@@ -1,72 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760474Ab3B0RiY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 12:38:24 -0500
-Received: from mail-da0-f47.google.com ([209.85.210.47]:64031 "EHLO
-	mail-da0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754926Ab3B0RiX convert rfc822-to-8bit (ORCPT
+	id S1760550Ab3B0Rio (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 12:38:44 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:51397 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760417Ab3B0Rim (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 12:38:23 -0500
-References: <nsxr4k2kdwv.fsf@closure.thunk.org> <20130227124727.GA225@x4> <20130227153435.GB5609@thunk.org> <20130227154450.GA23402@x4> <20130227170157.GA222@x4> <98C6DE45-F050-4AAD-82E2-7352F5BB0A5D@gmail.com> <20130227172256.GA236@x4>
-Mime-Version: 1.0 (1.0)
-In-Reply-To: <20130227172256.GA236@x4>
-Content-Type: text/plain;
-	charset=GB2312
-Content-Transfer-Encoding: 8BIT
-Message-Id: <7BFB2135-A1F0-4B6D-9962-16E75E5560F8@gmail.com>
-Cc: "Theodore Ts'o" <tytso@mit.edu>, Zheng Liu <wenqing.lz@taobao.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Jones <davej@redhat.com>, Borislav Petkov <bp@alien8.de>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-X-Mailer: iPad Mail (10B146)
-From: "gnehzuil.liu" <gnehzuil.liu@gmail.com>
-Subject: Re: [GIT PULL] ext4 updates for 3.9
-Date: Thu, 28 Feb 2013 01:38:13 +0800
-To: Markus Trippelsdorf <markus@trippelsdorf.de>
+	Wed, 27 Feb 2013 12:38:42 -0500
+Date: Wed, 27 Feb 2013 17:36:44 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Joe Perches <joe@perches.com>
+Cc: Peter Korsgaard <jacmet@sunsite.dk>, Nicolas Pitre <nico@fluxnic.net>,
+        "Markus F.X.J. Oberhumer" <markus@oberhumer.com>,
+        Kyungsik Lee <kyungsik.lee@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Michal Marek <mmarek@suse.cz>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-kbuild@vger.kernel.org, x86@kernel.org,
+        celinux-dev@lists.celinuxforum.org,
+        Nitin Gupta <nitingupta910@gmail.com>,
+        Richard Purdie <rpurdie@openedhand.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Joe Millenbach <jmillenbach@gmail.com>, David Sterba <dsterba@suse.cz>,
+        Richard Cochran <richardcochran@gmail.com>,
+        Albin Tonnerre <albin.tonnerre@free-electrons.com>,
+        Egon Alter <egon.alter@gmx.net>, hyojun.im@lge.com, chan.jeong@lge.com,
+        raphael.andy.lee@gmail.com
+Subject: Re: [RFC PATCH v2 0/4] Add support for LZ4-compressed kernel
+Message-ID: <20130227173644.GC17833@n2100.arm.linux.org.uk>
+References: <1361859870-15751-1-git-send-email-kyungsik.lee@lge.com> <512D1C12.4080109@oberhumer.com> <alpine.LFD.2.03.1302261557220.1254@syhkavp.arg> <87fw0i7n6d.fsf@dell.be.48ers.dk> <20130226221027.GW17833@n2100.arm.linux.org.uk> <1361929234.1924.8.camel@joe-AO722> <20130227095609.GY17833@n2100.arm.linux.org.uk> <1361980152.2035.13.camel@joe-AO722> <20130227163118.GB17833@n2100.arm.linux.org.uk> <1361984688.2035.20.camel@joe-AO722>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1361984688.2035.20.camel@joe-AO722>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-在 2013-2-28，上午1:22，Markus Trippelsdorf <markus@trippelsdorf.de> 写道：
-
-> On 2013.02.28 at 01:10 +0800, gnehzuil.liu wrote:
->> 在 2013-2-28，上午1:01，Markus Trippelsdorf <markus@trippelsdorf.de> 写道：
->> 
->>> On 2013.02.27 at 16:44 +0100, Markus Trippelsdorf wrote:
->>>> On 2013.02.27 at 10:34 -0500, Theodore Ts'o wrote:
->>>>> On Wed, Feb 27, 2013 at 01:47:27PM +0100, Markus Trippelsdorf wrote:
->>>>>> Just booted todays Linux tree and got the following errors:
->>>>>> 
->>>>>> ...
->>>>>> Feb 27 13:33:31 x4 kernel: EXT4-fs (sda): mounted filesystem with ordered data mode. Opts: (null)
->>>>>> ...
->>>>>> Feb 27 13:33:32 x4 kernel: EXT4-fs error (device sda): ext4_find_dest_de:1657: inode #70647809: block 14164000: comm cupsd: bad entry in directory: rec_len % 4 != 0 - offset=0(0), inode=2569822761, rec_len=3837, name_len=1
->>>>>> Feb 27 13:33:32 x4 kernel: EXT4-fs error (device sda): ext4_find_dest_de:1657: ignore#70911401: block 15213579: comm pdnsd: bad entry in directory: rec_len % 4 != 0 - offset=0(0), inode=2000846358, rec_len=36782, name_len=120
->>>>> 
->>>>> Is this reproducible? 
->>> 
->>> The issue is caused by:
->>> 
->>> commit d100eef2440fea13e4f09e88b1c8bcbca64beb9f
->>> Author: Zheng Liu <wenqing.lz@taobao.com>
->>> Date:   Mon Feb 18 00:29:59 2013 -0500
->>> 
->>>   ext4: lookup block mapping in extent status tree
->> 
->> Thanks for the report.  I am very sorry about that.  Now I am trying to fix it.
->> 
-> Thank you.
+On Wed, Feb 27, 2013 at 09:04:48AM -0800, Joe Perches wrote:
+> On Wed, 2013-02-27 at 16:31 +0000, Russell King - ARM Linux wrote:
+> > On Wed, Feb 27, 2013 at 07:49:12AM -0800, Joe Perches wrote:
+> > > On Wed, 2013-02-27 at 09:56 +0000, Russell King - ARM Linux wrote:
+> > > > On Tue, Feb 26, 2013 at 05:40:34PM -0800, Joe Perches wrote:
+> > > > > On Tue, 2013-02-26 at 22:10 +0000, Russell King - ARM Linux wrote:
+> > > > > > So... for a selected kernel version of a particular size, can we please
+> > > > > > have a comparison between the new LZO code and this LZ4 code, so that
+> > > > > > we can see whether it's worth updating the LZO code or replacing the
+> > > > > > LZO code with LZ4?
+> > > > > 
+> > > > > How could it be questionable that it's worth updating the LZO code?
+> > > > 
+> > > > Please read the comments against the previous posting of these patches
+> > > > where I first stated this argument - and with agreement from those
+> > > > following the thread.  The thread started on 26 Jan 2013.  Thanks.
+> > > 
+> > > https://lkml.org/lkml/2013/1/29/145
+> > > 
+> > > I did not and do not see significant value in
+> > > adding LZ4 given Markus' LZO improvements.
+> > 
+> > Sorry, a 66% increase in decompression speed over the updated LZO code
+> > isn't "significant value" ?
 > 
-> Please note that if I run a kernel build with: 
-> "git reset --hard f7fec032aa782d3fd7e51fbdf08aa3a296c01500" 
-> (the commit before d100eef24) I get a different but similar error:
+> We disagree.
+
+ROTFL.
+
+> > I'm curious - what in your mind qualifies "significant value" ?
 > 
->  EXT4-fs (sda): error count: 4
->  EXT4-fs (sda): initial error at 1361983458: ext4_find_dest_de:1657: inode 70911401: block 15213579 
->  EXT4-fs (sda): last error at 1361983663: ext4_find_dest_de:1658: inode 70647809: block 14164000
+> faster boot time. smaller, faster overall code.
 
-Yup, thanks for the note.  Could you please revert to this commit a25a4e1a5d5dc0f97dddbca44e695c532d8228c1 (the commit before f7fec032)?  I suspect that commit f7fec032 is the root cause.  Thanks for your help.
+ROTFL again!  Because you've just disagreed with your above statement.
+"66% increase in decompression speed" as far as I know _is_ "faster
+boot time" !
 
-Regards,
-                                                - Zheng
+> > Maybe "significant value" is a patch which buggily involves converting
+> > all those "<n>" printk format strings in assembly files to KERN_* macros,
+> > thereby breaking those strings because you've not paid attention to what
+> > .asciz means?  (Yes, I've just cleaned that crap up after you...)
+> 
+> If you mean commit 0cc41e4a21d43, perhaps you could clarify with an
+> example.  I don't see any relevant changes by you in -next, but
+> maybe I'm not looking in the right spot.
+
+While recently asking someone to enable VFP debugging, so I could help
+sort out a problem they had reported, this is the debug output I was
+greeted by thanks to your meddling:
+
+[  927.235546] \x01\x01\x01\x01\x01\x01\x01\x01
+...
+[  927.241505] \x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01                     
+
+Yes, really useful debug output isn't it?  You can really see what's
+going on there.  These are coming from ultimately two commits - the
+one you refer to above, which on its own would've changed the printk
+string to be merely "<7>" - and the follow on commit changing the
+way printk levels are dealt with.
+
+The above output is produced by:
+
+#define KERN_SOH        "\001"          /* ASCII Start Of Header */
+#define KERN_DEBUG      KERN_SOH "7"    /* debug-level messages */
+
+	.asciz  KERN_DEBUG "VFP: \str\n"
+
+7.6 `.asciz "STRING"'...
+========================
+
+`.asciz' is just like `.ascii', but each string is followed by a zero
+                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+byte.  The "z" in `.asciz' stands for "zero".
+^^^^^
+
+ 0000 01003700 5646503a 20696e73 74722025  ..7.VFP: instr %
+        ^^  ^^
+ 0010 30387820 70632025 30387820 73746174  08x pc %08x stat
+ 0020 65202570 0a000100 37005646 503a2066  e %p....7.VFP: f
+                 ^^
+...
+
+That is: \x01 \x00 7 \x00 VFP: instr %08x pc %08x state %p \x00
+
+See - three separately terminated strings because you changed:
+
+	.asciz	"<7>VFP: \str\n"
+
+to:
+
+	.asciz	"<7>" "VFP: \str\n"
+
+which turned it into _two_ separately NUL-terminated strings, and then
+the follow-on changes to printk kern levels changed this to:
+
+	.asciz	"\001" "7" "VFP: \str\n"
+
+producing _three_ separately NUL-terminated strings.
+
+The commit is not in mainline, nor linux-next, but in my tree as of
+yesterday (e36815e2e), ready to be pushed out when I've finished working
+on fixing other problems with VFP - or when I decide to push it out ready
+for submission during this merge window.
+
+> The change did enable reducing code size.
+
+??? Yea, right, meanwhile breaking the ability of stuff to produce
+kernel messages.
+
+> > > Why would the LZO code not be updated?
+> > I'm not saying that the LZO code should not be updated.
+> 
+> You said:
+> 
+> > > > > > so that we can see whether it's worth updating the LZO code
+> 
+> Sounded as if you were doubtful to me.
+
+_In_ the decompressor.  We're talking about the _decompressor_ in
+this thread.
