@@ -1,91 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758386Ab3B0QN5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 11:13:57 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:43715 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750784Ab3B0QN4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 11:13:56 -0500
-Date: Wed, 27 Feb 2013 17:13:52 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Roman Gushchin <klamm@yandex-team.ru>
-Cc: Johannes Weiner-Arquette <hannes@cmpxchg.org>,
-        "bsingharora@gmail.com" <bsingharora@gmail.com>,
-        "kamezawa.hiroyu@jp.fujitsu.com" <kamezawa.hiroyu@jp.fujitsu.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "kosaki.motohiro@jp.fujitsu.com" <kosaki.motohiro@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>, "mel@csn.ul.ie" <mel@csn.ul.ie>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Ying Han <yinghan@google.com>
-Subject: Re: [PATCH] memcg: implement low limits
-Message-ID: <20130227161352.GF16719@dhcp22.suse.cz>
-References: <8121361952156@webcorp1g.yandex-team.ru>
- <20130227094054.GC16719@dhcp22.suse.cz>
- <17521361961576@webcorp1g.yandex-team.ru>
+	id S1760010Ab3B0QOL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 11:14:11 -0500
+Received: from mail-we0-f169.google.com ([74.125.82.169]:63687 "EHLO
+	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757421Ab3B0QOG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Feb 2013 11:14:06 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <17521361961576@webcorp1g.yandex-team.ru>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <20130227160833.GF5530@pd.tnic>
+References: <CA+icZUUsedHPqZc5jXQ_AqAbfmTMu5WW8CJ+vnHwL69ofw7uTw@mail.gmail.com>
+	<20130227122302.GA5678@pd.tnic>
+	<CA+icZUVXDfOhztQtrOxyYaHutpx=iVpPGmRT0PzP7045_mjh6w@mail.gmail.com>
+	<CA+icZUXJb5O7ML-xnQq8Zoa46NmaGZp2Xaqj6fJL+vudPeQTLw@mail.gmail.com>
+	<20130227150733.GB22383@htj.dyndns.org>
+	<CA+icZUUFCOPJ=TAE-5=suUqPy0NjA+BSToiZxX=Xm7u=30GdOA@mail.gmail.com>
+	<20130227160833.GF5530@pd.tnic>
+Date: Wed, 27 Feb 2013 17:14:04 +0100
+Message-ID: <CA+icZUVhfYHu_EtC=itTR04OGq_yOq902_ZMb9_Jy=1pZfU_FA@mail.gmail.com>
+Subject: Re: [next-20130227] kernel NULL pointer dereference [ watchdog | perf
+ related ? ]
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Borislav Petkov <bp@alien8.de>, Sedat Dilek <sedat.dilek@gmail.com>,
+        Tejun Heo <tj@kernel.org>, Wim Van Sebroeck <wim@iguana.be>,
+        Ingo Molnar <mingo@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
+        linux-watchdog@vger.kernel.org, x86@kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-next <linux-next@vger.kernel.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 27-02-13 14:39:36, Roman Gushchin wrote:
-> 27.02.2013, 13:41, "Michal Hocko" <mhocko@suse.cz>:
-> > Let me restate what I have already mentioned in the private
-> > communication.
-> >
-> > We already have soft limit which can be implemented to achieve the
-> > same/similar functionality and in fact this is a long term objective (at
-> > least for me). I hope I will be able to post my code soon. The last post
-> > by Ying Hand (cc-ing her) was here:
-> > http://comments.gmane.org/gmane.linux.kernel.mm/83499
-> >
-> > To be honest I do not like introduction of a new limit because we have
-> > two already and the situation would get over complicated.
-> 
-> I think, there are three different tasks:
-> 1) keeping cgroups below theirs hard limit to avoid direct reclaim
-> (for performance reasons),
+On Wed, Feb 27, 2013 at 5:08 PM, Borislav Petkov <bp@alien8.de> wrote:
+> On Wed, Feb 27, 2013 at 04:56:27PM +0100, Sedat Dilek wrote:
+>> Hmm, I am not very amused to read all this, really.
+>>
+>> If such fixes are around why aren't they applied quickly?
+>
+> Sedat, you need to relax a little. You're testing a linux next tree
+> right during the merge window where patches are flying back and forth.
+> Things like that can happen and you, if you're really willing to test
+> such bleeding edge kernels, also would have to accept the fact that
+> fixes don't magically appear where they have to in no time.
+>
+> I debugged an issue which apparently got fixed already but I'm not
+> complaining. People are trying their best and screaming at them is not
+> constructive. At all.
+>
 
-Could you clarify what you mean by this, please? There is no background
-reclaim for memcgs currently and I am a bit skeptical whether it is
-useful. If it would be useful then it should be in par with the global
-reclaim (so something like min_free_kbytes would be more appropriate).
+I am not screaming or whining... people should reflect a bit on the
+patch workflow process?
+Also, I am sure a patchwork-service especially for -next is helpful.
 
-> 2) cgroup's prioritization during global reclaim,
+/me forgot to add a "call trace" to my 1st kernel checks.
 
-Yes, group priorities sound like a useful feature not just for the
-reclaim I would like it for oom selection as well.
-I think that we shouldn't use any kind of limit for this task, though.
+     $ dmesg | egrep -i 'error|fail|warn|conflict|terminated|killed|call trace'
 
-> 3) granting some amount of memory to a selected cgroup (and protecting
-> it from reclaim without significant reasons)
+That's why I have overseen it.
 
-and soft limit sounds like a good fit with this description.
+> I'd suggest simply reporting the issue, maybe trying to debug it
+> yourself and patiently waiting. I'm sure you can find anything else to
+> do in the meantime :-)
+>
 
-> IMHO, combining them all in one limit will simplify a kernel code,
-> but will also make a user's (or administrator's) life much more
-> complicated.
+Yupp, I had a coffee and two pieces of cake :-).
 
-I do not think all 3 tasks you have described can be covered by a single
-limit of course. We have hard limit to cap the usage, we have a soft
-limit to allow over-committing the machine. Task 2 would require a new
-knob but it shouldn't be covered by any limit or depend on the group
-usage. And task 1 sounds like a background reclaim and then it should be
-consistent with the global knob.
-
-> Introducing low limits can make the situation simpler.
-
-How exactly? I can see how it would address task 3 but yet again, soft
-limit can be turned into this behavior as well without changing its
-semantic (that limit would be still considered if we are able to handle
-memory pressure from the above - either global pressure or parent
-hitting the limit).
--- 
-Michal Hocko
-SUSE Labs
+> Thanks.
+>
+> --
+> Regards/Gruss,
+>     Boris.
+>
+> Sent from a fat crate under my desk. Formatting is fine.
+> --
