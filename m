@@ -1,64 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933634Ab3B0AjS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 19:39:18 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42311 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933156Ab3BZX6j (ORCPT
+	id S933844Ab3B0Ajd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 19:39:33 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.242]:65415 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933167Ab3B0Aj3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 18:58:39 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        fangxiaozhi <huananhu@huawei.com>
-Subject: [ 146/150] USB: storage: properly handle the endian issues of idProduct
-Date: Tue, 26 Feb 2013 15:56:43 -0800
-Message-Id: <20130226235539.709068882@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130226235523.930663721@linuxfoundation.org>
-References: <20130226235523.930663721@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	Tue, 26 Feb 2013 19:39:29 -0500
+From: Wenyou Yang <wenyou.yang@atmel.com>
+To: <linux-arm-kernel@lists.infradead.org>
+CC: <grant.likely@secretlab.ca>, <nicolas.ferre@atmel.com>,
+        <plagnioj@jcrosoft.com>, <richard.genoud@gmail.com>,
+        <JM.Lin@atmel.com>, <wenyou.yang@atmel.com>,
+        <spi-devel-general@lists.sourceforge.net>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH Resend v5 01/16] spi/spi-atmel: fix master->num_chipselect wrongly set.
+Date: Wed, 27 Feb 2013 08:37:14 +0800
+Message-ID: <1361925434-11929-1-git-send-email-wenyou.yang@atmel.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1361925297-11854-1-git-send-email-wenyou.yang@atmel.com>
+References: <1361925297-11854-1-git-send-email-wenyou.yang@atmel.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8-stable review patch.  If anyone has any objections, please let me know.
+if the spi property "cs-gpios" is set as below:
 
-------------------
+	cs-gpios = <0>, <&pioC 11 0>, <0>, <0>;
 
-From: fangxiaozhi <huananhu@huawei.com>
+the master->num_chipselect will wrongly be set to 0,
+and the spi fail to probe.
 
-commit cd060956c5e97931c3909e4a808508469c0bb9f6 upstream.
-
-1. The idProduct is little endian, so make sure its value to be
-compatible with the current CPU. Make no break on big endian processors.
-
-Signed-off-by: fangxiaozhi <huananhu@huawei.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
+Cc: spi-devel-general@lists.sourceforge.net
+Cc: linux-kernel@vger.kernel.org
 ---
- drivers/usb/storage/initializers.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/spi/spi-atmel.c |    2 +-
+ drivers/spi/spi.c       |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/storage/initializers.c
-+++ b/drivers/usb/storage/initializers.c
-@@ -147,7 +147,7 @@ static int usb_stor_huawei_dongles_pid(s
- 	int idProduct;
+diff --git a/drivers/spi/spi-atmel.c b/drivers/spi/spi-atmel.c
+index ab34497..5bf3786 100644
+--- a/drivers/spi/spi-atmel.c
++++ b/drivers/spi/spi-atmel.c
+@@ -944,7 +944,7 @@ static int atmel_spi_probe(struct platform_device *pdev)
  
- 	idesc = &us->pusb_intf->cur_altsetting->desc;
--	idProduct = us->pusb_dev->descriptor.idProduct;
-+	idProduct = le16_to_cpu(us->pusb_dev->descriptor.idProduct);
- 	/* The first port is CDROM,
- 	 * means the dongle in the single port mode,
- 	 * and a switch command is required to be sent. */
-@@ -169,7 +169,7 @@ int usb_stor_huawei_init(struct us_data
- 	int result = 0;
+ 	master->dev.of_node = pdev->dev.of_node;
+ 	master->bus_num = pdev->id;
+-	master->num_chipselect = master->dev.of_node ? 0 : 4;
++	master->num_chipselect = 4;
+ 	master->setup = atmel_spi_setup;
+ 	master->transfer = atmel_spi_transfer;
+ 	master->cleanup = atmel_spi_cleanup;
+diff --git a/drivers/spi/spi.c b/drivers/spi/spi.c
+index 19ee901..d88cbef 100644
+--- a/drivers/spi/spi.c
++++ b/drivers/spi/spi.c
+@@ -1070,7 +1070,7 @@ static int of_spi_register_master(struct spi_master *master)
+ 	master->num_chipselect = max(nb, master->num_chipselect);
  
- 	if (usb_stor_huawei_dongles_pid(us)) {
--		if (us->pusb_dev->descriptor.idProduct >= 0x1446)
-+		if (le16_to_cpu(us->pusb_dev->descriptor.idProduct) >= 0x1446)
- 			result = usb_stor_huawei_scsi_init(us);
- 		else
- 			result = usb_stor_huawei_feature_init(us);
-
+ 	if (nb < 1)
+-		return 0;
++		nb = master->num_chipselect;
+ 
+ 	cs = devm_kzalloc(&master->dev,
+ 			  sizeof(int) * master->num_chipselect,
+-- 
+1.7.9.5
 
