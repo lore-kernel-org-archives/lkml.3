@@ -1,67 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753956Ab3B0VLf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 16:11:35 -0500
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:50346 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752647Ab3B0VLd (ORCPT
+	id S1751813Ab3B0VMZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 16:12:25 -0500
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:54872 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752275Ab3B0VMY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 16:11:33 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAFDW0jJ2yHftRW5Kp8sc+uxNC3oS4AZKqG0Szz2rUyxeeA0+2Q@mail.gmail.com>
-References: <20130227052247.GA20213@redhat.com>
-	<20130227132736.GH19641@localhost.localdomain>
-	<CAFDW0jK6zigx0YgVMHomUkRQkqpw5mUgkdeynv36LUiQn4XTxg@mail.gmail.com>
-	<20130227182617.GI19641@localhost.localdomain>
-	<CAFDW0jJ2yHftRW5Kp8sc+uxNC3oS4AZKqG0Szz2rUyxeeA0+2Q@mail.gmail.com>
-Date: Wed, 27 Feb 2013 16:11:32 -0500
-Message-ID: <CAEzrpqeQTVwSYd_0NpjnfMJKiLPeL-tC2tGPAh6ov2ViBndXUg@mail.gmail.com>
-Subject: Re: btrfs crash when low on memory.
-From: Josef Bacik <josef@toxicpanda.com>
-To: Ahmet Inan <ainan@mathematik.uni-freiburg.de>
-Cc: Josef Bacik <jbacik@fusionio.com>, Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 27 Feb 2013 16:12:24 -0500
+Subject: Re: [perf patch] perf doesn't delete /tmp/perf-vdso.so.* file on
+ exit
+From: Namhyung Kim <namhyung@kernel.org>
+To: Markus Trippelsdorf <markus@trippelsdorf.de>
+Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <20130227130316.GB225@x4>
+References: <20130221094544.GA2919@x4> <20130221102748.GB2919@x4>
+	 <loom.20130221T191341-303@post.gmane.org>  <20130227130316.GB225@x4>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 28 Feb 2013 06:12:18 +0900
+Message-ID: <1361999538.1712.15.camel@leonhard>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 27, 2013 at 3:10 PM, Ahmet Inan
-<ainan@mathematik.uni-freiburg.de> wrote:
-> On Wed, Feb 27, 2013 at 7:26 PM, Josef Bacik <jbacik@fusionio.com> wrote:
->> On Wed, Feb 27, 2013 at 07:31:11AM -0700, Ahmet Inan wrote:
->>> > Yeah we have a lot of
->>> >
->>> > ptr = kmalloc();
->>> > BUG_ON(ptr);
->>> >
->>> > everywhere.  I'll fix this one up but I really need to sit down and go through
->>> > all of them and make sure we do the right thing in all these places.  Thanks,
->>>
->>> But what would be the right thing to do when you got no memory?
->>> Spinlock until you can kmalloc? Pre-reserve some memory?
->>>
->>
->> Return ENOMEM?  We have a way to abort transactions now, if it's in a horrible
->> of enough spot we can just abort the transaction and let the user deal with the
->> aftermath, it's nicer than panicing.  Thanks,
->
-> youre right. i am only afraid of silent corruption of data on aborts:
-> our guys here trigger OOM all the time with their compilers and
-> numerical codes (go figure).
-> and until now we had no more aborts / panics because of
-> "vm.min_free_kbytes = 65536" and thus no corruption.
->
-> my point is:
-> i like a freezing computer more than an corrupting computer, even if
-> its a server. reboot to the rescue.
->
+2013-02-27 (수), 14:03 +0100, Markus Trippelsdorf:
+> On 2013.02.21 at 18:19 +0000, Namhyung Kim wrote:
+> > Markus Trippelsdorf <markus <at> trippelsdorf.de> writes:
+> > > 
+> > > perf top doesn't unlink /tmp/perf-vdso.so.* on exit.
+> > > Fix this by calling vdso__exit() before exit(0).
+> > 
+> > > @@ -602,6 +603,7 @@ static void *display_thread_tui(void *arg)
+> > >  				      &top->session->header.env);
+> > > 
+> > >  	exit_browser(0);
+> > > +	vdso__exit();
+> > >  	exit(0);
+> > >  	return NULL;
+> > >  }
+> > 
+> > I don't think it's enough - it doesn't cover all exit paths.
+> > I'd suggest making it to use atexit/on_exit().
+> 
+> The issue is fixed by commit 11859e821761.
+> 
 
-If we're corrupting on abort that is a bug too that needs to be fixed
-too.  I've banged on the abort stuff a lot recently when trying to
-make it not panic the box and it appears to work fine.  Obviously that
-kind of stuff needs to be tested as well, but so far I haven't seen
-abort corrupt the file system.  Thanks,
+Ah, right.  It's much better. :)
 
-Josef
+Thanks,
+Namhyung
+
+
