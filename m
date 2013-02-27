@@ -1,111 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932301Ab3B0Jw5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 04:52:57 -0500
-Received: from mail-la0-f47.google.com ([209.85.215.47]:64646 "EHLO
-	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751410Ab3B0Jwx (ORCPT
+	id S932385Ab3B0JxU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 04:53:20 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:51034 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932168Ab3B0JxQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 04:52:53 -0500
+	Wed, 27 Feb 2013 04:53:16 -0500
+Date: Wed, 27 Feb 2013 09:51:39 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Kyungsik Lee <kyungsik.lee@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: "Markus F.X.J. Oberhumer" <markus@oberhumer.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Michal Marek <mmarek@suse.cz>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-kbuild@vger.kernel.org, x86@kernel.org,
+        celinux-dev@lists.celinuxforum.org, Nicolas Pitre <nico@fluxnic.net>,
+        Nitin Gupta <nitingupta910@gmail.com>,
+        Richard Purdie <rpurdie@openedhand.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Joe Millenbach <jmillenbach@gmail.com>, David Sterba <dsterba@suse.cz>,
+        Richard Cochran <richardcochran@gmail.com>,
+        Albin Tonnerre <albin.tonnerre@free-electrons.com>,
+        Egon Alter <egon.alter@gmx.net>, hyojun.im@lge.com, chan.jeong@lge.com,
+        raphael.andy.lee@gmail.com
+Subject: Re: [RFC PATCH v2 0/4] Add support for LZ4-compressed kernel
+Message-ID: <20130227095139.GX17833@n2100.arm.linux.org.uk>
+References: <1361859870-15751-1-git-send-email-kyungsik.lee@lge.com> <512D1C12.4080109@oberhumer.com> <20130227073646.GA22333@Corona>
 MIME-Version: 1.0
-In-Reply-To: <20130227085216.GC30395@linux-sh.org>
-References: <20130218142834.28739.39417.sendpatchset@w520>
-	<20130227082335.GB30395@linux-sh.org>
-	<CANqRtoSbiPhRbDsZppkJ+F48tEmuCdSfVRo3dTs9cEUxfvLopA@mail.gmail.com>
-	<20130227085216.GC30395@linux-sh.org>
-Date: Wed, 27 Feb 2013 18:52:51 +0900
-Message-ID: <CANqRtoTFgHDKpb52HCRD=11ds_zKgLammcnymF719L9u4v3fvg@mail.gmail.com>
-Subject: Re: [PATCH] irqchip: Renesas INTC External IRQ pin driver
-From: Magnus Damm <magnus.damm@gmail.com>
-To: Paul Mundt <lethal@linux-sh.org>
-Cc: linux-kernel@vger.kernel.org, linux-sh@vger.kernel.org,
-        benh@kernel.crashing.org, grant.likely@secretlab.ca,
-        horms@verge.net.au, tglx@linutronix.de
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130227073646.GA22333@Corona>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 27, 2013 at 5:52 PM, Paul Mundt <lethal@linux-sh.org> wrote:
-> On Wed, Feb 27, 2013 at 05:35:51PM +0900, Magnus Damm wrote:
->> On Wed, Feb 27, 2013 at 5:23 PM, Paul Mundt <lethal@linux-sh.org> wrote:
->> > So how exactly does this interact with the existing sh_intc code? Or is
->> > there some reason why you have opted to bypass it in order to implement a
->> > simplified reduced-functionality version of INTC support focused only on
->> > external pins? If both are used together this is going to be a nightmare
->> > for locking, and it's also non-obvious how the IRQ domains on both sides
->> > will interact.
->> >
->> > This needs a lot more explanation.
->>
->> Recent GIC-based SoCs do not make use of INTC for any on-chip I/O
->> devices. This driver is meant to be used as a layer between the actual
->> IRQ pin and the GIC. Anything else needs the full driver. The existing
->> non-DT INTC driver can happily coexist with this driver like it does
->> in the case of sh73a0 here:
->>
->> [PATCH 02/03] ARM: shmobile: INTC External IRQ pin driver on sh73a0
->>
-> Ok, thanks for clarifying.
->
-> I suppose the main concern is how quickly this will simply turn in to a
-> deviated partial implementation of the full driver as newer SoCs begin
-> deviating from your simplified case, and we basically end up
-> reimplementing sh_intc anyways.
+On Wed, Feb 27, 2013 at 04:36:47PM +0900, Kyungsik Lee wrote:
+> Compiler: Linaro ARM gcc 4.6.2
+> 2. ARMv7, 1.7GHz based board
+>    Kernel: linux 3.7
+>    Uncompressed Kernel Size: 14MB
+>          Compressed Size  Decompression Speed
+>     LZO  6.0MB            34.1MB/s            Old
+>          ----------------------------------------
+>          6.0MB            34.7MB/s            New
+>          6.0MB            52.2MB/s(UA)
+>     =============================================
+>     LZ4  6.5MB            86.7MB/s
+> UA: Unaligned memory Access support
 
-As you know, the INTC code that you are referring to is a full
-interrupt controller designed to work directly with CPU cores like SH
-and ARM. Newer ARM cores like Cortex-A9 all include the GIC both for
-IPI purpose in case of SMP and they also implement SPI functionality
-for I/O device interrupts. So the need for vendor-specific interrupt
-controller IP is almost down to nothing these days.
+That is pretty conclusive - it shows an 8% increase in image size vs a
+66% increase in decompression speed.  It will take a _lot_ to offset
+that increase in decompression speed.
 
-With that in mind I do really doubt that we end up reimplementing
-sh_intc. The upcoming designs that I am aware of do not change their
-external IRQ pin hardware to force us to update this driver. What
-happens after that I'm afraid I can't say. =)
+So, what I think is that yes, we should accept LZ4 and drop LZO from
+the kernel - the "fast but may not be small" compression title has
+clearly been taken by LZ4.
 
->> The driver is not meant to be used with INTC-only based systems like
->> sh7372 and the SH architecture. I would be very happy if someone could
->> get their shit together and fix up DT support for the common INTC
->> code. This has not happened yet though. So if you know anyone with
->> time to spare then feel free to suggest them to work together with
->> Iwamatsu-san to get the DT version of the code reviewed together with
->> Linaro.
->>
-> I haven't heard or seen anything new on that in some time, so I assumed
-> the work had stalled. I'm not sure why there wasn't more effort put in to
-> DT support for the INTC code rather than simply coming up with a
-> temporary bypass shim, and I'm not sure why you think this work is
-> blocked by anyone (unless you're just referring to a general lack of
-> resources).
-
-I mainly wrote this driver to support the r8a7779 SoC which can't be
-driven by the existing INTC code base. During development I decided to
-try to share the driver between multiple GIC-based SoCs like r8a7779
-and sh73a0. The reason behind trying to share this driver between
-multiple SoCs is to remove SoC-specific hacks that can't be dealt with
-by the existing INTC code.
-
-> In any event, I'm not sure what the best option for the interim is. I
-> suppose we can merge the irqchips until the INTC stuff catches up, but
-> then we are probaby going to run in to a situation where they either have
-> to co-exist, or the irqchips are removed and the sh_intc code has to
-> carry a compat shim to deal with those DT bindings. Neither of those
-> options seem particularly appealing to me.
-
-I don't really understand why you would want to use a generic table
-driven driver when you have the possibility of using a
-hardware-specific driver. I suppose you are wondering why no one seems
-to be working on INTC DT support at this point. The truth is that we
-got very little feedback and development support with interrupts in
-general last autumn and on top of that our developers went their own
-way instead of following advice.
-
-Anyway, I do understand your worry about what happens if the hardware
-starts to deviate, but judging by the future devices that I've seen we
-should be ok for a while. Beyond that no one can tell.
-
-Thanks,
-
-/ magnus
+Akpm - what's your thoughts?
