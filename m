@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760471Ab3B0AOY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 19:14:24 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42934 "EHLO
+	id S1760517Ab3B0AOj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 19:14:39 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42929 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760434Ab3B0AJY (ORCPT
+	with ESMTP id S1760429Ab3B0AJX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 19:09:24 -0500
+	Tue, 26 Feb 2013 19:09:23 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Wei Liu <wei.liu2@citrix.com>, Jan Beulich <JBeulich@suse.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        "Christopher S. Aker" <caker@theshore.net>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 72/86] xen-netback: correctly return errors from netbk_count_requests()
-Date: Tue, 26 Feb 2013 16:08:20 -0800
-Message-Id: <20130226235920.424068113@linuxfoundation.org>
+        John David Anglin <dave.anglin@bell.net>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [ 62/86] [PARISC] Purge existing TLB entries in set_pte_at and ptep_set_wrprotect
+Date: Tue, 26 Feb 2013 16:08:10 -0800
+Message-Id: <20130226235919.341509699@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235912.881663118@linuxfoundation.org>
 References: <20130226235912.881663118@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,73 +30,92 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: John David Anglin <dave.anglin@bell.net>
 
-From: David Vrabel <david.vrabel@citrix.com>
+commit 7139bc1579901b53db7e898789e916ee2fb52d78 upstream.
 
-[ Upstream commit 35876b5ffc154c357476b2c3bdab10feaf4bd8f0 ]
+This patch goes a long way toward fixing the minifail bug, and
+it  significantly improves the stability of SMP machines such as
+the rp3440.  When write  protecting a page for COW, we need to
+purge the existing translation.  Otherwise, the COW break
+doesn't occur as expected because the TLB may still have a stale entry
+which allows writes.
 
-netbk_count_requests() could detect an error, call
-netbk_fatal_tx_error() but return 0.  The vif may then be used
-afterwards (e.g., in a call to netbk_tx_error().
-
-Since netbk_fatal_tx_error() could set vif->refcnt to 1, the vif may
-be freed immediately after the call to netbk_fatal_tx_error() (e.g.,
-if the vif is also removed).
-
-Netback thread              Xenwatch thread
--------------------------------------------
-netbk_fatal_tx_err()        netback_remove()
-                              xenvif_disconnect()
-                                ...
-                                free_netdev()
-netbk_tx_err() Oops!
-
-Signed-off-by: Wei Liu <wei.liu2@citrix.com>
-Signed-off-by: Jan Beulich <JBeulich@suse.com>
-Signed-off-by: David Vrabel <david.vrabel@citrix.com>
-Reported-by: Christopher S. Aker <caker@theshore.net>
-Acked-by: Ian Campbell <ian.campbell@citrix.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+[jejb: fix up checkpatch errors]
+Signed-off-by: John David Anglin <dave.anglin@bell.net>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/xen-netback/netback.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/drivers/net/xen-netback/netback.c
-+++ b/drivers/net/xen-netback/netback.c
-@@ -883,13 +883,13 @@ static int netbk_count_requests(struct x
- 		if (frags >= work_to_do) {
- 			netdev_err(vif->dev, "Need more frags\n");
- 			netbk_fatal_tx_err(vif);
--			return -frags;
-+			return -ENODATA;
- 		}
+---
+ arch/parisc/include/asm/pgtable.h |   13 ++++++++++---
+ arch/parisc/kernel/cache.c        |   18 ++++++++++++++++++
+ 2 files changed, 28 insertions(+), 3 deletions(-)
+
+--- a/arch/parisc/include/asm/pgtable.h
++++ b/arch/parisc/include/asm/pgtable.h
+@@ -12,11 +12,10 @@
  
- 		if (unlikely(frags >= MAX_SKB_FRAGS)) {
- 			netdev_err(vif->dev, "Too many frags\n");
- 			netbk_fatal_tx_err(vif);
--			return -frags;
-+			return -E2BIG;
- 		}
+ #include <linux/bitops.h>
+ #include <linux/spinlock.h>
++#include <linux/mm_types.h>
+ #include <asm/processor.h>
+ #include <asm/cache.h>
  
- 		memcpy(txp, RING_GET_REQUEST(&vif->tx, cons + frags),
-@@ -897,7 +897,7 @@ static int netbk_count_requests(struct x
- 		if (txp->size > first->size) {
- 			netdev_err(vif->dev, "Frag is bigger than frame.\n");
- 			netbk_fatal_tx_err(vif);
--			return -frags;
-+			return -EIO;
- 		}
+-struct vm_area_struct;
+-
+ /*
+  * kern_addr_valid(ADDR) tests if ADDR is pointing to valid kernel
+  * memory.  For the return value to be meaningful, ADDR must be >=
+@@ -40,7 +39,14 @@ struct vm_area_struct;
+         do{                                                     \
+                 *(pteptr) = (pteval);                           \
+         } while(0)
+-#define set_pte_at(mm,addr,ptep,pteval) set_pte(ptep,pteval)
++
++extern void purge_tlb_entries(struct mm_struct *, unsigned long);
++
++#define set_pte_at(mm, addr, ptep, pteval)                      \
++	do {                                                    \
++		set_pte(ptep, pteval);                          \
++		purge_tlb_entries(mm, addr);                    \
++	} while (0)
  
- 		first->size -= txp->size;
-@@ -907,7 +907,7 @@ static int netbk_count_requests(struct x
- 			netdev_err(vif->dev, "txp->offset: %x, size: %u\n",
- 				 txp->offset, txp->size);
- 			netbk_fatal_tx_err(vif);
--			return -frags;
-+			return -EINVAL;
- 		}
- 	} while ((txp++)->flags & XEN_NETTXF_more_data);
- 	return frags;
+ #endif /* !__ASSEMBLY__ */
+ 
+@@ -466,6 +472,7 @@ static inline void ptep_set_wrprotect(st
+ 		old = pte_val(*ptep);
+ 		new = pte_val(pte_wrprotect(__pte (old)));
+ 	} while (cmpxchg((unsigned long *) ptep, old, new) != old);
++	purge_tlb_entries(mm, addr);
+ #else
+ 	pte_t old_pte = *ptep;
+ 	set_pte_at(mm, addr, ptep, pte_wrprotect(old_pte));
+--- a/arch/parisc/kernel/cache.c
++++ b/arch/parisc/kernel/cache.c
+@@ -420,6 +420,24 @@ void kunmap_parisc(void *addr)
+ EXPORT_SYMBOL(kunmap_parisc);
+ #endif
+ 
++void purge_tlb_entries(struct mm_struct *mm, unsigned long addr)
++{
++	unsigned long flags;
++
++	/* Note: purge_tlb_entries can be called at startup with
++	   no context.  */
++
++	/* Disable preemption while we play with %sr1.  */
++	preempt_disable();
++	mtsp(mm->context, 1);
++	purge_tlb_start(flags);
++	pdtlb(addr);
++	pitlb(addr);
++	purge_tlb_end(flags);
++	preempt_enable();
++}
++EXPORT_SYMBOL(purge_tlb_entries);
++
+ void __flush_tlb_range(unsigned long sid, unsigned long start,
+ 		       unsigned long end)
+ {
 
 
