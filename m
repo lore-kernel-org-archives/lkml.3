@@ -1,40 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755137Ab3B0IYF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 03:24:05 -0500
-Received: from linux-sh.org ([111.68.239.195]:47087 "EHLO linux-sh.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752460Ab3B0IYC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 03:24:02 -0500
-Date: Wed, 27 Feb 2013 17:23:38 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: Magnus Damm <magnus.damm@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-sh@vger.kernel.org,
-        benh@kernel.crashing.org, grant.likely@secretlab.ca,
-        horms@verge.net.au, tglx@linutronix.de
-Subject: Re: [PATCH] irqchip: Renesas INTC External IRQ pin driver
-Message-ID: <20130227082335.GB30395@linux-sh.org>
-References: <20130218142834.28739.39417.sendpatchset@w520>
+	id S1755292Ab3B0I0b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 03:26:31 -0500
+Received: from mail-lb0-f169.google.com ([209.85.217.169]:62635 "EHLO
+	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753923Ab3B0I0a (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Feb 2013 03:26:30 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130218142834.28739.39417.sendpatchset@w520>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAPM=9tw8mefcYTqELXFbZWZ44a--SNcPnRMAvMSGTiODzRpDhg@mail.gmail.com>
+References: <1352665488-13818-1-git-send-email-mathieu.poirier@linaro.org>
+	<20121119072525.GA16730@core.coreip.homeip.net>
+	<CAPM=9tw8mefcYTqELXFbZWZ44a--SNcPnRMAvMSGTiODzRpDhg@mail.gmail.com>
+Date: Wed, 27 Feb 2013 18:26:29 +1000
+Message-ID: <CAPM=9tzyBuxwLS=0vAcF5h4vZnB01X7_1NbnMo0M=M454gwZBQ@mail.gmail.com>
+Subject: Re: [PATCH v4] drivers/tty: Folding Android's keyreset driver in sysRQ
+From: Dave Airlie <airlied@gmail.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: mathieu.poirier@linaro.org, linux-kernel@vger.kernel.org, arve@android.com,
+        kernel-team@android.com, john.stultz@linaro.org,
+        alan@lxorguk.ukuu.org.uk,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 18, 2013 at 11:28:34PM +0900, Magnus Damm wrote:
-> From: Magnus Damm <damm@opensource.se>
-> 
-> This patch adds a driver for external IRQ pins connected
-> to the INTC block on recent SoCs from Renesas.
-> 
-So how exactly does this interact with the existing sh_intc code? Or is
-there some reason why you have opted to bypass it in order to implement a
-simplified reduced-functionality version of INTC support focused only on
-external pins? If both are used together this is going to be a nightmare
-for locking, and it's also non-obvious how the IRQ domains on both sides
-will interact.
+>
+> this patch seems to be oopsing on my x86 32-bit machine on bootup, pic attached.
+>
+> .config attached.
+>
+> It looks to me like the weak bit isn't working so well
+>
+>         if (platform_sysrq_reset_seq) {
+>                 for (i = 0; i < ARRAY_SIZE(sysrq_reset_seq); i++) {
+>                         key = platform_sysrq_reset_seq[i];
+>   6d:   66 8b 8c 00 00 00 00    mov    0x0(%eax,%eax,1),%cx
+>   74:   00
+>
+> is around where it craps out.
+> gcc version 4.7.2 20121109 (Red Hat 4.7.2-8) (GCC)
+> Fedora 18 machine.
 
-This needs a lot more explanation.
+And just to confirm reverting
+154b7a489a5b1d808323b933b04864958c2f1056.in Linus' tree allows boot to
+proceed.
+
+Dave.
