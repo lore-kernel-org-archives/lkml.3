@@ -1,115 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932490Ab3B0SK2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 13:10:28 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:23301 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760052Ab3B0SK0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 13:10:26 -0500
-Date: Wed, 27 Feb 2013 19:08:44 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Mandeep Singh Baines <msb@chromium.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Neil Horman <nhorman@redhat.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 2/3] freezer: do not send a fake signal to a
-	PF_DUMPCORE thread
-Message-ID: <20130227180844.GA6015@redhat.com>
-References: <20130224173144.GA32179@redhat.com> <20130224173206.GA32206@redhat.com> <20130224183656.GA8903@redhat.com> <CACBanvoOdfZr1x5kU1+fmtex1Cuoas_LwBKwZ_giiLE511E-jg@mail.gmail.com> <CACBanvr5vbkH1J+waRHMBq8hRuKqJtF0sD0+95v6Qmnd=3Zd_w@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACBanvr5vbkH1J+waRHMBq8hRuKqJtF0sD0+95v6Qmnd=3Zd_w@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S932526Ab3B0SL5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 13:11:57 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:58404 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753303Ab3B0SL4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Feb 2013 13:11:56 -0500
+Date: Wed, 27 Feb 2013 13:11:54 -0500 (EST)
+Message-Id: <20130227.131154.341075972488849111.davem@davemloft.net>
+To: gdt@gdt.id.au
+Cc: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv2] usb/net/asix_devices: Add USBNET HG20F9 ethernet
+ dongle
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1361975556.13093.3.camel@ilion>
+References: <20130226.172856.235525833921140241.davem@davemloft.net>
+	<20130226.172955.926853809838377302.davem@davemloft.net>
+	<1361975556.13093.3.camel@ilion>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Wed, 27 Feb 2013 10:11:59 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/26, Mandeep Singh Baines wrote:
->
-> >> Change freeze_task() to check PF_DUMPCORE along with PF_KTHREAD. We
-> >> need to recheck PF_DUMPCORE under ->siglock to avoid the race with
-> >> zap_threads() which can set this flag right before we take the lock.
-> >>
-> >
-> > Won't this prevent suspend?
+From: Glen Turner <gdt@gdt.id.au>
+Date: Thu, 28 Feb 2013 01:02:36 +1030
 
-Hmm. I guess you mean that pipe_write() can hang in pipe_wait() if the
-user-space handler was already freezed... Damn, and I even mentioned
-this race when we discussed this 2 weeks ago.
+> This USB ethernet adapter was purchased in anodyne packaging
+> from the computer store adjacent to linux.conf.au 2013 in
+> Canberra (Australia). A web search shows other recent
+> purchasers in Lancaster (UK) and Seattle (USA). Just like an
+> emergent virus, our age of e-commerce and airmail allows
+> underdocumented hardware to spread around the world instantly
+> using the vector of ridiculously low prices.
+> 
+> Paige Thompson, infected via eBay, discovered that the HG20F9
+> is a copy of the Asix 88772B; many viruses copy the RNA of
+> other viruses. See Paige's work at
+> <https://github.com/paigeadele/HG20F9>.
+> This patch uses her discovery to update the restructured Asix
+> driver in the current kernel.
+> 
+> Just as some viruses inhabit seemingly-healthy cells, the
+> HG20F9 uses the Vendor ID 0x066b assigned to Linksys Inc.
+> For the present there is no clash of Product ID 0x20f9.
+> 
+> Signed-off-by: Glen Turner <gdt@gdt.id.au>
 
-I need to think, but most probably you are right, and we need another
-solution...
-
-> You'd rather have reliable suspend than coredumps that aren't
-> truncated so you need to set TIF_SIGPENDING to break waits in the
-> dump_write path.
-
-Oh, I agree. In this case the necessary changes look simple.
-
-> static void wait_for_dump_helpers(struct file *file)
-> {
->         struct pipe_inode_info *pipe;
->
->         pipe = file->f_path.dentry->d_inode->i_pipe;
->
->         pipe_lock(pipe);
->         pipe->readers++;
->         pipe->writers--;
->
->         while (pipe->readers > 1) {
->                 unsigned long flags;
->
->                 wake_up_interruptible_sync(&pipe->wait);
->                 kill_fasync(&pipe->fasync_readers, SIGIO, POLL_IN);
->                 pipe_wait(pipe);
->
->                 pipe_unlock(pipe);
->                 try_to_freeze();
->                 pipe_lock(pipe);
->
->                 if (fatal_signal_pending(current))
->                         break;
->
->                 /* Clear fake signal from freeze_task(). */
->                 spin_lock_irqsave(&current->sighand->siglock, flags);
->                 recalc_sigpending();
->                 spin_unlock_irqrestore(&current->sighand->siglock, flags);
-
-IIRC, this is what you added into your tree. But note that
-recalc_sigpending() is wrong, exactly because (say) SIGCHLD can
-be pending if it was sent before we set SIGNAL_GROUP_COREDUMP.
-
-So this code needs something like
-
-	spin_lock_irq(siglock);
-	if (!fatal_signal_pending)
-		clear_thread_flag(TIF_SIGPENDING);
-	spin_unlock_irq(siglock);
-
-Or we need to change recalc_sigpending() to check SIGNAL_GROUP_COREDUMP
-or PF_DUMPCORE. I'd like to avoid this, but perhaps we have to do this...
-
-(Btw, this is offtopic, but whatever we do 3/3 still looks like a nice
- cleanup to me, although it probably needs more changes)
-
-> What do you think? That would fix most cases. You'll still get a
-> truncated core if you were to receive the signal during pipe_write or
-> something.
-
-Let me think a bit...
-
-Right now I can only say that personally I do not really like the
-idea to fix wait_for_dump_helpers() but not pipe_write(). I mean,
-if pipe_write() can fail due to freezing(), then why should we care
-about wait_for_dump_helpers() ? Let them all fail, suspend is not
-that often.
-
-Or we should try to make everything freezer-friendly. But if
-freeze_task() sets TIF_SIGPENDING then we need the ugly "retry"
-logic in dump_write()... Not good.
-
-Thanks Mandeep. If you have other ideas please tell me ;)
-
-Oleg.
-
+Applied, thanks.
