@@ -1,88 +1,214 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933587Ab3B0Akz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 19:40:55 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42300 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933126Ab3BZX6h (ORCPT
+	id S933731Ab3B0AlM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 19:41:12 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.242]:10035 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933062Ab3B0Akx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 18:58:37 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
-Subject: [ 143/150] USB: option: add Yota / Megafon M100-1 4g modem
-Date: Tue, 26 Feb 2013 15:56:40 -0800
-Message-Id: <20130226235539.320900708@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130226235523.930663721@linuxfoundation.org>
-References: <20130226235523.930663721@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	Tue, 26 Feb 2013 19:40:53 -0500
+From: Wenyou Yang <wenyou.yang@atmel.com>
+To: <linux-arm-kernel@lists.infradead.org>
+CC: <grant.likely@secretlab.ca>, <nicolas.ferre@atmel.com>,
+        <plagnioj@jcrosoft.com>, <richard.genoud@gmail.com>,
+        <JM.Lin@atmel.com>, <wenyou.yang@atmel.com>,
+        <spi-devel-general@lists.sourceforge.net>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH Resend v5 02/16] spi/spi-atmel: detect the capabilities of SPI core by reading the VERSION register.
+Date: Wed, 27 Feb 2013 08:38:40 +0800
+Message-ID: <1361925520-11981-1-git-send-email-wenyou.yang@atmel.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1361925297-11854-1-git-send-email-wenyou.yang@atmel.com>
+References: <1361925297-11854-1-git-send-email-wenyou.yang@atmel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8-stable review patch.  If anyone has any objections, please let me know.
+The "has_dma_support" needed for future use with dmaengine driver.
 
-------------------
-
-From: Bjørn Mork <bjorn@mork.no>
-
-commit cd565279e51bedee1b2988e84f9b3bef485adeb6 upstream.
-
-Interface layout:
-
- 00 CD-ROM
- 01 debug COM port
- 02 AP control port
- 03 modem
- 04 usb-ethernet
-
-Bus=01 Lev=02 Prnt=02 Port=01 Cnt=02 Dev#=  4 Spd=480  MxCh= 0
-D:  Ver= 2.00 Cls=00(>ifc ) Sub=00 Prot=00 MxPS=64 #Cfgs=  1
-P:  Vendor=0408 ProdID=ea42 Rev= 0.00
-S:  Manufacturer=Qualcomm, Incorporated
-S:  Product=Qualcomm CDMA Technologies MSM
-S:  SerialNumber=353568051xxxxxx
-C:* #Ifs= 5 Cfg#= 1 Atr=e0 MxPwr=500mA
-I:* If#= 0 Alt= 0 #EPs= 2 Cls=08(stor.) Sub=06 Prot=50 Driver=usb-storage
-E:  Ad=01(O) Atr=02(Bulk) MxPS= 512 Ivl=0ms
-E:  Ad=81(I) Atr=02(Bulk) MxPS= 512 Ivl=0ms
-I:* If#= 1 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
-E:  Ad=82(I) Atr=02(Bulk) MxPS= 512 Ivl=0ms
-E:  Ad=02(O) Atr=02(Bulk) MxPS= 512 Ivl=4ms
-I:* If#= 2 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
-E:  Ad=83(I) Atr=02(Bulk) MxPS= 512 Ivl=0ms
-E:  Ad=03(O) Atr=02(Bulk) MxPS= 512 Ivl=4ms
-I:* If#= 3 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
-E:  Ad=84(I) Atr=03(Int.) MxPS=  64 Ivl=2ms
-E:  Ad=85(I) Atr=02(Bulk) MxPS= 512 Ivl=0ms
-E:  Ad=04(O) Atr=02(Bulk) MxPS= 512 Ivl=4ms
-I:* If#= 4 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
-E:  Ad=86(I) Atr=03(Int.) MxPS=  64 Ivl=2ms
-E:  Ad=87(I) Atr=02(Bulk) MxPS= 512 Ivl=0ms
-E:  Ad=05(O) Atr=02(Bulk) MxPS= 512 Ivl=4ms
-
-Signed-off-by: Bjørn Mork <bjorn@mork.no>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
+Cc: spi-devel-general@lists.sourceforge.net
+Cc: linux-kernel@vger.kernel.org
 ---
- drivers/usb/serial/option.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/spi/spi-atmel.c |   70 ++++++++++++++++++++++++++++++++++++++---------
+ 1 file changed, 57 insertions(+), 13 deletions(-)
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -576,6 +576,8 @@ static const struct usb_device_id option
- 	{ USB_DEVICE(QUANTA_VENDOR_ID, QUANTA_PRODUCT_GLX) },
- 	{ USB_DEVICE(QUANTA_VENDOR_ID, QUANTA_PRODUCT_GKE) },
- 	{ USB_DEVICE(QUANTA_VENDOR_ID, QUANTA_PRODUCT_GLE) },
-+	{ USB_DEVICE(QUANTA_VENDOR_ID, 0xea42),
-+		.driver_info = (kernel_ulong_t)&net_intf4_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E173, 0xff, 0xff, 0xff),
- 		.driver_info = (kernel_ulong_t) &net_intf1_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K4505, 0xff, 0xff, 0xff),
-
+diff --git a/drivers/spi/spi-atmel.c b/drivers/spi/spi-atmel.c
+index 5bf3786..a8e091b 100644
+--- a/drivers/spi/spi-atmel.c
++++ b/drivers/spi/spi-atmel.c
+@@ -39,6 +39,7 @@
+ #define SPI_CSR1				0x0034
+ #define SPI_CSR2				0x0038
+ #define SPI_CSR3				0x003c
++#define SPI_VERSION				0x00fc
+ #define SPI_RPR					0x0100
+ #define SPI_RCR					0x0104
+ #define SPI_TPR					0x0108
+@@ -71,6 +72,8 @@
+ #define SPI_FDIV_SIZE				1
+ #define SPI_MODFDIS_OFFSET			4
+ #define SPI_MODFDIS_SIZE			1
++#define SPI_WDRBT_OFFSET			5
++#define SPI_WDRBT_SIZE				1
+ #define SPI_LLB_OFFSET				7
+ #define SPI_LLB_SIZE				1
+ #define SPI_PCS_OFFSET				16
+@@ -180,6 +183,11 @@
+ #define spi_writel(port,reg,value) \
+ 	__raw_writel((value), (port)->regs + SPI_##reg)
+ 
++struct atmel_spi_caps {
++	bool	is_spi2;
++	bool	has_wdrbt;
++	bool	has_dma_support;
++};
+ 
+ /*
+  * The core SPI transfer engine just talks to a register bank to set up
+@@ -204,6 +212,8 @@ struct atmel_spi {
+ 
+ 	void			*buffer;
+ 	dma_addr_t		buffer_dma;
++
++	struct atmel_spi_caps	caps;
+ };
+ 
+ /* Controller-specific per-slave state */
+@@ -222,14 +232,10 @@ struct atmel_spi_device {
+  *  - SPI_SR.TXEMPTY, SPI_SR.NSSR (and corresponding irqs)
+  *  - SPI_CSRx.CSAAT
+  *  - SPI_CSRx.SBCR allows faster clocking
+- *
+- * We can determine the controller version by reading the VERSION
+- * register, but I haven't checked that it exists on all chips, and
+- * this is cheaper anyway.
+  */
+-static bool atmel_spi_is_v2(void)
++static bool atmel_spi_is_v2(struct atmel_spi *as)
+ {
+-	return !cpu_is_at91rm9200();
++	return as->caps.is_spi2;
+ }
+ 
+ /*
+@@ -263,15 +269,20 @@ static void cs_activate(struct atmel_spi *as, struct spi_device *spi)
+ 	unsigned active = spi->mode & SPI_CS_HIGH;
+ 	u32 mr;
+ 
+-	if (atmel_spi_is_v2()) {
++	if (atmel_spi_is_v2(as)) {
+ 		/*
+ 		 * Always use CSR0. This ensures that the clock
+ 		 * switches to the correct idle polarity before we
+ 		 * toggle the CS.
+ 		 */
+ 		spi_writel(as, CSR0, asd->csr);
+-		spi_writel(as, MR, SPI_BF(PCS, 0x0e) | SPI_BIT(MODFDIS)
++		if (as->caps.has_wdrbt) {
++			spi_writel(as, MR, SPI_BF(PCS, 0x0e) | SPI_BIT(WDRBT)
++				| SPI_BIT(MODFDIS) | SPI_BIT(MSTR));
++		} else {
++			spi_writel(as, MR, SPI_BF(PCS, 0x0e) | SPI_BIT(MODFDIS)
+ 				| SPI_BIT(MSTR));
++		}
+ 		mr = spi_readl(as, MR);
+ 		gpio_set_value(asd->npcs_pin, active);
+ 	} else {
+@@ -318,7 +329,7 @@ static void cs_deactivate(struct atmel_spi *as, struct spi_device *spi)
+ 			asd->npcs_pin, active ? " (low)" : "",
+ 			mr);
+ 
+-	if (atmel_spi_is_v2() || spi->chip_select != 0)
++	if (atmel_spi_is_v2(as) || spi->chip_select != 0)
+ 		gpio_set_value(asd->npcs_pin, !active);
+ }
+ 
+@@ -719,7 +730,7 @@ static int atmel_spi_setup(struct spi_device *spi)
+ 	}
+ 
+ 	/* see notes above re chipselect */
+-	if (!atmel_spi_is_v2()
++	if (!atmel_spi_is_v2(as)
+ 			&& spi->chip_select == 0
+ 			&& (spi->mode & SPI_CS_HIGH)) {
+ 		dev_dbg(&spi->dev, "setup: can't be active-high\n");
+@@ -728,7 +739,7 @@ static int atmel_spi_setup(struct spi_device *spi)
+ 
+ 	/* v1 chips start out at half the peripheral bus speed. */
+ 	bus_hz = clk_get_rate(as->clk);
+-	if (!atmel_spi_is_v2())
++	if (!atmel_spi_is_v2(as))
+ 		bus_hz /= 2;
+ 
+ 	if (spi->max_speed_hz) {
+@@ -804,7 +815,7 @@ static int atmel_spi_setup(struct spi_device *spi)
+ 		"setup: %lu Hz bpw %u mode 0x%x -> csr%d %08x\n",
+ 		bus_hz / scbr, bits, spi->mode, spi->chip_select, csr);
+ 
+-	if (!atmel_spi_is_v2())
++	if (!atmel_spi_is_v2(as))
+ 		spi_writel(as, CSR0 + 4 * spi->chip_select, csr);
+ 
+ 	return 0;
+@@ -910,6 +921,32 @@ static void atmel_spi_cleanup(struct spi_device *spi)
+ 	kfree(asd);
+ }
+ 
++static inline unsigned int atmel_get_version(struct atmel_spi *as)
++{
++	return spi_readl(as, VERSION) & 0x00000fff;
++}
++
++static void __init atmel_get_caps(struct atmel_spi *as)
++{
++	unsigned int version;
++
++	version = atmel_get_version(as);
++	dev_info(&as->pdev->dev, "version: 0x%x\n", version);
++
++	as->caps.is_spi2 = false;
++	as->caps.has_wdrbt = false;
++	as->caps.has_dma_support = false;
++
++	if (version > 0x121)
++		as->caps.is_spi2 = true;
++
++	if (version >= 0x210)
++		as->caps.has_wdrbt = true;
++
++	if (version >= 0x212)
++		as->caps.has_dma_support = true;
++}
++
+ /*-------------------------------------------------------------------------*/
+ 
+ static int atmel_spi_probe(struct platform_device *pdev)
+@@ -970,6 +1007,8 @@ static int atmel_spi_probe(struct platform_device *pdev)
+ 	as->irq = irq;
+ 	as->clk = clk;
+ 
++	atmel_get_caps(as);
++
+ 	ret = request_irq(irq, atmel_spi_interrupt, 0,
+ 			dev_name(&pdev->dev), master);
+ 	if (ret)
+@@ -979,7 +1018,12 @@ static int atmel_spi_probe(struct platform_device *pdev)
+ 	clk_enable(clk);
+ 	spi_writel(as, CR, SPI_BIT(SWRST));
+ 	spi_writel(as, CR, SPI_BIT(SWRST)); /* AT91SAM9263 Rev B workaround */
+-	spi_writel(as, MR, SPI_BIT(MSTR) | SPI_BIT(MODFDIS));
++	if (as->caps.has_wdrbt) {
++		spi_writel(as, MR, SPI_BIT(WDRBT) | SPI_BIT(MODFDIS)
++				| SPI_BIT(MSTR));
++	} else {
++		spi_writel(as, MR, SPI_BIT(MSTR) | SPI_BIT(MODFDIS));
++	}
+ 	spi_writel(as, PTCR, SPI_BIT(RXTDIS) | SPI_BIT(TXTDIS));
+ 	spi_writel(as, CR, SPI_BIT(SPIEN));
+ 
+-- 
+1.7.9.5
 
