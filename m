@@ -1,47 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754553Ab3B0WTx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 17:19:53 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:58444 "EHLO mail.zytor.com"
+	id S1755863Ab3B0WUQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 17:20:16 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:25412 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752514Ab3B0WTv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 17:19:51 -0500
-Message-ID: <512E8664.3070903@zytor.com>
-Date: Wed, 27 Feb 2013 14:19:16 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130219 Thunderbird/17.0.3
+	id S1754075Ab3B0WUN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Feb 2013 17:20:13 -0500
+Date: Wed, 27 Feb 2013 17:19:54 -0500
+From: Josh Boyer <jwboyer@redhat.com>
+To: Eric Paris <eparis@redhat.com>
+Cc: Kees Cook <keescook@chromium.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Christian Kujau <lists@nerdbynature.de>, stable@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] kmsg: Honor dmesg_restrict sysctl on /dev/kmsg
+Message-ID: <20130227221954.GJ2071@hansolo.jdub.homelinux.org>
+References: <20130222181856.GA2419@hansolo.jdub.homelinux.org>
+ <20130227175427.GQ26411@outflux.net>
+ <20130227180145.GH2071@hansolo.jdub.homelinux.org>
+ <CAGXu5j+ntBM5ZwO9Xqa3sWaEW3nSpR8wsL7poTJ6wZOp5x0Lhw@mail.gmail.com>
+ <1361998001.2110.22.camel@localhost>
 MIME-Version: 1.0
-To: Stephen Boyd <sboyd@codeaurora.org>
-CC: Arnd Bergmann <arnd@arndb.de>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        linux-parisc@vger.kernel.org, linux-s390@vger.kernel.org,
-        Arjan van de Ven <arjan@linux.intel.com>, Helge Deller <deller@gmx.de>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Chris Metcalf <cmetcalf@tilera.com>
-Subject: Re: [PATCH] Consolidate CONFIG_DEBUG_STRICT_USER_COPY_CHECK
-References: <1361934016-22630-1-git-send-email-sboyd@codeaurora.org> <201302272032.21014.arnd@arndb.de> <512E6FA9.4060504@codeaurora.org>
-In-Reply-To: <512E6FA9.4060504@codeaurora.org>
-X-Enigmail-Version: 1.5
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1361998001.2110.22.camel@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/27/2013 12:42 PM, Stephen Boyd wrote:
->>
->> It's fine to do your patch as a first step though, which would not
->> change the behavior.
+On Wed, Feb 27, 2013 at 03:46:41PM -0500, Eric Paris wrote:
+> Fine Fine, I'll get off my lazy butt and look at this.
+
+Shock!
+
+> Right.  Now we have /proc/kmsg, /dev/kmsg, and the syscall.  /proc/kmsg
+> and the syscall both use do_syslog() which calls
+> check_syslog_permissions() and security_syslog().  /dev/kmsg only calls
+> security_syslog(), which we all agree needs fixed.
 > 
-> A lot of arches seem to not want to enable it because false positives
-> are everywhere. It really depends on how good the compiler is at doing
-> constant propagation and dead code removal.
+> > > Also, the LSM hooks aren't doing any capability checks at all that I can
+> > > see, which may or may not be a bug in and of itself but I have no idea.
+> > > I was hoping Eric would speak up about that.
 > 
+> I wouldn't call it a bug.  But it sure is a pretty shitty design pattern
+> to have security_* sometimes the right thing to do and sometimes
+> capable() is the right thing to do.  It is pervasive in the kernel that
+> you have either/or, but I can't think of anywhere that functions are
+> expected to do BOTH.  So yeah, that needs fixed.
 
-Although some of the cases I have seen being flagged as "false
-positives" have been real bugs.
+OK.
 
-	-hpa
+> 
+> > Eric explicitly removed the cap check since it was cluttering things
+> > the way it was originally written. I do think security_syslog() should
+> > pass through check_syslog_permissions(), though. Then this wouldn't
+> > have happened. That might actually be the right way to clean this up,
+> > but I'd like to see Eric's thoughts first.
+> 
+> How about something like this?
 
+I think this looks pretty good.  Much clearer overall and the
+consolidation is nice.  I'll try to get it tested soon.
 
+josh
+
+> 
+> diff --git a/kernel/printk.c b/kernel/printk.c
+> index 7c69b3e..ced2cac 100644
+> --- a/kernel/printk.c
+> +++ b/kernel/printk.c
+> @@ -626,7 +626,7 @@ static int devkmsg_open(struct inode *inode, struct file *file)
+>  	if ((file->f_flags & O_ACCMODE) == O_WRONLY)
+>  		return 0;
+>  
+> -	err = security_syslog(SYSLOG_ACTION_READ_ALL);
+> +	err = check_syslog_permissions(SYSLOG_ACTION_OPEN, SYSLOG_FROM_FILE);
+>  	if (err)
+>  		return err;
+>  
+> @@ -840,22 +840,23 @@ static int check_syslog_permissions(int type, bool from_file)
+>  	 * already done the capabilities checks at open time.
+>  	 */
+>  	if (from_file && type != SYSLOG_ACTION_OPEN)
+> -		return 0;
+> +		goto ok;
+>  
+>  	if (syslog_action_restricted(type)) {
+>  		if (capable(CAP_SYSLOG))
+> -			return 0;
+> +			goto ok;
+>  		/* For historical reasons, accept CAP_SYS_ADMIN too, with a warning */
+>  		if (capable(CAP_SYS_ADMIN)) {
+>  			printk_once(KERN_WARNING "%s (%d): "
+>  				 "Attempt to access syslog with CAP_SYS_ADMIN "
+>  				 "but no CAP_SYSLOG (deprecated).\n",
+>  				 current->comm, task_pid_nr(current));
+> -			return 0;
+> +			goto ok;
+>  		}
+>  		return -EPERM;
+>  	}
+> -	return 0;
+> +ok:
+> +	return security_syslog(type);
+>  }
+>  
+>  #if defined(CONFIG_PRINTK_TIME)
+> @@ -1133,10 +1134,6 @@ int do_syslog(int type, char __user *buf, int len, bool from_file)
+>  	if (error)
+>  		goto out;
+>  
+> -	error = security_syslog(type);
+> -	if (error)
+> -		return error;
+> -
+>  	switch (type) {
+>  	case SYSLOG_ACTION_CLOSE:	/* Close log */
+>  		break;
+> 
+> 
