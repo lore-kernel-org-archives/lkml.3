@@ -1,77 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756790Ab3B1UMU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 15:12:20 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:8510 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756417Ab3B1UMT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 15:12:19 -0500
-Date: Thu, 28 Feb 2013 21:10:24 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Anton Arapov <anton@redhat.com>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, Josh Stone <jistone@redhat.com>,
-        Frank Eigler <fche@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-Subject: Re: [RFC PATCH v3 4/6] uretprobes: return probe entry, prepare
-	uretprobe
-Message-ID: <20130228201024.GB9074@redhat.com>
-References: <1362049215-5780-1-git-send-email-anton@redhat.com> <1362049215-5780-5-git-send-email-anton@redhat.com>
+	id S1760180Ab3B1UTK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 15:19:10 -0500
+Received: from mail-oa0-f51.google.com ([209.85.219.51]:57333 "EHLO
+	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752900Ab3B1UTF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Feb 2013 15:19:05 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1362049215-5780-5-git-send-email-anton@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20130224173209.GA32209@redhat.com>
+References: <20130224173144.GA32179@redhat.com>
+	<20130224173209.GA32209@redhat.com>
+Date: Thu, 28 Feb 2013 12:19:04 -0800
+X-Google-Sender-Auth: 48pM2vLwsvq833F_9ZymXAw5X5k
+Message-ID: <CACBanvqZM-AVwwpTDW-ofi=8KH8K13jLRBzTvoB=1Mg=VPxHOQ@mail.gmail.com>
+Subject: Re: [PATCH 3/3] coredump: make wait_for_dump_helpers() freezable
+From: Mandeep Singh Baines <msb@chromium.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Neil Horman <nhorman@redhat.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/28, Anton Arapov wrote:
+On Sun, Feb 24, 2013 at 9:32 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+> wait_for_dump_helpers() calls wake_up/kill_fasync from inside the
+> wait_event-like loop. This is not needed and in fact this is not
+> strictly correct, we can/should do this only once after we change
+> pipe->writers. We could even check if it becomes zero.
 >
-> +static void prepare_uretprobe(struct uprobe *uprobe, struct pt_regs *regs)
-> +{
-> +	struct return_uprobe_i *ri;
-> +	struct uprobe_task *utask;
-> +	struct xol_area *area;
-> +	unsigned long rp_trampoline_vaddr = 0;
-> +	uprobe_opcode_t insn = UPROBE_SWBP_INSN;
-> +
-> +	area = get_xol_area();
-> +	if (area)
-> +		rp_trampoline_vaddr = area->rp_trampoline_vaddr;
-> +	if (!rp_trampoline_vaddr) {
-> +		rp_trampoline_vaddr = xol_get_insn_slot(&insn);
-> +		if (!rp_trampoline_vaddr)
-> +			return;
-> +	}
-> +	area->rp_trampoline_vaddr = rp_trampoline_vaddr;
+> With this change it is trivial to convert this code to use
+> wait_event_freezable() and make this function freezable/killable,
+> only SIGKILL can set TIF_SIGPENDING.
+>
+> With this patch we check pipe->readers without pipe_lock(), this
+> is fine. Once we see pipe->readers == 1 we know that the handler
+> decremented the counter, this is all we need.
+>
+> Note: wait_event_freezable() is "strange", perhaps it should be
+> changed or simply removed. In the latter case we can change this
+> code again to use freezer_do_not_count + wait_event_interruptible.
+>
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 
-This is called under down_read(), so 2 threads can race with each other
-and use the different rp_trampoline_vaddr's if ->rp_trampoline_vaddr was
-NULL.
+Acked-by: Mandeep Singh Baines <msb@chromium.org>
 
-And again, I think ->rp_trampoline_vaddr is simply unneeded, see my
-reply to 3/6.
-
->  static void handler_chain(struct uprobe *uprobe, struct pt_regs *regs)
->  {
-> +	int rc = 0;
->  	struct uprobe_consumer *uc;
->  	int remove = UPROBE_HANDLER_REMOVE;
->  
->  	down_read(&uprobe->register_rwsem);
->  	for (uc = uprobe->consumers; uc; uc = uc->next) {
-> -		int rc = uc->handler(uc, regs);
-> +		if (uc->handler)
-> +			rc = uc->handler(uc, regs);
-> +
-> +		if (uc->rp_handler)
-> +			prepare_uretprobe(uprobe, regs); /* put bp at return */
-
-Hmm. I didn't read this series yet. But at first glance I am not
-sure prepare_uretprobe() should be called every time we see
-->rp_handler != NULL, there could be multiple consumers...
-
-Oleg.
-
+> ---
+>  fs/coredump.c |   12 ++++++------
+>  1 files changed, 6 insertions(+), 6 deletions(-)
+>
+> diff --git a/fs/coredump.c b/fs/coredump.c
+> index 4f3c8d1..284d841 100644
+> --- a/fs/coredump.c
+> +++ b/fs/coredump.c
+> @@ -32,6 +32,7 @@
+>  #include <linux/pipe_fs_i.h>
+>  #include <linux/oom.h>
+>  #include <linux/compat.h>
+> +#include <linux/freezer.h>
+>
+>  #include <asm/uaccess.h>
+>  #include <asm/mmu_context.h>
+> @@ -428,17 +429,16 @@ static void wait_for_dump_helpers(struct file *file)
+>         pipe_lock(pipe);
+>         pipe->readers++;
+>         pipe->writers--;
+> +       wake_up_interruptible_sync(&pipe->wait);
+> +       kill_fasync(&pipe->fasync_readers, SIGIO, POLL_IN);
+> +       pipe_unlock(pipe);
+>
+> -       while ((pipe->readers > 1) && (!signal_pending(current))) {
+> -               wake_up_interruptible_sync(&pipe->wait);
+> -               kill_fasync(&pipe->fasync_readers, SIGIO, POLL_IN);
+> -               pipe_wait(pipe);
+> -       }
+> +       wait_event_freezable(pipe->wait, pipe->readers == 1);
+>
+> +       pipe_lock(pipe);
+>         pipe->readers--;
+>         pipe->writers++;
+>         pipe_unlock(pipe);
+> -
+>  }
+>
+>  /*
+> --
+> 1.5.5.1
+>
