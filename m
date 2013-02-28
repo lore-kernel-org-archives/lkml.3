@@ -1,77 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754760Ab3B1TwV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 14:52:21 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:26160 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752755Ab3B1TwT convert rfc822-to-8bit (ORCPT
+	id S1755192Ab3B1Tx3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 14:53:29 -0500
+Received: from cavan.codon.org.uk ([93.93.128.6]:38268 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752755Ab3B1Tx2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 14:52:19 -0500
+	Thu, 28 Feb 2013 14:53:28 -0500
+Date: Thu, 28 Feb 2013 19:53:21 +0000
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Florian Weimer <fw@deneb.enyo.de>
+Cc: Chris Friesen <chris.friesen@genband.com>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        David Howells <dhowells@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Josh Boyer <jwboyer@redhat.com>, Peter Jones <pjones@redhat.com>,
+        Vivek Goyal <vgoyal@redhat.com>, Kees Cook <keescook@chromium.org>,
+        keyrings@linux-nfs.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] Load keys from signed PE binaries
+Message-ID: <20130228195321.GA8769@srcf.ucam.org>
+References: <18738.1361836265@warthog.procyon.org.uk>
+ <20130226005955.GA19686@kroah.com>
+ <20130226023332.GA29282@srcf.ucam.org>
+ <20130226030249.GB23834@kroah.com>
+ <20130226031338.GA29784@srcf.ucam.org>
+ <20130226033156.GA24999@kroah.com>
+ <8738wgsweq.fsf@mid.deneb.enyo.de>
+ <512F7B0E.1030404@genband.com>
+ <20130228193023.GA8090@srcf.ucam.org>
+ <87d2vkns4m.fsf@mid.deneb.enyo.de>
 MIME-Version: 1.0
-Message-ID: <175ae3a0-2760-4ec7-869f-46a634ce321d@default>
-Date: Thu, 28 Feb 2013 11:50:58 -0800 (PST)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
-        Konrad Wilk <konrad.wilk@oracle.com>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
-        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Larry Woodman <lwoodman@redhat.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, Joe Perches <joe@perches.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Cody P Schafer <cody@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Subject: RE: [PATCHv6 4/8] zswap: add to mm/
-References: <<1361397888-14863-1-git-send-email-sjenning@linux.vnet.ibm.com>>
- <<1361397888-14863-5-git-send-email-sjenning@linux.vnet.ibm.com>>
- <42ac68b3-cb1f-48da-bd5e-a368ed62826f@default>
-In-Reply-To: <42ac68b3-cb1f-48da-bd5e-a368ed62826f@default>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.7  (607090) [OL
- 12.0.6665.5003 (x86)]
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+Content-Disposition: inline
+In-Reply-To: <87d2vkns4m.fsf@mid.deneb.enyo.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Dan Magenheimer
-> Sent: Thursday, February 28, 2013 11:13 AM
-> To: Seth Jennings; Andrew Morton
-> Cc: Greg Kroah-Hartman; Nitin Gupta; Minchan Kim; Konrad Rzeszutek Wilk; Dan Magenheimer; Robert
-> Jennings; Jenifer Hopper; Mel Gorman; Johannes Weiner; Rik van Riel; Larry Woodman; Benjamin
-> Herrenschmidt; Dave Hansen; Joe Perches; Joonsoo Kim; Cody P Schafer; linux-mm@kvack.org; linux-
-> kernel@vger.kernel.org; devel@driverdev.osuosl.org
-> Subject: RE: [PATCHv6 4/8] zswap: add to mm/
+On Thu, Feb 28, 2013 at 08:41:13PM +0100, Florian Weimer wrote:
+> * Matthew Garrett:
 > 
-> > From: Seth Jennings [mailto:sjenning@linux.vnet.ibm.com]
-> > Subject: [PATCHv6 4/8] zswap: add to mm/
+> >> Would it be possible to have a signed bootloader that allows booting
+> >> Win8 from within the secure environment, or it could exit the secure
+> >> environment and run unsigned grub?
 > >
-> > +/*
-> > + * Maximum compression ratio, as as percentage, for an acceptable
-> > + * compressed page. Any pages that do not compress by at least
-> > + * this ratio will be rejected.
-> > +*/
-> > +static unsigned int zswap_max_compression_ratio = 80;
-> > +module_param_named(max_compression_ratio,
-> > +			zswap_max_compression_ratio, uint, 0644);
+> > What would stop the unsigned grub from installing a firmware hook that 
+> > lies about whether or not Secure Boot is enabled, and then booting 
+> > Windows?
 > 
-> Unless this is a complete coincidence, I believe that
-> the default value "80" is actually:
-> 
-> (100 * (1L >> ZS_MAX_ZSPAGE_ORDER)) /
->         ((1L >> ZS_MAX_ZSPAGE_ORDER)) + 1)
+> Windows would not have access to the product key because it is stored
+> in a variable without EFI_VARIABLE_RUNTIME_ACCESS, so WGA and other
+> checks will fail, and the user will notice.
 
-Doh! If it wasn't obvious, those should be left
-shift operators, not right shift.  So....
+grub's running before ExitBootServices(), because otherwise it has no 
+way to actually read anything off disk. Or draw to the screen. Or 
+receive keyboard input. So if it boots Windows, Windows is running in 
+exactly the environment it would expect to be in.
 
-(100 * (1L << ZS_MAX_ZSPAGE_ORDER)) /
-        ((1L << ZS_MAX_ZSPAGE_ORDER)) + 1)
-
-Sorry for that.
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
