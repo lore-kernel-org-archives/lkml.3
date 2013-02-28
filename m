@@ -1,58 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752311Ab3B1Cer (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 21:34:47 -0500
-Received: from intranet.asianux.com ([58.214.24.6]:41639 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750942Ab3B1Cem (ORCPT
+	id S1752260Ab3B1ClV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 21:41:21 -0500
+Received: from e32.co.us.ibm.com ([32.97.110.150]:57109 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750973Ab3B1ClU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 21:34:42 -0500
-X-Spam-Score: -100.8
-Message-ID: <512EC22F.5020404@asianux.com>
-Date: Thu, 28 Feb 2013 10:34:23 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Wed, 27 Feb 2013 21:41:20 -0500
+Date: Wed, 27 Feb 2013 18:41:12 -0800
+From: Cody P Schafer <cody@linux.vnet.ibm.com>
+To: Linux MM <linux-mm@kvack.org>
+Cc: David Hansen <dave@linux.vnet.ibm.com>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [RFC] DNUMA: Runtime NUMA memory layout reconfiguration
+Message-ID: <20130228024112.GA24970@negative>
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Jan Beulich <JBeulich@suse.com>, roger.pau@citrix.com,
-        stefano.stabellini@eu.citrix.com, dgdegra@tycho.nsa.gov
-CC: xen-devel <xen-devel@lists.xen.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2] drivers/block/xen-blkback: preq.dev is used without initialized
-Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13022802-5406-0000-0000-000005BECE5E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+These patches allow the NUMA memory layout (meaning the mapping of a page to a
+node) to be changed at runtime in place (without hotplugging).
 
-  if call xen_vbd_translate failed, the preq.dev will be not initialized.
-  so use blkif->vbd.pdevice instead (still better to print relative info).
+= Why/when is this useful? =
 
-additional information:
-  before commit 01c681d4c70d64cb72142a2823f27c4146a02e63, the value printed
-  here was bogus, as it was the guest provided value from req->u.rw.handle
-  rather than the actual device.
+In virtual machines (VMs) running on NUMA systems both [a] if/when the
+hypervisor decides to move their backing memory around (compacting,
+prioritizing another VMs desired layout, etc) and [b] in general for
+migration of VMs.
 
-Signed-off-by: Chen Gang <gang.chen@asianux.com>
-Acked-by: Jan Beulich <JBeulich@suse.com>
----
- drivers/block/xen-blkback/blkback.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+The hardware is _already_ changing the NUMA layout underneath us. We have
+powerpc64 systems with firmware that currently move the backing memory around,
+and have the ability to notify Linux of new NUMA info.
 
-diff --git a/drivers/block/xen-blkback/blkback.c b/drivers/block/xen-blkback/blkback.c
-index de1f319..6d1cc3d 100644
---- a/drivers/block/xen-blkback/blkback.c
-+++ b/drivers/block/xen-blkback/blkback.c
-@@ -904,7 +904,8 @@ static int dispatch_rw_block_io(struct xen_blkif *blkif,
- 		pr_debug(DRV_PFX "access denied: %s of [%llu,%llu] on dev=%04x\n",
- 			 operation == READ ? "read" : "write",
- 			 preq.sector_number,
--			 preq.sector_number + preq.nr_sects, preq.dev);
-+			 preq.sector_number + preq.nr_sects,
-+			 blkif->vbd.pdevice);
- 		goto fail_response;
- 	}
- 
--- 
-1.7.7.6
+= Code & testing =
+
+web:
+	https://github.com/jmesmon/linux/tree/dnuma/v26
+git:
+	https://github.com/jmesmon/linux.git dnuma/v26
+
+commit range:
+	7e4f3230c9161706ebe9d37d774398082dc352de^..01e16461cf4a914feb1a34ed8dd7b28f3e842645
+
+Some patches are marked "XXX: ...", they are only for testing or
+temporary documentation purposes.
+
+A debugfs interface allows the NUMA memory layout to be changed.  Basically,
+you don't need to have wierd systems to test this, in fact, I've done all my
+testing so far in plain old qemu-i386.
+
+A script which stripes the memory between nodes or pushes all memory to a
+(potentially new) node is avaliable here:
+
+	https://raw.github.com/jmesmon/trifles/master/bin/dnuma-test
+
+Related LSF/MM Topic proposal:
+
+	http://permalink.gmane.org/gmane.linux.kernel.mm/95342
+
+= How are you managing to do this? =
+
+Reconfiguration of page->node mappings is done at the page allocator
+level by both pulling out free pages (when a new memory layout is
+commited) & redirecting pages on free to their new node.
+
+Because we can't change page_node(A) while A is allocated, a rbtree
+holding the mapping from pfn ranges to node ids ('struct memlayout')
+is introduced to track the pfn->node mapping for
+yet-to-be-transplanted pages. A lookup in this rbtree occurs on any
+page allocator path that decides which zone to free a page to.
+
+To avoid horrible performance due to rbtree lookups all the time, the
+rbtree is only consulted when the page is marked with a new pageflag
+(LookupNode).
+
+= Current Limitations =
+
+For the reconfiguration to be effective (and not make the allocator make
+poorer choices), updating the cpu->node mappings is also needed. This patchset
+does _not_ handle this. Also missing is a way to update topology (node
+distances), which is less fatal.
+
+These patches only work on SPARSEMEM and the node id _must_ fit in the pageflags
+(can't be pushed out to the section). This generally means that 32-bit
+platforms are out (unless you hack MAX_PHYS{ADDR,MEM}_BITS like I do for
+testing).
+
+This code does the reconfiguration without hotplugging memory at all (1
+errant page doesn't keep us from fixing the rest of them). But it still
+depends on MEMORY_HOTPLUG for functions that online nodes & adjust
+zone/pgdat size.
+
+Things that need doing (but aren't quite bugs):
+ - While the interface is meant to be driven via a hypervisor/firmware, that
+   portion is not yet included.
+ - notifier for kernel users of memory that need/want their allocations on a
+   particular node (NODE_DATA(), for instance).
+ - notifier for userspace.
+ - a way to allocate things from the appropriate node prior to the page
+   allocator being fully updated (could just be "allocate it wrong now &
+   reallocate later").
+ - Make memlayout faster (potentially via per-node allocation, different data
+   structure, or more/smarter caching).
+ - (potentially) propagation of updated layout knowledge into kmem_caches
+   (SL*B).
+
+Known Bugs:
+ - Transplant of free pages is _very_ slow due to excessive use of
+   stop_machine() via zone_pcp_update() & build_zonelists(). On my i5 laptop,
+   it take ~9 minutes to stripe the layout in blocks of 256 pfns to 3 nodes on a
+   128MB 8 cpu x86_32 VM booted with 2 nodes.
+ - memory leak when SLUB is used (struct kmem_cache_nodes are leaked), SLAB
+   appears fine.
+ - Locking of managed_pages/present_pages needs adjustment, or they need to
+   be updated outside of the free page path.
+ - Exported numa/memory info in sysfs isn't updated (`numactl --show` segfaults,
+   `numactl --hardware` shows new nodes as nearly empty).
+ - Uses pageflag setters without "owning" pages, could cause loss of pageflag
+   updates when combined with non-atomic pageflag users in mm/*.
+ - some strange sleeps while atomic (for me they occur when memory is
+   moved out of all the boot nodes)
+
