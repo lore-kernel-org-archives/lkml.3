@@ -1,185 +1,291 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756084Ab3B1QNd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 11:13:33 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:40582 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754062Ab3B1QN3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 11:13:29 -0500
-Message-ID: <512F8226.9070809@suse.de>
-Date: Thu, 28 Feb 2013 17:13:26 +0100
-From: Hannes Reinecke <hare@suse.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
+	id S1756607Ab3B1QUR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 11:20:17 -0500
+Received: from mail-pb0-f50.google.com ([209.85.160.50]:36398 "EHLO
+	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753512Ab3B1QUP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Feb 2013 11:20:15 -0500
+Date: Thu, 28 Feb 2013 08:20:18 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        torvalds@linux-foundation.org, stable@vger.kernel.org
+Cc: lwn@lwn.net, Jiri Slaby <jslaby@suse.cz>
+Subject: Linux 3.0.67
+Message-ID: <20130228162018.GA9070@kroah.com>
 MIME-Version: 1.0
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Yinghai Lu <yinghai@kernel.org>, linux-kernel@vger.kernel.org,
-        Frederik Himpe <fhimpe@vub.ac.be>, Oliver Neukum <oneukum@suse.de>,
-        David Haerdeman <david@hardeman.nu>, linux-usb@vger.kernel.org,
-        linux-pci@vger.kernel.org, Andy Grover <agrover@redhat.com>
-Subject: Re: [PATCH] pci: do not try to assign irq 255
-References: <1361182193-31894-1-git-send-email-hare@suse.de> <CAE9FiQWP1F5mLUoHoTHXy-wQoGxVK66QuuHYydaq3YfysS5Etg@mail.gmail.com> <5124820D.2080900@suse.de> <CAE9FiQXHteymDNzu0GqWtVSVhu3g2hCT+K9e5tB1mR-OBX1ffA@mail.gmail.com> <5125C45A.5020208@suse.de> <CAErSpo5j3Qge5Q2S+hyMGOcmoN77V0T=1+6OJdNJfJdnvT8wgg@mail.gmail.com>
-In-Reply-To: <CAErSpo5j3Qge5Q2S+hyMGOcmoN77V0T=1+6OJdNJfJdnvT8wgg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="vkogqOf2sHV7VnPd"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/27/2013 10:13 PM, Bjorn Helgaas wrote:
-> [+cc Andy]
->
-> On Wed, Feb 20, 2013 at 11:53 PM, Hannes Reinecke <hare@suse.de> wrote:
->> On 02/20/2013 05:57 PM, Yinghai Lu wrote:
->>>
->>> On Tue, Feb 19, 2013 at 11:58 PM, Hannes Reinecke <hare@suse.de> wrote:
->>>>>
->>>>>
->>>> Apparently this device is meant to use MSI _only_ so the BIOS developer
->>>> didn't feel the need to assign an INTx here.
->>>>
->>>> According to PCI-3.0, section 6.8 (Message Signalled Interrupts):
->>>>>
->>>>> It is recommended that devices implement interrupt pins to
->>>>> provide compatibility in systems that do not support MSI
->>>>> (devices default to interrupt pins). However, it is expected
->>>>> that the need for interrupt pins will diminish over time.
->>>>> Devices that do not support interrupt pins due to pin
->>>>> constraints (rely on polling for device service) may implement
->>>>> messages to increase performance without adding additional pins. >
->>>>> Therefore, system configuration software must not assume that a
->>>>> message capable device has an interrupt pin.
->>>>
->>>>
->>>> Which sounds to me as if the implementation is valid...
->>>
->>>
->>> it seems you mess pin with interrupt line.
->>>
->>> current code:
->>>           unsigned char irq;
->>>
->>>           pci_read_config_byte(dev, PCI_INTERRUPT_PIN, &irq);
->>>           dev->pin = irq;
->>>           if (irq)
->>>                   pci_read_config_byte(dev, PCI_INTERRUPT_LINE, &irq);
->>>           dev->irq = irq;
->>>
->>> so if the device does not have interrupt pin implemented, pin should be
->>> zero.
->>> and  pin and irq in dev should
->>> be all 0.
->>>
->> But the device _has_ an interrupt pin implemented.
->> The whole point here is that the interrupt line is _NOT_ zero.
->>
->> 00:14.0 USB controller [0c03]: Intel Corporation 7 Series/C210 Series
->> Chipset Family USB xHCI Host Controller [8086:1e31] (rev 04) (prog-if 30
->> [XHCI])
->>          Subsystem: Hewlett-Packard Company Device [103c:179b]
->>          Control: I/O- Mem+ BusMaster- SpecCycle- MemWINV- VGASnoop- ParErr-
->> Stepping- SERR- FastB2B- DisINTx-
->>          Status: Cap+ 66MHz- UDF- FastB2B+ ParErr- DEVSEL=medium >TAbort-
->> <TAbort- <MAbort- >SERR- <PERR- INTx-
->>          Interrupt: pin A routed to IRQ 255
->>          Region 0: Memory at d4720000 (64-bit, non-prefetchable) [size=64K]
->>          Capabilities: [70] Power Management version 2
->>                  Flags: PMEClk- DSI- D1- D2- AuxCurrent=375mA
->> PME(D0-,D1-,D2-,D3hot+,D3cold+)
->>                  Status: D0 NoSoftRst+ PME-Enable- DSel=0 DScale=0 PME-
->>          Capabilities: [80] MSI: Enable- Count=1/8 Maskable- 64bit+
->>                  Address: 0000000000000000  Data: 0000
->>
->> So at one point we have to decide that ->irq is not valid, despite it being
->> not set to zero.
->> An alternative fix would be this:
->>
->> diff --git a/drivers/acpi/pci_irq.c b/drivers/acpi/pci_irq.c
->> index 68a921d..4a480cb 100644
->> --- a/drivers/acpi/pci_irq.c
->> +++ b/drivers/acpi/pci_irq.c
->> @@ -469,6 +469,7 @@ int acpi_pci_irq_enable(struct pci_dev *dev)
->>                  } else {
->>                          dev_warn(&dev->dev, "PCI INT %c: no GSI\n",
->>                                   pin_name(pin));
->> +                       dev->irq = 0;
->>                  }
->>                  return 0;
->>          }
->>
->> Which probably is a better solution, as here ->irq is _definitely_
->> not valid, so we should reset it to '0' to avoid confusion on upper
->> layers.
->
-> I didn't like the pci_read_irq() change because the PCI spec doesn't
-> say anything about any PCI_INTERRUPT_LINE values being invalid.
->
-> I like this solution better, but I still don't quite understand it.
-> We have the following code in acpi_pci_irq_enable().  We have
-> previously tried to look up "gsi," but the _PRT doesn't mention this
-> device, so we have "gsi == -1" at this point:
->
->          /*
->           * No IRQ known to the ACPI subsystem - maybe the BIOS /
->           * driver reported one, then use it. Exit in any case.
->           */
->          if (gsi < 0) {
->                  u32 dev_gsi;
->                  /* Interrupt Line values above 0xF are forbidden */
->                  if (dev->irq > 0 && (dev->irq <= 0xF) &&
->                      (acpi_isa_irq_to_gsi(dev->irq, &dev_gsi) == 0)) {
->                          dev_warn(&dev->dev, "PCI INT %c: no GSI -
-> using ISA IRQ %d\n",
->                                   pin_name(pin), dev->irq);
->                          acpi_register_gsi(&dev->dev, dev_gsi,
->                                            ACPI_LEVEL_SENSITIVE,
->                                            ACPI_ACTIVE_LOW);
->                  } else {
->                          dev_warn(&dev->dev, "PCI INT %c: no GSI\n",
->                                   pin_name(pin));
->                  }
->
->                  return 0;
->          }
->
-> 1) I don't know where the restriction of 0x1-0xF came from.
-> Presumably this value of dev->irq came from PCI_INTERRUPT_LINE, and I
-> don't know what forbids values > 0xF.  The test was added by Andy
-> Grover in the attached commit.  This is ancient history; probably Andy
-> doesn't remember either :)
->
-> 2) The proposed change (setting "dev->irq = 0" when we didn't find
-> anything in the _PRT and dev->irq > 0xF) throws away some information,
-> and I fear it could break systems.  For example, what would happen if
-> a system put an IOAPIC pin number in a device's PCI_INTERRUPT_LINE and
-> omitted the device from _PRT?  Is it possible the device would still
-> work as-is (with acpi_pci_irq_enable() doing nothing), but would break
-> if we set dev->irq = 0?
->
-> 3) I don't understand why the xhci init fails in the first place.  It
-> looks like the "request interrupt 255 failed" message is from
-> xhci_try_enable_msi(), but that function tries to enable MSI-X, then
-> MSI, then falls back to legacy interrupts, where we get the error.
-> But the device supports MSI, so I don't know why we even fall back to
-> trying legacy interrupts.  Hannes, do you have any insight into that?
-> Obviously I'm missing something here.
->
-Right.
 
-It's infact a quirk with the USB HCD setup.
+--vkogqOf2sHV7VnPd
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-drivers/usb/core/hcd.c calls request_irq for the legacy interrupt 
-line, before drivers/usb/host/xhci.c enables MSI-X.
+I'm announcing the release of the 3.0.67 kernel.
 
-So the correct thing would be to skip the request_irq() function in 
-drivers/usb/core/hcd.c.
+All users of the 3.0 kernel series must upgrade.
 
-I'll be drafting up a patch.
+The updated 3.0.y git tree can be found at:
+	git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linu=
+x-3.0.y
+and can be browsed at the normal kernel.org git web browser:
+	http://git.kernel.org/?p=3Dlinux/kernel/git/stable/linux-stable.git;a=3Dsu=
+mmary
 
-Cheers,
+thanks,
 
-Hannes
--- 
-Dr. Hannes Reinecke		      zSeries & Storage
-hare@suse.de			      +49 911 74053 688
-SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg
-GF: J. Hawn, J. Guild, F. Imendörffer, HRB 16746 (AG Nürnberg)
+greg k-h
+
+------------
+
+ Makefile                               |    2=20
+ arch/arm/mach-pxa/include/mach/smemc.h |    1=20
+ arch/arm/mach-pxa/smemc.c              |   15 +++
+ arch/parisc/include/asm/pgtable.h      |   13 ++
+ arch/parisc/kernel/cache.c             |   18 ++++
+ arch/powerpc/kernel/machine_kexec_64.c |    5 +
+ arch/s390/kvm/kvm-s390.c               |    8 +
+ arch/x86/include/asm/mmzone_32.h       |    6 -
+ arch/x86/power/hibernate_32.c          |    2=20
+ arch/x86/xen/spinlock.c                |    1=20
+ drivers/base/bus.c                     |    4=20
+ drivers/block/sunvdc.c                 |    2=20
+ drivers/dca/dca-core.c                 |    5 +
+ drivers/gpu/drm/drm_usb.c              |    2=20
+ drivers/gpu/drm/i915/intel_display.c   |    8 +
+ drivers/net/wireless/p54/p54usb.c      |    2=20
+ drivers/net/xen-netback/interface.c    |    3=20
+ drivers/net/xen-netback/netback.c      |   10 +-
+ drivers/pcmcia/vrc4171_card.c          |    1=20
+ drivers/s390/kvm/kvm_virtio.c          |   38 ++++++--
+ drivers/staging/comedi/comedi_fops.c   |    5 +
+ drivers/staging/hv/hv_kvp.c            |   10 +-
+ drivers/staging/vt6656/usbpipe.c       |   28 ++++--
+ drivers/tty/tty_ioctl.c                |    4=20
+ drivers/tty/vt/vt.c                    |  134 +++++++++++++++++++++-------=
+--
+ drivers/usb/host/ehci-omap.c           |    2=20
+ drivers/usb/serial/option.c            |   16 +++
+ drivers/usb/storage/initializers.c     |    4=20
+ drivers/usb/storage/unusual_cypress.h  |    2=20
+ drivers/video/backlight/adp8860_bl.c   |    2=20
+ drivers/video/backlight/adp8870_bl.c   |    2=20
+ drivers/video/console/fbcon.c          |   47 ++++++++--
+ drivers/video/fbmem.c                  |    9 +-
+ drivers/video/fbsysfs.c                |    3=20
+ fs/ext4/resize.c                       |    1=20
+ fs/ext4/super.c                        |   19 ++--
+ fs/fat/namei_vfat.c                    |    3=20
+ fs/lockd/clntproc.c                    |    3=20
+ fs/nls/nls_base.c                      |   43 +++++++--
+ fs/notify/inotify/inotify_user.c       |    4=20
+ fs/ocfs2/dlmglue.c                     |    5 -
+ include/linux/console.h                |    2=20
+ include/linux/mmu_notifier.h           |    1=20
+ include/linux/nls.h                    |    5 -
+ include/linux/usb/audio.h              |    6 -
+ include/linux/vt_kern.h                |    2=20
+ include/net/inet6_hashtables.h         |    8 -
+ include/net/inet_sock.h                |    1=20
+ include/net/ipv6.h                     |   12 ++
+ kernel/hrtimer.c                       |   36 ++++----
+ kernel/irq/spurious.c                  |    7 -
+ kernel/posix-cpu-timers.c              |   23 ++++-
+ kernel/timeconst.pl                    |    6 -
+ mm/fadvise.c                           |   18 +++-
+ mm/mmu_notifier.c                      |  147 +++++++++++++++++++---------=
+-----
+ mm/page_alloc.c                        |   15 ++-
+ mm/shmem.c                             |   10 +-
+ net/bridge/br_stp_bpdu.c               |    2=20
+ net/ipv4/af_inet.c                     |    9 +-
+ net/ipv4/ping.c                        |    4=20
+ sound/pci/ali5451/ali5451.c            |    2=20
+ sound/pci/rme32.c                      |    2=20
+ sound/usb/quirks-table.h               |    2=20
+ 63 files changed, 572 insertions(+), 240 deletions(-)
+
+Alan Cox (1):
+      fb: rework locking to fix lock ordering on takeover
+
+Alan Stern (1):
+      NLS: improve UTF8 -> UTF16 string conversion routine
+
+Andrea Arcangeli (1):
+      mm: mmu_notifier: make the mmu_notifier srcu static
+
+Bjorn Helgaas (1):
+      Driver core: treat unregistered bus_types as having no devices
+
+Bj=F8rn Mork (3):
+      USB: option: add and update Alcatel modems
+      USB: option: add Yota / Megafon M100-1 4g modem
+      USB: option: add Huawei "ACM" devices using protocol =3D vendor
+
+Christian Borntraeger (1):
+      s390/kvm: Fix store status for ACRS/FPRS
+
+Clemens Ladisch (1):
+      ALSA: usb-audio: fix Roland A-PRO support
+
+Cornelia Huck (1):
+      KVM: s390: Handle hosts not supporting s390-virtio.
+
+Dan Carpenter (1):
+      ext4: add missing kfree() on error return path in add_new_gdb()
+
+Dave Airlie (2):
+      drm/usb: bind driver to correct device
+      fbcon: don't lose the console font across generic->chip driver switch
+
+David S. Miller (1):
+      sunvdc: Fix off-by-one in generic_request().
+
+David Vrabel (2):
+      xen-netback: correctly return errors from netbk_count_requests()
+      xen-netback: cancel the credit timer when taking the vif down
+
+Denis Efremov (2):
+      ALSA: ali5451: remove irq enabling in pointer callback
+      ALSA: rme32.c irq enabling after spin_lock_irq
+
+Eric Dumazet (1):
+      ipv6: use a stronger hash for tcp
+
+Greg Kroah-Hartman (1):
+      Linux 3.0.67
+
+Greg Thelen (1):
+      tmpfs: fix use-after-free of mempolicy object
+
+H. Peter Anvin (2):
+      x86-32, mm: Remove reference to resume_map_numa_kva()
+      timeconst.pl: Eliminate Perl warning
+
+Ian Abbott (1):
+      staging: comedi: disallow COMEDI_DEVCONFIG on non-board minors
+
+Ian Campbell (1):
+      xen/netback: check correct frag when looking for head frag
+
+Igor Grinberg (1):
+      ARM: PXA3xx: program the CSMSADRCFG register
+
+Jean Delvare (1):
+      pcmcia/vrc4171: Add missing spinlock init
+
+Jim Somerville (1):
+      inotify: remove broken mask checks causing unmount to be EINVAL
+
+John David Anglin (1):
+      Purge existing TLB entries in set_pte_at and ptep_set_wrprotect
+
+Josh Boyer (1):
+      USB: usb-storage: unusual_devs update for Super TOP SATA bridge
+
+Junxiao Bi (1):
+      ocfs2: unlock super lock if lockres refresh failed
+
+Lars-Peter Clausen (1):
+      drivers/video/backlight/adp88?0_bl.c: fix resume
+
+Leonid Shatz (1):
+      hrtimer: Prevent hrtimer_enqueue_reprogram race
+
+Li Wei (1):
+      ipv4: fix a bug in ping_err().
+
+Linus Torvalds (1):
+      mm: fix pageblock bitmap allocation
+
+Maciej Sosnowski (1):
+      dca: check against empty dca_domains list before unregister provider
+
+Malcolm Priestley (1):
+      staging: vt6656: Fix URB submitted while active warning.
+
+Mel Gorman (1):
+      mm/fadvise.c: drain all pagevecs if POSIX_FADV_DONTNEED fails to disc=
+ard all pages
+
+Mika Kuoppala (1):
+      drm/i915: disable shared panel fitter for pipe
+
+Oleg Nesterov (1):
+      tty: set_termios/set_termiox should not return -EINTR
+
+Pawel Moll (1):
+      ALSA: usb: Fix Processing Unit Descriptor parsers
+
+Phileas Fogg (1):
+      powerpc/kexec: Disable hard IRQ before kexec
+
+Robin Holt (1):
+      mmu_notifier_unregister NULL Pointer deref and multiple ->release() c=
+allouts
+
+Roger Quadros (1):
+      USB: ehci-omap: Fix autoloading of module
+
+Sagi Grimberg (1):
+      mm: mmu_notifier: have mmu_notifiers use a global SRCU so they may sa=
+fely schedule
+
+Stanislaw Gruszka (1):
+      posix-cpu-timers: Fix nanosleep task_struct leak
+
+Stefan Bader (1):
+      xen: Send spinlock IPI to all waiters
+
+Stephen Hemminger (1):
+      bridge: set priority of STP packets
+
+Takashi Iwai (1):
+      fb: Yet another band-aid for fixing lockdep mess
+
+Tao Ma (1):
+      ext4: Free resources in some error path in ext4_fill_super
+
+Thomas Gleixner (1):
+      genirq: Avoid deadlock in spurious handling
+
+Tomasz Guszkowski (1):
+      p54usb: corrected USB ID for T-Com Sinus 154 data II
+
+Trond Myklebust (1):
+      NLM: Ensure that we resend all pending blocking locks after a reclaim
+
+fangxiaozhi (1):
+      USB: storage: properly handle the endian issues of idProduct
+
+
+--vkogqOf2sHV7VnPd
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRL4PCAAoJEDjbvchgkmk+FwYQALZukLMGdgrc4T1iK2wpbnFp
+GDKxbly4j3kAti//ctHQArrI1gohbEX5tF8W/8I4M9rELh3ip9JOCH0y45t0O5dx
+2EtHsFAzElZgjC4wg4TDii0cLj6pdDNNRc9FpWq0i0Wt07KntNGJr3vHEd/emiE8
+84n/ufL/wf9WVNVO8BYfgvdEb9kUrQ77N1/gsYK6CPgQIY8GPL4JxOMmHoqh2pDw
+QLvD6ngDPfx0mwPtSnEx1wAfZtMlwY+wi8lVTy8PcU0P6pUsSWraIAoFyVEGIxea
+3lbuteFU79EoXOSS6H0olZsqkPDTX8+sQvlN8B64bISXdlMHkROE8S+DqQdHwHFK
+pIU8QDfCfbMzYpyPHjCgtuhBTBLs7ojK2y/1MAOciq8wXQZiolhO2fSmQABOpqpa
+KSLxY9Xn2vEPw5JY+WormR3vX4j5Zbv3TdB7/Mp6dZ153T/4vJXJsx0CHQCwOPqF
+Jq+DXpUzG2LtuInQdLyfZZIaVvX1EsGgsi4Sw+Aefr2ZLU+bNuurOjgW7fKKs8/u
+vHfosIdEVFfOG4bPVEsGNeIZshh8e4LtJZyPAL4u5t8n3deJFefZZXutnSf9SsxD
+yc9GyBqWOceAqFJ8s/q7cae7EbU/RVlCNgCf8jrYTV7ox4G0l/O29G8JOtIAA/P0
+7Ca09sZmPyiVAqXoqPu8
+=XMJz
+-----END PGP SIGNATURE-----
+
+--vkogqOf2sHV7VnPd--
