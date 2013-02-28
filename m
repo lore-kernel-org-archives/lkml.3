@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758351Ab3B1Osc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 09:48:32 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:42175 "EHLO
+	id S932437Ab3B1PJ0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 10:09:26 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:42199 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932262Ab3B1OsW (ORCPT
+	with ESMTP id S1758346Ab3B1Osc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 09:48:22 -0500
+	Thu, 28 Feb 2013 09:48:32 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Li Zefan <lizefan@huawei.com>, Tejun Heo <tj@kernel.org>,
+Cc: David Henningsson <david.henningsson@canonical.com>,
+        Takashi Iwai <tiwai@suse.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 062/139] cpuset: fix cpuset_print_task_mems_allowed() vs rename() race
-Date: Thu, 28 Feb 2013 14:43:32 +0000
-Message-Id: <1362062689-2567-63-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 067/139] ALSA: hda - hdmi: ELD shouldn't be valid after unplug
+Date: Thu, 28 Feb 2013 14:43:37 +0000
+Message-Id: <1362062689-2567-68-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1362062689-2567-1-git-send-email-luis.henriques@canonical.com>
 References: <1362062689-2567-1-git-send-email-luis.henriques@canonical.com>
@@ -27,49 +28,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Li Zefan <lizefan@huawei.com>
+From: David Henningsson <david.henningsson@canonical.com>
 
-commit 63f43f55c9bbc14f76b582644019b8a07dc8219a upstream.
+commit bbfd8a19b6913f50a362457c34d49bfafe5e456e upstream.
 
-rename() will change dentry->d_name. The result of this race can
-be worse than seeing partially rewritten name, but we might access
-a stale pointer because rename() will re-allocate memory to hold
-a longer name.
+Currently, eld_valid is never set to false, except at kernel module
+load time. This patch makes sure that eld is no longer valid when
+the cable is (hot-)unplugged.
 
-It's safe in the protection of dentry->d_lock.
-
-v2: check NULL dentry before acquiring dentry lock.
-
-Signed-off-by: Li Zefan <lizefan@huawei.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: David Henningsson <david.henningsson@canonical.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- kernel/cpuset.c | 12 ++++++++++--
- 1 file changed, 10 insertions(+), 2 deletions(-)
+ sound/pci/hda/patch_hdmi.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/kernel/cpuset.c b/kernel/cpuset.c
-index 746d1ee..4611da5 100644
---- a/kernel/cpuset.c
-+++ b/kernel/cpuset.c
-@@ -2468,8 +2468,16 @@ void cpuset_print_task_mems_allowed(struct task_struct *tsk)
+diff --git a/sound/pci/hda/patch_hdmi.c b/sound/pci/hda/patch_hdmi.c
+index 063afa2..45e3102 100644
+--- a/sound/pci/hda/patch_hdmi.c
++++ b/sound/pci/hda/patch_hdmi.c
+@@ -995,6 +995,7 @@ static void hdmi_present_sense(struct hdmi_spec_per_pin *per_pin, int repoll)
+ 		"HDMI status: Codec=%d Pin=%d Presence_Detect=%d ELD_Valid=%d\n",
+ 		codec->addr, pin_nid, eld->monitor_present, eld_valid);
  
- 	dentry = task_cs(tsk)->css.cgroup->dentry;
- 	spin_lock(&cpuset_buffer_lock);
--	snprintf(cpuset_name, CPUSET_NAME_LEN,
--		 dentry ? (const char *)dentry->d_name.name : "/");
-+
-+	if (!dentry) {
-+		strcpy(cpuset_name, "/");
-+	} else {
-+		spin_lock(&dentry->d_lock);
-+		strlcpy(cpuset_name, (const char *)dentry->d_name.name,
-+			CPUSET_NAME_LEN);
-+		spin_unlock(&dentry->d_lock);
-+	}
-+
- 	nodelist_scnprintf(cpuset_nodelist, CPUSET_NODELIST_LEN,
- 			   tsk->mems_allowed);
- 	printk(KERN_INFO "%s cpuset=%s mems_allowed=%s\n",
++	eld->eld_valid = false;
+ 	if (eld_valid) {
+ 		if (!snd_hdmi_get_eld(eld, codec, pin_nid))
+ 			snd_hdmi_show_eld(eld);
 -- 
 1.8.1.2
 
