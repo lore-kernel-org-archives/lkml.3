@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759969Ab3B1PL1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 10:11:27 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:42153 "EHLO
+	id S1760177Ab3B1PLv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 10:11:51 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:42141 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758130Ab3B1OsM (ORCPT
+	with ESMTP id S1758009Ab3B1OsG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 09:48:12 -0500
+	Thu, 28 Feb 2013 09:48:06 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Weston Andros Adamson <dros@netapp.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
+Cc: Stanislaw Gruszka <sgruszka@redhat.com>, Dave Jones <davej@redhat.com>,
+        John Stultz <john.stultz@linaro.org>, Oleg Nesterov <oleg@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 058/139] NFSv4.1: Don't decode skipped layoutgets
-Date: Thu, 28 Feb 2013 14:43:28 +0000
-Message-Id: <1362062689-2567-59-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 056/139] posix-cpu-timers: Fix nanosleep task_struct leak
+Date: Thu, 28 Feb 2013 14:43:26 +0000
+Message-Id: <1362062689-2567-57-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1362062689-2567-1-git-send-email-luis.henriques@canonical.com>
 References: <1362062689-2567-1-git-send-email-luis.henriques@canonical.com>
@@ -28,74 +29,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Weston Andros Adamson <dros@netapp.com>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit 085b7a45c63d3da5be155faab9249a5cab224561 upstream.
+commit e6c42c295e071dd74a66b5a9fcf4f44049888ed8 upstream.
 
-layoutget's prepare hook can call rpc_exit with status = NFS4_OK (0).
-Because of this, nfs4_proc_layoutget can't depend on a 0 status to mean
-that the RPC was successfully sent, received and parsed.
+The trinity fuzzer triggered a task_struct reference leak via
+clock_nanosleep with CPU_TIMERs. do_cpu_nanosleep() calls
+posic_cpu_timer_create(), but misses a corresponding
+posix_cpu_timer_del() which leads to the task_struct reference leak.
 
-To fix this, use the result's len member to see if parsing took place.
-
-This fixes the following OOPS -- calling xdr_init_decode() with a buffer length
-0 doesn't set the stream's 'p' member and ends up using uninitialized memory
-in filelayout_decode_layout.
-
-BUG: unable to handle kernel paging request at 0000000000008050
-IP: [<ffffffff81282e78>] memcpy+0x18/0x120
-PGD 0
-Oops: 0000 [#1] SMP
-last sysfs file: /sys/devices/pci0000:00/0000:00:11.0/0000:02:01.0/irq
-CPU 1
-Modules linked in: nfs_layout_nfsv41_files nfs lockd fscache auth_rpcgss nfs_acl autofs4 sunrpc ipt_REJECT nf_conntrack_ipv4 nf_defrag_ipv4 iptable_filter ip_tables ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 xt_state nf_conntrack ip6table_filter ip6_tables ipv6 dm_mirror dm_region_hash dm_log dm_mod ppdev parport_pc parport snd_ens1371 snd_rawmidi snd_ac97_codec ac97_bus snd_seq snd_seq_device snd_pcm snd_timer snd soundcore snd_page_alloc e1000 microcode vmware_balloon i2c_piix4 i2c_core sg shpchp ext4 mbcache jbd2 sr_mod cdrom sd_mod crc_t10dif pata_acpi ata_generic ata_piix mptspi mptscsih mptbase scsi_transport_spi [last unloaded: speedstep_lib]
-
-Pid: 1665, comm: flush-0:22 Not tainted 2.6.32-356-test-2 #2 VMware, Inc. VMware Virtual Platform/440BX Desktop Reference Platform
-RIP: 0010:[<ffffffff81282e78>]  [<ffffffff81282e78>] memcpy+0x18/0x120
-RSP: 0018:ffff88003dfab588  EFLAGS: 00010206
-RAX: ffff88003dc42000 RBX: ffff88003dfab610 RCX: 0000000000000009
-RDX: 000000003f807ff0 RSI: 0000000000008050 RDI: ffff88003dc42000
-RBP: ffff88003dfab5b0 R08: 0000000000000000 R09: 0000000000000000
-R10: 0000000000000000 R11: 0000000000000080 R12: 0000000000000024
-R13: ffff88003dc42000 R14: ffff88003f808030 R15: ffff88003dfab6a0
-FS:  0000000000000000(0000) GS:ffff880003420000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0018 ES: 0018 CR0: 000000008005003b
-CR2: 0000000000008050 CR3: 000000003bc92000 CR4: 00000000001407e0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Process flush-0:22 (pid: 1665, threadinfo ffff88003dfaa000, task ffff880037f77540)
-Stack:
-ffffffffa0398ac1 ffff8800397c5940 ffff88003dfab610 ffff88003dfab6a0
-<d> ffff88003dfab5d0 ffff88003dfab680 ffffffffa01c150b ffffea0000d82e70
-<d> 000000508116713b 0000000000000000 0000000000000000 0000000000000000
-Call Trace:
-[<ffffffffa0398ac1>] ? xdr_inline_decode+0xb1/0x120 [sunrpc]
-[<ffffffffa01c150b>] filelayout_decode_layout+0xeb/0x350 [nfs_layout_nfsv41_files]
-[<ffffffffa01c17fc>] filelayout_alloc_lseg+0x8c/0x3c0 [nfs_layout_nfsv41_files]
-[<ffffffff8150e6ce>] ? __wait_on_bit+0x7e/0x90
-
-Signed-off-by: Weston Andros Adamson <dros@netapp.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-[ luis: adjust context ]
+Reported-and-tested-by: Tommi Rantala <tt.rantala@gmail.com>
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Cc: Dave Jones <davej@redhat.com>
+Cc: John Stultz <john.stultz@linaro.org>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Link: http://lkml.kernel.org/r/20130215100810.GF4392@redhat.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/nfs/nfs4proc.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ kernel/posix-cpu-timers.c | 23 +++++++++++++++++++++--
+ 1 file changed, 21 insertions(+), 2 deletions(-)
 
-diff --git a/fs/nfs/nfs4proc.c b/fs/nfs/nfs4proc.c
-index c1bad65..81d51aa 100644
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -6287,7 +6287,8 @@ int nfs4_proc_layoutget(struct nfs4_layoutget *lgp, gfp_t gfp_flags)
- 	status = nfs4_wait_for_completion_rpc_task(task);
- 	if (status == 0)
- 		status = task->tk_status;
--	if (status == 0)
-+	/* if layoutp->len is 0, nfs4_layoutget_prepare called rpc_exit */
-+	if (status == 0 && lgp->res.layoutp->len)
- 		status = pnfs_layout_process(lgp);
- 	rpc_put_task(task);
- 	dprintk("<-- %s status=%d\n", __func__, status);
+diff --git a/kernel/posix-cpu-timers.c b/kernel/posix-cpu-timers.c
+index 125cb67..acbb79c 100644
+--- a/kernel/posix-cpu-timers.c
++++ b/kernel/posix-cpu-timers.c
+@@ -1422,8 +1422,10 @@ static int do_cpu_nanosleep(const clockid_t which_clock, int flags,
+ 		while (!signal_pending(current)) {
+ 			if (timer.it.cpu.expires.sched == 0) {
+ 				/*
+-				 * Our timer fired and was reset.
++				 * Our timer fired and was reset, below
++				 * deletion can not fail.
+ 				 */
++				posix_cpu_timer_del(&timer);
+ 				spin_unlock_irq(&timer.it_lock);
+ 				return 0;
+ 			}
+@@ -1441,9 +1443,26 @@ static int do_cpu_nanosleep(const clockid_t which_clock, int flags,
+ 		 * We were interrupted by a signal.
+ 		 */
+ 		sample_to_timespec(which_clock, timer.it.cpu.expires, rqtp);
+-		posix_cpu_timer_set(&timer, 0, &zero_it, it);
++		error = posix_cpu_timer_set(&timer, 0, &zero_it, it);
++		if (!error) {
++			/*
++			 * Timer is now unarmed, deletion can not fail.
++			 */
++			posix_cpu_timer_del(&timer);
++		}
+ 		spin_unlock_irq(&timer.it_lock);
+ 
++		while (error == TIMER_RETRY) {
++			/*
++			 * We need to handle case when timer was or is in the
++			 * middle of firing. In other cases we already freed
++			 * resources.
++			 */
++			spin_lock_irq(&timer.it_lock);
++			error = posix_cpu_timer_del(&timer);
++			spin_unlock_irq(&timer.it_lock);
++		}
++
+ 		if ((it->it_value.tv_sec | it->it_value.tv_nsec) == 0) {
+ 			/*
+ 			 * It actually did fire already.
 -- 
 1.8.1.2
 
