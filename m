@@ -1,66 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754262Ab3B1EiO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 23:38:14 -0500
-Received: from mail-we0-f171.google.com ([74.125.82.171]:59977 "EHLO
-	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750775Ab3B1EiJ convert rfc822-to-8bit (ORCPT
+	id S1754130Ab3B1Eng (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 23:43:36 -0500
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:59017 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750775Ab3B1Enf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 23:38:09 -0500
+	Wed, 27 Feb 2013 23:43:35 -0500
+Message-ID: <512EE073.8090709@gmail.com>
+Date: Wed, 27 Feb 2013 21:43:31 -0700
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:17.0) Gecko/20130216 Thunderbird/17.0.3
 MIME-Version: 1.0
-In-Reply-To: <20130226110740.GA3962@katana>
-References: <88.A5.02716.F6CB6215@epcpsbge3.samsung.com>
-	<alpine.LNX.2.00.1302261101250.2128@pobox.suse.cz>
-	<20130226110740.GA3962@katana>
-Date: Thu, 28 Feb 2013 10:08:07 +0530
-Message-ID: <CAK7N6vrSMBgO9=2vfB3PCG0e0WDhkTwQ0wLpJLhicu4U61ym5g@mail.gmail.com>
-Subject: Re: I2C: Fix i2c fail problem when a process is terminated by a
- signal on octeon in 3.8
-From: anish singh <anish198519851985@gmail.com>
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: Jiri Kosina <jkosina@suse.cz>,
-        =?UTF-8?B?7Iah7J2A67SJ?= <eunb.song@samsung.com>,
-        linux-kernel@vger.kernel.org,
-        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
-        linux-i2c@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+CC: acme@ghostprotocols.net, linux-kernel@vger.kernel.org,
+        Dongsoo Nathaniel Kim <dongsoo.kim@gmail.com>
+Subject: Re: [PATCH] perf kvm: fix segfault by initializing file_name to NULL
+References: <1362022197-38929-1-git-send-email-dsahern@gmail.com> <512EDD96.9090600@linux.vnet.ibm.com>
+In-Reply-To: <512EDD96.9090600@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 26, 2013 at 4:37 PM, Wolfram Sang <wsa@the-dreams.de> wrote:
-> On Tue, Feb 26, 2013 at 11:02:17AM +0100, Jiri Kosina wrote:
->> On Fri, 22 Feb 2013, 송은봉 wrote:
->>
->> >
->> >
->> >
->> > I've been debugging the abnormal operation of i2c on octeon.
->> > If a process is terminated by signal in the middle of i2c operation,
->> > next i2c read operation which is done by another process was failed.
->> > So i changed to ignore signal in the middle of i2c operation.
->> > After that the problem was not reproduced.
->>
->> This is not really material directly for trivial.git. Adding maintainers
->> to CC.
+On 2/27/13 9:31 PM, Xiao Guangrong wrote:
 >
-> Yes, this should not go via trivial. Please resend to i2c list. Patch
-> looks okay from a glimpse (and fixes an issue we have seen before and
-> fixed the same way).
-Just curios to know why reinitializing the i2c controller is a bad idea?
-This fix looks perfect but if we know that there is only one i2c device
-currently being controlled by controller.Can we(i know it is expensive
-compare to the fix provided) not re-initialize the i2c-controller?
+> On 02/28/2013 11:29 AM, David Ahern wrote:
+>> Dongsoo reported that perf-kvm was segfaulting. The bug was introduced by
+>> commit 3786063 which moved file_name from struct perf_kvm which was
+>> initialized on the stack to an uninitialized stack variable. Fix by
+>> initializing.
+>>
+>> Needs to be applied to 3.7 and 3.8 as well.
+>
+> David, The bug has already been fixed by by Arnaldo, see:
+> http://git.kernel.org/?p=virt/kvm/kvm.git;a=commit;h=20914ce5b9e1ef4a35f1f09a2c9c8fb8eb1c4d86
+>
 
-Thanks,
->
-> Thanks,
->
->    Wolfram
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+very odd. Arnaldo's latest perf/urgent has the problem -- and no 
+initialized variable. Seems to have been dropped somewhere.
+
+David
