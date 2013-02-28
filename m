@@ -1,191 +1,337 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932848Ab3B1SEL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 13:04:11 -0500
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:41217 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755292Ab3B1SEI (ORCPT
+	id S1759944Ab3B1SF4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 13:05:56 -0500
+Received: from mail-ee0-f41.google.com ([74.125.83.41]:43729 "EHLO
+	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758699Ab3B1SFy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 13:04:08 -0500
-Date: Thu, 28 Feb 2013 10:04:02 -0800
-From: Jeff Layton <jlayton@samba.org>
-To: Dave Chiluk <dave.chiluk@canonical.com>
-Cc: Steve French <smfrench@gmail.com>,
-        "Stefan (metze) Metzmacher" <metze@samba.org>,
-        Steve French <sfrench@samba.org>, linux-cifs@vger.kernel.org,
-        samba-technical@lists.samba.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] CIFS: Decrease reconnection delay when switching nics
-Message-ID: <20130228100402.5f7a42fc@corrin.poochiereds.net>
-In-Reply-To: <512F948A.9060404@canonical.com>
-References: <1361831310-24260-1-git-send-email-chiluk@canonical.com>
-	<512DE8A6.9030000@samba.org>
-	<20130227083419.0af9deaf@corrin.poochiereds.net>
-	<512E8787.6070709@canonical.com>
-	<20130228072637.3b71a4f7@corrin.poochiereds.net>
-	<CAH2r5mtBHO6woWeOJ+DJDBmF35VTfuFYo2iza--xAe7grnELAg@mail.gmail.com>
-	<20130228084704.7f267119@corrin.poochiereds.net>
-	<512F948A.9060404@canonical.com>
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.13; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Thu, 28 Feb 2013 13:05:54 -0500
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: Tony Lindgren <tony@atomide.com>
+Subject: [PATCH] OMAP3 ROM Random Number Generator support
+Date: Thu, 28 Feb 2013 19:05:47 +0100
+User-Agent: KMail/1.13.7 (Linux/3.5.0-25-generic; KDE/4.10.0; x86_64; ; )
+Cc: Juha Yrjola <juha.yrjola@solidboot.com>,
+        Russell King <linux@arm.linux.org.uk>, Matt Mackall <mpm@selenic.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+MIME-Version: 1.0
+Content-Type: multipart/signed;
+  boundary="nextPart1557775.NvWmvZgbeZ";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
 Content-Transfer-Encoding: 7bit
+Message-Id: <201302281905.48546@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 28 Feb 2013 11:31:54 -0600
-Dave Chiluk <dave.chiluk@canonical.com> wrote:
+--nextPart1557775.NvWmvZgbeZ
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-> On 02/28/2013 10:47 AM, Jeff Layton wrote:
-> > On Thu, 28 Feb 2013 10:04:36 -0600
-> > Steve French <smfrench@gmail.com> wrote:
-> > 
-> >> On Thu, Feb 28, 2013 at 9:26 AM, Jeff Layton <jlayton@samba.org> wrote:
-> >>> On Wed, 27 Feb 2013 16:24:07 -0600
-> >>> Dave Chiluk <dave.chiluk@canonical.com> wrote:
-> >>>
-> >>>> On 02/27/2013 10:34 AM, Jeff Layton wrote:
-> >>>>> On Wed, 27 Feb 2013 12:06:14 +0100
-> >>>>> "Stefan (metze) Metzmacher" <metze@samba.org> wrote:
-> >>>>>
-> >>>>>> Hi Dave,
-> >>>>>>
-> >>>>>>> When messages are currently in queue awaiting a response, decrease amount of
-> >>>>>>> time before attempting cifs_reconnect to SMB_MAX_RTT = 10 seconds. The current
-> >>>>>>> wait time before attempting to reconnect is currently 2*SMB_ECHO_INTERVAL(120
-> >>>>>>> seconds) since the last response was recieved.  This does not take into account
-> >>>>>>> the fact that messages waiting for a response should be serviced within a
-> >>>>>>> reasonable round trip time.
-> >>>>>>
-> >>>>>> Wouldn't that mean that the client will disconnect a good connection,
-> >>>>>> if the server doesn't response within 10 seconds?
-> >>>>>> Reads and Writes can take longer than 10 seconds...
-> >>>>>>
-> >>>>>
-> >>>>> Where does this magic value of 10s come from? Note that a slow server
-> >>>>> can take *minutes* to respond to writes that are long past the EOF.
-> >>>> It comes from the desire to decrease the reconnection delay to something
-> >>>> better than a random number between 60 and 120 seconds.  I am not
-> >>>> committed to this number, and it is open for discussion.  Additionally
-> >>>> if you look closely at the logic it's not 10 seconds per request, but
-> >>>> actually when requests have been in flight for more than 10 seconds make
-> >>>> sure we've heard from the server in the last 10 seconds.
-> >>>>
-> >>>> Can you explain more fully your use case of writes that are long past
-> >>>> the EOF?  Perhaps with a test-case or script that I can test?  As far as
-> >>>> I know writes long past EOF will just result in a sparse file, and
-> >>>> return in a reasonable round trip time *(that's at least what I'm seeing
-> >>>> with my testing).  dd if=/dev/zero of=/mnt/cifs/a bs=1M count=100
-> >>>> seek=100000, starts receiving responses from the server in about .05
-> >>>> seconds with subsequent responses following at roughly .002-.01 second
-> >>>> intervals.  This is well within my 10 second value.  Even adding the
-> >>>> latency of AT&T's 2g cell network brings it up to only 1s.  Still 10x
-> >>>> less than my 10 second value.
-> >>>>
-> >>>> The new logic goes like this
-> >>>> if( we've been expecting a response from the server (in_flight), and
-> >>>>  message has been in_flight for more than 10 seconds and
-> >>>>  we haven't had any other contact from the server in that time
-> >>>>   reconnect
-> >>>>
-> >>>
-> >>> That will break writes long past the EOF. Note too that reconnects on
-> >>> CIFS are horrifically expensive and problematic. Much of the state on a
-> >>> CIFS mount is tied to the connection. When that drops, open files are
-> >>> closed and things like locks are dropped. SMB1 has no real mechanism
-> >>> for state recovery, so that can really be a problem.
-> >>>
-> >>>> On a side note, I discovered a small race condition in the previous
-> >>>> logic while working on this, that my new patch also fixes.
-> >>>> 1s  request
-> >>>> 2s  response
-> >>>> 61.995 echo job pops
-> >>>> 121.995 echo job pops and sends echo
-> >>>> 122 server_unresponsive called.  Finds no response and attempts to
-> >>>>        reconnect
-> >>>> 122.95 response to echo received
-> >>>>
-> >>>
-> >>> Sure, here's a reproducer. Do this against a windows server, preferably
-> >>> one exporting NTFS on relatively slow storage. Make sure that
-> >>> "testfile" doesn't exist first:
-> >>>
-> >>>      $ dd if=/dev/zero of=/path/to/cifs/share/testfile bs=1M count=1 seek=3192
-> >>>
-> >>> NTFS doesn't support sparse files, so the OS has to zero-fill up to the
-> >>> point where you're writing. That can take a looooong time on slow
-> >>> storage (minutes even). What we do now is periodically send a SMB echo
-> >>> to make sure the server is alive rather than trying to time out a
-> >>> particular call.
-> >>
-> >> Writing past end of file in Windows can be very slow, but note that it
-> >> is possible for a windows to set as sparse a file on an NTFS
-> >> partition.   Quoting from
-> >> http://msdn.microsoft.com/en-us/library/windows/desktop/aa365566%28v=vs.85%29.aspx
-> >> Windows NTFS does support sparse files (and we could even send it over
-> >> cifs if we want) but it has to be explicitly set by the app on the
-> >> file:
-> >>
-> >> "To determine whether a file system supports sparse files, call the
-> >> GetVolumeInformation function and examine the
-> >> FILE_SUPPORTS_SPARSE_FILES bit flag returned through the
-> >> lpFileSystemFlags parameter.
-> >>
-> >> Most applications are not aware of sparse files and will not create
-> >> sparse files. The fact that an application is reading a sparse file is
-> >> transparent to the application. An application that is aware of
-> >> sparse-files should determine whether its data set is suitable to be
-> >> kept in a sparse file. After that determination is made, the
-> >> application must explicitly declare a file as sparse, using the
-> >> FSCTL_SET_SPARSE control code."
-> >>
-> >>
-> > 
-> > That's interesting. I didn't know about the fsctl.
-> > 
-> > It doesn't really help us though. Not all servers support passthrough
-> > infolevels, and there are other filesystems (e.g. FAT) that don't
-> > support sparse files at all.
-> > 
-> > In any case, the upshot of all of this is that we simply can't assume
-> > that we'll get the response to a particular call in any given amount of
-> > time, so we have to periodically check that the server is still
-> > responding via echoes before giving up on it completely.
-> > 
-> 
-> I just verified this by running the dd testcase against a windows 7
-> server.  I'm going to rewrite my patch to optimise the echo logic as
-> Jeff suggested earlier.  The only difference being that, I think we
-> should still have regular echos when nothing else is happening, so that
-> the connection can be rebuilt when nothing urgent is going on.
-> 
+This driver provides kernel-side support for the Random Number
+Generator hardware found on OMAP34xx processors.
 
-OTOH, you don't want to hammer the server with echoes. They are fairly
-light weight, but they aren't completely free. That's why I think we
-might get better milage out of trying to look at the socket itself to
-figure out the state.
+This driver is included in Maemo 2.6.28 kernel used on Nokia N900.
 
-> It still makes more sense to me that we should be checking the status of
-> the tcp socket, and it's underlying nic, but I'm still not completely
-> clear on how that could be accomplished.  Any pointers to that regard
-> would be appreciated.
-> 
-> Thanks for the help guys.
+I fixed driver to work with 3.8 kernel and added platform_driver
+code to autoload it on omap3 devices.
 
-You can always look at the sk_state flags to figure out the state of
-the TCP connection (there are some examples of that in sunrpc code, but
-there may be simpler ones elsewhere).
+diff --git a/arch/arm/mach-omap2/devices.c b/arch/arm/mach-omap2/devices.c
+index 626f3ea..48e40f3 100644
+=2D-- a/arch/arm/mach-omap2/devices.c
++++ b/arch/arm/mach-omap2/devices.c
+@@ -446,6 +446,18 @@ static void omap_init_mcspi(void)
+ static inline void omap_init_mcspi(void) {}
+ #endif
+=20
++static struct platform_device omap3_rom_rng_device =3D {
++	.name		=3D "omap3-rom-rng",
++	.id		=3D -1,
++};
++
++static void omap_init_rom_rng(void)
++{
++	if (!cpu_is_omap34xx() || omap_type() =3D=3D OMAP2_DEVICE_TYPE_GP)
++		return;
++	platform_device_register(&omap3_rom_rng_device);
++}
++
+ /**
+  * omap_init_rng - bind the RNG hwmod to the RNG omap_device
+  *
+@@ -727,6 +739,7 @@ static int __init omap2_init_devices(void)
+ 	}
+ 	omap_init_sti();
+ 	omap_init_rng();
++	omap_init_rom_rng();
+ 	omap_init_sham();
+ 	omap_init_aes();
+ 	omap_init_vout();
+diff --git a/drivers/char/hw_random/Kconfig b/drivers/char/hw_random/Kconfig
+index c5a0262..2d51db6 100644
+=2D-- a/drivers/char/hw_random/Kconfig
++++ b/drivers/char/hw_random/Kconfig
+@@ -153,6 +153,19 @@ config HW_RANDOM_OMAP
+=20
+  	  If unsure, say Y.
+=20
++config HW_RANDOM_OMAP3_ROM
++	tristate "OMAP3 ROM Random Number Generator support"
++	depends on HW_RANDOM && ARCH_OMAP3
++	default HW_RANDOM
++	---help---
++	  This driver provides kernel-side support for the Random Number
++	  Generator hardware found on OMAP34xx processors.
++
++	  To compile this driver as a module, choose M here: the
++	  module will be called omap3-rom-rng.
++
++	  If unsure, say Y.
++
+ config HW_RANDOM_OCTEON
+ 	tristate "Octeon Random Number Generator support"
+ 	depends on HW_RANDOM && CPU_CAVIUM_OCTEON
+diff --git a/drivers/char/hw_random/Makefile b/drivers/char/hw_random/Makef=
+ile
+index 1fd7eec..d227cd6 100644
+=2D-- a/drivers/char/hw_random/Makefile
++++ b/drivers/char/hw_random/Makefile
+@@ -15,6 +15,8 @@ n2-rng-y :=3D n2-drv.o n2-asm.o
+ obj-$(CONFIG_HW_RANDOM_VIA) +=3D via-rng.o
+ obj-$(CONFIG_HW_RANDOM_IXP4XX) +=3D ixp4xx-rng.o
+ obj-$(CONFIG_HW_RANDOM_OMAP) +=3D omap-rng.o
++obj-$(CONFIG_HW_RANDOM_OMAP3_ROM) +=3D omap3-rom-rng.o
++omap3-rom-rng-y :=3D omap3-rom-drv.o omap3-rom-asm.o
+ obj-$(CONFIG_HW_RANDOM_PASEMI) +=3D pasemi-rng.o
+ obj-$(CONFIG_HW_RANDOM_VIRTIO) +=3D virtio-rng.o
+ obj-$(CONFIG_HW_RANDOM_TX4939) +=3D tx4939-rng.o
+diff --git a/drivers/char/hw_random/omap3-rom-asm.S b/drivers/char/hw_rando=
+m/omap3-rom-asm.S
+new file mode 100644
+index 0000000..ce82e16
+=2D-- /dev/null
++++ b/drivers/char/hw_random/omap3-rom-asm.S
+@@ -0,0 +1,27 @@
++/*
++ * Copyright (C) 2009 Nokia Corporation
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ */
++
++#include <linux/linkage.h>
++#include <asm/assembler.h>
++
++ENTRY(omap3_rng_call_rom_asm)
++	.arch_extension sec
++	stmfd	sp!, {r4-r12, lr}
++	stmfd	sp!, {r0-r3}
++	bl	v7_flush_dcache_all
++	ldmfd	sp!, {r0-r3}
++	mov	r6, #0xff
++	mov	r12, r0
++	smc	#1
++	mov	r12, r0
++	bl	v7_flush_dcache_all
++	mov	r0, #0
++	mcr	p15, 0, r0, c7, c5, 0
++	mov	r0, r12
++	ldmfd	sp!, {r4-r12, pc}
+diff --git a/drivers/char/hw_random/omap3-rom-drv.c b/drivers/char/hw_rando=
+m/omap3-rom-drv.c
+new file mode 100644
+index 0000000..4e2c0ff
+=2D-- /dev/null
++++ b/drivers/char/hw_random/omap3-rom-drv.c
+@@ -0,0 +1,167 @@
++/*
++ * omap3-rom-drv.c - RNG driver for TI OMAP3 CPU family
++ *
++ * Copyright (C) 2009 Nokia Corporation
++ * Author: Juha Yrjola <juha.yrjola@solidboot.com>
++ *
++ * This file is licensed under  the terms of the GNU General Public
++ * License version 2. This program is licensed "as is" without any
++ * warranty of any kind, whether express or implied.
++ */
++
++#include <linux/module.h>
++#include <linux/init.h>
++#include <linux/random.h>
++#include <linux/hw_random.h>
++#include <linux/timer.h>
++#include <linux/clk.h>
++#include <linux/err.h>
++#include <linux/platform_device.h>
++
++#include "../../../arch/arm/mach-omap2/soc.h"
++
++#define SEC_HAL_RNG_GENERATE		29
++#define RNG_RESET			0x01
++#define RNG_GEN_PRNG_HW_INIT		0x02
++#define RNG_GEN_HW			0x08
++
++static const char *omap3_rom_rng_name =3D "OMAP3 ROM RNG";
++
++extern u32 omap3_rng_call_rom_asm(u32 id, u32 proc, u32 flags, u32 va_ptr);
++
++static int call_sec_rom(u32 appl_id, u32 proc_id, u32 flag, ...)
++{
++	va_list ap;
++	u32 ret;
++	u32 val;
++
++	va_start(ap, flag);
++	val =3D *(u32 *) &ap;
++	local_irq_disable();
++	local_fiq_disable();
++	ret =3D omap3_rng_call_rom_asm(appl_id, proc_id, flag,
++				     (u32) virt_to_phys((void *) val));
++	local_fiq_enable();
++	local_irq_enable();
++	va_end(ap);
++
++	return ret;
++}
++
++static struct timer_list idle_timer;
++static int rng_idle;
++static struct clk *rng_clk;
++
++static void omap3_rom_idle_rng(unsigned long data)
++{
++	int r;
++
++	r =3D call_sec_rom(SEC_HAL_RNG_GENERATE, 0, 0, 3, NULL, 0,
++			 RNG_RESET);
++	if (r !=3D 0) {
++		printk(KERN_ERR "%s: reset failed: %d\n",
++		       omap3_rom_rng_name, r);
++		return;
++	}
++	clk_disable_unprepare(rng_clk);
++	rng_idle =3D 1;
++}
++
++static int omap3_rom_get_random(void *buf, unsigned int count)
++{
++	u32 r;
++	u32 ptr;
++
++	del_timer_sync(&idle_timer);
++	if (rng_idle) {
++		clk_prepare_enable(rng_clk);
++		r =3D call_sec_rom(SEC_HAL_RNG_GENERATE, 0, 0, 3, NULL, 0,
++				 RNG_GEN_PRNG_HW_INIT);
++		if (r !=3D 0) {
++			clk_disable_unprepare(rng_clk);
++			printk(KERN_ERR "%s: HW init failed: %d\n",
++			       omap3_rom_rng_name, r);
++			return -EIO;
++		}
++		rng_idle =3D 0;
++	}
++
++	ptr =3D virt_to_phys(buf);
++	r =3D call_sec_rom(SEC_HAL_RNG_GENERATE, 0, 0, 3, ptr,
++			 count, RNG_GEN_HW);
++	mod_timer(&idle_timer, jiffies + msecs_to_jiffies(500));
++	if (r !=3D 0)
++		return -EINVAL;
++	return 0;
++}
++
++static int omap3_rom_rng_data_present(struct hwrng *rng, int wait)
++{
++	return 1;
++}
++
++static int omap3_rom_rng_data_read(struct hwrng *rng, u32 *data)
++{
++	int r;
++
++	r =3D omap3_rom_get_random(data, 4);
++	if (r < 0)
++		return r;
++	return 4;
++}
++
++static struct hwrng omap3_rom_rng_ops =3D {
++	.name		=3D "omap3-rom",
++	.data_present	=3D omap3_rom_rng_data_present,
++	.data_read	=3D omap3_rom_rng_data_read,
++};
++
++static int omap3_rom_rng_probe(struct platform_device *pdev)
++{
++	printk(KERN_INFO "%s: initializing\n", omap3_rom_rng_name);
++	if (!cpu_is_omap34xx()) {
++		printk(KERN_ERR "%s: currently supports only OMAP34xx CPUs\n",
++		       omap3_rom_rng_name);
++		return -ENODEV;
++	}
++	if (omap_type() =3D=3D OMAP2_DEVICE_TYPE_GP) {
++		printk(KERN_ERR "%s: GP OMAPs not supported\n",
++		       omap3_rom_rng_name);
++		return -ENODEV;
++	}
++
++	setup_timer(&idle_timer, omap3_rom_idle_rng, 0);
++	rng_clk =3D clk_get_sys("omap_rng", "ick");
++	if (IS_ERR(rng_clk)) {
++		printk(KERN_ERR "%s: unable to get RNG clock\n",
++		       omap3_rom_rng_name);
++		return IS_ERR(rng_clk);
++	}
++
++	/* Leave the RNG in reset state. */
++	clk_prepare_enable(rng_clk);
++	omap3_rom_idle_rng(0);
++
++	return hwrng_register(&omap3_rom_rng_ops);
++}
++
++static int omap3_rom_rng_remove(struct platform_device *pdev)
++{
++	hwrng_unregister(&omap3_rom_rng_ops);
++	return 0;
++}
++
++static struct platform_driver omap3_rom_rng_driver =3D {
++	.driver =3D {
++		.name		=3D "omap3-rom-rng",
++		.owner		=3D THIS_MODULE,
++	},
++	.probe		=3D omap3_rom_rng_probe,
++	.remove		=3D omap3_rom_rng_remove,
++};
++
++module_platform_driver(omap3_rom_rng_driver);
++
++MODULE_ALIAS("platform:omap3-rom-rng");
++MODULE_AUTHOR("Juha Yrjola");
++MODULE_LICENSE("GPL");
 
-As far as the underlying interface goes, I'm not sure what you can do.
-There's not always a straightforward 1:1 correspondance between an
-interface and connection is there? Also, we don't necessarily want to
-reconnect just because networkmanager got upgraded and took down the if
-for a second and brought it right back up again. What if an address
-migrates to a different interface altogether on the same subnet? Do TCP
-connections normally keep chugging along in that situation?
+=2D-=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
 
-I think you probably need to nail down the specific circumstances where
-you want to reconnect and then try to figure out how best to detect them.
+--nextPart1557775.NvWmvZgbeZ
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
 
--- 
-Jeff Layton <jlayton@samba.org>
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEABECAAYFAlEvnHwACgkQi/DJPQPkQ1I7MwCgiX6TOuUwpnxPdWWxGWLIGPKm
+hb4AoMnNfdAmf606OVyd/Hg0NNKQBFeI
+=2Mjq
+-----END PGP SIGNATURE-----
+
+--nextPart1557775.NvWmvZgbeZ--
