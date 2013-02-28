@@ -1,56 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753142Ab3B1Eyh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 23:54:37 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:41818 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751548Ab3B1Eyg (ORCPT
+	id S1753366Ab3B1E5a (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 23:57:30 -0500
+Received: from mail-ia0-f176.google.com ([209.85.210.176]:34543 "EHLO
+	mail-ia0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750999Ab3B1E52 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 23:54:36 -0500
-Message-ID: <512EE2F5.2080900@oracle.com>
-Date: Wed, 27 Feb 2013 20:54:13 -0800
-From: Srinivas Eeda <srinivas.eeda@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Wed, 27 Feb 2013 23:57:28 -0500
 MIME-Version: 1.0
-To: richard -rw- weinberger <richard.weinberger@gmail.com>
-CC: "Ramappa, Ravi (NSN - IN/Bangalore)" <ravi.ramappa@nsn.com>,
-        "ocfs2-users@oss.oracle.com" <ocfs2-users@oss.oracle.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>, david@sigma-star.at
-Subject: Re: [Ocfs2-users] Kernel panic due to ocfs2
-References: <EB937501617BFC44BE90EDA24CA6A13A0117EB@SGSIMBX003.nsn-intra.net> <512C56AF.1030801@oracle.com> <CAFLxGvyQmPz_iK26NavuRdBWAFiWzmt8BMfL8f6rg_Qm4LF7WQ@mail.gmail.com> <CAFLxGvycGCyeg7AhJ=3J0ztZfgYLmyKZSrzNUd5ymAb-tSd4qg@mail.gmail.com>
-In-Reply-To: <CAFLxGvycGCyeg7AhJ=3J0ztZfgYLmyKZSrzNUd5ymAb-tSd4qg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+In-Reply-To: <CACxGe6tyDrOF1eNNjY0j4tctx=C+m+9xkjGUFRW33hU+k6+o-g@mail.gmail.com>
+References: <1360907177-6468-1-git-send-email-acourbot@nvidia.com>
+ <CAAVeFuLP0KLVL-0SS+nGWSoK1RMPCmKgZV-OjMJo-h7E1UVuXw@mail.gmail.com>
+ <20130226175311.D17173E2EF8@localhost> <CAAVeFuLazaZEbbUVtR_Zyub3hgTesW6JcD9Kxgk7dUXuESpLOw@mail.gmail.com>
+ <CACxGe6tyDrOF1eNNjY0j4tctx=C+m+9xkjGUFRW33hU+k6+o-g@mail.gmail.com>
+From: Alexandre Courbot <gnurou@gmail.com>
+Date: Thu, 28 Feb 2013 13:57:07 +0900
+Message-ID: <CAAVeFuKGS2j_V8HG-q-=U0Rkz5Dp48xEmwg3h4ShVyh3vHXnyw@mail.gmail.com>
+Subject: Re: [PATCH v2 0/4] gpiolib: some fixup patches
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Linus Walleij <linus.walleij@linaro.org>, Ryan Mallon <rmallon@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "acourbot@nvidia.com" <acourbot@nvidia.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/27/2013 03:52 AM, richard -rw- weinberger wrote:
-> On Tue, Feb 26, 2013 at 8:54 AM, richard -rw- weinberger
-> <richard.weinberger@gmail.com> wrote:
->> On Tue, Feb 26, 2013 at 7:31 AM, Srinivas Eeda <srinivas.eeda@oracle.com> wrote:
->>> This is due to a race in lock mastery/purge. I have recently fixed this
->>> problem but haven't yet submitted the patch to mainline. Please file a
->>> Service request with Oracle to get a one-off fix.
->> Please submit the patch immediately.
->> Why does one need a f§&"!#$ SR from Oracle to have this fixed?
-> So, where can I find this patch?
-> Can you please share it with us insignificant and rubbishy community folks?
-Here is the patch against mainline which I haven't yet submitted because 
-I have not finished testing on mainline kernel yet. I am running into 
-another unrelated crashes during testing. I am forwarding the patch to 
-you assuming you are looking for this fix.
-
-https://oss.oracle.com/~seeda/patches/dlm-race/
-
-The other person who emailed about the problem was running older ocfs2 
-version(1.4-10). Which is where I originally debugged, patched and 
-tested the fix. So I offered to help him.
+On Wed, Feb 27, 2013 at 4:52 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
+> While you're working on that, I'd like you to keep the following in
+> mind. I'm getting concerned with the level of overhead that the gpio
+> access routines are incuring. They're doing a lot of checks right now
+> when with GPIOs we want it to be as fast as possible for the case of
+> mmio gpios. (i2c and spi gpios are always going to be slow, so I'm not
+> so concerned here). gpio_get, gpio_set and gpio_direction all need to
+> be fast.
 >
-> https://oss.oracle.com/projects/ocfs2/source.html points to
-> http://git.kernel.org/?p=linux/kernel/git/jlbec/ocfs2.git;a=summary
-> This tree seems horrible outdated...
->
+> Basically, I think the model should be that if you've got a gpio_desc
+> pointer, then you've got a valid gpio.
 
+Yes, that's what I had in mind as well. Since the only way to obtain a
+GPIO descriptor is through the gpiod_get() function(s), we can safely
+issues descriptors are valid. There should be no gpiod_is_valid()
+function.
+
+> A lot of the checks that are
+> currently performed in the gpiod_ versions of functions can be moved
+> to the gpio_ versions where a lookup has to be performed anyway. For
+> example, right now gpiod_direction_output() is 61 lines long. Madness!
+>  :-)
+
+There is certainly room to optimize things and avoid redundant tests
+in the legacy GPIO API. Will be worth having a look at this once we
+have a clean gpiod implementation.
+
+> I've been playing with an idea of pulling in some basic MMIO gpio
+> access directly into gpiolib so that when appropriate gpiolib itself
+> can have a fast path for doing the register access and shadow register
+> management.
+
+Appealing. :)
+
+Alex.
