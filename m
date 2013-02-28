@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933120Ab3B1OvM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 09:51:12 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:42513 "EHLO
+	id S1755653Ab3B1OyV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 09:54:21 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:42547 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933027Ab3B1Ouy (ORCPT
+	with ESMTP id S933116Ab3B1OvM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 09:50:54 -0500
+	Thu, 28 Feb 2013 09:51:12 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Oleg Nesterov <oleg@redhat.com>,
+Cc: Ying Xue <ying.xue@windriver.com>, "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 122/139] ptrace/x86: Partly fix set_task_blockstep()->update_debugctlmsr() logic
-Date: Thu, 28 Feb 2013 14:44:32 +0000
-Message-Id: <1362062689-2567-123-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 129/139] net: fix a compile error when SOCK_REFCNT_DEBUG is enabled
+Date: Thu, 28 Feb 2013 14:44:39 +0000
+Message-Id: <1362062689-2567-130-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1362062689-2567-1-git-send-email-luis.henriques@canonical.com>
 References: <1362062689-2567-1-git-send-email-luis.henriques@canonical.com>
@@ -27,81 +27,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oleg Nesterov <oleg@redhat.com>
+From: Ying Xue <ying.xue@windriver.com>
 
-commit 95cf00fa5d5e2a200a2c044c84bde8389a237e02 upstream.
+commit dec34fb0f5b7873de45132a84a3af29e61084a6b upstream.
 
-Afaics the usage of update_debugctlmsr() and TIF_BLOCKSTEP in
-step.c was always very wrong.
+When SOCK_REFCNT_DEBUG is enabled, below build error is met:
 
-1. update_debugctlmsr() was simply unneeded. The child sleeps
-   TASK_TRACED, __switch_to_xtra(next_p => child) should notice
-   TIF_BLOCKSTEP and set/clear DEBUGCTLMSR_BTF after resume if
-   needed.
+kernel/sysctl_binary.o: In function `sk_refcnt_debug_release':
+include/net/sock.h:1025: multiple definition of `sk_refcnt_debug_release'
+kernel/sysctl.o:include/net/sock.h:1025: first defined here
+kernel/audit.o: In function `sk_refcnt_debug_release':
+include/net/sock.h:1025: multiple definition of `sk_refcnt_debug_release'
+kernel/sysctl.o:include/net/sock.h:1025: first defined here
+make[1]: *** [kernel/built-in.o] Error 1
+make: *** [kernel] Error 2
 
-2. It is wrong. The state of DEBUGCTLMSR_BTF bit in CPU register
-   should always match the state of current's TIF_BLOCKSTEP bit.
+So we decide to make sk_refcnt_debug_release static to eliminate
+the error.
 
-3. Even get_debugctlmsr() + update_debugctlmsr() itself does not
-   look right. Irq can change other bits in MSR_IA32_DEBUGCTLMSR
-   register or the caller can be preempted in between.
-
-4. It is not safe to play with TIF_BLOCKSTEP if task != current.
-   DEBUGCTLMSR_BTF and TIF_BLOCKSTEP should always match each
-   other if the task is running. The tracee is stopped but it
-   can be SIGKILL'ed right before set/clear_tsk_thread_flag().
-
-However, now that uprobes uses user_enable_single_step(current)
-we can't simply remove update_debugctlmsr(). So this patch adds
-the additional "task == current" check and disables irqs to avoid
-the race with interrupts/preemption.
-
-Unfortunately this patch doesn't solve the last problem, we need
-another fix. Probably we should teach ptrace_stop() to set/clear
-single/block stepping after resume.
-
-And afaics there is yet another problem: perf can play with
-MSR_IA32_DEBUGCTLMSR from nmi, this obviously means that even
-__switch_to_xtra() has problems.
-
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: Ying Xue <ying.xue@windriver.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/x86/kernel/step.c | 14 +++++++++++++-
- 1 file changed, 13 insertions(+), 1 deletion(-)
+ include/net/sock.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/x86/kernel/step.c b/arch/x86/kernel/step.c
-index 7a51498..f89cdc6 100644
---- a/arch/x86/kernel/step.c
-+++ b/arch/x86/kernel/step.c
-@@ -161,6 +161,16 @@ static void set_task_blockstep(struct task_struct *task, bool on)
- {
- 	unsigned long debugctl;
- 
-+	/*
-+	 * Ensure irq/preemption can't change debugctl in between.
-+	 * Note also that both TIF_BLOCKSTEP and debugctl should
-+	 * be changed atomically wrt preemption.
-+	 * FIXME: this means that set/clear TIF_BLOCKSTEP is simply
-+	 * wrong if task != current, SIGKILL can wakeup the stopped
-+	 * tracee and set/clear can play with the running task, this
-+	 * can confuse the next __switch_to_xtra().
-+	 */
-+	local_irq_disable();
- 	debugctl = get_debugctlmsr();
- 	if (on) {
- 		debugctl |= DEBUGCTLMSR_BTF;
-@@ -169,7 +179,9 @@ static void set_task_blockstep(struct task_struct *task, bool on)
- 		debugctl &= ~DEBUGCTLMSR_BTF;
- 		clear_tsk_thread_flag(task, TIF_BLOCKSTEP);
- 	}
--	update_debugctlmsr(debugctl);
-+	if (task == current)
-+		update_debugctlmsr(debugctl);
-+	local_irq_enable();
+diff --git a/include/net/sock.h b/include/net/sock.h
+index 5de6557..5e904e6 100644
+--- a/include/net/sock.h
++++ b/include/net/sock.h
+@@ -979,7 +979,7 @@ static inline void sk_refcnt_debug_dec(struct sock *sk)
+ 	       sk->sk_prot->name, sk, atomic_read(&sk->sk_prot->socks));
  }
  
- /*
+-inline void sk_refcnt_debug_release(const struct sock *sk)
++static inline void sk_refcnt_debug_release(const struct sock *sk)
+ {
+ 	if (atomic_read(&sk->sk_refcnt) != 1)
+ 		printk(KERN_DEBUG "Destruction of the %s socket %p delayed, refcnt=%d\n",
 -- 
 1.8.1.2
 
