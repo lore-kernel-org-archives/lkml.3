@@ -1,214 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753567Ab3B1MJs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 07:09:48 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:42071 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752040Ab3B1MJq convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 07:09:46 -0500
-From: "J, KEERTHY" <j-keerthy@ti.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "rob@landley.net" <rob@landley.net>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+	id S1753490Ab3B1MNR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 07:13:17 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:39389 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752040Ab3B1MNP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Feb 2013 07:13:15 -0500
+X-IronPort-AV: E=Sophos;i="4.84,755,1355068800"; 
+   d="scan'208";a="6787324"
+From: Hu Tao <hutao@cn.fujitsu.com>
+To: kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Cousson, Benoit" <b-cousson@ti.com>,
-        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>
-Subject: RE: [PATCH 1/4] documentation: add palmas dts definition
-Thread-Topic: [PATCH 1/4] documentation: add palmas dts definition
-Thread-Index: AQHODZaUJ2KZMn/4MkSOwn0Lr+e98ZiNukAAgAFTrfA=
-Date: Thu, 28 Feb 2013 12:09:32 +0000
-Message-ID: <DC88CAD03C0052499C1907B327FC63229BCE15@DBDE01.ent.ti.com>
-References: <1361164283-3133-1-git-send-email-j-keerthy@ti.com>
- <512E5144.9020105@wwwdotorg.org>
-In-Reply-To: <512E5144.9020105@wwwdotorg.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.159.88]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>, Gleb Natapov <gleb@redhat.com>,
+        Blue Swirl <blauwirbel@gmail.com>, Eric Blake <eblake@redhat.com>,
+        Andrew Jones <drjones@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Luiz Capitulino <lcapitulino@redhat.com>,
+        Anthony Liguori <aliguori@us.ibm.com>,
+        Markus Armbruster <armbru@redhat.com>,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        Stefan Hajnoczi <stefanha@redhat.com>,
+        Juan Quintela <quintela@redhat.com>,
+        Orit Wasserman <owasserm@redhat.com>, Kevin Wolf <kwolf@redhat.com>,
+        Wen Congyang <wency@cn.fujitsu.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>, Alexander Graf <agraf@suse.de>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        Peter Maydell <peter.maydell@linaro.org>
+Subject: [PATCH v13 0/8] pv event interface between host and guest
+Date: Thu, 28 Feb 2013 20:13:10 +0800
+Message-Id: <cover.1362051581.git.hutao@cn.fujitsu.com>
+X-Mailer: git-send-email 1.8.1.4
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/02/28 20:12:17,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/02/28 20:12:19,
+	Serialize complete at 2013/02/28 20:12:19
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Stephen,
+This series implements a new interface, kvm pv event, to notify host when
+some events happen in guest. Right now there is one supported event: guest
+panic.
 
-Thanks for a detailed review.
+Also, the cpu runstate is preserved during save/load vm and migration. Thus,
+if vm is panicked during migration, we can still know it by quring the status
+of vm in destination host when migration completes.
 
-> -----Original Message-----
-> From: Stephen Warren [mailto:swarren@wwwdotorg.org]
-> Sent: Thursday, February 28, 2013 12:03 AM
-> To: J, KEERTHY
-> Cc: grant.likely@secretlab.ca; rob.herring@calxeda.com;
-> rob@landley.net; devicetree-discuss@lists.ozlabs.org; linux-
-> doc@vger.kernel.org; linux-kernel@vger.kernel.org; Cousson, Benoit;
-> gg@slimlogic.co.uk
-> Subject: Re: [PATCH 1/4] documentation: add palmas dts definition
-> 
-> On 02/17/2013 10:11 PM, J Keerthy wrote:
-> > Add the DTS definition for the palmas device including the MFD
-> children.
-> ...
-> > diff --git a/Documentation/devicetree/bindings/mfd/palmas.txt
-> > b/Documentation/devicetree/bindings/mfd/palmas.txt
-> ...
-> > +Texas Instruments Palmas family
-> > +
-> > +The Palmas familly are Integrated Power Management Chips.
-> > +These chips are connected to an i2c bus.
-> 
-> s/familly/family.
+v12: http://lists.nongnu.org/archive/html/qemu-devel/2013-01/msg04120.html
 
-I will correct this.
+changes from v12:
+  - no DO_UPCASE
+  - the interface is only for x86 now
+  - request 4 bytes io range(hw/kvm_pv_event.c)
+  - rebase to the latest tree
 
-> 
-> > +
-> > +Required properties:
-> > +- compatible : Must be "ti,palmas";
-> 
-> Do you need a version number there; will there be Palmas v1 HW, then
-> later Palmas v2 HW, and so on?
+Hu Tao (7):
+  save/load cpu runstate
+  update kernel headers
+  add a new runstate: RUN_STATE_GUEST_PANICKED
+  add a new qevent: QEVENT_GUEST_PANICKED
+  introduce a new qom device to deal with panicked event
+  allower the user to disable pv event support
+  pv event: add document to describe the usage
 
-AFAIK there is no HW version.
- 
-> 
-> > +  For Integrated power-management in the palmas series, twl6035,
-> > + twl6037,
-> > +  tps65913
-> 
-> If this binding represents multiple different chips, compatible should
-> contain both the most chip-specific value (e.g. ti,twl6035 I guess
-> given the above) /and/ the more generic "ti,palmas" value. This will
-> allow any device-specific quirks to be implemented if needed in the
-> future, without having to retrofit the device-specific compatible value
-> into .dts files after the fact.
+Wen Congyang (1):
+  start vm after resetting it
 
-Ok.
+ docs/pv-event.txt                |  17 ++++
+ hw/kvm/Makefile.objs             |   2 +-
+ hw/kvm/pv_event.c                | 198 +++++++++++++++++++++++++++++++++++++++
+ hw/pc_piix.c                     |  12 +++
+ include/block/block.h            |   2 +
+ include/monitor/monitor.h        |   1 +
+ include/sysemu/kvm.h             |   2 +
+ include/sysemu/sysemu.h          |   2 +
+ kvm-stub.c                       |   4 +
+ linux-headers/asm-x86/kvm_para.h |   1 +
+ linux-headers/linux/kvm_para.h   |   6 ++
+ migration.c                      |   7 +-
+ monitor.c                        |   6 +-
+ qapi-schema.json                 |   6 +-
+ qemu-options.hx                  |   3 +-
+ qmp.c                            |   5 +-
+ savevm.c                         |   1 +
+ vl.c                             |  56 ++++++++++-
+ 18 files changed, 314 insertions(+), 17 deletions(-)
+ create mode 100644 docs/pv-event.txt
+ create mode 100644 hw/kvm/pv_event.c
 
-> 
-> > +- interrupts : This i2c device has an IRQ line connected to the main
-> > +SoC
-> > +- interrupt-controller : Since the palmas support several interrupts
-> > +internally,
-> > +  it is considered as an interrupt controller cascaded to the SoC
-> one.
-> > +- #interrupt-cells = <1>;
-> 
-> Why not 2; can't any IRQ flags be represented in DT? 1 seems limiting
-> here unless the HW truly can't support configuration of IRQ input
-> polarity of edge-vs-level sensitivity.
-
->From the register manual I see that only GPIO has the edge detect capability.
-I agree.
-
-> 
-> > +- interrupt-parent : The parent interrupt controller.
-> > +
-> > +Optional node:
-> > +- Child nodes contain in the palmas. The palmas family is made of
-> > +several
-> > +  variants that support a different number of features.
-> > +  The child nodes will thus depend of the capability of the variant.
-> 
-> Are there DT bindings for those child nodes anywhere?
-> 
-> Representing each internal component as a separate DT node feels a
-> little like designing the DT bindings to model the Linux-internal MFD
-> structure. DT bindings should be driven by the HW design and OS-
-> agnostic.
-> 
-> From a DT perspective, is there any need at all to create a separate DT
-> node for each component? This would only be needed or useful if the
-> child IP blocks (and hence DT bindings for those blocks) could be re-
-> used in other top-level devices that aren't represented by this top-
-> level ti,palmas DT binding. Are the HW IP blocks here re-used anywhere,
-> or will they be?
->
-
-I guess for now I will drop this patch and will be taken up once we
-Finalize on the design.
- 
-> ...
-> > +Example:
-> > +/*
-> > + * Integrated Power Management Chip Palmas  */
-> > +palmas@48 {
-> 
-> There's a considerable mix of TAB and space indentation in this
-> example.
-> 
-> > +    compatible = "ti,palmas";
-> > +    reg = <0x48>;
-> > +    interrupts = <39>; /* IRQ_SYS_1N cascaded to gic */
-> 
-> If that's routed to a regular ARM GIC, then I think you need extra
-> cells there; #interrupt-cells=<3> for the ARM GIC.
-> 
-> > +    interrupt-controller;
-> > +    #interrupt-cells = <1>;
-> > +    interrupt-parent = <&gic>;
-> > +    #address-cells = <1>;
-> > +    #size-cells = <0>;
-> > +
-> > +	ti,mux-pad1 = <0x00>;
-> > +	ti,mux-pad2 = <0x00>;
-> > +	ti,power-ctrl = <0x03>;
-> > +
-> > +	palmas_pmic {
-> 
-> Just "pmic" seems simpler, although I dare say the node name isn't
-> really used for anything.
-> 
-> > +		compatible = "ti,palmas_pmic";
-> 
-> Using _ in compatible values isn't common. "ti,palmas-pmic" instead?
-> 
-> > +		regulators {
-> > +			smps12_reg: smps12 {
-> 
-> As I mentioned elsewhere, this binding (or a separate binding doc for
-> "ti,palmas_pmic") should contain a list of valid values for these node
-> names.
-> 
-> > +				regulator-min-microvolt = < 600000>;
-> > +                regulator-max-microvolt = <1500000>;
-> > +				regulator-always-on;
-> > +				regulator-boot-on;
-> > +                ti,warm-sleep = <0>;
-> > +                ti,roof-floor = <0>;
-> > +                ti,mode-sleep = <0>;
-> > +                ti,warm-reset = <0>;
-> > +                ti,tstep = <0>;
-> > +                ti,vsel = <0>;
-> > +			};
-> > +		};
-> > +		ti,ldo6-vibrator = <0>;
-> > +	};
-> > +
-> > +    palmas_rtc {
-> > +        compatible = "ti,palmas_rtc";
-> > +        interrupts = <8 9>;
-> 
-> Are the interrupt outputs of the RTC fed directly to the GIC interrupt
-> mentioned in the top-level Palmas node, or do these interrupts feed
-> into a top-level IRQ controller in the Palmas device, which then feeds
-> into the external IRQ controller?
-> 
-> If these feed into an on-chip IRQ controller, then you'd need an
-> interrupt-parent property here to indicate that.
-> 
-> If these feed directly into an external IRQ controller, it's almost
-> certain that IRQ controller's binding uses #interrupt-cells = <3> it
-> is's the ARM GIC, and hence you need some extra cells here.
-> 
-> > +        reg = <0>;
-> > +    };
-> > +};
+-- 
+1.8.1.4
 
