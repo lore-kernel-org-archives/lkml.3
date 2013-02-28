@@ -1,259 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932704Ab3B1Q5j (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 11:57:39 -0500
-Received: from sema.semaphore.gr ([78.46.194.137]:47861 "EHLO
-	sema.semaphore.gr" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932499Ab3B1Q5g (ORCPT
+	id S1759317Ab3B1Q7t (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 11:59:49 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:43313 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754404Ab3B1Q7r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 11:57:36 -0500
-Message-ID: <512F8C7C.2020101@semaphore.gr>
-Date: Thu, 28 Feb 2013 18:57:32 +0200
-From: Stratos Karafotis <stratosk@semaphore.gr>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130219 Thunderbird/17.0.3
+	Thu, 28 Feb 2013 11:59:47 -0500
+Message-ID: <512F8D17.3010302@oracle.com>
+Date: Thu, 28 Feb 2013 12:00:07 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130227 Thunderbird/17.0.3
 MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>
-CC: "Rafael J. Wysocki" <rjw@sisk.pl>, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 linux-next] cpufreq: governors: Calculate iowait time
- only when necessary
-References: <512E45E9.5020801@semaphore.gr> <CAOh2x==vxM+qoebcUGNca50oeszwnqSfSzVPSEOyS6GKENudeg@mail.gmail.com>
-In-Reply-To: <CAOh2x==vxM+qoebcUGNca50oeszwnqSfSzVPSEOyS6GKENudeg@mail.gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Dave Jones <davej@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Pekka Enberg <penberg@kernel.org>, Christoph Lameter <cl@linux.com>,
+        linux-mm <linux-mm@kvack.org>
+Subject: Re: slub error in fs/sysfs/bin.c related code
+References: <512F7FEE.2090803@oracle.com> <20130228162735.GB26013@kroah.com>
+In-Reply-To: <20130228162735.GB26013@kroah.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Viresh,
-
-On 02/28/2013 08:58 AM, Viresh Kumar wrote:
-> I have really spent some 10-15 minutes reviewing this patch as initially it
-> looked to me like something is missing here and calculations are going wrong.
+On 02/28/2013 11:27 AM, Greg Kroah-Hartman wrote:
+> On Thu, Feb 28, 2013 at 11:03:58AM -0500, Sasha Levin wrote:
+>> Hi Greg,
+>>
+>> While fuzzing with trinity inside a KVM tools guest, running latest -next kernel
+>> I got the following spew.
+>>
+>> The open() and release() callbacks in the traces below point to fs/sysfs/bin.c.
 > 
-> But it was fine :)
+> Any hint as to which sysfs binary file you were accessing when this
+> happened?
 
-Thanks for you review.
- 
->> diff --git a/drivers/cpufreq/cpufreq_ondemand.c b/drivers/cpufreq/cpufreq_ondemand.c
->> index f3eb26c..46be2c4 100644
->> --- a/drivers/cpufreq/cpufreq_ondemand.c
->> +++ b/drivers/cpufreq/cpufreq_ondemand.c
->> @@ -339,11 +339,20 @@ static ssize_t store_io_is_busy(struct kobject *a, struct attribute *b,
->>   {
+No, sorry - the trace only shows the allocation and freeing, I'm not sure
+which file it was.
+
+>> [  719.288925] =============================================================================
+>> [  719.290663] BUG kmalloc-4096 (Tainted: G        W   ): Redzone overwritten
+>> [  719.291764] -----------------------------------------------------------------------------
+>> [  719.291764]
+>> [  719.294527] Disabling lock debugging due to kernel taint
+>> [  719.294527] INFO: 0xffff88006d1a5520-0xffff88006d1a5520. First byte 0x0 instead of 0xcc
+>> [  719.294527] INFO: Allocated in open+0xb8/0x190 age=18922 cpu=1 pid=7095
+>> [  719.294527] 	__slab_alloc+0x622/0x6d0
+>> [  719.294527] 	kmem_cache_alloc_trace+0x123/0x2c0
+>> [  719.294527] 	open+0xb8/0x190
+>> [  719.294527] 	do_dentry_open+0x229/0x330
+>> [  719.294527] 	finish_open+0x54/0x70
+>> [  719.294527] 	do_last+0x56c/0x790
+>> [  719.294527] 	path_openat+0xbe/0x490
+>> [  719.294527] 	do_filp_open+0x44/0xa0
+>> [  719.294527] 	do_sys_open+0x133/0x1d0
+>> [  719.294527] 	sys_open+0x1c/0x20
+>> [  719.294527] 	tracesys+0xdd/0xe2
+>> [  719.294527] INFO: Freed in seq_release+0x18/0x30 age=18947 cpu=0 pid=31203
+>> [  719.294527] 	__slab_free+0x3c/0x590
+>> [  719.294527] 	kfree+0x2cb/0x2e0
+>> [  719.294527] 	seq_release+0x18/0x30
+>> [  719.294527] 	single_release+0x24/0x40
+>> [  719.294527] 	proc_reg_release+0xed/0x110
+>> [  719.294527] 	__fput+0x122/0x2d0
+>> [  719.294527] 	____fput+0x9/0x10
+>> [  719.294527] 	task_work_run+0xbe/0x100
+>> [  719.294527] 	do_notify_resume+0x7e/0xa0
+>> [  719.294527] 	int_signal+0x12/0x17
+>> [  719.294527] INFO: Slab 0xffffea0001b46800 objects=7 used=7 fp=0x          (null) flags=0x1ffc0000004081
+>> [  719.294527] INFO: Object 0xffff88006d1a4520 @offset=17696 fp=0x          (null)
 > 
->> +       /* we need to re-evaluate prev_cpu_idle */
->> +       for_each_online_cpu(j) {
->> +               struct od_cpu_dbs_info_s *dbs_info;
->> +               dbs_info = &per_cpu(od_cpu_dbs_info, j);
-> 
-> Probably squash above two lines and give a blank line after it.
-> 
->> +               dbs_info->cdbs.prev_cpu_idle = get_cpu_idle_time(j,
->> +                       &dbs_info->cdbs.prev_cpu_wall, od_tuners.io_is_busy);
->> +       }
->>          return count;
->>   }
-> 
-> And after that add my:
-> 
-> Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
-> 
+> Hm, where is sysfs in this traceback?  I don't see it mentioned anywhere
+> in this report, what am I missing?
 
-Bellow V2 with your suggestion included.
+The call trace at the end of the spew:
+[  719.294527] Call Trace:
+[  719.294527]  [<ffffffff81260202>] print_trailer+0x132/0x140
+[  719.294527]  [<ffffffff81260641>] check_bytes_and_report+0xe1/0x130
+[  719.294527]  [<ffffffff812626e2>] check_object+0x52/0x220
+[  719.294527]  [<ffffffff81263a13>] free_debug_processing+0x173/0x300
+[  719.294527]  [<ffffffff8130c9a2>] ? release+0x72/0x90
+[  719.294527]  [<ffffffff8130c9a2>] ? release+0x72/0x90
+[  719.294527]  [<ffffffff812674ec>] __slab_free+0x3c/0x590
+[  719.294527]  [<ffffffff8118541d>] ? trace_hardirqs_on+0xd/0x10
+[  719.294527]  [<ffffffff83d7a284>] ? _raw_spin_unlock_irqrestore+0x94/0xc0
+[  719.294527]  [<ffffffff81a3898f>] ? __debug_check_no_obj_freed+0x15f/0x220
+[  719.294527]  [<ffffffff83d75e89>] ? mutex_unlock+0x9/0x10
+[  719.294527]  [<ffffffff8130c9a2>] ? release+0x72/0x90
+[  719.294527]  [<ffffffff8130c9a2>] ? release+0x72/0x90
+[  719.294527]  [<ffffffff81267d0b>] kfree+0x2cb/0x2e0
+[  719.294527]  [<ffffffff8130c9a2>] release+0x72/0x90
+[  719.294527]  [<ffffffff81289592>] __fput+0x122/0x2d0
+[  719.294527]  [<ffffffff812897a9>] ____fput+0x9/0x10
+[  719.294527]  [<ffffffff81135bbe>] task_work_run+0xbe/0x100
+[  719.294527]  [<ffffffff81114781>] do_exit+0x311/0x510
+[  719.294527]  [<ffffffff81114a21>] do_group_exit+0xa1/0xe0
+[  719.294527]  [<ffffffff81114a72>] sys_exit_group+0x12/0x20
+[  719.294527]  [<ffffffff83d833d0>] tracesys+0xdd/0xe2
 
-Regards,
-Stratos
+Specifically, this:
 
+[  719.294527]  [<ffffffff8130c9a2>] release+0x72/0x90
 
-----------------8<----------------------
-Currently we always calculate the CPU iowait time and add it to idle time.
-If we are in ondemand and we use io_is_busy, we re-calculate iowait time
-and we subtract it from idle time.
+Is the release() in fs/sysfs/bin.c
 
-With this patch iowait time is calculated only when necessary avoiding
-the double call to get_cpu_iowait_time_us. We use a parameter in
-function get_cpu_idle_time to distinguish when the iowait time will be
-added to idle time or not, without the need of keeping the prev_io_wait.
-
-Signed-off-by: Stratos Karafotis <stratosk@semaphore.gr>
----
- drivers/cpufreq/cpufreq_conservative.c |  2 +-
- drivers/cpufreq/cpufreq_governor.c     | 46 +++++++++++++---------------------
- drivers/cpufreq/cpufreq_governor.h     |  3 +--
- drivers/cpufreq/cpufreq_ondemand.c     | 11 +++++++-
- 4 files changed, 29 insertions(+), 33 deletions(-)
-
-diff --git a/drivers/cpufreq/cpufreq_conservative.c b/drivers/cpufreq/cpufreq_conservative.c
-index 4fd0006..dfe652c 100644
---- a/drivers/cpufreq/cpufreq_conservative.c
-+++ b/drivers/cpufreq/cpufreq_conservative.c
-@@ -242,7 +242,7 @@ static ssize_t store_ignore_nice_load(struct kobject *a, struct attribute *b,
- 		struct cs_cpu_dbs_info_s *dbs_info;
- 		dbs_info = &per_cpu(cs_cpu_dbs_info, j);
- 		dbs_info->cdbs.prev_cpu_idle = get_cpu_idle_time(j,
--						&dbs_info->cdbs.prev_cpu_wall);
-+					&dbs_info->cdbs.prev_cpu_wall, 0);
- 		if (cs_tuners.ignore_nice)
- 			dbs_info->cdbs.prev_cpu_nice =
- 				kcpustat_cpu(j).cpustat[CPUTIME_NICE];
-diff --git a/drivers/cpufreq/cpufreq_governor.c b/drivers/cpufreq/cpufreq_governor.c
-index 5a76086..a322bda 100644
---- a/drivers/cpufreq/cpufreq_governor.c
-+++ b/drivers/cpufreq/cpufreq_governor.c
-@@ -50,13 +50,13 @@ static inline u64 get_cpu_idle_time_jiffy(unsigned int cpu, u64 *wall)
- 	return cputime_to_usecs(idle_time);
- }
- 
--u64 get_cpu_idle_time(unsigned int cpu, u64 *wall)
-+u64 get_cpu_idle_time(unsigned int cpu, u64 *wall, int io_busy)
- {
- 	u64 idle_time = get_cpu_idle_time_us(cpu, NULL);
- 
- 	if (idle_time == -1ULL)
- 		return get_cpu_idle_time_jiffy(cpu, wall);
--	else
-+	else if (!io_busy)
- 		idle_time += get_cpu_iowait_time_us(cpu, wall);
- 
- 	return idle_time;
-@@ -83,13 +83,22 @@ void dbs_check_cpu(struct dbs_data *dbs_data, int cpu)
- 	/* Get Absolute Load (in terms of freq for ondemand gov) */
- 	for_each_cpu(j, policy->cpus) {
- 		struct cpu_dbs_common_info *j_cdbs;
--		u64 cur_wall_time, cur_idle_time, cur_iowait_time;
--		unsigned int idle_time, wall_time, iowait_time;
-+		u64 cur_wall_time, cur_idle_time;
-+		unsigned int idle_time, wall_time;
- 		unsigned int load;
-+		int io_busy = 0;
- 
- 		j_cdbs = dbs_data->get_cpu_cdbs(j);
- 
--		cur_idle_time = get_cpu_idle_time(j, &cur_wall_time);
-+		/*
-+		 * For the purpose of ondemand, waiting for disk IO is
-+		 * an indication that you're performance critical, and
-+		 * not that the system is actually idle. So do not add
-+		 * the iowait time to the cpu idle time.
-+		 */
-+		if (dbs_data->governor == GOV_ONDEMAND)
-+			io_busy = od_tuners->io_is_busy;
-+		cur_idle_time = get_cpu_idle_time(j, &cur_wall_time, io_busy);
- 
- 		wall_time = (unsigned int)
- 			(cur_wall_time - j_cdbs->prev_cpu_wall);
-@@ -117,29 +126,6 @@ void dbs_check_cpu(struct dbs_data *dbs_data, int cpu)
- 			idle_time += jiffies_to_usecs(cur_nice_jiffies);
- 		}
- 
--		if (dbs_data->governor == GOV_ONDEMAND) {
--			struct od_cpu_dbs_info_s *od_j_dbs_info =
--				dbs_data->get_cpu_dbs_info_s(cpu);
--
--			cur_iowait_time = get_cpu_iowait_time_us(j,
--					&cur_wall_time);
--			if (cur_iowait_time == -1ULL)
--				cur_iowait_time = 0;
--
--			iowait_time = (unsigned int) (cur_iowait_time -
--					od_j_dbs_info->prev_cpu_iowait);
--			od_j_dbs_info->prev_cpu_iowait = cur_iowait_time;
--
--			/*
--			 * For the purpose of ondemand, waiting for disk IO is
--			 * an indication that you're performance critical, and
--			 * not that the system is actually idle. So subtract the
--			 * iowait time from the cpu idle time.
--			 */
--			if (od_tuners->io_is_busy && idle_time >= iowait_time)
--				idle_time -= iowait_time;
--		}
--
- 		if (unlikely(!wall_time || wall_time < idle_time))
- 			continue;
- 
-@@ -207,6 +193,7 @@ int cpufreq_governor_dbs(struct dbs_data *dbs_data,
- 	struct cs_dbs_tuners *cs_tuners = dbs_data->tuners;
- 	struct cpu_dbs_common_info *cpu_cdbs;
- 	unsigned int *sampling_rate, latency, ignore_nice, j, cpu = policy->cpu;
-+	int io_busy = 0;
- 	int rc;
- 
- 	cpu_cdbs = dbs_data->get_cpu_cdbs(cpu);
-@@ -221,6 +208,7 @@ int cpufreq_governor_dbs(struct dbs_data *dbs_data,
- 		sampling_rate = &od_tuners->sampling_rate;
- 		ignore_nice = od_tuners->ignore_nice;
- 		od_ops = dbs_data->gov_ops;
-+		io_busy = od_tuners->io_is_busy;
- 	}
- 
- 	switch (event) {
-@@ -237,7 +225,7 @@ int cpufreq_governor_dbs(struct dbs_data *dbs_data,
- 			j_cdbs->cpu = j;
- 			j_cdbs->cur_policy = policy;
- 			j_cdbs->prev_cpu_idle = get_cpu_idle_time(j,
--					&j_cdbs->prev_cpu_wall);
-+					       &j_cdbs->prev_cpu_wall, io_busy);
- 			if (ignore_nice)
- 				j_cdbs->prev_cpu_nice =
- 					kcpustat_cpu(j).cpustat[CPUTIME_NICE];
-diff --git a/drivers/cpufreq/cpufreq_governor.h b/drivers/cpufreq/cpufreq_governor.h
-index d2ac911..534dfae 100644
---- a/drivers/cpufreq/cpufreq_governor.h
-+++ b/drivers/cpufreq/cpufreq_governor.h
-@@ -87,7 +87,6 @@ struct cpu_dbs_common_info {
- 
- struct od_cpu_dbs_info_s {
- 	struct cpu_dbs_common_info cdbs;
--	u64 prev_cpu_iowait;
- 	struct cpufreq_frequency_table *freq_table;
- 	unsigned int freq_lo;
- 	unsigned int freq_lo_jiffies;
-@@ -169,7 +168,7 @@ static inline int delay_for_sampling_rate(unsigned int sampling_rate)
- 	return delay;
- }
- 
--u64 get_cpu_idle_time(unsigned int cpu, u64 *wall);
-+u64 get_cpu_idle_time(unsigned int cpu, u64 *wall, int io_busy);
- void dbs_check_cpu(struct dbs_data *dbs_data, int cpu);
- bool need_load_eval(struct cpu_dbs_common_info *cdbs,
- 		unsigned int sampling_rate);
-diff --git a/drivers/cpufreq/cpufreq_ondemand.c b/drivers/cpufreq/cpufreq_ondemand.c
-index f3eb26c..74dd3ae 100644
---- a/drivers/cpufreq/cpufreq_ondemand.c
-+++ b/drivers/cpufreq/cpufreq_ondemand.c
-@@ -339,11 +339,20 @@ static ssize_t store_io_is_busy(struct kobject *a, struct attribute *b,
- {
- 	unsigned int input;
- 	int ret;
-+	unsigned int j;
- 
- 	ret = sscanf(buf, "%u", &input);
- 	if (ret != 1)
- 		return -EINVAL;
- 	od_tuners.io_is_busy = !!input;
-+
-+	/* we need to re-evaluate prev_cpu_idle */
-+	for_each_online_cpu(j) {
-+		struct od_cpu_dbs_info_s *dbs_info = &per_cpu(od_cpu_dbs_info,
-+									j);
-+		dbs_info->cdbs.prev_cpu_idle = get_cpu_idle_time(j,
-+			&dbs_info->cdbs.prev_cpu_wall, od_tuners.io_is_busy);
-+	}
- 	return count;
- }
- 
-@@ -411,7 +420,7 @@ static ssize_t store_ignore_nice_load(struct kobject *a, struct attribute *b,
- 		struct od_cpu_dbs_info_s *dbs_info;
- 		dbs_info = &per_cpu(od_cpu_dbs_info, j);
- 		dbs_info->cdbs.prev_cpu_idle = get_cpu_idle_time(j,
--						&dbs_info->cdbs.prev_cpu_wall);
-+			&dbs_info->cdbs.prev_cpu_wall, od_tuners.io_is_busy);
- 		if (od_tuners.ignore_nice)
- 			dbs_info->cdbs.prev_cpu_nice =
- 				kcpustat_cpu(j).cpustat[CPUTIME_NICE];
--- 
-1.8.1.2
+I've confirmed it by also checking the sizes of the open() and
+release() sizes and actual code at those positions mentioned
+in the backtrace, and they match the backtrace.
 
 
+Thanks,
+Sasha
