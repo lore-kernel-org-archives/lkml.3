@@ -1,66 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752906Ab3B1NY5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 08:24:57 -0500
-Received: from goliath.siemens.de ([192.35.17.28]:17440 "EHLO
-	goliath.siemens.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752370Ab3B1NYz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 08:24:55 -0500
-Message-ID: <512F5A5E.9020504@siemens.com>
-Date: Thu, 28 Feb 2013 14:23:42 +0100
-From: Jan Kiszka <jan.kiszka@siemens.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
-MIME-Version: 1.0
-To: Hu Tao <hutao@cn.fujitsu.com>
-CC: kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Gleb Natapov <gleb@redhat.com>, Blue Swirl <blauwirbel@gmail.com>,
-        Eric Blake <eblake@redhat.com>, Andrew Jones <drjones@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Sasha Levin <levinsasha928@gmail.com>,
-        Luiz Capitulino <lcapitulino@redhat.com>,
-        Anthony Liguori <aliguori@us.ibm.com>,
-        Markus Armbruster <armbru@redhat.com>,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        Stefan Hajnoczi <stefanha@redhat.com>,
-        Juan Quintela <quintela@redhat.com>,
-        Orit Wasserman <owasserm@redhat.com>, Kevin Wolf <kwolf@redhat.com>,
-        Wen Congyang <wency@cn.fujitsu.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>, Alexander Graf <agraf@suse.de>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Peter Maydell <peter.maydell@linaro.org>
-Subject: Re: [PATCH v13 2/8] start vm after resetting it
-References: <cover.1362051581.git.hutao@cn.fujitsu.com> <d1f8b5689b05b9db923d86941e914d08ac4c2b7c.1362051582.git.hutao@cn.fujitsu.com>
-In-Reply-To: <d1f8b5689b05b9db923d86941e914d08ac4c2b7c.1362051582.git.hutao@cn.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1752851Ab3B1N2v (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 08:28:51 -0500
+Received: from nat28.tlf.novell.com ([130.57.49.28]:59174 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751332Ab3B1N2u (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:1>);
+	Thu, 28 Feb 2013 08:28:50 -0500
+Message-Id: <512F69A002000078000C2020@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.1 
+Date: Thu, 28 Feb 2013 13:28:48 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "=?UTF-8?Q?Roger=20Pau=20Monn=C3=A9?=" <roger.pau@citrix.com>
+Cc: "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
+        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH RFC 12/12] xen-block: implement
+ indirect descriptors
+References: <1362047335-26402-1-git-send-email-roger.pau@citrix.com>
+ <1362047335-26402-13-git-send-email-roger.pau@citrix.com>
+ <512F4B4402000078000C1E5B@nat28.tlf.novell.com>
+ <512F46F5.5040105@citrix.com>
+In-Reply-To: <512F46F5.5040105@citrix.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013-02-28 13:13, Hu Tao wrote:
-> From: Wen Congyang <wency@cn.fujitsu.com>
+>>> On 28.02.13 at 13:00, Roger Pau Monné<roger.pau@citrix.com> wrote:
+> On 28/02/13 12:19, Jan Beulich wrote:
+>>>>> On 28.02.13 at 11:28, Roger Pau Monne <roger.pau@citrix.com> wrote:
+>>> @@ -109,6 +111,16 @@ typedef uint64_t blkif_sector_t;
+>>>   */
+>>>  #define BLKIF_MAX_SEGMENTS_PER_REQUEST 11
+>>>  
+>>> +#define BLKIF_MAX_INDIRECT_GREFS_PER_REQUEST 8
+>>> +
+>>> +struct blkif_request_segment_aligned {
+>>> +	grant_ref_t gref;        /* reference to I/O buffer frame        */
+>>> +	/* @first_sect: first sector in frame to transfer (inclusive).   */
+>>> +	/* @last_sect: last sector in frame to transfer (inclusive).     */
+>>> +	uint8_t     first_sect, last_sect;
+>>> +	uint16_t    _pad; /* padding to make it 8 bytes, so it's cache-aligned */
+>>> +} __attribute__((__packed__));
+>> 
+>> What's the __packed__ for here?
 > 
-> The guest should run after resetting it, but it does not run if its
-> old state is RUN_STATE_INTERNAL_ERROR or RUN_STATE_PAUSED.
+> Yes, that's not needed.
 > 
-> We don't set runstate to RUN_STATE_PAUSED when resetting the guest,
-> so the runstate will be changed from RUN_STATE_INTERNAL_ERROR or
-> RUN_STATE_PAUSED to RUN_STATE_RUNNING(not RUN_STATE_PAUSED).
+>> 
+>>> +
+>>>  struct blkif_request_rw {
+>>>  	uint8_t        nr_segments;  /* number of segments                   */
+>>>  	blkif_vdev_t   handle;       /* only for read/write requests         */
+>>> @@ -138,11 +150,24 @@ struct blkif_request_discard {
+>>>  	uint8_t        _pad3;
+>>>  } __attribute__((__packed__));
+>>>  
+>>> +struct blkif_request_indirect {
+>>> +	uint8_t        indirect_op;
+>>> +	uint16_t       nr_segments;
+>>> +#ifdef CONFIG_X86_64
+>>> +	uint32_t       _pad1;        /* offsetof(blkif_...,u.indirect.id) == 8 */
+>>> +#endif
+>> 
+>> Either you want the structure be packed tightly (and you don't care
+>> about misaligned fields), in which case you shouldn't need a padding
+>> field. That's even more so as there's no padding between indirect_op
+>> and nr_segments, so everything is misaligned anyway, and the
+>> comment above is wrong too (offsetof() really ought to yield 7 in
+>> that case).
+> 
+> This padding is because we want to have the "id" field at the same
+> position as blkif_request_rw, so we need to add the padding for it to
+> match 32 & 64 bit blkif_request_rw structures, this prevents adding some
+> "if (req.op == BLKIF_OP_INDIRECT)..." if we only need to get the id of
+> the request.
 
-I just wonder what will happen if I interrupted the guest via gdb and
-then issue "monitor system_reset", also via gdb - common pattern if you
-set a breakpoint on some BUG() or fault handler and then want to restart
-the guest. Will the guest continue then while gdb thinks it is still
-stopped? Likely, we do not differentiate between gdb-initiated stops and
-the rest. Could you clarify?
+Oh, right, that's desirable of course.
 
-Thanks,
+> The comment is indeed wrong, I've copied it from blkif_request_discard
+> and forgot to change the offset
+
+But the offset stated there then is right after all - I forgot that
+there is a 1-byte field outside the union (the way this is being done
+in the upstream Linux header is really ugly imo, but I guess Jeremy
+and/or Konrad liked it that way). That's also why the packed
+attribute is needed here.
+
+But you will probably want to switch sector_number and handle, so
+that sector_number becomes aligned, and add another 16-bit
+padding field between handle and indirect_grefs[].
+
+I also wonder whether "indirect_op" wouldn't better be named
+"actual_op" or just "op".
+
 Jan
-
--- 
-Siemens AG, Corporate Technology, CT RTC ITP SDP-DE
-Corporate Competence Center Embedded Linux
