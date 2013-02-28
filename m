@@ -1,77 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750899Ab3B1FM2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 00:12:28 -0500
-Received: from mga11.intel.com ([192.55.52.93]:33522 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750703Ab3B1FM1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 00:12:27 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,753,1355126400"; 
-   d="scan'208";a="292869002"
-Subject: [PATCH] n_gsm: Add Mutex to avoid race when net destroy
-From: channing <chao.bi@intel.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 28 Feb 2013 13:31:26 +0800
-Message-ID: <1362029486.31563.5.camel@bichao>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1750992Ab3B1FWn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 00:22:43 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:46042 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750723Ab3B1FWm convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Feb 2013 00:22:42 -0500
+From: "J, KEERTHY" <j-keerthy@ti.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>
+Subject: RE: [PATCH 3/4] regulator: palmas: Removing duplicated code
+Thread-Topic: [PATCH 3/4] regulator: palmas: Removing duplicated code
+Thread-Index: AQHODZbzlruKrwrzB0+4blbrifIXF5iNuv4AgAEPVaA=
+Date: Thu, 28 Feb 2013 05:22:30 +0000
+Message-ID: <DC88CAD03C0052499C1907B327FC63229BCD0A@DBDE01.ent.ti.com>
+References: <1361164446-3216-1-git-send-email-j-keerthy@ti.com>
+ <512E51E4.902@wwwdotorg.org>
+In-Reply-To: <512E51E4.902@wwwdotorg.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.159.88]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello Stephen,
 
-when gsm Net is enabled, data on dlci is transferrd by
-gsm_mux_net_start_xmit(), while userspace may trigger
-ioctrl to call gsm_destroy_network() during data was
-transferring, because there is no mutex protection between
-the two functions, following scenario may happen:
+> -----Original Message-----
+> From: Stephen Warren [mailto:swarren@wwwdotorg.org]
+> Sent: Thursday, February 28, 2013 12:05 AM
+> To: J, KEERTHY
+> Cc: broonie@opensource.wolfsonmicro.com; lgirdwood@gmail.com; linux-
+> kernel@vger.kernel.org; gg@slimlogic.co.uk
+> Subject: Re: [PATCH 3/4] regulator: palmas: Removing duplicated code
+> 
+> On 02/17/2013 10:14 PM, J Keerthy wrote:
+> > Removing duplicate assignment in the existing code.
+> ...
+> > diff --git a/drivers/regulator/palmas-regulator.c
+> > b/drivers/regulator/palmas-regulator.c
+> ...
+> > @@ -566,11 +566,6 @@ static void palmas_dt_to_pdata(struct device
+> *dev,
+> >  			pdata->reg_init[idx]->mode_sleep = prop;
+> >
+> >  		ret = of_property_read_u32(palmas_matches[idx].of_node,
+> > -				"ti,warm_reset", &prop);
+> > -		if (!ret)
+> > -			pdata->reg_init[idx]->warm_reset = prop;
+> > -
+> > -		ret = of_property_read_u32(palmas_matches[idx].of_node,
+> 
+> Can you point out where the duplicate of that is; I don't see any other
+> assignment to warm_reset.
 
-1) gsm_mux_net_start_xmit() calls muxnet_get(mux_net);
-2) gsm_destroy_network() is called from ioctrl, and it
-will not call net_free() to release net device because
-net device is still referred in step 1)
-3) continue execute step 1), gsm_mux_net_start_xmit()
-calls muxnet_put(mux_net), and then calls net_free() to
-release net device.
-4) if userspace triggers gsm_create_network() at same time
-with net_free() in step 3). it will hit race on dlci->net.
+As pointed out by Graeme this is already fixed.
 
-This patch is to add a mutex in tx function to avoid race
-between it and destroy function.
-
-Signed-off-by: Chao Bi <chao.bi@intel.com>
-Signed-off-by: Pillet Vincent <vincentx.pillet@intel.com>
----
- drivers/tty/n_gsm.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/tty/n_gsm.c b/drivers/tty/n_gsm.c
-index 4a43ef5..0ca810a 100644
---- a/drivers/tty/n_gsm.c
-+++ b/drivers/tty/n_gsm.c
-@@ -2660,6 +2660,7 @@ static int gsm_mux_net_start_xmit(struct sk_buff *skb,
- {
- 	struct gsm_mux_net *mux_net = (struct gsm_mux_net *)netdev_priv(net);
- 	struct gsm_dlci *dlci = mux_net->dlci;
-+	mutex_lock(&dlci->mutex);
- 	muxnet_get(mux_net);
- 
- 	skb_queue_head(&dlci->skb_list, skb);
-@@ -2669,6 +2670,7 @@ static int gsm_mux_net_start_xmit(struct sk_buff *skb,
- 	/* And tell the kernel when the last transmit started. */
- 	net->trans_start = jiffies;
- 	muxnet_put(mux_net);
-+	mutex_unlock(&dlci->mutex);
- 	return NETDEV_TX_OK;
- }
- 
--- 
-1.7.1
-
-
-
+Regards,
+Keerthy
