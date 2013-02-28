@@ -1,74 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752559Ab3B1CyC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 21:54:02 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:2372 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751571Ab3B1Cx7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 21:53:59 -0500
-Message-ID: <512EC7F0.60103@redhat.com>
-Date: Wed, 27 Feb 2013 21:58:56 -0500
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1752403Ab3B1DDV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 22:03:21 -0500
+Received: from mail-oa0-f43.google.com ([209.85.219.43]:47234 "EHLO
+	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751190Ab3B1DDT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Feb 2013 22:03:19 -0500
+Date: Wed, 27 Feb 2013 18:59:31 -0800
+From: Anton Vorontsov <anton@enomsg.org>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: linux-kernel@vger.kernel.org, David Woodhouse <dwmw2@infradead.org>
+Subject: Re: [PATCH] power: make goldfish option have a dependency on goldfish
+Message-ID: <20130228025931.GA13764@lizard.gateway.2wire.net>
+References: <1361989666-1922-1-git-send-email-paul.gortmaker@windriver.com>
+ <20130227231826.GA30154@lizard.fhda.edu>
+ <CAP=VYLqg5Q_e4y6bD9x8idOvJx2n_knzujOY9Z0VyGDEQZTzag@mail.gmail.com>
+ <20130228013514.GA7556@lizard.fhda.edu>
+ <CAP=VYLoNV16xJtQGtmnC6TejaBRjBz5x=+Lhu7Yzm7q9UZ20AA@mail.gmail.com>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        "Vinod, Chegu" <chegu_vinod@hp.com>, "Low, Jason" <jason.low2@hp.com>,
-        linux-tip-commits@vger.kernel.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>, aquini@redhat.com,
-        Michel Lespinasse <walken@google.com>, Ingo Molnar <mingo@kernel.org>
-Subject: Re: [tip:core/locking] x86/smp: Move waiting on contended ticket
- lock out of line
-References: <20130206150403.006e5294@cuia.bos.redhat.com> <tip-4aef331850b637169ff036ed231f0d236874f310@git.kernel.org> <CA+55aFx6N6SaRN+w=CTXJ=ZSsOE6KeS2R9sT_uhAx9h2j+hjKg@mail.gmail.com> <511BE4A3.8050607@redhat.com> <CA+55aFycMB7OZGQ54ueQ74C42beDBSdQE_fKJDV=TbjTjr_emg@mail.gmail.com> <511C1204.9040608@redhat.com> <CA+55aFwxYK-BLH0crhySHaQvAYHOH-VGUi7WTd1aq-24+WTDYw@mail.gmail.com> <511C24A6.8020409@redhat.com> <CA+55aFws80EEJQskqiP+a5J-HOGu=M1Fe=uCs50ifedVxPxT1Q@mail.gmail.com> <512E376D.70105@redhat.com> <CA+55aFzPxJ3rfZvAvrP9LxCXfDU8AAVvhMZnP-OAoe-ycc70aw@mail.gmail.com> <512E6443.9050603@redhat.com> <CA+55aFwHxv9RH75BoXYcwdKeHx+otOOpg9494TTdFwQe3biOhw@mail.gmail.com> <512E80E3.7060800@redhat.com> <CA+55aFwa0EjGG2NUDYVLVBmXJa2k81YiuNO2yggk=GLRQxhhUQ@mail.gmail.com>
-In-Reply-To: <CA+55aFwa0EjGG2NUDYVLVBmXJa2k81YiuNO2yggk=GLRQxhhUQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CAP=VYLoNV16xJtQGtmnC6TejaBRjBz5x=+Lhu7Yzm7q9UZ20AA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/27/2013 05:13 PM, Linus Torvalds wrote:
->
-> On Feb 27, 2013 1:56 PM, "Rik van Riel" <riel@redhat.com
-> <mailto:riel@redhat.com>> wrote:
->>
->> No argument there, but that does in no way negate the need for some
->> performance robustness.
->
-> The very numbers you posted showed that the backoff was *not* more
-> robust. Quite the reverse, there was arguably more variability.
+On Wed, Feb 27, 2013 at 09:17:06PM -0500, Paul Gortmaker wrote:
+[...]
+> > Testing patches takes time, and if I have to do it for all bunch of
+> > different machines and architectures, it becomes mess and unmanageable. In
+> 
+> So, you actually want my change then -- you do not want to test for
+> goldfish power issues unless goldfish is selected.  This is how I see
+> the situation.
 
-On the other hand, both MCS and the fast queue locks
-implemented by Michel showed low variability and high
-performance.
+No, I want to cover as much as possible code in one go. This is not 'all
+or nothing' thing, plus I can't test whether the driver actually works,
+but testing that it compiles is a great deal, because quite often patches
+just don't compile. :-)
 
-http://thread.gmane.org/gmane.linux.kernel/1427417
+And part of my task is to catch the trivial errors (but not all! 99% of
+them). Putting unneeded(!) 'depends on' makes my life harder.
 
-> So I really don't like how you make these sweeping statements
-> *again*. Numbers talk, bullshit walks.
+> > another words, it is easier for me to use as little different
+> > setups/.configs/cross-compilers/trees/etc as possible.
+> >
+> > For example, here is the scenario:
+> >
+> > - someone sends me a patch for goldfish driver;
+> > - I quickly compile it on my [underpowered] x86 laptop without need for
+> >   cross-compilation and special configs;
+> > - It compiles fine, produces no warnings, so I happily send out the
+> >   'Applied, thanks!' email;
+> 
+> I can not see how the above is at all relevant.  If someone sends you a
+> patch for ARCH != x86, then your workflow will fail, regardless of what
+> actually is within the patch.
 
-If you read all the text in my last mail, you will see the
-link to Michel's performance results. The numbers speak for
-themselves.
+Again, it is not 'all or nothing'. If the patch, supposedly, for Alpha, I
+won't even bother compile-testing it. Instead, I will spend more brain
+power to look into the patch, and see if it is actually sane. Doing so
+will take 5 seconds more of my time for this single patch for the rare
+architecture, instead of *hours* setting up cross tools and compile the
+patch for this weird arch.
 
-> The fact is, life is complicated. The simple spinlocks tend to work
-> really well. People have tried fancy things before, and it turns out
-> it's not as simple as they think.
+> As a maintainer, you need to be able to
+> handle cross compiles -- you can't escape the slightly more detailed
+> testing requirements we need to get from subsystem maintainers.  There
+> are cross compile capable toolchains on kernel.org, and I use them
+> regularly before sending out changes that can impact multiple arch.
+> 
+> ftp://ftp.kernel.org/pub/tools/crosstool/files/bin/
+> 
+> We can forgive individual contributors for not being arch aware, but
+> at the subsystem maintainer level, folks should be arch aware, and
+> doing regular x-compiles.
 
-The numbers for both the simple spinlocks and the
-spinlock backoff kind of suck. Both of these have
-high variability, and both eventually fall down
-under heavy load.
+Seriously? You mean, as a maintainer, I must compile it for every weird
+architecture out there? No way. I care not to break 99% users -- x86, and
+maybe ARM. If MIPS guys (or automated linux-next builds) see an error, I
+will fix it -- but by no chance I will spend my time compiling myself for
+all the crazy architectures and configs for every patch that I apply.
 
-The numbers for Michel's MCS and fast queue lock
-implementations appear to be both fast and stable.
+But don't get me wrong, I am perfectly fine with actually testing the
+patches on any weird arches -- if you are ready to lend me time on a ready
+to use cloud-based automated build farm with all kinds of cross tools, I
+will set up a 'testing' branch and will use it for compile-testing.
 
-I agree that we need numbers.
+> > Now, with your patch:
+> >
+> > - Someone sends me a patch for goldfish driver;
+> > - I starting to look for my cross-compilers collections, making all the
+> >   environment setups, setting up a new build tree, looking for the
+> >   outdated goldfish config, the ARM thing fails to build somewhere in
+> >   arch/arm/plat-foo and drivers/mfd/bar. I become grumpy... and, you might
+> >   not believe me, I open and edit drivers/power/Kconfig and remove
+> 
+> I am confused here.  If there are correct depends lines here in the Kconfig,
+> then it _protects_ you from suffering like this.
 
-I do not agree that other locks should be dismissed
-out of hand without looking at the numbers.
+No, if it says 'depends on FLUFFY_ARCH', it says that all that
+'1%-users-fluffy-arch' must be buildable so that I could test the single
+patch. Which is so often not true, the fluffy arches are quite often
+broken. (Unlike x86, since we have tons of users for x86.)
 
+So for me it is easier to remove the 'depends on FLUFFY_ARCH' and
+compile-test it on x86, if that is possible (and in case of goldfish it is
+surely possible).
+
+> Yet, you want me to think
+> that it adds new work, new cross compile requirements and so on.  I do
+> not see how that can possibly happen.
+
+Without additional 'depends on' I cover 99% of drivers, that is enough.
+Again, I am not trying to be perfect.
+
+> 
+> >   needless 'depends on' (that is, I actually do these kind of things when
+> >   I feel lazy enough).
+> >
+> > Do you agree that without the additional deps life is easier for me? :)
+> 
+> No, I do not agree.  In fact I see it as totally the opposite.  But I already
+> said that I would not pursue this further, based only on differing points
+> of view, and so, after sending this, I will adhere to that now.
+
+I see. In that case, please feel free to send the patch to akpm with my
+Nack and pointing to this discussion. If Andrew agrees and I was wrong
+(and I'm really curious whether I am right or wrong), I will start
+applying such patches in future.
+
+Thanks,
+
+Anton
