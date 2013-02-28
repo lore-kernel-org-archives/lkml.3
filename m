@@ -1,284 +1,409 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759727Ab3B1VP2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 16:15:28 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:6602 "EHLO mx1.redhat.com"
+	id S1759598Ab3B1VbP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 16:31:15 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:40476 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754685Ab3B1VPY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 16:15:24 -0500
-Message-ID: <512FC89B.6030507@redhat.com>
-Date: Thu, 28 Feb 2013 16:14:03 -0500
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1752774Ab3B1VbN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Feb 2013 16:31:13 -0500
+Message-ID: <512FCC90.5000604@ti.com>
+Date: Thu, 28 Feb 2013 17:30:56 -0400
+From: Eduardo Valentin <eduardo.valentin@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        "Vinod, Chegu" <chegu_vinod@hp.com>, "Low, Jason" <jason.low2@hp.com>,
-        linux-tip-commits@vger.kernel.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>, aquini@redhat.com,
-        Michel Lespinasse <walken@google.com>, Ingo Molnar <mingo@kernel.org>,
-        Larry Woodman <lwoodman@redhat.com>
-Subject: Re: [tip:core/locking] x86/smp: Move waiting on contended ticket
- lock out of line
-References: <20130206150403.006e5294@cuia.bos.redhat.com> <511BE4A3.8050607@redhat.com> <CA+55aFycMB7OZGQ54ueQ74C42beDBSdQE_fKJDV=TbjTjr_emg@mail.gmail.com> <511C1204.9040608@redhat.com> <CA+55aFwxYK-BLH0crhySHaQvAYHOH-VGUi7WTd1aq-24+WTDYw@mail.gmail.com> <511C24A6.8020409@redhat.com> <CA+55aFws80EEJQskqiP+a5J-HOGu=M1Fe=uCs50ifedVxPxT1Q@mail.gmail.com> <512E376D.70105@redhat.com> <CA+55aFzPxJ3rfZvAvrP9LxCXfDU8AAVvhMZnP-OAoe-ycc70aw@mail.gmail.com> <512E6443.9050603@redhat.com> <CA+55aFwHxv9RH75BoXYcwdKeHx+otOOpg9494TTdFwQe3biOhw@mail.gmail.com> <512E80E3.7060800@redhat.com> <CA+55aFwa0EjGG2NUDYVLVBmXJa2k81YiuNO2yggk=GLRQxhhUQ@mail.gmail.com> <512EC7F0.60103@redhat.com> <1362024397.1867.28.camel@buesod1.americas.hpqcorp.net> <CA+55aFygzjuNYiG4MTPMzimEjQ92rpS-rNJr7HD4OQCAqze5zg@mail.gmail.com> <512F7429.4020103@redhat.com> <CA+55aFw3t+sC-zv6njxdJ6hB0arJnZzoGNO9W7o8h=tcUo5P_Q@mail.gmail.com> <CA+55aFwEshukBGU5YCtKL=7c-43guMuGSHTnXo02rLxZWGQWTw@mail.gmail.com>
-In-Reply-To: <CA+55aFwEshukBGU5YCtKL=7c-43guMuGSHTnXo02rLxZWGQWTw@mail.gmail.com>
-Content-Type: multipart/mixed;
- boundary="------------050901090803080504040600"
+To: Durgadoss R <durgadoss.r@intel.com>
+CC: <rui.zhang@intel.com>, <linux-pm@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <hongbo.zhang@linaro.org>,
+        <wni@nvidia.com>
+Subject: Re: [PATCH 5/8] Thermal: Create Thermal map sysfs attributes for
+ a zone
+References: <1360061183-14137-1-git-send-email-durgadoss.r@intel.com> <1360061183-14137-6-git-send-email-durgadoss.r@intel.com>
+In-Reply-To: <1360061183-14137-6-git-send-email-durgadoss.r@intel.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------050901090803080504040600
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Durga,
 
-On 02/28/2013 03:26 PM, Linus Torvalds wrote:
-> On Thu, Feb 28, 2013 at 10:22 AM, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
->>
->> I'm sure there are other things we could do to improve ipc lock times
->> even if we don't actually split the lock, but the security one might
->> be a good first step.
+
+On 05-02-2013 06:46, Durgadoss R wrote:
+> This patch creates a thermal map sysfs node under
+> /sys/class/thermal/zoneX/. This contains
+> entries named mapY_trip_type, mapY_sensor_name,
+> mapY_cdev_name, mapY_trip_mask, mapY_weights.
+
+
+Some of the previous comments apply here as well, specially wrt to 
+devm_, snprintf and strlcpy. Also the documentation for the exported 
+functions are welcome.
+
 >
-> Btw, if somebody has a benchmark for threads using multiple ipc
-> semaphores (from the same semget() allocation) concurrently, and we
-> could have a simple way to see the contention without having to run
-> some big DB thing, that would also be nice. Maybe there is something
-> out there already? Google didn't find any, and the normal benchmarks
-> I'm aware of all just do one single (private) ipc semaphore per
-> process.
+> Signed-off-by: Durgadoss R <durgadoss.r@intel.com>
+> ---
+>   drivers/thermal/thermal_sys.c |  221 ++++++++++++++++++++++++++++++++++++++++-
+>   include/linux/thermal.h       |   25 +++++
+>   2 files changed, 244 insertions(+), 2 deletions(-)
 >
-> Nothing gets some people going like just having a nice benchmark to
-> show the effect.
+> diff --git a/drivers/thermal/thermal_sys.c b/drivers/thermal/thermal_sys.c
+> index 69a60a4..e284b67 100644
+> --- a/drivers/thermal/thermal_sys.c
+> +++ b/drivers/thermal/thermal_sys.c
+> @@ -525,6 +525,44 @@ static void remove_cdev_from_zone(struct thermal_zone *tz,
+>   	tz->cdev_indx--;
+>   }
+>
+> +static inline void __remove_map_entry(struct thermal_zone *tz, int indx)
+> +{
+> +	int i;
+> +	struct thermal_map_attr *attr = tz->map_attr[indx];
+> +
+> +	for (i = 0; i < NUM_MAP_ATTRS; i++)
+> +		device_remove_file(&tz->device, &attr->attrs[i].attr);
+> +
+> +	kfree(tz->map_attr[indx]);
+> +	tz->map[indx] = NULL;
+> +}
+> +
+> +static void remove_sensor_map_entry(struct thermal_zone *tz,
+> +				struct thermal_sensor *ts)
+> +{
+> +	int i;
+> +
+> +	for (i = 0; i < MAX_MAPS_PER_ZONE; i++) {
+> +		if (tz->map[i] && !strnicmp(ts->name, tz->map[i]->sensor_name,
+> +						THERMAL_NAME_LENGTH)) {
+> +			__remove_map_entry(tz, i);
+> +		}
+> +	}
+> +}
+> +
+> +static void remove_cdev_map_entry(struct thermal_zone *tz,
+> +				struct thermal_cooling_device *cdev)
+> +{
+> +	int i;
+> +
+> +	for (i = 0; i < MAX_MAPS_PER_ZONE; i++) {
+> +		if (tz->map[i] && !strnicmp(cdev->type, tz->map[i]->cdev_name,
+> +						THERMAL_NAME_LENGTH)) {
+> +			__remove_map_entry(tz, i);
+> +		}
+> +	}
+> +}
+> +
+>   /* sys I/F for thermal zone */
+>
+>   #define to_thermal_zone(_dev) \
+> @@ -917,6 +955,107 @@ policy_show(struct device *dev, struct device_attribute *devattr, char *buf)
+>   }
+>
+>   static ssize_t
+> +map_ttype_show(struct device *dev, struct device_attribute *attr, char *buf)
+> +{
+> +	char *trip;
+> +	int indx;
+> +	struct thermal_zone *tz = to_zone(dev);
+> +
+> +	if (!sscanf(attr->attr.name, "map%d_trip_type", &indx))
+> +		return -EINVAL;
+> +
+> +	if (indx < 0 || indx >= MAX_MAPS_PER_ZONE)
+> +		return -EINVAL;
+> +
+> +	if (!tz->map[indx])
+> +		return sprintf(buf, "<Unavailable>\n");
 
-I have modified one of the semop tests to use multiple semaphores.
+Is this condition possible? If yes, we probably need to change the code 
+so that if the map is not present, the sysfs files are also removed.
 
-To run the test, specify the number of threads.  If you want the
-number of semaphores to be different from the number of threads,
-specify a second commandline argument.
+> +
+> +	trip = (tz->map[indx]->trip_type == THERMAL_TRIP_ACTIVE) ?
+> +						"active" : "passive";
+> +	return sprintf(buf, "%s\n", trip);
+> +}
+> +
+> +static ssize_t map_ts_name_show(struct device *dev,
+> +				struct device_attribute *attr, char *buf)
+> +{
+> +	int indx;
+> +	struct thermal_zone *tz = to_zone(dev);
+> +
+> +	if (!sscanf(attr->attr.name, "map%d_sensor_name", &indx))
+> +		return -EINVAL;
+> +
+> +	if (indx < 0 || indx >= MAX_MAPS_PER_ZONE)
+> +		return -EINVAL;
+> +
+> +	if (!tz->map[indx])
+> +		return sprintf(buf, "<Unavailable>\n");
 
-$ ./semop-multi
-usage: ./semop-multi <threads> [nsems]
+ditto
 
+> +
+> +	return sprintf(buf, "%s\n", tz->map[indx]->sensor_name);
+> +}
+> +
+> +static ssize_t map_cdev_name_show(struct device *dev,
+> +				struct device_attribute *attr, char *buf)
+> +{
+> +	int indx;
+> +	struct thermal_zone *tz = to_zone(dev);
+> +
+> +	if (!sscanf(attr->attr.name, "map%d_cdev_name", &indx))
+> +		return -EINVAL;
+> +
+> +	if (indx < 0 || indx >= MAX_MAPS_PER_ZONE)
+> +		return -EINVAL;
+> +
+> +	if (!tz->map[indx])
+> +		return sprintf(buf, "<Unavailable>\n");
 
---------------050901090803080504040600
-Content-Type: text/x-csrc;
- name="semop-multi.c"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="semop-multi.c"
+ditto
 
-#define _GNU_SOURCE
-#include <sched.h>
-#include <pthread.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <string.h>
-#include <malloc.h>
-#include <sys/ipc.h>
-#include <sys/msg.h>
-#include <sys/sem.h>
+> +
+> +	return sprintf(buf, "%s\n", tz->map[indx]->cdev_name);
+> +}
+> +
+> +static ssize_t map_trip_mask_show(struct device *dev,
+> +				struct device_attribute *attr, char *buf)
+> +{
+> +	int indx;
+> +	struct thermal_zone *tz = to_zone(dev);
+> +
+> +	if (!sscanf(attr->attr.name, "map%d_trip_mask", &indx))
+> +		return -EINVAL;
+> +
+> +	if (indx < 0 || indx >= MAX_MAPS_PER_ZONE)
+> +		return -EINVAL;
+> +
+> +	if (!tz->map[indx])
+> +		return sprintf(buf, "<Unavailable>\n");
 
-#define TEST_TIME	30
-#define SEMMNI		128
+ditto
 
-int		semid;
-int		state = 1;
-unsigned long	*results_array;
-int		threads_starting;
-pthread_cond_t	thread_parent;
-pthread_cond_t	thread_worker;
-pthread_mutex_t	thread_lock;
-int		nsems;
+> +
+> +	return sprintf(buf, "0x%x\n", tz->map[indx]->trip_mask);
+> +}
+> +
+> +static ssize_t map_weights_show(struct device *dev,
+> +				struct device_attribute *attr, char *buf)
+> +{
+> +	int i, indx, ret = 0;
+> +	struct thermal_map *map;
+> +	struct thermal_zone *tz = to_zone(dev);
+> +
+> +	if (!sscanf(attr->attr.name, "map%d_weights", &indx))
+> +		return -EINVAL;
+> +
+> +	if (indx < 0 || indx >= MAX_MAPS_PER_ZONE)
+> +		return -EINVAL;
+> +
+> +	if (!tz->map[indx])
+> +		return sprintf(buf, "<Unavailable>\n");
+> +
 
-union semun {
-	int val;
-	struct semid_ds *buf;
-	unsigned short int *array;
-	struct seminfo *__buf;
-	void *__pad;
-};
+ditto
 
-void *
-worker(void *arg)
-{
-	unsigned long	count = 0;
-	int		id = (int)(unsigned long)arg;
-	struct sembuf	sembuff;
+> +	map = tz->map[indx];
+> +
+> +	ret += sprintf(buf, "%d", map->weights[0]);
+> +	for (i = 1; i < map->num_weights; i++)
+> +		ret += sprintf(buf + ret, " %d", map->weights[i]);
+> +
+> +	ret += sprintf(buf + ret, "\n");
+> +	return ret;
 
-	sembuff.sem_num = 0;
-	sembuff.sem_flg = 0;
+this function violates sysfs rules.
 
-	pthread_mutex_lock(&thread_lock);
-	threads_starting--;
-	if (!threads_starting)
-		pthread_cond_signal(&thread_parent);
-	pthread_cond_wait(&thread_worker, &thread_lock);
-	pthread_mutex_unlock(&thread_lock);
+> +}
+> +
+> +static ssize_t
+>   active_show(struct device *dev, struct device_attribute *attr, char *buf)
+>   {
+>   	int i, indx, ret = 0;
+> @@ -1655,8 +1794,10 @@ void thermal_cooling_device_unregister(struct thermal_cooling_device *cdev)
+>
+>   	mutex_lock(&zone_list_lock);
+>
+> -	for_each_thermal_zone(tmp_tz)
+> +	for_each_thermal_zone(tmp_tz) {
+>   		remove_cdev_from_zone(tmp_tz, cdev);
+> +		remove_cdev_map_entry(tmp_tz, cdev);
+> +	}
+>
+>   	mutex_unlock(&zone_list_lock);
+>
+> @@ -1994,6 +2135,9 @@ void remove_thermal_zone(struct thermal_zone *tz)
+>   				kobject_name(&tz->cdevs[i]->device.kobj));
+>   	}
+>
+> +	for (i = 0; i < MAX_MAPS_PER_ZONE; i++)
+> +		__remove_map_entry(tz, i);
+> +
+>   	release_idr(&thermal_zone_idr, &thermal_idr_lock, tz->id);
+>   	idr_destroy(&tz->idr);
+>
+> @@ -2039,6 +2183,77 @@ struct thermal_sensor *get_sensor_by_name(const char *name)
+>   }
+>   EXPORT_SYMBOL(get_sensor_by_name);
+>
+> +static int create_map_attrs(struct thermal_zone *tz, int indx)
+> +{
+> +	int ret, i;
+> +	struct thermal_map_attr *attr = tz->map_attr[indx];
+> +
+> +	static const char *const names[NUM_MAP_ATTRS] = { "map%d_trip_type",
+> +			"map%d_sensor_name", "map%d_cdev_name",
+> +			"map%d_trip_mask", "map%d_weights" };
+> +	static ssize_t (*const rd_ptr[NUM_MAP_ATTRS]) (struct device *dev,
+> +			struct device_attribute *devattr, char *buf) = {
+> +			map_ttype_show, map_ts_name_show, map_cdev_name_show,
+> +			map_trip_mask_show, map_weights_show };
+> +
+> +	for (i = 0; i < NUM_MAP_ATTRS; i++) {
+> +		snprintf(attr->attrs[i].name,
+> +			THERMAL_NAME_LENGTH, names[i], indx);
+> +		attr->attrs[i].attr.attr.name = attr->attrs[i].name;
+> +		attr->attrs[i].attr.attr.mode = S_IRUGO;
+> +		attr->attrs[i].attr.show = rd_ptr[i];
+> +		sysfs_attr_init(&attr->attrs[i].attr);
+> +
+> +		ret = device_create_file(&tz->device, &attr->attrs[i].attr);
+> +		if (ret)
+> +			goto exit_free;
+> +	}
+> +	return 0;
+> +exit_free:
+> +	while (--i >= 0)
+> +		device_remove_file(&tz->device, &attr->attrs[i].attr);
+> +	return ret;
+> +}
+> +
+> +int add_map_entry(struct thermal_zone *tz, struct thermal_map *map)
+> +{
+> +	int ret, indx;
+> +
+> +	if (!tz || !map)
+> +		return -EINVAL;
+> +
+> +	mutex_lock(&zone_list_lock);
+> +
+> +	for (indx = 0; indx < MAX_MAPS_PER_ZONE; indx++) {
+> +		if (tz->map[indx] == NULL)
+> +			break;
+> +	}
+> +
+> +	if (indx >= MAX_MAPS_PER_ZONE) {
+> +		ret = -EINVAL;
+> +		goto exit;
+> +	}
+> +
+> +	tz->map_attr[indx] = kzalloc(sizeof(struct thermal_map_attr),
+> +						GFP_KERNEL);
+> +	if (!tz->map_attr[indx]) {
+> +		ret = -ENOMEM;
+> +		goto exit;
+> +	}
+> +
+> +	ret = create_map_attrs(tz, indx);
+> +	if (ret) {
+> +		kfree(tz->map_attr[indx]);
+> +		goto exit;
+> +	}
+> +
+> +	tz->map[indx] = map;
 
-	for (;state;) {
+userland must be aware that a file named:
+/sys/class/thermal/zoneX/mapY_trip_type not aways refer to the same map. 
+This is because one may add a map, it will create say:
+/sys/class/thermal/zoneX/map0_trip_type
 
-		/* Move "id" ahead through the semaphores */
-		sembuff.sem_num = (sembuff.sem_num + id) % nsems;
+then for some odd reason that map gets removed. And for some other odd 
+reason, one decides to add yet another map. It will reuse the number. 
+But it is not the same map!
 
-		/* Lock the semaphore */
-		sembuff.sem_op = 1;
-		if (semop(semid, &sembuff, 1) < 0) {
-			perror("semop");
-			exit(1);
-		}
+This must be well documented, otherwise things may get confusing.
 
-		/* Unlock the semaphore */
-		sembuff.sem_op = -1;
-		if (semop(semid, &sembuff, 1) < 0) {
-			perror("semop");
-			exit(1);
-		}
+I'd suggest using a unique id..
 
-		count += 2;
-	}
+> +exit:
+> +	mutex_unlock(&zone_list_lock);
+> +	return ret;
+> +}
+> +EXPORT_SYMBOL(add_map_entry);
+> +
+>   int add_sensor_to_zone(struct thermal_zone *tz, struct thermal_sensor *ts)
+>   {
+>   	int ret;
+> @@ -2243,8 +2458,10 @@ void thermal_sensor_unregister(struct thermal_sensor *ts)
+>
+>   	mutex_lock(&zone_list_lock);
+>
+> -	for_each_thermal_zone(tz)
+> +	for_each_thermal_zone(tz) {
+>   		remove_sensor_from_zone(tz, ts);
+> +		remove_sensor_map_entry(tz, ts);
+> +	}
+>
+>   	mutex_unlock(&zone_list_lock);
+>
+> diff --git a/include/linux/thermal.h b/include/linux/thermal.h
+> index 2f68018..4389599 100644
+> --- a/include/linux/thermal.h
+> +++ b/include/linux/thermal.h
+> @@ -60,6 +60,11 @@
+>
+>   #define MAX_CDEVS_PER_ZONE		5
+>
+> +#define NUM_MAP_ATTRS			5
+> +
+> +/* If we map each sensor with every possible cdev for a zone */
+> +#define MAX_MAPS_PER_ZONE	(MAX_SENSORS_PER_ZONE * MAX_CDEVS_PER_ZONE)
+> +
+>   struct thermal_sensor;
+>   struct thermal_zone_device;
+>   struct thermal_cooling_device;
+> @@ -167,6 +172,20 @@ struct thermal_attr {
+>   	char name[THERMAL_NAME_LENGTH];
+>   };
+>
+> +struct thermal_map {
+> +	enum thermal_trip_type trip_type;
+> +	char cdev_name[THERMAL_NAME_LENGTH];
+> +	char sensor_name[THERMAL_NAME_LENGTH];
+> +
+> +	int trip_mask;
+> +	int num_weights;
+> +	int *weights;
+> +};
+> +
+> +struct thermal_map_attr {
+> +	struct thermal_attr attrs[NUM_MAP_ATTRS];
+> +};
+> +
+>   /*
+>    * This structure defines the trip points for a sensor.
+>    * The actual values for these trip points come from
+> @@ -256,6 +275,10 @@ struct thermal_zone {
+>   	/* Thermal sensors trip information */
+>   	struct thermal_trip_point *sensor_trip[MAX_SENSORS_PER_ZONE];
+>   	struct thermal_trip_attr *trip_attr[MAX_SENSORS_PER_ZONE];
+> +
+> +	/* Thermal map information */
+> +	struct thermal_map *map[MAX_MAPS_PER_ZONE];
+> +	struct thermal_map_attr *map_attr[MAX_MAPS_PER_ZONE];
+>   };
+>
+>   /* Structure that holds thermal governor information */
+> @@ -341,6 +364,8 @@ struct thermal_cooling_device *get_cdev_by_name(const char *);
+>   int add_sensor_trip_info(struct thermal_zone *, struct thermal_sensor *,
+>   			struct thermal_trip_point *);
+>
+> +int add_map_entry(struct thermal_zone *, struct thermal_map *);
+> +
+>   #ifdef CONFIG_NET
+>   extern int thermal_generate_netlink_event(struct thermal_zone_device *tz,
+>   						enum events event);
+>
 
-	results_array[id] = count;
-
-	return NULL;
-}
-
-int
-main(int argc, char **argv)
-{
-	pthread_t	*thread_array;
-	pthread_attr_t	thread_attr;
-	int		thread_count;
-	unsigned short	seminit[SEMMNI];
-	union semun	sem_un;
-	cpu_set_t	cpu;
-	unsigned long	total = 0;
-	int		i, ret;
-	long		cpus;
-
-	cpus = sysconf(_SC_NPROCESSORS_ONLN);
-
-	if (argc < 2) {
-		printf("usage: %s <threads> [nsems]\n", argv[0]);
-		exit(1);
-	}
-
-	thread_count = atoi(argv[1]);
-
-	if (thread_count < 0) {
-		printf("threads must be >= 0\n");
-		exit(1);
-	}
-
-	if (thread_count == 0)
-		thread_count = cpus;
-
-	if (argc > 2)
-		nsems = atoi(argv[2]);
-	else
-		nsems = thread_count;
-	if (nsems > SEMMNI)
-		nsems = SEMMNI;
-
-	printf("cpus %ld, threads: %d, semaphores: %d, test duration: %d secs\n", cpus, thread_count, nsems, TEST_TIME);
-
-	thread_array = malloc(thread_count * sizeof(pthread_t));
-
-	if (!thread_array) {
-		perror("malloc(thread_array)");
-		exit(1);
-	}
-
-	results_array = malloc(thread_count * sizeof(unsigned long));
-
-	if (!results_array) {
-		perror("malloc(results_array)");
-		exit(1);
-	}
-
-	semid = semget(0x12345, nsems, 0777|IPC_CREAT );
-
-	if (semid < 0) {
-		perror("semget");
-		exit(1);
-	}
-
-	for (i = 0; i < SEMMNI; i++)
-		seminit[i] = 200;
-	sem_un.array = seminit;
-  
-	if (semctl(semid, 1, SETALL, sem_un) < 0) {
-		perror("semctl(setall)");
-		exit(1);
-	}
-
-	pthread_mutex_init(&thread_lock, NULL);
-	pthread_cond_init(&thread_parent, NULL);
-	pthread_cond_init(&thread_worker, NULL);
-	pthread_attr_init(&thread_attr);
-
-	threads_starting = thread_count;
-
-	for (i = 0; i < thread_count; i++) {
-
-		CPU_ZERO(&cpu);
-		CPU_SET(i % cpus, &cpu);
-
-		ret = pthread_attr_setaffinity_np(&thread_attr, sizeof(cpu_set_t), &cpu);
-
-		if (ret) {
-			printf("pthread_attr_setaffinity_np: %s\n", strerror(ret));
-			exit(1);
-		}
-
-		ret = pthread_create(&thread_array[i], &thread_attr, worker, (void *)(unsigned long)i);
-
-		if (ret) {
-			printf("pthread_create: %s\n", strerror(ret));
-			exit(1);
-		}
-	}
-
-	pthread_attr_destroy(&thread_attr);
-
-	pthread_mutex_lock(&thread_lock);
-	while (threads_starting)
-		pthread_cond_wait(&thread_parent, &thread_lock);
-	pthread_cond_broadcast(&thread_worker);
-	pthread_mutex_unlock(&thread_lock);
-
-	sleep(TEST_TIME);
-	state = 0;
-
-	for (i = 0; i < thread_count; i++)
-		pthread_join(thread_array[i], NULL);
-
-	pthread_cond_destroy(&thread_parent);
-	pthread_cond_destroy(&thread_worker);
-	pthread_mutex_destroy(&thread_lock);
-
-	if (semctl(semid, 1, IPC_RMID) < 0)
-		perror("semctl(rmid)");
-
-	for (i = 0; i < thread_count; i++)
-		total += results_array[i];
-
-	printf("total operations: %ld, ops/sec %ld\n", total, total / TEST_TIME);
-
-	free(thread_array);
-	free(results_array);
-
-	return 0;
-}
-
---------------050901090803080504040600--
