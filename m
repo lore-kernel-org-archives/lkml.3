@@ -1,55 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752643Ab3B1J70 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 04:59:26 -0500
-Received: from mail.not-your-server.de ([78.46.182.243]:56010 "EHLO
-	mail.not-your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751667Ab3B1J7X (ORCPT
+	id S1752622Ab3B1KAS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 05:00:18 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:50018 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751163Ab3B1KAO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 04:59:23 -0500
-From: jlec@gentoo.org
-To: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Justin Lecher <jlec@gentoo.org>
-Subject: [PATCH 2/2] kconfig: use config scripts to detect ncurses libs
-Date: Thu, 28 Feb 2013 10:59:17 +0100
-Message-Id: <1362045557-9123-1-git-send-email-jlec@gentoo.org>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <jlec@gentoo.org>
-References: <jlec@gentoo.org>
+	Thu, 28 Feb 2013 05:00:14 -0500
+X-AuditID: 9c930179-b7b61ae000004061-f6-512f2aabc051
+From: Namhyung Kim <namhyung@kernel.org>
+To: Roberto Vitillo <ravitillo@lbl.gov>
+Cc: linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl, paulus@samba.org,
+        mingo@redhat.com, acme@ghostprotocols.net
+Subject: Re: [PATCH] perf: add callgrind conversion tool
+References: <CA+BNSkX-2NhJmf0b26Bmf-bK_dFnGE_NOR-F9p2MDpZTuScHpg@mail.gmail.com>
+Date: Thu, 28 Feb 2013 19:00:10 +0900
+In-Reply-To: <CA+BNSkX-2NhJmf0b26Bmf-bK_dFnGE_NOR-F9p2MDpZTuScHpg@mail.gmail.com>
+	(Roberto Vitillo's message of "Wed, 27 Feb 2013 00:26:33 +0100")
+Message-ID: <87d2vksqqd.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Justin Lecher <jlec@gentoo.org>
+Hi Roberto,
 
-When building ncurses with --with-termlib several symbols get moved from
-libncurses.so to libtinfo.so. Thus when linking with libncurses.so, one
-additionally needs to link with libtinfo.so.
+On Wed, 27 Feb 2013 00:26:33 +0100, Roberto Vitillo wrote:
+> The proposed patch adds the convert tool to perf which allows to convert a
+> perf.data file to a callgrind data file which can subsequently be displayed
+> with kcachegrind. Callgraphs are not supported.
+>
+> In order to speed up the converter I am not piping to addr2line, this
+> means that
+> the code depends on libbfd. Considering that perf doesn't strictly depend on
+> libbfd my question is if it would be feasible to add that requirement.
 
-Ncurses provides a config script (ncurses5-config) to assist finding ncurses.
-This patch makes use of it to detect the necessary libs for linking of the
-ncurses nconfig dialog.
+You can make it optional, disables 'convert' command when missing.
 
-Signed-off-by: Justin Lecher <jlec@gentoo.org>
----
- scripts/kconfig/Makefile | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+I didn't read your code in detail yet, will do if I have free time soon.
 
-diff --git a/scripts/kconfig/Makefile b/scripts/kconfig/Makefile
-index 3091794..c372976 100644
---- a/scripts/kconfig/Makefile
-+++ b/scripts/kconfig/Makefile
-@@ -216,7 +216,9 @@ HOSTCFLAGS_gconf.o	= `pkg-config --cflags gtk+-2.0 gmodule-2.0 libglade-2.0` \
- 
- HOSTLOADLIBES_mconf   = $(shell $(CONFIG_SHELL) $(check-lxdialog) -ldflags $(HOSTCC))
- 
--HOSTLOADLIBES_nconf	= -lmenu -lpanel -lncurses
-+HOSTLOADLIBES_nconf	= -lmenu -lpanel
-+HOSTLOADLIBES_nconf	+= $(shell    ncursesw5-config --libs 2>/dev/null \
-+				   || ncurses5-config --libs 2>/dev/null  )
- $(obj)/qconf.o: $(obj)/.tmp_qtcheck
- 
- ifeq ($(qconf-target),1)
--- 
-1.8.1.4
-
+Thanks,
+Namhyung
