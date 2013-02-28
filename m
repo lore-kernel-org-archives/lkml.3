@@ -1,61 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754767Ab3BDMsd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Feb 2013 07:48:33 -0500
-Received: from asix.com.tw ([210.243.224.51]:63121 "EHLO asix.com.tw"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754433Ab3BDMsb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Feb 2013 07:48:31 -0500
-From: "Freddy" <freddy@asix.com.tw>
-To: "'Daniel J Blueman'" <daniel@quora.org>
-Cc: "'Linux Kernel'" <linux-kernel@vger.kernel.org>
-References: <CAMVG2suXHz2ZhikrTa0j3gFc+_c7rdu0qFrXD3sve9JwfyzFAQ@mail.gmail.com>
-In-Reply-To: <CAMVG2suXHz2ZhikrTa0j3gFc+_c7rdu0qFrXD3sve9JwfyzFAQ@mail.gmail.com>
-Subject: RE: [PATCH, resubmit] ax88179_178a: ASIX AX88179_178A USB 3.0/2.0 to gigabit ethernet adapter driver
-Date: Wed, 4 Dec 2013 20:48:24 +0800
-Message-ID: <002901cef0ef$1f4a0e00$5dde2a00$@asix.com.tw>
+	id S1755524Ab3B1XC2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 18:02:28 -0500
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:58759 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754673Ab3B1XC0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Feb 2013 18:02:26 -0500
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-Index: AQHKWZaTfbymrurcvG6QlDIOeXD7gZpNJB7Q
-Content-Language: zh-tw
+In-Reply-To: <512FC82B.40909@zytor.com>
+References: <20130228205206.GC3438@sgi.com>
+	<512FC697.3090608@zytor.com>
+	<20130228210910.GD3438@sgi.com>
+	<512FC82B.40909@zytor.com>
+Date: Thu, 28 Feb 2013 15:02:25 -0800
+X-Google-Sender-Auth: 373WHXMO-45uskoEDTN6-0Zm8kM
+Message-ID: <CAE9FiQU3FBwEiC86N1RC8=aMdN09EbUmRcsWP0yof7bmxBhPew@mail.gmail.com>
+Subject: Re: Revert commit 5dcd14ecd4 - breaks EFI boot with SLES11 elilo.efi
+From: Yinghai Lu <yinghai@kernel.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Robin Holt <holt@sgi.com>, hpa@sgi.com, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Feb 28, 2013 at 1:12 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 02/28/2013 01:09 PM, Robin Holt wrote:
+>>>
+>>> Sounds like ELILO needs to be fixed to pass the boot_params correctly.
+>>>
+>>> To support existing ELILO, it would be good to know exactly *which*
+>>> fields ELILO pass in as garbage (because it does, that is why ->sentinel
+>>> is nonzero) and use its bootloader ID to apply the proper brainwhack for
+>>> the legacy versions.
+>>
+>> Any idea how I can dump that information?
+>>
+>
+> Look at the source code and look at what fields it actually initializes.
+>  Give us that list, and then we can work around elilo braindamage in the
+> kernel.
+>
+> Then make it follow the boot spec:
+>
+>> In 32-bit boot protocol, the first step in loading a Linux kernel
+>> should be to setup the boot parameters (struct boot_params,
+>> traditionally known as "zero page"). The memory for struct boot_params
+>> should be allocated and initialized to all zero. Then the setup header
+>> from offset 0x01f1 of kernel image on should be loaded into struct
+>> boot_params and examined. The end of setup header can be calculated as
+>> follow:
+>>
+>>         0x0202 + byte value at offset 0x0201
+>
+> ... so we don't have to.
 
+Good, kexec is not only one.
 
------Original Message-----
-From: Daniel J Blueman [mailto:daniel@quora.org] 
-Sent: Sunday, February 03, 2013 10:22 PM
-To: Freddy Xin
-Cc: Linux Kernel
-Subject: Re: [PATCH, resubmit] ax88179_178a: ASIX AX88179_178A USB 3.0/2.0
-to gigabit ethernet adapter driver
+ELILO has one.
+        5  ELILO
 
-> Hi Freddy,
+We need switch/case to have different fields set for it.
 
-> Michael, could you give me more information about how do you test this
-driver?
-> I have tried to reproduce the issue by using "ifconfig ethX mtu 1500", but
-I didn't confront the same issue.
-> Thank you in advance for your help.
+Thanks
 
-> I found the same by just starting with 'ifconfig eth0 1500' and testing as
-high as 4000; pinging another host with a large payload of size mtu-40
-starts failing; after ~30s, I see the transmit time out trace [1].
-
-> Of course, a default MTU size of 1500 is essential to avoid fragmentation
-issues, so should be fixed too. Jumbo frames support is essential these days
-too.
-
-Hi Daniel,
-
-The default MTU size will be change to 1500 and the HW jumbo frame function
-will be enabled in the next submission of the driver.
-Thanks for your help.
-
-Freddy
-
+Yinghai
