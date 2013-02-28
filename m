@@ -1,26 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758603Ab3B1Osx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 09:48:53 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:42232 "EHLO
+	id S932423Ab3B1OtK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 09:49:10 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:42277 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755004Ab3B1Osq (ORCPT
+	with ESMTP id S1758486Ab3B1OtE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 09:48:46 -0500
+	Thu, 28 Feb 2013 09:49:04 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jim Somerville <Jim.Somerville@windriver.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Jerome Marchand <jmarchan@redhat.com>,
-        John McCutchan <john@johnmccutchan.com>, Robert Love <rlove@rlove.org>,
-        Eric Paris <eparis@parisplace.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
+Cc: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 071/139] inotify: remove broken mask checks causing unmount to be EINVAL
-Date: Thu, 28 Feb 2013 14:43:41 +0000
-Message-Id: <1362062689-2567-72-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 079/139] mm/fadvise.c: drain all pagevecs if POSIX_FADV_DONTNEED fails to discard all pages
+Date: Thu, 28 Feb 2013 14:43:49 +0000
+Message-Id: <1362062689-2567-80-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1362062689-2567-1-git-send-email-luis.henriques@canonical.com>
 References: <1362062689-2567-1-git-send-email-luis.henriques@canonical.com>
@@ -33,82 +28,200 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jim Somerville <Jim.Somerville@windriver.com>
+From: Mel Gorman <mgorman@suse.de>
 
-commit 676a0675cf9200ac047fb50825f80867b3bb733b upstream.
+commit 67d46b296a1ba1477c0df8ff3bc5e0167a0b0732 upstream.
 
-Running the command:
+Rob van der Heij reported the following (paraphrased) on private mail.
 
-	inotifywait -e unmount /mnt/disk
+	The scenario is that I want to avoid backups to fill up the page
+	cache and purge stuff that is more likely to be used again (this is
+	with s390x Linux on z/VM, so I don't give it as much memory that
+	we don't care anymore). So I have something with LD_PRELOAD that
+	intercepts the close() call (from tar, in this case) and issues
+	a posix_fadvise() just before closing the file.
 
-immediately aborts with a -EINVAL return code.  This is however a valid
-parameter.  This abort occurs only if unmount is the sole event
-parameter.  If other event parameters are supplied, then the unmount
-event wait will work.
+	This mostly works, except for small files (less than 14 pages)
+	that remains in page cache after the face.
 
-The problem was introduced by commit 44b350fc23e ("inotify: Fix mask
-checks").  In that commit, it states:
+Unfortunately Rob has not had a chance to test this exact patch but the
+test program below should be reproducing the problem he described.
 
-	The mask checks in inotify_update_existing_watch() and
-	inotify_new_watch() are useless because inotify_arg_to_mask()
-	sets FS_IN_IGNORED and FS_EVENT_ON_CHILD bits anyway.
+The issue is the per-cpu pagevecs for LRU additions.  If the pages are
+added by one CPU but fadvise() is called on another then the pages
+remain resident as the invalidate_mapping_pages() only drains the local
+pagevecs via its call to pagevec_release().  The user-visible effect is
+that a program that uses fadvise() properly is not obeyed.
 
-But instead of removing the useless checks, it did this:
+A possible fix for this is to put the necessary smarts into
+invalidate_mapping_pages() to globally drain the LRU pagevecs if a
+pagevec page could not be discarded.  The downside with this is that an
+inode cache shrink would send a global IPI and memory pressure
+potentially causing global IPI storms is very undesirable.
 
-	        mask = inotify_arg_to_mask(arg);
-	-       if (unlikely(!mask))
-	+       if (unlikely(!(mask & IN_ALL_EVENTS)))
-	                return -EINVAL;
+Instead, this patch adds a check during fadvise(POSIX_FADV_DONTNEED) to
+check if invalidate_mapping_pages() discarded all the requested pages.
+If a subset of pages are discarded it drains the LRU pagevecs and tries
+again.  If the second attempt fails, it assumes it is due to the pages
+being mapped, locked or dirty and does not care.  With this patch, an
+application using fadvise() correctly will be obeyed but there is a
+downside that a malicious application can force the kernel to send
+global IPIs and increase overhead.
 
-The problem is that IN_ALL_EVENTS doesn't include IN_UNMOUNT, and other
-parts of the code keep IN_UNMOUNT separate from IN_ALL_EVENTS.  So the
-check should be:
+If accepted, I would like this to be considered as a -stable candidate.
+It's not an urgent issue but it's a system call that is not working as
+advertised which is weak.
 
-	if (unlikely(!(mask & (IN_ALL_EVENTS | IN_UNMOUNT))))
+The following test program demonstrates the problem.  It should never
+report that pages are still resident but will without this patch.  It
+assumes that CPU 0 and 1 exist.
 
-But inotify_arg_to_mask(arg) always sets the IN_UNMOUNT bit in the mask
-anyway, so the check is always going to pass and thus should simply be
-removed.  Also note that inotify_arg_to_mask completely controls what
-mask bits get set from arg, there's no way for invalid bits to get
-enabled there.
+int main() {
+	int fd;
+	int pagesize = getpagesize();
+	ssize_t written = 0, expected;
+	char *buf;
+	unsigned char *vec;
+	int resident, i;
+	cpu_set_t set;
 
-Lets fix it by simply removing the useless broken checks.
+	/* Prepare a buffer for writing */
+	expected = FILESIZE_PAGES * pagesize;
+	buf = malloc(expected + 1);
+	if (buf == NULL) {
+		printf("ENOMEM\n");
+		exit(EXIT_FAILURE);
+	}
+	buf[expected] = 0;
+	memset(buf, 'a', expected);
 
-Signed-off-by: Jim Somerville <Jim.Somerville@windriver.com>
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Jerome Marchand <jmarchan@redhat.com>
-Cc: John McCutchan <john@johnmccutchan.com>
-Cc: Robert Love <rlove@rlove.org>
-Cc: Eric Paris <eparis@parisplace.org>
+	/* Prepare the mincore vec */
+	vec = malloc(FILESIZE_PAGES);
+	if (vec == NULL) {
+		printf("ENOMEM\n");
+		exit(EXIT_FAILURE);
+	}
+
+	/* Bind ourselves to CPU 0 */
+	CPU_ZERO(&set);
+	CPU_SET(0, &set);
+	if (sched_setaffinity(getpid(), sizeof(set), &set) == -1) {
+		perror("sched_setaffinity");
+		exit(EXIT_FAILURE);
+	}
+
+	/* open file, unlink and write buffer */
+	fd = open("fadvise-test-file", O_CREAT|O_EXCL|O_RDWR);
+	if (fd == -1) {
+		perror("open");
+		exit(EXIT_FAILURE);
+	}
+	unlink("fadvise-test-file");
+	while (written < expected) {
+		ssize_t this_write;
+		this_write = write(fd, buf + written, expected - written);
+
+		if (this_write == -1) {
+			perror("write");
+			exit(EXIT_FAILURE);
+		}
+
+		written += this_write;
+	}
+	free(buf);
+
+	/*
+	 * Force ourselves to another CPU. If fadvise only flushes the local
+	 * CPUs pagevecs then the fadvise will fail to discard all file pages
+	 */
+	CPU_ZERO(&set);
+	CPU_SET(1, &set);
+	if (sched_setaffinity(getpid(), sizeof(set), &set) == -1) {
+		perror("sched_setaffinity");
+		exit(EXIT_FAILURE);
+	}
+
+	/* sync and fadvise to discard the page cache */
+	fsync(fd);
+	if (posix_fadvise(fd, 0, expected, POSIX_FADV_DONTNEED) == -1) {
+		perror("posix_fadvise");
+		exit(EXIT_FAILURE);
+	}
+
+	/* map the file and use mincore to see which parts of it are resident */
+	buf = mmap(NULL, expected, PROT_READ, MAP_SHARED, fd, 0);
+	if (buf == NULL) {
+		perror("mmap");
+		exit(EXIT_FAILURE);
+	}
+	if (mincore(buf, expected, vec) == -1) {
+		perror("mincore");
+		exit(EXIT_FAILURE);
+	}
+
+	/* Check residency */
+	for (i = 0, resident = 0; i < FILESIZE_PAGES; i++) {
+		if (vec[i])
+			resident++;
+	}
+	if (resident != 0) {
+		printf("Nr unexpected pages resident: %d\n", resident);
+		exit(EXIT_FAILURE);
+	}
+
+	munmap(buf, expected);
+	close(fd);
+	free(vec);
+	exit(EXIT_SUCCESS);
+}
+
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Reported-by: Rob van der Heij <rvdheij@gmail.com>
+Tested-by: Rob van der Heij <rvdheij@gmail.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/notify/inotify/inotify_user.c | 4 ----
- 1 file changed, 4 deletions(-)
+ mm/fadvise.c | 18 ++++++++++++++++--
+ 1 file changed, 16 insertions(+), 2 deletions(-)
 
-diff --git a/fs/notify/inotify/inotify_user.c b/fs/notify/inotify/inotify_user.c
-index 8445fbc..6f292dd 100644
---- a/fs/notify/inotify/inotify_user.c
-+++ b/fs/notify/inotify/inotify_user.c
-@@ -579,8 +579,6 @@ static int inotify_update_existing_watch(struct fsnotify_group *group,
+diff --git a/mm/fadvise.c b/mm/fadvise.c
+index 469491e0..dcb9872 100644
+--- a/mm/fadvise.c
++++ b/mm/fadvise.c
+@@ -17,6 +17,7 @@
+ #include <linux/fadvise.h>
+ #include <linux/writeback.h>
+ #include <linux/syscalls.h>
++#include <linux/swap.h>
  
- 	/* don't allow invalid bits: we don't want flags set */
- 	mask = inotify_arg_to_mask(arg);
--	if (unlikely(!(mask & IN_ALL_EVENTS)))
--		return -EINVAL;
+ #include <asm/unistd.h>
  
- 	fsn_mark = fsnotify_find_inode_mark(group, inode);
- 	if (!fsn_mark)
-@@ -632,8 +630,6 @@ static int inotify_new_watch(struct fsnotify_group *group,
+@@ -124,9 +125,22 @@ SYSCALL_DEFINE(fadvise64_64)(int fd, loff_t offset, loff_t len, int advice)
+ 		start_index = (offset+(PAGE_CACHE_SIZE-1)) >> PAGE_CACHE_SHIFT;
+ 		end_index = (endbyte >> PAGE_CACHE_SHIFT);
  
- 	/* don't allow invalid bits: we don't want flags set */
- 	mask = inotify_arg_to_mask(arg);
--	if (unlikely(!(mask & IN_ALL_EVENTS)))
--		return -EINVAL;
- 
- 	tmp_i_mark = kmem_cache_alloc(inotify_inode_mark_cachep, GFP_KERNEL);
- 	if (unlikely(!tmp_i_mark))
+-		if (end_index >= start_index)
+-			invalidate_mapping_pages(mapping, start_index,
++		if (end_index >= start_index) {
++			unsigned long count = invalidate_mapping_pages(mapping,
++						start_index, end_index);
++
++			/*
++			 * If fewer pages were invalidated than expected then
++			 * it is possible that some of the pages were on
++			 * a per-cpu pagevec for a remote CPU. Drain all
++			 * pagevecs and try again.
++			 */
++			if (count < (end_index - start_index + 1)) {
++				lru_add_drain_all();
++				invalidate_mapping_pages(mapping, start_index,
+ 						end_index);
++			}
++		}
+ 		break;
+ 	default:
+ 		ret = -EINVAL;
 -- 
 1.8.1.2
 
