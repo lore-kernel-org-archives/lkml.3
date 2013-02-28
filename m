@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760533Ab3B1PRr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 10:17:47 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:42029 "EHLO
+	id S932717Ab3B1PSB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 10:18:01 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:42026 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756471Ab3B1OrR (ORCPT
+	with ESMTP id S1756454Ab3B1OrQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 09:47:17 -0500
+	Thu, 28 Feb 2013 09:47:16 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: fangxiaozhi <huananhu@huawei.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Larry Finger <Larry.Finger@lwfinger.net>,
+        "John W. Linville" <linville@tuxdriver.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 037/139] USB: storage: properly handle the endian issues of idProduct
-Date: Thu, 28 Feb 2013 14:43:07 +0000
-Message-Id: <1362062689-2567-38-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 036/139] rtlwifi: rtl8192cu: Add new USB ID
+Date: Thu, 28 Feb 2013 14:43:06 +0000
+Message-Id: <1362062689-2567-37-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1362062689-2567-1-git-send-email-luis.henriques@canonical.com>
 References: <1362062689-2567-1-git-send-email-luis.henriques@canonical.com>
@@ -28,42 +28,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: fangxiaozhi <huananhu@huawei.com>
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit cd060956c5e97931c3909e4a808508469c0bb9f6 upstream.
+commit 8708aac79e4572ba673d7a21e94ddca9f3abb7fc upstream.
 
-1. The idProduct is little endian, so make sure its value to be
-compatible with the current CPU. Make no break on big endian processors.
+A new model of the RTL8188CUS has appeared.
 
-Signed-off-by: fangxiaozhi <huananhu@huawei.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Reported-and-tested-by: Thomas Rosenkrantz <tom.rosary@googlemail.com>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/usb/storage/initializers.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/net/wireless/rtlwifi/rtl8192cu/sw.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/usb/storage/initializers.c b/drivers/usb/storage/initializers.c
-index 16b0bf0..7ab9046 100644
---- a/drivers/usb/storage/initializers.c
-+++ b/drivers/usb/storage/initializers.c
-@@ -147,7 +147,7 @@ static int usb_stor_huawei_dongles_pid(struct us_data *us)
- 	int idProduct;
+diff --git a/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c b/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c
+index 6f4f9aa..b450931 100644
+--- a/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c
+@@ -285,6 +285,7 @@ static struct usb_device_id rtl8192c_usb_ids[] = {
+ 	{RTL_USB_DEVICE(USB_VENDER_ID_REALTEK, 0x817f, rtl92cu_hal_cfg)},
+ 	/* RTL8188CUS-VL */
+ 	{RTL_USB_DEVICE(USB_VENDER_ID_REALTEK, 0x818a, rtl92cu_hal_cfg)},
++	{RTL_USB_DEVICE(USB_VENDER_ID_REALTEK, 0x819a, rtl92cu_hal_cfg)},
+ 	/* 8188 Combo for BC4 */
+ 	{RTL_USB_DEVICE(USB_VENDER_ID_REALTEK, 0x8754, rtl92cu_hal_cfg)},
  
- 	idesc = &us->pusb_intf->cur_altsetting->desc;
--	idProduct = us->pusb_dev->descriptor.idProduct;
-+	idProduct = le16_to_cpu(us->pusb_dev->descriptor.idProduct);
- 	/* The first port is CDROM,
- 	 * means the dongle in the single port mode,
- 	 * and a switch command is required to be sent. */
-@@ -169,7 +169,7 @@ int usb_stor_huawei_init(struct us_data *us)
- 	int result = 0;
- 
- 	if (usb_stor_huawei_dongles_pid(us)) {
--		if (us->pusb_dev->descriptor.idProduct >= 0x1446)
-+		if (le16_to_cpu(us->pusb_dev->descriptor.idProduct) >= 0x1446)
- 			result = usb_stor_huawei_scsi_init(us);
- 		else
- 			result = usb_stor_huawei_feature_init(us);
 -- 
 1.8.1.2
 
