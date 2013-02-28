@@ -1,84 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751358Ab3B1JSp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 04:18:45 -0500
-Received: from mout.gmx.net ([212.227.15.18]:63366 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750985Ab3B1JSk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 04:18:40 -0500
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1895XcWcHs9PQqmTOYa5MoVl1TeNJiD3NGwdINPFK
-	t9HtGPlHF/fTwz
-Message-ID: <1362043112.4460.163.camel@marge.simpson.net>
-Subject: Re: [RFC PATCH] sched: wakeup buddy
-From: Mike Galbraith <efault@gmx.de>
-To: Michael Wang <wangyun@linux.vnet.ibm.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
-        Alex Shi <alex.shi@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ram Pai <linuxram@us.ibm.com>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        Namhyung Kim <namhyung@kernel.org>
-Date: Thu, 28 Feb 2013 10:18:32 +0100
-In-Reply-To: <512F1A15.2000609@linux.vnet.ibm.com>
-References: <512EFB4B.5040204@linux.vnet.ibm.com>
-	 <1362035917.4460.105.camel@marge.simpson.net>
-	 <512F09D4.1020307@linux.vnet.ibm.com>
-	 <1362038652.4460.124.camel@marge.simpson.net>
-	 <512F11E6.8060807@linux.vnet.ibm.com>
-	 <1362039862.4460.132.camel@marge.simpson.net>
-	 <512F1A15.2000609@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
+	id S1752175Ab3B1JXW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 04:23:22 -0500
+Received: from mercuryimc.plus.com ([80.229.200.144]:43487 "EHLO
+	centos1.newflow.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751779Ab3B1JXO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Feb 2013 04:23:14 -0500
+Message-ID: <512F2201.6010407@mimc.co.uk>
+Date: Thu, 28 Feb 2013 09:23:13 +0000
+From: Mark Jackson <mpfj-list@mimc.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: "Philip, Avinash" <avinashphilip@ti.com>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>,
+        David Woodhouse <dwmw2@infradead.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        lkml <linux-kernel@vger.kernel.org>, Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: linux-next: JFFS2 corruption
+References: <512CD9BA.3080300@mimc.co.uk> <20130227101824.6e18ba21fb99070594420f29@canb.auug.org.au> <512E2241.9040705@mimc.co.uk> <518397C60809E147AF5323E0420B992E3EA8EF4A@DBDE01.ent.ti.com>
+In-Reply-To: <518397C60809E147AF5323E0420B992E3EA8EF4A@DBDE01.ent.ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-02-28 at 16:49 +0800, Michael Wang wrote: 
-> On 02/28/2013 04:24 PM, Mike Galbraith wrote:
-> > On Thu, 2013-02-28 at 16:14 +0800, Michael Wang wrote: 
-> >> On 02/28/2013 04:04 PM, Mike Galbraith wrote:
-> > 
-> >>> It would be nice if it _were_ a promise, but it is not, it's a hint.
-> >>
-> >> Bad to know :(
-> >>
-> >> Should we fix it or this is by designed? The comments after WF_SYNC
-> >> cheated me...
-> > 
-> > You can't fix it, because it's not busted.  You can say "Ok guys, I'm
-> > off for a nap RSN" all you want, but that won't guarantee that nobody
-> > pokes you, and hands you something more useful to do than snoozing.
+On 28/02/13 04:11, Philip, Avinash wrote:
+> On Wed, Feb 27, 2013 at 20:42:01, Mark Jackson wrote:
+>>
+>> Okay, just tested 3v8 plus:-
+>>
+>> https://patchwork.kernel.org/patch/1931251/
+>> https://patchwork.kernel.org/patch/1931221/
+>> https://patchwork.kernel.org/patch/1931201/
+>> and changed drivers/mtd/nand/elm.c, line 388 "ti,am33xx-elm" to "ti,am3352-elm"
+>>
+>> This produces an identical corruption.
+>>
+>> I have also tested next-20130225 and next-20130227, and both cause the same corruption.
 > 
-> So sync still means current is going to sleep, what you concerned is
-> this promise will be easily broken by other waker, correct?
+> JFFS2 is not supported in am335x with BCH8 ecc scheme because of ECC layout constraints.
+> Reasons for disabling JFFS2 support documented in the wiki
+> http://processors.wiki.ti.com/index.php/AM335x_JFFS2_Support_Guide#Reasons_for_disabling_JFFS2_support
 
-That makes it a lie, and it can already have been one with no help.
-Just because you wake one sync does not mean you're not going to find
-another to wake.  Smart tasks are taught to look before they leap.
+Aha ... thanks for the link.
 
-> Hmm.. may be you are right, if 'perf bench sched pipe' is not the one we
-> should care, I have no reason to add this logical currently.
+I'll move over to UBIFS then, although I did have issues with that too (which is why I went back
+to JFFS2), but I'll start another thread if needs be.
 
-Well, there is reason to identify task relationships methinks, you just
-can't rely on the fact that you're alone on the rq at the moment, and
-doing a sync wakeup to bind tasks.  They _will_ lie to you :)
-
-> I will remove this plus branch, unless I found other benchmark could
-> benefit a lot from it.
-> 
-> Besides this, how do you think about this idea?
-
-I like the idea of filtering true buddy pairs, and automagically
-detecting the point when 1:N wants spreading rather a lot (fwtw).  I'll
-look closer at your method, but when it comes to implementation
-opinions, the only one I trust comes out of a box in front of me.
-
-I'm somewhat.. "taste challenged", Peter and Ingo have some though :)
-
--Mike
-
+Cheers
+Mark J.
