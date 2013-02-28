@@ -1,51 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754962Ab3B1Pne (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 10:43:34 -0500
-Received: from exprod7og101.obsmtp.com ([64.18.2.155]:35752 "EHLO
-	exprod7og101.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752760Ab3B1Pnd (ORCPT
+	id S1755232Ab3B1Ppc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 10:45:32 -0500
+Received: from gate.crashing.org ([63.228.1.57]:47424 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753218Ab3B1Pp3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 10:43:33 -0500
-Message-ID: <512F7B0E.1030404@genband.com>
-Date: Thu, 28 Feb 2013 09:43:10 -0600
-From: Chris Friesen <chris.friesen@genband.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.16
-MIME-Version: 1.0
-To: Florian Weimer <fw@deneb.enyo.de>
-CC: Greg KH <gregkh@linuxfoundation.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        David Howells <dhowells@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Josh Boyer <jwboyer@redhat.com>, Peter Jones <pjones@redhat.com>,
-        Vivek Goyal <vgoyal@redhat.com>, Kees Cook <keescook@chromium.org>,
-        keyrings@linux-nfs.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] Load keys from signed PE binaries
-References: <87ppzo79in.fsf@mid.deneb.enyo.de>	<30665.1361461678@warthog.procyon.org.uk>	<CA+55aFxyuvC1H6doSw_e_yLTey2YGWU9cLnUzxUeT2kaeazydA@mail.gmail.com>	<20130221164244.GA19625@srcf.ucam.org>	<18738.1361836265@warthog.procyon.org.uk>	<20130226005955.GA19686@kroah.com>	<20130226023332.GA29282@srcf.ucam.org>	<20130226030249.GB23834@kroah.com>	<20130226031338.GA29784@srcf.ucam.org>	<20130226033156.GA24999@kroah.com> <8738wgsweq.fsf@mid.deneb.enyo.de>
-In-Reply-To: <8738wgsweq.fsf@mid.deneb.enyo.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 28 Feb 2013 15:43:11.0436 (UTC) FILETIME=[504158C0:01CE15CA]
-X-TM-AS-Product-Ver: SMEX-8.0.0.4160-6.500.1024-19678.000
-X-TM-AS-Result: No--8.163100-8.000000-31
-X-TM-AS-User-Approved-Sender: No
-X-TM-AS-User-Blocked-Sender: No
+	Thu, 28 Feb 2013 10:45:29 -0500
+Subject: Re: [PATCH 2/6] powerpc/fsl_pci: Store the platform device information corresponding to the pci controller.
+Mime-Version: 1.0 (Apple Message framework v1278)
+Content-Type: text/plain; charset=us-ascii
+From: Kumar Gala <galak@kernel.crashing.org>
+In-Reply-To: <C5ECD7A89D1DC44195F34B25E172658D3C24A9@039-SN2MPN1-013.039d.mgd.msft.net>
+Date: Thu, 28 Feb 2013 09:45:18 -0600
+Cc: Joerg Roedel <joro@8bytes.org>, Stuart Yoder <b08248@gmail.com>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Wood Scott-B07421 <B07421@freescale.com>,
+        Yoder Stuart-B08248 <B08248@freescale.com>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <D109CC7C-09D2-41E6-82BF-376692C390CA@kernel.crashing.org>
+References: <1361191939-21260-1-git-send-email-Varun.Sethi@freescale.com> <1361191939-21260-3-git-send-email-Varun.Sethi@freescale.com> <CALRxmdDc9TuxH7HgAF3_iLgatoaOUML6fUt8SU+sxHyz6ZVjfw@mail.gmail.com> <C5ECD7A89D1DC44195F34B25E172658D3BD338@039-SN2MPN1-013.039d.mgd.msft.net> <20130227104505.GE26252@8bytes.org> <C5ECD7A89D1DC44195F34B25E172658D3C24A9@039-SN2MPN1-013.039d.mgd.msft.net>
+To: Sethi Varun-B16395 <B16395@freescale.com>
+X-Mailer: Apple Mail (2.1278)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/28/2013 01:57 AM, Florian Weimer wrote:
 
-> In any case, there's another reading of the UEFI Secure Boot
-> requirements: you may run any code you wish after calling
-> ExitBootServices().  That could be an unsigned, traditional GRUB.  But
-> this will not generally address the issue of dual-booting Windows 8 in
-> such a way that Windows sees that the device has enabled Microsoft
-> Secure Boot.
+On Feb 27, 2013, at 4:56 AM, Sethi Varun-B16395 wrote:
 
-Would it be possible to have a signed bootloader that allows booting 
-Win8 from within the secure environment, or it could exit the secure 
-environment and run unsigned grub?
+> This patch is present in the "next branch" of linux ppc tree maintained by Kumar Gala.
+> Following is the commit id:
+> 52c5affc545053d37c0b05224bbf70f5336caa20
+> 
+> I am not sure if this would be part of 3.9-rc1.
+> 
+> Regards
+> varun
 
-Chris
+This is now in Linus's tree so will be in 3.9-rc1
+
+- k
+
