@@ -1,83 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753000Ab3B1NCp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 08:02:45 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:58140 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751265Ab3B1NCl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 08:02:41 -0500
-Date: Thu, 28 Feb 2013 14:02:37 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Roman Gushchin <klamm@yandex-team.ru>
-Cc: Johannes Weiner-Arquette <hannes@cmpxchg.org>,
-        "bsingharora@gmail.com" <bsingharora@gmail.com>,
-        "kamezawa.hiroyu@jp.fujitsu.com" <kamezawa.hiroyu@jp.fujitsu.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "kosaki.motohiro@jp.fujitsu.com" <kosaki.motohiro@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>, "mel@csn.ul.ie" <mel@csn.ul.ie>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Ying Han <yinghan@google.com>
-Subject: Re: [PATCH] memcg: implement low limits
-Message-ID: <20130228130237.GD6573@dhcp22.suse.cz>
-References: <8121361952156@webcorp1g.yandex-team.ru>
- <20130227094054.GC16719@dhcp22.suse.cz>
- <17521361961576@webcorp1g.yandex-team.ru>
- <20130227161352.GF16719@dhcp22.suse.cz>
- <61661362049995@webcorp1g.yandex-team.ru>
+	id S1752802Ab3B1NST (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 08:18:19 -0500
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:46448 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751937Ab3B1NSR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Feb 2013 08:18:17 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AtkPAHdXL1F5LNTy/2dsb2JhbABEDoVYty+FFXoXc4IfAQEEATocKAsIAxgJJQ8FJQMhARKIDQXBPRWOICJEg0ADlkCQa4JJUw
+Date: Fri, 1 Mar 2013 00:18:13 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: "Theodore Ts'o" <tytso@mit.edu>, Dave Jones <davej@redhat.com>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "gnehzuil.liu" <gnehzuil.liu@gmail.com>,
+        Zheng Liu <wenqing.lz@taobao.com>, Borislav Petkov <bp@alien8.de>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] ext4 updates for 3.9
+Message-ID: <20130228131813.GO5551@dastard>
+References: <20130227170157.GA222@x4>
+ <98C6DE45-F050-4AAD-82E2-7352F5BB0A5D@gmail.com>
+ <20130227172256.GA236@x4>
+ <7BFB2135-A1F0-4B6D-9962-16E75E5560F8@gmail.com>
+ <20130227174553.GA224@x4>
+ <CA+55aFwWA1jPEEQNx_5oJ6Ze=3yFb6=E9nraBfX-Ve=WjRkQMw@mail.gmail.com>
+ <20130227184912.GA19624@thunk.org>
+ <20130227185625.GA224@x4>
+ <20130227191923.GA1121@redhat.com>
+ <20130227192907.GB14253@thunk.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <61661362049995@webcorp1g.yandex-team.ru>
+In-Reply-To: <20130227192907.GB14253@thunk.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 28-02-13 15:13:15, Roman Gushchin wrote:
-> 27.02.2013, 20:14, "Michal Hocko" <mhocko@suse.cz>:
-> > On Wed 27-02-13 14:39:36, Roman Gushchin wrote:
-[...]
-> >>  2) cgroup's prioritization during global reclaim,
-> >
-> > Yes, group priorities sound like a useful feature not just for the
-> > reclaim I would like it for oom selection as well.
-> > I think that we shouldn't use any kind of limit for this task, though.
+On Wed, Feb 27, 2013 at 02:29:07PM -0500, Theodore Ts'o wrote:
+> On Wed, Feb 27, 2013 at 02:19:23PM -0500, Dave Jones wrote:
+> > 
+> > Looks like it's fixed here too.
+> > 
+> > How did this make it through -next without anyone hitting it ?
 > 
-> I'm thinking about them. Do you know, did someone any attempts to
-> implement them?
+> > Is anyone running xfstests or similar on linux-next regularly ?
+> 
+> I run xfstests on the ext4 tree, and I ran it on ext4 plus Linus's tip
+> before I submitted a pull request.  The problem is that XFSTESTS is
+> S-L-O-W if you use large partitions, so typically I use a 5GB
+> partition sizes for my test runs.
 
-I do not remember any patches but we have touched that topic in the
-past. With no conclusion AFAIR. The primary issue is that this requires
-good justification and nobody seemed to have a good use case - other
-than "I can imagine this could be useful". But others might disagree and
-provide such use cases...
+This isn't the case for XFS. I typically see 1TB scratch devices
+only being ~10-20% slower than 10GB scratch devices, and 10TB only
+being a little slower than 1TB scratch devices. I have to use sparse
+devices and --large-fs for 100TB filesystem testing, so I can't
+directly compare the speeds to those that I run on physical devices.
+However I can say that it isn't significantly slower than using
+small scratch devices...
 
-[...]
-> Actually, I don't like the name of soft limits - the word "soft". It's
-> not clear from the name if it's lower or upper limit.
+> So what we probably need to do is to have a separate set of tests
+> using a loopback mount, and perhaps an artificially created file
+> system which has a large percentage of the blocks in the middle of the
+> file system busied out, to make efficient testing of these sorts of
 
-The name might be not the best one but it makes some sense.
+That's exactly what the --large-fs patch set I posted months ago does
+for ext4 - it uses fallocate() to fill all but 50GB of the large
+filesystem without actually writing any data and runs the standard
+tests in the remaining unused space.
 
-> It's a little bit confusing that "limit" means upper limit, and "soft
-> limit" means lower limit.
+However, last time I tested ext4 with this patchset (when I posted
+the patches months ago), multi-TB preallocation on ext4 was still too
+slow to make it practical for testing on devices larger than 2-3TB.
+Perhaps it would make testing 1-2TB ext4 filesystems fast enough
+that you could do it regularly...
 
-It is not a lower limit. It is basically a (soft) high limit for
-memory contended situations. Now it just depends on what "memory
-contended situation" means and this is an internal implementation thing
-(e.g. reclaim only groups which are over soft limit to reduce the
-contention). Changing it from best-effort to (almost) guarantee doesn't
-change the semantic of the limit for users.
+Cheers,
 
-> Assuming it's possible to implement strict lower limit efficiently,
-> how do you call them?
-
-This is not about efficiency but rather about an user interface. If the
-current one can be used we shouldn't introduce new or we will end up in
-an unusable mess.
+Dave.
 -- 
-Michal Hocko
-SUSE Labs
+Dave Chinner
+david@fromorbit.com
