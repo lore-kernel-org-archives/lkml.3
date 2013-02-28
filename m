@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752484Ab3B1LA4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 06:00:56 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:13085 "EHLO mx1.redhat.com"
+	id S1752496Ab3B1LCv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 06:02:51 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:6267 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751163Ab3B1LAy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 06:00:54 -0500
+	id S1751078Ab3B1LCu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Feb 2013 06:02:50 -0500
 From: Anton Arapov <anton@redhat.com>
 To: Anton Arapov <anton@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
         Srikar Dronamraju <srikar@linux.vnet.ibm.com>
@@ -13,59 +13,73 @@ Cc: LKML <linux-kernel@vger.kernel.org>, Josh Stone <jistone@redhat.com>,
         Frank Eigler <fche@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
         Ingo Molnar <mingo@elte.hu>,
         Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-Subject: [RFC PATCH v3 0/6] uprobes: return probe implementation
-Date: Thu, 28 Feb 2013 12:00:09 +0100
-Message-Id: <1362049215-5780-1-git-send-email-anton@redhat.com>
+Subject: [RFC PATCH v3 2/6] uretprobes/x86: hijack return address
+Date: Thu, 28 Feb 2013 12:00:11 +0100
+Message-Id: <1362049215-5780-3-git-send-email-anton@redhat.com>
+In-Reply-To: <1362049215-5780-1-git-send-email-anton@redhat.com>
+References: <1362049215-5780-1-git-send-email-anton@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+  hijack the return address and replace it with a "trampoline"
 
-  RFC v3 uretprobes implementation. I'd be grateful for review.
+v2:
+  - remove ->doomed flag, kill task immediately
 
-  These patches extending uprobes by enabling tools, such as perf(trace_event),
-set a breakpoint on probed function's return address. 
+Signed-off-by: Anton Arapov <anton@redhat.com>
+---
+ arch/x86/include/asm/uprobes.h |  1 +
+ arch/x86/kernel/uprobes.c      | 29 +++++++++++++++++++++++++++++
+ 2 files changed, 30 insertions(+)
 
-v3 changes:
-  - removed uretprobe_bypass logic, it will be better to send it as
-    independent patch
-  - unified xol_get_trampoline_slot() and xol_get_insn_slot()
-  - protected uprobe with refcounter in prepare_uretprobe()
-  - uprobe_register() routine fails now, if neither consumer is set
-  - enclosed implementation into 1/6, 6/6 patches -ENOSYS bits
-
-v2 changes:
-  - introduced rp_handler(), get rid of return_consumers
-  - get rid of uretprobe_[un]register()
-  - introduced arch_uretprobe_get_sp()
-  - removed uprobe_task->doomed, kill task immediately
-  - fix arch_uretprobe_hijack_return_addr()'s returns
-  - address the v1 minor issues
-
-integrated patchset:
-  http://github.com/arapov/linux-aa/commits/uretprobes_v3
-
-previous implementations:
-  RFCv2: https://lkml.org/lkml/2013/1/9/157
-  RFCv1: https://lkml.org/lkml/2012/12/21/133
-
-thanks,
-Anton
-
-Anton Arapov (6):
-  uretprobes: preparation patch
-  uretprobes/x86: hijack return address
-  uretprobes: generalize xol_get_insn_slot()
-  uretprobes: return probe entry, prepare uretprobe
-  uretprobes: invoke return probe handlers
-  uretprobes: implemented, thus remove -ENOSYS
-
- arch/x86/include/asm/uprobes.h |   6 +++
- arch/x86/kernel/uprobes.c      |  29 +++++++++++
- include/linux/uprobes.h        |   6 +++
- kernel/events/uprobes.c        | 112 ++++++++++++++++++++++++++++++++++++++---
- 4 files changed, 146 insertions(+), 7 deletions(-)
-
+diff --git a/arch/x86/include/asm/uprobes.h b/arch/x86/include/asm/uprobes.h
+index 8ff8be7..c353555 100644
+--- a/arch/x86/include/asm/uprobes.h
++++ b/arch/x86/include/asm/uprobes.h
+@@ -55,4 +55,5 @@ extern int  arch_uprobe_post_xol(struct arch_uprobe *aup, struct pt_regs *regs);
+ extern bool arch_uprobe_xol_was_trapped(struct task_struct *tsk);
+ extern int  arch_uprobe_exception_notify(struct notifier_block *self, unsigned long val, void *data);
+ extern void arch_uprobe_abort_xol(struct arch_uprobe *aup, struct pt_regs *regs);
++extern unsigned long arch_uretprobe_hijack_return_addr(unsigned long rp_trampoline_vaddr, struct pt_regs *regs);
+ #endif	/* _ASM_UPROBES_H */
+diff --git a/arch/x86/kernel/uprobes.c b/arch/x86/kernel/uprobes.c
+index 0ba4cfb..85e2153 100644
+--- a/arch/x86/kernel/uprobes.c
++++ b/arch/x86/kernel/uprobes.c
+@@ -697,3 +697,32 @@ bool arch_uprobe_skip_sstep(struct arch_uprobe *auprobe, struct pt_regs *regs)
+ 		send_sig(SIGTRAP, current, 0);
+ 	return ret;
+ }
++
++extern unsigned long arch_uretprobe_hijack_return_addr(unsigned long
++		rp_trampoline_vaddr, struct pt_regs *regs)
++{
++	int rasize, ncopied;
++	unsigned long orig_ret_vaddr = 0; /* clear high bits for 32-bit apps */
++
++	rasize = is_ia32_task() ? 4 : 8;
++	ncopied = copy_from_user(&orig_ret_vaddr, (void __user *)regs->sp, rasize);
++	if (unlikely(ncopied))
++		return 0;
++
++	/* check whether address has been already hijacked */
++	if (orig_ret_vaddr == rp_trampoline_vaddr)
++		return orig_ret_vaddr;
++
++	ncopied = copy_to_user((void __user *)regs->sp, &rp_trampoline_vaddr, rasize);
++	if (unlikely(ncopied)) {
++		if (ncopied != rasize) {
++			printk(KERN_ERR "uretprobe: return address clobbered: "
++					"pid=%d, %%sp=%#lx, %%ip=%#lx\n",
++					current->pid, regs->sp, regs->ip);
++			/* kill task immediately */
++			send_sig(SIGSEGV, current, 0);
++		}
++	}
++
++	return orig_ret_vaddr;
++}
 -- 
 1.8.1.2
+
