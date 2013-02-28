@@ -1,63 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753366Ab3B1E5a (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 23:57:30 -0500
-Received: from mail-ia0-f176.google.com ([209.85.210.176]:34543 "EHLO
-	mail-ia0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750999Ab3B1E52 (ORCPT
+	id S1752488Ab3B1FL2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 00:11:28 -0500
+Received: from kirsty.vergenet.net ([202.4.237.240]:48680 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750775Ab3B1FL1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 23:57:28 -0500
+	Thu, 28 Feb 2013 00:11:27 -0500
+Date: Thu, 28 Feb 2013 14:11:23 +0900
+From: Simon Horman <horms@verge.net.au>
+To: Magnus Damm <magnus.damm@gmail.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-kernel@vger.kernel.org,
+        grant.likely@secretlab.ca, linus.walleij@linaro.org,
+        linux-sh@vger.kernel.org
+Subject: Re: [PATCH] gpio: em: Add Device Tree support
+Message-ID: <20130228051122.GA12312@verge.net.au>
+References: <20130226132623.18365.36583.sendpatchset@w520>
+ <20130226224106.GC20670@core.coreip.homeip.net>
+ <CANqRtoRUqDsspHQQ11d3c2jc+MvoROwfbv3so5=SGhHOs9k7WA@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CACxGe6tyDrOF1eNNjY0j4tctx=C+m+9xkjGUFRW33hU+k6+o-g@mail.gmail.com>
-References: <1360907177-6468-1-git-send-email-acourbot@nvidia.com>
- <CAAVeFuLP0KLVL-0SS+nGWSoK1RMPCmKgZV-OjMJo-h7E1UVuXw@mail.gmail.com>
- <20130226175311.D17173E2EF8@localhost> <CAAVeFuLazaZEbbUVtR_Zyub3hgTesW6JcD9Kxgk7dUXuESpLOw@mail.gmail.com>
- <CACxGe6tyDrOF1eNNjY0j4tctx=C+m+9xkjGUFRW33hU+k6+o-g@mail.gmail.com>
-From: Alexandre Courbot <gnurou@gmail.com>
-Date: Thu, 28 Feb 2013 13:57:07 +0900
-Message-ID: <CAAVeFuKGS2j_V8HG-q-=U0Rkz5Dp48xEmwg3h4ShVyh3vHXnyw@mail.gmail.com>
-Subject: Re: [PATCH v2 0/4] gpiolib: some fixup patches
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Linus Walleij <linus.walleij@linaro.org>, Ryan Mallon <rmallon@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "acourbot@nvidia.com" <acourbot@nvidia.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CANqRtoRUqDsspHQQ11d3c2jc+MvoROwfbv3so5=SGhHOs9k7WA@mail.gmail.com>
+Organisation: Horms Solutions Ltd.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 27, 2013 at 4:52 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
-> While you're working on that, I'd like you to keep the following in
-> mind. I'm getting concerned with the level of overhead that the gpio
-> access routines are incuring. They're doing a lot of checks right now
-> when with GPIOs we want it to be as fast as possible for the case of
-> mmio gpios. (i2c and spi gpios are always going to be slow, so I'm not
-> so concerned here). gpio_get, gpio_set and gpio_direction all need to
-> be fast.
->
-> Basically, I think the model should be that if you've got a gpio_desc
-> pointer, then you've got a valid gpio.
+On Wed, Feb 27, 2013 at 07:13:46PM +0900, Magnus Damm wrote:
+> Hi Dmitry,
+> 
+> Thanks for your feedback!
+> 
+> On Wed, Feb 27, 2013 at 7:41 AM, Dmitry Torokhov
+> <dmitry.torokhov@gmail.com> wrote:
+> > Hi Magnus,
+> >
+> > On Tue, Feb 26, 2013 at 10:26:23PM +0900, Magnus Damm wrote:
+> >> From: Magnus Damm <damm@opensource.se>
+> >>
+> >> Update the Emma Mobile GPIO driver to add DT support.
+> >>
+> >
+> > ...
+> >
+> >> @@ -366,15 +387,33 @@ static int em_gio_remove(struct platform
+> >>       return 0;
+> >>  }
+> >>
+> >
+> > #ifdef CONFIG_OF here? No need to have extra aliases in modules if OF
+> > support is not enabled (or is entire ARM arch now enables device tree?).
+> >
+> >> +static const struct of_device_id em_gio_dt_ids[] = {
+> >> +     { .compatible = "renesas,em-gio", },
+> >> +     {},
+> >> +};
+> >> +MODULE_DEVICE_TABLE(of, em_gio_dt_ids);
+> >> +
+> 
+> I suppose we could sprinkle a couple of #ifdefs across the code, but I
+> have to say that I'm not that fond of #ifdefs in general. So if it was
+> up to me only then I would aim at having exactly zero #ifdefs in my
+> drivers at the expense of slightly larger binaries in some cases.
 
-Yes, that's what I had in mind as well. Since the only way to obtain a
-GPIO descriptor is through the gpiod_get() function(s), we can safely
-issues descriptors are valid. There should be no gpiod_is_valid()
-function.
+My take on this is as follows (if anyone cares):
 
-> A lot of the checks that are
-> currently performed in the gpiod_ versions of functions can be moved
-> to the gpio_ versions where a lookup has to be performed anyway. For
-> example, right now gpiod_direction_output() is 61 lines long. Madness!
->  :-)
+* The driver in question is currently only useful in conjunction with
+  the Emev2 SoC and the kzm9g board which uses that SoC. The current
+  (and to date only) practice when booting that board and thus SoC
+  with merged upstream code is to do so using DT.
 
-There is certainly room to optimize things and avoid redundant tests
-in the legacy GPIO API. Will be worth having a look at this once we
-have a clean gpiod implementation.
+* The inclusion of the code above does not appear to cause build-time
+  breakage even if CONFIG_OF is not set.
 
-> I've been playing with an idea of pulling in some basic MMIO gpio
-> access directly into gpiolib so that when appropriate gpiolib itself
-> can have a fast path for doing the register access and shadow register
-> management.
-
-Appealing. :)
-
-Alex.
+So it seems to me that it is reasonable to leave the code as is
+without being guarded by an #ifdef.
