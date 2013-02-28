@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933142Ab3B1PSg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 10:18:36 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41994 "EHLO
+	id S933266Ab3B1PSx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 10:18:53 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41980 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756153Ab3B1OrB (ORCPT
+	with ESMTP id S1755774Ab3B1Oqz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 09:47:01 -0500
+	Thu, 28 Feb 2013 09:46:55 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Ian Abbott <abbotti@mev.co.uk>,
+Cc: Oleg Nesterov <oleg@redhat.com>, Jiri Slaby <jslaby@suse.cz>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 031/139] staging: comedi: check s->async for poll(), read() and write()
-Date: Thu, 28 Feb 2013 14:43:01 +0000
-Message-Id: <1362062689-2567-32-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 028/139] tty: set_termios/set_termiox should not return -EINTR
+Date: Thu, 28 Feb 2013 14:42:58 +0000
+Message-Id: <1362062689-2567-29-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1362062689-2567-1-git-send-email-luis.henriques@canonical.com>
 References: <1362062689-2567-1-git-send-email-luis.henriques@canonical.com>
@@ -28,69 +28,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ian Abbott <abbotti@mev.co.uk>
+From: Oleg Nesterov <oleg@redhat.com>
 
-commit cc400e185c07c15a42d2635995f422de5b94b696 upstream.
+commit 183d95cdd834381c594d3aa801c1f9f9c0c54fa9 upstream.
 
-Some low-level comedi drivers (incorrectly) point `dev->read_subdev` or
-`dev->write_subdev` to a subdevice that does not support asynchronous
-commands.  Comedi's poll(), read() and write() file operation handlers
-assume these subdevices do support asynchronous commands.  In
-particular, they assume `s->async` is valid (where `s` points to the
-read or write subdevice), which it won't be if it has been set
-incorrectly.  This can lead to a NULL pointer dereference.
+See https://bugzilla.redhat.com/show_bug.cgi?id=904907
+read command causes bash to abort with double free or corruption (out).
 
-Check `s->async` is non-NULL in `comedi_poll()`, `comedi_read()` and
-`comedi_write()` to avoid the bug.
+A simple test-case from Roman:
 
-Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
+	// Compile the reproducer and send sigchld ti that process.
+	// EINTR occurs even if SA_RESTART flag is set.
+
+	void handler(int sig)
+	{
+	}
+
+	main()
+	{
+	  struct sigaction act;
+	  act.sa_handler = handler;
+	  act.sa_flags = SA_RESTART;
+	  sigaction (SIGCHLD, &act, 0);
+	  struct termio ttp;
+	  ioctl(0, TCGETA, &ttp);
+	  while(1)
+	  {
+	    if (ioctl(0, TCSETAW, ttp) < 0)
+	      {
+		if (errno == EINTR)
+		{
+		  fprintf(stderr, "BUG!"); return(1);
+		}
+	      }
+	  }
+	}
+
+Change set_termios/set_termiox to return -ERESTARTSYS to fix this
+particular problem.
+
+I didn't dare to change other EINTR's in drivers/tty/, but they look
+equally wrong.
+
+Reported-by: Roman Rakus <rrakus@redhat.com>
+Reported-by: Lingzhu Xiang <lxiang@redhat.com>
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Cc: Jiri Slaby <jslaby@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-[ luis: adjust context, variables names ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/staging/comedi/comedi_fops.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/tty/tty_ioctl.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/staging/comedi/comedi_fops.c b/drivers/staging/comedi/comedi_fops.c
-index 2831080..b08cbbe 100644
---- a/drivers/staging/comedi/comedi_fops.c
-+++ b/drivers/staging/comedi/comedi_fops.c
-@@ -1866,7 +1866,7 @@ static unsigned int comedi_poll(struct file *file, poll_table *wait)
- 
- 	mask = 0;
- 	read_subdev = comedi_get_read_subdevice(dev_file_info);
--	if (read_subdev) {
-+	if (read_subdev && read_subdev->async) {
- 		poll_wait(file, &read_subdev->async->wait_head, wait);
- 		if (!read_subdev->busy
- 		    || comedi_buf_read_n_available(read_subdev->async) > 0
-@@ -1876,7 +1876,7 @@ static unsigned int comedi_poll(struct file *file, poll_table *wait)
- 		}
- 	}
- 	write_subdev = comedi_get_write_subdevice(dev_file_info);
--	if (write_subdev) {
-+	if (write_subdev && write_subdev->async) {
- 		poll_wait(file, &write_subdev->async->wait_head, wait);
- 		comedi_buf_write_alloc(write_subdev->async,
- 				       write_subdev->async->prealloc_bufsz);
-@@ -1918,7 +1918,7 @@ static ssize_t comedi_write(struct file *file, const char __user *buf,
+diff --git a/drivers/tty/tty_ioctl.c b/drivers/tty/tty_ioctl.c
+index a1b9a2f..f8d03da 100644
+--- a/drivers/tty/tty_ioctl.c
++++ b/drivers/tty/tty_ioctl.c
+@@ -617,7 +617,7 @@ static int set_termios(struct tty_struct *tty, void __user *arg, int opt)
+ 	if (opt & TERMIOS_WAIT) {
+ 		tty_wait_until_sent(tty, 0);
+ 		if (signal_pending(current))
+-			return -EINTR;
++			return -ERESTARTSYS;
  	}
  
- 	s = comedi_get_write_subdevice(dev_file_info);
--	if (s == NULL) {
-+	if (!s || !s->async) {
- 		retval = -EIO;
- 		goto done;
- 	}
-@@ -2029,7 +2029,7 @@ static ssize_t comedi_read(struct file *file, char __user *buf, size_t nbytes,
+ 	tty_set_termios(tty, &tmp_termios);
+@@ -684,7 +684,7 @@ static int set_termiox(struct tty_struct *tty, void __user *arg, int opt)
+ 	if (opt & TERMIOS_WAIT) {
+ 		tty_wait_until_sent(tty, 0);
+ 		if (signal_pending(current))
+-			return -EINTR;
++			return -ERESTARTSYS;
  	}
  
- 	s = comedi_get_read_subdevice(dev_file_info);
--	if (s == NULL) {
-+	if (!s || !s->async) {
- 		retval = -EIO;
- 		goto done;
- 	}
+ 	mutex_lock(&tty->termios_mutex);
 -- 
 1.8.1.2
 
