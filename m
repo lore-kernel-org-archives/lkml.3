@@ -1,80 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932732Ab3B1SOQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 13:14:16 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:32145 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759993Ab3B1SOP (ORCPT
+	id S932872Ab3B1SQJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 13:16:09 -0500
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:51224 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755839Ab3B1SQG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 13:14:15 -0500
-X-Authority-Analysis: v=2.0 cv=UN5f7Vjy c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=wom5GMh1gUkA:10 a=QjT1mVhjSf4A:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=ev9wIl1RTScA:10 a=zbbTrqVcxftZtKoRw0QA:9 a=CjuIK1q_8ugA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Date: Thu, 28 Feb 2013 13:14:11 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-Cc: Borislav Petkov <bp@alien8.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Greg KH <gregkh@linuxfoundation.org>, mingo@redhat.com,
-        tglx@linutronix.de, xen-devel@lists.xen.org,
-        linux-kernel@vger.kernel.org, samu.kallio@aberdeencloud.com,
-        kraman@redhat.com, jwboyer@redhat.com
-Subject: Re: Is: x86: mm: Fix vmalloc_fault oops during lazy MMU updates Was:
- Re: [PATCH] mm/x86: Flush lazy MMU when DEBUG_PAGEALLOC is set
-Message-ID: <20130228181411.GD9161@home.goodmis.org>
-References: <512E8B41.8000504@zytor.com>
- <20130227230009.GA32465@kroah.com>
- <512E91B7.6060102@zytor.com>
- <20130228142910.GA32354@phenom.dumpdata.com>
- <20130228153846.GA9782@pd.tnic>
- <512F7D88.4090703@zytor.com>
- <20130228161057.GC9767@pd.tnic>
- <512F83C4.6080904@oracle.com>
- <20130228162227.GD9767@pd.tnic>
- <512F856B.5090801@oracle.com>
+	Thu, 28 Feb 2013 13:16:06 -0500
+From: "Yann E. MORIN" <yann.morin.1998@free.fr>
+Organization: BZH lan
+To: linux-kbuild@vger.kernel.org
+Subject: Re: [PATCH] menuconfig: use config scripts to detect ncurses libs
+Date: Thu, 28 Feb 2013 19:16:00 +0100
+User-Agent: KMail/1.13.5 (Linux/3.8.0-treguer; KDE/4.4.5; x86_64; ; )
+Cc: jlec@gentoo.org, linux-kernel@vger.kernel.org
+References: <jlec@gentoo.org> <1362052335-17913-1-git-send-email-jlec@gentoo.org>
+In-Reply-To: <1362052335-17913-1-git-send-email-jlec@gentoo.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <512F856B.5090801@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201302281916.00257.yann.morin.1998@free.fr>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 28, 2013 at 11:27:23AM -0500, Boris Ostrovsky wrote:
-> On 02/28/2013 11:22 AM, Borislav Petkov wrote:
-> >On Thu, Feb 28, 2013 at 11:20:20AM -0500, Boris Ostrovsky wrote:
-> >>On 02/28/2013 11:10 AM, Borislav Petkov wrote:
-> >>>On Thu, Feb 28, 2013 at 07:53:44AM -0800, H. Peter Anvin wrote:
-> >>>>At the very least we should have an early filter for the **COMMON!**
-> >>>>case that we are not on a PV platform.
-> >>>... or, patch it out with the alternatives on baremetal, as Steven
-> >>>suggested.
+Justin, All,
+
+On Thursday 28 February 2013 jlec@gentoo.org wrote:
+> When building ncurses with --with-termlib several symbols get moved from
+> libncurses.so to libtinfo.so. Thus when linking with libncurses.so, one
+> additionally needs to link with libtinfo.so. Ncurses provides a config script
+> (ncurses5-config) to assist finding ncurses.
 > 
-> What was the suggestion exactly? I don't remember seeing that message.
+> This patch replaces the old heuristic for detection of ncurses libs for
+> linking the ncurses menuconfig dialog by the use of the config scripts.
+> This results in the requirement of ncurses version 5.6 or newer for menuconfig.
 
-Yeah, Borislav talked to me privately on IRC about this and I pointed
-him to the apply_paravirt() function in arch/x86/kernel/alternative.c
-where things that apply only to paravirt get patched out on baremetal.
+As you said, ncurses started bundling these files with ncurses-5.6,
+which was released in 2006.
 
-It may add complexity, but there's a method for doing it and I rather
-not burden baremetal for pravirt nonsense. I know adding a simple call
-to preempt_count() can show a noticable impact to function tracing. It
-requires referencing the gs segment register and doing some offset
-games (as it's stored as a per cpu pointer) to find the stack.
+OTOH, RHEL4 is still a widely used distro, and was released in 2005,
+so is using an ncurses older than 5.6, so I'm afraid we can't drop
+the legacy code like that.
 
-I was actually a bit amazed that it had as big of an impact as it did. I
-can understand why Christoph Lameter tried hard not to add a
-preempt_disable() in his code for just a tiny location.
+Of course, I'm no authority on the subject, so I'd suggest that you
+split this patch in two, and re-submit:
+  - one patch to add usage of ncurses{w,}5-config;
+  - one patch to drop legacy code.
 
--- Steve
+That way, it is easy to apply the *-config part, and get more people
+involved in commenting the legacy drop without further delaying use
+of the *-config scripts.
 
+And, sorry, I should have been more explicit in my previous mail that
+the legacy drop should be in its own patch. I thought that was obvious,
+following the "one single change per patch" philosophy.
+
+Thanks you! :-)
+
+Regards,
+Yann E. MORIN.
+
+> Signed-off-by: Justin Lecher <jlec@gentoo.org>
+> ---
+>  scripts/kconfig/lxdialog/check-lxdialog.sh | 11 ++---------
+>  1 file changed, 2 insertions(+), 9 deletions(-)
 > 
-> -boris
+> diff --git a/scripts/kconfig/lxdialog/check-lxdialog.sh b/scripts/kconfig/lxdialog/check-lxdialog.sh
+> index c8e8a71..10df55b 100644
+> --- a/scripts/kconfig/lxdialog/check-lxdialog.sh
+> +++ b/scripts/kconfig/lxdialog/check-lxdialog.sh
+> @@ -4,15 +4,8 @@
+>  # What library to link
+>  ldflags()
+>  {
+> -	for ext in so a dll.a dylib ; do
+> -		for lib in ncursesw ncurses curses ; do
+> -			$cc -print-file-name=lib${lib}.${ext} | grep -q /
+> -			if [ $? -eq 0 ]; then
+> -				echo "-l${lib}"
+> -				exit
+> -			fi
+> -		done
+> -	done
+> +	ncursesw5-config --libs 2>/dev/null && exit
+> +	ncurses5-config --libs 2>/dev/null && exit
+>  	exit 1
+>  }
+>  
+> -- 
+> 1.8.1.4
 > 
-> >>>
-> >>I think making a check for paravirt_enabled() is safe enough. I'll
-> >>send a patch shortly.
-> >Why not make it absolutely for free?
-> >
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kbuild" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+> 
+
+-- 
+.-----------------.--------------------.------------------.--------------------.
+|  Yann E. MORIN  | Real-Time Embedded | /"\ ASCII RIBBON | Erics' conspiracy: |
+| +33 662 376 056 | Software  Designer | \ / CAMPAIGN     |  ___               |
+| +33 223 225 172 `------------.-------:  X  AGAINST      |  \e/  There is no  |
+| http://ymorin.is-a-geek.org/ | _/*\_ | / \ HTML MAIL    |   v   conspiracy.  |
+'------------------------------^-------^------------------^--------------------'
