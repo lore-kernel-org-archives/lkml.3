@@ -1,55 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752311Ab3B1JKu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 04:10:50 -0500
-Received: from eu1sys200aog105.obsmtp.com ([207.126.144.119]:60019 "EHLO
-	eu1sys200aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750916Ab3B1JKq (ORCPT
+	id S1751886Ab3B1JNK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 04:13:10 -0500
+Received: from mail-ea0-f178.google.com ([209.85.215.178]:61662 "EHLO
+	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750899Ab3B1JNG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 04:10:46 -0500
-From: Linus Walleij <linus.walleij@stericsson.com>
-To: <linux-kernel@vger.kernel.org>, Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Cc: Anmar Oueja <anmar.oueja@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH] irqdomain: document the simple domain first_irq
-Date: Thu, 28 Feb 2013 10:07:18 +0100
-Message-ID: <1362042438-13887-1-git-send-email-linus.walleij@stericsson.com>
-X-Mailer: git-send-email 1.7.11.3
+	Thu, 28 Feb 2013 04:13:06 -0500
+Date: Thu, 28 Feb 2013 10:13:06 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        stable <stable@vger.kernel.org>,
+        Ezequiel Garcia <elezegarcia@gmail.com>
+Subject: Re: [PATCH][3.9] ftrace: Update the kconfig for DYNAMIC_FTRACE
+Message-ID: <20130228091306.GA6950@gmail.com>
+References: <1362021805.1231.18.camel@gandalf.local.home>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1362021805.1231.18.camel@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Linus Walleij <linus.walleij@linaro.org>
 
-The first_irq needs to be zero to get a linear domain and that
-comes with special semantics. We want to simplify this going
-forward but some documentation never hurts.
+* Steven Rostedt <rostedt@goodmis.org> wrote:
 
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
----
- kernel/irq/irqdomain.c | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+> 
+> Ingo,
+> 
+> At ELC I watched a presentation by Ezequiel about a tool he wrote to
+> analyze memory wasted by kmalloc and friends. He incorrectly stated that
+> you need to enable DYNAMIC_FTRACE in order to get events. I pointed out
+> that this was incorrect, but he showed me that the prompt for
+> DYNAMIC_FTRACE said it enabled/disabled ftrace tracepoints dynamically.
+> And sure enough, it did say that. But this was written when ftrace was
+> first created and hasn't been updated since. It was written well before
+> tracepoints made it into the kernel. Heck, it even references that damn
+> daemon!
+> 
+> As the merge window is still opened, and even if it wasn't, this fix
+> should go mainline ASAP. It should also go into stable. This is
+> definitely a bug. It may only be documentation (which means it's low
+> risk to add), but it's documentation on how to set up your kernel, and
+> that being wrong creates unexpected results for the user. Just like any
+> other bug would.
+> 
+> Please pull the latest tip/perf/urgent tree, which can be found at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
+> tip/perf/urgent
+> 
+> Head SHA1: db05021d49a994ee40a9735d9c3cb0060c9babb8
+> 
+> 
+> Steven Rostedt (1):
+>       ftrace: Update the kconfig for DYNAMIC_FTRACE
+> 
+> ----
+>  kernel/trace/Kconfig |   24 ++++++++++++++----------
+>  1 file changed, 14 insertions(+), 10 deletions(-)
 
-diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
-index 96f3a1d..059a280 100644
---- a/kernel/irq/irqdomain.c
-+++ b/kernel/irq/irqdomain.c
-@@ -143,7 +143,10 @@ static unsigned int irq_domain_legacy_revmap(struct irq_domain *domain,
-  * irq_domain_add_simple() - Allocate and register a simple irq_domain.
-  * @of_node: pointer to interrupt controller's device tree node.
-  * @size: total number of irqs in mapping
-- * @first_irq: first number of irq block assigned to the domain
-+ * @first_irq: first number of irq block assigned to the domain,
-+ *	pass zero to assign irqs on-the-fly. This will result in a
-+ *	linear IRQ domain so it is important to use irq_create_mapping()
-+ *	for each used IRQ, especially when SPARSE_IRQ is enabled.
-  * @ops: map/unmap domain callbacks
-  * @host_data: Controller private data pointer
-  *
--- 
-1.7.11.3
+Pulled, thanks Steve!
 
+	Ingo
