@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754392Ab3B1MNe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 07:13:34 -0500
+	id S1754518Ab3B1MNi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 07:13:38 -0500
 Received: from cn.fujitsu.com ([222.73.24.84]:39389 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753666Ab3B1MNT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 07:13:19 -0500
+	id S1753717Ab3B1MNU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Feb 2013 07:13:20 -0500
 X-IronPort-AV: E=Sophos;i="4.84,755,1355068800"; 
-   d="scan'208";a="6787329"
+   d="scan'208";a="6787332"
 From: Hu Tao <hutao@cn.fujitsu.com>
 To: kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
@@ -29,136 +29,92 @@ To: kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
         "Michael S. Tsirkin" <mst@redhat.com>, Alexander Graf <agraf@suse.de>,
         Alex Williamson <alex.williamson@redhat.com>,
         Peter Maydell <peter.maydell@linaro.org>
-Subject: [PATCH v13 4/8] add a new runstate: RUN_STATE_GUEST_PANICKED
-Date: Thu, 28 Feb 2013 20:13:15 +0800
-Message-Id: <ab47cb1ef5a962848b2390d5b602b36aca1f149a.1362051582.git.hutao@cn.fujitsu.com>
+Subject: [PATCH v13 7/8] allower the user to disable pv event support
+Date: Thu, 28 Feb 2013 20:13:18 +0800
+Message-Id: <1af3c134891e119a21268ac6c48434447a8f6ab2.1362051582.git.hutao@cn.fujitsu.com>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <cover.1362051581.git.hutao@cn.fujitsu.com>
 References: <cover.1362051581.git.hutao@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/02/28 20:12:17,
+ 2013/02/28 20:12:18,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/02/28 20:12:20,
-	Serialize complete at 2013/02/28 20:12:20
+ 2013/02/28 20:12:21,
+	Serialize complete at 2013/02/28 20:12:21
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The guest will be in this state when it is panicked.
-
 Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
 Signed-off-by: Hu Tao <hutao@cn.fujitsu.com>
 ---
- migration.c      |  1 +
- qapi-schema.json |  6 +++++-
- qmp.c            |  3 ++-
- vl.c             | 11 ++++++++++-
- 4 files changed, 18 insertions(+), 3 deletions(-)
+ hw/pc_piix.c    | 9 ++++++++-
+ qemu-options.hx | 3 ++-
+ vl.c            | 4 ++++
+ 3 files changed, 14 insertions(+), 2 deletions(-)
 
-diff --git a/migration.c b/migration.c
-index c29830e..fa17b82 100644
---- a/migration.c
-+++ b/migration.c
-@@ -698,6 +698,7 @@ static void *buffered_file_thread(void *opaque)
-                 int64_t start_time, end_time;
+diff --git a/hw/pc_piix.c b/hw/pc_piix.c
+index 24a9bf3..82a421a 100644
+--- a/hw/pc_piix.c
++++ b/hw/pc_piix.c
+@@ -44,6 +44,7 @@
+ #include "exec/memory.h"
+ #include "exec/address-spaces.h"
+ #include "cpu.h"
++#include "qemu/config-file.h"
+ #ifdef CONFIG_XEN
+ #  include <xen/hvm/hvm_info_table.h>
+ #endif
+@@ -86,6 +87,8 @@ static void pc_init1(MemoryRegion *system_memory,
+     MemoryRegion *pci_memory;
+     MemoryRegion *rom_memory;
+     void *fw_cfg = NULL;
++    QemuOptsList *list = qemu_find_opts("machine");
++    bool enable_pv_event = false;
  
-                 DPRINTF("done iterating\n");
-+                save_run_state();
-                 start_time = qemu_get_clock_ms(rt_clock);
-                 qemu_system_wakeup_request(QEMU_WAKEUP_REASON_OTHER);
-                 if (old_vm_running) {
-diff --git a/qapi-schema.json b/qapi-schema.json
-index 28b070f..8f1d138 100644
---- a/qapi-schema.json
-+++ b/qapi-schema.json
-@@ -174,11 +174,15 @@
- # @suspended: guest is suspended (ACPI S3)
- #
- # @watchdog: the watchdog action is configured to pause and has been triggered
-+#
-+# @guest-panicked: the panicked action is configured to pause and has been
-+# triggered.
- ##
- { 'enum': 'RunState',
-   'data': [ 'debug', 'inmigrate', 'internal-error', 'io-error', 'paused',
-             'postmigrate', 'prelaunch', 'finish-migrate', 'restore-vm',
--            'running', 'save-vm', 'shutdown', 'suspended', 'watchdog' ] }
-+            'running', 'save-vm', 'shutdown', 'suspended', 'watchdog',
-+            'guest-panicked' ] }
+     pc_cpus_init(cpu_model);
+     pc_acpi_init("acpi-dsdt.aml");
+@@ -218,7 +221,11 @@ static void pc_init1(MemoryRegion *system_memory,
+         pc_pci_device_init(pci_bus);
+     }
  
- ##
- # @SnapshotInfo
-diff --git a/qmp.c b/qmp.c
-index 5f1bed1..f5027f6 100644
---- a/qmp.c
-+++ b/qmp.c
-@@ -150,7 +150,8 @@ void qmp_cont(Error **errp)
-     Error *local_err = NULL;
- 
-     if (runstate_check(RUN_STATE_INTERNAL_ERROR) ||
--               runstate_check(RUN_STATE_SHUTDOWN)) {
-+            runstate_check(RUN_STATE_SHUTDOWN) ||
-+            runstate_check(RUN_STATE_GUEST_PANICKED)) {
-         error_set(errp, QERR_RESET_REQUIRED);
-         return;
-     } else if (runstate_check(RUN_STATE_SUSPENDED)) {
+-    if (kvm_enabled()) {
++    if (list && !QTAILQ_EMPTY(&list->head)) {
++        enable_pv_event = qemu_opt_get_bool(QTAILQ_FIRST(&list->head),
++                                            "enable_pv_event", false);
++    }
++    if (kvm_enabled() && enable_pv_event) {
+         kvm_pv_event_init(isa_bus);
+     }
+ }
+diff --git a/qemu-options.hx b/qemu-options.hx
+index 797d992..1ad4041 100644
+--- a/qemu-options.hx
++++ b/qemu-options.hx
+@@ -35,7 +35,8 @@ DEF("machine", HAS_ARG, QEMU_OPTION_machine, \
+     "                kernel_irqchip=on|off controls accelerated irqchip support\n"
+     "                kvm_shadow_mem=size of KVM shadow MMU\n"
+     "                dump-guest-core=on|off include guest memory in a core dump (default=on)\n"
+-    "                mem-merge=on|off controls memory merge support (default: on)\n",
++    "                mem-merge=on|off controls memory merge support (default: on)\n"
++    "                enable_pv_event=on|off controls pv event support (default: off)\n",
+     QEMU_ARCH_ALL)
+ STEXI
+ @item -machine [type=]@var{name}[,prop=@var{value}[,...]]
 diff --git a/vl.c b/vl.c
-index 3d08e1a..51d4922 100644
+index 51d4922..5b3a279 100644
 --- a/vl.c
 +++ b/vl.c
-@@ -536,6 +536,7 @@ static const RunStateTransition runstate_transitions_def[] = {
- 
-     { RUN_STATE_INMIGRATE, RUN_STATE_RUNNING },
-     { RUN_STATE_INMIGRATE, RUN_STATE_PAUSED },
-+    { RUN_STATE_INMIGRATE, RUN_STATE_GUEST_PANICKED },
- 
-     { RUN_STATE_INTERNAL_ERROR, RUN_STATE_RUNNING },
-     { RUN_STATE_INTERNAL_ERROR, RUN_STATE_FINISH_MIGRATE },
-@@ -549,6 +550,7 @@ static const RunStateTransition runstate_transitions_def[] = {
-     { RUN_STATE_POSTMIGRATE, RUN_STATE_RUNNING },
-     { RUN_STATE_POSTMIGRATE, RUN_STATE_PAUSED },
-     { RUN_STATE_POSTMIGRATE, RUN_STATE_FINISH_MIGRATE },
-+    { RUN_STATE_POSTMIGRATE, RUN_STATE_GUEST_PANICKED },
- 
-     { RUN_STATE_PRELAUNCH, RUN_STATE_RUNNING },
-     { RUN_STATE_PRELAUNCH, RUN_STATE_FINISH_MIGRATE },
-@@ -559,6 +561,7 @@ static const RunStateTransition runstate_transitions_def[] = {
- 
-     { RUN_STATE_RESTORE_VM, RUN_STATE_RUNNING },
-     { RUN_STATE_RESTORE_VM, RUN_STATE_PAUSED },
-+    { RUN_STATE_RESTORE_VM, RUN_STATE_GUEST_PANICKED },
- 
-     { RUN_STATE_RUNNING, RUN_STATE_DEBUG },
-     { RUN_STATE_RUNNING, RUN_STATE_INTERNAL_ERROR },
-@@ -569,6 +572,7 @@ static const RunStateTransition runstate_transitions_def[] = {
-     { RUN_STATE_RUNNING, RUN_STATE_SAVE_VM },
-     { RUN_STATE_RUNNING, RUN_STATE_SHUTDOWN },
-     { RUN_STATE_RUNNING, RUN_STATE_WATCHDOG },
-+    { RUN_STATE_RUNNING, RUN_STATE_GUEST_PANICKED },
- 
-     { RUN_STATE_SAVE_VM, RUN_STATE_RUNNING },
- 
-@@ -583,6 +587,10 @@ static const RunStateTransition runstate_transitions_def[] = {
-     { RUN_STATE_WATCHDOG, RUN_STATE_RUNNING },
-     { RUN_STATE_WATCHDOG, RUN_STATE_FINISH_MIGRATE },
- 
-+    { RUN_STATE_GUEST_PANICKED, RUN_STATE_RUNNING },
-+    { RUN_STATE_GUEST_PANICKED, RUN_STATE_PAUSED },
-+    { RUN_STATE_GUEST_PANICKED, RUN_STATE_FINISH_MIGRATE },
-+
-     { RUN_STATE_MAX, RUN_STATE_MAX },
- };
- 
-@@ -2001,7 +2009,8 @@ static bool main_loop_should_exit(void)
-         qemu_system_reset(VMRESET_REPORT);
-         resume_all_vcpus();
-         if (runstate_check(RUN_STATE_INTERNAL_ERROR) ||
--            runstate_check(RUN_STATE_SHUTDOWN)) {
-+            runstate_check(RUN_STATE_SHUTDOWN) ||
-+            runstate_check(RUN_STATE_GUEST_PANICKED)) {
-             bdrv_iterate(iostatus_bdrv_it, NULL);
-             vm_start();
-         }
+@@ -427,6 +427,10 @@ static QemuOptsList qemu_machine_opts = {
+             .name = "usb",
+             .type = QEMU_OPT_BOOL,
+             .help = "Set on/off to enable/disable usb",
++        }, {
++            .name = "enable_pv_event",
++            .type = QEMU_OPT_BOOL,
++            .help = "handle pv event"
+         },
+         { /* End of list */ }
+     },
 -- 
 1.8.1.4
 
