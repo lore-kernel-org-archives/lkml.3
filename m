@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754518Ab3B1MNi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 07:13:38 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:39389 "EHLO song.cn.fujitsu.com"
+	id S1753581Ab3B1MN0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 07:13:26 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:13757 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753717Ab3B1MNU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 07:13:20 -0500
+	id S1752040Ab3B1MNS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Feb 2013 07:13:18 -0500
 X-IronPort-AV: E=Sophos;i="4.84,755,1355068800"; 
-   d="scan'208";a="6787332"
+   d="scan'208";a="6787327"
 From: Hu Tao <hutao@cn.fujitsu.com>
 To: kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
@@ -29,92 +29,58 @@ To: kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
         "Michael S. Tsirkin" <mst@redhat.com>, Alexander Graf <agraf@suse.de>,
         Alex Williamson <alex.williamson@redhat.com>,
         Peter Maydell <peter.maydell@linaro.org>
-Subject: [PATCH v13 7/8] allower the user to disable pv event support
-Date: Thu, 28 Feb 2013 20:13:18 +0800
-Message-Id: <1af3c134891e119a21268ac6c48434447a8f6ab2.1362051582.git.hutao@cn.fujitsu.com>
+Subject: [PATCH v13 3/8] update kernel headers
+Date: Thu, 28 Feb 2013 20:13:14 +0800
+Message-Id: <cb8fd74d8299809227272ba657b638ee65ab2fe1.1362051582.git.hutao@cn.fujitsu.com>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <cover.1362051581.git.hutao@cn.fujitsu.com>
 References: <cover.1362051581.git.hutao@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/02/28 20:12:18,
+ 2013/02/28 20:12:17,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/02/28 20:12:21,
-	Serialize complete at 2013/02/28 20:12:21
+ 2013/02/28 20:12:19,
+	Serialize complete at 2013/02/28 20:12:19
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+update kernel headers to add pv event macros.
+
 Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
 Signed-off-by: Hu Tao <hutao@cn.fujitsu.com>
 ---
- hw/pc_piix.c    | 9 ++++++++-
- qemu-options.hx | 3 ++-
- vl.c            | 4 ++++
- 3 files changed, 14 insertions(+), 2 deletions(-)
+ linux-headers/asm-x86/kvm_para.h | 1 +
+ linux-headers/linux/kvm_para.h   | 6 ++++++
+ 2 files changed, 7 insertions(+)
 
-diff --git a/hw/pc_piix.c b/hw/pc_piix.c
-index 24a9bf3..82a421a 100644
---- a/hw/pc_piix.c
-+++ b/hw/pc_piix.c
-@@ -44,6 +44,7 @@
- #include "exec/memory.h"
- #include "exec/address-spaces.h"
- #include "cpu.h"
-+#include "qemu/config-file.h"
- #ifdef CONFIG_XEN
- #  include <xen/hvm/hvm_info_table.h>
- #endif
-@@ -86,6 +87,8 @@ static void pc_init1(MemoryRegion *system_memory,
-     MemoryRegion *pci_memory;
-     MemoryRegion *rom_memory;
-     void *fw_cfg = NULL;
-+    QemuOptsList *list = qemu_find_opts("machine");
-+    bool enable_pv_event = false;
+diff --git a/linux-headers/asm-x86/kvm_para.h b/linux-headers/asm-x86/kvm_para.h
+index a1c3d72..e9b082d 100644
+--- a/linux-headers/asm-x86/kvm_para.h
++++ b/linux-headers/asm-x86/kvm_para.h
+@@ -96,5 +96,6 @@ struct kvm_vcpu_pv_apf_data {
+ #define KVM_PV_EOI_ENABLED KVM_PV_EOI_MASK
+ #define KVM_PV_EOI_DISABLED 0x0
  
-     pc_cpus_init(cpu_model);
-     pc_acpi_init("acpi-dsdt.aml");
-@@ -218,7 +221,11 @@ static void pc_init1(MemoryRegion *system_memory,
-         pc_pci_device_init(pci_bus);
-     }
++#define KVM_PV_EVENT_PORT        (0x505UL)
  
--    if (kvm_enabled()) {
-+    if (list && !QTAILQ_EMPTY(&list->head)) {
-+        enable_pv_event = qemu_opt_get_bool(QTAILQ_FIRST(&list->head),
-+                                            "enable_pv_event", false);
-+    }
-+    if (kvm_enabled() && enable_pv_event) {
-         kvm_pv_event_init(isa_bus);
-     }
- }
-diff --git a/qemu-options.hx b/qemu-options.hx
-index 797d992..1ad4041 100644
---- a/qemu-options.hx
-+++ b/qemu-options.hx
-@@ -35,7 +35,8 @@ DEF("machine", HAS_ARG, QEMU_OPTION_machine, \
-     "                kernel_irqchip=on|off controls accelerated irqchip support\n"
-     "                kvm_shadow_mem=size of KVM shadow MMU\n"
-     "                dump-guest-core=on|off include guest memory in a core dump (default=on)\n"
--    "                mem-merge=on|off controls memory merge support (default: on)\n",
-+    "                mem-merge=on|off controls memory merge support (default: on)\n"
-+    "                enable_pv_event=on|off controls pv event support (default: off)\n",
-     QEMU_ARCH_ALL)
- STEXI
- @item -machine [type=]@var{name}[,prop=@var{value}[,...]]
-diff --git a/vl.c b/vl.c
-index 51d4922..5b3a279 100644
---- a/vl.c
-+++ b/vl.c
-@@ -427,6 +427,10 @@ static QemuOptsList qemu_machine_opts = {
-             .name = "usb",
-             .type = QEMU_OPT_BOOL,
-             .help = "Set on/off to enable/disable usb",
-+        }, {
-+            .name = "enable_pv_event",
-+            .type = QEMU_OPT_BOOL,
-+            .help = "handle pv event"
-         },
-         { /* End of list */ }
-     },
+ #endif /* _ASM_X86_KVM_PARA_H */
+diff --git a/linux-headers/linux/kvm_para.h b/linux-headers/linux/kvm_para.h
+index 7bdcf93..6c42923 100644
+--- a/linux-headers/linux/kvm_para.h
++++ b/linux-headers/linux/kvm_para.h
+@@ -20,6 +20,12 @@
+ #define KVM_HC_FEATURES			3
+ #define KVM_HC_PPC_MAP_MAGIC_PAGE	4
+ 
++/* The bit of supported pv event */
++#define KVM_PV_FEATURE_PANICKED      0
++
++/* The pv event value */
++#define KVM_PV_EVENT_PANICKED        1
++
+ /*
+  * hypercalls use architecture specific
+  */
 -- 
 1.8.1.4
 
