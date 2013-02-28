@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752353Ab3CAQmo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 11:42:44 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:33723 "EHLO
+	id S1752506Ab3CAQm4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 11:42:56 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:33722 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751156Ab3CAQjJ (ORCPT
+	with ESMTP id S1751151Ab3CAQjJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 1 Mar 2013 11:39:09 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Michael Ellerman <michael@ellerman.id.au>,
-        Feng Tang <feng.tang@intel.com>, Namhyung Kim <namhyung.kim@lge.com>,
-        Namhyung Kim <namhyung@kernel.org>,
+Cc: linux-kernel@vger.kernel.org, Borislav Petkov <bp@suse.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 14/15] perf annotate: Fix build with NO_NEWT=1
-Date: Thu, 28 Feb 2013 18:05:26 -0300
-Message-Id: <1362085527-25326-15-git-send-email-acme@infradead.org>
+Subject: [PATCH 03/15] perf tools: Honor parallel jobs
+Date: Thu, 28 Feb 2013 18:05:15 -0300
+Message-Id: <1362085527-25326-4-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.1.361.gec3ae6e
 In-Reply-To: <1362085527-25326-1-git-send-email-acme@infradead.org>
 References: <1362085527-25326-1-git-send-email-acme@infradead.org>
@@ -26,48 +25,55 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Michael Ellerman <michael@ellerman.id.au>
+From: Borislav Petkov <bp@suse.de>
 
-Commit 18c9e5c "Make it to be able to skip unannotatable symbols" broke
-the build with NO_NEWT=1:
+We need to hand down parallel build options like the internal make
+--jobserver-fds one so that parallel builds can also happen when
+building perf from the toplevel directory.
 
-   CC builtin-annotate.o
-builtin-annotate.c: In function 'hists__find_annotations':
-builtin-annotate.c:161:4: error: duplicate case value
-builtin-annotate.c:154:4: error: previously used here
-make: *** [builtin-annotate.o] Error 1
+Make it so #1!
 
-This is because without NEWT support K_LEFT is #defined to -1 in
-utils/hist.h
-
-Fix it by shifting the K_LEFT/K_RIGHT #defines out of the likely range
-of error values.
-
-Signed-off-by: Michael Ellerman <michael@ellerman.id.au>
-Cc: Feng Tang <feng.tang@intel.com>
-Cc: Namhyung Kim <namhyung.kim@lge.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Link: http://lkml.kernel.org/r/1361854923-1814-1-git-send-email-michael@ellerman.id.au
+Signed-off-by: Borislav Petkov <bp@suse.de>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Link: http://lkml.kernel.org/r/1361374353-30385-3-git-send-email-bp@alien8.de
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/hist.h | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ Makefile                       | 4 ++--
+ tools/scripts/Makefile.include | 2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
-index 3862468..609a115 100644
---- a/tools/perf/util/hist.h
-+++ b/tools/perf/util/hist.h
-@@ -208,8 +208,8 @@ static inline int script_browse(const char *script_opt __maybe_unused)
- 	return 0;
- }
+diff --git a/Makefile b/Makefile
+index 2cd4c6b..f14a9c9 100644
+--- a/Makefile
++++ b/Makefile
+@@ -1330,11 +1330,11 @@ kernelversion:
+ # Clear a bunch of variables before executing the submake
+ tools/: FORCE
+ 	$(Q)mkdir -p $(objtree)/tools
+-	$(Q)$(MAKE) LDFLAGS= MAKEFLAGS= O=$(objtree) subdir=tools -C $(src)/tools/
++	$(Q)$(MAKE) LDFLAGS= MAKEFLAGS="$(filter --j% -j,$(MAKEFLAGS))" O=$(objtree) subdir=tools -C $(src)/tools/
  
--#define K_LEFT -1
--#define K_RIGHT -2
-+#define K_LEFT  -1000
-+#define K_RIGHT -2000
- #endif
+ tools/%: FORCE
+ 	$(Q)mkdir -p $(objtree)/tools
+-	$(Q)$(MAKE) LDFLAGS= MAKEFLAGS= O=$(objtree) subdir=tools -C $(src)/tools/ $*
++	$(Q)$(MAKE) LDFLAGS= MAKEFLAGS="$(filter --j% -j,$(MAKEFLAGS))" O=$(objtree) subdir=tools -C $(src)/tools/ $*
  
- #ifdef GTK2_SUPPORT
+ # Single targets
+ # ---------------------------------------------------------------------------
+diff --git a/tools/scripts/Makefile.include b/tools/scripts/Makefile.include
+index 2964b96..00a05f4 100644
+--- a/tools/scripts/Makefile.include
++++ b/tools/scripts/Makefile.include
+@@ -70,7 +70,7 @@ ifndef V
+ 	QUIET_BISON    = @echo '   ' BISON $@;
+ 
+ 	descend = \
+-		@echo '   ' DESCEND $(1); \
++		+@echo '   ' DESCEND $(1); \
+ 		mkdir -p $(OUTPUT)$(1) && \
+ 		$(MAKE) $(COMMAND_O) subdir=$(if $(subdir),$(subdir)/$(1),$(1)) $(PRINT_DIR) -C $(1) $(2)
+ endif
 -- 
 1.8.1.1.361.gec3ae6e
 
