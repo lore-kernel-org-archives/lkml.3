@@ -1,42 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752188Ab3B1Gxa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 01:53:30 -0500
-Received: from mail-lb0-f176.google.com ([209.85.217.176]:50940 "EHLO
-	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751459Ab3B1Gx1 (ORCPT
+	id S1752286Ab3B1GyS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 01:54:18 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:22186 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751116Ab3B1GyR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 01:53:27 -0500
+	Thu, 28 Feb 2013 01:54:17 -0500
+Message-ID: <512EFEDF.8080205@huawei.com>
+Date: Thu, 28 Feb 2013 14:53:19 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
 MIME-Version: 1.0
-In-Reply-To: <CAHGf_=r5oo+N0_BSd-8-GPeburBnHVAjLEszmNkj+ASMJXqYLQ@mail.gmail.com>
-References: <512B677D.1040501@oracle.com>
-	<CAHGf_=rur29gFs9R9AYeDwnbVBm3b3cOfAn2xyi=mQ+ZbgzEDA@mail.gmail.com>
-	<512C15F0.6030907@oracle.com>
-	<CAJd=RBBxTutPsF+XPZGt44eT1f0uPAQfCvQj_UmwdDg82J=F+A@mail.gmail.com>
-	<CAHGf_=r5oo+N0_BSd-8-GPeburBnHVAjLEszmNkj+ASMJXqYLQ@mail.gmail.com>
-Date: Thu, 28 Feb 2013 14:53:25 +0800
-Message-ID: <CAJd=RBBtCxBgoeJ8xcj4zqv7pEk7uAy39V=in4RppDH05GjPkA@mail.gmail.com>
-Subject: Re: mm: BUG in mempolicy's sp_insert
-From: Hillf Danton <dhillf@gmail.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Sasha Levin <sasha.levin@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, Mel Gorman <mgorman@suse.de>,
-        Dave Jones <davej@redhat.com>, linux-mm <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Tejun Heo <tj@kernel.org>
+CC: Al Viro <viro@zeniv.linux.org.uk>, LKML <linux-kernel@vger.kernel.org>,
+        Cgroups <cgroups@vger.kernel.org>
+Subject: Re: [PATCH 2/3] cgroup: add cgroup_name() API
+References: <512B01FA.5020506@huawei.com> <512B020D.9040504@huawei.com> <20130226022703.GA13837@htj.dyndns.org> <512C8D84.7090707@huawei.com> <CAOS58YMb7HRQ3X+Z92vi3+jKr4DuNmAgxtc5e3Jkhy-s-7Os-g@mail.gmail.com> <512DE4A8.5050303@huawei.com> <CAOS58YMhm6Uia0bx6oUHwheXUhu8i31LPhh8VVggvg0vg-UmUQ@mail.gmail.com>
+In-Reply-To: <CAOS58YMhm6Uia0bx6oUHwheXUhu8i31LPhh8VVggvg0vg-UmUQ@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 28, 2013 at 1:26 PM, KOSAKI Motohiro
-<kosaki.motohiro@jp.fujitsu.com> wrote:
->> Insert new node after updating node in tree.
->
-> Thanks. you are right. I could reproduce and verified.
+On 2013/2/27 21:23, Tejun Heo wrote:
+> On Wed, Feb 27, 2013 at 2:49 AM, Li Zefan <lizefan@huawei.com> wrote:
+>> Well, cgrp->name is a pointer to struct cgroup_name.
+>>
+>> At first I tried to declare cgrp->name as char *, and use container_of()
+>> to get struct cgroup_name, but it didn't result in simpler code.
+> 
+> Hmmm?  But then what prevents defining const struct cgroup_name?
+> 
+> static const struct cgroup_name root_cgroup_name = { .name = "/" };
 
-Thank you too;) pleasure to do minor work for you.
+Can't... That's char name[0] not char *name.
 
-btw, how about your belly now? fully recovered?
+I'll allocate a global struct cgroup_name *root_cgroup_name, and use it
+for all root_cgroup->name and dummytop->name.
 
-Hillf
