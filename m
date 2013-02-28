@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756821Ab3B1XFG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 18:05:06 -0500
-Received: from longford.logfs.org ([213.229.74.203]:58558 "EHLO
+	id S1756983Ab3B1XFM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 18:05:12 -0500
+Received: from longford.logfs.org ([213.229.74.203]:58562 "EHLO
 	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756702Ab3B1XFB (ORCPT
+	with ESMTP id S1756702Ab3B1XFH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 18:05:01 -0500
+	Thu, 28 Feb 2013 18:05:07 -0500
 From: Joern Engel <joern@logfs.org>
 To: linux-kernel@vger.kernel.org
 Cc: Andrew Morton <akpm@linux-foundation.org>, Borislav Petkov <bp@alien8.de>,
         Jeff Moyer <jmoyer@redhat.com>, Joern Engel <joern@logfs.org>
-Subject: [PATCH 6/9] bcon: add a release work struct
-Date: Thu, 28 Feb 2013 16:39:59 -0500
-Message-Id: <1362087602-8979-7-git-send-email-joern@logfs.org>
+Subject: [PATCH 9/9] bcon: remove version 1.0 support
+Date: Thu, 28 Feb 2013 16:40:02 -0500
+Message-Id: <1362087602-8979-10-git-send-email-joern@logfs.org>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1362087602-8979-1-git-send-email-joern@logfs.org>
 References: <1362087602-8979-1-git-send-email-joern@logfs.org>
@@ -21,70 +21,65 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The final bcon_put() can be called from atomic context, by way of
-bio_endio().  In that case we would sleep in invalidate_mapping_pages(),
-with the usual unhappy results.
-
-In nearly a year of production use, I have only seen a matching
-backtrace once.  There was a second known issue that could be reproduced
-by "yes h > /proc/sysrq-trigger" and concurrently pulling and replugging
-the blockconsole device.  It took be somewhere around 30 pulls and sore
-thumbs to reproduce and I never found the time to get to the bottom of
-it.  Quite likely the two issues are identical.
+Very few machines ever ran with 1.0 format and by now I doubt whether a
+single one still does.  No need to carry that code along.
 
 Signed-off-by: Joern Engel <joern@logfs.org>
 ---
- drivers/block/blockconsole.c |   15 +++++++++++++--
- 1 file changed, 13 insertions(+), 2 deletions(-)
+ drivers/block/blockconsole.c |   19 ++-----------------
+ 1 file changed, 2 insertions(+), 17 deletions(-)
 
 diff --git a/drivers/block/blockconsole.c b/drivers/block/blockconsole.c
-index 32f6c62..b4730f8 100644
+index b4730f8..e88b8ee 100644
 --- a/drivers/block/blockconsole.c
 +++ b/drivers/block/blockconsole.c
-@@ -65,6 +65,7 @@ struct blockconsole {
- 	struct block_device *bdev;
- 	struct console console;
- 	struct work_struct unregister_work;
-+	struct work_struct release_work;
- 	struct task_struct *writeback_thread;
- 	struct notifier_block panic_block;
- };
-@@ -74,9 +75,10 @@ static void bcon_get(struct blockconsole *bc)
- 	kref_get(&bc->kref);
+@@ -18,7 +18,6 @@
+ #include <linux/sched.h>
+ #include <linux/ctype.h>
+ 
+-#define BLOCKCONSOLE_MAGIC_OLD	"\nLinux blockconsole version 1.0\n"
+ #define BLOCKCONSOLE_MAGIC	"\nLinux blockconsole version 1.1\n"
+ #define BCON_UUID_OFS		(32)
+ #define BCON_ROUND_OFS		(41)
+@@ -234,18 +233,6 @@ static void bcon_advance_write_bytes(struct blockconsole *bc, int bytes)
+ 	}
  }
  
--static void bcon_release(struct kref *kref)
-+static void __bcon_release(struct work_struct *work)
+-static int bcon_convert_old_format(struct blockconsole *bc)
+-{
+-	bc->uuid = get_random_int();
+-	bc->round = 0;
+-	bc->console_bytes = bc->write_bytes = 0;
+-	bcon_advance_console_bytes(bc, 0); /* To skip the header */
+-	bcon_advance_write_bytes(bc, 0); /* To wrap around, if necessary */
+-	bcon_erase_segment(bc);
+-	pr_info("converted %s from old format\n", bc->devname);
+-	return 0;
+-}
+-
+ static int bcon_find_end_of_log(struct blockconsole *bc)
  {
--	struct blockconsole *bc = container_of(kref, struct blockconsole, kref);
-+	struct blockconsole *bc = container_of(work, struct blockconsole,
-+			release_work);
+ 	u64 start = 0, end = bc->max_bytes, middle;
+@@ -258,8 +245,8 @@ static int bcon_find_end_of_log(struct blockconsole *bc)
+ 		return err;
+ 	/* Second sanity check, out of sheer paranoia */
+ 	version = bcon_magic_present(sec0);
+-	if (version == 10)
+-		return bcon_convert_old_format(bc);
++	if (!version)
++		return -EINVAL;
  
- 	__free_pages(bc->zero_page, 0);
- 	__free_pages(bc->pages, 8);
-@@ -85,6 +87,14 @@ static void bcon_release(struct kref *kref)
- 	kfree(bc);
- }
- 
-+static void bcon_release(struct kref *kref)
-+{
-+	struct blockconsole *bc = container_of(kref, struct blockconsole, kref);
-+
-+	/* bcon_release can be called from atomic context */
-+	schedule_work(&bc->release_work);
-+}
-+
- static void bcon_put(struct blockconsole *bc)
+ 	bc->uuid = simple_strtoull(sec0 + BCON_UUID_OFS, NULL, 16);
+ 	bc->round = simple_strtoull(sec0 + BCON_ROUND_OFS, NULL, 16);
+@@ -618,8 +605,6 @@ int bcon_magic_present(const void *data)
  {
- 	kref_put(&bc->kref, bcon_release);
-@@ -512,6 +522,7 @@ static int bcon_create(const char *devname)
- 	if (IS_ERR(bc->writeback_thread))
- 		goto out2;
- 	INIT_WORK(&bc->unregister_work, bcon_unregister);
-+	INIT_WORK(&bc->release_work, __bcon_release);
- 	register_console(&bc->console);
- 	bc->panic_block.notifier_call = blockconsole_panic;
- 	bc->panic_block.priority = INT_MAX;
+ 	size_t len = strlen(BLOCKCONSOLE_MAGIC);
+ 
+-	if (!memcmp(data, BLOCKCONSOLE_MAGIC_OLD, len))
+-		return 10;
+ 	if (memcmp(data, BLOCKCONSOLE_MAGIC, len))
+ 		return 0;
+ 	if (!is_four_byte_hex(data + BCON_UUID_OFS))
 -- 
 1.7.10.4
 
