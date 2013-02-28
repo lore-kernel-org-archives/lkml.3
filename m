@@ -1,221 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933173Ab3B1Tft (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 14:35:49 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:54091 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755774Ab3B1Tfs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 14:35:48 -0500
-Message-ID: <512FB186.6010207@ti.com>
-Date: Thu, 28 Feb 2013 15:35:34 -0400
-From: Eduardo Valentin <eduardo.valentin@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	id S933188Ab3B1TlZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 14:41:25 -0500
+Received: from ka.mail.enyo.de ([87.106.162.201]:43608 "EHLO ka.mail.enyo.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756233Ab3B1TlY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Feb 2013 14:41:24 -0500
+From: Florian Weimer <fw@deneb.enyo.de>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Chris Friesen <chris.friesen@genband.com>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        David Howells <dhowells@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Josh Boyer <jwboyer@redhat.com>, Peter Jones <pjones@redhat.com>,
+        Vivek Goyal <vgoyal@redhat.com>, Kees Cook <keescook@chromium.org>,
+        keyrings@linux-nfs.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] Load keys from signed PE binaries
+References: <CA+55aFxyuvC1H6doSw_e_yLTey2YGWU9cLnUzxUeT2kaeazydA@mail.gmail.com>
+	<20130221164244.GA19625@srcf.ucam.org>
+	<18738.1361836265@warthog.procyon.org.uk>
+	<20130226005955.GA19686@kroah.com>
+	<20130226023332.GA29282@srcf.ucam.org>
+	<20130226030249.GB23834@kroah.com>
+	<20130226031338.GA29784@srcf.ucam.org>
+	<20130226033156.GA24999@kroah.com> <8738wgsweq.fsf@mid.deneb.enyo.de>
+	<512F7B0E.1030404@genband.com> <20130228193023.GA8090@srcf.ucam.org>
+Date: Thu, 28 Feb 2013 20:41:13 +0100
+In-Reply-To: <20130228193023.GA8090@srcf.ucam.org> (Matthew Garrett's message
+	of "Thu, 28 Feb 2013 19:30:23 +0000")
+Message-ID: <87d2vkns4m.fsf@mid.deneb.enyo.de>
 MIME-Version: 1.0
-To: Durgadoss R <durgadoss.r@intel.com>
-CC: <rui.zhang@intel.com>, <linux-pm@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <hongbo.zhang@linaro.org>,
-        <wni@nvidia.com>
-Subject: Re: [PATCH 3/8] Thermal: Add APIs to bind cdev to new zone structure
-References: <1360061183-14137-1-git-send-email-durgadoss.r@intel.com> <1360061183-14137-4-git-send-email-durgadoss.r@intel.com>
-In-Reply-To: <1360061183-14137-4-git-send-email-durgadoss.r@intel.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Durga,
+* Matthew Garrett:
 
-On 05-02-2013 06:46, Durgadoss R wrote:
-> This patch creates new APIs to add/remove a
-> cdev to/from a zone. This patch does not change
-> the old cooling device implementation.
+>> Would it be possible to have a signed bootloader that allows booting
+>> Win8 from within the secure environment, or it could exit the secure
+>> environment and run unsigned grub?
+>
+> What would stop the unsigned grub from installing a firmware hook that 
+> lies about whether or not Secure Boot is enabled, and then booting 
+> Windows?
 
-Same comments on patch 02/08 I want to rise here:
+Windows would not have access to the product key because it is stored
+in a variable without EFI_VARIABLE_RUNTIME_ACCESS, so WGA and other
+checks will fail, and the user will notice.
 
-- Consider using linked list
-- You may have contention on your index/cdevs array
-- overflow on your buffer (carefully check your implementation)
-- zone removal condition. can we remove zones with cdevs registered?
-- get_by_name, why do we need it? (at least not on this patch)
-- Minors on strlcpy, snprintf, devm_ helpers
-- documentation in the code for these helper functions and also better 
-naming..
-
->
-> Signed-off-by: Durgadoss R <durgadoss.r@intel.com>
-> ---
->   drivers/thermal/thermal_sys.c |   80 +++++++++++++++++++++++++++++++++++++++++
->   include/linux/thermal.h       |    9 +++++
->   2 files changed, 89 insertions(+)
->
-> diff --git a/drivers/thermal/thermal_sys.c b/drivers/thermal/thermal_sys.c
-> index 838d4fb..bf703b1 100644
-> --- a/drivers/thermal/thermal_sys.c
-> +++ b/drivers/thermal/thermal_sys.c
-> @@ -57,6 +57,7 @@ static LIST_HEAD(thermal_governor_list);
->   static DEFINE_MUTEX(thermal_list_lock);
->   static DEFINE_MUTEX(sensor_list_lock);
->   static DEFINE_MUTEX(zone_list_lock);
-> +static DEFINE_MUTEX(cdev_list_lock);
->   static DEFINE_MUTEX(thermal_governor_lock);
->
->   #define for_each_thermal_sensor(pos) \
-> @@ -83,6 +84,9 @@ static DEFINE_MUTEX(thermal_governor_lock);
->   	ret;						\
->   })
->
-> +#define for_each_cdev(pos) \
-> +	list_for_each_entry(pos, &thermal_cdev_list, node)
-> +
->   static struct thermal_governor *__find_governor(const char *name)
->   {
->   	struct thermal_governor *pos;
-> @@ -466,6 +470,24 @@ static void remove_sensor_from_zone(struct thermal_zone *tz,
->   	tz->sensor_indx--;
->   }
->
-> +static void remove_cdev_from_zone(struct thermal_zone *tz,
-> +				struct thermal_cooling_device *cdev)
-> +{
-> +	int j, indx;
-> +
-> +	indx = GET_INDEX(tz, cdev, cdev);
-> +	if (indx < 0)
-> +		return;
-> +
-> +	sysfs_remove_link(&tz->device.kobj, kobject_name(&cdev->device.kobj));
-> +
-> +	/* Shift the entries in the tz->cdevs array */
-> +	for (j = indx; j < MAX_CDEVS_PER_ZONE - 1; j++)
-> +		tz->cdevs[j] = tz->cdevs[j + 1];
-> +
-> +	tz->cdev_indx--;
-> +}
-> +
->   /* sys I/F for thermal zone */
->
->   #define to_thermal_zone(_dev) \
-> @@ -1462,6 +1484,7 @@ void thermal_cooling_device_unregister(struct thermal_cooling_device *cdev)
->   	int i;
->   	const struct thermal_zone_params *tzp;
->   	struct thermal_zone_device *tz;
-> +	struct thermal_zone *tmp_tz;
->   	struct thermal_cooling_device *pos = NULL;
->
->   	if (!cdev)
-> @@ -1499,6 +1522,13 @@ void thermal_cooling_device_unregister(struct thermal_cooling_device *cdev)
->
->   	mutex_unlock(&thermal_list_lock);
->
-> +	mutex_lock(&zone_list_lock);
-> +
-> +	for_each_thermal_zone(tmp_tz)
-> +		remove_cdev_from_zone(tmp_tz, cdev);
-> +
-> +	mutex_unlock(&zone_list_lock);
-> +
->   	if (cdev->type[0])
->   		device_remove_file(&cdev->device, &dev_attr_cdev_type);
->   	device_remove_file(&cdev->device, &dev_attr_max_state);
-> @@ -1794,6 +1824,23 @@ exit:
->   }
->   EXPORT_SYMBOL(remove_thermal_zone);
->
-> +struct thermal_cooling_device *get_cdev_by_name(const char *name)
-> +{
-> +	struct thermal_cooling_device *pos;
-> +	struct thermal_cooling_device *cdev = NULL;
-> +
-> +	mutex_lock(&cdev_list_lock);
-> +	for_each_cdev(pos) {
-> +		if (!strnicmp(pos->type, name, THERMAL_NAME_LENGTH)) {
-> +			cdev = pos;
-> +			break;
-> +		}
-> +	}
-> +	mutex_unlock(&cdev_list_lock);
-> +	return cdev;
-> +}
-> +EXPORT_SYMBOL(get_cdev_by_name);
-> +
->   struct thermal_sensor *get_sensor_by_name(const char *name)
->   {
->   	struct thermal_sensor *pos;
-> @@ -1844,6 +1891,39 @@ exit_zone:
->   }
->   EXPORT_SYMBOL(add_sensor_to_zone);
->
-> +int add_cdev_to_zone(struct thermal_zone *tz,
-> +			struct thermal_cooling_device *cdev)
-> +{
-> +	int ret;
-> +
-> +	if (!tz || !cdev)
-> +		return -EINVAL;
-> +
-> +	mutex_lock(&zone_list_lock);
-> +
-> +	/* Ensure we are not adding the same cdev again!! */
-> +	ret = GET_INDEX(tz, cdev, cdev);
-> +	if (ret >= 0) {
-> +		ret = -EEXIST;
-> +		goto exit_zone;
-> +	}
-> +
-> +	mutex_lock(&cdev_list_lock);
-> +	ret = sysfs_create_link(&tz->device.kobj, &cdev->device.kobj,
-> +				kobject_name(&cdev->device.kobj));
-> +	if (ret)
-> +		goto exit_cdev;
-> +
-> +	tz->cdevs[tz->cdev_indx++] = cdev;
-> +
-> +exit_cdev:
-> +	mutex_unlock(&cdev_list_lock);
-> +exit_zone:
-> +	mutex_unlock(&zone_list_lock);
-> +	return ret;
-> +}
-> +EXPORT_SYMBOL(add_cdev_to_zone);
-> +
->   /**
->    * thermal_sensor_register - register a new thermal sensor
->    * @name:	name of the thermal sensor
-> diff --git a/include/linux/thermal.h b/include/linux/thermal.h
-> index 2194519..c841414 100644
-> --- a/include/linux/thermal.h
-> +++ b/include/linux/thermal.h
-> @@ -57,6 +57,8 @@
->
->   #define MAX_SENSORS_PER_ZONE		5
->
-> +#define MAX_CDEVS_PER_ZONE		5
-> +
->   struct thermal_sensor;
->   struct thermal_zone_device;
->   struct thermal_cooling_device;
-> @@ -217,6 +219,10 @@ struct thermal_zone {
->   	/* Sensor level information */
->   	int sensor_indx; /* index into 'sensors' array */
->   	struct thermal_sensor *sensors[MAX_SENSORS_PER_ZONE];
-> +
-> +	/* cdev level information */
-> +	int cdev_indx; /* index into 'cdevs' array */
-> +	struct thermal_cooling_device *cdevs[MAX_CDEVS_PER_ZONE];
->   };
->
->   /* Structure that holds thermal governor information */
-> @@ -296,6 +302,9 @@ void remove_thermal_zone(struct thermal_zone *);
->   int add_sensor_to_zone(struct thermal_zone *, struct thermal_sensor *);
->   struct thermal_sensor *get_sensor_by_name(const char *);
->
-> +int add_cdev_to_zone(struct thermal_zone *, struct thermal_cooling_device *);
-> +struct thermal_cooling_device *get_cdev_by_name(const char *);
-> +
->   #ifdef CONFIG_NET
->   extern int thermal_generate_netlink_event(struct thermal_zone_device *tz,
->   						enum events event);
->
-
+(Not sure if it is implemented this way, my test machine lost the
+firmware-embedded product key after the mainboard was replaced.)
