@@ -1,130 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752260Ab3B1ClV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 21:41:21 -0500
-Received: from e32.co.us.ibm.com ([32.97.110.150]:57109 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750973Ab3B1ClU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 21:41:20 -0500
-Date: Wed, 27 Feb 2013 18:41:12 -0800
-From: Cody P Schafer <cody@linux.vnet.ibm.com>
-To: Linux MM <linux-mm@kvack.org>
-Cc: David Hansen <dave@linux.vnet.ibm.com>,
-        Cody P Schafer <cody@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [RFC] DNUMA: Runtime NUMA memory layout reconfiguration
-Message-ID: <20130228024112.GA24970@negative>
+	id S1752559Ab3B1CyC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 21:54:02 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:2372 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751571Ab3B1Cx7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Feb 2013 21:53:59 -0500
+Message-ID: <512EC7F0.60103@redhat.com>
+Date: Wed, 27 Feb 2013 21:58:56 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13022802-5406-0000-0000-000005BECE5E
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        "Vinod, Chegu" <chegu_vinod@hp.com>, "Low, Jason" <jason.low2@hp.com>,
+        linux-tip-commits@vger.kernel.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>, aquini@redhat.com,
+        Michel Lespinasse <walken@google.com>, Ingo Molnar <mingo@kernel.org>
+Subject: Re: [tip:core/locking] x86/smp: Move waiting on contended ticket
+ lock out of line
+References: <20130206150403.006e5294@cuia.bos.redhat.com> <tip-4aef331850b637169ff036ed231f0d236874f310@git.kernel.org> <CA+55aFx6N6SaRN+w=CTXJ=ZSsOE6KeS2R9sT_uhAx9h2j+hjKg@mail.gmail.com> <511BE4A3.8050607@redhat.com> <CA+55aFycMB7OZGQ54ueQ74C42beDBSdQE_fKJDV=TbjTjr_emg@mail.gmail.com> <511C1204.9040608@redhat.com> <CA+55aFwxYK-BLH0crhySHaQvAYHOH-VGUi7WTd1aq-24+WTDYw@mail.gmail.com> <511C24A6.8020409@redhat.com> <CA+55aFws80EEJQskqiP+a5J-HOGu=M1Fe=uCs50ifedVxPxT1Q@mail.gmail.com> <512E376D.70105@redhat.com> <CA+55aFzPxJ3rfZvAvrP9LxCXfDU8AAVvhMZnP-OAoe-ycc70aw@mail.gmail.com> <512E6443.9050603@redhat.com> <CA+55aFwHxv9RH75BoXYcwdKeHx+otOOpg9494TTdFwQe3biOhw@mail.gmail.com> <512E80E3.7060800@redhat.com> <CA+55aFwa0EjGG2NUDYVLVBmXJa2k81YiuNO2yggk=GLRQxhhUQ@mail.gmail.com>
+In-Reply-To: <CA+55aFwa0EjGG2NUDYVLVBmXJa2k81YiuNO2yggk=GLRQxhhUQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These patches allow the NUMA memory layout (meaning the mapping of a page to a
-node) to be changed at runtime in place (without hotplugging).
+On 02/27/2013 05:13 PM, Linus Torvalds wrote:
+>
+> On Feb 27, 2013 1:56 PM, "Rik van Riel" <riel@redhat.com
+> <mailto:riel@redhat.com>> wrote:
+>>
+>> No argument there, but that does in no way negate the need for some
+>> performance robustness.
+>
+> The very numbers you posted showed that the backoff was *not* more
+> robust. Quite the reverse, there was arguably more variability.
 
-= Why/when is this useful? =
+On the other hand, both MCS and the fast queue locks
+implemented by Michel showed low variability and high
+performance.
 
-In virtual machines (VMs) running on NUMA systems both [a] if/when the
-hypervisor decides to move their backing memory around (compacting,
-prioritizing another VMs desired layout, etc) and [b] in general for
-migration of VMs.
+http://thread.gmane.org/gmane.linux.kernel/1427417
 
-The hardware is _already_ changing the NUMA layout underneath us. We have
-powerpc64 systems with firmware that currently move the backing memory around,
-and have the ability to notify Linux of new NUMA info.
+> So I really don't like how you make these sweeping statements
+> *again*. Numbers talk, bullshit walks.
 
-= Code & testing =
+If you read all the text in my last mail, you will see the
+link to Michel's performance results. The numbers speak for
+themselves.
 
-web:
-	https://github.com/jmesmon/linux/tree/dnuma/v26
-git:
-	https://github.com/jmesmon/linux.git dnuma/v26
+> The fact is, life is complicated. The simple spinlocks tend to work
+> really well. People have tried fancy things before, and it turns out
+> it's not as simple as they think.
 
-commit range:
-	7e4f3230c9161706ebe9d37d774398082dc352de^..01e16461cf4a914feb1a34ed8dd7b28f3e842645
+The numbers for both the simple spinlocks and the
+spinlock backoff kind of suck. Both of these have
+high variability, and both eventually fall down
+under heavy load.
 
-Some patches are marked "XXX: ...", they are only for testing or
-temporary documentation purposes.
+The numbers for Michel's MCS and fast queue lock
+implementations appear to be both fast and stable.
 
-A debugfs interface allows the NUMA memory layout to be changed.  Basically,
-you don't need to have wierd systems to test this, in fact, I've done all my
-testing so far in plain old qemu-i386.
+I agree that we need numbers.
 
-A script which stripes the memory between nodes or pushes all memory to a
-(potentially new) node is avaliable here:
-
-	https://raw.github.com/jmesmon/trifles/master/bin/dnuma-test
-
-Related LSF/MM Topic proposal:
-
-	http://permalink.gmane.org/gmane.linux.kernel.mm/95342
-
-= How are you managing to do this? =
-
-Reconfiguration of page->node mappings is done at the page allocator
-level by both pulling out free pages (when a new memory layout is
-commited) & redirecting pages on free to their new node.
-
-Because we can't change page_node(A) while A is allocated, a rbtree
-holding the mapping from pfn ranges to node ids ('struct memlayout')
-is introduced to track the pfn->node mapping for
-yet-to-be-transplanted pages. A lookup in this rbtree occurs on any
-page allocator path that decides which zone to free a page to.
-
-To avoid horrible performance due to rbtree lookups all the time, the
-rbtree is only consulted when the page is marked with a new pageflag
-(LookupNode).
-
-= Current Limitations =
-
-For the reconfiguration to be effective (and not make the allocator make
-poorer choices), updating the cpu->node mappings is also needed. This patchset
-does _not_ handle this. Also missing is a way to update topology (node
-distances), which is less fatal.
-
-These patches only work on SPARSEMEM and the node id _must_ fit in the pageflags
-(can't be pushed out to the section). This generally means that 32-bit
-platforms are out (unless you hack MAX_PHYS{ADDR,MEM}_BITS like I do for
-testing).
-
-This code does the reconfiguration without hotplugging memory at all (1
-errant page doesn't keep us from fixing the rest of them). But it still
-depends on MEMORY_HOTPLUG for functions that online nodes & adjust
-zone/pgdat size.
-
-Things that need doing (but aren't quite bugs):
- - While the interface is meant to be driven via a hypervisor/firmware, that
-   portion is not yet included.
- - notifier for kernel users of memory that need/want their allocations on a
-   particular node (NODE_DATA(), for instance).
- - notifier for userspace.
- - a way to allocate things from the appropriate node prior to the page
-   allocator being fully updated (could just be "allocate it wrong now &
-   reallocate later").
- - Make memlayout faster (potentially via per-node allocation, different data
-   structure, or more/smarter caching).
- - (potentially) propagation of updated layout knowledge into kmem_caches
-   (SL*B).
-
-Known Bugs:
- - Transplant of free pages is _very_ slow due to excessive use of
-   stop_machine() via zone_pcp_update() & build_zonelists(). On my i5 laptop,
-   it take ~9 minutes to stripe the layout in blocks of 256 pfns to 3 nodes on a
-   128MB 8 cpu x86_32 VM booted with 2 nodes.
- - memory leak when SLUB is used (struct kmem_cache_nodes are leaked), SLAB
-   appears fine.
- - Locking of managed_pages/present_pages needs adjustment, or they need to
-   be updated outside of the free page path.
- - Exported numa/memory info in sysfs isn't updated (`numactl --show` segfaults,
-   `numactl --hardware` shows new nodes as nearly empty).
- - Uses pageflag setters without "owning" pages, could cause loss of pageflag
-   updates when combined with non-atomic pageflag users in mm/*.
- - some strange sleeps while atomic (for me they occur when memory is
-   moved out of all the boot nodes)
+I do not agree that other locks should be dismissed
+out of hand without looking at the numbers.
 
