@@ -1,171 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753581Ab3B1Lwf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 06:52:35 -0500
-Received: from slimlogic.co.uk ([89.16.172.20]:47576 "EHLO slimlogic.co.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753308Ab3B1Lwd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 06:52:33 -0500
-Message-ID: <512F44FD.2040104@slimlogic.co.uk>
-Date: Thu, 28 Feb 2013 11:52:29 +0000
-From: Ian Lartey <ian@slimlogic.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	id S1753077Ab3B1MA5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 07:00:57 -0500
+Received: from smtp.eu.citrix.com ([46.33.159.39]:33707 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752040Ab3B1MAz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Feb 2013 07:00:55 -0500
+X-IronPort-AV: E=Sophos;i="4.84,755,1355097600"; 
+   d="scan'208";a="2020738"
+Message-ID: <512F46F5.5040105@citrix.com>
+Date: Thu, 28 Feb 2013 13:00:53 +0100
+From: =?ISO-8859-1?Q?Roger_Pau_Monn=E9?= <roger.pau@citrix.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:17.0) Gecko/20130216 Thunderbird/17.0.3
 MIME-Version: 1.0
-To: Laxman Dewangan <ldewangan@nvidia.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "j-keerthy@ti.com" <j-keerthy@ti.com>,
-        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
-        "cooloney@gmail.com" <cooloney@gmail.com>,
-        "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "broonie@opensource.wolfsonmicro.com" 
-	<broonie@opensource.wolfsonmicro.com>
-Subject: Re: [PATCH 1/2] leds: Add support for Palmas LEDs
-References: <1361970800-31460-1-git-send-email-ian@slimlogic.co.uk> <512EEECF.5090409@nvidia.com>
-In-Reply-To: <512EEECF.5090409@nvidia.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Jan Beulich <JBeulich@suse.com>
+CC: "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH RFC 12/12] xen-block: implement indirect descriptors
+References: <1362047335-26402-1-git-send-email-roger.pau@citrix.com> <1362047335-26402-13-git-send-email-roger.pau@citrix.com> <512F4B4402000078000C1E5B@nat28.tlf.novell.com>
+In-Reply-To: <512F4B4402000078000C1E5B@nat28.tlf.novell.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28/02/13 05:44, Laxman Dewangan wrote:
-> On Wednesday 27 February 2013 06:43 PM, Ian Lartey wrote:
->> The Palmas familly of chips has LED support. This is not always muxed
->> to output pins so depending on the setting of the mux this driver
->> will create the appropriate LED class devices.
->>
->> Signed-off-by: Graeme Gregory <gg@slimlogic.co.uk>
->> Signed-off-by: Ian Lartey <ian@slimlogic.co.uk>
->> ---
->
-> Patch 1 and 2 can be merged together as this is makefile, Kconfig and
-> driver addition.
+On 28/02/13 12:19, Jan Beulich wrote:
+>>>> On 28.02.13 at 11:28, Roger Pau Monne <roger.pau@citrix.com> wrote:
+>> @@ -109,6 +111,16 @@ typedef uint64_t blkif_sector_t;
+>>   */
+>>  #define BLKIF_MAX_SEGMENTS_PER_REQUEST 11
+>>  
+>> +#define BLKIF_MAX_INDIRECT_GREFS_PER_REQUEST 8
+>> +
+>> +struct blkif_request_segment_aligned {
+>> +	grant_ref_t gref;        /* reference to I/O buffer frame        */
+>> +	/* @first_sect: first sector in frame to transfer (inclusive).   */
+>> +	/* @last_sect: last sector in frame to transfer (inclusive).     */
+>> +	uint8_t     first_sect, last_sect;
+>> +	uint16_t    _pad; /* padding to make it 8 bytes, so it's cache-aligned */
+>> +} __attribute__((__packed__));
+> 
+> What's the __packed__ for here?
 
-This could cause a merge conflict for anyone adding files/drivers
-in drivers/leds so it's safer to separate the Kconfig and Makefile
-from the actual drver source code so that can go in conflict free.
+Yes, that's not needed.
 
->
->
+> 
 >> +
->> +static int palmas_led_read(struct palmas_leds_data *leds, unsigned
->> int reg,
->> +               unsigned int *dest)
->> +{
->> +       unsigned int addr;
->> +
->> +       addr = PALMAS_BASE_TO_REG(PALMAS_LED_BASE, reg);
-> This is not require. Infact doing this will not work.
+>>  struct blkif_request_rw {
+>>  	uint8_t        nr_segments;  /* number of segments                   */
+>>  	blkif_vdev_t   handle;       /* only for read/write requests         */
+>> @@ -138,11 +150,24 @@ struct blkif_request_discard {
+>>  	uint8_t        _pad3;
+>>  } __attribute__((__packed__));
+>>  
+>> +struct blkif_request_indirect {
+>> +	uint8_t        indirect_op;
+>> +	uint16_t       nr_segments;
+>> +#ifdef CONFIG_X86_64
+>> +	uint32_t       _pad1;        /* offsetof(blkif_...,u.indirect.id) == 8 */
+>> +#endif
+> 
+> Either you want the structure be packed tightly (and you don't care
+> about misaligned fields), in which case you shouldn't need a padding
+> field. That's even more so as there's no padding between indirect_op
+> and nr_segments, so everything is misaligned anyway, and the
+> comment above is wrong too (offsetof() really ought to yield 7 in
+> that case).
 
-Yes, of course, thanks for that.
->
-> palmas_read already take care of proper offset.
->          unsigned int addr =  PALMAS_BASE_TO_REG(base, reg);
->          int slave_id = PALMAS_BASE_TO_SLAVE(base);
->
->          return regmap_read(palmas->regmap[slave_id], addr, val);
->
->
-> same for other places also.
+This padding is because we want to have the "id" field at the same
+position as blkif_request_rw, so we need to add the padding for it to
+match 32 & 64 bit blkif_request_rw structures, this prevents adding some
+"if (req.op == BLKIF_OP_INDIRECT)..." if we only need to get the id of
+the request.
 
-ditto.
+The comment is indeed wrong, I've copied it from blkif_request_discard
+and forgot to change the offset
 
->
->
->>
->> +static void palmas_leds_work(struct work_struct *work)
->> +{
->> +       struct palmas_led *led = container_of(work, struct palmas_led,
->> work);
->> +       unsigned int period, ctrl;
->> +       unsigned long flags;
->> +
->> +       mutex_lock(&led->mutex);
->> +
->> +       palmas_led_read(led->leds_data, PALMAS_LED_CTRL, &ctrl);
->> +       palmas_led_read(led->leds_data, PALMAS_LED_PERIOD_CTRL, &period);
->> +
->> +       spin_lock_irqsave(&led->value_lock, flags);
->> +
->> +       switch (led->led_no) {
->> +       case 1:
->> +               ctrl &= ~PALMAS_LED_CTRL_LED_1_ON_TIME_MASK;
->> +               period &= ~PALMAS_LED_PERIOD_CTRL_LED_1_PERIOD_MASK;
->> +
->
-> case 1,2,3 and 4 looks same, jus shift/mask are changed. I think this
-> can be rewritten here to reduce code size.
+> 
+> Or you want the structure fields aligned, in which case you again
+> ought to drop the use of the __packed__ attribute and introduce
+> _all_ necessary padding fields.
+> 
+>> +	uint64_t       id;
+>> +	blkif_vdev_t   handle;
+>> +	blkif_sector_t sector_number;
+>> +	grant_ref_t    indirect_grefs[BLKIF_MAX_INDIRECT_GREFS_PER_REQUEST];
+>> +} __attribute__((__packed__));
+> 
+> And then it would be quite nice for new features to no longer
+> require translation between a 32- and a 64-bit layout at all.
 
-Will do.
+The translation is caused by the id issue described above.
 
->
->
->> +static int palmas_leds_probe(struct platform_device *pdev)
->> +{
->> +       struct palmas *palmas = dev_get_drvdata(pdev->dev.parent);
->> +       struct palmas_leds_platform_data *pdata =
->> pdev->dev.platform_data;
->> +       struct palmas_leds_data *leds_data;
->> +       struct device_node *node = pdev->dev.of_node;
->> +       int ret, i;
->> +       int offset = 0;
->> +
->> +       if (!palmas->led_muxed &&
->> !is_palmas_charger(palmas->product_id)) {
->> +               dev_err(&pdev->dev, "there are no LEDs muxed\n");
->> +               return -EINVAL;
->> +       }
->> +
->> +       /* Palmas charger requires platform data */
->> +       if (is_palmas_charger(palmas->product_id) && node && !pdata) {
->> +               pdata = devm_kzalloc(&pdev->dev, sizeof(*pdata),
->> GFP_KERNEL);
->> +
->> +               if (!pdata)
->> +                       return -ENOMEM;
->> +
->> +               ret = palmas_dt_to_pdata(&pdev->dev, node, pdata);
->> +               if (ret)
->> +                       return ret;
->> +       }
->> +
->> +       if (is_palmas_charger(palmas->product_id) && !pdata)
->> +               return -EINVAL;
->> +
->> +       leds_data = kzalloc(sizeof(*leds_data), GFP_KERNEL);
->
-> Use devm_kzalloc().
-
-Noted.
-
->
->
->> +
->> +static int  palmas_leds_init(void)
->> +{
->> +       return platform_driver_register(&palmas_leds_driver);
->> +}
->> +module_init(palmas_leds_init);
->> +
->> +static void palmas_leds_exit(void)
->> +{
->> +       platform_driver_unregister(&palmas_leds_driver);
->> +}
->> +module_exit(palmas_leds_exit);
->
-> use Module_platform_driver().
-
-Will do.
-
->
+> Plus, rather than introducing uninitialized padding fields, I'd
+> suggest using fields that are required to be zero initialized, to
+> allow giving them a meaning later.
 
 
-Thanks,
 
-Ian
