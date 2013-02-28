@@ -1,62 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752403Ab3B1Xp1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 18:45:27 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:60446 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752014Ab3B1Xp0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 18:45:26 -0500
-Date: Fri, 1 Mar 2013 00:45:23 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: David Howells <dhowells@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>, jwboyer@redhat.com,
-        pjones@redhat.com, vgoyal@redhat.com, keescook@chromium.org,
-        keyrings@linux-nfs.org, linux-kernel@vger.kernel.org,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Florian Weimer <fw@deneb.enyo.de>, Paolo Bonzini <pbonzini@redhat.com>
-Subject: Re: [GIT PULL] Load keys from signed PE binaries
-In-Reply-To: <20130228230518.GA12717@srcf.ucam.org>
-Message-ID: <alpine.LNX.2.00.1303010040280.11745@pobox.suse.cz>
-References: <30665.1361461678@warthog.procyon.org.uk> <alpine.LRH.2.00.1302282335500.2038@twin.jikos.cz> <20130228225115.GA12360@srcf.ucam.org> <alpine.LNX.2.00.1302282357210.11745@pobox.suse.cz> <20130228230518.GA12717@srcf.ucam.org>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1752904Ab3B1XqX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 18:46:23 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41505 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751223Ab3B1XqW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Feb 2013 18:46:22 -0500
+Date: Thu, 28 Feb 2013 15:46:20 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: Stanislav Kinsbursky <skinsbursky@parallels.com>,
+        linux-kernel@vger.kernel.org, Dave Jones <davej@redhat.com>
+Subject: Re: [PATCH 00/10] ipc MSG_COPY fixes
+Message-Id: <20130228154620.a6d87ad8.akpm@linux-foundation.org>
+In-Reply-To: <1361845307-12737-1-git-send-email-peter@hurleysoftware.com>
+References: <1361845307-12737-1-git-send-email-peter@hurleysoftware.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 28 Feb 2013, Matthew Garrett wrote:
+On Mon, 25 Feb 2013 21:21:37 -0500
+Peter Hurley <peter@hurleysoftware.com> wrote:
 
-> > But the real harm is being done by the i_own_your_ring0.ko module, which 
-> > can be modprobed on all the systems where the signed "hello world" binary 
-> > has been keyctl-ed before it was blacklisted.
+> Over the weekend testing with trinity on KVM, I hit a similar oops
+> (pasted below) to what others have already reported here
+>      http://lkml.indiana.edu/hypermail/linux/kernel/1302.2/01465.html
 > 
-> Sure, if you've been infected before the revocation, you'll still be 
-> infected. There's not really any good way around that.
-
-Which is a very substantial difference to normal X509 chain of trust, 
-isn't it?
-
-This security model seems to be quite seriously flawed to me (in a sense 
-that it has nothing to do with chain of trust as mandated by X509 even 
-though it tries to pretend the opposite)
-
-And frankly, Linus' proposal at [1] doesn't really make it any better in 
-principle, it just keeps the whole thing out of kernel.
-
-[1] https://lkml.org/lkml/2013/2/21/228
-
-> > In other words -- you blacklist the population of the key on systems by 
-> > blakclisting the key-carrying binary, but the key remains trusted on 
-> > whatever system the binary has been processed by keyctl before. Right?
+> While trying to uncover the underlying cause of the list corruption,
+> I uncovered two other bugs which are addressed in
+>   ipc: Fix potential oops when src msg > 4k w/ MSG_COPY
+>   ipc: Don't allocate a copy larger than max
 > 
-> You have to re-load it on every boot, it's not a permanent thing.
+> The other cleanup was incidental to trying to uncover the oops (so far
+> unsuccessfully).
 
-That unfortunately seems to be very weak security measure as well.
+afacit, only the above two are needed in 3.9 and 3.8.x, agree?
 
-Thanks,
+The changelog for "ipc: Don't allocate a copy larger than max" is
+rather poor - it doesn't actually describe the bug's effects, so people
+will have trouble understanding whether they need the patch in their
+kernels.  Can you please send along some additional description of this
+one?
 
--- 
-Jiri Kosina
-SUSE Labs
+
