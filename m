@@ -1,62 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751712Ab3B1GfX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 01:35:23 -0500
-Received: from intranet.asianux.com ([58.214.24.6]:31602 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750813Ab3B1GfT (ORCPT
+	id S1751883Ab3B1Gij (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 01:38:39 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:1705 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751096Ab3B1Gig (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 01:35:19 -0500
-X-Spam-Score: -100.8
-Message-ID: <512EFA91.5050101@asianux.com>
-Date: Thu, 28 Feb 2013 14:34:57 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Thu, 28 Feb 2013 01:38:36 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Wed, 27 Feb 2013 22:33:08 -0800
+From: Venu Byravarasu <vbyravarasu@nvidia.com>
+To: <gregkh@linuxfoundation.org>, <stern@rowland.harvard.edu>
+CC: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <swarren@wwwdotorg.org>, Venu Byravarasu <vbyravarasu@nvidia.com>
+Subject: [PATCH] usb: host: tegra: Reset Tegra USB controller before init
+Date: Thu, 28 Feb 2013 12:06:58 +0530
+Message-ID: <1362033418-7332-1-git-send-email-vbyravarasu@nvidia.com>
+X-Mailer: git-send-email 1.7.0.4
 MIME-Version: 1.0
-To: JBottomley@parallels.com, David Miller <davem@davemloft.net>,
-        kxie@chelsio.com, michaelc@cs.wisc.edu
-CC: linux-scsi@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] drivers/scsi/cxgbi: using ccflags-y instead of EXTRA_CFLAGS
- in Kbuild
-References: <50F15A35.4000400@asianux.com> <50FB9A33.2090204@asianux.com> <51077BB3.2010809@asianux.com> <512ECDDC.2020607@asianux.com> <512EF43D.1070805@asianux.com>
-In-Reply-To: <512EF43D.1070805@asianux.com>
-Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+To clear any configurations made by U-Boot on Tegra USB controller,
+reset it before init in probe.
 
-  need using ccflags-y instead of EXTRA_CFLAGS
-    can reference scripts/checkpatch.pl (1755..1766)
-
-  when make EXTRA_CFLAGS=-W, the compiling issue will be occured.
-
-
-Signed-off-by: Chen Gang <gang.chen@asianux.com>
+Signed-off-by: Venu Byravarasu <vbyravarasu@nvidia.com>
 ---
- drivers/scsi/cxgbi/cxgb3i/Kbuild |    2 +-
- drivers/scsi/cxgbi/cxgb4i/Kbuild |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+When U-Boot configures a Tegra USB controller in device mode and if the EHCI
+driver of kernel tries to set it to HOST mode, message "irq 52: nobody cared"
+appears and IRQ gets disabled.
 
-diff --git a/drivers/scsi/cxgbi/cxgb3i/Kbuild b/drivers/scsi/cxgbi/cxgb3i/Kbuild
-index 6f095e2..961a12f 100644
---- a/drivers/scsi/cxgbi/cxgb3i/Kbuild
-+++ b/drivers/scsi/cxgbi/cxgb3i/Kbuild
-@@ -1,3 +1,3 @@
--EXTRA_CFLAGS += -I$(srctree)/drivers/net/ethernet/chelsio/cxgb3
-+ccflags-y += -I$(srctree)/drivers/net/ethernet/chelsio/cxgb3
+This issue was initially reported with: http://marc.info/?l=linux-tegra&m=136110175423601&w=2
+
+To avoid such issues, due to configurations made by U-Boot driver, reset the
+Tegra USB controller, before configuring it by kernel.
+
+
+ drivers/usb/host/ehci-tegra.c |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/usb/host/ehci-tegra.c b/drivers/usb/host/ehci-tegra.c
+index 568aecc..83d190a 100644
+--- a/drivers/usb/host/ehci-tegra.c
++++ b/drivers/usb/host/ehci-tegra.c
+@@ -28,6 +28,7 @@
+ #include <linux/pm_runtime.h>
+ #include <linux/usb/ehci_def.h>
+ #include <linux/usb/tegra_usb_phy.h>
++#include <linux/clk/tegra.h>
  
- obj-$(CONFIG_SCSI_CXGB3_ISCSI) += cxgb3i.o
-diff --git a/drivers/scsi/cxgbi/cxgb4i/Kbuild b/drivers/scsi/cxgbi/cxgb4i/Kbuild
-index 8290cda..3745864 100644
---- a/drivers/scsi/cxgbi/cxgb4i/Kbuild
-+++ b/drivers/scsi/cxgbi/cxgb4i/Kbuild
-@@ -1,3 +1,3 @@
--EXTRA_CFLAGS += -I$(srctree)/drivers/net/ethernet/chelsio/cxgb4
-+ccflags-y += -I$(srctree)/drivers/net/ethernet/chelsio/cxgb4
+ #define TEGRA_USB_BASE			0xC5000000
+ #define TEGRA_USB2_BASE			0xC5004000
+@@ -691,6 +692,10 @@ static int tegra_ehci_probe(struct platform_device *pdev)
+ 	if (err)
+ 		goto fail_clk;
  
- obj-$(CONFIG_SCSI_CXGB4_ISCSI) += cxgb4i.o
++	tegra_periph_reset_assert(tegra->clk);
++	udelay(1);
++	tegra_periph_reset_deassert(tegra->clk);
++
+ 	tegra->needs_double_reset = of_property_read_bool(pdev->dev.of_node,
+ 		"nvidia,needs-double-reset");
+ 
 -- 
-1.7.7.6
+1.7.0.4
+
