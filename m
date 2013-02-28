@@ -1,81 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752271Ab3B1KhX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 05:37:23 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:57031 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751608Ab3B1KhT (ORCPT
+	id S1752605Ab3B1Kh4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 05:37:56 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:39390 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751991Ab3B1Khy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 05:37:19 -0500
-X-AuditID: cbfee690-b7f6b6d000004563-f4-512f335eb2da
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Andrew Morton'" <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, "'Alessandro Zummo'" <a.zummo@towertech.it>,
-        rtc-linux@googlegroups.com, "'Jingoo Han'" <jg1.han@samsung.com>
-Subject: [PATCH 1/7] rtc: rtc-mv: add __init annotation
-Date: Thu, 28 Feb 2013 19:37:18 +0900
-Message-id: <000901ce159f$94e48270$bead8750$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac4Vn5THVyS/kU1xRpiO8bTmT1G2Wg==
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrLIsWRmVeSWpSXmKPExsVy+t8zQ904Y/1Ag1O/ZSyWXLzKbjFn/Ro2
-	i8sLL7FaXN41h81if2cHowOrx56JJ9k8Tsz4zeLRt2UVo8f0eT+ZPD5vkgtgjeKySUnNySxL
-	LdK3S+DKuLzkFFPBd9aKxtmP2RsYf7F0MXJySAiYSFw7vosJwhaTuHBvPVsXIxeHkMAyRom/
-	nQ+YYYrWr2hjhEhMZ5Tovb+YHcL5xShxffJasFFsAmoSX74cBkpwcIgI6Eu0tWiA1DAL9DJK
-	nOndzQ5SIyxgLnG05wgrSA2LgKrErzPiIGFeAVuJLZt/skLYghI/Jt8DG8ksoCWxeVsTK4Qt
-	L7F5zVtmkFYJAXWJR391ITbpSVy5mQlRISKx78U7RoiTj7FLNN+KBrFZBAQkvk0+xALRKSux
-	6QDUV5ISB1fcYJnAKDYLyd5ZSPbOQrJ3FpINCxhZVjGKphYkFxQnpReZ6BUn5haX5qXrJefn
-	bmKERN2EHYz3DlgfYkwGWj+RWUo0OR8YtXkl8YbGxiZmJqYm5pam5qakCSuJ88pfkgkUEkhP
-	LEnNTk0tSC2KLyrNSS0+xMjEwSnVwMjyI9HKe01NQYThFS0vQ+/FiucnmuQuet6akKb8Tucj
-	p9MmU0HRc6Y8F+cvuPW3dVLv8UvCMgbKsqXXpLJEo2oPZz/eXL9/fY5L6uk7tlMuFmZanZ45
-	fdtMYYlug9LZTCIndFL3POZMDpZ+Iihvdl78wqlbrCv6Uudn81Z9vaVsu/K8/J7ga0osxRmJ
-	hlrMRcWJAGeHGV7QAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprNKsWRmVeSWpSXmKPExsVy+t9jQd04Y/1Ag5vzJCyWXLzKbjFn/Ro2
-	i8sLL7FaXN41h81if2cHowOrx56JJ9k8Tsz4zeLRt2UVo8f0eT+ZPD5vkgtgjWpgtMlITUxJ
-	LVJIzUvOT8nMS7dV8g6Od443NTMw1DW0tDBXUshLzE21VXLxCdB1y8wB2q6kUJaYUwoUCkgs
-	LlbSt8M0ITTETdcCpjFC1zckCK7HyAANJKxjzLi85BRTwXfWisbZj9kbGH+xdDFyckgImEis
-	X9HGCGGLSVy4t56ti5GLQ0hgOqNE7/3F7BDOL0aJ65PXgnWwCahJfPlyGCjBwSEioC/R1qIB
-	UsMs0MsocaZ3NztIjbCAucTRniOsIDUsAqoSv86Ig4R5BWwltmz+yQphC0r8mHwPbCSzgJbE
-	5m1NrBC2vMTmNW+ZQVolBNQlHv3VhdikJ3HlZiZEhYjEvhfvGCcwCsxCMmgWkkGzkAyahaRl
-	ASPLKkbR1ILkguKk9FwjveLE3OLSvHS95PzcTYzgqH4mvYNxVYPFIUYBDkYlHt4OE71AIdbE
-	suLK3EOMEhzMSiK8Lvz6gUK8KYmVValF+fFFpTmpxYcYk4HenMgsJZqcD0w4eSXxhsYmZkaW
-	RmYWRibm5qQJK4nzMp56EiAkkJ5YkpqdmlqQWgSzhYmDU6qBMaT155+uU2dfG76Ybr1kb8fc
-	fM1lnHx8yhdvBCvrXdh3I/mayr7W92t23PNxnf1r+6xZPyLfBm5kefj97qbM4NyA7584Rayb
-	HvPUa0SaKp9tv233PdpMa0X6+y130/eufGw1QfDGEomSKbvuvNkUIJfAGvJ9l81jxS3i/o0L
-	Dlelis/6cO7QmQYlluKMREMt5qLiRADjxDXDLgMAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Thu, 28 Feb 2013 05:37:54 -0500
+Date: Thu, 28 Feb 2013 10:37:49 +0000
+From: Luis Henriques <luis.henriques@canonical.com>
+To: Roger Quadros <rogerq@ti.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Felipe Balbi <balbi@ti.com>, Alan Stern <stern@rowland.harvard.edu>,
+        Russ.Dill@gmail.com
+Subject: Re: [ 79/86] USB: ehci-omap: Dont free gpios that we didnt request
+Message-ID: <20130228103749.GC4073@hercules>
+References: <20130226235912.881663118@linuxfoundation.org>
+ <20130226235921.105248169@linuxfoundation.org>
+ <512DBB46.1080609@ti.com>
+ <20130227172059.GA5066@hercules>
+ <512F2E6F.5010802@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <512F2E6F.5010802@ti.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When platform_driver_probe() is used, bind/unbind via sysfs is
-disabled. Thus, __init/__exit annotations can be added to
-probe()/remove().
+On Thu, Feb 28, 2013 at 12:16:15PM +0200, Roger Quadros wrote:
+> Hi Luis,
+> 
+> On 02/27/2013 07:20 PM, Luis Henriques wrote:
+> > Hi Roger,
+> > 
+> > On Wed, Feb 27, 2013 at 09:52:38AM +0200, Roger Quadros wrote:
+> >> Hi Greg,
+> >>
+> >> On 02/27/2013 02:08 AM, Greg Kroah-Hartman wrote:
+> >>> 3.4-stable review patch.  If anyone has any objections, please let me know.
+> >>>
+> >>> ------------------
+> >>>
+> >>> From: Roger Quadros <rogerq@ti.com>
+> >>>
+> >>> commit 428525f97153505e83983460a8d08a3210aa6b8a upstream.
+> >>>
+> >>> This driver does not request any gpios so don't free them.
+> >>> Fixes L3 bus error on multiple modprobe/rmmod of ehci_hcd
+> >>> with ehci-omap in use.
+> >>
+> >> Please drop this patch from 3.4-stable.
+> >>
+> >> In 3.4, the driver requests the gpios in probe() so they must be freed
+> >> in remove() and this patch should not be applied. Thanks.
+> > 
+> > I believe this is also true for the 3.5 kernels.  Can you confirm this?
+> > 
+> 
+> The problem was introduced in v3.5 by this commit.
+> 
+> commit c05995c3d7d0d8edda6ecd2855ac5fad15fa4723
+> Author: Russ Dill <Russ.Dill@gmail.com>
+> Date:   Thu Jun 14 09:24:21 2012 -0700
+> 
+>     mfd: USB: Fix the omap-usb EHCI ULPI PHY reset fix issues.
+> 
+> 
+> So the fix is applicable from v3.5 to v3.8
 
-Signed-off-by: Jingoo Han <jg1.han@samsung.com>
----
- drivers/rtc/rtc-mv.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Great, thanks.  The fix is queued in the 3.5 tree.
 
-diff --git a/drivers/rtc/rtc-mv.c b/drivers/rtc/rtc-mv.c
-index 57233c8..59d1671 100644
---- a/drivers/rtc/rtc-mv.c
-+++ b/drivers/rtc/rtc-mv.c
-@@ -215,7 +215,7 @@ static const struct rtc_class_ops mv_rtc_alarm_ops = {
- 	.alarm_irq_enable = mv_rtc_alarm_irq_enable,
- };
- 
--static int mv_rtc_probe(struct platform_device *pdev)
-+static int __init mv_rtc_probe(struct platform_device *pdev)
- {
- 	struct resource *res;
- 	struct rtc_plat_data *pdata;
--- 
-1.7.2.5
+Cheers,
+--
+Luis
 
-
+> 
+> cheers, -roger
+> 
+> 
+> >>
+> >>>
+> >>> Without this patch, EHCI will break on repeated insmod/rmmod
+> >>> of ehci_hcd for all OMAP2+ platforms that use EHCI and
+> >>> set 'phy_reset = true' in usbhs_omap_board_data.
+> >>> i.e.
+> >>>
+> >>> board-3430sdp.c:	.phy_reset  = true,
+> >>> board-3630sdp.c:	.phy_reset  = true,
+> >>> board-am3517crane.c:	.phy_reset  = true,
+> >>> board-am3517evm.c:	.phy_reset  = true,
+> >>> board-cm-t3517.c:	.phy_reset  = true,
+> >>> board-cm-t35.c:	.phy_reset  = true,
+> >>> board-devkit8000.c:	.phy_reset  = true,
+> >>> board-igep0020.c:	.phy_reset = true,
+> >>> board-igep0020.c:	.phy_reset = true,
+> >>> board-omap3beagle.c:	.phy_reset  = true,
+> >>> board-omap3evm.c:	.phy_reset  = true,
+> >>> board-omap3pandora.c:	.phy_reset  = true,
+> >>> board-omap3stalker.c:	.phy_reset = true,
+> >>> board-omap3touchbook.c:	.phy_reset  = true,
+> >>> board-omap4panda.c:	.phy_reset  = false,
+> >>> board-overo.c:	.phy_reset  = true,
+> >>> board-zoom.c:	.phy_reset		= true,
+> >>>
+> >>> Signed-off-by: Roger Quadros <rogerq@ti.com>
+> >>> Reviewed-by: Felipe Balbi <balbi@ti.com>
+> >>> Acked-by: Alan Stern <stern@rowland.harvard.edu>
+> >>> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> >>>
+> >>> ---
+> >>>  drivers/usb/host/ehci-omap.c |    8 --------
+> >>>  1 file changed, 8 deletions(-)
+> >>>
+> >>> --- a/drivers/usb/host/ehci-omap.c
+> >>> +++ b/drivers/usb/host/ehci-omap.c
+> >>> @@ -288,7 +288,6 @@ static int ehci_hcd_omap_remove(struct p
+> >>>  {
+> >>>  	struct device *dev				= &pdev->dev;
+> >>>  	struct usb_hcd *hcd				= dev_get_drvdata(dev);
+> >>> -	struct ehci_hcd_omap_platform_data *pdata	= dev->platform_data;
+> >>>  
+> >>>  	usb_remove_hcd(hcd);
+> >>>  	disable_put_regulator(dev->platform_data);
+> >>> @@ -297,13 +296,6 @@ static int ehci_hcd_omap_remove(struct p
+> >>>  	pm_runtime_put_sync(dev);
+> >>>  	pm_runtime_disable(dev);
+> >>>  
+> >>> -	if (pdata->phy_reset) {
+> >>> -		if (gpio_is_valid(pdata->reset_gpio_port[0]))
+> >>> -			gpio_free(pdata->reset_gpio_port[0]);
+> >>> -
+> >>> -		if (gpio_is_valid(pdata->reset_gpio_port[1]))
+> >>> -			gpio_free(pdata->reset_gpio_port[1]);
+> >>> -	}
+> >>>  	return 0;
+> >>>  }
+> >>>  
+> >>>
+> >>>
+> >>
+> >> --
+> >> To unsubscribe from this list: send the line "unsubscribe stable" in
+> >> the body of a message to majordomo@vger.kernel.org
+> >> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe stable" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
