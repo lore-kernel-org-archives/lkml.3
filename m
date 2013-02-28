@@ -1,83 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933157Ab3B1TLg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 14:11:36 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:40737 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933134Ab3B1TLc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 14:11:32 -0500
-Message-ID: <512FABD7.3090000@wwwdotorg.org>
-Date: Thu, 28 Feb 2013 12:11:19 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Alan Stern <stern@rowland.harvard.edu>
-CC: Venu Byravarasu <vbyravarasu@nvidia.com>, gregkh@linuxfoundation.org,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] usb: host: tegra: Reset Tegra USB controller before init
-References: <Pine.LNX.4.44L0.1302281346120.1352-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1302281346120.1352-100000@iolanthe.rowland.org>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1759625Ab3B1TYI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 14:24:08 -0500
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:60611 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757222Ab3B1TYG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Feb 2013 14:24:06 -0500
+Message-ID: <1362079419.2908.390.camel@falcor1.watson.ibm.com>
+Subject: Re: IMA: How to manage user space signing policy with others
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        linux-security-module@vger.kernel.org
+Date: Thu, 28 Feb 2013 14:23:39 -0500
+In-Reply-To: <20130228151333.GB11360@redhat.com>
+References: <20130228151333.GB11360@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13022819-7182-0000-0000-000005961F76
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/28/2013 11:52 AM, Alan Stern wrote:
-> On Thu, 28 Feb 2013, Stephen Warren wrote:
+On Thu, 2013-02-28 at 10:13 -0500, Vivek Goyal wrote:
+> Hi Mimi,
 > 
->> I think this patch might cause unintended consequences.
->>
->> When the Tegra PHY code is converted to a driver (i.e. has its own
->> probe), the initial order of execution of the PHY and EHCI driver probes
->> will not be guaranteed.
->>
->> In particular, since the EHCI probe will attempt to "find" the PHY
->> device, and defer the EHCI probe until it can do so, this guarantees
->> that the PHY's probe() will have completed before EHCI's probe()
->> completes (although EHCI's probe may start running first some number of
->> times, and be retried with -EPROBE_DEFERRED for a variety of reasons).
->>
->> Now, if the PHY driver's probe() actually touches HW and sets up some
->> registers, isn't this reset call going to trash any of that register
->> setup? Or, will PHY probe() not touch registers, but only do so during
->> the standard PHY open/init "op"/API calls?
->>
->> I think the way to solve this is to put the reset call into the PHY
->> driver. I assume it has access to the appropriate clock object. This may
->> also address Alan's query re: when the unexpected interrupt occurs; it's
->> triggered by (or correlated with at least) the PHY (or USB port in
->> general) being in device mode due to the boot ROM setting it up this
->> way, then switching to host mode via the Linux driver. I /think/ that
->> device/host mode switching is more related to the PHY than EHCI driver,
->> although I could well be wrong here.
+> I am running into issues w.r.t IMA policy management and user space
+> signing. So thought of dropping a mail and gather some ideas.
 > 
-> With the PCI platform driver, the handoff from the firmware (we can
-> categorize U-Boot as firmware for this discussion) is handled as soon
-> as the controller is discovered by the platform-specific code.  
-> There's a special pci-quirks.c file to take care of it.  It is not
-> handled by the driver or the glue layer.
-> 
-> In general I think that's what needs to be done.  Errant interrupt 
-> sources should be disabled as quickly as possible.
-> 
-> In this case I don't know exactly when the earliest opportunity is.  I
-> assume that the EHCI driver and/or the PHY driver gets probed because
-> some platform-layer code has registered the device.  If this is so then
-> that platform-layer code is the right place to do the reset.
+> Currently IMA seems to able to one policy only which does not contain
+> conflicting rules. We have tcb policies in-built and they don't have
+> conflicting rules. User can put its own policy and that will replace
+> kernel policy (default policy). And then user is responsible for making
+> sure conflicting rules are not present.
 
-The first platform-specific code that is executed in this case is the
-(struct platform_driver) probe() functions for the PHY and/or EHCI device.
+The default integrity policy is a null policy, which can be replaced by
+specifying a boot command line option(s).  The integrity policy can be
+replaced once, with a policy of your choice.  Normally this would be
+done in the initramfs, before pivoting root.
 
-On Tegra, all devices are listed in device tree, and core kernel code
-instantiates platform devices based on the information in device tree.
-The first non-core code that runs on a platform device is the driver's
-probe() method. That probe() method is for a very specific piece of HW,
-and hence seems to be the best place to put any quirks for it. Putting
-the quirks outside the driver would mean some piece of the core DT code
-would need to have a quirk list, and be able to map the registers for
-the device, acquire clocks, etc. etc., implement the quirk, and tear it
-all down again. All of which would just be duplicated with the driver's
-own probe() function.
+> Now with user space signing and secureboot, I have another set of rules
+> which are not compatible with existing tcb policies. 
+
+I know.  We've already discussed this
+http://marc.info/?l=linux-security-module&m=136131183031527&w=2.
+
+> This is how my
+> rules look like as of today. These can change based on config options.
+> 
+> appraise func=BPRM_CHECK appraise_type=optional
+> appraise func=BPRM_POST_LOAD appraise_type=optional
+> 
+> These rules are not compatible with tcp appraise rule.
+> 
+> .action = APPRAISE,.fowner = GLOBAL_ROOT_UID,.flags = IMA_FOWNER
+> 
+> That means in current scheme of things, multiple policies can't co-exist
+> together. It has few  disadvantages.
+
+No, it just means the merged policy needs to make sense.  The example you give
+doesn't.
+
+I've already suggested that you define a builtin secureboot integrity
+policy, which is a subset of the ima_appraise_tcb policy.  If secureboot
+is enabled, then the secureboot integrity policy would be enabled by
+default, in lieu of the default null policy.
+
+I would suggest that the ima_appraise_tcb, which is more restrictive, be
+permitted to replace the secureboot policy.
+
+> - If we want IMA to be central point for all integrity measurement
+>   needs, then having one policy only is very limiting.
+
+So far, you haven't made a convincing case for supporting more than one
+policy.  If anything, you've made it very clear that merging policies
+needs to be well thought out.
+
+>   The fact that
+>   user can overirde that policy makes it worse as then kernel can
+>   not impose any policy at all.
+
+The kernel IS enforcing the specified integrity policy.
+
+>   IOW, if user enables user space signign in kernel, say CONFIG_BIN_SIGN=y,
+>   then I need a way so that kernel can make sure IMA rules needed to
+>   ensure integrity of binaries are present and can not be overruled.
+
+If you want to prohibit userspace from replacing the builtin policy, then
+provide a Kconfig option based on secureboot.
+
+> - Disabling policy can disable certain features in kernel. So in this
+>   case if user overides default policy, it will disable binary signing
+>   feature also (that too in a very unintutive way).
+
+Or, you can look at Kconfig options as a way of defining what is
+included in the build.  The policy defines what is enabled.
+ 
+> One possible way could be that we allow execution of all the relevant
+> rules in a policy and return the ANDed results of all the rules. But
+> this does not go well with the result caching. Atleast current IMA
+> infrastructure does not allow it and might require overhaul.
+
+> In general I am concerned about increased performance overhead if we
+> allow multiple policies to co-exist. 
+> 
+> Performance overhead is a concern even without multiple policies. For
+> user space signing, IMA hooks will be called for file operations like
+> open(), mmap() etc and we don't require those to be called. I am not
+> sure if performance overhead is significant or not. Once things start
+> working, I will do some benchmarking.
+> 
+> But coming back to the point, how to go about making sure user space
+> signing policies can't be overridden if user has enabled user space
+> signing feature in kernel.
+
+Vivek, there are multiple concurrent threads to this discussion.  One
+thread discusses adding the 'optional' flag.  The other thread discusses
+defining a new hook to appraise the kernel image being loaded.  If the
+decision is to go forward with the latter, then this thread, using the
+'optional' flag, becomes moot.
+
+With a new hook to verify kernel images, you would be able to define a
+single integrity rule, lets call the hook
+security/ima_kexec_image_check(), that would appraise the integrity of
+kernel images being loaded.  There wouldn't be a convoluted policy that
+verifies the signature of binaries, if it exists, yet permits all
+binaries to execute, except those that failed signature verification.
+You wouldn't need a new capability, nor rely on the signed binary to
+appraise the images being loaded.  If secureboot is enabled, the single
+secureboot integrity rule could be merged safely with other policies.
+
+thanks,
+
+Mimi
+
