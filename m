@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755745Ab3B1Oqo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 09:46:44 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41953 "EHLO
+	id S1756140Ab3B1Oq4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 09:46:56 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41963 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755654Ab3B1Oqk (ORCPT
+	with ESMTP id S1753512Ab3B1Oqq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 09:46:40 -0500
+	Thu, 28 Feb 2013 09:46:46 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Takashi Iwai <tiwai@suse.de>,
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 023/139] ALSA: hda - Release assigned pin/cvt at error path of hdmi_pcm_open()
-Date: Thu, 28 Feb 2013 14:42:53 +0000
-Message-Id: <1362062689-2567-24-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 025/139] Driver core: treat unregistered bus_types as having no devices
+Date: Thu, 28 Feb 2013 14:42:55 +0000
+Message-Id: <1362062689-2567-26-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1362062689-2567-1-git-send-email-luis.henriques@canonical.com>
 References: <1362062689-2567-1-git-send-email-luis.henriques@canonical.com>
@@ -27,38 +28,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Bjorn Helgaas <bhelgaas@google.com>
 
-commit 2ad779b7329d6894a80df94e693e72eaa0d56790 upstream.
+commit 4fa3e78be7e985ca814ce2aa0c09cbee404efcf7 upstream.
 
-If the driver detects and invalid ELD, it gives an open error.
-But it forgot to release the assigned pin, converter and spdif ctls
-before returning.
+A bus_type has a list of devices (klist_devices), but the list and the
+subsys_private structure that contains it are not initialized until the
+bus_type is registered with bus_register().
 
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+The panic/reboot path has fixups that look up devices in pci_bus_type.  If
+we panic before registering pci_bus_type, the bus_type exists but the list
+does not, so mach_reboot_fixups() trips over a null pointer and panics
+again:
+
+    mach_reboot_fixups
+      pci_get_device
+        ..
+          bus_find_device(&pci_bus_type, ...)
+            bus->p is NULL
+
+Joonsoo reported a problem when panicking before PCI was initialized.
+I think this patch should be sufficient to replace the patch he posted
+here: https://lkml.org/lkml/2012/12/28/75 ("[PATCH] x86, reboot: skip
+reboot_fixups in early boot phase")
+
+Reported-by: Joonsoo Kim <js1304@gmail.com>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- sound/pci/hda/patch_hdmi.c | 6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ drivers/base/bus.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/sound/pci/hda/patch_hdmi.c b/sound/pci/hda/patch_hdmi.c
-index f212c37..063afa2 100644
---- a/sound/pci/hda/patch_hdmi.c
-+++ b/sound/pci/hda/patch_hdmi.c
-@@ -926,8 +926,12 @@ static int hdmi_pcm_open(struct hda_pcm_stream *hinfo,
- 	if (!static_hdmi_pcm && eld->eld_valid) {
- 		snd_hdmi_eld_update_pcm_info(eld, hinfo);
- 		if (hinfo->channels_min > hinfo->channels_max ||
--		    !hinfo->rates || !hinfo->formats)
-+		    !hinfo->rates || !hinfo->formats) {
-+			per_cvt->assigned = 0;
-+			hinfo->nid = 0;
-+			snd_hda_spdif_ctls_unassign(codec, pin_idx);
- 			return -ENODEV;
-+		}
- 	}
+diff --git a/drivers/base/bus.c b/drivers/base/bus.c
+index 2bcef65..287b7e2 100644
+--- a/drivers/base/bus.c
++++ b/drivers/base/bus.c
+@@ -293,7 +293,7 @@ int bus_for_each_dev(struct bus_type *bus, struct device *start,
+ 	struct device *dev;
+ 	int error = 0;
  
- 	/* Store the updated parameters */
+-	if (!bus)
++	if (!bus || !bus->p)
+ 		return -EINVAL;
+ 
+ 	klist_iter_init_node(&bus->p->klist_devices, &i,
+@@ -327,7 +327,7 @@ struct device *bus_find_device(struct bus_type *bus,
+ 	struct klist_iter i;
+ 	struct device *dev;
+ 
+-	if (!bus)
++	if (!bus || !bus->p)
+ 		return NULL;
+ 
+ 	klist_iter_init_node(&bus->p->klist_devices, &i,
 -- 
 1.8.1.2
 
