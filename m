@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754676Ab3B1Wzj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 17:55:39 -0500
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:42562 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754162Ab3B1WzN (ORCPT
+	id S1754849Ab3B1W4C (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 17:56:02 -0500
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:48129 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753948Ab3B1WzK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 17:55:13 -0500
+	Thu, 28 Feb 2013 17:55:10 -0500
 From: Olof Johansson <olof@lixom.net>
 To: torvalds@linux-foundation.org
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         arm@kernel.org, Olof Johansson <olof@lixom.net>
-Subject: [GIT PULL 3/3] arm-soc: mvebu platform changes (not rebased)
-Date: Thu, 28 Feb 2013 14:54:52 -0800
-Message-Id: <1362092093-4839-4-git-send-email-olof@lixom.net>
+Subject: [GIT PULL 2/3] arm-soc: late OMAP changes
+Date: Thu, 28 Feb 2013 14:54:51 -0800
+Message-Id: <1362092093-4839-3-git-send-email-olof@lixom.net>
 X-Mailer: git-send-email 1.8.1.192.gc4361b8
 In-Reply-To: <1362092093-4839-1-git-send-email-olof@lixom.net>
 References: <1362092093-4839-1-git-send-email-olof@lixom.net>
@@ -21,241 +21,146 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This series contains changes for the Marvell EBU platforms (mvebu,
-orion, kirkwood, dove) that were not part of the first set of pull
-requests because of dependencies on the MMC tree, and being submitted
-a little late.
+This branch contains changes for OMAP that came in late during the release
+staging, close to when the merge window opened.
 
-Notable changes are:
+It contains, among other things:
 
-* More devices get moved out of board files into device tree
-descriptions. The remaining devices listed in there have patches
-that will get sent for 3.10, after which we can remove a lot of the
-board files entirely. We are doing the pinctrl and mmc drivers here,
-ethernet and PCI still remain.
-
-* SMP support for mvebu is improved with support for the
-local interrupt controller.
-
-* The Guruplug board file gets replaced with a DT description.
-
+- OMAP PM fixes and some patches for audio device integration
+- OMAP clock fixes related to common clock conversion
+- A set of patches cleaning up WFI entry and blocking.
+- A set of fixes and IP block support for PM on TI AM33xx SoCs (Beaglebone, etc)
+- A set of smaller fixes and cleanups around AM33xx restart and revision
+detection, as well as removal of some dead code (CONFIG_32K_TIMER_HZ)
 
 ----------------------------------------------------------------
 
-The following changes since commit 280c50ec3b6e801b59311823fcd7d9c679354b6a:
+The following changes since commit 1b4d123a8d9c42208e03e615ae64ef076f66309e:
 
-  Merge tag 'late-omap' into HEAD
+  Merge branch 'late/dt' into HEAD
 
 are available in the git repository at:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git tags/late-mvebu
+  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git tags/late-omap
 
-for you to fetch changes up to 0ed30f3e6550706830959c6657c3f229334c9ccd:
+for you to fetch changes up to 55ccb1a8b4c14c086427fd6b7272448fbd0c4449:
 
-  Merge commit 'mmc-fsckup-merge' into late/mvebu
+  ARM: omap2: include linux/errno.h in hwmod_reset
 
 ----------------------------------------------------------------
 
-Andrew Lunn (7):
-      ARM: Kirkwood: Remove redundent USB clock alias
-      ARM: Kirkwood: Remove redundent SDIO clock alias
-      ARM: Kirkwood: Convert NSA310 to DT based regulators.
-      ARM: Kirkwood: Convert NSA310 to use gpio-poweroff driver
-      ARM: Kirkwood: Convert NSA310 I2C to device tree
-      ARM: Kirkwood: Convert NS2 to gpio-poweroff.
-      ARM: Kirkwood: topkick: Enable i2c bus.
+Afzal Mohammed (3):
+      ARM: OMAP2+: dpll: am335x - avoid freqsel
+      ARM: OMAP2+: clock data: add DEFINE_STRUCT_CLK_FLAGS helper
+      ARM: OMAP AM33XX: clock data: SET_RATE_PARENT in lcd path
 
-Andy Shevchenko (1):
-      mmc: sdhci: introduce sdhci_update_clock helper to re-enable clock
+AnilKumar Ch (1):
+      ARM: OMAP2: AM33XX: id: Add support for AM335x PG2.0
 
-Arnd Bergmann (7):
-      Merge branch 'mvebu/boards' into late/mvebu
-      Merge tag 'boards_for_v3.9_round2' of git://git.infradead.org/users/jcooper/linux into late/mvebu
-      Merge tag 'boards_for_v3.9_round3' of git://git.infradead.org/users/jcooper/linux into late/mvebu
-      Merge tag 'dt_for_v3.9_round2' of git://git.infradead.org/users/jcooper/linux into late/mvebu-dt
-      Merge commit 'upstream/mmc'; branch 'depends/mmc' into late/mvebu2
-      Merge branch 'late/mvebu-dt' into late/mvebu
-      Merge commit 'mmc-fsckup-merge' into late/mvebu
+Arnd Bergmann (1):
+      ARM: omap2: include linux/errno.h in hwmod_reset
 
-Chris Ball (1):
-      mmc: mvsdio: add pinctrl integration
+Hebbar Gururaja (2):
+      ARM: OMAP2+: AM33xx: hwmod: add missing HWMOD_NO_IDLEST flags
+      ARM: OMAP2: am33xx-hwmod: Fix "register offset NULL check" bug
 
-Ezequiel Garcia (7):
-      arm: mvebu: Update defconfig to select USB support
-      arm: mvebu: Add support for USB host controllers in Armada 370/XP
-      arm: mvebu: Enable USB controllers on Armada 370/XP boards
-      ARM: mvebu: Update defconfig to select SPI support
-      ARM: mvebu: Update defconfig to select SPI flash and MTD support
-      arm: mvebu: Add support for SPI controller in Armada 370/XP
-      arm: mvebu: Add SPI flash on Armada XP-GP board
+Jean-Sebastien A. Beaudry (1):
+      ARM: OMAP2+: AM33xx: Add SoC specific restart hook
 
-Florian Fainelli (2):
-      arm: mvebu: add DTS file for Marvell RD-A370-A1 board
-      arm: mvebu: enable the SD card slot on Armada 370 Reference Design board
+Laurent Pinchart (2):
+      ARM: OMAP3: clock: Back-propagate rate change from cam_mclk to dpll4_m5
+      omap3isp: Set cam_mclk rate directly
 
-Gregory CLEMENT (12):
-      arm: mvebu: Update defconfig with Marvell RTC support
-      arm: mvebu: Improve the SMP support of the interrupt controller
-      arm: mvebu: Add RTC support for Armada 370 and Armada XP
-      arm: mvebu: Add support for local interrupt
-      clocksource: time-armada-370-xp: add local timer support
-      arm: mvebu: update defconfig with local timer support
-      arm: mvebu: update DT to support local timers
-      clocksource: update and move armada-370-xp-timer documentation to timer directory
-      arm: mvebu: support for the new Armada XP development board(DB-MV784MP-GP)
-      arm: mvebu: Add SPI flash on Armada XP-DB board
-      arm: mvebu: Add SPI flash on Armada 370 DB board
-      arm: mvebu: update defconfig with ATAG support when using DT
+Olof Johansson (5):
+      Merge tag 'omap-for-v3.9/soc-signed' of git://git.kernel.org/.../tmlind/linux-omap into late/omap
+      Merge tag 'omap-for-v3.9/am33xx-signed' of git://git.kernel.org/.../tmlind/linux-omap into late/omap
+      Merge tag 'omap-for-v3.9/pm-wfi-take2-signed-v2' of git://git.kernel.org/.../tmlind/linux-omap into late/omap
+      Merge tag 'omap-for-v3.9/clock-signed' of git://git.kernel.org/.../tmlind/linux-omap into late/omap
+      Merge tag 'omap-for-v3.9/pm-omap4-signed' of git://git.kernel.org/.../tmlind/linux-omap into late/omap
 
-Guennadi Liakhovetski (7):
-      mmc: sh-mmcif: fix missing and consolidate IO completion timeouts
-      mmc: sh-mmcif: (cosmetic) simplify boolean return blocks
-      mmc: sh-mmcif: fix a race, causing an Oops on SMP
-      mmc: sh-mmcif: reset error code for any opcode
-      mmc: sh-mmcif: reset DMA completion immediately before starting DMA
-      mmc: sh-mmcif: fix I/O errors
-      mmc: sh-mmcif: simplify IRQ processing
+Paul Walmsley (10):
+      ARM: OMAP2xxx: PM: enter WFI via inline asm if CORE stays active
+      ARM: OMAP2+: hwmod: add support for blocking WFI when a device is active
+      ARM: OMAP2420: hwmod data/PM: use hwmod to block WFI when I2C active
+      ARM: OMAP AM3517/05: hwmod data: block WFI when EMAC active
+      Merge branch 'clock_misc_devel_a_3.9', remote-tracking branch 'remotes/pinchart/omap3isp/clock' into clock_devel_a_3.9
+      ARM: OMAP2+: hwmod: add enable_preprogram hook
+      ASoC: TI AESS: add autogating-enable function, callable from architecture code
+      ARM: OMAP4+: AESS: enable internal auto-gating during initial setup
+      Merge branches 'sg_aess_reset_devel_3.9' and 'omap4_pm_fixes_a_3.9' into omap4_prcm_devel_a_3.9
+      ARM: OMAP2+: fix some omap_device_build() calls that aren't compiled by default
 
-Jason Cooper (11):
-      Merge tag 'tags/mvebu_fixes_for_v3.8-rc6' into mvebu/boards
-      Merge tag 'tags/cleanup_for_v3.9_round2' into mvebu/boards
-      Merge tag 'tags/drivers_for_v3.9' into mvebu/boards
-      Merge commit 'd293875' into mvebu/boards
-      Merge tag 'tags/boards_for_v3.9' into mvebu/dt
-      Merge branch 'mvebu/boards' into mvebu/dt
-      Merge branch 'mvebu/boards' into mvebu/dt
-      ARM: kirkwood: topkick: convert to pinctrl
-      ARM: kirkwood: nsa310: convert to pinctrl
-      ARM: kirkwood: topkick: init mvsdio via DT
-      Merge remote-tracking branch 'arm-soc/timer/cleanup' into mvebu/boards
+Philip Avinash (2):
+      ARM: OMAP: AM33xx hwmod: Corrects PWM subsystem HWMOD entries
+      ARM: OMAP: AM33xx hwmod: Add parent-child relationship for PWM subsystem
 
-Kevin Liu (3):
-      mmc: sdhci: disable interrupt before free_irq
-      mmc: sdhci: add IRQ wake up support
-      mmc: sdhci-pxav3: add IRQ wake up support
+Rajendra Nayak (2):
+      ARM: OMAP4: PM: Warn users about usage of older bootloaders
+      ARM: OMAP4: clock data: Add missing clkdm association for dpll_usb
 
-Konstantin Dorfman (1):
-      mmc: fix async request mechanism for sequential read scenarios
+Santosh Shilimkar (2):
+      ARM: OMAP2+: Get rid of custom OMAP_32K_TIMER_HZ
+      ARM: OMAP2+: PM: Fix the dt return condition in pm_late_init()
 
-Nobuhiro Iwamatsu (3):
-      ARM: Kirkwood: Add pinctrl of TWSI1 to 88f6282
-      ARM: Kirkwood: Add pinctrl of NAND to 88f6282
-      ARM: Kirkwood: Convert openblocks A6 board to pinctrl
+Sebastien Guiriec (2):
+      ARM: OMAP4: hwmod data: Update AESS data with memory bank area
+      ARM: OMAP4: hwmod data: Enable AESS hwmod device
 
-Olof Johansson (1):
-      ARM: dove: update dove_defconfig with a few useful options
+Tony Lindgren (6):
+      Merge tag 'omap-devel-a-for-3.9' of git://git.kernel.org/.../pjw/omap-pending into omap-for-v3.9/am33xx
+      Merge tag 'omap-devel-e-for-3.9' of git://git.kernel.org/.../pjw/omap-pending into omap-for-v3.9/clock
+      Merge tag 'omap-for-v3.9/pm-signed' into omap-for-v3.9/pm-wfi-take2
+      Merge tag 'omap-devel-b-for-3.9' of git://git.kernel.org/.../pjw/omap-pending into omap-for-v3.9/pm-wfi-take2
+      Merge tag 'omap-devel-d2-for-3.9' of git://git.kernel.org/.../pjw/omap-pending into omap-for-v3.9/pm-omap4
+      Merge branch 'omap-for-v3.9/pm-fix' into omap-for-v3.9/pm-wfi-take2
 
-Sebastian Hesselbarth (5):
-      ARM: Dove: split legacy and DT setup
-      ARM: Dove: move CuBox led pinctrl to gpio-leds node
-      ARM: Dove: add fixed regulator for CuBox USB power
-      ARM: Dove: convert usb host controller to DT
-      ARM: dove: convert serial DT nodes to clocks property
-
-Seungwon Jeon (1):
-      mmc: queue: exclude asynchronous transfer for special request
-
-Shawn Guo (5):
-      mmc: sdhci: query card presence from cd-gpio before asking SDHCI
-      mmc: slot-gpio: use devm_* managed functions to ease users
-      mmc: remove unncessary mmc_gpio_free_cd() call from slot-gpio users
-      mmc: sdhci-esdhc-imx: use slot-gpio helpers for CD and WP
-      mmc: sdhci-esdhc-imx: remove ESDHC_CD_GPIO handling from IO accessory
-
-Shinya Kuribayashi (1):
-      mmc: sh_mmcif: add support for bundled MMCIF IRQs
-
-Stephen Warren (1):
-      mmc: add BCM2835 driver
-
-Subhash Jadavani (2):
-      mmc: sdio: fix resume failure due to lack of CMD52 reset
-      mmc: sdio: print correct UHS mode during card detection
-
-Sujit Reddy Thumma (1):
-      mmc: sdio: Fix SDIO 3.0 UHS-I initialization sequence
-
-Teppei Kamijou (7):
-      mmc: sh_mmcif: force to fail CMD52 immediately
-      mmc: sh_mmcif: ensure run-time suspend call is processed before suspend
-      mmc: sh_mmcif: Add support for eMMC Dual Data Rate
-      mmc: sh_mmcif: Use msecs_to_jiffies() for host->timeout
-      mmc: sh_mmcif: Avoid unnecessary mmc_delay() at mmc_card_sleepawake()
-      mmc: sh-mmcif: Terminate DMA transactions when detecting timeout or error
-      mmc: sh-mmcif: report all errors
-
-Thomas Petazzoni (18):
-      mmc: mvsdio: use slot-gpio infrastructure for write protect gpio
-      mmc: mvsdio: use slot-gpio for card detect gpio
-      mmc: mvsdio: implement a Device Tree binding
-      arm: mvebu: enable SDIO support in mvebu_defconfig
-      arm: mvebu: enable mwifiex driver in mvebu_defconfig
-      arm: mvebu: enable btmrvl driver in mvebu_defconfig
-      arm: mvebu: add LEDs support to defconfig file
-      arm: mvebu: add DT information for the SDIO interface of Armada 370/XP
-      arm: mvebu: add pin muxing options for the SDIO interface on Armada 370
-      arm: mvebu: add pin muxing options for the SDIO interface on Armada XP
-      arm: mvebu: enable the SD card slot on Armada XP DB board
-      arm: mvebu: enable the SD card slot on Armada 370 DB board
-      arm: mvebu: enable the SDIO interface on the Globalscale Mirabox
-      arm: kirkwood: add Device Tree informations for the SDIO controller
-      arm: kirkwood: dreamplug: use Device Tree to probe SDIO
-      arm: kirkwood: mplcec4: use Device Tree to probe SDIO
-      arm: kirkwood: add pinmux option for the SDIO interface on 88F6282
-      arm: mvebu: add button for OpenBlocks AX3-4
-
-Willy Tarreau (1):
-      ARM: kirkwood: convert Guruplug Server Plus to use the device tree
+Vaibhav Bedia (8):
+      ARM: OMAP2+: AM33XX: CM: Get rid of unnecessary header inclusions
+      ARM: OMAP2+: AM33XX: CM/PRM: Use __ASSEMBLER__ macros in header files
+      ARM: OMAP2+: AM33XX: hwmod: Register OCMC RAM hwmod
+      ARM: OMAP2+: AM33XX: hwmod: Update TPTC0 hwmod with the right flags
+      ARM: OMAP2+: AM33XX: hwmod: Fixup cpgmac0 hwmod entry
+      ARM: OMAP2+: AM33XX: hwmod: Update the WKUP-M3 hwmod with reset status bit
+      ARM: OMAP2+: AM33XX: Update the hardreset API
+      ARM: DTS: AM33XX: Add nodes for OCMC RAM and WKUP-M3
 
 
- .../marvell,armada-370-xp-timer.txt}            |  11 +-
- arch/arm/boot/dts/Makefile                      |   3 +
- arch/arm/boot/dts/armada-370-db.dts             |  35 +++++
- arch/arm/boot/dts/armada-370-mirabox.dts        |  18 +++
- arch/arm/boot/dts/armada-370-rd.dts             |  68 +++++++++
- arch/arm/boot/dts/armada-370-xp.dtsi            |  49 +++++-
- arch/arm/boot/dts/armada-370.dtsi               |  21 +++
- arch/arm/boot/dts/armada-xp-db.dts              |  31 ++++
- arch/arm/boot/dts/armada-xp-gp.dts              | 113 ++++++++++++++
- arch/arm/boot/dts/armada-xp-mv78230.dtsi        |   6 +
- arch/arm/boot/dts/armada-xp-mv78260.dtsi        |   6 +
- arch/arm/boot/dts/armada-xp-mv78460.dtsi        |   6 +
- .../arm/boot/dts/armada-xp-openblocks-ax3-4.dts |  18 +++
- arch/arm/boot/dts/armada-xp.dtsi                |  19 ++-
- arch/arm/boot/dts/dove-cubox.dts                |  28 +++-
- arch/arm/boot/dts/dove.dtsi                     |  24 ++-
- arch/arm/boot/dts/kirkwood-6282.dtsi            |  17 +++
- arch/arm/boot/dts/kirkwood-dreamplug.dts        |   7 +
- .../boot/dts/kirkwood-guruplug-server-plus.dts  |  94 ++++++++++++
- arch/arm/boot/dts/kirkwood-mplcec4.dts          |  11 +-
- arch/arm/boot/dts/kirkwood-ns2-common.dtsi      |   6 +
- arch/arm/boot/dts/kirkwood-nsa310.dts           | 126 ++++++++++++++++
- arch/arm/boot/dts/kirkwood-openblocks_a6.dts    | 116 ++++++++++++++
- arch/arm/boot/dts/kirkwood-topkick.dts          | 102 +++++++++++++
- arch/arm/boot/dts/kirkwood.dtsi                 |   8 +
- arch/arm/configs/dove_defconfig                 |  28 +---
- arch/arm/configs/mvebu_defconfig                |  26 +++-
- arch/arm/mach-dove/Kconfig                      |   7 +
- arch/arm/mach-dove/Makefile                     |   4 +-
- arch/arm/mach-dove/board-dt.c                   |  92 ++++++++++++
- arch/arm/mach-dove/common.c                     |  85 -----------
- arch/arm/mach-kirkwood/Kconfig                  |   7 +
- arch/arm/mach-kirkwood/Makefile                 |   1 +
- arch/arm/mach-kirkwood/board-dreamplug.c        |   6 -
- arch/arm/mach-kirkwood/board-dt.c               |  16 +-
- arch/arm/mach-kirkwood/board-guruplug.c         |  39 +++++
- arch/arm/mach-kirkwood/board-mplcec4.c          |   7 -
- arch/arm/mach-kirkwood/board-ns2.c              |  14 --
- arch/arm/mach-kirkwood/board-nsa310.c           |  69 ---------
- arch/arm/mach-kirkwood/board-openblocks_a6.c    |  44 ------
- arch/arm/mach-kirkwood/board-usi_topkick.c      |  48 ------
- arch/arm/mach-kirkwood/common.h                 |  11 +-
- arch/arm/mach-mvebu/irq-armada-370-xp.c         |  87 ++++++++++-
- drivers/clocksource/time-armada-370-xp.c        | 150 ++++++++++++++-----
- 44 files changed, 1314 insertions(+), 370 deletions(-)
- rename Documentation/devicetree/bindings/{arm/armada-370-xp-timer.txt => timer/marvell,armada-370-xp-timer.txt} (55%)
- create mode 100644 arch/arm/boot/dts/armada-370-rd.dts
- create mode 100644 arch/arm/boot/dts/armada-xp-gp.dts
- create mode 100644 arch/arm/boot/dts/kirkwood-guruplug-server-plus.dts
- create mode 100644 arch/arm/mach-dove/board-dt.c
- create mode 100644 arch/arm/mach-kirkwood/board-guruplug.c
+ arch/arm/Kconfig                           |   1 -
+ arch/arm/boot/dts/am33xx.dtsi              |  14 +
+ arch/arm/mach-omap2/Makefile               |   3 +-
+ arch/arm/mach-omap2/am33xx-restart.c       |  34 ++
+ arch/arm/mach-omap2/am35xx-emac.c          |   3 +-
+ arch/arm/mach-omap2/board-generic.c        |   1 +
+ arch/arm/mach-omap2/cclock33xx_data.c      |  10 +-
+ arch/arm/mach-omap2/cclock3xxx_data.c      |  10 +-
+ arch/arm/mach-omap2/cclock44xx_data.c      |  13 +-
+ arch/arm/mach-omap2/clock.h                |  11 +
+ arch/arm/mach-omap2/cm33xx.c               |   3 -
+ arch/arm/mach-omap2/cm33xx.h               |   9 +-
+ arch/arm/mach-omap2/common.h               |   8 +
+ arch/arm/mach-omap2/devices.c              |   2 +-
+ arch/arm/mach-omap2/dpll3xxx.c             |   5 +-
+ arch/arm/mach-omap2/id.c                   |  14 +-
+ arch/arm/mach-omap2/omap_hwmod.c           |  23 +-
+ arch/arm/mach-omap2/omap_hwmod.h           |   8 +
+ arch/arm/mach-omap2/omap_hwmod_33xx_data.c | 443 +++++++++++++++---------
+ arch/arm/mach-omap2/omap_hwmod_3xxx_data.c |   7 +-
+ arch/arm/mach-omap2/omap_hwmod_44xx_data.c |  51 ++-
+ arch/arm/mach-omap2/omap_hwmod_reset.c     |  53 +++
+ arch/arm/mach-omap2/pm.c                   |  20 +-
+ arch/arm/mach-omap2/pm24xx.c               |  12 +-
+ arch/arm/mach-omap2/pm44xx.c               |  21 +-
+ arch/arm/mach-omap2/prm33xx.c              |  11 +-
+ arch/arm/mach-omap2/prm33xx.h              |   4 +-
+ arch/arm/mach-omap2/sleep24xx.S            |  19 -
+ arch/arm/mach-omap2/soc.h                  |   1 +
+ arch/arm/mach-omap2/sr_device.c            |   2 +-
+ arch/arm/plat-omap/Kconfig                 |   9 -
+ arch/arm/plat-omap/include/plat/timex.h    |   8 -
+ drivers/media/platform/omap3isp/isp.c      |  18 +-
+ drivers/media/platform/omap3isp/isp.h      |   8 +-
+ include/sound/aess.h                       |  53 +++
+ 35 files changed, 633 insertions(+), 279 deletions(-)
+ create mode 100644 arch/arm/mach-omap2/am33xx-restart.c
+ create mode 100644 arch/arm/mach-omap2/omap_hwmod_reset.c
+ create mode 100644 include/sound/aess.h
