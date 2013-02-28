@@ -1,124 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753015Ab3B1BdY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 20:33:24 -0500
-Received: from na01-by2-obe.ptr.protection.outlook.com ([207.46.100.31]:4469
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751886Ab3B1BdX convert rfc822-to-8bit (ORCPT
+	id S1753163Ab3B1BjG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 20:39:06 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:45281 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751904Ab3B1BjC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 20:33:23 -0500
-X-Greylist: delayed 313 seconds by postgrey-1.27 at vger.kernel.org; Wed, 27 Feb 2013 20:33:23 EST
-From: Tom Talpey <ttalpey@microsoft.com>
-To: Dave Chiluk <dave.chiluk@canonical.com>, Steve French <smfrench@gmail.com>
-CC: Jeff Layton <jlayton@samba.org>,
-        "Stefan (metze) Metzmacher" <metze@samba.org>,
-        Dave Chiluk <chiluk@canonical.com>, Steve French <sfrench@samba.org>,
-        "linux-cifs@vger.kernel.org" <linux-cifs@vger.kernel.org>,
-        "samba-technical@lists.samba.org" <samba-technical@lists.samba.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] CIFS: Decrease reconnection delay when switching nics
-Thread-Topic: [PATCH] CIFS: Decrease reconnection delay when switching nics
-Thread-Index: AQHOE6gELIco8AYO20mQ183wJfgE3JiNjZoAgABbqoCAAGG8gIAABHwAgAABE4CAACsZwA==
-Date: Thu, 28 Feb 2013 01:26:26 +0000
-Message-ID: <614F550557B82C44AC27C492ADA391AA045A4924@TK5EX14MBXC284.redmond.corp.microsoft.com>
-References: <1361831310-24260-1-git-send-email-chiluk@canonical.com>
- <512DE8A6.9030000@samba.org>
- <20130227083419.0af9deaf@corrin.poochiereds.net>
- <512E8787.6070709@canonical.com>
- <CAH2r5mvM=OX+F4uqMh_c24DXLxwgRX2UzX3bsYqM00JPzbtjqA@mail.gmail.com>
- <512E8C31.8070106@canonical.com>
-In-Reply-To: <512E8C31.8070106@canonical.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.51.36]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 27 Feb 2013 20:39:02 -0500
+Date: Wed, 27 Feb 2013 17:35:14 -0800
+From: Anton Vorontsov <anton@enomsg.org>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: linux-kernel@vger.kernel.org, David Woodhouse <dwmw2@infradead.org>
+Subject: Re: [PATCH] power: make goldfish option have a dependency on goldfish
+Message-ID: <20130228013514.GA7556@lizard.fhda.edu>
+References: <1361989666-1922-1-git-send-email-paul.gortmaker@windriver.com>
+ <20130227231826.GA30154@lizard.fhda.edu>
+ <CAP=VYLqg5Q_e4y6bD9x8idOvJx2n_knzujOY9Z0VyGDEQZTzag@mail.gmail.com>
 MIME-Version: 1.0
-X-Forefront-Antispam-Report: CIP:131.107.125.37;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(189002)(377454001)(24454001)(199002)(479174001)(52084001)(51704002)(13464002)(4396001)(66066001)(46406002)(77982001)(54316002)(63696002)(56816002)(16406001)(5343655001)(53806001)(80022001)(51856001)(65816001)(5343635001)(20776003)(79102001)(56776001)(54356001)(46102001)(76482001)(74502001)(59766001)(31966008)(44976002)(74662001)(33656001)(47446002)(23726001)(50986001)(50466001)(47776003)(47976001)(55846006)(47736001)(49866001);DIR:OUT;SFP:;SCL:1;SRVR:BY2FFO11HUB030;H:TK5EX14HUBC104.redmond.corp.microsoft.com;RD:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-X-OriginatorOrg: microsoft.onmicrosoft.com
-X-Forefront-PRVS: 0771670921
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CAP=VYLqg5Q_e4y6bD9x8idOvJx2n_knzujOY9Z0VyGDEQZTzag@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: linux-cifs-owner@vger.kernel.org [mailto:linux-cifs-
-> owner@vger.kernel.org] On Behalf Of Dave Chiluk
-> Sent: Wednesday, February 27, 2013 5:44 PM
-> To: Steve French
-> Cc: Jeff Layton; Stefan (metze) Metzmacher; Dave Chiluk; Steve French;
-> linux-cifs@vger.kernel.org; samba-technical@lists.samba.org; linux-
-> kernel@vger.kernel.org
-> Subject: Re: [PATCH] CIFS: Decrease reconnection delay when switching nics
-> 
-> On 02/27/2013 04:40 PM, Steve French wrote:
-> > On Wed, Feb 27, 2013 at 4:24 PM, Dave Chiluk
-> <dave.chiluk@canonical.com> wrote:
-> >> On 02/27/2013 10:34 AM, Jeff Layton wrote:
-> >>> On Wed, 27 Feb 2013 12:06:14 +0100
-> >>> "Stefan (metze) Metzmacher" <metze@samba.org> wrote:
-> >>>
-> >>>> Hi Dave,
-> >>>>
-> >>>>> When messages are currently in queue awaiting a response, decrease
-> >>>>> amount of time before attempting cifs_reconnect to SMB_MAX_RTT
-> =
-> >>>>> 10 seconds. The current wait time before attempting to reconnect
-> >>>>> is currently 2*SMB_ECHO_INTERVAL(120
-> >>>>> seconds) since the last response was recieved.  This does not take
-> >>>>> into account the fact that messages waiting for a response should
-> >>>>> be serviced within a reasonable round trip time.
-> >>>>
-> >>>> Wouldn't that mean that the client will disconnect a good
-> >>>> connection, if the server doesn't response within 10 seconds?
-> >>>> Reads and Writes can take longer than 10 seconds...
-> >>>>
-> >>>
-> >>> Where does this magic value of 10s come from? Note that a slow
-> >>> server can take *minutes* to respond to writes that are long past the
-> EOF.
-> >> It comes from the desire to decrease the reconnection delay to
-> >> something better than a random number between 60 and 120 seconds.  I
-> >> am not committed to this number, and it is open for discussion.
-> >> Additionally if you look closely at the logic it's not 10 seconds per
-> >> request, but actually when requests have been in flight for more than
-> >> 10 seconds make sure we've heard from the server in the last 10 seconds.
-> >>
-> >> Can you explain more fully your use case of writes that are long past
-> >> the EOF?  Perhaps with a test-case or script that I can test?  As far
-> >> as I know writes long past EOF will just result in a sparse file, and
-> >> return in a reasonable round trip time *(that's at least what I'm
-> >> seeing with my testing).  dd if=/dev/zero of=/mnt/cifs/a bs=1M
-> >> count=100 seek=100000, starts receiving responses from the server in
-> >> about .05 seconds with subsequent responses following at roughly
-> >> .002-.01 second intervals.  This is well within my 10 second value.
-> >
-> > Note that not all Linux file systems support sparse files and
-> > certainly there are cifs servers running on operating systems other
-> > than Linux which have popular file systems which don't support sparse
-> > files (e.g. FAT32 but there are many others) - in any case, writes
-> > after end of file can take a LONG time if sparse files are not
-> > supported and I don't know a good way for the client to know that
-> > attribute of the server file system ahead of time (although we could
-> > attempt to set the sparse flag, servers can and do lie)
-> >
-> 
-> It doesn't matter how long it takes for the entire operation to complete, just
-> so long as the server acks something in less than 10 seconds.  Now the
-> question becomes, is there an OS out there that doesn't ack the request or
-> doesn't ack the progress regularly.
+On Wed, Feb 27, 2013 at 07:48:38PM -0500, Paul Gortmaker wrote:
+[...]
+> If you don't want to take the commit, I won't argue it any further, but
+> I genuinely do hope the above logical arguments perhaps might cause
+> you to  change your mind.
 
-SMB/CIFS servers will signal the operation "going async" by returning a
-STATUS_PENDING response if the operation is not prompt, but this only
-happens once. The client is still expected to run a timer, and recover from
-possibly lost responses and/or unresponsive servers. Windows clients
-extend their timeout when this occurs, typically quadrupling it.
+As a maintainer of drivers/power/, I have to keep things in a sane state,
+which means, that I want to compile-test the patches that I am merging.
 
-Some clients will issue ECHO requests to probe the server in this
-case, but it is neither a protocol requirement nor does it truly address
-the issue of tracking each pending operation. Windows SMB2 clients
-do not do this.
+Testing patches takes time, and if I have to do it for all bunch of
+different machines and architectures, it becomes mess and unmanageable. In
+another words, it is easier for me to use as little different
+setups/.configs/cross-compilers/trees/etc as possible.
 
+For example, here is the scenario:
+
+- someone sends me a patch for goldfish driver;
+- I quickly compile it on my [underpowered] x86 laptop without need for
+  cross-compilation and special configs;
+- It compiles fine, produces no warnings, so I happily send out the
+  'Applied, thanks!' email;
+
+Now, with your patch:
+
+- Someone sends me a patch for goldfish driver;
+- I starting to look for my cross-compilers collections, making all the
+  environment setups, setting up a new build tree, looking for the
+  outdated goldfish config, the ARM thing fails to build somewhere in
+  arch/arm/plat-foo and drivers/mfd/bar. I become grumpy... and, you might
+  not believe me, I open and edit drivers/power/Kconfig and remove
+  needless 'depends on' (that is, I actually do these kind of things when
+  I feel lazy enough).
+
+Do you agree that without the additional deps life is easier for me? :)
+
+If so, please do help me and the rest of the maintainers: instead of
+adding the unneeded deps, for consistency just remove those which are not
+needed.
+
+Thanks,
+
+Anton
+
+p.s. Quick answers for the rest of your arguments:
+
+> The linux-next compile queue as it is today barely gets completed within
+>  a 24h window.
+
+So, it is large enough already, and nothing we can do about it, things are
+growing. But the good news is that no human attention is needed to compile
+things. That is what machines are for. :)
+
+> --why shouldn't we restrict the maintenance overhead of CONFIG_FOO
+> to people who really do care about supporting and testing and updating
+> features conditional on CONFIG_FOO?  Given the size of the kernel
+> today, this seems to make sense in terms of developer "load balancing".
+
+You don't have to enable/fix everything. Some things become broken, so
+just disable them for the time being. But when people stumble upon broken
+drivers, the drivers are either get fixed, or removed (if no one wants to
+fix it). Sweeping drivers under 'depends on' doesn't do anything good in
+this regard, IMO.
+
+If we notice that goldfish is broken for long time and nobody cares to fix
+it, then it is a good time to think about its removal. Since goldfish has
+nothing goldfish-specific, it can be broeken only in a generic way, so if
+it is broken on x86, it is as well broken for ARM.
+
+> If you don't want to take the commit, I won't argue it any further
+
+I don't want to take it for a reason, but I do care whether my reasons
+make sense to you.
