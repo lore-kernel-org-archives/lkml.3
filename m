@@ -1,56 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753742Ab3B1BFF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 20:05:05 -0500
-Received: from mail-da0-f52.google.com ([209.85.210.52]:57407 "EHLO
-	mail-da0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751248Ab3B1BFD convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 20:05:03 -0500
+	id S1754756Ab3B1BFU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 20:05:20 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:46978 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753956Ab3B1BFM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Feb 2013 20:05:12 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>, linux-usb@vger.kernel.org,
+        Tejun Heo <tj@kernel.org>, linux-ide@vger.kernel.org,
+        Jeff Garzik <jgarzik@pobox.com>, Yinghai Lu <yinghai@kernel.org>
+Subject: Re: [Resend][PATCH] ACPI / glue: Drop .find_bridge() callback from struct acpi_bus_type
+Date: Thu, 28 Feb 2013 02:11:58 +0100
+Message-ID: <1723405.gTrRpVTGu2@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <20130227222032.GA28616@kroah.com>
+References: <2612891.I2roH54cPk@vostro.rjw.lan> <20130227222032.GA28616@kroah.com>
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.02.1302271613210.27317@chino.kir.corp.google.com>
-References: <1361945258-24420-1-git-send-email-john.stultz@linaro.org>
-	<1361945258-24420-2-git-send-email-john.stultz@linaro.org>
-	<alpine.DEB.2.02.1302271417000.7155@chino.kir.corp.google.com>
-	<CAMP5XgcjdZk5MZ9v+W5phgWgE4Q0Pc_2FfopapjctsV6sdguLQ@mail.gmail.com>
-	<alpine.DEB.2.02.1302271509230.24485@chino.kir.corp.google.com>
-	<CAMP5XgemB4AdKEY4HFLwupo1CGv89hbmB+HUYYN8qdQRYCTdHg@mail.gmail.com>
-	<alpine.DEB.2.02.1302271613210.27317@chino.kir.corp.google.com>
-Date: Wed, 27 Feb 2013 17:05:01 -0800
-Message-ID: <CAMP5XgdE-Ui9qiLGjvAXk13LbCzn-bHEC_AsxQ8dWpz+R-qSDg@mail.gmail.com>
-Subject: Re: [PATCH 1/5] staging: android: lowmemorykiller: Add config option
- to support oom_adj values
-From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-To: David Rientjes <rientjes@google.com>
-Cc: John Stultz <john.stultz@linaro.org>, lkml <linux-kernel@vger.kernel.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 27, 2013 at 4:14 PM, David Rientjes <rientjes@google.com> wrote:
-> On Wed, 27 Feb 2013, Arve Hjønnevåg wrote:
->
->> Because, without this patch, the values written to
->> /sys/module/lowmemorykiller/parameters/adj do not get adjusted and
->> therefore do not match the correct processes.
->>
->
-> Explain how this can possibly be consistent if your system includes two
-> processes, one writing oom_adj values and one writing oom_score_adj
-> values, and the kernel has this new option enabled?
+On Wednesday, February 27, 2013 02:20:32 PM Greg Kroah-Hartman wrote:
+> On Wed, Feb 27, 2013 at 11:06:52PM +0100, Rafael J. Wysocki wrote:
+> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > 
+> > After PCI has stopped using the .find_bridge() callback in
+> > struct acpi_bus_type, the only remaining users of it are SATA and
+> > USB.  However, SATA only pretends to be a user, because it points
+> > that callback to a stub always returning -ENODEV, and USB uses it
+> > incorrectly, because as a result of the way it is used by USB every
+> > device in the system that doesn't have a bus type or parent is
+> > passed to usb_acpi_find_device() for inspection.
+> > 
+> > What USB actually needs, though, is to call usb_acpi_find_device()
+> > for USB ports that don't have a bus type defined, but have
+> > usb_port_device_type as their device type.
+> 
+> Ick, that's not good.  Can you have the original creator of that code
+> (someone else from Intel, I can't remember at the moment), fix that up
+> properly and send me patches?
 
-These values are all written by the same process. If you want to
-improve this, the lowmemorykiller will need a separate score_adj
-parameter so that it knows for sure which type of value it receives.
-You changed the meaning of /sys/module/lowmemorykiller/parameters/adj.
-This patch restores the old behavior as long as the values you write
-are within the range oom_adj, while still supporting the new behavior
-you added in the likely case that one of the values are out of range
-for oom_adj.
+That won't be necessary afer this patch.  Or do you want to fix up USB
+separately first?
+
+Rafael
+
 
 -- 
-Arve Hjønnevåg
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
