@@ -1,74 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932136Ab3B1WBs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 17:01:48 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:36755 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754675Ab3B1WBp convert rfc822-to-8bit (ORCPT
+	id S1759952Ab3B1WFD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 17:05:03 -0500
+Received: from mail-ee0-f51.google.com ([74.125.83.51]:56357 "EHLO
+	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755521Ab3B1WE7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 17:01:45 -0500
+	Thu, 28 Feb 2013 17:04:59 -0500
+Message-ID: <512FD486.6030804@suse.cz>
+Date: Thu, 28 Feb 2013 23:04:54 +0100
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:19.0) Gecko/20130124 Thunderbird/19.0
 MIME-Version: 1.0
-Message-ID: <0621544c-dbb7-44ff-bfd0-ee623439bd9d@default>
-Date: Thu, 28 Feb 2013 14:00:36 -0800 (PST)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: minchan@kernel.org, sjenning@linux.vnet.ibm.com,
-        Nitin Gupta <nitingupta910@gmail.com>
-Cc: Konrad Wilk <konrad.wilk@oracle.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Bob Liu <lliubbo@gmail.com>,
-        Luigi Semenzato <semenzato@google.com>, Mel Gorman <mgorman@suse.de>
-Subject: RE: zsmalloc limitations and related topics
-References: <0efe9610-1aa5-4aa9-bde9-227acfa969ca@default>
-In-Reply-To: <0efe9610-1aa5-4aa9-bde9-227acfa969ca@default>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.7  (607090) [OL
- 12.0.6665.5003 (x86)]
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+CC: stable@vger.kernel.org, Jiang Liu <jiang.liu@huawei.com>,
+        Gaohuai Han <hangaohuai@huawei.com>,
+        Maciej Sosnowski <maciej.sosnowski@intel.com>,
+        Dan Williams <djbw@fb.com>
+Subject: Re: [ 47/53] dca: check against empty dca_domains list before unregister
+ provider
+References: <20130226235619.844721947@linuxfoundation.org> <20130226235624.751198592@linuxfoundation.org>
+In-Reply-To: <20130226235624.751198592@linuxfoundation.org>
+X-Enigmail-Version: 1.6a1pre
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Dan Magenheimer
-> Subject: zsmalloc limitations and related topics
+On 02/27/2013 12:58 AM, Greg Kroah-Hartman wrote:
+> 3.0-stable review patch.  If anyone has any objections, please let me know.
 > 
-> WORKLOAD ANALYSIS
->   :
-> 1) The average page compressed by almost a factor of six
->    (mean zsize == 694, stddev == 474)
-> 2) Almost eleven percent of the pages were zero pages.  A
->    zero page compresses to 28 bytes.
-> 3) On average, 77% of the bytes (3156) in the pages-to-be-
->    compressed contained a byte-value of zero.
-> 4) Despite the above, mean density of zsmalloc was measured at
->    3.2 zpages/pageframe, presumably losing nearly half of
->    available space to fragmentation.
+> ------------------
 > 
-> I have no clue if these measurements are representative
-> of a wide range of workloads over the lifetime of a booted
-> machine, but I am suspicious that they are not.  For example,
-> the lzo1x compression algorithm claims to compress data by
-> about a factor of two.
+> From: Maciej Sosnowski <maciej.sosnowski@intel.com>
+> 
+> commit c419fcfd071cf34ba00f9f65282583772d2655e7 upstream.
+> 
+> When providers get blocked unregister_dca_providers() is called ending up
+> with dca_providers and dca_domain lists emptied. Dca should be prevented from
+> trying to unregister any provider if dca_domain list is found empty.
+> 
+> Reported-by: Jiang Liu <jiang.liu@huawei.com>
+> Tested-by: Gaohuai Han <hangaohuai@huawei.com>
+> Signed-off-by: Maciej Sosnowski <maciej.sosnowski@intel.com>
+> Signed-off-by: Dan Williams <djbw@fb.com>
+> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> 
+> ---
+>  drivers/dca/dca-core.c |    5 +++++
+>  1 file changed, 5 insertions(+)
+> 
+> --- a/drivers/dca/dca-core.c
+> +++ b/drivers/dca/dca-core.c
+> @@ -409,6 +409,11 @@ void unregister_dca_provider(struct dca_
+>  
+>  	spin_lock_irqsave(&dca_lock, flags);
+>  
+> +	if (list_empty(&dca_domains)) {
+> +		raw_spin_unlock_irqrestore(&dca_lock, flags);
 
-I realized that with a small hack in zswap, I could simulate the
-effect on zsmalloc of a workload with very different zsize
-distribution, one with a much higher mean, by simply doubling
-(and tripling) the zsize passed to zs_malloc.  The results:
+Hi, this is an incorrect backport. It should be spin_unlock_irqrestore
+obviously...
 
-Unchanged: mean=694 stddev=474 -> mean density = 3.2
-Doubled:   mean=1340 stddev=842 -> mean density = 1.9
-Tripled:   mean=1636 stddev=1031 -> mean density = 1.6
 
-Note that even tripled, the mean of the simulated
-distribution is still much lower than PAGE_SIZE/2,
-which is roughly the published expected compression for
-lzo1x.  So one would still expect a mean density greater
-than two but, apparently, one-third of available space is
-lost to fragmentation.
 
-Without a "representative" workload, I still have no clue
-as to whether this simulated distribution is relevant,
-but it is interesting to note that, for a workload with
-lower mean compressibility, zsmalloc's reputation as
-"high density" may be undeserved.
-
+-- 
+js
+suse labs
