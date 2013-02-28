@@ -1,121 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752183Ab3B1Jpz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 04:45:55 -0500
-Received: from mail-we0-f181.google.com ([74.125.82.181]:60272 "EHLO
-	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751159Ab3B1Jpx (ORCPT
+	id S1752229Ab3B1JqS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 04:46:18 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:49620 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750784Ab3B1JqN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 04:45:53 -0500
-MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <20130228073235.GP10026@vostochny.stro.at>
-References: <1335219389-10887-1-git-send-email-sedat.dilek@gmail.com>
-	<512E1061.3030007@suse.cz>
-	<20130228073235.GP10026@vostochny.stro.at>
-Date: Thu, 28 Feb 2013 10:45:51 +0100
-Message-ID: <CA+icZUWkaULN_OH4A9qbw_g9Yayzcr8v3EFLYPYnUWDZqyR=qA@mail.gmail.com>
-Subject: Re: [PATCH 1/3] kbuild, deb-pkg: Try to determine distribution
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: maximilian attems <max@stro.at>
-Cc: Michal Marek <mmarek@suse.cz>, Sedat Dilek <sedat.dilek@googlemail.com>,
-        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Alexander Wirt <formorer@debian.org>, Thorsten Glaser <tg@mirbsd.de>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 28 Feb 2013 04:46:13 -0500
+X-AuditID: cbfee68e-b7fa46d00000627e-f1-512f27642c38
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Andrew Morton'" <akpm@linux-foundation.org>
+Cc: "'LKML'" <linux-kernel@vger.kernel.org>,
+        "'Richard Purdie'" <rpurdie@rpsys.net>,
+        "'Jingoo Han'" <jg1.han@samsung.com>
+References: 
+In-reply-to: 
+Subject: Re: [PATCH] backlight: atmel-pwm-bl: remove erroneous __exit annotation
+Date: Thu, 28 Feb 2013 18:46:12 +0900
+Message-id: <000801ce1598$7168f800$543ae800$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac4VaMZK/2U6vu2+TDmktd1woodJ1AAL2NZA
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrFIsWRmVeSWpSXmKPExsVy+t8zI90Udf1Ag7kP1SzmrF/DZnF54SVW
+	i8u75rBZ7N71lNWBxePEjN8sHnvm/2D16NuyitHj8ya5AJYoLpuU1JzMstQifbsErowjk5uY
+	CyZzVexo3M3WwLiQo4uRk0NCwETiwYTpzBC2mMSFe+vZuhi5OIQEljFKLF7zjgmmqPN2L1Ri
+	OqPE6ckXwDqEBH4BVW2uB7HZBNQkvnw5zN7FyMEhIqAv0daiARJmFiiV2PrgPQtIWEiAW2J1
+	cxBImFOAR2Ldn05mkLCwQIBE+7wYkDCLgKrE7f7NLCA2r4CtxIm559ggbEGJH5PvsUBM1JLY
+	vK2JFcKWl9i85i3YGAkBdYlHf3VBwiICRhIPL/eyQ5SISOx78Y4R5HgJgXPsErf3LWaB2CUg
+	8W3yIRaIXlmJTQegoSApcXDFDZYJjBKzkGyehWTzLCSbZyFZsYCRZRWjaGpBckFxUnqRkV5x
+	Ym5xaV66XnJ+7iZGSDz27WC8ecD6EGMy0PqJzFKiyfnAeM4riTc0NjYxMzE1Mbc0NTclTVhJ
+	nFf+kkygkEB6YklqdmpqQWpRfFFpTmrxIUYmDk6pBkb5/yYaATtcWnT8TbjldFwVs47JPUm0
+	MqgNr9gRxpvWzZ3+9LrInGUnbUyNw6ZebDdWjtXXqVD8pmLAPP3grIDF/d7MfkUJQn9ezVDn
+	vF2+5XTXg6M+y9+7HDYoW/PIc4Z3yWc5gS/lm3kltW59XXuSz7CPIa0pfuv092ueR9he/pcZ
+	8Sd0vRJLcUaioRZzUXEiAHjtImXdAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrOKsWRmVeSWpSXmKPExsVy+t9jQd0Udf1Ag85uJYs569ewWVxeeInV
+	4vKuOWwWu3c9ZXVg8Tgx4zeLx575P1g9+rasYvT4vEkugCWqgdEmIzUxJbVIITUvOT8lMy/d
+	Vsk7ON453tTMwFDX0NLCXEkhLzE31VbJxSdA1y0zB2inkkJZYk4pUCggsbhYSd8O04TQEDdd
+	C5jGCF3fkCC4HiMDNJCwjjHjyOQm5oLJXBU7GnezNTAu5Ohi5OSQEDCR6LzdywZhi0lcuLce
+	yObiEBKYzihxevIFZpCEkMAvRonFm+tBbDYBNYkvXw6zdzFycIgI6Eu0tWiAhJkFSiW2PnjP
+	AhIWEuCWWN0cBBLmFOCRWPenkxkkLCwQINE+LwYkzCKgKnG7fzMLiM0rYCtxYu45NghbUOLH
+	5HssEBO1JDZva2KFsOUlNq95CzZGQkBd4tFfXZCwiICRxMPLvewQJSIS+168Y5zAKDQLyaRZ
+	SCbNQjJpFpKWBYwsqxhFUwuSC4qT0nON9IoTc4tL89L1kvNzNzGCo/2Z9A7GVQ0WhxgFOBiV
+	eHg7TPQChVgTy4orcw8xSnAwK4nwuvDrBwrxpiRWVqUW5ccXleakFh9iTAZ6dCKzlGhyPjAR
+	5ZXEGxqbmBlZGplZGJmYm5MmrCTOy3jqSYCQQHpiSWp2ampBahHMFiYOTqkGRsmHarOCHdZo
+	6vHPM0+Mv77fQaw2Tstd0uNEws5/t9Ibfq24+rcmfd0KydC62kXdvWZhWoWWlrVBdp+ELqk+
+	CVtzZ5eF0T5VHQ+jG+Ixl+V6koqvGNWHbPQouhJncfSXu6CAxK/ZTcwsce3PMv8GeEzYcaiW
+	UfacQlyhpC+jsoRLX6xVTKMSS3FGoqEWc1FxIgCcPD/8OgMAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 28, 2013 at 8:32 AM, maximilian attems <max@stro.at> wrote:
-> On Wed, Feb 27, 2013 at 02:55:45PM +0100, Michal Marek wrote:
->> Sorry I missed this series. Max, can you have a look? I don't know the
->> policies for debian package changelogs. The full series is at
->> http://lkml.indiana.edu/hypermail/linux/kernel/1204.2/index.html#04252,
->> but the remaining two patches are obvious.
->
-> the two remaining ones are trivial, should have pushed them a long time
-> ago and will do so this weekend in a combined version going up to 2013
-> (sitting in my queue to send).
->
->> On 24.4.2012 00:16, Sedat Dilek wrote:
->> > Signed-off-by: Sedat Dilek <sedat.dilek@gmail.com>
->> > ---
->> >  scripts/package/builddeb |   15 ++++++++++++++-
->> >  1 file changed, 14 insertions(+), 1 deletion(-)
->> >
->> > diff --git a/scripts/package/builddeb b/scripts/package/builddeb
->> > index eee5f8e..f5b56ac 100644
->> > --- a/scripts/package/builddeb
->> > +++ b/scripts/package/builddeb
->> > @@ -172,9 +172,22 @@ else
->> >  fi
->> >  maintainer="$name <$email>"
->> >
->> > +# Try to determine distribution
->> > +if [ -e $(which lsb_release) ]; then
->> > +       codename=$(lsb_release --codename --short)
->> > +       if [ "$codename" != "" ]; then
->> > +           distribution=$codename
->> > +       else
->> > +           distribution="UNRELEASED"
->> > +           echo "WARNING: The distribution could NOT be determined!"
->> > +       fi
->> > +else
->> > +       echo "HINT: Install lsb_release binary, this helps to identify your distribution!"
->> > +fi
->> > +
->> >  # Generate a simple changelog template
->> >  cat <<EOF > debian/changelog
->> > -linux-upstream ($packageversion) unstable; urgency=low
->> > +linux-upstream ($packageversion) $distribution; urgency=low
->> >
->> >    * Custom built Linux kernel.
->
-> this is pretty useless.
-> Nack, in adding a this additional lsb dep.
-> I know it should be installed by default, but in practise it is often not.
->
-> If you'd really care about the changelog you'd generate it out of your
-> git repo with Debian's git dch in order to have something meaningful.
->
+On Thursday, February 28, 2013 1:05 PM, Jingoo Han wrote:
+> 
+> CONFIG_HOTPLUG was removed, so __devexit or __exit of remove()
+> should not be used.
 
-[ CCing Thorsten and Alexander ]
+This driver also use platform_driver_probe().
+So, this patch is useless.
 
-Thank you for your response.
+Please, abandon this patch.
+Thank you.
 
-This was a compromise for Debian and Ubuntu systems and as said
-discussed with two longterm Debian maintainers.
-Thorsten Glaser uses same mechanisms in his Debian build-environments
-(he prefers -cs as parameters than long-format).
-FYI: Ubuntu/precise ships lsb(-release) stuff by default!
-Can't say if it is a "essential" package on Debian these days or not
-(in my patch there is a warning if it's not available).
+Best regards,
+Jingoo Han
 
-Personally, I think lsb-release binary is a good compromise in a
-non-Debian-world, too.
-I don't know of a real distro not shipping it - not thinking of
-distros like LFS (Linux From Scratch) in first place (and did not
-verify even if LSB stuff is done or not, I might be wrong).
-
-What's your proposal to check for $codename/$distribution (just curious)?
-
-Last question:
-Should people CC you always on patches for deb-pkg?
-For me it looks like you are "maintaining" it, so why not place you as
-a maintainer in MAINTAINERS file?
-( Didn't check what checkpatch.pl throws out. )
-So, you do the work - get the credits :-)!
-
-- Sedat -
-
-P.S.: Ubuntu/precise beta1 ships lsb-release.
-
-# grep lsb packages_01_precise-beta1.txt
-ii  lsb-base                               4.0-0ubuntu20
-                 Linux Standard Base 4.0 init script functionality
-ii  lsb-release                            4.0-0ubuntu20
-                 Linux Standard Base version reporting utility
-
->
+> 
+> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+> ---
+>  drivers/video/backlight/atmel-pwm-bl.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/video/backlight/atmel-pwm-bl.c b/drivers/video/backlight/atmel-pwm-bl.c
+> index de5e5e7..24b90fa 100644
+> --- a/drivers/video/backlight/atmel-pwm-bl.c
+> +++ b/drivers/video/backlight/atmel-pwm-bl.c
+> @@ -203,7 +203,7 @@ err_free_mem:
+>  	return retval;
+>  }
+> 
+> -static int __exit atmel_pwm_bl_remove(struct platform_device *pdev)
+> +static int atmel_pwm_bl_remove(struct platform_device *pdev)
+>  {
+>  	struct atmel_pwm_bl *pwmbl = platform_get_drvdata(pdev);
+> 
+> @@ -222,7 +222,7 @@ static struct platform_driver atmel_pwm_bl_driver = {
+>  		.name = "atmel-pwm-bl",
+>  	},
+>  	/* REVISIT add suspend() and resume() */
+> -	.remove = __exit_p(atmel_pwm_bl_remove),
+> +	.remove = atmel_pwm_bl_remove,
+>  };
+> 
+>  static int __init atmel_pwm_bl_init(void)
 > --
-> maks
+> 1.7.2.5
+
+
