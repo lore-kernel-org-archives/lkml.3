@@ -1,84 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752271Ab3B1H1j (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 02:27:39 -0500
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:38524 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751345Ab3B1H1i (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 02:27:38 -0500
+	id S1752721Ab3B1Hcl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 02:32:41 -0500
+Received: from vostochny.stro.at ([78.47.22.85]:59619 "EHLO vostochny.stro.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751548Ab3B1Hch (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Feb 2013 02:32:37 -0500
+Date: Thu, 28 Feb 2013 07:32:35 +0000
+From: maximilian attems <max@stro.at>
+To: Michal Marek <mmarek@suse.cz>
+Cc: Sedat Dilek <sedat.dilek@googlemail.com>, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Sedat Dilek <sedat.dilek@gmail.com>
+Subject: Re: [PATCH 1/3] kbuild, deb-pkg: Try to determine distribution
+Message-ID: <20130228073235.GP10026@vostochny.stro.at>
+References: <1335219389-10887-1-git-send-email-sedat.dilek@gmail.com>
+ <512E1061.3030007@suse.cz>
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <CA+icZUXGGQjKAwAET81pioAfZBw8mj3MO49Mm3xc35-UY=BgTg@mail.gmail.com>
-References: <CA+icZUUsedHPqZc5jXQ_AqAbfmTMu5WW8CJ+vnHwL69ofw7uTw@mail.gmail.com>
-	<20130227122302.GA5678@pd.tnic>
-	<CA+icZUVXDfOhztQtrOxyYaHutpx=iVpPGmRT0PzP7045_mjh6w@mail.gmail.com>
-	<CA+icZUXJb5O7ML-xnQq8Zoa46NmaGZp2Xaqj6fJL+vudPeQTLw@mail.gmail.com>
-	<20130227150733.GB22383@htj.dyndns.org>
-	<CA+icZUXGGQjKAwAET81pioAfZBw8mj3MO49Mm3xc35-UY=BgTg@mail.gmail.com>
-Date: Thu, 28 Feb 2013 08:27:36 +0100
-Message-ID: <CA+icZUUQPmo+dNRA2W_QMJ9zSwYPpqMMnr5brmE==TzG9bS8sw@mail.gmail.com>
-Subject: Re: [next-20130227] kernel NULL pointer dereference [ watchdog | perf
- related ? ]
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Borislav Petkov <bp@alien8.de>, Wim Van Sebroeck <wim@iguana.be>,
-        Ingo Molnar <mingo@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
-        linux-watchdog@vger.kernel.org, x86@kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-next <linux-next@vger.kernel.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <512E1061.3030007@suse.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 28, 2013 at 8:24 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
-> On Wed, Feb 27, 2013 at 4:07 PM, Tejun Heo <tj@kernel.org> wrote:
->> Replying here too just in case.
->>
->> On Wed, Feb 27, 2013 at 02:08:40PM +0100, Sedat Dilek wrote:
->>> >> static inline void *idr_find(struct idr *idr, int id)
->>> >> {
->>> >>         struct idr_layer *hint = rcu_dereference_raw(idr->hint);
->>> >>     86d7:       48 8b 05 00 00 00 00    mov    0x0(%rip),%rax        # 86de <perf_init_event+0x2e>
->>> >>                         86da: R_X86_64_PC32     .bss+0xfc
->>> >>
->>> >>         if ((id & ~IDR_MASK) == hint->prefix)
->>> >>     86de:       89 f2                   mov    %esi,%edx
->>> >>     86e0:       30 d2                   xor    %dl,%dl
->>> >>     86e2:       3b 10                   cmp    (%rax),%edx              <--- trapping insn
->>> >>     86e4:       74 4a                   je     8730 <perf_init_event+0x80>
->>> >>                 return rcu_dereference_raw(hint->ary[id & IDR_MASK]);
->>> >>
->>> >>
->>> >> So 'hint' is NULL as RAX above confirms and we're not supposed to deref
->>> >> NULL things.
->>> >>
->>> >> Looking at 29cf29e1fbb875019713eb55cf27ec35f1e5fa5e, Tejun should
->>> >> probably know. CCed.
->>
->> Fix was posted some days ago.
->>
->>   http://thread.gmane.org/gmane.linux.kernel.next/26213
->>
->> I got Andrew's patch added to -mm message a week ago.  Not sure why it
->> still hasn't showed up.  Andrew, any ideas?
->>
->> Thanks.
->>
->> --
->> tejun
->
-> AFAICS the updated (correct) patch "idr: implement lookup hint" is now
-> in mainline.
->
+On Wed, Feb 27, 2013 at 02:55:45PM +0100, Michal Marek wrote:
+> Sorry I missed this series. Max, can you have a look? I don't know the
+> policies for debian package changelogs. The full series is at
+> http://lkml.indiana.edu/hypermail/linux/kernel/1204.2/index.html#04252,
+> but the remaining two patches are obvious.
 
-...but not in next-20130228 yet (tomorrow's Linux-Next will have it).
+the two remaining ones are trivial, should have pushed them a long time
+ago and will do so this weekend in a combined version going up to 2013
+(sitting in my queue to send).
+ 
+> On 24.4.2012 00:16, Sedat Dilek wrote:
+> > Signed-off-by: Sedat Dilek <sedat.dilek@gmail.com>
+> > ---
+> >  scripts/package/builddeb |   15 ++++++++++++++-
+> >  1 file changed, 14 insertions(+), 1 deletion(-)
+> > 
+> > diff --git a/scripts/package/builddeb b/scripts/package/builddeb
+> > index eee5f8e..f5b56ac 100644
+> > --- a/scripts/package/builddeb
+> > +++ b/scripts/package/builddeb
+> > @@ -172,9 +172,22 @@ else
+> >  fi
+> >  maintainer="$name <$email>"
+> >  
+> > +# Try to determine distribution
+> > +if [ -e $(which lsb_release) ]; then
+> > +       codename=$(lsb_release --codename --short)
+> > +       if [ "$codename" != "" ]; then
+> > +		distribution=$codename
+> > +       else
+> > +		distribution="UNRELEASED"
+> > +		echo "WARNING: The distribution could NOT be determined!"
+> > +       fi
+> > +else
+> > +       echo "HINT: Install lsb_release binary, this helps to identify your distribution!"
+> > +fi
+> > +
+> >  # Generate a simple changelog template
+> >  cat <<EOF > debian/changelog
+> > -linux-upstream ($packageversion) unstable; urgency=low
+> > +linux-upstream ($packageversion) $distribution; urgency=low
+> >  
+> >    * Custom built Linux kernel.
 
-- Sedat -
+this is pretty useless. 
+Nack, in adding a this additional lsb dep.
+I know it should be installed by default, but in practise it is often not.
 
-> - Sedat -
->
-> [1] http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commitdiff;h=0ffc2a9c8072969253a20821c2c733a2cbb4c7c7
+If you'd really care about the changelog you'd generate it out of your
+git repo with Debian's git dch in order to have something meaningful.
+
+
+-- 
+maks
