@@ -1,69 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753194Ab3B1ABm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 19:01:42 -0500
-Received: from mail-oa0-f50.google.com ([209.85.219.50]:62906 "EHLO
-	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751213Ab3B1ABl (ORCPT
+	id S1752848Ab3B1ACk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 19:02:40 -0500
+Received: from mail-da0-f51.google.com ([209.85.210.51]:39831 "EHLO
+	mail-da0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751213Ab3B1ACj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 19:01:41 -0500
+	Wed, 27 Feb 2013 19:02:39 -0500
+Date: Wed, 27 Feb 2013 16:02:36 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: James Courtier-Dutton <james.dutton@gmail.com>
+Cc: Dave Airlie <airlied@gmail.com>, Ben Skeggs <bskeggs@redhat.com>,
+        David Airlie <airlied@linux.ie>, Martin Peres <martin.peres@labri.fr>,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Subject: Re: resume fails to light display on Macbook Pro Retina on 3.8-rc1
+Message-ID: <20130228000236.GA2216@kroah.com>
+References: <CAPM=9txjG5rohsNbme=myrX+-Z5eucpEXYQMWqPQqN=5dNze8g@mail.gmail.com>
+ <CAPM=9tw_vfESbbH4dD9z8mAYVYcwmVs=n4BrRz4XBj1Rw1qrkw@mail.gmail.com>
+ <20130225223243.GA18744@kroah.com>
+ <20130226034545.GA1089@kroah.com>
+ <20130226173514.GA24136@kroah.com>
+ <CAAMvbhFTNmUS-usRZKBEqp_YrpxDhckj9tdTtC+m_5EnO+UECw@mail.gmail.com>
+ <CAAMvbhEAcLuE+5KGP13wCc8nVBp1Eq-UPtaUD7c5oGVq8io8Lw@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CA+5PVA5vvw-JyODTtRwVhQSEiGrt=3wzDoCmeButEMTZxWAhbA@mail.gmail.com>
-References: <alpine.DEB.2.00.1302260003460.24684@skynet.skynet.ie>
-	<CA+5PVA5wtZipQRTPfvbh1U8gjDMaW0095EsNz==Co+iww3YN1g@mail.gmail.com>
-	<CA+5PVA5vvw-JyODTtRwVhQSEiGrt=3wzDoCmeButEMTZxWAhbA@mail.gmail.com>
-Date: Wed, 27 Feb 2013 19:01:38 -0500
-Message-ID: <CA+5PVA5za2stXYxQ_Tu3D6Lbif94cqK_5wvPXFhUpvsh_DOXVg@mail.gmail.com>
-Subject: Re: [git pull] drm merge for 3.9-rc1
-From: Josh Boyer <jwboyer@gmail.com>
-To: Dave Airlie <airlied@linux.ie>, Alex Deucher <alexander.deucher@amd.com>,
-        Jerome Glisse <jglisse@redhat.com>
-Cc: torvalds@linux-foundation.org,
-        DRI mailing list <dri-devel@lists.freedesktop.org>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAAMvbhEAcLuE+5KGP13wCc8nVBp1Eq-UPtaUD7c5oGVq8io8Lw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 27, 2013 at 3:20 PM, Josh Boyer <jwboyer@gmail.com> wrote:
-> On Wed, Feb 27, 2013 at 11:34 AM, Josh Boyer <jwboyer@gmail.com> wrote:
->> On Mon, Feb 25, 2013 at 7:05 PM, Dave Airlie <airlied@linux.ie> wrote:
->>> Alex Deucher (29):
->>>       drm/radeon: halt engines before disabling MC (6xx/7xx)
->>>       drm/radeon: halt engines before disabling MC (evergreen)
->>>       drm/radeon: halt engines before disabling MC (cayman/TN)
->>>       drm/radeon: halt engines before disabling MC (si)
->>>       drm/radeon: use the reset mask to determine if rings are hung
->>
->> Something in this series of commits is causing the GPU to hang on reboot
->> on my Dell XPS 8300 machine.  That has a:
->>
->> 01:00.0 VGA compatible controller: Advanced Micro Devices [AMD] nee
->> ATI Caicos [Radeon HD 6450]
->>
->> card in it.  After reboots, I get a screen that looks like this:
->>
->> http://t.co/tPnT6xQZUK
->>
->> I can hit it fairly consistently after a few reboots, so I tried doing a
->> git bisect on the radeon driver and it came down to:
->>
->> ca57802e521de54341efc8a56f70571f79ffac72 is the first bad commit
->
-> So I don't think that's actually the cause of the problem.  Or at least
-> not that alone.  I reverted it on top of Linus' latest tree and I still
-> get the lockups.
+On Wed, Feb 27, 2013 at 11:27:30PM +0000, James Courtier-Dutton wrote:
+> On 26 February 2013 18:11, James Courtier-Dutton <james.dutton@gmail.com> wrote:
+> > On 26 February 2013 17:35, Greg KH <gregkh@linuxfoundation.org> wrote:
+> >> On Mon, Feb 25, 2013 at 07:45:45PM -0800, Greg KH wrote:
+> >>> On Mon, Feb 25, 2013 at 02:32:43PM -0800, Greg KH wrote:
+> >>> > On Mon, Feb 25, 2013 at 04:06:02PM +1000, Dave Airlie wrote:
+> >>> > > On Mon, Feb 25, 2013 at 3:52 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> >>> > > > Hi Ben,
+> >>> > > >
+> >>> > > > My Macbook Pro Retina fails to resume properly on 3.8.  I tracked this
+> >>> > > > down to commit 6c5a04249d7afeea3e0ed971e7813f84e29a1706 (drm/nvd0/disp:
+> >>> > > > move link training helpers into core as display methods)
+> >>> > > >
+> >>> > > > Anything I can try to help solve this?
+> >>> > > >
+> >>> > > > Note, I'm using the Intel driver as the main controller for this laptop,
+> >>> > > > well, I think I am, my xorg log is attached.
+> >>> > >
+> >>> > > No you are using the nvidia, the efi always boots nvidia enabled now.
+> >>> >
+> >>> > Really?  When did that change?  I thought I wanted to be using the Intel
+> >>> > chip to save battery life.
+> >>> >
+> >>> > > btw I just tested my drm-next tree on mine and it resumed the display
+> >>> > > fine, something oopsed a few seconds later that I haven't tracked down
+> >>> > >
+> >>> > > git://git.freedesktop.org/~airlied/linux drm-next
+> >>> > >
+> >>> > > I'll be sending it to Linus this evening or tomorrow morning, once I
+> >>> > > fix my tree.
+> >>> >
+> >>> > Ok, I'll test again when it hits Linus's tree, and if that works, it
+> >>> > would be good to try to work out what patch fixes it to get them into
+> >>> > the 3.8-stable series so that others don't run into the same problem.
+> >>>
+> >>> I've tested Linus's tree now (I'm guessing it has all of your changes in
+> >>> it), and it works!
+> >>>
+> >>> I see a bunch of patches marked for the stable branch, so I'll try those
+> >>> out and see if they fix the problem.  If not, I'll let you and Ben know.
+> >>
+> >> I've applied the radeon patches tagged for -stable and tested that on
+> >> 3.8.0, but that doesn't solve the resume problem.  Any ideas of anything
+> >> else I can do to test this?  Doing a "backwards" git-bisect is a pain,
+> >> but I guess I can do that to try to track down what patch fixed this, if
+> >> that's the only idea people have...
+> >>
+> >
+> > If it helps, I have a similar resume problem here.
+> > 3.7.8 good
+> > 3.8.0 bad
+> >
+> > Laptop with no nvidia, no amd graphics, just Intel Graphics 4000, 3rd
+> > Gen I5 CPU.
+> 
+> Problem: "Backlight not coming on after resume."
+> git finally bisected  for my Samsung Serial 7 Laptop.
+> Bisecting: 0 revisions left to test after this (roughly 0 steps)
+> [cf0a6584aa6d382f802f2c3cacac23ccbccde0cd] drm/i915: write backlight
+> harder     <- This is the problem commit. Seems that fixing some
+> machines breaks others, based on the existing comments on that patch.
 
-Actually, git bisect does seem to have gotten it correct.  Once I
-actually tested the revert of just that on top of Linus' tree (commit
-d895cb1af1), things seem to be working much better.  I've rebooted a
-dozen times without a lockup.  The most I've seen it take on a kernel
-with that commit included is 3 reboots, so that's definitely at least an
-improvement.
+Hm, so, 3.8.0 works for you, but 3.8.1-rc1 doesn't?  Or are you saying
+Linus's tree doesn't work for you?
 
-Now that I seem to have narrowed down which commit is broken, I'd be
-happy to test fixes, etc.  Sorry for the noise from earlier today.
+As you have a different issue here than the nvidia hardware I was
+dealing with, you might want to try to start over with a new thread and
+the needed info, and the needed people on it (i.e. the i915
+maintainers and mailing list.)
 
+thanks,
 
-josh
+greg k-h
