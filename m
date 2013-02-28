@@ -1,78 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760763Ab3B1P0w (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 10:26:52 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41878 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754655Ab3B1OqD (ORCPT
+	id S1760683Ab3B1P0q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 10:26:46 -0500
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:46860 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755153Ab3B1P0m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 09:46:03 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Pratyush Anand <pratyush.anand@st.com>, Felipe Balbi <balbi@ti.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 008/139] usb: dwc3: gadget: fix skip LINK_TRB on ISOC
-Date: Thu, 28 Feb 2013 14:42:38 +0000
-Message-Id: <1362062689-2567-9-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1362062689-2567-1-git-send-email-luis.henriques@canonical.com>
-References: <1362062689-2567-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.5
+	Thu, 28 Feb 2013 10:26:42 -0500
+Date: Thu, 28 Feb 2013 07:26:37 -0800
+From: Jeff Layton <jlayton@samba.org>
+To: Dave Chiluk <dave.chiluk@canonical.com>
+Cc: "Stefan (metze) Metzmacher" <metze@samba.org>,
+        Dave Chiluk <chiluk@canonical.com>, Steve French <sfrench@samba.org>,
+        linux-cifs@vger.kernel.org, samba-technical@lists.samba.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] CIFS: Decrease reconnection delay when switching nics
+Message-ID: <20130228072637.3b71a4f7@corrin.poochiereds.net>
+In-Reply-To: <512E8787.6070709@canonical.com>
+References: <1361831310-24260-1-git-send-email-chiluk@canonical.com>
+	<512DE8A6.9030000@samba.org>
+	<20130227083419.0af9deaf@corrin.poochiereds.net>
+	<512E8787.6070709@canonical.com>
+X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.13; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.7 -stable review patch.  If anyone has any objections, please let me know.
+On Wed, 27 Feb 2013 16:24:07 -0600
+Dave Chiluk <dave.chiluk@canonical.com> wrote:
 
-------------------
+> On 02/27/2013 10:34 AM, Jeff Layton wrote:
+> > On Wed, 27 Feb 2013 12:06:14 +0100
+> > "Stefan (metze) Metzmacher" <metze@samba.org> wrote:
+> > 
+> >> Hi Dave,
+> >>
+> >>> When messages are currently in queue awaiting a response, decrease amount of
+> >>> time before attempting cifs_reconnect to SMB_MAX_RTT = 10 seconds. The current
+> >>> wait time before attempting to reconnect is currently 2*SMB_ECHO_INTERVAL(120
+> >>> seconds) since the last response was recieved.  This does not take into account
+> >>> the fact that messages waiting for a response should be serviced within a
+> >>> reasonable round trip time.
+> >>
+> >> Wouldn't that mean that the client will disconnect a good connection,
+> >> if the server doesn't response within 10 seconds?
+> >> Reads and Writes can take longer than 10 seconds...
+> >>
+> > 
+> > Where does this magic value of 10s come from? Note that a slow server
+> > can take *minutes* to respond to writes that are long past the EOF.
+> It comes from the desire to decrease the reconnection delay to something
+> better than a random number between 60 and 120 seconds.  I am not
+> committed to this number, and it is open for discussion.  Additionally
+> if you look closely at the logic it's not 10 seconds per request, but
+> actually when requests have been in flight for more than 10 seconds make
+> sure we've heard from the server in the last 10 seconds.
+> 
+> Can you explain more fully your use case of writes that are long past
+> the EOF?  Perhaps with a test-case or script that I can test?  As far as
+> I know writes long past EOF will just result in a sparse file, and
+> return in a reasonable round trip time *(that's at least what I'm seeing
+> with my testing).  dd if=/dev/zero of=/mnt/cifs/a bs=1M count=100
+> seek=100000, starts receiving responses from the server in about .05
+> seconds with subsequent responses following at roughly .002-.01 second
+> intervals.  This is well within my 10 second value.  Even adding the
+> latency of AT&T's 2g cell network brings it up to only 1s.  Still 10x
+> less than my 10 second value.
+> 
+> The new logic goes like this
+> if( we've been expecting a response from the server (in_flight), and
+>  message has been in_flight for more than 10 seconds and
+>  we haven't had any other contact from the server in that time
+>   reconnect
+> 
 
-From: Pratyush Anand <pratyush.anand@st.com>
+That will break writes long past the EOF. Note too that reconnects on
+CIFS are horrifically expensive and problematic. Much of the state on a
+CIFS mount is tied to the connection. When that drops, open files are
+closed and things like locks are dropped. SMB1 has no real mechanism
+for state recovery, so that can really be a problem.
 
-commit 915e202aeeb59e272992a6364c910aaef3073544 upstream.
+> On a side note, I discovered a small race condition in the previous
+> logic while working on this, that my new patch also fixes.
+> 1s  request
+> 2s  response
+> 61.995 echo job pops
+> 121.995 echo job pops and sends echo
+> 122 server_unresponsive called.  Finds no response and attempts to
+> 	 reconnect
+> 122.95 response to echo received
+> 
 
-When we reach to link trb, we just need to increase free_slot and then
-calculate TRB. Return is not correct, as it will cause wrong TRB DMA
-address to fetch in case of update transfer.
+Sure, here's a reproducer. Do this against a windows server, preferably
+one exporting NTFS on relatively slow storage. Make sure that
+"testfile" doesn't exist first:
 
-Signed-off-by: Pratyush Anand <pratyush.anand@st.com>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/usb/dwc3/gadget.c | 13 +++++--------
- 1 file changed, 5 insertions(+), 8 deletions(-)
+     $ dd if=/dev/zero of=/path/to/cifs/share/testfile bs=1M count=1 seek=3192
 
-diff --git a/drivers/usb/dwc3/gadget.c b/drivers/usb/dwc3/gadget.c
-index edfff45..9ba53de 100644
---- a/drivers/usb/dwc3/gadget.c
-+++ b/drivers/usb/dwc3/gadget.c
-@@ -710,21 +710,18 @@ static void dwc3_prepare_one_trb(struct dwc3_ep *dep,
- 	struct dwc3		*dwc = dep->dwc;
- 	struct dwc3_trb		*trb;
- 
--	unsigned int		cur_slot;
--
- 	dev_vdbg(dwc->dev, "%s: req %p dma %08llx length %d%s%s\n",
- 			dep->name, req, (unsigned long long) dma,
- 			length, last ? " last" : "",
- 			chain ? " chain" : "");
- 
--	trb = &dep->trb_pool[dep->free_slot & DWC3_TRB_MASK];
--	cur_slot = dep->free_slot;
--	dep->free_slot++;
--
- 	/* Skip the LINK-TRB on ISOC */
--	if (((cur_slot & DWC3_TRB_MASK) == DWC3_TRB_NUM - 1) &&
-+	if (((dep->free_slot & DWC3_TRB_MASK) == DWC3_TRB_NUM - 1) &&
- 			usb_endpoint_xfer_isoc(dep->endpoint.desc))
--		return;
-+		dep->free_slot++;
-+
-+	trb = &dep->trb_pool[dep->free_slot & DWC3_TRB_MASK];
-+	dep->free_slot++;
- 
- 	if (!req->trb) {
- 		dwc3_gadget_move_request_queued(req);
+NTFS doesn't support sparse files, so the OS has to zero-fill up to the
+point where you're writing. That can take a looooong time on slow
+storage (minutes even). What we do now is periodically send a SMB echo
+to make sure the server is alive rather than trying to time out a
+particular call.
+
+The logic that handles that today is somewhat sub-optimal though. We
+send an echo every 60s whether there are any calls in flight or not and
+wait for 60s until we decide that the server isn't there. What would be
+better is to only send one when we've been waiting a long time for a
+response.
+
+That "long time" is debatable -- 10s would be fine with me but the
+logic needs to be fixed not to send echoes unless there is an
+outstanding request first.
+
+I think though that you're trying to use this mechanism to do something
+that it wasn't really designed to do. A better method might be to try
+and detect whether the TCP connection is really dead somehow. That
+would be more immediate, but I'm unclear on how best to do that.
+Probably it'll mean groveling around down in the TCP layer...
+
+FWIW, there was a thread on the linux-cifs mailing list started on Dec
+3, 2010 entitled "cifs client timeouts and hard/soft mounts" that lays
+out the rationale for the current reconnection behavior. You may want
+to look over that before you go making changes here...
+
 -- 
-1.8.1.2
-
+Jeff Layton <jlayton@samba.org>
