@@ -1,53 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754651Ab3B1WVD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 17:21:03 -0500
-Received: from mail-la0-f44.google.com ([209.85.215.44]:61873 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750886Ab3B1WVA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 17:21:00 -0500
-MIME-Version: 1.0
-In-Reply-To: <20130228213534.GF11360@redhat.com>
-References: <20130228151333.GB11360@redhat.com>
-	<1362079419.2908.390.camel@falcor1.watson.ibm.com>
-	<20130228213534.GF11360@redhat.com>
-Date: Thu, 28 Feb 2013 17:20:58 -0500
-Message-ID: <CACLa4pum7kXK+7+8ceVSuQsKDCFebdgGVYRTMKH9GQarqCEgMQ@mail.gmail.com>
-Subject: Re: IMA: How to manage user space signing policy with others
-From: Eric Paris <eparis@parisplace.org>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        LSM List <linux-security-module@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753632Ab3B1WXp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 17:23:45 -0500
+Received: from fn.samba.org ([216.83.154.106]:56919 "EHLO mail.samba.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752622Ab3B1WXk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Feb 2013 17:23:40 -0500
+Message-ID: <1362090219.2057.7.camel@pico.ipa.ssimo.org>
+Subject: Re: [PATCH] CIFS: Decrease reconnection delay when switching nics
+From: simo <idra@samba.org>
+To: Dave Chiluk <dave.chiluk@canonical.com>
+Cc: Jeff Layton <jlayton@samba.org>, Steve French <smfrench@gmail.com>,
+        "Stefan (metze) Metzmacher" <metze@samba.org>,
+        Steve French <sfrench@samba.org>, linux-cifs@vger.kernel.org,
+        samba-technical@lists.samba.org, linux-kernel@vger.kernel.org
+Date: Thu, 28 Feb 2013 17:23:39 -0500
+In-Reply-To: <512F948A.9060404@canonical.com>
+References: <1361831310-24260-1-git-send-email-chiluk@canonical.com>
+	 <512DE8A6.9030000@samba.org>
+	 <20130227083419.0af9deaf@corrin.poochiereds.net>
+	 <512E8787.6070709@canonical.com>
+	 <20130228072637.3b71a4f7@corrin.poochiereds.net>
+	 <CAH2r5mtBHO6woWeOJ+DJDBmF35VTfuFYo2iza--xAe7grnELAg@mail.gmail.com>
+	 <20130228084704.7f267119@corrin.poochiereds.net>
+	 <512F948A.9060404@canonical.com>
+Organization: Samba Team
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 28, 2013 at 4:35 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
-> On Thu, Feb 28, 2013 at 02:23:39PM -0500, Mimi Zohar wrote:
+On Thu, 2013-02-28 at 11:31 -0600, Dave Chiluk wrote:
+> On 02/28/2013 10:47 AM, Jeff Layton wrote:
+> > On Thu, 28 Feb 2013 10:04:36 -0600
+> > Steve French <smfrench@gmail.com> wrote:
+> > 
+> >> On Thu, Feb 28, 2013 at 9:26 AM, Jeff Layton <jlayton@samba.org> wrote:
+> >>> On Wed, 27 Feb 2013 16:24:07 -0600
+> >>> Dave Chiluk <dave.chiluk@canonical.com> wrote:
+> >>>
+> >>>> On 02/27/2013 10:34 AM, Jeff Layton wrote:
+> >>>>> On Wed, 27 Feb 2013 12:06:14 +0100
+> >>>>> "Stefan (metze) Metzmacher" <metze@samba.org> wrote:
+> >>>>>
+> >>>>>> Hi Dave,
+> >>>>>>
+> >>>>>>> When messages are currently in queue awaiting a response, decrease amount of
+> >>>>>>> time before attempting cifs_reconnect to SMB_MAX_RTT = 10 seconds. The current
+> >>>>>>> wait time before attempting to reconnect is currently 2*SMB_ECHO_INTERVAL(120
+> >>>>>>> seconds) since the last response was recieved.  This does not take into account
+> >>>>>>> the fact that messages waiting for a response should be serviced within a
+> >>>>>>> reasonable round trip time.
+> >>>>>>
+> >>>>>> Wouldn't that mean that the client will disconnect a good connection,
+> >>>>>> if the server doesn't response within 10 seconds?
+> >>>>>> Reads and Writes can take longer than 10 seconds...
+> >>>>>>
+> >>>>>
+> >>>>> Where does this magic value of 10s come from? Note that a slow server
+> >>>>> can take *minutes* to respond to writes that are long past the EOF.
+> >>>> It comes from the desire to decrease the reconnection delay to something
+> >>>> better than a random number between 60 and 120 seconds.  I am not
+> >>>> committed to this number, and it is open for discussion.  Additionally
+> >>>> if you look closely at the logic it's not 10 seconds per request, but
+> >>>> actually when requests have been in flight for more than 10 seconds make
+> >>>> sure we've heard from the server in the last 10 seconds.
+> >>>>
+> >>>> Can you explain more fully your use case of writes that are long past
+> >>>> the EOF?  Perhaps with a test-case or script that I can test?  As far as
+> >>>> I know writes long past EOF will just result in a sparse file, and
+> >>>> return in a reasonable round trip time *(that's at least what I'm seeing
+> >>>> with my testing).  dd if=/dev/zero of=/mnt/cifs/a bs=1M count=100
+> >>>> seek=100000, starts receiving responses from the server in about .05
+> >>>> seconds with subsequent responses following at roughly .002-.01 second
+> >>>> intervals.  This is well within my 10 second value.  Even adding the
+> >>>> latency of AT&T's 2g cell network brings it up to only 1s.  Still 10x
+> >>>> less than my 10 second value.
+> >>>>
+> >>>> The new logic goes like this
+> >>>> if( we've been expecting a response from the server (in_flight), and
+> >>>>  message has been in_flight for more than 10 seconds and
+> >>>>  we haven't had any other contact from the server in that time
+> >>>>   reconnect
+> >>>>
+> >>>
+> >>> That will break writes long past the EOF. Note too that reconnects on
+> >>> CIFS are horrifically expensive and problematic. Much of the state on a
+> >>> CIFS mount is tied to the connection. When that drops, open files are
+> >>> closed and things like locks are dropped. SMB1 has no real mechanism
+> >>> for state recovery, so that can really be a problem.
+> >>>
+> >>>> On a side note, I discovered a small race condition in the previous
+> >>>> logic while working on this, that my new patch also fixes.
+> >>>> 1s  request
+> >>>> 2s  response
+> >>>> 61.995 echo job pops
+> >>>> 121.995 echo job pops and sends echo
+> >>>> 122 server_unresponsive called.  Finds no response and attempts to
+> >>>>        reconnect
+> >>>> 122.95 response to echo received
+> >>>>
+> >>>
+> >>> Sure, here's a reproducer. Do this against a windows server, preferably
+> >>> one exporting NTFS on relatively slow storage. Make sure that
+> >>> "testfile" doesn't exist first:
+> >>>
+> >>>      $ dd if=/dev/zero of=/path/to/cifs/share/testfile bs=1M count=1 seek=3192
+> >>>
+> >>> NTFS doesn't support sparse files, so the OS has to zero-fill up to the
+> >>> point where you're writing. That can take a looooong time on slow
+> >>> storage (minutes even). What we do now is periodically send a SMB echo
+> >>> to make sure the server is alive rather than trying to time out a
+> >>> particular call.
+> >>
+> >> Writing past end of file in Windows can be very slow, but note that it
+> >> is possible for a windows to set as sparse a file on an NTFS
+> >> partition.   Quoting from
+> >> http://msdn.microsoft.com/en-us/library/windows/desktop/aa365566%28v=vs.85%29.aspx
+> >> Windows NTFS does support sparse files (and we could even send it over
+> >> cifs if we want) but it has to be explicitly set by the app on the
+> >> file:
+> >>
+> >> "To determine whether a file system supports sparse files, call the
+> >> GetVolumeInformation function and examine the
+> >> FILE_SUPPORTS_SPARSE_FILES bit flag returned through the
+> >> lpFileSystemFlags parameter.
+> >>
+> >> Most applications are not aware of sparse files and will not create
+> >> sparse files. The fact that an application is reading a sparse file is
+> >> transparent to the application. An application that is aware of
+> >> sparse-files should determine whether its data set is suitable to be
+> >> kept in a sparse file. After that determination is made, the
+> >> application must explicitly declare a file as sparse, using the
+> >> FSCTL_SET_SPARSE control code."
+> >>
+> >>
+> > 
+> > That's interesting. I didn't know about the fsctl.
+> > 
+> > It doesn't really help us though. Not all servers support passthrough
+> > infolevels, and there are other filesystems (e.g. FAT) that don't
+> > support sparse files at all.
+> > 
+> > In any case, the upshot of all of this is that we simply can't assume
+> > that we'll get the response to a particular call in any given amount of
+> > time, so we have to periodically check that the server is still
+> > responding via echoes before giving up on it completely.
+> > 
+> 
+> I just verified this by running the dd testcase against a windows 7
+> server.  I'm going to rewrite my patch to optimise the echo logic as
+> Jeff suggested earlier.  The only difference being that, I think we
+> should still have regular echos when nothing else is happening, so that
+> the connection can be rebuilt when nothing urgent is going on.
 
-I think just a second for both of you to step back and see a slightly
-larger picture/problem might help.
+Constant echo requests, keep the server busy and create unnecessary
+traffic. They would also probably kill connections that would otherwise
+survive temporary disruption of communications (laptop gets briefly out
+of range while moving through rooms, etc...) when otherwise not needing
+to contact the server and the underlying TCP connection would not be
+dropped.
 
-This is a weird case where Vivek does not trust root to make the
-policy decision.  If the box is configured for secure boot, it needs
-to make these decisions no matter what the admin wants.  This is why
-he talks about trying to merge multiple competing policies.  The
-current IMA policy is controlled by whomever can first write to the
-ima policy file interface.  Vivek does not want an admin to be able to
-overwrite the secureboot policy.  So I get why he thinks changes may
-be needed to support this use case.
+Simo.
 
-The ima_tcb policy was meant to be larger than needed to determine a
-trusted computing base, but it is clearly not a superset of what he is
-hoping to accomplish.
+> It still makes more sense to me that we should be checking the status of
+> the tcp socket, and it's underlying nic, but I'm still not completely
+> clear on how that could be accomplished.  Any pointers to that regard
+> would be appreciated.
 
-So how do we take a system where the admin/software has some control
-over the integrity policy (as it is today?) and the kernel/system
-itself also has control (as Vivek wants it)?
 
-It seems unsolved with what we have today....
+-- 
+Simo Sorce
+Samba Team GPL Compliance Officer <simo@samba.org>
+Principal Software Engineer at Red Hat, Inc. <simo@redhat.com>
 
--Eric
