@@ -1,124 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753576Ab3B1Ieu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 03:34:50 -0500
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:57426 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752376Ab3B1Ies (ORCPT
+	id S1753288Ab3B1IiL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 03:38:11 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:47286 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751815Ab3B1IiK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 03:34:48 -0500
-Date: Thu, 28 Feb 2013 09:34:38 +0100
-From: Richard GENOUD <richard.genoud@gmail.com>
-To: "K. Y. Srinivasan" <kys@microsoft.com>
-Cc: Haiyang Zhang <haiyangz@microsoft.com>, devel@linuxdriverproject.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: hv_netvsc: WARNING in softirq.c
-Message-ID: <20130228083437.GA28143@lnx-rg>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 28 Feb 2013 03:38:10 -0500
+X-AuditID: cbfee691-b7faa6d000005ae9-aa-512f1770f0b6
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Andrew Morton'" <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, "'Alessandro Zummo'" <a.zummo@towertech.it>,
+        rtc-linux@googlegroups.com, "'Jingoo Han'" <jg1.han@samsung.com>
+Subject: [PATCH 01/19] rtc: rtc-mv: remove erroneous __exit annotation
+Date: Thu, 28 Feb 2013 17:38:07 +0900
+Message-id: <00a501ce158e$ef171610$cd454230$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac4Vju7DHmrOxtsNRmyyH1DU6RVYuA==
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrHIsWRmVeSWpSXmKPExsVy+t8zQ90Ccf1Ag86v0hZLLl5lt5izfg2b
+	xeWFl1gtLu+aw2axv7OD0YHVY8/Ek2weJ2b8ZvHo27KK0WP6vJ9MHp83yQWwRnHZpKTmZJal
+	FunbJXBlnO98x17wnqNi7ar9bA2Ma9i7GDk5JARMJG7+bGOBsMUkLtxbz9bFyMUhJLCMUeLW
+	sW1MMEVbri5ihUhMZ5Q4MHEzC4Tzi1Hi2qRWsFFsAmoSX74cBrI5OEQE9CXaWjRAapgFehkl
+	zvTuBqsRFnCTuN19mhHEZhFQlfh9+DEbSD2vgK1E5xdVkDCvgKDEj8n3wC5iFtCSWL/zOBOE
+	LS+xec1bZpByCQF1iUd/dSE26UmcW6kEUSEise/FO0aQrRICx9glPnWvZobYJCDxbfIhFohW
+	WYlNB5gh3pKUOLjiBssERrFZSBbPQrJ4FpLFs5CsWMDIsopRNLUguaA4Kb3IVK84Mbe4NC9d
+	Lzk/dxMjJO4m7mC8f8D6EGMy0PqJzFKiyfnAuM0riTc0NjYxMzE1Mbc0NTclTVhJnFf+kkyg
+	kEB6YklqdmpqQWpRfFFpTmrxIUYmDk6pBsag46IH9ojUbsnz2JG4yyRWMObNw81uvxmF7e03
+	iCgvNT/TkR6kxfrZuje2P3cn7/lmdi65hIyJFqVyj2Vepk08UvjG0smq6Yh76yOWQ86zd3Js
+	lIjhLoio2mzp1nGdV0f/t/Ub76/2ZXsO/N7z0/pvpknRTK2y9Mt/uqpP/HIL81xdNZvBQYml
+	OCPRUIu5qDgRABPTTrjRAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprNKsWRmVeSWpSXmKPExsVy+t9jQd0Ccf1Ag7svxSyWXLzKbjFn/Ro2
+	i8sLL7FaXN41h81if2cHowOrx56JJ9k8Tsz4zeLRt2UVo8f0eT+ZPD5vkgtgjWpgtMlITUxJ
+	LVJIzUvOT8nMS7dV8g6Od443NTMw1DW0tDBXUshLzE21VXLxCdB1y8wB2q6kUJaYUwoUCkgs
+	LlbSt8M0ITTETdcCpjFC1zckCK7HyAANJKxjzDjf+Y694D1HxdpV+9kaGNewdzFyckgImEhs
+	ubqIFcIWk7hwbz1bFyMXh5DAdEaJAxM3s0A4vxglrk1qBetgE1CT+PLlMJDNwSEioC/R1qIB
+	UsMs0MsocaZ3N1iNsICbxO3u04wgNouAqsTvw4/ZQOp5BWwlOr+ogoR5BQQlfky+xwJiMwto
+	SazfeZwJwpaX2LzmLTNIuYSAusSjv7oQm/Qkzq1UgqgQkdj34h3jBEaBWUgGzUIyaBaSQbOQ
+	tCxgZFnFKJpakFxQnJSea6hXnJhbXJqXrpecn7uJERzVz6R2MK5ssDjEKMDBqMTD22GiFyjE
+	mlhWXJl7iFGCg1lJhNeFXz9QiDclsbIqtSg/vqg0J7X4EGMy0JsTmaVEk/OBCSevJN7Q2MTM
+	yNLIzMLIxNycNGElcV7GU08ChATSE0tSs1NTC1KLYLYwcXBKNTAqd+UXsrm+m5arM3lZVy+n
+	Ji/HdZU2f4/iVUeKJuWlxLdw2lw6dW+61qJK4xkRS7/6Gm26NYfl916TNpMzy/8G79o7SUrq
+	4KwNfG1utU+KTG6LNjVrzKmK0tsosszskHchr5m70M/FJx/aTp1fI/e02+0X25tEDQ9x08P9
+	TjPKebmX7Q3WO6PEUpyRaKjFXFScCABLVqRILgMAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+__init/__exit annotations for probe()/remove() are supposed to be
+__devinit/__devexit, because __init/__exit for probe()/remove()
+are not correct. However, __devinit/__devexit are not used,
+because CONFIG_HOTPLUG was removed. Thus, these annotations
+should be removed.
 
-Here is the kernel trace I got this morning (kern.log):
-Feb 27 22:32:59 devlabo kernel: [10688.187062] hv_vmbus: child device vmbus_0_8 unregistered
-Feb 27 22:34:37 devlabo kernel: [10688.187196] ------------[ cut here ]------------
-Feb 27 22:34:37 devlabo kernel: [10688.187203] WARNING: at /build/buildd-linux_3.2.35-2-amd64-v9djlH/linux-3.2.35/kernel/softirq.c:159 _local_bh_enable_ip.isra.11+0x3d/0x88()
-Feb 27 22:34:37 devlabo kernel: [10688.187206] Hardware name: Virtual Machine
-Feb 27 22:34:37 devlabo kernel: [10688.187208] Modules linked in: des_generic ecb md4 hmac nls_utf8 cifs nfsd nfs nfs_acl auth_rpcgss fscache lockd sunrpc loop snd_pcm snd_page_alloc snd_timer snd joydev processor hid_hyperv crc32c_intel hid thermal_sys i2c_piix4 evdev button soundcore hv_utils i2c_core psmouse serio_raw pcspkr ext4 crc16 jbd2 mbcache sd_mod crc_t10dif hv_netvsc hv_storvsc sg sr_mod cdrom ata_generic floppy hv_vmbus ata_piix libata scsi_mod [last unloaded: scsi_wait_scan]
-Feb 27 22:34:37 devlabo kernel: [10688.187244] Pid: 0, comm: swapper/0 Not tainted 3.2.0-4-amd64 #1 Debian 3.2.35-2
-Feb 27 22:34:37 devlabo kernel: [10688.187246] Call Trace:
-Feb 27 22:34:37 devlabo kernel: [10688.187248]  <IRQ>  [<ffffffff81046a75>] ? warn_slowpath_common+0x78/0x8c
-Feb 27 22:34:37 devlabo kernel: [10688.187257]  [<ffffffff8104bf76>] ? _local_bh_enable_ip.isra.11+0x3d/0x88
-Feb 27 22:34:37 devlabo kernel: [10688.187262]  [<ffffffffa00a59b5>] ? rndis_filter_receive+0x236/0x259 [hv_netvsc]
-Feb 27 22:34:37 devlabo kernel: [10688.187267]  [<ffffffffa00a4e5f>] ? netvsc_channel_cb+0x37a/0x449 [hv_netvsc]
-Feb 27 22:34:37 devlabo kernel: [10688.187273]  [<ffffffffa006211b>] ? vmbus_on_event+0x91/0xdd [hv_vmbus]
-Feb 27 22:34:37 devlabo kernel: [10688.187277]  [<ffffffff812432d5>] ? add_interrupt_randomness+0x38/0x155
-Feb 27 22:34:37 devlabo kernel: [10688.187283]  [<ffffffff8104b89a>] ? tasklet_action+0x73/0xc2
-Feb 27 22:34:37 devlabo kernel: [10688.187287]  [<ffffffff8104c084>] ? __do_softirq+0xb9/0x177
-Feb 27 22:34:37 devlabo kernel: [10688.187292]  [<ffffffff8135426c>] ? call_softirq+0x1c/0x30
-Feb 27 22:34:37 devlabo kernel: [10688.187297]  [<ffffffff8100f8dd>] ? do_softirq+0x3c/0x7b
-Feb 27 22:34:37 devlabo kernel: [10688.187300]  [<ffffffff8104c2ec>] ? irq_exit+0x3c/0x9a
-Feb 27 22:34:37 devlabo kernel: [10688.187303]  [<ffffffff8100f60d>] ? do_IRQ+0x82/0x98
-Feb 27 22:34:37 devlabo kernel: [10688.187307]  [<ffffffff8134d32e>] ? common_interrupt+0x6e/0x6e
-Feb 27 22:34:37 devlabo kernel: [10688.187309]  <EOI>  [<ffffffff81065dbd>] ? timekeeping_get_ns+0xd/0x2a
-Feb 27 22:34:37 devlabo kernel: [10688.187317]  [<ffffffff8106bc20>] ? arch_local_irq_enable+0x4/0x8
-Feb 27 22:34:37 devlabo kernel: [10688.187321]  [<ffffffff8100d286>] ? cpu_idle+0xe8/0xf2
-Feb 27 22:34:37 devlabo kernel: [10688.187324]  [<ffffffff816abb33>] ? start_kernel+0x3b3/0x3be
-Feb 27 22:34:37 devlabo kernel: [10688.187328]  [<ffffffff816ab140>] ? early_idt_handlers+0x140/0x140
-Feb 27 22:34:37 devlabo kernel: [10688.187331]  [<ffffffff816ab3c4>] ? x86_64_start_kernel+0x104/0x111
-Feb 27 22:34:37 devlabo kernel: [10688.187333] ---[ end trace 39158641c6e4b495 ]---
+Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+---
+ drivers/rtc/rtc-mv.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-and there was a lot of them :
-Feb 26 22:35:14 devlabo kernel: [37398.788119] ------------[ cut here ]------------
-Feb 26 22:35:14 devlabo kernel: [37398.788129] WARNING: at /build/buildd-linux_3.2.35-2-amd64-v9djlH/linux-3.2.35/kernel/softirq.c:159 _local_bh_enable_ip.isra.11+0x3d/0x88()
-Feb 26 22:35:14 devlabo kernel: [37398.788132] Hardware name: Virtual Machine
-Feb 26 22:35:14 devlabo kernel: [37398.788133] Modules linked in: nfsd nfs nfs_acl auth_rpcgss lockd sunrpc des_generic ecb md4 hmac nls_utf8 cifs fscache loop snd_pcm snd_page_alloc snd_timer joydev crc32c_intel i2c_piix4 snd processor hid_hyperv hid hv_utils soundcore button thermal_sys pcspkr i2c_core psmouse evdev serio_raw ext4 crc16 jbd2 mbcache sd_mod crc_t10dif hv_netvsc hv_storvsc sg sr_mod cdrom ata_generic ata_piix libata scsi_mod floppy hv_vmbus [last unloaded: scsi_wait_scan]
-Feb 26 22:35:14 devlabo kernel: [37398.788169] Pid: 0, comm: swapper/0 Not tainted 3.2.0-4-amd64 #1 Debian 3.2.35-2
-Feb 26 22:35:14 devlabo kernel: [37398.788171] Call Trace:
-Feb 26 22:35:14 devlabo kernel: [37398.788172]  <IRQ>  [<ffffffff81046a75>] ? warn_slowpath_common+0x78/0x8c
-Feb 26 22:35:14 devlabo kernel: [37398.788181]  [<ffffffff8104bf76>] ? _local_bh_enable_ip.isra.11+0x3d/0x88
-Feb 26 22:35:14 devlabo kernel: [37398.788186]  [<ffffffffa009e9b5>] ? rndis_filter_receive+0x236/0x259 [hv_netvsc]
-Feb 26 22:35:14 devlabo kernel: [37398.788190]  [<ffffffffa009de5f>] ? netvsc_channel_cb+0x37a/0x449 [hv_netvsc]
-Feb 26 22:35:14 devlabo kernel: [37398.788196]  [<ffffffffa000111b>] ? vmbus_on_event+0x91/0xdd [hv_vmbus]
-Feb 26 22:35:14 devlabo kernel: [37398.788200]  [<ffffffff8104b89a>] ? tasklet_action+0x73/0xc2
-Feb 26 22:35:14 devlabo kernel: [37398.788203]  [<ffffffff8104c084>] ? __do_softirq+0xb9/0x177
-Feb 26 22:35:14 devlabo kernel: [37398.788207]  [<ffffffff81061755>] ? run_posix_cpu_timers+0x23/0x346
-Feb 26 22:35:14 devlabo kernel: [37398.788211]  [<ffffffff8135426c>] ? call_softirq+0x1c/0x30
-Feb 26 22:35:14 devlabo kernel: [37398.788216]  [<ffffffff8100f8dd>] ? do_softirq+0x3c/0x7b
-Feb 26 22:35:14 devlabo kernel: [37398.788218]  [<ffffffff8104c2ec>] ? irq_exit+0x3c/0x9a
-Feb 26 22:35:14 devlabo kernel: [37398.788222]  [<ffffffff810241c8>] ? smp_apic_timer_interrupt+0x74/0x82
-Feb 26 22:35:14 devlabo kernel: [37398.788225]  [<ffffffff81352ade>] ? apic_timer_interrupt+0x6e/0x80
-Feb 26 22:35:14 devlabo kernel: [37398.788227]  <EOI>  [<ffffffff81013a17>] ? native_sched_clock+0x27/0x2f
-Feb 26 22:35:14 devlabo kernel: [37398.788233]  [<ffffffff8102b360>] ? native_safe_halt+0x2/0x3
-Feb 26 22:35:14 devlabo kernel: [37398.788236]  [<ffffffff81014508>] ? default_idle+0x47/0x7f
-Feb 26 22:35:14 devlabo kernel: [37398.788238]  [<ffffffff8100d24d>] ? cpu_idle+0xaf/0xf2
-Feb 26 22:35:14 devlabo kernel: [37398.788241]  [<ffffffff816abb33>] ? start_kernel+0x3b3/0x3be
-Feb 26 22:35:14 devlabo kernel: [37398.788244]  [<ffffffff816ab140>] ? early_idt_handlers+0x140/0x140
-Feb 26 22:35:14 devlabo kernel: [37398.788247]  [<ffffffff816ab3c4>] ? x86_64_start_kernel+0x104/0x111
-Feb 26 22:35:14 devlabo kernel: [37398.788249] ---[ end trace 8f3991272dc0c5cc ]---
-Feb 26 22:35:14 devlabo kernel: [37398.789256] hv_vmbus: child device vmbus_0_8 unregistered
+diff --git a/drivers/rtc/rtc-mv.c b/drivers/rtc/rtc-mv.c
+index 57233c8..8cb15d2 100644
+--- a/drivers/rtc/rtc-mv.c
++++ b/drivers/rtc/rtc-mv.c
+@@ -284,7 +284,7 @@ static int mv_rtc_probe(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
+-static int __exit mv_rtc_remove(struct platform_device *pdev)
++static int mv_rtc_remove(struct platform_device *pdev)
+ {
+ 	struct rtc_plat_data *pdata = platform_get_drvdata(pdev);
+ 
+@@ -303,7 +303,7 @@ static struct of_device_id rtc_mv_of_match_table[] = {
+ #endif
+ 
+ static struct platform_driver mv_rtc_driver = {
+-	.remove		= __exit_p(mv_rtc_remove),
++	.remove		= mv_rtc_remove,
+ 	.driver		= {
+ 		.name	= "rtc-mv",
+ 		.owner	= THIS_MODULE,
+-- 
+1.7.2.5
 
-Feb  3 22:31:55 devlabo kernel: [37819.617243] ------------[ cut here ]------------
-Feb  3 22:31:55 devlabo kernel: [37819.617253] WARNING: at /build/buildd-linux_3.2.35-2-amd64-v9djlH/linux-3.2.35/kernel/softirq.c:159 _local_bh_enable_ip.isra.11+0x3d/0x88()
-Feb  3 22:31:55 devlabo kernel: [37819.617257] Hardware name: Virtual Machine
-Feb  3 22:31:55 devlabo kernel: [37819.617259] Modules linked in: nfsd nfs nfs_acl auth_rpcgss lockd sunrpc des_generic ecb md4 hmac nls_utf8 cifs fscache loop joydev snd_pcm hid_hyperv hid snd_page_alloc snd_timer snd hv_utils i2c_piix4 i2c_core soundcore processor psmouse crc32c_intel thermal_sys button pcspkr evdev serio_raw ext4 crc16 jbd2 mbcache sd_mod crc_t10dif hv_netvsc hv_storvsc sg sr_mod cdrom ata_generic hv_vmbus ata_piix floppy libata scsi_mod [last unloaded: scsi_wait_scan]
-Feb  3 22:31:55 devlabo kernel: [37819.617308] Pid: 0, comm: swapper/0 Not tainted 3.2.0-4-amd64 #1 Debian 3.2.35-2
-Feb  3 22:31:55 devlabo kernel: [37819.617311] Call Trace:
-Feb  3 22:31:55 devlabo kernel: [37819.617313]  <IRQ>  [<ffffffff81046a75>] ? warn_slowpath_common+0x78/0x8c
-Feb  3 22:31:55 devlabo kernel: [37819.617324]  [<ffffffff8104bf76>] ? _local_bh_enable_ip.isra.11+0x3d/0x88
-Feb  3 22:31:55 devlabo kernel: [37819.617331]  [<ffffffffa00a09b5>] ? rndis_filter_receive+0x236/0x259 [hv_netvsc]
-Feb  3 22:31:55 devlabo kernel: [37819.617339]  [<ffffffffa009fe5f>] ? netvsc_channel_cb+0x37a/0x449 [hv_netvsc]
-Feb  3 22:31:55 devlabo kernel: [37819.617347]  [<ffffffffa006211b>] ? vmbus_on_event+0x91/0xdd [hv_vmbus]
-Feb  3 22:31:55 devlabo kernel: [37819.617353]  [<ffffffff8104b89a>] ? tasklet_action+0x73/0xc2
-Feb  3 22:31:55 devlabo kernel: [37819.617357]  [<ffffffff8104c084>] ? __do_softirq+0xb9/0x177
-Feb  3 22:31:55 devlabo kernel: [37819.617362]  [<ffffffff81061755>] ? run_posix_cpu_timers+0x23/0x346
-Feb  3 22:31:55 devlabo kernel: [37819.617366]  [<ffffffff8104c350>] ? raise_softirq_irqoff+0x6/0x25
-Feb  3 22:31:55 devlabo kernel: [37819.617372]  [<ffffffff8135426c>] ? call_softirq+0x1c/0x30
-Feb  3 22:31:55 devlabo kernel: [37819.617378]  [<ffffffff8100f8dd>] ? do_softirq+0x3c/0x7b
-Feb  3 22:31:55 devlabo kernel: [37819.617382]  [<ffffffff8104c2ec>] ? irq_exit+0x3c/0x9a
-Feb  3 22:31:55 devlabo kernel: [37819.617387]  [<ffffffff810241c8>] ? smp_apic_timer_interrupt+0x74/0x82
-Feb  3 22:31:55 devlabo kernel: [37819.617391]  [<ffffffff81352ade>] ? apic_timer_interrupt+0x6e/0x80
-Feb  3 22:31:55 devlabo kernel: [37819.617394]  <EOI>  [<ffffffff81013a17>] ? native_sched_clock+0x27/0x2f
-Feb  3 22:31:55 devlabo kernel: [37819.617402]  [<ffffffff8102b360>] ? native_safe_halt+0x2/0x3
-Feb  3 22:31:55 devlabo kernel: [37819.617407]  [<ffffffff81014508>] ? default_idle+0x47/0x7f
-Feb  3 22:31:55 devlabo kernel: [37819.617411]  [<ffffffff8100d24d>] ? cpu_idle+0xaf/0xf2
-Feb  3 22:31:55 devlabo kernel: [37819.617415]  [<ffffffff816abb33>] ? start_kernel+0x3b3/0x3be
-Feb  3 22:31:55 devlabo kernel: [37819.617420]  [<ffffffff816ab140>] ? early_idt_handlers+0x140/0x140
-Feb  3 22:31:55 devlabo kernel: [37819.617424]  [<ffffffff816ab3c4>] ? x86_64_start_kernel+0x104/0x111
-Feb  3 22:31:55 devlabo kernel: [37819.617427] ---[ end trace a20acc0adc92e993 ]---
-Feb  3 22:31:55 devlabo kernel: [37819.618127] hv_vmbus: child device vmbus_0_8 unregistered
-
-It does not happen every day, but quite often : 4 times in February
-I'll ask my sysadm if there's something special at 22h30 in the host,
-because it's always happening around this time.
-
-Machine is debian wheezy (7) under windows server 2008 R2
-
-Regards
-Richard
 
