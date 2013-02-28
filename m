@@ -1,110 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752464Ab3B1LNX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 06:13:23 -0500
-Received: from forward16.mail.yandex.net ([95.108.253.141]:41907 "EHLO
-	forward16.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751163Ab3B1LNV (ORCPT
+	id S1752719Ab3B1LNp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 06:13:45 -0500
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:39699 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752271Ab3B1LNm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 06:13:21 -0500
-From: Roman Gushchin <klamm@yandex-team.ru>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Johannes Weiner-Arquette <hannes@cmpxchg.org>,
-        "bsingharora@gmail.com" <bsingharora@gmail.com>,
-        "kamezawa.hiroyu@jp.fujitsu.com" <kamezawa.hiroyu@jp.fujitsu.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "kosaki.motohiro@jp.fujitsu.com" <kosaki.motohiro@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>, "mel@csn.ul.ie" <mel@csn.ul.ie>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Ying Han <yinghan@google.com>
-In-Reply-To: <20130227161352.GF16719@dhcp22.suse.cz>
-References: <8121361952156@webcorp1g.yandex-team.ru>
- <20130227094054.GC16719@dhcp22.suse.cz>
- <17521361961576@webcorp1g.yandex-team.ru> <20130227161352.GF16719@dhcp22.suse.cz>
-Subject: Re: [PATCH] memcg: implement low limits
+	Thu, 28 Feb 2013 06:13:42 -0500
+Message-ID: <512F3BDA.6000208@hitachi.com>
+Date: Thu, 28 Feb 2013 20:13:30 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Message-Id: <61661362049995@webcorp1g.yandex-team.ru>
-X-Mailer: Yamail [ http://yandex.ru ] 5.0
-Date: Thu, 28 Feb 2013 15:13:15 +0400
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=koi8-r
+To: heikki.krogerus@linux.intel.com, linux-arm-kernel@lists.infradead.org
+Cc: alan@linux.intel.com, linux-kernel@vger.kernel.org,
+        thomas.petazzoni@free-electrons.com, yrl.pp-manager.tt@hitachi.com,
+        iwamatsu@nigauri.org
+Subject: [BUG][arm-soc] kernel panic in boot on Openblocks with the latest
+ kernel
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-27.02.2013, 20:14, "Michal Hocko" <mhocko@suse.cz>:
-> On Wed 27-02-13 14:39:36, Roman Gushchin wrote:
->
->> š27.02.2013, 13:41, "Michal Hocko" <mhocko@suse.cz>:
->>> šLet me restate what I have already mentioned in the private
->>> šcommunication.
->>>
->>> šWe already have soft limit which can be implemented to achieve the
->>> šsame/similar functionality and in fact this is a long term objective (at
->>> šleast for me). I hope I will be able to post my code soon. The last post
->>> šby Ying Hand (cc-ing her) was here:
->>> šhttp://comments.gmane.org/gmane.linux.kernel.mm/83499
->>>
->>> šTo be honest I do not like introduction of a new limit because we have
->>> štwo already and the situation would get over complicated.
->> šI think, there are three different tasks:
->> š1) keeping cgroups below theirs hard limit to avoid direct reclaim
->> š(for performance reasons),
->
-> Could you clarify what you mean by this, please? There is no background
-> reclaim for memcgs currently and I am a bit skeptical whether it is
-> useful. If it would be useful then it should be in par with the global
-> reclaim (so something like min_free_kbytes would be more appropriate).
+Hi,
 
-I mean, that it's a good idea to keep memory usage of any cgroup a little bit 
-under it's hard limit to avoid direct reclaim. There is no good mechanism yet,
-but it can be developed later.
+I tried the latest "fixes" branch of arm-soc.git on OpenBlocks
+AX3 (Marvel Armada-XP) and got below kernel panic in boot sequence.
+It seems that we have an exception while cpu is in idle.
 
->> š2) cgroup's prioritization during global reclaim,
->
-> Yes, group priorities sound like a useful feature not just for the
-> reclaim I would like it for oom selection as well.
-> I think that we shouldn't use any kind of limit for this task, though.
+----
+Kernel panic - not syncing: Attempted to kill init! exitcode=0x00000200
 
-I'm thinking about them. Do you know, did someone any attempts to implement them?
-I have an idea how to implement them (and also implementing (fast) strict lower limits limits).
-I'll try to post my version soon.
+Backtrace:
+[<c00113d4>] (dump_backtrace+0x0/0x110) from [<c04a7324>] (dump_stack+0x18/0x1c)
+ r6:ef2bcc00 r5:c06532b0 r4:ef2bcc00 r3:00000001
+[<c04a730c>] (dump_stack+0x0/0x1c) from [<c04a7434>] (panic+0x90/0x1ec)
+[<c04a73a4>] (panic+0x0/0x1ec) from [<c002613c>] (do_exit+0x500/0x960)
+ r3:ef2c0dc0 r2:ef2bcc00 r1:00000200 r0:c0584be1
+ r7:c063e040
+[<c0025c3c>] (do_exit+0x0/0x960) from [<c0026790>] (do_group_exit+0xa4/0xd0)
+ r7:000000f8
+[<c00266ec>] (do_group_exit+0x0/0xd0) from [<c00267d4>] (__wake_up_parent+0x0/0x28)
+ r7:000000f8 r6:0000003c r5:bee6bf14 r4:000703ae
+[<c00267bc>] (sys_exit_group+0x0/0x18) from [<c000d8c0>] (ret_fast_syscall+0x0/0x30)
+CPU0: stopping
+Backtrace:
+[<c00113d4>] (dump_backtrace+0x0/0x110) from [<c04a7324>] (dump_stack+0x18/0x1c)
+ r6:c063df48 r5:00000000 r4:c0688e98 r3:c064def4
+[<c04a730c>] (dump_stack+0x0/0x1c) from [<c00128f4>] (handle_IPI+0xc8/0x12c)
+[<c001282c>] (handle_IPI+0x0/0x12c) from [<c00085a0>]
+(armada_370_xp_handle_irq+0x98/0xb0)
+ r5:c0689070 r4:00000005
+[<c0008508>] (armada_370_xp_handle_irq+0x0/0xb0) from [<c04ae680>]
+(__irq_svc+0x40/0x50)
+Exception stack(0xc063df48 to 0xc063df90)
+df40:                   ffffffed 00000000 027ac000 60000013 c063c000 c0688c88
+df60: c04b5518 c2ddffc0 0000406a 562f5842 00000000 c063dfac c063df90 c063df90
+df80: c000e588 c000e590 60000013 ffffffff
+[<c000e4d8>] (cpu_idle+0x0/0x104) from [<c04a266c>] (rest_init+0x64/0x7c)
+ r6:c0625a50 r5:00000000 r4:c06450e0 r3:00000000
+[<c04a2608>] (rest_init+0x0/0x7c) from [<c05fb848>] (start_kernel+0x2d4/0x32c)
+[<c05fb574>] (start_kernel+0x0/0x32c) from [<00008074>] (0x8074)
+----
 
->> š3) granting some amount of memory to a selected cgroup (and protecting
->> šit from reclaim without significant reasons)
->
-> and soft limit sounds like a good fit with this description.
->
->> šIMHO, combining them all in one limit will simplify a kernel code,
->> šbut will also make a user's (or administrator's) life much more
->> šcomplicated.
->
-> I do not think all 3 tasks you have described can be covered by a single
-> limit of course. We have hard limit to cap the usage, we have a soft
-> limit to allow over-committing the machine. Task 2 would require a new
-> knob but it shouldn't be covered by any limit or depend on the group
-> usage. And task 1 sounds like a background reclaim and then it should be
-> consistent with the global knob.
->
->> šIntroducing low limits can make the situation simpler.
->
-> How exactly? I can see how it would address task 3 but yet again, soft
-> limit can be turned into this behavior as well without changing its
-> semantic (that limit would be still considered if we are able to handle
-> memory pressure from the above - either global pressure or parent
-> hitting the limit).
+And I found that this panic also happened on the latest linus tree.
+Git-bisect told me that the 8250 serial driver patch is the first bad
+commit.
 
-Actually, I don't like the name of soft limits - the word "soft". It's not clear from
-the name if it's lower or upper limit. It's a little bit confusing that "limit" 
-means upper limit, and "soft limit" means lower limit.
+serial: 8250_dw: Don't use UPF_FIXED_TYPE
 
-Assuming it's possible to implement strict lower limit efficiently, how do you call them?
+966c4e39b5f7f249d7bb4c409176c9e6c5d48025
 
-Thank you!
+https://patchwork.kernel.org/patch/1958931/
 
---
-Regards, 
-Roman
+
+Thank you,
+
+-- 
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
