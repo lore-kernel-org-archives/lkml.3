@@ -1,53 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760598Ab3B1Vff (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 16:35:35 -0500
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:39725 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755665Ab3B1Vfc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 16:35:32 -0500
-From: "Yann E. MORIN" <yann.morin.1998@free.fr>
-Organization: BZH lan
-To: justin <jlec@gentoo.org>
-Subject: Re: [PATCH 1/2] Use config scripts to detect ncurses libs for menuconfig
-Date: Thu, 28 Feb 2013 22:35:27 +0100
-User-Agent: KMail/1.13.5 (Linux/3.8.0-treguer; KDE/4.4.5; x86_64; ; )
-Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <jlec@gentoo.org> <201302281908.14787.yann.morin.1998@free.fr> <512FCCBA.7000404@gentoo.org>
-In-Reply-To: <512FCCBA.7000404@gentoo.org>
+	id S1760609Ab3B1Vfx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 16:35:53 -0500
+Received: from smtp.gentoo.org ([140.211.166.183]:44154 "EHLO smtp.gentoo.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755665Ab3B1Vfw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Feb 2013 16:35:52 -0500
+Message-ID: <512FCDBF.5050508@gentoo.org>
+Date: Thu, 28 Feb 2013 22:35:59 +0100
+From: justin <jlec@gentoo.org>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130216 Thunderbird/17.0.3
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201302282235.28016.yann.morin.1998@free.fr>
+To: "Yann E. MORIN" <yann.morin.1998@free.fr>
+CC: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] menuconfig: use config scripts to detect ncurses libs
+References: <jlec@gentoo.org> <1362052335-17913-1-git-send-email-jlec@gentoo.org> <201302281916.00257.yann.morin.1998@free.fr>
+In-Reply-To: <201302281916.00257.yann.morin.1998@free.fr>
+X-Enigmail-Version: 1.5
+Content-Type: multipart/signed; micalg=pgp-sha512;
+ protocol="application/pgp-signature";
+ boundary="----enig2QVTTFDVTKFFOFVASVBGX"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Justin, All,
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+------enig2QVTTFDVTKFFOFVASVBGX
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: quoted-printable
 
-On Thursday 28 February 2013 justin wrote:
-> On 2/28/13 7:08 PM, Yann E. MORIN wrote:
-> > Well, RHEL4 is still widely used, and it was released in 2005, so will
-> > not have ncurses-5.6 (updates may have it, but not everybody installs
-> > updates).
-> 
-> question, will such system be updated then to latest kernel sources? And
-> if so, can't we require that for the ncurses based config menus need
-> newer ncurses?
+On 2/28/13 7:16 PM, Yann E. MORIN wrote:
+> And, sorry, I should have been more explicit in my previous mail that
+> the legacy drop should be in its own patch. I thought that was obvious,=
 
-It's not that those systems will be updated to run the latest kernel, but
-rather that those systems can be used to build a newer kernel for another
-system (think eg. cross-compilation and embedded).
+> following the "one single change per patch" philosophy.
+>=20
 
-Regards,
-Yann E. MORIN.
+Hi,
 
--- 
-.-----------------.--------------------.------------------.--------------------.
-|  Yann E. MORIN  | Real-Time Embedded | /"\ ASCII RIBBON | Erics' conspiracy: |
-| +33 662 376 056 | Software  Designer | \ / CAMPAIGN     |  ___               |
-| +33 223 225 172 `------------.-------:  X  AGAINST      |  \e/  There is no  |
-| http://ymorin.is-a-geek.org/ | _/*\_ | / \ HTML MAIL    |   v   conspiracy.  |
-'------------------------------^-------^------------------^--------------------'
+no worries. I will submit as you suggested. It's a learning experience
+for me and we will get this solved.
+
+The new patches will come tomorrow.
+
+Thanks,
+Justin
+
+
+------enig2QVTTFDVTKFFOFVASVBGX
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG/MacGPG2 v2.0.18 (Darwin)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iEYEAREKAAYFAlEvzb8ACgkQgAnW8HDreRY2eACeIFtyB/a2TPNuWqkvwWkuBKTT
+JU4AoLloOJzQoNoSuHupkqsetj9y6RBw
+=HQ4C
+-----END PGP SIGNATURE-----
+
+------enig2QVTTFDVTKFFOFVASVBGX--
