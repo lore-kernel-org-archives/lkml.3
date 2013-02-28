@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755279Ab3B1OqV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 09:46:21 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41897 "EHLO
+	id S1755183Ab3B1OqS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 09:46:18 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41893 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754936Ab3B1OqM (ORCPT
+	with ESMTP id S1754787Ab3B1OqL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 09:46:12 -0500
+	Thu, 28 Feb 2013 09:46:11 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Lee Jones <lee.jones@linaro.org>,
+Cc: Igor Grinberg <grinberg@compulab.co.il>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 012/139] ab8500-chargalg: Only root should have write permission on sysfs file
-Date: Thu, 28 Feb 2013 14:42:42 +0000
-Message-Id: <1362062689-2567-13-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 011/139] ARM: PXA3xx: program the CSMSADRCFG register
+Date: Thu, 28 Feb 2013 14:42:41 +0000
+Message-Id: <1362062689-2567-12-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1362062689-2567-1-git-send-email-luis.henriques@canonical.com>
 References: <1362062689-2567-1-git-send-email-luis.henriques@canonical.com>
@@ -27,31 +28,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lee Jones <lee.jones@linaro.org>
+From: Igor Grinberg <grinberg@compulab.co.il>
 
-commit e3455002d04276c256a531f7175dce0f7d1cb78a upstream.
+commit d107a204154ddd79339203c2deeb7433f0cf6777 upstream.
 
-Only root should have write permission on sysfs file ab8500_chargalg/chargalg.
+The Chip Select Configuration Register must be programmed to 0x2 in
+order to achieve the correct behavior of the Static Memory Controller.
 
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
+Without this patch devices wired to DFI and accessed through SMC cannot
+be accessed after resume from S2.
+
+Do not rely on the boot loader to program the CSMSADRCFG register by
+programming it in the kernel smemc module.
+
+Signed-off-by: Igor Grinberg <grinberg@compulab.co.il>
+Acked-by: Eric Miao <eric.y.miao@gmail.com>
+Signed-off-by: Haojian Zhuang <haojian.zhuang@gmail.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/power/abx500_chargalg.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm/mach-pxa/include/mach/smemc.h |  1 +
+ arch/arm/mach-pxa/smemc.c              | 15 ++++++++++++++-
+ 2 files changed, 15 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/power/abx500_chargalg.c b/drivers/power/abx500_chargalg.c
-index 804b88c..d8cd151 100644
---- a/drivers/power/abx500_chargalg.c
-+++ b/drivers/power/abx500_chargalg.c
-@@ -1698,7 +1698,7 @@ static ssize_t abx500_chargalg_sysfs_charger(struct kobject *kobj,
- static struct attribute abx500_chargalg_en_charger = \
- {
- 	.name = "chargalg",
--	.mode = S_IWUGO,
-+	.mode = S_IWUSR,
- };
+diff --git a/arch/arm/mach-pxa/include/mach/smemc.h b/arch/arm/mach-pxa/include/mach/smemc.h
+index b7de471..b802f28 100644
+--- a/arch/arm/mach-pxa/include/mach/smemc.h
++++ b/arch/arm/mach-pxa/include/mach/smemc.h
+@@ -37,6 +37,7 @@
+ #define CSADRCFG1	(SMEMC_VIRT + 0x84)  /* Address Configuration Register for CS1 */
+ #define CSADRCFG2	(SMEMC_VIRT + 0x88)  /* Address Configuration Register for CS2 */
+ #define CSADRCFG3	(SMEMC_VIRT + 0x8C)  /* Address Configuration Register for CS3 */
++#define CSMSADRCFG	(SMEMC_VIRT + 0xA0)  /* Chip Select Configuration Register */
  
- static struct attribute *abx500_chargalg_chg[] = {
+ /*
+  * More handy macros for PCMCIA
+diff --git a/arch/arm/mach-pxa/smemc.c b/arch/arm/mach-pxa/smemc.c
+index 7992305..f38aa89 100644
+--- a/arch/arm/mach-pxa/smemc.c
++++ b/arch/arm/mach-pxa/smemc.c
+@@ -40,6 +40,8 @@ static void pxa3xx_smemc_resume(void)
+ 	__raw_writel(csadrcfg[1], CSADRCFG1);
+ 	__raw_writel(csadrcfg[2], CSADRCFG2);
+ 	__raw_writel(csadrcfg[3], CSADRCFG3);
++	/* CSMSADRCFG wakes up in its default state (0), so we need to set it */
++	__raw_writel(0x2, CSMSADRCFG);
+ }
+ 
+ static struct syscore_ops smemc_syscore_ops = {
+@@ -49,8 +51,19 @@ static struct syscore_ops smemc_syscore_ops = {
+ 
+ static int __init smemc_init(void)
+ {
+-	if (cpu_is_pxa3xx())
++	if (cpu_is_pxa3xx()) {
++		/*
++		 * The only documentation we have on the
++		 * Chip Select Configuration Register (CSMSADRCFG) is that
++		 * it must be programmed to 0x2.
++		 * Moreover, in the bit definitions, the second bit
++		 * (CSMSADRCFG[1]) is called "SETALWAYS".
++		 * Other bits are reserved in this register.
++		 */
++		__raw_writel(0x2, CSMSADRCFG);
++
+ 		register_syscore_ops(&smemc_syscore_ops);
++	}
+ 
+ 	return 0;
+ }
 -- 
 1.8.1.2
 
