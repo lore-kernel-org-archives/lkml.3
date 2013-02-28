@@ -1,78 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755635Ab3B1Oqk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 09:46:40 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41944 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754259Ab3B1Oqh (ORCPT
+	id S1755906Ab3B1Oqu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 09:46:50 -0500
+Received: from dkim2.fusionio.com ([66.114.96.54]:38244 "EHLO
+	dkim2.fusionio.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755709Ab3B1Oqo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 09:46:37 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 021/139] x86-32, mm: Remove reference to resume_map_numa_kva()
-Date: Thu, 28 Feb 2013 14:42:51 +0000
-Message-Id: <1362062689-2567-22-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1362062689-2567-1-git-send-email-luis.henriques@canonical.com>
-References: <1362062689-2567-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.5
+	Thu, 28 Feb 2013 09:46:44 -0500
+X-ASG-Debug-ID: 1362062413-03d6a5664a594f0001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Date: Thu, 28 Feb 2013 15:40:09 +0100
+From: Jens Axboe <jaxboe@fusionio.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] Block driver bits for 3.9
+Message-ID: <20130228144009.GD4727@kernel.dk>
+X-ASG-Orig-Subj: [GIT PULL] Block driver bits for 3.9
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1362062413
+X-Barracuda-Encrypted: AES128-SHA
+X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
+X-Barracuda-Bayes: INNOCENT GLOBAL 0.0016 1.0000 -2.0107
+X-Barracuda-Spam-Score: -2.01
+X-Barracuda-Spam-Status: No, SCORE=-2.01 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.123854
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.7 -stable review patch.  If anyone has any objections, please let me know.
+Hi Linus,
 
-------------------
+After the block IO core bits are in, please grab the driver updates from
+below as well. It contains:
 
-From: "H. Peter Anvin" <hpa@linux.intel.com>
+- Fix ancient regression in dac960. Nobody must be using that anymore...
 
-commit bb112aec5ee41427e9b9726e3d57b896709598ed upstream.
+- Some good fixes from Guo Ghao for loop, fixing both potential oopses
+  and deadlocks.
 
-Remove reference to removed function resume_map_numa_kva().
+- Improve mtip32xx for NUMA systems, by being a bit more clever in
+  distributing work.
 
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Cc: Dave Hansen <dave@linux.vnet.ibm.com>
-Link: http://lkml.kernel.org/r/20130131005616.1C79F411@kernel.stglabs.ibm.com
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- arch/x86/include/asm/mmzone_32.h | 6 ------
- arch/x86/power/hibernate_32.c    | 2 --
- 2 files changed, 8 deletions(-)
+- Add IBM RamSan 70/80 driver. A second round of fixes for that is
+  pending, that will come in through for-linus during the 3.9 cycle as
+  per usual.
 
-diff --git a/arch/x86/include/asm/mmzone_32.h b/arch/x86/include/asm/mmzone_32.h
-index eb05fb3..8a9b3e2 100644
---- a/arch/x86/include/asm/mmzone_32.h
-+++ b/arch/x86/include/asm/mmzone_32.h
-@@ -14,12 +14,6 @@ extern struct pglist_data *node_data[];
- 
- #include <asm/numaq.h>
- 
--extern void resume_map_numa_kva(pgd_t *pgd);
--
--#else /* !CONFIG_NUMA */
--
--static inline void resume_map_numa_kva(pgd_t *pgd) {}
--
- #endif /* CONFIG_NUMA */
- 
- #ifdef CONFIG_DISCONTIGMEM
-diff --git a/arch/x86/power/hibernate_32.c b/arch/x86/power/hibernate_32.c
-index 74202c1..7d28c88 100644
---- a/arch/x86/power/hibernate_32.c
-+++ b/arch/x86/power/hibernate_32.c
-@@ -129,8 +129,6 @@ static int resume_physical_mapping_init(pgd_t *pgd_base)
- 		}
- 	}
- 
--	resume_map_numa_kva(pgd_base);
--
- 	return 0;
- }
- 
+- A few xen-blk{back,front} fixes from Konrad and Roger.
+
+- Other minor fixes and improvements.
+
+
+Please pull!
+
+  git://git.kernel.dk/linux-block.git for-3.9/drivers
+
+
+
+Asai Thambi S P (2):
+      mtip32xx: Add workqueue and NUMA support
+      mtip32xx: add trim support
+
+Dan Carpenter (1):
+      dac960: return success instead of -ENOTTY
+
+Fengguang Wu (2):
+      drivers/block/mtip32xx/mtip32xx.c:4029:1: sparse: symbol 'mtip_workq_sdbf0' was not declared. Should it be static?
+      drivers/block/mtip32xx/mtip32xx.c:1726:5: sparse: symbol 'mtip_send_trim' was not declared. Should it be static?
+
+Guo Chao (5):
+      loopdev: fix a deadlock
+      loopdev: update block device size in loop_set_status()
+      loopdev: move common code into loop_figure_size()
+      loopdev: remove an user triggerable oops
+      loopdev: ignore negative offset when calculate loop device size
+
+Heiko Carstens (1):
+      drivers/block/mtip32xx: add missing GENERIC_HARDIRQS dependency
+
+Jan Beulich (1):
+      xen-blkback: do not leak mode property
+
+Jens Axboe (3):
+      rsxx: add slab.h include to dma.c
+      Merge branch 'delete-xt-disk' of git://git.kernel.org/.../paulg/linux into for-3.9/drivers
+      Merge branch 'stable/for-jens-3.9' of git://git.kernel.org/.../konrad/xen into for-3.9/drivers
+
+Konrad Rzeszutek Wilk (2):
+      xen/blkback: Don't trust the handle from the frontend.
+      xen-blkfront: drop the use of llist_for_each_entry_safe
+
+Paul Gortmaker (1):
+      block: delete super ancient PC-XT driver for 1980's hardware
+
+Philip J Kelleher (1):
+      block: IBM RamSan 70/80 driver fixes
+
+Roger Pau Monne (1):
+      xen-blkback: use balloon pages for persistent grants
+
+Stephen Rothwell (1):
+      block: remove new __devinit/exit annotations on ramsam driver
+
+josh.h.morris@us.ibm.com (1):
+      block: IBM RamSan 70/80 device driver
+
+ MAINTAINERS                         |    6 +
+ drivers/block/DAC960.c              |    1 +
+ drivers/block/Kconfig               |   23 +-
+ drivers/block/Makefile              |    3 +-
+ drivers/block/loop.c                |   61 +-
+ drivers/block/mtip32xx/Kconfig      |    2 +-
+ drivers/block/mtip32xx/mtip32xx.c   |  431 +++++++++++---
+ drivers/block/mtip32xx/mtip32xx.h   |   48 +-
+ drivers/block/rsxx/Makefile         |    2 +
+ drivers/block/rsxx/config.c         |  213 +++++++
+ drivers/block/rsxx/core.c           |  649 ++++++++++++++++++++
+ drivers/block/rsxx/cregs.c          |  758 +++++++++++++++++++++++
+ drivers/block/rsxx/dev.c            |  367 ++++++++++++
+ drivers/block/rsxx/dma.c            |  998 +++++++++++++++++++++++++++++++
+ drivers/block/rsxx/rsxx.h           |   45 ++
+ drivers/block/rsxx/rsxx_cfg.h       |   72 +++
+ drivers/block/rsxx/rsxx_priv.h      |  399 +++++++++++++
+ drivers/block/xd.c                  | 1123 -----------------------------------
+ drivers/block/xd.h                  |  134 -----
+ drivers/block/xen-blkback/blkback.c |    7 +-
+ drivers/block/xen-blkback/xenbus.c  |   49 +-
+ drivers/block/xen-blkfront.c        |   13 +-
+ include/linux/llist.h               |   25 -
+ 23 files changed, 3986 insertions(+), 1443 deletions(-)
+ create mode 100644 drivers/block/rsxx/Makefile
+ create mode 100644 drivers/block/rsxx/config.c
+ create mode 100644 drivers/block/rsxx/core.c
+ create mode 100644 drivers/block/rsxx/cregs.c
+ create mode 100644 drivers/block/rsxx/dev.c
+ create mode 100644 drivers/block/rsxx/dma.c
+ create mode 100644 drivers/block/rsxx/rsxx.h
+ create mode 100644 drivers/block/rsxx/rsxx_cfg.h
+ create mode 100644 drivers/block/rsxx/rsxx_priv.h
+ delete mode 100644 drivers/block/xd.c
+ delete mode 100644 drivers/block/xd.h
+
 -- 
-1.8.1.2
+Jens Axboe
 
