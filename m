@@ -1,69 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932822Ab3B1SCq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 13:02:46 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:52461 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753265Ab3B1SCo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 13:02:44 -0500
-Date: Thu, 28 Feb 2013 19:00:07 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Michel Lespinasse <walken@google.com>
-Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Lai Jiangshan <eag0628@gmail.com>, linux-doc@vger.kernel.org,
-        peterz@infradead.org, fweisbec@gmail.com, linux-kernel@vger.kernel.org,
-        namhyung@kernel.org, mingo@kernel.org, linux-arch@vger.kernel.org,
-        linux@arm.linux.org.uk, xiaoguangrong@linux.vnet.ibm.com,
-        wangyun@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com,
-        nikunj@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
-        rusty@rustcorp.com.au, rostedt@goodmis.org, rjw@sisk.pl,
-        vincent.guittot@linaro.org, tglx@linutronix.de,
-        linux-arm-kernel@lists.infradead.org, netdev@vger.kernel.org,
-        sbw@mit.edu, tj@kernel.org, akpm@linux-foundation.org,
-        linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH v6 04/46] percpu_rwlock: Implement the core design of
-	Per-CPU Reader-Writer Locks
-Message-ID: <20130228180007.GA3537@redhat.com>
-References: <512BBAD8.8010006@linux.vnet.ibm.com> <CACvQF51jCxk5jUqmhD=QBBtUsBkQWZzakacrKO4Gsk=w61rNwQ@mail.gmail.com> <512C7A38.8060906@linux.vnet.ibm.com> <CACvQF51RvhM8XNqu3-1OTQ=cZUZ=pAX+_zx0a29+W67N1X+BgQ@mail.gmail.com> <512CC509.1050000@linux.vnet.ibm.com> <CACvQF50UgiqPpDk3HCmV86zKSf6tPjqr0bZowfPEOJs0g0r0MQ@mail.gmail.com> <512D0D67.9010609@linux.vnet.ibm.com> <CANN689FuuEb9wpV43DkTtgv6syvBYL-LQxByWznyAq8dkrhzBw@mail.gmail.com> <20130227192551.GA8333@redhat.com> <CANN689EhqoQAKALR7WhT3YrQh3=VDA2Dq3QX1yLuYU_gZAo_Tg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CANN689EhqoQAKALR7WhT3YrQh3=VDA2Dq3QX1yLuYU_gZAo_Tg@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S932848Ab3B1SEL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 13:04:11 -0500
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:41217 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755292Ab3B1SEI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Feb 2013 13:04:08 -0500
+Date: Thu, 28 Feb 2013 10:04:02 -0800
+From: Jeff Layton <jlayton@samba.org>
+To: Dave Chiluk <dave.chiluk@canonical.com>
+Cc: Steve French <smfrench@gmail.com>,
+        "Stefan (metze) Metzmacher" <metze@samba.org>,
+        Steve French <sfrench@samba.org>, linux-cifs@vger.kernel.org,
+        samba-technical@lists.samba.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] CIFS: Decrease reconnection delay when switching nics
+Message-ID: <20130228100402.5f7a42fc@corrin.poochiereds.net>
+In-Reply-To: <512F948A.9060404@canonical.com>
+References: <1361831310-24260-1-git-send-email-chiluk@canonical.com>
+	<512DE8A6.9030000@samba.org>
+	<20130227083419.0af9deaf@corrin.poochiereds.net>
+	<512E8787.6070709@canonical.com>
+	<20130228072637.3b71a4f7@corrin.poochiereds.net>
+	<CAH2r5mtBHO6woWeOJ+DJDBmF35VTfuFYo2iza--xAe7grnELAg@mail.gmail.com>
+	<20130228084704.7f267119@corrin.poochiereds.net>
+	<512F948A.9060404@canonical.com>
+X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.13; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/28, Michel Lespinasse wrote:
->
-> On Thu, Feb 28, 2013 at 3:25 AM, Oleg Nesterov <oleg@redhat.com> wrote:
-> > On 02/27, Michel Lespinasse wrote:
+On Thu, 28 Feb 2013 11:31:54 -0600
+Dave Chiluk <dave.chiluk@canonical.com> wrote:
+
+> On 02/28/2013 10:47 AM, Jeff Layton wrote:
+> > On Thu, 28 Feb 2013 10:04:36 -0600
+> > Steve French <smfrench@gmail.com> wrote:
+> > 
+> >> On Thu, Feb 28, 2013 at 9:26 AM, Jeff Layton <jlayton@samba.org> wrote:
+> >>> On Wed, 27 Feb 2013 16:24:07 -0600
+> >>> Dave Chiluk <dave.chiluk@canonical.com> wrote:
+> >>>
+> >>>> On 02/27/2013 10:34 AM, Jeff Layton wrote:
+> >>>>> On Wed, 27 Feb 2013 12:06:14 +0100
+> >>>>> "Stefan (metze) Metzmacher" <metze@samba.org> wrote:
+> >>>>>
+> >>>>>> Hi Dave,
+> >>>>>>
+> >>>>>>> When messages are currently in queue awaiting a response, decrease amount of
+> >>>>>>> time before attempting cifs_reconnect to SMB_MAX_RTT = 10 seconds. The current
+> >>>>>>> wait time before attempting to reconnect is currently 2*SMB_ECHO_INTERVAL(120
+> >>>>>>> seconds) since the last response was recieved.  This does not take into account
+> >>>>>>> the fact that messages waiting for a response should be serviced within a
+> >>>>>>> reasonable round trip time.
+> >>>>>>
+> >>>>>> Wouldn't that mean that the client will disconnect a good connection,
+> >>>>>> if the server doesn't response within 10 seconds?
+> >>>>>> Reads and Writes can take longer than 10 seconds...
+> >>>>>>
+> >>>>>
+> >>>>> Where does this magic value of 10s come from? Note that a slow server
+> >>>>> can take *minutes* to respond to writes that are long past the EOF.
+> >>>> It comes from the desire to decrease the reconnection delay to something
+> >>>> better than a random number between 60 and 120 seconds.  I am not
+> >>>> committed to this number, and it is open for discussion.  Additionally
+> >>>> if you look closely at the logic it's not 10 seconds per request, but
+> >>>> actually when requests have been in flight for more than 10 seconds make
+> >>>> sure we've heard from the server in the last 10 seconds.
+> >>>>
+> >>>> Can you explain more fully your use case of writes that are long past
+> >>>> the EOF?  Perhaps with a test-case or script that I can test?  As far as
+> >>>> I know writes long past EOF will just result in a sparse file, and
+> >>>> return in a reasonable round trip time *(that's at least what I'm seeing
+> >>>> with my testing).  dd if=/dev/zero of=/mnt/cifs/a bs=1M count=100
+> >>>> seek=100000, starts receiving responses from the server in about .05
+> >>>> seconds with subsequent responses following at roughly .002-.01 second
+> >>>> intervals.  This is well within my 10 second value.  Even adding the
+> >>>> latency of AT&T's 2g cell network brings it up to only 1s.  Still 10x
+> >>>> less than my 10 second value.
+> >>>>
+> >>>> The new logic goes like this
+> >>>> if( we've been expecting a response from the server (in_flight), and
+> >>>>  message has been in_flight for more than 10 seconds and
+> >>>>  we haven't had any other contact from the server in that time
+> >>>>   reconnect
+> >>>>
+> >>>
+> >>> That will break writes long past the EOF. Note too that reconnects on
+> >>> CIFS are horrifically expensive and problematic. Much of the state on a
+> >>> CIFS mount is tied to the connection. When that drops, open files are
+> >>> closed and things like locks are dropped. SMB1 has no real mechanism
+> >>> for state recovery, so that can really be a problem.
+> >>>
+> >>>> On a side note, I discovered a small race condition in the previous
+> >>>> logic while working on this, that my new patch also fixes.
+> >>>> 1s  request
+> >>>> 2s  response
+> >>>> 61.995 echo job pops
+> >>>> 121.995 echo job pops and sends echo
+> >>>> 122 server_unresponsive called.  Finds no response and attempts to
+> >>>>        reconnect
+> >>>> 122.95 response to echo received
+> >>>>
+> >>>
+> >>> Sure, here's a reproducer. Do this against a windows server, preferably
+> >>> one exporting NTFS on relatively slow storage. Make sure that
+> >>> "testfile" doesn't exist first:
+> >>>
+> >>>      $ dd if=/dev/zero of=/path/to/cifs/share/testfile bs=1M count=1 seek=3192
+> >>>
+> >>> NTFS doesn't support sparse files, so the OS has to zero-fill up to the
+> >>> point where you're writing. That can take a looooong time on slow
+> >>> storage (minutes even). What we do now is periodically send a SMB echo
+> >>> to make sure the server is alive rather than trying to time out a
+> >>> particular call.
 > >>
-> >> +void lg_rwlock_local_read_lock(struct lgrwlock *lgrw)
-> >> +{
-> >> +       preempt_disable();
-> >> +
-> >> +       if (__this_cpu_read(*lgrw->local_refcnt) ||
-> >> +           arch_spin_trylock(this_cpu_ptr(lgrw->lglock->lock))) {
-> >> +               __this_cpu_inc(*lgrw->local_refcnt);
-> >
-> > Please look at __this_cpu_generic_to_op(). You need this_cpu_inc()
-> > to avoid the race with irs. The same for _read_unlock.
->
-> Hmmm, I was thinking that this was safe because while interrupts might
-> modify local_refcnt to acquire a nested read lock, they are expected
-> to release that lock as well which would set local_refcnt back to its
-> original value ???
+> >> Writing past end of file in Windows can be very slow, but note that it
+> >> is possible for a windows to set as sparse a file on an NTFS
+> >> partition.   Quoting from
+> >> http://msdn.microsoft.com/en-us/library/windows/desktop/aa365566%28v=vs.85%29.aspx
+> >> Windows NTFS does support sparse files (and we could even send it over
+> >> cifs if we want) but it has to be explicitly set by the app on the
+> >> file:
+> >>
+> >> "To determine whether a file system supports sparse files, call the
+> >> GetVolumeInformation function and examine the
+> >> FILE_SUPPORTS_SPARSE_FILES bit flag returned through the
+> >> lpFileSystemFlags parameter.
+> >>
+> >> Most applications are not aware of sparse files and will not create
+> >> sparse files. The fact that an application is reading a sparse file is
+> >> transparent to the application. An application that is aware of
+> >> sparse-files should determine whether its data set is suitable to be
+> >> kept in a sparse file. After that determination is made, the
+> >> application must explicitly declare a file as sparse, using the
+> >> FSCTL_SET_SPARSE control code."
+> >>
+> >>
+> > 
+> > That's interesting. I didn't know about the fsctl.
+> > 
+> > It doesn't really help us though. Not all servers support passthrough
+> > infolevels, and there are other filesystems (e.g. FAT) that don't
+> > support sparse files at all.
+> > 
+> > In any case, the upshot of all of this is that we simply can't assume
+> > that we'll get the response to a particular call in any given amount of
+> > time, so we have to periodically check that the server is still
+> > responding via echoes before giving up on it completely.
+> > 
+> 
+> I just verified this by running the dd testcase against a windows 7
+> server.  I'm going to rewrite my patch to optimise the echo logic as
+> Jeff suggested earlier.  The only difference being that, I think we
+> should still have regular echos when nothing else is happening, so that
+> the connection can be rebuilt when nothing urgent is going on.
+> 
 
-Yes, yes, this is correct.
+OTOH, you don't want to hammer the server with echoes. They are fairly
+light weight, but they aren't completely free. That's why I think we
+might get better milage out of trying to look at the socket itself to
+figure out the state.
 
-I meant that (in general, x86 is fine) __this_cpu_inc() itself is not
-irq-safe. It simply does "pcp += 1".
+> It still makes more sense to me that we should be checking the status of
+> the tcp socket, and it's underlying nic, but I'm still not completely
+> clear on how that could be accomplished.  Any pointers to that regard
+> would be appreciated.
+> 
+> Thanks for the help guys.
 
-this_cpu_inc() is fine, _this_cpu_generic_to_op() does cli/sti around.
+You can always look at the sk_state flags to figure out the state of
+the TCP connection (there are some examples of that in sunrpc code, but
+there may be simpler ones elsewhere).
 
-I know this only because I did the same mistake recently, and Srivatsa
-explained the problem to me ;)
+As far as the underlying interface goes, I'm not sure what you can do.
+There's not always a straightforward 1:1 correspondance between an
+interface and connection is there? Also, we don't necessarily want to
+reconnect just because networkmanager got upgraded and took down the if
+for a second and brought it right back up again. What if an address
+migrates to a different interface altogether on the same subnet? Do TCP
+connections normally keep chugging along in that situation?
 
-Oleg.
+I think you probably need to nail down the specific circumstances where
+you want to reconnect and then try to figure out how best to detect them.
 
+-- 
+Jeff Layton <jlayton@samba.org>
