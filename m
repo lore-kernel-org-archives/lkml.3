@@ -1,63 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753163Ab3B1LwY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 06:52:24 -0500
-Received: from mail.not-your-server.de ([78.46.182.243]:56350 "EHLO
-	mail.not-your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752040Ab3B1LwU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 06:52:20 -0500
-From: jlec@gentoo.org
-To: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Justin Lecher <jlec@gentoo.org>
-Subject: [PATCH] menuconfig: use config scripts to detect ncurses libs
-Date: Thu, 28 Feb 2013 12:52:15 +0100
-Message-Id: <1362052335-17913-1-git-send-email-jlec@gentoo.org>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <jlec@gentoo.org>
-References: <jlec@gentoo.org>
+	id S1753581Ab3B1Lwf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 06:52:35 -0500
+Received: from slimlogic.co.uk ([89.16.172.20]:47576 "EHLO slimlogic.co.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753308Ab3B1Lwd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Feb 2013 06:52:33 -0500
+Message-ID: <512F44FD.2040104@slimlogic.co.uk>
+Date: Thu, 28 Feb 2013 11:52:29 +0000
+From: Ian Lartey <ian@slimlogic.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Laxman Dewangan <ldewangan@nvidia.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "j-keerthy@ti.com" <j-keerthy@ti.com>,
+        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
+        "cooloney@gmail.com" <cooloney@gmail.com>,
+        "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>
+Subject: Re: [PATCH 1/2] leds: Add support for Palmas LEDs
+References: <1361970800-31460-1-git-send-email-ian@slimlogic.co.uk> <512EEECF.5090409@nvidia.com>
+In-Reply-To: <512EEECF.5090409@nvidia.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Justin Lecher <jlec@gentoo.org>
+On 28/02/13 05:44, Laxman Dewangan wrote:
+> On Wednesday 27 February 2013 06:43 PM, Ian Lartey wrote:
+>> The Palmas familly of chips has LED support. This is not always muxed
+>> to output pins so depending on the setting of the mux this driver
+>> will create the appropriate LED class devices.
+>>
+>> Signed-off-by: Graeme Gregory <gg@slimlogic.co.uk>
+>> Signed-off-by: Ian Lartey <ian@slimlogic.co.uk>
+>> ---
+>
+> Patch 1 and 2 can be merged together as this is makefile, Kconfig and
+> driver addition.
 
-When building ncurses with --with-termlib several symbols get moved from
-libncurses.so to libtinfo.so. Thus when linking with libncurses.so, one
-additionally needs to link with libtinfo.so. Ncurses provides a config script
-(ncurses5-config) to assist finding ncurses.
+This could cause a merge conflict for anyone adding files/drivers
+in drivers/leds so it's safer to separate the Kconfig and Makefile
+from the actual drver source code so that can go in conflict free.
 
-This patch replaces the old heuristic for detection of ncurses libs for
-linking the ncurses menuconfig dialog by the use of the config scripts.
-This results in the requirement of ncurses version 5.6 or newer for menuconfig.
+>
+>
+>> +
+>> +static int palmas_led_read(struct palmas_leds_data *leds, unsigned
+>> int reg,
+>> +               unsigned int *dest)
+>> +{
+>> +       unsigned int addr;
+>> +
+>> +       addr = PALMAS_BASE_TO_REG(PALMAS_LED_BASE, reg);
+> This is not require. Infact doing this will not work.
 
-Signed-off-by: Justin Lecher <jlec@gentoo.org>
----
- scripts/kconfig/lxdialog/check-lxdialog.sh | 11 ++---------
- 1 file changed, 2 insertions(+), 9 deletions(-)
+Yes, of course, thanks for that.
+>
+> palmas_read already take care of proper offset.
+>          unsigned int addr =  PALMAS_BASE_TO_REG(base, reg);
+>          int slave_id = PALMAS_BASE_TO_SLAVE(base);
+>
+>          return regmap_read(palmas->regmap[slave_id], addr, val);
+>
+>
+> same for other places also.
 
-diff --git a/scripts/kconfig/lxdialog/check-lxdialog.sh b/scripts/kconfig/lxdialog/check-lxdialog.sh
-index c8e8a71..10df55b 100644
---- a/scripts/kconfig/lxdialog/check-lxdialog.sh
-+++ b/scripts/kconfig/lxdialog/check-lxdialog.sh
-@@ -4,15 +4,8 @@
- # What library to link
- ldflags()
- {
--	for ext in so a dll.a dylib ; do
--		for lib in ncursesw ncurses curses ; do
--			$cc -print-file-name=lib${lib}.${ext} | grep -q /
--			if [ $? -eq 0 ]; then
--				echo "-l${lib}"
--				exit
--			fi
--		done
--	done
-+	ncursesw5-config --libs 2>/dev/null && exit
-+	ncurses5-config --libs 2>/dev/null && exit
- 	exit 1
- }
- 
--- 
-1.8.1.4
+ditto.
 
+>
+>
+>>
+>> +static void palmas_leds_work(struct work_struct *work)
+>> +{
+>> +       struct palmas_led *led = container_of(work, struct palmas_led,
+>> work);
+>> +       unsigned int period, ctrl;
+>> +       unsigned long flags;
+>> +
+>> +       mutex_lock(&led->mutex);
+>> +
+>> +       palmas_led_read(led->leds_data, PALMAS_LED_CTRL, &ctrl);
+>> +       palmas_led_read(led->leds_data, PALMAS_LED_PERIOD_CTRL, &period);
+>> +
+>> +       spin_lock_irqsave(&led->value_lock, flags);
+>> +
+>> +       switch (led->led_no) {
+>> +       case 1:
+>> +               ctrl &= ~PALMAS_LED_CTRL_LED_1_ON_TIME_MASK;
+>> +               period &= ~PALMAS_LED_PERIOD_CTRL_LED_1_PERIOD_MASK;
+>> +
+>
+> case 1,2,3 and 4 looks same, jus shift/mask are changed. I think this
+> can be rewritten here to reduce code size.
+
+Will do.
+
+>
+>
+>> +static int palmas_leds_probe(struct platform_device *pdev)
+>> +{
+>> +       struct palmas *palmas = dev_get_drvdata(pdev->dev.parent);
+>> +       struct palmas_leds_platform_data *pdata =
+>> pdev->dev.platform_data;
+>> +       struct palmas_leds_data *leds_data;
+>> +       struct device_node *node = pdev->dev.of_node;
+>> +       int ret, i;
+>> +       int offset = 0;
+>> +
+>> +       if (!palmas->led_muxed &&
+>> !is_palmas_charger(palmas->product_id)) {
+>> +               dev_err(&pdev->dev, "there are no LEDs muxed\n");
+>> +               return -EINVAL;
+>> +       }
+>> +
+>> +       /* Palmas charger requires platform data */
+>> +       if (is_palmas_charger(palmas->product_id) && node && !pdata) {
+>> +               pdata = devm_kzalloc(&pdev->dev, sizeof(*pdata),
+>> GFP_KERNEL);
+>> +
+>> +               if (!pdata)
+>> +                       return -ENOMEM;
+>> +
+>> +               ret = palmas_dt_to_pdata(&pdev->dev, node, pdata);
+>> +               if (ret)
+>> +                       return ret;
+>> +       }
+>> +
+>> +       if (is_palmas_charger(palmas->product_id) && !pdata)
+>> +               return -EINVAL;
+>> +
+>> +       leds_data = kzalloc(sizeof(*leds_data), GFP_KERNEL);
+>
+> Use devm_kzalloc().
+
+Noted.
+
+>
+>
+>> +
+>> +static int  palmas_leds_init(void)
+>> +{
+>> +       return platform_driver_register(&palmas_leds_driver);
+>> +}
+>> +module_init(palmas_leds_init);
+>> +
+>> +static void palmas_leds_exit(void)
+>> +{
+>> +       platform_driver_unregister(&palmas_leds_driver);
+>> +}
+>> +module_exit(palmas_leds_exit);
+>
+> use Module_platform_driver().
+
+Will do.
+
+>
+
+
+Thanks,
+
+Ian
