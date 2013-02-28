@@ -1,108 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932872Ab3B1SQJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 13:16:09 -0500
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:51224 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755839Ab3B1SQG (ORCPT
+	id S932915Ab3B1SQs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 13:16:48 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:46741 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752650Ab3B1SQq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 13:16:06 -0500
-From: "Yann E. MORIN" <yann.morin.1998@free.fr>
-Organization: BZH lan
-To: linux-kbuild@vger.kernel.org
-Subject: Re: [PATCH] menuconfig: use config scripts to detect ncurses libs
-Date: Thu, 28 Feb 2013 19:16:00 +0100
-User-Agent: KMail/1.13.5 (Linux/3.8.0-treguer; KDE/4.4.5; x86_64; ; )
-Cc: jlec@gentoo.org, linux-kernel@vger.kernel.org
-References: <jlec@gentoo.org> <1362052335-17913-1-git-send-email-jlec@gentoo.org>
-In-Reply-To: <1362052335-17913-1-git-send-email-jlec@gentoo.org>
+	Thu, 28 Feb 2013 13:16:46 -0500
+Message-ID: <512F9F0B.1040303@wwwdotorg.org>
+Date: Thu, 28 Feb 2013 11:16:43 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+To: Venu Byravarasu <vbyravarasu@nvidia.com>
+CC: gregkh@linuxfoundation.org, stern@rowland.harvard.edu,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] usb: host: tegra: Reset Tegra USB controller before init
+References: <1362033418-7332-1-git-send-email-vbyravarasu@nvidia.com>
+In-Reply-To: <1362033418-7332-1-git-send-email-vbyravarasu@nvidia.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201302281916.00257.yann.morin.1998@free.fr>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Justin, All,
+On 02/27/2013 11:36 PM, Venu Byravarasu wrote:
+> To clear any configurations made by U-Boot on Tegra USB controller,
+> reset it before init in probe.
 
-On Thursday 28 February 2013 jlec@gentoo.org wrote:
-> When building ncurses with --with-termlib several symbols get moved from
-> libncurses.so to libtinfo.so. Thus when linking with libncurses.so, one
-> additionally needs to link with libtinfo.so. Ncurses provides a config script
-> (ncurses5-config) to assist finding ncurses.
-> 
-> This patch replaces the old heuristic for detection of ncurses libs for
-> linking the ncurses menuconfig dialog by the use of the config scripts.
-> This results in the requirement of ncurses version 5.6 or newer for menuconfig.
+> diff --git a/drivers/usb/host/ehci-tegra.c b/drivers/usb/host/ehci-tegra.c
 
-As you said, ncurses started bundling these files with ncurses-5.6,
-which was released in 2006.
-
-OTOH, RHEL4 is still a widely used distro, and was released in 2005,
-so is using an ncurses older than 5.6, so I'm afraid we can't drop
-the legacy code like that.
-
-Of course, I'm no authority on the subject, so I'd suggest that you
-split this patch in two, and re-submit:
-  - one patch to add usage of ncurses{w,}5-config;
-  - one patch to drop legacy code.
-
-That way, it is easy to apply the *-config part, and get more people
-involved in commenting the legacy drop without further delaying use
-of the *-config scripts.
-
-And, sorry, I should have been more explicit in my previous mail that
-the legacy drop should be in its own patch. I thought that was obvious,
-following the "one single change per patch" philosophy.
-
-Thanks you! :-)
-
-Regards,
-Yann E. MORIN.
-
-> Signed-off-by: Justin Lecher <jlec@gentoo.org>
-> ---
->  scripts/kconfig/lxdialog/check-lxdialog.sh | 11 ++---------
->  1 file changed, 2 insertions(+), 9 deletions(-)
-> 
-> diff --git a/scripts/kconfig/lxdialog/check-lxdialog.sh b/scripts/kconfig/lxdialog/check-lxdialog.sh
-> index c8e8a71..10df55b 100644
-> --- a/scripts/kconfig/lxdialog/check-lxdialog.sh
-> +++ b/scripts/kconfig/lxdialog/check-lxdialog.sh
-> @@ -4,15 +4,8 @@
->  # What library to link
->  ldflags()
->  {
-> -	for ext in so a dll.a dylib ; do
-> -		for lib in ncursesw ncurses curses ; do
-> -			$cc -print-file-name=lib${lib}.${ext} | grep -q /
-> -			if [ $? -eq 0 ]; then
-> -				echo "-l${lib}"
-> -				exit
-> -			fi
-> -		done
-> -	done
-> +	ncursesw5-config --libs 2>/dev/null && exit
-> +	ncurses5-config --libs 2>/dev/null && exit
->  	exit 1
->  }
+> @@ -691,6 +692,10 @@ static int tegra_ehci_probe(struct platform_device *pdev)
+>  	if (err)
+>  		goto fail_clk;
 >  
-> -- 
-> 1.8.1.4
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kbuild" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-> 
+> +	tegra_periph_reset_assert(tegra->clk);
+> +	udelay(1);
+> +	tegra_periph_reset_deassert(tegra->clk);
 
--- 
-.-----------------.--------------------.------------------.--------------------.
-|  Yann E. MORIN  | Real-Time Embedded | /"\ ASCII RIBBON | Erics' conspiracy: |
-| +33 662 376 056 | Software  Designer | \ / CAMPAIGN     |  ___               |
-| +33 223 225 172 `------------.-------:  X  AGAINST      |  \e/  There is no  |
-| http://ymorin.is-a-geek.org/ | _/*\_ | / \ HTML MAIL    |   v   conspiracy.  |
-'------------------------------^-------^------------------^--------------------'
+I think this patch might cause unintended consequences.
+
+When the Tegra PHY code is converted to a driver (i.e. has its own
+probe), the initial order of execution of the PHY and EHCI driver probes
+will not be guaranteed.
+
+In particular, since the EHCI probe will attempt to "find" the PHY
+device, and defer the EHCI probe until it can do so, this guarantees
+that the PHY's probe() will have completed before EHCI's probe()
+completes (although EHCI's probe may start running first some number of
+times, and be retried with -EPROBE_DEFERRED for a variety of reasons).
+
+Now, if the PHY driver's probe() actually touches HW and sets up some
+registers, isn't this reset call going to trash any of that register
+setup? Or, will PHY probe() not touch registers, but only do so during
+the standard PHY open/init "op"/API calls?
+
+I think the way to solve this is to put the reset call into the PHY
+driver. I assume it has access to the appropriate clock object. This may
+also address Alan's query re: when the unexpected interrupt occurs; it's
+triggered by (or correlated with at least) the PHY (or USB port in
+general) being in device mode due to the boot ROM setting it up this
+way, then switching to host mode via the Linux driver. I /think/ that
+device/host mode switching is more related to the PHY than EHCI driver,
+although I could well be wrong here.
