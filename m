@@ -1,22 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760064Ab3B1PGo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 10:06:44 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:42286 "EHLO
+	id S1760080Ab3B1PGs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 10:06:48 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:42283 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758662Ab3B1OtH (ORCPT
+	with ESMTP id S1758513Ab3B1OtG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 09:49:07 -0500
+	Thu, 28 Feb 2013 09:49:06 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Greg Thelen <gthelen@google.com>,
+Cc: Sagi Grimberg <sagig@mellanox.co.il>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Haggai Eran <haggaie@mellanox.com>,
+        "Paul E. McKenney" <paulmck@us.ibm.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 080/139] tmpfs: fix use-after-free of mempolicy object
-Date: Thu, 28 Feb 2013 14:43:50 +0000
-Message-Id: <1362062689-2567-81-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 076/139] mm: mmu_notifier: have mmu_notifiers use a global SRCU so they may safely schedule
+Date: Thu, 28 Feb 2013 14:43:46 +0000
+Message-Id: <1362062689-2567-77-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1362062689-2567-1-git-send-email-luis.henriques@canonical.com>
 References: <1362062689-2567-1-git-send-email-luis.henriques@canonical.com>
@@ -29,109 +33,292 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Greg Thelen <gthelen@google.com>
+From: Sagi Grimberg <sagig@mellanox.co.il>
 
-commit 5f00110f7273f9ff04ac69a5f85bb535a4fd0987 upstream.
+commit 21a92735f660eaecf69a6f2e777f18463760ec32 upstream.
 
-The tmpfs remount logic preserves filesystem mempolicy if the mpol=M
-option is not specified in the remount request.  A new policy can be
-specified if mpol=M is given.
+With an RCU based mmu_notifier implementation, any callout to
+mmu_notifier_invalidate_range_{start,end}() or
+mmu_notifier_invalidate_page() would not be allowed to call schedule()
+as that could potentially allow a modification to the mmu_notifier
+structure while it is currently being used.
 
-Before this patch remounting an mpol bound tmpfs without specifying
-mpol= mount option in the remount request would set the filesystem's
-mempolicy object to a freed mempolicy object.
+Since srcu allocs 4 machine words per instance per cpu, we may end up
+with memory exhaustion if we use srcu per mm.  So all mms share a global
+srcu.  Note that during large mmu_notifier activity exit & unregister
+paths might hang for longer periods, but it is tolerable for current
+mmu_notifier clients.
 
-To reproduce the problem boot a DEBUG_PAGEALLOC kernel and run:
-    # mkdir /tmp/x
-
-    # mount -t tmpfs -o size=100M,mpol=interleave nodev /tmp/x
-
-    # grep /tmp/x /proc/mounts
-    nodev /tmp/x tmpfs rw,relatime,size=102400k,mpol=interleave:0-3 0 0
-
-    # mount -o remount,size=200M nodev /tmp/x
-
-    # grep /tmp/x /proc/mounts
-    nodev /tmp/x tmpfs rw,relatime,size=204800k,mpol=??? 0 0
-        # note ? garbage in mpol=... output above
-
-    # dd if=/dev/zero of=/tmp/x/f count=1
-        # panic here
-
-Panic:
-    BUG: unable to handle kernel NULL pointer dereference at           (null)
-    IP: [<          (null)>]           (null)
-    [...]
-    Oops: 0010 [#1] SMP DEBUG_PAGEALLOC
-    Call Trace:
-      mpol_shared_policy_init+0xa5/0x160
-      shmem_get_inode+0x209/0x270
-      shmem_mknod+0x3e/0xf0
-      shmem_create+0x18/0x20
-      vfs_create+0xb5/0x130
-      do_last+0x9a1/0xea0
-      path_openat+0xb3/0x4d0
-      do_filp_open+0x42/0xa0
-      do_sys_open+0xfe/0x1e0
-      compat_sys_open+0x1b/0x20
-      cstar_dispatch+0x7/0x1f
-
-Non-debug kernels will not crash immediately because referencing the
-dangling mpol will not cause a fault.  Instead the filesystem will
-reference a freed mempolicy object, which will cause unpredictable
-behavior.
-
-The problem boils down to a dropped mpol reference below if
-shmem_parse_options() does not allocate a new mpol:
-
-    config = *sbinfo
-    shmem_parse_options(data, &config, true)
-    mpol_put(sbinfo->mpol)
-    sbinfo->mpol = config.mpol  /* BUG: saves unreferenced mpol */
-
-This patch avoids the crash by not releasing the mempolicy if
-shmem_parse_options() doesn't create a new mpol.
-
-How far back does this issue go? I see it in both 2.6.36 and 3.3.  I did
-not look back further.
-
-Signed-off-by: Greg Thelen <gthelen@google.com>
-Acked-by: Hugh Dickins <hughd@google.com>
+Signed-off-by: Sagi Grimberg <sagig@mellanox.co.il>
+Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Haggai Eran <haggaie@mellanox.com>
+Cc: "Paul E. McKenney" <paulmck@us.ibm.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- mm/shmem.c | 10 ++++++++--
- 1 file changed, 8 insertions(+), 2 deletions(-)
+ include/linux/mmu_notifier.h |  1 +
+ mm/mmu_notifier.c            | 73 +++++++++++++++++++++++++++++---------------
+ 2 files changed, 49 insertions(+), 25 deletions(-)
 
-diff --git a/mm/shmem.c b/mm/shmem.c
-index 626a7e7..2cede41 100644
---- a/mm/shmem.c
-+++ b/mm/shmem.c
-@@ -2541,6 +2541,7 @@ static int shmem_remount_fs(struct super_block *sb, int *flags, char *data)
- 	unsigned long inodes;
- 	int error = -EINVAL;
+diff --git a/include/linux/mmu_notifier.h b/include/linux/mmu_notifier.h
+index 1d1b1e1..ee2baf0 100644
+--- a/include/linux/mmu_notifier.h
++++ b/include/linux/mmu_notifier.h
+@@ -4,6 +4,7 @@
+ #include <linux/list.h>
+ #include <linux/spinlock.h>
+ #include <linux/mm_types.h>
++#include <linux/srcu.h>
  
-+	config.mpol = NULL;
- 	if (shmem_parse_options(data, &config, true))
- 		return error;
+ struct mmu_notifier;
+ struct mmu_notifier_ops;
+diff --git a/mm/mmu_notifier.c b/mm/mmu_notifier.c
+index 862b608..35ff447 100644
+--- a/mm/mmu_notifier.c
++++ b/mm/mmu_notifier.c
+@@ -14,10 +14,14 @@
+ #include <linux/export.h>
+ #include <linux/mm.h>
+ #include <linux/err.h>
++#include <linux/srcu.h>
+ #include <linux/rcupdate.h>
+ #include <linux/sched.h>
+ #include <linux/slab.h>
  
-@@ -2565,8 +2566,13 @@ static int shmem_remount_fs(struct super_block *sb, int *flags, char *data)
- 	sbinfo->max_inodes  = config.max_inodes;
- 	sbinfo->free_inodes = config.max_inodes - inodes;
++/* global SRCU for all MMs */
++struct srcu_struct srcu;
++
+ /*
+  * This function can't run concurrently against mmu_notifier_register
+  * because mm->mm_users > 0 during mmu_notifier_register and exit_mmap
+@@ -25,8 +29,8 @@
+  * in parallel despite there being no task using this mm any more,
+  * through the vmas outside of the exit_mmap context, such as with
+  * vmtruncate. This serializes against mmu_notifier_unregister with
+- * the mmu_notifier_mm->lock in addition to RCU and it serializes
+- * against the other mmu notifiers with RCU. struct mmu_notifier_mm
++ * the mmu_notifier_mm->lock in addition to SRCU and it serializes
++ * against the other mmu notifiers with SRCU. struct mmu_notifier_mm
+  * can't go away from under us as exit_mmap holds an mm_count pin
+  * itself.
+  */
+@@ -34,12 +38,13 @@ void __mmu_notifier_release(struct mm_struct *mm)
+ {
+ 	struct mmu_notifier *mn;
+ 	struct hlist_node *n;
++	int id;
  
--	mpol_put(sbinfo->mpol);
--	sbinfo->mpol        = config.mpol;	/* transfers initial ref */
+ 	/*
+ 	 * RCU here will block mmu_notifier_unregister until
+ 	 * ->release returns.
+ 	 */
+-	rcu_read_lock();
++	id = srcu_read_lock(&srcu);
+ 	hlist_for_each_entry_rcu(mn, n, &mm->mmu_notifier_mm->list, hlist)
+ 		/*
+ 		 * if ->release runs before mmu_notifier_unregister it
+@@ -50,7 +55,7 @@ void __mmu_notifier_release(struct mm_struct *mm)
+ 		 */
+ 		if (mn->ops->release)
+ 			mn->ops->release(mn, mm);
+-	rcu_read_unlock();
++	srcu_read_unlock(&srcu, id);
+ 
+ 	spin_lock(&mm->mmu_notifier_mm->lock);
+ 	while (unlikely(!hlist_empty(&mm->mmu_notifier_mm->list))) {
+@@ -68,7 +73,7 @@ void __mmu_notifier_release(struct mm_struct *mm)
+ 	spin_unlock(&mm->mmu_notifier_mm->lock);
+ 
+ 	/*
+-	 * synchronize_rcu here prevents mmu_notifier_release to
++	 * synchronize_srcu here prevents mmu_notifier_release to
+ 	 * return to exit_mmap (which would proceed freeing all pages
+ 	 * in the mm) until the ->release method returns, if it was
+ 	 * invoked by mmu_notifier_unregister.
+@@ -76,7 +81,7 @@ void __mmu_notifier_release(struct mm_struct *mm)
+ 	 * The mmu_notifier_mm can't go away from under us because one
+ 	 * mm_count is hold by exit_mmap.
+ 	 */
+-	synchronize_rcu();
++	synchronize_srcu(&srcu);
+ }
+ 
+ /*
+@@ -89,14 +94,14 @@ int __mmu_notifier_clear_flush_young(struct mm_struct *mm,
+ {
+ 	struct mmu_notifier *mn;
+ 	struct hlist_node *n;
+-	int young = 0;
++	int young = 0, id;
+ 
+-	rcu_read_lock();
++	id = srcu_read_lock(&srcu);
+ 	hlist_for_each_entry_rcu(mn, n, &mm->mmu_notifier_mm->list, hlist) {
+ 		if (mn->ops->clear_flush_young)
+ 			young |= mn->ops->clear_flush_young(mn, mm, address);
+ 	}
+-	rcu_read_unlock();
++	srcu_read_unlock(&srcu, id);
+ 
+ 	return young;
+ }
+@@ -106,9 +111,9 @@ int __mmu_notifier_test_young(struct mm_struct *mm,
+ {
+ 	struct mmu_notifier *mn;
+ 	struct hlist_node *n;
+-	int young = 0;
++	int young = 0, id;
+ 
+-	rcu_read_lock();
++	id = srcu_read_lock(&srcu);
+ 	hlist_for_each_entry_rcu(mn, n, &mm->mmu_notifier_mm->list, hlist) {
+ 		if (mn->ops->test_young) {
+ 			young = mn->ops->test_young(mn, mm, address);
+@@ -116,7 +121,7 @@ int __mmu_notifier_test_young(struct mm_struct *mm,
+ 				break;
+ 		}
+ 	}
+-	rcu_read_unlock();
++	srcu_read_unlock(&srcu, id);
+ 
+ 	return young;
+ }
+@@ -126,8 +131,9 @@ void __mmu_notifier_change_pte(struct mm_struct *mm, unsigned long address,
+ {
+ 	struct mmu_notifier *mn;
+ 	struct hlist_node *n;
++	int id;
+ 
+-	rcu_read_lock();
++	id = srcu_read_lock(&srcu);
+ 	hlist_for_each_entry_rcu(mn, n, &mm->mmu_notifier_mm->list, hlist) {
+ 		if (mn->ops->change_pte)
+ 			mn->ops->change_pte(mn, mm, address, pte);
+@@ -138,7 +144,7 @@ void __mmu_notifier_change_pte(struct mm_struct *mm, unsigned long address,
+ 		else if (mn->ops->invalidate_page)
+ 			mn->ops->invalidate_page(mn, mm, address);
+ 	}
+-	rcu_read_unlock();
++	srcu_read_unlock(&srcu, id);
+ }
+ 
+ void __mmu_notifier_invalidate_page(struct mm_struct *mm,
+@@ -146,13 +152,14 @@ void __mmu_notifier_invalidate_page(struct mm_struct *mm,
+ {
+ 	struct mmu_notifier *mn;
+ 	struct hlist_node *n;
++	int id;
+ 
+-	rcu_read_lock();
++	id = srcu_read_lock(&srcu);
+ 	hlist_for_each_entry_rcu(mn, n, &mm->mmu_notifier_mm->list, hlist) {
+ 		if (mn->ops->invalidate_page)
+ 			mn->ops->invalidate_page(mn, mm, address);
+ 	}
+-	rcu_read_unlock();
++	srcu_read_unlock(&srcu, id);
+ }
+ 
+ void __mmu_notifier_invalidate_range_start(struct mm_struct *mm,
+@@ -160,13 +167,14 @@ void __mmu_notifier_invalidate_range_start(struct mm_struct *mm,
+ {
+ 	struct mmu_notifier *mn;
+ 	struct hlist_node *n;
++	int id;
+ 
+-	rcu_read_lock();
++	id = srcu_read_lock(&srcu);
+ 	hlist_for_each_entry_rcu(mn, n, &mm->mmu_notifier_mm->list, hlist) {
+ 		if (mn->ops->invalidate_range_start)
+ 			mn->ops->invalidate_range_start(mn, mm, start, end);
+ 	}
+-	rcu_read_unlock();
++	srcu_read_unlock(&srcu, id);
+ }
+ 
+ void __mmu_notifier_invalidate_range_end(struct mm_struct *mm,
+@@ -174,13 +182,14 @@ void __mmu_notifier_invalidate_range_end(struct mm_struct *mm,
+ {
+ 	struct mmu_notifier *mn;
+ 	struct hlist_node *n;
++	int id;
+ 
+-	rcu_read_lock();
++	id = srcu_read_lock(&srcu);
+ 	hlist_for_each_entry_rcu(mn, n, &mm->mmu_notifier_mm->list, hlist) {
+ 		if (mn->ops->invalidate_range_end)
+ 			mn->ops->invalidate_range_end(mn, mm, start, end);
+ 	}
+-	rcu_read_unlock();
++	srcu_read_unlock(&srcu, id);
+ }
+ 
+ static int do_mmu_notifier_register(struct mmu_notifier *mn,
+@@ -192,6 +201,12 @@ static int do_mmu_notifier_register(struct mmu_notifier *mn,
+ 
+ 	BUG_ON(atomic_read(&mm->mm_users) <= 0);
+ 
 +	/*
-+	 * Preserve previous mempolicy unless mpol remount option was specified.
-+	 */
-+	if (config.mpol) {
-+		mpol_put(sbinfo->mpol);
-+		sbinfo->mpol = config.mpol;	/* transfers initial ref */
-+	}
- out:
- 	spin_unlock(&sbinfo->stat_lock);
- 	return error;
++	* Verify that mmu_notifier_init() already run and the global srcu is
++	* initialized.
++	*/
++	BUG_ON(!srcu.per_cpu_ref);
++
+ 	ret = -ENOMEM;
+ 	mmu_notifier_mm = kmalloc(sizeof(struct mmu_notifier_mm), GFP_KERNEL);
+ 	if (unlikely(!mmu_notifier_mm))
+@@ -274,8 +289,8 @@ void __mmu_notifier_mm_destroy(struct mm_struct *mm)
+ /*
+  * This releases the mm_count pin automatically and frees the mm
+  * structure if it was the last user of it. It serializes against
+- * running mmu notifiers with RCU and against mmu_notifier_unregister
+- * with the unregister lock + RCU. All sptes must be dropped before
++ * running mmu notifiers with SRCU and against mmu_notifier_unregister
++ * with the unregister lock + SRCU. All sptes must be dropped before
+  * calling mmu_notifier_unregister. ->release or any other notifier
+  * method may be invoked concurrently with mmu_notifier_unregister,
+  * and only after mmu_notifier_unregister returned we're guaranteed
+@@ -290,8 +305,9 @@ void mmu_notifier_unregister(struct mmu_notifier *mn, struct mm_struct *mm)
+ 		 * RCU here will force exit_mmap to wait ->release to finish
+ 		 * before freeing the pages.
+ 		 */
+-		rcu_read_lock();
++		int id;
+ 
++		id = srcu_read_lock(&srcu);
+ 		/*
+ 		 * exit_mmap will block in mmu_notifier_release to
+ 		 * guarantee ->release is called before freeing the
+@@ -299,7 +315,7 @@ void mmu_notifier_unregister(struct mmu_notifier *mn, struct mm_struct *mm)
+ 		 */
+ 		if (mn->ops->release)
+ 			mn->ops->release(mn, mm);
+-		rcu_read_unlock();
++		srcu_read_unlock(&srcu, id);
+ 
+ 		spin_lock(&mm->mmu_notifier_mm->lock);
+ 		hlist_del_rcu(&mn->hlist);
+@@ -310,10 +326,17 @@ void mmu_notifier_unregister(struct mmu_notifier *mn, struct mm_struct *mm)
+ 	 * Wait any running method to finish, of course including
+ 	 * ->release if it was run by mmu_notifier_relase instead of us.
+ 	 */
+-	synchronize_rcu();
++	synchronize_srcu(&srcu);
+ 
+ 	BUG_ON(atomic_read(&mm->mm_count) <= 0);
+ 
+ 	mmdrop(mm);
+ }
+ EXPORT_SYMBOL_GPL(mmu_notifier_unregister);
++
++static int __init mmu_notifier_init(void)
++{
++	return init_srcu_struct(&srcu);
++}
++
++module_init(mmu_notifier_init);
 -- 
 1.8.1.2
 
