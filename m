@@ -1,89 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752556Ab3B1LSe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 06:18:34 -0500
-Received: from mga11.intel.com ([192.55.52.93]:41237 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751127Ab3B1LSc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 06:18:32 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,755,1355126400"; 
-   d="scan'208";a="297133738"
-Date: Thu, 28 Feb 2013 11:18:19 +0000
-From: Chris Wilson <chris@chris-wilson.co.uk>
-To: Sedat Dilek <sedat.dilek@gmail.com>
-Cc: Dave Airlie <airlied@gmail.com>, DRI <dri-devel@lists.freedesktop.org>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-next <linux-next@vger.kernel.org>
-Subject: Re: [git pull] drm merge for 3.9-rc1
-Message-ID: <20130228111819.GF11892@cantiga.alporthouse.com>
-Mail-Followup-To: Chris Wilson <chris@chris-wilson.co.uk>,
-	Sedat Dilek <sedat.dilek@gmail.com>,
-	Dave Airlie <airlied@gmail.com>,
-	DRI <dri-devel@lists.freedesktop.org>,
-	intel-gfx <intel-gfx@lists.freedesktop.org>,
-	LKML <linux-kernel@vger.kernel.org>,
-	linux-next <linux-next@vger.kernel.org>
-References: <CA+icZUXG7WgRap2-oQGBr_s=QbE0QW6_zChDRqC-eEzrWR3Y5g@mail.gmail.com>
- <CA+icZUUP0hLjkTjsAGbhoT1QG55X2062G5KCCDsKkhDyM_SQEg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1752605Ab3B1LTU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 06:19:20 -0500
+Received: from nat28.tlf.novell.com ([130.57.49.28]:51862 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751127Ab3B1LTT convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:1>);
+	Thu, 28 Feb 2013 06:19:19 -0500
+Message-Id: <512F4B4402000078000C1E5B@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.1 
+Date: Thu, 28 Feb 2013 11:19:16 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Roger Pau Monne" <roger.pau@citrix.com>
+Cc: <xen-devel@lists.xen.org>,
+        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH RFC 12/12] xen-block: implement
+ indirect descriptors
+References: <1362047335-26402-1-git-send-email-roger.pau@citrix.com>
+ <1362047335-26402-13-git-send-email-roger.pau@citrix.com>
+In-Reply-To: <1362047335-26402-13-git-send-email-roger.pau@citrix.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <CA+icZUUP0hLjkTjsAGbhoT1QG55X2062G5KCCDsKkhDyM_SQEg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 28, 2013 at 12:06:28AM +0100, Sedat Dilek wrote:
-> On Wed, Feb 27, 2013 at 11:36 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
-> > Hi,
-> >
-> > I am seeing this also on Linux-Next.
-> >
-> > /var/log/kern.log:Feb 27 22:52:35 fambox kernel: [   28.202381]
-> > [drm:intel_dp_aux_wait_done] *ERROR* dp aux hw did not signal timeout
-> > (has irq: 1)!
-> > /var/log/kern.log:Feb 27 22:52:35 fambox kernel: [   28.210588]
-> > [drm:intel_dp_aux_wait_done] *ERROR* dp aux hw did not signal timeout
-> > (has irq: 1)!
-> >
-> > /var/log/kern.log.1:Feb 22 07:36:04 fambox kernel: [   27.408280]
-> > [drm:intel_dp_aux_wait_done] *ERROR* dp aux hw did not signal timeout
-> > (has irq: 1)!
-> >
-> > This seems to be hard reproducible...
-> > Laptop-LCD... Sandybridge Mobile-GT2.
-> >
-> > Is there a way to force the error?
-> >
-> > Possible patch see [1].
-> >
-> > - Sedat -
-> >
-> > [1] https://patchwork.kernel.org/patch/2192721/
+>>> On 28.02.13 at 11:28, Roger Pau Monne <roger.pau@citrix.com> wrote:
+> @@ -109,6 +111,16 @@ typedef uint64_t blkif_sector_t;
+>   */
+>  #define BLKIF_MAX_SEGMENTS_PER_REQUEST 11
+>  
+> +#define BLKIF_MAX_INDIRECT_GREFS_PER_REQUEST 8
+> +
+> +struct blkif_request_segment_aligned {
+> +	grant_ref_t gref;        /* reference to I/O buffer frame        */
+> +	/* @first_sect: first sector in frame to transfer (inclusive).   */
+> +	/* @last_sect: last sector in frame to transfer (inclusive).     */
+> +	uint8_t     first_sect, last_sect;
+> +	uint16_t    _pad; /* padding to make it 8 bytes, so it's cache-aligned */
+> +} __attribute__((__packed__));
 
-That was:
+What's the __packed__ for here?
 
-+	if (!done) {
-+		status = I915_READ_NOTRACE(ch_ctl);
-+		DRM_ERROR("dp aux hw did not signal timeout (has irq:
-%i), status=%08x!\n",
-+			  has_aux_irq, status);
-+	}
+> +
+>  struct blkif_request_rw {
+>  	uint8_t        nr_segments;  /* number of segments                   */
+>  	blkif_vdev_t   handle;       /* only for read/write requests         */
+> @@ -138,11 +150,24 @@ struct blkif_request_discard {
+>  	uint8_t        _pad3;
+>  } __attribute__((__packed__));
+>  
+> +struct blkif_request_indirect {
+> +	uint8_t        indirect_op;
+> +	uint16_t       nr_segments;
+> +#ifdef CONFIG_X86_64
+> +	uint32_t       _pad1;        /* offsetof(blkif_...,u.indirect.id) == 8 */
+> +#endif
 
-You applied
+Either you want the structure be packed tightly (and you don't care
+about misaligned fields), in which case you shouldn't need a padding
+field. That's even more so as there's no padding between indirect_op
+and nr_segments, so everything is misaligned anyway, and the
+comment above is wrong too (offsetof() really ought to yield 7 in
+that case).
 
-+	if (!done) {
-+		status = I915_READ_NOTRACE(ch_ctl);
-+		DRM_ERROR("dp aux hw did not signal timeout (has irq:
-%i), status=%08x!\n",
-+			  has_aux_irq, status);
-+	{
+Or you want the structure fields aligned, in which case you again
+ought to drop the use of the __packed__ attribute and introduce
+_all_ necessary padding fields.
 
-That second '{' is the source of the compile error.
--Chris
+> +	uint64_t       id;
+> +	blkif_vdev_t   handle;
+> +	blkif_sector_t sector_number;
+> +	grant_ref_t    indirect_grefs[BLKIF_MAX_INDIRECT_GREFS_PER_REQUEST];
+> +} __attribute__((__packed__));
 
--- 
-Chris Wilson, Intel Open Source Technology Centre
+And then it would be quite nice for new features to no longer
+require translation between a 32- and a 64-bit layout at all.
+
+Plus, rather than introducing uninitialized padding fields, I'd
+suggest using fields that are required to be zero initialized, to
+allow giving them a meaning later.
+
+Jan
+
