@@ -1,38 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754115Ab3B1Ixm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 03:53:42 -0500
-Received: from pegase2.c-s.fr ([93.17.235.10]:47421 "EHLO mailhub2.si.c-s.fr"
+	id S1754497Ab3B1Ixs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 03:53:48 -0500
+Received: from pegase2.c-s.fr ([93.17.235.10]:46631 "EHLO mailhub2.si.c-s.fr"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752647Ab3B1Ixh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 03:53:37 -0500
-Message-ID: <512F1AC0.8080209@c-s.fr>
-Date: Thu, 28 Feb 2013 09:52:16 +0100
-From: leroy christophe <christophe.leroy@c-s.fr>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
-MIME-Version: 1.0
+	id S1754173Ab3B1Ixn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Feb 2013 03:53:43 -0500
+Date: Thu, 28 Feb 2013 09:52:22 +0100
+Message-Id: <201302280852.r1S8qMYu003742@localhost.localdomain>
+From: Christophe Leroy <christophe.leroy@c-s.fr>
 To: Wim Van Sebroeck <wim@iguana.be>
 CC: linux-kernel@vger.kernel.org, linux-watchdog@vger.kernel.org,
         linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH] Enhanced support for MPC8xx/8xxx watchdog
-References: <201302131519.r1DFJtGm032487@localhost.localdomain> <20130227195214.GC7867@spo001.leaseweb.com>
-In-Reply-To: <20130227195214.GC7867@spo001.leaseweb.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+Subject: [PATCH v2] Enhanced support for MPC8xx/8xxx watchdog
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Wim,
+This patch modifies the behaviour of the MPC8xx/8xxx watchdog. On the MPC8xx,
+at 133Mhz, the maximum timeout of the watchdog timer is 1s, which means it must
+be pinged twice a second. This is not in line with the Linux watchdog concept
+which is based on a default watchdog timeout around 60s.
+This patch introduces an intermediate layer between the CPU and the userspace.
+The kernel pings the watchdog at the required frequency at the condition that
+userspace tools refresh it regularly.
+Existing parameter 'timeout' is renamed 'hw_time'.
+The new parameter 'timeout' allows to set up the userspace timeout.
+The driver also implements the WDIOC_SETTIMEOUT ioctl.
 
-Le 27/02/2013 20:52, Wim Van Sebroeck a écrit :
-> The rest of the code is OK and when above comments are corrected,
-> I will add the patch to improve the userspace experience.
->
-> Kind regards,
-> Wim.
+Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
 
-Ok, I'll fix and re-submit my patch according to your comments.
-
-Best regards
-Christophe
+diff -ur linux-3.7.9/drivers/watchdog/mpc8xxx_wdt.c linux/drivers/watchdog/mpc8xxx_wdt.c
+--- linux-3.7.9/drivers/watchdog/mpc8xxx_wdt.c	2013-02-17 19:53:32.000000000 +0100
++++ linux/drivers/watchdog/mpc8xxx_wdt.c	2013-02-27 16:00:07.000000000 +0100
+@@ -52,10 +52,17 @@
+ static struct mpc8xxx_wdt __iomem *wd_base;
+ static int mpc8xxx_wdt_init_late(void);
+ 
+-static u16 timeout = 0xffff;
+-module_param(timeout, ushort, 0);
++#define WD_TIMO 10			/* Default timeout = 10 seconds */
++
++static uint timeout = WD_TIMO;
++module_param(timeout, uint, 0);
+ MODULE_PARM_DESC(timeout,
+-	"Watchdog timeout in ticks. (0<timeout<65536, default=65535)");
++	"Watchdog SW timeout in seconds. (0 < timeout < 65536s, default = "
++				__MODULE_STRING(WD_TIMO) "s)");
++static u16 hw_timo = 0xffff;
++module_param(hw_timo, ushort, 0);
++MODULE_PARM_DESC(hw_timo,
++	"Watchdog HW timeout in ticks. (0 < hw_timo < 65536, default = 65535)");
+ 
+ static bool reset = 1;
+ module_param(reset, bool, 0);
+@@ -72,10 +79,12 @@
+  * to 0
+  */
+ static int prescale = 1;
+-static unsigned int timeout_sec;
++static unsigned int hw_timo_sec;
+ 
++static int wdt_auto = 1;
+ static unsigned long wdt_is_open;
+ static DEFINE_SPINLOCK(wdt_spinlock);
++static unsigned long wdt_last_ping;
+ 
+ static void mpc8xxx_wdt_keepalive(void)
+ {
+@@ -91,9 +100,20 @@
+ 
+ static void mpc8xxx_wdt_timer_ping(unsigned long arg)
+ {
+-	mpc8xxx_wdt_keepalive();
+-	/* We're pinging it twice faster than needed, just to be sure. */
+-	mod_timer(&wdt_timer, jiffies + HZ * timeout_sec / 2);
++	if (wdt_auto)
++		wdt_last_ping = jiffies;
++
++	if (jiffies - wdt_last_ping <= timeout * HZ) {
++		mpc8xxx_wdt_keepalive();
++		/* We're pinging it twice faster than needed, to be sure. */
++		mod_timer(&wdt_timer, jiffies + HZ * hw_timo_sec / 2);
++	}
++}
++
++static void mpc8xxx_wdt_sw_keepalive(void)
++{
++	wdt_last_ping = jiffies;
++	mpc8xxx_wdt_timer_ping(0);
+ }
+ 
+ static void mpc8xxx_wdt_pr_warn(const char *msg)
+@@ -106,7 +126,7 @@
+ 				 size_t count, loff_t *ppos)
+ {
+ 	if (count)
+-		mpc8xxx_wdt_keepalive();
++		mpc8xxx_wdt_sw_keepalive();
+ 	return count;
+ }
+ 
+@@ -126,11 +146,11 @@
+ 	if (reset)
+ 		tmp |= SWCRR_SWRI;
+ 
+-	tmp |= timeout << 16;
++	tmp |= hw_timo << 16;
+ 
+ 	out_be32(&wd_base->swcrr, tmp);
+ 
+-	del_timer_sync(&wdt_timer);
++	wdt_auto = 0;
+ 
+ 	return nonseekable_open(inode, file);
+ }
+@@ -138,7 +158,8 @@
+ static int mpc8xxx_wdt_release(struct inode *inode, struct file *file)
+ {
+ 	if (!nowayout)
+-		mpc8xxx_wdt_timer_ping(0);
++		wdt_auto = 1;
++
+ 	else
+ 		mpc8xxx_wdt_pr_warn("watchdog closed");
+ 	clear_bit(0, &wdt_is_open);
+@@ -163,10 +184,12 @@
+ 	case WDIOC_GETBOOTSTATUS:
+ 		return put_user(0, p);
+ 	case WDIOC_KEEPALIVE:
+-		mpc8xxx_wdt_keepalive();
++		mpc8xxx_wdt_sw_keepalive();
+ 		return 0;
+ 	case WDIOC_GETTIMEOUT:
+-		return put_user(timeout_sec, p);
++		return put_user(timeout, p);
++	case WDIOC_SETTIMEOUT:
++		return get_user(timeout, p);
+ 	default:
+ 		return -ENOTTY;
+ 	}
+@@ -215,12 +238,14 @@
+ 		ret = -ENOSYS;
+ 		goto err_unmap;
+ 	}
++	if (enabled)
++		hw_timo = in_be32(&wd_base->swcrr) >> 16;
+ 
+ 	/* Calculate the timeout in seconds */
+ 	if (prescale)
+-		timeout_sec = (timeout * wdt_type->prescaler) / freq;
++		hw_timo_sec = (hw_timo * wdt_type->prescaler) / freq;
+ 	else
+-		timeout_sec = timeout / freq;
++		hw_timo_sec = hw_timo / freq;
+ 
+ #ifdef MODULE
+ 	ret = mpc8xxx_wdt_init_late();
+@@ -228,8 +253,8 @@
+ 		goto err_unmap;
+ #endif
+ 
+-	pr_info("WDT driver for MPC8xxx initialized. mode:%s timeout=%d (%d seconds)\n",
+-		reset ? "reset" : "interrupt", timeout, timeout_sec);
++	pr_info("WDT driver for MPC8xxx initialized. mode:%s timeout = %d (%d seconds)\n",
++		reset ? "reset" : "interrupt", hw_timo, hw_timo_sec);
+ 
+ 	/*
+ 	 * If the watchdog was previously enabled or we're running on
+@@ -273,6 +298,7 @@
+ 		.compatible = "fsl,mpc823-wdt",
+ 		.data = &(struct mpc8xxx_wdt_type) {
+ 			.prescaler = 0x800,
++			.hw_enabled = true,
+ 		},
+ 	},
+ 	{},
