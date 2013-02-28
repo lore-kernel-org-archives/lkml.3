@@ -1,23 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754756Ab3B1OqG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 09:46:06 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41873 "EHLO
+	id S1755377Ab3B1OqX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 09:46:23 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41902 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754636Ab3B1OqC (ORCPT
+	with ESMTP id S1754872Ab3B1OqQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 09:46:02 -0500
+	Thu, 28 Feb 2013 09:46:16 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Pratyush Anand <pratyush.anand@st.com>, Felipe Balbi <balbi@ti.com>,
+Cc: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 007/139] USB: DWC3: Generate interrupt on each TRB as default option
-Date: Thu, 28 Feb 2013 14:42:37 +0000
-Message-Id: <1362062689-2567-8-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 013/139] USB: option: add and update Alcatel modems
+Date: Thu, 28 Feb 2013 14:42:43 +0000
+Message-Id: <1362062689-2567-14-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1362062689-2567-1-git-send-email-luis.henriques@canonical.com>
 References: <1362062689-2567-1-git-send-email-luis.henriques@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,41 +31,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Pratyush Anand <pratyush.anand@st.com>
+From: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
 
-commit 206dd69a62a06197b308fa0decfd0b649fcc2811 upstream.
+commit f8f0302bbcbd1b14655bef29f6996a2152be559d upstream.
 
-Currently in case of isoc, interrupt is programmed after each
-TRB_NUM/4 ie 8th TRB. A TRB is programmed against each submitted
-request from gadget. If we do not want to limit the minimum number of
-necessary request to be submitted from gadget then we must receive
-interrupt on each TRB submission. There can be such situation with a
-gadget working with ping-pong buffer.
+Adding three currently unsupported modems based on information
+from .inf driver files:
 
-If a gadget does not want to receive interrupt after each request
-completion then it may set no_interrupt flag.
+  Diag  VID_1BBB&PID_0052&MI_00
+  AGPS  VID_1BBB&PID_0052&MI_01
+  VOICE VID_1BBB&PID_0052&MI_02
+  AT    VID_1BBB&PID_0052&MI_03
+  Modem VID_1BBB&PID_0052&MI_05
+  wwan  VID_1BBB&PID_0052&MI_06
 
-Signed-off-by: Pratyush Anand <pratyush.anand@st.com>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+  Diag  VID_1BBB&PID_00B6&MI_00
+  AT    VID_1BBB&PID_00B6&MI_01
+  Modem VID_1BBB&PID_00B6&MI_02
+  wwan  VID_1BBB&PID_00B6&MI_03
+
+  Diag  VID_1BBB&PID_00B7&MI_00
+  AGPS  VID_1BBB&PID_00B7&MI_01
+  VOICE VID_1BBB&PID_00B7&MI_02
+  AT    VID_1BBB&PID_00B7&MI_03
+  Modem VID_1BBB&PID_00B7&MI_04
+  wwan  VID_1BBB&PID_00B7&MI_05
+
+Updating the blacklist info for the X060S_X200 and X220_X500D,
+reserving interfaces for a wwan driver, based on
+
+  wwan VID_1BBB&PID_0000&MI_04
+  wwan VID_1BBB&PID_0017&MI_06
+
+Signed-off-by: Bjørn Mork <bjorn@mork.no>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/usb/dwc3/gadget.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/usb/serial/option.c | 10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/usb/dwc3/gadget.c b/drivers/usb/dwc3/gadget.c
-index 1f53210..edfff45 100644
---- a/drivers/usb/dwc3/gadget.c
-+++ b/drivers/usb/dwc3/gadget.c
-@@ -744,8 +744,7 @@ static void dwc3_prepare_one_trb(struct dwc3_ep *dep,
- 	case USB_ENDPOINT_XFER_ISOC:
- 		trb->ctrl = DWC3_TRBCTL_ISOCHRONOUS_FIRST;
+diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
+index 5f4ce8e..b5fd2f8 100644
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -479,6 +479,7 @@ static const struct option_blacklist_info four_g_w14_blacklist = {
  
--		/* IOC every DWC3_TRB_NUM / 4 so we can refill */
--		if (!(cur_slot % (DWC3_TRB_NUM / 4)))
-+		if (!req->request.no_interrupt)
- 			trb->ctrl |= DWC3_TRB_CTRL_IOC;
- 		break;
+ static const struct option_blacklist_info alcatel_x200_blacklist = {
+ 	.sendsetup = BIT(0) | BIT(1),
++	.reserved = BIT(4),
+ };
  
+ static const struct option_blacklist_info zte_0037_blacklist = {
+@@ -1215,7 +1216,14 @@ static const struct usb_device_id option_ids[] = {
+ 	{ USB_DEVICE(ALCATEL_VENDOR_ID, ALCATEL_PRODUCT_X060S_X200),
+ 	  .driver_info = (kernel_ulong_t)&alcatel_x200_blacklist
+ 	},
+-	{ USB_DEVICE(ALCATEL_VENDOR_ID, ALCATEL_PRODUCT_X220_X500D) },
++	{ USB_DEVICE(ALCATEL_VENDOR_ID, ALCATEL_PRODUCT_X220_X500D),
++	  .driver_info = (kernel_ulong_t)&net_intf6_blacklist },
++	{ USB_DEVICE(ALCATEL_VENDOR_ID, 0x0052),
++	  .driver_info = (kernel_ulong_t)&net_intf6_blacklist },
++	{ USB_DEVICE(ALCATEL_VENDOR_ID, 0x00b6),
++	  .driver_info = (kernel_ulong_t)&net_intf3_blacklist },
++	{ USB_DEVICE(ALCATEL_VENDOR_ID, 0x00b7),
++	  .driver_info = (kernel_ulong_t)&net_intf5_blacklist },
+ 	{ USB_DEVICE(ALCATEL_VENDOR_ID, ALCATEL_PRODUCT_L100V),
+ 	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
+ 	{ USB_DEVICE(AIRPLUS_VENDOR_ID, AIRPLUS_PRODUCT_MCD650) },
 -- 
 1.8.1.2
 
