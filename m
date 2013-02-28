@@ -1,62 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932114Ab3B1Orl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 09:47:41 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:42074 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757076Ab3B1Org (ORCPT
+	id S1760269Ab3B1POG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 10:14:06 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:38761 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1758537Ab3B1POC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 09:47:36 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 045/139] idr: idr_for_each_entry() macro
-Date: Thu, 28 Feb 2013 14:43:15 +0000
-Message-Id: <1362062689-2567-46-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1362062689-2567-1-git-send-email-luis.henriques@canonical.com>
-References: <1362062689-2567-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.5
+	Thu, 28 Feb 2013 10:14:02 -0500
+Date: Thu, 28 Feb 2013 10:14:01 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Lan Tianyu <tianyu.lan@intel.com>
+cc: Li Fei <fei.li@intel.com>, <gregkh@linuxfoundation.org>,
+        <sarah.a.sharp@linux.intel.com>, <rjw@sisk.pl>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <chuansheng.liu@intel.com>
+Subject: Re: [PATCH 4/5] usb: call pm_runtime_put_sync in pm_runtime_get_sync
+ failed case
+In-Reply-To: <512F1741.60202@intel.com>
+Message-ID: <Pine.LNX.4.44L0.1302281011550.1352-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.7 -stable review patch.  If anyone has any objections, please let me know.
+On Thu, 28 Feb 2013, Lan Tianyu wrote:
 
-------------------
+> Hi Alan:
+> 	Further thinking, the device should be disconnected since the port
+> can't be resumed and the device will not work normally. Something like
+> following. Does this make sense?
+> ---
+> diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
+> index d5d3de4..cf36b11 100644
+> --- a/drivers/usb/core/hub.c
+> +++ b/drivers/usb/core/hub.c
+> @@ -3170,6 +3170,7 @@ int usb_port_resume(struct usb_device *udev,
+> pm_message_t msg)
+>                 if (status < 0) {
+>                         dev_dbg(&udev->dev, "can't resume usb port,
+> status %d\n",
+>                                         status);
+> +                       hub_port_logical_disconnect(hub, port1);
+>                         return status;
+>                 }
+>         }
 
-From: Philipp Reisner <philipp.reisner@linbit.com>
+I don't know.  If you do this, will the port ever get powered on again?  
+This sort of thing is hard to test.
 
-commit 9749f30f1a387070e6e8351f35aeb829eacc3ab6 upstream.
+As far as the device is concerned, it won't make much difference.  
+Either way, the device won't work.
 
-Inspired by the list_for_each_entry() macro
-
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- include/linux/idr.h | 11 +++++++++++
- 1 file changed, 11 insertions(+)
-
-diff --git a/include/linux/idr.h b/include/linux/idr.h
-index 255491c..52a9da2 100644
---- a/include/linux/idr.h
-+++ b/include/linux/idr.h
-@@ -152,4 +152,15 @@ void ida_simple_remove(struct ida *ida, unsigned int id);
- 
- void __init idr_init_cache(void);
- 
-+/**
-+ * idr_for_each_entry - iterate over an idr's elements of a given type
-+ * @idp:     idr handle
-+ * @entry:   the type * to use as cursor
-+ * @id:      id entry's key
-+ */
-+#define idr_for_each_entry(idp, entry, id)				\
-+	for (id = 0, entry = (typeof(entry))idr_get_next((idp), &(id)); \
-+	     entry != NULL;                                             \
-+	     ++id, entry = (typeof(entry))idr_get_next((idp), &(id)))
-+
- #endif /* __IDR_H__ */
--- 
-1.8.1.2
+Alan Stern
 
