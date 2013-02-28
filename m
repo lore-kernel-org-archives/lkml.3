@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754924Ab3B1Eu3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 23:50:29 -0500
-Received: from mail-da0-f41.google.com ([209.85.210.41]:38916 "EHLO
-	mail-da0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752560Ab3B1EuX (ORCPT
+	id S1755153Ab3B1Euf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 23:50:35 -0500
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:61477 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752560Ab3B1Eua (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 23:50:23 -0500
+	Wed, 27 Feb 2013 23:50:30 -0500
 From: Mike Turquette <mturquette@linaro.org>
 To: linux-kernel@vger.kernel.org
 Cc: linux-arm-kernel@lists.infradead.org, patches@linaro.org,
         linaro-dev@lists.linaro.org, Mike Turquette <mturquette@linaro.org>
-Subject: [PATCH 2/5] clk: notifier handler for dynamic voltage scaling
-Date: Wed, 27 Feb 2013 20:49:26 -0800
-Message-Id: <1362026969-11457-3-git-send-email-mturquette@linaro.org>
+Subject: [PATCH 4/5] HACK: set_parent callback for OMAP4 non-core DPLLs
+Date: Wed, 27 Feb 2013 20:49:28 -0800
+Message-Id: <1362026969-11457-5-git-send-email-mturquette@linaro.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1362026969-11457-1-git-send-email-mturquette@linaro.org>
 References: <1362026969-11457-1-git-send-email-mturquette@linaro.org>
@@ -21,217 +21,208 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dynamic voltage and frequency scaling (dvfs) is a common power saving
-technique in many of today's modern processors.  This patch introduces a
-common clk rate-change notifier handler which scales voltage
-appropriately whenever clk_set_rate is called on an affected clock.
+This is a silly patch that demonstrates calling clk_set_parent from
+within a .set_rate callback, which itself was called by clk_set_rate.
+It may make your board burst into flames or otherwise void various
+warrantees.
 
-There are three prerequisites to using this feature:
+I do not suggest that the OMAP folks take this approach in unless they
+really want to.  Instead it was a way for me to increase code coverage
+while testing the reentrancy changes to the core clock framework.
 
-1) the affected clocks must be using the common clk framework
-2) voltage must be scaled using the regulator framework
-3) clock frequency and regulator voltage values must be paired via the
-OPP library
+Changes in this patch include removing __clk_prepare and __clk_unprepare
+from omap3_noncore_dpll_set_rate and using the (now reentrant)
+clk_prepare & clk_unprepare versions.  Most importantly this patch
+introduces omap3_noncore_dpll_set_parent and adds it to the clk_ops for
+all OMAP3+ DPLLs.
 
-If a platform or device meets these requirements then using the notifier
-handler is straightforward.  A struct device is used as the basis for
-performing initial look-ups for clocks via clk_get and regulators via
-regulator_get.  This means that notifiers are subscribed on a per-device
-basis and multiple devices can have notifiers subscribed to the same
-clock.  Put another way, the voltage chosen for a rail during a call to
-clk_set_rate is a function of the device, not the clock.
+The net gain is that on OMAP4 platforms it is now possible to call
+clk_set_parent(some_dpll_ck, ...) in order to change the PLL input from
+the reference clock to the bypass clock, and vice versa.
 
-Signed-off-by: Mike Turquette <mturquette@linaro.org>
+omap3_noncore_dpll_set_rate is modified to call clk_set_parent when
+appropriate as a way to test reentrancy.
+
+Not-signed-off-by: Mike Turquette <mturquette@linaro.org>
 ---
- drivers/clk/Makefile |    1 +
- drivers/clk/dvfs.c   |  125 ++++++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/clk.h  |   27 ++++++++++-
- 3 files changed, 152 insertions(+), 1 deletion(-)
- create mode 100644 drivers/clk/dvfs.c
+ arch/arm/mach-omap2/cclock44xx_data.c |    1 +
+ arch/arm/mach-omap2/clock.h           |    1 +
+ arch/arm/mach-omap2/dpll3xxx.c        |  107 +++++++++++++++++++++++++--------
+ 3 files changed, 84 insertions(+), 25 deletions(-)
 
-diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
-index e73b1d6..e720b7c 100644
---- a/drivers/clk/Makefile
-+++ b/drivers/clk/Makefile
-@@ -7,6 +7,7 @@ obj-$(CONFIG_COMMON_CLK)	+= clk-fixed-factor.o
- obj-$(CONFIG_COMMON_CLK)	+= clk-fixed-rate.o
- obj-$(CONFIG_COMMON_CLK)	+= clk-gate.o
- obj-$(CONFIG_COMMON_CLK)	+= clk-mux.o
-+obj-$(CONFIG_COMMON_CLK)	+= dvfs.o
- 
- # SoCs specific
- obj-$(CONFIG_ARCH_BCM2835)	+= clk-bcm2835.o
-diff --git a/drivers/clk/dvfs.c b/drivers/clk/dvfs.c
-new file mode 100644
-index 0000000..d916d0b
---- /dev/null
-+++ b/drivers/clk/dvfs.c
-@@ -0,0 +1,125 @@
-+/*
-+ * Copyright (C) 2011-2012 Linaro Ltd <mturquette@linaro.org>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * Helper functions for dynamic voltage & frequency transitions using
-+ * the OPP library.
-+ */
-+
-+#include <linux/clk.h>
-+#include <linux/regulator/consumer.h>
-+#include <linux/opp.h>
-+#include <linux/device.h>
-+#include <linux/slab.h>
-+#include <linux/module.h>
-+
-+/*
-+ * XXX clk, regulator & tolerance should be stored in the OPP table?
-+ */
-+struct dvfs_info {
-+	struct device *dev;
-+	struct clk *clk;
-+	struct regulator *reg;
-+	int tol;
-+	struct notifier_block nb;
-+};
-+
-+#define to_dvfs_info(_nb) container_of(_nb, struct dvfs_info, nb)
-+
-+static int dvfs_clk_notifier_handler(struct notifier_block *nb,
-+		unsigned long flags, void *data)
-+{
-+	struct clk_notifier_data *cnd = data;
-+	struct dvfs_info *di = to_dvfs_info(nb);
-+	int ret, volt_new, volt_old;
-+	struct opp *opp;
-+
-+	volt_old = regulator_get_voltage(di->reg);
-+	rcu_read_lock();
-+	opp = opp_find_freq_floor(di->dev, &cnd->new_rate);
-+	volt_new = opp_get_voltage(opp);
-+	rcu_read_unlock();
-+
-+	/* scaling up?  scale voltage before frequency */
-+	if (flags & PRE_RATE_CHANGE && cnd->new_rate > cnd->old_rate) {
-+		dev_dbg(di->dev, "%s: %d mV --> %d mV\n",
-+				__func__, volt_old, volt_new);
-+
-+		ret = regulator_set_voltage_tol(di->reg, volt_new, di->tol);
-+
-+		if (ret) {
-+			dev_warn(di->dev, "%s: unable to scale voltage up.\n",
-+				 __func__);
-+			return notifier_from_errno(ret);
-+		}
-+	}
-+
-+	/* scaling down?  scale voltage after frequency */
-+	if (flags & POST_RATE_CHANGE && cnd->new_rate < cnd->old_rate) {
-+		dev_dbg(di->dev, "%s: %d mV --> %d mV\n",
-+				__func__, volt_old, volt_new);
-+
-+		ret = regulator_set_voltage_tol(di->reg, volt_new, di->tol);
-+
-+		if (ret) {
-+			dev_warn(di->dev, "%s: unable to scale voltage down.\n",
-+				 __func__);
-+			return notifier_from_errno(ret);
-+		}
-+	}
-+
-+	return NOTIFY_OK;
-+}
-+
-+struct dvfs_info *dvfs_clk_notifier_register(struct dvfs_info_init *dii)
-+{
-+	struct dvfs_info *di;
-+	int ret = 0;
-+
-+	if (!dii)
-+		return ERR_PTR(-EINVAL);
-+
-+	di = kzalloc(sizeof(struct dvfs_info), GFP_KERNEL);
-+	if (!di)
-+		return ERR_PTR(-ENOMEM);
-+
-+	di->dev = dii->dev;
-+	di->clk = clk_get(di->dev, dii->con_id);
-+	if (IS_ERR(di->clk)) {
-+		ret = -ENOMEM;
-+		goto err;
-+	}
-+
-+	di->reg = regulator_get(di->dev, dii->reg_id);
-+	if (IS_ERR(di->reg)) {
-+		ret = -ENOMEM;
-+		goto err;
-+	}
-+
-+	di->tol = dii->tol;
-+	di->nb.notifier_call = dvfs_clk_notifier_handler;
-+
-+	ret = clk_notifier_register(di->clk, &di->nb);
-+
-+	if (ret)
-+		goto err;
-+
-+	return di;
-+
-+err:
-+	kfree(di);
-+	return ERR_PTR(ret);
-+}
-+EXPORT_SYMBOL_GPL(dvfs_clk_notifier_register);
-+
-+void dvfs_clk_notifier_unregister(struct dvfs_info *di)
-+{
-+	clk_notifier_unregister(di->clk, &di->nb);
-+	clk_put(di->clk);
-+	regulator_put(di->reg);
-+	kfree(di);
-+}
-+EXPORT_SYMBOL_GPL(dvfs_clk_notifier_unregister);
-diff --git a/include/linux/clk.h b/include/linux/clk.h
-index b3ac22d..28d952f 100644
---- a/include/linux/clk.h
-+++ b/include/linux/clk.h
-@@ -78,9 +78,34 @@ struct clk_notifier_data {
- 	unsigned long		new_rate;
+diff --git a/arch/arm/mach-omap2/cclock44xx_data.c b/arch/arm/mach-omap2/cclock44xx_data.c
+index 5789a5e..df5da7f 100644
+--- a/arch/arm/mach-omap2/cclock44xx_data.c
++++ b/arch/arm/mach-omap2/cclock44xx_data.c
+@@ -386,6 +386,7 @@ static const struct clk_ops dpll_ck_ops = {
+ 	.round_rate	= &omap2_dpll_round_rate,
+ 	.set_rate	= &omap3_noncore_dpll_set_rate,
+ 	.get_parent	= &omap2_init_dpll_parent,
++	.set_parent	= &omap3_noncore_dpll_set_parent,
  };
  
--int clk_notifier_register(struct clk *clk, struct notifier_block *nb);
-+/**
-+ * struct dvfs_info_init - data needs to initialize struct dvfs_info
-+ * @dev:	device related to this frequency-voltage pair
-+ * @con_id:	string name of clock connection
-+ * @reg_id:	string name of regulator
-+ * @tol:	voltage tolerance for this device
-+ *
-+ * Provides the data needed to register a common dvfs sequence in a clk
-+ * notifier handler.  The clk and regulator lookups are stored in a
-+ * private struct and the notifier handler is registered with the clk
-+ * framework with a call to dvfs_clk_notifier_register.
-+ *
-+ * FIXME stuffing @tol here is a hack.  It belongs in the opp table.
-+ * Maybe clk & regulator will also live in the opp table some day.
-+ */
-+struct dvfs_info_init {
-+	struct device *dev;
-+	const char *con_id;
-+	const char *reg_id;
-+	int tol;
-+};
+ static struct clk_hw_omap dpll_iva_ck_hw = {
+diff --git a/arch/arm/mach-omap2/clock.h b/arch/arm/mach-omap2/clock.h
+index b402048..1cf43a5 100644
+--- a/arch/arm/mach-omap2/clock.h
++++ b/arch/arm/mach-omap2/clock.h
+@@ -367,6 +367,7 @@ long omap2_dpll_round_rate(struct clk_hw *hw, unsigned long target_rate,
+ unsigned long omap3_dpll_recalc(struct clk_hw *hw, unsigned long parent_rate);
+ int omap3_noncore_dpll_enable(struct clk_hw *hw);
+ void omap3_noncore_dpll_disable(struct clk_hw *hw);
++int omap3_noncore_dpll_set_parent(struct clk_hw *hw, u8 index);
+ int omap3_noncore_dpll_set_rate(struct clk_hw *hw, unsigned long rate,
+ 				unsigned long parent_rate);
+ u32 omap3_dpll_autoidle_read(struct clk_hw_omap *clk);
+diff --git a/arch/arm/mach-omap2/dpll3xxx.c b/arch/arm/mach-omap2/dpll3xxx.c
+index 0a02aab5..bae123e 100644
+--- a/arch/arm/mach-omap2/dpll3xxx.c
++++ b/arch/arm/mach-omap2/dpll3xxx.c
+@@ -450,6 +450,76 @@ void omap3_noncore_dpll_disable(struct clk_hw *hw)
+ 		clkdm_clk_disable(clk->clkdm, hw->clk);
+ }
+ 
++/* Non-CORE DPLL set parent code */
 +
-+struct dvfs_info;
++/**
++ * omap3_noncore_dpll_set_parent - set non-core DPLL input
++ * @hw: hardware object for this clock/dpll
++ * @index: parent to switch to in the array of possible parents
++ *
++ * Sets the input to the DPLL to either the reference clock or bypass
++ * clock.  Returns error code upon failure or 0 upon success.
++ */
++int omap3_noncore_dpll_set_parent(struct clk_hw *hw, u8 index)
++{
++	struct clk_hw_omap *clk = to_clk_hw_omap(hw);
++	u16 freqsel = 0;
++	struct dpll_data *dd;
++	int ret;
++
++	if (!hw)
++		return -EINVAL;
++
++	dd = clk->dpll_data;
++	if (!dd)
++		return -EINVAL;
++
++	clk_prepare(dd->clk_bypass);
++	clk_enable(dd->clk_bypass);
++	clk_prepare(dd->clk_ref);
++	clk_enable(dd->clk_ref);
++
++	/* FIXME hard coded magic numbers are gross */
++	switch (index) {
++		/* dpll input is the reference clock */
++		case 0:
++			if (dd->last_rounded_rate == 0)
++				return -EINVAL;
++
++			/* No freqsel on OMAP4 and OMAP3630 */
++			if (!cpu_is_omap44xx() && !cpu_is_omap3630()) {
++				freqsel = _omap3_dpll_compute_freqsel(clk,
++						dd->last_rounded_n);
++				WARN_ON(!freqsel);
++			}
++
++			pr_debug("%s: %s: set rate: locking rate to %lu.\n",
++					__func__, __clk_get_name(hw->clk), dd->last_rounded_rate);
++
++			ret = omap3_noncore_dpll_program(clk, freqsel);
++			break;
++
++		/* dpll input is the bypass clock */
++		case 1:
++			pr_debug("%s: %s: set rate: entering bypass.\n",
++					__func__, __clk_get_name(hw->clk));
++
++			ret = _omap3_noncore_dpll_bypass(clk);
++			break;
++
++		default:
++			pr_warn("%s: %s: set parent: invalid parent\n",
++					__func__, __clk_get_name(hw->clk));
++			return -EINVAL;
++	}
++
++	clk_disable(dd->clk_ref);
++	clk_unprepare(dd->clk_ref);
++	clk_disable(dd->clk_bypass);
++	clk_unprepare(dd->clk_bypass);
++
++	return 0;
++}
  
-+int clk_notifier_register(struct clk *clk, struct notifier_block *nb);
- int clk_notifier_unregister(struct clk *clk, struct notifier_block *nb);
-+struct dvfs_info *dvfs_clk_notifier_register(struct dvfs_info_init *dii);
-+void dvfs_clk_notifier_unregister(struct dvfs_info *di);
+ /* Non-CORE DPLL rate set code */
  
- #endif
+@@ -468,7 +538,6 @@ int omap3_noncore_dpll_set_rate(struct clk_hw *hw, unsigned long rate,
+ 					unsigned long parent_rate)
+ {
+ 	struct clk_hw_omap *clk = to_clk_hw_omap(hw);
+-	struct clk *new_parent = NULL;
+ 	u16 freqsel = 0;
+ 	struct dpll_data *dd;
+ 	int ret;
+@@ -480,22 +549,18 @@ int omap3_noncore_dpll_set_rate(struct clk_hw *hw, unsigned long rate,
+ 	if (!dd)
+ 		return -EINVAL;
  
+-	__clk_prepare(dd->clk_bypass);
++	clk_prepare(dd->clk_bypass);
+ 	clk_enable(dd->clk_bypass);
+-	__clk_prepare(dd->clk_ref);
++	clk_prepare(dd->clk_ref);
+ 	clk_enable(dd->clk_ref);
+ 
+-	if (__clk_get_rate(dd->clk_bypass) == rate &&
++	/* FIXME below block should call clk_set_parent */
++	if (clk_get_rate(dd->clk_bypass) == rate &&
+ 	    (dd->modes & (1 << DPLL_LOW_POWER_BYPASS))) {
+-		pr_debug("%s: %s: set rate: entering bypass.\n",
+-			 __func__, __clk_get_name(hw->clk));
+-
+-		ret = _omap3_noncore_dpll_bypass(clk);
+-		if (!ret)
+-			new_parent = dd->clk_bypass;
++		clk_set_parent(hw->clk, dd->clk_bypass);
+ 	} else {
+ 		if (dd->last_rounded_rate != rate)
+-			rate = __clk_round_rate(hw->clk, rate);
++			rate = clk_round_rate(hw->clk, rate);
+ 
+ 		if (dd->last_rounded_rate == 0)
+ 			return -EINVAL;
+@@ -510,24 +575,16 @@ int omap3_noncore_dpll_set_rate(struct clk_hw *hw, unsigned long rate,
+ 		pr_debug("%s: %s: set rate: locking rate to %lu.\n",
+ 			 __func__, __clk_get_name(hw->clk), rate);
+ 
+-		ret = omap3_noncore_dpll_program(clk, freqsel);
+-		if (!ret)
+-			new_parent = dd->clk_ref;
++		if (clk_get_parent(hw->clk) == dd->clk_bypass)
++			clk_set_parent(hw->clk, dd->clk_ref);
++		else
++			ret = omap3_noncore_dpll_program(clk, freqsel);
+ 	}
+-	/*
+-	* FIXME - this is all wrong.  common code handles reparenting and
+-	* migrating prepare/enable counts.  dplls should be a multiplexer
+-	* clock and this should be a set_parent operation so that all of that
+-	* stuff is inherited for free
+-	*/
+-
+-	if (!ret)
+-		__clk_reparent(hw->clk, new_parent);
+ 
+ 	clk_disable(dd->clk_ref);
+-	__clk_unprepare(dd->clk_ref);
++	clk_unprepare(dd->clk_ref);
+ 	clk_disable(dd->clk_bypass);
+-	__clk_unprepare(dd->clk_bypass);
++	clk_unprepare(dd->clk_bypass);
+ 
+ 	return 0;
+ }
 -- 
 1.7.10.4
 
