@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756508Ab3B1OrR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 09:47:17 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:42004 "EHLO
+	id S1760533Ab3B1PRr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 10:17:47 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:42029 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756302Ab3B1OrG (ORCPT
+	with ESMTP id S1756471Ab3B1OrR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 09:47:06 -0500
+	Thu, 28 Feb 2013 09:47:17 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
+Cc: fangxiaozhi <huananhu@huawei.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 033/139] timeconst.pl: Eliminate Perl warning
-Date: Thu, 28 Feb 2013 14:43:03 +0000
-Message-Id: <1362062689-2567-34-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 037/139] USB: storage: properly handle the endian issues of idProduct
+Date: Thu, 28 Feb 2013 14:43:07 +0000
+Message-Id: <1362062689-2567-38-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1362062689-2567-1-git-send-email-luis.henriques@canonical.com>
 References: <1362062689-2567-1-git-send-email-luis.henriques@canonical.com>
@@ -28,44 +28,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "H. Peter Anvin" <hpa@linux.intel.com>
+From: fangxiaozhi <huananhu@huawei.com>
 
-commit 63a3f603413ffe82ad775f2d62a5afff87fd94a0 upstream.
+commit cd060956c5e97931c3909e4a808508469c0bb9f6 upstream.
 
-defined(@array) is deprecated in Perl and gives off a warning.
-Restructure the code to remove that warning.
+1. The idProduct is little endian, so make sure its value to be
+compatible with the current CPU. Make no break on big endian processors.
 
-[ hpa: it would be interesting to revert to the timeconst.bc script.
-  It appears that the failures reported by akpm during testing of
-  that script was due to a known broken version of make, not a problem
-  with bc.  The Makefile rules could probably be restructured to avoid
-  the make bug, or it is probably old enough that it doesn't matter. ]
-
-Reported-by: Andi Kleen <ak@linux.intel.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: fangxiaozhi <huananhu@huawei.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- kernel/timeconst.pl | 6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+ drivers/usb/storage/initializers.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/timeconst.pl b/kernel/timeconst.pl
-index eb51d76..3f42652 100644
---- a/kernel/timeconst.pl
-+++ b/kernel/timeconst.pl
-@@ -369,10 +369,8 @@ if ($hz eq '--can') {
- 		die "Usage: $0 HZ\n";
- 	}
+diff --git a/drivers/usb/storage/initializers.c b/drivers/usb/storage/initializers.c
+index 16b0bf0..7ab9046 100644
+--- a/drivers/usb/storage/initializers.c
++++ b/drivers/usb/storage/initializers.c
+@@ -147,7 +147,7 @@ static int usb_stor_huawei_dongles_pid(struct us_data *us)
+ 	int idProduct;
  
--	@val = @{$canned_values{$hz}};
--	if (!defined(@val)) {
--		@val = compute_values($hz);
--	}
-+	$cv = $canned_values{$hz};
-+	@val = defined($cv) ? @$cv : compute_values($hz);
- 	output($hz, @val);
- }
- exit 0;
+ 	idesc = &us->pusb_intf->cur_altsetting->desc;
+-	idProduct = us->pusb_dev->descriptor.idProduct;
++	idProduct = le16_to_cpu(us->pusb_dev->descriptor.idProduct);
+ 	/* The first port is CDROM,
+ 	 * means the dongle in the single port mode,
+ 	 * and a switch command is required to be sent. */
+@@ -169,7 +169,7 @@ int usb_stor_huawei_init(struct us_data *us)
+ 	int result = 0;
+ 
+ 	if (usb_stor_huawei_dongles_pid(us)) {
+-		if (us->pusb_dev->descriptor.idProduct >= 0x1446)
++		if (le16_to_cpu(us->pusb_dev->descriptor.idProduct) >= 0x1446)
+ 			result = usb_stor_huawei_scsi_init(us);
+ 		else
+ 			result = usb_stor_huawei_feature_init(us);
 -- 
 1.8.1.2
 
