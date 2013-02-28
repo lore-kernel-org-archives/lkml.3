@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754579Ab3B1Opz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 09:45:55 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41856 "EHLO
+	id S1754756Ab3B1OqG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 09:46:06 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41873 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752561Ab3B1Opw (ORCPT
+	with ESMTP id S1754636Ab3B1OqC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 09:45:52 -0500
+	Thu, 28 Feb 2013 09:46:02 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Dan Carpenter <dan.carpenter@oracle.com>,
-        Douglas Bagnall <douglas@paradise.net.nz>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
+Cc: Pratyush Anand <pratyush.anand@st.com>, Felipe Balbi <balbi@ti.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 003/139] rc: unlock on error in show_protocols()
-Date: Thu, 28 Feb 2013 14:42:33 +0000
-Message-Id: <1362062689-2567-4-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 007/139] USB: DWC3: Generate interrupt on each TRB as default option
+Date: Thu, 28 Feb 2013 14:42:37 +0000
+Message-Id: <1362062689-2567-8-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1362062689-2567-1-git-send-email-luis.henriques@canonical.com>
 References: <1362062689-2567-1-git-send-email-luis.henriques@canonical.com>
@@ -29,40 +27,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Pratyush Anand <pratyush.anand@st.com>
 
-commit 30ebc5e44d057a1619ad63fe32c8c1670c37c4b8 upstream.
+commit 206dd69a62a06197b308fa0decfd0b649fcc2811 upstream.
 
-We recently introduced a new return -ENODEV in this function but we need
-to unlock before returning.
+Currently in case of isoc, interrupt is programmed after each
+TRB_NUM/4 ie 8th TRB. A TRB is programmed against each submitted
+request from gadget. If we do not want to limit the minimum number of
+necessary request to be submitted from gadget then we must receive
+interrupt on each TRB submission. There can be such situation with a
+gadget working with ping-pong buffer.
 
-[mchehab@redhat.com: found two patches with the same fix. Merged SOB's/acks into one patch]
-Acked-by: Herton R. Krzesinski <herton.krzesinski@canonical.com>
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Douglas Bagnall <douglas@paradise.net.nz>
+If a gadget does not want to receive interrupt after each request
+completion then it may set no_interrupt flag.
 
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+Signed-off-by: Pratyush Anand <pratyush.anand@st.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/media/rc/rc-main.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/usb/dwc3/gadget.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/drivers/media/rc/rc-main.c b/drivers/media/rc/rc-main.c
-index cabc19c..cec1f8c 100644
---- a/drivers/media/rc/rc-main.c
-+++ b/drivers/media/rc/rc-main.c
-@@ -778,8 +778,10 @@ static ssize_t show_protocols(struct device *device,
- 	} else if (dev->raw) {
- 		enabled = dev->raw->enabled_protocols;
- 		allowed = ir_raw_get_allowed_protocols();
--	} else
-+	} else {
-+		mutex_unlock(&dev->lock);
- 		return -ENODEV;
-+	}
+diff --git a/drivers/usb/dwc3/gadget.c b/drivers/usb/dwc3/gadget.c
+index 1f53210..edfff45 100644
+--- a/drivers/usb/dwc3/gadget.c
++++ b/drivers/usb/dwc3/gadget.c
+@@ -744,8 +744,7 @@ static void dwc3_prepare_one_trb(struct dwc3_ep *dep,
+ 	case USB_ENDPOINT_XFER_ISOC:
+ 		trb->ctrl = DWC3_TRBCTL_ISOCHRONOUS_FIRST;
  
- 	IR_dprintk(1, "allowed - 0x%llx, enabled - 0x%llx\n",
- 		   (long long)allowed,
+-		/* IOC every DWC3_TRB_NUM / 4 so we can refill */
+-		if (!(cur_slot % (DWC3_TRB_NUM / 4)))
++		if (!req->request.no_interrupt)
+ 			trb->ctrl |= DWC3_TRB_CTRL_IOC;
+ 		break;
+ 
 -- 
 1.8.1.2
 
