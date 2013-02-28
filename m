@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932953Ab3B1Oul (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 09:50:41 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:42470 "EHLO
+	id S1759736Ab3B1O5k (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 09:57:40 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:42482 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932900Ab3B1Oue (ORCPT
+	with ESMTP id S932918Ab3B1Ouj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 09:50:34 -0500
+	Thu, 28 Feb 2013 09:50:39 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Lukas Czerner <lczerner@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>,
+Cc: Shawn Guo <shawn.guo@linaro.org>, Chris Ball <cjb@laptop.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 114/139] ext4: fix free clusters calculation in bigalloc filesystem
-Date: Thu, 28 Feb 2013 14:44:24 +0000
-Message-Id: <1362062689-2567-115-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 116/139] mmc: sdhci-esdhc-imx: fix host version read
+Date: Thu, 28 Feb 2013 14:44:26 +0000
+Message-Id: <1362062689-2567-117-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1362062689-2567-1-git-send-email-luis.henriques@canonical.com>
 References: <1362062689-2567-1-git-send-email-luis.henriques@canonical.com>
@@ -27,63 +27,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lukas Czerner <lczerner@redhat.com>
+From: Shawn Guo <shawn.guo@linaro.org>
 
-commit 304e220f0879198b1f5309ad6f0be862b4009491 upstream.
+commit ef4d0888bb7e1b963880f086575081c3d39cad2d upstream.
 
-ext4_has_free_clusters() should tell us whether there is enough free
-clusters to allocate, however number of free clusters in the file system
-is converted to blocks using EXT4_C2B() which is not only wrong use of
-the macro (we should have used EXT4_NUM_B2C) but it's also completely
-wrong concept since everything else is in cluster units.
+When commit 95a2482 (mmc: sdhci-esdhc-imx: add basic imx6q usdhc
+support) works around host version issue on imx6q, it gets the
+register address fixup "reg ^= 2" lost for imx25/35/51/53 esdhc.
+Thus, the controller version on these SoCs is wrongly identified
+as v1 while it's actually v2.
 
-Moreover when calculating number of root clusters we should be using
-macro EXT4_NUM_B2C() instead of EXT4_B2C() otherwise the result might be
-off by one. However r_blocks_count should always be a multiple of the
-cluster ratio so doing a plain bit shift should be enough here. We
-avoid using EXT4_B2C() because it's confusing.
+Add the address fixup back and take a different approach to correct
+imx6q host version, so that the host version read gets back to work
+for all SoCs.
 
-As a result of the first problem number of free clusters is much bigger
-than it should have been and ext4_has_free_clusters() would return 1 even
-if there is really not enough free clusters available.
-
-Fix this by removing the EXT4_C2B() conversion of free clusters and
-using bit shift when calculating number of root clusters. This bug
-affects number of xfstests tests covering file system ENOSPC situation
-handling. With this patch most of the ENOSPC problems with bigalloc file
-system disappear, especially the errors caused by delayed allocation not
-having enough space when the actual allocation is finally requested.
-
-Signed-off-by: Lukas Czerner <lczerner@redhat.com>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
+Signed-off-by: Chris Ball <cjb@laptop.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/ext4/balloc.c | 9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+ drivers/mmc/host/sdhci-esdhc-imx.c | 19 +++++++++++--------
+ 1 file changed, 11 insertions(+), 8 deletions(-)
 
-diff --git a/fs/ext4/balloc.c b/fs/ext4/balloc.c
-index 33938c1..2f2e0da 100644
---- a/fs/ext4/balloc.c
-+++ b/fs/ext4/balloc.c
-@@ -484,11 +484,16 @@ static int ext4_has_free_clusters(struct ext4_sb_info *sbi,
+diff --git a/drivers/mmc/host/sdhci-esdhc-imx.c b/drivers/mmc/host/sdhci-esdhc-imx.c
+index ebbe984..1dc06a6 100644
+--- a/drivers/mmc/host/sdhci-esdhc-imx.c
++++ b/drivers/mmc/host/sdhci-esdhc-imx.c
+@@ -237,15 +237,18 @@ static void esdhc_writel_le(struct sdhci_host *host, u32 val, int reg)
  
- 	free_clusters  = percpu_counter_read_positive(fcc);
- 	dirty_clusters = percpu_counter_read_positive(dcc);
--	root_clusters = EXT4_B2C(sbi, ext4_r_blocks_count(sbi->s_es));
+ static u16 esdhc_readw_le(struct sdhci_host *host, int reg)
+ {
++	struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
++	struct pltfm_imx_data *imx_data = pltfm_host->priv;
 +
-+	/*
-+	 * r_blocks_count should always be multiple of the cluster ratio so
-+	 * we are safe to do a plane bit shift only.
-+	 */
-+	root_clusters = ext4_r_blocks_count(sbi->s_es) >> sbi->s_cluster_bits;
- 
- 	if (free_clusters - (nclusters + root_clusters + dirty_clusters) <
- 					EXT4_FREECLUSTERS_WATERMARK) {
--		free_clusters  = EXT4_C2B(sbi, percpu_counter_sum_positive(fcc));
-+		free_clusters  = percpu_counter_sum_positive(fcc);
- 		dirty_clusters = percpu_counter_sum_positive(dcc);
+ 	if (unlikely(reg == SDHCI_HOST_VERSION)) {
+-		u16 val = readw(host->ioaddr + (reg ^ 2));
+-		/*
+-		 * uSDHC supports SDHCI v3.0, but it's encoded as value
+-		 * 0x3 in host controller version register, which violates
+-		 * SDHCI_SPEC_300 definition.  Work it around here.
+-		 */
+-		if ((val & SDHCI_SPEC_VER_MASK) == 3)
+-			return --val;
++		reg ^= 2;
++		if (is_imx6q_usdhc(imx_data)) {
++			/*
++			 * The usdhc register returns a wrong host version.
++			 * Correct it here.
++			 */
++			return SDHCI_SPEC_300;
++		}
  	}
- 	/* Check whether we have space after accounting for current
+ 
+ 	return readw(host->ioaddr + reg);
 -- 
 1.8.1.2
 
