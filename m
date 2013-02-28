@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759471Ab3B1WMG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 17:12:06 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40257 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756454Ab3B1WMC (ORCPT
+	id S1760114Ab3B1WM3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 17:12:29 -0500
+Received: from mail-ia0-f170.google.com ([209.85.210.170]:48946 "EHLO
+	mail-ia0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756454Ab3B1WM1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 17:12:02 -0500
-Date: Thu, 28 Feb 2013 14:12:00 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Andrew Shewmaker <agshew@gmail.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [RFC PATCH v2 1/2] mm: tuning hardcoded reserved memory
-Message-Id: <20130228141200.3fe7f459.akpm@linux-foundation.org>
-In-Reply-To: <20130227205629.GA8429@localhost.localdomain>
-References: <20130227205629.GA8429@localhost.localdomain>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+	Thu, 28 Feb 2013 17:12:27 -0500
+Date: Thu, 28 Feb 2013 17:11:43 -0500
+From: "John L. Males" <jlmales@gmail.com>
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Linux Kernel Commit 025cee7f8fef02af09b03c8e1cd9843cb32adf9b
+Message-Id: <20130228171143.5c32726d.jlmales@gmail.com>
+Reply-To: jlmales@gmail.com
+Organization: Toronto, Ontario
+X-Mailer: Sylpheed 3.1.3 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
@@ -24,67 +23,63 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 27 Feb 2013 15:56:30 -0500
-Andrew Shewmaker <agshew@gmail.com> wrote:
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-> The following patches are against the mmtom git tree as of February 27th.
-> 
-> The first patch only affects OVERCOMMIT_NEVER mode, entirely removing 
-> the 3% reserve for other user processes.
-> 
-> The second patch affects both OVERCOMMIT_GUESS and OVERCOMMIT_NEVER 
-> modes, replacing the hardcoded 3% reserve for the root user with a 
-> tunable knob.
-> 
+Dave,
 
-Gee, it's been years since anyone thought about the overcommit code.
+With respect to Linux Kernel Commit
+025cee7f8fef02af09b03c8e1cd9843cb32adf9b Change Log:
 
-Documentation/vm/overcommit-accounting says that OVERCOMMIT_ALWAYS is
-"Appropriate for some scientific applications", but doesn't say why. 
-You're running a scientific cluster but you're using OVERCOMMIT_NEVER,
-I think?  Is the documentation wrong?
+<http://www.kernel.org/pub/linux/kernel/v3.0/ChangeLog-3.4.34>
 
-> __vm_enough_memory reserves 3% of free pages with the default 
-> overcommit mode and 6% when overcommit is disabled. These hardcoded 
-> values have become less reasonable as memory sizes have grown.
-> 
-> On scientific clusters, systems are generally dedicated to one user. 
-> Also, overcommit is sometimes disabled in order to prevent a long 
-> running job from suddenly failing days or weeks into a calculation.
-> In this case, a user wishing to allocate as much memory as possible 
-> to one process may be prevented from using, for example, around 7GB 
-> out of 128GB.
-> 
-> The effect is less, but still significant when a user starts a job 
-> with one process per core. I have repeatedly seen a set of processes 
-> requesting the same amount of memory fail because one of them could  
-> not allocate the amount of memory a user would expect to be able to 
-> allocate.
-> 
-> ...
->
-> --- a/mm/mmap.c
-> +++ b/mm/mmap.c
-> @@ -182,11 +182,6 @@ int __vm_enough_memory(struct mm_struct *mm, long pages, int cap_sys_admin)
->  		allowed -= allowed / 32;
->  	allowed += total_swap_pages;
->  
-> -	/* Don't let a single process grow too big:
-> -	   leave 3% of the size of this process for other processes */
-> -	if (mm)
-> -		allowed -= mm->total_vm / 32;
-> -
->  	if (percpu_counter_read_positive(&vm_committed_as) < allowed)
->  		return 0;
+comment "It has probably been the cause of a number of subtle
+bugs over the years, although the conditions to excite them
+would have been hard to trigger."
 
-So what might be the downside for this change?  root can't log in, I
-assume.  Have you actually tested for this scenario and observed the
-effects?
+Would the Linux Kernel under "unique" Virtual Memory Subsystem
+stress excite some of these "subtle bugs" in Linux Kernels
+prior to this change set for Commit
+025cee7f8fef02af09b03c8e1cd9843cb32adf9b?  I am not asking for
+you to identify the subtle bugs.  It is obvious it would be
+difficult to determine from reported and unreported cases such
+bugs. Just your sense or first hand knowledge if a Linux Kernel
+under "unique" stress including Virtual Memory Subsystem stress
+would be a key element of?
 
-If there *are* observable risks and/or to preserve back-compatibility,
-I guess we could create a fourth overcommit mode which provides the
-headroom which you desire.
+I am one of those who seems to often cause system kernels of
+any OS stress due to my very high power user use of Operating
+Systems and hence why my question.
 
-Also, should we be looking at removing root's 3% from OVERCOMMIT_GUESS
-as well?
 
+Regards,
+
+John L. Males
+Toronto, Ontario
+Canada
+28 February 2013 17:11
+<mailto:jlmales@gmail.com>
+
+
+==============================================================
+2013-02-28 16:57:24.110757989-0500-EST
+
+28 Feb 16:57:24 ntpdate[27847]: ntpdate 4.2.6p2@1.2194-o Sun
+Oct 17 13:35:14 UTC 2010 (1)
+
+28 Feb 16:58:59 ntpdate[27852]: step time server 132.246.11.228
+offset -0.000138 sec
+
+Linux 3.4.24-kernel.org-jlm-010-amd64 #1 SMP PREEMPT Sun Dec 23
+10:06:41 EST 2012
+
+Modified Debian GNU/Linux 6.0.3 (squeeze)
+(Evaluating alternatives to Debian)
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAlEv1h8ACgkQ+V/XUtB6aBDSzQCgiu+hskZzz2bMfLG5u+Ao9YzJ
+hwIAn1IY5jnq0sJjIe0nxFnA+LKrGtAh
+=1KDN
+-----END PGP SIGNATURE-----
