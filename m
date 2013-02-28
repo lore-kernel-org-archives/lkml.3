@@ -1,135 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756854Ab3B1QEj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 11:04:39 -0500
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:47784 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755163Ab3B1QEh (ORCPT
+	id S1753581Ab3B1QHI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 11:07:08 -0500
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:35928 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752721Ab3B1QHD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 11:04:37 -0500
+	Thu, 28 Feb 2013 11:07:03 -0500
 MIME-Version: 1.0
-In-Reply-To: <20130228072637.3b71a4f7@corrin.poochiereds.net>
-References: <1361831310-24260-1-git-send-email-chiluk@canonical.com>
-	<512DE8A6.9030000@samba.org>
-	<20130227083419.0af9deaf@corrin.poochiereds.net>
-	<512E8787.6070709@canonical.com>
-	<20130228072637.3b71a4f7@corrin.poochiereds.net>
-Date: Thu, 28 Feb 2013 10:04:36 -0600
-Message-ID: <CAH2r5mtBHO6woWeOJ+DJDBmF35VTfuFYo2iza--xAe7grnELAg@mail.gmail.com>
-Subject: Re: [PATCH] CIFS: Decrease reconnection delay when switching nics
-From: Steve French <smfrench@gmail.com>
-To: Jeff Layton <jlayton@samba.org>
-Cc: Dave Chiluk <dave.chiluk@canonical.com>,
-        "Stefan (metze) Metzmacher" <metze@samba.org>,
-        Dave Chiluk <chiluk@canonical.com>, Steve French <sfrench@samba.org>,
-        linux-cifs@vger.kernel.org, samba-technical@lists.samba.org,
-        linux-kernel@vger.kernel.org
+In-Reply-To: <512DB96E.5030408@cn.fujitsu.com>
+References: <512B7D10.4060304@tpi.com>
+	<512B8407.2090807@canonical.com>
+	<512BD753.4080001@hp.com>
+	<CAE9FiQVY4io_mO3PhTtE6FbGUgo1uZKKXO=pjx_FoZ1JuZmsAw@mail.gmail.com>
+	<CAE9FiQXRZ2VjfG4L2d2zDQ3Sud=JqjS=M9=XW=ORS58_y7i4_g@mail.gmail.com>
+	<CAE9FiQU-CV4mF8x=Bi_4pmpmeZW-tSoes_f-jOt7yYrbrppo+A@mail.gmail.com>
+	<512D58C2.1090403@jp.fujitsu.com>
+	<CAE9FiQV5APHSGXuz3NrsApC+V7rsDQMDXMNwZszZuUqQVaZSew@mail.gmail.com>
+	<512D7FAD.1040003@jp.fujitsu.com>
+	<CAE9FiQWxq-HPKK+XNRLggZSM4NcdfaeGDWCgd3HegEhaDSSTtA@mail.gmail.com>
+	<512D8EDA.3010602@jp.fujitsu.com>
+	<CAE9FiQWAxL6F70fF0dQcBZKTReJOiC+Ez0xcqcosgAdSagS-bA@mail.gmail.com>
+	<512D9E69.6010102@jp.fujitsu.com>
+	<CAE9FiQV9JRk1SYLkBXsQmrSEDHrYZDpBV6UZb+U5rB7=4gFhVA@mail.gmail.com>
+	<512DB199.5050203@cn.fujitsu.com>
+	<CAE9FiQXvdXoW8xFO2Q_dJo4jRkse5Lg9TmLHuFhqZ9H92ipsuw@mail.gmail.com>
+	<512DB96E.5030408@cn.fujitsu.com>
+Date: Thu, 28 Feb 2013 08:07:02 -0800
+X-Google-Sender-Auth: 1G15YHAjpw4Yp7u2NOAlZAstMjI
+Message-ID: <CAE9FiQWx9TUwF6mXyhKDX=OZNsubvDebViyyTrA9EQpBZ6FsKw@mail.gmail.com>
+Subject: Re: sched: CPU #1's llc-sibling CPU #0 is not on the same node!
+From: Yinghai Lu <yinghai@kernel.org>
+To: Tang Chen <tangchen@cn.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Tejun Heo <tj@kernel.org>
+Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Don Morris <don.morris@hp.com>,
+        Tim Gardner <tim.gardner@canonical.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>, Thomas Renninger <trenn@suse.de>,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@redhat.com,
+        a.p.zijlstra@chello.nl, jarkko.sakkinen@intel.com
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 28, 2013 at 9:26 AM, Jeff Layton <jlayton@samba.org> wrote:
-> On Wed, 27 Feb 2013 16:24:07 -0600
-> Dave Chiluk <dave.chiluk@canonical.com> wrote:
+On Tue, Feb 26, 2013 at 11:44 PM, Tang Chen <tangchen@cn.fujitsu.com> wrote:
 >
->> On 02/27/2013 10:34 AM, Jeff Layton wrote:
->> > On Wed, 27 Feb 2013 12:06:14 +0100
->> > "Stefan (metze) Metzmacher" <metze@samba.org> wrote:
->> >
->> >> Hi Dave,
->> >>
->> >>> When messages are currently in queue awaiting a response, decrease amount of
->> >>> time before attempting cifs_reconnect to SMB_MAX_RTT = 10 seconds. The current
->> >>> wait time before attempting to reconnect is currently 2*SMB_ECHO_INTERVAL(120
->> >>> seconds) since the last response was recieved.  This does not take into account
->> >>> the fact that messages waiting for a response should be serviced within a
->> >>> reasonable round trip time.
->> >>
->> >> Wouldn't that mean that the client will disconnect a good connection,
->> >> if the server doesn't response within 10 seconds?
->> >> Reads and Writes can take longer than 10 seconds...
->> >>
->> >
->> > Where does this magic value of 10s come from? Note that a slow server
->> > can take *minutes* to respond to writes that are long past the EOF.
->> It comes from the desire to decrease the reconnection delay to something
->> better than a random number between 60 and 120 seconds.  I am not
->> committed to this number, and it is open for discussion.  Additionally
->> if you look closely at the logic it's not 10 seconds per request, but
->> actually when requests have been in flight for more than 10 seconds make
->> sure we've heard from the server in the last 10 seconds.
->>
->> Can you explain more fully your use case of writes that are long past
->> the EOF?  Perhaps with a test-case or script that I can test?  As far as
->> I know writes long past EOF will just result in a sparse file, and
->> return in a reasonable round trip time *(that's at least what I'm seeing
->> with my testing).  dd if=/dev/zero of=/mnt/cifs/a bs=1M count=100
->> seek=100000, starts receiving responses from the server in about .05
->> seconds with subsequent responses following at roughly .002-.01 second
->> intervals.  This is well within my 10 second value.  Even adding the
->> latency of AT&T's 2g cell network brings it up to only 1s.  Still 10x
->> less than my 10 second value.
->>
->> The new logic goes like this
->> if( we've been expecting a response from the server (in_flight), and
->>  message has been in_flight for more than 10 seconds and
->>  we haven't had any other contact from the server in that time
->>   reconnect
->>
+> Sorry, if you want to revert, you just need to revert:
 >
-> That will break writes long past the EOF. Note too that reconnects on
-> CIFS are horrifically expensive and problematic. Much of the state on a
-> CIFS mount is tied to the connection. When that drops, open files are
-> closed and things like locks are dropped. SMB1 has no real mechanism
-> for state recovery, so that can really be a problem.
+>  commit e8d1955258091e4c92d5a975ebd7fd8a98f5d30f
+>       acpi, memory-hotplug: parse SRAT before memblock is ready
+>  commit 01a178a94e8eaec351b29ee49fbb3d1c124cb7fb
+>       acpi, memory-hotplug: support getting hotplug info from SRAT
 >
->> On a side note, I discovered a small race condition in the previous
->> logic while working on this, that my new patch also fixes.
->> 1s  request
->> 2s  response
->> 61.995 echo job pops
->> 121.995 echo job pops and sends echo
->> 122 server_unresponsive called.  Finds no response and attempts to
->>        reconnect
->> 122.95 response to echo received
->>
+> The other two have nothing to do with SRAT. And they are necessary.
 >
-> Sure, here's a reproducer. Do this against a windows server, preferably
-> one exporting NTFS on relatively slow storage. Make sure that
-> "testfile" doesn't exist first:
->
->      $ dd if=/dev/zero of=/path/to/cifs/share/testfile bs=1M count=1 seek=3192
->
-> NTFS doesn't support sparse files, so the OS has to zero-fill up to the
-> point where you're writing. That can take a looooong time on slow
-> storage (minutes even). What we do now is periodically send a SMB echo
-> to make sure the server is alive rather than trying to time out a
-> particular call.
+> Seeing from the code, I think it is clean. But we'd better test it.
 
-Writing past end of file in Windows can be very slow, but note that it
-is possible for a windows to set as sparse a file on an NTFS
-partition.   Quoting from
-http://msdn.microsoft.com/en-us/library/windows/desktop/aa365566%28v=vs.85%29.aspx
-Windows NTFS does support sparse files (and we could even send it over
-cifs if we want) but it has to be explicitly set by the app on the
-file:
+We should revert them all.
 
-"To determine whether a file system supports sparse files, call the
-GetVolumeInformation function and examine the
-FILE_SUPPORTS_SPARSE_FILES bit flag returned through the
-lpFileSystemFlags parameter.
+as
 
-Most applications are not aware of sparse files and will not create
-sparse files. The fact that an application is reading a sparse file is
-transparent to the application. An application that is aware of
-sparse-files should determine whether its data set is suitable to be
-kept in a sparse file. After that determination is made, the
-application must explicitly declare a file as sparse, using the
-FSCTL_SET_SPARSE control code."
+commit fb06bc8e5f42f38c011de0e59481f464a82380f6
+Author: Tang Chen <tangchen@cn.fujitsu.com>
+Date:   Fri Feb 22 16:33:42 2013 -0800
 
+    page_alloc: bootmem limit with movablecore_map
 
--- 
-Thanks,
+It is totally misleading in the TITLE. Come on, what is movablecore_map?
 
-Steve
+It actually use movablemem_map to exclude some range during
+memblock_find_in_range.
+
+That make memblock less generic.
+
+That patch is the base of the whole patchset.
+
+Also you and Yasuaki keep saying: movablemem_map=srat.
+But where is doc and code for it?
+Looks like there is only movablemem_map=acpi.
+
+I'm upset by this patchset.
+
+Next time, please get Ack from TJ or Ben when you touch memblock code.
+And at least make the TITLE is right.
+
+Thanks
+
+Yinghai
