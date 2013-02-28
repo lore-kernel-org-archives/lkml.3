@@ -1,76 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752091Ab3B1G1X (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 01:27:23 -0500
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:40740 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750723Ab3B1G1W (ORCPT
+	id S1751712Ab3B1GfX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 01:35:23 -0500
+Received: from intranet.asianux.com ([58.214.24.6]:31602 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750813Ab3B1GfT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 01:27:22 -0500
+	Thu, 28 Feb 2013 01:35:19 -0500
+X-Spam-Score: -100.8
+Message-ID: <512EFA91.5050101@asianux.com>
+Date: Thu, 28 Feb 2013 14:34:57 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <CAPM=9twBA67kLADG4r51Q5me1AsLrHZeuTM4oSdkbKRmHGMtxA@mail.gmail.com>
-References: <20130226030249.GB23834@kroah.com>
-	<20130226031338.GA29784@srcf.ucam.org>
-	<20130226033156.GA24999@kroah.com>
-	<20130226033803.GA30285@srcf.ucam.org>
-	<20130226035416.GA1128@kroah.com>
-	<20130226040456.GA30717@srcf.ucam.org>
-	<20130226041324.GA7241@kroah.com>
-	<CAPM=9tzTXL_mystUa2=hGGzNZaYH==pMwt_PMLsWuqpRTs335g@mail.gmail.com>
-	<20130226044521.GC12906@thunk.org>
-	<20130226165451.GE32160@fenchurch.internal.datastacks.com>
-	<20130227152429.GA5609@thunk.org>
-	<CAPM=9twBA67kLADG4r51Q5me1AsLrHZeuTM4oSdkbKRmHGMtxA@mail.gmail.com>
-Date: Thu, 28 Feb 2013 07:27:21 +0100
-X-Google-Sender-Auth: s5d32VLfRMh3H0MhQ1S4cJEbx3Y
-Message-ID: <CAMuHMdU=EiqCkogQcY46UV8LzdKgYF6eG1Q91oyytnzZMY9esQ@mail.gmail.com>
-Subject: Re: [GIT PULL] Load keys from signed PE binaries
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Dave Airlie <airlied@gmail.com>
-Cc: "Theodore Ts'o" <tytso@mit.edu>, Peter Jones <pjones@redhat.com>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        David Howells <dhowells@redhat.com>, Florian Weimer <fw@deneb.enyo.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Josh Boyer <jwboyer@redhat.com>, Vivek Goyal <vgoyal@redhat.com>,
-        Kees Cook <keescook@chromium.org>, keyrings@linux-nfs.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: JBottomley@parallels.com, David Miller <davem@davemloft.net>,
+        kxie@chelsio.com, michaelc@cs.wisc.edu
+CC: linux-scsi@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] drivers/scsi/cxgbi: using ccflags-y instead of EXTRA_CFLAGS
+ in Kbuild
+References: <50F15A35.4000400@asianux.com> <50FB9A33.2090204@asianux.com> <51077BB3.2010809@asianux.com> <512ECDDC.2020607@asianux.com> <512EF43D.1070805@asianux.com>
+In-Reply-To: <512EF43D.1070805@asianux.com>
+Content-Type: text/plain; charset=GB2312
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 27, 2013 at 10:31 PM, Dave Airlie <airlied@gmail.com> wrote:
-> On Thu, Feb 28, 2013 at 1:24 AM, Theodore Ts'o <tytso@mit.edu> wrote:
->> On Tue, Feb 26, 2013 at 11:54:51AM -0500, Peter Jones wrote:
->>> No, no, no.  Quit saying nobody knows.  We've got a pretty good idea -
->>> we've got a contract with them, and it says they provide the signing
->>> service, and under circumstances where the thing being signed is found
->>> to enable malware that circumvents Secure Boot
->>
->> The question is what does "malware that circuments Secure Boot" mean?
->> Does starting up a hacked KVM and running Windows 8 under KVM so that
->> malare can be injected count as circumenting Secure Boot?  If so, will
->> you have to disable KVM, too?
->>
->> What if someone implements a virtualization bootkit for Windows 8.
->> Will they revoke their own key?  Somehow, I doubt that....
->
-> Have you noticed that laptops rarely come with virtualisation enabled
-> in the BIOS?
->
-> Now you know why.
 
-I thought it was about market segmentation? Charge $$$ for the model with VT
-enabled.
+  need using ccflags-y instead of EXTRA_CFLAGS
+    can reference scripts/checkpatch.pl (1755..1766)
 
-Gr{oetje,eeting}s,
+  when make EXTRA_CFLAGS=-W, the compiling issue will be occured.
 
-                        Geert
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+Signed-off-by: Chen Gang <gang.chen@asianux.com>
+---
+ drivers/scsi/cxgbi/cxgb3i/Kbuild |    2 +-
+ drivers/scsi/cxgbi/cxgb4i/Kbuild |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+diff --git a/drivers/scsi/cxgbi/cxgb3i/Kbuild b/drivers/scsi/cxgbi/cxgb3i/Kbuild
+index 6f095e2..961a12f 100644
+--- a/drivers/scsi/cxgbi/cxgb3i/Kbuild
++++ b/drivers/scsi/cxgbi/cxgb3i/Kbuild
+@@ -1,3 +1,3 @@
+-EXTRA_CFLAGS += -I$(srctree)/drivers/net/ethernet/chelsio/cxgb3
++ccflags-y += -I$(srctree)/drivers/net/ethernet/chelsio/cxgb3
+ 
+ obj-$(CONFIG_SCSI_CXGB3_ISCSI) += cxgb3i.o
+diff --git a/drivers/scsi/cxgbi/cxgb4i/Kbuild b/drivers/scsi/cxgbi/cxgb4i/Kbuild
+index 8290cda..3745864 100644
+--- a/drivers/scsi/cxgbi/cxgb4i/Kbuild
++++ b/drivers/scsi/cxgbi/cxgb4i/Kbuild
+@@ -1,3 +1,3 @@
+-EXTRA_CFLAGS += -I$(srctree)/drivers/net/ethernet/chelsio/cxgb4
++ccflags-y += -I$(srctree)/drivers/net/ethernet/chelsio/cxgb4
+ 
+ obj-$(CONFIG_SCSI_CXGB4_ISCSI) += cxgb4i.o
+-- 
+1.7.7.6
