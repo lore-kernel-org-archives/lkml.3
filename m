@@ -1,74 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752164Ab3B1G6P (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 01:58:15 -0500
-Received: from mail-we0-f179.google.com ([74.125.82.179]:35000 "EHLO
-	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751332Ab3B1G6O (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 01:58:14 -0500
+	id S1752465Ab3B1HBR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 02:01:17 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:23994 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751545Ab3B1HBN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Feb 2013 02:01:13 -0500
+Date: Thu, 28 Feb 2013 09:01:24 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Paolo Bonzini <pbonzini@redhat.com>, Asias He <asias@redhat.com>,
+        linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org
+Subject: Re: [PATCH 08/16] virtio_ring: virtqueue_add_outbuf /
+ virtqueue_add_inbuf.
+Message-ID: <20130228070124.GD4743@redhat.com>
+References: <1361260594-601-1-git-send-email-rusty@rustcorp.com.au>
+ <1361260594-601-9-git-send-email-rusty@rustcorp.com.au>
+ <20130221170902.GA27097@redhat.com>
+ <87sj4pfc61.fsf@rustcorp.com.au>
+ <20130225213504.GC18167@redhat.com>
+ <87lia9c9er.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-In-Reply-To: <512E45E9.5020801@semaphore.gr>
-References: <512E45E9.5020801@semaphore.gr>
-Date: Thu, 28 Feb 2013 12:28:11 +0530
-X-Google-Sender-Auth: zdmltFduYSKUVyek0nnt2RERVwE
-Message-ID: <CAOh2x==vxM+qoebcUGNca50oeszwnqSfSzVPSEOyS6GKENudeg@mail.gmail.com>
-Subject: Re: [PATCH linux-next] cpufreq: governors: Calculate iowait time only
- when necessary
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Stratos Karafotis <stratosk@semaphore.gr>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87lia9c9er.fsf@rustcorp.com.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 27, 2013 at 11:14 PM, Stratos Karafotis
-<stratosk@semaphore.gr> wrote:
-> Currently we always calculate the CPU iowait time and add it to idle time.
-> If we are in ondemand and we use io_is_busy, we re-calculate iowait time
-> and we subtract it from idle time.
->
-> With this patch iowait time is calculated only when necessary avoiding
-> the double call to get_cpu_iowait_time_us. We use a parameter in
-> function get_cpu_idle_time to distinguish when the iowait time will be
-> added to idle time or not, without the need of keeping the prev_io_wait.
->
-> Signed-off-by: Stratos Karafotis <stratosk@semaphore.gr>
-> ---
->  drivers/cpufreq/cpufreq_conservative.c |  2 +-
->  drivers/cpufreq/cpufreq_governor.c     | 46 +++++++++++++---------------------
->  drivers/cpufreq/cpufreq_governor.h     |  3 +--
->  drivers/cpufreq/cpufreq_ondemand.c     | 11 +++++++-
->  4 files changed, 29 insertions(+), 33 deletions(-)
+On Thu, Feb 28, 2013 at 03:38:44PM +1030, Rusty Russell wrote:
+> "Michael S. Tsirkin" <mst@redhat.com> writes:
+> > On Fri, Feb 22, 2013 at 10:32:46AM +1030, Rusty Russell wrote:
+> >> "Michael S. Tsirkin" <mst@redhat.com> writes:
+> >> > On Tue, Feb 19, 2013 at 06:26:26PM +1030, Rusty Russell wrote:
+> >> >> These are specialized versions of virtqueue_add_buf(), which cover
+> >> >> over 50% of cases and are far clearer.
+> >> >> 
+> >> >> In particular, the scatterlists passed to these functions don't have
+> >> >> to be clean (ie. we ignore end markers).
+> >> >> 
+> >> >> FIXME: I'm not sure about the unclean sglist bit.  I had a more
+> >> >> ambitious one which conditionally ignored end markers in the iterator,
+> >> >> but it was ugly and I suspect this is just as fast.  Maybe we should
+> >> >> just fix all the drivers?
+> >> >> 
+> >> >> Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+> >> >
+> >> > Looking at code, it seems that most users really have a single sg, in
+> >> > low memory. So how about simply passing void * instead of sg? Whoever
+> >> > has multiple sgs can use the rich interface.
+> >> 
+> >> Good point, let's do that:
+> >> 1) Make virtqueue_add_outbuf()/inbuf() take a void * and len.
+> >> 2) Transfer users across to use that.
+> >> 3) Make everyone else use clean scatterlists with virtqueue_add_sgs[].
+> >> 4) Remove virtqueue_add_bufs().
+> >> 
+> >> > Long term we might optimize this unrolling some loops, I think
+> >> > I saw this giving a small performance gain for -net.
+> >> 
+> >> I *think* we could make virtqueue_add() an inline and implement an
+> >> virtqueue_add_outsg() wrapper and gcc will eliminate the loops for us.
+> >> But not sure it's worth the text bloat...
+> >> 
+> >> Cheers,
+> >> Rusty.
+> >
+> > inline is mostly useless nowdays...  We can make it a static function and
+> > let gcc decide.
+> 
+> I know I've said before that inline is the register keyword of the '90s.
+> But not at -O2 with i686-linux-gnu-gcc-4.7 (Ubuntu/Linaro
+> 4.7.2-2ubuntu1) 4.7.2.
+> 
+> Without the inline keywords, it doesn't inline virtqueue_add, and thus
+> sg_next_chained and sg_next_add aren't inlined:
+> 
+> $ for i in `seq 50`; do /usr/bin/time --format=%U ./vringh_test --indirect --eventidx --parallel; done 2>&1 | stats --trim-outliers
+> Using CPUS 0 and 3
+> Guest: notified 39102-39145(39105), pinged 39060-39063(39063)
+> Host: notified 39060-39063(39063), pinged 19551-19581(19553)
+> 3.050000-3.220000(3.136875)
+> 
+> With inline:
+> 
+> $ for i in `seq 50`; do /usr/bin/time --format=%U ./vringh_test --indirect --eventidx --parallel; done 2>&1 | stats --trim-outliers
+> Using CPUS 0 and 3
+> Guest: notified 39084-39148(39099), pinged 39062-39063(39062)
+> Host: notified 39062-39063(39062), pinged 19542-19574(19550)
+> 2.940000-3.140000(3.014583)
+> 
+> Cheers,
+> Rusty.
 
-I have really spent some 10-15 minutes reviewing this patch as initially it
-looked to me like something is missing here and calculations are going wrong.
-
-But it was fine :)
-
-
-> diff --git a/drivers/cpufreq/cpufreq_ondemand.c b/drivers/cpufreq/cpufreq_ondemand.c
-> index f3eb26c..46be2c4 100644
-> --- a/drivers/cpufreq/cpufreq_ondemand.c
-> +++ b/drivers/cpufreq/cpufreq_ondemand.c
-> @@ -339,11 +339,20 @@ static ssize_t store_io_is_busy(struct kobject *a, struct attribute *b,
->  {
-
-> +       /* we need to re-evaluate prev_cpu_idle */
-> +       for_each_online_cpu(j) {
-> +               struct od_cpu_dbs_info_s *dbs_info;
-> +               dbs_info = &per_cpu(od_cpu_dbs_info, j);
-
-Probably squash above two lines and give a blank line after it.
-
-> +               dbs_info->cdbs.prev_cpu_idle = get_cpu_idle_time(j,
-> +                       &dbs_info->cdbs.prev_cpu_wall, od_tuners.io_is_busy);
-> +       }
->         return count;
->  }
-
-And after that add my:
-
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+Cool and did it actually unroll all loops?
