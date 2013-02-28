@@ -1,69 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751886Ab3B1JNK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 04:13:10 -0500
-Received: from mail-ea0-f178.google.com ([209.85.215.178]:61662 "EHLO
-	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750899Ab3B1JNG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 04:13:06 -0500
-Date: Thu, 28 Feb 2013 10:13:06 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
+	id S1751358Ab3B1JSp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 04:18:45 -0500
+Received: from mout.gmx.net ([212.227.15.18]:63366 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750985Ab3B1JSk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Feb 2013 04:18:40 -0500
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1895XcWcHs9PQqmTOYa5MoVl1TeNJiD3NGwdINPFK
+	t9HtGPlHF/fTwz
+Message-ID: <1362043112.4460.163.camel@marge.simpson.net>
+Subject: Re: [RFC PATCH] sched: wakeup buddy
+From: Mike Galbraith <efault@gmx.de>
+To: Michael Wang <wangyun@linux.vnet.ibm.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
+        Alex Shi <alex.shi@intel.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        stable <stable@vger.kernel.org>,
-        Ezequiel Garcia <elezegarcia@gmail.com>
-Subject: Re: [PATCH][3.9] ftrace: Update the kconfig for DYNAMIC_FTRACE
-Message-ID: <20130228091306.GA6950@gmail.com>
-References: <1362021805.1231.18.camel@gandalf.local.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1362021805.1231.18.camel@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        Ram Pai <linuxram@us.ibm.com>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        Namhyung Kim <namhyung@kernel.org>
+Date: Thu, 28 Feb 2013 10:18:32 +0100
+In-Reply-To: <512F1A15.2000609@linux.vnet.ibm.com>
+References: <512EFB4B.5040204@linux.vnet.ibm.com>
+	 <1362035917.4460.105.camel@marge.simpson.net>
+	 <512F09D4.1020307@linux.vnet.ibm.com>
+	 <1362038652.4460.124.camel@marge.simpson.net>
+	 <512F11E6.8060807@linux.vnet.ibm.com>
+	 <1362039862.4460.132.camel@marge.simpson.net>
+	 <512F1A15.2000609@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 2013-02-28 at 16:49 +0800, Michael Wang wrote: 
+> On 02/28/2013 04:24 PM, Mike Galbraith wrote:
+> > On Thu, 2013-02-28 at 16:14 +0800, Michael Wang wrote: 
+> >> On 02/28/2013 04:04 PM, Mike Galbraith wrote:
+> > 
+> >>> It would be nice if it _were_ a promise, but it is not, it's a hint.
+> >>
+> >> Bad to know :(
+> >>
+> >> Should we fix it or this is by designed? The comments after WF_SYNC
+> >> cheated me...
+> > 
+> > You can't fix it, because it's not busted.  You can say "Ok guys, I'm
+> > off for a nap RSN" all you want, but that won't guarantee that nobody
+> > pokes you, and hands you something more useful to do than snoozing.
+> 
+> So sync still means current is going to sleep, what you concerned is
+> this promise will be easily broken by other waker, correct?
 
-* Steven Rostedt <rostedt@goodmis.org> wrote:
+That makes it a lie, and it can already have been one with no help.
+Just because you wake one sync does not mean you're not going to find
+another to wake.  Smart tasks are taught to look before they leap.
 
-> 
-> Ingo,
-> 
-> At ELC I watched a presentation by Ezequiel about a tool he wrote to
-> analyze memory wasted by kmalloc and friends. He incorrectly stated that
-> you need to enable DYNAMIC_FTRACE in order to get events. I pointed out
-> that this was incorrect, but he showed me that the prompt for
-> DYNAMIC_FTRACE said it enabled/disabled ftrace tracepoints dynamically.
-> And sure enough, it did say that. But this was written when ftrace was
-> first created and hasn't been updated since. It was written well before
-> tracepoints made it into the kernel. Heck, it even references that damn
-> daemon!
-> 
-> As the merge window is still opened, and even if it wasn't, this fix
-> should go mainline ASAP. It should also go into stable. This is
-> definitely a bug. It may only be documentation (which means it's low
-> risk to add), but it's documentation on how to set up your kernel, and
-> that being wrong creates unexpected results for the user. Just like any
-> other bug would.
-> 
-> Please pull the latest tip/perf/urgent tree, which can be found at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
-> tip/perf/urgent
-> 
-> Head SHA1: db05021d49a994ee40a9735d9c3cb0060c9babb8
-> 
-> 
-> Steven Rostedt (1):
->       ftrace: Update the kconfig for DYNAMIC_FTRACE
-> 
-> ----
->  kernel/trace/Kconfig |   24 ++++++++++++++----------
->  1 file changed, 14 insertions(+), 10 deletions(-)
+> Hmm.. may be you are right, if 'perf bench sched pipe' is not the one we
+> should care, I have no reason to add this logical currently.
 
-Pulled, thanks Steve!
+Well, there is reason to identify task relationships methinks, you just
+can't rely on the fact that you're alone on the rq at the moment, and
+doing a sync wakeup to bind tasks.  They _will_ lie to you :)
 
-	Ingo
+> I will remove this plus branch, unless I found other benchmark could
+> benefit a lot from it.
+> 
+> Besides this, how do you think about this idea?
+
+I like the idea of filtering true buddy pairs, and automagically
+detecting the point when 1:N wants spreading rather a lot (fwtw).  I'll
+look closer at your method, but when it comes to implementation
+opinions, the only one I trust comes out of a box in front of me.
+
+I'm somewhat.. "taste challenged", Peter and Ingo have some though :)
+
+-Mike
+
