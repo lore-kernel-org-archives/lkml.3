@@ -1,68 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754413Ab3B1PjA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 10:39:00 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:47091 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751192Ab3B1Piz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 10:38:55 -0500
-Date: Thu, 28 Feb 2013 16:38:46 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Greg KH <gregkh@linuxfoundation.org>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>, mingo@redhat.com,
-        tglx@linutronix.de, xen-devel@lists.xen.org,
-        linux-kernel@vger.kernel.org, samu.kallio@aberdeencloud.com,
-        kraman@redhat.com, jwboyer@redhat.com
-Subject: Re: Is: x86: mm: Fix vmalloc_fault oops during lazy MMU updates Was:
- Re: [PATCH] mm/x86: Flush lazy MMU when DEBUG_PAGEALLOC is set
-Message-ID: <20130228153846.GA9782@pd.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-	"H. Peter Anvin" <hpa@zytor.com>,
-	Greg KH <gregkh@linuxfoundation.org>,
-	Boris Ostrovsky <boris.ostrovsky@oracle.com>, mingo@redhat.com,
-	tglx@linutronix.de, xen-devel@lists.xen.org,
-	linux-kernel@vger.kernel.org, samu.kallio@aberdeencloud.com,
-	kraman@redhat.com, jwboyer@redhat.com
-References: <91983d94-7b7d-4a0b-9470-e7cd823ba139@default>
- <512E8B41.8000504@zytor.com>
- <20130227230009.GA32465@kroah.com>
- <512E91B7.6060102@zytor.com>
- <20130228142910.GA32354@phenom.dumpdata.com>
+	id S1754674Ab3B1Pjy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 10:39:54 -0500
+Received: from mail-oa0-f45.google.com ([209.85.219.45]:50570 "EHLO
+	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752801Ab3B1Pjw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Feb 2013 10:39:52 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20130228142910.GA32354@phenom.dumpdata.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130227180844.GA6015@redhat.com>
+References: <20130224173144.GA32179@redhat.com>
+	<20130224173206.GA32206@redhat.com>
+	<20130224183656.GA8903@redhat.com>
+	<CACBanvoOdfZr1x5kU1+fmtex1Cuoas_LwBKwZ_giiLE511E-jg@mail.gmail.com>
+	<CACBanvr5vbkH1J+waRHMBq8hRuKqJtF0sD0+95v6Qmnd=3Zd_w@mail.gmail.com>
+	<20130227180844.GA6015@redhat.com>
+Date: Thu, 28 Feb 2013 07:39:51 -0800
+X-Google-Sender-Auth: 1GrMyxLvqE8JhhS9tOBw_nK4rtg
+Message-ID: <CACBanvqryn0Q_Vjxbo7sOfvbb_kYCV=0OFoapT3MAodNwfRVAw@mail.gmail.com>
+Subject: Re: [PATCH v2 2/3] freezer: do not send a fake signal to a
+ PF_DUMPCORE thread
+From: Mandeep Singh Baines <msb@chromium.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Neil Horman <nhorman@redhat.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 28, 2013 at 09:29:10AM -0500, Konrad Rzeszutek Wilk wrote:
-> diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
-> index fb674fd..4f7d793 100644
-> --- a/arch/x86/mm/fault.c
-> +++ b/arch/x86/mm/fault.c
-> @@ -378,10 +378,12 @@ static noinline __kprobes int vmalloc_fault(unsigned long address)
->  	if (pgd_none(*pgd_ref))
->  		return -1;
->  
-> -	if (pgd_none(*pgd))
-> +	if (pgd_none(*pgd)) {
->  		set_pgd(pgd, *pgd_ref);
-> -	else
-> +		arch_flush_lazy_mmu_mode();
+On Wed, Feb 27, 2013 at 10:08 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+> On 02/26, Mandeep Singh Baines wrote:
+>>
+>> >> Change freeze_task() to check PF_DUMPCORE along with PF_KTHREAD. We
+>> >> need to recheck PF_DUMPCORE under ->siglock to avoid the race with
+>> >> zap_threads() which can set this flag right before we take the lock.
+>> >>
+>> >
+>> > Won't this prevent suspend?
+>
+> Hmm. I guess you mean that pipe_write() can hang in pipe_wait() if the
+> user-space handler was already freezed... Damn, and I even mentioned
+> this race when we discussed this 2 weeks ago.
+>
+> I need to think, but most probably you are right, and we need another
+> solution...
+>
+>> You'd rather have reliable suspend than coredumps that aren't
+>> truncated so you need to set TIF_SIGPENDING to break waits in the
+>> dump_write path.
+>
+> Oh, I agree. In this case the necessary changes look simple.
+>
+>> static void wait_for_dump_helpers(struct file *file)
+>> {
+>>         struct pipe_inode_info *pipe;
+>>
+>>         pipe = file->f_path.dentry->d_inode->i_pipe;
+>>
+>>         pipe_lock(pipe);
+>>         pipe->readers++;
+>>         pipe->writers--;
+>>
+>>         while (pipe->readers > 1) {
+>>                 unsigned long flags;
+>>
+>>                 wake_up_interruptible_sync(&pipe->wait);
+>>                 kill_fasync(&pipe->fasync_readers, SIGIO, POLL_IN);
+>>                 pipe_wait(pipe);
+>>
+>>                 pipe_unlock(pipe);
+>>                 try_to_freeze();
+>>                 pipe_lock(pipe);
+>>
+>>                 if (fatal_signal_pending(current))
+>>                         break;
+>>
+>>                 /* Clear fake signal from freeze_task(). */
+>>                 spin_lock_irqsave(&current->sighand->siglock, flags);
+>>                 recalc_sigpending();
+>>                 spin_unlock_irqrestore(&current->sighand->siglock, flags);
+>
+> IIRC, this is what you added into your tree. But note that
+> recalc_sigpending() is wrong, exactly because (say) SIGCHLD can
+> be pending if it was sent before we set SIGNAL_GROUP_COREDUMP.
+>
+> So this code needs something like
+>
+>         spin_lock_irq(siglock);
+>         if (!fatal_signal_pending)
+>                 clear_thread_flag(TIF_SIGPENDING);
+>         spin_unlock_irq(siglock);
+>
+> Or we need to change recalc_sigpending() to check SIGNAL_GROUP_COREDUMP
+> or PF_DUMPCORE. I'd like to avoid this, but perhaps we have to do this...
+>
+> (Btw, this is offtopic, but whatever we do 3/3 still looks like a nice
+>  cleanup to me, although it probably needs more changes)
+>
+>> What do you think? That would fix most cases. You'll still get a
+>> truncated core if you were to receive the signal during pipe_write or
+>> something.
+>
+> Let me think a bit...
+>
+> Right now I can only say that personally I do not really like the
+> idea to fix wait_for_dump_helpers() but not pipe_write(). I mean,
+> if pipe_write() can fail due to freezing(), then why should we care
+> about wait_for_dump_helpers() ? Let them all fail, suspend is not
+> that often.
+>
 
-Do I understand it correctly that this would cost us a
-"preempt_disable(); preempt_enable()" needlessly on baremetal when
-running with CONFIG_PARAVIRT enabled?
+I agree. This does seem like a minor problem since its likely very
+rare. Probably not worth fixing unless there is an elegant,
+non-invasive solution.
 
-Thanks.
+As long as suspend is reliable, a very small chance of a truncated
+core dumps is OK.
 
--- 
-Regards/Gruss,
-    Boris.
+Regards,
+Mandeep
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+> Or we should try to make everything freezer-friendly. But if
+> freeze_task() sets TIF_SIGPENDING then we need the ugly "retry"
+> logic in dump_write()... Not good.
+>
+> Thanks Mandeep. If you have other ideas please tell me ;)
+>
+> Oleg.
+>
