@@ -1,71 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932772Ab3B1R2r (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 12:28:47 -0500
-Received: from mail.pr.hu ([87.242.0.5]:34230 "EHLO mail.pr.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752587Ab3B1R2p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 12:28:45 -0500
-Message-ID: <512F93C2.7050105@pr.hu>
-Date: Thu, 28 Feb 2013 18:28:34 +0100
-From: Boszormenyi Zoltan <zboszor@pr.hu>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130219 Thunderbird/17.0.3
+	id S1759674Ab3B1R3n (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 12:29:43 -0500
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:52944 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759366Ab3B1R3l (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Feb 2013 12:29:41 -0500
 MIME-Version: 1.0
-To: Azat Khuzhin <dohardgopro@gmail.com>
-CC: lkml <linux-kernel@vger.kernel.org>
-Subject: Re: loadavg question
-References: <512F4716.4050802@pr.hu> <CAAW1UO8b5gc5fD++XTvE8y1yF6N-j7LoiGnQZFzgo-3robe+zQ@mail.gmail.com>
-In-Reply-To: <CAAW1UO8b5gc5fD++XTvE8y1yF6N-j7LoiGnQZFzgo-3robe+zQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-2; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Spam-Score: -2.0 (--)
-X-Scan-Signature: 2e5eb630a1ec22e7814fe1e7a9c849de
-X-Spam-Tracer: backend.mail.pr.hu -2.0 20130228172703Z
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <CA+icZUWE-DpD3azUaY7uKnz18DV-JRdYBkTBa-YzqX30S4THrQ@mail.gmail.com>
+References: <CA+icZUXG7WgRap2-oQGBr_s=QbE0QW6_zChDRqC-eEzrWR3Y5g@mail.gmail.com>
+	<CA+icZUUP0hLjkTjsAGbhoT1QG55X2062G5KCCDsKkhDyM_SQEg@mail.gmail.com>
+	<20130228111819.GF11892@cantiga.alporthouse.com>
+	<CA+gsUGQ-cn00=emFkHeWi6akL9TrJ9CV6ikv7C62fhLYMtB=HQ@mail.gmail.com>
+	<CA+icZUWE-DpD3azUaY7uKnz18DV-JRdYBkTBa-YzqX30S4THrQ@mail.gmail.com>
+Date: Thu, 28 Feb 2013 18:29:38 +0100
+Message-ID: <CA+icZUU3Beo65x+Y1-L7=g6rAcChoT8qnCzM4-n2Q0EGEuqgZA@mail.gmail.com>
+Subject: Re: [Intel-gfx] [git pull] drm merge for 3.9-rc1
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Paulo Zanoni <przanoni@gmail.com>
+Cc: Chris Wilson <chris@chris-wilson.co.uk>, Dave Airlie <airlied@gmail.com>,
+        DRI <dri-devel@lists.freedesktop.org>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-next <linux-next@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, Feb 28, 2013 at 6:12 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+> On Thu, Feb 28, 2013 at 3:31 PM, Paulo Zanoni <przanoni@gmail.com> wrote:
+>> Hi
+>>
+>> 2013/2/28 Chris Wilson <chris@chris-wilson.co.uk>:
+>>> On Thu, Feb 28, 2013 at 12:06:28AM +0100, Sedat Dilek wrote:
+>>>> On Wed, Feb 27, 2013 at 11:36 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+>>>> > Hi,
+>>>> >
+>>>> > I am seeing this also on Linux-Next.
+>>>> >
+>>>> > /var/log/kern.log:Feb 27 22:52:35 fambox kernel: [   28.202381]
+>>>> > [drm:intel_dp_aux_wait_done] *ERROR* dp aux hw did not signal timeout
+>>>> > (has irq: 1)!
+>>>> > /var/log/kern.log:Feb 27 22:52:35 fambox kernel: [   28.210588]
+>>>> > [drm:intel_dp_aux_wait_done] *ERROR* dp aux hw did not signal timeout
+>>>> > (has irq: 1)!
+>>>> >
+>>>> > /var/log/kern.log.1:Feb 22 07:36:04 fambox kernel: [   27.408280]
+>>>> > [drm:intel_dp_aux_wait_done] *ERROR* dp aux hw did not signal timeout
+>>>> > (has irq: 1)!
+>>>> >
+>>>> > This seems to be hard reproducible...
+>>>> > Laptop-LCD... Sandybridge Mobile-GT2.
+>>>> >
+>>>> > Is there a way to force the error?
+>>>> >
+>>>> > Possible patch see [1].
+>>>> >
+>>>> > - Sedat -
+>>>> >
+>>>> > [1] https://patchwork.kernel.org/patch/2192721/
+>>>
+>>> That was:
+>>>
+>>> +       if (!done) {
+>>> +               status = I915_READ_NOTRACE(ch_ctl);
+>>> +               DRM_ERROR("dp aux hw did not signal timeout (has irq:
+>>> %i), status=%08x!\n",
+>>> +                         has_aux_irq, status);
+>>> +       }
+>>>
+>>> You applied
+>>>
+>>> +       if (!done) {
+>>> +               status = I915_READ_NOTRACE(ch_ctl);
+>>> +               DRM_ERROR("dp aux hw did not signal timeout (has irq:
+>>> %i), status=%08x!\n",
+>>> +                         has_aux_irq, status);
+>>> +       {
+>>
+>> In addition to this, after the problem happens can you please dump the
+>> registers 0x44008 (DEIIR) and 0xC4008 (SDEIIR)? You can do this either
+>> by running intel-reg-read (from intel-gpu-tools) or by changing the
+>> DRM_ERROR above to also print the result of I915_READ(0x44008) and
+>> I915_READ(0xC4008).
+>>
+>
+> Do I need a specific version of intel-gpu-tools?
+> Ubuntu/precise has v1.2 in its archives - sufficient?
+> Note: The error was twice after dozenz of Linux-Next kernel builds.
+>
+> - Sedat -
+>
+> [1] http://packages.ubuntu.com/precise/intel-gpu-tools
+>
 
-yes, that commit is in my kernel 3.7.9 kernel source, but not in 3.3.2.
-Also, I have CONFIG_NO_HZ=n in my .config. I will retry with
-CONFIG_NO_HZ=y with 3.7.9.
+Installed intel-gpu-tools.
 
-Thanks,
-Zoltán Böszörményi
+# intel_reg_read
+Usage: intel_reg_read [-f | addr]
+         -f : read back full range of registers.
+              WARNING! This could be danger to hang the machine!
+         addr : in 0xXXXX format
 
-2013-02-28 15:05 keltezÃ©ssel, Azat Khuzhin Ã­rta:
->
-> Hi,
->
-> Could you check do you have commit that mentioned here?
-> http://comments.gmane.org/gmane.linux.kernel/1346108
->
-> Respectfully
-> Azat Khuzhin.
-> >From phone.
->
-> On Feb 28, 2013 4:40 PM, "Boszormenyi Zoltan" <zboszor@pr.hu <mailto:zboszor@pr.hu>> wrote:
->
->     Hi,
->
->     on an embedded PC (500MHz AMD Geode), we recently tried
->     to upgrade the kernel. The original version was 2.6.27, the new
->     ones were 3.3.x and 3.7.x. With the same userspace (a GTK based
->     GUI constantly querying daemons handling different pieces of
->     hardware over serial ports), we noticed that loadavg is different
->     while the idle time (95-97%) is the same. On 2.6.27, the load was
->     around 0.05-0.3 while on 3.3.x and 3.7.x, it quickly crawled up
->     to around 5. Has the load calculation changed so dramatically
->     after 2.6.27?
->
->     Thanks in advance,
->     ZoltÃ¡n BÃ¶szÃ¶rmÃ©nyi
->
->     --
->     To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->     the body of a message to majordomo@vger.kernel.org <mailto:majordomo@vger.kernel.org>
->     More majordomo info at Â http://vger.kernel.org/majordomo-info.html
->     Please read the FAQ at Â http://www.tux.org/lkml/
->
+# intel_reg_read 0x44008
+Couldn't map MMIO region: Resource temporarily unavailable
 
+[  368.281707] intel_reg_read:3657 conflicting memory types
+f0000000-f0400000 uncached-minus<->write-combining
+[  381.521912] intel_reg_read:3658 conflicting memory types
+f0000000-f0400000 uncached-minus<->write-combining
+[  401.136291] intel_reg_read:3659 conflicting memory types
+f0000000-f0400000 uncached-minus<->write-combining
+
+Wrong i-g-t version? Missing enabled kernel-config option? Boot with
+i915 debug enabled?
+
+- Sedat -
+
+>> If you conclude that the value of 0x44008 is 0x0 while the value of
+>> 0xC4008 is not, then this patch should help:
+>> https://patchwork.kernel.org/patch/2177841/
+>>
+>>>
+>>> That second '{' is the source of the compile error.
+>>> -Chris
+>>>
+>>> --
+>>> Chris Wilson, Intel Open Source Technology Centre
+>>> _______________________________________________
+>>> Intel-gfx mailing list
+>>> Intel-gfx@lists.freedesktop.org
+>>> http://lists.freedesktop.org/mailman/listinfo/intel-gfx
+>>
+>>
+>>
+>> --
+>> Paulo Zanoni
