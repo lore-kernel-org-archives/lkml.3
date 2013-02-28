@@ -1,74 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754116Ab3B1BOO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 20:14:14 -0500
-Received: from mail-oa0-f47.google.com ([209.85.219.47]:44079 "EHLO
-	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751541Ab3B1BON (ORCPT
+	id S1754675Ab3B1BPg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 20:15:36 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:41331 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752383Ab3B1BPc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 20:14:13 -0500
-MIME-Version: 1.0
-In-Reply-To: <CA+5PVA5za2stXYxQ_Tu3D6Lbif94cqK_5wvPXFhUpvsh_DOXVg@mail.gmail.com>
-References: <alpine.DEB.2.00.1302260003460.24684@skynet.skynet.ie>
-	<CA+5PVA5wtZipQRTPfvbh1U8gjDMaW0095EsNz==Co+iww3YN1g@mail.gmail.com>
-	<CA+5PVA5vvw-JyODTtRwVhQSEiGrt=3wzDoCmeButEMTZxWAhbA@mail.gmail.com>
-	<CA+5PVA5za2stXYxQ_Tu3D6Lbif94cqK_5wvPXFhUpvsh_DOXVg@mail.gmail.com>
-Date: Wed, 27 Feb 2013 20:14:12 -0500
-Message-ID: <CA+5PVA6CQ0YrSGkXPGtmzB9BgabXyiRnMSMKYDCJM+OuF5t6gQ@mail.gmail.com>
-Subject: Re: [git pull] drm merge for 3.9-rc1
-From: Josh Boyer <jwboyer@gmail.com>
-To: Dave Airlie <airlied@linux.ie>, Alex Deucher <alexander.deucher@amd.com>,
-        Jerome Glisse <jglisse@redhat.com>
-Cc: torvalds@linux-foundation.org,
-        DRI mailing list <dri-devel@lists.freedesktop.org>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 27 Feb 2013 20:15:32 -0500
+Date: Thu, 28 Feb 2013 12:15:22 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Sasha Levin <sasha.levin@oracle.com>, Joe Thornber <ejt@redhat.com>,
+        Heinz Mauelshagen <mauelshagen@redhat.com>,
+        Alasdair G Kergon <agk@redhat.com>
+Subject: linux-next: build failure after merge of the akpm tree
+Message-Id: <20130228121522.b13a9a9aad4d8aceeb70edf0@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__28_Feb_2013_12_15_22_+1100_m7tVkt1j_Kljw6+H"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 27, 2013 at 7:01 PM, Josh Boyer <jwboyer@gmail.com> wrote:
-> On Wed, Feb 27, 2013 at 3:20 PM, Josh Boyer <jwboyer@gmail.com> wrote:
->> On Wed, Feb 27, 2013 at 11:34 AM, Josh Boyer <jwboyer@gmail.com> wrote:
->>> On Mon, Feb 25, 2013 at 7:05 PM, Dave Airlie <airlied@linux.ie> wrote:
->>>> Alex Deucher (29):
->>>>       drm/radeon: halt engines before disabling MC (6xx/7xx)
->>>>       drm/radeon: halt engines before disabling MC (evergreen)
->>>>       drm/radeon: halt engines before disabling MC (cayman/TN)
->>>>       drm/radeon: halt engines before disabling MC (si)
->>>>       drm/radeon: use the reset mask to determine if rings are hung
->>>
->>> Something in this series of commits is causing the GPU to hang on reboot
->>> on my Dell XPS 8300 machine.  That has a:
->>>
->>> 01:00.0 VGA compatible controller: Advanced Micro Devices [AMD] nee
->>> ATI Caicos [Radeon HD 6450]
->>>
->>> card in it.  After reboots, I get a screen that looks like this:
->>>
->>> http://t.co/tPnT6xQZUK
->>>
->>> I can hit it fairly consistently after a few reboots, so I tried doing a
->>> git bisect on the radeon driver and it came down to:
->>>
->>> ca57802e521de54341efc8a56f70571f79ffac72 is the first bad commit
->>
->> So I don't think that's actually the cause of the problem.  Or at least
->> not that alone.  I reverted it on top of Linus' latest tree and I still
->> get the lockups.
->
-> Actually, git bisect does seem to have gotten it correct.  Once I
-> actually tested the revert of just that on top of Linus' tree (commit
-> d895cb1af1), things seem to be working much better.  I've rebooted a
-> dozen times without a lockup.  The most I've seen it take on a kernel
-> with that commit included is 3 reboots, so that's definitely at least an
-> improvement.
+--Signature=_Thu__28_Feb_2013_12_15_22_+1100_m7tVkt1j_Kljw6+H
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I give up.  GPU issues are not my thing.  2 reboots after I sent that it
-gave me pretty rainbow static again.  So it might have been an
-improvement, but revert it is not a solution.
+Hi Andrew,
 
-Looking at there rest of the commits, the whole GPU rework might be
-suspect, but I clearly have no clue.
+After merging the akpm tree, today's linux-next build (x86_64
+allmodconfig) failed like this:
 
-josh
+drivers/md/dm-cache-policy-cleaner.c: In function 'lookup_cache_entry':
+drivers/md/dm-cache-policy-cleaner.c:148:46: error: macro "hlist_for_each_e=
+ntry" passed 4 arguments, but takes just 3
+drivers/md/dm-cache-policy-cleaner.c:148:2: error: 'hlist_for_each_entry' u=
+ndeclared (first use in this function)
+drivers/md/dm-cache-policy-cleaner.c:148:2: note: each undeclared identifie=
+r is reported only once for each function it appears in
+drivers/md/dm-cache-policy-cleaner.c:148:48: error: expected ';' before '{'=
+ token
+drivers/md/dm-cache-policy-cleaner.c:146:21: warning: unused variable 'buck=
+et' [-Wunused-variable]
+drivers/md/dm-cache-policy-cleaner.c:145:21: warning: unused variable 'tmp'=
+ [-Wunused-variable]
+drivers/md/dm-cache-policy-cleaner.c:144:25: warning: unused variable 'cur'=
+ [-Wunused-variable]
+drivers/md/dm-cache-policy-cleaner.c:158:1: warning: no return statement in=
+ function returning non-void [-Wreturn-type]
+drivers/md/dm-cache-policy-mq.c: In function 'hash_lookup':
+drivers/md/dm-cache-policy-mq.c:375:44: error: macro "hlist_for_each_entry"=
+ passed 4 arguments, but takes just 3
+drivers/md/dm-cache-policy-mq.c:375:2: error: 'hlist_for_each_entry' undecl=
+ared (first use in this function)
+drivers/md/dm-cache-policy-mq.c:375:2: note: each undeclared identifier is =
+reported only once for each function it appears in
+drivers/md/dm-cache-policy-mq.c:376:3: error: expected ';' before 'if'
+drivers/md/dm-cache-policy-mq.c:373:16: warning: unused variable 'e' [-Wunu=
+sed-variable]
+drivers/md/dm-cache-policy-mq.c:372:21: warning: unused variable 'tmp' [-Wu=
+nused-variable]
+drivers/md/dm-cache-policy-mq.c:371:21: warning: unused variable 'bucket' [=
+-Wunused-variable]
+drivers/md/dm-cache-policy-mq.c:383:1: warning: no return statement in func=
+tion returning non-void [-Wreturn-type]
+
+Caused by commit "hlist: drop the node parameter from iterators" from the
+akpm tree interacting with commits b5dc50616996 ("A cache policy that
+uses a multiqueue ordered by recent hit") and 9c44464a0aed ("A simple
+cache policy that writes back all data to the origin") from the
+device-mapper tree.
+
+I applied the following merge fix patch:
+
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Thu, 28 Feb 2013 12:09:42 +1100
+Subject: [PATCH] hlist-drop-the-node-parameter-from-iterators-dm-cache-poli=
+cy-fix
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ drivers/md/dm-cache-policy-cleaner.c | 3 +--
+ drivers/md/dm-cache-policy-mq.c      | 3 +--
+ 2 files changed, 2 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/md/dm-cache-policy-cleaner.c b/drivers/md/dm-cache-pol=
+icy-cleaner.c
+index 6b0fdb0..43c270a 100644
+--- a/drivers/md/dm-cache-policy-cleaner.c
++++ b/drivers/md/dm-cache-policy-cleaner.c
+@@ -142,10 +142,9 @@ static struct wb_cache_entry *lookup_cache_entry(struc=
+t policy *p, dm_oblock_t o
+ 	struct hash *hash =3D &p->chash;
+ 	unsigned h =3D hash_64(from_oblock(oblock), hash->hash_bits);
+ 	struct wb_cache_entry *cur;
+-	struct hlist_node *tmp;
+ 	struct hlist_head *bucket =3D &hash->table[h];
+=20
+-	hlist_for_each_entry(cur, tmp, bucket, hlist) {
++	hlist_for_each_entry(cur, bucket, hlist) {
+ 		if (cur->oblock =3D=3D oblock) {
+ 			/* Move upfront bucket for faster access. */
+ 			hlist_del(&cur->hlist);
+diff --git a/drivers/md/dm-cache-policy-mq.c b/drivers/md/dm-cache-policy-m=
+q.c
+index cd4582d..63ec258 100644
+--- a/drivers/md/dm-cache-policy-mq.c
++++ b/drivers/md/dm-cache-policy-mq.c
+@@ -369,10 +369,9 @@ static struct entry *hash_lookup(struct mq_policy *mq,=
+ dm_oblock_t oblock)
+ {
+ 	unsigned h =3D hash_64(from_oblock(oblock), mq->hash_bits);
+ 	struct hlist_head *bucket =3D mq->table + h;
+-	struct hlist_node *tmp;
+ 	struct entry *e;
+=20
+-	hlist_for_each_entry(e, tmp, bucket, hlist)
++	hlist_for_each_entry(e, bucket, hlist)
+ 		if (e->oblock =3D=3D oblock) {
+ 			hlist_del(&e->hlist);
+ 			hlist_add_head(&e->hlist, bucket);
+--=20
+1.8.1
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Thu__28_Feb_2013_12_15_22_+1100_m7tVkt1j_Kljw6+H
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRLq+qAAoJEECxmPOUX5FEYBUQAKJw8Eo6oHoDosCplPGgQ9PG
+6IV675L6c7+5ULIKyZzeCRUujiNxDxT1Ncdgiv8w8ye2BjUCoVfnmqtYG9MZLV8b
+Cn7FsVNZgnYQ07ZBTEW0JcSSfBexpT7yLW0Ts6GcYcmgt6g+Fb/+1DsHm6GpMWMo
+h9mwzHibzXEm5H4U84yi1xkzTBWfsORaO+9h0peu305FNkrJsFW5CHaBNNohID0L
+qs47/32R4DVdILeJjKcZAFB/VquYJU+ERbFMS2jGehotMSKLSvEffXrGfrPndPgB
+8GiVqiPPCNHgOSqkCFL5xOtqMiwt22hMv6aZ1JTLAlb3Z4E4q7HVRlkosiCgrhSX
+dTHWco1v10g2D/e4lRF/C5c4lGilTmcBJXHtbPQtShcYovclbJ+p5v1huPdaxhaE
+54uIEdb8yzqplLFKi8Kfhm4KNsYTVWJpWqr00XDIAw+DkS6+fwBWZlRyBTnTS8aF
+5cwE3r3w83OrIj2kowGDX2XulAI+FRjgQLY5PvTAUlJXtRbjyeuzKtLo6Y5SJy+0
+fK8aeHbBm3V4/+HF3xKQi6HDxLDfaru0DGUs9T6bBfsnrzN0U+0BNLokaBUaFThh
+oYfH2U2yhtKk4XHKRm8IURRCP0LwQ5e0+BGEqbBeOwW4W8QWKbRDdt7Wnc571U+b
+udEu3PIst5Hfhp25AVyL
+=Oh+w
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__28_Feb_2013_12_15_22_+1100_m7tVkt1j_Kljw6+H--
