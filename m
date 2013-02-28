@@ -1,136 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752605Ab3B1DXa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 22:23:30 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:21214 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751398Ab3B1DX1 (ORCPT
+	id S1752761Ab3B1DYh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 22:24:37 -0500
+Received: from intranet.asianux.com ([58.214.24.6]:4630 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751190Ab3B1DYc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 22:23:27 -0500
-X-Authority-Analysis: v=2.0 cv=H5hZMpki c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=6sTwnNPpnDYA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=dkBOD8IEPmgA:10 a=VwQbUJbxAAAA:8 a=20KFwNOVAAAA:8 a=pGLkceISAAAA:8 a=L8gsoqZCD2LpnyAUK58A:9 a=PUjeQqilurYA:10 a=jEp0ucaQiEUA:10 a=MSl-tDqOz04A:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1362021805.1231.18.camel@gandalf.local.home>
-Subject: [PATCH][3.9] ftrace: Update the kconfig for DYNAMIC_FTRACE
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        stable <stable@vger.kernel.org>,
-        Ezequiel Garcia <elezegarcia@gmail.com>
-Date: Wed, 27 Feb 2013 22:23:25 -0500
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 27 Feb 2013 22:24:32 -0500
+X-Spam-Score: -100.8
+Message-ID: <512ECDDC.2020607@asianux.com>
+Date: Thu, 28 Feb 2013 11:24:12 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: JBottomley@parallels.com, David Miller <davem@davemloft.net>,
+        kxie@chelsio.com, michaelc@cs.wisc.edu
+CC: linux-scsi@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] drivers/scsi/cxgbi: correcting the include path, so can
+ pass compiling.
+References: <50F15A35.4000400@asianux.com> <50FB9A33.2090204@asianux.com> <51077BB3.2010809@asianux.com>
+In-Reply-To: <51077BB3.2010809@asianux.com>
+Content-Type: text/plain; charset=GB2312
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello relative Maintainers:
 
-Ingo,
+  could any one help checking this patch ?
 
-At ELC I watched a presentation by Ezequiel about a tool he wrote to
-analyze memory wasted by kmalloc and friends. He incorrectly stated that
-you need to enable DYNAMIC_FTRACE in order to get events. I pointed out
-that this was incorrect, but he showed me that the prompt for
-DYNAMIC_FTRACE said it enabled/disabled ftrace tracepoints dynamically.
-And sure enough, it did say that. But this was written when ftrace was
-first created and hasn't been updated since. It was written well before
-tracepoints made it into the kernel. Heck, it even references that damn
-daemon!
+    this patch fixes the compiling issue.
+    the make command in my x86_64 laptop is: "make V=1 allmodconfig"
+    the patch was sent in Jan-12-2013, and get non-reply now.
 
-As the merge window is still opened, and even if it wasn't, this fix
-should go mainline ASAP. It should also go into stable. This is
-definitely a bug. It may only be documentation (which means it's low
-risk to add), but it's documentation on how to set up your kernel, and
-that being wrong creates unexpected results for the user. Just like any
-other bug would.
+  could you please give a glance when you have time.
 
-Please pull the latest tip/perf/urgent tree, which can be found at:
+  thanks.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
-tip/perf/urgent
+  :-)
 
-Head SHA1: db05021d49a994ee40a9735d9c3cb0060c9babb8
+gchen.
 
 
-Steven Rostedt (1):
-      ftrace: Update the kconfig for DYNAMIC_FTRACE
+于 2013年01月29日 15:35, Chen Gang 写道:
+> Hello JBottomley@parallels.com
+> 
+>   have you already fixed it by another patches ?
+> 
+>   if so:
+>     better to let me know about it, so I should not bother you, again.
+>   else
+>     please give a glance to this patch, when you have time
+>      (since compiling errors are always belong to critical errors)
+> 
+>   thanks.
+> 
+> 
+> by the way:
+>    I get the sending mail address from ./script/get_maintainer.pl.
+>    if I sent to an incorrect member, please tell me.
+> 
+>   thanks.
+> 
+> gchen.
+> 
+> 
+> 于 2013年01月20日 15:18, Chen Gang 写道:
+>> Hello JBottomley@parallels.com
+>>
+>>   when you have free time, could you give a glance for this patch ?
+>>
+>>   thanks.
+>>
+>> gchen.
+>>
+>>
+>> 于 2013年01月12日 20:42, Chen Gang 写道:
+>>>
+>>>   correct the include path,
+>>>   or the compiler will report can not find "common.h"...
+>>>
+>>>   both cxgb3/ and cxgb4/ sub directly have l2t.h (they are different).
+>>>   so it is not suitable to '-I' sub-directy, directly.
+>>>
+>>>
+>>> Signed-off-by: Chen Gang <gang.chen@asianux.com>
+>>> ---
+>>>  drivers/scsi/cxgbi/Makefile        |    4 ++++
+>>>  drivers/scsi/cxgbi/cxgb3i/cxgb3i.c |   14 +++++++-------
+>>>  drivers/scsi/cxgbi/cxgb4i/cxgb4i.c |   10 +++++-----
+>>>  3 files changed, 16 insertions(+), 12 deletions(-)
+>>>
+>>> diff --git a/drivers/scsi/cxgbi/Makefile b/drivers/scsi/cxgbi/Makefile
+>>> index 86007e3..aff2998 100644
+>>> --- a/drivers/scsi/cxgbi/Makefile
+>>> +++ b/drivers/scsi/cxgbi/Makefile
+>>> @@ -1,2 +1,6 @@
+>>> +
+>>> +ccflags-y			:= -Idrivers/net/ethernet/chelsio
+>>> +subdir-ccflags-y		:= -Idrivers/net/ethernet/chelsio
+>>> +
+>>>  obj-$(CONFIG_SCSI_CXGB3_ISCSI)	+= libcxgbi.o cxgb3i/
+>>>  obj-$(CONFIG_SCSI_CXGB4_ISCSI)	+= libcxgbi.o cxgb4i/
+>>> diff --git a/drivers/scsi/cxgbi/cxgb3i/cxgb3i.c b/drivers/scsi/cxgbi/cxgb3i/cxgb3i.c
+>>> index 49692a1..ca92e72 100644
+>>> --- a/drivers/scsi/cxgbi/cxgb3i/cxgb3i.c
+>>> +++ b/drivers/scsi/cxgbi/cxgb3i/cxgb3i.c
+>>> @@ -18,13 +18,13 @@
+>>>  #include <linux/moduleparam.h>
+>>>  #include <scsi/scsi_host.h>
+>>>  
+>>> -#include "common.h"
+>>> -#include "t3_cpl.h"
+>>> -#include "t3cdev.h"
+>>> -#include "cxgb3_defs.h"
+>>> -#include "cxgb3_ctl_defs.h"
+>>> -#include "cxgb3_offload.h"
+>>> -#include "firmware_exports.h"
+>>> +#include "cxgb3/common.h"
+>>> +#include "cxgb3/t3_cpl.h"
+>>> +#include "cxgb3/t3cdev.h"
+>>> +#include "cxgb3/cxgb3_defs.h"
+>>> +#include "cxgb3/cxgb3_ctl_defs.h"
+>>> +#include "cxgb3/cxgb3_offload.h"
+>>> +#include "cxgb3/firmware_exports.h"
+>>>  #include "cxgb3i.h"
+>>>  
+>>>  static unsigned int dbg_level;
+>>> diff --git a/drivers/scsi/cxgbi/cxgb4i/cxgb4i.c b/drivers/scsi/cxgbi/cxgb4i/cxgb4i.c
+>>> index f924b3c..a5795d5 100644
+>>> --- a/drivers/scsi/cxgbi/cxgb4i/cxgb4i.c
+>>> +++ b/drivers/scsi/cxgbi/cxgb4i/cxgb4i.c
+>>> @@ -20,11 +20,11 @@
+>>>  #include <net/dst.h>
+>>>  #include <linux/netdevice.h>
+>>>  
+>>> -#include "t4_msg.h"
+>>> -#include "cxgb4.h"
+>>> -#include "cxgb4_uld.h"
+>>> -#include "t4fw_api.h"
+>>> -#include "l2t.h"
+>>> +#include "cxgb4/t4_msg.h"
+>>> +#include "cxgb4/cxgb4.h"
+>>> +#include "cxgb4/cxgb4_uld.h"
+>>> +#include "cxgb4/t4fw_api.h"
+>>> +#include "cxgb4/l2t.h"
+>>>  #include "cxgb4i.h"
+>>>  
+>>>  static unsigned int dbg_level;
+>>>
+>>
+>>
+> 
+> 
 
-----
- kernel/trace/Kconfig |   24 ++++++++++++++----------
- 1 file changed, 14 insertions(+), 10 deletions(-)
----------------------------
-commit db05021d49a994ee40a9735d9c3cb0060c9babb8
-Author: Steven Rostedt <srostedt@redhat.com>
-Date:   Wed Feb 27 21:48:09 2013 -0500
 
-    ftrace: Update the kconfig for DYNAMIC_FTRACE
-    
-    The prompt to enable DYNAMIC_FTRACE (the ability to nop and
-    enable function tracing at run time) had a confusing statement:
-    
-     "enable/disable ftrace tracepoints dynamically"
-    
-    This was written before tracepoints were added to the kernel,
-    but now that tracepoints have been added, this is very confusing
-    and has confused people enough to give wrong information during
-    presentations.
-    
-    Not only that, I looked at the help text, and it still references
-    that dreaded daemon that use to wake up once a second to update
-    the nop locations and brick NICs, that hasn't been around for over
-    five years.
-    
-    Time to bring the text up to the current decade.
-    
-    Cc: stable@vger.kernel.org
-    Reported-by: Ezequiel Garcia <elezegarcia@gmail.com>
-    Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+-- 
+Chen Gang
 
-diff --git a/kernel/trace/Kconfig b/kernel/trace/Kconfig
-index 3656756..b516a8e 100644
---- a/kernel/trace/Kconfig
-+++ b/kernel/trace/Kconfig
-@@ -429,24 +429,28 @@ config PROBE_EVENTS
- 	def_bool n
- 
- config DYNAMIC_FTRACE
--	bool "enable/disable ftrace tracepoints dynamically"
-+	bool "enable/disable function tracing dynamically"
- 	depends on FUNCTION_TRACER
- 	depends on HAVE_DYNAMIC_FTRACE
- 	default y
- 	help
--          This option will modify all the calls to ftrace dynamically
--	  (will patch them out of the binary image and replace them
--	  with a No-Op instruction) as they are called. A table is
--	  created to dynamically enable them again.
-+	  This option will modify all the calls to function tracing
-+	  dynamically (will patch them out of the binary image and
-+	  replace them with a No-Op instruction) on boot up. During
-+	  compile time, a table is made of all the locations that ftrace
-+	  can function trace, and this table is linked into the kernel
-+	  image. When this is enabled, functions can be individually
-+	  enabled, and the functions not enabled will not affect
-+	  performance of the system.
-+
-+	  See the files in /sys/kernel/debug/tracing:
-+	    available_filter_functions
-+	    set_ftrace_filter
-+	    set_ftrace_notrace
- 
- 	  This way a CONFIG_FUNCTION_TRACER kernel is slightly larger, but
- 	  otherwise has native performance as long as no tracing is active.
- 
--	  The changes to the code are done by a kernel thread that
--	  wakes up once a second and checks to see if any ftrace calls
--	  were made. If so, it runs stop_machine (stops all CPUS)
--	  and modifies the code to jump over the call to ftrace.
--
- config DYNAMIC_FTRACE_WITH_REGS
- 	def_bool y
- 	depends on DYNAMIC_FTRACE
-
-
+Asianux Corporation
