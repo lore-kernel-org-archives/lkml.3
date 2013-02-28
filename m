@@ -1,74 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752215Ab3B1DTd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 22:19:33 -0500
-Received: from mail-vc0-f181.google.com ([209.85.220.181]:38026 "EHLO
-	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750888Ab3B1DT3 (ORCPT
+	id S1752605Ab3B1DXa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 22:23:30 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:21214 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751398Ab3B1DX1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 22:19:29 -0500
-MIME-Version: 1.0
-In-Reply-To: <512EC7F0.60103@redhat.com>
-References: <20130206150403.006e5294@cuia.bos.redhat.com>
-	<tip-4aef331850b637169ff036ed231f0d236874f310@git.kernel.org>
-	<CA+55aFx6N6SaRN+w=CTXJ=ZSsOE6KeS2R9sT_uhAx9h2j+hjKg@mail.gmail.com>
-	<511BE4A3.8050607@redhat.com>
-	<CA+55aFycMB7OZGQ54ueQ74C42beDBSdQE_fKJDV=TbjTjr_emg@mail.gmail.com>
-	<511C1204.9040608@redhat.com>
-	<CA+55aFwxYK-BLH0crhySHaQvAYHOH-VGUi7WTd1aq-24+WTDYw@mail.gmail.com>
-	<511C24A6.8020409@redhat.com>
-	<CA+55aFws80EEJQskqiP+a5J-HOGu=M1Fe=uCs50ifedVxPxT1Q@mail.gmail.com>
-	<512E376D.70105@redhat.com>
-	<CA+55aFzPxJ3rfZvAvrP9LxCXfDU8AAVvhMZnP-OAoe-ycc70aw@mail.gmail.com>
-	<512E6443.9050603@redhat.com>
-	<CA+55aFwHxv9RH75BoXYcwdKeHx+otOOpg9494TTdFwQe3biOhw@mail.gmail.com>
-	<512E80E3.7060800@redhat.com>
-	<CA+55aFwa0EjGG2NUDYVLVBmXJa2k81YiuNO2yggk=GLRQxhhUQ@mail.gmail.com>
-	<512EC7F0.60103@redhat.com>
-Date: Wed, 27 Feb 2013 19:19:28 -0800
-X-Google-Sender-Auth: 6tQ9Hyeihv82a-UB_42eL78b2sM
-Message-ID: <CA+55aFxHco9QKkzJshbae4athxGdCoZY0vBB3Y=mJ6deOLnJuQ@mail.gmail.com>
-Subject: Re: [tip:core/locking] x86/smp: Move waiting on contended ticket lock
- out of line
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Rik van Riel <riel@redhat.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        "Vinod, Chegu" <chegu_vinod@hp.com>, "Low, Jason" <jason.low2@hp.com>,
-        linux-tip-commits@vger.kernel.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>, aquini@redhat.com,
-        Michel Lespinasse <walken@google.com>, Ingo Molnar <mingo@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 27 Feb 2013 22:23:27 -0500
+X-Authority-Analysis: v=2.0 cv=H5hZMpki c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=6sTwnNPpnDYA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=dkBOD8IEPmgA:10 a=VwQbUJbxAAAA:8 a=20KFwNOVAAAA:8 a=pGLkceISAAAA:8 a=L8gsoqZCD2LpnyAUK58A:9 a=PUjeQqilurYA:10 a=jEp0ucaQiEUA:10 a=MSl-tDqOz04A:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1362021805.1231.18.camel@gandalf.local.home>
+Subject: [PATCH][3.9] ftrace: Update the kconfig for DYNAMIC_FTRACE
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        stable <stable@vger.kernel.org>,
+        Ezequiel Garcia <elezegarcia@gmail.com>
+Date: Wed, 27 Feb 2013 22:23:25 -0500
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 27, 2013 at 6:58 PM, Rik van Riel <riel@redhat.com> wrote:
->
-> On the other hand, both MCS and the fast queue locks
-> implemented by Michel showed low variability and high
-> performance.
 
-On microbenchmarks, and when implemented for only one single subsystem, yes.
+Ingo,
 
-> The numbers for Michel's MCS and fast queue lock
-> implementations appear to be both fast and stable.
+At ELC I watched a presentation by Ezequiel about a tool he wrote to
+analyze memory wasted by kmalloc and friends. He incorrectly stated that
+you need to enable DYNAMIC_FTRACE in order to get events. I pointed out
+that this was incorrect, but he showed me that the prompt for
+DYNAMIC_FTRACE said it enabled/disabled ftrace tracepoints dynamically.
+And sure enough, it did say that. But this was written when ftrace was
+first created and hasn't been updated since. It was written well before
+tracepoints made it into the kernel. Heck, it even references that damn
+daemon!
 
-I do think that doing specialized spinlocks for special areas may be a
-rasonable approach, and it's quite possible that the SySV IPC thing is
-one such area.
+As the merge window is still opened, and even if it wasn't, this fix
+should go mainline ASAP. It should also go into stable. This is
+definitely a bug. It may only be documentation (which means it's low
+risk to add), but it's documentation on how to set up your kernel, and
+that being wrong creates unexpected results for the user. Just like any
+other bug would.
 
-But no, I don't think the numbers I've seen for Michel's MCS are AT
-ALL comparable to the generic spinlocks, and the interface makes them
-incompatible as a replacement to even test in general.
+Please pull the latest tip/perf/urgent tree, which can be found at:
 
-Don't get me wrong: I think the targeted approach is *better*. I just
-also happen to think that you spout big words about things that aren't
-all that big, and try to make this a bigger deal than it is. The
-benchmark numbers you point to are micro-benchmarks, and not all
-comparable.
+  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
+tip/perf/urgent
 
-              Linus
+Head SHA1: db05021d49a994ee40a9735d9c3cb0060c9babb8
+
+
+Steven Rostedt (1):
+      ftrace: Update the kconfig for DYNAMIC_FTRACE
+
+----
+ kernel/trace/Kconfig |   24 ++++++++++++++----------
+ 1 file changed, 14 insertions(+), 10 deletions(-)
+---------------------------
+commit db05021d49a994ee40a9735d9c3cb0060c9babb8
+Author: Steven Rostedt <srostedt@redhat.com>
+Date:   Wed Feb 27 21:48:09 2013 -0500
+
+    ftrace: Update the kconfig for DYNAMIC_FTRACE
+    
+    The prompt to enable DYNAMIC_FTRACE (the ability to nop and
+    enable function tracing at run time) had a confusing statement:
+    
+     "enable/disable ftrace tracepoints dynamically"
+    
+    This was written before tracepoints were added to the kernel,
+    but now that tracepoints have been added, this is very confusing
+    and has confused people enough to give wrong information during
+    presentations.
+    
+    Not only that, I looked at the help text, and it still references
+    that dreaded daemon that use to wake up once a second to update
+    the nop locations and brick NICs, that hasn't been around for over
+    five years.
+    
+    Time to bring the text up to the current decade.
+    
+    Cc: stable@vger.kernel.org
+    Reported-by: Ezequiel Garcia <elezegarcia@gmail.com>
+    Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+
+diff --git a/kernel/trace/Kconfig b/kernel/trace/Kconfig
+index 3656756..b516a8e 100644
+--- a/kernel/trace/Kconfig
++++ b/kernel/trace/Kconfig
+@@ -429,24 +429,28 @@ config PROBE_EVENTS
+ 	def_bool n
+ 
+ config DYNAMIC_FTRACE
+-	bool "enable/disable ftrace tracepoints dynamically"
++	bool "enable/disable function tracing dynamically"
+ 	depends on FUNCTION_TRACER
+ 	depends on HAVE_DYNAMIC_FTRACE
+ 	default y
+ 	help
+-          This option will modify all the calls to ftrace dynamically
+-	  (will patch them out of the binary image and replace them
+-	  with a No-Op instruction) as they are called. A table is
+-	  created to dynamically enable them again.
++	  This option will modify all the calls to function tracing
++	  dynamically (will patch them out of the binary image and
++	  replace them with a No-Op instruction) on boot up. During
++	  compile time, a table is made of all the locations that ftrace
++	  can function trace, and this table is linked into the kernel
++	  image. When this is enabled, functions can be individually
++	  enabled, and the functions not enabled will not affect
++	  performance of the system.
++
++	  See the files in /sys/kernel/debug/tracing:
++	    available_filter_functions
++	    set_ftrace_filter
++	    set_ftrace_notrace
+ 
+ 	  This way a CONFIG_FUNCTION_TRACER kernel is slightly larger, but
+ 	  otherwise has native performance as long as no tracing is active.
+ 
+-	  The changes to the code are done by a kernel thread that
+-	  wakes up once a second and checks to see if any ftrace calls
+-	  were made. If so, it runs stop_machine (stops all CPUS)
+-	  and modifies the code to jump over the call to ftrace.
+-
+ config DYNAMIC_FTRACE_WITH_REGS
+ 	def_bool y
+ 	depends on DYNAMIC_FTRACE
+
+
