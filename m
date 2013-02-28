@@ -1,60 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751265Ab3B1Fvd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 00:51:33 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:17911 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750775Ab3B1Fva (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 00:51:30 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Wed, 27 Feb 2013 21:45:54 -0800
-Message-ID: <512EF012.7080006@nvidia.com>
-Date: Thu, 28 Feb 2013 11:20:10 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
-MIME-Version: 1.0
-To: Ian Lartey <ian@slimlogic.co.uk>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>,
-        "j-keerthy@ti.com" <j-keerthy@ti.com>,
-        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
-        "wim@iguana.be" <wim@iguana.be>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>
-Subject: Re: [PATCH 1/2] watchdog: add Palmas Watchdog support
-References: <1361990168-882-1-git-send-email-ian@slimlogic.co.uk>
-In-Reply-To: <1361990168-882-1-git-send-email-ian@slimlogic.co.uk>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1751158Ab3B1FyA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 00:54:00 -0500
+Received: from mail.southpole.se ([37.247.8.11]:37845 "EHLO mail.southpole.se"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750723Ab3B1Fx6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Feb 2013 00:53:58 -0500
+From: Jonas Bonn <jonas@southpole.se>
+To: arnd@arndb.de
+Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jonas Bonn <jonas@southpole.se>, David Howells <dhowells@redhat.com>
+Subject: [PATCH 1/1] asm-generic: move cmpxchg*_local defs to cmpxchg.h
+Date: Thu, 28 Feb 2013 06:54:03 +0100
+Message-Id: <1362030843-25354-1-git-send-email-jonas@southpole.se>
+X-Mailer: git-send-email 1.7.10.4
+X-Assp-Version: 2.2.2(12343) on assp.southpole.se
+X-Assp-Client-SSL: yes
+X-Assp-Server-TLS: yes
+X-Assp-ID: assp.southpole.se 30828-07803
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 28 February 2013 12:06 AM, Ian Lartey wrote:
-> From: Graeme Gregory <gg@slimlogic.co.uk>
->
-> Add support for the Palmas watchdog timer which has a timeout configurable
-> from 1s to 128s.
->
-> Signed-off-by: Graeme Gregory <gg@slimlogic.co.uk>
-> Signed-off-by: Ian Lartey <ian@slimlogic.co.uk>
-> ---
->   drivers/watchdog/palmas_wdt.c |  291 +++++++++++++++++++++++++++++++++++++++++
->   1 files changed, 291 insertions(+), 0 deletions(-)
->   create mode 100644 drivers/watchdog/palmas_wdt.c
+asm/cmpxchg.h can be included on its own and needs to be self-consistent.
+The definitions for the cmpxchg*_local macros, as such, need to be part
+of this file.
 
-patch 1 and 2 can be merge as single patch.
+This fixes a build issue on OpenRISC since the system.h smashing patch
+96f951edb1f1bdbbc99b0cd458f9808bb83d58ae that introdued the direct inclusion
+asm/cmpxchg.h into linux/llist.h.
 
-generic comment, we have proper watchdog framework where we can have 
-some api for watchdog_ops and register as watchdog_register_device().
-Then core parts take care of the all fileops/sysfs interface.
-This need not to be develop locally.
+CC: David Howells <dhowells@redhat.com>
+Signed-off-by: Jonas Bonn <jonas@southpole.se>
+---
+ include/asm-generic/atomic.h  |    6 ------
+ include/asm-generic/cmpxchg.h |   10 ++++++++++
+ 2 files changed, 10 insertions(+), 6 deletions(-)
 
-You can refer wm831x_wdt.c, wm8350_wdt.c driver for more reference where 
-it is really used watchdog framework.
-
-
-I think you can use the watchdog framework for this.
-
+diff --git a/include/asm-generic/atomic.h b/include/asm-generic/atomic.h
+index 1ced641..33bd2de 100644
+--- a/include/asm-generic/atomic.h
++++ b/include/asm-generic/atomic.h
+@@ -136,12 +136,6 @@ static inline void atomic_dec(atomic_t *v)
+ #define atomic_xchg(ptr, v)		(xchg(&(ptr)->counter, (v)))
+ #define atomic_cmpxchg(v, old, new)	(cmpxchg(&((v)->counter), (old), (new)))
+ 
+-#define cmpxchg_local(ptr, o, n)				  	       \
+-	((__typeof__(*(ptr)))__cmpxchg_local_generic((ptr), (unsigned long)(o),\
+-			(unsigned long)(n), sizeof(*(ptr))))
+-
+-#define cmpxchg64_local(ptr, o, n) __cmpxchg64_local_generic((ptr), (o), (n))
+-
+ static inline int __atomic_add_unless(atomic_t *v, int a, int u)
+ {
+   int c, old;
+diff --git a/include/asm-generic/cmpxchg.h b/include/asm-generic/cmpxchg.h
+index 1488302..811fb1e 100644
+--- a/include/asm-generic/cmpxchg.h
++++ b/include/asm-generic/cmpxchg.h
+@@ -92,6 +92,16 @@ unsigned long __xchg(unsigned long x, volatile void *ptr, int size)
+  */
+ #include <asm-generic/cmpxchg-local.h>
+ 
++#ifndef cmpxchg_local
++#define cmpxchg_local(ptr, o, n)				  	       \
++	((__typeof__(*(ptr)))__cmpxchg_local_generic((ptr), (unsigned long)(o),\
++			(unsigned long)(n), sizeof(*(ptr))))
++#endif
++
++#ifndef cmpxchg64_local
++#define cmpxchg64_local(ptr, o, n) __cmpxchg64_local_generic((ptr), (o), (n))
++#endif
++
+ #define cmpxchg(ptr, o, n)	cmpxchg_local((ptr), (o), (n))
+ #define cmpxchg64(ptr, o, n)	cmpxchg64_local((ptr), (o), (n))
+ 
+-- 
+1.7.10.4
 
