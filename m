@@ -1,67 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752650Ab3B1Ks3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 05:48:29 -0500
-Received: from smtp.domeneshop.no ([194.63.252.54]:43814 "EHLO
-	smtp.domeneshop.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751192Ab3B1Ks0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 05:48:26 -0500
-X-Greylist: delayed 649 seconds by postgrey-1.27 at vger.kernel.org; Thu, 28 Feb 2013 05:48:26 EST
-Message-ID: <512F3369.5060201@paradoxuncreated.com>
-Date: Thu, 28 Feb 2013 11:37:29 +0100
-From: Ove Karlsen <ove.karlsen@paradoxuncreated.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
-MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>
-Subject: Last thoughts on low-jitter desktop for developers and distromakers.
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+	id S1752082Ab3B1KtQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 05:49:16 -0500
+Received: from nat28.tlf.novell.com ([130.57.49.28]:58864 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750899Ab3B1KtP convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:3:1>);
+	Thu, 28 Feb 2013 05:49:15 -0500
+Message-Id: <512F443702000078000C1DF7@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.1 
+Date: Thu, 28 Feb 2013 10:49:11 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Roger Pau Monne" <roger.pau@citrix.com>
+Cc: <xen-devel@lists.xen.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH RFC 00/12] xen-block: indirect
+ descriptors
+References: <1362047335-26402-1-git-send-email-roger.pau@citrix.com>
+In-Reply-To: <1362047335-26402-1-git-send-email-roger.pau@citrix.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I don´t know how many got that I did a very good low-jitter config for 
-linux, and made jitter-sensitive games, like doom 3 run perfectly on 5 
-yr old h/w (core 2 duo/gtx280), something that requires a modern Intel 
-E5 workstation for a finely tweaked windows XP.
+>>> On 28.02.13 at 11:28, Roger Pau Monne <roger.pau@citrix.com> wrote:
+> This series contains the initial implementation of indirect 
+> descriptors for Linux blkback/blkfront.
+> 
+> Patches 1, 2, 3, 4 and 5 are bug fixes and minor optimizations.
+> 
+> Patch 6 contains a LRU implementation for blkback that will be needed 
+> when using indirect descriptors (since we are no longer able to map 
+> all possible grants blkfront might use).
 
-Low-jitter linux config: http://paradoxuncreated.com/Blog/wordpress/?p=2268
+Considering this, ...
 
-Windows tweak here: http://paradoxuncreated.com/Blog/wordpress/?p=1783
+> Patch 7 is an addition to the print stats function in blkback in order 
+> to print information regarding persistent grant usage.
+> 
+> Patches 8, 9, 10 and 11 are preparatory work for indirect descriptors 
+> implementation, mainly make blkback use dynamic memory and remove the 
+> shared blkbk structure, so each blkback instance has it's own list of 
+> free requests, pages, handles and so on.
+> 
+> Finally patch 12 contains the indirect descriptors implementation.
+> 
+> I've also pushed this series to the following git repository:
+> 
+> git://xenbits.xen.org/people/royger/linux.git xen-block-indirect
+> 
+> Performance benefit of this series can be seen in the following graph:
+> 
+> http://xenbits.xen.org/people/royger/plot_indirect.png 
 
-I have been testing it for a while, and it is really excellent.
+... would you happen to also have a comparison with using
+indirect descriptors but not persistent grants? IOW I'm
+wondering about the hit rate on the persistently mapped
+grants, especially when blkfront really saturates the added
+bandwidth.
 
-
-Afterwards some thoughts come to me though, and that is really that, 
-when everything is working optimally, one can make some considerations 
-for prioritization of threads for the desktop.
-
-Audio seems to be the one thing, that one notices immedialtely if breaks 
-up, so that could be more like a realtime thing, where developers 
-optimize for minimal cpu-usage at low latency. 0.2ms is probably close 
-enough to hardware for most.
-
-Graphics seem to work very well, with the low-jitter config. No 
-dropouts, smooth action all the time, even on jitter-sensitive games 
-like doom 3 that does 3 passes to openGL. The added complexity of 3 
-passes, seems to be what makes it jitter sensitive, and the added layers 
-of wine, seems indeed to cause jitter aswell, and low-jitter configs 
-improve wine aswell. Here the standard kernel is obviously better than 
-the BFS scheduler also. CFS is better overall, and I also tried some 
-other schedulers that were useless. (rifs?)
-
-Network connection: Many these days want the lowest possbile latency 
-network connection. While for desktops it is no problem if this is 
-prioritized after an audio-thread for my part, some talk about OS-bypass 
-here. Maybe some consideration can be done, if some things work better, 
-such as audio and network, programmed directly to the hardware, such as 
-on oldskool computers, where there was "no latency".
-
-Other than that, the ubersmooth graphics that Mark Shuttleworth wants is 
-already here. That is the low-jitter config. It will be great to see the 
-developments of Wayland, which ofcourse then must be an improvement.
-
-Peace Be with You,
-Ove Karlsen.
+Jan
 
