@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758900Ab3B1PGO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 10:06:14 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:42302 "EHLO
+	id S1760064Ab3B1PGo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 10:06:44 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:42286 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758731Ab3B1OtM (ORCPT
+	with ESMTP id S1758662Ab3B1OtH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 09:49:12 -0500
+	Thu, 28 Feb 2013 09:49:07 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Theodore Ts'o" <tytso@mit.edu>,
+Cc: Greg Thelen <gthelen@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 082/139] ext4: return ENOMEM if sb_getblk() fails
-Date: Thu, 28 Feb 2013 14:43:52 +0000
-Message-Id: <1362062689-2567-83-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 080/139] tmpfs: fix use-after-free of mempolicy object
+Date: Thu, 28 Feb 2013 14:43:50 +0000
+Message-Id: <1362062689-2567-81-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1362062689-2567-1-git-send-email-luis.henriques@canonical.com>
 References: <1362062689-2567-1-git-send-email-luis.henriques@canonical.com>
@@ -27,260 +29,109 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Theodore Ts'o <tytso@mit.edu>
+From: Greg Thelen <gthelen@google.com>
 
-commit 860d21e2c585f7ee8a4ecc06f474fdc33c9474f4 upstream.
+commit 5f00110f7273f9ff04ac69a5f85bb535a4fd0987 upstream.
 
-The only reason for sb_getblk() failing is if it can't allocate the
-buffer_head.  So ENOMEM is more appropriate than EIO.  In addition,
-make sure that the file system is marked as being inconsistent if
-sb_getblk() fails.
+The tmpfs remount logic preserves filesystem mempolicy if the mpol=M
+option is not specified in the remount request.  A new policy can be
+specified if mpol=M is given.
 
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-[ luis: removed fs/ext4/inline.c ]
+Before this patch remounting an mpol bound tmpfs without specifying
+mpol= mount option in the remount request would set the filesystem's
+mempolicy object to a freed mempolicy object.
+
+To reproduce the problem boot a DEBUG_PAGEALLOC kernel and run:
+    # mkdir /tmp/x
+
+    # mount -t tmpfs -o size=100M,mpol=interleave nodev /tmp/x
+
+    # grep /tmp/x /proc/mounts
+    nodev /tmp/x tmpfs rw,relatime,size=102400k,mpol=interleave:0-3 0 0
+
+    # mount -o remount,size=200M nodev /tmp/x
+
+    # grep /tmp/x /proc/mounts
+    nodev /tmp/x tmpfs rw,relatime,size=204800k,mpol=??? 0 0
+        # note ? garbage in mpol=... output above
+
+    # dd if=/dev/zero of=/tmp/x/f count=1
+        # panic here
+
+Panic:
+    BUG: unable to handle kernel NULL pointer dereference at           (null)
+    IP: [<          (null)>]           (null)
+    [...]
+    Oops: 0010 [#1] SMP DEBUG_PAGEALLOC
+    Call Trace:
+      mpol_shared_policy_init+0xa5/0x160
+      shmem_get_inode+0x209/0x270
+      shmem_mknod+0x3e/0xf0
+      shmem_create+0x18/0x20
+      vfs_create+0xb5/0x130
+      do_last+0x9a1/0xea0
+      path_openat+0xb3/0x4d0
+      do_filp_open+0x42/0xa0
+      do_sys_open+0xfe/0x1e0
+      compat_sys_open+0x1b/0x20
+      cstar_dispatch+0x7/0x1f
+
+Non-debug kernels will not crash immediately because referencing the
+dangling mpol will not cause a fault.  Instead the filesystem will
+reference a freed mempolicy object, which will cause unpredictable
+behavior.
+
+The problem boils down to a dropped mpol reference below if
+shmem_parse_options() does not allocate a new mpol:
+
+    config = *sbinfo
+    shmem_parse_options(data, &config, true)
+    mpol_put(sbinfo->mpol)
+    sbinfo->mpol = config.mpol  /* BUG: saves unreferenced mpol */
+
+This patch avoids the crash by not releasing the mempolicy if
+shmem_parse_options() doesn't create a new mpol.
+
+How far back does this issue go? I see it in both 2.6.36 and 3.3.  I did
+not look back further.
+
+Signed-off-by: Greg Thelen <gthelen@google.com>
+Acked-by: Hugh Dickins <hughd@google.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/ext4/extents.c  | 25 ++++++++++++++-----------
- fs/ext4/indirect.c |  9 ++++++---
- fs/ext4/inode.c    |  9 +++------
- fs/ext4/mmp.c      |  2 ++
- fs/ext4/resize.c   |  8 ++++----
- fs/ext4/xattr.c    |  3 ++-
- 6 files changed, 31 insertions(+), 25 deletions(-)
+ mm/shmem.c | 10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
-diff --git a/fs/ext4/extents.c b/fs/ext4/extents.c
-index 8e5dd3b..d14487e 100644
---- a/fs/ext4/extents.c
-+++ b/fs/ext4/extents.c
-@@ -720,6 +720,7 @@ ext4_ext_find_extent(struct inode *inode, ext4_lblk_t block,
- 	struct ext4_extent_header *eh;
- 	struct buffer_head *bh;
- 	short int depth, i, ppos = 0, alloc = 0;
-+	int ret;
+diff --git a/mm/shmem.c b/mm/shmem.c
+index 626a7e7..2cede41 100644
+--- a/mm/shmem.c
++++ b/mm/shmem.c
+@@ -2541,6 +2541,7 @@ static int shmem_remount_fs(struct super_block *sb, int *flags, char *data)
+ 	unsigned long inodes;
+ 	int error = -EINVAL;
  
- 	eh = ext_inode_hdr(inode);
- 	depth = ext_depth(inode);
-@@ -747,12 +748,15 @@ ext4_ext_find_extent(struct inode *inode, ext4_lblk_t block,
- 		path[ppos].p_ext = NULL;
++	config.mpol = NULL;
+ 	if (shmem_parse_options(data, &config, true))
+ 		return error;
  
- 		bh = sb_getblk(inode->i_sb, path[ppos].p_block);
--		if (unlikely(!bh))
-+		if (unlikely(!bh)) {
-+			ret = -ENOMEM;
- 			goto err;
-+		}
- 		if (!bh_uptodate_or_lock(bh)) {
- 			trace_ext4_ext_load_extent(inode, block,
- 						path[ppos].p_block);
--			if (bh_submit_read(bh) < 0) {
-+			ret = bh_submit_read(bh);
-+			if (ret < 0) {
- 				put_bh(bh);
- 				goto err;
- 			}
-@@ -763,13 +767,15 @@ ext4_ext_find_extent(struct inode *inode, ext4_lblk_t block,
- 			put_bh(bh);
- 			EXT4_ERROR_INODE(inode,
- 					 "ppos %d > depth %d", ppos, depth);
-+			ret = -EIO;
- 			goto err;
- 		}
- 		path[ppos].p_bh = bh;
- 		path[ppos].p_hdr = eh;
- 		i--;
+@@ -2565,8 +2566,13 @@ static int shmem_remount_fs(struct super_block *sb, int *flags, char *data)
+ 	sbinfo->max_inodes  = config.max_inodes;
+ 	sbinfo->free_inodes = config.max_inodes - inodes;
  
--		if (ext4_ext_check_block(inode, eh, i, bh))
-+		ret = ext4_ext_check_block(inode, eh, i, bh);
-+		if (ret < 0)
- 			goto err;
- 	}
- 
-@@ -791,7 +797,7 @@ err:
- 	ext4_ext_drop_refs(path);
- 	if (alloc)
- 		kfree(path);
--	return ERR_PTR(-EIO);
-+	return ERR_PTR(ret);
- }
- 
- /*
-@@ -946,7 +952,7 @@ static int ext4_ext_split(handle_t *handle, struct inode *inode,
- 	}
- 	bh = sb_getblk(inode->i_sb, newblock);
- 	if (!bh) {
--		err = -EIO;
-+		err = -ENOMEM;
- 		goto cleanup;
- 	}
- 	lock_buffer(bh);
-@@ -1019,7 +1025,7 @@ static int ext4_ext_split(handle_t *handle, struct inode *inode,
- 		newblock = ablocks[--a];
- 		bh = sb_getblk(inode->i_sb, newblock);
- 		if (!bh) {
--			err = -EIO;
-+			err = -ENOMEM;
- 			goto cleanup;
- 		}
- 		lock_buffer(bh);
-@@ -1131,11 +1137,8 @@ static int ext4_ext_grow_indepth(handle_t *handle, struct inode *inode,
- 		return err;
- 
- 	bh = sb_getblk(inode->i_sb, newblock);
--	if (!bh) {
--		err = -EIO;
--		ext4_std_error(inode->i_sb, err);
--		return err;
--	}
-+	if (!bh)
-+		return -ENOMEM;
- 	lock_buffer(bh);
- 
- 	err = ext4_journal_get_create_access(handle, bh);
-diff --git a/fs/ext4/indirect.c b/fs/ext4/indirect.c
-index 830e1b2..6dc6153 100644
---- a/fs/ext4/indirect.c
-+++ b/fs/ext4/indirect.c
-@@ -145,6 +145,7 @@ static Indirect *ext4_get_branch(struct inode *inode, int depth,
- 	struct super_block *sb = inode->i_sb;
- 	Indirect *p = chain;
- 	struct buffer_head *bh;
-+	int ret = -EIO;
- 
- 	*err = 0;
- 	/* i_data is not going away, no lock needed */
-@@ -153,8 +154,10 @@ static Indirect *ext4_get_branch(struct inode *inode, int depth,
- 		goto no_block;
- 	while (--depth) {
- 		bh = sb_getblk(sb, le32_to_cpu(p->key));
--		if (unlikely(!bh))
-+		if (unlikely(!bh)) {
-+			ret = -ENOMEM;
- 			goto failure;
-+		}
- 
- 		if (!bh_uptodate_or_lock(bh)) {
- 			if (bh_submit_read(bh) < 0) {
-@@ -176,7 +179,7 @@ static Indirect *ext4_get_branch(struct inode *inode, int depth,
- 	return NULL;
- 
- failure:
--	*err = -EIO;
-+	*err = ret;
- no_block:
- 	return p;
- }
-@@ -470,7 +473,7 @@ static int ext4_alloc_branch(handle_t *handle, struct inode *inode,
- 		 */
- 		bh = sb_getblk(inode->i_sb, new_blocks[n-1]);
- 		if (unlikely(!bh)) {
--			err = -EIO;
-+			err = -ENOMEM;
- 			goto failed;
- 		}
- 
-diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
-index 75f537f..20b2687 100644
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -730,7 +730,7 @@ struct buffer_head *ext4_getblk(handle_t *handle, struct inode *inode,
- 
- 	bh = sb_getblk(inode->i_sb, map.m_pblk);
- 	if (!bh) {
--		*errp = -EIO;
-+		*errp = -ENOMEM;
- 		return NULL;
- 	}
- 	if (map.m_flags & EXT4_MAP_NEW) {
-@@ -3528,11 +3528,8 @@ static int __ext4_get_inode_loc(struct inode *inode,
- 	iloc->offset = (inode_offset % inodes_per_block) * EXT4_INODE_SIZE(sb);
- 
- 	bh = sb_getblk(sb, block);
--	if (!bh) {
--		EXT4_ERROR_INODE_BLOCK(inode, block,
--				       "unable to read itable block");
--		return -EIO;
--	}
-+	if (!bh)
-+		return -ENOMEM;
- 	if (!buffer_uptodate(bh)) {
- 		lock_buffer(bh);
- 
-diff --git a/fs/ext4/mmp.c b/fs/ext4/mmp.c
-index f99a131..b4d5088 100644
---- a/fs/ext4/mmp.c
-+++ b/fs/ext4/mmp.c
-@@ -74,6 +74,8 @@ static int read_mmp_block(struct super_block *sb, struct buffer_head **bh,
- 	 * is not blocked in the elevator. */
- 	if (!*bh)
- 		*bh = sb_getblk(sb, mmp_block);
-+	if (!*bh)
-+		return -ENOMEM;
- 	if (*bh) {
- 		get_bh(*bh);
- 		lock_buffer(*bh);
-diff --git a/fs/ext4/resize.c b/fs/ext4/resize.c
-index 367510e..4c31b71 100644
---- a/fs/ext4/resize.c
-+++ b/fs/ext4/resize.c
-@@ -315,7 +315,7 @@ static struct buffer_head *bclean(handle_t *handle, struct super_block *sb,
- 
- 	bh = sb_getblk(sb, blk);
- 	if (!bh)
--		return ERR_PTR(-EIO);
-+		return ERR_PTR(-ENOMEM);
- 	if ((err = ext4_journal_get_write_access(handle, bh))) {
- 		brelse(bh);
- 		bh = ERR_PTR(err);
-@@ -392,7 +392,7 @@ static int set_flexbg_block_bitmap(struct super_block *sb, handle_t *handle,
- 
- 		bh = sb_getblk(sb, flex_gd->groups[group].block_bitmap);
- 		if (!bh)
--			return -EIO;
-+			return -ENOMEM;
- 
- 		err = ext4_journal_get_write_access(handle, bh);
- 		if (err)
-@@ -470,7 +470,7 @@ static int setup_new_flex_group_blocks(struct super_block *sb,
- 
- 			gdb = sb_getblk(sb, block);
- 			if (!gdb) {
--				err = -EIO;
-+				err = -ENOMEM;
- 				goto out;
- 			}
- 
-@@ -991,7 +991,7 @@ static void update_backups(struct super_block *sb,
- 
- 		bh = sb_getblk(sb, group * bpg + blk_off);
- 		if (!bh) {
--			err = -EIO;
-+			err = -ENOMEM;
- 			break;
- 		}
- 		ext4_debug("update metadata backup %#04lx\n",
-diff --git a/fs/ext4/xattr.c b/fs/ext4/xattr.c
-index 2cdb98d..3390680 100644
---- a/fs/ext4/xattr.c
-+++ b/fs/ext4/xattr.c
-@@ -898,16 +898,17 @@ inserted:
- 
- 			new_bh = sb_getblk(sb, block);
- 			if (!new_bh) {
-+				error = -ENOMEM;
- getblk_failed:
- 				ext4_free_blocks(handle, inode, NULL, block, 1,
- 						 EXT4_FREE_BLOCKS_METADATA);
--				error = -EIO;
- 				goto cleanup;
- 			}
- 			lock_buffer(new_bh);
- 			error = ext4_journal_get_create_access(handle, new_bh);
- 			if (error) {
- 				unlock_buffer(new_bh);
-+				error = -EIO;
- 				goto getblk_failed;
- 			}
- 			memcpy(new_bh->b_data, s->base, new_bh->b_size);
+-	mpol_put(sbinfo->mpol);
+-	sbinfo->mpol        = config.mpol;	/* transfers initial ref */
++	/*
++	 * Preserve previous mempolicy unless mpol remount option was specified.
++	 */
++	if (config.mpol) {
++		mpol_put(sbinfo->mpol);
++		sbinfo->mpol = config.mpol;	/* transfers initial ref */
++	}
+ out:
+ 	spin_unlock(&sbinfo->stat_lock);
+ 	return error;
 -- 
 1.8.1.2
 
