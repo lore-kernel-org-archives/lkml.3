@@ -1,57 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754498Ab3B1Tq7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 14:46:59 -0500
-Received: from mail.active-venture.com ([67.228.131.205]:49790 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752561Ab3B1Tq6 (ORCPT
+	id S1754332Ab3B1TsI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 14:48:08 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:13695 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752801Ab3B1TsG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 14:46:58 -0500
-X-Virus-Scan: Scanned by ClamAV 0.97.2 (no viruses);
-  Thu, 28 Feb 2013 13:46:58 -0600
-X-Originating-IP: 108.223.40.66
-From: Guenter Roeck <linux@roeck-us.net>
-To: devel@driverdev.osuosl.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>
-Subject: [PATCH] staging: dgrp: Drop unnecessary typecast
-Date: Thu, 28 Feb 2013 11:46:57 -0800
-Message-Id: <1362080817-2098-1-git-send-email-linux@roeck-us.net>
-X-Mailer: git-send-email 1.7.9.7
+	Thu, 28 Feb 2013 14:48:06 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Thu, 28 Feb 2013 11:42:34 -0800
+Message-ID: <512FB473.8060309@nvidia.com>
+Date: Thu, 28 Feb 2013 14:48:03 -0500
+From: Rhyland Klein <rklein@nvidia.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: Anton Vorontsov <cbou@mail.ru>, David Woodhouse <dwmw2@infradead.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC v2 2/3] power: power_supply: Add core support for supplied_nodes
+References: <1361488272-21010-1-git-send-email-rklein@nvidia.com> <1361488272-21010-3-git-send-email-rklein@nvidia.com> <5127D083.6020308@wwwdotorg.org> <5127EA13.9010403@nvidia.com>
+In-Reply-To: <5127EA13.9010403@nvidia.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-An unnecessary typecast in dgrp_net_ops.c causes the following build error
-if compiled with W=1.
+On 2/22/2013 4:58 PM, Rhyland Klein wrote:
+> On 2/22/2013 3:09 PM, Stephen Warren wrote:
+>> On 02/21/2013 04:11 PM, Rhyland Klein wrote:
+>>> With the growing support for dt, it make sense to try to make use of
+>>> dt features to make the general code cleaner. This patch is an
+>>> attempt to commonize how chargers and their supplies are linked.
+>>>
+>>> Following common dt convention, the "supplied-to" char** list is
+>>> replaced with phandle lists defined in the supplies which contain
+>>> phandles of their suppliers.
+>>>
+>>> This has the effect however of introducing an inversion in the internal
+>>> mechanics of how this information is stored. In the case of non-dt,
+>>> the char** list of supplies is stored in the charger. In the dt case,
+>>> a device_node * list is stored in the supplies of their chargers,
+>>> however this seems to be the only way to support this.
+>> grep over the whole kernel tree for supplied_to doesn't yield /too/ many
+>> hits, although I didn't look at the complexity of most of them. Would it
+>> be possible to invert all the current in-kernel uses to represent a
+>> supplied_from/by model instead? That would mean the proposed DT binding
+>> would then represent the same relationship ordering as the kernel code,
+>> which would be easier to handle.
+> I think it is surely possible to change all the existing drivers to the
+> inverse logic as
+> you suggested. That might make a good follow patchset.
+>
+> -rhyland
+>
 
-In function ‘copy_from_user’, inlined from ‘dgrp_net_ioctl’ at
-    drivers/staging/dgrp/dgrp_net_ops.c:3408:21:
-    arch/x86/include/asm/uaccess_32.h:211:26: error: call to
-    ‘copy_from_user_overflow’ declared with attribute error: copy_from_user()
-    buffer size is not provably correct
+Anton, David, would you be adverse to the changing of supplied_to from 
+being a
+list of batteries stored in a charger to being a list of chargers stored 
+in batteries?
 
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
----
- drivers/staging/dgrp/dgrp_net_ops.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+(I only use terms charger and batteries as it is much clearer for me to 
+read in place
+of terms like supplier and supply which are more accurate but much more 
+confusing
+when used together).
 
-diff --git a/drivers/staging/dgrp/dgrp_net_ops.c b/drivers/staging/dgrp/dgrp_net_ops.c
-index e6018823..f364e8e 100644
---- a/drivers/staging/dgrp/dgrp_net_ops.c
-+++ b/drivers/staging/dgrp/dgrp_net_ops.c
-@@ -3405,7 +3405,7 @@ static long dgrp_net_ioctl(struct file *file, unsigned int cmd,
- 		if (size != sizeof(struct link_struct))
- 			return -EINVAL;
- 
--		if (copy_from_user((void *)(&link), (void __user *) arg, size))
-+		if (copy_from_user(&link, (void __user *)arg, size))
- 			return -EFAULT;
- 
- 		if (link.lk_fast_rate < 9600)
+-rhyland
+
 -- 
-1.7.9.7
+nvpublic
 
