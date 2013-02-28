@@ -1,93 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751991Ab3B1Hmb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 02:42:31 -0500
-Received: from e28smtp09.in.ibm.com ([122.248.162.9]:37997 "EHLO
-	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751315Ab3B1Hma (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 02:42:30 -0500
-Message-ID: <512F0A5C.8030405@linux.vnet.ibm.com>
-Date: Thu, 28 Feb 2013 15:42:20 +0800
-From: Michael Wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
-MIME-Version: 1.0
-To: Mike Galbraith <efault@gmx.de>
-CC: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
-        Alex Shi <alex.shi@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ram Pai <linuxram@us.ibm.com>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        Namhyung Kim <namhyung@kernel.org>
-Subject: Re: [RFC PATCH] sched: wakeup buddy
-References: <512EFB4B.5040204@linux.vnet.ibm.com> <1362035917.4460.105.camel@marge.simpson.net> <512F09D4.1020307@linux.vnet.ibm.com>
-In-Reply-To: <512F09D4.1020307@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1751779Ab3B1Hpv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 02:45:51 -0500
+Received: from mga09.intel.com ([134.134.136.24]:7716 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751315Ab3B1Hps (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Feb 2013 02:45:48 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,754,1355126400"; 
+   d="scan'208";a="291677060"
+Subject: [PATCH 2/5] mmc: core: call pm_runtime_put_sync in
+ pm_runtime_get_sync failed case
+From: Li Fei <fei.li@intel.com>
+To: cjb@laptop.org, ulf.hansson@linaro.org, johan.rudholm@stericsson.com,
+        subhashj@codeaurora.org, prakity@marvell.com,
+        rafael.j.wysocki@intel.com, thierry.reding@avionic-design.de,
+        sachin.kamat@linaro.org
+Cc: linux-mmc@vger.kernel.org, rjw@sisk.pl, linux-kernel@vger.kernel.org,
+        chuansheng.liu@intel.com, fei.li@intel.com
+In-Reply-To: <1362037031.6212.3.camel@fli24-HP-Compaq-8100-Elite-CMT-PC>
+References: <1362037031.6212.3.camel@fli24-HP-Compaq-8100-Elite-CMT-PC>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 28 Feb 2013 15:44:15 +0800
+Message-ID: <1362037455.6212.8.camel@fli24-HP-Compaq-8100-Elite-CMT-PC>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13022807-2674-0000-0000-000007FDF218
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/28/2013 03:40 PM, Michael Wang wrote:
-> Hi, Mike
-> 
-> Thanks for your reply.
-> 
-> On 02/28/2013 03:18 PM, Mike Galbraith wrote:
->> On Thu, 2013-02-28 at 14:38 +0800, Michael Wang wrote:
->>
->>> +				/*
->>> +				 * current is the only task on rq and it is
->>> +				 * going to sleep, current cpu will be a nice
->>> +				 * candidate for p to run on.
->>> +				 */
->>
->> The sync hint only means it might be going to sleep soon, and even then,
->> there can still be enough execution overlap to be a win to schedule
->> cross core.  Sched pipe numbers will always be much prettier if you do
->> wakeup cpu affine, as it's ~100% scheduler and ~100% sync.
-> 
-> Hmm.. so it's the comparison between 'cache benefit - execution overlap'
-> and 'latency - execution overlap'?
-> 
-> I could not estimate how many latency will be added to wait for current
-> going to sleep (it should be faster than access cold data, isn't it?),
-> but I really like the cache benefit, unless sync doesn't means current
-> is going to sleep every time, but that's the promise of WF_SYNC, isn't it?
-> 
-> You may lose
->> a lot on other stuff if you interpret the hint as gospel truth.
-> 
-> Could you please give more details on this point?
-> 
->>
->> IMHO, sched pipe is a "how fat have I become" benchmark, not "how well
->> do I perform".  The scheduler performs well when it makes more work
->> happen.  Playing ping-pong with yourself is _exercise_, not a job :)
-> 
-> That's right, may be I'm using the wrong description, it's the ops/sec
-> which has been doubled, that means 'fat', correct?
 
-I mean could we say that more ops/sec means more works has been done?
+Even in failed case of pm_runtime_get_sync, the usage_count
+is incremented. In order to keep the usage_count with correct
+value and runtime power management to behave correctly, call
+pm_runtime_put(_sync) in such case.
 
-Regards,
-Michael Wang
+Signed-off-by Liu Chuansheng <chuansheng.liu@intel.com>
+Signed-off-by: Li Fei <fei.li@intel.com>
+---
+ drivers/mmc/core/sdio.c     |    3 +--
+ drivers/mmc/core/sdio_bus.c |    4 +++-
+ 2 files changed, 4 insertions(+), 3 deletions(-)
 
-> 
-> Regards,
-> Michael Wang
-> 
->>
->> -Mike
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
->>
-> 
+diff --git a/drivers/mmc/core/sdio.c b/drivers/mmc/core/sdio.c
+index aa0719a..45ab6f32 100644
+--- a/drivers/mmc/core/sdio.c
++++ b/drivers/mmc/core/sdio.c
+@@ -874,6 +874,7 @@ static void mmc_sdio_detect(struct mmc_host *host)
+ 
+ 	mmc_release_host(host);
+ 
++out:
+ 	/*
+ 	 * Tell PM core it's OK to power off the card now.
+ 	 *
+@@ -887,8 +888,6 @@ static void mmc_sdio_detect(struct mmc_host *host)
+ 	 */
+ 	if (host->caps & MMC_CAP_POWER_OFF_CARD)
+ 		pm_runtime_put_sync(&host->card->dev);
+-
+-out:
+ 	if (err) {
+ 		mmc_sdio_remove(host);
+ 
+diff --git a/drivers/mmc/core/sdio_bus.c b/drivers/mmc/core/sdio_bus.c
+index 5e57048..d572b31 100644
+--- a/drivers/mmc/core/sdio_bus.c
++++ b/drivers/mmc/core/sdio_bus.c
+@@ -136,8 +136,10 @@ static int sdio_bus_probe(struct device *dev)
+ 	 */
+ 	if (func->card->host->caps & MMC_CAP_POWER_OFF_CARD) {
+ 		ret = pm_runtime_get_sync(dev);
+-		if (ret < 0)
++		if (ret < 0) {
++			pm_runtime_put_sync(dev);
+ 			goto out;
++		}
+ 	}
+ 
+ 	/* Set the default block size so the driver is sure it's something
+-- 
+1.7.4.1
+
+
 
