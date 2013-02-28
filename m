@@ -1,142 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759625Ab3B1RY7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 12:24:59 -0500
-Received: from mail-vc0-f173.google.com ([209.85.220.173]:64086 "EHLO
-	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753289Ab3B1RY6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 12:24:58 -0500
+	id S932772Ab3B1R2r (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 12:28:47 -0500
+Received: from mail.pr.hu ([87.242.0.5]:34230 "EHLO mail.pr.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752587Ab3B1R2p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Feb 2013 12:28:45 -0500
+Message-ID: <512F93C2.7050105@pr.hu>
+Date: Thu, 28 Feb 2013 18:28:34 +0100
+From: Boszormenyi Zoltan <zboszor@pr.hu>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130219 Thunderbird/17.0.3
 MIME-Version: 1.0
-In-Reply-To: <BAF0C2081321BA469F9ADF648F97D9B04C78FA6069@MCC023.weinmann.com>
-References: <BAF0C2081321BA469F9ADF648F97D9B04C78FA6069@MCC023.weinmann.com>
-Date: Thu, 28 Feb 2013 09:24:56 -0800
-Message-ID: <CAN8TOE9YJBvUE9GDW3krZB-Js6gUkqY23gYNLS4gFX0e2NDNZw@mail.gmail.com>
-Subject: Re: Bug in mtd_get_device_size()?
-From: Brian Norris <computersforpeace@gmail.com>
-To: "Velykokhatko, Sergey" <Sergey.Velykokhatko@mcc-med.de>
-Cc: "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "artem.bityutskiy@linux.intel.com" <artem.bityutskiy@linux.intel.com>,
-        Richard Genoud <richard.genoud@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Azat Khuzhin <dohardgopro@gmail.com>
+CC: lkml <linux-kernel@vger.kernel.org>
+Subject: Re: loadavg question
+References: <512F4716.4050802@pr.hu> <CAAW1UO8b5gc5fD++XTvE8y1yF6N-j7LoiGnQZFzgo-3robe+zQ@mail.gmail.com>
+In-Reply-To: <CAAW1UO8b5gc5fD++XTvE8y1yF6N-j7LoiGnQZFzgo-3robe+zQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-2; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Spam-Score: -2.0 (--)
+X-Scan-Signature: 2e5eb630a1ec22e7814fe1e7a9c849de
+X-Spam-Tracer: backend.mail.pr.hu -2.0 20130228172703Z
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-+ Richard
+Hi,
 
-On Thu, Feb 28, 2013 at 4:30 AM, Velykokhatko, Sergey
-<Sergey.Velykokhatko@mcc-med.de> wrote:
-> I got today such case:
->
->       * Kernel 3.8
->
->       * We are using M29F2G16 NAND chip with 4096 blocks, each has 128k
->
->       * Configured with CONFIG_MTD_UBI_BEB_LIMIT=100
+yes, that commit is in my kernel 3.7.9 kernel source, but not in 3.3.2.
+Also, I have CONFIG_NO_HZ=n in my .config. I will retry with
+CONFIG_NO_HZ=y with 3.7.9.
 
-This is your problem. See below for more comments.
+Thanks,
+Zoltán Böszörményi
 
->       * Our rootfs partition contains 640 EBs
+2013-02-28 15:05 keltezÃ©ssel, Azat Khuzhin Ã­rta:
 >
->       * At system start comes following error message:
+> Hi,
 >
-> Feb 28 09:23:09 (none) kern.notice kernel: [    0.375000] Creating 6 MTD
-> partitions on "atmel_nand":
+> Could you check do you have commit that mentioned here?
+> http://comments.gmane.org/gmane.linux.kernel/1346108
 >
-> Feb 28 09:23:09 (none) kern.notice kernel: [    0.375000]
-> 0x000000000000-0x000000020000 : "obsolete_bootstrap"
+> Respectfully
+> Azat Khuzhin.
+> >From phone.
 >
-> Feb 28 09:23:09 (none) kern.notice kernel: [    0.381000]
-> 0x000000020000-0x000000320000 : "kernel_a"
+> On Feb 28, 2013 4:40 PM, "Boszormenyi Zoltan" <zboszor@pr.hu <mailto:zboszor@pr.hu>> wrote:
 >
-> Feb 28 09:23:09 (none) kern.notice kernel: [    0.386000]
-> 0x000000320000-0x000000620000 : "kernel_b"
+>     Hi,
 >
-> Feb 28 09:23:09 (none) kern.notice kernel: [    0.392000]
-> 0x000000620000-0x000005620000 : "rootfs_a"
+>     on an embedded PC (500MHz AMD Geode), we recently tried
+>     to upgrade the kernel. The original version was 2.6.27, the new
+>     ones were 3.3.x and 3.7.x. With the same userspace (a GTK based
+>     GUI constantly querying daemons handling different pieces of
+>     hardware over serial ports), we noticed that loadavg is different
+>     while the idle time (95-97%) is the same. On 2.6.27, the load was
+>     around 0.05-0.3 while on 3.3.x and 3.7.x, it quickly crawled up
+>     to around 5. Has the load calculation changed so dramatically
+>     after 2.6.27?
 >
-> Feb 28 09:23:09 (none) kern.notice kernel: [    0.399000]
-> 0x000005620000-0x00000a620000 : "rootfs_b"
+>     Thanks in advance,
+>     ZoltÃ¡n BÃ¶szÃ¶rmÃ©nyi
 >
-> Feb 28 09:23:09 (none) kern.notice kernel: [    0.406000]
-> 0x00000a620000-0x000020000000 : "config_data"
+>     --
+>     To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>     the body of a message to majordomo@vger.kernel.org <mailto:majordomo@vger.kernel.org>
+>     More majordomo info at Â http://vger.kernel.org/majordomo-info.html
+>     Please read the FAQ at Â http://www.tux.org/lkml/
 >
-> ...
->
->
->
-> Feb 28 09:23:10 (none) kern.info kernel: [    0.546000] NET: Registered
-> protocol family 17
->
-> Feb 28 09:23:10 (none) kern.notice kernel: [    0.557000] UBI: attaching
-> mtd3 to ubi0
->
-> Feb 28 09:23:10 (none) kern.info kernel: [    0.748000] usb 1-2: new
-> high-speed USB device number 2 using atmel-ehci
->
-> Feb 28 09:23:10 (none) kern.notice kernel: [    0.810000] UBI: scanning is
-> finished
->
-> Feb 28 09:23:10 (none) kern.warn kernel: [    0.821000] UBI warning:
-> print_rsvd_warning: cannot reserve enough PEBs for bad PEB handling,
-> reserved 115, need 400
->
-> Feb 28 09:23:10 (none) kern.notice kernel: [    0.826000] UBI: attached mtd3
-> (name "rootfs_a", size 80 MiB) to ubi0
->
-> Feb 28 09:23:10 (none) kern.notice kernel: [    0.826000] UBI: PEB size:
-> 131072 bytes (128 KiB), LEB size: 129024 bytes
->
-> Feb 28 09:23:10 (none) kern.notice kernel: [    0.826000] UBI: min./max. I/O
-> unit sizes: 2048/2048, sub-page size 512
->
-> Feb 28 09:23:10 (none) kern.notice kernel: [    0.826000] UBI: VID header
-> offset: 512 (aligned 512), data offset: 2048
->
-> Feb 28 09:23:10 (none) kern.notice kernel: [    0.826000] UBI: good PEBs:
-> 640, bad PEBs: 0, corrupted PEBs: 0
->
-> Feb 28 09:23:10 (none) kern.notice kernel: [    0.826000] UBI: user volume:
-> 1, internal volumes: 1, max. volumes count: 128
->
-> Feb 28 09:23:10 (none) kern.notice kernel: [    0.826000] UBI: max/mean
-> erase counter: 399/202, WL threshold: 4096, image sequence number: 548304255
->
-> Feb 28 09:23:10 (none) kern.notice kernel: [    0.826000] UBI: available
-> PEBs: 0, total reserved PEBs: 640, PEBs reserved for bad PEB handling: 115
->
-> Feb 28 09:23:10 (none) kern.notice kernel: [    0.827000] UBI: background
-> thread "ubi_bgt0d" started, PID 288
->
-> UBI wanted to reserve 400 blocks on MTD with 640. Hm... During debugging I
-> found that mtd_get_device_size() gives the size of whole flash memory back
-> (4096 blocks * 128kB). I guess that I found small error. With micro patch
-> the problem seems to be corrected for my case
 
-Your patch is wrong, actually. mtd_get_device_size() should get "the
-size of the entire flash chip", so if mtd is a partition, you *want*
-to return the size of its 'master'.
-
-In fact, everything is behaving as expected (by the designers; not by
-you). Because your BEB_LIMIT=100, you are reserving 100*size/1024
-(that is 9.8% of your total size, or 400 blocks) in *every* partition.
-I don't see why you need that high of a limit, though. Check your NAND
-data sheet, but the limit defaults reasonably to 20 (or, about 2%).
-That would reserve only 80 blocks on your system, and you would not
-see these warnings/errors, since you already have 115 blocks reserved.
-
-You might want to read the comments in this commit:
-
-commit ba4087e956d336488c6df9dfca65d1e70cf480f1
-Author: Richard Genoud <richard.genoud@gmail.com>
-Date:   Tue Jul 10 18:23:41 2012 +0200
-
-    UBI: use the whole MTD device size to get bad_peb_limit
-
-It might be worth revisiting the conclusions of those arguments; it
-essentially limits your partitions to a certain minimum size. But as
-far as I can tell, the code works as documented.
-
-Brian
