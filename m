@@ -1,47 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752229Ab3B1KHG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 05:07:06 -0500
-Received: from mout.gmx.net ([212.227.15.15]:62808 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751158Ab3B1KHC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 05:07:02 -0500
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1+W7kR2PqeWzo0HJ9hvabGNdSlMojPUPRX+olGhYx
-	uUzJToXy8XBlo1
-Message-ID: <1362046013.4460.195.camel@marge.simpson.net>
-Subject: Re: [RFC PATCH] sched: wakeup buddy
-From: Mike Galbraith <efault@gmx.de>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Michael Wang <wangyun@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
-        Alex Shi <alex.shi@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ram Pai <linuxram@us.ibm.com>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>
-Date: Thu, 28 Feb 2013 11:06:53 +0100
-In-Reply-To: <87hakwssc9.fsf@sejong.aot.lge.com>
-References: <512EFB4B.5040204@linux.vnet.ibm.com>
-	 <87hakwssc9.fsf@sejong.aot.lge.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
+	id S1752484Ab3B1KH6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 05:07:58 -0500
+Received: from mail-ee0-f51.google.com ([74.125.83.51]:58963 "EHLO
+	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751358Ab3B1KH5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Feb 2013 05:07:57 -0500
+Message-ID: <512F2C79.40807@suse.cz>
+Date: Thu, 28 Feb 2013 11:07:53 +0100
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:19.0) Gecko/20130124 Thunderbird/19.0
+MIME-Version: 1.0
+To: Larry Finger <Larry.Finger@lwfinger.net>
+CC: Daniel Mack <zonque@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Hurley <peter@hurleysoftware.com>
+Subject: Re: WARNING from tty driver in 3.9-rc0
+References: <512D284B.8070802@lwfinger.net> <CACTFLAO0y-XOwBYJBnOjGJ6rzE2CZjKRnMx4+FpPScCeJkZnUw@mail.gmail.com> <512E7850.6060107@suse.cz> <512E79B5.3080402@lwfinger.net>
+In-Reply-To: <512E79B5.3080402@lwfinger.net>
+X-Enigmail-Version: 1.6a1pre
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-02-28 at 18:25 +0900, Namhyung Kim wrote:
+On 02/27/2013 10:25 PM, Larry Finger wrote:
+> Thanks for looking into this. Will you be pushing a 3.9 patch to disable
+> the warning?
 
-> Not sure if it should require bidirectional relationship.  Looks like
-> just for benchmarks.  Isn't there a one-way relationship that could get
-> a benefit from this?  I don't know ;-)
+Hi, yes, it's on its way already.
 
-??  Meaningful relationships are bare minimum bidirectional, how can you
-describe one connection and have it remain meaningful?  I love "her" is
-unlikely to lead to anything meaningful if "she" doesn't know you exist.
-
--Mike
-
+-- 
+js
+suse labs
