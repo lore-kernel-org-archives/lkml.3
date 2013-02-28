@@ -1,73 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932894Ab3B1Svh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 13:51:37 -0500
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:37708 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758214Ab3B1Svf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 13:51:35 -0500
-Message-ID: <512FA732.4010703@linaro.org>
-Date: Thu, 28 Feb 2013 10:51:30 -0800
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	id S1760120Ab3B1SwF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 13:52:05 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:9341 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932963Ab3B1Sv7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Feb 2013 13:51:59 -0500
+Date: Thu, 28 Feb 2013 13:51:56 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        linux-security-module@vger.kernel.org
+Subject: Re: IMA: How to manage user space signing policy with others
+Message-ID: <20130228185155.GC11360@redhat.com>
+References: <20130228151333.GB11360@redhat.com>
 MIME-Version: 1.0
-To: Prarit Bhargava <prarit@redhat.com>
-CC: Alessandro Zummo <a.zummo@towertech.it>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "x86@kernel.org" <x86@kernel.org>,
-        Matt Fleming <matt.fleming@intel.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andi Kleen <ak@linux.intel.com>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>
-Subject: Re: [RFE PATCH 2/2] rtc, add write functionality to sysfs
-References: <1360861375-24131-1-git-send-email-prarit@redhat.com> <1360861375-24131-3-git-send-email-prarit@redhat.com> <5127D884.6020701@linaro.org> <5127DB2B.3030700@redhat.com> <5127DDAF.2000403@linaro.org> <B22B05C4-B8D2-44B9-971B-37913DE59EF6@towertech.it> <512A47C5.3010500@redhat.com>
-In-Reply-To: <512A47C5.3010500@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130228151333.GB11360@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/24/2013 09:03 AM, Prarit Bhargava wrote:
->
-> On 02/23/2013 06:11 PM, Alessandro Zummo wrote:
->> On 22/feb/2013, at 22:05, John Stultz <john.stultz@linaro.org> wrote:
->>
->>> On 02/22/2013 12:55 PM, Prarit Bhargava wrote:
->>>> On 02/22/2013 03:43 PM, John Stultz wrote:
->>>>> On 02/14/2013 09:02 AM, Prarit Bhargava wrote:
->>>>>> /sys/class/rtc/rtcX/date and /sys/class/rtc/rtcX/time currently have
->>>>>> read-only access.  This patch introduces write functionality which will
->>>>>> set the rtc time.
->>>>>>
->>>>>> Usage: echo YYYY-MM-DD > /sys/class/rtc/rtcX/date
->>>>>>          echo HH:MM:SS > /sys/class/rtc/rtcX/time
->>>>> Why do we want to add a new interface here?
->>>> John,
->>>>
->>>> I'm not adding a new interface.  The current date/time interface only handles
->>>> read and I'm introducing write.
->>>>
->>> Right, but what benefit does that provide?
->>> (I'm not saying there isn't any, its just not clear from your patch why this is a good thing.)
->>>
-> Sorry John, I misunderstood your question.
->
->>> Also CC'ing Alessandro for his input.
->> I'd like to keep the interfaces as simple as possible but I'm open to improvements if there are good use cases.
->>
-> AFAICT there is no way for me to "test" or use the write from userspace.
-> hwclock uses the SET_TIME ioctl, which is a different code path AFAICT.
+On Thu, Feb 28, 2013 at 10:13:33AM -0500, Vivek Goyal wrote:
+> Hi Mimi,
+> 
+> I am running into issues w.r.t IMA policy management and user space
+> signing. So thought of dropping a mail and gather some ideas.
+> 
+> Currently IMA seems to able to one policy only which does not contain
+> conflicting rules. We have tcb policies in-built and they don't have
+> conflicting rules. User can put its own policy and that will replace
+> kernel policy (default policy). And then user is responsible for making
+> sure conflicting rules are not present.
+> 
+> Now with user space signing and secureboot, I have another set of rules
+> which are not compatible with existing tcb policies. This is how my
+> rules look like as of today. These can change based on config options.
+> 
+> appraise func=BPRM_CHECK appraise_type=optional
+> appraise func=BPRM_POST_LOAD appraise_type=optional
+> 
+> These rules are not compatible with tcp appraise rule.
+> 
+> .action = APPRAISE,.fowner = GLOBAL_ROOT_UID,.flags = IMA_FOWNER
+> 
+> That means in current scheme of things, multiple policies can't co-exist
+> together. It has few  disadvantages.
+> 
+> - If we want IMA to be central point for all integrity measurement
+>   needs, then having one policy only is very limiting. The fact that
+>   user can overirde that policy makes it worse as then kernel can
+>   not impose any policy at all.
+> 
+>   IOW, if user enables user space signign in kernel, say CONFIG_BIN_SIGN=y,
+>   then I need a way so that kernel can make sure IMA rules needed to
+>   ensure integrity of binaries are present and can not be overruled.
+> 
+> - Disabling policy can disable certain features in kernel. So in this
+>   case if user overides default policy, it will disable binary signing
+>   feature also (that too in a very unintutive way).
+> 
+> 
+> One possible way could be that we allow execution of all the relevant
+> rules in a policy and return the ANDed results of all the rules. But
+> this does not go well with the result caching. Atleast current IMA
+> infrastructure does not allow it and might require overhaul.
+> 
+> In general I am concerned about increased performance overhead if we
+> allow multiple policies to co-exist. 
+> 
+> Performance overhead is a concern even without multiple policies. For
+> user space signing, IMA hooks will be called for file operations like
+> open(), mmap() etc and we don't require those to be called. I am not
+> sure if performance overhead is significant or not. Once things start
+> working, I will do some benchmarking.
+> 
+> But coming back to the point, how to go about making sure user space
+> signing policies can't be overridden if user has enabled user space
+> signing feature in kernel.
 
-Yea, per your other email, I'd rather we drop this change for now.
+Thinking more about it, even if something could be done where multiple
+rules (kernel and user specified one) could co-exist, I think there will
+be issues. One issue could override other in incompatible way.
 
-If possible, instead of adding redundant userland interfaces, I'd rather 
-we consolidate the redundant internal code paths.
+For example, one of the limitations of current IMA infrastructures is
+that it does not cover the case of somebody writing to thd disk directly
+(by bypassing the filesystem). If IMA has cached previous appraisal
+result, next time IMA will simply say file integrity is fine. This
+probably worked so far, but certainly does not work for my case where
+I want to verify file signature everytime and no result caching.
 
-thanks
--john
+I thought I could extend IMA rule syntax and mention that results of
+particular rule should not be cached. For example,
 
+cache_result = no
+
+So one could say
+
+appraise bprm_check appraise_type=optional cache_result=no
+
+But then an user space policy could overide it by specifying
+
+appraise bprm_check appraise_type=optional 
+
+Or something simlar. And results will be cached and calling code will
+assume that signatures of binary are fine. But that's not the case.
+
+So we need few more things from IMA for it to support the case of user
+space signing.
+
+- Ability to make sure kernel specified rules can not be overridden.
+- Ability to not cache results so that direct writes to disk could
+  be detected.
+
+Till then I can't see how can I use IMA to implement process signing.
+
+Thanks
+Vivek
