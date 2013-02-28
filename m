@@ -1,71 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759952Ab3B1WFD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 17:05:03 -0500
-Received: from mail-ee0-f51.google.com ([74.125.83.51]:56357 "EHLO
-	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755521Ab3B1WE7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 17:04:59 -0500
-Message-ID: <512FD486.6030804@suse.cz>
-Date: Thu, 28 Feb 2013 23:04:54 +0100
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:19.0) Gecko/20130124 Thunderbird/19.0
-MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-CC: stable@vger.kernel.org, Jiang Liu <jiang.liu@huawei.com>,
-        Gaohuai Han <hangaohuai@huawei.com>,
-        Maciej Sosnowski <maciej.sosnowski@intel.com>,
-        Dan Williams <djbw@fb.com>
-Subject: Re: [ 47/53] dca: check against empty dca_domains list before unregister
- provider
-References: <20130226235619.844721947@linuxfoundation.org> <20130226235624.751198592@linuxfoundation.org>
-In-Reply-To: <20130226235624.751198592@linuxfoundation.org>
-X-Enigmail-Version: 1.6a1pre
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 7bit
+	id S1760792Ab3B1WFZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 17:05:25 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:40669 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755779Ab3B1WFX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Feb 2013 17:05:23 -0500
+From: Borislav Petkov <bp@alien8.de>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Borislav Petkov <bp@suse.de>
+Subject: [PATCH] scripts/decodecode: Make faulting insn ptr more robust
+Date: Thu, 28 Feb 2013 23:05:12 +0100
+Message-Id: <1362089112-27470-1-git-send-email-bp@alien8.de>
+X-Mailer: git-send-email 1.8.1.3.535.ga923c31
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/27/2013 12:58 AM, Greg Kroah-Hartman wrote:
-> 3.0-stable review patch.  If anyone has any objections, please let me know.
-> 
-> ------------------
-> 
-> From: Maciej Sosnowski <maciej.sosnowski@intel.com>
-> 
-> commit c419fcfd071cf34ba00f9f65282583772d2655e7 upstream.
-> 
-> When providers get blocked unregister_dca_providers() is called ending up
-> with dca_providers and dca_domain lists emptied. Dca should be prevented from
-> trying to unregister any provider if dca_domain list is found empty.
-> 
-> Reported-by: Jiang Liu <jiang.liu@huawei.com>
-> Tested-by: Gaohuai Han <hangaohuai@huawei.com>
-> Signed-off-by: Maciej Sosnowski <maciej.sosnowski@intel.com>
-> Signed-off-by: Dan Williams <djbw@fb.com>
-> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> 
-> ---
->  drivers/dca/dca-core.c |    5 +++++
->  1 file changed, 5 insertions(+)
-> 
-> --- a/drivers/dca/dca-core.c
-> +++ b/drivers/dca/dca-core.c
-> @@ -409,6 +409,11 @@ void unregister_dca_provider(struct dca_
->  
->  	spin_lock_irqsave(&dca_lock, flags);
->  
-> +	if (list_empty(&dca_domains)) {
-> +		raw_spin_unlock_irqrestore(&dca_lock, flags);
+From: Borislav Petkov <bp@suse.de>
 
-Hi, this is an incorrect backport. It should be spin_unlock_irqrestore
-obviously...
+It can accidentally happen that the faulting insn (the exact instruction
+bytes) is repeated a little further on in the trace. This causes that
+same instruction to be tagged twice, see example below.
 
+What we want to do, however, is to track back from the end of the whole
+disassembly so many lines as the slice which starts with the faulting
+instruction is long. This leads us to the actual faulting instruction
+and *then* we tag it.
 
+While we're at it, we can drop the sed "g" flag because we address only
+this one line.
 
+Also, if we point to an instruction which changes decoding depending
+on the slice being objdumped, like a Jcc insn, for example, we do not
+even tag it as a faulting instruction because the instruction decode
+changes in the second slice but we use that second format as a regex on
+the fsrst disassembled buffer and more often than not that instruction
+doesn't match.
+
+Again, simply tag the line which is deduced from the original "<>"
+marking we've received from the kernel.
+
+This also solves the pathologic issue of multiple tagging like this:
+
+  29:*  0f 0b                   ud2         <-- trapping instruction
+  2b:*  0f 0b                   ud2         <-- trapping instruction
+  2d:*  0f 0b                   ud2         <-- trapping instruction
+
+Double tagging example:
+
+Code: 34 dd 40 30 ad 81 48 c7 c0 80 f6 00 00 48 8b 3c 30 48 01 c6 b8 ff ff ff ff 48 8d 57 f0 48 39 f7 74 2f 49 8b 4c 24 08 48 8b 47 f0 <48> 39 48 08 75 0e eb 2a 66 90 48 8b 40 f0 48 39 48 08 74 1e 48
+All code
+========
+   0:   34 dd                   xor    $0xdd,%al
+   2:   40 30 ad 81 48 c7 c0    xor    %bpl,-0x3f38b77f(%rbp)
+   9:   80 f6 00                xor    $0x0,%dh
+   c:   00 48 8b                add    %cl,-0x75(%rax)
+   f:   3c 30                   cmp    $0x30,%al
+  11:   48 01 c6                add    %rax,%rsi
+  14:   b8 ff ff ff ff          mov    $0xffffffff,%eax
+  19:   48 8d 57 f0             lea    -0x10(%rdi),%rdx
+  1d:   48 39 f7                cmp    %rsi,%rdi
+  20:   74 2f                   je     0x51
+  22:   49 8b 4c 24 08          mov    0x8(%r12),%rcx
+  27:   48 8b 47 f0             mov    -0x10(%rdi),%rax
+  2b:*  48 39 48 08             cmp    %rcx,0x8(%rax)     <-- trapping instruction
+  2f:   75 0e                   jne    0x3f
+  31:   eb 2a                   jmp    0x5d
+  33:   66 90                   xchg   %ax,%ax
+  35:   48 8b 40 f0             mov    -0x10(%rax),%rax
+  39:*  48 39 48 08             cmp    %rcx,0x8(%rax)     <-- trapping instruction
+  3d:   74 1e                   je     0x5d
+  3f:   48                      rex.W
+
+Signed-off-by: Borislav Petkov <bp@suse.de>
+---
+ scripts/decodecode | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
+
+diff --git a/scripts/decodecode b/scripts/decodecode
+index 4f8248d5a11f..d8824f37acce 100755
+--- a/scripts/decodecode
++++ b/scripts/decodecode
+@@ -89,10 +89,16 @@ echo $code >> $T.s
+ disas $T
+ cat $T.dis >> $T.aa
+ 
++# (lines of whole $T.oo) - (lines of $T.aa, i.e. "Code starting") + 3,
++# i.e. the title + the "===..=" line (sed is counting from 1, 0 address is
++# special)
++faultlinenum=$(( $(wc -l $T.oo  | cut -d" " -f1) - \
++		 $(wc -l $T.aa  | cut -d" " -f1) + 3))
++
+ faultline=`cat $T.dis | head -1 | cut -d":" -f2-`
+ faultline=`echo "$faultline" | sed -e 's/\[/\\\[/g; s/\]/\\\]/g'`
+ 
+-cat $T.oo | sed -e "s/\($faultline\)/\*\1     <-- trapping instruction/g"
++cat $T.oo | sed -e "${faultlinenum}s/^\(.*:\)\(.*\)/\1\*\2\t\t<-- trapping instruction/"
+ echo
+ cat $T.aa
+ cleanup
 -- 
-js
-suse labs
+1.8.1.3.535.ga923c31
+
