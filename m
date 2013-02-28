@@ -1,196 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751779Ab3B1JZf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 04:25:35 -0500
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:49275 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750768Ab3B1JZb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 04:25:31 -0500
-X-AuditID: 9c930197-b7c43ae0000006e1-de-512f2287c874
-From: Namhyung Kim <namhyung@kernel.org>
-To: Michael Wang <wangyun@linux.vnet.ibm.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mike Galbraith <efault@gmx.de>, Paul Turner <pjt@google.com>,
-        Alex Shi <alex.shi@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ram Pai <linuxram@us.ibm.com>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>
-Subject: Re: [RFC PATCH] sched: wakeup buddy
-References: <512EFB4B.5040204@linux.vnet.ibm.com>
-Date: Thu, 28 Feb 2013 18:25:26 +0900
-In-Reply-To: <512EFB4B.5040204@linux.vnet.ibm.com> (Michael Wang's message of
-	"Thu, 28 Feb 2013 14:38:03 +0800")
-Message-ID: <87hakwssc9.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S1751937Ab3B1J0K (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 04:26:10 -0500
+Received: from mga02.intel.com ([134.134.136.20]:15725 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750768Ab3B1J0H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Feb 2013 04:26:07 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,754,1355126400"; 
+   d="scan'208";a="291713211"
+Date: Thu, 28 Feb 2013 11:26:02 +0200
+From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+To: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Cc: Jamie Iles <jamie@jamieiles.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-serial@vger.kernel.org
+Subject: Re: Serial port initialization broken on Armada 370/XP due to
+ "serial: 8250_dw: Don't use UPF_FIXED_TYPE"
+Message-ID: <20130228092602.GA5688@xps8300>
+References: <512E1AD9.4090403@free-electrons.com>
+ <512E2F64.2010706@free-electrons.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <512E2F64.2010706@free-electrons.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Michael,
+Hi Gregory.
 
-On Thu, 28 Feb 2013 14:38:03 +0800, Michael Wang wrote:
-> wake_affine() stuff is trying to bind related tasks closely, but it doesn't
-> work well according to the test on 'perf bench sched pipe' (thanks to Peter).
->
-> Besides, pgbench show that blindly using wake_affine() will eat a lot of
-> performance.
->
-> Thus, we need a new solution, it should detect the tasks related to each
-> other, bind them closely, take care the balance, latency and performance
-> at the same time.
->
-> Feature wakeup buddy seems like a good solution (thanks to Mike for the hint).
->
-> The feature introduced waker, wakee pointer and their ref count, along with
-> the new knob sysctl_sched_wakeup_buddy_ref.
->
-> Now in select_task_rq_fair(), when current (task B) try to wakeup p (task A),
-> if match:
->
-> 	1. A->waker == B && A->wakee == B
-> 	2. A->waker_ref > sysctl_sched_wakeup_buddy_ref
-> 	3. A->wakee_ref > sysctl_sched_wakeup_buddy_ref
->
-> then A is the wakeup buddy of B, which means A and B is likely to utilize
-> the memory of each other.
->
-> Thus, if B is also the wakeup buddy of A, which means no other task has
-> destroyed their relationship, then A is likely to benefit from the cached
-> data of B, make them running closely is likely to gain benefit.
+On Wed, Feb 27, 2013 at 05:08:04PM +0100, Gregory CLEMENT wrote:
+> I found the root of the problem in drivers/tty/serial/8250/8250.c
+> 
+> in the autoconfig() function, when the IIR register is acceded, it is
+> done using serial_in(), this function return an int but is used as it
+> have returned a char. There is a lot of implicit cast to a char when
+> the returned value is put in a char variable, this seems to not be a
+> problem most of the time. The problematic line is the following:
+> 
+> scratch = serial_in(up, UART_IIR) >> 6;
+> 
+> the shift is done here before any cast or mask, and unfortunately my
+> hardware send 0xC1C1C1C1, that lead to get a '7' in the scratch
+> variable instead of a '3'.
 
-Not sure if it should require bidirectional relationship.  Looks like
-just for benchmarks.  Isn't there a one-way relationship that could get
-a benefit from this?  I don't know ;-)
+OK, this is interesting. Why does it return that? dw_apb_uart_db.pdf I
+have says that bits 31:8 read as zero?
 
-Few nitpicks below..
+> Would you agree with this kind of patch to fix the issue?
+> 
+> diff --git a/drivers/tty/serial/8250/8250.c b/drivers/tty/serial/8250/8250.c
+> index e2ac25a..0b284c6 100644
+> --- a/drivers/tty/serial/8250/8250.c
+> +++ b/drivers/tty/serial/8250/8250.c
+> @@ -1119,7 +1119,7 @@ static void autoconfig(struct uart_8250_port *up, unsigned int probeflags)
+>         serial_out(up, UART_LCR, 0);
+> 
+>         serial_out(up, UART_FCR, UART_FCR_ENABLE_FIFO);
+> -       scratch = serial_in(up, UART_IIR) >> 6;
+> +       scratch = (serial_in(up, UART_IIR) & 0xFF) >> 6;
+> 
+>         switch (scratch) {
+>         case 0:
 
->
-> This patch add the feature wakeup buddy, reorganized the logical of
-> wake_affine() stuff with the new feature, by doing these, pgbench and
-> 'perf bench sched pipe' perform better.
->
-> Highlight:
-> 	Default value of sysctl_sched_wakeup_buddy_ref is 8 temporarily,
-> 	please let me know if some number perform better on your system,
-> 	I'd like to make it bigger to make the decision more carefully,
-> 	so we could provide the solution when it is really needed.
->
-> 	Comments are very welcomed.
->
-> Test:
-> 	Test with a 12 cpu X86 server and tip 3.8.0-rc7.
->
-> 	'perf bench sched pipe' show nearly double improvement.
->
-> 	pgbench result:
-> 					prev	post
->
->                 | db_size | clients |  tps  |   |  tps  |
->                 +---------+---------+-------+   +-------+
->                 | 22 MB   |       1 | 10794 |   | 10820 |
->                 | 22 MB   |       2 | 21567 |   | 21915 |
->                 | 22 MB   |       4 | 41621 |   | 42766 |
->                 | 22 MB   |       8 | 53883 |   | 60511 |       +12.30%
->                 | 22 MB   |      12 | 50818 |   | 57129 |       +12.42%
->                 | 22 MB   |      16 | 50463 |   | 59345 |       +17.60%
->                 | 22 MB   |      24 | 46698 |   | 63787 |       +36.59%
->                 | 22 MB   |      32 | 43404 |   | 62643 |       +44.33%
->
->                 | 7484 MB |       1 |  7974 |   |  8014 |
->                 | 7484 MB |       2 | 19341 |   | 19534 |
->                 | 7484 MB |       4 | 36808 |   | 38092 |
->                 | 7484 MB |       8 | 47821 |   | 51968 |       +8.67%
->                 | 7484 MB |      12 | 45913 |   | 52284 |       +13.88%
->                 | 7484 MB |      16 | 46478 |   | 54418 |       +17.08%
->                 | 7484 MB |      24 | 42793 |   | 56375 |       +31.74%
->                 | 7484 MB |      32 | 36329 |   | 55783 |       +53.55%
->                 
->                 | 15 GB   |       1 |  7636 |   |  7880 |       
->                 | 15 GB   |       2 | 19195 |   | 19477 |
->                 | 15 GB   |       4 | 35975 |   | 37962 |
->                 | 15 GB   |       8 | 47919 |   | 51558 |       +7.59%
->                 | 15 GB   |      12 | 45397 |   | 51163 |       +12.70%
->                 | 15 GB   |      16 | 45926 |   | 53912 |       +17.39%
->                 | 15 GB   |      24 | 42184 |   | 55343 |       +31.19%
->                 | 15 GB   |      32 | 35983 |   | 55358 |       +53.84%
->
-> Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
-> ---
-[SNIP]
-> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> index 81fa536..d5acfd8 100644
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -3173,6 +3173,75 @@ static int wake_affine(struct sched_domain *sd, struct task_struct *p, int sync)
->  }
->  
->  /*
-> + * Reduce sysctl_sched_wakeup_buddy_ref will reduce the preparation time
-> + * to active the wakeup buddy feature, and make it agile, however, this
-> + * will increase the risk of misidentify.
-> + *
-> + * Check wakeup_buddy() for the usage.
-> + */
-> +unsigned int sysctl_sched_wakeup_buddy_ref = 8UL;
+Instead, can you test if it's enough for you to set the reg-io-width
+to 1 instead of 4:
 
-It seems that just 8U (or even 8) is enough.
+diff --git a/arch/arm/boot/dts/armada-370-xp.dtsi b/arch/arm/boot/dts/armada-370-xp.dtsi
+index 4c0abe8..3a87a0e 100644
+--- a/arch/arm/boot/dts/armada-370-xp.dtsi
++++ b/arch/arm/boot/dts/armada-370-xp.dtsi
+@@ -54,7 +54,7 @@
+                                reg = <0xd0012000 0x100>;
+                                reg-shift = <2>;
+                                interrupts = <41>;
+-                               reg-io-width = <4>;
++                               reg-io-width = <1>;
+                                status = "disabled";
+                };
+                serial@d0012100 {
+@@ -62,7 +62,7 @@
+                                reg = <0xd0012100 0x100>;
+                                reg-shift = <2>;
+                                interrupts = <42>;
+-                               reg-io-width = <4>;
++                               reg-io-width = <1>;
+                                status = "disabled";
+                };
+ 
+Thanks,
 
-> +
-> +/*
-> + * wakeup_buddy() help to check whether p1 is the wakeup buddy of p2.
-> + *
-> + * Return 1 for yes, 0 for no.
-> +*/
-> +static inline int wakeup_buddy(struct task_struct *p1, struct task_struct *p2)
-> +{
-> +	if (p1->waker != p2 || p1->wakee != p2)
-> +		return 0;
-> +
-> +	if (p1->waker_ref < sysctl_sched_wakeup_buddy_ref)
-> +		return 0;
-> +
-> +	if (p1->wakee_ref < sysctl_sched_wakeup_buddy_ref)
-> +		return 0;
-> +
-> +	return 1;
-> +}
-[SNIP]
-> @@ -3399,6 +3490,8 @@ select_task_rq_fair(struct task_struct *p, int sd_flag, int wake_flags)
->  unlock:
->  	rcu_read_unlock();
->  
-> +	wakeup_ref(p);
-> +
-
-Why did you call it here?  Shouldn't it be on somewhere in the ttwu?
-
-
->  	return new_cpu;
->  }
->  
-> diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-> index c88878d..6845d24 100644
-> --- a/kernel/sysctl.c
-> +++ b/kernel/sysctl.c
-> @@ -424,6 +424,16 @@ static struct ctl_table kern_table[] = {
->  		.extra1		= &one,
->  	},
->  #endif
-> +#ifdef CONFIG_SMP
-> +	{
-> +		.procname	= "sched_wakeup_buddy_ref",
-> +		.data		= &sysctl_sched_wakeup_buddy_ref,
-> +		.maxlen		= sizeof(unsigned int),
-> +		.mode		= 0644,
-> +		.proc_handler	= proc_dointvec_minmax,
-> +		.extra1		= &one,
-> +	},
-> +#endif
->  #ifdef CONFIG_PROVE_LOCKING
->  	{
->  		.procname	= "prove_locking",
+-- 
+heikki
