@@ -1,85 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760669Ab3B1PWj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 10:22:39 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41913 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755321Ab3B1OqW (ORCPT
+	id S1760694Ab3B1PWu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 10:22:50 -0500
+Received: from mail-lb0-f169.google.com ([209.85.217.169]:32926 "EHLO
+	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755321Ab3B1PWp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 09:46:22 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        "Suzuki K. Poulose" <suzuki@in.ibm.com>, linuxppc-dev@ozlabs.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 014/139] uprobes/powerpc: Add dependency on single step emulation
-Date: Thu, 28 Feb 2013 14:42:44 +0000
-Message-Id: <1362062689-2567-15-git-send-email-luis.henriques@canonical.com>
+	Thu, 28 Feb 2013 10:22:45 -0500
+From: Pavel Shilovsky <piastry@etersoft.ru>
+To: linux-kernel@vger.kernel.org
+Cc: linux-cifs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-nfs@vger.kernel.org, wine-devel@winehq.org
+Subject: [PATCH v3 0/7] Add O_DENY* support for VFS and CIFS/NFS
+Date: Thu, 28 Feb 2013 19:25:26 +0400
+Message-Id: <1362065133-9490-1-git-send-email-piastry@etersoft.ru>
 X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1362062689-2567-1-git-send-email-luis.henriques@canonical.com>
-References: <1362062689-2567-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.7 -stable review patch.  If anyone has any objections, please let me know.
+This patchset adds support of O_DENY* flags for Linux fs layer. These flags can be used by any application that needs share reservations to organize a file access. VFS already has some sort of this capability - now it's done through flock/LOCK_MAND mechanis, but that approach is non-atomic. This patchset build new capabilities on top of the existing one but doesn't bring any changes into the flock call semantic.
 
-------------------
+These flags can be used by NFS (built-in-kernel) and CIFS (Samba) servers and Wine applications through VFS (for local filesystems) or CIFS/NFS modules. This will help when e.g. Samba and NFS server share the same directory for Windows and Linux users or Wine applications use Samba/NFS share to access the same data from different clients.
 
-From: "Suzuki K. Poulose" <suzuki@in.ibm.com>
+According to the previous discussions the most problematic question is how to prevent situations like DoS attacks where e.g /lib/liba.so file can be open with DENYREAD, or smth like this. That's why one extra flag O_DENYMAND is added. It indicates to underlying layer that an application want to use O_DENY* flags semantic. It allows us not affect native Linux applications (that don't use O_DENYMAND flag) - so, these flags (and the semantic of open syscall that they bring) are used only for those applications that really want it proccessed that way.
 
-commit 5e249d4528528c9a77da051a89ec7f99d31b83eb upstream.
+So, we have four new flags:
+O_DENYREAD - to prevent other opens with read access,
+O_DENYWRITE - to prevent other opens with write access,
+O_DENYDELETE - to prevent delete operations (this flag is not implemented in VFS and NFS part and only suitable for CIFS module),
+O_DENYMAND - to switch on/off three flags above.
 
-Uprobes uses emulate_step in sstep.c, but we haven't explicitly specified
-the dependency. On pseries HAVE_HW_BREAKPOINT protects us, but 44x has no
-such luxury.
+Also, this version of the patchset fixes the problem of data races on newely created files: open with O_CREAT can return the -ETXTBSY error for a successfully created file if this files was locked with a deny lock by another task.
 
-Consolidate other users that depend on sstep and create a new config option.
+The #1 patch adds flags to fcntl, the #2 patch implements VFS part. The patches #3, #4, #5 are related to CIFS-specific changes, #6 and #7 describe NFS and NFSD parts.
 
-Signed-off-by: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-Signed-off-by: Suzuki K. Poulose <suzuki@in.ibm.com>
-Cc: linuxppc-dev@ozlabs.org
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-[ luis: adjust context ]
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- arch/powerpc/Kconfig      | 4 ++++
- arch/powerpc/lib/Makefile | 4 +---
- 2 files changed, 5 insertions(+), 3 deletions(-)
+The preliminary patch for Samba that replaces the existing use of flock/LOCK_MAND mechanism with O_DENY* flags:
+http://git.etersoft.ru/people/piastry/packages/?p=samba.git;a=commitdiff;h=0596193832ace26a1dd54160c7380d071a83115b
 
-diff --git a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
-index 050cb37..4d8336c 100644
---- a/arch/powerpc/Kconfig
-+++ b/arch/powerpc/Kconfig
-@@ -264,6 +264,10 @@ config PPC_ADV_DEBUG_DAC_RANGE
- 	depends on PPC_ADV_DEBUG_REGS && 44x
- 	default y
- 
-+config PPC_EMULATE_SSTEP
-+	bool
-+	default y if KPROBES || UPROBES || XMON || HAVE_HW_BREAKPOINT
-+
- source "init/Kconfig"
- 
- source "kernel/Kconfig.freezer"
-diff --git a/arch/powerpc/lib/Makefile b/arch/powerpc/lib/Makefile
-index 7735a2c..3230bc1 100644
---- a/arch/powerpc/lib/Makefile
-+++ b/arch/powerpc/lib/Makefile
-@@ -18,9 +18,7 @@ obj-$(CONFIG_PPC64)	+= copypage_64.o copyuser_64.o \
- 			   memcpy_64.o usercopy_64.o mem_64.o string.o \
- 			   checksum_wrappers_64.o hweight_64.o \
- 			   copyuser_power7.o
--obj-$(CONFIG_XMON)	+= sstep.o ldstfp.o
--obj-$(CONFIG_KPROBES)	+= sstep.o ldstfp.o
--obj-$(CONFIG_HAVE_HW_BREAKPOINT)	+= sstep.o ldstfp.o
-+obj-$(CONFIG_PPC_EMULATE_SSTEP)	+= sstep.o ldstfp.o
- 
- ifeq ($(CONFIG_PPC64),y)
- obj-$(CONFIG_SMP)	+= locks.o
+The future part of open man page patch:
+
+-----
+O_DENYMAND - used to inforce a mandatory share reservation scheme of the file access. If this flag is passed, the open fails with -ETXTBSY in following cases:
+1) if O_DENYREAD flag is specified and there is another open with O_DENYMAND flag and READ access to the file;
+2) if O_DENYWRITE flag is specified and there is another open with O_DENYMAND flag and WRITE access to the file;
+3) if READ access is requested and there is another open with O_DENYMAND and O_DENYREAD flags;
+4) if WRITE access is requested and there is another open with O_DENYMAND and O_DENYWRITE flags.
+
+If O_DENYDELETE flag is specified and the open succeded, any further unlink operation will fail with -ETXTBSY untill this open is closed. Now this flag is processed by CIFS filesystems only.
+
+This mechanism is done through flocks. If O_DENYMAND is specified and flock syscall is processed after the open. The share modes are translated into flock according the following rules:
+1) O_DENYMAND   -> LOCK_MAND
+2) !O_DENYREAD  -> LOCK_READ
+3) !O_DENYWRITE -> LOCK_WRITE
+-----
+
+Pavel Shilovsky (7):
+  fcntl: Introduce new O_DENY* open flags
+  vfs: Add O_DENYREAD/WRITE flags support for open syscall
+  CIFS: Add O_DENY* open flags support
+  CIFS: Use NT_CREATE_ANDX command for forcemand mounts
+  CIFS: Translate SHARING_VIOLATION to -ETXTBSY error code for SMB2
+  NFSv4: Add O_DENY* open flags support
+  NFSD: Pass share reservations flags to VFS
+
+ fs/cifs/cifsacl.c                |   6 +-
+ fs/cifs/cifsglob.h               |  12 +++-
+ fs/cifs/cifsproto.h              |   9 +--
+ fs/cifs/cifssmb.c                |  47 ++++++++--------
+ fs/cifs/dir.c                    |  14 +++--
+ fs/cifs/file.c                   |  18 ++++--
+ fs/cifs/inode.c                  |  11 ++--
+ fs/cifs/link.c                   |  10 ++--
+ fs/cifs/readdir.c                |   2 +-
+ fs/cifs/smb1ops.c                |  15 ++---
+ fs/cifs/smb2file.c               |  10 ++--
+ fs/cifs/smb2inode.c              |   4 +-
+ fs/cifs/smb2maperror.c           |   2 +-
+ fs/cifs/smb2ops.c                |  10 ++--
+ fs/cifs/smb2pdu.c                |   6 +-
+ fs/cifs/smb2proto.h              |  14 +++--
+ fs/fcntl.c                       |   5 +-
+ fs/locks.c                       | 117 +++++++++++++++++++++++++++++++++++----
+ fs/namei.c                       |  44 ++++++++++++++-
+ fs/nfs/nfs4xdr.c                 |  24 ++++++--
+ fs/nfsd/nfs4state.c              |  46 ++++++++++++++-
+ include/linux/fs.h               |   6 ++
+ include/uapi/asm-generic/fcntl.h |  14 +++++
+ 23 files changed, 345 insertions(+), 101 deletions(-)
+
 -- 
 1.8.1.2
 
