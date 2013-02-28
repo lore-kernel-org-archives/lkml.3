@@ -1,93 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751324Ab3B1FW5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 00:22:57 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:42044 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751127Ab3B1FWw (ORCPT
+	id S1751137Ab3B1FZd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 00:25:33 -0500
+Received: from mail-qe0-f42.google.com ([209.85.128.42]:57343 "EHLO
+	mail-qe0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750738Ab3B1FZc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 00:22:52 -0500
-X-AuditID: 9c930179-b7b61ae000004061-f9-512ee9a9ec2c
-Date: Thu, 28 Feb 2013 14:22:48 +0900
-From: Kyungsik Lee <kyungsik.lee@lge.com>
-To: David Sterba <dsterba@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Michal Marek <mmarek@suse.cz>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-kbuild@vger.kernel.org, x86@kernel.org,
-        celinux-dev@lists.celinuxforum.org, Nicolas Pitre <nico@fluxnic.net>,
-        Nitin Gupta <nitingupta910@gmail.com>,
-        "Markus F.X.J. Oberhumer" <markus@oberhumer.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Joe Millenbach <jmillenbach@gmail.com>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Egon Alter <egon.alter@gmx.net>, hyojun.im@lge.com, chan.jeong@lge.com,
-        raphael.andy.lee@gmail.com
-Subject: Re: [RFC PATCH v2 2/4] lib: Add support for LZ4-compressed kernel
-Message-ID: <20130228052248.GA15148@Corona>
-References: <1361859870-15751-1-git-send-email-kyungsik.lee@lge.com>
- <1361859870-15751-3-git-send-email-kyungsik.lee@lge.com>
- <20130226140051.GX27541@twin.jikos.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130226140051.GX27541@twin.jikos.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Brightmail-Tracker: AAAAAA==
+	Thu, 28 Feb 2013 00:25:32 -0500
+From: kosaki.motohiro@gmail.com
+To: linux-kernel@vger.kernel.org
+Cc: linux-mm@kvack.org, Sasha Levin <sasha.levin@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, Mel Gorman <mgorman@suse.de>,
+        Dave Jones <davej@redhat.com>, Hillf Danton <dhillf@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Subject: [PATCH 1/2] mempolicy: fix wrong sp_node insertion
+Date: Thu, 28 Feb 2013 00:25:06 -0500
+Message-Id: <1362029107-3908-1-git-send-email-kosaki.motohiro@gmail.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <CAJd=RBBxTutPsF+XPZGt44eT1f0uPAQfCvQj_UmwdDg82J=F+A@mail.gmail.com>
+References: <CAJd=RBBxTutPsF+XPZGt44eT1f0uPAQfCvQj_UmwdDg82J=F+A@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 26, 2013 at 03:00:51PM +0100, David Sterba wrote:
-> On Tue, Feb 26, 2013 at 03:24:28PM +0900, Kyungsik Lee wrote:
-> > +config KERNEL_LZ4
-> > +	bool "LZ4"
-> > +	depends on HAVE_KERNEL_LZ4
-> > +	help
-> > +	  Its compression ratio is worse than LZO. The size of the kernel
-> > +	  is about 8% bigger than LZO. But the decompression speed is
-> > +	  faster than LZO.
-> > +
-> 
-> Can you please add a sentence what lz4 actually is before you start
-> comparing it with the current competitor(s)?
-Yes, I will update it.
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 
-> > --- /dev/null
-> > +++ b/lib/decompress_unlz4.c
-> > @@ -0,0 +1,190 @@
-> > +#define LZ4_CHUNK_SIZE (8<<20)
-> 
-> Please use a less cryptic way of representing a value of 8 MB. Also,
-> this is a hardcoded value that must be used on the compressor side. It's
-> an upper limit, so anything below 8MB does not break decompresssion, but
-> this must be somehow checked or saved along in the binary stream. You
-> seem to use the lz4demo.c on the userspace side for compression, but
-> this is not a standard tool nor the output format is well-defined or
-> stabilized.
-Yes, It will be easy to parse and extract the meta information required
-for the kernel decompressor if output format is well-defined and
-standardized.
+From: Hillf Danton <dhillf@gmail.com>
 
-> For proper use I would like to see a commandline tool similar to
-> gzip/bzip2/lzop that can be packaged and shipped by distros, and the
-> output format defintion.
-> 
-> Yann has some ideas for the format
-> http://fastcompression.blogspot.cz/2012/04/file-container-format-for-lz4.html
-Actually, I would like to use a packaged tool by distros too.
-lz4demo is what I use for compressing the kernel so far.
-I name it lz4 in the patch.
+n->end is accessed in sp_insert(). Thus it should be update
+before calling sp_insert(). This mistake may make kernel panic.
 
-> For kernel, the minimum of meta information is total compressed length,
-> total uncompressed length and chunk size. I don't know if the first two
-> aren't stored elsewhere in the generic kernel image headers, but chunk
-> size must be specified.
-Right, Currently the chunk size used in the kernel decompressor is the same
-as defined in lz4demo but it should have been provided as meta
-information.
+Signed-off-by: Hillf Danton <dhillf@gmail.com>
+Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+---
+ mm/mempolicy.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Thanks,
-Kyungsik
+diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+index 31d2663..868d08f 100644
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -2391,8 +2391,8 @@ static int shared_policy_replace(struct shared_policy *sp, unsigned long start,
+ 				*mpol_new = *n->policy;
+ 				atomic_set(&mpol_new->refcnt, 1);
+ 				sp_node_init(n_new, n->end, end, mpol_new);
+-				sp_insert(sp, n_new);
+ 				n->end = start;
++				sp_insert(sp, n_new);
+ 				n_new = NULL;
+ 				mpol_new = NULL;
+ 				break;
+-- 
+1.7.1
+
