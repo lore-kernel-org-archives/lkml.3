@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757070Ab3B1Owi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 09:52:38 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:42594 "EHLO
+	id S1759163Ab3B1Owx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 09:52:53 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:42579 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933232Ab3B1Ove (ORCPT
+	with ESMTP id S933206Ab3B1Ov1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 09:51:34 -0500
+	Thu, 28 Feb 2013 09:51:27 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Ian Abbott <abbotti@mev.co.uk>,
+Cc: Malcolm Priestley <tvboxspy@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 138/139] staging: comedi: ni_labpc: set up command4 register *after* command3
-Date: Thu, 28 Feb 2013 14:44:48 +0000
-Message-Id: <1362062689-2567-139-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 135/139] staging: vt6656: Fix URB submitted while active warning.
+Date: Thu, 28 Feb 2013 14:44:45 +0000
+Message-Id: <1362062689-2567-136-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1362062689-2567-1-git-send-email-luis.henriques@canonical.com>
 References: <1362062689-2567-1-git-send-email-luis.henriques@canonical.com>
@@ -27,78 +28,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ian Abbott <abbotti@mev.co.uk>
+From: Malcolm Priestley <tvboxspy@gmail.com>
 
-Commit 22056e2b46246d97ff0f7c6e21a77b8daa07f02c upstream.
+commit ae5943de8c8c4438cbac5cda599ff0b88c224468 upstream.
 
-Tuomas <tvainikk _at_ gmail _dot_ com> reported problems getting
-meaningful output from a Lab-PC+ in differential mode for AI cmds, but
-AI insn reads gave correct readings.  He tracked it down to two
-problems, one of which is addressed by this patch.
+This error happens because PIPEnsControlOut and PIPEnsControlIn unlock the
+spin lock for delay, letting in another thread.
 
-It seems that writing to the command3 register after writing to the
-command4 register in `labpc_ai_cmd()` messes up the differential
-reference bit setting in the command4 register.  Set up the command4
-register after the command3 register (as in `labpc_ai_rinsn()`) to avoid
-the problem.
+The patch moves the current MP_SET_FLAG to before filling
+of sUsbCtlRequest for pControlURB and clears it in event of failing.
 
-Thanks to Tuomas for suggesting the fix.
+Any thread calling either function while fMP_CONTROL_READS or fMP_CONTROL_WRITES
+flags set will return STATUS_FAILURE.
 
-Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
+Signed-off-by: Malcolm Priestley <tvboxspy@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/staging/comedi/drivers/ni_labpc.c | 31 ++++++++++++++++---------------
- 1 file changed, 16 insertions(+), 15 deletions(-)
+ drivers/staging/vt6656/usbpipe.c | 28 ++++++++++++++++++++--------
+ 1 file changed, 20 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/ni_labpc.c b/drivers/staging/comedi/drivers/ni_labpc.c
-index 5334977..5b2b966 100644
---- a/drivers/staging/comedi/drivers/ni_labpc.c
-+++ b/drivers/staging/comedi/drivers/ni_labpc.c
-@@ -1275,21 +1275,6 @@ static int labpc_ai_cmd(struct comedi_device *dev, struct comedi_subdevice *s)
- 		devpriv->write_byte(devpriv->command1_bits,
- 				    dev->iobase + COMMAND1_REG);
- 	}
--	/*  setup any external triggering/pacing (command4 register) */
--	devpriv->command4_bits = 0;
--	if (cmd->convert_src != TRIG_EXT)
--		devpriv->command4_bits |= EXT_CONVERT_DISABLE_BIT;
--	/* XXX should discard first scan when using interval scanning
--	 * since manual says it is not synced with scan clock */
--	if (labpc_use_continuous_mode(cmd) == 0) {
--		devpriv->command4_bits |= INTERVAL_SCAN_EN_BIT;
--		if (cmd->scan_begin_src == TRIG_EXT)
--			devpriv->command4_bits |= EXT_SCAN_EN_BIT;
--	}
--	/*  single-ended/differential */
--	if (aref == AREF_DIFF)
--		devpriv->command4_bits |= ADC_DIFF_BIT;
--	devpriv->write_byte(devpriv->command4_bits, dev->iobase + COMMAND4_REG);
+diff --git a/drivers/staging/vt6656/usbpipe.c b/drivers/staging/vt6656/usbpipe.c
+index c612ab5..f759352 100644
+--- a/drivers/staging/vt6656/usbpipe.c
++++ b/drivers/staging/vt6656/usbpipe.c
+@@ -168,6 +168,11 @@ int PIPEnsControlOut(
+     if (pDevice->Flags & fMP_CONTROL_WRITES)
+         return STATUS_FAILURE;
  
- 	devpriv->write_byte(cmd->chanlist_len,
- 			    dev->iobase + INTERVAL_COUNT_REG);
-@@ -1369,6 +1354,22 @@ static int labpc_ai_cmd(struct comedi_device *dev, struct comedi_subdevice *s)
- 		devpriv->command3_bits &= ~ADC_FNE_INTR_EN_BIT;
- 	devpriv->write_byte(devpriv->command3_bits, dev->iobase + COMMAND3_REG);
- 
-+	/*  setup any external triggering/pacing (command4 register) */
-+	devpriv->command4_bits = 0;
-+	if (cmd->convert_src != TRIG_EXT)
-+		devpriv->command4_bits |= EXT_CONVERT_DISABLE_BIT;
-+	/* XXX should discard first scan when using interval scanning
-+	 * since manual says it is not synced with scan clock */
-+	if (labpc_use_continuous_mode(cmd) == 0) {
-+		devpriv->command4_bits |= INTERVAL_SCAN_EN_BIT;
-+		if (cmd->scan_begin_src == TRIG_EXT)
-+			devpriv->command4_bits |= EXT_SCAN_EN_BIT;
-+	}
-+	/*  single-ended/differential */
-+	if (aref == AREF_DIFF)
-+		devpriv->command4_bits |= ADC_DIFF_BIT;
-+	devpriv->write_byte(devpriv->command4_bits, dev->iobase + COMMAND4_REG);
++	if (pDevice->Flags & fMP_CONTROL_READS)
++		return STATUS_FAILURE;
 +
- 	/*  startup acquisition */
++	MP_SET_FLAG(pDevice, fMP_CONTROL_WRITES);
++
+ 	pDevice->sUsbCtlRequest.bRequestType = 0x40;
+ 	pDevice->sUsbCtlRequest.bRequest = byRequest;
+ 	pDevice->sUsbCtlRequest.wValue = cpu_to_le16p(&wValue);
+@@ -182,12 +187,13 @@ int PIPEnsControlOut(
  
- 	/*  command2 reg */
+ 	ntStatus = usb_submit_urb(pDevice->pControlURB, GFP_ATOMIC);
+ 	if (ntStatus != 0) {
+-		DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO"control send request submission failed: %d\n", ntStatus);
++		DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO
++			"control send request submission failed: %d\n",
++				ntStatus);
++		MP_CLEAR_FLAG(pDevice, fMP_CONTROL_WRITES);
+ 		return STATUS_FAILURE;
+ 	}
+-	else {
+-	    MP_SET_FLAG(pDevice, fMP_CONTROL_WRITES);
+-	}
++
+ 	spin_unlock_irq(&pDevice->lock);
+     for (ii = 0; ii <= USB_CTL_WAIT; ii ++) {
+ 
+@@ -227,6 +233,11 @@ int PIPEnsControlIn(
+     if (pDevice->Flags & fMP_CONTROL_READS)
+ 	return STATUS_FAILURE;
+ 
++	if (pDevice->Flags & fMP_CONTROL_WRITES)
++		return STATUS_FAILURE;
++
++	MP_SET_FLAG(pDevice, fMP_CONTROL_READS);
++
+ 	pDevice->sUsbCtlRequest.bRequestType = 0xC0;
+ 	pDevice->sUsbCtlRequest.bRequest = byRequest;
+ 	pDevice->sUsbCtlRequest.wValue = cpu_to_le16p(&wValue);
+@@ -240,10 +251,11 @@ int PIPEnsControlIn(
+ 
+ 	ntStatus = usb_submit_urb(pDevice->pControlURB, GFP_ATOMIC);
+ 	if (ntStatus != 0) {
+-		DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO"control request submission failed: %d\n", ntStatus);
+-	}else {
+-		MP_SET_FLAG(pDevice, fMP_CONTROL_READS);
+-    }
++		DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO
++			"control request submission failed: %d\n", ntStatus);
++		MP_CLEAR_FLAG(pDevice, fMP_CONTROL_READS);
++		return STATUS_FAILURE;
++	}
+ 
+ 	spin_unlock_irq(&pDevice->lock);
+     for (ii = 0; ii <= USB_CTL_WAIT; ii ++) {
 -- 
 1.8.1.2
 
