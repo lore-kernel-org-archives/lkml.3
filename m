@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758217Ab3B1OsX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 09:48:23 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:42163 "EHLO
+	id S932334Ab3B1Osf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 09:48:35 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:42191 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932175Ab3B1OsP (ORCPT
+	with ESMTP id S932175Ab3B1Osa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 09:48:15 -0500
+	Thu, 28 Feb 2013 09:48:30 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: David Herrmann <dh.herrmann@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+Cc: Trond Myklebust <Trond.Myklebust@netapp.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 060/139] HID: wiimote: fix nunchuck button parser
-Date: Thu, 28 Feb 2013 14:43:30 +0000
-Message-Id: <1362062689-2567-61-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 066/139] NLM: Ensure that we resend all pending blocking locks after a reclaim
+Date: Thu, 28 Feb 2013 14:43:36 +0000
+Message-Id: <1362062689-2567-67-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1362062689-2567-1-git-send-email-luis.henriques@canonical.com>
 References: <1362062689-2567-1-git-send-email-luis.henriques@canonical.com>
@@ -27,46 +27,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Herrmann <dh.herrmann@gmail.com>
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit 89bdd0c6f38ccf0de43d5a36ede384a730f3394e upstream.
+commit 666b3d803a511fbc9bc5e5ea8ce66010cf03ea13 upstream.
 
-The buttons of the Wii Remote Nunchuck extension are actually active low.
-Fix the parser to forward the inverted values. The comment in the function
-always said "0 == pressed" but the implementation was wrong from the
-beginning.
+Currently, nlmclnt_lock will break out of the for(;;) loop when
+the reclaimer wakes up the blocking lock thread by setting
+nlm_lck_denied_grace_period. This causes the lock request to fail
+with an ENOLCK error.
+The intention was always to ensure that we resend the lock request
+after the grace period has expired.
 
-Reported-by: Victor Quicksilver <victor.quicksilver@gmail.com>
-Signed-off-by: David Herrmann <dh.herrmann@gmail.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Reported-by: Wangyuan Zhang <Wangyuan.Zhang@netapp.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/hid/hid-wiimote-ext.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ fs/lockd/clntproc.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/drivers/hid/hid-wiimote-ext.c b/drivers/hid/hid-wiimote-ext.c
-index aa95870..9e57285 100644
---- a/drivers/hid/hid-wiimote-ext.c
-+++ b/drivers/hid/hid-wiimote-ext.c
-@@ -378,14 +378,14 @@ static void handler_nunchuck(struct wiimote_ext *ext, const __u8 *payload)
- 
- 	if (ext->motionp) {
- 		input_report_key(ext->input,
--			wiiext_keymap[WIIEXT_KEY_Z], !!(payload[5] & 0x04));
-+			wiiext_keymap[WIIEXT_KEY_Z], !(payload[5] & 0x04));
- 		input_report_key(ext->input,
--			wiiext_keymap[WIIEXT_KEY_C], !!(payload[5] & 0x08));
-+			wiiext_keymap[WIIEXT_KEY_C], !(payload[5] & 0x08));
- 	} else {
- 		input_report_key(ext->input,
--			wiiext_keymap[WIIEXT_KEY_Z], !!(payload[5] & 0x01));
-+			wiiext_keymap[WIIEXT_KEY_Z], !(payload[5] & 0x01));
- 		input_report_key(ext->input,
--			wiiext_keymap[WIIEXT_KEY_C], !!(payload[5] & 0x02));
-+			wiiext_keymap[WIIEXT_KEY_C], !(payload[5] & 0x02));
+diff --git a/fs/lockd/clntproc.c b/fs/lockd/clntproc.c
+index 8392cb8..a3a0987 100644
+--- a/fs/lockd/clntproc.c
++++ b/fs/lockd/clntproc.c
+@@ -551,6 +551,9 @@ again:
+ 		status = nlmclnt_block(block, req, NLMCLNT_POLL_TIMEOUT);
+ 		if (status < 0)
+ 			break;
++		/* Resend the blocking lock request after a server reboot */
++		if (resp->status ==  nlm_lck_denied_grace_period)
++			continue;
+ 		if (resp->status != nlm_lck_blocked)
+ 			break;
  	}
- 
- 	input_sync(ext->input);
 -- 
 1.8.1.2
 
