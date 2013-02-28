@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757431Ab3B1XFY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 18:05:24 -0500
-Received: from longford.logfs.org ([213.229.74.203]:58571 "EHLO
+	id S1757574Ab3B1XF3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 18:05:29 -0500
+Received: from longford.logfs.org ([213.229.74.203]:58575 "EHLO
 	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757124Ab3B1XFV (ORCPT
+	with ESMTP id S1755352Ab3B1XF0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 18:05:21 -0500
+	Thu, 28 Feb 2013 18:05:26 -0500
 From: Joern Engel <joern@logfs.org>
 To: linux-kernel@vger.kernel.org
 Cc: Andrew Morton <akpm@linux-foundation.org>, Borislav Petkov <bp@alien8.de>,
         Jeff Moyer <jmoyer@redhat.com>, Joern Engel <joern@logfs.org>
-Subject: [PATCH 5/9] blockconsole: use CON_ALLDATA
-Date: Thu, 28 Feb 2013 16:39:58 -0500
-Message-Id: <1362087602-8979-6-git-send-email-joern@logfs.org>
+Subject: [PATCH 4/9] netconsole: use CON_ALLDATA
+Date: Thu, 28 Feb 2013 16:39:57 -0500
+Message-Id: <1362087602-8979-5-git-send-email-joern@logfs.org>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1362087602-8979-1-git-send-email-joern@logfs.org>
 References: <1362087602-8979-1-git-send-email-joern@logfs.org>
@@ -21,7 +21,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Blockconsole should really see every message ever printed.  The
+Netconsole should really see every message ever printed.  The
 alternative is to try debugging with information like this:
 [166135.633974] Stack:
 [166135.634016] Call Trace:
@@ -32,22 +32,22 @@ alternative is to try debugging with information like this:
 
 Signed-off-by: Joern Engel <joern@logfs.org>
 ---
- drivers/block/blockconsole.c |    2 +-
+ drivers/net/netconsole.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/block/blockconsole.c b/drivers/block/blockconsole.c
-index 7f8ac5b..32f6c62 100644
---- a/drivers/block/blockconsole.c
-+++ b/drivers/block/blockconsole.c
-@@ -481,7 +481,7 @@ static int bcon_create(const char *devname)
- 	strlcpy(bc->devname, devname, sizeof(bc->devname));
- 	spin_lock_init(&bc->end_io_lock);
- 	strcpy(bc->console.name, "bcon");
--	bc->console.flags = CON_PRINTBUFFER | CON_ENABLED;
-+	bc->console.flags = CON_PRINTBUFFER | CON_ENABLED | CON_ALLDATA;
- 	bc->console.write = bcon_write;
- 	bc->bdev = blkdev_get_by_path(devname, mode, NULL);
- #ifndef MODULE
+diff --git a/drivers/net/netconsole.c b/drivers/net/netconsole.c
+index 6989ebe..77783fe 100644
+--- a/drivers/net/netconsole.c
++++ b/drivers/net/netconsole.c
+@@ -718,7 +718,7 @@ static void write_msg(struct console *con, const char *msg, unsigned int len)
+ 
+ static struct console netconsole = {
+ 	.name	= "netcon",
+-	.flags	= CON_ENABLED,
++	.flags	= CON_ENABLED | CON_ALLDATA,
+ 	.write	= write_msg,
+ };
+ 
 -- 
 1.7.10.4
 
