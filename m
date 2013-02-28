@@ -1,73 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751918Ab3B1Xn4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 18:43:56 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:33773 "EHLO mx1.redhat.com"
+	id S1752403Ab3B1Xp1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 18:45:27 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:60446 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751078Ab3B1Xny (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 18:43:54 -0500
-Date: Thu, 28 Feb 2013 18:43:51 -0500
-From: Dave Jones <davej@redhat.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Cc: ebiederm@xmission.com, dhowells@redhat.com
-Subject: commit_creds oops
-Message-ID: <20130228234351.GA22046@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>, ebiederm@xmission.com,
-	dhowells@redhat.com
+	id S1752014Ab3B1Xp0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Feb 2013 18:45:26 -0500
+Date: Fri, 1 Mar 2013 00:45:23 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: David Howells <dhowells@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>, jwboyer@redhat.com,
+        pjones@redhat.com, vgoyal@redhat.com, keescook@chromium.org,
+        keyrings@linux-nfs.org, linux-kernel@vger.kernel.org,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Florian Weimer <fw@deneb.enyo.de>, Paolo Bonzini <pbonzini@redhat.com>
+Subject: Re: [GIT PULL] Load keys from signed PE binaries
+In-Reply-To: <20130228230518.GA12717@srcf.ucam.org>
+Message-ID: <alpine.LNX.2.00.1303010040280.11745@pobox.suse.cz>
+References: <30665.1361461678@warthog.procyon.org.uk> <alpine.LRH.2.00.1302282335500.2038@twin.jikos.cz> <20130228225115.GA12360@srcf.ucam.org> <alpine.LNX.2.00.1302282357210.11745@pobox.suse.cz> <20130228230518.GA12717@srcf.ucam.org>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just hit this on Linus' current tree.
+On Thu, 28 Feb 2013, Matthew Garrett wrote:
 
-[   89.621770] BUG: unable to handle kernel NULL pointer dereference at 00000000000000c8
-[   89.623111] IP: [<ffffffff810784b0>] commit_creds+0x250/0x2f0
-[   89.624062] PGD 122bfd067 PUD 122bfe067 PMD 0 
-[   89.624901] Oops: 0000 [#1] PREEMPT SMP 
-[   89.625678] Modules linked in: caif_socket caif netrom bridge hidp 8021q garp stp mrp rose llc2 af_rxrpc phonet af_key binfmt_misc bnep l2tp_ppp can_bcm l2tp_core pppoe pppox can_raw scsi_transport_iscsi ppp_generic slhc nfnetlink can ipt_ULOG ax25 decnet irda nfc rds x25 crc_ccitt appletalk atm ipx p8023 psnap p8022 llc lockd sunrpc ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 xt_conntrack nf_conntrack ip6table_filter ip6_tables btusb bluetooth snd_hda_codec_realtek snd_hda_intel snd_hda_codec snd_pcm vhost_net snd_page_alloc snd_timer tun macvtap usb_debug snd rfkill microcode macvlan edac_core pcspkr serio_raw kvm_amd soundcore kvm r8169 mii
-[   89.637846] CPU 2 
-[   89.638175] Pid: 782, comm: trinity-main Not tainted 3.8.0+ #63 Gigabyte Technology Co., Ltd. GA-MA78GM-S2H/GA-MA78GM-S2H
-[   89.639850] RIP: 0010:[<ffffffff810784b0>]  [<ffffffff810784b0>] commit_creds+0x250/0x2f0
-[   89.641161] RSP: 0018:ffff880115657eb8  EFLAGS: 00010207
-[   89.641984] RAX: 00000000000003e8 RBX: ffff88012688b000 RCX: 0000000000000000
-[   89.643069] RDX: 0000000000000000 RSI: ffffffff81c32960 RDI: ffff880105839600
-[   89.644167] RBP: ffff880115657ed8 R08: 0000000000000000 R09: 0000000000000000
-[   89.645254] R10: 0000000000000001 R11: 0000000000000246 R12: ffff880105839600
-[   89.646340] R13: ffff88011beea490 R14: ffff88011beea490 R15: 0000000000000000
-[   89.647431] FS:  00007f3ac063b740(0000) GS:ffff88012b200000(0000) knlGS:0000000000000000
-[   89.648660] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[   89.649548] CR2: 00000000000000c8 CR3: 0000000122bfc000 CR4: 00000000000007e0
-[   89.650635] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[   89.651723] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[   89.652812] Process trinity-main (pid: 782, threadinfo ffff880115656000, task ffff88011beea490)
-[   89.654128] Stack:
-[   89.654433]  0000000000000000 ffff8801058396a0 ffff880105839600 ffff88011beeaa78
-[   89.655769]  ffff880115657ef8 ffffffff812c7d9b ffffffff82079be0 0000000000000000
-[   89.657073]  ffff880115657f28 ffffffff8106c665 0000000000000002 ffff880115657f58
-[   89.658399] Call Trace:
-[   89.658822]  [<ffffffff812c7d9b>] key_change_session_keyring+0xfb/0x140
-[   89.659845]  [<ffffffff8106c665>] task_work_run+0xa5/0xd0
-[   89.660698]  [<ffffffff81002911>] do_notify_resume+0x71/0xb0
-[   89.661581]  [<ffffffff816c9a4a>] int_signal+0x12/0x17
-[   89.662385] Code: 24 90 00 00 00 48 8b b3 90 00 00 00 49 8b 4c 24 40 48 39 f2 75 08 e9 83 00 00 00 48 89 ca 48 81 fa 60 29 c3 81 0f 84 41 fe ff ff <48> 8b 8a c8 00 00 00 48 39 ce 75 e4 3b 82 d0 00 00 00 0f 84 4b 
-[   89.667778] RIP  [<ffffffff810784b0>] commit_creds+0x250/0x2f0
-[   89.668733]  RSP <ffff880115657eb8>
-[   89.669301] CR2: 00000000000000c8
+> > But the real harm is being done by the i_own_your_ring0.ko module, which 
+> > can be modprobed on all the systems where the signed "hello world" binary 
+> > has been keyctl-ed before it was blacklisted.
+> 
+> Sure, if you've been infected before the revocation, you'll still be 
+> infected. There's not really any good way around that.
 
-My fastest trinity induced oops yet!
+Which is a very substantial difference to normal X509 chain of trust, 
+isn't it?
 
+This security model seems to be quite seriously flawed to me (in a sense 
+that it has nothing to do with chain of trust as mandated by X509 even 
+though it tries to pretend the opposite)
 
-Appears to be..
+And frankly, Linus' proposal at [1] doesn't really make it any better in 
+principle, it just keeps the whole thing out of kernel.
 
-                if ((set_ns == subset_ns->parent)  &&
-     850:       48 8b 8a c8 00 00 00    mov    0xc8(%rdx),%rcx
+[1] https://lkml.org/lkml/2013/2/21/228
 
-from the inlined cred_cap_issubset
+> > In other words -- you blacklist the population of the key on systems by 
+> > blakclisting the key-carrying binary, but the key remains trusted on 
+> > whatever system the binary has been processed by keyctl before. Right?
+> 
+> You have to re-load it on every boot, it's not a permanent thing.
 
-	Dave
+That unfortunately seems to be very weak security measure as well.
 
+Thanks,
+
+-- 
+Jiri Kosina
+SUSE Labs
