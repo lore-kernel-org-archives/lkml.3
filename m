@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756983Ab3B1XFM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 18:05:12 -0500
-Received: from longford.logfs.org ([213.229.74.203]:58562 "EHLO
+	id S1757431Ab3B1XFY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 18:05:24 -0500
+Received: from longford.logfs.org ([213.229.74.203]:58571 "EHLO
 	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756702Ab3B1XFH (ORCPT
+	with ESMTP id S1757124Ab3B1XFV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 18:05:07 -0500
+	Thu, 28 Feb 2013 18:05:21 -0500
 From: Joern Engel <joern@logfs.org>
 To: linux-kernel@vger.kernel.org
 Cc: Andrew Morton <akpm@linux-foundation.org>, Borislav Petkov <bp@alien8.de>,
         Jeff Moyer <jmoyer@redhat.com>, Joern Engel <joern@logfs.org>
-Subject: [PATCH 9/9] bcon: remove version 1.0 support
-Date: Thu, 28 Feb 2013 16:40:02 -0500
-Message-Id: <1362087602-8979-10-git-send-email-joern@logfs.org>
+Subject: [PATCH 5/9] blockconsole: use CON_ALLDATA
+Date: Thu, 28 Feb 2013 16:39:58 -0500
+Message-Id: <1362087602-8979-6-git-send-email-joern@logfs.org>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1362087602-8979-1-git-send-email-joern@logfs.org>
 References: <1362087602-8979-1-git-send-email-joern@logfs.org>
@@ -21,65 +21,33 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Very few machines ever ran with 1.0 format and by now I doubt whether a
-single one still does.  No need to carry that code along.
+Blockconsole should really see every message ever printed.  The
+alternative is to try debugging with information like this:
+[166135.633974] Stack:
+[166135.634016] Call Trace:
+[166135.634029]  <IRQ>
+[166135.634156]  <EOI>
+[166135.634177] Code: 00 00 55 48 89 e5 0f 1f 44 00 00 ff 15 31 49 80 00 c9 c3 66 66 66 66 66 66 2e 0f 1f 84 00 00 00 00 00 55 48 89 e5 0f 1f 44 00 00
+[166135.634384]  48 8b 14 25 98 24 01 00 48 8d 14 92 48 8d 04 bd 00 00 00 00
 
 Signed-off-by: Joern Engel <joern@logfs.org>
 ---
- drivers/block/blockconsole.c |   19 ++-----------------
- 1 file changed, 2 insertions(+), 17 deletions(-)
+ drivers/block/blockconsole.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/drivers/block/blockconsole.c b/drivers/block/blockconsole.c
-index b4730f8..e88b8ee 100644
+index 7f8ac5b..32f6c62 100644
 --- a/drivers/block/blockconsole.c
 +++ b/drivers/block/blockconsole.c
-@@ -18,7 +18,6 @@
- #include <linux/sched.h>
- #include <linux/ctype.h>
- 
--#define BLOCKCONSOLE_MAGIC_OLD	"\nLinux blockconsole version 1.0\n"
- #define BLOCKCONSOLE_MAGIC	"\nLinux blockconsole version 1.1\n"
- #define BCON_UUID_OFS		(32)
- #define BCON_ROUND_OFS		(41)
-@@ -234,18 +233,6 @@ static void bcon_advance_write_bytes(struct blockconsole *bc, int bytes)
- 	}
- }
- 
--static int bcon_convert_old_format(struct blockconsole *bc)
--{
--	bc->uuid = get_random_int();
--	bc->round = 0;
--	bc->console_bytes = bc->write_bytes = 0;
--	bcon_advance_console_bytes(bc, 0); /* To skip the header */
--	bcon_advance_write_bytes(bc, 0); /* To wrap around, if necessary */
--	bcon_erase_segment(bc);
--	pr_info("converted %s from old format\n", bc->devname);
--	return 0;
--}
--
- static int bcon_find_end_of_log(struct blockconsole *bc)
- {
- 	u64 start = 0, end = bc->max_bytes, middle;
-@@ -258,8 +245,8 @@ static int bcon_find_end_of_log(struct blockconsole *bc)
- 		return err;
- 	/* Second sanity check, out of sheer paranoia */
- 	version = bcon_magic_present(sec0);
--	if (version == 10)
--		return bcon_convert_old_format(bc);
-+	if (!version)
-+		return -EINVAL;
- 
- 	bc->uuid = simple_strtoull(sec0 + BCON_UUID_OFS, NULL, 16);
- 	bc->round = simple_strtoull(sec0 + BCON_ROUND_OFS, NULL, 16);
-@@ -618,8 +605,6 @@ int bcon_magic_present(const void *data)
- {
- 	size_t len = strlen(BLOCKCONSOLE_MAGIC);
- 
--	if (!memcmp(data, BLOCKCONSOLE_MAGIC_OLD, len))
--		return 10;
- 	if (memcmp(data, BLOCKCONSOLE_MAGIC, len))
- 		return 0;
- 	if (!is_four_byte_hex(data + BCON_UUID_OFS))
+@@ -481,7 +481,7 @@ static int bcon_create(const char *devname)
+ 	strlcpy(bc->devname, devname, sizeof(bc->devname));
+ 	spin_lock_init(&bc->end_io_lock);
+ 	strcpy(bc->console.name, "bcon");
+-	bc->console.flags = CON_PRINTBUFFER | CON_ENABLED;
++	bc->console.flags = CON_PRINTBUFFER | CON_ENABLED | CON_ALLDATA;
+ 	bc->console.write = bcon_write;
+ 	bc->bdev = blkdev_get_by_path(devname, mode, NULL);
+ #ifndef MODULE
 -- 
 1.7.10.4
 
