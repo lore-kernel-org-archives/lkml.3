@@ -1,74 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760711Ab3B1VrZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 16:47:25 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:47934 "EHLO hydra.sisk.pl"
+	id S1759963Ab3B1Vuv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 16:50:51 -0500
+Received: from mout.gmx.net ([212.227.15.19]:52707 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759872Ab3B1Vq4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 16:46:56 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, linux-usb@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, linux-ide@vger.kernel.org,
-        Jeff Garzik <jgarzik@pobox.com>, Yinghai Lu <yinghai@kernel.org>
-Subject: Re: [Resend][PATCH] ACPI / glue: Drop .find_bridge() callback from struct acpi_bus_type
-Date: Thu, 28 Feb 2013 22:49:27 +0100
-Message-ID: <1504144.f1SBuDyFqp@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <20130228023313.GC4042@kroah.com>
-References: <2612891.I2roH54cPk@vostro.rjw.lan> <1723405.gTrRpVTGu2@vostro.rjw.lan> <20130228023313.GC4042@kroah.com>
+	id S1752610Ab3B1Vut (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Feb 2013 16:50:49 -0500
+X-Authenticated: #28250155
+X-Provags-ID: V01U2FsdGVkX19Sh1wqwndS0571XxrEDPOjlVS1MkTZQ17zcwJ37y
+	Hx0PpR4VqNtIzk
+From: Sven Joachim <svenjoac@gmx.de>
+To: jlec@gentoo.org
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] kconfig: use config scripts to detect ncurses libs
+References: <jlec@gentoo.org>
+	<1362045557-9123-1-git-send-email-jlec@gentoo.org>
+Date: Thu, 28 Feb 2013 22:50:45 +0100
+In-Reply-To: <1362045557-9123-1-git-send-email-jlec@gentoo.org>
+	(jlec@gentoo.org's message of "Thu, 28 Feb 2013 10:59:17 +0100")
+Message-ID: <874ngwhzuy.fsf@turtle.gmx.de>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2.93 (gnu/linux)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, February 27, 2013 06:33:13 PM Greg Kroah-Hartman wrote:
-> On Thu, Feb 28, 2013 at 02:11:58AM +0100, Rafael J. Wysocki wrote:
-> > On Wednesday, February 27, 2013 02:20:32 PM Greg Kroah-Hartman wrote:
-> > > On Wed, Feb 27, 2013 at 11:06:52PM +0100, Rafael J. Wysocki wrote:
-> > > > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > > > 
-> > > > After PCI has stopped using the .find_bridge() callback in
-> > > > struct acpi_bus_type, the only remaining users of it are SATA and
-> > > > USB.  However, SATA only pretends to be a user, because it points
-> > > > that callback to a stub always returning -ENODEV, and USB uses it
-> > > > incorrectly, because as a result of the way it is used by USB every
-> > > > device in the system that doesn't have a bus type or parent is
-> > > > passed to usb_acpi_find_device() for inspection.
-> > > > 
-> > > > What USB actually needs, though, is to call usb_acpi_find_device()
-> > > > for USB ports that don't have a bus type defined, but have
-> > > > usb_port_device_type as their device type.
-> > > 
-> > > Ick, that's not good.  Can you have the original creator of that code
-> > > (someone else from Intel, I can't remember at the moment), fix that up
-> > > properly and send me patches?
-> > 
-> > That won't be necessary afer this patch.  Or do you want to fix up USB
-> > separately first?
-> 
-> No, sorry, my misunderstanding, I was assuming we still needed to do
-> other USB work after this.  If not, that's an even better reason to
-> accept this patch :)
+On 2013-02-28 10:59 +0100, jlec@gentoo.org wrote:
 
-Heh, thanks!
+> Ncurses provides a config script (ncurses5-config) to assist finding ncurses.
+> This patch makes use of it to detect the necessary libs for linking of the
+> ncurses nconfig dialog.
 
-Still, it seems that we can do a bit better that this.
+That script is not necessarily called ncurses5-config, it might also be
+called ncurses6-config is ncurses is configured for a different ABI
+(--enable-ext-colors, --enable-ext-mouse).  Although I would suspect
+that any distribution who does that provides a compatibility symlink.
 
-The two patches that will follow should be almost functionally equivalent to
-the $subject one, but the resulting code looks somewhat cleaner to me.
+>  scripts/kconfig/Makefile | 4 +++-
+>  1 file changed, 3 insertions(+), 1 deletion(-)
+>
+> diff --git a/scripts/kconfig/Makefile b/scripts/kconfig/Makefile
+> index 3091794..c372976 100644
+> --- a/scripts/kconfig/Makefile
+> +++ b/scripts/kconfig/Makefile
+> @@ -216,7 +216,9 @@ HOSTCFLAGS_gconf.o	= `pkg-config --cflags gtk+-2.0 gmodule-2.0 libglade-2.0` \
+>  
+>  HOSTLOADLIBES_mconf   = $(shell $(CONFIG_SHELL) $(check-lxdialog) -ldflags $(HOSTCC))
+>  
+> -HOSTLOADLIBES_nconf	= -lmenu -lpanel -lncurses
+> +HOSTLOADLIBES_nconf	= -lmenu -lpanel
+> +HOSTLOADLIBES_nconf	+= $(shell    ncursesw5-config --libs 2>/dev/null \
+> +				   || ncurses5-config --libs 2>/dev/null  )
 
-[1/2] Add .macth() callback to struct acpi_bus_type (instead of the bus pointer).
-[2/2] Drop .find_bridge() from struct acpi_bus_type
+This will link with ncursesw, not ncurses.  Probably not what you want,
+since nconf.h does not #include the right headers for that.
 
-Thanks,
-Rafael
+On Debian/Ubuntu, there's also the problem that ncursesw5-config exists
+even if the libncursesw5-dev package is not installed, so this patch
+makes the build fail in such cases.
 
+Can we just call ncurses5-config and not ncursesw5-config, or are there
+any distros who ship the latter and not the former?
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Cheers,
+       Sven
