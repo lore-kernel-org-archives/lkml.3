@@ -1,236 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932532Ab3B1QfJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 11:35:09 -0500
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:48076 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932405Ab3B1QfD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 11:35:03 -0500
-Message-ID: <512F8732.9090005@gmail.com>
-Date: Thu, 28 Feb 2013 09:34:58 -0700
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:17.0) Gecko/20130216 Thunderbird/17.0.3
+	id S1758806Ab3B1QkU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 11:40:20 -0500
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:57713 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753298Ab3B1QkS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Feb 2013 11:40:18 -0500
+Date: Thu, 28 Feb 2013 08:38:47 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Li Zhong <zhong@linux.vnet.ibm.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [RFC PATCH] context_tracking/rcu: don't function trace before
+ rcu_user_exit() finishes
+Message-ID: <20130228163847.GA3566@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1362039970.18895.28.camel@ThinkPad-T5421.cn.ibm.com>
 MIME-Version: 1.0
-To: chenggang <chenggang.qin@gmail.com>
-CC: linux-kernel@vger.kernel.org, chenggang <chenggang.qcg@taobao.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Namhyung Kim <namhyung@gmail.com>,
-        Yanmin Zhang <yanmin.zhang@intel.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Mike Galbraith <efault@gmx.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH v2 3/4] Transform mmap and other related structures to
- list with new xyarray
-References: <1361871710-6251-1-git-send-email-chenggang.qin@gmail.com> <1361871710-6251-2-git-send-email-chenggang.qin@gmail.com>
-In-Reply-To: <1361871710-6251-2-git-send-email-chenggang.qin@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1362039970.18895.28.camel@ThinkPad-T5421.cn.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13022816-5806-0000-0000-00002024DE43
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2/26/13 2:41 AM, chenggang wrote:
-> diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-> index 774c907..13112c6 100644
-> --- a/tools/perf/builtin-record.c
-> +++ b/tools/perf/builtin-record.c
-> @@ -31,6 +31,8 @@
->   #include <sched.h>
->   #include <sys/mman.h>
->
-> +#define MMAP(e, y) (*(struct perf_mmap *)xyarray__entry(e->mmap, 0, y))
-> +
+On Thu, Feb 28, 2013 at 04:26:10PM +0800, Li Zhong wrote:
+> I saw some RCU illegal usage from idle complaints when function tracer
+> is enabled with forced context tracking.
+> 
+> It seems that __schedule() might be called in function_trace_call() when
+> it re-enables preemption(if preemption and irqs are both enabled). 
+> 
+> So at the places where we call rcu_user_exit(), we need make sure that
+> no function tracer hooks could be called in preemption/irqs both enabled
+> environment before rcu_user_exit() finishes, or we might cause illegal
+> RCU usage in __schedule(). 
+> 
+> This patch tries to add notrace attribute to a couple of functions where
+> the above could happen, including user_exit(), and a few callers of
+> user_exit(). 
 
-That is ugly to have in perf commands. It would be better to hide such 
-details within evlist.c. e.g.
+And I have to ask...
 
-struct perf_mmap *perf_evlist__get_mmap(struct perf_evlist *evlist, int i)
+Do we really need the rcu_user_notrace?  Why not just label the functions
+as notrace?
 
->   #ifndef HAVE_ON_EXIT
->   #ifndef ATEXIT_MAX
->   #define ATEXIT_MAX 32
-> @@ -367,8 +369,8 @@ static int perf_record__mmap_read_all(struct perf_record *rec)
->   	int rc = 0;
->
->   	for (i = 0; i < rec->evlist->nr_mmaps; i++) {
-> -		if (rec->evlist->mmap[i].base) {
-> -			if (perf_record__mmap_read(rec, &rec->evlist->mmap[i]) != 0) {
-> +		if (MMAP(rec->evlist, i).base) {
-> +			if (perf_record__mmap_read(rec, &MMAP(rec->evlist, i)) != 0) {
->   				rc = -1;
->   				goto out;
->   			}
+							Thanx, Paul
 
-and then here get the mmap, if base is set call the read function.
+> Signed-off-by: Li Zhong <zhong@linux.vnet.ibm.com>
+> --
+>  arch/x86/kernel/ptrace.c  | 4 ++--
+>  arch/x86/kernel/signal.c  | 2 +-
+>  include/linux/rcupdate.h  | 2 ++
+>  kernel/context_tracking.c | 2 +-
+>  kernel/sched/core.c       | 2 +-
+>  5 files changed, 7 insertions(+), 5 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/ptrace.c b/arch/x86/kernel/ptrace.c
+> index 29a8120..04659c2 100644
+> --- a/arch/x86/kernel/ptrace.c
+> +++ b/arch/x86/kernel/ptrace.c
+> @@ -1488,7 +1488,7 @@ void send_sigtrap(struct task_struct *tsk, struct pt_regs *regs,
+>   * We must return the syscall number to actually look up in the table.
+>   * This can be -1L to skip running any syscall at all.
+>   */
+> -long syscall_trace_enter(struct pt_regs *regs)
+> +long rcu_user_notrace syscall_trace_enter(struct pt_regs *regs)
+>  {
+>  	long ret = 0;
+> 
+> @@ -1538,7 +1538,7 @@ out:
+>  	return ret ?: regs->orig_ax;
+>  }
+> 
+> -void syscall_trace_leave(struct pt_regs *regs)
+> +void rcu_user_notrace syscall_trace_leave(struct pt_regs *regs)
+>  {
+>  	bool step;
+> 
+> diff --git a/arch/x86/kernel/signal.c b/arch/x86/kernel/signal.c
+> index 6956299..10a9e5a 100644
+> --- a/arch/x86/kernel/signal.c
+> +++ b/arch/x86/kernel/signal.c
+> @@ -732,7 +732,7 @@ static void do_signal(struct pt_regs *regs)
+>   * notification of userspace execution resumption
+>   * - triggered by the TIF_WORK_MASK flags
+>   */
+> -void
+> +void rcu_user_notrace
+>  do_notify_resume(struct pt_regs *regs, void *unused, __u32 thread_info_flags)
+>  {
+>  	user_exit();
+> diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+> index b758ce1..ecf9872 100644
+> --- a/include/linux/rcupdate.h
+> +++ b/include/linux/rcupdate.h
+> @@ -229,6 +229,7 @@ extern void rcu_user_enter(void);
+>  extern void rcu_user_exit(void);
+>  extern void rcu_user_enter_after_irq(void);
+>  extern void rcu_user_exit_after_irq(void);
+> +#define rcu_user_notrace notrace
+>  #else
+>  static inline void rcu_user_enter(void) { }
+>  static inline void rcu_user_exit(void) { }
+> @@ -236,6 +237,7 @@ static inline void rcu_user_enter_after_irq(void) { }
+>  static inline void rcu_user_exit_after_irq(void) { }
+>  static inline void rcu_user_hooks_switch(struct task_struct *prev,
+>  					 struct task_struct *next) { }
+> +#define rcu_user_notrace
+>  #endif /* CONFIG_RCU_USER_QS */
+> 
+>  extern void exit_rcu(void);
+> diff --git a/kernel/context_tracking.c b/kernel/context_tracking.c
+> index 65349f0..d3fc35f 100644
+> --- a/kernel/context_tracking.c
+> +++ b/kernel/context_tracking.c
+> @@ -83,7 +83,7 @@ void user_enter(void)
+>   * This call supports re-entrancy. This way it can be called from any exception
+>   * handler without needing to know if we came from userspace or not.
+>   */
+> -void user_exit(void)
+> +void rcu_user_notrace user_exit(void)
+>  {
+>  	unsigned long flags;
+> 
+> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> index 2b52431..c970e92 100644
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -2973,7 +2973,7 @@ asmlinkage void __sched schedule(void)
+>  EXPORT_SYMBOL(schedule);
+> 
+>  #ifdef CONFIG_CONTEXT_TRACKING
+> -asmlinkage void __sched schedule_user(void)
+> +asmlinkage void __sched rcu_user_notrace schedule_user(void)
+>  {
+>  	/*
+>  	 * If we come here after a random call to set_need_resched(),
+> 
+> 
 
-However, changing the mmaps from an indexed array to a linked list is 
-going to have a cost with loops like this one - especially as the number 
-of events goes up (e.g., perf record -e kvm:*). Might be better to walk 
-the mmap list and call mmap_read for each.
-
----8<---
-
-> +/*
-> + * If threads->nr > 1, the cpu_map__nr() must be 1.
-> + * If the cpu_map__nr() > 1, we should not append pollfd.
-> + */
-> +static int perf_evlist__append_pollfd_thread(struct perf_evlist *evlist)
-> +{
-> +	int new_nfds;
-> +
-> +	if (cpu_map__all(evlist->cpus)) {
-> +		struct pollfd *pfd;
-> +
-> +		new_nfds = evlist->threads->nr * evlist->nr_entries;
-> +		pfd = zalloc(sizeof(struct pollfd) * new_nfds);
-> +
-> +		if (!pfd)
-> +			return -1;
-> +
-> +		memcpy(pfd, evlist->pollfd, (evlist->threads->nr - 1) * evlist->nr_entries);
-> +
-> +		evlist->pollfd = pfd;
-> +		return 0;
-> +	}
-> +
-> +	return 1;
-> +}
-> +
->   static int perf_evlist__alloc_pollfd(struct perf_evlist *evlist)
->   {
->   	int nfds = cpu_map__nr(evlist->cpus) * evlist->threads->nr * evlist->nr_entries;
-> @@ -288,7 +316,7 @@ void perf_evlist__id_add(struct perf_evlist *evlist, struct perf_evsel *evsel,
->   			 int cpu, int thread, u64 id)
->   {
->   	perf_evlist__id_hash(evlist, evsel, cpu, thread, id);
-> -	evsel->id[evsel->ids++] = id;
-> +	ID(evsel, evsel->ids++) = id;
->   }
-
-The pollfd changes should be a separate patch (should be possible; seems 
-independent of the mmap change).
-
->
->   static int perf_evlist__id_add_fd(struct perf_evlist *evlist,
-> @@ -336,7 +364,7 @@ struct perf_evsel *perf_evlist__id2evsel(struct perf_evlist *evlist, u64 id)
->
->   union perf_event *perf_evlist__mmap_read(struct perf_evlist *evlist, int idx)
->   {
-> -	struct perf_mmap *md = &evlist->mmap[idx];
-> +	struct perf_mmap *md = &MMAP(evlist, idx);
->   	unsigned int head = perf_mmap__read_head(md);
->   	unsigned int old = md->prev;
->   	unsigned char *data = md->base + page_size;
-> @@ -404,9 +432,9 @@ void perf_evlist__munmap(struct perf_evlist *evlist)
->   	int i;
->
->   	for (i = 0; i < evlist->nr_mmaps; i++) {
-> -		if (evlist->mmap[i].base != NULL) {
-> -			munmap(evlist->mmap[i].base, evlist->mmap_len);
-> -			evlist->mmap[i].base = NULL;
-> +		if (MMAP(evlist, i).base != NULL) {
-> +			munmap(MMAP(evlist, i).base, evlist->mmap_len);
-> +			MMAP(evlist, i).base = NULL;
->   		}
->   	}
-
-same comment here -- walk the mmap list rather than index looping. 
-Changing evlist as threads come and go will have implications on 
-multi-threaded users.
-
-
----8<---
-
-> +int perf_evlist__mmap_thread(struct perf_evlist *evlist, bool overwrite, int tidx)
-> +{
-> +	struct perf_evsel *evsel;
-> +	int prot = PROT_READ | (overwrite ? 0 : PROT_WRITE);
-> +	int mask = evlist->mmap_len - page_size - 1;
-> +	int output = -1;
-> +	struct pollfd *old_pollfd = evlist->pollfd;
-> +
-> +	if (!cpu_map__all(evlist->cpus))
-> +		return 1;
-> +
-> +	if (perf_evlist__append_mmap_thread(evlist) < 0)
-> +		return -ENOMEM;
-> +
-> +	if (perf_evlist__append_pollfd_thread(evlist) < 0)
-> +		goto free_append_mmap;
-> +
-> +	list_for_each_entry(evsel, &evlist->entries, node)
-> +		if ((evsel->attr.read_format & PERF_FORMAT_ID) &&
-> +		    evsel->sample_id == NULL)
-> +			if (perf_evsel__append_id_thread(evsel, tidx) < 0)
-> +				goto free_append_pollfd;
-
-braces
-
-
----8<---
-
-> +void perf_evsel__close_thread(struct perf_evsel *evsel, int cpu_nr, int tidx)
-> +{
-> +	int cpu;
-> +
-> +	for (cpu = 0; cpu < cpu_nr; cpu++)
-> +		if (FD(evsel, cpu, tidx) >= 0)
-> +			close(FD(evsel, cpu, tidx));
-
-braces
-
----8<---
-			\
-> diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-> index f4bfd79..51a52d4 100644
-> --- a/tools/perf/util/header.c
-> +++ b/tools/perf/util/header.c
-> @@ -25,6 +25,8 @@
->   #include "strbuf.h"
->   #include "build-id.h"
->
-> +#define ID(e, y) (*(u64 *)xyarray__entry(e->id, 0, y))
-
-again here, really do not want that outside of the evlist.c/evsel.c files
-
-> +
->   static bool no_buildid_cache = false;
->
->   static int trace_event_count;
-> @@ -1260,7 +1262,6 @@ static struct perf_evsel *
->   read_event_desc(struct perf_header *ph, int fd)
->   {
->   	struct perf_evsel *evsel, *events = NULL;
-> -	u64 *id;
->   	void *buf = NULL;
->   	u32 nre, sz, nr, i, j;
->   	ssize_t ret;
-> @@ -1325,19 +1326,17 @@ read_event_desc(struct perf_header *ph, int fd)
->   		if (!nr)
->   			continue;
->
-> -		id = calloc(nr, sizeof(*id));
-> -		if (!id)
-> -			goto error;
->   		evsel->ids = nr;
-> -		evsel->id = id;
-> +		evsel->id = xyarray__new(1, nr, sizeof(u64));
-> +		if (!evsel->id)
-> +			goto error;
-
-perf_evsel__id_new()?
-
->
->   		for (j = 0 ; j < nr; j++) {
-> -			ret = readn(fd, id, sizeof(*id));
-> -			if (ret != (ssize_t)sizeof(*id))
-> +			ret = readn(fd, &ID(evsel, j), sizeof(u64));
-
-perf_evsel__get_id()?
-
-Also, think about how to break up the patches into smaller change sets.
-
-David
