@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754424Ab3B1WzU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 17:55:20 -0500
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:56599 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753923Ab3B1WzP (ORCPT
+	id S1754676Ab3B1Wzj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 17:55:39 -0500
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:42562 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754162Ab3B1WzN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 17:55:15 -0500
+	Thu, 28 Feb 2013 17:55:13 -0500
 From: Olof Johansson <olof@lixom.net>
 To: torvalds@linux-foundation.org
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         arm@kernel.org, Olof Johansson <olof@lixom.net>
-Subject: [GIT PULL 3/3] arm-soc: mvebu platform changes (rebased)
-Date: Thu, 28 Feb 2013 14:54:53 -0800
-Message-Id: <1362092093-4839-5-git-send-email-olof@lixom.net>
+Subject: [GIT PULL 3/3] arm-soc: mvebu platform changes (not rebased)
+Date: Thu, 28 Feb 2013 14:54:52 -0800
+Message-Id: <1362092093-4839-4-git-send-email-olof@lixom.net>
 X-Mailer: git-send-email 1.8.1.192.gc4361b8
 In-Reply-To: <1362092093-4839-1-git-send-email-olof@lixom.net>
 References: <1362092093-4839-1-git-send-email-olof@lixom.net>
@@ -48,11 +48,11 @@ The following changes since commit 280c50ec3b6e801b59311823fcd7d9c679354b6a:
 
 are available in the git repository at:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git tags/late-mvebu-rebased
+  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git tags/late-mvebu
 
-for you to fetch changes up to 564991205956d869db0e45dfabe23a31b596fa15:
+for you to fetch changes up to 0ed30f3e6550706830959c6657c3f229334c9ccd:
 
-  arm: mvebu: enable the SD card slot on Armada 370 Reference Design board
+  Merge commit 'mmc-fsckup-merge' into late/mvebu
 
 ----------------------------------------------------------------
 
@@ -65,17 +65,27 @@ Andrew Lunn (7):
       ARM: Kirkwood: Convert NS2 to gpio-poweroff.
       ARM: Kirkwood: topkick: Enable i2c bus.
 
-Arnd Bergmann (3):
-      Merge 'mmc/upstream' into late/mvebu2
-      Merge branch 'timer/cleanup' into late/mvebu2
-      ARM: Dove: split legacy and DT setup
+Andy Shevchenko (1):
+      mmc: sdhci: introduce sdhci_update_clock helper to re-enable clock
+
+Arnd Bergmann (7):
+      Merge branch 'mvebu/boards' into late/mvebu
+      Merge tag 'boards_for_v3.9_round2' of git://git.infradead.org/users/jcooper/linux into late/mvebu
+      Merge tag 'boards_for_v3.9_round3' of git://git.infradead.org/users/jcooper/linux into late/mvebu
+      Merge tag 'dt_for_v3.9_round2' of git://git.infradead.org/users/jcooper/linux into late/mvebu-dt
+      Merge commit 'upstream/mmc'; branch 'depends/mmc' into late/mvebu2
+      Merge branch 'late/mvebu-dt' into late/mvebu
+      Merge commit 'mmc-fsckup-merge' into late/mvebu
+
+Chris Ball (1):
+      mmc: mvsdio: add pinctrl integration
 
 Ezequiel Garcia (7):
       arm: mvebu: Update defconfig to select USB support
-      ARM: mvebu: Update defconfig to select SPI support
-      ARM: mvebu: Update defconfig to select SPI flash and MTD support
       arm: mvebu: Add support for USB host controllers in Armada 370/XP
       arm: mvebu: Enable USB controllers on Armada 370/XP boards
+      ARM: mvebu: Update defconfig to select SPI support
+      ARM: mvebu: Update defconfig to select SPI flash and MTD support
       arm: mvebu: Add support for SPI controller in Armada 370/XP
       arm: mvebu: Add SPI flash on Armada XP-GP board
 
@@ -86,25 +96,46 @@ Florian Fainelli (2):
 Gregory CLEMENT (12):
       arm: mvebu: Update defconfig with Marvell RTC support
       arm: mvebu: Improve the SMP support of the interrupt controller
+      arm: mvebu: Add RTC support for Armada 370 and Armada XP
       arm: mvebu: Add support for local interrupt
       clocksource: time-armada-370-xp: add local timer support
       arm: mvebu: update defconfig with local timer support
-      arm: mvebu: support for the new Armada XP development board(DB-MV784MP-GP)
-      arm: mvebu: update defconfig with ATAG support when using DT
-      arm: mvebu: Add RTC support for Armada 370 and Armada XP
       arm: mvebu: update DT to support local timers
       clocksource: update and move armada-370-xp-timer documentation to timer directory
+      arm: mvebu: support for the new Armada XP development board(DB-MV784MP-GP)
       arm: mvebu: Add SPI flash on Armada XP-DB board
       arm: mvebu: Add SPI flash on Armada 370 DB board
+      arm: mvebu: update defconfig with ATAG support when using DT
 
-Jason Cooper (7):
+Guennadi Liakhovetski (7):
+      mmc: sh-mmcif: fix missing and consolidate IO completion timeouts
+      mmc: sh-mmcif: (cosmetic) simplify boolean return blocks
+      mmc: sh-mmcif: fix a race, causing an Oops on SMP
+      mmc: sh-mmcif: reset error code for any opcode
+      mmc: sh-mmcif: reset DMA completion immediately before starting DMA
+      mmc: sh-mmcif: fix I/O errors
+      mmc: sh-mmcif: simplify IRQ processing
+
+Jason Cooper (11):
       Merge tag 'tags/mvebu_fixes_for_v3.8-rc6' into mvebu/boards
       Merge tag 'tags/cleanup_for_v3.9_round2' into mvebu/boards
       Merge tag 'tags/drivers_for_v3.9' into mvebu/boards
       Merge commit 'd293875' into mvebu/boards
+      Merge tag 'tags/boards_for_v3.9' into mvebu/dt
+      Merge branch 'mvebu/boards' into mvebu/dt
+      Merge branch 'mvebu/boards' into mvebu/dt
       ARM: kirkwood: topkick: convert to pinctrl
       ARM: kirkwood: nsa310: convert to pinctrl
       ARM: kirkwood: topkick: init mvsdio via DT
+      Merge remote-tracking branch 'arm-soc/timer/cleanup' into mvebu/boards
+
+Kevin Liu (3):
+      mmc: sdhci: disable interrupt before free_irq
+      mmc: sdhci: add IRQ wake up support
+      mmc: sdhci-pxav3: add IRQ wake up support
+
+Konstantin Dorfman (1):
+      mmc: fix async request mechanism for sequential read scenarios
 
 Nobuhiro Iwamatsu (3):
       ARM: Kirkwood: Add pinctrl of TWSI1 to 88f6282
@@ -114,13 +145,48 @@ Nobuhiro Iwamatsu (3):
 Olof Johansson (1):
       ARM: dove: update dove_defconfig with a few useful options
 
-Sebastian Hesselbarth (4):
+Sebastian Hesselbarth (5):
+      ARM: Dove: split legacy and DT setup
       ARM: Dove: move CuBox led pinctrl to gpio-leds node
       ARM: Dove: add fixed regulator for CuBox USB power
       ARM: Dove: convert usb host controller to DT
       ARM: dove: convert serial DT nodes to clocks property
 
-Thomas Petazzoni (16):
+Seungwon Jeon (1):
+      mmc: queue: exclude asynchronous transfer for special request
+
+Shawn Guo (5):
+      mmc: sdhci: query card presence from cd-gpio before asking SDHCI
+      mmc: slot-gpio: use devm_* managed functions to ease users
+      mmc: remove unncessary mmc_gpio_free_cd() call from slot-gpio users
+      mmc: sdhci-esdhc-imx: use slot-gpio helpers for CD and WP
+      mmc: sdhci-esdhc-imx: remove ESDHC_CD_GPIO handling from IO accessory
+
+Shinya Kuribayashi (1):
+      mmc: sh_mmcif: add support for bundled MMCIF IRQs
+
+Stephen Warren (1):
+      mmc: add BCM2835 driver
+
+Subhash Jadavani (2):
+      mmc: sdio: fix resume failure due to lack of CMD52 reset
+      mmc: sdio: print correct UHS mode during card detection
+
+Sujit Reddy Thumma (1):
+      mmc: sdio: Fix SDIO 3.0 UHS-I initialization sequence
+
+Teppei Kamijou (7):
+      mmc: sh_mmcif: force to fail CMD52 immediately
+      mmc: sh_mmcif: ensure run-time suspend call is processed before suspend
+      mmc: sh_mmcif: Add support for eMMC Dual Data Rate
+      mmc: sh_mmcif: Use msecs_to_jiffies() for host->timeout
+      mmc: sh_mmcif: Avoid unnecessary mmc_delay() at mmc_card_sleepawake()
+      mmc: sh-mmcif: Terminate DMA transactions when detecting timeout or error
+      mmc: sh-mmcif: report all errors
+
+Thomas Petazzoni (18):
+      mmc: mvsdio: use slot-gpio infrastructure for write protect gpio
+      mmc: mvsdio: use slot-gpio for card detect gpio
       mmc: mvsdio: implement a Device Tree binding
       arm: mvebu: enable SDIO support in mvebu_defconfig
       arm: mvebu: enable mwifiex driver in mvebu_defconfig
@@ -140,6 +206,7 @@ Thomas Petazzoni (16):
 
 Willy Tarreau (1):
       ARM: kirkwood: convert Guruplug Server Plus to use the device tree
+
 
  .../marvell,armada-370-xp-timer.txt}            |  11 +-
  arch/arm/boot/dts/Makefile                      |   3 +
