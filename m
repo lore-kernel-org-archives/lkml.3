@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933227Ab3B1Ova (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 09:51:30 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:42574 "EHLO
+	id S933255Ab3B1Ovj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 09:51:39 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:42590 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933055Ab3B1Ov0 (ORCPT
+	with ESMTP id S932706Ab3B1Ovd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 09:51:26 -0500
+	Thu, 28 Feb 2013 09:51:33 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Eric Dumazet <edumazet@google.com>, Pavel Emelyanov <xemul@parallels.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Jean Delvare <khali@linux-fr.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 134/139] net: fix infinite loop in __skb_recv_datagram()
-Date: Thu, 28 Feb 2013 14:44:44 +0000
-Message-Id: <1362062689-2567-135-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 137/139] gpio/ich: Add missing spinlock init
+Date: Thu, 28 Feb 2013 14:44:47 +0000
+Message-Id: <1362062689-2567-138-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1362062689-2567-1-git-send-email-luis.henriques@canonical.com>
 References: <1362062689-2567-1-git-send-email-luis.henriques@canonical.com>
@@ -28,56 +28,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Jean Delvare <khali@linux-fr.org>
 
-commit 77c1090f94d1b0b5186fb13a1b71b47b1343f87f upstream.
+commit d39a948fef2446cfac3749bbfcfdd536335c3764 upstream.
 
-Tommi was fuzzing with trinity and reported the following problem :
+As reported by CONFIG_DEBUG_SPINLOCK=y.
 
-commit 3f518bf745 (datagram: Add offset argument to __skb_recv_datagram)
-missed that a raw socket receive queue can contain skbs with no payload.
-
-We can loop in __skb_recv_datagram() with MSG_PEEK mode, because
-wait_for_packet() is not prepared to skip these skbs.
-
-[   83.541011] INFO: rcu_sched detected stalls on CPUs/tasks: {}
-(detected by 0, t=26002 jiffies, g=27673, c=27672, q=75)
-[   83.541011] INFO: Stall ended before state dump start
-[  108.067010] BUG: soft lockup - CPU#0 stuck for 22s! [trinity-child31:2847]
-...
-[  108.067010] Call Trace:
-[  108.067010]  [<ffffffff818cc103>] __skb_recv_datagram+0x1a3/0x3b0
-[  108.067010]  [<ffffffff818cc33d>] skb_recv_datagram+0x2d/0x30
-[  108.067010]  [<ffffffff819ed43d>] rawv6_recvmsg+0xad/0x240
-[  108.067010]  [<ffffffff818c4b04>] sock_common_recvmsg+0x34/0x50
-[  108.067010]  [<ffffffff818bc8ec>] sock_recvmsg+0xbc/0xf0
-[  108.067010]  [<ffffffff818bf31e>] sys_recvfrom+0xde/0x150
-[  108.067010]  [<ffffffff81ca4329>] system_call_fastpath+0x16/0x1b
-
-Reported-by: Tommi Rantala <tt.rantala@gmail.com>
-Tested-by: Tommi Rantala <tt.rantala@gmail.com>
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Cc: Pavel Emelyanov <xemul@parallels.com>
-Acked-by: Pavel Emelyanov <xemul@parallels.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Jean Delvare <khali@linux-fr.org>
+Acked-by: Peter Tyser <ptyser@xes-inc.com>
+Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/core/datagram.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpio/gpio-ich.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/net/core/datagram.c b/net/core/datagram.c
-index ae6acf6..064151a 100644
---- a/net/core/datagram.c
-+++ b/net/core/datagram.c
-@@ -187,7 +187,7 @@ struct sk_buff *__skb_recv_datagram(struct sock *sk, unsigned int flags,
- 		skb_queue_walk(queue, skb) {
- 			*peeked = skb->peeked;
- 			if (flags & MSG_PEEK) {
--				if (*off >= skb->len) {
-+				if (*off >= skb->len && skb->len) {
- 					*off -= skb->len;
- 					continue;
- 				}
+diff --git a/drivers/gpio/gpio-ich.c b/drivers/gpio/gpio-ich.c
+index b7c0651..230814d 100644
+--- a/drivers/gpio/gpio-ich.c
++++ b/drivers/gpio/gpio-ich.c
+@@ -328,6 +328,7 @@ static int __devinit ichx_gpio_probe(struct platform_device *pdev)
+ 		return -ENODEV;
+ 	}
+ 
++	spin_lock_init(&ichx_priv.lock);
+ 	res_base = platform_get_resource(pdev, IORESOURCE_IO, ICH_RES_GPIO);
+ 	if (!res_base || !res_base->start || !res_base->end)
+ 		return -ENODEV;
 -- 
 1.8.1.2
 
