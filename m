@@ -1,74 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752271Ab3B1LGD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 06:06:03 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:44395 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751865Ab3B1LGA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 06:06:00 -0500
-From: Anton Arapov <anton@redhat.com>
-To: Anton Arapov <anton@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Josh Stone <jistone@redhat.com>,
-        Frank Eigler <fche@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-Subject: [RFC PATCH v3 3/6] uretprobes: generalize xol_get_insn_slot()
-Date: Thu, 28 Feb 2013 12:00:12 +0100
-Message-Id: <1362049215-5780-4-git-send-email-anton@redhat.com>
-In-Reply-To: <1362049215-5780-1-git-send-email-anton@redhat.com>
-References: <1362049215-5780-1-git-send-email-anton@redhat.com>
+	id S1752464Ab3B1LH3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 06:07:29 -0500
+Received: from nat28.tlf.novell.com ([130.57.49.28]:58838 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751163Ab3B1LH2 convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:1>);
+	Thu, 28 Feb 2013 06:07:28 -0500
+Message-Id: <512F487D02000078000C1E30@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.1 
+Date: Thu, 28 Feb 2013 11:07:25 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Roger Pau Monne" <roger.pau@citrix.com>
+Cc: <xen-devel@lists.xen.org>,
+        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH RFC 09/12] xen-blkback: move pending
+ handles list from blkbk to pending_req
+References: <1362047335-26402-1-git-send-email-roger.pau@citrix.com>
+ <1362047335-26402-10-git-send-email-roger.pau@citrix.com>
+In-Reply-To: <1362047335-26402-10-git-send-email-roger.pau@citrix.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  Generalize xol_take_insn_slot() to enable more consumers of the
-function, e.g. trampoline implementation for return probes.
+>>> On 28.02.13 at 11:28, Roger Pau Monne <roger.pau@citrix.com> wrote:
+> Moving grant ref handles from blkbk to pending_req will allow us to
+> get rid of the shared blkbk structure.
 
-  The first time a uprobe with return consumer is hit for a process, a
-trampoline slot is obtained in the xol_area and initialized with a
-breakpoint instruction. This slot is subsequently used by all
-uretprobes.
+At the expense of (slightly?) higher memory requirements?
 
-v3:
- - unified xol_get_insn_slot(), thus get rid of xol_get_trampoline_slot()
+> --- a/drivers/block/xen-blkback/blkback.c
+> +++ b/drivers/block/xen-blkback/blkback.c
+> @@ -136,6 +136,7 @@ struct pending_req {
+>  	struct list_head	free_list;
+>  	struct persistent_gnt	*persistent_gnts[BLKIF_MAX_SEGMENTS_PER_REQUEST];
+>  	struct page		*pages[BLKIF_MAX_SEGMENTS_PER_REQUEST];
+> +	grant_handle_t		grant_handles[BLKIF_MAX_SEGMENTS_PER_REQUEST];
 
-Signed-off-by: Anton Arapov <anton@redhat.com>
----
- kernel/events/uprobes.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+Adding yet another array here makes it even more desirable to
+switch from multiple arrays to a singly array of a structure, thus
+improving locality of the memory accesses involved in processing
+an individual segment.
 
-diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index d904164..69bf060 100644
---- a/kernel/events/uprobes.c
-+++ b/kernel/events/uprobes.c
-@@ -1221,7 +1221,7 @@ static unsigned long xol_take_insn_slot(struct xol_area *area)
-  * xol_get_insn_slot - allocate a slot for xol.
-  * Returns the allocated slot address or 0.
-  */
--static unsigned long xol_get_insn_slot(struct uprobe *uprobe)
-+static unsigned long xol_get_insn_slot(unsigned char *insn)
- {
- 	struct xol_area *area;
- 	unsigned long offset;
-@@ -1239,7 +1239,7 @@ static unsigned long xol_get_insn_slot(struct uprobe *uprobe)
- 	/* Initialize the slot */
- 	offset = xol_vaddr & ~PAGE_MASK;
- 	vaddr = kmap_atomic(area->page);
--	memcpy(vaddr + offset, uprobe->arch.insn, MAX_UINSN_BYTES);
-+	memcpy(vaddr + offset, insn, MAX_UINSN_BYTES);
- 	kunmap_atomic(vaddr);
- 	/*
- 	 * We probably need flush_icache_user_range() but it needs vma.
-@@ -1353,7 +1353,7 @@ pre_ssout(struct uprobe *uprobe, struct pt_regs *regs, unsigned long bp_vaddr)
- 	if (!utask)
- 		return -ENOMEM;
- 
--	xol_vaddr = xol_get_insn_slot(uprobe);
-+	xol_vaddr = xol_get_insn_slot(uprobe->arch.insn);
- 	if (!xol_vaddr)
- 		return -ENOMEM;
- 
--- 
-1.8.1.2
+Jan
 
