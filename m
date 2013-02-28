@@ -1,104 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754580Ab3B1Iqd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 03:46:33 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:37599 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753217Ab3B1Iqa (ORCPT
+	id S1754339Ab3B1Itj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 03:49:39 -0500
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:47120 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752340Ab3B1Itg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 03:46:30 -0500
-X-AuditID: cbfee68d-b7f636d0000009be-84-512f19653426
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Andrew Morton'" <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, "'Alessandro Zummo'" <a.zummo@towertech.it>,
-        rtc-linux@googlegroups.com, "'Jingoo Han'" <jg1.han@samsung.com>
-References: <00a501ce158e$ef171610$cd454230$%han@samsung.com>
-In-reply-to: <00a501ce158e$ef171610$cd454230$%han@samsung.com>
-Subject: [PATCH 19/19] rtc: rtc-starfire: remove erroneous __init/__exit
- annotations
-Date: Thu, 28 Feb 2013 17:46:29 +0900
-Message-id: <00b701ce1590$19b55070$4d1ff150$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac4Vju7DHmrOxtsNRmyyH1DU6RVYuAAARzfA
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrOIsWRmVeSWpSXmKPExsVy+t8zY91USf1Ag+1/RSyWXLzKbjFn/Ro2
-	i8sLL7FaXN41h81if2cHowOrx56JJ9k8Tsz4zeLRt2UVo8f0eT+ZPD5vkgtgjeKySUnNySxL
-	LdK3S+DK6H+zmrWgl6fi3I6VLA2ME7i6GDk5JARMJBq6WlghbDGJC/fWs3UxcnEICSxjlGg4
-	sJgRpujzp+esEInpjBKnTzZCOb8YJfbtfw/WziagJvHly2H2LkYODhEBfYm2Fg2QGmaBXkaJ
-	M7272UFqhARsJY61tbGA2JwCdhK/nx4F6xUWCJOY2nOUBaSXRUBVYvttOZAwL1D5gr37mSFs
-	QYkfk++BtTILaEms33mcCcKWl9i85i0zSKuEgLrEo7+6IGERASOJiyv2MUOUiEjse/GOEeQc
-	CYFH7BLblm0CO4dFQEDi2+RDLBC9shKbDjBD/CspcXDFDZYJjBKzkGyehWTzLCSbZyFZsYCR
-	ZRWjaGpBckFxUnqRoV5xYm5xaV66XnJ+7iZGSKT27mC8fcD6EGMy0PqJzFKiyfnASM8riTc0
-	NjYxMzE1Mbc0NTclTVhJnFfukkygkEB6YklqdmpqQWpRfFFpTmrxIUYmDk6pBkbRaR1Kxx9Y
-	pmy607IwRVT7yn1Hg8yz+767ds1TK7/89LZ5kcmx8y+YvN3LbSz+Bry/wjxfQ3Wd+knnlXdT
-	dvxLDrp8QMCuSGtBiX21bTuX2syWkpssx7aI8ahXrhURMV+tqvv18bxNNj2SXwoeHU0/n79T
-	q/LNguKjFlMy0wTOrXB/+72A4bYSS3FGoqEWc1FxIgBZ16dn6gIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrCKsWRmVeSWpSXmKPExsVy+t9jQd1USf1Ag2tXBSyWXLzKbjFn/Ro2
-	i8sLL7FaXN41h81if2cHowOrx56JJ9k8Tsz4zeLRt2UVo8f0eT+ZPD5vkgtgjWpgtMlITUxJ
-	LVJIzUvOT8nMS7dV8g6Od443NTMw1DW0tDBXUshLzE21VXLxCdB1y8wB2q6kUJaYUwoUCkgs
-	LlbSt8M0ITTETdcCpjFC1zckCK7HyAANJKxjzOh/s5q1oJen4tyOlSwNjBO4uhg5OSQETCQ+
-	f3rOCmGLSVy4t56ti5GLQ0hgOqPE6ZONrBDOL0aJffvfg1WxCahJfPlymL2LkYNDREBfoq1F
-	A6SGWaCXUeJM7252kBohAVuJY21tLCA2p4CdxO+nR8F6hQXCJKb2HGUB6WURUJXYflsOJMwL
-	VL5g735mCFtQ4sfke2CtzAJaEut3HmeCsOUlNq95ywzSKiGgLvHory5IWETASOLiin3MECUi
-	EvtevGOcwCg0C8mkWUgmzUIyaRaSlgWMLKsYRVMLkguKk9JzDfWKE3OLS/PS9ZLzczcxgtPA
-	M6kdjCsbLA4xCnAwKvHwdpjoBQqxJpYVV+YeYpTgYFYS4XXh1w8U4k1JrKxKLcqPLyrNSS0+
-	xJgM9OdEZinR5HxgisoriTc0NjEzsjQyszAyMTcnTVhJnJfx1JMAIYH0xJLU7NTUgtQimC1M
-	HJxSDYytxz54LHWOq4g/aBlt6sYjfHbvqWlB+as3XZS/yhdzbJa4aPOt9Wtnffl29LlYq/Ps
-	Sf05zJ3iu3k1Fr15a3t/usmLmJKrEjNeab93+2EUy306bHXpBQ/JH+WNV08zq53xrixYnW69
-	h2/JgTXqieedXjKGeZRsPrvks9F3/uKnlV02LAlzL09XYinOSDTUYi4qTgQAzZntLkcDAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Thu, 28 Feb 2013 03:49:36 -0500
+Message-ID: <512F1A15.2000609@linux.vnet.ibm.com>
+Date: Thu, 28 Feb 2013 16:49:25 +0800
+From: Michael Wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+MIME-Version: 1.0
+To: Mike Galbraith <efault@gmx.de>
+CC: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
+        Alex Shi <alex.shi@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ram Pai <linuxram@us.ibm.com>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        Namhyung Kim <namhyung@kernel.org>
+Subject: Re: [RFC PATCH] sched: wakeup buddy
+References: <512EFB4B.5040204@linux.vnet.ibm.com> <1362035917.4460.105.camel@marge.simpson.net> <512F09D4.1020307@linux.vnet.ibm.com> <1362038652.4460.124.camel@marge.simpson.net> <512F11E6.8060807@linux.vnet.ibm.com> <1362039862.4460.132.camel@marge.simpson.net>
+In-Reply-To: <1362039862.4460.132.camel@marge.simpson.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13022808-9574-0000-0000-000006C8BB94
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-__init/__exit annotations for probe()/remove() are supposed to be
-__devinit/__devexit, because __init/__exit for probe()/remove()
-are not correct. However, __devinit/__devexit are not used,
-because CONFIG_HOTPLUG was removed. Thus, these annotations
-should be removed.
+On 02/28/2013 04:24 PM, Mike Galbraith wrote:
+> On Thu, 2013-02-28 at 16:14 +0800, Michael Wang wrote: 
+>> On 02/28/2013 04:04 PM, Mike Galbraith wrote:
+> 
+>>> It would be nice if it _were_ a promise, but it is not, it's a hint.
+>>
+>> Bad to know :(
+>>
+>> Should we fix it or this is by designed? The comments after WF_SYNC
+>> cheated me...
+> 
+> You can't fix it, because it's not busted.  You can say "Ok guys, I'm
+> off for a nap RSN" all you want, but that won't guarantee that nobody
+> pokes you, and hands you something more useful to do than snoozing.
 
-Signed-off-by: Jingoo Han <jg1.han@samsung.com>
----
- drivers/rtc/rtc-starfire.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+So sync still means current is going to sleep, what you concerned is
+this promise will be easily broken by other waker, correct?
 
-diff --git a/drivers/rtc/rtc-starfire.c b/drivers/rtc/rtc-starfire.c
-index 5be98bf..d801eb5 100644
---- a/drivers/rtc/rtc-starfire.c
-+++ b/drivers/rtc/rtc-starfire.c
-@@ -37,7 +37,7 @@ static const struct rtc_class_ops starfire_rtc_ops = {
- 	.read_time	= starfire_read_time,
- };
- 
--static int __init starfire_rtc_probe(struct platform_device *pdev)
-+static int starfire_rtc_probe(struct platform_device *pdev)
- {
- 	struct rtc_device *rtc = rtc_device_register("starfire", &pdev->dev,
- 				     &starfire_rtc_ops, THIS_MODULE);
-@@ -49,7 +49,7 @@ static int __init starfire_rtc_probe(struct platform_device *pdev)
- 	return 0;
- }
- 
--static int __exit starfire_rtc_remove(struct platform_device *pdev)
-+static int starfire_rtc_remove(struct platform_device *pdev)
- {
- 	struct rtc_device *rtc = platform_get_drvdata(pdev);
- 
-@@ -63,7 +63,7 @@ static struct platform_driver starfire_rtc_driver = {
- 		.name	= "rtc-starfire",
- 		.owner	= THIS_MODULE,
- 	},
--	.remove		= __exit_p(starfire_rtc_remove),
-+	.remove		= starfire_rtc_remove,
- };
- 
- static int __init starfire_rtc_init(void)
--- 
-1.7.2.5
+Hmm.. may be you are right, if 'perf bench sched pipe' is not the one we
+should care, I have no reason to add this logical currently.
 
+I will remove this plus branch, unless I found other benchmark could
+benefit a lot from it.
+
+Besides this, how do you think about this idea?
+
+Regards,
+Michael Wang
+
+> 
+> -Mike  
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
