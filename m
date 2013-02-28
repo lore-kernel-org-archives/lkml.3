@@ -1,56 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752175Ab3B1Hio (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 02:38:44 -0500
-Received: from mga02.intel.com ([134.134.136.20]:49067 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751345Ab3B1Hin (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 02:38:43 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,754,1355126400"; 
-   d="scan'208";a="291674999"
-Subject: [PATCH 1/5] regmap: irq: call pm_runtime_put in
- pm_runtime_get_sync failed case
-From: Li Fei <fei.li@intel.com>
-To: broonie@opensource.wolfsonmicro.com, gregkh@linuxfoundation.org
-Cc: rjw@sisk.pl, linux-kernel@vger.kernel.org, chuansheng.liu@intel.com,
-        fei.li@intel.com
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 28 Feb 2013 15:37:11 +0800
-Message-ID: <1362037031.6212.3.camel@fli24-HP-Compaq-8100-Elite-CMT-PC>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+	id S1751443Ab3B1Hj1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 02:39:27 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:29116 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750775Ab3B1Hj0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Feb 2013 02:39:26 -0500
+Message-ID: <512F08AC.7010105@huawei.com>
+Date: Thu, 28 Feb 2013 15:35:08 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: Al Viro <viro@ZenIV.linux.org.uk>, cgroups <cgroups@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH 2/2] cpuset: use cgroup_name() in cpuset_print_task_mems_allowed()
+References: <512F0899.80101@huawei.com>
+In-Reply-To: <512F0899.80101@huawei.com>
+Content-Type: text/plain; charset="GB2312"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Use cgroup_name() instead of cgrp->dentry->name. This makes the code
+a bit simpler.
 
-Even in failed case of pm_runtime_get_sync, the usage_count
-is incremented. In order to keep the usage_count with correct
-value and runtime power management to behave correctly, call
-pm_runtime_put(_sync) in such case.
+While at it, remove cpuset_name and make cpuset_nodelist a local variable
+to cpuset_print_task_mems_allowed().
 
-Signed-off-by Liu Chuansheng <chuansheng.liu@intel.com>
-Signed-off-by: Li Fei <fei.li@intel.com>
+Signed-off-by: Li Zefan <lizefan@huawei.com>
 ---
- drivers/base/regmap/regmap-irq.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ kernel/cpuset.c | 32 +++++++++-----------------------
+ 1 file changed, 9 insertions(+), 23 deletions(-)
 
-diff --git a/drivers/base/regmap/regmap-irq.c b/drivers/base/regmap/regmap-irq.c
-index 4706c63..020ea2b 100644
---- a/drivers/base/regmap/regmap-irq.c
-+++ b/drivers/base/regmap/regmap-irq.c
-@@ -184,6 +184,7 @@ static irqreturn_t regmap_irq_thread(int irq, void *d)
- 		if (ret < 0) {
- 			dev_err(map->dev, "IRQ thread failed to resume: %d\n",
- 				ret);
-+			pm_runtime_put(map->dev);
- 			return IRQ_NONE;
- 		}
- 	}
+diff --git a/kernel/cpuset.c b/kernel/cpuset.c
+index 4f9dfe4..ace5bfc 100644
+--- a/kernel/cpuset.c
++++ b/kernel/cpuset.c
+@@ -265,17 +265,6 @@ static DEFINE_MUTEX(cpuset_mutex);
+ static DEFINE_MUTEX(callback_mutex);
+ 
+ /*
+- * cpuset_buffer_lock protects both the cpuset_name and cpuset_nodelist
+- * buffers.  They are statically allocated to prevent using excess stack
+- * when calling cpuset_print_task_mems_allowed().
+- */
+-#define CPUSET_NAME_LEN		(128)
+-#define	CPUSET_NODELIST_LEN	(256)
+-static char cpuset_name[CPUSET_NAME_LEN];
+-static char cpuset_nodelist[CPUSET_NODELIST_LEN];
+-static DEFINE_SPINLOCK(cpuset_buffer_lock);
+-
+-/*
+  * CPU / memory hotplug is handled asynchronously.
+  */
+ static struct workqueue_struct *cpuset_propagate_hotplug_wq;
+@@ -2592,6 +2581,8 @@ int cpuset_mems_allowed_intersects(const struct task_struct *tsk1,
+ 	return nodes_intersects(tsk1->mems_allowed, tsk2->mems_allowed);
+ }
+ 
++#define CPUSET_NODELIST_LEN	(256)
++
+ /**
+  * cpuset_print_task_mems_allowed - prints task's cpuset and mems_allowed
+  * @task: pointer to task_struct of some task.
+@@ -2602,24 +2593,19 @@ int cpuset_mems_allowed_intersects(const struct task_struct *tsk1,
+  */
+ void cpuset_print_task_mems_allowed(struct task_struct *tsk)
+ {
+-	struct dentry *dentry;
++	 /* Statically allocated to prevent using excess stack. */
++	static char cpuset_nodelist[CPUSET_NODELIST_LEN];
++	static DEFINE_SPINLOCK(cpuset_buffer_lock);
+ 
+-	dentry = task_cs(tsk)->css.cgroup->dentry;
+-	spin_lock(&cpuset_buffer_lock);
++	struct cgroup *cgrp = task_cs(tsk)->css.cgroup;
+ 
+-	if (!dentry) {
+-		strcpy(cpuset_name, "/");
+-	} else {
+-		spin_lock(&dentry->d_lock);
+-		strlcpy(cpuset_name, (const char *)dentry->d_name.name,
+-			CPUSET_NAME_LEN);
+-		spin_unlock(&dentry->d_lock);
+-	}
++	spin_lock(&cpuset_buffer_lock);
+ 
+ 	nodelist_scnprintf(cpuset_nodelist, CPUSET_NODELIST_LEN,
+ 			   tsk->mems_allowed);
+ 	printk(KERN_INFO "%s cpuset=%s mems_allowed=%s\n",
+-	       tsk->comm, cpuset_name, cpuset_nodelist);
++	       tsk->comm, cgroup_name(cgrp), cpuset_nodelist);
++
+ 	spin_unlock(&cpuset_buffer_lock);
+ }
+ 
 -- 
-1.7.4.1
-
-
-
+1.8.0.2
