@@ -1,99 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933063Ab3B1S73 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 13:59:29 -0500
-Received: from mail-oa0-f49.google.com ([209.85.219.49]:49533 "EHLO
-	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753124Ab3B1S70 (ORCPT
+	id S933093Ab3B1TCB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 14:02:01 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:39386 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932157Ab3B1TB6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 13:59:26 -0500
+	Thu, 28 Feb 2013 14:01:58 -0500
+Message-ID: <512FA9A1.7070701@wwwdotorg.org>
+Date: Thu, 28 Feb 2013 12:01:53 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <CA+5PVA6P2igBMmOeVwhoA5cy0NQHzd-MM6jw5ySUBfZUsMK=ag@mail.gmail.com>
-References: <alpine.DEB.2.00.1302260003460.24684@skynet.skynet.ie>
-	<CA+5PVA5wtZipQRTPfvbh1U8gjDMaW0095EsNz==Co+iww3YN1g@mail.gmail.com>
-	<CA+5PVA5vvw-JyODTtRwVhQSEiGrt=3wzDoCmeButEMTZxWAhbA@mail.gmail.com>
-	<CA+5PVA5za2stXYxQ_Tu3D6Lbif94cqK_5wvPXFhUpvsh_DOXVg@mail.gmail.com>
-	<CA+5PVA6CQ0YrSGkXPGtmzB9BgabXyiRnMSMKYDCJM+OuF5t6gQ@mail.gmail.com>
-	<CADnq5_PqAAhQZ-4Fd0UNoT5aEhUDdtu4n+1qXYucXsnyi0sQwQ@mail.gmail.com>
-	<CA+5PVA7Yzrx_=k9HB-D5v=7gsmn1ZyNb7YpzwDW-1j35Bbrs4Q@mail.gmail.com>
-	<CADnq5_OadSJ1thVEvfQVfTZ3De0vivVjnCKwepVxabs6i6ivLQ@mail.gmail.com>
-	<CA+5PVA6P2igBMmOeVwhoA5cy0NQHzd-MM6jw5ySUBfZUsMK=ag@mail.gmail.com>
-Date: Thu, 28 Feb 2013 13:59:25 -0500
-Message-ID: <CA+5PVA5ApepOTJGJR0zXF5C_p7cFjShr3_shynAHX_M=ya5o7Q@mail.gmail.com>
-Subject: Re: [git pull] drm merge for 3.9-rc1
-From: Josh Boyer <jwboyer@gmail.com>
-To: Alex Deucher <alexdeucher@gmail.com>
-Cc: Dave Airlie <airlied@linux.ie>, Alex Deucher <alexander.deucher@amd.com>,
-        Jerome Glisse <jglisse@redhat.com>, torvalds@linux-foundation.org,
-        linux-kernel@vger.kernel.org,
-        DRI mailing list <dri-devel@lists.freedesktop.org>
+To: Graeme Gregory <gg@slimlogic.co.uk>
+CC: Laxman Dewangan <ldewangan@nvidia.com>, J Keerthy <j-keerthy@ti.com>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "rob@landley.net" <rob@landley.net>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "b-cousson@ti.com" <b-cousson@ti.com>
+Subject: Re: [PATCH 1/4] documentation: add palmas dts definition
+References: <1361164283-3133-1-git-send-email-j-keerthy@ti.com> <512E5144.9020105@wwwdotorg.org> <512F1ADF.90906@nvidia.com> <512F2A29.8080708@slimlogic.co.uk> <512F3118.6030806@nvidia.com> <512F3810.30109@slimlogic.co.uk>
+In-Reply-To: <512F3810.30109@slimlogic.co.uk>
+X-Enigmail-Version: 1.4.6
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 28, 2013 at 10:15 AM, Josh Boyer <jwboyer@gmail.com> wrote:
-> On Thu, Feb 28, 2013 at 10:09 AM, Alex Deucher <alexdeucher@gmail.com> wrote:
->> On Thu, Feb 28, 2013 at 8:44 AM, Josh Boyer <jwboyer@gmail.com> wrote:
->>> On Thu, Feb 28, 2013 at 8:38 AM, Alex Deucher <alexdeucher@gmail.com> wrote:
->>>>>>>> ca57802e521de54341efc8a56f70571f79ffac72 is the first bad commit
->>>>>>>
->>>>>>> So I don't think that's actually the cause of the problem.  Or at least
->>>>>>> not that alone.  I reverted it on top of Linus' latest tree and I still
->>>>>>> get the lockups.
->>>>>>
->>>>>> Actually, git bisect does seem to have gotten it correct.  Once I
->>>>>> actually tested the revert of just that on top of Linus' tree (commit
->>>>>> d895cb1af1), things seem to be working much better.  I've rebooted a
->>>>>> dozen times without a lockup.  The most I've seen it take on a kernel
->>>>>> with that commit included is 3 reboots, so that's definitely at least an
->>>>>> improvement.
->>>>>
->>>>> I give up.  GPU issues are not my thing.  2 reboots after I sent that it
->>>>> gave me pretty rainbow static again.  So it might have been an
->>>>> improvement, but revert it is not a solution.
->>>>>
->>>>> Looking at there rest of the commits, the whole GPU rework might be
->>>>> suspect, but I clearly have no clue.
->>>>
->>>> GPUs are tricky beasts :)
->>>
->>> Understatement ;).
->>>
->>>> ca57802e521de54341efc8a56f70571f79ffac72 mostly likely wasn't the
->>>> problem anyway since it only affects 6xx/7xx and your card is handled
->>>> by the evergreen code.  I'll put together some patches to help narrow
->>>> down the problem.
->>>
->>> Yeah, that's the biggest problem I have, not knowing which functions are
->>> actually being executed for this card.  It looks like a combination of
->>> stuff in evergreen.c and ni.c, but I have no idea.
->>>
->>> Patches would be great.  If nothing else, I'm really good at building
->>> kernels and rebooting by now.
->>
->> Two possible fixes attached.  The first attempts a full reset of all
->> blocks if the MC (memory controller) is hung.  That may work better
->> than just resetting the MC.  The second just disables MC reset.  I'm
->> not sure we can reliably tell if it's busy due to display requests
->> hitting the MC periodically which would lead to needlessly resetting
->> it possibly leading to failures like you are seeing.
->
-> OK.  I'll test them individually.  It will probably take a bit because
-> I'll want to do numerous reboots if things seem "fixed" with one or the
-> other.
->
-> I'll let you know how things go.
+On 02/28/2013 03:57 AM, Graeme Gregory wrote:
+...
+> The final but of information that would be needed is some method to pass
+> down product_id/design_rev and for a lot of the IP blocks they could be
+> made independent of the actual parent.
 
-I applied each individually on top of Linus' tree as of this morning
-(commit 2a7d2b96d5) built, installed, and tested.
+That should probably be represented in DT itself as differing compatible
+values.
 
-0001-drm-radeon-XXX-try-a-full-reset-if-the-MC-is-busy.patch failed in
-two reboots.
-
-0001-drm-radeon-XXX-skip-MC-reset-as-it-s-probably-not-hu.patch has gone
-21 reboots without a hang/rainbow static.  You'll understand if I'm
-hesitant to declare success, but resetting the MC does indeed appear to
-be the issue.  I'll keep rebooting for a while to make sure.
-
-josh
+I could see the argument that this is SW-probe-able since there's a
+register that defines the value. However, any global ID register would
+apply to the top-level device, and not the version of any child IP
+blocks if there's the possibility of mixing/matching IP blocks. If
+there's a dedicated version register for a child IP block, then
+presumably it's already part of the child IP block's register space, and
+so the driver can read it, and then there perhaps wouldn't be a need to
+represent this using different compatible values.
