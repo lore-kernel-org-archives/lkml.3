@@ -1,251 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753932Ab3B1Ok2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 09:40:28 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:37329 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753103Ab3B1Ok0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 09:40:26 -0500
-Date: Thu, 28 Feb 2013 08:40:05 -0600
-From: Nishanth Menon <nm@ti.com>
-To: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
-CC: Tony Lindgren <tony@atomide.com>, Russell King <linux@arm.linux.org.uk>,
-        <linux-kernel@vger.kernel.org>, Ivaylo Dimitrov <freemangordon@abv.bg>,
-        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] arm: omap: RX-51: ARM errata 430973 workaround
-Message-ID: <20130228144005.GA22544@kahuna>
-References: <1362044548-5398-1-git-send-email-pali.rohar@gmail.com>
+	id S1754062Ab3B1On3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 09:43:29 -0500
+Received: from dkim1.fusionio.com ([66.114.96.53]:59592 "EHLO
+	dkim1.fusionio.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752729Ab3B1On1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Feb 2013 09:43:27 -0500
+X-Greylist: delayed 469 seconds by postgrey-1.27 at vger.kernel.org; Thu, 28 Feb 2013 09:43:27 EST
+X-ASG-Debug-ID: 1362062137-03d6a5664859390001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Date: Thu, 28 Feb 2013 15:35:33 +0100
+From: Jens Axboe <jaxboe@fusionio.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] Block IO core bits for 3.9
+Message-ID: <20130228143533.GC4727@kernel.dk>
+X-ASG-Orig-Subj: [GIT PULL] Block IO core bits for 3.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-1"
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1362044548-5398-1-git-send-email-pali.rohar@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1362062137
+X-Barracuda-Encrypted: AES128-SHA
+X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
+X-Barracuda-Bayes: INNOCENT GLOBAL 0.0000 1.0000 -2.0210
+X-Barracuda-Spam-Score: -2.02
+X-Barracuda-Spam-Status: No, SCORE=-2.02 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.123854
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10:42-20130228, Pali Rohár wrote:
-> Signed-off-by: Ivaylo Dimitrov <freemangordon@abv.bg>
-> Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
-> ---
->  arch/arm/mach-omap2/Makefile            |    1 +
->  arch/arm/mach-omap2/board-rx51-secure.c |   66 +++++++++++++++++++++++++++++++
->  arch/arm/mach-omap2/board-rx51-secure.h |   36 +++++++++++++++++
->  arch/arm/mach-omap2/board-rx51-smc.S    |   34 ++++++++++++++++
->  arch/arm/mach-omap2/board-rx51.c        |    7 ++++
+Hi Linus,
 
-Wondering if we can integrate these into 
-arch/arm/mach-omap2/omap-smc.S
-and
-arch/arm/mach-omap2/omap-secure.c
-on a quick look, it does seem there are commonalities.
+Below are the core block IO bits for 3.9. It was delayed a few days
+since my workstation kept crashing every 2-8h after pulling it into
+current -git, but turns out it is a bug in the new pstate code (divide
+by zero, will report separately). In any case, it contains:
 
->  5 files changed, 144 insertions(+)
->  create mode 100644 arch/arm/mach-omap2/board-rx51-secure.c
->  create mode 100644 arch/arm/mach-omap2/board-rx51-secure.h
->  create mode 100644 arch/arm/mach-omap2/board-rx51-smc.S
-> 
-> diff --git a/arch/arm/mach-omap2/Makefile b/arch/arm/mach-omap2/Makefile
-> index 0ebbdd50..8eb4fb4 100644
-> --- a/arch/arm/mach-omap2/Makefile
-> +++ b/arch/arm/mach-omap2/Makefile
-> @@ -241,6 +241,7 @@ obj-$(CONFIG_MACH_NOKIA_RX51)		+= board-rx51.o sdram-nokia.o
->  obj-$(CONFIG_MACH_NOKIA_RX51)		+= board-rx51-peripherals.o
->  obj-$(CONFIG_MACH_NOKIA_RX51)		+= board-rx51-video.o
->  obj-$(CONFIG_MACH_NOKIA_RX51)		+= board-rx51-camera.o
-> +obj-$(CONFIG_MACH_NOKIA_RX51)		+= board-rx51-smc.o board-rx51-secure.o
->  obj-$(CONFIG_MACH_OMAP_ZOOM2)		+= board-zoom.o board-zoom-peripherals.o
->  obj-$(CONFIG_MACH_OMAP_ZOOM2)		+= board-zoom-display.o
->  obj-$(CONFIG_MACH_OMAP_ZOOM2)		+= board-zoom-debugboard.o
-> diff --git a/arch/arm/mach-omap2/board-rx51-secure.c b/arch/arm/mach-omap2/board-rx51-secure.c
-> new file mode 100644
-> index 0000000..361dc78
-> --- /dev/null
-> +++ b/arch/arm/mach-omap2/board-rx51-secure.c
-> @@ -0,0 +1,66 @@
-> +/*
-> + * RX51 Secure PPA API.
-> + *
-> + * Copyright (C) 2012 Ivaylo Dimitrov <freemangordon@abv.bg>
-> + *
-> + *
-> + * This program is free software,you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + */
-> +#include <asm/cacheflush.h>
-> +
-> +#include "board-rx51-secure.h"
-> +
-> +/**
-> + * rx51_secure_dispatcher: Routine to dispatch secure PPA API calls
-> + * @idx: The PPA API index
-> + * @flag: The flag indicating criticality of operation
-> + * @nargs: Number of valid arguments out of four.
-> + * @arg1, arg2, arg3 args4: Parameters passed to secure API
-> + *
-> + * Return the non-zero error value on failure.
-> + */
-> +u32 rx51_secure_dispatcher(u32 idx, u32 flag, u32 nargs, u32 arg1, u32 arg2,
-> +			   u32 arg3, u32 arg4)
-> +{
-> +	u32 ret;
-> +	u32 param[5];
-> +
-> +	param[0] = nargs+1;
-> +	param[1] = arg1;
-> +	param[2] = arg2;
-> +	param[3] = arg3;
-> +	param[4] = arg4;
-> +
-> +	/*
-> +	 * Secure API needs physical address
-> +	 * pointer for the parameters
-> +	 */
-> +	flush_cache_all();
-> +	outer_clean_range(__pa(param), __pa(param + 5));
-> +	ret = rx51_ppa_smc(idx, flag, __pa(param));
-> +
-> +	return ret;
-> +}
-> +
-> +/**
-> + * rx51_secure_update_aux_cr: Routine to modify the contents of Auxiliary Control Register
-> + *  @set_bits: bits to set in ACR
-> + *  @clr_bits: bits to clear in ACR
-> + *
-> + * Return the non-zero error value on failure.
-> +*/
-> +u32 rx51_secure_update_aux_cr(u32 set_bits, u32 clear_bits)
-> +{
-> +	u32 acr;
-> +
-> +	/* Read ACR */
-> +	asm volatile ("mrc p15, 0, %0, c1, c0, 1" : "=r" (acr));
-> +	acr &= ~clear_bits;
-> +	acr |= set_bits;
-> +
-> +	return rx51_secure_dispatcher(RX51_PPA_WRITE_ACR,
-> +			       FLAG_START_CRITICAL,
-> +			       1,acr,0,0,0);
-> +}
-> diff --git a/arch/arm/mach-omap2/board-rx51-secure.h b/arch/arm/mach-omap2/board-rx51-secure.h
-> new file mode 100644
-> index 0000000..61c760b
-> --- /dev/null
-> +++ b/arch/arm/mach-omap2/board-rx51-secure.h
-> @@ -0,0 +1,36 @@
-> +/*
-> + * board-rx51-secure.h: OMAP Secure infrastructure header.
-> + *
-> + * Copyright (C) 2012 Ivaylo Dimitrov <freemangordon@abv.bg>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + */
-> +#ifndef OMAP_RX51_SECURE_H
-> +#define OMAP_RX51_SECURE_H
-> +
-> +/* HAL API error codes */
-> +#define  API_HAL_RET_VALUE_OK           0x00
-> +#define  API_HAL_RET_VALUE_FAIL         0x01
-> +
-> +/* Secure HAL API flags */
-> +#define FLAG_START_CRITICAL             0x4
-> +#define FLAG_IRQFIQ_MASK                0x3
-> +#define FLAG_IRQ_ENABLE                 0x2
-> +#define FLAG_FIQ_ENABLE                 0x1
-> +#define NO_FLAG                         0x0
-> +
-> +/* Secure PPA(Primary Protected Application) APIs */
-> +#define RX51_PPA_L2_INVAL               40
-> +#define RX51_PPA_WRITE_ACR              42
-> +
-> +#ifndef __ASSEMBLER__
-> +
-> +extern u32 rx51_secure_dispatcher(u32 idx, u32 flag, u32 nargs,
-> +                                u32 arg1, u32 arg2, u32 arg3, u32 arg4);
-> +extern u32 rx51_ppa_smc(u32 id, u32 flag, u32 pargs);
-> +
-> +extern u32 rx51_secure_update_aux_cr(u32 set_bits, u32 clear_bits);
-> +#endif /* __ASSEMBLER__ */
-> +#endif /* OMAP_RX51_SECURE_H */
-> diff --git a/arch/arm/mach-omap2/board-rx51-smc.S b/arch/arm/mach-omap2/board-rx51-smc.S
-> new file mode 100644
-> index 0000000..70e2eb7
-> --- /dev/null
-> +++ b/arch/arm/mach-omap2/board-rx51-smc.S
-> @@ -0,0 +1,34 @@
-> +/*
-> + * RX51 secure APIs file.
-> + *
-> + * Copyright (C) 2012 Ivaylo Dimitrov <freemangordon@abv.bg>
-> + *
-> + *
-> + * This program is free software,you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + */
-> +
-> +#include <linux/linkage.h>
-> +
-> +/**
-> + * u32 rx51_ppa_smc(u32 id, u32 flag, u32 pargs)
-> + * Low level common routine for secure HAL and PPA APIs.
-> + * @id: Secure Service ID
-> + * @flag: Flag to indicate the criticality of operation
-> + * @pargs: Physical address of parameter list starting
-> + *          with number of parametrs
-> + */
-> +ENTRY(rx51_ppa_smc)
-> +	.arch_extension sec
-> +	stmfd	sp!, {r4-r12, lr}
-> +	mov	r12, r0		@ Copy the secure service ID
-> +	mov	r3, r2		@ Copy the pointer to va_list in R3
-> +	mov	r2, r1		@ Copy the flags in R2
-> +	mov	r1, #0x0	@ Process ID - 0
-> +	mov	r6, #0xff	@ Indicate new Task call
-> +	dsb
-> +	dmb
-> +	smc	#1		@ call PPA service
-> +	ldmfd	sp!, {r4-r12, pc}
-> +ENDPROC(rx51_ppa_smc)
-> diff --git a/arch/arm/mach-omap2/board-rx51.c b/arch/arm/mach-omap2/board-rx51.c
-> index 92117a13..fd85081 100644
-> --- a/arch/arm/mach-omap2/board-rx51.c
-> +++ b/arch/arm/mach-omap2/board-rx51.c
-> @@ -31,6 +31,7 @@
->  #include "gpmc.h"
->  #include "pm.h"
->  #include "sdram-nokia.h"
-> +#include "board-rx51-secure.h"
->  
->  #define RX51_GPIO_SLEEP_IND 162
->  
-> @@ -103,6 +104,12 @@ static void __init rx51_init(void)
->  	rx51_peripherals_init();
->  	rx51_camera_init();
->  
-> +#ifdef CONFIG_ARM_ERRATA_430973
-> +	printk(KERN_INFO "Enabling ARM errata 430973 workaround.\n");
-> +	/* set IBE to 1 */
-> +	rx51_secure_update_aux_cr(1 << 6, 0);
-> +#endif
-> +
->  	/* Ensure SDRC pins are mux'd for self-refresh */
->  	omap_mux_init_signal("sdrc_cke0", OMAP_PIN_OUTPUT);
->  	omap_mux_init_signal("sdrc_cke1", OMAP_PIN_OUTPUT);
-> -- 
-> 1.7.10.4
-> 
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+- The big cfq/blkcg update from Tejun and and Vivek.
+
+- Additional block and writeback tracepoints from Tejun.
+
+- Improvement of the should sort (based on queues) logic in the plug
+  flushing.
+
+- _io() variants of the wait_for_completion() interface, using
+  io_schedule() instead of schedule() to contribute to io wait properly.
+
+- Various little fixes.
+
+You'll get two trivial merge conflicts, which should be easy enough to
+fix up.
+
+Please pull!
+
+  git://git.kernel.dk/linux-block.git for-3.9/core
+
+
+
+
+Cong Ding (1):
+      drivers/block/swim3.c: fix null pointer dereference
+
+Glauber Costa (1):
+      cfq: fix lock imbalance with failed allocations
+
+Guo Chao (2):
+      block: use i_size_write() in bd_set_size()
+      block: remove redundant check to bd_openers()
+
+Jens Axboe (1):
+      Merge branch 'blkcg-cfq-hierarchy' of git://git.kernel.org/.../tj/cgroup into for-3.9/core
+
+Jianpeng Ma (1):
+      block: Remove should_sort judgement when flush blk_plug
+
+Mikulas Patocka (1):
+      block: don't select PERCPU_RWSEM
+
+Sasha Levin (1):
+      block,elevator: use new hashtable implementation
+
+Tejun Heo (24):
+      blkcg: fix minor bug in blkg_alloc()
+      blkcg: reorganize blkg_lookup_create() and friends
+      blkcg: cosmetic updates to blkg_create()
+      blkcg: make blkcg_gq's hierarchical
+      cfq-iosched: add leaf_weight
+      cfq-iosched: implement cfq_group->nr_active and ->children_weight
+      cfq-iosched: implement hierarchy-ready cfq_group charge scaling
+      cfq-iosched: convert cfq_group_slice() to use cfqg->vfraction
+      cfq-iosched: enable full blkcg hierarchy support
+      blkcg: add blkg_policy_data->plid
+      blkcg: implement blkcg_policy->on/offline_pd_fn() and blkcg_gq->online
+      blkcg: s/blkg_rwstat_sum()/blkg_rwstat_total()/
+      blkcg: export __blkg_prfill_rwstat()
+      blkcg: implement blkg_[rw]stat_recursive_sum() and blkg_[rw]stat_merge()
+      block: RCU free request_queue
+      blkcg: make blkcg_print_blkgs() grab q locks instead of blkcg lock
+      cfq-iosched: separate out cfqg_stats_reset() from cfq_pd_reset_stats()
+      cfq-iosched: collect stats from dead cfqgs
+      cfq-iosched: add hierarchical cfq_group statistics
+      block: add missing block_bio_complete() tracepoint
+      block: add @req to bio_{front|back}_merge tracepoints
+      buffer: make touch_buffer() an exported function
+      block: add block_{touch|dirty}_buffer tracepoint
+      writeback: add more tracepoints
+
+Vivek Goyal (6):
+      cfq-iosched: Properly name all references to IO class
+      cfq-iosched: More renaming to better represent wl_class and wl_type
+      cfq-iosched: Rename "service_tree" to "st" at some places
+      cfq-iosched: Rename few functions related to selecting workload
+      cfq-iosched: Get rid of unnecessary local variable
+      cfq-iosched: Print sync-noidle information in blktrace messages
+
+Vladimir Davydov (2):
+      sched: add wait_for_completion_io[_timeout]
+      block: account iowait time when waiting for completion of IO request
+
+ Documentation/block/cfq-iosched.txt        |  58 +++
+ Documentation/cgroups/blkio-controller.txt |  35 +-
+ block/Kconfig                              |   1 -
+ block/blk-cgroup.c                         | 277 +++++++++++--
+ block/blk-cgroup.h                         |  68 +++-
+ block/blk-core.c                           |  18 +-
+ block/blk-exec.c                           |   4 +-
+ block/blk-flush.c                          |   2 +-
+ block/blk-lib.c                            |   6 +-
+ block/blk-sysfs.c                          |   9 +-
+ block/blk.h                                |   2 +-
+ block/cfq-iosched.c                        | 629 +++++++++++++++++++++++------
+ block/elevator.c                           |  23 +-
+ drivers/block/swim3.c                      |   5 +-
+ drivers/md/dm.c                            |   1 -
+ drivers/md/raid5.c                         |  11 +-
+ fs/bio.c                                   |   2 +
+ fs/block_dev.c                             |   6 +-
+ fs/buffer.c                                |  10 +
+ fs/fs-writeback.c                          |  16 +-
+ include/linux/blkdev.h                     |   3 +-
+ include/linux/blktrace_api.h               |   1 +
+ include/linux/buffer_head.h                |   2 +-
+ include/linux/completion.h                 |   3 +
+ include/linux/elevator.h                   |   5 +-
+ include/trace/events/block.h               | 104 ++++-
+ include/trace/events/writeback.h           | 116 ++++++
+ kernel/sched/core.c                        |  57 ++-
+ kernel/trace/blktrace.c                    |  28 +-
+ mm/page-writeback.c                        |   2 +
+ 30 files changed, 1246 insertions(+), 258 deletions(-)
 
 -- 
-Regards,
-Nishanth Menon
+Jens Axboe
+
