@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754498Ab3B1MPW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 07:15:22 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:26655 "EHLO song.cn.fujitsu.com"
+	id S1752313Ab3B1MPu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 07:15:50 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:13757 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753696Ab3B1MNU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 07:13:20 -0500
+	id S1752729Ab3B1MNQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Feb 2013 07:13:16 -0500
 X-IronPort-AV: E=Sophos;i="4.84,755,1355068800"; 
-   d="scan'208";a="6787331"
+   d="scan'208";a="6787325"
 From: Hu Tao <hutao@cn.fujitsu.com>
 To: kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
@@ -29,307 +29,248 @@ To: kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
         "Michael S. Tsirkin" <mst@redhat.com>, Alexander Graf <agraf@suse.de>,
         Alex Williamson <alex.williamson@redhat.com>,
         Peter Maydell <peter.maydell@linaro.org>
-Subject: [PATCH v13 6/8] introduce a new qom device to deal with panicked event
-Date: Thu, 28 Feb 2013 20:13:17 +0800
-Message-Id: <d7b92bed37f3669194b45acd8736b4b7ac71cc95.1362051582.git.hutao@cn.fujitsu.com>
+Subject: [PATCH v13] kvm: notify host when the guest is panicked
+Date: Thu, 28 Feb 2013 20:13:11 +0800
+Message-Id: <1362053604-5839-1-git-send-email-hutao@cn.fujitsu.com>
 X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <cover.1362051581.git.hutao@cn.fujitsu.com>
 References: <cover.1362051581.git.hutao@cn.fujitsu.com>
+In-Reply-To: <cover.1362051581.git.hutao@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
  2013/02/28 20:12:17,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/02/28 20:12:21,
-	Serialize complete at 2013/02/28 20:12:21
+ 2013/02/28 20:12:19,
+	Serialize complete at 2013/02/28 20:12:19
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the target is x86/x86_64, the guest's kernel will write 0x01 to the
-port KVM_PV_EVENT_PORT when it is panciked. This patch introduces a new
-qom device kvm_pv_ioport to listen this I/O port, and deal with panicked
-event according to panicked_action's value. The possible actions are:
-1. emit QEVENT_GUEST_PANICKED only
-2. emit QEVENT_GUEST_PANICKED and pause the guest
-3. emit QEVENT_GUEST_PANICKED and poweroff the guest
-4. emit QEVENT_GUEST_PANICKED and reset the guest
+We can know the guest is panicked when the guest runs on xen.
+But we do not have such feature on kvm.
 
-I/O ports does not work for some targets(for example: s390). And you
-can implement another qom device, and include it's code into pv_event.c
-for such target.
+Another purpose of this feature is: management app(for example:
+libvirt) can do auto dump when the guest is panicked. If management
+app does not do auto dump, the guest's user can do dump by hand if
+he sees the guest is panicked.
 
-Note: if we emit QEVENT_GUEST_PANICKED only, and the management
-application does not receive this event(the management may not
-run when the event is emitted), the management won't know the
-guest is panicked.
+We have three solutions to implement this feature:
+1. use vmcall
+2. use I/O port
+3. use virtio-serial.
+
+We have decided to avoid touching hypervisor. The reason why I choose
+choose the I/O port is:
+1. it is easier to implememt
+2. it does not depend any virtual device
+3. it can work when starting the kernel
 
 Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
 Signed-off-by: Hu Tao <hutao@cn.fujitsu.com>
 ---
- hw/kvm/Makefile.objs |   2 +-
- hw/kvm/pv_event.c    | 198 +++++++++++++++++++++++++++++++++++++++++++++++++++
- hw/pc_piix.c         |   5 ++
- include/sysemu/kvm.h |   2 +
- kvm-stub.c           |   4 ++
- 5 files changed, 210 insertions(+), 1 deletion(-)
- create mode 100644 hw/kvm/pv_event.c
+ arch/x86/include/asm/kvm_para.h      | 26 +++++++++++++++++++++
+ arch/x86/include/uapi/asm/kvm_para.h |  2 ++
+ arch/x86/kernel/Makefile             |  2 +-
+ arch/x86/kernel/kvm.c                | 44 ++++++++++++++++++++++++++++++++++++
+ arch/x86/kernel/kvm_panic.c          | 32 ++++++++++++++++++++++++++
+ kernel/panic.c                       |  4 ++++
+ 6 files changed, 109 insertions(+), 1 deletion(-)
+ create mode 100644 arch/x86/kernel/kvm_panic.c
 
-diff --git a/hw/kvm/Makefile.objs b/hw/kvm/Makefile.objs
-index f620d7f..cf93199 100644
---- a/hw/kvm/Makefile.objs
-+++ b/hw/kvm/Makefile.objs
-@@ -1 +1 @@
--obj-$(CONFIG_KVM) += clock.o apic.o i8259.o ioapic.o i8254.o pci-assign.o
-+obj-$(CONFIG_KVM) += clock.o apic.o i8259.o ioapic.o i8254.o pci-assign.o pv_event.o
-diff --git a/hw/kvm/pv_event.c b/hw/kvm/pv_event.c
-new file mode 100644
-index 0000000..5e68190
---- /dev/null
-+++ b/hw/kvm/pv_event.c
-@@ -0,0 +1,198 @@
-+/*
-+ * QEMU KVM support, paravirtual event device
-+ *
-+ * Copyright Fujitsu, Corp. 2012
-+ *
-+ * Authors:
-+ *     Wen Congyang <wency@cn.fujitsu.com>
-+ *
-+ * This work is licensed under the terms of the GNU GPL, version 2 or later.
-+ * See the COPYING file in the top-level directory.
-+ *
-+ */
-+
-+#include <linux/kvm_para.h>
-+#include <asm/kvm_para.h>
-+#include <qapi/qmp/qobject.h>
-+#include <qapi/qmp/qjson.h>
-+#include <monitor/monitor.h>
-+#include <sysemu/sysemu.h>
-+#include <sysemu/kvm.h>
-+
-+/* Possible values for action parameter. */
-+#define PANICKED_REPORT     1   /* emit QEVENT_GUEST_PANICKED only */
-+#define PANICKED_PAUSE      2   /* emit QEVENT_GUEST_PANICKED and pause VM */
-+#define PANICKED_POWEROFF   3   /* emit QEVENT_GUEST_PANICKED and quit VM */
-+#define PANICKED_RESET      4   /* emit QEVENT_GUEST_PANICKED and reset VM */
-+
-+#define PV_EVENT_DRIVER     "kvm_pv_event"
-+#define PV_IOPORT(obj)      OBJECT_CHECK(PVIOPortState, (obj), PV_EVENT_DRIVER)
-+
-+struct PVEventAction {
-+    char *panicked_action;
-+    int panicked_action_value;
-+};
-+
-+#define DEFINE_PV_EVENT_PROPERTIES(_state, _conf)   \
-+    DEFINE_PROP_STRING("panicked_action", _state, _conf.panicked_action)
-+
-+static void panicked_mon_event(const char *action)
-+{
-+    QObject *data;
-+
-+    data = qobject_from_jsonf("{ 'action': %s }", action);
-+    monitor_protocol_event(QEVENT_GUEST_PANICKED, data);
-+    qobject_decref(data);
-+}
-+
-+static void panicked_perform_action(uint32_t panicked_action)
-+{
-+    switch (panicked_action) {
-+    case PANICKED_REPORT:
-+        panicked_mon_event("report");
-+        break;
-+
-+    case PANICKED_PAUSE:
-+        panicked_mon_event("pause");
-+        vm_stop(RUN_STATE_GUEST_PANICKED);
-+        break;
-+
-+    case PANICKED_POWEROFF:
-+        panicked_mon_event("poweroff");
-+        qemu_system_shutdown_request();
-+        break;
-+
-+    case PANICKED_RESET:
-+        panicked_mon_event("reset");
-+        qemu_system_reset_request();
-+        break;
-+    }
-+}
-+
-+static uint64_t supported_event(void)
-+{
-+    return 1 << KVM_PV_FEATURE_PANICKED;
-+}
-+
-+static void handle_event(int event, struct PVEventAction *conf)
-+{
-+    if (event == KVM_PV_EVENT_PANICKED) {
-+        panicked_perform_action(conf->panicked_action_value);
-+    }
-+}
-+
-+static int pv_event_init(struct PVEventAction *conf)
-+{
-+    if (!conf->panicked_action) {
-+        conf->panicked_action_value = PANICKED_REPORT;
-+    } else if (strcasecmp(conf->panicked_action, "none") == 0) {
-+        conf->panicked_action_value = PANICKED_REPORT;
-+    } else if (strcasecmp(conf->panicked_action, "pause") == 0) {
-+        conf->panicked_action_value = PANICKED_PAUSE;
-+    } else if (strcasecmp(conf->panicked_action, "poweroff") == 0) {
-+        conf->panicked_action_value = PANICKED_POWEROFF;
-+    } else if (strcasecmp(conf->panicked_action, "reset") == 0) {
-+        conf->panicked_action_value = PANICKED_RESET;
-+    } else {
-+        return -1;
-+    }
-+
-+    return 0;
-+}
-+
-+#if defined(KVM_PV_EVENT_PORT)
-+
-+#include "hw/isa.h"
-+
-+typedef struct {
-+    ISADevice dev;
-+    struct PVEventAction conf;
-+    MemoryRegion ioport;
-+} PVIOPortState;
-+
-+static uint64_t pv_io_read(void *opaque, hwaddr addr, unsigned size)
-+{
-+    return supported_event();
-+}
-+
-+static void pv_io_write(void *opaque, hwaddr addr, uint64_t val,
-+                        unsigned size)
-+{
-+    PVIOPortState *s = opaque;
-+
-+    handle_event(val, &s->conf);
-+}
-+
-+static const MemoryRegionOps pv_io_ops = {
-+    .read = pv_io_read,
-+    .write = pv_io_write,
-+    .impl = {
-+        .min_access_size = 4,
-+        .max_access_size = 4,
-+    },
-+};
-+
-+static int pv_ioport_initfn(ISADevice *dev)
-+{
-+    PVIOPortState *s = PV_IOPORT(dev);
-+
-+    if (pv_event_init(&s->conf) < 0) {
-+        return -1;
-+    }
-+
-+    memory_region_init_io(&s->ioport, &pv_io_ops, s, "pv_event", 4);
-+    isa_register_ioport(dev, &s->ioport, KVM_PV_EVENT_PORT);
-+
-+    return 0;
-+}
-+
-+static Property pv_ioport_properties[] = {
-+    DEFINE_PV_EVENT_PROPERTIES(PVIOPortState, conf),
-+    DEFINE_PROP_END_OF_LIST(),
-+};
-+
-+static void pv_ioport_class_init(ObjectClass *klass, void *data)
-+{
-+    DeviceClass *dc = DEVICE_CLASS(klass);
-+    ISADeviceClass *ic = ISA_DEVICE_CLASS(klass);
-+
-+    ic->init = pv_ioport_initfn;
-+    dc->no_user = 1;
-+    dc->props = pv_ioport_properties;
-+}
-+
-+static TypeInfo pv_ioport_info = {
-+    .name          = PV_EVENT_DRIVER,
-+    .parent        = TYPE_ISA_DEVICE,
-+    .instance_size = sizeof(PVIOPortState),
-+    .class_init    = pv_ioport_class_init,
-+};
-+
-+static void pv_ioport_register_types(void)
-+{
-+    type_register_static(&pv_ioport_info);
-+}
-+
-+type_init(pv_ioport_register_types)
-+
-+void kvm_pv_event_init(void *opaque)
-+{
-+    ISABus *bus = opaque;
-+    ISADevice *dev;
-+
-+    dev = isa_create(bus, PV_EVENT_DRIVER);
-+    qdev_init_nofail(&dev->qdev);
-+}
-+
-+#else
-+
-+/*
-+ * If you need a qom device to handle pv event, this device should
-+ * be created and initialized in kvm_pv_event_init().
-+ *
-+ * The parameter opaque is the device's parent bus.
-+ */
-+void kvm_pv_event_init(void *opaque)
-+{
-+}
-+#endif
-diff --git a/hw/pc_piix.c b/hw/pc_piix.c
-index aa9cc81..24a9bf3 100644
---- a/hw/pc_piix.c
-+++ b/hw/pc_piix.c
-@@ -47,6 +47,7 @@
- #ifdef CONFIG_XEN
- #  include <xen/hvm/hvm_info_table.h>
- #endif
-+#include <linux/kvm_para.h>
- 
- #define MAX_IDE_BUS 2
- 
-@@ -216,6 +217,10 @@ static void pc_init1(MemoryRegion *system_memory,
-     if (pci_enabled) {
-         pc_pci_device_init(pci_bus);
-     }
-+
-+    if (kvm_enabled()) {
-+        kvm_pv_event_init(isa_bus);
-+    }
+diff --git a/arch/x86/include/asm/kvm_para.h b/arch/x86/include/asm/kvm_para.h
+index 695399f..deae820 100644
+--- a/arch/x86/include/asm/kvm_para.h
++++ b/arch/x86/include/asm/kvm_para.h
+@@ -133,4 +133,30 @@ static inline void kvm_disable_steal_time(void)
  }
- 
- static void pc_init_pci(QEMUMachineInitArgs *args)
-diff --git a/include/sysemu/kvm.h b/include/sysemu/kvm.h
-index f2d97b5..97d3daf 100644
---- a/include/sysemu/kvm.h
-+++ b/include/sysemu/kvm.h
-@@ -296,4 +296,6 @@ int kvm_irqchip_add_irqfd_notifier(KVMState *s, EventNotifier *n, int virq);
- int kvm_irqchip_remove_irqfd_notifier(KVMState *s, EventNotifier *n, int virq);
- void kvm_pc_gsi_handler(void *opaque, int n, int level);
- void kvm_pc_setup_irq_routing(bool pci_enabled);
-+
-+void kvm_pv_event_init(void *opaque);
  #endif
-diff --git a/kvm-stub.c b/kvm-stub.c
-index 760aadc..f543fa2 100644
---- a/kvm-stub.c
-+++ b/kvm-stub.c
-@@ -145,3 +145,7 @@ int kvm_irqchip_remove_irqfd_notifier(KVMState *s, EventNotifier *n, int virq)
+ 
++/* The bit of supported pv event */
++#define KVM_PV_FEATURE_PANICKED	0
++
++/* The pv event value */
++#define KVM_PV_EVENT_PANICKED	1
++
++static inline unsigned int kvm_arch_pv_features(void)
++{
++	return inl(KVM_PV_EVENT_PORT);
++}
++
++static inline unsigned int kvm_arch_pv_has_feature(unsigned int feature)
++{
++	if (kvm_arch_pv_features() & (1UL << feature))
++		return 1;
++	return 0;
++}
++
++static inline void kvm_arch_pv_send_event(unsigned int event)
++{
++	outl(event, KVM_PV_EVENT_PORT);
++}
++
++bool kvm_arch_pv_event_enabled(void);
++int kvm_arch_pv_event_init(void);
++
+ #endif /* _ASM_X86_KVM_PARA_H */
+diff --git a/arch/x86/include/uapi/asm/kvm_para.h b/arch/x86/include/uapi/asm/kvm_para.h
+index 06fdbd9..c15ef33 100644
+--- a/arch/x86/include/uapi/asm/kvm_para.h
++++ b/arch/x86/include/uapi/asm/kvm_para.h
+@@ -96,5 +96,7 @@ struct kvm_vcpu_pv_apf_data {
+ #define KVM_PV_EOI_ENABLED KVM_PV_EOI_MASK
+ #define KVM_PV_EOI_DISABLED 0x0
+ 
++#define KVM_PV_EVENT_PORT	(0x505UL)
++
+ 
+ #endif /* _UAPI_ASM_X86_KVM_PARA_H */
+diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
+index 7bd3bd3..f0629b2 100644
+--- a/arch/x86/kernel/Makefile
++++ b/arch/x86/kernel/Makefile
+@@ -80,7 +80,7 @@ obj-$(CONFIG_DEBUG_RODATA_TEST)	+= test_rodata.o
+ obj-$(CONFIG_DEBUG_NX_TEST)	+= test_nx.o
+ obj-$(CONFIG_DEBUG_NMI_SELFTEST) += nmi_selftest.o
+ 
+-obj-$(CONFIG_KVM_GUEST)		+= kvm.o kvmclock.o
++obj-$(CONFIG_KVM_GUEST)		+= kvm.o kvmclock.o kvm_panic.o
+ obj-$(CONFIG_PARAVIRT)		+= paravirt.o paravirt_patch_$(BITS).o
+ obj-$(CONFIG_PARAVIRT_SPINLOCKS)+= paravirt-spinlocks.o
+ obj-$(CONFIG_PARAVIRT_CLOCK)	+= pvclock.o
+diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
+index b686a90..727ef91 100644
+--- a/arch/x86/kernel/kvm.c
++++ b/arch/x86/kernel/kvm.c
+@@ -73,6 +73,20 @@ static int parse_no_kvmclock_vsyscall(char *arg)
+ 
+ early_param("no-kvmclock-vsyscall", parse_no_kvmclock_vsyscall);
+ 
++static int pv_event = 1;
++static int parse_no_pv_event(char *arg)
++{
++	pv_event = 0;
++	return 0;
++}
++
++bool kvm_arch_pv_event_enabled(void)
++{
++	return !!pv_event;
++}
++
++early_param("no-pv-event", parse_no_pv_event);
++
+ static DEFINE_PER_CPU(struct kvm_vcpu_pv_apf_data, apf_reason) __aligned(64);
+ static DEFINE_PER_CPU(struct kvm_steal_time, steal_time) __aligned(64);
+ static int has_steal_clock = 0;
+@@ -386,6 +400,17 @@ static struct notifier_block kvm_pv_reboot_nb = {
+ 	.notifier_call = kvm_pv_reboot_notify,
+ };
+ 
++static int
++kvm_pv_panic_notify(struct notifier_block *nb, unsigned long code, void *unused)
++{
++	kvm_arch_pv_send_event(KVM_PV_EVENT_PANICKED);
++	return NOTIFY_DONE;
++}
++
++static struct notifier_block kvm_pv_panic_nb = {
++	.notifier_call = kvm_pv_panic_notify,
++};
++
+ static u64 kvm_steal_clock(int cpu)
  {
-     return -ENOSYS;
+ 	u64 steal;
+@@ -463,6 +488,23 @@ static void __init kvm_apf_trap_init(void)
+ 	set_intr_gate(14, &async_page_fault);
  }
-+
-+void kvm_pv_event_init(void *opaque)
+ 
++static void __init kvm_pv_panicked_event_init(void)
 +{
++	if (kvm_arch_pv_has_feature(KVM_PV_FEATURE_PANICKED))
++		atomic_notifier_chain_register(&panic_notifier_list,
++			&kvm_pv_panic_nb);
 +}
++
++static void enable_pv_event(void)
++{
++	if (pv_event) {
++		if (kvm_arch_pv_event_init())
++			return;
++
++		kvm_pv_panicked_event_init();
++	}
++}
++
+ void __init kvm_guest_init(void)
+ {
+ 	int i;
+@@ -494,6 +536,8 @@ void __init kvm_guest_init(void)
+ #else
+ 	kvm_guest_cpu_init();
+ #endif
++
++	enable_pv_event();
+ }
+ 
+ static bool __init kvm_detect(void)
+diff --git a/arch/x86/kernel/kvm_panic.c b/arch/x86/kernel/kvm_panic.c
+new file mode 100644
+index 0000000..3df23b7
+--- /dev/null
++++ b/arch/x86/kernel/kvm_panic.c
+@@ -0,0 +1,32 @@
++/*
++ * KVM panic notification implementation
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
++ *
++ * Copyright (C) 2013, Fujitsu, Inc.
++ *   Authors: Wen Congyang <wency@cn.fujitsu.com>
++ *   Authors: Hu Tao <hutao@cn.fujitsu.com>
++ */
++
++#include <uapi/asm/kvm_para.h>
++#include <linux/ioport.h>
++
++int kvm_arch_pv_event_init(void)
++{
++	if (!request_region(KVM_PV_EVENT_PORT, 4, "KVM_PV_EVENT"))
++		return -1;
++
++	return 0;
++}
+diff --git a/kernel/panic.c b/kernel/panic.c
+index e1b2822..06dd477 100644
+--- a/kernel/panic.c
++++ b/kernel/panic.c
+@@ -23,6 +23,7 @@
+ #include <linux/init.h>
+ #include <linux/nmi.h>
+ #include <linux/dmi.h>
++#include <linux/kvm_para.h>
+ 
+ #define PANIC_TIMER_STEP 100
+ #define PANIC_BLINK_SPD 18
+@@ -132,6 +133,9 @@ void panic(const char *fmt, ...)
+ 	if (!panic_blink)
+ 		panic_blink = no_blink;
+ 
++	if (kvm_arch_pv_event_enabled())
++		panic_timeout = 0;
++
+ 	if (panic_timeout > 0) {
+ 		/*
+ 		 * Delay timeout seconds before rebooting the machine.
 -- 
 1.8.1.4
 
