@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754832Ab3B1EuW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 23:50:22 -0500
-Received: from mail-da0-f51.google.com ([209.85.210.51]:49160 "EHLO
-	mail-da0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752560Ab3B1EuQ (ORCPT
+	id S1754924Ab3B1Eu3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 23:50:29 -0500
+Received: from mail-da0-f41.google.com ([209.85.210.41]:38916 "EHLO
+	mail-da0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752560Ab3B1EuX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 23:50:16 -0500
+	Wed, 27 Feb 2013 23:50:23 -0500
 From: Mike Turquette <mturquette@linaro.org>
 To: linux-kernel@vger.kernel.org
 Cc: linux-arm-kernel@lists.infradead.org, patches@linaro.org,
-        linaro-dev@lists.linaro.org, Mike Turquette <mturquette@linaro.org>,
-        Rajagopal Venkat <rajagopal.venkat@linaro.org>,
-        David Brown <davidb@codeaurora.org>
-Subject: [PATCH 1/5] clk: allow reentrant calls into the clk framework
-Date: Wed, 27 Feb 2013 20:49:25 -0800
-Message-Id: <1362026969-11457-2-git-send-email-mturquette@linaro.org>
+        linaro-dev@lists.linaro.org, Mike Turquette <mturquette@linaro.org>
+Subject: [PATCH 2/5] clk: notifier handler for dynamic voltage scaling
+Date: Wed, 27 Feb 2013 20:49:26 -0800
+Message-Id: <1362026969-11457-3-git-send-email-mturquette@linaro.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1362026969-11457-1-git-send-email-mturquette@linaro.org>
 References: <1362026969-11457-1-git-send-email-mturquette@linaro.org>
@@ -23,432 +21,217 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reentrancy into the clock framework from the clk.h api is highly
-desirable.  This feature is necessary for clocks that are prepared and
-unprepared via i2c_transfer (which includes many PMICs and discrete
-audio chips) and it is also necessary for performing dynamic voltage &
-frequency scaling via clock rate-change notifiers.
+Dynamic voltage and frequency scaling (dvfs) is a common power saving
+technique in many of today's modern processors.  This patch introduces a
+common clk rate-change notifier handler which scales voltage
+appropriately whenever clk_set_rate is called on an affected clock.
 
-This patch implements reentrancy by adding a global atomic_t which
-tracks the context of the current caller.  Context in this case is the
-return value from get_current().  The clk.h api implementations are
-modified to first see if the relevant global lock is already held and if
-so compare the global context (set by whoever is holding the lock)
-against their own context (via a call to get_current()).  If the two
-match then this function is a nested call from the one already holding
-the lock and we procede.  If the context does not match then procede to
-call mutex_lock and busy-wait for the existing task to complete.
+There are three prerequisites to using this feature:
 
-Thus this patch set does not increase concurrency for unrelated calls
-into the clock framework.  Instead it simply allows reentrancy by the
-single task which is currently holding the global clock framework lock.
+1) the affected clocks must be using the common clk framework
+2) voltage must be scaled using the regulator framework
+3) clock frequency and regulator voltage values must be paired via the
+OPP library
 
-Thanks to Rajagoapl Venkat for the original idea to use get_current()
-and to David Brown for the suggestion to replace my previous rwlock
-scheme with atomic operations during code review at ELC 2013.
+If a platform or device meets these requirements then using the notifier
+handler is straightforward.  A struct device is used as the basis for
+performing initial look-ups for clocks via clk_get and regulators via
+regulator_get.  This means that notifiers are subscribed on a per-device
+basis and multiple devices can have notifiers subscribed to the same
+clock.  Put another way, the voltage chosen for a rail during a call to
+clk_set_rate is a function of the device, not the clock.
 
 Signed-off-by: Mike Turquette <mturquette@linaro.org>
-Cc: Rajagopal Venkat <rajagopal.venkat@linaro.org>
-Cc: David Brown <davidb@codeaurora.org>
 ---
- drivers/clk/clk.c |  254 ++++++++++++++++++++++++++++++++++++++---------------
- 1 file changed, 185 insertions(+), 69 deletions(-)
+ drivers/clk/Makefile |    1 +
+ drivers/clk/dvfs.c   |  125 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/clk.h  |   27 ++++++++++-
+ 3 files changed, 152 insertions(+), 1 deletion(-)
+ create mode 100644 drivers/clk/dvfs.c
 
-diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-index fabbfe1..b7d6a0a 100644
---- a/drivers/clk/clk.c
-+++ b/drivers/clk/clk.c
-@@ -19,9 +19,11 @@
- #include <linux/of.h>
- #include <linux/device.h>
- #include <linux/init.h>
-+#include <linux/sched.h>
+diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
+index e73b1d6..e720b7c 100644
+--- a/drivers/clk/Makefile
++++ b/drivers/clk/Makefile
+@@ -7,6 +7,7 @@ obj-$(CONFIG_COMMON_CLK)	+= clk-fixed-factor.o
+ obj-$(CONFIG_COMMON_CLK)	+= clk-fixed-rate.o
+ obj-$(CONFIG_COMMON_CLK)	+= clk-gate.o
+ obj-$(CONFIG_COMMON_CLK)	+= clk-mux.o
++obj-$(CONFIG_COMMON_CLK)	+= dvfs.o
  
- static DEFINE_SPINLOCK(enable_lock);
- static DEFINE_MUTEX(prepare_lock);
-+static atomic_t context;
- 
- static HLIST_HEAD(clk_root_list);
- static HLIST_HEAD(clk_orphan_list);
-@@ -433,27 +435,6 @@ unsigned int __clk_get_prepare_count(struct clk *clk)
- 	return !clk ? 0 : clk->prepare_count;
- }
- 
--unsigned long __clk_get_rate(struct clk *clk)
--{
--	unsigned long ret;
--
--	if (!clk) {
--		ret = 0;
--		goto out;
--	}
--
--	ret = clk->rate;
--
--	if (clk->flags & CLK_IS_ROOT)
--		goto out;
--
--	if (!clk->parent)
--		ret = 0;
--
--out:
--	return ret;
--}
--
- unsigned long __clk_get_flags(struct clk *clk)
- {
- 	return !clk ? 0 : clk->flags;
-@@ -524,6 +505,35 @@ struct clk *__clk_lookup(const char *name)
- 	return NULL;
- }
- 
-+/***  locking & reentrancy ***/
+ # SoCs specific
+ obj-$(CONFIG_ARCH_BCM2835)	+= clk-bcm2835.o
+diff --git a/drivers/clk/dvfs.c b/drivers/clk/dvfs.c
+new file mode 100644
+index 0000000..d916d0b
+--- /dev/null
++++ b/drivers/clk/dvfs.c
+@@ -0,0 +1,125 @@
++/*
++ * Copyright (C) 2011-2012 Linaro Ltd <mturquette@linaro.org>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * Helper functions for dynamic voltage & frequency transitions using
++ * the OPP library.
++ */
 +
-+static void clk_fwk_lock(void)
++#include <linux/clk.h>
++#include <linux/regulator/consumer.h>
++#include <linux/opp.h>
++#include <linux/device.h>
++#include <linux/slab.h>
++#include <linux/module.h>
++
++/*
++ * XXX clk, regulator & tolerance should be stored in the OPP table?
++ */
++struct dvfs_info {
++	struct device *dev;
++	struct clk *clk;
++	struct regulator *reg;
++	int tol;
++	struct notifier_block nb;
++};
++
++#define to_dvfs_info(_nb) container_of(_nb, struct dvfs_info, nb)
++
++static int dvfs_clk_notifier_handler(struct notifier_block *nb,
++		unsigned long flags, void *data)
 +{
-+	/* hold the framework-wide lock, context == NULL */
-+	mutex_lock(&prepare_lock);
++	struct clk_notifier_data *cnd = data;
++	struct dvfs_info *di = to_dvfs_info(nb);
++	int ret, volt_new, volt_old;
++	struct opp *opp;
 +
-+	/* set context for any reentrant calls */
-+	atomic_set(&context, (int) get_current());
-+}
++	volt_old = regulator_get_voltage(di->reg);
++	rcu_read_lock();
++	opp = opp_find_freq_floor(di->dev, &cnd->new_rate);
++	volt_new = opp_get_voltage(opp);
++	rcu_read_unlock();
 +
-+static void clk_fwk_unlock(void)
-+{
-+	/* clear the context */
-+	atomic_set(&context, 0);
++	/* scaling up?  scale voltage before frequency */
++	if (flags & PRE_RATE_CHANGE && cnd->new_rate > cnd->old_rate) {
++		dev_dbg(di->dev, "%s: %d mV --> %d mV\n",
++				__func__, volt_old, volt_new);
 +
-+	/* release the framework-wide lock, context == NULL */
-+	mutex_unlock(&prepare_lock);
-+}
++		ret = regulator_set_voltage_tol(di->reg, volt_new, di->tol);
 +
-+static bool clk_is_reentrant(void)
-+{
-+	if (mutex_is_locked(&prepare_lock))
-+		if ((void *) atomic_read(&context) == get_current())
-+			return true;
-+
-+	return false;
-+}
-+
- /***        clk api        ***/
- 
- void __clk_unprepare(struct clk *clk)
-@@ -558,9 +568,15 @@ void __clk_unprepare(struct clk *clk)
-  */
- void clk_unprepare(struct clk *clk)
- {
--	mutex_lock(&prepare_lock);
-+	/* re-enter if call is from the same context */
-+	if (clk_is_reentrant()) {
-+		__clk_unprepare(clk);
-+		return;
-+	}
-+
-+	clk_fwk_lock();
- 	__clk_unprepare(clk);
--	mutex_unlock(&prepare_lock);
-+	clk_fwk_unlock();
- }
- EXPORT_SYMBOL_GPL(clk_unprepare);
- 
-@@ -606,10 +622,16 @@ int clk_prepare(struct clk *clk)
- {
- 	int ret;
- 
--	mutex_lock(&prepare_lock);
--	ret = __clk_prepare(clk);
--	mutex_unlock(&prepare_lock);
-+	/* re-enter if call is from the same context */
-+	if (clk_is_reentrant()) {
-+		ret = __clk_prepare(clk);
-+		goto out;
-+	}
- 
-+	clk_fwk_lock();
-+	ret = __clk_prepare(clk);
-+	clk_fwk_unlock();
-+out:
- 	return ret;
- }
- EXPORT_SYMBOL_GPL(clk_prepare);
-@@ -650,8 +672,27 @@ void clk_disable(struct clk *clk)
- {
- 	unsigned long flags;
- 
-+	/* must check both the global spinlock and the global mutex */
-+	if (spin_is_locked(&enable_lock) || mutex_is_locked(&prepare_lock)) {
-+		if ((void *) atomic_read(&context) == get_current()) {
-+			__clk_disable(clk);
-+			return;
++		if (ret) {
++			dev_warn(di->dev, "%s: unable to scale voltage up.\n",
++				 __func__);
++			return notifier_from_errno(ret);
 +		}
 +	}
 +
-+	/* hold the framework-wide lock, context == NULL */
- 	spin_lock_irqsave(&enable_lock, flags);
++	/* scaling down?  scale voltage after frequency */
++	if (flags & POST_RATE_CHANGE && cnd->new_rate < cnd->old_rate) {
++		dev_dbg(di->dev, "%s: %d mV --> %d mV\n",
++				__func__, volt_old, volt_new);
 +
-+	/* set context for any reentrant calls */
-+	atomic_set(&context, (int) get_current());
++		ret = regulator_set_voltage_tol(di->reg, volt_new, di->tol);
 +
-+	/* disable the clock(s) */
- 	__clk_disable(clk);
-+
-+	/* clear the context */
-+	atomic_set(&context, 0);
-+
-+	/* release the framework-wide lock, context == NULL */
- 	spin_unlock_irqrestore(&enable_lock, flags);
- }
- EXPORT_SYMBOL_GPL(clk_disable);
-@@ -703,10 +744,29 @@ int clk_enable(struct clk *clk)
- 	unsigned long flags;
- 	int ret;
- 
-+	/* this call re-enters if it is from the same context */
-+	if (spin_is_locked(&enable_lock) || mutex_is_locked(&prepare_lock)) {
-+		if ((void *) atomic_read(&context) == get_current()) {
-+			ret = __clk_enable(clk);
-+			goto out;
++		if (ret) {
++			dev_warn(di->dev, "%s: unable to scale voltage down.\n",
++				 __func__);
++			return notifier_from_errno(ret);
 +		}
 +	}
 +
-+	/* hold the framework-wide lock, context == NULL */
- 	spin_lock_irqsave(&enable_lock, flags);
-+
-+	/* set context for any reentrant calls */
-+	atomic_set(&context, (int) get_current());
-+
-+	/* enable the clock(s) */
- 	ret = __clk_enable(clk);
--	spin_unlock_irqrestore(&enable_lock, flags);
- 
-+	/* clear the context */
-+	atomic_set(&context, 0);
-+
-+	/* release the framework-wide lock, context == NULL */
-+	spin_unlock_irqrestore(&enable_lock, flags);
-+out:
- 	return ret;
- }
- EXPORT_SYMBOL_GPL(clk_enable);
-@@ -750,10 +810,17 @@ long clk_round_rate(struct clk *clk, unsigned long rate)
- {
- 	unsigned long ret;
- 
--	mutex_lock(&prepare_lock);
-+	/* this call re-enters if it is from the same context */
-+	if (clk_is_reentrant()) {
-+		ret = __clk_round_rate(clk, rate);
-+		goto out;
-+	}
-+
-+	clk_fwk_lock();
- 	ret = __clk_round_rate(clk, rate);
--	mutex_unlock(&prepare_lock);
-+	clk_fwk_unlock();
- 
-+out:
- 	return ret;
- }
- EXPORT_SYMBOL_GPL(clk_round_rate);
-@@ -836,6 +903,30 @@ static void __clk_recalc_rates(struct clk *clk, unsigned long msg)
- 		__clk_recalc_rates(child, msg);
- }
- 
-+unsigned long __clk_get_rate(struct clk *clk)
-+{
-+	unsigned long ret;
-+
-+	if (!clk) {
-+		ret = 0;
-+		goto out;
-+	}
-+
-+	if (clk->flags & CLK_GET_RATE_NOCACHE)
-+		__clk_recalc_rates(clk, 0);
-+
-+	ret = clk->rate;
-+
-+	if (clk->flags & CLK_IS_ROOT)
-+		goto out;
-+
-+	if (!clk->parent)
-+		ret = 0;
-+
-+out:
-+	return ret;
++	return NOTIFY_OK;
 +}
 +
- /**
-  * clk_get_rate - return the rate of clk
-  * @clk: the clk whose rate is being returned
-@@ -848,14 +939,22 @@ unsigned long clk_get_rate(struct clk *clk)
- {
- 	unsigned long rate;
- 
--	mutex_lock(&prepare_lock);
-+	/*
-+	 * FIXME - any locking here seems heavy weight
-+	 * can clk->rate be replaced with an atomic_t?
-+	 * same logic can likely be applied to prepare_count & enable_count
-+	 */
- 
--	if (clk && (clk->flags & CLK_GET_RATE_NOCACHE))
--		__clk_recalc_rates(clk, 0);
-+	if (clk_is_reentrant()) {
-+		rate = __clk_get_rate(clk);
-+		goto out;
-+	}
- 
-+	clk_fwk_lock();
- 	rate = __clk_get_rate(clk);
--	mutex_unlock(&prepare_lock);
-+	clk_fwk_unlock();
- 
-+out:
- 	return rate;
- }
- EXPORT_SYMBOL_GPL(clk_get_rate);
-@@ -1036,6 +1135,39 @@ static void clk_change_rate(struct clk *clk)
- 		clk_change_rate(child);
- }
- 
-+int __clk_set_rate(struct clk *clk, unsigned long rate)
++struct dvfs_info *dvfs_clk_notifier_register(struct dvfs_info_init *dii)
 +{
++	struct dvfs_info *di;
 +	int ret = 0;
-+	struct clk *top, *fail_clk;
 +
-+	/* bail early if nothing to do */
-+	if (rate == clk->rate)
-+		return 0;
++	if (!dii)
++		return ERR_PTR(-EINVAL);
 +
-+	if ((clk->flags & CLK_SET_RATE_GATE) && clk->prepare_count) {
-+		return -EBUSY;
++	di = kzalloc(sizeof(struct dvfs_info), GFP_KERNEL);
++	if (!di)
++		return ERR_PTR(-ENOMEM);
++
++	di->dev = dii->dev;
++	di->clk = clk_get(di->dev, dii->con_id);
++	if (IS_ERR(di->clk)) {
++		ret = -ENOMEM;
++		goto err;
 +	}
 +
-+	/* calculate new rates and get the topmost changed clock */
-+	top = clk_calc_new_rates(clk, rate);
-+	if (!top)
-+		return -EINVAL;
-+
-+	/* notify that we are about to change rates */
-+	fail_clk = clk_propagate_rate_change(top, PRE_RATE_CHANGE);
-+	if (fail_clk) {
-+		pr_warn("%s: failed to set %s rate\n", __func__,
-+				fail_clk->name);
-+		clk_propagate_rate_change(top, ABORT_RATE_CHANGE);
-+		return -EBUSY;
++	di->reg = regulator_get(di->dev, dii->reg_id);
++	if (IS_ERR(di->reg)) {
++		ret = -ENOMEM;
++		goto err;
 +	}
 +
-+	/* change the rates */
-+	clk_change_rate(top);
++	di->tol = dii->tol;
++	di->nb.notifier_call = dvfs_clk_notifier_handler;
 +
-+	return ret;
++	ret = clk_notifier_register(di->clk, &di->nb);
++
++	if (ret)
++		goto err;
++
++	return di;
++
++err:
++	kfree(di);
++	return ERR_PTR(ret);
 +}
++EXPORT_SYMBOL_GPL(dvfs_clk_notifier_register);
 +
- /**
-  * clk_set_rate - specify a new rate for clk
-  * @clk: the clk whose rate is being changed
-@@ -1059,44 +1191,18 @@ static void clk_change_rate(struct clk *clk)
-  */
- int clk_set_rate(struct clk *clk, unsigned long rate)
- {
--	struct clk *top, *fail_clk;
- 	int ret = 0;
++void dvfs_clk_notifier_unregister(struct dvfs_info *di)
++{
++	clk_notifier_unregister(di->clk, &di->nb);
++	clk_put(di->clk);
++	regulator_put(di->reg);
++	kfree(di);
++}
++EXPORT_SYMBOL_GPL(dvfs_clk_notifier_unregister);
+diff --git a/include/linux/clk.h b/include/linux/clk.h
+index b3ac22d..28d952f 100644
+--- a/include/linux/clk.h
++++ b/include/linux/clk.h
+@@ -78,9 +78,34 @@ struct clk_notifier_data {
+ 	unsigned long		new_rate;
+ };
  
--	/* prevent racing with updates to the clock topology */
--	mutex_lock(&prepare_lock);
--
--	/* bail early if nothing to do */
--	if (rate == clk->rate)
--		goto out;
--
--	if ((clk->flags & CLK_SET_RATE_GATE) && clk->prepare_count) {
--		ret = -EBUSY;
--		goto out;
--	}
--
--	/* calculate new rates and get the topmost changed clock */
--	top = clk_calc_new_rates(clk, rate);
--	if (!top) {
--		ret = -EINVAL;
--		goto out;
--	}
--
--	/* notify that we are about to change rates */
--	fail_clk = clk_propagate_rate_change(top, PRE_RATE_CHANGE);
--	if (fail_clk) {
--		pr_warn("%s: failed to set %s rate\n", __func__,
--				fail_clk->name);
--		clk_propagate_rate_change(top, ABORT_RATE_CHANGE);
--		ret = -EBUSY;
-+	if (clk_is_reentrant()) {
-+		ret = __clk_set_rate(clk, rate);
- 		goto out;
- 	}
- 
--	/* change the rates */
--	clk_change_rate(top);
-+	clk_fwk_lock();
-+	ret = __clk_set_rate(clk, rate);
-+	clk_fwk_unlock();
- 
- out:
--	mutex_unlock(&prepare_lock);
--
- 	return ret;
- }
- EXPORT_SYMBOL_GPL(clk_set_rate);
-@@ -1111,10 +1217,16 @@ struct clk *clk_get_parent(struct clk *clk)
- {
- 	struct clk *parent;
- 
--	mutex_lock(&prepare_lock);
-+	if (clk_is_reentrant()) {
-+		parent = __clk_get_parent(clk);
-+		goto out;
-+	}
+-int clk_notifier_register(struct clk *clk, struct notifier_block *nb);
++/**
++ * struct dvfs_info_init - data needs to initialize struct dvfs_info
++ * @dev:	device related to this frequency-voltage pair
++ * @con_id:	string name of clock connection
++ * @reg_id:	string name of regulator
++ * @tol:	voltage tolerance for this device
++ *
++ * Provides the data needed to register a common dvfs sequence in a clk
++ * notifier handler.  The clk and regulator lookups are stored in a
++ * private struct and the notifier handler is registered with the clk
++ * framework with a call to dvfs_clk_notifier_register.
++ *
++ * FIXME stuffing @tol here is a hack.  It belongs in the opp table.
++ * Maybe clk & regulator will also live in the opp table some day.
++ */
++struct dvfs_info_init {
++	struct device *dev;
++	const char *con_id;
++	const char *reg_id;
++	int tol;
++};
 +
-+	clk_fwk_lock();
- 	parent = __clk_get_parent(clk);
--	mutex_unlock(&prepare_lock);
-+	clk_fwk_unlock();
++struct dvfs_info;
  
-+out:
- 	return parent;
- }
- EXPORT_SYMBOL_GPL(clk_get_parent);
-@@ -1293,6 +1405,7 @@ out:
- int clk_set_parent(struct clk *clk, struct clk *parent)
- {
- 	int ret = 0;
-+	bool reenter;
++int clk_notifier_register(struct clk *clk, struct notifier_block *nb);
+ int clk_notifier_unregister(struct clk *clk, struct notifier_block *nb);
++struct dvfs_info *dvfs_clk_notifier_register(struct dvfs_info_init *dii);
++void dvfs_clk_notifier_unregister(struct dvfs_info *di);
  
- 	if (!clk || !clk->ops)
- 		return -EINVAL;
-@@ -1300,8 +1413,10 @@ int clk_set_parent(struct clk *clk, struct clk *parent)
- 	if (!clk->ops->set_parent)
- 		return -ENOSYS;
+ #endif
  
--	/* prevent racing with updates to the clock topology */
--	mutex_lock(&prepare_lock);
-+	reenter = clk_is_reentrant();
-+
-+	if (!reenter)
-+		clk_fwk_lock();
- 
- 	if (clk->parent == parent)
- 		goto out;
-@@ -1330,7 +1445,8 @@ int clk_set_parent(struct clk *clk, struct clk *parent)
- 	__clk_reparent(clk, parent);
- 
- out:
--	mutex_unlock(&prepare_lock);
-+	if (!reenter)
-+		clk_fwk_unlock();
- 
- 	return ret;
- }
 -- 
 1.7.10.4
 
