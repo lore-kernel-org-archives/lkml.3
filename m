@@ -1,89 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752078Ab3B1GrF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 01:47:05 -0500
-Received: from ozlabs.org ([203.10.76.45]:42567 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750876Ab3B1GrC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 01:47:02 -0500
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Paolo Bonzini <pbonzini@redhat.com>, Asias He <asias@redhat.com>,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org
-Subject: Re: [PATCH 08/16] virtio_ring: virtqueue_add_outbuf / virtqueue_add_inbuf.
-In-Reply-To: <20130225213504.GC18167@redhat.com>
-References: <1361260594-601-1-git-send-email-rusty@rustcorp.com.au> <1361260594-601-9-git-send-email-rusty@rustcorp.com.au> <20130221170902.GA27097@redhat.com> <87sj4pfc61.fsf@rustcorp.com.au> <20130225213504.GC18167@redhat.com>
-User-Agent: Notmuch/0.14 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
-Date: Thu, 28 Feb 2013 15:38:44 +1030
-Message-ID: <87lia9c9er.fsf@rustcorp.com.au>
+	id S1752413Ab3B1GrJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 01:47:09 -0500
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:42203 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750876Ab3B1GrG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Feb 2013 01:47:06 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <20130227135155.c04453db.akpm@linux-foundation.org>
+References: <1361944667.957820@landley.net>
+	<20130227135155.c04453db.akpm@linux-foundation.org>
+Date: Thu, 28 Feb 2013 07:47:05 +0100
+X-Google-Sender-Auth: uCIK3cEwVFDcRMeD5FJbYDq7Yj4
+Message-ID: <CAMuHMdWpZ3_3x-Swfm6E_2bD7LQ-Hs3XCfy24hJLJuSCE+M+CQ@mail.gmail.com>
+Subject: Re: [PATCH 0/3] build linux-next without perl
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Rob Landley <rob@landley.net>, linux-kernel@vger.kernel.org,
+        Al Viro <viro@zeniv.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Cyrill Gorcunov <gorcunov@openvz.org>, Dave Jones <davej@redhat.com>,
+        David Howells <dhowell@redhat.com>,
+        David Howells <dhowells@redhat.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
+        Josh Boyer <jwboyer@redhat.com>, Michal Marek <mmarek@suse.cz>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rusty Russell <rusty@rustcorp.com.au>, Sam Ravnborg <sam@ravnborg.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Vince Weaver <vincent.weaver@maine.edu>, x86@kernel.org,
+        Zheng Yan <zheng.z.yan@intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Michael S. Tsirkin" <mst@redhat.com> writes:
-> On Fri, Feb 22, 2013 at 10:32:46AM +1030, Rusty Russell wrote:
->> "Michael S. Tsirkin" <mst@redhat.com> writes:
->> > On Tue, Feb 19, 2013 at 06:26:26PM +1030, Rusty Russell wrote:
->> >> These are specialized versions of virtqueue_add_buf(), which cover
->> >> over 50% of cases and are far clearer.
->> >> 
->> >> In particular, the scatterlists passed to these functions don't have
->> >> to be clean (ie. we ignore end markers).
->> >> 
->> >> FIXME: I'm not sure about the unclean sglist bit.  I had a more
->> >> ambitious one which conditionally ignored end markers in the iterator,
->> >> but it was ugly and I suspect this is just as fast.  Maybe we should
->> >> just fix all the drivers?
->> >> 
->> >> Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
->> >
->> > Looking at code, it seems that most users really have a single sg, in
->> > low memory. So how about simply passing void * instead of sg? Whoever
->> > has multiple sgs can use the rich interface.
->> 
->> Good point, let's do that:
->> 1) Make virtqueue_add_outbuf()/inbuf() take a void * and len.
->> 2) Transfer users across to use that.
->> 3) Make everyone else use clean scatterlists with virtqueue_add_sgs[].
->> 4) Remove virtqueue_add_bufs().
->> 
->> > Long term we might optimize this unrolling some loops, I think
->> > I saw this giving a small performance gain for -net.
->> 
->> I *think* we could make virtqueue_add() an inline and implement an
->> virtqueue_add_outsg() wrapper and gcc will eliminate the loops for us.
->> But not sure it's worth the text bloat...
->> 
->> Cheers,
->> Rusty.
->
-> inline is mostly useless nowdays...  We can make it a static function and
-> let gcc decide.
+On Wed, Feb 27, 2013 at 10:51 PM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+> It'll need to be reasonably good motivation, too.  Because not only do
+> we need to patch the kernel, we also need to *maintain* its
+> perl-freeness and fix up perlisms as they later get added by others.
 
-I know I've said before that inline is the register keyword of the '90s.
-But not at -O2 with i686-linux-gnu-gcc-4.7 (Ubuntu/Linaro
-4.7.2-2ubuntu1) 4.7.2.
+That's actually a backwards argument: as long as there are scripts in the kernel
+source tree using perl, people will add more of them, since they see perl is an
+accepted scripting language within the Linux kernel build system.
 
-Without the inline keywords, it doesn't inline virtqueue_add, and thus
-sg_next_chained and sg_next_add aren't inlined:
+It's the same as refactoring existing code: if we don't, people will
+copy the bad
+examples. So we fix them, to avoid this.
 
-$ for i in `seq 50`; do /usr/bin/time --format=%U ./vringh_test --indirect --eventidx --parallel; done 2>&1 | stats --trim-outliers
-Using CPUS 0 and 3
-Guest: notified 39102-39145(39105), pinged 39060-39063(39063)
-Host: notified 39060-39063(39063), pinged 19551-19581(19553)
-3.050000-3.220000(3.136875)
+Gr{oetje,eeting}s,
 
-With inline:
+                        Geert
 
-$ for i in `seq 50`; do /usr/bin/time --format=%U ./vringh_test --indirect --eventidx --parallel; done 2>&1 | stats --trim-outliers
-Using CPUS 0 and 3
-Guest: notified 39084-39148(39099), pinged 39062-39063(39062)
-Host: notified 39062-39063(39062), pinged 19542-19574(19550)
-2.940000-3.140000(3.014583)
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-Cheers,
-Rusty.
-
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
