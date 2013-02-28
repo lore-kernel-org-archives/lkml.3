@@ -1,100 +1,399 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754879Ab3B1IyH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 03:54:07 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:16418 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754714Ab3B1IyC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 03:54:02 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Thu, 28 Feb 2013 00:53:12 -0800
-Message-ID: <512F1ADF.90906@nvidia.com>
-Date: Thu, 28 Feb 2013 14:22:47 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
-MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: J Keerthy <j-keerthy@ti.com>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "rob@landley.net" <rob@landley.net>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+	id S1755040Ab3B1IyV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 03:54:21 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:26112 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1754714Ab3B1IyT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Feb 2013 03:54:19 -0500
+X-IronPort-AV: E=Sophos;i="4.84,754,1355068800"; 
+   d="scan'208";a="6786204"
+Date: Thu, 28 Feb 2013 16:54:25 +0800
+From: Hu Tao <hutao@cn.fujitsu.com>
+To: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "b-cousson@ti.com" <b-cousson@ti.com>,
-        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>
-Subject: Re: [PATCH 1/4] documentation: add palmas dts definition
-References: <1361164283-3133-1-git-send-email-j-keerthy@ti.com> <512E5144.9020105@wwwdotorg.org>
-In-Reply-To: <512E5144.9020105@wwwdotorg.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>, Gleb Natapov <gleb@redhat.com>,
+        Blue Swirl <blauwirbel@gmail.com>, Eric Blake <eblake@redhat.com>,
+        Andrew Jones <drjones@redhat.com>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Luiz Capitulino <lcapitulino@redhat.com>,
+        Wen Congyang <wency@cn.fujitsu.com>
+Subject: Re: [PATCH v12 rebased] kvm: notify host when the guest is panicked
+Message-ID: <20130228085425.GA16362@localhost.localdomain>
+References: <cover.1358920534.git.hutao@cn.fujitsu.com>
+ <1358925575-4505-1-git-send-email-hutao@cn.fujitsu.com>
+ <20130208013947.GA3364@amt.cnet>
+MIME-Version: 1.0
+In-Reply-To: <20130208013947.GA3364@amt.cnet>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/02/28 16:53:23,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/02/28 16:53:24,
+	Serialize complete at 2013/02/28 16:53:24
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 28 February 2013 12:02 AM, Stephen Warren wrote:
-> On 02/17/2013 10:11 PM, J Keerthy wrote:
-> +- interrupt-parent : The parent interrupt controller.
-> +
-> +Optional node:
-> +- Child nodes contain in the palmas. The palmas family is made of several
-> +  variants that support a different number of features.
-> +  The child nodes will thus depend of the capability of the variant.
-> Are there DT bindings for those child nodes anywhere?
->
-> Representing each internal component as a separate DT node feels a
-> little like designing the DT bindings to model the Linux-internal MFD
-> structure. DT bindings should be driven by the HW design and OS-agnostic.
->
->  From a DT perspective, is there any need at all to create a separate DT
-> node for each component? This would only be needed or useful if the
-> child IP blocks (and hence DT bindings for those blocks) could be
-> re-used in other top-level devices that aren't represented by this
-> top-level ti,palmas DT binding. Are the HW IP blocks here re-used
-> anywhere, or will they be?
+On Thu, Feb 07, 2013 at 11:39:47PM -0200, Marcelo Tosatti wrote:
+> Hi,
+> 
+> On Wed, Jan 23, 2013 at 03:19:21PM +0800, Hu Tao wrote:
+> > We can know the guest is panicked when the guest runs on xen.
+> > But we do not have such feature on kvm.
+> > 
+> > Another purpose of this feature is: management app(for example:
+> > libvirt) can do auto dump when the guest is panicked. If management
+> > app does not do auto dump, the guest's user can do dump by hand if
+> > he sees the guest is panicked.
+> > 
+> > We have three solutions to implement this feature:
+> > 1. use vmcall
+> > 2. use I/O port
+> > 3. use virtio-serial.
+> > 
+> > We have decided to avoid touching hypervisor. The reason why I choose
+> > choose the I/O port is:
+> > 1. it is easier to implememt
+> > 2. it does not depend any virtual device
+> > 3. it can work when starting the kernel
+> > 
+> > Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
+> > Signed-off-by: Hu Tao <hutao@cn.fujitsu.com>
+> > ---
+> >  arch/ia64/kvm/irq.h                  | 19 +++++++++++++
+> >  arch/powerpc/include/asm/kvm_para.h  | 18 ++++++++++++
+> >  arch/s390/include/asm/kvm_para.h     | 19 +++++++++++++
+> >  arch/x86/include/asm/kvm_para.h      | 20 ++++++++++++++
+> >  arch/x86/include/uapi/asm/kvm_para.h |  2 ++
+> >  arch/x86/kernel/kvm.c                | 53 ++++++++++++++++++++++++++++++++++++
+> >  include/linux/kvm_para.h             | 18 ++++++++++++
+> >  include/uapi/linux/kvm_para.h        |  6 ++++
+> >  kernel/panic.c                       |  4 +++
+> >  9 files changed, 159 insertions(+)
+> > 
+> > diff --git a/arch/ia64/kvm/irq.h b/arch/ia64/kvm/irq.h
+> > index c0785a7..b3870f8 100644
+> > --- a/arch/ia64/kvm/irq.h
+> > +++ b/arch/ia64/kvm/irq.h
+> > @@ -30,4 +30,23 @@ static inline int irqchip_in_kernel(struct kvm *kvm)
+> >  	return 1;
+> >  }
+> >  
+> > +static inline int kvm_arch_pv_event_init(void)
+> > +{
+> > +	return 0;
+> > +}
+> > +
+> > +static inline unsigned int kvm_arch_pv_features(void)
+> > +{
+> > +	return 0;
+> > +}
+> > +
+> > +static inline void kvm_arch_pv_eject_event(unsigned int event)
+> > +{
+> > +}
+> > +
+> > +static inline bool kvm_arch_pv_event_enabled(void)
+> > +{
+> > +	return false;
+> > +}
+> > +
+> 
+> The interface is x86 only, no need to touch other architectures.
 
+OK.
 
-I dont think that child IP block can be used outside of the palma 
-although other mfd device may have same IP.
+> 
+> >  #endif
+> > diff --git a/arch/powerpc/include/asm/kvm_para.h b/arch/powerpc/include/asm/kvm_para.h
+> > index 2b11965..17dd013 100644
+> > --- a/arch/powerpc/include/asm/kvm_para.h
+> > +++ b/arch/powerpc/include/asm/kvm_para.h
+> > @@ -144,4 +144,22 @@ static inline bool kvm_check_and_clear_guest_paused(void)
+> >  	return false;
+> >  }
+> >  
+> > +static inline int kvm_arch_pv_event_init(void)
+> > +{
+> > +	return 0;
+> > +}
+> > +
+> > +static inline unsigned int kvm_arch_pv_features(void)
+> > +{
+> > +	return 0;
+> > +}
+> > +
+> > +static inline void kvm_arch_pv_eject_event(unsigned int event)
+> > +{
+> > +}
+> > +
+> > +static inline bool kvm_arch_pv_event_enabled(void)
+> > +{
+> > +	return false;
+> > +}
+> >  #endif /* __POWERPC_KVM_PARA_H__ */
+> > diff --git a/arch/s390/include/asm/kvm_para.h b/arch/s390/include/asm/kvm_para.h
+> > index e0f8423..81d87ec 100644
+> > --- a/arch/s390/include/asm/kvm_para.h
+> > +++ b/arch/s390/include/asm/kvm_para.h
+> > @@ -154,4 +154,23 @@ static inline bool kvm_check_and_clear_guest_paused(void)
+> >  	return false;
+> >  }
+> >  
+> > +static inline int kvm_arch_pv_event_init(void)
+> > +{
+> > +	return 0;
+> > +}
+> > +
+> > +static inline unsigned int kvm_arch_pv_features(void)
+> > +{
+> > +	return 0;
+> > +}
+> > +
+> > +static inline void kvm_arch_pv_eject_event(unsigned int event)
+> > +{
+> > +}
+> > +
+> > +static inline bool kvm_arch_pv_event_enabled(void)
+> > +{
+> > +	return false;
+> > +}
+> > +
+> >  #endif /* __S390_KVM_PARA_H */
+> > --- a/arch/x86/include/asm/kvm_para.h
+> > +++ b/arch/x86/include/asm/kvm_para.h
+> > @@ -133,4 +133,24 @@ static inline void kvm_disable_steal_time(void)
+> >  }
+> >  #endif
+> >  
+> > +static inline int kvm_arch_pv_event_init(void)
+> > +{
+> > +	if (!request_region(KVM_PV_EVENT_PORT, 4, "KVM_PV_EVENT"))
+> > +		return -1;
+> > +
+> > +	return 0;
+> > +}
+> 
+> This should be in a driver in arch/x86/kernel/kvm-panic.c, or so.
+> 
+> > +
+> > +static inline unsigned int kvm_arch_pv_features(void)
+> > +{
+> > +	return inl(KVM_PV_EVENT_PORT);
+> > +}
+> > +
+> > +static inline void kvm_arch_pv_eject_event(unsigned int event)
+> > +{
+> > +	outl(event, KVM_PV_EVENT_PORT);
+> > +}
+> 
+> > +
+> > +bool kvm_arch_pv_event_enabled(void);
+> > +
+> >  #endif /* _ASM_X86_KVM_PARA_H */
+> > diff --git a/arch/x86/include/uapi/asm/kvm_para.h b/arch/x86/include/uapi/asm/kvm_para.h
+> > index 06fdbd9..c15ef33 100644
+> > --- a/arch/x86/include/uapi/asm/kvm_para.h
+> > +++ b/arch/x86/include/uapi/asm/kvm_para.h
+> > @@ -96,5 +96,7 @@ struct kvm_vcpu_pv_apf_data {
+> >  #define KVM_PV_EOI_ENABLED KVM_PV_EOI_MASK
+> >  #define KVM_PV_EOI_DISABLED 0x0
+> >  
+> > +#define KVM_PV_EVENT_PORT	(0x505UL)
+> > +
+> 
+> No need for the ioport to be hard coded. What are the options to
+> communicate an address to the guest? An MSR, via ACPI?
 
-The child driver very much used the palma's API for register access and 
-they can not be separated untill driver is write completely independent 
-of palmas API. Currently, child driver include the palma header, uses 
-palma mfd stcruture and plama's api for accessing registers.
+I'm not quite understanding here. By 'address', you mean an ioport?
+how to communicate an address? (I have little knowledge about ACPI)
 
->> +    interrupt-controller;
->> +    #interrupt-cells = <1>;
->> +    interrupt-parent = <&gic>;
->> +    #address-cells = <1>;
->> +    #size-cells = <0>;
->> +
->> +	ti,mux-pad1 = <0x00>;
->> +	ti,mux-pad2 = <0x00>;
->> +	ti,power-ctrl = <0x03>;
->> +
->> +	palmas_pmic {
-> Just "pmic" seems simpler, although I dare say the node name isn't
-> really used for anything.
+> 
+> >  
+> >  #endif /* _UAPI_ASM_X86_KVM_PARA_H */
+> > diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
+> > index 9c2bd8b..0aa7b3e 100644
+> > --- a/arch/x86/kernel/kvm.c
+> > +++ b/arch/x86/kernel/kvm.c
+> > @@ -73,6 +73,20 @@ static int parse_no_kvmclock_vsyscall(char *arg)
+> >  
+> >  early_param("no-kvmclock-vsyscall", parse_no_kvmclock_vsyscall);
+> >  
+> > +static int pv_event = 1;
+> > +static int parse_no_pv_event(char *arg)
+> > +{
+> > +	pv_event = 0;
+> > +	return 0;
+> > +}
+> > +
+> > +bool kvm_arch_pv_event_enabled(void)
+> > +{
+> > +	return !!pv_event;
+> > +}
+> > +
+> > +early_param("no-pv-event", parse_no_pv_event);
+> > +
+> 
+> "pv-event" is a bad name for an interface which is specific to notify
+> panic events. Please use pv-panic everywhere.
 
-Stephen,
-Just curios, why do we require the palma_pmic node at all, We can start 
-with regulator node directly. Is it not too much nested here?
+panic event is one of the events supported. Can we keep the name?
 
+> 
+> >  static DEFINE_PER_CPU(struct kvm_vcpu_pv_apf_data, apf_reason) __aligned(64);
+> >  static DEFINE_PER_CPU(struct kvm_steal_time, steal_time) __aligned(64);
+> >  static int has_steal_clock = 0;
+> > @@ -385,6 +399,17 @@ static struct notifier_block kvm_pv_reboot_nb = {
+> >  	.notifier_call = kvm_pv_reboot_notify,
+> >  };
+> >  
+> > +static int
+> > +kvm_pv_panic_notify(struct notifier_block *nb, unsigned long code, void *unused)
+> > +{
+> > +	kvm_pv_eject_event(KVM_PV_EVENT_PANICKED);
+> > +	return NOTIFY_DONE;
+> > +}
+> 
+> Why 'eject' ?
 
+changed to 'send'
 
->
-> +
-> +    palmas_rtc {
-> +        compatible = "ti,palmas_rtc";
-> +        interrupts = <8 9>;
-> Are the interrupt outputs of the RTC fed directly to the GIC interrupt
-> mentioned in the top-level Palmas node, or do these interrupts feed into
-> a top-level IRQ controller in the Palmas device, which then feeds into
-> the external IRQ controller?
+> 
+> > +
+> > +static struct notifier_block kvm_pv_panic_nb = {
+> > +	.notifier_call = kvm_pv_panic_notify,
+> > +};
+> > +
+> >  static u64 kvm_steal_clock(int cpu)
+> >  {
+> >  	u64 steal;
+> > @@ -462,6 +487,34 @@ static void __init kvm_apf_trap_init(void)
+> >  	set_intr_gate(14, &async_page_fault);
+> >  }
+> >  
+> > +static void __init kvm_pv_panicked_event_init(void)
+> > +{
+> > +	if (!kvm_para_available())
+> > +		return;
+> > +
+> > +	if (kvm_pv_has_feature(KVM_PV_FEATURE_PANICKED))
+> > +		atomic_notifier_chain_register(&panic_notifier_list,
+> > +			&kvm_pv_panic_nb);
+> > +}
+> > +
+> > +static inline int kvm_pv_event_init(void)
+> > +{
+> > +	return kvm_arch_pv_event_init();
+> > +}
+> > +
+> > +static int __init enable_pv_event(void)
+> > +{
+> > +	if (pv_event) {
+> > +		if (kvm_pv_event_init())
+> > +			return 0;
+> > +
+> > +		kvm_pv_panicked_event_init();
+> > +	}
+> > +
+> > +	return 0;
+> > +}
+> > +arch_initcall(enable_pv_event);
+> 
+> Call the initialization code from kvm_guest_init, only one function is
+> necessary.
 
-The interrupt goes to the chip-internal irq, not to external of chip.  
-We have only one int line from chip which can be connected to processor/GIC.
-yes, interrupt parent need to be define here to get the proper interrupt 
-number.
+At the point of kvm_guest_init, rqeust_region (called by
+kvm_pv_event_init) will block, so the guest kernel won't up.
+
+> 
+> > +
+> >  void __init kvm_guest_init(void)
+> >  {
+> >  	int i;
+> > diff --git a/include/linux/kvm_para.h b/include/linux/kvm_para.h
+> > index 00a97bb..6fb6198 100644
+> > --- a/include/linux/kvm_para.h
+> > +++ b/include/linux/kvm_para.h
+> > @@ -10,4 +10,22 @@ static inline int kvm_para_has_feature(unsigned int feature)
+> >  		return 1;
+> >  	return 0;
+> >  }
+> > +
+> > +static inline int kvm_pv_has_feature(unsigned int feature)
+> > +{
+> > +	if (kvm_arch_pv_features() & (1UL << feature))
+> > +		return 1;
+> > +	return 0;
+> > +}
+> > +
+> > +static inline void kvm_pv_eject_event(unsigned int event)
+> > +{
+> > +	kvm_arch_pv_eject_event(event);
+> > +}
+> > +
+> > +static inline bool kvm_pv_event_enabled(void)
+> > +{
+> > +	return kvm_arch_pv_event_enabled();
+> > +}
+> 
+> No need for this helpers, as noted.
+
+OK.
+
+> 
+> >  #endif /* __LINUX_KVM_PARA_H */
+> > diff --git a/include/uapi/linux/kvm_para.h b/include/uapi/linux/kvm_para.h
+> > index cea2c5c..c41ddce 100644
+> > --- a/include/uapi/linux/kvm_para.h
+> > +++ b/include/uapi/linux/kvm_para.h
+> > @@ -20,6 +20,12 @@
+> >  #define KVM_HC_FEATURES			3
+> >  #define KVM_HC_PPC_MAP_MAGIC_PAGE	4
+> >  
+> > +/* The bit of supported pv event */
+> > +#define KVM_PV_FEATURE_PANICKED	0
+> > +
+> > +/* The pv event value */
+> > +#define KVM_PV_EVENT_PANICKED	1
+> > +
+> 
+> This is a hypercall header. You want
+> 
+> arch/x86/include/asm/kvm_para.h
+
+OK.
+
+> 
+> >  /*
+> >   * hypercalls use architecture specific
+> >   */
+> > diff --git a/kernel/panic.c b/kernel/panic.c
+> > index e1b2822..a764d2e 100644
+> > --- a/kernel/panic.c
+> > +++ b/kernel/panic.c
+> > @@ -23,6 +23,7 @@
+> >  #include <linux/init.h>
+> >  #include <linux/nmi.h>
+> >  #include <linux/dmi.h>
+> > +#include <linux/kvm_para.h>
+> >  
+> >  #define PANIC_TIMER_STEP 100
+> >  #define PANIC_BLINK_SPD 18
+> > @@ -132,6 +133,9 @@ void panic(const char *fmt, ...)
+> >  	if (!panic_blink)
+> >  		panic_blink = no_blink;
+> >  
+> > +	if (kvm_pv_event_enabled())
+> > +		panic_timeout = 0;
+> > +
+> 
+> What is the rationale behind this?
+
+This is a hack to disable reset_on_panic if user enables
+pv-event.
