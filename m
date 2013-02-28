@@ -1,52 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752801Ab3B1Kid (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 05:38:33 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:14723 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751993Ab3B1Kib (ORCPT
+	id S1752742Ab3B1Ki7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 05:38:59 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:11193 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751991Ab3B1Ki5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 05:38:31 -0500
-X-AuditID: cbfee68f-b7f6a6d000004969-aa-512f33a2fb8f
+	Thu, 28 Feb 2013 05:38:57 -0500
+X-AuditID: cbfee690-b7f6b6d000004563-3a-512f33c05058
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Andrew Morton'" <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, "'Alessandro Zummo'" <a.zummo@towertech.it>,
         rtc-linux@googlegroups.com, "'Jingoo Han'" <jg1.han@samsung.com>
 References: <000901ce159f$94e48270$bead8750$%han@samsung.com>
 In-reply-to: <000901ce159f$94e48270$bead8750$%han@samsung.com>
-Subject: [PATCH 3/7] rtc: rtc-ds1302: add __exit annotation
-Date: Thu, 28 Feb 2013 19:38:26 +0900
-Message-id: <000b01ce159f$bd9253f0$38b6fbd0$%han@samsung.com>
+Subject: [PATCH 4/7] rtc: rtc-imxdi: add __init/__exit annotation
+Date: Thu, 28 Feb 2013 19:38:56 +0900
+Message-id: <000c01ce159f$cf729760$6e57c620$%han@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=US-ASCII
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac4Vn5THVyS/kU1xRpiO8bTmT1G2WgAABg4w
+Thread-index: Ac4Vn5THVyS/kU1xRpiO8bTmT1G2WgAACmGw
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrPIsWRmVeSWpSXmKPExsVy+t8zQ91FxvqBBqd+6Vtc3jWHzYHR4/Mm
-	uQDGKC6blNSczLLUIn27BK6Mvcv3shY0clTcOZLVwHiJrYuRk0NCwETiyvJGRghbTOLCvfVA
-	cS4OIYFljBJNk08xwhT93v6OCSKxiFHiyo8b7BDObCaJw90TWUCq2ATUJL58OQyU4OAQEdCX
-	aGvRAKlhFuhllDjTu5sdpEZIwFZiVXcrK4jNKWAnsWf+JDBbWMBa4sXWZWA2i4CqxL5XH5lB
-	bF6g+mcNh9kgbEGJH5Pvge1iFtCS2LytiRXClpfYvOYtM8heCQF1iUd/dUHCIgJGEg+7zrND
-	lIhI7HvxjhHkHgmBRewS9+7ehdolIPFt8iEWiF5ZiU0HmCEelpQ4uOIGywRGiVlINs9CsnkW
-	ks2zkKxYwMiyilE0tSC5oDgpvchYrzgxt7g0L10vOT93EyMksvp3MN49YH2IMRlo/URmKdHk
-	fGBk5pXEGxobm5iZmJqYW5qam5ImrCTOK39JJlBIID2xJDU7NbUgtSi+qDQntfgQIxMHp1QD
-	o7i6q3XSp9qQAwv2KvdZWngm7TlsKqh1qT46IWXug5LczZ0cnpK7v4ZJT/+5b/Eyx4k2LTd2
-	hFStSvt6+mtLOnfJ+dlLlhlfz1u3rpdZQC5cyvDpW8+LpZvjChc4Vqe8EapMNtYNe7ZRiK/Y
-	m39F2S7Ri9+2l/6yu+Hhs2/BtsvPrcys5i0+qcRSnJFoqMVcVJwIAIpHyXPCAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuphleLIzCtJLcpLzFFi42I5/e+xgO4iY/1Ag3MftCwu75rD5sDo8XmT
-	XABjVAOjTUZqYkpqkUJqXnJ+SmZeuq2Sd3C8c7ypmYGhrqGlhbmSQl5ibqqtkotPgK5bZg7Q
-	VCWFssScUqBQQGJxsZK+HaYJoSFuuhYwjRG6viFBcD1GBmggYR1jxt7le1kLGjkq7hzJamC8
-	xNbFyMkhIWAi8Xv7OyYIW0ziwr31QHEuDiGBRYwSV37cYIdwZjNJHO6eyAJSxSagJvHly2Gg
-	BAeHiIC+RFuLBkgNs0Avo8SZ3t3sIDVCArYSq7pbWUFsTgE7iT3zJ4HZwgLWEi+2LgOzWQRU
-	Jfa9+sgMYvMC1T9rOMwGYQtK/Jh8D2wXs4CWxOZtTawQtrzE5jVvmUH2SgioSzz6qwsSFhEw
-	knjYdZ4dokREYt+Ld4wTGIVmIZk0C8mkWUgmzULSsoCRZRWjaGpBckFxUnquoV5xYm5xaV66
-	XnJ+7iZGcNw+k9rBuLLB4hCjAAejEg9vh4leoBBrYllxZe4hRgkOZiURXhd+/UAh3pTEyqrU
-	ovz4otKc1OJDjMlAj05klhJNzgemlLySeENjEzMjSyMzCyMTc3PShJXEeRlPPQkQEkhPLEnN
-	Tk0tSC2C2cLEwSnVwHjCQ/tyU23JiQL+lvd7cqd9EIjemLhMqrDmwOu+1kMPNc+e50xR9//F
-	sejiU5u0+NwQJr4lsqzBXnNbvY7VOAUcnpTa/ueEbZb+zy1zPYW8W6NixD7uNeub0pec/3/q
-	cVPLq4vjtxSeMShLL9E5caNr8fTlm9cYiSv+O+m9TmO7zY7TJ3Li0pRYijMSDbWYi4oTATOR
-	XGgfAwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrKIsWRmVeSWpSXmKPExsVy+t8zA90DxvqBBkdfa1ksuXiV3WLO+jVs
+	FpcXXmK1uLxrDpvF/s4ORgdWjz0TT7J5nJjxm8Wjb8sqRo/p834yeXzeJBfAGsVlk5Kak1mW
+	WqRvl8CVcWnbAbaCfq6KCfP6WBoYl3N0MXJySAiYSCxes4IZwhaTuHBvPRuILSSwjFHiyJ06
+	mJoXd28ydTFyAcWnM0psaf4N5fxilLi5ZyMrSBWbgJrEly+H2bsYOThEBPQl2lo0QGqYBXoZ
+	Jc707maHmGorsaq7FayeU8BOYs/8SWC2sICjxN22dYwgNouAqsTVX5fBruAFqr+7YCY7hC0o
+	8WPyPRYQm1lAS2LztiZWCFteYvOat8wgeyUE1CUe/dWFOMFI4uB+AYgKEYl9L94xQvzyiF1i
+	6yReiE0CEt8mH2KB6JSV2HQAGgySEgdX3GCZwCgxC8neWUj2zkKydxaSDQsYWVYxiqYWJBcU
+	J6UXmegVJ+YWl+al6yXn525ihETphB2M9w5YH2JMBlo/kVlKNDkfGOV5JfGGxsYmZiamJuaW
+	puampAkrifPKX5IJFBJITyxJzU5NLUgtii8qzUktPsTIxMEp1cAYZyO+w/+N9/zLH5NqItRj
+	5PY9Prqmq33XmlsCN/id3z68VF4tdz/8cX+/nNB7a09rptUuvunx3//rfZhisI/T2X1dg5n7
+	9YVr+W2O5tyfvWtdQu3qOwe+vTg18aRqoITW1SmZ/WuOCs1Mdq+54nRExn2+xIV/NwKEDuxZ
+	4lr7I/Tj5obzO6avUWIpzkg01GIuKk4EAA9HMGXoAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrCKsWRmVeSWpSXmKPExsVy+t9jQd0DxvqBBr+WqFksuXiV3WLO+jVs
+	FpcXXmK1uLxrDpvF/s4ORgdWjz0TT7J5nJjxm8Wjb8sqRo/p834yeXzeJBfAGtXAaJORmpiS
+	WqSQmpecn5KZl26r5B0c7xxvamZgqGtoaWGupJCXmJtqq+TiE6DrlpkDtF1JoSwxpxQoFJBY
+	XKykb4dpQmiIm64FTGOErm9IEFyPkQEaSFjHmHFp2wG2gn6uignz+lgaGJdzdDFyckgImEi8
+	uHuTCcIWk7hwbz1bFyMXh5DAdEaJLc2/mSCcX4wSN/dsZAWpYhNQk/jy5TB7FyMHh4iAvkRb
+	iwZIDbNAL6PEmd7d7CA1QgK2Equ6W8HqOQXsJPbMnwRmCws4StxtW8cIYrMIqEpc/XWZDcTm
+	Baq/u2AmO4QtKPFj8j0WEJtZQEti87YmVghbXmLzmrfMIHslBNQlHv3VhTjBSOLgfgGIChGJ
+	fS/eMU5gFJqFZNAsJINmIRk0C0nLAkaWVYyiqQXJBcVJ6blGesWJucWleel6yfm5mxjBaeCZ
+	9A7GVQ0WhxgFOBiVeHg7TPQChVgTy4orcw8xSnAwK4nwuvDrBwrxpiRWVqUW5ccXleakFh9i
+	TAb6cyKzlGhyPjBF5ZXEGxqbmBlZGplZGJmYm5MmrCTOy3jqSYCQQHpiSWp2ampBahHMFiYO
+	TqkGRoMNe94sTOC6a7Bn4rKKiH+HxJWnhPPY+fNzr7kS+m3m3OlLi35fLZ1S9VLpjOpLs6RF
+	N/fPVxVYmvzG+tWBIxlefRMYTl+alrguxtcjT1ebV/xFUecDyTP/JweIdC/+ellQRyp7Vcnp
+	9U/7FqmW2dgFxj44q/PGTXKX7KxZF5YtDFRdcvrzuT9KLMUZiYZazEXFiQB2HfBRRwMAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -60,31 +61,40 @@ probe()/remove().
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/rtc/rtc-ds1302.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/rtc/rtc-imxdi.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/rtc/rtc-ds1302.c b/drivers/rtc/rtc-ds1302.c
-index fdbcdb2..d20b5f1 100644
---- a/drivers/rtc/rtc-ds1302.c
-+++ b/drivers/rtc/rtc-ds1302.c
-@@ -234,7 +234,7 @@ static int __init ds1302_rtc_probe(struct platform_device *pdev)
- 	return 0;
+diff --git a/drivers/rtc/rtc-imxdi.c b/drivers/rtc/rtc-imxdi.c
+index 82aad69..73cf81c 100644
+--- a/drivers/rtc/rtc-imxdi.c
++++ b/drivers/rtc/rtc-imxdi.c
+@@ -369,7 +369,7 @@ static void dryice_work(struct work_struct *work)
+ /*
+  * probe for dryice rtc device
+  */
+-static int dryice_rtc_probe(struct platform_device *pdev)
++static int __init dryice_rtc_probe(struct platform_device *pdev)
+ {
+ 	struct resource *res;
+ 	struct imxdi_dev *imxdi;
+@@ -479,7 +479,7 @@ err:
+ 	return rc;
  }
  
--static int ds1302_rtc_remove(struct platform_device *pdev)
-+static int __exit ds1302_rtc_remove(struct platform_device *pdev)
+-static int dryice_rtc_remove(struct platform_device *pdev)
++static int __exit dryice_rtc_remove(struct platform_device *pdev)
  {
- 	struct rtc_device *rtc = platform_get_drvdata(pdev);
+ 	struct imxdi_dev *imxdi = platform_get_drvdata(pdev);
  
-@@ -249,7 +249,7 @@ static struct platform_driver ds1302_platform_driver = {
- 		.name	= DRV_NAME,
- 		.owner	= THIS_MODULE,
- 	},
--	.remove		= ds1302_rtc_remove,
-+	.remove		= __exit_p(ds1302_rtc_remove),
+@@ -510,7 +510,7 @@ static struct platform_driver dryice_rtc_driver = {
+ 		   .owner = THIS_MODULE,
+ 		   .of_match_table = of_match_ptr(dryice_dt_ids),
+ 		   },
+-	.remove = dryice_rtc_remove,
++	.remove = __exit_p(dryice_rtc_remove),
  };
  
- static int __init ds1302_rtc_init(void)
+ static int __init dryice_rtc_init(void)
 -- 
 1.7.2.5
 
