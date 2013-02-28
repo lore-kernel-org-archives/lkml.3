@@ -1,134 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753155Ab3B1I0f (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 03:26:35 -0500
-Received: from e23smtp02.au.ibm.com ([202.81.31.144]:45683 "EHLO
-	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751345Ab3B1I0e (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 03:26:34 -0500
-Message-ID: <1362039970.18895.28.camel@ThinkPad-T5421.cn.ibm.com>
-Subject: [RFC PATCH] context_tracking/rcu: don't function trace before
- rcu_user_exit() finishes
-From: Li Zhong <zhong@linux.vnet.ibm.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Date: Thu, 28 Feb 2013 16:26:10 +0800
+	id S1753420Ab3B1I3d (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 03:29:33 -0500
+Received: from mout.gmx.net ([212.227.15.15]:51968 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752028Ab3B1I3c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Feb 2013 03:29:32 -0500
+X-Greylist: delayed 303 seconds by postgrey-1.27 at vger.kernel.org; Thu, 28 Feb 2013 03:29:32 EST
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1/3sHYdlsn3AL1BAKzZsjz1V7AE4ITK4Zl1Bh+PPr
+	DIkyiGPcgFczT7
+Message-ID: <1362039862.4460.132.camel@marge.simpson.net>
+Subject: Re: [RFC PATCH] sched: wakeup buddy
+From: Mike Galbraith <efault@gmx.de>
+To: Michael Wang <wangyun@linux.vnet.ibm.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
+        Alex Shi <alex.shi@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ram Pai <linuxram@us.ibm.com>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        Namhyung Kim <namhyung@kernel.org>
+Date: Thu, 28 Feb 2013 09:24:22 +0100
+In-Reply-To: <512F11E6.8060807@linux.vnet.ibm.com>
+References: <512EFB4B.5040204@linux.vnet.ibm.com>
+	 <1362035917.4460.105.camel@marge.simpson.net>
+	 <512F09D4.1020307@linux.vnet.ibm.com>
+	 <1362038652.4460.124.camel@marge.simpson.net>
+	 <512F11E6.8060807@linux.vnet.ibm.com>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+X-Mailer: Evolution 3.2.3 
 Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13022808-5490-0000-0000-000003094E59
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I saw some RCU illegal usage from idle complaints when function tracer
-is enabled with forced context tracking.
+On Thu, 2013-02-28 at 16:14 +0800, Michael Wang wrote: 
+> On 02/28/2013 04:04 PM, Mike Galbraith wrote:
 
-It seems that __schedule() might be called in function_trace_call() when
-it re-enables preemption(if preemption and irqs are both enabled). 
+> > It would be nice if it _were_ a promise, but it is not, it's a hint.
+> 
+> Bad to know :(
+> 
+> Should we fix it or this is by designed? The comments after WF_SYNC
+> cheated me...
 
-So at the places where we call rcu_user_exit(), we need make sure that
-no function tracer hooks could be called in preemption/irqs both enabled
-environment before rcu_user_exit() finishes, or we might cause illegal
-RCU usage in __schedule(). 
+You can't fix it, because it's not busted.  You can say "Ok guys, I'm
+off for a nap RSN" all you want, but that won't guarantee that nobody
+pokes you, and hands you something more useful to do than snoozing.
 
-This patch tries to add notrace attribute to a couple of functions where
-the above could happen, including user_exit(), and a few callers of
-user_exit(). 
-
-Signed-off-by: Li Zhong <zhong@linux.vnet.ibm.com>
---
- arch/x86/kernel/ptrace.c  | 4 ++--
- arch/x86/kernel/signal.c  | 2 +-
- include/linux/rcupdate.h  | 2 ++
- kernel/context_tracking.c | 2 +-
- kernel/sched/core.c       | 2 +-
- 5 files changed, 7 insertions(+), 5 deletions(-)
-
-diff --git a/arch/x86/kernel/ptrace.c b/arch/x86/kernel/ptrace.c
-index 29a8120..04659c2 100644
---- a/arch/x86/kernel/ptrace.c
-+++ b/arch/x86/kernel/ptrace.c
-@@ -1488,7 +1488,7 @@ void send_sigtrap(struct task_struct *tsk, struct pt_regs *regs,
-  * We must return the syscall number to actually look up in the table.
-  * This can be -1L to skip running any syscall at all.
-  */
--long syscall_trace_enter(struct pt_regs *regs)
-+long rcu_user_notrace syscall_trace_enter(struct pt_regs *regs)
- {
- 	long ret = 0;
- 
-@@ -1538,7 +1538,7 @@ out:
- 	return ret ?: regs->orig_ax;
- }
- 
--void syscall_trace_leave(struct pt_regs *regs)
-+void rcu_user_notrace syscall_trace_leave(struct pt_regs *regs)
- {
- 	bool step;
- 
-diff --git a/arch/x86/kernel/signal.c b/arch/x86/kernel/signal.c
-index 6956299..10a9e5a 100644
---- a/arch/x86/kernel/signal.c
-+++ b/arch/x86/kernel/signal.c
-@@ -732,7 +732,7 @@ static void do_signal(struct pt_regs *regs)
-  * notification of userspace execution resumption
-  * - triggered by the TIF_WORK_MASK flags
-  */
--void
-+void rcu_user_notrace
- do_notify_resume(struct pt_regs *regs, void *unused, __u32 thread_info_flags)
- {
- 	user_exit();
-diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-index b758ce1..ecf9872 100644
---- a/include/linux/rcupdate.h
-+++ b/include/linux/rcupdate.h
-@@ -229,6 +229,7 @@ extern void rcu_user_enter(void);
- extern void rcu_user_exit(void);
- extern void rcu_user_enter_after_irq(void);
- extern void rcu_user_exit_after_irq(void);
-+#define rcu_user_notrace notrace
- #else
- static inline void rcu_user_enter(void) { }
- static inline void rcu_user_exit(void) { }
-@@ -236,6 +237,7 @@ static inline void rcu_user_enter_after_irq(void) { }
- static inline void rcu_user_exit_after_irq(void) { }
- static inline void rcu_user_hooks_switch(struct task_struct *prev,
- 					 struct task_struct *next) { }
-+#define rcu_user_notrace
- #endif /* CONFIG_RCU_USER_QS */
- 
- extern void exit_rcu(void);
-diff --git a/kernel/context_tracking.c b/kernel/context_tracking.c
-index 65349f0..d3fc35f 100644
---- a/kernel/context_tracking.c
-+++ b/kernel/context_tracking.c
-@@ -83,7 +83,7 @@ void user_enter(void)
-  * This call supports re-entrancy. This way it can be called from any exception
-  * handler without needing to know if we came from userspace or not.
-  */
--void user_exit(void)
-+void rcu_user_notrace user_exit(void)
- {
- 	unsigned long flags;
- 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 2b52431..c970e92 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -2973,7 +2973,7 @@ asmlinkage void __sched schedule(void)
- EXPORT_SYMBOL(schedule);
- 
- #ifdef CONFIG_CONTEXT_TRACKING
--asmlinkage void __sched schedule_user(void)
-+asmlinkage void __sched rcu_user_notrace schedule_user(void)
- {
- 	/*
- 	 * If we come here after a random call to set_need_resched(),
-
+-Mike  
 
