@@ -1,50 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932241Ab3B1Q1t (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 11:27:49 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:22255 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758639Ab3B1Q1p (ORCPT
+	id S932301Ab3B1Q2C (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 11:28:02 -0500
+Received: from mx2.promwad.com ([91.149.128.90]:39373 "EHLO mx2.promwad.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932244Ab3B1Q15 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 11:27:45 -0500
-Message-ID: <512F856B.5090801@oracle.com>
-Date: Thu, 28 Feb 2013 11:27:23 -0500
-From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Thu, 28 Feb 2013 11:27:57 -0500
+From: Kurachkin Michail <Michail.Kurachkin@promwad.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Kuten Ivan <Ivan.Kuten@promwad.com>,
+        "benavi@marvell.com" <benavi@marvell.com>,
+        "Viktar Palstsiuk" <Viktar.Palstsiuk@promwad.com>,
+        Gorokh Dmitriy <Dmitriy.Gorokh@promwad.com>
+Subject: RE: [PATCH 7/9] added issues description in TODO file
+Thread-Topic: [PATCH 7/9] added issues description in TODO file
+Thread-Index: AQHOFQc7dhh15HnzGU+3GHU/ccGffJiNtPOAgAG85YE=
+Date: Thu, 28 Feb 2013 16:27:54 +0000
+Message-ID: <F7F628C32E67B04DAECC5CA53521253E6AD1AA09@sv-exmb01-lo1.promwad.corp>
+References: <1361982404-5398-1-git-send-email-michail.kurachkin@promwad.com>,<20130227163653.GA23508@kroah.com>
+In-Reply-To: <20130227163653.GA23508@kroah.com>
+Accept-Language: en-US, ru-RU
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [192.168.10.99]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Greg KH <gregkh@linuxfoundation.org>, mingo@redhat.com,
-        tglx@linutronix.de, xen-devel@lists.xen.org,
-        linux-kernel@vger.kernel.org, samu.kallio@aberdeencloud.com,
-        kraman@redhat.com, jwboyer@redhat.com
-Subject: Re: Is: x86: mm: Fix vmalloc_fault oops during lazy MMU updates Was:
- Re: [PATCH] mm/x86: Flush lazy MMU when DEBUG_PAGEALLOC is set
-References: <91983d94-7b7d-4a0b-9470-e7cd823ba139@default> <512E8B41.8000504@zytor.com> <20130227230009.GA32465@kroah.com> <512E91B7.6060102@zytor.com> <20130228142910.GA32354@phenom.dumpdata.com> <20130228153846.GA9782@pd.tnic> <512F7D88.4090703@zytor.com> <20130228161057.GC9767@pd.tnic> <512F83C4.6080904@oracle.com> <20130228162227.GD9767@pd.tnic>
-In-Reply-To: <20130228162227.GD9767@pd.tnic>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/28/2013 11:22 AM, Borislav Petkov wrote:
-> On Thu, Feb 28, 2013 at 11:20:20AM -0500, Boris Ostrovsky wrote:
->> On 02/28/2013 11:10 AM, Borislav Petkov wrote:
->>> On Thu, Feb 28, 2013 at 07:53:44AM -0800, H. Peter Anvin wrote:
->>>> At the very least we should have an early filter for the **COMMON!**
->>>> case that we are not on a PV platform.
->>> ... or, patch it out with the alternatives on baremetal, as Steven
->>> suggested.
+>Oh, and finally, why isn't this driver under the drivers/staging/tdm/
+>directory?
 
-What was the suggestion exactly? I don't remember seeing that message.
+Because SLIC driver is not a part of TDM core. It only uses TDM and SPI API.
 
--boris
-
->>>
->> I think making a check for paravirt_enabled() is safe enough. I'll
->> send a patch shortly.
-> Why not make it absolutely for free?
->
-
+Regards,
+Michail
