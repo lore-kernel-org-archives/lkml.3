@@ -1,67 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751851Ab3CAQjR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 11:39:17 -0500
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:45985
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750886Ab3CAQjM (ORCPT
+	id S1752059Ab3CAQjc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 11:39:32 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:33744 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751538Ab3CAQjS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 11:39:12 -0500
+	Fri, 1 Mar 2013 11:39:18 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Borislav Petkov <bp@suse.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
+Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Namhyung Kim <namhyung@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 04/15] perf tools: Correct Makefile.include
-Date: Thu, 28 Feb 2013 18:05:16 -0300
-Message-Id: <1362085527-25326-5-git-send-email-acme@infradead.org>
+Subject: [PATCH 06/15] perf tests: Make attr script verbose friendly
+Date: Thu, 28 Feb 2013 18:05:18 -0300
+Message-Id: <1362085527-25326-7-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.1.361.gec3ae6e
 In-Reply-To: <1362085527-25326-1-git-send-email-acme@infradead.org>
 References: <1362085527-25326-1-git-send-email-acme@infradead.org>
 Content-Type: text/plain; charset="utf-8"
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Borislav Petkov <bp@suse.de>
+From: Jiri Olsa <jolsa@redhat.com>
 
-It looks at O= and adjusts the $(OUTPUT) variable based on what the
-output directory will be. However, when O is defined but empty, it
-wrongly becomes the user's $HOME dir which is not what we want. So check
-it is not empty before working with it further.
+Making the attr test script runner to pass proper verbose option. Also
+making single '-v' be more reader friendly and display just the test
+name.
 
-Signed-off-by: Borislav Petkov <bp@suse.de>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/r/1361374353-30385-4-git-send-email-bp@alien8.de
+Making the current output to be display for '-vv'.
+
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1361785972-7431-3-git-send-email-jolsa@redhat.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/scripts/Makefile.include | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ tools/perf/tests/attr.c  | 9 +++++++--
+ tools/perf/tests/attr.py | 4 ++--
+ 2 files changed, 9 insertions(+), 4 deletions(-)
 
-diff --git a/tools/scripts/Makefile.include b/tools/scripts/Makefile.include
-index 00a05f4..f03e681 100644
---- a/tools/scripts/Makefile.include
-+++ b/tools/scripts/Makefile.include
-@@ -1,3 +1,4 @@
-+ifneq ($(O),)
- ifeq ($(origin O), command line)
- 	dummy := $(if $(shell test -d $(O) || echo $(O)),$(error O=$(O) does not exist),)
- 	ABSOLUTE_O := $(shell cd $(O) ; pwd)
-@@ -7,9 +8,10 @@ ifeq ($(objtree),)
- 	objtree := $(O)
- endif
- endif
-+endif
+diff --git a/tools/perf/tests/attr.c b/tools/perf/tests/attr.c
+index bdcceb8..038de3e 100644
+--- a/tools/perf/tests/attr.c
++++ b/tools/perf/tests/attr.c
+@@ -147,10 +147,15 @@ void test_attr__open(struct perf_event_attr *attr, pid_t pid, int cpu,
  
--ifneq ($(OUTPUT),)
- # check that the output directory actually exists
-+ifneq ($(OUTPUT),)
- OUTDIR := $(shell cd $(OUTPUT) && /bin/pwd)
- $(if $(OUTDIR),, $(error output directory "$(OUTPUT)" does not exist))
- endif
+ static int run_dir(const char *d, const char *perf)
+ {
++	char v[] = "-vvvvv";
++	int vcnt = min(verbose, (int) sizeof(v) - 1);
+ 	char cmd[3*PATH_MAX];
+ 
+-	snprintf(cmd, 3*PATH_MAX, PYTHON " %s/attr.py -d %s/attr/ -p %s %s",
+-		 d, d, perf, verbose ? "-v" : "");
++	if (verbose)
++		vcnt++;
++
++	snprintf(cmd, 3*PATH_MAX, PYTHON " %s/attr.py -d %s/attr/ -p %s %.*s",
++		 d, d, perf, vcnt, v);
+ 
+ 	return system(cmd);
+ }
+diff --git a/tools/perf/tests/attr.py b/tools/perf/tests/attr.py
+index 2f629ca..e0ea513 100644
+--- a/tools/perf/tests/attr.py
++++ b/tools/perf/tests/attr.py
+@@ -121,7 +121,7 @@ class Test(object):
+         parser = ConfigParser.SafeConfigParser()
+         parser.read(path)
+ 
+-        log.debug("running '%s'" % path)
++        log.warning("running '%s'" % path)
+ 
+         self.path     = path
+         self.test_dir = options.test_dir
+@@ -172,7 +172,7 @@ class Test(object):
+               self.perf, self.command, tempdir, self.args)
+         ret = os.WEXITSTATUS(os.system(cmd))
+ 
+-        log.warning("  running '%s' ret %d " % (cmd, ret))
++        log.info("  '%s' ret %d " % (cmd, ret))
+ 
+         if ret != int(self.ret):
+             raise Unsup(self)
 -- 
 1.8.1.1.361.gec3ae6e
 
