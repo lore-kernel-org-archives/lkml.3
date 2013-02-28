@@ -1,28 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932797Ab3B1OuU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 09:50:20 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:42428 "EHLO
+	id S932902Ab3B1Oue (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 09:50:34 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:42449 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932720Ab3B1OuO (ORCPT
+	with ESMTP id S932816Ab3B1OuZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 09:50:14 -0500
+	Thu, 28 Feb 2013 09:50:25 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: =?UTF-8?q?Ville=20Syrj=C3=A4l=C3=A4?= 
-	<ville.syrjala@linux.intel.com>,
+Cc: David Woodhouse <dwmw2@infradead.org>,
+        "Sankaran, Rajesh" <rajesh.sankaran@intel.com>,
         Daniel Vetter <daniel.vetter@ffwll.ch>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 106/139] drm: Use C8 instead of RGB332 when determining the format from depth/bpp
-Date: Thu, 28 Feb 2013 14:44:16 +0000
-Message-Id: <1362062689-2567-107-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 110/139] intel/iommu: force writebuffer-flush quirk on Gen 4 Chipsets
+Date: Thu, 28 Feb 2013 14:44:20 +0000
+Message-Id: <1362062689-2567-111-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1362062689-2567-1-git-send-email-luis.henriques@canonical.com>
 References: <1362062689-2567-1-git-send-email-luis.henriques@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -32,40 +29,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?Ville=20Syrj=C3=A4l=C3=A4?= <ville.syrjala@linux.intel.com>
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-commit d84f031bd230fdf9c3b7734940c859bf28b90219 upstream.
+commit 210561ffd72d00eccf12c0131b8024d5436bae95 upstream.
 
-Support for real RGB332 is a rarity, most hardware only really support
-C8. So use C8 instead of RGB332 when determining the format based on
-depth/bpp.
+We already have the quirk entry for the mobile platform, but also
+reports on some desktop versions. So be paranoid and set it
+everywhere.
 
-This fixes 8bpp fbcon on i915, since i915 will only accept C8 and not
-RGB332.
-
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=59572
-Signed-off-by: Ville Syrjälä <ville.syrjala@linux.intel.com>
-Acked-by: Dave Airlie <airlied@gmail.com>
-Tested-by: mlsemon35@gmail.com
+References: http://www.mail-archive.com/dri-devel@lists.freedesktop.org/msg33138.html
+Cc: David Woodhouse <dwmw2@infradead.org>
+Cc: "Sankaran, Rajesh" <rajesh.sankaran@intel.com>
+Reported-and-tested-by: Mihai Moldovan <ionic@ionic.de>
 Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpu/drm/drm_crtc.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/iommu/intel-iommu.c | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/drm_crtc.c b/drivers/gpu/drm/drm_crtc.c
-index 2ca9737..3859f43 100644
---- a/drivers/gpu/drm/drm_crtc.c
-+++ b/drivers/gpu/drm/drm_crtc.c
-@@ -2023,7 +2023,7 @@ uint32_t drm_mode_legacy_fb_format(uint32_t bpp, uint32_t depth)
+diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
+index 1f78d86..eafc4ed 100644
+--- a/drivers/iommu/intel-iommu.c
++++ b/drivers/iommu/intel-iommu.c
+@@ -4210,13 +4210,19 @@ static void __devinit quirk_iommu_rwbf(struct pci_dev *dev)
+ {
+ 	/*
+ 	 * Mobile 4 Series Chipset neglects to set RWBF capability,
+-	 * but needs it:
++	 * but needs it. Same seems to hold for the desktop versions.
+ 	 */
+ 	printk(KERN_INFO "DMAR: Forcing write-buffer flush capability\n");
+ 	rwbf_quirk = 1;
+ }
  
- 	switch (bpp) {
- 	case 8:
--		fmt = DRM_FORMAT_RGB332;
-+		fmt = DRM_FORMAT_C8;
- 		break;
- 	case 16:
- 		if (depth == 15)
+ DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x2a40, quirk_iommu_rwbf);
++DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x2e00, quirk_iommu_rwbf);
++DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x2e10, quirk_iommu_rwbf);
++DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x2e20, quirk_iommu_rwbf);
++DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x2e30, quirk_iommu_rwbf);
++DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x2e40, quirk_iommu_rwbf);
++DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x2e90, quirk_iommu_rwbf);
+ 
+ #define GGC 0x52
+ #define GGC_MEMORY_SIZE_MASK	(0xf << 8)
 -- 
 1.8.1.2
 
