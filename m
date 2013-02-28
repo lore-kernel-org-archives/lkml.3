@@ -1,100 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751937Ab3B1J0K (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 04:26:10 -0500
-Received: from mga02.intel.com ([134.134.136.20]:15725 "EHLO mga02.intel.com"
+	id S1751513Ab3B1J1v (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 04:27:51 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:44898 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750768Ab3B1J0H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 04:26:07 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,754,1355126400"; 
-   d="scan'208";a="291713211"
-Date: Thu, 28 Feb 2013 11:26:02 +0200
-From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-To: Gregory CLEMENT <gregory.clement@free-electrons.com>
-Cc: Jamie Iles <jamie@jamieiles.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-serial@vger.kernel.org
-Subject: Re: Serial port initialization broken on Armada 370/XP due to
- "serial: 8250_dw: Don't use UPF_FIXED_TYPE"
-Message-ID: <20130228092602.GA5688@xps8300>
-References: <512E1AD9.4090403@free-electrons.com>
- <512E2F64.2010706@free-electrons.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <512E2F64.2010706@free-electrons.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1750768Ab3B1J1s convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Feb 2013 04:27:48 -0500
+Date: Thu, 28 Feb 2013 06:27:38 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux EDAC Mailing List <linux-edac@vger.kernel.org>,
+        Doug Thompson <dougthompson@xmission.com>,
+        Len Brown <len.brown@intel.com>, Rafael Wysocki <rjw@sisk.pl>,
+        Huang Ying <ying.huang@intel.com>
+Subject: [GIT PULL for v3.8] EDAC fixes and ghes-edac
+Message-ID: <20130228062738.154b001f@redhat.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Gregory.
+Hi Linus,
 
-On Wed, Feb 27, 2013 at 05:08:04PM +0100, Gregory CLEMENT wrote:
-> I found the root of the problem in drivers/tty/serial/8250/8250.c
-> 
-> in the autoconfig() function, when the IIR register is acceded, it is
-> done using serial_in(), this function return an int but is used as it
-> have returned a char. There is a lot of implicit cast to a char when
-> the returned value is put in a char variable, this seems to not be a
-> problem most of the time. The problematic line is the following:
-> 
-> scratch = serial_in(up, UART_IIR) >> 6;
-> 
-> the shift is done here before any cast or mask, and unfortunately my
-> hardware send 0xC1C1C1C1, that lead to get a '7' in the scratch
-> variable instead of a '3'.
+Please pull from:
+  git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-edac.git linux_next
 
-OK, this is interesting. Why does it return that? dw_apb_uart_db.pdf I
-have says that bits 31:8 read as zero?
+For:
+	- Some fixes at edac drivers (i7core_edac, sb_edac, i3200_edac);
+	- error injection support for i5100, when EDAC debug is enabled;
+	- fix edac when it is loaded builtin (early init for the subsystem);
+	- a "Firmware First" EDAC driver, allowing ghes to report errors via
+	  EDAC (ghes-edac).
 
-> Would you agree with this kind of patch to fix the issue?
-> 
-> diff --git a/drivers/tty/serial/8250/8250.c b/drivers/tty/serial/8250/8250.c
-> index e2ac25a..0b284c6 100644
-> --- a/drivers/tty/serial/8250/8250.c
-> +++ b/drivers/tty/serial/8250/8250.c
-> @@ -1119,7 +1119,7 @@ static void autoconfig(struct uart_8250_port *up, unsigned int probeflags)
->         serial_out(up, UART_LCR, 0);
-> 
->         serial_out(up, UART_FCR, UART_FCR_ENABLE_FIFO);
-> -       scratch = serial_in(up, UART_IIR) >> 6;
-> +       scratch = (serial_in(up, UART_IIR) & 0xFF) >> 6;
-> 
->         switch (scratch) {
->         case 0:
+With regards to ghes-edac, this fixes a longstanding BZ at Red Hat that
+happens with Nehalem and Sandy Bridge CPUs: when both GHES and i7core_edac
+or sb_edac are running, the error reports are unpredictable, as both BIOS
+and OS race to access the registers. With ghes-edac, the EDAC core will
+refuse to register any other concurrent memory error driver.
 
-Instead, can you test if it's enough for you to set the reg-io-width
-to 1 instead of 4:
+This patchset moves the ghes struct definitions to a separate header file
+(include/acpi/ghes.h) and adds 3 hooks at apei/ghes.c to register/unregister
+and to report errors via ghes-edac. Those changes were acked by ghes driver
+maintainer (Huang).
 
-diff --git a/arch/arm/boot/dts/armada-370-xp.dtsi b/arch/arm/boot/dts/armada-370-xp.dtsi
-index 4c0abe8..3a87a0e 100644
---- a/arch/arm/boot/dts/armada-370-xp.dtsi
-+++ b/arch/arm/boot/dts/armada-370-xp.dtsi
-@@ -54,7 +54,7 @@
-                                reg = <0xd0012000 0x100>;
-                                reg-shift = <2>;
-                                interrupts = <41>;
--                               reg-io-width = <4>;
-+                               reg-io-width = <1>;
-                                status = "disabled";
-                };
-                serial@d0012100 {
-@@ -62,7 +62,7 @@
-                                reg = <0xd0012100 0x100>;
-                                reg-shift = <2>;
-                                interrupts = <42>;
--                               reg-io-width = <4>;
-+                               reg-io-width = <1>;
-                                status = "disabled";
-                };
- 
-Thanks,
+Thanks!
+Mauro
 
--- 
-heikki
+-
+
+The following changes since commit 836dc9e3fbbab0c30aa6e664417225f5c1fb1c39:
+
+  Linux 3.8-rc7 (2013-02-09 08:20:39 +1100)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-edac.git linux_next
+
+for you to fetch changes up to b0769891ba7baa53f270dc70d71934748beb4c5b:
+
+  i5100_edac: convert to use simple_open() (2013-02-26 10:06:18 -0300)
+
+----------------------------------------------------------------
+Lans Zhang (1):
+      i7core_edac: fix kernel crash on unloading i7core_edac
+
+Mauro Carvalho Chehab (23):
+      sb_edac: add a missing /n on a debug message
+      Merge tag 'v3.8-rc7' into next
+      i3200_edac: Add more debug to the driver
+      i3200_edac: Fix the logic that detects filled memories
+      edac: only create sdram_scrub_rate where supported
+      i5100_edac: Remove two checkpatch warnings
+      edac: better report error conditions in debug mode
+      edac: initialize the core earlier
+      edac: add a new memory layer type
+      edac: remove proc_name from mci structure
+      edac: lock module owner to avoid error report conflicts
+      edac: reduce stack pressure by using a pre-allocated buffer
+      edac: add support for raw error reports
+      edac: add support for error type "Info"
+      ghes: move structures/enum to a header file
+      ghes: add the needed hooks for EDAC error report
+      ghes_edac: Register at EDAC core the BIOS report
+      ghes_edac: add support for reporting errors via EDAC
+      ghes_edac: do a better job of filling EDAC DIMM info
+      ghes_edac: Don't credit the same memory dimm twice
+      ghes_edac: Improve driver's printk messages
+      ghes_edac: Make it compliant with UEFI spec 2.3.1
+      ghes_edac: Fix RAS tracing
+
+Niklas Söderlund (4):
+      i7core_edac: fix erroneous size of static array
+      i5100_edac: probe for device 19 function 0
+      i5100_edac: add fault injection code
+      i5100_edac: connect fault injection to debugfs node
+
+Shaun Ruffell (1):
+      edac: edac_mc no longer deals with kobjects directly
+
+Wei Yongjun (2):
+      ghes_edac: fix to use list_for_each_entry_safe() when delete list items
+      i5100_edac: convert to use simple_open()
+
+ MAINTAINERS                   |   7 +
+ drivers/acpi/apei/ghes.c      |  71 ++----
+ drivers/edac/Kconfig          |  23 ++
+ drivers/edac/Makefile         |   1 +
+ drivers/edac/edac_core.h      |   5 +
+ drivers/edac/edac_mc.c        | 152 +++++++-----
+ drivers/edac/edac_mc_sysfs.c  |  36 ++-
+ drivers/edac/edac_module.c    |   2 +-
+ drivers/edac/edac_pci_sysfs.c |   2 +-
+ drivers/edac/ghes_edac.c      | 537 ++++++++++++++++++++++++++++++++++++++++++
+ drivers/edac/i3200_edac.c     |  37 ++-
+ drivers/edac/i5100_edac.c     | 178 +++++++++++++-
+ drivers/edac/i7core_edac.c    |   8 +-
+ drivers/edac/sb_edac.c        |   2 +-
+ include/acpi/ghes.h           |  72 ++++++
+ include/linux/edac.h          |  79 ++++++-
+ include/linux/pci_ids.h       |   1 +
+ include/ras/ras_event.h       |   4 +-
+ 18 files changed, 1077 insertions(+), 140 deletions(-)
+ create mode 100644 drivers/edac/ghes_edac.c
+ create mode 100644 include/acpi/ghes.h
+
