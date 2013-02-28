@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759736Ab3B1O5k (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 09:57:40 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:42482 "EHLO
+	id S1759706Ab3B1O5f (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 09:57:35 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:42484 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932918Ab3B1Ouj (ORCPT
+	with ESMTP id S932938Ab3B1Ouk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 09:50:39 -0500
+	Thu, 28 Feb 2013 09:50:40 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Shawn Guo <shawn.guo@linaro.org>, Chris Ball <cjb@laptop.org>,
+Cc: Christoph Hellwig <hch@infradead.org>, Jens Axboe <axboe@kernel.dk>,
+        Jeff Moyer <jmoyer@redhat.com>, Jan Kara <jack@suse.cz>,
+        Al Viro <viro@zeniv.linux.org.uk>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 116/139] mmc: sdhci-esdhc-imx: fix host version read
-Date: Thu, 28 Feb 2013 14:44:26 +0000
-Message-Id: <1362062689-2567-117-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 115/139] fs: Fix possible use-after-free with AIO
+Date: Thu, 28 Feb 2013 14:44:25 +0000
+Message-Id: <1362062689-2567-116-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1362062689-2567-1-git-send-email-luis.henriques@canonical.com>
 References: <1362062689-2567-1-git-send-email-luis.henriques@canonical.com>
@@ -27,58 +29,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Shawn Guo <shawn.guo@linaro.org>
+From: Jan Kara <jack@suse.cz>
 
-commit ef4d0888bb7e1b963880f086575081c3d39cad2d upstream.
+commit 54c807e71d5ac59dee56c685f2b66e27cd54c475 upstream.
 
-When commit 95a2482 (mmc: sdhci-esdhc-imx: add basic imx6q usdhc
-support) works around host version issue on imx6q, it gets the
-register address fixup "reg ^= 2" lost for imx25/35/51/53 esdhc.
-Thus, the controller version on these SoCs is wrongly identified
-as v1 while it's actually v2.
+Running AIO is pinning inode in memory using file reference. Once AIO
+is completed using aio_complete(), file reference is put and inode can
+be freed from memory. So we have to be sure that calling aio_complete()
+is the last thing we do with the inode.
 
-Add the address fixup back and take a different approach to correct
-imx6q host version, so that the host version read gets back to work
-for all SoCs.
-
-Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
-Signed-off-by: Chris Ball <cjb@laptop.org>
+CC: Christoph Hellwig <hch@infradead.org>
+CC: Jens Axboe <axboe@kernel.dk>
+CC: Jeff Moyer <jmoyer@redhat.com>
+Acked-by: Jeff Moyer <jmoyer@redhat.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/mmc/host/sdhci-esdhc-imx.c | 19 +++++++++++--------
- 1 file changed, 11 insertions(+), 8 deletions(-)
+ fs/direct-io.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/mmc/host/sdhci-esdhc-imx.c b/drivers/mmc/host/sdhci-esdhc-imx.c
-index ebbe984..1dc06a6 100644
---- a/drivers/mmc/host/sdhci-esdhc-imx.c
-+++ b/drivers/mmc/host/sdhci-esdhc-imx.c
-@@ -237,15 +237,18 @@ static void esdhc_writel_le(struct sdhci_host *host, u32 val, int reg)
- 
- static u16 esdhc_readw_le(struct sdhci_host *host, int reg)
- {
-+	struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
-+	struct pltfm_imx_data *imx_data = pltfm_host->priv;
-+
- 	if (unlikely(reg == SDHCI_HOST_VERSION)) {
--		u16 val = readw(host->ioaddr + (reg ^ 2));
--		/*
--		 * uSDHC supports SDHCI v3.0, but it's encoded as value
--		 * 0x3 in host controller version register, which violates
--		 * SDHCI_SPEC_300 definition.  Work it around here.
--		 */
--		if ((val & SDHCI_SPEC_VER_MASK) == 3)
--			return --val;
-+		reg ^= 2;
-+		if (is_imx6q_usdhc(imx_data)) {
-+			/*
-+			 * The usdhc register returns a wrong host version.
-+			 * Correct it here.
-+			 */
-+			return SDHCI_SPEC_300;
-+		}
+diff --git a/fs/direct-io.c b/fs/direct-io.c
+index 0c85fae..84466cb 100644
+--- a/fs/direct-io.c
++++ b/fs/direct-io.c
+@@ -261,9 +261,9 @@ static ssize_t dio_complete(struct dio *dio, loff_t offset, ssize_t ret, bool is
+ 		dio->end_io(dio->iocb, offset, transferred,
+ 			    dio->private, ret, is_async);
+ 	} else {
++		inode_dio_done(dio->inode);
+ 		if (is_async)
+ 			aio_complete(dio->iocb, ret, 0);
+-		inode_dio_done(dio->inode);
  	}
  
- 	return readw(host->ioaddr + reg);
+ 	return ret;
 -- 
 1.8.1.2
 
