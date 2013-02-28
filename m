@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753581Ab3B1MN0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 07:13:26 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:13757 "EHLO song.cn.fujitsu.com"
+	id S1753917Ab3B1MNX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 07:13:23 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:39389 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752040Ab3B1MNS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 07:13:18 -0500
+	id S1752765Ab3B1MNR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Feb 2013 07:13:17 -0500
 X-IronPort-AV: E=Sophos;i="4.84,755,1355068800"; 
-   d="scan'208";a="6787327"
+   d="scan'208";a="6787326"
 From: Hu Tao <hutao@cn.fujitsu.com>
 To: kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
@@ -29,9 +29,9 @@ To: kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
         "Michael S. Tsirkin" <mst@redhat.com>, Alexander Graf <agraf@suse.de>,
         Alex Williamson <alex.williamson@redhat.com>,
         Peter Maydell <peter.maydell@linaro.org>
-Subject: [PATCH v13 3/8] update kernel headers
-Date: Thu, 28 Feb 2013 20:13:14 +0800
-Message-Id: <cb8fd74d8299809227272ba657b638ee65ab2fe1.1362051582.git.hutao@cn.fujitsu.com>
+Subject: [PATCH v13 1/8] save/load cpu runstate
+Date: Thu, 28 Feb 2013 20:13:12 +0800
+Message-Id: <df20999140db716e8b1ccd57a7cbcb0fa343a78c.1362051582.git.hutao@cn.fujitsu.com>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <cover.1362051581.git.hutao@cn.fujitsu.com>
 References: <cover.1362051581.git.hutao@cn.fujitsu.com>
@@ -44,43 +44,185 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-update kernel headers to add pv event macros.
+This patch enables preservation of cpu runstate during save/load vm.
+So when a vm is restored from snapshot, the cpu runstate is restored,
+too.
 
-Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
+See following example:
+
+# save two vms: one is running, the other is paused
+(qemu) info status
+VM status: running
+(qemu) savevm running
+(qemu) stop
+(qemu) info status
+VM status: paused
+(qemu) savevm paused
+
+# restore the one running
+(qemu) info status
+VM status: paused
+(qemu) loadvm running
+(qemu) info status
+VM status: running
+
+# restore the one paused
+(qemu) loadvm paused
+(qemu) info status
+VM status: paused
+(qemu) cont
+(qemu)info status
+VM status: running
+
 Signed-off-by: Hu Tao <hutao@cn.fujitsu.com>
 ---
- linux-headers/asm-x86/kvm_para.h | 1 +
- linux-headers/linux/kvm_para.h   | 6 ++++++
- 2 files changed, 7 insertions(+)
+ include/sysemu/sysemu.h |  2 ++
+ migration.c             |  6 +-----
+ monitor.c               |  5 ++---
+ savevm.c                |  1 +
+ vl.c                    | 34 ++++++++++++++++++++++++++++++++++
+ 5 files changed, 40 insertions(+), 8 deletions(-)
 
-diff --git a/linux-headers/asm-x86/kvm_para.h b/linux-headers/asm-x86/kvm_para.h
-index a1c3d72..e9b082d 100644
---- a/linux-headers/asm-x86/kvm_para.h
-+++ b/linux-headers/asm-x86/kvm_para.h
-@@ -96,5 +96,6 @@ struct kvm_vcpu_pv_apf_data {
- #define KVM_PV_EOI_ENABLED KVM_PV_EOI_MASK
- #define KVM_PV_EOI_DISABLED 0x0
+diff --git a/include/sysemu/sysemu.h b/include/sysemu/sysemu.h
+index b19ec95..f121213 100644
+--- a/include/sysemu/sysemu.h
++++ b/include/sysemu/sysemu.h
+@@ -19,6 +19,8 @@ extern uint8_t qemu_uuid[];
+ int qemu_uuid_parse(const char *str, uint8_t *uuid);
+ #define UUID_FMT "%02hhx%02hhx%02hhx%02hhx-%02hhx%02hhx-%02hhx%02hhx-%02hhx%02hhx-%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx"
  
-+#define KVM_PV_EVENT_PORT        (0x505UL)
++void save_run_state(void);
++void load_run_state(void);
+ bool runstate_check(RunState state);
+ void runstate_set(RunState new_state);
+ int runstate_is_running(void);
+diff --git a/migration.c b/migration.c
+index 11725ae..c29830e 100644
+--- a/migration.c
++++ b/migration.c
+@@ -107,11 +107,7 @@ static void process_incoming_migration_co(void *opaque)
+     /* Make sure all file formats flush their mutable metadata */
+     bdrv_invalidate_cache_all();
  
- #endif /* _ASM_X86_KVM_PARA_H */
-diff --git a/linux-headers/linux/kvm_para.h b/linux-headers/linux/kvm_para.h
-index 7bdcf93..6c42923 100644
---- a/linux-headers/linux/kvm_para.h
-+++ b/linux-headers/linux/kvm_para.h
-@@ -20,6 +20,12 @@
- #define KVM_HC_FEATURES			3
- #define KVM_HC_PPC_MAP_MAGIC_PAGE	4
+-    if (autostart) {
+-        vm_start();
+-    } else {
+-        runstate_set(RUN_STATE_PAUSED);
+-    }
++    load_run_state();
+ }
  
-+/* The bit of supported pv event */
-+#define KVM_PV_FEATURE_PANICKED      0
+ void process_incoming_migration(QEMUFile *f)
+diff --git a/monitor.c b/monitor.c
+index 32a6e74..bf974b4 100644
+--- a/monitor.c
++++ b/monitor.c
+@@ -2059,13 +2059,12 @@ void qmp_closefd(const char *fdname, Error **errp)
+ 
+ static void do_loadvm(Monitor *mon, const QDict *qdict)
+ {
+-    int saved_vm_running  = runstate_is_running();
+     const char *name = qdict_get_str(qdict, "name");
+ 
+     vm_stop(RUN_STATE_RESTORE_VM);
+ 
+-    if (load_vmstate(name) == 0 && saved_vm_running) {
+-        vm_start();
++    if (load_vmstate(name) == 0) {
++        load_run_state();
+     }
+ }
+ 
+diff --git a/savevm.c b/savevm.c
+index a8a53ef..aa631eb 100644
+--- a/savevm.c
++++ b/savevm.c
+@@ -2143,6 +2143,7 @@ void do_savevm(Monitor *mon, const QDict *qdict)
+     }
+ 
+     saved_vm_running = runstate_is_running();
++    save_run_state();
+     vm_stop(RUN_STATE_SAVE_VM);
+ 
+     memset(sn, 0, sizeof(*sn));
+diff --git a/vl.c b/vl.c
+index febd2ea..7991f2e 100644
+--- a/vl.c
++++ b/vl.c
+@@ -523,6 +523,7 @@ static int default_driver_check(QemuOpts *opts, void *opaque)
+ /* QEMU state */
+ 
+ static RunState current_run_state = RUN_STATE_PRELAUNCH;
++static RunState saved_run_state = RUN_STATE_RUNNING;
+ 
+ typedef struct {
+     RunState from;
+@@ -546,6 +547,7 @@ static const RunStateTransition runstate_transitions_def[] = {
+     { RUN_STATE_PAUSED, RUN_STATE_FINISH_MIGRATE },
+ 
+     { RUN_STATE_POSTMIGRATE, RUN_STATE_RUNNING },
++    { RUN_STATE_POSTMIGRATE, RUN_STATE_PAUSED },
+     { RUN_STATE_POSTMIGRATE, RUN_STATE_FINISH_MIGRATE },
+ 
+     { RUN_STATE_PRELAUNCH, RUN_STATE_RUNNING },
+@@ -556,6 +558,7 @@ static const RunStateTransition runstate_transitions_def[] = {
+     { RUN_STATE_FINISH_MIGRATE, RUN_STATE_POSTMIGRATE },
+ 
+     { RUN_STATE_RESTORE_VM, RUN_STATE_RUNNING },
++    { RUN_STATE_RESTORE_VM, RUN_STATE_PAUSED },
+ 
+     { RUN_STATE_RUNNING, RUN_STATE_DEBUG },
+     { RUN_STATE_RUNNING, RUN_STATE_INTERNAL_ERROR },
+@@ -585,11 +588,39 @@ static const RunStateTransition runstate_transitions_def[] = {
+ 
+ static bool runstate_valid_transitions[RUN_STATE_MAX][RUN_STATE_MAX];
+ 
++void save_run_state(void)
++{
++    saved_run_state = current_run_state;
++}
 +
-+/* The pv event value */
-+#define KVM_PV_EVENT_PANICKED        1
++void load_run_state(void)
++{
++    if (saved_run_state == RUN_STATE_RUNNING) {
++        vm_start();
++    } else if (!runstate_check(saved_run_state)) {
++        runstate_set(saved_run_state);
++    } else {
++        ; /* leave unchanged */
++    }
++}
 +
- /*
-  * hypercalls use architecture specific
-  */
+ bool runstate_check(RunState state)
+ {
+     return current_run_state == state;
+ }
+ 
++static void runstate_save(QEMUFile *f, void *opaque)
++{
++    qemu_put_byte(f, saved_run_state);
++}
++
++static int runstate_load(QEMUFile *f, void *opaque, int version_id)
++{
++    saved_run_state = qemu_get_byte(f);
++
++    return 0;
++}
++
+ static void runstate_init(void)
+ {
+     const RunStateTransition *p;
+@@ -599,6 +630,9 @@ static void runstate_init(void)
+     for (p = &runstate_transitions_def[0]; p->from != RUN_STATE_MAX; p++) {
+         runstate_valid_transitions[p->from][p->to] = true;
+     }
++
++    register_savevm(NULL, "runstate", 0, 1,
++                    runstate_save, runstate_load, NULL);
+ }
+ 
+ /* This function will abort() on invalid state transitions */
 -- 
 1.8.1.4
 
