@@ -1,160 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760244Ab3B1Ufr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 15:35:47 -0500
-Received: from mail-da0-f48.google.com ([209.85.210.48]:39713 "EHLO
-	mail-da0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753871Ab3B1Ufp (ORCPT
+	id S1760263Ab3B1Ufx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 15:35:53 -0500
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:44374 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760241Ab3B1Ufr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 15:35:45 -0500
+	Thu, 28 Feb 2013 15:35:47 -0500
 From: Kent Overstreet <koverstreet@google.com>
 To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
         linux-aio@kvack.org
 Cc: Kent Overstreet <koverstreet@google.com>, tytso@mit.edu, axboe@kernel.dk,
         zab@redhat.com, bcrl@kvack.org, anatol@google.com
-Subject: [PATCH 1/4] aio: io_cancel() no longer returns the io_event
-Date: Thu, 28 Feb 2013 12:35:38 -0800
-Message-Id: <1362083741-2429-1-git-send-email-koverstreet@google.com>
+Subject: [PATCH 3/4] direct-io: Set dio->io_error directly
+Date: Thu, 28 Feb 2013 12:35:40 -0800
+Message-Id: <1362083741-2429-3-git-send-email-koverstreet@google.com>
 X-Mailer: git-send-email 1.7.12
+In-Reply-To: <1362083741-2429-1-git-send-email-koverstreet@google.com>
+References: <1362083741-2429-1-git-send-email-koverstreet@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Originally, io_event() was documented to return the io_event if
-cancellation succeeded - the io_event wouldn't be delivered via the ring
-buffer like it normally would.
-
-But this isn't what the implementation was actually doing; the only
-driver implementing cancellation, the usb gadget code, never returned an
-io_event in its cancel function. And aio_complete() was recently changed
-to no longer suppress event delivery if the kiocb had been cancelled.
-
-This gets rid of the unused io_event argument to kiocb_cancel() and
-kiocb->ki_cancel(), and changes io_cancel() to return -EINPROGRESS if
-kiocb->ki_cancel() returned success.
-
-Also tweak the refcounting in kiocb_cancel() to make more sense.
+The way io errors are returned in the dio code was rather convoluted,
+and also meant that the specific error code was lost. We need to return
+the actual error so that for cancellation we can pass up -ECANCELED.
 
 Signed-off-by: Kent Overstreet <koverstreet@google.com>
 ---
- drivers/usb/gadget/inode.c |  3 +--
- fs/aio.c                   | 24 ++++++++++--------------
- include/linux/aio.h        |  2 +-
- 3 files changed, 12 insertions(+), 17 deletions(-)
+ fs/direct-io.c | 35 ++++++++++++++---------------------
+ 1 file changed, 14 insertions(+), 21 deletions(-)
 
-diff --git a/drivers/usb/gadget/inode.c b/drivers/usb/gadget/inode.c
-index b540a1d..fd1bf4a 100644
---- a/drivers/usb/gadget/inode.c
-+++ b/drivers/usb/gadget/inode.c
-@@ -524,7 +524,7 @@ struct kiocb_priv {
- 	unsigned		actual;
- };
- 
--static int ep_aio_cancel(struct kiocb *iocb, struct io_event *e)
-+static void ep_aio_cancel(struct kiocb *iocb)
- {
- 	struct kiocb_priv	*priv = iocb->private;
- 	struct ep_data		*epdata;
-@@ -540,7 +540,6 @@ static int ep_aio_cancel(struct kiocb *iocb, struct io_event *e)
- 	// spin_unlock(&epdata->dev->lock);
- 	local_irq_enable();
- 
--	aio_put_req(iocb);
- 	return value;
- }
- 
-diff --git a/fs/aio.c b/fs/aio.c
-index a86ffd0..4b9bfb5 100644
---- a/fs/aio.c
-+++ b/fs/aio.c
-@@ -256,8 +256,7 @@ void kiocb_set_cancel_fn(struct kiocb *req, kiocb_cancel_fn *cancel)
- }
- EXPORT_SYMBOL(kiocb_set_cancel_fn);
- 
--static int kiocb_cancel(struct kioctx *ctx, struct kiocb *kiocb,
--			struct io_event *res)
-+static int kiocb_cancel(struct kioctx *ctx, struct kiocb *kiocb)
- {
- 	kiocb_cancel_fn *old, *cancel;
- 	int ret = -EINVAL;
-@@ -279,12 +278,10 @@ static int kiocb_cancel(struct kioctx *ctx, struct kiocb *kiocb,
- 	atomic_inc(&kiocb->ki_users);
- 	spin_unlock_irq(&ctx->ctx_lock);
- 
--	memset(res, 0, sizeof(*res));
--	res->obj = (u64)(unsigned long)kiocb->ki_obj.user;
--	res->data = kiocb->ki_user_data;
--	ret = cancel(kiocb, res);
-+	ret = cancel(kiocb);
- 
- 	spin_lock_irq(&ctx->ctx_lock);
-+	aio_put_req(kiocb);
- 
+diff --git a/fs/direct-io.c b/fs/direct-io.c
+index ef234ee..b054615 100644
+--- a/fs/direct-io.c
++++ b/fs/direct-io.c
+@@ -270,7 +270,7 @@ static ssize_t dio_complete(struct dio *dio, loff_t offset, ssize_t ret, bool is
  	return ret;
  }
-@@ -305,7 +302,6 @@ static void free_ioctx_rcu(struct rcu_head *head)
- static void free_ioctx(struct kioctx *ctx)
- {
- 	struct aio_ring *ring;
--	struct io_event res;
- 	struct kiocb *req;
- 	unsigned cpu, head, avail;
  
-@@ -316,7 +312,7 @@ static void free_ioctx(struct kioctx *ctx)
- 				       struct kiocb, ki_list);
- 
- 		list_del_init(&req->ki_list);
--		kiocb_cancel(ctx, req, &res);
-+		kiocb_cancel(ctx, req);
- 	}
- 
- 	spin_unlock_irq(&ctx->ctx_lock);
-@@ -1351,7 +1347,6 @@ static struct kiocb *lookup_kiocb(struct kioctx *ctx, struct iocb __user *iocb,
- SYSCALL_DEFINE3(io_cancel, aio_context_t, ctx_id, struct iocb __user *, iocb,
- 		struct io_event __user *, result)
- {
--	struct io_event res;
- 	struct kioctx *ctx;
- 	struct kiocb *kiocb;
- 	u32 key;
-@@ -1369,18 +1364,19 @@ SYSCALL_DEFINE3(io_cancel, aio_context_t, ctx_id, struct iocb __user *, iocb,
- 
- 	kiocb = lookup_kiocb(ctx, iocb, key);
- 	if (kiocb)
--		ret = kiocb_cancel(ctx, kiocb, &res);
-+		ret = kiocb_cancel(ctx, kiocb);
- 	else
- 		ret = -EINVAL;
- 
- 	spin_unlock_irq(&ctx->ctx_lock);
- 
- 	if (!ret) {
--		/* Cancellation succeeded -- copy the result
--		 * into the user's buffer.
-+		/*
-+		 * The result argument is no longer used - the io_event is
-+		 * always delivered via the ring buffer. -EINPROGRESS indicates
-+		 * cancellation is progress:
- 		 */
--		if (copy_to_user(result, &res, sizeof(res)))
--			ret = -EFAULT;
-+		ret = -EINPROGRESS;
- 	}
- 
- 	put_ioctx(ctx);
-diff --git a/include/linux/aio.h b/include/linux/aio.h
-index 93892bf..7340f77 100644
---- a/include/linux/aio.h
-+++ b/include/linux/aio.h
-@@ -28,7 +28,7 @@ struct batch_complete;
+-static int dio_bio_complete(struct dio *dio, struct bio *bio);
++static void dio_bio_complete(struct dio *dio, struct bio *bio);
+ /*
+  * Asynchronous IO callback. 
   */
- #define KIOCB_CANCELLED		((void *) (~0ULL))
+@@ -328,6 +328,9 @@ void dio_end_io(struct bio *bio, int error)
+ {
+ 	struct dio *dio = bio->bi_private;
  
--typedef int (kiocb_cancel_fn)(struct kiocb *, struct io_event *);
-+typedef int (kiocb_cancel_fn)(struct kiocb *);
++	if (error)
++		dio->io_error = error;
++
+ 	if (dio->is_async)
+ 		dio_bio_end_aio(bio, error, NULL);
+ 	else
+@@ -440,15 +443,11 @@ static struct bio *dio_await_one(struct dio *dio)
+ /*
+  * Process one completed BIO.  No locks are held.
+  */
+-static int dio_bio_complete(struct dio *dio, struct bio *bio)
++static void dio_bio_complete(struct dio *dio, struct bio *bio)
+ {
+-	const int uptodate = test_bit(BIO_UPTODATE, &bio->bi_flags);
+ 	struct bio_vec *bvec = bio->bi_io_vec;
+ 	int page_no;
  
- struct kiocb {
- 	struct rb_node		ki_node;
+-	if (!uptodate)
+-		dio->io_error = -EIO;
+-
+ 	if (dio->is_async && dio->rw == READ) {
+ 		bio_check_pages_dirty(bio);	/* transfers ownership */
+ 	} else {
+@@ -461,7 +460,6 @@ static int dio_bio_complete(struct dio *dio, struct bio *bio)
+ 		}
+ 		bio_put(bio);
+ 	}
+-	return uptodate ? 0 : -EIO;
+ }
+ 
+ /*
+@@ -488,27 +486,21 @@ static void dio_await_completion(struct dio *dio)
+  *
+  * This also helps to limit the peak amount of pinned userspace memory.
+  */
+-static inline int dio_bio_reap(struct dio *dio, struct dio_submit *sdio)
++static inline void dio_bio_reap(struct dio *dio, struct dio_submit *sdio)
+ {
+-	int ret = 0;
+-
+ 	if (sdio->reap_counter++ >= 64) {
+ 		while (dio->bio_list) {
+ 			unsigned long flags;
+ 			struct bio *bio;
+-			int ret2;
+ 
+ 			spin_lock_irqsave(&dio->bio_lock, flags);
+ 			bio = dio->bio_list;
+ 			dio->bio_list = bio->bi_private;
+ 			spin_unlock_irqrestore(&dio->bio_lock, flags);
+-			ret2 = dio_bio_complete(dio, bio);
+-			if (ret == 0)
+-				ret = ret2;
++			dio_bio_complete(dio, bio);
+ 		}
+ 		sdio->reap_counter = 0;
+ 	}
+-	return ret;
+ }
+ 
+ /*
+@@ -593,19 +585,20 @@ static inline int dio_new_bio(struct dio *dio, struct dio_submit *sdio,
+ 		sector_t start_sector, struct buffer_head *map_bh)
+ {
+ 	sector_t sector;
+-	int ret, nr_pages;
++	int nr_pages;
++
++	dio_bio_reap(dio, sdio);
++
++	if (dio->io_error)
++		return dio->io_error;
+ 
+-	ret = dio_bio_reap(dio, sdio);
+-	if (ret)
+-		goto out;
+ 	sector = start_sector << (sdio->blkbits - 9);
+ 	nr_pages = min(sdio->pages_in_io, bio_get_nr_vecs(map_bh->b_bdev));
+ 	nr_pages = min(nr_pages, BIO_MAX_PAGES);
+ 	BUG_ON(nr_pages <= 0);
+ 	dio_bio_alloc(dio, sdio, map_bh->b_bdev, sector, nr_pages);
+ 	sdio->boundary = 0;
+-out:
+-	return ret;
++	return 0;
+ }
+ 
+ /*
 -- 
 1.7.12
 
