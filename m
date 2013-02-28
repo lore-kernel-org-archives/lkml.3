@@ -1,31 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752605Ab3B1J6t (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 04:58:49 -0500
-Received: from webbox1416.server-home.net ([77.236.96.61]:38474 "EHLO
-	webbox1416.server-home.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750985Ab3B1J6s (ORCPT
+	id S1752643Ab3B1J70 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 04:59:26 -0500
+Received: from mail.not-your-server.de ([78.46.182.243]:56010 "EHLO
+	mail.not-your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751667Ab3B1J7X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 04:58:48 -0500
-From: Alexander Stein <alexander.stein@systec-electronic.com>
-To: Stefan Koch <stefan.koch10@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Long Time Kernel
-Date: Thu, 28 Feb 2013 10:58:45 +0100
-Message-ID: <1461382.3uSLmsl8z2@ws-stein>
-User-Agent: KMail/4.9.5 (Linux/3.7.9-gentoo; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <512F27B5.2060208@gmail.com>
-References: <512F27B5.2060208@gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	Thu, 28 Feb 2013 04:59:23 -0500
+From: jlec@gentoo.org
+To: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Justin Lecher <jlec@gentoo.org>
+Subject: [PATCH 2/2] kconfig: use config scripts to detect ncurses libs
+Date: Thu, 28 Feb 2013 10:59:17 +0100
+Message-Id: <1362045557-9123-1-git-send-email-jlec@gentoo.org>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <jlec@gentoo.org>
+References: <jlec@gentoo.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 28 February 2013 10:47:33, Stefan Koch wrote:
-> is linux 3.7 or linux 3.8 a long time supported kernel release?
+From: Justin Lecher <jlec@gentoo.org>
 
-Please see http://www.kroah.com/log/linux/3.8-is_not_longterm_stable.html
+When building ncurses with --with-termlib several symbols get moved from
+libncurses.so to libtinfo.so. Thus when linking with libncurses.so, one
+additionally needs to link with libtinfo.so.
 
-Alexander
+Ncurses provides a config script (ncurses5-config) to assist finding ncurses.
+This patch makes use of it to detect the necessary libs for linking of the
+ncurses nconfig dialog.
+
+Signed-off-by: Justin Lecher <jlec@gentoo.org>
+---
+ scripts/kconfig/Makefile | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/scripts/kconfig/Makefile b/scripts/kconfig/Makefile
+index 3091794..c372976 100644
+--- a/scripts/kconfig/Makefile
++++ b/scripts/kconfig/Makefile
+@@ -216,7 +216,9 @@ HOSTCFLAGS_gconf.o	= `pkg-config --cflags gtk+-2.0 gmodule-2.0 libglade-2.0` \
+ 
+ HOSTLOADLIBES_mconf   = $(shell $(CONFIG_SHELL) $(check-lxdialog) -ldflags $(HOSTCC))
+ 
+-HOSTLOADLIBES_nconf	= -lmenu -lpanel -lncurses
++HOSTLOADLIBES_nconf	= -lmenu -lpanel
++HOSTLOADLIBES_nconf	+= $(shell    ncursesw5-config --libs 2>/dev/null \
++				   || ncurses5-config --libs 2>/dev/null  )
+ $(obj)/qconf.o: $(obj)/.tmp_qtcheck
+ 
+ ifeq ($(qconf-target),1)
+-- 
+1.8.1.4
+
