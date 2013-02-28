@@ -1,80 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752275Ab3B1CO3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 21:14:29 -0500
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:56867 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750916Ab3B1CO2 (ORCPT
+	id S1752561Ab3B1CRk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 21:17:40 -0500
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:61145 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751588Ab3B1CRi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 21:14:28 -0500
-Message-ID: <512EBD80.8070101@linaro.org>
-Date: Wed, 27 Feb 2013 18:14:24 -0800
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Wed, 27 Feb 2013 21:17:38 -0500
 MIME-Version: 1.0
-To: Maarten Lankhorst <maarten.lankhorst@canonical.com>,
-        Erik Gilling <konkers@android.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>, Rob Clark <robclark@gmail.com>,
-        Sumit Semwal <sumit.semwal@linaro.org>
-CC: linaro-mm-sig@lists.linaro.org, dri-devel@lists.freedesktop.org,
-        lkml <linux-kernel@vger.kernel.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        Greg KH <gregkh@linuxfoundation.org>
-Subject: [RFD] Proposal for merging Android sync driver in staging
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20130228013514.GA7556@lizard.fhda.edu>
+References: <1361989666-1922-1-git-send-email-paul.gortmaker@windriver.com>
+ <20130227231826.GA30154@lizard.fhda.edu> <CAP=VYLqg5Q_e4y6bD9x8idOvJx2n_knzujOY9Z0VyGDEQZTzag@mail.gmail.com>
+ <20130228013514.GA7556@lizard.fhda.edu>
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+Date: Wed, 27 Feb 2013 21:17:06 -0500
+X-Google-Sender-Auth: dIcaHXKYOP_--gK0Mg0ylSHeTfc
+Message-ID: <CAP=VYLoNV16xJtQGtmnC6TejaBRjBz5x=+Lhu7Yzm7q9UZ20AA@mail.gmail.com>
+Subject: Re: [PATCH] power: make goldfish option have a dependency on goldfish
+To: Anton Vorontsov <anton@enomsg.org>
+Cc: linux-kernel@vger.kernel.org, David Woodhouse <dwmw2@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'd like to get a discussion going about submitting the Android sync 
-driver to staging.
+On Wed, Feb 27, 2013 at 8:35 PM, Anton Vorontsov <anton@enomsg.org> wrote:
+> On Wed, Feb 27, 2013 at 07:48:38PM -0500, Paul Gortmaker wrote:
+> [...]
+>> If you don't want to take the commit, I won't argue it any further, but
+>> I genuinely do hope the above logical arguments perhaps might cause
+>> you to  change your mind.
+>
+> As a maintainer of drivers/power/, I have to keep things in a sane state,
+> which means, that I want to compile-test the patches that I am merging.
 
-I know there is currently some very similar work going on with the 
-dmabuf-fences, and rather then both approaches being worked out 
-individually on their own, I suspect there could be better collaboration 
-around this effort.
+As you should, and nobody will fault you for that objective.
 
-So my proposal is that we merge the Android sync driver into staging.
+>
+> Testing patches takes time, and if I have to do it for all bunch of
+> different machines and architectures, it becomes mess and unmanageable. In
 
-In my mind, this has the following benefits:
-1) It allows other drivers that depend on the sync interface to also be 
-submitted to staging, rather then forcing those drivers to be hidden 
-away in various out of tree git repos, location unknown.
+So, you actually want my change then -- you do not want to test for
+goldfish power issues unless goldfish is selected.  This is how I see
+the situation.
 
-2) It would provide a baseline view to the upstream community of the 
-interface Android is using, providing  a real-world, active use case of 
-the functionality.
+> another words, it is easier for me to use as little different
+> setups/.configs/cross-compilers/trees/etc as possible.
+>
+> For example, here is the scenario:
+>
+> - someone sends me a patch for goldfish driver;
+> - I quickly compile it on my [underpowered] x86 laptop without need for
+>   cross-compilation and special configs;
+> - It compiles fine, produces no warnings, so I happily send out the
+>   'Applied, thanks!' email;
 
-Once the sync driver is in staging, if the dmabuf-fences work is fully 
-sufficient to replace the Android sync driver, we should be able to 
-whittle down the sync driver until its just a interface shim (and at 
-which point efforts can be made to convert Android userland over to 
-dmabuf-fences).
+I can not see how the above is at all relevant.  If someone sends you a
+patch for ARCH != x86, then your workflow will fail, regardless of what
+actually is within the patch.  As a maintainer, you need to be able to
+handle cross compiles -- you can't escape the slightly more detailed
+testing requirements we need to get from subsystem maintainers.  There
+are cross compile capable toolchains on kernel.org, and I use them
+regularly before sending out changes that can impact multiple arch.
 
-However, if the dmabuf-fences work is not fully sufficient to replace 
-the android sync driver, we should be able to at least to whittle down 
-the driver to those specific differences, which would provide a concrete 
-example of where the dmabuf-fences, or other work may need to be 
-expanded, or if maybe the sync driver is the better approach.
+ftp://ftp.kernel.org/pub/tools/crosstool/files/bin/
 
-I've gone through the Android tree and reworked the sync driver to live 
-in staging, while still preserving the full patch history/authorship. 
-You can checkout the reworked patch queue here:
-  http://git.linaro.org/gitweb?p=people/jstultz/android-dev.git;a=shortlog;h=refs/heads/dev/sync-staging
+We can forgive individual contributors for not being arch aware, but
+at the subsystem maintainer level, folks should be arch aware, and
+doing regular x-compiles.
 
-If folks would take a look and let me know what they think of the 
-changes as well as what they think about pushing it to staging, or other 
-ideas for how to improve collaboration so we can have common interfaces 
-here, I'd appreciate it.
+> Now, with your patch:
+>
+> - Someone sends me a patch for goldfish driver;
+> - I starting to look for my cross-compilers collections, making all the
+>   environment setups, setting up a new build tree, looking for the
+>   outdated goldfish config, the ARM thing fails to build somewhere in
+>   arch/arm/plat-foo and drivers/mfd/bar. I become grumpy... and, you might
+>   not believe me, I open and edit drivers/power/Kconfig and remove
 
-Also note: I've done this so far without any feedback from the Android 
-devs (despite my reaching out to Erik a few times recently), so if they 
-object to pushing it to staging, in deference to it being their code 
-I'll back off, even though I do think it would be good to have the code 
-get more visibility upstream in staging. I don't mean to step on 
-anyone's toes. :)
+I am confused here.  If there are correct depends lines here in the Kconfig,
+then it _protects_ you from suffering like this.  Yet, you want me to think
+that it adds new work, new cross compile requirements and so on.  I do
+not see how that can possibly happen.
 
-thanks
--john
+>   needless 'depends on' (that is, I actually do these kind of things when
+>   I feel lazy enough).
+>
+> Do you agree that without the additional deps life is easier for me? :)
 
+No, I do not agree.  In fact I see it as totally the opposite.  But I already
+said that I would not pursue this further, based only on differing points
+of view, and so, after sending this, I will adhere to that now.
+
+> If so, please do help me and the rest of the maintainers: instead of
+> adding the unneeded deps, for consistency just remove those which are not
+> needed.
+
+I think what I sent matches the above criteria.  If you still are convinced
+that I am incorrect in this regard, then I hope you can point to explicit
+specifics that can convince me I am wrong.  At the moment I do not
+see anything to convince me that is the case.  We are expanding work
+for maintainers, testers, and people doing build coverage for no return
+whatsoever, including yourself.
+
+Thanks,
+Paul.
+--
+
+>
+> Thanks,
+>
+> Anton
+>
+> p.s. Quick answers for the rest of your arguments:
+>
+>> The linux-next compile queue as it is today barely gets completed within
+>>  a 24h window.
+>
+> So, it is large enough already, and nothing we can do about it, things are
+> growing. But the good news is that no human attention is needed to compile
+> things. That is what machines are for. :)
+>
+>> --why shouldn't we restrict the maintenance overhead of CONFIG_FOO
+>> to people who really do care about supporting and testing and updating
+>> features conditional on CONFIG_FOO?  Given the size of the kernel
+>> today, this seems to make sense in terms of developer "load balancing".
+>
+> You don't have to enable/fix everything. Some things become broken, so
+> just disable them for the time being. But when people stumble upon broken
+> drivers, the drivers are either get fixed, or removed (if no one wants to
+> fix it). Sweeping drivers under 'depends on' doesn't do anything good in
+> this regard, IMO.
+>
+> If we notice that goldfish is broken for long time and nobody cares to fix
+> it, then it is a good time to think about its removal. Since goldfish has
+> nothing goldfish-specific, it can be broeken only in a generic way, so if
+> it is broken on x86, it is as well broken for ARM.
+>
+>> If you don't want to take the commit, I won't argue it any further
+>
+> I don't want to take it for a reason, but I do care whether my reasons
+> make sense to you.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
