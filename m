@@ -1,54 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752175Ab3B1JXW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 04:23:22 -0500
-Received: from mercuryimc.plus.com ([80.229.200.144]:43487 "EHLO
-	centos1.newflow.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751779Ab3B1JXO (ORCPT
+	id S1751779Ab3B1JZf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 04:25:35 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:49275 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750768Ab3B1JZb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 04:23:14 -0500
-Message-ID: <512F2201.6010407@mimc.co.uk>
-Date: Thu, 28 Feb 2013 09:23:13 +0000
-From: Mark Jackson <mpfj-list@mimc.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Thu, 28 Feb 2013 04:25:31 -0500
+X-AuditID: 9c930197-b7c43ae0000006e1-de-512f2287c874
+From: Namhyung Kim <namhyung@kernel.org>
+To: Michael Wang <wangyun@linux.vnet.ibm.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Galbraith <efault@gmx.de>, Paul Turner <pjt@google.com>,
+        Alex Shi <alex.shi@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ram Pai <linuxram@us.ibm.com>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>
+Subject: Re: [RFC PATCH] sched: wakeup buddy
+References: <512EFB4B.5040204@linux.vnet.ibm.com>
+Date: Thu, 28 Feb 2013 18:25:26 +0900
+In-Reply-To: <512EFB4B.5040204@linux.vnet.ibm.com> (Michael Wang's message of
+	"Thu, 28 Feb 2013 14:38:03 +0800")
+Message-ID: <87hakwssc9.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-To: "Philip, Avinash" <avinashphilip@ti.com>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>,
-        David Woodhouse <dwmw2@infradead.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        lkml <linux-kernel@vger.kernel.org>, Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: linux-next: JFFS2 corruption
-References: <512CD9BA.3080300@mimc.co.uk> <20130227101824.6e18ba21fb99070594420f29@canb.auug.org.au> <512E2241.9040705@mimc.co.uk> <518397C60809E147AF5323E0420B992E3EA8EF4A@DBDE01.ent.ti.com>
-In-Reply-To: <518397C60809E147AF5323E0420B992E3EA8EF4A@DBDE01.ent.ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28/02/13 04:11, Philip, Avinash wrote:
-> On Wed, Feb 27, 2013 at 20:42:01, Mark Jackson wrote:
->>
->> Okay, just tested 3v8 plus:-
->>
->> https://patchwork.kernel.org/patch/1931251/
->> https://patchwork.kernel.org/patch/1931221/
->> https://patchwork.kernel.org/patch/1931201/
->> and changed drivers/mtd/nand/elm.c, line 388 "ti,am33xx-elm" to "ti,am3352-elm"
->>
->> This produces an identical corruption.
->>
->> I have also tested next-20130225 and next-20130227, and both cause the same corruption.
-> 
-> JFFS2 is not supported in am335x with BCH8 ecc scheme because of ECC layout constraints.
-> Reasons for disabling JFFS2 support documented in the wiki
-> http://processors.wiki.ti.com/index.php/AM335x_JFFS2_Support_Guide#Reasons_for_disabling_JFFS2_support
+Hi Michael,
 
-Aha ... thanks for the link.
+On Thu, 28 Feb 2013 14:38:03 +0800, Michael Wang wrote:
+> wake_affine() stuff is trying to bind related tasks closely, but it doesn't
+> work well according to the test on 'perf bench sched pipe' (thanks to Peter).
+>
+> Besides, pgbench show that blindly using wake_affine() will eat a lot of
+> performance.
+>
+> Thus, we need a new solution, it should detect the tasks related to each
+> other, bind them closely, take care the balance, latency and performance
+> at the same time.
+>
+> Feature wakeup buddy seems like a good solution (thanks to Mike for the hint).
+>
+> The feature introduced waker, wakee pointer and their ref count, along with
+> the new knob sysctl_sched_wakeup_buddy_ref.
+>
+> Now in select_task_rq_fair(), when current (task B) try to wakeup p (task A),
+> if match:
+>
+> 	1. A->waker == B && A->wakee == B
+> 	2. A->waker_ref > sysctl_sched_wakeup_buddy_ref
+> 	3. A->wakee_ref > sysctl_sched_wakeup_buddy_ref
+>
+> then A is the wakeup buddy of B, which means A and B is likely to utilize
+> the memory of each other.
+>
+> Thus, if B is also the wakeup buddy of A, which means no other task has
+> destroyed their relationship, then A is likely to benefit from the cached
+> data of B, make them running closely is likely to gain benefit.
 
-I'll move over to UBIFS then, although I did have issues with that too (which is why I went back
-to JFFS2), but I'll start another thread if needs be.
+Not sure if it should require bidirectional relationship.  Looks like
+just for benchmarks.  Isn't there a one-way relationship that could get
+a benefit from this?  I don't know ;-)
 
-Cheers
-Mark J.
+Few nitpicks below..
+
+>
+> This patch add the feature wakeup buddy, reorganized the logical of
+> wake_affine() stuff with the new feature, by doing these, pgbench and
+> 'perf bench sched pipe' perform better.
+>
+> Highlight:
+> 	Default value of sysctl_sched_wakeup_buddy_ref is 8 temporarily,
+> 	please let me know if some number perform better on your system,
+> 	I'd like to make it bigger to make the decision more carefully,
+> 	so we could provide the solution when it is really needed.
+>
+> 	Comments are very welcomed.
+>
+> Test:
+> 	Test with a 12 cpu X86 server and tip 3.8.0-rc7.
+>
+> 	'perf bench sched pipe' show nearly double improvement.
+>
+> 	pgbench result:
+> 					prev	post
+>
+>                 | db_size | clients |  tps  |   |  tps  |
+>                 +---------+---------+-------+   +-------+
+>                 | 22 MB   |       1 | 10794 |   | 10820 |
+>                 | 22 MB   |       2 | 21567 |   | 21915 |
+>                 | 22 MB   |       4 | 41621 |   | 42766 |
+>                 | 22 MB   |       8 | 53883 |   | 60511 |       +12.30%
+>                 | 22 MB   |      12 | 50818 |   | 57129 |       +12.42%
+>                 | 22 MB   |      16 | 50463 |   | 59345 |       +17.60%
+>                 | 22 MB   |      24 | 46698 |   | 63787 |       +36.59%
+>                 | 22 MB   |      32 | 43404 |   | 62643 |       +44.33%
+>
+>                 | 7484 MB |       1 |  7974 |   |  8014 |
+>                 | 7484 MB |       2 | 19341 |   | 19534 |
+>                 | 7484 MB |       4 | 36808 |   | 38092 |
+>                 | 7484 MB |       8 | 47821 |   | 51968 |       +8.67%
+>                 | 7484 MB |      12 | 45913 |   | 52284 |       +13.88%
+>                 | 7484 MB |      16 | 46478 |   | 54418 |       +17.08%
+>                 | 7484 MB |      24 | 42793 |   | 56375 |       +31.74%
+>                 | 7484 MB |      32 | 36329 |   | 55783 |       +53.55%
+>                 
+>                 | 15 GB   |       1 |  7636 |   |  7880 |       
+>                 | 15 GB   |       2 | 19195 |   | 19477 |
+>                 | 15 GB   |       4 | 35975 |   | 37962 |
+>                 | 15 GB   |       8 | 47919 |   | 51558 |       +7.59%
+>                 | 15 GB   |      12 | 45397 |   | 51163 |       +12.70%
+>                 | 15 GB   |      16 | 45926 |   | 53912 |       +17.39%
+>                 | 15 GB   |      24 | 42184 |   | 55343 |       +31.19%
+>                 | 15 GB   |      32 | 35983 |   | 55358 |       +53.84%
+>
+> Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
+> ---
+[SNIP]
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index 81fa536..d5acfd8 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -3173,6 +3173,75 @@ static int wake_affine(struct sched_domain *sd, struct task_struct *p, int sync)
+>  }
+>  
+>  /*
+> + * Reduce sysctl_sched_wakeup_buddy_ref will reduce the preparation time
+> + * to active the wakeup buddy feature, and make it agile, however, this
+> + * will increase the risk of misidentify.
+> + *
+> + * Check wakeup_buddy() for the usage.
+> + */
+> +unsigned int sysctl_sched_wakeup_buddy_ref = 8UL;
+
+It seems that just 8U (or even 8) is enough.
+
+> +
+> +/*
+> + * wakeup_buddy() help to check whether p1 is the wakeup buddy of p2.
+> + *
+> + * Return 1 for yes, 0 for no.
+> +*/
+> +static inline int wakeup_buddy(struct task_struct *p1, struct task_struct *p2)
+> +{
+> +	if (p1->waker != p2 || p1->wakee != p2)
+> +		return 0;
+> +
+> +	if (p1->waker_ref < sysctl_sched_wakeup_buddy_ref)
+> +		return 0;
+> +
+> +	if (p1->wakee_ref < sysctl_sched_wakeup_buddy_ref)
+> +		return 0;
+> +
+> +	return 1;
+> +}
+[SNIP]
+> @@ -3399,6 +3490,8 @@ select_task_rq_fair(struct task_struct *p, int sd_flag, int wake_flags)
+>  unlock:
+>  	rcu_read_unlock();
+>  
+> +	wakeup_ref(p);
+> +
+
+Why did you call it here?  Shouldn't it be on somewhere in the ttwu?
+
+
+>  	return new_cpu;
+>  }
+>  
+> diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+> index c88878d..6845d24 100644
+> --- a/kernel/sysctl.c
+> +++ b/kernel/sysctl.c
+> @@ -424,6 +424,16 @@ static struct ctl_table kern_table[] = {
+>  		.extra1		= &one,
+>  	},
+>  #endif
+> +#ifdef CONFIG_SMP
+> +	{
+> +		.procname	= "sched_wakeup_buddy_ref",
+> +		.data		= &sysctl_sched_wakeup_buddy_ref,
+> +		.maxlen		= sizeof(unsigned int),
+> +		.mode		= 0644,
+> +		.proc_handler	= proc_dointvec_minmax,
+> +		.extra1		= &one,
+> +	},
+> +#endif
+>  #ifdef CONFIG_PROVE_LOCKING
+>  	{
+>  		.procname	= "prove_locking",
