@@ -1,103 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753672Ab3B1Obs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 09:31:48 -0500
-Received: from mail-oa0-f43.google.com ([209.85.219.43]:59333 "EHLO
-	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751332Ab3B1Obp (ORCPT
+	id S1753500Ab3B1Ojn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 09:39:43 -0500
+Received: from mail-bk0-f50.google.com ([209.85.214.50]:65126 "EHLO
+	mail-bk0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752229Ab3B1Ojg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 09:31:45 -0500
+	Thu, 28 Feb 2013 09:39:36 -0500
 MIME-Version: 1.0
-In-Reply-To: <20130228111819.GF11892@cantiga.alporthouse.com>
-References: <CA+icZUXG7WgRap2-oQGBr_s=QbE0QW6_zChDRqC-eEzrWR3Y5g@mail.gmail.com>
-	<CA+icZUUP0hLjkTjsAGbhoT1QG55X2062G5KCCDsKkhDyM_SQEg@mail.gmail.com>
-	<20130228111819.GF11892@cantiga.alporthouse.com>
-Date: Thu, 28 Feb 2013 11:31:45 -0300
-Message-ID: <CA+gsUGQ-cn00=emFkHeWi6akL9TrJ9CV6ikv7C62fhLYMtB=HQ@mail.gmail.com>
-Subject: Re: [Intel-gfx] [git pull] drm merge for 3.9-rc1
-From: Paulo Zanoni <przanoni@gmail.com>
-To: Chris Wilson <chris@chris-wilson.co.uk>,
-        Sedat Dilek <sedat.dilek@gmail.com>, Dave Airlie <airlied@gmail.com>,
-        DRI <dri-devel@lists.freedesktop.org>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-next <linux-next@vger.kernel.org>
+In-Reply-To: <20130131153836.GF4064@arwen.pp.htv.fi>
+References: <1359631232-7107-1-git-send-email-gautam.vivek@samsung.com>
+	<510A56BF.3040804@ti.com>
+	<CAFp+6iFkb=U0CJA=3zmQvd5XfMwbROuRJjXoJG7zvvq4_upzNw@mail.gmail.com>
+	<20130131152527.GE4064@arwen.pp.htv.fi>
+	<CAFp+6iHvKYiF_neANRq5roAEJwhvcaLk7pAd7Dy94Z5XiDkhgA@mail.gmail.com>
+	<20130131153836.GF4064@arwen.pp.htv.fi>
+Date: Thu, 28 Feb 2013 20:09:33 +0530
+Message-ID: <CAFp+6iGTqZY=+crcYyu9o5uEP9Nv2=haSqB+nCuqA2_iUand6A@mail.gmail.com>
+Subject: Re: [PATCH RFC] usb: dwc3: Get PHY from platform specific dwc3 dt node.
+From: Vivek Gautam <gautamvivek1987@gmail.com>
+To: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>
+Cc: Felipe Balbi <balbi@ti.com>, kishon <kishon@ti.com>,
+        Vivek Gautam <gautam.vivek@samsung.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, gregkh@linuxfoundation.org,
+        devicetree-discuss@lists.ozlabs.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+Hi,
 
-2013/2/28 Chris Wilson <chris@chris-wilson.co.uk>:
-> On Thu, Feb 28, 2013 at 12:06:28AM +0100, Sedat Dilek wrote:
->> On Wed, Feb 27, 2013 at 11:36 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+On Thu, Jan 31, 2013 at 9:08 PM, Felipe Balbi <balbi@ti.com> wrote:
+> On Thu, Jan 31, 2013 at 09:00:37PM +0530, Vivek Gautam wrote:
+>> Hi Felipe,
+>>
+>>
+>> On Thu, Jan 31, 2013 at 8:55 PM, Felipe Balbi <balbi@ti.com> wrote:
 >> > Hi,
 >> >
->> > I am seeing this also on Linux-Next.
+>> > On Thu, Jan 31, 2013 at 08:53:27PM +0530, Vivek Gautam wrote:
+>> >> >> Moreover, SoCs having multiple dwc3 controllers will have multiple
+>> >> >> PHYs, which eventually be added using usb_add_phy_dev(), and not
+>> >> >> using usb_add_phy(). So each dwc3 controller won't be able to
+>> >> >> get PHYs by simply calling devm_usb_get_phy() also.
+>> >> >
+>> >> > No. We have added usb_get_phy_dev() for that purpose in the case of non-dt.
+>> >> > I think, instead you can have a patch to use devm_usb_get_phy_dev() here and
+>> >> > in exynos platform specific code use usb_bind_phy() to bind the phy and
+>> >> > controller till you change it to dt.
+>> >> >
+>> >>
+>> >> We have dt support for dwc3-exynos, in such case we should go ahead with
+>> >> of_platform_populate(), right ?
+>> >> But if when i use of_platform_populate() i will not be able to set
+>> >> dma_mask to dwc3->dev. :-(
 >> >
->> > /var/log/kern.log:Feb 27 22:52:35 fambox kernel: [   28.202381]
->> > [drm:intel_dp_aux_wait_done] *ERROR* dp aux hw did not signal timeout
->> > (has irq: 1)!
->> > /var/log/kern.log:Feb 27 22:52:35 fambox kernel: [   28.210588]
->> > [drm:intel_dp_aux_wait_done] *ERROR* dp aux hw did not signal timeout
->> > (has irq: 1)!
+>> > do you have a special need for dma_mask because OF already sets it.
 >> >
->> > /var/log/kern.log.1:Feb 22 07:36:04 fambox kernel: [   27.408280]
->> > [drm:intel_dp_aux_wait_done] *ERROR* dp aux hw did not signal timeout
->> > (has irq: 1)!
->> >
->> > This seems to be hard reproducible...
->> > Laptop-LCD... Sandybridge Mobile-GT2.
->> >
->> > Is there a way to force the error?
->> >
->> > Possible patch see [1].
->> >
->> > - Sedat -
->> >
->> > [1] https://patchwork.kernel.org/patch/2192721/
+>> If i am not wrong of_platform_device_create_pdata() will set
+>> "dev->dev.coherent_dma_mask = DMA_BIT_MASK(32)"
+>> and not dma_mask.
+>> I fact we had some discussion sometime back when we needed the same
+>> for dwc3-exynos in the thread:
+>> [PATCH v2 1/2] USB: dwc3-exynos: Add support for device tree
+>>
+>> But couldn't get final node on it.
+>> So suggestions here please. :-)
 >
-> That was:
+> hmm.. you're right there. Grant, Rob ? Any hints ?
 >
-> +       if (!done) {
-> +               status = I915_READ_NOTRACE(ch_ctl);
-> +               DRM_ERROR("dp aux hw did not signal timeout (has irq:
-> %i), status=%08x!\n",
-> +                         has_aux_irq, status);
-> +       }
->
-> You applied
->
-> +       if (!done) {
-> +               status = I915_READ_NOTRACE(ch_ctl);
-> +               DRM_ERROR("dp aux hw did not signal timeout (has irq:
-> %i), status=%08x!\n",
-> +                         has_aux_irq, status);
-> +       {
 
-In addition to this, after the problem happens can you please dump the
-registers 0x44008 (DEIIR) and 0xC4008 (SDEIIR)? You can do this either
-by running intel-reg-read (from intel-gpu-tools) or by changing the
-DRM_ERROR above to also print the result of I915_READ(0x44008) and
-I915_READ(0xC4008).
+Any suggestions on this ?
 
-If you conclude that the value of 0x44008 is 0x0 while the value of
-0xC4008 is not, then this patch should help:
-https://patchwork.kernel.org/patch/2177841/
-
->
-> That second '{' is the source of the compile error.
-> -Chris
->
 > --
-> Chris Wilson, Intel Open Source Technology Centre
-> _______________________________________________
-> Intel-gfx mailing list
-> Intel-gfx@lists.freedesktop.org
-> http://lists.freedesktop.org/mailman/listinfo/intel-gfx
+> balbi
 
 
 
 -- 
-Paulo Zanoni
+Thanks & Regards
+Vivek
