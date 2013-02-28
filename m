@@ -1,117 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759317Ab3B1Q7t (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 11:59:49 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:43313 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754404Ab3B1Q7r (ORCPT
+	id S1759471Ab3B1RCM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 12:02:12 -0500
+Received: from mail-ee0-f43.google.com ([74.125.83.43]:47188 "EHLO
+	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755194Ab3B1RCI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 11:59:47 -0500
-Message-ID: <512F8D17.3010302@oracle.com>
-Date: Thu, 28 Feb 2013 12:00:07 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130227 Thunderbird/17.0.3
+	Thu, 28 Feb 2013 12:02:08 -0500
+Message-ID: <512F8D8B.3070307@suse.cz>
+Date: Thu, 28 Feb 2013 18:02:03 +0100
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:19.0) Gecko/20130124 Thunderbird/19.0
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Dave Jones <davej@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Pekka Enberg <penberg@kernel.org>, Christoph Lameter <cl@linux.com>,
-        linux-mm <linux-mm@kvack.org>
-Subject: Re: slub error in fs/sysfs/bin.c related code
-References: <512F7FEE.2090803@oracle.com> <20130228162735.GB26013@kroah.com>
-In-Reply-To: <20130228162735.GB26013@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Hillf Danton <dhillf@gmail.com>
+CC: Daniel J Blueman <daniel@numascale-asia.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Steffen Persvold <sp@numascale.com>
+Subject: Re: kswapd craziness round 2
+References: <5121C7AF.2090803@numascale-asia.com> <CAJd=RBArPT8YowhLuE8YVGNfH7G-xXTOjSyDgdV2RsatL-9m+Q@mail.gmail.com> <51254AD2.7000906@suse.cz> <CAJd=RBCiYof5rRVK+62OFMw+5F=5rS=qxRYF+OHpuRz895bn4w@mail.gmail.com>
+In-Reply-To: <CAJd=RBCiYof5rRVK+62OFMw+5F=5rS=qxRYF+OHpuRz895bn4w@mail.gmail.com>
+X-Enigmail-Version: 1.6a1pre
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/28/2013 11:27 AM, Greg Kroah-Hartman wrote:
-> On Thu, Feb 28, 2013 at 11:03:58AM -0500, Sasha Levin wrote:
->> Hi Greg,
+On 02/21/2013 01:07 PM, Hillf Danton wrote:
+> On Thu, Feb 21, 2013 at 6:14 AM, Jiri Slaby <jslaby@suse.cz> wrote:
+>>>
+>>> Does Ingo's revert help? https://lkml.org/lkml/2013/2/15/168
 >>
->> While fuzzing with trinity inside a KVM tools guest, running latest -next kernel
->> I got the following spew.
+>> Not at all...
 >>
->> The open() and release() callbacks in the traces below point to fs/sysfs/bin.c.
+> Then mind taking a try?
+
+Ok, no difference, kswap is still crazy. I'm attaching the output of
+"grep -vw '0' /proc/vmstat" if you see something there.
+
+> --- a/mm/vmscan.c	Thu Feb 21 20:01:02 2013
+> +++ b/mm/vmscan.c	Thu Feb 21 20:05:58 2013
+> @@ -1715,7 +1715,7 @@ static void get_scan_count(struct lruvec
+>  	 * to swap.  Better start now and leave the - probably heavily
+>  	 * thrashing - remaining file pages alone.
+>  	 */
+> -	if (global_reclaim(sc)) {
+> +	if (global_reclaim(sc) && sc->priority >= DEF_PRIORITY - 2) {
+>  		free = zone_page_state(zone, NR_FREE_PAGES);
+>  		if (unlikely(file + free <= high_wmark_pages(zone))) {
+>  			scan_balance = SCAN_ANON;
+> @@ -2840,9 +2840,10 @@ out:
+>  		 * reclaim if they wish.
+>  		 */
+>  		if (sc.nr_reclaimed < SWAP_CLUSTER_MAX)
+> -			order = sc.order = 0;
+> -
+> -		goto loop_again;
+> +			if (order != 0) {
+> +				sc.order = order = 0;
+> +				goto loop_again;
+> +			}
+>  	}
 > 
-> Any hint as to which sysfs binary file you were accessing when this
-> happened?
-
-No, sorry - the trace only shows the allocation and freeing, I'm not sure
-which file it was.
-
->> [  719.288925] =============================================================================
->> [  719.290663] BUG kmalloc-4096 (Tainted: G        W   ): Redzone overwritten
->> [  719.291764] -----------------------------------------------------------------------------
->> [  719.291764]
->> [  719.294527] Disabling lock debugging due to kernel taint
->> [  719.294527] INFO: 0xffff88006d1a5520-0xffff88006d1a5520. First byte 0x0 instead of 0xcc
->> [  719.294527] INFO: Allocated in open+0xb8/0x190 age=18922 cpu=1 pid=7095
->> [  719.294527] 	__slab_alloc+0x622/0x6d0
->> [  719.294527] 	kmem_cache_alloc_trace+0x123/0x2c0
->> [  719.294527] 	open+0xb8/0x190
->> [  719.294527] 	do_dentry_open+0x229/0x330
->> [  719.294527] 	finish_open+0x54/0x70
->> [  719.294527] 	do_last+0x56c/0x790
->> [  719.294527] 	path_openat+0xbe/0x490
->> [  719.294527] 	do_filp_open+0x44/0xa0
->> [  719.294527] 	do_sys_open+0x133/0x1d0
->> [  719.294527] 	sys_open+0x1c/0x20
->> [  719.294527] 	tracesys+0xdd/0xe2
->> [  719.294527] INFO: Freed in seq_release+0x18/0x30 age=18947 cpu=0 pid=31203
->> [  719.294527] 	__slab_free+0x3c/0x590
->> [  719.294527] 	kfree+0x2cb/0x2e0
->> [  719.294527] 	seq_release+0x18/0x30
->> [  719.294527] 	single_release+0x24/0x40
->> [  719.294527] 	proc_reg_release+0xed/0x110
->> [  719.294527] 	__fput+0x122/0x2d0
->> [  719.294527] 	____fput+0x9/0x10
->> [  719.294527] 	task_work_run+0xbe/0x100
->> [  719.294527] 	do_notify_resume+0x7e/0xa0
->> [  719.294527] 	int_signal+0x12/0x17
->> [  719.294527] INFO: Slab 0xffffea0001b46800 objects=7 used=7 fp=0x          (null) flags=0x1ffc0000004081
->> [  719.294527] INFO: Object 0xffff88006d1a4520 @offset=17696 fp=0x          (null)
-> 
-> Hm, where is sysfs in this traceback?  I don't see it mentioned anywhere
-> in this report, what am I missing?
-
-The call trace at the end of the spew:
-[  719.294527] Call Trace:
-[  719.294527]  [<ffffffff81260202>] print_trailer+0x132/0x140
-[  719.294527]  [<ffffffff81260641>] check_bytes_and_report+0xe1/0x130
-[  719.294527]  [<ffffffff812626e2>] check_object+0x52/0x220
-[  719.294527]  [<ffffffff81263a13>] free_debug_processing+0x173/0x300
-[  719.294527]  [<ffffffff8130c9a2>] ? release+0x72/0x90
-[  719.294527]  [<ffffffff8130c9a2>] ? release+0x72/0x90
-[  719.294527]  [<ffffffff812674ec>] __slab_free+0x3c/0x590
-[  719.294527]  [<ffffffff8118541d>] ? trace_hardirqs_on+0xd/0x10
-[  719.294527]  [<ffffffff83d7a284>] ? _raw_spin_unlock_irqrestore+0x94/0xc0
-[  719.294527]  [<ffffffff81a3898f>] ? __debug_check_no_obj_freed+0x15f/0x220
-[  719.294527]  [<ffffffff83d75e89>] ? mutex_unlock+0x9/0x10
-[  719.294527]  [<ffffffff8130c9a2>] ? release+0x72/0x90
-[  719.294527]  [<ffffffff8130c9a2>] ? release+0x72/0x90
-[  719.294527]  [<ffffffff81267d0b>] kfree+0x2cb/0x2e0
-[  719.294527]  [<ffffffff8130c9a2>] release+0x72/0x90
-[  719.294527]  [<ffffffff81289592>] __fput+0x122/0x2d0
-[  719.294527]  [<ffffffff812897a9>] ____fput+0x9/0x10
-[  719.294527]  [<ffffffff81135bbe>] task_work_run+0xbe/0x100
-[  719.294527]  [<ffffffff81114781>] do_exit+0x311/0x510
-[  719.294527]  [<ffffffff81114a21>] do_group_exit+0xa1/0xe0
-[  719.294527]  [<ffffffff81114a72>] sys_exit_group+0x12/0x20
-[  719.294527]  [<ffffffff83d833d0>] tracesys+0xdd/0xe2
-
-Specifically, this:
-
-[  719.294527]  [<ffffffff8130c9a2>] release+0x72/0x90
-
-Is the release() in fs/sysfs/bin.c
-
-I've confirmed it by also checking the sizes of the open() and
-release() sizes and actual code at those positions mentioned
-in the backtrace, and they match the backtrace.
+>  	/*
 
 
-Thanks,
-Sasha
+nr_free_pages 36767
+nr_inactive_anon 209253
+nr_active_anon 1000355
+nr_inactive_file 130500
+nr_active_file 82677
+nr_anon_pages 781334
+nr_mapped 94443
+nr_file_pages 554906
+nr_dirty 29
+nr_slab_reclaimable 13104
+nr_slab_unreclaimable 9202
+nr_page_table_pages 11694
+nr_kernel_stack 477
+nr_vmscan_write 114
+nr_vmscan_immediate_reclaim 831
+nr_shmem 341734
+nr_dirtied 13492560
+nr_written 13388832
+nr_anon_transparent_hugepages 169
+nr_dirty_threshold 20063
+nr_dirty_background_threshold 10031
+pgpgin 29026221
+pgpgout 55166319
+pgalloc_dma 256
+pgalloc_dma32 75887179
+pgalloc_normal 127591749
+pgfree 212204191
+pgactivate 5665900
+pgdeactivate 1370274
+pgfault 130946292
+pgmajfault 91443
+pgrefill_dma32 582854
+pgrefill_normal 1140727
+pgsteal_kswapd_dma32 6244454
+pgsteal_kswapd_normal 6341734
+pgsteal_direct_dma32 1209055
+pgsteal_direct_normal 2280164
+pgscan_kswapd_dma32 6271350
+pgscan_kswapd_normal 6403760
+pgscan_direct_dma32 1213349
+pgscan_direct_normal 2300634
+pginodesteal 190690
+slabs_scanned 5139200
+kswapd_inodesteal 456779
+kswapd_low_wmark_hit_quickly 5042
+kswapd_high_wmark_hit_quickly 156125
+pageoutrun 170524
+allocstall 32073
+pgrotated 1321
+pgmigrate_success 890843
+pgmigrate_fail 282
+compact_migrate_scanned 7776871
+compact_free_scanned 565089036
+compact_isolated 10590951
+compact_stall 3114
+compact_fail 2675
+compact_success 439
+unevictable_pgs_culled 658
+unevictable_pgs_rescued 5309
+unevictable_pgs_mlocked 5309
+unevictable_pgs_munlocked 5309
+thp_fault_alloc 6071
+thp_fault_fallback 34735
+thp_collapse_alloc 1817
+thp_collapse_alloc_failed 2822
+thp_split 292
+thp_zero_page_alloc 2
+thp_zero_page_alloc_failed 243
+
+thanks,
+-- 
+js
+suse labs
