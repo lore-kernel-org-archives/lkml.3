@@ -1,98 +1,319 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751968Ab3B1KYF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 05:24:05 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:6141 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751370Ab3B1KYB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 05:24:01 -0500
-Message-ID: <512F223B.4080801@redhat.com>
-Date: Thu, 28 Feb 2013 10:24:11 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1752441Ab3B1KZR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 05:25:17 -0500
+Received: from adelie.canonical.com ([91.189.90.139]:42767 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751865Ab3B1KZP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Feb 2013 05:25:15 -0500
+Subject: [PATCH v2 1/3] arch: make __mutex_fastpath_lock_retval return whether
+ fastpath succeeded or not.
+To: linux-kernel@vger.kernel.org
+From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+Cc: linux-arch@vger.kernel.org, a.p.zijlstra@chello.nl, daniel.vetter@ffwll.ch,
+        x86@kernel.org, dri-devel@lists.freedesktop.org,
+        linaro-mm-sig@lists.linaro.org, robclark@gmail.com, tglx@linutronix.de,
+        mingo@elte.hu, linux-media@vger.kernel.org
+Date: Thu, 28 Feb 2013 11:24:52 +0100
+Message-ID: <20130228102452.15191.22673.stgit@patser>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-To: Rusty Russell <rusty@rustcorp.com.au>
-CC: "Michael S. Tsirkin" <mst@redhat.com>, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org
-Subject: Re: [PATCH 02/16] virtio_ring: virtqueue_add_sgs, to add multiple
- sgs.
-References: <1361260594-601-1-git-send-email-rusty@rustcorp.com.au> <1361260594-601-3-git-send-email-rusty@rustcorp.com.au> <20130224221255.GA5300@redhat.com> <512C5E0E.5040305@redhat.com> <87obf6dxlm.fsf@rustcorp.com.au> <20130227074920.GA11775@redhat.com> <87fw0idmu2.fsf@rustcorp.com.au>
-In-Reply-To: <87fw0idmu2.fsf@rustcorp.com.au>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 27/02/2013 12:21, Rusty Russell ha scritto:
->>> >> Baseline (before add_sgs):
->>> >>         2.840000-3.040000(2.927292)user
->>> >> 
->>> >> After add_sgs:
->>> >>         2.970000-3.150000(3.053750)user
->>> >> 
->>> >> After simplifying add_buf a little:
->>> >>         2.950000-3.210000(3.081458)user
->>> >> 
->>> >> After inlining virtqueue_add/vring_add_indirect:
->>> >>         2.920000-3.150000(3.026875)user
->>> >> 
->>> >> After passing in iteration functions (chained vs unchained):
->>> >>         2.760000-2.970000(2.883542)user
-> Oops.  This result (and the next) is bogus.  I was playing with -O3, and
-> accidentally left that in :(
+This will allow me to call functions that have multiple arguments if fastpath fails.
+This is required to support ticket mutexes, because they need to be able to pass an
+extra argument to the fail function.
 
-Did you check what actually happened that improved speed so much?  Can
-we do it ourselves, or use a GCC attribute to turn it on?  Looking at
-the GCC manual and source, there's just a bunch of optimizations enabled
-by -O3:
+Originally I duplicated the functions, by adding __mutex_fastpath_lock_retval_arg.
+This ended up being just a duplication of the existing function, so a way to test
+if fastpath was called ended up being better.
 
-    { OPT_LEVELS_3_PLUS, OPT_ftree_loop_distribute_patterns, NULL, 1 },
+This also cleaned up the reservation mutex patch some by being able to call an
+atomic_set instead of atomic_xchg, and making it easier to detect if the wrong
+unlock function was previously used.
 
-`-ftree-loop-distribute-patterns'
-     This pass distributes the initialization loops and generates a
-     call to memset zero.  For example, the loop
+Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+---
+ arch/ia64/include/asm/mutex.h    |   10 ++++------
+ arch/powerpc/include/asm/mutex.h |   10 ++++------
+ arch/sh/include/asm/mutex-llsc.h |    4 ++--
+ arch/x86/include/asm/mutex_32.h  |   11 ++++-------
+ arch/x86/include/asm/mutex_64.h  |   11 ++++-------
+ include/asm-generic/mutex-dec.h  |   10 ++++------
+ include/asm-generic/mutex-null.h |    2 +-
+ include/asm-generic/mutex-xchg.h |   10 ++++------
+ kernel/mutex.c                   |   32 ++++++++++++++------------------
+ 9 files changed, 41 insertions(+), 59 deletions(-)
 
-Doesn't matter.
+diff --git a/arch/ia64/include/asm/mutex.h b/arch/ia64/include/asm/mutex.h
+index bed73a6..f41e66d 100644
+--- a/arch/ia64/include/asm/mutex.h
++++ b/arch/ia64/include/asm/mutex.h
+@@ -29,17 +29,15 @@ __mutex_fastpath_lock(atomic_t *count, void (*fail_fn)(atomic_t *))
+  *  __mutex_fastpath_lock_retval - try to take the lock by moving the count
+  *                                 from 1 to a 0 value
+  *  @count: pointer of type atomic_t
+- *  @fail_fn: function to call if the original value was not 1
+  *
+- * Change the count from 1 to a value lower than 1, and call <fail_fn> if
+- * it wasn't 1 originally. This function returns 0 if the fastpath succeeds,
+- * or anything the slow path function returns.
++ * Change the count from 1 to a value lower than 1. This function returns 0
++ * if the fastpath succeeds, or -1 otherwise.
+  */
+ static inline int
+-__mutex_fastpath_lock_retval(atomic_t *count, int (*fail_fn)(atomic_t *))
++__mutex_fastpath_lock_retval(atomic_t *count)
+ {
+ 	if (unlikely(ia64_fetchadd4_acq(count, -1) != 1))
+-		return fail_fn(count);
++		return -1;
+ 	return 0;
+ }
+ 
+diff --git a/arch/powerpc/include/asm/mutex.h b/arch/powerpc/include/asm/mutex.h
+index 5399f7e..127ab23 100644
+--- a/arch/powerpc/include/asm/mutex.h
++++ b/arch/powerpc/include/asm/mutex.h
+@@ -82,17 +82,15 @@ __mutex_fastpath_lock(atomic_t *count, void (*fail_fn)(atomic_t *))
+  *  __mutex_fastpath_lock_retval - try to take the lock by moving the count
+  *                                 from 1 to a 0 value
+  *  @count: pointer of type atomic_t
+- *  @fail_fn: function to call if the original value was not 1
+  *
+- * Change the count from 1 to a value lower than 1, and call <fail_fn> if
+- * it wasn't 1 originally. This function returns 0 if the fastpath succeeds,
+- * or anything the slow path function returns.
++ * Change the count from 1 to a value lower than 1. This function returns 0
++ * if the fastpath succeeds, or -1 otherwise.
+  */
+ static inline int
+-__mutex_fastpath_lock_retval(atomic_t *count, int (*fail_fn)(atomic_t *))
++__mutex_fastpath_lock_retval(atomic_t *count)
+ {
+ 	if (unlikely(__mutex_dec_return_lock(count) < 0))
+-		return fail_fn(count);
++		return -1;
+ 	return 0;
+ }
+ 
+diff --git a/arch/sh/include/asm/mutex-llsc.h b/arch/sh/include/asm/mutex-llsc.h
+index 090358a..dad29b6 100644
+--- a/arch/sh/include/asm/mutex-llsc.h
++++ b/arch/sh/include/asm/mutex-llsc.h
+@@ -37,7 +37,7 @@ __mutex_fastpath_lock(atomic_t *count, void (*fail_fn)(atomic_t *))
+ }
+ 
+ static inline int
+-__mutex_fastpath_lock_retval(atomic_t *count, int (*fail_fn)(atomic_t *))
++__mutex_fastpath_lock_retval(atomic_t *count)
+ {
+ 	int __done, __res;
+ 
+@@ -51,7 +51,7 @@ __mutex_fastpath_lock_retval(atomic_t *count, int (*fail_fn)(atomic_t *))
+ 		: "t");
+ 
+ 	if (unlikely(!__done || __res != 0))
+-		__res = fail_fn(count);
++		__res = -1;
+ 
+ 	return __res;
+ }
+diff --git a/arch/x86/include/asm/mutex_32.h b/arch/x86/include/asm/mutex_32.h
+index 03f90c8..b7f6b34 100644
+--- a/arch/x86/include/asm/mutex_32.h
++++ b/arch/x86/include/asm/mutex_32.h
+@@ -42,17 +42,14 @@ do {								\
+  *  __mutex_fastpath_lock_retval - try to take the lock by moving the count
+  *                                 from 1 to a 0 value
+  *  @count: pointer of type atomic_t
+- *  @fail_fn: function to call if the original value was not 1
+  *
+- * Change the count from 1 to a value lower than 1, and call <fail_fn> if it
+- * wasn't 1 originally. This function returns 0 if the fastpath succeeds,
+- * or anything the slow path function returns
++ * Change the count from 1 to a value lower than 1. This function returns 0
++ * if the fastpath succeeds, or 1 otherwise.
+  */
+-static inline int __mutex_fastpath_lock_retval(atomic_t *count,
+-					       int (*fail_fn)(atomic_t *))
++static inline int __mutex_fastpath_lock_retval(atomic_t *count)
+ {
+ 	if (unlikely(atomic_dec_return(count) < 0))
+-		return fail_fn(count);
++		return -1;
+ 	else
+ 		return 0;
+ }
+diff --git a/arch/x86/include/asm/mutex_64.h b/arch/x86/include/asm/mutex_64.h
+index 68a87b0..2c543ff 100644
+--- a/arch/x86/include/asm/mutex_64.h
++++ b/arch/x86/include/asm/mutex_64.h
+@@ -37,17 +37,14 @@ do {								\
+  *  __mutex_fastpath_lock_retval - try to take the lock by moving the count
+  *                                 from 1 to a 0 value
+  *  @count: pointer of type atomic_t
+- *  @fail_fn: function to call if the original value was not 1
+  *
+- * Change the count from 1 to a value lower than 1, and call <fail_fn> if
+- * it wasn't 1 originally. This function returns 0 if the fastpath succeeds,
+- * or anything the slow path function returns
++ * Change the count from 1 to a value lower than 1. This function returns 0
++ * if the fastpath succeeds, or -1 otherwise.
+  */
+-static inline int __mutex_fastpath_lock_retval(atomic_t *count,
+-					       int (*fail_fn)(atomic_t *))
++static inline int __mutex_fastpath_lock_retval(atomic_t *count)
+ {
+ 	if (unlikely(atomic_dec_return(count) < 0))
+-		return fail_fn(count);
++		return -1;
+ 	else
+ 		return 0;
+ }
+diff --git a/include/asm-generic/mutex-dec.h b/include/asm-generic/mutex-dec.h
+index f104af7..d4f9fb4 100644
+--- a/include/asm-generic/mutex-dec.h
++++ b/include/asm-generic/mutex-dec.h
+@@ -28,17 +28,15 @@ __mutex_fastpath_lock(atomic_t *count, void (*fail_fn)(atomic_t *))
+  *  __mutex_fastpath_lock_retval - try to take the lock by moving the count
+  *                                 from 1 to a 0 value
+  *  @count: pointer of type atomic_t
+- *  @fail_fn: function to call if the original value was not 1
+  *
+- * Change the count from 1 to a value lower than 1, and call <fail_fn> if
+- * it wasn't 1 originally. This function returns 0 if the fastpath succeeds,
+- * or anything the slow path function returns.
++ * Change the count from 1 to a value lower than 1. This function returns 0
++ * if the fastpath succeeds, or -1 otherwise.
+  */
+ static inline int
+-__mutex_fastpath_lock_retval(atomic_t *count, int (*fail_fn)(atomic_t *))
++__mutex_fastpath_lock_retval(atomic_t *count)
+ {
+ 	if (unlikely(atomic_dec_return(count) < 0))
+-		return fail_fn(count);
++		return -1;
+ 	return 0;
+ }
+ 
+diff --git a/include/asm-generic/mutex-null.h b/include/asm-generic/mutex-null.h
+index e1bbbc7..efd6206 100644
+--- a/include/asm-generic/mutex-null.h
++++ b/include/asm-generic/mutex-null.h
+@@ -11,7 +11,7 @@
+ #define _ASM_GENERIC_MUTEX_NULL_H
+ 
+ #define __mutex_fastpath_lock(count, fail_fn)		fail_fn(count)
+-#define __mutex_fastpath_lock_retval(count, fail_fn)	fail_fn(count)
++#define __mutex_fastpath_lock_retval(count, fail_fn)	(-1)
+ #define __mutex_fastpath_unlock(count, fail_fn)		fail_fn(count)
+ #define __mutex_fastpath_trylock(count, fail_fn)	fail_fn(count)
+ #define __mutex_slowpath_needs_to_unlock()		1
+diff --git a/include/asm-generic/mutex-xchg.h b/include/asm-generic/mutex-xchg.h
+index c04e0db..f169ec0 100644
+--- a/include/asm-generic/mutex-xchg.h
++++ b/include/asm-generic/mutex-xchg.h
+@@ -39,18 +39,16 @@ __mutex_fastpath_lock(atomic_t *count, void (*fail_fn)(atomic_t *))
+  *  __mutex_fastpath_lock_retval - try to take the lock by moving the count
+  *                                 from 1 to a 0 value
+  *  @count: pointer of type atomic_t
+- *  @fail_fn: function to call if the original value was not 1
+  *
+- * Change the count from 1 to a value lower than 1, and call <fail_fn> if it
+- * wasn't 1 originally. This function returns 0 if the fastpath succeeds,
+- * or anything the slow path function returns
++ * Change the count from 1 to a value lower than 1. This function returns 0
++ * if the fastpath succeeds, or -1 otherwise.
+  */
+ static inline int
+-__mutex_fastpath_lock_retval(atomic_t *count, int (*fail_fn)(atomic_t *))
++__mutex_fastpath_lock_retval(atomic_t *count)
+ {
+ 	if (unlikely(atomic_xchg(count, 0) != 1))
+ 		if (likely(atomic_xchg(count, -1) != 1))
+-			return fail_fn(count);
++			return -1;
+ 	return 0;
+ }
+ 
+diff --git a/kernel/mutex.c b/kernel/mutex.c
+index 52f2301..84a5f07 100644
+--- a/kernel/mutex.c
++++ b/kernel/mutex.c
+@@ -351,10 +351,10 @@ __mutex_unlock_slowpath(atomic_t *lock_count)
+  * mutex_lock_interruptible() and mutex_trylock().
+  */
+ static noinline int __sched
+-__mutex_lock_killable_slowpath(atomic_t *lock_count);
++__mutex_lock_killable_slowpath(struct mutex *lock);
+ 
+ static noinline int __sched
+-__mutex_lock_interruptible_slowpath(atomic_t *lock_count);
++__mutex_lock_interruptible_slowpath(struct mutex *lock);
+ 
+ /**
+  * mutex_lock_interruptible - acquire the mutex, interruptible
+@@ -372,12 +372,12 @@ int __sched mutex_lock_interruptible(struct mutex *lock)
+ 	int ret;
+ 
+ 	might_sleep();
+-	ret =  __mutex_fastpath_lock_retval
+-			(&lock->count, __mutex_lock_interruptible_slowpath);
+-	if (!ret)
++	ret =  __mutex_fastpath_lock_retval(&lock->count);
++	if (likely(!ret)) {
+ 		mutex_set_owner(lock);
+-
+-	return ret;
++		return 0;
++	} else
++		return __mutex_lock_interruptible_slowpath(lock);
+ }
+ 
+ EXPORT_SYMBOL(mutex_lock_interruptible);
+@@ -387,12 +387,12 @@ int __sched mutex_lock_killable(struct mutex *lock)
+ 	int ret;
+ 
+ 	might_sleep();
+-	ret = __mutex_fastpath_lock_retval
+-			(&lock->count, __mutex_lock_killable_slowpath);
+-	if (!ret)
++	ret = __mutex_fastpath_lock_retval(&lock->count);
++	if (likely(!ret)) {
+ 		mutex_set_owner(lock);
+-
+-	return ret;
++		return 0;
++	} else
++		return __mutex_lock_killable_slowpath(lock);
+ }
+ EXPORT_SYMBOL(mutex_lock_killable);
+ 
+@@ -405,18 +405,14 @@ __mutex_lock_slowpath(atomic_t *lock_count)
+ }
+ 
+ static noinline int __sched
+-__mutex_lock_killable_slowpath(atomic_t *lock_count)
++__mutex_lock_killable_slowpath(struct mutex *lock)
+ {
+-	struct mutex *lock = container_of(lock_count, struct mutex, count);
+-
+ 	return __mutex_lock_common(lock, TASK_KILLABLE, 0, NULL, _RET_IP_);
+ }
+ 
+ static noinline int __sched
+-__mutex_lock_interruptible_slowpath(atomic_t *lock_count)
++__mutex_lock_interruptible_slowpath(struct mutex *lock)
+ {
+-	struct mutex *lock = container_of(lock_count, struct mutex, count);
+-
+ 	return __mutex_lock_common(lock, TASK_INTERRUPTIBLE, 0, NULL, _RET_IP_);
+ }
+ #endif
 
-    { OPT_LEVELS_3_PLUS, OPT_fpredictive_commoning, NULL, 1 },
-
-Also doesn't matter.
-
-    { OPT_LEVELS_3_PLUS, OPT_funswitch_loops, NULL, 1 },
-
-Can be done by us at the source level.
-
-    { OPT_LEVELS_3_PLUS, OPT_ftree_vectorize, NULL, 1 },
-
-Probably doesn't matter.
-
-    { OPT_LEVELS_3_PLUS, OPT_fipa_cp_clone, NULL, 1 },
-
-`-fipa-cp-clone'
-     Perform function cloning to make interprocedural constant
-     propagation stronger.  When enabled, interprocedural constant
-     propagation will perform function cloning when externally visible
-     function can be called with constant arguments.
-
-Can be done by adding new external APIs or marking functions as
-always_inline.
-
-    { OPT_LEVELS_3_PLUS, OPT_fgcse_after_reload, NULL, 1 },
-
-`-fgcse-after-reload'
-     When `-fgcse-after-reload' is enabled, a redundant load elimination
-     pass is performed after reload.  The purpose of this pass is to
-     cleanup redundant spilling.
-
-Never saw it have any substantial effect.
-
-    { OPT_LEVELS_3_PLUS_AND_SIZE, OPT_finline_functions, NULL, 1 },
-
-Can be done by us simply by adding more "inline" keywords.
-
-Plus, -O3 will make *full* loop unrolling a bit more aggressive.  But
-full loop unrolling requires compile-time-known loop bounds, so I doubt
-this is the case.
-
-Paolo
