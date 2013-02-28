@@ -1,80 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752721Ab3B1Hcl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 02:32:41 -0500
-Received: from vostochny.stro.at ([78.47.22.85]:59619 "EHLO vostochny.stro.at"
+	id S1752175Ab3B1Hio (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 02:38:44 -0500
+Received: from mga02.intel.com ([134.134.136.20]:49067 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751548Ab3B1Hch (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 02:32:37 -0500
-Date: Thu, 28 Feb 2013 07:32:35 +0000
-From: maximilian attems <max@stro.at>
-To: Michal Marek <mmarek@suse.cz>
-Cc: Sedat Dilek <sedat.dilek@googlemail.com>, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Sedat Dilek <sedat.dilek@gmail.com>
-Subject: Re: [PATCH 1/3] kbuild, deb-pkg: Try to determine distribution
-Message-ID: <20130228073235.GP10026@vostochny.stro.at>
-References: <1335219389-10887-1-git-send-email-sedat.dilek@gmail.com>
- <512E1061.3030007@suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <512E1061.3030007@suse.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1751345Ab3B1Hin (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Feb 2013 02:38:43 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,754,1355126400"; 
+   d="scan'208";a="291674999"
+Subject: [PATCH 1/5] regmap: irq: call pm_runtime_put in
+ pm_runtime_get_sync failed case
+From: Li Fei <fei.li@intel.com>
+To: broonie@opensource.wolfsonmicro.com, gregkh@linuxfoundation.org
+Cc: rjw@sisk.pl, linux-kernel@vger.kernel.org, chuansheng.liu@intel.com,
+        fei.li@intel.com
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 28 Feb 2013 15:37:11 +0800
+Message-ID: <1362037031.6212.3.camel@fli24-HP-Compaq-8100-Elite-CMT-PC>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 27, 2013 at 02:55:45PM +0100, Michal Marek wrote:
-> Sorry I missed this series. Max, can you have a look? I don't know the
-> policies for debian package changelogs. The full series is at
-> http://lkml.indiana.edu/hypermail/linux/kernel/1204.2/index.html#04252,
-> but the remaining two patches are obvious.
 
-the two remaining ones are trivial, should have pushed them a long time
-ago and will do so this weekend in a combined version going up to 2013
-(sitting in my queue to send).
- 
-> On 24.4.2012 00:16, Sedat Dilek wrote:
-> > Signed-off-by: Sedat Dilek <sedat.dilek@gmail.com>
-> > ---
-> >  scripts/package/builddeb |   15 ++++++++++++++-
-> >  1 file changed, 14 insertions(+), 1 deletion(-)
-> > 
-> > diff --git a/scripts/package/builddeb b/scripts/package/builddeb
-> > index eee5f8e..f5b56ac 100644
-> > --- a/scripts/package/builddeb
-> > +++ b/scripts/package/builddeb
-> > @@ -172,9 +172,22 @@ else
-> >  fi
-> >  maintainer="$name <$email>"
-> >  
-> > +# Try to determine distribution
-> > +if [ -e $(which lsb_release) ]; then
-> > +       codename=$(lsb_release --codename --short)
-> > +       if [ "$codename" != "" ]; then
-> > +		distribution=$codename
-> > +       else
-> > +		distribution="UNRELEASED"
-> > +		echo "WARNING: The distribution could NOT be determined!"
-> > +       fi
-> > +else
-> > +       echo "HINT: Install lsb_release binary, this helps to identify your distribution!"
-> > +fi
-> > +
-> >  # Generate a simple changelog template
-> >  cat <<EOF > debian/changelog
-> > -linux-upstream ($packageversion) unstable; urgency=low
-> > +linux-upstream ($packageversion) $distribution; urgency=low
-> >  
-> >    * Custom built Linux kernel.
+Even in failed case of pm_runtime_get_sync, the usage_count
+is incremented. In order to keep the usage_count with correct
+value and runtime power management to behave correctly, call
+pm_runtime_put(_sync) in such case.
 
-this is pretty useless. 
-Nack, in adding a this additional lsb dep.
-I know it should be installed by default, but in practise it is often not.
+Signed-off-by Liu Chuansheng <chuansheng.liu@intel.com>
+Signed-off-by: Li Fei <fei.li@intel.com>
+---
+ drivers/base/regmap/regmap-irq.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-If you'd really care about the changelog you'd generate it out of your
-git repo with Debian's git dch in order to have something meaningful.
-
-
+diff --git a/drivers/base/regmap/regmap-irq.c b/drivers/base/regmap/regmap-irq.c
+index 4706c63..020ea2b 100644
+--- a/drivers/base/regmap/regmap-irq.c
++++ b/drivers/base/regmap/regmap-irq.c
+@@ -184,6 +184,7 @@ static irqreturn_t regmap_irq_thread(int irq, void *d)
+ 		if (ret < 0) {
+ 			dev_err(map->dev, "IRQ thread failed to resume: %d\n",
+ 				ret);
++			pm_runtime_put(map->dev);
+ 			return IRQ_NONE;
+ 		}
+ 	}
 -- 
-maks
+1.7.4.1
+
+
+
