@@ -1,99 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753163Ab3B1BjG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 20:39:06 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:45281 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751904Ab3B1BjC (ORCPT
+	id S1753459Ab3B1Bll (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 20:41:41 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:43959 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752028Ab3B1Blj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 20:39:02 -0500
-Date: Wed, 27 Feb 2013 17:35:14 -0800
-From: Anton Vorontsov <anton@enomsg.org>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: linux-kernel@vger.kernel.org, David Woodhouse <dwmw2@infradead.org>
-Subject: Re: [PATCH] power: make goldfish option have a dependency on goldfish
-Message-ID: <20130228013514.GA7556@lizard.fhda.edu>
-References: <1361989666-1922-1-git-send-email-paul.gortmaker@windriver.com>
- <20130227231826.GA30154@lizard.fhda.edu>
- <CAP=VYLqg5Q_e4y6bD9x8idOvJx2n_knzujOY9Z0VyGDEQZTzag@mail.gmail.com>
+	Wed, 27 Feb 2013 20:41:39 -0500
+Date: Wed, 27 Feb 2013 17:41:37 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: =?UTF-8?Q?Arve_Hj=C3=B8nnev=C3=A5g?= <arve@android.com>
+cc: John Stultz <john.stultz@linaro.org>, lkml <linux-kernel@vger.kernel.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH 1/5] staging: android: lowmemorykiller: Add config option
+ to support oom_adj values
+In-Reply-To: <CAMP5XgdE-Ui9qiLGjvAXk13LbCzn-bHEC_AsxQ8dWpz+R-qSDg@mail.gmail.com>
+Message-ID: <alpine.DEB.2.02.1302271739520.1648@chino.kir.corp.google.com>
+References: <1361945258-24420-1-git-send-email-john.stultz@linaro.org> <1361945258-24420-2-git-send-email-john.stultz@linaro.org> <alpine.DEB.2.02.1302271417000.7155@chino.kir.corp.google.com> <CAMP5XgcjdZk5MZ9v+W5phgWgE4Q0Pc_2FfopapjctsV6sdguLQ@mail.gmail.com>
+ <alpine.DEB.2.02.1302271509230.24485@chino.kir.corp.google.com> <CAMP5XgemB4AdKEY4HFLwupo1CGv89hbmB+HUYYN8qdQRYCTdHg@mail.gmail.com> <alpine.DEB.2.02.1302271613210.27317@chino.kir.corp.google.com>
+ <CAMP5XgdE-Ui9qiLGjvAXk13LbCzn-bHEC_AsxQ8dWpz+R-qSDg@mail.gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <CAP=VYLqg5Q_e4y6bD9x8idOvJx2n_knzujOY9Z0VyGDEQZTzag@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: MULTIPART/MIXED; BOUNDARY="531381512-1438450809-1362015698=:1648"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 27, 2013 at 07:48:38PM -0500, Paul Gortmaker wrote:
-[...]
-> If you don't want to take the commit, I won't argue it any further, but
-> I genuinely do hope the above logical arguments perhaps might cause
-> you to  change your mind.
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-As a maintainer of drivers/power/, I have to keep things in a sane state,
-which means, that I want to compile-test the patches that I am merging.
+--531381512-1438450809-1362015698=:1648
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 
-Testing patches takes time, and if I have to do it for all bunch of
-different machines and architectures, it becomes mess and unmanageable. In
-another words, it is easier for me to use as little different
-setups/.configs/cross-compilers/trees/etc as possible.
+On Wed, 27 Feb 2013, Arve Hjønnevåg wrote:
 
-For example, here is the scenario:
+> > Explain how this can possibly be consistent if your system includes two
+> > processes, one writing oom_adj values and one writing oom_score_adj
+> > values, and the kernel has this new option enabled?
+> 
+> These values are all written by the same process. If you want to
+> improve this, the lowmemorykiller will need a separate score_adj
+> parameter so that it knows for sure which type of value it receives.
+> You changed the meaning of /sys/module/lowmemorykiller/parameters/adj.
+> This patch restores the old behavior as long as the values you write
+> are within the range oom_adj, while still supporting the new behavior
+> you added in the likely case that one of the values are out of range
+> for oom_adj.
+> 
 
-- someone sends me a patch for goldfish driver;
-- I quickly compile it on my [underpowered] x86 laptop without need for
-  cross-compilation and special configs;
-- It compiles fine, produces no warnings, so I happily send out the
-  'Applied, thanks!' email;
-
-Now, with your patch:
-
-- Someone sends me a patch for goldfish driver;
-- I starting to look for my cross-compilers collections, making all the
-  environment setups, setting up a new build tree, looking for the
-  outdated goldfish config, the ARM thing fails to build somewhere in
-  arch/arm/plat-foo and drivers/mfd/bar. I become grumpy... and, you might
-  not believe me, I open and edit drivers/power/Kconfig and remove
-  needless 'depends on' (that is, I actually do these kind of things when
-  I feel lazy enough).
-
-Do you agree that without the additional deps life is easier for me? :)
-
-If so, please do help me and the rest of the maintainers: instead of
-adding the unneeded deps, for consistency just remove those which are not
-needed.
-
-Thanks,
-
-Anton
-
-p.s. Quick answers for the rest of your arguments:
-
-> The linux-next compile queue as it is today barely gets completed within
->  a 24h window.
-
-So, it is large enough already, and nothing we can do about it, things are
-growing. But the good news is that no human attention is needed to compile
-things. That is what machines are for. :)
-
-> --why shouldn't we restrict the maintenance overhead of CONFIG_FOO
-> to people who really do care about supporting and testing and updating
-> features conditional on CONFIG_FOO?  Given the size of the kernel
-> today, this seems to make sense in terms of developer "load balancing".
-
-You don't have to enable/fix everything. Some things become broken, so
-just disable them for the time being. But when people stumble upon broken
-drivers, the drivers are either get fixed, or removed (if no one wants to
-fix it). Sweeping drivers under 'depends on' doesn't do anything good in
-this regard, IMO.
-
-If we notice that goldfish is broken for long time and nobody cares to fix
-it, then it is a good time to think about its removal. Since goldfish has
-nothing goldfish-specific, it can be broeken only in a generic way, so if
-it is broken on x86, it is as well broken for ARM.
-
-> If you don't want to take the commit, I won't argue it any further
-
-I don't want to take it for a reason, but I do care whether my reasons
-make sense to you.
+Then remove the config option entirely and add a new score_adj file that 
+gets mapped from writes to adj.  No reason to tie the kernel config to a 
+particular userspace implementation (even though it's been like this for 
+over a year).  Nack to this patch.
+--531381512-1438450809-1362015698=:1648--
