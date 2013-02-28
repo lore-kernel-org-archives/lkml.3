@@ -1,85 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752802Ab3B1NST (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 08:18:19 -0500
-Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:46448 "EHLO
-	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751937Ab3B1NSR (ORCPT
+	id S1752769Ab3B1NWR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 08:22:17 -0500
+Received: from mail-ia0-f169.google.com ([209.85.210.169]:55239 "EHLO
+	mail-ia0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752271Ab3B1NWO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 08:18:17 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AtkPAHdXL1F5LNTy/2dsb2JhbABEDoVYty+FFXoXc4IfAQEEATocKAsIAxgJJQ8FJQMhARKIDQXBPRWOICJEg0ADlkCQa4JJUw
-Date: Fri, 1 Mar 2013 00:18:13 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: "Theodore Ts'o" <tytso@mit.edu>, Dave Jones <davej@redhat.com>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "gnehzuil.liu" <gnehzuil.liu@gmail.com>,
-        Zheng Liu <wenqing.lz@taobao.com>, Borislav Petkov <bp@alien8.de>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] ext4 updates for 3.9
-Message-ID: <20130228131813.GO5551@dastard>
-References: <20130227170157.GA222@x4>
- <98C6DE45-F050-4AAD-82E2-7352F5BB0A5D@gmail.com>
- <20130227172256.GA236@x4>
- <7BFB2135-A1F0-4B6D-9962-16E75E5560F8@gmail.com>
- <20130227174553.GA224@x4>
- <CA+55aFwWA1jPEEQNx_5oJ6Ze=3yFb6=E9nraBfX-Ve=WjRkQMw@mail.gmail.com>
- <20130227184912.GA19624@thunk.org>
- <20130227185625.GA224@x4>
- <20130227191923.GA1121@redhat.com>
- <20130227192907.GB14253@thunk.org>
+	Thu, 28 Feb 2013 08:22:14 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130227192907.GB14253@thunk.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CANq1E4QoutxRkuBj3p2vaw2U4-GN0Gz4ueopKkDavX_ZmgMC-w@mail.gmail.com>
+References: <1361123951-587-1-git-send-email-dh.herrmann@gmail.com>
+	<CAPM=9txQtJ6FLFTEFr_Wi6RK=W9y3gKYxV_+zPCo6kLi4nM8eA@mail.gmail.com>
+	<CANq1E4TTB-Lp+eVRPpzOMnS7XNbzHJRTicwCcwXw3AUs11XFMw@mail.gmail.com>
+	<CAPM=9tzDXLqUG3c6VsMjaJ_1997h7f+_3kB0C0N2imuQcXsD6Q@mail.gmail.com>
+	<CANq1E4QoutxRkuBj3p2vaw2U4-GN0Gz4ueopKkDavX_ZmgMC-w@mail.gmail.com>
+Date: Thu, 28 Feb 2013 14:22:14 +0100
+X-Google-Sender-Auth: _aXSedtE95XfbuQ6PF_0ro_Duow
+Message-ID: <CAMuHMdUfyOe_ySL0gB_FQLjz2ACQhk6cPWi_ty5pMb6=zZduSA@mail.gmail.com>
+Subject: Re: [PATCH 0/9] System Framebuffer Bus (sysfb)
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: David Herrmann <dh.herrmann@gmail.com>
+Cc: Dave Airlie <airlied@gmail.com>, linux-kernel@vger.kernel.org,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        linux-fbdev@vger.kernel.org, David Airlie <airlied@linux.ie>,
+        dri-devel@lists.freedesktop.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 27, 2013 at 02:29:07PM -0500, Theodore Ts'o wrote:
-> On Wed, Feb 27, 2013 at 02:19:23PM -0500, Dave Jones wrote:
-> > 
-> > Looks like it's fixed here too.
-> > 
-> > How did this make it through -next without anyone hitting it ?
-> 
-> > Is anyone running xfstests or similar on linux-next regularly ?
-> 
-> I run xfstests on the ext4 tree, and I ran it on ext4 plus Linus's tip
-> before I submitted a pull request.  The problem is that XFSTESTS is
-> S-L-O-W if you use large partitions, so typically I use a 5GB
-> partition sizes for my test runs.
+On Thu, Feb 28, 2013 at 1:20 PM, David Herrmann <dh.herrmann@gmail.com> wrote:
+> We currently have different drivers that can make use of "system
+> framebuffers" (as I call them for now):
+>  - vgacon
+>  - fbdev
+>  - DRM
+> (- vgalog) (similar to fblog/drmlog but using vga/VBE)
 
-This isn't the case for XFS. I typically see 1TB scratch devices
-only being ~10-20% slower than 10GB scratch devices, and 10TB only
-being a little slower than 1TB scratch devices. I have to use sparse
-devices and --large-fs for 100TB filesystem testing, so I can't
-directly compare the speeds to those that I run on physical devices.
-However I can say that it isn't significantly slower than using
-small scratch devices...
+offb
 
-> So what we probably need to do is to have a separate set of tests
-> using a loopback mount, and perhaps an artificially created file
-> system which has a large percentage of the blocks in the middle of the
-> file system busied out, to make efficient testing of these sorts of
+Gr{oetje,eeting}s,
 
-That's exactly what the --large-fs patch set I posted months ago does
-for ext4 - it uses fallocate() to fill all but 50GB of the large
-filesystem without actually writing any data and runs the standard
-tests in the remaining unused space.
+                        Geert
 
-However, last time I tested ext4 with this patchset (when I posted
-the patches months ago), multi-TB preallocation on ext4 was still too
-slow to make it practical for testing on devices larger than 2-3TB.
-Perhaps it would make testing 1-2TB ext4 filesystems fast enough
-that you could do it regularly...
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
