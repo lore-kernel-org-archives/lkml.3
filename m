@@ -1,82 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760287Ab3B1PON (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 10:14:13 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:47788 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758537Ab3B1POI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 10:14:08 -0500
-Date: Thu, 28 Feb 2013 10:13:33 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Cc: linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        linux-security-module@vger.kernel.org
-Subject: IMA: How to manage user space signing policy with others
-Message-ID: <20130228151333.GB11360@redhat.com>
+	id S1760307Ab3B1POw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 10:14:52 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:42066 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756930Ab3B1Ord (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Feb 2013 09:47:33 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 043/139] USB: option: add Yota / Megafon M100-1 4g modem
+Date: Thu, 28 Feb 2013 14:43:13 +0000
+Message-Id: <1362062689-2567-44-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1362062689-2567-1-git-send-email-luis.henriques@canonical.com>
+References: <1362062689-2567-1-git-send-email-luis.henriques@canonical.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mimi,
+3.5.7.7 -stable review patch.  If anyone has any objections, please let me know.
 
-I am running into issues w.r.t IMA policy management and user space
-signing. So thought of dropping a mail and gather some ideas.
+------------------
 
-Currently IMA seems to able to one policy only which does not contain
-conflicting rules. We have tcb policies in-built and they don't have
-conflicting rules. User can put its own policy and that will replace
-kernel policy (default policy). And then user is responsible for making
-sure conflicting rules are not present.
+From: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
 
-Now with user space signing and secureboot, I have another set of rules
-which are not compatible with existing tcb policies. This is how my
-rules look like as of today. These can change based on config options.
+commit cd565279e51bedee1b2988e84f9b3bef485adeb6 upstream.
 
-appraise func=BPRM_CHECK appraise_type=optional
-appraise func=BPRM_POST_LOAD appraise_type=optional
+Interface layout:
 
-These rules are not compatible with tcp appraise rule.
+ 00 CD-ROM
+ 01 debug COM port
+ 02 AP control port
+ 03 modem
+ 04 usb-ethernet
 
-.action = APPRAISE,.fowner = GLOBAL_ROOT_UID,.flags = IMA_FOWNER
+Bus=01 Lev=02 Prnt=02 Port=01 Cnt=02 Dev#=  4 Spd=480  MxCh= 0
+D:  Ver= 2.00 Cls=00(>ifc ) Sub=00 Prot=00 MxPS=64 #Cfgs=  1
+P:  Vendor=0408 ProdID=ea42 Rev= 0.00
+S:  Manufacturer=Qualcomm, Incorporated
+S:  Product=Qualcomm CDMA Technologies MSM
+S:  SerialNumber=353568051xxxxxx
+C:* #Ifs= 5 Cfg#= 1 Atr=e0 MxPwr=500mA
+I:* If#= 0 Alt= 0 #EPs= 2 Cls=08(stor.) Sub=06 Prot=50 Driver=usb-storage
+E:  Ad=01(O) Atr=02(Bulk) MxPS= 512 Ivl=0ms
+E:  Ad=81(I) Atr=02(Bulk) MxPS= 512 Ivl=0ms
+I:* If#= 1 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
+E:  Ad=82(I) Atr=02(Bulk) MxPS= 512 Ivl=0ms
+E:  Ad=02(O) Atr=02(Bulk) MxPS= 512 Ivl=4ms
+I:* If#= 2 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
+E:  Ad=83(I) Atr=02(Bulk) MxPS= 512 Ivl=0ms
+E:  Ad=03(O) Atr=02(Bulk) MxPS= 512 Ivl=4ms
+I:* If#= 3 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
+E:  Ad=84(I) Atr=03(Int.) MxPS=  64 Ivl=2ms
+E:  Ad=85(I) Atr=02(Bulk) MxPS= 512 Ivl=0ms
+E:  Ad=04(O) Atr=02(Bulk) MxPS= 512 Ivl=4ms
+I:* If#= 4 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
+E:  Ad=86(I) Atr=03(Int.) MxPS=  64 Ivl=2ms
+E:  Ad=87(I) Atr=02(Bulk) MxPS= 512 Ivl=0ms
+E:  Ad=05(O) Atr=02(Bulk) MxPS= 512 Ivl=4ms
 
-That means in current scheme of things, multiple policies can't co-exist
-together. It has few  disadvantages.
+Signed-off-by: Bjørn Mork <bjorn@mork.no>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ drivers/usb/serial/option.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-- If we want IMA to be central point for all integrity measurement
-  needs, then having one policy only is very limiting. The fact that
-  user can overirde that policy makes it worse as then kernel can
-  not impose any policy at all.
+diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
+index b5fd2f8..3e5c9fe 100644
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -576,6 +576,8 @@ static const struct usb_device_id option_ids[] = {
+ 	{ USB_DEVICE(QUANTA_VENDOR_ID, QUANTA_PRODUCT_GLX) },
+ 	{ USB_DEVICE(QUANTA_VENDOR_ID, QUANTA_PRODUCT_GKE) },
+ 	{ USB_DEVICE(QUANTA_VENDOR_ID, QUANTA_PRODUCT_GLE) },
++	{ USB_DEVICE(QUANTA_VENDOR_ID, 0xea42),
++		.driver_info = (kernel_ulong_t)&net_intf4_blacklist },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E173, 0xff, 0xff, 0xff),
+ 		.driver_info = (kernel_ulong_t) &net_intf1_blacklist },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K4505, 0xff, 0xff, 0xff),
+-- 
+1.8.1.2
 
-  IOW, if user enables user space signign in kernel, say CONFIG_BIN_SIGN=y,
-  then I need a way so that kernel can make sure IMA rules needed to
-  ensure integrity of binaries are present and can not be overruled.
-
-- Disabling policy can disable certain features in kernel. So in this
-  case if user overides default policy, it will disable binary signing
-  feature also (that too in a very unintutive way).
-
-
-One possible way could be that we allow execution of all the relevant
-rules in a policy and return the ANDed results of all the rules. But
-this does not go well with the result caching. Atleast current IMA
-infrastructure does not allow it and might require overhaul.
-
-In general I am concerned about increased performance overhead if we
-allow multiple policies to co-exist. 
-
-Performance overhead is a concern even without multiple policies. For
-user space signing, IMA hooks will be called for file operations like
-open(), mmap() etc and we don't require those to be called. I am not
-sure if performance overhead is significant or not. Once things start
-working, I will do some benchmarking.
-
-But coming back to the point, how to go about making sure user space
-signing policies can't be overridden if user has enabled user space
-signing feature in kernel.
-
-Thanks
-Vivek
