@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933087Ab3B1OvG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 09:51:06 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:42498 "EHLO
+	id S933162Ab3B1Ozg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 09:55:36 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:42531 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932997Ab3B1Our (ORCPT
+	with ESMTP id S933079Ab3B1OvE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 09:50:47 -0500
+	Thu, 28 Feb 2013 09:51:04 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jan Beulich <jbeulich@suse.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+Cc: Stephen Hemminger <stephen@networkplumber.org>,
+        "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 119/139] x86/xen: don't assume %ds is usable in xen_iret for 32-bit PVOPS.
-Date: Thu, 28 Feb 2013 14:44:29 +0000
-Message-Id: <1362062689-2567-120-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 126/139] bridge: set priority of STP packets
+Date: Thu, 28 Feb 2013 14:44:36 +0000
+Message-Id: <1362062689-2567-127-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1362062689-2567-1-git-send-email-luis.henriques@canonical.com>
 References: <1362062689-2567-1-git-send-email-luis.henriques@canonical.com>
@@ -28,133 +28,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Beulich <JBeulich@suse.com>
+From: Stephen Hemminger <stephen@networkplumber.org>
 
-commit 13d2b4d11d69a92574a55bfd985cfb0ca77aebdc upstream.
+commit 547b4e718115eea74087e28d7fa70aec619200db upstream.
 
-This fixes CVE-2013-0228 / XSA-42
+Spanning Tree Protocol packets should have always been marked as
+control packets, this causes them to get queued in the high prirority
+FIFO. As Radia Perlman mentioned in her LCA talk, STP dies if bridge
+gets overloaded and can't communicate. This is a long-standing bug back
+to the first versions of Linux bridge.
 
-Drew Jones while working on CVE-2013-0190 found that that unprivileged guest user
-in 32bit PV guest can use to crash the > guest with the panic like this:
-
--------------
-general protection fault: 0000 [#1] SMP
-last sysfs file: /sys/devices/vbd-51712/block/xvda/dev
-Modules linked in: sunrpc ipt_REJECT nf_conntrack_ipv4 nf_defrag_ipv4
-iptable_filter ip_tables ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6
-xt_state nf_conntrack ip6table_filter ip6_tables ipv6 xen_netfront ext4
-mbcache jbd2 xen_blkfront dm_mirror dm_region_hash dm_log dm_mod [last
-unloaded: scsi_wait_scan]
-
-Pid: 1250, comm: r Not tainted 2.6.32-356.el6.i686 #1
-EIP: 0061:[<c0407462>] EFLAGS: 00010086 CPU: 0
-EIP is at xen_iret+0x12/0x2b
-EAX: eb8d0000 EBX: 00000001 ECX: 08049860 EDX: 00000010
-ESI: 00000000 EDI: 003d0f00 EBP: b77f8388 ESP: eb8d1fe0
- DS: 0000 ES: 007b FS: 0000 GS: 00e0 SS: 0069
-Process r (pid: 1250, ti=eb8d0000 task=c2953550 task.ti=eb8d0000)
-Stack:
- 00000000 0027f416 00000073 00000206 b77f8364 0000007b 00000000 00000000
-Call Trace:
-Code: c3 8b 44 24 18 81 4c 24 38 00 02 00 00 8d 64 24 30 e9 03 00 00 00
-8d 76 00 f7 44 24 08 00 00 02 80 75 33 50 b8 00 e0 ff ff 21 e0 <8b> 40
-10 8b 04 85 a0 f6 ab c0 8b 80 0c b0 b3 c0 f6 44 24 0d 02
-EIP: [<c0407462>] xen_iret+0x12/0x2b SS:ESP 0069:eb8d1fe0
-general protection fault: 0000 [#2]
----[ end trace ab0d29a492dcd330 ]---
-Kernel panic - not syncing: Fatal exception
-Pid: 1250, comm: r Tainted: G      D    ---------------
-2.6.32-356.el6.i686 #1
-Call Trace:
- [<c08476df>] ? panic+0x6e/0x122
- [<c084b63c>] ? oops_end+0xbc/0xd0
- [<c084b260>] ? do_general_protection+0x0/0x210
- [<c084a9b7>] ? error_code+0x73/
--------------
-
-Petr says: "
- I've analysed the bug and I think that xen_iret() cannot cope with
- mangled DS, in this case zeroed out (null selector/descriptor) by either
- xen_failsafe_callback() or RESTORE_REGS because the corresponding LDT
- entry was invalidated by the reproducer. "
-
-Jan took a look at the preliminary patch and came up a fix that solves
-this problem:
-
-"This code gets called after all registers other than those handled by
-IRET got already restored, hence a null selector in %ds or a non-null
-one that got loaded from a code or read-only data descriptor would
-cause a kernel mode fault (with the potential of crashing the kernel
-as a whole, if panic_on_oops is set)."
-
-The way to fix this is to realize that the we can only relay on the
-registers that IRET restores. The two that are guaranteed are the
-%cs and %ss as they are always fixed GDT selectors. Also they are
-inaccessible from user mode - so they cannot be altered. This is
-the approach taken in this patch.
-
-Another alternative option suggested by Jan would be to relay on
-the subtle realization that using the %ebp or %esp relative references uses
-the %ss segment.  In which case we could switch from using %eax to %ebp and
-would not need the %ss over-rides. That would also require one extra
-instruction to compensate for the one place where the register is used
-as scaled index. However Andrew pointed out that is too subtle and if
-further work was to be done in this code-path it could escape folks attention
-and lead to accidents.
-
-Reviewed-by: Petr Matousek <pmatouse@redhat.com>
-Reported-by: Petr Matousek <pmatouse@redhat.com>
-Reviewed-by: Andrew Cooper <andrew.cooper3@citrix.com>
-Signed-off-by: Jan Beulich <jbeulich@suse.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: Stephen Hemminger <stephen@networkplumber.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/x86/xen/xen-asm_32.S | 14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
+ net/bridge/br_stp_bpdu.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/arch/x86/xen/xen-asm_32.S b/arch/x86/xen/xen-asm_32.S
-index f9643fc..33ca6e4 100644
---- a/arch/x86/xen/xen-asm_32.S
-+++ b/arch/x86/xen/xen-asm_32.S
-@@ -89,11 +89,11 @@ ENTRY(xen_iret)
- 	 */
- #ifdef CONFIG_SMP
- 	GET_THREAD_INFO(%eax)
--	movl TI_cpu(%eax), %eax
--	movl __per_cpu_offset(,%eax,4), %eax
--	mov xen_vcpu(%eax), %eax
-+	movl %ss:TI_cpu(%eax), %eax
-+	movl %ss:__per_cpu_offset(,%eax,4), %eax
-+	mov %ss:xen_vcpu(%eax), %eax
- #else
--	movl xen_vcpu, %eax
-+	movl %ss:xen_vcpu, %eax
- #endif
+diff --git a/net/bridge/br_stp_bpdu.c b/net/bridge/br_stp_bpdu.c
+index fd30a60..a8aa2d5 100644
+--- a/net/bridge/br_stp_bpdu.c
++++ b/net/bridge/br_stp_bpdu.c
+@@ -16,6 +16,7 @@
+ #include <linux/etherdevice.h>
+ #include <linux/llc.h>
+ #include <linux/slab.h>
++#include <linux/pkt_sched.h>
+ #include <net/net_namespace.h>
+ #include <net/llc.h>
+ #include <net/llc_pdu.h>
+@@ -40,6 +41,7 @@ static void br_send_bpdu(struct net_bridge_port *p,
  
- 	/* check IF state we're restoring */
-@@ -106,11 +106,11 @@ ENTRY(xen_iret)
- 	 * resuming the code, so we don't have to be worried about
- 	 * being preempted to another CPU.
- 	 */
--	setz XEN_vcpu_info_mask(%eax)
-+	setz %ss:XEN_vcpu_info_mask(%eax)
- xen_iret_start_crit:
+ 	skb->dev = p->dev;
+ 	skb->protocol = htons(ETH_P_802_2);
++	skb->priority = TC_PRIO_CONTROL;
  
- 	/* check for unmasked and pending */
--	cmpw $0x0001, XEN_vcpu_info_pending(%eax)
-+	cmpw $0x0001, %ss:XEN_vcpu_info_pending(%eax)
- 
- 	/*
- 	 * If there's something pending, mask events again so we can
-@@ -118,7 +118,7 @@ xen_iret_start_crit:
- 	 * touch XEN_vcpu_info_mask.
- 	 */
- 	jne 1f
--	movb $1, XEN_vcpu_info_mask(%eax)
-+	movb $1, %ss:XEN_vcpu_info_mask(%eax)
- 
- 1:	popl %eax
- 
+ 	skb_reserve(skb, LLC_RESERVE);
+ 	memcpy(__skb_put(skb, length), data, length);
 -- 
 1.8.1.2
 
