@@ -1,70 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750992Ab3B1FWn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 00:22:43 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:46042 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750723Ab3B1FWm convert rfc822-to-8bit (ORCPT
+	id S1751324Ab3B1FW5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 00:22:57 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:42044 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751127Ab3B1FWw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 00:22:42 -0500
-From: "J, KEERTHY" <j-keerthy@ti.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: "broonie@opensource.wolfsonmicro.com" 
-	<broonie@opensource.wolfsonmicro.com>,
-        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>
-Subject: RE: [PATCH 3/4] regulator: palmas: Removing duplicated code
-Thread-Topic: [PATCH 3/4] regulator: palmas: Removing duplicated code
-Thread-Index: AQHODZbzlruKrwrzB0+4blbrifIXF5iNuv4AgAEPVaA=
-Date: Thu, 28 Feb 2013 05:22:30 +0000
-Message-ID: <DC88CAD03C0052499C1907B327FC63229BCD0A@DBDE01.ent.ti.com>
-References: <1361164446-3216-1-git-send-email-j-keerthy@ti.com>
- <512E51E4.902@wwwdotorg.org>
-In-Reply-To: <512E51E4.902@wwwdotorg.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.159.88]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 28 Feb 2013 00:22:52 -0500
+X-AuditID: 9c930179-b7b61ae000004061-f9-512ee9a9ec2c
+Date: Thu, 28 Feb 2013 14:22:48 +0900
+From: Kyungsik Lee <kyungsik.lee@lge.com>
+To: David Sterba <dsterba@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Michal Marek <mmarek@suse.cz>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-kbuild@vger.kernel.org, x86@kernel.org,
+        celinux-dev@lists.celinuxforum.org, Nicolas Pitre <nico@fluxnic.net>,
+        Nitin Gupta <nitingupta910@gmail.com>,
+        "Markus F.X.J. Oberhumer" <markus@oberhumer.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Joe Millenbach <jmillenbach@gmail.com>,
+        Richard Cochran <richardcochran@gmail.com>,
+        Egon Alter <egon.alter@gmx.net>, hyojun.im@lge.com, chan.jeong@lge.com,
+        raphael.andy.lee@gmail.com
+Subject: Re: [RFC PATCH v2 2/4] lib: Add support for LZ4-compressed kernel
+Message-ID: <20130228052248.GA15148@Corona>
+References: <1361859870-15751-1-git-send-email-kyungsik.lee@lge.com>
+ <1361859870-15751-3-git-send-email-kyungsik.lee@lge.com>
+ <20130226140051.GX27541@twin.jikos.cz>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130226140051.GX27541@twin.jikos.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Stephen,
-
-> -----Original Message-----
-> From: Stephen Warren [mailto:swarren@wwwdotorg.org]
-> Sent: Thursday, February 28, 2013 12:05 AM
-> To: J, KEERTHY
-> Cc: broonie@opensource.wolfsonmicro.com; lgirdwood@gmail.com; linux-
-> kernel@vger.kernel.org; gg@slimlogic.co.uk
-> Subject: Re: [PATCH 3/4] regulator: palmas: Removing duplicated code
+On Tue, Feb 26, 2013 at 03:00:51PM +0100, David Sterba wrote:
+> On Tue, Feb 26, 2013 at 03:24:28PM +0900, Kyungsik Lee wrote:
+> > +config KERNEL_LZ4
+> > +	bool "LZ4"
+> > +	depends on HAVE_KERNEL_LZ4
+> > +	help
+> > +	  Its compression ratio is worse than LZO. The size of the kernel
+> > +	  is about 8% bigger than LZO. But the decompression speed is
+> > +	  faster than LZO.
+> > +
 > 
-> On 02/17/2013 10:14 PM, J Keerthy wrote:
-> > Removing duplicate assignment in the existing code.
-> ...
-> > diff --git a/drivers/regulator/palmas-regulator.c
-> > b/drivers/regulator/palmas-regulator.c
-> ...
-> > @@ -566,11 +566,6 @@ static void palmas_dt_to_pdata(struct device
-> *dev,
-> >  			pdata->reg_init[idx]->mode_sleep = prop;
-> >
-> >  		ret = of_property_read_u32(palmas_matches[idx].of_node,
-> > -				"ti,warm_reset", &prop);
-> > -		if (!ret)
-> > -			pdata->reg_init[idx]->warm_reset = prop;
-> > -
-> > -		ret = of_property_read_u32(palmas_matches[idx].of_node,
+> Can you please add a sentence what lz4 actually is before you start
+> comparing it with the current competitor(s)?
+Yes, I will update it.
+
+> > --- /dev/null
+> > +++ b/lib/decompress_unlz4.c
+> > @@ -0,0 +1,190 @@
+> > +#define LZ4_CHUNK_SIZE (8<<20)
 > 
-> Can you point out where the duplicate of that is; I don't see any other
-> assignment to warm_reset.
+> Please use a less cryptic way of representing a value of 8 MB. Also,
+> this is a hardcoded value that must be used on the compressor side. It's
+> an upper limit, so anything below 8MB does not break decompresssion, but
+> this must be somehow checked or saved along in the binary stream. You
+> seem to use the lz4demo.c on the userspace side for compression, but
+> this is not a standard tool nor the output format is well-defined or
+> stabilized.
+Yes, It will be easy to parse and extract the meta information required
+for the kernel decompressor if output format is well-defined and
+standardized.
 
-As pointed out by Graeme this is already fixed.
+> For proper use I would like to see a commandline tool similar to
+> gzip/bzip2/lzop that can be packaged and shipped by distros, and the
+> output format defintion.
+> 
+> Yann has some ideas for the format
+> http://fastcompression.blogspot.cz/2012/04/file-container-format-for-lz4.html
+Actually, I would like to use a packaged tool by distros too.
+lz4demo is what I use for compressing the kernel so far.
+I name it lz4 in the patch.
 
-Regards,
-Keerthy
+> For kernel, the minimum of meta information is total compressed length,
+> total uncompressed length and chunk size. I don't know if the first two
+> aren't stored elsewhere in the generic kernel image headers, but chunk
+> size must be specified.
+Right, Currently the chunk size used in the kernel decompressor is the same
+as defined in lz4demo but it should have been provided as meta
+information.
+
+Thanks,
+Kyungsik
