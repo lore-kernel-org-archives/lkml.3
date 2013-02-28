@@ -1,178 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754497Ab3B1Ixs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 03:53:48 -0500
-Received: from pegase2.c-s.fr ([93.17.235.10]:46631 "EHLO mailhub2.si.c-s.fr"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754173Ab3B1Ixn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 03:53:43 -0500
-Date: Thu, 28 Feb 2013 09:52:22 +0100
-Message-Id: <201302280852.r1S8qMYu003742@localhost.localdomain>
-From: Christophe Leroy <christophe.leroy@c-s.fr>
-To: Wim Van Sebroeck <wim@iguana.be>
-CC: linux-kernel@vger.kernel.org, linux-watchdog@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org
-Subject: [PATCH v2] Enhanced support for MPC8xx/8xxx watchdog
+	id S1754879Ab3B1IyH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 03:54:07 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:16418 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754714Ab3B1IyC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Feb 2013 03:54:02 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Thu, 28 Feb 2013 00:53:12 -0800
+Message-ID: <512F1ADF.90906@nvidia.com>
+Date: Thu, 28 Feb 2013 14:22:47 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+MIME-Version: 1.0
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: J Keerthy <j-keerthy@ti.com>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "rob@landley.net" <rob@landley.net>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "b-cousson@ti.com" <b-cousson@ti.com>,
+        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>
+Subject: Re: [PATCH 1/4] documentation: add palmas dts definition
+References: <1361164283-3133-1-git-send-email-j-keerthy@ti.com> <512E5144.9020105@wwwdotorg.org>
+In-Reply-To: <512E5144.9020105@wwwdotorg.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch modifies the behaviour of the MPC8xx/8xxx watchdog. On the MPC8xx,
-at 133Mhz, the maximum timeout of the watchdog timer is 1s, which means it must
-be pinged twice a second. This is not in line with the Linux watchdog concept
-which is based on a default watchdog timeout around 60s.
-This patch introduces an intermediate layer between the CPU and the userspace.
-The kernel pings the watchdog at the required frequency at the condition that
-userspace tools refresh it regularly.
-Existing parameter 'timeout' is renamed 'hw_time'.
-The new parameter 'timeout' allows to set up the userspace timeout.
-The driver also implements the WDIOC_SETTIMEOUT ioctl.
+On Thursday 28 February 2013 12:02 AM, Stephen Warren wrote:
+> On 02/17/2013 10:11 PM, J Keerthy wrote:
+> +- interrupt-parent : The parent interrupt controller.
+> +
+> +Optional node:
+> +- Child nodes contain in the palmas. The palmas family is made of several
+> +  variants that support a different number of features.
+> +  The child nodes will thus depend of the capability of the variant.
+> Are there DT bindings for those child nodes anywhere?
+>
+> Representing each internal component as a separate DT node feels a
+> little like designing the DT bindings to model the Linux-internal MFD
+> structure. DT bindings should be driven by the HW design and OS-agnostic.
+>
+>  From a DT perspective, is there any need at all to create a separate DT
+> node for each component? This would only be needed or useful if the
+> child IP blocks (and hence DT bindings for those blocks) could be
+> re-used in other top-level devices that aren't represented by this
+> top-level ti,palmas DT binding. Are the HW IP blocks here re-used
+> anywhere, or will they be?
 
-Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
 
-diff -ur linux-3.7.9/drivers/watchdog/mpc8xxx_wdt.c linux/drivers/watchdog/mpc8xxx_wdt.c
---- linux-3.7.9/drivers/watchdog/mpc8xxx_wdt.c	2013-02-17 19:53:32.000000000 +0100
-+++ linux/drivers/watchdog/mpc8xxx_wdt.c	2013-02-27 16:00:07.000000000 +0100
-@@ -52,10 +52,17 @@
- static struct mpc8xxx_wdt __iomem *wd_base;
- static int mpc8xxx_wdt_init_late(void);
- 
--static u16 timeout = 0xffff;
--module_param(timeout, ushort, 0);
-+#define WD_TIMO 10			/* Default timeout = 10 seconds */
-+
-+static uint timeout = WD_TIMO;
-+module_param(timeout, uint, 0);
- MODULE_PARM_DESC(timeout,
--	"Watchdog timeout in ticks. (0<timeout<65536, default=65535)");
-+	"Watchdog SW timeout in seconds. (0 < timeout < 65536s, default = "
-+				__MODULE_STRING(WD_TIMO) "s)");
-+static u16 hw_timo = 0xffff;
-+module_param(hw_timo, ushort, 0);
-+MODULE_PARM_DESC(hw_timo,
-+	"Watchdog HW timeout in ticks. (0 < hw_timo < 65536, default = 65535)");
- 
- static bool reset = 1;
- module_param(reset, bool, 0);
-@@ -72,10 +79,12 @@
-  * to 0
-  */
- static int prescale = 1;
--static unsigned int timeout_sec;
-+static unsigned int hw_timo_sec;
- 
-+static int wdt_auto = 1;
- static unsigned long wdt_is_open;
- static DEFINE_SPINLOCK(wdt_spinlock);
-+static unsigned long wdt_last_ping;
- 
- static void mpc8xxx_wdt_keepalive(void)
- {
-@@ -91,9 +100,20 @@
- 
- static void mpc8xxx_wdt_timer_ping(unsigned long arg)
- {
--	mpc8xxx_wdt_keepalive();
--	/* We're pinging it twice faster than needed, just to be sure. */
--	mod_timer(&wdt_timer, jiffies + HZ * timeout_sec / 2);
-+	if (wdt_auto)
-+		wdt_last_ping = jiffies;
-+
-+	if (jiffies - wdt_last_ping <= timeout * HZ) {
-+		mpc8xxx_wdt_keepalive();
-+		/* We're pinging it twice faster than needed, to be sure. */
-+		mod_timer(&wdt_timer, jiffies + HZ * hw_timo_sec / 2);
-+	}
-+}
-+
-+static void mpc8xxx_wdt_sw_keepalive(void)
-+{
-+	wdt_last_ping = jiffies;
-+	mpc8xxx_wdt_timer_ping(0);
- }
- 
- static void mpc8xxx_wdt_pr_warn(const char *msg)
-@@ -106,7 +126,7 @@
- 				 size_t count, loff_t *ppos)
- {
- 	if (count)
--		mpc8xxx_wdt_keepalive();
-+		mpc8xxx_wdt_sw_keepalive();
- 	return count;
- }
- 
-@@ -126,11 +146,11 @@
- 	if (reset)
- 		tmp |= SWCRR_SWRI;
- 
--	tmp |= timeout << 16;
-+	tmp |= hw_timo << 16;
- 
- 	out_be32(&wd_base->swcrr, tmp);
- 
--	del_timer_sync(&wdt_timer);
-+	wdt_auto = 0;
- 
- 	return nonseekable_open(inode, file);
- }
-@@ -138,7 +158,8 @@
- static int mpc8xxx_wdt_release(struct inode *inode, struct file *file)
- {
- 	if (!nowayout)
--		mpc8xxx_wdt_timer_ping(0);
-+		wdt_auto = 1;
-+
- 	else
- 		mpc8xxx_wdt_pr_warn("watchdog closed");
- 	clear_bit(0, &wdt_is_open);
-@@ -163,10 +184,12 @@
- 	case WDIOC_GETBOOTSTATUS:
- 		return put_user(0, p);
- 	case WDIOC_KEEPALIVE:
--		mpc8xxx_wdt_keepalive();
-+		mpc8xxx_wdt_sw_keepalive();
- 		return 0;
- 	case WDIOC_GETTIMEOUT:
--		return put_user(timeout_sec, p);
-+		return put_user(timeout, p);
-+	case WDIOC_SETTIMEOUT:
-+		return get_user(timeout, p);
- 	default:
- 		return -ENOTTY;
- 	}
-@@ -215,12 +238,14 @@
- 		ret = -ENOSYS;
- 		goto err_unmap;
- 	}
-+	if (enabled)
-+		hw_timo = in_be32(&wd_base->swcrr) >> 16;
- 
- 	/* Calculate the timeout in seconds */
- 	if (prescale)
--		timeout_sec = (timeout * wdt_type->prescaler) / freq;
-+		hw_timo_sec = (hw_timo * wdt_type->prescaler) / freq;
- 	else
--		timeout_sec = timeout / freq;
-+		hw_timo_sec = hw_timo / freq;
- 
- #ifdef MODULE
- 	ret = mpc8xxx_wdt_init_late();
-@@ -228,8 +253,8 @@
- 		goto err_unmap;
- #endif
- 
--	pr_info("WDT driver for MPC8xxx initialized. mode:%s timeout=%d (%d seconds)\n",
--		reset ? "reset" : "interrupt", timeout, timeout_sec);
-+	pr_info("WDT driver for MPC8xxx initialized. mode:%s timeout = %d (%d seconds)\n",
-+		reset ? "reset" : "interrupt", hw_timo, hw_timo_sec);
- 
- 	/*
- 	 * If the watchdog was previously enabled or we're running on
-@@ -273,6 +298,7 @@
- 		.compatible = "fsl,mpc823-wdt",
- 		.data = &(struct mpc8xxx_wdt_type) {
- 			.prescaler = 0x800,
-+			.hw_enabled = true,
- 		},
- 	},
- 	{},
+I dont think that child IP block can be used outside of the palma 
+although other mfd device may have same IP.
+
+The child driver very much used the palma's API for register access and 
+they can not be separated untill driver is write completely independent 
+of palmas API. Currently, child driver include the palma header, uses 
+palma mfd stcruture and plama's api for accessing registers.
+
+>> +    interrupt-controller;
+>> +    #interrupt-cells = <1>;
+>> +    interrupt-parent = <&gic>;
+>> +    #address-cells = <1>;
+>> +    #size-cells = <0>;
+>> +
+>> +	ti,mux-pad1 = <0x00>;
+>> +	ti,mux-pad2 = <0x00>;
+>> +	ti,power-ctrl = <0x03>;
+>> +
+>> +	palmas_pmic {
+> Just "pmic" seems simpler, although I dare say the node name isn't
+> really used for anything.
+
+Stephen,
+Just curios, why do we require the palma_pmic node at all, We can start 
+with regulator node directly. Is it not too much nested here?
+
+
+
+>
+> +
+> +    palmas_rtc {
+> +        compatible = "ti,palmas_rtc";
+> +        interrupts = <8 9>;
+> Are the interrupt outputs of the RTC fed directly to the GIC interrupt
+> mentioned in the top-level Palmas node, or do these interrupts feed into
+> a top-level IRQ controller in the Palmas device, which then feeds into
+> the external IRQ controller?
+
+The interrupt goes to the chip-internal irq, not to external of chip.  
+We have only one int line from chip which can be connected to processor/GIC.
+yes, interrupt parent need to be define here to get the proper interrupt 
+number.
