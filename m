@@ -1,77 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752760Ab3B1Wrd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 17:47:33 -0500
-Received: from mail-lb0-f175.google.com ([209.85.217.175]:45630 "EHLO
-	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751855Ab3B1Wrb convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 17:47:31 -0500
+	id S1752966Ab3B1WsT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 17:48:19 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:58723 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751855Ab3B1WsS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Feb 2013 17:48:18 -0500
+Date: Thu, 28 Feb 2013 23:48:06 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+X-X-Sender: jikos@twin.jikos.cz
+To: David Howells <dhowells@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, jwboyer@redhat.com,
+        pjones@redhat.com, vgoyal@redhat.com, mjg59@srcf.ucam.org,
+        keescook@chromium.org, keyrings@linux-nfs.org,
+        linux-kernel@vger.kernel.org, Greg KH <gregkh@linuxfoundation.org>,
+        Florian Weimer <fw@deneb.enyo.de>, Paolo Bonzini <pbonzini@redhat.com>
+Subject: Re: [GIT PULL] Load keys from signed PE binaries
+In-Reply-To: <30665.1361461678@warthog.procyon.org.uk>
+Message-ID: <alpine.LRH.2.00.1302282335500.2038@twin.jikos.cz>
+References: <30665.1361461678@warthog.procyon.org.uk>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <20130228233235.5f279117@endymion.delvare>
-References: <20130228110611.3ed77e92@endymion.delvare> <201302282312.51514.PeterHuewe@gmx.de>
- <20130228233235.5f279117@endymion.delvare>
-From: Kent Yoder <shpedoikal@gmail.com>
-Date: Thu, 28 Feb 2013 16:46:58 -0600
-Message-ID: <CAM0nabENksjYahD49cx_GnnxN6XbEROo7zgyqP8s33zhcZUYYg@mail.gmail.com>
-Subject: Re: [tpmdd-devel] [PATCH RESEND] char/tpm: Convert struct i2c_msg
- initialization to C99 format
-To: Jean Delvare <khali@linux-fr.org>
-Cc: =?ISO-8859-1?Q?Peter_H=FCwe?= <PeterHuewe@gmx.de>,
-        tpmdd-devel@lists.sourceforge.net, Kent Yoder <key@linux.vnet.ibm.com>,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 28, 2013 at 4:32 PM, Jean Delvare <khali@linux-fr.org> wrote:
-> On Thu, 28 Feb 2013 23:12:51 +0100, Peter Hüwe wrote:
->> thanks for resending.
->
-> You're welcome.
->
->> Am Donnerstag, 28. Februar 2013, 11:06:11 schrieb Jean Delvare:
->> > From: Shubhrajyoti Datta <omaplinuxkernel@gmail.com>
->> >
->> > Convert the struct i2c_msg initialization to C99 format. This makes
->> > maintaining and editing the code simpler. Also helps once other fields
->> > like transferred are added in future.
->> >
->> > Thanks to Julia Lawall for automating the conversion.
->> >
->> > Signed-off-by: Shubhrajyoti D <shubhrajyoti@ti.com>
->> > Acked-by: Peter Huewe <peter.huewe@infineon.com>
->> > Signed-off-by: Jean Delvare <khali@linux-fr.org>
->> > ---
->> > v2: removed zero initialization of flags.
->> >
->> > Patch already sent by Shubhrajyoti Datta on 2012-10-10.
->> >
->> >  drivers/char/tpm/tpm_i2c_infineon.c |   19 ++++++++++++++++---
->> >  1 file changed, 16 insertions(+), 3 deletions(-)
->>
->> As it was not yet applied I folded it into my patch
->> "Add support for new Infineon I2C TPM (SLB 9645 TT 1.2 I2C)"
->
-> I'd suggest not to. Mixing actual changes with cleanups is generally
-> discouraged.
+On Thu, 21 Feb 2013, David Howells wrote:
 
-  Yes, please don't do this.  Also because it makes it really
-confusing for me to figure out whether something has been applied or
-not and if I have the right people on the sign off.
+> The way we have come up with to get around this is to embed an X.509
+> certificate containing the key in a section called ".keylist" in an EFI PE
+> binary and then get the binary signed by Microsoft.  The key can then be passed
+> to the kernel by passing the signed binary:
+> 
+> 	keyctl padd asymmetric "" {ID of .system_keyring} <pekey.efi.signed
 
-  Peter, can you resend without it?  I'll have a new staging tree with
-everything up in the next day or two.
+Please let me take this back to square one for a very short moment.
+
+
+I completely fail to understand how your security model is dealing with 
+this scenario:
+
+- Mr. Evil Blackhat creates EFI PE binary from "int main() { return 42; }" 
+  (psuedo)code
+- Mr. Evil Blackhat puts his own key into .keylist section of this binary
+- Mr. Evil Blackhat goes through the $99 process of having this binary 
+  signed by Microsoft. They don't have a slightest reason not to sign it, 
+  as the binary obviously can't be used to run backdoored Windows
+- Mr. Evil Blackhat then uses keyctl to process this signed binary
+- Mr. Evil Blackhat modprobes i_own_your_ring0.ko which is signed by 
+  his key, and he instantly has his code running in your SecureBoot 
+  environment
+
+
+Let me formulate my point more clearly -- Microsoft very likely going to 
+sign hello world EFI PE binary, no matter the contents of .keylist 
+section, as they don't give a damn about this section, as it has zero 
+semantic value to them, right?
+
+They sign the binary. By signing the binary, they are *NOT* establishing 
+cryptographic chain of trust to the key stored in .keylist, but your 
+patchset seems to imply so.
+
+What am I missing?
 
 Thanks,
-Kent
 
-> --
-> Jean Delvare
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+-- 
+Jiri Kosina
+SUSE Labs
+
