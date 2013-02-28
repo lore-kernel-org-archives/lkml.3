@@ -1,51 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753742Ab3B1UDG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 15:03:06 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:64923 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752599Ab3B1UDD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752954Ab3B1UDD (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 28 Feb 2013 15:03:03 -0500
-Date: Thu, 28 Feb 2013 21:01:17 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Anton Arapov <anton@redhat.com>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, Josh Stone <jistone@redhat.com>,
-        Frank Eigler <fche@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-Subject: Re: [RFC PATCH v3 3/6] uretprobes: generalize xol_get_insn_slot()
-Message-ID: <20130228200117.GA9074@redhat.com>
-References: <1362049215-5780-1-git-send-email-anton@redhat.com> <1362049215-5780-4-git-send-email-anton@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1362049215-5780-4-git-send-email-anton@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Received: from mail-vb0-f43.google.com ([209.85.212.43]:58648 "EHLO
+	mail-vb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752599Ab3B1UC7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Feb 2013 15:02:59 -0500
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH 1/2] irq: Remove IRQ_EXIT_OFFSET workaround
+Date: Thu, 28 Feb 2013 21:02:46 +0100
+Message-Id: <1362081767-30684-2-git-send-email-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1362081767-30684-1-git-send-email-fweisbec@gmail.com>
+References: <1362081767-30684-1-git-send-email-fweisbec@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Anton, I'll try to read this series asap. Just one note,
+The IRQ_EXIT_OFFSET trick was used to make sure the irq
+doesn't get preempted after we substract the HARDIRQ_OFFSET
+until we are entirely done with any code in irq_exit().
 
-On 02/28, Anton Arapov wrote:
->
->   Generalize xol_take_insn_slot() to enable more consumers of the
-> function, e.g. trampoline implementation for return probes.
+This workaround was necessary because some archs may call
+irq_exit() with irqs enabled and there is still some code
+in the end of this function that is not covered by the
+HARDIRQ_OFFSET but want to stay non-preemptible.
 
-Yes, this is can work too.
+Now that irq are always disabled in irq_exit(), the whole code
+is guaranteed not to be preempted. We can thus remove this hack.
 
-But I guess you misunderstood me, or I missed something...
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+---
+ include/linux/hardirq.h |    2 --
+ kernel/softirq.c        |    3 +--
+ 2 files changed, 1 insertions(+), 4 deletions(-)
 
-Why do you need xol_area->rp_trampoline_vaddr at all? From the very
-beginning I am trying to suggest to use the first slot for trampoline:
-
-	Or. Perhaps even better, do not add this helper at all. xol_alloc_area()
-	could reserve the first slot/bit for trampoline. And note that in this
-	case we do not need xol_area->rp_trampoline_vaddr, it is always equal
-	to xol_area->vaddr.
-
-Doesn't this look simpler?
-
-Oleg.
+diff --git a/include/linux/hardirq.h b/include/linux/hardirq.h
+index 29eb805..c1d6555 100644
+--- a/include/linux/hardirq.h
++++ b/include/linux/hardirq.h
+@@ -118,10 +118,8 @@
+ 
+ #ifdef CONFIG_PREEMPT_COUNT
+ # define preemptible()	(preempt_count() == 0 && !irqs_disabled())
+-# define IRQ_EXIT_OFFSET (HARDIRQ_OFFSET-1)
+ #else
+ # define preemptible()	0
+-# define IRQ_EXIT_OFFSET HARDIRQ_OFFSET
+ #endif
+ 
+ #if defined(CONFIG_SMP) || defined(CONFIG_GENERIC_HARDIRQS)
+diff --git a/kernel/softirq.c b/kernel/softirq.c
+index 24a921b..f42ff97 100644
+--- a/kernel/softirq.c
++++ b/kernel/softirq.c
+@@ -343,7 +343,7 @@ void irq_exit(void)
+ 
+ 	account_irq_exit_time(current);
+ 	trace_hardirq_exit();
+-	sub_preempt_count(IRQ_EXIT_OFFSET);
++	sub_preempt_count(HARDIRQ_OFFSET);
+ 	if (!in_interrupt() && local_softirq_pending())
+ 		invoke_softirq();
+ 
+@@ -353,7 +353,6 @@ void irq_exit(void)
+ 		tick_nohz_irq_exit();
+ #endif
+ 	rcu_irq_exit();
+-	sched_preempt_enable_no_resched();
+ #ifndef __ARCH_IRQ_EXIT_IRQS_DISABLED
+ 	local_irq_restore(flags);
+ #endif
+-- 
+1.7.5.4
 
