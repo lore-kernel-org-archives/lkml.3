@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758646Ab3B1Os6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 09:48:58 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:42240 "EHLO
+	id S932405Ab3B1Osp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 09:48:45 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:42217 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758486Ab3B1Osu (ORCPT
+	with ESMTP id S932175Ab3B1Osl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 09:48:50 -0500
+	Thu, 28 Feb 2013 09:48:41 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Richard Weinberger <richard@nod.at>, akpm@linux-foundation.org,
-        paul.gortmaker@windriver.com, davej@redhat.com, keescook@chromium.org,
-        ebiederm@xmission.com, Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 065/139] futex: Revert "futex: Mark get_robust_list as deprecated"
-Date: Thu, 28 Feb 2013 14:43:35 +0000
-Message-Id: <1362062689-2567-66-git-send-email-luis.henriques@canonical.com>
+Cc: Pawel Moll <mail@pawelmoll.com>, Takashi Iwai <tiwai@suse.de>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 070/139] ALSA: usb: Fix Processing Unit Descriptor parsers
+Date: Thu, 28 Feb 2013 14:43:40 +0000
+Message-Id: <1362062689-2567-71-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1362062689-2567-1-git-send-email-luis.henriques@canonical.com>
 References: <1362062689-2567-1-git-send-email-luis.henriques@canonical.com>
@@ -30,56 +27,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: Pawel Moll <mail@pawelmoll.com>
 
-commit fe2b05f7ca9f906be61dced5489f63b8b4d7c770 upstream.
+commit b531f81b0d70ffbe8d70500512483227cc532608 upstream.
 
-This reverts commit ec0c4274e33c0373e476b73e01995c53128f1257.
+Commit 99fc86450c439039d2ef88d06b222fd51a779176 "ALSA: usb-mixer:
+parse descriptors with structs" introduced a set of useful parsers
+for descriptors. Unfortunately the parses for the Processing Unit
+Descriptor came with a very subtle bug...
 
-get_robust_list() is in use and a removal would break existing user
-space. With the permission checks in place it's not longer a security
-hole. Remove the deprecation warnings.
+Functions uac_processing_unit_iProcessing() and
+uac_processing_unit_specific() were indexing the baSourceID array
+forgetting the fields before the iProcessing and process-specific
+descriptors.
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: Richard Weinberger <richard@nod.at>
-Cc: akpm@linux-foundation.org
-Cc: paul.gortmaker@windriver.com
-Cc: davej@redhat.com
-Cc: keescook@chromium.org
-Cc: ebiederm@xmission.com
+The problem was observed with Sound Blaster Extigy mixer,
+where nNrModes in Up/Down-mix Processing Unit Descriptor
+was accessed at offset 10 of the descriptor (value 0)
+instead of offset 15 (value 7). In result the resulting
+control had interesting limit values:
+
+Simple mixer control 'Channel Routing Mode Select',0
+  Capabilities: volume volume-joined penum
+  Playback channels: Mono
+  Capture channels: Mono
+  Limits: 0 - -1
+  Mono: -1 [100%]
+
+Fixed by starting from the bmControls, which was calculated
+correctly, instead of baSourceID.
+
+Now the mentioned control is fine:
+
+Simple mixer control 'Channel Routing Mode Select',0
+  Capabilities: volume volume-joined penum
+  Playback channels: Mono
+  Capture channels: Mono
+  Limits: 0 - 6
+  Mono: 0 [0%]
+
+Signed-off-by: Pawel Moll <mail@pawelmoll.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+[ luis: include/uapi/linux/usb/audio.h -> include/linux/usb/audio.h,
+  adjust context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- kernel/futex.c        | 2 --
- kernel/futex_compat.c | 2 --
- 2 files changed, 4 deletions(-)
+ include/linux/usb/audio.h | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/futex.c b/kernel/futex.c
-index 19eb089..8879430 100644
---- a/kernel/futex.c
-+++ b/kernel/futex.c
-@@ -2471,8 +2471,6 @@ SYSCALL_DEFINE3(get_robust_list, int, pid,
- 	if (!futex_cmpxchg_enabled)
- 		return -ENOSYS;
+diff --git a/include/linux/usb/audio.h b/include/linux/usb/audio.h
+index a54b825..6f8b026 100644
+--- a/include/linux/usb/audio.h
++++ b/include/linux/usb/audio.h
+@@ -384,14 +384,16 @@ static inline __u8 uac_processing_unit_iProcessing(struct uac_processing_unit_de
+ 						   int protocol)
+ {
+ 	__u8 control_size = uac_processing_unit_bControlSize(desc, protocol);
+-	return desc->baSourceID[desc->bNrInPins + control_size];
++	return *(uac_processing_unit_bmControls(desc, protocol)
++			+ control_size);
+ }
  
--	WARN_ONCE(1, "deprecated: get_robust_list will be deleted in 2013.\n");
--
- 	rcu_read_lock();
+ static inline __u8 *uac_processing_unit_specific(struct uac_processing_unit_descriptor *desc,
+ 						 int protocol)
+ {
+ 	__u8 control_size = uac_processing_unit_bControlSize(desc, protocol);
+-	return &desc->baSourceID[desc->bNrInPins + control_size + 1];
++	return uac_processing_unit_bmControls(desc, protocol)
++			+ control_size + 1;
+ }
  
- 	ret = -ESRCH;
-diff --git a/kernel/futex_compat.c b/kernel/futex_compat.c
-index 83e368b..a9642d5 100644
---- a/kernel/futex_compat.c
-+++ b/kernel/futex_compat.c
-@@ -142,8 +142,6 @@ compat_sys_get_robust_list(int pid, compat_uptr_t __user *head_ptr,
- 	if (!futex_cmpxchg_enabled)
- 		return -ENOSYS;
- 
--	WARN_ONCE(1, "deprecated: get_robust_list will be deleted in 2013.\n");
--
- 	rcu_read_lock();
- 
- 	ret = -ESRCH;
+ /* 4.5.2 Class-Specific AS Interface Descriptor */
 -- 
 1.8.1.2
 
