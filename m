@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752954Ab3B1UDD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 15:03:03 -0500
-Received: from mail-vb0-f43.google.com ([209.85.212.43]:58648 "EHLO
-	mail-vb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752599Ab3B1UC7 (ORCPT
+	id S1755305Ab3B1UDi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 15:03:38 -0500
+Received: from mail-ve0-f170.google.com ([209.85.128.170]:64648 "EHLO
+	mail-ve0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752616Ab3B1UDB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 15:02:59 -0500
+	Thu, 28 Feb 2013 15:03:01 -0500
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>
 Cc: LKML <linux-kernel@vger.kernel.org>,
@@ -14,9 +14,9 @@ Cc: LKML <linux-kernel@vger.kernel.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Peter Zijlstra <peterz@infradead.org>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH 1/2] irq: Remove IRQ_EXIT_OFFSET workaround
-Date: Thu, 28 Feb 2013 21:02:46 +0100
-Message-Id: <1362081767-30684-2-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 2/2] irq: Don't re-enable interrupts at the end of irq_exit
+Date: Thu, 28 Feb 2013 21:02:47 +0100
+Message-Id: <1362081767-30684-3-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1362081767-30684-1-git-send-email-fweisbec@gmail.com>
 References: <1362081767-30684-1-git-send-email-fweisbec@gmail.com>
@@ -24,18 +24,17 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The IRQ_EXIT_OFFSET trick was used to make sure the irq
-doesn't get preempted after we substract the HARDIRQ_OFFSET
-until we are entirely done with any code in irq_exit().
+Commit 74eed0163d0def3fce27228d9ccf3d36e207b286
+"irq: Ensure irq_exit() code runs with interrupts disabled"
+restore interrupts flags in the end of irq_exit() for archs
+that don't define __ARCH_IRQ_EXIT_IRQS_DISABLED.
 
-This workaround was necessary because some archs may call
-irq_exit() with irqs enabled and there is still some code
-in the end of this function that is not covered by the
-HARDIRQ_OFFSET but want to stay non-preemptible.
+However always returning from irq_exit() with interrupts
+disabled should not be a problem for these archs. Prior to
+this commit this was already happening anytime we processed
+pending softirqs anyway.
 
-Now that irq are always disabled in irq_exit(), the whole code
-is guaranteed not to be preempted. We can thus remove this hack.
-
+Suggested-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>
@@ -43,46 +42,34 @@ Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- include/linux/hardirq.h |    2 --
- kernel/softirq.c        |    3 +--
- 2 files changed, 1 insertions(+), 4 deletions(-)
+ kernel/softirq.c |    7 +------
+ 1 files changed, 1 insertions(+), 6 deletions(-)
 
-diff --git a/include/linux/hardirq.h b/include/linux/hardirq.h
-index 29eb805..c1d6555 100644
---- a/include/linux/hardirq.h
-+++ b/include/linux/hardirq.h
-@@ -118,10 +118,8 @@
- 
- #ifdef CONFIG_PREEMPT_COUNT
- # define preemptible()	(preempt_count() == 0 && !irqs_disabled())
--# define IRQ_EXIT_OFFSET (HARDIRQ_OFFSET-1)
- #else
- # define preemptible()	0
--# define IRQ_EXIT_OFFSET HARDIRQ_OFFSET
- #endif
- 
- #if defined(CONFIG_SMP) || defined(CONFIG_GENERIC_HARDIRQS)
 diff --git a/kernel/softirq.c b/kernel/softirq.c
-index 24a921b..f42ff97 100644
+index f42ff97..dce38fa 100644
 --- a/kernel/softirq.c
 +++ b/kernel/softirq.c
-@@ -343,7 +343,7 @@ void irq_exit(void)
- 
- 	account_irq_exit_time(current);
- 	trace_hardirq_exit();
--	sub_preempt_count(IRQ_EXIT_OFFSET);
-+	sub_preempt_count(HARDIRQ_OFFSET);
- 	if (!in_interrupt() && local_softirq_pending())
- 		invoke_softirq();
- 
-@@ -353,7 +353,6 @@ void irq_exit(void)
+@@ -334,9 +334,7 @@ static inline void invoke_softirq(void)
+ void irq_exit(void)
+ {
+ #ifndef __ARCH_IRQ_EXIT_IRQS_DISABLED
+-	unsigned long flags;
+-
+-	local_irq_save(flags);
++	local_irq_disable();
+ #else
+ 	WARN_ON_ONCE(!irqs_disabled());
+ #endif
+@@ -353,9 +351,6 @@ void irq_exit(void)
  		tick_nohz_irq_exit();
  #endif
  	rcu_irq_exit();
--	sched_preempt_enable_no_resched();
- #ifndef __ARCH_IRQ_EXIT_IRQS_DISABLED
- 	local_irq_restore(flags);
- #endif
+-#ifndef __ARCH_IRQ_EXIT_IRQS_DISABLED
+-	local_irq_restore(flags);
+-#endif
+ }
+ 
+ /*
 -- 
 1.7.5.4
 
