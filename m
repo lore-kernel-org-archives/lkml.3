@@ -1,97 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756263Ab3B1PwH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 10:52:07 -0500
-Received: from gate.crashing.org ([63.228.1.57]:41770 "EHLO gate.crashing.org"
+	id S1756464Ab3B1PzZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 10:55:25 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:38348 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754662Ab3B1PwD convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 10:52:03 -0500
-Subject: Re: [PATCH 1/6 v8] iommu/fsl: Store iommu domain information pointer in archdata.
-Mime-Version: 1.0 (Apple Message framework v1278)
-Content-Type: text/plain; charset=us-ascii
-From: Kumar Gala <galak@kernel.crashing.org>
-In-Reply-To: <C5ECD7A89D1DC44195F34B25E172658D3C26F6@039-SN2MPN1-013.039d.mgd.msft.net>
-Date: Thu, 28 Feb 2013 09:51:23 -0600
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        iommu@lists.linux-foundation.org,
-        "linuxppc-dev@lists.ozlabs.org list" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org list" <linux-kernel@vger.kernel.org>,
-        Wood Scott-B07421 <B07421@freescale.com>,
-        Yoder Stuart-B08248 <B08248@freescale.com>,
-        Joerg Roedel <joro@8bytes.org>, Paul Mackerras <paulus@samba.org>,
-        Alexey Kardashevskiy <aik@ozlabs.ru>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <BAB98EA5-5324-4FB2-97C2-A28A96C569DC@kernel.crashing.org>
-References: <1361191939-21260-1-git-send-email-Varun.Sethi@freescale.com> <1361191939-21260-2-git-send-email-Varun.Sethi@freescale.com> <20130227113045.GH26252@8bytes.org> <C5ECD7A89D1DC44195F34B25E172658D3C26F6@039-SN2MPN1-013.039d.mgd.msft.net>
-To: Sethi Varun-B16395 <B16395@freescale.com>
-X-Mailer: Apple Mail (2.1278)
+	id S1753956Ab3B1PzY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Feb 2013 10:55:24 -0500
+Message-ID: <512F7D88.4090703@zytor.com>
+Date: Thu, 28 Feb 2013 07:53:44 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130219 Thunderbird/17.0.3
+MIME-Version: 1.0
+To: Borislav Petkov <bp@alien8.de>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>, mingo@redhat.com,
+        tglx@linutronix.de, xen-devel@lists.xen.org,
+        linux-kernel@vger.kernel.org, samu.kallio@aberdeencloud.com,
+        kraman@redhat.com, jwboyer@redhat.com
+Subject: Re: Is: x86: mm: Fix vmalloc_fault oops during lazy MMU updates Was:
+ Re: [PATCH] mm/x86: Flush lazy MMU when DEBUG_PAGEALLOC is set
+References: <91983d94-7b7d-4a0b-9470-e7cd823ba139@default> <512E8B41.8000504@zytor.com> <20130227230009.GA32465@kroah.com> <512E91B7.6060102@zytor.com> <20130228142910.GA32354@phenom.dumpdata.com> <20130228153846.GA9782@pd.tnic>
+In-Reply-To: <20130228153846.GA9782@pd.tnic>
+X-Enigmail-Version: 1.5
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On Feb 27, 2013, at 6:04 AM, Sethi Varun-B16395 wrote:
-
-> Hi Kumar,Ben,
-> I am implementing the Freescale PAMU (IOMMU) driver using the Linux IOMMU API. In this particular patch, I have added a new field to dev_archdata structure to store the dma domain information.
-> This field is updated whenever we attach a device to an iommu domain.
+On 02/28/2013 07:38 AM, Borislav Petkov wrote:
+> On Thu, Feb 28, 2013 at 09:29:10AM -0500, Konrad Rzeszutek Wilk wrote:
+>> diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
+>> index fb674fd..4f7d793 100644
+>> --- a/arch/x86/mm/fault.c
+>> +++ b/arch/x86/mm/fault.c
+>> @@ -378,10 +378,12 @@ static noinline __kprobes int vmalloc_fault(unsigned long address)
+>>  	if (pgd_none(*pgd_ref))
+>>  		return -1;
+>>  
+>> -	if (pgd_none(*pgd))
+>> +	if (pgd_none(*pgd)) {
+>>  		set_pgd(pgd, *pgd_ref);
+>> -	else
+>> +		arch_flush_lazy_mmu_mode();
 > 
-> Regards
-> Varun
-
-Would be good to see if this overlaps with Alexey's work for IOMMU driver for powernv.
-
-- k
-
+> Do I understand it correctly that this would cost us a
+> "preempt_disable(); preempt_enable()" needlessly on baremetal when
+> running with CONFIG_PARAVIRT enabled?
 > 
->> -----Original Message-----
->> From: Joerg Roedel [mailto:joro@8bytes.org]
->> Sent: Wednesday, February 27, 2013 5:01 PM
->> To: Sethi Varun-B16395
->> Cc: iommu@lists.linux-foundation.org; linuxppc-dev@lists.ozlabs.org;
->> linux-kernel@vger.kernel.org; Wood Scott-B07421; Yoder Stuart-B08248
->> Subject: Re: [PATCH 1/6 v8] iommu/fsl: Store iommu domain information
->> pointer in archdata.
->> 
->> On Mon, Feb 18, 2013 at 06:22:14PM +0530, Varun Sethi wrote:
->>> Add a new field in the device (powerpc) archdata structure for storing
->>> iommu domain information pointer. This pointer is stored when the
->>> device is attached to a particular domain.
->>> 
->>> 
->>> Signed-off-by: Varun Sethi <Varun.Sethi@freescale.com>
->>> ---
->>> - no change.
->>> arch/powerpc/include/asm/device.h |    4 ++++
->>> 1 files changed, 4 insertions(+), 0 deletions(-)
->>> 
->>> diff --git a/arch/powerpc/include/asm/device.h
->>> b/arch/powerpc/include/asm/device.h
->>> index 77e97dd..6dc79fe 100644
->>> --- a/arch/powerpc/include/asm/device.h
->>> +++ b/arch/powerpc/include/asm/device.h
->>> @@ -28,6 +28,10 @@ struct dev_archdata {
->>> 		void		*iommu_table_base;
->>> 	} dma_data;
->>> 
->>> +	/* IOMMU domain information pointer. This would be set
->>> +	 * when this device is attached to an iommu_domain.
->>> +	 */
->>> +	void			*iommu_domain;
->> 
->> Please Cc the PowerPC Maintainers on this, so that they can have a look
->> at it. This also must be put this into an #ifdef CONFIG_IOMMU_API.
->> 
->> 
->> 	Joerg
->> 
->> 
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+
+OK, this is mind-boggingly crazy and these things that just drives me
+batty about PV.
+
+arch_flush_lazy_mmu_mode() involves a function call and preemption off
+*before it even tests for being a noop*.  On bare metal this function
+doesn't do anything, and cannot do anything.
+
+At the very least we should have an early filter for the **COMMON!**
+case that we are not on a PV platform.
+
+	-hpa
+
+
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
