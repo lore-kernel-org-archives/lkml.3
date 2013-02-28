@@ -1,110 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752560Ab3B1K50 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 05:57:26 -0500
-Received: from slimlogic.co.uk ([89.16.172.20]:33067 "EHLO slimlogic.co.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752440Ab3B1K5X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 05:57:23 -0500
-Message-ID: <512F3810.30109@slimlogic.co.uk>
-Date: Thu, 28 Feb 2013 10:57:20 +0000
-From: Graeme Gregory <gg@slimlogic.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130219 Thunderbird/17.0.3
-MIME-Version: 1.0
-To: Laxman Dewangan <ldewangan@nvidia.com>
-CC: Stephen Warren <swarren@wwwdotorg.org>, J Keerthy <j-keerthy@ti.com>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "rob@landley.net" <rob@landley.net>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "b-cousson@ti.com" <b-cousson@ti.com>
-Subject: Re: [PATCH 1/4] documentation: add palmas dts definition
-References: <1361164283-3133-1-git-send-email-j-keerthy@ti.com> <512E5144.9020105@wwwdotorg.org> <512F1ADF.90906@nvidia.com> <512F2A29.8080708@slimlogic.co.uk> <512F3118.6030806@nvidia.com>
-In-Reply-To: <512F3118.6030806@nvidia.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1752543Ab3B1K6v (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 05:58:51 -0500
+Received: from nat28.tlf.novell.com ([130.57.49.28]:38269 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751163Ab3B1K6u convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:1>);
+	Thu, 28 Feb 2013 05:58:50 -0500
+Message-Id: <512F467602000078000C1E0C@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.1 
+Date: Thu, 28 Feb 2013 10:58:46 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Roger Pau Monne" <roger.pau@citrix.com>
+Cc: <xen-devel@lists.xen.org>,
+        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH RFC 01/12] xen-blkback: don't store
+ dev_bus_addr
+References: <1362047335-26402-1-git-send-email-roger.pau@citrix.com>
+ <1362047335-26402-2-git-send-email-roger.pau@citrix.com>
+In-Reply-To: <1362047335-26402-2-git-send-email-roger.pau@citrix.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28/02/13 10:27, Laxman Dewangan wrote:
-> On Thursday 28 February 2013 03:28 PM, Graeme Gregory wrote:
->> On 28/02/13 08:52, Laxman Dewangan wrote:
->>> On Thursday 28 February 2013 12:02 AM, Stephen Warren wrote:
->>>> On 02/17/2013 10:11 PM, J Keerthy wrote:
->>>> +- interrupt-parent : The parent interrupt controller.
->>>> +
->>>> +Optional node:
->>>> +- Child nodes contain in the palmas. The palmas family is made of
->>>> several
->>>> +  variants that support a different number of features.
->>>> +  The child nodes will thus depend of the capability of the variant.
->>>> Are there DT bindings for those child nodes anywhere?
->>>>
->>>> Representing each internal component as a separate DT node feels a
->>>> little like designing the DT bindings to model the Linux-internal MFD
->>>> structure. DT bindings should be driven by the HW design and
->>>> OS-agnostic.
->>>>
->>>>   From a DT perspective, is there any need at all to create a
->>>> separate DT
->>>> node for each component? This would only be needed or useful if the
->>>> child IP blocks (and hence DT bindings for those blocks) could be
->>>> re-used in other top-level devices that aren't represented by this
->>>> top-level ti,palmas DT binding. Are the HW IP blocks here re-used
->>>> anywhere, or will they be?
->>>
->>> I dont think that child IP block can be used outside of the palma
->>> although other mfd device may have same IP.
->>>
->>> The child driver very much used the palma's API for register access
->>> and they can not be separated untill driver is write completely
->>> independent of palmas API. Currently, child driver include the palma
->>> header, uses palma mfd stcruture and plama's api for accessing
->>> registers.
->>>
->> I wonder why break good software principles of keeping data and code
->> localised? Just because there is no current case where a block is
->> re-used does not mean it shall not be so in the future. The original
->> information I got from TI when designing this was blocks may be re-used
->> in future products.
->>
->> This structure also makes it much neater when dealing with palmas
->> varients with different IP blocks which already exist.
->>
->> I also do not see an issue with working like the internal MFD structure,
->> I think it is a good design.
->
->
-> I did not get how the register access will be happen from IP driver.
-> suppose we have RTC driver which is common IP for device 1 and
-> device2. Device1 and device2 are registered as separate MFD driver
-> which has different set of chip structure and initialisation.
->
-> When I write the RTC register then how do  I call register access?
-> Currently RTC driver is saying device1_reg_read() or
-> device2_reg_read() etc on which register address passed along with dev
-> or chip structure.
->
-Since I originally wrote the driver it is now possible to get your
-parents regmap without knowledge of the parent.
+>>> On 28.02.13 at 11:28, Roger Pau Monne <roger.pau@citrix.com> wrote:
+> dev_bus_addr returned in the grant ref map operation is the mfn of the
+> passed page, there's no need to store it in the persistent grant
+> entry, since we can always get it provided that we have the page.
 
-All that is then needed is a method to pass an offset (possibly re-use
-IO_RESOURCE).
+Interesting that you come up with this, as I have a similar patch
+pending (not posted yet), aiming at reducing the stack usage in
+dispatch_rw_block_io(): seg[].buf is really unnecessary with the
+dev_bus_addr storing removed, as the only reader of that field
+can equally well use req->u.rw.seg[i].first_sect.
 
-The final but of information that would be needed is some method to pass
-down product_id/design_rev and for a lot of the IP blocks they could be
-made independent of the actual parent.
+And then the biolist[] array really can be folded into a union
+with the remaining seg[] one, as their usage scopes are easily
+separable.
 
-This is theoretical at the moment because I would not do this work
-unless it became neccessary. But this was in my head when I was
-originally designing the driver.
+> --- a/drivers/block/xen-blkback/blkback.c
+> +++ b/drivers/block/xen-blkback/blkback.c
+> @@ -621,9 +621,7 @@ static int xen_blkbk_map(struct blkif_request *req,
+>  				 * If this is a new persistent grant
+>  				 * save the handler
+>  				 */
+> -				persistent_gnts[i]->handle = map[j].handle;
+> -				persistent_gnts[i]->dev_bus_addr =
+> -					map[j++].dev_bus_addr;
+> +				persistent_gnts[i]->handle = map[j++].handle;
+>  			}
+>  			pending_handle(pending_req, i) =
+>  				persistent_gnts[i]->handle;
+> @@ -631,7 +629,8 @@ static int xen_blkbk_map(struct blkif_request *req,
+>  			if (ret)
+>  				continue;
+>  
+> -			seg[i].buf = persistent_gnts[i]->dev_bus_addr |
+> +			seg[i].buf = pfn_to_mfn(page_to_pfn(
+> +				persistent_gnts[i]->page)) << PAGE_SHIFT |
 
-The RTC is a good point, the same RTC IP block is used in most tps6591X
-and tps800XX devices. My dream would be to make them all one driver!
+So why do you do this? The only reader masks the field with
+~PAGE_MASK anyway.
 
-Graeme
+Jan
 
