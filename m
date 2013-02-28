@@ -1,56 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753834Ab3B1Xhc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 18:37:32 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:47737 "EHLO mail.skyhub.de"
+	id S1751918Ab3B1Xn4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 18:43:56 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:33773 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753554Ab3B1Xha (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 18:37:30 -0500
-Date: Fri, 1 Mar 2013 00:37:20 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-Cc: hpa@zytor.com, mingo@redhat.com, tglx@linutronix.de,
-        konrad.wilk@oracle.com, rostedt@goodmis.org,
-        gregkh@linuxfoundation.org, samu.kallio@aberdeencloud.com,
-        kraman@redhat.com, jwboyer@redhat.com, xen-devel@lists.xen.org,
-        linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: Re: [PATCH] mm/x86: Patch out arch_flush_lazy_mmu_mode() when
- running on bare metal
-Message-ID: <20130228233720.GB17468@pd.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Boris Ostrovsky <boris.ostrovsky@oracle.com>, hpa@zytor.com,
-	mingo@redhat.com, tglx@linutronix.de, konrad.wilk@oracle.com,
-	rostedt@goodmis.org, gregkh@linuxfoundation.org,
-	samu.kallio@aberdeencloud.com, kraman@redhat.com,
-	jwboyer@redhat.com, xen-devel@lists.xen.org,
-	linux-kernel@vger.kernel.org, stable@kernel.org
-References: <1362092149-32381-1-git-send-email-boris.ostrovsky@oracle.com>
+	id S1751078Ab3B1Xny (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Feb 2013 18:43:54 -0500
+Date: Thu, 28 Feb 2013 18:43:51 -0500
+From: Dave Jones <davej@redhat.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Cc: ebiederm@xmission.com, dhowells@redhat.com
+Subject: commit_creds oops
+Message-ID: <20130228234351.GA22046@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>, ebiederm@xmission.com,
+	dhowells@redhat.com
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1362092149-32381-1-git-send-email-boris.ostrovsky@oracle.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 28, 2013 at 05:55:49PM -0500, Boris Ostrovsky wrote:
-> Invoking arch_flush_lazy_mmu_mode() results in calls to
-> preempt_enable()/disable() which may have performance impact.
-> 
-> Since lazy MMU is not used on bare metal we can patch away
-> arch_flush_lazy_mmu_mode() so that it is never called in such
-> environment.
-> 
-> Signed-off-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+Just hit this on Linus' current tree.
 
-Looks straight-forward enough to me.
+[   89.621770] BUG: unable to handle kernel NULL pointer dereference at 00000000000000c8
+[   89.623111] IP: [<ffffffff810784b0>] commit_creds+0x250/0x2f0
+[   89.624062] PGD 122bfd067 PUD 122bfe067 PMD 0 
+[   89.624901] Oops: 0000 [#1] PREEMPT SMP 
+[   89.625678] Modules linked in: caif_socket caif netrom bridge hidp 8021q garp stp mrp rose llc2 af_rxrpc phonet af_key binfmt_misc bnep l2tp_ppp can_bcm l2tp_core pppoe pppox can_raw scsi_transport_iscsi ppp_generic slhc nfnetlink can ipt_ULOG ax25 decnet irda nfc rds x25 crc_ccitt appletalk atm ipx p8023 psnap p8022 llc lockd sunrpc ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 xt_conntrack nf_conntrack ip6table_filter ip6_tables btusb bluetooth snd_hda_codec_realtek snd_hda_intel snd_hda_codec snd_pcm vhost_net snd_page_alloc snd_timer tun macvtap usb_debug snd rfkill microcode macvlan edac_core pcspkr serio_raw kvm_amd soundcore kvm r8169 mii
+[   89.637846] CPU 2 
+[   89.638175] Pid: 782, comm: trinity-main Not tainted 3.8.0+ #63 Gigabyte Technology Co., Ltd. GA-MA78GM-S2H/GA-MA78GM-S2H
+[   89.639850] RIP: 0010:[<ffffffff810784b0>]  [<ffffffff810784b0>] commit_creds+0x250/0x2f0
+[   89.641161] RSP: 0018:ffff880115657eb8  EFLAGS: 00010207
+[   89.641984] RAX: 00000000000003e8 RBX: ffff88012688b000 RCX: 0000000000000000
+[   89.643069] RDX: 0000000000000000 RSI: ffffffff81c32960 RDI: ffff880105839600
+[   89.644167] RBP: ffff880115657ed8 R08: 0000000000000000 R09: 0000000000000000
+[   89.645254] R10: 0000000000000001 R11: 0000000000000246 R12: ffff880105839600
+[   89.646340] R13: ffff88011beea490 R14: ffff88011beea490 R15: 0000000000000000
+[   89.647431] FS:  00007f3ac063b740(0000) GS:ffff88012b200000(0000) knlGS:0000000000000000
+[   89.648660] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[   89.649548] CR2: 00000000000000c8 CR3: 0000000122bfc000 CR4: 00000000000007e0
+[   89.650635] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[   89.651723] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+[   89.652812] Process trinity-main (pid: 782, threadinfo ffff880115656000, task ffff88011beea490)
+[   89.654128] Stack:
+[   89.654433]  0000000000000000 ffff8801058396a0 ffff880105839600 ffff88011beeaa78
+[   89.655769]  ffff880115657ef8 ffffffff812c7d9b ffffffff82079be0 0000000000000000
+[   89.657073]  ffff880115657f28 ffffffff8106c665 0000000000000002 ffff880115657f58
+[   89.658399] Call Trace:
+[   89.658822]  [<ffffffff812c7d9b>] key_change_session_keyring+0xfb/0x140
+[   89.659845]  [<ffffffff8106c665>] task_work_run+0xa5/0xd0
+[   89.660698]  [<ffffffff81002911>] do_notify_resume+0x71/0xb0
+[   89.661581]  [<ffffffff816c9a4a>] int_signal+0x12/0x17
+[   89.662385] Code: 24 90 00 00 00 48 8b b3 90 00 00 00 49 8b 4c 24 40 48 39 f2 75 08 e9 83 00 00 00 48 89 ca 48 81 fa 60 29 c3 81 0f 84 41 fe ff ff <48> 8b 8a c8 00 00 00 48 39 ce 75 e4 3b 82 d0 00 00 00 0f 84 4b 
+[   89.667778] RIP  [<ffffffff810784b0>] commit_creds+0x250/0x2f0
+[   89.668733]  RSP <ffff880115657eb8>
+[   89.669301] CR2: 00000000000000c8
 
-Acked-by: Borislav Petkov <bp@suse.de>
+My fastest trinity induced oops yet!
 
--- 
-Regards/Gruss,
-    Boris.
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+Appears to be..
+
+                if ((set_ns == subset_ns->parent)  &&
+     850:       48 8b 8a c8 00 00 00    mov    0xc8(%rdx),%rcx
+
+from the inlined cred_cap_issubset
+
+	Dave
+
