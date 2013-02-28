@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759163Ab3B1Owx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 09:52:53 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:42579 "EHLO
+	id S1759324Ab3B1OxR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 09:53:17 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:42568 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933206Ab3B1Ov1 (ORCPT
+	with ESMTP id S933072Ab3B1OvW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 09:51:27 -0500
+	Thu, 28 Feb 2013 09:51:22 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Malcolm Priestley <tvboxspy@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 135/139] staging: vt6656: Fix URB submitted while active warning.
-Date: Thu, 28 Feb 2013 14:44:45 +0000
-Message-Id: <1362062689-2567-136-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 133/139] ARM: 7635/1: versatile: fix the PCI IRQ regression
+Date: Thu, 28 Feb 2013 14:44:43 +0000
+Message-Id: <1362062689-2567-134-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1362062689-2567-1-git-send-email-luis.henriques@canonical.com>
 References: <1362062689-2567-1-git-send-email-luis.henriques@canonical.com>
@@ -28,88 +28,119 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Malcolm Priestley <tvboxspy@gmail.com>
+From: Linus Walleij <linus.walleij@linaro.org>
 
-commit ae5943de8c8c4438cbac5cda599ff0b88c224468 upstream.
+commit e3e92a7be6936dff1de80e66b0b683d54e9e02d8 upstream.
 
-This error happens because PIPEnsControlOut and PIPEnsControlIn unlock the
-spin lock for delay, letting in another thread.
+The PCI IRQs were regressing due to two things:
 
-The patch moves the current MP_SET_FLAG to before filling
-of sUsbCtlRequest for pControlURB and clears it in event of failing.
+- The PCI glue layer was using an hard-coded IRQ 27 offset.
+  This caused the immediate regression.
 
-Any thread calling either function while fMP_CONTROL_READS or fMP_CONTROL_WRITES
-flags set will return STATUS_FAILURE.
+- The SIC IRQ mask was inverted (i.e. a bit was indeed set to
+  one for each valid IRQ on the SIC, but accidentally inverted
+  in the init call). This has been around forever, but we have
+  been saved by some other forgiving code that would reserve
+  IRQ descriptors in this range, as the versatile is
+  non-sparse.
 
-Signed-off-by: Malcolm Priestley <tvboxspy@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+When the IRQs were bumped up 32 steps so as to avoid using IRQ
+zero and avoid touching the 16 legacy IRQs, things broke.
+
+Introduce an explicit valid mask for the IRQs that are active
+on the PIC/SIC, and pass that. Use the BIT() macro from
+<linux/bitops.h> to make sure we hit the right bits, readily
+defined in <mach/platform.h>.
+
+Reported-by: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/staging/vt6656/usbpipe.c | 28 ++++++++++++++++++++--------
- 1 file changed, 20 insertions(+), 8 deletions(-)
+ arch/arm/mach-versatile/core.c | 15 ++++++++++++++-
+ arch/arm/mach-versatile/pci.c  | 11 ++++++-----
+ 2 files changed, 20 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/staging/vt6656/usbpipe.c b/drivers/staging/vt6656/usbpipe.c
-index c612ab5..f759352 100644
---- a/drivers/staging/vt6656/usbpipe.c
-+++ b/drivers/staging/vt6656/usbpipe.c
-@@ -168,6 +168,11 @@ int PIPEnsControlOut(
-     if (pDevice->Flags & fMP_CONTROL_WRITES)
-         return STATUS_FAILURE;
+diff --git a/arch/arm/mach-versatile/core.c b/arch/arm/mach-versatile/core.c
+index cd8ea35..88070ab 100644
+--- a/arch/arm/mach-versatile/core.c
++++ b/arch/arm/mach-versatile/core.c
+@@ -35,6 +35,7 @@
+ #include <linux/gfp.h>
+ #include <linux/clkdev.h>
+ #include <linux/mtd/physmap.h>
++#include <linux/bitops.h>
  
-+	if (pDevice->Flags & fMP_CONTROL_READS)
-+		return STATUS_FAILURE;
-+
-+	MP_SET_FLAG(pDevice, fMP_CONTROL_WRITES);
-+
- 	pDevice->sUsbCtlRequest.bRequestType = 0x40;
- 	pDevice->sUsbCtlRequest.bRequest = byRequest;
- 	pDevice->sUsbCtlRequest.wValue = cpu_to_le16p(&wValue);
-@@ -182,12 +187,13 @@ int PIPEnsControlOut(
+ #include <asm/irq.h>
+ #include <asm/leds.h>
+@@ -66,16 +67,28 @@
+ #define VA_VIC_BASE		__io_address(VERSATILE_VIC_BASE)
+ #define VA_SIC_BASE		__io_address(VERSATILE_SIC_BASE)
  
- 	ntStatus = usb_submit_urb(pDevice->pControlURB, GFP_ATOMIC);
- 	if (ntStatus != 0) {
--		DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO"control send request submission failed: %d\n", ntStatus);
-+		DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO
-+			"control send request submission failed: %d\n",
-+				ntStatus);
-+		MP_CLEAR_FLAG(pDevice, fMP_CONTROL_WRITES);
- 		return STATUS_FAILURE;
- 	}
--	else {
--	    MP_SET_FLAG(pDevice, fMP_CONTROL_WRITES);
--	}
-+
- 	spin_unlock_irq(&pDevice->lock);
-     for (ii = 0; ii <= USB_CTL_WAIT; ii ++) {
++/* These PIC IRQs are valid in each configuration */
++#define PIC_VALID_ALL	BIT(SIC_INT_KMI0) | BIT(SIC_INT_KMI1) | \
++			BIT(SIC_INT_SCI3) | BIT(SIC_INT_UART3) | \
++			BIT(SIC_INT_CLCD) | BIT(SIC_INT_TOUCH) | \
++			BIT(SIC_INT_KEYPAD) | BIT(SIC_INT_DoC) | \
++			BIT(SIC_INT_USB) | BIT(SIC_INT_PCI0) | \
++			BIT(SIC_INT_PCI1) | BIT(SIC_INT_PCI2) | \
++			BIT(SIC_INT_PCI3)
+ #if 1
+ #define IRQ_MMCI0A	IRQ_VICSOURCE22
+ #define IRQ_AACI	IRQ_VICSOURCE24
+ #define IRQ_ETH		IRQ_VICSOURCE25
+ #define PIC_MASK	0xFFD00000
++#define PIC_VALID	PIC_VALID_ALL
+ #else
+ #define IRQ_MMCI0A	IRQ_SIC_MMCI0A
+ #define IRQ_AACI	IRQ_SIC_AACI
+ #define IRQ_ETH		IRQ_SIC_ETH
+ #define PIC_MASK	0
++#define PIC_VALID	PIC_VALID_ALL | BIT(SIC_INT_MMCI0A) | \
++			BIT(SIC_INT_MMCI1A) | BIT(SIC_INT_AACI) | \
++			BIT(SIC_INT_ETH)
+ #endif
  
-@@ -227,6 +233,11 @@ int PIPEnsControlIn(
-     if (pDevice->Flags & fMP_CONTROL_READS)
- 	return STATUS_FAILURE;
+ /* Lookup table for finding a DT node that represents the vic instance */
+@@ -103,7 +116,7 @@ void __init versatile_init_irq(void)
+ 					      VERSATILE_SIC_BASE);
  
-+	if (pDevice->Flags & fMP_CONTROL_WRITES)
-+		return STATUS_FAILURE;
-+
-+	MP_SET_FLAG(pDevice, fMP_CONTROL_READS);
-+
- 	pDevice->sUsbCtlRequest.bRequestType = 0xC0;
- 	pDevice->sUsbCtlRequest.bRequest = byRequest;
- 	pDevice->sUsbCtlRequest.wValue = cpu_to_le16p(&wValue);
-@@ -240,10 +251,11 @@ int PIPEnsControlIn(
+ 	fpga_irq_init(VA_SIC_BASE, "SIC", IRQ_SIC_START,
+-		IRQ_VICSOURCE31, ~PIC_MASK, np);
++		IRQ_VICSOURCE31, PIC_VALID, np);
  
- 	ntStatus = usb_submit_urb(pDevice->pControlURB, GFP_ATOMIC);
- 	if (ntStatus != 0) {
--		DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO"control request submission failed: %d\n", ntStatus);
--	}else {
--		MP_SET_FLAG(pDevice, fMP_CONTROL_READS);
--    }
-+		DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO
-+			"control request submission failed: %d\n", ntStatus);
-+		MP_CLEAR_FLAG(pDevice, fMP_CONTROL_READS);
-+		return STATUS_FAILURE;
-+	}
+ 	/*
+ 	 * Interrupts on secondary controller from 0 to 8 are routed to
+diff --git a/arch/arm/mach-versatile/pci.c b/arch/arm/mach-versatile/pci.c
+index e95bf84..af94887 100644
+--- a/arch/arm/mach-versatile/pci.c
++++ b/arch/arm/mach-versatile/pci.c
+@@ -23,6 +23,7 @@
+ #include <linux/io.h>
  
- 	spin_unlock_irq(&pDevice->lock);
-     for (ii = 0; ii <= USB_CTL_WAIT; ii ++) {
+ #include <mach/hardware.h>
++#include <mach/irqs.h>
+ #include <asm/irq.h>
+ #include <asm/mach/pci.h>
+ 
+@@ -341,12 +342,12 @@ static int __init versatile_map_irq(const struct pci_dev *dev, u8 slot, u8 pin)
+ 	int irq;
+ 
+ 	/* slot,  pin,	irq
+-	 *  24     1     27
+-	 *  25     1     28
+-	 *  26     1     29
+-	 *  27     1     30
++	 *  24     1     IRQ_SIC_PCI0
++	 *  25     1     IRQ_SIC_PCI1
++	 *  26     1     IRQ_SIC_PCI2
++	 *  27     1     IRQ_SIC_PCI3
+ 	 */
+-	irq = 27 + ((slot - 24 + pin - 1) & 3);
++	irq = IRQ_SIC_PCI0 + ((slot - 24 + pin - 1) & 3);
+ 
+ 	return irq;
+ }
 -- 
 1.8.1.2
 
