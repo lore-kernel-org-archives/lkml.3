@@ -1,115 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932750Ab3B1RM0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 12:12:26 -0500
-Received: from mail-we0-f182.google.com ([74.125.82.182]:51560 "EHLO
-	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932385Ab3B1RMX (ORCPT
+	id S1759625Ab3B1RY7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 12:24:59 -0500
+Received: from mail-vc0-f173.google.com ([209.85.220.173]:64086 "EHLO
+	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753289Ab3B1RY6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 12:12:23 -0500
+	Thu, 28 Feb 2013 12:24:58 -0500
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <CA+gsUGQ-cn00=emFkHeWi6akL9TrJ9CV6ikv7C62fhLYMtB=HQ@mail.gmail.com>
-References: <CA+icZUXG7WgRap2-oQGBr_s=QbE0QW6_zChDRqC-eEzrWR3Y5g@mail.gmail.com>
-	<CA+icZUUP0hLjkTjsAGbhoT1QG55X2062G5KCCDsKkhDyM_SQEg@mail.gmail.com>
-	<20130228111819.GF11892@cantiga.alporthouse.com>
-	<CA+gsUGQ-cn00=emFkHeWi6akL9TrJ9CV6ikv7C62fhLYMtB=HQ@mail.gmail.com>
-Date: Thu, 28 Feb 2013 18:12:21 +0100
-Message-ID: <CA+icZUWE-DpD3azUaY7uKnz18DV-JRdYBkTBa-YzqX30S4THrQ@mail.gmail.com>
-Subject: Re: [Intel-gfx] [git pull] drm merge for 3.9-rc1
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Paulo Zanoni <przanoni@gmail.com>
-Cc: Chris Wilson <chris@chris-wilson.co.uk>, Dave Airlie <airlied@gmail.com>,
-        DRI <dri-devel@lists.freedesktop.org>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-next <linux-next@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <BAF0C2081321BA469F9ADF648F97D9B04C78FA6069@MCC023.weinmann.com>
+References: <BAF0C2081321BA469F9ADF648F97D9B04C78FA6069@MCC023.weinmann.com>
+Date: Thu, 28 Feb 2013 09:24:56 -0800
+Message-ID: <CAN8TOE9YJBvUE9GDW3krZB-Js6gUkqY23gYNLS4gFX0e2NDNZw@mail.gmail.com>
+Subject: Re: Bug in mtd_get_device_size()?
+From: Brian Norris <computersforpeace@gmail.com>
+To: "Velykokhatko, Sergey" <Sergey.Velykokhatko@mcc-med.de>
+Cc: "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "artem.bityutskiy@linux.intel.com" <artem.bityutskiy@linux.intel.com>,
+        Richard Genoud <richard.genoud@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 28, 2013 at 3:31 PM, Paulo Zanoni <przanoni@gmail.com> wrote:
-> Hi
->
-> 2013/2/28 Chris Wilson <chris@chris-wilson.co.uk>:
->> On Thu, Feb 28, 2013 at 12:06:28AM +0100, Sedat Dilek wrote:
->>> On Wed, Feb 27, 2013 at 11:36 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
->>> > Hi,
->>> >
->>> > I am seeing this also on Linux-Next.
->>> >
->>> > /var/log/kern.log:Feb 27 22:52:35 fambox kernel: [   28.202381]
->>> > [drm:intel_dp_aux_wait_done] *ERROR* dp aux hw did not signal timeout
->>> > (has irq: 1)!
->>> > /var/log/kern.log:Feb 27 22:52:35 fambox kernel: [   28.210588]
->>> > [drm:intel_dp_aux_wait_done] *ERROR* dp aux hw did not signal timeout
->>> > (has irq: 1)!
->>> >
->>> > /var/log/kern.log.1:Feb 22 07:36:04 fambox kernel: [   27.408280]
->>> > [drm:intel_dp_aux_wait_done] *ERROR* dp aux hw did not signal timeout
->>> > (has irq: 1)!
->>> >
->>> > This seems to be hard reproducible...
->>> > Laptop-LCD... Sandybridge Mobile-GT2.
->>> >
->>> > Is there a way to force the error?
->>> >
->>> > Possible patch see [1].
->>> >
->>> > - Sedat -
->>> >
->>> > [1] https://patchwork.kernel.org/patch/2192721/
->>
->> That was:
->>
->> +       if (!done) {
->> +               status = I915_READ_NOTRACE(ch_ctl);
->> +               DRM_ERROR("dp aux hw did not signal timeout (has irq:
->> %i), status=%08x!\n",
->> +                         has_aux_irq, status);
->> +       }
->>
->> You applied
->>
->> +       if (!done) {
->> +               status = I915_READ_NOTRACE(ch_ctl);
->> +               DRM_ERROR("dp aux hw did not signal timeout (has irq:
->> %i), status=%08x!\n",
->> +                         has_aux_irq, status);
->> +       {
->
-> In addition to this, after the problem happens can you please dump the
-> registers 0x44008 (DEIIR) and 0xC4008 (SDEIIR)? You can do this either
-> by running intel-reg-read (from intel-gpu-tools) or by changing the
-> DRM_ERROR above to also print the result of I915_READ(0x44008) and
-> I915_READ(0xC4008).
->
++ Richard
 
-Do I need a specific version of intel-gpu-tools?
-Ubuntu/precise has v1.2 in its archives - sufficient?
-Note: The error was twice after dozenz of Linux-Next kernel builds.
+On Thu, Feb 28, 2013 at 4:30 AM, Velykokhatko, Sergey
+<Sergey.Velykokhatko@mcc-med.de> wrote:
+> I got today such case:
+>
+>       * Kernel 3.8
+>
+>       * We are using M29F2G16 NAND chip with 4096 blocks, each has 128k
+>
+>       * Configured with CONFIG_MTD_UBI_BEB_LIMIT=100
 
-- Sedat -
+This is your problem. See below for more comments.
 
-[1] http://packages.ubuntu.com/precise/intel-gpu-tools
+>       * Our rootfs partition contains 640 EBs
+>
+>       * At system start comes following error message:
+>
+> Feb 28 09:23:09 (none) kern.notice kernel: [    0.375000] Creating 6 MTD
+> partitions on "atmel_nand":
+>
+> Feb 28 09:23:09 (none) kern.notice kernel: [    0.375000]
+> 0x000000000000-0x000000020000 : "obsolete_bootstrap"
+>
+> Feb 28 09:23:09 (none) kern.notice kernel: [    0.381000]
+> 0x000000020000-0x000000320000 : "kernel_a"
+>
+> Feb 28 09:23:09 (none) kern.notice kernel: [    0.386000]
+> 0x000000320000-0x000000620000 : "kernel_b"
+>
+> Feb 28 09:23:09 (none) kern.notice kernel: [    0.392000]
+> 0x000000620000-0x000005620000 : "rootfs_a"
+>
+> Feb 28 09:23:09 (none) kern.notice kernel: [    0.399000]
+> 0x000005620000-0x00000a620000 : "rootfs_b"
+>
+> Feb 28 09:23:09 (none) kern.notice kernel: [    0.406000]
+> 0x00000a620000-0x000020000000 : "config_data"
+>
+> ...
+>
+>
+>
+> Feb 28 09:23:10 (none) kern.info kernel: [    0.546000] NET: Registered
+> protocol family 17
+>
+> Feb 28 09:23:10 (none) kern.notice kernel: [    0.557000] UBI: attaching
+> mtd3 to ubi0
+>
+> Feb 28 09:23:10 (none) kern.info kernel: [    0.748000] usb 1-2: new
+> high-speed USB device number 2 using atmel-ehci
+>
+> Feb 28 09:23:10 (none) kern.notice kernel: [    0.810000] UBI: scanning is
+> finished
+>
+> Feb 28 09:23:10 (none) kern.warn kernel: [    0.821000] UBI warning:
+> print_rsvd_warning: cannot reserve enough PEBs for bad PEB handling,
+> reserved 115, need 400
+>
+> Feb 28 09:23:10 (none) kern.notice kernel: [    0.826000] UBI: attached mtd3
+> (name "rootfs_a", size 80 MiB) to ubi0
+>
+> Feb 28 09:23:10 (none) kern.notice kernel: [    0.826000] UBI: PEB size:
+> 131072 bytes (128 KiB), LEB size: 129024 bytes
+>
+> Feb 28 09:23:10 (none) kern.notice kernel: [    0.826000] UBI: min./max. I/O
+> unit sizes: 2048/2048, sub-page size 512
+>
+> Feb 28 09:23:10 (none) kern.notice kernel: [    0.826000] UBI: VID header
+> offset: 512 (aligned 512), data offset: 2048
+>
+> Feb 28 09:23:10 (none) kern.notice kernel: [    0.826000] UBI: good PEBs:
+> 640, bad PEBs: 0, corrupted PEBs: 0
+>
+> Feb 28 09:23:10 (none) kern.notice kernel: [    0.826000] UBI: user volume:
+> 1, internal volumes: 1, max. volumes count: 128
+>
+> Feb 28 09:23:10 (none) kern.notice kernel: [    0.826000] UBI: max/mean
+> erase counter: 399/202, WL threshold: 4096, image sequence number: 548304255
+>
+> Feb 28 09:23:10 (none) kern.notice kernel: [    0.826000] UBI: available
+> PEBs: 0, total reserved PEBs: 640, PEBs reserved for bad PEB handling: 115
+>
+> Feb 28 09:23:10 (none) kern.notice kernel: [    0.827000] UBI: background
+> thread "ubi_bgt0d" started, PID 288
+>
+> UBI wanted to reserve 400 blocks on MTD with 640. Hm... During debugging I
+> found that mtd_get_device_size() gives the size of whole flash memory back
+> (4096 blocks * 128kB). I guess that I found small error. With micro patch
+> the problem seems to be corrected for my case
 
-> If you conclude that the value of 0x44008 is 0x0 while the value of
-> 0xC4008 is not, then this patch should help:
-> https://patchwork.kernel.org/patch/2177841/
->
->>
->> That second '{' is the source of the compile error.
->> -Chris
->>
->> --
->> Chris Wilson, Intel Open Source Technology Centre
->> _______________________________________________
->> Intel-gfx mailing list
->> Intel-gfx@lists.freedesktop.org
->> http://lists.freedesktop.org/mailman/listinfo/intel-gfx
->
->
->
-> --
-> Paulo Zanoni
+Your patch is wrong, actually. mtd_get_device_size() should get "the
+size of the entire flash chip", so if mtd is a partition, you *want*
+to return the size of its 'master'.
+
+In fact, everything is behaving as expected (by the designers; not by
+you). Because your BEB_LIMIT=100, you are reserving 100*size/1024
+(that is 9.8% of your total size, or 400 blocks) in *every* partition.
+I don't see why you need that high of a limit, though. Check your NAND
+data sheet, but the limit defaults reasonably to 20 (or, about 2%).
+That would reserve only 80 blocks on your system, and you would not
+see these warnings/errors, since you already have 115 blocks reserved.
+
+You might want to read the comments in this commit:
+
+commit ba4087e956d336488c6df9dfca65d1e70cf480f1
+Author: Richard Genoud <richard.genoud@gmail.com>
+Date:   Tue Jul 10 18:23:41 2012 +0200
+
+    UBI: use the whole MTD device size to get bad_peb_limit
+
+It might be worth revisiting the conclusions of those arguments; it
+essentially limits your partitions to a certain minimum size. But as
+far as I can tell, the code works as documented.
+
+Brian
