@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753980Ab3B1AG0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 19:06:26 -0500
-Received: from g6t0185.atlanta.hp.com ([15.193.32.62]:7517 "EHLO
-	g6t0185.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752650Ab3B1AGY (ORCPT
+	id S1754961Ab3B1AGx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 19:06:53 -0500
+Received: from g4t0017.houston.hp.com ([15.201.24.20]:13631 "EHLO
+	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751532Ab3B1AGw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 19:06:24 -0500
-Message-ID: <1362009978.2808.33.camel@lorien2>
-Subject: [PATCH v2 0/4] pci: Add PCI_BUS() and PCI_DEVID() interfaces to
+	Wed, 27 Feb 2013 19:06:52 -0500
+Message-ID: <1362010005.2808.34.camel@lorien2>
+Subject: [PATCH v2 1/4] pci: Add PCI_BUS_NUM() and PCI_DEVID() interfaces to
  return bus number and device id
 From: Shuah Khan <shuah.khan@hp.com>
 Reply-To: shuah.khan@hp.com
@@ -19,7 +19,7 @@ Cc: jiang.liu@huawei.com, shemminger@vyatta.com, paulmck@linux.vnet.ibm.com,
         iommu@lists.linux-foundation.org, linux-pci@vger.kernel.org,
         wangyijing@huawei.com, LKML <linux-kernel@vger.kernel.org>,
         shuahkhan@gmail.com
-Date: Wed, 27 Feb 2013 17:06:18 -0700
+Date: Wed, 27 Feb 2013 17:06:45 -0700
 Organization: ISS-Linux
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.2.3-0ubuntu6 
@@ -31,44 +31,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 pci defines PCI_DEVFN(), PCI_SLOT(), and PCI_FUNC() interfaces, however,
 it doesn't have interfaces to return PCI bus and PCI device id. Drivers
-(AMD IOMMU, and AER) have module specific definitions for PCI_BUS() and
-AMD_IOMMU driver also has a module specific interface to calculate PCI
+(AMD IOMMU, and AER) implement module specific definitions for PCI_BUS()
+and AMD_IOMMU driver also has a module specific interface to calculate PCI
 device id from bus number and devfn.
 
-This patch set adds PCI_BUS_NUM(), and PCI_DEVID() to pci.h, changes AER
-to use PCI_BUS_NUM() from pci and remove local PCI_BUS() define. Changes
-AMD_IOMMU driver to use PCI_BUS_NUM() and PCI_DEVID() from pci and remove
-local PCI_BUS() define and local PCI_DEVID() implementation.
+Add PCI_BUS_NUM and PCI_DEVID interfaces to return PCI bus number and PCI
+device id respectively to avoid the need for duplicate definitions in other
+modules. AER driver code and AMD IOMMU driver define PCI_BUS. AMD IOMMU driver
+defines an interface to calculate device id from bus number, and devfn pair.
 
-Files changed:
+PCI_DEVFN(), PCI_SLOT(), and PCI_FUNC() interfaces are exported to user-space
+via uapi/linux/pci.h. However, in the interest to keep the new interfaces as
+kernel only and not export them to user-space unnecessarily, added them to
+linux/pci.h instead.
 
-[PATCH v2 1/4] pci: Add PCI_BUS_NUM() and PCI_DEVID() interfaces to return bus
-           number and device id
-
+Signed-off-by: Shuah Khan <shuah.khan@hp.com>
+---
  include/linux/pci.h |   15 +++++++++++++++
  1 file changed, 15 insertions(+)
 
-[PATCH v2 2/4] pci/aer: Remove local PCI_BUS() define and use PCI_BUS_NUM()
-           from pci
-
- drivers/pci/pcie/aer/aerdrv_core.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
-
-[PATCH v2 3/4] iommu/amd: Remove local PCI_BUS() define and use PCI_BUS_NUM()
-           from pci
-
- drivers/iommu/amd_iommu.c       |   12 ++++++------
- drivers/iommu/amd_iommu_init.c  |   34 +++++++++++++++++-----------------
- drivers/iommu/amd_iommu_types.h |    4 +---
- 3 files changed, 24 insertions(+), 26 deletions(-)
-
-[PATCH v2 4/4] iommu/amd: Remove calc_devid() and use PCI_DEVID() from pci
-(no change to this patch - but tagging it v2 for clarity)
-
- drivers/iommu/amd_iommu.c       |    2 +-
- drivers/iommu/amd_iommu_init.c  |    6 +++---
- drivers/iommu/amd_iommu_types.h |    7 -------
- 3 files changed, 4 insertions(+), 11 deletions(-)
+diff --git a/include/linux/pci.h b/include/linux/pci.h
+index 15472d6..95c105a 100644
+--- a/include/linux/pci.h
++++ b/include/linux/pci.h
+@@ -35,6 +35,21 @@
+ /* Include the ID list */
+ #include <linux/pci_ids.h>
+ 
++/*
++ * The PCI interface treats multi-function devices as independent
++ * devices.  The slot/function address of each device is encoded
++ * in a single byte as follows:
++ *
++ *	7:3 = slot
++ *	2:0 = function
++ * PCI_DEVFN(), PCI_SLOT(), and PCI_FUNC() are defined uapi/linux/pci.h
++ * In the interest of not exposing interfaces to user-space unnecessarily,
++ * the following kernel only defines are being added here.
++ */
++#define PCI_DEVID(bus, devfn)  ((((u16)bus) << 8) | devfn)
++/* return bus from PCI devid = ((u16)bus_number) << 8) | devfn */
++#define PCI_BUS_NUM(x) (((x) >> 8) & 0xff)
++
+ /* pci_slot represents a physical slot */
+ struct pci_slot {
+ 	struct pci_bus *bus;		/* The bus this slot is on */
+-- 
+1.7.9.5
 
 
 
