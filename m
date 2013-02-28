@@ -1,128 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760905Ab3B1WPT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 17:15:19 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:51331 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1759748Ab3B1WPQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 17:15:16 -0500
-Message-ID: <1362089715.1928.22.camel@joe-AO722>
-Subject: [PULL REQUEST staging-next] staging: vt6655: Whitespace cleanups
- only
-From: Joe Perches <joe@perches.com>
+	id S1760917Ab3B1WRb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 17:17:31 -0500
+Received: from mail-ee0-f52.google.com ([74.125.83.52]:53441 "EHLO
+	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752801Ab3B1WR3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Feb 2013 17:17:29 -0500
+Message-ID: <512FD775.40206@suse.cz>
+Date: Thu, 28 Feb 2013 23:17:25 +0100
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:19.0) Gecko/20130124 Thunderbird/19.0
+MIME-Version: 1.0
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Forest Bond <forest@alittletooquiet.net>
-Cc: devel <devel@driverdev.osuosl.org>, linux-kernel@vger.kernel.org
-Date: Thu, 28 Feb 2013 14:15:15 -0800
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+        linux-kernel@vger.kernel.org
+CC: stable@vger.kernel.org, Jiang Liu <jiang.liu@huawei.com>,
+        Gaohuai Han <hangaohuai@huawei.com>,
+        Maciej Sosnowski <maciej.sosnowski@intel.com>,
+        Dan Williams <djbw@fb.com>
+Subject: Re: [ 47/53] dca: check against empty dca_domains list before unregister
+ provider
+References: <20130226235619.844721947@linuxfoundation.org> <20130226235624.751198592@linuxfoundation.org> <512FD486.6030804@suse.cz>
+In-Reply-To: <512FD486.6030804@suse.cz>
+X-Enigmail-Version: 1.6a1pre
+Content-Type: multipart/mixed;
+ boundary="------------090908020203060800000408"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just a nearly completely scripted pass to convert
-the vt6655 sources to something more kernel like.
+This is a multi-part message in MIME format.
+--------------090908020203060800000408
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 7bit
 
-It's too large to post, ~2.3Mb.
+On 02/28/2013 11:04 PM, Jiri Slaby wrote:
+> On 02/27/2013 12:58 AM, Greg Kroah-Hartman wrote:
+>> 3.0-stable review patch.  If anyone has any objections, please let me know.
+>>
+>> ------------------
+>>
+>> From: Maciej Sosnowski <maciej.sosnowski@intel.com>
+>>
+>> commit c419fcfd071cf34ba00f9f65282583772d2655e7 upstream.
+>>
+>> When providers get blocked unregister_dca_providers() is called ending up
+>> with dca_providers and dca_domain lists emptied. Dca should be prevented from
+>> trying to unregister any provider if dca_domain list is found empty.
+>>
+>> Reported-by: Jiang Liu <jiang.liu@huawei.com>
+>> Tested-by: Gaohuai Han <hangaohuai@huawei.com>
+>> Signed-off-by: Maciej Sosnowski <maciej.sosnowski@intel.com>
+>> Signed-off-by: Dan Williams <djbw@fb.com>
+>> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>>
+>> ---
+>>  drivers/dca/dca-core.c |    5 +++++
+>>  1 file changed, 5 insertions(+)
+>>
+>> --- a/drivers/dca/dca-core.c
+>> +++ b/drivers/dca/dca-core.c
+>> @@ -409,6 +409,11 @@ void unregister_dca_provider(struct dca_
+>>  
+>>  	spin_lock_irqsave(&dca_lock, flags);
+>>  
+>> +	if (list_empty(&dca_domains)) {
+>> +		raw_spin_unlock_irqrestore(&dca_lock, flags);
+> 
+> Hi, this is an incorrect backport. It should be spin_unlock_irqrestore
+> obviously...
 
-No lines added or removed.
+Fix attached.
 
-git diff -w shows no differences.
-Compilation allyesconfig, allmodconfig shows no
-object/module differences.
+-- 
+js
+suse labs
 
+--------------090908020203060800000408
+Content-Type: text/x-patch;
+ name="dca-check-against-empty-dca_domains-list-before-fix.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename*0="dca-check-against-empty-dca_domains-list-before-fix.patch"
+
+From: Jiri Slaby <jslaby@suse.cz>
+Subject: dca: check against empty dca_domains list before unregister provider fix
+Patch-mainline: no, submitted on 28th Feb 2013
+
+In 3.0.67, commit 7a9a20ea77e7508c795dead9ab2f6c98a617762d (dca: check
+against empty dca_domains list before unregister provider), upstream
+commit c419fcfd071cf34ba00f9f65282583772d2655e7, added a fail path to
+unregister_dca_provider. It added there also a call to
+raw_spin_unlock_irqrestore. But in 3.0, the lock is not raw, so this
+results in:
+drivers/dca/dca-core.c: In function 'unregister_dca_provider':
+drivers/dca/dca-core.c:413: warning: passing argument 1 of '_raw_spin_unlock_irqrestore' from incompatible pointer type
+
+Fix it by calling spin_unlock_irqrestore properly.
+
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
+ drivers/dca/dca-core.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-The following changes since commit 8b5628ab83b671f96ac9f174c1bd51c92589fc82:
+--- a/drivers/dca/dca-core.c
++++ b/drivers/dca/dca-core.c
+@@ -410,7 +410,7 @@ void unregister_dca_provider(struct dca_
+ 	spin_lock_irqsave(&dca_lock, flags);
+ 
+ 	if (list_empty(&dca_domains)) {
+-		raw_spin_unlock_irqrestore(&dca_lock, flags);
++		spin_unlock_irqrestore(&dca_lock, flags);
+ 		return;
+ 	}
+ 
 
-  Merge tag 'virt' of git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc (2013-02-21 15:40:16 -0800)
-
-are available in the git repository at:
-
-
-  git://repo.or.cz/linux-2.6/trivial-mods.git 20130228_vt6655
-
-for you to fetch changes up to ac8672419217a49c966d2458498c082d2572cf27:
-
-  staging: vt6655: Whitespace cleanups (2013-02-28 13:48:42 -0800)
-
-----------------------------------------------------------------
-Joe Perches (1):
-      staging: vt6655: Whitespace cleanups
-
- drivers/staging/vt6655/80211hdr.h    |   44 +-
- drivers/staging/vt6655/80211mgr.c    | 1122 ++---
- drivers/staging/vt6655/80211mgr.h    |  640 +--
- drivers/staging/vt6655/IEEE11h.c     |  104 +-
- drivers/staging/vt6655/IEEE11h.h     |    6 +-
- drivers/staging/vt6655/aes_ccmp.c    |  566 +--
- drivers/staging/vt6655/baseband.c    | 4810 ++++++++++----------
- drivers/staging/vt6655/baseband.h    |   56 +-
- drivers/staging/vt6655/bssdb.c       | 2648 +++++------
- drivers/staging/vt6655/bssdb.h       |  396 +-
- drivers/staging/vt6655/card.c        | 2792 ++++++------
- drivers/staging/vt6655/card.h        |  130 +-
- drivers/staging/vt6655/channel.c     |  730 +--
- drivers/staging/vt6655/channel.h     |   14 +-
- drivers/staging/vt6655/country.h     |  238 +-
- drivers/staging/vt6655/datarate.c    |  456 +-
- drivers/staging/vt6655/datarate.h    |   42 +-
- drivers/staging/vt6655/desc.h        |  482 +-
- drivers/staging/vt6655/device.h      |  902 ++--
- drivers/staging/vt6655/device_cfg.h  |   24 +-
- drivers/staging/vt6655/device_main.c | 4882 ++++++++++----------
- drivers/staging/vt6655/dpc.c         | 2440 +++++-----
- drivers/staging/vt6655/dpc.h         |    8 +-
- drivers/staging/vt6655/hostap.c      |  666 +--
- drivers/staging/vt6655/iocmd.h       |  200 +-
- drivers/staging/vt6655/ioctl.c       |   16 +-
- drivers/staging/vt6655/ioctl.h       |   12 +-
- drivers/staging/vt6655/iowpa.h       |   42 +-
- drivers/staging/vt6655/iwctl.c       | 2170 ++++-----
- drivers/staging/vt6655/iwctl.h       |  200 +-
- drivers/staging/vt6655/key.c         | 1160 ++---
- drivers/staging/vt6655/key.h         |  168 +-
- drivers/staging/vt6655/mac.c         | 1632 +++----
- drivers/staging/vt6655/mac.h         |  836 ++--
- drivers/staging/vt6655/mib.c         |  698 +--
- drivers/staging/vt6655/mib.h         |  502 +--
- drivers/staging/vt6655/michael.c     |  166 +-
- drivers/staging/vt6655/michael.h     |    6 +-
- drivers/staging/vt6655/power.c       |  468 +-
- drivers/staging/vt6655/power.h       |   30 +-
- drivers/staging/vt6655/rc4.c         |   78 +-
- drivers/staging/vt6655/rc4.h         |    6 +-
- drivers/staging/vt6655/rf.c          | 1456 +++---
- drivers/staging/vt6655/rf.h          |   22 +-
- drivers/staging/vt6655/rxtx.c        | 5652 +++++++++++------------
- drivers/staging/vt6655/rxtx.h        |   52 +-
- drivers/staging/vt6655/srom.c        |  254 +-
- drivers/staging/vt6655/srom.h        |   58 +-
- drivers/staging/vt6655/tcrc.c        |  156 +-
- drivers/staging/vt6655/tether.c      |   46 +-
- drivers/staging/vt6655/tether.h      |   34 +-
- drivers/staging/vt6655/tkip.c        |  328 +-
- drivers/staging/vt6655/tkip.h        |   12 +-
- drivers/staging/vt6655/ttype.h       |   12 +-
- drivers/staging/vt6655/upc.h         |  136 +-
- drivers/staging/vt6655/vntwifi.c     |  906 ++--
- drivers/staging/vt6655/vntwifi.h     |  258 +-
- drivers/staging/vt6655/wcmd.c        | 1734 ++++----
- drivers/staging/vt6655/wcmd.h        |  108 +-
- drivers/staging/vt6655/wctl.c        |  246 +-
- drivers/staging/vt6655/wctl.h        |   70 +-
- drivers/staging/vt6655/wmgr.c        | 8154 +++++++++++++++++-----------------
- drivers/staging/vt6655/wmgr.h        |  514 +--
- drivers/staging/vt6655/wpa.c         |  334 +-
- drivers/staging/vt6655/wpa.h         |   22 +-
- drivers/staging/vt6655/wpa2.c        |  504 +--
- drivers/staging/vt6655/wpa2.h        |   28 +-
- drivers/staging/vt6655/wpactl.c      |  868 ++--
- drivers/staging/vt6655/wpactl.h      |    2 +-
- drivers/staging/vt6655/wroute.c      |  256 +-
- drivers/staging/vt6655/wroute.h      |    2 +-
- 71 files changed, 27406 insertions(+), 27406 deletions(-)
-
-
+--------------090908020203060800000408--
