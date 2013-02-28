@@ -1,57 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760269Ab3B1POG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 10:14:06 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:38761 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1758537Ab3B1POC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 10:14:02 -0500
-Date: Thu, 28 Feb 2013 10:14:01 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Lan Tianyu <tianyu.lan@intel.com>
-cc: Li Fei <fei.li@intel.com>, <gregkh@linuxfoundation.org>,
-        <sarah.a.sharp@linux.intel.com>, <rjw@sisk.pl>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <chuansheng.liu@intel.com>
-Subject: Re: [PATCH 4/5] usb: call pm_runtime_put_sync in pm_runtime_get_sync
- failed case
-In-Reply-To: <512F1741.60202@intel.com>
-Message-ID: <Pine.LNX.4.44L0.1302281011550.1352-100000@iolanthe.rowland.org>
+	id S1760287Ab3B1PON (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 10:14:13 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:47788 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758537Ab3B1POI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Feb 2013 10:14:08 -0500
+Date: Thu, 28 Feb 2013 10:13:33 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        linux-security-module@vger.kernel.org
+Subject: IMA: How to manage user space signing policy with others
+Message-ID: <20130228151333.GB11360@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 28 Feb 2013, Lan Tianyu wrote:
+Hi Mimi,
 
-> Hi Alan:
-> 	Further thinking, the device should be disconnected since the port
-> can't be resumed and the device will not work normally. Something like
-> following. Does this make sense?
-> ---
-> diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
-> index d5d3de4..cf36b11 100644
-> --- a/drivers/usb/core/hub.c
-> +++ b/drivers/usb/core/hub.c
-> @@ -3170,6 +3170,7 @@ int usb_port_resume(struct usb_device *udev,
-> pm_message_t msg)
->                 if (status < 0) {
->                         dev_dbg(&udev->dev, "can't resume usb port,
-> status %d\n",
->                                         status);
-> +                       hub_port_logical_disconnect(hub, port1);
->                         return status;
->                 }
->         }
+I am running into issues w.r.t IMA policy management and user space
+signing. So thought of dropping a mail and gather some ideas.
 
-I don't know.  If you do this, will the port ever get powered on again?  
-This sort of thing is hard to test.
+Currently IMA seems to able to one policy only which does not contain
+conflicting rules. We have tcb policies in-built and they don't have
+conflicting rules. User can put its own policy and that will replace
+kernel policy (default policy). And then user is responsible for making
+sure conflicting rules are not present.
 
-As far as the device is concerned, it won't make much difference.  
-Either way, the device won't work.
+Now with user space signing and secureboot, I have another set of rules
+which are not compatible with existing tcb policies. This is how my
+rules look like as of today. These can change based on config options.
 
-Alan Stern
+appraise func=BPRM_CHECK appraise_type=optional
+appraise func=BPRM_POST_LOAD appraise_type=optional
 
+These rules are not compatible with tcp appraise rule.
+
+.action = APPRAISE,.fowner = GLOBAL_ROOT_UID,.flags = IMA_FOWNER
+
+That means in current scheme of things, multiple policies can't co-exist
+together. It has few  disadvantages.
+
+- If we want IMA to be central point for all integrity measurement
+  needs, then having one policy only is very limiting. The fact that
+  user can overirde that policy makes it worse as then kernel can
+  not impose any policy at all.
+
+  IOW, if user enables user space signign in kernel, say CONFIG_BIN_SIGN=y,
+  then I need a way so that kernel can make sure IMA rules needed to
+  ensure integrity of binaries are present and can not be overruled.
+
+- Disabling policy can disable certain features in kernel. So in this
+  case if user overides default policy, it will disable binary signing
+  feature also (that too in a very unintutive way).
+
+
+One possible way could be that we allow execution of all the relevant
+rules in a policy and return the ANDed results of all the rules. But
+this does not go well with the result caching. Atleast current IMA
+infrastructure does not allow it and might require overhaul.
+
+In general I am concerned about increased performance overhead if we
+allow multiple policies to co-exist. 
+
+Performance overhead is a concern even without multiple policies. For
+user space signing, IMA hooks will be called for file operations like
+open(), mmap() etc and we don't require those to be called. I am not
+sure if performance overhead is significant or not. Once things start
+working, I will do some benchmarking.
+
+But coming back to the point, how to go about making sure user space
+signing policies can't be overridden if user has enabled user space
+signing feature in kernel.
+
+Thanks
+Vivek
