@@ -1,171 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752723Ab3B1Aar (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 19:30:47 -0500
-Received: from smtp.outflux.net ([198.145.64.163]:34948 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751213Ab3B1Aaq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 19:30:46 -0500
-Date: Wed, 27 Feb 2013 16:30:42 -0800
-From: Kees Cook <keescook@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: Tyler Hicks <tyhicks@canonical.com>,
-        Dustin Kirkland <dustin.kirkland@gazzang.com>,
-        ecryptfs@vger.kernel.org
-Subject: [PATCH] eCryptfs: allow userspace messaging to be disabled
-Message-ID: <20130228003042.GA8472@www.outflux.net>
+	id S1753124Ab3B1AbJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 19:31:09 -0500
+Received: from mail-vb0-f53.google.com ([209.85.212.53]:33944 "EHLO
+	mail-vb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751213Ab3B1AbH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Feb 2013 19:31:07 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-HELO: www.outflux.net
+In-Reply-To: <20130228000236.GA2216@kroah.com>
+References: <CAPM=9txjG5rohsNbme=myrX+-Z5eucpEXYQMWqPQqN=5dNze8g@mail.gmail.com>
+	<CAPM=9tw_vfESbbH4dD9z8mAYVYcwmVs=n4BrRz4XBj1Rw1qrkw@mail.gmail.com>
+	<20130225223243.GA18744@kroah.com>
+	<20130226034545.GA1089@kroah.com>
+	<20130226173514.GA24136@kroah.com>
+	<CAAMvbhFTNmUS-usRZKBEqp_YrpxDhckj9tdTtC+m_5EnO+UECw@mail.gmail.com>
+	<CAAMvbhEAcLuE+5KGP13wCc8nVBp1Eq-UPtaUD7c5oGVq8io8Lw@mail.gmail.com>
+	<20130228000236.GA2216@kroah.com>
+Date: Thu, 28 Feb 2013 00:31:05 +0000
+Message-ID: <CAAMvbhGbkUkpEu35JHe1t3m7xDTtKVegUWtmEsgYn7iSeouU2w@mail.gmail.com>
+Subject: Re: resume fails to light display on Macbook Pro Retina on 3.8-rc1
+From: James Courtier-Dutton <james.dutton@gmail.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Dave Airlie <airlied@gmail.com>, Ben Skeggs <bskeggs@redhat.com>,
+        David Airlie <airlied@linux.ie>, Martin Peres <martin.peres@labri.fr>,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When the userspace messaging (for the less common case of userspace key
-wrap/unwrap via ecryptfsd) is not needed, allow eCryptfs to build with
-it removed. This saves on kernel code size and reduces potential attack
-surface by removing the /dev/ecryptfs node.
+On 28 February 2013 00:02, Greg KH <gregkh@linuxfoundation.org> wrote:
+> On Wed, Feb 27, 2013 at 11:27:30PM +0000, James Courtier-Dutton wrote:
+>> On 26 February 2013 18:11, James Courtier-Dutton <james.dutton@gmail.com> wrote:
+>> > On 26 February 2013 17:35, Greg KH <gregkh@linuxfoundation.org> wrote:
+>> >> On Mon, Feb 25, 2013 at 07:45:45PM -0800, Greg KH wrote:
+>> >>> On Mon, Feb 25, 2013 at 02:32:43PM -0800, Greg KH wrote:
+>> >>> > On Mon, Feb 25, 2013 at 04:06:02PM +1000, Dave Airlie wrote:
+>> >>> > > On Mon, Feb 25, 2013 at 3:52 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+>> >>> > > > Hi Ben,
+>> >>> > > >
+>> >>> > > > My Macbook Pro Retina fails to resume properly on 3.8.  I tracked this
+>> >>> > > > down to commit 6c5a04249d7afeea3e0ed971e7813f84e29a1706 (drm/nvd0/disp:
+>> >>> > > > move link training helpers into core as display methods)
+>> >>> > > >
+>> >>> > > > Anything I can try to help solve this?
+>> >>> > > >
+>> >>> > > > Note, I'm using the Intel driver as the main controller for this laptop,
+>> >>> > > > well, I think I am, my xorg log is attached.
+>> >>> > >
+>> >>> > > No you are using the nvidia, the efi always boots nvidia enabled now.
+>> >>> >
+>> >>> > Really?  When did that change?  I thought I wanted to be using the Intel
+>> >>> > chip to save battery life.
+>> >>> >
+>> >>> > > btw I just tested my drm-next tree on mine and it resumed the display
+>> >>> > > fine, something oopsed a few seconds later that I haven't tracked down
+>> >>> > >
+>> >>> > > git://git.freedesktop.org/~airlied/linux drm-next
+>> >>> > >
+>> >>> > > I'll be sending it to Linus this evening or tomorrow morning, once I
+>> >>> > > fix my tree.
+>> >>> >
+>> >>> > Ok, I'll test again when it hits Linus's tree, and if that works, it
+>> >>> > would be good to try to work out what patch fixes it to get them into
+>> >>> > the 3.8-stable series so that others don't run into the same problem.
+>> >>>
+>> >>> I've tested Linus's tree now (I'm guessing it has all of your changes in
+>> >>> it), and it works!
+>> >>>
+>> >>> I see a bunch of patches marked for the stable branch, so I'll try those
+>> >>> out and see if they fix the problem.  If not, I'll let you and Ben know.
+>> >>
+>> >> I've applied the radeon patches tagged for -stable and tested that on
+>> >> 3.8.0, but that doesn't solve the resume problem.  Any ideas of anything
+>> >> else I can do to test this?  Doing a "backwards" git-bisect is a pain,
+>> >> but I guess I can do that to try to track down what patch fixed this, if
+>> >> that's the only idea people have...
+>> >>
+>> >
+>> > If it helps, I have a similar resume problem here.
+>> > 3.7.8 good
+>> > 3.8.0 bad
+>> >
+>> > Laptop with no nvidia, no amd graphics, just Intel Graphics 4000, 3rd
+>> > Gen I5 CPU.
+>>
+>> Problem: "Backlight not coming on after resume."
+>> git finally bisected  for my Samsung Serial 7 Laptop.
+>> Bisecting: 0 revisions left to test after this (roughly 0 steps)
+>> [cf0a6584aa6d382f802f2c3cacac23ccbccde0cd] drm/i915: write backlight
+>> harder     <- This is the problem commit. Seems that fixing some
+>> machines breaks others, based on the existing comments on that patch.
+>
+> Hm, so, 3.8.0 works for you, but 3.8.1-rc1 doesn't?  Or are you saying
+> Linus's tree doesn't work for you?
+>
+> As you have a different issue here than the nvidia hardware I was
+> dealing with, you might want to try to start over with a new thread and
+> the needed info, and the needed people on it (i.e. the i915
+> maintainers and mailing list.)
+>
+I little confusing sorry.
+I started using:
+git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git
+For that 3.7.8 worked fine, 3.8 failed to restore X, but the backlight lights.
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Cc: Tyler Hicks <tyhicks@canonical.com>
----
- fs/ecryptfs/Kconfig           |    8 ++++++++
- fs/ecryptfs/Makefile          |    7 +++++--
- fs/ecryptfs/ecryptfs_kernel.h |   27 +++++++++++++++++++++++++--
- fs/ecryptfs/keystore.c        |    4 ++--
- 4 files changed, 40 insertions(+), 6 deletions(-)
+I then moved to linus tree at:
+git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
+On Linus tree the problem commit is:
+[cf0a6584aa6d382f802f2c3cacac23ccbccde0cd] drm/i915: write backlight harder
+The problem on the Linux tree is different from the stable tree.
+Linus tree: Backlight fails to light up after resume.
+linux-stable tree: Failed to restore X, but the backlight lights.
 
-diff --git a/fs/ecryptfs/Kconfig b/fs/ecryptfs/Kconfig
-index e15ef38..434aa31 100644
---- a/fs/ecryptfs/Kconfig
-+++ b/fs/ecryptfs/Kconfig
-@@ -12,3 +12,11 @@ config ECRYPT_FS
- 
- 	  To compile this file system support as a module, choose M here: the
- 	  module will be called ecryptfs.
-+
-+config ECRYPT_FS_MESSAGING
-+	bool "Enable notifications for userspace key wrap/unwrap"
-+	depends on ECRYPT_FS
-+	help
-+	  Enables the /dev/ecryptfs entry for use by ecryptfsd. This allows
-+	  for userspace to wrap/unwrap file encryption keys by other
-+	  backends, like OpenSSL.
-diff --git a/fs/ecryptfs/Makefile b/fs/ecryptfs/Makefile
-index 2cc9ee4..49678a6 100644
---- a/fs/ecryptfs/Makefile
-+++ b/fs/ecryptfs/Makefile
-@@ -1,7 +1,10 @@
- #
--# Makefile for the Linux 2.6 eCryptfs
-+# Makefile for the Linux eCryptfs
- #
- 
- obj-$(CONFIG_ECRYPT_FS) += ecryptfs.o
- 
--ecryptfs-objs := dentry.o file.o inode.o main.o super.o mmap.o read_write.o crypto.o keystore.o messaging.o miscdev.o kthread.o debug.o
-+ecryptfs-y := dentry.o file.o inode.o main.o super.o mmap.o read_write.o \
-+	      crypto.o keystore.o kthread.o debug.o
-+
-+ecryptfs-$(CONFIG_ECRYPT_FS_MESSAGING) += messaging.o miscdev.o
-diff --git a/fs/ecryptfs/ecryptfs_kernel.h b/fs/ecryptfs/ecryptfs_kernel.h
-index cfb4b9f..b33722c 100644
---- a/fs/ecryptfs/ecryptfs_kernel.h
-+++ b/fs/ecryptfs/ecryptfs_kernel.h
-@@ -399,7 +399,9 @@ struct ecryptfs_daemon {
- 	struct hlist_node euid_chain;
- };
- 
-+#ifdef CONFIG_ECRYPT_FS_MESSAGING
- extern struct mutex ecryptfs_daemon_hash_mux;
-+#endif
- 
- static inline size_t
- ecryptfs_lower_header_size(struct ecryptfs_crypt_stat *crypt_stat)
-@@ -604,6 +606,7 @@ int
- ecryptfs_setxattr(struct dentry *dentry, const char *name, const void *value,
- 		  size_t size, int flags);
- int ecryptfs_read_xattr_region(char *page_virt, struct inode *ecryptfs_inode);
-+#ifdef CONFIG_ECRYPT_FS_MESSAGING
- int ecryptfs_process_response(struct ecryptfs_daemon *daemon,
- 			      struct ecryptfs_message *msg, u32 seq);
- int ecryptfs_send_message(char *data, int data_len,
-@@ -612,6 +615,24 @@ int ecryptfs_wait_for_response(struct ecryptfs_msg_ctx *msg_ctx,
- 			       struct ecryptfs_message **emsg);
- int ecryptfs_init_messaging(void);
- void ecryptfs_release_messaging(void);
-+#else
-+static inline int ecryptfs_init_messaging(void)
-+{
-+	return 0;
-+}
-+static inline void ecryptfs_release_messaging(void)
-+{ }
-+static inline int ecryptfs_send_message(char *data, int data_len,
-+					struct ecryptfs_msg_ctx **msg_ctx)
-+{
-+	return -ENOTCONN;
-+}
-+static inline int ecryptfs_wait_for_response(struct ecryptfs_msg_ctx *msg_ctx,
-+					     struct ecryptfs_message **emsg)
-+{
-+	return -ENOMSG;
-+}
-+#endif
- 
- void
- ecryptfs_write_header_metadata(char *virt,
-@@ -649,12 +670,11 @@ int ecryptfs_read_lower_page_segment(struct page *page_for_ecryptfs,
- 				     size_t offset_in_page, size_t size,
- 				     struct inode *ecryptfs_inode);
- struct page *ecryptfs_get_locked_page(struct inode *inode, loff_t index);
--int ecryptfs_exorcise_daemon(struct ecryptfs_daemon *daemon);
--int ecryptfs_find_daemon_by_euid(struct ecryptfs_daemon **daemon);
- int ecryptfs_parse_packet_length(unsigned char *data, size_t *size,
- 				 size_t *length_size);
- int ecryptfs_write_packet_length(char *dest, size_t size,
- 				 size_t *packet_size_length);
-+#ifdef CONFIG_ECRYPT_FS_MESSAGING
- int ecryptfs_init_ecryptfs_miscdev(void);
- void ecryptfs_destroy_ecryptfs_miscdev(void);
- int ecryptfs_send_miscdev(char *data, size_t data_size,
-@@ -663,6 +683,9 @@ int ecryptfs_send_miscdev(char *data, size_t data_size,
- void ecryptfs_msg_ctx_alloc_to_free(struct ecryptfs_msg_ctx *msg_ctx);
- int
- ecryptfs_spawn_daemon(struct ecryptfs_daemon **daemon, struct file *file);
-+int ecryptfs_exorcise_daemon(struct ecryptfs_daemon *daemon);
-+int ecryptfs_find_daemon_by_euid(struct ecryptfs_daemon **daemon);
-+#endif
- int ecryptfs_init_kthread(void);
- void ecryptfs_destroy_kthread(void);
- int ecryptfs_privileged_open(struct file **lower_file,
-diff --git a/fs/ecryptfs/keystore.c b/fs/ecryptfs/keystore.c
-index 2333203..32bd806 100644
---- a/fs/ecryptfs/keystore.c
-+++ b/fs/ecryptfs/keystore.c
-@@ -1168,7 +1168,7 @@ decrypt_pki_encrypted_session_key(struct ecryptfs_auth_tok *auth_tok,
- 	rc = ecryptfs_send_message(payload, payload_len, &msg_ctx);
- 	if (rc) {
- 		ecryptfs_printk(KERN_ERR, "Error sending message to "
--				"ecryptfsd\n");
-+				"ecryptfsd: %d\n", rc);
- 		goto out;
- 	}
- 	rc = ecryptfs_wait_for_response(msg_ctx, &msg);
-@@ -1989,7 +1989,7 @@ pki_encrypt_session_key(struct key *auth_tok_key,
- 	rc = ecryptfs_send_message(payload, payload_len, &msg_ctx);
- 	if (rc) {
- 		ecryptfs_printk(KERN_ERR, "Error sending message to "
--				"ecryptfsd\n");
-+				"ecryptfsd: %d\n", rc);
- 		goto out;
- 	}
- 	rc = ecryptfs_wait_for_response(msg_ctx, &msg);
--- 
-1.7.9.5
+So, I think the linus tree fixes the "failed to restore X" bit, but
+introduced a new regression for the backlight.
+I don't know which patch from the Linus tree would fix the stable 3.8 tree.
 
-
--- 
-Kees Cook
-Chrome OS Security
+I will send an email to the i915 maintainers tomorrow.
