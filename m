@@ -1,86 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760377Ab3B1PPi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 10:15:38 -0500
-Received: from mail-ob0-f182.google.com ([209.85.214.182]:62886 "EHLO
-	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760351Ab3B1PPc (ORCPT
+	id S1760393Ab3B1PQM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 10:16:12 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:42052 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756760Ab3B1Or1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 10:15:32 -0500
-MIME-Version: 1.0
-In-Reply-To: <CADnq5_OadSJ1thVEvfQVfTZ3De0vivVjnCKwepVxabs6i6ivLQ@mail.gmail.com>
-References: <alpine.DEB.2.00.1302260003460.24684@skynet.skynet.ie>
-	<CA+5PVA5wtZipQRTPfvbh1U8gjDMaW0095EsNz==Co+iww3YN1g@mail.gmail.com>
-	<CA+5PVA5vvw-JyODTtRwVhQSEiGrt=3wzDoCmeButEMTZxWAhbA@mail.gmail.com>
-	<CA+5PVA5za2stXYxQ_Tu3D6Lbif94cqK_5wvPXFhUpvsh_DOXVg@mail.gmail.com>
-	<CA+5PVA6CQ0YrSGkXPGtmzB9BgabXyiRnMSMKYDCJM+OuF5t6gQ@mail.gmail.com>
-	<CADnq5_PqAAhQZ-4Fd0UNoT5aEhUDdtu4n+1qXYucXsnyi0sQwQ@mail.gmail.com>
-	<CA+5PVA7Yzrx_=k9HB-D5v=7gsmn1ZyNb7YpzwDW-1j35Bbrs4Q@mail.gmail.com>
-	<CADnq5_OadSJ1thVEvfQVfTZ3De0vivVjnCKwepVxabs6i6ivLQ@mail.gmail.com>
-Date: Thu, 28 Feb 2013 10:15:31 -0500
-Message-ID: <CA+5PVA6P2igBMmOeVwhoA5cy0NQHzd-MM6jw5ySUBfZUsMK=ag@mail.gmail.com>
-Subject: Re: [git pull] drm merge for 3.9-rc1
-From: Josh Boyer <jwboyer@gmail.com>
-To: Alex Deucher <alexdeucher@gmail.com>
-Cc: Dave Airlie <airlied@linux.ie>, Alex Deucher <alexander.deucher@amd.com>,
-        Jerome Glisse <jglisse@redhat.com>, torvalds@linux-foundation.org,
-        linux-kernel@vger.kernel.org,
-        DRI mailing list <dri-devel@lists.freedesktop.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 28 Feb 2013 09:47:27 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 040/139] ARM: 7643/1: sched: correct update_sched_clock()
+Date: Thu, 28 Feb 2013 14:43:10 +0000
+Message-Id: <1362062689-2567-41-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1362062689-2567-1-git-send-email-luis.henriques@canonical.com>
+References: <1362062689-2567-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 28, 2013 at 10:09 AM, Alex Deucher <alexdeucher@gmail.com> wrote:
-> On Thu, Feb 28, 2013 at 8:44 AM, Josh Boyer <jwboyer@gmail.com> wrote:
->> On Thu, Feb 28, 2013 at 8:38 AM, Alex Deucher <alexdeucher@gmail.com> wrote:
->>>>>>> ca57802e521de54341efc8a56f70571f79ffac72 is the first bad commit
->>>>>>
->>>>>> So I don't think that's actually the cause of the problem.  Or at least
->>>>>> not that alone.  I reverted it on top of Linus' latest tree and I still
->>>>>> get the lockups.
->>>>>
->>>>> Actually, git bisect does seem to have gotten it correct.  Once I
->>>>> actually tested the revert of just that on top of Linus' tree (commit
->>>>> d895cb1af1), things seem to be working much better.  I've rebooted a
->>>>> dozen times without a lockup.  The most I've seen it take on a kernel
->>>>> with that commit included is 3 reboots, so that's definitely at least an
->>>>> improvement.
->>>>
->>>> I give up.  GPU issues are not my thing.  2 reboots after I sent that it
->>>> gave me pretty rainbow static again.  So it might have been an
->>>> improvement, but revert it is not a solution.
->>>>
->>>> Looking at there rest of the commits, the whole GPU rework might be
->>>> suspect, but I clearly have no clue.
->>>
->>> GPUs are tricky beasts :)
->>
->> Understatement ;).
->>
->>> ca57802e521de54341efc8a56f70571f79ffac72 mostly likely wasn't the
->>> problem anyway since it only affects 6xx/7xx and your card is handled
->>> by the evergreen code.  I'll put together some patches to help narrow
->>> down the problem.
->>
->> Yeah, that's the biggest problem I have, not knowing which functions are
->> actually being executed for this card.  It looks like a combination of
->> stuff in evergreen.c and ni.c, but I have no idea.
->>
->> Patches would be great.  If nothing else, I'm really good at building
->> kernels and rebooting by now.
->
-> Two possible fixes attached.  The first attempts a full reset of all
-> blocks if the MC (memory controller) is hung.  That may work better
-> than just resetting the MC.  The second just disables MC reset.  I'm
-> not sure we can reliably tell if it's busy due to display requests
-> hitting the MC periodically which would lead to needlessly resetting
-> it possibly leading to failures like you are seeing.
+3.5.7.7 -stable review patch.  If anyone has any objections, please let me know.
 
-OK.  I'll test them individually.  It will probably take a bit because
-I'll want to do numerous reboots if things seem "fixed" with one or the
-other.
+------------------
 
-I'll let you know how things go.
+From: Joonsoo Kim <js1304@gmail.com>
 
-josh
+commit 7c4e9ced424be4d36df6a3e3825763e97ee97607 upstream.
+
+If we want load epoch_cyc and epoch_ns atomically,
+we should update epoch_cyc_copy first of all.
+This notify reader that updating is in progress.
+
+If we update epoch_cyc first like as current implementation,
+there is subtle error case.
+Look at the below example.
+
+<Initial Condition>
+cyc = 9
+ns = 900
+cyc_copy = 9
+
+== CASE 1 ==
+<CPU A = reader>           <CPU B = updater>
+                           write cyc = 10
+read cyc = 10
+read ns = 900
+                           write ns = 1000
+                           write cyc_copy = 10
+read cyc_copy = 10
+
+output = (10, 900)
+
+== CASE 2 ==
+<CPU A = reader>           <CPU B = updater>
+read cyc = 9
+                           write cyc = 10
+                           write ns = 1000
+read ns = 1000
+read cyc_copy = 9
+                           write cyc_copy = 10
+output = (9, 1000)
+
+If atomic read is ensured, output should be (9, 900) or (10, 1000).
+But, output in example case are not.
+
+So, change updating sequence in order to correct this problem.
+
+Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ arch/arm/kernel/sched_clock.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/kernel/sched_clock.c b/arch/arm/kernel/sched_clock.c
+index 27d186a..6bbf936 100644
+--- a/arch/arm/kernel/sched_clock.c
++++ b/arch/arm/kernel/sched_clock.c
+@@ -84,11 +84,11 @@ static void notrace update_sched_clock(void)
+ 	 * detectable in cyc_to_fixed_sched_clock().
+ 	 */
+ 	raw_local_irq_save(flags);
+-	cd.epoch_cyc = cyc;
++	cd.epoch_cyc_copy = cyc;
+ 	smp_wmb();
+ 	cd.epoch_ns = ns;
+ 	smp_wmb();
+-	cd.epoch_cyc_copy = cyc;
++	cd.epoch_cyc = cyc;
+ 	raw_local_irq_restore(flags);
+ }
+ 
+-- 
+1.8.1.2
+
