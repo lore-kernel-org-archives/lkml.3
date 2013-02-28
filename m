@@ -1,104 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754670Ab3B1IoB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 03:44:01 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:48540 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754162Ab3B1IoA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 03:44:00 -0500
-X-AuditID: cbfee68f-b7f6a6d000004969-44-512f18ced743
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Andrew Morton'" <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, "'Alessandro Zummo'" <a.zummo@towertech.it>,
-        rtc-linux@googlegroups.com, "'Jingoo Han'" <jg1.han@samsung.com>
-References: <00a501ce158e$ef171610$cd454230$%han@samsung.com>
-In-reply-to: <00a501ce158e$ef171610$cd454230$%han@samsung.com>
-Subject: [PATCH 13/19] rtc: rtc-at91rm9200: remove erroneous __init/__exit
- annotations
-Date: Thu, 28 Feb 2013 17:43:58 +0900
-Message-id: <00b101ce158f$c00baba0$402302e0$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac4Vju7DHmrOxtsNRmyyH1DU6RVYuAAAMJ2w
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrGIsWRmVeSWpSXmKPExsVy+t8zY91zEvqBBvOazC2WXLzKbjFn/Ro2
-	i8sLL7FaXN41h81if2cHowOrx56JJ9k8Tsz4zeLRt2UVo8f0eT+ZPD5vkgtgjeKySUnNySxL
-	LdK3S+DKWN7+jb3gLXfFnfbvLA2Mrzi7GDk5JARMJObNXsoMYYtJXLi3ng3EFhJYxigxq0MF
-	pmb1wj+sXYxcQPHpjBJrWr+yQxT9YpT4csYBxGYTUJP48uUwUJyDQ0RAX6KtRQOknlmgl1Hi
-	TO9uqHpbiWNtbSwgNqeAncTvp0dZQWxhgQiJnp63TCA2i4CqxMsb98HivED1R+Zfh7IFJX5M
-	vgfWyyygJbF+53EmCFteYvOat8wgeyUE1CUe/dUFCYsIGEl0NPcxQpSISOx78Y4R5B4JgXvs
-	EieOTmGF2CUg8W3yIRaIXlmJTQeg4SApcXDFDZYJwBBAsnkWks2zkGyehWTFAkaWVYyiqQXJ
-	BcVJ6UXGesWJucWleel6yfm5mxghcdq/g/HuAetDjMlA6ycyS4km5wPjPK8k3tDY2MTMxNTE
-	3NLU3JQ0YSVxXvlLMoFCAumJJanZqakFqUXxRaU5qcWHGJk4OKUaGDOS/vHt+GMVpsDVtXBB
-	hOFZoXSf/wfOe/JuPODWoxHR0rOaUX1NtKp5SfekTw8YXD4tP8W28GBPPW/+armHU+cknVNw
-	W9Vb9ThgWtn7+1m31NKZZySxWBjuuPzMONroj1ePcdWdkA2eU05N28Dfn7Yqsu34mk8SJmvz
-	Lh2eW+7Ps98yncnUXYmlOCPRUIu5qDgRABpyoXHpAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrCKsWRmVeSWpSXmKPExsVy+t9jQd1zEvqBBmdeGFksuXiV3WLO+jVs
-	FpcXXmK1uLxrDpvF/s4ORgdWjz0TT7J5nJjxm8Wjb8sqRo/p834yeXzeJBfAGtXAaJORmpiS
-	WqSQmpecn5KZl26r5B0c7xxvamZgqGtoaWGupJCXmJtqq+TiE6DrlpkDtF1JoSwxpxQoFJBY
-	XKykb4dpQmiIm64FTGOErm9IEFyPkQEaSFjHmLG8/Rt7wVvuijvt31kaGF9xdjFyckgImEis
-	XviHFcIWk7hwbz1bFyMXh5DAdEaJNa1f2UESQgK/GCW+nHEAsdkE1CS+fDkMFOfgEBHQl2hr
-	0QCpZxboZZQ407sbqt5W4lhbGwuIzSlgJ/H76VGwBcICERI9PW+ZQGwWAVWJlzfug8V5geqP
-	zL8OZQtK/Jh8D6yXWUBLYv3O40wQtrzE5jVvmUH2SgioSzz6qwsSFhEwkuho7mOEKBGR2Pfi
-	HeMERqFZSCbNQjJpFpJJs5C0LGBkWcUomlqQXFCclJ5rpFecmFtcmpeul5yfu4kRnAaeSe9g
-	XNVgcYhRgINRiYe3w0QvUIg1say4MvcQowQHs5IIrwu/fqAQb0piZVVqUX58UWlOavEhxmSg
-	RycyS4km5wNTVF5JvKGxiZmRpZGZhZGJuTlpwkrivIynngQICaQnlqRmp6YWpBbBbGHi4JRq
-	YBQ6ej/+u/zGfQrrt8Z9st9clFjeuyFzbalo8PIG/utLl1tfkdhiuFXIe/MtnsXiyk9Sj7RN
-	5hIwKPbdaT3nZcxFtRltPO3Bu7ZZ/F2bq/Tj/707B1YddUjvn3nzkDP3ti0PglZ/PMswq7Zh
-	uYrEg7Oc13quJ+1S5MtbIZAx2bNp5dxeJvtun1YlluKMREMt5qLiRAARN/XtRwMAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1754674Ab3B1IoS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 03:44:18 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:43658 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753803Ab3B1IoN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Feb 2013 03:44:13 -0500
+Message-ID: <512F18D6.4080104@suse.cz>
+Date: Thu, 28 Feb 2013 09:44:06 +0100
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Rob Landley <rob@landley.net>, linux-kernel@vger.kernel.org,
+        Al Viro <viro@zeniv.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Cyrill Gorcunov <gorcunov@openvz.org>, Dave Jones <davej@redhat.com>,
+        David Howells <dhowell@redhat.com>,
+        David Howells <dhowells@redhat.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
+        Josh Boyer <jwboyer@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rusty Russell <rusty@rustcorp.com.au>, Sam Ravnborg <sam@ravnborg.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Vince Weaver <vincent.weaver@maine.edu>, x86@kernel.org,
+        Zheng Yan <zheng.z.yan@intel.com>
+Subject: Re: [PATCH 0/3] build linux-next without perl
+References: <1361944667.957820@landley.net> <20130227135155.c04453db.akpm@linux-foundation.org>
+In-Reply-To: <20130227135155.c04453db.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-__init/__exit annotations for probe()/remove() are supposed to be
-__devinit/__devexit, because __init/__exit for probe()/remove()
-are not correct. However, __devinit/__devexit are not used,
-because CONFIG_HOTPLUG was removed. Thus, these annotations
-should be removed.
+On 27.2.2013 22:51, Andrew Morton wrote:
+> It'll need to be reasonably good motivation, too.  Because not only do
+> we need to patch the kernel, we also need to *maintain* its
+> perl-freeness and fix up perlisms as they later get added by others.
+> 
+> (Perhaps one way of doing this would be to disable perl in regular
+> builds, so even if a developer has perl installed on his machine, his
+> build will still fail when he invokes it.  Add "PERL=/dev/null" to some
+> build targets in some manner.)
 
-Signed-off-by: Jingoo Han <jg1.han@samsung.com>
----
- drivers/rtc/rtc-at91rm9200.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+I don't think we need to go this far. Apparently, there are people who
+want to be able to build the kernel without perl, so let's rely on them
+to report if perl appears again as a hard build dependency. If these
+people lose interest, then after some time we might end up with perl
+being required again, but then this by definition won't be a problem for
+anyone who cares.
 
-diff --git a/drivers/rtc/rtc-at91rm9200.c b/drivers/rtc/rtc-at91rm9200.c
-index 434ebc3..055dafa 100644
---- a/drivers/rtc/rtc-at91rm9200.c
-+++ b/drivers/rtc/rtc-at91rm9200.c
-@@ -260,7 +260,7 @@ static const struct rtc_class_ops at91_rtc_ops = {
- /*
-  * Initialize and install RTC driver
-  */
--static int __init at91_rtc_probe(struct platform_device *pdev)
-+static int at91_rtc_probe(struct platform_device *pdev)
- {
- 	struct rtc_device *rtc;
- 	struct resource *regs;
-@@ -321,7 +321,7 @@ static int __init at91_rtc_probe(struct platform_device *pdev)
- /*
-  * Disable and remove the RTC driver
-  */
--static int __exit at91_rtc_remove(struct platform_device *pdev)
-+static int at91_rtc_remove(struct platform_device *pdev)
- {
- 	struct rtc_device *rtc = platform_get_drvdata(pdev);
- 
-@@ -382,7 +382,7 @@ static const struct dev_pm_ops at91_rtc_pm = {
- #endif
- 
- static struct platform_driver at91_rtc_driver = {
--	.remove		= __exit_p(at91_rtc_remove),
-+	.remove		= at91_rtc_remove,
- 	.driver		= {
- 		.name	= "at91_rtc",
- 		.owner	= THIS_MODULE,
--- 
-1.7.2.5
+It is like bashisms in shell scripts and Makefile commands. They should
+be avoided, but it wasn't until Debian and Ubuntu switched to /bin/sh ->
+dash when we started to fix them. Nowadays, the kernel should build file
+with a minimal POSIX shell, but we did not need any
+SHELL=$(objtree)/scripts/dash to achieve this.
 
-
+Michal
