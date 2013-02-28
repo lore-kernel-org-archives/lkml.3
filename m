@@ -1,163 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752761Ab3B1DYh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 22:24:37 -0500
-Received: from intranet.asianux.com ([58.214.24.6]:4630 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751190Ab3B1DYc (ORCPT
+	id S1752782Ab3B1DaI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 22:30:08 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:65137 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752183Ab3B1DaD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 22:24:32 -0500
-X-Spam-Score: -100.8
-Message-ID: <512ECDDC.2020607@asianux.com>
-Date: Thu, 28 Feb 2013 11:24:12 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: JBottomley@parallels.com, David Miller <davem@davemloft.net>,
-        kxie@chelsio.com, michaelc@cs.wisc.edu
-CC: linux-scsi@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] drivers/scsi/cxgbi: correcting the include path, so can
- pass compiling.
-References: <50F15A35.4000400@asianux.com> <50FB9A33.2090204@asianux.com> <51077BB3.2010809@asianux.com>
-In-Reply-To: <51077BB3.2010809@asianux.com>
-Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 8bit
+	Wed, 27 Feb 2013 22:30:03 -0500
+From: David Ahern <dsahern@gmail.com>
+To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
+Cc: David Ahern <dsahern@gmail.com>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Dongsoo Nathaniel Kim <dongsoo.kim@gmail.com>
+Subject: [PATCH] perf kvm: fix segfault by initializing file_name to NULL
+Date: Wed, 27 Feb 2013 20:29:57 -0700
+Message-Id: <1362022197-38929-1-git-send-email-dsahern@gmail.com>
+X-Mailer: git-send-email 1.7.10.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello relative Maintainers:
+Dongsoo reported that perf-kvm was segfaulting. The bug was introduced by
+commit 3786063 which moved file_name from struct perf_kvm which was
+initialized on the stack to an uninitialized stack variable. Fix by
+initializing.
 
-  could any one help checking this patch ?
+Needs to be applied to 3.7 and 3.8 as well.
 
-    this patch fixes the compiling issue.
-    the make command in my x86_64 laptop is: "make V=1 allmodconfig"
-    the patch was sent in Jan-12-2013, and get non-reply now.
+Signed-off-by: David Ahern <dsahern@gmail.com>
+Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: Dongsoo Nathaniel Kim <dongsoo.kim@gmail.com>
+---
+ tools/perf/builtin-kvm.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-  could you please give a glance when you have time.
-
-  thanks.
-
-  :-)
-
-gchen.
-
-
-于 2013年01月29日 15:35, Chen Gang 写道:
-> Hello JBottomley@parallels.com
-> 
->   have you already fixed it by another patches ?
-> 
->   if so:
->     better to let me know about it, so I should not bother you, again.
->   else
->     please give a glance to this patch, when you have time
->      (since compiling errors are always belong to critical errors)
-> 
->   thanks.
-> 
-> 
-> by the way:
->    I get the sending mail address from ./script/get_maintainer.pl.
->    if I sent to an incorrect member, please tell me.
-> 
->   thanks.
-> 
-> gchen.
-> 
-> 
-> 于 2013年01月20日 15:18, Chen Gang 写道:
->> Hello JBottomley@parallels.com
->>
->>   when you have free time, could you give a glance for this patch ?
->>
->>   thanks.
->>
->> gchen.
->>
->>
->> 于 2013年01月12日 20:42, Chen Gang 写道:
->>>
->>>   correct the include path,
->>>   or the compiler will report can not find "common.h"...
->>>
->>>   both cxgb3/ and cxgb4/ sub directly have l2t.h (they are different).
->>>   so it is not suitable to '-I' sub-directy, directly.
->>>
->>>
->>> Signed-off-by: Chen Gang <gang.chen@asianux.com>
->>> ---
->>>  drivers/scsi/cxgbi/Makefile        |    4 ++++
->>>  drivers/scsi/cxgbi/cxgb3i/cxgb3i.c |   14 +++++++-------
->>>  drivers/scsi/cxgbi/cxgb4i/cxgb4i.c |   10 +++++-----
->>>  3 files changed, 16 insertions(+), 12 deletions(-)
->>>
->>> diff --git a/drivers/scsi/cxgbi/Makefile b/drivers/scsi/cxgbi/Makefile
->>> index 86007e3..aff2998 100644
->>> --- a/drivers/scsi/cxgbi/Makefile
->>> +++ b/drivers/scsi/cxgbi/Makefile
->>> @@ -1,2 +1,6 @@
->>> +
->>> +ccflags-y			:= -Idrivers/net/ethernet/chelsio
->>> +subdir-ccflags-y		:= -Idrivers/net/ethernet/chelsio
->>> +
->>>  obj-$(CONFIG_SCSI_CXGB3_ISCSI)	+= libcxgbi.o cxgb3i/
->>>  obj-$(CONFIG_SCSI_CXGB4_ISCSI)	+= libcxgbi.o cxgb4i/
->>> diff --git a/drivers/scsi/cxgbi/cxgb3i/cxgb3i.c b/drivers/scsi/cxgbi/cxgb3i/cxgb3i.c
->>> index 49692a1..ca92e72 100644
->>> --- a/drivers/scsi/cxgbi/cxgb3i/cxgb3i.c
->>> +++ b/drivers/scsi/cxgbi/cxgb3i/cxgb3i.c
->>> @@ -18,13 +18,13 @@
->>>  #include <linux/moduleparam.h>
->>>  #include <scsi/scsi_host.h>
->>>  
->>> -#include "common.h"
->>> -#include "t3_cpl.h"
->>> -#include "t3cdev.h"
->>> -#include "cxgb3_defs.h"
->>> -#include "cxgb3_ctl_defs.h"
->>> -#include "cxgb3_offload.h"
->>> -#include "firmware_exports.h"
->>> +#include "cxgb3/common.h"
->>> +#include "cxgb3/t3_cpl.h"
->>> +#include "cxgb3/t3cdev.h"
->>> +#include "cxgb3/cxgb3_defs.h"
->>> +#include "cxgb3/cxgb3_ctl_defs.h"
->>> +#include "cxgb3/cxgb3_offload.h"
->>> +#include "cxgb3/firmware_exports.h"
->>>  #include "cxgb3i.h"
->>>  
->>>  static unsigned int dbg_level;
->>> diff --git a/drivers/scsi/cxgbi/cxgb4i/cxgb4i.c b/drivers/scsi/cxgbi/cxgb4i/cxgb4i.c
->>> index f924b3c..a5795d5 100644
->>> --- a/drivers/scsi/cxgbi/cxgb4i/cxgb4i.c
->>> +++ b/drivers/scsi/cxgbi/cxgb4i/cxgb4i.c
->>> @@ -20,11 +20,11 @@
->>>  #include <net/dst.h>
->>>  #include <linux/netdevice.h>
->>>  
->>> -#include "t4_msg.h"
->>> -#include "cxgb4.h"
->>> -#include "cxgb4_uld.h"
->>> -#include "t4fw_api.h"
->>> -#include "l2t.h"
->>> +#include "cxgb4/t4_msg.h"
->>> +#include "cxgb4/cxgb4.h"
->>> +#include "cxgb4/cxgb4_uld.h"
->>> +#include "cxgb4/t4fw_api.h"
->>> +#include "cxgb4/l2t.h"
->>>  #include "cxgb4i.h"
->>>  
->>>  static unsigned int dbg_level;
->>>
->>
->>
-> 
-> 
-
-
+diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
+index ca3f80e..e55701d 100644
+--- a/tools/perf/builtin-kvm.c
++++ b/tools/perf/builtin-kvm.c
+@@ -973,7 +973,7 @@ __cmd_buildid_list(const char *file_name, int argc, const char **argv)
+ 
+ int cmd_kvm(int argc, const char **argv, const char *prefix __maybe_unused)
+ {
+-	const char *file_name;
++	const char *file_name = NULL;
+ 
+ 	const struct option kvm_options[] = {
+ 		OPT_STRING('i', "input", &file_name, "file",
 -- 
-Chen Gang
+1.7.10.1
 
-Asianux Corporation
