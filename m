@@ -1,169 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760653Ab3B1Vk7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 16:40:59 -0500
-Received: from kanga.kvack.org ([205.233.56.17]:33980 "EHLO kanga.kvack.org"
+	id S1760669Ab3B1Vq4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 16:46:56 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:47923 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755418Ab3B1Vk5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 16:40:57 -0500
-Date: Thu, 28 Feb 2013 16:40:56 -0500
-From: Benjamin LaHaise <bcrl@kvack.org>
-To: Kent Overstreet <koverstreet@google.com>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-aio@kvack.org, tytso@mit.edu, axboe@kernel.dk, zab@redhat.com,
-        anatol@google.com
-Subject: Re: [PATCH 1/4] aio: io_cancel() no longer returns the io_event
-Message-ID: <20130228214056.GA25505@kvack.org>
-References: <1362083741-2429-1-git-send-email-koverstreet@google.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1362083741-2429-1-git-send-email-koverstreet@google.com>
-User-Agent: Mutt/1.4.2.2i
+	id S1751936Ab3B1Vqx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Feb 2013 16:46:53 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>, linux-usb@vger.kernel.org,
+        Tejun Heo <tj@kernel.org>, linux-ide@vger.kernel.org,
+        Jeff Garzik <jgarzik@pobox.com>, Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH 2/2] ACPI / glue: Drop .find_bridge() callback from struct acpi_bus_type
+Date: Thu, 28 Feb 2013 22:53:31 +0100
+Message-ID: <1995794.TENtrAZA5Q@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <1504144.f1SBuDyFqp@vostro.rjw.lan>
+References: <2612891.I2roH54cPk@vostro.rjw.lan> <20130228023313.GC4042@kroah.com> <1504144.f1SBuDyFqp@vostro.rjw.lan>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 28, 2013 at 12:35:38PM -0800, Kent Overstreet wrote:
-> Originally, io_event() was documented to return the io_event if
-> cancellation succeeded - the io_event wouldn't be delivered via the ring
-> buffer like it normally would.
-> 
-> But this isn't what the implementation was actually doing; the only
-> driver implementing cancellation, the usb gadget code, never returned an
-> io_event in its cancel function. And aio_complete() was recently changed
-> to no longer suppress event delivery if the kiocb had been cancelled.
-> 
-> This gets rid of the unused io_event argument to kiocb_cancel() and
-> kiocb->ki_cancel(), and changes io_cancel() to return -EINPROGRESS if
-> kiocb->ki_cancel() returned success.
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-...
+After PCI and USB have stopped using the .find_bridge() callback in
+struct acpi_bus_type, the only remaining user of it is SATA, but SATA
+only pretends to be a user, because it points that callback to a stub
+always returning -ENODEV.
 
-> diff --git a/drivers/usb/gadget/inode.c b/drivers/usb/gadget/inode.c
-> index b540a1d..fd1bf4a 100644
-> --- a/drivers/usb/gadget/inode.c
-> +++ b/drivers/usb/gadget/inode.c
-> @@ -524,7 +524,7 @@ struct kiocb_priv {
->  	unsigned		actual;
->  };
->  
-> -static int ep_aio_cancel(struct kiocb *iocb, struct io_event *e)
-> +static void ep_aio_cancel(struct kiocb *iocb)
->  {
->  	struct kiocb_priv	*priv = iocb->private;
->  	struct ep_data		*epdata;
-> @@ -540,7 +540,6 @@ static int ep_aio_cancel(struct kiocb *iocb, struct io_event *e)
->  	// spin_unlock(&epdata->dev->lock);
->  	local_irq_enable();
->  
-> -	aio_put_req(iocb);
->  	return value;
->  }
->  
+For this reason, drop the SATA's dummy .find_bridge() callback and
+remove .find_bridge(), which is not used any more, from struct
+acpi_bus_type entirely.
 
-You seem to have removed the return value from ki_cancel in the gadget code, 
-so this won't compile.  I think this is wrong and an unnecessary restriction 
-As such, I'm NAKing this patch.  Please leave the return value from the 
-ki_cancel function present so we can know if the cancel actually succeeded.
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+---
+ drivers/acpi/glue.c       |   26 +-------------------------
+ drivers/ata/libata-acpi.c |    6 ------
+ include/acpi/acpi_bus.h   |    3 ---
+ 3 files changed, 1 insertion(+), 34 deletions(-)
 
-		-ben
-
-
-> diff --git a/fs/aio.c b/fs/aio.c
-> index a86ffd0..4b9bfb5 100644
-> --- a/fs/aio.c
-> +++ b/fs/aio.c
-> @@ -256,8 +256,7 @@ void kiocb_set_cancel_fn(struct kiocb *req, kiocb_cancel_fn *cancel)
->  }
->  EXPORT_SYMBOL(kiocb_set_cancel_fn);
->  
-> -static int kiocb_cancel(struct kioctx *ctx, struct kiocb *kiocb,
-> -			struct io_event *res)
-> +static int kiocb_cancel(struct kioctx *ctx, struct kiocb *kiocb)
->  {
->  	kiocb_cancel_fn *old, *cancel;
->  	int ret = -EINVAL;
-> @@ -279,12 +278,10 @@ static int kiocb_cancel(struct kioctx *ctx, struct kiocb *kiocb,
->  	atomic_inc(&kiocb->ki_users);
->  	spin_unlock_irq(&ctx->ctx_lock);
->  
-> -	memset(res, 0, sizeof(*res));
-> -	res->obj = (u64)(unsigned long)kiocb->ki_obj.user;
-> -	res->data = kiocb->ki_user_data;
-> -	ret = cancel(kiocb, res);
-> +	ret = cancel(kiocb);
->  
->  	spin_lock_irq(&ctx->ctx_lock);
-> +	aio_put_req(kiocb);
->  
->  	return ret;
->  }
-> @@ -305,7 +302,6 @@ static void free_ioctx_rcu(struct rcu_head *head)
->  static void free_ioctx(struct kioctx *ctx)
->  {
->  	struct aio_ring *ring;
-> -	struct io_event res;
->  	struct kiocb *req;
->  	unsigned cpu, head, avail;
->  
-> @@ -316,7 +312,7 @@ static void free_ioctx(struct kioctx *ctx)
->  				       struct kiocb, ki_list);
->  
->  		list_del_init(&req->ki_list);
-> -		kiocb_cancel(ctx, req, &res);
-> +		kiocb_cancel(ctx, req);
->  	}
->  
->  	spin_unlock_irq(&ctx->ctx_lock);
-> @@ -1351,7 +1347,6 @@ static struct kiocb *lookup_kiocb(struct kioctx *ctx, struct iocb __user *iocb,
->  SYSCALL_DEFINE3(io_cancel, aio_context_t, ctx_id, struct iocb __user *, iocb,
->  		struct io_event __user *, result)
->  {
-> -	struct io_event res;
->  	struct kioctx *ctx;
->  	struct kiocb *kiocb;
->  	u32 key;
-> @@ -1369,18 +1364,19 @@ SYSCALL_DEFINE3(io_cancel, aio_context_t, ctx_id, struct iocb __user *, iocb,
->  
->  	kiocb = lookup_kiocb(ctx, iocb, key);
->  	if (kiocb)
-> -		ret = kiocb_cancel(ctx, kiocb, &res);
-> +		ret = kiocb_cancel(ctx, kiocb);
->  	else
->  		ret = -EINVAL;
->  
->  	spin_unlock_irq(&ctx->ctx_lock);
->  
->  	if (!ret) {
-> -		/* Cancellation succeeded -- copy the result
-> -		 * into the user's buffer.
-> +		/*
-> +		 * The result argument is no longer used - the io_event is
-> +		 * always delivered via the ring buffer. -EINPROGRESS indicates
-> +		 * cancellation is progress:
->  		 */
-> -		if (copy_to_user(result, &res, sizeof(res)))
-> -			ret = -EFAULT;
-> +		ret = -EINPROGRESS;
->  	}
->  
->  	put_ioctx(ctx);
-> diff --git a/include/linux/aio.h b/include/linux/aio.h
-> index 93892bf..7340f77 100644
-> --- a/include/linux/aio.h
-> +++ b/include/linux/aio.h
-> @@ -28,7 +28,7 @@ struct batch_complete;
->   */
->  #define KIOCB_CANCELLED		((void *) (~0ULL))
->  
-> -typedef int (kiocb_cancel_fn)(struct kiocb *, struct io_event *);
-> +typedef int (kiocb_cancel_fn)(struct kiocb *);
->  
->  struct kiocb {
->  	struct rb_node		ki_node;
-> -- 
-> 1.7.12
-
--- 
-"Thought is the essence of where you are now."
+Index: linux-pm/drivers/ata/libata-acpi.c
+===================================================================
+--- linux-pm.orig/drivers/ata/libata-acpi.c
++++ linux-pm/drivers/ata/libata-acpi.c
+@@ -1144,14 +1144,8 @@ static int ata_acpi_find_device(struct d
+ 		return -ENODEV;
+ }
+ 
+-static int ata_acpi_find_dummy(struct device *dev, acpi_handle *handle)
+-{
+-	return -ENODEV;
+-}
+-
+ static struct acpi_bus_type ata_acpi_bus = {
+ 	.name = "ATA",
+-	.find_bridge = ata_acpi_find_dummy,
+ 	.find_device = ata_acpi_find_device,
+ };
+ 
+Index: linux-pm/include/acpi/acpi_bus.h
+===================================================================
+--- linux-pm.orig/include/acpi/acpi_bus.h
++++ linux-pm/include/acpi/acpi_bus.h
+@@ -439,10 +439,7 @@ struct acpi_bus_type {
+ 	struct list_head list;
+ 	const char *name;
+ 	bool (*match)(struct device *dev);
+-	/* For general devices under the bus */
+ 	int (*find_device) (struct device *, acpi_handle *);
+-	/* For bridges, such as PCI root bridge, IDE controller */
+-	int (*find_bridge) (struct device *, acpi_handle *);
+ 	void (*setup)(struct device *);
+ 	void (*cleanup)(struct device *);
+ };
+Index: linux-pm/drivers/acpi/glue.c
+===================================================================
+--- linux-pm.orig/drivers/acpi/glue.c
++++ linux-pm/drivers/acpi/glue.c
+@@ -78,22 +78,6 @@ static struct acpi_bus_type *acpi_get_bu
+ 	return ret;
+ }
+ 
+-static int acpi_find_bridge_device(struct device *dev, acpi_handle * handle)
+-{
+-	struct acpi_bus_type *tmp;
+-	int ret = -ENODEV;
+-
+-	down_read(&bus_type_sem);
+-	list_for_each_entry(tmp, &bus_type_list, list) {
+-		if (tmp->find_bridge && !tmp->find_bridge(dev, handle)) {
+-			ret = 0;
+-			break;
+-		}
+-	}
+-	up_read(&bus_type_sem);
+-	return ret;
+-}
+-
+ static acpi_status do_acpi_find_child(acpi_handle handle, u32 lvl_not_used,
+ 				      void *addr_p, void **ret_p)
+ {
+@@ -262,15 +246,7 @@ static int acpi_platform_notify(struct d
+ 	int ret;
+ 
+ 	ret = acpi_bind_one(dev, NULL);
+-	if (ret) {
+-		if (!type) {
+-			ret = acpi_find_bridge_device(dev, &handle);
+-			if (!ret)
+-				ret = acpi_bind_one(dev, handle);
+-
+-			goto out;
+-		}
+-
++	if (ret && type) {
+ 		ret = type->find_device(dev, &handle);
+ 		if (ret) {
+ 			DBG("Unable to get handle for %s\n", dev_name(dev));
