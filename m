@@ -1,45 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759918Ab3B1PAA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 10:00:00 -0500
-Received: from mail-pb0-f51.google.com ([209.85.160.51]:33035 "EHLO
-	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759903Ab3B1O7y (ORCPT
+	id S1759932Ab3B1PAf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 10:00:35 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:42433 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932729Ab3B1OuQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 09:59:54 -0500
-Date: Thu, 28 Feb 2013 06:59:59 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Satoru Takeuchi <satoru.takeuchi@gmail.com>
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, stable@vger.kernel.org
-Subject: Re: [ 00/86] 3.4.34-stable review
-Message-ID: <20130228145959.GB8780@kroah.com>
-References: <20130226235912.881663118@linuxfoundation.org>
- <87txowbian.wl%satoru.takeuchi@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87txowbian.wl%satoru.takeuchi@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 28 Feb 2013 09:50:16 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Jani Nikula <jani.nikula@intel.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 107/139] drm/i915: add missing \n to UTS_RELEASE in the error_state
+Date: Thu, 28 Feb 2013 14:44:17 +0000
+Message-Id: <1362062689-2567-108-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1362062689-2567-1-git-send-email-luis.henriques@canonical.com>
+References: <1362062689-2567-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 28, 2013 at 11:54:24PM +0900, Satoru Takeuchi wrote:
-> At Tue, 26 Feb 2013 16:07:08 -0800,
-> Greg Kroah-Hartman wrote:
-> > 
-> > This is the start of the stable review cycle for the 3.4.34 release.
-> > There are 86 patches in this series, all will be posted as a response
-> > to this one.  If anyone has any issues with these being applied, please
-> > let me know.
-> > 
-> > Responses should be made by Thu Feb 28 23:58:09 UTC 2013.
-> > Anything received after that time might be too late.
-> 
-> This kernel can be built and boot without any problem.
-> Building a kernel with this kernel also works fine.
+3.5.7.7 -stable review patch.  If anyone has any objections, please let me know.
 
-Thanks for letting me know.
+------------------
 
-greg k-h
+From: Jani Nikula <jani.nikula@intel.com>
+
+commit fdfa175d0a9cfa2082ce24e67e284e5acbba452a upstream.
+
+Amending
+commit 4518f611ba21ba165ea3714055938a8984a44ff9
+Author: Daniel Vetter <daniel.vetter@ffwll.ch>
+Date:   Wed Jan 23 16:16:35 2013 +0100
+
+    drm/i915: dump UTS_RELEASE into the error_state
+
+Signed-off-by: Jani Nikula <jani.nikula@intel.com>
+Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ drivers/gpu/drm/i915/i915_debugfs.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/gpu/drm/i915/i915_debugfs.c b/drivers/gpu/drm/i915/i915_debugfs.c
+index 3459e27..5ec5222 100644
+--- a/drivers/gpu/drm/i915/i915_debugfs.c
++++ b/drivers/gpu/drm/i915/i915_debugfs.c
+@@ -710,7 +710,7 @@ static int i915_error_state(struct seq_file *m, void *unused)
+ 
+ 	seq_printf(m, "Time: %ld s %ld us\n", error->time.tv_sec,
+ 		   error->time.tv_usec);
+-	seq_printf(m, "Kernel: " UTS_RELEASE);
++	seq_printf(m, "Kernel: " UTS_RELEASE "\n");
+ 	seq_printf(m, "PCI ID: 0x%04x\n", dev->pci_device);
+ 	seq_printf(m, "EIR: 0x%08x\n", error->eir);
+ 	seq_printf(m, "IER: 0x%08x\n", error->ier);
+-- 
+1.8.1.2
+
