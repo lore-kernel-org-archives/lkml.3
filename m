@@ -1,77 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759043Ab3B1Q1j (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 11:27:39 -0500
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:37820 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758450Ab3B1Q1i (ORCPT
+	id S932241Ab3B1Q1t (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 11:27:49 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:22255 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758639Ab3B1Q1p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 11:27:38 -0500
-Date: Thu, 28 Feb 2013 08:27:35 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: Dave Jones <davej@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Pekka Enberg <penberg@kernel.org>, Christoph Lameter <cl@linux.com>,
-        linux-mm <linux-mm@kvack.org>
-Subject: Re: slub error in fs/sysfs/bin.c related code
-Message-ID: <20130228162735.GB26013@kroah.com>
-References: <512F7FEE.2090803@oracle.com>
+	Thu, 28 Feb 2013 11:27:45 -0500
+Message-ID: <512F856B.5090801@oracle.com>
+Date: Thu, 28 Feb 2013 11:27:23 -0500
+From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <512F7FEE.2090803@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Borislav Petkov <bp@alien8.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Greg KH <gregkh@linuxfoundation.org>, mingo@redhat.com,
+        tglx@linutronix.de, xen-devel@lists.xen.org,
+        linux-kernel@vger.kernel.org, samu.kallio@aberdeencloud.com,
+        kraman@redhat.com, jwboyer@redhat.com
+Subject: Re: Is: x86: mm: Fix vmalloc_fault oops during lazy MMU updates Was:
+ Re: [PATCH] mm/x86: Flush lazy MMU when DEBUG_PAGEALLOC is set
+References: <91983d94-7b7d-4a0b-9470-e7cd823ba139@default> <512E8B41.8000504@zytor.com> <20130227230009.GA32465@kroah.com> <512E91B7.6060102@zytor.com> <20130228142910.GA32354@phenom.dumpdata.com> <20130228153846.GA9782@pd.tnic> <512F7D88.4090703@zytor.com> <20130228161057.GC9767@pd.tnic> <512F83C4.6080904@oracle.com> <20130228162227.GD9767@pd.tnic>
+In-Reply-To: <20130228162227.GD9767@pd.tnic>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 28, 2013 at 11:03:58AM -0500, Sasha Levin wrote:
-> Hi Greg,
-> 
-> While fuzzing with trinity inside a KVM tools guest, running latest -next kernel
-> I got the following spew.
-> 
-> The open() and release() callbacks in the traces below point to fs/sysfs/bin.c.
+On 02/28/2013 11:22 AM, Borislav Petkov wrote:
+> On Thu, Feb 28, 2013 at 11:20:20AM -0500, Boris Ostrovsky wrote:
+>> On 02/28/2013 11:10 AM, Borislav Petkov wrote:
+>>> On Thu, Feb 28, 2013 at 07:53:44AM -0800, H. Peter Anvin wrote:
+>>>> At the very least we should have an early filter for the **COMMON!**
+>>>> case that we are not on a PV platform.
+>>> ... or, patch it out with the alternatives on baremetal, as Steven
+>>> suggested.
 
-Any hint as to which sysfs binary file you were accessing when this
-happened?
+What was the suggestion exactly? I don't remember seeing that message.
 
-> [  719.288925] =============================================================================
-> [  719.290663] BUG kmalloc-4096 (Tainted: G        W   ): Redzone overwritten
-> [  719.291764] -----------------------------------------------------------------------------
-> [  719.291764]
-> [  719.294527] Disabling lock debugging due to kernel taint
-> [  719.294527] INFO: 0xffff88006d1a5520-0xffff88006d1a5520. First byte 0x0 instead of 0xcc
-> [  719.294527] INFO: Allocated in open+0xb8/0x190 age=18922 cpu=1 pid=7095
-> [  719.294527] 	__slab_alloc+0x622/0x6d0
-> [  719.294527] 	kmem_cache_alloc_trace+0x123/0x2c0
-> [  719.294527] 	open+0xb8/0x190
-> [  719.294527] 	do_dentry_open+0x229/0x330
-> [  719.294527] 	finish_open+0x54/0x70
-> [  719.294527] 	do_last+0x56c/0x790
-> [  719.294527] 	path_openat+0xbe/0x490
-> [  719.294527] 	do_filp_open+0x44/0xa0
-> [  719.294527] 	do_sys_open+0x133/0x1d0
-> [  719.294527] 	sys_open+0x1c/0x20
-> [  719.294527] 	tracesys+0xdd/0xe2
-> [  719.294527] INFO: Freed in seq_release+0x18/0x30 age=18947 cpu=0 pid=31203
-> [  719.294527] 	__slab_free+0x3c/0x590
-> [  719.294527] 	kfree+0x2cb/0x2e0
-> [  719.294527] 	seq_release+0x18/0x30
-> [  719.294527] 	single_release+0x24/0x40
-> [  719.294527] 	proc_reg_release+0xed/0x110
-> [  719.294527] 	__fput+0x122/0x2d0
-> [  719.294527] 	____fput+0x9/0x10
-> [  719.294527] 	task_work_run+0xbe/0x100
-> [  719.294527] 	do_notify_resume+0x7e/0xa0
-> [  719.294527] 	int_signal+0x12/0x17
-> [  719.294527] INFO: Slab 0xffffea0001b46800 objects=7 used=7 fp=0x          (null) flags=0x1ffc0000004081
-> [  719.294527] INFO: Object 0xffff88006d1a4520 @offset=17696 fp=0x          (null)
+-boris
 
-Hm, where is sysfs in this traceback?  I don't see it mentioned anywhere
-in this report, what am I missing?
+>>>
+>> I think making a check for paravirt_enabled() is safe enough. I'll
+>> send a patch shortly.
+> Why not make it absolutely for free?
+>
 
-thanks,
-
-greg k-h
