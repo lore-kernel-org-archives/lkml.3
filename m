@@ -1,148 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752561Ab3B1CRk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 21:17:40 -0500
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:61145 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751588Ab3B1CRi (ORCPT
+	id S1752613Ab3B1CTn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 21:19:43 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:40193 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750999Ab3B1CTl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 21:17:38 -0500
-MIME-Version: 1.0
-In-Reply-To: <20130228013514.GA7556@lizard.fhda.edu>
-References: <1361989666-1922-1-git-send-email-paul.gortmaker@windriver.com>
- <20130227231826.GA30154@lizard.fhda.edu> <CAP=VYLqg5Q_e4y6bD9x8idOvJx2n_knzujOY9Z0VyGDEQZTzag@mail.gmail.com>
- <20130228013514.GA7556@lizard.fhda.edu>
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-Date: Wed, 27 Feb 2013 21:17:06 -0500
-X-Google-Sender-Auth: dIcaHXKYOP_--gK0Mg0ylSHeTfc
-Message-ID: <CAP=VYLoNV16xJtQGtmnC6TejaBRjBz5x=+Lhu7Yzm7q9UZ20AA@mail.gmail.com>
-Subject: Re: [PATCH] power: make goldfish option have a dependency on goldfish
-To: Anton Vorontsov <anton@enomsg.org>
-Cc: linux-kernel@vger.kernel.org, David Woodhouse <dwmw2@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 27 Feb 2013 21:19:41 -0500
+Date: Thu, 28 Feb 2013 13:19:30 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: oe Thornber <ejt@redhat.com>, Heinz Mauelshagen <mauelshagen@redhat.com>,
+        Alasdair G Kergon <agk@redhat.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Joe Thornber <ejt@redhat.com>,
+        Heinz Mauelshagen <mauelshagen@redhat.com>
+Subject: linux-next: build failure after merge of the final tree
+ (device-mapper tree related)
+Message-Id: <20130228131930.7d1f440a4c671e887253a2e4@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__28_Feb_2013_13_19_30_+1100_aylyw6bWy90j0Yn9"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 27, 2013 at 8:35 PM, Anton Vorontsov <anton@enomsg.org> wrote:
-> On Wed, Feb 27, 2013 at 07:48:38PM -0500, Paul Gortmaker wrote:
-> [...]
->> If you don't want to take the commit, I won't argue it any further, but
->> I genuinely do hope the above logical arguments perhaps might cause
->> you to  change your mind.
->
-> As a maintainer of drivers/power/, I have to keep things in a sane state,
-> which means, that I want to compile-test the patches that I am merging.
+--Signature=_Thu__28_Feb_2013_13_19_30_+1100_aylyw6bWy90j0Yn9
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-As you should, and nobody will fault you for that objective.
+Hi all,
 
->
-> Testing patches takes time, and if I have to do it for all bunch of
-> different machines and architectures, it becomes mess and unmanageable. In
+After merging the final tree, today's linux-next build (powerpc
+allyesconfig) failed like this:
 
-So, you actually want my change then -- you do not want to test for
-goldfish power issues unless goldfish is selected.  This is how I see
-the situation.
+drivers/md/dm-cache-policy-cleaner.c: In function 'alloc_hash':
+drivers/md/dm-cache-policy-cleaner.c:87:2: error: implicit declaration of f=
+unction 'vzalloc' [-Werror=3Dimplicit-function-declaration]
+drivers/md/dm-cache-policy-cleaner.c:87:14: warning: assignment makes point=
+er from integer without a cast [enabled by default]
+drivers/md/dm-cache-policy-cleaner.c: In function 'free_hash':
+drivers/md/dm-cache-policy-cleaner.c:94:2: error: implicit declaration of f=
+unction 'vfree' [-Werror=3Dimplicit-function-declaration]
+drivers/md/dm-cache-policy-cleaner.c: In function 'alloc_cache_blocks_with_=
+hash':
+drivers/md/dm-cache-policy-cleaner.c:101:13: warning: assignment makes poin=
+ter from integer without a cast [enabled by default]
+cc1: some warnings being treated as errors
+make[3]: *** [drivers/md/dm-cache-policy-cleaner.o] Error 1
+drivers/md/dm-cache-policy-mq.c: In function 'alloc_bitset':
+drivers/md/dm-cache-policy-mq.c:32:2: error: implicit declaration of functi=
+on 'vzalloc' [-Werror=3Dimplicit-function-declaration]
+drivers/md/dm-cache-policy-mq.c:32:2: warning: return makes pointer from in=
+teger without a cast [enabled by default]
+drivers/md/dm-cache-policy-mq.c: In function 'free_bitset':
+drivers/md/dm-cache-policy-mq.c:37:2: error: implicit declaration of functi=
+on 'vfree' [-Werror=3Dimplicit-function-declaration]
+cc1: some warnings being treated as errors
+make[3]: *** [drivers/md/dm-cache-policy-mq.o] Error 1
+drivers/md/dm-cache-target.c: In function 'alloc_bitset':
+drivers/md/dm-cache-target.c:46:2: error: implicit declaration of function =
+'vzalloc' [-Werror=3Dimplicit-function-declaration]
+drivers/md/dm-cache-target.c:46:2: warning: return makes pointer from integ=
+er without a cast [enabled by default]
+drivers/md/dm-cache-target.c: In function 'free_bitset':
+drivers/md/dm-cache-target.c:57:2: error: implicit declaration of function =
+'vfree' [-Werror=3Dimplicit-function-declaration]
 
-> another words, it is easier for me to use as little different
-> setups/.configs/cross-compilers/trees/etc as possible.
->
-> For example, here is the scenario:
->
-> - someone sends me a patch for goldfish driver;
-> - I quickly compile it on my [underpowered] x86 laptop without need for
->   cross-compilation and special configs;
-> - It compiles fine, produces no warnings, so I happily send out the
->   'Applied, thanks!' email;
+Caused by commits d5d224ab22e4 ("Add a target that allows a fast device
+such as an SSD to be used as a"), b5dc50616996 ("A cache policy that uses
+a multiqueue ordered by recent hit") and 9c44464a0aed ("A simple cache
+policy that writes back all data to the origin") from the device-mapper
+tree.
 
-I can not see how the above is at all relevant.  If someone sends you a
-patch for ARCH != x86, then your workflow will fail, regardless of what
-actually is within the patch.  As a maintainer, you need to be able to
-handle cross compiles -- you can't escape the slightly more detailed
-testing requirements we need to get from subsystem maintainers.  There
-are cross compile capable toolchains on kernel.org, and I use them
-regularly before sending out changes that can impact multiple arch.
+I added the following fix patch for today:
 
-ftp://ftp.kernel.org/pub/tools/crosstool/files/bin/
+=46rom 0fe0a64ba2a600a10725318998c19e0b3820e6d7 Mon Sep 17 00:00:00 2001
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Thu, 28 Feb 2013 13:11:49 +1100
+Subject: [PATCH] md: use of vmalloc et al needs vmalloc.h
 
-We can forgive individual contributors for not being arch aware, but
-at the subsystem maintainer level, folks should be arch aware, and
-doing regular x-compiles.
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ drivers/md/dm-cache-policy-cleaner.c | 1 +
+ drivers/md/dm-cache-policy-mq.c      | 1 +
+ drivers/md/dm-cache-target.c         | 1 +
+ 3 files changed, 3 insertions(+)
 
-> Now, with your patch:
->
-> - Someone sends me a patch for goldfish driver;
-> - I starting to look for my cross-compilers collections, making all the
->   environment setups, setting up a new build tree, looking for the
->   outdated goldfish config, the ARM thing fails to build somewhere in
->   arch/arm/plat-foo and drivers/mfd/bar. I become grumpy... and, you might
->   not believe me, I open and edit drivers/power/Kconfig and remove
+diff --git a/drivers/md/dm-cache-policy-cleaner.c b/drivers/md/dm-cache-pol=
+icy-cleaner.c
+index 43c270a..f43896f 100644
+--- a/drivers/md/dm-cache-policy-cleaner.c
++++ b/drivers/md/dm-cache-policy-cleaner.c
+@@ -12,6 +12,7 @@
+ #include <linux/hash.h>
+ #include <linux/module.h>
+ #include <linux/slab.h>
++#include <linux/vmalloc.h>
+=20
+ /*----------------------------------------------------------------*/
+=20
+diff --git a/drivers/md/dm-cache-policy-mq.c b/drivers/md/dm-cache-policy-m=
+q.c
+index 63ec258..d62d0c1 100644
+--- a/drivers/md/dm-cache-policy-mq.c
++++ b/drivers/md/dm-cache-policy-mq.c
+@@ -11,6 +11,7 @@
+ #include <linux/module.h>
+ #include <linux/mutex.h>
+ #include <linux/slab.h>
++#include <linux/vmalloc.h>
+=20
+ #define DM_MSG_PREFIX "cache-policy-mq"
+ #define MQ_VERSION	"1.0.0"
+diff --git a/drivers/md/dm-cache-target.c b/drivers/md/dm-cache-target.c
+index 630f769..1215050 100644
+--- a/drivers/md/dm-cache-target.c
++++ b/drivers/md/dm-cache-target.c
+@@ -14,6 +14,7 @@
+ #include <linux/mempool.h>
+ #include <linux/module.h>
+ #include <linux/slab.h>
++#include <linux/vmalloc.h>
+=20
+ #define DM_MSG_PREFIX "cache"
+=20
+--=20
+1.8.1
 
-I am confused here.  If there are correct depends lines here in the Kconfig,
-then it _protects_ you from suffering like this.  Yet, you want me to think
-that it adds new work, new cross compile requirements and so on.  I do
-not see how that can possibly happen.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
->   needless 'depends on' (that is, I actually do these kind of things when
->   I feel lazy enough).
->
-> Do you agree that without the additional deps life is easier for me? :)
+--Signature=_Thu__28_Feb_2013_13_19_30_+1100_aylyw6bWy90j0Yn9
+Content-Type: application/pgp-signature
 
-No, I do not agree.  In fact I see it as totally the opposite.  But I already
-said that I would not pursue this further, based only on differing points
-of view, and so, after sending this, I will adhere to that now.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-> If so, please do help me and the rest of the maintainers: instead of
-> adding the unneeded deps, for consistency just remove those which are not
-> needed.
+iQIcBAEBCAAGBQJRLr6yAAoJEECxmPOUX5FEFyIQAJAfSXyMYGaECzNyc58RhPnF
+dnODB251ERZbtydmMtZEkDmdLrEsZGwRrEkYQK6X23xotc0o5SJtCX9Vo9PpkOHQ
+B2lLez22q+D0IBw3AoWIOgcVI3sYByyjvayv9pNDZJkUl8AD0kkI84bgY5jnngWY
+cE3qG8cxYlzHi8DAHOHPRDUB635MZiUWGu4JH+D/upumlfR0wCYciXcR4NUDh9Bo
+4uh3jt4P8J/CsOyu5SeHdpc2Ni06gxqit+glOOeBw5PVdPnhyvGstvRyUs+sLbX5
+GAVv0Nc64fHuXPtrZDgwl78wVdGNMzXbHMkS0Y7/Qkl8yB5iDn2mJKsKK/jsKDtt
+2jCwVOvaskTyH4uFt59alC3FUtShI9OfUgWNvgUK/gzET8gn/y1ZSrRXYyuxqDZP
+jyfjg8T25gcpZEFCFz2ijsUfmQgaSEDirKmfO9b8w+T7jjurYxluXRR9U9mSHUsF
++1S5KMSjgWND7lAkYIKfngvpYuOHy8l08S7cdO7DyE3ly9u7YO61wWhjfSNdi/3O
+5NLkR9fX2Y1xT9ubGep39pksWarjGAMzB+VShyI5bkSRoc9T2TJGlnXn0FkIQvWr
+PRCSE7+RrGYwn+BkaXid6ahxZxxsnvdo5SKqUVeJ0FS0dKroZZqC5TfSxuGkOiSg
+eJBR34rZFrKk0jO7U1hg
+=lfZo
+-----END PGP SIGNATURE-----
 
-I think what I sent matches the above criteria.  If you still are convinced
-that I am incorrect in this regard, then I hope you can point to explicit
-specifics that can convince me I am wrong.  At the moment I do not
-see anything to convince me that is the case.  We are expanding work
-for maintainers, testers, and people doing build coverage for no return
-whatsoever, including yourself.
-
-Thanks,
-Paul.
---
-
->
-> Thanks,
->
-> Anton
->
-> p.s. Quick answers for the rest of your arguments:
->
->> The linux-next compile queue as it is today barely gets completed within
->>  a 24h window.
->
-> So, it is large enough already, and nothing we can do about it, things are
-> growing. But the good news is that no human attention is needed to compile
-> things. That is what machines are for. :)
->
->> --why shouldn't we restrict the maintenance overhead of CONFIG_FOO
->> to people who really do care about supporting and testing and updating
->> features conditional on CONFIG_FOO?  Given the size of the kernel
->> today, this seems to make sense in terms of developer "load balancing".
->
-> You don't have to enable/fix everything. Some things become broken, so
-> just disable them for the time being. But when people stumble upon broken
-> drivers, the drivers are either get fixed, or removed (if no one wants to
-> fix it). Sweeping drivers under 'depends on' doesn't do anything good in
-> this regard, IMO.
->
-> If we notice that goldfish is broken for long time and nobody cares to fix
-> it, then it is a good time to think about its removal. Since goldfish has
-> nothing goldfish-specific, it can be broeken only in a generic way, so if
-> it is broken on x86, it is as well broken for ARM.
->
->> If you don't want to take the commit, I won't argue it any further
->
-> I don't want to take it for a reason, but I do care whether my reasons
-> make sense to you.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+--Signature=_Thu__28_Feb_2013_13_19_30_+1100_aylyw6bWy90j0Yn9--
