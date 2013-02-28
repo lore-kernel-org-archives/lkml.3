@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932689Ab3B1Ot5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 09:49:57 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:42382 "EHLO
+	id S932715Ab3B1OuM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 09:50:12 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:42407 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932650Ab3B1Oty (ORCPT
+	with ESMTP id S1759046Ab3B1OuF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 09:49:54 -0500
+	Thu, 28 Feb 2013 09:50:05 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>, Dave Airlie <airlied@redhat.com>,
+Cc: Steven Rostedt <rostedt@goodmis.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 098/139] Revert "drm: Add EDID_QUIRK_FORCE_REDUCED_BLANKING for ASUS VW222S"
-Date: Thu, 28 Feb 2013 14:44:08 +0000
-Message-Id: <1362062689-2567-99-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 102/139] ftrace: Call ftrace cleanup module notifier after all other notifiers
+Date: Thu, 28 Feb 2013 14:44:12 +0000
+Message-Id: <1362062689-2567-103-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1362062689-2567-1-git-send-email-luis.henriques@canonical.com>
 References: <1362062689-2567-1-git-send-email-luis.henriques@canonical.com>
@@ -27,39 +27,129 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-commit db3985e5ca8f50fc17606855ba394783d11683a5 upstream.
+commit 8c189ea64eea01ca20d102ddb74d6936dd16c579 upstream.
 
-This reverts commit 6f33814bd4d9cfe76033a31b1c0c76c960cd8e4b.
+Commit: c1bf08ac "ftrace: Be first to run code modification on modules"
 
-The quirk cause a regression, and it looks like the original bug was
-simply a lack of FIFO bandwidth on the i915G of the reporter. Which
-should eventually be fixed as soon as we get around to implemented
-DSPARB FIFO reassignment on gen 3.
+changed ftrace module notifier's priority to INT_MAX in order to
+process the ftrace nops before anything else could touch them
+(namely kprobes). This was the correct thing to do.
 
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=52281
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Unfortunately, the ftrace module notifier also contains the ftrace
+clean up code. As opposed to the set up code, this code should be
+run *after* all the module notifiers have run in case a module is doing
+correct clean-up and unregisters its ftrace hooks. Basically, ftrace
+needs to do clean up on module removal, as it needs to know about code
+being removed so that it doesn't try to modify that code. But after it
+removes the module from its records, if a ftrace user tries to remove
+a probe, that removal will fail due as the record of that code segment
+no longer exists.
+
+Nothing really bad happens if the probe removal is called after ftrace
+did the clean up, but the ftrace removal function will return an error.
+Correct code (such as kprobes) will produce a WARN_ON() if it fails
+to remove the probe. As people get annoyed by frivolous warnings, it's
+best to do the ftrace clean up after everything else.
+
+By splitting the ftrace_module_notifier into two notifiers, one that
+does the module load setup that is run at high priority, and the other
+that is called for module clean up that is run at low priority, the
+problem is solved.
+
+Reported-by: Frank Ch. Eigler <fche@redhat.com>
+Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpu/drm/drm_edid.c | 3 ---
- 1 file changed, 3 deletions(-)
+ kernel/trace/ftrace.c | 46 ++++++++++++++++++++++++++++++++--------------
+ 1 file changed, 32 insertions(+), 14 deletions(-)
 
-diff --git a/drivers/gpu/drm/drm_edid.c b/drivers/gpu/drm/drm_edid.c
-index b7ee230..a8743c3 100644
---- a/drivers/gpu/drm/drm_edid.c
-+++ b/drivers/gpu/drm/drm_edid.c
-@@ -87,9 +87,6 @@ static struct edid_quirk {
- 	int product_id;
- 	u32 quirks;
- } edid_quirk_list[] = {
--	/* ASUS VW222S */
--	{ "ACI", 0x22a2, EDID_QUIRK_FORCE_REDUCED_BLANKING },
--
- 	/* Acer AL1706 */
- 	{ "ACR", 44358, EDID_QUIRK_PREFER_LARGE_60 },
- 	/* Acer F51 */
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index 793e367..e5a77ba 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -3835,37 +3835,51 @@ static void ftrace_init_module(struct module *mod,
+ 	ftrace_process_locs(mod, start, end);
+ }
+ 
+-static int ftrace_module_notify(struct notifier_block *self,
+-				unsigned long val, void *data)
++static int ftrace_module_notify_enter(struct notifier_block *self,
++				      unsigned long val, void *data)
+ {
+ 	struct module *mod = data;
+ 
+-	switch (val) {
+-	case MODULE_STATE_COMING:
++	if (val == MODULE_STATE_COMING)
+ 		ftrace_init_module(mod, mod->ftrace_callsites,
+ 				   mod->ftrace_callsites +
+ 				   mod->num_ftrace_callsites);
+-		break;
+-	case MODULE_STATE_GOING:
++	return 0;
++}
++
++static int ftrace_module_notify_exit(struct notifier_block *self,
++				     unsigned long val, void *data)
++{
++	struct module *mod = data;
++
++	if (val == MODULE_STATE_GOING)
+ 		ftrace_release_mod(mod);
+-		break;
+-	}
+ 
+ 	return 0;
+ }
+ #else
+-static int ftrace_module_notify(struct notifier_block *self,
+-				unsigned long val, void *data)
++static int ftrace_module_notify_enter(struct notifier_block *self,
++				      unsigned long val, void *data)
++{
++	return 0;
++}
++static int ftrace_module_notify_exit(struct notifier_block *self,
++				     unsigned long val, void *data)
+ {
+ 	return 0;
+ }
+ #endif /* CONFIG_MODULES */
+ 
+-struct notifier_block ftrace_module_nb = {
+-	.notifier_call = ftrace_module_notify,
++struct notifier_block ftrace_module_enter_nb = {
++	.notifier_call = ftrace_module_notify_enter,
+ 	.priority = INT_MAX,	/* Run before anything that can use kprobes */
+ };
+ 
++struct notifier_block ftrace_module_exit_nb = {
++	.notifier_call = ftrace_module_notify_exit,
++	.priority = INT_MIN,	/* Run after anything that can remove kprobes */
++};
++
+ extern unsigned long __start_mcount_loc[];
+ extern unsigned long __stop_mcount_loc[];
+ 
+@@ -3897,9 +3911,13 @@ void __init ftrace_init(void)
+ 				  __start_mcount_loc,
+ 				  __stop_mcount_loc);
+ 
+-	ret = register_module_notifier(&ftrace_module_nb);
++	ret = register_module_notifier(&ftrace_module_enter_nb);
++	if (ret)
++		pr_warning("Failed to register trace ftrace module enter notifier\n");
++
++	ret = register_module_notifier(&ftrace_module_exit_nb);
+ 	if (ret)
+-		pr_warning("Failed to register trace ftrace module notifier\n");
++		pr_warning("Failed to register trace ftrace module exit notifier\n");
+ 
+ 	set_ftrace_early_filters();
+ 
 -- 
 1.8.1.2
 
