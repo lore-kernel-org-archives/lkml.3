@@ -1,65 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753746Ab3B1EtI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 23:49:08 -0500
-Received: from mail-ve0-f174.google.com ([209.85.128.174]:38826 "EHLO
-	mail-ve0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751672Ab3B1EtD (ORCPT
+	id S1754434Ab3B1EuO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 23:50:14 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:62522 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752560Ab3B1EuL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 23:49:03 -0500
-MIME-Version: 1.0
-In-Reply-To: <1362024397.1867.28.camel@buesod1.americas.hpqcorp.net>
-References: <20130206150403.006e5294@cuia.bos.redhat.com>
-	<tip-4aef331850b637169ff036ed231f0d236874f310@git.kernel.org>
-	<CA+55aFx6N6SaRN+w=CTXJ=ZSsOE6KeS2R9sT_uhAx9h2j+hjKg@mail.gmail.com>
-	<511BE4A3.8050607@redhat.com>
-	<CA+55aFycMB7OZGQ54ueQ74C42beDBSdQE_fKJDV=TbjTjr_emg@mail.gmail.com>
-	<511C1204.9040608@redhat.com>
-	<CA+55aFwxYK-BLH0crhySHaQvAYHOH-VGUi7WTd1aq-24+WTDYw@mail.gmail.com>
-	<511C24A6.8020409@redhat.com>
-	<CA+55aFws80EEJQskqiP+a5J-HOGu=M1Fe=uCs50ifedVxPxT1Q@mail.gmail.com>
-	<512E376D.70105@redhat.com>
-	<CA+55aFzPxJ3rfZvAvrP9LxCXfDU8AAVvhMZnP-OAoe-ycc70aw@mail.gmail.com>
-	<512E6443.9050603@redhat.com>
-	<CA+55aFwHxv9RH75BoXYcwdKeHx+otOOpg9494TTdFwQe3biOhw@mail.gmail.com>
-	<512E80E3.7060800@redhat.com>
-	<CA+55aFwa0EjGG2NUDYVLVBmXJa2k81YiuNO2yggk=GLRQxhhUQ@mail.gmail.com>
-	<512EC7F0.60103@redhat.com>
-	<1362024397.1867.28.camel@buesod1.americas.hpqcorp.net>
-Date: Wed, 27 Feb 2013 20:49:01 -0800
-X-Google-Sender-Auth: Bn8_qE34ilnK21zjikNRKA6r1PU
-Message-ID: <CA+55aFygzjuNYiG4MTPMzimEjQ92rpS-rNJr7HD4OQCAqze5zg@mail.gmail.com>
-Subject: Re: [tip:core/locking] x86/smp: Move waiting on contended ticket lock
- out of line
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Davidlohr Bueso <davidlohr.bueso@hp.com>
-Cc: Rik van Riel <riel@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        "Vinod, Chegu" <chegu_vinod@hp.com>, "Low, Jason" <jason.low2@hp.com>,
-        linux-tip-commits@vger.kernel.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>, aquini@redhat.com,
-        Michel Lespinasse <walken@google.com>, Ingo Molnar <mingo@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 27 Feb 2013 23:50:11 -0500
+From: Mike Turquette <mturquette@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, patches@linaro.org,
+        linaro-dev@lists.linaro.org, Mike Turquette <mturquette@linaro.org>
+Subject: [PATCH v3 0/5] common clk framework reentrancy & dvfs, take 3
+Date: Wed, 27 Feb 2013 20:49:24 -0800
+Message-Id: <1362026969-11457-1-git-send-email-mturquette@linaro.org>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 27, 2013 at 8:06 PM, Davidlohr Bueso <davidlohr.bueso@hp.com> wrote:
->
-> The attached file shows how the amount of sys time used by the ipc lock
-> for a 4 and 8 socket box.
+Hello,
 
-I have to say, even with the improvements, that looks pretty
-disgusting. It really makes me wonder if that thing couldn't be done
-better some way. Is it the SysV semaphores that this all ends up
-using, or what?
+This series implements reentrancy for the common clk implementation of
+the clk.h api.  Making reentrant calls into the clock framework is both
+necessary and desirable for many use cases such as enabling off-chip
+clocks via i2c.  The first patch in the series implements this.
 
-That said, I think the IPC layer is just about the perfect candidate
-for things like this, because I'm afraid that nobody is ever going to
-fix it.
+A neat side effect of reentrancy is that it is possible for platforms
+using voltage regulators controlled via i2c to register rate-change
+notifier handlers to scale voltage as a function of clock rate.  This is
+an effective way to implement dynamic voltage & frequency scaling.
+Patch #2 implements a helper function for registering such a notifier
+handler.
 
-          Linus
+The third patch in the series demonstrates dvfs on OMAP platforms by
+modifying the cpufreq-omap driver; it migrates the voltage scaling logic
+out of the cpufreq driver's .target callback and registers callbacks via
+the helper introduced in patch #2.
+
+Patches four and five are purely test coverage.  And what better way to
+test than to muck with fragile PLL programming code?  These patches test
+out a lot of the aforementioned reentrancy in the OMAP3+ DPLL code.
+They are not for merging, but as a demonstration of what is now
+possible.
+
+Finally, I know that Documentation/clk.txt needs an update for these
+changes but I wanted this on the list before I flew out to LCA 2013.
+I'll provide that update during or after the conference.
+
+Two previous (and considerably more insane) attempts at this,
+v1: http://article.gmane.org/gmane.linux.kernel/1327866
+v2: http://marc.info/?l=linux-kernel&m=134507429302463&w=2
+
+Mike Turquette (5):
+  clk: allow reentrant calls into the clk framework
+  clk: notifier handler for dynamic voltage scaling
+  cpufreq: omap: scale regulator from clk notifier
+  HACK: set_parent callback for OMAP4 non-core DPLLs
+  HACK: omap: opp: add fake 400MHz OPP to bypass MPU
+
+ arch/arm/mach-omap2/cclock44xx_data.c |    1 +
+ arch/arm/mach-omap2/clock.h           |    1 +
+ arch/arm/mach-omap2/dpll3xxx.c        |  107 ++++++++++----
+ arch/arm/mach-omap2/opp4xxx_data.c    |   18 +++
+ drivers/clk/Makefile                  |    1 +
+ drivers/clk/clk.c                     |  254 ++++++++++++++++++++++++---------
+ drivers/clk/dvfs.c                    |  125 ++++++++++++++++
+ drivers/cpufreq/omap-cpufreq.c        |   82 +++--------
+ include/linux/clk.h                   |   27 +++-
+ 9 files changed, 459 insertions(+), 157 deletions(-)
+ create mode 100644 drivers/clk/dvfs.c
+
+-- 
+1.7.10.4
+
