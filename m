@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760254Ab3B1PNt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 10:13:49 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:42084 "EHLO
+	id S932114Ab3B1Orl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 09:47:41 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:42074 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757076Ab3B1Orm (ORCPT
+	with ESMTP id S1757076Ab3B1Org (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 09:47:42 -0500
+	Thu, 28 Feb 2013 09:47:36 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: George Spelvin <linux@horizon.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 047/139] pps: Use pps_lookup_dev to reduce ldisc coupling
-Date: Thu, 28 Feb 2013 14:43:17 +0000
-Message-Id: <1362062689-2567-48-git-send-email-luis.henriques@canonical.com>
+Cc: Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 045/139] idr: idr_for_each_entry() macro
+Date: Thu, 28 Feb 2013 14:43:15 +0000
+Message-Id: <1362062689-2567-46-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1362062689-2567-1-git-send-email-luis.henriques@canonical.com>
 References: <1362062689-2567-1-git-send-email-luis.henriques@canonical.com>
@@ -28,72 +26,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: George Spelvin <linux@horizon.com>
+From: Philipp Reisner <philipp.reisner@linbit.com>
 
-commit 03a7ffe4e542310838bac70ef85acc17536b6d7c upstream.
+commit 9749f30f1a387070e6e8351f35aeb829eacc3ab6 upstream.
 
-Now that N_TTY uses tty->disc_data for its private data,
-'subclass' ldiscs cannot use ->disc_data for their own private data.
-(This is a regression is v3.8-rc1)
+Inspired by the list_for_each_entry() macro
 
-Use pps_lookup_dev to associate the tty with the pps source instead.
-
-This fixes a crashing regression in 3.8-rc1.
-
-Signed-off-by: George Spelvin <linux@horizon.com>
-Acked-by: Rodolfo Giometti <giometti@enneenne.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/pps/clients/pps-ldisc.c | 10 ++++------
- 1 file changed, 4 insertions(+), 6 deletions(-)
+ include/linux/idr.h | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
 
-diff --git a/drivers/pps/clients/pps-ldisc.c b/drivers/pps/clients/pps-ldisc.c
-index 79451f2..60cee9e 100644
---- a/drivers/pps/clients/pps-ldisc.c
-+++ b/drivers/pps/clients/pps-ldisc.c
-@@ -31,7 +31,7 @@
- static void pps_tty_dcd_change(struct tty_struct *tty, unsigned int status,
- 				struct pps_event_time *ts)
- {
--	struct pps_device *pps = (struct pps_device *)tty->disc_data;
-+	struct pps_device *pps = pps_lookup_dev(tty);
+diff --git a/include/linux/idr.h b/include/linux/idr.h
+index 255491c..52a9da2 100644
+--- a/include/linux/idr.h
++++ b/include/linux/idr.h
+@@ -152,4 +152,15 @@ void ida_simple_remove(struct ida *ida, unsigned int id);
  
- 	BUG_ON(pps == NULL);
+ void __init idr_init_cache(void);
  
-@@ -67,9 +67,9 @@ static int pps_tty_open(struct tty_struct *tty)
- 		pr_err("cannot register PPS source \"%s\"\n", info.path);
- 		return -ENOMEM;
- 	}
--	tty->disc_data = pps;
-+	pps->lookup_cookie = tty;
- 
--	/* Should open N_TTY ldisc too */
-+	/* Now open the base class N_TTY ldisc */
- 	ret = alias_n_tty_open(tty);
- 	if (ret < 0) {
- 		pr_err("cannot open tty ldisc \"%s\"\n", info.path);
-@@ -81,7 +81,6 @@ static int pps_tty_open(struct tty_struct *tty)
- 	return 0;
- 
- err_unregister:
--	tty->disc_data = NULL;
- 	pps_unregister_source(pps);
- 	return ret;
- }
-@@ -90,11 +89,10 @@ static void (*alias_n_tty_close)(struct tty_struct *tty);
- 
- static void pps_tty_close(struct tty_struct *tty)
- {
--	struct pps_device *pps = (struct pps_device *)tty->disc_data;
-+	struct pps_device *pps = pps_lookup_dev(tty);
- 
- 	alias_n_tty_close(tty);
- 
--	tty->disc_data = NULL;
- 	dev_info(pps->dev, "removed\n");
- 	pps_unregister_source(pps);
- }
++/**
++ * idr_for_each_entry - iterate over an idr's elements of a given type
++ * @idp:     idr handle
++ * @entry:   the type * to use as cursor
++ * @id:      id entry's key
++ */
++#define idr_for_each_entry(idp, entry, id)				\
++	for (id = 0, entry = (typeof(entry))idr_get_next((idp), &(id)); \
++	     entry != NULL;                                             \
++	     ++id, entry = (typeof(entry))idr_get_next((idp), &(id)))
++
+ #endif /* __IDR_H__ */
 -- 
 1.8.1.2
 
