@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933162Ab3B1Ozg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 09:55:36 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:42531 "EHLO
+	id S1759453Ab3B1Oz6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 09:55:58 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:42526 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933079Ab3B1OvE (ORCPT
+	with ESMTP id S933064Ab3B1OvB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 09:51:04 -0500
+	Thu, 28 Feb 2013 09:51:01 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Stephen Hemminger <stephen@networkplumber.org>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Jan Beulich <jbeulich@suse.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 126/139] bridge: set priority of STP packets
-Date: Thu, 28 Feb 2013 14:44:36 +0000
-Message-Id: <1362062689-2567-127-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 125/139] xen-pciback: rate limit error messages from xen_pcibk_enable_msi{,x}()
+Date: Thu, 28 Feb 2013 14:44:35 +0000
+Message-Id: <1362062689-2567-126-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1362062689-2567-1-git-send-email-luis.henriques@canonical.com>
 References: <1362062689-2567-1-git-send-email-luis.henriques@canonical.com>
@@ -28,43 +27,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stephen Hemminger <stephen@networkplumber.org>
+From: Jan Beulich <jbeulich@suse.com>
 
-commit 547b4e718115eea74087e28d7fa70aec619200db upstream.
+commit 51ac8893a7a51b196501164e645583bf78138699 upstream.
 
-Spanning Tree Protocol packets should have always been marked as
-control packets, this causes them to get queued in the high prirority
-FIFO. As Radia Perlman mentioned in her LCA talk, STP dies if bridge
-gets overloaded and can't communicate. This is a long-standing bug back
-to the first versions of Linux bridge.
+... as being guest triggerable (e.g. by invoking
+XEN_PCI_OP_enable_msi{,x} on a device not being MSI/MSI-X capable).
 
-Signed-off-by: Stephen Hemminger <stephen@networkplumber.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+This is CVE-2013-0231 / XSA-43.
+
+Also make the two messages uniform in both their wording and severity.
+
+Signed-off-by: Jan Beulich <jbeulich@suse.com>
+Acked-by: Ian Campbell <ian.campbell@citrix.com>
+Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/bridge/br_stp_bpdu.c | 2 ++
- 1 file changed, 2 insertions(+)
+ drivers/xen/xen-pciback/pciback_ops.c | 14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
-diff --git a/net/bridge/br_stp_bpdu.c b/net/bridge/br_stp_bpdu.c
-index fd30a60..a8aa2d5 100644
---- a/net/bridge/br_stp_bpdu.c
-+++ b/net/bridge/br_stp_bpdu.c
-@@ -16,6 +16,7 @@
- #include <linux/etherdevice.h>
- #include <linux/llc.h>
- #include <linux/slab.h>
-+#include <linux/pkt_sched.h>
- #include <net/net_namespace.h>
- #include <net/llc.h>
- #include <net/llc_pdu.h>
-@@ -40,6 +41,7 @@ static void br_send_bpdu(struct net_bridge_port *p,
+diff --git a/drivers/xen/xen-pciback/pciback_ops.c b/drivers/xen/xen-pciback/pciback_ops.c
+index 97f5d26..37c1f82 100644
+--- a/drivers/xen/xen-pciback/pciback_ops.c
++++ b/drivers/xen/xen-pciback/pciback_ops.c
+@@ -135,7 +135,6 @@ int xen_pcibk_enable_msi(struct xen_pcibk_device *pdev,
+ 			 struct pci_dev *dev, struct xen_pci_op *op)
+ {
+ 	struct xen_pcibk_dev_data *dev_data;
+-	int otherend = pdev->xdev->otherend_id;
+ 	int status;
  
- 	skb->dev = p->dev;
- 	skb->protocol = htons(ETH_P_802_2);
-+	skb->priority = TC_PRIO_CONTROL;
+ 	if (unlikely(verbose_request))
+@@ -144,8 +143,9 @@ int xen_pcibk_enable_msi(struct xen_pcibk_device *pdev,
+ 	status = pci_enable_msi(dev);
  
- 	skb_reserve(skb, LLC_RESERVE);
- 	memcpy(__skb_put(skb, length), data, length);
+ 	if (status) {
+-		printk(KERN_ERR "error enable msi for guest %x status %x\n",
+-			otherend, status);
++		pr_warn_ratelimited(DRV_NAME ": %s: error enabling MSI for guest %u: err %d\n",
++				    pci_name(dev), pdev->xdev->otherend_id,
++				    status);
+ 		op->value = 0;
+ 		return XEN_PCI_ERR_op_failed;
+ 	}
+@@ -223,10 +223,10 @@ int xen_pcibk_enable_msix(struct xen_pcibk_device *pdev,
+ 						pci_name(dev), i,
+ 						op->msix_entries[i].vector);
+ 		}
+-	} else {
+-		printk(KERN_WARNING DRV_NAME ": %s: failed to enable MSI-X: err %d!\n",
+-			pci_name(dev), result);
+-	}
++	} else
++		pr_warn_ratelimited(DRV_NAME ": %s: error enabling MSI-X for guest %u: err %d!\n",
++				    pci_name(dev), pdev->xdev->otherend_id,
++				    result);
+ 	kfree(entries);
+ 
+ 	op->value = result;
 -- 
 1.8.1.2
 
