@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932283Ab3B1Os3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 09:48:29 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:42181 "EHLO
+	id S933064Ab3B1PKd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 10:10:33 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:42187 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932175Ab3B1OsZ (ORCPT
+	with ESMTP id S932273Ab3B1Os2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 09:48:25 -0500
+	Thu, 28 Feb 2013 09:48:28 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>,
-        "John W. Linville" <linville@tuxdriver.com>,
+Cc: Larry Finger <Larry.Finger@lwfinger.net>,
+        Bastian Bittorf <bittorf@bluebottle.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 063/139] rtlwifi: usb: allocate URB control message setup_packet and data buffer separately
-Date: Thu, 28 Feb 2013 14:43:33 +0000
-Message-Id: <1362062689-2567-64-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 064/139] b43: Increase number of RX DMA slots
+Date: Thu, 28 Feb 2013 14:43:34 +0000
+Message-Id: <1362062689-2567-65-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1362062689-2567-1-git-send-email-luis.henriques@canonical.com>
 References: <1362062689-2567-1-git-send-email-luis.henriques@canonical.com>
@@ -28,115 +29,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit bc6b89237acb3dee6af6e64e51a18255fef89cc2 upstream.
+commit ccae0e50c16a7f7adb029c169147400d1ce9f703 upstream.
 
-rtlwifi allocates both setup_packet and data buffer of control message urb,
-using shared kmalloc in _usbctrl_vendorreq_async_write. Structure used for
-allocating is:
-	struct {
-		u8 data[254];
-		struct usb_ctrlrequest dr;
-	};
+Bastian Bittorf reported that some of the silent freezes on a Linksys WRT54G
+were due to overflow of the RX DMA ring buffer, which was created with 64
+slots. That finding reminded me that I was seeing similar crashed on a netbook,
+which also has a relatively slow processor. After increasing the number of
+slots to 128, runs on the netbook that previously failed now worked; however,
+I found that 109 slots had been used in one test. For that reason, the number
+of slots is being increased to 256.
 
-Because 'struct usb_ctrlrequest' is __packed, setup packet is unaligned and
-DMA mapping of both 'data' and 'dr' confuses ARM/sunxi, leading to memory
-corruptions and freezes.
-
-Patch changes setup packet to be allocated separately.
-
-[v2]:
- - Use WARN_ON_ONCE instead of WARN_ON
-
-Signed-off-by: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Cc: Bastian Bittorf <bittorf@bluebottle.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/wireless/rtlwifi/usb.c | 44 ++++++++++++++++++++++++--------------
- 1 file changed, 28 insertions(+), 16 deletions(-)
+ drivers/net/wireless/b43/dma.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/net/wireless/rtlwifi/usb.c b/drivers/net/wireless/rtlwifi/usb.c
-index c03a018..d4850b4 100644
---- a/drivers/net/wireless/rtlwifi/usb.c
-+++ b/drivers/net/wireless/rtlwifi/usb.c
-@@ -42,8 +42,12 @@
+diff --git a/drivers/net/wireless/b43/dma.h b/drivers/net/wireless/b43/dma.h
+index 315b96e..9fdd198 100644
+--- a/drivers/net/wireless/b43/dma.h
++++ b/drivers/net/wireless/b43/dma.h
+@@ -169,7 +169,7 @@ struct b43_dmadesc_generic {
  
- static void usbctrl_async_callback(struct urb *urb)
- {
--	if (urb)
--		kfree(urb->context);
-+	if (urb) {
-+		/* free dr */
-+		kfree(urb->setup_packet);
-+		/* free databuf */
-+		kfree(urb->transfer_buffer);
-+	}
- }
+ /* DMA engine tuning knobs */
+ #define B43_TXRING_SLOTS		256
+-#define B43_RXRING_SLOTS		64
++#define B43_RXRING_SLOTS		256
+ #define B43_DMA0_RX_FW598_BUFSIZE	(B43_DMA0_RX_FW598_FO + IEEE80211_MAX_FRAME_LEN)
+ #define B43_DMA0_RX_FW351_BUFSIZE	(B43_DMA0_RX_FW351_FO + IEEE80211_MAX_FRAME_LEN)
  
- static int _usbctrl_vendorreq_async_write(struct usb_device *udev, u8 request,
-@@ -55,39 +59,47 @@ static int _usbctrl_vendorreq_async_write(struct usb_device *udev, u8 request,
- 	u8 reqtype;
- 	struct usb_ctrlrequest *dr;
- 	struct urb *urb;
--	struct rtl819x_async_write_data {
--		u8 data[REALTEK_USB_VENQT_MAX_BUF_SIZE];
--		struct usb_ctrlrequest dr;
--	} *buf;
-+	const u16 databuf_maxlen = REALTEK_USB_VENQT_MAX_BUF_SIZE;
-+	u8 *databuf;
-+
-+	if (WARN_ON_ONCE(len > databuf_maxlen))
-+		len = databuf_maxlen;
- 
- 	pipe = usb_sndctrlpipe(udev, 0); /* write_out */
- 	reqtype =  REALTEK_USB_VENQT_WRITE;
- 
--	buf = kmalloc(sizeof(*buf), GFP_ATOMIC);
--	if (!buf)
-+	dr = kmalloc(sizeof(*dr), GFP_ATOMIC);
-+	if (!dr)
- 		return -ENOMEM;
- 
-+	databuf = kmalloc(databuf_maxlen, GFP_ATOMIC);
-+	if (!databuf) {
-+		kfree(dr);
-+		return -ENOMEM;
-+	}
-+
- 	urb = usb_alloc_urb(0, GFP_ATOMIC);
- 	if (!urb) {
--		kfree(buf);
-+		kfree(databuf);
-+		kfree(dr);
- 		return -ENOMEM;
- 	}
- 
--	dr = &buf->dr;
--
- 	dr->bRequestType = reqtype;
- 	dr->bRequest = request;
- 	dr->wValue = cpu_to_le16(value);
- 	dr->wIndex = cpu_to_le16(index);
- 	dr->wLength = cpu_to_le16(len);
- 	/* data are already in little-endian order */
--	memcpy(buf, pdata, len);
-+	memcpy(databuf, pdata, len);
- 	usb_fill_control_urb(urb, udev, pipe,
--			     (unsigned char *)dr, buf, len,
--			     usbctrl_async_callback, buf);
-+			     (unsigned char *)dr, databuf, len,
-+			     usbctrl_async_callback, NULL);
- 	rc = usb_submit_urb(urb, GFP_ATOMIC);
--	if (rc < 0)
--		kfree(buf);
-+	if (rc < 0) {
-+		kfree(databuf);
-+		kfree(dr);
-+	}
- 	usb_free_urb(urb);
- 	return rc;
- }
 -- 
 1.8.1.2
 
