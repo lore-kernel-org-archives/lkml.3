@@ -1,61 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753420Ab3B1XuU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 18:50:20 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:56301 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751078Ab3B1XuS (ORCPT
+	id S1753103Ab3CABLr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 20:11:47 -0500
+Received: from mail-da0-f43.google.com ([209.85.210.43]:43757 "EHLO
+	mail-da0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751306Ab3CABLp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 18:50:18 -0500
-Date: Wed, 27 Feb 2013 21:19:50 -0500
+	Thu, 28 Feb 2013 20:11:45 -0500
+Date: Wed, 27 Feb 2013 22:48:03 -0500
 From: Andrew Shewmaker <agshew@gmail.com>
 To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH v2 2/2] mm: tuning hardcoded reserved memory
-Message-ID: <20130228021950.GA3829@localhost.localdomain>
-References: <20130227210925.GB8429@localhost.localdomain>
- <20130228141441.7dbd19be.akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [RFC PATCH v2 1/2] mm: tuning hardcoded reserved memory
+Message-ID: <20130228034803.GB3829@localhost.localdomain>
+References: <20130227205629.GA8429@localhost.localdomain>
+ <20130228141200.3fe7f459.akpm@linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130228141441.7dbd19be.akpm@linux-foundation.org>
+In-Reply-To: <20130228141200.3fe7f459.akpm@linux-foundation.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 28, 2013 at 02:14:41PM -0800, Andrew Morton wrote:
-> On Wed, 27 Feb 2013 16:09:25 -0500
+On Thu, Feb 28, 2013 at 02:12:00PM -0800, Andrew Morton wrote:
+> On Wed, 27 Feb 2013 15:56:30 -0500
 > Andrew Shewmaker <agshew@gmail.com> wrote:
 > 
-> > Add a rootuser_reserve_pages knob to allow admins of large memory 
-> > systems running with overcommit disabled to change the hardcoded 
-> > memory reserve to something other than 3%.
+> > The following patches are against the mmtom git tree as of February 27th.
 > > 
-> > Signed-off-by: Andrew Shewmaker <agshew@gmail.com>
+> > The first patch only affects OVERCOMMIT_NEVER mode, entirely removing 
+> > the 3% reserve for other user processes.
 > > 
-> > ---
+> > The second patch affects both OVERCOMMIT_GUESS and OVERCOMMIT_NEVER 
+> > modes, replacing the hardcoded 3% reserve for the root user with a 
+> > tunable knob.
 > > 
-> > Patch based off of mmotm git tree as of February 27th.
-> > 
-> > I set rootuser_reserve pages to be a default of 1000, and I suppose 
-> > I should have initialzed similarly to the way min_free_kbytes is, 
-> > scaling it with the size of the box. However, I wanted to get a 
-> > simple version of this patch out for feedback to see if it has any 
-> > chance of acceptance or if I need to take an entirely different 
-> > approach.
-> > 
-> > Any feedback will be appreciated!
 > 
-> Seems reasonable.
+> Gee, it's been years since anyone thought about the overcommit code.
 > 
-> Yes, we should scale the initial value according to the machine size in
-> some fashion.
-> 
-> btw, both these patches had the same title.  Please avoid this.
-> Documentation/SubmittingPatches section 15 has all the details.
+> Documentation/vm/overcommit-accounting says that OVERCOMMIT_ALWAYS is
+> "Appropriate for some scientific applications", but doesn't say why. 
+> You're running a scientific cluster but you're using OVERCOMMIT_NEVER,
+> I think?  Is the documentation wrong?
 
-Sorry about that. I'll resend correctly formatted patche submissions 
-with a scaled initial value for rootuser_reserve_pages.
+None of my scientists appeared to use sparse arrays as Alan described. 
+My users would run jobs that appeared to initialize correctly. However, 
+they wouldn't write to every page they malloced (and they wouldn't use 
+calloc), so I saw jobs failing well into a computation once the 
+simulation tried to access a page and the kernel couldn't give it to them.
 
-Thanks for the feedback!
+I think Roadrunner (http://en.wikipedia.org/wiki/IBM_Roadrunner) was 
+the first cluster I put into OVERCOMMIT_NEVER mode. Jobs with 
+infeasible memory requirements fail early and the OOM killer 
+gets triggered much less often than in guess mode. More often than not 
+the OOM killer seemed to kill the wrong thing causing a subtle brokenness. 
+Disabling overcommit worked so well during the stabilization and 
+early user phases that we did the same with other clusters. 
+
+> > __vm_enough_memory reserves 3% of free pages with the default 
+> > overcommit mode and 6% when overcommit is disabled. These hardcoded 
+> > values have become less reasonable as memory sizes have grown.
+> > 
+> > On scientific clusters, systems are generally dedicated to one user. 
+> > Also, overcommit is sometimes disabled in order to prevent a long 
+> > running job from suddenly failing days or weeks into a calculation.
+> > In this case, a user wishing to allocate as much memory as possible 
+> > to one process may be prevented from using, for example, around 7GB 
+> > out of 128GB.
+> > 
+> > The effect is less, but still significant when a user starts a job 
+> > with one process per core. I have repeatedly seen a set of processes 
+> > requesting the same amount of memory fail because one of them could  
+> > not allocate the amount of memory a user would expect to be able to 
+> > allocate.
+> > 
+> > ...
+> >
+> > --- a/mm/mmap.c
+> > +++ b/mm/mmap.c
+> > @@ -182,11 +182,6 @@ int __vm_enough_memory(struct mm_struct *mm, long pages, int cap_sys_admin)
+> >  		allowed -= allowed / 32;
+> >  	allowed += total_swap_pages;
+> >  
+> > -	/* Don't let a single process grow too big:
+> > -	   leave 3% of the size of this process for other processes */
+> > -	if (mm)
+> > -		allowed -= mm->total_vm / 32;
+> > -
+> >  	if (percpu_counter_read_positive(&vm_committed_as) < allowed)
+> >  		return 0;
+> 
+> So what might be the downside for this change?  root can't log in, I
+> assume.  Have you actually tested for this scenario and observed the
+> effects?
+> 
+> If there *are* observable risks and/or to preserve back-compatibility,
+> I guess we could create a fourth overcommit mode which provides the
+> headroom which you desire.
+> 
+> Also, should we be looking at removing root's 3% from OVERCOMMIT_GUESS
+> as well?
+
+The downside of the first patch, which removes the "other" reserve 
+(sorry about the confusing duplicated subject line), is that a user 
+may not be able to kill their process, even if they have a shell prompt. 
+When testing, I did sometimes get into spot where I attempted to execute 
+kill, but got: "bash: fork: Cannot allocate memory". Of course, a 
+user can get in the same predicament with the current 3% reserve--they 
+just have to start processes until 3% becomes negligible.
+
+With just the first patch, root still has a 3% reserve, so they can 
+still log in.
+
+When I resubmit the second patch, adding a tunable rootuser_reserve_pages 
+variable, I'll test both guess and never overcommit modes to see what 
+minimum initial values allow root to login and kill a user's memory 
+hogging process. This will be safer than the current behavior since 
+root's reserve will never shrink to something useless in the case where 
+a user has grabbed all available memory with many processes.
+
+As an estimate of a useful rootuser_reserve_pages, the rss+share size of 
+sshd, bash, and top is about 16MB. Overcommit disabled mode would need 
+closer to 360MB for the same processes. On a 128GB box 3% is 3.8GB, so 
+the new tunable would still be a win.
+
+I think the tunable would benefit everyone over the current behavior, 
+but would you prefer it if I only made it tunable in a fourth overcommit 
+mode in order to preserve back-compatibility?
