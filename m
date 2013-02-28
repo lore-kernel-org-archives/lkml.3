@@ -1,97 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932334Ab3B1Qa5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 11:30:57 -0500
-Received: from mx2.promwad.com ([91.149.128.90]:39387 "EHLO mx2.promwad.com"
+	id S932398Ab3B1Qct (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 11:32:49 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:37156 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752785Ab3B1Qay convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 11:30:54 -0500
-From: Kurachkin Michail <Michail.Kurachkin@promwad.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kuten Ivan <Ivan.Kuten@promwad.com>,
-        "benavi@marvell.com" <benavi@marvell.com>,
-        "Viktar Palstsiuk" <Viktar.Palstsiuk@promwad.com>,
-        Gorokh Dmitriy <Dmitriy.Gorokh@promwad.com>
-Subject: [PATCH] staging: si3226x: TDM: add issues to TODO file
-Thread-Topic: [PATCH] staging: si3226x: TDM: add issues to TODO file
-Thread-Index: AQHOFdD5ie9iNhJ1Mk+hbImUJi/PTg==
-Date: Thu, 28 Feb 2013 16:30:52 +0000
-Message-ID: <F7F628C32E67B04DAECC5CA53521253E6AD1BA22@sv-exmb01-lo1.promwad.corp>
-Accept-Language: en-US, ru-RU
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [192.168.10.99]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1755815Ab3B1Qcs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Feb 2013 11:32:48 -0500
+Date: Thu, 28 Feb 2013 17:32:39 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Greg KH <gregkh@linuxfoundation.org>, mingo@redhat.com,
+        tglx@linutronix.de, xen-devel@lists.xen.org,
+        linux-kernel@vger.kernel.org, samu.kallio@aberdeencloud.com,
+        kraman@redhat.com, jwboyer@redhat.com
+Subject: Re: Is: x86: mm: Fix vmalloc_fault oops during lazy MMU updates Was:
+ Re: [PATCH] mm/x86: Flush lazy MMU when DEBUG_PAGEALLOC is set
+Message-ID: <20130228163239.GE9767@pd.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+	"H. Peter Anvin" <hpa@zytor.com>,
+	Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+	Greg KH <gregkh@linuxfoundation.org>, mingo@redhat.com,
+	tglx@linutronix.de, xen-devel@lists.xen.org,
+	linux-kernel@vger.kernel.org, samu.kallio@aberdeencloud.com,
+	kraman@redhat.com, jwboyer@redhat.com
+References: <512E8B41.8000504@zytor.com>
+ <20130227230009.GA32465@kroah.com>
+ <512E91B7.6060102@zytor.com>
+ <20130228142910.GA32354@phenom.dumpdata.com>
+ <20130228153846.GA9782@pd.tnic>
+ <512F7D88.4090703@zytor.com>
+ <20130228161057.GC9767@pd.tnic>
+ <512F83C4.6080904@oracle.com>
+ <20130228162227.GD9767@pd.tnic>
+ <512F856B.5090801@oracle.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <512F856B.5090801@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Michail Kurachkin <michail.kurachkin@promwad.com>
----
- drivers/staging/si3226x/TODO |   20 +++++++++++++++++---
- drivers/staging/tdm/TODO     |   19 +++++++++++++++++++
- 2 files changed, 36 insertions(+), 3 deletions(-)
- create mode 100644 drivers/staging/tdm/TODO
+On Thu, Feb 28, 2013 at 11:27:23AM -0500, Boris Ostrovsky wrote:
+> What was the suggestion exactly? I don't remember seeing that message.
 
-diff --git a/drivers/staging/si3226x/TODO b/drivers/staging/si3226x/TODO
-index b2cb27e..e4c334a 100644
---- a/drivers/staging/si3226x/TODO
-+++ b/drivers/staging/si3226x/TODO
-@@ -1,8 +1,22 @@
-+Mainteiners:
-+Michail Kurachkin <Michail.Kurachkin@promwad.com> <stelhs@yandex.ru>
-+Ivan Kuten <ivan.kuten@promwad.com>
-+Promwad company <info@promwad.com>
-+
-+Reviwers:
-+Oliver Neukum <oneukum@suse.de>
-+Ryan Mallon <rmallon@gmail.com>
-+Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-+
-+Needed to be done to get the code out of the staging tree:
- 1) mutex_lock(&slic_chr_dev_lock);
- This locking is very heavy handed and should be reworked
+Use the paravirt patching facility to replace arch_flush_lazy_mmu_mode()
+with a nop when running on baremetal. I.e., the whole functionality
+around apply_paravirt() et al.
 
--2) SLIC driver works unstable when compiled as module, loaded, then unloaded and finally reloaded again.
--
--3) Current version of Si3226x SLIC driver is limited. It implements only base functionality such as Answer, Hangup, receive DTMF, send DTMF, send Caller ID.
-+2) SLIC driver works unstable when compiled as module,
-+loaded, then unloaded and finally reloaded again.
+-- 
+Regards/Gruss,
+    Boris.
 
-+3) ensure stability of current driver, define several test scenarios
-
-+4) Current version of Si3226x SLIC driver is limited. It implements
-+only base functionality such as Answer, Hangup, receive DTMF,
-+send DTMF, send Caller ID.
-diff --git a/drivers/staging/tdm/TODO b/drivers/staging/tdm/TODO
-new file mode 100644
-index 0000000..585a617
---- /dev/null
-+++ b/drivers/staging/tdm/TODO
-@@ -0,0 +1,19 @@
-+Mainteiners:
-+Michail Kurachkin <Michail.Kurachkin@promwad.com> <stelhs@yandex.ru>
-+Ivan Kuten <ivan.kuten@promwad.com>
-+Promwad company <info@promwad.com>
-+
-+Reviwers:
-+Oliver Neukum <oneukum@suse.de>
-+Ryan Mallon <rmallon@gmail.com>
-+Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-+
-+Needed to be done to get the code out of the staging tree:
-+1) Marvell Kirkwood TDM driver works unstable when compiled as module,
-+loaded, then unloaded and finally reloaded again.
-+
-+2) Add Documentation/tdm-bus.txt
-+
-+3) ensure stability of current driver, define several test scenarios
-+
-+4) look into Freescale TDM https://patchwork.kernel.org/patch/1249881/ , adopt Freescale bits into current TDM framework
+Sent from a fat crate under my desk. Formatting is fine.
 --
-1.7.5.4
