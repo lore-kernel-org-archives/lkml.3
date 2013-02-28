@@ -1,49 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755417Ab3B1W6Y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 17:58:24 -0500
-Received: from mout.gmx.net ([212.227.15.19]:58746 "EHLO mout.gmx.net"
+	id S1756099Ab3B1XC4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 18:02:56 -0500
+Received: from mail1.SerNet.de ([193.175.80.2]:50201 "EHLO mail.SerNet.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753834Ab3B1W6X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 17:58:23 -0500
-X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX198bihQENJ8mj9ToDOiAyO1xWz0J2E6M9i842mMD8
-	qvqYUSDd2ljGrz
-From: Peter =?iso-8859-1?q?H=FCwe?= <PeterHuewe@gmx.de>
-To: Kent Yoder <shpedoikal@gmail.com>
-Subject: Re: [tpmdd-devel] [PATCH RESEND] char/tpm: Convert struct i2c_msg initialization to C99 format
-Date: Thu, 28 Feb 2013 23:58:37 +0100
-User-Agent: KMail/1.13.7 (Linux/3.7.7; KDE/4.9.5; x86_64; ; )
-Cc: Jean Delvare <khali@linux-fr.org>, tpmdd-devel@lists.sourceforge.net,
-        Kent Yoder <key@linux.vnet.ibm.com>, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org
-References: <20130228110611.3ed77e92@endymion.delvare> <20130228233235.5f279117@endymion.delvare> <CAM0nabENksjYahD49cx_GnnxN6XbEROo7zgyqP8s33zhcZUYYg@mail.gmail.com>
-In-Reply-To: <CAM0nabENksjYahD49cx_GnnxN6XbEROo7zgyqP8s33zhcZUYYg@mail.gmail.com>
+	id S1755748Ab3B1XCu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Feb 2013 18:02:50 -0500
+X-Greylist: delayed 512 seconds by postgrey-1.27 at vger.kernel.org; Thu, 28 Feb 2013 18:02:50 EST
+Date: Thu, 28 Feb 2013 23:54:13 +0100
+From: =?iso-8859-1?Q?Bj=F6rn?= JACKE <bj@SerNet.DE>
+To: Jeff Layton <jlayton@samba.org>
+Cc: Dave Chiluk <dave.chiluk@canonical.com>, Steve French <sfrench@samba.org>,
+        linux-cifs@vger.kernel.org, samba-technical@lists.samba.org,
+        linux-kernel@vger.kernel.org,
+        "Stefan (metze) Metzmacher" <metze@samba.org>,
+        Dave Chiluk <chiluk@canonical.com>
+Subject: Re: [PATCH] CIFS: Decrease reconnection delay when switching nics
+Mail-Followup-To: Jeff Layton <jlayton@samba.org>,
+	Dave Chiluk <dave.chiluk@canonical.com>,
+	Steve French <sfrench@samba.org>, linux-cifs@vger.kernel.org,
+	samba-technical@lists.samba.org, linux-kernel@vger.kernel.org,
+	"Stefan (metze) Metzmacher" <metze@samba.org>,
+	Dave Chiluk <chiluk@canonical.com>
+References: <1361831310-24260-1-git-send-email-chiluk@canonical.com>
+ <512DE8A6.9030000@samba.org>
+ <20130227083419.0af9deaf@corrin.poochiereds.net>
+ <512E8787.6070709@canonical.com>
+ <20130228072637.3b71a4f7@corrin.poochiereds.net>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201302282358.38102.PeterHuewe@gmx.de>
-X-Y-GMX-Trusted: 0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130228072637.3b71a4f7@corrin.poochiereds.net>
+X-Q: Die Schriftsteller koennen nicht so schnell schreiben, wie die
+ Regierungen Kriege machen; denn das Schreiben verlangt Denkarbeit. - Brecht
+Message-Id: <E1UBCMh-00FRaK-CC@intern.SerNet.DE>
+Organization: SerNet GmbH, Goettingen, Germany
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > I'd suggest not to. Mixing actual changes with cleanups is generally
-> > discouraged.
-> 
->   Yes, please don't do this.  Also because it makes it really
-> confusing for me to figure out whether something has been applied or
-> not and if I have the right people on the sign off.
-> 
->   Peter, can you resend without it?  I'll have a new staging tree with
-> everything up in the next day or two.
+On 2013-02-28 at 07:26 -0800 Jeff Layton sent off:
+> NTFS doesn't support sparse files, so the OS has to zero-fill up to the
+> point where you're writing. That can take a looooong time on slow
+> storage (minutes even).
 
+but you are talking about FAT here, right? NTFS does support sparse files if
+the sparse bit has been explicitly been set on it. Bit even if the sparse bit
+is not set filling a file with zeros by writing after a seek long beyond the
+end of the file is very fast because NTFS supports that feature what Unix
+filesystems like xfs call extents.
 
-Yes, no problem.
-I'll create a patch without it -
-I'll make it this way that you can apply the conversion patch first and then 
-the change.
+If writing beyond the end of a file is really slow via cifs vfs in the test
+case against a ntfs volume then I wonder if that operation is being really done
+optimally over the wire. ntfs really isn't that bad with handling this kind of
+files.
 
-Thanks,
-Peter
+Cheers
+Björn
