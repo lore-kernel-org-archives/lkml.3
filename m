@@ -1,83 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752765Ab3B1Esy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 23:48:54 -0500
-Received: from mail-ie0-f181.google.com ([209.85.223.181]:50929 "EHLO
-	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751672Ab3B1Esw convert rfc822-to-8bit (ORCPT
+	id S1753746Ab3B1EtI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 23:49:08 -0500
+Received: from mail-ve0-f174.google.com ([209.85.128.174]:38826 "EHLO
+	mail-ve0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751672Ab3B1EtD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 23:48:52 -0500
-Date: Wed, 27 Feb 2013 22:48:47 -0600
-From: Rob Landley <rob@landley.net>
-Subject: Re: [PATCH 0/3] build linux-next without perl
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
-        Arnd Bergmann <arnd@arndb.de>, Cyrill Gorcunov <gorcunov@openvz.org>,
-        Dave Jones <davej@redhat.com>, David Howells <dhowell@redhat.com>,
-        David Howells <dhowells@redhat.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
-        Josh Boyer <jwboyer@redhat.com>, Michal Marek <mmarek@suse.cz>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Rusty Russell <rusty@rustcorp.com.au>, Sam Ravnborg <sam@ravnborg.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Vince Weaver <vincent.weaver@maine.edu>, x86@kernel.org,
-        Zheng Yan <zheng.z.yan@intel.com>
-References: <1361944667.957820@landley.net>
-	<20130227135155.c04453db.akpm@linux-foundation.org>
-In-Reply-To: <20130227135155.c04453db.akpm@linux-foundation.org> (from
-	akpm@linux-foundation.org on Wed Feb 27 15:51:55 2013)
-X-Mailer: Balsa 2.4.11
-Message-Id: <1362026927.15531.2@driftwood>
+	Wed, 27 Feb 2013 23:49:03 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <1362024397.1867.28.camel@buesod1.americas.hpqcorp.net>
+References: <20130206150403.006e5294@cuia.bos.redhat.com>
+	<tip-4aef331850b637169ff036ed231f0d236874f310@git.kernel.org>
+	<CA+55aFx6N6SaRN+w=CTXJ=ZSsOE6KeS2R9sT_uhAx9h2j+hjKg@mail.gmail.com>
+	<511BE4A3.8050607@redhat.com>
+	<CA+55aFycMB7OZGQ54ueQ74C42beDBSdQE_fKJDV=TbjTjr_emg@mail.gmail.com>
+	<511C1204.9040608@redhat.com>
+	<CA+55aFwxYK-BLH0crhySHaQvAYHOH-VGUi7WTd1aq-24+WTDYw@mail.gmail.com>
+	<511C24A6.8020409@redhat.com>
+	<CA+55aFws80EEJQskqiP+a5J-HOGu=M1Fe=uCs50ifedVxPxT1Q@mail.gmail.com>
+	<512E376D.70105@redhat.com>
+	<CA+55aFzPxJ3rfZvAvrP9LxCXfDU8AAVvhMZnP-OAoe-ycc70aw@mail.gmail.com>
+	<512E6443.9050603@redhat.com>
+	<CA+55aFwHxv9RH75BoXYcwdKeHx+otOOpg9494TTdFwQe3biOhw@mail.gmail.com>
+	<512E80E3.7060800@redhat.com>
+	<CA+55aFwa0EjGG2NUDYVLVBmXJa2k81YiuNO2yggk=GLRQxhhUQ@mail.gmail.com>
+	<512EC7F0.60103@redhat.com>
+	<1362024397.1867.28.camel@buesod1.americas.hpqcorp.net>
+Date: Wed, 27 Feb 2013 20:49:01 -0800
+X-Google-Sender-Auth: Bn8_qE34ilnK21zjikNRKA6r1PU
+Message-ID: <CA+55aFygzjuNYiG4MTPMzimEjQ92rpS-rNJr7HD4OQCAqze5zg@mail.gmail.com>
+Subject: Re: [tip:core/locking] x86/smp: Move waiting on contended ticket lock
+ out of line
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Davidlohr Bueso <davidlohr.bueso@hp.com>
+Cc: Rik van Riel <riel@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        "Vinod, Chegu" <chegu_vinod@hp.com>, "Low, Jason" <jason.low2@hp.com>,
+        linux-tip-commits@vger.kernel.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>, aquini@redhat.com,
+        Michel Lespinasse <walken@google.com>, Ingo Molnar <mingo@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/27/2013 03:51:55 PM, Andrew Morton wrote:
-> On Tue, 26 Feb 2013 21:57:52 -0800 (PST)
-> Rob Landley <rob@landley.net> wrote:
-> 
-> > Before 2.6.25 building Linux never required perl. This patch series  
-> removes
-> > the requirement from basic kernel builds (tested on i686, x86_64,  
-> arm, mips,
-> > powerpc, sparc, sh4, and m68k). Now updated to 3.8-rc1.
-> >
-> > Note, this removes perl from the _build_ environment, not from the  
-> _development_
-> > environment. This is approximately the same logic behind "make  
-> menuconfig"
-> > requiring curses but "make oldconfig" not requiring curses.  
-> Including
-> > zconf.lex.c_shipped in kconfig and then requiring perl makes no  
-> sense.
-> >
-> > ...
-> >
-> > Mostly people just copy the patches into their local projects (ala
-> > https://github.com/rofl0r/sabotage/tree/master/KEEP ) but I'm  
-> reposting
-> > them to linux-kernel after Gentoo considered using these patches,  
-> but didn't
-> > because they weren't upstream:
-> >   https://bugs.gentoo.org/show_bug.cgi?id=421483
-> 
-> Sitting here scratching head wondering why you-need-perl is a problem
-> for anyone.
-> 
-> That gentoo bug report provides some explanation: "perl was removed
-> from @system".  But I expect other people have different reasons.
-> 
-> IOW, please better describe the motivation for this patchset.
+On Wed, Feb 27, 2013 at 8:06 PM, Davidlohr Bueso <davidlohr.bueso@hp.com> wrote:
+>
+> The attached file shows how the amount of sys time used by the ipc lock
+> for a 4 and 8 socket box.
 
-P.S. A much shorter reply than mine, from David Anders:
+I have to say, even with the improvements, that looks pretty
+disgusting. It really makes me wonder if that thing couldn't be done
+better some way. Is it the SysV semaphores that this all ends up
+using, or what?
 
-https://plus.google.com/101339419642360856354/posts/AyRnz2REq8C
+That said, I think the IPC layer is just about the perfect candidate
+for things like this, because I'm afraid that nobody is ever going to
+fix it.
 
-Rob
+          Linus
