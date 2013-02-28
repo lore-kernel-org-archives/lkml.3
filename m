@@ -1,51 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752769Ab3B1NWR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 08:22:17 -0500
-Received: from mail-ia0-f169.google.com ([209.85.210.169]:55239 "EHLO
-	mail-ia0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752271Ab3B1NWO (ORCPT
+	id S1752906Ab3B1NY5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 08:24:57 -0500
+Received: from goliath.siemens.de ([192.35.17.28]:17440 "EHLO
+	goliath.siemens.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752370Ab3B1NYz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 08:22:14 -0500
+	Thu, 28 Feb 2013 08:24:55 -0500
+Message-ID: <512F5A5E.9020504@siemens.com>
+Date: Thu, 28 Feb 2013 14:23:42 +0100
+From: Jan Kiszka <jan.kiszka@siemens.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
 MIME-Version: 1.0
-In-Reply-To: <CANq1E4QoutxRkuBj3p2vaw2U4-GN0Gz4ueopKkDavX_ZmgMC-w@mail.gmail.com>
-References: <1361123951-587-1-git-send-email-dh.herrmann@gmail.com>
-	<CAPM=9txQtJ6FLFTEFr_Wi6RK=W9y3gKYxV_+zPCo6kLi4nM8eA@mail.gmail.com>
-	<CANq1E4TTB-Lp+eVRPpzOMnS7XNbzHJRTicwCcwXw3AUs11XFMw@mail.gmail.com>
-	<CAPM=9tzDXLqUG3c6VsMjaJ_1997h7f+_3kB0C0N2imuQcXsD6Q@mail.gmail.com>
-	<CANq1E4QoutxRkuBj3p2vaw2U4-GN0Gz4ueopKkDavX_ZmgMC-w@mail.gmail.com>
-Date: Thu, 28 Feb 2013 14:22:14 +0100
-X-Google-Sender-Auth: _aXSedtE95XfbuQ6PF_0ro_Duow
-Message-ID: <CAMuHMdUfyOe_ySL0gB_FQLjz2ACQhk6cPWi_ty5pMb6=zZduSA@mail.gmail.com>
-Subject: Re: [PATCH 0/9] System Framebuffer Bus (sysfb)
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: David Herrmann <dh.herrmann@gmail.com>
-Cc: Dave Airlie <airlied@gmail.com>, linux-kernel@vger.kernel.org,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        linux-fbdev@vger.kernel.org, David Airlie <airlied@linux.ie>,
-        dri-devel@lists.freedesktop.org
-Content-Type: text/plain; charset=UTF-8
+To: Hu Tao <hutao@cn.fujitsu.com>
+CC: kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Gleb Natapov <gleb@redhat.com>, Blue Swirl <blauwirbel@gmail.com>,
+        Eric Blake <eblake@redhat.com>, Andrew Jones <drjones@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Luiz Capitulino <lcapitulino@redhat.com>,
+        Anthony Liguori <aliguori@us.ibm.com>,
+        Markus Armbruster <armbru@redhat.com>,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        Stefan Hajnoczi <stefanha@redhat.com>,
+        Juan Quintela <quintela@redhat.com>,
+        Orit Wasserman <owasserm@redhat.com>, Kevin Wolf <kwolf@redhat.com>,
+        Wen Congyang <wency@cn.fujitsu.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>, Alexander Graf <agraf@suse.de>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        Peter Maydell <peter.maydell@linaro.org>
+Subject: Re: [PATCH v13 2/8] start vm after resetting it
+References: <cover.1362051581.git.hutao@cn.fujitsu.com> <d1f8b5689b05b9db923d86941e914d08ac4c2b7c.1362051582.git.hutao@cn.fujitsu.com>
+In-Reply-To: <d1f8b5689b05b9db923d86941e914d08ac4c2b7c.1362051582.git.hutao@cn.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 28, 2013 at 1:20 PM, David Herrmann <dh.herrmann@gmail.com> wrote:
-> We currently have different drivers that can make use of "system
-> framebuffers" (as I call them for now):
->  - vgacon
->  - fbdev
->  - DRM
-> (- vgalog) (similar to fblog/drmlog but using vga/VBE)
+On 2013-02-28 13:13, Hu Tao wrote:
+> From: Wen Congyang <wency@cn.fujitsu.com>
+> 
+> The guest should run after resetting it, but it does not run if its
+> old state is RUN_STATE_INTERNAL_ERROR or RUN_STATE_PAUSED.
+> 
+> We don't set runstate to RUN_STATE_PAUSED when resetting the guest,
+> so the runstate will be changed from RUN_STATE_INTERNAL_ERROR or
+> RUN_STATE_PAUSED to RUN_STATE_RUNNING(not RUN_STATE_PAUSED).
 
-offb
+I just wonder what will happen if I interrupted the guest via gdb and
+then issue "monitor system_reset", also via gdb - common pattern if you
+set a breakpoint on some BUG() or fault handler and then want to restart
+the guest. Will the guest continue then while gdb thinks it is still
+stopped? Likely, we do not differentiate between gdb-initiated stops and
+the rest. Could you clarify?
 
-Gr{oetje,eeting}s,
+Thanks,
+Jan
 
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+-- 
+Siemens AG, Corporate Technology, CT RTC ITP SDP-DE
+Corporate Competence Center Embedded Linux
