@@ -1,697 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752762Ab3B1KZv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 05:25:51 -0500
-Received: from adelie.canonical.com ([91.189.90.139]:42800 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752549Ab3B1KZ1 (ORCPT
+	id S1752549Ab3B1K3B (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 05:29:01 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:3936 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751443Ab3B1K26 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 05:25:27 -0500
-Subject: [PATCH v2 3/3] reservation: Add tests to lib/locking-selftest.c. v2
-To: linux-kernel@vger.kernel.org
-From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-Cc: linux-arch@vger.kernel.org, a.p.zijlstra@chello.nl, daniel.vetter@ffwll.ch,
-        x86@kernel.org, dri-devel@lists.freedesktop.org,
-        linaro-mm-sig@lists.linaro.org, robclark@gmail.com, tglx@linutronix.de,
-        mingo@elte.hu, linux-media@vger.kernel.org
-Date: Thu, 28 Feb 2013 11:25:12 +0100
-Message-ID: <20130228102512.15191.3060.stgit@patser>
-In-Reply-To: <20130228102452.15191.22673.stgit@patser>
-References: <20130228102452.15191.22673.stgit@patser>
-User-Agent: StGit/0.15
+	Thu, 28 Feb 2013 05:28:58 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Thu, 28 Feb 2013 02:28:01 -0800
+Message-ID: <512F3118.6030806@nvidia.com>
+Date: Thu, 28 Feb 2013 15:57:36 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Graeme Gregory <gg@slimlogic.co.uk>
+CC: Stephen Warren <swarren@wwwdotorg.org>, J Keerthy <j-keerthy@ti.com>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "rob@landley.net" <rob@landley.net>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "b-cousson@ti.com" <b-cousson@ti.com>
+Subject: Re: [PATCH 1/4] documentation: add palmas dts definition
+References: <1361164283-3133-1-git-send-email-j-keerthy@ti.com> <512E5144.9020105@wwwdotorg.org> <512F1ADF.90906@nvidia.com> <512F2A29.8080708@slimlogic.co.uk>
+In-Reply-To: <512F2A29.8080708@slimlogic.co.uk>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This stresses the lockdep code in some ways specifically useful to
-reservations. It adds checks for most of the common locking errors.
+On Thursday 28 February 2013 03:28 PM, Graeme Gregory wrote:
+> On 28/02/13 08:52, Laxman Dewangan wrote:
+>> On Thursday 28 February 2013 12:02 AM, Stephen Warren wrote:
+>>> On 02/17/2013 10:11 PM, J Keerthy wrote:
+>>> +- interrupt-parent : The parent interrupt controller.
+>>> +
+>>> +Optional node:
+>>> +- Child nodes contain in the palmas. The palmas family is made of
+>>> several
+>>> +  variants that support a different number of features.
+>>> +  The child nodes will thus depend of the capability of the variant.
+>>> Are there DT bindings for those child nodes anywhere?
+>>>
+>>> Representing each internal component as a separate DT node feels a
+>>> little like designing the DT bindings to model the Linux-internal MFD
+>>> structure. DT bindings should be driven by the HW design and
+>>> OS-agnostic.
+>>>
+>>>   From a DT perspective, is there any need at all to create a separate DT
+>>> node for each component? This would only be needed or useful if the
+>>> child IP blocks (and hence DT bindings for those blocks) could be
+>>> re-used in other top-level devices that aren't represented by this
+>>> top-level ti,palmas DT binding. Are the HW IP blocks here re-used
+>>> anywhere, or will they be?
+>>
+>> I dont think that child IP block can be used outside of the palma
+>> although other mfd device may have same IP.
+>>
+>> The child driver very much used the palma's API for register access
+>> and they can not be separated untill driver is write completely
+>> independent of palmas API. Currently, child driver include the palma
+>> header, uses palma mfd stcruture and plama's api for accessing registers.
+>>
+> I wonder why break good software principles of keeping data and code
+> localised? Just because there is no current case where a block is
+> re-used does not mean it shall not be so in the future. The original
+> information I got from TI when designing this was blocks may be re-used
+> in future products.
+>
+> This structure also makes it much neater when dealing with palmas
+> varients with different IP blocks which already exist.
+>
+> I also do not see an issue with working like the internal MFD structure,
+> I think it is a good design.
 
-Since the lockdep tests were originally written to stress the
-reservation code, I duplicated some of the definitions into
-lib/locking-selftest.c for now.
 
-This will be cleaned up later when the api for reservations is
-accepted. I don't expect the tests to change, since the discussion
-is mostly about the fence aspect of reservations.
+I did not get how the register access will be happen from IP driver.
+suppose we have RTC driver which is common IP for device 1 and device2. 
+Device1 and device2 are registered as separate MFD driver which has 
+different set of chip structure and initialisation.
 
-Changes since v1:
- - Add tests to verify reservation_id is untouched.
- - Use L() and U() macros where possible.
-
-Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
----
- lib/locking-selftest.c |  588 ++++++++++++++++++++++++++++++++++++++++++++++--
- 1 file changed, 569 insertions(+), 19 deletions(-)
-
-diff --git a/lib/locking-selftest.c b/lib/locking-selftest.c
-index c3eb261..2c52c0e 100644
---- a/lib/locking-selftest.c
-+++ b/lib/locking-selftest.c
-@@ -26,6 +26,67 @@
-  */
- static unsigned int debug_locks_verbose;
- 
-+/*
-+ * These definitions are from the reservation objects patch series.
-+ * For now we have to define it ourselves here. These definitions will
-+ * be removed upon acceptance of that patch series.
-+ */
-+static const char reservation_object_name[] = "reservation_object";
-+static struct lock_class_key reservation_object_class;
-+#ifdef CONFIG_DEBUG_LOCK_ALLOC
-+static const char reservation_ticket_name[] = "reservation_ticket";
-+static struct lock_class_key reservation_ticket_class;
-+#endif
-+
-+struct reservation_object {
-+	struct ticket_mutex lock;
-+};
-+
-+struct reservation_ticket {
-+	unsigned long seqno;
-+#ifdef CONFIG_DEBUG_LOCK_ALLOC
-+	struct lockdep_map dep_map;
-+#endif
-+};
-+
-+static inline void
-+reservation_object_init(struct reservation_object *obj)
-+{
-+	__ticket_mutex_init(&obj->lock, reservation_object_name,
-+			    &reservation_object_class);
-+}
-+
-+static inline void
-+reservation_object_fini(struct reservation_object *obj)
-+{
-+	mutex_destroy(&obj->lock.base);
-+}
-+
-+static inline void
-+reservation_ticket_init(struct reservation_ticket *t)
-+{
-+#ifdef CONFIG_DEBUG_LOCK_ALLOC
-+	/*
-+	 * Make sure we are not reinitializing a held ticket:
-+	 */
-+
-+	debug_check_no_locks_freed((void *)t, sizeof(*t));
-+	lockdep_init_map(&t->dep_map, reservation_ticket_name,
-+			 &reservation_ticket_class, 0);
-+#endif
-+	mutex_acquire(&t->dep_map, 0, 0, _THIS_IP_);
-+	t->seqno = 5;
-+}
-+
-+static inline void
-+reservation_ticket_fini(struct reservation_ticket *t)
-+{
-+#ifdef CONFIG_DEBUG_LOCK_ALLOC
-+	mutex_release(&t->dep_map, 0, _THIS_IP_);
-+	t->seqno = 0;
-+#endif
-+}
-+
- static int __init setup_debug_locks_verbose(char *str)
- {
- 	get_option(&str, &debug_locks_verbose);
-@@ -42,6 +103,7 @@ __setup("debug_locks_verbose=", setup_debug_locks_verbose);
- #define LOCKTYPE_RWLOCK	0x2
- #define LOCKTYPE_MUTEX	0x4
- #define LOCKTYPE_RWSEM	0x8
-+#define LOCKTYPE_RESERVATION	0x10
- 
- /*
-  * Normal standalone locks, for the circular and irq-context
-@@ -920,11 +982,17 @@ GENERATE_PERMUTATIONS_3_EVENTS(irq_read_recursion_soft)
- static void reset_locks(void)
- {
- 	local_irq_disable();
-+	lockdep_free_key_range(&reservation_object_class, 1);
-+	lockdep_free_key_range(&reservation_ticket_class, 1);
-+
- 	I1(A); I1(B); I1(C); I1(D);
- 	I1(X1); I1(X2); I1(Y1); I1(Y2); I1(Z1); I1(Z2);
- 	lockdep_reset();
- 	I2(A); I2(B); I2(C); I2(D);
- 	init_shared_classes();
-+
-+	memset(&reservation_object_class, 0, sizeof(reservation_object_class));
-+	memset(&reservation_ticket_class, 0, sizeof(reservation_ticket_class));
- 	local_irq_enable();
- }
- 
-@@ -938,7 +1006,6 @@ static int unexpected_testcase_failures;
- static void dotest(void (*testcase_fn)(void), int expected, int lockclass_mask)
- {
- 	unsigned long saved_preempt_count = preempt_count();
--	int expected_failure = 0;
- 
- 	WARN_ON(irqs_disabled());
- 
-@@ -946,26 +1013,16 @@ static void dotest(void (*testcase_fn)(void), int expected, int lockclass_mask)
- 	/*
- 	 * Filter out expected failures:
- 	 */
-+	if (debug_locks != expected) {
- #ifndef CONFIG_PROVE_LOCKING
--	if ((lockclass_mask & LOCKTYPE_SPIN) && debug_locks != expected)
--		expected_failure = 1;
--	if ((lockclass_mask & LOCKTYPE_RWLOCK) && debug_locks != expected)
--		expected_failure = 1;
--	if ((lockclass_mask & LOCKTYPE_MUTEX) && debug_locks != expected)
--		expected_failure = 1;
--	if ((lockclass_mask & LOCKTYPE_RWSEM) && debug_locks != expected)
--		expected_failure = 1;
-+		expected_testcase_failures++;
-+		printk("failed|");
-+#else
-+		unexpected_testcase_failures++;
-+		printk("FAILED|");
-+
-+		dump_stack();
- #endif
--	if (debug_locks != expected) {
--		if (expected_failure) {
--			expected_testcase_failures++;
--			printk("failed|");
--		} else {
--			unexpected_testcase_failures++;
--
--			printk("FAILED|");
--			dump_stack();
--		}
- 	} else {
- 		testcase_successes++;
- 		printk("  ok  |");
-@@ -1108,6 +1165,497 @@ static inline void print_testname(const char *testname)
- 	DO_TESTCASE_6IRW(desc, name, 312);			\
- 	DO_TESTCASE_6IRW(desc, name, 321);
- 
-+static void reservation_test_fail_reserve(void)
-+{
-+	struct reservation_ticket t;
-+	struct reservation_object o;
-+	int ret;
-+
-+	reservation_object_init(&o);
-+	reservation_ticket_init(&t);
-+	t.seqno++;
-+
-+	ret = mutex_reserve_lock(&o.lock, &t, t.seqno);
-+
-+	BUG_ON(!atomic_long_read(&o.lock.reservation_id));
-+
-+	/* No lockdep test, pure API */
-+	ret = mutex_reserve_lock(&o.lock, &t, t.seqno);
-+	WARN_ON(ret != -EDEADLK);
-+
-+	t.seqno++;
-+	ret = mutex_trylock(&o.lock.base);
-+	WARN_ON(ret);
-+
-+	ret = mutex_reserve_lock(&o.lock, &t, t.seqno);
-+	WARN_ON(ret != -EAGAIN);
-+	mutex_unlock(&o.lock.base);
-+
-+	if (mutex_trylock(&o.lock.base))
-+		mutex_unlock(&o.lock.base);
-+#ifdef CONFIG_DEBUG_LOCK_ALLOC
-+	else
-+		DEBUG_LOCKS_WARN_ON(1);
-+#endif
-+
-+	reservation_ticket_fini(&t);
-+}
-+
-+static void reservation_test_normal(void)
-+{
-+	struct reservation_object o;
-+	struct reservation_ticket t;
-+	int ret;
-+
-+	reservation_object_init(&o);
-+	reservation_ticket_init(&t);
-+
-+	/*
-+	 * test if reservation_id is kept identical if not
-+	 * called with any of the reserve_* locking calls
-+	 */
-+
-+	/* mutex_lock (and indirectly, mutex_lock_nested) */
-+	atomic_long_set(&o.lock.reservation_id, ~0UL);
-+	mutex_lock(&o.lock.base);
-+	mutex_unlock(&o.lock.base);
-+	WARN_ON(atomic_long_read(&o.lock.reservation_id) != ~0UL);
-+
-+	/* mutex_lock_interruptible (and *_nested) */
-+	atomic_long_set(&o.lock.reservation_id, ~0UL);
-+	ret = mutex_lock_interruptible(&o.lock.base);
-+	if (!ret)
-+		mutex_unlock(&o.lock.base);
-+	else
-+		WARN_ON(1);
-+	WARN_ON(atomic_long_read(&o.lock.reservation_id) != ~0UL);
-+
-+	/* mutex_lock_killable (and *_nested) */
-+	atomic_long_set(&o.lock.reservation_id, ~0UL);
-+	ret = mutex_lock_killable(&o.lock.base);
-+	if (!ret)
-+		mutex_unlock(&o.lock.base);
-+	else
-+		WARN_ON(1);
-+	WARN_ON(atomic_long_read(&o.lock.reservation_id) != ~0UL);
-+
-+	/* trylock, succeeding */
-+	atomic_long_set(&o.lock.reservation_id, ~0UL);
-+	ret = mutex_trylock(&o.lock.base);
-+	WARN_ON(!ret);
-+	if (ret)
-+		mutex_unlock(&o.lock.base);
-+	else
-+		WARN_ON(1);
-+	WARN_ON(atomic_long_read(&o.lock.reservation_id) != ~0UL);
-+
-+	/* trylock, failing */
-+	atomic_long_set(&o.lock.reservation_id, ~0UL);
-+	mutex_lock(&o.lock.base);
-+	ret = mutex_trylock(&o.lock.base);
-+	WARN_ON(ret);
-+	mutex_unlock(&o.lock.base);
-+	WARN_ON(atomic_long_read(&o.lock.reservation_id) != ~0UL);
-+
-+	/* nest_lock */
-+	atomic_long_set(&o.lock.reservation_id, ~0UL);
-+	mutex_lock_nest_lock(&o.lock.base, &t);
-+	mutex_unlock(&o.lock.base);
-+	WARN_ON(atomic_long_read(&o.lock.reservation_id) != ~0UL);
-+
-+	reservation_ticket_fini(&t);
-+}
-+
-+static void reservation_test_two_tickets(void)
-+{
-+	struct reservation_ticket t, t2;
-+
-+	reservation_ticket_init(&t);
-+	reservation_ticket_init(&t2);
-+
-+	reservation_ticket_fini(&t2);
-+	reservation_ticket_fini(&t);
-+}
-+
-+static void reservation_test_ticket_unreserve_twice(void)
-+{
-+	struct reservation_ticket t;
-+
-+	reservation_ticket_init(&t);
-+	reservation_ticket_fini(&t);
-+	reservation_ticket_fini(&t);
-+}
-+
-+static void reservation_test_object_unreserve_twice(void)
-+{
-+	struct reservation_object o;
-+
-+	reservation_object_init(&o);
-+	mutex_lock(&o.lock.base);
-+	mutex_unlock(&o.lock.base);
-+	mutex_unlock(&o.lock.base);
-+}
-+
-+static void reservation_test_fence_nest_unreserved(void)
-+{
-+	struct reservation_object o;
-+
-+	reservation_object_init(&o);
-+
-+	raw_spin_lock_nest_lock(&lock_A, &o.lock.base);
-+	U(A);
-+}
-+
-+static void reservation_test_mismatch_normal_reserve(void)
-+{
-+	struct reservation_object o;
-+
-+	reservation_object_init(&o);
-+
-+	mutex_lock(&o.lock.base);
-+	mutex_unreserve_unlock(&o.lock);
-+}
-+
-+static void reservation_test_mismatch_reserve_normal(void)
-+{
-+	struct reservation_ticket t;
-+	struct reservation_object o;
-+	int ret;
-+
-+	reservation_ticket_init(&t);
-+	reservation_object_init(&o);
-+
-+	ret = mutex_reserve_lock(&o.lock, &t, t.seqno);
-+	WARN_ON(ret);
-+	mutex_unlock(&o.lock.base);
-+
-+	/*
-+	 * the second mutex_reserve_lock will detect the
-+	 * mismatch of the first one
-+	 */
-+	ret = mutex_reserve_lock(&o.lock, &t, t.seqno);
-+	WARN_ON(ret);
-+	mutex_unreserve_unlock(&o.lock);
-+
-+	reservation_ticket_fini(&t);
-+}
-+
-+static void reservation_test_mismatch_reserve_normal_slow(void)
-+{
-+	struct reservation_ticket t;
-+	struct reservation_object o;
-+	int ret;
-+
-+	reservation_ticket_init(&t);
-+	reservation_object_init(&o);
-+
-+	ret = mutex_reserve_lock(&o.lock, &t, t.seqno);
-+	WARN_ON(ret);
-+	mutex_unlock(&o.lock.base);
-+
-+	/*
-+	 * the second mutex_reserve_lock will detect the
-+	 * mismatch of the first one
-+	 */
-+	mutex_reserve_lock_slow(&o.lock, &t, t.seqno);
-+	mutex_unreserve_unlock(&o.lock);
-+
-+	reservation_ticket_fini(&t);
-+}
-+
-+static void reservation_test_ticket_block(void)
-+{
-+	struct reservation_ticket t;
-+	struct reservation_object o, o2;
-+	int ret;
-+
-+	reservation_object_init(&o);
-+	reservation_object_init(&o2);
-+	reservation_ticket_init(&t);
-+
-+	ret = mutex_reserve_lock(&o.lock, &t, t.seqno);
-+	WARN_ON(ret);
-+	mutex_lock(&o2.lock.base);
-+	mutex_unlock(&o2.lock.base);
-+	mutex_unreserve_unlock(&o.lock);
-+
-+	reservation_ticket_fini(&t);
-+}
-+
-+static void reservation_test_ticket_try(void)
-+{
-+	struct reservation_ticket t;
-+	struct reservation_object o, o2;
-+	int ret;
-+
-+	reservation_object_init(&o);
-+	reservation_object_init(&o2);
-+	reservation_ticket_init(&t);
-+
-+	ret = mutex_reserve_lock(&o.lock, &t, t.seqno);
-+	WARN_ON(ret);
-+
-+	ret = mutex_trylock(&o2.lock.base);
-+	WARN_ON(!ret);
-+	mutex_unlock(&o2.lock.base);
-+	mutex_unreserve_unlock(&o.lock);
-+
-+	reservation_ticket_fini(&t);
-+}
-+
-+static void reservation_test_ticket_ticket(void)
-+{
-+	struct reservation_ticket t;
-+	struct reservation_object o, o2;
-+	int ret;
-+
-+	reservation_object_init(&o);
-+	reservation_object_init(&o2);
-+	reservation_ticket_init(&t);
-+
-+	ret = mutex_reserve_lock(&o.lock, &t, t.seqno);
-+	WARN_ON(ret);
-+
-+	ret = mutex_reserve_lock(&o2.lock, &t, t.seqno);
-+	WARN_ON(ret);
-+
-+	mutex_unreserve_unlock(&o2.lock);
-+	mutex_unreserve_unlock(&o.lock);
-+
-+	reservation_ticket_fini(&t);
-+}
-+
-+static void reservation_test_try_block(void)
-+{
-+	struct reservation_object o, o2;
-+	bool ret;
-+
-+	reservation_object_init(&o);
-+	reservation_object_init(&o2);
-+
-+	ret = mutex_trylock(&o.lock.base);
-+	WARN_ON(!ret);
-+
-+	mutex_lock(&o2.lock.base);
-+	mutex_unlock(&o2.lock.base);
-+	mutex_unlock(&o.lock.base);
-+}
-+
-+static void reservation_test_try_try(void)
-+{
-+	struct reservation_object o, o2;
-+	bool ret;
-+
-+	reservation_object_init(&o);
-+	reservation_object_init(&o2);
-+
-+	ret = mutex_trylock(&o.lock.base);
-+	WARN_ON(!ret);
-+	ret = mutex_trylock(&o2.lock.base);
-+	WARN_ON(!ret);
-+	mutex_unlock(&o2.lock.base);
-+	mutex_unlock(&o.lock.base);
-+}
-+
-+static void reservation_test_try_ticket(void)
-+{
-+	struct reservation_ticket t;
-+	struct reservation_object o, o2;
-+	int ret;
-+
-+	reservation_object_init(&o);
-+	reservation_object_init(&o2);
-+
-+	ret = mutex_trylock(&o.lock.base);
-+	WARN_ON(!ret);
-+	reservation_ticket_init(&t);
-+
-+	ret = mutex_reserve_lock(&o2.lock, &t, t.seqno);
-+	WARN_ON(ret);
-+
-+	mutex_unreserve_unlock(&o2.lock);
-+	mutex_unlock(&o.lock.base);
-+
-+	reservation_ticket_fini(&t);
-+}
-+
-+static void reservation_test_block_block(void)
-+{
-+	struct reservation_object o, o2;
-+
-+	reservation_object_init(&o);
-+	reservation_object_init(&o2);
-+
-+	mutex_lock(&o.lock.base);
-+	mutex_lock(&o2.lock.base);
-+	mutex_unlock(&o2.lock.base);
-+	mutex_unlock(&o.lock.base);
-+}
-+
-+static void reservation_test_block_try(void)
-+{
-+	struct reservation_object o, o2;
-+	bool ret;
-+
-+	reservation_object_init(&o);
-+	reservation_object_init(&o2);
-+
-+	mutex_lock(&o.lock.base);
-+	ret = mutex_trylock(&o2.lock.base);
-+	WARN_ON(!ret);
-+	mutex_unlock(&o2.lock.base);
-+	mutex_unlock(&o.lock.base);
-+}
-+
-+static void reservation_test_block_ticket(void)
-+{
-+	struct reservation_ticket t;
-+	struct reservation_object o, o2;
-+	int ret;
-+
-+	reservation_object_init(&o);
-+	reservation_object_init(&o2);
-+
-+	mutex_lock(&o.lock.base);
-+	reservation_ticket_init(&t);
-+
-+	ret = mutex_reserve_lock(&o2.lock, &t, t.seqno);
-+	WARN_ON(ret);
-+	mutex_unreserve_unlock(&o2.lock);
-+	mutex_unlock(&o.lock.base);
-+
-+	reservation_ticket_fini(&t);
-+}
-+
-+static void reservation_test_fence_block(void)
-+{
-+	struct reservation_object o;
-+
-+	reservation_object_init(&o);
-+	L(A);
-+	U(A);
-+
-+	mutex_lock(&o.lock.base);
-+	L(A);
-+	U(A);
-+	mutex_unlock(&o.lock.base);
-+
-+	L(A);
-+	mutex_lock(&o.lock.base);
-+	mutex_unlock(&o.lock.base);
-+	U(A);
-+}
-+
-+static void reservation_test_fence_try(void)
-+{
-+	struct reservation_object o;
-+	bool ret;
-+
-+	reservation_object_init(&o);
-+	L(A);
-+	U(A);
-+
-+	ret = mutex_trylock(&o.lock.base);
-+	WARN_ON(!ret);
-+	L(A);
-+	U(A);
-+	mutex_unlock(&o.lock.base);
-+
-+	L(A);
-+	ret = mutex_trylock(&o.lock.base);
-+	WARN_ON(!ret);
-+	mutex_unlock(&o.lock.base);
-+	U(A);
-+}
-+
-+static void reservation_test_fence_ticket(void)
-+{
-+	struct reservation_ticket t;
-+	struct reservation_object o;
-+	int ret;
-+
-+	reservation_object_init(&o);
-+	L(A);
-+	U(A);
-+
-+	reservation_ticket_init(&t);
-+
-+	ret = mutex_reserve_lock(&o.lock, &t, t.seqno);
-+	WARN_ON(ret);
-+	L(A);
-+	U(A);
-+	mutex_unreserve_unlock(&o.lock);
-+
-+	L(A);
-+	ret = mutex_reserve_lock(&o.lock, &t, t.seqno);
-+	WARN_ON(ret);
-+	mutex_unreserve_unlock(&o.lock);
-+	U(A);
-+
-+	reservation_ticket_fini(&t);
-+}
-+
-+static void reservation_tests(void)
-+{
-+	printk("  --------------------------------------------------------------------------\n");
-+	printk("  | Reservation tests |\n");
-+	printk("  ---------------------\n");
-+
-+	print_testname("reservation api failures");
-+	dotest(reservation_test_fail_reserve, SUCCESS, LOCKTYPE_RESERVATION);
-+	dotest(reservation_test_normal, SUCCESS, LOCKTYPE_RESERVATION);
-+	printk("\n");
-+
-+	print_testname("reserving two tickets");
-+	dotest(reservation_test_two_tickets, FAILURE, LOCKTYPE_RESERVATION);
-+	printk("\n");
-+
-+	print_testname("unreserve ticket twice");
-+	dotest(reservation_test_ticket_unreserve_twice, FAILURE, LOCKTYPE_RESERVATION);
-+	printk("\n");
-+
-+	print_testname("unreserve object twice");
-+	dotest(reservation_test_object_unreserve_twice, FAILURE, LOCKTYPE_RESERVATION);
-+	printk("\n");
-+
-+	print_testname("spinlock nest unreserved");
-+	dotest(reservation_test_fence_nest_unreserved, FAILURE, LOCKTYPE_RESERVATION);
-+	printk("\n");
-+
-+	print_testname("mutex reserve (un)lock mismatch");
-+	dotest(reservation_test_mismatch_normal_reserve, FAILURE, LOCKTYPE_RESERVATION);
-+	dotest(reservation_test_mismatch_reserve_normal, FAILURE, LOCKTYPE_RESERVATION);
-+	dotest(reservation_test_mismatch_reserve_normal_slow, FAILURE, LOCKTYPE_RESERVATION);
-+	printk("\n");
-+
-+	printk("  -----------------------------------------------------\n");
-+	printk("                                 |block | try  |ticket|\n");
-+	printk("  -----------------------------------------------------\n");
-+
-+	print_testname("ticket");
-+	dotest(reservation_test_ticket_block, FAILURE, LOCKTYPE_RESERVATION);
-+	dotest(reservation_test_ticket_try, SUCCESS, LOCKTYPE_RESERVATION);
-+	dotest(reservation_test_ticket_ticket, SUCCESS, LOCKTYPE_RESERVATION);
-+	printk("\n");
-+
-+	print_testname("try");
-+	dotest(reservation_test_try_block, FAILURE, LOCKTYPE_RESERVATION);
-+	dotest(reservation_test_try_try, SUCCESS, LOCKTYPE_RESERVATION);
-+	dotest(reservation_test_try_ticket, FAILURE, LOCKTYPE_RESERVATION);
-+	printk("\n");
-+
-+	print_testname("block");
-+	dotest(reservation_test_block_block, FAILURE, LOCKTYPE_RESERVATION);
-+	dotest(reservation_test_block_try, SUCCESS, LOCKTYPE_RESERVATION);
-+	dotest(reservation_test_block_ticket, FAILURE, LOCKTYPE_RESERVATION);
-+	printk("\n");
-+
-+	print_testname("spinlock");
-+	dotest(reservation_test_fence_block, FAILURE, LOCKTYPE_RESERVATION);
-+	dotest(reservation_test_fence_try, SUCCESS, LOCKTYPE_RESERVATION);
-+	dotest(reservation_test_fence_ticket, FAILURE, LOCKTYPE_RESERVATION);
-+	printk("\n");
-+}
- 
- void locking_selftest(void)
- {
-@@ -1188,6 +1736,8 @@ void locking_selftest(void)
- 	DO_TESTCASE_6x2("irq read-recursion", irq_read_recursion);
- //	DO_TESTCASE_6x2B("irq read-recursion #2", irq_read_recursion2);
- 
-+	reservation_tests();
-+
- 	if (unexpected_testcase_failures) {
- 		printk("-----------------------------------------------------------------\n");
- 		debug_locks = 0;
+When I write the RTC register then how do  I call register access? 
+Currently RTC driver is saying device1_reg_read() or device2_reg_read() 
+etc on which register address passed along with dev or chip structure.
 
