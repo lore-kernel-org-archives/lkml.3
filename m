@@ -1,63 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752461Ab3B1HEq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 02:04:46 -0500
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:52122 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751459Ab3B1HEp (ORCPT
+	id S1752802Ab3B1HFo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 02:05:44 -0500
+Received: from mail-we0-f173.google.com ([74.125.82.173]:34472 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751238Ab3B1HFn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 02:04:45 -0500
-Message-ID: <512F0139.60702@linux.vnet.ibm.com>
-Date: Thu, 28 Feb 2013 12:33:21 +0530
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	Thu, 28 Feb 2013 02:05:43 -0500
 MIME-Version: 1.0
-To: Alex Shi <alex.shi@intel.com>
-CC: torvalds@linux-foundation.org, mingo@redhat.com, peterz@infradead.org,
-        tglx@linutronix.de, akpm@linux-foundation.org, arjan@linux.intel.com,
-        bp@alien8.de, pjt@google.com, namhyung@kernel.org, efault@gmx.de,
-        vincent.guittot@linaro.org, gregkh@linuxfoundation.org,
-        viresh.kumar@linaro.org, linux-kernel@vger.kernel.org,
-        morten.rasmussen@arm.com
-Subject: Re: [patch v5 02/15] sched: set initial load avg of new forked task
-References: <1361164062-20111-1-git-send-email-alex.shi@intel.com> <1361164062-20111-3-git-send-email-alex.shi@intel.com> <51246B1A.8040100@intel.com> <5129F200.6080309@linux.vnet.ibm.com> <512AFE18.5020104@intel.com>
-In-Reply-To: <512AFE18.5020104@intel.com>
+In-Reply-To: <512EE2F5.2080900@oracle.com>
+References: <EB937501617BFC44BE90EDA24CA6A13A0117EB@SGSIMBX003.nsn-intra.net>
+	<512C56AF.1030801@oracle.com>
+	<CAFLxGvyQmPz_iK26NavuRdBWAFiWzmt8BMfL8f6rg_Qm4LF7WQ@mail.gmail.com>
+	<CAFLxGvycGCyeg7AhJ=3J0ztZfgYLmyKZSrzNUd5ymAb-tSd4qg@mail.gmail.com>
+	<512EE2F5.2080900@oracle.com>
+Date: Thu, 28 Feb 2013 08:05:41 +0100
+Message-ID: <CAFLxGvyW+5RCReH8NuFVcgiqvRyHHyE5ZvuB7V8y5zbPzw=69w@mail.gmail.com>
+Subject: Re: [Ocfs2-users] Kernel panic due to ocfs2
+From: richard -rw- weinberger <richard.weinberger@gmail.com>
+To: Srinivas Eeda <srinivas.eeda@oracle.com>
+Cc: "Ramappa, Ravi (NSN - IN/Bangalore)" <ravi.ramappa@nsn.com>,
+        "ocfs2-users@oss.oracle.com" <ocfs2-users@oss.oracle.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>, david@sigma-star.at
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13022807-5564-0000-0000-000006CEEBE3
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alex,
-
->>> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
->>> index 81fa536..cae5134 100644
->>> --- a/kernel/sched/fair.c
->>> +++ b/kernel/sched/fair.c
->>> @@ -1509,6 +1509,10 @@ static inline void enqueue_entity_load_avg(struct cfs_rq *cfs_rq,
->>>  	 * We track migrations using entity decay_count <= 0, on a wake-up
->>>  	 * migration we use a negative decay count to track the remote decays
->>>  	 * accumulated while sleeping.
->>> +	 *
->>> +	 * When enqueue a new forked task, the se->avg.decay_count == 0, so
->>> +	 * we bypass update_entity_load_avg(), use avg.load_avg_contrib initial
->>> +	 * value: se->load.weight.
+On Thu, Feb 28, 2013 at 5:54 AM, Srinivas Eeda <srinivas.eeda@oracle.com> wrote:
+> On 02/27/2013 03:52 AM, richard -rw- weinberger wrote:
 >>
->> I disagree with the comment.update_entity_load_avg() gets called for all
->> forked tasks.
->> enqueue_task_fair->update_entity_load_avg() during the second
->> iteration.But __update_entity_load_avg() in update_entity_load_avg()
+>> On Tue, Feb 26, 2013 at 8:54 AM, richard -rw- weinberger
+>> <richard.weinberger@gmail.com> wrote:
+>>>
+>>> On Tue, Feb 26, 2013 at 7:31 AM, Srinivas Eeda <srinivas.eeda@oracle.com>
+>>> wrote:
+>>>>
+>>>> This is due to a race in lock mastery/purge. I have recently fixed this
+>>>> problem but haven't yet submitted the patch to mainline. Please file a
+>>>> Service request with Oracle to get a one-off fix.
+>>>
+>>> Please submit the patch immediately.
+>>> Why does one need a f§&"!#$ SR from Oracle to have this fixed?
 >>
-> 
-> When goes 'enqueue_task_fair->update_entity_load_avg()' during the
-> second iteration. the se is changed.
-> That is different se.
-> 
-> 
-Correct Alex,sorry I overlooked this.
+>> So, where can I find this patch?
+>> Can you please share it with us insignificant and rubbishy community
+>> folks?
+>
+> Here is the patch against mainline which I haven't yet submitted because I
+> have not finished testing on mainline kernel yet. I am running into another
+> unrelated crashes during testing. I am forwarding the patch to you assuming
+> you are looking for this fix.
+>
+> https://oss.oracle.com/~seeda/patches/dlm-race/
+>
+> The other person who emailed about the problem was running older ocfs2
+> version(1.4-10). Which is where I originally debugged, patched and tested
+> the fix. So I offered to help him.
 
-Regards
-Preeti U Murthy
+Thanks a lot for the patch!
+Offering help is okay, but the SR thing had a really bad taste.
+Iff mainline is not vulnerable, no problem but please communicate such
+a fact clearly.
+Also if your patch is not yet through your in-house QA, you can still
+send an "hey-i-have-an-idea..."-patch.
 
+Is the git repo listed in MAINTAINERS and the ocfs2 website still valid?
+It looks kinda outdated...
+git://git.kernel.org/pub/scm/linux/kernel/git/jlbec/ocfs2.git
+
+OCFS2 development seems to be very opaque currently.
+
+-- 
+Thanks,
+//richard
