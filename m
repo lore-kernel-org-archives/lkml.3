@@ -1,86 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752904Ab3B1ENW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 23:13:22 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:43922 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751003Ab3B1ENU convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 23:13:20 -0500
-From: "Philip, Avinash" <avinashphilip@ti.com>
-To: Mark Jackson <mpfj-list@mimc.co.uk>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-CC: David Woodhouse <dwmw2@infradead.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        lkml <linux-kernel@vger.kernel.org>, Al Viro <viro@zeniv.linux.org.uk>
-Subject: RE: linux-next: JFFS2 corruption
-Thread-Topic: linux-next: JFFS2 corruption
-Thread-Index: AQHOFDnRyo9GH7SKiUWkrJcRJE0N5ZiMan4AgAEKcICAATP5UA==
-Date: Thu, 28 Feb 2013 04:11:56 +0000
-Deferred-Delivery: Thu, 28 Feb 2013 04:11:00 +0000
-Message-ID: <518397C60809E147AF5323E0420B992E3EA8EF4A@DBDE01.ent.ti.com>
-References: <512CD9BA.3080300@mimc.co.uk>
- <20130227101824.6e18ba21fb99070594420f29@canb.auug.org.au>
- <512E2241.9040705@mimc.co.uk>
-In-Reply-To: <512E2241.9040705@mimc.co.uk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.162.25]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1753346Ab3B1EW7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 23:22:59 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:56263 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750916Ab3B1EW4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Feb 2013 23:22:56 -0500
+Message-ID: <1362025374.1928.13.camel@joe-AO722>
+Subject: Re: [RFC PATCH v2 0/4] Add support for LZ4-compressed kernel
+From: Joe Perches <joe@perches.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Peter Korsgaard <jacmet@sunsite.dk>, Nicolas Pitre <nico@fluxnic.net>,
+        "Markus F.X.J. Oberhumer" <markus@oberhumer.com>,
+        Kyungsik Lee <kyungsik.lee@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Michal Marek <mmarek@suse.cz>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-kbuild@vger.kernel.org, x86@kernel.org,
+        celinux-dev@lists.celinuxforum.org,
+        Nitin Gupta <nitingupta910@gmail.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Joe Millenbach <jmillenbach@gmail.com>, David Sterba <dsterba@suse.cz>,
+        Richard Cochran <richardcochran@gmail.com>,
+        Egon Alter <egon.alter@gmx.net>, hyojun.im@lge.com, chan.jeong@lge.com,
+        raphael.andy.lee@gmail.com
+Date: Wed, 27 Feb 2013 20:22:54 -0800
+In-Reply-To: <20130227173644.GC17833@n2100.arm.linux.org.uk>
+References: <1361859870-15751-1-git-send-email-kyungsik.lee@lge.com>
+	 <512D1C12.4080109@oberhumer.com>
+	 <alpine.LFD.2.03.1302261557220.1254@syhkavp.arg>
+	 <87fw0i7n6d.fsf@dell.be.48ers.dk>
+	 <20130226221027.GW17833@n2100.arm.linux.org.uk>
+	 <1361929234.1924.8.camel@joe-AO722>
+	 <20130227095609.GY17833@n2100.arm.linux.org.uk>
+	 <1361980152.2035.13.camel@joe-AO722>
+	 <20130227163118.GB17833@n2100.arm.linux.org.uk>
+	 <1361984688.2035.20.camel@joe-AO722>
+	 <20130227173644.GC17833@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 27, 2013 at 20:42:01, Mark Jackson wrote:
-> On 26/02/13 23:18, Stephen Rothwell wrote:
-> > Hi Mark,
-> > 
-> > On Tue, 26 Feb 2013 15:50:18 +0000 Mark Jackson <mpfj-list@mimc.co.uk> wrote:
-> >>
-> >> Just tested the current next-20130226 on a custom AM335X board, and if I mount
-> >> our JFFS2 image as read/write, the next reboot shows the image as being corrupt.
-> >>
-> >> If I reprogram the jffs2 image into NAND and only mount the volume as read-only,
-> >> no corruption occurs and the system remains intact.
-> >>
-> >> I have also tested:-
-> >>
-> >> (a) reprogram ubifs image into nand
-> >> (b) boot the volume as read-only (corrupt -> no)
-> >> (c) remount the volume as read/write
-> >> (d) rebooting the volume as read-only (corrupt -> yes)
-> > 
-> > Thanks for all the testing.  Sam questions as in my other email.
-> 
-> Okay, just tested 3v8 plus:-
-> 
-> https://patchwork.kernel.org/patch/1931251/
-> https://patchwork.kernel.org/patch/1931221/
-> https://patchwork.kernel.org/patch/1931201/
-> and changed drivers/mtd/nand/elm.c, line 388 "ti,am33xx-elm" to "ti,am3352-elm"
-> 
-> This produces an identical corruption.
-> 
-> I have also tested next-20130225 and next-20130227, and both cause the same corruption.
+(removed Richard Purdie and Albin Tonnerre as their email addresses
+ seem to be bounding)
 
-JFFS2 is not supported in am335x with BCH8 ecc scheme because of ECC layout constraints.
-Reasons for disabling JFFS2 support documented in the wiki
-http://processors.wiki.ti.com/index.php/AM335x_JFFS2_Support_Guide#Reasons_for_disabling_JFFS2_support
+> While recently asking someone to enable VFP debugging, so I could help
+> sort out a problem they had reported, this is the debug output I was
+> greeted by thanks to your meddling:
 
+:) Meddling... You sound like one of those nameless
+villains on Scooby Doo.  If only I had a cool nickname
+like Dave "Shaggy" Kliekamp.  I guess you'd have to call
+me Velma.
 
-Thanks
-Avinash
+> [  927.235546] \x01\x01\x01\x01\x01\x01\x01\x01
+> ...
+> [  927.241505] \x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01                     
 > 
-> Regards
-> Mark J.
+> 7.6 `.asciz "STRING"'...
+> ========================
 > 
-> ______________________________________________________
-> Linux MTD discussion mailing list
-> http://lists.infradead.org/mailman/listinfo/linux-mtd/
-> 
+> `.asciz' is just like `.ascii', but each string is followed by a zero
+>                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> byte.  The "z" in `.asciz' stands for "zero".
+> ^^^^^
+
+Yeah, sorry.  I thought that the zero was after any
+concatenation like .c.  Learned something.  'preciate
+that.  Would have appreciated a polite "you broke it"
+email too.
+
+> ??? Yea, right, meanwhile breaking the ability of stuff to produce
+> kernel messages.
+
+Fortunately, that's the only .S instance.
+
+> > > > > > > so that we can see whether it's worth updating the LZO code
+> > Sounded as if you were doubtful to me.
+> _In_ the decompressor.  We're talking about the _decompressor_ in
+> this thread.
+
+My opinion is it's useful to update LZO.
+
+cheers, Joe (aka: Velma)
 
