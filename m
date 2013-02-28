@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760595Ab3B1P1Z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 10:27:25 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41868 "EHLO
+	id S1760773Ab3B1P1p (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 10:27:45 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41858 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753420Ab3B1Op7 (ORCPT
+	with ESMTP id S1754265Ab3B1Opy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 09:45:59 -0500
+	Thu, 28 Feb 2013 09:45:54 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jean Delvare <khali@linux-fr.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 006/139] pcmcia/vrc4171: Add missing spinlock init
-Date: Thu, 28 Feb 2013 14:42:36 +0000
-Message-Id: <1362062689-2567-7-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 004/139] v4l: Reset subdev v4l2_dev field to NULL if registration fails
+Date: Thu, 28 Feb 2013 14:42:34 +0000
+Message-Id: <1362062689-2567-5-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1362062689-2567-1-git-send-email-luis.henriques@canonical.com>
 References: <1362062689-2567-1-git-send-email-luis.henriques@canonical.com>
@@ -28,32 +28,83 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jean Delvare <khali@linux-fr.org>
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
 
-commit 811af9723859884f2f771f3174f3ddedab7c53b5 upstream.
+commit 317efce991620adc589b3005b9baed433dcb2a56 upstream.
 
-It doesn't seem this spinlock was properly initialized. This bug was
-introduced by commit 7a410e8d4d97457c8c381e2de9cdc7bd3306badc.
+When subdev registration fails the subdev v4l2_dev field is left to a
+non-NULL value. Later calls to v4l2_device_unregister_subdev() will
+consider the subdev as registered and will module_put() the subdev
+module without any matching module_get().
+Fix this by setting the subdev v4l2_dev field to NULL in
+v4l2_device_register_subdev() when the function fails.
 
-Signed-off-by: Jean Delvare <khali@linux-fr.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Acked-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+[ luis: adjust context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/pcmcia/vrc4171_card.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/media/video/v4l2-device.c | 30 ++++++++++++++----------------
+ 1 file changed, 14 insertions(+), 16 deletions(-)
 
-diff --git a/drivers/pcmcia/vrc4171_card.c b/drivers/pcmcia/vrc4171_card.c
-index 86e4a1a..6bb02ab 100644
---- a/drivers/pcmcia/vrc4171_card.c
-+++ b/drivers/pcmcia/vrc4171_card.c
-@@ -246,6 +246,7 @@ static int pccard_init(struct pcmcia_socket *sock)
- 	socket = &vrc4171_sockets[slot];
- 	socket->csc_irq = search_nonuse_irq();
- 	socket->io_irq = search_nonuse_irq();
-+	spin_lock_init(&socket->lock);
+diff --git a/drivers/media/video/v4l2-device.c b/drivers/media/video/v4l2-device.c
+index 1f203b8..683ae99 100644
+--- a/drivers/media/video/v4l2-device.c
++++ b/drivers/media/video/v4l2-device.c
+@@ -159,31 +159,21 @@ int v4l2_device_register_subdev(struct v4l2_device *v4l2_dev,
+ 	sd->v4l2_dev = v4l2_dev;
+ 	if (sd->internal_ops && sd->internal_ops->registered) {
+ 		err = sd->internal_ops->registered(sd);
+-		if (err) {
+-			module_put(sd->owner);
+-			return err;
+-		}
++		if (err)
++			goto error_module;
+ 	}
+ 
+ 	/* This just returns 0 if either of the two args is NULL */
+ 	err = v4l2_ctrl_add_handler(v4l2_dev->ctrl_handler, sd->ctrl_handler);
+-	if (err) {
+-		if (sd->internal_ops && sd->internal_ops->unregistered)
+-			sd->internal_ops->unregistered(sd);
+-		module_put(sd->owner);
+-		return err;
+-	}
++	if (err)
++		goto error_unregister;
+ 
+ #if defined(CONFIG_MEDIA_CONTROLLER)
+ 	/* Register the entity. */
+ 	if (v4l2_dev->mdev) {
+ 		err = media_device_register_entity(v4l2_dev->mdev, entity);
+-		if (err < 0) {
+-			if (sd->internal_ops && sd->internal_ops->unregistered)
+-				sd->internal_ops->unregistered(sd);
+-			module_put(sd->owner);
+-			return err;
+-		}
++		if (err < 0)
++			goto error_unregister;
+ 	}
+ #endif
+ 
+@@ -192,6 +182,14 @@ int v4l2_device_register_subdev(struct v4l2_device *v4l2_dev,
+ 	spin_unlock(&v4l2_dev->lock);
  
  	return 0;
++
++error_unregister:
++	if (sd->internal_ops && sd->internal_ops->unregistered)
++		sd->internal_ops->unregistered(sd);
++error_module:
++	module_put(sd->owner);
++	sd->v4l2_dev = NULL;
++	return err;
  }
+ EXPORT_SYMBOL_GPL(v4l2_device_register_subdev);
+ 
 -- 
 1.8.1.2
 
