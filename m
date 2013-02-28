@@ -1,53 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757797Ab3B1XFb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 18:05:31 -0500
-Received: from cavan.codon.org.uk ([93.93.128.6]:57742 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757061Ab3B1XF0 (ORCPT
+	id S1758309Ab3B1XJV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 18:09:21 -0500
+Received: from mail-ve0-f182.google.com ([209.85.128.182]:39852 "EHLO
+	mail-ve0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753036Ab3B1XJT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 18:05:26 -0500
-Date: Thu, 28 Feb 2013 23:05:19 +0000
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: David Howells <dhowells@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>, jwboyer@redhat.com,
-        pjones@redhat.com, vgoyal@redhat.com, keescook@chromium.org,
-        keyrings@linux-nfs.org, linux-kernel@vger.kernel.org,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Florian Weimer <fw@deneb.enyo.de>, Paolo Bonzini <pbonzini@redhat.com>
-Subject: Re: [GIT PULL] Load keys from signed PE binaries
-Message-ID: <20130228230518.GA12717@srcf.ucam.org>
-References: <30665.1361461678@warthog.procyon.org.uk>
- <alpine.LRH.2.00.1302282335500.2038@twin.jikos.cz>
- <20130228225115.GA12360@srcf.ucam.org>
- <alpine.LNX.2.00.1302282357210.11745@pobox.suse.cz>
+	Thu, 28 Feb 2013 18:09:19 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1302282357210.11745@pobox.suse.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <512FDC82.2060606@redhat.com>
+References: <20130206150403.006e5294@cuia.bos.redhat.com>
+	<511C1204.9040608@redhat.com>
+	<CA+55aFwxYK-BLH0crhySHaQvAYHOH-VGUi7WTd1aq-24+WTDYw@mail.gmail.com>
+	<511C24A6.8020409@redhat.com>
+	<CA+55aFws80EEJQskqiP+a5J-HOGu=M1Fe=uCs50ifedVxPxT1Q@mail.gmail.com>
+	<512E376D.70105@redhat.com>
+	<CA+55aFzPxJ3rfZvAvrP9LxCXfDU8AAVvhMZnP-OAoe-ycc70aw@mail.gmail.com>
+	<512E6443.9050603@redhat.com>
+	<CA+55aFwHxv9RH75BoXYcwdKeHx+otOOpg9494TTdFwQe3biOhw@mail.gmail.com>
+	<512E80E3.7060800@redhat.com>
+	<CA+55aFwa0EjGG2NUDYVLVBmXJa2k81YiuNO2yggk=GLRQxhhUQ@mail.gmail.com>
+	<512EC7F0.60103@redhat.com>
+	<1362024397.1867.28.camel@buesod1.americas.hpqcorp.net>
+	<CA+55aFygzjuNYiG4MTPMzimEjQ92rpS-rNJr7HD4OQCAqze5zg@mail.gmail.com>
+	<512F7429.4020103@redhat.com>
+	<CA+55aFw3t+sC-zv6njxdJ6hB0arJnZzoGNO9W7o8h=tcUo5P_Q@mail.gmail.com>
+	<CA+55aFwEshukBGU5YCtKL=7c-43guMuGSHTnXo02rLxZWGQWTw@mail.gmail.com>
+	<512FC89B.6030507@redhat.com>
+	<CA+55aFxbm83Oc2g55868HA2xCytsJzTxWGE0w_pMUzKaU5mJMw@mail.gmail.com>
+	<512FDC82.2060606@redhat.com>
+Date: Thu, 28 Feb 2013 15:09:18 -0800
+X-Google-Sender-Auth: RefxldcVVwofQEt7l7-jnpHOOr4
+Message-ID: <CA+55aFyitxgooTYq27eK4fO___R4uRrNhoPwDWxULeUkejH0ZA@mail.gmail.com>
+Subject: Re: [tip:core/locking] x86/smp: Move waiting on contended ticket lock
+ out of line
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Rik van Riel <riel@redhat.com>
+Cc: Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        "Vinod, Chegu" <chegu_vinod@hp.com>, "Low, Jason" <jason.low2@hp.com>,
+        linux-tip-commits@vger.kernel.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>, aquini@redhat.com,
+        Michel Lespinasse <walken@google.com>, Ingo Molnar <mingo@kernel.org>,
+        Larry Woodman <lwoodman@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 01, 2013 at 12:02:43AM +0100, Jiri Kosina wrote:
+On Thu, Feb 28, 2013 at 2:38 PM, Rik van Riel <riel@redhat.com> wrote:
+>
+> I could see doing the permission checks under a seq lock.
+>
+> If the permissions, or any other aspect of the semaphore
+> array changed while we were doing our permission check,
+> we can simply jump back to the top of the function and
+> try again.
 
-> But the real harm is being done by the i_own_your_ring0.ko module, which 
-> can be modprobed on all the systems where the signed "hello world" binary 
-> has been keyctl-ed before it was blacklisted.
+We do the normal file permissions under just the RCU read lock. If
+it's good enough for files, them ipc semaphores certainly don't need
+anything more.
 
-Sure, if you've been infected before the revocation, you'll still be 
-infected. There's not really any good way around that.
+> The ugliness of using two kinds of protection may be
+> necessary, since permissions can be modified in-place,
+> and RCU does not seem to do in-place modification...
 
-> In other words -- you blacklist the population of the key on systems by 
-> blakclisting the key-carrying binary, but the key remains trusted on 
-> whatever system the binary has been processed by keyctl before. Right?
+The selinux AVC code does its stuff by rcu, and for files we don't
+even care if there is some uid/gid change going on - we'll  get one or
+the other, and live with it. There is no atomic way to change the uid
+and gid anyway, so there are no new races. You get old or you get new,
+or a mix of the two, any of it is "correct".
 
-You have to re-load it on every boot, it's not a permanent thing.
+So I almost think that *everything* there in the semaphore code could
+be done under RCU. The actual spinlock doesn't seem to much matter, at
+least for semaphores. The semaphore values themselves seem to be
+protected by the atomic operations, but I might be wrong about that, I
+didn't even check. I just looked at the ipcperm() part, which
+certainly doesn't seem to merit spinlocks.
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+            Linus
