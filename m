@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755426Ab3B1Eul (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 23:50:41 -0500
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:54773 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752560Ab3B1Eug (ORCPT
+	id S1755626Ab3B1EvE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 23:51:04 -0500
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:56884 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751538Ab3B1Eu1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 23:50:36 -0500
+	Wed, 27 Feb 2013 23:50:27 -0500
 From: Mike Turquette <mturquette@linaro.org>
 To: linux-kernel@vger.kernel.org
 Cc: linux-arm-kernel@lists.infradead.org, patches@linaro.org,
-        linaro-dev@lists.linaro.org, Mike Turquette <mturquette@ti.com>
-Subject: [PATCH 5/5] HACK: omap: opp: add fake 400MHz OPP to bypass MPU
-Date: Wed, 27 Feb 2013 20:49:29 -0800
-Message-Id: <1362026969-11457-6-git-send-email-mturquette@linaro.org>
+        linaro-dev@lists.linaro.org, Mike Turquette <mturquette@linaro.org>
+Subject: [PATCH 3/5] cpufreq: omap: scale regulator from clk notifier
+Date: Wed, 27 Feb 2013 20:49:27 -0800
+Message-Id: <1362026969-11457-4-git-send-email-mturquette@linaro.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1362026969-11457-1-git-send-email-mturquette@linaro.org>
 References: <1362026969-11457-1-git-send-email-mturquette@linaro.org>
@@ -21,73 +21,160 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mike Turquette <mturquette@ti.com>
+This patch moves direct control of the MPU voltage regulator out of the
+cpufreq driver .target callback and instead uses the common dvfs clk
+rate-change notifier infrastructure.
 
-The following is another silly patch which was done to test calling
-clk_set_parent from within a call to clk_set_rate.  It may make your
-board burst into flames or otherwise void various warrantees.
+Ideally it would be nice to reduce the .target callback for omap's
+cpufreq driver to a simple call to clk_set_rate.  For now there is still
+some other stuff needed there (jiffies per loop, rounding the rate, etc
+etc).
 
-This patch introduces a 400MHz OPP for the MPU, which happens to
-correspond to the bypass clk rate on the 4430 Panda board and 4460 Panda
-ES board, both using a 38.4MHz SYS_CLK oscillator rate.
-
-One may test this by using the cpufreq-userspace governor and executing:
-echo 400000 > /sys/devices/system/cpu/cpu0/cpufreq/scaling_setspeed
-
-On Panda ES validation can be done via:
-$ find /debug/clk/ -iname "dpll_mpu_ck"
-/debug/clk/virt_38400000_ck/sys_clkin_ck/dpll_mpu_ck
-$ echo 400000 > scaling_setspeed
-$ find /debug/clk/ -iname "dpll_mpu_ck"
-/debug/clk/virt_38400000_ck/sys_clkin_ck/dpll_core_ck/dpll_core_x2_ck/dpll_core_m5x2_ck/div_mpu_hs_clk/dpll_mpu_ck
-$ cat /proc/cpuinfo
-...
-BogoMIPS        : 794.26
-...
-$ cat /sys/class/regulator/regulator.3/microvolts
-1200000
-
-Not-signed-off-by: Mike Turquette <mturquette@ti.com>
+Signed-off-by: Mike Turquette <mturquette@linaro.org>
 ---
- arch/arm/mach-omap2/opp4xxx_data.c |   18 ++++++++++++++++++
- 1 file changed, 18 insertions(+)
+ drivers/cpufreq/omap-cpufreq.c |   82 ++++++++++------------------------------
+ 1 file changed, 20 insertions(+), 62 deletions(-)
 
-diff --git a/arch/arm/mach-omap2/opp4xxx_data.c b/arch/arm/mach-omap2/opp4xxx_data.c
-index d470b72..c7bccf7 100644
---- a/arch/arm/mach-omap2/opp4xxx_data.c
-+++ b/arch/arm/mach-omap2/opp4xxx_data.c
-@@ -67,6 +67,15 @@ struct omap_volt_data omap443x_vdd_core_volt_data[] = {
- static struct omap_opp_def __initdata omap443x_opp_def_list[] = {
- 	/* MPU OPP1 - OPP50 */
- 	OPP_INITIALIZER("mpu", true, 300000000, OMAP4430_VDD_MPU_OPP50_UV),
-+	/*
-+	 * MPU OPP1.5 - 400MHz - completely FAKE - not endorsed by TI
-+	 *
-+	 * DPLL_MPU is in Low Power Bypass driven by DPLL_CORE.  After
-+	 * transitioning to this OPP you can see the migration in debugfs:
-+	 * /d/clk/virt_38400000_ck/sys_clkin_ck/dpll_mpu_ck to
-+	 * /d/.../dpll_core_ck/dpll_core_x2_ck/dpll_core_m5x2_ck/div_mpu_hs_clk
-+	 */
-+	OPP_INITIALIZER("mpu", true, 400000000, 1100000),
- 	/* MPU OPP2 - OPP100 */
- 	OPP_INITIALIZER("mpu", true, 600000000, OMAP4430_VDD_MPU_OPP100_UV),
- 	/* MPU OPP3 - OPP-Turbo */
-@@ -126,6 +135,15 @@ struct omap_volt_data omap446x_vdd_core_volt_data[] = {
- static struct omap_opp_def __initdata omap446x_opp_def_list[] = {
- 	/* MPU OPP1 - OPP50 */
- 	OPP_INITIALIZER("mpu", true, 350000000, OMAP4460_VDD_MPU_OPP50_UV),
-+	/*
-+	 * MPU OPP1.5 - 400MHz - completely FAKE - not endorsed by TI
-+	 *
-+	 * DPLL_MPU is in Low Power Bypass driven by DPLL_CORE.  After
-+	 * transitioning to this OPP you can see the migration in debugfs:
-+	 * /d/clk/virt_38400000_ck/sys_clkin_ck/dpll_mpu_ck to
-+	 * /d/.../dpll_core_ck/dpll_core_x2_ck/dpll_core_m5x2_ck/div_mpu_hs_clk
-+	 */
-+	OPP_INITIALIZER("mpu", true, 400000000, 1100000),
- 	/* MPU OPP2 - OPP100 */
- 	OPP_INITIALIZER("mpu", true, 700000000, OMAP4460_VDD_MPU_OPP100_UV),
- 	/* MPU OPP3 - OPP-Turbo */
+diff --git a/drivers/cpufreq/omap-cpufreq.c b/drivers/cpufreq/omap-cpufreq.c
+index 1f3417a..6bec1c4 100644
+--- a/drivers/cpufreq/omap-cpufreq.c
++++ b/drivers/cpufreq/omap-cpufreq.c
+@@ -37,7 +37,7 @@ static struct cpufreq_frequency_table *freq_table;
+ static atomic_t freq_table_users = ATOMIC_INIT(0);
+ static struct clk *mpu_clk;
+ static struct device *mpu_dev;
+-static struct regulator *mpu_reg;
++static struct dvfs_info *di;
+ 
+ static int omap_verify_speed(struct cpufreq_policy *policy)
+ {
+@@ -62,10 +62,9 @@ static int omap_target(struct cpufreq_policy *policy,
+ 		       unsigned int relation)
+ {
+ 	unsigned int i;
+-	int r, ret = 0;
++	int ret = 0;
+ 	struct cpufreq_freqs freqs;
+-	struct opp *opp;
+-	unsigned long freq, volt = 0, volt_old = 0, tol = 0;
++	unsigned long freq;
+ 
+ 	if (!freq_table) {
+ 		dev_err(mpu_dev, "%s: cpu%d: no freq table!\n", __func__,
+@@ -109,50 +108,13 @@ static int omap_target(struct cpufreq_policy *policy,
+ 	}
+ 	freq = ret;
+ 
+-	if (mpu_reg) {
+-		opp = opp_find_freq_ceil(mpu_dev, &freq);
+-		if (IS_ERR(opp)) {
+-			dev_err(mpu_dev, "%s: unable to find MPU OPP for %d\n",
+-				__func__, freqs.new);
+-			return -EINVAL;
+-		}
+-		volt = opp_get_voltage(opp);
+-		tol = volt * OPP_TOLERANCE / 100;
+-		volt_old = regulator_get_voltage(mpu_reg);
+-	}
+-
+-	dev_dbg(mpu_dev, "cpufreq-omap: %u MHz, %ld mV --> %u MHz, %ld mV\n", 
+-		freqs.old / 1000, volt_old ? volt_old / 1000 : -1,
+-		freqs.new / 1000, volt ? volt / 1000 : -1);
+-
+-	/* scaling up?  scale voltage before frequency */
+-	if (mpu_reg && (freqs.new > freqs.old)) {
+-		r = regulator_set_voltage(mpu_reg, volt - tol, volt + tol);
+-		if (r < 0) {
+-			dev_warn(mpu_dev, "%s: unable to scale voltage up.\n",
+-				 __func__);
+-			freqs.new = freqs.old;
+-			goto done;
+-		}
+-	}
++	dev_dbg(mpu_dev, "cpufreq-omap: %u MHz --> %u MHz\n",
++			freqs.old / 1000, freqs.new / 1000); 
+ 
+ 	ret = clk_set_rate(mpu_clk, freqs.new * 1000);
+ 
+-	/* scaling down?  scale voltage after frequency */
+-	if (mpu_reg && (freqs.new < freqs.old)) {
+-		r = regulator_set_voltage(mpu_reg, volt - tol, volt + tol);
+-		if (r < 0) {
+-			dev_warn(mpu_dev, "%s: unable to scale voltage down.\n",
+-				 __func__);
+-			ret = clk_set_rate(mpu_clk, freqs.old * 1000);
+-			freqs.new = freqs.old;
+-			goto done;
+-		}
+-	}
+-
+ 	freqs.new = omap_getspeed(policy->cpu);
+ 
+-done:
+ 	/* notifiers */
+ 	for_each_cpu(i, policy->cpus) {
+ 		freqs.cpu = i;
+@@ -172,10 +134,6 @@ static int __cpuinit omap_cpu_init(struct cpufreq_policy *policy)
+ {
+ 	int result = 0;
+ 
+-	mpu_clk = clk_get(NULL, "cpufreq_ck");
+-	if (IS_ERR(mpu_clk))
+-		return PTR_ERR(mpu_clk);
+-
+ 	if (policy->cpu >= NR_CPUS) {
+ 		result = -EINVAL;
+ 		goto fail_ck;
+@@ -253,34 +211,34 @@ static struct cpufreq_driver omap_driver = {
+ 
+ static int __init omap_cpufreq_init(void)
+ {
++	struct dvfs_info_init dii;
++
++	mpu_clk = clk_get(NULL, "cpufreq_ck");
++	if (IS_ERR(mpu_clk))
++		return PTR_ERR(mpu_clk);
++
+ 	mpu_dev = get_cpu_device(0);
+ 	if (!mpu_dev) {
+ 		pr_warning("%s: unable to get the mpu device\n", __func__);
+ 		return -EINVAL;
+ 	}
+ 
+-	mpu_reg = regulator_get(mpu_dev, "vcc");
+-	if (IS_ERR(mpu_reg)) {
+-		pr_warning("%s: unable to get MPU regulator\n", __func__);
+-		mpu_reg = NULL;
+-	} else {
+-		/* 
+-		 * Ensure physical regulator is present.
+-		 * (e.g. could be dummy regulator.)
+-		 */
+-		if (regulator_get_voltage(mpu_reg) < 0) {
+-			pr_warn("%s: physical regulator not present for MPU\n",
++	dii.dev = mpu_dev;
++	dii.con_id = "cpufreq_ck";
++	dii.reg_id = "vcc";
++	dii.tol = OPP_TOLERANCE;
++
++	di = dvfs_clk_notifier_register(&dii);
++	if (IS_ERR(di))
++		pr_warning("%s: failed to register dvfs clk notifier\n",
+ 				__func__);
+-			regulator_put(mpu_reg);
+-			mpu_reg = NULL;
+-		}
+-	}
+ 
+ 	return cpufreq_register_driver(&omap_driver);
+ }
+ 
+ static void __exit omap_cpufreq_exit(void)
+ {
++	dvfs_clk_notifier_unregister(di);
+ 	cpufreq_unregister_driver(&omap_driver);
+ }
+ 
 -- 
 1.7.10.4
 
