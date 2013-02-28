@@ -1,23 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932715Ab3B1OuM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 09:50:12 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:42407 "EHLO
+	id S932750Ab3B1OuR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 09:50:17 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:42422 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759046Ab3B1OuF (ORCPT
+	with ESMTP id S932709Ab3B1OuM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 09:50:05 -0500
+	Thu, 28 Feb 2013 09:50:12 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Steven Rostedt <rostedt@goodmis.org>,
+Cc: =?UTF-8?q?Ville=20Syrj=C3=A4l=C3=A4?= 
+	<ville.syrjala@linux.intel.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 102/139] ftrace: Call ftrace cleanup module notifier after all other notifiers
-Date: Thu, 28 Feb 2013 14:44:12 +0000
-Message-Id: <1362062689-2567-103-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 105/139] drm: Fill depth/bits_per_pixel for C8 format
+Date: Thu, 28 Feb 2013 14:44:15 +0000
+Message-Id: <1362062689-2567-106-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1362062689-2567-1-git-send-email-luis.henriques@canonical.com>
 References: <1362062689-2567-1-git-send-email-luis.henriques@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,129 +32,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+From: =?UTF-8?q?Ville=20Syrj=C3=A4l=C3=A4?= <ville.syrjala@linux.intel.com>
 
-commit 8c189ea64eea01ca20d102ddb74d6936dd16c579 upstream.
+commit c51a6bc5f6d328926a9a4a1247c5030faf190a80 upstream.
 
-Commit: c1bf08ac "ftrace: Be first to run code modification on modules"
+Set depth/bits_per_pixel to 8 for C8 format.
 
-changed ftrace module notifier's priority to INT_MAX in order to
-process the ftrace nops before anything else could touch them
-(namely kprobes). This was the correct thing to do.
-
-Unfortunately, the ftrace module notifier also contains the ftrace
-clean up code. As opposed to the set up code, this code should be
-run *after* all the module notifiers have run in case a module is doing
-correct clean-up and unregisters its ftrace hooks. Basically, ftrace
-needs to do clean up on module removal, as it needs to know about code
-being removed so that it doesn't try to modify that code. But after it
-removes the module from its records, if a ftrace user tries to remove
-a probe, that removal will fail due as the record of that code segment
-no longer exists.
-
-Nothing really bad happens if the probe removal is called after ftrace
-did the clean up, but the ftrace removal function will return an error.
-Correct code (such as kprobes) will produce a WARN_ON() if it fails
-to remove the probe. As people get annoyed by frivolous warnings, it's
-best to do the ftrace clean up after everything else.
-
-By splitting the ftrace_module_notifier into two notifiers, one that
-does the module load setup that is run at high priority, and the other
-that is called for module clean up that is run at low priority, the
-problem is solved.
-
-Reported-by: Frank Ch. Eigler <fche@redhat.com>
-Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Ville Syrjälä <ville.syrjala@linux.intel.com>
+Acked-by: Dave Airlie <airlied@gmail.com>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- kernel/trace/ftrace.c | 46 ++++++++++++++++++++++++++++++++--------------
- 1 file changed, 32 insertions(+), 14 deletions(-)
+ drivers/gpu/drm/drm_crtc.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index 793e367..e5a77ba 100644
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -3835,37 +3835,51 @@ static void ftrace_init_module(struct module *mod,
- 	ftrace_process_locs(mod, start, end);
- }
- 
--static int ftrace_module_notify(struct notifier_block *self,
--				unsigned long val, void *data)
-+static int ftrace_module_notify_enter(struct notifier_block *self,
-+				      unsigned long val, void *data)
+diff --git a/drivers/gpu/drm/drm_crtc.c b/drivers/gpu/drm/drm_crtc.c
+index af81f77..2ca9737 100644
+--- a/drivers/gpu/drm/drm_crtc.c
++++ b/drivers/gpu/drm/drm_crtc.c
+@@ -3633,6 +3633,7 @@ void drm_fb_get_bpp_depth(uint32_t format, unsigned int *depth,
+ 			  int *bpp)
  {
- 	struct module *mod = data;
- 
--	switch (val) {
--	case MODULE_STATE_COMING:
-+	if (val == MODULE_STATE_COMING)
- 		ftrace_init_module(mod, mod->ftrace_callsites,
- 				   mod->ftrace_callsites +
- 				   mod->num_ftrace_callsites);
--		break;
--	case MODULE_STATE_GOING:
-+	return 0;
-+}
-+
-+static int ftrace_module_notify_exit(struct notifier_block *self,
-+				     unsigned long val, void *data)
-+{
-+	struct module *mod = data;
-+
-+	if (val == MODULE_STATE_GOING)
- 		ftrace_release_mod(mod);
--		break;
--	}
- 
- 	return 0;
- }
- #else
--static int ftrace_module_notify(struct notifier_block *self,
--				unsigned long val, void *data)
-+static int ftrace_module_notify_enter(struct notifier_block *self,
-+				      unsigned long val, void *data)
-+{
-+	return 0;
-+}
-+static int ftrace_module_notify_exit(struct notifier_block *self,
-+				     unsigned long val, void *data)
- {
- 	return 0;
- }
- #endif /* CONFIG_MODULES */
- 
--struct notifier_block ftrace_module_nb = {
--	.notifier_call = ftrace_module_notify,
-+struct notifier_block ftrace_module_enter_nb = {
-+	.notifier_call = ftrace_module_notify_enter,
- 	.priority = INT_MAX,	/* Run before anything that can use kprobes */
- };
- 
-+struct notifier_block ftrace_module_exit_nb = {
-+	.notifier_call = ftrace_module_notify_exit,
-+	.priority = INT_MIN,	/* Run after anything that can remove kprobes */
-+};
-+
- extern unsigned long __start_mcount_loc[];
- extern unsigned long __stop_mcount_loc[];
- 
-@@ -3897,9 +3911,13 @@ void __init ftrace_init(void)
- 				  __start_mcount_loc,
- 				  __stop_mcount_loc);
- 
--	ret = register_module_notifier(&ftrace_module_nb);
-+	ret = register_module_notifier(&ftrace_module_enter_nb);
-+	if (ret)
-+		pr_warning("Failed to register trace ftrace module enter notifier\n");
-+
-+	ret = register_module_notifier(&ftrace_module_exit_nb);
- 	if (ret)
--		pr_warning("Failed to register trace ftrace module notifier\n");
-+		pr_warning("Failed to register trace ftrace module exit notifier\n");
- 
- 	set_ftrace_early_filters();
- 
+ 	switch (format) {
++	case DRM_FORMAT_C8:
+ 	case DRM_FORMAT_RGB332:
+ 	case DRM_FORMAT_BGR233:
+ 		*depth = 8;
 -- 
 1.8.1.2
 
