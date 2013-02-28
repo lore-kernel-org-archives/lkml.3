@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932567Ab3B1Oth (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 09:49:37 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:42333 "EHLO
+	id S932831Ab3B1PDZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 10:03:25 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:42351 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932490Ab3B1Ot2 (ORCPT
+	with ESMTP id S932570Ab3B1Oti (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 09:49:28 -0500
+	Thu, 28 Feb 2013 09:49:38 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Adam Thomas <adamthomas1111@gmail.com>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+Cc: Kay Sievers <kay.sievers@vrfy.org>, Dave Airlie <airlied@redhat.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 088/139] UBIFS: fix use of freed ubifs_orphan objects
-Date: Thu, 28 Feb 2013 14:43:58 +0000
-Message-Id: <1362062689-2567-89-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 092/139] fbcon: don't lose the console font across generic->chip driver switch
+Date: Thu, 28 Feb 2013 14:44:02 +0000
+Message-Id: <1362062689-2567-93-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1362062689-2567-1-git-send-email-luis.henriques@canonical.com>
 References: <1362062689-2567-1-git-send-email-luis.henriques@canonical.com>
@@ -28,98 +27,94 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Adam Thomas <adamthomas1111@gmail.com>
+From: Dave Airlie <airlied@redhat.com>
 
-commit 2928f0d0c5ebd6c9605c0d98207a44376387c298 upstream.
+commit ae1287865f5361fa138d4d3b1b6277908b54eac9 upstream.
 
-The last orphan in the cnext list has its cnext set to NULL. Because
-of that, ubifs_delete_orphan assumes that it is not on the cnext list
-and frees it immediately instead of adding it to the dnext list. The
-freed orphan is later modified by write_orph_node.
+If grub2 loads efifb/vesafb, then when systemd starts it can set the console
+font on that framebuffer device, however when we then load the native KMS
+driver, the first thing it does is tear down the generic framebuffer driver.
 
-This can cause various inconsistencies including directory entries
-that cannot be removed and this error:
+The thing is the generic code is doing the right thing, it frees the font
+because otherwise it would leak memory. However we can assume that if you
+are removing the generic firmware driver (vesa/efi/offb), that a new driver
+*should* be loading soon after, so we effectively leak the font.
 
-UBIFS error (pid 20685): layout_cnodes: LPT out of space at LEB 14:129009 needing 17, done_ltab 1, done_lsave 1
+However the old code left a dangling pointer in vc->vc_font.data and we
+can now reuse that dangling pointer to load the font into the new
+driver, now that we aren't freeing it.
 
-This is a regression introduced by
-"7074e5eb UBIFS: remove invalid reference to list iterator variable".
+Bugzilla: https://bugzilla.redhat.com/show_bug.cgi?id=892340
 
-This change adds an explicit flag to ubifs_orphan indicating whether
-it is pending commit.
-
-Signed-off-by: Adam Thomas <adamthomas1111@gmail.com>
-Reviewed-by: Adrian Hunter <adrian.hunter@intel.com>
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Cc: Kay Sievers <kay.sievers@vrfy.org>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/ubifs/orphan.c | 7 ++++++-
- fs/ubifs/ubifs.h  | 4 +++-
- 2 files changed, 9 insertions(+), 2 deletions(-)
+ drivers/video/console/fbcon.c | 14 ++++++++++----
+ 1 file changed, 10 insertions(+), 4 deletions(-)
 
-diff --git a/fs/ubifs/orphan.c b/fs/ubifs/orphan.c
-index b02734d..bd516f1 100644
---- a/fs/ubifs/orphan.c
-+++ b/fs/ubifs/orphan.c
-@@ -132,7 +132,7 @@ void ubifs_delete_orphan(struct ubifs_info *c, ino_t inum)
- 					(unsigned long)inum);
- 				return;
- 			}
--			if (o->cnext) {
-+			if (o->cmt) {
- 				o->dnext = c->orph_dnext;
- 				c->orph_dnext = o;
- 				spin_unlock(&c->orphan_lock);
-@@ -172,7 +172,9 @@ int ubifs_orphan_start_commit(struct ubifs_info *c)
- 	last = &c->orph_cnext;
- 	list_for_each_entry(orphan, &c->orph_new, new_list) {
- 		ubifs_assert(orphan->new);
-+		ubifs_assert(!orphan->cmt);
- 		orphan->new = 0;
-+		orphan->cmt = 1;
- 		*last = orphan;
- 		last = &orphan->cnext;
+diff --git a/drivers/video/console/fbcon.c b/drivers/video/console/fbcon.c
+index 88e9204..bdcd34d 100644
+--- a/drivers/video/console/fbcon.c
++++ b/drivers/video/console/fbcon.c
+@@ -990,7 +990,7 @@ static const char *fbcon_startup(void)
  	}
-@@ -299,7 +301,9 @@ static int write_orph_node(struct ubifs_info *c, int atomic)
- 	cnext = c->orph_cnext;
- 	for (i = 0; i < cnt; i++) {
- 		orphan = cnext;
-+		ubifs_assert(orphan->cmt);
- 		orph->inos[i] = cpu_to_le64(orphan->inum);
-+		orphan->cmt = 0;
- 		cnext = orphan->cnext;
- 		orphan->cnext = NULL;
- 	}
-@@ -378,6 +382,7 @@ static int consolidate(struct ubifs_info *c)
- 		list_for_each_entry(orphan, &c->orph_list, list) {
- 			if (orphan->new)
- 				continue;
-+			orphan->cmt = 1;
- 			*last = orphan;
- 			last = &orphan->cnext;
- 			cnt += 1;
-diff --git a/fs/ubifs/ubifs.h b/fs/ubifs/ubifs.h
-index 51ac3e6..fb89c54 100644
---- a/fs/ubifs/ubifs.h
-+++ b/fs/ubifs/ubifs.h
-@@ -905,6 +905,7 @@ struct ubifs_budget_req {
-  * @dnext: next orphan to delete
-  * @inum: inode number
-  * @new: %1 => added since the last commit, otherwise %0
-+ * @cmt: %1 => commit pending, otherwise %0
-  */
- struct ubifs_orphan {
- 	struct rb_node rb;
-@@ -913,7 +914,8 @@ struct ubifs_orphan {
- 	struct ubifs_orphan *cnext;
- 	struct ubifs_orphan *dnext;
- 	ino_t inum;
--	int new;
-+	unsigned new:1;
-+	unsigned cmt:1;
- };
  
- /**
+ 	/* Setup default font */
+-	if (!p->fontdata) {
++	if (!p->fontdata && !vc->vc_font.data) {
+ 		if (!fontname[0] || !(font = find_font(fontname)))
+ 			font = get_default_font(info->var.xres,
+ 						info->var.yres,
+@@ -1000,6 +1000,8 @@ static const char *fbcon_startup(void)
+ 		vc->vc_font.height = font->height;
+ 		vc->vc_font.data = (void *)(p->fontdata = font->data);
+ 		vc->vc_font.charcount = 256; /* FIXME  Need to support more fonts */
++	} else {
++		p->fontdata = vc->vc_font.data;
+ 	}
+ 
+ 	cols = FBCON_SWAP(ops->rotate, info->var.xres, info->var.yres);
+@@ -1159,9 +1161,9 @@ static void fbcon_init(struct vc_data *vc, int init)
+ 	ops->p = &fb_display[fg_console];
+ }
+ 
+-static void fbcon_free_font(struct display *p)
++static void fbcon_free_font(struct display *p, bool freefont)
+ {
+-	if (p->userfont && p->fontdata && (--REFCOUNT(p->fontdata) == 0))
++	if (freefont && p->userfont && p->fontdata && (--REFCOUNT(p->fontdata) == 0))
+ 		kfree(p->fontdata - FONT_EXTRA_WORDS * sizeof(int));
+ 	p->fontdata = NULL;
+ 	p->userfont = 0;
+@@ -1173,8 +1175,8 @@ static void fbcon_deinit(struct vc_data *vc)
+ 	struct fb_info *info;
+ 	struct fbcon_ops *ops;
+ 	int idx;
++	bool free_font = true;
+ 
+-	fbcon_free_font(p);
+ 	idx = con2fb_map[vc->vc_num];
+ 
+ 	if (idx == -1)
+@@ -1185,6 +1187,8 @@ static void fbcon_deinit(struct vc_data *vc)
+ 	if (!info)
+ 		goto finished;
+ 
++	if (info->flags & FBINFO_MISC_FIRMWARE)
++		free_font = false;
+ 	ops = info->fbcon_par;
+ 
+ 	if (!ops)
+@@ -1196,6 +1200,8 @@ static void fbcon_deinit(struct vc_data *vc)
+ 	ops->flags &= ~FBCON_FLAGS_INIT;
+ finished:
+ 
++	fbcon_free_font(p, free_font);
++
+ 	if (!con_is_bound(&fb_con))
+ 		fbcon_exit();
+ 
 -- 
 1.8.1.2
 
