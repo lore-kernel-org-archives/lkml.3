@@ -1,77 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752852Ab3B1BcC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 20:32:02 -0500
-Received: from fn.samba.org ([216.83.154.106]:42741 "EHLO mail.samba.org"
+	id S1753015Ab3B1BdY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 20:33:24 -0500
+Received: from na01-by2-obe.ptr.protection.outlook.com ([207.46.100.31]:4469
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751904Ab3B1BcA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 20:32:00 -0500
-X-Greylist: delayed 415 seconds by postgrey-1.27 at vger.kernel.org; Wed, 27 Feb 2013 20:32:00 EST
-Message-ID: <1362014704.2057.1.camel@pico.ipa.ssimo.org>
-Subject: Re: [PATCH] CIFS: Decrease reconnection delay when switching nics
-From: simo <idra@samba.org>
-To: Dave Chiluk <dave.chiluk@canonical.com>
-Cc: Steve French <smfrench@gmail.com>, Steve French <sfrench@samba.org>,
-        linux-cifs@vger.kernel.org, samba-technical@lists.samba.org,
-        linux-kernel@vger.kernel.org,
+	id S1751886Ab3B1BdX convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Feb 2013 20:33:23 -0500
+X-Greylist: delayed 313 seconds by postgrey-1.27 at vger.kernel.org; Wed, 27 Feb 2013 20:33:23 EST
+From: Tom Talpey <ttalpey@microsoft.com>
+To: Dave Chiluk <dave.chiluk@canonical.com>, Steve French <smfrench@gmail.com>
+CC: Jeff Layton <jlayton@samba.org>,
         "Stefan (metze) Metzmacher" <metze@samba.org>,
-        Dave Chiluk <chiluk@canonical.com>
-Date: Wed, 27 Feb 2013 20:25:04 -0500
-In-Reply-To: <512E8C31.8070106@canonical.com>
+        Dave Chiluk <chiluk@canonical.com>, Steve French <sfrench@samba.org>,
+        "linux-cifs@vger.kernel.org" <linux-cifs@vger.kernel.org>,
+        "samba-technical@lists.samba.org" <samba-technical@lists.samba.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] CIFS: Decrease reconnection delay when switching nics
+Thread-Topic: [PATCH] CIFS: Decrease reconnection delay when switching nics
+Thread-Index: AQHOE6gELIco8AYO20mQ183wJfgE3JiNjZoAgABbqoCAAGG8gIAABHwAgAABE4CAACsZwA==
+Date: Thu, 28 Feb 2013 01:26:26 +0000
+Message-ID: <614F550557B82C44AC27C492ADA391AA045A4924@TK5EX14MBXC284.redmond.corp.microsoft.com>
 References: <1361831310-24260-1-git-send-email-chiluk@canonical.com>
-	 <512DE8A6.9030000@samba.org>
-	 <20130227083419.0af9deaf@corrin.poochiereds.net>
-	 <512E8787.6070709@canonical.com>
-	 <CAH2r5mvM=OX+F4uqMh_c24DXLxwgRX2UzX3bsYqM00JPzbtjqA@mail.gmail.com>
-	 <512E8C31.8070106@canonical.com>
-Organization: Samba Team
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+ <512DE8A6.9030000@samba.org>
+ <20130227083419.0af9deaf@corrin.poochiereds.net>
+ <512E8787.6070709@canonical.com>
+ <CAH2r5mvM=OX+F4uqMh_c24DXLxwgRX2UzX3bsYqM00JPzbtjqA@mail.gmail.com>
+ <512E8C31.8070106@canonical.com>
+In-Reply-To: <512E8C31.8070106@canonical.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.36]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-Forefront-Antispam-Report: CIP:131.107.125.37;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(189002)(377454001)(24454001)(199002)(479174001)(52084001)(51704002)(13464002)(4396001)(66066001)(46406002)(77982001)(54316002)(63696002)(56816002)(16406001)(5343655001)(53806001)(80022001)(51856001)(65816001)(5343635001)(20776003)(79102001)(56776001)(54356001)(46102001)(76482001)(74502001)(59766001)(31966008)(44976002)(74662001)(33656001)(47446002)(23726001)(50986001)(50466001)(47776003)(47976001)(55846006)(47736001)(49866001);DIR:OUT;SFP:;SCL:1;SRVR:BY2FFO11HUB030;H:TK5EX14HUBC104.redmond.corp.microsoft.com;RD:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-OriginatorOrg: microsoft.onmicrosoft.com
+X-Forefront-PRVS: 0771670921
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-02-27 at 16:44 -0600, Dave Chiluk wrote:
+> -----Original Message-----
+> From: linux-cifs-owner@vger.kernel.org [mailto:linux-cifs-
+> owner@vger.kernel.org] On Behalf Of Dave Chiluk
+> Sent: Wednesday, February 27, 2013 5:44 PM
+> To: Steve French
+> Cc: Jeff Layton; Stefan (metze) Metzmacher; Dave Chiluk; Steve French;
+> linux-cifs@vger.kernel.org; samba-technical@lists.samba.org; linux-
+> kernel@vger.kernel.org
+> Subject: Re: [PATCH] CIFS: Decrease reconnection delay when switching nics
+> 
 > On 02/27/2013 04:40 PM, Steve French wrote:
-> > On Wed, Feb 27, 2013 at 4:24 PM, Dave Chiluk <dave.chiluk@canonical.com> wrote:
+> > On Wed, Feb 27, 2013 at 4:24 PM, Dave Chiluk
+> <dave.chiluk@canonical.com> wrote:
 > >> On 02/27/2013 10:34 AM, Jeff Layton wrote:
 > >>> On Wed, 27 Feb 2013 12:06:14 +0100
 > >>> "Stefan (metze) Metzmacher" <metze@samba.org> wrote:
 > >>>
 > >>>> Hi Dave,
 > >>>>
-> >>>>> When messages are currently in queue awaiting a response, decrease amount of
-> >>>>> time before attempting cifs_reconnect to SMB_MAX_RTT = 10 seconds. The current
-> >>>>> wait time before attempting to reconnect is currently 2*SMB_ECHO_INTERVAL(120
-> >>>>> seconds) since the last response was recieved.  This does not take into account
-> >>>>> the fact that messages waiting for a response should be serviced within a
-> >>>>> reasonable round trip time.
+> >>>>> When messages are currently in queue awaiting a response, decrease
+> >>>>> amount of time before attempting cifs_reconnect to SMB_MAX_RTT
+> =
+> >>>>> 10 seconds. The current wait time before attempting to reconnect
+> >>>>> is currently 2*SMB_ECHO_INTERVAL(120
+> >>>>> seconds) since the last response was recieved.  This does not take
+> >>>>> into account the fact that messages waiting for a response should
+> >>>>> be serviced within a reasonable round trip time.
 > >>>>
-> >>>> Wouldn't that mean that the client will disconnect a good connection,
-> >>>> if the server doesn't response within 10 seconds?
+> >>>> Wouldn't that mean that the client will disconnect a good
+> >>>> connection, if the server doesn't response within 10 seconds?
 > >>>> Reads and Writes can take longer than 10 seconds...
 > >>>>
 > >>>
-> >>> Where does this magic value of 10s come from? Note that a slow server
-> >>> can take *minutes* to respond to writes that are long past the EOF.
-> >> It comes from the desire to decrease the reconnection delay to something
-> >> better than a random number between 60 and 120 seconds.  I am not
-> >> committed to this number, and it is open for discussion.  Additionally
-> >> if you look closely at the logic it's not 10 seconds per request, but
-> >> actually when requests have been in flight for more than 10 seconds make
-> >> sure we've heard from the server in the last 10 seconds.
+> >>> Where does this magic value of 10s come from? Note that a slow
+> >>> server can take *minutes* to respond to writes that are long past the
+> EOF.
+> >> It comes from the desire to decrease the reconnection delay to
+> >> something better than a random number between 60 and 120 seconds.  I
+> >> am not committed to this number, and it is open for discussion.
+> >> Additionally if you look closely at the logic it's not 10 seconds per
+> >> request, but actually when requests have been in flight for more than
+> >> 10 seconds make sure we've heard from the server in the last 10 seconds.
 > >>
 > >> Can you explain more fully your use case of writes that are long past
-> >> the EOF?  Perhaps with a test-case or script that I can test?  As far as
-> >> I know writes long past EOF will just result in a sparse file, and
-> >> return in a reasonable round trip time *(that's at least what I'm seeing
-> >> with my testing).  dd if=/dev/zero of=/mnt/cifs/a bs=1M count=100
-> >> seek=100000, starts receiving responses from the server in about .05
-> >> seconds with subsequent responses following at roughly .002-.01 second
-> >> intervals.  This is well within my 10 second value.
-> > 
+> >> the EOF?  Perhaps with a test-case or script that I can test?  As far
+> >> as I know writes long past EOF will just result in a sparse file, and
+> >> return in a reasonable round trip time *(that's at least what I'm
+> >> seeing with my testing).  dd if=/dev/zero of=/mnt/cifs/a bs=1M
+> >> count=100 seek=100000, starts receiving responses from the server in
+> >> about .05 seconds with subsequent responses following at roughly
+> >> .002-.01 second intervals.  This is well within my 10 second value.
+> >
 > > Note that not all Linux file systems support sparse files and
 > > certainly there are cifs servers running on operating systems other
 > > than Linux which have popular file systems which don't support sparse
@@ -80,21 +104,21 @@ On Wed, 2013-02-27 at 16:44 -0600, Dave Chiluk wrote:
 > > supported and I don't know a good way for the client to know that
 > > attribute of the server file system ahead of time (although we could
 > > attempt to set the sparse flag, servers can and do lie)
-> > 
+> >
 > 
-> It doesn't matter how long it takes for the entire operation to
-> complete, just so long as the server acks something in less than 10
-> seconds.  Now the question becomes, is there an OS out there that
-> doesn't ack the request or doesn't ack the progress regularly.
+> It doesn't matter how long it takes for the entire operation to complete, just
+> so long as the server acks something in less than 10 seconds.  Now the
+> question becomes, is there an OS out there that doesn't ack the request or
+> doesn't ack the progress regularly.
 
-IIRC older samba servers were fully synchronous and wouldn't reply to
-anything while processing an operation. I am sure you can still find old
-code bases in older (and slow) appliances out there.
+SMB/CIFS servers will signal the operation "going async" by returning a
+STATUS_PENDING response if the operation is not prompt, but this only
+happens once. The client is still expected to run a timer, and recover from
+possibly lost responses and/or unresponsive servers. Windows clients
+extend their timeout when this occurs, typically quadrupling it.
 
-Simo.
-
--- 
-Simo Sorce
-Samba Team GPL Compliance Officer <simo@samba.org>
-Principal Software Engineer at Red Hat, Inc. <simo@redhat.com>
+Some clients will issue ECHO requests to probe the server in this
+case, but it is neither a protocol requirement nor does it truly address
+the issue of tracking each pending operation. Windows SMB2 clients
+do not do this.
 
