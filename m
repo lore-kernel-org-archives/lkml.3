@@ -1,137 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751348Ab3CASrQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 13:47:16 -0500
-Received: from [207.46.163.212] ([207.46.163.212]:34316 "EHLO
-	na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750779Ab3CASrP convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 13:47:15 -0500
-X-Forefront-Antispam-Report-Untrusted: CIP:157.56.240.21;KIP:(null);UIP:(null);(null);H:BL2PRD0310HT004.namprd03.prod.outlook.com;R:internal;EFV:INT
-X-SpamScore: -2
-X-BigFish: PS-2(zz98dI9371I542I1432Izz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ahzz8275ch8275dh8275bhz31h2a8h668h839h944hd24hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h9a9j1155h)
-X-Forefront-Antispam-Report-Untrusted: SFV:SKI;SFS:;DIR:OUT;SFP:;SCL:-1;SRVR:SN2PR03MB063;H:SN2PR03MB061.namprd03.prod.outlook.com;LANG:en;
-From: KY Srinivasan <kys@microsoft.com>
-To: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-CC: "olaf@aepfle.de" <olaf@aepfle.de>, Jiri Kosina <jkosina@suse.cz>,
-        "jasowang@redhat.com" <jasowang@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "James.Bottomley@HansenPartnership.com" 
-	<James.Bottomley@HansenPartnership.com>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "davem@davemloft.net" <davem@davemloft.net>
-Subject: RE: [PATCH 6/6] Drivers: hv: Execute shutdown in a thread context
-Thread-Topic: [PATCH 6/6] Drivers: hv: Execute shutdown in a thread context
-Thread-Index: AQHN+dCsx+V+FBWESk2aq+oN9Eqam5hYQkaAgABz/iCAAAOHAIA4cQtAgAAQXwCAACjz4A==
-Date: Fri, 1 Mar 2013 18:40:52 +0000
-Message-ID: <947c89e9d8f04f2495ac520e077244c7@SN2PR03MB061.namprd03.prod.outlook.com>
-References: <1358991737-22675-1-git-send-email-kys@microsoft.com>
- <1358991765-22715-1-git-send-email-kys@microsoft.com>
- <1358991765-22715-6-git-send-email-kys@microsoft.com>
- <alpine.LNX.2.00.1301241108590.31600@pobox.suse.cz>
- <53da151ef8494d5084ef5aa089b9f102@SN2PR03MB061.namprd03.prod.outlook.com>
- <20130124171740.GA5420@kroah.com>
- <524a403348d240a8b24db0177e7aaecd@SN2PR03MB061.namprd03.prod.outlook.com>
- <20130301161124.GA3969@kroah.com>
-In-Reply-To: <20130301161124.GA3969@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.255.156.132]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1751483Ab3CASvJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 13:51:09 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:57764 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750779Ab3CASvG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Mar 2013 13:51:06 -0500
+Message-ID: <5130F886.2070009@redhat.com>
+Date: Fri, 01 Mar 2013 13:50:46 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-X-OrganizationHeadersPreserved: SN2PR03MB063.namprd03.prod.outlook.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%CANONICAL.COM$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%HANSENPARTNERSHIP.COM$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%DAVEMLOFT.NET$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXDRIVERPROJECT.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%AEPFLE.DE$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXFOUNDATION.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%REDHAT.COM$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%SUSE.CZ$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-CrossPremisesHeadersPromoted: TK5EX14MLTC102.redmond.corp.microsoft.com
-X-CrossPremisesHeadersFiltered: TK5EX14MLTC102.redmond.corp.microsoft.com
-X-Forefront-Antispam-Report: CIP:131.107.125.37;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(377454001)(189002)(51704002)(199002)(13464002)(24454001)(50466001)(31966008)(56816002)(51856001)(76482001)(74502001)(44976002)(77982001)(46406002)(65816001)(59766001)(4396001)(80022001)(47736001)(46102001)(56776001)(63696002)(54356001)(47976001)(5343645001)(23726001)(53806001)(20776003)(49866001)(6806001)(47446002)(54316002)(5343635001)(47776003)(50986001)(16676001)(79102001)(5343655001)(33646001)(74662001)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BL2FFO11HUB019;H:TK5EX14MLTC102.redmond.corp.microsoft.com;RD:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-X-OriginatorOrg: microsoft.onmicrosoft.com
-X-Forefront-PRVS: 0772E5DAD5
+To: Davidlohr Bueso <davidlohr.bueso@hp.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        "Vinod, Chegu" <chegu_vinod@hp.com>, "Low, Jason" <jason.low2@hp.com>,
+        linux-tip-commits@vger.kernel.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>, aquini@redhat.com,
+        Michel Lespinasse <walken@google.com>, Ingo Molnar <mingo@kernel.org>,
+        Larry Woodman <lwoodman@redhat.com>
+Subject: Re: [tip:core/locking] x86/smp: Move waiting on contended ticket
+ lock out of line
+References: <20130206150403.006e5294@cuia.bos.redhat.com>  <512E376D.70105@redhat.com>  <CA+55aFzPxJ3rfZvAvrP9LxCXfDU8AAVvhMZnP-OAoe-ycc70aw@mail.gmail.com>  <512E6443.9050603@redhat.com>  <CA+55aFwHxv9RH75BoXYcwdKeHx+otOOpg9494TTdFwQe3biOhw@mail.gmail.com>  <512E80E3.7060800@redhat.com>  <CA+55aFwa0EjGG2NUDYVLVBmXJa2k81YiuNO2yggk=GLRQxhhUQ@mail.gmail.com>  <512EC7F0.60103@redhat.com>  <1362024397.1867.28.camel@buesod1.americas.hpqcorp.net>  <CA+55aFygzjuNYiG4MTPMzimEjQ92rpS-rNJr7HD4OQCAqze5zg@mail.gmail.com>  <512F7429.4020103@redhat.com>  <CA+55aFw3t+sC-zv6njxdJ6hB0arJnZzoGNO9W7o8h=tcUo5P_Q@mail.gmail.com>  <CA+55aFwEshukBGU5YCtKL=7c-43guMuGSHTnXo02rLxZWGQWTw@mail.gmail.com>  <512FC89B.6030507@redhat.com>  <CA+55aFxbm83Oc2g55868HA2xCytsJzTxWGE0w_pMUzKaU5mJMw@mail.gmail.com>  <512FDC82.2060606@redhat.com>  <CA+55aFyitxgooTYq27eK4fO___R4uRrNhoPwDWxULeUkejH0ZA@mail.gmail.com>  <51304DDA.40808@redhat.com> <1362161912.12277.10.camel@buesod1.americas.hpqcorp.net>
+In-Reply-To: <1362161912.12277.10.camel@buesod1.americas.hpqcorp.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 03/01/2013 01:18 PM, Davidlohr Bueso wrote:
+> On Fri, 2013-03-01 at 01:42 -0500, Rik van Riel wrote:
+>> On 02/28/2013 06:09 PM, Linus Torvalds wrote:
+>>
+>>> So I almost think that *everything* there in the semaphore code could
+>>> be done under RCU. The actual spinlock doesn't seem to much matter, at
+>>> least for semaphores. The semaphore values themselves seem to be
+>>> protected by the atomic operations, but I might be wrong about that, I
+>>> didn't even check.
+>>
+>> Checking try_atomic_semop and do_smart_update, it looks like neither
+>> is using atomic operations. That part of the semaphore code would
+>> still benefit from spinlocks.
+>
+> Agreed.
 
+If we assume that calls to semctl with more than one semaphore
+operator are rare, we could do something smarter here.
 
-> -----Original Message-----
-> From: gregkh@linuxfoundation.org [mailto:gregkh@linuxfoundation.org]
-> Sent: Friday, March 01, 2013 11:11 AM
-> To: KY Srinivasan
-> Cc: olaf@aepfle.de; Jiri Kosina; jasowang@redhat.com; linux-
-> kernel@vger.kernel.org; James.Bottomley@HansenPartnership.com;
-> apw@canonical.com; devel@linuxdriverproject.org; davem@davemloft.net
-> Subject: Re: [PATCH 6/6] Drivers: hv: Execute shutdown in a thread context
-> 
-> On Fri, Mar 01, 2013 at 03:15:58PM +0000, KY Srinivasan wrote:
-> > > > > > Execute the shutdown code in a thread context. With recent changes
-> made
-> > > > > the
-> > > > > > shutdown code, shutdown code cannot be invoked from an interrupt
-> > > context.
-> > > > > >
-> > > > > > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-> > > > > > Reviewed-by: Haiyang Zhang <haiyangz@microsoft.com>
-> > > > > > ---
-> > > > > >  drivers/hv/hv_util.c |   12 +++++++++++-
-> > > > > >  1 files changed, 11 insertions(+), 1 deletions(-)
-> > > > > >
-> > > > > > diff --git a/drivers/hv/hv_util.c b/drivers/hv/hv_util.c
-> > > > > > index 8b7868a..aceb67f 100644
-> > > > > > --- a/drivers/hv/hv_util.c
-> > > > > > +++ b/drivers/hv/hv_util.c
-> > > > > > @@ -49,6 +49,16 @@ static struct hv_util_service util_kvp = {
-> > > > > >  	.util_deinit = hv_kvp_deinit,
-> > > > > >  };
-> > > > > >
-> > > > > > +static void perform_shutdown(struct work_struct *dummy)
-> > > > > > +{
-> > > > > > +		orderly_poweroff(true);
-> > > > > > +}
-> > > > >
-> > > > > Is there any particular reason for this kind of crazy indentation?
-> > > > I don't know how this extra tab crept through! Greg, if you want I can
-> resend
-> > > > this patch minus the extra tab. Let me know.
-> > >
-> > > I'll edit it by hand, but someone owes me a beer for it...  :)
-> >
-> > Greg,
-> >
-> > You have already applied this. There has been some customer request for
-> getting this
-> > patch into 3.7 (3.7 is where the Hyper-V shutdown code ceased to work
-> because of
-> > some other patches unrelated to Hyper-V that went in). What is the process for
-> requesting
-> > that this patch be applied all the way back to 3.7.
-> 
-> You have read the file, Documentation/stable_kernel_rules.txt, right?
-> 
-> But please remember, the 3.7 kernel is now end-of-life, as of the 3.7.10
-> kernel release, so even if this was a bug fix that was applicable to
-> stable kernels, it would be impossible to get it into the 3.7.y
-> releases, without going back in time.
+We could turn the outer spinlock into an rwlock. If we are
+doing a call that modifies the outer structure, or multiple
+semops at once, we take the lock exclusively.
 
-Thanks Greg.
+If we want to do just one semop, we can take the lock in
+shared mode. Then each semaphore inside would have its own
+spinlock, and we lock just that one.
 
-K. Y
-> 
-> sorry,
-> 
-> greg k-h
-> 
+Of course, that would just add overhead to the case where
+a semaphore block has just one semaphore in it, so I'm not
+sure this would be worthwhile at all...
 
+>> The way the code handles a whole batch of semops all at once,
+>> potentially to multiple semaphores at once, and with the ability
+>> to undo all of the operations, it looks like the spinlock will
+>> still need to be per block of semaphores.
+>>
+>> I guess the code may still benefit from Michel's locking code,
+>> after the permission stuff has been moved from under the spinlock.
+>
+> How about splitting ipc_lock()/ipc_lock_control() in two calls: one to
+> obtain the ipc object (rcu_read_lock + idr_find), which can be called
+> when performing the permissions and security checks, and another to
+> obtain the ipcp->lock [q_]spinlock when necessary.
 
+That is what I am working on now.
+
+-- 
+All rights reversed
