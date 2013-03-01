@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754589Ab3CATwr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 14:52:47 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51995 "EHLO
+	id S1754395Ab3CATqj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 14:46:39 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51959 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754426Ab3CATql (ORCPT
+	with ESMTP id S1754312Ab3CATqf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 14:46:41 -0500
+	Fri, 1 Mar 2013 14:46:35 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Olaf Hering <olaf@aepfle.de>, Jan Beulich <jbeulich@suse.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [ 10/30] xen-blkback: do not leak mode property
-Date: Fri,  1 Mar 2013 11:45:31 -0800
-Message-Id: <20130301194529.096390367@linuxfoundation.org>
+        Joerg Roedel <joro@8bytes.org>, Shuah Khan <shuah.khan@hp.com>
+Subject: [ 02/30] iommu/amd: Initialize device table after dma_ops
+Date: Fri,  1 Mar 2013 11:45:23 -0800
+Message-Id: <20130301194528.275438849@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130301194527.988540148@linuxfoundation.org>
 References: <20130301194527.988540148@linuxfoundation.org>
@@ -27,113 +26,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Beulich <JBeulich@suse.com>
+From: Joerg Roedel <joro@8bytes.org>
 
-commit 9d092603cc306ee6edfe917bf9ab8beb5f32d7bc upstream.
+commit f528d980c17b8714aedc918ba86e058af914d66b upstream.
 
-"be->mode" is obtained from xenbus_read(), which does a kmalloc() for
-the message body. The short string is never released, so do it along
-with freeing "be" itself, and make sure the string isn't kept when
-backend_changed() doesn't complete successfully (which made it
-desirable to slightly re-structure that function, so that the error
-cleanup can be done in one place).
+When dma_ops are initialized the unity mappings are
+created. The init_device_table_dma() function makes sure DMA
+from all devices is blocked by default. This opens a short
+window in time where DMA to unity mapped regions is blocked
+by the IOMMU. Make sure this does not happen by initializing
+the device table after dma_ops.
 
-Reported-by: Olaf Hering <olaf@aepfle.de>
-Signed-off-by: Jan Beulich <jbeulich@suse.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: Joerg Roedel <joro@8bytes.org>
+Signed-off-by: Shuah Khan <shuah.khan@hp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/block/xen-blkback/xenbus.c |   49 ++++++++++++++++++-------------------
- 1 file changed, 24 insertions(+), 25 deletions(-)
+ arch/x86/kernel/amd_iommu_init.c |   10 +++++++---
+ 1 file changed, 7 insertions(+), 3 deletions(-)
 
---- a/drivers/block/xen-blkback/xenbus.c
-+++ b/drivers/block/xen-blkback/xenbus.c
-@@ -400,6 +400,7 @@ static int xen_blkbk_remove(struct xenbu
- 		be->blkif = NULL;
- 	}
+--- a/arch/x86/kernel/amd_iommu_init.c
++++ b/arch/x86/kernel/amd_iommu_init.c
+@@ -1363,6 +1363,7 @@ static struct syscore_ops amd_iommu_sysc
+  */
+ static int __init amd_iommu_init(void)
+ {
++	struct amd_iommu *iommu;
+ 	int i, ret = 0;
  
-+	kfree(be->mode);
- 	kfree(be);
- 	dev_set_drvdata(&dev->dev, NULL);
- 	return 0;
-@@ -482,6 +483,7 @@ static void backend_changed(struct xenbu
- 		= container_of(watch, struct backend_info, backend_watch);
- 	struct xenbus_device *dev = be->dev;
- 	int cdrom = 0;
-+	unsigned long handle;
- 	char *device_type;
+ 	/*
+@@ -1411,9 +1412,6 @@ static int __init amd_iommu_init(void)
+ 	if (amd_iommu_pd_alloc_bitmap == NULL)
+ 		goto free;
  
- 	DPRINTK("");
-@@ -501,10 +503,10 @@ static void backend_changed(struct xenbu
- 		return;
- 	}
- 
--	if ((be->major || be->minor) &&
--	    ((be->major != major) || (be->minor != minor))) {
--		pr_warn(DRV_PFX "changing physical device (from %x:%x to %x:%x) not supported.\n",
--			be->major, be->minor, major, minor);
-+	if (be->major | be->minor) {
-+		if (be->major != major || be->minor != minor)
-+			pr_warn(DRV_PFX "changing physical device (from %x:%x to %x:%x) not supported.\n",
-+				be->major, be->minor, major, minor);
- 		return;
- 	}
- 
-@@ -522,36 +524,33 @@ static void backend_changed(struct xenbu
- 		kfree(device_type);
- 	}
- 
--	if (be->major == 0 && be->minor == 0) {
--		/* Front end dir is a number, which is used as the handle. */
+-	/* init the device table */
+-	init_device_table();
 -
--		char *p = strrchr(dev->otherend, '/') + 1;
--		long handle;
--		err = strict_strtoul(p, 0, &handle);
--		if (err)
--			return;
-+	/* Front end dir is a number, which is used as the handle. */
-+	err = strict_strtoul(strrchr(dev->otherend, '/') + 1, 0, &handle);
-+	if (err)
-+		return;
+ 	/*
+ 	 * let all alias entries point to itself
+ 	 */
+@@ -1463,6 +1461,12 @@ static int __init amd_iommu_init(void)
+ 	if (ret)
+ 		goto free_disable;
  
--		be->major = major;
--		be->minor = minor;
-+	be->major = major;
-+	be->minor = minor;
++	/* init the device table */
++	init_device_table();
++
++	for_each_iommu(iommu)
++		iommu_flush_all_caches(iommu);
++
+ 	amd_iommu_init_api();
  
--		err = xen_vbd_create(be->blkif, handle, major, minor,
--				 (NULL == strchr(be->mode, 'w')), cdrom);
--		if (err) {
--			be->major = 0;
--			be->minor = 0;
--			xenbus_dev_fatal(dev, err, "creating vbd structure");
--			return;
--		}
-+	err = xen_vbd_create(be->blkif, handle, major, minor,
-+			     !strchr(be->mode, 'w'), cdrom);
- 
-+	if (err)
-+		xenbus_dev_fatal(dev, err, "creating vbd structure");
-+	else {
- 		err = xenvbd_sysfs_addif(dev);
- 		if (err) {
- 			xen_vbd_free(&be->blkif->vbd);
--			be->major = 0;
--			be->minor = 0;
- 			xenbus_dev_fatal(dev, err, "creating sysfs entries");
--			return;
- 		}
-+	}
- 
-+	if (err) {
-+		kfree(be->mode);
-+		be->mode = NULL;
-+		be->major = 0;
-+		be->minor = 0;
-+	} else {
- 		/* We're potentially connected now */
- 		xen_update_blkif_status(be->blkif);
- 	}
+ 	amd_iommu_init_notifier();
 
 
