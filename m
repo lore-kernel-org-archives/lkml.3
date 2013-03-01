@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754609Ab3CATqt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 14:46:49 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52022 "EHLO
+	id S1754669Ab3CATto (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 14:49:44 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52048 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754404Ab3CATqo (ORCPT
+	with ESMTP id S1753382Ab3CATqs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 14:46:44 -0500
+	Fri, 1 Mar 2013 14:46:48 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Niu Yawei <yawei.niu@intel.com>, "Theodore Tso" <tytso@mit.edu>
-Subject: [ 15/30] ext4: fix race in ext4_mb_add_n_trim()
-Date: Fri,  1 Mar 2013 11:45:36 -0800
-Message-Id: <20130301194529.629495863@linuxfoundation.org>
+        Oleg Nesterov <oleg@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Michal Hocko <mhocko@suse.cz>
+Subject: [ 20/30] wake_up_process() should be never used to wakeup a TASK_STOPPED/TRACED task
+Date: Fri,  1 Mar 2013 11:45:41 -0800
+Message-Id: <20130301194530.159088198@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130301194527.988540148@linuxfoundation.org>
 References: <20130301194527.988540148@linuxfoundation.org>
@@ -26,46 +28,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Niu Yawei <yawei.niu@gmail.com>
 
-commit f1167009711032b0d747ec89a632a626c901a1ad upstream.
+From: Oleg Nesterov <oleg@redhat.com>
 
-In ext4_mb_add_n_trim(), lg_prealloc_lock should be taken when
-changing the lg_prealloc_list.
+Upstream commit 9067ac85d533651b98c2ff903182a20cbb361fcb.
 
-Signed-off-by: Niu Yawei <yawei.niu@intel.com>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+wake_up_process() should never wakeup a TASK_STOPPED/TRACED task.
+Change it to use TASK_NORMAL and add the WARN_ON().
+
+TASK_ALL has no other users, probably can be killed.
+
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Michal Hocko <mhocko@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- fs/ext4/mballoc.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ kernel/sched.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/fs/ext4/mballoc.c
-+++ b/fs/ext4/mballoc.c
-@@ -4111,7 +4111,7 @@ static void ext4_mb_add_n_trim(struct ex
- 		/* The max size of hash table is PREALLOC_TB_SIZE */
- 		order = PREALLOC_TB_SIZE - 1;
- 	/* Add the prealloc space to lg */
--	rcu_read_lock();
-+	spin_lock(&lg->lg_prealloc_lock);
- 	list_for_each_entry_rcu(tmp_pa, &lg->lg_prealloc_list[order],
- 						pa_inode_list) {
- 		spin_lock(&tmp_pa->pa_lock);
-@@ -4135,12 +4135,12 @@ static void ext4_mb_add_n_trim(struct ex
- 	if (!added)
- 		list_add_tail_rcu(&pa->pa_inode_list,
- 					&lg->lg_prealloc_list[order]);
--	rcu_read_unlock();
-+	spin_unlock(&lg->lg_prealloc_lock);
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -2778,7 +2778,8 @@ out:
+  */
+ int wake_up_process(struct task_struct *p)
+ {
+-	return try_to_wake_up(p, TASK_ALL, 0);
++	WARN_ON(task_is_stopped_or_traced(p));
++	return try_to_wake_up(p, TASK_NORMAL, 0);
+ }
+ EXPORT_SYMBOL(wake_up_process);
  
- 	/* Now trim the list to be not more than 8 elements */
- 	if (lg_prealloc_count > 8) {
- 		ext4_mb_discard_lg_preallocations(sb, lg,
--						order, lg_prealloc_count);
-+						  order, lg_prealloc_count);
- 		return;
- 	}
- 	return ;
 
 
