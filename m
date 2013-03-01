@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754561Ab3CAApz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 19:45:55 -0500
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:58539 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756464Ab3CAAoU (ORCPT
+	id S1753696Ab3CAApx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 19:45:53 -0500
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:43497 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756583Ab3CAAoW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 19:44:20 -0500
+	Thu, 28 Feb 2013 19:44:22 -0500
 From: John Stultz <john.stultz@linaro.org>
 To: lkml <linux-kernel@vger.kernel.org>
 Cc: Erik Gilling <konkers@android.com>,
@@ -16,9 +16,9 @@ Cc: Erik Gilling <konkers@android.com>,
         Greg KH <gregkh@linuxfoundation.org>, dri-devel@lists.freedesktop.org,
         Android Kernel Team <kernel-team@android.com>,
         John Stultz <john.stultz@linaro.org>
-Subject: [PATCH 25/30] staging: sync: Refactor sync debug printing
-Date: Thu, 28 Feb 2013 16:43:21 -0800
-Message-Id: <1362098606-26469-26-git-send-email-john.stultz@linaro.org>
+Subject: [PATCH 27/30] staging: sync: Add tracepoint support
+Date: Thu, 28 Feb 2013 16:43:23 -0800
+Message-Id: <1362098606-26469-28-git-send-email-john.stultz@linaro.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1362098606-26469-1-git-send-email-john.stultz@linaro.org>
 References: <1362098606-26469-1-git-send-email-john.stultz@linaro.org>
@@ -28,8 +28,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Erik Gilling <konkers@android.com>
 
-Move driver callbacks to fill strings instead of using seq_files.  This
-will allow those values to be used in a future tracepoint patch.
+Add support for tracepoints
 
 Cc: Maarten Lankhorst <maarten.lankhorst@canonical.com>
 Cc: Erik Gilling <konkers@android.com>
@@ -40,96 +39,145 @@ Cc: Greg KH <gregkh@linuxfoundation.org>
 Cc: dri-devel@lists.freedesktop.org
 Cc: Android Kernel Team <kernel-team@android.com>
 Signed-off-by: Erik Gilling <konkers@android.com>
+[jstultz: Whitespace changes, add commit message, move to staging]
 Signed-off-by: John Stultz <john.stultz@linaro.org>
 ---
- drivers/staging/android/sync.c |   18 ++++++++++++++++--
- drivers/staging/android/sync.h |   19 +++++++++++++------
- 2 files changed, 29 insertions(+), 8 deletions(-)
+ drivers/staging/android/sync.c       |   11 +++++
+ drivers/staging/android/trace/sync.h |   82 ++++++++++++++++++++++++++++++++++
+ 2 files changed, 93 insertions(+)
+ create mode 100644 drivers/staging/android/trace/sync.h
 
 diff --git a/drivers/staging/android/sync.c b/drivers/staging/android/sync.c
-index 811cf65..988f233 100644
+index 988f233..1ddc404 100644
 --- a/drivers/staging/android/sync.c
 +++ b/drivers/staging/android/sync.c
-@@ -847,7 +847,17 @@ static void sync_print_pt(struct seq_file *s, struct sync_pt *pt, bool fence)
- 		seq_printf(s, "@%ld.%06ld", tv.tv_sec, tv.tv_usec);
- 	}
+@@ -28,6 +28,9 @@
  
--	if (pt->parent->ops->print_pt) {
-+	if (pt->parent->ops->timeline_value_str &&
-+	    pt->parent->ops->pt_value_str) {
-+		char value[64];
-+		pt->parent->ops->pt_value_str(pt, value, sizeof(value));
-+		seq_printf(s, ": %s", value);
-+		if (fence) {
-+			pt->parent->ops->timeline_value_str(pt->parent, value,
-+						    sizeof(value));
-+			seq_printf(s, " / %s", value);
+ #include "sync.h"
+ 
++#define CREATE_TRACE_POINTS
++#include "trace/sync.h"
++
+ static void sync_fence_signal_pt(struct sync_pt *pt);
+ static int _sync_pt_has_signaled(struct sync_pt *pt);
+ static void sync_fence_free(struct kref *kref);
+@@ -134,6 +137,8 @@ void sync_timeline_signal(struct sync_timeline *obj)
+ 	LIST_HEAD(signaled_pts);
+ 	struct list_head *pos, *n;
+ 
++	trace_sync_timeline(obj);
++
+ 	spin_lock_irqsave(&obj->active_list_lock, flags);
+ 
+ 	list_for_each_safe(pos, n, &obj->active_list_head) {
+@@ -581,6 +586,11 @@ static bool sync_fence_check(struct sync_fence *fence)
+ int sync_fence_wait(struct sync_fence *fence, long timeout)
+ {
+ 	int err = 0;
++	struct sync_pt *pt;
++
++	trace_sync_wait(fence, 1);
++	list_for_each_entry(pt, &fence->pt_list_head, pt_list)
++		trace_sync_pt(pt);
+ 
+ 	if (timeout > 0) {
+ 		timeout = msecs_to_jiffies(timeout);
+@@ -591,6 +601,7 @@ int sync_fence_wait(struct sync_fence *fence, long timeout)
+ 		err = wait_event_interruptible(fence->wq,
+ 					       sync_fence_check(fence));
+ 	}
++	trace_sync_wait(fence, 0);
+ 
+ 	if (err < 0)
+ 		return err;
+diff --git a/drivers/staging/android/trace/sync.h b/drivers/staging/android/trace/sync.h
+new file mode 100644
+index 0000000..9546235
+--- /dev/null
++++ b/drivers/staging/android/trace/sync.h
+@@ -0,0 +1,82 @@
++#undef TRACE_SYSTEM
++#define TRACE_INCLUDE_PATH ../../drivers/staging/android/trace
++#define TRACE_SYSTEM sync
++
++#if !defined(_TRACE_SYNC_H) || defined(TRACE_HEADER_MULTI_READ)
++#define _TRACE_SYNC_H
++
++#include "../sync.h"
++#include <linux/tracepoint.h>
++
++TRACE_EVENT(sync_timeline,
++	TP_PROTO(struct sync_timeline *timeline),
++
++	TP_ARGS(timeline),
++
++	TP_STRUCT__entry(
++			__string(name, timeline->name)
++			__array(char, value, 32)
++	),
++
++	TP_fast_assign(
++			__assign_str(name, timeline->name);
++			if (timeline->ops->timeline_value_str) {
++				timeline->ops->timeline_value_str(timeline,
++							__entry->value,
++							sizeof(__entry->value));
++			} else {
++				__entry->value[0] = '\0';
++			}
++	),
++
++	TP_printk("name=%s value=%s", __get_str(name), __entry->value)
++);
++
++TRACE_EVENT(sync_wait,
++	TP_PROTO(struct sync_fence *fence, int begin),
++
++	TP_ARGS(fence, begin),
++
++	TP_STRUCT__entry(
++			__string(name, fence->name)
++			__field(s32, status)
++			__field(u32, begin)
++	),
++
++	TP_fast_assign(
++			__assign_str(name, fence->name);
++			__entry->status = fence->status;
++			__entry->begin = begin;
++	),
++
++	TP_printk("%s name=%s state=%d", __entry->begin ? "begin" : "end",
++			__get_str(name), __entry->status)
++);
++
++TRACE_EVENT(sync_pt,
++	TP_PROTO(struct sync_pt *pt),
++
++	TP_ARGS(pt),
++
++	TP_STRUCT__entry(
++		__string(timeline, pt->parent->name)
++		__array(char, value, 32)
++	),
++
++	TP_fast_assign(
++		__assign_str(timeline, pt->parent->name);
++		if (pt->parent->ops->pt_value_str) {
++			pt->parent->ops->pt_value_str(pt, __entry->value,
++							sizeof(__entry->value));
++		} else {
++			__entry->value[0] = '\0';
 +		}
-+	} else if (pt->parent->ops->print_pt) {
- 		seq_printf(s, ": ");
- 		pt->parent->ops->print_pt(s, pt);
- 	}
-@@ -862,7 +872,11 @@ static void sync_print_obj(struct seq_file *s, struct sync_timeline *obj)
- 
- 	seq_printf(s, "%s %s", obj->name, obj->ops->driver_name);
- 
--	if (obj->ops->print_obj) {
-+	if (obj->ops->timeline_value_str) {
-+		char value[64];
-+		obj->ops->timeline_value_str(obj, value, sizeof(value));
-+		seq_printf(s, ": %s", value);
-+	} else if (obj->ops->print_obj) {
- 		seq_printf(s, ": ");
- 		obj->ops->print_obj(s, obj);
- 	}
-diff --git a/drivers/staging/android/sync.h b/drivers/staging/android/sync.h
-index 75ed5f1..38ea986 100644
---- a/drivers/staging/android/sync.h
-+++ b/drivers/staging/android/sync.h
-@@ -40,14 +40,14 @@ struct sync_fence;
-  *			 -1 if a will signabl before b
-  * @free_pt:		called before sync_pt is freed
-  * @release_obj:	called before sync_timeline is freed
-- * @print_obj:		print aditional debug information about sync_timeline.
-- *			  should not print a newline
-- * @print_pt:		print aditional debug information about sync_pt.
-- *			  should not print a newline
-+ * @print_obj:		deprecated
-+ * @print_pt:		deprecated
-  * @fill_driver_data:	write implmentation specific driver data to data.
-  *			  should return an error if there is not enough room
-  *			  as specified by size.  This information is returned
-  *			  to userspace by SYNC_IOC_FENCE_INFO.
-+ * @timeline_value_str: fill str with the value of the sync_timeline's counter
-+ * @pt_value_str:	fill str with the value of the sync_pt
-  */
- struct sync_timeline_ops {
- 	const char *driver_name;
-@@ -67,15 +67,22 @@ struct sync_timeline_ops {
- 	/* optional */
- 	void (*release_obj)(struct sync_timeline *sync_timeline);
- 
--	/* optional */
-+	/* deprecated */
- 	void (*print_obj)(struct seq_file *s,
- 			  struct sync_timeline *sync_timeline);
- 
--	/* optional */
-+	/* deprecated */
- 	void (*print_pt)(struct seq_file *s, struct sync_pt *sync_pt);
- 
- 	/* optional */
- 	int (*fill_driver_data)(struct sync_pt *syncpt, void *data, int size);
++	),
 +
-+	/* optional */
-+	void (*timeline_value_str)(struct sync_timeline *timeline, char *str,
-+				   int size);
++	TP_printk("name=%s value=%s", __get_str(timeline), __entry->value)
++);
 +
-+	/* optional */
-+	void (*pt_value_str)(struct sync_pt *pt, char *str, int size);
- };
- 
- /**
++#endif /* if !defined(_TRACE_SYNC_H) || defined(TRACE_HEADER_MULTI_READ) */
++
++/* This part must be outside protection */
++#include <trace/define_trace.h>
 -- 
 1.7.10.4
 
