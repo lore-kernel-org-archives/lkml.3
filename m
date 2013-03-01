@@ -1,23 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753060Ab3CATpo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 14:45:44 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51510 "EHLO
+	id S1754368Ab3CAUNx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 15:13:53 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51549 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752931Ab3CATpi (ORCPT
+	with ESMTP id S1753058Ab3CATpo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 14:45:38 -0500
+	Fri, 1 Mar 2013 14:45:44 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        Paul Clements <Paul.Clements@steeleye.com>,
-        Alex Bligh <alex@alex.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 41/77] nbd: fsync and kill block device on shutdown
-Date: Fri,  1 Mar 2013 11:44:26 -0800
-Message-Id: <20130301194356.306846525@linuxfoundation.org>
+        Lee Jones <lee.jones@linaro.org>
+Subject: [ 65/77] ab8500-chargalg: Only root should have write permission on sysfs file
+Date: Fri,  1 Mar 2013 11:44:50 -0800
+Message-Id: <20130301194358.849093982@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130301194351.913471337@linuxfoundation.org>
 References: <20130301194351.913471337@linuxfoundation.org>
@@ -30,91 +26,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paolo Bonzini <pbonzini@redhat.com>
+From: Lee Jones <lee.jones@linaro.org>
 
-commit 3a2d63f87989e01437ba994df5f297528c353d7d upstream.
+commit e3455002d04276c256a531f7175dce0f7d1cb78a upstream.
 
-There are two problems with shutdown in the NBD driver.
+Only root should have write permission on sysfs file ab8500_chargalg/chargalg.
 
-1: Receiving the NBD_DISCONNECT ioctl does not sync the filesystem.
-
-   This patch adds the sync operation into __nbd_ioctl()'s
-   NBD_DISCONNECT handler.  This is useful because BLKFLSBUF is restricted
-   to processes that have CAP_SYS_ADMIN, and the NBD client may not
-   possess it (fsync of the block device does not sync the filesystem,
-   either).
-
-2: Once we clear the socket we have no guarantee that later reads will
-   come from the same backing storage.
-
-   The patch adds calls to kill_bdev() in __nbd_ioctl()'s socket
-   clearing code so the page cache is cleaned, lest reads that hit on the
-   page cache will return stale data from the previously-accessible disk.
-
-Example:
-
-    # qemu-nbd -r -c/dev/nbd0 /dev/sr0
-    # file -s /dev/nbd0
-    /dev/stdin: # UDF filesystem data (version 1.5) etc.
-    # qemu-nbd -d /dev/nbd0
-    # qemu-nbd -r -c/dev/nbd0 /dev/sda
-    # file -s /dev/nbd0
-    /dev/stdin: # UDF filesystem data (version 1.5) etc.
-
-While /dev/sda has:
-
-    # file -s /dev/sda
-    /dev/sda: x86 boot sector; etc.
-
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-Acked-by: Paul Clements <Paul.Clements@steeleye.com>
-Cc: Alex Bligh <alex@alex.org.uk>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/block/nbd.c |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+ drivers/power/abx500_chargalg.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/block/nbd.c
-+++ b/drivers/block/nbd.c
-@@ -595,12 +595,20 @@ static int __nbd_ioctl(struct block_devi
- 		struct request sreq;
+--- a/drivers/power/abx500_chargalg.c
++++ b/drivers/power/abx500_chargalg.c
+@@ -1698,7 +1698,7 @@ static ssize_t abx500_chargalg_sysfs_cha
+ static struct attribute abx500_chargalg_en_charger = \
+ {
+ 	.name = "chargalg",
+-	.mode = S_IWUGO,
++	.mode = S_IWUSR,
+ };
  
- 		dev_info(disk_to_dev(nbd->disk), "NBD_DISCONNECT\n");
-+		if (!nbd->sock)
-+			return -EINVAL;
- 
-+		mutex_unlock(&nbd->tx_lock);
-+		fsync_bdev(bdev);
-+		mutex_lock(&nbd->tx_lock);
- 		blk_rq_init(NULL, &sreq);
- 		sreq.cmd_type = REQ_TYPE_SPECIAL;
- 		nbd_cmd(&sreq) = NBD_CMD_DISC;
-+
-+		/* Check again after getting mutex back.  */
- 		if (!nbd->sock)
- 			return -EINVAL;
-+
- 		nbd_send_req(nbd, &sreq);
-                 return 0;
- 	}
-@@ -614,6 +622,7 @@ static int __nbd_ioctl(struct block_devi
- 		nbd_clear_que(nbd);
- 		BUG_ON(!list_empty(&nbd->queue_head));
- 		BUG_ON(!list_empty(&nbd->waiting_queue));
-+		kill_bdev(bdev);
- 		if (file)
- 			fput(file);
- 		return 0;
-@@ -702,6 +711,7 @@ static int __nbd_ioctl(struct block_devi
- 		nbd->file = NULL;
- 		nbd_clear_que(nbd);
- 		dev_warn(disk_to_dev(nbd->disk), "queue cleared\n");
-+		kill_bdev(bdev);
- 		queue_flag_clear_unlocked(QUEUE_FLAG_DISCARD, nbd->disk->queue);
- 		if (file)
- 			fput(file);
+ static struct attribute *abx500_chargalg_chg[] = {
 
 
