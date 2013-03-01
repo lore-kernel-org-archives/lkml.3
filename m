@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754754Ab3CATzT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 14:55:19 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51943 "EHLO
+	id S1754886Ab3CATzr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 14:55:47 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51938 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754237Ab3CATqd (ORCPT
+	with ESMTP id S1753897Ab3CATqc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 14:46:33 -0500
+	Fri, 1 Mar 2013 14:46:32 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        James Ralston <james.d.ralston@intel.com>,
+        Seth Heasley <seth.heasley@intel.com>,
         Jeff Garzik <jgarzik@redhat.com>
-Subject: [ 45/46] ata_piix: Add Device IDs for Intel Wellsburg PCH
-Date: Fri,  1 Mar 2013 11:45:33 -0800
-Message-Id: <20130301194436.995911062@linuxfoundation.org>
+Subject: [ 44/46] ata_piix: IDE-mode SATA patch for Intel Avoton DeviceIDs
+Date: Fri,  1 Mar 2013 11:45:32 -0800
+Message-Id: <20130301194436.880150496@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130301194432.263409302@linuxfoundation.org>
 References: <20130301194432.263409302@linuxfoundation.org>
@@ -27,35 +27,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: James Ralston <james.d.ralston@intel.com>
+From: Seth Heasley <seth.heasley@intel.com>
 
-commit 3aee8bc52c415aba8148f144e5e5359b0fd75dd1 upstream.
+commit aaa515277db9585eeb4fdeb4637b9f9df50a1dd9 upstream.
 
-This patch adds the IDE-mode SATA Device IDs for the Intel Wellsburg PCH
+This patch adds the IDE-mode SATA DeviceIDs for the Intel Avoton SOC.
 
-Signed-off-by: James Ralston <james.d.ralston@intel.com>
+Signed-off-by: Seth Heasley <seth.heasley@intel.com>
 Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/ata/ata_piix.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
+ drivers/ata/ata_piix.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
 --- a/drivers/ata/ata_piix.c
 +++ b/drivers/ata/ata_piix.c
-@@ -339,6 +339,15 @@ static const struct pci_device_id piix_p
- 	{ 0x8086, 0x1f30, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
- 	/* SATA Controller IDE (Avoton) */
- 	{ 0x8086, 0x1f31, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
-+	/* SATA Controller IDE (Wellsburg) */
-+	{ 0x8086, 0x8d00, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_sata_snb },
-+	/* SATA Controller IDE (Wellsburg) */
-+	{ 0x8086, 0x8d08, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
-+	/* SATA Controller IDE (Wellsburg) */
-+	{ 0x8086, 0x8d60, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_sata_snb },
-+	/* SATA Controller IDE (Wellsburg) */
-+	{ 0x8086, 0x8d68, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
-+
+@@ -331,6 +331,14 @@ static const struct pci_device_id piix_p
+ 	{ 0x8086, 0x8c09, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
+ 	/* SATA Controller IDE (DH89xxCC) */
+ 	{ 0x8086, 0x2326, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
++	/* SATA Controller IDE (Avoton) */
++	{ 0x8086, 0x1f20, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_sata_snb },
++	/* SATA Controller IDE (Avoton) */
++	{ 0x8086, 0x1f21, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_sata_snb },
++	/* SATA Controller IDE (Avoton) */
++	{ 0x8086, 0x1f30, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
++	/* SATA Controller IDE (Avoton) */
++	{ 0x8086, 0x1f31, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
  	{ }	/* terminate list */
  };
  
