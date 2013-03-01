@@ -1,59 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751658Ab3CAPIP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 10:08:15 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:42960 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751060Ab3CAPIO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 10:08:14 -0500
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Joern Engel <joern@logfs.org>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 3/9] printk: add CON_ALLDATA console flag
-References: <1362087602-8979-1-git-send-email-joern@logfs.org>
-	<1362087602-8979-4-git-send-email-joern@logfs.org>
-	<x49obf32mvo.fsf@segfault.boston.devel.redhat.com>
-	<20130301145805.GC30938@pd.tnic>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Fri, 01 Mar 2013 10:08:00 -0500
-In-Reply-To: <20130301145805.GC30938@pd.tnic> (Borislav Petkov's message of
-	"Fri, 1 Mar 2013 15:58:06 +0100")
-Message-ID: <x49fw0f2m5r.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S1751759Ab3CAPJQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 10:09:16 -0500
+Received: from zimbra.alphalink.fr ([217.15.80.77]:55839 "EHLO
+	mail-2-cbv2.admin.alphalink.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751060Ab3CAPJO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Mar 2013 10:09:14 -0500
+X-Greylist: delayed 431 seconds by postgrey-1.27 at vger.kernel.org; Fri, 01 Mar 2013 10:09:14 EST
+Date: Fri, 1 Mar 2013 16:02:02 +0100
+From: Guillaume Nault <g.nault@alphalink.fr>
+To: James Chapman <jchapman@katalix.com>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH] l2tp: Restore socket refcount when sendmsg succeeds
+Message-ID: <20130301150202.GA3649@alphalink.fr>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Borislav Petkov <bp@alien8.de> writes:
+The sendmsg() syscall handler for PPPoL2TP doesn't decrease the socket
+reference counter after successful transmissions. Any successful
+sendmsg() call from userspace will then increase the reference counter
+forever, thus preventing the kernel's session and tunnel data from
+being freed later on.
 
-> On Fri, Mar 01, 2013 at 09:52:27AM -0500, Jeff Moyer wrote:
->> > For consoles like netconsole and blockconsole the loglevel filtering
->> > really doesn't make any sense.  If a line gets printed at all, please
->> > send it down to that console, no questions asked.
->> 
->> Could you please explain this a bit further?  Why wouldn't you want to
->> allow the admin to filter log messages to the block or network console?
->> This doesn't make a whole lot of sense to me, and in fact could cause
->> problems for netconsole now that you're potentially sending a ton more
->> traffic over the wire.
->
-> Let's reverse the question: why would the admin ever want to filter
-> messages to debugging consoles like netconsole or blockconsole?
->
-> When running a debugging session, you generally want to see *all*
-> messages.
+The problem only happens when writing directly on L2TP sockets.
+PPP sockets attached to L2TP are unaffected as the PPP subsystem
+uses pppol2tp_xmit() which symmetrically increase/decrease reference
+counters.
 
-People don't just use this for "debugging sessions."  They use it in
-production, and I already gave you one reason why you might not want to
-do this with netconsole (udp is unreliable, and I've definitely seem
-cases where netconsole suffered due to dropped packets; this won't make
-that better, especially when you multiply the extra bytes times the
-number of servers on the subnet).
+This patch adds the missing call to sock_put() before returning from
+pppol2tp_sendmsg().
 
-Cheers,
-Jeff
+Cc: <stable@vger.kernel.org>
+Signed-off-by: Guillaume Nault <g.nault@alphalink.fr>
+---
+ net/l2tp/l2tp_ppp.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/net/l2tp/l2tp_ppp.c b/net/l2tp/l2tp_ppp.c
+index 3f4e3af..6a53371 100644
+--- a/net/l2tp/l2tp_ppp.c
++++ b/net/l2tp/l2tp_ppp.c
+@@ -355,6 +355,7 @@ static int pppol2tp_sendmsg(struct kiocb *iocb, struct socket *sock, struct msgh
+ 	l2tp_xmit_skb(session, skb, session->hdr_len);
+ 
+ 	sock_put(ps->tunnel_sock);
++	sock_put(sk);
+ 
+ 	return error;
+ 
+-- 
+1.7.10.4
+
