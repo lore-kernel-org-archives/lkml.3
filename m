@@ -1,89 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751988Ab3CALBK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 06:01:10 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:59235 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751132Ab3CALBI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 06:01:08 -0500
-Date: Fri, 1 Mar 2013 12:00:43 +0100
-From: Anton Arapov <anton@redhat.com>
-To: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-Cc: Oleg Nesterov <oleg@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, Josh Stone <jistone@redhat.com>,
-        Frank Eigler <fche@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: Re: [RFC PATCH v3 2/6] uretprobes/x86: hijack return address
-Message-ID: <20130301110043.GA15426@bandura.brq.redhat.com>
-References: <1362049215-5780-1-git-send-email-anton@redhat.com>
- <1362049215-5780-3-git-send-email-anton@redhat.com>
- <20130301054536.GB30500@in.ibm.com>
+	id S1751773Ab3CALCY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 06:02:24 -0500
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:37714 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751290Ab3CALCX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Mar 2013 06:02:23 -0500
+Message-ID: <51308ABD.2020509@hitachi.com>
+Date: Fri, 01 Mar 2013 20:02:21 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130301054536.GB30500@in.ibm.com>
-X-PGP-Key: http://people.redhat.com/aarapov/gpg
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Timo Juhani Lindfors <timo.lindfors@iki.fi>
+Cc: ananth@in.ibm.com, linux-kernel@vger.kernel.org,
+        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
+Subject: Re: Re: Re: kprobing "hash_64.constprop.26" crashes the system,
+ recursion through get_kprobe?
+References: <84ehg2jdny.fsf@sauna.l.org> <20130301053123.GA30500@in.ibm.com> <513041D0.4010209@hitachi.com> <84sj4fik71.fsf@sauna.l.org> <513088E0.4090704@hitachi.com>
+In-Reply-To: <513088E0.4090704@hitachi.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 01, 2013 at 11:15:36AM +0530, Ananth N Mavinakayanahalli wrote:
-> On Thu, Feb 28, 2013 at 12:00:11PM +0100, Anton Arapov wrote:
-> >   hijack the return address and replace it with a "trampoline"
-> > 
-> > v2:
-> >   - remove ->doomed flag, kill task immediately
-> > 
-> > Signed-off-by: Anton Arapov <anton@redhat.com>
-> > ---
-> >  arch/x86/include/asm/uprobes.h |  1 +
-> >  arch/x86/kernel/uprobes.c      | 29 +++++++++++++++++++++++++++++
-> >  2 files changed, 30 insertions(+)
-> > 
-> > diff --git a/arch/x86/include/asm/uprobes.h b/arch/x86/include/asm/uprobes.h
-> > index 8ff8be7..c353555 100644
-> > --- a/arch/x86/include/asm/uprobes.h
-> > +++ b/arch/x86/include/asm/uprobes.h
-> > @@ -55,4 +55,5 @@ extern int  arch_uprobe_post_xol(struct arch_uprobe *aup, struct pt_regs *regs);
-> >  extern bool arch_uprobe_xol_was_trapped(struct task_struct *tsk);
-> >  extern int  arch_uprobe_exception_notify(struct notifier_block *self, unsigned long val, void *data);
-> >  extern void arch_uprobe_abort_xol(struct arch_uprobe *aup, struct pt_regs *regs);
-> > +extern unsigned long arch_uretprobe_hijack_return_addr(unsigned long rp_trampoline_vaddr, struct pt_regs *regs);
-> >  #endif	/* _ASM_UPROBES_H */
-> > diff --git a/arch/x86/kernel/uprobes.c b/arch/x86/kernel/uprobes.c
-> > index 0ba4cfb..85e2153 100644
-> > --- a/arch/x86/kernel/uprobes.c
-> > +++ b/arch/x86/kernel/uprobes.c
-> > @@ -697,3 +697,32 @@ bool arch_uprobe_skip_sstep(struct arch_uprobe *auprobe, struct pt_regs *regs)
-> >  		send_sig(SIGTRAP, current, 0);
-> >  	return ret;
-> >  }
-> > +
-> > +extern unsigned long arch_uretprobe_hijack_return_addr(unsigned long
-> > +		rp_trampoline_vaddr, struct pt_regs *regs)
-> > +{
-> > +	int rasize, ncopied;
-> > +	unsigned long orig_ret_vaddr = 0; /* clear high bits for 32-bit apps */
-> > +
-> > +	rasize = is_ia32_task() ? 4 : 8;
-> > +	ncopied = copy_from_user(&orig_ret_vaddr, (void __user *)regs->sp, rasize);
-> > +	if (unlikely(ncopied))
+(2013/03/01 19:54), Masami Hiramatsu wrote:
+> Actually, __kprobes is used much more than we need, because that
+> is safer (and also, that is used just for marking functions
+> related to kprobes).
 > 
-> What if ncopied < rasize? Agreed that the upper order bits can be 0, but should
-> you not validate ncopied == rasize?
+> Only what functions we need to mark __kprobes is the functions
+> called from do_int3, and optimized_callback, until processing
+> recursive call (which is done by kprobe_running() and
+> reenter_kprobe()).
 
-  Function returns 0 in case copy_from_user() was not able to copy
-return address entirely, and "if (ncopied)" makes sure of it. We 
-can't continue if we have no correct return address.
+Ah, I forgot to mention that interrupt/exception/NMI related code too...
 
-  copy_from_user() returns number of bytes that were *not* copied,
-thus "ncopied == rasize" means copy_from_user() was not able to copy
-*all* bytes. I don't see the point of such check here.
+Thanks,
 
-  Or am I missing anything?
+-- 
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
-thank you!
-Anton.
 
