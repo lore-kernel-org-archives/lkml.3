@@ -1,53 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751882Ab3CAG33 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 01:29:29 -0500
-Received: from pegase2.c-s.fr ([93.17.235.10]:36934 "EHLO mailhub2.si.c-s.fr"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750971Ab3CAG32 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 01:29:28 -0500
-Message-ID: <51304ABD.9020706@c-s.fr>
-Date: Fri, 01 Mar 2013 07:29:17 +0100
-From: leroy christophe <christophe.leroy@c-s.fr>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+	id S1750915Ab3CAGhO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 01:37:14 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:60152 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750696Ab3CAGhN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Mar 2013 01:37:13 -0500
+Message-ID: <51304C6D.8050207@huawei.com>
+Date: Fri, 1 Mar 2013 14:36:29 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
-        Patrick Vasseur <patrick.vasseur@c-s.fr>
-Subject: Re: [PATCH] Adds support for Open Firmware in MAX730x GPIO Driver
-References: <201302220926.r1M9Q3wV029855@localhost.localdomain> <CACRpkdY1M8w7o8S4idAx1JN-fc-t221qF_uwR5U9RBsBAn=Jhw@mail.gmail.com>
-In-Reply-To: <CACRpkdY1M8w7o8S4idAx1JN-fc-t221qF_uwR5U9RBsBAn=Jhw@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+To: Tejun Heo <tj@kernel.org>
+CC: Al Viro <viro@zeniv.linux.org.uk>, LKML <linux-kernel@vger.kernel.org>,
+        Cgroups <cgroups@vger.kernel.org>
+Subject: Re: [PATCH 2/3] cgroup: add cgroup_name() API
+References: <512B01FA.5020506@huawei.com> <512B020D.9040504@huawei.com> <20130226022703.GA13837@htj.dyndns.org> <512C8D84.7090707@huawei.com> <CAOS58YMb7HRQ3X+Z92vi3+jKr4DuNmAgxtc5e3Jkhy-s-7Os-g@mail.gmail.com> <512DE4A8.5050303@huawei.com> <CAOS58YMhm6Uia0bx6oUHwheXUhu8i31LPhh8VVggvg0vg-UmUQ@mail.gmail.com> <512EFEDF.8080205@huawei.com> <CAOS58YMBcvhfBWdQmt=JersRgB9nVgsrLACtLovz===2ZXfR=w@mail.gmail.com>
+In-Reply-To: <CAOS58YMBcvhfBWdQmt=JersRgB9nVgsrLACtLovz===2ZXfR=w@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-Le 01/03/2013 01:43, Linus Walleij a écrit :
-> On Fri, Feb 22, 2013 at 10:26 AM, Christophe Leroy
-> <christophe.leroy@c-s.fr> wrote:
->
->> This patch allows the use of the MAX730x Driver on systems using
->> the Open Firmware platform format
+On 2013/2/28 22:49, Tejun Heo wrote:
+> On Wed, Feb 27, 2013 at 10:53 PM, Li Zefan <lizefan@huawei.com> wrote:
+>>> static const struct cgroup_name root_cgroup_name = { .name = "/" };
 >>
->> Signed-off-by: Patrick Vasseur <patrick.vasseur@c-s.fr>
->> Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
-> (...)
->>          /* bits_per_word cannot be configured in platform data */
->> -       spi->bits_per_word = 16;
->> +       if (spi->dev.platform_data)
->> +               spi->bits_per_word = 16;
-> What about just fixing so you *can* specify that instead?
-> The comment looks more like a FIXME to me.
-Euh, ok, why not. But here the purpose of my patch is to allow using 
-this driver with of_platform in addition to platform.
-This FIXME is not mine, it was already existing in that driver.
-As of_platform can configure bits per word, the only thing I did is to 
-add a test in order to not apply this FIXME on the of_platform case.
+>> Can't... That's char name[0] not char *name.
+> 
+> Flexible array members can be statically initialized. If you wanna be
+> really anal about it, you can do it manually with a wrapping struct
+> but I don't think that would be necessary.
+> 
 
-Do you think my patch is not acceptable like this ?
-
-Regards
-Christophe
+I didn't know this difference between flexible array and zero-size array.
+Thanks.
 
