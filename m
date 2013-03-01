@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754342Ab3CAT5M (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 14:57:12 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51921 "EHLO
+	id S1754381Ab3CAT5i (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 14:57:38 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51918 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754146Ab3CATq3 (ORCPT
+	with ESMTP id S1754116Ab3CATq2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 14:46:29 -0500
+	Fri, 1 Mar 2013 14:46:28 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ian Abbott <abbotti@mev.co.uk>
-Subject: [ 40/46] staging: comedi: ni_labpc: correct differential channel sequence for AI commands
-Date: Fri,  1 Mar 2013 11:45:28 -0800
-Message-Id: <20130301194436.462679780@linuxfoundation.org>
+        Joseph Salisbury <joseph.salisbury@canonical.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [ 39/46] ACPI: Add DMI entry for Sony VGN-FW41E_H
+Date: Fri,  1 Mar 2013 11:45:27 -0800
+Message-Id: <20130301194436.370181262@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130301194432.263409302@linuxfoundation.org>
 References: <20130301194432.263409302@linuxfoundation.org>
@@ -26,51 +27,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ian Abbott <abbotti@mev.co.uk>
+From: Joseph Salisbury <joseph.salisbury@canonical.com>
 
-Commit 4c4bc25d0fa6beaf054c0b4c3b324487f266c820 upstream.
+commit 66f2fda93b67fa744d406e6dcf443f67bac204b6 upstream.
 
-Tuomas <tvainikk _at_ gmail _dot_ com> reported problems getting
-meaningful output from a Lab-PC+ in differential mode for AI cmds, but
-AI insn reads gave correct readings.  He tracked it down to two
-problems, one of which is addressed by this patch.
+This patch adds a quirk to allow the Sony VGN-FW41E_H to suspend/resume
+properly.
 
-It seems the setting of the channel bits for particular scanning modes
-was incorrect for differential mode.  (Only half the number of channels
-are available in differential mode; comedi refers to them as channels 0,
-1, 2 and 3, but the hardware documentation refers to them as channels 0,
-2, 4 and 6.)  In differential mode, the setting of the channel enable
-bits in the command1 register should depend on whether the scan enable
-bit is set.  Effectively, we need to double the comedi channel number
-when the scan enable bit is not set in differential mode.  The scan
-enable bit gets set when the AI scan mode is `MODE_MULT_CHAN_UP` or
-`MODE_MULT_CHAN_DOWN`, and gets cleared when the AI scan mode is
-`MODE_SINGLE_CHAN` or `MODE_SINGLE_CHAN_INTERVAL`.  The existing test
-for whether the comedi channel number needs to be doubled in
-differential mode is incorrect in `labpc_ai_cmd()`.  This patch corrects
-the test.
-
-Thanks to Tuomas for suggesting the fix.
-
-Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
+References: http://bugs.launchpad.net/bugs/1113547
+Signed-off-by: Joseph Salisbury <joseph.salisbury@canonical.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/comedi/drivers/ni_labpc.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/acpi/sleep.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/drivers/staging/comedi/drivers/ni_labpc.c
-+++ b/drivers/staging/comedi/drivers/ni_labpc.c
-@@ -1264,7 +1264,9 @@ static int labpc_ai_cmd(struct comedi_de
- 	else
- 		channel = CR_CHAN(cmd->chanlist[0]);
- 	/* munge channel bits for differential / scan disabled mode */
--	if (labpc_ai_scan_mode(cmd) != MODE_SINGLE_CHAN && aref == AREF_DIFF)
-+	if ((labpc_ai_scan_mode(cmd) == MODE_SINGLE_CHAN ||
-+	     labpc_ai_scan_mode(cmd) == MODE_SINGLE_CHAN_INTERVAL) &&
-+	    aref == AREF_DIFF)
- 		channel *= 2;
- 	devpriv->command1_bits |= ADC_CHAN_BITS(channel);
- 	devpriv->command1_bits |= thisboard->ai_range_code[range];
+--- a/drivers/acpi/sleep.c
++++ b/drivers/acpi/sleep.c
+@@ -186,6 +186,14 @@ static struct dmi_system_id __initdata a
+ 	},
+ 	{
+ 	.callback = init_nvs_nosave,
++	.ident = "Sony Vaio VGN-FW41E_H",
++	.matches = {
++		DMI_MATCH(DMI_SYS_VENDOR, "Sony Corporation"),
++		DMI_MATCH(DMI_PRODUCT_NAME, "VGN-FW41E_H"),
++		},
++	},
++	{
++	.callback = init_nvs_nosave,
+ 	.ident = "Sony Vaio VGN-FW21E",
+ 	.matches = {
+ 		DMI_MATCH(DMI_SYS_VENDOR, "Sony Corporation"),
 
 
