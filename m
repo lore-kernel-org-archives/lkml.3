@@ -1,55 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751061Ab3CADGe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 22:06:34 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:13453 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750884Ab3CADGd (ORCPT
+	id S1751247Ab3CADI4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 22:08:56 -0500
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:42738 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750870Ab3CADIz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 22:06:33 -0500
-X-Authority-Analysis: v=2.0 cv=H5hZMpki c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=dCXt4Z_EDXgA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=VHl0eERhotoA:10 a=RxyK8sfA-hFjJdKiKSEA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1362107191.1231.25.camel@gandalf.local.home>
-Subject: Re: linux-next: build failure after merge of the ftrace tree
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Thu, 28 Feb 2013 22:06:31 -0500
-In-Reply-To: <20130301134738.ce925e1643a35b0a2c4ff275@canb.auug.org.au>
-References: <20130301134738.ce925e1643a35b0a2c4ff275@canb.auug.org.au>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4-1 
+	Thu, 28 Feb 2013 22:08:55 -0500
+Message-ID: <1362107325.2712.2.camel@localhost>
+Subject: Re: [PATCH 0/3] Enable multiple MSI feature in pSeries
+From: Mike <qiudayu@linux.vnet.ibm.com>
+To: linuxppc-dev@lists.ozlabs.org
+Cc: linux-kernel@vger.kernel.org, benh@kernel.crashing.org, tglx@linutronix.de
+Date: Fri, 01 Mar 2013 11:08:45 +0800
+In-Reply-To: <1358235536-32741-1-git-send-email-qiudayu@linux.vnet.ibm.com>
+References: <1358235536-32741-1-git-send-email-qiudayu@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 8bit
 Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13030103-2674-0000-0000-0000080140B2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-03-01 at 13:47 +1100, Stephen Rothwell wrote:
-> Hi Steven,
-> 
-> After merging the ftrace tree, today's linux-next build (x86_64
-> allmodconfig) failed like this:
-> 
-> kernel/trace/trace_kdb.c: In function 'ftrace_dump_buf':
-> kernel/trace/trace_kdb.c:29:33: error: invalid type argument of '->' (have 'struct trace_array_cpu')
-> kernel/trace/trace_kdb.c:86:33: error: invalid type argument of '->' (have 'struct trace_array_cpu')
-> 
-> Caused by commit eaac1836c10e ("tracing: Replace the static global
-> per_cpu arrays with allocated per_cpu").
-> 
-> I have used the ftrace tree from next-20130228 for today.
+Hi all
 
-Thanks, I'll take a look into it. I also found that my latest push also
-broke the ftrace snapshot feature. I'm currently bisecting what caused
-that.
+Any comments? or any questions about my patchset?
 
-Hmm, interesting though, I thought it succeeded in building against an
-allyesconfig?? Grumble, I'll have to run it through the tests again to
-make sure I didn't screw something up, like test the wrong branch :-p
+Thanks
+Mike
+在 2013-01-15二的 15:38 +0800，Mike Qiu写道：
+> Currently, multiple MSI feature hasn't been enabled in pSeries,
+> These patches try to enbale this feature.
+> 
+> These patches have been tested by using ipr driver, and the driver patch
+> has been made by Wen Xiong <wenxiong@linux.vnet.ibm.com>:
+> 
+> [PATCH 0/7] Add support for new IBM SAS controllers
+> 
+> Test platform: One partition of pSeries with one cpu core(4 SMTs) and 
+>                RAID bus controller: IBM PCI-E IPR SAS Adapter (ASIC) in POWER7
+> OS version: SUSE Linux Enterprise Server 11 SP2  (ppc64) with 3.8-rc3 kernel 
+> 
+> IRQ 21 and 22 are assigned to the ipr device which support 2 mutiple MSI.
+> 
+> The test results is shown by 'cat /proc/interrups':
+>           CPU0       CPU1       CPU2       CPU3       
+> 16:     240458     261601     226310     200425      XICS Level     IPI
+> 17:          0          0          0          0      XICS Level     RAS_EPOW
+> 18:         10          0          3          2      XICS Level     hvc_console
+> 19:     122182      28481      28527      28864      XICS Level     ibmvscsi
+> 20:        506    7388226        108        118      XICS Level     eth0
+> 21:          6          5          5          5      XICS Level     host1-0
+> 22:        817        814        816        813      XICS Level     host1-1
+> LOC:     398077     316725     231882     203049   Local timer interrupts
+> SPU:       1659        919        961        903   Spurious interrupts
+> CNT:          0          0          0          0   Performance
+> monitoring interrupts
+> MCE:          0          0          0          0   Machine check exceptions
+> 
+> Mike Qiu (3):
+>   irq: Set multiple MSI descriptor data for multiple IRQs
+>   irq: Add hw continuous IRQs map to virtual continuous IRQs support
+>   powerpc/pci: Enable pSeries multiple MSI feature
+> 
+>  arch/powerpc/kernel/msi.c            |    4 --
+>  arch/powerpc/platforms/pseries/msi.c |   62 ++++++++++++++++++++++++++++++++-
+>  include/linux/irq.h                  |    4 ++
+>  include/linux/irqdomain.h            |    3 ++
+>  kernel/irq/chip.c                    |   40 ++++++++++++++++-----
+>  kernel/irq/irqdomain.c               |   61 +++++++++++++++++++++++++++++++++
+>  6 files changed, 158 insertions(+), 16 deletions(-)
+> 
 
--- Steve
 
 
