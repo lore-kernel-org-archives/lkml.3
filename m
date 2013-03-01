@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751804Ab3CAQJk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 11:09:40 -0500
-Received: from mail-qe0-f49.google.com ([209.85.128.49]:33812 "EHLO
-	mail-qe0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751691Ab3CAQJi (ORCPT
+	id S1751944Ab3CAQJq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 11:09:46 -0500
+Received: from mail-qc0-f170.google.com ([209.85.216.170]:36322 "EHLO
+	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751697Ab3CAQJo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 11:09:38 -0500
+	Fri, 1 Mar 2013 11:09:44 -0500
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
@@ -17,9 +17,9 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Namhyung Kim <namhyung.kim@lge.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 4/5] cputime: Dynamically scale cputime for full dynticks accounting
-Date: Fri,  1 Mar 2013 17:08:58 +0100
-Message-Id: <1362154139-1139-5-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 5/5] context_tracking: Enable probes by default for selftesting
+Date: Fri,  1 Mar 2013 17:08:59 +0100
+Message-Id: <1362154139-1139-6-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1362154139-1139-1-git-send-email-fweisbec@gmail.com>
 References: <1362154139-1139-1-git-send-email-fweisbec@gmail.com>
@@ -27,17 +27,17 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The full dynticks cputime accounting is able to account either
-using the tick or the context tracking subsystem. This way
-the housekeeping CPU can keep the low overhead tick based
-solution.
+Until we provide the nohz_mask boot parameter, keeping
+the context tracking probes disabled by default is pointless
+since what we want is to runtime test this code anyway.
 
-This latter mode has a low jiffies resolution granularity and
-need to be scaled against CFS precise runtime accounting to
-improve its result. We are doing this for CONFIG_TICK_CPU_ACCOUNTING,
-now we also need to expand it to full dynticks accounting dynamic
-off-case as well.
+It's furthermore confusing for the users which don't expect
+the probes to be off when they select RCU user mode or full
+dynticks cputime accounting.
 
+Let's enable these probes selftests by default for now.
+
+Suggested: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Li Zhong <zhong@linux.vnet.ibm.com>
 Cc: Kevin Hilman <khilman@linaro.org>
@@ -49,237 +49,21 @@ Cc: Namhyung Kim <namhyung.kim@lge.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 ---
- include/linux/sched.h  |    4 +-
- kernel/fork.c          |    2 +-
- kernel/sched/cputime.c |  154 +++++++++++++++++++++++++-----------------------
- 3 files changed, 83 insertions(+), 77 deletions(-)
+ init/Kconfig |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index f9ca237d..145110b 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -574,7 +574,7 @@ struct signal_struct {
- 	cputime_t utime, stime, cutime, cstime;
- 	cputime_t gtime;
- 	cputime_t cgtime;
--#ifndef CONFIG_VIRT_CPU_ACCOUNTING
-+#ifndef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
- 	struct cputime prev_cputime;
- #endif
- 	unsigned long nvcsw, nivcsw, cnvcsw, cnivcsw;
-@@ -1331,7 +1331,7 @@ struct task_struct {
- 
- 	cputime_t utime, stime, utimescaled, stimescaled;
- 	cputime_t gtime;
--#ifndef CONFIG_VIRT_CPU_ACCOUNTING
-+#ifndef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
- 	struct cputime prev_cputime;
- #endif
- #ifdef CONFIG_VIRT_CPU_ACCOUNTING_GEN
-diff --git a/kernel/fork.c b/kernel/fork.c
-index 4133876..30ce197 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -1230,7 +1230,7 @@ static struct task_struct *copy_process(unsigned long clone_flags,
- 
- 	p->utime = p->stime = p->gtime = 0;
- 	p->utimescaled = p->stimescaled = 0;
--#ifndef CONFIG_VIRT_CPU_ACCOUNTING
-+#ifndef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
- 	p->prev_cputime.utime = p->prev_cputime.stime = 0;
- #endif
- #ifdef CONFIG_VIRT_CPU_ACCOUNTING_GEN
-diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
-index ed12cbb..024fe19 100644
---- a/kernel/sched/cputime.c
-+++ b/kernel/sched/cputime.c
-@@ -388,82 +388,10 @@ static inline void irqtime_account_process_tick(struct task_struct *p, int user_
- 						struct rq *rq) {}
- #endif /* CONFIG_IRQ_TIME_ACCOUNTING */
- 
--#ifndef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
--/*
-- * Account a single tick of cpu time.
-- * @p: the process that the cpu time gets accounted to
-- * @user_tick: indicates if the tick is a user or a system tick
-- */
--void account_process_tick(struct task_struct *p, int user_tick)
--{
--	cputime_t one_jiffy_scaled = cputime_to_scaled(cputime_one_jiffy);
--	struct rq *rq = this_rq();
--
--	if (vtime_accounting_enabled())
--		return;
--
--	if (sched_clock_irqtime) {
--		irqtime_account_process_tick(p, user_tick, rq);
--		return;
--	}
--
--	if (steal_account_process_tick())
--		return;
--
--	if (user_tick)
--		account_user_time(p, cputime_one_jiffy, one_jiffy_scaled);
--	else if ((p != rq->idle) || (irq_count() != HARDIRQ_OFFSET))
--		account_system_time(p, HARDIRQ_OFFSET, cputime_one_jiffy,
--				    one_jiffy_scaled);
--	else
--		account_idle_time(cputime_one_jiffy);
--}
--
--/*
-- * Account multiple ticks of steal time.
-- * @p: the process from which the cpu time has been stolen
-- * @ticks: number of stolen ticks
-- */
--void account_steal_ticks(unsigned long ticks)
--{
--	account_steal_time(jiffies_to_cputime(ticks));
--}
--
--/*
-- * Account multiple ticks of idle time.
-- * @ticks: number of stolen ticks
-- */
--void account_idle_ticks(unsigned long ticks)
--{
--
--	if (sched_clock_irqtime) {
--		irqtime_account_idle_ticks(ticks);
--		return;
--	}
--
--	account_idle_time(jiffies_to_cputime(ticks));
--}
--#endif /* !CONFIG_VIRT_CPU_ACCOUNTING_NATIVE */
--
- /*
-  * Use precise platform statistics if available:
-  */
- #ifdef CONFIG_VIRT_CPU_ACCOUNTING
--void task_cputime_adjusted(struct task_struct *p, cputime_t *ut, cputime_t *st)
--{
--	*ut = p->utime;
--	*st = p->stime;
--}
--
--void thread_group_cputime_adjusted(struct task_struct *p, cputime_t *ut, cputime_t *st)
--{
--	struct task_cputime cputime;
--
--	thread_group_cputime(p, &cputime);
--
--	*ut = cputime.utime;
--	*st = cputime.stime;
--}
- 
- #ifndef __ARCH_HAS_VTIME_TASK_SWITCH
- void vtime_task_switch(struct task_struct *prev)
-@@ -518,8 +446,80 @@ void vtime_account_irq_enter(struct task_struct *tsk)
- }
- EXPORT_SYMBOL_GPL(vtime_account_irq_enter);
- #endif /* __ARCH_HAS_VTIME_ACCOUNT */
-+#endif /* CONFIG_VIRT_CPU_ACCOUNTING */
-+
-+
-+#ifdef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
-+void task_cputime_adjusted(struct task_struct *p, cputime_t *ut, cputime_t *st)
-+{
-+	*ut = p->utime;
-+	*st = p->stime;
-+}
- 
--#else /* !CONFIG_VIRT_CPU_ACCOUNTING */
-+void thread_group_cputime_adjusted(struct task_struct *p, cputime_t *ut, cputime_t *st)
-+{
-+	struct task_cputime cputime;
-+
-+	thread_group_cputime(p, &cputime);
-+
-+	*ut = cputime.utime;
-+	*st = cputime.stime;
-+}
-+#else /* !CONFIG_VIRT_CPU_ACCOUNTING_NATIVE */
-+/*
-+ * Account a single tick of cpu time.
-+ * @p: the process that the cpu time gets accounted to
-+ * @user_tick: indicates if the tick is a user or a system tick
-+ */
-+void account_process_tick(struct task_struct *p, int user_tick)
-+{
-+	cputime_t one_jiffy_scaled = cputime_to_scaled(cputime_one_jiffy);
-+	struct rq *rq = this_rq();
-+
-+	if (vtime_accounting_enabled())
-+		return;
-+
-+	if (sched_clock_irqtime) {
-+		irqtime_account_process_tick(p, user_tick, rq);
-+		return;
-+	}
-+
-+	if (steal_account_process_tick())
-+		return;
-+
-+	if (user_tick)
-+		account_user_time(p, cputime_one_jiffy, one_jiffy_scaled);
-+	else if ((p != rq->idle) || (irq_count() != HARDIRQ_OFFSET))
-+		account_system_time(p, HARDIRQ_OFFSET, cputime_one_jiffy,
-+				    one_jiffy_scaled);
-+	else
-+		account_idle_time(cputime_one_jiffy);
-+}
-+
-+/*
-+ * Account multiple ticks of steal time.
-+ * @p: the process from which the cpu time has been stolen
-+ * @ticks: number of stolen ticks
-+ */
-+void account_steal_ticks(unsigned long ticks)
-+{
-+	account_steal_time(jiffies_to_cputime(ticks));
-+}
-+
-+/*
-+ * Account multiple ticks of idle time.
-+ * @ticks: number of stolen ticks
-+ */
-+void account_idle_ticks(unsigned long ticks)
-+{
-+
-+	if (sched_clock_irqtime) {
-+		irqtime_account_idle_ticks(ticks);
-+		return;
-+	}
-+
-+	account_idle_time(jiffies_to_cputime(ticks));
-+}
- 
- static cputime_t scale_stime(cputime_t stime, cputime_t rtime, cputime_t total)
- {
-@@ -545,6 +545,12 @@ static void cputime_adjust(struct task_cputime *curr,
- {
- 	cputime_t rtime, stime, total;
- 
-+	if (vtime_accounting_enabled()) {
-+		*ut = curr->utime;
-+		*st = curr->stime;
-+		return;
-+	}
-+
- 	stime = curr->stime;
- 	total = stime + curr->utime;
- 
-@@ -597,7 +603,7 @@ void thread_group_cputime_adjusted(struct task_struct *p, cputime_t *ut, cputime
- 	thread_group_cputime(p, &cputime);
- 	cputime_adjust(&cputime, &p->signal->prev_cputime, ut, st);
- }
--#endif /* !CONFIG_VIRT_CPU_ACCOUNTING */
-+#endif /* !CONFIG_VIRT_CPU_ACCOUNTING_NATIVE */
- 
- #ifdef CONFIG_VIRT_CPU_ACCOUNTING_GEN
- static unsigned long long vtime_delta(struct task_struct *tsk)
+diff --git a/init/Kconfig b/init/Kconfig
+index 7000d96..55e376b 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -536,6 +536,7 @@ config RCU_USER_QS
+ config CONTEXT_TRACKING_FORCE
+ 	bool "Force context tracking"
+ 	depends on CONTEXT_TRACKING
++	default CONTEXT_TRACKING
+ 	help
+ 	  Probe on user/kernel boundaries by default in order to
+ 	  test the features that rely on it such as userspace RCU extended
 -- 
 1.7.5.4
 
