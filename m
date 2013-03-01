@@ -1,190 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751496Ab3CAJgn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 04:36:43 -0500
-Received: from mx.mcc-med.de ([213.148.153.242]:28965 "EHLO mx.mcc-med.de"
+	id S1751739Ab3CAJhz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 04:37:55 -0500
+Received: from mga09.intel.com ([134.134.136.24]:41046 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751125Ab3CAJgl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 04:36:41 -0500
-From: "Velykokhatko, Sergey" <Sergey.Velykokhatko@mcc-med.de>
-To: "'Richard Genoud'" <richard.genoud@gmail.com>,
-        Brian Norris <computersforpeace@gmail.com>
-CC: "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "artem.bityutskiy@linux.intel.com" <artem.bityutskiy@linux.intel.com>
-Date: Fri, 1 Mar 2013 10:36:35 +0100
-Subject: AW: Bug in mtd_get_device_size()?
-Thread-Topic: Bug in mtd_get_device_size()?
-Thread-Index: Ac4WVFnqr5ePBkP1RW6VWyadM2C5BAACbSgw
-Message-ID: <BAF0C2081321BA469F9ADF648F97D9B04C78FA6076@MCC023.weinmann.com>
-References: <BAF0C2081321BA469F9ADF648F97D9B04C78FA6069@MCC023.weinmann.com>
- <CAN8TOE9YJBvUE9GDW3krZB-Js6gUkqY23gYNLS4gFX0e2NDNZw@mail.gmail.com>
- <CACQ1gAgz+nko3S4=KC=fAa8-V0gEchB05W6y1edOxYRmB9W0UQ@mail.gmail.com>
-In-Reply-To: <CACQ1gAgz+nko3S4=KC=fAa8-V0gEchB05W6y1edOxYRmB9W0UQ@mail.gmail.com>
-Accept-Language: de-DE
-Content-Language: de-DE
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: de-DE
-Content-Type: text/plain; charset="utf-8"
+	id S1751125Ab3CAJhv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Mar 2013 04:37:51 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,761,1355126400"; 
+   d="asc'?scan'208";a="292232164"
+Date: Fri, 1 Mar 2013 04:35:37 -0500
+From: Chen Gong <gong.chen@linux.intel.com>
+To: Simon Jeons <simon.jeons@gmail.com>
+Cc: Mel Gorman <mgorman@suse.de>, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org, riel@redhat.com,
+        mhocko@suse.cz, hannes@cmpxchg.org
+Subject: Re: [PATCH] x86: mm: Check if PUD is large when validating a kernel
+ address v2
+Message-ID: <20130301093537.GA12327@gchen.bj.intel.com>
+Mail-Followup-To: Simon Jeons <simon.jeons@gmail.com>,
+	Mel Gorman <mgorman@suse.de>, Ingo Molnar <mingo@kernel.org>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	linux-kernel@vger.kernel.org, linux-mm@kvack.org, riel@redhat.com,
+	mhocko@suse.cz, hannes@cmpxchg.org
+References: <20130211145236.GX21389@suse.de>
+ <20130213110202.GI4100@suse.de>
+ <51304E29.40900@gmail.com>
+ <20130301091513.GA11787@gchen.bj.intel.com>
+ <5130731F.4000804@gmail.com>
 MIME-Version: 1.0
-X-OriginalRecipient: RPFD:richard.genoud@gmail.com
-X-OriginalRecipient: RPFD:computersforpeace@gmail.com
-X-OriginalRecipient: RPFD:artem.bityutskiy@linux.intel.com
-X-OriginalRecipient: RPFD:linux-mtd@lists.infradead.org
-X-OriginalId: qfr219aZrY011373
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="pf9I7BMVVzbSWLtt"
+Content-Disposition: inline
+In-Reply-To: <5130731F.4000804@gmail.com>
+X-PGP-Key-ID: A43922C7
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r219alRl019932
-
-Hi Richard,
-
-Thanks, I saw that definition and calculation formula. But it is ambiguous. Depending on what you take for basis for that 1024. If you take MTD size you get completely other result as for basis with whole chip size. In my interpretation of actual implementation the basis of whole chip size for this case is totally wrong since it brings limitations of minimum partition size driven with UBI (someone from you already listed this argument too). In my case I patched this thing in mtd_get_device_size(). I understand that patch is wrong for complete system in your interpretation. But I report you my problem case, listed you my arguments and you decide what to do. In "our" 3.8 Kernel I left my patch since now system works so as I expected. 
-
-Thanks a lot,
-Best regards,
-Sergey
 
 
+--pf9I7BMVVzbSWLtt
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
------Urspr√ºngliche Nachricht-----
-Von: Richard Genoud [mailto:richard.genoud@gmail.com] 
-Gesendet: Freitag, 1. M√§rz 2013 09:11
-An: Brian Norris
-Cc: Velykokhatko, Sergey; linux-mtd@lists.infradead.org; linux-kernel@vger.kernel.org; artem.bityutskiy@linux.intel.com
-Betreff: Re: Bug in mtd_get_device_size()?
+On Fri, Mar 01, 2013 at 05:21:35PM +0800, Simon Jeons wrote:
+> Date: Fri, 01 Mar 2013 17:21:35 +0800
+> From: Simon Jeons <simon.jeons@gmail.com>
+> To: Mel Gorman <mgorman@suse.de>, Ingo Molnar <mingo@kernel.org>, Andrew
+>  Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+>  linux-mm@kvack.org, riel@redhat.com, mhocko@suse.cz, hannes@cmpxchg.org
+> Subject: Re: [PATCH] x86: mm: Check if PUD is large when validating a
+>  kernel address v2
+> User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130221
+>  Thunderbird/17.0.3
+>=20
+> On 03/01/2013 05:15 PM, Chen Gong wrote:
+> >On Fri, Mar 01, 2013 at 02:43:53PM +0800, Simon Jeons wrote:
+> >>Date: Fri, 01 Mar 2013 14:43:53 +0800
+> >>From: Simon Jeons <simon.jeons@gmail.com>
+> >>To: Mel Gorman <mgorman@suse.de>
+> >>CC: Ingo Molnar <mingo@kernel.org>, Andrew Morton
+> >>  <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+> >>  linux-mm@kvack.org, riel@redhat.com, mhocko@suse.cz, hannes@cmpxchg.o=
+rg
+> >>Subject: Re: [PATCH] x86: mm: Check if PUD is large when validating a
+> >>  kernel address v2
+> >>User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130221
+> >>  Thunderbird/17.0.3
+> >>
+> >>On 02/13/2013 07:02 PM, Mel Gorman wrote:
+> >>>Andrew or Ingo, please pick up.
+> >>>
+> >>>Changelog since v1
+> >>>   o Add reviewed-bys and acked-bys
+> >>>
+> >>>A user reported a bug whereby a backup process accessing /proc/kcore
+> >>>caused an oops.
+> >>>
+> >>>  BUG: unable to handle kernel paging request at ffffbb00ff33b000
+> >>>  IP: [<ffffffff8103157e>] kern_addr_valid+0xbe/0x110
+> >>>  PGD 0
+> >>>  Oops: 0000 [#1] SMP
+> >>>  CPU 6
+> >>>  Modules linked in: af_packet nfs lockd fscache auth_rpcgss nfs_acl s=
+unrpc 8021q garp stp llc cpufreq_conservative cpufreq_userspace cpufreq_pow=
+ersave acpi_cpufreq mperf microcode fuse nls_iso8859_1 nls_cp437 vfat fat l=
+oop dm_mod ioatdma ipv6 ipv6_lib igb dca i7core_edac edac_core i2c_i801 i2c=
+_core cdc_ether usbnet bnx2 mii iTCO_wdt iTCO_vendor_support shpchp rtc_cmo=
+s pci_hotplug tpm_tis sg tpm pcspkr tpm_bios serio_raw button ext3 jbd mbca=
+che uhci_hcd ehci_hcd usbcore sd_mod crc_t10dif usb_common processor therma=
+l_sys hwmon scsi_dh_emc scsi_dh_rdac scsi_dh_alua scsi_dh_hp_sw scsi_dh ata=
+_generic ata_piix libata megaraid_sas scsi_mod
+> >>>
+> >>>  Pid: 16196, comm: Hibackp Not tainted 3.0.13-0.27-default #1 IBM Sys=
+tem x3550 M3 -[7944 K3G]-/94Y7614
+> >>>  RIP: 0010:[<ffffffff8103157e>]  [<ffffffff8103157e>] kern_addr_valid=
++0xbe/0x110
+> >>>  RSP: 0018:ffff88094165fe80  EFLAGS: 00010246
+> >>>  RAX: 00003300ff33b000 RBX: ffff880100000000 RCX: 0000000000000000
+> >>>  RDX: 0000000100000000 RSI: ffff880000000000 RDI: ff32b300ff33b400
+> >>>  RBP: 0000000000001000 R08: 00003ffffffff000 R09: 0000000000000000
+> >>>  R10: 22302e31223d6e6f R11: 0000000000000246 R12: 0000000000001000
+> >>>  R13: 0000000000003000 R14: 0000000000571be0 R15: ffff88094165ff50
+> >>>  FS:  00007ff152d33700(0000) GS:ffff88097f2c0000(0000) knlGS:00000000=
+00000000
+> >>>  CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> >>>  CR2: ffffbb00ff33b000 CR3: 00000009405a3000 CR4: 00000000000006e0
+> >>>  DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> >>>  DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> >>>  Process Hibackp (pid: 16196, threadinfo ffff88094165e000, task ffff8=
+808eb9ba600)
+> >>>  Stack:
+> >>>   ffffffff811b8aaa 0000000000004000 ffff880943fea480 ffff8808ef2bae50
+> >>>   ffff880943d32980 fffffffffffffffb ffff8808ef2bae40 ffff88094165ff50
+> >>>   0000000000004000 000000000056ebe0 ffffffff811ad847 000000000056ebe0
+> >>>  Call Trace:
+> >>>   [<ffffffff811b8aaa>] read_kcore+0x17a/0x370
+> >>>   [<ffffffff811ad847>] proc_reg_read+0x77/0xc0
+> >>>   [<ffffffff81151687>] vfs_read+0xc7/0x130
+> >>>   [<ffffffff811517f3>] sys_read+0x53/0xa0
+> >>>   [<ffffffff81449692>] system_call_fastpath+0x16/0x1b
+> >>>
+> >>>Investigation determined that the bug triggered when reading system RAM
+> >>>at the 4G mark. On this system, that was the first address using 1G pa=
+ges
+> >>Do you mean there is one page which is 1G?
+> >>
+> >1GB support in native kernel is started from 2.6.27 with these 2 commits:
+>=20
+> Why call kernel native? Which kend of kernel is not native?
+relative to VMM like Xen.
 
-2013/2/28 Brian Norris <computersforpeace@gmail.com>:
-> + Richard
->
-> On Thu, Feb 28, 2013 at 4:30 AM, Velykokhatko, Sergey 
-> <Sergey.Velykokhatko@mcc-med.de> wrote:
->> I got today such case:
->>
->>       * Kernel 3.8
->>
->>       * We are using M29F2G16 NAND chip with 4096 blocks, each has 
->> 128k
->>
->>       * Configured with CONFIG_MTD_UBI_BEB_LIMIT=100
->
-> This is your problem. See below for more comments.
->
->>       * Our rootfs partition contains 640 EBs
->>
->>       * At system start comes following error message:
->>
->> Feb 28 09:23:09 (none) kern.notice kernel: [    0.375000] Creating 6 MTD
->> partitions on "atmel_nand":
->>
->> Feb 28 09:23:09 (none) kern.notice kernel: [    0.375000]
->> 0x000000000000-0x000000020000 : "obsolete_bootstrap"
->>
->> Feb 28 09:23:09 (none) kern.notice kernel: [    0.381000]
->> 0x000000020000-0x000000320000 : "kernel_a"
->>
->> Feb 28 09:23:09 (none) kern.notice kernel: [    0.386000]
->> 0x000000320000-0x000000620000 : "kernel_b"
->>
->> Feb 28 09:23:09 (none) kern.notice kernel: [    0.392000]
->> 0x000000620000-0x000005620000 : "rootfs_a"
->>
->> Feb 28 09:23:09 (none) kern.notice kernel: [    0.399000]
->> 0x000005620000-0x00000a620000 : "rootfs_b"
->>
->> Feb 28 09:23:09 (none) kern.notice kernel: [    0.406000]
->> 0x00000a620000-0x000020000000 : "config_data"
->>
->> ...
->>
->>
->>
->> Feb 28 09:23:10 (none) kern.info kernel: [    0.546000] NET: Registered
->> protocol family 17
->>
->> Feb 28 09:23:10 (none) kern.notice kernel: [    0.557000] UBI: attaching
->> mtd3 to ubi0
->>
->> Feb 28 09:23:10 (none) kern.info kernel: [    0.748000] usb 1-2: new
->> high-speed USB device number 2 using atmel-ehci
->>
->> Feb 28 09:23:10 (none) kern.notice kernel: [    0.810000] UBI: scanning is
->> finished
->>
->> Feb 28 09:23:10 (none) kern.warn kernel: [    0.821000] UBI warning:
->> print_rsvd_warning: cannot reserve enough PEBs for bad PEB handling, 
->> reserved 115, need 400
->>
->> Feb 28 09:23:10 (none) kern.notice kernel: [    0.826000] UBI: attached mtd3
->> (name "rootfs_a", size 80 MiB) to ubi0
->>
->> Feb 28 09:23:10 (none) kern.notice kernel: [    0.826000] UBI: PEB size:
->> 131072 bytes (128 KiB), LEB size: 129024 bytes
->>
->> Feb 28 09:23:10 (none) kern.notice kernel: [    0.826000] UBI: min./max. I/O
->> unit sizes: 2048/2048, sub-page size 512
->>
->> Feb 28 09:23:10 (none) kern.notice kernel: [    0.826000] UBI: VID header
->> offset: 512 (aligned 512), data offset: 2048
->>
->> Feb 28 09:23:10 (none) kern.notice kernel: [    0.826000] UBI: good PEBs:
->> 640, bad PEBs: 0, corrupted PEBs: 0
->>
->> Feb 28 09:23:10 (none) kern.notice kernel: [    0.826000] UBI: user volume:
->> 1, internal volumes: 1, max. volumes count: 128
->>
->> Feb 28 09:23:10 (none) kern.notice kernel: [    0.826000] UBI: max/mean
->> erase counter: 399/202, WL threshold: 4096, image sequence number: 
->> 548304255
->>
->> Feb 28 09:23:10 (none) kern.notice kernel: [    0.826000] UBI: available
->> PEBs: 0, total reserved PEBs: 640, PEBs reserved for bad PEB 
->> handling: 115
->>
->> Feb 28 09:23:10 (none) kern.notice kernel: [    0.827000] UBI: background
->> thread "ubi_bgt0d" started, PID 288
->>
->> UBI wanted to reserve 400 blocks on MTD with 640. Hm... During 
->> debugging I found that mtd_get_device_size() gives the size of whole 
->> flash memory back
->> (4096 blocks * 128kB). I guess that I found small error. With micro 
->> patch the problem seems to be corrected for my case
->
-> Your patch is wrong, actually. mtd_get_device_size() should get "the 
-> size of the entire flash chip", so if mtd is a partition, you *want* 
-> to return the size of its 'master'.
->
-> In fact, everything is behaving as expected (by the designers; not by 
-> you). Because your BEB_LIMIT=100, you are reserving 100*size/1024 
-> (that is 9.8% of your total size, or 400 blocks) in *every* partition.
-> I don't see why you need that high of a limit, though. Check your NAND 
-> data sheet, but the limit defaults reasonably to 20 (or, about 2%).
-> That would reserve only 80 blocks on your system, and you would not 
-> see these warnings/errors, since you already have 115 blocks reserved.
-That's rigth !
-There's also some documentation on how the overhead is calculated here :
-http://www.linux-mtd.infradead.org/doc/ubi.html#L_overhead
-and some more explanations a little bellow, in the "Reserved blocks for bad block handling" section
+>=20
+> >39c11e6 and b4718e6. For Intel CPU, from Westmere it supports 1GB page.
+> >BTW, IBM System x3550 M3 is a Westmere based system.
+> Is it only used in hugetlbfs page?
 
->
-> You might want to read the comments in this commit:
->
-> commit ba4087e956d336488c6df9dfca65d1e70cf480f1
-> Author: Richard Genoud <richard.genoud@gmail.com>
-> Date:   Tue Jul 10 18:23:41 2012 +0200
->
->     UBI: use the whole MTD device size to get bad_peb_limit
->
-> It might be worth revisiting the conclusions of those arguments; it 
-> essentially limits your partitions to a certain minimum size. But as 
-> far as I can tell, the code works as documented.
->
-> Brian
+Yes by now.
 
+--pf9I7BMVVzbSWLtt
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
---
-for me, ck means con kolivas and not calvin klein... does it mean I'm a geek ?
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+iQIcBAEBAgAGBQJRMHZpAAoJEI01n1+kOSLHMWcP/RUoDZHPpbe2oAwoN07Z/2CB
+3hS/kCAOUriOt+76eouVQ2EsW5FGBHW7ojTihoO6znvAptPlMRkBIcGwjYH8HBN2
+P0Bio74FhdQThnfYv0jexrMQI2LHuagJJ3z1ILzOdHADq40tIyMbomN6a6DmaYD9
+ij1pVFKKKWUaGbl69oaX+MbPQd6xe/Y5GlhlQJId2JQxJCrxEP28QL5OkLC295OQ
+3vGAoRiG8RJ9HsfJJ2o0SREYTkwfEJyTYo8BPZ6e3VSIlqcILig5BxLCAJoz5c29
+pY/wc7kXCzrxBNUI1oxFqBN6Vst2PC0+tMjArLd/CNhcE/GNJ5SDTSvGy4ReGsHc
+xEWjnG79N1VWQ9m3/Jjf7vuwwR1b/j9CTDrqtL/yxqOTbF2BGCK/KEieyoCatDgB
+6GepsRXvZjtqmNrLPH4Tw3xUd+qsxVkJ4YhsxDNm/M77O4QplgE59fbAVlEOvZ8n
+KPQsoEQ9hNJ93DitaZ4R7hTX7m7Bi7k3Jul1Q1JUMQ6n2mkO3bU0jgSmG318iKwy
+LcifJj+jKIRGu2uO0pa1Ur0SR5FXjkYhxNRyZunWkCAkjB31R2/mwX+dRT4RmVDR
+PRavQvL9BLY0TKp/OhGZISaRrL+MbG6C9JpDaxxX3a4SjzBrAU2HxfYB86LnP8y+
+xPPUApjPDJ43OEEFt3oQ
+=1VVA
+-----END PGP SIGNATURE-----
+
+--pf9I7BMVVzbSWLtt--
