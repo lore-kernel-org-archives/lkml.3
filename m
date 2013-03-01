@@ -1,25 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752509Ab3CAIQx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 03:16:53 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:50226 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751308Ab3CAIQw (ORCPT
+	id S1752541Ab3CAIVr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 03:21:47 -0500
+Received: from mail-bk0-f47.google.com ([209.85.214.47]:61594 "EHLO
+	mail-bk0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752015Ab3CAIVq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 03:16:52 -0500
-Message-ID: <513063EB.9080009@huawei.com>
-Date: Fri, 1 Mar 2013 16:16:43 +0800
-From: Xishi Qiu <qiuxishi@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Fri, 1 Mar 2013 03:21:46 -0500
 MIME-Version: 1.0
-To: <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.74.196]
-X-CFilter-Loop: Reflected
+In-Reply-To: <51302792.6040408@linaro.org>
+References: <1362098606-26469-1-git-send-email-john.stultz@linaro.org>
+ <1362098606-26469-11-git-send-email-john.stultz@linaro.org>
+ <20130301020008.GB13367@kroah.com> <51302792.6040408@linaro.org>
+From: Erik Gilling <konkers@android.com>
+Date: Fri, 1 Mar 2013 00:21:24 -0800
+X-Google-Sender-Auth: ZLWZLT-vYCiIHq8Yjc8xawWcKQ4
+Message-ID: <CACSP8Sg=sTbJ_Yv=PdxvHQ--0_rTLN6XG3+0aFKzzHxMzVxKhw@mail.gmail.com>
+Subject: Re: [PATCH 10/30] staging: sync: Export sync API symbols
+To: John Stultz <john.stultz@linaro.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>, lkml <linux-kernel@vger.kernel.org>,
+        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>, Rob Clark <robclark@gmail.com>,
+        Sumit Semwal <sumit.semwal@linaro.org>,
+        dri-devel@lists.freedesktop.org,
+        Android Kernel Team <kernel-team@android.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-subscibe linux-kernel
+On Thu, Feb 28, 2013 at 7:59 PM, John Stultz <john.stultz@linaro.org> wrote:
+>>> +EXPORT_SYMBOL(sync_timeline_create);
+>>
+>> As these are now global, should they be a bit more "specific"?  "sync_"
+>> seems pretty broad.
+>
+>
+> Given its the sync driver, its most obvious choice, but I agree its likely
+> to collide with filesystem related or other sync_ named functions that don't
+> have a subsystem prefix.
+>
+> Any suggestions?
+>
+> The only good alternative I can think of is that in some private
+> conversations with DanielV, he referred to Android using "sync-points".
+>
+> Erik: Would syncpoint_ be an ok prefix? Or do you have other ideas?
 
+syncpoint would be semantically weird when you end up with struct
+syncpoint_pt.  I'm open to suggestions as long as it works with
+XXXX_pt, XXXX_timeline, and XXXX_fence.  I'll ask around the office
+and see if someone has a good idea.
+
+>> Also, EXPORT_SYMBOL_GPL() perhaps?
+>>
+>> And who is using these exports?
+>
+>
+> From some quick git grepping...
+
+As John pointed out, the exynos and msm display and code uses them.  I
+know nvidia is working on adding suport to their tegra tree.  My knee
+jerk reaction is to make the export as permissible as possible.  That
+being said, all of the ARM SoC vendors I've worked with have GPL
+kernel drivers even if their user space is closed.  I'll reach out to
+them and ask for their opinions.  Are there any issues with keeping
+them EXPORT_SYMBOL?
+
+Cheers,
+   Erik
