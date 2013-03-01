@@ -1,107 +1,217 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751816Ab3CAKZf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 05:25:35 -0500
-Received: from jablonecka.jablonka.cz ([91.219.244.36]:52062 "EHLO
-	jablonecka.jablonka.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750907Ab3CAKZd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 05:25:33 -0500
-X-Greylist: delayed 1475 seconds by postgrey-1.27 at vger.kernel.org; Fri, 01 Mar 2013 05:25:33 EST
-Date: Fri, 1 Mar 2013 11:00:52 +0100
-From: Vojtech Pavlik <vojtech@suse.cz>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: Jiri Kosina <jkosina@suse.cz>, David Howells <dhowells@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>, jwboyer@redhat.com,
-        pjones@redhat.com, vgoyal@redhat.com, keescook@chromium.org,
-        keyrings@linux-nfs.org, linux-kernel@vger.kernel.org,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Florian Weimer <fw@deneb.enyo.de>, Paolo Bonzini <pbonzini@redhat.com>
-Subject: Re: [GIT PULL] Load keys from signed PE binaries
-Message-ID: <20130301100052.GA20085@suse.cz>
-References: <30665.1361461678@warthog.procyon.org.uk>
- <alpine.LRH.2.00.1302282335500.2038@twin.jikos.cz>
- <20130228225115.GA12360@srcf.ucam.org>
+	id S1751656Ab3CAKae (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 05:30:34 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:53632 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750979Ab3CAKac (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Mar 2013 05:30:32 -0500
+Date: Fri, 1 Mar 2013 11:30:27 +0100
+From: Jan Kara <jack@suse.cz>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3] printk: Avoid softlockups in console_unlock()
+Message-ID: <20130301103027.GC26128@quack.suse.cz>
+References: <1361927819-1570-1-git-send-email-jack@suse.cz>
+ <20130227175945.GC3336@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130228225115.GA12360@srcf.ucam.org>
-X-Bounce-Cookie: It's a lemon tree, dear Watson!
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130227175945.GC3336@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 28, 2013 at 10:51:15PM +0000, Matthew Garrett wrote:
-> On Thu, Feb 28, 2013 at 11:48:06PM +0100, Jiri Kosina wrote:
-> 
-> > Let me formulate my point more clearly -- Microsoft very likely going to 
-> > sign hello world EFI PE binary, no matter the contents of .keylist 
-> > section, as they don't give a damn about this section, as it has zero 
-> > semantic value to them, right?
+  Hello Paul,
+
+On Wed 27-02-13 09:59:45, Paul E. McKenney wrote:
+> On Wed, Feb 27, 2013 at 02:16:59AM +0100, Jan Kara wrote:
+> > A CPU can be caught in console_unlock() for a long time (tens of seconds
+> > are reported by our customers) when other CPUs are using printk heavily
+> > and serial console makes printing slow. Despite serial console drivers
+> > are calling touch_nmi_watchdog() this triggers softlockup warnings
+> > because interrupts are effectively disabled for the whole time printing
+> > takes place. Thus IPIs cannot be processed and other CPUs get stuck
+> > spinning in calls like smp_call_function_many(). Also RCU eventually
+> > starts reporting lockups.
 > > 
-> > They sign the binary. By signing the binary, they are *NOT* establishing 
-> > cryptographic chain of trust to the key stored in .keylist, but your 
-> > patchset seems to imply so.
+> > In my artifical testing I also managed to trigger a situation when disk
+> > disappeared from the system apparently because commands to / from it
+> > could not be delivered for long enough. This is why just silencing
+> > watchdogs isn't a reliable solution to the problem.
+> > 
+> > One part of fixing the issue is changing vprintk_emit() to call
+> > console_unlock() with interrupts enabled (this isn't perfect as printk()
+> > itself can be called with interrupts disabled but it improves the
+> > situation in lots of cases). Another part is limiting the time we spend
+> > in console_unlock() printing loop to watchdog_thresh() / 4. Then we
+> > release console_sem and wait for watchdog_thresh() / 4 to give a chance
+> > to other printk() users to get the semaphore and start printing. If
+> > printk() was called with interrupts enabled, it also gives CPU a chance
+> > to process blocked interrupts. Then we recheck if there's still anything
+> > to print, try to grab console_sem again and if we succeed, we go on with
+> > printing.
 > 
-> Mr Evil Blackhat's binary is then a mechanism for circumventing the 
-> Windows trust mechanism, and as such his account is subject to 
-> termination and his binary can be added to dbx. 
+> If a CPU remains in your loop where you invoke rcu_cpu_stall_reset(),
+> there is no indication of the stall.  Now, I do understand why having
+> RCU add a CPU stall warning into the mix would be very bad, but it
+> would be good to have some sort of indication that there is stalling.
+> Perhaps a counter visible in sysfs?  Whatever it is, at least some way
+> of diagnosing the stall condition would be very good.
+  I see. If others (Andrew, ping?) are OK with the rest of the patch, I can
+extend it and add a counter of printk() breaks we had to make. That looks
+like a good idea.
 
-Why?
+								Honza
 
-Let's take a look on what would happen in this scenario:
-
-A PE binary, from Mr. Blackhat, doing nothing, in general, but
-containing a key in a section, was signed by MS on the grounds that the
-binary isn't harmful.
-
-By issuing the signature, MS is attesting that the binary is safe, but
-isn't saying anything about the data (key) embedded in it. It doesn't
-say the key comes from a trusted party. It just says "this isn't
-malware", and that's what their tools verify.
-
-Your shim loader (signed by MS) loads your Linux kernel.
-
-Your Linux kernel, then, based on the key-in-PE model decides to trust
-the key, although nobody really said it's to be trusted.
-
-Mr. Blackhat then can load his i_own_your_ring0.ko module signed by his
-key on your system, having obtained root access previously.
-
-You call Microsoft, telling them what Mr. Blackhat has done.
-
-They now can:
-
-a) Do what you want: Disable Mr. Blackhat's account and revoke the hash
-   of his binary.
-
-But also:
-
-b) Say, "oh well, we're sorry this kills your security model, but it's
-enough for us that you already fully booted Linux to worry about Windows
-security, this affects only your distribution and we don't care".
-
-c) Decide your security model is flawed, because you're abusing their
-signature process to mean something else from what they intended and
-revoke your shim hash instead.
-
-And I don't think you can rely on MS doing 'a'. Particularly when there
-will be a large number of key-in-PE binaries signed by them at that
-point, with them not being able to tell by any analysis which of them
-are evil and which not.
-
-I would even say b) is most likely.
-
-> We'd check the binary hash against dbx and refuse to load it on
-> systems that have received the update, and Mr Evil Blackhat would have
-> to find a new bunch of identity documents to create a new account to
-> repeat the process.
-
-Yes, from the point it gets blacklisted, it's fairly clear. You're
-forced to reboot, but under the Secure Boot model, you have to do that
-on any system that used code whose hash has been revoked.
-
+> > Signed-off-by: Jan Kara <jack@suse.cz>
+> > ---
+> >  include/linux/nmi.h |   18 ++++++++++++++++++
+> >  kernel/printk.c     |   44 ++++++++++++++++++++++++++++++++++++++------
+> >  2 files changed, 56 insertions(+), 6 deletions(-)
+> > 
+> > Andrew, I was playing with this problem some more and this patch is the least
+> > scary fix I found ;). It may slow down printing in heavy-printk cases though.
+> > What do you think?
+> > 
+> > diff --git a/include/linux/nmi.h b/include/linux/nmi.h
+> > index db50840..ce32959 100644
+> > --- a/include/linux/nmi.h
+> > +++ b/include/linux/nmi.h
+> > @@ -51,6 +51,24 @@ extern int watchdog_thresh;
+> >  struct ctl_table;
+> >  extern int proc_dowatchdog(struct ctl_table *, int ,
+> >  			   void __user *, size_t *, loff_t *);
+> > +/*
+> > + * Return the maximum number of nanosecond for which interrupts may be disabled
+> > + * on the current CPU
+> > + */
+> > +static inline u64 max_interrupt_disabled_duration(void)
+> > +{
+> > +	/*
+> > +	 * We give us some headroom because timers need time to fire before the
+> > +	 * watchdog period expires.
+> > +	 */
+> > +	return ((u64)watchdog_thresh) * NSEC_PER_SEC / 2;
+> > +}
+> > +#else
+> > +static inline u64 max_interrupt_disabled_duration(void)
+> > +{
+> > +	/* About the value we'd get with the default watchdog setting */
+> > +	return 5ULL * NSEC_PER_SEC;
+> > +}
+> >  #endif
+> > 
+> >  #endif
+> > diff --git a/kernel/printk.c b/kernel/printk.c
+> > index 0b31715..2f4d9a4 100644
+> > --- a/kernel/printk.c
+> > +++ b/kernel/printk.c
+> > @@ -1522,7 +1522,8 @@ asmlinkage int vprintk_emit(int facility, int level,
+> >  		 */
+> >  		if (!oops_in_progress && !lockdep_recursing(current)) {
+> >  			recursion_bug = 1;
+> > -			goto out_restore_irqs;
+> > +			local_irq_restore(flags);
+> > +			return printed_len;
+> >  		}
+> >  		zap_locks();
+> >  	}
+> > @@ -1616,17 +1617,19 @@ asmlinkage int vprintk_emit(int facility, int level,
+> >  	/*
+> >  	 * Try to acquire and then immediately release the console semaphore.
+> >  	 * The release will print out buffers and wake up /dev/kmsg and syslog()
+> > -	 * users.
+> > +	 * users. We call console_unlock() with interrupts enabled if possible
+> > +	 * since printing can take a long time.
+> >  	 *
+> >  	 * The console_trylock_for_printk() function will release 'logbuf_lock'
+> >  	 * regardless of whether it actually gets the console semaphore or not.
+> >  	 */
+> > -	if (console_trylock_for_printk(this_cpu))
+> > +	if (console_trylock_for_printk(this_cpu)) {
+> > +		local_irq_restore(flags);
+> >  		console_unlock();
+> > +	} else
+> > +		local_irq_restore(flags);
+> > 
+> >  	lockdep_on();
+> > -out_restore_irqs:
+> > -	local_irq_restore(flags);
+> > 
+> >  	return printed_len;
+> >  }
+> > @@ -2046,6 +2049,8 @@ void console_unlock(void)
+> >  	unsigned long flags;
+> >  	bool wake_klogd = false;
+> >  	bool retry;
+> > +	u64 end_time, now;
+> > +	int cur_cpu;
+> > 
+> >  	if (console_suspended) {
+> >  		up(&console_sem);
+> > @@ -2053,6 +2058,15 @@ void console_unlock(void)
+> >  	}
+> > 
+> >  	console_may_schedule = 0;
+> > +	preempt_disable();
+> > +	cur_cpu = smp_processor_id();
+> > +	/*
+> > +	 * We give us some headroom because we check the time only after
+> > +	 * printing the whole message
+> > +	 */
+> > +	end_time = cpu_clock(cur_cpu) + max_interrupt_disabled_duration() / 2;
+> > +	preempt_enable();
+> > +
+> > 
+> >  	/* flush buffered message fragment immediately to console */
+> >  	console_cont_flush(text, sizeof(text));
+> > @@ -2075,7 +2089,8 @@ again:
+> >  			console_prev = 0;
+> >  		}
+> >  skip:
+> > -		if (console_seq == log_next_seq)
+> > +		now = sched_clock_cpu(cur_cpu);
+> > +		if (console_seq == log_next_seq || now > end_time)
+> >  			break;
+> > 
+> >  		msg = log_from_idx(console_idx);
+> > @@ -2121,6 +2136,23 @@ skip:
+> >  	up(&console_sem);
+> > 
+> >  	/*
+> > +	 * If the printing took too long, wait a bit to give other CPUs a
+> > +	 * chance to take console_sem or at least provide some time for
+> > +	 * interrupts to be processed (if we are lucky enough and they are
+> > +	 * enabled at this point).
+> > +	 */
+> > +	if (now > end_time) {
+> > +		/*
+> > +		 * We won't reach RCU quiescent state anytime soon, silence
+> > +		 * the warnings.
+> > +		 */
+> > +		local_irq_save(flags);
+> > +		rcu_cpu_stall_reset();
+> > +		local_irq_restore(flags);
+> > +		ndelay(max_interrupt_disabled_duration() / 2);
+> > +	}
+> > +
+> > +	/*
+> >  	 * Someone could have filled up the buffer again, so re-check if there's
+> >  	 * something to flush. In case we cannot trylock the console_sem again,
+> >  	 * there's a new owner and the console_unlock() from them will do the
+> > -- 
+> > 1.7.1
+> > 
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
+> > 
+> 
 -- 
-Vojtech Pavlik
-Director SuSE Labs
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
