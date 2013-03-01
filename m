@@ -1,114 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752499Ab3CAIhB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 03:37:01 -0500
-Received: from mout.gmx.net ([212.227.17.20]:54518 "EHLO mout.gmx.net"
+	id S1752568Ab3CAIjH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 03:39:07 -0500
+Received: from mga14.intel.com ([143.182.124.37]:20889 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752200Ab3CAIg7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 03:36:59 -0500
-X-Authenticated: #28250155
-X-Provags-ID: V01U2FsdGVkX18dBs1vEQAdtjQlw7cLoXyM/602SMXVycWqMHb3nP
-	JyswJWB//Ywedb
-From: Sven Joachim <svenjoac@gmx.de>
-To: justin <jlec@gentoo.org>
-Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] kconfig: use config scripts to detect ncurses libs
-References: <jlec@gentoo.org>
-	<1362045557-9123-1-git-send-email-jlec@gentoo.org>
-	<874ngwhzuy.fsf@turtle.gmx.de> <51305AC4.2030008@gentoo.org>
-Date: Fri, 01 Mar 2013 09:36:53 +0100
-In-Reply-To: <51305AC4.2030008@gentoo.org> (justin's message of "Fri, 01 Mar
-	2013 08:37:40 +0100")
-Message-ID: <87obf35xei.fsf@turtle.gmx.de>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2.93 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Y-GMX-Trusted: 0
+	id S1751346Ab3CAIjF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Mar 2013 03:39:05 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,760,1355126400"; 
+   d="scan'208";a="207668105"
+Subject: [PATCH] Notify and correct preempt count if irq/x86 handler change
+ it
+From: channing <chao.bi@intel.com>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Cc: linux-kernel@vger.kernel.org, liu chuansheng <chuansheng.liu@intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 01 Mar 2013 16:57:58 +0800
+Message-ID: <1362128278.31563.22.camel@bichao>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013-03-01 08:37 +0100, justin wrote:
 
-> On 28/02/13 22:50, Sven Joachim wrote:
->> On 2013-02-28 10:59 +0100, jlec@gentoo.org wrote:
->> 
->>> Ncurses provides a config script (ncurses5-config) to assist finding ncurses.
->>> This patch makes use of it to detect the necessary libs for linking of the
->>> ncurses nconfig dialog.
->> 
->> That script is not necessarily called ncurses5-config, it might also be
->> called ncurses6-config is ncurses is configured for a different ABI
->> (--enable-ext-colors, --enable-ext-mouse).  Although I would suspect
->> that any distribution who does that provides a compatibility symlink.
->>
->
-> We don't do that, but I rechecked with building ncurses manually. You
-> are right. How widely spread is the usage of this options? Or is it
-> rather an experimental option?
+On x86 platform, irq handler might runs in hardirq stack per cpu,
+or kernel stack, it's possible that any irq handler modify
+preempt count by mistake, and it would bring badly impact in below
+3 scenarios:
 
-Pretty much, since it changes the ABI and everyone wants to be
-compatible with the existing ncurses ABI.
+1) irq interrupt a process in user mode, then irq handler will be
+carry out in kernel stack, if handler changed preempt count, it will
+impact the blocked process;
 
-> What we could do is simple extending the syntax to additionally check
-> for the ABI version 6 config scripts. Is this an option to consider?
+2) irq A's handler is executing on irq stack, it changes preempt
+count and set IF EFLAG to enable local interrupt, then irq B is
+coming and nest in hard irq stack, whose preempt count was fault
+modified by irq A handler, then irq B's handler may hit preempt
+count related issues.
 
-Probably.
+3) irq handler changes preempt count's NMI bit by mistake, NMI may
+come at this point and executed in hard irq stack or kernel stack,
+and it would find that it's inside NMI context, and report a BUG().
 
->>>  scripts/kconfig/Makefile | 4 +++-
->>>  1 file changed, 3 insertions(+), 1 deletion(-)
->>>
->>> diff --git a/scripts/kconfig/Makefile b/scripts/kconfig/Makefile
->>> index 3091794..c372976 100644
->>> --- a/scripts/kconfig/Makefile
->>> +++ b/scripts/kconfig/Makefile
->>> @@ -216,7 +216,9 @@ HOSTCFLAGS_gconf.o	= `pkg-config --cflags gtk+-2.0 gmodule-2.0 libglade-2.0` \
->>>  
->>>  HOSTLOADLIBES_mconf   = $(shell $(CONFIG_SHELL) $(check-lxdialog) -ldflags $(HOSTCC))
->>>  
->>> -HOSTLOADLIBES_nconf	= -lmenu -lpanel -lncurses
->>> +HOSTLOADLIBES_nconf	= -lmenu -lpanel
->>> +HOSTLOADLIBES_nconf	+= $(shell    ncursesw5-config --libs 2>/dev/null \
->>> +				   || ncurses5-config --libs 2>/dev/null  )
->> 
->> This will link with ncursesw, not ncurses.  Probably not what you want,
->> since nconf.h does not #include the right headers for that.
->> 
->
-> That's true, and again it would change two things at once. I will go
-> back to simple -lncurses as it was before.
->
->> On Debian/Ubuntu, there's also the problem that ncursesw5-config exists
->> even if the libncursesw5-dev package is not installed, so this patch
->> makes the build fail in such cases.
->
-> Will be solved when reverting as described above. But actually it smells
-> like a bug in the package management, doesn't it? Why are build time
-> config scripts shipped in runtime only packages? What is their purpose?
+This patch is to print out a notification when hardirq handler
+change preempt count, it would helpful to faster debuger to find
+misbehavior irq handler; On the other hand, when above case happen,
+set back current preempt count to its previous value, to avoid
+impacting on blocked process or other irq handler.
 
-Historically it seems to be an accident, and the ncurses{w,5}-config
-scripts should have better been shipped in their development packages.
-But nowadays we want to make the development packages multiarch-aware,
-and since the scripts differ on architectures, moving them away from
-ncurses-bin would mean adding two additional binary packages just for
-these scripts.
+Signed-off-by: channing <chao.bi@intel.com>
+Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
+---
+ arch/x86/kernel/irq_32.c |   15 +++++++++++++++
+ 1 files changed, 15 insertions(+), 0 deletions(-)
 
-See http://bugs.debian.org/480437 for a discussion on that topic.
+diff --git a/arch/x86/kernel/irq_32.c b/arch/x86/kernel/irq_32.c
+index 344faf8..c92ab44 100644
+--- a/arch/x86/kernel/irq_32.c
++++ b/arch/x86/kernel/irq_32.c
+@@ -82,6 +82,7 @@ execute_on_irq_stack(int overflow, struct irq_desc *desc, int irq)
+ {
+ 	union irq_ctx *curctx, *irqctx;
+ 	u32 *isp, arg1, arg2;
++	int prev_count;
+ 
+ 	curctx = (union irq_ctx *) current_thread_info();
+ 	irqctx = __this_cpu_read(hardirq_ctx);
+@@ -102,6 +103,7 @@ execute_on_irq_stack(int overflow, struct irq_desc *desc, int irq)
+ 
+ 	/* Copy the preempt_count so that the [soft]irq checks work. */
+ 	irqctx->tinfo.preempt_count = curctx->tinfo.preempt_count;
++	prev_count = irqctx->tinfo.preempt_count;
+ 
+ 	if (unlikely(overflow))
+ 		call_on_stack(print_stack_overflow, isp);
+@@ -113,6 +115,12 @@ execute_on_irq_stack(int overflow, struct irq_desc *desc, int irq)
+ 		     :  "0" (irq),   "1" (desc),  "2" (isp),
+ 			"D" (desc->handle_irq)
+ 		     : "memory", "cc", "ecx");
++
++	if (unlikely(prev_count != irqctx->tinfo.preempt_count)) {
++		pr_err("huh, enterd irq %u handler with preempt_count %08x,exited with %08x?\n"
++			, irq, prev_count, irqctx->tinfo.preempt_count);
++		irqctx->tinfo.preempt_count = prev_count;
++	}
+ 	return 1;
+ }
+ 
+@@ -184,6 +192,7 @@ bool handle_irq(unsigned irq, struct pt_regs *regs)
+ {
+ 	struct irq_desc *desc;
+ 	int overflow;
++	int prev_count;
+ 
+ 	overflow = check_stack_overflow();
+ 
+@@ -194,7 +203,13 @@ bool handle_irq(unsigned irq, struct pt_regs *regs)
+ 	if (user_mode_vm(regs) || !execute_on_irq_stack(overflow, desc, irq)) {
+ 		if (unlikely(overflow))
+ 			print_stack_overflow();
++		prev_count = preempt_count();
+ 		desc->handle_irq(irq, desc);
++		if (unlikely(prev_count != preempt_count())) {
++			pr_err("huh, enterd irq %u handler with preempt_count %08x,exited with %08x?\n"
++				, irq, prev_count, preempt_count());
++			preempt_count() = prev_count;
++		}
+ 	}
+ 
+ 	return true;
+-- 
+1.7.1
 
->> Can we just call ncurses5-config and not ncursesw5-config, or are there
->> any distros who ship the latter and not the former?
->> 
->
-> I can't talk about distro wide situation, but manual building gives only
-> one of the two. So there might be a situation where only one of the two
-> is present.
->
-> It seems we have a little dilemma here. Any suggestions how to solve it?
 
-Well, at least until nconf does not make any effort to explicitly detect
-and use the wide API, trying ncurses5-config first should work.  If you
-build ncurses yourself with --enable-widec, there is no -lmenu or -lpanel
-anyway, these libraries are called menuw and panelw then.
 
-Cheers,
-       Sven
