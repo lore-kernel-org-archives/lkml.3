@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755183Ab3CAUOh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 15:14:37 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51533 "EHLO
+	id S1755067Ab3CAUOg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 15:14:36 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51539 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752978Ab3CATpl (ORCPT
+	with ESMTP id S1752938Ab3CATpm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 14:45:41 -0500
+	Fri, 1 Mar 2013 14:45:42 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [ 35/77] xen-blkfront: drop the use of llist_for_each_entry_safe
-Date: Fri,  1 Mar 2013 11:44:20 -0800
-Message-Id: <20130301194355.680090301@linuxfoundation.org>
+        Li Zefan <lizefan@huawei.com>, Tejun Heo <tj@kernel.org>
+Subject: [ 63/77] cgroup: fix exit() vs rmdir() race
+Date: Fri,  1 Mar 2013 11:44:48 -0800
+Message-Id: <20130301194358.650244539@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130301194351.913471337@linuxfoundation.org>
 References: <20130301194351.913471337@linuxfoundation.org>
@@ -26,141 +26,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+From: Li Zefan <lizefan@huawei.com>
 
-commit f84adf4921ae3115502f44ff467b04bf2f88cf04 upstream.
+commit 71b5707e119653039e6e95213f00479668c79b75 upstream.
 
-Replace llist_for_each_entry_safe with a while loop.
+In cgroup_exit() put_css_set_taskexit() is called without any lock,
+which might lead to accessing a freed cgroup:
 
-llist_for_each_entry_safe can trigger a bug in GCC 4.1, so it's best
-to remove it and use a while loop and do the deletion manually.
+thread1                           thread2
+---------------------------------------------
+exit()
+  cgroup_exit()
+    put_css_set_taskexit()
+      atomic_dec(cgrp->count);
+                                   rmdir();
+      /* not safe !! */
+      check_for_release(cgrp);
 
-Specifically this bug can be triggered by hot-unplugging a disk, either
-by doing xm block-detach or by save/restore cycle.
+rcu_read_lock() can be used to make sure the cgroup is alive.
 
-BUG: unable to handle kernel paging request at fffffffffffffff0
-IP: [<ffffffffa0047223>] blkif_free+0x63/0x130 [xen_blkfront]
-The crash call trace is:
-	...
-bad_area_nosemaphore+0x13/0x20
-do_page_fault+0x25e/0x4b0
-page_fault+0x25/0x30
-? blkif_free+0x63/0x130 [xen_blkfront]
-blkfront_resume+0x46/0xa0 [xen_blkfront]
-xenbus_dev_resume+0x6c/0x140
-pm_op+0x192/0x1b0
-device_resume+0x82/0x1e0
-dpm_resume+0xc9/0x1a0
-dpm_resume_end+0x15/0x30
-do_suspend+0x117/0x1e0
-
-When drilling down to the assembler code, on newer GCC it does
-.L29:
-        cmpq    $-16, %r12      #, persistent_gnt check
-        je      .L30    	#, out of the loop
-.L25:
-	... code in the loop
-        testq   %r13, %r13      # n
-        je      .L29    	#, back to the top of the loop
-        cmpq    $-16, %r12      #, persistent_gnt check
-        movq    16(%r12), %r13  # <variable>.node.next, n
-        jne     .L25    	#,	back to the top of the loop
-.L30:
-
-While on GCC 4.1, it is:
-L78:
-	... code in the loop
-	testq   %r13, %r13      # n
-        je      .L78    #,	back to the top of the loop
-        movq    16(%rbx), %r13  # <variable>.node.next, n
-        jmp     .L78    #,	back to the top of the loop
-
-Which basically means that the exit loop condition instead of
-being:
-
-	&(pos)->member != NULL;
-
-is:
-	;
-
-which makes the loop unbound.
-
-Since xen-blkfront is the only user of the llist_for_each_entry_safe
-macro remove it from llist.h.
-
-Orabug: 16263164
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: Li Zefan <lizefan@huawei.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/block/xen-blkfront.c |   13 ++++++++++---
- include/linux/llist.h        |   25 -------------------------
- 2 files changed, 10 insertions(+), 28 deletions(-)
+ kernel/cgroup.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/drivers/block/xen-blkfront.c
-+++ b/drivers/block/xen-blkfront.c
-@@ -791,7 +791,7 @@ static void blkif_restart_queue(struct w
- static void blkif_free(struct blkfront_info *info, int suspend)
- {
- 	struct llist_node *all_gnts;
--	struct grant *persistent_gnt;
-+	struct grant *persistent_gnt, *tmp;
- 	struct llist_node *n;
- 
- 	/* Prevent new requests being issued until we fix things up. */
-@@ -805,10 +805,17 @@ static void blkif_free(struct blkfront_i
- 	/* Remove all persistent grants */
- 	if (info->persistent_gnts_c) {
- 		all_gnts = llist_del_all(&info->persistent_gnts);
--		llist_for_each_entry_safe(persistent_gnt, n, all_gnts, node) {
-+		persistent_gnt = llist_entry(all_gnts, typeof(*(persistent_gnt)), node);
-+		while (persistent_gnt) {
- 			gnttab_end_foreign_access(persistent_gnt->gref, 0, 0UL);
- 			__free_page(pfn_to_page(persistent_gnt->pfn));
--			kfree(persistent_gnt);
-+			tmp = persistent_gnt;
-+			n = persistent_gnt->node.next;
-+			if (n)
-+				persistent_gnt = llist_entry(n, typeof(*(persistent_gnt)), node);
-+			else
-+				persistent_gnt = NULL;
-+			kfree(tmp);
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -426,12 +426,20 @@ static void __put_css_set(struct css_set
+ 		struct cgroup *cgrp = link->cgrp;
+ 		list_del(&link->cg_link_list);
+ 		list_del(&link->cgrp_link_list);
++
++		/*
++		 * We may not be holding cgroup_mutex, and if cgrp->count is
++		 * dropped to 0 the cgroup can be destroyed at any time, hence
++		 * rcu_read_lock is used to keep it alive.
++		 */
++		rcu_read_lock();
+ 		if (atomic_dec_and_test(&cgrp->count) &&
+ 		    notify_on_release(cgrp)) {
+ 			if (taskexit)
+ 				set_bit(CGRP_RELEASABLE, &cgrp->flags);
+ 			check_for_release(cgrp);
  		}
- 		info->persistent_gnts_c = 0;
- 	}
---- a/include/linux/llist.h
-+++ b/include/linux/llist.h
-@@ -125,31 +125,6 @@ static inline void init_llist_head(struc
- 	     (pos) = llist_entry((pos)->member.next, typeof(*(pos)), member))
++		rcu_read_unlock();
  
- /**
-- * llist_for_each_entry_safe - iterate safely against remove over some entries
-- * of lock-less list of given type.
-- * @pos:	the type * to use as a loop cursor.
-- * @n:		another type * to use as a temporary storage.
-- * @node:	the fist entry of deleted list entries.
-- * @member:	the name of the llist_node with the struct.
-- *
-- * In general, some entries of the lock-less list can be traversed
-- * safely only after being removed from list, so start with an entry
-- * instead of list head. This variant allows removal of entries
-- * as we iterate.
-- *
-- * If being used on entries deleted from lock-less list directly, the
-- * traverse order is from the newest to the oldest added entry.  If
-- * you want to traverse from the oldest to the newest, you must
-- * reverse the order by yourself before traversing.
-- */
--#define llist_for_each_entry_safe(pos, n, node, member)		\
--	for ((pos) = llist_entry((node), typeof(*(pos)), member),	\
--	     (n) = (pos)->member.next;					\
--	     &(pos)->member != NULL;					\
--	     (pos) = llist_entry(n, typeof(*(pos)), member),		\
--	     (n) = (&(pos)->member != NULL) ? (pos)->member.next : NULL)
--
--/**
-  * llist_empty - tests whether a lock-less list is empty
-  * @head:	the list to test
-  *
+ 		kfree(link);
+ 	}
 
 
