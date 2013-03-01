@@ -1,154 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755065Ab3CAUGz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 15:06:55 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51660 "EHLO
+	id S1753508Ab3CATqB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 14:46:01 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51640 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753450Ab3CATqC (ORCPT
+	with ESMTP id S1753450Ab3CATp6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 14:46:02 -0500
+	Fri, 1 Mar 2013 14:45:58 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [ 05/46] ftrace: Call ftrace cleanup module notifier after all other notifiers
-Date: Fri,  1 Mar 2013 11:44:53 -0800
-Message-Id: <20130301194432.850664919@linuxfoundation.org>
+        Lingzhu Xiang <lxiang@redhat.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        Jeremy Kerr <jeremy.kerr@canonical.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Matt Fleming <matt.fleming@intel.com>
+Subject: [ 76/77] efivarfs: Validate filenames much more aggressively
+Date: Fri,  1 Mar 2013 11:45:01 -0800
+Message-Id: <20130301194400.001366675@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130301194432.263409302@linuxfoundation.org>
-References: <20130301194432.263409302@linuxfoundation.org>
+In-Reply-To: <20130301194351.913471337@linuxfoundation.org>
+References: <20130301194351.913471337@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+3.8-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+From: Matt Fleming <matt.fleming@intel.com>
 
-commit 8c189ea64eea01ca20d102ddb74d6936dd16c579 upstream.
+commit 47f531e8ba3bc3901a0c493f4252826c41dea1a1 upstream.
 
-Commit: c1bf08ac "ftrace: Be first to run code modification on modules"
+The only thing that efivarfs does to enforce a valid filename is
+ensure that the name isn't too short. We need to strongly sanitise any
+filenames, not least because variable creation is delayed until
+efivarfs_file_write(), which means we can't rely on the firmware to
+inform us of an invalid name, because if the file is never written to
+we'll never know it's invalid.
 
-changed ftrace module notifier's priority to INT_MAX in order to
-process the ftrace nops before anything else could touch them
-(namely kprobes). This was the correct thing to do.
+Perform a couple of steps before agreeing to create a new file,
 
-Unfortunately, the ftrace module notifier also contains the ftrace
-clean up code. As opposed to the set up code, this code should be
-run *after* all the module notifiers have run in case a module is doing
-correct clean-up and unregisters its ftrace hooks. Basically, ftrace
-needs to do clean up on module removal, as it needs to know about code
-being removed so that it doesn't try to modify that code. But after it
-removes the module from its records, if a ftrace user tries to remove
-a probe, that removal will fail due as the record of that code segment
-no longer exists.
+  * hex_to_bin() returns a value indicating whether or not it was able
+    to convert its arguments to a binary representation - we should
+    check it.
 
-Nothing really bad happens if the probe removal is called after ftrace
-did the clean up, but the ftrace removal function will return an error.
-Correct code (such as kprobes) will produce a WARN_ON() if it fails
-to remove the probe. As people get annoyed by frivolous warnings, it's
-best to do the ftrace clean up after everything else.
+  * Ensure that the GUID portion of the filename is the correct length
+    and format.
 
-By splitting the ftrace_module_notifier into two notifiers, one that
-does the module load setup that is run at high priority, and the other
-that is called for module clean up that is run at low priority, the
-problem is solved.
+  * The variable name portion of the filename needs to be at least one
+    character in size.
 
-Reported-by: Frank Ch. Eigler <fche@redhat.com>
-Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Reported-by: Lingzhu Xiang <lxiang@redhat.com>
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Jeremy Kerr <jeremy.kerr@canonical.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Matt Fleming <matt.fleming@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/trace/ftrace.c |   46 ++++++++++++++++++++++++++++++++--------------
- 1 file changed, 32 insertions(+), 14 deletions(-)
+ drivers/firmware/efivars.c |   49 ++++++++++++++++++++++++++++++++++++++++-----
+ 1 file changed, 44 insertions(+), 5 deletions(-)
 
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -3841,37 +3841,51 @@ static void ftrace_init_module(struct mo
- 	ftrace_process_locs(mod, start, end);
+--- a/drivers/firmware/efivars.c
++++ b/drivers/firmware/efivars.c
+@@ -79,6 +79,7 @@
+ #include <linux/device.h>
+ #include <linux/slab.h>
+ #include <linux/pstore.h>
++#include <linux/ctype.h>
+ 
+ #include <linux/fs.h>
+ #include <linux/ramfs.h>
+@@ -900,6 +901,48 @@ static struct inode *efivarfs_get_inode(
+ 	return inode;
  }
  
--static int ftrace_module_notify(struct notifier_block *self,
--				unsigned long val, void *data)
-+static int ftrace_module_notify_enter(struct notifier_block *self,
-+				      unsigned long val, void *data)
- {
- 	struct module *mod = data;
- 
--	switch (val) {
--	case MODULE_STATE_COMING:
-+	if (val == MODULE_STATE_COMING)
- 		ftrace_init_module(mod, mod->ftrace_callsites,
- 				   mod->ftrace_callsites +
- 				   mod->num_ftrace_callsites);
--		break;
--	case MODULE_STATE_GOING:
-+	return 0;
++/*
++ * Return true if 'str' is a valid efivarfs filename of the form,
++ *
++ *	VariableName-12345678-1234-1234-1234-1234567891bc
++ */
++static bool efivarfs_valid_name(const char *str, int len)
++{
++	static const char dashes[GUID_LEN] = {
++		[8] = 1, [13] = 1, [18] = 1, [23] = 1
++	};
++	const char *s = str + len - GUID_LEN;
++	int i;
++
++	/*
++	 * We need a GUID, plus at least one letter for the variable name,
++	 * plus the '-' separator
++	 */
++	if (len < GUID_LEN + 2)
++		return false;
++
++	/* GUID should be right after the first '-' */
++	if (s - 1 != strchr(str, '-'))
++		return false;
++
++	/*
++	 * Validate that 's' is of the correct format, e.g.
++	 *
++	 *	12345678-1234-1234-1234-123456789abc
++	 */
++	for (i = 0; i < GUID_LEN; i++) {
++		if (dashes[i]) {
++			if (*s++ != '-')
++				return false;
++		} else {
++			if (!isxdigit(*s++))
++				return false;
++		}
++	}
++
++	return true;
 +}
 +
-+static int ftrace_module_notify_exit(struct notifier_block *self,
-+				     unsigned long val, void *data)
-+{
-+	struct module *mod = data;
-+
-+	if (val == MODULE_STATE_GOING)
- 		ftrace_release_mod(mod);
--		break;
--	}
- 
- 	return 0;
- }
- #else
--static int ftrace_module_notify(struct notifier_block *self,
--				unsigned long val, void *data)
-+static int ftrace_module_notify_enter(struct notifier_block *self,
-+				      unsigned long val, void *data)
-+{
-+	return 0;
-+}
-+static int ftrace_module_notify_exit(struct notifier_block *self,
-+				     unsigned long val, void *data)
+ static void efivarfs_hex_to_guid(const char *str, efi_guid_t *guid)
  {
- 	return 0;
- }
- #endif /* CONFIG_MODULES */
+ 	guid->b[0] = hex_to_bin(str[6]) << 4 | hex_to_bin(str[7]);
+@@ -928,11 +971,7 @@ static int efivarfs_create(struct inode
+ 	struct efivar_entry *var;
+ 	int namelen, i = 0, err = 0;
  
--struct notifier_block ftrace_module_nb = {
--	.notifier_call = ftrace_module_notify,
-+struct notifier_block ftrace_module_enter_nb = {
-+	.notifier_call = ftrace_module_notify_enter,
- 	.priority = INT_MAX,	/* Run before anything that can use kprobes */
- };
+-	/*
+-	 * We need a GUID, plus at least one letter for the variable name,
+-	 * plus the '-' separator
+-	 */
+-	if (dentry->d_name.len < GUID_LEN + 2)
++	if (!efivarfs_valid_name(dentry->d_name.name, dentry->d_name.len))
+ 		return -EINVAL;
  
-+struct notifier_block ftrace_module_exit_nb = {
-+	.notifier_call = ftrace_module_notify_exit,
-+	.priority = INT_MIN,	/* Run after anything that can remove kprobes */
-+};
-+
- extern unsigned long __start_mcount_loc[];
- extern unsigned long __stop_mcount_loc[];
- 
-@@ -3903,9 +3917,13 @@ void __init ftrace_init(void)
- 				  __start_mcount_loc,
- 				  __stop_mcount_loc);
- 
--	ret = register_module_notifier(&ftrace_module_nb);
-+	ret = register_module_notifier(&ftrace_module_enter_nb);
-+	if (ret)
-+		pr_warning("Failed to register trace ftrace module enter notifier\n");
-+
-+	ret = register_module_notifier(&ftrace_module_exit_nb);
- 	if (ret)
--		pr_warning("Failed to register trace ftrace module notifier\n");
-+		pr_warning("Failed to register trace ftrace module exit notifier\n");
- 
- 	set_ftrace_early_filters();
- 
+ 	inode = efivarfs_get_inode(dir->i_sb, dir, mode, 0);
 
 
