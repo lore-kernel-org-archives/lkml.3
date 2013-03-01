@@ -1,27 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755429Ab3CAUYr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 15:24:47 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51328 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752132Ab3CATpM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752429Ab3CATpM (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 1 Mar 2013 14:45:12 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51300 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752132Ab3CATpH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Mar 2013 14:45:07 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Paul Zimmerman <paulz@synopsys.com>,
-        Pratyush Anand <pratyush.anand@st.com>, Felipe Balbi <balbi@ti.com>
-Subject: [ 11/77] usb: dwc3: Enable usb2 LPM only when connected as usb2.0
-Date: Fri,  1 Mar 2013 11:43:56 -0800
-Message-Id: <20130301194353.196158672@linuxfoundation.org>
+        David Henningsson <david.henningsson@canonical.com>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [ 03/77] ALSA: hda - hdmi: Make jacks phantom, if theyre not detectable
+Date: Fri,  1 Mar 2013 11:43:48 -0800
+Message-Id: <20130301194352.319556541@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130301194351.913471337@linuxfoundation.org>
 References: <20130301194351.913471337@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,72 +27,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Pratyush Anand <pratyush.anand@st.com>
+From: David Henningsson <david.henningsson@canonical.com>
 
-commit 2b758350af19db9a5c98241cf222c2e211d7a912 upstream.
+commit 30efd8debd1ef30be342d374f01e993509f5b76b upstream.
 
-Synopsys says:
-The HIRD Threshold field must be set to ‘0’ when the device core is
-operating in super speed mode.
+Just as for analog codecs, a jack that isn't suitable for detection
+(in this case, NO_PRESENCE was set) should be a phantom Jack
+instead of a normal one.
 
-This patch implements above statement.
+Thanks to Raymond Yau for spotting.
 
-Acked-by: Paul Zimmerman <paulz@synopsys.com>
-Signed-off-by: Pratyush Anand <pratyush.anand@st.com>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+BugLink: https://bugs.launchpad.net/bugs/961286
+BugLink: https://bugzilla.redhat.com/show_bug.cgi?id=903869
+Signed-off-by: David Henningsson <david.henningsson@canonical.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/dwc3/gadget.c |   31 ++++++++++++++++++-------------
- 1 file changed, 18 insertions(+), 13 deletions(-)
+ sound/pci/hda/patch_hdmi.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/usb/dwc3/gadget.c
-+++ b/drivers/usb/dwc3/gadget.c
-@@ -2157,6 +2157,23 @@ static void dwc3_gadget_conndone_interru
- 		break;
- 	}
+--- a/sound/pci/hda/patch_hdmi.c
++++ b/sound/pci/hda/patch_hdmi.c
+@@ -1573,6 +1573,9 @@ static int generic_hdmi_build_jack(struc
  
-+	/* Enable USB2 LPM Capability */
-+
-+	if ((dwc->revision > DWC3_REVISION_194A)
-+			&& (speed != DWC3_DCFG_SUPERSPEED)) {
-+		reg = dwc3_readl(dwc->regs, DWC3_DCFG);
-+		reg |= DWC3_DCFG_LPM_CAP;
-+		dwc3_writel(dwc->regs, DWC3_DCFG, reg);
-+
-+		reg = dwc3_readl(dwc->regs, DWC3_DCTL);
-+		reg &= ~(DWC3_DCTL_HIRD_THRES_MASK | DWC3_DCTL_L1_HIBER_EN);
-+
-+		/* TODO: This should be configurable */
-+		reg |= DWC3_DCTL_HIRD_THRES(28);
-+
-+		dwc3_writel(dwc->regs, DWC3_DCTL, reg);
-+	}
-+
- 	/* Recent versions support automatic phy suspend and don't need this */
- 	if (dwc->revision < DWC3_REVISION_194A) {
- 		/* Suspend unneeded PHY */
-@@ -2463,20 +2480,8 @@ int dwc3_gadget_init(struct dwc3 *dwc)
- 			DWC3_DEVTEN_DISCONNEVTEN);
- 	dwc3_writel(dwc->regs, DWC3_DEVTEN, reg);
+ 	if (pcmdev > 0)
+ 		sprintf(hdmi_str + strlen(hdmi_str), ",pcm=%d", pcmdev);
++	if (!is_jack_detectable(codec, per_pin->pin_nid))
++		strncat(hdmi_str, " Phantom",
++			sizeof(hdmi_str) - strlen(hdmi_str) - 1);
  
--	/* Enable USB2 LPM and automatic phy suspend only on recent versions */
-+	/* automatic phy suspend only on recent versions */
- 	if (dwc->revision >= DWC3_REVISION_194A) {
--		reg = dwc3_readl(dwc->regs, DWC3_DCFG);
--		reg |= DWC3_DCFG_LPM_CAP;
--		dwc3_writel(dwc->regs, DWC3_DCFG, reg);
--
--		reg = dwc3_readl(dwc->regs, DWC3_DCTL);
--		reg &= ~(DWC3_DCTL_HIRD_THRES_MASK | DWC3_DCTL_L1_HIBER_EN);
--
--		/* TODO: This should be configurable */
--		reg |= DWC3_DCTL_HIRD_THRES(28);
--
--		dwc3_writel(dwc->regs, DWC3_DCTL, reg);
--
- 		dwc3_gadget_usb2_phy_suspend(dwc, false);
- 		dwc3_gadget_usb3_phy_suspend(dwc, false);
- 	}
+ 	return snd_hda_jack_add_kctl(codec, per_pin->pin_nid, hdmi_str, 0);
+ }
 
 
