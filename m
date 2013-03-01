@@ -1,64 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754695Ab3CAUBd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 15:01:33 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51798 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753654Ab3CATqQ (ORCPT
+	id S1754929Ab3CAUBk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 15:01:40 -0500
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:44926 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754691Ab3CAUBg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 14:46:16 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Xi Wang <xi.wang@gmail.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 21/46] sysctl: fix null checking in bin_dn_node_address()
-Date: Fri,  1 Mar 2013 11:45:09 -0800
-Message-Id: <20130301194434.479738435@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130301194432.263409302@linuxfoundation.org>
-References: <20130301194432.263409302@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	Fri, 1 Mar 2013 15:01:36 -0500
+Message-ID: <51310899.1090308@linux.vnet.ibm.com>
+Date: Sat, 02 Mar 2013 01:29:21 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: Lai Jiangshan <eag0628@gmail.com>, Michel Lespinasse <walken@google.com>,
+        linux-doc@vger.kernel.org, peterz@infradead.org, fweisbec@gmail.com,
+        linux-kernel@vger.kernel.org, namhyung@kernel.org, mingo@kernel.org,
+        linux-arch@vger.kernel.org, linux@arm.linux.org.uk,
+        xiaoguangrong@linux.vnet.ibm.com, wangyun@linux.vnet.ibm.com,
+        paulmck@linux.vnet.ibm.com, nikunj@linux.vnet.ibm.com,
+        linux-pm@vger.kernel.org, rusty@rustcorp.com.au, rostedt@goodmis.org,
+        rjw@sisk.pl, vincent.guittot@linaro.org, tglx@linutronix.de,
+        linux-arm-kernel@lists.infradead.org, netdev@vger.kernel.org,
+        oleg@redhat.com, sbw@mit.edu, akpm@linux-foundation.org,
+        linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH v6 04/46] percpu_rwlock: Implement the core design of
+ Per-CPU Reader-Writer Locks
+References: <CACvQF53bdh4_BxF0y1fnTVR+T2OmRc0jmWQYftsvx92-fg-Lug@mail.gmail.com> <512BBAD8.8010006@linux.vnet.ibm.com> <CACvQF51jCxk5jUqmhD=QBBtUsBkQWZzakacrKO4Gsk=w61rNwQ@mail.gmail.com> <512C7A38.8060906@linux.vnet.ibm.com> <CACvQF51RvhM8XNqu3-1OTQ=cZUZ=pAX+_zx0a29+W67N1X+BgQ@mail.gmail.com> <512CC509.1050000@linux.vnet.ibm.com> <CACvQF50UgiqPpDk3HCmV86zKSf6tPjqr0bZowfPEOJs0g0r0MQ@mail.gmail.com> <512D0D67.9010609@linux.vnet.ibm.com> <CACvQF53ph2ixdM-otzetjM5cR+2kcZj6sckOp3TnzzA_x-EZ8w@mail.gmail.com> <512E7879.20109@linux.vnet.ibm.com> <20130301181054.GD2481@mtj.dyndns.org>
+In-Reply-To: <20130301181054.GD2481@mtj.dyndns.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13030119-2000-0000-0000-00000B23492C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+Hi Tejun,
 
-------------------
+On 03/01/2013 11:40 PM, Tejun Heo wrote:
+> Hello, Srivatsa.
+> 
+> On Thu, Feb 28, 2013 at 02:49:53AM +0530, Srivatsa S. Bhat wrote:
+>> Don't get me wrong - I'll whole-heartedly acknowledge and appreciate if
+>> _your_ code is better than mine. I just don't like the idea of somebody
+>> plagiarizing my ideas/code (or even others' ideas for that matter).
+>> However, I sincerely apologize in advance if I misunderstood/misjudged your
+>> intentions; I just wanted to voice my concerns out loud at this point,
+>> considering the bad feeling I got by looking at your responses collectively.
+> 
+> Although I don't know Lai personally, from my experience working with
+> him past several months on workqueue, I strongly doubt he has dark
+> urterior intenions.  The biggest problem probably is that his
+> communication in English isn't very fluent yet and thus doesn't carry
+> the underlying intentions or tones very well and he tends to bombard
+> patches in quick succession without much explanation inbetween (during
+> 3.8 cycle, I was receiving several workqueue patchsets days apart
+> trying to solve the same problem with completely different approaches
+> way before the discussion on the previous postings reach any kind of
+> consensus).  A lot of that also probably comes from communication
+> problems.
+> 
+> Anyways, I really don't think he's trying to take claim of your work.
+> At least for now, you kinda need to speculate what he's trying to do
+> and then confirm that back to him, but once you get used to that part,
+> he's pretty nice to work with and I'm sure his communication will
+> improve in time (I think it has gotten a lot better than only some
+> months ago).
+>
 
-From: Xi Wang <xi.wang@gmail.com>
+Thank you so much for helping clear the air, Tejun! I'm truly sorry again
+for having drawn the wrong conclusions based on gaps in our communication.
+It was a mistake on my part and I would like to request Lai to kindly
+forgive me. I'm looking forward to working with Lai effectively, going
+forward.
 
-commit df1778be1a33edffa51d094eeda87c858ded6560 upstream.
+Thank you!
 
-The null check of `strchr() + 1' is broken, which is always non-null,
-leading to OOB read.  Instead, check the result of strchr().
-
-Signed-off-by: Xi Wang <xi.wang@gmail.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- kernel/sysctl_binary.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
---- a/kernel/sysctl_binary.c
-+++ b/kernel/sysctl_binary.c
-@@ -1194,9 +1194,10 @@ static ssize_t bin_dn_node_address(struc
- 
- 		/* Convert the decnet address to binary */
- 		result = -EIO;
--		nodep = strchr(buf, '.') + 1;
-+		nodep = strchr(buf, '.');
- 		if (!nodep)
- 			goto out;
-+		++nodep;
- 
- 		area = simple_strtoul(buf, NULL, 10);
- 		node = simple_strtoul(nodep, NULL, 10);
-
+Regards,
+Srivatsa S. Bhat
 
