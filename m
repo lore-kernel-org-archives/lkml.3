@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751944Ab3CAQJq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 11:09:46 -0500
-Received: from mail-qc0-f170.google.com ([209.85.216.170]:36322 "EHLO
-	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751697Ab3CAQJo (ORCPT
+	id S1751988Ab3CAQKO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 11:10:14 -0500
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:55577 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751346Ab3CAQJe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 11:09:44 -0500
+	Fri, 1 Mar 2013 11:09:34 -0500
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
@@ -17,9 +17,9 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Namhyung Kim <namhyung.kim@lge.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 5/5] context_tracking: Enable probes by default for selftesting
-Date: Fri,  1 Mar 2013 17:08:59 +0100
-Message-Id: <1362154139-1139-6-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 3/5] context_tracking: Restore preempted context state after preempt_schedule_irq()
+Date: Fri,  1 Mar 2013 17:08:57 +0100
+Message-Id: <1362154139-1139-4-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1362154139-1139-1-git-send-email-fweisbec@gmail.com>
 References: <1362154139-1139-1-git-send-email-fweisbec@gmail.com>
@@ -27,17 +27,19 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Until we provide the nohz_mask boot parameter, keeping
-the context tracking probes disabled by default is pointless
-since what we want is to runtime test this code anyway.
+>From the context tracking POV, preempt_schedule_irq() behaves pretty much
+like an exception: It can be called anytime and schedule another task.
 
-It's furthermore confusing for the users which don't expect
-the probes to be off when they select RCU user mode or full
-dynticks cputime accounting.
+But currently it doesn't restore the context tracking state of the preempted
+code on preempt_schedule_irq() return.
 
-Let's enable these probes selftests by default for now.
+As a result, if preempt_schedule_irq() is called in the tiny frame between
+user_enter() and the actual return to userspace, we resume userspace with
+the wrong context tracking state.
 
-Suggested: Steven Rostedt <rostedt@goodmis.org>
+Fix this by using exception_enter/exit() which are a perfect fit for this
+kind of issue.
+
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Li Zhong <zhong@linux.vnet.ibm.com>
 Cc: Kevin Hilman <khilman@linaro.org>
@@ -49,21 +51,37 @@ Cc: Namhyung Kim <namhyung.kim@lge.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 ---
- init/Kconfig |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ kernel/sched/core.c |    6 +++++-
+ 1 files changed, 5 insertions(+), 1 deletions(-)
 
-diff --git a/init/Kconfig b/init/Kconfig
-index 7000d96..55e376b 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -536,6 +536,7 @@ config RCU_USER_QS
- config CONTEXT_TRACKING_FORCE
- 	bool "Force context tracking"
- 	depends on CONTEXT_TRACKING
-+	default CONTEXT_TRACKING
- 	help
- 	  Probe on user/kernel boundaries by default in order to
- 	  test the features that rely on it such as userspace RCU extended
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index b7b03cd..db36e11 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -3074,11 +3074,13 @@ EXPORT_SYMBOL(preempt_schedule);
+ asmlinkage void __sched preempt_schedule_irq(void)
+ {
+ 	struct thread_info *ti = current_thread_info();
++	enum ctx_state prev_state;
+ 
+ 	/* Catch callers which need to be fixed */
+ 	BUG_ON(ti->preempt_count || !irqs_disabled());
+ 
+-	user_exit();
++	prev_state = exception_enter();
++
+ 	do {
+ 		add_preempt_count(PREEMPT_ACTIVE);
+ 		local_irq_enable();
+@@ -3092,6 +3094,8 @@ asmlinkage void __sched preempt_schedule_irq(void)
+ 		 */
+ 		barrier();
+ 	} while (need_resched());
++
++	exception_exit(prev_state);
+ }
+ 
+ #endif /* CONFIG_PREEMPT */
 -- 
 1.7.5.4
 
