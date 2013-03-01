@@ -1,71 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754844Ab3CAAao (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 19:30:44 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:50192 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753948Ab3CAAan (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 19:30:43 -0500
-Date: Thu, 28 Feb 2013 19:30:38 -0500
-From: Dave Jones <davej@redhat.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Cc: bfields@fieldses.org, linux-nfs@vger.kernel.org
-Subject: lockdep trace from nfsd
-Message-ID: <20130301003038.GA26533@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>, bfields@fieldses.org,
-	linux-nfs@vger.kernel.org
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755057Ab3CAAbP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 19:31:15 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41749 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754737Ab3CAAbN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Feb 2013 19:31:13 -0500
+Date: Thu, 28 Feb 2013 16:31:11 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Wolfram Sang <wsa@the-dreams.de>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [PATCH] shmem: fix build regression
+Message-Id: <20130228163111.5d61d391.akpm@linux-foundation.org>
+In-Reply-To: <1362093459-24608-1-git-send-email-wsa@the-dreams.de>
+References: <1362093459-24608-1-git-send-email-wsa@the-dreams.de>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[   39.878535] =====================================
-[   39.879670] [ BUG: rpc.nfsd/666 still has locks held! ]
-[   39.880871] 3.8.0+ #3 Not tainted
-[   39.881858] -------------------------------------
-[   39.882850] 2 locks on stack by rpc.nfsd/666:
-[   39.883868]  #0: held:     (nfsd_mutex){+.+.+.}, instance: ffffffffa01cf0b8, at: [<ffffffffa0193d57>] write_ports+0x37/0x7a0 [nfsd]
-[   39.884750]  #1: held:     (rpcb_create_local_mutex){+.+.+.}, instance: ffffffffa016d878, at: [<ffffffffa0153916>] rpcb_create_local+0x46/0x90 [sunrpc]
-[   39.885903] 
-stack backtrace:
-[   39.897044] Pid: 666, comm: rpc.nfsd Not tainted 3.8.0+ #3
-[   39.898186] Call Trace:
-[   39.900755]  [<ffffffff810b9c6a>] debug_check_no_locks_held+0x9a/0xa0
-[   39.901823]  [<ffffffffa0145965>] rpc_wait_bit_killable+0x85/0xb0 [sunrpc]
-[   39.902866]  [<ffffffff8161bf10>] __wait_on_bit+0x60/0x90
-[   39.903879]  [<ffffffffa0147860>] ? __rpc_execute+0x170/0x5a0 [sunrpc]
-[   39.904900]  [<ffffffffa01458e0>] ? __rpc_wait_for_completion_task+0x30/0x30 [sunrpc]
-[   39.905969]  [<ffffffff8161bfbc>] out_of_line_wait_on_bit+0x7c/0x90
-[   39.907010]  [<ffffffffa0147860>] ? __rpc_execute+0x170/0x5a0 [sunrpc]
-[   39.908070]  [<ffffffff81075f00>] ? autoremove_wake_function+0x50/0x50
-[   39.909124]  [<ffffffffa0139b50>] ? call_connect+0xa0/0xa0 [sunrpc]
-[   39.910154]  [<ffffffffa0147891>] __rpc_execute+0x1a1/0x5a0 [sunrpc]
-[   39.911176]  [<ffffffff81075e9e>] ? wake_up_bit+0x2e/0x40
-[   39.912058]  [<ffffffffa0147d49>] rpc_execute+0x59/0x180 [sunrpc]
-[   39.912745]  [<ffffffffa013da00>] rpc_run_task+0x70/0x90 [sunrpc]
-[   39.913446]  [<ffffffffa013db23>] rpc_call_sync+0x43/0xa0 [sunrpc]
-[   39.914280]  [<ffffffffa013dbd2>] rpc_ping+0x52/0x70 [sunrpc]
-[   39.914992]  [<ffffffffa013de08>] rpc_create+0x188/0x230 [sunrpc]
-[   39.915735]  [<ffffffff8100a4a9>] ? sched_clock+0x9/0x10
-[   39.916577]  [<ffffffff810b807e>] ? put_lock_stats.isra.25+0xe/0x40
-[   39.917635]  [<ffffffff810b871c>] ? lock_release_holdtime.part.26+0xcc/0x140
-[   39.918667]  [<ffffffffa015331c>] rpcb_create_local_unix+0x5c/0xe0 [sunrpc]
-[   39.919669]  [<ffffffffa0153948>] rpcb_create_local+0x78/0x90 [sunrpc]
-[   39.920705]  [<ffffffffa014a653>] svc_rpcb_setup+0x23/0x50 [sunrpc]
-[   39.921725]  [<ffffffffa014a6b4>] svc_bind+0x34/0x50 [sunrpc]
-[   39.921733]  [<ffffffffa01909ed>] nfsd_create_serv+0x1cd/0x320 [nfsd]
-[   39.921738]  [<ffffffffa0190825>] ? nfsd_create_serv+0x5/0x320 [nfsd]
-[   39.921742]  [<ffffffffa019424a>] write_ports+0x52a/0x7a0 [nfsd]
-[   39.921746]  [<ffffffffa0194138>] ? write_ports+0x418/0x7a0 [nfsd]
-[   39.921750]  [<ffffffff816203c5>] ? _raw_spin_unlock+0x35/0x60
-[   39.921754]  [<ffffffff811de09a>] ? simple_transaction_get+0xca/0xe0
-[   39.921759]  [<ffffffffa0193d20>] ? write_maxblksize+0x2e0/0x2e0 [nfsd]
-[   39.921764]  [<ffffffffa0192367>] nfsctl_transaction_write+0x57/0x90 [nfsd]
-[   39.921768]  [<ffffffff811b45ff>] vfs_write+0xaf/0x190
-[   39.921771]  [<ffffffff811b4955>] sys_write+0x55/0xa0
-[   39.921775]  [<ffffffff81628b99>] system_call_fastpath+0x16/0x1b
+On Fri,  1 Mar 2013 00:17:39 +0100
+Wolfram Sang <wsa@the-dreams.de> wrote:
+
+> commit 6b4d0b27 (clean shmem_file_setup() a bit) broke allnoconfig since
+> this needs the NOMMU path where 'error' is still needed:
+> 
+> mm/shmem.c:2935:2: error: 'error' undeclared (first use in this function)
+> 
+> Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+> Cc: Al Viro <viro@zeniv.linux.org.uk>
+> ---
+>  mm/shmem.c |    1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/mm/shmem.c b/mm/shmem.c
+> index ed2befb..56ff7d7 100644
+> --- a/mm/shmem.c
+> +++ b/mm/shmem.c
+> @@ -2897,6 +2897,7 @@ static struct dentry_operations anon_ops = {
+>   */
+>  struct file *shmem_file_setup(const char *name, loff_t size, unsigned long flags)
+>  {
+> +	int error;
+>  	struct file *res;
+>  	struct inode *inode;
+>  	struct path path;
+
+That will generate an unused-var warning on CONFIG_MMU=y.  We can
+avoid that by doing
+
++	{
++		int error;
+		...
++	}
+
+or by reusing an existing local.
+
+How's this?
+
+From: Andrew Morton <akpm@linux-foundation.org>
+Subject: shmem-fix-build-regression-fix
+
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Wolfram Sang <wsa@the-dreams.de>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+---
+
+ include/linux/ramfs.h |    8 +++++++-
+ mm/shmem.c            |   12 ++++--------
+ 2 files changed, 11 insertions(+), 9 deletions(-)
+
+diff -puN mm/shmem.c~shmem-fix-build-regression-fix mm/shmem.c
+--- a/mm/shmem.c~shmem-fix-build-regression-fix
++++ a/mm/shmem.c
+@@ -25,6 +25,7 @@
+ #include <linux/init.h>
+ #include <linux/vfs.h>
+ #include <linux/mount.h>
++#include <linux/ramfs.h>
+ #include <linux/pagemap.h>
+ #include <linux/file.h>
+ #include <linux/mm.h>
+@@ -2830,8 +2831,6 @@ out4:
+  * effectively equivalent, but much lighter weight.
+  */
+ 
+-#include <linux/ramfs.h>
+-
+ static struct file_system_type shmem_fs_type = {
+ 	.name		= "tmpfs",
+ 	.mount		= ramfs_mount,
+@@ -2897,7 +2896,6 @@ static struct dentry_operations anon_ops
+  */
+ struct file *shmem_file_setup(const char *name, loff_t size, unsigned long flags)
+ {
+-	int error;
+ 	struct file *res;
+ 	struct inode *inode;
+ 	struct path path;
+@@ -2932,12 +2930,10 @@ struct file *shmem_file_setup(const char
+ 	d_instantiate(path.dentry, inode);
+ 	inode->i_size = size;
+ 	clear_nlink(inode);	/* It is unlinked */
+-#ifndef CONFIG_MMU
+-	error = ramfs_nommu_expand_for_mapping(inode, size);
+-	res = ERR_PTR(error);
+-	if (error)
++
++	res = ERR_PTR(ramfs_nommu_expand_for_mapping(inode, size));
++	if (IS_ERR(res))
+ 		goto put_dentry;
+-#endif
+ 
+ 	res = alloc_file(&path, FMODE_WRITE | FMODE_READ,
+ 		  &shmem_file_operations);
+diff -puN include/linux/ramfs.h~shmem-fix-build-regression-fix include/linux/ramfs.h
+--- a/include/linux/ramfs.h~shmem-fix-build-regression-fix
++++ a/include/linux/ramfs.h
+@@ -6,7 +6,13 @@ struct inode *ramfs_get_inode(struct sup
+ extern struct dentry *ramfs_mount(struct file_system_type *fs_type,
+ 	 int flags, const char *dev_name, void *data);
+ 
+-#ifndef CONFIG_MMU
++#ifdef CONFIG_MMU
++static inline int
++ramfs_nommu_expand_for_mapping(struct inode *inode, size_t newsize)
++{
++	return 0;
++}
++#else
+ extern int ramfs_nommu_expand_for_mapping(struct inode *inode, size_t newsize);
+ extern unsigned long ramfs_nommu_get_unmapped_area(struct file *file,
+ 						   unsigned long addr,
+_
+
 
