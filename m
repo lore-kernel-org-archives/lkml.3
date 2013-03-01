@@ -1,110 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751060Ab3CAD7T (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 22:59:19 -0500
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:49558 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750698Ab3CAD7S (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 22:59:18 -0500
-Message-ID: <51302792.6040408@linaro.org>
-Date: Thu, 28 Feb 2013 19:59:14 -0800
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	id S1751202Ab3CAEA4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 23:00:56 -0500
+Received: from li9-11.members.linode.com ([67.18.176.11]:50691 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750696Ab3CAEAz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Feb 2013 23:00:55 -0500
+Date: Thu, 28 Feb 2013 23:00:39 -0500
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Dave Jones <davej@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        "gnehzuil.liu" <gnehzuil.liu@gmail.com>,
+        Zheng Liu <wenqing.lz@taobao.com>, Borislav Petkov <bp@alien8.de>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL URGENT] ext4 regression fix for 3.9
+Message-ID: <20130301040039.GA4452@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Dave Jones <davej@redhat.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Markus Trippelsdorf <markus@trippelsdorf.de>,
+	"gnehzuil.liu" <gnehzuil.liu@gmail.com>,
+	Zheng Liu <wenqing.lz@taobao.com>, Borislav Petkov <bp@alien8.de>,
+	"linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <20130227172256.GA236@x4>
+ <7BFB2135-A1F0-4B6D-9962-16E75E5560F8@gmail.com>
+ <20130227174553.GA224@x4>
+ <CA+55aFwWA1jPEEQNx_5oJ6Ze=3yFb6=E9nraBfX-Ve=WjRkQMw@mail.gmail.com>
+ <20130227184912.GA19624@thunk.org>
+ <20130227185625.GA224@x4>
+ <20130227191923.GA1121@redhat.com>
+ <20130227192907.GB14253@thunk.org>
+ <20130227201217.GD14253@thunk.org>
+ <20130301033005.GA7081@redhat.com>
 MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: lkml <linux-kernel@vger.kernel.org>, Erik Gilling <konkers@android.com>,
-        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>, Rob Clark <robclark@gmail.com>,
-        Sumit Semwal <sumit.semwal@linaro.org>,
-        dri-devel@lists.freedesktop.org,
-        Android Kernel Team <kernel-team@android.com>
-Subject: Re: [PATCH 10/30] staging: sync: Export sync API symbols
-References: <1362098606-26469-1-git-send-email-john.stultz@linaro.org> <1362098606-26469-11-git-send-email-john.stultz@linaro.org> <20130301020008.GB13367@kroah.com>
-In-Reply-To: <20130301020008.GB13367@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130301033005.GA7081@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/28/2013 06:00 PM, Greg KH wrote:
-> On Thu, Feb 28, 2013 at 04:43:06PM -0800, John Stultz wrote:
->> From: Erik Gilling <konkers@android.com>
->>
->> This is needed to allow modules to link against the sync subsystem
->>
->> Cc: Maarten Lankhorst <maarten.lankhorst@canonical.com>
->> Cc: Erik Gilling <konkers@android.com>
->> Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
->> Cc: Rob Clark <robclark@gmail.com>
->> Cc: Sumit Semwal <sumit.semwal@linaro.org>
->> Cc: Greg KH <gregkh@linuxfoundation.org>
->> Cc: dri-devel@lists.freedesktop.org
->> Cc: Android Kernel Team <kernel-team@android.com>
->> Signed-off-by: Erik Gilling <konkers@android.com>
->> Signed-off-by: John Stultz <john.stultz@linaro.org>
->> ---
->>   drivers/staging/android/sync.c |   14 ++++++++++++++
->>   1 file changed, 14 insertions(+)
->>
->> diff --git a/drivers/staging/android/sync.c b/drivers/staging/android/sync.c
->> index 54f84d9..6739a84 100644
->> --- a/drivers/staging/android/sync.c
->> +++ b/drivers/staging/android/sync.c
->> @@ -15,6 +15,7 @@
->>    */
->>   
->>   #include <linux/debugfs.h>
->> +#include <linux/export.h>
->>   #include <linux/file.h>
->>   #include <linux/fs.h>
->>   #include <linux/kernel.h>
->> @@ -64,6 +65,7 @@ struct sync_timeline *sync_timeline_create(const struct sync_timeline_ops *ops,
->>   
->>   	return obj;
->>   }
->> +EXPORT_SYMBOL(sync_timeline_create);
-> As these are now global, should they be a bit more "specific"?  "sync_"
-> seems pretty broad.
+On Thu, Feb 28, 2013 at 10:30:05PM -0500, Dave Jones wrote:
+> 
+> This has fixed the problem I reported, but I notice now that my
+> desktop is really sluggish. perf top shows it's almost constantly
+> spinning in ext4_es_reclaim_extents_count
+> 
+> Any ideas ?
 
-Given its the sync driver, its most obvious choice, but I agree its 
-likely to collide with filesystem related or other sync_ named functions 
-that don't have a subsystem prefix.
+ext4_es_reclaim_extents_count() is getting called out of the slab
+shrinker.  It's getting called too often when there is significant
+memory pressure.  We can optimize this so we're not calculating it all
+the time.
 
-Any suggestions?
-
-The only good alternative I can think of is that in some private 
-conversations with DanielV, he referred to Android using "sync-points".
-
-Erik: Would syncpoint_ be an ok prefix? Or do you have other ideas?
-
-> Also, EXPORT_SYMBOL_GPL() perhaps?
->
-> And who is using these exports?
-
- From some quick git grepping...
-
-In the android exynos tree:
-https://android.googlesource.com/kernel/exynos.git 
-android-exynos-manta-3.4-jb-mr1.1
-
-drivers/gpu/arm/t6xx/kbase/src/linux/mali_kbase_sync.c: tl = 
-sync_timeline_creat
-drivers/media/video/videobuf2-core.c:   q->timeline = 
-sw_sync_timeline_create(q-
-drivers/video/s3c-fb.c: sfb->timeline = sw_sync_timeline_create("s3c-fb");
-
-In the android msm tree:
-https://android.googlesource.com/kernel/msm.git 
-android-msm-mako-3.4-jb-mr1.1
-
-drivers/gpu/msm/kgsl_sync.c:    context->timeline = 
-sync_timeline_create(&kgsl_s
-drivers/video/msm/msm_fb.c:             mfd->timeline = 
-sw_sync_timeline_create(
-
-thanks
--john
-
-
+						- Ted
