@@ -1,73 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751442Ab3CAGAP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 01:00:15 -0500
-Received: from mail-da0-f50.google.com ([209.85.210.50]:59672 "EHLO
-	mail-da0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750884Ab3CAGAN (ORCPT
+	id S1751370Ab3CAGDs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 01:03:48 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:52384 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750717Ab3CAGDr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 01:00:13 -0500
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: linux-kernel@vger.kernel.org, linux-rt-users@vger.kernel.org
-Cc: Thomas Gleixner <tglx@linutronix.de>, Steven Rostedt <rostedt@goodmis.org>
-Subject: [V2 PATCH -rt] futex: fix unbalanced spin_lock/spin_unlock() in exit_pi_state_list()
-Date: Fri,  1 Mar 2013 14:00:03 +0800
-Message-Id: <1362117603-9480-1-git-send-email-yong.zhang0@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Fri, 1 Mar 2013 01:03:47 -0500
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <5130447F.4070706@jp.fujitsu.com>
+Date: Fri, 1 Mar 2013 15:02:39 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
+MIME-Version: 1.0
+To: Yinghai Lu <yinghai@kernel.org>
+CC: "H. Peter Anvin" <hpa@zytor.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Tang Chen <tangchen@cn.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Don Morris <don.morris@hp.com>,
+        Tim Gardner <tim.gardner@canonical.com>, Tejun Heo <tj@kernel.org>,
+        Tony Luck <tony.luck@intel.com>, Thomas Renninger <trenn@suse.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Jarkko Sakkinen <jarkko.sakkinen@intel.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Wen Congyang <wency@cn.fujitsu.com>, Lin Feng <linfeng@cn.fujitsu.com>,
+        "guz.fnst@cn.fujitsu.com" <guz.fnst@cn.fujitsu.com>,
+        Gui jianfeng <guijianfeng@cn.fujitsu.com>
+Subject: Re: sched: CPU #1's llc-sibling CPU #0 is not on the same node!
+References: <512B7D10.4060304@tpi.com> <512B8407.2090807@canonical.com> <512BD753.4080001@hp.com> <CAE9FiQVY4io_mO3PhTtE6FbGUgo1uZKKXO=pjx_FoZ1JuZmsAw@mail.gmail.com> <CAE9FiQXRZ2VjfG4L2d2zDQ3Sud=JqjS=M9=XW=ORS58_y7i4_g@mail.gmail.com> <CAE9FiQU-CV4mF8x=Bi_4pmpmeZW-tSoes_f-jOt7yYrbrppo+A@mail.gmail.com> <512D58C2.1090403@jp.fujitsu.com> <CAE9FiQV5APHSGXuz3NrsApC+V7rsDQMDXMNwZszZuUqQVaZSew@mail.gmail.com> <512D7FAD.1040003@jp.fujitsu.com> <CAE9FiQWxq-HPKK+XNRLggZSM4NcdfaeGDWCgd3HegEhaDSSTtA@mail.gmail.com> <512D8EDA.3010602@jp.fujitsu.com> <CAE9FiQWAxL6F70fF0dQcBZKTReJOiC+Ez0xcqcosgAdSagS-bA@mail.gmail.com> <512DBD24.7090302@cn.fujitsu.com> <20130227132612.14664a3a.akpm@linux-foundation.org> <CA+55aFz8Yx4=d=Lrmir0Vy0jhUBJMgfrJegDWsDByf28c0MuRQ@mail.gmail.com> <51302481.9070005@cn.fujitsu.com> <CA+55aFw_1wDHmu+wsfV5e0miHC20Guy=u_toG_VSnsqneryAHQ@mail.gmail.com> <513030AF.70208@zytor.com> <CAE9FiQXb7K=QTR4PgMdNSoPm2LgYkxAuXUUZ0BXtgicQOGOaUA@mail.gmail.com>
+In-Reply-To: <CAE9FiQXb7K=QTR4PgMdNSoPm2LgYkxAuXUUZ0BXtgicQOGOaUA@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Yong Zhang <yong.zhang@windriver.com>
+2013/03/01 14:00, Yinghai Lu wrote:
+> On Thursday, February 28, 2013, H. Peter Anvin wrote:
+>
+>> On 02/28/2013 08:32 PM, Linus Torvalds wrote:
+>>> Yingai, Andrew,
+>>>   is this ok with you two?
+>>>
+>>>          Linus
+>>
+>> FWIW, it makes sense to me iff it resolves the problems
+>
+>
+> I prefer to reverting all 8 patches.
+>
+> Actually I have worked out one patch that could solve all problems, but it
+> is too intrusive that I do      not want to split it to small pieces to
+> post it.
+>
 
-Otherwise, below warning is shown somtimes when running some test:
+> Leaving the movablemem_map related changes in  the upstream tree,
+> will prevent me from continuing to make memblock to be used to allocate
+> page table on local node ram for hot add.
 
-WARNING: at kernel/sched/core.c:3423 migrate_disable+0xbf/0xd0()
-Hardware name: OptiPlex 755
-Modules linked in: floppy parport parport_pc minix
-Pid: 1800, comm: tst-robustpi8 Tainted: G        W    3.4.28-rt40 #1
-Call Trace:
- [<ffffffff81031f3f>] warn_slowpath_common+0x7f/0xc0
- [<ffffffff81031f9a>] warn_slowpath_null+0x1a/0x20
- [<ffffffff81066eaf>] migrate_disable+0xbf/0xd0
- [<ffffffff81085d95>] exit_pi_state_list+0xa5/0x170
- [<ffffffff8102f71f>] mm_release+0x12f/0x170
- [<ffffffff81036906>] exit_mm+0x26/0x140
- [<ffffffff81090fc6>] ? acct_collect+0x186/0x1c0
- [<ffffffff81036b66>] do_exit+0x146/0x930
- [<ffffffff810658d1>] ? get_parent_ip+0x11/0x50
- [<ffffffff8103760d>] do_group_exit+0x4d/0xc0
- [<ffffffff8104828f>] get_signal_to_deliver+0x23f/0x6a0
- [<ffffffff810019e5>] do_signal+0x65/0x5e0
- [<ffffffff81047816>] ? group_send_sig_info+0x76/0x80
- [<ffffffff81002018>] do_notify_resume+0x98/0xd0
- [<ffffffff8165779b>] int_signal+0x12/0x17
----[ end trace 0000000000000004 ]---
+Original issue occurs by two patches. And it is fixed by Tang's reverting
+patch. So other patches are obviously unrelated to original problem. Thus
+there is no reason to revert all patches related with movablemem_map.
 
-The reason is that spin_lock() is taken in atomic context, but
-spin_unlock() is not.
+If there is a reason, movablemem_map patches prevent only your work.
 
-Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Steven Rostedt <rostedt@goodmis.org>
----
- kernel/futex.c |    2 ++
- 1 file changed, 2 insertions(+)
+If you keep on developing your work, you should develop it in consideration
+of those patches.
 
-diff --git a/kernel/futex.c b/kernel/futex.c
-index 9e26e87..daada3d 100644
---- a/kernel/futex.c
-+++ b/kernel/futex.c
-@@ -568,7 +568,9 @@ void exit_pi_state_list(struct task_struct *curr)
- 		 * task still owns the PI-state:
- 		 */
- 		if (head->next != next) {
-+			raw_spin_unlock_irq(&curr->pi_lock);
- 			spin_unlock(&hb->lock);
-+			raw_spin_lock_irq(&curr->pi_lock);
- 			continue;
- 		}
- 
--- 
-1.7.9.5
+Thanks,
+Yasuaki Ishimatsu
+
+>
+> Will send reverting patch and putting page table on local node patch around
+> 10pm after I get home.
+>
+> Thanks
+>
+
 
