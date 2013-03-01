@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754270Ab3CAUAs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 15:00:48 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51828 "EHLO
+	id S1754524Ab3CAUBF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 15:01:05 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51810 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753874Ab3CATqT (ORCPT
+	with ESMTP id S1753863Ab3CATqR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 14:46:19 -0500
+	Fri, 1 Mar 2013 14:46:17 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Lukas Czerner <lczerner@redhat.com>, "Theodore Tso" <tytso@mit.edu>,
-        Eric Sandeen <sandeen@redhat.com>
-Subject: [ 26/46] ext4: fix xattr block allocation/release with bigalloc
-Date: Fri,  1 Mar 2013 11:45:14 -0800
-Message-Id: <20130301194435.005253684@linuxfoundation.org>
+        "Herton R. Krzesinski" <herton.krzesinski@canonical.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Douglas Bagnall <douglas@paradise.net.nz>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: [ 23/46] media: rc: unlock on error in show_protocols()
+Date: Fri,  1 Mar 2013 11:45:11 -0800
+Message-Id: <20130301194434.677176290@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130301194432.263409302@linuxfoundation.org>
 References: <20130301194432.263409302@linuxfoundation.org>
@@ -27,62 +29,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lukas Czerner <lczerner@redhat.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit 1231b3a1eb5740192aeebf5344dd6d6da000febf upstream.
+commit 30ebc5e44d057a1619ad63fe32c8c1670c37c4b8 upstream.
 
-Currently when new xattr block is created or released we we would call
-dquot_free_block() or dquot_alloc_block() respectively, among the else
-decrementing or incrementing the number of blocks assigned to the
-inode by one block.
+We recently introduced a new return -ENODEV in this function but we need
+to unlock before returning.
 
-This however does not work for bigalloc file system because we always
-allocate/free the whole cluster so we have to count with that in
-dquot_free_block() and dquot_alloc_block() as well.
-
-Use the clusters-to-blocks conversion EXT4_C2B() when passing number of
-blocks to the dquot_alloc/free functions to fix the problem.
-
-The problem has been revealed by xfstests #117 (and possibly others).
-
-Signed-off-by: Lukas Czerner <lczerner@redhat.com>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Reviewed-by: Eric Sandeen <sandeen@redhat.com>
+[mchehab@redhat.com: found two patches with the same fix. Merged SOB's/acks into one patch]
+Acked-by: Herton R. Krzesinski <herton.krzesinski@canonical.com>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Douglas Bagnall <douglas@paradise.net.nz>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/xattr.c |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ drivers/media/rc/rc-main.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/fs/ext4/xattr.c
-+++ b/fs/ext4/xattr.c
-@@ -495,7 +495,7 @@ ext4_xattr_release_block(handle_t *handl
- 		error = ext4_handle_dirty_metadata(handle, inode, bh);
- 		if (IS_SYNC(inode))
- 			ext4_handle_sync(handle);
--		dquot_free_block(inode, 1);
-+		dquot_free_block(inode, EXT4_C2B(EXT4_SB(inode->i_sb), 1));
- 		ea_bdebug(bh, "refcount now=%d; releasing",
- 			  le32_to_cpu(BHDR(bh)->h_refcount));
- 	}
-@@ -784,7 +784,8 @@ inserted:
- 			else {
- 				/* The old block is released after updating
- 				   the inode. */
--				error = dquot_alloc_block(inode, 1);
-+				error = dquot_alloc_block(inode,
-+						EXT4_C2B(EXT4_SB(sb), 1));
- 				if (error)
- 					goto cleanup;
- 				error = ext4_journal_get_write_access(handle,
-@@ -880,7 +881,7 @@ cleanup:
- 	return error;
+--- a/drivers/media/rc/rc-main.c
++++ b/drivers/media/rc/rc-main.c
+@@ -778,8 +778,10 @@ static ssize_t show_protocols(struct dev
+ 	} else if (dev->raw) {
+ 		enabled = dev->raw->enabled_protocols;
+ 		allowed = ir_raw_get_allowed_protocols();
+-	} else
++	} else {
++		mutex_unlock(&dev->lock);
+ 		return -ENODEV;
++	}
  
- cleanup_dquot:
--	dquot_free_block(inode, 1);
-+	dquot_free_block(inode, EXT4_C2B(EXT4_SB(sb), 1));
- 	goto cleanup;
- 
- bad_block:
+ 	IR_dprintk(1, "allowed - 0x%llx, enabled - 0x%llx\n",
+ 		   (long long)allowed,
 
 
