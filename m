@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753246Ab3CATpu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 14:45:50 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51568 "EHLO
+	id S1753432Ab3CATp4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 14:45:56 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51594 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753136Ab3CATpr (ORCPT
+	with ESMTP id S1753262Ab3CATpv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 14:45:47 -0500
+	Fri, 1 Mar 2013 14:45:51 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Lukas Czerner <lczerner@redhat.com>, "Theodore Tso" <tytso@mit.edu>
-Subject: [ 53/77] ext4: fix free clusters calculation in bigalloc filesystem
-Date: Fri,  1 Mar 2013 11:44:38 -0800
-Message-Id: <20130301194357.575782442@linuxfoundation.org>
+        Tero Roponen <tero.roponen@gmail.com>,
+        Miklos Szeredi <mszeredi@suse.cz>
+Subject: [ 59/77] fuse: dont WARN when nlink is zero
+Date: Fri,  1 Mar 2013 11:44:44 -0800
+Message-Id: <20130301194358.183293958@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130301194351.913471337@linuxfoundation.org>
 References: <20130301194351.913471337@linuxfoundation.org>
@@ -26,61 +27,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lukas Czerner <lczerner@redhat.com>
+From: Miklos Szeredi <mszeredi@suse.cz>
 
-commit 304e220f0879198b1f5309ad6f0be862b4009491 upstream.
+commit dfca7cebc2679f3d129f8e680a8f199a7ad16e38 upstream.
 
-ext4_has_free_clusters() should tell us whether there is enough free
-clusters to allocate, however number of free clusters in the file system
-is converted to blocks using EXT4_C2B() which is not only wrong use of
-the macro (we should have used EXT4_NUM_B2C) but it's also completely
-wrong concept since everything else is in cluster units.
+drop_nlink() warns if nlink is already zero.  This is triggerable by a buggy
+userspace filesystem.  The cure, I think, is worse than the disease so disable
+the warning.
 
-Moreover when calculating number of root clusters we should be using
-macro EXT4_NUM_B2C() instead of EXT4_B2C() otherwise the result might be
-off by one. However r_blocks_count should always be a multiple of the
-cluster ratio so doing a plain bit shift should be enough here. We
-avoid using EXT4_B2C() because it's confusing.
-
-As a result of the first problem number of free clusters is much bigger
-than it should have been and ext4_has_free_clusters() would return 1 even
-if there is really not enough free clusters available.
-
-Fix this by removing the EXT4_C2B() conversion of free clusters and
-using bit shift when calculating number of root clusters. This bug
-affects number of xfstests tests covering file system ENOSPC situation
-handling. With this patch most of the ENOSPC problems with bigalloc file
-system disappear, especially the errors caused by delayed allocation not
-having enough space when the actual allocation is finally requested.
-
-Signed-off-by: Lukas Czerner <lczerner@redhat.com>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Reported-by: Tero Roponen <tero.roponen@gmail.com>
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/balloc.c |    9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+ fs/fuse/dir.c |    9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
 
---- a/fs/ext4/balloc.c
-+++ b/fs/ext4/balloc.c
-@@ -484,11 +484,16 @@ static int ext4_has_free_clusters(struct
+--- a/fs/fuse/dir.c
++++ b/fs/fuse/dir.c
+@@ -682,7 +682,14 @@ static int fuse_unlink(struct inode *dir
  
- 	free_clusters  = percpu_counter_read_positive(fcc);
- 	dirty_clusters = percpu_counter_read_positive(dcc);
--	root_clusters = EXT4_B2C(sbi, ext4_r_blocks_count(sbi->s_es));
-+
-+	/*
-+	 * r_blocks_count should always be multiple of the cluster ratio so
-+	 * we are safe to do a plane bit shift only.
-+	 */
-+	root_clusters = ext4_r_blocks_count(sbi->s_es) >> sbi->s_cluster_bits;
- 
- 	if (free_clusters - (nclusters + root_clusters + dirty_clusters) <
- 					EXT4_FREECLUSTERS_WATERMARK) {
--		free_clusters  = EXT4_C2B(sbi, percpu_counter_sum_positive(fcc));
-+		free_clusters  = percpu_counter_sum_positive(fcc);
- 		dirty_clusters = percpu_counter_sum_positive(dcc);
- 	}
- 	/* Check whether we have space after accounting for current
+ 		spin_lock(&fc->lock);
+ 		fi->attr_version = ++fc->attr_version;
+-		drop_nlink(inode);
++		/*
++		 * If i_nlink == 0 then unlink doesn't make sense, yet this can
++		 * happen if userspace filesystem is careless.  It would be
++		 * difficult to enforce correct nlink usage so just ignore this
++		 * condition here
++		 */
++		if (inode->i_nlink > 0)
++			drop_nlink(inode);
+ 		spin_unlock(&fc->lock);
+ 		fuse_invalidate_attr(inode);
+ 		fuse_invalidate_attr(dir);
 
 
