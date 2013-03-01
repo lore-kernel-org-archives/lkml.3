@@ -1,283 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751418Ab3CAJUI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 04:20:08 -0500
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:58763 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750915Ab3CAJUD (ORCPT
+	id S1751571Ab3CAJVs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 04:21:48 -0500
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:38009 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750799Ab3CAJVq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 04:20:03 -0500
-Message-ID: <1362129599.2384.13.camel@dabdike.int.hansenpartnership.com>
-Subject: [GIT PULL] Final round of SCSI updates for the 3.8+ merge window
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Date: Fri, 01 Mar 2013 09:19:59 +0000
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.6.3 
-Mime-Version: 1.0
+	Fri, 1 Mar 2013 04:21:46 -0500
+Message-ID: <5130731F.4000804@gmail.com>
+Date: Fri, 01 Mar 2013 17:21:35 +0800
+From: Simon Jeons <simon.jeons@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
+MIME-Version: 1.0
+To: Mel Gorman <mgorman@suse.de>, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org, riel@redhat.com,
+        mhocko@suse.cz, hannes@cmpxchg.org
+Subject: Re: [PATCH] x86: mm: Check if PUD is large when validating a kernel
+ address v2
+References: <20130211145236.GX21389@suse.de> <20130213110202.GI4100@suse.de> <51304E29.40900@gmail.com> <20130301091513.GA11787@gchen.bj.intel.com>
+In-Reply-To: <20130301091513.GA11787@gchen.bj.intel.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an assorted set of stragglers into the merge window with driver
-updates for qla2xxx, megaraid_sas, storvsc and ufs.  It also includes
-pulls of the uapi tree (all the remaining SCSI pieces) and the fcoe tree
-(updates to fcoe and libfc)
+On 03/01/2013 05:15 PM, Chen Gong wrote:
+> On Fri, Mar 01, 2013 at 02:43:53PM +0800, Simon Jeons wrote:
+>> Date: Fri, 01 Mar 2013 14:43:53 +0800
+>> From: Simon Jeons <simon.jeons@gmail.com>
+>> To: Mel Gorman <mgorman@suse.de>
+>> CC: Ingo Molnar <mingo@kernel.org>, Andrew Morton
+>>   <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+>>   linux-mm@kvack.org, riel@redhat.com, mhocko@suse.cz, hannes@cmpxchg.org
+>> Subject: Re: [PATCH] x86: mm: Check if PUD is large when validating a
+>>   kernel address v2
+>> User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130221
+>>   Thunderbird/17.0.3
+>>
+>> On 02/13/2013 07:02 PM, Mel Gorman wrote:
+>>> Andrew or Ingo, please pick up.
+>>>
+>>> Changelog since v1
+>>>    o Add reviewed-bys and acked-bys
+>>>
+>>> A user reported a bug whereby a backup process accessing /proc/kcore
+>>> caused an oops.
+>>>
+>>>   BUG: unable to handle kernel paging request at ffffbb00ff33b000
+>>>   IP: [<ffffffff8103157e>] kern_addr_valid+0xbe/0x110
+>>>   PGD 0
+>>>   Oops: 0000 [#1] SMP
+>>>   CPU 6
+>>>   Modules linked in: af_packet nfs lockd fscache auth_rpcgss nfs_acl sunrpc 8021q garp stp llc cpufreq_conservative cpufreq_userspace cpufreq_powersave acpi_cpufreq mperf microcode fuse nls_iso8859_1 nls_cp437 vfat fat loop dm_mod ioatdma ipv6 ipv6_lib igb dca i7core_edac edac_core i2c_i801 i2c_core cdc_ether usbnet bnx2 mii iTCO_wdt iTCO_vendor_support shpchp rtc_cmos pci_hotplug tpm_tis sg tpm pcspkr tpm_bios serio_raw button ext3 jbd mbcache uhci_hcd ehci_hcd usbcore sd_mod crc_t10dif usb_common processor thermal_sys hwmon scsi_dh_emc scsi_dh_rdac scsi_dh_alua scsi_dh_hp_sw scsi_dh ata_generic ata_piix libata megaraid_sas scsi_mod
+>>>
+>>>   Pid: 16196, comm: Hibackp Not tainted 3.0.13-0.27-default #1 IBM System x3550 M3 -[7944 K3G]-/94Y7614
+>>>   RIP: 0010:[<ffffffff8103157e>]  [<ffffffff8103157e>] kern_addr_valid+0xbe/0x110
+>>>   RSP: 0018:ffff88094165fe80  EFLAGS: 00010246
+>>>   RAX: 00003300ff33b000 RBX: ffff880100000000 RCX: 0000000000000000
+>>>   RDX: 0000000100000000 RSI: ffff880000000000 RDI: ff32b300ff33b400
+>>>   RBP: 0000000000001000 R08: 00003ffffffff000 R09: 0000000000000000
+>>>   R10: 22302e31223d6e6f R11: 0000000000000246 R12: 0000000000001000
+>>>   R13: 0000000000003000 R14: 0000000000571be0 R15: ffff88094165ff50
+>>>   FS:  00007ff152d33700(0000) GS:ffff88097f2c0000(0000) knlGS:0000000000000000
+>>>   CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+>>>   CR2: ffffbb00ff33b000 CR3: 00000009405a3000 CR4: 00000000000006e0
+>>>   DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+>>>   DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+>>>   Process Hibackp (pid: 16196, threadinfo ffff88094165e000, task ffff8808eb9ba600)
+>>>   Stack:
+>>>    ffffffff811b8aaa 0000000000004000 ffff880943fea480 ffff8808ef2bae50
+>>>    ffff880943d32980 fffffffffffffffb ffff8808ef2bae40 ffff88094165ff50
+>>>    0000000000004000 000000000056ebe0 ffffffff811ad847 000000000056ebe0
+>>>   Call Trace:
+>>>    [<ffffffff811b8aaa>] read_kcore+0x17a/0x370
+>>>    [<ffffffff811ad847>] proc_reg_read+0x77/0xc0
+>>>    [<ffffffff81151687>] vfs_read+0xc7/0x130
+>>>    [<ffffffff811517f3>] sys_read+0x53/0xa0
+>>>    [<ffffffff81449692>] system_call_fastpath+0x16/0x1b
+>>>
+>>> Investigation determined that the bug triggered when reading system RAM
+>>> at the 4G mark. On this system, that was the first address using 1G pages
+>> Do you mean there is one page which is 1G?
+>>
+> 1GB support in native kernel is started from 2.6.27 with these 2 commits:
 
-The patch is available here:
+Why call kernel native? Which kend of kernel is not native?
 
-git://git.kernel.org/pub/scm/linux/kernel/git/jejb/scsi.git scsi-for-linus
-
-The short changelog is:
-
-Adam Radford (3):
-      megaraid_sas: Version and Changelog update
-      megaraid_sas: Dont load DevHandle unless FastPath enabled
-      megaraid_sas: Add 4k FastPath DIF support
-
-Al Viro (1):
-      debris left by " libfcoe: Remove mutex_trylock/restart_syscall checks"
-
-Andrew Vasquez (2):
-      qla2xxx: Correct list-iteration bug in Report-ID Acquisition codes.
-      qla2xxx: Correct race in loop_state assignment during reset handling.
-
-Arun Easi (3):
-      qla2xxx: Prevent enabling target mode for unsupported HBAs.
-      qla2xxx: Allow ISP81xx to create ATIO queues.
-      qla2xxx: Enable target mode support for ISP83xx.
-
-Bhanu Prakash Gollapudi (2):
-      libfcoe: Check for unusable FCFs before looking for conflicting FCFs
-      libfcoe: Handle CVL while waiting to select an FCF
-
-Brian King (1):
-      ipr: Fix oops while resetting an ipr adapter
-
-Chad Dupuis (8):
-      qla2xxx: Wait for IDC complete event to finish loopback operation.
-      qla2xxx: Don't process RSCNs for a vport on the same physical adapter.
-      qla2xxx: Move loopback mode reset after chip reset check.
-      qla2xxx: Extra loopback error handling for ISP83xx.
-      qla2xxx: Unload hangs after issuing BSG commands to vport.
-      qla2xxx: Reject loopback request if one is already in progress.
-      qla2xxx: Ramp down queue depth for attached SCSI devices when driver resources are low.
-      qla2xxx: Determine the number of outstanding commands based on available resources.
-
-Dan Carpenter (3):
-      dc395x: uninitialized variable in device_alloc()
-      libosd: check for kzalloc() failure
-      qla4xxx: don't free NULL dma pool
-
-David Howells (2):
-      UAPI: (Scripted) Disintegrate include/scsi/fc
-      UAPI: (Scripted) Disintegrate include/scsi
-
-Giridhar Malavali (1):
-      qla2xxx: Update the FTP site references in the driver sources.
-
-Hiral Patel (5):
-      fnic: Fnic Trace Utility
-      fnic: New debug flags and debug log messages
-      fnic: fnic driver may hit BUG_ON on device reset
-      fnic: Fix SGEs limit
-      fnic: fixing issues in device and firmware reset code
-
-Joe Carnuccio (7):
-      qla2xxx: Integrate generic card temperature with mezz card temperature.
-      qla2xxx: Add setting of driver version string for vendor application.
-      qla2xxx: Correction of comment in MBC opcode defines.
-      Revert "[SCSI] qla2xxx: Optimize existing port name server query matching."
-      Revert "[SCSI] qla2xxx: Avoid losing any fc ports when loop id's are exhausted."
-      qla2xxx: Do link initialization on get loop id failure.
-      qla2xxx: Print thermal unsupported message.
-
-K. Y. Srinivasan (3):
-      storvsc: Handle dynamic resizing of the device
-      storvsc: Restructure error handling code on command completion
-      storvsc: Initialize the sglist
-
-Krishna Mohan (1):
-      libfc: XenServer fails to mount root filesystem.
-
-Martin K. Petersen (1):
-      Fix range check in scsi_host_dif_capable()
-
-Masanari Iida (1):
-      qla2xxx: Avoid null pointer dereference in shutdown routine.
-
-Neerav Parikh (1):
-      fcoe: Fix deadlock while deleting FCoE interface with NPIV ports
-
-Neil Horman (1):
-      fcoe: close race on link speed detection in fcoe code
-
-Olaf Hering (1):
-      storvsc: avoid usage of WRITE_SAME
-
-Paul Bolle (2):
-      aacraid: suppress two GCC warnings
-      qla2xxx: silence two GCC warnings.
-
-Randy Dunlap (1):
-      scsi: fix lpfc build when wmb() is defined as mb()
-
-Robert Love (7):
-      libfc, libfcoe, fcoe: Convert debug_logging macros to pr_info
-      bnx2fc: Use the fcoe_sysfs control interface
-      fcoe: Use the fcoe_sysfs control interface
-      libfcoe, fcoe, bnx2fc: Add new fcoe control interface
-      libfcoe: Add fcoe_sysfs debug logging level
-      libfcoe: Save some memory and optimize name lookups
-      Documentation: Add missing devices/ to devices path
-
-Sakthivel K (1):
-      pm80xx: fix for memory region free
-
-Saurav Kashyap (6):
-      qla2xxx: Don't process state change aen for reset owner.
-      qla2xxx: Update the copyright information.
-      qla2xxx: Display the lock owner on lock acquire failure.
-      qla2xxx: Do MPI reset only for ISP81xx.
-      qla2xxx: Get VPD information from common location for CNA.
-      qla2xxx: Correction to the message ids.
-
-Shuah Khan (1):
-      hpsa: Check for dma_mapping_error in hpsa_map_one
-
-Sreekanth Reddy (1):
-      mpt2sas: Add support for OEM specific controller
-
-Stephen M. Cameron (4):
-      hpsa: check for dma_mapping_error in hpsa_passthru ioctls
-      hpsa: reorganize error handling in hpsa_passthru_ioctl
-      hpsa: check for dma_mapping_error in hpsa_map_sg_chain_block
-      hpsa: Check for dma_mapping_error for all code paths using fill_cmd
-
-Vasu Dev (1):
-      libfc: fix REC handling
-
-Vinayak Holikatti (2):
-      ufs: Separate PCI code into glue driver
-      ufs: Segregate PCI Specific Code
-
-Xiangliang Yu (1):
-      mvsas: fixed timeout issue when removing module
-
-Yi Zou (7):
-      bnx2fc: use fcoe_get_lesb/fcoe_ctlr_get_lesb() directly from libfcoe
-      bnx2fc: use fcoe_link_speed_update() from the exported symbol in libfcoe
-      bnx2fc: add support to get_netdev for bnx2f_interface
-      libfcoe, fcoe: consolidate the fcoe_ctlr_get_lesb/fcoe_get_lesb
-      libfcoe, fcoe: move fcoe_link_speed_update() to libfcoe and export it
-      fcoe: add support to the get_netdev() for fcoe_interface
-      fcoe: prep work to start consolidate the usage of fcoe_netdev
-
-And the diffstat:
-
- Documentation/ABI/testing/sysfs-bus-fcoe    |  45 +-
- Documentation/scsi/ChangeLog.megaraid_sas   |   9 +
- drivers/scsi/aacraid/src.c                  |   4 +-
- drivers/scsi/bnx2fc/bnx2fc_fcoe.c           | 256 +++++-----
- drivers/scsi/dc395x.c                       |   2 +-
- drivers/scsi/fcoe/fcoe.c                    | 266 ++++++----
- drivers/scsi/fcoe/fcoe.h                    |   6 +-
- drivers/scsi/fcoe/fcoe_ctlr.c               |  45 +-
- drivers/scsi/fcoe/fcoe_sysfs.c              | 186 +++++--
- drivers/scsi/fcoe/fcoe_transport.c          | 199 +++++++-
- drivers/scsi/fcoe/libfcoe.h                 |  20 +-
- drivers/scsi/fnic/Makefile                  |   2 +
- drivers/scsi/fnic/fnic.h                    |  60 +++
- drivers/scsi/fnic/fnic_debugfs.c            | 314 ++++++++++++
- drivers/scsi/fnic/fnic_io.h                 |   6 +-
- drivers/scsi/fnic/fnic_main.c               |  17 +
- drivers/scsi/fnic/fnic_scsi.c               | 721 ++++++++++++++++++++++++++--
- drivers/scsi/fnic/fnic_trace.c              | 273 +++++++++++
- drivers/scsi/fnic/fnic_trace.h              |  90 ++++
- drivers/scsi/hpsa.c                         | 117 +++--
- drivers/scsi/ipr.c                          |  33 +-
- drivers/scsi/ipr.h                          |   1 +
- drivers/scsi/libfc/fc_fcp.c                 |   6 +-
- drivers/scsi/libfc/fc_libfc.h               |  38 +-
- drivers/scsi/libfc/fc_rport.c               |   2 +-
- drivers/scsi/lpfc/lpfc_sli.c                |  56 +--
- drivers/scsi/megaraid/megaraid_sas.h        |   6 +-
- drivers/scsi/megaraid/megaraid_sas_base.c   |   2 +-
- drivers/scsi/megaraid/megaraid_sas_fusion.c |   5 +-
- drivers/scsi/megaraid/megaraid_sas_fusion.h |   1 -
- drivers/scsi/mpt2sas/mpt2sas_base.c         |   8 +
- drivers/scsi/mpt2sas/mpt2sas_base.h         |   6 +
- drivers/scsi/mvsas/mv_sas.c                 |  10 +-
- drivers/scsi/mvsas/mv_sas.h                 |   1 +
- drivers/scsi/osd/osd_initiator.c            |   4 +
- drivers/scsi/pm8001/pm8001_init.c           |   3 +-
- drivers/scsi/qla2xxx/qla_attr.c             |  35 +-
- drivers/scsi/qla2xxx/qla_bsg.c              | 199 +++++---
- drivers/scsi/qla2xxx/qla_bsg.h              |   2 +-
- drivers/scsi/qla2xxx/qla_dbg.c              |  17 +-
- drivers/scsi/qla2xxx/qla_dbg.h              |   2 +-
- drivers/scsi/qla2xxx/qla_def.h              |  54 ++-
- drivers/scsi/qla2xxx/qla_dfs.c              |   2 +-
- drivers/scsi/qla2xxx/qla_fw.h               |   7 +-
- drivers/scsi/qla2xxx/qla_gbl.h              |  15 +-
- drivers/scsi/qla2xxx/qla_gs.c               |  10 +-
- drivers/scsi/qla2xxx/qla_init.c             | 200 ++++++--
- drivers/scsi/qla2xxx/qla_inline.h           |  28 +-
- drivers/scsi/qla2xxx/qla_iocb.c             |  39 +-
- drivers/scsi/qla2xxx/qla_isr.c              |  82 +++-
- drivers/scsi/qla2xxx/qla_mbx.c              | 207 ++++++--
- drivers/scsi/qla2xxx/qla_mid.c              |   9 +-
- drivers/scsi/qla2xxx/qla_nx.c               |  13 +-
- drivers/scsi/qla2xxx/qla_nx.h               |   4 +-
- drivers/scsi/qla2xxx/qla_os.c               | 147 +++++-
- drivers/scsi/qla2xxx/qla_settings.h         |   2 +-
- drivers/scsi/qla2xxx/qla_sup.c              |  18 +-
- drivers/scsi/qla2xxx/qla_target.c           | 169 ++++++-
- drivers/scsi/qla2xxx/qla_target.h           |  19 +-
- drivers/scsi/qla2xxx/qla_version.h          |   2 +-
- drivers/scsi/qla4xxx/ql4_mbx.c              |   6 +-
- drivers/scsi/storvsc_drv.c                  | 137 ++++--
- drivers/scsi/ufs/Kconfig                    |  74 +--
- drivers/scsi/ufs/Makefile                   |   1 +
- drivers/scsi/ufs/ufs.h                      |  44 +-
- drivers/scsi/ufs/ufshcd-pci.c               | 211 ++++++++
- drivers/scsi/ufs/ufshcd.c                   | 423 ++++------------
- drivers/scsi/ufs/ufshcd.h                   | 202 ++++++++
- drivers/scsi/ufs/ufshci.h                   |  44 +-
- include/scsi/Kbuild                         |   3 -
- include/scsi/fc/Kbuild                      |   4 -
- include/scsi/fcoe_sysfs.h                   |  11 +-
- include/scsi/libfcoe.h                      |  32 +-
- include/scsi/scsi_host.h                    |   4 +-
- include/uapi/scsi/Kbuild                    |   3 +
- include/uapi/scsi/fc/Kbuild                 |   4 +
- include/{ => uapi}/scsi/fc/fc_els.h         |   0
- include/{ => uapi}/scsi/fc/fc_fs.h          |   0
- include/{ => uapi}/scsi/fc/fc_gs.h          |   0
- include/{ => uapi}/scsi/fc/fc_ns.h          |   0
- include/{ => uapi}/scsi/scsi_bsg_fc.h       |   0
- include/{ => uapi}/scsi/scsi_netlink.h      |   0
- include/{ => uapi}/scsi/scsi_netlink_fc.h   |   0
- 83 files changed, 4100 insertions(+), 1205 deletions(-)
- create mode 100644 drivers/scsi/fnic/fnic_debugfs.c
- create mode 100644 drivers/scsi/fnic/fnic_trace.c
- create mode 100644 drivers/scsi/fnic/fnic_trace.h
- create mode 100644 drivers/scsi/ufs/ufshcd-pci.c
- create mode 100644 drivers/scsi/ufs/ufshcd.h
- rename include/{ => uapi}/scsi/fc/fc_els.h (100%)
- rename include/{ => uapi}/scsi/fc/fc_fs.h (100%)
- rename include/{ => uapi}/scsi/fc/fc_gs.h (100%)
- rename include/{ => uapi}/scsi/fc/fc_ns.h (100%)
- rename include/{ => uapi}/scsi/scsi_bsg_fc.h (100%)
- rename include/{ => uapi}/scsi/scsi_netlink.h (100%)
- rename include/{ => uapi}/scsi/scsi_netlink_fc.h (100%)
-
-James
-
-
+> 39c11e6 and b4718e6. For Intel CPU, from Westmere it supports 1GB page.
+> BTW, IBM System x3550 M3 is a Westmere based system.
+Is it only used in hugetlbfs page?
 
 
