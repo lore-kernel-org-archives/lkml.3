@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753298Ab3CAUWN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 15:22:13 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51390 "EHLO
+	id S1752703Ab3CAUV4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 15:21:56 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51394 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752558Ab3CATpV (ORCPT
+	with ESMTP id S1752567Ab3CATpW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 14:45:21 -0500
+	Fri, 1 Mar 2013 14:45:22 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "H. Peter Anvin" <hpa@zytor.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [ 24/77] doc, xen: Mention earlyprintk=xen in the documentation.
-Date: Fri,  1 Mar 2013 11:44:09 -0800
-Message-Id: <20130301194354.561762449@linuxfoundation.org>
+Subject: [ 25/77] doc, kernel-parameters: Document console=hvc<n>
+Date: Fri,  1 Mar 2013 11:44:10 -0800
+Message-Id: <20130301194354.659550091@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130301194351.913471337@linuxfoundation.org>
 References: <20130301194351.913471337@linuxfoundation.org>
@@ -30,42 +29,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-commit 2482a92e7d17187301d7313cfe5021b13393a0b4 upstream.
+commit a2fd6419174470f5ae6383f5037d0ee21ed9833f upstream.
 
-The earlyprintk for Xen PV guests utilizes a simple hypercall
-(console_io) to provide output to Xen emergency console.
+Both the PowerPC hypervisor and Xen hypervisor can utilize the
+hvc driver.
 
-Note that the Xen hypervisor should be booted with 'loglevel=all'
-to output said information.
-
-Reported-by: H. Peter Anvin <hpa@zytor.com>
 Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Link: http://lkml.kernel.org/r/1361825650-14031-2-git-send-email-konrad.wilk@oracle.com
+Link: http://lkml.kernel.org/r/1361825650-14031-3-git-send-email-konrad.wilk@oracle.com
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- Documentation/kernel-parameters.txt |    3 +++
- 1 file changed, 3 insertions(+)
+ Documentation/kernel-parameters.txt |    2 ++
+ 1 file changed, 2 insertions(+)
 
 --- a/Documentation/kernel-parameters.txt
 +++ b/Documentation/kernel-parameters.txt
-@@ -754,6 +754,7 @@ bytes respectively. Such letter suffixes
+@@ -564,6 +564,8 @@ bytes respectively. Such letter suffixes
+ 			UART at the specified I/O port or MMIO address,
+ 			switching to the matching ttyS device later.  The
+ 			options are the same as for ttyS, above.
++		hvc<n>	Use the hypervisor console device <n>. This is for
++			both Xen and PowerPC hypervisors.
  
- 	earlyprintk=	[X86,SH,BLACKFIN]
- 			earlyprintk=vga
-+			earlyprintk=xen
- 			earlyprintk=serial[,ttySn[,baudrate]]
- 			earlyprintk=ttySn[,baudrate]
- 			earlyprintk=dbgp[debugController#]
-@@ -771,6 +772,8 @@ bytes respectively. Such letter suffixes
- 			The VGA output is eventually overwritten by the real
- 			console.
- 
-+			The xen output can only be used by Xen PV guests.
-+
- 	ekgdboc=	[X86,KGDB] Allow early kernel console debugging
- 			ekgdboc=kbd
- 
+                 If the device connected to the port is not a TTY but a braille
+                 device, prepend "brl," before the device type, for instance
 
 
