@@ -1,72 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751918Ab3CATM4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 14:12:56 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:59745 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751192Ab3CATMz (ORCPT
+	id S1752071Ab3CATQ7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 14:16:59 -0500
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:64347 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751436Ab3CATQ5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 14:12:55 -0500
-Date: Fri, 01 Mar 2013 14:12:52 -0500 (EST)
-Message-Id: <20130301.141252.1152926224695074046.davem@davemloft.net>
-To: g.nault@alphalink.fr
-Cc: jchapman@katalix.com, linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: [PATCH] l2tp: Restore socket refcount when sendmsg succeeds
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20130301150202.GA3649@alphalink.fr>
-References: <20130301150202.GA3649@alphalink.fr>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Fri, 01 Mar 2013 11:12:58 -0800 (PST)
+	Fri, 1 Mar 2013 14:16:57 -0500
+Date: Fri, 1 Mar 2013 11:16:54 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: Christian Borntraeger <borntraeger@de.ibm.com>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Gleb Natapov <gleb@redhat.com>
+Subject: Re: [ 17/53] s390/kvm: Fix store status for ACRS/FPRS
+Message-ID: <20130301191654.GA30321@kroah.com>
+References: <20130226235619.844721947@linuxfoundation.org>
+ <20130226235621.622037661@linuxfoundation.org>
+ <512FD9B3.5000304@suse.cz>
+ <51305DC5.7010201@de.ibm.com>
+ <5130734F.6090208@suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5130734F.6090208@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Guillaume Nault <g.nault@alphalink.fr>
-Date: Fri, 1 Mar 2013 16:02:02 +0100
-
-> The sendmsg() syscall handler for PPPoL2TP doesn't decrease the socket
-> reference counter after successful transmissions. Any successful
-> sendmsg() call from userspace will then increase the reference counter
-> forever, thus preventing the kernel's session and tunnel data from
-> being freed later on.
+On Fri, Mar 01, 2013 at 10:22:23AM +0100, Jiri Slaby wrote:
+> On 03/01/2013 08:50 AM, Christian Borntraeger wrote:
+> > On 28/02/13 23:26, Jiri Slaby wrote:
+> >> On 02/27/2013 12:57 AM, Greg Kroah-Hartman wrote:
+> >>> 3.0-stable review patch.  If anyone has any objections, please let me know.
+> >>>
+> >>> ------------------
+> >>>
+> >>> From: Christian Borntraeger <borntraeger@de.ibm.com>
+> >>>
+> >>> commit 15bc8d8457875f495c59d933b05770ba88d1eacb upstream.
+> >>>
+> >>> On store status we need to copy the current state of registers
+> >>> into a save area. Currently we might save stale versions:
+> >>> The sie state descriptor doesnt have fields for guest ACRS,FPRS,
+> >>> those registers are simply stored in the host registers. The host
+> >>> program must copy these away if needed. We do that in vcpu_put/load.
+> >>>
+> >>> If we now do a store status in KVM code between vcpu_put/load, the
+> >>> saved values are not up-to-date. Lets collect the ACRS/FPRS before
+> >>> saving them.
+> >>>
+> >>> This also fixes some strange problems with hotplug and virtio-ccw,
+> >>> since the low level machine check handler (on hotplug a machine check
+> >>> will happen) will revalidate all registers with the content of the
+> >>> save area.
+> >>>
+> >>> Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
+> >>> Signed-off-by: Gleb Natapov <gleb@redhat.com>
+> >>> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> >>>
+> >>> ---
+> >>>  arch/s390/kvm/kvm-s390.c |    8 ++++++++
+> >>>  1 file changed, 8 insertions(+)
+> >>>
+> >>> --- a/arch/s390/kvm/kvm-s390.c
+> >>> +++ b/arch/s390/kvm/kvm-s390.c
+> >>> @@ -584,6 +584,14 @@ int kvm_s390_vcpu_store_status(struct kv
+> >>>  	} else
+> >>>  		prefix = 0;
+> >>>  
+> >>> +	/*
+> >>> +	 * The guest FPRS and ACRS are in the host FPRS/ACRS due to the lazy
+> >>> +	 * copying in vcpu load/put. Lets update our copies before we save
+> >>> +	 * it into the save area
+> >>> +	 */
+> >>> +	save_fp_regs(&vcpu->arch.guest_fpregs);
+> >>> +	save_access_regs(vcpu->run->s.regs.acrs);
+> >>
+> >> kvm_run structure does not have kvm_sync_regs in it in 3.0 yet. So this
+> >> fails with:
+> >> arch/s390/kvm/kvm-s390.c: In function 'kvm_s390_vcpu_store_status':
+> >> arch/s390/kvm/kvm-s390.c:593: error: 'struct kvm_run' has no member
+> >> named 's'
+> >>
+> >> I believe the fix is just to remove save_access_regs, right?
+> > 
+> > Before the sync reg changes, the ACRS were saved in the vcpu->arch.
+> > So the fix would look like 
+> > 
+> > 	save_access_regs(vcpu->arch.guest_acrs);
 > 
-> The problem only happens when writing directly on L2TP sockets.
-> PPP sockets attached to L2TP are unaffected as the PPP subsystem
-> uses pppol2tp_xmit() which symmetrically increase/decrease reference
-> counters.
-> 
-> This patch adds the missing call to sock_put() before returning from
-> pppol2tp_sendmsg().
-> 
-> Cc: <stable@vger.kernel.org>
-> Signed-off-by: Guillaume Nault <g.nault@alphalink.fr>
+> Fix attached.
 
-Looking at how this code works, it is such a terrible design.  This
-whole reference counting issue exists purely because
-pppol2tp_sock_to_session() grabs the 'sk' reference.
+Thanks, now applied.
 
-In all but one case, it need not do this.
-
-The socket system calls have an implicit reference to 'sk' via
-socket->sk.  If you can get into the system call and socket->sk
-is non-NULL then 'sk' is NOT going anywhere.
-
-And all of these system call handlers have this pattern:
-
-	session = pppol2tp_sock_to_session(sk);
-	...
-	sock_put(sk);
-
-The only case where the reference count is really needed is that
-sequence in pppol2tp_release().
-
-Long term the right thing to do here is stop having this session
-grabber function take the 'sk' reference.  Then in pppol2tp_release
-we'll grab a reference explicitly.  At all the other call sites we
-then blast aweay all of the sock_put(sk) paths.
-
-Anyways, for now I'll apply this patch and queue it up for -stable,
-thanks.
+greg k-h
