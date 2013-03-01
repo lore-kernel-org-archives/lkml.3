@@ -1,59 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751873Ab3CAEmF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 23:42:05 -0500
-Received: from alvesta.synopsys.com ([198.182.60.77]:48461 "EHLO
-	alvesta.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750863Ab3CAEmD (ORCPT
+	id S1750968Ab3CAE6y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 23:58:54 -0500
+Received: from mail-la0-f45.google.com ([209.85.215.45]:57174 "EHLO
+	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750696Ab3CAE6x convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 23:42:03 -0500
-Message-ID: <51303173.5060405@synopsys.com>
-Date: Fri, 1 Mar 2013 10:11:23 +0530
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	Thu, 28 Feb 2013 23:58:53 -0500
 MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Arnd Bergmann" <arnd@arndb.de>, Thomas Gleixner <tglx@linutronix.de>,
-        "Gilad Ben-Yossef" <gilad@benyossef.com>, Helge Deller <deller@gmx.de>,
-        "Mischa Jonker" <Mischa.Jonker@synopsys.com>
-Subject: Re: [GIT PULL] arch/arc for v3.9-rc1
-References: <51271703.8050107@synopsys.com>
-In-Reply-To: <51271703.8050107@synopsys.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.12.197.217]
+Date: Fri, 1 Mar 2013 12:58:51 +0800
+Message-ID: <CA+zQFfmZ49Z-jRCVWcErMTNusqqOGoiMm6JCAK1EpoioBMZmgA@mail.gmail.com>
+Subject: [QUESTION] How can I understand ARM_DMA_MEM_BUFFERABLE?
+From: =?GB2312?B?0e6/ycfX?= <itrifler@gmail.com>
+To: lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=GB2312
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 22 February 2013 12:28 PM, Vineet Gupta wrote:
-> Hi Linus,
-> 
-> I would like to introduce the Linux port to ARC Processors (from Synopsys) for
-> 3.9-rc1. The patch-set has been discussed on the public lists since Nov and has
-> received a fair bit of review, specially from Arnd, tglx, Al and other subsystem
-> maintainers for DeviceTree, kgdb .....
-> 
-> The arch bits are in arch/arc, some asm-generic changes (acked by Arnd), a minor
-> change to PARISC (acked by Helge).
-> 
-> The series is a touch bigger for a new port for 2 main reasons:
-> 1. It enables a basic kernel in first sub-series and adds ptrace/kgdb/.. later
-> 2. Some of the fallout of review (DeviceTree support, multi-platform-image
-> support) were added on top of orig series, primarily to record the revision history.
-> 
-> Please consider pulling.
-> 
-> Thanks,
-> Vineet
+Hi everyone:
 
-Hi Linus,
+In the newest linux kernel version3.8, arch/arm/mm/Kconfig, there are
+some menu like this:
 
-Did you get a chance to look at the patch series and is there anything in
-particular which could be gating the merge.
+872 *config ARM_DMA_MEM_BUFFERABLE*
 
-Thanks,
-Vineet
+ 873         *bool "Use non-cacheable memory for DMA" if (CPU_V6 ||
+CPU_V6K) && !CPU_V7*
+
+ 874         depends on !(MACH_REALVIEW_PB1176 || REALVIEW_EB_ARM11MP || \
+
+ 875                      MACH_REALVIEW_PB11MP)
+
+ 876         default y if CPU_V6 || CPU_V6K || CPU_V7
+
+ 877         help
+
+ 878           Historically, the kernel has used strongly ordered mappings to
+
+ 879           provide DMA coherent memory.  With the advent of ARMv7, mapping
+
+ 880           memory with differing types results in unpredictable behaviour,
+
+ 881           so on these CPUs, this option is forced on.
+
+ 882
+
+ 883           Multiple mappings with differing attributes is also unpredictable
+
+ 884           on ARMv6 CPUs, but since they do not have aggressive speculative
+
+ 885           prefetch, no harm appears to occur.
+
+ 886
+ 887           However, drivers may be missing the necessary barriers for ARMv6,
+
+ 888           and therefore turning this on may result in unpredictable driver
+
+ 889           behaviour.  Therefore, we offer this as an option.
+
+ 890
+ 891           You are recommended say 'Y' here and debug any affected drivers.
+
+
+
+ I have three questions:
+
+ 1)Does this mean that I cann't get unbuffered DMA buffer on ARM
+cortex a8(CPU_V7)?
+
+
+ 2)How can I¡¡allocate unbuffered DMA buffer on linux of cortex a8 platform?
+
+ 3)In the upper contex,there are:
+   "With the advent of ARMv7, mapping memory with differing types
+results in unpredictable    behaviour"
+  What does "mapping memory with differing types" really mean?
