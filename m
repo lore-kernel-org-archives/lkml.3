@@ -1,55 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752582Ab3CAVxy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 16:53:54 -0500
-Received: from e39.co.us.ibm.com ([32.97.110.160]:43317 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752264Ab3CAVxx (ORCPT
+	id S1752611Ab3CAVy2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 16:54:28 -0500
+Received: from mailout02.c08.mtsvc.net ([205.186.168.190]:41456 "EHLO
+	mailout02.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751944Ab3CAVy0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 16:53:53 -0500
-Date: Fri, 1 Mar 2013 13:53:46 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Jan Kara <jack@suse.cz>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3] printk: Avoid softlockups in console_unlock()
-Message-ID: <20130301215346.GF3285@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1361927819-1570-1-git-send-email-jack@suse.cz>
- <20130227175945.GC3336@linux.vnet.ibm.com>
- <20130301103027.GC26128@quack.suse.cz>
- <20130301134321.85e18987.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130301134321.85e18987.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13030121-3620-0000-0000-0000016EFAD3
+	Fri, 1 Mar 2013 16:54:26 -0500
+Message-ID: <1362174860.3221.2.camel@thor.lan>
+Subject: Re: WARNING: at lib/idr.c:678 idr_find_slowpath+0x97/0xc0()
+From: Peter Hurley <peter@hurleysoftware.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, markus@trippelsdorf.de,
+        linux-kernel@vger.kernel.org
+Date: Fri, 01 Mar 2013 16:54:20 -0500
+In-Reply-To: <20130301213511.GF2481@mtj.dyndns.org>
+References: <20130228090846.GA249@x4>
+	 <20130301133159.0711f81a.akpm@linux-foundation.org>
+	 <20130301213511.GF2481@mtj.dyndns.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.3-0pjh1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 125194 peter@hurleysoftware.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 01, 2013 at 01:43:21PM -0800, Andrew Morton wrote:
-> On Fri, 1 Mar 2013 11:30:27 +0100
-> Jan Kara <jack@suse.cz> wrote:
+On Fri, 2013-03-01 at 13:35 -0800, Tejun Heo wrote:
+> Hello, Andrew.
 > 
-> > > If a CPU remains in your loop where you invoke rcu_cpu_stall_reset(),
-> > > there is no indication of the stall.  Now, I do understand why having
-> > > RCU add a CPU stall warning into the mix would be very bad, but it
-> > > would be good to have some sort of indication that there is stalling.
-> > > Perhaps a counter visible in sysfs?  Whatever it is, at least some way
-> > > of diagnosing the stall condition would be very good.
-> >   I see. If others (Andrew, ping?) are OK with the rest of the patch, I can
-> > extend it and add a counter of printk() breaks we had to make. That looks
-> > like a good idea.
+> On Fri, Mar 01, 2013 at 01:31:59PM -0800, Andrew Morton wrote:
+> > okluar passed a negative `wd' into inotify_rm_watch()?
+> > 
+> > I wonder why it did that.  I doubt if inotify_add_watch() ever returns
+> > negative descriptors, in which case I expect that okular's call to
+> > inotify_add_watch() returned -1 and an errno and okular forgot to check
+> > it, and later passed that -1 back into inotify_rm_watch().
+> > 
+> > Anyway, I guess we need to make inotify_add_watch() refuse to return
+> > negative descriptors (presumably this is already the case due to idr
+> > internals) and make inotify_rm_watch() trap negative values of `wd' up
+> > front.
+> > 
+> > I wonder how many other such gremlins the IDR checking has added.
 > 
-> hmpf, spose so.  It sound lke the world's least interesting counter but
-> perhaps it will look more interesting when we see its sparkly
-> documentation.
+> The WARN_ON() is just for cases where someone might be doing something
+> crazy with the previous behavior of ignoring high bit.  Maybe I was
+> being overly paranoid and we should just drop it from idr_find().
 
-Boredom is a good thing here, given that the goal is to reduce
-excitement when bad things happen.  Or at least to increase awareness
-of root causes.
+Can we revert the __lock_timer patch as well then?
 
-							Thanx, Paul
+On Mon, 2013-02-25 at 17:48 -0800, Tejun Heo wrote:
+On Mon, Feb 25, 2013 at 08:46:11PM -0500, Peter Hurley wrote:
+> > On Mon, 2013-02-25 at 17:40 -0800, Tejun Heo wrote:
+> > > On Mon, Feb 25, 2013 at 08:37:12PM -0500, Peter Hurley wrote:
+> > > > Since idr is used for syscall apis (to associate 'handles' with
+> > > > internal structures), don't WARN with invalid input.
+> > > > 
+> > > > For example, POSIX timers are identified by timer_t id. These
+> > > > ids are idr values. If userspace passes a representable timer_t id
+> > > > value (eg, id < 0) but which was not previous allocated (since the
+> > > > current idr api does not return negative idr values), then the
+> > > > syscall properly returns an error; a WARN is unnecessary and
+> > > > undesirable.
+> > > 
+> > > WARN_ON() on negative was intentional.  Because the previous
+> > > implmentation silently dropped the msb, we at least wanna know who has
+> > > been passing in negative indices.  Patch for the lock_timer is already
+> > > in -mm.
+> > 
+> > Thanks. Can you share the patch title? It's not in next-20130225.
+> 
+> It's this one.
+> 
+>  http://thread.gmane.org/gmane.linux.kernel/1444883/focus=1445094
+> 
 
