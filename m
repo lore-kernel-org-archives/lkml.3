@@ -1,55 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752038Ab3CASM2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 13:12:28 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:23100 "EHLO mx1.redhat.com"
+	id S1751936Ab3CASM1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 13:12:27 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:2028 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751192Ab3CASM0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751080Ab3CASM0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 1 Mar 2013 13:12:26 -0500
 From: Jiri Olsa <jolsa@redhat.com>
 To: linux-kernel@vger.kernel.org
-Cc: Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andi Kleen <andi@firstfloor.org>, Oleg Nesterov <oleg@redhat.com>,
+Cc: Jiri Olsa <jolsa@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <andi@firstfloor.org>,
+        Oleg Nesterov <oleg@redhat.com>,
         Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
         Paul Mackerras <paulus@samba.org>,
         Corey Ashford <cjashfor@linux.vnet.ibm.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Vince Weaver <vincent.weaver@maine.edu>
-Subject: [RFC 0/5] perf, signal x86: Fix breakpoint events overflow handling
-Date: Fri,  1 Mar 2013 19:11:47 +0100
-Message-Id: <1362161512-16803-1-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 1/5] signal x86: Propage RF EFLAGS bit throught the signal restore call
+Date: Fri,  1 Mar 2013 19:11:48 +0100
+Message-Id: <1362161512-16803-2-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1362161512-16803-1-git-send-email-jolsa@redhat.com>
+References: <1362161512-16803-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi,
-while porting Vince's overflow tests I found perf event
-breakpoint overflow does not work properly.
+Adding RF EFLAGS bit to be restored on return from signal from
+the original register context before the signal was entered.
 
-I found the x86 RF EFLAG bit not being set when returning
-from debug exception after triggering signal handler. Which
-is exactly what you get when you set perf breakpoint overflow
-SIGIO handler.
+This will prevent the RF flag to disappear when returning
+from exception due to the signal handler being executed.
 
-Patches 1 and 2 are trying to fix that and make attached
-tests pass. But it's very likely I'm breaking something
-else by these changes, so please consider those as RFC
-patches.. pure suggestions to make my point ;-)
-
-Patch 3 fixes the period handling for breakpoint events.
-
-Patches 4 and 5 provide automated perf tests for testing
-all 3 kernel changes.
-
-Also available at:
-git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/linux.git
-perf/RF1
-
-thanks for comments,
-jirka
-
-
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: H. Peter Anvin <hpa@zytor.com>
 Cc: Andi Kleen <andi@firstfloor.org>
@@ -62,24 +45,58 @@ Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Vince Weaver <vincent.weaver@maine.edu>
 ---
-Jiri Olsa (5):
-      signal x86: Propage RF EFLAGS bit throught the signal restore call
-      signal x86: Clear RF EFLAGS bit for signal handler
-      perf: Fix hw breakpoints overflow period sampling
-      perf tests: Test breakpoint overflow signal handler
-      perf tests: Test breakpoint overflow signal handler counts
+ arch/x86/ia32/ia32_signal.c        | 2 --
+ arch/x86/include/asm/sighandling.h | 4 ++--
+ arch/x86/kernel/signal.c           | 6 ------
+ 3 files changed, 2 insertions(+), 10 deletions(-)
 
- arch/x86/ia32/ia32_signal.c           |   2 -
- arch/x86/include/asm/sighandling.h    |   4 +-
- arch/x86/kernel/signal.c              |  13 ++++---
- include/linux/perf_event.h            |   2 +
- kernel/events/core.c                  |   2 +-
- kernel/events/hw_breakpoint.c         |   5 +++
- tools/perf/Makefile                   |   2 +
- tools/perf/tests/bp_signal.c          | 187 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- tools/perf/tests/bp_signal_overflow.c | 126 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- tools/perf/tests/builtin-test.c       |   8 ++++
- tools/perf/tests/tests.h              |   2 +
- 11 files changed, 342 insertions(+), 11 deletions(-)
- create mode 100644 tools/perf/tests/bp_signal.c
- create mode 100644 tools/perf/tests/bp_signal_overflow.c
+diff --git a/arch/x86/ia32/ia32_signal.c b/arch/x86/ia32/ia32_signal.c
+index a1daf4a..f13c279 100644
+--- a/arch/x86/ia32/ia32_signal.c
++++ b/arch/x86/ia32/ia32_signal.c
+@@ -34,8 +34,6 @@
+ #include <asm/sys_ia32.h>
+ #include <asm/smap.h>
+ 
+-#define FIX_EFLAGS	__FIX_EFLAGS
+-
+ int copy_siginfo_to_user32(compat_siginfo_t __user *to, siginfo_t *from)
+ {
+ 	int err = 0;
+diff --git a/arch/x86/include/asm/sighandling.h b/arch/x86/include/asm/sighandling.h
+index beff97f..7a95816 100644
+--- a/arch/x86/include/asm/sighandling.h
++++ b/arch/x86/include/asm/sighandling.h
+@@ -7,10 +7,10 @@
+ 
+ #include <asm/processor-flags.h>
+ 
+-#define __FIX_EFLAGS	(X86_EFLAGS_AC | X86_EFLAGS_OF | \
++#define FIX_EFLAGS	(X86_EFLAGS_AC | X86_EFLAGS_OF | \
+ 			 X86_EFLAGS_DF | X86_EFLAGS_TF | X86_EFLAGS_SF | \
+ 			 X86_EFLAGS_ZF | X86_EFLAGS_AF | X86_EFLAGS_PF | \
+-			 X86_EFLAGS_CF)
++			 X86_EFLAGS_CF | X86_EFLAGS_RF)
+ 
+ void signal_fault(struct pt_regs *regs, void __user *frame, char *where);
+ 
+diff --git a/arch/x86/kernel/signal.c b/arch/x86/kernel/signal.c
+index d6bf1f3..b6fe116 100644
+--- a/arch/x86/kernel/signal.c
++++ b/arch/x86/kernel/signal.c
+@@ -43,12 +43,6 @@
+ 
+ #include <asm/sigframe.h>
+ 
+-#ifdef CONFIG_X86_32
+-# define FIX_EFLAGS	(__FIX_EFLAGS | X86_EFLAGS_RF)
+-#else
+-# define FIX_EFLAGS	__FIX_EFLAGS
+-#endif
+-
+ #define COPY(x)			do {			\
+ 	get_user_ex(regs->x, &sc->x);			\
+ } while (0)
+-- 
+1.7.11.7
+
