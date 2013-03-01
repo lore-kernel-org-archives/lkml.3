@@ -1,48 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752241Ab3CAR5G (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 12:57:06 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:35810 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751202Ab3CAR5E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 12:57:04 -0500
-Date: Fri, 1 Mar 2013 18:56:53 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
-Cc: Jeff Moyer <jmoyer@redhat.com>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 5/9] blockconsole: use CON_ALLDATA
-Message-ID: <20130301175653.GG30938@pd.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	=?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>,
-	Jeff Moyer <jmoyer@redhat.com>, linux-kernel@vger.kernel.org,
-	Andrew Morton <akpm@linux-foundation.org>
-References: <1362087602-8979-1-git-send-email-joern@logfs.org>
- <1362087602-8979-6-git-send-email-joern@logfs.org>
- <x49txov14mp.fsf@segfault.boston.devel.redhat.com>
- <20130301162029.GB16393@logfs.org>
- <20130301175220.GF30938@pd.tnic>
- <20130301163128.GA16713@logfs.org>
+	id S1751971Ab3CASDv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 13:03:51 -0500
+Received: from mail-ve0-f177.google.com ([209.85.128.177]:51912 "EHLO
+	mail-ve0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751247Ab3CASDu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Mar 2013 13:03:50 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130301163128.GA16713@logfs.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <5130DD94.2060408@imgtec.com>
+References: <5130DD94.2060408@imgtec.com>
+Date: Fri, 1 Mar 2013 10:03:49 -0800
+X-Google-Sender-Auth: U4Vyu7smiFXovkn4HMy0w7u55hk
+Message-ID: <CA+55aFw9qvUdrtEk_83-gEjZMTceONk=AuVsHuTtqOj=jpVPQg@mail.gmail.com>
+Subject: Re: [GIT PULL] late arch/metag fixes for v3.9-rc1
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: James Hogan <james.hogan@imgtec.com>
+Cc: Arnd <arnd@arndb.de>, linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 01, 2013 at 11:31:28AM -0500, Jörn Engel wrote:
-> For blockconsole I agree.  Netconsole is the interesting one, because
-> CON_ALLDATA could be considered a regression for it.
+On Fri, Mar 1, 2013 at 8:55 AM, James Hogan <james.hogan@imgtec.com> wrote:
+>
+> Please pull the following changes in addition to my previous arch/metag
+> pull request. See the tag (below) for details. The shortlog is a bit
+> inflated unfortunately as it includes the previous pull request too.
+> I've marked where the new changes begin though.
 
-Yeah, that's why I suggested dropping 4/9 - nothing changes for
-netconsole so that everyone can relax :-).
+Yeah, that would be a no. I finally got to look at the new
+architectures and be ready to pull them, and you just made sure I
+won't pull this.
 
--- 
-Regards/Gruss,
-    Boris.
+This is exactly the kind of crap I don't want to see in *any* pull
+requests, much less for a new sub-area.
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+>       metag: copy devicetree to non-init memory
+>       metag: prom.h: remove declaration of metag_dt_memblock_reserve()
+>       metag: Provide dma_get_sgtable()
+>       Merge commit 'burying unused conditionals'
+>       metag: remove GENERIC_SIGALTSTACK
+>       Merge commit 'irq_work: Remove CONFIG_HAVE_IRQ_WORK'
+>       metag: remove select CONFIG_HAVE_IRQ_WORK
+>       Merge commit 'make CONFIG_EXPERIMENTAL invisible and default'
+>       metag: remove CONFIG_EXPERIMENTAL from defconfigs
+>       Merge commit 'default SET_PERSONALITY() in linux/elf.h'
+>       metag: remove SET_PERSONALITY()
+
+Why the f*ck are you doing back-merges? There is no excuse for even a
+single one. And here you have just about one back-merge per commit.
+
+No, no no.
+
+At least you have explanations, but you already had one from before,
+now you added four more. Don't do it. Let me know about fixups, or
+just wait for me to pull, but doing back-merges for trivial issues
+just makes things worse, and makes it much harder to see what the heck
+is up.
+
+             Linus
