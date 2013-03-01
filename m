@@ -1,82 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754843Ab3CABhH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 20:37:07 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:56550 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752854Ab3CABhF (ORCPT
+	id S1755077Ab3CABh0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 20:37:26 -0500
+Received: from prdiron-2.llnl.gov ([128.15.143.172]:57430 "EHLO
+	prdiron-2.llnl.gov" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753809Ab3CABhY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 20:37:05 -0500
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: linux-kernel@vger.kernel.org, linux-rt-users@vger.kernel.org
-Cc: Thomas Gleixner <tglx@linutronix.de>, Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCH] futex: fix unbalanced spin_lock/spin_unlock() in exit_pi_state_list()
-Date: Fri,  1 Mar 2013 09:36:55 +0800
-Message-Id: <1362101815-19968-1-git-send-email-yong.zhang0@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Thu, 28 Feb 2013 20:37:24 -0500
+X-Attachments: 
+Date: Thu, 28 Feb 2013 17:37:22 -0800
+From: Ira Weiny <weiny2@llnl.gov>
+To: "Husam Kahalah" <HKahalah@asaltech.com>
+Cc: linux-rdma@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH]  infiniband-diags/saquery.c: switchinfo support added
+Message-Id: <20130228173722.81b9d161a894b8324d5c5775@llnl.gov>
+In-Reply-To: <WC20130228061138.140078@asaltech.com>
+References: <WC20130228061138.140078@asaltech.com>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.18.9; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Yong Zhang <yong.zhang@windriver.com>
+Your mailer line wrapped the patch.  Could you resend.
 
-Otherwise, below warning is shown somtimes when running some test:
+Also, could you add this to doc/rst/saquery.8.in.rst
 
-WARNING: at kernel/sched/core.c:3423 migrate_disable+0xbf/0xd0()
-Hardware name: OptiPlex 755
-Modules linked in: floppy parport parport_pc minix
-Pid: 1800, comm: tst-robustpi8 Tainted: G        W    3.4.28-rt40 #1
-Call Trace:
- [<ffffffff81031f3f>] warn_slowpath_common+0x7f/0xc0
- [<ffffffff81031f9a>] warn_slowpath_null+0x1a/0x20
- [<ffffffff81066eaf>] migrate_disable+0xbf/0xd0
- [<ffffffff81085d95>] exit_pi_state_list+0xa5/0x170
- [<ffffffff8102f71f>] mm_release+0x12f/0x170
- [<ffffffff81036906>] exit_mm+0x26/0x140
- [<ffffffff81090fc6>] ? acct_collect+0x186/0x1c0
- [<ffffffff81036b66>] do_exit+0x146/0x930
- [<ffffffff810658d1>] ? get_parent_ip+0x11/0x50
- [<ffffffff8103760d>] do_group_exit+0x4d/0xc0
- [<ffffffff8104828f>] get_signal_to_deliver+0x23f/0x6a0
- [<ffffffff810019e5>] do_signal+0x65/0x5e0
- [<ffffffff81047816>] ? group_send_sig_info+0x76/0x80
- [<ffffffff81002018>] do_notify_resume+0x98/0xd0
- [<ffffffff8165779b>] int_signal+0x12/0x17
----[ end trace 0000000000000004 ]---
+Thanks,
+Ira
 
-The reason is that spin_lock() is taken in atomic context, but
-spin_unlock() is not.
+On Thu, 28 Feb 2013 08:11:38 +0200
+"Husam Kahalah" <HKahalah@asaltech.com> wrote:
 
-Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Steven Rostedt <rostedt@goodmis.org>
----
- kernel/futex.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+> From d61f2580b829fa2fc56aea15bd98ef3a607d9aba Mon Sep 17 00:00:00 2001
+> 
+> From: Husam kahalah <hkahalah@asaltech.com>
+> Date: Mon, 25 Feb 2013 10:53:25 +0200
+> Subject: [PATCH]  infiniband-diags/saquery.c: switchinfo support added
+> 
+> ---
+>  src/saquery.c |   55 
+> +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+>  1 files changed, 55 insertions(+), 0 deletions(-)
+> 
+> diff --git a/src/saquery.c b/src/saquery.c
+> index d31d77d..6390bcd 100644
+> --- a/src/saquery.c
+> +++ b/src/saquery.c
+> @@ -481,6 +481,41 @@ static void dump_service_record(void *data)
+>          cl_ntoh64(p_sr->service_data64[1]));
+>  }
+> 
+> +static void dump_switch_info_record(void *data)
+> +{
+> +  ib_switch_info_record_t *p_sir = data;
+> +
+> +  printf("SwitchInfoRecord dump:\n"
+> +        "\t\tRID\n"
+> +        "\t\tlid.....................%u\n"
+> +        "\t\tSwitchInfo dump:\n"
+> +        "\t\tlin_cap.................0x%X\n"
+> +        "\t\trand_cap................0x%X\n"
+> +        "\t\tmcast_cap...............0x%X\n"
+> +        "\t\tlin_top.................0x%X\n"
+> +        "\t\tdef_port................%u\n"
+> +        "\t\tdef_mcast_pri_port......%u\n"
+> +        "\t\tdef_mcast_not_port......%u\n"
+> +        "\t\tlife_state..............%u\n"
+> +        "\t\tlids_per_port...........0x%X\n"
+> +        "\t\tenforce_cap.............0x%X\n"
+> +        "\t\tflags...................%u\n"
+> +        "\t\tmcast_top...............0x%X\n",
+> +        cl_ntoh16(p_sir->lid),
+> +        cl_ntoh16(p_sir->switch_info.lin_cap),
+> +        cl_ntoh16(p_sir->switch_info.rand_cap),
+> +        cl_ntoh16(p_sir->switch_info.mcast_cap),
+> +        cl_ntoh16(p_sir->switch_info.lin_top),
+> +        p_sir->switch_info.def_port,
+> +        p_sir->switch_info.def_mcast_pri_port,
+> +        p_sir->switch_info.def_mcast_not_port,
+> +        p_sir->switch_info.life_state,
+> +        cl_ntoh16(p_sir->switch_info.lids_per_port),
+> +        cl_ntoh16(p_sir->switch_info.enforce_cap),
+> +        p_sir->switch_info.flags,
+> +        cl_ntoh16(p_sir->switch_info.mcast_top));
+> +}
+> +
+>  static void dump_inform_info_record(void *data)
+>  {
+>   char gid_str[INET6_ADDRSTRLEN];
+> @@ -1150,6 +1185,24 @@ static int query_service_records(const struct 
+> query_cmd *q, struct sa_handle * h
+>    dump_service_record);
+>  }
+> 
+> +static int query_switchinfo_records(const struct query_cmd *q,
+> + struct sa_handle * h, struct query_params *p,
+> + int argc, char *argv[])
+> +{
+> +  ib_switch_info_record_t swir;
+> + ib_net64_t comp_mask = 0;
+> + int lid = 0;
+> +
+> + if (argc > 0)
+> +  parse_lid_and_ports(h, argv[0], &lid, NULL, NULL);
+> +
+> +  memset(&swir, 0, sizeof(swir));
+> +  CHECK_AND_SET_VAL(lid, 16, 0, swir.lid, SWIR, LID);
+> +
+> + return get_and_dump_any_records(h, IB_SA_ATTR_SWITCHINFORECORD, 0, 
+> comp_mask,
+> + &swir, sizeof(swir), dump_switch_info_record);
+> +}
+> +
+>  static int query_inform_info_records(const struct query_cmd *q,
+>       struct sa_handle * h, struct query_params *p,
+>       int argc, char *argv[])
+> @@ -1342,6 +1395,8 @@ static const struct query_cmd query_cmds[] = {
+>    "[[mlid]/[position]/[block]]", query_mft_records},
+>    {"GUIDInfoRecord", "GIR", IB_SA_ATTR_GUIDINFORECORD,
+>    "[[lid]/[block]]", query_guidinfo_records},
+> +  {"SwitchInfoRecord", "SWIR", IB_SA_ATTR_SWITCHINFORECORD,
+> +  "[lid]", query_switchinfo_records},
+>    {0}
+>  };
+> 
+> -- 
+> 1.7.1
 
-diff --git a/kernel/futex.c b/kernel/futex.c
-index 9e26e87..2b676a2 100644
---- a/kernel/futex.c
-+++ b/kernel/futex.c
-@@ -562,16 +562,17 @@ void exit_pi_state_list(struct task_struct *curr)
- 
- 		spin_lock(&hb->lock);
- 
--		raw_spin_lock_irq(&curr->pi_lock);
- 		/*
- 		 * We dropped the pi-lock, so re-check whether this
- 		 * task still owns the PI-state:
- 		 */
- 		if (head->next != next) {
- 			spin_unlock(&hb->lock);
-+			raw_spin_lock_irq(&curr->pi_lock);
- 			continue;
- 		}
- 
-+		raw_spin_lock_irq(&curr->pi_lock);
- 		WARN_ON(pi_state->owner != curr);
- 		WARN_ON(list_empty(&pi_state->list));
- 		list_del_init(&pi_state->list);
+
 -- 
-1.7.9.5
-
+Ira Weiny
+Member of Technical Staff
+Lawrence Livermore National Lab
+925-423-8008
+weiny2@llnl.gov
