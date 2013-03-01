@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754767Ab3CAT4v (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 14:56:51 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51924 "EHLO
+	id S1754156Ab3CATq3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 14:46:29 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51905 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754170Ab3CATqa (ORCPT
+	with ESMTP id S1754065Ab3CATq0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 14:46:30 -0500
+	Fri, 1 Mar 2013 14:46:26 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ian Abbott <abbotti@mev.co.uk>
-Subject: [ 41/46] staging: comedi: ni_labpc: set up command4 register *after* command3
-Date: Fri,  1 Mar 2013 11:45:29 -0800
-Message-Id: <20130301194436.562961288@linuxfoundation.org>
+        Li Zefan <lizefan@huawei.com>, Tejun Heo <tj@kernel.org>
+Subject: [ 36/46] cgroup: fix exit() vs rmdir() race
+Date: Fri,  1 Mar 2013 11:45:24 -0800
+Message-Id: <20130301194436.081508459@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130301194432.263409302@linuxfoundation.org>
 References: <20130301194432.263409302@linuxfoundation.org>
@@ -26,76 +26,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ian Abbott <abbotti@mev.co.uk>
+From: Li Zefan <lizefan@huawei.com>
 
-Commit 22056e2b46246d97ff0f7c6e21a77b8daa07f02c upstream.
+commit 71b5707e119653039e6e95213f00479668c79b75 upstream.
 
-Tuomas <tvainikk _at_ gmail _dot_ com> reported problems getting
-meaningful output from a Lab-PC+ in differential mode for AI cmds, but
-AI insn reads gave correct readings.  He tracked it down to two
-problems, one of which is addressed by this patch.
+In cgroup_exit() put_css_set_taskexit() is called without any lock,
+which might lead to accessing a freed cgroup:
 
-It seems that writing to the command3 register after writing to the
-command4 register in `labpc_ai_cmd()` messes up the differential
-reference bit setting in the command4 register.  Set up the command4
-register after the command3 register (as in `labpc_ai_rinsn()`) to avoid
-the problem.
+thread1                           thread2
+---------------------------------------------
+exit()
+  cgroup_exit()
+    put_css_set_taskexit()
+      atomic_dec(cgrp->count);
+                                   rmdir();
+      /* not safe !! */
+      check_for_release(cgrp);
 
-Thanks to Tuomas for suggesting the fix.
+rcu_read_lock() can be used to make sure the cgroup is alive.
 
-Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
+Signed-off-by: Li Zefan <lizefan@huawei.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/comedi/drivers/ni_labpc.c |   31 +++++++++++++++---------------
- 1 file changed, 16 insertions(+), 15 deletions(-)
+ kernel/cgroup.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/drivers/staging/comedi/drivers/ni_labpc.c
-+++ b/drivers/staging/comedi/drivers/ni_labpc.c
-@@ -1282,21 +1282,6 @@ static int labpc_ai_cmd(struct comedi_de
- 		devpriv->write_byte(devpriv->command1_bits,
- 				    dev->iobase + COMMAND1_REG);
- 	}
--	/*  setup any external triggering/pacing (command4 register) */
--	devpriv->command4_bits = 0;
--	if (cmd->convert_src != TRIG_EXT)
--		devpriv->command4_bits |= EXT_CONVERT_DISABLE_BIT;
--	/* XXX should discard first scan when using interval scanning
--	 * since manual says it is not synced with scan clock */
--	if (labpc_use_continuous_mode(cmd) == 0) {
--		devpriv->command4_bits |= INTERVAL_SCAN_EN_BIT;
--		if (cmd->scan_begin_src == TRIG_EXT)
--			devpriv->command4_bits |= EXT_SCAN_EN_BIT;
--	}
--	/*  single-ended/differential */
--	if (aref == AREF_DIFF)
--		devpriv->command4_bits |= ADC_DIFF_BIT;
--	devpriv->write_byte(devpriv->command4_bits, dev->iobase + COMMAND4_REG);
- 
- 	devpriv->write_byte(cmd->chanlist_len,
- 			    dev->iobase + INTERVAL_COUNT_REG);
-@@ -1376,6 +1361,22 @@ static int labpc_ai_cmd(struct comedi_de
- 		devpriv->command3_bits &= ~ADC_FNE_INTR_EN_BIT;
- 	devpriv->write_byte(devpriv->command3_bits, dev->iobase + COMMAND3_REG);
- 
-+	/*  setup any external triggering/pacing (command4 register) */
-+	devpriv->command4_bits = 0;
-+	if (cmd->convert_src != TRIG_EXT)
-+		devpriv->command4_bits |= EXT_CONVERT_DISABLE_BIT;
-+	/* XXX should discard first scan when using interval scanning
-+	 * since manual says it is not synced with scan clock */
-+	if (labpc_use_continuous_mode(cmd) == 0) {
-+		devpriv->command4_bits |= INTERVAL_SCAN_EN_BIT;
-+		if (cmd->scan_begin_src == TRIG_EXT)
-+			devpriv->command4_bits |= EXT_SCAN_EN_BIT;
-+	}
-+	/*  single-ended/differential */
-+	if (aref == AREF_DIFF)
-+		devpriv->command4_bits |= ADC_DIFF_BIT;
-+	devpriv->write_byte(devpriv->command4_bits, dev->iobase + COMMAND4_REG);
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -378,12 +378,20 @@ static void __put_css_set(struct css_set
+ 		struct cgroup *cgrp = link->cgrp;
+ 		list_del(&link->cg_link_list);
+ 		list_del(&link->cgrp_link_list);
 +
- 	/*  startup acquisition */
++		/*
++		 * We may not be holding cgroup_mutex, and if cgrp->count is
++		 * dropped to 0 the cgroup can be destroyed at any time, hence
++		 * rcu_read_lock is used to keep it alive.
++		 */
++		rcu_read_lock();
+ 		if (atomic_dec_and_test(&cgrp->count) &&
+ 		    notify_on_release(cgrp)) {
+ 			if (taskexit)
+ 				set_bit(CGRP_RELEASABLE, &cgrp->flags);
+ 			check_for_release(cgrp);
+ 		}
++		rcu_read_unlock();
  
- 	/*  command2 reg */
+ 		kfree(link);
+ 	}
 
 
