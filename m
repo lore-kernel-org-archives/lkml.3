@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752992Ab3CATpl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 14:45:41 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51516 "EHLO
+	id S1755208Ab3CAUOk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 15:14:40 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51530 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752934Ab3CATpj (ORCPT
+	with ESMTP id S1752962Ab3CATpl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 14:45:39 -0500
+	Fri, 1 Mar 2013 14:45:41 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jeff Moyer <jmoyer@redhat.com>, Christoph Hellwig <hch@infradead.org>,
-        Jens Axboe <axboe@kernel.dk>, Jan Kara <jack@suse.cz>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: [ 42/77] fs: Fix possible use-after-free with AIO
-Date: Fri,  1 Mar 2013 11:44:27 -0800
-Message-Id: <20130301194356.407445720@linuxfoundation.org>
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: [ 44/77] media: cx18/ivtv: fix regression: remove __init from a non-init function
+Date: Fri,  1 Mar 2013 11:44:29 -0800
+Message-Id: <20130301194356.625874002@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130301194351.913471337@linuxfoundation.org>
 References: <20130301194351.913471337@linuxfoundation.org>
@@ -28,39 +27,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Hans Verkuil <hans.verkuil@cisco.com>
 
-commit 54c807e71d5ac59dee56c685f2b66e27cd54c475 upstream.
+commit cfb046cb800ba306b211fbbe4ac633486e11055f upstream.
 
-Running AIO is pinning inode in memory using file reference. Once AIO
-is completed using aio_complete(), file reference is put and inode can
-be freed from memory. So we have to be sure that calling aio_complete()
-is the last thing we do with the inode.
+Commits 5e6e81b2890db3969527772a8350825a85c22d5c (cx18) and
+2aebbf6737212265b917ed27c875c59d3037110a (ivtv) added an __init
+annotation to the cx18-alsa-load and ivtv-alsa-load functions. However,
+these functions are called *after* initialization by the main cx18/ivtv
+driver. By that time the memory containing those functions is already
+freed and your machine goes BOOM.
 
-Acked-by: Jeff Moyer <jmoyer@redhat.com>
-CC: Christoph Hellwig <hch@infradead.org>
-CC: Jens Axboe <axboe@kernel.dk>
-CC: Jeff Moyer <jmoyer@redhat.com>
-Signed-off-by: Jan Kara <jack@suse.cz>
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/direct-io.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/media/pci/cx18/cx18-alsa-main.c |    2 +-
+ drivers/media/pci/cx18/cx18-alsa-pcm.h  |    2 +-
+ drivers/media/pci/ivtv/ivtv-alsa-main.c |    2 +-
+ drivers/media/pci/ivtv/ivtv-alsa-pcm.h  |    2 +-
+ 4 files changed, 4 insertions(+), 4 deletions(-)
 
---- a/fs/direct-io.c
-+++ b/fs/direct-io.c
-@@ -261,9 +261,9 @@ static ssize_t dio_complete(struct dio *
- 		dio->end_io(dio->iocb, offset, transferred,
- 			    dio->private, ret, is_async);
- 	} else {
-+		inode_dio_done(dio->inode);
- 		if (is_async)
- 			aio_complete(dio->iocb, ret, 0);
--		inode_dio_done(dio->inode);
- 	}
- 
+--- a/drivers/media/pci/cx18/cx18-alsa-main.c
++++ b/drivers/media/pci/cx18/cx18-alsa-main.c
+@@ -197,7 +197,7 @@ err_exit:
  	return ret;
+ }
+ 
+-static int __init cx18_alsa_load(struct cx18 *cx)
++static int cx18_alsa_load(struct cx18 *cx)
+ {
+ 	struct v4l2_device *v4l2_dev = &cx->v4l2_dev;
+ 	struct cx18_stream *s;
+--- a/drivers/media/pci/cx18/cx18-alsa-pcm.h
++++ b/drivers/media/pci/cx18/cx18-alsa-pcm.h
+@@ -20,7 +20,7 @@
+  *  02111-1307  USA
+  */
+ 
+-int __init snd_cx18_pcm_create(struct snd_cx18_card *cxsc);
++int snd_cx18_pcm_create(struct snd_cx18_card *cxsc);
+ 
+ /* Used by cx18-mailbox to announce the PCM data to the module */
+ void cx18_alsa_announce_pcm_data(struct snd_cx18_card *card, u8 *pcm_data,
+--- a/drivers/media/pci/ivtv/ivtv-alsa-main.c
++++ b/drivers/media/pci/ivtv/ivtv-alsa-main.c
+@@ -205,7 +205,7 @@ err_exit:
+ 	return ret;
+ }
+ 
+-static int __init ivtv_alsa_load(struct ivtv *itv)
++static int ivtv_alsa_load(struct ivtv *itv)
+ {
+ 	struct v4l2_device *v4l2_dev = &itv->v4l2_dev;
+ 	struct ivtv_stream *s;
+--- a/drivers/media/pci/ivtv/ivtv-alsa-pcm.h
++++ b/drivers/media/pci/ivtv/ivtv-alsa-pcm.h
+@@ -20,4 +20,4 @@
+  *  02111-1307  USA
+  */
+ 
+-int __init snd_ivtv_pcm_create(struct snd_ivtv_card *itvsc);
++int snd_ivtv_pcm_create(struct snd_ivtv_card *itvsc);
 
 
