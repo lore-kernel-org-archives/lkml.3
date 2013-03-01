@@ -1,46 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751595Ab3CAMzk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 07:55:40 -0500
-Received: from mail-ee0-f49.google.com ([74.125.83.49]:37372 "EHLO
-	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751462Ab3CAMzj (ORCPT
+	id S1751841Ab3CAM4m (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 07:56:42 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:3212 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751308Ab3CAM4l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 07:55:39 -0500
-Message-ID: <5130A55E.8030508@suse.cz>
-Date: Fri, 01 Mar 2013 13:55:58 +0100
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:19.0) Gecko/20130124 Thunderbird/19.0
+	Fri, 1 Mar 2013 07:56:41 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Fri, 01 Mar 2013 04:56:40 -0800
+Message-ID: <5130A53C.1000600@nvidia.com>
+Date: Fri, 1 Mar 2013 18:25:24 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Bjorn Helgaas <bhelgaas@google.com>, x86@kernel.org,
-        lkml <linux-kernel@vger.kernel.org>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>
-Subject: Re: Uhhuh. NMI received for unknown reason 2c on CPU 0.
-References: <20130129202848.GE25415@pd.tnic> <5109A8F1.9040707@suse.cz> <5109B11C.2010400@suse.cz> <5170962.qHnbnlVDfx@vostro.rjw.lan> <20130131070926.GC4926@pd.tnic> <510A2B1C.1060108@suse.cz> <20130131131805.GG4926@pd.tnic> <20130131132400.GH4926@pd.tnic>
-In-Reply-To: <20130131132400.GH4926@pd.tnic>
-X-Enigmail-Version: 1.6a1pre
-Content-Type: text/plain; charset=UTF-8
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Stephen Warren <swarren@nvidia.com>,
+        "ian@slimlogic.co.uk" <ian@slimlogic.co.uk>
+Subject: Re: [PATCH] mfd: palmas: provide irq flags through DT/platform data
+References: <1362141296-15321-1-git-send-email-ldewangan@nvidia.com> <20130301124350.GA25302@opensource.wolfsonmicro.com>
+In-Reply-To: <20130301124350.GA25302@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/31/2013 02:24 PM, Borislav Petkov wrote:
-> On Thu, Jan 31, 2013 at 02:18:05PM +0100, Borislav Petkov wrote:
->>> And if I pass nmi_watchdog=0 to the image kernel, it should be gone I
->>> guess.
->>
->> How do you pass options the image kernel?
-> 
-> Yep, passing "nmi_watchdog=0" to the kernel (both when you boot and
-> when you resume) fixes the issue - no more unknown NMIs. Did only 3 s/r
-> cycles though.
+On Friday 01 March 2013 06:13 PM, Mark Brown wrote:
+> * PGP Signed by an unknown key
+>
+> On Fri, Mar 01, 2013 at 06:04:56PM +0530, Laxman Dewangan wrote:
+>
+>> Currently driver sets the irq type to IRQF_TRIGGER_LOW which is
+>> causing interrupt registration failure in ARM based SoCs as:
+>> [    0.208479] genirq: Setting trigger mode 8 for irq 118 failed (gic_set_type+0x0/0xf0)
+>> [    0.208513] dummy 0-0059: Failed to request IRQ 118: -22
+> This can't be a generic problem on ARM systems, I'm pretty sure the
+> primary users of palmas would've noticed, this is more of a new feature
+> isn't it?
 
-FWIW the last time I saw the unhandled NMI was on 31st Jan. Since I
-disabled NMI watchdog no more unhandled NMIs. I have to add that I don't
-use ethernet at all.
+I think it is tested with eval board and connected to gpio interrupt and 
+hence it is not noticed.
 
--- 
-js
-suse labs
+
+>
+>> +	if (ret < 0) {
+>> +		dev_err(palmas->dev, "POLARITY_CTRL write failed: %d\n", ret);
+>> +		goto err;
+>> +	}
+> Isn't there a read/modify/write call for palmas?
+
+Yaah, there is call but forget as I took this fix from my downstream code.
+I will respin the next patch.
+
