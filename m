@@ -1,49 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752022Ab3CARwc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 12:52:32 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:42938 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751151Ab3CARwb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 12:52:31 -0500
-Date: Fri, 1 Mar 2013 18:52:20 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
-Cc: Jeff Moyer <jmoyer@redhat.com>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 5/9] blockconsole: use CON_ALLDATA
-Message-ID: <20130301175220.GF30938@pd.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	=?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>,
-	Jeff Moyer <jmoyer@redhat.com>, linux-kernel@vger.kernel.org,
-	Andrew Morton <akpm@linux-foundation.org>
-References: <1362087602-8979-1-git-send-email-joern@logfs.org>
- <1362087602-8979-6-git-send-email-joern@logfs.org>
- <x49txov14mp.fsf@segfault.boston.devel.redhat.com>
- <20130301162029.GB16393@logfs.org>
+	id S1752135Ab3CARyA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 12:54:00 -0500
+Received: from mail-qa0-f50.google.com ([209.85.216.50]:44761 "EHLO
+	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751320Ab3CARx5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Mar 2013 12:53:57 -0500
+Date: Fri, 1 Mar 2013 09:53:49 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Lai Jiangshan <eag0628@gmail.com>,
+        Michel Lespinasse <walken@google.com>, linux-doc@vger.kernel.org,
+        peterz@infradead.org, fweisbec@gmail.com, linux-kernel@vger.kernel.org,
+        namhyung@kernel.org, mingo@kernel.org, linux-arch@vger.kernel.org,
+        linux@arm.linux.org.uk, xiaoguangrong@linux.vnet.ibm.com,
+        wangyun@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com,
+        nikunj@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
+        rusty@rustcorp.com.au, rostedt@goodmis.org, rjw@sisk.pl,
+        vincent.guittot@linaro.org, tglx@linutronix.de,
+        linux-arm-kernel@lists.infradead.org, netdev@vger.kernel.org,
+        oleg@redhat.com, sbw@mit.edu, akpm@linux-foundation.org,
+        linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH] lglock: add read-preference local-global rwlock
+Message-ID: <20130301175349.GC2481@mtj.dyndns.org>
+References: <512BBAD8.8010006@linux.vnet.ibm.com>
+ <CACvQF51jCxk5jUqmhD=QBBtUsBkQWZzakacrKO4Gsk=w61rNwQ@mail.gmail.com>
+ <512C7A38.8060906@linux.vnet.ibm.com>
+ <CACvQF51RvhM8XNqu3-1OTQ=cZUZ=pAX+_zx0a29+W67N1X+BgQ@mail.gmail.com>
+ <512CC509.1050000@linux.vnet.ibm.com>
+ <CACvQF50UgiqPpDk3HCmV86zKSf6tPjqr0bZowfPEOJs0g0r0MQ@mail.gmail.com>
+ <512D0D67.9010609@linux.vnet.ibm.com>
+ <CACvQF53ph2ixdM-otzetjM5cR+2kcZj6sckOp3TnzzA_x-EZ8w@mail.gmail.com>
+ <512E7879.20109@linux.vnet.ibm.com>
+ <5130E8E2.50206@cn.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130301162029.GB16393@logfs.org>
+In-Reply-To: <5130E8E2.50206@cn.fujitsu.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 01, 2013 at 11:20:29AM -0500, Jörn Engel wrote:
-> If you and/or other people are strongly opposed to the CON_ALLDATA
-> patches, I can either keep them private (we will never drop them from
-> our kernel) or add a config option.
+Hey, guys and Oleg (yes, I'm singling you out ;p because you're that
+awesome.)
 
-We'll do that when someone comes up with a really persuasive reason why
-blockconsole shouldn't log *all* messages. And, whatever we do, I don't
-want to configure/set anything so that blockconsole logs everything - it
-should be the default.
+On Sat, Mar 02, 2013 at 01:44:02AM +0800, Lai Jiangshan wrote:
+> Performance:
+> We only focus on the performance of the read site. this read site's fast path
+> is just preempt_disable() + __this_cpu_read/inc() + arch_spin_trylock(),
+> It has only one heavy memory operation. it will be expected fast.
+> 
+> We test three locks.
+> 1) traditional rwlock WITHOUT remote competition nor cache-bouncing.(opt-rwlock)
+> 2) this lock(lgrwlock)
+> 3) V6 percpu-rwlock by "Srivatsa S. Bhat". (percpu-rwlock)
+>    (https://lkml.org/lkml/2013/2/18/186)
+> 
+> 		nested=1(no nested)	nested=2	nested=4
+> opt-rwlock	 517181			1009200		2010027
+> lgrwlock	 452897			 700026		1201415
+> percpu-rwlock	1192955			1451343		1951757
+
+On the first glance, the numbers look pretty good and I kinda really
+like the fact that if this works out we don't have to introduce yet
+another percpu synchronization construct and get to reuse lglock.
+
+So, Oleg, can you please see whether you can find holes in this one?
+
+Srivatsa, I know you spent a lot of time on percpu_rwlock but as you
+wrote before Lai's work can be seen as continuation of yours, and if
+we get to extend what's already there instead of introducing something
+completely new, there's no reason not to (and my apologies for not
+noticing the possibility of extending lglock before).  So, if this can
+work, it would be awesome if you guys can work together.  Lai might
+not be very good at communicating in english yet but he's really good
+at spotting patterns in complex code and playing with them.
+
+Thanks!
 
 -- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+tejun
