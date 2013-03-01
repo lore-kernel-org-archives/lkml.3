@@ -1,42 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752180Ab3CALuR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 06:50:17 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:57323 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752023Ab3CALuQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 06:50:16 -0500
-Message-ID: <513095F6.2010000@suse.cz>
-Date: Fri, 01 Mar 2013 12:50:14 +0100
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S1752277Ab3CAMBW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 07:01:22 -0500
+Received: from mail-ob0-f169.google.com ([209.85.214.169]:45280 "EHLO
+	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752224Ab3CAMBU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Mar 2013 07:01:20 -0500
 MIME-Version: 1.0
-To: "Yann E. MORIN" <yann.morin.1998@free.fr>
-Cc: linux-kbuild@vger.kernel.org, jlec@gentoo.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] menuconfig: use config scripts to detect ncurses libs
-References: <jlec@gentoo.org> <1362052335-17913-1-git-send-email-jlec@gentoo.org> <201302281916.00257.yann.morin.1998@free.fr>
-In-Reply-To: <201302281916.00257.yann.morin.1998@free.fr>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1362101815-19968-1-git-send-email-yong.zhang0@gmail.com>
+References: <1362101815-19968-1-git-send-email-yong.zhang0@gmail.com>
+Date: Fri, 1 Mar 2013 13:01:19 +0100
+X-Google-Sender-Auth: EFQ1gn401QgDtDaKDQOJg-b9hc0
+Message-ID: <CAONaPpGUwHenOq9p_ktK10HqPCwZ_m9=Nj8qYWpKVxPhqQ8zjw@mail.gmail.com>
+Subject: Re: [PATCH] futex: fix unbalanced spin_lock/spin_unlock() in exit_pi_state_list()
+From: John Kacur <jkacur@redhat.com>
+To: Yong Zhang <yong.zhang0@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-rt-users@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28.2.2013 19:16, Yann E. MORIN wrote:
-> On Thursday 28 February 2013 jlec@gentoo.org wrote:
->> This patch replaces the old heuristic for detection of ncurses libs for
->> linking the ncurses menuconfig dialog by the use of the config scripts.
->> This results in the requirement of ncurses version 5.6 or newer for menuconfig.
-> 
-> As you said, ncurses started bundling these files with ncurses-5.6,
-> which was released in 2006.
-> 
-> OTOH, RHEL4 is still a widely used distro, and was released in 2005,
-> so is using an ncurses older than 5.6, so I'm afraid we can't drop
-> the legacy code like that.
+On Fri, Mar 1, 2013 at 2:36 AM, Yong Zhang <yong.zhang0@gmail.com> wrote:
+> From: Yong Zhang <yong.zhang@windriver.com>
+>
+> Otherwise, below warning is shown somtimes when running some test:
 
-Yes, please keep support for older libraries if it does not require too
-much effort.
-
-Michal
+It would be nice to know which test!
+----->o SNIP
