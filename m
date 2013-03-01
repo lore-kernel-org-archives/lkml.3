@@ -1,74 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751699Ab3CAOus (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 09:50:48 -0500
-Received: from smtp.nue.novell.com ([195.135.221.5]:38990 "EHLO
-	smtp.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751197Ab3CAOuq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 09:50:46 -0500
-Subject: Re: [PATCH] efivarfs: fix abnormal GUID in variable name by using
- strcpy to replace null with dash
-From: joeyli <jlee@suse.com>
-To: Lingzhu Xiang <lxiang@redhat.com>
-Cc: matt@console-pimps.org, linux-efi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Michael Schroeder <mls@suse.com>,
-        Josh Boyer <jwboyer@redhat.com>,
-        Jeremy Kerr <jeremy.kerr@canonical.com>
-In-Reply-To: <5130757F.4090702@redhat.com>
-References: <1362108018-13117-1-git-send-email-jlee@suse.com>
-	 <5130757F.4090702@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 01 Mar 2013 22:49:35 +0800
-Message-ID: <1362149375.23932.167.camel@linux-s257.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 8bit
+	id S1751245Ab3CAOwq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 09:52:46 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:10243 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750709Ab3CAOwp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Mar 2013 09:52:45 -0500
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Joern Engel <joern@logfs.org>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Borislav Petkov <bp@alien8.de>
+Subject: Re: [PATCH 3/9] printk: add CON_ALLDATA console flag
+References: <1362087602-8979-1-git-send-email-joern@logfs.org>
+	<1362087602-8979-4-git-send-email-joern@logfs.org>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Fri, 01 Mar 2013 09:52:27 -0500
+In-Reply-To: <1362087602-8979-4-git-send-email-joern@logfs.org> (Joern Engel's
+	message of "Thu, 28 Feb 2013 16:39:56 -0500")
+Message-ID: <x49obf32mvo.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-於 五，2013-03-01 於 17:31 +0800，Lingzhu Xiang 提到：
-> On 03/01/2013 11:20 AM, Lee, Chun-Yi wrote:
-> > From: Michael Schroeder <mls@suse.com>
-> > 
-> > On HP z220 system (firmware version 1.54), some EFI variables are incorrectly
-> > named :
-> > 
-> > ls -d /sys/firmware/efi/vars/*8be4d* | grep -v -- -8be returns
-> > /sys/firmware/efi/vars/dbxDefault-pport8be4df61-93ca-11d2-aa0d-00e098032b8c
-> > /sys/firmware/efi/vars/KEKDefault-pport8be4df61-93ca-11d2-aa0d-00e098032b8c
-> > /sys/firmware/efi/vars/SecureBoot-pport8be4df61-93ca-11d2-aa0d-00e098032b8c
-> > /sys/firmware/efi/vars/SetupMode-Information8be4df61-93ca-11d2-aa0d-00e098032b8c
-> > 
-> > That causes by the following statement in efivar_create_sysfs_entry function:
-> > 
-> >   *(short_name + strlen(short_name)) = '-';
-> > efi_guid_unparse(vendor_guid, short_name + strlen(short_name));
-> > 
-> > The trailing \0 is overwritten with '-', but the next char doesn't seem to be a \0
-> > as well for HP. So, the second strlen return the point of next '\0', causes there
-> > have garbage string attached before GUID.
-> > 
-> > Tested on On HP z220.
-> 
-> So short_name has trailing garbage, or rather, variable_name_size
-> is larger than variable_name actually is, wouldn't new_efivar->var.VariableName
-> also gets filled with trailing garbage?
-> 
-> In efivar_store_raw the VariableName's trailing garbage can cause
-> problem for comparison. You might want to also cover that or fix
-> variable_name_size.
-> 
-> 
-> Lingzhu Xiang
-> 
+Joern Engel <joern@logfs.org> writes:
 
-Yes, it's possible! I will add patch for print more debug messages to
-bug reporter for check it.
+> For consoles like netconsole and blockconsole the loglevel filtering
+> really doesn't make any sense.  If a line gets printed at all, please
+> send it down to that console, no questions asked.
 
+Could you please explain this a bit further?  Why wouldn't you want to
+allow the admin to filter log messages to the block or network console?
+This doesn't make a whole lot of sense to me, and in fact could cause
+problems for netconsole now that you're potentially sending a ton more
+traffic over the wire.
 
-Thanks for your review!
-Joey Lee
-
-
+Cheers,
+Jeff
