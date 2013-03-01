@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753696Ab3CAUSa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 15:18:30 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51458 "EHLO
+	id S1752730Ab3CATp3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 14:45:29 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51370 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752737Ab3CATpa (ORCPT
+	with ESMTP id S1751538Ab3CATpT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 14:45:30 -0500
+	Fri, 1 Mar 2013 14:45:19 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>, Sakari Ailus <sakari.ailus@iki.fi>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Archit Taneja <archit@ti.com>, Prabhakar Lad <prabhakar.lad@ti.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: [ 46/77] media: omap_vout: find_vma() needs ->mmap_sem held
-Date: Fri,  1 Mar 2013 11:44:31 -0800
-Message-Id: <20130301194356.840788893@linuxfoundation.org>
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [ 21/77] ftrace: Call ftrace cleanup module notifier after all other notifiers
+Date: Fri,  1 Mar 2013 11:44:06 -0800
+Message-Id: <20130301194354.252919829@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130301194351.913471337@linuxfoundation.org>
 References: <20130301194351.913471337@linuxfoundation.org>
@@ -29,63 +28,127 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Al Viro <viro@ZenIV.linux.org.uk>
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-commit 55ee64b30a38d688232e5eb2860467dddc493573 upstream.
+commit 8c189ea64eea01ca20d102ddb74d6936dd16c579 upstream.
 
-Walking rbtree while it's modified is a Bad Idea(tm); besides,
-the result of find_vma() can be freed just as it's getting returned
-to caller.  Fortunately, it's easy to fix - just take ->mmap_sem a bit
-earlier (and don't bother with find_vma() at all if virtp >= PAGE_OFFSET -
-in that case we don't even look at its result).
+Commit: c1bf08ac "ftrace: Be first to run code modification on modules"
 
-While we are at it, what prevents VIDIOC_PREPARE_BUF calling
-v4l_prepare_buf() -> (e.g) vb2_ioctl_prepare_buf() -> vb2_prepare_buf() ->
-__buf_prepare() -> __qbuf_userptr() -> vb2_vmalloc_get_userptr() -> find_vma(),
-AFAICS without having taken ->mmap_sem anywhere in process?  The code flow
-is bloody convoluted and depends on a bunch of things done by initialization,
-so I certainly might've missed something...
+changed ftrace module notifier's priority to INT_MAX in order to
+process the ftrace nops before anything else could touch them
+(namely kprobes). This was the correct thing to do.
 
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Sakari Ailus <sakari.ailus@iki.fi>
-Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: Archit Taneja <archit@ti.com>
-Cc: Prabhakar Lad <prabhakar.lad@ti.com>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+Unfortunately, the ftrace module notifier also contains the ftrace
+clean up code. As opposed to the set up code, this code should be
+run *after* all the module notifiers have run in case a module is doing
+correct clean-up and unregisters its ftrace hooks. Basically, ftrace
+needs to do clean up on module removal, as it needs to know about code
+being removed so that it doesn't try to modify that code. But after it
+removes the module from its records, if a ftrace user tries to remove
+a probe, that removal will fail due as the record of that code segment
+no longer exists.
+
+Nothing really bad happens if the probe removal is called after ftrace
+did the clean up, but the ftrace removal function will return an error.
+Correct code (such as kprobes) will produce a WARN_ON() if it fails
+to remove the probe. As people get annoyed by frivolous warnings, it's
+best to do the ftrace clean up after everything else.
+
+By splitting the ftrace_module_notifier into two notifiers, one that
+does the module load setup that is run at high priority, and the other
+that is called for module clean up that is run at low priority, the
+problem is solved.
+
+Reported-by: Frank Ch. Eigler <fche@redhat.com>
+Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/platform/omap/omap_vout.c |   12 +++++++-----
- 1 file changed, 7 insertions(+), 5 deletions(-)
+ kernel/trace/ftrace.c |   46 ++++++++++++++++++++++++++++++++--------------
+ 1 file changed, 32 insertions(+), 14 deletions(-)
 
---- a/drivers/media/platform/omap/omap_vout.c
-+++ b/drivers/media/platform/omap/omap_vout.c
-@@ -205,19 +205,21 @@ static u32 omap_vout_uservirt_to_phys(u3
- 	struct vm_area_struct *vma;
- 	struct mm_struct *mm = current->mm;
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -3970,37 +3970,51 @@ static void ftrace_init_module(struct mo
+ 	ftrace_process_locs(mod, start, end);
+ }
  
--	vma = find_vma(mm, virtp);
- 	/* For kernel direct-mapped memory, take the easy way */
--	if (virtp >= PAGE_OFFSET) {
--		physp = virt_to_phys((void *) virtp);
--	} else if (vma && (vma->vm_flags & VM_IO) && vma->vm_pgoff) {
-+	if (virtp >= PAGE_OFFSET)
-+		return virt_to_phys((void *) virtp);
+-static int ftrace_module_notify(struct notifier_block *self,
+-				unsigned long val, void *data)
++static int ftrace_module_notify_enter(struct notifier_block *self,
++				      unsigned long val, void *data)
+ {
+ 	struct module *mod = data;
+ 
+-	switch (val) {
+-	case MODULE_STATE_COMING:
++	if (val == MODULE_STATE_COMING)
+ 		ftrace_init_module(mod, mod->ftrace_callsites,
+ 				   mod->ftrace_callsites +
+ 				   mod->num_ftrace_callsites);
+-		break;
+-	case MODULE_STATE_GOING:
++	return 0;
++}
 +
-+	down_read(&current->mm->mmap_sem);
-+	vma = find_vma(mm, virtp);
-+	if (vma && (vma->vm_flags & VM_IO) && vma->vm_pgoff) {
- 		/* this will catch, kernel-allocated, mmaped-to-usermode
- 		   addresses */
- 		physp = (vma->vm_pgoff << PAGE_SHIFT) + (virtp - vma->vm_start);
-+		up_read(&current->mm->mmap_sem);
- 	} else {
- 		/* otherwise, use get_user_pages() for general userland pages */
- 		int res, nr_pages = 1;
- 		struct page *pages;
--		down_read(&current->mm->mmap_sem);
++static int ftrace_module_notify_exit(struct notifier_block *self,
++				     unsigned long val, void *data)
++{
++	struct module *mod = data;
++
++	if (val == MODULE_STATE_GOING)
+ 		ftrace_release_mod(mod);
+-		break;
+-	}
  
- 		res = get_user_pages(current, current->mm, virtp, nr_pages, 1,
- 				0, &pages, NULL);
+ 	return 0;
+ }
+ #else
+-static int ftrace_module_notify(struct notifier_block *self,
+-				unsigned long val, void *data)
++static int ftrace_module_notify_enter(struct notifier_block *self,
++				      unsigned long val, void *data)
++{
++	return 0;
++}
++static int ftrace_module_notify_exit(struct notifier_block *self,
++				     unsigned long val, void *data)
+ {
+ 	return 0;
+ }
+ #endif /* CONFIG_MODULES */
+ 
+-struct notifier_block ftrace_module_nb = {
+-	.notifier_call = ftrace_module_notify,
++struct notifier_block ftrace_module_enter_nb = {
++	.notifier_call = ftrace_module_notify_enter,
+ 	.priority = INT_MAX,	/* Run before anything that can use kprobes */
+ };
+ 
++struct notifier_block ftrace_module_exit_nb = {
++	.notifier_call = ftrace_module_notify_exit,
++	.priority = INT_MIN,	/* Run after anything that can remove kprobes */
++};
++
+ extern unsigned long __start_mcount_loc[];
+ extern unsigned long __stop_mcount_loc[];
+ 
+@@ -4032,9 +4046,13 @@ void __init ftrace_init(void)
+ 				  __start_mcount_loc,
+ 				  __stop_mcount_loc);
+ 
+-	ret = register_module_notifier(&ftrace_module_nb);
++	ret = register_module_notifier(&ftrace_module_enter_nb);
++	if (ret)
++		pr_warning("Failed to register trace ftrace module enter notifier\n");
++
++	ret = register_module_notifier(&ftrace_module_exit_nb);
+ 	if (ret)
+-		pr_warning("Failed to register trace ftrace module notifier\n");
++		pr_warning("Failed to register trace ftrace module exit notifier\n");
+ 
+ 	set_ftrace_early_filters();
+ 
 
 
