@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754509Ab3CATwY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 14:52:24 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52002 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754476Ab3CATqm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754473Ab3CATqm (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 1 Mar 2013 14:46:42 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51986 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754312Ab3CATqj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Mar 2013 14:46:39 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, David Teigland <teigland@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 11/30] idr: fix a subtle bug in idr_get_next()
-Date: Fri,  1 Mar 2013 11:45:32 -0800
-Message-Id: <20130301194529.211102955@linuxfoundation.org>
+        Jan Engelhardt <jengelh@inai.de>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [ 08/30] target: Add missing mapped_lun bounds checking during make_mappedlun setup
+Date: Fri,  1 Mar 2013 11:45:29 -0800
+Message-Id: <20130301194528.885001700@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130301194527.988540148@linuxfoundation.org>
 References: <20130301194527.988540148@linuxfoundation.org>
@@ -29,73 +27,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-commit 6cdae7416a1c45c2ce105a78187d9b7e8feb9e24 upstream.
+commit fbbf8555a986ed31e54f006b6cc637ea4ff1425b upstream.
 
-The iteration logic of idr_get_next() is borrowed mostly verbatim from
-idr_for_each().  It walks down the tree looking for the slot matching
-the current ID.  If the matching slot is not found, the ID is
-incremented by the distance of single slot at the given level and
-repeats.
+This patch adds missing bounds checking for the configfs provided
+mapped_lun value during target_fabric_make_mappedlun() setup ahead
+of se_lun_acl initialization.
 
-The implementation assumes that during the whole iteration id is aligned
-to the layer boundaries of the level closest to the leaf, which is true
-for all iterations starting from zero or an existing element and thus is
-fine for idr_for_each().
+This addresses a potential OOPs when using a mapped_lun value that
+exceeds the hardcoded TRANSPORT_MAX_LUNS_PER_TPG-1 value within
+se_node_acl->device_list[].
 
-However, idr_get_next() may be given any point and if the starting id
-hits in the middle of a non-existent layer, increment to the next layer
-will end up skipping the same offset into it.  For example, an IDR with
-IDs filled between [64, 127] would look like the following.
-
-          [  0  64 ... ]
-       /----/   |
-       |        |
-      NULL    [ 64 ... 127 ]
-
-If idr_get_next() is called with 63 as the starting point, it will try
-to follow down the pointer from 0.  As it is NULL, it will then try to
-proceed to the next slot in the same level by adding the slot distance
-at that level which is 64 - making the next try 127.  It goes around the
-loop and finds and returns 127 skipping [64, 126].
-
-Note that this bug also triggers in idr_for_each_entry() loop which
-deletes during iteration as deletions can make layers go away leaving
-the iteration with unaligned ID into missing layers.
-
-Fix it by ensuring proceeding to the next slot doesn't carry over the
-unaligned offset - ie.  use round_up(id + 1, slot_distance) instead of
-id += slot_distance.
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: David Teigland <teigland@redhat.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-by: Jan Engelhardt <jengelh@inai.de>
+Cc: Jan Engelhardt <jengelh@inai.de>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- lib/idr.c |    9 ++++++++-
- 1 file changed, 8 insertions(+), 1 deletion(-)
+ drivers/target/target_core_fabric_configfs.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/lib/idr.c
-+++ b/lib/idr.c
-@@ -621,7 +621,14 @@ void *idr_get_next(struct idr *idp, int
- 			return p;
- 		}
+--- a/drivers/target/target_core_fabric_configfs.c
++++ b/drivers/target/target_core_fabric_configfs.c
+@@ -355,6 +355,14 @@ static struct config_group *target_fabri
+ 		ret = -EINVAL;
+ 		goto out;
+ 	}
++	if (mapped_lun > (TRANSPORT_MAX_LUNS_PER_TPG-1)) {
++		pr_err("Mapped LUN: %lu exceeds TRANSPORT_MAX_LUNS_PER_TPG"
++			"-1: %u for Target Portal Group: %u\n", mapped_lun,
++			TRANSPORT_MAX_LUNS_PER_TPG-1,
++			se_tpg->se_tpg_tfo->tpg_get_tag(se_tpg));
++		ret = -EINVAL;
++		goto out;
++	}
  
--		id += 1 << n;
-+		/*
-+		 * Proceed to the next layer at the current level.  Unlike
-+		 * idr_for_each(), @id isn't guaranteed to be aligned to
-+		 * layer boundary at this point and adding 1 << n may
-+		 * incorrectly skip IDs.  Make sure we jump to the
-+		 * beginning of the next layer using round_up().
-+		 */
-+		id = round_up(id + 1, 1 << n);
- 		while (n < fls(id)) {
- 			n += IDR_BITS;
- 			p = *--paa;
+ 	lacl = core_dev_init_initiator_node_lun_acl(se_tpg, mapped_lun,
+ 			config_item_name(acl_ci), &ret);
 
 
