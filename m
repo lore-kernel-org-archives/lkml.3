@@ -1,61 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752148Ab3CAGnA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 01:43:00 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:61331 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751407Ab3CAGm7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 01:42:59 -0500
-Message-ID: <51304DDA.40808@redhat.com>
-Date: Fri, 01 Mar 2013 01:42:34 -0500
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1752188Ab3CAGoF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 01:44:05 -0500
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:51362 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751988Ab3CAGoD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Mar 2013 01:44:03 -0500
+Message-ID: <51304E29.40900@gmail.com>
+Date: Fri, 01 Mar 2013 14:43:53 +0800
+From: Simon Jeons <simon.jeons@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        "Vinod, Chegu" <chegu_vinod@hp.com>, "Low, Jason" <jason.low2@hp.com>,
-        linux-tip-commits@vger.kernel.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>, aquini@redhat.com,
-        Michel Lespinasse <walken@google.com>, Ingo Molnar <mingo@kernel.org>,
-        Larry Woodman <lwoodman@redhat.com>
-Subject: Re: [tip:core/locking] x86/smp: Move waiting on contended ticket
- lock out of line
-References: <20130206150403.006e5294@cuia.bos.redhat.com> <511C24A6.8020409@redhat.com> <CA+55aFws80EEJQskqiP+a5J-HOGu=M1Fe=uCs50ifedVxPxT1Q@mail.gmail.com> <512E376D.70105@redhat.com> <CA+55aFzPxJ3rfZvAvrP9LxCXfDU8AAVvhMZnP-OAoe-ycc70aw@mail.gmail.com> <512E6443.9050603@redhat.com> <CA+55aFwHxv9RH75BoXYcwdKeHx+otOOpg9494TTdFwQe3biOhw@mail.gmail.com> <512E80E3.7060800@redhat.com> <CA+55aFwa0EjGG2NUDYVLVBmXJa2k81YiuNO2yggk=GLRQxhhUQ@mail.gmail.com> <512EC7F0.60103@redhat.com> <1362024397.1867.28.camel@buesod1.americas.hpqcorp.net> <CA+55aFygzjuNYiG4MTPMzimEjQ92rpS-rNJr7HD4OQCAqze5zg@mail.gmail.com> <512F7429.4020103@redhat.com> <CA+55aFw3t+sC-zv6njxdJ6hB0arJnZzoGNO9W7o8h=tcUo5P_Q@mail.gmail.com> <CA+55aFwEshukBGU5YCtKL=7c-43guMuGSHTnXo02rLxZWGQWTw@mail.gmail.com> <512FC89B.6030507@redhat.com> <CA+55aFxbm83Oc2g55868HA2xCytsJzTxWGE0w_pMUzKaU5mJMw@mail.gmail.com> <512FDC82.2060606@redhat.com> <CA+55aFyitxgooTYq27eK4fO___R4uRrNhoPwDWxULeUkejH0ZA@mail.gmail.com>
-In-Reply-To: <CA+55aFyitxgooTYq27eK4fO___R4uRrNhoPwDWxULeUkejH0ZA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Mel Gorman <mgorman@suse.de>
+CC: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org, riel@redhat.com,
+        mhocko@suse.cz, hannes@cmpxchg.org
+Subject: Re: [PATCH] x86: mm: Check if PUD is large when validating a kernel
+ address v2
+References: <20130211145236.GX21389@suse.de> <20130213110202.GI4100@suse.de>
+In-Reply-To: <20130213110202.GI4100@suse.de>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/28/2013 06:09 PM, Linus Torvalds wrote:
+On 02/13/2013 07:02 PM, Mel Gorman wrote:
+> Andrew or Ingo, please pick up.
+>
+> Changelog since v1
+>    o Add reviewed-bys and acked-bys
+>
+> A user reported a bug whereby a backup process accessing /proc/kcore
+> caused an oops.
+>
+>   BUG: unable to handle kernel paging request at ffffbb00ff33b000
+>   IP: [<ffffffff8103157e>] kern_addr_valid+0xbe/0x110
+>   PGD 0
+>   Oops: 0000 [#1] SMP
+>   CPU 6
+>   Modules linked in: af_packet nfs lockd fscache auth_rpcgss nfs_acl sunrpc 8021q garp stp llc cpufreq_conservative cpufreq_userspace cpufreq_powersave acpi_cpufreq mperf microcode fuse nls_iso8859_1 nls_cp437 vfat fat loop dm_mod ioatdma ipv6 ipv6_lib igb dca i7core_edac edac_core i2c_i801 i2c_core cdc_ether usbnet bnx2 mii iTCO_wdt iTCO_vendor_support shpchp rtc_cmos pci_hotplug tpm_tis sg tpm pcspkr tpm_bios serio_raw button ext3 jbd mbcache uhci_hcd ehci_hcd usbcore sd_mod crc_t10dif usb_common processor thermal_sys hwmon scsi_dh_emc scsi_dh_rdac scsi_dh_alua scsi_dh_hp_sw scsi_dh ata_generic ata_piix libata megaraid_sas scsi_mod
+>
+>   Pid: 16196, comm: Hibackp Not tainted 3.0.13-0.27-default #1 IBM System x3550 M3 -[7944 K3G]-/94Y7614
+>   RIP: 0010:[<ffffffff8103157e>]  [<ffffffff8103157e>] kern_addr_valid+0xbe/0x110
+>   RSP: 0018:ffff88094165fe80  EFLAGS: 00010246
+>   RAX: 00003300ff33b000 RBX: ffff880100000000 RCX: 0000000000000000
+>   RDX: 0000000100000000 RSI: ffff880000000000 RDI: ff32b300ff33b400
+>   RBP: 0000000000001000 R08: 00003ffffffff000 R09: 0000000000000000
+>   R10: 22302e31223d6e6f R11: 0000000000000246 R12: 0000000000001000
+>   R13: 0000000000003000 R14: 0000000000571be0 R15: ffff88094165ff50
+>   FS:  00007ff152d33700(0000) GS:ffff88097f2c0000(0000) knlGS:0000000000000000
+>   CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+>   CR2: ffffbb00ff33b000 CR3: 00000009405a3000 CR4: 00000000000006e0
+>   DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+>   DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+>   Process Hibackp (pid: 16196, threadinfo ffff88094165e000, task ffff8808eb9ba600)
+>   Stack:
+>    ffffffff811b8aaa 0000000000004000 ffff880943fea480 ffff8808ef2bae50
+>    ffff880943d32980 fffffffffffffffb ffff8808ef2bae40 ffff88094165ff50
+>    0000000000004000 000000000056ebe0 ffffffff811ad847 000000000056ebe0
+>   Call Trace:
+>    [<ffffffff811b8aaa>] read_kcore+0x17a/0x370
+>    [<ffffffff811ad847>] proc_reg_read+0x77/0xc0
+>    [<ffffffff81151687>] vfs_read+0xc7/0x130
+>    [<ffffffff811517f3>] sys_read+0x53/0xa0
+>    [<ffffffff81449692>] system_call_fastpath+0x16/0x1b
+>
+> Investigation determined that the bug triggered when reading system RAM
+> at the 4G mark. On this system, that was the first address using 1G pages
 
-> So I almost think that *everything* there in the semaphore code could
-> be done under RCU. The actual spinlock doesn't seem to much matter, at
-> least for semaphores. The semaphore values themselves seem to be
-> protected by the atomic operations, but I might be wrong about that, I
-> didn't even check.
+Do you mean there is one page which is 1G?
 
-Checking try_atomic_semop and do_smart_update, it looks like neither
-is using atomic operations. That part of the semaphore code would
-still benefit from spinlocks.
+> for the virt->phys direct mapping so the PUD is pointing to a physical
+> address, not a PMD page.  The problem is that the page table walker in
+> kern_addr_valid() is not checking pud_large() and treats the physical
+> address as if it was a PMD.  If it happens to look like pmd_none then it'll
+> silently fail, probably returning zeros instead of real data. If the data
+> happens to look like a present PMD though, it will be walked resulting in
+> the oops above. This patch adds the necessary pud_large() check.
+>
+> Cc: stable@vger.kernel.org
+> Signed-off-by: Mel Gorman <mgorman@suse.de>
+> Reviewed-by: Rik van Riel <riel@redhat.com>
+> Reviewed-by: Michal Hocko <mhocko@suse.cz>
+> Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+> ---
+>   arch/x86/include/asm/pgtable.h |    5 +++++
+>   arch/x86/mm/init_64.c          |    3 +++
+>   2 files changed, 8 insertions(+)
+>
+> diff --git a/arch/x86/include/asm/pgtable.h b/arch/x86/include/asm/pgtable.h
+> index 5199db2..1c1a955 100644
+> --- a/arch/x86/include/asm/pgtable.h
+> +++ b/arch/x86/include/asm/pgtable.h
+> @@ -142,6 +142,11 @@ static inline unsigned long pmd_pfn(pmd_t pmd)
+>   	return (pmd_val(pmd) & PTE_PFN_MASK) >> PAGE_SHIFT;
+>   }
+>   
+> +static inline unsigned long pud_pfn(pud_t pud)
+> +{
+> +	return (pud_val(pud) & PTE_PFN_MASK) >> PAGE_SHIFT;
+> +}
+> +
+>   #define pte_page(pte)	pfn_to_page(pte_pfn(pte))
+>   
+>   static inline int pmd_large(pmd_t pte)
+> diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+> index 2ead3c8..75c9a6a 100644
+> --- a/arch/x86/mm/init_64.c
+> +++ b/arch/x86/mm/init_64.c
+> @@ -831,6 +831,9 @@ int kern_addr_valid(unsigned long addr)
+>   	if (pud_none(*pud))
+>   		return 0;
+>   
+> +	if (pud_large(*pud))
+> +		return pfn_valid(pud_pfn(*pud));
+> +
+>   	pmd = pmd_offset(pud, addr);
+>   	if (pmd_none(*pmd))
+>   		return 0;
+>
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
-The way the code handles a whole batch of semops all at once,
-potentially to multiple semaphores at once, and with the ability
-to undo all of the operations, it looks like the spinlock will
-still need to be per block of semaphores.
-
-I guess the code may still benefit from Michel's locking code,
-after the permission stuff has been moved from under the spinlock.
-
-Two remaining worries are the security_sem_free call and the
-non-RCU list_del calls from freeary, called from the SEM_RMID
-code. They are probably fine, but worth another pair of eyes...
-
--- 
-All rights reversed
