@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752703Ab3CAUV4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 15:21:56 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51394 "EHLO
+	id S1755373Ab3CAUWt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 15:22:49 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51362 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752567Ab3CATpW (ORCPT
+	with ESMTP id S1752499Ab3CATpR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 14:45:22 -0500
+	Fri, 1 Mar 2013 14:45:17 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [ 25/77] doc, kernel-parameters: Document console=hvc<n>
-Date: Fri,  1 Mar 2013 11:44:10 -0800
-Message-Id: <20130301194354.659550091@linuxfoundation.org>
+        Pratyush Anand <pratyush.anand@st.com>, Felipe Balbi <balbi@ti.com>
+Subject: [ 14/77] usb: dwc3: gadget: fix skip LINK_TRB on ISOC
+Date: Fri,  1 Mar 2013 11:43:59 -0800
+Message-Id: <20130301194353.510721377@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130301194351.913471337@linuxfoundation.org>
 References: <20130301194351.913471337@linuxfoundation.org>
@@ -27,32 +26,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+From: Pratyush Anand <pratyush.anand@st.com>
 
-commit a2fd6419174470f5ae6383f5037d0ee21ed9833f upstream.
+commit 915e202aeeb59e272992a6364c910aaef3073544 upstream.
 
-Both the PowerPC hypervisor and Xen hypervisor can utilize the
-hvc driver.
+When we reach to link trb, we just need to increase free_slot and then
+calculate TRB. Return is not correct, as it will cause wrong TRB DMA
+address to fetch in case of update transfer.
 
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Link: http://lkml.kernel.org/r/1361825650-14031-3-git-send-email-konrad.wilk@oracle.com
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Pratyush Anand <pratyush.anand@st.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- Documentation/kernel-parameters.txt |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/usb/dwc3/gadget.c |   13 +++++--------
+ 1 file changed, 5 insertions(+), 8 deletions(-)
 
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -564,6 +564,8 @@ bytes respectively. Such letter suffixes
- 			UART at the specified I/O port or MMIO address,
- 			switching to the matching ttyS device later.  The
- 			options are the same as for ttyS, above.
-+		hvc<n>	Use the hypervisor console device <n>. This is for
-+			both Xen and PowerPC hypervisors.
+--- a/drivers/usb/dwc3/gadget.c
++++ b/drivers/usb/dwc3/gadget.c
+@@ -754,21 +754,18 @@ static void dwc3_prepare_one_trb(struct
+ 	struct dwc3		*dwc = dep->dwc;
+ 	struct dwc3_trb		*trb;
  
-                 If the device connected to the port is not a TTY but a braille
-                 device, prepend "brl," before the device type, for instance
+-	unsigned int		cur_slot;
+-
+ 	dev_vdbg(dwc->dev, "%s: req %p dma %08llx length %d%s%s\n",
+ 			dep->name, req, (unsigned long long) dma,
+ 			length, last ? " last" : "",
+ 			chain ? " chain" : "");
+ 
+-	trb = &dep->trb_pool[dep->free_slot & DWC3_TRB_MASK];
+-	cur_slot = dep->free_slot;
+-	dep->free_slot++;
+-
+ 	/* Skip the LINK-TRB on ISOC */
+-	if (((cur_slot & DWC3_TRB_MASK) == DWC3_TRB_NUM - 1) &&
++	if (((dep->free_slot & DWC3_TRB_MASK) == DWC3_TRB_NUM - 1) &&
+ 			usb_endpoint_xfer_isoc(dep->endpoint.desc))
+-		return;
++		dep->free_slot++;
++
++	trb = &dep->trb_pool[dep->free_slot & DWC3_TRB_MASK];
++	dep->free_slot++;
+ 
+ 	if (!req->trb) {
+ 		dwc3_gadget_move_request_queued(req);
 
 
