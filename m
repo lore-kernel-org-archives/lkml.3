@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755162Ab3CAUIX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 15:08:23 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51627 "EHLO
+	id S1755124Ab3CAUIV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 15:08:21 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51644 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753417Ab3CATp4 (ORCPT
+	with ESMTP id S1753453Ab3CATp6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 14:45:56 -0500
+	Fri, 1 Mar 2013 14:45:58 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Lee, Chun-Yi" <jlee@suse.com>, Matthew Garrett <mjg59@srcf.ucam.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
+        Lingzhu Xiang <lxiang@redhat.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        Jeremy Kerr <jeremy.kerr@canonical.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
         Matt Fleming <matt.fleming@intel.com>
-Subject: [ 74/77] x86, efi: Allow slash in file path of initrd
-Date: Fri,  1 Mar 2013 11:44:59 -0800
-Message-Id: <20130301194359.799370204@linuxfoundation.org>
+Subject: [ 77/77] efivarfs: guid part of filenames are case-insensitive
+Date: Fri,  1 Mar 2013 11:45:02 -0800
+Message-Id: <20130301194400.106143345@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130301194351.913471337@linuxfoundation.org>
 References: <20130301194351.913471337@linuxfoundation.org>
@@ -28,93 +30,162 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>
+From: Matt Fleming <matt.fleming@intel.com>
 
-commit deb94101c4fda22e152c2a311210cf09ae51adf6 upstream.
+commit da27a24383b2b10bf6ebd0db29b325548aafecb4 upstream.
 
-When initrd file didn't put at the same place with stub kernel, we
-need give the file path of initrd, but need use backslash to separate
-directory and file. It's not friendly to unix/linux user, and not so
-intuitive for bootloader forward paramters to efi stub kernel by
-chainloading.
+It makes no sense to treat the following filenames as unique,
 
-This patch add support to handle_ramdisks for allow slash in file path
-of initrd, it convert slash to backlash when parsing path.
+	VarName-abcdefab-abcd-abcd-abcd-abcdefabcdef
+	VarName-ABCDEFAB-ABCD-ABCD-ABCD-ABCDEFABCDEF
+	VarName-ABcDEfAB-ABcD-ABcD-ABcD-ABcDEfABcDEf
+	VarName-aBcDEfAB-aBcD-aBcD-aBcD-aBcDEfaBcDEf
+	... etc ...
 
-In additional, this patch also separates print code of efi_char16_t from
-efi_printk, and print out the path/filename of initrd when failed to open
-initrd file. It's good for debug and discover typo.
+since the guid will be converted into a binary representation, which
+has no case.
 
-Signed-off-by: Lee, Chun-Yi <jlee@suse.com>
+Roll our own dentry operations so that we can treat the variable name
+part of filenames ("VarName" in the above example) as case-sensitive,
+but the guid portion as case-insensitive. That way, efivarfs will
+refuse to create the above files if any one already exists.
+
+Reported-by: Lingzhu Xiang <lxiang@redhat.com>
 Cc: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: H. Peter Anvin <hpa@zytor.com>
+Cc: Jeremy Kerr <jeremy.kerr@canonical.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Matt Fleming <matt.fleming@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/boot/compressed/eboot.c |   26 +++++++++++++++++++-------
- 1 file changed, 19 insertions(+), 7 deletions(-)
+ drivers/firmware/efivars.c |   95 ++++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 93 insertions(+), 2 deletions(-)
 
---- a/arch/x86/boot/compressed/eboot.c
-+++ b/arch/x86/boot/compressed/eboot.c
-@@ -19,23 +19,28 @@
+--- a/drivers/firmware/efivars.c
++++ b/drivers/firmware/efivars.c
+@@ -1043,6 +1043,84 @@ static int efivarfs_unlink(struct inode
+ 	return -EINVAL;
+ };
  
- static efi_system_table_t *sys_table;
- 
-+static void efi_char16_printk(efi_char16_t *str)
++/*
++ * Compare two efivarfs file names.
++ *
++ * An efivarfs filename is composed of two parts,
++ *
++ *	1. A case-sensitive variable name
++ *	2. A case-insensitive GUID
++ *
++ * So we need to perform a case-sensitive match on part 1 and a
++ * case-insensitive match on part 2.
++ */
++static int efivarfs_d_compare(const struct dentry *parent, const struct inode *pinode,
++			      const struct dentry *dentry, const struct inode *inode,
++			      unsigned int len, const char *str,
++			      const struct qstr *name)
 +{
-+	struct efi_simple_text_output_protocol *out;
++	int guid = len - GUID_LEN;
 +
-+	out = (struct efi_simple_text_output_protocol *)sys_table->con_out;
-+	efi_call_phys2(out->output_string, out, str);
++	if (name->len != len)
++		return 1;
++
++	/* Case-sensitive compare for the variable name */
++	if (memcmp(str, name->name, guid))
++		return 1;
++
++	/* Case-insensitive compare for the GUID */
++	return strncasecmp(name->name + guid, str + guid, GUID_LEN);
 +}
 +
- static void efi_printk(char *str)
++static int efivarfs_d_hash(const struct dentry *dentry,
++			   const struct inode *inode, struct qstr *qstr)
++{
++	unsigned long hash = init_name_hash();
++	const unsigned char *s = qstr->name;
++	unsigned int len = qstr->len;
++
++	if (!efivarfs_valid_name(s, len))
++		return -EINVAL;
++
++	while (len-- > GUID_LEN)
++		hash = partial_name_hash(*s++, hash);
++
++	/* GUID is case-insensitive. */
++	while (len--)
++		hash = partial_name_hash(tolower(*s++), hash);
++
++	qstr->hash = end_name_hash(hash);
++	return 0;
++}
++
++/*
++ * Retaining negative dentries for an in-memory filesystem just wastes
++ * memory and lookup time: arrange for them to be deleted immediately.
++ */
++static int efivarfs_delete_dentry(const struct dentry *dentry)
++{
++	return 1;
++}
++
++static struct dentry_operations efivarfs_d_ops = {
++	.d_compare = efivarfs_d_compare,
++	.d_hash = efivarfs_d_hash,
++	.d_delete = efivarfs_delete_dentry,
++};
++
++static struct dentry *efivarfs_alloc_dentry(struct dentry *parent, char *name)
++{
++	struct qstr q;
++
++	q.name = name;
++	q.len = strlen(name);
++
++	if (efivarfs_d_hash(NULL, NULL, &q))
++		return NULL;
++
++	return d_alloc(parent, &q);
++}
++
+ static int efivarfs_fill_super(struct super_block *sb, void *data, int silent)
  {
- 	char *s8;
+ 	struct inode *inode = NULL;
+@@ -1058,6 +1136,7 @@ static int efivarfs_fill_super(struct su
+ 	sb->s_blocksize_bits    = PAGE_CACHE_SHIFT;
+ 	sb->s_magic             = EFIVARFS_MAGIC;
+ 	sb->s_op                = &efivarfs_ops;
++	sb->s_d_op		= &efivarfs_d_ops;
+ 	sb->s_time_gran         = 1;
  
- 	for (s8 = str; *s8; s8++) {
--		struct efi_simple_text_output_protocol *out;
- 		efi_char16_t ch[2] = { 0 };
+ 	inode = efivarfs_get_inode(sb, NULL, S_IFDIR | 0755, 0);
+@@ -1098,7 +1177,7 @@ static int efivarfs_fill_super(struct su
+ 		if (!inode)
+ 			goto fail_name;
  
- 		ch[0] = *s8;
--		out = (struct efi_simple_text_output_protocol *)sys_table->con_out;
--
- 		if (*s8 == '\n') {
- 			efi_char16_t nl[2] = { '\r', 0 };
--			efi_call_phys2(out->output_string, out, nl);
-+			efi_char16_printk(nl);
- 		}
+-		dentry = d_alloc_name(root, name);
++		dentry = efivarfs_alloc_dentry(root, name);
+ 		if (!dentry)
+ 			goto fail_inode;
  
--		efi_call_phys2(out->output_string, out, ch);
-+		efi_char16_printk(ch);
- 	}
- }
+@@ -1148,8 +1227,20 @@ static struct file_system_type efivarfs_
+ 	.kill_sb = efivarfs_kill_sb,
+ };
  
-@@ -709,7 +714,12 @@ static efi_status_t handle_ramdisks(efi_
- 			if ((u8 *)p >= (u8 *)filename_16 + sizeof(filename_16))
- 				break;
- 
--			*p++ = *str++;
-+			if (*str == '/') {
-+				*p++ = '\\';
-+				*str++;
-+			} else {
-+				*p++ = *str++;
-+			}
- 		}
- 
- 		*p = '\0';
-@@ -737,7 +747,9 @@ static efi_status_t handle_ramdisks(efi_
- 		status = efi_call_phys5(fh->open, fh, &h, filename_16,
- 					EFI_FILE_MODE_READ, (u64)0);
- 		if (status != EFI_SUCCESS) {
--			efi_printk("Failed to open initrd file\n");
-+			efi_printk("Failed to open initrd file: ");
-+			efi_char16_printk(filename_16);
-+			efi_printk("\n");
- 			goto close_handles;
- 		}
- 
++/*
++ * Handle negative dentry.
++ */
++static struct dentry *efivarfs_lookup(struct inode *dir, struct dentry *dentry,
++				      unsigned int flags)
++{
++	if (dentry->d_name.len > NAME_MAX)
++		return ERR_PTR(-ENAMETOOLONG);
++	d_add(dentry, NULL);
++	return NULL;
++}
++
+ static const struct inode_operations efivarfs_dir_inode_operations = {
+-	.lookup = simple_lookup,
++	.lookup = efivarfs_lookup,
+ 	.unlink = efivarfs_unlink,
+ 	.create = efivarfs_create,
+ };
 
 
