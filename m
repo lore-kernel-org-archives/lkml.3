@@ -1,211 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752347Ab3CAXnq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 18:43:46 -0500
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:54082 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751688Ab3CAXno (ORCPT
+	id S1752475Ab3CAXoZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 18:44:25 -0500
+Received: from mail-ia0-f175.google.com ([209.85.210.175]:47297 "EHLO
+	mail-ia0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751478Ab3CAXoX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 18:43:44 -0500
-Date: Fri, 1 Mar 2013 18:43:40 -0500
-From: Andrew Shewmaker <agshew@gmail.com>
-To: akpm@linux-foundation.org
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, alan@lxorguk.ukuu.org.uk,
-        simon.jeons@gmail.com, ric.masonn@gmail.com
-Subject: [PATCH v3 002/002] mm: replace hardcoded 3% with admin_reserve_pages
- knob
-Message-ID: <20130301234340.GB1848@localhost.localdomain>
+	Fri, 1 Mar 2013 18:44:23 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Fri, 1 Mar 2013 15:44:22 -0800
+X-Google-Sender-Auth: BVT03g7Rj6zynUTy_rcx2uF5OEI
+Message-ID: <CAE9FiQVmJ0dtrxjViGHkaHigQHiBYZvuu5=4Xn4hgS=86xq9yQ@mail.gmail.com>
+Subject: hang with e1000_
+From: Yinghai Lu <yinghai@kernel.org>
+To: Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        NetDev <netdev@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add an admin_reserve_pages knob to allow admins of large memory
-systems running with overcommit disabled to change the hardcoded
-memory reserve to something other than 3%.
-    
-admin_reserve_pages is initialized to min(3%, k) as Alan suggested.
-k=2000 pages should allow the admin to spawn new sshd, bash, and top
-to recover if necessary.
+on today mainline tree.
 
-This affects OVERCOMMIT_GUESS and OVERCOMMIT_NEVER modes.
+[  529.379490] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs"
+disables this message.
+[  529.399350] swapper/0       D ffff883025294000     0     1      0 0x00000000
+[  529.399726]  ffff8810274f5ab8 0000000000000046 ffffffff810b3111
+ffff8810274f5fd8
+[  529.424058]  ffff8810274f5fd8 0000000000004000 ffff881027578000
+ffff8810274f8000
+[  529.439317]  ffff8810274f59f8 0000000000000002 0000000000000282
+ffff88203e40d680
+[  529.439740] Call Trace:
+[  529.459254]  [<ffffffff810b3111>] ? __hrtimer_start_range_ns+0x391/0x400
+[  529.459610]  [<ffffffff810e95bd>] ? trace_hardirqs_on+0xd/0x10
+[  529.480104]  [<ffffffff810b3111>] ? __hrtimer_start_range_ns+0x391/0x400
+[  529.480482]  [<ffffffff8219535d>] schedule+0x5d/0x60
+[  529.499357]  [<ffffffff8219405c>] schedule_hrtimeout_range_clock+0x10c/0x160
+[  529.499710]  [<ffffffff810b2720>] ? update_rmtp+0x70/0x70
+[  529.519406]  [<ffffffff810b31b4>] ? hrtimer_start_range_ns+0x14/0x20
+[  529.539192]  [<ffffffff821940c3>] schedule_hrtimeout_range+0x13/0x20
+[  529.539507]  [<ffffffff8109a040>] usleep_range+0x40/0x50
+[  529.559225]  [<ffffffff81b33dc9>] e1000_get_cfg_done_82571+0x39/0x50
+[  529.559539]  [<ffffffff81b42dc2>] e1000e_phy_hw_reset_generic+0x102/0x160
+[  529.579338]  [<ffffffff81b41ac7>] e1000e_copper_link_setup_igp+0x17/0x160
+[  529.579662]  [<ffffffff81b34e80>] e1000_setup_copper_link_82571+0xb0/0xd0
+[  529.599457]  [<ffffffff81b3e22f>] e1000e_setup_link_generic+0xbf/0x280
+[  529.621078]  [<ffffffff81b33fc2>] e1000_setup_link_82571+0x32/0x40
+[  529.621365]  [<ffffffff81b54495>] e1000_open+0xc5/0x540
+[  529.639395]  [<ffffffff810b4f3e>] ? __raw_notifier_call_chain+0xe/0x10
+[  529.639723]  [<ffffffff81f95510>] __dev_open+0x90/0x100
+[  529.659431]  [<ffffffff81f95804>] __dev_change_flags+0xd4/0x170
+[  529.659723]  [<ffffffff81f95948>] dev_change_flags+0x28/0x70
+[  529.679957]  [<ffffffff82ffc978>] ip_auto_config+0x193/0xea4
+[  529.680270]  [<ffffffff82ffc7e5>] ? root_nfs_parse_addr+0xc0/0xc0
+[  529.699378]  [<ffffffff82179e58>] ? printk+0x4d/0x4f
+[  529.699668]  [<ffffffff82ffc7e5>] ? root_nfs_parse_addr+0xc0/0xc0
+[  529.719381]  [<ffffffff81000254>] do_one_initcall+0x64/0x160
+[  529.719692]  [<ffffffff82faf31c>] kernel_init_freeable+0x1bf/0x251
+[  529.739527]  [<ffffffff82faea6c>] ? loglevel+0x31/0x31
+[  529.739835]  [<ffffffff82164a70>] ? rest_init+0xc0/0xc0
+[  529.759417]  [<ffffffff82164a7e>] kernel_init+0xe/0xf0
+[  529.759658]  [<ffffffff8219f75c>] ret_from_fork+0x7c/0xb0
+[  529.779357]  [<ffffffff82164a70>] ? rest_init+0xc0/0xc0
+[  529.779592] 1 lock held by swapper/0/1:
+[  529.799285]  #0:  (rtnl_mutex){+.+.+.}, at: [<ffffffff81fa3487>]
+rtnl_lock+0x17/0x20
 
-Signed-off-by: Andrew Shewmaker <agshew@gmail.com>
+The system is nehalem-ex 8 sockets.
 
----
+Another westmere-ex 8 sockets is ok.
 
-I changed the name of the knob from "rootuser" to "admin" 
-because it better matches the cap_sys_admin conditional. 
+They have same IO add-on cards.
 
- Documentation/sysctl/vm.txt | 16 +++++++++++++++
- include/linux/mm.h          |  2 ++
- kernel/sysctl.c             |  8 ++++++++
- mm/mmap.c                   | 50 +++++++++++++++++++++++++++++++++++++++++----
- 4 files changed, 72 insertions(+), 4 deletions(-)
+Thanks
 
-diff --git a/Documentation/sysctl/vm.txt b/Documentation/sysctl/vm.txt
-index 078701f..2827800 100644
---- a/Documentation/sysctl/vm.txt
-+++ b/Documentation/sysctl/vm.txt
-@@ -18,6 +18,7 @@ files can be found in mm/swap.c.
- 
- Currently, these files are in /proc/sys/vm:
- 
-+- admin_reserve_pages
- - block_dump
- - compact_memory
- - dirty_background_bytes
-@@ -628,6 +629,21 @@ the high water marks for each per cpu page list.
- 
- ==============================================================
- 
-+admin_reserve_pages
-+
-+The number of free pages in the system that should be reserved for users
-+with the capability cap_sys_admin. The default value is the smaller of 3% 
-+of free pages or 2000 pages (8MB with 4k pages). 8MB should provide 
-+enough for the admin to log in and kill a process if necessary. 
-+
-+Systems running with overcommit disabled should consider increasing this 
-+to account for the full Virtual Memory Size of programs used to recover 
-+a system.
-+
-+Changing this takes effect whenever an application requests memory.
-+
-+==============================================================
-+
- stat_interval
- 
- The time interval between which vm statistics are updated.  The default
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 66e2f7c..fba5f9a 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -1677,6 +1677,8 @@ int in_gate_area_no_mm(unsigned long addr);
- 
- int drop_caches_sysctl_handler(struct ctl_table *, int,
- 					void __user *, size_t *, loff_t *);
-+int admin_reserve_pages_sysctl_handler(struct ctl_table *, int,
-+					void __user *, size_t *, loff_t *);
- unsigned long shrink_slab(struct shrink_control *shrink,
- 			  unsigned long nr_pages_scanned,
- 			  unsigned long lru_pages);
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index c88878d..33f99f6 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -96,6 +96,7 @@
- /* External variables not in a header file. */
- extern int sysctl_overcommit_memory;
- extern int sysctl_overcommit_ratio;
-+extern int sysctl_admin_reserve_pages;
- extern int max_threads;
- extern int suid_dumpable;
- #ifdef CONFIG_COREDUMP
-@@ -1413,6 +1414,13 @@ static struct ctl_table vm_table[] = {
- 		.extra2		= &one,
- 	},
- #endif
-+	{
-+		.procname	= "admin_reserve_pages",
-+		.data		= &sysctl_admin_reserve_pages,
-+		.maxlen		= sizeof(sysctl_admin_reserve_pages),
-+		.mode		= 0644,
-+		.proc_handler	= admin_reserve_pages_sysctl_handler,
-+	},
- 	{ }
- };
- 
-diff --git a/mm/mmap.c b/mm/mmap.c
-index 6134b1d..e7e8889 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -32,6 +32,7 @@
- #include <linux/khugepaged.h>
- #include <linux/uprobes.h>
- #include <linux/rbtree_augmented.h>
-+#include <linux/sysctl.h>
- 
- #include <asm/uaccess.h>
- #include <asm/cacheflush.h>
-@@ -83,6 +84,7 @@ EXPORT_SYMBOL(vm_get_page_prot);
- int sysctl_overcommit_memory __read_mostly = OVERCOMMIT_GUESS;  /* heuristic overcommit */
- int sysctl_overcommit_ratio __read_mostly = 50;	/* default is 50% */
- int sysctl_max_map_count __read_mostly = DEFAULT_MAX_MAP_COUNT;
-+int sysctl_admin_reserve_pages __read_mostly = 4096;
- /*
-  * Make sure vm_committed_as in one cacheline and not cacheline shared with
-  * other variables. It can be updated by several CPUs frequently.
-@@ -162,10 +164,10 @@ int __vm_enough_memory(struct mm_struct *mm, long pages, int cap_sys_admin)
- 			free -= totalreserve_pages;
- 
- 		/*
--		 * Leave the last 3% for root
-+		 * Reserve some 3% for root
- 		 */
- 		if (!cap_sys_admin)
--			free -= free / 32;
-+			free -= sysctl_admin_reserve_pages;
- 
- 		if (free > pages)
- 			return 0;
-@@ -176,10 +178,10 @@ int __vm_enough_memory(struct mm_struct *mm, long pages, int cap_sys_admin)
- 	allowed = (totalram_pages - hugetlb_total_pages())
- 	       	* sysctl_overcommit_ratio / 100;
- 	/*
--	 * Leave the last 3% for root
-+	 * Reserve some for root
- 	 */
- 	if (!cap_sys_admin)
--		allowed -= allowed / 32;
-+		allowed -= sysctl_admin_reserve_pages;
- 	allowed += total_swap_pages;
- 
- 	/* Don't let a single process grow too big:
-@@ -3053,3 +3055,43 @@ void __init mmap_init(void)
- 	ret = percpu_counter_init(&vm_committed_as, 0);
- 	VM_BUG_ON(ret);
- }
-+
-+/*
-+ * Initialise sysctl_admin_reserve_pages.
-+ *
-+ * The purpose of sysctl_admin_reserve_pages is to allow the sys admin
-+ * to log in and kill a memory hogging process.
-+ *
-+ * The sum RSS of sshd, bash, and top is about 8MB on x86_64, 
-+ * so 2000 pages should be enough. However, systems with 
-+ * less than 256MB will only reserve 3% of free pages by default.
-+ */
-+int __meminit init_admin_reserve(void)
-+{
-+	unsigned long free;
-+
-+	free = global_page_state(NR_FREE_PAGES);
-+
-+	sysctl_admin_reserve_pages = min(free / 32, 2000UL);
-+	return 0;
-+}
-+module_init(init_admin_reserve)
-+
-+/*
-+ * admin_reserve_pages_sysctl_handler - just a wrapper around proc_dointvec_minmax() so 
-+ *	that we can cap the number of pages to the current number of free pages.
-+ */
-+int admin_reserve_pages_sysctl_handler(ctl_table *table, int write, 
-+	void __user *buffer, size_t *length, loff_t *ppos)
-+{
-+	unsigned long free;
-+
-+	proc_dointvec(table, write, buffer, length, ppos);
-+
-+	if (write) {
-+		free = global_page_state(NR_FREE_PAGES);
-+		if (sysctl_admin_reserve_pages > free)
-+			sysctl_admin_reserve_pages = free;
-+	}
-+	return 0;
-+}
+Yinghai
