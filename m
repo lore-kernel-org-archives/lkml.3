@@ -1,56 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751737Ab3CAVcE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 16:32:04 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52594 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751601Ab3CAVcA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 16:32:00 -0500
-Date: Fri, 1 Mar 2013 13:31:59 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: markus@trippelsdorf.de
-Cc: linux-kernel@vger.kernel.org, tj@kernel.org
-Subject: Re: WARNING: at lib/idr.c:678 idr_find_slowpath+0x97/0xc0()
-Message-Id: <20130301133159.0711f81a.akpm@linux-foundation.org>
-In-Reply-To: <20130228090846.GA249@x4>
-References: <20130228090846.GA249@x4>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1751998Ab3CAVdg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 16:33:36 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:45228 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751043Ab3CAVdd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Mar 2013 16:33:33 -0500
+Date: Fri, 1 Mar 2013 16:33:29 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: Eric Paris <eparis@parisplace.org>,
+        linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        LSM List <linux-security-module@vger.kernel.org>
+Subject: Re: IMA: How to manage user space signing policy with others
+Message-ID: <20130301213329.GC3457@redhat.com>
+References: <20130228151333.GB11360@redhat.com>
+ <1362079419.2908.390.camel@falcor1.watson.ibm.com>
+ <20130228213534.GF11360@redhat.com>
+ <CACLa4pum7kXK+7+8ceVSuQsKDCFebdgGVYRTMKH9GQarqCEgMQ@mail.gmail.com>
+ <1362102544.9158.35.camel@falcor1>
+ <1362140107.9158.101.camel@falcor1>
+ <20130301152839.GA3457@redhat.com>
+ <20130301184027.GB3457@redhat.com>
+ <1362166753.9158.169.camel@falcor1>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1362166753.9158.169.camel@falcor1>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 28 Feb 2013 10:08:46 +0100
-markus@trippelsdorf.de wrote:
+On Fri, Mar 01, 2013 at 02:39:13PM -0500, Mimi Zohar wrote:
 
-> Just hit the following warning on current git tree:
+[..]
+> I was suggesting that a builtin appraise rule chain and everything else
+> on the other chain.  Userspace could replace the other chain with
+> whatever they wanted, including additional appraisal rules.
 > 
-> ------------[ cut here ]------------
-> WARNING: at lib/idr.c:678 idr_find_slowpath+0x97/0xc0()
-> Hardware name: System Product Name
-> Pid: 12366, comm: okular Not tainted 3.8.0-09633-g2a7d2b9-dirty #312
-> Call Trace:
->  [<ffffffff8105b7a0>] ? warn_slowpath_common+0x60/0xa0
->  [<ffffffff811bf557>] ? idr_find_slowpath+0x97/0xc0
->  [<ffffffff811249f2>] ? inotify_idr_find_locked+0x32/0x80
->  [<ffffffff810ecf7d>] ? fput+0x1d/0xc0
->  [<ffffffff811254d0>] ? sys_inotify_rm_watch+0x50/0xc0
->  [<ffffffff814c9f58>] ? int_signal+0x12/0x17
->  [<ffffffff814c9d52>] ? system_call_fastpath+0x16/0x1b
+> > > Given the fact that policy file ABI is still in testing we should be
+> > > able to change semantics. (As currently user's appraise rules override
+> > > kernel's appraisal rules).
+> 
+> The userspace policy could only extend the appraisal rules.  We OR the
+> result of both chains, and use the more restrictive rule.
 
-okluar passed a negative `wd' into inotify_rm_watch()?
 
-I wonder why it did that.  I doubt if inotify_add_watch() ever returns
-negative descriptors, in which case I expect that okular's call to
-inotify_add_watch() returned -1 and an errno and okular forgot to check
-it, and later passed that -1 back into inotify_rm_watch().
+So secureboot rules will go in builtin policy. tcb appraise rules and
+others will go in other policy. This other policy is replacable by
+user.
 
-Anyway, I guess we need to make inotify_add_watch() refuse to return
-negative descriptors (presumably this is already the case due to idr
-internals) and make inotify_rm_watch() trap negative values of `wd' up
-front.
+We OR the results of both chains and instead of using first matching
+rule, we choose a rule which is more restrictive and use that.
 
-I wonder how many other such gremlins the IDR checking has added.
+Is there always a clear relationship between rules. I mean one is more
+restrictive than other. There can not be part-overlapping rules?
+
+[..]
+> We've already spoken about needing an additional hook or moving the
+> existing bprm hook.  Can we defer the memory caching requirements for
+> now?
+
+Sure, additional hook is not a concern.
+
+I can defer caching discussion but I think it is important to discuss
+it now. Because it might very well affect how do we decide to handle
+multiple appraise rules/policies. So please, if possible, let us not
+defer the caching requirement discussion.
+
+My biggest concern is what if we decide to rule based caching option
+and rule gets skipped because of more restrictive rule present.
+
+appraise func=bprm_check cache_status=no
+appraise fowner=root 
+
+In above case second rule will override first one and that's not what
+we want.
+
+Thanks
+Vivek
