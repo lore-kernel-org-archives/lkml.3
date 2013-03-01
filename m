@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754849Ab3CATvx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 14:51:53 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52007 "EHLO
+	id S1754728Ab3CATvw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 14:51:52 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52012 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754312Ab3CATqm (ORCPT
+	with ESMTP id S1754493Ab3CATqn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 14:46:42 -0500
+	Fri, 1 Mar 2013 14:46:43 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, Sasha Levin <sasha.levin@oracle.com>,
+        Xi Wang <xi.wang@gmail.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [ 03/30] posix-timer: Dont call idr_find() with out-of-range ID
-Date: Fri,  1 Mar 2013 11:45:24 -0800
-Message-Id: <20130301194528.370693652@linuxfoundation.org>
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 13/30] sysctl: fix null checking in bin_dn_node_address()
+Date: Fri,  1 Mar 2013 11:45:34 -0800
+Message-Id: <20130301194529.410713908@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130301194527.988540148@linuxfoundation.org>
 References: <20130301194527.988540148@linuxfoundation.org>
@@ -28,54 +29,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: Xi Wang <xi.wang@gmail.com>
 
-commit e182bb38d7db7494fa5dcd82da17fe0dedf60ecf upstream.
+commit df1778be1a33edffa51d094eeda87c858ded6560 upstream.
 
-When idr_find() was fed a negative ID, it used to look up the ID
-ignoring the sign bit before recent ("idr: remove MAX_IDR_MASK and
-move left MAX_IDR_* into idr.c") patch. Now a negative ID triggers
-a WARN_ON_ONCE().
+The null check of `strchr() + 1' is broken, which is always non-null,
+leading to OOB read.  Instead, check the result of strchr().
 
-__lock_timer() feeds timer_id from userland directly to idr_find()
-without sanitizing it which can trigger the above malfunctions.  Add a
-range check on @timer_id before invoking idr_find() in __lock_timer().
-
-While timer_t is defined as int by all archs at the moment, Andrew
-worries that it may be defined as a larger type later on.  Make the
-test cover larger integers too so that it at least is guaranteed to
-not return the wrong timer.
-
-Note that WARN_ON_ONCE() in idr_find() on id < 0 is transitional
-precaution while moving away from ignoring MSB.  Once it's gone we can
-remove the guard as long as timer_t isn't larger than int.
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: Sasha Levin <sasha.levin@oracle.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Link: http://lkml.kernel.org/r/20130220232412.GL3570@htj.dyndns.org
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Xi Wang <xi.wang@gmail.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/posix-timers.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+ kernel/sysctl_binary.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/kernel/posix-timers.c
-+++ b/kernel/posix-timers.c
-@@ -639,6 +639,13 @@ static struct k_itimer *__lock_timer(tim
- {
- 	struct k_itimer *timr;
+--- a/kernel/sysctl_binary.c
++++ b/kernel/sysctl_binary.c
+@@ -1194,9 +1194,10 @@ static ssize_t bin_dn_node_address(struc
  
-+	/*
-+	 * timer_t could be any type >= int and we want to make sure any
-+	 * @timer_id outside positive int range fails lookup.
-+	 */
-+	if ((unsigned long long)timer_id > INT_MAX)
-+		return NULL;
-+
- 	rcu_read_lock();
- 	timr = idr_find(&posix_timers_id, (int)timer_id);
- 	if (timr) {
+ 		/* Convert the decnet address to binary */
+ 		result = -EIO;
+-		nodep = strchr(buf, '.') + 1;
++		nodep = strchr(buf, '.');
+ 		if (!nodep)
+ 			goto out;
++		++nodep;
+ 
+ 		area = simple_strtoul(buf, NULL, 10);
+ 		node = simple_strtoul(nodep, NULL, 10);
 
 
