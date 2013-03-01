@@ -1,55 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751071Ab3CAENW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 23:13:22 -0500
-Received: from relay.parallels.com ([195.214.232.42]:35026 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750758Ab3CAENV (ORCPT
+	id S1751478Ab3CAESg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 23:18:36 -0500
+Received: from mail-vc0-f173.google.com ([209.85.220.173]:33856 "EHLO
+	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750698Ab3CAESf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 23:13:21 -0500
-Message-ID: <51302AAC.6030400@parallels.com>
-Date: Fri, 1 Mar 2013 08:12:28 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Thu, 28 Feb 2013 23:18:35 -0500
 MIME-Version: 1.0
-To: Peter Hurley <peter@hurleysoftware.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@redhat.com>
-Subject: Re: [PATCH 00/10] ipc MSG_COPY fixes
-References: <1361845307-12737-1-git-send-email-peter@hurleysoftware.com>  <512C69EA.8020603@parallels.com> <1361880000.3235.3.camel@thor.lan>
-In-Reply-To: <1361880000.3235.3.camel@thor.lan>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.30.29.37]
+In-Reply-To: <1362092093-4839-1-git-send-email-olof@lixom.net>
+References: <1362092093-4839-1-git-send-email-olof@lixom.net>
+Date: Thu, 28 Feb 2013 20:18:34 -0800
+X-Google-Sender-Auth: 3fYko1EXt_pRUTdaaRj7MhsjLvY
+Message-ID: <CA+55aFx2Cuuq2YW6mexxZ88TNm=FLYUYPzeLqN=y46oYxZJ3wQ@mail.gmail.com>
+Subject: Re: [GIT PULL 0/3] arm-soc: late changes for 3.9
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Olof Johansson <olof@lixom.net>, Chris Ball <cjb@laptop.org>,
+        Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        ARM SoC <arm@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-26.02.2013 16:00, Peter Hurley пишет:
-> On Tue, 2013-02-26 at 11:53 +0400, Stanislav Kinsbursky wrote:
->> Looks good to me. Thanks you, Peter!
->>
->> Acked-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
->>
->> Next time please, add maintainer to "To" list instead of "CC" list (no need to resend - I've added Andrew Morton to "To" list in this reply).
+On Thu, Feb 28, 2013 at 2:54 PM, Olof Johansson <olof@lixom.net> wrote:
 >
-> Ok.
->
->>> Can the alloc_msg() be further simplified to allocate one block with
->>> vmalloc() and link the msg segments in-place?
->
-> Any thoughts on this suggestion?
->
+> Final two pull requests are for the same code. As Arnd describes in the
+> tags, they are for a set of mvebu patches that depend on contents in
+> the MMC tree. We had pulled in part of the MMC branch as a dependency,
+> but unfortunately Chris Ball rebased it.
 
-Emm... You can do so, is you want.
-But this will be just an optimisation on a slow-path. I.e. I have nothing
-to object, but don't see any other reason except striving for perfection.
+Has Chris Ball been told what an incredible pain this kind of crap is,
+and that there's a damn good reason why WE DO NOT REBASE PUBLIC TREES
+THAT OTHERS MAY BE BASING THEIR DEVELOPMENT ON!
 
-> Regards,
-> Peter Hurley
->
+Chris, can you hear me shouting? Don't do that.
 
+> We're giving you the choice of taking the rebased version, or a
+> non-rebased-but-merged-and-fixed-up version to avoid dealing with the
+> excessive conflicts. The rebased one has the obvious benefit of not
+> having duplicate commits in the tree for the same changes, but, well,
+> it's rebased. Actual tree contents is identical though.
 
--- 
-Best regards,
-Stanislav Kinsbursky
+I'm taking the rebased one, thanks for the explanation. I really don't
+like rebasing, but you did it for a valid reason, and it wasn't your
+mistake. And duplicating the commits just to be a pain is not worth
+it.
+
+> I've pushed a resolved branch for reference (late-branches-resolved)
+> in case you want to compare conflict resolutions.
+
+So Arnd's tag talked about removing the stale gpio.h, but I think it
+was the i2c.h that was now also stale. So I removed both - even though
+technically, the merge should have left i2c.h since it was in both
+parents. You should double-check that, but I don't see how that
+<linux/i2c.h> could *possibly* be valid any more, and people had tried
+(unsuccessfully) to remove it once already, so...
+
+              Linus
