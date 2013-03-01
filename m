@@ -1,86 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752289Ab3CAVpU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 16:45:20 -0500
-Received: from mail-qa0-f43.google.com ([209.85.216.43]:56349 "EHLO
-	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751944Ab3CAVpT (ORCPT
+	id S1752222Ab3CAVrO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 16:47:14 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:33577 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751543Ab3CAVrN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 16:45:19 -0500
-Date: Fri, 1 Mar 2013 13:45:14 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: markus@trippelsdorf.de, linux-kernel@vger.kernel.org
-Subject: [PATCH] idr: remove WARN_ON_ONCE() on negative IDs
-Message-ID: <20130301214514.GG2481@mtj.dyndns.org>
-References: <20130228090846.GA249@x4>
- <20130301133159.0711f81a.akpm@linux-foundation.org>
- <20130301213511.GF2481@mtj.dyndns.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130301213511.GF2481@mtj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 1 Mar 2013 16:47:13 -0500
+Date: Fri, 01 Mar 2013 16:47:11 -0500 (EST)
+Message-Id: <20130301.164711.326215889038834651.davem@davemloft.net>
+To: gregkh@linuxfoundation.org
+CC: linux-kernel@vger.kernel.org, jslaby@suse.cz
+Subject: WARNING at tty_buffer.c:428 process_one_work()
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Fri, 01 Mar 2013 13:47:16 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-idr_find(), idr_remove() and idr_replace() used to silently ignore the
-sign bit and perform lookup with the rest of the bits.  The weird
-behavior has been changed such that negative IDs are treated as
-invalid.  As the behavior change was subtle, WARN_ON_ONCE() was added
-in the hope of determining who's calling idr functions with negative
-IDs so that they can be examined for problems.
 
-Up until now, all two reported cases are ID number coming directly
-from userland and getting fed into idr_find() and the warnings seem to
-cause more problems than being helpful.  Drop the WARN_ON_ONCE()s.
+I'm getting these non-stop right when the hypervisor console registers
+on sparc64, and the machine won't boot up properly.  This is with
+Linus's current tree.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: markus@trippelsdorf.de
-Cc: Andrew Morton <akpm@linux-foundation.org>
----
- lib/idr.c |   16 +++-------------
- 1 file changed, 3 insertions(+), 13 deletions(-)
-
-diff --git a/lib/idr.c b/lib/idr.c
-index 73f4d53..00739aa 100644
---- a/lib/idr.c
-+++ b/lib/idr.c
-@@ -569,8 +569,7 @@ void idr_remove(struct idr *idp, int id)
- 	struct idr_layer *p;
- 	struct idr_layer *to_free;
- 
--	/* see comment in idr_find_slowpath() */
--	if (WARN_ON_ONCE(id < 0))
-+	if (id < 0)
- 		return;
- 
- 	sub_remove(idp, (idp->layers - 1) * IDR_BITS, id);
-@@ -667,15 +666,7 @@ void *idr_find_slowpath(struct idr *idp, int id)
- 	int n;
- 	struct idr_layer *p;
- 
--	/*
--	 * If @id is negative, idr_find() used to ignore the sign bit and
--	 * performed lookup with the rest of bits, which is weird and can
--	 * lead to very obscure bugs.  We're now returning NULL for all
--	 * negative IDs but just in case somebody was depending on the sign
--	 * bit being ignored, let's trigger WARN_ON_ONCE() so that they can
--	 * be detected and fixed.  WARN_ON_ONCE() can later be removed.
--	 */
--	if (WARN_ON_ONCE(id < 0))
-+	if (id < 0)
- 		return NULL;
- 
- 	p = rcu_dereference_raw(idp->top);
-@@ -824,8 +815,7 @@ void *idr_replace(struct idr *idp, void *ptr, int id)
- 	int n;
- 	struct idr_layer *p, *old_p;
- 
--	/* see comment in idr_find_slowpath() */
--	if (WARN_ON_ONCE(id < 0))
-+	if (id < 0)
- 		return ERR_PTR(-EINVAL);
- 
- 	p = idp->top;
+[511865.556835] console [ttyHV0] enabled
+[511865.564555] ------------[ cut here ]------------
+[511865.612410] WARNING: at drivers/tty/tty_buffer.c:428 process_one_work+0x164/0x420()
+[511865.627846] tty is NULL
+[511865.687052] Modules linked in:
+[511865.693305] Call Trace:
+[511865.698343]  [0000000000464f2c] warn_slowpath_fmt+0x2c/0x40
+[511865.709637]  [0000000000480f24] process_one_work+0x164/0x420
+[511865.721097]  [0000000000481580] worker_thread+0x120/0x440
+[511865.732036]  [00000000004867a8] kthread+0x88/0xa0
+[511865.741585]  [0000000000406044] ret_from_syscall+0x1c/0x2c
+[511865.752695]  [0000000000000000]           (null)
+[511865.762080] ---[ end trace 40d7a6b076cabd64 ]---
+[511865.771806] ------------[ cut here ]------------
+[511865.780935] WARNING: at drivers/tty/tty_buffer.c:428 process_one_work+0x164/0x420()
+[511865.796379] tty is NULL
+[511865.801409] Modules linked in:
+[511865.807649] Call Trace:
+[511865.812689]  [0000000000464f2c] warn_slowpath_fmt+0x2c/0x40
+[511865.823981]  [0000000000480f24] process_one_work+0x164/0x420
+[511865.835447]  [0000000000481580] worker_thread+0x120/0x440
+[511865.846385]  [00000000004867a8] kthread+0x88/0xa0
+[511865.855930]  [0000000000406044] ret_from_syscall+0x1c/0x2c
+[511865.867042]  [0000000000000000]           (null)
+[511865.876414] ---[ end trace 40d7a6b076cabd65 ]---
+[511865.886157] ------------[ cut here ]------------
+[511865.895284] WARNING: at drivers/tty/tty_buffer.c:428 process_one_work+0x164/0x420()
+[511865.910730] tty is NULL
+[511865.915757] Modules linked in:
+[511865.922000] Call Trace:
+[511865.927035]  [0000000000464f2c] warn_slowpath_fmt+0x2c/0x40
+[511865.938330]  [0000000000480f24] process_one_work+0x164/0x420
+[511865.949796]  [0000000000481580] worker_thread+0x120/0x440
+[511865.960733]  [00000000004867a8] kthread+0x88/0xa0
+[511865.970288]  [0000000000406044] ret_from_syscall+0x1c/0x2c
+[511865.981402]  [0000000000000000]           (null)
+[511865.990773] ---[ end trace 40d7a6b076cabd66 ]---
+[511866.000507] ------------[ cut here ]------------
+[511866.009618] WARNING: at drivers/tty/tty_buffer.c:428 process_one_work+0x164/0x420()
+[511866.025074] tty is NULL
+[511866.030102] Modules linked in:
+[511866.036361] Call Trace:
+[511866.041400]  [0000000000464f2c] warn_slowpath_fmt+0x2c/0x40
+[511866.052675]  [0000000000480f24] process_one_work+0x164/0x420
+[511866.064147]  [0000000000481580] worker_thread+0x120/0x440
+[511866.075077]  [00000000004867a8] kthread+0x88/0xa0
+[511866.084639]  [0000000000406044] ret_from_syscall+0x1c/0x2c
+[511866.095739]  [0000000000000000]           (null)
+[511866.105123] ---[ end trace 40d7a6b076cabd67 ]---
