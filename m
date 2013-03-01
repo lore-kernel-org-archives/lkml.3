@@ -1,79 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751247Ab3CADI4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 22:08:56 -0500
-Received: from e28smtp09.in.ibm.com ([122.248.162.9]:42738 "EHLO
-	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750870Ab3CADIz (ORCPT
+	id S1751077Ab3CADNO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 22:13:14 -0500
+Received: from mail-ve0-f171.google.com ([209.85.128.171]:44259 "EHLO
+	mail-ve0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750870Ab3CADNN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 22:08:55 -0500
-Message-ID: <1362107325.2712.2.camel@localhost>
-Subject: Re: [PATCH 0/3] Enable multiple MSI feature in pSeries
-From: Mike <qiudayu@linux.vnet.ibm.com>
-To: linuxppc-dev@lists.ozlabs.org
-Cc: linux-kernel@vger.kernel.org, benh@kernel.crashing.org, tglx@linutronix.de
-Date: Fri, 01 Mar 2013 11:08:45 +0800
-In-Reply-To: <1358235536-32741-1-git-send-email-qiudayu@linux.vnet.ibm.com>
-References: <1358235536-32741-1-git-send-email-qiudayu@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13030103-2674-0000-0000-0000080140B2
+	Thu, 28 Feb 2013 22:13:13 -0500
+MIME-Version: 1.0
+In-Reply-To: <20130227132612.14664a3a.akpm@linux-foundation.org>
+References: <512B7D10.4060304@tpi.com>
+	<512B8407.2090807@canonical.com>
+	<512BD753.4080001@hp.com>
+	<CAE9FiQVY4io_mO3PhTtE6FbGUgo1uZKKXO=pjx_FoZ1JuZmsAw@mail.gmail.com>
+	<CAE9FiQXRZ2VjfG4L2d2zDQ3Sud=JqjS=M9=XW=ORS58_y7i4_g@mail.gmail.com>
+	<CAE9FiQU-CV4mF8x=Bi_4pmpmeZW-tSoes_f-jOt7yYrbrppo+A@mail.gmail.com>
+	<512D58C2.1090403@jp.fujitsu.com>
+	<CAE9FiQV5APHSGXuz3NrsApC+V7rsDQMDXMNwZszZuUqQVaZSew@mail.gmail.com>
+	<512D7FAD.1040003@jp.fujitsu.com>
+	<CAE9FiQWxq-HPKK+XNRLggZSM4NcdfaeGDWCgd3HegEhaDSSTtA@mail.gmail.com>
+	<512D8EDA.3010602@jp.fujitsu.com>
+	<CAE9FiQWAxL6F70fF0dQcBZKTReJOiC+Ez0xcqcosgAdSagS-bA@mail.gmail.com>
+	<512DBD24.7090302@cn.fujitsu.com>
+	<20130227132612.14664a3a.akpm@linux-foundation.org>
+Date: Thu, 28 Feb 2013 19:13:12 -0800
+X-Google-Sender-Auth: Kyf3gKng47D01-Eh66xSuMTU3b4
+Message-ID: <CA+55aFz8Yx4=d=Lrmir0Vy0jhUBJMgfrJegDWsDByf28c0MuRQ@mail.gmail.com>
+Subject: Re: sched: CPU #1's llc-sibling CPU #0 is not on the same node!
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, Yinghai Lu <yinghai@kernel.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Tang Chen <tangchen@cn.fujitsu.com>, Don Morris <don.morris@hp.com>,
+        Tim Gardner <tim.gardner@canonical.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Tejun Heo <tj@kernel.org>,
+        Tony Luck <tony.luck@intel.com>, Thomas Renninger <trenn@suse.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Jarkko Sakkinen <jarkko.sakkinen@intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all
+On Wed, Feb 27, 2013 at 1:26 PM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+>
+> So I'm thinking that the best approach here is to revert everything and
+> then try again for 3.10-rc1.  This gives people time to test the code
+> while it's only in linux-next.  (Hint!)
 
-Any comments? or any questions about my patchset?
+I'd prefer to revert too by now - the bug seems to be known, and
+apparently it's not a trivial fix. We're getting close to the end of
+the merge window, and it's still being discussed, it clearly wasn't
+really fully cooked.
 
-Thanks
-Mike
-在 2013-01-15二的 15:38 +0800，Mike Qiu写道：
-> Currently, multiple MSI feature hasn't been enabled in pSeries,
-> These patches try to enbale this feature.
-> 
-> These patches have been tested by using ipr driver, and the driver patch
-> has been made by Wen Xiong <wenxiong@linux.vnet.ibm.com>:
-> 
-> [PATCH 0/7] Add support for new IBM SAS controllers
-> 
-> Test platform: One partition of pSeries with one cpu core(4 SMTs) and 
->                RAID bus controller: IBM PCI-E IPR SAS Adapter (ASIC) in POWER7
-> OS version: SUSE Linux Enterprise Server 11 SP2  (ppc64) with 3.8-rc3 kernel 
-> 
-> IRQ 21 and 22 are assigned to the ipr device which support 2 mutiple MSI.
-> 
-> The test results is shown by 'cat /proc/interrups':
->           CPU0       CPU1       CPU2       CPU3       
-> 16:     240458     261601     226310     200425      XICS Level     IPI
-> 17:          0          0          0          0      XICS Level     RAS_EPOW
-> 18:         10          0          3          2      XICS Level     hvc_console
-> 19:     122182      28481      28527      28864      XICS Level     ibmvscsi
-> 20:        506    7388226        108        118      XICS Level     eth0
-> 21:          6          5          5          5      XICS Level     host1-0
-> 22:        817        814        816        813      XICS Level     host1-1
-> LOC:     398077     316725     231882     203049   Local timer interrupts
-> SPU:       1659        919        961        903   Spurious interrupts
-> CNT:          0          0          0          0   Performance
-> monitoring interrupts
-> MCE:          0          0          0          0   Machine check exceptions
-> 
-> Mike Qiu (3):
->   irq: Set multiple MSI descriptor data for multiple IRQs
->   irq: Add hw continuous IRQs map to virtual continuous IRQs support
->   powerpc/pci: Enable pSeries multiple MSI feature
-> 
->  arch/powerpc/kernel/msi.c            |    4 --
->  arch/powerpc/platforms/pseries/msi.c |   62 ++++++++++++++++++++++++++++++++-
->  include/linux/irq.h                  |    4 ++
->  include/linux/irqdomain.h            |    3 ++
->  kernel/irq/chip.c                    |   40 ++++++++++++++++-----
->  kernel/irq/irqdomain.c               |   61 +++++++++++++++++++++++++++++++++
->  6 files changed, 158 insertions(+), 16 deletions(-)
-> 
+Can we agree on some minimal set of reverts? Can somebody send me a
+patch with the revert and the commit explanation for the revert?
+Yinghai? Or I can do the reverts too if just the exact set of commits
+is clear, but I'd rather get it from somebody who sees and understand
+the problem, and can test the state afterwards..
 
-
-
+               Linus
