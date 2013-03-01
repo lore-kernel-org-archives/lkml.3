@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752369Ab3CASMm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 13:12:42 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:52425 "EHLO mx1.redhat.com"
+	id S1752222Ab3CASMd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 13:12:33 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:38581 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752313Ab3CASMl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 13:12:41 -0500
+	id S1751192Ab3CASMb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Mar 2013 13:12:31 -0500
 From: Jiri Olsa <jolsa@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
@@ -17,20 +17,34 @@ Cc: Jiri Olsa <jolsa@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
         Corey Ashford <cjashfor@linux.vnet.ibm.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Vince Weaver <vincent.weaver@maine.edu>
-Subject: [PATCH 5/5] perf tests: Test breakpoint overflow signal handler counts
-Date: Fri,  1 Mar 2013 19:11:52 +0100
-Message-Id: <1362161512-16803-6-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 4/5] perf tests: Test breakpoint overflow signal handler
+Date: Fri,  1 Mar 2013 19:11:51 +0100
+Message-Id: <1362161512-16803-5-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1362161512-16803-1-git-send-email-jolsa@redhat.com>
 References: <1362161512-16803-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding automated test to check the exact number of
-breakpoint event overflows and counts.
+Adding automated test for breakpoint event signal
+handler checking if it's executed properly.
 
-This test was originally done by Vince Weaver for
-perf_event_tests.
+The test is related to the proper handling of the RF
+EFLAGS bit on x86_64, but it's generic for all archs.
+
+First we check the signal handler is properly called
+and that the following debug exception return to user
+space wouldn't trigger recursive breakpoint.
+
+This is related to x86_64 RF EFLAGS bit being managed
+in a wrong way.
+
+Second we check that we can set breakpoint in signal
+handler, which is not possible on x86_64 if the signal
+handler is executed with RF EFLAG set.
+
+This test is inpired by overflow tests done by Vince
+Weaver.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>
@@ -45,34 +59,35 @@ Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Vince Weaver <vincent.weaver@maine.edu>
 ---
- tools/perf/Makefile                   |   1 +
- tools/perf/tests/bp_signal_overflow.c | 126 ++++++++++++++++++++++++++++++++++
- tools/perf/tests/builtin-test.c       |   4 ++
- tools/perf/tests/tests.h              |   1 +
- 4 files changed, 132 insertions(+)
- create mode 100644 tools/perf/tests/bp_signal_overflow.c
+ tools/perf/Makefile             |   1 +
+ tools/perf/tests/bp_signal.c    | 187 ++++++++++++++++++++++++++++++++++++++++
+ tools/perf/tests/builtin-test.c |   4 +
+ tools/perf/tests/tests.h        |   1 +
+ 4 files changed, 193 insertions(+)
+ create mode 100644 tools/perf/tests/bp_signal.c
 
 diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index bea66fe..34a63ce 100644
+index a2108ca..bea66fe 100644
 --- a/tools/perf/Makefile
 +++ b/tools/perf/Makefile
-@@ -498,6 +498,7 @@ LIB_OBJS += $(OUTPUT)tests/pmu.o
+@@ -497,6 +497,7 @@ LIB_OBJS += $(OUTPUT)tests/evsel-tp-sched.o
+ LIB_OBJS += $(OUTPUT)tests/pmu.o
  LIB_OBJS += $(OUTPUT)tests/hists_link.o
  LIB_OBJS += $(OUTPUT)tests/python-use.o
- LIB_OBJS += $(OUTPUT)tests/bp_signal.o
-+LIB_OBJS += $(OUTPUT)tests/bp_signal_overflow.o
++LIB_OBJS += $(OUTPUT)tests/bp_signal.o
  
  BUILTIN_OBJS += $(OUTPUT)builtin-annotate.o
  BUILTIN_OBJS += $(OUTPUT)builtin-bench.o
-diff --git a/tools/perf/tests/bp_signal_overflow.c b/tools/perf/tests/bp_signal_overflow.c
+diff --git a/tools/perf/tests/bp_signal.c b/tools/perf/tests/bp_signal.c
 new file mode 100644
-index 0000000..556d2ce
+index 0000000..a40b019
 --- /dev/null
-+++ b/tools/perf/tests/bp_signal_overflow.c
-@@ -0,0 +1,126 @@
++++ b/tools/perf/tests/bp_signal.c
+@@ -0,0 +1,187 @@
 +/*
-+ * Originally done by Vince Weaver <vincent.weaver@maine.edu> for
-+ * perf_event_tests (git://github.com/deater/perf_event_tests)
++ * Inspired by breakpoint overflow test done by
++ * Vince Weaver <vincent.weaver@maine.edu> for perf_event_tests
++ * (git://github.com/deater/perf_event_tests)
 + */
 +
 +#include <stdlib.h>
@@ -91,6 +106,8 @@ index 0000000..556d2ce
 +#include "debug.h"
 +#include "perf.h"
 +
++static int fd1;
++static int fd2;
 +static int overflows;
 +
 +__attribute__ ((noinline))
@@ -104,6 +121,58 @@ index 0000000..556d2ce
 +			void *uc __maybe_unused)
 +{
 +	overflows++;
++
++	if (overflows > 10) {
++		/*
++		 * This should be executed only once during
++		 * this test, if we are here for the 10th
++		 * time, consider this the recursive issue.
++		 *
++		 * We can get out of here by disable events,
++		 * so no new SIGIO is delivered.
++		 */
++		ioctl(fd1, PERF_EVENT_IOC_DISABLE, 0);
++		ioctl(fd2, PERF_EVENT_IOC_DISABLE, 0);
++	}
++}
++
++static int bp_event(void *fn, int setup_signal)
++{
++	struct perf_event_attr pe;
++	int fd;
++
++	memset(&pe, 0, sizeof(struct perf_event_attr));
++	pe.type = PERF_TYPE_BREAKPOINT;
++	pe.size = sizeof(struct perf_event_attr);
++
++	pe.config = 0;
++	pe.bp_type = HW_BREAKPOINT_X;
++	pe.bp_addr = (unsigned long) fn;
++	pe.bp_len = sizeof(long);
++
++	pe.sample_period = 1;
++	pe.sample_type = PERF_SAMPLE_IP;
++	pe.wakeup_events = 1;
++
++	pe.disabled = 1;
++	pe.exclude_kernel = 1;
++	pe.exclude_hv = 1;
++
++	fd = sys_perf_event_open(&pe, 0, -1, -1, 0);
++	if (fd < 0) {
++		pr_err("failed opening event %llx\n", pe.config);
++		return TEST_FAIL;
++	}
++
++	if (setup_signal) {
++		fcntl(fd, F_SETFL, O_RDWR|O_NONBLOCK|O_ASYNC);
++		fcntl(fd, F_SETSIG, SIGIO);
++		fcntl(fd, F_SETOWN, getpid());
++	}
++
++	ioctl(fd, PERF_EVENT_IOC_RESET, 0);
++
++	return fd;
 +}
 +
 +static long long bp_count(int fd)
@@ -120,15 +189,10 @@ index 0000000..556d2ce
 +	return count;
 +}
 +
-+#define EXECUTIONS 10000
-+#define THRESHOLD  100
-+
-+int test__bp_signal_overflow(void)
++int test__bp_signal(void)
 +{
-+	struct perf_event_attr pe;
 +	struct sigaction sa;
-+	long long count;
-+	int fd, i, fails = 0;
++	long long count1, count2;
 +
 +	/* setup SIGIO signal handler */
 +	memset(&sa, 0, sizeof(struct sigaction));
@@ -140,86 +204,97 @@ index 0000000..556d2ce
 +		return TEST_FAIL;
 +	}
 +
-+	memset(&pe, 0, sizeof(struct perf_event_attr));
-+	pe.type = PERF_TYPE_BREAKPOINT;
-+	pe.size = sizeof(struct perf_event_attr);
++	/*
++	 * We create following events:
++	 *
++	 * fd1 - breakpoint event on test_function with SIGIO
++	 *       signal configured. We should get signal
++	 *       notification each time the breakpoint is hit
++	 *
++	 * fd2 - breakpoint event on sig_handler without SIGIO
++	 *       configured.
++	 *
++	 * Following processing should happen:
++	 *   - execute test_function
++	 *   - fd1 event breakpoint hit -> count1 == 1
++	 *   - SIGIO is delivered       -> overflows == 1
++	 *   - fd2 event breakpoint hit -> count2 == 1
++	 *
++	 * The test case check following error conditions:
++	 * - we get stuck in signal handler because of debug
++	 *   exception being triggered receursively due to
++	 *   the wrong RF EFLAG management
++	 *
++	 * - we never trigger the sig_handler breakpoint due
++	 *   to the rong RF EFLAG management
++	 *
++	 */
 +
-+	pe.config = 0;
-+	pe.bp_type = HW_BREAKPOINT_X;
-+	pe.bp_addr = (unsigned long) test_function;
-+	pe.bp_len = sizeof(long);
++	fd1 = bp_event(test_function, 1);
++	fd2 = bp_event(sig_handler, 0);
 +
-+	pe.sample_period = THRESHOLD;
-+	pe.sample_type = PERF_SAMPLE_IP;
-+	pe.wakeup_events = 1;
++	ioctl(fd1, PERF_EVENT_IOC_ENABLE, 0);
++	ioctl(fd2, PERF_EVENT_IOC_ENABLE, 0);
 +
-+	pe.disabled = 1;
-+	pe.exclude_kernel = 1;
-+	pe.exclude_hv = 1;
++	/*
++	 * Kick off the test by trigering 'fd1'
++	 * breakpoint.
++	 */
++	test_function();
 +
-+	fd = sys_perf_event_open(&pe, 0, -1, -1, 0);
-+	if (fd < 0) {
-+		pr_err("failed opening event %llx\n", pe.config);
-+		return TEST_FAIL;
++	ioctl(fd1, PERF_EVENT_IOC_DISABLE, 0);
++	ioctl(fd2, PERF_EVENT_IOC_DISABLE, 0);
++
++	count1 = bp_count(fd1);
++	count2 = bp_count(fd2);
++
++	close(fd1);
++	close(fd2);
++
++	pr_debug("count1 %lld, count2 %lld, overflow %d\n",
++		 count1, count2, overflows);
++
++	if (count1 != 1) {
++		if (count1 == 11)
++			pr_err("failed: RF EFLAG recursion issue detected\n");
++		else
++			pr_err("failed: wrong count for bp1%lld\n",
++			       count1);
 +	}
 +
-+	fcntl(fd, F_SETFL, O_RDWR|O_NONBLOCK|O_ASYNC);
-+	fcntl(fd, F_SETSIG, SIGIO);
-+	fcntl(fd, F_SETOWN, getpid());
++	if (overflows != 1)
++		pr_err("failed: wrong overflow hit\n");
 +
-+	ioctl(fd, PERF_EVENT_IOC_RESET, 0);
-+	ioctl(fd, PERF_EVENT_IOC_ENABLE, 0);
++	if (count2 != 1)
++		pr_err("failed: wrong count for bp2\n");
 +
-+	for (i = 0; i < EXECUTIONS; i++)
-+		test_function();
-+
-+	ioctl(fd, PERF_EVENT_IOC_DISABLE, 0);
-+
-+	count = bp_count(fd);
-+
-+	close(fd);
-+
-+	pr_debug("count %lld, overflow %d\n",
-+		 count, overflows);
-+
-+	if (count != EXECUTIONS) {
-+		pr_err("\tWrong number of executions %lld != %d\n",
-+		count, EXECUTIONS);
-+		fails++;
-+	}
-+
-+	if (overflows != EXECUTIONS / THRESHOLD) {
-+		pr_err("\tWrong number of overflows %d != %d\n",
-+		overflows, EXECUTIONS / THRESHOLD);
-+		fails++;
-+	}
-+
-+	return fails ? TEST_FAIL : TEST_OK;
++	return count1 == 1 && overflows == 1 && count2 == 1 ?
++		TEST_OK : TEST_FAIL;
 +}
 diff --git a/tools/perf/tests/builtin-test.c b/tools/perf/tests/builtin-test.c
-index 37b108b..45d9ad4 100644
+index acb98e0..37b108b 100644
 --- a/tools/perf/tests/builtin-test.c
 +++ b/tools/perf/tests/builtin-test.c
-@@ -82,6 +82,10 @@ static struct test {
- 		.func = test__bp_signal,
+@@ -78,6 +78,10 @@ static struct test {
+ 		.func = test__python_use,
  	},
  	{
-+		.desc = "Test breakpoint overflow sampling",
-+		.func = test__bp_signal_overflow,
++		.desc = "Test breakpoint overflow signal handler",
++		.func = test__bp_signal,
 +	},
 +	{
  		.func = NULL,
  	},
  };
 diff --git a/tools/perf/tests/tests.h b/tools/perf/tests/tests.h
-index 05d0e58..6cf1ec4 100644
+index 5de0be1..05d0e58 100644
 --- a/tools/perf/tests/tests.h
 +++ b/tools/perf/tests/tests.h
-@@ -24,5 +24,6 @@ int test__parse_events(void);
+@@ -23,5 +23,6 @@ int test__dso_data(void);
+ int test__parse_events(void);
  int test__hists_link(void);
  int test__python_use(void);
- int test__bp_signal(void);
-+int test__bp_signal_overflow(void);
++int test__bp_signal(void);
  
  #endif /* TESTS_H */
 -- 
