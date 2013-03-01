@@ -1,47 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753512Ab3CAAmj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 19:42:39 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:48379 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751183Ab3CAAmi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 19:42:38 -0500
-Date: Thu, 28 Feb 2013 19:42:11 -0500
-From: Josh Boyer <jwboyer@redhat.com>
-To: Borislav Petkov <bp@alien8.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>, mingo@redhat.com,
-        tglx@linutronix.de, konrad.wilk@oracle.com, rostedt@goodmis.org,
-        gregkh@linuxfoundation.org, samu.kallio@aberdeencloud.com,
-        kraman@redhat.com, xen-devel@lists.xen.org,
-        linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: Re: [PATCH] mm/x86: Patch out arch_flush_lazy_mmu_mode() when
- running on bare metal
-Message-ID: <20130301004211.GB31649@hansolo.jdub.homelinux.org>
-References: <1362092149-32381-1-git-send-email-boris.ostrovsky@oracle.com>
- <20130228233720.GB17468@pd.tnic>
- <20130301000539.GA31649@hansolo.jdub.homelinux.org>
- <512FF331.5050008@zytor.com>
- <20130301003629.GG9767@pd.tnic>
+	id S1753314Ab3CAAne (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 19:43:34 -0500
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:49190 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751078Ab3CAAnc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Feb 2013 19:43:32 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130301003629.GG9767@pd.tnic>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <201302220926.r1M9Q3wV029855@localhost.localdomain>
+References: <201302220926.r1M9Q3wV029855@localhost.localdomain>
+Date: Fri, 1 Mar 2013 01:43:32 +0100
+Message-ID: <CACRpkdY1M8w7o8S4idAx1JN-fc-t221qF_uwR5U9RBsBAn=Jhw@mail.gmail.com>
+Subject: Re: [PATCH] Adds support for Open Firmware in MAX730x GPIO Driver
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Christophe Leroy <christophe.leroy@c-s.fr>
+Cc: Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
+        Patrick Vasseur <patrick.vasseur@c-s.fr>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 01, 2013 at 01:36:29AM +0100, Borislav Petkov wrote:
-> On Thu, Feb 28, 2013 at 04:15:45PM -0800, H. Peter Anvin wrote:
-> > > I'll try to get someone to test this tomorrow.
-> 
-> Btw, you'd need to apply that other patch too
-> 
-> http://marc.info/?l=xen-devel&m=136206183814547&w=2
-> 
-> so that arch_flush_lazy_mmu_mode() has at least one caller on x86_64.
+On Fri, Feb 22, 2013 at 10:26 AM, Christophe Leroy
+<christophe.leroy@c-s.fr> wrote:
 
-Yeah, we already have that applied.  It stops crashes in xen
-environments so we pulled it in as a bugfix.  Thanks though!
+> This patch allows the use of the MAX730x Driver on systems using
+> the Open Firmware platform format
+>
+> Signed-off-by: Patrick Vasseur <patrick.vasseur@c-s.fr>
+> Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
 
-josh
+(...)
+>         /* bits_per_word cannot be configured in platform data */
+> -       spi->bits_per_word = 16;
+> +       if (spi->dev.platform_data)
+> +               spi->bits_per_word = 16;
+
+What about just fixing so you *can* specify that instead?
+The comment looks more like a FIXME to me.
+
+Yours,
+Linus Walleij
