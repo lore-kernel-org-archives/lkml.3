@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752847Ab3CATpe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 14:45:34 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51446 "EHLO
+	id S1753547Ab3CAURI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 15:17:08 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51476 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752729Ab3CATp3 (ORCPT
+	with ESMTP id S1752825Ab3CATpd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 14:45:29 -0500
+	Fri, 1 Mar 2013 14:45:33 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jan Kara <jack@suse.cz>, Jeff Moyer <jmoyer@redhat.com>,
-        Joel Becker <jlbec@evilplan.org>, Mark Fasheh <mfasheh@suse.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [ 29/77] ocfs2: fix possible use-after-free with AIO
-Date: Fri,  1 Mar 2013 11:44:14 -0800
-Message-Id: <20130301194355.095778081@linuxfoundation.org>
+        "Theodore Tso" <tytso@mit.edu>, Carlos Maiolino <cmaiolino@redhat.com>
+Subject: [ 50/77] ext4: release sysfs kobject when failing to enable quotas on mount
+Date: Fri,  1 Mar 2013 11:44:35 -0800
+Message-Id: <20130301194357.253765741@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130301194351.913471337@linuxfoundation.org>
 References: <20130301194351.913471337@linuxfoundation.org>
@@ -29,40 +26,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Theodore Ts'o <tytso@mit.edu>
 
-commit 9b171e0c74ca0549d0610990a862dd895870f04a upstream.
+commit 72ba74508b2857e71d65fc93f0d6b684492fc740 upstream.
 
-Running AIO is pinning inode in memory using file reference. Once AIO
-is completed using aio_complete(), file reference is put and inode can
-be freed from memory. So we have to be sure that calling aio_complete()
-is the last thing we do with the inode.
+In addition, print the error returned from ext4_enable_quotas()
 
-Signed-off-by: Jan Kara <jack@suse.cz>
-Acked-by: Jeff Moyer <jmoyer@redhat.com>
-Acked-by: Joel Becker <jlbec@evilplan.org>
-Cc: Mark Fasheh <mfasheh@suse.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Reviewed-by: Carlos Maiolino <cmaiolino@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ocfs2/aops.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/ext4/super.c |   12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
 
---- a/fs/ocfs2/aops.c
-+++ b/fs/ocfs2/aops.c
-@@ -593,9 +593,9 @@ static void ocfs2_dio_end_io(struct kioc
- 	level = ocfs2_iocb_rw_locked_level(iocb);
- 	ocfs2_rw_unlock(inode, level);
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -4008,7 +4008,7 @@ no_journal:
+ 	    !(sb->s_flags & MS_RDONLY)) {
+ 		err = ext4_enable_quotas(sb);
+ 		if (err)
+-			goto failed_mount7;
++			goto failed_mount8;
+ 	}
+ #endif  /* CONFIG_QUOTA */
  
-+	inode_dio_done(inode);
- 	if (is_async)
- 		aio_complete(iocb, ret, 0);
--	inode_dio_done(inode);
- }
+@@ -4035,6 +4035,10 @@ cantfind_ext4:
+ 		ext4_msg(sb, KERN_ERR, "VFS: Can't find ext4 filesystem");
+ 	goto failed_mount;
  
- /*
++#ifdef CONFIG_QUOTA
++failed_mount8:
++	kobject_del(&sbi->s_kobj);
++#endif
+ failed_mount7:
+ 	ext4_unregister_li_request(sb);
+ failed_mount6:
+@@ -5005,9 +5009,9 @@ static int ext4_enable_quotas(struct sup
+ 						DQUOT_USAGE_ENABLED);
+ 			if (err) {
+ 				ext4_warning(sb,
+-					"Failed to enable quota (type=%d) "
+-					"tracking. Please run e2fsck to fix.",
+-					type);
++					"Failed to enable quota tracking "
++					"(type=%d, err=%d). Please run "
++					"e2fsck to fix.", type, err);
+ 				return err;
+ 			}
+ 		}
 
 
