@@ -1,79 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755043Ab3CAUEj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 15:04:39 -0500
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:55749 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754294Ab3CAUEe (ORCPT
+	id S1755019Ab3CAUFF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 15:05:05 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51702 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753512Ab3CATqG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 15:04:34 -0500
-Date: Fri, 1 Mar 2013 12:03:53 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Ric Mason <ric.masonn@gmail.com>
-cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Petr Holasek <pholasek@redhat.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Izik Eidus <izik.eidus@ravellosystems.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH 2/7] ksm: treat unstable nid like in stable tree
-In-Reply-To: <51303CAB.3080406@gmail.com>
-Message-ID: <alpine.LNX.2.00.1303011139270.7398@eggly.anvils>
-References: <alpine.LNX.2.00.1302210013120.17843@eggly.anvils> <alpine.LNX.2.00.1302210019390.17843@eggly.anvils> <51271A7D.6020305@gmail.com> <alpine.LNX.2.00.1302221250440.6100@eggly.anvils> <51303CAB.3080406@gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Fri, 1 Mar 2013 14:46:06 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [ 10/46] target: Fix lookup of dynamic NodeACLs during cached demo-mode operation
+Date: Fri,  1 Mar 2013 11:44:58 -0800
+Message-Id: <20130301194433.349290584@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
+In-Reply-To: <20130301194432.263409302@linuxfoundation.org>
+References: <20130301194432.263409302@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 1 Mar 2013, Ric Mason wrote:
-> 
-> I think the ksm implementation for num awareness  is buggy.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-Sorry, I just don't understand your comments below,
-but will try to answer or question them as best I can.
+------------------
 
-> 
-> For page migratyion stuff, new page is allocated from node *which page is
-> migrated to*.
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-Yes, by definition.
+commit fcf29481fb8e106daad6688f2e898226ee928992 upstream.
 
-> - when meeting a page from the wrong NUMA node in an unstable tree
->     get_kpfn_nid(page_to_pfn(page)) *==* page_to_nid(tree_page)
+This patch fixes a bug in core_tpg_check_initiator_node_acl() ->
+core_tpg_get_initiator_node_acl() where a dynamically created
+se_node_acl generated during session login would be skipped during
+subsequent lookup due to the '!acl->dynamic_node_acl' check, causing
+a new se_node_acl to be created with a duplicate ->initiatorname.
 
-I thought you were writing of the wrong NUMA node case,
-but now you emphasize "*==*", which means the right NUMA node.
+This would occur when a fabric endpoint was configured with
+TFO->tpg_check_demo_mode()=1 + TPF->tpg_check_demo_mode_cache()=1
+preventing the release of an existing se_node_acl during se_session
+shutdown.
 
->     How can say it's okay for comparisons, but not as a leaf for merging?
+Also, drop the unnecessary usage of core_tpg_get_initiator_node_acl()
+within core_dev_init_initiator_node_lun_acl() that originally
+required the extra '!acl->dynamic_node_acl' check, and just pass
+the configfs provided se_node_acl pointer instead.
 
-Pages in the unstable tree are unstable (and it's not even accurate to
-say "pages in the unstable tree"), they and their content can change at
-any moment, so I cannot assert anything of them for sure.
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-But if we suppose, as an approximation, that they are somewhat likely
-to remain stable (and the unstable tree would be useless without that
-assumption: it tends to work out), but subject to migration, then it makes
-sense to compare content, no matter what NUMA node it is on, in order to
-locate a page of the same content; but wrong to merge with that page if
-it's on the wrong NUMA node, if !merge_across_nodes tells us not to.
+---
+ drivers/target/target_core_device.c          |   13 ++++---------
+ drivers/target/target_core_fabric_configfs.c |    4 ++--
+ drivers/target/target_core_internal.h        |    2 +-
+ drivers/target/target_core_tpg.c             |   10 ++--------
+ 4 files changed, 9 insertions(+), 20 deletions(-)
+
+--- a/drivers/target/target_core_device.c
++++ b/drivers/target/target_core_device.c
+@@ -1483,24 +1483,18 @@ static struct se_lun *core_dev_get_lun(s
+ 
+ struct se_lun_acl *core_dev_init_initiator_node_lun_acl(
+ 	struct se_portal_group *tpg,
++	struct se_node_acl *nacl,
+ 	u32 mapped_lun,
+-	char *initiatorname,
+ 	int *ret)
+ {
+ 	struct se_lun_acl *lacl;
+-	struct se_node_acl *nacl;
+ 
+-	if (strlen(initiatorname) >= TRANSPORT_IQN_LEN) {
++	if (strlen(nacl->initiatorname) >= TRANSPORT_IQN_LEN) {
+ 		pr_err("%s InitiatorName exceeds maximum size.\n",
+ 			tpg->se_tpg_tfo->get_fabric_name());
+ 		*ret = -EOVERFLOW;
+ 		return NULL;
+ 	}
+-	nacl = core_tpg_get_initiator_node_acl(tpg, initiatorname);
+-	if (!nacl) {
+-		*ret = -EINVAL;
+-		return NULL;
+-	}
+ 	lacl = kzalloc(sizeof(struct se_lun_acl), GFP_KERNEL);
+ 	if (!lacl) {
+ 		pr_err("Unable to allocate memory for struct se_lun_acl.\n");
+@@ -1511,7 +1505,8 @@ struct se_lun_acl *core_dev_init_initiat
+ 	INIT_LIST_HEAD(&lacl->lacl_list);
+ 	lacl->mapped_lun = mapped_lun;
+ 	lacl->se_lun_nacl = nacl;
+-	snprintf(lacl->initiatorname, TRANSPORT_IQN_LEN, "%s", initiatorname);
++	snprintf(lacl->initiatorname, TRANSPORT_IQN_LEN, "%s",
++		 nacl->initiatorname);
+ 
+ 	return lacl;
+ }
+--- a/drivers/target/target_core_fabric_configfs.c
++++ b/drivers/target/target_core_fabric_configfs.c
+@@ -357,8 +357,8 @@ static struct config_group *target_fabri
+ 		goto out;
+ 	}
+ 
+-	lacl = core_dev_init_initiator_node_lun_acl(se_tpg, mapped_lun,
+-			config_item_name(acl_ci), &ret);
++	lacl = core_dev_init_initiator_node_lun_acl(se_tpg, se_nacl,
++			mapped_lun, &ret);
+ 	if (!lacl) {
+ 		ret = -EINVAL;
+ 		goto out;
+--- a/drivers/target/target_core_internal.h
++++ b/drivers/target/target_core_internal.h
+@@ -61,7 +61,7 @@ struct se_lun *core_dev_add_lun(struct s
+ int	core_dev_del_lun(struct se_portal_group *, u32);
+ struct se_lun *core_get_lun_from_tpg(struct se_portal_group *, u32);
+ struct se_lun_acl *core_dev_init_initiator_node_lun_acl(struct se_portal_group *,
+-		u32, char *, int *);
++		struct se_node_acl *, u32, int *);
+ int	core_dev_add_initiator_node_lun_acl(struct se_portal_group *,
+ 		struct se_lun_acl *, u32, u32);
+ int	core_dev_del_initiator_node_lun_acl(struct se_portal_group *,
+--- a/drivers/target/target_core_tpg.c
++++ b/drivers/target/target_core_tpg.c
+@@ -114,16 +114,10 @@ struct se_node_acl *core_tpg_get_initiat
+ 	struct se_node_acl *acl;
+ 
+ 	spin_lock_irq(&tpg->acl_node_lock);
+-	list_for_each_entry(acl, &tpg->acl_node_list, acl_list) {
+-		if (!strcmp(acl->initiatorname, initiatorname) &&
+-		    !acl->dynamic_node_acl) {
+-			spin_unlock_irq(&tpg->acl_node_lock);
+-			return acl;
+-		}
+-	}
++	acl = __core_tpg_get_initiator_node_acl(tpg, initiatorname);
+ 	spin_unlock_irq(&tpg->acl_node_lock);
+ 
+-	return NULL;
++	return acl;
+ }
+ 
+ /*	core_tpg_add_node_to_devs():
 
 
-> - when meeting a page from the wrong NUMA node in an stable tree
->    - meeting a normal page
-
-What does that line mean, and where does it fit in your argument?
-
->    - meeting a page which is ksm page before migration
->      get_kpfn_nid(stable_node->kpfn) != NUMA(stable_node->nid) can't capture
-> them since stable_node is for tree page in current stable tree. They are
-> always equal.
-
-When we meet a ksm page in the stable tree before it's migrated to another
-NUMA node, yes, it will be on the right NUMA node (because we were careful
-only to merge pages from the right NUMA node there), and that test will not
-capture them.  It's for capturng a ksm page in the stable tree after it has
-been migrated to another NUMA node.
-
-Hugh
