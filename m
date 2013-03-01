@@ -1,99 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752224Ab3CAEcD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 23:32:03 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:51221 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750902Ab3CAEcB (ORCPT
+	id S1752582Ab3CAEcT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 23:32:19 -0500
+Received: from mail-vc0-f179.google.com ([209.85.220.179]:47513 "EHLO
+	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752328Ab3CAEcQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 23:32:01 -0500
-Date: Fri, 1 Mar 2013 15:31:51 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: build failure after merge of the akpm tree
-Message-Id: <20130301153151.1c44c6af6283a3be8c715a1a@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__1_Mar_2013_15_31_51_+1100_NpnacA0mVjplfHC4"
+	Thu, 28 Feb 2013 23:32:16 -0500
+MIME-Version: 1.0
+In-Reply-To: <51302481.9070005@cn.fujitsu.com>
+References: <512B7D10.4060304@tpi.com>
+	<512B8407.2090807@canonical.com>
+	<512BD753.4080001@hp.com>
+	<CAE9FiQVY4io_mO3PhTtE6FbGUgo1uZKKXO=pjx_FoZ1JuZmsAw@mail.gmail.com>
+	<CAE9FiQXRZ2VjfG4L2d2zDQ3Sud=JqjS=M9=XW=ORS58_y7i4_g@mail.gmail.com>
+	<CAE9FiQU-CV4mF8x=Bi_4pmpmeZW-tSoes_f-jOt7yYrbrppo+A@mail.gmail.com>
+	<512D58C2.1090403@jp.fujitsu.com>
+	<CAE9FiQV5APHSGXuz3NrsApC+V7rsDQMDXMNwZszZuUqQVaZSew@mail.gmail.com>
+	<512D7FAD.1040003@jp.fujitsu.com>
+	<CAE9FiQWxq-HPKK+XNRLggZSM4NcdfaeGDWCgd3HegEhaDSSTtA@mail.gmail.com>
+	<512D8EDA.3010602@jp.fujitsu.com>
+	<CAE9FiQWAxL6F70fF0dQcBZKTReJOiC+Ez0xcqcosgAdSagS-bA@mail.gmail.com>
+	<512DBD24.7090302@cn.fujitsu.com>
+	<20130227132612.14664a3a.akpm@linux-foundation.org>
+	<CA+55aFz8Yx4=d=Lrmir0Vy0jhUBJMgfrJegDWsDByf28c0MuRQ@mail.gmail.com>
+	<51302481.9070005@cn.fujitsu.com>
+Date: Thu, 28 Feb 2013 20:32:15 -0800
+X-Google-Sender-Auth: SugflxQFkFwI-ooY0qhVhPNs7SE
+Message-ID: <CA+55aFw_1wDHmu+wsfV5e0miHC20Guy=u_toG_VSnsqneryAHQ@mail.gmail.com>
+Subject: Re: sched: CPU #1's llc-sibling CPU #0 is not on the same node!
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Tang Chen <tangchen@cn.fujitsu.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Yinghai Lu <yinghai@kernel.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Don Morris <don.morris@hp.com>,
+        Tim Gardner <tim.gardner@canonical.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Tejun Heo <tj@kernel.org>,
+        Tony Luck <tony.luck@intel.com>, Thomas Renninger <trenn@suse.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Jarkko Sakkinen <jarkko.sakkinen@intel.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Wen Congyang <wency@cn.fujitsu.com>, Lin Feng <linfeng@cn.fujitsu.com>,
+        "guz.fnst@cn.fujitsu.com" <guz.fnst@cn.fujitsu.com>,
+        Gui jianfeng <guijianfeng@cn.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__1_Mar_2013_15_31_51_+1100_NpnacA0mVjplfHC4
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Yingai, Andrew,
+ is this ok with you two?
 
-Hi Andrew,
+        Linus
 
-After merging the akpm tree, today's linux-next build (powerpc
-ppc64_defconfig) failed like this:
-
-fs/aio.c: In function 'exit_aio':
-fs/aio.c:522:60: error: macro "hlist_for_each_entry_safe" passed 5 argument=
-s, but takes just 4
-fs/aio.c:522:2: error: 'hlist_for_each_entry_safe' undeclared (first use in=
- this function)
-fs/aio.c:522:2: note: each undeclared identifier is reported only once for =
-each function it appears in
-fs/aio.c:522:62: error: expected ';' before '{' token
-
-I added this fix patch:
-
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Fri, 1 Mar 2013 15:30:24 +1100
-Subject: [PATCH] aio: fixup for hlist_for_each_entry_safe API change
-
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- fs/aio.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/fs/aio.c b/fs/aio.c
-index b36c2b6..2512232 100644
---- a/fs/aio.c
-+++ b/fs/aio.c
-@@ -517,9 +517,9 @@ EXPORT_SYMBOL(wait_on_sync_kiocb);
- void exit_aio(struct mm_struct *mm)
- {
- 	struct kioctx *ctx;
--	struct hlist_node *p, *n;
-+	struct hlist_node *n;
-=20
--	hlist_for_each_entry_safe(ctx, p, n, &mm->ioctx_list, list) {
-+	hlist_for_each_entry_safe(ctx, n, &mm->ioctx_list, list) {
- 		/*
- 		 * We don't need to bother with munmap() here -
- 		 * exit_mmap(mm) is coming and it'll unmap everything.
---=20
-1.8.1
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Fri__1_Mar_2013_15_31_51_+1100_NpnacA0mVjplfHC4
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRMC83AAoJEECxmPOUX5FEJ6QP/1c7iwHWt6f8AVZpQVlQpxFK
-F45AR/DTv5iMJz8Jg/09jfdZFP7OhDxevxu6NdL4GEA7nYz1rFGAqsry/BP0xBsB
-Q3ddlCAGoSdNgI6YLWHFZNik2/9kuLei0T406cqRG9ybflE1rFSNcqqP6f+LJO3w
-Aqb+CFExfmenYp6AF0gX1ADSm9KnT8I2Fe74gjLLDSiWbFIZtHnrJ2386QQcG57a
-CAlIslqjhGTsvsxvcfJGv7W5wfwu1NL6t1/AYzwyg64yuP31GXgSrmvmOMg8hnNi
-jGDk2ojCGoem77ne5QRU4WOGRHbixQfH0rDgTGt+c+YspLEcSYSbzkgudoGkJ9zr
-cEGcJna3nll5fdLBW675mBFH40u1tNI87S7Bc2rf08AOiAiWnO8gy9xYLbYpIuqJ
-EXYw+5sOllUisHBs6fVKevvBKqcb6Rcfs0vIK+cvSSFC+k6SRz6hhPxIscJuGKcx
-/1upQ44yE53MCTn2iE4DJ6TlNM7raKC7c9hGPuWdUHFLod3TlCEdIEQxw0RE/8ls
-5Y8IbGoNJ6RBCCbgHPB5LqaQIdGSyB6cdzan+QbsmZKIHVNScvMoti170AfmJvM8
-JjCgDpgOKjM0xLLH/LWSmttHTCTujPjxzEKYlyzjJqp6fxjJYFaKVHKgZmE60Adg
-qWuao6Uuxyjt2QpNTF4H
-=uNVZ
------END PGP SIGNATURE-----
-
---Signature=_Fri__1_Mar_2013_15_31_51_+1100_NpnacA0mVjplfHC4--
+On Thu, Feb 28, 2013 at 7:46 PM, Tang Chen <tangchen@cn.fujitsu.com> wrote:
+> Hi Linus,
+>
+> Please refer to the attached patch.
+>
+> This patch everts only the following two patches.
+>
+>
+>         commit 01a178a94e8eaec351b29ee49fbb3d1c124cb7fb
+>                 acpi, memory-hotplug: support getting hotplug info from SRAT
+>         commit e8d1955258091e4c92d5a975ebd7fd8a98f5d30f
+>
+>                 acpi, memory-hotplug: parse SRAT before memblock is ready
+>
+> Without these two patches, users can use "movablemem_map=nn[KMG]@ss[KMG]"
+> correctly, and cause no problem.
+>
+> And of course, the kernel will work as before if users don't use
+>
+> "movablemem_map=nn[KMG]@ss[KMG]".
+>
+> I do hope we can keep "movablemem_map=nn[KMG]@ss[KMG]" in 3.9.
+>
+>
+> We are working on fixing the SRAT problems, and we aims to push SRAT related
+> patches in 3.10. And we will also improve "movablemem_map=nn[KMG]@ss[KMG]"
+> functionality consistently in the future.
+>
+> Thanks. :)
+>
+>
+> On 03/01/2013 11:13 AM, Linus Torvalds wrote:
+>>
+>> On Wed, Feb 27, 2013 at 1:26 PM, Andrew Morton
+>> <akpm@linux-foundation.org>  wrote:
+>>>
+>>>
+>>> So I'm thinking that the best approach here is to revert everything and
+>>> then try again for 3.10-rc1.  This gives people time to test the code
+>>> while it's only in linux-next.  (Hint!)
+>>
+>>
+>> I'd prefer to revert too by now - the bug seems to be known, and
+>> apparently it's not a trivial fix. We're getting close to the end of
+>> the merge window, and it's still being discussed, it clearly wasn't
+>> really fully cooked.
+>>
+>> Can we agree on some minimal set of reverts? Can somebody send me a
+>> patch with the revert and the commit explanation for the revert?
+>> Yinghai? Or I can do the reverts too if just the exact set of commits
+>> is clear, but I'd rather get it from somebody who sees and understand
+>> the problem, and can test the state afterwards..
+>>
+>>                 Linus
+>>
+>
