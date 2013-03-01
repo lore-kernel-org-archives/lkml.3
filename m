@@ -1,85 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755472Ab3CAAvJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 19:51:09 -0500
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:62598 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751332Ab3CAAns (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 19:43:48 -0500
-From: John Stultz <john.stultz@linaro.org>
-To: lkml <linux-kernel@vger.kernel.org>
-Cc: Erik Gilling <konkers@android.com>,
-        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>, Rob Clark <robclark@gmail.com>,
-        Sumit Semwal <sumit.semwal@linaro.org>,
-        Greg KH <gregkh@linuxfoundation.org>, dri-devel@lists.freedesktop.org,
-        Android Kernel Team <kernel-team@android.com>,
-        John Stultz <john.stultz@linaro.org>
-Subject: [PATCH 05/30] staging: sw_sync: Add debug support
-Date: Thu, 28 Feb 2013 16:43:01 -0800
-Message-Id: <1362098606-26469-6-git-send-email-john.stultz@linaro.org>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1362098606-26469-1-git-send-email-john.stultz@linaro.org>
-References: <1362098606-26469-1-git-send-email-john.stultz@linaro.org>
+	id S1754928Ab3CAAnr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 19:43:47 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:48200 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751332Ab3CAAnn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Feb 2013 19:43:43 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: "Liu, Chuansheng" <chuansheng.liu@intel.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>, "Li, Fei" <fei.li@intel.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "Lan, Tianyu" <tianyu.lan@intel.com>,
+        "sarah.a.sharp@linux.intel.com" <sarah.a.sharp@linux.intel.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 4/5 V2] usb: call pm_runtime_put_sync in pm_runtime_get_sync failed case
+Date: Fri, 01 Mar 2013 01:50:30 +0100
+Message-ID: <35852055.MkFUspWUco@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <27240C0AC20F114CBF8149A2696CBE4A24253F@SHSMSX101.ccr.corp.intel.com>
+References: <1362042384.6212.25.camel@fli24-HP-Compaq-8100-Elite-CMT-PC> <Pine.LNX.4.44L0.1302281015330.1352-100000@iolanthe.rowland.org> <27240C0AC20F114CBF8149A2696CBE4A24253F@SHSMSX101.ccr.corp.intel.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Erik Gilling <konkers@android.com>
+On Friday, March 01, 2013 12:38:07 AM Liu, Chuansheng wrote:
+> 
+> > -----Original Message-----
+> > From: Alan Stern [mailto:stern@rowland.harvard.edu]
+> > Sent: Thursday, February 28, 2013 11:17 PM
+> > To: Li, Fei
+> > Cc: gregkh@linuxfoundation.org; Lan, Tianyu; sarah.a.sharp@linux.intel.com;
+> > rjw@sisk.pl; linux-usb@vger.kernel.org; linux-kernel@vger.kernel.org; Liu,
+> > Chuansheng
+> > Subject: Re: [PATCH 4/5 V2] usb: call pm_runtime_put_sync in
+> > pm_runtime_get_sync failed case
+> > 
+> > On Thu, 28 Feb 2013, Li Fei wrote:
+> > 
+> > >
+> > > Even in failed case of pm_runtime_get_sync, the usage_count
+> > > is incremented. In order to keep the usage_count with correct
+> > > value and runtime power management to behave correctly, call
+> > > pm_runtime_put(_sync) in such case.
+> > >
+> > > Signed-off-by Liu Chuansheng <chuansheng.liu@intel.com>
+> > > Signed-off-by: Li Fei <fei.li@intel.com>
+> > > ---
+> > >  drivers/usb/core/hub.c |    3 ++-
+> > >  1 files changed, 2 insertions(+), 1 deletions(-)
+> > >
+> > > diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
+> > > index 5480352..f72dede 100644
+> > > --- a/drivers/usb/core/hub.c
+> > > +++ b/drivers/usb/core/hub.c
+> > > @@ -3148,12 +3148,13 @@ int usb_port_resume(struct usb_device *udev,
+> > pm_message_t msg)
+> > >
+> > >  	if (port_dev->did_runtime_put) {
+> > >  		status = pm_runtime_get_sync(&port_dev->dev);
+> > > -		port_dev->did_runtime_put = false;
+> > >  		if (status < 0) {
+> > >  			dev_dbg(&udev->dev, "can't resume usb port, status %d\n",
+> > >  					status);
+> > > +			pm_runtime_put_sync(&port_dev->dev);
+> > >  			return status;
+> > >  		}
+> > > +		port_dev->did_runtime_put = false;
+> > >  	}
+> > 
+> > I don't see much point in this.  After a failed resume, the port's
+> > runtime PM status is undefined.  Whether or not you do a
+> > pm_runtime_put_sync won't make any difference.
+> In case of failed resume, calling pm_runtime_put_sync() is just for decrease the dev->power.usage_count,
+> because pm_runtime_get_sync() always increase the dev->power.usage_count even failed.
+> 
+> If not pairing runtime_get/put, after that case, the device can not enter runtime suspend any more due to dev->power.usage_count > 0 always.
+> Is it making sense?
 
-Add debugfs support hooks.
+Well, not really.
 
-Cc: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-Cc: Erik Gilling <konkers@android.com>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: Rob Clark <robclark@gmail.com>
-Cc: Sumit Semwal <sumit.semwal@linaro.org>
-Cc: Greg KH <gregkh@linuxfoundation.org>
-Cc: dri-devel@lists.freedesktop.org
-Cc: Android Kernel Team <kernel-team@android.com>
-Signed-off-by: Erik Gilling <konkers@android.com>
-[jstultz: Add commit message]
-Signed-off-by: John Stultz <john.stultz@linaro.org>
----
- drivers/staging/android/sw_sync.c |   19 +++++++++++++++++++
- 1 file changed, 19 insertions(+)
+Before returning an error code, rpm_callback() assigns that code to
+dev->power.runtime_error and that will effectively disable runtime PM for dev
+going forward anyway.
 
-diff --git a/drivers/staging/android/sw_sync.c b/drivers/staging/android/sw_sync.c
-index c27004c..64c5ebb 100644
---- a/drivers/staging/android/sw_sync.c
-+++ b/drivers/staging/android/sw_sync.c
-@@ -70,11 +70,30 @@ static int sw_sync_pt_compare(struct sync_pt *a, struct sync_pt *b)
- 	return sw_sync_cmp(pt_a->value, pt_b->value);
- }
- 
-+static void sw_sync_print_obj(struct seq_file *s,
-+			      struct sync_timeline *sync_timeline)
-+{
-+	struct sw_sync_timeline *obj = (struct sw_sync_timeline *)sync_timeline;
-+
-+	seq_printf(s, "%d", obj->value);
-+}
-+
-+static void sw_sync_print_pt(struct seq_file *s, struct sync_pt *sync_pt)
-+{
-+	struct sw_sync_pt *pt = (struct sw_sync_pt *)sync_pt;
-+	struct sw_sync_timeline *obj =
-+		(struct sw_sync_timeline *)sync_pt->parent;
-+
-+	seq_printf(s, "%d / %d", pt->value, obj->value);
-+}
-+
- struct sync_timeline_ops sw_sync_timeline_ops = {
- 	.driver_name = "sw_sync",
- 	.dup = sw_sync_pt_dup,
- 	.has_signaled = sw_sync_pt_has_signaled,
- 	.compare = sw_sync_pt_compare,
-+	.print_obj = sw_sync_print_obj,
-+	.print_pt = sw_sync_print_pt,
- };
- 
- 
+Thanks,
+Rafael
+
+
 -- 
-1.7.10.4
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
