@@ -1,93 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751601Ab3CAPNk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 10:13:40 -0500
-Received: from mail-oa0-f45.google.com ([209.85.219.45]:35477 "EHLO
-	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750779Ab3CAPNi (ORCPT
+	id S1751823Ab3CAPNu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 10:13:50 -0500
+Received: from mail-lb0-f172.google.com ([209.85.217.172]:58379 "EHLO
+	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751696Ab3CAPNr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 10:13:38 -0500
-Message-ID: <5130C59E.8020702@gmail.com>
-Date: Fri, 01 Mar 2013 09:13:34 -0600
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Fri, 1 Mar 2013 10:13:47 -0500
 MIME-Version: 1.0
-To: Andrew Murray <Andrew.Murray@arm.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Liviu Dudau <Liviu.Dudau@arm.com>
-Subject: Re: [RFC PATCH RESEND v2] of/pci: Provide support for parsing PCI
- DT ranges property
-References: <1362140616-19346-1-git-send-email-Andrew.Murray@arm.com>
-In-Reply-To: <1362140616-19346-1-git-send-email-Andrew.Murray@arm.com>
+In-Reply-To: <1362146843.9158.134.camel@falcor1>
+References: <1362132778.2723.15.camel@menhir>
+	<1362140849.9158.108.camel@falcor1>
+	<1362143512.2723.21.camel@menhir>
+	<1362146843.9158.134.camel@falcor1>
+Date: Fri, 1 Mar 2013 10:13:45 -0500
+Message-ID: <CACLa4psWBYPDjiZB3ROA4yGTbJX=UmN3Go8xH_myZ+_W7D01AA@mail.gmail.com>
+Subject: Re: security_inode_init_security() inode field requirements
+From: Eric Paris <eparis@parisplace.org>
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: Steven Whitehouse <swhiteho@redhat.com>, Mimi Zohar <zohar@us.ibm.com>,
+        Chris Wright <chrisw@sous-sol.org>,
+        LSM List <linux-security-module@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        cluster-devel@redhat.com,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/01/2013 06:23 AM, Andrew Murray wrote:
-> This patch factors out common implementations patterns to reduce overall kernel
-> code and provide a means for host bridge drivers to directly obtain struct
-> resources from the DT's ranges property without relying on architecture specific
-> DT handling. This will make it easier to write archiecture independent host bridge
-> drivers and mitigate against further duplication of DT parsing code.
-> 
-> This patch can be used in the following way:
-> 
-> 	struct of_pci_range_iter iter;
-> 	for_each_of_pci_range(&iter, np) {
-> 
-> 		//directly access properties of the address range, e.g.:
-> 		//iter.pci_space, iter.pci_addr, iter.cpu_addr, iter.size or
-> 		//iter.flags
-> 
-> 		//alternatively obtain a struct resource, e.g.:
-> 		//struct resource res;
-> 		//range_iter_fill_resource(iter, np, res);
-> 	}
-> 
-> Additionally the implementation takes care of adjacent ranges and merges them
-> into a single range (as was the case with powerpc and microblaze).
-> 
-> The modifications to microblaze, mips and powerpc have not been tested.
-> 
-> v2:
->   This follows on from suggestions made by Grant Likely
->   (marc.info/?l=linux-kernel&m=136079602806328)
-> 
-> Signed-off-by: Andrew Murray <Andrew.Murray@arm.com>
-> Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
-> ---
->  arch/microblaze/pci/pci-common.c |  100 +++++++++++--------------------------
->  arch/mips/pci/pci.c              |   44 ++++-------------
->  arch/powerpc/kernel/pci-common.c |   93 ++++++++++-------------------------
->  drivers/of/address.c             |   54 ++++++++++++++++++++
->  include/linux/of_address.h       |   30 +++++++++++
->  5 files changed, 151 insertions(+), 170 deletions(-)
+SELinux has no maximum   :-(
 
-The thing is that this still leaves pci_process_bridge_OF_ranges
-basically identical for microblaze and powerpc which is really what
-needs to be moved out to common code. Obviously, struct pci_controller
-vs. struct pci_sys_data on ARM is an issue, but they all have
-fundamentally the same data.
+Realistically there are a couple of interfaces that limit things to
+4k, but labels on files on disk could be even larger than that!
 
-All these common fields should be in a common PCI controller struct.
-Perhaps introducing this with just what you need would work. Depending
-how invasive moving those fields to a new struct is, you could have a
-wrapper that just copies/translates the fields to the arch specific struct.
+255 will fit most every label, but not necessarily all of them.
 
-There's also things like ioremap of the i/o range. ARM uses a fixed
-virtual address, so we need to do something different. Just returning
-the i/o cpu_addr and moving the ioremap out of this function would solve
-that.
 
-Rob
+I know ext4 on Fedora allocates inodes which left about 255 bytes for
+selinux.selinux, but will place the xattr in another block if it
+happens to be larger than 255.  This is rare, but certainly
+possible....
 
+We use the inode->i_mode.
+
+In debug/error path we use:
+  inode->i_sb inode->i_no
+
+We could use the parent dir sb instead of the new inode->i_sb.  We
+don't have to print the i_no when we hit a failure, but it is just
+about the only information that can help for debugging/figuring out
+which file had a failure..
+
+-Eric
+
+On Fri, Mar 1, 2013 at 9:07 AM, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
+> On Fri, 2013-03-01 at 13:11 +0000, Steven Whitehouse wrote:
+>> Hi,
+>>
+>> On Fri, 2013-03-01 at 07:27 -0500, Mimi Zohar wrote:
+>> > On Fri, 2013-03-01 at 10:12 +0000, Steven Whitehouse wrote:
+>> > > Hi,
+>> > >
+>> > > I'm wondering whether there is a list somewhere of fields which
+>> > > security_inode_init_security() requires are set in an inode when it is
+>> > > called? In particular, does it matter if the inode number itself is
+>> > > unset when security_inode_init_security() is called?
+>> > >
+>> > > The problem that I'm looking at is the use of multiple transactions
+>> > > during inode creation when some combination of ACLs/LSMs/IMA are turned
+>> > > on. What we have currently (in GFS2, there are other fs which follow
+>> > > broadly the same solution though) is this:
+>> > >
+>> > > 1. Create inode in core
+>> > > 2. Create inode on disk
+>> > > 3. Add xattrs one at a time for ACLs/LSMs/IMA
+>> > > 4. Link inode into directory
+>> > >
+>> > > Steps 2 through 4 require separate transactions at the moment. What I'd
+>> > > like to do is to be able to get the details of the xattrs ahead of time
+>> > > such that the allocation of the inode can be one and the same allocation
+>> > > as that for the xattr blocks. That allows merging of the transactions
+>> > > into one and a greatly simplified error path too. This would look
+>> > > something like:
+>> > >
+>> > > 1. Create in-core inode and init required fields
+>> > > 2. Get details of all xattrs for the inode
+>> > > 3. Alloc on disk inode and blocks for xattrs as needed
+>> > > 4. Link into directory
+>> > >
+>> > > In this case, steps 2 through 4 are within a single transaction. We
+>> > > don't actually need to have the content of the xattrs ahead of
+>> > > allocating the inode, just the length (or even just a max length, if it
+>> > > is not too large). However the easiest solution would just be to move
+>> > > the call to security_inode_init_security() to the point before we've
+>> > > allocated the inode (and thus we don't know its number yet) but after
+>> > > we've filled out all the remaining fields if that makes sense?
+>> > >
+>> > > So I just wanted to check whether that would break anything,
+>> >
+>> > Hi Steve,
+>> >
+>> > Included in security_inode_init_security() is the call to
+>> > evm_inode_init_security() to write the 'security.evm' extended
+>> > attribute.  'security.evm' is an HMAC of the security extended
+>> > attributes and other file metadata, including the inode.  For an exact
+>> > list of other metadata included in the HMAC calculation refer to
+>> > hmac_add_misc().  (The UUID is being added to the HMAC calculation in
+>> > this open window.)
+>> >
+>> > thanks,
+>> >
+>> > Mimi
+>> >
+>>
+>> Ok... but it is using inode->i_ino in that case, as well as the
+>> generation number too. So that presumably can only be done after the
+>> inode has been allocated, since we need to know its location in order to
+>> know its inode number. Also the generation number is assigned at
+>> allocation time. One potential issue though... the inode->i_ino is an
+>> unsigned long, so that on 32 bit archs, that will be (on GFS2) a
+>> truncated version of the full 64 bit inode number. I'm not sure if that
+>> matters or not for EVM.
+>
+> The reason for adding additional information to the HMAC calculation is
+> to prevent a cut & paste attack, taking a valid 'security.evm' from one
+> file and using it for another file.
+>
+>> So since that appears to rule out doing the security init bits ahead of
+>> the allocation of the inode, is it possible to get a maximum value for
+>> the size of the xattr which EVM will add? Likewise for the other LSMs
+>> too?
+>
+> Although 'security.evm' can contain either an HMAC or a digital
+> signature, new inodes are created with an HMAC, which is hardcoded as
+> hmac(sha1).  On a running system, the existing 'security.evm' digital
+> signatures are replaced with an HMAC.
+>
+> SELinux defines INITCONTEXTLEN as 255, which seems to be the maximum
+> xattr length, but I'm not sure.  From the smack header:
+>
+> /*
+>  * Smack labels were limited to 23 characters for a long time.
+>  */
+> #define SMK_LABELLEN    24
+> #define SMK_LONGLABEL   256
+>
+> thanks,
+>
+> Mimi
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
