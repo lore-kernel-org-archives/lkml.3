@@ -1,116 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752083Ab3CAQai (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 11:30:38 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:9083 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750778Ab3CAQag (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 11:30:36 -0500
-Message-ID: <5130D760.70908@redhat.com>
-Date: Fri, 01 Mar 2013 09:29:20 -0700
-From: Eric Blake <eblake@redhat.com>
-Organization: Red Hat, Inc.
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130219 Thunderbird/17.0.3
+	id S1751667Ab3CAQa0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 11:30:26 -0500
+Received: from mail-qe0-f46.google.com ([209.85.128.46]:56754 "EHLO
+	mail-qe0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750709Ab3CAQaY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Mar 2013 11:30:24 -0500
 MIME-Version: 1.0
-To: Hu Tao <hutao@cn.fujitsu.com>
-CC: kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>, Gleb Natapov <gleb@redhat.com>,
-        Blue Swirl <blauwirbel@gmail.com>, Andrew Jones <drjones@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Sasha Levin <levinsasha928@gmail.com>,
-        Luiz Capitulino <lcapitulino@redhat.com>,
-        Anthony Liguori <aliguori@us.ibm.com>,
-        Markus Armbruster <armbru@redhat.com>,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        Stefan Hajnoczi <stefanha@redhat.com>,
-        Juan Quintela <quintela@redhat.com>,
-        Orit Wasserman <owasserm@redhat.com>, Kevin Wolf <kwolf@redhat.com>,
-        Wen Congyang <wency@cn.fujitsu.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>, Alexander Graf <agraf@suse.de>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Peter Maydell <peter.maydell@linaro.org>
-Subject: Re: [PATCH v13 1/8] save/load cpu runstate
-References: <cover.1362051581.git.hutao@cn.fujitsu.com> <df20999140db716e8b1ccd57a7cbcb0fa343a78c.1362051582.git.hutao@cn.fujitsu.com> <512FC845.9080209@redhat.com> <20130301073648.GD16362@localhost.localdomain>
-In-Reply-To: <20130301073648.GD16362@localhost.localdomain>
-X-Enigmail-Version: 1.5.1
-OpenPGP: url=http://people.redhat.com/eblake/eblake.gpg
-Content-Type: multipart/signed; micalg=pgp-sha256;
- protocol="application/pgp-signature";
- boundary="----enig2IQQMSOUPJIDWITKASEXF"
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <CA+icZUWcipb4XG7HvbShP+RWa_Y8ewcGWJmcxRfQ0-owzgrx=g@mail.gmail.com>
+References: <CA+icZUXG7WgRap2-oQGBr_s=QbE0QW6_zChDRqC-eEzrWR3Y5g@mail.gmail.com>
+	<CA+icZUUP0hLjkTjsAGbhoT1QG55X2062G5KCCDsKkhDyM_SQEg@mail.gmail.com>
+	<20130228111819.GF11892@cantiga.alporthouse.com>
+	<CA+gsUGQ-cn00=emFkHeWi6akL9TrJ9CV6ikv7C62fhLYMtB=HQ@mail.gmail.com>
+	<CA+icZUWE-DpD3azUaY7uKnz18DV-JRdYBkTBa-YzqX30S4THrQ@mail.gmail.com>
+	<CA+icZUU3Beo65x+Y1-L7=g6rAcChoT8qnCzM4-n2Q0EGEuqgZA@mail.gmail.com>
+	<CA+gsUGRBHb2Yg6u_GiXdD47e4RSGmBei2sBjQih_Tr09HxQFPg@mail.gmail.com>
+	<CA+icZUWcipb4XG7HvbShP+RWa_Y8ewcGWJmcxRfQ0-owzgrx=g@mail.gmail.com>
+Date: Fri, 1 Mar 2013 17:30:23 +0100
+Message-ID: <CA+icZUXXYDY6rkcBF91qKy_1H7pchWAwW6koCRgY4E3b1oQvnw@mail.gmail.com>
+Subject: Re: [Intel-gfx] [git pull] drm merge for 3.9-rc1
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Paulo Zanoni <przanoni@gmail.com>
+Cc: Chris Wilson <chris@chris-wilson.co.uk>, Dave Airlie <airlied@gmail.com>,
+        DRI <dri-devel@lists.freedesktop.org>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-next <linux-next@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
-------enig2IQQMSOUPJIDWITKASEXF
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
-
-On 03/01/2013 12:36 AM, Hu Tao wrote:
-> On Thu, Feb 28, 2013 at 02:12:37PM -0700, Eric Blake wrote:
->> On 02/28/2013 05:13 AM, Hu Tao wrote:
->>> This patch enables preservation of cpu runstate during save/load vm.
->>> So when a vm is restored from snapshot, the cpu runstate is restored,=
-
->>> too.
+On Thu, Feb 28, 2013 at 6:59 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+> On Thu, Feb 28, 2013 at 6:33 PM, Paulo Zanoni <przanoni@gmail.com> wrote:
+>> Hi
 >>
->> What happens if a management app wants to override the runstate when
->> restoring the domain?  I can think of several useful scenarios:
+>> 2013/2/28 Sedat Dilek <sedat.dilek@gmail.com>:
+>>> On Thu, Feb 28, 2013 at 6:12 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+>>>> On Thu, Feb 28, 2013 at 3:31 PM, Paulo Zanoni <przanoni@gmail.com> wrote:
+>>>>> Hi
+>>>>>
+>>>>> 2013/2/28 Chris Wilson <chris@chris-wilson.co.uk>:
+>>>>>> On Thu, Feb 28, 2013 at 12:06:28AM +0100, Sedat Dilek wrote:
+>>>>>>> On Wed, Feb 27, 2013 at 11:36 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+>>>>>>> > Hi,
+>>>>>>> >
+>>>>>>> > I am seeing this also on Linux-Next.
+>>>>>>> >
+>>>>>>> > /var/log/kern.log:Feb 27 22:52:35 fambox kernel: [   28.202381]
+>>>>>>> > [drm:intel_dp_aux_wait_done] *ERROR* dp aux hw did not signal timeout
+>>>>>>> > (has irq: 1)!
+>>>>>>> > /var/log/kern.log:Feb 27 22:52:35 fambox kernel: [   28.210588]
+>>>>>>> > [drm:intel_dp_aux_wait_done] *ERROR* dp aux hw did not signal timeout
+>>>>>>> > (has irq: 1)!
+>>>>>>> >
+>>>>>>> > /var/log/kern.log.1:Feb 22 07:36:04 fambox kernel: [   27.408280]
+>>>>>>> > [drm:intel_dp_aux_wait_done] *ERROR* dp aux hw did not signal timeout
+>>>>>>> > (has irq: 1)!
+>>>>>>> >
+>>>>>>> > This seems to be hard reproducible...
+>>>>>>> > Laptop-LCD... Sandybridge Mobile-GT2.
+>>>>>>> >
+>>>>>>> > Is there a way to force the error?
+>>>>>>> >
+>>>>>>> > Possible patch see [1].
+>>>>>>> >
+>>>>>>> > - Sedat -
+>>>>>>> >
+>>>>>>> > [1] https://patchwork.kernel.org/patch/2192721/
+>>>>>>
+>>>>>> That was:
+>>>>>>
+>>>>>> +       if (!done) {
+>>>>>> +               status = I915_READ_NOTRACE(ch_ctl);
+>>>>>> +               DRM_ERROR("dp aux hw did not signal timeout (has irq:
+>>>>>> %i), status=%08x!\n",
+>>>>>> +                         has_aux_irq, status);
+>>>>>> +       }
+>>>>>>
+>>>>>> You applied
+>>>>>>
+>>>>>> +       if (!done) {
+>>>>>> +               status = I915_READ_NOTRACE(ch_ctl);
+>>>>>> +               DRM_ERROR("dp aux hw did not signal timeout (has irq:
+>>>>>> %i), status=%08x!\n",
+>>>>>> +                         has_aux_irq, status);
+>>>>>> +       {
+>>>>>
+>>>>> In addition to this, after the problem happens can you please dump the
+>>>>> registers 0x44008 (DEIIR) and 0xC4008 (SDEIIR)? You can do this either
+>>>>> by running intel-reg-read (from intel-gpu-tools) or by changing the
+>>>>> DRM_ERROR above to also print the result of I915_READ(0x44008) and
+>>>>> I915_READ(0xC4008).
+>>>>>
+>>>>
+>>>> Do I need a specific version of intel-gpu-tools?
+>>>> Ubuntu/precise has v1.2 in its archives - sufficient?
+>>>> Note: The error was twice after dozenz of Linux-Next kernel builds.
+>>>>
+>>>> - Sedat -
+>>>>
+>>>> [1] http://packages.ubuntu.com/precise/intel-gpu-tools
+>>>>
+>>>
+>>> Installed intel-gpu-tools.
+>>>
+>>> # intel_reg_read
+>>> Usage: intel_reg_read [-f | addr]
+>>>          -f : read back full range of registers.
+>>>               WARNING! This could be danger to hang the machine!
+>>>          addr : in 0xXXXX format
+>>>
+>>> # intel_reg_read 0x44008
+>>> Couldn't map MMIO region: Resource temporarily unavailable
+>>>
+>>> [  368.281707] intel_reg_read:3657 conflicting memory types
+>>> f0000000-f0400000 uncached-minus<->write-combining
+>>> [  381.521912] intel_reg_read:3658 conflicting memory types
+>>> f0000000-f0400000 uncached-minus<->write-combining
+>>> [  401.136291] intel_reg_read:3659 conflicting memory types
+>>> f0000000-f0400000 uncached-minus<->write-combining
+>>>
+>>> Wrong i-g-t version? Missing enabled kernel-config option? Boot with
+>>> i915 debug enabled?
 >>
->> 1. management app pauses the guest, then saves domain state and other
->> things (management state, or disk clones), then resumes the guest.
->> Later, the management wants to revert to the saved state, but have the=
-
->> guest running right away.  I guess here, knowing that the guest was
->> saved in a paused state doesn't hurt, since the management app can
->> resume it right away.
+>> Just build the version from git and it should work
+>> (http://cgit.freedesktop.org/xorg/app/intel-gpu-tools/).
 >>
->> 2. management app saves domain state of a live guest, then copies that=
+>
+> NO.
+>
+> $ git clone git://anongit.freedesktop.org/xorg/app/intel-gpu-tools
+> intel-gpu-tools-git
+>
+> $ cd intel-gpu-tools-git/
+>
+> $ ./autogen.sh --disable-dumper <--- requires swig2.0 and python >=3.x
+>
+> $ sudo ./tools/intel_reg_read 0x44008
+> 0x44008 : 0x0
+>
+> $ sudo ./tools/intel_reg_read 0xC4008
+> 0xC4008 : 0x0
+>
+> $ sudo ./tools/intel_reg_dumper > /tmp/intel_reg_dumper.txt <--- see attachment
+>
+> Does this help you?
+>
 
->> state elsewhere.  In its new location, the management app wants to
->> investigate the state for forensic analysis - so even though the guest=
+Ping Paulo.
 
->> remembers that it was running, management wants to start it paused.
->> Here, it is important that there must not be a window of time where th=
-e
->> guest can run, otherwise, the results are not reproducible.
->=20
-> -S takes precedence in the case. But for in-migration, runstate is
-> loaded from src.
+- Sedat -
 
-Given your answer, I think we're okay from the libvirt perspective.  My
-biggest worry about a window where the guest runs unchecked is not a
-problem, given that libvirt always uses -S on incoming migration.  In
-turn, libvirt has its own mechanisms for tracking whether the outgoing
-migration was started from a running state, along with API overrides to
-let a user override whether libvirt will resume the guest on the
-incoming migration side.
-
---=20
-Eric Blake   eblake redhat com    +1-919-301-3266
-Libvirt virtualization library http://libvirt.org
-
-
-------enig2IQQMSOUPJIDWITKASEXF
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.13 (GNU/Linux)
-Comment: Public key at http://people.redhat.com/eblake/eblake.gpg
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iQEcBAEBCAAGBQJRMNdgAAoJEKeha0olJ0Nq0kEH/1SbK8p7fVUNjgKkqfpK8gb1
-x/VQR88hsWDEeYO9wzaWjUIlS081QVm39kcGyeuYQFqtKA3ixUvIIuEDbtyzOS37
-IQWQpwU0C/ILluJrQaqEFD77HwJAMi86SNVuQA2KvYOYXZrJIzKn5Q5ads1vDnPy
-pCv9nbwmu2kWc1rcXa9MPXqYq1yowsW5AWW0VM3m8tFIgc8VJbiSH/Ulku7KpzEu
-u0Xqun7tKOsF29l5TxMWwDPuSi/iPTovwpngz00VPQiMt5vrgj0rhA7Uj7xlWxyW
-DDT7Lf8OLlGbLEBsDAMDz0uwV5gZjl0ewaa5WIfGq+sYlfu0Lt1mzE+Ovq7R9r0=
-=F9rp
------END PGP SIGNATURE-----
-
-------enig2IQQMSOUPJIDWITKASEXF--
+> - Sedat -
+>
+>
+>>>
+>>> - Sedat -
+>>>
+>>>>> If you conclude that the value of 0x44008 is 0x0 while the value of
+>>>>> 0xC4008 is not, then this patch should help:
+>>>>> https://patchwork.kernel.org/patch/2177841/
+>>>>>
+>>>>>>
+>>>>>> That second '{' is the source of the compile error.
+>>>>>> -Chris
+>>>>>>
+>>>>>> --
+>>>>>> Chris Wilson, Intel Open Source Technology Centre
+>>>>>> _______________________________________________
+>>>>>> Intel-gfx mailing list
+>>>>>> Intel-gfx@lists.freedesktop.org
+>>>>>> http://lists.freedesktop.org/mailman/listinfo/intel-gfx
+>>>>>
+>>>>>
+>>>>>
+>>>>> --
+>>>>> Paulo Zanoni
+>>
+>>
+>>
+>> --
+>> Paulo Zanoni
