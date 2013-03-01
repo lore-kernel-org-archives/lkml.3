@@ -1,73 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751132Ab3CAQH6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 11:07:58 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:57749 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750983Ab3CAQH5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 11:07:57 -0500
-From: Borislav Petkov <bp@alien8.de>
-To: Matt Fleming <matt.fleming@intel.com>
-Cc: X86 ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <bp@suse.de>
-Subject: [PATCH] x86, efi: Make efi_memblock_x86_reserve_range more readable
-Date: Fri,  1 Mar 2013 17:07:44 +0100
-Message-Id: <1362154064-9386-1-git-send-email-bp@alien8.de>
-X-Mailer: git-send-email 1.8.1.3.535.ga923c31
+	id S1751371Ab3CAQIx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 11:08:53 -0500
+Received: from zfrontend1.aha.ru ([195.2.83.147]:37703 "EHLO aha.ru"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751059Ab3CAQIw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Mar 2013 11:08:52 -0500
+X-Greylist: delayed 3602 seconds by postgrey-1.27 at vger.kernel.org; Fri, 01 Mar 2013 11:08:51 EST
+From: "werner" <w.landgraf@ru.ru>
+Subject: Re: Linux 3.8-rc1: compiling problem in perf-event-p6.o
+To: rdunlap@infradead.org, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org
+X-Mailer: CommuniGate Pro WebUser Interface v.4.3.12
+Date: Fri, 01 Mar 2013 11:08:45 -0400
+Message-ID: <web-850647262@zbackend1.aha.ru>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"; format="flowed"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Borislav Petkov <bp@suse.de>
+That should be corrected, even if it's a problem of the CC 
+version / libries, or not,   compilation can't depend on 
+this, code can't be so non-standard that it depends on the 
+compiler version.
 
-So basically this function copies EFI memmap stuff from boot_params into
-the EFI memmap descriptor and reserves memory for it. Make it much more
-readable.
+wl
 
-Signed-off-by: Borislav Petkov <bp@suse.de>
+
+
+
+=====================================
+
+The problem continues with 3.8-rc
+
+This is grave, no vmlinuz is produced.
+
+
+wl
+
+   CC arch/x86/kernel/cpu/perf_event.o
+   CC arch/x86/kernel/cpu/perf_event_amd.o
+   CC arch/x86/kernel/cpu/perf_event_p6.o
+arch/x86/kernel/cpu/perf_event_p6.c:22: error: 
+p6_hw_cache_event_ids causes a section type conflict
+make[3]: [arch/x86/kernel/cpu/perf_event_p6.o] Error 1 
+(ignored)
+   CC arch/x86/kernel/cpu/perf_event_knc.o
+   CC arch/x86/kernel/cpu/perf_event_p4.o
+   CC arch/x86/kernel/cpu/perf_event_intel_lbr.o
 ---
- arch/x86/platform/efi/efi.c | 19 ++++++++++---------
- 1 file changed, 10 insertions(+), 9 deletions(-)
-
-diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
-index 5f2ecaf3f9d8..fff986da6239 100644
---- a/arch/x86/platform/efi/efi.c
-+++ b/arch/x86/platform/efi/efi.c
-@@ -351,24 +351,25 @@ static void __init do_add_efi_memmap(void)
- 
- int __init efi_memblock_x86_reserve_range(void)
- {
-+	struct efi_info *e = &boot_params.efi_info;
- 	unsigned long pmap;
- 
- #ifdef CONFIG_X86_32
- 	/* Can't handle data above 4GB at this time */
--	if (boot_params.efi_info.efi_memmap_hi) {
-+	if (e->efi_memmap_hi) {
- 		pr_err("Memory map is above 4GB, disabling EFI.\n");
- 		return -EINVAL;
- 	}
--	pmap = boot_params.efi_info.efi_memmap;
-+	pmap =  e->efi_memmap;
- #else
--	pmap = (boot_params.efi_info.efi_memmap |
--		((__u64)boot_params.efi_info.efi_memmap_hi<<32));
-+	pmap = (e->efi_memmap |	((__u64)e->efi_memmap_hi << 32));
- #endif
--	memmap.phys_map = (void *)pmap;
--	memmap.nr_map = boot_params.efi_info.efi_memmap_size /
--		boot_params.efi_info.efi_memdesc_size;
--	memmap.desc_version = boot_params.efi_info.efi_memdesc_version;
--	memmap.desc_size = boot_params.efi_info.efi_memdesc_size;
-+	memmap.phys_map		= (void *)pmap;
-+	memmap.nr_map		= e->efi_memmap_size /
-+				  e->efi_memdesc_size;
-+	memmap.desc_size	= e->efi_memdesc_size;
-+	memmap.desc_version	= e->efi_memdesc_version;
-+
- 	memblock_reserve(pmap, memmap.nr_map * memmap.desc_size);
- 
- 	return 0;
--- 
-1.8.1.3.535.ga923c31
-
+Professional hosting for everyone - http://www.host.ru
