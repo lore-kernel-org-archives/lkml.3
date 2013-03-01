@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753861Ab3CAUMl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 15:12:41 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51562 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753119Ab3CATpq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753108Ab3CATpq (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 1 Mar 2013 14:45:46 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51504 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752729Ab3CATph (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Mar 2013 14:45:37 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Seth Heasley <seth.heasley@intel.com>,
-        Jeff Garzik <jgarzik@redhat.com>
-Subject: [ 69/77] ata_piix: IDE-mode SATA patch for Intel Avoton DeviceIDs
-Date: Fri,  1 Mar 2013 11:44:54 -0800
-Message-Id: <20130301194359.246629282@linuxfoundation.org>
+        Xi Wang <xi.wang@gmail.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 40/77] sysctl: fix null checking in bin_dn_node_address()
+Date: Fri,  1 Mar 2013 11:44:25 -0800
+Message-Id: <20130301194356.209261867@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130301194351.913471337@linuxfoundation.org>
 References: <20130301194351.913471337@linuxfoundation.org>
@@ -27,36 +29,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Seth Heasley <seth.heasley@intel.com>
+From: Xi Wang <xi.wang@gmail.com>
 
-commit aaa515277db9585eeb4fdeb4637b9f9df50a1dd9 upstream.
+commit df1778be1a33edffa51d094eeda87c858ded6560 upstream.
 
-This patch adds the IDE-mode SATA DeviceIDs for the Intel Avoton SOC.
+The null check of `strchr() + 1' is broken, which is always non-null,
+leading to OOB read.  Instead, check the result of strchr().
 
-Signed-off-by: Seth Heasley <seth.heasley@intel.com>
-Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
+Signed-off-by: Xi Wang <xi.wang@gmail.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/ata/ata_piix.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ kernel/sysctl_binary.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/ata/ata_piix.c
-+++ b/drivers/ata/ata_piix.c
-@@ -317,6 +317,14 @@ static const struct pci_device_id piix_p
- 	{ 0x8086, 0x9c09, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
- 	/* SATA Controller IDE (DH89xxCC) */
- 	{ 0x8086, 0x2326, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
-+	/* SATA Controller IDE (Avoton) */
-+	{ 0x8086, 0x1f20, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_sata_snb },
-+	/* SATA Controller IDE (Avoton) */
-+	{ 0x8086, 0x1f21, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_sata_snb },
-+	/* SATA Controller IDE (Avoton) */
-+	{ 0x8086, 0x1f30, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
-+	/* SATA Controller IDE (Avoton) */
-+	{ 0x8086, 0x1f31, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
- 	{ }	/* terminate list */
- };
+--- a/kernel/sysctl_binary.c
++++ b/kernel/sysctl_binary.c
+@@ -1194,9 +1194,10 @@ static ssize_t bin_dn_node_address(struc
  
+ 		/* Convert the decnet address to binary */
+ 		result = -EIO;
+-		nodep = strchr(buf, '.') + 1;
++		nodep = strchr(buf, '.');
+ 		if (!nodep)
+ 			goto out;
++		++nodep;
+ 
+ 		area = simple_strtoul(buf, NULL, 10);
+ 		node = simple_strtoul(nodep, NULL, 10);
 
 
