@@ -1,139 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751590Ab3CAOpQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 09:45:16 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:11074 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750902Ab3CAOpO (ORCPT
+	id S1751699Ab3CAOus (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 09:50:48 -0500
+Received: from smtp.nue.novell.com ([195.135.221.5]:38990 "EHLO
+	smtp.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751197Ab3CAOuq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 09:45:14 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Fri, 01 Mar 2013 06:45:08 -0800
-From: Laxman Dewangan <ldewangan@nvidia.com>
-To: <sameo@linux.intel.com>
-CC: <gg@slimlogic.co.uk>, <broonie@opensource.wolfsonmicro.com>,
-        <linux-kernel@vger.kernel.org>, <swarren@nvidia.com>,
-        <ian@slimlogic.co.uk>, Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH V2] mfd: palmas: provide irq flags through DT/platform data
-Date: Fri, 1 Mar 2013 20:13:46 +0530
-Message-ID: <1362149026-21170-1-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
-MIME-Version: 1.0
-Content-Type: text/plain
+	Fri, 1 Mar 2013 09:50:46 -0500
+Subject: Re: [PATCH] efivarfs: fix abnormal GUID in variable name by using
+ strcpy to replace null with dash
+From: joeyli <jlee@suse.com>
+To: Lingzhu Xiang <lxiang@redhat.com>
+Cc: matt@console-pimps.org, linux-efi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Michael Schroeder <mls@suse.com>,
+        Josh Boyer <jwboyer@redhat.com>,
+        Jeremy Kerr <jeremy.kerr@canonical.com>
+In-Reply-To: <5130757F.4090702@redhat.com>
+References: <1362108018-13117-1-git-send-email-jlee@suse.com>
+	 <5130757F.4090702@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 01 Mar 2013 22:49:35 +0800
+Message-ID: <1362149375.23932.167.camel@linux-s257.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently driver sets the irq type to IRQF_TRIGGER_LOW which is
-causing interrupt registration failure in ARM based SoCs as:
-[    0.208479] genirq: Setting trigger mode 8 for irq 118 failed (gic_set_type+0x0/0xf0)
-[    0.208513] dummy 0-0059: Failed to request IRQ 118: -22
+於 五，2013-03-01 於 17:31 +0800，Lingzhu Xiang 提到：
+> On 03/01/2013 11:20 AM, Lee, Chun-Yi wrote:
+> > From: Michael Schroeder <mls@suse.com>
+> > 
+> > On HP z220 system (firmware version 1.54), some EFI variables are incorrectly
+> > named :
+> > 
+> > ls -d /sys/firmware/efi/vars/*8be4d* | grep -v -- -8be returns
+> > /sys/firmware/efi/vars/dbxDefault-pport8be4df61-93ca-11d2-aa0d-00e098032b8c
+> > /sys/firmware/efi/vars/KEKDefault-pport8be4df61-93ca-11d2-aa0d-00e098032b8c
+> > /sys/firmware/efi/vars/SecureBoot-pport8be4df61-93ca-11d2-aa0d-00e098032b8c
+> > /sys/firmware/efi/vars/SetupMode-Information8be4df61-93ca-11d2-aa0d-00e098032b8c
+> > 
+> > That causes by the following statement in efivar_create_sysfs_entry function:
+> > 
+> >   *(short_name + strlen(short_name)) = '-';
+> > efi_guid_unparse(vendor_guid, short_name + strlen(short_name));
+> > 
+> > The trailing \0 is overwritten with '-', but the next char doesn't seem to be a \0
+> > as well for HP. So, the second strlen return the point of next '\0', causes there
+> > have garbage string attached before GUID.
+> > 
+> > Tested on On HP z220.
+> 
+> So short_name has trailing garbage, or rather, variable_name_size
+> is larger than variable_name actually is, wouldn't new_efivar->var.VariableName
+> also gets filled with trailing garbage?
+> 
+> In efivar_store_raw the VariableName's trailing garbage can cause
+> problem for comparison. You might want to also cover that or fix
+> variable_name_size.
+> 
+> 
+> Lingzhu Xiang
+> 
 
-Provide the irq flags through platform data if device is registered
-through board file or get the irq type from DT node property in place
-of hardcoding the irq flag in driver to support multiple platforms.
+Yes, it's possible! I will add patch for print more debug messages to
+bug reporter for check it.
 
-Also configure the device to generate the interrupt signal according to
-flag type.
 
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
----
-Changes from V1:
-- Use palmas_update_bits() for rea/modiy/write.
+Thanks for your review!
+Joey Lee
 
- drivers/mfd/palmas.c       |   36 +++++++++++++++++++++++++++++++++---
- include/linux/mfd/palmas.h |    1 +
- 2 files changed, 34 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/mfd/palmas.c b/drivers/mfd/palmas.c
-index bbdbc50..73bf76d 100644
---- a/drivers/mfd/palmas.c
-+++ b/drivers/mfd/palmas.c
-@@ -257,9 +257,24 @@ static struct regmap_irq_chip palmas_irq_chip = {
- 			PALMAS_INT1_MASK),
- };
- 
--static void palmas_dt_to_pdata(struct device_node *node,
-+static int palmas_set_pdata_irq_flag(struct i2c_client *i2c,
- 		struct palmas_platform_data *pdata)
- {
-+	struct irq_data *irq_data = irq_get_irq_data(i2c->irq);
-+	if (!irq_data) {
-+		dev_err(&i2c->dev, "Invalid IRQ: %d\n", i2c->irq);
-+		return -EINVAL;
-+	}
-+
-+	pdata->irq_flags = irqd_get_trigger_type(irq_data);
-+	dev_info(&i2c->dev, "Irq flag is 0x%08x\n", pdata->irq_flags);
-+	return 0;
-+}
-+
-+static void palmas_dt_to_pdata(struct i2c_client *i2c,
-+		struct palmas_platform_data *pdata)
-+{
-+	struct device_node *node = i2c->dev.of_node;
- 	int ret;
- 	u32 prop;
- 
-@@ -283,6 +298,8 @@ static void palmas_dt_to_pdata(struct device_node *node,
- 		pdata->power_ctrl = PALMAS_POWER_CTRL_NSLEEP_MASK |
- 					PALMAS_POWER_CTRL_ENABLE1_MASK |
- 					PALMAS_POWER_CTRL_ENABLE2_MASK;
-+	if (i2c->irq)
-+		palmas_set_pdata_irq_flag(i2c, pdata);
- }
- 
- static int palmas_i2c_probe(struct i2c_client *i2c,
-@@ -304,7 +321,7 @@ static int palmas_i2c_probe(struct i2c_client *i2c,
- 		if (!pdata)
- 			return -ENOMEM;
- 
--		palmas_dt_to_pdata(node, pdata);
-+		palmas_dt_to_pdata(i2c, pdata);
- 	}
- 
- 	if (!pdata)
-@@ -344,6 +361,19 @@ static int palmas_i2c_probe(struct i2c_client *i2c,
- 		}
- 	}
- 
-+	/* Change interrupt line output polarity */
-+	if (pdata->irq_flags & IRQ_TYPE_LEVEL_HIGH)
-+		reg = PALMAS_POLARITY_CTRL_INT_POLARITY;
-+	else
-+		reg = 0;
-+	ret = palmas_update_bits(palmas, PALMAS_PU_PD_OD_BASE,
-+			PALMAS_POLARITY_CTRL, PALMAS_POLARITY_CTRL_INT_POLARITY,
-+			reg);
-+	if (ret < 0) {
-+		dev_err(palmas->dev, "POLARITY_CTRL updat failed: %d\n", ret);
-+		goto err;
-+	}
-+
- 	/* Change IRQ into clear on read mode for efficiency */
- 	slave = PALMAS_BASE_TO_SLAVE(PALMAS_INTERRUPT_BASE);
- 	addr = PALMAS_BASE_TO_REG(PALMAS_INTERRUPT_BASE, PALMAS_INT_CTRL);
-@@ -352,7 +382,7 @@ static int palmas_i2c_probe(struct i2c_client *i2c,
- 	regmap_write(palmas->regmap[slave], addr, reg);
- 
- 	ret = regmap_add_irq_chip(palmas->regmap[slave], palmas->irq,
--			IRQF_ONESHOT | IRQF_TRIGGER_LOW, 0, &palmas_irq_chip,
-+			IRQF_ONESHOT | pdata->irq_flags, 0, &palmas_irq_chip,
- 			&palmas->irq_data);
- 	if (ret < 0)
- 		goto err;
-diff --git a/include/linux/mfd/palmas.h b/include/linux/mfd/palmas.h
-index a4d13d7..3bbda22 100644
---- a/include/linux/mfd/palmas.h
-+++ b/include/linux/mfd/palmas.h
-@@ -221,6 +221,7 @@ struct palmas_clk_platform_data {
- };
- 
- struct palmas_platform_data {
-+	int irq_flags;
- 	int gpio_base;
- 
- 	/* bit value to be loaded to the POWER_CTRL register */
--- 
-1.7.1.1
 
