@@ -1,61 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752317Ab3CAHqS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 02:46:18 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:59048 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750884Ab3CAHqR (ORCPT
+	id S1752466Ab3CAHs0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 02:48:26 -0500
+Received: from mail.not-your-server.de ([78.46.182.243]:58909 "EHLO
+	mail.not-your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751256Ab3CAHsZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 02:46:17 -0500
-Date: Fri, 1 Mar 2013 15:45:43 +0800
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: J Keerthy <j-keerthy@ti.com>
-Cc: lgirdwood@gmail.com, linux-kernel@vger.kernel.org, gg@slimlogic.co.uk
-Subject: Re: [PATCH 4/4] regulator: palmas: Change the DT node property names
- to follow the convention
-Message-ID: <20130301074540.GL25302@opensource.wolfsonmicro.com>
-References: <1361164460-3251-1-git-send-email-j-keerthy@ti.com>
+	Fri, 1 Mar 2013 02:48:25 -0500
+Message-ID: <51305D44.3080601@gentoo.org>
+Date: Fri, 01 Mar 2013 08:48:20 +0100
+From: justin <jlec@gentoo.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130224 Thunderbird/17.0.3
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="XRwESHC7KXlqFpSs"
-Content-Disposition: inline
-In-Reply-To: <1361164460-3251-1-git-send-email-j-keerthy@ti.com>
-X-Cookie: Condense soup, not books!
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Yann E. MORIN" <yann.morin.1998@free.fr>
+CC: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] kconfig: use config scripts to detect ncurses libs
+References: <jlec@gentoo.org> <1362045557-9123-1-git-send-email-jlec@gentoo.org> <201302282159.20338.yann.morin.1998@free.fr>
+In-Reply-To: <201302282159.20338.yann.morin.1998@free.fr>
+X-Enigmail-Version: 1.5
+Content-Type: multipart/signed; micalg=pgp-sha512;
+ protocol="application/pgp-signature";
+ boundary="----enig2QAGWVMQMXVLBDKLVHCQR"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+------enig2QAGWVMQMXVLBDKLVHCQR
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: quoted-printable
 
---XRwESHC7KXlqFpSs
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+On 28/02/13 21:59, Yann E. MORIN wrote:
+> I've queued that one in my tree, now, in branch yem-kconfig-for-next:
+>     https://www.gitorious.org/linux-kconfig/linux-kconfig
+>=20
 
-On Mon, Feb 18, 2013 at 10:44:20AM +0530, J Keerthy wrote:
-> DT node properties should not have "_". Replacing them by "-".
 
-Applied, thanks.
+Thanks for queuing, but with the points which Sven mentioned we should
+first agree on a way to detect things.
 
---XRwESHC7KXlqFpSs
+The simplest option which might only be present at very recent distro
+versions is using pkg-config.
+Second best is ncurses*5-config. There we have the strange situation
+that "ncurses-bin" contains the config scripts although no build time
+dependencies are installed along.
+Third, we might only find either of nurses{,w}5-config.
+And at last we might face the situation where the new ABI is used and
+the script is named ncurses{,w}6-config.
+
+Ugly but working would be a simple "||" chain. This would create
+problems on debian/ubuntu which needs to be solved.
+
+Any other suggestions how we can solve the problem?
+
+
+Thanks
+justin
+
+
+------enig2QAGWVMQMXVLBDKLVHCQR
 Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Version: GnuPG v2.0.19 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
 
-iQIcBAEBAgAGBQJRMFyYAAoJELSic+t+oim9teEP/26gZV8j2KOTMkPmw1MpfpPV
-8yoJW/paOcIdeW6r6EDRabDLztBf76cvkKQcszeandkB4QvpSxzyGlq+582ojh4C
-onOMvvz5xyiyuOBn8nf+T4rgX2UWMRQ7/EAJdElJu4huJelD+I/H7mlBGs9nZeiA
-sJqsBMLzv0LDQr0htHfRCx/ZrY0Av8l6LnPU/8yOu9AuDN7LLp3gqzjOHP2NPauo
-gj6dtmLPwUq5bzNFbCtANUPyUvTs0WrU9XWqsyC/7NKBfr0sEa88UOq8de843GxS
-Yov5ABqMluO0UmxeFDGPh4HhUSMJDZ6/qk8S+dNCZWJpZYaaorTYxnB2FEO5VXKi
-y9v9XN1MwjuWp14L4YTNoGSMFGnst0GASmq/MSPjmAu77aKkFMy26oEInS/wBR5s
-JEyZMSeyxImYQAUPtw4p724Jog5zuenaY76EBSlXc3n8lu5Ve1sm3GgmyAGXsscS
-/dlWMV0IaOlNHnmRR2KWTiB6iHgmRtPSwjM1lMvIYO/xRNutsUY3JW86JUXVfKGn
-oaFCXvHFIFZNU6XCFDLaMqRz62CAGdJbngRcQ6MBPtZHAX2fIOipcD+e2SRQYCmn
-1Mo0Hv0Pi49ua0NOgMnAMtyRq9rABuI1UwLpcq/aD3ZJIC3wTYBE9VTuYJqgekUi
-5r2hxdCH04Dr2NBGcjAz
-=RDyi
+iEYEAREKAAYFAlEwXUQACgkQgAnW8HDreRYZKQCfcA/llnOqq3tVV5Ld3F7P/XzA
+cJEAoJirfp8/RGcu5NFToPHTg6R2gbrc
+=Hjot
 -----END PGP SIGNATURE-----
 
---XRwESHC7KXlqFpSs--
+------enig2QAGWVMQMXVLBDKLVHCQR--
