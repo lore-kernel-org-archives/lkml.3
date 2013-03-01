@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752544Ab3CATpT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 14:45:19 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51344 "EHLO
+	id S1753298Ab3CAUWN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 15:22:13 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51390 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751538Ab3CATpP (ORCPT
+	with ESMTP id S1752558Ab3CATpV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 14:45:15 -0500
+	Fri, 1 Mar 2013 14:45:21 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Bart Van Assche <bvanassche@acm.org>,
-        David Dillow <dave@thedillows.org>,
-        Roland Dreier <roland@purestorage.com>
-Subject: [ 07/77] IB/srp: Avoid sending a task management function needlessly
-Date: Fri,  1 Mar 2013 11:43:52 -0800
-Message-Id: <20130301194352.743401389@linuxfoundation.org>
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [ 24/77] doc, xen: Mention earlyprintk=xen in the documentation.
+Date: Fri,  1 Mar 2013 11:44:09 -0800
+Message-Id: <20130301194354.561762449@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130301194351.913471337@linuxfoundation.org>
 References: <20130301194351.913471337@linuxfoundation.org>
@@ -28,43 +28,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bart Van Assche <bvanassche@acm.org>
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-commit 3780d1f08856f692116bcf026e4acf1c521df1c7 upstream.
+commit 2482a92e7d17187301d7313cfe5021b13393a0b4 upstream.
 
-Do not send a task management function if sending will fail anyway
-because either there is no RDMA/RC connection or the QP is in the
-error state.
+The earlyprintk for Xen PV guests utilizes a simple hypercall
+(console_io) to provide output to Xen emergency console.
 
-Signed-off-by: Bart Van Assche <bvanassche@acm.org>
-Acked-by: David Dillow <dave@thedillows.org>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
+Note that the Xen hypervisor should be booted with 'loglevel=all'
+to output said information.
+
+Reported-by: H. Peter Anvin <hpa@zytor.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Link: http://lkml.kernel.org/r/1361825650-14031-2-git-send-email-konrad.wilk@oracle.com
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/infiniband/ulp/srp/ib_srp.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ Documentation/kernel-parameters.txt |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/infiniband/ulp/srp/ib_srp.c
-+++ b/drivers/infiniband/ulp/srp/ib_srp.c
-@@ -1695,6 +1695,9 @@ static int srp_send_tsk_mgmt(struct srp_
- 	struct srp_iu *iu;
- 	struct srp_tsk_mgmt *tsk_mgmt;
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -754,6 +754,7 @@ bytes respectively. Such letter suffixes
  
-+	if (!target->connected || target->qp_in_error)
-+		return -1;
+ 	earlyprintk=	[X86,SH,BLACKFIN]
+ 			earlyprintk=vga
++			earlyprintk=xen
+ 			earlyprintk=serial[,ttySn[,baudrate]]
+ 			earlyprintk=ttySn[,baudrate]
+ 			earlyprintk=dbgp[debugController#]
+@@ -771,6 +772,8 @@ bytes respectively. Such letter suffixes
+ 			The VGA output is eventually overwritten by the real
+ 			console.
+ 
++			The xen output can only be used by Xen PV guests.
 +
- 	init_completion(&target->tsk_mgmt_done);
+ 	ekgdboc=	[X86,KGDB] Allow early kernel console debugging
+ 			ekgdboc=kbd
  
- 	spin_lock_irq(&target->lock);
-@@ -1754,8 +1757,6 @@ static int srp_reset_device(struct scsi_
- 
- 	shost_printk(KERN_ERR, target->scsi_host, "SRP reset_device called\n");
- 
--	if (target->qp_in_error)
--		return FAILED;
- 	if (srp_send_tsk_mgmt(target, SRP_TAG_NO_REQ, scmnd->device->lun,
- 			      SRP_TSK_LUN_RESET))
- 		return FAILED;
 
 
