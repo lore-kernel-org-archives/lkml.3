@@ -1,89 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753036Ab3CAB6q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 20:58:46 -0500
-Received: from mga14.intel.com ([143.182.124.37]:52450 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751509Ab3CAB6n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 20:58:43 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,758,1355126400"; 
-   d="scan'208";a="207574129"
-Message-ID: <51300B8D.8030600@intel.com>
-Date: Fri, 01 Mar 2013 09:59:41 +0800
-From: Aaron Lu <aaron.lu@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1754339Ab3CAB66 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 20:58:58 -0500
+Received: from mail-da0-f48.google.com ([209.85.210.48]:35162 "EHLO
+	mail-da0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753596Ab3CAB6z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Feb 2013 20:58:55 -0500
+Date: Thu, 28 Feb 2013 17:59:01 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: John Stultz <john.stultz@linaro.org>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+        Erik Gilling <konkers@android.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>, Rob Clark <robclark@gmail.com>,
+        Sumit Semwal <sumit.semwal@linaro.org>,
+        dri-devel@lists.freedesktop.org, linaro-mm-sig@lists.linaro.org,
+        Android Kernel Team <kernel-team@android.com>
+Subject: Re: [RFC][PATCH 00/30] staging: Android sync driver
+Message-ID: <20130301015901.GA13367@kroah.com>
+References: <1362098606-26469-1-git-send-email-john.stultz@linaro.org>
 MIME-Version: 1.0
-To: Sander Eikelenboom <linux@eikelenboom.it>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Jeff Garzik <jgarzik@pobox.com>, linux-kernel@vger.kernel.org,
-        linux-ide@vger.kernel.org,
-        Linux-pm mailing list <linux-pm@vger.kernel.org>
-Subject: Re: libata-acpi.c ata_acpi_register_power_resource copy and paste
- mistake ?
-References: <928867757.20130228174510@eikelenboom.it>
-In-Reply-To: <928867757.20130228174510@eikelenboom.it>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1362098606-26469-1-git-send-email-john.stultz@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-+Rafael
+On Thu, Feb 28, 2013 at 04:42:56PM -0800, John Stultz wrote:
+> As proposed yesterday, here's the Android sync driver patches for
+> staging.
+> 
+> I've preserved the commit history, but moved all the changes over
+> to be against the staging directory (instead of drivers/base).
+> 
+> 
+> The goal of submitting this driver to staging is to try to get
+> more collaberation, as there are some similar efforts going on
+> in the community with dmabuf-fences. My email from yesterday with
+> more details for how I hope this goes is here:
+> 	http://comments.gmane.org/gmane.linux.kernel/1448420
+> 
+> Erik also provided a nice background on the patch set in his
+> reply yesterday, which I'll quote here:
 
-commit bc9b6407bd6df3ab7189e5622816bbc11ae9d2d8
-Author: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Date:   Thu Jan 17 14:11:05 2013 +0100
+<snip>
 
-    ACPI / PM: Rework the handling of devices depending on power resources
+Mind if I put that in the 1/30 changelog body for future people to see?
 
--Aaron
+Other than that, at first glance, I only have one minor question, which
+I'll make in the patch itself.  Otherwise, if there are no objections,
+I'll queue these up in my tree after 3.9-rc1 is out.
 
-On 03/01/2013 12:45 AM, Sander Eikelenboom wrote:
-> Hi Jeff,
-> 
-> During the last merge of ahci code (d9978ec5680059d727b39d6c706777c6973587f2), i saw this coming by:
-> 
-> 
-> --- a/drivers/ata/libata-acpi.c
-> +++ b/drivers/ata/libata-acpi.c
-> @@ -1024,30 +1024,20 @@ static void ata_acpi_register_power_resource(struct ata_device *dev)
->  {
->         struct scsi_device *sdev = dev->sdev;
->         acpi_handle handle;
-> -       struct device *device;
->  
->         handle = ata_dev_acpi_handle(dev);
-> -       if (!handle)
-> -               return;
-> -
-> -       device = &sdev->sdev_gendev;
-> -
-> -       acpi_power_resource_register_device(device, handle);
-> +       if (handle)
-> +               acpi_dev_pm_remove_dependent(handle, &sdev->sdev_gendev);
->  }
-> 
-> shouldn't:
-> 
-> acpi_dev_pm_remove_dependent(handle, &sdev->sdev_gendev);
-> 
-> be
-> 
-> acpi_dev_pm_add_dependent(handle, &sdev->sdev_gendev);
-> 
-> in the ata_acpi_register_power_resource function ?
-> 
-> (seems like a copy and paste mistake from the unregister function)
-> 
-> --
-> Sander
-> 
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-ide" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+thanks for doing this work,
 
+greg k-h
