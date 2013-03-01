@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755915Ab3CAAoF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 19:44:05 -0500
-Received: from mail-da0-f48.google.com ([209.85.210.48]:60236 "EHLO
-	mail-da0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753336Ab3CAAn5 (ORCPT
+	id S1756524Ab3CAAoU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 19:44:20 -0500
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:52417 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752616Ab3CAAoQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 19:43:57 -0500
+	Thu, 28 Feb 2013 19:44:16 -0500
 From: John Stultz <john.stultz@linaro.org>
 To: lkml <linux-kernel@vger.kernel.org>
 Cc: Erik Gilling <konkers@android.com>,
@@ -16,9 +16,9 @@ Cc: Erik Gilling <konkers@android.com>,
         Greg KH <gregkh@linuxfoundation.org>, dri-devel@lists.freedesktop.org,
         Android Kernel Team <kernel-team@android.com>,
         John Stultz <john.stultz@linaro.org>
-Subject: [PATCH 11/30] staging: sw_sync: Export sw_sync API
-Date: Thu, 28 Feb 2013 16:43:07 -0800
-Message-Id: <1362098606-26469-12-git-send-email-john.stultz@linaro.org>
+Subject: [PATCH 23/30] staging: sync: Update new fence status with sync_fence_signal_pt
+Date: Thu, 28 Feb 2013 16:43:19 -0800
+Message-Id: <1362098606-26469-24-git-send-email-john.stultz@linaro.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1362098606-26469-1-git-send-email-john.stultz@linaro.org>
 References: <1362098606-26469-1-git-send-email-john.stultz@linaro.org>
@@ -28,7 +28,10 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Erik Gilling <konkers@android.com>
 
-Needed to let modules link against sw_sync.
+If a fence's pt is signaled before sync_fence_create is called, the fence
+will never transition into the signaled state.  This also address a tiny
+race if a merged fence's pt after sync_fence_get_status checks it's status
+and before fence->status is updated.
 
 Cc: Maarten Lankhorst <maarten.lankhorst@canonical.com>
 Cc: Erik Gilling <konkers@android.com>
@@ -41,46 +44,41 @@ Cc: Android Kernel Team <kernel-team@android.com>
 Signed-off-by: Erik Gilling <konkers@android.com>
 Signed-off-by: John Stultz <john.stultz@linaro.org>
 ---
- drivers/staging/android/sw_sync.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ drivers/staging/android/sync.c |   14 +++++++++++++-
+ 1 file changed, 13 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/staging/android/sw_sync.c b/drivers/staging/android/sw_sync.c
-index 081e4d1..d689760 100644
---- a/drivers/staging/android/sw_sync.c
-+++ b/drivers/staging/android/sw_sync.c
-@@ -15,6 +15,7 @@
-  */
+diff --git a/drivers/staging/android/sync.c b/drivers/staging/android/sync.c
+index 2394189..889ca6e 100644
+--- a/drivers/staging/android/sync.c
++++ b/drivers/staging/android/sync.c
+@@ -295,6 +295,12 @@ struct sync_fence *sync_fence_create(const char *name, struct sync_pt *pt)
+ 	list_add(&pt->pt_list, &fence->pt_list_head);
+ 	sync_pt_activate(pt);
  
- #include <linux/kernel.h>
-+#include <linux/export.h>
- #include <linux/file.h>
- #include <linux/fs.h>
- #include <linux/miscdevice.h>
-@@ -43,6 +44,7 @@ struct sync_pt *sw_sync_pt_create(struct sw_sync_timeline *obj, u32 value)
- 
- 	return (struct sync_pt *)pt;
++	/*
++	 * signal the fence in case pt was activated before
++	 * sync_pt_activate(pt) was called
++	 */
++	sync_fence_signal_pt(pt);
++
+ 	return fence;
  }
-+EXPORT_SYMBOL(sw_sync_pt_create);
+ EXPORT_SYMBOL(sync_fence_create);
+@@ -457,7 +463,13 @@ struct sync_fence *sync_fence_merge(const char *name,
+ 	if (err < 0)
+ 		goto err;
  
- static struct sync_pt *sw_sync_pt_dup(struct sync_pt *sync_pt)
- {
-@@ -120,6 +122,7 @@ struct sw_sync_timeline *sw_sync_timeline_create(const char *name)
+-	fence->status = sync_fence_get_status(fence);
++	/*
++	 * signal the fence in case one of it's pts were activated before
++	 * they were activated
++	 */
++	sync_fence_signal_pt(list_first_entry(&fence->pt_list_head,
++					      struct sync_pt,
++					      pt_list));
  
- 	return obj;
- }
-+EXPORT_SYMBOL(sw_sync_timeline_create);
- 
- void sw_sync_timeline_inc(struct sw_sync_timeline *obj, u32 inc)
- {
-@@ -127,7 +130,7 @@ void sw_sync_timeline_inc(struct sw_sync_timeline *obj, u32 inc)
- 
- 	sync_timeline_signal(&obj->obj);
- }
--
-+EXPORT_SYMBOL(sw_sync_timeline_inc);
- 
- #ifdef CONFIG_SW_SYNC_USER
- /* *WARNING*
+ 	return fence;
+ err:
 -- 
 1.7.10.4
 
