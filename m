@@ -1,78 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752460Ab3CAIgn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 03:36:43 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:54456 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751346Ab3CAIgl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 03:36:41 -0500
-Date: Fri, 1 Mar 2013 09:36:24 +0100
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Vinicius Tinti <viniciustinti@gmail.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Will Deacon <will.deacon@arm.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/1] arm: remove extra semicolon in if statement
-Message-ID: <20130301083624.GI22886@pengutronix.de>
-References: <1362111952-8072-1-git-send-email-viniciustinti@gmail.com>
+	id S1752499Ab3CAIhB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 03:37:01 -0500
+Received: from mout.gmx.net ([212.227.17.20]:54518 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752200Ab3CAIg7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Mar 2013 03:36:59 -0500
+X-Authenticated: #28250155
+X-Provags-ID: V01U2FsdGVkX18dBs1vEQAdtjQlw7cLoXyM/602SMXVycWqMHb3nP
+	JyswJWB//Ywedb
+From: Sven Joachim <svenjoac@gmx.de>
+To: justin <jlec@gentoo.org>
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] kconfig: use config scripts to detect ncurses libs
+References: <jlec@gentoo.org>
+	<1362045557-9123-1-git-send-email-jlec@gentoo.org>
+	<874ngwhzuy.fsf@turtle.gmx.de> <51305AC4.2030008@gentoo.org>
+Date: Fri, 01 Mar 2013 09:36:53 +0100
+In-Reply-To: <51305AC4.2030008@gentoo.org> (justin's message of "Fri, 01 Mar
+	2013 08:37:40 +0100")
+Message-ID: <87obf35xei.fsf@turtle.gmx.de>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2.93 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1362111952-8072-1-git-send-email-viniciustinti@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: text/plain
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On 2013-03-01 08:37 +0100, justin wrote:
 
-On Fri, Mar 01, 2013 at 01:25:52AM -0300, Vinicius Tinti wrote:
-> Remove extra semicolon in perf_event.c if statement.
-The commit log sounds like a style fix, but your patch introduces a
-semantical change. I suspect this patch fixes a real bug, you should
-point that out here.
+> On 28/02/13 22:50, Sven Joachim wrote:
+>> On 2013-02-28 10:59 +0100, jlec@gentoo.org wrote:
+>> 
+>>> Ncurses provides a config script (ncurses5-config) to assist finding ncurses.
+>>> This patch makes use of it to detect the necessary libs for linking of the
+>>> ncurses nconfig dialog.
+>> 
+>> That script is not necessarily called ncurses5-config, it might also be
+>> called ncurses6-config is ncurses is configured for a different ABI
+>> (--enable-ext-colors, --enable-ext-mouse).  Although I would suspect
+>> that any distribution who does that provides a compatibility symlink.
+>>
+>
+> We don't do that, but I rechecked with building ncurses manually. You
+> are right. How widely spread is the usage of this options? Or is it
+> rather an experimental option?
 
-Best regards
-Uwe
-> 
-> Signed-off-by: Vinicius Tinti <viniciustinti@gmail.com>
-> ---
->  arch/arm/kernel/perf_event.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/arch/arm/kernel/perf_event.c b/arch/arm/kernel/perf_event.c
-> index 31e0eb3..a892067 100644
-> --- a/arch/arm/kernel/perf_event.c
-> +++ b/arch/arm/kernel/perf_event.c
-> @@ -400,7 +400,7 @@ __hw_perf_event_init(struct perf_event *event)
->  	}
->  
->  	if (event->group_leader != event) {
-> -		if (validate_group(event) != 0);
-> +		if (validate_group(event) != 0)
->  			return -EINVAL;
->  	}
->  
-> -- 
-> 1.7.9.5
-> 
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
-> 
+Pretty much, since it changes the ABI and everyone wants to be
+compatible with the existing ncurses ABI.
 
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+> What we could do is simple extending the syntax to additionally check
+> for the ABI version 6 config scripts. Is this an option to consider?
+
+Probably.
+
+>>>  scripts/kconfig/Makefile | 4 +++-
+>>>  1 file changed, 3 insertions(+), 1 deletion(-)
+>>>
+>>> diff --git a/scripts/kconfig/Makefile b/scripts/kconfig/Makefile
+>>> index 3091794..c372976 100644
+>>> --- a/scripts/kconfig/Makefile
+>>> +++ b/scripts/kconfig/Makefile
+>>> @@ -216,7 +216,9 @@ HOSTCFLAGS_gconf.o	= `pkg-config --cflags gtk+-2.0 gmodule-2.0 libglade-2.0` \
+>>>  
+>>>  HOSTLOADLIBES_mconf   = $(shell $(CONFIG_SHELL) $(check-lxdialog) -ldflags $(HOSTCC))
+>>>  
+>>> -HOSTLOADLIBES_nconf	= -lmenu -lpanel -lncurses
+>>> +HOSTLOADLIBES_nconf	= -lmenu -lpanel
+>>> +HOSTLOADLIBES_nconf	+= $(shell    ncursesw5-config --libs 2>/dev/null \
+>>> +				   || ncurses5-config --libs 2>/dev/null  )
+>> 
+>> This will link with ncursesw, not ncurses.  Probably not what you want,
+>> since nconf.h does not #include the right headers for that.
+>> 
+>
+> That's true, and again it would change two things at once. I will go
+> back to simple -lncurses as it was before.
+>
+>> On Debian/Ubuntu, there's also the problem that ncursesw5-config exists
+>> even if the libncursesw5-dev package is not installed, so this patch
+>> makes the build fail in such cases.
+>
+> Will be solved when reverting as described above. But actually it smells
+> like a bug in the package management, doesn't it? Why are build time
+> config scripts shipped in runtime only packages? What is their purpose?
+
+Historically it seems to be an accident, and the ncurses{w,5}-config
+scripts should have better been shipped in their development packages.
+But nowadays we want to make the development packages multiarch-aware,
+and since the scripts differ on architectures, moving them away from
+ncurses-bin would mean adding two additional binary packages just for
+these scripts.
+
+See http://bugs.debian.org/480437 for a discussion on that topic.
+
+>> Can we just call ncurses5-config and not ncursesw5-config, or are there
+>> any distros who ship the latter and not the former?
+>> 
+>
+> I can't talk about distro wide situation, but manual building gives only
+> one of the two. So there might be a situation where only one of the two
+> is present.
+>
+> It seems we have a little dilemma here. Any suggestions how to solve it?
+
+Well, at least until nconf does not make any effort to explicitly detect
+and use the wide API, trying ncurses5-config first should work.  If you
+build ncurses yourself with --enable-widec, there is no -lmenu or -lpanel
+anyway, these libraries are called menuw and panelw then.
+
+Cheers,
+       Sven
