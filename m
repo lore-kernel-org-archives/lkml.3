@@ -1,45 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751518Ab3CAQO4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 11:14:56 -0500
-Received: from jacques.telenet-ops.be ([195.130.132.50]:33247 "EHLO
-	jacques.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751223Ab3CAQOz (ORCPT
+	id S1751632Ab3CAQVF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 11:21:05 -0500
+Received: from mail-bk0-f48.google.com ([209.85.214.48]:49124 "EHLO
+	mail-bk0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751060Ab3CAQVD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 11:14:55 -0500
-Message-ID: <5130D3EE.4090205@acm.org>
-Date: Fri, 01 Mar 2013 17:14:38 +0100
-From: Bart Van Assche <bvanassche@acm.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
+	Fri, 1 Mar 2013 11:21:03 -0500
 MIME-Version: 1.0
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] Final round of SCSI updates for the 3.8+ merge window
-References: <1362129599.2384.13.camel@dabdike.int.hansenpartnership.com>
-In-Reply-To: <1362129599.2384.13.camel@dabdike.int.hansenpartnership.com>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20130301015901.GA13367@kroah.com>
+References: <1362098606-26469-1-git-send-email-john.stultz@linaro.org> <20130301015901.GA13367@kroah.com>
+From: Erik Gilling <konkers@android.com>
+Date: Fri, 1 Mar 2013 08:20:41 -0800
+X-Google-Sender-Auth: nnHSfN7FeEI3tIaae9gl-3BgfBA
+Message-ID: <CACSP8Shkqfz5UF=0FDgk+m7mQYevdXdA6-jLWfc4PCXmpuzhPg@mail.gmail.com>
+Subject: Re: [RFC][PATCH 00/30] staging: Android sync driver
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: John Stultz <john.stultz@linaro.org>, lkml <linux-kernel@vger.kernel.org>,
+        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>, Rob Clark <robclark@gmail.com>,
+        Sumit Semwal <sumit.semwal@linaro.org>,
+        dri-devel@lists.freedesktop.org, linaro-mm-sig@lists.linaro.org,
+        Android Kernel Team <kernel-team@android.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/01/13 10:19, James Bottomley wrote:
-> This is an assorted set of stragglers into the merge window with driver
-> updates for qla2xxx, megaraid_sas, storvsc and ufs.  It also includes
-> pulls of the uapi tree (all the remaining SCSI pieces) and the fcoe tree
-> (updates to fcoe and libfc)
+On Thu, Feb 28, 2013 at 5:59 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> On Thu, Feb 28, 2013 at 04:42:56PM -0800, John Stultz wrote:
+>> Erik also provided a nice background on the patch set in his
+>> reply yesterday, which I'll quote here:
+>
+> Mind if I put that in the 1/30 changelog body for future people to see?
 
-Hello James,
+Please do.
 
-I'm curious to know your opinion about the patch called "Fix race 
-between starved list processing and device removal" 
-(http://article.gmane.org/gmane.linux.scsi/80090/match=scsi_run_queue) ? 
-It was posted for the first time several months ago and has been ack-ed 
-and tested by other people. So far I haven't seen any comments from you 
-on that patch.
+> Other than that, at first glance, I only have one minor question, which
+> I'll make in the patch itself.  Otherwise, if there are no objections,
+> I'll queue these up in my tree after 3.9-rc1 is out.
+>
+> thanks for doing this work,
 
-Bart.
+Indeed, thanks John
 
+Cheers,
+   Erik
