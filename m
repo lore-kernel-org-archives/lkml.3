@@ -1,1462 +1,952 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751543Ab3CAWtp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 17:49:45 -0500
-Received: from mail-da0-f47.google.com ([209.85.210.47]:50628 "EHLO
-	mail-da0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751060Ab3CAWto (ORCPT
+	id S1751688Ab3CAWxQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 17:53:16 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:19315 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751140Ab3CAWxO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 17:49:44 -0500
-Message-ID: <513131B4.6050306@gmail.com>
-Date: Sat, 02 Mar 2013 09:54:44 +1100
-From: Ryan Mallon <rmallon@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
-MIME-Version: 1.0
-To: Michail Kurachkin <michail.kurachkin@promwad.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kuten Ivan <Ivan.Kuten@promwad.com>,
-        "benavi@marvell.com" <benavi@marvell.com>,
-        Palstsiuk Viktar <Viktar.Palstsiuk@promwad.com>,
-        Dmitriy Gorokh <dmitriy.gorokh@promwad.com>,
-        Oliver Neukum <oneukum@suse.de>
-Subject: Re: [PATCH v2 01/11] staging: Initial commit of TDM core
-References: <cover.1362133319.git.michail.kurachkin@promwad.com> <563f0589ba8c56bd194938f8bff80a06b15f9418.1362133319.git.michail.kurachkin@promwad.com>
-In-Reply-To: <563f0589ba8c56bd194938f8bff80a06b15f9418.1362133319.git.michail.kurachkin@promwad.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Fri, 1 Mar 2013 17:53:14 -0500
+From: Yinghai Lu <yinghai@kernel.org>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
+        Tony Luck <tony.luck@intel.com>, Thomas Renninger <trenn@suse.de>,
+        Tejun Heo <tj@kernel.org>, Tang Chen <tangchen@cn.fujitsu.com>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Subject: [PATCH] x86, ACPI, mm: Revert movablemem_map support
+Date: Fri,  1 Mar 2013 14:51:27 -0800
+Message-Id: <1362178287-24037-1-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <CAE9FiQWLys4BopOzSfVK8Smt6xzN+Q=xNk801nS6ac2qZEgo3w@mail.gmail.com>
+References: <CAE9FiQWLys4BopOzSfVK8Smt6xzN+Q=xNk801nS6ac2qZEgo3w@mail.gmail.com>
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/03/13 21:50, Michail Kurachkin wrote:
-
-> From: Michail Kurochkin <michail.kurachkin@promwad.com>
-> 
-> Signed-off-by: Michail Kurochkin <michail.kurachkin@promwad.com>
-
-
-Hi Michail, 
-
-Quick review below. I'll try to find some time to look through
-the other patches later.
-
-~Ryan
-
-> ---
->  drivers/staging/Kconfig        |    4 +
->  drivers/staging/Makefile       |    4 +-
->  drivers/staging/tdm/Kconfig    |   38 ++
->  drivers/staging/tdm/Makefile   |   19 +
->  drivers/staging/tdm/tdm.h      |  292 ++++++++++++++
->  drivers/staging/tdm/tdm_core.c |  826 ++++++++++++++++++++++++++++++++++++++++
->  6 files changed, 1182 insertions(+), 1 deletions(-)
->  create mode 100644 drivers/staging/tdm/Kconfig
->  create mode 100644 drivers/staging/tdm/Makefile
->  create mode 100644 drivers/staging/tdm/tdm.h
->  create mode 100644 drivers/staging/tdm/tdm_core.c
-> 
-> diff --git a/drivers/staging/Kconfig b/drivers/staging/Kconfig
-> index 329bdb4..9bba991 100644
-> --- a/drivers/staging/Kconfig
-> +++ b/drivers/staging/Kconfig
-> @@ -26,6 +26,10 @@ if STAGING
->  
->  source "drivers/staging/et131x/Kconfig"
->  
-> +source "drivers/staging/si3226x/Kconfig"
-> +
-> +source "drivers/staging/tdm/Kconfig"
-> +
->  source "drivers/staging/slicoss/Kconfig"
->  
->  source "drivers/staging/usbip/Kconfig"
-> diff --git a/drivers/staging/Makefile b/drivers/staging/Makefile
-> index c7ec486..a7f3699 100644
-> --- a/drivers/staging/Makefile
-> +++ b/drivers/staging/Makefile
-> @@ -1,4 +1,4 @@
-> -# Makefile for staging directory
-> +    # Makefile for staging directory
->  
->  # fix for build system bug...
->  obj-$(CONFIG_STAGING)		+= staging.o
-> @@ -7,6 +7,8 @@ obj-y				+= media/
->  obj-y				+= net/
->  obj-$(CONFIG_ET131X)		+= et131x/
->  obj-$(CONFIG_SLICOSS)		+= slicoss/
-> +obj-$(CONFIG_SI3226X)		+= si3226x/
-> +obj-$(CONFIG_TDM)		+= tdm/
->  obj-$(CONFIG_USBIP_CORE)	+= usbip/
->  obj-$(CONFIG_W35UND)		+= winbond/
->  obj-$(CONFIG_PRISM2_USB)	+= wlan-ng/
-> diff --git a/drivers/staging/tdm/Kconfig b/drivers/staging/tdm/Kconfig
-> new file mode 100644
-> index 0000000..77b08fb4
-> --- /dev/null
-> +++ b/drivers/staging/tdm/Kconfig
-> @@ -0,0 +1,38 @@
-> +#
-> +# TDM driver configuration
-> +#
-> +menuconfig TDM
-> +	bool "TDM support"
-> +	depends on HAS_IOMEM
-> +	help
-> +	  Time-division multiplexing (TDM) is a type of digital (or rarely analog)
-> +	  multiplexing in which two or more bit streams or signals are
-> +	  transferred apparently simultaneously as sub-channels in one
-> +	  communication channel, but are physically taking turns on the
-> +	  channel. The time domain is divided into several recurrent
-> +	  timeslots of fixed length, one for each sub-channel. A sample
-> +	  byte or data block of sub-channel 1 is transmitted during timeslot 1,
-> +	  sub-channel 2 during timeslot 2, etc. One TDM frame consists of one
-> +	  timeslot per sub-channel plus a synchronization channel and
-> +	  sometimes error correction channel before the synchronization.
-> +
-> +if TDM
-> +
-> +config TDM_DEBUG
-> +	bool "Debug support for TDM drivers"
-> +	depends on DEBUG_KERNEL
-> +	help
-> +	  Say "yes" to enable debug messaging (like dev_dbg and pr_debug),
-> +	  sysfs, and debugfs support in TDM controller and protocol drivers.
-> +
-> +
-> +comment "TDM controllers"
-> +
-> +config TDM_KIRKWOOD
-> +#  TODO: add depend on kirkwood architecture
-> +#	depends on ARCH_KIRKWOOD
-> +	tristate "Marvel Kirkwood TDM Controller"
-> +	help
-> +	  This selects a driver for the Marvel Kirkwood TDM Controller.
-> +		  
-> +endif # TDM
-> diff --git a/drivers/staging/tdm/Makefile b/drivers/staging/tdm/Makefile
-> new file mode 100644
-> index 0000000..f99ab5a
-> --- /dev/null
-> +++ b/drivers/staging/tdm/Makefile
-> @@ -0,0 +1,19 @@
-> +#
-> +# Makefile for kernel TDM drivers.
-> +#
-> +
-> +ccflags-$(CONFIG_TDM_DEBUG) := -DDEBUG
-> +
-> +# small core, mostly translating board-specific
-> +# config declarations into driver model code
-> +obj-$(CONFIG_TDM)		+= tdm_core.o
-> +
-> +# TDM controller drivers (bus)
-> +obj-$(CONFIG_TDM_KIRKWOOD)			+= kirkwood_tdm.o
-> +
-> +# 	... add above this line ...
-> +
-> +# TDM protocol drivers (device/link on bus)
-> +#obj-$(CONFIG_TDM_TDMDEV)	+= tdmdev.o
-> +# 	... add above this line ...
-> +
-> diff --git a/drivers/staging/tdm/tdm.h b/drivers/staging/tdm/tdm.h
-> new file mode 100644
-> index 0000000..ee7b5bf
-> --- /dev/null
-> +++ b/drivers/staging/tdm/tdm.h
-> @@ -0,0 +1,292 @@
-> +/*
-> + * tdm_base.h
-> + *
-> + *  Created on: 20.01.2012
-> + *      Author: Michail Kurochkin
-> + */
-> +
-> +#ifndef TDM_BASE_H_
-> +#define TDM_BASE_H_
-> +
-> +#include <linux/device.h>
-> +
-> +extern struct bus_type tdm_bus_type;
-> +
-> +
-> +
-
-
-Nitpick - Please just leave a single blank line between functions,
-globals, etc. Same applies in many other places.
-
-> +/**
-> + * General hardware TDM settings
-> + */
-> +struct tdm_controller_hw_settings {
-> +	u8 fs_freq; /*  Frequency of discretization for audio transport. Normally 8KHz. */
-> +	u8 count_time_slots; /*  Total count of time slots in frame. One time slot = 8bit */
-> +	u8 channel_size; /*  Sample size (in time slots). 1 or 2 time slots. */
-> +
-> +	/*  Controller generate PCLK clock - TDM_CLOCK_OUTPUT, */
-> +	/*  or clock generate remote device - TDM_CLOCK_INPUT */
-> +#define TDM_CLOCK_INPUT 0
-> +#define TDM_CLOCK_OUTPUT 1
-> +	u8 clock_direction; /*  Drirection for PCLK */
-> +	u8 fs_clock_direction;  /*  Drirection for FS */
-
-
-These could be:
-
-	bool clock_is_out;
-	bool fs_clock_is_out;
-
-and then remove the defines?
-
-> +
-> +	/*  FS and data polarity. Detection on rise or fall */
-> +#define TDM_POLAR_NEGATIVE 0
-> +#define TDM_POLAR_POSITIV 1
-> +	u8 fs_polarity;
-> +	u8 data_polarity;
-
-
-Same here:
-
-	bool fs_polarity_negative;
-	bool data_polarity_negative;
-
-?
-
-> +
-> +	struct mbus_dram_target_info	*dram;
-> +};
-> +
-> +
-> +/*
-> + * Voice channel
-> + */
-> +struct tdm_voice_channel {
-> +	u8 channel_num; /*  Hardware channel number */
-> +	u8 mode_wideband; /*  1 - support wideband mode for current voice channel */
-> +	u8 tdm_channel; /*  TDM channel on registered voice channel */
-> +	u8 buffer_len; /*  Length of transmit and receive buffers */
-> +	void *private_data; /*  hardware dependency channel private data */
-> +
-> +	/*  wait queue for transmit and receive operations */
-> +	wait_queue_head_t tx_queue;
-> +	wait_queue_head_t rx_queue;
-> +
-> +        struct list_head list; /*  Union all tdm voice channels by one controller */
-
-Indentation is messed here. Same is true in a few other places. Running
-through checkpatch should point them all out.
-
-> +	struct device *dev; /*  device requested voice channel */
-> +};
-> +
-> +
-> +/**
-> + * Remote device connected to TDM bus
-> + */
-> +struct tdm_device {
-> +	struct device dev; /*  device connected to TDM bus */
-> +	struct tdm_controller *controller; /*  controller attendant TDM bus */
-> +	u8 tdm_channel_num; /*  requested TDM channel number on TDM frame */
-> +	u16 buffer_sample_count; /*  count samples for tx and rx buffers */
-> +	u8 mode_wideband; /*  quality mode 1 or 0. Wideband mode demand is 16bit tdm channel size */
-> +	struct tdm_voice_channel *ch; /*  requested voice channel */
-> +	char modalias[32];
-> +};
-> +
-> +
-> +/**
-> + * Driver remote device connected to TDM bus
-> + */
-> +struct tdm_driver {
-> +	int			(*probe)(struct tdm_device *tdm_dev);
-> +	int			(*remove)(struct tdm_device *tdm_dev);
-> +	void			(*shutdown)(struct tdm_device *tdm_dev);
-> +	int			(*suspend)(struct tdm_device *tdm_dev, pm_message_t mesg);
-> +	int			(*resume)(struct tdm_device *tdm_dev);
-> +	struct device_driver	driver;
-> +};
-> +
-> +
-> +/**
-> + * TDM controller device
-> + */
-> +struct tdm_controller {
-> +	struct device	dev;
-> +	spinlock_t		lock;
-
-
-A comment explaining what fields the lock protects would be nice.
-
-> +
-> +	struct list_head list; /*  Union all TDM controllers */
-> +
-> +	s16 bus_num; /*  Number of controller, use -1 for auto numeration */
-
-
-Do you really need to use fixed width types for some of these values?
-Generally fixed width types should only be used for things which map
-directly to the hardware, otherwise it is fine to use int here.
-
-> +
-> +/* 	struct tdm_voice_channel *voice_channels; // Hardware or software voice channels transport */
-> +/* 	u8 count_voice_channels; // count voice channels supported by current TDM controller */
-
-Remove commented out code?
-
-> +	/* List of voice channels */
-> +	struct list_head voice_channels;
-> +
-> +	/*  TDM hardware settings */
-> +	struct tdm_controller_hw_settings *settings;
-> +
-> +	int (*setup_voice_channel)(struct tdm_voice_channel *ch);
-> +	int (*send)(struct tdm_voice_channel *ch, u8 *data);
-> +	int (*recv)(struct tdm_voice_channel *ch, u8 *data);
-> +	int (*run_audio)(struct tdm_device *tdm_dev);
-> +	int (*stop_audio)(struct tdm_device *tdm_dev);
-> +	int (*poll_rx)(struct tdm_device *tdm_dev);
-> +	int (*poll_tx)(struct tdm_device *tdm_dev);
-> +
-> +	/*  called on release() for TDM device to free memory provided by tdm_controller */
-> +	void	(*cleanup)(struct tdm_device *tdm);
-> +};
-> +
-> +
-> +
-> +/*
-> + * Board specific information for requested TDM channel
-> + */
-> +struct tdm_board_info {
-> +	/* the device name and module name are coupled, like platform_bus;
-> +	 * "modalias" is normally the driver name.
-> +	 *
-> +	 * platform_data goes to tdm_controller.dev.platform_data,
-> +	 * controller_data goes to tdm_device.controller_data,
-> +	 * irq is copied too
-> +	 */
-> +	char		modalias[32];
-> +
-> +	/* bus_num is board specific and matches the bus_num of some
-> +	 * tdm_controller that will probably be registered later.
-> +	 */
-> +	u16		bus_num;
-> +
-> +	const void	*platform_data;
-> +	void		*controller_data;
-> +
-> +	u8		tdm_channel_num; /*  Number TDM channel for connected device */
-> +	u8 		buffer_sample_count; /*  Size for transmit and receive buffer */
-> +	u8		mode_wideband; /*  1 - Enable wideband mode for requested TDM */
-> +
-> +	struct list_head	list; /*  Entry for union all board info */
-> +};
-> +
-> +
-> +
-> +
-> +/**
-> + * Search address tdm_controller structure contained device stucture
-> + * @param dev - device
-> + * @return pointer to tdm_device
-> + */
-> +static inline struct tdm_controller *to_tdm_controller(struct device *dev) {
-> +	return dev ? container_of(dev, struct tdm_controller, dev) : NULL;
-> +}
-
-
-Do you really need the dev check? Why would a caller be doing 
-to_tdm_controller on a NULL device?
-
-> +
-> +
-> +/**
-> + * Search address tdm_device structure contained device stucture
-> + * @param dev - device
-> + * @return pointer to tdm_device
-> + */
-> +static inline struct tdm_device *to_tdm_device(struct device *dev) {
-> +	return dev ? container_of(dev, struct tdm_device, dev) : NULL;
-> +}
-> +
-> +/**
-> + * Search address tdm_driver structure contained device stucture
-> + * @param dev - device
-> + * @return pointer to tdm_driver
-> + */
-> +static inline struct tdm_driver *to_tdm_driver(struct device_driver *drv) {
-> +	return drv ? container_of(drv, struct tdm_driver, driver) : NULL;
-> +}
-> +
-> +
-> +/**
-> + * Get private driver tdm controller data
-> + * @param tdm
-> + */
-> +static inline void *tdm_controller_get_devdata(struct tdm_controller *tdm)
-> +{
-> +	return dev_get_drvdata(&tdm->dev);
-> +}
-
-
-Nitpick - This helper function is actually more verbose than the
-function it calls :-). 
-
-> +
-> +
-> +/**
-> + * decrement pointer counter to tdm_controller
-> + * @param tdm - tdm_controller
-> + */
-> +static inline void tdm_controller_put(struct tdm_controller *tdm)
-> +{
-> +	if (tdm)
-> +		put_device(&tdm->dev);
-> +}
-
-
-This function really shouldn't have a check for dev, since presumably
-you had to get the device in able to put it, so hopefully it isn't
-NULL. 
-
-> +
-> +
-> +/**
-> + * Increment pointer counter to tdm_controller
-> + * @param tdm - tdm_controller
-> + */
-> +static inline struct tdm_controller *tdm_controller_get(struct tdm_controller *tdm) {
-> +	if (!tdm || !get_device(&tdm->dev))
-> +		return NULL;
-> +	return tdm;
-> +}
-> +
-> +
-> +/**
-> + * Store private data for tdm device
-> + * @param tdm_dev - tdm device
-> + * @param data - private data
-> + */
-> +static inline void tdm_set_drvdata(struct tdm_device *tdm_dev, void *data)
-> +{
-> +	dev_set_drvdata(&tdm_dev->dev, data);
-> +}
-> +
-> +
-> +/**
-> + * Get stored early private data for tdm device
-> + * @param tdm_dev - tdm device
-> + */
-> +static inline void *tdm_get_drvdata(struct tdm_device *tdm_dev)
-> +{
-> +	return dev_get_drvdata(&tdm_dev->dev);
-> +}
-> +
-> +
-> +int tdm_register_driver(struct tdm_driver *tdm_drv);
-> +
-> +void tdm_unregister_driver(struct tdm_driver *tdm_dev);
-> +
-> +struct tdm_controller *tdm_alloc_controller(struct device *dev, unsigned size);
-> +
-> +struct tdm_voice_channel *tdm_alloc_voice_channel(void);
-> +
-> +int tdm_free_controller(struct tdm_controller *tdm);
-> +
-> +int tdm_controller_register(struct tdm_controller *tdm);
-> +
-> +void tdm_controller_unregister(struct tdm_controller *tdm);
-> +
-> +struct tdm_device *tdm_new_device(struct tdm_controller *tdm,
-> +                                  struct tdm_board_info *chip);
-> +
-> +int tdm_add_device(struct tdm_device *tdm_dev);
-> +
-> +int tdm_recv(struct tdm_device *tdm_dev, u8 *data);
-> +
-> +int tdm_send(struct tdm_device *tdm_dev, u8 *data);
-> +
-> +int tdm_run_audio(struct tdm_device *tdm_dev);
-> +
-> +int tdm_stop_audio(struct tdm_device *tdm_dev);
-> +
-> +int tdm_poll_rx(struct tdm_device *tdm_dev);
-> +
-> +int tdm_poll_tx(struct tdm_device *tdm_dev);
-> +
-> +int tdm_get_voice_block_size(struct tdm_device *tdm_dev);
-> +
-> +int
-> +tdm_register_new_voice_channel(struct tdm_controller *tdm,
-> +    struct tdm_voice_channel *ch,
-> +    void *driver_private);
-> +
-> +int tdm_free_voice_channels(struct tdm_controller *tdm);
-> +
-> +struct tdm_voice_channel *
-> +get_voice_channel_by_num(struct tdm_controller *tdm, int num);
-> +
-> +
-> +#ifdef CONFIG_TDM
-
-
-Why is this ifdef here, don't you need CONFIG_TDM for all of the 
-above also?
-
-> +int __init
-> +tdm_register_board_info(struct tdm_board_info const *info, unsigned n);
-> +#else
-> +/* board init code may ignore whether TDM is configured or not */
-> +static inline int __init
-> +tdm_register_board_info(struct tdm_board_info const *info, unsigned n)
-> +{
-> +	return 0;
-> +}
-> +#endif
-> +
-> +#endif /* TDM_BASE_H_ */
-> diff --git a/drivers/staging/tdm/tdm_core.c b/drivers/staging/tdm/tdm_core.c
-> new file mode 100644
-> index 0000000..0182a4f
-> --- /dev/null
-> +++ b/drivers/staging/tdm/tdm_core.c
-> @@ -0,0 +1,826 @@
-> +/**********************************************************************
-> + * Author: Michail Kurachkin
-> + *
-> + * Contact: michail.kurachkin@promwad.com
-> + *
-> + * Copyright (c) 2013 Promwad Inc.
-> + *
-> + * This file is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License, Version 2, as
-> + * published by the Free Software Foundation.
-> + *
-> + * This file is distributed in the hope that it will be useful, but
-> + * AS-IS and WITHOUT ANY WARRANTY; without even the implied warranty
-> + * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE, TITLE, or
-> + * NONINFRINGEMENT.  See the GNU General Public License for more
-> + * details.
-> + *
-> + * You should have received a copy of the GNU General Public License
-> + * along with this file; if not, write to the Free Software
-> + * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
-> + * or visit http://www.gnu.org/licenses/.
-> +**********************************************************************/
-> +
-> +#include <linux/kernel.h>
-> +#include <linux/module.h>
-> +#include <linux/slab.h>
-> +#include <linux/init.h>
-> +#include <linux/io.h>
-> +#include <linux/sched.h>
-> +#include <linux/interrupt.h>
-> +#include <linux/types.h>
-> +#include <linux/device.h>
-> +#include <linux/spinlock.h>
-> +#include <linux/platform_device.h>
-> +#include "tdm.h"
-> +
-> +#include <linux/cache.h>
-> +#include <linux/mutex.h>
-> +#include <linux/mod_devicetable.h>
-> +
-> +static void tdmdev_release(struct device *dev)
-> +{
-> +        struct tdm_device *tdm_dev = to_tdm_device(dev);
-> +
-> +        /* tdm controllers may cleanup for released devices */
-> +        if (tdm_dev->controller->cleanup)
-> +                tdm_dev->controller->cleanup(tdm_dev);
-> +
-> +        put_device(&tdm_dev->controller->dev);
-> +        kfree(tdm_dev);
-> +}
-> +
-> +static ssize_t
-> +modalias_show(struct device *dev, struct device_attribute *a, char *buf)
-> +{
-> +        const struct tdm_device *tdm_dev = to_tdm_device(dev);
-> +
-> +        return sprintf(buf, "%s\n", tdm_dev->modalias);
-> +}
-> +
-> +static struct device_attribute tdm_dev_attrs[] = {
-> +        __ATTR_RO(modalias),
-> +        __ATTR_NULL,
-> +};
-> +
-> +
-> +static int tdm_match_device(struct device *dev, struct device_driver *drv)
-> +{
-> +        const struct tdm_device *tdm_dev = to_tdm_device(dev);
-> +
-> +        return strcmp(tdm_dev->modalias, drv->name) == 0;
-> +}
-> +
-> +
-> +static int tdm_uevent(struct device *dev, struct kobj_uevent_env *env)
-> +{
-> +        const struct tdm_device *tdm_dev = to_tdm_device(dev);
-> +
-> +        add_uevent_var(env, "MODALIAS=%s%s", "tdm:", tdm_dev->modalias);
-> +        return 0;
-> +}
-> +
-> +
-> +static void tdm_release(struct device *dev)
-> +{
-> +        struct tdm_device *tdm_dev;
-> +
-> +        tdm_dev = to_tdm_device(dev);
-> +
-> +        kfree(tdm_dev);
-> +}
-> +
-> +
-> +static struct class tdm_class = {
-> +                .name           = "tdm",
-> +                .owner          = THIS_MODULE,
-> +                .dev_release    = tdm_release,
-> +        };
-
-
-Indentation is all messed here.
-
-> +
-> +
-> +
-> +/**
-> + * Struct for TDM bus
-> + */
-> +struct bus_type tdm_bus_type = {
-> +        .name           = "tdm",
-> +        .dev_attrs      = tdm_dev_attrs,
-> +        .match          = tdm_match_device,
-> +        .uevent         = tdm_uevent,
-> +        .suspend        = NULL,
-> +        .resume         = NULL,
-
-
-Nitpick - You can ommit the NULL fields, they will automatically
-be initialised to NULL.
-
-> +};
-> +EXPORT_SYMBOL_GPL(tdm_bus_type);
-> +
-> +
-> +
-> +static int tdm_drv_probe(struct device *dev)
-> +{
-> +        const struct tdm_driver *tdm_drv = to_tdm_driver(dev->driver);
-> +
-> +        return tdm_drv->probe(to_tdm_device(dev));
-> +}
-> +
-> +static int tdm_drv_remove(struct device *dev)
-> +{
-> +        const struct tdm_driver *tdm_drv = to_tdm_driver(dev->driver);
-> +
-> +        return tdm_drv->remove(to_tdm_device(dev));
-> +}
-> +
-> +static void tdm_drv_shutdown(struct device *dev)
-> +{
-> +        const struct tdm_driver *tdm_drv = to_tdm_driver(dev->driver);
-> +
-> +        tdm_drv->shutdown(to_tdm_device(dev));
-> +}
-> +
-> +
-> +/**
-> + * tdm_register_driver - register a TDM driver
-> + * @sdrv: the driver to register
-> + * Context: can sleep
-> + */
-> +int tdm_register_driver(struct tdm_driver *tdm_drv)
-> +{
-> +        tdm_drv->driver.bus = &tdm_bus_type;
-> +
-> +        if (tdm_drv->probe)
-> +                tdm_drv->driver.probe = tdm_drv_probe;
-> +
-> +        if (tdm_drv->remove)
-> +                tdm_drv->driver.remove = tdm_drv_remove;
-> +
-> +        if (tdm_drv->shutdown)
-> +                tdm_drv->driver.shutdown = tdm_drv_shutdown;
-
-You don't need the checks here, since you will just end up
-assigning NULL if the various callbacks are not set.
-
-> +        return driver_register(&tdm_drv->driver);
-> +}
-> +EXPORT_SYMBOL_GPL(tdm_register_driver);
-> +
-> +
-> +/**
-> + * tdm_unregister_driver - reverse effect of tdm_register_driver
-> + * @sdrv: the driver to unregister
-> + * Context: can sleep
-> + */
-> +void tdm_unregister_driver(struct tdm_driver *tdm_dev)
-> +{
-> +        if (tdm_dev)
-> +                driver_unregister(&tdm_dev->driver);
-> +}
-> +EXPORT_SYMBOL_GPL(tdm_unregister_driver);
-> +
-> +
-> +
-> +/**
-> + * Request unused voice channel
-> + * @param tdm_dev - TDM device requested voice channel
-> + * @return pointer to voice channel
-> + */
-> +struct tdm_voice_channel *request_voice_channel(struct tdm_device *tdm_dev) {
-> +        struct tdm_controller *tdm = tdm_dev->controller;
-> +        struct tdm_voice_channel *ch;
-> +        unsigned long flags;
-> +
-> +        spin_lock_irqsave(&tdm->lock, flags);
-
-
-All usage of tdm->lock use irqsave/irqrestore, but I can't see an
-interrupt handlers in this patch. irqsave/restore should be used
-when you don't know if the callsite will be run from interrupt
-context or not. Is that the case here? Otherwise you should be
-using normal spin_lock, or spin_lock_irq if this callsite runs
-in process context, but other uses of the lock run in irq 
-context.
-
-> +
-> +	list_for_each_entry(ch, &tdm->voice_channels, list)
-> +                if (ch->dev == NULL) {
-> +                        ch->dev = &tdm_dev->dev;
-> +                        tdm_dev->ch = ch;
-> +                        spin_unlock_irqrestore(&tdm->lock, flags);
-> +                        return ch;
-> +                }
-> +
-> +        spin_unlock_irqrestore(&tdm->lock, flags);
-> +        return NULL;
-> +}
-> +
-> +/**
-> + * Release requested voice channel
-> + * @param TDM device requested early voice channel
-> + * @return 0 - OK
-> + */
-> +int release_voice_channel(struct tdm_device *tdm_dev)
-> +{
-> +        struct tdm_controller *tdm = tdm_dev->controller;
-> +        struct tdm_voice_channel *ch;
-> +        unsigned long flags;
-> +
-> +        spin_lock_irqsave(&tdm->lock, flags);
-> +
-> +        tdm_dev->ch = NULL;
-> +	list_for_each_entry(ch, &tdm->voice_channels, list)
-> +                if (ch->dev == &tdm_dev->dev) {
-> +                        ch->dev = NULL;
-> +                        spin_unlock_irqrestore(&tdm->lock, flags);
-> +                        return 0;
-> +                }
-> +
-> +        spin_unlock_irqrestore(&tdm->lock, flags);
-> +
-> +        return -ENODEV;
-> +}
-> +
-> +
-> +
-> +/*
-> + * Container for union board info of all TDM devices
-> + */
-> +struct tdm_board_devices {
-> +        struct list_head        list;
-> +        struct tdm_board_info   bi; /* Board specific info */
-> +};
-> +
-> +/* List of all board specific TDM devices */
-> +static LIST_HEAD(tdm_devices_list);
-> +
-> +/* List of all registred TDM controllers */
-> +static LIST_HEAD(tdm_controller_list);
-> +
-> +
-> +/*
-> + * Used to protect add/del opertion for board_info list and
-> + * tdm_controller list, and their matching process
-> + */
-> +static DEFINE_MUTEX(board_lock);
-> +
-> +
-> +static void tdm_match_controller_to_boardinfo(struct tdm_controller *tdm,
-> +        struct tdm_board_info *bi)
-> +{
-> +        struct tdm_device *tdm_dev;
-> +
-> +        if (tdm->bus_num != bi->bus_num)
-> +                return;
-> +
-> +        tdm_dev = tdm_new_device(tdm, bi);
-> +        if (!tdm_dev)
-> +                dev_err(tdm->dev.parent, "can't create new device for %s\n",
-> +                        bi->modalias);
-> +}
-
-
-This function is confusingly named. It's name suggested it should return
-true if the boardinfo matches the device, but instead it goes and
-allocates a new device on match. It also doesn't propogate any errors
-back to the caller if the device allocation fails.
-
-> +
-> +
-> +
-> +/**
-> + * Allocate memory for TDM controller device
-> + * @dev: the controller, possibly using the platform_bus
-> + * @size: how much zeroed driver-private data to allocate; the pointer to this
-> + *      memory is in the driver_data field of the returned device,
-> + *      accessible with tdm_controller_get_devdata().
-> + * Context: can sleep
-> + */
-> +struct tdm_controller *tdm_alloc_controller(struct device *dev, unsigned size) {
-> +        struct tdm_controller   *tdm;
-> +
-> +        if (!dev)
-> +                return NULL;
-> +
-> +        tdm = kzalloc(sizeof *tdm + size, GFP_KERNEL);
-
-
-Nitpick:
-
-	sizeof(*tdm)
-
-is more typical.
-
-> +        if (!tdm)
-> +                return NULL;
-> +
-> +        device_initialize(&tdm->dev);
-> +        tdm->dev.class = &tdm_class;
-> +        tdm->dev.parent = get_device(dev);
-> +        spin_lock_init(&tdm->lock);
-> +        INIT_LIST_HEAD(&tdm->list);
-> +        INIT_LIST_HEAD(&tdm->voice_channels);
-> +
-> +        dev_set_drvdata(&tdm->dev, tdm + 1);
-> +
-> +        return tdm;
-> +}
-> +EXPORT_SYMBOL_GPL(tdm_alloc_controller);
-> +
-> +
-> +/**
-> + * Free memory for TDM controller device, allocated by tdm_alloc_controller
-> + * @dev: the controller, possibly using the platform_bus
-> + * Context: can sleep
-> + */
-> +int tdm_free_controller(struct tdm_controller *tdm)
-> +{
-> +        if (!tdm)
-> +                return -EINVAL;
-> +
-> +        dev_set_drvdata(&tdm->dev, NULL);
-> +        put_device(&tdm->dev);
-> +        kzfree(tdm);
-
-Is kzfree, rather than just plain kfree, really necessary?
-
-> +        return 0;
-> +}
-> +EXPORT_SYMBOL_GPL(tdm_free_controller);
-> +
-> +
-> +/**
-> + * Allocate memory for voice channel
-> + * @return object voice_channel or NULL if error
-> + */
-> +struct tdm_voice_channel *tdm_alloc_voice_channel(void)
-> +{
-> +        struct tdm_voice_channel *ch;
-> +
-> +        ch = kzalloc(sizeof *ch, GFP_KERNEL);
-> +        if (!ch)
-> +                return NULL;
-> +
-> +        memset(ch, 0, sizeof *ch);
-
-
-Remove the memset. kzalloc already clears the memory.
-
-> +        init_waitqueue_head(&ch->tx_queue);
-> +        init_waitqueue_head(&ch->rx_queue);
-> +
-> +        return ch;
-> +}
-> +EXPORT_SYMBOL_GPL(tdm_alloc_voice_channel);
-> +
-> +
-> +
-> +/**
-> + * Add allocated voice channel in tdm controller
-> + * @param tdm - tdm controller
-> + * @param ch - allocated voice channel
-> + * @param driver_private - private driver structure
-> + * @return 0 - ok
-> + */
-> +int
-> +tdm_register_new_voice_channel(struct tdm_controller *tdm,
-> +    struct tdm_voice_channel *ch,
-> +    void *driver_private)
-> +{
-> +	struct tdm_voice_channel *c;
-> +	int last_num;
-> +
-> +	last_num = -1;
-> +	list_for_each_entry(c, &tdm->voice_channels, list)
-> +		if (c->channel_num > last_num)
-> +			last_num = c->channel_num;
-
-
-Should this list access be protected by tdm->lock? If the caller
-needs to hold the lock then that should be documented.
-
-> +
-> +	ch->channel_num = last_num + 1;
-> +	ch->private_data = driver_private;
-> +	list_add_tail(&ch->list, &tdm->voice_channels);
-
-
-Same here, this probably needs to be protected by tdm->lock.
-
-> +
-> +	return 0;
-> +}
-> +EXPORT_SYMBOL_GPL(tdm_register_new_voice_channel);
-> +
-> +/**
-> + * free memory for voice channels allocated by tdm_alloc_voice_channels
-> + * @param tdm - TDM controller
-> + * @param count_channels - count supported voice channels
-> + * @return
-> + */
-> +int tdm_free_voice_channels(struct tdm_controller *tdm)
-> +{
-> +	struct tdm_voice_channel *ch, *ch_tmp;
-> +        if (!tdm)
-> +        	return -EINVAL;
-> +
-> +	list_for_each_entry_safe(ch, ch_tmp, &tdm->voice_channels, list)
-> +        {
-> +        	list_del(&ch->list);
-> +        	kzfree(ch);
-> +        }
-
-
-Locking? If it is the callers responsibility, document it.
-
-> +
-> +        return 0;
-> +}
-> +EXPORT_SYMBOL_GPL(tdm_free_voice_channels);
-> +
-> +
-> +/**
-> + * get voice_channel object by voice number
-> + * @param tdm - tdm_controller contained voice channels
-> + * @param num - voice channel number
-> + * @return voice_channel object or NULL
-> + */
-> +struct tdm_voice_channel *
-> +get_voice_channel_by_num(struct tdm_controller *tdm, int num)
-> +{
-> +	struct tdm_voice_channel *ch;
-> +	list_for_each_entry(ch, &tdm->voice_channels, list)
-> +		if (ch->channel_num == num)
-> +			return ch;
-
-
-Locking.
-
-> +
-> +	return NULL;
-> +}
-> +EXPORT_SYMBOL_GPL(get_voice_channel_by_num);
-> +
-> +
-> +/**
-> + * tdm_controller_register - register TDM controller
-> + * @master: initialized master, originally from spi_alloc_master()
-> + * Context: can sleep
-> + *
-> + * This must be called from context that can sleep.  It returns zero on
-> + * success, else a negative error code (dropping the master's refcount).
-> + * After a successful return, the caller is responsible for calling
-> + * tdm_controller_unregister().
-> + */
-> +int tdm_controller_register(struct tdm_controller *tdm)
-> +{
-> +        static atomic_t         dyn_bus_id = ATOMIC_INIT((1<<15) - 1);
-> +        struct device           *dev = tdm->dev.parent;
-> +        struct tdm_board_devices        *bi;
-> +        int                     status = -ENODEV;
-> +        int                     dynamic = 0;
-> +
-> +        if (!dev) {
-> +                dev_err(dev, "parent device not exist\n");
-> +                return -ENODEV;
-> +        }
-> +
-> +        /* convention:  dynamically assigned bus IDs count down from the max */
-> +        if (tdm->bus_num < 0) {
-> +                tdm->bus_num = atomic_dec_return(&dyn_bus_id);
-
-
-I haven't looked at the other patches yet, but this is the only place
-that dyn_bys_id is used in this patch. Does it really need to be
-atomic, or can it just be a plain int protected by a mutex? Atomics
-can be somewhat difficult to get correct since atomic != concurrency
-safe.
-
-> +                dynamic = 1;
-> +        }
-> +
-> +        /* register the device, then userspace will see it.
-> +         * registration fails if the bus ID is in use.
-> +         */
-> +        dev_set_name(&tdm->dev, "tdm%u", tdm->bus_num);
-> +        status = device_add(&tdm->dev);
-> +        if (status < 0) {
-> +                dev_err(dev, "cannot added controller device, %d\n", status);
-> +                goto done;
-> +        }
-> +        dev_dbg(dev, "registered controller %s%s\n", dev_name(&tdm->dev),
-> +                dynamic ? " (dynamic)" : "");
-> +
-> +        mutex_lock(&board_lock);
-> +        list_add_tail(&tdm->list, &tdm_controller_list);
-> +        list_for_each_entry(bi, &tdm_devices_list, list)
-> +                tdm_match_controller_to_boardinfo(tdm, &bi->bi);
-> +
-> +        mutex_unlock(&board_lock);
-> +
-> +        status = 0;
-
-Nitpick - If you initialise status to 0 above then you can remove
-this line.
-
-> +done:
-> +        return status;
-> +}
-> +EXPORT_SYMBOL_GPL(tdm_controller_register);
-> +
-> +
-> +static int __unregister(struct device *dev, void *null)
-> +{
-> +        device_unregister(dev);
-> +        return 0;
-> +}
-> +
-> +
-> +/**
-> + * tdm_controller_unregister - unregister TDM controller
-> + * @tdm: the controller being unregistered
-> + * Context: can sleep
-> + *
-> + * This call is used only by TDM controller drivers, which are the
-> + * only ones directly touching chip registers.
-> + *
-> + * This must be called from context that can sleep.
-> + */
-> +void tdm_controller_unregister(struct tdm_controller *tdm)
-> +{
-> +        int dummy;
-> +
-> +        mutex_lock(&board_lock);
-> +        list_del(&tdm->list);
-> +        mutex_unlock(&board_lock);
-> +
-> +        dummy = device_for_each_child(&tdm->dev, NULL, __unregister);
-
-
-device_for_each_child is not __must_check, so you can remove the
-dummy variable.
-
-> +        device_unregister(&tdm->dev);
-> +}
-> +EXPORT_SYMBOL_GPL(tdm_controller_unregister);
-> +
-> +
-> +/**
-> + * tdm_new_device - instantiate one new TDM device
-> + * @tdm: TDM Controller to which device is connected
-> + * @chip: Describes the TDM device
-> + * Context: can sleep
-> + *
-> + * Returns the new device, or NULL.
-> + */
-> +struct tdm_device *tdm_new_device(struct tdm_controller *tdm,
-> +                                  struct tdm_board_info *chip) {
-> +        struct tdm_device       *tdm_dev;
-> +        int                     status;
-> +
-> +        if (!tdm_controller_get(tdm))
-> +                return NULL;
-> +
-> +        tdm_dev = kzalloc(sizeof *tdm_dev, GFP_KERNEL);
-> +        if (!tdm_dev) {
-> +                dev_err(tdm->dev.parent, "cannot alloc for TDM device\n");
-
-
-You don't need to print errors on kalloc failures, you will
-automatically get a stack trace.
-
-> +                tdm_controller_put(tdm);
-> +                return NULL;
-> +        }
-> +
-> +        tdm_dev->controller = tdm;
-> +        tdm_dev->dev.parent = tdm->dev.parent;
-> +        tdm_dev->dev.bus = &tdm_bus_type;
-> +        tdm_dev->dev.release = tdmdev_release;
-> +        device_initialize(&tdm_dev->dev);
-> +
-> +        WARN_ON(strlen(chip->modalias) >= sizeof(tdm_dev->modalias));
-> +
-> +        tdm_dev->tdm_channel_num = chip->tdm_channel_num;
-> +        tdm_dev->mode_wideband = chip->mode_wideband;
-> +        tdm_dev->buffer_sample_count = chip->buffer_sample_count;
-> +        strlcpy(tdm_dev->modalias, chip->modalias, sizeof(tdm_dev->modalias));
-> +
-> +        status = tdm_add_device(tdm_dev);
-> +        if (status < 0) {
-> +                put_device(&tdm_dev->dev);
-> +                return NULL;
-> +        }
-> +
-> +        return tdm_dev;
-> +}
-> +EXPORT_SYMBOL_GPL(tdm_new_device);
-> +
-> +
-> +
-> +/**
-> + * tdm_add_device - Add tdm_device on TDM bus
-> + * @tdm_dev: TDM device to register
-> + *
-> + * Returns 0 on success; negative errno on failure
-> + */
-> +int tdm_add_device(struct tdm_device *tdm_dev)
-> +{
-> +        static DEFINE_MUTEX(tdm_add_lock);
-
-
-Ick, please move this out of the function.
-
-> +        struct tdm_controller *tdm = tdm_dev->controller;
-> +        struct tdm_controller_hw_settings *hw = tdm->settings;
-> +        struct device *dev = tdm->dev.parent;
-> +        struct device *d;
-> +        struct tdm_voice_channel *ch;
-> +        int status;
-> +        u8 count_tdm_channels;
-> +
-> +
-> +        if (tdm_dev->mode_wideband) {
-> +                dev_err(dev, "mode_wideband is not supported by this driver\n");
-> +                status = -EINVAL;
-> +                goto done;
-> +        }
-> +
-> +        count_tdm_channels = hw->count_time_slots / hw->channel_size;
-> +
-> +        if (tdm_dev->tdm_channel_num >= count_tdm_channels) {
-> +                dev_err(dev, "Incorrect requested TDM channel.\n"
-> +                        "Requested %d TDM channel, %d TDM channels available.\n",
-> +                        tdm_dev->tdm_channel_num, count_tdm_channels);
-> +
-> +                status = -EINVAL;
-> +                goto done;
-> +        }
-> +
-> +        if (tdm_dev->mode_wideband &&
-
-
-You just rejected mode_wideband devices above?
-
-> +            (tdm_dev->tdm_channel_num > count_tdm_channels / 2)) {
-> +                dev_err(dev, "Incorrect requested TDM channel in wideband mode.\n"
-> +                        "Requested %d TDM channel, %d TDM channels available\n"
-> +                        "in wideband mode\n",
-> +                        tdm_dev->tdm_channel_num, count_tdm_channels / 2);
-> +
-> +                status = -EINVAL;
-> +                goto done;
-> +        }
-> +
-> +
-> +        /* Set the bus ID string */
-> +        dev_set_name(&tdm_dev->dev, "%s.%u", dev_name(&tdm_dev->controller->dev),
-> +                     tdm_dev->tdm_channel_num);
-> +
-> +        /* We need to make sure there's no other device with this
-> +         * chipselect **BEFORE** we call setup(), else we'll trash
-> +         * its configuration.  Lock against concurrent add() calls.
-> +         */
-> +        mutex_lock(&tdm_add_lock);
-> +
-> +        d = bus_find_device_by_name(&tdm_bus_type, NULL, dev_name(&tdm_dev->dev));
-> +        if (d != NULL) {
-> +                dev_err(dev, "TDM channel %d already in use\n",
-> +                        tdm_dev->tdm_channel_num);
-> +                put_device(d);
-> +                status = -EBUSY;
-> +                goto done;
-> +        }
-> +
-> +        ch = request_voice_channel(tdm_dev);
-> +        if (ch == NULL) {
-> +                dev_err(dev, "Can't request TDM voice channel. All voice channels is busy\n");
-> +                status = -EBUSY;
-> +                goto done;
-
-
-Missing put_device.
-
-> +        }
-> +
-> +        printk("ch = %s\n", dev_name(ch->dev));
-
-Left over debugging? Remove or change to dev_dbg.
-
-> +        /* Configuring voice channel */
-> +        ch->mode_wideband = tdm_dev->mode_wideband;
-> +        ch->tdm_channel = tdm_dev->tdm_channel_num;
-> +
-> +        /* Run setup voice channel */
-> +        status = tdm_dev->controller->setup_voice_channel(ch);
-> +        if (status < 0) {
-> +                dev_err(dev, "can't setup voice channel, status %d\n", status);
-> +                goto done;
-
-
-Missing put_device.
-
-> +        }
-> +
-> +        /* Device may be bound to an active driver when this returns */
-> +        status = device_add(&tdm_dev->dev);
-> +        if (status < 0)
-> +                dev_err(dev, "can't add %s, status %d\n",
-> +                        dev_name(&tdm_dev->dev), status);
-> +        else
-> +                dev_dbg(dev, "registered child %s\n", dev_name(&tdm_dev->dev));
-> +
-> +done:
-> +        mutex_unlock(&tdm_add_lock);
-> +        return status;
-> +}
-> +EXPORT_SYMBOL_GPL(tdm_add_device);
-> +
-> +
-> +
-> +/**
-> + * Receive audio-data from tdm device.
-> + * @param tdm_dev - tdm device registered on TDM bus
-> + * @param data - pointer to receive block data.
-> + *              Allocated data size must be equal value
-> + *              returned by tdm_get_voice_block_size();
-
-
-Is it possible to check this inside the function and return
--EINVAL if it is not true, so that dodgy callers can't cause
-an overflow?
-
-> + * @return 0 - success
-> + */
-> +int tdm_recv(struct tdm_device *tdm_dev, u8 *data)
-> +{
-> +        struct tdm_controller *tdm = tdm_dev->controller;
-> +
-> +        if (tdm_dev->ch == NULL)
-> +                return -ENODEV;
-> +
-> +        return tdm->recv(tdm_dev->ch, data);
-> +}
-> +EXPORT_SYMBOL_GPL(tdm_recv);
-> +
-> +
-> +/**
-> + * Transmit audio-data from tdm device.
-> + * @param tdm_dev - tdm device registered on TDM bus
-> + * @param data - pointer to transmit block data.
-> + *              Transmit data size must be equal value
-> + *              returned by tdm_get_voice_block_size();
-> + * @return 0 - success
-> + */
-> +int tdm_send(struct tdm_device *tdm_dev, u8 *data)
-> +{
-> +        struct tdm_controller *tdm = tdm_dev->controller;
-> +
-> +        if (tdm_dev->ch == NULL)
-> +                return -ENODEV;
-> +
-> +        return tdm->send(tdm_dev->ch, data);
-> +}
-> +EXPORT_SYMBOL_GPL(tdm_send);
-> +
-> +
-> +/**
-> + * Enable audio transport
-> + * @param tdm_dev - tdm device registered on TDM bus
-> + * @return 0 - success
-> + */
-> +int tdm_run_audio(struct tdm_device *tdm_dev)
-> +{
-> +        struct tdm_controller *tdm = tdm_dev->controller;
-> +
-> +        if (!tdm_dev->ch) {
-> +                dev_err(&tdm_dev->dev, "Can't run audio because not allocated tdm voice channel\n");
-> +                return -ENODEV;
-> +        }
-> +
-> +        return tdm->run_audio(tdm_dev);
-> +}
-> +EXPORT_SYMBOL_GPL(tdm_run_audio);
-> +
-> +
-> +/**
-> + * Disable audio transport
-> + * @param tdm_dev - tdm device registered on TDM bus
-> + * @return 0 - success
-> + */
-> +int tdm_stop_audio(struct tdm_device *tdm_dev)
-> +{
-> +        struct tdm_controller *tdm = tdm_dev->controller;
-> +
-> +        if (!tdm_dev->ch) {
-> +                dev_err(&tdm_dev->dev, "Can't stop audio because not allocated tdm voice channel\n");
-> +                return -ENODEV;
-> +        }
-> +
-> +        return tdm->stop_audio(tdm_dev);
-> +}
-> +EXPORT_SYMBOL_GPL(tdm_stop_audio);
-> +
-> +
-> +
-> +/**
-> + * Check rx audio buffer for exist new data
-> + * @param tdm_dev - tdm device registered on TDM bus
-> + * @return 0 - not enought data, 1 - data exist
-> + */
-> +int tdm_poll_rx(struct tdm_device *tdm_dev)
-> +{
-> +        struct tdm_controller *tdm = tdm_dev->controller;
-> +
-> +        return tdm->poll_rx(tdm_dev);
-> +}
-> +EXPORT_SYMBOL_GPL(tdm_poll_rx);
-> +
-> +
-> +/**
-> + * Check tx audio buffer for free space
-> + * @param tdm_dev - tdm device registered on TDM bus
-> + * @return 0 - not enought free space, 1 - exist free space
-> + */
-> +int tdm_poll_tx(struct tdm_device *tdm_dev)
-> +{
-> +        struct tdm_controller *tdm = tdm_dev->controller;
-> +
-> +        return tdm->poll_tx(tdm_dev);
-> +}
-> +EXPORT_SYMBOL_GPL(tdm_poll_tx);
-> +
-> +
-> +/**
-> + * Get voice block size for transmit or receive operations
-> + * @param tdm_dev - tdm device registered on TDM bus
-> + * @return voice block size, or error if returned value less 0
-> + */
-> +int tdm_get_voice_block_size(struct tdm_device *tdm_dev)
-> +{
-> +        struct tdm_voice_channel *ch;
-> +
-> +        ch = tdm_dev->ch;
-> +        if (ch == NULL)
-> +                return -ENODEV;
-> +
-> +        return ch->buffer_len;
-> +}
-> +EXPORT_SYMBOL_GPL(tdm_get_voice_block_size);
-> +
-> +
-> +
-> +/**
-> + * tdm_register_board_info - register TDM devices for a given board
-> + * @info: array of chip descriptors
-> + * @n: how many descriptors are provided
-> + * Context: can sleep
-> + */
-> +int __init
-> +tdm_register_board_info(struct tdm_board_info const *info, unsigned n)
-> +{
-> +        struct tdm_board_devices *bi;
-> +        int i;
-> +
-> +        bi = kzalloc(n * sizeof(*bi), GFP_KERNEL);
-
-
-Use kcalloc.
-
-> +        if (!bi)
-> +                return -ENOMEM;
-> +
-> +        for (i = 0; i < n; i++, bi++, info++) {
-> +                struct tdm_controller *tdm;
-> +
-> +                memcpy(&bi->bi, info, sizeof(*info));
-> +                mutex_lock(&board_lock);
-> +
-> +                list_add_tail(&bi->list, &tdm_devices_list);
-> +                list_for_each_entry(tdm, &tdm_controller_list, list)
-> +                        tdm_match_controller_to_boardinfo(tdm, &bi->bi);
-> +
-> +                mutex_unlock(&board_lock);
-> +        }
-> +
-> +        return 0;
-> +}
-> +
-> +
-> +
-> +static int __init tdm_core_init(void)
-> +{
-> +        int status;
-> +
-> +        status = bus_register(&tdm_bus_type);
-> +        if (status < 0)
-> +                goto err0;
-> +
-> +        status = class_register(&tdm_class);
-> +        if (status < 0)
-> +                goto err1;
-
-> +        return 0;
-> +
-> +err1:
-> +        bus_unregister(&tdm_bus_type);
-> +err0:
-> +        return status;
-> +}
-> +
-> +postcore_initcall(tdm_core_init);
-> +
-
-
+Tim found:
+[    0.181441] WARNING: at
+/home/rtg/ukb/raring/amd64/unstable-3.9/ubuntu-raring/arch/x86/kernel/smpboot.c:324
+topology_sane.isra.2+0x6f/0x80()
+[    0.181443] Hardware name: S2600CP
+[    0.181445] sched: CPU #1's llc-sibling CPU #0 is not on the same
+node! [node: 1 != 0]. Ignoring dependency.
+[    0.166925] smpboot: Booting Node   1, Processors  #1
+[    0.181446] Modules linked in:
+[    0.181451] Pid: 0, comm: swapper/1 Not tainted 3.9.0-0-generic #1
+[    0.181452] Call Trace:
+[    0.181457]  [<ffffffff816c0270>] ? topology_sane.isra.2+0x6f/0x80
+[    0.181463]  [<ffffffff8105914f>] warn_slowpath_common+0x7f/0xc0
+[    0.181469]  [<ffffffff8105924c>] warn_slowpath_fmt+0x4c/0x50
+[    0.181473]  [<ffffffff816bf737>] ? mcheck_cpu_init+0x378/0x3fb
+[    0.181478]  [<ffffffff816ca32b>] ? cpuid_eax+0x27/0x2e
+[    0.181483]  [<ffffffff816c0270>] topology_sane.isra.2+0x6f/0x80
+[    0.181488]  [<ffffffff816c0534>] set_cpu_sibling_map+0x279/0x449
+[    0.181493]  [<ffffffff816c0821>] start_secondary+0x11d/0x1e5
+[    0.181507] ---[ end trace 8c24ebb220b8c665 ]---
+
+Don Morris reproduced on a HP z620 workstation, and bisect to
+# bad: [e8d1955258091e4c92d5a975ebd7fd8a98f5d30f] acpi, memory-hotplug:
+   parse SRAT before memblock is ready
+
+It turns out movable_map has some problems, and it breaks several things
+1. numa_init is called several times, NOT just for srat. so those
+	nodes_clear(numa_nodes_parsed)
+	memset(&numa_meminfo, 0, sizeof(numa_meminfo))
+   can not be just removed.  Need to consider sequence is: numaq, srat, amd, dummy.
+   and make fall back path working.
+2. simply split acpi_numa_init to early_parse_srat.
+   a. that early_parse_srat is NOT called for ia64, so you break ia64.
+   b.  for (i = 0; i < MAX_LOCAL_APIC; i++)
+	     set_apicid_to_node(i, NUMA_NO_NODE)
+     still left in numa_init. So it will just clear result from early_parse_srat.
+     it should be moved before that....
+   c.  it breaks ACPI_TABLE_OVERIDE...as the acpi table scan is moved
+       early before override from INITRD is settled.
+3. that patch TITLE is total misleading, there is NO x86 in the title,
+   but it changes critical x86 code. It caused x86 guys did not
+   pay attention to find the problem early. Those patches really should
+   be routed via tip/x86/mm.
+4: after that commit, following range can not use movable ram:
+  a. real_mode code.... well..funny, legacy Node0 [0,1M) could be hot-removed?
+  b. initrd... it will be freed after booting, so it could be on movable...
+  c. crashkernel for kdump...: looks like we can not put kdump kernel above 4G
+	anymore.
+  d. init_mem_mapping: can not put page table high anymore.
+  e. initmem_init: vmemmap can not be high local node anymore. That is
+     not good.
+
+If node is hotplugable, the mem related range like page table and vmemmap could be
+on the that node without problem and should be on that node.
+
+We have workaround patch that could fix some problems, but some
+can not be fixed.
+
+So just remove that offending commit and related ones including:
+commit f7210e6c4ac795694106c1c5307134d3fc233e88
+    mm/memblock.c: use CONFIG_HAVE_MEMBLOCK_NODE_MAP to protect movablecore_map in memblock_overlaps_region().
+commit 01a178a94e8eaec351b29ee49fbb3d1c124cb7fb
+    acpi, memory-hotplug: support getting hotplug info from SRAT
+commit 27168d38fa209073219abedbe6a9de7ba9acbfad
+    acpi, memory-hotplug: extend movablemem_map ranges to the end of node
+commit e8d1955258091e4c92d5a975ebd7fd8a98f5d30f
+    acpi, memory-hotplug: parse SRAT before memblock is ready
+commit fb06bc8e5f42f38c011de0e59481f464a82380f6
+    page_alloc: bootmem limit with movablecore_map
+commit 42f47e27e761fee07da69e04612ec7dd0d490edd
+    page_alloc: make movablemem_map have higher priority
+commit 6981ec31146cf19454c55c130625f6cee89aab95
+    page_alloc: introduce zone_movable_limit[] to keep movable limit for nodes
+commit 34b71f1e04fcba578e719e675b4882eeeb2a1f6f
+    page_alloc: add movable_memmap kernel parameter
+commit 4d59a75125d5a4717e57e9fc62c64b3d346e603e
+    x86: get pg_data_t's memory from other node
+
+Later we should have patches that will make sure kernel put page table
+and vmemmap on local node ram instead of push them down to node0.
+Also need to find way to put other kernel used ram to local node ram.
+
+Reported-by: Tim Gardner <tim.gardner@canonical.com>
+Reported-by: Don Morris <don.morris@hp.com>
+Bisected-by: Don Morris <don.morris@hp.com>
+Tested-by: Don Morris <don.morris@hp.com>
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: Thomas Renninger <trenn@suse.de>
+Cc: Tejun Heo <tj@kernel.org>
+Cc: Tang Chen <tangchen@cn.fujitsu.com>
+Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+
+---
+ Documentation/kernel-parameters.txt |   36 ----
+ arch/x86/kernel/setup.c             |   13 -
+ arch/x86/mm/numa.c                  |   11 -
+ arch/x86/mm/srat.c                  |  125 ---------------
+ drivers/acpi/numa.c                 |   23 +-
+ include/linux/acpi.h                |    8 -
+ include/linux/memblock.h            |    2 
+ include/linux/mm.h                  |   18 --
+ mm/memblock.c                       |   50 ------
+ mm/page_alloc.c                     |  285 ------------------------------------
+ 10 files changed, 27 insertions(+), 544 deletions(-)
+
+Index: linux-2.6/Documentation/kernel-parameters.txt
+===================================================================
+--- linux-2.6.orig/Documentation/kernel-parameters.txt
++++ linux-2.6/Documentation/kernel-parameters.txt
+@@ -1645,42 +1645,6 @@ bytes respectively. Such letter suffixes
+ 			that the amount of memory usable for all allocations
+ 			is not too small.
+ 
+-	movablemem_map=acpi
+-			[KNL,X86,IA-64,PPC] This parameter is similar to
+-			memmap except it specifies the memory map of
+-			ZONE_MOVABLE.
+-			This option inform the kernel to use Hot Pluggable bit
+-			in flags from SRAT from ACPI BIOS to determine which
+-			memory devices could be hotplugged. The corresponding
+-			memory ranges will be set as ZONE_MOVABLE.
+-			NOTE: Whatever node the kernel resides in will always
+-			      be un-hotpluggable.
+-
+-	movablemem_map=nn[KMG]@ss[KMG]
+-			[KNL,X86,IA-64,PPC] This parameter is similar to
+-			memmap except it specifies the memory map of
+-			ZONE_MOVABLE.
+-			If user specifies memory ranges, the info in SRAT will
+-			be ingored. And it works like the following:
+-			- If more ranges are all within one node, then from
+-			  lowest ss to the end of the node will be ZONE_MOVABLE.
+-			- If a range is within a node, then from ss to the end
+-			  of the node will be ZONE_MOVABLE.
+-			- If a range covers two or more nodes, then from ss to
+-			  the end of the 1st node will be ZONE_MOVABLE, and all
+-			  the rest nodes will only have ZONE_MOVABLE.
+-			If memmap is specified at the same time, the
+-			movablemem_map will be limited within the memmap
+-			areas. If kernelcore or movablecore is also specified,
+-			movablemem_map will have higher priority to be
+-			satisfied. So the administrator should be careful that
+-			the amount of movablemem_map areas are not too large.
+-			Otherwise kernel won't have enough memory to start.
+-			NOTE: We don't stop users specifying the node the
+-			      kernel resides in as hotpluggable so that this
+-			      option can be used as a workaround of firmware
+-                              bugs.
+-
+ 	MTD_Partition=	[MTD]
+ 			Format: <name>,<region-number>,<size>,<offset>
+ 
+Index: linux-2.6/arch/x86/kernel/setup.c
+===================================================================
+--- linux-2.6.orig/arch/x86/kernel/setup.c
++++ linux-2.6/arch/x86/kernel/setup.c
+@@ -1056,15 +1056,6 @@ void __init setup_arch(char **cmdline_p)
+ 	setup_bios_corruption_check();
+ #endif
+ 
+-	/*
+-	 * In the memory hotplug case, the kernel needs info from SRAT to
+-	 * determine which memory is hotpluggable before allocating memory
+-	 * using memblock.
+-	 */
+-	acpi_boot_table_init();
+-	early_acpi_boot_init();
+-	early_parse_srat();
+-
+ #ifdef CONFIG_X86_32
+ 	printk(KERN_DEBUG "initial memory mapped: [mem 0x00000000-%#010lx]\n",
+ 			(max_pfn_mapped<<PAGE_SHIFT) - 1);
+@@ -1110,6 +1101,10 @@ void __init setup_arch(char **cmdline_p)
+ 	/*
+ 	 * Parse the ACPI tables for possible boot-time SMP configuration.
+ 	 */
++	acpi_boot_table_init();
++
++	early_acpi_boot_init();
++
+ 	initmem_init();
+ 	memblock_find_dma_reserve();
+ 
+Index: linux-2.6/arch/x86/mm/numa.c
+===================================================================
+--- linux-2.6.orig/arch/x86/mm/numa.c
++++ linux-2.6/arch/x86/mm/numa.c
+@@ -212,9 +212,10 @@ static void __init setup_node_data(int n
+ 	 * Allocate node data.  Try node-local memory and then any node.
+ 	 * Never allocate in DMA zone.
+ 	 */
+-	nd_pa = memblock_alloc_try_nid(nd_size, SMP_CACHE_BYTES, nid);
++	nd_pa = memblock_alloc_nid(nd_size, SMP_CACHE_BYTES, nid);
+ 	if (!nd_pa) {
+-		pr_err("Cannot find %zu bytes in any node\n", nd_size);
++		pr_err("Cannot find %zu bytes in node %d\n",
++		       nd_size, nid);
+ 		return;
+ 	}
+ 	nd = __va(nd_pa);
+@@ -559,12 +560,10 @@ static int __init numa_init(int (*init_f
+ 	for (i = 0; i < MAX_LOCAL_APIC; i++)
+ 		set_apicid_to_node(i, NUMA_NO_NODE);
+ 
+-	/*
+-	 * Do not clear numa_nodes_parsed or zero numa_meminfo here, because
+-	 * SRAT was parsed earlier in early_parse_srat().
+-	 */
++	nodes_clear(numa_nodes_parsed);
+ 	nodes_clear(node_possible_map);
+ 	nodes_clear(node_online_map);
++	memset(&numa_meminfo, 0, sizeof(numa_meminfo));
+ 	WARN_ON(memblock_set_node(0, ULLONG_MAX, MAX_NUMNODES));
+ 	numa_reset_distance();
+ 
+Index: linux-2.6/arch/x86/mm/srat.c
+===================================================================
+--- linux-2.6.orig/arch/x86/mm/srat.c
++++ linux-2.6/arch/x86/mm/srat.c
+@@ -141,126 +141,11 @@ static inline int save_add_info(void) {r
+ static inline int save_add_info(void) {return 0;}
+ #endif
+ 
+-#ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
+-static void __init
+-handle_movablemem(int node, u64 start, u64 end, u32 hotpluggable)
+-{
+-	int overlap, i;
+-	unsigned long start_pfn, end_pfn;
+-
+-	start_pfn = PFN_DOWN(start);
+-	end_pfn = PFN_UP(end);
+-
+-	/*
+-	 * For movablemem_map=acpi:
+-	 *
+-	 * SRAT:		|_____| |_____| |_________| |_________| ......
+-	 * node id:                0       1         1           2
+-	 * hotpluggable:	   n       y         y           n
+-	 * movablemem_map:	        |_____| |_________|
+-	 *
+-	 * Using movablemem_map, we can prevent memblock from allocating memory
+-	 * on ZONE_MOVABLE at boot time.
+-	 *
+-	 * Before parsing SRAT, memblock has already reserve some memory ranges
+-	 * for other purposes, such as for kernel image. We cannot prevent
+-	 * kernel from using these memory, so we need to exclude these memory
+-	 * even if it is hotpluggable.
+-	 * Furthermore, to ensure the kernel has enough memory to boot, we make
+-	 * all the memory on the node which the kernel resides in
+-	 * un-hotpluggable.
+-	 */
+-	if (hotpluggable && movablemem_map.acpi) {
+-		/* Exclude ranges reserved by memblock. */
+-		struct memblock_type *rgn = &memblock.reserved;
+-
+-		for (i = 0; i < rgn->cnt; i++) {
+-			if (end <= rgn->regions[i].base ||
+-			    start >= rgn->regions[i].base +
+-			    rgn->regions[i].size)
+-				continue;
+-
+-			/*
+-			 * If the memory range overlaps the memory reserved by
+-			 * memblock, then the kernel resides in this node.
+-			 */
+-			node_set(node, movablemem_map.numa_nodes_kernel);
+-
+-			goto out;
+-		}
+-
+-		/*
+-		 * If the kernel resides in this node, then the whole node
+-		 * should not be hotpluggable.
+-		 */
+-		if (node_isset(node, movablemem_map.numa_nodes_kernel))
+-			goto out;
+-
+-		insert_movablemem_map(start_pfn, end_pfn);
+-
+-		/*
+-		 * numa_nodes_hotplug nodemask represents which nodes are put
+-		 * into movablemem_map.map[].
+-		 */
+-		node_set(node, movablemem_map.numa_nodes_hotplug);
+-		goto out;
+-	}
+-
+-	/*
+-	 * For movablemem_map=nn[KMG]@ss[KMG]:
+-	 *
+-	 * SRAT:		|_____| |_____| |_________| |_________| ......
+-	 * node id:		   0       1         1           2
+-	 * user specified:	          |__|                 |___|
+-	 * movablemem_map:		  |___| |_________|    |______| ......
+-	 *
+-	 * Using movablemem_map, we can prevent memblock from allocating memory
+-	 * on ZONE_MOVABLE at boot time.
+-	 *
+-	 * NOTE: In this case, SRAT info will be ingored.
+-	 */
+-	overlap = movablemem_map_overlap(start_pfn, end_pfn);
+-	if (overlap >= 0) {
+-		/*
+-		 * If part of this range is in movablemem_map, we need to
+-		 * add the range after it to extend the range to the end
+-		 * of the node, because from the min address specified to
+-		 * the end of the node will be ZONE_MOVABLE.
+-		 */
+-		start_pfn = max(start_pfn,
+-			    movablemem_map.map[overlap].start_pfn);
+-		insert_movablemem_map(start_pfn, end_pfn);
+-
+-		/*
+-		 * Set the nodemask, so that if the address range on one node
+-		 * is not continuse, we can add the subsequent ranges on the
+-		 * same node into movablemem_map.
+-		 */
+-		node_set(node, movablemem_map.numa_nodes_hotplug);
+-	} else {
+-		if (node_isset(node, movablemem_map.numa_nodes_hotplug))
+-			/*
+-			 * Insert the range if we already have movable ranges
+-			 * on the same node.
+-			 */
+-			insert_movablemem_map(start_pfn, end_pfn);
+-	}
+-out:
+-	return;
+-}
+-#else		/* CONFIG_HAVE_MEMBLOCK_NODE_MAP */
+-static inline void
+-handle_movablemem(int node, u64 start, u64 end, u32 hotpluggable)
+-{
+-}
+-#endif		/* CONFIG_HAVE_MEMBLOCK_NODE_MAP */
+-
+ /* Callback for parsing of the Proximity Domain <-> Memory Area mappings */
+ int __init
+ acpi_numa_memory_affinity_init(struct acpi_srat_mem_affinity *ma)
+ {
+ 	u64 start, end;
+-	u32 hotpluggable;
+ 	int node, pxm;
+ 
+ 	if (srat_disabled())
+@@ -269,8 +154,7 @@ acpi_numa_memory_affinity_init(struct ac
+ 		goto out_err_bad_srat;
+ 	if ((ma->flags & ACPI_SRAT_MEM_ENABLED) == 0)
+ 		goto out_err;
+-	hotpluggable = ma->flags & ACPI_SRAT_MEM_HOT_PLUGGABLE;
+-	if (hotpluggable && !save_add_info())
++	if ((ma->flags & ACPI_SRAT_MEM_HOT_PLUGGABLE) && !save_add_info())
+ 		goto out_err;
+ 
+ 	start = ma->base_address;
+@@ -290,12 +174,9 @@ acpi_numa_memory_affinity_init(struct ac
+ 
+ 	node_set(node, numa_nodes_parsed);
+ 
+-	printk(KERN_INFO "SRAT: Node %u PXM %u [mem %#010Lx-%#010Lx] %s\n",
++	printk(KERN_INFO "SRAT: Node %u PXM %u [mem %#010Lx-%#010Lx]\n",
+ 	       node, pxm,
+-	       (unsigned long long) start, (unsigned long long) end - 1,
+-	       hotpluggable ? "Hot Pluggable": "");
+-
+-	handle_movablemem(node, start, end, hotpluggable);
++	       (unsigned long long) start, (unsigned long long) end - 1);
+ 
+ 	return 0;
+ out_err_bad_srat:
+Index: linux-2.6/drivers/acpi/numa.c
+===================================================================
+--- linux-2.6.orig/drivers/acpi/numa.c
++++ linux-2.6/drivers/acpi/numa.c
+@@ -282,10 +282,10 @@ acpi_table_parse_srat(enum acpi_srat_typ
+ 					    handler, max_entries);
+ }
+ 
+-static int srat_mem_cnt;
+-
+-void __init early_parse_srat(void)
++int __init acpi_numa_init(void)
+ {
++	int cnt = 0;
++
+ 	/*
+ 	 * Should not limit number with cpu num that is from NR_CPUS or nr_cpus=
+ 	 * SRAT cpu entries could have different order with that in MADT.
+@@ -295,24 +295,21 @@ void __init early_parse_srat(void)
+ 	/* SRAT: Static Resource Affinity Table */
+ 	if (!acpi_table_parse(ACPI_SIG_SRAT, acpi_parse_srat)) {
+ 		acpi_table_parse_srat(ACPI_SRAT_TYPE_X2APIC_CPU_AFFINITY,
+-				      acpi_parse_x2apic_affinity, 0);
++				     acpi_parse_x2apic_affinity, 0);
+ 		acpi_table_parse_srat(ACPI_SRAT_TYPE_CPU_AFFINITY,
+-				      acpi_parse_processor_affinity, 0);
+-		srat_mem_cnt = acpi_table_parse_srat(ACPI_SRAT_TYPE_MEMORY_AFFINITY,
+-						     acpi_parse_memory_affinity,
+-						     NR_NODE_MEMBLKS);
++				     acpi_parse_processor_affinity, 0);
++		cnt = acpi_table_parse_srat(ACPI_SRAT_TYPE_MEMORY_AFFINITY,
++					    acpi_parse_memory_affinity,
++					    NR_NODE_MEMBLKS);
+ 	}
+-}
+ 
+-int __init acpi_numa_init(void)
+-{
+ 	/* SLIT: System Locality Information Table */
+ 	acpi_table_parse(ACPI_SIG_SLIT, acpi_parse_slit);
+ 
+ 	acpi_numa_arch_fixup();
+ 
+-	if (srat_mem_cnt < 0)
+-		return srat_mem_cnt;
++	if (cnt < 0)
++		return cnt;
+ 	else if (!parsed_numa_memblks)
+ 		return -ENOENT;
+ 	return 0;
+Index: linux-2.6/include/linux/acpi.h
+===================================================================
+--- linux-2.6.orig/include/linux/acpi.h
++++ linux-2.6/include/linux/acpi.h
+@@ -485,14 +485,6 @@ static inline bool acpi_driver_match_dev
+ 
+ #endif	/* !CONFIG_ACPI */
+ 
+-#ifdef CONFIG_ACPI_NUMA
+-void __init early_parse_srat(void);
+-#else
+-static inline void early_parse_srat(void)
+-{
+-}
+-#endif
+-
+ #ifdef CONFIG_ACPI
+ void acpi_os_set_prepare_sleep(int (*func)(u8 sleep_state,
+ 			       u32 pm1a_ctrl,  u32 pm1b_ctrl));
+Index: linux-2.6/include/linux/memblock.h
+===================================================================
+--- linux-2.6.orig/include/linux/memblock.h
++++ linux-2.6/include/linux/memblock.h
+@@ -42,7 +42,6 @@ struct memblock {
+ 
+ extern struct memblock memblock;
+ extern int memblock_debug;
+-extern struct movablemem_map movablemem_map;
+ 
+ #define memblock_dbg(fmt, ...) \
+ 	if (memblock_debug) printk(KERN_INFO pr_fmt(fmt), ##__VA_ARGS__)
+@@ -61,7 +60,6 @@ int memblock_reserve(phys_addr_t base, p
+ void memblock_trim_memory(phys_addr_t align);
+ 
+ #ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
+-
+ void __next_mem_pfn_range(int *idx, int nid, unsigned long *out_start_pfn,
+ 			  unsigned long *out_end_pfn, int *out_nid);
+ 
+Index: linux-2.6/include/linux/mm.h
+===================================================================
+--- linux-2.6.orig/include/linux/mm.h
++++ linux-2.6/include/linux/mm.h
+@@ -1333,24 +1333,6 @@ extern void free_bootmem_with_active_reg
+ 						unsigned long max_low_pfn);
+ extern void sparse_memory_present_with_active_regions(int nid);
+ 
+-#define MOVABLEMEM_MAP_MAX MAX_NUMNODES
+-struct movablemem_entry {
+-	unsigned long start_pfn;    /* start pfn of memory segment */
+-	unsigned long end_pfn;      /* end pfn of memory segment (exclusive) */
+-};
+-
+-struct movablemem_map {
+-	bool acpi;	/* true if using SRAT info */
+-	int nr_map;
+-	struct movablemem_entry map[MOVABLEMEM_MAP_MAX];
+-	nodemask_t numa_nodes_hotplug;	/* on which nodes we specify memory */
+-	nodemask_t numa_nodes_kernel;	/* on which nodes kernel resides in */
+-};
+-
+-extern void __init insert_movablemem_map(unsigned long start_pfn,
+-					 unsigned long end_pfn);
+-extern int __init movablemem_map_overlap(unsigned long start_pfn,
+-					 unsigned long end_pfn);
+ #endif /* CONFIG_HAVE_MEMBLOCK_NODE_MAP */
+ 
+ #if !defined(CONFIG_HAVE_MEMBLOCK_NODE_MAP) && \
+Index: linux-2.6/mm/memblock.c
+===================================================================
+--- linux-2.6.orig/mm/memblock.c
++++ linux-2.6/mm/memblock.c
+@@ -92,58 +92,9 @@ static long __init_memblock memblock_ove
+  *
+  * Find @size free area aligned to @align in the specified range and node.
+  *
+- * If we have CONFIG_HAVE_MEMBLOCK_NODE_MAP defined, we need to check if the
+- * memory we found if not in hotpluggable ranges.
+- *
+  * RETURNS:
+  * Found address on success, %0 on failure.
+  */
+-#ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
+-phys_addr_t __init_memblock memblock_find_in_range_node(phys_addr_t start,
+-					phys_addr_t end, phys_addr_t size,
+-					phys_addr_t align, int nid)
+-{
+-	phys_addr_t this_start, this_end, cand;
+-	u64 i;
+-	int curr = movablemem_map.nr_map - 1;
+-
+-	/* pump up @end */
+-	if (end == MEMBLOCK_ALLOC_ACCESSIBLE)
+-		end = memblock.current_limit;
+-
+-	/* avoid allocating the first page */
+-	start = max_t(phys_addr_t, start, PAGE_SIZE);
+-	end = max(start, end);
+-
+-	for_each_free_mem_range_reverse(i, nid, &this_start, &this_end, NULL) {
+-		this_start = clamp(this_start, start, end);
+-		this_end = clamp(this_end, start, end);
+-
+-restart:
+-		if (this_end <= this_start || this_end < size)
+-			continue;
+-
+-		for (; curr >= 0; curr--) {
+-			if ((movablemem_map.map[curr].start_pfn << PAGE_SHIFT)
+-			    < this_end)
+-				break;
+-		}
+-
+-		cand = round_down(this_end - size, align);
+-		if (curr >= 0 &&
+-		    cand < movablemem_map.map[curr].end_pfn << PAGE_SHIFT) {
+-			this_end = movablemem_map.map[curr].start_pfn
+-				   << PAGE_SHIFT;
+-			goto restart;
+-		}
+-
+-		if (cand >= this_start)
+-			return cand;
+-	}
+-
+-	return 0;
+-}
+-#else /* CONFIG_HAVE_MEMBLOCK_NODE_MAP */
+ phys_addr_t __init_memblock memblock_find_in_range_node(phys_addr_t start,
+ 					phys_addr_t end, phys_addr_t size,
+ 					phys_addr_t align, int nid)
+@@ -172,7 +123,6 @@ phys_addr_t __init_memblock memblock_fin
+ 	}
+ 	return 0;
+ }
+-#endif /* CONFIG_HAVE_MEMBLOCK_NODE_MAP */
+ 
+ /**
+  * memblock_find_in_range - find free area in given range
+Index: linux-2.6/mm/page_alloc.c
+===================================================================
+--- linux-2.6.orig/mm/page_alloc.c
++++ linux-2.6/mm/page_alloc.c
+@@ -202,18 +202,11 @@ static unsigned long __meminitdata nr_al
+ static unsigned long __meminitdata dma_reserve;
+ 
+ #ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
+-/* Movable memory ranges, will also be used by memblock subsystem. */
+-struct movablemem_map movablemem_map = {
+-	.acpi = false,
+-	.nr_map = 0,
+-};
+-
+ static unsigned long __meminitdata arch_zone_lowest_possible_pfn[MAX_NR_ZONES];
+ static unsigned long __meminitdata arch_zone_highest_possible_pfn[MAX_NR_ZONES];
+ static unsigned long __initdata required_kernelcore;
+ static unsigned long __initdata required_movablecore;
+ static unsigned long __meminitdata zone_movable_pfn[MAX_NUMNODES];
+-static unsigned long __meminitdata zone_movable_limit[MAX_NUMNODES];
+ 
+ /* movable_zone is the "real" zone pages in ZONE_MOVABLE are taken from */
+ int movable_zone;
+@@ -4412,77 +4405,6 @@ static unsigned long __meminit zone_abse
+ 	return __absent_pages_in_range(nid, zone_start_pfn, zone_end_pfn);
+ }
+ 
+-/**
+- * sanitize_zone_movable_limit - Sanitize the zone_movable_limit array.
+- *
+- * zone_movable_limit is initialized as 0. This function will try to get
+- * the first ZONE_MOVABLE pfn of each node from movablemem_map, and
+- * assigne them to zone_movable_limit.
+- * zone_movable_limit[nid] == 0 means no limit for the node.
+- *
+- * Note: Each range is represented as [start_pfn, end_pfn)
+- */
+-static void __meminit sanitize_zone_movable_limit(void)
+-{
+-	int map_pos = 0, i, nid;
+-	unsigned long start_pfn, end_pfn;
+-
+-	if (!movablemem_map.nr_map)
+-		return;
+-
+-	/* Iterate all ranges from minimum to maximum */
+-	for_each_mem_pfn_range(i, MAX_NUMNODES, &start_pfn, &end_pfn, &nid) {
+-		/*
+-		 * If we have found lowest pfn of ZONE_MOVABLE of the node
+-		 * specified by user, just go on to check next range.
+-		 */
+-		if (zone_movable_limit[nid])
+-			continue;
+-
+-#ifdef CONFIG_ZONE_DMA
+-		/* Skip DMA memory. */
+-		if (start_pfn < arch_zone_highest_possible_pfn[ZONE_DMA])
+-			start_pfn = arch_zone_highest_possible_pfn[ZONE_DMA];
+-#endif
+-
+-#ifdef CONFIG_ZONE_DMA32
+-		/* Skip DMA32 memory. */
+-		if (start_pfn < arch_zone_highest_possible_pfn[ZONE_DMA32])
+-			start_pfn = arch_zone_highest_possible_pfn[ZONE_DMA32];
+-#endif
+-
+-#ifdef CONFIG_HIGHMEM
+-		/* Skip lowmem if ZONE_MOVABLE is highmem. */
+-		if (zone_movable_is_highmem() &&
+-		    start_pfn < arch_zone_lowest_possible_pfn[ZONE_HIGHMEM])
+-			start_pfn = arch_zone_lowest_possible_pfn[ZONE_HIGHMEM];
+-#endif
+-
+-		if (start_pfn >= end_pfn)
+-			continue;
+-
+-		while (map_pos < movablemem_map.nr_map) {
+-			if (end_pfn <= movablemem_map.map[map_pos].start_pfn)
+-				break;
+-
+-			if (start_pfn >= movablemem_map.map[map_pos].end_pfn) {
+-				map_pos++;
+-				continue;
+-			}
+-
+-			/*
+-			 * The start_pfn of ZONE_MOVABLE is either the minimum
+-			 * pfn specified by movablemem_map, or 0, which means
+-			 * the node has no ZONE_MOVABLE.
+-			 */
+-			zone_movable_limit[nid] = max(start_pfn,
+-					movablemem_map.map[map_pos].start_pfn);
+-
+-			break;
+-		}
+-	}
+-}
+-
+ #else /* CONFIG_HAVE_MEMBLOCK_NODE_MAP */
+ static inline unsigned long __meminit zone_spanned_pages_in_node(int nid,
+ 					unsigned long zone_type,
+@@ -4500,6 +4422,7 @@ static inline unsigned long __meminit zo
+ 
+ 	return zholes_size[zone_type];
+ }
++
+ #endif /* CONFIG_HAVE_MEMBLOCK_NODE_MAP */
+ 
+ static void __meminit calculate_node_totalpages(struct pglist_data *pgdat,
+@@ -4941,19 +4864,12 @@ static void __init find_zone_movable_pfn
+ 		required_kernelcore = max(required_kernelcore, corepages);
+ 	}
+ 
+-	/*
+-	 * If neither kernelcore/movablecore nor movablemem_map is specified,
+-	 * there is no ZONE_MOVABLE. But if movablemem_map is specified, the
+-	 * start pfn of ZONE_MOVABLE has been stored in zone_movable_limit[].
+-	 */
+-	if (!required_kernelcore) {
+-		if (movablemem_map.nr_map)
+-			memcpy(zone_movable_pfn, zone_movable_limit,
+-				sizeof(zone_movable_pfn));
++	/* If kernelcore was not specified, there is no ZONE_MOVABLE */
++	if (!required_kernelcore)
+ 		goto out;
+-	}
+ 
+ 	/* usable_startpfn is the lowest possible pfn ZONE_MOVABLE can be at */
++	find_usable_zone_for_movable();
+ 	usable_startpfn = arch_zone_lowest_possible_pfn[movable_zone];
+ 
+ restart:
+@@ -4981,24 +4897,10 @@ restart:
+ 		for_each_mem_pfn_range(i, nid, &start_pfn, &end_pfn, NULL) {
+ 			unsigned long size_pages;
+ 
+-			/*
+-			 * Find more memory for kernelcore in
+-			 * [zone_movable_pfn[nid], zone_movable_limit[nid]).
+-			 */
+ 			start_pfn = max(start_pfn, zone_movable_pfn[nid]);
+ 			if (start_pfn >= end_pfn)
+ 				continue;
+ 
+-			if (zone_movable_limit[nid]) {
+-				end_pfn = min(end_pfn, zone_movable_limit[nid]);
+-				/* No range left for kernelcore in this node */
+-				if (start_pfn >= end_pfn) {
+-					zone_movable_pfn[nid] =
+-							zone_movable_limit[nid];
+-					break;
+-				}
+-			}
+-
+ 			/* Account for what is only usable for kernelcore */
+ 			if (start_pfn < usable_startpfn) {
+ 				unsigned long kernel_pages;
+@@ -5058,12 +4960,12 @@ restart:
+ 	if (usable_nodes && required_kernelcore > usable_nodes)
+ 		goto restart;
+ 
+-out:
+ 	/* Align start of ZONE_MOVABLE on all nids to MAX_ORDER_NR_PAGES */
+ 	for (nid = 0; nid < MAX_NUMNODES; nid++)
+ 		zone_movable_pfn[nid] =
+ 			roundup(zone_movable_pfn[nid], MAX_ORDER_NR_PAGES);
+ 
++out:
+ 	/* restore the node_state */
+ 	node_states[N_MEMORY] = saved_node_state;
+ }
+@@ -5126,8 +5028,6 @@ void __init free_area_init_nodes(unsigne
+ 
+ 	/* Find the PFNs that ZONE_MOVABLE begins at in each node */
+ 	memset(zone_movable_pfn, 0, sizeof(zone_movable_pfn));
+-	find_usable_zone_for_movable();
+-	sanitize_zone_movable_limit();
+ 	find_zone_movable_pfns_for_nodes();
+ 
+ 	/* Print out the zone ranges */
+@@ -5211,181 +5111,6 @@ static int __init cmdline_parse_movablec
+ early_param("kernelcore", cmdline_parse_kernelcore);
+ early_param("movablecore", cmdline_parse_movablecore);
+ 
+-/**
+- * movablemem_map_overlap() - Check if a range overlaps movablemem_map.map[].
+- * @start_pfn:	start pfn of the range to be checked
+- * @end_pfn: 	end pfn of the range to be checked (exclusive)
+- *
+- * This function checks if a given memory range [start_pfn, end_pfn) overlaps
+- * the movablemem_map.map[] array.
+- *
+- * Return: index of the first overlapped element in movablemem_map.map[]
+- *         or -1 if they don't overlap each other.
+- */
+-int __init movablemem_map_overlap(unsigned long start_pfn,
+-				   unsigned long end_pfn)
+-{
+-	int overlap;
+-
+-	if (!movablemem_map.nr_map)
+-		return -1;
+-
+-	for (overlap = 0; overlap < movablemem_map.nr_map; overlap++)
+-		if (start_pfn < movablemem_map.map[overlap].end_pfn)
+-			break;
+-
+-	if (overlap == movablemem_map.nr_map ||
+-	    end_pfn <= movablemem_map.map[overlap].start_pfn)
+-		return -1;
+-
+-	return overlap;
+-}
+-
+-/**
+- * insert_movablemem_map - Insert a memory range in to movablemem_map.map.
+- * @start_pfn:	start pfn of the range
+- * @end_pfn:	end pfn of the range
+- *
+- * This function will also merge the overlapped ranges, and sort the array
+- * by start_pfn in monotonic increasing order.
+- */
+-void __init insert_movablemem_map(unsigned long start_pfn,
+-				  unsigned long end_pfn)
+-{
+-	int pos, overlap;
+-
+-	/*
+-	 * pos will be at the 1st overlapped range, or the position
+-	 * where the element should be inserted.
+-	 */
+-	for (pos = 0; pos < movablemem_map.nr_map; pos++)
+-		if (start_pfn <= movablemem_map.map[pos].end_pfn)
+-			break;
+-
+-	/* If there is no overlapped range, just insert the element. */
+-	if (pos == movablemem_map.nr_map ||
+-	    end_pfn < movablemem_map.map[pos].start_pfn) {
+-		/*
+-		 * If pos is not the end of array, we need to move all
+-		 * the rest elements backward.
+-		 */
+-		if (pos < movablemem_map.nr_map)
+-			memmove(&movablemem_map.map[pos+1],
+-				&movablemem_map.map[pos],
+-				sizeof(struct movablemem_entry) *
+-				(movablemem_map.nr_map - pos));
+-		movablemem_map.map[pos].start_pfn = start_pfn;
+-		movablemem_map.map[pos].end_pfn = end_pfn;
+-		movablemem_map.nr_map++;
+-		return;
+-	}
+-
+-	/* overlap will be at the last overlapped range */
+-	for (overlap = pos + 1; overlap < movablemem_map.nr_map; overlap++)
+-		if (end_pfn < movablemem_map.map[overlap].start_pfn)
+-			break;
+-
+-	/*
+-	 * If there are more ranges overlapped, we need to merge them,
+-	 * and move the rest elements forward.
+-	 */
+-	overlap--;
+-	movablemem_map.map[pos].start_pfn = min(start_pfn,
+-					movablemem_map.map[pos].start_pfn);
+-	movablemem_map.map[pos].end_pfn = max(end_pfn,
+-					movablemem_map.map[overlap].end_pfn);
+-
+-	if (pos != overlap && overlap + 1 != movablemem_map.nr_map)
+-		memmove(&movablemem_map.map[pos+1],
+-			&movablemem_map.map[overlap+1],
+-			sizeof(struct movablemem_entry) *
+-			(movablemem_map.nr_map - overlap - 1));
+-
+-	movablemem_map.nr_map -= overlap - pos;
+-}
+-
+-/**
+- * movablemem_map_add_region - Add a memory range into movablemem_map.
+- * @start:	physical start address of range
+- * @end:	physical end address of range
+- *
+- * This function transform the physical address into pfn, and then add the
+- * range into movablemem_map by calling insert_movablemem_map().
+- */
+-static void __init movablemem_map_add_region(u64 start, u64 size)
+-{
+-	unsigned long start_pfn, end_pfn;
+-
+-	/* In case size == 0 or start + size overflows */
+-	if (start + size <= start)
+-		return;
+-
+-	if (movablemem_map.nr_map >= ARRAY_SIZE(movablemem_map.map)) {
+-		pr_err("movablemem_map: too many entries;"
+-			" ignoring [mem %#010llx-%#010llx]\n",
+-			(unsigned long long) start,
+-			(unsigned long long) (start + size - 1));
+-		return;
+-	}
+-
+-	start_pfn = PFN_DOWN(start);
+-	end_pfn = PFN_UP(start + size);
+-	insert_movablemem_map(start_pfn, end_pfn);
+-}
+-
+-/*
+- * cmdline_parse_movablemem_map - Parse boot option movablemem_map.
+- * @p:	The boot option of the following format:
+- *	movablemem_map=nn[KMG]@ss[KMG]
+- *
+- * This option sets the memory range [ss, ss+nn) to be used as movable memory.
+- *
+- * Return: 0 on success or -EINVAL on failure.
+- */
+-static int __init cmdline_parse_movablemem_map(char *p)
+-{
+-	char *oldp;
+-	u64 start_at, mem_size;
+-
+-	if (!p)
+-		goto err;
+-
+-	if (!strcmp(p, "acpi"))
+-		movablemem_map.acpi = true;
+-
+-	/*
+-	 * If user decide to use info from BIOS, all the other user specified
+-	 * ranges will be ingored.
+-	 */
+-	if (movablemem_map.acpi) {
+-		if (movablemem_map.nr_map) {
+-			memset(movablemem_map.map, 0,
+-				sizeof(struct movablemem_entry)
+-				* movablemem_map.nr_map);
+-			movablemem_map.nr_map = 0;
+-		}
+-		return 0;
+-	}
+-
+-	oldp = p;
+-	mem_size = memparse(p, &p);
+-	if (p == oldp)
+-		goto err;
+-
+-	if (*p == '@') {
+-		oldp = ++p;
+-		start_at = memparse(p, &p);
+-		if (p == oldp || *p != '\0')
+-			goto err;
+-
+-		movablemem_map_add_region(start_at, mem_size);
+-		return 0;
+-	}
+-err:
+-	return -EINVAL;
+-}
+-early_param("movablemem_map", cmdline_parse_movablemem_map);
+-
+ #endif /* CONFIG_HAVE_MEMBLOCK_NODE_MAP */
+ 
+ /**
