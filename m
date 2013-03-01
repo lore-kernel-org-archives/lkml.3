@@ -1,177 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752464Ab3CAWQx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 17:16:53 -0500
-Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:60687 "EHLO
-	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751151Ab3CAWQv convert rfc822-to-8bit (ORCPT
+	id S1751998Ab3CAWTM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 17:19:12 -0500
+Received: from mail-la0-f54.google.com ([209.85.215.54]:50027 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751151Ab3CAWTJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 17:16:51 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:cc
-	:subject:date:message-id:mime-version:content-type
-	:content-transfer-encoding; q=dns; s=sasl; b=VSi9vyYwgISm3mf2b9m
-	gkMGtgjEfNG38qibE8Dk6Sp9i31ze4JsAPxQsHkfWHL0IuzKfDFobB8Nwjss+tTR
-	ieZ5F8UrLosgh1OSsMriB0fUsEvx2mqkjoOTIZHmQmtRl8s9oBPJIatX3vHhhPsf
-	9ij0YrogppzLkj4pbkZeqYJ4=
-From: Junio C Hamano <gitster@pobox.com>
-To: git@vger.kernel.org
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [ANNOUNCE] Git v1.8.1.5
-Date: Fri, 01 Mar 2013 14:16:48 -0800
-Message-ID: <7v1ubyg3zj.fsf@alter.siamese.dyndns.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	Fri, 1 Mar 2013 17:19:09 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-X-Pobox-Relay-ID: B6DD6136-82BD-11E2-B8EF-7FA22E706CDE-77302942!b-pb-sasl-quonix.pobox.com
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <CAO9zADxjoP+R9ccz7vMPmcFvdYwNjErSjaWc_RFkW_FY3+SK=w@mail.gmail.com>
+References: <1354533387-4110-1-git-send-email-acooks@gmail.com>
+	<1355914703-28576-1-git-send-email-acooks@gmail.com>
+	<1362126373-32318-1-git-send-email-acooks@gmail.com>
+	<CAO9zADxjoP+R9ccz7vMPmcFvdYwNjErSjaWc_RFkW_FY3+SK=w@mail.gmail.com>
+Date: Sat, 2 Mar 2013 06:19:07 +0800
+Message-ID: <CAJtEV7Zs2BiwJ9jdDeoceh9hiVXvVaSvj=9H+4+vEzhY72AS9g@mail.gmail.com>
+Subject: Re: [PATCH] Quirk to support Marvell 88SE91xx SATA controllers with
+ Intel IOMMU.
+From: Andrew Cooks <acooks@gmail.com>
+To: Justin Piszcz <jpiszcz@lucidpixels.com>
+Cc: Joerg Roedel <joro@8bytes.org>, YingChu <xjtuychu@hotmail.com>,
+        Chu Ying <gm.ychu@gmail.com>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        "bhelgaas@google.com" <bhelgaas@google.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        "open list:INTEL IOMMU (VT-d)" <iommu@lists.linux-foundation.org>,
+        open list <linux-kernel@vger.kernel.org>,
+        "open list:PCI SUBSYSTEM" <linux-pci@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The latest maintenance release Git v1.8.1.5 is now available at
-the usual places.
+On Sat, Mar 2, 2013 at 1:51 AM, Justin Piszcz <jpiszcz@lucidpixels.com> wrote:
+>
+>
+> On Fri, Mar 1, 2013 at 3:26 AM, Andrew Cooks <acooks@gmail.com> wrote:
+>>
+>> This is my third submitted patch to make Marvell 88SE91xx SATA controllers
+>> work when IOMMU is enabled.[1][2]
+>>
+>
+> Hi,
+>
+> Against 3.7.10:
+>
+> # patch -p1 <
+> ../RFC-Fix-Intel-IOMMU-support-for-Marvell-88SE91xx-SATA-controllers..patch
+> patching file drivers/iommu/intel-iommu.c
+> patching file drivers/pci/quirks.c
+> Hunk #1 succeeded at 3230 (offset 3 lines).
+> patching file include/linux/pci.h
+> #
 
-The release tarballs are found at:
+Thanks for testing!
 
-    http://code.google.com/p/git-core/downloads/list
+Patching 3.7.10 looks somewhat different here. I'm using the
+linux-3.7.y branch from
+git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git
+at commit 356d8c6fb2a7cf49e836742738a8b9a47e77cfea. The output I get
+is:
 
-and their SHA-1 checksums are:
+$ patch -p1 < ~/devel/lk_patches_dma_source_maps-20130301/marvell_ghost_funcs.patch
+patching file drivers/iommu/intel-iommu.c
+Hunk #1 succeeded at 1672 (offset -2 lines).
+Hunk #2 succeeded at 1729 (offset -2 lines).
+Hunk #3 succeeded at 3833 (offset -2 lines).
+patching file drivers/pci/quirks.c
+Hunk #1 succeeded at 3210 (offset -39 lines).
+Hunk #2 succeeded at 3240 (offset -39 lines).
+Hunk #3 succeeded at 3258 (offset -39 lines).
+patching file include/linux/pci.h
+Hunk #1 succeeded at 1546 (offset -32 lines).
+Hunk #2 succeeded at 1555 (offset -32 lines).
+patching file include/linux/pci_ids.h
 
-3349a15de7c5501715bda9b68301d0406272f8e0  git-1.8.1.5.tar.gz
-84d832fc70a053e97ce336c4a0af0371461e469f  git-htmldocs-1.8.1.5.tar.gz
-7f211a2f8fe36180373a20b32eb930018883bfd1  git-manpages-1.8.1.5.tar.gz
+>
+> Recompile kernel, reboot..
+>
+> Shutdown host, re-attach to Marvell Controller w/IOMMU.
+>
+> The host still failed to boot, dmesg/panic here:
+> http://home.comcast.net/~jpiszcz/20130301/boot_failure.JPG
+>
+> (The root disk is /dev/sdc)
 
-Also the following public repositories all have a copy of the v1.8.1.5
-tag and the maint branch that the tag points at:
+Sorry it doesn't work for you, but I can't really tell what's failing
+from the photo you posted. I'm running 3.7.10 with this patch right
+now.
 
-  url = git://repo.or.cz/alt-git.git
-  url = https://code.google.com/p/git-core/
-  url = git://git.sourceforge.jp/gitroot/git-core/git.git
-  url = git://git-core.git.sourceforge.net/gitroot/git-core/git-core
-  url = https://github.com/gitster/git
+According to the dmesg output you posted at
+https://home.comcast.net/~jpiszcz/20121128/dmesg.txt and the lspci
+output in http://www.kernelhub.org/?p=2&msg=171877, you've run into
+two separate DMAR issues:
 
-Git 1.8.1.5 Release Notes
-=========================
+Problem A - nvidia graphics:
+[    2.968248] dmar: DRHD: handling fault status reg 202
+[    2.968253] dmar: DMAR:[DMA Read] Request device [04:00.0] fault addr 0
+[    2.968253] DMAR:[fault reason 06] PTE Read access is not set
 
-Fixes since v1.8.1.4
---------------------
+Problem B - Marvell 88SE9123:
+[    2.974534] ata9: SATA link down (SStatus 0 SControl 300)
+[    2.976297] ata7: SATA link down (SStatus 0 SControl 300)
+[    2.977939] ata13: SATA link down (SStatus 0 SControl 300)
+[    2.979689] ata14: SATA link up 1.5 Gbps (SStatus 113 SControl 300)
+[    2.981419] dmar: DRHD: handling fault status reg 2
+[    2.981431] ata8: SATA link down (SStatus 0 SControl 300)
+[    2.981449] ata11: SATA link down (SStatus 0 SControl 300)
+[    2.988479] dmar: DMAR:[DMA Read] Request device [84:00.1] fault
+addr fff00000
+[    2.988479] DMAR:[fault reason 02] Present bit in context entry is clear
 
- * Given a string with a multi-byte character that begins with '-' on
-   the command line where an option is expected, the option parser
-   used just one byte of the unknown letter when reporting an error.
+Can you capture a full dmesg with this patch applied?
 
- * In v1.8.1, the attribute parser was tightened too restrictive to
-   error out upon seeing an entry that begins with an ! (exclamation),
-   which may confuse users to expect a "negative match", which does
-   not exist.  This has been demoted to a warning; such an entry is
-   still ignored.
-
- * "git apply --summary" has been taught to make sure the similarity
-   value shown in its output is sensible, even when the input had a
-   bogus value.
-
- * "git clean" showed what it was going to do, but sometimes ended
-   up finding that it was not allowed to do so, which resulted in a
-   confusing output (e.g. after saying that it will remove an
-   untracked directory, it found an embedded git repository there
-   which it is not allowed to remove).  It now performs the actions
-   and then reports the outcome more faithfully.
-
- * "git clone" used to allow --bare and --separate-git-dir=$there
-   options at the same time, which was nonsensical.
-
- * "git cvsimport" mishandled timestamps at DST boundary.
-
- * We used to have an arbitrary 32 limit for combined diff input,
-   resulting in incorrect number of leading colons shown when showing
-   the "--raw --cc" output.
-
- * The smart HTTP clients forgot to verify the content-type that comes
-   back from the server side to make sure that the request is being
-   handled properly.
-
- * "git help remote-helpers" failed to find the documentation.
-
- * "gitweb" pages served over HTTPS, when configured to show picon or
-   gravatar, referred to these external resources to be fetched via
-   HTTP, resulting in mixed contents warning in browsers.
-
-Also contains various documentation fixes.
-
-----------------------------------------------------------------
-
-Changes since v1.8.1.4 are as follows:
-
-Andrej E Baranov (1):
-      gitweb: refer to picon/gravatar images over the same scheme
-
-Andrew Wong (1):
-      Documentation/githooks: Fix linkgit
-
-Asheesh Laroia (1):
-      git-mergetool: print filename when it contains %
-
-Ben Walton (3):
-      Move Git::SVN::get_tz to Git::get_tz_offset
-      perl/Git.pm: fix get_tz_offset to properly handle DST boundary cases
-      cvsimport: format commit timestamp ourselves without using strftime
-
-Brad King (1):
-      Documentation/submodule: Add --force to update synopsis
-
-David Aguilar (3):
-      mergetools/p4merge: Honor $TMPDIR for the /dev/null placeholder
-      difftool--helper: fix printf usage
-      p4merge: fix printf usage
-
-Erik Faye-Lund (1):
-      parse-options: report uncorrupted multi-byte options
-
-Greg Price (1):
-      Documentation: "advice" is uncountable
-
-Jeff King (2):
-      http_request: reset "type" strbuf before adding
-      Makefile: avoid infinite loop on configure.ac change
-
-Jiang Xin (1):
-      Add utf8_fprintf helper that returns correct number of columns
-
-John Keeping (3):
-      Rename {git- => git}remote-helpers.txt
-      builtin/apply: tighten (dis)similarity index parsing
-      t4038: add tests for "diff --cc --raw <trees>"
-
-Junio C Hamano (7):
-      doc: mention tracking for pull.default
-      combine-diff: lift 32-way limit of combined diff
-      t5551: fix expected error output
-      user-manual: typofix (ofthe->of the)
-      Prepare for 1.8.1.5
-      Update draft release notes to 1.8.1.5
-      Git 1.8.1.5
-
-Matthieu Moy (1):
-      git.txt: update description of the configuration mechanism
-
-Michael J Gruber (1):
-      git-bisect.txt: clarify that reset quits bisect
-
-Nguyễn Thái Ngọc Duy (1):
-      clone: forbid --bare --separate-git-dir <dir>
-
-Shawn O. Pearce (1):
-      Verify Content-Type from smart HTTP servers
-
-Thomas Rast (1):
-      Make !pattern in .gitattributes non-fatal
-
-W. Trevor King (4):
-      user-manual: Update for receive.denyCurrentBranch=refuse
-      user-manual: Reorganize the reroll sections, adding 'git rebase -i'
-      user-manual: Use request-pull to generate "please pull" text
-      user-manual: Flesh out uncommitted changes and submodule updates
-
-Zoltan Klinger (1):
-      git-clean: Display more accurate delete messages
-
+--
+a.
