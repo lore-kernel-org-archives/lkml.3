@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753961Ab3CAUN0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 15:13:26 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51552 "EHLO
+	id S1753526Ab3CAUNY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 15:13:24 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51557 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752931Ab3CATpo (ORCPT
+	with ESMTP id S1753076Ab3CATpp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 14:45:44 -0500
+	Fri, 1 Mar 2013 14:45:45 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Rajanikanth H.V" <rajanikanth.hv@stericsson.com>,
-        Anton Vorontsov <anton@enomsg.org>
-Subject: [ 66/77] ab8500_btemp: Demote initcall sequence
-Date: Fri,  1 Mar 2013 11:44:51 -0800
-Message-Id: <20130301194358.950956129@linuxfoundation.org>
+        Joseph Salisbury <joseph.salisbury@canonical.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [ 67/77] ACPI: Add DMI entry for Sony VGN-FW41E_H
+Date: Fri,  1 Mar 2013 11:44:52 -0800
+Message-Id: <20130301194359.045763244@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130301194351.913471337@linuxfoundation.org>
 References: <20130301194351.913471337@linuxfoundation.org>
@@ -27,71 +27,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Rajanikanth H.V" <rajanikanth.hv@stericsson.com>
+From: Joseph Salisbury <joseph.salisbury@canonical.com>
 
-commit eeb0751c99522a4d1bbcc7b6bc1460cd07d07488 upstream.
+commit 66f2fda93b67fa744d406e6dcf443f67bac204b6 upstream.
 
-Power supply subsystem creates thermal zone device for the property
-'POWER_SUPPLY_PROP_TEMP' which requires thermal subsystem to be ready
-before 'ab8500 battery temperature monitor' driver is initialized. ab8500
-btemp driver is initialized with subsys_initcall whereas thermal subsystem
-is initialized with fs_initcall which causes
-thermal_zone_device_register(...) to crash since the required structure
-'thermal_class' is not initialized yet:
+This patch adds a quirk to allow the Sony VGN-FW41E_H to suspend/resume
+properly.
 
-Unable to handle kernel NULL pointer dereference at virtual address 000000a4
-pgd = c0004000
-[000000a4] *pgd=00000000
-Internal error: Oops: 5 [#1] PREEMPT SMP ARM
-Modules linked in:
-CPU: 0    Tainted: G        W     (3.8.0-rc4-00001-g632fda8-dirty #1)
-PC is at _raw_spin_lock+0x18/0x54
-LR is at get_device_parent+0x50/0x1b8
-pc : [<c02f1dd0>]    lr : [<c01cb248>]    psr: 60000013
-sp : ef04bdc8  ip : 00000000  fp : c0446180
-r10: ef216e38  r9 : c03af5d0  r8 : ef275c18
-r7 : 00000000  r6 : c0476c14  r5 : ef275c18  r4 : ef095840
-r3 : ef04a000  r2 : 00000001  r1 : 00000000  r0 : 000000a4
-Flags: nZCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
-Control: 10c5787d  Table: 0000404a  DAC: 00000015
-Process swapper/0 (pid: 1, stack limit = 0xef04a238)
-Stack: (0xef04bdc8 to 0xef04c000)
-[...]
-[<c02f1dd0>] (_raw_spin_lock+0x18/0x54) from [<c01cb248>] (get_device_parent+0x50/0x1b8)
-[<c01cb248>] (get_device_parent+0x50/0x1b8) from [<c01cb8d8>] (device_add+0xa4/0x574)
-[<c01cb8d8>] (device_add+0xa4/0x574) from [<c020b91c>] (thermal_zone_device_register+0x118/0x938)
-[<c020b91c>] (thermal_zone_device_register+0x118/0x938) from [<c0202030>] (power_supply_register+0x170/0x1f8)
-[<c0202030>] (power_supply_register+0x170/0x1f8) from [<c02055ec>] (ab8500_btemp_probe+0x208/0x47c)
-[<c02055ec>] (ab8500_btemp_probe+0x208/0x47c) from [<c01cf0dc>] (platform_drv_probe+0x14/0x18)
-[<c01cf0dc>] (platform_drv_probe+0x14/0x18) from [<c01cde70>] (driver_probe_device+0x74/0x20c)
-[<c01cde70>] (driver_probe_device+0x74/0x20c) from [<c01ce094>] (__driver_attach+0x8c/0x90)
-[<c01ce094>] (__driver_attach+0x8c/0x90) from [<c01cc640>] (bus_for_each_dev+0x4c/0x80)
-[<c01cc640>] (bus_for_each_dev+0x4c/0x80) from [<c01cd6b4>] (bus_add_driver+0x16c/0x23c)
-[<c01cd6b4>] (bus_add_driver+0x16c/0x23c) from [<c01ce54c>] (driver_register+0x78/0x14c)
-[<c01ce54c>] (driver_register+0x78/0x14c) from [<c00086ac>] (do_one_initcall+0xfc/0x164)
-[<c00086ac>] (do_one_initcall+0xfc/0x164) from [<c02e89c8>] (kernel_init+0x120/0x2b8)
-[<c02e89c8>] (kernel_init+0x120/0x2b8) from [<c000e358>] (ret_from_fork+0x14/0x3c)
-Code: e3c3303f e5932004 e2822001 e5832004 (e1903f9f)
----[ end trace ed9df72941b5bada ]---
-
-Signed-off-by: Rajanikanth H.V <rajanikanth.hv@stericsson.com>
-Signed-off-by: Anton Vorontsov <anton@enomsg.org>
+References: http://bugs.launchpad.net/bugs/1113547
+Signed-off-by: Joseph Salisbury <joseph.salisbury@canonical.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/power/ab8500_btemp.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/acpi/sleep.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/drivers/power/ab8500_btemp.c
-+++ b/drivers/power/ab8500_btemp.c
-@@ -1123,7 +1123,7 @@ static void __exit ab8500_btemp_exit(voi
- 	platform_driver_unregister(&ab8500_btemp_driver);
- }
- 
--subsys_initcall_sync(ab8500_btemp_init);
-+device_initcall(ab8500_btemp_init);
- module_exit(ab8500_btemp_exit);
- 
- MODULE_LICENSE("GPL v2");
+--- a/drivers/acpi/sleep.c
++++ b/drivers/acpi/sleep.c
+@@ -177,6 +177,14 @@ static struct dmi_system_id __initdata a
+ 	},
+ 	{
+ 	.callback = init_nvs_nosave,
++	.ident = "Sony Vaio VGN-FW41E_H",
++	.matches = {
++		DMI_MATCH(DMI_SYS_VENDOR, "Sony Corporation"),
++		DMI_MATCH(DMI_PRODUCT_NAME, "VGN-FW41E_H"),
++		},
++	},
++	{
++	.callback = init_nvs_nosave,
+ 	.ident = "Sony Vaio VGN-FW21E",
+ 	.matches = {
+ 		DMI_MATCH(DMI_SYS_VENDOR, "Sony Corporation"),
 
 
