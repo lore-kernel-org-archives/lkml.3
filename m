@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754524Ab3CAUBF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 15:01:05 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51810 "EHLO
+	id S1754695Ab3CAUBd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 15:01:33 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51798 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753863Ab3CATqR (ORCPT
+	with ESMTP id S1753654Ab3CATqQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 14:46:17 -0500
+	Fri, 1 Mar 2013 14:46:16 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Herton R. Krzesinski" <herton.krzesinski@canonical.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Douglas Bagnall <douglas@paradise.net.nz>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: [ 23/46] media: rc: unlock on error in show_protocols()
-Date: Fri,  1 Mar 2013 11:45:11 -0800
-Message-Id: <20130301194434.677176290@linuxfoundation.org>
+        Xi Wang <xi.wang@gmail.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 21/46] sysctl: fix null checking in bin_dn_node_address()
+Date: Fri,  1 Mar 2013 11:45:09 -0800
+Message-Id: <20130301194434.479738435@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130301194432.263409302@linuxfoundation.org>
 References: <20130301194432.263409302@linuxfoundation.org>
@@ -29,37 +29,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Xi Wang <xi.wang@gmail.com>
 
-commit 30ebc5e44d057a1619ad63fe32c8c1670c37c4b8 upstream.
+commit df1778be1a33edffa51d094eeda87c858ded6560 upstream.
 
-We recently introduced a new return -ENODEV in this function but we need
-to unlock before returning.
+The null check of `strchr() + 1' is broken, which is always non-null,
+leading to OOB read.  Instead, check the result of strchr().
 
-[mchehab@redhat.com: found two patches with the same fix. Merged SOB's/acks into one patch]
-Acked-by: Herton R. Krzesinski <herton.krzesinski@canonical.com>
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Douglas Bagnall <douglas@paradise.net.nz>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+Signed-off-by: Xi Wang <xi.wang@gmail.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/rc/rc-main.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ kernel/sysctl_binary.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/media/rc/rc-main.c
-+++ b/drivers/media/rc/rc-main.c
-@@ -778,8 +778,10 @@ static ssize_t show_protocols(struct dev
- 	} else if (dev->raw) {
- 		enabled = dev->raw->enabled_protocols;
- 		allowed = ir_raw_get_allowed_protocols();
--	} else
-+	} else {
-+		mutex_unlock(&dev->lock);
- 		return -ENODEV;
-+	}
+--- a/kernel/sysctl_binary.c
++++ b/kernel/sysctl_binary.c
+@@ -1194,9 +1194,10 @@ static ssize_t bin_dn_node_address(struc
  
- 	IR_dprintk(1, "allowed - 0x%llx, enabled - 0x%llx\n",
- 		   (long long)allowed,
+ 		/* Convert the decnet address to binary */
+ 		result = -EIO;
+-		nodep = strchr(buf, '.') + 1;
++		nodep = strchr(buf, '.');
+ 		if (!nodep)
+ 			goto out;
++		++nodep;
+ 
+ 		area = simple_strtoul(buf, NULL, 10);
+ 		node = simple_strtoul(nodep, NULL, 10);
 
 
