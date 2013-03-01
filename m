@@ -1,46 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755248Ab3CAUU3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 15:20:29 -0500
-Received: from cpsmtpb-ews05.kpnxchange.com ([213.75.39.8]:64460 "EHLO
-	cpsmtpb-ews05.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752712Ab3CAUU1 (ORCPT
+	id S1755277Ab3CAUU4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 15:20:56 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51405 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752496Ab3CATpY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 15:20:27 -0500
-Message-ID: <1362169225.20156.6.camel@x61.thuisdomein>
-Subject: Re: [PATCH V2] MAINTAINERS: Update SIMTEC file patterns, remove
- Vincent Sanders
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Joe Perches <joe@perches.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Simtec Linux Team <linux@simtec.co.uk>,
-        Ben Dooks <ben-linux@fluff.org>
-Date: Fri, 01 Mar 2013 21:20:25 +0100
-In-Reply-To: <1362168132.2116.17.camel@joe-AO722>
-References: <1362166088.2116.10.camel@joe-AO722>
-	 <1362168132.2116.17.camel@joe-AO722>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 01 Mar 2013 20:20:25.0769 (UTC) FILETIME=[3580E190:01CE16BA]
-X-RcptDomain: vger.kernel.org
+	Fri, 1 Mar 2013 14:45:24 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Jan Engelhardt <jengelh@inai.de>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [ 28/77] target: Add missing mapped_lun bounds checking during make_mappedlun setup
+Date: Fri,  1 Mar 2013 11:44:13 -0800
+Message-Id: <20130301194355.003778256@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
+In-Reply-To: <20130301194351.913471337@linuxfoundation.org>
+References: <20130301194351.913471337@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-03-01 at 12:02 -0800, Joe Perches wrote:
-> commit 85fd6d6 ("ARM: S3C2410: move mach-s3c2410/* into mach-s3c24xx/")
-> moved the files, update the F: patterns.
+3.8-stable review patch.  If anyone has any objections, please let me know.
 
-The BAST MAINTAINER entry has come up a few times already. I commented
-on the last time that happened in https://lkml.org/lkml/2012/11/24/96 .
-Nothing has changed. I suggest to remove this entry entirely.
+------------------
 
-I guess the CATS entry might also be removed. But that doesn't have an
-F: pattern, so I'm not sure what code that entry covers.
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
+commit fbbf8555a986ed31e54f006b6cc637ea4ff1425b upstream.
 
-Paul Bolle
+This patch adds missing bounds checking for the configfs provided
+mapped_lun value during target_fabric_make_mappedlun() setup ahead
+of se_lun_acl initialization.
+
+This addresses a potential OOPs when using a mapped_lun value that
+exceeds the hardcoded TRANSPORT_MAX_LUNS_PER_TPG-1 value within
+se_node_acl->device_list[].
+
+Reported-by: Jan Engelhardt <jengelh@inai.de>
+Cc: Jan Engelhardt <jengelh@inai.de>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/target/target_core_fabric_configfs.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+--- a/drivers/target/target_core_fabric_configfs.c
++++ b/drivers/target/target_core_fabric_configfs.c
+@@ -354,6 +354,14 @@ static struct config_group *target_fabri
+ 		ret = -EINVAL;
+ 		goto out;
+ 	}
++	if (mapped_lun > (TRANSPORT_MAX_LUNS_PER_TPG-1)) {
++		pr_err("Mapped LUN: %lu exceeds TRANSPORT_MAX_LUNS_PER_TPG"
++			"-1: %u for Target Portal Group: %u\n", mapped_lun,
++			TRANSPORT_MAX_LUNS_PER_TPG-1,
++			se_tpg->se_tpg_tfo->tpg_get_tag(se_tpg));
++		ret = -EINVAL;
++		goto out;
++	}
+ 
+ 	lacl = core_dev_init_initiator_node_lun_acl(se_tpg, se_nacl,
+ 			mapped_lun, &ret);
+
 
