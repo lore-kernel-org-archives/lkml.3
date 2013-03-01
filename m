@@ -1,93 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751245Ab3CAJQJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 04:16:09 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:40335 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750709Ab3CAJQG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 04:16:06 -0500
-Date: Fri, 1 Mar 2013 09:15:08 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Uwe =?utf-8?Q?Kleine-K=C3=B6nig?= <u.kleine-koenig@pengutronix.de>
-Cc: Vinicius Tinti <viniciustinti@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 1/1] arm: remove extra semicolon in if statement
-Message-ID: <20130301091508.GB27385@e106331-lin.cambridge.arm.com>
-References: <1362111952-8072-1-git-send-email-viniciustinti@gmail.com>
- <20130301083624.GI22886@pengutronix.de>
+	id S1751225Ab3CAJRZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 04:17:25 -0500
+Received: from mga11.intel.com ([192.55.52.93]:52084 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750709Ab3CAJRW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Mar 2013 04:17:22 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,761,1355126400"; 
+   d="asc'?scan'208";a="297652675"
+Date: Fri, 1 Mar 2013 04:15:13 -0500
+From: Chen Gong <gong.chen@linux.intel.com>
+To: Simon Jeons <simon.jeons@gmail.com>
+Cc: Mel Gorman <mgorman@suse.de>, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org, riel@redhat.com,
+        mhocko@suse.cz, hannes@cmpxchg.org
+Subject: Re: [PATCH] x86: mm: Check if PUD is large when validating a kernel
+ address v2
+Message-ID: <20130301091513.GA11787@gchen.bj.intel.com>
+Mail-Followup-To: Simon Jeons <simon.jeons@gmail.com>,
+	Mel Gorman <mgorman@suse.de>, Ingo Molnar <mingo@kernel.org>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	linux-kernel@vger.kernel.org, linux-mm@kvack.org, riel@redhat.com,
+	mhocko@suse.cz, hannes@cmpxchg.org
+References: <20130211145236.GX21389@suse.de>
+ <20130213110202.GI4100@suse.de>
+ <51304E29.40900@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="xHFwDpU9dbj6ez1V"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130301083624.GI22886@pengutronix.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <51304E29.40900@gmail.com>
+X-PGP-Key-ID: A43922C7
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 01, 2013 at 08:36:24AM +0000, Uwe Kleine-König wrote:
-> Hello,
-> 
-> On Fri, Mar 01, 2013 at 01:25:52AM -0300, Vinicius Tinti wrote:
-> > Remove extra semicolon in perf_event.c if statement.
-> The commit log sounds like a style fix, but your patch introduces a
-> semantical change. I suspect this patch fixes a real bug, you should
-> point that out here.
-> 
-> Best regards
-> Uwe
 
-It does fix a real bug, but Will already has a fix [1]. It's in rmk's patch
-tracking system as 7664/1.
+--xHFwDpU9dbj6ez1V
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thanks,
-Mark.
+On Fri, Mar 01, 2013 at 02:43:53PM +0800, Simon Jeons wrote:
+> Date: Fri, 01 Mar 2013 14:43:53 +0800
+> From: Simon Jeons <simon.jeons@gmail.com>
+> To: Mel Gorman <mgorman@suse.de>
+> CC: Ingo Molnar <mingo@kernel.org>, Andrew Morton
+>  <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+>  linux-mm@kvack.org, riel@redhat.com, mhocko@suse.cz, hannes@cmpxchg.org
+> Subject: Re: [PATCH] x86: mm: Check if PUD is large when validating a
+>  kernel address v2
+> User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130221
+>  Thunderbird/17.0.3
+>=20
+> On 02/13/2013 07:02 PM, Mel Gorman wrote:
+> >Andrew or Ingo, please pick up.
+> >
+> >Changelog since v1
+> >   o Add reviewed-bys and acked-bys
+> >
+> >A user reported a bug whereby a backup process accessing /proc/kcore
+> >caused an oops.
+> >
+> >  BUG: unable to handle kernel paging request at ffffbb00ff33b000
+> >  IP: [<ffffffff8103157e>] kern_addr_valid+0xbe/0x110
+> >  PGD 0
+> >  Oops: 0000 [#1] SMP
+> >  CPU 6
+> >  Modules linked in: af_packet nfs lockd fscache auth_rpcgss nfs_acl sun=
+rpc 8021q garp stp llc cpufreq_conservative cpufreq_userspace cpufreq_power=
+save acpi_cpufreq mperf microcode fuse nls_iso8859_1 nls_cp437 vfat fat loo=
+p dm_mod ioatdma ipv6 ipv6_lib igb dca i7core_edac edac_core i2c_i801 i2c_c=
+ore cdc_ether usbnet bnx2 mii iTCO_wdt iTCO_vendor_support shpchp rtc_cmos =
+pci_hotplug tpm_tis sg tpm pcspkr tpm_bios serio_raw button ext3 jbd mbcach=
+e uhci_hcd ehci_hcd usbcore sd_mod crc_t10dif usb_common processor thermal_=
+sys hwmon scsi_dh_emc scsi_dh_rdac scsi_dh_alua scsi_dh_hp_sw scsi_dh ata_g=
+eneric ata_piix libata megaraid_sas scsi_mod
+> >
+> >  Pid: 16196, comm: Hibackp Not tainted 3.0.13-0.27-default #1 IBM Syste=
+m x3550 M3 -[7944 K3G]-/94Y7614
+> >  RIP: 0010:[<ffffffff8103157e>]  [<ffffffff8103157e>] kern_addr_valid+0=
+xbe/0x110
+> >  RSP: 0018:ffff88094165fe80  EFLAGS: 00010246
+> >  RAX: 00003300ff33b000 RBX: ffff880100000000 RCX: 0000000000000000
+> >  RDX: 0000000100000000 RSI: ffff880000000000 RDI: ff32b300ff33b400
+> >  RBP: 0000000000001000 R08: 00003ffffffff000 R09: 0000000000000000
+> >  R10: 22302e31223d6e6f R11: 0000000000000246 R12: 0000000000001000
+> >  R13: 0000000000003000 R14: 0000000000571be0 R15: ffff88094165ff50
+> >  FS:  00007ff152d33700(0000) GS:ffff88097f2c0000(0000) knlGS:0000000000=
+000000
+> >  CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> >  CR2: ffffbb00ff33b000 CR3: 00000009405a3000 CR4: 00000000000006e0
+> >  DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> >  DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> >  Process Hibackp (pid: 16196, threadinfo ffff88094165e000, task ffff880=
+8eb9ba600)
+> >  Stack:
+> >   ffffffff811b8aaa 0000000000004000 ffff880943fea480 ffff8808ef2bae50
+> >   ffff880943d32980 fffffffffffffffb ffff8808ef2bae40 ffff88094165ff50
+> >   0000000000004000 000000000056ebe0 ffffffff811ad847 000000000056ebe0
+> >  Call Trace:
+> >   [<ffffffff811b8aaa>] read_kcore+0x17a/0x370
+> >   [<ffffffff811ad847>] proc_reg_read+0x77/0xc0
+> >   [<ffffffff81151687>] vfs_read+0xc7/0x130
+> >   [<ffffffff811517f3>] sys_read+0x53/0xa0
+> >   [<ffffffff81449692>] system_call_fastpath+0x16/0x1b
+> >
+> >Investigation determined that the bug triggered when reading system RAM
+> >at the 4G mark. On this system, that was the first address using 1G pages
+>=20
+> Do you mean there is one page which is 1G?
+>=20
+1GB support in native kernel is started from 2.6.27 with these 2 commits:
+39c11e6 and b4718e6. For Intel CPU, from Westmere it supports 1GB page.
+BTW, IBM System x3550 M3 is a Westmere based system.
 
-[1] http://lists.infradead.org/pipermail/linux-arm-kernel/2013-February/151564.html
+--xHFwDpU9dbj6ez1V
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-> > 
-> > Signed-off-by: Vinicius Tinti <viniciustinti@gmail.com>
-> > ---
-> >  arch/arm/kernel/perf_event.c |    2 +-
-> >  1 file changed, 1 insertion(+), 1 deletion(-)
-> > 
-> > diff --git a/arch/arm/kernel/perf_event.c b/arch/arm/kernel/perf_event.c
-> > index 31e0eb3..a892067 100644
-> > --- a/arch/arm/kernel/perf_event.c
-> > +++ b/arch/arm/kernel/perf_event.c
-> > @@ -400,7 +400,7 @@ __hw_perf_event_init(struct perf_event *event)
-> >  	}
-> >  
-> >  	if (event->group_leader != event) {
-> > -		if (validate_group(event) != 0);
-> > +		if (validate_group(event) != 0)
-> >  			return -EINVAL;
-> >  	}
-> >  
-> > -- 
-> > 1.7.9.5
-> > 
-> > 
-> > _______________________________________________
-> > linux-arm-kernel mailing list
-> > linux-arm-kernel@lists.infradead.org
-> > http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
-> > 
-> 
-> -- 
-> Pengutronix e.K.                           | Uwe Kleine-König            |
-> Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
-> 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRMHGhAAoJEI01n1+kOSLHfjAP/jtqxHLGODFr/SR89RQKdt4m
+/KA2gqxyVhoHjrPpezO6mT7QAKg8aoNsKfkWRGNmRph10bI1ZBRM5w1V9QP8+tcL
+wLp6fnqy8o7QlD9JDIVR7IRRShFc1tX8f+Vba9O+RK141X2WANj5OrEbonq8bkNr
+ImnJGXWJvqAU+e24UswJurcITVJPCDg8YwnTkhJmHv6XA8muh4SzMrDYTxT7zXoF
+D27S17HQbJP0t98vHmep2XsgiW68HB9+TCyUbLJE4eIm9wrMi+/EG94xGCG6v2T5
+0hOzLIG+riLb+SkIGd2bMzfYnSua/FyontYaoVjHSEXuY+TUBmUlY4ewpM9i28fq
+P6f0MH7injd9ddga/7l26rS3dSdrxPdY3mvlYy5Zp21giDivvCEG4ScqvZlnd+Jf
+wgp2sRqwGL/O4mZqtmLgZXiOxXlyJTfgDEKSFt20+TGmldiGNxKzjAmfLri2oDMU
+JS3PFDqdBJroI+SgAzHvWVg1Tz1aVDDY6H5gbl+Y7Z4I1uJRaZYgKFZNvAJLpwPL
+L3xcCm76tv8wAPjY/PU2BTflVhTbAXU673AgyHZf8IVFiG+eDQTU/3U2DvXh6nQD
+Pmx7OsW1GWEMwD0t20VvHgImzOb5qggh0djch5BZqhppFTWltuWDxPLtgZB+3CHU
+c4qvxlAw7aWcZXRyd2CN
+=ZjGZ
+-----END PGP SIGNATURE-----
+
+--xHFwDpU9dbj6ez1V--
