@@ -1,193 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752166Ab3CAI3Z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 03:29:25 -0500
-Received: from ishtar.tlinx.org ([173.164.175.65]:43750 "EHLO
-	Ishtar.sc.tlinx.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750758Ab3CAI3Y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 03:29:24 -0500
-X-Greylist: delayed 811 seconds by postgrey-1.27 at vger.kernel.org; Fri, 01 Mar 2013 03:29:23 EST
-Message-ID: <513063B4.8070604@tlinx.org>
-Date: Fri, 01 Mar 2013 00:15:48 -0800
-From: Linda Walsh <lkml@tlinx.org>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; en-US; rv:1.8.1.24) Gecko/20100228 Lightning/0.9 Thunderbird/2.0.0.24 Mnenhy/0.7.6.666
-MIME-Version: 1.0
-To: Linux-Kernel <linux-kernel@vger.kernel.org>
-Subject: upgrade to 3.8.1 : BUG Scheduling while atomic in bonding driver:
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752217Ab3CAIdC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 03:33:02 -0500
+Received: from mga01.intel.com ([192.55.52.88]:56083 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750884Ab3CAIdB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Mar 2013 03:33:01 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,760,1355126400"; 
+   d="scan'208";a="293468101"
+Subject: Re: [PATCH] n_gsm: Add Mutex to avoid race when net destroy
+From: channing <chao.bi@intel.com>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, ML netdev <netdev@vger.kernel.org>,
+        vincentx.pillet@intel.com
+In-Reply-To: <512F28FD.9030502@suse.cz>
+References: <1362029486.31563.5.camel@bichao>  <512F28FD.9030502@suse.cz>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 01 Mar 2013 16:51:55 +0800
+Message-ID: <1362127915.31563.18.camel@bichao>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 2013-02-28 at 10:53 +0100, Jiri Slaby wrote:
+> On 02/28/2013 06:31 AM, channing wrote:
+> > 
+> > when gsm Net is enabled, data on dlci is transferrd by
+> > gsm_mux_net_start_xmit(), while userspace may trigger
+> > ioctrl to call gsm_destroy_network() during data was
+> > transferring, because there is no mutex protection between
+> > the two functions, following scenario may happen:
+> > 
+> > 1) gsm_mux_net_start_xmit() calls muxnet_get(mux_net);
+> > 2) gsm_destroy_network() is called from ioctrl, and it
+> > will not call net_free() to release net device because
+> > net device is still referred in step 1)
+> > 3) continue execute step 1), gsm_mux_net_start_xmit()
+> > calls muxnet_put(mux_net), and then calls net_free() to
+> > release net device.
+> > 4) if userspace triggers gsm_create_network() at same time
+> > with net_free() in step 3). it will hit race on dlci->net.
+> > 
+> > This patch is to add a mutex in tx function to avoid race
+> > between it and destroy function.
+> > 
+> > Signed-off-by: Chao Bi <chao.bi@intel.com>
+> > Signed-off-by: Pillet Vincent <vincentx.pillet@intel.com>
+> > ---
+> >  drivers/tty/n_gsm.c |    2 ++
+> >  1 files changed, 2 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/drivers/tty/n_gsm.c b/drivers/tty/n_gsm.c
+> > index 4a43ef5..0ca810a 100644
+> > --- a/drivers/tty/n_gsm.c
+> > +++ b/drivers/tty/n_gsm.c
+> > @@ -2660,6 +2660,7 @@ static int gsm_mux_net_start_xmit(struct sk_buff *skb,
+> >  {
+> >  	struct gsm_mux_net *mux_net = (struct gsm_mux_net *)netdev_priv(net);
+> >  	struct gsm_dlci *dlci = mux_net->dlci;
+> > +	mutex_lock(&dlci->mutex);
+> 
+> Nack, start_xmit may be called in an atomic context -- you cannot call
+> mutex.
+> 
+> >  	muxnet_get(mux_net);
+> >  
+> >  	skb_queue_head(&dlci->skb_list, skb);
+> > @@ -2669,6 +2670,7 @@ static int gsm_mux_net_start_xmit(struct sk_buff *skb,
+> >  	/* And tell the kernel when the last transmit started. */
+> >  	net->trans_start = jiffies;
+> >  	muxnet_put(mux_net);
+> 
+> Instead the concept is broken. If this was the last reference (as
+> described in your steps above), it would blow up for the same reason I
+> refer to above, i.e. net_free here would call unregister_netdev which is
+> not atomic. Plus it will definitely deadlock because unregister_netdev
+> waits for start_xmit to finish.
+> 
+> It should stop the queue and schedule a workqueue to lock the mutex,
+> unregister the hetdev and reset dlci->net. (Or maybe just call
+> muxnet_put with the lock held.)
 
-Just installed 3.8.1....
+Thanks, Jiri, you're right, I didn't notice that in validation because
+DEBUG_ATOMIC_SLEEP is not enabled in my platform :( Now I'm trying to
+work out the workqueue solution, when it finished I'll re-submit for
+review. What do you mean by "call muxnet_put with lock held"? do you
+mean to use spin lock instead of mutex?
+ 
+> 
+> That will fix 4), but there is still a bug: what protects
+> gsm_create_network to be called twice or more in a sequence thus
+> re-setting dlci->net to a new and new pointer?
 
-Thought this had been fixed?  Note it causes the kernel to
-show up as tainted after the 1st...
+Yes, that's a problem, Vincent has already noticed that and has a check
+in gsmtty_ioctl to avoid call net creation multi time, I thought it
+might be patch for other issue so didn't put them together.
+
+> 
+> > +	mutex_unlock(&dlci->mutex);
+> >  	return NETDEV_TX_OK;
+> >  }
+> 
+> thanks,
 
 
-
-As the system was coming up and initializing the bond0 driver:
-
-
-[   19.847743] ixgbe 0000:06:00.0: registered PHC device on eth_s2_0
-[   20.258245] BUG: scheduling while atomic: ifup-bonding/2003/0x00000002
-[   20.264812] 4 locks held by ifup-bonding/2003:
-[   20.269298]  #0:  (&buffer->mutex){......}, at: [<ffffffff811c401f>]
-sysfs_write_file+0x3f/0x150
-[   20.278319]  #1:  (s_active#59){......}, at: [<ffffffff811c409b>]
-sysfs_write_file+0xbb/0x150
-[   20.287088]  #2:  (rtnl_mutex){......}, at: [<ffffffff81590bf0>]
-rtnl_trylock+0x10/0x20
-[   20.295373]  #3:  (&bond->lock){......}, at: [<ffffffff8145be6f>]
-bond_enslave+0x4ef/0xb80
-[   20.303912] Modules linked in: iptable_filter kvm_intel kvm acpi_cpufreq
-mperf button processor mousedev iTCO_wdt
-[   20.314695] Pid: 2003, comm: ifup-bonding Not tainted 3.8.1-Isht-Van #5
-[   20.321340] Call Trace:
-[   20.323833]  [<ffffffff8162b029>] __schedule_bug+0x5e/0x6c
-[   20.329356]  [<ffffffff81634592>] __schedule+0x762/0x7f0
-[   20.334701]  [<ffffffff81634734>] schedule+0x24/0x70
-[   20.339703]  [<ffffffff816336f4>] schedule_hrtimeout_range_clock+0xa4/0x130
-[   20.346699]  [<ffffffff81068250>] ? update_rmtp+0x60/0x60
-[   20.352130]  [<ffffffff81068f9f>] ? hrtimer_start_range_ns+0xf/0x20
-[   20.358434]  [<ffffffff8163378e>] schedule_hrtimeout_range+0xe/0x10
-[   20.364734]  [<ffffffff8104ec1b>] usleep_range+0x3b/0x40
-[   20.370082]  [<ffffffff814b2d7c>] ixgbe_acquire_swfw_sync_X540+0xbc/0x100
-[   20.376905]  [<ffffffff814aeb0d>] ixgbe_read_phy_reg_generic+0x3d/0x140
-[   20.383553]  [<ffffffff814aedac>]
-ixgbe_get_copper_link_capabilities_generic+0x2c/0x60
-[   20.391499]  [<ffffffff8145be6f>] ? bond_enslave+0x4ef/0xb80
-[   20.397194]  [<ffffffff814a64e4>] ixgbe_get_settings+0x34/0x340
-[   20.403148]  [<ffffffff81586ab8>] __ethtool_get_settings+0x88/0x130
-[   20.409448]  [<ffffffff814568a3>] bond_update_speed_duplex+0x23/0x60
-[   20.415833]  [<ffffffff8145bed9>] bond_enslave+0x559/0xb80
-[   20.421356]  [<ffffffff8146454f>] bonding_store_slaves+0x16f/0x1c0
-[   20.427569]  [<ffffffff813bfb83>] dev_attr_store+0x13/0x30
-[   20.433091]  [<ffffffff811c40b4>] sysfs_write_file+0xd4/0x150
-[   20.438872]  [<ffffffff81154b81>] vfs_write+0xb1/0x190
-[   20.444047]  [<ffffffff81154ee0>] sys_write+0x50/0xa0
-[   20.449137]  [<ffffffff81637092>] system_call_fastpath+0x16/0x1b
-[   20.455264] BUG: scheduling while atomic: ifup-bonding/2003/0x00000002
-[   20.461851] 4 locks held by ifup-bonding/2003:
-[   20.466334]  #0:  (&buffer->mutex){......}, at: [<ffffffff811c401f>]
-sysfs_write_file+0x3f/0x150
-[   20.475356]  #1:  (s_active#59){......}, at: [<ffffffff811c409b>]
-sysfs_write_file+0xbb/0x150
-[   20.484117]  #2:  (rtnl_mutex){......}, at: [<ffffffff81590bf0>]
-rtnl_trylock+0x10/0x20
-[   20.492403]  #3:  (&bond->lock){......}, at: [<ffffffff8145be6f>]
-bond_enslave+0x4ef/0xb80
-[   20.500902] Modules linked in: iptable_filter kvm_intel kvm acpi_cpufreq
-mperf button processor mousedev iTCO_wdt
-[   20.511640] Pid: 2003, comm: ifup-bonding Tainted: G        W
-3.8.1-Isht-Van #5
-[   20.519240] Call Trace:
-[   20.521729]  [<ffffffff8162b029>] __schedule_bug+0x5e/0x6c
-[   20.527251]  [<ffffffff81634592>] __schedule+0x762/0x7f0
-[   20.532599]  [<ffffffff81634734>] schedule+0x24/0x70
-[   20.537599]  [<ffffffff816336f4>] schedule_hrtimeout_range_clock+0xa4/0x130
-[   20.544592]  [<ffffffff81068250>] ? update_rmtp+0x60/0x60
-[   20.550026]  [<ffffffff81068250>] ? update_rmtp+0x60/0x60
-[   20.555462]  [<ffffffff81068f9f>] ? hrtimer_start_range_ns+0xf/0x20
-[   20.561763]  [<ffffffff8163378e>] schedule_hrtimeout_range+0xe/0x10
-[   20.568064]  [<ffffffff8104ec1b>] usleep_range+0x3b/0x40
-[   20.573415]  [<ffffffff814b2cae>] ixgbe_release_swfw_sync_X540+0x4e/0x60
-[   20.580146]  [<ffffffff814aebdd>] ixgbe_read_phy_reg_generic+0x10d/0x140
-[   20.586960]  [<ffffffff814aedac>]
-ixgbe_get_copper_link_capabilities_generic+0x2c/0x60
-[   20.594908]  [<ffffffff8145be6f>] ? bond_enslave+0x4ef/0xb80
-[   20.600601]  [<ffffffff814a64e4>] ixgbe_get_settings+0x34/0x340
-[   20.606557]  [<ffffffff81586ab8>] __ethtool_get_settings+0x88/0x130
-[   20.612858]  [<ffffffff814568a3>] bond_update_speed_duplex+0x23/0x60
-[   20.619244]  [<ffffffff8145bed9>] bond_enslave+0x559/0xb80
-[   20.624767]  [<ffffffff8146454f>] bonding_store_slaves+0x16f/0x1c0
-[   20.630983]  [<ffffffff813bfb83>] dev_attr_store+0x13/0x30
-[   20.636503]  [<ffffffff811c40b4>] sysfs_write_file+0xd4/0x150
-[   20.642283]  [<ffffffff81154b81>] vfs_write+0xb1/0x190
-[   20.647462]  [<ffffffff81154ee0>] sys_write+0x50/0xa0
-[   20.652548]  [<ffffffff81637092>] system_call_fastpath+0x16/0x1b
-[   20.658696] bonding: bond0: enslaving eth_s2_0 as an active interface with a
-down link.
-[   20.676577] bonding: bond0: Adding slave eth_s2_1.
-[   20.743760] pps pps1: new PPS source ptp1
-[   20.747792] ixgbe 0000:06:00.1: registered PHC device on eth_s2_1
-[   21.150267] BUG: scheduling while atomic: ifup-bonding/2003/0x00000002
-[   21.156836] 4 locks held by ifup-bonding/2003:
-[   21.161319]  #0:  (&buffer->mutex){......}, at: [<ffffffff811c401f>]
-sysfs_write_file+0x3f/0x150
-[   21.170388]  #1:  (s_active#59){......}, at: [<ffffffff811c409b>]
-sysfs_write_file+0xbb/0x150
-[   21.179149]  #2:  (rtnl_mutex){......}, at: [<ffffffff81590bf0>]
-rtnl_trylock+0x10/0x20
-[   21.187403]  #3:  (&bond->lock){......}, at: [<ffffffff8145be6f>]
-bond_enslave+0x4ef/0xb80
-[   21.195904] Modules linked in: iptable_filter kvm_intel kvm acpi_cpufreq
-mperf button processor mousedev iTCO_wdt
-[   21.206644] Pid: 2003, comm: ifup-bonding Tainted: G        W
-3.8.1-Isht-Van #5
-[   21.214240] Call Trace:
-[   21.216732]  [<ffffffff8162b029>] __schedule_bug+0x5e/0x6c
-[   21.222254]  [<ffffffff81634592>] __schedule+0x762/0x7f0
-[   21.227604]  [<ffffffff81634734>] schedule+0x24/0x70
-[   21.232606]  [<ffffffff816336f4>] schedule_hrtimeout_range_clock+0xa4/0x130
-[   21.239601]  [<ffffffff81068250>] ? update_rmtp+0x60/0x60
-[   21.245033]  [<ffffffff81068f9f>] ? hrtimer_start_range_ns+0xf/0x20
-[   21.251339]  [<ffffffff8163378e>] schedule_hrtimeout_range+0xe/0x10
-[   21.257635]  [<ffffffff8104ec1b>] usleep_range+0x3b/0x40
-[   21.262987]  [<ffffffff814b2d7c>] ixgbe_acquire_swfw_sync_X540+0xbc/0x100
-[   21.269811]  [<ffffffff814aeb0d>] ixgbe_read_phy_reg_generic+0x3d/0x140
-[   21.276461]  [<ffffffff814aedac>]
-ixgbe_get_copper_link_capabilities_generic+0x2c/0x60
-[   21.284409]  [<ffffffff8145be6f>] ? bond_enslave+0x4ef/0xb80
-[   21.290106]  [<ffffffff814a64e4>] ixgbe_get_settings+0x34/0x340
-[   21.296067]  [<ffffffff81586ab8>] __ethtool_get_settings+0x88/0x130
-[   21.302369]  [<ffffffff814568a3>] bond_update_speed_duplex+0x23/0x60
-[   21.308754]  [<ffffffff8145bed9>] bond_enslave+0x559/0xb80
-[   21.314278]  [<ffffffff8146454f>] bonding_store_slaves+0x16f/0x1c0
-[   21.320491]  [<ffffffff813bfb83>] dev_attr_store+0x13/0x30
-[   21.326009]  [<ffffffff811c40b4>] sysfs_write_file+0xd4/0x150
-[   21.331793]  [<ffffffff81154b81>] vfs_write+0xb1/0x190
-[   21.336964]  [<ffffffff81154ee0>] sys_write+0x50/0xa0
-[   21.342053]  [<ffffffff81637092>] system_call_fastpath+0x16/0x1b
-[   21.348191] BUG: scheduling while atomic: ifup-bonding/2003/0x00000002
-[   21.354775] 4 locks held by ifup-bonding/2003:
-[   21.359258]  #0:  (&buffer->mutex){......}, at: [<ffffffff811c401f>]
-sysfs_write_file+0x3f/0x150
-[   21.368283]  #1:  (s_active#59){......}, at: [<ffffffff811c409b>]
-sysfs_write_file+0xbb/0x150
-[   21.377104]  #2:  (rtnl_mutex){......}, at: [<ffffffff81590bf0>]
-rtnl_trylock+0x10/0x20
-[   21.385343]  #3:  (&bond->lock){......}, at: [<ffffffff8145be6f>]
-bond_enslave+0x4ef/0xb80
-[   21.393887] Modules linked in: iptable_filter kvm_intel kvm acpi_cpufreq
-mperf button processor mousedev iTCO_wdt
-[   21.404575] Pid: 2003, comm: ifup-bonding Tainted: G        W
-3.8.1-Isht-Van #5
-[   21.412176] Call Trace:
-[   21.414666]  [<ffffffff8162b029>] __schedule_bug+0x5e/0x6c
-[   21.420188]  [<ffffffff81634592>] __schedule+0x762/0x7f0
-[   21.425536]  [<ffffffff81634734>] schedule+0x24/0x70
-[   21.430541]  [<ffffffff816336f4>] schedule_hrtimeout_range_clock+0xa4/0x130
-[   21.437532]  [<ffffffff81068250>] ? update_rmtp+0x60/0x60
-[   21.442967]  [<ffffffff81068250>] ? update_rmtp+0x60/0x60
-[   21.448407]  [<ffffffff81068f9f>] ? hrtimer_start_range_ns+0xf/0x20
-[   21.454712]  [<ffffffff8163378e>] schedule_hrtimeout_range+0xe/0x10
-[   21.461015]  [<ffffffff8104ec1b>] usleep_range+0x3b/0x40
-[   21.466370]  [<ffffffff814b2cae>] ixgbe_release_swfw_sync_X540+0x4e/0x60
-[   21.473105]  [<ffffffff814aebdd>] ixgbe_read_phy_reg_generic+0x10d/0x140
-[   21.479843]  [<ffffffff814aedac>]
-ixgbe_get_copper_link_capabilities_generic+0x2c/0x60
-[   21.487787]  [<ffffffff8145be6f>] ? bond_enslave+0x4ef/0xb80
-[   21.493513]  [<ffffffff814a64e4>] ixgbe_get_settings+0x34/0x340
-[   21.499468]  [<ffffffff81586ab8>] __ethtool_get_settings+0x88/0x130
-[   21.505767]  [<ffffffff814568a3>] bond_update_speed_duplex+0x23/0x60
-[   21.512153]  [<ffffffff8145bed9>] bond_enslave+0x559/0xb80
-[   21.517677]  [<ffffffff8146454f>] bonding_store_slaves+0x16f/0x1c0
-[   21.523889]  [<ffffffff813bfb83>] dev_attr_store+0x13/0x30
-[   21.529412]  [<ffffffff811c40b4>] sysfs_write_file+0xd4/0x150
-[   21.535193]  [<ffffffff81154b81>] vfs_write+0xb1/0x190
-[   21.540373]  [<ffffffff81154ee0>] sys_write+0x50/0xa0
-[   21.545463]  [<ffffffff81637092>] system_call_fastpath+0x16/0x1b
