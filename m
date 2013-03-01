@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752148Ab3CASMa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 13:12:30 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:23356 "EHLO mx1.redhat.com"
+	id S1752299Ab3CASMg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 13:12:36 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:43786 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751192Ab3CASM2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 13:12:28 -0500
+	id S1752155Ab3CASMb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Mar 2013 13:12:31 -0500
 From: Jiri Olsa <jolsa@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
@@ -17,21 +17,21 @@ Cc: Jiri Olsa <jolsa@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
         Corey Ashford <cjashfor@linux.vnet.ibm.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Vince Weaver <vincent.weaver@maine.edu>
-Subject: [PATCH 3/5] perf: Fix hw breakpoints overflow period sampling
-Date: Fri,  1 Mar 2013 19:11:50 +0100
-Message-Id: <1362161512-16803-4-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 2/5] signal x86: Clear RF EFLAGS bit for signal handler
+Date: Fri,  1 Mar 2013 19:11:49 +0100
+Message-Id: <1362161512-16803-3-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1362161512-16803-1-git-send-email-jolsa@redhat.com>
 References: <1362161512-16803-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The hw breakpoint pmu 'add' function is missing the
-period_left update needed for SW events.
+Clearing RF EFLAGS bit for signal handler. The reason is,
+that this flag is set by debug exception code to prevent
+the recursive exception entry.
 
-The perf HW breakpoint events use SW events framework
-for to process the overflow, so it needs to be properly
-initialized during PMU 'add' method.
+Leaving it set for signal handler might prevent debug
+exception of the signal handler itself.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>
@@ -46,60 +46,27 @@ Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Vince Weaver <vincent.weaver@maine.edu>
 ---
- include/linux/perf_event.h    | 2 ++
- kernel/events/core.c          | 2 +-
- kernel/events/hw_breakpoint.c | 5 +++++
- 3 files changed, 8 insertions(+), 1 deletion(-)
+ arch/x86/kernel/signal.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
 
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index e47ee46..a0ec1fd 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -754,6 +754,7 @@ extern unsigned int perf_output_skip(struct perf_output_handle *handle,
- 				     unsigned int len);
- extern int perf_swevent_get_recursion_context(void);
- extern void perf_swevent_put_recursion_context(int rctx);
-+extern u64 perf_swevent_set_period(struct perf_event *event);
- extern void perf_event_enable(struct perf_event *event);
- extern void perf_event_disable(struct perf_event *event);
- extern int __perf_event_disable(void *info);
-@@ -793,6 +794,7 @@ static inline void perf_event_fork(struct task_struct *tsk)		{ }
- static inline void perf_event_init(void)				{ }
- static inline int  perf_swevent_get_recursion_context(void)		{ return -1; }
- static inline void perf_swevent_put_recursion_context(int rctx)		{ }
-+static inline u64 perf_swevent_set_period(struct perf_event *event)	{ return 0; }
- static inline void perf_event_enable(struct perf_event *event)		{ }
- static inline void perf_event_disable(struct perf_event *event)		{ }
- static inline int __perf_event_disable(void *info)			{ return -1; }
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 5c75791..de6528b 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -4957,7 +4957,7 @@ static DEFINE_PER_CPU(struct swevent_htable, swevent_htable);
-  * sign as trigger.
-  */
+diff --git a/arch/x86/kernel/signal.c b/arch/x86/kernel/signal.c
+index b6fe116..e273571 100644
+--- a/arch/x86/kernel/signal.c
++++ b/arch/x86/kernel/signal.c
+@@ -726,6 +726,13 @@ handle_signal(unsigned long sig, siginfo_t *info, struct k_sigaction *ka,
+ 	regs->flags &= ~X86_EFLAGS_DF;
  
--static u64 perf_swevent_set_period(struct perf_event *event)
-+u64 perf_swevent_set_period(struct perf_event *event)
- {
- 	struct hw_perf_event *hwc = &event->hw;
- 	u64 period = hwc->last_period;
-diff --git a/kernel/events/hw_breakpoint.c b/kernel/events/hw_breakpoint.c
-index a64f8ae..966a241 100644
---- a/kernel/events/hw_breakpoint.c
-+++ b/kernel/events/hw_breakpoint.c
-@@ -612,6 +612,11 @@ static int hw_breakpoint_add(struct perf_event *bp, int flags)
- 	if (!(flags & PERF_EF_START))
- 		bp->hw.state = PERF_HES_STOPPED;
- 
-+	if (is_sampling_event(bp)) {
-+		bp->hw.last_period = bp->hw.sample_period;
-+		perf_swevent_set_period(bp);
-+	}
+ 	/*
++	 * Clear RF when entering the signal handler, because
++	 * it might disable possible debug exception from the
++	 * signal handler.
++	 */
++	regs->flags &= ~X86_EFLAGS_RF;
 +
- 	return arch_install_hw_breakpoint(bp);
- }
- 
++	/*
+ 	 * Clear TF when entering the signal handler, but
+ 	 * notify any tracer that was single-stepping it.
+ 	 * The tracer may want to single-step inside the
 -- 
 1.7.11.7
 
