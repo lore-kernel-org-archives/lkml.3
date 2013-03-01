@@ -1,104 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751298Ab3CAN1c (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 08:27:32 -0500
-Received: from mx.mcc-med.de ([213.148.153.242]:52963 "EHLO mx.mcc-med.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750778Ab3CAN1b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 08:27:31 -0500
-From: "Velykokhatko, Sergey" <Sergey.Velykokhatko@mcc-med.de>
-To: "'Richard Genoud'" <richard.genoud@gmail.com>
-CC: Brian Norris <computersforpeace@gmail.com>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "artem.bityutskiy@linux.intel.com" <artem.bityutskiy@linux.intel.com>
-Date: Fri, 1 Mar 2013 14:27:20 +0100
-Subject: AW: Bug in mtd_get_device_size()?
-Thread-Topic: Bug in mtd_get_device_size()?
-Thread-Index: Ac4Wdb2rFA0BrwcRQgSLeQUX70KhLAABJ4UA
-Message-ID: <BAF0C2081321BA469F9ADF648F97D9B04C78FA607E@MCC023.weinmann.com>
-References: <BAF0C2081321BA469F9ADF648F97D9B04C78FA6069@MCC023.weinmann.com>
- <CAN8TOE9YJBvUE9GDW3krZB-Js6gUkqY23gYNLS4gFX0e2NDNZw@mail.gmail.com>
- <BAF0C2081321BA469F9ADF648F97D9B04C78FA6071@MCC023.weinmann.com>
- <CACQ1gAg0rE+X+uxRWbrPKhmdS1T0MG00cwwBbzWM+VwU4zaXmw@mail.gmail.com>
- <BAF0C2081321BA469F9ADF648F97D9B04C78FA607C@MCC023.weinmann.com>
- <CACQ1gAg=L7ru5J4C7OQN0r-c2VN3baKX1qqty8Z0ObS5Wk48yg@mail.gmail.com>
-In-Reply-To: <CACQ1gAg=L7ru5J4C7OQN0r-c2VN3baKX1qqty8Z0ObS5Wk48yg@mail.gmail.com>
-Accept-Language: de-DE
-Content-Language: de-DE
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: de-DE
-Content-Type: text/plain; charset="utf-8"
+	id S1750915Ab3CAN2r (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 08:28:47 -0500
+Received: from eu1sys200aog101.obsmtp.com ([207.126.144.111]:54124 "EHLO
+	eu1sys200aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750696Ab3CAN2p (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Mar 2013 08:28:45 -0500
+Message-ID: <5130ACF2.6070005@stericsson.com>
+Date: Fri, 1 Mar 2013 14:28:18 +0100
+From: Rickard Andersson <rickard.andersson@stericsson.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110921 Lightning/1.0b2 Thunderbird/3.1.15
 MIME-Version: 1.0
-X-OriginalRecipient: RPFD:richard.genoud@gmail.com
-X-OriginalRecipient: RPFD:computersforpeace@gmail.com
-X-OriginalRecipient: RPFD:artem.bityutskiy@linux.intel.com
-X-OriginalRecipient: RPFD:linux-mtd@lists.infradead.org
-X-OriginalId: qfr21DRK2C015521
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Vincent Guittot <vincent.guittot@linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        "john.stultz@linaro.org" <john.stultz@linaro.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "jacob.jun.pan@linux.intel.com" <jacob.jun.pan@linux.intel.com>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "viresh.kumar@linaro.org" <viresh.kumar@linaro.org>,
+        "patches@linaro.org" <patches@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 3/4] ARM: nomadik: add dynamic irq flag to the timer
+References: <1361917047-29230-1-git-send-email-daniel.lezcano@linaro.org>	<1361917047-29230-4-git-send-email-daniel.lezcano@linaro.org>	<CACRpkda=i5cXSbYCyb0gH0OLKj7396qguup1nqgqn0m-S1x1wg@mail.gmail.com> <CAKfTPtA=7pTPrwFHr61WiffXGv2Ztmaiji5q_vJpPj9XgyeZMg@mail.gmail.com>
+In-Reply-To: <CAKfTPtA=7pTPrwFHr61WiffXGv2Ztmaiji5q_vJpPj9XgyeZMg@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r21DRfj9020757
 
-Hi Richard,
-
->And if you want to tweak the BEB_LIMIT for each of your UBI partition, it's possible, via the ubiattach call ( get the master branchof of git://git.infradead.org/mtd-utils.git ) cf http://git.infradead.org/mtd-utils.git/commit/878e06ea555ba5dbfb974b3904d1a86a9a0e20f5
-
-Aha! I didn't see that before. In my case will be useful. Thanks for idea! 
-
-Let I ask you one more question, probably you have better idea how to resolve it. If you have no other solution as my, should not answer. Also: as I mentioned before, I have one big partition with 4 UBI volumes on it: one of volumes will contain extreme important data (for example device type and serial number) and data on this volume will be written only several times for whole device life; and on other volume will be stored patient data that will be written relative often. Now in my SW that runs as init process I call ubiatach+mount. If ubiattach or mount for any of UBI volumes returns error, I call ubiformat+ubimkvol+mount again. This is normal use case when the device booted first time after production. With 2.6.38 and 3.3 kernel I had no problems but after update on 3.7 I got reported 2 cases when devices lost all their data. Unfortunately I have no additional information why it happened, but anyway is it really necessary to runs ubiformat+ubimkvol for such cases? Or is it possible to recover data? Since my solution for this case is to put the device data in separate MTD with one single UBI volume. But you know how much space I should reserve on NAND MTD for single XML-File with 200Bytes :-). Alternative is to try to mount only device volume, copy data in tmpfs, run ubiformat+ubimkvol+mount and copy the data back to the device volume. Or you have other idea?
-
-Thanks a lot,
-Best regards,
-Sergey
-
-
-
-
-
------UrsprÃ¼ngliche Nachricht-----
-Von: Richard Genoud [mailto:richard.genoud@gmail.com] 
-Gesendet: Freitag, 1. MÃ¤rz 2013 13:10
-An: Velykokhatko, Sergey
-Cc: Brian Norris; linux-mtd@lists.infradead.org; linux-kernel@vger.kernel.org; artem.bityutskiy@linux.intel.com
-Betreff: Re: Bug in mtd_get_device_size()?
-
-2013/3/1 Velykokhatko, Sergey <Sergey.Velykokhatko@mcc-med.de>:
-> Hi Richard,
+On 03/01/2013 09:56 AM, Vincent Guittot wrote:
+> On 1 March 2013 02:13, Linus Walleij<linus.walleij@linaro.org>  wrote:
+>> On Tue, Feb 26, 2013 at 11:17 PM, Daniel Lezcano
+>> <daniel.lezcano@linaro.org>  wrote:
+>>
+>>> Add the dynamic irq affinity feature to the timer clock device.
+>>>
+>>> Signed-off-by: Daniel Lezcano<daniel.lezcano@linaro.org>
+>> Looks reasonable to me, sadly I do not fully grasp the patch set,
+>> Vincent+Rickard can you have a look at this?
+> ux500 is able to trig the wake up on one CPU and let the other one in
+> WFI. This patch will minimize the spurious wake up of CPU0 when CPU1
+> is the target CPU of the broadcast timer. One main consequence is that
+> we will not uselessly execute all the deferrable and newly idle
+> activities on the CPU0 .
 >
-> Thanks a lot for your explanations. Now at least I understand your logic. And it seems to be reasonable. Your start point that all bad blocks for flash chip could be placed in single MTD. This is really worst worst case, but... Theoretically it could happened. And you should take care of it.
-> And you are right again in things about my chip. I interpreted that up to 40 blocks could be bad from chip production. But now found on side 104 of 125 one note (sometimes I like datasheets :-) ):
+> you can add my reviewed-by if you want
 >
-> "
-> Notes:
->  1. Invalid blocks are blocks that contain one or more bad bits. The 
-> device may contain bad blocks upon shipment. Additional bad blocks may 
-> develop over time; however, the total number of available blocks will 
-> not drop below NVB during the endurance life of the device. Do not erase or program blocks marked invalid by the factory.
-> "
+> Vincent
 >
-> Also I should expect up to 40 bad blocks. Nearly 1%.  No more for endurance case.
-That less than many NAND device, so in your case, you should set CONFIG_MTD_UBI_BEB_LIMIT to 10 (40 bad blocks on a total of 4096)
+It looks ok to me as well.
 
->
-> Independing from this I wanted to make my kernel partition bigger. Now just no time for this, we are still in developing with our device.
->
->
->>If not, we have to accept to loose some space for bad blocks, or use 
->>NOR :)
-> :) NOR is expensive. And UBI takes a lot of space since based on worst 
-> case estimation of NAND features. I have to find compromise
-yes... may be one day we will have cheap, reliable and fast flash storage.
-(and at least your nand is SLC, not MLC !)
-
-And if you want to tweak the BEB_LIMIT for each of your UBI partition, it's possible, via the ubiattach call ( get the master branchof of git://git.infradead.org/mtd-utils.git ) cf http://git.infradead.org/mtd-utils.git/commit/878e06ea555ba5dbfb974b3904d1a86a9a0e20f5
-and via the ubi module parameter :
-mtd=<name|num|path>[,<vid_hdr_offs>[,max_beb_per1024]]
-
-with that, you won't need your kernel patch anymore !
-
-Regards,
-Richard.
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+BR
+Rickard
