@@ -1,186 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751667Ab3CAQa0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 11:30:26 -0500
-Received: from mail-qe0-f46.google.com ([209.85.128.46]:56754 "EHLO
-	mail-qe0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750709Ab3CAQaY (ORCPT
+	id S1752155Ab3CAQbk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 11:31:40 -0500
+Received: from arkanian.console-pimps.org ([212.110.184.194]:45017 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751058Ab3CAQbi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 11:30:24 -0500
-MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <CA+icZUWcipb4XG7HvbShP+RWa_Y8ewcGWJmcxRfQ0-owzgrx=g@mail.gmail.com>
-References: <CA+icZUXG7WgRap2-oQGBr_s=QbE0QW6_zChDRqC-eEzrWR3Y5g@mail.gmail.com>
-	<CA+icZUUP0hLjkTjsAGbhoT1QG55X2062G5KCCDsKkhDyM_SQEg@mail.gmail.com>
-	<20130228111819.GF11892@cantiga.alporthouse.com>
-	<CA+gsUGQ-cn00=emFkHeWi6akL9TrJ9CV6ikv7C62fhLYMtB=HQ@mail.gmail.com>
-	<CA+icZUWE-DpD3azUaY7uKnz18DV-JRdYBkTBa-YzqX30S4THrQ@mail.gmail.com>
-	<CA+icZUU3Beo65x+Y1-L7=g6rAcChoT8qnCzM4-n2Q0EGEuqgZA@mail.gmail.com>
-	<CA+gsUGRBHb2Yg6u_GiXdD47e4RSGmBei2sBjQih_Tr09HxQFPg@mail.gmail.com>
-	<CA+icZUWcipb4XG7HvbShP+RWa_Y8ewcGWJmcxRfQ0-owzgrx=g@mail.gmail.com>
-Date: Fri, 1 Mar 2013 17:30:23 +0100
-Message-ID: <CA+icZUXXYDY6rkcBF91qKy_1H7pchWAwW6koCRgY4E3b1oQvnw@mail.gmail.com>
-Subject: Re: [Intel-gfx] [git pull] drm merge for 3.9-rc1
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Paulo Zanoni <przanoni@gmail.com>
-Cc: Chris Wilson <chris@chris-wilson.co.uk>, Dave Airlie <airlied@gmail.com>,
-        DRI <dri-devel@lists.freedesktop.org>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-next <linux-next@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 1 Mar 2013 11:31:38 -0500
+Message-ID: <1362155493.2842.446.camel@mfleming-mobl1.ger.corp.intel.com>
+Subject: Re: [PATCH] efivarfs: fix abnormal GUID in variable name by using
+ strcpy to replace null with dash
+From: Matt Fleming <matt@console-pimps.org>
+To: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>
+Cc: linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Michael Schroeder <mls@suse.com>, Josh Boyer <jwboyer@redhat.com>,
+        "Lee, Chun-Yi" <jlee@suse.com>, Peter Jones <pjones@redhat.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>
+Date: Fri, 01 Mar 2013 16:31:33 +0000
+In-Reply-To: <1362151068.2842.440.camel@mfleming-mobl1.ger.corp.intel.com>
+References: <1362108018-13117-1-git-send-email-jlee@suse.com>
+	 <1362151068.2842.440.camel@mfleming-mobl1.ger.corp.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 28, 2013 at 6:59 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
-> On Thu, Feb 28, 2013 at 6:33 PM, Paulo Zanoni <przanoni@gmail.com> wrote:
->> Hi
->>
->> 2013/2/28 Sedat Dilek <sedat.dilek@gmail.com>:
->>> On Thu, Feb 28, 2013 at 6:12 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
->>>> On Thu, Feb 28, 2013 at 3:31 PM, Paulo Zanoni <przanoni@gmail.com> wrote:
->>>>> Hi
->>>>>
->>>>> 2013/2/28 Chris Wilson <chris@chris-wilson.co.uk>:
->>>>>> On Thu, Feb 28, 2013 at 12:06:28AM +0100, Sedat Dilek wrote:
->>>>>>> On Wed, Feb 27, 2013 at 11:36 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
->>>>>>> > Hi,
->>>>>>> >
->>>>>>> > I am seeing this also on Linux-Next.
->>>>>>> >
->>>>>>> > /var/log/kern.log:Feb 27 22:52:35 fambox kernel: [   28.202381]
->>>>>>> > [drm:intel_dp_aux_wait_done] *ERROR* dp aux hw did not signal timeout
->>>>>>> > (has irq: 1)!
->>>>>>> > /var/log/kern.log:Feb 27 22:52:35 fambox kernel: [   28.210588]
->>>>>>> > [drm:intel_dp_aux_wait_done] *ERROR* dp aux hw did not signal timeout
->>>>>>> > (has irq: 1)!
->>>>>>> >
->>>>>>> > /var/log/kern.log.1:Feb 22 07:36:04 fambox kernel: [   27.408280]
->>>>>>> > [drm:intel_dp_aux_wait_done] *ERROR* dp aux hw did not signal timeout
->>>>>>> > (has irq: 1)!
->>>>>>> >
->>>>>>> > This seems to be hard reproducible...
->>>>>>> > Laptop-LCD... Sandybridge Mobile-GT2.
->>>>>>> >
->>>>>>> > Is there a way to force the error?
->>>>>>> >
->>>>>>> > Possible patch see [1].
->>>>>>> >
->>>>>>> > - Sedat -
->>>>>>> >
->>>>>>> > [1] https://patchwork.kernel.org/patch/2192721/
->>>>>>
->>>>>> That was:
->>>>>>
->>>>>> +       if (!done) {
->>>>>> +               status = I915_READ_NOTRACE(ch_ctl);
->>>>>> +               DRM_ERROR("dp aux hw did not signal timeout (has irq:
->>>>>> %i), status=%08x!\n",
->>>>>> +                         has_aux_irq, status);
->>>>>> +       }
->>>>>>
->>>>>> You applied
->>>>>>
->>>>>> +       if (!done) {
->>>>>> +               status = I915_READ_NOTRACE(ch_ctl);
->>>>>> +               DRM_ERROR("dp aux hw did not signal timeout (has irq:
->>>>>> %i), status=%08x!\n",
->>>>>> +                         has_aux_irq, status);
->>>>>> +       {
->>>>>
->>>>> In addition to this, after the problem happens can you please dump the
->>>>> registers 0x44008 (DEIIR) and 0xC4008 (SDEIIR)? You can do this either
->>>>> by running intel-reg-read (from intel-gpu-tools) or by changing the
->>>>> DRM_ERROR above to also print the result of I915_READ(0x44008) and
->>>>> I915_READ(0xC4008).
->>>>>
->>>>
->>>> Do I need a specific version of intel-gpu-tools?
->>>> Ubuntu/precise has v1.2 in its archives - sufficient?
->>>> Note: The error was twice after dozenz of Linux-Next kernel builds.
->>>>
->>>> - Sedat -
->>>>
->>>> [1] http://packages.ubuntu.com/precise/intel-gpu-tools
->>>>
->>>
->>> Installed intel-gpu-tools.
->>>
->>> # intel_reg_read
->>> Usage: intel_reg_read [-f | addr]
->>>          -f : read back full range of registers.
->>>               WARNING! This could be danger to hang the machine!
->>>          addr : in 0xXXXX format
->>>
->>> # intel_reg_read 0x44008
->>> Couldn't map MMIO region: Resource temporarily unavailable
->>>
->>> [  368.281707] intel_reg_read:3657 conflicting memory types
->>> f0000000-f0400000 uncached-minus<->write-combining
->>> [  381.521912] intel_reg_read:3658 conflicting memory types
->>> f0000000-f0400000 uncached-minus<->write-combining
->>> [  401.136291] intel_reg_read:3659 conflicting memory types
->>> f0000000-f0400000 uncached-minus<->write-combining
->>>
->>> Wrong i-g-t version? Missing enabled kernel-config option? Boot with
->>> i915 debug enabled?
->>
->> Just build the version from git and it should work
->> (http://cgit.freedesktop.org/xorg/app/intel-gpu-tools/).
->>
->
-> NO.
->
-> $ git clone git://anongit.freedesktop.org/xorg/app/intel-gpu-tools
-> intel-gpu-tools-git
->
-> $ cd intel-gpu-tools-git/
->
-> $ ./autogen.sh --disable-dumper <--- requires swig2.0 and python >=3.x
->
-> $ sudo ./tools/intel_reg_read 0x44008
-> 0x44008 : 0x0
->
-> $ sudo ./tools/intel_reg_read 0xC4008
-> 0xC4008 : 0x0
->
-> $ sudo ./tools/intel_reg_dumper > /tmp/intel_reg_dumper.txt <--- see attachment
->
-> Does this help you?
->
+On Fri, 2013-03-01 at 15:17 +0000, Matt Fleming wrote:
+> On Fri, 2013-03-01 at 11:20 +0800, Lee, Chun-Yi wrote:
+> > From: Michael Schroeder <mls@suse.com>
+> > 
+> > On HP z220 system (firmware version 1.54), some EFI variables are incorrectly
+> > named :
+> > 
+> > ls -d /sys/firmware/efi/vars/*8be4d* | grep -v -- -8be returns
+> > /sys/firmware/efi/vars/dbxDefault-pport8be4df61-93ca-11d2-aa0d-00e098032b8c
+> > /sys/firmware/efi/vars/KEKDefault-pport8be4df61-93ca-11d2-aa0d-00e098032b8c
+> > /sys/firmware/efi/vars/SecureBoot-pport8be4df61-93ca-11d2-aa0d-00e098032b8c
+> > /sys/firmware/efi/vars/SetupMode-Information8be4df61-93ca-11d2-aa0d-00e098032b8c
+> > 
+> > That causes by the following statement in efivar_create_sysfs_entry function:
+> > 
+> >  *(short_name + strlen(short_name)) = '-';
+> > efi_guid_unparse(vendor_guid, short_name + strlen(short_name));
+> > 
+> > The trailing \0 is overwritten with '-', but the next char doesn't seem to be a \0
+> > as well for HP. So, the second strlen return the point of next '\0', causes there
+> > have garbage string attached before GUID.
+> > 
+> > Tested on On HP z220.
+> 
+> What's more likely happening here is that GetNextVariable() is broken on
+> this HP firmware and variable_name_size is too big for the given
+> variable in variable_name. We've seen other reports of similar bugs,
+> 
+> 	https://bugzilla.kernel.org/show_bug.cgi?id=47631
+> 
+> 
+> Could someone try this patch against Linus' tree?
 
-Ping Paulo.
+Urgh, and here's a version that isn't utterly, utterly broken...
 
-- Sedat -
+---
 
-> - Sedat -
->
->
->>>
->>> - Sedat -
->>>
->>>>> If you conclude that the value of 0x44008 is 0x0 while the value of
->>>>> 0xC4008 is not, then this patch should help:
->>>>> https://patchwork.kernel.org/patch/2177841/
->>>>>
->>>>>>
->>>>>> That second '{' is the source of the compile error.
->>>>>> -Chris
->>>>>>
->>>>>> --
->>>>>> Chris Wilson, Intel Open Source Technology Centre
->>>>>> _______________________________________________
->>>>>> Intel-gfx mailing list
->>>>>> Intel-gfx@lists.freedesktop.org
->>>>>> http://lists.freedesktop.org/mailman/listinfo/intel-gfx
->>>>>
->>>>>
->>>>>
->>>>> --
->>>>> Paulo Zanoni
->>
->>
->>
->> --
->> Paulo Zanoni
+>From 4b2ef72bca72039717efe4570ec858a86d565b34 Mon Sep 17 00:00:00 2001
+From: Matt Fleming <matt.fleming@intel.com>
+Date: Fri, 1 Mar 2013 14:49:12 +0000
+Subject: [PATCH] efivars: Sanitise string length returned by
+ GetNextVariableName()
+
+Some buggy firmware implementations return a string length from
+GetNextVariableName() that is actually larger than the string in
+'variable_name', as Michael Schroeder writes,
+
+  > On HP z220 system (firmware version 1.54), some EFI variables are
+  > incorrectly named :
+  >
+  > ls -d /sys/firmware/efi/vars/*8be4d* | grep -v -- -8be returns
+  > /sys/firmware/efi/vars/dbxDefault-pport8be4df61-93ca-11d2-aa0d-00e098032b8c
+  > /sys/firmware/efi/vars/KEKDefault-pport8be4df61-93ca-11d2-aa0d-00e098032b8c
+  > /sys/firmware/efi/vars/SecureBoot-pport8be4df61-93ca-11d2-aa0d-00e098032b8c
+  > /sys/firmware/efi/vars/SetupMode-Information8be4df61-93ca-11d2-aa0d-00e098032b8c
+
+Since 'variable_name' is a string, we can validate its size by
+searching for the terminating NULL character.
+
+Reported-by: Frederic Crozat <fcrozat@suse.com>
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Josh Boyer <jwboyer@redhat.com>
+Cc: Michael Schroeder <mls@suse.com>
+Cc: Lee, Chun-Yi <jlee@suse.com>
+Cc: Lingzhu Xiang <lxiang@redhat.com>
+Signed-off-by: Matt Fleming <matt.fleming@intel.com>
+---
+ drivers/firmware/efivars.c | 30 ++++++++++++++++++++++++++++++
+ 1 file changed, 30 insertions(+)
+
+diff --git a/drivers/firmware/efivars.c b/drivers/firmware/efivars.c
+index 7320bf8..ab477b8 100644
+--- a/drivers/firmware/efivars.c
++++ b/drivers/firmware/efivars.c
+@@ -1895,6 +1895,33 @@ void unregister_efivars(struct efivars *efivars)
+ }
+ EXPORT_SYMBOL_GPL(unregister_efivars);
+ 
++/*
++ * Sanity check size of a variable name.
++ */
++static unsigned long sanity_check_size(efi_char16_t *variable_name,
++				       unsigned long variable_name_size)
++{
++	unsigned long len;
++	efi_char16_t c;
++
++	/*
++	 * The variable name is, by definition, a NULL-terminated
++	 * string, so make absolutely sure that variable_name_size is
++	 * the value we expect it to be. If not, return the real size.
++	 */
++	for (len = 2; len <= variable_name_size; len += sizeof(c)) {
++		c = variable_name[(len / sizeof(c)) - 1];
++		if (!c)
++			break;
++	}
++
++
++	if (len != variable_name_size)
++		printk(KERN_WARNING "efivars: bogus variable_name_size: %lu %lu\n", len, variable_name_size);
++
++	return min(len, variable_name_size);
++}
++
+ int register_efivars(struct efivars *efivars,
+ 		     const struct efivar_operations *ops,
+ 		     struct kobject *parent_kobj)
+@@ -1941,8 +1968,11 @@ int register_efivars(struct efivars *efivars,
+ 		status = ops->get_next_variable(&variable_name_size,
+ 						variable_name,
+ 						&vendor_guid);
++
+ 		switch (status) {
+ 		case EFI_SUCCESS:
++			variable_name_size = sanity_check_size(variable_name,
++							       variable_name_size);
+ 			efivar_create_sysfs_entry(efivars,
+ 						  variable_name_size,
+ 						  variable_name,
+-- 
+1.7.11.7
+
+
+
