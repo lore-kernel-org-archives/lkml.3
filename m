@@ -1,65 +1,283 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751080Ab3CANfZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 08:35:25 -0500
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:34882 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750696Ab3CANfY (ORCPT
+	id S1751138Ab3CANjt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 08:39:49 -0500
+Received: from mail-bk0-f52.google.com ([209.85.214.52]:56482 "EHLO
+	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750696Ab3CANjr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 08:35:24 -0500
+	Fri, 1 Mar 2013 08:39:47 -0500
+Message-ID: <5130AFA1.7000808@gmail.com>
+Date: Fri, 01 Mar 2013 14:39:45 +0100
+From: Daniel Mack <zonque@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130219 Thunderbird/17.0.3
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <CA+icZUWQsKo7dX9f4uVP7_L0iX2SuCrSXUjv+G_s2SHQ7+0pbg@mail.gmail.com>
-References: <CA+icZUXWA1JQ11Ph-JL8snYAvc-FvMCZGBvTi9vNLwhyn-3S2g@mail.gmail.com>
-	<CA+icZUXJNDTFSjh4MnUjx7hsX8sxcP2E5DEANe757CcDuayp5g@mail.gmail.com>
-	<CA+icZUWQsKo7dX9f4uVP7_L0iX2SuCrSXUjv+G_s2SHQ7+0pbg@mail.gmail.com>
-Date: Fri, 1 Mar 2013 14:35:13 +0100
-Message-ID: <CA+icZUUUEAe+ZEsonW1CXjXLP3g97WVmC0xg0GXwB2oKrXUgEg@mail.gmail.com>
-Subject: Re: Pulling linux-next GIT
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        linux-next <linux-next@vger.kernel.org>, ftpadmin@kernel.org,
-        webmaster@kernel.org
-Content-Type: text/plain; charset=UTF-8
+To: Michal Bachraty <michal.bachraty@streamunlimited.com>
+CC: perex@perex.cz, tiwai@suse.de, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org, broonie@opensource.wolfsonmicro.com,
+        lgirdwood@gmail.com, "Hebbar, Gururaja" <gururaja.hebbar@ti.com>,
+        Vaibhav Bedia <vaibhav.bedia@ti.com>
+Subject: Re: [alsa-devel] [PATCH v3] davinci-mcasp: Add support for multichannel
+ playback
+References: <1362064028-12666-1-git-send-email-michal.bachraty@streamunlimited.com>
+In-Reply-To: <1362064028-12666-1-git-send-email-michal.bachraty@streamunlimited.com>
+X-Enigmail-Version: 1.5
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2 hours passed - same problems!
+Hi Michal,
 
-I looked at <www.kernel.org>, but there is no message in the news area.
+On 28.02.2013 16:07, Michal Bachraty wrote:
+> Davinci McASP has support for I2S multichannel playback.
+> For I2S playback/receive, each serializer is capable to play 2 channels
+> (L/R) audio data.Serializer function (Playback-receive-none) is configured
+> in DT, depending on hardware specification. It is possible to play less
+> channels than configured in DT. For that purpose,only specific number of
+> active serializers are enabled. McASP FIFO need to have DMA transfer Bcnt
+> set to number of enabled serializers, otherwise no data are transfered to
+> McASP and Alsa generates "DMA/IRQ playback write error (DMA or IRQ trouble?)"
+> error. For TDM mode, McASP is capable to play or receive 32 channels for one
+> serializer. McAsp has support for max 16 serializer, therefore max channels
+> is 32 * 8.
+> 
+> Signed-off-by: Michal Bachraty <michal.bachraty@streamunlimited.com>
 
-- Sedat -
+Ok, I successfully tested this now, and it seems to work fine. You can
+take my
 
-On Fri, Mar 1, 2013 at 11:55 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
-> GitWeb service says:
->
-> 503 - The load average on the server is too high
->
-> - Sedat -
->
-> On Fri, Mar 1, 2013 at 11:53 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
->> Hmm, cloning also not possible:
->>
->> $ LANG=C LC_ALL=C git clone
->> git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
->> Cloning into 'linux-next'...
->> fatal: Could not read from remote repository.
->>
->> Please make sure you have the correct access rights
->> and the repository exists.
->>
->> - Sedat -
->>
->> On Fri, Mar 1, 2013 at 11:49 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
->>> Hi,
->>>
->>> I have here troubles pulling from linux-next GIT, also GitWeb service
->>> is not reachable or slow.
->>> Server reports to high working load.
->>>
->>> Just in case this is not known - not only for the admins.
->>>
->>> Regards,
->>> - Sedat -
+  Tested-by: Daniel Mack <zonque@gmail.com>
+
+One thing that has to be considered by users of the driver is that the
+'serial-dir' DT property has to contain enough '1' entries for
+multichannel playback (or enough '2's for multichannel record). So this
+information is not actually something that describes the hardware, but
+rather some resource that can be and should be allocated dynamically by
+the driver at run-time. Should we consider dropping this property?
+
+
+
+Thanks,
+Daniel
+
+
+> ---
+>  sound/soc/davinci/davinci-mcasp.c |   66 ++++++++++++++++++++++++++++++++-----
+>  sound/soc/davinci/davinci-pcm.c   |   16 +++++----
+>  sound/soc/davinci/davinci-pcm.h   |    1 +
+>  3 files changed, 68 insertions(+), 15 deletions(-)
+> 
+> diff --git a/sound/soc/davinci/davinci-mcasp.c b/sound/soc/davinci/davinci-mcasp.c
+> index d2ca682..0a1af1a 100644
+> --- a/sound/soc/davinci/davinci-mcasp.c
+> +++ b/sound/soc/davinci/davinci-mcasp.c
+> @@ -235,6 +235,10 @@
+>  #define DISMOD		(val)(val<<2)
+>  #define TXSTATE		BIT(4)
+>  #define RXSTATE		BIT(5)
+> +#define SRMOD_MASK	3
+> +#define SRMOD_INACTIVE	0
+> +#define SRMOD_TX	1
+> +#define SRMOD_RX	2
+>  
+>  /*
+>   * DAVINCI_MCASP_LBCTL_REG - Loop Back Control Register Bits
+> @@ -657,12 +661,15 @@ static int davinci_config_channel_size(struct davinci_audio_dev *dev,
+>  	return 0;
+>  }
+>  
+> -static void davinci_hw_common_param(struct davinci_audio_dev *dev, int stream)
+> +static int davinci_hw_common_param(struct davinci_audio_dev *dev, int stream,
+> +				    int channels)
+>  {
+>  	int i;
+>  	u8 tx_ser = 0;
+>  	u8 rx_ser = 0;
+> -
+> +	u8 ser;
+> +	u8 slots = dev->tdm_slots;
+> +	u8 max_active_serializers = (channels + slots - 1) / slots;
+>  	/* Default configuration */
+>  	mcasp_set_bits(dev->base + DAVINCI_MCASP_PWREMUMGT_REG, MCASP_SOFT);
+>  
+> @@ -680,16 +687,42 @@ static void davinci_hw_common_param(struct davinci_audio_dev *dev, int stream)
+>  	}
+>  
+>  	for (i = 0; i < dev->num_serializer; i++) {
+> +		if (dev->serial_dir[i] == TX_MODE)
+> +			tx_ser++;
+> +		if (dev->serial_dir[i] == RX_MODE)
+> +			rx_ser++;
+> +	}
+> +
+> +	if (stream == SNDRV_PCM_STREAM_PLAYBACK)
+> +		ser = tx_ser;
+> +	else
+> +		ser = rx_ser;
+> +
+> +	if (ser < max_active_serializers) {
+> +		dev_warn(dev->dev, "stream has more channels (%d) than are "
+> +			"enabled in mcasp (%d)\n", channels, ser * slots);
+> +		return -EINVAL;
+> +	}
+> +
+> +	tx_ser = 0;
+> +	rx_ser = 0;
+> +
+> +	for (i = 0; i < dev->num_serializer; i++) {
+>  		mcasp_set_bits(dev->base + DAVINCI_MCASP_XRSRCTL_REG(i),
+>  					dev->serial_dir[i]);
+> -		if (dev->serial_dir[i] == TX_MODE) {
+> +		if (dev->serial_dir[i] == TX_MODE &&
+> +					tx_ser < max_active_serializers) {
+>  			mcasp_set_bits(dev->base + DAVINCI_MCASP_PDIR_REG,
+>  					AXR(i));
+>  			tx_ser++;
+> -		} else if (dev->serial_dir[i] == RX_MODE) {
+> +		} else if (dev->serial_dir[i] == RX_MODE &&
+> +					rx_ser < max_active_serializers) {
+>  			mcasp_clr_bits(dev->base + DAVINCI_MCASP_PDIR_REG,
+>  					AXR(i));
+>  			rx_ser++;
+> +		} else {
+> +			mcasp_mod_bits(dev->base + DAVINCI_MCASP_XRSRCTL_REG(i),
+> +					SRMOD_INACTIVE, SRMOD_MASK);
+>  		}
+>  	}
+>  
+> @@ -729,6 +762,8 @@ static void davinci_hw_common_param(struct davinci_audio_dev *dev, int stream)
+>  				((dev->rxnumevt * rx_ser) << 8), NUMEVT_MASK);
+>  		}
+>  	}
+> +
+> +	return 0;
+>  }
+>  
+>  static void davinci_hw_param(struct davinci_audio_dev *dev, int stream)
+> @@ -812,8 +847,14 @@ static int davinci_mcasp_hw_params(struct snd_pcm_substream *substream,
+>  					&dev->dma_params[substream->stream];
+>  	int word_length;
+>  	u8 fifo_level;
+> +	u8 slots = dev->tdm_slots;
+> +	int channels;
+> +	struct snd_interval *pcm_channels = hw_param_interval(params,
+> +					SNDRV_PCM_HW_PARAM_CHANNELS);
+> +	channels = pcm_channels->min;
+>  
+> -	davinci_hw_common_param(dev, substream->stream);
+> +	if (davinci_hw_common_param(dev, substream->stream, channels) == -EINVAL)
+> +		return -EINVAL;
+>  	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
+>  		fifo_level = dev->txnumevt;
+>  	else
+> @@ -862,6 +903,7 @@ static int davinci_mcasp_hw_params(struct snd_pcm_substream *substream,
+>  		dma_params->acnt = dma_params->data_type;
+>  
+>  	dma_params->fifo_level = fifo_level;
+> +	dma_params->active_serializers = (channels + slots - 1) / slots;
+>  	davinci_config_channel_size(dev, word_length);
+>  
+>  	return 0;
+> @@ -936,13 +978,13 @@ static struct snd_soc_dai_driver davinci_mcasp_dai[] = {
+>  		.name		= "davinci-mcasp.0",
+>  		.playback	= {
+>  			.channels_min	= 2,
+> -			.channels_max 	= 2,
+> +			.channels_max	= 32 * 16,
+>  			.rates 		= DAVINCI_MCASP_RATES,
+>  			.formats	= DAVINCI_MCASP_PCM_FMTS,
+>  		},
+>  		.capture 	= {
+>  			.channels_min 	= 2,
+> -			.channels_max 	= 2,
+> +			.channels_max	= 32 * 16,
+>  			.rates 		= DAVINCI_MCASP_RATES,
+>  			.formats	= DAVINCI_MCASP_PCM_FMTS,
+>  		},
+> @@ -1015,8 +1057,16 @@ static struct snd_platform_data *davinci_mcasp_set_pdata_from_of(
+>  		pdata->op_mode = val;
+>  
+>  	ret = of_property_read_u32(np, "tdm-slots", &val);
+> -	if (ret >= 0)
+> +	if (ret >= 0) {
+> +		if (val < 2 || val > 32) {
+> +			dev_err(&pdev->dev,
+> +				"tdm-slots must be in rage [2-32]\n");
+> +			ret = -EINVAL;
+> +			goto nodata;
+> +		}
+> +
+>  		pdata->tdm_slots = val;
+> +	}
+>  
+>  	ret = of_property_read_u32(np, "num-serializer", &val);
+>  	if (ret >= 0)
+> diff --git a/sound/soc/davinci/davinci-pcm.c b/sound/soc/davinci/davinci-pcm.c
+> index bb57552..3af8b50 100644
+> --- a/sound/soc/davinci/davinci-pcm.c
+> +++ b/sound/soc/davinci/davinci-pcm.c
+> @@ -182,6 +182,7 @@ static void davinci_pcm_enqueue_dma(struct snd_pcm_substream *substream)
+>  	unsigned short acnt;
+>  	unsigned int count;
+>  	unsigned int fifo_level;
+> +	unsigned char serializers = prtd->params->active_serializers;
+>  
+>  	period_size = snd_pcm_lib_period_bytes(substream);
+>  	dma_offset = prtd->period * period_size;
+> @@ -195,14 +196,14 @@ static void davinci_pcm_enqueue_dma(struct snd_pcm_substream *substream)
+>  	data_type = prtd->params->data_type;
+>  	count = period_size / data_type;
+>  	if (fifo_level)
+> -		count /= fifo_level;
+> +		count /= fifo_level * serializers;
+>  
+>  	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
+>  		src = dma_pos;
+>  		dst = prtd->params->dma_addr;
+>  		src_bidx = data_type;
+> -		dst_bidx = 0;
+> -		src_cidx = data_type * fifo_level;
+> +		dst_bidx = 4;
+> +		src_cidx = data_type * fifo_level * serializers;
+>  		dst_cidx = 0;
+>  	} else {
+>  		src = prtd->params->dma_addr;
+> @@ -210,7 +211,7 @@ static void davinci_pcm_enqueue_dma(struct snd_pcm_substream *substream)
+>  		src_bidx = 0;
+>  		dst_bidx = data_type;
+>  		src_cidx = 0;
+> -		dst_cidx = data_type * fifo_level;
+> +		dst_cidx = data_type * fifo_level * serializers;
+>  	}
+>  
+>  	acnt = prtd->params->acnt;
+> @@ -224,9 +225,10 @@ static void davinci_pcm_enqueue_dma(struct snd_pcm_substream *substream)
+>  		edma_set_transfer_params(prtd->asp_link[0], acnt, count, 1, 0,
+>  							ASYNC);
+>  	else
+> -		edma_set_transfer_params(prtd->asp_link[0], acnt, fifo_level,
+> -							count, fifo_level,
+> -							ABSYNC);
+> +		edma_set_transfer_params(prtd->asp_link[0], acnt,
+> +						fifo_level * serializers,
+> +						count, fifo_level * serializers,
+> +						ABSYNC);
+>  }
+>  
+>  static void davinci_pcm_dma_irq(unsigned link, u16 ch_status, void *data)
+> diff --git a/sound/soc/davinci/davinci-pcm.h b/sound/soc/davinci/davinci-pcm.h
+> index fbb710c..0d84d32 100644
+> --- a/sound/soc/davinci/davinci-pcm.h
+> +++ b/sound/soc/davinci/davinci-pcm.h
+> @@ -27,6 +27,7 @@ struct davinci_pcm_dma_params {
+>  	unsigned char data_type;	/* xfer data type */
+>  	unsigned char convert_mono_stereo;
+>  	unsigned int fifo_level;
+> +	unsigned char active_serializers; /* num. of active audio serializers */
+>  };
+>  
+>  int davinci_soc_platform_register(struct device *dev);
+> 
+
