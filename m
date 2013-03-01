@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755468Ab3CAU0M (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 15:26:12 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51309 "EHLO
+	id S1755443Ab3CAUZB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 15:25:01 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51324 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751320Ab3CATpJ (ORCPT
+	with ESMTP id S1752412Ab3CATpL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 14:45:09 -0500
+	Fri, 1 Mar 2013 14:45:11 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Bart Van Assche <bvanassche@acm.org>,
-        David Dillow <dave@thedillows.org>,
-        Roland Dreier <roland@purestorage.com>
-Subject: [ 06/77] IB/srp: Track connection state properly
-Date: Fri,  1 Mar 2013 11:43:51 -0800
-Message-Id: <20130301194352.616583154@linuxfoundation.org>
+        "Theodore Tso" <tytso@mit.edu>, Carlos Maiolino <cmaiolino@redhat.com>,
+        Jan Kara <jack@suse.cz>
+Subject: [ 10/77] quota: autoload the quota_v2 module for QFMT_VFS_V1 quota format
+Date: Fri,  1 Mar 2013 11:43:55 -0800
+Message-Id: <20130301194353.097837448@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130301194351.913471337@linuxfoundation.org>
 References: <20130301194351.913471337@linuxfoundation.org>
@@ -28,31 +27,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bart Van Assche <bvanassche@acm.org>
+From: Theodore Ts'o <tytso@mit.edu>
 
-commit e1b2f13aba9ff714d23ecd4a950e744ee7ad72e1 upstream.
+commit c3ad83d9efdfe6a86efd44945a781f00c879b7b4 upstream.
 
-Remove an assignment that incorrectly overwrites the connection state
-update by srp_connect_target().
+Otherwise, ext4 file systems with the quota featured enable will get a
+very confusing "No such process" error message if the quota code is
+built as a module and the quota_v2 module has not been loaded.
 
-Signed-off-by: Bart Van Assche <bvanassche@acm.org>
-Acked-by: David Dillow <dave@thedillows.org>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Reviewed-by: Carlos Maiolino <cmaiolino@redhat.com>
+Acked-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/infiniband/ulp/srp/ib_srp.c |    1 -
- 1 file changed, 1 deletion(-)
+ include/linux/quota.h |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/infiniband/ulp/srp/ib_srp.c
-+++ b/drivers/infiniband/ulp/srp/ib_srp.c
-@@ -1972,7 +1972,6 @@ static int srp_add_target(struct srp_hos
- 	spin_unlock(&host->target_lock);
+--- a/include/linux/quota.h
++++ b/include/linux/quota.h
+@@ -405,6 +405,7 @@ struct quota_module_name {
+ #define INIT_QUOTA_MODULE_NAMES {\
+ 	{QFMT_VFS_OLD, "quota_v1"},\
+ 	{QFMT_VFS_V0, "quota_v2"},\
++	{QFMT_VFS_V1, "quota_v2"},\
+ 	{0, NULL}}
  
- 	target->state = SRP_TARGET_LIVE;
--	target->connected = false;
- 
- 	scsi_scan_target(&target->scsi_host->shost_gendev,
- 			 0, target->scsi_id, SCAN_WILD_CARD, 0);
+ #endif /* _QUOTA_ */
 
 
