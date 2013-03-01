@@ -1,111 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752217Ab3CAIdC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 03:33:02 -0500
-Received: from mga01.intel.com ([192.55.52.88]:56083 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750884Ab3CAIdB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 03:33:01 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,760,1355126400"; 
-   d="scan'208";a="293468101"
-Subject: Re: [PATCH] n_gsm: Add Mutex to avoid race when net destroy
-From: channing <chao.bi@intel.com>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, ML netdev <netdev@vger.kernel.org>,
-        vincentx.pillet@intel.com
-In-Reply-To: <512F28FD.9030502@suse.cz>
-References: <1362029486.31563.5.camel@bichao>  <512F28FD.9030502@suse.cz>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 01 Mar 2013 16:51:55 +0800
-Message-ID: <1362127915.31563.18.camel@bichao>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1752312Ab3CAIgN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 03:36:13 -0500
+Received: from out01.mta.xmission.com ([166.70.13.231]:33181 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750784Ab3CAIgL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Mar 2013 03:36:11 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: mtk.manpages@gmail.com
+Cc: Vasily Kulikov <segoon@openwall.com>,
+        linux-man <linux-man@vger.kernel.org>,
+        Linux Containers <containers@lists.linux-foundation.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Lennart Poettering <lennart@poettering.net>
+References: <CAKgNAki=mUYuu_Ewhe7sjCmo+Dq2Vr+FZCixqNRaadcvAxtpFw@mail.gmail.com>
+	<20130228142440.GA6328@cachalot>
+	<CAKgNAkjXAfq4RwtX1ELier+GLv0D5e9spM3Os3-oqSCXGqRqOg@mail.gmail.com>
+Date: Fri, 01 Mar 2013 00:36:03 -0800
+In-Reply-To: <CAKgNAkjXAfq4RwtX1ELier+GLv0D5e9spM3Os3-oqSCXGqRqOg@mail.gmail.com>
+	(Michael Kerrisk's message of "Fri, 1 Mar 2013 09:03:18 +0100")
+Message-ID: <87fw0f5xfw.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX1+pmCh1f1uon3Eo40i9RZs8qvUv9Ouc0VY=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  1.5 TR_Symld_Words too many words that have symbols inside
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -0.5 BAYES_05 BODY: Bayes spam probability is 1 to 5%
+	*      [score: 0.0161]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
+X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;mtk.manpages@gmail.com
+X-Spam-Relay-Country: 
+Subject: Re: For review: pid_namespaces(7) man page
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-02-28 at 10:53 +0100, Jiri Slaby wrote:
-> On 02/28/2013 06:31 AM, channing wrote:
-> > 
-> > when gsm Net is enabled, data on dlci is transferrd by
-> > gsm_mux_net_start_xmit(), while userspace may trigger
-> > ioctrl to call gsm_destroy_network() during data was
-> > transferring, because there is no mutex protection between
-> > the two functions, following scenario may happen:
-> > 
-> > 1) gsm_mux_net_start_xmit() calls muxnet_get(mux_net);
-> > 2) gsm_destroy_network() is called from ioctrl, and it
-> > will not call net_free() to release net device because
-> > net device is still referred in step 1)
-> > 3) continue execute step 1), gsm_mux_net_start_xmit()
-> > calls muxnet_put(mux_net), and then calls net_free() to
-> > release net device.
-> > 4) if userspace triggers gsm_create_network() at same time
-> > with net_free() in step 3). it will hit race on dlci->net.
-> > 
-> > This patch is to add a mutex in tx function to avoid race
-> > between it and destroy function.
-> > 
-> > Signed-off-by: Chao Bi <chao.bi@intel.com>
-> > Signed-off-by: Pillet Vincent <vincentx.pillet@intel.com>
-> > ---
-> >  drivers/tty/n_gsm.c |    2 ++
-> >  1 files changed, 2 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/drivers/tty/n_gsm.c b/drivers/tty/n_gsm.c
-> > index 4a43ef5..0ca810a 100644
-> > --- a/drivers/tty/n_gsm.c
-> > +++ b/drivers/tty/n_gsm.c
-> > @@ -2660,6 +2660,7 @@ static int gsm_mux_net_start_xmit(struct sk_buff *skb,
-> >  {
-> >  	struct gsm_mux_net *mux_net = (struct gsm_mux_net *)netdev_priv(net);
-> >  	struct gsm_dlci *dlci = mux_net->dlci;
-> > +	mutex_lock(&dlci->mutex);
-> 
-> Nack, start_xmit may be called in an atomic context -- you cannot call
-> mutex.
-> 
-> >  	muxnet_get(mux_net);
-> >  
-> >  	skb_queue_head(&dlci->skb_list, skb);
-> > @@ -2669,6 +2670,7 @@ static int gsm_mux_net_start_xmit(struct sk_buff *skb,
-> >  	/* And tell the kernel when the last transmit started. */
-> >  	net->trans_start = jiffies;
-> >  	muxnet_put(mux_net);
-> 
-> Instead the concept is broken. If this was the last reference (as
-> described in your steps above), it would blow up for the same reason I
-> refer to above, i.e. net_free here would call unregister_netdev which is
-> not atomic. Plus it will definitely deadlock because unregister_netdev
-> waits for start_xmit to finish.
-> 
-> It should stop the queue and schedule a workqueue to lock the mutex,
-> unregister the hetdev and reset dlci->net. (Or maybe just call
-> muxnet_put with the lock held.)
+"Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com> writes:
 
-Thanks, Jiri, you're right, I didn't notice that in validation because
-DEBUG_ATOMIC_SLEEP is not enabled in my platform :( Now I'm trying to
-work out the workqueue solution, when it finished I'll re-submit for
-review. What do you mean by "call muxnet_put with lock held"? do you
-mean to use spin lock instead of mutex?
- 
-> 
-> That will fix 4), but there is still a bug: what protects
-> gsm_create_network to be called twice or more in a sequence thus
-> re-setting dlci->net to a new and new pointer?
+> [CC += Lennart]
+>
+> On Thu, Feb 28, 2013 at 3:24 PM, Vasily Kulikov <segoon@openwall.com> wrote:
+>> Hi Michael,
+>>
+>> On Thu, Feb 28, 2013 at 12:24 +0100, Michael Kerrisk (man-pages) wrote:
+>>>    The namespace init process
+>>>        The first process created in a new namespace (i.e., the process
+>>>        created using clone(2) with the CLONE_NEWPID flag, or the first
+>>>        child created by a process after a call to unshare(2) using the
+>>>        CLONE_NEWPID flag) has the PID 1, and is the "init" process for
+>>>        the namespace (see init(1)).  Children that are orphaned within
+>>>        the namespace will be reparented to this  process  rather  than
+>>>        init(1).
+>>
+>> Probably it worth noting here that this is true unless
+>> prctl() with PR_SET_CHILD_SUBREAPER option is called.
+>
+> Thanks Vasily. It probably is worth mentioning that, and I will add some words.
+>
+> One thing I am not sure of (have not tested), but maybe you (or Eric)
+> know the answer: does the effect of PR_SET_CHILD_SUBREAPER  cross a
+> PID namespace boundary?
 
-Yes, that's a problem, Vincent has already noticed that and has a check
-in gsmtty_ioctl to avoid call net creation multi time, I thought it
-might be patch for other issue so didn't put them together.
+No.
 
-> 
-> > +	mutex_unlock(&dlci->mutex);
-> >  	return NETDEV_TX_OK;
-> >  }
-> 
-> thanks,
+> In other words, if it was a process in the
+> parent PID namespace that employed PR_SET_CHILD_SUBREAPER , will that
+> affect child processes in a child PID namespace, or  wiill
+> PR_SET_CHILD_SUBREAPER  only apply to child processes in the same PID
+> namespace as the caller?
 
+With respect to reparenting it acts like an additional pid namespace
+init is on the path.
+
+If you want to read the code it is in kernel/exit.c:find_new_reaper().
+called from forget_original_parent, which does the actual reparenting.
+
+Eric
 
