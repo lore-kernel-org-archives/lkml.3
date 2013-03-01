@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754651Ab3CATvR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 14:51:17 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52034 "EHLO
+	id S1754551Ab3CATvf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 14:51:35 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52019 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754536Ab3CATqq (ORCPT
+	with ESMTP id S1754510Ab3CATqo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 14:46:46 -0500
+	Fri, 1 Mar 2013 14:46:44 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Jason Wang <jasowang@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 17/30] vhost: fix length for cross region descriptor
-Date: Fri,  1 Mar 2013 11:45:38 -0800
-Message-Id: <20130301194529.836054618@linuxfoundation.org>
+        "Herton R. Krzesinski" <herton.krzesinski@canonical.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Douglas Bagnall <douglas@paradise.net.nz>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: [ 14/30] media: rc: unlock on error in show_protocols()
+Date: Fri,  1 Mar 2013 11:45:35 -0800
+Message-Id: <20130301194529.523122840@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130301194527.988540148@linuxfoundation.org>
 References: <20130301194527.988540148@linuxfoundation.org>
@@ -28,34 +29,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Michael S. Tsirkin" <mst@redhat.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit bd97120fc3d1a11f3124c7c9ba1d91f51829eb85 upstream.
+commit 30ebc5e44d057a1619ad63fe32c8c1670c37c4b8 upstream.
 
-If a single descriptor crosses a region, the
-second chunk length should be decremented
-by size translated so far, instead it includes
-the full descriptor length.
+We recently introduced a new return -ENODEV in this function but we need
+to unlock before returning.
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-Acked-by: Jason Wang <jasowang@redhat.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+[mchehab@redhat.com: found two patches with the same fix. Merged SOB's/acks into one patch]
+Acked-by: Herton R. Krzesinski <herton.krzesinski@canonical.com>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Douglas Bagnall <douglas@paradise.net.nz>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/vhost/vhost.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/media/rc/rc-main.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/drivers/vhost/vhost.c
-+++ b/drivers/vhost/vhost.c
-@@ -986,7 +986,7 @@ static int translate_desc(struct vhost_d
- 		}
- 		_iov = iov + ret;
- 		size = reg->memory_size - addr + reg->guest_phys_addr;
--		_iov->iov_len = min((u64)len, size);
-+		_iov->iov_len = min((u64)len - s, size);
- 		_iov->iov_base = (void __user *)(unsigned long)
- 			(reg->userspace_addr + addr - reg->guest_phys_addr);
- 		s += size;
+--- a/drivers/media/rc/rc-main.c
++++ b/drivers/media/rc/rc-main.c
+@@ -775,8 +775,10 @@ static ssize_t show_protocols(struct dev
+ 	} else if (dev->raw) {
+ 		enabled = dev->raw->enabled_protocols;
+ 		allowed = ir_raw_get_allowed_protocols();
+-	} else
++	} else {
++		mutex_unlock(&dev->lock);
+ 		return -ENODEV;
++	}
+ 
+ 	IR_dprintk(1, "allowed - 0x%llx, enabled - 0x%llx\n",
+ 		   (long long)allowed,
 
 
