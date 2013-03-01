@@ -1,236 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752538Ab3CAI1w (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 03:27:52 -0500
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:37839 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751559Ab3CAI1v (ORCPT
+	id S1752166Ab3CAI3Z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 03:29:25 -0500
+Received: from ishtar.tlinx.org ([173.164.175.65]:43750 "EHLO
+	Ishtar.sc.tlinx.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750758Ab3CAI3Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 03:27:51 -0500
-From: Andrew Cooks <acooks@gmail.com>
-To: acooks@gmail.com, joro@8bytes.org, xjtuychu@hotmail.com, gm.ychu@gmail.com,
-        alex.williamson@redhat.com, bhelgaas@google.com,
-        jpiszcz@lucidpixels.com, dwmw2@infradead.org
-Cc: iommu@lists.linux-foundation.org (open list:INTEL IOMMU (VT-d)),
-        linux-kernel@vger.kernel.org (open list),
-        linux-pci@vger.kernel.org (open list:PCI SUBSYSTEM)
-Subject: [PATCH] Quirk to support Marvell 88SE91xx SATA controllers with Intel IOMMU.
-Date: Fri,  1 Mar 2013 16:26:13 +0800
-Message-Id: <1362126373-32318-1-git-send-email-acooks@gmail.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1354533387-4110-1-git-send-email-acooks@gmail.com>, <1355914703-28576-1-git-send-email-acooks@gmail.com>
-References: <1354533387-4110-1-git-send-email-acooks@gmail.com>, <1355914703-28576-1-git-send-email-acooks@gmail.com>
+	Fri, 1 Mar 2013 03:29:24 -0500
+X-Greylist: delayed 811 seconds by postgrey-1.27 at vger.kernel.org; Fri, 01 Mar 2013 03:29:23 EST
+Message-ID: <513063B4.8070604@tlinx.org>
+Date: Fri, 01 Mar 2013 00:15:48 -0800
+From: Linda Walsh <lkml@tlinx.org>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; en-US; rv:1.8.1.24) Gecko/20100228 Lightning/0.9 Thunderbird/2.0.0.24 Mnenhy/0.7.6.666
+MIME-Version: 1.0
+To: Linux-Kernel <linux-kernel@vger.kernel.org>
+Subject: upgrade to 3.8.1 : BUG Scheduling while atomic in bonding driver:
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is my third submitted patch to make Marvell 88SE91xx SATA controllers work when IOMMU is enabled.[1][2]
 
-What's changed:
-* Adopt David Woodhouse's terminology by referring to the quirky functions as 'ghost' functions.
-* Unmap ghost functions when device is detached from IOMMU.
-* Stub function for when CONFIG_PCI_QUIRKS is not enabled.
+Just installed 3.8.1....
 
-The bad:
-* Still no AMD support.
-* The table of affected chip IDs is as complete as I can make it by googling for bug reports.
+Thought this had been fixed?  Note it causes the kernel to
+show up as tainted after the 1st...
 
-This patch was generated against commit b0af9cd9aab60ceb17d3ebabb9fdf4ff0a99cf50, but will also apply cleanly to 3.7.10.
 
-Bug reports:
-1. https://bugzilla.redhat.com/show_bug.cgi?id=757166
-2. https://bugzilla.kernel.org/show_bug.cgi?id=42679
 
-Signed-off-by: Andrew Cooks <acooks@gmail.com>
----
- drivers/iommu/intel-iommu.c |   50 +++++++++++++++++++++++++++++++++++++++++++
- drivers/pci/quirks.c        |   47 +++++++++++++++++++++++++++++++++++++++-
- include/linux/pci.h         |    5 ++++
- include/linux/pci_ids.h     |    1 +
- 4 files changed, 102 insertions(+), 1 deletions(-)
+As the system was coming up and initializing the bond0 driver:
 
-diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
-index 0099667..13323f2 100644
---- a/drivers/iommu/intel-iommu.c
-+++ b/drivers/iommu/intel-iommu.c
-@@ -1674,6 +1674,50 @@ static int domain_context_mapping_one(struct dmar_domain *domain, int segment,
- 	return 0;
- }
- 
-+/* For quirky devices like Marvell 88SE91xx chips that use ghost functions. */
-+static int map_ghost_dma_fn(struct dmar_domain *domain,
-+		struct pci_dev *pdev,
-+		int translation)
-+{
-+	u8 fn, fn_map;
-+	int err = 0;
-+
-+	fn_map = pci_get_dma_source_map(pdev);
-+
-+	for (fn = 1; fn < 8; fn++) {
-+		if (fn_map & (1 << fn)) {
-+			err = domain_context_mapping_one(domain,
-+					pci_domain_nr(pdev->bus),
-+					pdev->bus->number,
-+					PCI_DEVFN(PCI_SLOT(pdev->devfn), fn),
-+					translation);
-+			if (err)
-+				return err;
-+			dev_dbg(&pdev->dev, "dma quirk; func %d mapped", fn);
-+		}
-+	}
-+	return 0;
-+}
-+
-+static void iommu_detach_dev(struct intel_iommu *iommu, u8 bus, u8 devfn);
-+
-+static void unmap_ghost_dma_fn(struct intel_iommu *iommu,
-+		struct pci_dev *pdev)
-+{
-+	u8 fn, fn_map;
-+
-+	fn_map = pci_get_dma_source_map(pdev);
-+
-+	for (fn = 1; fn < 8; fn++) {
-+		if (fn_map & (1 << fn)) {
-+			iommu_detach_dev(iommu,
-+					pdev->bus->number,
-+					PCI_DEVFN(PCI_SLOT(pdev->devfn), fn));
-+			dev_dbg(&pdev->dev, "dma quirk; func %d unmapped", fn);
-+		}
-+	}
-+}
-+
- static int
- domain_context_mapping(struct dmar_domain *domain, struct pci_dev *pdev,
- 			int translation)
-@@ -1687,6 +1731,11 @@ domain_context_mapping(struct dmar_domain *domain, struct pci_dev *pdev,
- 	if (ret)
- 		return ret;
- 
-+	/* quirk for undeclared/ghost pci functions */
-+	ret = map_ghost_dma_fn(domain, pdev, translation);
-+	if (ret)
-+		return ret;
-+
- 	/* dependent device mapping */
- 	tmp = pci_find_upstream_pcie_bridge(pdev);
- 	if (!tmp)
-@@ -3786,6 +3835,7 @@ static void domain_remove_one_dev_info(struct dmar_domain *domain,
- 			iommu_disable_dev_iotlb(info);
- 			iommu_detach_dev(iommu, info->bus, info->devfn);
- 			iommu_detach_dependent_devices(iommu, pdev);
-+			unmap_ghost_dma_fn(iommu, pdev);
- 			free_devinfo_mem(info);
- 
- 			spin_lock_irqsave(&device_domain_lock, flags);
-diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
-index 0369fb6..d311100 100644
---- a/drivers/pci/quirks.c
-+++ b/drivers/pci/quirks.c
-@@ -3249,6 +3249,10 @@ static struct pci_dev *pci_func_0_dma_source(struct pci_dev *dev)
- 	return pci_get_slot(dev->bus, PCI_DEVFN(PCI_SLOT(dev->devfn), 0));
- }
- 
-+/* Table of source functions for real devices. The DMA requests for the
-+ * device are tagged with a different real function as source. This is
-+ * relevant to multifunction devices.
-+ */
- static const struct pci_dev_dma_source {
- 	u16 vendor;
- 	u16 device;
-@@ -3275,7 +3279,8 @@ static const struct pci_dev_dma_source {
-  * the device doing the DMA, but sometimes hardware is broken and will
-  * tag the DMA as being sourced from a different device.  This function
-  * allows that translation.  Note that the reference count of the
-- * returned device is incremented on all paths.
-+ * returned device is incremented on all paths. Translation is done when
-+ * the device is added to an IOMMU group.
-  */
- struct pci_dev *pci_get_dma_source(struct pci_dev *dev)
- {
-@@ -3292,6 +3297,46 @@ struct pci_dev *pci_get_dma_source(struct pci_dev *dev)
- 	return pci_dev_get(dev);
- }
- 
-+/* Table of multiple (ghost) source functions. This is similar to the
-+ * translated sources above, but with the following differences:
-+ * 1. the device may use multiple functions as DMA sources,
-+ * 2. these functions cannot be assumed to be actual devices,
-+ * 3. the specific ghost function for a request can not be exactly predicted.
-+ * The bitmap only contains the additional quirk functions.
-+ */
-+static const struct pci_dev_dma_multi_func_sources {
-+	u16 vendor;
-+	u16 device;
-+	u8 func_map;	/* bit map. lsb is fn 0. */
-+} pci_dev_dma_multi_func_sources[] = {
-+	{ PCI_VENDOR_ID_MARVELL_2, 0x9123, (1<<0)|(1<<1)},
-+	{ PCI_VENDOR_ID_MARVELL_2, 0x9125, (1<<0)|(1<<1)},
-+	{ PCI_VENDOR_ID_MARVELL_2, 0x9128, (1<<0)|(1<<1)},
-+	{ PCI_VENDOR_ID_MARVELL_2, 0x9130, (1<<0)|(1<<1)},
-+	{ PCI_VENDOR_ID_MARVELL_2, 0x9172, (1<<0)|(1<<1)},
-+	{ 0 }
-+};
-+
-+/*
-+ * The mapping of fake/ghost functions is used when the real device is
-+ * attached to an IOMMU domain. IOMMU groups are not aware of these
-+ * functions, because they're not real devices.
-+ */
-+u8 pci_get_dma_source_map(struct pci_dev *dev)
-+{
-+	const struct pci_dev_dma_multi_func_sources *i;
-+
-+	for (i = pci_dev_dma_multi_func_sources; i->func_map; i++) {
-+		if ((i->vendor == dev->vendor ||
-+		     i->vendor == (u16)PCI_ANY_ID) &&
-+		    (i->device == dev->device ||
-+		     i->device == (u16)PCI_ANY_ID)) {
-+			return i->func_map;
-+		}
-+	}
-+	return 0;
-+}
-+
- static const struct pci_dev_acs_enabled {
- 	u16 vendor;
- 	u16 device;
-diff --git a/include/linux/pci.h b/include/linux/pci.h
-index 2461033..5ad3822 100644
---- a/include/linux/pci.h
-+++ b/include/linux/pci.h
-@@ -1578,6 +1578,7 @@ enum pci_fixup_pass {
- #ifdef CONFIG_PCI_QUIRKS
- void pci_fixup_device(enum pci_fixup_pass pass, struct pci_dev *dev);
- struct pci_dev *pci_get_dma_source(struct pci_dev *dev);
-+u8 pci_get_dma_source_map(struct pci_dev *dev);
- int pci_dev_specific_acs_enabled(struct pci_dev *dev, u16 acs_flags);
- #else
- static inline void pci_fixup_device(enum pci_fixup_pass pass,
-@@ -1586,6 +1587,10 @@ static inline struct pci_dev *pci_get_dma_source(struct pci_dev *dev)
- {
- 	return pci_dev_get(dev);
- }
-+u8 pci_get_dma_source_map(struct pci_dev *dev)
-+{
-+	return 0;
-+}
- static inline int pci_dev_specific_acs_enabled(struct pci_dev *dev,
- 					       u16 acs_flags)
- {
-diff --git a/include/linux/pci_ids.h b/include/linux/pci_ids.h
-index f11c1c2..df57496 100644
---- a/include/linux/pci_ids.h
-+++ b/include/linux/pci_ids.h
-@@ -1604,6 +1604,7 @@
- #define PCI_SUBDEVICE_ID_KEYSPAN_SX2	0x5334
- 
- #define PCI_VENDOR_ID_MARVELL		0x11ab
-+#define PCI_VENDOR_ID_MARVELL_2	0x1b4b
- #define PCI_DEVICE_ID_MARVELL_GT64111	0x4146
- #define PCI_DEVICE_ID_MARVELL_GT64260	0x6430
- #define PCI_DEVICE_ID_MARVELL_MV64360	0x6460
--- 
-1.7.1
 
+[   19.847743] ixgbe 0000:06:00.0: registered PHC device on eth_s2_0
+[   20.258245] BUG: scheduling while atomic: ifup-bonding/2003/0x00000002
+[   20.264812] 4 locks held by ifup-bonding/2003:
+[   20.269298]  #0:  (&buffer->mutex){......}, at: [<ffffffff811c401f>]
+sysfs_write_file+0x3f/0x150
+[   20.278319]  #1:  (s_active#59){......}, at: [<ffffffff811c409b>]
+sysfs_write_file+0xbb/0x150
+[   20.287088]  #2:  (rtnl_mutex){......}, at: [<ffffffff81590bf0>]
+rtnl_trylock+0x10/0x20
+[   20.295373]  #3:  (&bond->lock){......}, at: [<ffffffff8145be6f>]
+bond_enslave+0x4ef/0xb80
+[   20.303912] Modules linked in: iptable_filter kvm_intel kvm acpi_cpufreq
+mperf button processor mousedev iTCO_wdt
+[   20.314695] Pid: 2003, comm: ifup-bonding Not tainted 3.8.1-Isht-Van #5
+[   20.321340] Call Trace:
+[   20.323833]  [<ffffffff8162b029>] __schedule_bug+0x5e/0x6c
+[   20.329356]  [<ffffffff81634592>] __schedule+0x762/0x7f0
+[   20.334701]  [<ffffffff81634734>] schedule+0x24/0x70
+[   20.339703]  [<ffffffff816336f4>] schedule_hrtimeout_range_clock+0xa4/0x130
+[   20.346699]  [<ffffffff81068250>] ? update_rmtp+0x60/0x60
+[   20.352130]  [<ffffffff81068f9f>] ? hrtimer_start_range_ns+0xf/0x20
+[   20.358434]  [<ffffffff8163378e>] schedule_hrtimeout_range+0xe/0x10
+[   20.364734]  [<ffffffff8104ec1b>] usleep_range+0x3b/0x40
+[   20.370082]  [<ffffffff814b2d7c>] ixgbe_acquire_swfw_sync_X540+0xbc/0x100
+[   20.376905]  [<ffffffff814aeb0d>] ixgbe_read_phy_reg_generic+0x3d/0x140
+[   20.383553]  [<ffffffff814aedac>]
+ixgbe_get_copper_link_capabilities_generic+0x2c/0x60
+[   20.391499]  [<ffffffff8145be6f>] ? bond_enslave+0x4ef/0xb80
+[   20.397194]  [<ffffffff814a64e4>] ixgbe_get_settings+0x34/0x340
+[   20.403148]  [<ffffffff81586ab8>] __ethtool_get_settings+0x88/0x130
+[   20.409448]  [<ffffffff814568a3>] bond_update_speed_duplex+0x23/0x60
+[   20.415833]  [<ffffffff8145bed9>] bond_enslave+0x559/0xb80
+[   20.421356]  [<ffffffff8146454f>] bonding_store_slaves+0x16f/0x1c0
+[   20.427569]  [<ffffffff813bfb83>] dev_attr_store+0x13/0x30
+[   20.433091]  [<ffffffff811c40b4>] sysfs_write_file+0xd4/0x150
+[   20.438872]  [<ffffffff81154b81>] vfs_write+0xb1/0x190
+[   20.444047]  [<ffffffff81154ee0>] sys_write+0x50/0xa0
+[   20.449137]  [<ffffffff81637092>] system_call_fastpath+0x16/0x1b
+[   20.455264] BUG: scheduling while atomic: ifup-bonding/2003/0x00000002
+[   20.461851] 4 locks held by ifup-bonding/2003:
+[   20.466334]  #0:  (&buffer->mutex){......}, at: [<ffffffff811c401f>]
+sysfs_write_file+0x3f/0x150
+[   20.475356]  #1:  (s_active#59){......}, at: [<ffffffff811c409b>]
+sysfs_write_file+0xbb/0x150
+[   20.484117]  #2:  (rtnl_mutex){......}, at: [<ffffffff81590bf0>]
+rtnl_trylock+0x10/0x20
+[   20.492403]  #3:  (&bond->lock){......}, at: [<ffffffff8145be6f>]
+bond_enslave+0x4ef/0xb80
+[   20.500902] Modules linked in: iptable_filter kvm_intel kvm acpi_cpufreq
+mperf button processor mousedev iTCO_wdt
+[   20.511640] Pid: 2003, comm: ifup-bonding Tainted: G        W
+3.8.1-Isht-Van #5
+[   20.519240] Call Trace:
+[   20.521729]  [<ffffffff8162b029>] __schedule_bug+0x5e/0x6c
+[   20.527251]  [<ffffffff81634592>] __schedule+0x762/0x7f0
+[   20.532599]  [<ffffffff81634734>] schedule+0x24/0x70
+[   20.537599]  [<ffffffff816336f4>] schedule_hrtimeout_range_clock+0xa4/0x130
+[   20.544592]  [<ffffffff81068250>] ? update_rmtp+0x60/0x60
+[   20.550026]  [<ffffffff81068250>] ? update_rmtp+0x60/0x60
+[   20.555462]  [<ffffffff81068f9f>] ? hrtimer_start_range_ns+0xf/0x20
+[   20.561763]  [<ffffffff8163378e>] schedule_hrtimeout_range+0xe/0x10
+[   20.568064]  [<ffffffff8104ec1b>] usleep_range+0x3b/0x40
+[   20.573415]  [<ffffffff814b2cae>] ixgbe_release_swfw_sync_X540+0x4e/0x60
+[   20.580146]  [<ffffffff814aebdd>] ixgbe_read_phy_reg_generic+0x10d/0x140
+[   20.586960]  [<ffffffff814aedac>]
+ixgbe_get_copper_link_capabilities_generic+0x2c/0x60
+[   20.594908]  [<ffffffff8145be6f>] ? bond_enslave+0x4ef/0xb80
+[   20.600601]  [<ffffffff814a64e4>] ixgbe_get_settings+0x34/0x340
+[   20.606557]  [<ffffffff81586ab8>] __ethtool_get_settings+0x88/0x130
+[   20.612858]  [<ffffffff814568a3>] bond_update_speed_duplex+0x23/0x60
+[   20.619244]  [<ffffffff8145bed9>] bond_enslave+0x559/0xb80
+[   20.624767]  [<ffffffff8146454f>] bonding_store_slaves+0x16f/0x1c0
+[   20.630983]  [<ffffffff813bfb83>] dev_attr_store+0x13/0x30
+[   20.636503]  [<ffffffff811c40b4>] sysfs_write_file+0xd4/0x150
+[   20.642283]  [<ffffffff81154b81>] vfs_write+0xb1/0x190
+[   20.647462]  [<ffffffff81154ee0>] sys_write+0x50/0xa0
+[   20.652548]  [<ffffffff81637092>] system_call_fastpath+0x16/0x1b
+[   20.658696] bonding: bond0: enslaving eth_s2_0 as an active interface with a
+down link.
+[   20.676577] bonding: bond0: Adding slave eth_s2_1.
+[   20.743760] pps pps1: new PPS source ptp1
+[   20.747792] ixgbe 0000:06:00.1: registered PHC device on eth_s2_1
+[   21.150267] BUG: scheduling while atomic: ifup-bonding/2003/0x00000002
+[   21.156836] 4 locks held by ifup-bonding/2003:
+[   21.161319]  #0:  (&buffer->mutex){......}, at: [<ffffffff811c401f>]
+sysfs_write_file+0x3f/0x150
+[   21.170388]  #1:  (s_active#59){......}, at: [<ffffffff811c409b>]
+sysfs_write_file+0xbb/0x150
+[   21.179149]  #2:  (rtnl_mutex){......}, at: [<ffffffff81590bf0>]
+rtnl_trylock+0x10/0x20
+[   21.187403]  #3:  (&bond->lock){......}, at: [<ffffffff8145be6f>]
+bond_enslave+0x4ef/0xb80
+[   21.195904] Modules linked in: iptable_filter kvm_intel kvm acpi_cpufreq
+mperf button processor mousedev iTCO_wdt
+[   21.206644] Pid: 2003, comm: ifup-bonding Tainted: G        W
+3.8.1-Isht-Van #5
+[   21.214240] Call Trace:
+[   21.216732]  [<ffffffff8162b029>] __schedule_bug+0x5e/0x6c
+[   21.222254]  [<ffffffff81634592>] __schedule+0x762/0x7f0
+[   21.227604]  [<ffffffff81634734>] schedule+0x24/0x70
+[   21.232606]  [<ffffffff816336f4>] schedule_hrtimeout_range_clock+0xa4/0x130
+[   21.239601]  [<ffffffff81068250>] ? update_rmtp+0x60/0x60
+[   21.245033]  [<ffffffff81068f9f>] ? hrtimer_start_range_ns+0xf/0x20
+[   21.251339]  [<ffffffff8163378e>] schedule_hrtimeout_range+0xe/0x10
+[   21.257635]  [<ffffffff8104ec1b>] usleep_range+0x3b/0x40
+[   21.262987]  [<ffffffff814b2d7c>] ixgbe_acquire_swfw_sync_X540+0xbc/0x100
+[   21.269811]  [<ffffffff814aeb0d>] ixgbe_read_phy_reg_generic+0x3d/0x140
+[   21.276461]  [<ffffffff814aedac>]
+ixgbe_get_copper_link_capabilities_generic+0x2c/0x60
+[   21.284409]  [<ffffffff8145be6f>] ? bond_enslave+0x4ef/0xb80
+[   21.290106]  [<ffffffff814a64e4>] ixgbe_get_settings+0x34/0x340
+[   21.296067]  [<ffffffff81586ab8>] __ethtool_get_settings+0x88/0x130
+[   21.302369]  [<ffffffff814568a3>] bond_update_speed_duplex+0x23/0x60
+[   21.308754]  [<ffffffff8145bed9>] bond_enslave+0x559/0xb80
+[   21.314278]  [<ffffffff8146454f>] bonding_store_slaves+0x16f/0x1c0
+[   21.320491]  [<ffffffff813bfb83>] dev_attr_store+0x13/0x30
+[   21.326009]  [<ffffffff811c40b4>] sysfs_write_file+0xd4/0x150
+[   21.331793]  [<ffffffff81154b81>] vfs_write+0xb1/0x190
+[   21.336964]  [<ffffffff81154ee0>] sys_write+0x50/0xa0
+[   21.342053]  [<ffffffff81637092>] system_call_fastpath+0x16/0x1b
+[   21.348191] BUG: scheduling while atomic: ifup-bonding/2003/0x00000002
+[   21.354775] 4 locks held by ifup-bonding/2003:
+[   21.359258]  #0:  (&buffer->mutex){......}, at: [<ffffffff811c401f>]
+sysfs_write_file+0x3f/0x150
+[   21.368283]  #1:  (s_active#59){......}, at: [<ffffffff811c409b>]
+sysfs_write_file+0xbb/0x150
+[   21.377104]  #2:  (rtnl_mutex){......}, at: [<ffffffff81590bf0>]
+rtnl_trylock+0x10/0x20
+[   21.385343]  #3:  (&bond->lock){......}, at: [<ffffffff8145be6f>]
+bond_enslave+0x4ef/0xb80
+[   21.393887] Modules linked in: iptable_filter kvm_intel kvm acpi_cpufreq
+mperf button processor mousedev iTCO_wdt
+[   21.404575] Pid: 2003, comm: ifup-bonding Tainted: G        W
+3.8.1-Isht-Van #5
+[   21.412176] Call Trace:
+[   21.414666]  [<ffffffff8162b029>] __schedule_bug+0x5e/0x6c
+[   21.420188]  [<ffffffff81634592>] __schedule+0x762/0x7f0
+[   21.425536]  [<ffffffff81634734>] schedule+0x24/0x70
+[   21.430541]  [<ffffffff816336f4>] schedule_hrtimeout_range_clock+0xa4/0x130
+[   21.437532]  [<ffffffff81068250>] ? update_rmtp+0x60/0x60
+[   21.442967]  [<ffffffff81068250>] ? update_rmtp+0x60/0x60
+[   21.448407]  [<ffffffff81068f9f>] ? hrtimer_start_range_ns+0xf/0x20
+[   21.454712]  [<ffffffff8163378e>] schedule_hrtimeout_range+0xe/0x10
+[   21.461015]  [<ffffffff8104ec1b>] usleep_range+0x3b/0x40
+[   21.466370]  [<ffffffff814b2cae>] ixgbe_release_swfw_sync_X540+0x4e/0x60
+[   21.473105]  [<ffffffff814aebdd>] ixgbe_read_phy_reg_generic+0x10d/0x140
+[   21.479843]  [<ffffffff814aedac>]
+ixgbe_get_copper_link_capabilities_generic+0x2c/0x60
+[   21.487787]  [<ffffffff8145be6f>] ? bond_enslave+0x4ef/0xb80
+[   21.493513]  [<ffffffff814a64e4>] ixgbe_get_settings+0x34/0x340
+[   21.499468]  [<ffffffff81586ab8>] __ethtool_get_settings+0x88/0x130
+[   21.505767]  [<ffffffff814568a3>] bond_update_speed_duplex+0x23/0x60
+[   21.512153]  [<ffffffff8145bed9>] bond_enslave+0x559/0xb80
+[   21.517677]  [<ffffffff8146454f>] bonding_store_slaves+0x16f/0x1c0
+[   21.523889]  [<ffffffff813bfb83>] dev_attr_store+0x13/0x30
+[   21.529412]  [<ffffffff811c40b4>] sysfs_write_file+0xd4/0x150
+[   21.535193]  [<ffffffff81154b81>] vfs_write+0xb1/0x190
+[   21.540373]  [<ffffffff81154ee0>] sys_write+0x50/0xa0
+[   21.545463]  [<ffffffff81637092>] system_call_fastpath+0x16/0x1b
