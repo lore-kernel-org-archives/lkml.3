@@ -1,73 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751958Ab3CAGHj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 01:07:39 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:8821 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750758Ab3CAGHh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 01:07:37 -0500
-Date: Fri, 1 Mar 2013 01:07:32 -0500
-From: Dave Jones <davej@redhat.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>, dhowells@redhat.com,
-        "Serge E. Hallyn" <serge@hallyn.com>
-Subject: Re: commit_creds oops
-Message-ID: <20130301060732.GA20195@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	"Eric W. Biederman" <ebiederm@xmission.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>, dhowells@redhat.com,
-	"Serge E. Hallyn" <serge@hallyn.com>
-References: <20130228234351.GA22046@redhat.com>
- <87hakw7ypn.fsf@xmission.com>
+	id S1752046Ab3CAGI1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 01:08:27 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:37936 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751966Ab3CAGI0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Mar 2013 01:08:26 -0500
+Date: Fri, 1 Mar 2013 06:07:41 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Nishanth Menon <nm@ti.com>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] regulator: core: update kernel documentation for
+ regulator_desc
+Message-ID: <20130301060739.GB25302@opensource.wolfsonmicro.com>
+References: <1362096767-8157-1-git-send-email-nm@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="K8nIJk4ghYZn606h"
 Content-Disposition: inline
-In-Reply-To: <87hakw7ypn.fsf@xmission.com>
+In-Reply-To: <1362096767-8157-1-git-send-email-nm@ti.com>
+X-Cookie: Condense soup, not books!
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 28, 2013 at 04:25:40PM -0800, Eric W. Biederman wrote:
- 
- > > [   89.639850] RIP: 0010:[<ffffffff810784b0>]  [<ffffffff810784b0>] commit_creds+0x250/0x2f0
- > > [   89.658399] Call Trace:
- > > [   89.658822]  [<ffffffff812c7d9b>] key_change_session_keyring+0xfb/0x140
- > > [   89.659845]  [<ffffffff8106c665>] task_work_run+0xa5/0xd0
- > > [   89.660698]  [<ffffffff81002911>] do_notify_resume+0x71/0xb0
- > > [   89.661581]  [<ffffffff816c9a4a>] int_signal+0x12/0x17
- > >
- > > Appears to be..
- > >
- > >                 if ((set_ns == subset_ns->parent)  &&
- > >      850:       48 8b 8a c8 00 00 00    mov    0xc8(%rdx),%rcx
- > >
- > > from the inlined cred_cap_issubset
- > 
- > Interesting.  That line is protected with the check subset_ns !=
- > &init_user_ns so subset_ns->parent must be valid or subset_ns is not
- > a proper user namespace.
- > 
- > Ugh.  I think I see what is going on and it is just silly. 
- > 
- > It looks like by historical accident we have been reading trying to set
- > new->user_ns from new->user_ns.  Which is totally silly as new->user_ns
- > is NULL (as is every other field in new except session_keyring at that
- > point).
- > 
- > It looks like it is safe to sleep in key_change_session_keyring so why
- > we just don't use prepare_creds there like everywhere else is beyond
- > me.
- > 
- > The intent is clearly to copy all of the fields from old to new so what
- > we should be doing is is copying old->user_ns into new->user_ns.
- > 
- > Dave can you verify that this patch fixes the oops?
 
-Looks like it.  Haven't hit the same thing since applying your patch.
+--K8nIJk4ghYZn606h
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-I noticed though that get_user_ns bumps a refcount.  Is this what we
-want if we're just copying ?
+On Thu, Feb 28, 2013 at 06:12:47PM -0600, Nishanth Menon wrote:
+> commit df367931 (regulator: core: Provide regmap get/set bypass
+> operations) introduced regulator_[gs]et_bypass_regmap
 
-	Dave
+Applied, thanks.
 
+--K8nIJk4ghYZn606h
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRMEWiAAoJELSic+t+oim9psUQAISyfRVR7WZczUAgd/yuuaKS
+yONvMkUtmZ0b9nftYSq7kJaVqnntg31BA971ACp0n+IWs2389XQClB5Q00hioy6r
+bqd4G5fJLGQujZ2kFqmn3pIRWm3KYMfYVzBkRVMKE/G/xNZJTl37H4qDAP/XdB/Z
+TgsN0YUuoefv9fOmJk50M8877qhd2F5SJWitBeFmQfQu4TOuJOwt7BbdM/OT09/C
+BLdaBgtkCfje52iG5SB16kAHTeK5q1jZDPxSjv9CdldmjAenvyKmY5w7wXGbVj0W
+14z1E2Q36yHPV1H9lbTwAy8RoXo/V/bc18Ue+dlUAekYfjHa4oxqmvqejyBAp/my
+25LwscqTtZRuMap8rT3wHbLnB2n1aGLkbWGALYmzbR0ZLlmdZW1Ca29BCvfp/XUT
+w46qHFp6IYwpUlr+pQdTCJC2OkA1mDks/KwyRfpcRn6y19Z6uQ4I+pRGjd4llR/a
+oDU6G84RmppIpumX1n3CMBZWFnOPzVdY9KGkACOcK2WSoyRV69axSuoRqStWRnd1
+Vwe10zCuJKOHcB61AmjxH+MR2tg8Ld1q0MPJRGE1x/PtQG+EGCFR1ZVxBmBFsJA7
+11v3Md5cVQ5Q0tcde/82fGx0IDyVnyaMHfYHHl5r0IdNxFy2KO9y/kVWAxwn0Ybz
+MtKzApvKsYcRzFA/wNTe
+=Qv6M
+-----END PGP SIGNATURE-----
+
+--K8nIJk4ghYZn606h--
