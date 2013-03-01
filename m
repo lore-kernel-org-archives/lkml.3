@@ -1,89 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752207Ab3CASbS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 13:31:18 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:11986 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750779Ab3CASbQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 13:31:16 -0500
-Date: Fri, 1 Mar 2013 19:28:54 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Lai Jiangshan <eag0628@gmail.com>,
-        Michel Lespinasse <walken@google.com>, linux-doc@vger.kernel.org,
-        peterz@infradead.org, fweisbec@gmail.com, linux-kernel@vger.kernel.org,
-        namhyung@kernel.org, mingo@kernel.org, linux-arch@vger.kernel.org,
-        linux@arm.linux.org.uk, xiaoguangrong@linux.vnet.ibm.com,
-        wangyun@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com,
-        nikunj@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
-        rusty@rustcorp.com.au, rostedt@goodmis.org, rjw@sisk.pl,
-        vincent.guittot@linaro.org, tglx@linutronix.de,
-        linux-arm-kernel@lists.infradead.org, netdev@vger.kernel.org,
-        sbw@mit.edu, tj@kernel.org, akpm@linux-foundation.org,
-        linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH] lglock: add read-preference local-global rwlock
-Message-ID: <20130301182854.GA3631@redhat.com>
-References: <512BBAD8.8010006@linux.vnet.ibm.com> <CACvQF51jCxk5jUqmhD=QBBtUsBkQWZzakacrKO4Gsk=w61rNwQ@mail.gmail.com> <512C7A38.8060906@linux.vnet.ibm.com> <CACvQF51RvhM8XNqu3-1OTQ=cZUZ=pAX+_zx0a29+W67N1X+BgQ@mail.gmail.com> <512CC509.1050000@linux.vnet.ibm.com> <CACvQF50UgiqPpDk3HCmV86zKSf6tPjqr0bZowfPEOJs0g0r0MQ@mail.gmail.com> <512D0D67.9010609@linux.vnet.ibm.com> <CACvQF53ph2ixdM-otzetjM5cR+2kcZj6sckOp3TnzzA_x-EZ8w@mail.gmail.com> <512E7879.20109@linux.vnet.ibm.com> <5130E8E2.50206@cn.fujitsu.com>
+	id S1752071Ab3CASeY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 13:34:24 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:57875 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750779Ab3CASeW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Mar 2013 13:34:22 -0500
+Date: Fri, 1 Mar 2013 10:33:07 -0800
+From: tip-bot for Lans Zhang <tipbot@zytor.com>
+Message-ID: <tip-2dead15fb8f6522b96c913603b5ad0b5c7d01f49@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, lans.zhang2008@gmail.com, hpa@zytor.com,
+        mingo@kernel.org, tglx@linutronix.de, hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, lans.zhang2008@gmail.com,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de, hpa@linux.intel.com
+In-Reply-To: <51300267.6000008@gmail.com>
+References: <51300267.6000008@gmail.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/cleanups] x86_64:
+  Use __BOOT_DS instead_of __KERNEL_DS for safety
+Git-Commit-ID: 2dead15fb8f6522b96c913603b5ad0b5c7d01f49
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <5130E8E2.50206@cn.fujitsu.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 01 Mar 2013 10:33:13 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Lai, I didn't read this discussion except the code posted by Michel.
-I'll try to read this patch carefully later, but I'd like to ask
-a couple of questions.
+Commit-ID:  2dead15fb8f6522b96c913603b5ad0b5c7d01f49
+Gitweb:     http://git.kernel.org/tip/2dead15fb8f6522b96c913603b5ad0b5c7d01f49
+Author:     Lans Zhang <lans.zhang2008@gmail.com>
+AuthorDate: Fri, 1 Mar 2013 09:20:39 +0800
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Fri, 1 Mar 2013 10:18:33 -0800
 
-This version looks more complex than Michel's, why? Just curious, I
-am trying to understand what I missed. See
-http://marc.info/?l=linux-kernel&m=136196350213593
+x86_64: Use __BOOT_DS instead_of __KERNEL_DS for safety
 
-And I can't understand FALLBACK_BASE...
+In startup_32, the running code still uses the initial GDT
+located in setup. Thus, __BOOT_DS is preferred. Currently
+__KERNEL_DS is lucky to equal to __BOOT_DS, but this is
+not always a safe way.
 
-OK, suppose that CPU_0 does _write_unlock() and releases ->fallback_rwlock.
+Signed-off-by: Lans Zhang <lans.zhang2008@gmail.com>
+Link: http://lkml.kernel.org/r/51300267.6000008@gmail.com
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/boot/compressed/head_64.S | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-CPU_1 does _read_lock(), and ...
-
-> +void lg_rwlock_local_read_lock(struct lgrwlock *lgrw)
-> +{
-> +	struct lglock *lg = &lgrw->lglock;
-> +
-> +	preempt_disable();
-> +	rwlock_acquire_read(&lg->lock_dep_map, 0, 0, _RET_IP_);
-> +	if (likely(!__this_cpu_read(*lgrw->reader_refcnt))) {
-> +		if (!arch_spin_trylock(this_cpu_ptr(lg->lock))) {
-
-_trylock() fails,
-
-> +			read_lock(&lgrw->fallback_rwlock);
-> +			__this_cpu_add(*lgrw->reader_refcnt, FALLBACK_BASE);
-
-so we take ->fallback_rwlock and ->reader_refcnt == FALLBACK_BASE.
-
-CPU_0 does lg_global_unlock(lgrw->lglock) and finishes _write_unlock().
-
-Interrupt handler on CPU_1 does _read_lock() notices ->reader_refcnt != 0
-and simply does this_cpu_inc(), so reader_refcnt == FALLBACK_BASE + 1.
-
-Then irq does _read_unlock(), and
-
-> +void lg_rwlock_local_read_unlock(struct lgrwlock *lgrw)
-> +{
-> +	switch (__this_cpu_dec_return(*lgrw->reader_refcnt)) {
-> +	case 0:
-> +		lg_local_unlock(&lgrw->lglock);
-> +		return;
-> +	case FALLBACK_BASE:
-> +		__this_cpu_sub(*lgrw->reader_refcnt, FALLBACK_BASE);
-> +		read_unlock(&lgrw->fallback_rwlock);
-
-hits this case?
-
-Doesn't look right, but most probably I missed something.
-
-Oleg.
-
+diff --git a/arch/x86/boot/compressed/head_64.S b/arch/x86/boot/compressed/head_64.S
+index c1d383d..16f24e6 100644
+--- a/arch/x86/boot/compressed/head_64.S
++++ b/arch/x86/boot/compressed/head_64.S
+@@ -52,7 +52,7 @@ ENTRY(startup_32)
+ 	jnz 1f
+ 
+ 	cli
+-	movl	$(__KERNEL_DS), %eax
++	movl	$(__BOOT_DS), %eax
+ 	movl	%eax, %ds
+ 	movl	%eax, %es
+ 	movl	%eax, %ss
