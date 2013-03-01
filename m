@@ -1,19 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754843Ab3CATrh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 14:47:37 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52100 "EHLO
+	id S1754866Ab3CATry (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 14:47:54 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52090 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754728Ab3CATqz (ORCPT
+	with ESMTP id S1754709Ab3CATqz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 1 Mar 2013 14:46:55 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ian Abbott <abbotti@mev.co.uk>
-Subject: [ 30/30] staging: comedi: check s->async for poll(), read() and write()
-Date: Fri,  1 Mar 2013 11:45:51 -0800
-Message-Id: <20130301194531.268432010@linuxfoundation.org>
+        Dan Rosenberg <dan.j.rosenberg@gmail.com>,
+        Brad Spengler <spender@grsecurity.net>,
+        Kees Cook <keescook@chromium.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, CAI Qian <caiqian@redhat.com>
+Subject: [ 22/30] x86: Do not leak kernel page mapping locations
+Date: Fri,  1 Mar 2013 11:45:43 -0800
+Message-Id: <20130301194530.386673314@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130301194527.988540148@linuxfoundation.org>
 References: <20130301194527.988540148@linuxfoundation.org>
@@ -26,65 +35,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ian Abbott <abbotti@mev.co.uk>
+From: Kees Cook <keescook@chromium.org>
 
-commit cc400e185c07c15a42d2635995f422de5b94b696 upstream.
+commit e575a86fdc50d013bf3ad3aa81d9100e8e6cc60d upstream.
 
-Some low-level comedi drivers (incorrectly) point `dev->read_subdev` or
-`dev->write_subdev` to a subdevice that does not support asynchronous
-commands.  Comedi's poll(), read() and write() file operation handlers
-assume these subdevices do support asynchronous commands.  In
-particular, they assume `s->async` is valid (where `s` points to the
-read or write subdevice), which it won't be if it has been set
-incorrectly.  This can lead to a NULL pointer dereference.
+Without this patch, it is trivial to determine kernel page
+mappings by examining the error code reported to dmesg[1].
+Instead, declare the entire kernel memory space as a violation
+of a present page.
 
-Check `s->async` is non-NULL in `comedi_poll()`, `comedi_read()` and
-`comedi_write()` to avoid the bug.
+Additionally, since show_unhandled_signals is enabled by
+default, switch branch hinting to the more realistic
+expectation, and unobfuscate the setting of the PF_PROT bit to
+improve readability.
 
-Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
+[1] http://vulnfactory.org/blog/2013/02/06/a-linux-memory-trick/
+
+Reported-by: Dan Rosenberg <dan.j.rosenberg@gmail.com>
+Suggested-by: Brad Spengler <spender@grsecurity.net>
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Acked-by: H. Peter Anvin <hpa@zytor.com>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Eric W. Biederman <ebiederm@xmission.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/20130207174413.GA12485@www.outflux.net
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: CAI Qian <caiqian@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/comedi/comedi_fops.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ arch/x86/mm/fault.c |    9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
---- a/drivers/staging/comedi/comedi_fops.c
-+++ b/drivers/staging/comedi/comedi_fops.c
-@@ -1577,7 +1577,7 @@ static unsigned int comedi_poll(struct f
+--- a/arch/x86/mm/fault.c
++++ b/arch/x86/mm/fault.c
+@@ -720,12 +720,15 @@ __bad_area_nosemaphore(struct pt_regs *r
+ 		if (is_errata100(regs, address))
+ 			return;
  
- 	mask = 0;
- 	read_subdev = comedi_get_read_subdevice(dev_file_info);
--	if (read_subdev) {
-+	if (read_subdev && read_subdev->async) {
- 		poll_wait(file, &read_subdev->async->wait_head, wait);
- 		if (!read_subdev->busy
- 		    || comedi_buf_read_n_available(read_subdev->async) > 0
-@@ -1587,7 +1587,7 @@ static unsigned int comedi_poll(struct f
- 		}
- 	}
- 	write_subdev = comedi_get_write_subdevice(dev_file_info);
--	if (write_subdev) {
-+	if (write_subdev && write_subdev->async) {
- 		poll_wait(file, &write_subdev->async->wait_head, wait);
- 		comedi_buf_write_alloc(write_subdev->async,
- 				       write_subdev->async->prealloc_bufsz);
-@@ -1629,7 +1629,7 @@ static ssize_t comedi_write(struct file
- 	}
+-		if (unlikely(show_unhandled_signals))
++		/* Kernel addresses are always protection faults: */
++		if (address >= TASK_SIZE)
++			error_code |= PF_PROT;
++
++		if (likely(show_unhandled_signals))
+ 			show_signal_msg(regs, error_code, address, tsk);
  
- 	s = comedi_get_write_subdevice(dev_file_info);
--	if (s == NULL) {
-+	if (s == NULL || s->async == NULL) {
- 		retval = -EIO;
- 		goto done;
- 	}
-@@ -1740,7 +1740,7 @@ static ssize_t comedi_read(struct file *
- 	}
+-		/* Kernel addresses are always protection faults: */
+ 		tsk->thread.cr2		= address;
+-		tsk->thread.error_code	= error_code | (address >= TASK_SIZE);
++		tsk->thread.error_code	= error_code;
+ 		tsk->thread.trap_no	= 14;
  
- 	s = comedi_get_read_subdevice(dev_file_info);
--	if (s == NULL) {
-+	if (s == NULL || s->async == NULL) {
- 		retval = -EIO;
- 		goto done;
- 	}
+ 		force_sig_info_fault(SIGSEGV, si_code, address, tsk, 0);
 
 
