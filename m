@@ -1,69 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755014Ab3CAUEe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 15:04:34 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51706 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753631Ab3CATqH (ORCPT
+	id S1755043Ab3CAUEj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 15:04:39 -0500
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:55749 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754294Ab3CAUEe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 14:46:07 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jan Engelhardt <jengelh@inai.de>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [ 11/46] target: Add missing mapped_lun bounds checking during make_mappedlun setup
-Date: Fri,  1 Mar 2013 11:44:59 -0800
-Message-Id: <20130301194433.460897786@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130301194432.263409302@linuxfoundation.org>
-References: <20130301194432.263409302@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	Fri, 1 Mar 2013 15:04:34 -0500
+Date: Fri, 1 Mar 2013 12:03:53 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Ric Mason <ric.masonn@gmail.com>
+cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        Petr Holasek <pholasek@redhat.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Izik Eidus <izik.eidus@ravellosystems.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH 2/7] ksm: treat unstable nid like in stable tree
+In-Reply-To: <51303CAB.3080406@gmail.com>
+Message-ID: <alpine.LNX.2.00.1303011139270.7398@eggly.anvils>
+References: <alpine.LNX.2.00.1302210013120.17843@eggly.anvils> <alpine.LNX.2.00.1302210019390.17843@eggly.anvils> <51271A7D.6020305@gmail.com> <alpine.LNX.2.00.1302221250440.6100@eggly.anvils> <51303CAB.3080406@gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+On Fri, 1 Mar 2013, Ric Mason wrote:
+> 
+> I think the ksm implementation for num awareness  is buggy.
 
-------------------
+Sorry, I just don't understand your comments below,
+but will try to answer or question them as best I can.
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+> 
+> For page migratyion stuff, new page is allocated from node *which page is
+> migrated to*.
 
-commit fbbf8555a986ed31e54f006b6cc637ea4ff1425b upstream.
+Yes, by definition.
 
-This patch adds missing bounds checking for the configfs provided
-mapped_lun value during target_fabric_make_mappedlun() setup ahead
-of se_lun_acl initialization.
+> - when meeting a page from the wrong NUMA node in an unstable tree
+>     get_kpfn_nid(page_to_pfn(page)) *==* page_to_nid(tree_page)
 
-This addresses a potential OOPs when using a mapped_lun value that
-exceeds the hardcoded TRANSPORT_MAX_LUNS_PER_TPG-1 value within
-se_node_acl->device_list[].
+I thought you were writing of the wrong NUMA node case,
+but now you emphasize "*==*", which means the right NUMA node.
 
-Reported-by: Jan Engelhardt <jengelh@inai.de>
-Cc: Jan Engelhardt <jengelh@inai.de>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>     How can say it's okay for comparisons, but not as a leaf for merging?
 
----
- drivers/target/target_core_fabric_configfs.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+Pages in the unstable tree are unstable (and it's not even accurate to
+say "pages in the unstable tree"), they and their content can change at
+any moment, so I cannot assert anything of them for sure.
 
---- a/drivers/target/target_core_fabric_configfs.c
-+++ b/drivers/target/target_core_fabric_configfs.c
-@@ -356,6 +356,14 @@ static struct config_group *target_fabri
- 		ret = -EINVAL;
- 		goto out;
- 	}
-+	if (mapped_lun > (TRANSPORT_MAX_LUNS_PER_TPG-1)) {
-+		pr_err("Mapped LUN: %lu exceeds TRANSPORT_MAX_LUNS_PER_TPG"
-+			"-1: %u for Target Portal Group: %u\n", mapped_lun,
-+			TRANSPORT_MAX_LUNS_PER_TPG-1,
-+			se_tpg->se_tpg_tfo->tpg_get_tag(se_tpg));
-+		ret = -EINVAL;
-+		goto out;
-+	}
- 
- 	lacl = core_dev_init_initiator_node_lun_acl(se_tpg, se_nacl,
- 			mapped_lun, &ret);
+But if we suppose, as an approximation, that they are somewhat likely
+to remain stable (and the unstable tree would be useless without that
+assumption: it tends to work out), but subject to migration, then it makes
+sense to compare content, no matter what NUMA node it is on, in order to
+locate a page of the same content; but wrong to merge with that page if
+it's on the wrong NUMA node, if !merge_across_nodes tells us not to.
 
 
+> - when meeting a page from the wrong NUMA node in an stable tree
+>    - meeting a normal page
+
+What does that line mean, and where does it fit in your argument?
+
+>    - meeting a page which is ksm page before migration
+>      get_kpfn_nid(stable_node->kpfn) != NUMA(stable_node->nid) can't capture
+> them since stable_node is for tree page in current stable tree. They are
+> always equal.
+
+When we meet a ksm page in the stable tree before it's migrated to another
+NUMA node, yes, it will be on the right NUMA node (because we were careful
+only to merge pages from the right NUMA node there), and that test will not
+capture them.  It's for capturng a ksm page in the stable tree after it has
+been migrated to another NUMA node.
+
+Hugh
