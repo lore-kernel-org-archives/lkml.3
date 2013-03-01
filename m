@@ -1,61 +1,313 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751186Ab3CAG71 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 01:59:27 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:58730 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750758Ab3CAG71 (ORCPT
+	id S1751219Ab3CAHCI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 02:02:08 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:57303 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750696Ab3CAHCG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 01:59:27 -0500
-Date: Fri, 1 Mar 2013 14:58:52 +0800
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] regulator: tps6586x: (cosmetic) simplify a conditional
-Message-ID: <20130301065844.GF25302@opensource.wolfsonmicro.com>
-References: <Pine.LNX.4.64.1302251232260.3030@axis700.grange>
+	Fri, 1 Mar 2013 02:02:06 -0500
+Message-ID: <51305264.2080602@huawei.com>
+Date: Fri, 1 Mar 2013 15:01:56 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="UBnjLfzoMQYIXCvq"
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.64.1302251232260.3030@axis700.grange>
-X-Cookie: Condense soup, not books!
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Tejun Heo <tj@kernel.org>
+CC: LKML <linux-kernel@vger.kernel.org>, cgroups <cgroups@vger.kernel.org>
+Subject: [PATCH v5 1/2] cgroup: fix cgroup_path() vs rename() race
+Content-Type: text/plain; charset="GB2312"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+rename() will change dentry->d_name. The result of this race can
+be worse than seeing partially rewritten name, but we might access
+a stale pointer because rename() will re-allocate memory to hold
+a longer name.
 
---UBnjLfzoMQYIXCvq
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+As accessing dentry->name must be protected by dentry->d_lock or
+parent inode's i_mutex, while on the other hand cgroup-path() can
+be called with some irq-safe spinlocks held, we can't generate
+cgroup path using dentry->d_name.
 
-On Mon, Feb 25, 2013 at 12:34:09PM +0100, Guennadi Liakhovetski wrote:
-> of_node_put() is called on either branch of a conditional, simplify the
-> code by only calling it once.
+Alternatively we make a copy of dentry->d_name and save it in
+cgrp->name when a cgroup is created, and update cgrp->name at
+rename().
 
-Applied, thanks.
+v5: use flexible array instead of zero-size array.
+v4: - allocate root_cgroup_name and all root_cgroup->name points to it.
+    - add cgroup_name() wrapper.
+v3: use kfree_rcu() instead of synchronize_rcu() in user-visible path.
+v2: make cgrp->name RCU safe.
 
---UBnjLfzoMQYIXCvq
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Signed-off-by: Li Zefan <lizefan@huawei.com>
+---
+ block/blk-cgroup.h     |   2 -
+ include/linux/cgroup.h |  24 +++++++++++
+ kernel/cgroup.c        | 106 +++++++++++++++++++++++++++++++++++--------------
+ 3 files changed, 100 insertions(+), 32 deletions(-)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRMFGdAAoJELSic+t+oim9Q44P/jTiIr1JFKxUWkXiGD340a7K
-D8yB2hSsJ6o7kvUu1fr/Ar1cdNp4GrCuP+liUT2HCHmWV33VC95vsKlB1+/WCUgM
-elKosoUaVOMo+zUzYP+tBnfHzM1C3bbU0gh360YS1H42rnTY/m0Q1/eW30MqA03N
-2BuMGMcN1YlAU9WmdiBMC0GlKoOq1NrHOdw+7E7R4NswrIUCcU/xG8Ym9xcAcSd+
-OI+BWblGl4pREX9Gft9uqEjq1bOSFgcFSA/ibHn55NOvPbiKEM8/u6T9i0mvGNxp
-x42QBJhXCUA5SsE2ekDfJK4/DwCG0OFYNb9YnIzHJiKM9ETEyftz2BDwfphGu4SI
-7SoRJQ16IpTuqRVwsTHznDmsM/Vpd5ol8ttRLnRZ2oTqFjWd+q5Je7kUZhIQAn0l
-VyDhHpRTQhz4TkOkySPG+9WrOKpdK9B5PQbtdOXjYVYaCcyriPR4NV8UBqECxu1+
-3ioE4UwHoOXbaIVZT+3hfe7ZdQ43WNdMN9Sjagaz8PjsScYCw9laQOIzEtb6RE3v
-DzBHkCH9ajSfeWHLVvt62t0Y8cmv8HQQY74pjMI+jgUgXNpLNIMjbYMh2vSYyCYV
-8AI9ZdP9r3D/KY/PANya2aa1LHYlxLydfgKge83pUUZsyRv6/mxgCT4CGFs94+6e
-KGPl2n8/Y7UqBRSU6hyN
-=T6cU
------END PGP SIGNATURE-----
-
---UBnjLfzoMQYIXCvq--
+diff --git a/block/blk-cgroup.h b/block/blk-cgroup.h
+index 2459730..e2e3404 100644
+--- a/block/blk-cgroup.h
++++ b/block/blk-cgroup.h
+@@ -216,9 +216,7 @@ static inline int blkg_path(struct blkcg_gq *blkg, char *buf, int buflen)
+ {
+ 	int ret;
+ 
+-	rcu_read_lock();
+ 	ret = cgroup_path(blkg->blkcg->css.cgroup, buf, buflen);
+-	rcu_read_unlock();
+ 	if (ret)
+ 		strncpy(buf, "<unavailable>", buflen);
+ 	return ret;
+diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
+index 900af59..75c6ec1 100644
+--- a/include/linux/cgroup.h
++++ b/include/linux/cgroup.h
+@@ -150,6 +150,11 @@ enum {
+ 	CGRP_CPUSET_CLONE_CHILDREN,
+ };
+ 
++struct cgroup_name {
++	struct rcu_head rcu_head;
++	char name[];
++};
++
+ struct cgroup {
+ 	unsigned long flags;		/* "unsigned long" so bitops work */
+ 
+@@ -172,6 +177,19 @@ struct cgroup {
+ 	struct cgroup *parent;		/* my parent */
+ 	struct dentry *dentry;		/* cgroup fs entry, RCU protected */
+ 
++	/*
++	 * This is a copy of dentry->d_name, and it's needed because
++	 * we can't use dentry->d_name in cgroup_path().
++	 *
++	 * You must acquire rcu_read_lock() to access cgrp->name, and
++	 * the only place that can change it is rename(), which is
++	 * protected by parent dir's i_mutex.
++	 *
++	 * Normally you should use cgroup_name() wrapper rather than
++	 * access it directly.
++	 */
++	struct cgroup_name __rcu *name;
++
+ 	/* Private pointers for each registered subsystem */
+ 	struct cgroup_subsys_state *subsys[CGROUP_SUBSYS_COUNT];
+ 
+@@ -404,6 +422,12 @@ struct cgroup_scanner {
+ 	void *data;
+ };
+ 
++/* Caller should hold rcu_read_lock() */
++static inline const char *cgroup_name(const struct cgroup *cgrp)
++{
++	return rcu_dereference(cgrp->name)->name;
++}
++
+ int cgroup_add_cftypes(struct cgroup_subsys *ss, struct cftype *cfts);
+ int cgroup_rm_cftypes(struct cgroup_subsys *ss, struct cftype *cfts);
+ 
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index b5c6432..43ff59e 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -238,6 +238,8 @@ static DEFINE_SPINLOCK(hierarchy_id_lock);
+ /* dummytop is a shorthand for the dummy hierarchy's top cgroup */
+ #define dummytop (&rootnode.top_cgroup)
+ 
++static struct cgroup_name root_cgroup_name = { .name = "/" };
++
+ /* This flag indicates whether tasks in the fork and exit paths should
+  * check for fork/exit handlers to call. This avoids us having to do
+  * extra work in the fork/exit path if none of the subsystems need to
+@@ -860,6 +862,17 @@ static struct inode *cgroup_new_inode(umode_t mode, struct super_block *sb)
+ 	return inode;
+ }
+ 
++static struct cgroup_name *cgroup_alloc_name(struct dentry *dentry)
++{
++	struct cgroup_name *name;
++
++	name = kmalloc(sizeof(*name) + dentry->d_name.len + 1, GFP_KERNEL);
++	if (!name)
++		return NULL;
++	strcpy(name->name, dentry->d_name.name);
++	return name;
++}
++
+ static void cgroup_free_fn(struct work_struct *work)
+ {
+ 	struct cgroup *cgrp = container_of(work, struct cgroup, free_work);
+@@ -890,6 +903,7 @@ static void cgroup_free_fn(struct work_struct *work)
+ 	simple_xattrs_free(&cgrp->xattrs);
+ 
+ 	ida_simple_remove(&cgrp->root->cgroup_ida, cgrp->id);
++	kfree(rcu_dereference_raw(cgrp->name));
+ 	kfree(cgrp);
+ }
+ 
+@@ -1422,6 +1436,7 @@ static void init_cgroup_root(struct cgroupfs_root *root)
+ 	INIT_LIST_HEAD(&root->allcg_list);
+ 	root->number_of_cgroups = 1;
+ 	cgrp->root = root;
++	cgrp->name = &root_cgroup_name;
+ 	cgrp->top_cgroup = cgrp;
+ 	init_cgroup_housekeeping(cgrp);
+ 	list_add_tail(&cgrp->allcg_node, &root->allcg_list);
+@@ -1771,49 +1786,45 @@ static struct kobject *cgroup_kobj;
+  * @buf: the buffer to write the path into
+  * @buflen: the length of the buffer
+  *
+- * Called with cgroup_mutex held or else with an RCU-protected cgroup
+- * reference.  Writes path of cgroup into buf.  Returns 0 on success,
+- * -errno on error.
++ * Writes path of cgroup into buf.  Returns 0 on success, -errno on error.
++ *
++ * We can't generate cgroup path using dentry->d_name, as accessing
++ * dentry->name must be protected by irq-unsafe dentry->d_lock or parent
++ * inode's i_mutex, while on the other hand cgroup_path() can be called
++ * with some irq-safe spinlocks held.
+  */
+ int cgroup_path(const struct cgroup *cgrp, char *buf, int buflen)
+ {
+-	struct dentry *dentry = cgrp->dentry;
++	int ret = -ENAMETOOLONG;
+ 	char *start;
+ 
+-	rcu_lockdep_assert(rcu_read_lock_held() || cgroup_lock_is_held(),
+-			   "cgroup_path() called without proper locking");
+-
+-	if (cgrp == dummytop) {
+-		/*
+-		 * Inactive subsystems have no dentry for their root
+-		 * cgroup
+-		 */
+-		strcpy(buf, "/");
+-		return 0;
+-	}
+-
+ 	start = buf + buflen - 1;
+-
+ 	*start = '\0';
+-	for (;;) {
+-		int len = dentry->d_name.len;
+ 
++	rcu_read_lock();
++	while (cgrp) {
++		const char *name = cgroup_name(cgrp);
++		int len;
++
++		len = strlen(name);
+ 		if ((start -= len) < buf)
+-			return -ENAMETOOLONG;
+-		memcpy(start, dentry->d_name.name, len);
+-		cgrp = cgrp->parent;
+-		if (!cgrp)
+-			break;
++			goto out;
++		memcpy(start, name, len);
+ 
+-		dentry = cgrp->dentry;
+ 		if (!cgrp->parent)
+-			continue;
++			break;
++
+ 		if (--start < buf)
+-			return -ENAMETOOLONG;
++			goto out;
+ 		*start = '/';
++
++		cgrp = cgrp->parent;
+ 	}
++	ret = 0;
+ 	memmove(buf, start, buf + buflen - start);
+-	return 0;
++out:
++	rcu_read_unlock();
++	return ret;
+ }
+ EXPORT_SYMBOL_GPL(cgroup_path);
+ 
+@@ -2539,13 +2550,40 @@ static int cgroup_file_release(struct inode *inode, struct file *file)
+ static int cgroup_rename(struct inode *old_dir, struct dentry *old_dentry,
+ 			    struct inode *new_dir, struct dentry *new_dentry)
+ {
++	int ret;
++	struct cgroup_name *name, *old_name;
++	struct cgroup *cgrp;
++
++	/*
++	 * It's convinient to use parent dir's i_mutex to protected
++	 * cgrp->name.
++	 */
++	lockdep_assert_held(&old_dir->i_mutex);
++
+ 	if (!S_ISDIR(old_dentry->d_inode->i_mode))
+ 		return -ENOTDIR;
+ 	if (new_dentry->d_inode)
+ 		return -EEXIST;
+ 	if (old_dir != new_dir)
+ 		return -EIO;
+-	return simple_rename(old_dir, old_dentry, new_dir, new_dentry);
++
++	cgrp = __d_cgrp(old_dentry);
++
++	name = cgroup_alloc_name(new_dentry);
++	if (!name)
++		return -ENOMEM;
++
++	ret = simple_rename(old_dir, old_dentry, new_dir, new_dentry);
++	if (ret) {
++		kfree(name);
++		return ret;
++	}
++
++	old_name = cgrp->name;
++	rcu_assign_pointer(cgrp->name, name);
++
++	kfree_rcu(old_name, rcu_head);
++	return 0;
+ }
+ 
+ static struct simple_xattrs *__d_xattrs(struct dentry *dentry)
+@@ -4160,6 +4198,7 @@ static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
+ 			     umode_t mode)
+ {
+ 	struct cgroup *cgrp;
++	struct cgroup_name *name;
+ 	struct cgroupfs_root *root = parent->root;
+ 	int err = 0;
+ 	struct cgroup_subsys *ss;
+@@ -4170,9 +4209,14 @@ static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
+ 	if (!cgrp)
+ 		return -ENOMEM;
+ 
++	name = cgroup_alloc_name(dentry);
++	if (!name)
++		goto err_free_cgrp;
++	rcu_assign_pointer(cgrp->name, name);
++
+ 	cgrp->id = ida_simple_get(&root->cgroup_ida, 1, 0, GFP_KERNEL);
+ 	if (cgrp->id < 0)
+-		goto err_free_cgrp;
++		goto err_free_name;
+ 
+ 	/*
+ 	 * Only live parents can have children.  Note that the liveliness
+@@ -4278,6 +4322,8 @@ err_free_all:
+ 	deactivate_super(sb);
+ err_free_id:
+ 	ida_simple_remove(&root->cgroup_ida, cgrp->id);
++err_free_name:
++	kfree(rcu_dereference_raw(cgrp->name));
+ err_free_cgrp:
+ 	kfree(cgrp);
+ 	return err;
+-- 
+1.8.0.2
