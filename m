@@ -1,133 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755418Ab3CAUY3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 15:24:29 -0500
-Received: from relay2.sgi.com ([192.48.179.30]:37788 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752441Ab3CAUY1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 15:24:27 -0500
-Message-ID: <51310E7A.1000905@sgi.com>
-Date: Fri, 01 Mar 2013 14:24:26 -0600
-From: Mark Tinguely <tinguely@sgi.com>
-User-Agent: Mozilla/5.0 (X11; FreeBSD amd64; rv:9.0) Gecko/20120122 Thunderbird/9.0
+	id S1755429Ab3CAUYr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 15:24:47 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51328 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752132Ab3CATpM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Mar 2013 14:45:12 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Paul Zimmerman <paulz@synopsys.com>,
+        Pratyush Anand <pratyush.anand@st.com>, Felipe Balbi <balbi@ti.com>
+Subject: [ 11/77] usb: dwc3: Enable usb2 LPM only when connected as usb2.0
+Date: Fri,  1 Mar 2013 11:43:56 -0800
+Message-Id: <20130301194353.196158672@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
+In-Reply-To: <20130301194351.913471337@linuxfoundation.org>
+References: <20130301194351.913471337@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 MIME-Version: 1.0
-To: Tony Lu <zlu@tilera.com>
-CC: Alex Elder <elder@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        "xfs@oss.sgi.com" <xfs@oss.sgi.com>, Ben Myers <bpm@sgi.com>,
-        Dave Chinner <dchinner@redhat.com>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH] xfs: Fix possible truncation of log data in xlog_bread_noalign()
-References: <BAB94DBB0E89D8409949BC28AC95914C47C485E5@USMAExch1.tad.internal.tilera.com> <20130223000802.GB26081@dastard> <BAB94DBB0E89D8409949BC28AC95914C47C48702@USMAExch1.tad.internal.tilera.com> <20130223235546.GA5551@dastard> <BAB94DBB0E89D8409949BC28AC95914C47C488D8@USMAExch1.tad.internal.tilera.com> <20130224141017.GC5551@dastard> <BAB94DBB0E89D8409949BC28AC95914C47C49005@USMAExch1.tad.internal.tilera.com> <5130CE9E.9080501@sgi.com>
-In-Reply-To: <5130CE9E.9080501@sgi.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/01/13 09:51, Mark Tinguely wrote:
-> On 02/26/13 01:28, Tony Lu wrote:
->> I get a reliable way to reproduce this bug. The logprint and metadump
->> are attached.
->>
->> Kernel version: 2.6.38.8
->> Mkfs.xfs version: xfsprogs-3.1.1
->> mkfs.xfs -s size=4096 /dev/sda1
->>
->> Run the following mount-cp-umount script to reproduce:
->> #!/bin/sh
->> device=/dev/sda1
->> mount_point=/mnt
->> times=10
->>
->> for ((num=1;num<=$times;num++))
->> do
->> echo "$num mount $device $mount_point"
->> mount $device $mount_point
->>
->> echo "cp -rf /bin $mount_point/$num"
->> cp -rf /bin $mount_point/$num
->>
->> echo "$num umount $device $mount_point"
->> umount $mount_point
->>
->> #num=$(($num + 1))
->> done
->>
->> After several times of mount/cp/umount, this xfs crashes, and the xfs
->> partition can not be mounted any more. Here is the output of console.
->> -sh-4.1# ./umount-test
->> 1 mount /dev/sda1 /mnt
->> XFS mounting filesystem sda1
->> cp -rf /bin /mnt/1
->> 1 umount /dev/sda1 /mnt
->> 2 mount /dev/sda1 /mnt
->> XFS mounting filesystem sda1
->> cp -rf /bin /mnt/2
->> 2 umount /dev/sda1 /mnt
->> 3 mount /dev/sda1 /mnt
->> XFS mounting filesystem sda1
->> cp -rf /bin /mnt/3
->> 3 umount /dev/sda1 /mnt
->> 4 mount /dev/sda1 /mnt
->> XFS mounting filesystem sda1
->> cp -rf /bin /mnt/4
->> 4 umount /dev/sda1 /mnt
->> 5 mount /dev/sda1 /mnt
->> XFS mounting filesystem sda1
->> Starting XFS recovery on filesystem: sda1 (logdev: internal)
->> Ending XFS recovery on filesystem: sda1 (logdev: internal)cp -rf /bin
->> /mnt/5
->> 5 umount /dev/sda1 /mnt
->> 6 mount /dev/sda1 /mnt
->>
->> XFS mounting filesystem sda1
->> Starting XFS recovery on filesystem: sda1 (logdev: internal)
->> Ending XFS recovery on filesystem: sda1 (logdev: internal)Interrupt
->> cp -rf /bin /mnt/6
->> 6 umount /dev/sda1 /mnt
->> 7 mount /dev/sda1 /mnt
->>
->> XFS mounting filesystem sda1
->> cp -rf /bin /mnt/7
->> 7 umount /dev/sda1 /mnt
->> Interrupt
->> 8 mount /dev/sda1 /mnt
->> XFS mounting filesystem sda1
->> Starting XFS recovery on filesystem: sda1 (logdev: internal)
->> XFS: xlog_recover_process_data: bad clientid
->> XFS: log mount/recovery failed: error 5
->> XFS: log mount failed
->>
->> Thanks
->> -Tony
->
-> It works fine on a 2.6.32 machine I had sitting around - and I never
-> required log recovery.
->
-> I think you need to answer Dave's question as to why is your unmounts
-> are requiring recovery?
->
-> Are there errors in the /var/log/messages?
->
-> I downloaded the Linux 2.6.38.8 source and take a look if I can recreate
-> the problem.
->
-> --Mark.
+3.8-stable review patch.  If anyone has any objections, please let me know.
 
-I could not reproduce the problem on a vanilla install. XFS shutdown and 
-remounted cleanly running your script (several iterations looping set to 
-100).
+------------------
 
-I started fsstress on another XFS partition on the same disk to see if I 
-could force a shutdown race. With CONFIG_XFS_DEBUG=y, I could trigger 
-other ASSERTs on the fsstress partition so I never stayed up long enough 
-to cause a shutdown race.
+From: Pratyush Anand <pratyush.anand@st.com>
 
-Not wanting to patch that version of Linux/XFS, I am bailing here. If 
-you want to turn on the XFS debug it may point out why your filesystem 
-is not shutting down cleanly.
+commit 2b758350af19db9a5c98241cf222c2e211d7a912 upstream.
 
---Mark.
+Synopsys says:
+The HIRD Threshold field must be set to ‘0’ when the device core is
+operating in super speed mode.
+
+This patch implements above statement.
+
+Acked-by: Paul Zimmerman <paulz@synopsys.com>
+Signed-off-by: Pratyush Anand <pratyush.anand@st.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/usb/dwc3/gadget.c |   31 ++++++++++++++++++-------------
+ 1 file changed, 18 insertions(+), 13 deletions(-)
+
+--- a/drivers/usb/dwc3/gadget.c
++++ b/drivers/usb/dwc3/gadget.c
+@@ -2157,6 +2157,23 @@ static void dwc3_gadget_conndone_interru
+ 		break;
+ 	}
+ 
++	/* Enable USB2 LPM Capability */
++
++	if ((dwc->revision > DWC3_REVISION_194A)
++			&& (speed != DWC3_DCFG_SUPERSPEED)) {
++		reg = dwc3_readl(dwc->regs, DWC3_DCFG);
++		reg |= DWC3_DCFG_LPM_CAP;
++		dwc3_writel(dwc->regs, DWC3_DCFG, reg);
++
++		reg = dwc3_readl(dwc->regs, DWC3_DCTL);
++		reg &= ~(DWC3_DCTL_HIRD_THRES_MASK | DWC3_DCTL_L1_HIBER_EN);
++
++		/* TODO: This should be configurable */
++		reg |= DWC3_DCTL_HIRD_THRES(28);
++
++		dwc3_writel(dwc->regs, DWC3_DCTL, reg);
++	}
++
+ 	/* Recent versions support automatic phy suspend and don't need this */
+ 	if (dwc->revision < DWC3_REVISION_194A) {
+ 		/* Suspend unneeded PHY */
+@@ -2463,20 +2480,8 @@ int dwc3_gadget_init(struct dwc3 *dwc)
+ 			DWC3_DEVTEN_DISCONNEVTEN);
+ 	dwc3_writel(dwc->regs, DWC3_DEVTEN, reg);
+ 
+-	/* Enable USB2 LPM and automatic phy suspend only on recent versions */
++	/* automatic phy suspend only on recent versions */
+ 	if (dwc->revision >= DWC3_REVISION_194A) {
+-		reg = dwc3_readl(dwc->regs, DWC3_DCFG);
+-		reg |= DWC3_DCFG_LPM_CAP;
+-		dwc3_writel(dwc->regs, DWC3_DCFG, reg);
+-
+-		reg = dwc3_readl(dwc->regs, DWC3_DCTL);
+-		reg &= ~(DWC3_DCTL_HIRD_THRES_MASK | DWC3_DCTL_L1_HIBER_EN);
+-
+-		/* TODO: This should be configurable */
+-		reg |= DWC3_DCTL_HIRD_THRES(28);
+-
+-		dwc3_writel(dwc->regs, DWC3_DCTL, reg);
+-
+ 		dwc3_gadget_usb2_phy_suspend(dwc, false);
+ 		dwc3_gadget_usb3_phy_suspend(dwc, false);
+ 	}
+
+
