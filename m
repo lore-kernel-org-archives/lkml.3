@@ -1,100 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751601Ab3CAPmG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 10:42:06 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:29504 "EHLO mx1.redhat.com"
+	id S1751847Ab3CAPmb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 10:42:31 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:58608 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750696Ab3CAPmD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 10:42:03 -0500
-Message-ID: <5130CC28.1080204@redhat.com>
-Date: Fri, 01 Mar 2013 09:41:28 -0600
-From: Eric Sandeen <sandeen@redhat.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130216 Thunderbird/17.0.3
+	id S1751219Ab3CAPma (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Mar 2013 10:42:30 -0500
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Joern Engel <joern@logfs.org>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 3/9] printk: add CON_ALLDATA console flag
+References: <1362087602-8979-1-git-send-email-joern@logfs.org>
+	<1362087602-8979-4-git-send-email-joern@logfs.org>
+	<x49obf32mvo.fsf@segfault.boston.devel.redhat.com>
+	<20130301145805.GC30938@pd.tnic>
+	<x49fw0f2m5r.fsf@segfault.boston.devel.redhat.com>
+	<20130301153100.GD30938@pd.tnic>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Fri, 01 Mar 2013 10:42:16 -0500
+In-Reply-To: <20130301153100.GD30938@pd.tnic> (Borislav Petkov's message of
+	"Fri, 1 Mar 2013 16:31:00 +0100")
+Message-ID: <x49621b2kkn.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-To: Dmitry Monakhov <dmonakhov@openvz.org>
-CC: "Theodore Ts'o" <tytso@mit.edu>, Dave Jones <davej@redhat.com>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "gnehzuil.liu" <gnehzuil.liu@gmail.com>,
-        Zheng Liu <wenqing.lz@taobao.com>, Borislav Petkov <bp@alien8.de>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] ext4 updates for 3.9
-References: <20130227154450.GA23402@x4> <20130227170157.GA222@x4> <98C6DE45-F050-4AAD-82E2-7352F5BB0A5D@gmail.com> <20130227172256.GA236@x4> <7BFB2135-A1F0-4B6D-9962-16E75E5560F8@gmail.com> <20130227174553.GA224@x4> <CA+55aFwWA1jPEEQNx_5oJ6Ze=3yFb6=E9nraBfX-Ve=WjRkQMw@mail.gmail.com> <20130227184912.GA19624@thunk.org> <20130227185625.GA224@x4> <20130227191923.GA1121@redhat.com> <20130227192907.GB14253@thunk.org> <87k3pteank.fsf@openvz.org>
-In-Reply-To: <87k3pteank.fsf@openvz.org>
-X-Enigmail-Version: 1.5
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2/27/13 2:58 PM, Dmitry Monakhov wrote:
-> On Wed, 27 Feb 2013 14:29:07 -0500, Theodore Ts'o <tytso@mit.edu> wrote:
->> On Wed, Feb 27, 2013 at 02:19:23PM -0500, Dave Jones wrote:
->>>
->>> Looks like it's fixed here too.
->>>
->>> How did this make it through -next without anyone hitting it ?
->>>
->>> I can't remember how many years ago I last bought a disk < 1TB,
->>> and I can't be alone.  Or is everyone all about SSDs these days?
->>
->> I use LVM, so I have a number of volues which are smaler than 512GB,
->> but very few which are actually larger than 1TB.  And none on my test
->> boxes.  I was running the bleeding edge ext4 code on my laptop as for
->> dogfooding purposes, but I have an 80GB mSATA SSD and a 500GB HDD on
->> my X230 laptop (it requires a thin laptop drive, and 7mm drives don't
->> come any bigger, alas).
->>
->>> Is anyone running xfstests or similar on linux-next regularly ?
->>
->> I run xfstests on the ext4 tree, and I ran it on ext4 plus Linus's tip
->> before I submitted a pull request.  The problem is that XFSTESTS is
->> S-L-O-W if you use large partitions, so typically I use a 5GB
-> Indeed. That's why i give-up rotated disks and run xfstest only on SSD
-> or brd module 
->> partition sizes for my test runs.  Normally we're worried about race
->> condition bugs, not something as bone-headed as a bitmasking problem,
->> so it makes sense to use a smaller disk for most of your testing.
->> (Some folks do their xfstests run on SSD's or tmpfs image files, again
->> for speed reasons, and it's unlikely they would be big enough.)
->>
->> So what we probably need to do is to have a separate set of tests
->> using a loopback mount, and perhaps an artificially created file
->> system which has a large percentage of the blocks in the middle of the
->> file system busied out, to make efficient testing of these sorts of
->> bugs more efficient.  As I said, I'm thinking about how's the best way
->> to improve our testing regime to catch such problems the next time around.
-> Amazing idea. Something like:
-> 
-> #dd if=/dev/zero of=/tmp/fs.img bs=1M seek=2000000 count=1
-> #mkfs.ext4 -m0 -i4096000 /tmp/fs.img
-> #mount /tmp/fs.img /mnt/ -oloop
-> #for ((i=0; i < 2000; i++));do   fallocate -l $((1024*1024*1024)) /mnt/f$i ;done
-> #for ((i=0; i < 2000; i++));do   truncate -s $((1023*1024*1024)) /mnt/f$i ;done
-> 
-> As result file system image has 2gb of free space wich is fragmented to ~2000
-> chunks 1Mb each. But image itself is quite small
-> # df /mnt
-> Filesystem      1K-blocks       Used Available Use% Mounted on
-> /dev/loop0     2047678076 2045679228   1998848 100% /mnt
-> # du -sch /tmp/fs.img 
-> 242M     /tmp/fs.img
-> 242M     total
-> 
-> Later we can simply run xfstest/fio/fsx on this image.
-> I'll prepare new xfstest based on that idea. But the only disadvantage
-> is that loop dev has bottleneck, all requests will be serialized on i_mutex.
+Borislav Petkov <bp@alien8.de> writes:
 
-Before anyone does too much work, it would be worth revisiting
-dchinner's
-	[PATCH 0/10] xfstests: rework large filesystem testing
-series from July 2012 to see if it meets the needs already.
+> On Fri, Mar 01, 2013 at 10:08:00AM -0500, Jeff Moyer wrote:
+>> People don't just use this for "debugging sessions." They use it in
+>> production, and I already gave you one reason why you might not want
+>> to do this with netconsole (udp is unreliable, and I've definitely
+>> seem cases where netconsole suffered due to dropped packets; this
+>> won't make that better, especially when you multiply the extra bytes
+>> times the number of servers on the subnet).
+>
+> Ok, so we probably need to drop 4/9 for netconsole.
 
-It almost got all reviews, with one sticking point left, AFAICT.
+I don't think you've provided a very strong case for ignoring the
+administrator's configuration settings.  I'm against the patches that
+introduce this behaviour, for whatever that's worth (2 cents is the
+going rate, I think).
 
--Eric
-
-
-
+Cheers,
+Jeff
