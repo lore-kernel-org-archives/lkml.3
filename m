@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754654Ab3CAUDQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 15:03:16 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51764 "EHLO
+	id S1753758Ab3CATqM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 14:46:12 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51717 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753763Ab3CATqN (ORCPT
+	with ESMTP id S1753654Ab3CATqI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 14:46:13 -0500
+	Fri, 1 Mar 2013 14:46:08 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jan Beulich <jbeulich@suse.com>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [ 17/46] xen/blkback: Dont trust the handle from the frontend.
-Date: Fri,  1 Mar 2013 11:45:05 -0800
-Message-Id: <20130301194434.062149548@linuxfoundation.org>
+        Jie Liu <jeff.liu@oracle.com>, Tao Ma <boyu.mt@taobao.com>,
+        Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        Joel Becker <jlbec@evilplan.org>, Mark Fasheh <mfasheh@suse.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 13/46] ocfs2: fix ocfs2_init_security_and_acl() to initialize acl correctly
+Date: Fri,  1 Mar 2013 11:45:01 -0800
+Message-Id: <20130301194433.650899015@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130301194432.263409302@linuxfoundation.org>
 References: <20130301194432.263409302@linuxfoundation.org>
@@ -28,38 +30,163 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+From: Jeff Liu <jeff.liu@oracle.com>
 
-commit 01c681d4c70d64cb72142a2823f27c4146a02e63 upstream.
+commit 32918dd9f19e5960af4cdfa41190bb843fb2247b upstream.
 
-The 'handle' is the device that the request is from. For the life-time
-of the ring we copy it from a request to a response so that the frontend
-is not surprised by it. But we do not need it - when we start processing
-I/Os we have our own 'struct phys_req' which has only most essential
-information about the request. In fact the 'vbd_translate' ends up
-over-writing the preq.dev with a value from the backend.
+We need to re-initialize the security for a new reflinked inode with its
+parent dirs if it isn't specified to be preserved for ocfs2_reflink().
+However, the code logic is broken at ocfs2_init_security_and_acl()
+although ocfs2_init_security_get() succeed.  As a result,
+ocfs2_acl_init() does not involked and therefore the default ACL of
+parent dir was missing on the new inode.
 
-This assignment of preq.dev with the 'handle' value is superfluous
-so lets not do it.
+Note this was introduced by 9d8f13ba3 ("security: new
+security_inode_init_security API adds function callback")
 
-Acked-by: Jan Beulich <jbeulich@suse.com>
-Acked-by: Ian Campbell <ian.campbell@citrix.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To reproduce:
+
+    set default ACL for the parent dir(ocfs2 in this case):
+    $ setfacl -m default:user:jeff:rwx ../ocfs2/
+    $ getfacl ../ocfs2/
+    # file: ../ocfs2/
+    # owner: jeff
+    # group: jeff
+    user::rwx
+    group::r-x
+    other::r-x
+    default:user::rwx
+    default:user:jeff:rwx
+    default:group::r-x
+    default:mask::rwx
+    default:other::r-x
+
+    $ touch a
+    $ getfacl a
+    # file: a
+    # owner: jeff
+    # group: jeff
+    user::rw-
+    group::rw-
+    other::r--
+
+Before patching, create reflink file b from a, the user
+default ACL entry(user:jeff:rwx)was missing:
+
+    $ ./ocfs2_reflink a b
+    $ getfacl b
+    # file: b
+    # owner: jeff
+    # group: jeff
+    user::rw-
+    group::rw-
+    other::r--
+
+In this case, the end user can also observed an error message at syslog:
+
+  (ocfs2_reflink,3229,2):ocfs2_init_security_and_acl:7193 ERROR: status = 0
+
+After applying this patch, create reflink file c from a:
+
+    $ ./ocfs2_reflink a c
+    $ getfacl c
+    # file: c
+    # owner: jeff
+    # group: jeff
+    user::rw-
+    user:jeff:rwx			#effective:rw-
+    group::r-x			#effective:r--
+    mask::rw-
+    other::r--
+
+Test program:
+/* Usage: reflink <source> <dest> */
+#include <stdio.h>
+#include <stdint.h>
+#include <stdbool.h>
+#include <string.h>
+#include <errno.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <sys/ioctl.h>
+
+static int
+reflink_file(char const *src_name, char const *dst_name,
+	     bool preserve_attrs)
+{
+	int fd;
+
+#ifndef REFLINK_ATTR_NONE
+#  define REFLINK_ATTR_NONE 0
+#endif
+#ifndef REFLINK_ATTR_PRESERVE
+#  define REFLINK_ATTR_PRESERVE 1
+#endif
+#ifndef OCFS2_IOC_REFLINK
+	struct reflink_arguments {
+		uint64_t old_path;
+		uint64_t new_path;
+		uint64_t preserve;
+	};
+
+#  define OCFS2_IOC_REFLINK _IOW ('o', 4, struct reflink_arguments)
+#endif
+	struct reflink_arguments args = {
+		.old_path = (unsigned long) src_name,
+		.new_path = (unsigned long) dst_name,
+		.preserve = preserve_attrs ? REFLINK_ATTR_PRESERVE :
+					     REFLINK_ATTR_NONE,
+	};
+
+	fd = open(src_name, O_RDONLY);
+	if (fd < 0) {
+		fprintf(stderr, "Failed to open %s: %s\n",
+			src_name, strerror(errno));
+		return -1;
+	}
+
+	if (ioctl(fd, OCFS2_IOC_REFLINK, &args) < 0) {
+		fprintf(stderr, "Failed to reflink %s to %s: %s\n",
+			src_name, dst_name, strerror(errno));
+		return -1;
+	}
+}
+
+int
+main(int argc, char *argv[])
+{
+	if (argc != 3) {
+		fprintf(stdout, "Usage: %s source dest\n", argv[0]);
+		return 1;
+	}
+
+	return reflink_file(argv[1], argv[2], 0);
+}
+
+Signed-off-by: Jie Liu <jeff.liu@oracle.com>
+Reviewed-by: Tao Ma <boyu.mt@taobao.com>
+Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: Joel Becker <jlbec@evilplan.org>
+Cc: Mark Fasheh <mfasheh@suse.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/block/xen-blkback/blkback.c |    1 -
- 1 file changed, 1 deletion(-)
+ fs/ocfs2/xattr.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/block/xen-blkback/blkback.c
-+++ b/drivers/block/xen-blkback/blkback.c
-@@ -623,7 +623,6 @@ static int dispatch_rw_block_io(struct x
- 		goto fail_response;
+--- a/fs/ocfs2/xattr.c
++++ b/fs/ocfs2/xattr.c
+@@ -7189,7 +7189,7 @@ int ocfs2_init_security_and_acl(struct i
+ 	struct buffer_head *dir_bh = NULL;
+ 
+ 	ret = ocfs2_init_security_get(inode, dir, qstr, NULL);
+-	if (!ret) {
++	if (ret) {
+ 		mlog_errno(ret);
+ 		goto leave;
  	}
- 
--	preq.dev           = req->u.rw.handle;
- 	preq.sector_number = req->u.rw.sector_number;
- 	preq.nr_sects      = 0;
- 
 
 
