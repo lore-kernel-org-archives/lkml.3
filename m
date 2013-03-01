@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753651Ab3CATs7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 14:48:59 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52077 "EHLO
+	id S1754341Ab3CATtW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 14:49:22 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52072 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754646Ab3CATqw (ORCPT
+	with ESMTP id S1754636Ab3CATqv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 14:46:52 -0500
+	Fri, 1 Mar 2013 14:46:51 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [ 26/30] dca: check against empty dca_domains list before unregister provider fix
-Date: Fri,  1 Mar 2013 11:45:47 -0800
-Message-Id: <20130301194530.850597040@linuxfoundation.org>
+        Li Zefan <lizefan@huawei.com>, Tejun Heo <tj@kernel.org>
+Subject: [ 25/30] cgroup: fix exit() vs rmdir() race
+Date: Fri,  1 Mar 2013 11:45:46 -0800
+Message-Id: <20130301194530.732692246@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130301194527.988540148@linuxfoundation.org>
 References: <20130301194527.988540148@linuxfoundation.org>
@@ -26,33 +26,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-In 3.0.67, commit 7a9a20ea77e7508c795dead9ab2f6c98a617762d (dca: check
-against empty dca_domains list before unregister provider), upstream
-commit c419fcfd071cf34ba00f9f65282583772d2655e7, added a fail path to
-unregister_dca_provider. It added there also a call to
-raw_spin_unlock_irqrestore. But in 3.0, the lock is not raw, so this
-results in:
-drivers/dca/dca-core.c: In function 'unregister_dca_provider':
-drivers/dca/dca-core.c:413: warning: passing argument 1 of '_raw_spin_unlock_irqrestore' from incompatible pointer type
+From: Li Zefan <lizefan@huawei.com>
 
-Fix it by calling spin_unlock_irqrestore properly.
+commit 71b5707e119653039e6e95213f00479668c79b75 upstream.
 
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+In cgroup_exit() put_css_set_taskexit() is called without any lock,
+which might lead to accessing a freed cgroup:
+
+thread1                           thread2
+---------------------------------------------
+exit()
+  cgroup_exit()
+    put_css_set_taskexit()
+      atomic_dec(cgrp->count);
+                                   rmdir();
+      /* not safe !! */
+      check_for_release(cgrp);
+
+rcu_read_lock() can be used to make sure the cgroup is alive.
+
+Signed-off-by: Li Zefan <lizefan@huawei.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/dca/dca-core.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/dca/dca-core.c
-+++ b/drivers/dca/dca-core.c
-@@ -410,7 +410,7 @@ void unregister_dca_provider(struct dca_
- 	spin_lock_irqsave(&dca_lock, flags);
+---
+ kernel/cgroup.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -359,12 +359,20 @@ static void __put_css_set(struct css_set
+ 		struct cgroup *cgrp = link->cgrp;
+ 		list_del(&link->cg_link_list);
+ 		list_del(&link->cgrp_link_list);
++
++		/*
++		 * We may not be holding cgroup_mutex, and if cgrp->count is
++		 * dropped to 0 the cgroup can be destroyed at any time, hence
++		 * rcu_read_lock is used to keep it alive.
++		 */
++		rcu_read_lock();
+ 		if (atomic_dec_and_test(&cgrp->count) &&
+ 		    notify_on_release(cgrp)) {
+ 			if (taskexit)
+ 				set_bit(CGRP_RELEASABLE, &cgrp->flags);
+ 			check_for_release(cgrp);
+ 		}
++		rcu_read_unlock();
  
- 	if (list_empty(&dca_domains)) {
--		raw_spin_unlock_irqrestore(&dca_lock, flags);
-+		spin_unlock_irqrestore(&dca_lock, flags);
- 		return;
+ 		kfree(link);
  	}
- 
 
 
