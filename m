@@ -1,59 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751711Ab3CALPh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 06:15:37 -0500
-Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:14148
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751121Ab3CALPg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 06:15:36 -0500
-X-Forefront-Antispam-Report: CIP:59.163.77.45;KIP:(null);UIP:(null);IPV:NLI;H:KCHJEXHC01.kpit.com;RD:59.163.77.45.static.vsnl.net.in;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VPS-2(zz98dI936eI1432Izz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ahzz8275bhz2dh2a8h668h839h93fhd24hd2bhf0ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5hbe9i1155h)
-Subject: Re: [patch v1 1/5] mfd: da9055 change irq state to default
-From: Ashish Jangam <ashish.jangam@kpitcummins.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Samuel Ortiz <sameo@linux.intel.com>, Axel Lin <axel.lin@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        <linux-kernel@vger.kernel.org>, David Dajun Chen <dchen@diasemi.com>
-In-Reply-To: <1358486377.14373.7.camel@dhruva>
-References: <1358486377.14373.7.camel@dhruva>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 1 Mar 2013 16:42:17 +0530
-Message-ID: <1362136337.19678.3.camel@dhruva>
-MIME-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.10.38.47]
-X-OriginatorOrg: kpitcummins.com
+	id S1751958Ab3CALRi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 06:17:38 -0500
+Received: from [84.200.39.61] ([84.200.39.61]:41301 "EHLO smtp.eikelenboom.it"
+	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751367Ab3CALRg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Mar 2013 06:17:36 -0500
+From: Sander Eikelenboom <linux@eikelenboom.it>
+To: rjw@sisk.pl
+Cc: Sander Eikelenboom <linux@eikelenboom.it>, aaron.lu@intel.com,
+        jgarzik@pobox.com, linux-kernel@vger.kernel.org,
+        linux-ide@vger.kernel.org, linux-pm@vger.kernel.org
+Subject: [PATCH] libata-acpi.c: fix copy and paste mistake in ata_acpi_register_power_resource
+Date: Fri,  1 Mar 2013 12:16:42 +0100
+Message-Id: <1362136602-30327-1-git-send-email-linux@eikelenboom.it>
+X-Mailer: git-send-email 1.7.2.5
+In-Reply-To: <2508494.4AbRYXD1du@vostro.rjw.lan>
+References: <2508494.4AbRYXD1du@vostro.rjw.lan>
+To: rjw@sisk.pl
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-01-18 at 10:49 +0530, Ashish Jangam wrote:
-> This patch changes the irq state from high to the now default low
-> state.
-> 
-> This patch is tested on smdk6410 board.
-> 
-> Signed-off-by: Ashish Jangam <ashish.jangam@kpitcummins.com>
-> ---
->  drivers/mfd/da9055-core.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/mfd/da9055-core.c b/drivers/mfd/da9055-core.c
-> index f56a1a9..49cb23d 100644
-> --- a/drivers/mfd/da9055-core.c
-> +++ b/drivers/mfd/da9055-core.c
-> @@ -391,7 +391,7 @@ int da9055_device_init(struct da9055 *da9055)
->  		da9055->irq_base = pdata->irq_base;
->  
->  	ret = regmap_add_irq_chip(da9055->regmap, da9055->chip_irq,
-> -				  IRQF_TRIGGER_HIGH | IRQF_ONESHOT,
-> +				  IRQF_TRIGGER_LOW | IRQF_ONESHOT,
->  				  da9055->irq_base, &da9055_regmap_irq_chip,
->  				  &da9055->irq_data);
->  	if (ret < 0)
-Can you let me know if this patch looks good to get merged?
+Fix a copy and paste mistake introduced in:
 
+commit bc9b6407bd6df3ab7189e5622816bbc11ae9d2d8
+"ACPI / PM: Rework the handling of devices depending on power resources"
+
+Signed-off-by: Sander Eikelenboom <linux@eikelenboom.it>
+---
+ drivers/ata/libata-acpi.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/ata/libata-acpi.c b/drivers/ata/libata-acpi.c
+index 0ea1018..cb3eab6d 100644
+--- a/drivers/ata/libata-acpi.c
++++ b/drivers/ata/libata-acpi.c
+@@ -1027,7 +1027,7 @@ static void ata_acpi_register_power_resource(struct ata_device *dev)
+ 
+ 	handle = ata_dev_acpi_handle(dev);
+ 	if (handle)
+-		acpi_dev_pm_remove_dependent(handle, &sdev->sdev_gendev);
++		acpi_dev_pm_add_dependent(handle, &sdev->sdev_gendev);
+ }
+ 
+ static void ata_acpi_unregister_power_resource(struct ata_device *dev)
+-- 
+1.7.2.5
 
