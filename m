@@ -1,104 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755402Ab3CAAvv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 19:51:51 -0500
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:52816 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754592Ab3CAAnp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 19:43:45 -0500
-From: John Stultz <john.stultz@linaro.org>
-To: lkml <linux-kernel@vger.kernel.org>
-Cc: Erik Gilling <konkers@android.com>,
-        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>, Rob Clark <robclark@gmail.com>,
-        Sumit Semwal <sumit.semwal@linaro.org>,
-        Greg KH <gregkh@linuxfoundation.org>, dri-devel@lists.freedesktop.org,
-        Android Kernel Team <kernel-team@android.com>,
-        John Stultz <john.stultz@linaro.org>
-Subject: [PATCH 03/30] staging: sync: Add timestamps to sync_pts
-Date: Thu, 28 Feb 2013 16:42:59 -0800
-Message-Id: <1362098606-26469-4-git-send-email-john.stultz@linaro.org>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1362098606-26469-1-git-send-email-john.stultz@linaro.org>
-References: <1362098606-26469-1-git-send-email-john.stultz@linaro.org>
+	id S1751968Ab3CAAx4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 19:53:56 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:43187 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750985Ab3CAAxz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Feb 2013 19:53:55 -0500
+Message-ID: <512FFBC4.4070400@zytor.com>
+Date: Thu, 28 Feb 2013 16:52:20 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130219 Thunderbird/17.0.3
+MIME-Version: 1.0
+To: Josh Boyer <jwboyer@redhat.com>
+CC: Borislav Petkov <bp@alien8.de>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>, mingo@redhat.com,
+        tglx@linutronix.de, konrad.wilk@oracle.com, rostedt@goodmis.org,
+        gregkh@linuxfoundation.org, samu.kallio@aberdeencloud.com,
+        kraman@redhat.com, xen-devel@lists.xen.org,
+        linux-kernel@vger.kernel.org, stable@kernel.org
+Subject: Re: [PATCH] mm/x86: Patch out arch_flush_lazy_mmu_mode() when running
+ on bare metal
+References: <1362092149-32381-1-git-send-email-boris.ostrovsky@oracle.com> <20130228233720.GB17468@pd.tnic> <20130301000539.GA31649@hansolo.jdub.homelinux.org> <512FF331.5050008@zytor.com> <20130301003629.GG9767@pd.tnic> <20130301004211.GB31649@hansolo.jdub.homelinux.org>
+In-Reply-To: <20130301004211.GB31649@hansolo.jdub.homelinux.org>
+X-Enigmail-Version: 1.5
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Erik Gilling <konkers@android.com>
+On 02/28/2013 04:42 PM, Josh Boyer wrote:
+> On Fri, Mar 01, 2013 at 01:36:29AM +0100, Borislav Petkov wrote:
+>> On Thu, Feb 28, 2013 at 04:15:45PM -0800, H. Peter Anvin wrote:
+>>>> I'll try to get someone to test this tomorrow.
+>>
+>> Btw, you'd need to apply that other patch too
+>>
+>> http://marc.info/?l=xen-devel&m=136206183814547&w=2
+>>
+>> so that arch_flush_lazy_mmu_mode() has at least one caller on x86_64.
+> 
+> Yeah, we already have that applied.  It stops crashes in xen
+> environments so we pulled it in as a bugfix.  Thanks though!
+> 
 
-Add ktime timestamps to sync_pt structure and
-update them when signaled
+Who are "we"?
 
-Cc: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-Cc: Erik Gilling <konkers@android.com>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: Rob Clark <robclark@gmail.com>
-Cc: Sumit Semwal <sumit.semwal@linaro.org>
-Cc: Greg KH <gregkh@linuxfoundation.org>
-Cc: dri-devel@lists.freedesktop.org
-Cc: Android Kernel Team <kernel-team@android.com>
-Signed-off-by: Erik Gilling <konkers@android.com>
-[jstultz: Added commit message]
-Signed-off-by: John Stultz <john.stultz@linaro.org>
----
- drivers/staging/android/sync.c |    5 +++++
- drivers/staging/android/sync.h |    5 +++++
- 2 files changed, 10 insertions(+)
+	-hpa
 
-diff --git a/drivers/staging/android/sync.c b/drivers/staging/android/sync.c
-index 4a9e63d..88d7e66 100644
---- a/drivers/staging/android/sync.c
-+++ b/drivers/staging/android/sync.c
-@@ -155,12 +155,17 @@ void sync_pt_free(struct sync_pt *pt)
- /* call with pt->parent->active_list_lock held */
- static int _sync_pt_has_signaled(struct sync_pt *pt)
- {
-+	int old_status = pt->status;
-+
- 	if (!pt->status)
- 		pt->status = pt->parent->ops->has_signaled(pt);
- 
- 	if (!pt->status && pt->parent->destroyed)
- 		pt->status = -ENOENT;
- 
-+	if (pt->status != old_status)
-+		pt->timestamp = ktime_get();
-+
- 	return pt->status;
- }
- 
-diff --git a/drivers/staging/android/sync.h b/drivers/staging/android/sync.h
-index 388acd1..a8e289d 100644
---- a/drivers/staging/android/sync.h
-+++ b/drivers/staging/android/sync.h
-@@ -16,6 +16,7 @@
- #include <linux/types.h>
- #ifdef __KERNEL__
- 
-+#include <linux/ktime.h>
- #include <linux/list.h>
- #include <linux/spinlock.h>
- #include <linux/wait.h>
-@@ -90,6 +91,8 @@ struct sync_timeline {
-  * @fence:		sync_fence to which the sync_pt belongs
-  * @pt_list:		membership in sync_fence.pt_list_head
-  * @status:		1: signaled, 0:active, <0: error
-+ * @timestamp:		time which sync_pt status transitioned from active to
-+ *			  singaled or error.
-  */
- struct sync_pt {
- 	struct sync_timeline		*parent;
-@@ -102,6 +105,8 @@ struct sync_pt {
- 
- 	/* protected by parent->active_list_lock */
- 	int			status;
-+
-+	ktime_t			timestamp;
- };
- 
- /**
--- 
-1.7.10.4
 
