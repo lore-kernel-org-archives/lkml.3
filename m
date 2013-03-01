@@ -1,81 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752059Ab3CAGmm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 01:42:42 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:34010 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750798Ab3CAGml (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 01:42:41 -0500
-Date: Fri, 1 Mar 2013 14:39:28 +0800
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Graeme Gregory <gg@slimlogic.co.uk>
-Cc: Laxman Dewangan <ldewangan@nvidia.com>, linux-kernel@vger.kernel.org,
-        swarren@nvidia.com, ian@slimlogic.co.uk, lrg@ti.com
-Subject: Re: [PATCH] regulator: palmas: use correct device node for DT parsing
-Message-ID: <20130301063915.GD25302@opensource.wolfsonmicro.com>
-References: <1361974224-18180-1-git-send-email-ldewangan@nvidia.com>
- <512E16EE.2050201@slimlogic.co.uk>
+	id S1752148Ab3CAGnA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 01:43:00 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:61331 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751407Ab3CAGm7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Mar 2013 01:42:59 -0500
+Message-ID: <51304DDA.40808@redhat.com>
+Date: Fri, 01 Mar 2013 01:42:34 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ieNMXl1Fr3cevapt"
-Content-Disposition: inline
-In-Reply-To: <512E16EE.2050201@slimlogic.co.uk>
-X-Cookie: Condense soup, not books!
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        "Vinod, Chegu" <chegu_vinod@hp.com>, "Low, Jason" <jason.low2@hp.com>,
+        linux-tip-commits@vger.kernel.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>, aquini@redhat.com,
+        Michel Lespinasse <walken@google.com>, Ingo Molnar <mingo@kernel.org>,
+        Larry Woodman <lwoodman@redhat.com>
+Subject: Re: [tip:core/locking] x86/smp: Move waiting on contended ticket
+ lock out of line
+References: <20130206150403.006e5294@cuia.bos.redhat.com> <511C24A6.8020409@redhat.com> <CA+55aFws80EEJQskqiP+a5J-HOGu=M1Fe=uCs50ifedVxPxT1Q@mail.gmail.com> <512E376D.70105@redhat.com> <CA+55aFzPxJ3rfZvAvrP9LxCXfDU8AAVvhMZnP-OAoe-ycc70aw@mail.gmail.com> <512E6443.9050603@redhat.com> <CA+55aFwHxv9RH75BoXYcwdKeHx+otOOpg9494TTdFwQe3biOhw@mail.gmail.com> <512E80E3.7060800@redhat.com> <CA+55aFwa0EjGG2NUDYVLVBmXJa2k81YiuNO2yggk=GLRQxhhUQ@mail.gmail.com> <512EC7F0.60103@redhat.com> <1362024397.1867.28.camel@buesod1.americas.hpqcorp.net> <CA+55aFygzjuNYiG4MTPMzimEjQ92rpS-rNJr7HD4OQCAqze5zg@mail.gmail.com> <512F7429.4020103@redhat.com> <CA+55aFw3t+sC-zv6njxdJ6hB0arJnZzoGNO9W7o8h=tcUo5P_Q@mail.gmail.com> <CA+55aFwEshukBGU5YCtKL=7c-43guMuGSHTnXo02rLxZWGQWTw@mail.gmail.com> <512FC89B.6030507@redhat.com> <CA+55aFxbm83Oc2g55868HA2xCytsJzTxWGE0w_pMUzKaU5mJMw@mail.gmail.com> <512FDC82.2060606@redhat.com> <CA+55aFyitxgooTYq27eK4fO___R4uRrNhoPwDWxULeUkejH0ZA@mail.gmail.com>
+In-Reply-To: <CA+55aFyitxgooTYq27eK4fO___R4uRrNhoPwDWxULeUkejH0ZA@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 02/28/2013 06:09 PM, Linus Torvalds wrote:
 
---ieNMXl1Fr3cevapt
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> So I almost think that *everything* there in the semaphore code could
+> be done under RCU. The actual spinlock doesn't seem to much matter, at
+> least for semaphores. The semaphore values themselves seem to be
+> protected by the atomic operations, but I might be wrong about that, I
+> didn't even check.
 
-On Wed, Feb 27, 2013 at 02:23:42PM +0000, Graeme Gregory wrote:
-> On 27/02/13 14:10, Laxman Dewangan wrote:
+Checking try_atomic_semop and do_smart_update, it looks like neither
+is using atomic operations. That part of the semaphore code would
+still benefit from spinlocks.
 
-> > When device is registered through the DT then regulators node
-> > exist in the parent device node of regulator driver. Hence passing
-> > parent device node for parsing DT in place of self-device node
-> > which is typically NULL.
+The way the code handles a whole batch of semops all at once,
+potentially to multiple semaphores at once, and with the ability
+to undo all of the operations, it looks like the spinlock will
+still need to be per block of semaphores.
 
-> > -	struct device_node *node = pdev->dev.of_node;
-> > +	struct device_node *node = pdev->dev.parent->of_node;
+I guess the code may still benefit from Michel's locking code,
+after the permission stuff has been moved from under the spinlock.
 
-> This is not correct, nor is the reasoning.
+Two remaining worries are the security_sem_free call and the
+non-RCU list_del calls from freeary, called from the SEM_RMID
+code. They are probably fine, but worth another pair of eyes...
 
-> I suspect your previous patch broke DT probing so your not getting nodes
-> filled in.
-
-So, the reason that this pattern has generally been followed is so that
-the regulator core can do the equivalent of regulator_get(dev, supply)
-to find the supplies.  Using the parent device there is particularly
-important in non-DT systems so that we can map the child regulator
-supply in by using the dev_name() of the parent rather than the MFD
-internal subdevice name but for pure DT systems where it's all just
-direct links it's less of an issue.
-
---ieNMXl1Fr3cevapt
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRMEzgAAoJELSic+t+oim9yP0P/0Mtnp2U1hSabw5NbacfVy1q
-d6yEfgCVSo3UlE0GGlndBgHuziuhdSP9y+O/7d8+yxbNCkwDsiNqL7+rbUsoecxD
-4ImbpPpy1N04gII89aiod8b0aqkPebmLAf1rW0AsyjOZwqEx2tLCr9hr9jhXGUvt
-WWiNKW6kjRCjhfNE76R20HaGAgdTUgtf7s6vH7H36RH+i4pWNvAvNcx02vi4tZOs
-fq85sQr/AB9IJSxVcj6oqXE+VDt5uDjtqnIDNbA3UI43t5TGpK50+dlM4Gw6ar4E
-bRzHmRUshYGaESggVHxhwx7YBZS1HQAy4jkf22Z4yXZlAKSu4ICJEGxf8ziQf/4z
-8uZABrBdZ7E7KA1seYmrnpu1GiHHa/lhRAN0qur4kTzGEYJG13YOqY5WfpeI4hUK
-ouyF1volu2paBpbpE/KTig5xGTTiQZkJhRpVgYsNEK/d0wFFw7TnhNs4ghY3Hln6
-vKoFMutIryEy/nyXPXZjkpkOH0JkRHtCR2kxs98KWWKx2f9svu8bFb58vmH8KZg6
-24DbmIEREKsB2KrxeFYHNGbaQPbAPuLMXCgR+MM7O0VDpfRKhhTfdCzQTCSEq7nT
-pt79HJpWZvvoMYcaA9Tq4UDBZCHEfVxEpdaBhIO8xnyhvBM9OAG8G+02GVeSTMiK
-bafq5SCuK0yJUOfNPofX
-=TIKZ
------END PGP SIGNATURE-----
-
---ieNMXl1Fr3cevapt--
+-- 
+All rights reversed
