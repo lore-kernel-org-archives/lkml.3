@@ -1,63 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753805Ab3CAAoz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 19:44:55 -0500
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:59172 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756537Ab3CAAo0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 19:44:26 -0500
-From: John Stultz <john.stultz@linaro.org>
-To: lkml <linux-kernel@vger.kernel.org>
-Cc: Erik Gilling <konkers@android.com>,
-        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>, Rob Clark <robclark@gmail.com>,
-        Sumit Semwal <sumit.semwal@linaro.org>,
-        Greg KH <gregkh@linuxfoundation.org>, dri-devel@lists.freedesktop.org,
-        Android Kernel Team <kernel-team@android.com>,
-        John Stultz <john.stultz@linaro.org>
-Subject: [PATCH 29/30] staging: sync: Don't log wait timeouts when timeout = 0
-Date: Thu, 28 Feb 2013 16:43:25 -0800
-Message-Id: <1362098606-26469-30-git-send-email-john.stultz@linaro.org>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1362098606-26469-1-git-send-email-john.stultz@linaro.org>
-References: <1362098606-26469-1-git-send-email-john.stultz@linaro.org>
+	id S1757159Ab3CAApH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 19:45:07 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:47881 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755049Ab3CAApB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Feb 2013 19:45:01 -0500
+From: Nishanth Menon <nm@ti.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Nishanth Menon <nm@ti.com>, Liam Girdwood <lgirdwood@gmail.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH] regulator: core: fix documentation error in regulator_allow_bypass
+Date: Thu, 28 Feb 2013 18:44:54 -0600
+Message-ID: <1362098694-8570-1-git-send-email-nm@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Erik Gilling <konkers@android.com>
+commit f59c8f9f (regulator: core: Support bypass mode)
+has a short documentation error around the regulator_allow_bypass
+parameter 'enable' which is documented as 'allow'.
 
-If the timeout is zero, don't trip the timeout debugging
+This generates kernel-doc warning as follows:
+./scripts/kernel-doc drivers/regulator/core.c >/dev/null
+Warning(drivers/regulator/core.c:2841): No description found for parameter 'enable'
+Warning(drivers/regulator/core.c:2841): Excess function parameter 'allow' description in 'regulator_allow_bypass'
 
-Cc: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-Cc: Erik Gilling <konkers@android.com>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: Rob Clark <robclark@gmail.com>
-Cc: Sumit Semwal <sumit.semwal@linaro.org>
-Cc: Greg KH <gregkh@linuxfoundation.org>
-Cc: dri-devel@lists.freedesktop.org
-Cc: Android Kernel Team <kernel-team@android.com>
-Signed-off-by: Erik Gilling <konkers@android.com>
-[jstultz: Added commit message]
-Signed-off-by: John Stultz <john.stultz@linaro.org>
+Cc: Liam Girdwood <lgirdwood@gmail.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-kernel@vger.kernel.org
+Signed-off-by: Nishanth Menon <nm@ti.com>
 ---
- drivers/staging/android/sync.c |    2 +-
+the above error is based off:
+master de1a226 Merge tag 'writeback-fixes' of git://git.kernel.org/pub/scm/linux/kernel/git/wfg/linux
+from: git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git
+
+defconfig used: omap2plus_defconfig
+
+ drivers/regulator/core.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/staging/android/sync.c b/drivers/staging/android/sync.c
-index bd18c75..9b8b0e9 100644
---- a/drivers/staging/android/sync.c
-+++ b/drivers/staging/android/sync.c
-@@ -616,7 +616,7 @@ int sync_fence_wait(struct sync_fence *fence, long timeout)
- 		return fence->status;
- 	}
- 
--	if (fence->status == 0) {
-+	if (fence->status == 0 && timeout > 0) {
- 		pr_info("fence timeout on [%p] after %dms\n", fence,
- 			jiffies_to_msecs(timeout));
- 		sync_dump();
+diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
+index da9782b..154bc8f 100644
+--- a/drivers/regulator/core.c
++++ b/drivers/regulator/core.c
+@@ -2830,7 +2830,7 @@ EXPORT_SYMBOL_GPL(regulator_get_bypass_regmap);
+  * regulator_allow_bypass - allow the regulator to go into bypass mode
+  *
+  * @regulator: Regulator to configure
+- * @allow: enable or disable bypass mode
++ * @enable: enable or disable bypass mode
+  *
+  * Allow the regulator to go into bypass mode if all other consumers
+  * for the regulator also enable bypass mode and the machine
 -- 
-1.7.10.4
+1.7.9.5
 
