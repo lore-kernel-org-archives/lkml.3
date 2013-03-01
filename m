@@ -1,474 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751744Ab3CAPed (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 10:34:33 -0500
-Received: from mga09.intel.com ([134.134.136.24]:18025 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750696Ab3CAPec convert rfc822-to-8bit (ORCPT
+	id S1751624Ab3CAPfw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 10:35:52 -0500
+Received: from out02.mta.xmission.com ([166.70.13.232]:60668 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751367Ab3CAPfu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 10:34:32 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,761,1355126400"; 
-   d="scan'208";a="292346097"
-From: "R, Durgadoss" <durgadoss.r@intel.com>
-To: Eduardo Valentin <eduardo.valentin@ti.com>
-CC: "Zhang, Rui" <rui.zhang@intel.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hongbo.zhang@linaro.org" <hongbo.zhang@linaro.org>,
-        "wni@nvidia.com" <wni@nvidia.com>
-Subject: RE: [PATCH 4/8] Thermal: Add trip point sysfs nodes for sensor
-Thread-Topic: [PATCH 4/8] Thermal: Add trip point sysfs nodes for sensor
-Thread-Index: AQHOA47h86NMPZAv6Ea56M4HLj3/O5iPdqYAgAGmbsA=
-Date: Fri, 1 Mar 2013 15:34:26 +0000
-Message-ID: <4D68720C2E767A4AA6A8796D42C8EB59293FDE@BGSMSX101.gar.corp.intel.com>
-References: <1360061183-14137-1-git-send-email-durgadoss.r@intel.com>
- <1360061183-14137-5-git-send-email-durgadoss.r@intel.com>
- <512FB53A.8010601@ti.com>
-In-Reply-To: <512FB53A.8010601@ti.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.223.10.10]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 1 Mar 2013 10:35:50 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: mtk.manpages@gmail.com
+Cc: Rob Landley <rob@landley.net>, linux-man <linux-man@vger.kernel.org>,
+        Linux Containers <containers@lists.linux-foundation.org>,
+        lkml <linux-kernel@vger.kernel.org>
+References: <CAKgNAki=mUYuu_Ewhe7sjCmo+Dq2Vr+FZCixqNRaadcvAxtpFw@mail.gmail.com>
+	<1362110504.15531.4@driftwood>
+	<CAKgNAkgVKnhRT1Lpq4a_UdBKB+tn6XmWSDF2QJXG0aSLtNH6dg@mail.gmail.com>
+Date: Fri, 01 Mar 2013 07:35:38 -0800
+In-Reply-To: <CAKgNAkgVKnhRT1Lpq4a_UdBKB+tn6XmWSDF2QJXG0aSLtNH6dg@mail.gmail.com>
+	(Michael Kerrisk's message of "Fri, 1 Mar 2013 10:57:40 +0100")
+Message-ID: <87wqtr3zg5.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-XM-AID: U2FsdGVkX18aeFuPnfImbxmi8j+MyQpi1cOqEUbaEHc=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  1.5 TR_Symld_Words too many words that have symbols inside
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	*  0.8 BAYES_50 BODY: Bayes spam probability is 40 to 60%
+	*      [score: 0.4169]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.5 XM_Body_Dirty_Words Contains a dirty word
+	*  0.0 T_XMDrugObfuBody_08 obfuscated drug references
+	*  0.1 XMSolicitRefs_0 Weightloss drug
+X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: *;mtk.manpages@gmail.com
+X-Spam-Relay-Country: 
+Subject: Re: For review: pid_namespaces(7) man page
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: linux-pm-owner@vger.kernel.org [mailto:linux-pm-
-> owner@vger.kernel.org] On Behalf Of Eduardo Valentin
-> Sent: Friday, March 01, 2013 1:21 AM
-> To: R, Durgadoss
-> Cc: Zhang, Rui; linux-pm@vger.kernel.org; linux-kernel@vger.kernel.org;
-> hongbo.zhang@linaro.org; wni@nvidia.com
-> Subject: Re: [PATCH 4/8] Thermal: Add trip point sysfs nodes for sensor
-> 
-> Durga,
-> 
-> 
-> Same comments on patch 02/08 I want to rise here:
-> - Minors on strlcpy, snprintf, devm_ helpers
-> - documentation in the code for these helper functions and also better
-> naming..
-> 
-> 
-> On 05-02-2013 06:46, Durgadoss R wrote:
-> > This patch adds a trip point related sysfs nodes
-> > for each sensor under a zone in /sys/class/thermal/zoneX/.
-> > The nodes will be named, sensorX_trip_active,
-> > sensorX_trip_passive, sensorX_trip_hot, sensorX_trip_critical
-> > for active, passive, hot and critical trip points
-> > respectively for sensorX.
-> >
-> > Signed-off-by: Durgadoss R <durgadoss.r@intel.com>
-> > ---
-> >   drivers/thermal/thermal_sys.c |  225
-> ++++++++++++++++++++++++++++++++++++++++-
-> >   include/linux/thermal.h       |   38 ++++++-
-> >   2 files changed, 260 insertions(+), 3 deletions(-)
-> >
-> > diff --git a/drivers/thermal/thermal_sys.c b/drivers/thermal/thermal_sys.c
-> > index bf703b1..69a60a4 100644
-> > --- a/drivers/thermal/thermal_sys.c
-> > +++ b/drivers/thermal/thermal_sys.c
-> > @@ -452,6 +452,37 @@ static void thermal_zone_device_check(struct
-> work_struct *work)
-> >   	thermal_zone_device_update(tz);
-> >   }
-> >
-> > +static int get_sensor_indx_by_kobj(struct thermal_zone *tz, const char
-> *name)
-> > +{
-> > +	int i, indx = -EINVAL;
-> > +
-> > +	mutex_lock(&sensor_list_lock);
-> > +	for (i = 0; i < tz->sensor_indx; i++) {
-> > +		if (!strnicmp(name, kobject_name(&tz->sensors[i]-
-> >device.kobj),
-> > +					THERMAL_NAME_LENGTH)) {
-> > +			indx = i;
-> > +			break;
-> > +		}
-> > +	}
-> > +	mutex_unlock(&sensor_list_lock);
-> > +	return indx;
-> > +}
-> > +
-> > +static void inline __remove_trip_attr(struct thermal_zone *tz, int indx)
-> I believe the preferred format would be:
+"Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com> writes:
 
-Ok, will change..
+> Hi Rob,
+>
+> On Fri, Mar 1, 2013 at 5:01 AM, Rob Landley <rob@landley.net> wrote:
+>> On 02/28/2013 05:24:07 AM, Michael Kerrisk (man-pages) wrote:
+> [...]
+>
+>>> DESCRIPTION
+>>>        For an overview of namespaces, see namespaces(7).
+>>>
+>>>        PID  namespaces  isolate  the  process ID number space, meaning
+>>>        that processes in different PID namespaces can  have  the  same
+>>>        PID.
+>>
+>>
+>> Um, perhaps "different processes"? Slightly repetitive, but trying to avoid
+>> the potential misreading that "a processes can have the same PID in
+>> different namespaces". (A single process can't be a member of more than one
+>> namespace. This is not about selective visibility.)
+>
+> I'm not sure this clarifies things...
+>
+>>> PID namespaces allow containers to migrate to a new host
+>>>        while the processes inside  the  container  maintain  the  same
+>>>        PIDs.
+>>
+>>
+>> I thought suspend/resume a container was the simple case. Migration to a new
+>> host is built on top of that. (On resume in a new container on the same
+>> system, if other stuff is going on in the system so the available PIDs have
+>> shifted.)
+>
+> I'll add some words here on suspend/resume.
+>
+>>>        Likewise, a process in an ancestor namespace can—subject to the
+>>>        usual permission checks described in  kill(2)—send  signals  to
+>>>        the  "init" process of a child PID namespace only if the "init"
+>>>        process has established a handler for that signal.  (Within the
+>>>        handler,  the  siginfo_t si_pid field described in sigaction(2)
+>>>        will be zero.)  SIGKILL or SIGSTOP are  treated  exceptionally:
+>>>        these signals are forcibly delivered when sent from an ancestor
+>>>        PID namespace.  Neither of these signals can be caught  by  the
+>>>        "init" process, and so will result in the usual actions associ‐
+>>>        ated with those signals (respectively, terminating and stopping
+>>>        the process).
+>>
+>>
+>> If SIGKILL to init is propogated to all the children of init, is SIGSTOP
+>> also propogated to all the children? (I.E. will SIGSTOP to container's init
+>> suspend the whole container, and will SIGCONT resume the whole container? If
+>> the latter, will it only resume processes that weren't previously stopped?
+>> :)
+>
+> Covered by Eric.
+>
+>>>        To put things another way: a process's PID namespace membership
+>>>        is determined when the process is created and cannot be changed
+>>>        thereafter.  Among other things, this means that  the  parental
+>>>        relationship between processes mirrors the parental between PID
+>>
+>>
+>> mirrors the relationship
+>
+> Thanks.
+>
+>>>        namespaces: the parent of a  process  is  either  in  the  same
+>>>        namespace or resides in the immediate parent PID namespace.
+>>>
+>>>        Every  thread  in  a process must be in the same PID namespace.
+>>>        For this reason, the two following call sequences will fail:
+>>>
+>>>            unshare(CLONE_NEWPID);
+>>>            clone(..., CLONE_VM, ...);    /* Fails */
+>>>
+>>>            setns(fd, CLONE_NEWPID);
+>>>            clone(..., CLONE_VM, ...);    /* Fails */
+>>
+>>
+>> They fail with -EUNDOCUMENTED
+>
+> Added EINVAL, as per Eric's reply. (Eric does that error also apply
+> for the two new cases you added?).
+>
+>>>        Because the above unshare(2) and setns(2) calls only change the
+>>>        PID  namespace  for created children, the clone(2) calls neces‐
+>>>        sarily put the new thread in a different PID namespace from the
+>>>        calling thread.
+>>
+>>
+>> Um, no they don't. They fail. That's the point.
+>
+> (Good catch.)
+>
+>> They _would_ put the new
+>> thread in a different PID namespace, which breaks the definition of threads.
+>>
+>> How about:
+>>
+>> The above unshare(2) and setns(2) calls change the PID namespace of
+>> children created by subsequent clone(2) calls, which is incompatible
+>> with CLONE_VM.
+>
+> I decided on:
+>
+>        The  point  here is that unshare(2) and setns(2) change the PID
+>        namespace for created children but not for the calling process,
+>        while  clone(2) CLONE_VM specifies the creation of a new thread
+>        in the same process.
 
-> 
-> static inline void __remove_trip_attr(struct thermal_zone *tz, int indx)
-> 
-> > +{
-> > +	int i;
-> > +	struct thermal_trip_attr *attr = tz->trip_attr[indx];
-> > +
-> > +	if (!attr)
-> > +		return;
-> > +
-> > +	for (i = 0; i < NUM_TRIP_TYPES; i++)
-> > +		device_remove_file(&tz->device, &attr->attrs[i].attr);
-> > +
-> > +	kfree(tz->trip_attr[indx]);
-> > +	tz->trip_attr[indx] = NULL;
-> > +}
-> > +
-> >   static void remove_sensor_from_zone(struct thermal_zone *tz,
-> >   				struct thermal_sensor *ts)
-> >   {
-> > @@ -463,9 +494,15 @@ static void remove_sensor_from_zone(struct
-> thermal_zone *tz,
-> >
-> >   	sysfs_remove_link(&tz->device.kobj, kobject_name(&ts-
-> >device.kobj));
-> >
-> > +	/* Remove trip point attributes associated with this sensor */
-> > +	__remove_trip_attr(tz, indx);
-> > +
-> >   	/* Shift the entries in the tz->sensors array */
-> > -	for (j = indx; j < MAX_SENSORS_PER_ZONE - 1; j++)
-> > +	for (j = indx; j < MAX_SENSORS_PER_ZONE - 1; j++) {
-> >   		tz->sensors[j] = tz->sensors[j + 1];
-> > +		tz->sensor_trip[j] = tz->sensor_trip[j + 1];
-> > +		tz->trip_attr[j] = tz->trip_attr[j + 1];
-> > +	}
-> >
-> >   	tz->sensor_indx--;
-> >   }
-> > @@ -879,6 +916,99 @@ policy_show(struct device *dev, struct
-> device_attribute *devattr, char *buf)
-> >   	return sprintf(buf, "%s\n", tz->governor->name);
-> >   }
-> >
-> > +static ssize_t
-> > +active_show(struct device *dev, struct device_attribute *attr, char *buf)
-> > +{
-> > +	int i, indx, ret = 0;
-> > +	char kobj_name[THERMAL_NAME_LENGTH];
-> > +	struct thermal_zone *tz = to_zone(dev);
-> > +
-> > +	if (!sscanf(attr->attr.name, "sensor%d_trip_active", &i))
-> > +		return -EINVAL;
-> > +
-> > +	snprintf(kobj_name, THERMAL_NAME_LENGTH, "sensor%d", i);
-> > +	indx = get_sensor_indx_by_kobj(tz, kobj_name);
-> > +	if (indx < 0)
-> > +		return indx;
-> > +
-> > +	if (tz->sensor_trip[indx]->num_active_trips <= 0)
-> > +		return sprintf(buf, "<Not available>\n");
-> > +
-> > +	ret += sprintf(buf, "0x%x", tz->sensor_trip[indx]->active_trip_mask);
-> > +	for (i = 0; i < tz->sensor_trip[indx]->num_active_trips; i++) {
-> > +		ret += sprintf(buf + ret, " %d",
-> > +			tz->sensor_trip[indx]->active_trips[i]);
-> > +	}
-> > +
-> > +	ret += sprintf(buf + ret, "\n");
-> > +	return ret;
-> > +}
-> > +
-> 
-> I believe the above function violates sysfs rules, no? Each and every
-> file must contain only 1 value..
+Can we make that "for all new tasks created" instead of "created
+children"
 
-Yes, re-working this and similar thing in 05/08 in next version.
+Othewise someone might expect CLONE_THREAD would work as you
+CLONE_THREAD creates a thread and not a child...
 
-Thanks,
-Durga
-
-> 
-> > +static ssize_t
-> > +ptrip_show(struct device *dev, struct device_attribute *attr, char *buf)
-> > +{
-> > +	int i, indx, ret = 0;
-> > +	char kobj_name[THERMAL_NAME_LENGTH];
-> > +	struct thermal_zone *tz = to_zone(dev);
-> > +
-> > +	if (!sscanf(attr->attr.name, "sensor%d_trip_passive", &i))
-> > +		return -EINVAL;
-> > +
-> > +	snprintf(kobj_name, THERMAL_NAME_LENGTH, "sensor%d", i);
-> > +	indx = get_sensor_indx_by_kobj(tz, kobj_name);
-> > +	if (indx < 0)
-> > +		return indx;
-> > +
-> > +	if (tz->sensor_trip[indx]->num_passive_trips <= 0)
-> > +		return sprintf(buf, "<Not available>\n");
-> > +
-> > +	for (i = 0; i < tz->sensor_trip[indx]->num_passive_trips; i++) {
-> > +		ret += sprintf(buf + ret, "%d ",
-> > +			tz->sensor_trip[indx]->passive_trips[i]);
-> > +	}
-> > +
-> > +	ret += sprintf(buf + ret, "\n");
-> > +	return ret;
-> > +}
-> 
-> 
-> ditto.
-> 
-> > +
-> > +static ssize_t
-> > +hot_show(struct device *dev, struct device_attribute *attr, char *buf)
-> > +{
-> > +	int indx;
-> > +	char kobj_name[THERMAL_NAME_LENGTH];
-> > +	struct thermal_zone *tz = to_zone(dev);
-> > +
-> > +	if (!sscanf(attr->attr.name, "sensor%d_trip_hot", &indx))
-> > +		return -EINVAL;
-> > +
-> > +	snprintf(kobj_name, THERMAL_NAME_LENGTH, "sensor%d", indx);
-> > +
-> > +	indx = get_sensor_indx_by_kobj(tz, kobj_name);
-> > +	if (indx < 0)
-> > +		return indx;
-> > +
-> > +	return sprintf(buf, "%d\n", tz->sensor_trip[indx]->hot);
-> > +}
-> > +
-> > +static ssize_t
-> > +critical_show(struct device *dev, struct device_attribute *attr, char *buf)
-> > +{
-> > +	int indx;
-> > +	char kobj_name[THERMAL_NAME_LENGTH];
-> > +	struct thermal_zone *tz = to_zone(dev);
-> > +
-> > +	if (!sscanf(attr->attr.name, "sensor%d_trip_critical", &indx))
-> > +		return -EINVAL;
-> > +
-> > +	snprintf(kobj_name, THERMAL_NAME_LENGTH, "sensor%d", indx);
-> > +
-> > +	indx = get_sensor_indx_by_kobj(tz, kobj_name);
-> > +	if (indx < 0)
-> > +		return indx;
-> > +
-> > +	return sprintf(buf, "%d\n", tz->sensor_trip[indx]->crit);
-> > +}
-> > +
-> >   static DEVICE_ATTR(type, 0444, type_show, NULL);
-> >   static DEVICE_ATTR(temp, 0444, temp_show, NULL);
-> >   static DEVICE_ATTR(mode, 0644, mode_show, mode_store);
-> > @@ -889,7 +1019,8 @@ static DEVICE_ATTR(policy, S_IRUGO | S_IWUSR,
-> policy_show, policy_store);
-> >   static DEVICE_ATTR(sensor_name, 0444, sensor_name_show, NULL);
-> >   static DEVICE_ATTR(temp_input, 0444, sensor_temp_show, NULL);
-> >
-> > -static DEVICE_ATTR(zone_name, 0444, zone_name_show, NULL);
-> > +/* Thermal zone attributes */
-> > +static DEVICE_ATTR(zone_name, S_IRUGO, zone_name_show, NULL);
-> >
-> >   /* sys I/F for cooling device */
-> >   #define to_cooling_device(_dev)	\
-> > @@ -1744,6 +1875,38 @@ static int enable_sensor_thresholds(struct
-> thermal_sensor *ts, int count)
-> >   	return 0;
-> >   }
-> >
-> > +static int create_sensor_trip_attrs(struct thermal_zone *tz,
-> > +				struct thermal_trip_attr *attr, int indx)
-> > +{
-> > +	int i, ret;
-> > +	static const char *const names[NUM_TRIP_TYPES] = {
-> > +				"sensor%d_trip_active",
-> > +				"sensor%d_trip_passive",
-> > +				"sensor%d_trip_hot",
-> > +				"sensor%d_trip_critical",
-> > +				};
-> > +	static ssize_t (*const rd_ptr[NUM_TRIP_TYPES]) (struct device *dev,
-> > +			struct device_attribute *devattr, char *buf) = {
-> > +			active_show, ptrip_show, hot_show, critical_show};
-> > +
-> > +	for (i = 0; i < NUM_TRIP_TYPES; i++) {
-> > +		snprintf(attr->attrs[i].name, THERMAL_NAME_LENGTH,
-> names[i],
-> > +			indx);
-> > +		sysfs_attr_init(&attr->attrs[i].attr.attr);
-> > +		attr->attrs[i].attr.attr.name = attr->attrs[i].name;
-> > +		attr->attrs[i].attr.attr.mode = S_IRUGO;
-> > +		attr->attrs[i].attr.show = rd_ptr[i];
-> > +		ret = device_create_file(&tz->device, &attr->attrs[i].attr);
-> > +		if (ret)
-> > +			goto exit;
-> > +	}
-> > +	return 0;
-> > +exit:
-> > +	while (--i >= 0)
-> > +		device_remove_file(&tz->device, &attr->attrs[i].attr);
-> > +	return ret;
-> > +}
-> > +
-> >   struct thermal_zone *create_thermal_zone(const char *name, void
-> *devdata)
-> >   {
-> >   	struct thermal_zone *tz;
-> > @@ -1793,6 +1956,7 @@ EXPORT_SYMBOL(create_thermal_zone);
-> >   void remove_thermal_zone(struct thermal_zone *tz)
-> >   {
-> >   	struct thermal_zone *pos, *next;
-> > +	int i;
-> >   	bool found = false;
-> >
-> >   	if (!tz)
-> > @@ -1813,6 +1977,23 @@ void remove_thermal_zone(struct
-> thermal_zone *tz)
-> >
-> >   	device_remove_file(&tz->device, &dev_attr_zone_name);
-> >
-> > +	/* Just for ease of usage */
-> > +	i = tz->sensor_indx;
-> > +	while (--i >= 0) {
-> > +		/* Remove /sys/class/thermal/zoneX/sensorY */
-> > +		sysfs_remove_link(&tz->device.kobj,
-> > +				kobject_name(&tz->sensors[i]-
-> >device.kobj));
-> > +		__remove_trip_attr(tz, i);
-> > +	}
-> > +
-> > +	/* Release the cdevs attached to this zone */
-> > +	i = tz->cdev_indx;
-> > +	while (--i >= 0) {
-> > +		/* Remove /sys/class/thermal/zoneX/cooling_deviceY */
-> > +		sysfs_remove_link(&tz->device.kobj,
-> > +				kobject_name(&tz->cdevs[i]->device.kobj));
-> > +	}
-> > +
-> >   	release_idr(&thermal_zone_idr, &thermal_idr_lock, tz->id);
-> >   	idr_destroy(&tz->idr);
-> >
-> > @@ -1924,6 +2105,46 @@ exit_zone:
-> >   }
-> >   EXPORT_SYMBOL(add_cdev_to_zone);
-> >
-> > +int add_sensor_trip_info(struct thermal_zone *tz, struct thermal_sensor
-> *ts,
-> > +			struct thermal_trip_point *trip)
-> > +{
-> > +	int ret, indx, kobj_indx;
-> > +
-> > +	if (!tz || !ts || !trip)
-> > +		return -EINVAL;
-> > +
-> > +	if (!sscanf(kobject_name(&ts->device.kobj), "sensor%d",
-> &kobj_indx))
-> > +		return -EINVAL;
-> > +
-> > +	mutex_lock(&zone_list_lock);
-> > +
-> > +	indx = GET_INDEX(tz, ts, sensor);
-> > +	if (indx < 0) {
-> > +		ret = -EINVAL;
-> > +		goto exit;
-> > +	}
-> > +
-> > +	tz->trip_attr[indx] = kzalloc(sizeof(struct thermal_trip_attr),
-> > +					GFP_KERNEL);
-> > +	if (!tz->trip_attr[indx]) {
-> > +		ret = -ENOMEM;
-> > +		goto exit;
-> > +	}
-> > +
-> > +	ret = create_sensor_trip_attrs(tz, tz->trip_attr[indx], kobj_indx);
-> > +	if (ret) {
-> > +		kfree(tz->trip_attr[indx]);
-> > +		goto exit;
-> > +	}
-> > +
-> > +	tz->sensor_trip[indx] = trip;
-> > +
-> > +exit:
-> > +	mutex_unlock(&zone_list_lock);
-> > +	return ret;
-> > +}
-> > +EXPORT_SYMBOL(add_sensor_trip_info);
-> > +
-> >   /**
-> >    * thermal_sensor_register - register a new thermal sensor
-> >    * @name:	name of the thermal sensor
-> > diff --git a/include/linux/thermal.h b/include/linux/thermal.h
-> > index c841414..2f68018 100644
-> > --- a/include/linux/thermal.h
-> > +++ b/include/linux/thermal.h
-> > @@ -31,7 +31,8 @@
-> >
-> >   #define THERMAL_TRIPS_NONE	-1
-> >   #define THERMAL_MAX_TRIPS	12
-> > -#define THERMAL_NAME_LENGTH	20
-> > +#define THERMAL_NAME_LENGTH	22
-> > +#define NUM_TRIP_TYPES		4
-> >
-> >   /* No upper/lower limit requirement */
-> >   #define THERMAL_NO_LIMIT	-1UL
-> > @@ -166,6 +167,34 @@ struct thermal_attr {
-> >   	char name[THERMAL_NAME_LENGTH];
-> >   };
-> >
-> > +/*
-> > + * This structure defines the trip points for a sensor.
-> > + * The actual values for these trip points come from
-> > + * platform characterization. The thermal governors
-> > + * (either kernel or user space) may take appropriate
-> > + * actions when the sensors reach these trip points.
-> > + * See Documentation/thermal/sysfs-api2.txt for more details.
-> > + *
-> > + * As of now, For a particular sensor, we support:
-> > + * a) 1 hot trip point
-> > + * b) 1 critical trip point
-> > + * c) 'n' passive trip points
-> > + * d) 'm' active trip points
-> > + */
-> > +struct thermal_trip_point {
-> > +	int hot;
-> > +	int crit;
-> > +	int num_passive_trips;
-> > +	int *passive_trips;
-> > +	int num_active_trips;
-> > +	int *active_trips;
-> > +	int active_trip_mask;
-> > +};
-> > +
-> > +struct thermal_trip_attr {
-> > +	struct thermal_attr attrs[NUM_TRIP_TYPES];
-> > +};
-> > +
-> >   struct thermal_sensor {
-> >   	char name[THERMAL_NAME_LENGTH];
-> >   	int id;
-> > @@ -223,6 +252,10 @@ struct thermal_zone {
-> >   	/* cdev level information */
-> >   	int cdev_indx; /* index into 'cdevs' array */
-> >   	struct thermal_cooling_device *cdevs[MAX_CDEVS_PER_ZONE];
-> > +
-> > +	/* Thermal sensors trip information */
-> > +	struct thermal_trip_point *sensor_trip[MAX_SENSORS_PER_ZONE];
-> > +	struct thermal_trip_attr *trip_attr[MAX_SENSORS_PER_ZONE];
-> >   };
-> >
-> >   /* Structure that holds thermal governor information */
-> > @@ -305,6 +338,9 @@ struct thermal_sensor
-> *get_sensor_by_name(const char *);
-> >   int add_cdev_to_zone(struct thermal_zone *, struct
-> thermal_cooling_device *);
-> >   struct thermal_cooling_device *get_cdev_by_name(const char *);
-> >
-> > +int add_sensor_trip_info(struct thermal_zone *, struct thermal_sensor *,
-> > +			struct thermal_trip_point *);
-> > +
-> >   #ifdef CONFIG_NET
-> >   extern int thermal_generate_netlink_event(struct thermal_zone_device
-> *tz,
-> >   						enum events event);
-> >
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Eric
