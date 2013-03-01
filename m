@@ -1,191 +1,223 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754691Ab3CATuA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 14:50:00 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52042 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754558Ab3CATqr (ORCPT
+	id S1754294Ab3CATuJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 14:50:09 -0500
+Received: from e23smtp04.au.ibm.com ([202.81.31.146]:56826 "EHLO
+	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754637Ab3CATuC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 14:46:47 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Salman Qazi <sqazi@google.com>, Suleiman Souhlal <suleiman@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, Michal Hocko <mhocko@suse.cz>
-Subject: [ 19/30] ptrace: ensure arch_ptrace/ptrace_request can never race with SIGKILL
-Date: Fri,  1 Mar 2013 11:45:40 -0800
-Message-Id: <20130301194530.049390845@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130301194527.988540148@linuxfoundation.org>
-References: <20130301194527.988540148@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	Fri, 1 Mar 2013 14:50:02 -0500
+Message-ID: <513105DD.8010908@linux.vnet.ibm.com>
+Date: Sat, 02 Mar 2013 01:17:41 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+MIME-Version: 1.0
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+CC: Lai Jiangshan <eag0628@gmail.com>, Michel Lespinasse <walken@google.com>,
+        linux-doc@vger.kernel.org, peterz@infradead.org, fweisbec@gmail.com,
+        linux-kernel@vger.kernel.org, namhyung@kernel.org, mingo@kernel.org,
+        linux-arch@vger.kernel.org, linux@arm.linux.org.uk,
+        xiaoguangrong@linux.vnet.ibm.com, wangyun@linux.vnet.ibm.com,
+        paulmck@linux.vnet.ibm.com, nikunj@linux.vnet.ibm.com,
+        linux-pm@vger.kernel.org, rusty@rustcorp.com.au, rostedt@goodmis.org,
+        rjw@sisk.pl, vincent.guittot@linaro.org, tglx@linutronix.de,
+        linux-arm-kernel@lists.infradead.org, netdev@vger.kernel.org,
+        oleg@redhat.com, sbw@mit.edu, tj@kernel.org, akpm@linux-foundation.org,
+        linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH v6 04/46] percpu_rwlock: Implement the core design of
+ Per-CPU Reader-Writer Locks
+References: <20130218123714.26245.61816.stgit@srivatsabhat.in.ibm.com> <20130218123856.26245.46705.stgit@srivatsabhat.in.ibm.com> <CANN689F9S7c1M8+cEpz3tsxGF34+NTRBLvxgPUOtbvav5u+RRA@mail.gmail.com> <5122551E.1080703@linux.vnet.ibm.com>	<51226B46.9080707@linux.vnet.ibm.com> <CANN689FSxOz+0Cu7EG_yKD8ZE1OpT4kyT+ybLfXSqaifodJRpw@mail.gmail.com> <51226F91.7000108@linux.vnet.ibm.com> <CACvQF53bdh4_BxF0y1fnTVR+T2OmRc0jmWQYftsvx92-fg-Lug@mail.gmail.com> <512BBAD8.8010006@linux.vnet.ibm.com> <CACvQF51jCxk5jUqmhD=QBBtUsBkQWZzakacrKO4Gsk=w61rNwQ@mail.gmail.com> <512C7A38.8060906@linux.vnet.ibm.com> <CACvQF51RvhM8XNqu3-1OTQ=cZUZ=pAX+_zx0a29+W67N1X+BgQ@mail.gmail.com> <512CC509.1050000@linux.vnet.ibm.com> <CACvQF50UgiqPpDk3HCmV86zKSf6tPjqr0bZowfPEOJs0g0r0MQ@mail.gmail.com> <512D0D67.9010609@linux.vnet.ibm.com> <CACvQF53ph2ixdM-otzetjM5cR+2kcZj6sckOp3TnzzA_x-EZ8w@mail.gmail.com> <512E7879.20109@linux.vnet.ibm.com> <5130EA6B.6030901@cn.fujitsu.com>
+In-Reply-To: <5130EA6B.6030901@cn.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13030119-9264-0000-0000-0000033E317C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+On 03/01/2013 11:20 PM, Lai Jiangshan wrote:
+> On 28/02/13 05:19, Srivatsa S. Bhat wrote:
+>> On 02/27/2013 06:03 AM, Lai Jiangshan wrote:
+>>> On Wed, Feb 27, 2013 at 3:30 AM, Srivatsa S. Bhat
+>>> <srivatsa.bhat@linux.vnet.ibm.com> wrote:
+>>>> On 02/26/2013 09:55 PM, Lai Jiangshan wrote:
+>>>>> On Tue, Feb 26, 2013 at 10:22 PM, Srivatsa S. Bhat
+>>>>> <srivatsa.bhat@linux.vnet.ibm.com> wrote:
+>>>>>>
+>>>>>> Hi Lai,
+>>>>>>
+>>>>>> I'm really not convinced that piggy-backing on lglocks would help
+>>>>>> us in any way. But still, let me try to address some of the points
+>>>>>> you raised...
+>>>>>>
+>>>>>> On 02/26/2013 06:29 PM, Lai Jiangshan wrote:
+>>>>>>> On Tue, Feb 26, 2013 at 5:02 PM, Srivatsa S. Bhat
+>>>>>>> <srivatsa.bhat@linux.vnet.ibm.com> wrote:
+>>>>>>>> On 02/26/2013 05:47 AM, Lai Jiangshan wrote:
+>>>>>>>>> On Tue, Feb 26, 2013 at 3:26 AM, Srivatsa S. Bhat
+>>>>>>>>> <srivatsa.bhat@linux.vnet.ibm.com> wrote:
+>>>>>>>>>> Hi Lai,
+>>>>>>>>>>
+>>>>>>>>>> On 02/25/2013 09:23 PM, Lai Jiangshan wrote:
+>>>>>>>>>>> Hi, Srivatsa,
+>>>>>>>>>>>
+>>>>>>>>>>> The target of the whole patchset is nice for me.
+>>>>>>>>>>
+>>>>>>>>>> Cool! Thanks :-)
+>>>>>>>>>>
+>>>>>>>> [...]
+>>>>>>>>
+>>>>>>>> Unfortunately, I see quite a few issues with the code above. IIUC, the
+>>>>>>>> writer and the reader both increment the same counters. So how will the
+>>>>>>>> unlock() code in the reader path know when to unlock which of the locks?
+>>>>>>>
+>>>>>>> The same as your code, the reader(which nested in write C.S.) just dec
+>>>>>>> the counters.
+>>>>>>
+>>>>>> And that works fine in my case because the writer and the reader update
+>>>>>> _two_ _different_ counters.
+>>>>>
+>>>>> I can't find any magic in your code, they are the same counter.
+>>>>>
+>>>>>         /*
+>>>>>          * It is desirable to allow the writer to acquire the percpu-rwlock
+>>>>>          * for read (if necessary), without deadlocking or getting complaints
+>>>>>          * from lockdep. To achieve that, just increment the reader_refcnt of
+>>>>>          * this CPU - that way, any attempt by the writer to acquire the
+>>>>>          * percpu-rwlock for read, will get treated as a case of nested percpu
+>>>>>          * reader, which is safe, from a locking perspective.
+>>>>>          */
+>>>>>         this_cpu_inc(pcpu_rwlock->rw_state->reader_refcnt);
+>>>>>
+>>>>
+>>>> Whoa! Hold on, were you really referring to _this_ increment when you said
+>>>> that, in your patch you would increment the refcnt at the writer? Then I guess
+>>>> there is a major disconnect in our conversations. (I had assumed that you were
+>>>> referring to the update of writer_signal, and were just trying to have a single
+>>>> refcnt instead of reader_refcnt and writer_signal).
+>>>
+>>> https://github.com/laijs/linux/commit/53e5053d5b724bea7c538b11743d0f420d98f38d
+>>>
+>>> Sorry the name "fallback_reader_refcnt" misled you.
+>>>
+>> [...]
+>>
+>>>>> All I was considered is "nested reader is seldom", so I always
+>>>>> fallback to rwlock when nested.
+>>>>> If you like, I can add 6 lines of code, the overhead is
+>>>>> 1 spin_try_lock()(fast path)  + N  __this_cpu_inc()
+>>>>>
+>>>>
+>>>> I'm assuming that calculation is no longer valid, considering that
+>>>> we just discussed how the per-cpu refcnt that you were using is quite
+>>>> unnecessary and can be removed.
+>>>>
+>>>> IIUC, the overhead with your code, as per above discussion would be:
+>>>> 1 spin_try_lock() [non-nested] + N read_lock(global_rwlock).
+>>>
+>>> https://github.com/laijs/linux/commit/46334544bb7961550b7065e015da76f6dab21f16
+>>>
+>>> Again, I'm so sorry the name "fallback_reader_refcnt" misled you.
+>>>
+>>
+>> At this juncture I really have to admit that I don't understand your
+>> intentions at all. What are you really trying to prove? Without giving
+>> a single good reason why my code is inferior, why are you even bringing
+>> up the discussion about a complete rewrite of the synchronization code?
+>> http://article.gmane.org/gmane.linux.kernel.cross-arch/17103
+>> http://article.gmane.org/gmane.linux.power-management.general/31345
+>>
+>> I'm beginning to add 2 + 2 together based on the kinds of questions you
+>> have been asking...
+>>
+>> You posted a patch in this thread and started a discussion around it without
+>> even establishing a strong reason to do so. Now you point me to your git
+>> tree where your patches have even more traces of ideas being borrowed from
+>> my patchset (apart from my own ideas/code, there are traces of others' ideas
+>> being borrowed too - for example, it was Oleg who originally proposed the
+>> idea of splitting up the counter into 2 parts and I'm seeing that it is
+>> slowly crawling into your code with no sign of appropriate credits).
+>> http://article.gmane.org/gmane.linux.network/260288
+>>
+>> And in reply to my mail pointing out the performance implications of the
+>> global read_lock at the reader side in your code, you said you'll come up
+>> with a comparison between that and my patchset.
+>> http://article.gmane.org/gmane.linux.network/260288
+>> The issue has been well-documented in my patch description of patch 4.
+>> http://article.gmane.org/gmane.linux.kernel/1443258
+>>
+>> Are you really trying to pit bits and pieces of my own ideas/versions
+>> against one another and claiming them as your own?
+>>
+>> You projected the work involved in handling the locking issues pertaining
+>> to CPU_DYING notifiers etc as a TODO, despite the fact that I had explicitly
+>> noted in my cover letter that I had audited and taken care of all of them.
+>> http://article.gmane.org/gmane.linux.documentation/9727
+>> http://article.gmane.org/gmane.linux.documentation/9520
+>>
+>> You failed to acknowledge (on purpose?) that I had done a tree-wide
+>> conversion despite the fact that you were replying to the very thread which
+>> had the 46 patches which did exactly that (and I had also mentioned it
+>> explicitly in my cover letter).
+>> http://article.gmane.org/gmane.linux.documentation/9727
+>> http://article.gmane.org/gmane.linux.documentation/9520
+>>
+>> You then started probing more and more about the technique I used to do
+>> the tree-wide conversion.
+>> http://article.gmane.org/gmane.linux.kernel.cross-arch/17111
+>>
+>> You also retorted saying you did go through my patch descriptions, so
+>> its not like you have missed reading them.
+>> http://article.gmane.org/gmane.linux.power-management.general/31345
+>>
+>> Each of these when considered individually, might appear like innocuous and
+>> honest attempts at evaluating my code. But when put together, I'm beginning
+>> to sense a whole different angle to it altogether, as if you are trying
+>> to spin your own patch series, complete with the locking framework _and_
+>> the tree-wide conversion, heavily borrowed from mine. At the beginning of
+>> this discussion, I predicted that the lglock version that you are proposing
+>> would end up being either less efficient than my version or look very similar
+>> to my version. http://article.gmane.org/gmane.linux.kernel/1447139
+>>
+>> I thought it was just the former till now, but its not hard to see how it
+>> is getting closer to becoming the latter too. So yeah, I'm not amused.
+>>
+>> Maybe (and hopefully) you are just trying out different ideas on your own,
+>> and I'm just being paranoid. I really hope that is the case. If you are just
+>> trying to review my code, then please stop sending patches with borrowed ideas
+>> with your sole Signed-off-by, and purposefully ignoring the work already done
+>> in my patchset, because it is really starting to look suspicious, at least
+>> to me.
+>>
+>> Don't get me wrong - I'll whole-heartedly acknowledge and appreciate if
+>> _your_ code is better than mine. I just don't like the idea of somebody
+>> plagiarizing my ideas/code (or even others' ideas for that matter).
+>> However, I sincerely apologize in advance if I misunderstood/misjudged your
+>> intentions; I just wanted to voice my concerns out loud at this point,
+>> considering the bad feeling I got by looking at your responses collectively.
+>>
+> 
+> Hi, Srivatsa
+> 
+> I'm sorry, big apology to you.
+> I'm bad in communication and I did be wrong.
+> I tended to improve the codes but in false direction.
+> 
 
-------------------
+OK, in that case, I'm extremely sorry too, for jumping on you like that.
+I hope you'll forgive me for the uneasiness it caused.
 
+Now that I understand that you were simply trying to help, I would like to
+express my gratitude for your time, effort and inputs in improving the design
+of the stop-machine replacement.
 
-From: Oleg Nesterov <oleg@redhat.com>
+I'm looking forward to working with you on this as well as future endeavours,
+so I sincerely hope that we can put this unfortunate incident behind us and
+collaborate effectively with renewed mutual trust and good-will.
 
-Upstream commit 9899d11f654474d2d54ea52ceaa2a1f4db3abd68.
+Thank you very much!
 
-putreg() assumes that the tracee is not running and pt_regs_access() can
-safely play with its stack.  However a killed tracee can return from
-ptrace_stop() to the low-level asm code and do RESTORE_REST, this means
-that debugger can actually read/modify the kernel stack until the tracee
-does SAVE_REST again.
-
-set_task_blockstep() can race with SIGKILL too and in some sense this
-race is even worse, the very fact the tracee can be woken up breaks the
-logic.
-
-As Linus suggested we can clear TASK_WAKEKILL around the arch_ptrace()
-call, this ensures that nobody can ever wakeup the tracee while the
-debugger looks at it.  Not only this fixes the mentioned problems, we
-can do some cleanups/simplifications in arch_ptrace() paths.
-
-Probably ptrace_unfreeze_traced() needs more callers, for example it
-makes sense to make the tracee killable for oom-killer before
-access_process_vm().
-
-While at it, add the comment into may_ptrace_stop() to explain why
-ptrace_stop() still can't rely on SIGKILL and signal_pending_state().
-
-Reported-by: Salman Qazi <sqazi@google.com>
-Reported-by: Suleiman Souhlal <suleiman@google.com>
-Suggested-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- kernel/ptrace.c |   59 +++++++++++++++++++++++++++++++++++++++++++++++---------
- kernel/signal.c |    5 ++++
- 2 files changed, 55 insertions(+), 9 deletions(-)
-
---- a/kernel/ptrace.c
-+++ b/kernel/ptrace.c
-@@ -38,6 +38,36 @@ void __ptrace_link(struct task_struct *c
- 	child->parent = new_parent;
- }
- 
-+/* Ensure that nothing can wake it up, even SIGKILL */
-+static bool ptrace_freeze_traced(struct task_struct *task)
-+{
-+	bool ret = false;
-+
-+	spin_lock_irq(&task->sighand->siglock);
-+	if (task_is_traced(task) && !__fatal_signal_pending(task)) {
-+		task->state = __TASK_TRACED;
-+		ret = true;
-+	}
-+	spin_unlock_irq(&task->sighand->siglock);
-+
-+	return ret;
-+}
-+
-+static void ptrace_unfreeze_traced(struct task_struct *task)
-+{
-+	if (task->state != __TASK_TRACED)
-+		return;
-+
-+	WARN_ON(!task->ptrace || task->parent != current);
-+
-+	spin_lock_irq(&task->sighand->siglock);
-+	if (__fatal_signal_pending(task))
-+		wake_up_state(task, __TASK_TRACED);
-+	else
-+		task->state = TASK_TRACED;
-+	spin_unlock_irq(&task->sighand->siglock);
-+}
-+
- /**
-  * __ptrace_unlink - unlink ptracee and restore its execution state
-  * @child: ptracee to be unlinked
-@@ -112,23 +142,29 @@ int ptrace_check_attach(struct task_stru
- 	 * be changed by us so it's not changing right after this.
- 	 */
- 	read_lock(&tasklist_lock);
--	if ((child->ptrace & PT_PTRACED) && child->parent == current) {
-+	if (child->ptrace && child->parent == current) {
-+		WARN_ON(child->state == __TASK_TRACED);
- 		/*
- 		 * child->sighand can't be NULL, release_task()
- 		 * does ptrace_unlink() before __exit_signal().
- 		 */
--		spin_lock_irq(&child->sighand->siglock);
--		WARN_ON_ONCE(task_is_stopped(child));
--		if (task_is_traced(child) || kill)
-+		if (kill || ptrace_freeze_traced(child))
- 			ret = 0;
--		spin_unlock_irq(&child->sighand->siglock);
- 	}
- 	read_unlock(&tasklist_lock);
- 
--	if (!ret && !kill)
--		ret = wait_task_inactive(child, TASK_TRACED) ? 0 : -ESRCH;
-+	if (!ret && !kill) {
-+		if (!wait_task_inactive(child, __TASK_TRACED)) {
-+			/*
-+			 * This can only happen if may_ptrace_stop() fails and
-+			 * ptrace_stop() changes ->state back to TASK_RUNNING,
-+			 * so we should not worry about leaking __TASK_TRACED.
-+			 */
-+			WARN_ON(child->state == __TASK_TRACED);
-+			ret = -ESRCH;
-+		}
-+	}
- 
--	/* All systems go.. */
- 	return ret;
- }
- 
-@@ -777,6 +813,8 @@ SYSCALL_DEFINE4(ptrace, long, request, l
- 		goto out_put_task_struct;
- 
- 	ret = arch_ptrace(child, request, addr, data);
-+	if (ret || request != PTRACE_DETACH)
-+		ptrace_unfreeze_traced(child);
- 
-  out_put_task_struct:
- 	put_task_struct(child);
-@@ -915,8 +953,11 @@ asmlinkage long compat_sys_ptrace(compat
- 	}
- 
- 	ret = ptrace_check_attach(child, request == PTRACE_KILL);
--	if (!ret)
-+	if (!ret) {
- 		ret = compat_arch_ptrace(child, request, addr, data);
-+		if (ret || request != PTRACE_DETACH)
-+			ptrace_unfreeze_traced(child);
-+	}
- 
-  out_put_task_struct:
- 	put_task_struct(child);
---- a/kernel/signal.c
-+++ b/kernel/signal.c
-@@ -1669,6 +1669,10 @@ static inline int may_ptrace_stop(void)
- 	 * If SIGKILL was already sent before the caller unlocked
- 	 * ->siglock we must see ->core_state != NULL. Otherwise it
- 	 * is safe to enter schedule().
-+	 *
-+	 * This is almost outdated, a task with the pending SIGKILL can't
-+	 * block in TASK_TRACED. But PTRACE_EVENT_EXIT can be reported
-+	 * after SIGKILL was already dequeued.
- 	 */
- 	if (unlikely(current->mm->core_state) &&
- 	    unlikely(current->mm == current->parent->mm))
-@@ -1800,6 +1804,7 @@ static void ptrace_stop(int exit_code, i
- 		if (gstop_done)
- 			do_notify_parent_cldstop(current, false, why);
- 
-+		/* tasklist protects us from ptrace_freeze_traced() */
- 		__set_current_state(TASK_RUNNING);
- 		if (clear_code)
- 			current->exit_code = 0;
-
+Regards,
+Srivatsa S. Bhat
 
