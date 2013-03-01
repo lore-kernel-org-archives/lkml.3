@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754235Ab3CAT4c (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 14:56:32 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51927 "EHLO
+	id S1754767Ab3CAT4v (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 14:56:51 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51924 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754183Ab3CATqb (ORCPT
+	with ESMTP id S1754170Ab3CATqa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 14:46:31 -0500
+	Fri, 1 Mar 2013 14:46:30 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Ian Abbott <abbotti@mev.co.uk>
-Subject: [ 42/46] staging: comedi: check s->async for poll(), read() and write()
-Date: Fri,  1 Mar 2013 11:45:30 -0800
-Message-Id: <20130301194436.678964336@linuxfoundation.org>
+Subject: [ 41/46] staging: comedi: ni_labpc: set up command4 register *after* command3
+Date: Fri,  1 Mar 2013 11:45:29 -0800
+Message-Id: <20130301194436.562961288@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130301194432.263409302@linuxfoundation.org>
 References: <20130301194432.263409302@linuxfoundation.org>
@@ -28,63 +28,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Ian Abbott <abbotti@mev.co.uk>
 
-commit cc400e185c07c15a42d2635995f422de5b94b696 upstream.
+Commit 22056e2b46246d97ff0f7c6e21a77b8daa07f02c upstream.
 
-Some low-level comedi drivers (incorrectly) point `dev->read_subdev` or
-`dev->write_subdev` to a subdevice that does not support asynchronous
-commands.  Comedi's poll(), read() and write() file operation handlers
-assume these subdevices do support asynchronous commands.  In
-particular, they assume `s->async` is valid (where `s` points to the
-read or write subdevice), which it won't be if it has been set
-incorrectly.  This can lead to a NULL pointer dereference.
+Tuomas <tvainikk _at_ gmail _dot_ com> reported problems getting
+meaningful output from a Lab-PC+ in differential mode for AI cmds, but
+AI insn reads gave correct readings.  He tracked it down to two
+problems, one of which is addressed by this patch.
 
-Check `s->async` is non-NULL in `comedi_poll()`, `comedi_read()` and
-`comedi_write()` to avoid the bug.
+It seems that writing to the command3 register after writing to the
+command4 register in `labpc_ai_cmd()` messes up the differential
+reference bit setting in the command4 register.  Set up the command4
+register after the command3 register (as in `labpc_ai_rinsn()`) to avoid
+the problem.
+
+Thanks to Tuomas for suggesting the fix.
 
 Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/comedi/comedi_fops.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/staging/comedi/drivers/ni_labpc.c |   31 +++++++++++++++---------------
+ 1 file changed, 16 insertions(+), 15 deletions(-)
 
---- a/drivers/staging/comedi/comedi_fops.c
-+++ b/drivers/staging/comedi/comedi_fops.c
-@@ -1577,7 +1577,7 @@ static unsigned int comedi_poll(struct f
+--- a/drivers/staging/comedi/drivers/ni_labpc.c
++++ b/drivers/staging/comedi/drivers/ni_labpc.c
+@@ -1282,21 +1282,6 @@ static int labpc_ai_cmd(struct comedi_de
+ 		devpriv->write_byte(devpriv->command1_bits,
+ 				    dev->iobase + COMMAND1_REG);
+ 	}
+-	/*  setup any external triggering/pacing (command4 register) */
+-	devpriv->command4_bits = 0;
+-	if (cmd->convert_src != TRIG_EXT)
+-		devpriv->command4_bits |= EXT_CONVERT_DISABLE_BIT;
+-	/* XXX should discard first scan when using interval scanning
+-	 * since manual says it is not synced with scan clock */
+-	if (labpc_use_continuous_mode(cmd) == 0) {
+-		devpriv->command4_bits |= INTERVAL_SCAN_EN_BIT;
+-		if (cmd->scan_begin_src == TRIG_EXT)
+-			devpriv->command4_bits |= EXT_SCAN_EN_BIT;
+-	}
+-	/*  single-ended/differential */
+-	if (aref == AREF_DIFF)
+-		devpriv->command4_bits |= ADC_DIFF_BIT;
+-	devpriv->write_byte(devpriv->command4_bits, dev->iobase + COMMAND4_REG);
  
- 	mask = 0;
- 	read_subdev = comedi_get_read_subdevice(dev_file_info);
--	if (read_subdev) {
-+	if (read_subdev && read_subdev->async) {
- 		poll_wait(file, &read_subdev->async->wait_head, wait);
- 		if (!read_subdev->busy
- 		    || comedi_buf_read_n_available(read_subdev->async) > 0
-@@ -1587,7 +1587,7 @@ static unsigned int comedi_poll(struct f
- 		}
- 	}
- 	write_subdev = comedi_get_write_subdevice(dev_file_info);
--	if (write_subdev) {
-+	if (write_subdev && write_subdev->async) {
- 		poll_wait(file, &write_subdev->async->wait_head, wait);
- 		comedi_buf_write_alloc(write_subdev->async,
- 				       write_subdev->async->prealloc_bufsz);
-@@ -1629,7 +1629,7 @@ static ssize_t comedi_write(struct file
- 	}
+ 	devpriv->write_byte(cmd->chanlist_len,
+ 			    dev->iobase + INTERVAL_COUNT_REG);
+@@ -1376,6 +1361,22 @@ static int labpc_ai_cmd(struct comedi_de
+ 		devpriv->command3_bits &= ~ADC_FNE_INTR_EN_BIT;
+ 	devpriv->write_byte(devpriv->command3_bits, dev->iobase + COMMAND3_REG);
  
- 	s = comedi_get_write_subdevice(dev_file_info);
--	if (s == NULL) {
-+	if (s == NULL || s->async == NULL) {
- 		retval = -EIO;
- 		goto done;
- 	}
-@@ -1740,7 +1740,7 @@ static ssize_t comedi_read(struct file *
- 	}
++	/*  setup any external triggering/pacing (command4 register) */
++	devpriv->command4_bits = 0;
++	if (cmd->convert_src != TRIG_EXT)
++		devpriv->command4_bits |= EXT_CONVERT_DISABLE_BIT;
++	/* XXX should discard first scan when using interval scanning
++	 * since manual says it is not synced with scan clock */
++	if (labpc_use_continuous_mode(cmd) == 0) {
++		devpriv->command4_bits |= INTERVAL_SCAN_EN_BIT;
++		if (cmd->scan_begin_src == TRIG_EXT)
++			devpriv->command4_bits |= EXT_SCAN_EN_BIT;
++	}
++	/*  single-ended/differential */
++	if (aref == AREF_DIFF)
++		devpriv->command4_bits |= ADC_DIFF_BIT;
++	devpriv->write_byte(devpriv->command4_bits, dev->iobase + COMMAND4_REG);
++
+ 	/*  startup acquisition */
  
- 	s = comedi_get_read_subdevice(dev_file_info);
--	if (s == NULL) {
-+	if (s == NULL || s->async == NULL) {
- 		retval = -EIO;
- 		goto done;
- 	}
+ 	/*  command2 reg */
 
 
