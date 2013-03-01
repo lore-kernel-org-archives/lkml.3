@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755277Ab3CAUU4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 15:20:56 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51405 "EHLO
+	id S1755289Ab3CAUVN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 15:21:13 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51403 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752496Ab3CATpY (ORCPT
+	with ESMTP id S1752612Ab3CATpY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 1 Mar 2013 14:45:24 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jan Engelhardt <jengelh@inai.de>,
         Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [ 28/77] target: Add missing mapped_lun bounds checking during make_mappedlun setup
-Date: Fri,  1 Mar 2013 11:44:13 -0800
-Message-Id: <20130301194355.003778256@linuxfoundation.org>
+Subject: [ 27/77] target: Fix lookup of dynamic NodeACLs during cached demo-mode operation
+Date: Fri,  1 Mar 2013 11:44:12 -0800
+Message-Id: <20130301194354.894180724@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130301194351.913471337@linuxfoundation.org>
 References: <20130301194351.913471337@linuxfoundation.org>
@@ -29,41 +28,117 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-commit fbbf8555a986ed31e54f006b6cc637ea4ff1425b upstream.
+commit fcf29481fb8e106daad6688f2e898226ee928992 upstream.
 
-This patch adds missing bounds checking for the configfs provided
-mapped_lun value during target_fabric_make_mappedlun() setup ahead
-of se_lun_acl initialization.
+This patch fixes a bug in core_tpg_check_initiator_node_acl() ->
+core_tpg_get_initiator_node_acl() where a dynamically created
+se_node_acl generated during session login would be skipped during
+subsequent lookup due to the '!acl->dynamic_node_acl' check, causing
+a new se_node_acl to be created with a duplicate ->initiatorname.
 
-This addresses a potential OOPs when using a mapped_lun value that
-exceeds the hardcoded TRANSPORT_MAX_LUNS_PER_TPG-1 value within
-se_node_acl->device_list[].
+This would occur when a fabric endpoint was configured with
+TFO->tpg_check_demo_mode()=1 + TPF->tpg_check_demo_mode_cache()=1
+preventing the release of an existing se_node_acl during se_session
+shutdown.
 
-Reported-by: Jan Engelhardt <jengelh@inai.de>
-Cc: Jan Engelhardt <jengelh@inai.de>
+Also, drop the unnecessary usage of core_tpg_get_initiator_node_acl()
+within core_dev_init_initiator_node_lun_acl() that originally
+required the extra '!acl->dynamic_node_acl' check, and just pass
+the configfs provided se_node_acl pointer instead.
+
 Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/target/target_core_fabric_configfs.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/target/target_core_device.c          |   13 ++++---------
+ drivers/target/target_core_fabric_configfs.c |    4 ++--
+ drivers/target/target_core_internal.h        |    2 +-
+ drivers/target/target_core_tpg.c             |   10 ++--------
+ 4 files changed, 9 insertions(+), 20 deletions(-)
 
+--- a/drivers/target/target_core_device.c
++++ b/drivers/target/target_core_device.c
+@@ -1182,24 +1182,18 @@ static struct se_lun *core_dev_get_lun(s
+ 
+ struct se_lun_acl *core_dev_init_initiator_node_lun_acl(
+ 	struct se_portal_group *tpg,
++	struct se_node_acl *nacl,
+ 	u32 mapped_lun,
+-	char *initiatorname,
+ 	int *ret)
+ {
+ 	struct se_lun_acl *lacl;
+-	struct se_node_acl *nacl;
+ 
+-	if (strlen(initiatorname) >= TRANSPORT_IQN_LEN) {
++	if (strlen(nacl->initiatorname) >= TRANSPORT_IQN_LEN) {
+ 		pr_err("%s InitiatorName exceeds maximum size.\n",
+ 			tpg->se_tpg_tfo->get_fabric_name());
+ 		*ret = -EOVERFLOW;
+ 		return NULL;
+ 	}
+-	nacl = core_tpg_get_initiator_node_acl(tpg, initiatorname);
+-	if (!nacl) {
+-		*ret = -EINVAL;
+-		return NULL;
+-	}
+ 	lacl = kzalloc(sizeof(struct se_lun_acl), GFP_KERNEL);
+ 	if (!lacl) {
+ 		pr_err("Unable to allocate memory for struct se_lun_acl.\n");
+@@ -1210,7 +1204,8 @@ struct se_lun_acl *core_dev_init_initiat
+ 	INIT_LIST_HEAD(&lacl->lacl_list);
+ 	lacl->mapped_lun = mapped_lun;
+ 	lacl->se_lun_nacl = nacl;
+-	snprintf(lacl->initiatorname, TRANSPORT_IQN_LEN, "%s", initiatorname);
++	snprintf(lacl->initiatorname, TRANSPORT_IQN_LEN, "%s",
++		 nacl->initiatorname);
+ 
+ 	return lacl;
+ }
 --- a/drivers/target/target_core_fabric_configfs.c
 +++ b/drivers/target/target_core_fabric_configfs.c
-@@ -354,6 +354,14 @@ static struct config_group *target_fabri
- 		ret = -EINVAL;
+@@ -355,8 +355,8 @@ static struct config_group *target_fabri
  		goto out;
  	}
-+	if (mapped_lun > (TRANSPORT_MAX_LUNS_PER_TPG-1)) {
-+		pr_err("Mapped LUN: %lu exceeds TRANSPORT_MAX_LUNS_PER_TPG"
-+			"-1: %u for Target Portal Group: %u\n", mapped_lun,
-+			TRANSPORT_MAX_LUNS_PER_TPG-1,
-+			se_tpg->se_tpg_tfo->tpg_get_tag(se_tpg));
-+		ret = -EINVAL;
-+		goto out;
-+	}
  
- 	lacl = core_dev_init_initiator_node_lun_acl(se_tpg, se_nacl,
- 			mapped_lun, &ret);
+-	lacl = core_dev_init_initiator_node_lun_acl(se_tpg, mapped_lun,
+-			config_item_name(acl_ci), &ret);
++	lacl = core_dev_init_initiator_node_lun_acl(se_tpg, se_nacl,
++			mapped_lun, &ret);
+ 	if (!lacl) {
+ 		ret = -EINVAL;
+ 		goto out;
+--- a/drivers/target/target_core_internal.h
++++ b/drivers/target/target_core_internal.h
+@@ -45,7 +45,7 @@ struct se_lun *core_dev_add_lun(struct s
+ int	core_dev_del_lun(struct se_portal_group *, u32);
+ struct se_lun *core_get_lun_from_tpg(struct se_portal_group *, u32);
+ struct se_lun_acl *core_dev_init_initiator_node_lun_acl(struct se_portal_group *,
+-		u32, char *, int *);
++		struct se_node_acl *, u32, int *);
+ int	core_dev_add_initiator_node_lun_acl(struct se_portal_group *,
+ 		struct se_lun_acl *, u32, u32);
+ int	core_dev_del_initiator_node_lun_acl(struct se_portal_group *,
+--- a/drivers/target/target_core_tpg.c
++++ b/drivers/target/target_core_tpg.c
+@@ -111,16 +111,10 @@ struct se_node_acl *core_tpg_get_initiat
+ 	struct se_node_acl *acl;
+ 
+ 	spin_lock_irq(&tpg->acl_node_lock);
+-	list_for_each_entry(acl, &tpg->acl_node_list, acl_list) {
+-		if (!strcmp(acl->initiatorname, initiatorname) &&
+-		    !acl->dynamic_node_acl) {
+-			spin_unlock_irq(&tpg->acl_node_lock);
+-			return acl;
+-		}
+-	}
++	acl = __core_tpg_get_initiator_node_acl(tpg, initiatorname);
+ 	spin_unlock_irq(&tpg->acl_node_lock);
+ 
+-	return NULL;
++	return acl;
+ }
+ 
+ /*	core_tpg_add_node_to_devs():
 
 
