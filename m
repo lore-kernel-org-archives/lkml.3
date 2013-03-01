@@ -1,60 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754235Ab3CAARa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 19:17:30 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:42931 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751513Ab3CAAR3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 19:17:29 -0500
-Message-ID: <512FF331.5050008@zytor.com>
-Date: Thu, 28 Feb 2013 16:15:45 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130219 Thunderbird/17.0.3
+	id S1754193Ab3CAAYF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 19:24:05 -0500
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:35714 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752433Ab3CAAYD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Feb 2013 19:24:03 -0500
 MIME-Version: 1.0
-To: Josh Boyer <jwboyer@redhat.com>
-CC: Borislav Petkov <bp@alien8.de>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>, mingo@redhat.com,
-        tglx@linutronix.de, konrad.wilk@oracle.com, rostedt@goodmis.org,
-        gregkh@linuxfoundation.org, samu.kallio@aberdeencloud.com,
-        kraman@redhat.com, xen-devel@lists.xen.org,
-        linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: Re: [PATCH] mm/x86: Patch out arch_flush_lazy_mmu_mode() when running
- on bare metal
-References: <1362092149-32381-1-git-send-email-boris.ostrovsky@oracle.com> <20130228233720.GB17468@pd.tnic> <20130301000539.GA31649@hansolo.jdub.homelinux.org>
-In-Reply-To: <20130301000539.GA31649@hansolo.jdub.homelinux.org>
-X-Enigmail-Version: 1.5
+In-Reply-To: <1360653873-25368-1-git-send-email-andreas@gaisler.com>
+References: <1360653873-25368-1-git-send-email-andreas@gaisler.com>
+Date: Fri, 1 Mar 2013 01:24:01 +0100
+Message-ID: <CACRpkdaYQSrzm_Yj3ZH9YZLC_zPJN06X-9ZM9jd7=X0OB1shXQ@mail.gmail.com>
+Subject: Re: [PATCH v3] gpio: Add device driver for GRGPIO cores and support
+ custom accessors with gpio-generic
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Andreas Larsson <andreas@gaisler.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        software@gaisler.com
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/28/2013 04:05 PM, Josh Boyer wrote:
-> On Fri, Mar 01, 2013 at 12:37:20AM +0100, Borislav Petkov wrote:
->> On Thu, Feb 28, 2013 at 05:55:49PM -0500, Boris Ostrovsky wrote:
->>> Invoking arch_flush_lazy_mmu_mode() results in calls to
->>> preempt_enable()/disable() which may have performance impact.
->>>
->>> Since lazy MMU is not used on bare metal we can patch away
->>> arch_flush_lazy_mmu_mode() so that it is never called in such
->>> environment.
->>>
->>> Signed-off-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
->>
->> Looks straight-forward enough to me.
->>
->> Acked-by: Borislav Petkov <bp@suse.de>
-> 
-> I'll try to get someone to test this tomorrow.
-> 
+On Tue, Feb 12, 2013 at 8:24 AM, Andreas Larsson <andreas@gaisler.com> wrote:
 
-Sounds good.
+> This driver supports GRGPIO gpio cores available in the GRLIB VHDL IP
+> core library from Aeroflex Gaisler.
+>
+> This also adds support to gpio-generic for using custom accessor
+> functions. The grgpio driver uses this to use ioread32be and iowrite32be
+> for big endian register accesses.
+>
+> Signed-off-by: Andreas Larsson <andreas@gaisler.com>
 
-I'd like look at this after the merge window close.  I'm kind of
-bothered about having a choice with an oops on PV, a performance
-regression on native, or putting a pretty complex patch in as a fix, but
-since we'll be right after -rc1 it is probably reasonable to pick the
-last option.
+Can you split this in two patches: one that adds the custom accessors
+and one that adds the driver?
 
-	-hpa
+Grant is currently thinking about optimizations on the call graph
+depths of the GPIO functions and may want to take this opportunity
+to alter something there.
 
+> +++ b/drivers/gpio/gpio-grgpio.c
+(...)
+> +struct grgpio_priv {
+> +       struct bgpio_chip bgc;
+> +       struct grgpio_regs __iomem *regs;
+> +
+> +       u32 imask;      /* irq mask shadow register */
+> +       s32 *irqmap;    /* maps offset to irq or -1 if no irq */
+
+irqmap? Argh what is this... I think you want to use irqdomain
+for this instead. (Documentation/IRQ-domain.txt)
+
+Check other GPIO drivers (e.g. STMPE or TC3589x) for some
+example of how to use irqdomain.
+
+> +static int grgpio_to_irq(struct gpio_chip *gc, unsigned offset)
+> +{
+> +       struct grgpio_priv *priv = grgpio_gc_to_priv(gc);
+> +       int index, irq;
+
+This is wher you should use irq_create_mapping(domain, hwirq);
+
+Yours,
+Linus Walleij
