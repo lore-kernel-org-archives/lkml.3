@@ -1,155 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755358Ab3CAUYN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 15:24:13 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51334 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752441Ab3CATpN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 14:45:13 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Pratyush Anand <pratyush.anand@st.com>, Felipe Balbi <balbi@ti.com>
-Subject: [ 12/77] usb: dwc3: gadget: fix missed isoc
-Date: Fri,  1 Mar 2013 11:43:57 -0800
-Message-Id: <20130301194353.294521620@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130301194351.913471337@linuxfoundation.org>
-References: <20130301194351.913471337@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	id S1755418Ab3CAUY3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 15:24:29 -0500
+Received: from relay2.sgi.com ([192.48.179.30]:37788 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752441Ab3CAUY1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Mar 2013 15:24:27 -0500
+Message-ID: <51310E7A.1000905@sgi.com>
+Date: Fri, 01 Mar 2013 14:24:26 -0600
+From: Mark Tinguely <tinguely@sgi.com>
+User-Agent: Mozilla/5.0 (X11; FreeBSD amd64; rv:9.0) Gecko/20120122 Thunderbird/9.0
+MIME-Version: 1.0
+To: Tony Lu <zlu@tilera.com>
+CC: Alex Elder <elder@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        "xfs@oss.sgi.com" <xfs@oss.sgi.com>, Ben Myers <bpm@sgi.com>,
+        Dave Chinner <dchinner@redhat.com>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH] xfs: Fix possible truncation of log data in xlog_bread_noalign()
+References: <BAB94DBB0E89D8409949BC28AC95914C47C485E5@USMAExch1.tad.internal.tilera.com> <20130223000802.GB26081@dastard> <BAB94DBB0E89D8409949BC28AC95914C47C48702@USMAExch1.tad.internal.tilera.com> <20130223235546.GA5551@dastard> <BAB94DBB0E89D8409949BC28AC95914C47C488D8@USMAExch1.tad.internal.tilera.com> <20130224141017.GC5551@dastard> <BAB94DBB0E89D8409949BC28AC95914C47C49005@USMAExch1.tad.internal.tilera.com> <5130CE9E.9080501@sgi.com>
+In-Reply-To: <5130CE9E.9080501@sgi.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8-stable review patch.  If anyone has any objections, please let me know.
+On 03/01/13 09:51, Mark Tinguely wrote:
+> On 02/26/13 01:28, Tony Lu wrote:
+>> I get a reliable way to reproduce this bug. The logprint and metadump
+>> are attached.
+>>
+>> Kernel version: 2.6.38.8
+>> Mkfs.xfs version: xfsprogs-3.1.1
+>> mkfs.xfs -s size=4096 /dev/sda1
+>>
+>> Run the following mount-cp-umount script to reproduce:
+>> #!/bin/sh
+>> device=/dev/sda1
+>> mount_point=/mnt
+>> times=10
+>>
+>> for ((num=1;num<=$times;num++))
+>> do
+>> echo "$num mount $device $mount_point"
+>> mount $device $mount_point
+>>
+>> echo "cp -rf /bin $mount_point/$num"
+>> cp -rf /bin $mount_point/$num
+>>
+>> echo "$num umount $device $mount_point"
+>> umount $mount_point
+>>
+>> #num=$(($num + 1))
+>> done
+>>
+>> After several times of mount/cp/umount, this xfs crashes, and the xfs
+>> partition can not be mounted any more. Here is the output of console.
+>> -sh-4.1# ./umount-test
+>> 1 mount /dev/sda1 /mnt
+>> XFS mounting filesystem sda1
+>> cp -rf /bin /mnt/1
+>> 1 umount /dev/sda1 /mnt
+>> 2 mount /dev/sda1 /mnt
+>> XFS mounting filesystem sda1
+>> cp -rf /bin /mnt/2
+>> 2 umount /dev/sda1 /mnt
+>> 3 mount /dev/sda1 /mnt
+>> XFS mounting filesystem sda1
+>> cp -rf /bin /mnt/3
+>> 3 umount /dev/sda1 /mnt
+>> 4 mount /dev/sda1 /mnt
+>> XFS mounting filesystem sda1
+>> cp -rf /bin /mnt/4
+>> 4 umount /dev/sda1 /mnt
+>> 5 mount /dev/sda1 /mnt
+>> XFS mounting filesystem sda1
+>> Starting XFS recovery on filesystem: sda1 (logdev: internal)
+>> Ending XFS recovery on filesystem: sda1 (logdev: internal)cp -rf /bin
+>> /mnt/5
+>> 5 umount /dev/sda1 /mnt
+>> 6 mount /dev/sda1 /mnt
+>>
+>> XFS mounting filesystem sda1
+>> Starting XFS recovery on filesystem: sda1 (logdev: internal)
+>> Ending XFS recovery on filesystem: sda1 (logdev: internal)Interrupt
+>> cp -rf /bin /mnt/6
+>> 6 umount /dev/sda1 /mnt
+>> 7 mount /dev/sda1 /mnt
+>>
+>> XFS mounting filesystem sda1
+>> cp -rf /bin /mnt/7
+>> 7 umount /dev/sda1 /mnt
+>> Interrupt
+>> 8 mount /dev/sda1 /mnt
+>> XFS mounting filesystem sda1
+>> Starting XFS recovery on filesystem: sda1 (logdev: internal)
+>> XFS: xlog_recover_process_data: bad clientid
+>> XFS: log mount/recovery failed: error 5
+>> XFS: log mount failed
+>>
+>> Thanks
+>> -Tony
+>
+> It works fine on a 2.6.32 machine I had sitting around - and I never
+> required log recovery.
+>
+> I think you need to answer Dave's question as to why is your unmounts
+> are requiring recovery?
+>
+> Are there errors in the /var/log/messages?
+>
+> I downloaded the Linux 2.6.38.8 source and take a look if I can recreate
+> the problem.
+>
+> --Mark.
 
-------------------
+I could not reproduce the problem on a vanilla install. XFS shutdown and 
+remounted cleanly running your script (several iterations looping set to 
+100).
 
-From: Pratyush Anand <pratyush.anand@st.com>
+I started fsstress on another XFS partition on the same disk to see if I 
+could force a shutdown race. With CONFIG_XFS_DEBUG=y, I could trigger 
+other ASSERTs on the fsstress partition so I never stayed up long enough 
+to cause a shutdown race.
 
-commit 7efea86c2868b8fd9df65e589e33aebe498ce21d upstream.
+Not wanting to patch that version of Linux/XFS, I am bailing here. If 
+you want to turn on the XFS debug it may point out why your filesystem 
+is not shutting down cleanly.
 
-There are two reasons to generate missed isoc.
-
-1. when the host does not poll for all the data.
-2. because of application-side delays that prevent all the data from
-being transferred in programmed microframe.
-
-Current code was able to handle first case only.  This patch handles
-scenario 2 as well.Scenario 2 sometime may occur with complex gadget
-application, however it can be easily reproduced for testing purpose as
-follows:
-
-a. use isoc binterval as 1 in f_sourcesink.
-b. use pattern=0
-c. introduce a delay of 150us deliberately in source_sink_complete, so
-that after few frames it lands into scenario 2.
-d. now run testusb 16 (isoc in  test). You will notice that if this
-patch is not applied then isoc transfer is not able to recover after
-first missed.
-
-Current patch's approach is as under:
-
-If missed isoc occurs and there is no request queued then issue END
-TRANSFER, so that core generates next xfernotready and we will issue a
-fresh START TRANSFER.
-If there are still queued request then wait, do not issue either END or
-UPDATE TRANSFER, just attach next request in request_list during giveback.
-If any future queued request is successfully transferred then we will issue
-UPDATE TRANSFER for all request in the request_list.
-
-Signed-off-by: Pratyush Anand <pratyush.anand@st.com>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/usb/dwc3/core.h   |    2 --
- drivers/usb/dwc3/gadget.c |   36 ++++++++++++++++++++++++------------
- 2 files changed, 24 insertions(+), 14 deletions(-)
-
---- a/drivers/usb/dwc3/core.h
-+++ b/drivers/usb/dwc3/core.h
-@@ -405,7 +405,6 @@ struct dwc3_event_buffer {
-  * @number: endpoint number (1 - 15)
-  * @type: set to bmAttributes & USB_ENDPOINT_XFERTYPE_MASK
-  * @resource_index: Resource transfer index
-- * @current_uf: Current uf received through last event parameter
-  * @interval: the intervall on which the ISOC transfer is started
-  * @name: a human readable name e.g. ep1out-bulk
-  * @direction: true for TX, false for RX
-@@ -439,7 +438,6 @@ struct dwc3_ep {
- 	u8			number;
- 	u8			type;
- 	u8			resource_index;
--	u16			current_uf;
- 	u32			interval;
- 
- 	char			name[20];
---- a/drivers/usb/dwc3/gadget.c
-+++ b/drivers/usb/dwc3/gadget.c
-@@ -1117,16 +1117,6 @@ static int __dwc3_gadget_ep_queue(struct
- 					dep->name);
- 	}
- 
--	/*
--	 * 3. Missed ISOC Handling. We need to start isoc transfer on the saved
--	 * uframe number.
--	 */
--	if (usb_endpoint_xfer_isoc(dep->endpoint.desc) &&
--		(dep->flags & DWC3_EP_MISSED_ISOC)) {
--			__dwc3_gadget_start_isoc(dwc, dep, dep->current_uf);
--			dep->flags &= ~DWC3_EP_MISSED_ISOC;
--	}
--
- 	return 0;
- }
- 
-@@ -1689,14 +1679,29 @@ static int dwc3_cleanup_done_reqs(struct
- 				if (trb_status == DWC3_TRBSTS_MISSED_ISOC) {
- 					dev_dbg(dwc->dev, "incomplete IN transfer %s\n",
- 							dep->name);
--					dep->current_uf = event->parameters &
--						~(dep->interval - 1);
-+					/*
-+					 * If missed isoc occurred and there is
-+					 * no request queued then issue END
-+					 * TRANSFER, so that core generates
-+					 * next xfernotready and we will issue
-+					 * a fresh START TRANSFER.
-+					 * If there are still queued request
-+					 * then wait, do not issue either END
-+					 * or UPDATE TRANSFER, just attach next
-+					 * request in request_list during
-+					 * giveback.If any future queued request
-+					 * is successfully transferred then we
-+					 * will issue UPDATE TRANSFER for all
-+					 * request in the request_list.
-+					 */
- 					dep->flags |= DWC3_EP_MISSED_ISOC;
- 				} else {
- 					dev_err(dwc->dev, "incomplete IN transfer %s\n",
- 							dep->name);
- 					status = -ECONNRESET;
- 				}
-+			} else {
-+				dep->flags &= ~DWC3_EP_MISSED_ISOC;
- 			}
- 		} else {
- 			if (count && (event->status & DEPEVT_STATUS_SHORT))
-@@ -1723,6 +1728,13 @@ static int dwc3_cleanup_done_reqs(struct
- 			break;
- 	} while (1);
- 
-+	if (list_empty(&dep->req_queued) &&
-+			(dep->flags & DWC3_EP_MISSED_ISOC)) {
-+		dwc3_stop_active_transfer(dwc, dep->number);
-+		dep->flags &= ~DWC3_EP_MISSED_ISOC;
-+		return 1;
-+	}
-+
- 	if ((event->status & DEPEVT_STATUS_IOC) &&
- 			(trb->ctrl & DWC3_TRB_CTRL_IOC))
- 		return 0;
-
-
+--Mark.
