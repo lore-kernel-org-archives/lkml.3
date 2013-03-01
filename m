@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754473Ab3CATqm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 14:46:42 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51986 "EHLO
+	id S1754589Ab3CATwr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 14:52:47 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51995 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754312Ab3CATqj (ORCPT
+	with ESMTP id S1754426Ab3CATql (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 14:46:39 -0500
+	Fri, 1 Mar 2013 14:46:41 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jan Engelhardt <jengelh@inai.de>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [ 08/30] target: Add missing mapped_lun bounds checking during make_mappedlun setup
-Date: Fri,  1 Mar 2013 11:45:29 -0800
-Message-Id: <20130301194528.885001700@linuxfoundation.org>
+        Olaf Hering <olaf@aepfle.de>, Jan Beulich <jbeulich@suse.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [ 10/30] xen-blkback: do not leak mode property
+Date: Fri,  1 Mar 2013 11:45:31 -0800
+Message-Id: <20130301194529.096390367@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130301194527.988540148@linuxfoundation.org>
 References: <20130301194527.988540148@linuxfoundation.org>
@@ -27,43 +27,113 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+From: Jan Beulich <JBeulich@suse.com>
 
-commit fbbf8555a986ed31e54f006b6cc637ea4ff1425b upstream.
+commit 9d092603cc306ee6edfe917bf9ab8beb5f32d7bc upstream.
 
-This patch adds missing bounds checking for the configfs provided
-mapped_lun value during target_fabric_make_mappedlun() setup ahead
-of se_lun_acl initialization.
+"be->mode" is obtained from xenbus_read(), which does a kmalloc() for
+the message body. The short string is never released, so do it along
+with freeing "be" itself, and make sure the string isn't kept when
+backend_changed() doesn't complete successfully (which made it
+desirable to slightly re-structure that function, so that the error
+cleanup can be done in one place).
 
-This addresses a potential OOPs when using a mapped_lun value that
-exceeds the hardcoded TRANSPORT_MAX_LUNS_PER_TPG-1 value within
-se_node_acl->device_list[].
-
-Reported-by: Jan Engelhardt <jengelh@inai.de>
-Cc: Jan Engelhardt <jengelh@inai.de>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Reported-by: Olaf Hering <olaf@aepfle.de>
+Signed-off-by: Jan Beulich <jbeulich@suse.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/target/target_core_fabric_configfs.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/block/xen-blkback/xenbus.c |   49 ++++++++++++++++++-------------------
+ 1 file changed, 24 insertions(+), 25 deletions(-)
 
---- a/drivers/target/target_core_fabric_configfs.c
-+++ b/drivers/target/target_core_fabric_configfs.c
-@@ -355,6 +355,14 @@ static struct config_group *target_fabri
- 		ret = -EINVAL;
- 		goto out;
+--- a/drivers/block/xen-blkback/xenbus.c
++++ b/drivers/block/xen-blkback/xenbus.c
+@@ -400,6 +400,7 @@ static int xen_blkbk_remove(struct xenbu
+ 		be->blkif = NULL;
  	}
-+	if (mapped_lun > (TRANSPORT_MAX_LUNS_PER_TPG-1)) {
-+		pr_err("Mapped LUN: %lu exceeds TRANSPORT_MAX_LUNS_PER_TPG"
-+			"-1: %u for Target Portal Group: %u\n", mapped_lun,
-+			TRANSPORT_MAX_LUNS_PER_TPG-1,
-+			se_tpg->se_tpg_tfo->tpg_get_tag(se_tpg));
-+		ret = -EINVAL;
-+		goto out;
+ 
++	kfree(be->mode);
+ 	kfree(be);
+ 	dev_set_drvdata(&dev->dev, NULL);
+ 	return 0;
+@@ -482,6 +483,7 @@ static void backend_changed(struct xenbu
+ 		= container_of(watch, struct backend_info, backend_watch);
+ 	struct xenbus_device *dev = be->dev;
+ 	int cdrom = 0;
++	unsigned long handle;
+ 	char *device_type;
+ 
+ 	DPRINTK("");
+@@ -501,10 +503,10 @@ static void backend_changed(struct xenbu
+ 		return;
+ 	}
+ 
+-	if ((be->major || be->minor) &&
+-	    ((be->major != major) || (be->minor != minor))) {
+-		pr_warn(DRV_PFX "changing physical device (from %x:%x to %x:%x) not supported.\n",
+-			be->major, be->minor, major, minor);
++	if (be->major | be->minor) {
++		if (be->major != major || be->minor != minor)
++			pr_warn(DRV_PFX "changing physical device (from %x:%x to %x:%x) not supported.\n",
++				be->major, be->minor, major, minor);
+ 		return;
+ 	}
+ 
+@@ -522,36 +524,33 @@ static void backend_changed(struct xenbu
+ 		kfree(device_type);
+ 	}
+ 
+-	if (be->major == 0 && be->minor == 0) {
+-		/* Front end dir is a number, which is used as the handle. */
+-
+-		char *p = strrchr(dev->otherend, '/') + 1;
+-		long handle;
+-		err = strict_strtoul(p, 0, &handle);
+-		if (err)
+-			return;
++	/* Front end dir is a number, which is used as the handle. */
++	err = strict_strtoul(strrchr(dev->otherend, '/') + 1, 0, &handle);
++	if (err)
++		return;
+ 
+-		be->major = major;
+-		be->minor = minor;
++	be->major = major;
++	be->minor = minor;
+ 
+-		err = xen_vbd_create(be->blkif, handle, major, minor,
+-				 (NULL == strchr(be->mode, 'w')), cdrom);
+-		if (err) {
+-			be->major = 0;
+-			be->minor = 0;
+-			xenbus_dev_fatal(dev, err, "creating vbd structure");
+-			return;
+-		}
++	err = xen_vbd_create(be->blkif, handle, major, minor,
++			     !strchr(be->mode, 'w'), cdrom);
+ 
++	if (err)
++		xenbus_dev_fatal(dev, err, "creating vbd structure");
++	else {
+ 		err = xenvbd_sysfs_addif(dev);
+ 		if (err) {
+ 			xen_vbd_free(&be->blkif->vbd);
+-			be->major = 0;
+-			be->minor = 0;
+ 			xenbus_dev_fatal(dev, err, "creating sysfs entries");
+-			return;
+ 		}
 +	}
  
- 	lacl = core_dev_init_initiator_node_lun_acl(se_tpg, mapped_lun,
- 			config_item_name(acl_ci), &ret);
++	if (err) {
++		kfree(be->mode);
++		be->mode = NULL;
++		be->major = 0;
++		be->minor = 0;
++	} else {
+ 		/* We're potentially connected now */
+ 		xen_update_blkif_status(be->blkif);
+ 	}
 
 
