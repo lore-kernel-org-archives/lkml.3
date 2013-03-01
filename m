@@ -1,68 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752461Ab3CAMKQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 07:10:16 -0500
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:39202 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752328Ab3CAMKO convert rfc822-to-8bit (ORCPT
+	id S1752334Ab3CAMPR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 07:15:17 -0500
+Received: from e39.co.us.ibm.com ([32.97.110.160]:58127 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751660Ab3CAMPP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 07:10:14 -0500
-MIME-Version: 1.0
-In-Reply-To: <BAF0C2081321BA469F9ADF648F97D9B04C78FA607C@MCC023.weinmann.com>
-References: <BAF0C2081321BA469F9ADF648F97D9B04C78FA6069@MCC023.weinmann.com>
- <CAN8TOE9YJBvUE9GDW3krZB-Js6gUkqY23gYNLS4gFX0e2NDNZw@mail.gmail.com>
- <BAF0C2081321BA469F9ADF648F97D9B04C78FA6071@MCC023.weinmann.com>
- <CACQ1gAg0rE+X+uxRWbrPKhmdS1T0MG00cwwBbzWM+VwU4zaXmw@mail.gmail.com> <BAF0C2081321BA469F9ADF648F97D9B04C78FA607C@MCC023.weinmann.com>
-From: Richard Genoud <richard.genoud@gmail.com>
-Date: Fri, 1 Mar 2013 13:09:53 +0100
-Message-ID: <CACQ1gAg=L7ru5J4C7OQN0r-c2VN3baKX1qqty8Z0ObS5Wk48yg@mail.gmail.com>
-Subject: Re: Bug in mtd_get_device_size()?
-To: "Velykokhatko, Sergey" <Sergey.Velykokhatko@mcc-med.de>
-Cc: Brian Norris <computersforpeace@gmail.com>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "artem.bityutskiy@linux.intel.com" <artem.bityutskiy@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Fri, 1 Mar 2013 07:15:15 -0500
+Message-ID: <1362140107.9158.101.camel@falcor1>
+Subject: Re: IMA: How to manage user space signing policy with others
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Eric Paris <eparis@parisplace.org>
+Cc: Vivek Goyal <vgoyal@redhat.com>,
+        linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        LSM List <linux-security-module@vger.kernel.org>
+Date: Fri, 01 Mar 2013 07:15:07 -0500
+In-Reply-To: <1362102544.9158.35.camel@falcor1>
+References: <20130228151333.GB11360@redhat.com>
+	 <1362079419.2908.390.camel@falcor1.watson.ibm.com>
+	 <20130228213534.GF11360@redhat.com>
+	 <CACLa4pum7kXK+7+8ceVSuQsKDCFebdgGVYRTMKH9GQarqCEgMQ@mail.gmail.com>
+	 <1362102544.9158.35.camel@falcor1>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13030112-3620-0000-0000-0000016D0952
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/3/1 Velykokhatko, Sergey <Sergey.Velykokhatko@mcc-med.de>:
-> Hi Richard,
->
-> Thanks a lot for your explanations. Now at least I understand your logic. And it seems to be reasonable. Your start point that all bad blocks for flash chip could be placed in single MTD. This is really worst worst case, but... Theoretically it could happened. And you should take care of it.
-> And you are right again in things about my chip. I interpreted that up to 40 blocks could be bad from chip production. But now found on side 104 of 125 one note (sometimes I like datasheets :-) ):
->
-> "
-> Notes:
->  1. Invalid blocks are blocks that contain one or more bad bits. The device may contain bad
-> blocks upon shipment. Additional bad blocks may develop over time; however, the total
-> number of available blocks will not drop below NVB during the endurance life of the
-> device. Do not erase or program blocks marked invalid by the factory.
-> "
->
-> Also I should expect up to 40 bad blocks. Nearly 1%.  No more for endurance case.
-That less than many NAND device, so in your case, you should set
-CONFIG_MTD_UBI_BEB_LIMIT to 10 (40 bad blocks on a total of 4096)
+On Thu, 2013-02-28 at 20:49 -0500, Mimi Zohar wrote:
+> On Thu, 2013-02-28 at 17:20 -0500, Eric Paris wrote:
 
->
-> Independing from this I wanted to make my kernel partition bigger. Now just no time for this, we are still in developing with our device.
->
->
->>If not, we have to accept to loose some space for bad blocks, or use NOR :)
-> :) NOR is expensive. And UBI takes a lot of space since based on worst case estimation of NAND features. I have to find compromise
-yes... may be one day we will have cheap, reliable and fast flash storage.
-(and at least your nand is SLC, not MLC !)
+> > The ima_tcb policy was meant to be larger than needed to determine a
+> > trusted computing base, but it is clearly not a superset of what he is
+> > hoping to accomplish.
 
-And if you want to tweak the BEB_LIMIT for each of your UBI partition,
-it's possible, via the ubiattach call ( get the master branchof of
-git://git.infradead.org/mtd-utils.git )
-cf http://git.infradead.org/mtd-utils.git/commit/878e06ea555ba5dbfb974b3904d1a86a9a0e20f5
-and via the ubi module parameter :
-mtd=<name|num|path>[,<vid_hdr_offs>[,max_beb_per1024]]
+The builtin measurement and appraisal policies are different.  In order
+not to miss a measurement, the measurement policy measures everything
+read/executed by root.   Userspace can constrain the policy by defining
+rules based on LSM labels.  The appraisal policy measures everything
+owned by root.  Userspace might want to add rules to appraise additional
+files.
 
-with that, you won't need your kernel patch anymore !
+We can not OR the measurement builtin and userspace policies, as the
+userspace policy constrains the builtin policy, but for appraisal we
+could.  Perhaps we should define two rule chains, one for the builtin
+appraisal rules and another for all other rules.
 
-Regards,
-Richard.
+When secure boot is defined, instead of having a NULL policy, the
+default policy would be the secureboot integrity policy.  These rules
+would be added to the builtin appraisal rule chain.  If the
+'ima_appraise_tcb'  boot commandline option is specified, these rules
+would also be added to the builtin appraisal rule chain, but at the head
+of the chain, as they are more restrictive than the secureboot policy
+for root owned files.
+
+Vivek, would this work?
+
+thanks,
+
+Mimi
+
+
