@@ -1,42 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750915Ab3CAGhO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 01:37:14 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:60152 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750696Ab3CAGhN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 01:37:13 -0500
-Message-ID: <51304C6D.8050207@huawei.com>
-Date: Fri, 1 Mar 2013 14:36:29 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
+	id S1751795Ab3CAGix (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 01:38:53 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:45547 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751121Ab3CAGiw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Mar 2013 01:38:52 -0500
+Message-ID: <51304C96.3010801@zytor.com>
+Date: Thu, 28 Feb 2013 22:37:10 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130219 Thunderbird/17.0.3
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Al Viro <viro@zeniv.linux.org.uk>, LKML <linux-kernel@vger.kernel.org>,
-        Cgroups <cgroups@vger.kernel.org>
-Subject: Re: [PATCH 2/3] cgroup: add cgroup_name() API
-References: <512B01FA.5020506@huawei.com> <512B020D.9040504@huawei.com> <20130226022703.GA13837@htj.dyndns.org> <512C8D84.7090707@huawei.com> <CAOS58YMb7HRQ3X+Z92vi3+jKr4DuNmAgxtc5e3Jkhy-s-7Os-g@mail.gmail.com> <512DE4A8.5050303@huawei.com> <CAOS58YMhm6Uia0bx6oUHwheXUhu8i31LPhh8VVggvg0vg-UmUQ@mail.gmail.com> <512EFEDF.8080205@huawei.com> <CAOS58YMBcvhfBWdQmt=JersRgB9nVgsrLACtLovz===2ZXfR=w@mail.gmail.com>
-In-Reply-To: <CAOS58YMBcvhfBWdQmt=JersRgB9nVgsrLACtLovz===2ZXfR=w@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Martin Bligh <mbligh@mbligh.org>
+CC: Yinghai Lu <yinghai@kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Don Morris <don.morris@hp.com>, Tejun Heo <tj@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Tim Gardner <tim.gardner@canonical.com>, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, mingo@redhat.com, x86@kernel.org,
+        a.p.zijlstra@chello.nl, jarkko.sakkinen@intel.com,
+        tangchen@cn.fujitsu.com
+Subject: Re: sched: CPU #1's llc-sibling CPU #0 is not on the same node!
+References: <512B7D10.4060304@tpi.com> <512B8407.2090807@canonical.com> <512BD753.4080001@hp.com> <CAE9FiQVY4io_mO3PhTtE6FbGUgo1uZKKXO=pjx_FoZ1JuZmsAw@mail.gmail.com> <CAE9FiQXs3MyUW+hJhupJgL-t9sYmT5GdeStWD2vMjsJG+6qCrQ@mail.gmail.com> <CAE9FiQXHNm+E+PchPsReOykVPNkRrC8ttjDpWWs=njANT+Wf1Q@mail.gmail.com> <CAJErZ53dadbU3oM4Prhi3n_R+Lsbp3TG=FP1=whTK5uPMpj90A@mail.gmail.com> <CAE9FiQWx=FdQSH_H_PoVxUksY6rFnN6yDfwmK3w8OTbCPLM1+w@mail.gmail.com> <CAJErZ53AWMP688OV+J0qiJii2y=qzEjLq=WshAQbMhEdyx33cQ@mail.gmail.com>
+In-Reply-To: <CAJErZ53AWMP688OV+J0qiJii2y=qzEjLq=WshAQbMhEdyx33cQ@mail.gmail.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/2/28 22:49, Tejun Heo wrote:
-> On Wed, Feb 27, 2013 at 10:53 PM, Li Zefan <lizefan@huawei.com> wrote:
->>> static const struct cgroup_name root_cgroup_name = { .name = "/" };
->>
->> Can't... That's char name[0] not char *name.
+On 02/25/2013 08:51 PM, Martin Bligh wrote:
+>> Do you mean we can remove numaq x86 32bit code now?
 > 
-> Flexible array members can be statically initialized. If you wanna be
-> really anal about it, you can do it manually with a wrapping struct
-> but I don't think that would be necessary.
+> Wouldn't bother me at all. The machine is from 1995, end of life c. 2000?
+> Was useful in the early days of getting NUMA up and running on Linux,
+> but is now too old to be a museum piece, really.
 > 
 
-I didn't know this difference between flexible array and zero-size array.
-Thanks.
+I'd be very happy to get the NUMAQ code ripped out.  I am wondering if
+there are any reasons to keep any 32-bit x86 NUMA code at all.
+
+	-hpa
+
 
