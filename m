@@ -1,42 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753308Ab3CABao (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 20:30:44 -0500
-Received: from mail-oa0-f50.google.com ([209.85.219.50]:34732 "EHLO
-	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751571Ab3CABan (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 20:30:43 -0500
+	id S1754062Ab3CABbd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 20:31:33 -0500
+Received: from mout.gmx.net ([212.227.15.18]:60302 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753257Ab3CABbc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Feb 2013 20:31:32 -0500
+X-Authenticated: #20192376
+X-Provags-ID: V01U2FsdGVkX1/DrwIC+V7Du1fuch+2+jy4BToBiMbUZ/UZgfw8l7
+	E/cD/hS1eM6cLA
+Date: Fri, 1 Mar 2013 02:31:27 +0100
+From: Andreas Fenkart <andreas.fenkart@streamunlimited.com>
+To: gregkh@linuxfoundation.org, kay@vrfy.org
+Cc: linux-kernel@vger.kernel.org, Daniel Mack <daniel@zonque.org>
+Subject: dmesg macro in Documentation/kdump/gdbmacros.txt outdated
+Message-ID: <20130301013127.GA28038@blumentopf>
 MIME-Version: 1.0
-In-Reply-To: <CAJd=RBBtCxBgoeJ8xcj4zqv7pEk7uAy39V=in4RppDH05GjPkA@mail.gmail.com>
-References: <512B677D.1040501@oracle.com> <CAHGf_=rur29gFs9R9AYeDwnbVBm3b3cOfAn2xyi=mQ+ZbgzEDA@mail.gmail.com>
- <512C15F0.6030907@oracle.com> <CAJd=RBBxTutPsF+XPZGt44eT1f0uPAQfCvQj_UmwdDg82J=F+A@mail.gmail.com>
- <CAHGf_=r5oo+N0_BSd-8-GPeburBnHVAjLEszmNkj+ASMJXqYLQ@mail.gmail.com> <CAJd=RBBtCxBgoeJ8xcj4zqv7pEk7uAy39V=in4RppDH05GjPkA@mail.gmail.com>
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Date: Thu, 28 Feb 2013 20:30:22 -0500
-X-Google-Sender-Auth: R1eeV5EKbBFgsoNfhhrS_pep9lY
-Message-ID: <CAHGf_=pFebzif0CZs1bt0kXE+F9Y79pO8XWe0VLnAO4iTbPrcA@mail.gmail.com>
-Subject: Re: mm: BUG in mempolicy's sp_insert
-To: Hillf Danton <dhillf@gmail.com>
-Cc: Sasha Levin <sasha.levin@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, Mel Gorman <mgorman@suse.de>,
-        Dave Jones <davej@redhat.com>, linux-mm <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 28, 2013 at 1:53 AM, Hillf Danton <dhillf@gmail.com> wrote:
-> On Thu, Feb 28, 2013 at 1:26 PM, KOSAKI Motohiro
-> <kosaki.motohiro@jp.fujitsu.com> wrote:
->>> Insert new node after updating node in tree.
->>
->> Thanks. you are right. I could reproduce and verified.
->
-> Thank you too;) pleasure to do minor work for you.
->
-> btw, how about your belly now? fully recovered?
 
-Yup. I could learned US health care a bit. =)
+Is there an updated version matching the changed printk structure?
+
+thanks,
