@@ -1,43 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751052Ab3CAO3J (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 09:29:09 -0500
-Received: from canardo.mork.no ([148.122.252.1]:50497 "EHLO canardo.mork.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750696Ab3CAO3I convert rfc822-to-8bit (ORCPT
+	id S1751201Ab3CAO3y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 09:29:54 -0500
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:55148 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750696Ab3CAO3x convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 09:29:08 -0500
-From: =?utf-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
-To: Matthew Garrett <matthew.garrett@nebula.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        platform-driver-x86@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT] x86 platform driver bugfixes for 3.8
-Organization: m
-References: <20130107171722.GA31427@srcf.ucam.org>
-	<CA+55aFzL00K+oURqcnSgbAAkD18DJ8-p1G8vd7KE6RD77dLmCQ@mail.gmail.com>
-	<20130107172616.GB31427@srcf.ucam.org>
-	<20130107174306.GC31427@srcf.ucam.org>
-Date: Fri, 01 Mar 2013 14:36:55 +0100
-In-Reply-To: <20130107174306.GC31427@srcf.ucam.org> (Matthew Garrett's message
-	of "Mon, 7 Jan 2013 17:43:06 +0000")
-Message-ID: <87txov44y0.fsf@nemi.mork.no>
-User-Agent: Gnus/5.11002 (No Gnus v0.20) Emacs/23.4 (gnu/linux)
+	Fri, 1 Mar 2013 09:29:53 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+In-Reply-To: <BAF0C2081321BA469F9ADF648F97D9B04C78FA607E@MCC023.weinmann.com>
+References: <BAF0C2081321BA469F9ADF648F97D9B04C78FA6069@MCC023.weinmann.com>
+ <CAN8TOE9YJBvUE9GDW3krZB-Js6gUkqY23gYNLS4gFX0e2NDNZw@mail.gmail.com>
+ <BAF0C2081321BA469F9ADF648F97D9B04C78FA6071@MCC023.weinmann.com>
+ <CACQ1gAg0rE+X+uxRWbrPKhmdS1T0MG00cwwBbzWM+VwU4zaXmw@mail.gmail.com>
+ <BAF0C2081321BA469F9ADF648F97D9B04C78FA607C@MCC023.weinmann.com>
+ <CACQ1gAg=L7ru5J4C7OQN0r-c2VN3baKX1qqty8Z0ObS5Wk48yg@mail.gmail.com> <BAF0C2081321BA469F9ADF648F97D9B04C78FA607E@MCC023.weinmann.com>
+From: Richard Genoud <richard.genoud@gmail.com>
+Date: Fri, 1 Mar 2013 15:29:33 +0100
+Message-ID: <CACQ1gAhJzy5tGSuejc3GqaqRxtHvkABOY-tODzedveeRXddvxQ@mail.gmail.com>
+Subject: Re: Bug in mtd_get_device_size()?
+To: "Velykokhatko, Sergey" <Sergey.Velykokhatko@mcc-med.de>
+Cc: Brian Norris <computersforpeace@gmail.com>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "artem.bityutskiy@linux.intel.com" <artem.bityutskiy@linux.intel.com>,
+        Ricard Wanderlof <ricard.wanderlof@axis.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Matthew Garrett <matthew.garrett@nebula.com> writes:
+2013/3/1 Velykokhatko, Sergey <Sergey.Velykokhatko@mcc-med.de>:
+> Hi Richard,
+>
+>>And if you want to tweak the BEB_LIMIT for each of your UBI partition, it's possible, via the ubiattach call ( get the master branchof of git://git.infradead.org/mtd-utils.git ) cf http://git.infradead.org/mtd-utils.git/commit/878e06ea555ba5dbfb974b3904d1a86a9a0e20f5
+>
+> Aha! I didn't see that before. In my case will be useful. Thanks for idea!
+>
+> Let I ask you one more question, probably you have better idea how to resolve it. If you have no other solution as my, should not answer. Also: as I mentioned before, I have one big partition with 4 UBI volumes on it: one of volumes will contain extreme important data (for example device type and serial number) and data on this volume will be written only several times for whole device life; and on other volume will be stored patient data that will be written relative often. Now in my SW that runs as init process I call ubiatach+mount. If ubiattach or mount for any of UBI volumes returns error, I call ubiformat+ubimkvol+mount again. This is normal use case when the device booted first time after production.
+>With 2.6.38 and 3.3 kernel I had no problems but after update on 3.7 I got reported 2 cases when devices lost all their data.
+Hum, that's clearly not normal.
+> Unfortunately I have no additional information why it happened, but anyway is it really necessary to runs ubiformat+ubimkvol for such cases? Or is it possible to recover data?
+I honestly don't know, but I'm sure Artem has some idea on that.
+>Since my solution for this case is to put the device data in separate MTD with one single UBI volume. But you know how much space I should reserve on NAND MTD for single XML-File with 200Bytes :-).
+I've got the same problem with uboot environment for example. It's
+only some hundred bytes, and still I have to reserve the maximum bad
+blocks number + 1 for the environment itself (so for your device 41).
+I know, this looks overkill...
+For 200bytes, I would try to store them elsewhere (spi dataflash,
+eeprom...) if there's such devices on your board.
+There's also the 1st block of the nand device which is guaranteed to
+be "valid" for 1000 erase cycles (valid with 1-bit ECC per 528 bytes)
 
-> This set covers regressions and two obvious bugfixes. The rest can wait 
-> for 3.9.
+> Alternative is to try to mount only device volume, copy data in tmpfs, run ubiformat+ubimkvol+mount and copy the data back to the device volume. Or you have other idea?
+>
+> Thanks a lot,
+> Best regards,
+> Sergey
+>
 
-Sorry for nagging, but I assume the 3.9 merge window will close over the
-weekend and I haven't seen the pull request for the rest of these posted
-yet.  I hope that still is the plan?
-
-
-Bjørn
+Best regards,
+Richard.
