@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752730Ab3CATp3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 14:45:29 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51370 "EHLO
+	id S1755232Ab3CAUSn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 15:18:43 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51451 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751538Ab3CATpT (ORCPT
+	with ESMTP id S1751538Ab3CATpa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 14:45:19 -0500
+	Fri, 1 Mar 2013 14:45:30 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [ 21/77] ftrace: Call ftrace cleanup module notifier after all other notifiers
-Date: Fri,  1 Mar 2013 11:44:06 -0800
-Message-Id: <20130301194354.252919829@linuxfoundation.org>
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: [ 45/77] media: v4l: Reset subdev v4l2_dev field to NULL if registration fails
+Date: Fri,  1 Mar 2013 11:44:30 -0800
+Message-Id: <20130301194356.738888001@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130301194351.913471337@linuxfoundation.org>
 References: <20130301194351.913471337@linuxfoundation.org>
@@ -28,127 +28,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
 
-commit 8c189ea64eea01ca20d102ddb74d6936dd16c579 upstream.
+commit 317efce991620adc589b3005b9baed433dcb2a56 upstream.
 
-Commit: c1bf08ac "ftrace: Be first to run code modification on modules"
+When subdev registration fails the subdev v4l2_dev field is left to a
+non-NULL value. Later calls to v4l2_device_unregister_subdev() will
+consider the subdev as registered and will module_put() the subdev
+module without any matching module_get().
+Fix this by setting the subdev v4l2_dev field to NULL in
+v4l2_device_register_subdev() when the function fails.
 
-changed ftrace module notifier's priority to INT_MAX in order to
-process the ftrace nops before anything else could touch them
-(namely kprobes). This was the correct thing to do.
-
-Unfortunately, the ftrace module notifier also contains the ftrace
-clean up code. As opposed to the set up code, this code should be
-run *after* all the module notifiers have run in case a module is doing
-correct clean-up and unregisters its ftrace hooks. Basically, ftrace
-needs to do clean up on module removal, as it needs to know about code
-being removed so that it doesn't try to modify that code. But after it
-removes the module from its records, if a ftrace user tries to remove
-a probe, that removal will fail due as the record of that code segment
-no longer exists.
-
-Nothing really bad happens if the probe removal is called after ftrace
-did the clean up, but the ftrace removal function will return an error.
-Correct code (such as kprobes) will produce a WARN_ON() if it fails
-to remove the probe. As people get annoyed by frivolous warnings, it's
-best to do the ftrace clean up after everything else.
-
-By splitting the ftrace_module_notifier into two notifiers, one that
-does the module load setup that is run at high priority, and the other
-that is called for module clean up that is run at low priority, the
-problem is solved.
-
-Reported-by: Frank Ch. Eigler <fche@redhat.com>
-Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Acked-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/trace/ftrace.c |   46 ++++++++++++++++++++++++++++++++--------------
- 1 file changed, 32 insertions(+), 14 deletions(-)
+ drivers/media/v4l2-core/v4l2-device.c |   30 ++++++++++++++----------------
+ 1 file changed, 14 insertions(+), 16 deletions(-)
 
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -3970,37 +3970,51 @@ static void ftrace_init_module(struct mo
- 	ftrace_process_locs(mod, start, end);
- }
+--- a/drivers/media/v4l2-core/v4l2-device.c
++++ b/drivers/media/v4l2-core/v4l2-device.c
+@@ -159,31 +159,21 @@ int v4l2_device_register_subdev(struct v
+ 	sd->v4l2_dev = v4l2_dev;
+ 	if (sd->internal_ops && sd->internal_ops->registered) {
+ 		err = sd->internal_ops->registered(sd);
+-		if (err) {
+-			module_put(sd->owner);
+-			return err;
+-		}
++		if (err)
++			goto error_module;
+ 	}
  
--static int ftrace_module_notify(struct notifier_block *self,
--				unsigned long val, void *data)
-+static int ftrace_module_notify_enter(struct notifier_block *self,
-+				      unsigned long val, void *data)
- {
- 	struct module *mod = data;
- 
--	switch (val) {
--	case MODULE_STATE_COMING:
-+	if (val == MODULE_STATE_COMING)
- 		ftrace_init_module(mod, mod->ftrace_callsites,
- 				   mod->ftrace_callsites +
- 				   mod->num_ftrace_callsites);
--		break;
--	case MODULE_STATE_GOING:
-+	return 0;
-+}
-+
-+static int ftrace_module_notify_exit(struct notifier_block *self,
-+				     unsigned long val, void *data)
-+{
-+	struct module *mod = data;
-+
-+	if (val == MODULE_STATE_GOING)
- 		ftrace_release_mod(mod);
--		break;
+ 	/* This just returns 0 if either of the two args is NULL */
+ 	err = v4l2_ctrl_add_handler(v4l2_dev->ctrl_handler, sd->ctrl_handler, NULL);
+-	if (err) {
+-		if (sd->internal_ops && sd->internal_ops->unregistered)
+-			sd->internal_ops->unregistered(sd);
+-		module_put(sd->owner);
+-		return err;
 -	}
++	if (err)
++		goto error_unregister;
+ 
+ #if defined(CONFIG_MEDIA_CONTROLLER)
+ 	/* Register the entity. */
+ 	if (v4l2_dev->mdev) {
+ 		err = media_device_register_entity(v4l2_dev->mdev, entity);
+-		if (err < 0) {
+-			if (sd->internal_ops && sd->internal_ops->unregistered)
+-				sd->internal_ops->unregistered(sd);
+-			module_put(sd->owner);
+-			return err;
+-		}
++		if (err < 0)
++			goto error_unregister;
+ 	}
+ #endif
+ 
+@@ -192,6 +182,14 @@ int v4l2_device_register_subdev(struct v
+ 	spin_unlock(&v4l2_dev->lock);
  
  	return 0;
- }
- #else
--static int ftrace_module_notify(struct notifier_block *self,
--				unsigned long val, void *data)
-+static int ftrace_module_notify_enter(struct notifier_block *self,
-+				      unsigned long val, void *data)
-+{
-+	return 0;
-+}
-+static int ftrace_module_notify_exit(struct notifier_block *self,
-+				     unsigned long val, void *data)
- {
- 	return 0;
- }
- #endif /* CONFIG_MODULES */
- 
--struct notifier_block ftrace_module_nb = {
--	.notifier_call = ftrace_module_notify,
-+struct notifier_block ftrace_module_enter_nb = {
-+	.notifier_call = ftrace_module_notify_enter,
- 	.priority = INT_MAX,	/* Run before anything that can use kprobes */
- };
- 
-+struct notifier_block ftrace_module_exit_nb = {
-+	.notifier_call = ftrace_module_notify_exit,
-+	.priority = INT_MIN,	/* Run after anything that can remove kprobes */
-+};
 +
- extern unsigned long __start_mcount_loc[];
- extern unsigned long __stop_mcount_loc[];
- 
-@@ -4032,9 +4046,13 @@ void __init ftrace_init(void)
- 				  __start_mcount_loc,
- 				  __stop_mcount_loc);
- 
--	ret = register_module_notifier(&ftrace_module_nb);
-+	ret = register_module_notifier(&ftrace_module_enter_nb);
-+	if (ret)
-+		pr_warning("Failed to register trace ftrace module enter notifier\n");
-+
-+	ret = register_module_notifier(&ftrace_module_exit_nb);
- 	if (ret)
--		pr_warning("Failed to register trace ftrace module notifier\n");
-+		pr_warning("Failed to register trace ftrace module exit notifier\n");
- 
- 	set_ftrace_early_filters();
++error_unregister:
++	if (sd->internal_ops && sd->internal_ops->unregistered)
++		sd->internal_ops->unregistered(sd);
++error_module:
++	module_put(sd->owner);
++	sd->v4l2_dev = NULL;
++	return err;
+ }
+ EXPORT_SYMBOL_GPL(v4l2_device_register_subdev);
  
 
 
