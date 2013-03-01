@@ -1,58 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752156Ab3CAJlq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 04:41:46 -0500
-Received: from kirsty.vergenet.net ([202.4.237.240]:43682 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752039Ab3CAJln (ORCPT
+	id S1752103Ab3CAJqq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 04:46:46 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:11036 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751144Ab3CAJqo convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 04:41:43 -0500
-Date: Fri, 1 Mar 2013 18:41:41 +0900
-From: Simon Horman <horms@verge.net.au>
-To: Magnus Damm <magnus.damm@gmail.com>
-Cc: linux-kernel@vger.kernel.org, kuninori.morimoto.gx@renesas.com,
-        linux-sh@vger.kernel.org, benh@kernel.crashing.org,
-        grant.likely@secretlab.ca, tglx@linutronix.de
-Subject: Re: [PATCH 00/05] irqchip: Renesas INTC External IRQ pin v2 update
-Message-ID: <20130301094140.GB27938@verge.net.au>
-References: <20130226115834.5630.45471.sendpatchset@w520>
+	Fri, 1 Mar 2013 04:46:44 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Fri, 01 Mar 2013 01:37:43 -0800
+Date: Fri, 1 Mar 2013 11:43:14 +0200
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
+CC: Tony Lindgren <tony@atomide.com>, Russell King <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ivaylo Dimitrov <freemangordon@abv.bg>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] arm: omap: RX-51: ARM errata 430973 workaround
+Message-ID: <20130301094314.GG23234@tbergstrom-lnx.Nvidia.com>
+References: <1362044548-5398-1-git-send-email-pali.rohar@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="iso-8859-1"
 Content-Disposition: inline
-In-Reply-To: <20130226115834.5630.45471.sendpatchset@w520>
-Organisation: Horms Solutions Ltd.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <1362044548-5398-1-git-send-email-pali.rohar@gmail.com>
+X-NVConfidentiality: public
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 26, 2013 at 08:58:34PM +0900, Magnus Damm wrote:
-> irqchip: Renesas INTC External IRQ pin v2 update
+On Thu, Feb 28, 2013 at 10:42:28AM +0100, Pali Rohár wrote:
+> Signed-off-by: Ivaylo Dimitrov <freemangordon@abv.bg>
+> Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
+> ---
+>  arch/arm/mach-omap2/Makefile            |    1 +
+>  arch/arm/mach-omap2/board-rx51-secure.c |   66 +++++++++++++++++++++++++++++++
+>  arch/arm/mach-omap2/board-rx51-secure.h |   36 +++++++++++++++++
+>  arch/arm/mach-omap2/board-rx51-smc.S    |   34 ++++++++++++++++
+>  arch/arm/mach-omap2/board-rx51.c        |    7 ++++
+>  5 files changed, 144 insertions(+)
+>  create mode 100644 arch/arm/mach-omap2/board-rx51-secure.c
+>  create mode 100644 arch/arm/mach-omap2/board-rx51-secure.h
+>  create mode 100644 arch/arm/mach-omap2/board-rx51-smc.S
 > 
-> [PATCH 01/05] irqchip: intc-irqpin: Whitespace fixes
-> [PATCH 02/05] irqchip: intc-irqpin: Cache mapped IRQ
-> [PATCH 03/05] irqchip: intc-irqpin: Add force comments
-> [PATCH 04/05] irqchip: intc-irqpin: Make use of devm functions
-> [PATCH 05/05] irqchip: intc-irqpin: GPL header for platform data
-> 
-> These patches update the v1 of the INTC External IRQ pin driver
-> in various ways based on feedback kindly received from:
-> - Simon Horman
-> - Kuninori Morimoto
-> - Thomas Gleixner
-> 
-> With the series applied I see the driver as "v2", but
-> I prefer to keep these changes as incremental ones instead
-> of redoing a single "v2" patch for the driver. The reason
-> behind this is that there are on-going back porting efforts
-> that are better dealt with using incremental patches.
 
-Hi Magnus, Hi all,
+Is this necessary? I thought the PPA sets this bit?
 
-I do not expect this code to go through the renesas tree.  However, in
-order to provide a basis for work on renesas SoCs I have added this series
-to the topic/intc-external-irq topic branch in the reneas tree on
-kernel.org and merged it into topic/all+next.
+Cheers,
 
-In other words, I am not picking this series up to merge it or add it to
-linux-next, rather I am storing it for reference.
+Peter.
