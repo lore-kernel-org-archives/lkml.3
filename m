@@ -1,89 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754714Ab3CABfj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 20:35:39 -0500
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:36046 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751192Ab3CABfi (ORCPT
+	id S1754843Ab3CABhH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 20:37:07 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:56550 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752854Ab3CABhF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 20:35:38 -0500
-MIME-Version: 1.0
-In-Reply-To: <5108BDDD.60307@ti.com>
-References: <1358890049-26981-1-git-send-email-nm@ti.com>
-	<5108BDDD.60307@ti.com>
-Date: Thu, 28 Feb 2013 19:35:36 -0600
-X-Google-Sender-Auth: GBRdMzGO5hb3uRyvpUSuqCFTkl4
-Message-ID: <CAGo_u6qZwgGOugh3_F2pFvwM8ZAxU=Rsy7B2Lj6CjO+VG7GwXA@mail.gmail.com>
-Subject: Re: [PATCH] ARM: dts: remove generated .dtb files on clean
-From: Nishanth Menon <nm@ti.com>
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>, olof@lixom.net
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Dirk Behme <dirk.behme@de.bosch.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Arnd Bergmann <arnd@arndb.de>,
-        l-a <linux-arm-kernel@lists.infradead.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 28 Feb 2013 20:37:05 -0500
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: linux-kernel@vger.kernel.org, linux-rt-users@vger.kernel.org
+Cc: Thomas Gleixner <tglx@linutronix.de>, Steven Rostedt <rostedt@goodmis.org>
+Subject: [PATCH] futex: fix unbalanced spin_lock/spin_unlock() in exit_pi_state_list()
+Date: Fri,  1 Mar 2013 09:36:55 +0800
+Message-Id: <1362101815-19968-1-git-send-email-yong.zhang0@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 30, 2013 at 12:29 AM, Santosh Shilimkar
-<santosh.shilimkar@ti.com> wrote:
-> Looping RMK, Arnd
-Gentle query if we are still interested in this:
-https://patchwork.kernel.org/patch/2020831/
+From: Yong Zhang <yong.zhang@windriver.com>
 
-Looks like linux master still wont delete the dtbs on make clean etc..
-I think leaving the stale dtbs
-around could have it's set of user errors.
-Regards,
-Nishanth Menon
+Otherwise, below warning is shown somtimes when running some test:
 
->
->
-> On Wednesday 23 January 2013 02:57 AM, Nishanth Menon wrote:
->>
->> commit 5f300acd8ae9f3d4585154370012ffc5c665330f
->> (ARM: 7152/1: distclean: Remove generated .dtb files)
->> ensured that dtbs were cleaned up when they were in
->> arch/arm/boot.
->> However, with the following commit:
->> commit 499cd8298628eeabf0eb5eb6525d4faa0eec80d8
->> (ARM: dt: change .dtb build rules to build in dts directory)
->>
->> make clean now leaves dtbs in arch/arm/boot/dts/
->> untouched. Include dts directory so that clean-files rule
->> from arch/arm/boot/dts/Makefile is invoked when make
->> clean is done.
->>
->> Cc: Dirk Behme <dirk.behme@de.bosch.com>
->> CC: Grant Likely <grant.likely@secretlab.ca>
->>
->> Signed-off-by: Nishanth Menon <nm@ti.com>
->> ---
->>   arch/arm/boot/Makefile |    2 +-
->>   1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> diff --git a/arch/arm/boot/Makefile b/arch/arm/boot/Makefile
->> index abfce28..3837f97 100644
->> --- a/arch/arm/boot/Makefile
->> +++ b/arch/arm/boot/Makefile
->> @@ -115,4 +115,4 @@ i:
->>         $(CONFIG_SHELL) $(srctree)/$(src)/install.sh $(KERNELRELEASE) \
->>         $(obj)/Image System.map "$(INSTALL_PATH)"
->>
->> -subdir-            := bootp compressed
->> +subdir-            := bootp compressed dts
->>
-> Seems to be the valid fix for me.
->
-> Regards,
-> Santosh
->
->
->
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+WARNING: at kernel/sched/core.c:3423 migrate_disable+0xbf/0xd0()
+Hardware name: OptiPlex 755
+Modules linked in: floppy parport parport_pc minix
+Pid: 1800, comm: tst-robustpi8 Tainted: G        W    3.4.28-rt40 #1
+Call Trace:
+ [<ffffffff81031f3f>] warn_slowpath_common+0x7f/0xc0
+ [<ffffffff81031f9a>] warn_slowpath_null+0x1a/0x20
+ [<ffffffff81066eaf>] migrate_disable+0xbf/0xd0
+ [<ffffffff81085d95>] exit_pi_state_list+0xa5/0x170
+ [<ffffffff8102f71f>] mm_release+0x12f/0x170
+ [<ffffffff81036906>] exit_mm+0x26/0x140
+ [<ffffffff81090fc6>] ? acct_collect+0x186/0x1c0
+ [<ffffffff81036b66>] do_exit+0x146/0x930
+ [<ffffffff810658d1>] ? get_parent_ip+0x11/0x50
+ [<ffffffff8103760d>] do_group_exit+0x4d/0xc0
+ [<ffffffff8104828f>] get_signal_to_deliver+0x23f/0x6a0
+ [<ffffffff810019e5>] do_signal+0x65/0x5e0
+ [<ffffffff81047816>] ? group_send_sig_info+0x76/0x80
+ [<ffffffff81002018>] do_notify_resume+0x98/0xd0
+ [<ffffffff8165779b>] int_signal+0x12/0x17
+---[ end trace 0000000000000004 ]---
+
+The reason is that spin_lock() is taken in atomic context, but
+spin_unlock() is not.
+
+Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/futex.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/kernel/futex.c b/kernel/futex.c
+index 9e26e87..2b676a2 100644
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -562,16 +562,17 @@ void exit_pi_state_list(struct task_struct *curr)
+ 
+ 		spin_lock(&hb->lock);
+ 
+-		raw_spin_lock_irq(&curr->pi_lock);
+ 		/*
+ 		 * We dropped the pi-lock, so re-check whether this
+ 		 * task still owns the PI-state:
+ 		 */
+ 		if (head->next != next) {
+ 			spin_unlock(&hb->lock);
++			raw_spin_lock_irq(&curr->pi_lock);
+ 			continue;
+ 		}
+ 
++		raw_spin_lock_irq(&curr->pi_lock);
+ 		WARN_ON(pi_state->owner != curr);
+ 		WARN_ON(list_empty(&pi_state->list));
+ 		list_del_init(&pi_state->list);
+-- 
+1.7.9.5
+
