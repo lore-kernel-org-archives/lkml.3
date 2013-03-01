@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753738Ab3CAUML (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 15:12:11 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51572 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753186Ab3CATps (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753184Ab3CATps (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 1 Mar 2013 14:45:48 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51536 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752993Ab3CATpm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Mar 2013 14:45:42 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jianpeng Ma <majianpeng@gmail.com>,
-        "J. Bruce Fields" <bfields@redhat.com>
-Subject: [ 54/77] nfsd: Fix memleak
-Date: Fri,  1 Mar 2013 11:44:39 -0800
-Message-Id: <20130301194357.688809653@linuxfoundation.org>
+        Li Zefan <lizefan@huawei.com>, Tejun Heo <tj@kernel.org>
+Subject: [ 62/77] cpuset: fix cpuset_print_task_mems_allowed() vs rename() race
+Date: Fri,  1 Mar 2013 11:44:47 -0800
+Message-Id: <20130301194358.528846133@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130301194351.913471337@linuxfoundation.org>
 References: <20130301194351.913471337@linuxfoundation.org>
@@ -27,30 +26,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: majianpeng <majianpeng@gmail.com>
+From: Li Zefan <lizefan@huawei.com>
 
-commit 2d32b29a1c2830f7c42caa8258c714acd983961f upstream.
+commit 63f43f55c9bbc14f76b582644019b8a07dc8219a upstream.
 
-When free nfs-client, it must free the ->cl_stateids.
+rename() will change dentry->d_name. The result of this race can
+be worse than seeing partially rewritten name, but we might access
+a stale pointer because rename() will re-allocate memory to hold
+a longer name.
 
-Signed-off-by: Jianpeng Ma <majianpeng@gmail.com>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+It's safe in the protection of dentry->d_lock.
+
+v2: check NULL dentry before acquiring dentry lock.
+
+Signed-off-by: Li Zefan <lizefan@huawei.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfsd/nfs4state.c |    2 ++
- 1 file changed, 2 insertions(+)
+ kernel/cpuset.c |   12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
 
---- a/fs/nfsd/nfs4state.c
-+++ b/fs/nfsd/nfs4state.c
-@@ -1060,6 +1060,8 @@ free_client(struct nfs4_client *clp)
- 	}
- 	free_svc_cred(&clp->cl_cred);
- 	kfree(clp->cl_name.data);
-+	idr_remove_all(&clp->cl_stateids);
-+	idr_destroy(&clp->cl_stateids);
- 	kfree(clp);
- }
+--- a/kernel/cpuset.c
++++ b/kernel/cpuset.c
+@@ -2511,8 +2511,16 @@ void cpuset_print_task_mems_allowed(stru
  
+ 	dentry = task_cs(tsk)->css.cgroup->dentry;
+ 	spin_lock(&cpuset_buffer_lock);
+-	snprintf(cpuset_name, CPUSET_NAME_LEN,
+-		 dentry ? (const char *)dentry->d_name.name : "/");
++
++	if (!dentry) {
++		strcpy(cpuset_name, "/");
++	} else {
++		spin_lock(&dentry->d_lock);
++		strlcpy(cpuset_name, (const char *)dentry->d_name.name,
++			CPUSET_NAME_LEN);
++		spin_unlock(&dentry->d_lock);
++	}
++
+ 	nodelist_scnprintf(cpuset_nodelist, CPUSET_NODELIST_LEN,
+ 			   tsk->mems_allowed);
+ 	printk(KERN_INFO "%s cpuset=%s mems_allowed=%s\n",
 
 
