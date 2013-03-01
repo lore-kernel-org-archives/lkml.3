@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755208Ab3CAUOk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 15:14:40 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51530 "EHLO
+	id S1755183Ab3CAUOh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 15:14:37 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51533 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752962Ab3CATpl (ORCPT
+	with ESMTP id S1752978Ab3CATpl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 1 Mar 2013 14:45:41 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: [ 44/77] media: cx18/ivtv: fix regression: remove __init from a non-init function
-Date: Fri,  1 Mar 2013 11:44:29 -0800
-Message-Id: <20130301194356.625874002@linuxfoundation.org>
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [ 35/77] xen-blkfront: drop the use of llist_for_each_entry_safe
+Date: Fri,  1 Mar 2013 11:44:20 -0800
+Message-Id: <20130301194355.680090301@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130301194351.913471337@linuxfoundation.org>
 References: <20130301194351.913471337@linuxfoundation.org>
@@ -27,68 +26,141 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hans Verkuil <hans.verkuil@cisco.com>
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-commit cfb046cb800ba306b211fbbe4ac633486e11055f upstream.
+commit f84adf4921ae3115502f44ff467b04bf2f88cf04 upstream.
 
-Commits 5e6e81b2890db3969527772a8350825a85c22d5c (cx18) and
-2aebbf6737212265b917ed27c875c59d3037110a (ivtv) added an __init
-annotation to the cx18-alsa-load and ivtv-alsa-load functions. However,
-these functions are called *after* initialization by the main cx18/ivtv
-driver. By that time the memory containing those functions is already
-freed and your machine goes BOOM.
+Replace llist_for_each_entry_safe with a while loop.
 
-Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+llist_for_each_entry_safe can trigger a bug in GCC 4.1, so it's best
+to remove it and use a while loop and do the deletion manually.
+
+Specifically this bug can be triggered by hot-unplugging a disk, either
+by doing xm block-detach or by save/restore cycle.
+
+BUG: unable to handle kernel paging request at fffffffffffffff0
+IP: [<ffffffffa0047223>] blkif_free+0x63/0x130 [xen_blkfront]
+The crash call trace is:
+	...
+bad_area_nosemaphore+0x13/0x20
+do_page_fault+0x25e/0x4b0
+page_fault+0x25/0x30
+? blkif_free+0x63/0x130 [xen_blkfront]
+blkfront_resume+0x46/0xa0 [xen_blkfront]
+xenbus_dev_resume+0x6c/0x140
+pm_op+0x192/0x1b0
+device_resume+0x82/0x1e0
+dpm_resume+0xc9/0x1a0
+dpm_resume_end+0x15/0x30
+do_suspend+0x117/0x1e0
+
+When drilling down to the assembler code, on newer GCC it does
+.L29:
+        cmpq    $-16, %r12      #, persistent_gnt check
+        je      .L30    	#, out of the loop
+.L25:
+	... code in the loop
+        testq   %r13, %r13      # n
+        je      .L29    	#, back to the top of the loop
+        cmpq    $-16, %r12      #, persistent_gnt check
+        movq    16(%r12), %r13  # <variable>.node.next, n
+        jne     .L25    	#,	back to the top of the loop
+.L30:
+
+While on GCC 4.1, it is:
+L78:
+	... code in the loop
+	testq   %r13, %r13      # n
+        je      .L78    #,	back to the top of the loop
+        movq    16(%rbx), %r13  # <variable>.node.next, n
+        jmp     .L78    #,	back to the top of the loop
+
+Which basically means that the exit loop condition instead of
+being:
+
+	&(pos)->member != NULL;
+
+is:
+	;
+
+which makes the loop unbound.
+
+Since xen-blkfront is the only user of the llist_for_each_entry_safe
+macro remove it from llist.h.
+
+Orabug: 16263164
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/pci/cx18/cx18-alsa-main.c |    2 +-
- drivers/media/pci/cx18/cx18-alsa-pcm.h  |    2 +-
- drivers/media/pci/ivtv/ivtv-alsa-main.c |    2 +-
- drivers/media/pci/ivtv/ivtv-alsa-pcm.h  |    2 +-
- 4 files changed, 4 insertions(+), 4 deletions(-)
+ drivers/block/xen-blkfront.c |   13 ++++++++++---
+ include/linux/llist.h        |   25 -------------------------
+ 2 files changed, 10 insertions(+), 28 deletions(-)
 
---- a/drivers/media/pci/cx18/cx18-alsa-main.c
-+++ b/drivers/media/pci/cx18/cx18-alsa-main.c
-@@ -197,7 +197,7 @@ err_exit:
- 	return ret;
- }
- 
--static int __init cx18_alsa_load(struct cx18 *cx)
-+static int cx18_alsa_load(struct cx18 *cx)
+--- a/drivers/block/xen-blkfront.c
++++ b/drivers/block/xen-blkfront.c
+@@ -791,7 +791,7 @@ static void blkif_restart_queue(struct w
+ static void blkif_free(struct blkfront_info *info, int suspend)
  {
- 	struct v4l2_device *v4l2_dev = &cx->v4l2_dev;
- 	struct cx18_stream *s;
---- a/drivers/media/pci/cx18/cx18-alsa-pcm.h
-+++ b/drivers/media/pci/cx18/cx18-alsa-pcm.h
-@@ -20,7 +20,7 @@
-  *  02111-1307  USA
-  */
+ 	struct llist_node *all_gnts;
+-	struct grant *persistent_gnt;
++	struct grant *persistent_gnt, *tmp;
+ 	struct llist_node *n;
  
--int __init snd_cx18_pcm_create(struct snd_cx18_card *cxsc);
-+int snd_cx18_pcm_create(struct snd_cx18_card *cxsc);
+ 	/* Prevent new requests being issued until we fix things up. */
+@@ -805,10 +805,17 @@ static void blkif_free(struct blkfront_i
+ 	/* Remove all persistent grants */
+ 	if (info->persistent_gnts_c) {
+ 		all_gnts = llist_del_all(&info->persistent_gnts);
+-		llist_for_each_entry_safe(persistent_gnt, n, all_gnts, node) {
++		persistent_gnt = llist_entry(all_gnts, typeof(*(persistent_gnt)), node);
++		while (persistent_gnt) {
+ 			gnttab_end_foreign_access(persistent_gnt->gref, 0, 0UL);
+ 			__free_page(pfn_to_page(persistent_gnt->pfn));
+-			kfree(persistent_gnt);
++			tmp = persistent_gnt;
++			n = persistent_gnt->node.next;
++			if (n)
++				persistent_gnt = llist_entry(n, typeof(*(persistent_gnt)), node);
++			else
++				persistent_gnt = NULL;
++			kfree(tmp);
+ 		}
+ 		info->persistent_gnts_c = 0;
+ 	}
+--- a/include/linux/llist.h
++++ b/include/linux/llist.h
+@@ -125,31 +125,6 @@ static inline void init_llist_head(struc
+ 	     (pos) = llist_entry((pos)->member.next, typeof(*(pos)), member))
  
- /* Used by cx18-mailbox to announce the PCM data to the module */
- void cx18_alsa_announce_pcm_data(struct snd_cx18_card *card, u8 *pcm_data,
---- a/drivers/media/pci/ivtv/ivtv-alsa-main.c
-+++ b/drivers/media/pci/ivtv/ivtv-alsa-main.c
-@@ -205,7 +205,7 @@ err_exit:
- 	return ret;
- }
- 
--static int __init ivtv_alsa_load(struct ivtv *itv)
-+static int ivtv_alsa_load(struct ivtv *itv)
- {
- 	struct v4l2_device *v4l2_dev = &itv->v4l2_dev;
- 	struct ivtv_stream *s;
---- a/drivers/media/pci/ivtv/ivtv-alsa-pcm.h
-+++ b/drivers/media/pci/ivtv/ivtv-alsa-pcm.h
-@@ -20,4 +20,4 @@
-  *  02111-1307  USA
-  */
- 
--int __init snd_ivtv_pcm_create(struct snd_ivtv_card *itvsc);
-+int snd_ivtv_pcm_create(struct snd_ivtv_card *itvsc);
+ /**
+- * llist_for_each_entry_safe - iterate safely against remove over some entries
+- * of lock-less list of given type.
+- * @pos:	the type * to use as a loop cursor.
+- * @n:		another type * to use as a temporary storage.
+- * @node:	the fist entry of deleted list entries.
+- * @member:	the name of the llist_node with the struct.
+- *
+- * In general, some entries of the lock-less list can be traversed
+- * safely only after being removed from list, so start with an entry
+- * instead of list head. This variant allows removal of entries
+- * as we iterate.
+- *
+- * If being used on entries deleted from lock-less list directly, the
+- * traverse order is from the newest to the oldest added entry.  If
+- * you want to traverse from the oldest to the newest, you must
+- * reverse the order by yourself before traversing.
+- */
+-#define llist_for_each_entry_safe(pos, n, node, member)		\
+-	for ((pos) = llist_entry((node), typeof(*(pos)), member),	\
+-	     (n) = (pos)->member.next;					\
+-	     &(pos)->member != NULL;					\
+-	     (pos) = llist_entry(n, typeof(*(pos)), member),		\
+-	     (n) = (&(pos)->member != NULL) ? (pos)->member.next : NULL)
+-
+-/**
+  * llist_empty - tests whether a lock-less list is empty
+  * @head:	the list to test
+  *
 
 
