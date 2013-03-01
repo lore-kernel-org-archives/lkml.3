@@ -1,69 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752071Ab3CASeY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 13:34:24 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:57875 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750779Ab3CASeW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 13:34:22 -0500
-Date: Fri, 1 Mar 2013 10:33:07 -0800
-From: tip-bot for Lans Zhang <tipbot@zytor.com>
-Message-ID: <tip-2dead15fb8f6522b96c913603b5ad0b5c7d01f49@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, lans.zhang2008@gmail.com, hpa@zytor.com,
-        mingo@kernel.org, tglx@linutronix.de, hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, lans.zhang2008@gmail.com,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <51300267.6000008@gmail.com>
-References: <51300267.6000008@gmail.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/cleanups] x86_64:
-  Use __BOOT_DS instead_of __KERNEL_DS for safety
-Git-Commit-ID: 2dead15fb8f6522b96c913603b5ad0b5c7d01f49
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1751993Ab3CASjd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 13:39:33 -0500
+Received: from mail.wdtv.com ([66.118.69.84]:47300 "EHLO mail.wdtv.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750779Ab3CASjc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Mar 2013 13:39:32 -0500
+From: Gene Heskett <gheskett@wdtv.com>
+To: linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL] Load keys from signed PE binaries
+Date: Fri, 1 Mar 2013 13:39:29 -0500
+References: <87ppzo79in.fsf@mid.deneb.enyo.de> <loom.20130227T210924-53@post.gmane.org> <20130301182157.GA1306@srcf.ucam.org>
+In-Reply-To: <20130301182157.GA1306@srcf.ucam.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 01 Mar 2013 10:33:13 -0800 (PST)
+Content-Type: Text/Plain;
+  charset="windows-1256"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201303011339.29302.gheskett@wdtv.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  2dead15fb8f6522b96c913603b5ad0b5c7d01f49
-Gitweb:     http://git.kernel.org/tip/2dead15fb8f6522b96c913603b5ad0b5c7d01f49
-Author:     Lans Zhang <lans.zhang2008@gmail.com>
-AuthorDate: Fri, 1 Mar 2013 09:20:39 +0800
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Fri, 1 Mar 2013 10:18:33 -0800
+On Friday 01 March 2013, Matthew Garrett wrote:
+>On Wed, Feb 27, 2013 at 08:35:45PM +0000, ownssh wrote:
+>> Matthew Garrett <mjg59 <at> srcf.ucam.org> writes:
+>> > There's no way to update the UEFI key database without the update
+>> > being signed by an already trusted key, so what you're proposing
+>> > isn't possible.
+>> 
+>> I confused.
+>> Isn't custom mode can add user's own key?
+>
+>Yes, but that involves physically-present end-user interaction. A
+>bootloader can't do it even if it's signed by Microsoft.
 
-x86_64: Use __BOOT_DS instead_of __KERNEL_DS for safety
+Thats a false flag Matthew.  We have been 'touch'ing a file to trigger an 
+action on reboot, then typing "reboot" from 2000 miles away for at least a 
+decade.  I fail to see why that idea couldn't be expanded to do this too.
 
-In startup_32, the running code still uses the initial GDT
-located in setup. Thus, __BOOT_DS is preferred. Currently
-__KERNEL_DS is lucky to equal to __BOOT_DS, but this is
-not always a safe way.
-
-Signed-off-by: Lans Zhang <lans.zhang2008@gmail.com>
-Link: http://lkml.kernel.org/r/51300267.6000008@gmail.com
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/boot/compressed/head_64.S | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/arch/x86/boot/compressed/head_64.S b/arch/x86/boot/compressed/head_64.S
-index c1d383d..16f24e6 100644
---- a/arch/x86/boot/compressed/head_64.S
-+++ b/arch/x86/boot/compressed/head_64.S
-@@ -52,7 +52,7 @@ ENTRY(startup_32)
- 	jnz 1f
- 
- 	cli
--	movl	$(__KERNEL_DS), %eax
-+	movl	$(__BOOT_DS), %eax
- 	movl	%eax, %ds
- 	movl	%eax, %es
- 	movl	%eax, %ss
+Cheers, Gene
+-- 
+"There are four boxes to be used in defense of liberty:
+ soap, ballot, jury, and ammo. Please use in that order."
+-Ed Howdershelt (Author)
+My web page: <http://coyoteden.dyndns-free.com:85/gene> is up!
+My views 
+<http://www.armchairpatriot.com/What%20Has%20America%20Become.shtml>
+Friends may come and go, but enemies accumulate.
+		-- Thomas Jones
+I was taught to respect my elders, but its getting 
+harder and harder to find any...
