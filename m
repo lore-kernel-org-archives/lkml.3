@@ -1,59 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751993Ab3CALAq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 06:00:46 -0500
-Received: from mx2.promwad.com ([91.149.128.90]:9076 "EHLO mx2.promwad.com"
+	id S1751988Ab3CALBK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 06:01:10 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:59235 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751370Ab3CALAp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 06:00:45 -0500
-From: Michail Kurachkin <michail.kurachkin@promwad.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kuten Ivan <Ivan.Kuten@promwad.com>,
-        "benavi@marvell.com" <benavi@marvell.com>,
-        Palstsiuk Viktar <Viktar.Palstsiuk@promwad.com>,
-        Dmitriy Gorokh <dmitriy.gorokh@promwad.com>,
-        Oliver Neukum <oneukum@suse.de>, Ryan Mallon <rmallon@gmail.com>
-CC: Michail Kurachkin <michail.kurachkin@promwad.com>
-Subject: [PATCH v2 08/11] staging: removing of buffer filling flag and also reverting old buffer related fix which is not really effective
-Date: Fri, 1 Mar 2013 14:00:35 +0300
-Message-ID: <2438ea994cb929070e050664df73ebb221e17cd4.1362133319.git.michail.kurachkin@promwad.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <cover.1362133319.git.michail.kurachkin@promwad.com>
-References: <cover.1362133319.git.michail.kurachkin@promwad.com>
+	id S1751132Ab3CALBI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Mar 2013 06:01:08 -0500
+Date: Fri, 1 Mar 2013 12:00:43 +0100
+From: Anton Arapov <anton@redhat.com>
+To: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+Cc: Oleg Nesterov <oleg@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, Josh Stone <jistone@redhat.com>,
+        Frank Eigler <fche@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@elte.hu>
+Subject: Re: [RFC PATCH v3 2/6] uretprobes/x86: hijack return address
+Message-ID: <20130301110043.GA15426@bandura.brq.redhat.com>
+References: <1362049215-5780-1-git-send-email-anton@redhat.com>
+ <1362049215-5780-3-git-send-email-anton@redhat.com>
+ <20130301054536.GB30500@in.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130301054536.GB30500@in.ibm.com>
+X-PGP-Key: http://people.redhat.com/aarapov/gpg
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Michail Kurachkin <michail.kurachkin@promwad.com>
----
- drivers/staging/tdm/kirkwood_tdm.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+On Fri, Mar 01, 2013 at 11:15:36AM +0530, Ananth N Mavinakayanahalli wrote:
+> On Thu, Feb 28, 2013 at 12:00:11PM +0100, Anton Arapov wrote:
+> >   hijack the return address and replace it with a "trampoline"
+> > 
+> > v2:
+> >   - remove ->doomed flag, kill task immediately
+> > 
+> > Signed-off-by: Anton Arapov <anton@redhat.com>
+> > ---
+> >  arch/x86/include/asm/uprobes.h |  1 +
+> >  arch/x86/kernel/uprobes.c      | 29 +++++++++++++++++++++++++++++
+> >  2 files changed, 30 insertions(+)
+> > 
+> > diff --git a/arch/x86/include/asm/uprobes.h b/arch/x86/include/asm/uprobes.h
+> > index 8ff8be7..c353555 100644
+> > --- a/arch/x86/include/asm/uprobes.h
+> > +++ b/arch/x86/include/asm/uprobes.h
+> > @@ -55,4 +55,5 @@ extern int  arch_uprobe_post_xol(struct arch_uprobe *aup, struct pt_regs *regs);
+> >  extern bool arch_uprobe_xol_was_trapped(struct task_struct *tsk);
+> >  extern int  arch_uprobe_exception_notify(struct notifier_block *self, unsigned long val, void *data);
+> >  extern void arch_uprobe_abort_xol(struct arch_uprobe *aup, struct pt_regs *regs);
+> > +extern unsigned long arch_uretprobe_hijack_return_addr(unsigned long rp_trampoline_vaddr, struct pt_regs *regs);
+> >  #endif	/* _ASM_UPROBES_H */
+> > diff --git a/arch/x86/kernel/uprobes.c b/arch/x86/kernel/uprobes.c
+> > index 0ba4cfb..85e2153 100644
+> > --- a/arch/x86/kernel/uprobes.c
+> > +++ b/arch/x86/kernel/uprobes.c
+> > @@ -697,3 +697,32 @@ bool arch_uprobe_skip_sstep(struct arch_uprobe *auprobe, struct pt_regs *regs)
+> >  		send_sig(SIGTRAP, current, 0);
+> >  	return ret;
+> >  }
+> > +
+> > +extern unsigned long arch_uretprobe_hijack_return_addr(unsigned long
+> > +		rp_trampoline_vaddr, struct pt_regs *regs)
+> > +{
+> > +	int rasize, ncopied;
+> > +	unsigned long orig_ret_vaddr = 0; /* clear high bits for 32-bit apps */
+> > +
+> > +	rasize = is_ia32_task() ? 4 : 8;
+> > +	ncopied = copy_from_user(&orig_ret_vaddr, (void __user *)regs->sp, rasize);
+> > +	if (unlikely(ncopied))
+> 
+> What if ncopied < rasize? Agreed that the upper order bits can be 0, but should
+> you not validate ncopied == rasize?
 
-diff --git a/drivers/staging/tdm/kirkwood_tdm.c b/drivers/staging/tdm/kirkwood_tdm.c
-index e4a9106..57c8925 100644
---- a/drivers/staging/tdm/kirkwood_tdm.c
-+++ b/drivers/staging/tdm/kirkwood_tdm.c
-@@ -678,7 +678,7 @@ static irqreturn_t kirkwood_tdm_irq(s32 irq, void *context_data)
- 			}
- 
- 			/* waiting while dma providing access to buffer */
--			while(readl(&regs->chan0_buff_ownership + 4 * voice_num) & 1);
-+			/* while(readl(&regs->chan0_buff_ownership + 4 * voice_num) & 1); */
- 
- 			/* set next buffer address */
- 			writel((u32)onchip_ch->rx_buff_phy[next_buf_num],
-@@ -714,7 +714,7 @@ static irqreturn_t kirkwood_tdm_irq(s32 irq, void *context_data)
- 			}
- 
- 			/* waiting while dma providing access to buffer */
--			while(readl(&regs->chan0_buff_ownership + 4 * voice_num) & 0x100);
-+			/* while(readl(&regs->chan0_buff_ownership + 4 * voice_num) & 0x100); */
- 
- 			/* set next buffer address */
- 			writel((u32)onchip_ch->tx_buff_phy[next_buf_num],
--- 
-1.7.5.4
+  Function returns 0 in case copy_from_user() was not able to copy
+return address entirely, and "if (ncopied)" makes sure of it. We 
+can't continue if we have no correct return address.
+
+  copy_from_user() returns number of bytes that were *not* copied,
+thus "ncopied == rasize" means copy_from_user() was not able to copy
+*all* bytes. I don't see the point of such check here.
+
+  Or am I missing anything?
+
+thank you!
+Anton.
 
