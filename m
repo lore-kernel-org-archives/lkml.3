@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753576Ab3CAUTl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 15:19:41 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51429 "EHLO
+	id S1752671Ab3CATp0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 14:45:26 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51387 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752696Ab3CATp1 (ORCPT
+	with ESMTP id S1752554Ab3CATpV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 14:45:27 -0500
+	Fri, 1 Mar 2013 14:45:21 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tomas Henzl <thenzl@redhat.com>, Jens Axboe <axboe@kernel.dk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 32/77] block: fix ext_devt_idr handling
-Date: Fri,  1 Mar 2013 11:44:17 -0800
-Message-Id: <20130301194355.385269131@linuxfoundation.org>
+        Walt Nelson Jr <walt0924@gmail.com>,
+        Satoru Takeuchi <takeuchi_satoru@jp.fujitsu.com>,
+        Matt Fleming <matt.fleming@intel.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [ 23/77] x86, efi: Make "noefi" really disable EFI runtime serivces
+Date: Fri,  1 Mar 2013 11:44:08 -0800
+Message-Id: <20130301194354.452595684@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130301194351.913471337@linuxfoundation.org>
 References: <20130301194351.913471337@linuxfoundation.org>
@@ -28,110 +29,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tomas Henzl <thenzl@redhat.com>
+From: Matt Fleming <matt.fleming@intel.com>
 
-commit 7b74e912785a11572da43292786ed07ada7e3e0c upstream.
+commit fb834c7acc5e140cf4f9e86da93a66de8c0514da upstream.
 
-While adding and removing a lot of disks disks and partitions this
-sometimes shows up:
+commit 1de63d60cd5b ("efi: Clear EFI_RUNTIME_SERVICES rather than
+EFI_BOOT by "noefi" boot parameter") attempted to make "noefi" true to
+its documentation and disable EFI runtime services to prevent the
+bricking bug described in commit e0094244e41c ("samsung-laptop:
+Disable on EFI hardware"). However, it's not possible to clear
+EFI_RUNTIME_SERVICES from an early param function because
+EFI_RUNTIME_SERVICES is set in efi_init() *after* parse_early_param().
 
-  WARNING: at fs/sysfs/dir.c:512 sysfs_add_one+0xc9/0x130() (Not tainted)
-  Hardware name:
-  sysfs: cannot create duplicate filename '/dev/block/259:751'
-  Modules linked in: raid1 autofs4 bnx2fc cnic uio fcoe libfcoe libfc 8021q scsi_transport_fc scsi_tgt garp stp llc sunrpc cpufreq_ondemand powernow_k8 freq_table mperf ipv6 dm_mirror dm_region_hash dm_log power_meter microcode dcdbas serio_raw amd64_edac_mod edac_core edac_mce_amd i2c_piix4 i2c_core k10temp bnx2 sg ixgbe dca mdio ext4 mbcache jbd2 dm_round_robin sr_mod cdrom sd_mod crc_t10dif ata_generic pata_acpi pata_atiixp ahci mptsas mptscsih mptbase scsi_transport_sas dm_multipath dm_mod [last unloaded: scsi_wait_scan]
-  Pid: 44103, comm: async/16 Not tainted 2.6.32-195.el6.x86_64 #1
-  Call Trace:
-    warn_slowpath_common+0x87/0xc0
-    warn_slowpath_fmt+0x46/0x50
-    sysfs_add_one+0xc9/0x130
-    sysfs_do_create_link+0x12b/0x170
-    sysfs_create_link+0x13/0x20
-    device_add+0x317/0x650
-    idr_get_new+0x13/0x50
-    add_partition+0x21c/0x390
-    rescan_partitions+0x32b/0x470
-    sd_open+0x81/0x1f0 [sd_mod]
-    __blkdev_get+0x1b6/0x3c0
-    blkdev_get+0x10/0x20
-    register_disk+0x155/0x170
-    add_disk+0xa6/0x160
-    sd_probe_async+0x13b/0x210 [sd_mod]
-    add_wait_queue+0x46/0x60
-    async_thread+0x102/0x250
-    default_wake_function+0x0/0x20
-    async_thread+0x0/0x250
-    kthread+0x96/0xa0
-    child_rip+0xa/0x20
-    kthread+0x0/0xa0
-    child_rip+0x0/0x20
+This resulted in "noefi" effectively becoming a no-op and no longer
+providing users with a way to disable EFI, which is bad for those
+users that have buggy machines.
 
-This most likely happens because dev_t is freed while the number is
-still used and idr_get_new() is not protected on every use.  The fix
-adds a mutex where it wasn't before and moves the dev_t free function so
-it is called after device del.
-
-Signed-off-by: Tomas Henzl <thenzl@redhat.com>
-Cc: Jens Axboe <axboe@kernel.dk>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-by: Walt Nelson Jr <walt0924@gmail.com>
+Cc: Satoru Takeuchi <takeuchi_satoru@jp.fujitsu.com>
+Signed-off-by: Matt Fleming <matt.fleming@intel.com>
+Link: http://lkml.kernel.org/r/1361392572-25657-1-git-send-email-matt@console-pimps.org
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- block/genhd.c             |    6 +++++-
- block/partition-generic.c |    2 +-
- 2 files changed, 6 insertions(+), 2 deletions(-)
+ arch/x86/platform/efi/efi.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/block/genhd.c
-+++ b/block/genhd.c
-@@ -422,14 +422,18 @@ int blk_alloc_devt(struct hd_struct *par
- 	do {
- 		if (!idr_pre_get(&ext_devt_idr, GFP_KERNEL))
- 			return -ENOMEM;
-+		mutex_lock(&ext_devt_mutex);
- 		rc = idr_get_new(&ext_devt_idr, part, &idx);
-+		mutex_unlock(&ext_devt_mutex);
- 	} while (rc == -EAGAIN);
+--- a/arch/x86/platform/efi/efi.c
++++ b/arch/x86/platform/efi/efi.c
+@@ -85,9 +85,10 @@ int efi_enabled(int facility)
+ }
+ EXPORT_SYMBOL(efi_enabled);
  
- 	if (rc)
- 		return rc;
- 
- 	if (idx > MAX_EXT_DEVT) {
-+		mutex_lock(&ext_devt_mutex);
- 		idr_remove(&ext_devt_idr, idx);
-+		mutex_unlock(&ext_devt_mutex);
- 		return -EBUSY;
++static bool disable_runtime = false;
+ static int __init setup_noefi(char *arg)
+ {
+-	clear_bit(EFI_RUNTIME_SERVICES, &x86_efi_facility);
++	disable_runtime = true;
+ 	return 0;
+ }
+ early_param("noefi", setup_noefi);
+@@ -734,7 +735,7 @@ void __init efi_init(void)
+ 	if (!efi_is_native())
+ 		pr_info("No EFI runtime due to 32/64-bit mismatch with kernel\n");
+ 	else {
+-		if (efi_runtime_init())
++		if (disable_runtime || efi_runtime_init())
+ 			return;
+ 		set_bit(EFI_RUNTIME_SERVICES, &x86_efi_facility);
  	}
- 
-@@ -646,7 +650,6 @@ void del_gendisk(struct gendisk *disk)
- 	disk_part_iter_exit(&piter);
- 
- 	invalidate_partition(disk, 0);
--	blk_free_devt(disk_to_dev(disk)->devt);
- 	set_capacity(disk, 0);
- 	disk->flags &= ~GENHD_FL_UP;
- 
-@@ -664,6 +667,7 @@ void del_gendisk(struct gendisk *disk)
- 	if (!sysfs_deprecated)
- 		sysfs_remove_link(block_depr, dev_name(disk_to_dev(disk)));
- 	device_del(disk_to_dev(disk));
-+	blk_free_devt(disk_to_dev(disk)->devt);
- }
- EXPORT_SYMBOL(del_gendisk);
- 
---- a/block/partition-generic.c
-+++ b/block/partition-generic.c
-@@ -249,11 +249,11 @@ void delete_partition(struct gendisk *di
- 	if (!part)
- 		return;
- 
--	blk_free_devt(part_devt(part));
- 	rcu_assign_pointer(ptbl->part[partno], NULL);
- 	rcu_assign_pointer(ptbl->last_lookup, NULL);
- 	kobject_put(part->holder_dir);
- 	device_del(part_to_dev(part));
-+	blk_free_devt(part_devt(part));
- 
- 	hd_struct_put(part);
- }
 
 
