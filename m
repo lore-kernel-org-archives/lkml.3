@@ -1,98 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753358Ab3CAAJa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 19:09:30 -0500
-Received: from mga02.intel.com ([134.134.136.20]:9759 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752015Ab3CAAJ3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 19:09:29 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,758,1355126400"; 
-   d="scan'208";a="292064538"
-From: "Yu, Fenghua" <fenghua.yu@intel.com>
-To: Borislav Petkov <bp@alien8.de>, "H. Peter Anvin" <hpa@zytor.com>
-CC: "H. Peter Anvin" <hpa@linux.intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Yinghai Lu <yinghai@kernel.org>
-Subject: RE: [GIT PULL] x86/microcode for v3.9-rc1
-Thread-Topic: [GIT PULL] x86/microcode for v3.9-rc1
-Thread-Index: AQHOELkHDmkvCmd5tUaA2VfA77GJ6JiQd9cAgAAB6QD//3o0QIAAjhYA//990SA=
-Date: Fri, 1 Mar 2013 00:09:27 +0000
-Message-ID: <3E5A0FA7E9CA944F9D5414FEC6C71220528AAADB@ORSMSX105.amr.corp.intel.com>
-References: <201302220456.r1M4ua12006362@terminus.zytor.com>
- <20130228231608.GA17468@pd.tnic> <512FE6D2.7070704@zytor.com>
- <3E5A0FA7E9CA944F9D5414FEC6C71220528AAA95@ORSMSX105.amr.corp.intel.com>
- <20130228235238.GF9767@pd.tnic>
-In-Reply-To: <20130228235238.GF9767@pd.tnic>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.140]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	id S1752643Ab3CAAL7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 19:11:59 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:60398 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751332Ab3CAAL5 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Feb 2013 19:11:57 -0500
+Date: Thu, 28 Feb 2013 16:11:51 -0800
+From: Jeff Layton <jlayton@samba.org>
+To: =?ISO-8859-1?B?Qmr2cm4=?= JACKE <bj@SerNet.DE>
+Cc: Dave Chiluk <dave.chiluk@canonical.com>, Steve French <sfrench@samba.org>,
+        linux-cifs@vger.kernel.org, samba-technical@lists.samba.org,
+        linux-kernel@vger.kernel.org,
+        "Stefan (metze) Metzmacher" <metze@samba.org>,
+        Dave Chiluk <chiluk@canonical.com>
+Subject: Re: [PATCH] CIFS: Decrease reconnection delay when switching nics
+Message-ID: <20130228161151.0fbbff98@corrin.poochiereds.net>
+In-Reply-To: <E1UBCMh-00FRaK-CC@intern.SerNet.DE>
+References: <1361831310-24260-1-git-send-email-chiluk@canonical.com>
+	<512DE8A6.9030000@samba.org>
+	<20130227083419.0af9deaf@corrin.poochiereds.net>
+	<512E8787.6070709@canonical.com>
+	<20130228072637.3b71a4f7@corrin.poochiereds.net>
+	<E1UBCMh-00FRaK-CC@intern.SerNet.DE>
+X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.13; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r2109TeM017517
 
-> -----Original Message-----
-> From: Borislav Petkov [mailto:bp@alien8.de]
-> Sent: Thursday, February 28, 2013 3:53 PM
-> To: Yu, Fenghua; H. Peter Anvin
-> Cc: H. Peter Anvin; Linus Torvalds; Ingo Molnar; Linux Kernel Mailing
-> List; Thomas Gleixner; Yinghai Lu
-> Subject: Re: [GIT PULL] x86/microcode for v3.9-rc1
-> 
-> On Thu, Feb 28, 2013 at 11:28:06PM +0000, Yu, Fenghua wrote:
-> >> gcc is warning that the function is using lots of stack. In the
-> >> context that it is running in this is most likely not a problem
-> >> given how small the overrun is, but it might be worthwhile to see if
-> >> there is anything which can be moved out to static storage or some
-> >> other variant.
-> >>
-> >> Static storage is tricky to use in this context since it runs in
-> >> flat linear mode (without paging, and therefore without the +3 GB
-> >> offset) on 32 bits.
-> >
-> > The errors might be related to the arrays defined
-> > mc_saved_tmp[MAX_UCODE_COUNT].
-> >
-> > Could you send your .config to me so that I can reproduce the issue?
-> > I don't see the issue in my build environment and in Fengguang's test
-> > environment.
-> 
-> Ok, forget it. It was some local .config file corruption which caused
-> include/generated/autoconf.h and include/config/auto.conf to have a
-> line
-> 
-> CONFIG_FRAME_WARN=1024
-> 
-> which would cause the warnings.
-> 
-> The 1024 ceiling value is also consistent with the warnings complaining
-> about something being > 1024 bytes.
-> 
-> Default CONFIG_FRAME_WARN on x86_64 is 2048 which explains why those
-> warnings never trigger on 64-bit.
-> 
-> So, we all can relax ourselves, especially I :-)
-> 
-> Thanks.
-> 
-> --
-> Regards/Gruss,
->     Boris.
-> 
-> Sent from a fat crate under my desk. Formatting is fine.
-> --
+On Thu, 28 Feb 2013 23:54:13 +0100
+Björn JACKE <bj@SerNet.DE> wrote:
 
-Ok. Agree, 1024 is too small. Nice to know that:)
+> On 2013-02-28 at 07:26 -0800 Jeff Layton sent off:
+> > NTFS doesn't support sparse files, so the OS has to zero-fill up to the
+> > point where you're writing. That can take a looooong time on slow
+> > storage (minutes even).
+> 
+> but you are talking about FAT here, right? NTFS does support sparse files if
+> the sparse bit has been explicitly been set on it. Bit even if the sparse bit
+> is not set filling a file with zeros by writing after a seek long beyond the
+> end of the file is very fast because NTFS supports that feature what Unix
+> filesystems like xfs call extents.
+> 
+> If writing beyond the end of a file is really slow via cifs vfs in the test
+> case against a ntfs volume then I wonder if that operation is being really done
+> optimally over the wire. ntfs really isn't that bad with handling this kind of
+> files.
+> 
 
-Merci.
+I'm not sure since I don't know the internals of NTFS. I had always
+assumed that it didn't really handle sparse files well (hence the
+"rabbit-pellet" thing that windows clients do).
 
--Fenghua
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+All I can say however is that writes long past the EOF can take a
+*really* long time to run. Typically we just issue a SMB_COM_WRITEX at
+the offset to which we want to put the data. Is there some other way we
+ought to be doing this?
+
+In any case, it doesn't really change the fact that there is no
+guaranteed time of response from CIFS servers. They can easily take a
+really long time to respond to certain requests. The best method we
+have to deal with that is to periodically "ping" the server with an
+echo to see if it's still there.
+
+-- 
+Jeff Layton <jlayton@samba.org>
