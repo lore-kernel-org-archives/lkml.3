@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752917Ab3CATph (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 14:45:37 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51484 "EHLO
+	id S1753327Ab3CATpx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 14:45:53 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51592 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752729Ab3CATpf (ORCPT
+	with ESMTP id S1753257Ab3CATpv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 14:45:35 -0500
+	Fri, 1 Mar 2013 14:45:51 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        =?UTF-8?q?Roger=20Pau=20Monn=C3=A9?= <roger.pau@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [ 36/77] xen-blkback: use balloon pages for persistent grants
-Date: Fri,  1 Mar 2013 11:44:21 -0800
-Message-Id: <20130301194355.776286409@linuxfoundation.org>
+        Fernando Luis Vazquez Cao <fernando@oss.ntt.co.jp>,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: [ 58/77] HID: clean up quirk for Sony RF receivers
+Date: Fri,  1 Mar 2013 11:44:43 -0800
+Message-Id: <20130301194358.088642415@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130301194351.913471337@linuxfoundation.org>
 References: <20130301194351.913471337@linuxfoundation.org>
@@ -30,53 +30,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Roger Pau Monne <roger.pau@citrix.com>
+From: Fernando Luis Vázquez Cao <fernando_b1@lab.ntt.co.jp>
 
-commit 087ffecdaa1875cc683a7a5bc0695b3ebfce3bad upstream.
+commit 99d249021abd4341771523ed8dd7946276103432 upstream.
 
-With current persistent grants implementation we are not freeing the
-persistent grants after we disconnect the device. Since grant map
-operations change the mfn of the allocated page, and we can no longer
-pass it to __free_page without setting the mfn to a sane value, use
-balloon grant pages instead, as the gntdev device does.
+Document what the fix-up is does and make it more robust by ensuring
+that it is only applied to the USB interface that corresponds to the
+mouse (sony_report_fixup() is called once per interface during probing).
 
-Signed-off-by: Roger Pau Monné <roger.pau@citrix.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: Fernando Luis Vazquez Cao <fernando@oss.ntt.co.jp>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/block/xen-blkback/blkback.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/hid/hid-sony.c |   14 ++++++++++++--
+ 1 file changed, 12 insertions(+), 2 deletions(-)
 
---- a/drivers/block/xen-blkback/blkback.c
-+++ b/drivers/block/xen-blkback/blkback.c
-@@ -46,6 +46,7 @@
- #include <xen/xen.h>
- #include <asm/xen/hypervisor.h>
- #include <asm/xen/hypercall.h>
-+#include <xen/balloon.h>
- #include "common.h"
+--- a/drivers/hid/hid-sony.c
++++ b/drivers/hid/hid-sony.c
+@@ -43,9 +43,19 @@ static __u8 *sony_report_fixup(struct hi
+ {
+ 	struct sony_sc *sc = hid_get_drvdata(hdev);
  
- /*
-@@ -239,6 +240,7 @@ static void free_persistent_gnts(struct
- 			ret = gnttab_unmap_refs(unmap, NULL, pages,
- 				segs_to_unmap);
- 			BUG_ON(ret);
-+			free_xenballooned_pages(segs_to_unmap, pages);
- 			segs_to_unmap = 0;
- 		}
+-	if ((sc->quirks & VAIO_RDESC_CONSTANT) &&
+-			*rsize >= 56 && rdesc[54] == 0x81 && rdesc[55] == 0x07) {
++	/*
++	 * Some Sony RF receivers wrongly declare the mouse pointer as a
++	 * a constant non-data variable.
++	 */
++	if ((sc->quirks & VAIO_RDESC_CONSTANT) && *rsize >= 56 &&
++	    /* usage page: generic desktop controls */
++	    /* rdesc[0] == 0x05 && rdesc[1] == 0x01 && */
++	    /* usage: mouse */
++	    rdesc[2] == 0x09 && rdesc[3] == 0x02 &&
++	    /* input (usage page for x,y axes): constant, variable, relative */
++	    rdesc[54] == 0x81 && rdesc[55] == 0x07) {
+ 		hid_info(hdev, "Fixing up Sony RF Receiver report descriptor\n");
++		/* input: data, variable, relative */
+ 		rdesc[55] = 0x06;
+ 	}
  
-@@ -527,8 +529,8 @@ static int xen_blkbk_map(struct blkif_re
- 				GFP_KERNEL);
- 			if (!persistent_gnt)
- 				return -ENOMEM;
--			persistent_gnt->page = alloc_page(GFP_KERNEL);
--			if (!persistent_gnt->page) {
-+			if (alloc_xenballooned_pages(1, &persistent_gnt->page,
-+			    false)) {
- 				kfree(persistent_gnt);
- 				return -ENOMEM;
- 			}
 
 
