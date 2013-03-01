@@ -1,72 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751034Ab3CADV1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 22:21:27 -0500
-Received: from mail-qa0-f48.google.com ([209.85.216.48]:54834 "EHLO
-	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750696Ab3CADVZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 22:21:25 -0500
-From: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>
-To: matt@console-pimps.org
-Cc: linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Michael Schroeder <mls@suse.com>, Josh Boyer <jwboyer@redhat.com>,
-        Jeremy Kerr <jeremy.kerr@canonical.com>,
-        "Lee, Chun-Yi" <jlee@suse.com>
-Subject: [PATCH] efivarfs: fix abnormal GUID in variable name by using strcpy to replace null with dash
-Date: Fri,  1 Mar 2013 11:20:18 +0800
-Message-Id: <1362108018-13117-1-git-send-email-jlee@suse.com>
-X-Mailer: git-send-email 1.6.0.2
+	id S1751418Ab3CADap (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 22:30:45 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:2166 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751080Ab3CADan (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Feb 2013 22:30:43 -0500
+Date: Thu, 28 Feb 2013 22:30:05 -0500
+From: Dave Jones <davej@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        "gnehzuil.liu" <gnehzuil.liu@gmail.com>,
+        Zheng Liu <wenqing.lz@taobao.com>, Borislav Petkov <bp@alien8.de>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL URGENT] ext4 regression fix for 3.9
+Message-ID: <20130301033005.GA7081@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Markus Trippelsdorf <markus@trippelsdorf.de>,
+	"gnehzuil.liu" <gnehzuil.liu@gmail.com>,
+	Zheng Liu <wenqing.lz@taobao.com>, Borislav Petkov <bp@alien8.de>,
+	"linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <98C6DE45-F050-4AAD-82E2-7352F5BB0A5D@gmail.com>
+ <20130227172256.GA236@x4>
+ <7BFB2135-A1F0-4B6D-9962-16E75E5560F8@gmail.com>
+ <20130227174553.GA224@x4>
+ <CA+55aFwWA1jPEEQNx_5oJ6Ze=3yFb6=E9nraBfX-Ve=WjRkQMw@mail.gmail.com>
+ <20130227184912.GA19624@thunk.org>
+ <20130227185625.GA224@x4>
+ <20130227191923.GA1121@redhat.com>
+ <20130227192907.GB14253@thunk.org>
+ <20130227201217.GD14253@thunk.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130227201217.GD14253@thunk.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Michael Schroeder <mls@suse.com>
+On Wed, Feb 27, 2013 at 03:12:17PM -0500, Linus Torvalds wrote:
+ > The following changes since commit 304e220f0879198b1f5309ad6f0be862b4009491:
+ > 
+ >   ext4: fix free clusters calculation in bigalloc filesystem (2013-02-22 15:27:52 -0500)
+ > 
+ > are available in the git repository at:
+ > 
+ >   git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4.git tags/ext4_for_linus
+ > 
+ > for you to fetch changes up to 8e919d13048cd5acaadb2b15b48acbfb8832d3c2:
+ > 
+ >   ext4: fix extent status tree regression for file systems > 512GB (2013-02-27 14:54:37 -0500)
+ > 
+ > ----------------------------------------------------------------
+ > This fixes a real brown paper bag bug which causes ext4 to choke on
+ > file systems larger than 512GB.
+ > 
+ > ----------------------------------------------------------------
+ > Theodore Ts'o (1):
+ >       ext4: fix extent status tree regression for file systems > 512GB
+ > 
+ >  fs/ext4/extents_status.h | 19 +++++++++++--------
+ >  1 file changed, 11 insertions(+), 8 deletions(-)
 
-On HP z220 system (firmware version 1.54), some EFI variables are incorrectly
-named :
+This has fixed the problem I reported, but I notice now that my desktop is really
+sluggish. perf top shows it's almost constantly spinning in ext4_es_reclaim_extents_count
 
-ls -d /sys/firmware/efi/vars/*8be4d* | grep -v -- -8be returns
-/sys/firmware/efi/vars/dbxDefault-pport8be4df61-93ca-11d2-aa0d-00e098032b8c
-/sys/firmware/efi/vars/KEKDefault-pport8be4df61-93ca-11d2-aa0d-00e098032b8c
-/sys/firmware/efi/vars/SecureBoot-pport8be4df61-93ca-11d2-aa0d-00e098032b8c
-/sys/firmware/efi/vars/SetupMode-Information8be4df61-93ca-11d2-aa0d-00e098032b8c
+Any ideas ?
 
-That causes by the following statement in efivar_create_sysfs_entry function:
-
- *(short_name + strlen(short_name)) = '-';
-efi_guid_unparse(vendor_guid, short_name + strlen(short_name));
-
-The trailing \0 is overwritten with '-', but the next char doesn't seem to be a \0
-as well for HP. So, the second strlen return the point of next '\0', causes there
-have garbage string attached before GUID.
-
-Tested on On HP z220.
-
-Cc: Matt Fleming <matt@console-pimps.org>
-Cc: Josh Boyer <jwboyer@redhat.com>
-Cc: Jeremy Kerr <jeremy.kerr@canonical.com>
-Cc: Michael Schroeder <mls@suse.com>
-Reported-by: Frederic Crozat <fcrozat@suse.com>
-Tested-by: Frederic Crozat <fcrozat@suse.com>
-Signed-off-by: Lee, Chun-Yi <jlee@suse.com>
----
- drivers/firmware/efivars.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/firmware/efivars.c b/drivers/firmware/efivars.c
-index 8bcb595..fbf18ff 100644
---- a/drivers/firmware/efivars.c
-+++ b/drivers/firmware/efivars.c
-@@ -1708,7 +1708,7 @@ efivar_create_sysfs_entry(struct efivars *efivars,
- 	/* This is ugly, but necessary to separate one vendor's
- 	   private variables from another's.         */
- 
--	*(short_name + strlen(short_name)) = '-';
-+	strcpy(short_name + strlen(short_name), "-");
- 	efi_guid_unparse(vendor_guid, short_name + strlen(short_name));
- 
- 	new_efivar->kobj.kset = efivars->kset;
--- 
-1.6.0.2
+	Dave
 
