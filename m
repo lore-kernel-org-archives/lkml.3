@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755212Ab3CAUQh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 15:16:37 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51480 "EHLO
+	id S1754754Ab3CAUQg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 15:16:36 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51489 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752846Ab3CATpe (ORCPT
+	with ESMTP id S1752852Ab3CATpf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 14:45:34 -0500
+	Fri, 1 Mar 2013 14:45:35 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Niu Yawei <yawei.niu@intel.com>, "Theodore Tso" <tytso@mit.edu>
-Subject: [ 51/77] ext4: fix race in ext4_mb_add_n_trim()
-Date: Fri,  1 Mar 2013 11:44:36 -0800
-Message-Id: <20130301194357.371500736@linuxfoundation.org>
+        Tejun Heo <tj@kernel.org>, David Teigland <teigland@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 37/77] idr: fix a subtle bug in idr_get_next()
+Date: Fri,  1 Mar 2013 11:44:22 -0800
+Message-Id: <20130301194355.877735418@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130301194351.913471337@linuxfoundation.org>
 References: <20130301194351.913471337@linuxfoundation.org>
@@ -26,46 +29,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Niu Yawei <yawei.niu@gmail.com>
+From: Tejun Heo <tj@kernel.org>
 
-commit f1167009711032b0d747ec89a632a626c901a1ad upstream.
+commit 6cdae7416a1c45c2ce105a78187d9b7e8feb9e24 upstream.
 
-In ext4_mb_add_n_trim(), lg_prealloc_lock should be taken when
-changing the lg_prealloc_list.
+The iteration logic of idr_get_next() is borrowed mostly verbatim from
+idr_for_each().  It walks down the tree looking for the slot matching
+the current ID.  If the matching slot is not found, the ID is
+incremented by the distance of single slot at the given level and
+repeats.
 
-Signed-off-by: Niu Yawei <yawei.niu@intel.com>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+The implementation assumes that during the whole iteration id is aligned
+to the layer boundaries of the level closest to the leaf, which is true
+for all iterations starting from zero or an existing element and thus is
+fine for idr_for_each().
+
+However, idr_get_next() may be given any point and if the starting id
+hits in the middle of a non-existent layer, increment to the next layer
+will end up skipping the same offset into it.  For example, an IDR with
+IDs filled between [64, 127] would look like the following.
+
+          [  0  64 ... ]
+       /----/   |
+       |        |
+      NULL    [ 64 ... 127 ]
+
+If idr_get_next() is called with 63 as the starting point, it will try
+to follow down the pointer from 0.  As it is NULL, it will then try to
+proceed to the next slot in the same level by adding the slot distance
+at that level which is 64 - making the next try 127.  It goes around the
+loop and finds and returns 127 skipping [64, 126].
+
+Note that this bug also triggers in idr_for_each_entry() loop which
+deletes during iteration as deletions can make layers go away leaving
+the iteration with unaligned ID into missing layers.
+
+Fix it by ensuring proceeding to the next slot doesn't carry over the
+unaligned offset - ie.  use round_up(id + 1, slot_distance) instead of
+id += slot_distance.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: David Teigland <teigland@redhat.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/mballoc.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ lib/idr.c |    9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
 
---- a/fs/ext4/mballoc.c
-+++ b/fs/ext4/mballoc.c
-@@ -4136,7 +4136,7 @@ static void ext4_mb_add_n_trim(struct ex
- 		/* The max size of hash table is PREALLOC_TB_SIZE */
- 		order = PREALLOC_TB_SIZE - 1;
- 	/* Add the prealloc space to lg */
--	rcu_read_lock();
-+	spin_lock(&lg->lg_prealloc_lock);
- 	list_for_each_entry_rcu(tmp_pa, &lg->lg_prealloc_list[order],
- 						pa_inode_list) {
- 		spin_lock(&tmp_pa->pa_lock);
-@@ -4160,12 +4160,12 @@ static void ext4_mb_add_n_trim(struct ex
- 	if (!added)
- 		list_add_tail_rcu(&pa->pa_inode_list,
- 					&lg->lg_prealloc_list[order]);
--	rcu_read_unlock();
-+	spin_unlock(&lg->lg_prealloc_lock);
+--- a/lib/idr.c
++++ b/lib/idr.c
+@@ -625,7 +625,14 @@ void *idr_get_next(struct idr *idp, int
+ 			return p;
+ 		}
  
- 	/* Now trim the list to be not more than 8 elements */
- 	if (lg_prealloc_count > 8) {
- 		ext4_mb_discard_lg_preallocations(sb, lg,
--						order, lg_prealloc_count);
-+						  order, lg_prealloc_count);
- 		return;
- 	}
- 	return ;
+-		id += 1 << n;
++		/*
++		 * Proceed to the next layer at the current level.  Unlike
++		 * idr_for_each(), @id isn't guaranteed to be aligned to
++		 * layer boundary at this point and adding 1 << n may
++		 * incorrectly skip IDs.  Make sure we jump to the
++		 * beginning of the next layer using round_up().
++		 */
++		id = round_up(id + 1, 1 << n);
+ 		while (n < fls(id)) {
+ 			n += IDR_BITS;
+ 			p = *--paa;
 
 
