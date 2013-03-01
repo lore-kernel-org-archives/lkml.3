@@ -1,63 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752289Ab3CAIFS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 03:05:18 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:49867 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750709Ab3CAIFR (ORCPT
+	id S1752410Ab3CAIF0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 03:05:26 -0500
+Received: from mail-ia0-f180.google.com ([209.85.210.180]:45029 "EHLO
+	mail-ia0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752313Ab3CAIFY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 03:05:17 -0500
-Date: Fri, 1 Mar 2013 16:04:17 +0800
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@ingics.com>
-Cc: Tero Kristo <t-kristo@ti.com>, Aaro Koskinen <aaro.koskinen@iki.fi>,
-        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] regulator: twl: Convert twl4030ldo_ops to get_voltage_sel
-Message-ID: <20130301080414.GO25302@opensource.wolfsonmicro.com>
-References: <1360980594.6332.1.camel@phoenix>
+	Fri, 1 Mar 2013 03:05:24 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="GPOl6LAGMgeiWDic"
-Content-Disposition: inline
-In-Reply-To: <1360980594.6332.1.camel@phoenix>
-X-Cookie: Condense soup, not books!
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <51304C96.3010801@zytor.com>
+References: <512B7D10.4060304@tpi.com>
+	<512B8407.2090807@canonical.com>
+	<512BD753.4080001@hp.com>
+	<CAE9FiQVY4io_mO3PhTtE6FbGUgo1uZKKXO=pjx_FoZ1JuZmsAw@mail.gmail.com>
+	<CAE9FiQXs3MyUW+hJhupJgL-t9sYmT5GdeStWD2vMjsJG+6qCrQ@mail.gmail.com>
+	<CAE9FiQXHNm+E+PchPsReOykVPNkRrC8ttjDpWWs=njANT+Wf1Q@mail.gmail.com>
+	<CAJErZ53dadbU3oM4Prhi3n_R+Lsbp3TG=FP1=whTK5uPMpj90A@mail.gmail.com>
+	<CAE9FiQWx=FdQSH_H_PoVxUksY6rFnN6yDfwmK3w8OTbCPLM1+w@mail.gmail.com>
+	<CAJErZ53AWMP688OV+J0qiJii2y=qzEjLq=WshAQbMhEdyx33cQ@mail.gmail.com>
+	<51304C96.3010801@zytor.com>
+Date: Fri, 1 Mar 2013 00:05:23 -0800
+X-Google-Sender-Auth: syKU0ujmCMmiCaXfuLt4ypc-ZfQ
+Message-ID: <CAE9FiQXy-70JSFDQEFwD3DEyUSGp=Uj_kyC+xR=KZfmY0OOoag@mail.gmail.com>
+Subject: Re: sched: CPU #1's llc-sibling CPU #0 is not on the same node!
+From: Yinghai Lu <yinghai@kernel.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Martin Bligh <mbligh@mbligh.org>, Ingo Molnar <mingo@kernel.org>,
+        Don Morris <don.morris@hp.com>, Tejun Heo <tj@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Tim Gardner <tim.gardner@canonical.com>, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, mingo@redhat.com, x86@kernel.org,
+        a.p.zijlstra@chello.nl, jarkko.sakkinen@intel.com,
+        tangchen@cn.fujitsu.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Feb 28, 2013 at 10:37 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 02/25/2013 08:51 PM, Martin Bligh wrote:
+>>> Do you mean we can remove numaq x86 32bit code now?
+>>
+>> Wouldn't bother me at all. The machine is from 1995, end of life c. 2000?
+>> Was useful in the early days of getting NUMA up and running on Linux,
+>> but is now too old to be a museum piece, really.
+>>
+>
+> I'd be very happy to get the NUMAQ code ripped out.  I am wondering if
+> there are any reasons to keep any 32-bit x86 NUMA code at all.
 
---GPOl6LAGMgeiWDic
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-
-On Sat, Feb 16, 2013 at 10:09:54AM +0800, Axel Lin wrote:
-> This fixes an inconsistent behavior between list_voltage() and get_voltage()
-> because current implementation of get_voltage() does not check the case
-> IS_UNSUP() is true.
-
-Applied, thanks.
-
---GPOl6LAGMgeiWDic
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRMGD1AAoJELSic+t+oim96qYP/AlK35/pg7FQuzuRRpUriGBl
-5amFAHhWNmnSAlfba0Y69RJr8uKApXBHUhvXYAoOyP0Yf5l2Y+fmmDoGv+mdZmnD
-og5d71bGSbQI7U+nZmQynvsIxC46aO8inkZeY7F8U1S1uizTpSuf65Q4WpOIzCXT
-O3w57FHyeAEhA0Hoa5RJ0/fDiEWCN5tOn3kvep28Yav6AjljbNVpyE5oS/VyN/u6
-s4PNSwrlj/L8SRRoAmG6heboTzfrNFDkxk6PkZg3udlwcgNkAIp2i8tOFp4U9NqU
-qtcfIXAjQuvAe7BDudHpMuPcS4Yu/4IliI4BE3UPRFeXetJp0ZOSIENRXiHZpBgx
-O/491SlwI0cIcXyEf4aj46NsSuABWdCdrD48/d+vtSs4UjU998QclxlRprt2Zcve
-RXUzMRUaRwdN+YK4B/7UZFcreTnQJCXlFLWDJtzCXSe6M4JZT6l/vXYl0gyn2fQ0
-reT6+RdiRk4vEVoFs7OEK4RiLjVuIWXz5dGEfwreLxbaSst+DBl7FfFLQJVh2OZ8
-F45DK6V7slq7v+VrLbb4Oh4onlkpJRmZAE4vNtx3eoC3kCYIoskLTJZgZoNKQggH
-dH8U56Hakr48mUg89lRv1VJhDZkFDrszDKtxDHbMYEcY0gguUSP6keZ26tRN/v3B
-paXpOpmZAnCawQpNKLws
-=6/j9
------END PGP SIGNATURE-----
-
---GPOl6LAGMgeiWDic--
+Agreed!
