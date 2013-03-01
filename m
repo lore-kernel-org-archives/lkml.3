@@ -1,139 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755077Ab3CABh0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 20:37:26 -0500
-Received: from prdiron-2.llnl.gov ([128.15.143.172]:57430 "EHLO
-	prdiron-2.llnl.gov" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753809Ab3CABhY (ORCPT
+	id S1753758Ab3CABk2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 20:40:28 -0500
+Received: from mail-oa0-f50.google.com ([209.85.219.50]:44663 "EHLO
+	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750985Ab3CABk0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 20:37:24 -0500
-X-Attachments: 
-Date: Thu, 28 Feb 2013 17:37:22 -0800
-From: Ira Weiny <weiny2@llnl.gov>
-To: "Husam Kahalah" <HKahalah@asaltech.com>
-Cc: linux-rdma@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH]  infiniband-diags/saquery.c: switchinfo support added
-Message-Id: <20130228173722.81b9d161a894b8324d5c5775@llnl.gov>
-In-Reply-To: <WC20130228061138.140078@asaltech.com>
-References: <WC20130228061138.140078@asaltech.com>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.18.9; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Thu, 28 Feb 2013 20:40:26 -0500
+Message-ID: <51300702.1050006@gmail.com>
+Date: Fri, 01 Mar 2013 09:40:18 +0800
+From: Ric Mason <ric.masonn@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
+MIME-Version: 1.0
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+CC: minchan@kernel.org, sjenning@linux.vnet.ibm.com,
+        Nitin Gupta <nitingupta910@gmail.com>,
+        Konrad Wilk <konrad.wilk@oracle.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Bob Liu <lliubbo@gmail.com>,
+        Luigi Semenzato <semenzato@google.com>, Mel Gorman <mgorman@suse.de>
+Subject: Re: zsmalloc limitations and related topics
+References: <0efe9610-1aa5-4aa9-bde9-227acfa969ca@default>
+In-Reply-To: <0efe9610-1aa5-4aa9-bde9-227acfa969ca@default>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Your mailer line wrapped the patch.  Could you resend.
+On 02/28/2013 07:24 AM, Dan Magenheimer wrote:
+> Hi all --
+>
+> I've been doing some experimentation on zsmalloc in preparation
+> for my topic proposed for LSFMM13 and have run across some
+> perplexing limitations.  Those familiar with the intimate details
+> of zsmalloc might be well aware of these limitations, but they
+> aren't documented or immediately obvious, so I thought it would
+> be worthwhile to air them publicly.  I've also included some
+> measurements from the experimentation and some related thoughts.
+>
+> (Some of the terms here are unusual and may be used inconsistently
+> by different developers so a glossary of definitions of the terms
+> used here is appended.)
+>
+> ZSMALLOC LIMITATIONS
+>
+> Zsmalloc is used for two zprojects: zram and the out-of-tree
+> zswap.  Zsmalloc can achieve high density when "full".  But:
+>
+> 1) Zsmalloc has a worst-case density of 0.25 (one zpage per
+>     four pageframes).
+> 2) When not full and especially when nearly-empty _after_
+>     being full, density may fall below 1.0 as a result of
+>     fragmentation.
 
-Also, could you add this to doc/rst/saquery.8.in.rst
+What's the meaning of nearly-empty _after_ being full?
 
-Thanks,
-Ira
+> 3) Zsmalloc has a density of exactly 1.0 for any number of
+>     zpages with zsize >= 0.8.
+> 4) Zsmalloc contains several compile-time parameters;
+>     the best value of these parameters may be very workload
+>     dependent.
+>
+> If density == 1.0, that means we are paying the overhead of
+> compression+decompression for no space advantage.  If
+> density < 1.0, that means using zsmalloc is detrimental,
+> resulting in worse memory pressure than if it were not used.
+>
+> WORKLOAD ANALYSIS
+>
+> These limitations emphasize that the workload used to evaluate
+> zsmalloc is very important.  Benchmarks that measure data
 
-On Thu, 28 Feb 2013 08:11:38 +0200
-"Husam Kahalah" <HKahalah@asaltech.com> wrote:
+Could you share your benchmark? In order that other guys can take 
+advantage of it.
 
-> From d61f2580b829fa2fc56aea15bd98ef3a607d9aba Mon Sep 17 00:00:00 2001
-> 
-> From: Husam kahalah <hkahalah@asaltech.com>
-> Date: Mon, 25 Feb 2013 10:53:25 +0200
-> Subject: [PATCH]  infiniband-diags/saquery.c: switchinfo support added
-> 
-> ---
->  src/saquery.c |   55 
-> +++++++++++++++++++++++++++++++++++++++++++++++++++++++
->  1 files changed, 55 insertions(+), 0 deletions(-)
-> 
-> diff --git a/src/saquery.c b/src/saquery.c
-> index d31d77d..6390bcd 100644
-> --- a/src/saquery.c
-> +++ b/src/saquery.c
-> @@ -481,6 +481,41 @@ static void dump_service_record(void *data)
->          cl_ntoh64(p_sr->service_data64[1]));
->  }
-> 
-> +static void dump_switch_info_record(void *data)
-> +{
-> +  ib_switch_info_record_t *p_sir = data;
-> +
-> +  printf("SwitchInfoRecord dump:\n"
-> +        "\t\tRID\n"
-> +        "\t\tlid.....................%u\n"
-> +        "\t\tSwitchInfo dump:\n"
-> +        "\t\tlin_cap.................0x%X\n"
-> +        "\t\trand_cap................0x%X\n"
-> +        "\t\tmcast_cap...............0x%X\n"
-> +        "\t\tlin_top.................0x%X\n"
-> +        "\t\tdef_port................%u\n"
-> +        "\t\tdef_mcast_pri_port......%u\n"
-> +        "\t\tdef_mcast_not_port......%u\n"
-> +        "\t\tlife_state..............%u\n"
-> +        "\t\tlids_per_port...........0x%X\n"
-> +        "\t\tenforce_cap.............0x%X\n"
-> +        "\t\tflags...................%u\n"
-> +        "\t\tmcast_top...............0x%X\n",
-> +        cl_ntoh16(p_sir->lid),
-> +        cl_ntoh16(p_sir->switch_info.lin_cap),
-> +        cl_ntoh16(p_sir->switch_info.rand_cap),
-> +        cl_ntoh16(p_sir->switch_info.mcast_cap),
-> +        cl_ntoh16(p_sir->switch_info.lin_top),
-> +        p_sir->switch_info.def_port,
-> +        p_sir->switch_info.def_mcast_pri_port,
-> +        p_sir->switch_info.def_mcast_not_port,
-> +        p_sir->switch_info.life_state,
-> +        cl_ntoh16(p_sir->switch_info.lids_per_port),
-> +        cl_ntoh16(p_sir->switch_info.enforce_cap),
-> +        p_sir->switch_info.flags,
-> +        cl_ntoh16(p_sir->switch_info.mcast_top));
-> +}
-> +
->  static void dump_inform_info_record(void *data)
->  {
->   char gid_str[INET6_ADDRSTRLEN];
-> @@ -1150,6 +1185,24 @@ static int query_service_records(const struct 
-> query_cmd *q, struct sa_handle * h
->    dump_service_record);
->  }
-> 
-> +static int query_switchinfo_records(const struct query_cmd *q,
-> + struct sa_handle * h, struct query_params *p,
-> + int argc, char *argv[])
-> +{
-> +  ib_switch_info_record_t swir;
-> + ib_net64_t comp_mask = 0;
-> + int lid = 0;
-> +
-> + if (argc > 0)
-> +  parse_lid_and_ports(h, argv[0], &lid, NULL, NULL);
-> +
-> +  memset(&swir, 0, sizeof(swir));
-> +  CHECK_AND_SET_VAL(lid, 16, 0, swir.lid, SWIR, LID);
-> +
-> + return get_and_dump_any_records(h, IB_SA_ATTR_SWITCHINFORECORD, 0, 
-> comp_mask,
-> + &swir, sizeof(swir), dump_switch_info_record);
-> +}
-> +
->  static int query_inform_info_records(const struct query_cmd *q,
->       struct sa_handle * h, struct query_params *p,
->       int argc, char *argv[])
-> @@ -1342,6 +1395,8 @@ static const struct query_cmd query_cmds[] = {
->    "[[mlid]/[position]/[block]]", query_mft_records},
->    {"GUIDInfoRecord", "GIR", IB_SA_ATTR_GUIDINFORECORD,
->    "[[lid]/[block]]", query_guidinfo_records},
-> +  {"SwitchInfoRecord", "SWIR", IB_SA_ATTR_SWITCHINFORECORD,
-> +  "[lid]", query_switchinfo_records},
->    {0}
->  };
-> 
-> -- 
-> 1.7.1
+> throughput or CPU utilization are of questionable value because
+> it is the _content_ of the data that is particularly relevant
+> for compression.  Even more precisely, it is the "entropy"
+> of the data that is relevant, because the amount of
+> compressibility in the data is related to the entropy:
+> I.e. an entirely random pagefull of bits will compress poorly
+> and a highly-regular pagefull of bits will compress well.
+> Since the zprojects manage a large number of zpages, both
+> the mean and distribution of zsize of the workload should
+> be "representative".
+>
+> The workload most widely used to publish results for
+> the various zprojects is a kernel-compile using "make -jN"
+> where N is artificially increased to impose memory pressure.
+> By adding some debug code to zswap, I was able to analyze
+> this workload and found the following:
+>
+> 1) The average page compressed by almost a factor of six
+>     (mean zsize == 694, stddev == 474)
 
+stddev is what?
 
--- 
-Ira Weiny
-Member of Technical Staff
-Lawrence Livermore National Lab
-925-423-8008
-weiny2@llnl.gov
+> 2) Almost eleven percent of the pages were zero pages.  A
+>     zero page compresses to 28 bytes.
+> 3) On average, 77% of the bytes (3156) in the pages-to-be-
+>     compressed contained a byte-value of zero.
+> 4) Despite the above, mean density of zsmalloc was measured at
+>     3.2 zpages/pageframe, presumably losing nearly half of
+>     available space to fragmentation.
+>
+> I have no clue if these measurements are representative
+> of a wide range of workloads over the lifetime of a booted
+> machine, but I am suspicious that they are not.  For example,
+> the lzo1x compression algorithm claims to compress data by
+> about a factor of two.
+>
+> I would welcome ideas on how to evaluate workloads for
+> "representativeness".  Personally I don't believe we should
+> be making decisions about selecting the "best" algorithms
+> or merging code without an agreement on workloads.
+>
+> PAGEFRAME EVACUATION AND RECLAIM
+>
+> I've repeatedly stated the opinion that managing the number of
+> pageframes containing compressed pages will be valuable for
+> managing MM interaction/policy when compression is used in
+> the kernel.  After the experimentation above and some brainstorming,
+> I still do not see an effective method for zsmalloc evacuating and
+> reclaiming pageframes, because both are complicated by high density
+> and page-crossing.  In other words, zsmalloc's strengths may
+> also be its Achilles heels.  For zram, as far as I can see,
+> pageframe evacuation/reclaim is irrelevant except perhaps
+> as part of mass defragmentation.  For zcache and zswap, where
+> writethrough is used, pageframe evacuation/reclaim is very relevant.
+> (Note: The writeback implemented in zswap does _zpage_ evacuation
+> without pageframe reclaim.)
+>
+> CLOSING THOUGHT
+>
+> Since zsmalloc and zbud have different strengths and weaknesses,
+> I wonder if some combination or hybrid might be more optimal?
+> But unless/until we have and can measure a representative workload,
+> only intuition can answer that.
+>
+> GLOSSARY
+>
+> zproject -- a kernel project using compression (zram, zcache, zswap)
+> zpage -- a compressed sequence of PAGE_SIZE bytes
+> zsize -- the number of bytes in a compressed page
+> pageframe -- the term "page" is widely used both to describe
+>      either (1) PAGE_SIZE bytes of data, or (2) a physical RAM
+>      area with size=PAGE_SIZE which is PAGE_SIZE-aligned,
+>      as represented in the kernel by a struct page.  To be explicit,
+>      we refer to (2) as a pageframe.
+> density -- zpages per pageframe; higher is (presumably) better
+> zsmalloc -- a slab-based allocator written by Nitin Gupta to
+>       efficiently store zpages and designed to allow zpages
+>       to be split across two non-contiguous pageframes
+> zspage -- a grouping of N non-contiguous pageframes managed
+>       as a unit by zsmalloc to store zpages for which zsize
+>       falls within a certain range.  (The compile-time
+>       default maximum size for N is 4).
+> zbud -- a buddy-based allocator written by Dan Magenheimer
+>       (specifically for zcache) to predictably store zpages;
+>       no more than two zpages are stored in any pageframe
+> pageframe evacuation/reclaim -- the process of removing
+>       zpages from one or more pageframes, including pointers/nodes
+>       from any data structures referencing those zpages,
+>       so that the pageframe(s) can be freed for use by
+>       the rest of the kernel
+> writeback --  the process of transferring zpages from
+>       storage in a zproject to a backing swap device
+> lzo1x -- a compression algorithm used by default by all the
+>       zprojects; the kernel implementation resides in lib/lzo.c
+> entropy -- randomness of data to be compressed; higher entropy
+>       means worse data compression
+>
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=ilto:"dont@kvack.org"> email@kvack.org </a>
+
