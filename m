@@ -1,103 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751367Ab3CAQss (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 11:48:48 -0500
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:63053 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750910Ab3CAQso (ORCPT
+	id S1751223Ab3CAQus (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 11:50:48 -0500
+Received: from mail-da0-f53.google.com ([209.85.210.53]:60978 "EHLO
+	mail-da0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750910Ab3CAQur (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 11:48:44 -0500
-Date: Fri, 1 Mar 2013 08:48:39 -0800
+	Fri, 1 Mar 2013 11:50:47 -0500
+Date: Fri, 1 Mar 2013 08:50:43 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Cc: Matthias Schniedermeyer <ms@citd.de>,
-        Holger =?iso-8859-1?Q?Hoffst=E4tte?= 
-	<holger.hoffstaette@googlemail.com>,
-        Jonathan Nieder <jrnieder@gmail.com>, stable@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        Tilman Schmidt <tilman@imap.cc>, kernel-team@lists.ubuntu.com,
-        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: Re: [regression] external HDD in USB3 enclosure cannot be
- dynamically removed (Re: Linux 3.7.5)
-Message-ID: <20130301164839.GA5435@kroah.com>
-References: <20130212004023.GA8427@xanatos>
- <511A1AF1.9080107@googlemail.com>
- <20130212204224.GC8427@xanatos>
- <511B4EB1.9010708@googlemail.com>
- <20130213171656.GA9318@citd.de>
- <20130213193303.GH8427@xanatos>
- <20130213200413.GA17648@citd.de>
- <20130213210846.GI8427@xanatos>
- <20130213213129.GA10288@kroah.com>
- <20130213221250.GJ8427@xanatos>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Yinghai Lu <yinghai@kernel.org>, Greg KH <gregkh@suse.de>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Jens Axboe <axboe@kernel.dk>, Alexander Viro <viro@ftp.linux.org.uk>,
+        "Theodore Ts'o" <tytso@mit.edu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Laura Abbott <lauraa@codeaurora.org>, Mel Gorman <mgorman@suse.de>
+Subject: Re: [-rc7 regression] Buggy commit: "mm: use aligned zone start for
+ pfn_to_bitidx calculation"
+Message-ID: <20130301165043.GB5435@kroah.com>
+References: <20130213111007.GA11367@gmail.com>
+ <CA+55aFxrjsVkBwUdjmc4MYvEsjEyCJZ7AFpGrWvbbQFB3EVtHA@mail.gmail.com>
+ <alpine.LFD.2.02.1302140012460.22263@ionos>
+ <20130214144510.GC25282@gmail.com>
+ <20130214145424.GA26071@gmail.com>
+ <20130214150810.GA26095@gmail.com>
+ <CAE9FiQXc=7+TMwbfd20YiHNfOHX_kUOzYcVm8-uaP2R_C_1RRg@mail.gmail.com>
+ <20130215114425.GD26955@gmail.com>
+ <20130215220615.GA1696@kroah.com>
+ <20130216082954.GA18953@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130213221250.GJ8427@xanatos>
+In-Reply-To: <20130216082954.GA18953@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 13, 2013 at 02:12:50PM -0800, Sarah Sharp wrote:
-> On Wed, Feb 13, 2013 at 01:31:29PM -0800, Greg KH wrote:
-> > On Wed, Feb 13, 2013 at 01:08:46PM -0800, Sarah Sharp wrote:
-> > > On Wed, Feb 13, 2013 at 09:04:13PM +0100, Matthias Schniedermeyer wrote:
-> > > > On 13.02.2013 11:33, Sarah Sharp wrote:
-> > > > > On Wed, Feb 13, 2013 at 06:16:56PM +0100, Matthias Schniedermeyer wrote:
-> > > > > > On 13.02.2013 09:28, Holger Hoffstätte wrote:
-> > > > > > > On 12.02.2013 21:42, Sarah Sharp wrote:
-> > > > > > > > [..]
-> > > > > > > > There was a further set of patches queued for 3.9 to deal with connected
-> > > > > > > > devices going to the Inactive state, but they looked like they were too
-> > > > > > > > big for stable:
-> > > > > > > > 
-> > > > > > > > d3b9d7a USB: Fix connected device switch to Inactive state.
-> > > > > > > > a24a607 USB: Rip out recursive call on warm port reset.
-> > > > > > > > 2d4fa94 USB: Prepare for refactoring by adding extra udev checks.
-> > > > > > > > 0fe51aa USB: Don't use EHCI port sempahore for USB 3.0 hubs.
-> > > > > 
-> > > > > Holger and Matthias, can you double check that cherry picking just those
-> > > > > four patches on top of 3.7.7 or 3.8 works as well?
-> > > > 
-> > > > 3.7.7 + those 4 patches workes for me.
-> > > > 
-> > > > As i'm not very firm in git i generated separate diffs for each commit 
-> > > > and applying them in the order 2d4fa94 0fe51aa d3b9d7a a24a607 worked 
-> > > > without hunks dropped.
-> > > > 
-> > > > I have attached `git diff` against vanilla 3.7.7, so you can check that 
-> > > > i got it right.
-> > > 
-> > > Yep, that diff looks fine compared to the git diff of those four patches.
-> > > 
-> > > Greg,
-> > > 
-> > > How do you want to handle this?  The above four patches should go into
-> > > 3.8 and stable, but they're not currently in Linus' tree and it's
-> > > probably too late in the cycle to merge them this week.  Should we just
-> > > wait until 3.9 is out and put the patches into the stable trees then?
-> > 
-> > > My email shows that the bad commit
-> > > f7965c0846d74b270e246c1470ca955d5078eb07 has been added to the 3.2, 3.4,
-> > > and 3.7 stable trees, as well as Canonical's 3.7 stable tree.  I'm also
-> > > fine with just reverting that commit from 3.8 and stable.
-> > 
-> > It's probably easier at this point in time to just revert that commit,
-> > leave the stable kernels alone, and then everything will be fixed in
-> > 3.9.  When the commits go into Linus's tree, we can backport everything
-> > to the stable releases (including 3.8.1) at that point.
-> > 
-> > As long as someone remembers to send the needed information to
-> > stable@vger.kernel.org, I know I'll forget :)
-> > 
-> > Sound ok?
+On Sat, Feb 16, 2013 at 09:29:54AM +0100, Ingo Molnar wrote:
 > 
-> Yep, sounds fine.  I'll attempt to remember to send email to stable once
-> 3.9 is out.
+> * Greg KH <greg@kroah.com> wrote:
+> 
+> > On Fri, Feb 15, 2013 at 12:44:26PM +0100, Ingo Molnar wrote:
+> > > 
+> > > [ Greg: -stable was Cc:-ed for this potentially buggy commit. ]
+> > > 
+> > > * Yinghai Lu <yinghai@kernel.org> wrote:
+> > > 
+> > > > On Thu, Feb 14, 2013 at 7:08 AM, Ingo Molnar <mingo@kernel.org> wrote:
+> > > > > these three:
+> > > > >
+> > > > > 10d73e655cef mm: bootmem: fix free_all_bootmem_core() with odd bitmap alignment
+> > > > > c060f943d092 mm: use aligned zone start for pfn_to_bitidx calculation
+> > > > > c0232ae861df mm: memblock: fix wrong memmove size in memblock_merge_regions()
+> > > > >
+> > > > > might have highmem=512m boot parameter sensitivity.
+> > > > 
+> > > > 10d73e655cef should not be related, as we are using nobootmem wrapper
+> > > > of memblock.
+> > > > c0232ae861df is copying less while using the blank slot in memblock
+> > > > memory or reserved array
+> > > > so it should be ok too.
+> > > > 
+> > > > c060f943d092 may be related as you config does not have
+> > > > CONFIG_SPARSEMEM defined.
+> > > 
+> > > Right, that's the commit causing the x86 regression:
+> > > 
+> > >  c060f943d0929f3e429c5d9522290584f6281d6e is the first bad commit
+> > >  commit c060f943d0929f3e429c5d9522290584f6281d6e
+> > >  Date:   Fri Jan 11 14:31:51 2013 -0800
+> > > 
+> > >      mm: use aligned zone start for pfn_to_bitidx calculation
+> > > 
+> > > I've given 6d92d4f (its parent commit) quite a bit of testing so 
+> > > I'm 99% sure in the validity of this bisection result.
+> > > 
+> > > Involved parties Cc:-ed.
+> > > 
+> > > Revert attached below - it reverts cleanly and I'll test this 
+> > > today, to see whether this solves the sporadic lockups.
+> > > 
+> > > Thanks,
+> > > 
+> > > 	Ingo
+> > > 
+> > > ------------------->
+> > > >From 6f3d5a8f38eb23f792b408d9bc8fee53a7d158f9 Mon Sep 17 00:00:00 2001
+> > > From: Ingo Molnar <mingo@kernel.org>
+> > > Date: Fri, 15 Feb 2013 12:43:22 +0100
+> > > Subject: [PATCH] Revert "mm: use aligned zone start for pfn_to_bitidx
+> > >  calculation"
+> > > 
+> > > This reverts commit c060f943d0929f3e429c5d9522290584f6281d6e.
+> > 
+> > Let me know if I should be reverting this from the -stable releases.
+> 
+> It appears so - it definitely locks up here with the config I 
+> sent. It appears to be a rare bug but a bug.
+> 
+> Would be nice to hear from the authors/ackers/pushers of the 
+> patch though.
 
-Did this happen yet?
+What ever happened with this?  Did something go into Linus's tree to
+resolve this issue that I need to pull into a stable release?
 
 thanks,
 
