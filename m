@@ -1,96 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754544Ab3CAAfZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 19:35:25 -0500
-Received: from mail-oa0-f51.google.com ([209.85.219.51]:60949 "EHLO
-	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752091Ab3CAAfY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 19:35:24 -0500
-Message-ID: <512FF7C6.4090109@gmail.com>
-Date: Fri, 01 Mar 2013 08:35:18 +0800
-From: Ric Mason <ric.masonn@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
+	id S1752638Ab3CAAgk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 19:36:40 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:59619 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751183Ab3CAAgj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Feb 2013 19:36:39 -0500
+Date: Fri, 1 Mar 2013 01:36:29 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: "H. Peter Anvin" <hpa@zytor.com>, Josh Boyer <jwboyer@redhat.com>
+Cc: Boris Ostrovsky <boris.ostrovsky@oracle.com>, mingo@redhat.com,
+        tglx@linutronix.de, konrad.wilk@oracle.com, rostedt@goodmis.org,
+        gregkh@linuxfoundation.org, samu.kallio@aberdeencloud.com,
+        kraman@redhat.com, xen-devel@lists.xen.org,
+        linux-kernel@vger.kernel.org, stable@kernel.org
+Subject: Re: [PATCH] mm/x86: Patch out arch_flush_lazy_mmu_mode() when
+ running on bare metal
+Message-ID: <20130301003629.GG9767@pd.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	"H. Peter Anvin" <hpa@zytor.com>, Josh Boyer <jwboyer@redhat.com>,
+	Boris Ostrovsky <boris.ostrovsky@oracle.com>, mingo@redhat.com,
+	tglx@linutronix.de, konrad.wilk@oracle.com, rostedt@goodmis.org,
+	gregkh@linuxfoundation.org, samu.kallio@aberdeencloud.com,
+	kraman@redhat.com, xen-devel@lists.xen.org,
+	linux-kernel@vger.kernel.org, stable@kernel.org
+References: <1362092149-32381-1-git-send-email-boris.ostrovsky@oracle.com>
+ <20130228233720.GB17468@pd.tnic>
+ <20130301000539.GA31649@hansolo.jdub.homelinux.org>
+ <512FF331.5050008@zytor.com>
 MIME-Version: 1.0
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-CC: devel@linuxdriverproject.org, linux-kernel@vger.kernel.org,
-        gregkh@linuxfoundation.org, linux-mm@kvack.org, ngupta@vflare.org,
-        Konrad Wilk <konrad.wilk@oracle.com>, sjenning@linux.vnet.ibm.com,
-        minchan@kernel.org
-Subject: Re: [PATCH] staging/zcache: Fix/improve zcache writeback code, tie
- to a config option
-References: <1360175261-13287-1-git-send-email-dan.magenheimer@oracle.com> <5126F06A.8010106@gmail.com> <f6930e42-24d8-447c-9443-b4d3f5aa1418@default>
-In-Reply-To: <f6930e42-24d8-447c-9443-b4d3f5aa1418@default>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <512FF331.5050008@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/01/2013 06:29 AM, Dan Magenheimer wrote:
->> From: Ric Mason [mailto:ric.masonn@gmail.com]
->> Subject: Re: [PATCH] staging/zcache: Fix/improve zcache writeback code, tie to a config option
->>
->> On 02/07/2013 02:27 AM, Dan Magenheimer wrote:
->>> It was observed by Andrea Arcangeli in 2011 that zcache can get "full"
->>> and there must be some way for compressed swap pages to be (uncompressed
->>> and then) sent through to the backing swap disk.  A prototype of this
->>> functionality, called "unuse", was added in 2012 as part of a major update
->>> to zcache (aka "zcache2"), but was left unfinished due to the unfortunate
->>> temporary fork of zcache.
->>>
->>> This earlier version of the code had an unresolved memory leak
->>> and was anyway dependent on not-yet-upstream frontswap and mm changes.
->>> The code was meanwhile adapted by Seth Jennings for similar
->>> functionality in zswap (which he calls "flush").  Seth also made some
->>> clever simplifications which are herein ported back to zcache.  As a
->>> result of those simplifications, the frontswap changes are no longer
->>> necessary, but a slightly different (and simpler) set of mm changes are
->>> still required [1].  The memory leak is also fixed.
->>>
->>> Due to feedback from akpm in a zswap thread, this functionality in zcache
->>> has now been renamed from "unuse" to "writeback".
->>>
->>> Although this zcache writeback code now works, there are open questions
->>> as how best to handle the policy that drives it.  As a result, this
->>> patch also ties writeback to a new config option.  And, since the
->>> code still depends on not-yet-upstreamed mm patches, to avoid build
->>> problems, the config option added by this patch temporarily depends
->>> on "BROKEN"; this config dependency can be removed in trees that
->>> contain the necessary mm patches.
->>>
->>> [1] https://lkml.org/lkml/2013/1/29/540/ https://lkml.org/lkml/2013/1/29/539/
->> shrink_zcache_memory:
->>
->> while(nr_evict-- > 0) {
->>       page = zcache_evict_eph_pageframe();
->>       if (page == NULL)
->>           break;
->>       zcache_free_page(page);
->> }
->>
->> zcache_evict_eph_pageframe
->> ->zbud_evict_pageframe_lru
->>       ->zbud_evict_tmem
->>           ->tmem_flush_page
->>               ->zcache_pampd_free
->>                   ->zcache_free_page  <- zbudpage has already been free here
->>
->> If the zcache_free_page called in shrink_zcache_memory can be treated as
->> a double free?
-> Thanks for the code review and sorry for the delay...
->
-> zcache_pampd_free() only calls zcache_free_page() if page is non-NULL,
-> but in this code path I think when zcache_pampd_free() calls
-> zbud_free_and_delist(), that function determines that the zbudpage
-> is dying and returns NULL.
->
-> So unless I am misunderstanding (or misreading the code), there
-> is no double free.
+On Thu, Feb 28, 2013 at 04:15:45PM -0800, H. Peter Anvin wrote:
+> > I'll try to get someone to test this tomorrow.
 
-Oh, I see. Thanks for your response. :)
+Btw, you'd need to apply that other patch too
 
->
-> Thanks,
-> Dan
+http://marc.info/?l=xen-devel&m=136206183814547&w=2
 
+so that arch_flush_lazy_mmu_mode() has at least one caller on x86_64.
+
+Thanks.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
