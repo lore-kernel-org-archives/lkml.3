@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754720Ab3CATyx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 14:54:53 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51951 "EHLO
+	id S1754754Ab3CATzT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 14:55:19 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51943 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754258Ab3CATqe (ORCPT
+	with ESMTP id S1754237Ab3CATqd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 14:46:34 -0500
+	Fri, 1 Mar 2013 14:46:33 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Lee Jones <lee.jones@linaro.org>
-Subject: [ 37/46] ab8500-chargalg: Only root should have write permission on sysfs file
-Date: Fri,  1 Mar 2013 11:45:25 -0800
-Message-Id: <20130301194436.174783671@linuxfoundation.org>
+        James Ralston <james.d.ralston@intel.com>,
+        Jeff Garzik <jgarzik@redhat.com>
+Subject: [ 45/46] ata_piix: Add Device IDs for Intel Wellsburg PCH
+Date: Fri,  1 Mar 2013 11:45:33 -0800
+Message-Id: <20130301194436.995911062@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130301194432.263409302@linuxfoundation.org>
 References: <20130301194432.263409302@linuxfoundation.org>
@@ -26,29 +27,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lee Jones <lee.jones@linaro.org>
+From: James Ralston <james.d.ralston@intel.com>
 
-commit e3455002d04276c256a531f7175dce0f7d1cb78a upstream.
+commit 3aee8bc52c415aba8148f144e5e5359b0fd75dd1 upstream.
 
-Only root should have write permission on sysfs file ab8500_chargalg/chargalg.
+This patch adds the IDE-mode SATA Device IDs for the Intel Wellsburg PCH
 
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
+Signed-off-by: James Ralston <james.d.ralston@intel.com>
+Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/power/abx500_chargalg.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/ata/ata_piix.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
---- a/drivers/power/abx500_chargalg.c
-+++ b/drivers/power/abx500_chargalg.c
-@@ -1698,7 +1698,7 @@ static ssize_t abx500_chargalg_sysfs_cha
- static struct attribute abx500_chargalg_en_charger = \
- {
- 	.name = "chargalg",
--	.mode = S_IWUGO,
-+	.mode = S_IWUSR,
+--- a/drivers/ata/ata_piix.c
++++ b/drivers/ata/ata_piix.c
+@@ -339,6 +339,15 @@ static const struct pci_device_id piix_p
+ 	{ 0x8086, 0x1f30, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
+ 	/* SATA Controller IDE (Avoton) */
+ 	{ 0x8086, 0x1f31, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
++	/* SATA Controller IDE (Wellsburg) */
++	{ 0x8086, 0x8d00, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_sata_snb },
++	/* SATA Controller IDE (Wellsburg) */
++	{ 0x8086, 0x8d08, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
++	/* SATA Controller IDE (Wellsburg) */
++	{ 0x8086, 0x8d60, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_sata_snb },
++	/* SATA Controller IDE (Wellsburg) */
++	{ 0x8086, 0x8d68, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
++
+ 	{ }	/* terminate list */
  };
  
- static struct attribute *abx500_chargalg_chg[] = {
 
 
