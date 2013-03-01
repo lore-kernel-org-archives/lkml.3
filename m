@@ -1,96 +1,382 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754928Ab3CAAnr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 19:43:47 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:48200 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751332Ab3CAAnn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 19:43:43 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: "Liu, Chuansheng" <chuansheng.liu@intel.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>, "Li, Fei" <fei.li@intel.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "Lan, Tianyu" <tianyu.lan@intel.com>,
-        "sarah.a.sharp@linux.intel.com" <sarah.a.sharp@linux.intel.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 4/5 V2] usb: call pm_runtime_put_sync in pm_runtime_get_sync failed case
-Date: Fri, 01 Mar 2013 01:50:30 +0100
-Message-ID: <35852055.MkFUspWUco@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <27240C0AC20F114CBF8149A2696CBE4A24253F@SHSMSX101.ccr.corp.intel.com>
-References: <1362042384.6212.25.camel@fli24-HP-Compaq-8100-Elite-CMT-PC> <Pine.LNX.4.44L0.1302281015330.1352-100000@iolanthe.rowland.org> <27240C0AC20F114CBF8149A2696CBE4A24253F@SHSMSX101.ccr.corp.intel.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1755498Ab3CAAve (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 19:51:34 -0500
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:53502 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754776Ab3CAAnq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Feb 2013 19:43:46 -0500
+From: John Stultz <john.stultz@linaro.org>
+To: lkml <linux-kernel@vger.kernel.org>
+Cc: Erik Gilling <konkers@android.com>,
+        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>, Rob Clark <robclark@gmail.com>,
+        Sumit Semwal <sumit.semwal@linaro.org>,
+        Greg KH <gregkh@linuxfoundation.org>, dri-devel@lists.freedesktop.org,
+        Android Kernel Team <kernel-team@android.com>,
+        John Stultz <john.stultz@linaro.org>
+Subject: [PATCH 04/30] staging: sync: Add debugfs support
+Date: Thu, 28 Feb 2013 16:43:00 -0800
+Message-Id: <1362098606-26469-5-git-send-email-john.stultz@linaro.org>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1362098606-26469-1-git-send-email-john.stultz@linaro.org>
+References: <1362098606-26469-1-git-send-email-john.stultz@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, March 01, 2013 12:38:07 AM Liu, Chuansheng wrote:
-> 
-> > -----Original Message-----
-> > From: Alan Stern [mailto:stern@rowland.harvard.edu]
-> > Sent: Thursday, February 28, 2013 11:17 PM
-> > To: Li, Fei
-> > Cc: gregkh@linuxfoundation.org; Lan, Tianyu; sarah.a.sharp@linux.intel.com;
-> > rjw@sisk.pl; linux-usb@vger.kernel.org; linux-kernel@vger.kernel.org; Liu,
-> > Chuansheng
-> > Subject: Re: [PATCH 4/5 V2] usb: call pm_runtime_put_sync in
-> > pm_runtime_get_sync failed case
-> > 
-> > On Thu, 28 Feb 2013, Li Fei wrote:
-> > 
-> > >
-> > > Even in failed case of pm_runtime_get_sync, the usage_count
-> > > is incremented. In order to keep the usage_count with correct
-> > > value and runtime power management to behave correctly, call
-> > > pm_runtime_put(_sync) in such case.
-> > >
-> > > Signed-off-by Liu Chuansheng <chuansheng.liu@intel.com>
-> > > Signed-off-by: Li Fei <fei.li@intel.com>
-> > > ---
-> > >  drivers/usb/core/hub.c |    3 ++-
-> > >  1 files changed, 2 insertions(+), 1 deletions(-)
-> > >
-> > > diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
-> > > index 5480352..f72dede 100644
-> > > --- a/drivers/usb/core/hub.c
-> > > +++ b/drivers/usb/core/hub.c
-> > > @@ -3148,12 +3148,13 @@ int usb_port_resume(struct usb_device *udev,
-> > pm_message_t msg)
-> > >
-> > >  	if (port_dev->did_runtime_put) {
-> > >  		status = pm_runtime_get_sync(&port_dev->dev);
-> > > -		port_dev->did_runtime_put = false;
-> > >  		if (status < 0) {
-> > >  			dev_dbg(&udev->dev, "can't resume usb port, status %d\n",
-> > >  					status);
-> > > +			pm_runtime_put_sync(&port_dev->dev);
-> > >  			return status;
-> > >  		}
-> > > +		port_dev->did_runtime_put = false;
-> > >  	}
-> > 
-> > I don't see much point in this.  After a failed resume, the port's
-> > runtime PM status is undefined.  Whether or not you do a
-> > pm_runtime_put_sync won't make any difference.
-> In case of failed resume, calling pm_runtime_put_sync() is just for decrease the dev->power.usage_count,
-> because pm_runtime_get_sync() always increase the dev->power.usage_count even failed.
-> 
-> If not pairing runtime_get/put, after that case, the device can not enter runtime suspend any more due to dev->power.usage_count > 0 always.
-> Is it making sense?
+From: Erik Gilling <konkers@android.com>
 
-Well, not really.
+Add support for debugfs
 
-Before returning an error code, rpm_callback() assigns that code to
-dev->power.runtime_error and that will effectively disable runtime PM for dev
-going forward anyway.
+Cc: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+Cc: Erik Gilling <konkers@android.com>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: Rob Clark <robclark@gmail.com>
+Cc: Sumit Semwal <sumit.semwal@linaro.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>
+Cc: dri-devel@lists.freedesktop.org
+Cc: Android Kernel Team <kernel-team@android.com>
+Signed-off-by: Erik Gilling <konkers@android.com>
+[jstultz: Add commit message]
+Signed-off-by: John Stultz <john.stultz@linaro.org>
+---
+ drivers/staging/android/sync.c |  176 +++++++++++++++++++++++++++++++++++++++-
+ drivers/staging/android/sync.h |   20 ++++-
+ 2 files changed, 191 insertions(+), 5 deletions(-)
 
-Thanks,
-Rafael
-
-
+diff --git a/drivers/staging/android/sync.c b/drivers/staging/android/sync.c
+index 88d7e66..4ab55a3 100644
+--- a/drivers/staging/android/sync.c
++++ b/drivers/staging/android/sync.c
+@@ -14,10 +14,12 @@
+  *
+  */
+ 
++#include <linux/debugfs.h>
+ #include <linux/file.h>
+ #include <linux/fs.h>
+ #include <linux/kernel.h>
+ #include <linux/sched.h>
++#include <linux/seq_file.h>
+ #include <linux/slab.h>
+ #include <linux/uaccess.h>
+ #include <linux/anon_inodes.h>
+@@ -27,10 +29,17 @@
+ static void sync_fence_signal_pt(struct sync_pt *pt);
+ static int _sync_pt_has_signaled(struct sync_pt *pt);
+ 
++static LIST_HEAD(sync_timeline_list_head);
++static DEFINE_SPINLOCK(sync_timeline_list_lock);
++
++static LIST_HEAD(sync_fence_list_head);
++static DEFINE_SPINLOCK(sync_fence_list_lock);
++
+ struct sync_timeline *sync_timeline_create(const struct sync_timeline_ops *ops,
+ 					   int size, const char *name)
+ {
+ 	struct sync_timeline *obj;
++	unsigned long flags;
+ 
+ 	if (size < sizeof(struct sync_timeline))
+ 		return NULL;
+@@ -48,9 +57,27 @@ struct sync_timeline *sync_timeline_create(const struct sync_timeline_ops *ops,
+ 	INIT_LIST_HEAD(&obj->active_list_head);
+ 	spin_lock_init(&obj->active_list_lock);
+ 
++	spin_lock_irqsave(&sync_timeline_list_lock, flags);
++	list_add_tail(&obj->sync_timeline_list, &sync_timeline_list_head);
++	spin_unlock_irqrestore(&sync_timeline_list_lock, flags);
++
+ 	return obj;
+ }
+ 
++static void sync_timeline_free(struct sync_timeline *obj)
++{
++	unsigned long flags;
++
++	if (obj->ops->release_obj)
++		obj->ops->release_obj(obj);
++
++	spin_lock_irqsave(&sync_timeline_list_lock, flags);
++	list_del(&obj->sync_timeline_list);
++	spin_unlock_irqrestore(&sync_timeline_list_lock, flags);
++
++	kfree(obj);
++}
++
+ void sync_timeline_destroy(struct sync_timeline *obj)
+ {
+ 	unsigned long flags;
+@@ -62,7 +89,7 @@ void sync_timeline_destroy(struct sync_timeline *obj)
+ 	spin_unlock_irqrestore(&obj->child_list_lock, flags);
+ 
+ 	if (needs_freeing)
+-		kfree(obj);
++		sync_timeline_free(obj);
+ 	else
+ 		sync_timeline_signal(obj);
+ }
+@@ -95,7 +122,7 @@ static void sync_timeline_remove_pt(struct sync_pt *pt)
+ 	spin_unlock_irqrestore(&obj->child_list_lock, flags);
+ 
+ 	if (needs_freeing)
+-		kfree(obj);
++		sync_timeline_free(obj);
+ }
+ 
+ void sync_timeline_signal(struct sync_timeline *obj)
+@@ -206,6 +233,7 @@ static const struct file_operations sync_fence_fops = {
+ static struct sync_fence *sync_fence_alloc(const char *name)
+ {
+ 	struct sync_fence *fence;
++	unsigned long flags;
+ 
+ 	fence = kzalloc(sizeof(struct sync_fence), GFP_KERNEL);
+ 	if (fence == NULL)
+@@ -223,6 +251,11 @@ static struct sync_fence *sync_fence_alloc(const char *name)
+ 	spin_lock_init(&fence->waiter_list_lock);
+ 
+ 	init_waitqueue_head(&fence->wq);
++
++	spin_lock_irqsave(&sync_fence_list_lock, flags);
++	list_add_tail(&fence->sync_fence_list, &sync_fence_list_head);
++	spin_unlock_irqrestore(&sync_fence_list_lock, flags);
++
+ 	return fence;
+ 
+ err:
+@@ -451,8 +484,14 @@ int sync_fence_wait(struct sync_fence *fence, long timeout)
+ static int sync_fence_release(struct inode *inode, struct file *file)
+ {
+ 	struct sync_fence *fence = file->private_data;
++	unsigned long flags;
+ 
+ 	sync_fence_free_pts(fence);
++
++	spin_lock_irqsave(&sync_fence_list_lock, flags);
++	list_del(&fence->sync_fence_list);
++	spin_unlock_irqrestore(&sync_fence_list_lock, flags);
++
+ 	kfree(fence);
+ 
+ 	return 0;
+@@ -523,8 +562,141 @@ static long sync_fence_ioctl(struct file *file, unsigned int cmd,
+ 
+ 	case SYNC_IOC_MERGE:
+ 		return sync_fence_ioctl_merge(fence, arg);
++
+ 	default:
+ 		return -ENOTTY;
+ 	}
+ }
+ 
++#ifdef CONFIG_DEBUG_FS
++static const char *sync_status_str(int status)
++{
++	if (status > 0)
++		return "signaled";
++	else if (status == 0)
++		return "active";
++	else
++		return "error";
++}
++
++static void sync_print_pt(struct seq_file *s, struct sync_pt *pt, bool fence)
++{
++	int status = pt->status;
++	seq_printf(s, "  %s%spt %s",
++		   fence ? pt->parent->name : "",
++		   fence ? "_" : "",
++		   sync_status_str(status));
++	if (pt->status) {
++		struct timeval tv = ktime_to_timeval(pt->timestamp);
++		seq_printf(s, "@%ld.%06ld", tv.tv_sec, tv.tv_usec);
++	}
++
++	if (pt->parent->ops->print_pt) {
++		seq_printf(s, ": ");
++		pt->parent->ops->print_pt(s, pt);
++	}
++
++	seq_printf(s, "\n");
++}
++
++static void sync_print_obj(struct seq_file *s, struct sync_timeline *obj)
++{
++	struct list_head *pos;
++	unsigned long flags;
++
++	seq_printf(s, "%s %s", obj->name, obj->ops->driver_name);
++
++	if (obj->ops->print_obj) {
++		seq_printf(s, ": ");
++		obj->ops->print_obj(s, obj);
++	}
++
++	seq_printf(s, "\n");
++
++	spin_lock_irqsave(&obj->child_list_lock, flags);
++	list_for_each(pos, &obj->child_list_head) {
++		struct sync_pt *pt =
++			container_of(pos, struct sync_pt, child_list);
++		sync_print_pt(s, pt, false);
++	}
++	spin_unlock_irqrestore(&obj->child_list_lock, flags);
++}
++
++static void sync_print_fence(struct seq_file *s, struct sync_fence *fence)
++{
++	struct list_head *pos;
++	unsigned long flags;
++
++	seq_printf(s, "%s: %s\n", fence->name, sync_status_str(fence->status));
++
++	list_for_each(pos, &fence->pt_list_head) {
++		struct sync_pt *pt =
++			container_of(pos, struct sync_pt, pt_list);
++		sync_print_pt(s, pt, true);
++	}
++
++	spin_lock_irqsave(&fence->waiter_list_lock, flags);
++	list_for_each(pos, &fence->waiter_list_head) {
++		struct sync_fence_waiter *waiter =
++			container_of(pos, struct sync_fence_waiter,
++				     waiter_list);
++
++		seq_printf(s, "waiter %pF %p\n", waiter->callback,
++			   waiter->callback_data);
++	}
++	spin_unlock_irqrestore(&fence->waiter_list_lock, flags);
++}
++
++static int sync_debugfs_show(struct seq_file *s, void *unused)
++{
++	unsigned long flags;
++	struct list_head *pos;
++
++	seq_printf(s, "objs:\n--------------\n");
++
++	spin_lock_irqsave(&sync_timeline_list_lock, flags);
++	list_for_each(pos, &sync_timeline_list_head) {
++		struct sync_timeline *obj =
++			container_of(pos, struct sync_timeline,
++				     sync_timeline_list);
++
++		sync_print_obj(s, obj);
++		seq_printf(s, "\n");
++	}
++	spin_unlock_irqrestore(&sync_timeline_list_lock, flags);
++
++	seq_printf(s, "fences:\n--------------\n");
++
++	spin_lock_irqsave(&sync_fence_list_lock, flags);
++	list_for_each(pos, &sync_fence_list_head) {
++		struct sync_fence *fence =
++			container_of(pos, struct sync_fence, sync_fence_list);
++
++		sync_print_fence(s, fence);
++		seq_printf(s, "\n");
++	}
++	spin_unlock_irqrestore(&sync_fence_list_lock, flags);
++	return 0;
++}
++
++static int sync_debugfs_open(struct inode *inode, struct file *file)
++{
++	return single_open(file, sync_debugfs_show, inode->i_private);
++}
++
++static const struct file_operations sync_debugfs_fops = {
++	.open           = sync_debugfs_open,
++	.read           = seq_read,
++	.llseek         = seq_lseek,
++	.release        = single_release,
++};
++
++static __init int sync_debugfs_init(void)
++{
++	debugfs_create_file("sync", S_IRUGO, NULL, NULL, &sync_debugfs_fops);
++	return 0;
++}
++
++late_initcall(sync_debugfs_init);
++
++#endif
+diff --git a/drivers/staging/android/sync.h b/drivers/staging/android/sync.h
+index a8e289d..d64271b 100644
+--- a/drivers/staging/android/sync.h
++++ b/drivers/staging/android/sync.h
+@@ -39,6 +39,10 @@ struct sync_fence;
+  *			 -1 if a will signabl before b
+  * @free_pt:		called before sync_pt is freed
+  * @release_obj:	called before sync_timeline is freed
++ * @print_obj:		print aditional debug information about sync_timeline.
++ *			  should not print a newline
++ * @print_pt:		print aditional debug information about sync_pt.
++ *			  should not print a newline
+  */
+ struct sync_timeline_ops {
+ 	const char *driver_name;
+@@ -57,6 +61,13 @@ struct sync_timeline_ops {
+ 
+ 	/* optional */
+ 	void (*release_obj)(struct sync_timeline *sync_timeline);
++
++	/* optional */
++	void (*print_obj)(struct seq_file *s,
++			  struct sync_timeline *sync_timeline);
++
++	/* optional */
++	void (*print_pt)(struct seq_file *s, struct sync_pt *sync_pt);
+ };
+ 
+ /**
+@@ -68,6 +79,7 @@ struct sync_timeline_ops {
+  * @child_list_lock:	lock protecting @child_list_head, destroyed, and
+  *			  sync_pt.status
+  * @active_list_head:	list of active (unsignaled/errored) sync_pts
++ * @sync_timeline_list:	membership in global sync_timeline_list
+  */
+ struct sync_timeline {
+ 	const struct sync_timeline_ops	*ops;
+@@ -81,6 +93,8 @@ struct sync_timeline {
+ 
+ 	struct list_head	active_list_head;
+ 	spinlock_t		active_list_lock;
++
++	struct list_head	sync_timeline_list;
+ };
+ 
+ /**
+@@ -120,6 +134,7 @@ struct sync_pt {
+  * @status:		1: signaled, 0:active, <0: error
+  *
+  * @wq:			wait queue for fence signaling
++ * @sync_fence_list:	membership in global fence list
+  */
+ struct sync_fence {
+ 	struct file		*file;
+@@ -133,6 +148,8 @@ struct sync_fence {
+ 	int			status;
+ 
+ 	wait_queue_head_t	wq;
++
++	struct list_head	sync_fence_list;
+ };
+ 
+ /**
+@@ -281,9 +298,6 @@ int sync_fence_wait_async(struct sync_fence *fence,
+  */
+ int sync_fence_wait(struct sync_fence *fence, long timeout);
+ 
+-/* useful for sync driver's debug print handlers */
+-const char *sync_status_str(int status);
+-
+ #endif /* __KERNEL__ */
+ 
+ /**
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+1.7.10.4
+
