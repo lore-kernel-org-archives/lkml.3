@@ -1,110 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751873Ab3CAJkI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 04:40:08 -0500
-Received: from mail-pb0-f44.google.com ([209.85.160.44]:54782 "EHLO
-	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751246Ab3CAJkB (ORCPT
+	id S1752015Ab3CAJlh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 04:41:37 -0500
+Received: from kirsty.vergenet.net ([202.4.237.240]:43668 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751306Ab3CAJle (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 04:40:01 -0500
-Message-ID: <51307767.70605@gmail.com>
-Date: Fri, 01 Mar 2013 17:39:51 +0800
-From: Simon Jeons <simon.jeons@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
+	Fri, 1 Mar 2013 04:41:34 -0500
+Date: Fri, 1 Mar 2013 18:41:30 +0900
+From: Simon Horman <horms@verge.net.au>
+To: Magnus Damm <magnus.damm@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-sh@vger.kernel.org,
+        benh@kernel.crashing.org, grant.likely@secretlab.ca,
+        tglx@linutronix.de
+Subject: Re: [PATCH] irqchip: Renesas IRQC driver
+Message-ID: <20130301094125.GA27938@verge.net.au>
+References: <20130227081501.30706.60471.sendpatchset@w520>
 MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org, riel@redhat.com,
-        mhocko@suse.cz, hannes@cmpxchg.org
-Subject: Re: [PATCH] x86: mm: Check if PUD is large when validating a kernel
- address v2
-References: <20130211145236.GX21389@suse.de> <20130213110202.GI4100@suse.de> <51304E29.40900@gmail.com> <20130301091513.GA11787@gchen.bj.intel.com> <5130731F.4000804@gmail.com> <20130301093537.GA12327@gchen.bj.intel.com>
-In-Reply-To: <20130301093537.GA12327@gchen.bj.intel.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130227081501.30706.60471.sendpatchset@w520>
+Organisation: Horms Solutions Ltd.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/01/2013 05:35 PM, Chen Gong wrote:
-> On Fri, Mar 01, 2013 at 05:21:35PM +0800, Simon Jeons wrote:
->> Date: Fri, 01 Mar 2013 17:21:35 +0800
->> From: Simon Jeons <simon.jeons@gmail.com>
->> To: Mel Gorman <mgorman@suse.de>, Ingo Molnar <mingo@kernel.org>, Andrew
->>   Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
->>   linux-mm@kvack.org, riel@redhat.com, mhocko@suse.cz, hannes@cmpxchg.org
->> Subject: Re: [PATCH] x86: mm: Check if PUD is large when validating a
->>   kernel address v2
->> User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130221
->>   Thunderbird/17.0.3
->>
->> On 03/01/2013 05:15 PM, Chen Gong wrote:
->>> On Fri, Mar 01, 2013 at 02:43:53PM +0800, Simon Jeons wrote:
->>>> Date: Fri, 01 Mar 2013 14:43:53 +0800
->>>> From: Simon Jeons <simon.jeons@gmail.com>
->>>> To: Mel Gorman <mgorman@suse.de>
->>>> CC: Ingo Molnar <mingo@kernel.org>, Andrew Morton
->>>>   <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
->>>>   linux-mm@kvack.org, riel@redhat.com, mhocko@suse.cz, hannes@cmpxchg.org
->>>> Subject: Re: [PATCH] x86: mm: Check if PUD is large when validating a
->>>>   kernel address v2
->>>> User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130221
->>>>   Thunderbird/17.0.3
->>>>
->>>> On 02/13/2013 07:02 PM, Mel Gorman wrote:
->>>>> Andrew or Ingo, please pick up.
->>>>>
->>>>> Changelog since v1
->>>>>    o Add reviewed-bys and acked-bys
->>>>>
->>>>> A user reported a bug whereby a backup process accessing /proc/kcore
->>>>> caused an oops.
->>>>>
->>>>>   BUG: unable to handle kernel paging request at ffffbb00ff33b000
->>>>>   IP: [<ffffffff8103157e>] kern_addr_valid+0xbe/0x110
->>>>>   PGD 0
->>>>>   Oops: 0000 [#1] SMP
->>>>>   CPU 6
->>>>>   Modules linked in: af_packet nfs lockd fscache auth_rpcgss nfs_acl sunrpc 8021q garp stp llc cpufreq_conservative cpufreq_userspace cpufreq_powersave acpi_cpufreq mperf microcode fuse nls_iso8859_1 nls_cp437 vfat fat loop dm_mod ioatdma ipv6 ipv6_lib igb dca i7core_edac edac_core i2c_i801 i2c_core cdc_ether usbnet bnx2 mii iTCO_wdt iTCO_vendor_support shpchp rtc_cmos pci_hotplug tpm_tis sg tpm pcspkr tpm_bios serio_raw button ext3 jbd mbcache uhci_hcd ehci_hcd usbcore sd_mod crc_t10dif usb_common processor thermal_sys hwmon scsi_dh_emc scsi_dh_rdac scsi_dh_alua scsi_dh_hp_sw scsi_dh ata_generic ata_piix libata megaraid_sas scsi_mod
->>>>>
->>>>>   Pid: 16196, comm: Hibackp Not tainted 3.0.13-0.27-default #1 IBM System x3550 M3 -[7944 K3G]-/94Y7614
->>>>>   RIP: 0010:[<ffffffff8103157e>]  [<ffffffff8103157e>] kern_addr_valid+0xbe/0x110
->>>>>   RSP: 0018:ffff88094165fe80  EFLAGS: 00010246
->>>>>   RAX: 00003300ff33b000 RBX: ffff880100000000 RCX: 0000000000000000
->>>>>   RDX: 0000000100000000 RSI: ffff880000000000 RDI: ff32b300ff33b400
->>>>>   RBP: 0000000000001000 R08: 00003ffffffff000 R09: 0000000000000000
->>>>>   R10: 22302e31223d6e6f R11: 0000000000000246 R12: 0000000000001000
->>>>>   R13: 0000000000003000 R14: 0000000000571be0 R15: ffff88094165ff50
->>>>>   FS:  00007ff152d33700(0000) GS:ffff88097f2c0000(0000) knlGS:0000000000000000
->>>>>   CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
->>>>>   CR2: ffffbb00ff33b000 CR3: 00000009405a3000 CR4: 00000000000006e0
->>>>>   DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
->>>>>   DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
->>>>>   Process Hibackp (pid: 16196, threadinfo ffff88094165e000, task ffff8808eb9ba600)
->>>>>   Stack:
->>>>>    ffffffff811b8aaa 0000000000004000 ffff880943fea480 ffff8808ef2bae50
->>>>>    ffff880943d32980 fffffffffffffffb ffff8808ef2bae40 ffff88094165ff50
->>>>>    0000000000004000 000000000056ebe0 ffffffff811ad847 000000000056ebe0
->>>>>   Call Trace:
->>>>>    [<ffffffff811b8aaa>] read_kcore+0x17a/0x370
->>>>>    [<ffffffff811ad847>] proc_reg_read+0x77/0xc0
->>>>>    [<ffffffff81151687>] vfs_read+0xc7/0x130
->>>>>    [<ffffffff811517f3>] sys_read+0x53/0xa0
->>>>>    [<ffffffff81449692>] system_call_fastpath+0x16/0x1b
->>>>>
->>>>> Investigation determined that the bug triggered when reading system RAM
->>>>> at the 4G mark. On this system, that was the first address using 1G pages
->>>> Do you mean there is one page which is 1G?
->>>>
->>> 1GB support in native kernel is started from 2.6.27 with these 2 commits:
->> Why call kernel native? Which kend of kernel is not native?
-> relative to VMM like Xen.
+On Wed, Feb 27, 2013 at 05:15:01PM +0900, Magnus Damm wrote:
+> From: Magnus Damm <damm@opensource.se>
+> 
+> This patch adds a driver for external IRQ pins connected
+> to the IRQC hardware block on recent SoCs from Renesas.
+> 
+> The IRQC hardware block is used together with more
+> recent ARM based SoCs using the GIC. As usual the GIC
+> requires external IRQ trigger setup somewhere else
+> which in this particular case happens to be IRQC.
+> 
+> This driver implements the glue code needed to configure
+> IRQ trigger and also handle mask/unmask and demux of
+> external IRQ pins hooked up from the IRQC to the GIC.
+> 
+> Tested on r8a73a4 but is designed to work with a wide
+> range of SoCs. The driver requires one GIC SPI per
+> external IRQ pin to operate.  Each driver instance
+> will handle up to 32 external IRQ pins.
+> 
+> The SoCs using this driver are currently mainly used
+> together with regular platform devices so this driver
+> allows configuration via platform data to support things
+> like static interrupt base address. DT support will
+> be added incrementally in the not so distant future.
 
-Oh, I see. Thanks. :)
+Hi Magnus, Hi all,
 
->
->>> 39c11e6 and b4718e6. For Intel CPU, from Westmere it supports 1GB page.
->>> BTW, IBM System x3550 M3 is a Westmere based system.
->> Is it only used in hugetlbfs page?
-> Yes by now.
+I do not expect this code to go through the renesas tree.  However, in
+order to provide a basis for work on renesas SoCs I have added this patch
+to the topic/intc-external-irq topic branch in the reneas tree on
+kernel.org and merged it into topic/all+next.
+
+In other words, I am not picking this series up to merge it or add it to
+linux-next, rather I am storing it for reference.
 
