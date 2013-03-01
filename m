@@ -1,59 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754355Ab3CACRN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 21:17:13 -0500
-Received: from e39.co.us.ibm.com ([32.97.110.160]:38878 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752502Ab3CACRL (ORCPT
+	id S1753405Ab3CACSN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 21:18:13 -0500
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:45184 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751052Ab3CACSM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 21:17:11 -0500
-Message-ID: <1362104227.9158.41.camel@falcor1>
-Subject: Re: IMA: How to manage user space signing policy with others
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        linux-security-module@vger.kernel.org
-Date: Thu, 28 Feb 2013 21:17:07 -0500
-In-Reply-To: <20130228213534.GF11360@redhat.com>
-References: <20130228151333.GB11360@redhat.com>
-	 <1362079419.2908.390.camel@falcor1.watson.ibm.com>
-	 <20130228213534.GF11360@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+	Thu, 28 Feb 2013 21:18:12 -0500
+Message-ID: <51300FD8.4070609@linux.vnet.ibm.com>
+Date: Fri, 01 Mar 2013 10:18:00 +0800
+From: Michael Wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+MIME-Version: 1.0
+To: Mike Galbraith <efault@gmx.de>
+CC: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
+        Alex Shi <alex.shi@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ram Pai <linuxram@us.ibm.com>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        Namhyung Kim <namhyung@kernel.org>
+Subject: Re: [RFC PATCH] sched: wakeup buddy
+References: <512EFB4B.5040204@linux.vnet.ibm.com> <1362035917.4460.105.camel@marge.simpson.net> <512F09D4.1020307@linux.vnet.ibm.com> <1362038652.4460.124.camel@marge.simpson.net> <512F11E6.8060807@linux.vnet.ibm.com> <1362039862.4460.132.camel@marge.simpson.net> <512F1A15.2000609@linux.vnet.ibm.com> <1362043112.4460.163.camel@marge.simpson.net>
+In-Reply-To: <1362043112.4460.163.camel@marge.simpson.net>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13030102-3620-0000-0000-0000016BE248
+x-cbid: 13030102-7014-0000-0000-000002A7A5F1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-02-28 at 16:35 -0500, Vivek Goyal wrote:
-> On Thu, Feb 28, 2013 at 02:23:39PM -0500, Mimi Zohar wrote:
+On 02/28/2013 05:18 PM, Mike Galbraith wrote:
+> On Thu, 2013-02-28 at 16:49 +0800, Michael Wang wrote: 
+>> On 02/28/2013 04:24 PM, Mike Galbraith wrote:
+>>> On Thu, 2013-02-28 at 16:14 +0800, Michael Wang wrote: 
+>>>> On 02/28/2013 04:04 PM, Mike Galbraith wrote:
+>>>
+>>>>> It would be nice if it _were_ a promise, but it is not, it's a hint.
+>>>>
+>>>> Bad to know :(
+>>>>
+>>>> Should we fix it or this is by designed? The comments after WF_SYNC
+>>>> cheated me...
+>>>
+>>> You can't fix it, because it's not busted.  You can say "Ok guys, I'm
+>>> off for a nap RSN" all you want, but that won't guarantee that nobody
+>>> pokes you, and hands you something more useful to do than snoozing.
+>>
+>> So sync still means current is going to sleep, what you concerned is
+>> this promise will be easily broken by other waker, correct?
 > 
-> [..]
-> > I would suggest that the ima_appraise_tcb, which is more restrictive, be
-> > permitted to replace the secureboot policy.
+> That makes it a lie, and it can already have been one with no help.
+> Just because you wake one sync does not mean you're not going to find
+> another to wake.  Smart tasks are taught to look before they leap.
 > 
-> Also ima_appraise_tcb is not necessarily more restrictive. It takes
-> appraises only for root user. Files for rest of users are not appraised.
-
-Ok, good point.  
-
-> In general case of "memory locked execution of signed binary" I was
-> hoping to give user a flexibility to do appraisal either for root
-> or both root and non-root user.
+>> Hmm.. may be you are right, if 'perf bench sched pipe' is not the one we
+>> should care, I have no reason to add this logical currently.
 > 
-> For the time being I can hardcode things only for root user but the
-> moment somebody will extend functionality for non-root user, again
-> we will run into the issue that ima_appraise_tcb is not superset so
-> we can't allow that.
+> Well, there is reason to identify task relationships methinks, you just
+> can't rely on the fact that you're alone on the rq at the moment, and
+> doing a sync wakeup to bind tasks.  They _will_ lie to you :)
 
-So we can agree that the 'ima_appraise_tcb' policy is more restrictive
-for root owned files.  So as long as the 'ima_appraise_tcb' policy
-precedes the secureboot integrity policy, we should be good.
+I see.
 
-thanks,
+> 
+>> I will remove this plus branch, unless I found other benchmark could
+>> benefit a lot from it.
+>>
+>> Besides this, how do you think about this idea?
+> 
+> I like the idea of filtering true buddy pairs, and automagically
+> detecting the point when 1:N wants spreading rather a lot (fwtw).  I'll
+> look closer at your method, but when it comes to implementation
+> opinions, the only one I trust comes out of a box in front of me.
 
-Mimi
+And please let me know how it works on your box ;-)
+
+Regards,
+Michael Wang
+
+> 
+> I'm somewhat.. "taste challenged", Peter and Ingo have some though :)
+> 
+> -Mike
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
