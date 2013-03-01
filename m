@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751332Ab3CADAn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 22:00:43 -0500
-Received: from mga03.intel.com ([143.182.124.21]:50156 "EHLO mga03.intel.com"
+	id S1751944Ab3CADAv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 22:00:51 -0500
+Received: from mga02.intel.com ([134.134.136.20]:35531 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750750Ab3CADAm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 22:00:42 -0500
+	id S1750750Ab3CADAp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Feb 2013 22:00:45 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,758,1355126400"; 
-   d="scan'208";a="207590373"
+   d="scan'208";a="292120238"
 Subject: [PATCH 4/5 V3] usb: call pm_runtime_put_noidle in
  pm_runtime_get_sync failed case
 From: Li Fei <fei.li@intel.com>
@@ -23,15 +23,14 @@ References: <1362037031.6212.3.camel@fli24-HP-Compaq-8100-Elite-CMT-PC>
 	 <1362038236.6212.18.camel@fli24-HP-Compaq-8100-Elite-CMT-PC>
 	 <1362042384.6212.25.camel@fli24-HP-Compaq-8100-Elite-CMT-PC>
 Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 01 Mar 2013 10:57:24 +0800
-Message-ID: <1362106644.7260.2.camel@fli24-HP-Compaq-8100-Elite-CMT-PC>
+Date: Fri, 01 Mar 2013 10:59:09 +0800
+Message-ID: <1362106749.7348.0.camel@fli24-HP-Compaq-8100-Elite-CMT-PC>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-
 
 Even in failed case of pm_runtime_get_sync, the usage_count
 is incremented. In order to keep the usage_count with correct
@@ -65,6 +64,7 @@ index 5480352..4a6c055 100644
  	/* Skip the initial Clear-Suspend step for a remote wakeup */
 -- 
 1.7.4.1
+
 
 
 
