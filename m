@@ -1,48 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751739Ab3CAK4y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 05:56:54 -0500
-Received: from mx2.promwad.com ([91.149.128.90]:9013 "EHLO mx2.promwad.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751121Ab3CAK4x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 05:56:53 -0500
-From: Michail Kurachkin <michail.kurachkin@promwad.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        Kuten Ivan <Ivan.Kuten@promwad.com>,
-        "benavi@marvell.com" <benavi@marvell.com>,
-        Palstsiuk Viktar <Viktar.Palstsiuk@promwad.com>,
-        Dmitriy Gorokh <dmitriy.gorokh@promwad.com>,
-        Oliver Neukum <oneukum@suse.de>, Ryan Mallon <rmallon@gmail.com>
-CC: Michail Kurochkin <michail.kurachkin@promwad.com>
-Subject: [PATCH v2 04/11] staging: added TODO file for si3226x
-Date: Fri, 1 Mar 2013 13:56:31 +0300
-Message-ID: <c9ca8ceba785b2ad4b810e29ef101cbe8d7d87c6.1362133319.git.michail.kurachkin@promwad.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <cover.1362133319.git.michail.kurachkin@promwad.com>
-References: <cover.1362133319.git.michail.kurachkin@promwad.com>
+	id S1752017Ab3CAK5M (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 05:57:12 -0500
+Received: from mail-ea0-f171.google.com ([209.85.215.171]:46972 "EHLO
+	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751156Ab3CAK5K (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Mar 2013 05:57:10 -0500
+Date: Fri, 1 Mar 2013 11:57:05 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: li guang <lig.fnst@cn.fujitsu.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, tglx@linutronix.de, mingo@redhat.com,
+        x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] x86: change names of e820 memory map type
+Message-ID: <20130301105705.GA2625@gmail.com>
+References: <1362115638-10583-1-git-send-email-lig.fnst@cn.fujitsu.com>
+ <f5d7ca6f-7d88-4acd-9571-a48ed1097f75@email.android.com>
+ <1362129067.2262.84.camel@liguang.fnst.cn.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1362129067.2262.84.camel@liguang.fnst.cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Michail Kurochkin <michail.kurachkin@promwad.com>
 
-Signed-off-by: Michail Kurochkin <michail.kurachkin@promwad.com>
----
- drivers/staging/si3226x/TODO |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
- create mode 100644 drivers/staging/si3226x/TODO
+* li guang <lig.fnst@cn.fujitsu.com> wrote:
 
-diff --git a/drivers/staging/si3226x/TODO b/drivers/staging/si3226x/TODO
-new file mode 100644
-index 0000000..83c5958
---- /dev/null
-+++ b/drivers/staging/si3226x/TODO
-@@ -0,0 +1,2 @@
-+1) mutex_lock(&slic_chr_dev_lock);
-+This locking is very heavy handed. You are holding it across the entire open, close, read, write, ioctl, and it is protecting a bunch of different things.
--- 
-1.7.5.4
+> gratuitous?
+> 
+> It was inspired by gtk library's key definitions,
 
+I don't think GTK is a shining example of API cleanliness and usability that the 
+kernel should strive to imitate, especially not in the naming department...
+
+> gtk original keys like GDK_1, GDK_2, GDK_p, GDK_q, GDK_tab ...
+> now they all be changed to GDK_KEY_1, GDK_KEY_2 ...
+> do you think it's reasonable?
+> or gratuitous?
+
+I think hpa already expressed his opinion about the rename?
+
+Thanks,
+
+	Ingo
