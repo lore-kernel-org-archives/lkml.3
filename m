@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752406Ab3CAXsN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 18:48:13 -0500
-Received: from mail-da0-f49.google.com ([209.85.210.49]:62236 "EHLO
-	mail-da0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751436Ab3CAXsM (ORCPT
+	id S1752567Ab3CAXsk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 18:48:40 -0500
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:39462 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751603Ab3CAXsj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 18:48:12 -0500
-Date: Fri, 1 Mar 2013 15:48:08 -0800
+	Fri, 1 Mar 2013 18:48:39 -0500
+Date: Fri, 1 Mar 2013 15:48:36 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: [GIT PATCH] USB patch revert for 3.9-rc1
-Message-ID: <20130301234808.GA11358@kroah.com>
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arnd Bergmann <arnd@arndb.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: [GIT PATCH] char/misc patch for 3.9-rc1
+Message-ID: <20130301234836.GA11405@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -22,30 +23,31 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 74e1a2a39355b2d3ae8c60c78d8add162c6d7183:
+The following changes since commit 09884964335e85e897876d17783c2ad33cf8a2e0:
 
-  Merge tag 'usb-3.9-rc1' of git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/usb (2013-02-21 12:20:00 -0800)
+  mm: do not grow the stack vma just because of an overrun on preceding vma (2013-02-27 08:36:04 -0800)
 
 are available in the git repository at:
 
+  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/char-misc.git/ tags/char-misc-3.9-rc1
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/usb.git/ tags/usb-3.9-rc1
+for you to fetch changes up to 302a3c0f2757ae1a3e7df3f9fa1f20e2214ab945:
 
-for you to fetch changes up to 221f8dfca89276d8aec54c6d07fbe20c281668f0:
-
-  USB: EHCI: revert "remove ASS/PSS polling timeout" (2013-02-26 13:22:38 -0800)
+  Drivers: hv: vmbus: Use the new infrastructure for delivering VMBUS interrupts (2013-02-27 10:15:53 -0800)
 
 ----------------------------------------------------------------
-USB patch revert for 3.9-rc1
+Char/Misc remaining patch for 3.9-rc1
 
-Here is one remaining USB patch for 3.9-rc1, it reverts a 3.8 patch that has
-caused a lot of regressions for some VIA EHCI controllers.
+Here is one remaining patch for 3.9-rc1.  It is for the hyper-v drivers, and
+had to wait until some other patches went in through the x86 tree.
 
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ----------------------------------------------------------------
-Alan Stern (1):
-      USB: EHCI: revert "remove ASS/PSS polling timeout"
+K. Y. Srinivasan (1):
+      Drivers: hv: vmbus: Use the new infrastructure for delivering VMBUS interrupts
 
- drivers/usb/host/ehci-timer.c | 29 ++++++++++++++---------------
- 1 file changed, 14 insertions(+), 15 deletions(-)
+ drivers/hv/channel_mgmt.c |  2 +-
+ drivers/hv/hv.c           |  5 ++---
+ drivers/hv/vmbus_drv.c    | 11 +++++++----
+ 3 files changed, 10 insertions(+), 8 deletions(-)
