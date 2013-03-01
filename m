@@ -1,127 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753079Ab3CACXb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 21:23:31 -0500
-Received: from mga09.intel.com ([134.134.136.24]:36776 "EHLO mga09.intel.com"
+	id S1752755Ab3CACYW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 21:24:22 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:51120 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751183Ab3CACXa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 21:23:30 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,758,1355126400"; 
-   d="scan'208";a="292109027"
-From: "Liu, Chuansheng" <chuansheng.liu@intel.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: "Li, Fei" <fei.li@intel.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "Lan, Tianyu" <tianyu.lan@intel.com>,
-        "stern@rowland.harvard.edu" <stern@rowland.harvard.edu>,
-        "sarah.a.sharp@linux.intel.com" <sarah.a.sharp@linux.intel.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 4/5 V2] usb: call pm_runtime_put_sync in
- pm_runtime_get_sync failed case
-Thread-Topic: [PATCH 4/5 V2] usb: call pm_runtime_put_sync in
- pm_runtime_get_sync failed case
-Thread-Index: AQHOFiKtQmsbZj6sWk6IJpkmCrnN/JiQGvcA
-Date: Fri, 1 Mar 2013 02:23:25 +0000
-Message-ID: <27240C0AC20F114CBF8149A2696CBE4A2426B4@SHSMSX101.ccr.corp.intel.com>
-References: <1362037031.6212.3.camel@fli24-HP-Compaq-8100-Elite-CMT-PC>
- <1362042384.6212.25.camel@fli24-HP-Compaq-8100-Elite-CMT-PC>
- <27240C0AC20F114CBF8149A2696CBE4A24264B@SHSMSX101.ccr.corp.intel.com>
- <1500812.76gqUM2HnU@vostro.rjw.lan>
-In-Reply-To: <1500812.76gqUM2HnU@vostro.rjw.lan>
-Accept-Language: zh-CN, en-US
+	id S1751370Ab3CACYU convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Feb 2013 21:24:20 -0500
+From: "J, KEERTHY" <j-keerthy@ti.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "rob@landley.net" <rob@landley.net>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Cousson, Benoit" <b-cousson@ti.com>,
+        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>
+Subject: RE: [PATCH 1/4] documentation: add palmas dts definition
+Thread-Topic: [PATCH 1/4] documentation: add palmas dts definition
+Thread-Index: AQHODZaUJ2KZMn/4MkSOwn0Lr+e98ZiNukAAgAFTrfCAAEhhAIAA0GWA
+Date: Fri, 1 Mar 2013 02:24:03 +0000
+Message-ID: <DC88CAD03C0052499C1907B327FC63229BCF3D@DBDE01.ent.ti.com>
+References: <1361164283-3133-1-git-send-email-j-keerthy@ti.com>
+ <512E5144.9020105@wwwdotorg.org>
+ <DC88CAD03C0052499C1907B327FC63229BCE15@DBDE01.ent.ti.com>
+ <512FAAEC.5060004@wwwdotorg.org>
+In-Reply-To: <512FAAEC.5060004@wwwdotorg.org>
+Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="utf-8"
+x-originating-ip: [172.24.115.14]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r212NVEe018469
 
-
+Hi Stephen,
 
 > -----Original Message-----
-> From: Rafael J. Wysocki [mailto:rjw@sisk.pl]
-> Sent: Friday, March 01, 2013 10:22 AM
-> To: Liu, Chuansheng
-> Cc: Li, Fei; gregkh@linuxfoundation.org; Lan, Tianyu;
-> stern@rowland.harvard.edu; sarah.a.sharp@linux.intel.com;
-> linux-usb@vger.kernel.org; linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH 4/5 V2] usb: call pm_runtime_put_sync in
-> pm_runtime_get_sync failed case
+> From: Stephen Warren [mailto:swarren@wwwdotorg.org]
+> Sent: Friday, March 01, 2013 12:37 AM
+> To: J, KEERTHY
+> Cc: grant.likely@secretlab.ca; rob.herring@calxeda.com;
+> rob@landley.net; devicetree-discuss@lists.ozlabs.org; linux-
+> doc@vger.kernel.org; linux-kernel@vger.kernel.org; Cousson, Benoit;
+> gg@slimlogic.co.uk
+> Subject: Re: [PATCH 1/4] documentation: add palmas dts definition
 > 
-> On Friday, March 01, 2013 02:07:54 AM Liu, Chuansheng wrote:
+> On 02/28/2013 05:09 AM, J, KEERTHY wrote:
+> > Stephen Warren wrote at Thursday, February 28, 2013 12:03 AM:
+> >> On 02/17/2013 10:11 PM, J Keerthy wrote:
+> >>> Add the DTS definition for the palmas device including the MFD
+> children.
+> >> ...
+> >>> diff --git a/Documentation/devicetree/bindings/mfd/palmas.txt
+> 
+> >>> +Required properties:
+> >>> +- compatible : Must be "ti,palmas";
+> >>
+> >> Do you need a version number there; will there be Palmas v1 HW, then
+> >> later Palmas v2 HW, and so on?
 > >
-> > > -----Original Message-----
-> > > From: Li, Fei
-> > > Sent: Thursday, February 28, 2013 5:06 PM
-> > > To: gregkh@linuxfoundation.org; Lan, Tianyu; stern@rowland.harvard.edu;
-> > > sarah.a.sharp@linux.intel.com
-> > > Cc: rjw@sisk.pl; linux-usb@vger.kernel.org; linux-kernel@vger.kernel.org;
-> Liu,
-> > > Chuansheng; Li, Fei
-> > > Subject: [PATCH 4/5 V2] usb: call pm_runtime_put_sync in
-> > > pm_runtime_get_sync failed case
-> > >
-> > >
-> > > Even in failed case of pm_runtime_get_sync, the usage_count
-> > > is incremented. In order to keep the usage_count with correct
-> > > value and runtime power management to behave correctly, call
-> > > pm_runtime_put(_sync) in such case.
-> > >
-> > > Signed-off-by Liu Chuansheng <chuansheng.liu@intel.com>
-> > > Signed-off-by: Li Fei <fei.li@intel.com>
-> > > ---
-> > >  drivers/usb/core/hub.c |    3 ++-
-> > >  1 files changed, 2 insertions(+), 1 deletions(-)
-> > >
-> > > diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
-> > > index 5480352..f72dede 100644
-> > > --- a/drivers/usb/core/hub.c
-> > > +++ b/drivers/usb/core/hub.c
-> > > @@ -3148,12 +3148,13 @@ int usb_port_resume(struct usb_device
-> *udev,
-> > > pm_message_t msg)
-> > >
-> > >  	if (port_dev->did_runtime_put) {
-> > >  		status = pm_runtime_get_sync(&port_dev->dev);
-> > > -		port_dev->did_runtime_put = false;
-> > >  		if (status < 0) {
-> > >  			dev_dbg(&udev->dev, "can't resume usb port,
-> status %d\n",
-> > >  					status);
-> > > +			pm_runtime_put_sync(&port_dev->dev);
-> > Rechecked the usb similar codes, in usb_autoresume_device() and
-> usb_autopm_get_interface(),
-> > when pm_runtime_get_sync() failed, the paired pm_runtime_put_sync() will
-> be called.
-> > Alan and Rafael, is it reasonable to consider this cleanup patch also? Thanks.
+> > AFAIK there is no HW version.
 > 
-> You can very well use pm_runtime_put_noidle() here too.  Then, it will
-> be kind of clear what it's for.
-Thanks. Your advice really express we want to do. Will update the patch soon.
+> My point was more: might there be in the future. However, I guess we
+> can go with a first compatible value that has no version, and for any
+> future device we can add the version to its compatible value then.
+> 
 
-> 
+I got it. We can add versioning when we have the next versions available.
+
+> >>> +- interrupts : This i2c device has an IRQ line connected to the
+> >>> +main SoC
+> >>> +- interrupt-controller : Since the palmas support several
+> >>> +interrupts internally,
+> >>> +  it is considered as an interrupt controller cascaded to the SoC
+> one.
+> >>> +- #interrupt-cells = <1>;
+> >>
+> >> Why not 2; can't any IRQ flags be represented in DT? 1 seems
+> limiting
+> >> here unless the HW truly can't support configuration of IRQ input
+> >> polarity of edge-vs-level sensitivity.
 > >
-> > >  			return status;
-> > >  		}
-> > > +		port_dev->did_runtime_put = false;
-> > >  	}
-> > >
-> > >  	/* Skip the initial Clear-Suspend step for a remote wakeup */
-> > > --
-> > > 1.7.4.1
+> > From the register manual I see that only GPIO has the edge detect
+> capability.
+> > I agree.
 > 
-> Thanks,
-> Rafael
+> I'm not sure if you're agreeing that #interrupt-cells should be 2 here
+> as I suggested, or with the original code. you say "only GPIO has the
+> edge detect capability" which would imply that IRQs don't, which would
+> imply no need for a flags cell in DT, so #interrupt-cells=<1> would be
+> fine... But then you say "I agree" after I suggested that #interrupt-
+> cells=<2> might be better.
+
+Sorry I did not give a detailed explanation earlier. There are 32 sources
+Of interrupts from Palmas but only one physical line coming out. Out of 32
+8 of them are from the GPIO module of palmas. The GPIO module interrupts
+Are edge based. Hence I completely agreed to the point of using
+#interrupt-cells=<2>.
+ 
 > 
+> BTW, your mailer completely mangled the line-wrapping of my email,
+> making the parts you quoted rather harder to read.
 > 
-> --
-> I speak only for myself.
-> Rafael J. Wysocki, Intel Open Source Technology Center.
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+
+Sorry about that but not quite sure what happened there!
+
+> >>> +Optional node:
+> >>> +- Child nodes contain in the palmas. The palmas family is made of
+> >>> +several
+> >>> +  variants that support a different number of features.
+> >>> +  The child nodes will thus depend of the capability of the
+> variant.
+> >>
+> >> Are there DT bindings for those child nodes anywhere?
+> >>
+> >> Representing each internal component as a separate DT node feels a
+> >> little like designing the DT bindings to model the Linux-internal
+> MFD
+> >> structure. DT bindings should be driven by the HW design and OS-
+> >> agnostic.
+> >>
+> >> From a DT perspective, is there any need at all to create a separate
+> >> DT node for each component? This would only be needed or useful if
+> >> the child IP blocks (and hence DT bindings for those blocks) could
+> be
+> >> re- used in other top-level devices that aren't represented by this
+> >> top- level ti,palmas DT binding. Are the HW IP blocks here re-used
+> >> anywhere, or will they be?
+> >
+> > I guess for now I will drop this patch and will be taken up once we
+> > Finalize on the design.
+> 
+> The DT binding has to be fully defined before the code, or how do you
+> know what binding you're writing the code for? Dropping this patch and
+> then moving forward with posting it (which is what your statement
+> implies) doesn't seem correct.
+
+Since Graeme is planning to redesign a bit I am dropping this patch
+And he plans to send the updated documentation patch. The original
+Intent of this series was to add documentation since the code was
+Defined before Documentation. To make it clear I am not posting
+Any further patches before Documentation/DT binding is completely
+Defined.
+
+Regards,
+Keerthy 
