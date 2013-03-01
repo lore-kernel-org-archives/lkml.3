@@ -1,82 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754662Ab3CABcA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 20:32:00 -0500
-Received: from kirsty.vergenet.net ([202.4.237.240]:59949 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754528Ab3CABb7 (ORCPT
+	id S1754714Ab3CABfj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 20:35:39 -0500
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:36046 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751192Ab3CABfi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 20:31:59 -0500
-Date: Fri, 1 Mar 2013 10:31:56 +0900
-From: Simon Horman <horms@verge.net.au>
-To: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 1/2] kexec: fix wrong types of some local variables
-Message-ID: <20130301013156.GA11434@verge.net.au>
-References: <512C44E4.70907@cn.fujitsu.com>
+	Thu, 28 Feb 2013 20:35:38 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <512C44E4.70907@cn.fujitsu.com>
-Organisation: Horms Solutions Ltd.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <5108BDDD.60307@ti.com>
+References: <1358890049-26981-1-git-send-email-nm@ti.com>
+	<5108BDDD.60307@ti.com>
+Date: Thu, 28 Feb 2013 19:35:36 -0600
+X-Google-Sender-Auth: GBRdMzGO5hb3uRyvpUSuqCFTkl4
+Message-ID: <CAGo_u6qZwgGOugh3_F2pFvwM8ZAxU=Rsy7B2Lj6CjO+VG7GwXA@mail.gmail.com>
+Subject: Re: [PATCH] ARM: dts: remove generated .dtb files on clean
+From: Nishanth Menon <nm@ti.com>
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>, olof@lixom.net
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Dirk Behme <dirk.behme@de.bosch.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Arnd Bergmann <arnd@arndb.de>,
+        l-a <linux-arm-kernel@lists.infradead.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 26, 2013 at 01:15:16PM +0800, Zhang Yanfei wrote:
-> The types of the following local variables:
->   - ubytes/mbytes in kimage_load_crash_segment()/kimage_load_normal_segment()
->   - r in vmcoreinfo_append_str()
-> are wrong, so fix them.
-> 
-> Cc: "Eric W. Biederman" <ebiederm@xmission.com>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Simon Horman <horms@verge.net.au>
-> Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+On Wed, Jan 30, 2013 at 12:29 AM, Santosh Shilimkar
+<santosh.shilimkar@ti.com> wrote:
+> Looping RMK, Arnd
+Gentle query if we are still interested in this:
+https://patchwork.kernel.org/patch/2020831/
 
-No complaints here.
+Looks like linux master still wont delete the dtbs on make clean etc..
+I think leaving the stale dtbs
+around could have it's set of user errors.
+Regards,
+Nishanth Menon
 
-Reviewed-by: Simon Horman <horms@verge.net.au>
-
-> ---
->  kernel/kexec.c |    6 +++---
->  1 files changed, 3 insertions(+), 3 deletions(-)
-> 
-> diff --git a/kernel/kexec.c b/kernel/kexec.c
-> index 2436ffc..3cbfcc7 100644
-> --- a/kernel/kexec.c
-> +++ b/kernel/kexec.c
-> @@ -789,7 +789,7 @@ static int kimage_load_normal_segment(struct kimage *image,
->  					 struct kexec_segment *segment)
->  {
->  	unsigned long maddr;
-> -	unsigned long ubytes, mbytes;
-> +	size_t ubytes, mbytes;
->  	int result;
->  	unsigned char __user *buf;
->  
-> @@ -853,7 +853,7 @@ static int kimage_load_crash_segment(struct kimage *image,
->  	 * We do things a page at a time for the sake of kmap.
->  	 */
->  	unsigned long maddr;
-> -	unsigned long ubytes, mbytes;
-> +	size_t ubytes, mbytes;
->  	int result;
->  	unsigned char __user *buf;
->  
-> @@ -1455,7 +1455,7 @@ void vmcoreinfo_append_str(const char *fmt, ...)
->  {
->  	va_list args;
->  	char buf[0x50];
-> -	int r;
-> +	size_t r;
->  
->  	va_start(args, fmt);
->  	r = vsnprintf(buf, sizeof(buf), fmt, args);
-> -- 
-> 1.7.1
-> 
+>
+>
+> On Wednesday 23 January 2013 02:57 AM, Nishanth Menon wrote:
+>>
+>> commit 5f300acd8ae9f3d4585154370012ffc5c665330f
+>> (ARM: 7152/1: distclean: Remove generated .dtb files)
+>> ensured that dtbs were cleaned up when they were in
+>> arch/arm/boot.
+>> However, with the following commit:
+>> commit 499cd8298628eeabf0eb5eb6525d4faa0eec80d8
+>> (ARM: dt: change .dtb build rules to build in dts directory)
+>>
+>> make clean now leaves dtbs in arch/arm/boot/dts/
+>> untouched. Include dts directory so that clean-files rule
+>> from arch/arm/boot/dts/Makefile is invoked when make
+>> clean is done.
+>>
+>> Cc: Dirk Behme <dirk.behme@de.bosch.com>
+>> CC: Grant Likely <grant.likely@secretlab.ca>
+>>
+>> Signed-off-by: Nishanth Menon <nm@ti.com>
+>> ---
+>>   arch/arm/boot/Makefile |    2 +-
+>>   1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/arch/arm/boot/Makefile b/arch/arm/boot/Makefile
+>> index abfce28..3837f97 100644
+>> --- a/arch/arm/boot/Makefile
+>> +++ b/arch/arm/boot/Makefile
+>> @@ -115,4 +115,4 @@ i:
+>>         $(CONFIG_SHELL) $(srctree)/$(src)/install.sh $(KERNELRELEASE) \
+>>         $(obj)/Image System.map "$(INSTALL_PATH)"
+>>
+>> -subdir-            := bootp compressed
+>> +subdir-            := bootp compressed dts
+>>
+> Seems to be the valid fix for me.
+>
+> Regards,
+> Santosh
+>
+>
+>
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
