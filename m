@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754932Ab3CAUOT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 15:14:19 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51543 "EHLO
+	id S1752992Ab3CATpl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 14:45:41 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51516 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753031Ab3CATpn (ORCPT
+	with ESMTP id S1752934Ab3CATpj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 14:45:43 -0500
+	Fri, 1 Mar 2013 14:45:39 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        NeilBrown <neilb@suse.de>, Saranya Gopal <saranya.gopal@intel.com>,
-        Anton Vorontsov <anton@enomsg.org>
-Subject: [ 64/77] bq27x00_battery: Fix bugs introduced with BQ27425 support
-Date: Fri,  1 Mar 2013 11:44:49 -0800
-Message-Id: <20130301194358.754709800@linuxfoundation.org>
+        Jeff Moyer <jmoyer@redhat.com>, Christoph Hellwig <hch@infradead.org>,
+        Jens Axboe <axboe@kernel.dk>, Jan Kara <jack@suse.cz>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: [ 42/77] fs: Fix possible use-after-free with AIO
+Date: Fri,  1 Mar 2013 11:44:27 -0800
+Message-Id: <20130301194356.407445720@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130301194351.913471337@linuxfoundation.org>
 References: <20130301194351.913471337@linuxfoundation.org>
@@ -27,48 +28,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: NeilBrown <neilb@suse.de>
+From: Jan Kara <jack@suse.cz>
 
-commit bde83b9a6b44c1e0fd872e57ecc869cfcf88538f upstream.
+commit 54c807e71d5ac59dee56c685f2b66e27cd54c475 upstream.
 
-commit a66f59ba2e994bf70274ef0513e24e0e7ae20c63
+Running AIO is pinning inode in memory using file reference. Once AIO
+is completed using aio_complete(), file reference is put and inode can
+be freed from memory. So we have to be sure that calling aio_complete()
+is the last thing we do with the inode.
 
-    bq27x00_battery: Add support for BQ27425 chip
-
-introduced 2 bugs.
-
-1/ 'chip' was set to BQ27425 unconditionally - breaking support for
-   other devices;
-
-2/ BQ27425 does not support cycle count, how the code still tries to
-   get the cycle count for BQ27425, and now does it twice for other chips.
-
-Signed-off-by: NeilBrown <neilb@suse.de>
-Cc: Saranya Gopal <saranya.gopal@intel.com>
-Signed-off-by: Anton Vorontsov <anton@enomsg.org>
+Acked-by: Jeff Moyer <jmoyer@redhat.com>
+CC: Christoph Hellwig <hch@infradead.org>
+CC: Jens Axboe <axboe@kernel.dk>
+CC: Jeff Moyer <jmoyer@redhat.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/power/bq27x00_battery.c |    2 --
- 1 file changed, 2 deletions(-)
+ fs/direct-io.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/power/bq27x00_battery.c
-+++ b/drivers/power/bq27x00_battery.c
-@@ -448,7 +448,6 @@ static void bq27x00_update(struct bq27x0
- 		cache.temperature = bq27x00_battery_read_temperature(di);
- 		if (!is_bq27425)
- 			cache.cycle_count = bq27x00_battery_read_cyct(di);
--		cache.cycle_count = bq27x00_battery_read_cyct(di);
- 		cache.power_avg =
- 			bq27x00_battery_read_pwr_avg(di, BQ27x00_POWER_AVG);
+--- a/fs/direct-io.c
++++ b/fs/direct-io.c
+@@ -261,9 +261,9 @@ static ssize_t dio_complete(struct dio *
+ 		dio->end_io(dio->iocb, offset, transferred,
+ 			    dio->private, ret, is_async);
+ 	} else {
++		inode_dio_done(dio->inode);
+ 		if (is_async)
+ 			aio_complete(dio->iocb, ret, 0);
+-		inode_dio_done(dio->inode);
+ 	}
  
-@@ -696,7 +695,6 @@ static int bq27x00_powersupply_init(stru
- 	int ret;
- 
- 	di->bat.type = POWER_SUPPLY_TYPE_BATTERY;
--	di->chip = BQ27425;
- 	if (di->chip == BQ27425) {
- 		di->bat.properties = bq27425_battery_props;
- 		di->bat.num_properties = ARRAY_SIZE(bq27425_battery_props);
+ 	return ret;
 
 
