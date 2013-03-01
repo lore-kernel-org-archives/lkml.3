@@ -1,158 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752225Ab3CAXmx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 18:42:53 -0500
-Received: from smtp.nue.novell.com ([195.135.221.5]:40824 "EHLO
-	smtp.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751436Ab3CAXmw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 18:42:52 -0500
-Subject: Re: [PATCH] efivarfs: fix abnormal GUID in variable name by using
- strcpy to replace null with dash
-From: joeyli <jlee@suse.com>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Michael Schroeder <mls@suse.com>, Josh Boyer <jwboyer@redhat.com>,
-        Peter Jones <pjones@redhat.com>, Matthew Garrett <mjg59@srcf.ucam.org>
-In-Reply-To: <1362155493.2842.446.camel@mfleming-mobl1.ger.corp.intel.com>
-References: <1362108018-13117-1-git-send-email-jlee@suse.com>
-	 <1362151068.2842.440.camel@mfleming-mobl1.ger.corp.intel.com>
-	 <1362155493.2842.446.camel@mfleming-mobl1.ger.corp.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 02 Mar 2013 07:41:39 +0800
-Message-ID: <1362181299.23932.168.camel@linux-s257.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 8bit
+	id S1752371Ab3CAXnL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 18:43:11 -0500
+Received: from slimlogic.co.uk ([89.16.172.20]:41856 "EHLO slimlogic.co.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752281Ab3CAXnA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Mar 2013 18:43:00 -0500
+Message-ID: <51313CEA.4050300@slimlogic.co.uk>
+Date: Fri, 01 Mar 2013 23:42:34 +0000
+From: Ian Lartey <ian@slimlogic.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Laxman Dewangan <ldewangan@nvidia.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
+        Graeme Gregory <gg@slimlogic.co.uk>
+Subject: Re: [PATCH v2 2/2] mfd: palmas add variant and OTP detection
+References: <1361637341-22214-1-git-send-email-ian@slimlogic.co.uk> <1361637341-22214-2-git-send-email-ian@slimlogic.co.uk> <512CBE50.4050206@nvidia.com>
+In-Reply-To: <512CBE50.4050206@nvidia.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-於 五，2013-03-01 於 16:31 +0000，Matt Fleming 提到：
-> On Fri, 2013-03-01 at 15:17 +0000, Matt Fleming wrote:
-> > On Fri, 2013-03-01 at 11:20 +0800, Lee, Chun-Yi wrote:
-> > > From: Michael Schroeder <mls@suse.com>
-> > > 
-> > > On HP z220 system (firmware version 1.54), some EFI variables are incorrectly
-> > > named :
-> > > 
-> > > ls -d /sys/firmware/efi/vars/*8be4d* | grep -v -- -8be returns
-> > > /sys/firmware/efi/vars/dbxDefault-pport8be4df61-93ca-11d2-aa0d-00e098032b8c
-> > > /sys/firmware/efi/vars/KEKDefault-pport8be4df61-93ca-11d2-aa0d-00e098032b8c
-> > > /sys/firmware/efi/vars/SecureBoot-pport8be4df61-93ca-11d2-aa0d-00e098032b8c
-> > > /sys/firmware/efi/vars/SetupMode-Information8be4df61-93ca-11d2-aa0d-00e098032b8c
-> > > 
-> > > That causes by the following statement in efivar_create_sysfs_entry function:
-> > > 
-> > >  *(short_name + strlen(short_name)) = '-';
-> > > efi_guid_unparse(vendor_guid, short_name + strlen(short_name));
-> > > 
-> > > The trailing \0 is overwritten with '-', but the next char doesn't seem to be a \0
-> > > as well for HP. So, the second strlen return the point of next '\0', causes there
-> > > have garbage string attached before GUID.
-> > > 
-> > > Tested on On HP z220.
-> > 
-> > What's more likely happening here is that GetNextVariable() is broken on
-> > this HP firmware and variable_name_size is too big for the given
-> > variable in variable_name. We've seen other reports of similar bugs,
-> > 
-> > 	https://bugzilla.kernel.org/show_bug.cgi?id=47631
-> > 
-> > 
-> > Could someone try this patch against Linus' tree?
-> 
-> Urgh, and here's a version that isn't utterly, utterly broken...
+On 26/02/13 13:53, Laxman Dewangan wrote:
+> On Saturday 23 February 2013 10:05 PM, Ian Lartey wrote:
+>> From: Graeme Gregory <gg@slimlogic.co.uk>
+>>
+>> Read the chip varient and the OTP information from the chip and display
+>> this on probe to aid in debugging of issues.
+>>
+>> Older palmas chips do not have the USB_ID programmed and will therefore
+>> return 0x0000 for this field.
+>
+>> +
+>>       /* Change IRQ into clear on read mode for efficiency */
+>>       slave = PALMAS_BASE_TO_SLAVE(PALMAS_INTERRUPT_BASE);
+>> -    addr = PALMAS_BASE_TO_REG(PALMAS_INTERRUPT_BASE, PALMAS_INT_CTRL);
+>>       reg = PALMAS_INT_CTRL_INT_CLEAR;
+>> -    regmap_write(palmas->regmap[slave], addr, reg);
+>> +    ret = palmas_write(palmas, PALMAS_INTERRUPT_BASE,
+>> PALMAS_INT_CTRL, reg);
+>
+> I think this is unrelated change and can be on another patch.
 
-Thanks for Matt's patch, we will try it!
+This is the change  which you requested earlier "Can you please use the 
+api palmas_* for reading register which I added recently."
 
-Joey Lee
+>
+>>
+>> -    slave = PALMAS_BASE_TO_SLAVE(PALMAS_PU_PD_OD_BASE);
+>> -    addr = PALMAS_BASE_TO_REG(PALMAS_PU_PD_OD_BASE,
+>> -            PALMAS_PRIMARY_SECONDARY_PAD1);
+>> -
+>>       if (pdata->mux_from_pdata) {
+>>           reg = pdata->pad1;
+>> -        ret = regmap_write(palmas->regmap[slave], addr, reg);
+>> +        ret = palmas_write(palmas, PALMAS_PU_PD_OD_BASE,
+>> +                PALMAS_PRIMARY_SECONDARY_PAD1, reg);
+>
+> Same, in another patch and elsewhere which was part of cleanups.
 
-> 
-> ---
-> 
-> >From 4b2ef72bca72039717efe4570ec858a86d565b34 Mon Sep 17 00:00:00 2001
-> From: Matt Fleming <matt.fleming@intel.com>
-> Date: Fri, 1 Mar 2013 14:49:12 +0000
-> Subject: [PATCH] efivars: Sanitise string length returned by
->  GetNextVariableName()
-> 
-> Some buggy firmware implementations return a string length from
-> GetNextVariableName() that is actually larger than the string in
-> 'variable_name', as Michael Schroeder writes,
-> 
->   > On HP z220 system (firmware version 1.54), some EFI variables are
->   > incorrectly named :
->   >
->   > ls -d /sys/firmware/efi/vars/*8be4d* | grep -v -- -8be returns
->   > /sys/firmware/efi/vars/dbxDefault-pport8be4df61-93ca-11d2-aa0d-00e098032b8c
->   > /sys/firmware/efi/vars/KEKDefault-pport8be4df61-93ca-11d2-aa0d-00e098032b8c
->   > /sys/firmware/efi/vars/SecureBoot-pport8be4df61-93ca-11d2-aa0d-00e098032b8c
->   > /sys/firmware/efi/vars/SetupMode-Information8be4df61-93ca-11d2-aa0d-00e098032b8c
-> 
-> Since 'variable_name' is a string, we can validate its size by
-> searching for the terminating NULL character.
-> 
-> Reported-by: Frederic Crozat <fcrozat@suse.com>
-> Cc: Matthew Garrett <mjg59@srcf.ucam.org>
-> Cc: Josh Boyer <jwboyer@redhat.com>
-> Cc: Michael Schroeder <mls@suse.com>
-> Cc: Lee, Chun-Yi <jlee@suse.com>
-> Cc: Lingzhu Xiang <lxiang@redhat.com>
-> Signed-off-by: Matt Fleming <matt.fleming@intel.com>
-> ---
->  drivers/firmware/efivars.c | 30 ++++++++++++++++++++++++++++++
->  1 file changed, 30 insertions(+)
-> 
-> diff --git a/drivers/firmware/efivars.c b/drivers/firmware/efivars.c
-> index 7320bf8..ab477b8 100644
-> --- a/drivers/firmware/efivars.c
-> +++ b/drivers/firmware/efivars.c
-> @@ -1895,6 +1895,33 @@ void unregister_efivars(struct efivars *efivars)
->  }
->  EXPORT_SYMBOL_GPL(unregister_efivars);
->  
-> +/*
-> + * Sanity check size of a variable name.
-> + */
-> +static unsigned long sanity_check_size(efi_char16_t *variable_name,
-> +				       unsigned long variable_name_size)
-> +{
-> +	unsigned long len;
-> +	efi_char16_t c;
-> +
-> +	/*
-> +	 * The variable name is, by definition, a NULL-terminated
-> +	 * string, so make absolutely sure that variable_name_size is
-> +	 * the value we expect it to be. If not, return the real size.
-> +	 */
-> +	for (len = 2; len <= variable_name_size; len += sizeof(c)) {
-> +		c = variable_name[(len / sizeof(c)) - 1];
-> +		if (!c)
-> +			break;
-> +	}
-> +
-> +
-> +	if (len != variable_name_size)
-> +		printk(KERN_WARNING "efivars: bogus variable_name_size: %lu %lu\n", len, variable_name_size);
-> +
-> +	return min(len, variable_name_size);
-> +}
-> +
->  int register_efivars(struct efivars *efivars,
->  		     const struct efivar_operations *ops,
->  		     struct kobject *parent_kobj)
-> @@ -1941,8 +1968,11 @@ int register_efivars(struct efivars *efivars,
->  		status = ops->get_next_variable(&variable_name_size,
->  						variable_name,
->  						&vendor_guid);
-> +
->  		switch (status) {
->  		case EFI_SUCCESS:
-> +			variable_name_size = sanity_check_size(variable_name,
-> +							       variable_name_size);
->  			efivar_create_sysfs_entry(efivars,
->  						  variable_name_size,
->  						  variable_name,
+ditto.
 
+>
+>
+> otherwise it looks good.
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
