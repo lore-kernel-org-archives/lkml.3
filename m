@@ -1,263 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751823Ab3CAPdT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 10:33:19 -0500
-Received: from mga14.intel.com ([143.182.124.37]:14521 "EHLO mga14.intel.com"
+	id S1751951Ab3CAPee (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 10:34:34 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:54075 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750907Ab3CAPdS convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 10:33:18 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,761,1355126400"; 
-   d="scan'208";a="207778554"
-From: "R, Durgadoss" <durgadoss.r@intel.com>
-To: Eduardo Valentin <eduardo.valentin@ti.com>
-CC: "Zhang, Rui" <rui.zhang@intel.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hongbo.zhang@linaro.org" <hongbo.zhang@linaro.org>,
-        "wni@nvidia.com" <wni@nvidia.com>
-Subject: RE: [PATCH 3/8] Thermal: Add APIs to bind cdev to new zone structure
-Thread-Topic: [PATCH 3/8] Thermal: Add APIs to bind cdev to new zone
- structure
-Thread-Index: AQHOA47hD7j2CpLG4UCrs4zhvLhWCJiPcjwAgAGqhoA=
-Date: Fri, 1 Mar 2013 15:33:13 +0000
-Message-ID: <4D68720C2E767A4AA6A8796D42C8EB59293FC2@BGSMSX101.gar.corp.intel.com>
-References: <1360061183-14137-1-git-send-email-durgadoss.r@intel.com>
- <1360061183-14137-4-git-send-email-durgadoss.r@intel.com>
- <512FB186.6010207@ti.com>
-In-Reply-To: <512FB186.6010207@ti.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.223.10.10]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1750907Ab3CAPec (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Mar 2013 10:34:32 -0500
+User-Agent: K-9 Mail for Android
+In-Reply-To: <20130301112432.GA3018@gmail.com>
+References: <512B8407.2090807@canonical.com> <512BD753.4080001@hp.com> <CAE9FiQVY4io_mO3PhTtE6FbGUgo1uZKKXO=pjx_FoZ1JuZmsAw@mail.gmail.com> <CAE9FiQXs3MyUW+hJhupJgL-t9sYmT5GdeStWD2vMjsJG+6qCrQ@mail.gmail.com> <CAE9FiQXHNm+E+PchPsReOykVPNkRrC8ttjDpWWs=njANT+Wf1Q@mail.gmail.com> <CAJErZ53dadbU3oM4Prhi3n_R+Lsbp3TG=FP1=whTK5uPMpj90A@mail.gmail.com> <CAE9FiQWx=FdQSH_H_PoVxUksY6rFnN6yDfwmK3w8OTbCPLM1+w@mail.gmail.com> <CAJErZ53AWMP688OV+J0qiJii2y=qzEjLq=WshAQbMhEdyx33cQ@mail.gmail.com> <51304C96.3010801@zytor.com> <20130301110310.GA31058@pd.tnic> <20130301112432.GA3018@gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: sched: CPU #1's llc-sibling CPU #0 is not on the same node!
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Fri, 01 Mar 2013 07:32:48 -0800
+To: Ingo Molnar <mingo@kernel.org>, Borislav Petkov <bp@alien8.de>,
+        Martin Bligh <mbligh@mbligh.org>, Yinghai Lu <yinghai@kernel.org>,
+        Don Morris <don.morris@hp.com>, Tejun Heo <tj@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Tim Gardner <tim.gardner@canonical.com>, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, mingo@redhat.com, x86@kernel.org,
+        a.p.zijlstra@chello.nl, jarkko.sakkinen@intel.com,
+        tangchen@cn.fujitsu.com
+Message-ID: <6d811f43-e966-4885-9a2e-30b0b71466e0@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+If NUMAQ is breaking real stuff we can kill it by marking it BROKEN.  Rip-out is 3.10 at this stage.
 
-> -----Original Message-----
-> From: Eduardo Valentin [mailto:eduardo.valentin@ti.com]
-> Sent: Friday, March 01, 2013 1:06 AM
-> To: R, Durgadoss
-> Cc: Zhang, Rui; linux-pm@vger.kernel.org; linux-kernel@vger.kernel.org;
-> hongbo.zhang@linaro.org; wni@nvidia.com
-> Subject: Re: [PATCH 3/8] Thermal: Add APIs to bind cdev to new zone
-> structure
-> 
-> Durga,
-> 
-> On 05-02-2013 06:46, Durgadoss R wrote:
-> > This patch creates new APIs to add/remove a
-> > cdev to/from a zone. This patch does not change
-> > the old cooling device implementation.
-> 
-> Same comments on patch 02/08 I want to rise here:
-> 
-> - Consider using linked list
-> - You may have contention on your index/cdevs array
-> - overflow on your buffer (carefully check your implementation)
-> - zone removal condition. can we remove zones with cdevs registered?
+Ingo Molnar <mingo@kernel.org> wrote:
 
-Yes, as I said in 02/08.
+>
+>* Borislav Petkov <bp@alien8.de> wrote:
+>
+>> On Thu, Feb 28, 2013 at 10:37:10PM -0800, H. Peter Anvin wrote:
+>> > I'd be very happy to get the NUMAQ code ripped out.  I am wondering
+>if
+>> > there are any reasons to keep any 32-bit x86 NUMA code at all.
+>> 
+>> How much would it hurt us if we said 3.8 is the last kernel that
+>supported NUMAQ? 
+>> If anyone wants the functionality, they should use 3.8 or older.
+>
+>v3.9 - any non-trivial patch in the stage of being contemplated near
+>the end of the 
+>v3.9 merge window is most likely v3.10 material.
+>
+>Thanks,
+>
+>	Ingo
 
-> - get_by_name, why do we need it? (at least not on this patch)
-
-The platform drivers need this API to query the pointer for cdevs,
-sensors.
-
-Thanks,
-Durga
-
-> - Minors on strlcpy, snprintf, devm_ helpers
-> - documentation in the code for these helper functions and also better
-> naming..
-> 
-> >
-> > Signed-off-by: Durgadoss R <durgadoss.r@intel.com>
-> > ---
-> >   drivers/thermal/thermal_sys.c |   80
-> +++++++++++++++++++++++++++++++++++++++++
-> >   include/linux/thermal.h       |    9 +++++
-> >   2 files changed, 89 insertions(+)
-> >
-> > diff --git a/drivers/thermal/thermal_sys.c b/drivers/thermal/thermal_sys.c
-> > index 838d4fb..bf703b1 100644
-> > --- a/drivers/thermal/thermal_sys.c
-> > +++ b/drivers/thermal/thermal_sys.c
-> > @@ -57,6 +57,7 @@ static LIST_HEAD(thermal_governor_list);
-> >   static DEFINE_MUTEX(thermal_list_lock);
-> >   static DEFINE_MUTEX(sensor_list_lock);
-> >   static DEFINE_MUTEX(zone_list_lock);
-> > +static DEFINE_MUTEX(cdev_list_lock);
-> >   static DEFINE_MUTEX(thermal_governor_lock);
-> >
-> >   #define for_each_thermal_sensor(pos) \
-> > @@ -83,6 +84,9 @@ static DEFINE_MUTEX(thermal_governor_lock);
-> >   	ret;						\
-> >   })
-> >
-> > +#define for_each_cdev(pos) \
-> > +	list_for_each_entry(pos, &thermal_cdev_list, node)
-> > +
-> >   static struct thermal_governor *__find_governor(const char *name)
-> >   {
-> >   	struct thermal_governor *pos;
-> > @@ -466,6 +470,24 @@ static void remove_sensor_from_zone(struct
-> thermal_zone *tz,
-> >   	tz->sensor_indx--;
-> >   }
-> >
-> > +static void remove_cdev_from_zone(struct thermal_zone *tz,
-> > +				struct thermal_cooling_device *cdev)
-> > +{
-> > +	int j, indx;
-> > +
-> > +	indx = GET_INDEX(tz, cdev, cdev);
-> > +	if (indx < 0)
-> > +		return;
-> > +
-> > +	sysfs_remove_link(&tz->device.kobj, kobject_name(&cdev-
-> >device.kobj));
-> > +
-> > +	/* Shift the entries in the tz->cdevs array */
-> > +	for (j = indx; j < MAX_CDEVS_PER_ZONE - 1; j++)
-> > +		tz->cdevs[j] = tz->cdevs[j + 1];
-> > +
-> > +	tz->cdev_indx--;
-> > +}
-> > +
-> >   /* sys I/F for thermal zone */
-> >
-> >   #define to_thermal_zone(_dev) \
-> > @@ -1462,6 +1484,7 @@ void thermal_cooling_device_unregister(struct
-> thermal_cooling_device *cdev)
-> >   	int i;
-> >   	const struct thermal_zone_params *tzp;
-> >   	struct thermal_zone_device *tz;
-> > +	struct thermal_zone *tmp_tz;
-> >   	struct thermal_cooling_device *pos = NULL;
-> >
-> >   	if (!cdev)
-> > @@ -1499,6 +1522,13 @@ void thermal_cooling_device_unregister(struct
-> thermal_cooling_device *cdev)
-> >
-> >   	mutex_unlock(&thermal_list_lock);
-> >
-> > +	mutex_lock(&zone_list_lock);
-> > +
-> > +	for_each_thermal_zone(tmp_tz)
-> > +		remove_cdev_from_zone(tmp_tz, cdev);
-> > +
-> > +	mutex_unlock(&zone_list_lock);
-> > +
-> >   	if (cdev->type[0])
-> >   		device_remove_file(&cdev->device, &dev_attr_cdev_type);
-> >   	device_remove_file(&cdev->device, &dev_attr_max_state);
-> > @@ -1794,6 +1824,23 @@ exit:
-> >   }
-> >   EXPORT_SYMBOL(remove_thermal_zone);
-> >
-> > +struct thermal_cooling_device *get_cdev_by_name(const char *name)
-> > +{
-> > +	struct thermal_cooling_device *pos;
-> > +	struct thermal_cooling_device *cdev = NULL;
-> > +
-> > +	mutex_lock(&cdev_list_lock);
-> > +	for_each_cdev(pos) {
-> > +		if (!strnicmp(pos->type, name, THERMAL_NAME_LENGTH)) {
-> > +			cdev = pos;
-> > +			break;
-> > +		}
-> > +	}
-> > +	mutex_unlock(&cdev_list_lock);
-> > +	return cdev;
-> > +}
-> > +EXPORT_SYMBOL(get_cdev_by_name);
-> > +
-> >   struct thermal_sensor *get_sensor_by_name(const char *name)
-> >   {
-> >   	struct thermal_sensor *pos;
-> > @@ -1844,6 +1891,39 @@ exit_zone:
-> >   }
-> >   EXPORT_SYMBOL(add_sensor_to_zone);
-> >
-> > +int add_cdev_to_zone(struct thermal_zone *tz,
-> > +			struct thermal_cooling_device *cdev)
-> > +{
-> > +	int ret;
-> > +
-> > +	if (!tz || !cdev)
-> > +		return -EINVAL;
-> > +
-> > +	mutex_lock(&zone_list_lock);
-> > +
-> > +	/* Ensure we are not adding the same cdev again!! */
-> > +	ret = GET_INDEX(tz, cdev, cdev);
-> > +	if (ret >= 0) {
-> > +		ret = -EEXIST;
-> > +		goto exit_zone;
-> > +	}
-> > +
-> > +	mutex_lock(&cdev_list_lock);
-> > +	ret = sysfs_create_link(&tz->device.kobj, &cdev->device.kobj,
-> > +				kobject_name(&cdev->device.kobj));
-> > +	if (ret)
-> > +		goto exit_cdev;
-> > +
-> > +	tz->cdevs[tz->cdev_indx++] = cdev;
-> > +
-> > +exit_cdev:
-> > +	mutex_unlock(&cdev_list_lock);
-> > +exit_zone:
-> > +	mutex_unlock(&zone_list_lock);
-> > +	return ret;
-> > +}
-> > +EXPORT_SYMBOL(add_cdev_to_zone);
-> > +
-> >   /**
-> >    * thermal_sensor_register - register a new thermal sensor
-> >    * @name:	name of the thermal sensor
-> > diff --git a/include/linux/thermal.h b/include/linux/thermal.h
-> > index 2194519..c841414 100644
-> > --- a/include/linux/thermal.h
-> > +++ b/include/linux/thermal.h
-> > @@ -57,6 +57,8 @@
-> >
-> >   #define MAX_SENSORS_PER_ZONE		5
-> >
-> > +#define MAX_CDEVS_PER_ZONE		5
-> > +
-> >   struct thermal_sensor;
-> >   struct thermal_zone_device;
-> >   struct thermal_cooling_device;
-> > @@ -217,6 +219,10 @@ struct thermal_zone {
-> >   	/* Sensor level information */
-> >   	int sensor_indx; /* index into 'sensors' array */
-> >   	struct thermal_sensor *sensors[MAX_SENSORS_PER_ZONE];
-> > +
-> > +	/* cdev level information */
-> > +	int cdev_indx; /* index into 'cdevs' array */
-> > +	struct thermal_cooling_device *cdevs[MAX_CDEVS_PER_ZONE];
-> >   };
-> >
-> >   /* Structure that holds thermal governor information */
-> > @@ -296,6 +302,9 @@ void remove_thermal_zone(struct thermal_zone
-> *);
-> >   int add_sensor_to_zone(struct thermal_zone *, struct thermal_sensor *);
-> >   struct thermal_sensor *get_sensor_by_name(const char *);
-> >
-> > +int add_cdev_to_zone(struct thermal_zone *, struct
-> thermal_cooling_device *);
-> > +struct thermal_cooling_device *get_cdev_by_name(const char *);
-> > +
-> >   #ifdef CONFIG_NET
-> >   extern int thermal_generate_netlink_event(struct thermal_zone_device
-> *tz,
-> >   						enum events event);
-> >
-
+-- 
+Sent from my mobile phone. Please excuse brevity and lack of formatting.
