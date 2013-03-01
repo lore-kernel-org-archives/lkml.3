@@ -1,186 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751944Ab3CAJ5W (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 04:57:22 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:52176 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751246Ab3CAJ5T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 04:57:19 -0500
-Date: Fri, 1 Mar 2013 10:57:16 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: akpm@linux-foundation.org
-Cc: mm-commits@vger.kernel.org, rientjes@google.com, dave@linux.vnet.ibm.com,
-        mgorman@suse.de, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: +
- mm-show_mem-suppress-page-counts-in-non-blockable-contexts.patch added to
- -mm tree
-Message-ID: <20130301095716.GA21443@dhcp22.suse.cz>
-References: <20130228231025.9F11A5A410E@corp2gmr1-2.hot.corp.google.com>
+	id S1751816Ab3CAJ6G (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 04:58:06 -0500
+Received: from mail-da0-f43.google.com ([209.85.210.43]:33686 "EHLO
+	mail-da0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751370Ab3CAJ6B convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Mar 2013 04:58:01 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130228231025.9F11A5A410E@corp2gmr1-2.hot.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Reply-To: mtk.manpages@gmail.com
+In-Reply-To: <1362110504.15531.4@driftwood>
+References: <CAKgNAki=mUYuu_Ewhe7sjCmo+Dq2Vr+FZCixqNRaadcvAxtpFw@mail.gmail.com>
+ <1362110504.15531.4@driftwood>
+From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Date: Fri, 1 Mar 2013 10:57:40 +0100
+Message-ID: <CAKgNAkgVKnhRT1Lpq4a_UdBKB+tn6XmWSDF2QJXG0aSLtNH6dg@mail.gmail.com>
+Subject: Re: For review: pid_namespaces(7) man page
+To: Rob Landley <rob@landley.net>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        linux-man <linux-man@vger.kernel.org>,
+        Linux Containers <containers@lists.linux-foundation.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 28-02-13 15:10:25, Andrew Morton wrote:
+Hi Rob,
+
+On Fri, Mar 1, 2013 at 5:01 AM, Rob Landley <rob@landley.net> wrote:
+> On 02/28/2013 05:24:07 AM, Michael Kerrisk (man-pages) wrote:
 [...]
-> From: David Rientjes <rientjes@google.com>
-> Subject: mm, show_mem: suppress page counts in non-blockable contexts
-> 
-> On large systems with a lot of memory, walking all RAM to determine page
-> types may take a half second or even more.
-> 
-> In non-blockable contexts, the page allocator will emit a page allocation
-> failure warning unless __GFP_NOWARN is specified.  In such contexts, irqs
-> are typically disabled and such a lengthy delay may result in soft
-> lockups.
 
-I have already asked about it in the original thread but didn't get any
-answer. How can we get a soft lockup when all implementations of show_mem
-call touch_nmi_watchdog?
+>> DESCRIPTION
+>>        For an overview of namespaces, see namespaces(7).
+>>
+>>        PID  namespaces  isolate  the  process ID number space, meaning
+>>        that processes in different PID namespaces can  have  the  same
+>>        PID.
+>
+>
+> Um, perhaps "different processes"? Slightly repetitive, but trying to avoid
+> the potential misreading that "a processes can have the same PID in
+> different namespaces". (A single process can't be a member of more than one
+> namespace. This is not about selective visibility.)
 
-I do agree with the change but the above justification seems misleading.
-Can we just remove the information because it is costly and doesn't give
-us anything relevant to debug allocation failures?
+I'm not sure this clarifies things...
 
-> To fix this, suppress the page walk in such contexts when printing the
-> page allocation failure warning.
-> 
-> Signed-off-by: David Rientjes <rientjes@google.com>
-> Cc: Mel Gorman <mgorman@suse.de>
-> Cc: Michal Hocko <mhocko@suse.cz>
-> Cc: Dave Hansen <dave@linux.vnet.ibm.com>
-> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-> ---
-> 
->  arch/arm/mm/init.c       |    3 +++
->  arch/ia64/mm/contig.c    |    2 ++
->  arch/ia64/mm/discontig.c |    2 ++
->  arch/parisc/mm/init.c    |    2 ++
->  arch/unicore32/mm/init.c |    3 +++
->  include/linux/mm.h       |    3 ++-
->  lib/show_mem.c           |    3 +++
->  mm/page_alloc.c          |    7 +++++++
->  8 files changed, 24 insertions(+), 1 deletion(-)
-> 
-> diff -puN arch/arm/mm/init.c~mm-show_mem-suppress-page-counts-in-non-blockable-contexts arch/arm/mm/init.c
-> --- a/arch/arm/mm/init.c~mm-show_mem-suppress-page-counts-in-non-blockable-contexts
-> +++ a/arch/arm/mm/init.c
-> @@ -99,6 +99,9 @@ void show_mem(unsigned int filter)
->  	printk("Mem-info:\n");
->  	show_free_areas(filter);
->  
-> +	if (filter & SHOW_MEM_FILTER_PAGE_COUNT)
-> +		return;
-> +
->  	for_each_bank (i, mi) {
->  		struct membank *bank = &mi->bank[i];
->  		unsigned int pfn1, pfn2;
-> diff -puN arch/ia64/mm/contig.c~mm-show_mem-suppress-page-counts-in-non-blockable-contexts arch/ia64/mm/contig.c
-> --- a/arch/ia64/mm/contig.c~mm-show_mem-suppress-page-counts-in-non-blockable-contexts
-> +++ a/arch/ia64/mm/contig.c
-> @@ -47,6 +47,8 @@ void show_mem(unsigned int filter)
->  	printk(KERN_INFO "Mem-info:\n");
->  	show_free_areas(filter);
->  	printk(KERN_INFO "Node memory in pages:\n");
-> +	if (filter & SHOW_MEM_FILTER_PAGE_COUNT)
-> +		return;
->  	for_each_online_pgdat(pgdat) {
->  		unsigned long present;
->  		unsigned long flags;
-> diff -puN arch/ia64/mm/discontig.c~mm-show_mem-suppress-page-counts-in-non-blockable-contexts arch/ia64/mm/discontig.c
-> --- a/arch/ia64/mm/discontig.c~mm-show_mem-suppress-page-counts-in-non-blockable-contexts
-> +++ a/arch/ia64/mm/discontig.c
-> @@ -623,6 +623,8 @@ void show_mem(unsigned int filter)
->  
->  	printk(KERN_INFO "Mem-info:\n");
->  	show_free_areas(filter);
-> +	if (filter & SHOW_MEM_FILTER_PAGE_COUNT)
-> +		return;
->  	printk(KERN_INFO "Node memory in pages:\n");
->  	for_each_online_pgdat(pgdat) {
->  		unsigned long present;
-> diff -puN arch/parisc/mm/init.c~mm-show_mem-suppress-page-counts-in-non-blockable-contexts arch/parisc/mm/init.c
-> --- a/arch/parisc/mm/init.c~mm-show_mem-suppress-page-counts-in-non-blockable-contexts
-> +++ a/arch/parisc/mm/init.c
-> @@ -697,6 +697,8 @@ void show_mem(unsigned int filter)
->  
->  	printk(KERN_INFO "Mem-info:\n");
->  	show_free_areas(filter);
-> +	if (filter & SHOW_MEM_FILTER_PAGE_COUNT)
-> +		return;
->  #ifndef CONFIG_DISCONTIGMEM
->  	i = max_mapnr;
->  	while (i-- > 0) {
-> diff -puN arch/unicore32/mm/init.c~mm-show_mem-suppress-page-counts-in-non-blockable-contexts arch/unicore32/mm/init.c
-> --- a/arch/unicore32/mm/init.c~mm-show_mem-suppress-page-counts-in-non-blockable-contexts
-> +++ a/arch/unicore32/mm/init.c
-> @@ -66,6 +66,9 @@ void show_mem(unsigned int filter)
->  	printk(KERN_DEFAULT "Mem-info:\n");
->  	show_free_areas(filter);
->  
-> +	if (filter & SHOW_MEM_FILTER_PAGE_COUNT)
-> +		return;
-> +
->  	for_each_bank(i, mi) {
->  		struct membank *bank = &mi->bank[i];
->  		unsigned int pfn1, pfn2;
-> diff -puN include/linux/mm.h~mm-show_mem-suppress-page-counts-in-non-blockable-contexts include/linux/mm.h
-> --- a/include/linux/mm.h~mm-show_mem-suppress-page-counts-in-non-blockable-contexts
-> +++ a/include/linux/mm.h
-> @@ -900,7 +900,8 @@ extern void pagefault_out_of_memory(void
->   * Flags passed to show_mem() and show_free_areas() to suppress output in
->   * various contexts.
->   */
-> -#define SHOW_MEM_FILTER_NODES	(0x0001u)	/* filter disallowed nodes */
-> +#define SHOW_MEM_FILTER_NODES		(0x0001u)	/* disallowed nodes */
-> +#define SHOW_MEM_FILTER_PAGE_COUNT	(0x0002u)	/* page type count */
->  
->  extern void show_free_areas(unsigned int flags);
->  extern bool skip_free_areas_node(unsigned int flags, int nid);
-> diff -puN lib/show_mem.c~mm-show_mem-suppress-page-counts-in-non-blockable-contexts lib/show_mem.c
-> --- a/lib/show_mem.c~mm-show_mem-suppress-page-counts-in-non-blockable-contexts
-> +++ a/lib/show_mem.c
-> @@ -18,6 +18,9 @@ void show_mem(unsigned int filter)
->  	printk("Mem-Info:\n");
->  	show_free_areas(filter);
->  
-> +	if (filter & SHOW_MEM_FILTER_PAGE_COUNT)
-> +		return;
-> +
->  	for_each_online_pgdat(pgdat) {
->  		unsigned long i, flags;
->  
-> diff -puN mm/page_alloc.c~mm-show_mem-suppress-page-counts-in-non-blockable-contexts mm/page_alloc.c
-> --- a/mm/page_alloc.c~mm-show_mem-suppress-page-counts-in-non-blockable-contexts
-> +++ a/mm/page_alloc.c
-> @@ -2009,6 +2009,13 @@ void warn_alloc_failed(gfp_t gfp_mask, i
->  		return;
->  
->  	/*
-> +	 * Walking all memory to count page types is very expensive and should
-> +	 * be inhibited in non-blockable contexts.
-> +	 */
-> +	if (!(gfp_mask & __GFP_WAIT))
-> +		filter |= SHOW_MEM_FILTER_PAGE_COUNT;
-> +
-> +	/*
->  	 * This documents exceptions given to allocations in certain
->  	 * contexts that are allowed to allocate outside current's set
->  	 * of allowed nodes.
-> _
-> 
-> Patches currently in -mm which might be from rientjes@google.com are
-> 
-> origin.patch
-> mm-show_mem-suppress-page-counts-in-non-blockable-contexts.patch
-> mm-dmapoolc-fix-null-dev-in-dma_pool_create.patch
-> 
+>> PID namespaces allow containers to migrate to a new host
+>>        while the processes inside  the  container  maintain  the  same
+>>        PIDs.
+>
+>
+> I thought suspend/resume a container was the simple case. Migration to a new
+> host is built on top of that. (On resume in a new container on the same
+> system, if other stuff is going on in the system so the available PIDs have
+> shifted.)
+
+I'll add some words here on suspend/resume.
+
+>>        Likewise, a process in an ancestor namespace can—subject to the
+>>        usual permission checks described in  kill(2)—send  signals  to
+>>        the  "init" process of a child PID namespace only if the "init"
+>>        process has established a handler for that signal.  (Within the
+>>        handler,  the  siginfo_t si_pid field described in sigaction(2)
+>>        will be zero.)  SIGKILL or SIGSTOP are  treated  exceptionally:
+>>        these signals are forcibly delivered when sent from an ancestor
+>>        PID namespace.  Neither of these signals can be caught  by  the
+>>        "init" process, and so will result in the usual actions associ‐
+>>        ated with those signals (respectively, terminating and stopping
+>>        the process).
+>
+>
+> If SIGKILL to init is propogated to all the children of init, is SIGSTOP
+> also propogated to all the children? (I.E. will SIGSTOP to container's init
+> suspend the whole container, and will SIGCONT resume the whole container? If
+> the latter, will it only resume processes that weren't previously stopped?
+> :)
+
+Covered by Eric.
+
+>>        To put things another way: a process's PID namespace membership
+>>        is determined when the process is created and cannot be changed
+>>        thereafter.  Among other things, this means that  the  parental
+>>        relationship between processes mirrors the parental between PID
+>
+>
+> mirrors the relationship
+
+Thanks.
+
+>>        namespaces: the parent of a  process  is  either  in  the  same
+>>        namespace or resides in the immediate parent PID namespace.
+>>
+>>        Every  thread  in  a process must be in the same PID namespace.
+>>        For this reason, the two following call sequences will fail:
+>>
+>>            unshare(CLONE_NEWPID);
+>>            clone(..., CLONE_VM, ...);    /* Fails */
+>>
+>>            setns(fd, CLONE_NEWPID);
+>>            clone(..., CLONE_VM, ...);    /* Fails */
+>
+>
+> They fail with -EUNDOCUMENTED
+
+Added EINVAL, as per Eric's reply. (Eric does that error also apply
+for the two new cases you added?).
+
+>>        Because the above unshare(2) and setns(2) calls only change the
+>>        PID  namespace  for created children, the clone(2) calls neces‐
+>>        sarily put the new thread in a different PID namespace from the
+>>        calling thread.
+>
+>
+> Um, no they don't. They fail. That's the point.
+
+(Good catch.)
+
+> They _would_ put the new
+> thread in a different PID namespace, which breaks the definition of threads.
+>
+> How about:
+>
+> The above unshare(2) and setns(2) calls change the PID namespace of
+> children created by subsequent clone(2) calls, which is incompatible
+> with CLONE_VM.
+
+I decided on:
+
+       The  point  here is that unshare(2) and setns(2) change the PID
+       namespace for created children but not for the calling process,
+       while  clone(2) CLONE_VM specifies the creation of a new thread
+       in the same process.
+
+>>    Miscellaneous
+>>        After  creating a new PID namespace, it is useful for the child
+>>        to change its root directory and mount a new procfs instance at
+>>        /proc  so  that  tools such as ps(1) work correctly.  (If a new
+>>        mount  namespace  is  simultaneously   created   by   including
+>>        CLONE_NEWNS  in  the flags argument of clone(2) or unshare(2)),
+>>        then it isn't necessary to change the  root  directory:  a  new
+>>        procfs instance can be mounted directly over /proc.)
+>
+>
+> Why is the (If) clause in parentheses? And unshare(2)) has a Bruce.
+> (I.E. unbalanced parens.).
+
+I'll make some fixes here.
+
+>>        Calling  readlink(2)  on the path /proc/self yields the process
+>>        ID of the caller in the  PID  namespace  of  the  procfs  mount
+>>        (i.e.,  the  PID  namespace  of  the  process  that mounted the
+>>        procfs).
+>
+>
+> This is per-filesystem rather than using the process's namespace because...?
+> (Where /proc/self points is already process-local data, so the races here
+> can't be too horrible...)
+
+Explained by Eric.
+
+I'll add:
+
+[[
+This can be useful for introspection purposes,
+when a process wants to discover its PID in other namespaces.
+]]
+
+[...]
+
+>> CONFORMING TO
+>>        Namespaces are a Linux-specific feature.
+>
+>
+> And yet the glibc guys insist on #define GNU_GNU_GNU_ALL_HAIL_STALLMAN in
+> order to access this Linux-specific feature which has nothing whatsoever to
+> do with the FSF.
+
+This is a misunderstanding. _GNU_SOURCE is the standard way to expose
+Linux-specific functionality from POSIX header files.
+
+> The unshare() call originally _didn't_ require this define, but they
+> retroactively added the requirement in a version "upgrade" to match your man
+> page. This made me sad. It also made me prototype it myself rather than
+> expecting the header to provide it.
+
+Hmmm. I did not notice that change. Ulrich rejected my early (2007)
+request for a change
+(http://www.sourceware.org/bugzilla/show_bug.cgi?id=4749) and then
+quietly made it later (glibc 2.14, 2011).
+
+Thanks for the review, Rob.
+
+Cheers,
+
+Michael
 
 -- 
-Michal Hocko
-SUSE Labs
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Author of "The Linux Programming Interface"; http://man7.org/tlpi/
