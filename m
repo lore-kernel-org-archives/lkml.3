@@ -1,23 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754980Ab3CAUEC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 15:04:02 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51724 "EHLO
+	id S1753646Ab3CATqH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 14:46:07 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51666 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753689Ab3CATqJ (ORCPT
+	with ESMTP id S1753510Ab3CATqB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 14:46:09 -0500
+	Fri, 1 Mar 2013 14:46:01 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Xiaowei.Hu" <xiaowei.hu@oracle.com>,
-        Srinivas Eeda <srinivas.eeda@oracle.com>,
-        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 14/46] ocfs2: ac->ac_allow_chain_relink=0 wont disable group relink
-Date: Fri,  1 Mar 2013 11:45:02 -0800
-Message-Id: <20130301194433.752547780@linuxfoundation.org>
+        Joerg Roedel <joro@8bytes.org>, Shuah Khan <shuah.khan@hp.com>
+Subject: [ 03/46] iommu/amd: Initialize device table after dma_ops
+Date: Fri,  1 Mar 2013 11:44:51 -0800
+Message-Id: <20130301194432.634764528@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130301194432.263409302@linuxfoundation.org>
 References: <20130301194432.263409302@linuxfoundation.org>
@@ -30,108 +26,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Xiaowei.Hu" <xiaowei.hu@oracle.com>
+From: Joerg Roedel <joro@8bytes.org>
 
-commit 309a85b6861fedbb48a22d45e0e079d1be993b3a upstream.
+commit f528d980c17b8714aedc918ba86e058af914d66b upstream.
 
-ocfs2_block_group_alloc_discontig() disables chain relink by setting
-ac->ac_allow_chain_relink = 0 because it grabs clusters from multiple
-cluster groups.
+When dma_ops are initialized the unity mappings are
+created. The init_device_table_dma() function makes sure DMA
+from all devices is blocked by default. This opens a short
+window in time where DMA to unity mapped regions is blocked
+by the IOMMU. Make sure this does not happen by initializing
+the device table after dma_ops.
 
-It doesn't keep the credits for all chain relink,but
-ocfs2_claim_suballoc_bits overrides this in this call trace:
-ocfs2_block_group_claim_bits()->ocfs2_claim_clusters()->
-__ocfs2_claim_clusters()->ocfs2_claim_suballoc_bits()
-ocfs2_claim_suballoc_bits set ac->ac_allow_chain_relink = 1; then call
-ocfs2_search_chain() one time and disable it again, and then we run out
-of credits.
-
-Fix is to allow relink by default and disable it in
-ocfs2_block_group_alloc_discontig.
-
-Without this patch, End-users will run into a crash due to run out of
-credits, backtrace like this:
-
-  RIP: 0010:[<ffffffffa0808b14>]  [<ffffffffa0808b14>]
-  jbd2_journal_dirty_metadata+0x164/0x170 [jbd2]
-  RSP: 0018:ffff8801b919b5b8  EFLAGS: 00010246
-  RAX: 0000000000000000 RBX: ffff88022139ddc0 RCX: ffff880159f652d0
-  RDX: ffff880178aa3000 RSI: ffff880159f652d0 RDI: ffff880087f09bf8
-  RBP: ffff8801b919b5e8 R08: 0000000000000000 R09: 0000000000000000
-  R10: 0000000000001e00 R11: 00000000000150b0 R12: ffff880159f652d0
-  R13: ffff8801a0cae908 R14: ffff880087f09bf8 R15: ffff88018d177800
-  FS:  00007fc9b0b6b6e0(0000) GS:ffff88022fd40000(0000) knlGS:0000000000000000
-  CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-  CR2: 000000000040819c CR3: 0000000184017000 CR4: 00000000000006e0
-  DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-  DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-  Process dd (pid: 9945, threadinfo ffff8801b919a000, task ffff880149a264c0)
-  Call Trace:
-    ocfs2_journal_dirty+0x2f/0x70 [ocfs2]
-    ocfs2_relink_block_group+0x111/0x480 [ocfs2]
-    ocfs2_search_chain+0x455/0x9a0 [ocfs2]
-    ...
-
-Signed-off-by: Xiaowei.Hu <xiaowei.hu@oracle.com>
-Reviewed-by: Srinivas Eeda <srinivas.eeda@oracle.com>
-Cc: Mark Fasheh <mfasheh@suse.com>
-Cc: Joel Becker <jlbec@evilplan.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Joerg Roedel <joro@8bytes.org>
+Signed-off-by: Shuah Khan <shuah.khan@hp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ocfs2/suballoc.c |    7 +++----
- fs/ocfs2/suballoc.h |    2 +-
- 2 files changed, 4 insertions(+), 5 deletions(-)
+ drivers/iommu/amd_iommu_init.c |    9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
 
---- a/fs/ocfs2/suballoc.c
-+++ b/fs/ocfs2/suballoc.c
-@@ -642,7 +642,7 @@ ocfs2_block_group_alloc_discontig(handle
- 	 * cluster groups will be staying in cache for the duration of
- 	 * this operation.
- 	 */
--	ac->ac_allow_chain_relink = 0;
-+	ac->ac_disable_chain_relink = 1;
+--- a/drivers/iommu/amd_iommu_init.c
++++ b/drivers/iommu/amd_iommu_init.c
+@@ -1572,8 +1572,6 @@ int __init amd_iommu_init_hardware(void)
+ 	if (amd_iommu_pd_alloc_bitmap == NULL)
+ 		goto free;
  
- 	/* Claim the first region */
- 	status = ocfs2_block_group_claim_bits(osb, handle, ac, min_bits,
-@@ -1823,7 +1823,7 @@ static int ocfs2_search_chain(struct ocf
- 	 * Do this *after* figuring out how many bits we're taking out
- 	 * of our target group.
- 	 */
--	if (ac->ac_allow_chain_relink &&
-+	if (!ac->ac_disable_chain_relink &&
- 	    (prev_group_bh) &&
- 	    (ocfs2_block_group_reasonably_empty(bg, res->sr_bits))) {
- 		status = ocfs2_relink_block_group(handle, alloc_inode,
-@@ -1928,7 +1928,6 @@ static int ocfs2_claim_suballoc_bits(str
+-	/* init the device table */
+-	init_device_table();
  
- 	victim = ocfs2_find_victim_chain(cl);
- 	ac->ac_chain = victim;
--	ac->ac_allow_chain_relink = 1;
+ 	/*
+ 	 * let all alias entries point to itself
+@@ -1655,6 +1653,7 @@ out:
+  */
+ static int __init amd_iommu_init(void)
+ {
++	struct amd_iommu *iommu;
+ 	int ret = 0;
  
- 	status = ocfs2_search_chain(ac, handle, bits_wanted, min_bits,
- 				    res, &bits_left);
-@@ -1947,7 +1946,7 @@ static int ocfs2_claim_suballoc_bits(str
- 	 * searching each chain in order. Don't allow chain relinking
- 	 * because we only calculate enough journal credits for one
- 	 * relink per alloc. */
--	ac->ac_allow_chain_relink = 0;
-+	ac->ac_disable_chain_relink = 1;
- 	for (i = 0; i < le16_to_cpu(cl->cl_next_free_rec); i ++) {
- 		if (i == victim)
- 			continue;
---- a/fs/ocfs2/suballoc.h
-+++ b/fs/ocfs2/suballoc.h
-@@ -49,7 +49,7 @@ struct ocfs2_alloc_context {
+ 	ret = amd_iommu_init_hardware();
+@@ -1673,6 +1672,12 @@ static int __init amd_iommu_init(void)
+ 	if (ret)
+ 		goto free;
  
- 	/* these are used by the chain search */
- 	u16    ac_chain;
--	int    ac_allow_chain_relink;
-+	int    ac_disable_chain_relink;
- 	group_search_t *ac_group_search;
++	/* init the device table */
++	init_device_table();
++
++	for_each_iommu(iommu)
++		iommu_flush_all_caches(iommu);
++
+ 	amd_iommu_init_api();
  
- 	u64    ac_last_group;
+ 	x86_platform.iommu_shutdown = disable_iommus;
 
 
