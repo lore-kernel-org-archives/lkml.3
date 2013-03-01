@@ -1,23 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754998Ab3CAULM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 15:11:12 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51597 "EHLO
+	id S1755175Ab3CAULe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 15:11:34 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51582 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753273Ab3CATpw (ORCPT
+	with ESMTP id S1753225Ab3CATpt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 14:45:52 -0500
+	Fri, 1 Mar 2013 14:45:49 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, Andrey Isakov <andy51@gmx.ru>
-Subject: [ 60/77] workqueue: consider work function when searching for busy work items
-Date: Fri,  1 Mar 2013 11:44:45 -0800
-Message-Id: <20130301194358.287088221@linuxfoundation.org>
+        Jason Tibbitts <tibbs@math.uh.edu>,
+        =?UTF-8?q?Pawe=C5=82=20Sikora?= <pawel.sikora@agmk.net>,
+        Stanislav Kinsbursky <skinsbursky@parallels.com>,
+        "J. Bruce Fields" <bfields@redhat.com>
+Subject: [ 56/77] svcrpc: fix rpc server shutdown races
+Date: Fri,  1 Mar 2013 11:44:41 -0800
+Message-Id: <20130301194357.888045058@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130301194351.913471337@linuxfoundation.org>
 References: <20130301194351.913471337@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -26,136 +32,149 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: "J. Bruce Fields" <bfields@redhat.com>
 
-commit a2c1c57be8d9fd5b716113c8991d3d702eeacf77 upstream.
+commit cc630d9f476445927fca599f81182c7f06f79058 upstream.
 
-To avoid executing the same work item concurrenlty, workqueue hashes
-currently busy workers according to their current work items and looks
-up the the table when it wants to execute a new work item.  If there
-already is a worker which is executing the new work item, the new item
-is queued to the found worker so that it gets executed only after the
-current execution finishes.
+Rewrite server shutdown to remove the assumption that there are no
+longer any threads running (no longer true, for example, when shutting
+down the service in one network namespace while it's still running in
+others).
 
-Unfortunately, a work item may be freed while being executed and thus
-recycled for different purposes.  If it gets recycled for a different
-work item and queued while the previous execution is still in
-progress, workqueue may make the new work item wait for the old one
-although the two aren't really related in any way.
+Do that by doing what we'd do in normal circumstances: just CLOSE each
+socket, then enqueue it.
 
-In extreme cases, this false dependency may lead to deadlock although
-it's extremely unlikely given that there aren't too many self-freeing
-work item users and they usually don't wait for other work items.
+Since there may not be threads to handle the resulting queued xprts,
+also run a simplified version of the svc_recv() loop run by a server to
+clean up any closed xprts afterwards.
 
-To alleviate the problem, record the current work function in each
-busy worker and match it together with the work item address in
-find_worker_executing_work().  While this isn't complete, it ensures
-that unrelated work items don't interact with each other and in the
-very unlikely case where a twisted wq user triggers it, it's always
-onto itself making the culprit easy to spot.
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: Andrey Isakov <andy51@gmx.ru>
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=51701
-Cc: stable@vger.kernel.org
+Tested-by: Jason Tibbitts <tibbs@math.uh.edu>
+Tested-by: Paweł Sikora <pawel.sikora@agmk.net>
+Acked-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/workqueue.c |   36 +++++++++++++++++++++++++++++-------
- 1 file changed, 29 insertions(+), 7 deletions(-)
+ net/sunrpc/svc.c      |    9 -------
+ net/sunrpc/svc_xprt.c |   57 ++++++++++++++++++++++++++++----------------------
+ 2 files changed, 32 insertions(+), 34 deletions(-)
 
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -138,6 +138,7 @@ struct worker {
- 	};
+--- a/net/sunrpc/svc.c
++++ b/net/sunrpc/svc.c
+@@ -515,15 +515,6 @@ EXPORT_SYMBOL_GPL(svc_create_pooled);
  
- 	struct work_struct	*current_work;	/* L: work being processed */
-+	work_func_t		current_func;	/* L: current_work's fn */
- 	struct cpu_workqueue_struct *current_cwq; /* L: current_work's cwq */
- 	struct list_head	scheduled;	/* L: scheduled works */
- 	struct task_struct	*task;		/* I: worker task */
-@@ -910,7 +911,8 @@ static struct worker *__find_worker_exec
- 	struct hlist_node *tmp;
+ void svc_shutdown_net(struct svc_serv *serv, struct net *net)
+ {
+-	/*
+-	 * The set of xprts (contained in the sv_tempsocks and
+-	 * sv_permsocks lists) is now constant, since it is modified
+-	 * only by accepting new sockets (done by service threads in
+-	 * svc_recv) or aging old ones (done by sv_temptimer), or
+-	 * configuration changes (excluded by whatever locking the
+-	 * caller is using--nfsd_mutex in the case of nfsd).  So it's
+-	 * safe to traverse those lists and shut everything down:
+-	 */
+ 	svc_close_net(serv, net);
  
- 	hlist_for_each_entry(worker, tmp, bwh, hentry)
--		if (worker->current_work == work)
-+		if (worker->current_work == work &&
-+		    worker->current_func == work->func)
- 			return worker;
- 	return NULL;
+ 	if (serv->sv_shutdown)
+--- a/net/sunrpc/svc_xprt.c
++++ b/net/sunrpc/svc_xprt.c
+@@ -948,21 +948,24 @@ void svc_close_xprt(struct svc_xprt *xpr
  }
-@@ -920,9 +922,27 @@ static struct worker *__find_worker_exec
-  * @gcwq: gcwq of interest
-  * @work: work to find worker for
-  *
-- * Find a worker which is executing @work on @gcwq.  This function is
-- * identical to __find_worker_executing_work() except that this
-- * function calculates @bwh itself.
-+ * Find a worker which is executing @work on @gcwq by searching
-+ * @gcwq->busy_hash which is keyed by the address of @work.  For a worker
-+ * to match, its current execution should match the address of @work and
-+ * its work function.  This is to avoid unwanted dependency between
-+ * unrelated work executions through a work item being recycled while still
-+ * being executed.
-+ *
-+ * This is a bit tricky.  A work item may be freed once its execution
-+ * starts and nothing prevents the freed area from being recycled for
-+ * another work item.  If the same work item address ends up being reused
-+ * before the original execution finishes, workqueue will identify the
-+ * recycled work item as currently executing and make it wait until the
-+ * current execution finishes, introducing an unwanted dependency.
-+ *
-+ * This function checks the work item address, work function and workqueue
-+ * to avoid false positives.  Note that this isn't complete as one may
-+ * construct a work function which can introduce dependency onto itself
-+ * through a recycled work item.  Well, if somebody wants to shoot oneself
-+ * in the foot that badly, there's only so much we can do, and if such
-+ * deadlock actually occurs, it should be easy to locate the culprit work
-+ * function.
-  *
-  * CONTEXT:
-  * spin_lock_irq(gcwq->lock).
-@@ -2168,7 +2188,6 @@ __acquires(&gcwq->lock)
- 	struct global_cwq *gcwq = pool->gcwq;
- 	struct hlist_head *bwh = busy_worker_head(gcwq, work);
- 	bool cpu_intensive = cwq->wq->flags & WQ_CPU_INTENSIVE;
--	work_func_t f = work->func;
- 	int work_color;
- 	struct worker *collision;
- #ifdef CONFIG_LOCKDEP
-@@ -2208,6 +2227,7 @@ __acquires(&gcwq->lock)
- 	debug_work_deactivate(work);
- 	hlist_add_head(&worker->hentry, bwh);
- 	worker->current_work = work;
-+	worker->current_func = work->func;
- 	worker->current_cwq = cwq;
- 	work_color = get_work_color(work);
+ EXPORT_SYMBOL_GPL(svc_close_xprt);
  
-@@ -2240,7 +2260,7 @@ __acquires(&gcwq->lock)
- 	lock_map_acquire_read(&cwq->wq->lockdep_map);
- 	lock_map_acquire(&lockdep_map);
- 	trace_workqueue_execute_start(work);
--	f(work);
-+	worker->current_func(work);
- 	/*
- 	 * While we must be careful to not use "work" after this, the trace
- 	 * point will only record its address.
-@@ -2252,7 +2272,8 @@ __acquires(&gcwq->lock)
- 	if (unlikely(in_atomic() || lockdep_depth(current) > 0)) {
- 		pr_err("BUG: workqueue leaked lock or atomic: %s/0x%08x/%d\n"
- 		       "     last function: %pf\n",
--		       current->comm, preempt_count(), task_pid_nr(current), f);
-+		       current->comm, preempt_count(), task_pid_nr(current),
-+		       worker->current_func);
- 		debug_show_held_locks(current);
- 		dump_stack();
+-static void svc_close_list(struct svc_serv *serv, struct list_head *xprt_list, struct net *net)
++static int svc_close_list(struct svc_serv *serv, struct list_head *xprt_list, struct net *net)
+ {
+ 	struct svc_xprt *xprt;
++	int ret = 0;
+ 
+ 	spin_lock(&serv->sv_lock);
+ 	list_for_each_entry(xprt, xprt_list, xpt_list) {
+ 		if (xprt->xpt_net != net)
+ 			continue;
++		ret++;
+ 		set_bit(XPT_CLOSE, &xprt->xpt_flags);
+-		set_bit(XPT_BUSY, &xprt->xpt_flags);
++		svc_xprt_enqueue(xprt);
  	}
-@@ -2266,6 +2287,7 @@ __acquires(&gcwq->lock)
- 	/* we're done with it, release */
- 	hlist_del_init(&worker->hentry);
- 	worker->current_work = NULL;
-+	worker->current_func = NULL;
- 	worker->current_cwq = NULL;
- 	cwq_dec_nr_in_flight(cwq, work_color);
+ 	spin_unlock(&serv->sv_lock);
++	return ret;
  }
+ 
+-static void svc_clear_pools(struct svc_serv *serv, struct net *net)
++static struct svc_xprt *svc_dequeue_net(struct svc_serv *serv, struct net *net)
+ {
+ 	struct svc_pool *pool;
+ 	struct svc_xprt *xprt;
+@@ -977,42 +980,46 @@ static void svc_clear_pools(struct svc_s
+ 			if (xprt->xpt_net != net)
+ 				continue;
+ 			list_del_init(&xprt->xpt_ready);
++			spin_unlock_bh(&pool->sp_lock);
++			return xprt;
+ 		}
+ 		spin_unlock_bh(&pool->sp_lock);
+ 	}
++	return NULL;
+ }
+ 
+-static void svc_clear_list(struct svc_serv *serv, struct list_head *xprt_list, struct net *net)
++static void svc_clean_up_xprts(struct svc_serv *serv, struct net *net)
+ {
+ 	struct svc_xprt *xprt;
+-	struct svc_xprt *tmp;
+-	LIST_HEAD(victims);
+-
+-	spin_lock(&serv->sv_lock);
+-	list_for_each_entry_safe(xprt, tmp, xprt_list, xpt_list) {
+-		if (xprt->xpt_net != net)
+-			continue;
+-		list_move(&xprt->xpt_list, &victims);
+-	}
+-	spin_unlock(&serv->sv_lock);
+ 
+-	list_for_each_entry_safe(xprt, tmp, &victims, xpt_list)
++	while ((xprt = svc_dequeue_net(serv, net))) {
++		set_bit(XPT_CLOSE, &xprt->xpt_flags);
+ 		svc_delete_xprt(xprt);
++	}
+ }
+ 
++/*
++ * Server threads may still be running (especially in the case where the
++ * service is still running in other network namespaces).
++ *
++ * So we shut down sockets the same way we would on a running server, by
++ * setting XPT_CLOSE, enqueuing, and letting a thread pick it up to do
++ * the close.  In the case there are no such other threads,
++ * threads running, svc_clean_up_xprts() does a simple version of a
++ * server's main event loop, and in the case where there are other
++ * threads, we may need to wait a little while and then check again to
++ * see if they're done.
++ */
+ void svc_close_net(struct svc_serv *serv, struct net *net)
+ {
+-	svc_close_list(serv, &serv->sv_tempsocks, net);
+-	svc_close_list(serv, &serv->sv_permsocks, net);
++	int delay = 0;
++
++	while (svc_close_list(serv, &serv->sv_permsocks, net) +
++	       svc_close_list(serv, &serv->sv_tempsocks, net)) {
+ 
+-	svc_clear_pools(serv, net);
+-	/*
+-	 * At this point the sp_sockets lists will stay empty, since
+-	 * svc_xprt_enqueue will not add new entries without taking the
+-	 * sp_lock and checking XPT_BUSY.
+-	 */
+-	svc_clear_list(serv, &serv->sv_tempsocks, net);
+-	svc_clear_list(serv, &serv->sv_permsocks, net);
++		svc_clean_up_xprts(serv, net);
++		msleep(delay++);
++	}
+ }
+ 
+ /*
 
 
