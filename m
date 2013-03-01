@@ -1,65 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752350Ab3CAMCL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 07:02:11 -0500
-Received: from eu1sys200aog119.obsmtp.com ([207.126.144.147]:59117 "EHLO
-	eu1sys200aog119.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752261Ab3CAMCK (ORCPT
+	id S1752410Ab3CAMCY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 07:02:24 -0500
+Received: from anubis.se.axis.com ([195.60.68.12]:43123 "EHLO
+	anubis.se.axis.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752206Ab3CAMCW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 07:02:10 -0500
-From: Linus Walleij <linus.walleij@stericsson.com>
-To: Grant Likely <grant.likely@secretlab.ca>, <linux-kernel@vger.kernel.org>
-Cc: Anmar Oueja <anmar.oueja@linaro.org>,
-        Gabriel Fernandez <gabriel.fernandez@stericsson.com>,
-        <stable@vger.kernel.org>, Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH] gpio: stmpe: pass DT node to irqdomain
-Date: Fri, 1 Mar 2013 13:01:42 +0100
-Message-ID: <1362139302-23048-1-git-send-email-linus.walleij@stericsson.com>
-X-Mailer: git-send-email 1.7.11.3
+	Fri, 1 Mar 2013 07:02:22 -0500
+Date: Fri, 1 Mar 2013 13:02:18 +0100
+From: Ricard Wanderlof <ricard.wanderlof@axis.com>
+X-X-Sender: ricardw@lnxricardw.se.axis.com
+To: Richard Genoud <richard.genoud@gmail.com>
+CC: "Velykokhatko, Sergey" <Sergey.Velykokhatko@mcc-med.de>,
+        "artem.bityutskiy@linux.intel.com" <artem.bityutskiy@linux.intel.com>,
+        Brian Norris <computersforpeace@gmail.com>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Bug in mtd_get_device_size()?
+In-Reply-To: <CACQ1gAg0rE+X+uxRWbrPKhmdS1T0MG00cwwBbzWM+VwU4zaXmw@mail.gmail.com>
+Message-ID: <alpine.DEB.2.00.1303011258210.26361@lnxricardw.se.axis.com>
+References: <BAF0C2081321BA469F9ADF648F97D9B04C78FA6069@MCC023.weinmann.com> <CAN8TOE9YJBvUE9GDW3krZB-Js6gUkqY23gYNLS4gFX0e2NDNZw@mail.gmail.com> <BAF0C2081321BA469F9ADF648F97D9B04C78FA6071@MCC023.weinmann.com>
+ <CACQ1gAg0rE+X+uxRWbrPKhmdS1T0MG00cwwBbzWM+VwU4zaXmw@mail.gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset="ISO-8859-15"; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Gabriel Fernandez <gabriel.fernandez@stericsson.com>
 
-The irq domain was implemented but the device tree
-node was not transmitted to irq_domain_add_simple().
+On Fri, 1 Mar 2013, Richard Genoud wrote:
 
-Cc: stable@vger.kernel.org
-Signed-off-by: Gabriel Fernandez <gabriel.fernandez@stericsson.com>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
----
- drivers/gpio/gpio-stmpe.c | 7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+> From a Micron Nand datasheet :
+> Micron NAND devices are specified to have a minimum of 2,008 (NVB)
+> valid blocks out
+> of every 2,048 total available blocks. This means the devices may have
+> blocks that are
+> invalid when they are shipped. An invalid block is one that contains
+> one or more bad
+> bits. Additional bad blocks may develop with use. However, the total
+> number of avail-
+> able blocks will not fall below NVB during the endurance life of the product.
+>
+> As there's very little information on how bad blocks appear, we can
+> suppose that even on the 1st erase cycle of a block, it can turn bad.
+> That's why we have to use the worst case scenario.
 
-diff --git a/drivers/gpio/gpio-stmpe.c b/drivers/gpio/gpio-stmpe.c
-index 770476a..73b691c 100644
---- a/drivers/gpio/gpio-stmpe.c
-+++ b/drivers/gpio/gpio-stmpe.c
-@@ -309,9 +309,11 @@ static const struct irq_domain_ops stmpe_gpio_irq_simple_ops = {
- 
- static int stmpe_gpio_irq_init(struct stmpe_gpio *stmpe_gpio)
- {
--	int base = stmpe_gpio->irq_base;
-+	int base = 0;
-+	if (!stmpe_gpio->chip.of_node)
-+		base = stmpe_gpio->irq_base;
- 
--	stmpe_gpio->domain = irq_domain_add_simple(NULL,
-+	stmpe_gpio->domain = irq_domain_add_simple(stmpe_gpio->chip.of_node,
- 				stmpe_gpio->chip.ngpio, base,
- 				&stmpe_gpio_irq_simple_ops, stmpe_gpio);
- 	if (!stmpe_gpio->domain) {
-@@ -346,6 +348,7 @@ static int stmpe_gpio_probe(struct platform_device *pdev)
- 	stmpe_gpio->chip = template_chip;
- 	stmpe_gpio->chip.ngpio = stmpe->num_gpios;
- 	stmpe_gpio->chip.dev = &pdev->dev;
-+	stmpe_gpio->chip.of_node = np;
- 	stmpe_gpio->chip.base = pdata ? pdata->gpio_base : -1;
- 
- 	if (pdata)
+I would think that the primary reason for blocks to go bad is that they 
+wear out so that they don't meet the endurance specifications. I.e., when 
+worn out, one or more bits will start to flip significantly sooner than on 
+a non-worn-out block. Wearing out is a continual process; blocks don't 
+just suddenly 'go bad'.
+
+I suppose one can imagine catastrophic failures at any time as well. I 
+have never seen this case being specifically reference in an application 
+note or white paper from a flash manufacturer though. As you say the 
+datasheets are not very forthcoming on that issue.
+
+/Ricard
 -- 
-1.7.11.3
-
+Ricard Wolf Wanderlöf                           ricardw(at)axis.com
+Axis Communications AB, Lund, Sweden            www.axis.com
+Phone +46 46 272 2016                           Fax +46 46 13 61 30
