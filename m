@@ -1,139 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752264Ab3CAA72 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 19:59:28 -0500
-Received: from mga03.intel.com ([143.182.124.21]:20514 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751183Ab3CAA71 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 19:59:27 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,758,1355126400"; 
-   d="scan'208";a="262897441"
-From: "Liu, Chuansheng" <chuansheng.liu@intel.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Alan Stern <stern@rowland.harvard.edu>, "Li, Fei" <fei.li@intel.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "Lan, Tianyu" <tianyu.lan@intel.com>,
-        "sarah.a.sharp@linux.intel.com" <sarah.a.sharp@linux.intel.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 4/5 V2] usb: call pm_runtime_put_sync in
- pm_runtime_get_sync failed case
-Thread-Topic: [PATCH 4/5 V2] usb: call pm_runtime_put_sync in
- pm_runtime_get_sync failed case
-Thread-Index: AQHOFhXVpfLUIMJT1ESqSqn94PWo1ZiQActg
-Date: Fri, 1 Mar 2013 00:59:23 +0000
-Message-ID: <27240C0AC20F114CBF8149A2696CBE4A24257F@SHSMSX101.ccr.corp.intel.com>
-References: <1362042384.6212.25.camel@fli24-HP-Compaq-8100-Elite-CMT-PC>
- <Pine.LNX.4.44L0.1302281015330.1352-100000@iolanthe.rowland.org>
- <27240C0AC20F114CBF8149A2696CBE4A24253F@SHSMSX101.ccr.corp.intel.com>
- <35852055.MkFUspWUco@vostro.rjw.lan>
-In-Reply-To: <35852055.MkFUspWUco@vostro.rjw.lan>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	id S1752690Ab3CABEL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 20:04:11 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:60273 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751052Ab3CABEK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Feb 2013 20:04:10 -0500
+Date: Fri, 1 Mar 2013 12:04:01 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: linux-next: build failure after merge of the nfsd tree
+Message-Id: <20130301120401.bcb4a3c571cb0d2b7af96a4b@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__1_Mar_2013_12_04_01_+1100_s=QuJCLBvy0noIKT"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r210xT1O018205
 
+--Signature=_Fri__1_Mar_2013_12_04_01_+1100_s=QuJCLBvy0noIKT
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+Hi all,
 
-> -----Original Message-----
-> From: Rafael J. Wysocki [mailto:rjw@sisk.pl]
-> Sent: Friday, March 01, 2013 8:51 AM
-> To: Liu, Chuansheng
-> Cc: Alan Stern; Li, Fei; gregkh@linuxfoundation.org; Lan, Tianyu;
-> sarah.a.sharp@linux.intel.com; linux-usb@vger.kernel.org;
-> linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH 4/5 V2] usb: call pm_runtime_put_sync in
-> pm_runtime_get_sync failed case
-> 
-> On Friday, March 01, 2013 12:38:07 AM Liu, Chuansheng wrote:
-> >
-> > > -----Original Message-----
-> > > From: Alan Stern [mailto:stern@rowland.harvard.edu]
-> > > Sent: Thursday, February 28, 2013 11:17 PM
-> > > To: Li, Fei
-> > > Cc: gregkh@linuxfoundation.org; Lan, Tianyu;
-> sarah.a.sharp@linux.intel.com;
-> > > rjw@sisk.pl; linux-usb@vger.kernel.org; linux-kernel@vger.kernel.org; Liu,
-> > > Chuansheng
-> > > Subject: Re: [PATCH 4/5 V2] usb: call pm_runtime_put_sync in
-> > > pm_runtime_get_sync failed case
-> > >
-> > > On Thu, 28 Feb 2013, Li Fei wrote:
-> > >
-> > > >
-> > > > Even in failed case of pm_runtime_get_sync, the usage_count
-> > > > is incremented. In order to keep the usage_count with correct
-> > > > value and runtime power management to behave correctly, call
-> > > > pm_runtime_put(_sync) in such case.
-> > > >
-> > > > Signed-off-by Liu Chuansheng <chuansheng.liu@intel.com>
-> > > > Signed-off-by: Li Fei <fei.li@intel.com>
-> > > > ---
-> > > >  drivers/usb/core/hub.c |    3 ++-
-> > > >  1 files changed, 2 insertions(+), 1 deletions(-)
-> > > >
-> > > > diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
-> > > > index 5480352..f72dede 100644
-> > > > --- a/drivers/usb/core/hub.c
-> > > > +++ b/drivers/usb/core/hub.c
-> > > > @@ -3148,12 +3148,13 @@ int usb_port_resume(struct usb_device
-> *udev,
-> > > pm_message_t msg)
-> > > >
-> > > >  	if (port_dev->did_runtime_put) {
-> > > >  		status = pm_runtime_get_sync(&port_dev->dev);
-> > > > -		port_dev->did_runtime_put = false;
-> > > >  		if (status < 0) {
-> > > >  			dev_dbg(&udev->dev, "can't resume usb port,
-> status %d\n",
-> > > >  					status);
-> > > > +			pm_runtime_put_sync(&port_dev->dev);
-> > > >  			return status;
-> > > >  		}
-> > > > +		port_dev->did_runtime_put = false;
-> > > >  	}
-> > >
-> > > I don't see much point in this.  After a failed resume, the port's
-> > > runtime PM status is undefined.  Whether or not you do a
-> > > pm_runtime_put_sync won't make any difference.
-> > In case of failed resume, calling pm_runtime_put_sync() is just for decrease
-> the dev->power.usage_count,
-> > because pm_runtime_get_sync() always increase the
-> dev->power.usage_count even failed.
-> >
-> > If not pairing runtime_get/put, after that case, the device can not enter
-> runtime suspend any more due to dev->power.usage_count > 0 always.
-> > Is it making sense?
-> 
-> Well, not really.
-> 
-> Before returning an error code, rpm_callback() assigns that code to
-> dev->power.runtime_error and that will effectively disable runtime PM for dev
-> going forward anyway.
-Thanks your pointing out.
-dev->power.runtime_error!=0 will really block the runtime PM resume/suspend to continue.
+After merging the nfsd tree, today's linux-next build (powerpc
+ppc64_defconfig) failed like this:
 
-But in case of rpm_resume return error when dev->power.disable_depth > 0, the dev->power.runtime_error
-is not set yet. Is it the case? Thanks your comments again.
+net/sunrpc/xprtsock.c:1923:30: error: 'struct rpc_task' has no member named=
+ 'tk_xprt'
 
-And another case is when user called pm_runtime_set_status to clear the runtime_error after dev->power.runtime_error
-is set during pm_runtime_get_sync(), the runtime_resume/suspend() can be tried again? But the dev->power.usage_count is still wrong?
-Thanks your correction again:)
-> 
-> Thanks,
-> Rafael
-> 
-> 
-> --
-> I speak only for myself.
-> Rafael J. Wysocki, Intel Open Source Technology Center.
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+Caused by commit dc107402ae06 ("SUNRPC: make AF_LOCAL connect
+synchronous") interacting with commit 77102893ae68 ("SUNRPC: Nuke the
+tk_xprt macro") from Linus' tree.
+
+I have no idea how to fix this, so I have used the version of the nfsd
+tree from next-20130228 for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Fri__1_Mar_2013_12_04_01_+1100_s=QuJCLBvy0noIKT
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRL/6BAAoJEECxmPOUX5FETYcP/R9Uwofv3E0CHDl8qTSpl/bu
+2YPgKANTZgOOt+hyHRFsNRCSn9tIZQTt/qEFv4hBXcUbyiBM6LY4f/et/BPzl3+F
+gzHHwXY89sqi4emH8BufhVPs28PtMUKn/0X9/aQTuWRIiXbvhstb49Sr7PYItUWw
+khjujgsVFvCi+UNrsR6A5fq2wZ4dxvssFt0hbMRJVI2khAw7dc9+90n8WbiVBNLP
+jaCJKBMXKtM6tye4QRHHnk+2wt8wPLfpUX4tjxM6Ga2Q4Nl1vQ+mlQUh/B+hKC04
+ITZcwLyGaLzlcsSd+8UkxYDnrU/goXllO64v/vP0DzvzD1JAXbPh/Lo8I/7o1ROs
+Q8XeQo3ZIDcUwExAerQx5p5E5Q+9ozSpSi6IrDCew/y+PgL8BM7aMSdQQXpXdbJm
+o0RG1m3L5w2BA0OLWEC0y+pVghdP/Km7OM4YrRxa/8dcFC43FqdbzZJyYRmRlvym
+hVojSt2hzaHJJjLsYGYG7JgcbpS2eB6Gs8Du7QP5PCzfLwPGbze0LQem2ZYplj0E
+HoRVbN2oz4WqR5bKyFEQ2aaq/mZKWmb5WlA4XNMO4IO++n9vbVxNN0JnPcrA8PHZ
+MSAlZCsm+qPYMYLJ/Dk/R677nPLmo1bEP6yypudZ6Q4RG45UliIJ/ul/tN7fVaAA
+TR02AYaPZVRx5wMDKFjy
+=GhEI
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__1_Mar_2013_12_04_01_+1100_s=QuJCLBvy0noIKT--
