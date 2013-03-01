@@ -1,27 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753327Ab3CATpx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 14:45:53 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51592 "EHLO
+	id S1753246Ab3CATpu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 14:45:50 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51568 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753257Ab3CATpv (ORCPT
+	with ESMTP id S1753136Ab3CATpr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 14:45:51 -0500
+	Fri, 1 Mar 2013 14:45:47 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Fernando Luis Vazquez Cao <fernando@oss.ntt.co.jp>,
-        Jiri Kosina <jkosina@suse.cz>
-Subject: [ 58/77] HID: clean up quirk for Sony RF receivers
-Date: Fri,  1 Mar 2013 11:44:43 -0800
-Message-Id: <20130301194358.088642415@linuxfoundation.org>
+        Lukas Czerner <lczerner@redhat.com>, "Theodore Tso" <tytso@mit.edu>
+Subject: [ 53/77] ext4: fix free clusters calculation in bigalloc filesystem
+Date: Fri,  1 Mar 2013 11:44:38 -0800
+Message-Id: <20130301194357.575782442@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130301194351.913471337@linuxfoundation.org>
 References: <20130301194351.913471337@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,45 +26,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Fernando Luis Vázquez Cao <fernando_b1@lab.ntt.co.jp>
+From: Lukas Czerner <lczerner@redhat.com>
 
-commit 99d249021abd4341771523ed8dd7946276103432 upstream.
+commit 304e220f0879198b1f5309ad6f0be862b4009491 upstream.
 
-Document what the fix-up is does and make it more robust by ensuring
-that it is only applied to the USB interface that corresponds to the
-mouse (sony_report_fixup() is called once per interface during probing).
+ext4_has_free_clusters() should tell us whether there is enough free
+clusters to allocate, however number of free clusters in the file system
+is converted to blocks using EXT4_C2B() which is not only wrong use of
+the macro (we should have used EXT4_NUM_B2C) but it's also completely
+wrong concept since everything else is in cluster units.
 
-Signed-off-by: Fernando Luis Vazquez Cao <fernando@oss.ntt.co.jp>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Moreover when calculating number of root clusters we should be using
+macro EXT4_NUM_B2C() instead of EXT4_B2C() otherwise the result might be
+off by one. However r_blocks_count should always be a multiple of the
+cluster ratio so doing a plain bit shift should be enough here. We
+avoid using EXT4_B2C() because it's confusing.
+
+As a result of the first problem number of free clusters is much bigger
+than it should have been and ext4_has_free_clusters() would return 1 even
+if there is really not enough free clusters available.
+
+Fix this by removing the EXT4_C2B() conversion of free clusters and
+using bit shift when calculating number of root clusters. This bug
+affects number of xfstests tests covering file system ENOSPC situation
+handling. With this patch most of the ENOSPC problems with bigalloc file
+system disappear, especially the errors caused by delayed allocation not
+having enough space when the actual allocation is finally requested.
+
+Signed-off-by: Lukas Czerner <lczerner@redhat.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hid/hid-sony.c |   14 ++++++++++++--
- 1 file changed, 12 insertions(+), 2 deletions(-)
+ fs/ext4/balloc.c |    9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
 
---- a/drivers/hid/hid-sony.c
-+++ b/drivers/hid/hid-sony.c
-@@ -43,9 +43,19 @@ static __u8 *sony_report_fixup(struct hi
- {
- 	struct sony_sc *sc = hid_get_drvdata(hdev);
+--- a/fs/ext4/balloc.c
++++ b/fs/ext4/balloc.c
+@@ -484,11 +484,16 @@ static int ext4_has_free_clusters(struct
  
--	if ((sc->quirks & VAIO_RDESC_CONSTANT) &&
--			*rsize >= 56 && rdesc[54] == 0x81 && rdesc[55] == 0x07) {
+ 	free_clusters  = percpu_counter_read_positive(fcc);
+ 	dirty_clusters = percpu_counter_read_positive(dcc);
+-	root_clusters = EXT4_B2C(sbi, ext4_r_blocks_count(sbi->s_es));
++
 +	/*
-+	 * Some Sony RF receivers wrongly declare the mouse pointer as a
-+	 * a constant non-data variable.
++	 * r_blocks_count should always be multiple of the cluster ratio so
++	 * we are safe to do a plane bit shift only.
 +	 */
-+	if ((sc->quirks & VAIO_RDESC_CONSTANT) && *rsize >= 56 &&
-+	    /* usage page: generic desktop controls */
-+	    /* rdesc[0] == 0x05 && rdesc[1] == 0x01 && */
-+	    /* usage: mouse */
-+	    rdesc[2] == 0x09 && rdesc[3] == 0x02 &&
-+	    /* input (usage page for x,y axes): constant, variable, relative */
-+	    rdesc[54] == 0x81 && rdesc[55] == 0x07) {
- 		hid_info(hdev, "Fixing up Sony RF Receiver report descriptor\n");
-+		/* input: data, variable, relative */
- 		rdesc[55] = 0x06;
- 	}
++	root_clusters = ext4_r_blocks_count(sbi->s_es) >> sbi->s_cluster_bits;
  
+ 	if (free_clusters - (nclusters + root_clusters + dirty_clusters) <
+ 					EXT4_FREECLUSTERS_WATERMARK) {
+-		free_clusters  = EXT4_C2B(sbi, percpu_counter_sum_positive(fcc));
++		free_clusters  = percpu_counter_sum_positive(fcc);
+ 		dirty_clusters = percpu_counter_sum_positive(dcc);
+ 	}
+ 	/* Check whether we have space after accounting for current
 
 
