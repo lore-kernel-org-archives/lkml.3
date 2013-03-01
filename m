@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754972Ab3CAUKx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 15:10:53 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51603 "EHLO
+	id S1754998Ab3CAULM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 15:11:12 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51597 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753294Ab3CATpx (ORCPT
+	with ESMTP id S1753273Ab3CATpw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 14:45:53 -0500
+	Fri, 1 Mar 2013 14:45:52 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Seiji Aguchi <seiji.aguchi@hds.com>, Don Zickus <dzickus@redhat.com>,
-        Tony Luck <tony.luck@intel.com>, CAI Qian <caiqian@redhat.com>
-Subject: [ 61/77] pstore: Avoid deadlock in panic and emergency-restart path
-Date: Fri,  1 Mar 2013 11:44:46 -0800
-Message-Id: <20130301194358.383669505@linuxfoundation.org>
+        Tejun Heo <tj@kernel.org>, Andrey Isakov <andy51@gmx.ru>
+Subject: [ 60/77] workqueue: consider work function when searching for busy work items
+Date: Fri,  1 Mar 2013 11:44:45 -0800
+Message-Id: <20130301194358.287088221@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130301194351.913471337@linuxfoundation.org>
 References: <20130301194351.913471337@linuxfoundation.org>
@@ -27,149 +26,136 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Seiji Aguchi <seiji.aguchi@hds.com>
+From: Tejun Heo <tj@kernel.org>
 
-commit 9f244e9cfd70c7c0f82d3c92ce772ab2a92d9f64 upstream.
+commit a2c1c57be8d9fd5b716113c8991d3d702eeacf77 upstream.
 
-[Issue]
+To avoid executing the same work item concurrenlty, workqueue hashes
+currently busy workers according to their current work items and looks
+up the the table when it wants to execute a new work item.  If there
+already is a worker which is executing the new work item, the new item
+is queued to the found worker so that it gets executed only after the
+current execution finishes.
 
-When pstore is in panic and emergency-restart paths, it may be blocked
-in those paths because it simply takes spin_lock.
+Unfortunately, a work item may be freed while being executed and thus
+recycled for different purposes.  If it gets recycled for a different
+work item and queued while the previous execution is still in
+progress, workqueue may make the new work item wait for the old one
+although the two aren't really related in any way.
 
-This is an example scenario which pstore may hang up in a panic path:
+In extreme cases, this false dependency may lead to deadlock although
+it's extremely unlikely given that there aren't too many self-freeing
+work item users and they usually don't wait for other work items.
 
- - cpuA grabs psinfo->buf_lock
- - cpuB panics and calls smp_send_stop
- - smp_send_stop sends IRQ to cpuA
- - after 1 second, cpuB gives up on cpuA and sends an NMI instead
- - cpuA is now in an NMI handler while still holding buf_lock
- - cpuB is deadlocked
+To alleviate the problem, record the current work function in each
+busy worker and match it together with the work item address in
+find_worker_executing_work().  While this isn't complete, it ensures
+that unrelated work items don't interact with each other and in the
+very unlikely case where a twisted wq user triggers it, it's always
+onto itself making the culprit easy to spot.
 
-This case may happen if a firmware has a bug and
-cpuA is stuck talking with it more than one second.
-
-Also, this is a similar scenario in an emergency-restart path:
-
- - cpuA grabs psinfo->buf_lock and stucks in a firmware
- - cpuB kicks emergency-restart via either sysrq-b or hangcheck timer.
-   And then, cpuB is deadlocked by taking psinfo->buf_lock again.
-
-[Solution]
-
-This patch avoids the deadlocking issues in both panic and emergency_restart
-paths by introducing a function, is_non_blocking_path(), to check if a cpu
-can be blocked in current path.
-
-With this patch, pstore is not blocked even if another cpu has
-taken a spin_lock, in those paths by changing from spin_lock_irqsave
-to spin_trylock_irqsave.
-
-In addition, according to a comment of emergency_restart() in kernel/sys.c,
-spin_lock shouldn't be taken in an emergency_restart path to avoid
-deadlock. This patch fits the comment below.
-
-<snip>
-/**
- *      emergency_restart - reboot the system
- *
- *      Without shutting down any hardware or taking any locks
- *      reboot the system.  This is called when we know we are in
- *      trouble so this is our best effort to reboot.  This is
- *      safe to call in interrupt context.
- */
-void emergency_restart(void)
-<snip>
-
-Signed-off-by: Seiji Aguchi <seiji.aguchi@hds.com>
-Acked-by: Don Zickus <dzickus@redhat.com>
-Signed-off-by: Tony Luck <tony.luck@intel.com>
-Cc: CAI Qian <caiqian@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: Andrey Isakov <andy51@gmx.ru>
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=51701
+Cc: stable@vger.kernel.org
 
 ---
- fs/pstore/platform.c   |   35 +++++++++++++++++++++++++++++------
- include/linux/pstore.h |    6 ++++++
- 2 files changed, 35 insertions(+), 6 deletions(-)
+ kernel/workqueue.c |   36 +++++++++++++++++++++++++++++-------
+ 1 file changed, 29 insertions(+), 7 deletions(-)
 
---- a/fs/pstore/platform.c
-+++ b/fs/pstore/platform.c
-@@ -96,6 +96,27 @@ static const char *get_reason_str(enum k
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -138,6 +138,7 @@ struct worker {
+ 	};
+ 
+ 	struct work_struct	*current_work;	/* L: work being processed */
++	work_func_t		current_func;	/* L: current_work's fn */
+ 	struct cpu_workqueue_struct *current_cwq; /* L: current_work's cwq */
+ 	struct list_head	scheduled;	/* L: scheduled works */
+ 	struct task_struct	*task;		/* I: worker task */
+@@ -910,7 +911,8 @@ static struct worker *__find_worker_exec
+ 	struct hlist_node *tmp;
+ 
+ 	hlist_for_each_entry(worker, tmp, bwh, hentry)
+-		if (worker->current_work == work)
++		if (worker->current_work == work &&
++		    worker->current_func == work->func)
+ 			return worker;
+ 	return NULL;
+ }
+@@ -920,9 +922,27 @@ static struct worker *__find_worker_exec
+  * @gcwq: gcwq of interest
+  * @work: work to find worker for
+  *
+- * Find a worker which is executing @work on @gcwq.  This function is
+- * identical to __find_worker_executing_work() except that this
+- * function calculates @bwh itself.
++ * Find a worker which is executing @work on @gcwq by searching
++ * @gcwq->busy_hash which is keyed by the address of @work.  For a worker
++ * to match, its current execution should match the address of @work and
++ * its work function.  This is to avoid unwanted dependency between
++ * unrelated work executions through a work item being recycled while still
++ * being executed.
++ *
++ * This is a bit tricky.  A work item may be freed once its execution
++ * starts and nothing prevents the freed area from being recycled for
++ * another work item.  If the same work item address ends up being reused
++ * before the original execution finishes, workqueue will identify the
++ * recycled work item as currently executing and make it wait until the
++ * current execution finishes, introducing an unwanted dependency.
++ *
++ * This function checks the work item address, work function and workqueue
++ * to avoid false positives.  Note that this isn't complete as one may
++ * construct a work function which can introduce dependency onto itself
++ * through a recycled work item.  Well, if somebody wants to shoot oneself
++ * in the foot that badly, there's only so much we can do, and if such
++ * deadlock actually occurs, it should be easy to locate the culprit work
++ * function.
+  *
+  * CONTEXT:
+  * spin_lock_irq(gcwq->lock).
+@@ -2168,7 +2188,6 @@ __acquires(&gcwq->lock)
+ 	struct global_cwq *gcwq = pool->gcwq;
+ 	struct hlist_head *bwh = busy_worker_head(gcwq, work);
+ 	bool cpu_intensive = cwq->wq->flags & WQ_CPU_INTENSIVE;
+-	work_func_t f = work->func;
+ 	int work_color;
+ 	struct worker *collision;
+ #ifdef CONFIG_LOCKDEP
+@@ -2208,6 +2227,7 @@ __acquires(&gcwq->lock)
+ 	debug_work_deactivate(work);
+ 	hlist_add_head(&worker->hentry, bwh);
+ 	worker->current_work = work;
++	worker->current_func = work->func;
+ 	worker->current_cwq = cwq;
+ 	work_color = get_work_color(work);
+ 
+@@ -2240,7 +2260,7 @@ __acquires(&gcwq->lock)
+ 	lock_map_acquire_read(&cwq->wq->lockdep_map);
+ 	lock_map_acquire(&lockdep_map);
+ 	trace_workqueue_execute_start(work);
+-	f(work);
++	worker->current_func(work);
+ 	/*
+ 	 * While we must be careful to not use "work" after this, the trace
+ 	 * point will only record its address.
+@@ -2252,7 +2272,8 @@ __acquires(&gcwq->lock)
+ 	if (unlikely(in_atomic() || lockdep_depth(current) > 0)) {
+ 		pr_err("BUG: workqueue leaked lock or atomic: %s/0x%08x/%d\n"
+ 		       "     last function: %pf\n",
+-		       current->comm, preempt_count(), task_pid_nr(current), f);
++		       current->comm, preempt_count(), task_pid_nr(current),
++		       worker->current_func);
+ 		debug_show_held_locks(current);
+ 		dump_stack();
  	}
+@@ -2266,6 +2287,7 @@ __acquires(&gcwq->lock)
+ 	/* we're done with it, release */
+ 	hlist_del_init(&worker->hentry);
+ 	worker->current_work = NULL;
++	worker->current_func = NULL;
+ 	worker->current_cwq = NULL;
+ 	cwq_dec_nr_in_flight(cwq, work_color);
  }
- 
-+bool pstore_cannot_block_path(enum kmsg_dump_reason reason)
-+{
-+	/*
-+	 * In case of NMI path, pstore shouldn't be blocked
-+	 * regardless of reason.
-+	 */
-+	if (in_nmi())
-+		return true;
-+
-+	switch (reason) {
-+	/* In panic case, other cpus are stopped by smp_send_stop(). */
-+	case KMSG_DUMP_PANIC:
-+	/* Emergency restart shouldn't be blocked by spin lock. */
-+	case KMSG_DUMP_EMERG:
-+		return true;
-+	default:
-+		return false;
-+	}
-+}
-+EXPORT_SYMBOL_GPL(pstore_cannot_block_path);
-+
- /*
-  * callback from kmsg_dump. (s2,l2) has the most recently
-  * written bytes, older bytes are in (s1,l1). Save as much
-@@ -114,10 +135,12 @@ static void pstore_dump(struct kmsg_dump
- 
- 	why = get_reason_str(reason);
- 
--	if (in_nmi()) {
--		is_locked = spin_trylock(&psinfo->buf_lock);
--		if (!is_locked)
--			pr_err("pstore dump routine blocked in NMI, may corrupt error record\n");
-+	if (pstore_cannot_block_path(reason)) {
-+		is_locked = spin_trylock_irqsave(&psinfo->buf_lock, flags);
-+		if (!is_locked) {
-+			pr_err("pstore dump routine blocked in %s path, may corrupt error record\n"
-+				       , in_nmi() ? "NMI" : why);
-+		}
- 	} else
- 		spin_lock_irqsave(&psinfo->buf_lock, flags);
- 	oopscount++;
-@@ -143,9 +166,9 @@ static void pstore_dump(struct kmsg_dump
- 		total += hsize + len;
- 		part++;
- 	}
--	if (in_nmi()) {
-+	if (pstore_cannot_block_path(reason)) {
- 		if (is_locked)
--			spin_unlock(&psinfo->buf_lock);
-+			spin_unlock_irqrestore(&psinfo->buf_lock, flags);
- 	} else
- 		spin_unlock_irqrestore(&psinfo->buf_lock, flags);
- }
---- a/include/linux/pstore.h
-+++ b/include/linux/pstore.h
-@@ -68,12 +68,18 @@ struct pstore_info {
- 
- #ifdef CONFIG_PSTORE
- extern int pstore_register(struct pstore_info *);
-+extern bool pstore_cannot_block_path(enum kmsg_dump_reason reason);
- #else
- static inline int
- pstore_register(struct pstore_info *psi)
- {
- 	return -ENODEV;
- }
-+static inline bool
-+pstore_cannot_block_path(enum kmsg_dump_reason reason)
-+{
-+	return false;
-+}
- #endif
- 
- #endif /*_LINUX_PSTORE_H*/
 
 
