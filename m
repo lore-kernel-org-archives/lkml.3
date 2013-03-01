@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754156Ab3CATq3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 14:46:29 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51905 "EHLO
+	id S1754342Ab3CAT5M (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 14:57:12 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51921 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754065Ab3CATq0 (ORCPT
+	with ESMTP id S1754146Ab3CATq3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 14:46:26 -0500
+	Fri, 1 Mar 2013 14:46:29 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Li Zefan <lizefan@huawei.com>, Tejun Heo <tj@kernel.org>
-Subject: [ 36/46] cgroup: fix exit() vs rmdir() race
-Date: Fri,  1 Mar 2013 11:45:24 -0800
-Message-Id: <20130301194436.081508459@linuxfoundation.org>
+        Ian Abbott <abbotti@mev.co.uk>
+Subject: [ 40/46] staging: comedi: ni_labpc: correct differential channel sequence for AI commands
+Date: Fri,  1 Mar 2013 11:45:28 -0800
+Message-Id: <20130301194436.462679780@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130301194432.263409302@linuxfoundation.org>
 References: <20130301194432.263409302@linuxfoundation.org>
@@ -26,55 +26,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Li Zefan <lizefan@huawei.com>
+From: Ian Abbott <abbotti@mev.co.uk>
 
-commit 71b5707e119653039e6e95213f00479668c79b75 upstream.
+Commit 4c4bc25d0fa6beaf054c0b4c3b324487f266c820 upstream.
 
-In cgroup_exit() put_css_set_taskexit() is called without any lock,
-which might lead to accessing a freed cgroup:
+Tuomas <tvainikk _at_ gmail _dot_ com> reported problems getting
+meaningful output from a Lab-PC+ in differential mode for AI cmds, but
+AI insn reads gave correct readings.  He tracked it down to two
+problems, one of which is addressed by this patch.
 
-thread1                           thread2
----------------------------------------------
-exit()
-  cgroup_exit()
-    put_css_set_taskexit()
-      atomic_dec(cgrp->count);
-                                   rmdir();
-      /* not safe !! */
-      check_for_release(cgrp);
+It seems the setting of the channel bits for particular scanning modes
+was incorrect for differential mode.  (Only half the number of channels
+are available in differential mode; comedi refers to them as channels 0,
+1, 2 and 3, but the hardware documentation refers to them as channels 0,
+2, 4 and 6.)  In differential mode, the setting of the channel enable
+bits in the command1 register should depend on whether the scan enable
+bit is set.  Effectively, we need to double the comedi channel number
+when the scan enable bit is not set in differential mode.  The scan
+enable bit gets set when the AI scan mode is `MODE_MULT_CHAN_UP` or
+`MODE_MULT_CHAN_DOWN`, and gets cleared when the AI scan mode is
+`MODE_SINGLE_CHAN` or `MODE_SINGLE_CHAN_INTERVAL`.  The existing test
+for whether the comedi channel number needs to be doubled in
+differential mode is incorrect in `labpc_ai_cmd()`.  This patch corrects
+the test.
 
-rcu_read_lock() can be used to make sure the cgroup is alive.
+Thanks to Tuomas for suggesting the fix.
 
-Signed-off-by: Li Zefan <lizefan@huawei.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/cgroup.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/staging/comedi/drivers/ni_labpc.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -378,12 +378,20 @@ static void __put_css_set(struct css_set
- 		struct cgroup *cgrp = link->cgrp;
- 		list_del(&link->cg_link_list);
- 		list_del(&link->cgrp_link_list);
-+
-+		/*
-+		 * We may not be holding cgroup_mutex, and if cgrp->count is
-+		 * dropped to 0 the cgroup can be destroyed at any time, hence
-+		 * rcu_read_lock is used to keep it alive.
-+		 */
-+		rcu_read_lock();
- 		if (atomic_dec_and_test(&cgrp->count) &&
- 		    notify_on_release(cgrp)) {
- 			if (taskexit)
- 				set_bit(CGRP_RELEASABLE, &cgrp->flags);
- 			check_for_release(cgrp);
- 		}
-+		rcu_read_unlock();
- 
- 		kfree(link);
- 	}
+--- a/drivers/staging/comedi/drivers/ni_labpc.c
++++ b/drivers/staging/comedi/drivers/ni_labpc.c
+@@ -1264,7 +1264,9 @@ static int labpc_ai_cmd(struct comedi_de
+ 	else
+ 		channel = CR_CHAN(cmd->chanlist[0]);
+ 	/* munge channel bits for differential / scan disabled mode */
+-	if (labpc_ai_scan_mode(cmd) != MODE_SINGLE_CHAN && aref == AREF_DIFF)
++	if ((labpc_ai_scan_mode(cmd) == MODE_SINGLE_CHAN ||
++	     labpc_ai_scan_mode(cmd) == MODE_SINGLE_CHAN_INTERVAL) &&
++	    aref == AREF_DIFF)
+ 		channel *= 2;
+ 	devpriv->command1_bits |= ADC_CHAN_BITS(channel);
+ 	devpriv->command1_bits |= thisboard->ai_range_code[range];
 
 
