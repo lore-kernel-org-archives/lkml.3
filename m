@@ -1,86 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751367Ab3CAMuv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 07:50:51 -0500
-Received: from mail-ee0-f50.google.com ([74.125.83.50]:64211 "EHLO
-	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750709Ab3CAMut (ORCPT
+	id S1751418Ab3CAMzS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 07:55:18 -0500
+Received: from mail-ee0-f52.google.com ([74.125.83.52]:50412 "EHLO
+	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750708Ab3CAMzQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 07:50:49 -0500
-Message-ID: <5130A43C.9040207@suse.cz>
-Date: Fri, 01 Mar 2013 13:51:08 +0100
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:19.0) Gecko/20130124 Thunderbird/19.0
+	Fri, 1 Mar 2013 07:55:16 -0500
+From: Michal Nazarewicz <mina86@mina86.com>
+To: Andrzej Pietrasiewicz <andrzej.p@samsung.com>,
+        linux-kernel@vger.kernel.org
+Cc: Andrzej Pietrasiewicz <andrzej.p@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Matthias Fend <matthias.fend@wolfvision.net>
+Subject: Re: [PATCH] tools/usb: adapt ffs-test.c to new layout of includes (UAPI)
+In-Reply-To: <1362136901-28645-1-git-send-email-andrzej.p@samsung.com>
+Organization: http://mina86.com/
+References: <1362136901-28645-1-git-send-email-andrzej.p@samsung.com>
+User-Agent: Notmuch/ (http://notmuchmail.org) Emacs/24.3.50.5 (x86_64-unknown-linux-gnu)
+X-Face: PbkBB1w#)bOqd`iCe"Ds{e+!C7`pkC9a|f)Qo^BMQvy\q5x3?vDQJeN(DS?|-^$uMti[3D*#^_Ts"pU$jBQLq~Ud6iNwAw_r_o_4]|JO?]}P_}Nc&"p#D(ZgUb4uCNPe7~a[DbPG0T~!&c.y$Ur,=N4RT>]dNpd;KFrfMCylc}gc??'U2j,!8%xdD
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAJFBMVEWbfGlUPDDHgE57V0jUupKjgIObY0PLrom9mH4dFRK4gmjPs41MxjOgAAACQElEQVQ4jW3TMWvbQBQHcBk1xE6WyALX1069oZBMlq+ouUwpEQQ6uRjttkWP4CmBgGM0BQLBdPFZYPsyFUo6uEtKDQ7oy/U96XR2Ux8ehH/89Z6enqxBcS7Lg81jmSuujrfCZcLI/TYYvbGj+jbgFpHJ/bqQAUISj8iLyu4LuFHJTosxsucO4jSDNE0Hq3hwK/ceQ5sx97b8LcUDsILfk+ovHkOIsMbBfg43VuQ5Ln9YAGCkUdKJoXR9EclFBhixy3EGVz1K6eEkhxCAkeMMnqoAhAKwhoUJkDrCqvbecaYINlFKSRS1i12VKH1XpUd4qxL876EkMcDvHj3s5RBajHHMlA5iK32e0C7VgG0RlzFPvoYHZLRmAC0BmNcBruhkE0KsMsbEc62ZwUJDxWUdMsMhVqovoT96i/DnX/ASvz/6hbCabELLk/6FF/8PNpPCGqcZTGFcBhhAaZZDbQPaAB3+KrWWy2XgbYDNIinkdWAFcCpraDE/knwe5DBqGmgzESl1p2E4MWAz0VUPgYYzmfWb9yS4vCvgsxJriNTHoIBz5YteBvg+VGISQWUqhMiByPIPpygeDBE6elD973xWwKkEiHZAHKjhuPsFnBuArrzxtakRcISv+XMIPl4aGBUJm8Emk7qBYU8IlgNEIpiJhk/No24jHwkKTFHDWfPniR4iw5vJaw2nzSjfq2zffcE/GDjRC2dn0J0XwPAbDL84TvaFCJEU4Oml9pRyEUhR3Cl2t01AoEjRbs0sYugp14/4X5n4pU4EHHnMAAAAAElFTkSuQmCC
+X-PGP: 50751FF4
+X-PGP-FP: AC1F 5F5C D418 88F8 CC84 5858 2060 4012 5075 1FF4
+Date: Fri, 01 Mar 2013 13:55:04 +0100
+Message-ID: <xa1tsj4fth3r.fsf@mina86.com>
 MIME-Version: 1.0
-To: Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Borislav Petkov <bp@alien8.de>, Bjorn Helgaas <bhelgaas@google.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, lkml <linux-kernel@vger.kernel.org>,
-        e1000-devel@lists.sourceforge.net, ML netdev <netdev@vger.kernel.org>
-Subject: e1000e broken after resume on x230 [was: Uhhuh. NMI received for
- unknown reason 2c on CPU 0.]
-References: <20130129202848.GE25415@pd.tnic> <3066730.6MVSAfNyye@vostro.rjw.lan> <20130131131034.GF4926@pd.tnic> <2293454.v8QRHr8txR@vostro.rjw.lan> <20130203144656.GB5844@pd.tnic> <20130214143905.GC5700@pd.tnic> <CAErSpo6Mi31O1YA5PKnRjQMinB284Ag6PY8LuZpD0NwuZ6QZuw@mail.gmail.com> <20130214191234.GH5700@pd.tnic> <511DF7B4.8060504@openvz.org>
-In-Reply-To: <511DF7B4.8060504@openvz.org>
-X-Enigmail-Version: 1.6a1pre
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/mixed; boundary="=-=-="
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/15/2013 09:54 AM, Konstantin Khlebnikov wrote:
-> Borislav Petkov wrote:
->> On Thu, Feb 14, 2013 at 10:17:46AM -0700, Bjorn Helgaas wrote:
->>> It's pretty late for v3.8, but let me know if you think they're
->>> critical.
->>
->> Ok, I meant those:
->>
->> http://marc.info/?l=linux-kernel&m=135984592927219
->>
->> They fix the link detection issue on my x230. So let's see. The first
->> one is:
->>
->> * https://patchwork.kernel.org/patch/2001211/ (e1000e: fix pci device
->> enable
->> counter balance)
-> 
-> please use this instead:
+--=-=-=
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: quoted-printable
 
-Hi, I am a bit confused. Is this fixed in -next yet? And if so, is it
-known which commit IDs are needed to fix the issue in 3.7 (see below)?
+On Fri, Mar 01 2013, Andrzej Pietrasiewicz wrote:
+This fix has already been mailed:
 
-> [PATCH v2 1/7] e1000e: fix pci-device enable-counter balance
-> https://lkml.org/lkml/2013/2/4/190
-> 
-> from v2 patchset: https://lkml.org/lkml/2013/2/4/185
+https://patchwork.kernel.org/patch/2169791/
 
-So this is now in -next as:
-commit e34f7147d93afe5efc574734bbff6584c0cc4a02
-Author: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Date:   Mon Feb 25 09:19:04 2013 +0400
+> Signed-off-by: Andrzej Pietrasiewicz <andrzej.p@samsung.com>
+> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> ---
+>  tools/usb/ffs-test.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+>
+> diff --git a/tools/usb/ffs-test.c b/tools/usb/ffs-test.c
+> index 8674b9e..fe1e66b 100644
+> --- a/tools/usb/ffs-test.c
+> +++ b/tools/usb/ffs-test.c
+> @@ -38,7 +38,7 @@
+>  #include <unistd.h>
+>  #include <tools/le_byteshift.h>
+>=20=20
+> -#include "../../include/linux/usb/functionfs.h"
+> +#include "../../include/uapi/linux/usb/functionfs.h"
+>=20=20
+>=20=20
+>  /******************** Little Endian Handling ***************************=
+*****/
+> --=20
 
-    e1000e: fix pci-device enable-counter balance
+--=20
+Best regards,                                         _     _
+.o. | Liege of Serenely Enlightened Majesty of      o' \,=3D./ `o
+..o | Computer Science,  Micha=C5=82 =E2=80=9Cmina86=E2=80=9D Nazarewicz   =
+ (o o)
+ooo +----<email/xmpp: mpn@google.com>--------------ooO--(_)--Ooo--
+--=-=-=
+Content-Type: multipart/signed; boundary="==-=-=";
+	micalg=pgp-sha1; protocol="application/pgp-signature"
 
->> I don't see that one in your tree.
->>
->> * pci-pm-clear-state_saved-during-suspend.patch
+--==-=-=
+Content-Type: text/plain
 
-This is:
-commit 82fee4d67ab86d6fe5eb0f9a9e988ca9d654d765
-Author: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Date:   Mon Feb 4 15:56:05 2013 +0400
 
-    PCI/PM: Clear state_saved during suspend
+--==-=-=
+Content-Type: application/pgp-signature
 
->> Rafael said this one is a real bugfix. Looks like e1000e maintainers are
->> picking that one?
->>
->> * pci-pm-fix-e1000e-runtime-suspend.patch
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-Is this one replaced by a different fix in the end? Which one? I don't
-think it is in -next yet, right?
+iQIcBAEBAgAGBQJRMKUoAAoJECBgQBJQdR/0fLQQAIAZln6cGITOMLNh/ugdGCSh
+SiUJ2MxA94u4YJQfWXwuGJxxvWIHfxxYTkXdx5i22W2wTdU+FnoHUqFMaqC/A722
+Ua+PH0UaeEGRuElQzYQgEAqC/sACWMS2qJl9oNl7cubuk28eDkfS99Ly4gCrXCEV
+ZNEERtza2bKny2Y5vrEOwWiVXv6/6JaHViMih/x1pCXftffmKc8nRy2zxPk6avDS
+gfmLDnp4viWXcwO7NRrK/P6z+wyqm5qeBmBxcIjAFMGhNAtvYiNTABTTFT59g9sX
+ed8ZToJEZnSrfyUXjCZaaRbVmdPFylUh8s/E4KnRAhhfOUVehvnSIlCelcU6taGq
+PopS/zm7DPQEI8gNtDHwn4yvUYd8wGJRqVOVi3uR1gj3c9ErQUqjuId8JrBVmk/r
+5yTZAcXGNYAbNrafz4M39uDj0HnN6m0aF1/RAn/y7x/rA7qTg5VBjMLt0gj4E74l
+EhMLuasGOfnzTHJrIRWTHofjAFYkcmXRthH3iYV9HiJS5iw+VMNLc7+YVeR9zN05
+KCHUbPBqytq+HenRHN/qtbawuTmGhCRZE04oTAH5r4DqGburBL/RzHZ9oDj7Z2If
+fYMwiuSUaEaySJUM9O0R9K+E+S59hW5TK2X4DViMIapns6R1c0hsuwki+419if1u
+CDIAHff7Ak3fgeex+fnA
+=oqBd
+-----END PGP SIGNATURE-----
+--==-=-=--
 
-confused,
--- 
-js
-suse labs
+--=-=-=--
