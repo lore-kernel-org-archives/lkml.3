@@ -1,117 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751691Ab3CASwO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 13:52:14 -0500
-Received: from mail-vc0-f176.google.com ([209.85.220.176]:59481 "EHLO
-	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751140Ab3CASwN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 13:52:13 -0500
+	id S1751527Ab3CASzK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 13:55:10 -0500
+Received: from multi.imgtec.com ([194.200.65.239]:15200 "EHLO multi.imgtec.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750779Ab3CASzJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Mar 2013 13:55:09 -0500
+Message-ID: <5130F978.9040604@imgtec.com>
+Date: Fri, 1 Mar 2013 18:54:48 +0000
+From: James Hogan <james.hogan@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <1362161912.12277.10.camel@buesod1.americas.hpqcorp.net>
-References: <20130206150403.006e5294@cuia.bos.redhat.com>
-	<511C24A6.8020409@redhat.com>
-	<CA+55aFws80EEJQskqiP+a5J-HOGu=M1Fe=uCs50ifedVxPxT1Q@mail.gmail.com>
-	<512E376D.70105@redhat.com>
-	<CA+55aFzPxJ3rfZvAvrP9LxCXfDU8AAVvhMZnP-OAoe-ycc70aw@mail.gmail.com>
-	<512E6443.9050603@redhat.com>
-	<CA+55aFwHxv9RH75BoXYcwdKeHx+otOOpg9494TTdFwQe3biOhw@mail.gmail.com>
-	<512E80E3.7060800@redhat.com>
-	<CA+55aFwa0EjGG2NUDYVLVBmXJa2k81YiuNO2yggk=GLRQxhhUQ@mail.gmail.com>
-	<512EC7F0.60103@redhat.com>
-	<1362024397.1867.28.camel@buesod1.americas.hpqcorp.net>
-	<CA+55aFygzjuNYiG4MTPMzimEjQ92rpS-rNJr7HD4OQCAqze5zg@mail.gmail.com>
-	<512F7429.4020103@redhat.com>
-	<CA+55aFw3t+sC-zv6njxdJ6hB0arJnZzoGNO9W7o8h=tcUo5P_Q@mail.gmail.com>
-	<CA+55aFwEshukBGU5YCtKL=7c-43guMuGSHTnXo02rLxZWGQWTw@mail.gmail.com>
-	<512FC89B.6030507@redhat.com>
-	<CA+55aFxbm83Oc2g55868HA2xCytsJzTxWGE0w_pMUzKaU5mJMw@mail.gmail.com>
-	<512FDC82.2060606@redhat.com>
-	<CA+55aFyitxgooTYq27eK4fO___R4uRrNhoPwDWxULeUkejH0ZA@mail.gmail.com>
-	<51304DDA.40808@redhat.com>
-	<1362161912.12277.10.camel@buesod1.americas.hpqcorp.net>
-Date: Fri, 1 Mar 2013 10:52:12 -0800
-X-Google-Sender-Auth: 13lBbCuqOB2ImroFSCSeVwHQh60
-Message-ID: <CA+55aFxPgGZ2k81Leo-xVVBPThmh29GoCXeq3-iK88KhFNuPdQ@mail.gmail.com>
-Subject: Re: [tip:core/locking] x86/smp: Move waiting on contended ticket lock
- out of line
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Davidlohr Bueso <davidlohr.bueso@hp.com>
-Cc: Rik van Riel <riel@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        "Vinod, Chegu" <chegu_vinod@hp.com>, "Low, Jason" <jason.low2@hp.com>,
-        linux-tip-commits@vger.kernel.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>, aquini@redhat.com,
-        Michel Lespinasse <walken@google.com>, Ingo Molnar <mingo@kernel.org>,
-        Larry Woodman <lwoodman@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Arnd <arnd@arndb.de>, linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] late arch/metag fixes for v3.9-rc1
+References: <5130DD94.2060408@imgtec.com> <CA+55aFw9qvUdrtEk_83-gEjZMTceONk=AuVsHuTtqOj=jpVPQg@mail.gmail.com>
+In-Reply-To: <CA+55aFw9qvUdrtEk_83-gEjZMTceONk=AuVsHuTtqOj=jpVPQg@mail.gmail.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.154.65]
+X-SEF-Processed: 7_3_0_01181__2013_03_01_18_55_00
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 1, 2013 at 10:18 AM, Davidlohr Bueso <davidlohr.bueso@hp.com> wrote:
-> On Fri, 2013-03-01 at 01:42 -0500, Rik van Riel wrote:
+On 01/03/13 18:03, Linus Torvalds wrote:
+> On Fri, Mar 1, 2013 at 8:55 AM, James Hogan <james.hogan@imgtec.com> wrote:
 >>
->> Checking try_atomic_semop and do_smart_update, it looks like neither
->> is using atomic operations. That part of the semaphore code would
->> still benefit from spinlocks.
->
-> Agreed.
+>> Please pull the following changes in addition to my previous arch/metag
+>> pull request. See the tag (below) for details. The shortlog is a bit
+>> inflated unfortunately as it includes the previous pull request too.
+>> I've marked where the new changes begin though.
+> 
+> Yeah, that would be a no. I finally got to look at the new
+> architectures and be ready to pull them, and you just made sure I
+> won't pull this.
+> 
+> This is exactly the kind of crap I don't want to see in *any* pull
+> requests, much less for a new sub-area.
+> 
+>>       metag: copy devicetree to non-init memory
+>>       metag: prom.h: remove declaration of metag_dt_memblock_reserve()
+>>       metag: Provide dma_get_sgtable()
+>>       Merge commit 'burying unused conditionals'
+>>       metag: remove GENERIC_SIGALTSTACK
+>>       Merge commit 'irq_work: Remove CONFIG_HAVE_IRQ_WORK'
+>>       metag: remove select CONFIG_HAVE_IRQ_WORK
+>>       Merge commit 'make CONFIG_EXPERIMENTAL invisible and default'
+>>       metag: remove CONFIG_EXPERIMENTAL from defconfigs
+>>       Merge commit 'default SET_PERSONALITY() in linux/elf.h'
+>>       metag: remove SET_PERSONALITY()
+> 
+> Why the f*ck are you doing back-merges? There is no excuse for even a
+> single one. And here you have just about one back-merge per commit.
+> 
+> No, no no.
+> 
+> At least you have explanations, but you already had one from before,
+> now you added four more. Don't do it. Let me know about fixups, or
+> just wait for me to pull, but doing back-merges for trivial issues
+> just makes things worse, and makes it much harder to see what the heck
+> is up.
 
-Yup. As mentioned, I hadn't even looked at that part of the code, but
-yes, it definitely wants the spinlock.
+Okay thanks for the info, and sorry about that!
 
-> How about splitting ipc_lock()/ipc_lock_control() in two calls: one to
-> obtain the ipc object (rcu_read_lock + idr_find), which can be called
-> when performing the permissions and security checks, and another to
-> obtain the ipcp->lock [q_]spinlock when necessary.
+The original back-merge (in first merge request) was due to a dependency
+on something that at the time was in linux-next, and I believe that's
+the way dependencies are supposed to be dealt with for linux-next, which
+is also supposed to be what I ask you to pull.
 
-That sounds like absolutely the right thing to do. And we can leave
-the old helper functions that do both of them around, and only use the
-split case for just a few places.
+Are you okay just pulling the first merge request and I'll clean up this
+one once it's pulled, or would you like me to rebase the whole thing?
 
-And if we make the RCU read-lock be explicit too, we could get rid of
-some of the ugliness. Right now we have semtimedop() do things like a
-conditional "find_alloc_undo()", which will get the RCU lock. It would
-be much nicer if we just cleaned up the interfaces a tiny bit, said
-that the *caller* has to get the RCU lock, and just do this
-unconditionally before calling any of it. Because right now the RCU
-details are quite messy, and we have code like
+Thanks
+James
 
-                if (un)
-                        rcu_read_unlock();
-                error = PTR_ERR(sma);
-                goto out_free;
-
-etc, when it would actually be much simpler to just do the RCU read
-locking unconditionally (we'll need it for the semaphore lookup
-anyway) and just have the exit paths unlock unconditionally like we
-usually do (ie a few different exit goto's that just nest the
-unlocking properly).
-
-It would simplify the odd locking both for humans and for code
-generation. Right now we actually nest those RCU read locks two deep,
-as far as I can see.
-
-And it looks like this could be done in fairly small independent steps
-("add explicit RCU locking", "split up helper functions", "start using
-the simplified helper functions in selected paths that care").
-
-It won't *solve* the locking issues, and I'm sure we'll still see
-contention, but it should clean the code up and probably helps the
-contention numbers visibly. Even if it's only 10% (which, judging by
-my profiles, would be a safe lower bound from just moving the security
-callback out of the spinlock - and it could easily be 20% of more
-because contention often begets more contention) that would be in the
-same kind of ballpark as the spinlock improvements. And using Michel's
-work would be a largely independent scalability improvement on top.
-
-Anybody willing to give it a try? I suspect Rik's benchmark, some
-"perf record", and concentrating on just semtimedop() to begin with
-would be a fairly good starting point.
-
-                 Linus
