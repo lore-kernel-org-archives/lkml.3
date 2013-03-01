@@ -1,154 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754503Ab3CATyN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 14:54:13 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51967 "EHLO
+	id S1754301Ab3CATqf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 14:46:35 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51947 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754318Ab3CATqh (ORCPT
+	with ESMTP id S1754075Ab3CATqd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 14:46:37 -0500
+	Fri, 1 Mar 2013 14:46:33 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [ 04/30] ftrace: Call ftrace cleanup module notifier after all other notifiers
-Date: Fri,  1 Mar 2013 11:45:25 -0800
-Message-Id: <20130301194528.470243561@linuxfoundation.org>
+        Alexey Klimov <klimov.linux@gmail.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>, Jiri Kosina <jkosina@suse.cz>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: [ 46/46] [hid] usb hid quirks for Masterkit MA901 usb radio
+Date: Fri,  1 Mar 2013 11:45:34 -0800
+Message-Id: <20130301194437.089273060@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130301194527.988540148@linuxfoundation.org>
-References: <20130301194527.988540148@linuxfoundation.org>
+In-Reply-To: <20130301194432.263409302@linuxfoundation.org>
+References: <20130301194432.263409302@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+From: Alexey Klimov <klimov.linux@gmail.com>
 
-commit 8c189ea64eea01ca20d102ddb74d6936dd16c579 upstream.
+commit 0322bd3980b3ebf7dde8474e22614cb443d6479a upstream.
 
-Commit: c1bf08ac "ftrace: Be first to run code modification on modules"
+Don't let Masterkit MA901 USB radio be handled by usb hid drivers.
+This device will be handled by radio-ma901.c driver.
 
-changed ftrace module notifier's priority to INT_MAX in order to
-process the ftrace nops before anything else could touch them
-(namely kprobes). This was the correct thing to do.
-
-Unfortunately, the ftrace module notifier also contains the ftrace
-clean up code. As opposed to the set up code, this code should be
-run *after* all the module notifiers have run in case a module is doing
-correct clean-up and unregisters its ftrace hooks. Basically, ftrace
-needs to do clean up on module removal, as it needs to know about code
-being removed so that it doesn't try to modify that code. But after it
-removes the module from its records, if a ftrace user tries to remove
-a probe, that removal will fail due as the record of that code segment
-no longer exists.
-
-Nothing really bad happens if the probe removal is called after ftrace
-did the clean up, but the ftrace removal function will return an error.
-Correct code (such as kprobes) will produce a WARN_ON() if it fails
-to remove the probe. As people get annoyed by frivolous warnings, it's
-best to do the ftrace clean up after everything else.
-
-By splitting the ftrace_module_notifier into two notifiers, one that
-does the module load setup that is run at high priority, and the other
-that is called for module clean up that is run at low priority, the
-problem is solved.
-
-Reported-by: Frank Ch. Eigler <fche@redhat.com>
-Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Alexey Klimov <klimov.linux@gmail.com>
+Acked-by: Hans Verkuil <hans.verkuil@cisco.com>
+Acked-by: Jiri Kosina <jkosina@suse.cz>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/trace/ftrace.c |   46 ++++++++++++++++++++++++++++++++--------------
- 1 file changed, 32 insertions(+), 14 deletions(-)
+ drivers/hid/hid-core.c |    1 +
+ drivers/hid/hid-ids.h  |    3 +++
+ 2 files changed, 4 insertions(+)
 
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -3432,37 +3432,51 @@ static void ftrace_init_module(struct mo
- 	ftrace_process_locs(mod, start, end);
- }
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -1922,6 +1922,7 @@ static const struct hid_device_id hid_ig
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_LD, USB_DEVICE_ID_LD_HYBRID) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_LD, USB_DEVICE_ID_LD_HEATCONTROL) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_MADCATZ, USB_DEVICE_ID_MADCATZ_BEATPAD) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_MASTERKIT, USB_DEVICE_ID_MASTERKIT_MA901RADIO) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_MCC, USB_DEVICE_ID_MCC_PMD1024LS) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_MCC, USB_DEVICE_ID_MCC_PMD1208LS) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_MICROCHIP, USB_DEVICE_ID_PICKIT1) },
+--- a/drivers/hid/hid-ids.h
++++ b/drivers/hid/hid-ids.h
+@@ -520,6 +520,9 @@
+ #define USB_VENDOR_ID_MADCATZ		0x0738
+ #define USB_DEVICE_ID_MADCATZ_BEATPAD	0x4540
  
--static int ftrace_module_notify(struct notifier_block *self,
--				unsigned long val, void *data)
-+static int ftrace_module_notify_enter(struct notifier_block *self,
-+				      unsigned long val, void *data)
- {
- 	struct module *mod = data;
- 
--	switch (val) {
--	case MODULE_STATE_COMING:
-+	if (val == MODULE_STATE_COMING)
- 		ftrace_init_module(mod, mod->ftrace_callsites,
- 				   mod->ftrace_callsites +
- 				   mod->num_ftrace_callsites);
--		break;
--	case MODULE_STATE_GOING:
-+	return 0;
-+}
++#define USB_VENDOR_ID_MASTERKIT			0x16c0
++#define USB_DEVICE_ID_MASTERKIT_MA901RADIO	0x05df
 +
-+static int ftrace_module_notify_exit(struct notifier_block *self,
-+				     unsigned long val, void *data)
-+{
-+	struct module *mod = data;
-+
-+	if (val == MODULE_STATE_GOING)
- 		ftrace_release_mod(mod);
--		break;
--	}
- 
- 	return 0;
- }
- #else
--static int ftrace_module_notify(struct notifier_block *self,
--				unsigned long val, void *data)
-+static int ftrace_module_notify_enter(struct notifier_block *self,
-+				      unsigned long val, void *data)
-+{
-+	return 0;
-+}
-+static int ftrace_module_notify_exit(struct notifier_block *self,
-+				     unsigned long val, void *data)
- {
- 	return 0;
- }
- #endif /* CONFIG_MODULES */
- 
--struct notifier_block ftrace_module_nb = {
--	.notifier_call = ftrace_module_notify,
-+struct notifier_block ftrace_module_enter_nb = {
-+	.notifier_call = ftrace_module_notify_enter,
- 	.priority = INT_MAX,	/* Run before anything that can use kprobes */
- };
- 
-+struct notifier_block ftrace_module_exit_nb = {
-+	.notifier_call = ftrace_module_notify_exit,
-+	.priority = INT_MIN,	/* Run after anything that can remove kprobes */
-+};
-+
- extern unsigned long __start_mcount_loc[];
- extern unsigned long __stop_mcount_loc[];
- 
-@@ -3494,9 +3508,13 @@ void __init ftrace_init(void)
- 				  __start_mcount_loc,
- 				  __stop_mcount_loc);
- 
--	ret = register_module_notifier(&ftrace_module_nb);
-+	ret = register_module_notifier(&ftrace_module_enter_nb);
-+	if (ret)
-+		pr_warning("Failed to register trace ftrace module enter notifier\n");
-+
-+	ret = register_module_notifier(&ftrace_module_exit_nb);
- 	if (ret)
--		pr_warning("Failed to register trace ftrace module notifier\n");
-+		pr_warning("Failed to register trace ftrace module exit notifier\n");
- 
- 	set_ftrace_early_filters();
- 
+ #define USB_VENDOR_ID_MCC		0x09db
+ #define USB_DEVICE_ID_MCC_PMD1024LS	0x0076
+ #define USB_DEVICE_ID_MCC_PMD1208LS	0x007a
 
 
