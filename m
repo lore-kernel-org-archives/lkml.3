@@ -1,75 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751486Ab3CAPlJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 10:41:09 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:18315 "EHLO mx1.redhat.com"
+	id S1751601Ab3CAPmG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 10:42:06 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:29504 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751052Ab3CAPlH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 10:41:07 -0500
-Subject: Re: security_inode_init_security() inode field requirements
-From: Steven Whitehouse <swhiteho@redhat.com>
-To: Eric Paris <eparis@parisplace.org>
-Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>, Mimi Zohar <zohar@us.ibm.com>,
-        Chris Wright <chrisw@sous-sol.org>,
-        LSM List <linux-security-module@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        cluster-devel@redhat.com,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-In-Reply-To: <CACLa4psWBYPDjiZB3ROA4yGTbJX=UmN3Go8xH_myZ+_W7D01AA@mail.gmail.com>
-References: <1362132778.2723.15.camel@menhir>
-	 <1362140849.9158.108.camel@falcor1> <1362143512.2723.21.camel@menhir>
-	 <1362146843.9158.134.camel@falcor1>
-	 <CACLa4psWBYPDjiZB3ROA4yGTbJX=UmN3Go8xH_myZ+_W7D01AA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Red Hat UK Ltd
-Date: Fri, 01 Mar 2013 15:38:44 +0000
-Message-ID: <1362152324.2723.32.camel@menhir>
-Mime-Version: 1.0
+	id S1750696Ab3CAPmD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Mar 2013 10:42:03 -0500
+Message-ID: <5130CC28.1080204@redhat.com>
+Date: Fri, 01 Mar 2013 09:41:28 -0600
+From: Eric Sandeen <sandeen@redhat.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130216 Thunderbird/17.0.3
+MIME-Version: 1.0
+To: Dmitry Monakhov <dmonakhov@openvz.org>
+CC: "Theodore Ts'o" <tytso@mit.edu>, Dave Jones <davej@redhat.com>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "gnehzuil.liu" <gnehzuil.liu@gmail.com>,
+        Zheng Liu <wenqing.lz@taobao.com>, Borislav Petkov <bp@alien8.de>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] ext4 updates for 3.9
+References: <20130227154450.GA23402@x4> <20130227170157.GA222@x4> <98C6DE45-F050-4AAD-82E2-7352F5BB0A5D@gmail.com> <20130227172256.GA236@x4> <7BFB2135-A1F0-4B6D-9962-16E75E5560F8@gmail.com> <20130227174553.GA224@x4> <CA+55aFwWA1jPEEQNx_5oJ6Ze=3yFb6=E9nraBfX-Ve=WjRkQMw@mail.gmail.com> <20130227184912.GA19624@thunk.org> <20130227185625.GA224@x4> <20130227191923.GA1121@redhat.com> <20130227192907.GB14253@thunk.org> <87k3pteank.fsf@openvz.org>
+In-Reply-To: <87k3pteank.fsf@openvz.org>
+X-Enigmail-Version: 1.5
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 2/27/13 2:58 PM, Dmitry Monakhov wrote:
+> On Wed, 27 Feb 2013 14:29:07 -0500, Theodore Ts'o <tytso@mit.edu> wrote:
+>> On Wed, Feb 27, 2013 at 02:19:23PM -0500, Dave Jones wrote:
+>>>
+>>> Looks like it's fixed here too.
+>>>
+>>> How did this make it through -next without anyone hitting it ?
+>>>
+>>> I can't remember how many years ago I last bought a disk < 1TB,
+>>> and I can't be alone.  Or is everyone all about SSDs these days?
+>>
+>> I use LVM, so I have a number of volues which are smaler than 512GB,
+>> but very few which are actually larger than 1TB.  And none on my test
+>> boxes.  I was running the bleeding edge ext4 code on my laptop as for
+>> dogfooding purposes, but I have an 80GB mSATA SSD and a 500GB HDD on
+>> my X230 laptop (it requires a thin laptop drive, and 7mm drives don't
+>> come any bigger, alas).
+>>
+>>> Is anyone running xfstests or similar on linux-next regularly ?
+>>
+>> I run xfstests on the ext4 tree, and I ran it on ext4 plus Linus's tip
+>> before I submitted a pull request.  The problem is that XFSTESTS is
+>> S-L-O-W if you use large partitions, so typically I use a 5GB
+> Indeed. That's why i give-up rotated disks and run xfstest only on SSD
+> or brd module 
+>> partition sizes for my test runs.  Normally we're worried about race
+>> condition bugs, not something as bone-headed as a bitmasking problem,
+>> so it makes sense to use a smaller disk for most of your testing.
+>> (Some folks do their xfstests run on SSD's or tmpfs image files, again
+>> for speed reasons, and it's unlikely they would be big enough.)
+>>
+>> So what we probably need to do is to have a separate set of tests
+>> using a loopback mount, and perhaps an artificially created file
+>> system which has a large percentage of the blocks in the middle of the
+>> file system busied out, to make efficient testing of these sorts of
+>> bugs more efficient.  As I said, I'm thinking about how's the best way
+>> to improve our testing regime to catch such problems the next time around.
+> Amazing idea. Something like:
+> 
+> #dd if=/dev/zero of=/tmp/fs.img bs=1M seek=2000000 count=1
+> #mkfs.ext4 -m0 -i4096000 /tmp/fs.img
+> #mount /tmp/fs.img /mnt/ -oloop
+> #for ((i=0; i < 2000; i++));do   fallocate -l $((1024*1024*1024)) /mnt/f$i ;done
+> #for ((i=0; i < 2000; i++));do   truncate -s $((1023*1024*1024)) /mnt/f$i ;done
+> 
+> As result file system image has 2gb of free space wich is fragmented to ~2000
+> chunks 1Mb each. But image itself is quite small
+> # df /mnt
+> Filesystem      1K-blocks       Used Available Use% Mounted on
+> /dev/loop0     2047678076 2045679228   1998848 100% /mnt
+> # du -sch /tmp/fs.img 
+> 242M     /tmp/fs.img
+> 242M     total
+> 
+> Later we can simply run xfstest/fio/fsx on this image.
+> I'll prepare new xfstest based on that idea. But the only disadvantage
+> is that loop dev has bottleneck, all requests will be serialized on i_mutex.
 
-On Fri, 2013-03-01 at 10:13 -0500, Eric Paris wrote:
-> SELinux has no maximum   :-(
-> 
-> Realistically there are a couple of interfaces that limit things to
-> 4k, but labels on files on disk could be even larger than that!
-> 
-> 255 will fit most every label, but not necessarily all of them.
-> 
-> 
-> I know ext4 on Fedora allocates inodes which left about 255 bytes for
-> selinux.selinux, but will place the xattr in another block if it
-> happens to be larger than 255.  This is rare, but certainly
-> possible....
-> 
-> We use the inode->i_mode.
-> 
-> In debug/error path we use:
->   inode->i_sb inode->i_no
-> 
-> We could use the parent dir sb instead of the new inode->i_sb.  We
-> don't have to print the i_no when we hit a failure, but it is just
-> about the only information that can help for debugging/figuring out
-> which file had a failure..
-> 
-> -Eric
-> 
-So it sounds like setting the selinux label before the allocation of the
-inode wouldn't be too much of a problem. That would give us the size
-ahead of time. Maybe EVM is the only thing which needs to be an
-exception in terms of being done after the inode number is set, and if
-that has a fairly small maximum size, then that could still work I
-think.
+Before anyone does too much work, it would be worth revisiting
+dchinner's
+	[PATCH 0/10] xfstests: rework large filesystem testing
+series from July 2012 to see if it meets the needs already.
 
-Having said that, this is turning out to be a fair bit more complicated
-than I'd hoped :(
+It almost got all reviews, with one sticking point left, AFAICT.
 
-Steve.
-
+-Eric
 
 
 
