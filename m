@@ -1,43 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752446Ab3CAV4N (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 16:56:13 -0500
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:39325 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751804Ab3CAV4M (ORCPT
+	id S1752551Ab3CAV46 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 16:56:58 -0500
+Received: from mail-qe0-f54.google.com ([209.85.128.54]:37140 "EHLO
+	mail-qe0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751610Ab3CAV45 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 16:56:12 -0500
-Date: Fri, 1 Mar 2013 13:56:09 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: David Miller <davem@davemloft.net>
-Cc: linux-kernel@vger.kernel.org, jslaby@suse.cz
-Subject: Re: WARNING at tty_buffer.c:428 process_one_work()
-Message-ID: <20130301215609.GA3261@kroah.com>
-References: <20130301.164711.326215889038834651.davem@davemloft.net>
+	Fri, 1 Mar 2013 16:56:57 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130301.164711.326215889038834651.davem@davemloft.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1362174860.3221.2.camel@thor.lan>
+References: <20130228090846.GA249@x4>
+	<20130301133159.0711f81a.akpm@linux-foundation.org>
+	<20130301213511.GF2481@mtj.dyndns.org>
+	<1362174860.3221.2.camel@thor.lan>
+Date: Fri, 1 Mar 2013 13:56:54 -0800
+X-Google-Sender-Auth: Oo7uV5m6OikXwC2x8418aKsLbIs
+Message-ID: <CAOS58YOg20+i3beJsHJjedJ2sOrRfAakc=Pj84bZF0BatEU9HQ@mail.gmail.com>
+Subject: Re: WARNING: at lib/idr.c:678 idr_find_slowpath+0x97/0xc0()
+From: Tejun Heo <tj@kernel.org>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, markus@trippelsdorf.de,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 01, 2013 at 04:47:11PM -0500, David Miller wrote:
-> 
-> I'm getting these non-stop right when the hypervisor console registers
-> on sparc64, and the machine won't boot up properly.  This is with
-> Linus's current tree.
-> 
-> [511865.556835] console [ttyHV0] enabled
-> [511865.564555] ------------[ cut here ]------------
-> [511865.612410] WARNING: at drivers/tty/tty_buffer.c:428 process_one_work+0x164/0x420()
-> [511865.627846] tty is NULL
+On Fri, Mar 1, 2013 at 1:54 PM, Peter Hurley <peter@hurleysoftware.com> wrote:
+>> The WARN_ON() is just for cases where someone might be doing something
+>> crazy with the previous behavior of ignoring high bit.  Maybe I was
+>> being overly paranoid and we should just drop it from idr_find().
+>
+> Can we revert the __lock_timer patch as well then?
 
-Sorry about this, I have a patch, from Jiri, to get to Linus after
-3.9-rc1 to remove the warning.  It's safe to ignore.  Maybe I should
-just push it today, I wasn't aware that it was being hit so easily.
+I don't know.  Andrew was worried about the type of timer id.  For
+inotify, it's okay as the type is always int but it's not a bad idea
+to have some form of sanitizing if the type might deviate.
 
-thanks,
+Thanks.
 
-greg k-h
+-- 
+tejun
