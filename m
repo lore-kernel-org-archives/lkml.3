@@ -1,46 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751590Ab3CAGUB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 01:20:01 -0500
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:60639 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750696Ab3CAGT7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 01:19:59 -0500
+	id S1751882Ab3CAG33 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 01:29:29 -0500
+Received: from pegase2.c-s.fr ([93.17.235.10]:36934 "EHLO mailhub2.si.c-s.fr"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750971Ab3CAG32 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Mar 2013 01:29:28 -0500
+Message-ID: <51304ABD.9020706@c-s.fr>
+Date: Fri, 01 Mar 2013 07:29:17 +0100
+From: leroy christophe <christophe.leroy@c-s.fr>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
 MIME-Version: 1.0
-X-Originating-IP: [173.13.129.225]
-In-Reply-To: <CA+55aFx2Cuuq2YW6mexxZ88TNm=FLYUYPzeLqN=y46oYxZJ3wQ@mail.gmail.com>
-References: <1362092093-4839-1-git-send-email-olof@lixom.net>
-	<CA+55aFx2Cuuq2YW6mexxZ88TNm=FLYUYPzeLqN=y46oYxZJ3wQ@mail.gmail.com>
-Date: Thu, 28 Feb 2013 22:19:58 -0800
-Message-ID: <CAOesGMiMWaEmPMJ2q2t9gsTa2gFZm_iwc6v9wO7htyPrOKNx=Q@mail.gmail.com>
-Subject: Re: [GIT PULL 0/3] arm-soc: late changes for 3.9
-From: Olof Johansson <olof@lixom.net>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Chris Ball <cjb@laptop.org>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-kernel@lists.infradead.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        ARM SoC <arm@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
+        Patrick Vasseur <patrick.vasseur@c-s.fr>
+Subject: Re: [PATCH] Adds support for Open Firmware in MAX730x GPIO Driver
+References: <201302220926.r1M9Q3wV029855@localhost.localdomain> <CACRpkdY1M8w7o8S4idAx1JN-fc-t221qF_uwR5U9RBsBAn=Jhw@mail.gmail.com>
+In-Reply-To: <CACRpkdY1M8w7o8S4idAx1JN-fc-t221qF_uwR5U9RBsBAn=Jhw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 28, 2013 at 8:18 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
 
->> I've pushed a resolved branch for reference (late-branches-resolved)
->> in case you want to compare conflict resolutions.
+Le 01/03/2013 01:43, Linus Walleij a écrit :
+> On Fri, Feb 22, 2013 at 10:26 AM, Christophe Leroy
+> <christophe.leroy@c-s.fr> wrote:
 >
-> So Arnd's tag talked about removing the stale gpio.h, but I think it
-> was the i2c.h that was now also stale. So I removed both - even though
-> technically, the merge should have left i2c.h since it was in both
-> parents. You should double-check that, but I don't see how that
-> <linux/i2c.h> could *possibly* be valid any more, and people had tried
-> (unsuccessfully) to remove it once already, so...
+>> This patch allows the use of the MAX730x Driver on systems using
+>> the Open Firmware platform format
+>>
+>> Signed-off-by: Patrick Vasseur <patrick.vasseur@c-s.fr>
+>> Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
+> (...)
+>>          /* bits_per_word cannot be configured in platform data */
+>> -       spi->bits_per_word = 16;
+>> +       if (spi->dev.platform_data)
+>> +               spi->bits_per_word = 16;
+> What about just fixing so you *can* specify that instead?
+> The comment looks more like a FIXME to me.
+Euh, ok, why not. But here the purpose of my patch is to allow using 
+this driver with of_platform in addition to platform.
+This FIXME is not mine, it was already existing in that driver.
+As of_platform can configure bits per word, the only thing I did is to 
+add a test in order to not apply this FIXME on the of_platform case.
 
-The i2c include is definitely unnecessary since there's no
-i2c_board_info stuff left in the file. Thanks for catching that.
+Do you think my patch is not acceptable like this ?
 
+Regards
+Christophe
 
--Olof
