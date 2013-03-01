@@ -1,166 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751624Ab3CAPfw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 10:35:52 -0500
-Received: from out02.mta.xmission.com ([166.70.13.232]:60668 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751367Ab3CAPfu convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 10:35:50 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: mtk.manpages@gmail.com
-Cc: Rob Landley <rob@landley.net>, linux-man <linux-man@vger.kernel.org>,
-        Linux Containers <containers@lists.linux-foundation.org>,
-        lkml <linux-kernel@vger.kernel.org>
-References: <CAKgNAki=mUYuu_Ewhe7sjCmo+Dq2Vr+FZCixqNRaadcvAxtpFw@mail.gmail.com>
-	<1362110504.15531.4@driftwood>
-	<CAKgNAkgVKnhRT1Lpq4a_UdBKB+tn6XmWSDF2QJXG0aSLtNH6dg@mail.gmail.com>
-Date: Fri, 01 Mar 2013 07:35:38 -0800
-In-Reply-To: <CAKgNAkgVKnhRT1Lpq4a_UdBKB+tn6XmWSDF2QJXG0aSLtNH6dg@mail.gmail.com>
-	(Michael Kerrisk's message of "Fri, 1 Mar 2013 10:57:40 +0100")
-Message-ID: <87wqtr3zg5.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-XM-AID: U2FsdGVkX18aeFuPnfImbxmi8j+MyQpi1cOqEUbaEHc=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 TR_Symld_Words too many words that have symbols inside
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	*  0.8 BAYES_50 BODY: Bayes spam probability is 40 to 60%
-	*      [score: 0.4169]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.5 XM_Body_Dirty_Words Contains a dirty word
-	*  0.0 T_XMDrugObfuBody_08 obfuscated drug references
-	*  0.1 XMSolicitRefs_0 Weightloss drug
-X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: *;mtk.manpages@gmail.com
-X-Spam-Relay-Country: 
-Subject: Re: For review: pid_namespaces(7) man page
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+	id S1751486Ab3CAPlJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 10:41:09 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:18315 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751052Ab3CAPlH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Mar 2013 10:41:07 -0500
+Subject: Re: security_inode_init_security() inode field requirements
+From: Steven Whitehouse <swhiteho@redhat.com>
+To: Eric Paris <eparis@parisplace.org>
+Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>, Mimi Zohar <zohar@us.ibm.com>,
+        Chris Wright <chrisw@sous-sol.org>,
+        LSM List <linux-security-module@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        cluster-devel@redhat.com,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+In-Reply-To: <CACLa4psWBYPDjiZB3ROA4yGTbJX=UmN3Go8xH_myZ+_W7D01AA@mail.gmail.com>
+References: <1362132778.2723.15.camel@menhir>
+	 <1362140849.9158.108.camel@falcor1> <1362143512.2723.21.camel@menhir>
+	 <1362146843.9158.134.camel@falcor1>
+	 <CACLa4psWBYPDjiZB3ROA4yGTbJX=UmN3Go8xH_myZ+_W7D01AA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Red Hat UK Ltd
+Date: Fri, 01 Mar 2013 15:38:44 +0000
+Message-ID: <1362152324.2723.32.camel@menhir>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com> writes:
+Hi,
 
-> Hi Rob,
->
-> On Fri, Mar 1, 2013 at 5:01 AM, Rob Landley <rob@landley.net> wrote:
->> On 02/28/2013 05:24:07 AM, Michael Kerrisk (man-pages) wrote:
-> [...]
->
->>> DESCRIPTION
->>>        For an overview of namespaces, see namespaces(7).
->>>
->>>        PID  namespaces  isolate  the  process ID number space, meaning
->>>        that processes in different PID namespaces can  have  the  same
->>>        PID.
->>
->>
->> Um, perhaps "different processes"? Slightly repetitive, but trying to avoid
->> the potential misreading that "a processes can have the same PID in
->> different namespaces". (A single process can't be a member of more than one
->> namespace. This is not about selective visibility.)
->
-> I'm not sure this clarifies things...
->
->>> PID namespaces allow containers to migrate to a new host
->>>        while the processes inside  the  container  maintain  the  same
->>>        PIDs.
->>
->>
->> I thought suspend/resume a container was the simple case. Migration to a new
->> host is built on top of that. (On resume in a new container on the same
->> system, if other stuff is going on in the system so the available PIDs have
->> shifted.)
->
-> I'll add some words here on suspend/resume.
->
->>>        Likewise, a process in an ancestor namespace can—subject to the
->>>        usual permission checks described in  kill(2)—send  signals  to
->>>        the  "init" process of a child PID namespace only if the "init"
->>>        process has established a handler for that signal.  (Within the
->>>        handler,  the  siginfo_t si_pid field described in sigaction(2)
->>>        will be zero.)  SIGKILL or SIGSTOP are  treated  exceptionally:
->>>        these signals are forcibly delivered when sent from an ancestor
->>>        PID namespace.  Neither of these signals can be caught  by  the
->>>        "init" process, and so will result in the usual actions associ‐
->>>        ated with those signals (respectively, terminating and stopping
->>>        the process).
->>
->>
->> If SIGKILL to init is propogated to all the children of init, is SIGSTOP
->> also propogated to all the children? (I.E. will SIGSTOP to container's init
->> suspend the whole container, and will SIGCONT resume the whole container? If
->> the latter, will it only resume processes that weren't previously stopped?
->> :)
->
-> Covered by Eric.
->
->>>        To put things another way: a process's PID namespace membership
->>>        is determined when the process is created and cannot be changed
->>>        thereafter.  Among other things, this means that  the  parental
->>>        relationship between processes mirrors the parental between PID
->>
->>
->> mirrors the relationship
->
-> Thanks.
->
->>>        namespaces: the parent of a  process  is  either  in  the  same
->>>        namespace or resides in the immediate parent PID namespace.
->>>
->>>        Every  thread  in  a process must be in the same PID namespace.
->>>        For this reason, the two following call sequences will fail:
->>>
->>>            unshare(CLONE_NEWPID);
->>>            clone(..., CLONE_VM, ...);    /* Fails */
->>>
->>>            setns(fd, CLONE_NEWPID);
->>>            clone(..., CLONE_VM, ...);    /* Fails */
->>
->>
->> They fail with -EUNDOCUMENTED
->
-> Added EINVAL, as per Eric's reply. (Eric does that error also apply
-> for the two new cases you added?).
->
->>>        Because the above unshare(2) and setns(2) calls only change the
->>>        PID  namespace  for created children, the clone(2) calls neces‐
->>>        sarily put the new thread in a different PID namespace from the
->>>        calling thread.
->>
->>
->> Um, no they don't. They fail. That's the point.
->
-> (Good catch.)
->
->> They _would_ put the new
->> thread in a different PID namespace, which breaks the definition of threads.
->>
->> How about:
->>
->> The above unshare(2) and setns(2) calls change the PID namespace of
->> children created by subsequent clone(2) calls, which is incompatible
->> with CLONE_VM.
->
-> I decided on:
->
->        The  point  here is that unshare(2) and setns(2) change the PID
->        namespace for created children but not for the calling process,
->        while  clone(2) CLONE_VM specifies the creation of a new thread
->        in the same process.
+On Fri, 2013-03-01 at 10:13 -0500, Eric Paris wrote:
+> SELinux has no maximum   :-(
+> 
+> Realistically there are a couple of interfaces that limit things to
+> 4k, but labels on files on disk could be even larger than that!
+> 
+> 255 will fit most every label, but not necessarily all of them.
+> 
+> 
+> I know ext4 on Fedora allocates inodes which left about 255 bytes for
+> selinux.selinux, but will place the xattr in another block if it
+> happens to be larger than 255.  This is rare, but certainly
+> possible....
+> 
+> We use the inode->i_mode.
+> 
+> In debug/error path we use:
+>   inode->i_sb inode->i_no
+> 
+> We could use the parent dir sb instead of the new inode->i_sb.  We
+> don't have to print the i_no when we hit a failure, but it is just
+> about the only information that can help for debugging/figuring out
+> which file had a failure..
+> 
+> -Eric
+> 
+So it sounds like setting the selinux label before the allocation of the
+inode wouldn't be too much of a problem. That would give us the size
+ahead of time. Maybe EVM is the only thing which needs to be an
+exception in terms of being done after the inode number is set, and if
+that has a fairly small maximum size, then that could still work I
+think.
 
-Can we make that "for all new tasks created" instead of "created
-children"
+Having said that, this is turning out to be a fair bit more complicated
+than I'd hoped :(
 
-Othewise someone might expect CLONE_THREAD would work as you
-CLONE_THREAD creates a thread and not a child...
+Steve.
 
-Eric
+
+
+
