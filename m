@@ -1,37 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752047Ab3CARsz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 12:48:55 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:60460 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751367Ab3CARsx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 12:48:53 -0500
-Date: Fri, 1 Mar 2013 17:48:52 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Andrew Shewmaker <agshew@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH v2 1/2] mm: tuning hardcoded reserved memory
-Message-ID: <20130301174852.5d568191@www.etchedpixels.co.uk>
-In-Reply-To: <20130228034803.GB3829@localhost.localdomain>
-References: <20130227205629.GA8429@localhost.localdomain>
-	<20130228141200.3fe7f459.akpm@linux-foundation.org>
-	<20130228034803.GB3829@localhost.localdomain>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.13; x86_64-pc-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752022Ab3CARwc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 12:52:32 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:42938 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751151Ab3CARwb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Mar 2013 12:52:31 -0500
+Date: Fri, 1 Mar 2013 18:52:20 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
+Cc: Jeff Moyer <jmoyer@redhat.com>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 5/9] blockconsole: use CON_ALLDATA
+Message-ID: <20130301175220.GF30938@pd.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	=?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>,
+	Jeff Moyer <jmoyer@redhat.com>, linux-kernel@vger.kernel.org,
+	Andrew Morton <akpm@linux-foundation.org>
+References: <1362087602-8979-1-git-send-email-joern@logfs.org>
+ <1362087602-8979-6-git-send-email-joern@logfs.org>
+ <x49txov14mp.fsf@segfault.boston.devel.redhat.com>
+ <20130301162029.GB16393@logfs.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130301162029.GB16393@logfs.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The 3% reserve was added to the original code *because* users kept hitting
-problems where they couldn't recover. 
+On Fri, Mar 01, 2013 at 11:20:29AM -0500, Jörn Engel wrote:
+> If you and/or other people are strongly opposed to the CON_ALLDATA
+> patches, I can either keep them private (we will never drop them from
+> our kernel) or add a config option.
 
-I suspect the tunable should nowdays be something related to min(3%,
-someconstant), at the time we did the 3% I think 1GB was an "enterprise
-system" ;)
+We'll do that when someone comes up with a really persuasive reason why
+blockconsole shouldn't log *all* messages. And, whatever we do, I don't
+want to configure/set anything so that blockconsole logs everything - it
+should be the default.
 
-Alan
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
