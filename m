@@ -1,70 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754368Ab3CABbi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 20:31:38 -0500
-Received: from mga01.intel.com ([192.55.52.88]:21574 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754130Ab3CABbf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 20:31:35 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,758,1355126400"; 
-   d="scan'208";a="293340962"
-Message-ID: <5130052E.9070403@intel.com>
-Date: Fri, 01 Mar 2013 09:32:30 +0800
-From: Aaron Lu <aaron.lu@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1754662Ab3CABcA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 20:32:00 -0500
+Received: from kirsty.vergenet.net ([202.4.237.240]:59949 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754528Ab3CABb7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Feb 2013 20:31:59 -0500
+Date: Fri, 1 Mar 2013 10:31:56 +0900
+From: Simon Horman <horms@verge.net.au>
+To: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 1/2] kexec: fix wrong types of some local variables
+Message-ID: <20130301013156.GA11434@verge.net.au>
+References: <512C44E4.70907@cn.fujitsu.com>
 MIME-Version: 1.0
-To: Jeff Garzik <jgarzik@pobox.com>
-CC: Tejun Heo <tj@kernel.org>, Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        Jeff Garzik <jgarzik@redhat.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>
-Subject: [PATCH] [libata] Avoid specialized TLA's in ZPODD's Kconfig
-References: <1663657.ypAtqGpGAq@vostro.rjw.lan> <1781256.mPQbtiUPYR@vostro.rjw.lan> <CA+55aFyzjN_wMH+2RCEA+aNLY0Z7fn4YU7VOtTALbgngn1+vCw@mail.gmail.com> <2223198.XmyRLgb3Gv@vostro.rjw.lan> <20130226161049.GA9303@kahuna> <CA+55aFy24fp+9zXiDmAgvsz6YvWQh2L0BAJ2hAhF7cNSdyMd8w@mail.gmail.com> <CA+55aFyu5woJsH2y3y=w4UFneOG8hKz_cLXgZQbJzn5asn8=hQ@mail.gmail.com> <20130226163712.GA30433@htj.dyndns.org> <CA+55aFyFRbMX9G_0Mv0nUZgw9mHAPzE0zCw5mCSbGG_r1diFHg@mail.gmail.com> <20130226165813.GB30433@htj.dyndns.org> <512CF809.8010102@pobox.com>
-In-Reply-To: <512CF809.8010102@pobox.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <512C44E4.70907@cn.fujitsu.com>
+Organisation: Horms Solutions Ltd.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ODD is not a common TLA for non-ATA people so they will get confused
-by its meaning when they are configuring the kernel. This patch fixed
-this problem by using ODD only after stating what it is.
+On Tue, Feb 26, 2013 at 01:15:16PM +0800, Zhang Yanfei wrote:
+> The types of the following local variables:
+>   - ubytes/mbytes in kimage_load_crash_segment()/kimage_load_normal_segment()
+>   - r in vmcoreinfo_append_str()
+> are wrong, so fix them.
+> 
+> Cc: "Eric W. Biederman" <ebiederm@xmission.com>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Simon Horman <horms@verge.net.au>
+> Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
 
-Signed-off-by: Aaron Lu <aaron.lu@intel.com>
----
- drivers/ata/Kconfig | 13 +++++++------
- 1 file changed, 7 insertions(+), 6 deletions(-)
+No complaints here.
 
-diff --git a/drivers/ata/Kconfig b/drivers/ata/Kconfig
-index 3e751b7..d7d210e 100644
---- a/drivers/ata/Kconfig
-+++ b/drivers/ata/Kconfig
-@@ -59,15 +59,16 @@ config ATA_ACPI
- 	  option libata.noacpi=1
- 
- config SATA_ZPODD
--	bool "SATA Zero Power ODD Support"
-+	bool "SATA Zero Power Optical Disc Drive(ZPODD) support"
- 	depends on ATA_ACPI
- 	default n
- 	help
--	  This option adds support for SATA ZPODD. It requires both
--	  ODD and the platform support, and if enabled, will automatically
--	  power on/off the ODD when certain condition is satisfied. This
--	  does not impact user's experience of the ODD, only power is saved
--	  when ODD is not in use(i.e. no disc inside).
-+	  This option adds support for SATA Zero Power Optical Disc
-+	  Drive(ZPODD). It requires both the ODD and the platform
-+	  support, and if enabled, will automatically power on/off the
-+	  ODD when certain condition is satisfied. This does not impact
-+	  end user's experience of the ODD, only power is saved when
-+	  the ODD is not in use(i.e. no disc inside).
- 
- 	  If unsure, say N.
- 
--- 
-1.8.1.2
+Reviewed-by: Simon Horman <horms@verge.net.au>
 
+> ---
+>  kernel/kexec.c |    6 +++---
+>  1 files changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/kernel/kexec.c b/kernel/kexec.c
+> index 2436ffc..3cbfcc7 100644
+> --- a/kernel/kexec.c
+> +++ b/kernel/kexec.c
+> @@ -789,7 +789,7 @@ static int kimage_load_normal_segment(struct kimage *image,
+>  					 struct kexec_segment *segment)
+>  {
+>  	unsigned long maddr;
+> -	unsigned long ubytes, mbytes;
+> +	size_t ubytes, mbytes;
+>  	int result;
+>  	unsigned char __user *buf;
+>  
+> @@ -853,7 +853,7 @@ static int kimage_load_crash_segment(struct kimage *image,
+>  	 * We do things a page at a time for the sake of kmap.
+>  	 */
+>  	unsigned long maddr;
+> -	unsigned long ubytes, mbytes;
+> +	size_t ubytes, mbytes;
+>  	int result;
+>  	unsigned char __user *buf;
+>  
+> @@ -1455,7 +1455,7 @@ void vmcoreinfo_append_str(const char *fmt, ...)
+>  {
+>  	va_list args;
+>  	char buf[0x50];
+> -	int r;
+> +	size_t r;
+>  
+>  	va_start(args, fmt);
+>  	r = vsnprintf(buf, sizeof(buf), fmt, args);
+> -- 
+> 1.7.1
+> 
