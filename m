@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753603Ab3CATqG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 14:46:06 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51670 "EHLO
+	id S1754503Ab3CAUFe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 15:05:34 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51695 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753512Ab3CATqC (ORCPT
+	with ESMTP id S1753591Ab3CATqF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 14:46:02 -0500
+	Fri, 1 Mar 2013 14:46:05 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, Sasha Levin <sasha.levin@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [ 04/46] posix-timer: Dont call idr_find() with out-of-range ID
-Date: Fri,  1 Mar 2013 11:44:52 -0800
-Message-Id: <20130301194432.742289260@linuxfoundation.org>
+        David Henningsson <david.henningsson@canonical.com>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [ 01/46] ALSA: hda - hdmi: Make jacks phantom, if theyre not detectable
+Date: Fri,  1 Mar 2013 11:44:49 -0800
+Message-Id: <20130301194432.424842945@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130301194432.263409302@linuxfoundation.org>
 References: <20130301194432.263409302@linuxfoundation.org>
@@ -28,54 +27,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: David Henningsson <david.henningsson@canonical.com>
 
-commit e182bb38d7db7494fa5dcd82da17fe0dedf60ecf upstream.
+commit 30efd8debd1ef30be342d374f01e993509f5b76b upstream.
 
-When idr_find() was fed a negative ID, it used to look up the ID
-ignoring the sign bit before recent ("idr: remove MAX_IDR_MASK and
-move left MAX_IDR_* into idr.c") patch. Now a negative ID triggers
-a WARN_ON_ONCE().
+Just as for analog codecs, a jack that isn't suitable for detection
+(in this case, NO_PRESENCE was set) should be a phantom Jack
+instead of a normal one.
 
-__lock_timer() feeds timer_id from userland directly to idr_find()
-without sanitizing it which can trigger the above malfunctions.  Add a
-range check on @timer_id before invoking idr_find() in __lock_timer().
+Thanks to Raymond Yau for spotting.
 
-While timer_t is defined as int by all archs at the moment, Andrew
-worries that it may be defined as a larger type later on.  Make the
-test cover larger integers too so that it at least is guaranteed to
-not return the wrong timer.
-
-Note that WARN_ON_ONCE() in idr_find() on id < 0 is transitional
-precaution while moving away from ignoring MSB.  Once it's gone we can
-remove the guard as long as timer_t isn't larger than int.
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: Sasha Levin <sasha.levin@oracle.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Link: http://lkml.kernel.org/r/20130220232412.GL3570@htj.dyndns.org
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+BugLink: https://bugs.launchpad.net/bugs/961286
+BugLink: https://bugzilla.redhat.com/show_bug.cgi?id=903869
+Signed-off-by: David Henningsson <david.henningsson@canonical.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/posix-timers.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+ sound/pci/hda/patch_hdmi.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/kernel/posix-timers.c
-+++ b/kernel/posix-timers.c
-@@ -639,6 +639,13 @@ static struct k_itimer *__lock_timer(tim
- {
- 	struct k_itimer *timr;
+--- a/sound/pci/hda/patch_hdmi.c
++++ b/sound/pci/hda/patch_hdmi.c
+@@ -1244,6 +1244,9 @@ static int generic_hdmi_build_jack(struc
  
-+	/*
-+	 * timer_t could be any type >= int and we want to make sure any
-+	 * @timer_id outside positive int range fails lookup.
-+	 */
-+	if ((unsigned long long)timer_id > INT_MAX)
-+		return NULL;
-+
- 	rcu_read_lock();
- 	timr = idr_find(&posix_timers_id, (int)timer_id);
- 	if (timr) {
+ 	if (pcmdev > 0)
+ 		sprintf(hdmi_str + strlen(hdmi_str), ",pcm=%d", pcmdev);
++	if (!is_jack_detectable(codec, per_pin->pin_nid))
++		strncat(hdmi_str, " Phantom",
++			sizeof(hdmi_str) - strlen(hdmi_str) - 1);
+ 
+ 	return snd_hda_jack_add_kctl(codec, per_pin->pin_nid, hdmi_str, 0);
+ }
 
 
