@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751658Ab3CAQJe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 11:09:34 -0500
-Received: from mail-qa0-f47.google.com ([209.85.216.47]:41830 "EHLO
-	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751059Ab3CAQJ3 (ORCPT
+	id S1751804Ab3CAQJk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 11:09:40 -0500
+Received: from mail-qe0-f49.google.com ([209.85.128.49]:33812 "EHLO
+	mail-qe0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751691Ab3CAQJi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 11:09:29 -0500
+	Fri, 1 Mar 2013 11:09:38 -0500
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
@@ -17,9 +17,9 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Namhyung Kim <namhyung.kim@lge.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 2/5] context_tracking: Restore correct previous context state on exception exit
-Date: Fri,  1 Mar 2013 17:08:56 +0100
-Message-Id: <1362154139-1139-3-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 4/5] cputime: Dynamically scale cputime for full dynticks accounting
+Date: Fri,  1 Mar 2013 17:08:58 +0100
+Message-Id: <1362154139-1139-5-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1362154139-1139-1-git-send-email-fweisbec@gmail.com>
 References: <1362154139-1139-1-git-send-email-fweisbec@gmail.com>
@@ -27,25 +27,16 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On exception exit, we restore the previous context tracking state based on
-the regs of the interrupted frame. Iff that frame is in user mode as
-stated by user_mode() helper, we restore the context tracking user mode.
+The full dynticks cputime accounting is able to account either
+using the tick or the context tracking subsystem. This way
+the housekeeping CPU can keep the low overhead tick based
+solution.
 
-However there is a tiny chunck of low level arch code after we pass through
-user_enter() and until the CPU eventually resumes userspace.
-If an exception happens in this tiny area, exception_enter() correctly
-exits the context tracking user mode but exception_exit() won't restore
-it because of the value returned by user_mode(regs).
-
-As a result we may return to userspace with the wrong context tracking
-state.
-
-To fix this, change exception_enter() to return the context tracking state
-prior to its call and pass this saved state to exception_exit(). This restores
-the real context tracking state of the interrupted frame.
-
-(May be this patch was suggested to me, I don't recall exactly. If so,
-sorry for the missing credit).
+This latter mode has a low jiffies resolution granularity and
+need to be scaled against CFS precise runtime accounting to
+improve its result. We are doing this for CONFIG_TICK_CPU_ACCOUNTING,
+now we also need to expand it to full dynticks accounting dynamic
+off-case as well.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Li Zhong <zhong@linux.vnet.ibm.com>
@@ -58,333 +49,237 @@ Cc: Namhyung Kim <namhyung.kim@lge.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 ---
- arch/x86/kernel/kvm.c            |    6 ++-
- arch/x86/kernel/traps.c          |   65 ++++++++++++++++++++++++--------------
- arch/x86/mm/fault.c              |    6 ++-
- include/linux/context_tracking.h |   19 +++++++----
- 4 files changed, 61 insertions(+), 35 deletions(-)
+ include/linux/sched.h  |    4 +-
+ kernel/fork.c          |    2 +-
+ kernel/sched/cputime.c |  154 +++++++++++++++++++++++++-----------------------
+ 3 files changed, 83 insertions(+), 77 deletions(-)
 
-diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
-index 1effefa..7ae5e47 100644
---- a/arch/x86/kernel/kvm.c
-+++ b/arch/x86/kernel/kvm.c
-@@ -254,16 +254,18 @@ EXPORT_SYMBOL_GPL(kvm_read_and_reset_pf_reason);
- dotraplinkage void __kprobes
- do_async_page_fault(struct pt_regs *regs, unsigned long error_code)
- {
-+	enum ctx_state prev_state;
-+
- 	switch (kvm_read_and_reset_pf_reason()) {
- 	default:
- 		do_page_fault(regs, error_code);
- 		break;
- 	case KVM_PV_REASON_PAGE_NOT_PRESENT:
- 		/* page is swapped out by the host. */
--		exception_enter(regs);
-+		prev_state = exception_enter();
- 		exit_idle();
- 		kvm_async_pf_task_wait((u32)read_cr2());
--		exception_exit(regs);
-+		exception_exit(prev_state);
- 		break;
- 	case KVM_PV_REASON_PAGE_READY:
- 		rcu_irq_enter();
-diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
-index be079a6..324dff4 100644
---- a/arch/x86/kernel/traps.c
-+++ b/arch/x86/kernel/traps.c
-@@ -175,34 +175,38 @@ do_trap(int trapnr, int signr, char *str, struct pt_regs *regs,
- #define DO_ERROR(trapnr, signr, str, name)				\
- dotraplinkage void do_##name(struct pt_regs *regs, long error_code)	\
- {									\
--	exception_enter(regs);						\
-+	enum ctx_state prev_state;					\
-+									\
-+	prev_state = exception_enter();					\
- 	if (notify_die(DIE_TRAP, str, regs, error_code,			\
- 			trapnr, signr) == NOTIFY_STOP) {		\
--		exception_exit(regs);					\
-+		exception_exit(prev_state);				\
- 		return;							\
- 	}								\
- 	conditional_sti(regs);						\
- 	do_trap(trapnr, signr, str, regs, error_code, NULL);		\
--	exception_exit(regs);						\
-+	exception_exit(prev_state);					\
- }
- 
- #define DO_ERROR_INFO(trapnr, signr, str, name, sicode, siaddr)		\
- dotraplinkage void do_##name(struct pt_regs *regs, long error_code)	\
- {									\
- 	siginfo_t info;							\
-+	enum ctx_state prev_state;					\
-+									\
- 	info.si_signo = signr;						\
- 	info.si_errno = 0;						\
- 	info.si_code = sicode;						\
- 	info.si_addr = (void __user *)siaddr;				\
--	exception_enter(regs);						\
-+	prev_state = exception_enter();					\
- 	if (notify_die(DIE_TRAP, str, regs, error_code,			\
- 			trapnr, signr) == NOTIFY_STOP) {		\
--		exception_exit(regs);					\
-+		exception_exit(prev_state);				\
- 		return;							\
- 	}								\
- 	conditional_sti(regs);						\
- 	do_trap(trapnr, signr, str, regs, error_code, &info);		\
--	exception_exit(regs);						\
-+	exception_exit(prev_state);					\
- }
- 
- DO_ERROR_INFO(X86_TRAP_DE, SIGFPE, "divide error", divide_error, FPE_INTDIV,
-@@ -225,14 +229,16 @@ DO_ERROR_INFO(X86_TRAP_AC, SIGBUS, "alignment check", alignment_check,
- /* Runs on IST stack */
- dotraplinkage void do_stack_segment(struct pt_regs *regs, long error_code)
- {
--	exception_enter(regs);
-+	enum ctx_state prev_state;
-+
-+	prev_state = exception_enter();
- 	if (notify_die(DIE_TRAP, "stack segment", regs, error_code,
- 		       X86_TRAP_SS, SIGBUS) != NOTIFY_STOP) {
- 		preempt_conditional_sti(regs);
- 		do_trap(X86_TRAP_SS, SIGBUS, "stack segment", regs, error_code, NULL);
- 		preempt_conditional_cli(regs);
- 	}
--	exception_exit(regs);
-+	exception_exit(prev_state);
- }
- 
- dotraplinkage void do_double_fault(struct pt_regs *regs, long error_code)
-@@ -240,7 +246,7 @@ dotraplinkage void do_double_fault(struct pt_regs *regs, long error_code)
- 	static const char str[] = "double fault";
- 	struct task_struct *tsk = current;
- 
--	exception_enter(regs);
-+	exception_enter();
- 	/* Return not checked because double check cannot be ignored */
- 	notify_die(DIE_TRAP, str, regs, error_code, X86_TRAP_DF, SIGSEGV);
- 
-@@ -260,8 +266,9 @@ dotraplinkage void __kprobes
- do_general_protection(struct pt_regs *regs, long error_code)
- {
- 	struct task_struct *tsk;
-+	enum ctx_state prev_state;
- 
--	exception_enter(regs);
-+	prev_state = exception_enter();
- 	conditional_sti(regs);
- 
- #ifdef CONFIG_X86_32
-@@ -299,12 +306,14 @@ do_general_protection(struct pt_regs *regs, long error_code)
- 
- 	force_sig(SIGSEGV, tsk);
- exit:
--	exception_exit(regs);
-+	exception_exit(prev_state);
- }
- 
- /* May run on IST stack. */
- dotraplinkage void __kprobes notrace do_int3(struct pt_regs *regs, long error_code)
- {
-+	enum ctx_state prev_state;
-+
- #ifdef CONFIG_DYNAMIC_FTRACE
- 	/*
- 	 * ftrace must be first, everything else may cause a recursive crash.
-@@ -314,7 +323,7 @@ dotraplinkage void __kprobes notrace do_int3(struct pt_regs *regs, long error_co
- 	    ftrace_int3_handler(regs))
- 		return;
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index f9ca237d..145110b 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -574,7 +574,7 @@ struct signal_struct {
+ 	cputime_t utime, stime, cutime, cstime;
+ 	cputime_t gtime;
+ 	cputime_t cgtime;
+-#ifndef CONFIG_VIRT_CPU_ACCOUNTING
++#ifndef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
+ 	struct cputime prev_cputime;
  #endif
--	exception_enter(regs);
-+	prev_state = exception_enter();
- #ifdef CONFIG_KGDB_LOW_LEVEL_TRAP
- 	if (kgdb_ll_trap(DIE_INT3, "int3", regs, error_code, X86_TRAP_BP,
- 				SIGTRAP) == NOTIFY_STOP)
-@@ -335,7 +344,7 @@ dotraplinkage void __kprobes notrace do_int3(struct pt_regs *regs, long error_co
- 	preempt_conditional_cli(regs);
- 	debug_stack_usage_dec();
- exit:
--	exception_exit(regs);
-+	exception_exit(prev_state);
- }
+ 	unsigned long nvcsw, nivcsw, cnvcsw, cnivcsw;
+@@ -1331,7 +1331,7 @@ struct task_struct {
  
- #ifdef CONFIG_X86_64
-@@ -392,11 +401,12 @@ asmlinkage __kprobes struct pt_regs *sync_regs(struct pt_regs *eregs)
- dotraplinkage void __kprobes do_debug(struct pt_regs *regs, long error_code)
- {
- 	struct task_struct *tsk = current;
-+	enum ctx_state prev_state;
- 	int user_icebp = 0;
- 	unsigned long dr6;
- 	int si_code;
+ 	cputime_t utime, stime, utimescaled, stimescaled;
+ 	cputime_t gtime;
+-#ifndef CONFIG_VIRT_CPU_ACCOUNTING
++#ifndef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
+ 	struct cputime prev_cputime;
+ #endif
+ #ifdef CONFIG_VIRT_CPU_ACCOUNTING_GEN
+diff --git a/kernel/fork.c b/kernel/fork.c
+index 4133876..30ce197 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -1230,7 +1230,7 @@ static struct task_struct *copy_process(unsigned long clone_flags,
  
--	exception_enter(regs);
-+	prev_state = exception_enter();
+ 	p->utime = p->stime = p->gtime = 0;
+ 	p->utimescaled = p->stimescaled = 0;
+-#ifndef CONFIG_VIRT_CPU_ACCOUNTING
++#ifndef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
+ 	p->prev_cputime.utime = p->prev_cputime.stime = 0;
+ #endif
+ #ifdef CONFIG_VIRT_CPU_ACCOUNTING_GEN
+diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
+index ed12cbb..024fe19 100644
+--- a/kernel/sched/cputime.c
++++ b/kernel/sched/cputime.c
+@@ -388,82 +388,10 @@ static inline void irqtime_account_process_tick(struct task_struct *p, int user_
+ 						struct rq *rq) {}
+ #endif /* CONFIG_IRQ_TIME_ACCOUNTING */
  
- 	get_debugreg(dr6, 6);
- 
-@@ -466,7 +476,7 @@ dotraplinkage void __kprobes do_debug(struct pt_regs *regs, long error_code)
- 	debug_stack_usage_dec();
- 
- exit:
--	exception_exit(regs);
-+	exception_exit(prev_state);
- }
- 
+-#ifndef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
+-/*
+- * Account a single tick of cpu time.
+- * @p: the process that the cpu time gets accounted to
+- * @user_tick: indicates if the tick is a user or a system tick
+- */
+-void account_process_tick(struct task_struct *p, int user_tick)
+-{
+-	cputime_t one_jiffy_scaled = cputime_to_scaled(cputime_one_jiffy);
+-	struct rq *rq = this_rq();
+-
+-	if (vtime_accounting_enabled())
+-		return;
+-
+-	if (sched_clock_irqtime) {
+-		irqtime_account_process_tick(p, user_tick, rq);
+-		return;
+-	}
+-
+-	if (steal_account_process_tick())
+-		return;
+-
+-	if (user_tick)
+-		account_user_time(p, cputime_one_jiffy, one_jiffy_scaled);
+-	else if ((p != rq->idle) || (irq_count() != HARDIRQ_OFFSET))
+-		account_system_time(p, HARDIRQ_OFFSET, cputime_one_jiffy,
+-				    one_jiffy_scaled);
+-	else
+-		account_idle_time(cputime_one_jiffy);
+-}
+-
+-/*
+- * Account multiple ticks of steal time.
+- * @p: the process from which the cpu time has been stolen
+- * @ticks: number of stolen ticks
+- */
+-void account_steal_ticks(unsigned long ticks)
+-{
+-	account_steal_time(jiffies_to_cputime(ticks));
+-}
+-
+-/*
+- * Account multiple ticks of idle time.
+- * @ticks: number of stolen ticks
+- */
+-void account_idle_ticks(unsigned long ticks)
+-{
+-
+-	if (sched_clock_irqtime) {
+-		irqtime_account_idle_ticks(ticks);
+-		return;
+-	}
+-
+-	account_idle_time(jiffies_to_cputime(ticks));
+-}
+-#endif /* !CONFIG_VIRT_CPU_ACCOUNTING_NATIVE */
+-
  /*
-@@ -560,17 +570,21 @@ void math_error(struct pt_regs *regs, int error_code, int trapnr)
+  * Use precise platform statistics if available:
+  */
+ #ifdef CONFIG_VIRT_CPU_ACCOUNTING
+-void task_cputime_adjusted(struct task_struct *p, cputime_t *ut, cputime_t *st)
+-{
+-	*ut = p->utime;
+-	*st = p->stime;
+-}
+-
+-void thread_group_cputime_adjusted(struct task_struct *p, cputime_t *ut, cputime_t *st)
+-{
+-	struct task_cputime cputime;
+-
+-	thread_group_cputime(p, &cputime);
+-
+-	*ut = cputime.utime;
+-	*st = cputime.stime;
+-}
  
- dotraplinkage void do_coprocessor_error(struct pt_regs *regs, long error_code)
- {
--	exception_enter(regs);
-+	enum ctx_state prev_state;
+ #ifndef __ARCH_HAS_VTIME_TASK_SWITCH
+ void vtime_task_switch(struct task_struct *prev)
+@@ -518,8 +446,80 @@ void vtime_account_irq_enter(struct task_struct *tsk)
+ }
+ EXPORT_SYMBOL_GPL(vtime_account_irq_enter);
+ #endif /* __ARCH_HAS_VTIME_ACCOUNT */
++#endif /* CONFIG_VIRT_CPU_ACCOUNTING */
 +
-+	prev_state = exception_enter();
- 	math_error(regs, error_code, X86_TRAP_MF);
--	exception_exit(regs);
-+	exception_exit(prev_state);
- }
- 
- dotraplinkage void
- do_simd_coprocessor_error(struct pt_regs *regs, long error_code)
- {
--	exception_enter(regs);
-+	enum ctx_state prev_state;
 +
-+	prev_state = exception_enter();
- 	math_error(regs, error_code, X86_TRAP_XF);
--	exception_exit(regs);
-+	exception_exit(prev_state);
- }
++#ifdef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
++void task_cputime_adjusted(struct task_struct *p, cputime_t *ut, cputime_t *st)
++{
++	*ut = p->utime;
++	*st = p->stime;
++}
  
- dotraplinkage void
-@@ -638,7 +652,9 @@ EXPORT_SYMBOL_GPL(math_state_restore);
- dotraplinkage void __kprobes
- do_device_not_available(struct pt_regs *regs, long error_code)
- {
--	exception_enter(regs);
-+	enum ctx_state prev_state;
+-#else /* !CONFIG_VIRT_CPU_ACCOUNTING */
++void thread_group_cputime_adjusted(struct task_struct *p, cputime_t *ut, cputime_t *st)
++{
++	struct task_cputime cputime;
 +
-+	prev_state = exception_enter();
- 	BUG_ON(use_eager_fpu());
- 
- #ifdef CONFIG_MATH_EMULATION
-@@ -649,7 +665,7 @@ do_device_not_available(struct pt_regs *regs, long error_code)
- 
- 		info.regs = regs;
- 		math_emulate(&info);
--		exception_exit(regs);
-+		exception_exit(prev_state);
- 		return;
- 	}
- #endif
-@@ -657,15 +673,16 @@ do_device_not_available(struct pt_regs *regs, long error_code)
- #ifdef CONFIG_X86_32
- 	conditional_sti(regs);
- #endif
--	exception_exit(regs);
-+	exception_exit(prev_state);
- }
- 
- #ifdef CONFIG_X86_32
- dotraplinkage void do_iret_error(struct pt_regs *regs, long error_code)
- {
- 	siginfo_t info;
-+	enum ctx_state prev_state;
- 
--	exception_enter(regs);
-+	prev_state = exception_enter();
- 	local_irq_enable();
- 
- 	info.si_signo = SIGILL;
-@@ -677,7 +694,7 @@ dotraplinkage void do_iret_error(struct pt_regs *regs, long error_code)
- 		do_trap(X86_TRAP_IRET, SIGILL, "iret exception", regs, error_code,
- 			&info);
- 	}
--	exception_exit(regs);
-+	exception_exit(prev_state);
- }
- #endif
- 
-diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
-index 6d1e11f..d045a3b 100644
---- a/arch/x86/mm/fault.c
-+++ b/arch/x86/mm/fault.c
-@@ -1228,7 +1228,9 @@ good_area:
- dotraplinkage void __kprobes
- do_page_fault(struct pt_regs *regs, unsigned long error_code)
- {
--	exception_enter(regs);
-+	enum ctx_state prev_state;
++	thread_group_cputime(p, &cputime);
 +
-+	prev_state = exception_enter();
- 	__do_page_fault(regs, error_code);
--	exception_exit(regs);
-+	exception_exit(prev_state);
- }
-diff --git a/include/linux/context_tracking.h b/include/linux/context_tracking.h
-index 5a69273..365f4a6 100644
---- a/include/linux/context_tracking.h
-+++ b/include/linux/context_tracking.h
-@@ -5,7 +5,6 @@
- #include <linux/percpu.h>
- #include <asm/ptrace.h>
- 
--#ifdef CONFIG_CONTEXT_TRACKING
- struct context_tracking {
- 	/*
- 	 * When active is false, probes are unset in order
-@@ -14,12 +13,13 @@ struct context_tracking {
- 	 * may be further optimized using static keys.
- 	 */
- 	bool active;
--	enum {
-+	enum ctx_state {
- 		IN_KERNEL = 0,
- 		IN_USER,
- 	} state;
- };
- 
-+#ifdef CONFIG_CONTEXT_TRACKING
- DECLARE_PER_CPU(struct context_tracking, context_tracking);
- 
- static inline bool context_tracking_in_user(void)
-@@ -35,14 +35,19 @@ static inline bool context_tracking_active(void)
- extern void user_enter(void);
- extern void user_exit(void);
- 
--static inline void exception_enter(struct pt_regs *regs)
-+static inline enum ctx_state exception_enter(void)
- {
-+	enum ctx_state prev_ctx;
++	*ut = cputime.utime;
++	*st = cputime.stime;
++}
++#else /* !CONFIG_VIRT_CPU_ACCOUNTING_NATIVE */
++/*
++ * Account a single tick of cpu time.
++ * @p: the process that the cpu time gets accounted to
++ * @user_tick: indicates if the tick is a user or a system tick
++ */
++void account_process_tick(struct task_struct *p, int user_tick)
++{
++	cputime_t one_jiffy_scaled = cputime_to_scaled(cputime_one_jiffy);
++	struct rq *rq = this_rq();
 +
-+	prev_ctx = this_cpu_read(context_tracking.state);
- 	user_exit();
++	if (vtime_accounting_enabled())
++		return;
 +
-+	return prev_ctx;
- }
++	if (sched_clock_irqtime) {
++		irqtime_account_process_tick(p, user_tick, rq);
++		return;
++	}
++
++	if (steal_account_process_tick())
++		return;
++
++	if (user_tick)
++		account_user_time(p, cputime_one_jiffy, one_jiffy_scaled);
++	else if ((p != rq->idle) || (irq_count() != HARDIRQ_OFFSET))
++		account_system_time(p, HARDIRQ_OFFSET, cputime_one_jiffy,
++				    one_jiffy_scaled);
++	else
++		account_idle_time(cputime_one_jiffy);
++}
++
++/*
++ * Account multiple ticks of steal time.
++ * @p: the process from which the cpu time has been stolen
++ * @ticks: number of stolen ticks
++ */
++void account_steal_ticks(unsigned long ticks)
++{
++	account_steal_time(jiffies_to_cputime(ticks));
++}
++
++/*
++ * Account multiple ticks of idle time.
++ * @ticks: number of stolen ticks
++ */
++void account_idle_ticks(unsigned long ticks)
++{
++
++	if (sched_clock_irqtime) {
++		irqtime_account_idle_ticks(ticks);
++		return;
++	}
++
++	account_idle_time(jiffies_to_cputime(ticks));
++}
  
--static inline void exception_exit(struct pt_regs *regs)
-+static inline void exception_exit(enum ctx_state prev_ctx)
+ static cputime_t scale_stime(cputime_t stime, cputime_t rtime, cputime_t total)
  {
--	if (user_mode(regs))
-+	if (prev_ctx == IN_USER)
- 		user_enter();
- }
+@@ -545,6 +545,12 @@ static void cputime_adjust(struct task_cputime *curr,
+ {
+ 	cputime_t rtime, stime, total;
  
-@@ -52,8 +57,8 @@ extern void context_tracking_task_switch(struct task_struct *prev,
- static inline bool context_tracking_in_user(void) { return false; }
- static inline void user_enter(void) { }
- static inline void user_exit(void) { }
--static inline void exception_enter(struct pt_regs *regs) { }
--static inline void exception_exit(struct pt_regs *regs) { }
-+static inline enum ctx_state exception_enter(void) { return 0; }
-+static inline void exception_exit(enum ctx_state prev_ctx) { }
- static inline void context_tracking_task_switch(struct task_struct *prev,
- 						struct task_struct *next) { }
- #endif /* !CONFIG_CONTEXT_TRACKING */
++	if (vtime_accounting_enabled()) {
++		*ut = curr->utime;
++		*st = curr->stime;
++		return;
++	}
++
+ 	stime = curr->stime;
+ 	total = stime + curr->utime;
+ 
+@@ -597,7 +603,7 @@ void thread_group_cputime_adjusted(struct task_struct *p, cputime_t *ut, cputime
+ 	thread_group_cputime(p, &cputime);
+ 	cputime_adjust(&cputime, &p->signal->prev_cputime, ut, st);
+ }
+-#endif /* !CONFIG_VIRT_CPU_ACCOUNTING */
++#endif /* !CONFIG_VIRT_CPU_ACCOUNTING_NATIVE */
+ 
+ #ifdef CONFIG_VIRT_CPU_ACCOUNTING_GEN
+ static unsigned long long vtime_delta(struct task_struct *tsk)
 -- 
 1.7.5.4
 
