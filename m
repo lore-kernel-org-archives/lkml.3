@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752671Ab3CATp0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 14:45:26 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51387 "EHLO
+	id S1753043Ab3CAUUS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 15:20:18 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51405 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752554Ab3CATpV (ORCPT
+	with ESMTP id S1752665Ab3CATpZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 14:45:21 -0500
+	Fri, 1 Mar 2013 14:45:25 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Walt Nelson Jr <walt0924@gmail.com>,
-        Satoru Takeuchi <takeuchi_satoru@jp.fujitsu.com>,
-        Matt Fleming <matt.fleming@intel.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [ 23/77] x86, efi: Make "noefi" really disable EFI runtime serivces
-Date: Fri,  1 Mar 2013 11:44:08 -0800
-Message-Id: <20130301194354.452595684@linuxfoundation.org>
+        Jie Liu <jeff.liu@oracle.com>, Tao Ma <boyu.mt@taobao.com>,
+        Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        Joel Becker <jlbec@evilplan.org>, Mark Fasheh <mfasheh@suse.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 30/77] ocfs2: fix ocfs2_init_security_and_acl() to initialize acl correctly
+Date: Fri,  1 Mar 2013 11:44:15 -0800
+Message-Id: <20130301194355.190066508@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130301194351.913471337@linuxfoundation.org>
 References: <20130301194351.913471337@linuxfoundation.org>
@@ -29,55 +30,163 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Matt Fleming <matt.fleming@intel.com>
+From: Jeff Liu <jeff.liu@oracle.com>
 
-commit fb834c7acc5e140cf4f9e86da93a66de8c0514da upstream.
+commit 32918dd9f19e5960af4cdfa41190bb843fb2247b upstream.
 
-commit 1de63d60cd5b ("efi: Clear EFI_RUNTIME_SERVICES rather than
-EFI_BOOT by "noefi" boot parameter") attempted to make "noefi" true to
-its documentation and disable EFI runtime services to prevent the
-bricking bug described in commit e0094244e41c ("samsung-laptop:
-Disable on EFI hardware"). However, it's not possible to clear
-EFI_RUNTIME_SERVICES from an early param function because
-EFI_RUNTIME_SERVICES is set in efi_init() *after* parse_early_param().
+We need to re-initialize the security for a new reflinked inode with its
+parent dirs if it isn't specified to be preserved for ocfs2_reflink().
+However, the code logic is broken at ocfs2_init_security_and_acl()
+although ocfs2_init_security_get() succeed.  As a result,
+ocfs2_acl_init() does not involked and therefore the default ACL of
+parent dir was missing on the new inode.
 
-This resulted in "noefi" effectively becoming a no-op and no longer
-providing users with a way to disable EFI, which is bad for those
-users that have buggy machines.
+Note this was introduced by 9d8f13ba3 ("security: new
+security_inode_init_security API adds function callback")
 
-Reported-by: Walt Nelson Jr <walt0924@gmail.com>
-Cc: Satoru Takeuchi <takeuchi_satoru@jp.fujitsu.com>
-Signed-off-by: Matt Fleming <matt.fleming@intel.com>
-Link: http://lkml.kernel.org/r/1361392572-25657-1-git-send-email-matt@console-pimps.org
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+To reproduce:
+
+    set default ACL for the parent dir(ocfs2 in this case):
+    $ setfacl -m default:user:jeff:rwx ../ocfs2/
+    $ getfacl ../ocfs2/
+    # file: ../ocfs2/
+    # owner: jeff
+    # group: jeff
+    user::rwx
+    group::r-x
+    other::r-x
+    default:user::rwx
+    default:user:jeff:rwx
+    default:group::r-x
+    default:mask::rwx
+    default:other::r-x
+
+    $ touch a
+    $ getfacl a
+    # file: a
+    # owner: jeff
+    # group: jeff
+    user::rw-
+    group::rw-
+    other::r--
+
+Before patching, create reflink file b from a, the user
+default ACL entry(user:jeff:rwx)was missing:
+
+    $ ./ocfs2_reflink a b
+    $ getfacl b
+    # file: b
+    # owner: jeff
+    # group: jeff
+    user::rw-
+    group::rw-
+    other::r--
+
+In this case, the end user can also observed an error message at syslog:
+
+  (ocfs2_reflink,3229,2):ocfs2_init_security_and_acl:7193 ERROR: status = 0
+
+After applying this patch, create reflink file c from a:
+
+    $ ./ocfs2_reflink a c
+    $ getfacl c
+    # file: c
+    # owner: jeff
+    # group: jeff
+    user::rw-
+    user:jeff:rwx			#effective:rw-
+    group::r-x			#effective:r--
+    mask::rw-
+    other::r--
+
+Test program:
+/* Usage: reflink <source> <dest> */
+#include <stdio.h>
+#include <stdint.h>
+#include <stdbool.h>
+#include <string.h>
+#include <errno.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <sys/ioctl.h>
+
+static int
+reflink_file(char const *src_name, char const *dst_name,
+	     bool preserve_attrs)
+{
+	int fd;
+
+#ifndef REFLINK_ATTR_NONE
+#  define REFLINK_ATTR_NONE 0
+#endif
+#ifndef REFLINK_ATTR_PRESERVE
+#  define REFLINK_ATTR_PRESERVE 1
+#endif
+#ifndef OCFS2_IOC_REFLINK
+	struct reflink_arguments {
+		uint64_t old_path;
+		uint64_t new_path;
+		uint64_t preserve;
+	};
+
+#  define OCFS2_IOC_REFLINK _IOW ('o', 4, struct reflink_arguments)
+#endif
+	struct reflink_arguments args = {
+		.old_path = (unsigned long) src_name,
+		.new_path = (unsigned long) dst_name,
+		.preserve = preserve_attrs ? REFLINK_ATTR_PRESERVE :
+					     REFLINK_ATTR_NONE,
+	};
+
+	fd = open(src_name, O_RDONLY);
+	if (fd < 0) {
+		fprintf(stderr, "Failed to open %s: %s\n",
+			src_name, strerror(errno));
+		return -1;
+	}
+
+	if (ioctl(fd, OCFS2_IOC_REFLINK, &args) < 0) {
+		fprintf(stderr, "Failed to reflink %s to %s: %s\n",
+			src_name, dst_name, strerror(errno));
+		return -1;
+	}
+}
+
+int
+main(int argc, char *argv[])
+{
+	if (argc != 3) {
+		fprintf(stdout, "Usage: %s source dest\n", argv[0]);
+		return 1;
+	}
+
+	return reflink_file(argv[1], argv[2], 0);
+}
+
+Signed-off-by: Jie Liu <jeff.liu@oracle.com>
+Reviewed-by: Tao Ma <boyu.mt@taobao.com>
+Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: Joel Becker <jlbec@evilplan.org>
+Cc: Mark Fasheh <mfasheh@suse.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/platform/efi/efi.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ fs/ocfs2/xattr.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/x86/platform/efi/efi.c
-+++ b/arch/x86/platform/efi/efi.c
-@@ -85,9 +85,10 @@ int efi_enabled(int facility)
- }
- EXPORT_SYMBOL(efi_enabled);
+--- a/fs/ocfs2/xattr.c
++++ b/fs/ocfs2/xattr.c
+@@ -7189,7 +7189,7 @@ int ocfs2_init_security_and_acl(struct i
+ 	struct buffer_head *dir_bh = NULL;
  
-+static bool disable_runtime = false;
- static int __init setup_noefi(char *arg)
- {
--	clear_bit(EFI_RUNTIME_SERVICES, &x86_efi_facility);
-+	disable_runtime = true;
- 	return 0;
- }
- early_param("noefi", setup_noefi);
-@@ -734,7 +735,7 @@ void __init efi_init(void)
- 	if (!efi_is_native())
- 		pr_info("No EFI runtime due to 32/64-bit mismatch with kernel\n");
- 	else {
--		if (efi_runtime_init())
-+		if (disable_runtime || efi_runtime_init())
- 			return;
- 		set_bit(EFI_RUNTIME_SERVICES, &x86_efi_facility);
+ 	ret = ocfs2_init_security_get(inode, dir, qstr, NULL);
+-	if (!ret) {
++	if (ret) {
+ 		mlog_errno(ret);
+ 		goto leave;
  	}
 
 
