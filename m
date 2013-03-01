@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755029Ab3CAUGi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 15:06:38 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51680 "EHLO
+	id S1755065Ab3CAUGz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 15:06:55 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51660 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753532Ab3CATqD (ORCPT
+	with ESMTP id S1753450Ab3CATqC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 14:46:03 -0500
+	Fri, 1 Mar 2013 14:46:02 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Walt Nelson Jr <walt0924@gmail.com>,
-        Satoru Takeuchi <takeuchi_satoru@jp.fujitsu.com>,
-        Matt Fleming <matt.fleming@intel.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [ 06/46] x86, efi: Make "noefi" really disable EFI runtime serivces
-Date: Fri,  1 Mar 2013 11:44:54 -0800
-Message-Id: <20130301194432.953597862@linuxfoundation.org>
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [ 05/46] ftrace: Call ftrace cleanup module notifier after all other notifiers
+Date: Fri,  1 Mar 2013 11:44:53 -0800
+Message-Id: <20130301194432.850664919@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130301194432.263409302@linuxfoundation.org>
 References: <20130301194432.263409302@linuxfoundation.org>
@@ -29,55 +28,127 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Matt Fleming <matt.fleming@intel.com>
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-commit fb834c7acc5e140cf4f9e86da93a66de8c0514da upstream.
+commit 8c189ea64eea01ca20d102ddb74d6936dd16c579 upstream.
 
-commit 1de63d60cd5b ("efi: Clear EFI_RUNTIME_SERVICES rather than
-EFI_BOOT by "noefi" boot parameter") attempted to make "noefi" true to
-its documentation and disable EFI runtime services to prevent the
-bricking bug described in commit e0094244e41c ("samsung-laptop:
-Disable on EFI hardware"). However, it's not possible to clear
-EFI_RUNTIME_SERVICES from an early param function because
-EFI_RUNTIME_SERVICES is set in efi_init() *after* parse_early_param().
+Commit: c1bf08ac "ftrace: Be first to run code modification on modules"
 
-This resulted in "noefi" effectively becoming a no-op and no longer
-providing users with a way to disable EFI, which is bad for those
-users that have buggy machines.
+changed ftrace module notifier's priority to INT_MAX in order to
+process the ftrace nops before anything else could touch them
+(namely kprobes). This was the correct thing to do.
 
-Reported-by: Walt Nelson Jr <walt0924@gmail.com>
-Cc: Satoru Takeuchi <takeuchi_satoru@jp.fujitsu.com>
-Signed-off-by: Matt Fleming <matt.fleming@intel.com>
-Link: http://lkml.kernel.org/r/1361392572-25657-1-git-send-email-matt@console-pimps.org
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Unfortunately, the ftrace module notifier also contains the ftrace
+clean up code. As opposed to the set up code, this code should be
+run *after* all the module notifiers have run in case a module is doing
+correct clean-up and unregisters its ftrace hooks. Basically, ftrace
+needs to do clean up on module removal, as it needs to know about code
+being removed so that it doesn't try to modify that code. But after it
+removes the module from its records, if a ftrace user tries to remove
+a probe, that removal will fail due as the record of that code segment
+no longer exists.
+
+Nothing really bad happens if the probe removal is called after ftrace
+did the clean up, but the ftrace removal function will return an error.
+Correct code (such as kprobes) will produce a WARN_ON() if it fails
+to remove the probe. As people get annoyed by frivolous warnings, it's
+best to do the ftrace clean up after everything else.
+
+By splitting the ftrace_module_notifier into two notifiers, one that
+does the module load setup that is run at high priority, and the other
+that is called for module clean up that is run at low priority, the
+problem is solved.
+
+Reported-by: Frank Ch. Eigler <fche@redhat.com>
+Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/platform/efi/efi.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ kernel/trace/ftrace.c |   46 ++++++++++++++++++++++++++++++++--------------
+ 1 file changed, 32 insertions(+), 14 deletions(-)
 
---- a/arch/x86/platform/efi/efi.c
-+++ b/arch/x86/platform/efi/efi.c
-@@ -84,9 +84,10 @@ int efi_enabled(int facility)
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -3841,37 +3841,51 @@ static void ftrace_init_module(struct mo
+ 	ftrace_process_locs(mod, start, end);
  }
- EXPORT_SYMBOL(efi_enabled);
  
-+static bool disable_runtime = false;
- static int __init setup_noefi(char *arg)
+-static int ftrace_module_notify(struct notifier_block *self,
+-				unsigned long val, void *data)
++static int ftrace_module_notify_enter(struct notifier_block *self,
++				      unsigned long val, void *data)
  {
--	clear_bit(EFI_RUNTIME_SERVICES, &x86_efi_facility);
-+	disable_runtime = true;
+ 	struct module *mod = data;
+ 
+-	switch (val) {
+-	case MODULE_STATE_COMING:
++	if (val == MODULE_STATE_COMING)
+ 		ftrace_init_module(mod, mod->ftrace_callsites,
+ 				   mod->ftrace_callsites +
+ 				   mod->num_ftrace_callsites);
+-		break;
+-	case MODULE_STATE_GOING:
++	return 0;
++}
++
++static int ftrace_module_notify_exit(struct notifier_block *self,
++				     unsigned long val, void *data)
++{
++	struct module *mod = data;
++
++	if (val == MODULE_STATE_GOING)
+ 		ftrace_release_mod(mod);
+-		break;
+-	}
+ 
  	return 0;
  }
- early_param("noefi", setup_noefi);
-@@ -733,7 +734,7 @@ void __init efi_init(void)
- 	if (!efi_is_native())
- 		pr_info("No EFI runtime due to 32/64-bit mismatch with kernel\n");
- 	else {
--		if (efi_runtime_init())
-+		if (disable_runtime || efi_runtime_init())
- 			return;
- 		set_bit(EFI_RUNTIME_SERVICES, &x86_efi_facility);
- 	}
+ #else
+-static int ftrace_module_notify(struct notifier_block *self,
+-				unsigned long val, void *data)
++static int ftrace_module_notify_enter(struct notifier_block *self,
++				      unsigned long val, void *data)
++{
++	return 0;
++}
++static int ftrace_module_notify_exit(struct notifier_block *self,
++				     unsigned long val, void *data)
+ {
+ 	return 0;
+ }
+ #endif /* CONFIG_MODULES */
+ 
+-struct notifier_block ftrace_module_nb = {
+-	.notifier_call = ftrace_module_notify,
++struct notifier_block ftrace_module_enter_nb = {
++	.notifier_call = ftrace_module_notify_enter,
+ 	.priority = INT_MAX,	/* Run before anything that can use kprobes */
+ };
+ 
++struct notifier_block ftrace_module_exit_nb = {
++	.notifier_call = ftrace_module_notify_exit,
++	.priority = INT_MIN,	/* Run after anything that can remove kprobes */
++};
++
+ extern unsigned long __start_mcount_loc[];
+ extern unsigned long __stop_mcount_loc[];
+ 
+@@ -3903,9 +3917,13 @@ void __init ftrace_init(void)
+ 				  __start_mcount_loc,
+ 				  __stop_mcount_loc);
+ 
+-	ret = register_module_notifier(&ftrace_module_nb);
++	ret = register_module_notifier(&ftrace_module_enter_nb);
++	if (ret)
++		pr_warning("Failed to register trace ftrace module enter notifier\n");
++
++	ret = register_module_notifier(&ftrace_module_exit_nb);
+ 	if (ret)
+-		pr_warning("Failed to register trace ftrace module notifier\n");
++		pr_warning("Failed to register trace ftrace module exit notifier\n");
+ 
+ 	set_ftrace_early_filters();
+ 
 
 
