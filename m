@@ -1,66 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751993Ab3CALYY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 06:24:24 -0500
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:21192 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751121Ab3CALYX (ORCPT
+	id S1752150Ab3CALYj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 06:24:39 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:63550 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751828Ab3CALYi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 06:24:23 -0500
-X-AuditID: cbfec7f5-b7fd76d000007247-d2-51308fe59f90
-From: Andrzej Hajda <a.hajda@samsung.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-kernel@vger.kernel.org
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
-        Andrzej Hajda <a.hajda@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: [PATCH] regulator: fixed regulator_bulk_enable unwinding code
-Date: Fri, 01 Mar 2013 12:24:05 +0100
-Message-id: <1362137045-25600-1-git-send-email-a.hajda@samsung.com>
-X-Mailer: git-send-email 1.7.10.4
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrLJMWRmVeSWpSXmKPExsVy+t/xa7pP+w0CDe5c1LS4vGsOmwOjx+dN
-	cgGMUVw2Kak5mWWpRfp2CVwZu1Y9Yyw4xV7x9sRX5gbGeWxdjJwcEgImEmenbWeHsMUkLtxb
-	DxTn4hASWMoocanhDCOEs55J4sWX9WAdbAKaEn833wSzRQRCJJquTmUCKWIWaGSUmLbpGjNI
-	QljATeLusi4wm0VAVeL43BMsIDavgLPE5FvLmSDWKUp0P5vANoGRewEjwypG0dTS5ILipPRc
-	I73ixNzi0rx0veT83E2MEC9+3cG49JjVIUYBDkYlHt7AKv1AIdbEsuLK3EOMEhzMSiK8/xsN
-	AoV4UxIrq1KL8uOLSnNSiw8xMnFwSjUwrnB4KxZi2ywpJNatdvvQt+uHvBaxZjaICt3Lj7rr
-	/uhHk1zktDmfixtvJaecnnfv3s6eNfl/G/V+pL8s8vvlqRCntKQ06Mf0e5mNV5cy3WtWY/iz
-	ynvK/GeGr53Xs7F/nVSycUGVRVem9yzd1ZtLYw5fjreJ4NwiPXlfl3TbDLHc/j3FARbRSizF
-	GYmGWsxFxYkAP8klT8ABAAA=
+	Fri, 1 Mar 2013 06:24:38 -0500
+Date: Fri, 1 Mar 2013 12:24:32 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Borislav Petkov <bp@alien8.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Martin Bligh <mbligh@mbligh.org>, Yinghai Lu <yinghai@kernel.org>,
+        Don Morris <don.morris@hp.com>, Tejun Heo <tj@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Tim Gardner <tim.gardner@canonical.com>, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, mingo@redhat.com, x86@kernel.org,
+        a.p.zijlstra@chello.nl, jarkko.sakkinen@intel.com,
+        tangchen@cn.fujitsu.com
+Subject: Re: sched: CPU #1's llc-sibling CPU #0 is not on the same node!
+Message-ID: <20130301112432.GA3018@gmail.com>
+References: <512B8407.2090807@canonical.com>
+ <512BD753.4080001@hp.com>
+ <CAE9FiQVY4io_mO3PhTtE6FbGUgo1uZKKXO=pjx_FoZ1JuZmsAw@mail.gmail.com>
+ <CAE9FiQXs3MyUW+hJhupJgL-t9sYmT5GdeStWD2vMjsJG+6qCrQ@mail.gmail.com>
+ <CAE9FiQXHNm+E+PchPsReOykVPNkRrC8ttjDpWWs=njANT+Wf1Q@mail.gmail.com>
+ <CAJErZ53dadbU3oM4Prhi3n_R+Lsbp3TG=FP1=whTK5uPMpj90A@mail.gmail.com>
+ <CAE9FiQWx=FdQSH_H_PoVxUksY6rFnN6yDfwmK3w8OTbCPLM1+w@mail.gmail.com>
+ <CAJErZ53AWMP688OV+J0qiJii2y=qzEjLq=WshAQbMhEdyx33cQ@mail.gmail.com>
+ <51304C96.3010801@zytor.com>
+ <20130301110310.GA31058@pd.tnic>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130301110310.GA31058@pd.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Unwinding code disables all successfully enabled regulators.
-Error is logged for every failed regulator.
 
-Signed-off-by: Andrzej Hajda <a.hajda@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
----
- drivers/regulator/core.c |   10 +++++++---
- 1 file changed, 7 insertions(+), 3 deletions(-)
+* Borislav Petkov <bp@alien8.de> wrote:
 
-diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
-index 2785843..90af271 100644
---- a/drivers/regulator/core.c
-+++ b/drivers/regulator/core.c
-@@ -3032,9 +3032,13 @@ int regulator_bulk_enable(int num_consumers,
- 	return 0;
- 
- err:
--	pr_err("Failed to enable %s: %d\n", consumers[i].supply, ret);
--	while (--i >= 0)
--		regulator_disable(consumers[i].consumer);
-+	for (i = 0; i < num_consumers; i++) {
-+		if (consumers[i].ret < 0)
-+			pr_err("Failed to enable %s: %d\n", consumers[i].supply,
-+			       consumers[i].ret);
-+		else
-+			regulator_disable(consumers[i].consumer);
-+	}
- 
- 	return ret;
- }
--- 
-1.7.10.4
+> On Thu, Feb 28, 2013 at 10:37:10PM -0800, H. Peter Anvin wrote:
+> > I'd be very happy to get the NUMAQ code ripped out.  I am wondering if
+> > there are any reasons to keep any 32-bit x86 NUMA code at all.
+> 
+> How much would it hurt us if we said 3.8 is the last kernel that supported NUMAQ? 
+> If anyone wants the functionality, they should use 3.8 or older.
 
+v3.9 - any non-trivial patch in the stage of being contemplated near the end of the 
+v3.9 merge window is most likely v3.10 material.
+
+Thanks,
+
+	Ingo
