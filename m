@@ -1,69 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751371Ab3CAQ6J (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 11:58:09 -0500
-Received: from mail-gg0-f202.google.com ([209.85.161.202]:37066 "EHLO
-	mail-gg0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750879Ab3CAQ6H (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 11:58:07 -0500
-From: Doug Anderson <dianders@chromium.org>
-To: linux-i2c@vger.kernel.org, Wolfram Sang <wsa@the-dreams.de>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Kukjin Kim <kgene.kim@samsung.com>, Olof Johansson <olof@lixom.net>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Padmavathi Venna <padma.v@samsung.com>,
-        Ben Dooks <ben-linux@fluff.org>, linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
-        Doug Anderson <dianders@chromium.org>,
-        Karol Lewandowski <k.lewandowsk@samsung.com>,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH v4 0/2] Add automatic bus number support for i2c busses with device tree
-Date: Fri,  1 Mar 2013 08:57:30 -0800
-Message-Id: <1362157052-16738-1-git-send-email-dianders@chromium.org>
-X-Mailer: git-send-email 1.8.1.3
-In-Reply-To: <1360630085-26874-1-git-send-email-dianders@chromium.org>
-References: <1360630085-26874-1-git-send-email-dianders@chromium.org>
+	id S1751478Ab3CARE3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 12:04:29 -0500
+Received: from mout.gmx.net ([212.227.15.19]:51745 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750968Ab3CARE1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Mar 2013 12:04:27 -0500
+X-Authenticated: #28250155
+X-Provags-ID: V01U2FsdGVkX1/5eMsQwVf5II2sUVMhXfVixbiPwDz6EB9BEzMhKl
+	5TDCKOy9QWnzKr
+From: Sven Joachim <svenjoac@gmx.de>
+To: justin <jlec@gentoo.org>
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] kconfig: use config scripts to detect ncurses libs
+References: <jlec@gentoo.org>
+	<1362045557-9123-1-git-send-email-jlec@gentoo.org>
+	<874ngwhzuy.fsf@turtle.gmx.de> <51305AC4.2030008@gentoo.org>
+	<87obf35xei.fsf@turtle.gmx.de> <5130B183.9080901@gentoo.org>
+Date: Fri, 01 Mar 2013 18:04:25 +0100
+In-Reply-To: <5130B183.9080901@gentoo.org> (justin's message of "Fri, 01 Mar
+	2013 14:47:47 +0100")
+Message-ID: <87zjyn2grq.fsf@turtle.gmx.de>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2.93 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This was suggested by Mark Brown in response to a patch for adding
-this functionality only for the s3c2410 bus:
-  https://lkml.org/lkml/2012/11/20/681
+On 2013-03-01 14:47 +0100, justin wrote:
 
-I have also modified the i2c-pxa driver to use this new functionality.
-The i2c-pxa driver changes have only been compile-tested and are just
-for cleanup purposes.
+> On 01/03/13 09:36, Sven Joachim wrote:
+>> Historically it seems to be an accident, and the ncurses{w,5}-config
+>> scripts should have better been shipped in their development packages.
+>> But nowadays we want to make the development packages multiarch-aware,
+>> and since the scripts differ on architectures, moving them away from
+>> ncurses-bin would mean adding two additional binary packages just for
+>> these scripts.
+>> 
+>> See http://bugs.debian.org/480437 for a discussion on that topic.
+>> 
+>
+> I just tested on an ubuntu installation what happens with the patches
+> applied; you simply end up with the warning the you need to install the
+> dev package. So I don't see any problem here.
 
-Changes in v4:
-- Rebased atop the removal of MAX_IDR_MASK.
+Well, in Debian/Ubuntu are _two_ dev packages, one for the wide API
+(libncursesw5-dev), and on for the non-wide API (libncurses5-dev).  Only
+the latter should be necessary, but with your original patch people
+would need to install the former as well.
 
-Changes in v3:
-- Addressed Wolfram's feedback; rebased atop idr-cleanup series.
+>> Well, at least until nconf does not make any effort to explicitly detect
+>> and use the wide API, trying ncurses5-config first should work.  If you
+>> build ncurses yourself with --enable-widec, there is no -lmenu or -lpanel
+>> anyway, these libraries are called menuw and panelw then.
+>
+> You are right, we only should consider ncurses5-config right now.
 
-Changes in v2:
-- No longer tweak pdev->id as per Sylwester Nawrocki.
-- No longer add the dev ID to the adap.name.  Other drivers don't
-  include the device ID here and it doesn't make sense with
-  dynamically (or automatically) allocated IDs.
-- Use dev_name(&dev->dev) to register for the IRQ; this matches what
-  the i2c-s3c2410.c does and handles dynamically allocated IDs.
-- This change was only compile-tested (corgi_defconfig), since I don't
-  have access to a board that uses this driver.
+That seems unlikely to cause regressions on its own.
 
-Doug Anderson (2):
-  i2c-core: dt: Pick i2c bus number from i2c alias if present
-  i2c: pxa: Use i2c-core to get bus number now
-
- drivers/i2c/busses/i2c-pxa.c | 20 ++++++++----------
- drivers/i2c/i2c-core.c       | 49 +++++++++++++++++++++++++++++++++-----------
- 2 files changed, 46 insertions(+), 23 deletions(-)
-
--- 
-1.8.1.3
-
+Cheers,
+       Sven
