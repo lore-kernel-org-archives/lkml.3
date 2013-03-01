@@ -1,40 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753109Ab3CACer (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 21:34:47 -0500
-Received: from plane.gmane.org ([80.91.229.3]:35027 "EHLO plane.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751571Ab3CACep (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 21:34:45 -0500
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: jbian <jbian@redhat.com>
-Subject: Re: [PATCH] VMware Balloon: rename module
-Date: Fri, 1 Mar 2013 02:19:15 +0000 (UTC)
-Message-ID: <loom.20130301T031432-322@post.gmane.org>
-References: <AANLkTikWmwVvWzRMK7yvtyqYbd4OeeR1nLsP1OAxbnJg@mail.gmail.com> <201009161623.14722.dtor@vmware.com> <AANLkTinokTUuShVEokYyJApj26CBD-q+xma_55rgdZEM@mail.gmail.com> <201009161731.16913.dtor@vmware.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1753717Ab3CACkv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 21:40:51 -0500
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:59246 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751308Ab3CACku (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Feb 2013 21:40:50 -0500
+Message-ID: <5130152B.9060904@gmail.com>
+Date: Fri, 01 Mar 2013 10:40:43 +0800
+From: Ric Mason <ric.masonn@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
+MIME-Version: 1.0
+To: Andrew Shewmaker <agshew@gmail.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [RFC PATCH v2 1/2] mm: tuning hardcoded reserved memory
+References: <20130227205629.GA8429@localhost.localdomain> <20130228141200.3fe7f459.akpm@linux-foundation.org> <20130228034803.GB3829@localhost.localdomain>
+In-Reply-To: <20130228034803.GB3829@localhost.localdomain>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Complaints-To: usenet@ger.gmane.org
-X-Gmane-NNTP-Posting-Host: sea.gmane.org
-User-Agent: Loom/3.14 (http://gmane.org/)
-X-Loom-IP: 66.187.233.202 (Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 CentOS/3.6-2.el5.centos Firefox/3.6.13)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 02/28/2013 11:48 AM, Andrew Shewmaker wrote:
+> On Thu, Feb 28, 2013 at 02:12:00PM -0800, Andrew Morton wrote:
+>> On Wed, 27 Feb 2013 15:56:30 -0500
+>> Andrew Shewmaker <agshew@gmail.com> wrote:
+>>
+>>> The following patches are against the mmtom git tree as of February 27th.
+>>>
+>>> The first patch only affects OVERCOMMIT_NEVER mode, entirely removing
+>>> the 3% reserve for other user processes.
+>>>
+>>> The second patch affects both OVERCOMMIT_GUESS and OVERCOMMIT_NEVER
+>>> modes, replacing the hardcoded 3% reserve for the root user with a
+>>> tunable knob.
+>>>
+>> Gee, it's been years since anyone thought about the overcommit code.
+>>
+>> Documentation/vm/overcommit-accounting says that OVERCOMMIT_ALWAYS is
+>> "Appropriate for some scientific applications", but doesn't say why.
+>> You're running a scientific cluster but you're using OVERCOMMIT_NEVER,
+>> I think?  Is the documentation wrong?
+> None of my scientists appeared to use sparse arrays as Alan described.
+> My users would run jobs that appeared to initialize correctly. However,
+> they wouldn't write to every page they malloced (and they wouldn't use
+> calloc), so I saw jobs failing well into a computation once the
+> simulation tried to access a page and the kernel couldn't give it to them.
+>
+> I think Roadrunner (http://en.wikipedia.org/wiki/IBM_Roadrunner) was
+> the first cluster I put into OVERCOMMIT_NEVER mode. Jobs with
+> infeasible memory requirements fail early and the OOM killer
+> gets triggered much less often than in guess mode. More often than not
+> the OOM killer seemed to kill the wrong thing causing a subtle brokenness.
+> Disabling overcommit worked so well during the stabilization and
+> early user phases that we did the same with other clusters.
 
-Yeah,the vmware_balloon driver name changed,when the name is vmware_balloon,the
-rhel6 guest on esxi5.1,when modprobe the balloon driver,there will be a
-process"vmmemctl",after the driver upgrade:vmw_balloon,the rhel7 guest on
-esxi5.1,the balloon is vmw_balloon,but the process daemon disappear,but the
-balloon still worked well,so why remove the vmmemctl process??
+Do you mean OVERCOMMIT_NEVER is more suitable for scientific application 
+than OVERCOMMIT_GUESS and OVERCOMMIT_ALWAYS? Or should depend on 
+workload? Since your users would run jobs that wouldn't write to every 
+page they malloced, so why OVERCOMMIT_GUESS is not more suitable for you?
 
-Thanks in advance,I will be feel grateful to receive all your reply.
+>
+>>> __vm_enough_memory reserves 3% of free pages with the default
+>>> overcommit mode and 6% when overcommit is disabled. These hardcoded
+>>> values have become less reasonable as memory sizes have grown.
+>>>
+>>> On scientific clusters, systems are generally dedicated to one user.
+>>> Also, overcommit is sometimes disabled in order to prevent a long
+>>> running job from suddenly failing days or weeks into a calculation.
+>>> In this case, a user wishing to allocate as much memory as possible
+>>> to one process may be prevented from using, for example, around 7GB
+>>> out of 128GB.
+>>>
+>>> The effect is less, but still significant when a user starts a job
+>>> with one process per core. I have repeatedly seen a set of processes
+>>> requesting the same amount of memory fail because one of them could
+>>> not allocate the amount of memory a user would expect to be able to
+>>> allocate.
+>>>
+>>> ...
+>>>
+>>> --- a/mm/mmap.c
+>>> +++ b/mm/mmap.c
+>>> @@ -182,11 +182,6 @@ int __vm_enough_memory(struct mm_struct *mm, long pages, int cap_sys_admin)
+>>>   		allowed -= allowed / 32;
+>>>   	allowed += total_swap_pages;
+>>>   
+>>> -	/* Don't let a single process grow too big:
+>>> -	   leave 3% of the size of this process for other processes */
+>>> -	if (mm)
+>>> -		allowed -= mm->total_vm / 32;
+>>> -
+>>>   	if (percpu_counter_read_positive(&vm_committed_as) < allowed)
+>>>   		return 0;
+>> So what might be the downside for this change?  root can't log in, I
+>> assume.  Have you actually tested for this scenario and observed the
+>> effects?
+>>
+>> If there *are* observable risks and/or to preserve back-compatibility,
+>> I guess we could create a fourth overcommit mode which provides the
+>> headroom which you desire.
+>>
+>> Also, should we be looking at removing root's 3% from OVERCOMMIT_GUESS
+>> as well?
+> The downside of the first patch, which removes the "other" reserve
+> (sorry about the confusing duplicated subject line), is that a user
+> may not be able to kill their process, even if they have a shell prompt.
+> When testing, I did sometimes get into spot where I attempted to execute
+> kill, but got: "bash: fork: Cannot allocate memory". Of course, a
+> user can get in the same predicament with the current 3% reserve--they
+> just have to start processes until 3% becomes negligible.
+>
+> With just the first patch, root still has a 3% reserve, so they can
+> still log in.
+>
+> When I resubmit the second patch, adding a tunable rootuser_reserve_pages
+> variable, I'll test both guess and never overcommit modes to see what
+> minimum initial values allow root to login and kill a user's memory
+> hogging process. This will be safer than the current behavior since
+> root's reserve will never shrink to something useless in the case where
+> a user has grabbed all available memory with many processes.
 
-B.R
-jbian
+The idea of two patches looks reasonable to me.
 
+>
+> As an estimate of a useful rootuser_reserve_pages, the rss+share size of
 
+Sorry for my silly, why you mean share size is not consist in rss size?
+
+> sshd, bash, and top is about 16MB. Overcommit disabled mode would need
+> closer to 360MB for the same processes. On a 128GB box 3% is 3.8GB, so
+> the new tunable would still be a win.
+>
+> I think the tunable would benefit everyone over the current behavior,
+> but would you prefer it if I only made it tunable in a fourth overcommit
+> mode in order to preserve back-compatibility?
+>
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
