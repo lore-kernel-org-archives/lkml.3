@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752610Ab3CATpX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 14:45:23 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51378 "EHLO
+	id S1752544Ab3CATpT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 14:45:19 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51344 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752496Ab3CATpU (ORCPT
+	with ESMTP id S1751538Ab3CATpP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 14:45:20 -0500
+	Fri, 1 Mar 2013 14:45:15 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        PaX Team <pageexec@freemail.hu>,
-        Mathias Krause <minipli@googlemail.com>,
-        David Rientjes <rientjes@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: [ 22/77] x86/apic: Fix parsing of the lapic cmdline option
-Date: Fri,  1 Mar 2013 11:44:07 -0800
-Message-Id: <20130301194354.354775176@linuxfoundation.org>
+        Bart Van Assche <bvanassche@acm.org>,
+        David Dillow <dave@thedillows.org>,
+        Roland Dreier <roland@purestorage.com>
+Subject: [ 07/77] IB/srp: Avoid sending a task management function needlessly
+Date: Fri,  1 Mar 2013 11:43:52 -0800
+Message-Id: <20130301194352.743401389@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130301194351.913471337@linuxfoundation.org>
 References: <20130301194351.913471337@linuxfoundation.org>
@@ -30,39 +28,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mathias Krause <minipli@googlemail.com>
+From: Bart Van Assche <bvanassche@acm.org>
 
-commit 27cf929845b10043f2257693c7d179a9e0b1980e upstream.
+commit 3780d1f08856f692116bcf026e4acf1c521df1c7 upstream.
 
-Including " lapic " in the kernel cmdline on an x86-64 kernel
-makes it panic while parsing early params -- e.g. with no user
-visible output.
+Do not send a task management function if sending will fail anyway
+because either there is no RDMA/RC connection or the QP is in the
+error state.
 
-Fix this bug by ensuring arg is non-NULL before passing it to
-strncmp().
-
-Reported-by: PaX Team <pageexec@freemail.hu>
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
-Acked-by: David Rientjes <rientjes@google.com>
-Cc: Suresh Siddha <suresh.b.siddha@intel.com>
-Link: http://lkml.kernel.org/r/1361303227-13174-1-git-send-email-minipli@googlemail.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Bart Van Assche <bvanassche@acm.org>
+Acked-by: David Dillow <dave@thedillows.org>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/apic/apic.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/infiniband/ulp/srp/ib_srp.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/arch/x86/kernel/apic/apic.c
-+++ b/arch/x86/kernel/apic/apic.c
-@@ -131,7 +131,7 @@ static int __init parse_lapic(char *arg)
- {
- 	if (config_enabled(CONFIG_X86_32) && !arg)
- 		force_enable_local_apic = 1;
--	else if (!strncmp(arg, "notscdeadline", 13))
-+	else if (arg && !strncmp(arg, "notscdeadline", 13))
- 		setup_clear_cpu_cap(X86_FEATURE_TSC_DEADLINE_TIMER);
- 	return 0;
- }
+--- a/drivers/infiniband/ulp/srp/ib_srp.c
++++ b/drivers/infiniband/ulp/srp/ib_srp.c
+@@ -1695,6 +1695,9 @@ static int srp_send_tsk_mgmt(struct srp_
+ 	struct srp_iu *iu;
+ 	struct srp_tsk_mgmt *tsk_mgmt;
+ 
++	if (!target->connected || target->qp_in_error)
++		return -1;
++
+ 	init_completion(&target->tsk_mgmt_done);
+ 
+ 	spin_lock_irq(&target->lock);
+@@ -1754,8 +1757,6 @@ static int srp_reset_device(struct scsi_
+ 
+ 	shost_printk(KERN_ERR, target->scsi_host, "SRP reset_device called\n");
+ 
+-	if (target->qp_in_error)
+-		return FAILED;
+ 	if (srp_send_tsk_mgmt(target, SRP_TAG_NO_REQ, scmnd->device->lun,
+ 			      SRP_TSK_LUN_RESET))
+ 		return FAILED;
 
 
