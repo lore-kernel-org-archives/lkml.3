@@ -1,189 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751559Ab3CASJr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 13:09:47 -0500
-Received: from mail-qa0-f47.google.com ([209.85.216.47]:34357 "EHLO
-	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751151Ab3CASJq (ORCPT
+	id S1751816Ab3CASLJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 13:11:09 -0500
+Received: from mail-qe0-f49.google.com ([209.85.128.49]:33259 "EHLO
+	mail-qe0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751080Ab3CASLF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 13:09:46 -0500
-Date: Fri, 1 Mar 2013 13:02:27 -0500
-From: Frederik Deweerdt <frederik.deweerdt@xprog.eu>
-To: acme@ghostprotocols.net
-Cc: linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl, paulus@samba.org,
-        mingo@redhat.com
-Subject: [patch v2] perf stat: --repeat forever
-Message-ID: <20130301180227.GA24385@ks398093.ip-192-95-24.net>
-References: <20130215222849.GA5199@ks398093.ip-192-95-24.net>
+	Fri, 1 Mar 2013 13:11:05 -0500
+Date: Fri, 1 Mar 2013 10:10:54 -0800
+From: Tejun Heo <tj@kernel.org>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: Lai Jiangshan <eag0628@gmail.com>, Michel Lespinasse <walken@google.com>,
+        linux-doc@vger.kernel.org, peterz@infradead.org, fweisbec@gmail.com,
+        linux-kernel@vger.kernel.org, namhyung@kernel.org, mingo@kernel.org,
+        linux-arch@vger.kernel.org, linux@arm.linux.org.uk,
+        xiaoguangrong@linux.vnet.ibm.com, wangyun@linux.vnet.ibm.com,
+        paulmck@linux.vnet.ibm.com, nikunj@linux.vnet.ibm.com,
+        linux-pm@vger.kernel.org, rusty@rustcorp.com.au, rostedt@goodmis.org,
+        rjw@sisk.pl, vincent.guittot@linaro.org, tglx@linutronix.de,
+        linux-arm-kernel@lists.infradead.org, netdev@vger.kernel.org,
+        oleg@redhat.com, sbw@mit.edu, akpm@linux-foundation.org,
+        linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH v6 04/46] percpu_rwlock: Implement the core design of
+ Per-CPU Reader-Writer Locks
+Message-ID: <20130301181054.GD2481@mtj.dyndns.org>
+References: <CACvQF53bdh4_BxF0y1fnTVR+T2OmRc0jmWQYftsvx92-fg-Lug@mail.gmail.com>
+ <512BBAD8.8010006@linux.vnet.ibm.com>
+ <CACvQF51jCxk5jUqmhD=QBBtUsBkQWZzakacrKO4Gsk=w61rNwQ@mail.gmail.com>
+ <512C7A38.8060906@linux.vnet.ibm.com>
+ <CACvQF51RvhM8XNqu3-1OTQ=cZUZ=pAX+_zx0a29+W67N1X+BgQ@mail.gmail.com>
+ <512CC509.1050000@linux.vnet.ibm.com>
+ <CACvQF50UgiqPpDk3HCmV86zKSf6tPjqr0bZowfPEOJs0g0r0MQ@mail.gmail.com>
+ <512D0D67.9010609@linux.vnet.ibm.com>
+ <CACvQF53ph2ixdM-otzetjM5cR+2kcZj6sckOp3TnzzA_x-EZ8w@mail.gmail.com>
+ <512E7879.20109@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130215222849.GA5199@ks398093.ip-192-95-24.net>
+In-Reply-To: <512E7879.20109@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hello, Srivatsa.
 
-[This is based on git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux perf/core]
+On Thu, Feb 28, 2013 at 02:49:53AM +0530, Srivatsa S. Bhat wrote:
+> Don't get me wrong - I'll whole-heartedly acknowledge and appreciate if
+> _your_ code is better than mine. I just don't like the idea of somebody
+> plagiarizing my ideas/code (or even others' ideas for that matter).
+> However, I sincerely apologize in advance if I misunderstood/misjudged your
+> intentions; I just wanted to voice my concerns out loud at this point,
+> considering the bad feeling I got by looking at your responses collectively.
 
-The following patch causes 'perf stat --repeat 0' to be interpreted as
-'forever', displaying the stats for every run.
+Although I don't know Lai personally, from my experience working with
+him past several months on workqueue, I strongly doubt he has dark
+urterior intenions.  The biggest problem probably is that his
+communication in English isn't very fluent yet and thus doesn't carry
+the underlying intentions or tones very well and he tends to bombard
+patches in quick succession without much explanation inbetween (during
+3.8 cycle, I was receiving several workqueue patchsets days apart
+trying to solve the same problem with completely different approaches
+way before the discussion on the previous postings reach any kind of
+consensus).  A lot of that also probably comes from communication
+problems.
 
-We act as if a single run was asked, and reset the stats in each
-iteration. In this mode SIGINT is passed to perf to be able to stop the
-loop with Ctrl+C.
+Anyways, I really don't think he's trying to take claim of your work.
+At least for now, you kinda need to speculate what he's trying to do
+and then confirm that back to him, but once you get used to that part,
+he's pretty nice to work with and I'm sure his communication will
+improve in time (I think it has gotten a lot better than only some
+months ago).
 
-Regards,
-Frederik
+Thanks!
 
-
-Signed-off-by: Frederik Deweerdt <frederik.deweerdt@gmail.com>
-
-diff --git a/tools/perf/Documentation/perf-stat.txt b/tools/perf/Documentation/perf-stat.txt
-index faf4f4f..23e587a 100644
---- a/tools/perf/Documentation/perf-stat.txt
-+++ b/tools/perf/Documentation/perf-stat.txt
-@@ -52,7 +52,7 @@ OPTIONS
- 
- -r::
- --repeat=<n>::
--	repeat command and print average + stddev (max: 100)
-+	repeat command and print average + stddev (max: 100). 0 means forever.
- 
- -B::
- --big-num::
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index 9984876..f59ab78 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -94,6 +94,7 @@ static const char		*pre_cmd			= NULL;
- static const char		*post_cmd			= NULL;
- static bool			sync_run			= false;
- static unsigned int		interval			= 0;
-+static bool			forever				= false;
- static struct timespec		ref_time;
- static struct cpu_map		*sock_map;
- 
-@@ -125,6 +126,11 @@ static inline int perf_evsel__nr_cpus(struct perf_evsel *evsel)
- 	return perf_evsel__cpus(evsel)->nr;
- }
- 
-+static void perf_evsel__reset_stat_priv(struct perf_evsel *evsel)
-+{
-+	memset(evsel->priv, 0, sizeof(struct perf_stat));
-+}
-+
- static int perf_evsel__alloc_stat_priv(struct perf_evsel *evsel)
- {
- 	evsel->priv = zalloc(sizeof(struct perf_stat));
-@@ -173,6 +179,22 @@ static struct stats runtime_itlb_cache_stats[MAX_NR_CPUS];
- static struct stats runtime_dtlb_cache_stats[MAX_NR_CPUS];
- static struct stats walltime_nsecs_stats;
- 
-+static void reset_stats(void)
-+{
-+	memset(runtime_nsecs_stats, 0, sizeof(runtime_nsecs_stats));
-+	memset(runtime_cycles_stats, 0, sizeof(runtime_cycles_stats));
-+	memset(runtime_stalled_cycles_front_stats, 0, sizeof(runtime_stalled_cycles_front_stats));
-+	memset(runtime_stalled_cycles_back_stats, 0, sizeof(runtime_stalled_cycles_back_stats));
-+	memset(runtime_branches_stats, 0, sizeof(runtime_branches_stats));
-+	memset(runtime_cacherefs_stats, 0, sizeof(runtime_cacherefs_stats));
-+	memset(runtime_l1_dcache_stats, 0, sizeof(runtime_l1_dcache_stats));
-+	memset(runtime_l1_icache_stats, 0, sizeof(runtime_l1_icache_stats));
-+	memset(runtime_ll_cache_stats, 0, sizeof(runtime_ll_cache_stats));
-+	memset(runtime_itlb_cache_stats, 0, sizeof(runtime_itlb_cache_stats));
-+	memset(runtime_dtlb_cache_stats, 0, sizeof(runtime_dtlb_cache_stats));
-+	memset(&walltime_nsecs_stats, 0, sizeof(walltime_nsecs_stats));
-+}
-+
- static int create_perf_stat_counter(struct perf_evsel *evsel)
- {
- 	struct perf_event_attr *attr = &evsel->attr;
-@@ -1296,7 +1318,7 @@ int cmd_stat(int argc, const char **argv, const char *prefix __maybe_unused)
- 	OPT_INCR('v', "verbose", &verbose,
- 		    "be more verbose (show counter open errors, etc)"),
- 	OPT_INTEGER('r', "repeat", &run_count,
--		    "repeat command and print average + stddev (max: 100)"),
-+		    "repeat command and print average + stddev (max: 100, forever: 0)"),
- 	OPT_BOOLEAN('n', "null", &null_run,
- 		    "null run - dont start any counters"),
- 	OPT_INCR('d', "detailed", &detailed_run,
-@@ -1399,8 +1421,12 @@ int cmd_stat(int argc, const char **argv, const char *prefix __maybe_unused)
- 
- 	if (!argc && !perf_target__has_task(&target))
- 		usage_with_options(stat_usage, options);
--	if (run_count <= 0)
-+	if (run_count < 0) {
- 		usage_with_options(stat_usage, options);
-+	} else if (run_count == 0) {
-+		forever = true;
-+		run_count = 1;
-+	}
- 
- 	/* no_aggr, cgroup are for system-wide only */
- 	if ((no_aggr || nr_cgroups) && !perf_target__has_cpu(&target)) {
-@@ -1457,21 +1483,30 @@ int cmd_stat(int argc, const char **argv, const char *prefix __maybe_unused)
- 	 * task, but being ignored by perf stat itself:
- 	 */
- 	atexit(sig_atexit);
--	signal(SIGINT,  skip_signal);
-+	if (!forever)
-+		signal(SIGINT,  skip_signal);
- 	signal(SIGCHLD, skip_signal);
- 	signal(SIGALRM, skip_signal);
- 	signal(SIGABRT, skip_signal);
- 
- 	status = 0;
--	for (run_idx = 0; run_idx < run_count; run_idx++) {
-+	for (run_idx = 0; forever || run_idx < run_count; run_idx++) {
- 		if (run_count != 1 && verbose)
- 			fprintf(output, "[ perf stat: executing run #%d ... ]\n",
- 				run_idx + 1);
- 
- 		status = run_perf_stat(argc, argv);
-+		if (forever && status != -1) {
-+			print_stat(argc, argv);
-+			list_for_each_entry(pos, &evsel_list->entries, node) {
-+				perf_evsel__reset_stat_priv(pos);
-+				perf_evsel__reset_counts(pos, perf_evsel__nr_cpus(pos));
-+			}
-+			reset_stats();
-+		}
- 	}
- 
--	if (status != -1 && !interval)
-+	if (!forever && status != -1 && !interval)
- 		print_stat(argc, argv);
- out_free_fd:
- 	list_for_each_entry(pos, &evsel_list->entries, node) {
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index dc16231..6e55a5f 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -633,6 +633,12 @@ int perf_evsel__alloc_id(struct perf_evsel *evsel, int ncpus, int nthreads)
- 	return 0;
- }
- 
-+void perf_evsel__reset_counts(struct perf_evsel *evsel, int ncpus)
-+{
-+	memset(evsel->counts, 0, (sizeof(*evsel->counts) +
-+				 (ncpus * sizeof(struct perf_counts_values))));
-+}
-+
- int perf_evsel__alloc_counts(struct perf_evsel *evsel, int ncpus)
- {
- 	evsel->counts = zalloc((sizeof(*evsel->counts) +
-diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
-index 52021c3..d1eb4da 100644
---- a/tools/perf/util/evsel.h
-+++ b/tools/perf/util/evsel.h
-@@ -120,6 +120,7 @@ int perf_evsel__group_desc(struct perf_evsel *evsel, char *buf, size_t size);
- int perf_evsel__alloc_fd(struct perf_evsel *evsel, int ncpus, int nthreads);
- int perf_evsel__alloc_id(struct perf_evsel *evsel, int ncpus, int nthreads);
- int perf_evsel__alloc_counts(struct perf_evsel *evsel, int ncpus);
-+void perf_evsel__reset_counts(struct perf_evsel *evsel, int ncpus);
- void perf_evsel__free_fd(struct perf_evsel *evsel);
- void perf_evsel__free_id(struct perf_evsel *evsel);
- void perf_evsel__free_counts(struct perf_evsel *evsel);
+-- 
+tejun
