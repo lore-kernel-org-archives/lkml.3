@@ -1,95 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751571Ab3CAJVs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 04:21:48 -0500
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:38009 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750799Ab3CAJVq (ORCPT
+	id S1751911Ab3CAJWb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 04:22:31 -0500
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:57790 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751744Ab3CAJW2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 04:21:46 -0500
-Message-ID: <5130731F.4000804@gmail.com>
-Date: Fri, 01 Mar 2013 17:21:35 +0800
-From: Simon Jeons <simon.jeons@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
+	Fri, 1 Mar 2013 04:22:28 -0500
+Message-ID: <5130734F.6090208@suse.cz>
+Date: Fri, 01 Mar 2013 10:22:23 +0100
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:19.0) Gecko/20130124 Thunderbird/19.0
 MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org, riel@redhat.com,
-        mhocko@suse.cz, hannes@cmpxchg.org
-Subject: Re: [PATCH] x86: mm: Check if PUD is large when validating a kernel
- address v2
-References: <20130211145236.GX21389@suse.de> <20130213110202.GI4100@suse.de> <51304E29.40900@gmail.com> <20130301091513.GA11787@gchen.bj.intel.com>
-In-Reply-To: <20130301091513.GA11787@gchen.bj.intel.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+To: Christian Borntraeger <borntraeger@de.ibm.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Gleb Natapov <gleb@redhat.com>
+Subject: Re: [ 17/53] s390/kvm: Fix store status for ACRS/FPRS
+References: <20130226235619.844721947@linuxfoundation.org> <20130226235621.622037661@linuxfoundation.org> <512FD9B3.5000304@suse.cz> <51305DC5.7010201@de.ibm.com>
+In-Reply-To: <51305DC5.7010201@de.ibm.com>
+X-Enigmail-Version: 1.6a1pre
+Content-Type: multipart/mixed;
+ boundary="------------060304080001020002080908"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/01/2013 05:15 PM, Chen Gong wrote:
-> On Fri, Mar 01, 2013 at 02:43:53PM +0800, Simon Jeons wrote:
->> Date: Fri, 01 Mar 2013 14:43:53 +0800
->> From: Simon Jeons <simon.jeons@gmail.com>
->> To: Mel Gorman <mgorman@suse.de>
->> CC: Ingo Molnar <mingo@kernel.org>, Andrew Morton
->>   <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
->>   linux-mm@kvack.org, riel@redhat.com, mhocko@suse.cz, hannes@cmpxchg.org
->> Subject: Re: [PATCH] x86: mm: Check if PUD is large when validating a
->>   kernel address v2
->> User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130221
->>   Thunderbird/17.0.3
+This is a multi-part message in MIME format.
+--------------060304080001020002080908
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 7bit
+
+On 03/01/2013 08:50 AM, Christian Borntraeger wrote:
+> On 28/02/13 23:26, Jiri Slaby wrote:
+>> On 02/27/2013 12:57 AM, Greg Kroah-Hartman wrote:
+>>> 3.0-stable review patch.  If anyone has any objections, please let me know.
+>>>
+>>> ------------------
+>>>
+>>> From: Christian Borntraeger <borntraeger@de.ibm.com>
+>>>
+>>> commit 15bc8d8457875f495c59d933b05770ba88d1eacb upstream.
+>>>
+>>> On store status we need to copy the current state of registers
+>>> into a save area. Currently we might save stale versions:
+>>> The sie state descriptor doesnt have fields for guest ACRS,FPRS,
+>>> those registers are simply stored in the host registers. The host
+>>> program must copy these away if needed. We do that in vcpu_put/load.
+>>>
+>>> If we now do a store status in KVM code between vcpu_put/load, the
+>>> saved values are not up-to-date. Lets collect the ACRS/FPRS before
+>>> saving them.
+>>>
+>>> This also fixes some strange problems with hotplug and virtio-ccw,
+>>> since the low level machine check handler (on hotplug a machine check
+>>> will happen) will revalidate all registers with the content of the
+>>> save area.
+>>>
+>>> Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
+>>> Signed-off-by: Gleb Natapov <gleb@redhat.com>
+>>> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>>>
+>>> ---
+>>>  arch/s390/kvm/kvm-s390.c |    8 ++++++++
+>>>  1 file changed, 8 insertions(+)
+>>>
+>>> --- a/arch/s390/kvm/kvm-s390.c
+>>> +++ b/arch/s390/kvm/kvm-s390.c
+>>> @@ -584,6 +584,14 @@ int kvm_s390_vcpu_store_status(struct kv
+>>>  	} else
+>>>  		prefix = 0;
+>>>  
+>>> +	/*
+>>> +	 * The guest FPRS and ACRS are in the host FPRS/ACRS due to the lazy
+>>> +	 * copying in vcpu load/put. Lets update our copies before we save
+>>> +	 * it into the save area
+>>> +	 */
+>>> +	save_fp_regs(&vcpu->arch.guest_fpregs);
+>>> +	save_access_regs(vcpu->run->s.regs.acrs);
 >>
->> On 02/13/2013 07:02 PM, Mel Gorman wrote:
->>> Andrew or Ingo, please pick up.
->>>
->>> Changelog since v1
->>>    o Add reviewed-bys and acked-bys
->>>
->>> A user reported a bug whereby a backup process accessing /proc/kcore
->>> caused an oops.
->>>
->>>   BUG: unable to handle kernel paging request at ffffbb00ff33b000
->>>   IP: [<ffffffff8103157e>] kern_addr_valid+0xbe/0x110
->>>   PGD 0
->>>   Oops: 0000 [#1] SMP
->>>   CPU 6
->>>   Modules linked in: af_packet nfs lockd fscache auth_rpcgss nfs_acl sunrpc 8021q garp stp llc cpufreq_conservative cpufreq_userspace cpufreq_powersave acpi_cpufreq mperf microcode fuse nls_iso8859_1 nls_cp437 vfat fat loop dm_mod ioatdma ipv6 ipv6_lib igb dca i7core_edac edac_core i2c_i801 i2c_core cdc_ether usbnet bnx2 mii iTCO_wdt iTCO_vendor_support shpchp rtc_cmos pci_hotplug tpm_tis sg tpm pcspkr tpm_bios serio_raw button ext3 jbd mbcache uhci_hcd ehci_hcd usbcore sd_mod crc_t10dif usb_common processor thermal_sys hwmon scsi_dh_emc scsi_dh_rdac scsi_dh_alua scsi_dh_hp_sw scsi_dh ata_generic ata_piix libata megaraid_sas scsi_mod
->>>
->>>   Pid: 16196, comm: Hibackp Not tainted 3.0.13-0.27-default #1 IBM System x3550 M3 -[7944 K3G]-/94Y7614
->>>   RIP: 0010:[<ffffffff8103157e>]  [<ffffffff8103157e>] kern_addr_valid+0xbe/0x110
->>>   RSP: 0018:ffff88094165fe80  EFLAGS: 00010246
->>>   RAX: 00003300ff33b000 RBX: ffff880100000000 RCX: 0000000000000000
->>>   RDX: 0000000100000000 RSI: ffff880000000000 RDI: ff32b300ff33b400
->>>   RBP: 0000000000001000 R08: 00003ffffffff000 R09: 0000000000000000
->>>   R10: 22302e31223d6e6f R11: 0000000000000246 R12: 0000000000001000
->>>   R13: 0000000000003000 R14: 0000000000571be0 R15: ffff88094165ff50
->>>   FS:  00007ff152d33700(0000) GS:ffff88097f2c0000(0000) knlGS:0000000000000000
->>>   CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
->>>   CR2: ffffbb00ff33b000 CR3: 00000009405a3000 CR4: 00000000000006e0
->>>   DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
->>>   DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
->>>   Process Hibackp (pid: 16196, threadinfo ffff88094165e000, task ffff8808eb9ba600)
->>>   Stack:
->>>    ffffffff811b8aaa 0000000000004000 ffff880943fea480 ffff8808ef2bae50
->>>    ffff880943d32980 fffffffffffffffb ffff8808ef2bae40 ffff88094165ff50
->>>    0000000000004000 000000000056ebe0 ffffffff811ad847 000000000056ebe0
->>>   Call Trace:
->>>    [<ffffffff811b8aaa>] read_kcore+0x17a/0x370
->>>    [<ffffffff811ad847>] proc_reg_read+0x77/0xc0
->>>    [<ffffffff81151687>] vfs_read+0xc7/0x130
->>>    [<ffffffff811517f3>] sys_read+0x53/0xa0
->>>    [<ffffffff81449692>] system_call_fastpath+0x16/0x1b
->>>
->>> Investigation determined that the bug triggered when reading system RAM
->>> at the 4G mark. On this system, that was the first address using 1G pages
->> Do you mean there is one page which is 1G?
+>> kvm_run structure does not have kvm_sync_regs in it in 3.0 yet. So this
+>> fails with:
+>> arch/s390/kvm/kvm-s390.c: In function 'kvm_s390_vcpu_store_status':
+>> arch/s390/kvm/kvm-s390.c:593: error: 'struct kvm_run' has no member
+>> named 's'
 >>
-> 1GB support in native kernel is started from 2.6.27 with these 2 commits:
+>> I believe the fix is just to remove save_access_regs, right?
+> 
+> Before the sync reg changes, the ACRS were saved in the vcpu->arch.
+> So the fix would look like 
+> 
+> 	save_access_regs(vcpu->arch.guest_acrs);
 
-Why call kernel native? Which kend of kernel is not native?
+Fix attached.
 
-> 39c11e6 and b4718e6. For Intel CPU, from Westmere it supports 1GB page.
-> BTW, IBM System x3550 M3 is a Westmere based system.
-Is it only used in hugetlbfs page?
+thanks,
+-- 
+js
+suse labs
 
+--------------060304080001020002080908
+Content-Type: text/x-patch;
+ name="s390-kvm-Fix-store-status-for-ACRS-FPRS-fix.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="s390-kvm-Fix-store-status-for-ACRS-FPRS-fix.patch"
 
+From: Jiri Slaby <jslaby@suse.cz>
+Subject: s390/kvm: Fix store status for ACRS/FPRS fix
+Patch-mainline: no, submitted on 1st Mar 2013
+
+In 3.0.67, commit 58c9ce6fad8e00d9726447f939fe7e78e2aec891 (s390/kvm:
+Fix store status for ACRS/FPRS), upstream commit
+15bc8d8457875f495c59d933b05770ba88d1eacb, added a call to
+save_access_regs to save ACRS. But we do not have ARCS in kvm_run in
+3.0 yet, so this results in:
+arch/s390/kvm/kvm-s390.c: In function 'kvm_s390_vcpu_store_status':
+arch/s390/kvm/kvm-s390.c:593: error: 'struct kvm_run' has no member named 's'
+
+Fix it by saving guest_acrs which is where ARCS are in 3.0.
+
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ arch/s390/kvm/kvm-s390.c |    1 -
+ 1 file changed, 1 deletion(-)
+
+--- a/arch/s390/kvm/kvm-s390.c
++++ b/arch/s390/kvm/kvm-s390.c
+@@ -590,7 +590,7 @@ int kvm_s390_vcpu_store_status(struct kv
+ 	 * it into the save area
+ 	 */
+ 	save_fp_regs(&vcpu->arch.guest_fpregs);
+-	save_access_regs(vcpu->run->s.regs.acrs);
++	save_access_regs(vcpu->arch.guest_acrs);
+ 
+ 	if (__guestcopy(vcpu, addr + offsetof(struct save_area, fp_regs),
+ 			vcpu->arch.guest_fpregs.fprs, 128, prefix))
+
+--------------060304080001020002080908--
