@@ -1,101 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751601Ab3CAHDm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 02:03:42 -0500
-Received: from out02.mta.xmission.com ([166.70.13.232]:53740 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750758Ab3CAHDk (ORCPT
+	id S1751974Ab3CAHGd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 02:06:33 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:37011 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750870Ab3CAHGc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 02:03:40 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Dave Jones <davej@redhat.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>, dhowells@redhat.com,
-        "Serge E. Hallyn" <serge@hallyn.com>
-References: <20130228234351.GA22046@redhat.com> <87hakw7ypn.fsf@xmission.com>
-	<20130301060732.GA20195@redhat.com>
-Date: Thu, 28 Feb 2013 23:03:33 -0800
-In-Reply-To: <20130301060732.GA20195@redhat.com> (Dave Jones's message of
-	"Fri, 1 Mar 2013 01:07:32 -0500")
-Message-ID: <87vc9b61q2.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Fri, 1 Mar 2013 02:06:32 -0500
+Message-ID: <5130535F.7060201@huawei.com>
+Date: Fri, 1 Mar 2013 15:06:07 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX193aiG+gS5yIGhHDoVS7PtcXfZw5uzyBLY=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0001]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_XMDrugObfuBody_08 obfuscated drug references
-	*  0.1 XMSolicitRefs_0 Weightloss drug
-X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Dave Jones <davej@redhat.com>
-X-Spam-Relay-Country: 
-Subject: Re: commit_creds oops
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+To: Tejun Heo <tj@kernel.org>
+CC: LKML <linux-kernel@vger.kernel.org>, cgroups <cgroups@vger.kernel.org>
+Subject: [PATCH 1/2] cgroup: no need to check css refs for release notification
+Content-Type: text/plain; charset="GB2312"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dave Jones <davej@redhat.com> writes:
+We no longer fail rmdir() when there're still css refs, so we don't
+need to check css refs in check_for_release().
 
-> On Thu, Feb 28, 2013 at 04:25:40PM -0800, Eric W. Biederman wrote:
->  
->  > > [   89.639850] RIP: 0010:[<ffffffff810784b0>]  [<ffffffff810784b0>] commit_creds+0x250/0x2f0
->  > > [   89.658399] Call Trace:
->  > > [   89.658822]  [<ffffffff812c7d9b>] key_change_session_keyring+0xfb/0x140
->  > > [   89.659845]  [<ffffffff8106c665>] task_work_run+0xa5/0xd0
->  > > [   89.660698]  [<ffffffff81002911>] do_notify_resume+0x71/0xb0
->  > > [   89.661581]  [<ffffffff816c9a4a>] int_signal+0x12/0x17
->  > >
->  > > Appears to be..
->  > >
->  > >                 if ((set_ns == subset_ns->parent)  &&
->  > >      850:       48 8b 8a c8 00 00 00    mov    0xc8(%rdx),%rcx
->  > >
->  > > from the inlined cred_cap_issubset
->  > 
->  > Interesting.  That line is protected with the check subset_ns !=
->  > &init_user_ns so subset_ns->parent must be valid or subset_ns is not
->  > a proper user namespace.
->  > 
->  > Ugh.  I think I see what is going on and it is just silly. 
->  > 
->  > It looks like by historical accident we have been reading trying to set
->  > new->user_ns from new->user_ns.  Which is totally silly as new->user_ns
->  > is NULL (as is every other field in new except session_keyring at that
->  > point).
->  > 
->  > It looks like it is safe to sleep in key_change_session_keyring so why
->  > we just don't use prepare_creds there like everywhere else is beyond
->  > me.
->  > 
->  > The intent is clearly to copy all of the fields from old to new so what
->  > we should be doing is is copying old->user_ns into new->user_ns.
->  > 
->  > Dave can you verify that this patch fixes the oops?
->
-> Looks like it.  Haven't hit the same thing since applying your patch.
->
-> I noticed though that get_user_ns bumps a refcount.  Is this what we
-> want if we're just copying ?
+This also voids a bug. cgroup_has_css_refs() accesses subsys[i]
+without cgroup_mutex, so it can race with cgroup_unload_subsys().
 
-Yes.  commit_creds(new) winds up finding old on the current process
-and calling put_cred(old).
+cgroup_has_css_refs()
+...
+  if (ss == NULL || ss->root != cgrp->root)
 
-put_cred when the count drops to zero winds up calling put_cred_rcu
-which calls put_user_ns(old->user_ns);
+if ss pointers to net_cls_subsys, and cls_cgroup module is unloaded
+right after the former check but before the latter, the memory that
+net_cls_subsys resides has become invalid.
 
-For the same reason we need an extra count on the user namespace new
-so that when it eventually is put and put_user_ns(new->user_ns) is
-called we don't have a negative count.
+Signed-off-by: Li Zefan <lizefan@huawei.com>
+---
+ kernel/cgroup.c | 67 +++++++--------------------------------------------------
+ 1 file changed, 8 insertions(+), 59 deletions(-)
 
-Which is a long of way of saying yes we are adding another reference and
-we need to increase the reference count.
-
-Eric
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index 43ff59e..f4554cc 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -4343,47 +4343,6 @@ static int cgroup_mkdir(struct inode *dir, struct dentry *dentry, umode_t mode)
+ 	return cgroup_create(c_parent, dentry, mode | S_IFDIR);
+ }
+ 
+-/*
+- * Check the reference count on each subsystem. Since we already
+- * established that there are no tasks in the cgroup, if the css refcount
+- * is also 1, then there should be no outstanding references, so the
+- * subsystem is safe to destroy. We scan across all subsystems rather than
+- * using the per-hierarchy linked list of mounted subsystems since we can
+- * be called via check_for_release() with no synchronization other than
+- * RCU, and the subsystem linked list isn't RCU-safe.
+- */
+-static int cgroup_has_css_refs(struct cgroup *cgrp)
+-{
+-	int i;
+-
+-	/*
+-	 * We won't need to lock the subsys array, because the subsystems
+-	 * we're concerned about aren't going anywhere since our cgroup root
+-	 * has a reference on them.
+-	 */
+-	for (i = 0; i < CGROUP_SUBSYS_COUNT; i++) {
+-		struct cgroup_subsys *ss = subsys[i];
+-		struct cgroup_subsys_state *css;
+-
+-		/* Skip subsystems not present or not in this hierarchy */
+-		if (ss == NULL || ss->root != cgrp->root)
+-			continue;
+-
+-		css = cgrp->subsys[ss->subsys_id];
+-		/*
+-		 * When called from check_for_release() it's possible
+-		 * that by this point the cgroup has been removed
+-		 * and the css deleted. But a false-positive doesn't
+-		 * matter, since it can only happen if the cgroup
+-		 * has been deleted and hence no longer needs the
+-		 * release agent to be called anyway.
+-		 */
+-		if (css && css_refcnt(css) > 1)
+-			return 1;
+-	}
+-	return 0;
+-}
+-
+ static int cgroup_destroy_locked(struct cgroup *cgrp)
+ 	__releases(&cgroup_mutex) __acquires(&cgroup_mutex)
+ {
+@@ -5112,12 +5071,15 @@ static void check_for_release(struct cgroup *cgrp)
+ {
+ 	/* All of these checks rely on RCU to keep the cgroup
+ 	 * structure alive */
+-	if (cgroup_is_releasable(cgrp) && !atomic_read(&cgrp->count)
+-	    && list_empty(&cgrp->children) && !cgroup_has_css_refs(cgrp)) {
+-		/* Control Group is currently removeable. If it's not
++	if (cgroup_is_releasable(cgrp) &&
++	    !atomic_read(&cgrp->count) && list_empty(&cgrp->children)) {
++		/*
++		 * Control Group is currently removeable. If it's not
+ 		 * already queued for a userspace notification, queue
+-		 * it now */
++		 * it now
++		 */
+ 		int need_schedule_work = 0;
++
+ 		raw_spin_lock(&release_list_lock);
+ 		if (!cgroup_is_removed(cgrp) &&
+ 		    list_empty(&cgrp->release_list)) {
+@@ -5150,24 +5112,11 @@ EXPORT_SYMBOL_GPL(__css_tryget);
+ /* Caller must verify that the css is not for root cgroup */
+ void __css_put(struct cgroup_subsys_state *css)
+ {
+-	struct cgroup *cgrp = css->cgroup;
+ 	int v;
+ 
+-	rcu_read_lock();
+ 	v = css_unbias_refcnt(atomic_dec_return(&css->refcnt));
+-
+-	switch (v) {
+-	case 1:
+-		if (notify_on_release(cgrp)) {
+-			set_bit(CGRP_RELEASABLE, &cgrp->flags);
+-			check_for_release(cgrp);
+-		}
+-		break;
+-	case 0:
++	if (v == 0)
+ 		schedule_work(&css->dput_work);
+-		break;
+-	}
+-	rcu_read_unlock();
+ }
+ EXPORT_SYMBOL_GPL(__css_put);
+ 
+-- 
+1.8.0.2
