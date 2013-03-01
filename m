@@ -1,65 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751077Ab3CADNO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 22:13:14 -0500
-Received: from mail-ve0-f171.google.com ([209.85.128.171]:44259 "EHLO
-	mail-ve0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750870Ab3CADNN (ORCPT
+	id S1751034Ab3CADV1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 22:21:27 -0500
+Received: from mail-qa0-f48.google.com ([209.85.216.48]:54834 "EHLO
+	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750696Ab3CADVZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 22:13:13 -0500
-MIME-Version: 1.0
-In-Reply-To: <20130227132612.14664a3a.akpm@linux-foundation.org>
-References: <512B7D10.4060304@tpi.com>
-	<512B8407.2090807@canonical.com>
-	<512BD753.4080001@hp.com>
-	<CAE9FiQVY4io_mO3PhTtE6FbGUgo1uZKKXO=pjx_FoZ1JuZmsAw@mail.gmail.com>
-	<CAE9FiQXRZ2VjfG4L2d2zDQ3Sud=JqjS=M9=XW=ORS58_y7i4_g@mail.gmail.com>
-	<CAE9FiQU-CV4mF8x=Bi_4pmpmeZW-tSoes_f-jOt7yYrbrppo+A@mail.gmail.com>
-	<512D58C2.1090403@jp.fujitsu.com>
-	<CAE9FiQV5APHSGXuz3NrsApC+V7rsDQMDXMNwZszZuUqQVaZSew@mail.gmail.com>
-	<512D7FAD.1040003@jp.fujitsu.com>
-	<CAE9FiQWxq-HPKK+XNRLggZSM4NcdfaeGDWCgd3HegEhaDSSTtA@mail.gmail.com>
-	<512D8EDA.3010602@jp.fujitsu.com>
-	<CAE9FiQWAxL6F70fF0dQcBZKTReJOiC+Ez0xcqcosgAdSagS-bA@mail.gmail.com>
-	<512DBD24.7090302@cn.fujitsu.com>
-	<20130227132612.14664a3a.akpm@linux-foundation.org>
-Date: Thu, 28 Feb 2013 19:13:12 -0800
-X-Google-Sender-Auth: Kyf3gKng47D01-Eh66xSuMTU3b4
-Message-ID: <CA+55aFz8Yx4=d=Lrmir0Vy0jhUBJMgfrJegDWsDByf28c0MuRQ@mail.gmail.com>
-Subject: Re: sched: CPU #1's llc-sibling CPU #0 is not on the same node!
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, Yinghai Lu <yinghai@kernel.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Tang Chen <tangchen@cn.fujitsu.com>, Don Morris <don.morris@hp.com>,
-        Tim Gardner <tim.gardner@canonical.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Tejun Heo <tj@kernel.org>,
-        Tony Luck <tony.luck@intel.com>, Thomas Renninger <trenn@suse.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Jarkko Sakkinen <jarkko.sakkinen@intel.com>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 28 Feb 2013 22:21:25 -0500
+From: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>
+To: matt@console-pimps.org
+Cc: linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Michael Schroeder <mls@suse.com>, Josh Boyer <jwboyer@redhat.com>,
+        Jeremy Kerr <jeremy.kerr@canonical.com>,
+        "Lee, Chun-Yi" <jlee@suse.com>
+Subject: [PATCH] efivarfs: fix abnormal GUID in variable name by using strcpy to replace null with dash
+Date: Fri,  1 Mar 2013 11:20:18 +0800
+Message-Id: <1362108018-13117-1-git-send-email-jlee@suse.com>
+X-Mailer: git-send-email 1.6.0.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 27, 2013 at 1:26 PM, Andrew Morton
-<akpm@linux-foundation.org> wrote:
->
-> So I'm thinking that the best approach here is to revert everything and
-> then try again for 3.10-rc1.  This gives people time to test the code
-> while it's only in linux-next.  (Hint!)
+From: Michael Schroeder <mls@suse.com>
 
-I'd prefer to revert too by now - the bug seems to be known, and
-apparently it's not a trivial fix. We're getting close to the end of
-the merge window, and it's still being discussed, it clearly wasn't
-really fully cooked.
+On HP z220 system (firmware version 1.54), some EFI variables are incorrectly
+named :
 
-Can we agree on some minimal set of reverts? Can somebody send me a
-patch with the revert and the commit explanation for the revert?
-Yinghai? Or I can do the reverts too if just the exact set of commits
-is clear, but I'd rather get it from somebody who sees and understand
-the problem, and can test the state afterwards..
+ls -d /sys/firmware/efi/vars/*8be4d* | grep -v -- -8be returns
+/sys/firmware/efi/vars/dbxDefault-pport8be4df61-93ca-11d2-aa0d-00e098032b8c
+/sys/firmware/efi/vars/KEKDefault-pport8be4df61-93ca-11d2-aa0d-00e098032b8c
+/sys/firmware/efi/vars/SecureBoot-pport8be4df61-93ca-11d2-aa0d-00e098032b8c
+/sys/firmware/efi/vars/SetupMode-Information8be4df61-93ca-11d2-aa0d-00e098032b8c
 
-               Linus
+That causes by the following statement in efivar_create_sysfs_entry function:
+
+ *(short_name + strlen(short_name)) = '-';
+efi_guid_unparse(vendor_guid, short_name + strlen(short_name));
+
+The trailing \0 is overwritten with '-', but the next char doesn't seem to be a \0
+as well for HP. So, the second strlen return the point of next '\0', causes there
+have garbage string attached before GUID.
+
+Tested on On HP z220.
+
+Cc: Matt Fleming <matt@console-pimps.org>
+Cc: Josh Boyer <jwboyer@redhat.com>
+Cc: Jeremy Kerr <jeremy.kerr@canonical.com>
+Cc: Michael Schroeder <mls@suse.com>
+Reported-by: Frederic Crozat <fcrozat@suse.com>
+Tested-by: Frederic Crozat <fcrozat@suse.com>
+Signed-off-by: Lee, Chun-Yi <jlee@suse.com>
+---
+ drivers/firmware/efivars.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/firmware/efivars.c b/drivers/firmware/efivars.c
+index 8bcb595..fbf18ff 100644
+--- a/drivers/firmware/efivars.c
++++ b/drivers/firmware/efivars.c
+@@ -1708,7 +1708,7 @@ efivar_create_sysfs_entry(struct efivars *efivars,
+ 	/* This is ugly, but necessary to separate one vendor's
+ 	   private variables from another's.         */
+ 
+-	*(short_name + strlen(short_name)) = '-';
++	strcpy(short_name + strlen(short_name), "-");
+ 	efi_guid_unparse(vendor_guid, short_name + strlen(short_name));
+ 
+ 	new_efivar->kobj.kset = efivars->kset;
+-- 
+1.6.0.2
+
