@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754930Ab3CAUK2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 15:10:28 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51607 "EHLO
+	id S1754972Ab3CAUKx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 15:10:53 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51603 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753329Ab3CATpx (ORCPT
+	with ESMTP id S1753294Ab3CATpx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 1 Mar 2013 14:45:53 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Lukas Czerner <lczerner@redhat.com>, "Theodore Tso" <tytso@mit.edu>,
-        Eric Sandeen <sandeen@redhat.com>
-Subject: [ 52/77] ext4: fix xattr block allocation/release with bigalloc
-Date: Fri,  1 Mar 2013 11:44:37 -0800
-Message-Id: <20130301194357.475924140@linuxfoundation.org>
+        Seiji Aguchi <seiji.aguchi@hds.com>, Don Zickus <dzickus@redhat.com>,
+        Tony Luck <tony.luck@intel.com>, CAI Qian <caiqian@redhat.com>
+Subject: [ 61/77] pstore: Avoid deadlock in panic and emergency-restart path
+Date: Fri,  1 Mar 2013 11:44:46 -0800
+Message-Id: <20130301194358.383669505@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130301194351.913471337@linuxfoundation.org>
 References: <20130301194351.913471337@linuxfoundation.org>
@@ -27,62 +27,149 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lukas Czerner <lczerner@redhat.com>
+From: Seiji Aguchi <seiji.aguchi@hds.com>
 
-commit 1231b3a1eb5740192aeebf5344dd6d6da000febf upstream.
+commit 9f244e9cfd70c7c0f82d3c92ce772ab2a92d9f64 upstream.
 
-Currently when new xattr block is created or released we we would call
-dquot_free_block() or dquot_alloc_block() respectively, among the else
-decrementing or incrementing the number of blocks assigned to the
-inode by one block.
+[Issue]
 
-This however does not work for bigalloc file system because we always
-allocate/free the whole cluster so we have to count with that in
-dquot_free_block() and dquot_alloc_block() as well.
+When pstore is in panic and emergency-restart paths, it may be blocked
+in those paths because it simply takes spin_lock.
 
-Use the clusters-to-blocks conversion EXT4_C2B() when passing number of
-blocks to the dquot_alloc/free functions to fix the problem.
+This is an example scenario which pstore may hang up in a panic path:
 
-The problem has been revealed by xfstests #117 (and possibly others).
+ - cpuA grabs psinfo->buf_lock
+ - cpuB panics and calls smp_send_stop
+ - smp_send_stop sends IRQ to cpuA
+ - after 1 second, cpuB gives up on cpuA and sends an NMI instead
+ - cpuA is now in an NMI handler while still holding buf_lock
+ - cpuB is deadlocked
 
-Signed-off-by: Lukas Czerner <lczerner@redhat.com>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Reviewed-by: Eric Sandeen <sandeen@redhat.com>
+This case may happen if a firmware has a bug and
+cpuA is stuck talking with it more than one second.
+
+Also, this is a similar scenario in an emergency-restart path:
+
+ - cpuA grabs psinfo->buf_lock and stucks in a firmware
+ - cpuB kicks emergency-restart via either sysrq-b or hangcheck timer.
+   And then, cpuB is deadlocked by taking psinfo->buf_lock again.
+
+[Solution]
+
+This patch avoids the deadlocking issues in both panic and emergency_restart
+paths by introducing a function, is_non_blocking_path(), to check if a cpu
+can be blocked in current path.
+
+With this patch, pstore is not blocked even if another cpu has
+taken a spin_lock, in those paths by changing from spin_lock_irqsave
+to spin_trylock_irqsave.
+
+In addition, according to a comment of emergency_restart() in kernel/sys.c,
+spin_lock shouldn't be taken in an emergency_restart path to avoid
+deadlock. This patch fits the comment below.
+
+<snip>
+/**
+ *      emergency_restart - reboot the system
+ *
+ *      Without shutting down any hardware or taking any locks
+ *      reboot the system.  This is called when we know we are in
+ *      trouble so this is our best effort to reboot.  This is
+ *      safe to call in interrupt context.
+ */
+void emergency_restart(void)
+<snip>
+
+Signed-off-by: Seiji Aguchi <seiji.aguchi@hds.com>
+Acked-by: Don Zickus <dzickus@redhat.com>
+Signed-off-by: Tony Luck <tony.luck@intel.com>
+Cc: CAI Qian <caiqian@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/xattr.c |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ fs/pstore/platform.c   |   35 +++++++++++++++++++++++++++++------
+ include/linux/pstore.h |    6 ++++++
+ 2 files changed, 35 insertions(+), 6 deletions(-)
 
---- a/fs/ext4/xattr.c
-+++ b/fs/ext4/xattr.c
-@@ -549,7 +549,7 @@ ext4_xattr_release_block(handle_t *handl
- 		error = ext4_handle_dirty_xattr_block(handle, inode, bh);
- 		if (IS_SYNC(inode))
- 			ext4_handle_sync(handle);
--		dquot_free_block(inode, 1);
-+		dquot_free_block(inode, EXT4_C2B(EXT4_SB(inode->i_sb), 1));
- 		ea_bdebug(bh, "refcount now=%d; releasing",
- 			  le32_to_cpu(BHDR(bh)->h_refcount));
+--- a/fs/pstore/platform.c
++++ b/fs/pstore/platform.c
+@@ -96,6 +96,27 @@ static const char *get_reason_str(enum k
  	}
-@@ -832,7 +832,8 @@ inserted:
- 			else {
- 				/* The old block is released after updating
- 				   the inode. */
--				error = dquot_alloc_block(inode, 1);
-+				error = dquot_alloc_block(inode,
-+						EXT4_C2B(EXT4_SB(sb), 1));
- 				if (error)
- 					goto cleanup;
- 				error = ext4_journal_get_write_access(handle,
-@@ -929,7 +930,7 @@ cleanup:
- 	return error;
+ }
  
- cleanup_dquot:
--	dquot_free_block(inode, 1);
-+	dquot_free_block(inode, EXT4_C2B(EXT4_SB(sb), 1));
- 	goto cleanup;
++bool pstore_cannot_block_path(enum kmsg_dump_reason reason)
++{
++	/*
++	 * In case of NMI path, pstore shouldn't be blocked
++	 * regardless of reason.
++	 */
++	if (in_nmi())
++		return true;
++
++	switch (reason) {
++	/* In panic case, other cpus are stopped by smp_send_stop(). */
++	case KMSG_DUMP_PANIC:
++	/* Emergency restart shouldn't be blocked by spin lock. */
++	case KMSG_DUMP_EMERG:
++		return true;
++	default:
++		return false;
++	}
++}
++EXPORT_SYMBOL_GPL(pstore_cannot_block_path);
++
+ /*
+  * callback from kmsg_dump. (s2,l2) has the most recently
+  * written bytes, older bytes are in (s1,l1). Save as much
+@@ -114,10 +135,12 @@ static void pstore_dump(struct kmsg_dump
  
- bad_block:
+ 	why = get_reason_str(reason);
+ 
+-	if (in_nmi()) {
+-		is_locked = spin_trylock(&psinfo->buf_lock);
+-		if (!is_locked)
+-			pr_err("pstore dump routine blocked in NMI, may corrupt error record\n");
++	if (pstore_cannot_block_path(reason)) {
++		is_locked = spin_trylock_irqsave(&psinfo->buf_lock, flags);
++		if (!is_locked) {
++			pr_err("pstore dump routine blocked in %s path, may corrupt error record\n"
++				       , in_nmi() ? "NMI" : why);
++		}
+ 	} else
+ 		spin_lock_irqsave(&psinfo->buf_lock, flags);
+ 	oopscount++;
+@@ -143,9 +166,9 @@ static void pstore_dump(struct kmsg_dump
+ 		total += hsize + len;
+ 		part++;
+ 	}
+-	if (in_nmi()) {
++	if (pstore_cannot_block_path(reason)) {
+ 		if (is_locked)
+-			spin_unlock(&psinfo->buf_lock);
++			spin_unlock_irqrestore(&psinfo->buf_lock, flags);
+ 	} else
+ 		spin_unlock_irqrestore(&psinfo->buf_lock, flags);
+ }
+--- a/include/linux/pstore.h
++++ b/include/linux/pstore.h
+@@ -68,12 +68,18 @@ struct pstore_info {
+ 
+ #ifdef CONFIG_PSTORE
+ extern int pstore_register(struct pstore_info *);
++extern bool pstore_cannot_block_path(enum kmsg_dump_reason reason);
+ #else
+ static inline int
+ pstore_register(struct pstore_info *psi)
+ {
+ 	return -ENODEV;
+ }
++static inline bool
++pstore_cannot_block_path(enum kmsg_dump_reason reason)
++{
++	return false;
++}
+ #endif
+ 
+ #endif /*_LINUX_PSTORE_H*/
 
 
