@@ -1,57 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751988Ab3CAUhq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 15:37:46 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:37345 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751140Ab3CAUhp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 15:37:45 -0500
-Message-ID: <1362170264.2116.24.camel@joe-AO722>
-Subject: Re: [PATCH V2] MAINTAINERS: Update SIMTEC file patterns, remove
- Vincent Sanders
-From: Joe Perches <joe@perches.com>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Simtec Linux Team <linux@simtec.co.uk>,
-        Ben Dooks <ben-linux@fluff.org>,
-        Cesar Eduardo Barros <cesarb@cesarb.net>
-Date: Fri, 01 Mar 2013 12:37:44 -0800
-In-Reply-To: <1362169225.20156.6.camel@x61.thuisdomein>
-References: <1362166088.2116.10.camel@joe-AO722>
-	 <1362168132.2116.17.camel@joe-AO722>
-	 <1362169225.20156.6.camel@x61.thuisdomein>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752046Ab3CAUj0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 15:39:26 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:52518 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751140Ab3CAUjY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Mar 2013 15:39:24 -0500
+Date: Fri, 1 Mar 2013 20:39:17 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Li Zefan <lizefan@huawei.com>
+Cc: Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Cgroups <cgroups@vger.kernel.org>
+Subject: Re: [PATCH 2/3] cgroup: add cgroup_name() API
+Message-ID: <20130301203917.GT4503@ZenIV.linux.org.uk>
+References: <512B01FA.5020506@huawei.com>
+ <512B020D.9040504@huawei.com>
+ <20130226022703.GA13837@htj.dyndns.org>
+ <512C8D84.7090707@huawei.com>
+ <CAOS58YMb7HRQ3X+Z92vi3+jKr4DuNmAgxtc5e3Jkhy-s-7Os-g@mail.gmail.com>
+ <512DE4A8.5050303@huawei.com>
+ <CAOS58YMhm6Uia0bx6oUHwheXUhu8i31LPhh8VVggvg0vg-UmUQ@mail.gmail.com>
+ <512EFEDF.8080205@huawei.com>
+ <CAOS58YMBcvhfBWdQmt=JersRgB9nVgsrLACtLovz===2ZXfR=w@mail.gmail.com>
+ <51304C6D.8050207@huawei.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51304C6D.8050207@huawei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-03-01 at 21:20 +0100, Paul Bolle wrote:
-> On Fri, 2013-03-01 at 12:02 -0800, Joe Perches wrote:
-> > commit 85fd6d6 ("ARM: S3C2410: move mach-s3c2410/* into mach-s3c24xx/")
-> > moved the files, update the F: patterns.
+On Fri, Mar 01, 2013 at 02:36:29PM +0800, Li Zefan wrote:
+> On 2013/2/28 22:49, Tejun Heo wrote:
+> > On Wed, Feb 27, 2013 at 10:53 PM, Li Zefan <lizefan@huawei.com> wrote:
+> >>> static const struct cgroup_name root_cgroup_name = { .name = "/" };
+> >>
+> >> Can't... That's char name[0] not char *name.
+> > 
+> > Flexible array members can be statically initialized. If you wanna be
+> > really anal about it, you can do it manually with a wrapping struct
+> > but I don't think that would be necessary.
+> > 
 > 
-> The BAST MAINTAINER entry has come up a few times already. I commented
-> on the last time that happened in https://lkml.org/lkml/2012/11/24/96 .
-> Nothing has changed. I suggest to remove this entry entirely.
+> I didn't know this difference between flexible array and zero-size array.
+> Thanks.
 
-Seems sensible to me.  Ben?
-
-I'm a bit surprised that all of Cesar Eduardo Barros' patches
-to MAINTAINERS weren't applied.  I thought they were.  It
-seems that only some of them are in.
-
-https://lkml.org/lkml/2012/11/23/439
-
-Cesar?  Can you please resend whatever scraps weren't applied
-and make sure you cc Andrew Morton?
-
-> I guess the CATS entry might also be removed. But that doesn't have an
-> F: pattern, so I'm not sure what code that entry covers.
-
-I believe it's basically arch/arm/mach-footbridge/cats-*
-
-
+Mind you, initializing flex array member is explicitly invalid per C99;
+it's a GNU extension...
