@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755355Ab3CAUXb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 15:23:31 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51350 "EHLO
+	id S1755412Ab3CAUXc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 15:23:32 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51338 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752162Ab3CATpP (ORCPT
+	with ESMTP id S1752466Ab3CATpO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 14:45:15 -0500
+	Fri, 1 Mar 2013 14:45:14 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Adam Thomas <adamthomas1111@gmail.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Subject: [ 17/77] UBIFS: fix use of freed ubifs_orphan objects
-Date: Fri,  1 Mar 2013 11:44:02 -0800
-Message-Id: <20130301194353.811920726@linuxfoundation.org>
+        Pratyush Anand <pratyush.anand@st.com>, Felipe Balbi <balbi@ti.com>
+Subject: [ 13/77] usb: dwc3: gadget: fix isoc END TRANSFER Condition
+Date: Fri,  1 Mar 2013 11:43:58 -0800
+Message-Id: <20130301194353.395306822@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130301194351.913471337@linuxfoundation.org>
 References: <20130301194351.913471337@linuxfoundation.org>
@@ -28,94 +26,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Adam Thomas <adamthomas1111@gmail.com>
+From: Pratyush Anand <pratyush.anand@st.com>
 
-commit 2928f0d0c5ebd6c9605c0d98207a44376387c298 upstream.
+commit cdc359dd87ab6c39a67dab724fd0b61c16e6f08b upstream.
 
-The last orphan in the cnext list has its cnext set to NULL. Because
-of that, ubifs_delete_orphan assumes that it is not on the cnext list
-and frees it immediately instead of adding it to the dnext list. The
-freed orphan is later modified by write_orph_node.
+There were still some corner cases where isoc transfer was not able to
+restart, specially when missed isoc does not happen , and in fact gadget does
+not queue any new request during giveback.
 
-This can cause various inconsistencies including directory entries
-that cannot be removed and this error:
+Cleanup function calls giveback first, which provides a way to queue
+another request to gadget. But gadget did not had any data. So , it did
+not call ep_queue. To twist it further, gadget did not queue till
+cleanup for last queued TRB is called. If we ever reach this scenario,
+we must call END TRANSFER, so that we receive a new  xfernotready with
+information about current microframe number.
 
-UBIFS error (pid 20685): layout_cnodes: LPT out of space at LEB 14:129009 needing 17, done_ltab 1, done_lsave 1
+Also insure that there is no request submitted to core when issuing END
+TRANSFER.
 
-This is a regression introduced by
-"7074e5eb UBIFS: remove invalid reference to list iterator variable".
-
-This change adds an explicit flag to ubifs_orphan indicating whether
-it is pending commit.
-
-Signed-off-by: Adam Thomas <adamthomas1111@gmail.com>
-Reviewed-by: Adrian Hunter <adrian.hunter@intel.com>
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Signed-off-by: Pratyush Anand <pratyush.anand@st.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ubifs/orphan.c |    7 ++++++-
- fs/ubifs/ubifs.h  |    4 +++-
- 2 files changed, 9 insertions(+), 2 deletions(-)
+ drivers/usb/dwc3/gadget.c |   23 ++++++++++++++++++-----
+ 1 file changed, 18 insertions(+), 5 deletions(-)
 
---- a/fs/ubifs/orphan.c
-+++ b/fs/ubifs/orphan.c
-@@ -132,7 +132,7 @@ void ubifs_delete_orphan(struct ubifs_in
- 					(unsigned long)inum);
- 				return;
- 			}
--			if (o->cnext) {
-+			if (o->cmt) {
- 				o->dnext = c->orph_dnext;
- 				c->orph_dnext = o;
- 				spin_unlock(&c->orphan_lock);
-@@ -172,7 +172,9 @@ int ubifs_orphan_start_commit(struct ubi
- 	last = &c->orph_cnext;
- 	list_for_each_entry(orphan, &c->orph_new, new_list) {
- 		ubifs_assert(orphan->new);
-+		ubifs_assert(!orphan->cmt);
- 		orphan->new = 0;
-+		orphan->cmt = 1;
- 		*last = orphan;
- 		last = &orphan->cnext;
- 	}
-@@ -299,7 +301,9 @@ static int write_orph_node(struct ubifs_
- 	cnext = c->orph_cnext;
- 	for (i = 0; i < cnt; i++) {
- 		orphan = cnext;
-+		ubifs_assert(orphan->cmt);
- 		orph->inos[i] = cpu_to_le64(orphan->inum);
-+		orphan->cmt = 0;
- 		cnext = orphan->cnext;
- 		orphan->cnext = NULL;
- 	}
-@@ -378,6 +382,7 @@ static int consolidate(struct ubifs_info
- 		list_for_each_entry(orphan, &c->orph_list, list) {
- 			if (orphan->new)
- 				continue;
-+			orphan->cmt = 1;
- 			*last = orphan;
- 			last = &orphan->cnext;
- 			cnt += 1;
---- a/fs/ubifs/ubifs.h
-+++ b/fs/ubifs/ubifs.h
-@@ -904,6 +904,7 @@ struct ubifs_budget_req {
-  * @dnext: next orphan to delete
-  * @inum: inode number
-  * @new: %1 => added since the last commit, otherwise %0
-+ * @cmt: %1 => commit pending, otherwise %0
-  */
- struct ubifs_orphan {
- 	struct rb_node rb;
-@@ -912,7 +913,8 @@ struct ubifs_orphan {
- 	struct ubifs_orphan *cnext;
- 	struct ubifs_orphan *dnext;
- 	ino_t inum;
--	int new;
-+	unsigned new:1;
-+	unsigned cmt:1;
- };
+--- a/drivers/usb/dwc3/gadget.c
++++ b/drivers/usb/dwc3/gadget.c
+@@ -1091,7 +1091,10 @@ static int __dwc3_gadget_ep_queue(struct
+ 		 * notion of current microframe.
+ 		 */
+ 		if (usb_endpoint_xfer_isoc(dep->endpoint.desc)) {
+-			dwc3_stop_active_transfer(dwc, dep->number);
++			if (list_empty(&dep->req_queued)) {
++				dwc3_stop_active_transfer(dwc, dep->number);
++				dep->flags = DWC3_EP_ENABLED;
++			}
+ 			return 0;
+ 		}
  
- /**
+@@ -1728,10 +1731,20 @@ static int dwc3_cleanup_done_reqs(struct
+ 			break;
+ 	} while (1);
+ 
+-	if (list_empty(&dep->req_queued) &&
+-			(dep->flags & DWC3_EP_MISSED_ISOC)) {
+-		dwc3_stop_active_transfer(dwc, dep->number);
+-		dep->flags &= ~DWC3_EP_MISSED_ISOC;
++	if (usb_endpoint_xfer_isoc(dep->endpoint.desc) &&
++			list_empty(&dep->req_queued)) {
++		if (list_empty(&dep->request_list)) {
++			/*
++			 * If there is no entry in request list then do
++			 * not issue END TRANSFER now. Just set PENDING
++			 * flag, so that END TRANSFER is issued when an
++			 * entry is added into request list.
++			 */
++			dep->flags = DWC3_EP_PENDING_REQUEST;
++		} else {
++			dwc3_stop_active_transfer(dwc, dep->number);
++			dep->flags = DWC3_EP_ENABLED;
++		}
+ 		return 1;
+ 	}
+ 
 
 
