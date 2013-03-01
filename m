@@ -1,200 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932478Ab3CGElB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 23:41:01 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:3104 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754551Ab3CGElA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 23:41:00 -0500
-From: Jason Wang <jasowang@redhat.com>
-To: mst@redhat.com, kvm@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Jason Wang <jasowang@redhat.com>
-Subject: [PATCH] vhost_net: remove tx polling state
-Date: Thu,  7 Mar 2013 12:31:56 +0800
-Message-Id: <1362630716-57674-1-git-send-email-jasowang@redhat.com>
+	id S1759154Ab3CGEmR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 23:42:17 -0500
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:51074 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752554Ab3CGEmQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Mar 2013 23:42:16 -0500
+Message-ID: <1362107234.2712.1.camel@localhost>
+Subject: Re: [PATCH 0/3] Enable multiple MSI feature in pSeries
+From: Mike <qiudayu@linux.vnet.ibm.com>
+To: linuxppc-dev@lists.ozlabs.org
+Cc: linux-kernel@vger.kernel.org, benh@kernel.crashing.org, tglx@linutronix.de
+In-Reply-To: <1358235536-32741-1-git-send-email-qiudayu@linux.vnet.ibm.com>
+References: <1358235536-32741-1-git-send-email-qiudayu@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 01 Mar 2013 11:07:14 +0800
+Mime-Version: 1.0
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 8bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13030704-3568-0000-0000-000003410FD0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After commit 2b8b328b61c799957a456a5a8dab8cc7dea68575 (vhost_net: handle polling
-errors when setting backend), we in fact track the polling state through
-poll->wqh, so there's no need to duplicate the work with an extra
-vhost_net_polling_state. So this patch removes this and make the code simpler.
+Hi all
 
-Signed-off-by: Jason Wang <jasowang@redhat.com>
----
- drivers/vhost/net.c   |   60 ++++++++----------------------------------------
- drivers/vhost/vhost.c |    3 ++
- 2 files changed, 13 insertions(+), 50 deletions(-)
+Any comments? or any questions about my patchset?
 
-diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
-index 959b1cd..d1a03dd 100644
---- a/drivers/vhost/net.c
-+++ b/drivers/vhost/net.c
-@@ -64,20 +64,10 @@ enum {
- 	VHOST_NET_VQ_MAX = 2,
- };
- 
--enum vhost_net_poll_state {
--	VHOST_NET_POLL_DISABLED = 0,
--	VHOST_NET_POLL_STARTED = 1,
--	VHOST_NET_POLL_STOPPED = 2,
--};
--
- struct vhost_net {
- 	struct vhost_dev dev;
- 	struct vhost_virtqueue vqs[VHOST_NET_VQ_MAX];
- 	struct vhost_poll poll[VHOST_NET_VQ_MAX];
--	/* Tells us whether we are polling a socket for TX.
--	 * We only do this when socket buffer fills up.
--	 * Protected by tx vq lock. */
--	enum vhost_net_poll_state tx_poll_state;
- 	/* Number of TX recently submitted.
- 	 * Protected by tx vq lock. */
- 	unsigned tx_packets;
-@@ -155,28 +145,6 @@ static void copy_iovec_hdr(const struct iovec *from, struct iovec *to,
- 	}
- }
- 
--/* Caller must have TX VQ lock */
--static void tx_poll_stop(struct vhost_net *net)
--{
--	if (likely(net->tx_poll_state != VHOST_NET_POLL_STARTED))
--		return;
--	vhost_poll_stop(net->poll + VHOST_NET_VQ_TX);
--	net->tx_poll_state = VHOST_NET_POLL_STOPPED;
--}
--
--/* Caller must have TX VQ lock */
--static int tx_poll_start(struct vhost_net *net, struct socket *sock)
--{
--	int ret;
--
--	if (unlikely(net->tx_poll_state != VHOST_NET_POLL_STOPPED))
--		return 0;
--	ret = vhost_poll_start(net->poll + VHOST_NET_VQ_TX, sock->file);
--	if (!ret)
--		net->tx_poll_state = VHOST_NET_POLL_STARTED;
--	return ret;
--}
--
- /* In case of DMA done not in order in lower device driver for some reason.
-  * upend_idx is used to track end of used idx, done_idx is used to track head
-  * of used idx. Once lower device DMA done contiguously, we will signal KVM
-@@ -231,6 +199,7 @@ static void vhost_zerocopy_callback(struct ubuf_info *ubuf, bool success)
- static void handle_tx(struct vhost_net *net)
- {
- 	struct vhost_virtqueue *vq = &net->dev.vqs[VHOST_NET_VQ_TX];
-+	struct vhost_poll *poll = net->poll + VHOST_NET_VQ_TX;
- 	unsigned out, in, s;
- 	int head;
- 	struct msghdr msg = {
-@@ -256,7 +225,7 @@ static void handle_tx(struct vhost_net *net)
- 	wmem = atomic_read(&sock->sk->sk_wmem_alloc);
- 	if (wmem >= sock->sk->sk_sndbuf) {
- 		mutex_lock(&vq->mutex);
--		tx_poll_start(net, sock);
-+		vhost_poll_start(poll, sock->file);
- 		mutex_unlock(&vq->mutex);
- 		return;
- 	}
-@@ -265,7 +234,7 @@ static void handle_tx(struct vhost_net *net)
- 	vhost_disable_notify(&net->dev, vq);
- 
- 	if (wmem < sock->sk->sk_sndbuf / 2)
--		tx_poll_stop(net);
-+		vhost_poll_stop(poll);
- 	hdr_size = vq->vhost_hlen;
- 	zcopy = vq->ubufs;
- 
-@@ -287,7 +256,7 @@ static void handle_tx(struct vhost_net *net)
- 
- 			wmem = atomic_read(&sock->sk->sk_wmem_alloc);
- 			if (wmem >= sock->sk->sk_sndbuf * 3 / 4) {
--				tx_poll_start(net, sock);
-+				vhost_poll_start(poll, sock->file);
- 				set_bit(SOCK_ASYNC_NOSPACE, &sock->flags);
- 				break;
- 			}
-@@ -298,7 +267,7 @@ static void handle_tx(struct vhost_net *net)
- 				    (vq->upend_idx - vq->done_idx) :
- 				    (vq->upend_idx + UIO_MAXIOV - vq->done_idx);
- 			if (unlikely(num_pends > VHOST_MAX_PEND)) {
--				tx_poll_start(net, sock);
-+				vhost_poll_start(poll, sock->file);
- 				set_bit(SOCK_ASYNC_NOSPACE, &sock->flags);
- 				break;
- 			}
-@@ -364,7 +333,7 @@ static void handle_tx(struct vhost_net *net)
- 			}
- 			vhost_discard_vq_desc(vq, 1);
- 			if (err == -EAGAIN || err == -ENOBUFS)
--				tx_poll_start(net, sock);
-+				vhost_poll_start(poll, sock->file);
- 			break;
- 		}
- 		if (err != len)
-@@ -627,7 +596,6 @@ static int vhost_net_open(struct inode *inode, struct file *f)
- 
- 	vhost_poll_init(n->poll + VHOST_NET_VQ_TX, handle_tx_net, POLLOUT, dev);
- 	vhost_poll_init(n->poll + VHOST_NET_VQ_RX, handle_rx_net, POLLIN, dev);
--	n->tx_poll_state = VHOST_NET_POLL_DISABLED;
- 
- 	f->private_data = n;
- 
-@@ -637,32 +605,24 @@ static int vhost_net_open(struct inode *inode, struct file *f)
- static void vhost_net_disable_vq(struct vhost_net *n,
- 				 struct vhost_virtqueue *vq)
- {
-+	struct vhost_poll *poll = n->poll + (vq - n->vqs);
- 	if (!vq->private_data)
- 		return;
--	if (vq == n->vqs + VHOST_NET_VQ_TX) {
--		tx_poll_stop(n);
--		n->tx_poll_state = VHOST_NET_POLL_DISABLED;
--	} else
--		vhost_poll_stop(n->poll + VHOST_NET_VQ_RX);
-+	vhost_poll_stop(poll);
- }
- 
- static int vhost_net_enable_vq(struct vhost_net *n,
- 				struct vhost_virtqueue *vq)
- {
-+	struct vhost_poll *poll = n->poll + (vq - n->vqs);
- 	struct socket *sock;
--	int ret;
- 
- 	sock = rcu_dereference_protected(vq->private_data,
- 					 lockdep_is_held(&vq->mutex));
- 	if (!sock)
- 		return 0;
--	if (vq == n->vqs + VHOST_NET_VQ_TX) {
--		n->tx_poll_state = VHOST_NET_POLL_STOPPED;
--		ret = tx_poll_start(n, sock);
--	} else
--		ret = vhost_poll_start(n->poll + VHOST_NET_VQ_RX, sock->file);
- 
--	return ret;
-+	return vhost_poll_start(poll, sock->file);
- }
- 
- static struct socket *vhost_net_stop_vq(struct vhost_net *n,
-diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
-index 9759249..4eecdb8 100644
---- a/drivers/vhost/vhost.c
-+++ b/drivers/vhost/vhost.c
-@@ -89,6 +89,9 @@ int vhost_poll_start(struct vhost_poll *poll, struct file *file)
- 	unsigned long mask;
- 	int ret = 0;
- 
-+	if (poll->wqh)
-+		return 0;
-+
- 	mask = file->f_op->poll(file, &poll->table);
- 	if (mask)
- 		vhost_poll_wakeup(&poll->wait, 0, 0, (void *)mask);
--- 
-1.7.1
+Thanks
+Mike
+在 2013-01-15二的 15:38 +0800，Mike Qiu写道：
+> Currently, multiple MSI feature hasn't been enabled in pSeries,
+> These patches try to enbale this feature.
+> 
+> These patches have been tested by using ipr driver, and the driver patch
+> has been made by Wen Xiong <wenxiong@linux.vnet.ibm.com>:
+> 
+> [PATCH 0/7] Add support for new IBM SAS controllers
+> 
+> Test platform: One partition of pSeries with one cpu core(4 SMTs) and 
+>                RAID bus controller: IBM PCI-E IPR SAS Adapter (ASIC) in POWER7
+> OS version: SUSE Linux Enterprise Server 11 SP2  (ppc64) with 3.8-rc3 kernel 
+> 
+> IRQ 21 and 22 are assigned to the ipr device which support 2 mutiple MSI.
+> 
+> The test results is shown by 'cat /proc/interrups':
+>           CPU0       CPU1       CPU2       CPU3       
+> 16:     240458     261601     226310     200425      XICS Level     IPI
+> 17:          0          0          0          0      XICS Level     RAS_EPOW
+> 18:         10          0          3          2      XICS Level     hvc_console
+> 19:     122182      28481      28527      28864      XICS Level     ibmvscsi
+> 20:        506    7388226        108        118      XICS Level     eth0
+> 21:          6          5          5          5      XICS Level     host1-0
+> 22:        817        814        816        813      XICS Level     host1-1
+> LOC:     398077     316725     231882     203049   Local timer interrupts
+> SPU:       1659        919        961        903   Spurious interrupts
+> CNT:          0          0          0          0   Performance
+> monitoring interrupts
+> MCE:          0          0          0          0   Machine check exceptions
+> 
+> Mike Qiu (3):
+>   irq: Set multiple MSI descriptor data for multiple IRQs
+>   irq: Add hw continuous IRQs map to virtual continuous IRQs support
+>   powerpc/pci: Enable pSeries multiple MSI feature
+> 
+>  arch/powerpc/kernel/msi.c            |    4 --
+>  arch/powerpc/platforms/pseries/msi.c |   62 ++++++++++++++++++++++++++++++++-
+>  include/linux/irq.h                  |    4 ++
+>  include/linux/irqdomain.h            |    3 ++
+>  kernel/irq/chip.c                    |   40 ++++++++++++++++-----
+>  kernel/irq/irqdomain.c               |   61 +++++++++++++++++++++++++++++++++
+>  6 files changed, 158 insertions(+), 16 deletions(-)
+> 
+
 
