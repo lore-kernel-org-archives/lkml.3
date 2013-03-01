@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754503Ab3CAUFe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 15:05:34 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51695 "EHLO
+	id S1755007Ab3CAUF4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 15:05:56 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51660 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753591Ab3CATqF (ORCPT
+	with ESMTP id S1753262Ab3CATqF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 1 Mar 2013 14:46:05 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Henningsson <david.henningsson@canonical.com>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [ 01/46] ALSA: hda - hdmi: Make jacks phantom, if theyre not detectable
-Date: Fri,  1 Mar 2013 11:44:49 -0800
-Message-Id: <20130301194432.424842945@linuxfoundation.org>
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [ 08/46] doc, kernel-parameters: Document console=hvc<n>
+Date: Fri,  1 Mar 2013 11:44:56 -0800
+Message-Id: <20130301194433.158250787@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130301194432.263409302@linuxfoundation.org>
 References: <20130301194432.263409302@linuxfoundation.org>
@@ -27,37 +27,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Henningsson <david.henningsson@canonical.com>
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-commit 30efd8debd1ef30be342d374f01e993509f5b76b upstream.
+commit a2fd6419174470f5ae6383f5037d0ee21ed9833f upstream.
 
-Just as for analog codecs, a jack that isn't suitable for detection
-(in this case, NO_PRESENCE was set) should be a phantom Jack
-instead of a normal one.
+Both the PowerPC hypervisor and Xen hypervisor can utilize the
+hvc driver.
 
-Thanks to Raymond Yau for spotting.
-
-BugLink: https://bugs.launchpad.net/bugs/961286
-BugLink: https://bugzilla.redhat.com/show_bug.cgi?id=903869
-Signed-off-by: David Henningsson <david.henningsson@canonical.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Link: http://lkml.kernel.org/r/1361825650-14031-3-git-send-email-konrad.wilk@oracle.com
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_hdmi.c |    3 +++
- 1 file changed, 3 insertions(+)
+ Documentation/kernel-parameters.txt |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/sound/pci/hda/patch_hdmi.c
-+++ b/sound/pci/hda/patch_hdmi.c
-@@ -1244,6 +1244,9 @@ static int generic_hdmi_build_jack(struc
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -557,6 +557,8 @@ bytes respectively. Such letter suffixes
+ 			UART at the specified I/O port or MMIO address,
+ 			switching to the matching ttyS device later.  The
+ 			options are the same as for ttyS, above.
++		hvc<n>	Use the hypervisor console device <n>. This is for
++			both Xen and PowerPC hypervisors.
  
- 	if (pcmdev > 0)
- 		sprintf(hdmi_str + strlen(hdmi_str), ",pcm=%d", pcmdev);
-+	if (!is_jack_detectable(codec, per_pin->pin_nid))
-+		strncat(hdmi_str, " Phantom",
-+			sizeof(hdmi_str) - strlen(hdmi_str) - 1);
- 
- 	return snd_hda_jack_add_kctl(codec, per_pin->pin_nid, hdmi_str, 0);
- }
+                 If the device connected to the port is not a TTY but a braille
+                 device, prepend "brl," before the device type, for instance
 
 
