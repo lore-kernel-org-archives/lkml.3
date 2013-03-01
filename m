@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753184Ab3CATps (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 14:45:48 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51536 "EHLO
+	id S1753861Ab3CAUMl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 15:12:41 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51562 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752993Ab3CATpm (ORCPT
+	with ESMTP id S1753119Ab3CATpq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 14:45:42 -0500
+	Fri, 1 Mar 2013 14:45:46 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Li Zefan <lizefan@huawei.com>, Tejun Heo <tj@kernel.org>
-Subject: [ 62/77] cpuset: fix cpuset_print_task_mems_allowed() vs rename() race
-Date: Fri,  1 Mar 2013 11:44:47 -0800
-Message-Id: <20130301194358.528846133@linuxfoundation.org>
+        Seth Heasley <seth.heasley@intel.com>,
+        Jeff Garzik <jgarzik@redhat.com>
+Subject: [ 69/77] ata_piix: IDE-mode SATA patch for Intel Avoton DeviceIDs
+Date: Fri,  1 Mar 2013 11:44:54 -0800
+Message-Id: <20130301194359.246629282@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130301194351.913471337@linuxfoundation.org>
 References: <20130301194351.913471337@linuxfoundation.org>
@@ -26,47 +27,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Li Zefan <lizefan@huawei.com>
+From: Seth Heasley <seth.heasley@intel.com>
 
-commit 63f43f55c9bbc14f76b582644019b8a07dc8219a upstream.
+commit aaa515277db9585eeb4fdeb4637b9f9df50a1dd9 upstream.
 
-rename() will change dentry->d_name. The result of this race can
-be worse than seeing partially rewritten name, but we might access
-a stale pointer because rename() will re-allocate memory to hold
-a longer name.
+This patch adds the IDE-mode SATA DeviceIDs for the Intel Avoton SOC.
 
-It's safe in the protection of dentry->d_lock.
-
-v2: check NULL dentry before acquiring dentry lock.
-
-Signed-off-by: Li Zefan <lizefan@huawei.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Seth Heasley <seth.heasley@intel.com>
+Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/cpuset.c |   12 ++++++++++--
- 1 file changed, 10 insertions(+), 2 deletions(-)
+ drivers/ata/ata_piix.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/kernel/cpuset.c
-+++ b/kernel/cpuset.c
-@@ -2511,8 +2511,16 @@ void cpuset_print_task_mems_allowed(stru
+--- a/drivers/ata/ata_piix.c
++++ b/drivers/ata/ata_piix.c
+@@ -317,6 +317,14 @@ static const struct pci_device_id piix_p
+ 	{ 0x8086, 0x9c09, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
+ 	/* SATA Controller IDE (DH89xxCC) */
+ 	{ 0x8086, 0x2326, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
++	/* SATA Controller IDE (Avoton) */
++	{ 0x8086, 0x1f20, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_sata_snb },
++	/* SATA Controller IDE (Avoton) */
++	{ 0x8086, 0x1f21, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_sata_snb },
++	/* SATA Controller IDE (Avoton) */
++	{ 0x8086, 0x1f30, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
++	/* SATA Controller IDE (Avoton) */
++	{ 0x8086, 0x1f31, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
+ 	{ }	/* terminate list */
+ };
  
- 	dentry = task_cs(tsk)->css.cgroup->dentry;
- 	spin_lock(&cpuset_buffer_lock);
--	snprintf(cpuset_name, CPUSET_NAME_LEN,
--		 dentry ? (const char *)dentry->d_name.name : "/");
-+
-+	if (!dentry) {
-+		strcpy(cpuset_name, "/");
-+	} else {
-+		spin_lock(&dentry->d_lock);
-+		strlcpy(cpuset_name, (const char *)dentry->d_name.name,
-+			CPUSET_NAME_LEN);
-+		spin_unlock(&dentry->d_lock);
-+	}
-+
- 	nodelist_scnprintf(cpuset_nodelist, CPUSET_NODELIST_LEN,
- 			   tsk->mems_allowed);
- 	printk(KERN_INFO "%s cpuset=%s mems_allowed=%s\n",
 
 
