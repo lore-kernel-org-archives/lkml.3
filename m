@@ -1,354 +1,443 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751298Ab3CAPBc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 10:01:32 -0500
-Received: from mail-bk0-f42.google.com ([209.85.214.42]:37021 "EHLO
-	mail-bk0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750696Ab3CAPBa (ORCPT
+	id S1751486Ab3CAPDN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 10:03:13 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:56279 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750915Ab3CAPDK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 10:01:30 -0500
-Message-ID: <5130C2C7.30400@gmail.com>
-Date: Fri, 01 Mar 2013 16:01:27 +0100
-From: Daniel Mack <zonque@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130219 Thunderbird/17.0.3
+	Fri, 1 Mar 2013 10:03:10 -0500
+Date: Fri, 1 Mar 2013 16:02:54 +0100 (CET)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+X-X-Sender: lyakh@axis700.grange
+To: Magnus Damm <magnus.damm@gmail.com>
+cc: linux-kernel@vger.kernel.org, linux-sh@vger.kernel.org,
+        benh@kernel.crashing.org, grant.likely@secretlab.ca,
+        horms@verge.net.au, tglx@linutronix.de
+Subject: Re: [PATCH] irqchip: Renesas IRQC driver
+In-Reply-To: <20130227081501.30706.60471.sendpatchset@w520>
+Message-ID: <Pine.LNX.4.64.1303011555350.18776@axis700.grange>
+References: <20130227081501.30706.60471.sendpatchset@w520>
 MIME-Version: 1.0
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-CC: Stephen Warren <swarren@nvidia.com>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Dom Cobley <popcornmix@gmail.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rabeeh Khoury <rabeeh@solid-run.com>,
-        devicetree-discuss@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] clk: add si5351 i2c common clock driver
-References: <1360414772-12232-1-git-send-email-sebastian.hesselbarth@gmail.com> <5123CF5B.9060804@gmail.com> <CABJ1b_TaQ=AXCM9KKW-hJ0Rgdd+759ia+9P=bdnYbA_HcHP1wQ@mail.gmail.com>
-In-Reply-To: <CABJ1b_TaQ=AXCM9KKW-hJ0Rgdd+759ia+9P=bdnYbA_HcHP1wQ@mail.gmail.com>
-X-Enigmail-Version: 1.5
-Content-Type: multipart/mixed;
- boundary="------------000707060609010105040207"
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Provags-ID: V02:K0:8rCWcLk7eQsKJ6Q4DoTSc7mcAGkMI3zpRKMxkdfyMAP
+ XQPvyXZXRmODpQg83l7LL2z9fJ1CnyqfUhIPffjbqXaIXFOul2
+ AcQBDgLvN11Y7XLqkaxG0vuIol823iNS79A6sMSRQNTMhBqDW7
+ vrW3oITIpQfYoezCUFfCx0S4DldEUAyFX0u9FMS1QB4zA8Y5e2
+ 0HEyTnDClbUjeOCVCapvM92V2SyTfOU4sxPm6mwhumqEI0U7Sy
+ nuUsLmT9u2hg1/POsXoFtZ4a1OcawnOxBDNZbcz2YxPXdmXsQo
+ O28DBw7bmSxGOhn9TTFV/FWmZcsPyU6VjEUgQkbVjrjac29xMK
+ x17QoZ2RHDT02knnNyEq2zFHTS3PdpTJ67XrLPoNy9fXMPy0jP
+ vbuuhd86rM1cg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------000707060609010105040207
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+On Wed, 27 Feb 2013, Magnus Damm wrote:
 
-Hi Sebastian,
-
-On 27.02.2013 11:01, Sebastian Hesselbarth wrote:
-> first of all sorry for the late answer but thanks for testing the driver.
+> From: Magnus Damm <damm@opensource.se>
 > 
-> On 2/19/13, Daniel Mack <zonque@gmail.com> wrote:
->> Hi Sebastian,
->>
->> I did some more tests today and it took me a while to dig for the root
->> cause why things were not working for me in the first place - see below.
->>
->>
->> On 09.02.2013 13:59, Sebastian Hesselbarth wrote:
->>
->>> +==Example==
->>> +
->>> +/* 25MHz reference crystal */
->>> +ref25: ref25M {
->>> +	compatible = "fixed-clock";
->>> +	#clock-cells = <0>;
->>> +	clock-frequency = <25000000>;
->>> +};
->>> +
->>> +i2c-master-node {
->>> +
->>> +	/* Si5351a msop10 i2c clock generator */
->>> +	si5351a: clock-generator@60 {
->>> +		compatible = "silabs,si5351a-msop";
->>> +		reg = <0x60>;
->>> +		#address-cells = <1>;
->>> +		#size-cells = <0>;
->>> +		#clock-cells = <1>;
->>> +
->>> +		/* connect xtal input to 25MHz reference */
->>> +		clocks = <&ref25>;
->>
->> As referred to in another thread, registering the ref25M clock that way
->> didn't suffice for me on my platform - but that's a different story.
+> This patch adds a driver for external IRQ pins connected
+> to the IRQC hardware block on recent SoCs from Renesas.
 > 
-> I guess "fixed-clock" isn't registered by OMAP's clock init code? I had
-> to do this on dove, too. Actually, I will come back to clock initialization for
-> dove later and was hoping that there will be some global way of registering
-> core common clock drivers (or at least fixed-clock) until then.
+> The IRQC hardware block is used together with more
+> recent ARM based SoCs using the GIC. As usual the GIC
+> requires external IRQ trigger setup somewhere else
+> which in this particular case happens to be IRQC.
 > 
->>> +static void si5351_read_parameters(struct si5351_driver_data *drvdata,
->>> +	unsigned char reg, struct si5351_parameters *params)
->>> +{
->>> +	unsigned char buf[SI5351_PARAMETERS_LENGTH];
->>
->> On a general note, I think you can use u8 instead of unsigned char all
->> over the place here, which will save you some indentation trouble.
+> This driver implements the glue code needed to configure
+> IRQ trigger and also handle mask/unmask and demux of
+> external IRQ pins hooked up from the IRQC to the GIC.
 > 
-> Ok, I guess I was deriving "unsigned char" usage from other clock drivers
-> and never went to u8. But I ll reconsider using u8 when all issues are
-> worked out.
+> Tested on r8a73a4 but is designed to work with a wide
+> range of SoCs. The driver requires one GIC SPI per
+> external IRQ pin to operate.  Each driver instance
+> will handle up to 32 external IRQ pins.
 > 
->>> +static inline int _si5351_clkout_reparent(struct si5351_driver_data
->>> *drvdata,
->>> +				  unsigned char num, unsigned char parent)
->>> +{
->>> +	struct clk *pclk;
->>> +
->>> +	if (num > 8 ||
->>> +	    (drvdata->variant == SI5351_VARIANT_A3 && num > 3))
->>> +		return -EINVAL;
->>> +
->>> +	switch (parent) {
->>> +	case 0:
->>> +		pclk = drvdata->msynth[num].hw.clk;
->>> +		break;
->>> +	case 1:
->>> +		pclk = drvdata->msynth[0].hw.clk;
->>> +		if (num >= 4)
->>> +			pclk = drvdata->msynth[4].hw.clk;
->>> +		break;
->>> +	case 2:
->>> +		pclk = drvdata->xtal.clk;
->>> +		break;
->>> +	case 3:
->>> +		if (drvdata->variant != SI5351_VARIANT_C)
->>> +			return -EINVAL;
->>> +		pclk = drvdata->clkin.clk;
->>> +		break;
->>> +	default:
->>> +		return -EINVAL;
->>> +	}
->>> +	return clk_set_parent(drvdata->clkout[num].hw.clk, pclk);
->>> +}
->>
->> [...]
->>
->>> +static int si5351_clkout_set_parent(struct clk_hw *hw, u8 index)
->>> +{
->>> +	struct si5351_hw_data *hwdata =
->>> +		container_of(hw, struct si5351_hw_data, hw);
->>> +	unsigned val;
->>> +
->>> +	val = 0;
->>> +	hw->clk->flags &= ~CLK_SET_RATE_PARENT;
->>> +	switch (index) {
->>> +	case 0:
->>> +		hw->clk->flags |= CLK_SET_RATE_PARENT;
->>> +		val = SI5351_CLK_INPUT_MULTISYNTH_N;
->>> +		break;
->>
->> I fugured that _si5351_clkout_reparent() wouldn't actually call
->> ->set_parent() on the clock, which leads to the fact that
->> CLK_SET_RATE_PARENT is not set in the flags. That way, only the clkout
->> end leaf is actually supplied with a new rate, which leads to incorrect
->> effective clocks, depending on the current multisynth/pll configuration.
+> The SoCs using this driver are currently mainly used
+> together with regular platform devices so this driver
+> allows configuration via platform data to support things
+> like static interrupt base address. DT support will
+> be added incrementally in the not so distant future.
 > 
-> Yeah, true. Unfortunately, _clkout_reparent() is more like a dirty hack to
-> allow to reparent the clock output. At registration internal configuration of
-> si5351 is not known and when I parse the DT for clock configuration I might
-> have been already assigned to the same parent clk that you later explicitly
-> configure.
+> Signed-off-by: Magnus Damm <damm@opensource.se>
 
-Hmm, but then we need to either set the configuration on the chip to
-match the internal state of the driver, or tell the clock framework that
-the current state is not currently known (don't know if that's possible).
+tested on kzm9g in topic/all+next branch of
 
-> What I basically want for si5351 (or any other eeprom based programmable
-> clock gen) is that stored configuration is not touched. But it can be changed
-> after eeprom contents have been copied into device's sram - and this _is_
-> mandatory for the si5351 that I use on CuBox where there is no useful config
-> stored at all.
+https://git.kernel.org/cgit/linux/kernel/git/horms/renesas.git/
 
-Yes, same here. We set up the si5351 from the bootloader with some
-binary blob via i2c to bring some components to live before the kernel
-boots.
+Tested-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
 
-> Anyway, there still seem to be some more issues with doing it right on current
-> common clk framwork - thanks for pointing it out.
+Thanks
+Guennadi
 
-I'd be happy to test more versions if you have any.
-
-FWIW, attached is a patch for caching the 'prepared' states of the
-clocks. This fixes the 'scheduling while atomic' bug I described earlier
-in this thread. You can squash it into your patch if you want.
-
-
-
-Thanks,
-Daniel
-
---------------000707060609010105040207
-Content-Type: text/x-patch;
- name="0001-si5351-cache-prepared-bits-of-clocks.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="0001-si5351-cache-prepared-bits-of-clocks.patch"
-
->From 3e7a1a8e1f3e472e473e5ab47329bb44a9ec24ba Mon Sep 17 00:00:00 2001
-From: Daniel Mack <zonque@gmail.com>
-Date: Sun, 17 Feb 2013 18:01:08 +0100
-Subject: [PATCH] si5351: cache 'prepared' bits of clocks
+> ---
+> 
+>  drivers/irqchip/Kconfig                        |    4 
+>  drivers/irqchip/Makefile                       |    1 
+>  drivers/irqchip/irq-renesas-irqc.c             |  298 ++++++++++++++++++++++++
+>  include/linux/platform_data/irq-renesas-irqc.h |   27 ++
+>  4 files changed, 330 insertions(+)
+> 
+> --- 0002/drivers/irqchip/Kconfig
+> +++ work/drivers/irqchip/Kconfig	2013-02-27 16:00:08.000000000 +0900
+> @@ -29,6 +29,10 @@ config RENESAS_INTC_IRQPIN
+>  	bool
+>  	select IRQ_DOMAIN
+>  
+> +config RENESAS_IRQC
+> +	bool
+> +	select IRQ_DOMAIN
+> +
+>  config VERSATILE_FPGA_IRQ
+>  	bool
+>  	select IRQ_DOMAIN
+> --- 0002/drivers/irqchip/Makefile
+> +++ work/drivers/irqchip/Makefile	2013-02-27 16:00:08.000000000 +0900
+> @@ -6,4 +6,5 @@ obj-$(CONFIG_ARCH_SPEAR3XX)		+= spear-sh
+>  obj-$(CONFIG_ARM_GIC)			+= irq-gic.o
+>  obj-$(CONFIG_ARM_VIC)			+= irq-vic.o
+>  obj-$(CONFIG_RENESAS_INTC_IRQPIN)	+= irq-renesas-intc-irqpin.o
+> +obj-$(CONFIG_RENESAS_IRQC)		+= irq-renesas-irqc.o
+>  obj-$(CONFIG_VERSATILE_FPGA_IRQ)	+= irq-versatile-fpga.o
+> --- /dev/null
+> +++ work/drivers/irqchip/irq-renesas-irqc.c	2013-02-27 17:04:02.000000000 +0900
+> @@ -0,0 +1,298 @@
+> +/*
+> + * Renesas IRQC Driver
+> + *
+> + *  Copyright (C) 2013 Magnus Damm
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation; either version 2 of the License
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+> + * You should have received a copy of the GNU General Public License
+> + * along with this program; if not, write to the Free Software
+> + * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+> + */
+> +
+> +#include <linux/init.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/spinlock.h>
+> +#include <linux/interrupt.h>
+> +#include <linux/ioport.h>
+> +#include <linux/io.h>
+> +#include <linux/irq.h>
+> +#include <linux/irqdomain.h>
+> +#include <linux/err.h>
+> +#include <linux/slab.h>
+> +#include <linux/module.h>
+> +#include <linux/platform_data/irq-renesas-irqc.h>
+> +
+> +#define IRQC_IRQ_MAX 32 /* maximum 32 interrupts per driver instance */
+> +
+> +#define IRQC_REQ_STS 0x00
+> +#define IRQC_EN_STS 0x04
+> +#define IRQC_EN_SET 0x08
+> +#define IRQC_INT_CPU_BASE(n) (0x000 + ((n) * 0x10))
+> +#define DETECT_STATUS 0x100
+> +#define IRQC_CONFIG(n) (0x180 + ((n) * 0x04))
+> +
+> +struct irqc_irq {
+> +	int hw_irq;
+> +	int requested_irq;
+> +	int domain_irq;
+> +	struct irqc_priv *p;
+> +};
+> +
+> +struct irqc_priv {
+> +	void __iomem *iomem;
+> +	void __iomem *cpu_int_base;
+> +	struct irqc_irq irq[IRQC_IRQ_MAX];
+> +	struct renesas_irqc_config config;
+> +	unsigned int number_of_irqs;
+> +	struct platform_device *pdev;
+> +	struct irq_chip irq_chip;
+> +	struct irq_domain *irq_domain;
+> +};
+> +
+> +static void irqc_dbg(struct irqc_irq *i, char *str)
+> +{
+> +	dev_dbg(&i->p->pdev->dev, "%s (%d:%d:%d)\n",
+> +		str, i->requested_irq, i->hw_irq, i->domain_irq);
+> +}
+> +
+> +static void irqc_irq_enable(struct irq_data *d)
+> +{
+> +	struct irqc_priv *p = irq_data_get_irq_chip_data(d);
+> +	int hw_irq = irqd_to_hwirq(d);
+> +
+> +	irqc_dbg(&p->irq[hw_irq], "enable");
+> +	iowrite32(BIT(hw_irq), p->cpu_int_base + IRQC_EN_SET);
+> +}
+> +
+> +static void irqc_irq_disable(struct irq_data *d)
+> +{
+> +	struct irqc_priv *p = irq_data_get_irq_chip_data(d);
+> +	int hw_irq = irqd_to_hwirq(d);
+> +
+> +	irqc_dbg(&p->irq[hw_irq], "disable");
+> +	iowrite32(BIT(hw_irq), p->cpu_int_base + IRQC_EN_STS);
+> +}
+> +
+> +#define INTC_IRQ_SENSE_VALID 0x10
+> +#define INTC_IRQ_SENSE(x) (x + INTC_IRQ_SENSE_VALID)
+> +
+> +static unsigned char irqc_sense[IRQ_TYPE_SENSE_MASK + 1] = {
+> +	[IRQ_TYPE_LEVEL_LOW] = INTC_IRQ_SENSE(0x01),
+> +	[IRQ_TYPE_LEVEL_HIGH] = INTC_IRQ_SENSE(0x02),
+> +	[IRQ_TYPE_EDGE_FALLING] = INTC_IRQ_SENSE(0x04), /* Synchronous */
+> +	[IRQ_TYPE_EDGE_RISING] = INTC_IRQ_SENSE(0x08), /* Synchronous */
+> +	[IRQ_TYPE_EDGE_BOTH] = INTC_IRQ_SENSE(0x0c),  /* Synchronous */
+> +};
+> +
+> +static int irqc_irq_set_type(struct irq_data *d, unsigned int type)
+> +{
+> +	struct irqc_priv *p = irq_data_get_irq_chip_data(d);
+> +	int hw_irq = irqd_to_hwirq(d);
+> +	unsigned char value = irqc_sense[type & IRQ_TYPE_SENSE_MASK];
+> +	unsigned long tmp;
+> +
+> +	irqc_dbg(&p->irq[hw_irq], "sense");
+> +
+> +	if (!(value & INTC_IRQ_SENSE_VALID))
+> +		return -EINVAL;
+> +
+> +	tmp = ioread32(p->iomem + IRQC_CONFIG(hw_irq));
+> +	tmp &= ~0x3f;
+> +	tmp |= value ^ INTC_IRQ_SENSE_VALID;
+> +	iowrite32(tmp, p->iomem + IRQC_CONFIG(hw_irq));
+> +	return 0;
+> +}
+> +
+> +static irqreturn_t irqc_irq_handler(int irq, void *dev_id)
+> +{
+> +	struct irqc_irq *i = dev_id;
+> +	struct irqc_priv *p = i->p;
+> +	unsigned long bit = BIT(i->hw_irq);
+> +
+> +	irqc_dbg(i, "demux1");
+> +
+> +	if (ioread32(p->iomem + DETECT_STATUS) & bit) {
+> +		iowrite32(bit, p->iomem + DETECT_STATUS);
+> +		irqc_dbg(i, "demux2");
+> +		generic_handle_irq(i->domain_irq);
+> +		return IRQ_HANDLED;
+> +	}
+> +	return IRQ_NONE;
+> +}
+> +
+> +static int irqc_irq_domain_map(struct irq_domain *h, unsigned int virq,
+> +			       irq_hw_number_t hw)
+> +{
+> +	struct irqc_priv *p = h->host_data;
+> +
+> +	p->irq[hw].domain_irq = virq;
+> +	p->irq[hw].hw_irq = hw;
+> +
+> +	irqc_dbg(&p->irq[hw], "map");
+> +	irq_set_chip_data(virq, h->host_data);
+> +	irq_set_chip_and_handler(virq, &p->irq_chip, handle_level_irq);
+> +	set_irq_flags(virq, IRQF_VALID); /* kill me now */
+> +	return 0;
+> +}
+> +
+> +static struct irq_domain_ops irqc_irq_domain_ops = {
+> +	.map	= irqc_irq_domain_map,
+> +};
+> +
+> +static int irqc_probe(struct platform_device *pdev)
+> +{
+> +	struct renesas_irqc_config *pdata = pdev->dev.platform_data;
+> +	struct irqc_priv *p;
+> +	struct resource *io;
+> +	struct resource *irq;
+> +	struct irq_chip *irq_chip;
+> +	const char *name = dev_name(&pdev->dev);
+> +	int ret;
+> +	int k;
+> +
+> +	p = kzalloc(sizeof(*p), GFP_KERNEL);
+> +	if (!p) {
+> +		dev_err(&pdev->dev, "failed to allocate driver data\n");
+> +		ret = -ENOMEM;
+> +		goto err0;
+> +	}
+> +
+> +	/* deal with driver instance configuration */
+> +	if (pdata)
+> +		memcpy(&p->config, pdata, sizeof(*pdata));
+> +
+> +	p->pdev = pdev;
+> +	platform_set_drvdata(pdev, p);
+> +
+> +	/* get hold of manadatory IOMEM */
+> +	io = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> +	if (!io) {
+> +		dev_err(&pdev->dev, "not enough IOMEM resources\n");
+> +		ret = -EINVAL;
+> +		goto err1;
+> +	}
+> +
+> +	/* allow any number of IRQs between 1 and IRQC_IRQ_MAX */
+> +	for (k = 0; k < IRQC_IRQ_MAX; k++) {
+> +		irq = platform_get_resource(pdev, IORESOURCE_IRQ, k);
+> +		if (!irq)
+> +			break;
+> +
+> +		p->irq[k].p = p;
+> +		p->irq[k].requested_irq = irq->start;
+> +	}
+> +
+> +	p->number_of_irqs = k;
+> +	if (p->number_of_irqs < 1) {
+> +		dev_err(&pdev->dev, "not enough IRQ resources\n");
+> +		ret = -EINVAL;
+> +		goto err1;
+> +	}
+> +
+> +	/* ioremap IOMEM and setup read/write callbacks */
+> +	p->iomem = ioremap_nocache(io->start, resource_size(io));
+> +	if (!p->iomem) {
+> +		dev_err(&pdev->dev, "failed to remap IOMEM\n");
+> +		ret = -ENXIO;
+> +		goto err2;
+> +	}
+> +
+> +	p->cpu_int_base = p->iomem + IRQC_INT_CPU_BASE(0); /* SYS-SPI */
+> +
+> +	irq_chip = &p->irq_chip;
+> +	irq_chip->name = name;
+> +	irq_chip->irq_mask = irqc_irq_disable;
+> +	irq_chip->irq_unmask = irqc_irq_enable;
+> +	irq_chip->irq_enable = irqc_irq_enable;
+> +	irq_chip->irq_disable = irqc_irq_disable;
+> +	irq_chip->irq_set_type = irqc_irq_set_type;
+> +	irq_chip->flags	= IRQCHIP_SKIP_SET_WAKE;
+> +
+> +	p->irq_domain = irq_domain_add_simple(pdev->dev.of_node,
+> +					      p->number_of_irqs,
+> +					      p->config.irq_base,
+> +					      &irqc_irq_domain_ops, p);
+> +	if (!p->irq_domain) {
+> +		ret = -ENXIO;
+> +		dev_err(&pdev->dev, "cannot initialize irq domain\n");
+> +		goto err2;
+> +	}
+> +
+> +	/* request interrupts one by one */
+> +	for (k = 0; k < p->number_of_irqs; k++) {
+> +		if (request_irq(p->irq[k].requested_irq, irqc_irq_handler,
+> +				0, name, &p->irq[k])) {
+> +			dev_err(&pdev->dev, "failed to request IRQ\n");
+> +			ret = -ENOENT;
+> +			goto err3;
+> +		}
+> +	}
+> +
+> +	dev_info(&pdev->dev, "driving %d irqs\n", p->number_of_irqs);
+> +
+> +	/* warn in case of mismatch if irq base is specified */
+> +	if (p->config.irq_base) {
+> +		if (p->config.irq_base != p->irq[0].domain_irq)
+> +			dev_warn(&pdev->dev, "irq base mismatch (%d/%d)\n",
+> +				 p->config.irq_base, p->irq[0].domain_irq);
+> +	}
+> +
+> +	return 0;
+> +err3:
+> +	for (; k >= 0; k--)
+> +		free_irq(p->irq[k - 1].requested_irq, &p->irq[k - 1]);
+> +
+> +	irq_domain_remove(p->irq_domain);
+> +err2:
+> +	iounmap(p->iomem);
+> +err1:
+> +	kfree(p);
+> +err0:
+> +	return ret;
+> +}
+> +
+> +static int irqc_remove(struct platform_device *pdev)
+> +{
+> +	struct irqc_priv *p = platform_get_drvdata(pdev);
+> +	int k;
+> +
+> +	for (k = 0; k < p->number_of_irqs; k++)
+> +		free_irq(p->irq[k].requested_irq, &p->irq[k]);
+> +
+> +	irq_domain_remove(p->irq_domain);
+> +	iounmap(p->iomem);
+> +	kfree(p);
+> +	return 0;
+> +}
+> +
+> +static struct platform_driver irqc_device_driver = {
+> +	.probe		= irqc_probe,
+> +	.remove		= irqc_remove,
+> +	.driver		= {
+> +		.name	= "renesas_irqc",
+> +	}
+> +};
+> +
+> +static int __init irqc_init(void)
+> +{
+> +	return platform_driver_register(&irqc_device_driver);
+> +}
+> +postcore_initcall(irqc_init);
+> +
+> +static void __exit irqc_exit(void)
+> +{
+> +	platform_driver_unregister(&irqc_device_driver);
+> +}
+> +module_exit(irqc_exit);
+> +
+> +MODULE_AUTHOR("Magnus Damm");
+> +MODULE_DESCRIPTION("Renesas IRQC Driver");
+> +MODULE_LICENSE("GPL v2");
+> --- /dev/null
+> +++ work/include/linux/platform_data/irq-renesas-irqc.h	2013-02-27 16:12:09.000000000 +0900
+> @@ -0,0 +1,27 @@
+> +/*
+> + * Renesas IRQC Driver
+> + *
+> + *  Copyright (C) 2013 Magnus Damm
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation; either version 2 of the License
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+> + * You should have received a copy of the GNU General Public License
+> + * along with this program; if not, write to the Free Software
+> + * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+> + */
+> +
+> +#ifndef __IRQ_RENESAS_IRQC_H__
+> +#define __IRQ_RENESAS_IRQC_H__
+> +
+> +struct renesas_irqc_config {
+> +	unsigned int irq_base;
+> +};
+> +
+> +#endif /* __IRQ_RENESAS_IRQC_H__ */
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-sh" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
 ---
- drivers/clk/clk-si5351.c | 47 ++++++++++++++++++++++++++++++++++-------------
- 1 file changed, 34 insertions(+), 13 deletions(-)
-
-diff --git a/drivers/clk/clk-si5351.c b/drivers/clk/clk-si5351.c
-index b526742..528f88a 100644
---- a/drivers/clk/clk-si5351.c
-+++ b/drivers/clk/clk-si5351.c
-@@ -54,6 +54,7 @@ struct si5351_hw_data {
- 	struct si5351_driver_data	*drvdata;
- 	struct si5351_parameters	params;
- 	unsigned char			num;
-+	bool				prepared;
- };
- 
- struct si5351_driver_data {
-@@ -70,6 +71,9 @@ struct si5351_driver_data {
- 	struct si5351_hw_data	pll[2];
- 	struct si5351_hw_data	*msynth;
- 	struct si5351_hw_data	*clkout;
-+
-+	bool			xtal_prepared;
-+	bool			clkin_prepared;
- };
- 
- static const char const *si5351_input_names[] = {
-@@ -223,6 +227,8 @@ static int si5351_xtal_prepare(struct clk_hw *hw)
- 		container_of(hw, struct si5351_driver_data, xtal);
- 	si5351_set_bits(drvdata, SI5351_FANOUT_ENABLE,
- 			SI5351_XTAL_ENABLE, SI5351_XTAL_ENABLE);
-+	drvdata->xtal_prepared  = true;
-+
- 	return 0;
- }
- 
-@@ -232,15 +238,14 @@ static void si5351_xtal_unprepare(struct clk_hw *hw)
- 		container_of(hw, struct si5351_driver_data, xtal);
- 	si5351_set_bits(drvdata, SI5351_FANOUT_ENABLE,
- 			SI5351_XTAL_ENABLE, 0);
-+	drvdata->xtal_prepared  = false;
- }
- 
- static int si5351_xtal_is_enabled(struct clk_hw *hw)
- {
- 	struct si5351_driver_data *drvdata =
- 		container_of(hw, struct si5351_driver_data, xtal);
--	unsigned char reg;
--	reg = si5351_reg_read(drvdata, SI5351_FANOUT_ENABLE);
--	return (reg & SI5351_XTAL_ENABLE) ? 1 : 0;
-+	return drvdata->xtal_prepared;
- }
- 
- static const struct clk_ops si5351_xtal_ops = {
-@@ -258,7 +263,8 @@ static int si5351_clkin_prepare(struct clk_hw *hw)
- 		container_of(hw, struct si5351_driver_data, clkin);
- 	si5351_set_bits(drvdata, SI5351_FANOUT_ENABLE,
- 			SI5351_CLKIN_ENABLE, SI5351_CLKIN_ENABLE);
--	return 0;
-+	drvdata->clkin_prepared  = true;
-+	return 1;
- }
- 
- static void si5351_clkin_unprepare(struct clk_hw *hw)
-@@ -267,15 +273,14 @@ static void si5351_clkin_unprepare(struct clk_hw *hw)
- 		container_of(hw, struct si5351_driver_data, clkin);
- 	si5351_set_bits(drvdata, SI5351_FANOUT_ENABLE,
- 			SI5351_CLKIN_ENABLE, 0);
-+	drvdata->clkin_prepared  = false;
- }
- 
- static int si5351_clkin_is_enabled(struct clk_hw *hw)
- {
- 	struct si5351_driver_data *drvdata =
- 		container_of(hw, struct si5351_driver_data, clkin);
--	unsigned char reg;
--	reg = si5351_reg_read(drvdata, SI5351_FANOUT_ENABLE);
--	return (reg & SI5351_CLKIN_ENABLE) ? 1 : 0;
-+	return drvdata->clkin_prepared;
- }
- 
- /*
-@@ -660,6 +665,7 @@ static unsigned long si5351_msynth_recalc_rate(struct clk_hw *hw,
- 		m += hwdata->params.p2;
- 		m += 512 * hwdata->params.p3;
- 	}
-+printk(" XXXX m %d (%d)\n", m, hwdata->num);
- 	do_div(rate, m);
- 
- 	dev_dbg(&hwdata->drvdata->client->dev,
-@@ -887,6 +893,8 @@ static int si5351_clkout_prepare(struct clk_hw *hw)
- 			SI5351_CLK_POWERDOWN, 0);
- 	si5351_set_bits(hwdata->drvdata, SI5351_OUTPUT_ENABLE_CTRL,
- 			(1 << hwdata->num), 0);
-+	hwdata->prepared = true;
-+
- 	return 0;
- }
- 
-@@ -899,21 +907,28 @@ static void si5351_clkout_unprepare(struct clk_hw *hw)
- 			SI5351_CLK_POWERDOWN, SI5351_CLK_POWERDOWN);
- 	si5351_set_bits(hwdata->drvdata, SI5351_OUTPUT_ENABLE_CTRL,
- 			(1 << hwdata->num), (1 << hwdata->num));
-+	hwdata->prepared = false;
- }
- 
--static int si5351_clkout_is_enabled(struct clk_hw *hw)
-+static void __si5351_read_clkout_prepared(struct si5351_hw_data *hwdata)
- {
--	struct si5351_hw_data *hwdata =
--		container_of(hw, struct si5351_hw_data, hw);
- 	unsigned char val;
- 
- 	val = si5351_reg_read(hwdata->drvdata, SI5351_CLK0_CTRL + hwdata->num);
- 	if (val & SI5351_CLK_POWERDOWN)
--		return 0;
-+		hwdata->prepared = false;
- 	val = si5351_reg_read(hwdata->drvdata, SI5351_OUTPUT_ENABLE_CTRL);
- 	if (val & (1 << hwdata->num))
--		return 0;
--	return 1;
-+		hwdata->prepared = false;
-+	hwdata->prepared = true;
-+}
-+
-+static int si5351_clkout_is_enabled(struct clk_hw *hw)
-+{
-+	struct si5351_hw_data *hwdata =
-+		container_of(hw, struct si5351_hw_data, hw);
-+
-+	return hwdata->prepared;
- }
- 
- static u8 si5351_clkout_get_parent(struct clk_hw *hw)
-@@ -1306,6 +1321,11 @@ static int si5351_i2c_probe(
- 		return -EINVAL;
- 	}
- 
-+	/* read current clock enable bits */
-+	ret = si5351_reg_read(drvdata, SI5351_FANOUT_ENABLE);
-+	drvdata->xtal_prepared = !!(ret & SI5351_XTAL_ENABLE);
-+	drvdata->clkin_prepared  = !!(ret & SI5351_CLKIN_ENABLE);
-+
- 	/* register PLLB or VXCO (Si5351B) */
- 	drvdata->pll[1].num = 1;
- 	drvdata->pll[1].drvdata = drvdata;
-@@ -1394,6 +1414,7 @@ static int si5351_i2c_probe(
- 			return -EINVAL;
- 		}
- 		drvdata->onecell.clks[n] = clk;
-+		__si5351_read_clkout_prepared(&drvdata->clkout[n]);
- 	}
- 
- 	/* setup clock setup from DT */
--- 
-1.8.1.2
-
-
---------------000707060609010105040207--
+Guennadi Liakhovetski, Ph.D.
+Freelance Open-Source Software Developer
+http://www.open-technology.de/
