@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754728Ab3CATvw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 14:51:52 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52012 "EHLO
+	id S1754509Ab3CATwY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 14:52:24 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52002 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754493Ab3CATqn (ORCPT
+	with ESMTP id S1754476Ab3CATqm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 14:46:43 -0500
+	Fri, 1 Mar 2013 14:46:42 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Xi Wang <xi.wang@gmail.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Tejun Heo <tj@kernel.org>, David Teigland <teigland@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 13/30] sysctl: fix null checking in bin_dn_node_address()
-Date: Fri,  1 Mar 2013 11:45:34 -0800
-Message-Id: <20130301194529.410713908@linuxfoundation.org>
+Subject: [ 11/30] idr: fix a subtle bug in idr_get_next()
+Date: Fri,  1 Mar 2013 11:45:32 -0800
+Message-Id: <20130301194529.211102955@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130301194527.988540148@linuxfoundation.org>
 References: <20130301194527.988540148@linuxfoundation.org>
@@ -29,36 +29,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Xi Wang <xi.wang@gmail.com>
+From: Tejun Heo <tj@kernel.org>
 
-commit df1778be1a33edffa51d094eeda87c858ded6560 upstream.
+commit 6cdae7416a1c45c2ce105a78187d9b7e8feb9e24 upstream.
 
-The null check of `strchr() + 1' is broken, which is always non-null,
-leading to OOB read.  Instead, check the result of strchr().
+The iteration logic of idr_get_next() is borrowed mostly verbatim from
+idr_for_each().  It walks down the tree looking for the slot matching
+the current ID.  If the matching slot is not found, the ID is
+incremented by the distance of single slot at the given level and
+repeats.
 
-Signed-off-by: Xi Wang <xi.wang@gmail.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>
+The implementation assumes that during the whole iteration id is aligned
+to the layer boundaries of the level closest to the leaf, which is true
+for all iterations starting from zero or an existing element and thus is
+fine for idr_for_each().
+
+However, idr_get_next() may be given any point and if the starting id
+hits in the middle of a non-existent layer, increment to the next layer
+will end up skipping the same offset into it.  For example, an IDR with
+IDs filled between [64, 127] would look like the following.
+
+          [  0  64 ... ]
+       /----/   |
+       |        |
+      NULL    [ 64 ... 127 ]
+
+If idr_get_next() is called with 63 as the starting point, it will try
+to follow down the pointer from 0.  As it is NULL, it will then try to
+proceed to the next slot in the same level by adding the slot distance
+at that level which is 64 - making the next try 127.  It goes around the
+loop and finds and returns 127 skipping [64, 126].
+
+Note that this bug also triggers in idr_for_each_entry() loop which
+deletes during iteration as deletions can make layers go away leaving
+the iteration with unaligned ID into missing layers.
+
+Fix it by ensuring proceeding to the next slot doesn't carry over the
+unaligned offset - ie.  use round_up(id + 1, slot_distance) instead of
+id += slot_distance.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: David Teigland <teigland@redhat.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/sysctl_binary.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ lib/idr.c |    9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
 
---- a/kernel/sysctl_binary.c
-+++ b/kernel/sysctl_binary.c
-@@ -1194,9 +1194,10 @@ static ssize_t bin_dn_node_address(struc
+--- a/lib/idr.c
++++ b/lib/idr.c
+@@ -621,7 +621,14 @@ void *idr_get_next(struct idr *idp, int
+ 			return p;
+ 		}
  
- 		/* Convert the decnet address to binary */
- 		result = -EIO;
--		nodep = strchr(buf, '.') + 1;
-+		nodep = strchr(buf, '.');
- 		if (!nodep)
- 			goto out;
-+		++nodep;
- 
- 		area = simple_strtoul(buf, NULL, 10);
- 		node = simple_strtoul(nodep, NULL, 10);
+-		id += 1 << n;
++		/*
++		 * Proceed to the next layer at the current level.  Unlike
++		 * idr_for_each(), @id isn't guaranteed to be aligned to
++		 * layer boundary at this point and adding 1 << n may
++		 * incorrectly skip IDs.  Make sure we jump to the
++		 * beginning of the next layer using round_up().
++		 */
++		id = round_up(id + 1, 1 << n);
+ 		while (n < fls(id)) {
+ 			n += IDR_BITS;
+ 			p = *--paa;
 
 
