@@ -1,56 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751936Ab3CAQ1q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 11:27:46 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:48980 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751367Ab3CAQ1n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 11:27:43 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Sander Eikelenboom <linux@eikelenboom.it>
-Cc: aaron.lu@intel.com, jgarzik@pobox.com, linux-kernel@vger.kernel.org,
-        linux-ide@vger.kernel.org, linux-pm@vger.kernel.org
-Subject: Re: [PATCH] libata-acpi.c: fix copy and paste mistake in ata_acpi_register_power_resource
-Date: Fri, 01 Mar 2013 17:34:32 +0100
-Message-ID: <2944715.8ytIW0aehH@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1362136602-30327-1-git-send-email-linux@eikelenboom.it>
-References: <2508494.4AbRYXD1du@vostro.rjw.lan> <1362136602-30327-1-git-send-email-linux@eikelenboom.it>
+	id S1752002Ab3CAQa1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 11:30:27 -0500
+Received: from mail-bk0-f41.google.com ([209.85.214.41]:49700 "EHLO
+	mail-bk0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750778Ab3CAQaY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Mar 2013 11:30:24 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <20130301135529.GB27373@kroah.com>
+References: <1362098606-26469-1-git-send-email-john.stultz@linaro.org>
+ <1362098606-26469-11-git-send-email-john.stultz@linaro.org>
+ <20130301020008.GB13367@kroah.com> <51302792.6040408@linaro.org>
+ <CACSP8Sg=sTbJ_Yv=PdxvHQ--0_rTLN6XG3+0aFKzzHxMzVxKhw@mail.gmail.com> <20130301135529.GB27373@kroah.com>
+From: Erik Gilling <konkers@android.com>
+Date: Fri, 1 Mar 2013 08:30:02 -0800
+X-Google-Sender-Auth: Nu_qAaLyfCpiimuxweIwAbTsp4M
+Message-ID: <CACSP8SgGFtLdYDEEBapvzmn-hrCMu5VAeg2m6vjk6krw9SL8tg@mail.gmail.com>
+Subject: Re: [PATCH 10/30] staging: sync: Export sync API symbols
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: John Stultz <john.stultz@linaro.org>, lkml <linux-kernel@vger.kernel.org>,
+        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>, Rob Clark <robclark@gmail.com>,
+        Sumit Semwal <sumit.semwal@linaro.org>,
+        dri-devel@lists.freedesktop.org,
+        Android Kernel Team <kernel-team@android.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, March 01, 2013 12:16:42 PM Sander Eikelenboom wrote:
-> Fix a copy and paste mistake introduced in:
-> 
-> commit bc9b6407bd6df3ab7189e5622816bbc11ae9d2d8
-> "ACPI / PM: Rework the handling of devices depending on power resources"
-> 
-> Signed-off-by: Sander Eikelenboom <linux@eikelenboom.it>
+On Fri, Mar 1, 2013 at 5:55 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> On Fri, Mar 01, 2013 at 12:21:24AM -0800, Erik Gilling wrote:
+>> As John pointed out, the exynos and msm display and code uses them.  I
+>> know nvidia is working on adding suport to their tegra tree.  My knee
+>> jerk reaction is to make the export as permissible as possible.  That
+>> being said, all of the ARM SoC vendors I've worked with have GPL
+>> kernel drivers even if their user space is closed.  I'll reach out to
+>> them and ask for their opinions.  Are there any issues with keeping
+>> them EXPORT_SYMBOL?
+>
+> There's no "issues", it's just that it is preferred by some people and
+> companies to add new symbols to the kernel in this manner.  It's really
+> up to you / Google as you are the ones contributing the code.
 
-Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Ok.  Lets keep it EXPORT_SYMBOL then.
 
-> ---
->  drivers/ata/libata-acpi.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/ata/libata-acpi.c b/drivers/ata/libata-acpi.c
-> index 0ea1018..cb3eab6d 100644
-> --- a/drivers/ata/libata-acpi.c
-> +++ b/drivers/ata/libata-acpi.c
-> @@ -1027,7 +1027,7 @@ static void ata_acpi_register_power_resource(struct ata_device *dev)
->  
->  	handle = ata_dev_acpi_handle(dev);
->  	if (handle)
-> -		acpi_dev_pm_remove_dependent(handle, &sdev->sdev_gendev);
-> +		acpi_dev_pm_add_dependent(handle, &sdev->sdev_gendev);
->  }
->  
->  static void ata_acpi_unregister_power_resource(struct ata_device *dev)
-> 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Cheers,
+   Erik
