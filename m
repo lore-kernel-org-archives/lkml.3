@@ -1,165 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751496Ab3CAKRr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 05:17:47 -0500
-Received: from www.linutronix.de ([62.245.132.108]:43474 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750887Ab3CAKRo (ORCPT
+	id S1751539Ab3CAKVE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 05:21:04 -0500
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:40989 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750995Ab3CAKVB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 05:17:44 -0500
-Date: Fri, 1 Mar 2013 11:17:42 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Yong Zhang <yong.zhang0@gmail.com>
-cc: linux-kernel@vger.kernel.org, linux-rt-users@vger.kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH] futex: fix unbalanced spin_lock/spin_unlock() in
- exit_pi_state_list()
-In-Reply-To: <1362101815-19968-1-git-send-email-yong.zhang0@gmail.com>
-Message-ID: <alpine.LFD.2.02.1303011047170.22263@ionos>
-References: <1362101815-19968-1-git-send-email-yong.zhang0@gmail.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Fri, 1 Mar 2013 05:21:01 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Reply-To: mtk.manpages@gmail.com
+In-Reply-To: <877glr5vuo.fsf@xmission.com>
+References: <CAKgNAki=mUYuu_Ewhe7sjCmo+Dq2Vr+FZCixqNRaadcvAxtpFw@mail.gmail.com>
+ <87txowa2cm.fsf@xmission.com> <CAKgNAkjxrbcpONCU4UdD0-cjXwbHr+YwkOR0H_aXp3CGB283Uw@mail.gmail.com>
+ <877glr5vuo.fsf@xmission.com>
+From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Date: Fri, 1 Mar 2013 11:20:40 +0100
+Message-ID: <CAKgNAkiBrVP71Q67ORMZm93-5=aBL+KTyCo0KVeTpDju-z05ZA@mail.gmail.com>
+Subject: Re: For review: pid_namespaces(7) man page
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Linux Containers <containers@lists.linux-foundation.org>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        linux-man <linux-man@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 1 Mar 2013, Yong Zhang wrote:
+On Fri, Mar 1, 2013 at 10:10 AM, Eric W. Biederman
+<ebiederm@xmission.com> wrote:
+> "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com> writes:
+>
+>> Hi Eric,
+>>
+>> On Thu, Feb 28, 2013 at 4:24 PM, Eric W. Biederman
+>> <ebiederm@xmission.com> wrote:
+>>> "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com> writes:
+>>
+>> [...]
+>>
+>>>> ==========
+>>>> PID_NAMESPACES(7)      Linux Programmer's Manual     PID_NAMESPACES(7)
+>>>>
+>>>> NAME
+>>>>        pid_namespaces - overview of Linux PID namespaces
+>>>>
+>>>> DESCRIPTION
+>> [...]
+>>
+>>>>    The namespace init process
+>>>>        The first process created in a new namespace (i.e., the process
+>>>>        created using clone(2) with the CLONE_NEWPID flag, or the first
+>>>>        child created by a process after a call to unshare(2) using the
+>>>>        CLONE_NEWPID flag) has the PID 1, and is the "init" process for
+>>>>        the namespace (see init(1)).  Children that are orphaned within
+>>>>        the namespace will be reparented to this  process  rather  than
+>>>>        init(1).
+>>>>
+>>>>        If the "init" process of a PID namespace terminates, the kernel
+>>>>        terminates all of the processes in the namespace via a  SIGKILL
+>>>>        signal.   This  behavior  reflects  the  fact  that  the "init"
+>>>>        process is essential for the correct operation of a PID  names‐
+>>>>        pace.   In this case, a subsequent fork(2) into this PID names‐
+>>>>        pace (e.g., from a process that has done a  setns(2)  into  the
+>>>>        namespace    using    an    open    file   descriptor   for   a
+>>>>        /proc/[pid]/ns/pid file corresponding to a process that was  in
+>>>>        the  namespace) will fail with the error ENOMEM; it is not pos‐
+>>>>        sible to create a new processes in a PID namespace whose "init"
+>>>>        process has terminated.
+>>>
+>>> It may be useful to mention unshare in the case of fork(2) failing just
+>>> because that is such an easy mistake to make.
+>>>
+>>> unshare(CLONE_NEWPID);
+>>> pid = fork();
+>>> waitpid(pid,...);
+>>> fork() -> ENOMEM
+>>
+>> I'm lost. Why does that sequence fail? The child of fork() becomes PID
+>> 1 in the new PID namespace.
+>
+> Correct.
+> Then we wait for the child of the fork to exit();
+> Then we fork again into the new pid namespace.
+> The second fork fails because init has exited.
 
-> From: Yong Zhang <yong.zhang@windriver.com>
-> 
-> Otherwise, below warning is shown somtimes when running some test:
-> 
-> WARNING: at kernel/sched/core.c:3423 migrate_disable+0xbf/0xd0()
-> Hardware name: OptiPlex 755
-> Modules linked in: floppy parport parport_pc minix
-> Pid: 1800, comm: tst-robustpi8 Tainted: G        W    3.4.28-rt40 #1
-> Call Trace:
->  [<ffffffff81031f3f>] warn_slowpath_common+0x7f/0xc0
->  [<ffffffff81031f9a>] warn_slowpath_null+0x1a/0x20
->  [<ffffffff81066eaf>] migrate_disable+0xbf/0xd0
->  [<ffffffff81085d95>] exit_pi_state_list+0xa5/0x170
->  [<ffffffff8102f71f>] mm_release+0x12f/0x170
->  [<ffffffff81036906>] exit_mm+0x26/0x140
->  [<ffffffff81090fc6>] ? acct_collect+0x186/0x1c0
->  [<ffffffff81036b66>] do_exit+0x146/0x930
->  [<ffffffff810658d1>] ? get_parent_ip+0x11/0x50
->  [<ffffffff8103760d>] do_group_exit+0x4d/0xc0
->  [<ffffffff8104828f>] get_signal_to_deliver+0x23f/0x6a0
->  [<ffffffff810019e5>] do_signal+0x65/0x5e0
->  [<ffffffff81047816>] ? group_send_sig_info+0x76/0x80
->  [<ffffffff81002018>] do_notify_resume+0x98/0xd0
->  [<ffffffff8165779b>] int_signal+0x12/0x17
-> ---[ end trace 0000000000000004 ]---
-> 
-> The reason is that spin_lock() is taken in atomic context, but
-> spin_unlock() is not.
-
-This doesn't make sense. The spin_lock() happens in non atomic
-context.
-
-	spin_lock(&hb->lock);
-	raw_spin_lock_irq(&curr->pi_lock);
-
-The unlock is in atomic context and the unlock does not call
-migrate_disable().
-
-Though on RT this is caused by the in_atomic check of migrate_enable()
-and this results in asymetry. See below.
-
-> Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Steven Rostedt <rostedt@goodmis.org>
-> ---
->  kernel/futex.c |    3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
-> 
-> diff --git a/kernel/futex.c b/kernel/futex.c
-> index 9e26e87..2b676a2 100644
-> --- a/kernel/futex.c
-> +++ b/kernel/futex.c
-> @@ -562,16 +562,17 @@ void exit_pi_state_list(struct task_struct *curr)
->  
->  		spin_lock(&hb->lock);
->  
-> -		raw_spin_lock_irq(&curr->pi_lock);
->  		/*
->  		 * We dropped the pi-lock, so re-check whether this
->  		 * task still owns the PI-state:
->  		 */
-
-Did you read and understand this comment ?
-
-The logic here is
-
-    raw_spin_lock_irq(&curr->pi_lock);
-    next = head->next;
-    raw_spin_unlock_irq(&curr->pi_lock);
-    spin_lock(&hb->lock);
-    raw_spin_lock_irq(&curr->pi_lock);
-    if (head->next != next)
-
-We must drop pi_lock before locking the hash bucket lock. That opens a
-window for another task to modify head list. So we must relock pi_lock
-and verify whether head->next is unmodified. If it changed, we need to
-reevaluate.
-
->  		if (head->next != next) {
->  			spin_unlock(&hb->lock);
-> +			raw_spin_lock_irq(&curr->pi_lock);
->  			continue;
->  		}
->  
-> +		raw_spin_lock_irq(&curr->pi_lock);
->  		WARN_ON(pi_state->owner != curr);
->  		WARN_ON(list_empty(&pi_state->list));
->  		list_del_init(&pi_state->list);
-
-So both your patch description and your patch are patently wrong.
-Correct solution below.
+Ahhh -- I misapprehended the scenario you were describing. Got it now.
+I'll add that case.
 
 Thanks,
 
-	tglx
----
-futex: Ensure lock/unlock symetry versus pi_lock and hash bucket lock
-
-In exit_pi_state_list() we have the following locking construct:
-
-   spin_lock(&hb->lock);
-   raw_spin_lock_irq(&curr->pi_lock);
-   
-   ...
-   spin_unlock(&hb->lock);
-
-In !RT this works, but on RT the migrate_enable() function which is
-called from spin_unlock() sees atomic context due to the held pi_lock
-and just decrements the migrate_disable_atomic counter of the
-task. Now the next call to migrate_disable() sees the counter being
-negative and issues a warning. That check should be in
-migrate_enable() already.
-
-Fix this by dropping pi_lock before unlocking hb->lock and reaquire
-pi_lock after that again. This is safe as the loop code reevaluates
-head again under the pi_lock.
-
-Reported-by: Yong Zhang <yong.zhang@windriver.com>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-
-diff --git a/kernel/futex.c b/kernel/futex.c
-index f15f0e4..c795c9c 100644
---- a/kernel/futex.c
-+++ b/kernel/futex.c
-@@ -568,7 +568,9 @@ void exit_pi_state_list(struct task_struct *curr)
- 		 * task still owns the PI-state:
- 		 */
- 		if (head->next != next) {
-+			raw_spin_unlock_irq(&curr->pi_lock);
- 			spin_unlock(&hb->lock);
-+			raw_spin_lock_irq(&curr->pi_lock);
- 			continue;
- 		}
- 
+Michael
