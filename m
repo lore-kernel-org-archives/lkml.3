@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753594Ab3CAUQS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 15:16:18 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51496 "EHLO
+	id S1755212Ab3CAUQh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 15:16:37 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51480 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752857Ab3CATpg (ORCPT
+	with ESMTP id S1752846Ab3CATpe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 14:45:36 -0500
+	Fri, 1 Mar 2013 14:45:34 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, Jens Axboe <axboe@kernel.dk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 38/77] block: fix synchronization and limit check in blk_alloc_devt()
-Date: Fri,  1 Mar 2013 11:44:23 -0800
-Message-Id: <20130301194355.981008080@linuxfoundation.org>
+        Niu Yawei <yawei.niu@intel.com>, "Theodore Tso" <tytso@mit.edu>
+Subject: [ 51/77] ext4: fix race in ext4_mb_add_n_trim()
+Date: Fri,  1 Mar 2013 11:44:36 -0800
+Message-Id: <20130301194357.371500736@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130301194351.913471337@linuxfoundation.org>
 References: <20130301194351.913471337@linuxfoundation.org>
@@ -28,61 +26,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: Niu Yawei <yawei.niu@gmail.com>
 
-commit ce23bba842aee98092225d9576dba47c82352521 upstream.
+commit f1167009711032b0d747ec89a632a626c901a1ad upstream.
 
-idr allocation in blk_alloc_devt() wasn't synchronized against lookup
-and removal, and its limit check was off by one - 1 << MINORBITS is
-the number of minors allowed, not the maximum allowed minor.
+In ext4_mb_add_n_trim(), lg_prealloc_lock should be taken when
+changing the lg_prealloc_list.
 
-Add locking and rename MAX_EXT_DEVT to NR_EXT_DEVT and fix limit
-checking.
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Acked-by: Jens Axboe <axboe@kernel.dk>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Niu Yawei <yawei.niu@intel.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- block/genhd.c |   13 +++++--------
- 1 file changed, 5 insertions(+), 8 deletions(-)
+ fs/ext4/mballoc.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/block/genhd.c
-+++ b/block/genhd.c
-@@ -25,7 +25,7 @@ static DEFINE_MUTEX(block_class_lock);
- struct kobject *block_depr;
+--- a/fs/ext4/mballoc.c
++++ b/fs/ext4/mballoc.c
+@@ -4136,7 +4136,7 @@ static void ext4_mb_add_n_trim(struct ex
+ 		/* The max size of hash table is PREALLOC_TB_SIZE */
+ 		order = PREALLOC_TB_SIZE - 1;
+ 	/* Add the prealloc space to lg */
+-	rcu_read_lock();
++	spin_lock(&lg->lg_prealloc_lock);
+ 	list_for_each_entry_rcu(tmp_pa, &lg->lg_prealloc_list[order],
+ 						pa_inode_list) {
+ 		spin_lock(&tmp_pa->pa_lock);
+@@ -4160,12 +4160,12 @@ static void ext4_mb_add_n_trim(struct ex
+ 	if (!added)
+ 		list_add_tail_rcu(&pa->pa_inode_list,
+ 					&lg->lg_prealloc_list[order]);
+-	rcu_read_unlock();
++	spin_unlock(&lg->lg_prealloc_lock);
  
- /* for extended dynamic devt allocation, currently only one major is used */
--#define MAX_EXT_DEVT		(1 << MINORBITS)
-+#define NR_EXT_DEVT		(1 << MINORBITS)
- 
- /* For extended devt allocation.  ext_devt_mutex prevents look up
-  * results from going away underneath its user.
-@@ -424,19 +424,16 @@ int blk_alloc_devt(struct hd_struct *par
- 			return -ENOMEM;
- 		mutex_lock(&ext_devt_mutex);
- 		rc = idr_get_new(&ext_devt_idr, part, &idx);
-+		if (!rc && idx >= NR_EXT_DEVT) {
-+			idr_remove(&ext_devt_idr, idx);
-+			rc = -EBUSY;
-+		}
- 		mutex_unlock(&ext_devt_mutex);
- 	} while (rc == -EAGAIN);
- 
- 	if (rc)
- 		return rc;
- 
--	if (idx > MAX_EXT_DEVT) {
--		mutex_lock(&ext_devt_mutex);
--		idr_remove(&ext_devt_idr, idx);
--		mutex_unlock(&ext_devt_mutex);
--		return -EBUSY;
--	}
--
- 	*devt = MKDEV(BLOCK_EXT_MAJOR, blk_mangle_minor(idx));
- 	return 0;
- }
+ 	/* Now trim the list to be not more than 8 elements */
+ 	if (lg_prealloc_count > 8) {
+ 		ext4_mb_discard_lg_preallocations(sb, lg,
+-						order, lg_prealloc_count);
++						  order, lg_prealloc_count);
+ 		return;
+ 	}
+ 	return ;
 
 
