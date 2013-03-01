@@ -1,88 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751586Ab3CASvt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 13:51:49 -0500
-Received: from co1ehsobe002.messaging.microsoft.com ([216.32.180.185]:39824
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750779Ab3CASvs convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 13:51:48 -0500
-X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VPS0(zzc89bh4015Izz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ahzz8275bhz2fh95h668h839h93fhd24hf0ah119dh1288h12a5h12a9h12bdh137ah139eh13b6h1441h14ddh1504h1537h162dh1631h1758h1898h18e1h1946h19b5h906i1155h)
-From: Soren Brinkmann <soren.brinkmann@xilinx.com>
-To: Michal Simek <michal.simek@xilinx.com>, <monstr@monstr.eu>,
-        Russell King <linux@arm.linux.org.uk>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Will Deacon <will.deacon@arm.com>, Jason Cooper <jason@lakedaemon.net>,
-        Tony Lindgren <tony@atomide.com>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Soren Brinkmann <soren.brinkmann@xilinx.com>
-Subject: [PATCH RFC] arm: l2x0: Leverage power saving features
-Date: Fri, 1 Mar 2013 10:51:26 -0800
-X-Mailer: git-send-email 1.8.1.3
+	id S1751691Ab3CASwO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 13:52:14 -0500
+Received: from mail-vc0-f176.google.com ([209.85.220.176]:59481 "EHLO
+	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751140Ab3CASwN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Mar 2013 13:52:13 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-X-OriginalArrivalTime: 01 Mar 2013 18:51:43.0359 (UTC) FILETIME=[D11990F0:01CE16AD]
-X-RCIS-Action: ALLOW
-Message-ID: <da92149b-159b-40e3-87b4-a0a448d1da8b@CO1EHSMHS031.ehs.local>
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: xilinx.com
+In-Reply-To: <1362161912.12277.10.camel@buesod1.americas.hpqcorp.net>
+References: <20130206150403.006e5294@cuia.bos.redhat.com>
+	<511C24A6.8020409@redhat.com>
+	<CA+55aFws80EEJQskqiP+a5J-HOGu=M1Fe=uCs50ifedVxPxT1Q@mail.gmail.com>
+	<512E376D.70105@redhat.com>
+	<CA+55aFzPxJ3rfZvAvrP9LxCXfDU8AAVvhMZnP-OAoe-ycc70aw@mail.gmail.com>
+	<512E6443.9050603@redhat.com>
+	<CA+55aFwHxv9RH75BoXYcwdKeHx+otOOpg9494TTdFwQe3biOhw@mail.gmail.com>
+	<512E80E3.7060800@redhat.com>
+	<CA+55aFwa0EjGG2NUDYVLVBmXJa2k81YiuNO2yggk=GLRQxhhUQ@mail.gmail.com>
+	<512EC7F0.60103@redhat.com>
+	<1362024397.1867.28.camel@buesod1.americas.hpqcorp.net>
+	<CA+55aFygzjuNYiG4MTPMzimEjQ92rpS-rNJr7HD4OQCAqze5zg@mail.gmail.com>
+	<512F7429.4020103@redhat.com>
+	<CA+55aFw3t+sC-zv6njxdJ6hB0arJnZzoGNO9W7o8h=tcUo5P_Q@mail.gmail.com>
+	<CA+55aFwEshukBGU5YCtKL=7c-43guMuGSHTnXo02rLxZWGQWTw@mail.gmail.com>
+	<512FC89B.6030507@redhat.com>
+	<CA+55aFxbm83Oc2g55868HA2xCytsJzTxWGE0w_pMUzKaU5mJMw@mail.gmail.com>
+	<512FDC82.2060606@redhat.com>
+	<CA+55aFyitxgooTYq27eK4fO___R4uRrNhoPwDWxULeUkejH0ZA@mail.gmail.com>
+	<51304DDA.40808@redhat.com>
+	<1362161912.12277.10.camel@buesod1.americas.hpqcorp.net>
+Date: Fri, 1 Mar 2013 10:52:12 -0800
+X-Google-Sender-Auth: 13lBbCuqOB2ImroFSCSeVwHQh60
+Message-ID: <CA+55aFxPgGZ2k81Leo-xVVBPThmh29GoCXeq3-iK88KhFNuPdQ@mail.gmail.com>
+Subject: Re: [tip:core/locking] x86/smp: Move waiting on contended ticket lock
+ out of line
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Davidlohr Bueso <davidlohr.bueso@hp.com>
+Cc: Rik van Riel <riel@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        "Vinod, Chegu" <chegu_vinod@hp.com>, "Low, Jason" <jason.low2@hp.com>,
+        linux-tip-commits@vger.kernel.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>, aquini@redhat.com,
+        Michel Lespinasse <walken@google.com>, Ingo Molnar <mingo@kernel.org>,
+        Larry Woodman <lwoodman@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enable the 'dynamic clock stop' and 'standby mode' features in the
-l2x0 disable path.
+On Fri, Mar 1, 2013 at 10:18 AM, Davidlohr Bueso <davidlohr.bueso@hp.com> wrote:
+> On Fri, 2013-03-01 at 01:42 -0500, Rik van Riel wrote:
+>>
+>> Checking try_atomic_semop and do_smart_update, it looks like neither
+>> is using atomic operations. That part of the semaphore code would
+>> still benefit from spinlocks.
+>
+> Agreed.
 
-Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
----
-Hi,
+Yup. As mentioned, I hadn't even looked at that part of the code, but
+yes, it definitely wants the spinlock.
 
-we are currently implementing a suspend to RAM like low power mode for
-Zynq.
-The code for entering suspend looks like this:
-	outer_disable();                                                 
-        cpu_suspend(0, zynq_pm_suspend);                                 
-        outer_resume();
+> How about splitting ipc_lock()/ipc_lock_control() in two calls: one to
+> obtain the ipc object (rcu_read_lock + idr_find), which can be called
+> when performing the permissions and security checks, and another to
+> obtain the ipcp->lock [q_]spinlock when necessary.
 
-In our low power guidelines we mention the pl310's standby and clock stop
-feature and that they should be enabled for low power modes. The question
-arising here now is: Does the outer_disable() make these features redundant,
-or does it make sense to add it like shown in this patch?
+That sounds like absolutely the right thing to do. And we can leave
+the old helper functions that do both of them around, and only use the
+split case for just a few places.
 
-	Thanks,
-	Sören
+And if we make the RCU read-lock be explicit too, we could get rid of
+some of the ugliness. Right now we have semtimedop() do things like a
+conditional "find_alloc_undo()", which will get the RCU lock. It would
+be much nicer if we just cleaned up the interfaces a tiny bit, said
+that the *caller* has to get the RCU lock, and just do this
+unconditionally before calling any of it. Because right now the RCU
+details are quite messy, and we have code like
 
- arch/arm/mm/cache-l2x0.c | 12 ++++++++++++
- 1 file changed, 12 insertions(+)
+                if (un)
+                        rcu_read_unlock();
+                error = PTR_ERR(sma);
+                goto out_free;
 
-diff --git a/arch/arm/mm/cache-l2x0.c b/arch/arm/mm/cache-l2x0.c
-index c2f3739..3565df1 100644
---- a/arch/arm/mm/cache-l2x0.c
-+++ b/arch/arm/mm/cache-l2x0.c
-@@ -286,8 +286,20 @@ static void l2x0_flush_range(unsigned long start, unsigned long end)
- static void l2x0_disable(void)
- {
- 	unsigned long flags;
-+	unsigned long reg;
-+	u32 l2x0_revision;
- 
- 	raw_spin_lock_irqsave(&l2x0_lock, flags);
-+
-+	l2x0_revision = readl_relaxed(l2x0_base + L2X0_CACHE_ID) &
-+		L2X0_CACHE_ID_RTL_MASK;
-+
-+	if (l2x0_revision >= L2X0_CACHE_ID_RTL_R3P0) {
-+		reg = readl_relaxed(l2x0_base + L2X0_POWER_CTRL);
-+		reg |= L2X0_STNDBY_MODE_EN | L2X0_DYNAMIC_CLK_GATING_EN;
-+		writel_relaxed(reg, l2x0_base + L2X0_POWER_CTRL);
-+	}
-+
- 	__l2x0_flush_all();
- 	writel_relaxed(0, l2x0_base + L2X0_CTRL);
- 	dsb();
--- 
-1.8.1.3
+etc, when it would actually be much simpler to just do the RCU read
+locking unconditionally (we'll need it for the semaphore lookup
+anyway) and just have the exit paths unlock unconditionally like we
+usually do (ie a few different exit goto's that just nest the
+unlocking properly).
 
+It would simplify the odd locking both for humans and for code
+generation. Right now we actually nest those RCU read locks two deep,
+as far as I can see.
 
+And it looks like this could be done in fairly small independent steps
+("add explicit RCU locking", "split up helper functions", "start using
+the simplified helper functions in selected paths that care").
+
+It won't *solve* the locking issues, and I'm sure we'll still see
+contention, but it should clean the code up and probably helps the
+contention numbers visibly. Even if it's only 10% (which, judging by
+my profiles, would be a safe lower bound from just moving the security
+callback out of the spinlock - and it could easily be 20% of more
+because contention often begets more contention) that would be in the
+same kind of ballpark as the spinlock improvements. And using Michel's
+work would be a largely independent scalability improvement on top.
+
+Anybody willing to give it a try? I suspect Rik's benchmark, some
+"perf record", and concentrating on just semtimedop() to begin with
+would be a fairly good starting point.
+
+                 Linus
