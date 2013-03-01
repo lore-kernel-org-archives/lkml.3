@@ -1,79 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751052Ab3CANLc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 08:11:32 -0500
-Received: from mail-lb0-f175.google.com ([209.85.217.175]:42218 "EHLO
-	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750696Ab3CANLb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 08:11:31 -0500
-Message-ID: <5130A8DF.7080709@cogentembedded.com>
-Date: Fri, 01 Mar 2013 17:10:55 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
-MIME-Version: 1.0
-To: Aaron Lu <aaron.lu@intel.com>
-CC: Jeff Garzik <jgarzik@pobox.com>, Tejun Heo <tj@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        Jeff Garzik <jgarzik@redhat.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>
-Subject: Re: [PATCH] [libata] Avoid specialized TLA's in ZPODD's Kconfig
-References: <1663657.ypAtqGpGAq@vostro.rjw.lan> <1781256.mPQbtiUPYR@vostro.rjw.lan> <CA+55aFyzjN_wMH+2RCEA+aNLY0Z7fn4YU7VOtTALbgngn1+vCw@mail.gmail.com> <2223198.XmyRLgb3Gv@vostro.rjw.lan> <20130226161049.GA9303@kahuna> <CA+55aFy24fp+9zXiDmAgvsz6YvWQh2L0BAJ2hAhF7cNSdyMd8w@mail.gmail.com> <CA+55aFyu5woJsH2y3y=w4UFneOG8hKz_cLXgZQbJzn5asn8=hQ@mail.gmail.com> <20130226163712.GA30433@htj.dyndns.org> <CA+55aFyFRbMX9G_0Mv0nUZgw9mHAPzE0zCw5mCSbGG_r1diFHg@mail.gmail.com> <20130226165813.GB30433@htj.dyndns.org> <512CF809.8010102@pobox.com> <5130052E.9070403@intel.com>
-In-Reply-To: <5130052E.9070403@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1751192Ab3CANNg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 08:13:36 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:25962 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750879Ab3CANNe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Mar 2013 08:13:34 -0500
+Subject: Re: security_inode_init_security() inode field requirements
+From: Steven Whitehouse <swhiteho@redhat.com>
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: Mimi Zohar <zohar@us.ibm.com>, Chris Wright <chrisw@sous-sol.org>,
+        linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        cluster-devel@redhat.com, linux-kernel@vger.kernel.org
+In-Reply-To: <1362140849.9158.108.camel@falcor1>
+References: <1362132778.2723.15.camel@menhir>
+	 <1362140849.9158.108.camel@falcor1>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Red Hat UK Ltd
+Date: Fri, 01 Mar 2013 13:11:52 +0000
+Message-ID: <1362143512.2723.21.camel@menhir>
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+Hi,
 
-On 01-03-2013 5:32, Aaron Lu wrote:
+On Fri, 2013-03-01 at 07:27 -0500, Mimi Zohar wrote:
+> On Fri, 2013-03-01 at 10:12 +0000, Steven Whitehouse wrote:
+> > Hi,
+> > 
+> > I'm wondering whether there is a list somewhere of fields which
+> > security_inode_init_security() requires are set in an inode when it is
+> > called? In particular, does it matter if the inode number itself is
+> > unset when security_inode_init_security() is called?
+> > 
+> > The problem that I'm looking at is the use of multiple transactions
+> > during inode creation when some combination of ACLs/LSMs/IMA are turned
+> > on. What we have currently (in GFS2, there are other fs which follow
+> > broadly the same solution though) is this:
+> > 
+> > 1. Create inode in core
+> > 2. Create inode on disk
+> > 3. Add xattrs one at a time for ACLs/LSMs/IMA
+> > 4. Link inode into directory
+> > 
+> > Steps 2 through 4 require separate transactions at the moment. What I'd
+> > like to do is to be able to get the details of the xattrs ahead of time
+> > such that the allocation of the inode can be one and the same allocation
+> > as that for the xattr blocks. That allows merging of the transactions
+> > into one and a greatly simplified error path too. This would look
+> > something like:
+> > 
+> > 1. Create in-core inode and init required fields
+> > 2. Get details of all xattrs for the inode
+> > 3. Alloc on disk inode and blocks for xattrs as needed
+> > 4. Link into directory
+> > 
+> > In this case, steps 2 through 4 are within a single transaction. We
+> > don't actually need to have the content of the xattrs ahead of
+> > allocating the inode, just the length (or even just a max length, if it
+> > is not too large). However the easiest solution would just be to move
+> > the call to security_inode_init_security() to the point before we've
+> > allocated the inode (and thus we don't know its number yet) but after
+> > we've filled out all the remaining fields if that makes sense?
+> > 
+> > So I just wanted to check whether that would break anything,
+> 
+> Hi Steve,
+> 
+> Included in security_inode_init_security() is the call to
+> evm_inode_init_security() to write the 'security.evm' extended
+> attribute.  'security.evm' is an HMAC of the security extended
+> attributes and other file metadata, including the inode.  For an exact
+> list of other metadata included in the HMAC calculation refer to
+> hmac_add_misc().  (The UUID is being added to the HMAC calculation in
+> this open window.)
+> 
+> thanks,
+> 
+> Mimi
+> 
 
-> ODD is not a common TLA for non-ATA people so they will get confused
-> by its meaning when they are configuring the kernel. This patch fixed
-> this problem by using ODD only after stating what it is.
+Ok... but it is using inode->i_ino in that case, as well as the
+generation number too. So that presumably can only be done after the
+inode has been allocated, since we need to know its location in order to
+know its inode number. Also the generation number is assigned at
+allocation time. One potential issue though... the inode->i_ino is an
+unsigned long, so that on 32 bit archs, that will be (on GFS2) a
+truncated version of the full 64 bit inode number. I'm not sure if that
+matters or not for EVM.
 
-> Signed-off-by: Aaron Lu <aaron.lu@intel.com>
-> ---
->   drivers/ata/Kconfig | 13 +++++++------
->   1 file changed, 7 insertions(+), 6 deletions(-)
+So since that appears to rule out doing the security init bits ahead of
+the allocation of the inode, is it possible to get a maximum value for
+the size of the xattr which EVM will add? Likewise for the other LSMs
+too?
 
-> diff --git a/drivers/ata/Kconfig b/drivers/ata/Kconfig
-> index 3e751b7..d7d210e 100644
-> --- a/drivers/ata/Kconfig
-> +++ b/drivers/ata/Kconfig
-> @@ -59,15 +59,16 @@ config ATA_ACPI
->   	  option libata.noacpi=1
->
->   config SATA_ZPODD
-> -	bool "SATA Zero Power ODD Support"
-> +	bool "SATA Zero Power Optical Disc Drive(ZPODD) support"
+Steve.
 
-    Need a space before open paren.
-
->   	depends on ATA_ACPI
->   	default n
->   	help
-> -	  This option adds support for SATA ZPODD. It requires both
-> -	  ODD and the platform support, and if enabled, will automatically
-> -	  power on/off the ODD when certain condition is satisfied. This
-> -	  does not impact user's experience of the ODD, only power is saved
-> -	  when ODD is not in use(i.e. no disc inside).
-> +	  This option adds support for SATA Zero Power Optical Disc
-> +	  Drive(ZPODD). It requires both the ODD and the platform
-
-    Same here.
-
-> +	  support, and if enabled, will automatically power on/off the
-> +	  ODD when certain condition is satisfied. This does not impact
-> +	  end user's experience of the ODD, only power is saved when
-> +	  the ODD is not in use(i.e. no disc inside).
-
-   And here.
-
-MBR, Sergei
 
