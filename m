@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754830Ab3CATq6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 14:46:58 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52080 "EHLO
+	id S1754787Ab3CATq5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 14:46:57 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52057 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754669Ab3CATqx (ORCPT
+	with ESMTP id S1754581Ab3CATqt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 14:46:53 -0500
+	Fri, 1 Mar 2013 14:46:49 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [ 27/30] s390/kvm: Fix store status for ACRS/FPRS fix
-Date: Fri,  1 Mar 2013 11:45:48 -0800
-Message-Id: <20130301194530.949984251@linuxfoundation.org>
+        Helge Deller <deller@gmx.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ian Kent <raven@themaw.net>, Catalin Marinas <catalin.marinas@arm.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Rolf Eike Beer <eike-kernel@sf-tec.de>
+Subject: [ 21/30] unbreak automounter support on 64-bit kernel with 32-bit userspace (v2)
+Date: Fri,  1 Mar 2013 11:45:42 -0800
+Message-Id: <20130301194530.265582062@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130301194527.988540148@linuxfoundation.org>
 References: <20130301194527.988540148@linuxfoundation.org>
@@ -26,32 +29,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-In 3.0.67, commit 58c9ce6fad8e00d9726447f939fe7e78e2aec891 (s390/kvm:
-Fix store status for ACRS/FPRS), upstream commit
-15bc8d8457875f495c59d933b05770ba88d1eacb, added a call to
-save_access_regs to save ACRS. But we do not have ARCS in kvm_run in
-3.0 yet, so this results in:
-arch/s390/kvm/kvm-s390.c: In function 'kvm_s390_vcpu_store_status':
-arch/s390/kvm/kvm-s390.c:593: error: 'struct kvm_run' has no member named 's'
+From: Helge Deller <deller@gmx.de>
 
-Fix it by saving guest_acrs which is where ARCS are in 3.0.
+commit 4f4ffc3a5398ef9bdbb32db04756d7d34e356fcf upstream.
 
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+automount-support is broken on the parisc architecture, because the existing
+#if list does not include a check for defined(__hppa__). The HPPA (parisc)
+architecture is similiar to other 64bit Linux targets where we have to define
+autofs_wqt_t (which is passed back and forth to user space) as int type which
+has a size of 32bit across 32 and 64bit kernels.
+
+During the discussion on the mailing list, H. Peter Anvin suggested to invert
+the #if list since only specific platforms (specifically those who do not have
+a 32bit userspace, like IA64 and Alpha) should have autofs_wqt_t as unsigned
+long type.
+
+This suggestion is probably the best way to go, since Arm64 (and maybe others?)
+seems to have a non-working automounter. So in the long run even for other new
+upcoming architectures this inverted check seem to be the best solution, since
+it will not require them to change this #if again (unless they are 64bit only).
+
+Signed-off-by: Helge Deller <deller@gmx.de>
+Acked-by: H. Peter Anvin <hpa@zytor.com>
+Acked-by: Ian Kent <raven@themaw.net>
+Acked-by: Catalin Marinas <catalin.marinas@arm.com>
+CC: James Bottomley <James.Bottomley@HansenPartnership.com>
+CC: Rolf Eike Beer <eike-kernel@sf-tec.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- arch/s390/kvm/kvm-s390.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/s390/kvm/kvm-s390.c
-+++ b/arch/s390/kvm/kvm-s390.c
-@@ -590,7 +590,7 @@ int kvm_s390_vcpu_store_status(struct kv
- 	 * it into the save area
- 	 */
- 	save_fp_regs(&vcpu->arch.guest_fpregs);
--	save_access_regs(vcpu->run->s.regs.acrs);
-+	save_access_regs(vcpu->arch.guest_acrs);
+---
+ include/linux/auto_fs.h |   25 ++++++++-----------------
+ 1 file changed, 8 insertions(+), 17 deletions(-)
+
+--- a/include/linux/auto_fs.h
++++ b/include/linux/auto_fs.h
+@@ -31,25 +31,16 @@
+ #define AUTOFS_MIN_PROTO_VERSION	AUTOFS_PROTO_VERSION
  
- 	if (__guestcopy(vcpu, addr + offsetof(struct save_area, fp_regs),
- 			vcpu->arch.guest_fpregs.fprs, 128, prefix))
+ /*
+- * Architectures where both 32- and 64-bit binaries can be executed
+- * on 64-bit kernels need this.  This keeps the structure format
+- * uniform, and makes sure the wait_queue_token isn't too big to be
+- * passed back down to the kernel.
+- *
+- * This assumes that on these architectures:
+- * mode     32 bit    64 bit
+- * -------------------------
+- * int      32 bit    32 bit
+- * long     32 bit    64 bit
+- *
+- * If so, 32-bit user-space code should be backwards compatible.
++ * The wait_queue_token (autofs_wqt_t) is part of a structure which is passed
++ * back to the kernel via ioctl from userspace. On architectures where 32- and
++ * 64-bit userspace binaries can be executed it's important that the size of
++ * autofs_wqt_t stays constant between 32- and 64-bit Linux kernels so that we
++ * do not break the binary ABI interface by changing the structure size.
+  */
+-
+-#if defined(__sparc__) || defined(__mips__) || defined(__x86_64__) \
+- || defined(__powerpc__) || defined(__s390__)
+-typedef unsigned int autofs_wqt_t;
+-#else
++#if defined(__ia64__) || defined(__alpha__) /* pure 64bit architectures */
+ typedef unsigned long autofs_wqt_t;
++#else
++typedef unsigned int autofs_wqt_t;
+ #endif
+ 
+ /* Packet types */
 
 
