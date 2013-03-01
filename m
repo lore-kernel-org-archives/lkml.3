@@ -1,76 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751957Ab3CAHgo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 02:36:44 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:30085 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751221Ab3CAHgm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 02:36:42 -0500
-X-IronPort-AV: E=Sophos;i="4.84,760,1355068800"; 
-   d="scan'208";a="6792898"
-Date: Fri, 1 Mar 2013 15:36:48 +0800
-From: Hu Tao <hutao@cn.fujitsu.com>
-To: Eric Blake <eblake@redhat.com>
-Cc: kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>, Gleb Natapov <gleb@redhat.com>,
-        Blue Swirl <blauwirbel@gmail.com>, Andrew Jones <drjones@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Sasha Levin <levinsasha928@gmail.com>,
-        Luiz Capitulino <lcapitulino@redhat.com>,
-        Anthony Liguori <aliguori@us.ibm.com>,
-        Markus Armbruster <armbru@redhat.com>,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        Stefan Hajnoczi <stefanha@redhat.com>,
-        Juan Quintela <quintela@redhat.com>,
-        Orit Wasserman <owasserm@redhat.com>, Kevin Wolf <kwolf@redhat.com>,
-        Wen Congyang <wency@cn.fujitsu.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>, Alexander Graf <agraf@suse.de>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Peter Maydell <peter.maydell@linaro.org>
-Subject: Re: [PATCH v13 1/8] save/load cpu runstate
-Message-ID: <20130301073648.GD16362@localhost.localdomain>
-References: <cover.1362051581.git.hutao@cn.fujitsu.com>
- <df20999140db716e8b1ccd57a7cbcb0fa343a78c.1362051582.git.hutao@cn.fujitsu.com>
- <512FC845.9080209@redhat.com>
+	id S1751821Ab3CAHhq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 02:37:46 -0500
+Received: from mail.not-your-server.de ([78.46.182.243]:58865 "EHLO
+	mail.not-your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750758Ab3CAHhp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Mar 2013 02:37:45 -0500
+Message-ID: <51305AC4.2030008@gentoo.org>
+Date: Fri, 01 Mar 2013 08:37:40 +0100
+From: justin <jlec@gentoo.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130224 Thunderbird/17.0.3
 MIME-Version: 1.0
-In-Reply-To: <512FC845.9080209@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/03/01 15:35:44,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/03/01 15:35:46,
-	Serialize complete at 2013/03/01 15:35:46
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
+To: Sven Joachim <svenjoac@gmx.de>
+CC: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] kconfig: use config scripts to detect ncurses libs
+References: <jlec@gentoo.org> <1362045557-9123-1-git-send-email-jlec@gentoo.org> <874ngwhzuy.fsf@turtle.gmx.de>
+In-Reply-To: <874ngwhzuy.fsf@turtle.gmx.de>
+X-Enigmail-Version: 1.5
+Content-Type: multipart/signed; micalg=pgp-sha512;
+ protocol="application/pgp-signature";
+ boundary="----enig2FKVNXIUHVKBTRDNSLEMU"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 28, 2013 at 02:12:37PM -0700, Eric Blake wrote:
-> On 02/28/2013 05:13 AM, Hu Tao wrote:
-> > This patch enables preservation of cpu runstate during save/load vm.
-> > So when a vm is restored from snapshot, the cpu runstate is restored,
-> > too.
-> 
-> What happens if a management app wants to override the runstate when
-> restoring the domain?  I can think of several useful scenarios:
-> 
-> 1. management app pauses the guest, then saves domain state and other
-> things (management state, or disk clones), then resumes the guest.
-> Later, the management wants to revert to the saved state, but have the
-> guest running right away.  I guess here, knowing that the guest was
-> saved in a paused state doesn't hurt, since the management app can
-> resume it right away.
-> 
-> 2. management app saves domain state of a live guest, then copies that
-> state elsewhere.  In its new location, the management app wants to
-> investigate the state for forensic analysis - so even though the guest
-> remembers that it was running, management wants to start it paused.
-> Here, it is important that there must not be a window of time where the
-> guest can run, otherwise, the results are not reproducible.
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+------enig2FKVNXIUHVKBTRDNSLEMU
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
--S takes precedence in the case. But for in-migration, runstate is
-loaded from src.
+On 28/02/13 22:50, Sven Joachim wrote:
+> On 2013-02-28 10:59 +0100, jlec@gentoo.org wrote:
+>=20
+>> Ncurses provides a config script (ncurses5-config) to assist finding n=
+curses.
+>> This patch makes use of it to detect the necessary libs for linking of=
+ the
+>> ncurses nconfig dialog.
+>=20
+> That script is not necessarily called ncurses5-config, it might also be=
+
+> called ncurses6-config is ncurses is configured for a different ABI
+> (--enable-ext-colors, --enable-ext-mouse).  Although I would suspect
+> that any distribution who does that provides a compatibility symlink.
+>
+
+We don't do that, but I rechecked with building ncurses manually. You
+are right. How widely spread is the usage of this options? Or is it
+rather an experimental option?
+What we could do is simple extending the syntax to additionally check
+for the ABI version 6 config scripts. Is this an option to consider?
+
+>>  scripts/kconfig/Makefile | 4 +++-
+>>  1 file changed, 3 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/scripts/kconfig/Makefile b/scripts/kconfig/Makefile
+>> index 3091794..c372976 100644
+>> --- a/scripts/kconfig/Makefile
+>> +++ b/scripts/kconfig/Makefile
+>> @@ -216,7 +216,9 @@ HOSTCFLAGS_gconf.o	=3D `pkg-config --cflags gtk+-2=
+=2E0 gmodule-2.0 libglade-2.0` \
+>> =20
+>>  HOSTLOADLIBES_mconf   =3D $(shell $(CONFIG_SHELL) $(check-lxdialog) -=
+ldflags $(HOSTCC))
+>> =20
+>> -HOSTLOADLIBES_nconf	=3D -lmenu -lpanel -lncurses
+>> +HOSTLOADLIBES_nconf	=3D -lmenu -lpanel
+>> +HOSTLOADLIBES_nconf	+=3D $(shell    ncursesw5-config --libs 2>/dev/nu=
+ll \
+>> +				   || ncurses5-config --libs 2>/dev/null  )
+>=20
+> This will link with ncursesw, not ncurses.  Probably not what you want,=
+
+> since nconf.h does not #include the right headers for that.
+>=20
+
+That's true, and again it would change two things at once. I will go
+back to simple -lncurses as it was before.
+
+> On Debian/Ubuntu, there's also the problem that ncursesw5-config exists=
+
+> even if the libncursesw5-dev package is not installed, so this patch
+> makes the build fail in such cases.
+
+Will be solved when reverting as described above. But actually it smells
+like a bug in the package management, doesn't it? Why are build time
+config scripts shipped in runtime only packages? What is their purpose?
+
+>=20
+> Can we just call ncurses5-config and not ncursesw5-config, or are there=
+
+> any distros who ship the latter and not the former?
+>=20
+
+I can't talk about distro wide situation, but manual building gives only
+one of the two. So there might be a situation where only one of the two
+is present.
+
+It seems we have a little dilemma here. Any suggestions how to solve it?
+
+
+Thanks,
+Justin
+
+
+------enig2FKVNXIUHVKBTRDNSLEMU
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iEYEAREKAAYFAlEwWsUACgkQgAnW8HDreRa6aQCfSV39rQoxH2h2AFLi6v5W4BVF
+WYAAnRBInUXexTBMRW5Zfo3FjAIP1daZ
+=nIB/
+-----END PGP SIGNATURE-----
+
+------enig2FKVNXIUHVKBTRDNSLEMU--
