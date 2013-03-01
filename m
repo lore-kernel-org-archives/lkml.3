@@ -1,47 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751600Ab3CAUdM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 15:33:12 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:36427 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751140Ab3CAUdK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 15:33:10 -0500
-Date: Fri, 1 Mar 2013 23:31:46 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [patch] applicom: use correct array offset
-Message-ID: <20130301203146.GC22066@longonot.mountain>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	id S1751769Ab3CAUg5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 15:36:57 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:30460 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751269Ab3CAUg4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Mar 2013 15:36:56 -0500
+Message-ID: <1362170214.21294.0.camel@f16>
+Subject: [PATCH] Clean-up:  Fix incorrect path to header file
+From: Jonathan Brassow <jbrassow@redhat.com>
+To: linux-kernel@vger.kernel.org
+Date: Fri, 01 Mar 2013 14:36:54 -0600
+Organization: Red Hat, Inc
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We're iterating through abps[] printing information, but here we
-use the wrong array index.  IndexCard comes from the user and in
-this case it was specifically not range checked because we didn't
-expect to use it.
+Clean-up:  Fix incorrect path to header file
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Commit af170c5 (originally introduced in v3.8-rc1) moved some header
+files around and forgot to adjust the path to one of those.  Thus the
+header cannot be found, the macros are not defined and the kernel will
+not compile.
 
-diff --git a/drivers/char/applicom.c b/drivers/char/applicom.c
-index 25373df..974321a 100644
---- a/drivers/char/applicom.c
-+++ b/drivers/char/applicom.c
-@@ -804,8 +804,8 @@ static long ac_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+Signed-off-by: Jonathan Brassow <jbrassow@redhat.com>
+
+Index: linux-upstream/arch/x86/include/uapi/asm/msr.h
+===================================================================
+--- linux-upstream.orig/arch/x86/include/uapi/asm/msr.h
++++ linux-upstream/arch/x86/include/uapi/asm/msr.h
+@@ -1,7 +1,7 @@
+ #ifndef _UAPI_ASM_X86_MSR_H
+ #define _UAPI_ASM_X86_MSR_H
  
- 			printk(KERN_INFO "Prom version board %d ....... V%d.%d %s",
- 			       i+1,
--			       (int)(readb(apbs[IndexCard].RamIO + VERS) >> 4),
--			       (int)(readb(apbs[IndexCard].RamIO + VERS) & 0xF),
-+			       (int)(readb(apbs[i].RamIO + VERS) >> 4),
-+			       (int)(readb(apbs[i].RamIO + VERS) & 0xF),
- 			       boardname);
+-#include <asm/msr-index.h>
++#include <uapi/asm/msr-index.h>
  
+ #ifndef __ASSEMBLY__
  
+
+
+
