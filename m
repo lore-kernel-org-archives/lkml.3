@@ -1,51 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752038Ab3CAVfR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 16:35:17 -0500
-Received: from mail-qe0-f47.google.com ([209.85.128.47]:36479 "EHLO
-	mail-qe0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751346Ab3CAVfQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 16:35:16 -0500
-Date: Fri, 1 Mar 2013 13:35:11 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: markus@trippelsdorf.de, linux-kernel@vger.kernel.org
-Subject: Re: WARNING: at lib/idr.c:678 idr_find_slowpath+0x97/0xc0()
-Message-ID: <20130301213511.GF2481@mtj.dyndns.org>
-References: <20130228090846.GA249@x4>
- <20130301133159.0711f81a.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130301133159.0711f81a.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752246Ab3CAVj6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 16:39:58 -0500
+Received: from mail.ispras.ru ([83.149.199.45]:60609 "EHLO mail.ispras.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751688Ab3CAVj5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Mar 2013 16:39:57 -0500
+From: Alexey Khoroshilov <khoroshilov@ispras.ru>
+To: Lars Ellenberg <drbd-dev@lists.linbit.com>,
+        Philipp Reisner <philipp.reisner@linbit.com>
+Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>, drbd-user@lists.linbit.com,
+        linux-kernel@vger.kernel.org, ldv-project@linuxtesting.org
+Subject: [PATCH] drbd: add module_put() on error path in drbd_proc_open()
+Date: Sat,  2 Mar 2013 01:39:42 +0400
+Message-Id: <1362173982-26454-1-git-send-email-khoroshilov@ispras.ru>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Andrew.
+If single_open() fails in drbd_proc_open(), module refcount is left incremented.
+The patch adds module_put() on the error path.
 
-On Fri, Mar 01, 2013 at 01:31:59PM -0800, Andrew Morton wrote:
-> okluar passed a negative `wd' into inotify_rm_watch()?
-> 
-> I wonder why it did that.  I doubt if inotify_add_watch() ever returns
-> negative descriptors, in which case I expect that okular's call to
-> inotify_add_watch() returned -1 and an errno and okular forgot to check
-> it, and later passed that -1 back into inotify_rm_watch().
-> 
-> Anyway, I guess we need to make inotify_add_watch() refuse to return
-> negative descriptors (presumably this is already the case due to idr
-> internals) and make inotify_rm_watch() trap negative values of `wd' up
-> front.
-> 
-> I wonder how many other such gremlins the IDR checking has added.
+Found by Linux Driver Verification project (linuxtesting.org).
 
-The WARN_ON() is just for cases where someone might be doing something
-crazy with the previous behavior of ignoring high bit.  Maybe I was
-being overly paranoid and we should just drop it from idr_find().
+Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+---
+ drivers/block/drbd/drbd_proc.c |   10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
-Thanks.
-
+diff --git a/drivers/block/drbd/drbd_proc.c b/drivers/block/drbd/drbd_proc.c
+index 56672a6..30fe0a5 100644
+--- a/drivers/block/drbd/drbd_proc.c
++++ b/drivers/block/drbd/drbd_proc.c
+@@ -313,8 +313,14 @@ static int drbd_seq_show(struct seq_file *seq, void *v)
+ 
+ static int drbd_proc_open(struct inode *inode, struct file *file)
+ {
+-	if (try_module_get(THIS_MODULE))
+-		return single_open(file, drbd_seq_show, PDE(inode)->data);
++	int err;
++
++	if (try_module_get(THIS_MODULE)) {
++		err = single_open(file, drbd_seq_show, PDE(inode)->data);
++		if (err)
++			module_put(THIS_MODULE);
++		return err;
++	}
+ 	return -ENODEV;
+ }
+ 
 -- 
-tejun
+1.7.9.5
+
