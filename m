@@ -1,100 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755380Ab3CAAiO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Feb 2013 19:38:14 -0500
-Received: from mga03.intel.com ([143.182.124.21]:20654 "EHLO mga03.intel.com"
+	id S1753512Ab3CAAmj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Feb 2013 19:42:39 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:48379 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753764Ab3CAAiL convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 19:38:11 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,758,1355126400"; 
-   d="scan'208";a="262889678"
-From: "Liu, Chuansheng" <chuansheng.liu@intel.com>
-To: Alan Stern <stern@rowland.harvard.edu>, "Li, Fei" <fei.li@intel.com>
-CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "Lan, Tianyu" <tianyu.lan@intel.com>,
-        "sarah.a.sharp@linux.intel.com" <sarah.a.sharp@linux.intel.com>,
-        "rjw@sisk.pl" <rjw@sisk.pl>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 4/5 V2] usb: call pm_runtime_put_sync in
- pm_runtime_get_sync failed case
-Thread-Topic: [PATCH 4/5 V2] usb: call pm_runtime_put_sync in
- pm_runtime_get_sync failed case
-Thread-Index: AQHOFZMb6/3FwJCIKUGVv/+y/WGnrJiO3A8AgAEh+oA=
-Date: Fri, 1 Mar 2013 00:38:07 +0000
-Message-ID: <27240C0AC20F114CBF8149A2696CBE4A24253F@SHSMSX101.ccr.corp.intel.com>
-References: <1362042384.6212.25.camel@fli24-HP-Compaq-8100-Elite-CMT-PC>
- <Pine.LNX.4.44L0.1302281015330.1352-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1302281015330.1352-100000@iolanthe.rowland.org>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1751183Ab3CAAmi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Feb 2013 19:42:38 -0500
+Date: Thu, 28 Feb 2013 19:42:11 -0500
+From: Josh Boyer <jwboyer@redhat.com>
+To: Borislav Petkov <bp@alien8.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>, mingo@redhat.com,
+        tglx@linutronix.de, konrad.wilk@oracle.com, rostedt@goodmis.org,
+        gregkh@linuxfoundation.org, samu.kallio@aberdeencloud.com,
+        kraman@redhat.com, xen-devel@lists.xen.org,
+        linux-kernel@vger.kernel.org, stable@kernel.org
+Subject: Re: [PATCH] mm/x86: Patch out arch_flush_lazy_mmu_mode() when
+ running on bare metal
+Message-ID: <20130301004211.GB31649@hansolo.jdub.homelinux.org>
+References: <1362092149-32381-1-git-send-email-boris.ostrovsky@oracle.com>
+ <20130228233720.GB17468@pd.tnic>
+ <20130301000539.GA31649@hansolo.jdub.homelinux.org>
+ <512FF331.5050008@zytor.com>
+ <20130301003629.GG9767@pd.tnic>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130301003629.GG9767@pd.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-> -----Original Message-----
-> From: Alan Stern [mailto:stern@rowland.harvard.edu]
-> Sent: Thursday, February 28, 2013 11:17 PM
-> To: Li, Fei
-> Cc: gregkh@linuxfoundation.org; Lan, Tianyu; sarah.a.sharp@linux.intel.com;
-> rjw@sisk.pl; linux-usb@vger.kernel.org; linux-kernel@vger.kernel.org; Liu,
-> Chuansheng
-> Subject: Re: [PATCH 4/5 V2] usb: call pm_runtime_put_sync in
-> pm_runtime_get_sync failed case
+On Fri, Mar 01, 2013 at 01:36:29AM +0100, Borislav Petkov wrote:
+> On Thu, Feb 28, 2013 at 04:15:45PM -0800, H. Peter Anvin wrote:
+> > > I'll try to get someone to test this tomorrow.
 > 
-> On Thu, 28 Feb 2013, Li Fei wrote:
+> Btw, you'd need to apply that other patch too
 > 
-> >
-> > Even in failed case of pm_runtime_get_sync, the usage_count
-> > is incremented. In order to keep the usage_count with correct
-> > value and runtime power management to behave correctly, call
-> > pm_runtime_put(_sync) in such case.
-> >
-> > Signed-off-by Liu Chuansheng <chuansheng.liu@intel.com>
-> > Signed-off-by: Li Fei <fei.li@intel.com>
-> > ---
-> >  drivers/usb/core/hub.c |    3 ++-
-> >  1 files changed, 2 insertions(+), 1 deletions(-)
-> >
-> > diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
-> > index 5480352..f72dede 100644
-> > --- a/drivers/usb/core/hub.c
-> > +++ b/drivers/usb/core/hub.c
-> > @@ -3148,12 +3148,13 @@ int usb_port_resume(struct usb_device *udev,
-> pm_message_t msg)
-> >
-> >  	if (port_dev->did_runtime_put) {
-> >  		status = pm_runtime_get_sync(&port_dev->dev);
-> > -		port_dev->did_runtime_put = false;
-> >  		if (status < 0) {
-> >  			dev_dbg(&udev->dev, "can't resume usb port, status %d\n",
-> >  					status);
-> > +			pm_runtime_put_sync(&port_dev->dev);
-> >  			return status;
-> >  		}
-> > +		port_dev->did_runtime_put = false;
-> >  	}
+> http://marc.info/?l=xen-devel&m=136206183814547&w=2
 > 
-> I don't see much point in this.  After a failed resume, the port's
-> runtime PM status is undefined.  Whether or not you do a
-> pm_runtime_put_sync won't make any difference.
-In case of failed resume, calling pm_runtime_put_sync() is just for decrease the dev->power.usage_count,
-because pm_runtime_get_sync() always increase the dev->power.usage_count even failed.
+> so that arch_flush_lazy_mmu_mode() has at least one caller on x86_64.
 
-If not pairing runtime_get/put, after that case, the device can not enter runtime suspend any more due to dev->power.usage_count > 0 always.
-Is it making sense?
+Yeah, we already have that applied.  It stops crashes in xen
+environments so we pulled it in as a bugfix.  Thanks though!
 
-Thanks.
-> 
-> Alan Stern
-
+josh
