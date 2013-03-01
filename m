@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755175Ab3CAULe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 15:11:34 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51582 "EHLO
+	id S1754440Ab3CAULy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 15:11:54 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51577 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753225Ab3CATpt (ORCPT
+	with ESMTP id S1752934Ab3CATpt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 1 Mar 2013 14:45:49 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
@@ -12,11 +12,10 @@ To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Jason Tibbitts <tibbs@math.uh.edu>,
         =?UTF-8?q?Pawe=C5=82=20Sikora?= <pawel.sikora@agmk.net>,
-        Stanislav Kinsbursky <skinsbursky@parallels.com>,
         "J. Bruce Fields" <bfields@redhat.com>
-Subject: [ 56/77] svcrpc: fix rpc server shutdown races
-Date: Fri,  1 Mar 2013 11:44:41 -0800
-Message-Id: <20130301194357.888045058@linuxfoundation.org>
+Subject: [ 55/77] svcrpc: make svc_age_temp_xprts enqueue under sv_lock
+Date: Fri,  1 Mar 2013 11:44:40 -0800
+Message-Id: <20130301194357.786996695@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130301194351.913471337@linuxfoundation.org>
 References: <20130301194351.913471337@linuxfoundation.org>
@@ -34,147 +33,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "J. Bruce Fields" <bfields@redhat.com>
 
-commit cc630d9f476445927fca599f81182c7f06f79058 upstream.
+commit e75bafbff2270993926abcc31358361db74a9bc2 upstream.
 
-Rewrite server shutdown to remove the assumption that there are no
-longer any threads running (no longer true, for example, when shutting
-down the service in one network namespace while it's still running in
-others).
+svc_age_temp_xprts expires xprts in a two-step process: first it takes
+the sv_lock and moves the xprts to expire off their server-wide list
+(sv_tempsocks or sv_permsocks) to a local list.  Then it drops the
+sv_lock and enqueues and puts each one.
 
-Do that by doing what we'd do in normal circumstances: just CLOSE each
-socket, then enqueue it.
-
-Since there may not be threads to handle the resulting queued xprts,
-also run a simplified version of the svc_recv() loop run by a server to
-clean up any closed xprts afterwards.
+I see no reason for this: svc_xprt_enqueue() will take sp_lock, but the
+sv_lock and sp_lock are not otherwise nested anywhere (and documentation
+at the top of this file claims it's correct to nest these with sp_lock
+inside.)
 
 Tested-by: Jason Tibbitts <tibbs@math.uh.edu>
 Tested-by: Paweł Sikora <pawel.sikora@agmk.net>
-Acked-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
 Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/sunrpc/svc.c      |    9 -------
- net/sunrpc/svc_xprt.c |   57 ++++++++++++++++++++++++++++----------------------
- 2 files changed, 32 insertions(+), 34 deletions(-)
+ net/sunrpc/svc_xprt.c |   15 ++-------------
+ 1 file changed, 2 insertions(+), 13 deletions(-)
 
---- a/net/sunrpc/svc.c
-+++ b/net/sunrpc/svc.c
-@@ -515,15 +515,6 @@ EXPORT_SYMBOL_GPL(svc_create_pooled);
- 
- void svc_shutdown_net(struct svc_serv *serv, struct net *net)
- {
--	/*
--	 * The set of xprts (contained in the sv_tempsocks and
--	 * sv_permsocks lists) is now constant, since it is modified
--	 * only by accepting new sockets (done by service threads in
--	 * svc_recv) or aging old ones (done by sv_temptimer), or
--	 * configuration changes (excluded by whatever locking the
--	 * caller is using--nfsd_mutex in the case of nfsd).  So it's
--	 * safe to traverse those lists and shut everything down:
--	 */
- 	svc_close_net(serv, net);
- 
- 	if (serv->sv_shutdown)
 --- a/net/sunrpc/svc_xprt.c
 +++ b/net/sunrpc/svc_xprt.c
-@@ -948,21 +948,24 @@ void svc_close_xprt(struct svc_xprt *xpr
- }
- EXPORT_SYMBOL_GPL(svc_close_xprt);
- 
--static void svc_close_list(struct svc_serv *serv, struct list_head *xprt_list, struct net *net)
-+static int svc_close_list(struct svc_serv *serv, struct list_head *xprt_list, struct net *net)
- {
+@@ -856,7 +856,6 @@ static void svc_age_temp_xprts(unsigned
+ 	struct svc_serv *serv = (struct svc_serv *)closure;
  	struct svc_xprt *xprt;
-+	int ret = 0;
+ 	struct list_head *le, *next;
+-	LIST_HEAD(to_be_aged);
  
- 	spin_lock(&serv->sv_lock);
- 	list_for_each_entry(xprt, xprt_list, xpt_list) {
- 		if (xprt->xpt_net != net)
+ 	dprintk("svc_age_temp_xprts\n");
+ 
+@@ -877,25 +876,15 @@ static void svc_age_temp_xprts(unsigned
+ 		if (atomic_read(&xprt->xpt_ref.refcount) > 1 ||
+ 		    test_bit(XPT_BUSY, &xprt->xpt_flags))
  			continue;
-+		ret++;
+-		svc_xprt_get(xprt);
+-		list_move(le, &to_be_aged);
++		list_del_init(le);
  		set_bit(XPT_CLOSE, &xprt->xpt_flags);
--		set_bit(XPT_BUSY, &xprt->xpt_flags);
-+		svc_xprt_enqueue(xprt);
- 	}
- 	spin_unlock(&serv->sv_lock);
-+	return ret;
- }
- 
--static void svc_clear_pools(struct svc_serv *serv, struct net *net)
-+static struct svc_xprt *svc_dequeue_net(struct svc_serv *serv, struct net *net)
- {
- 	struct svc_pool *pool;
- 	struct svc_xprt *xprt;
-@@ -977,42 +980,46 @@ static void svc_clear_pools(struct svc_s
- 			if (xprt->xpt_net != net)
- 				continue;
- 			list_del_init(&xprt->xpt_ready);
-+			spin_unlock_bh(&pool->sp_lock);
-+			return xprt;
- 		}
- 		spin_unlock_bh(&pool->sp_lock);
- 	}
-+	return NULL;
- }
- 
--static void svc_clear_list(struct svc_serv *serv, struct list_head *xprt_list, struct net *net)
-+static void svc_clean_up_xprts(struct svc_serv *serv, struct net *net)
- {
- 	struct svc_xprt *xprt;
--	struct svc_xprt *tmp;
--	LIST_HEAD(victims);
--
--	spin_lock(&serv->sv_lock);
--	list_for_each_entry_safe(xprt, tmp, xprt_list, xpt_list) {
--		if (xprt->xpt_net != net)
--			continue;
--		list_move(&xprt->xpt_list, &victims);
+ 		set_bit(XPT_DETACHED, &xprt->xpt_flags);
 -	}
--	spin_unlock(&serv->sv_lock);
+-	spin_unlock_bh(&serv->sv_lock);
+-
+-	while (!list_empty(&to_be_aged)) {
+-		le = to_be_aged.next;
+-		/* fiddling the xpt_list node is safe 'cos we're XPT_DETACHED */
+-		list_del_init(le);
+-		xprt = list_entry(le, struct svc_xprt, xpt_list);
+-
+ 		dprintk("queuing xprt %p for closing\n", xprt);
  
--	list_for_each_entry_safe(xprt, tmp, &victims, xpt_list)
-+	while ((xprt = svc_dequeue_net(serv, net))) {
-+		set_bit(XPT_CLOSE, &xprt->xpt_flags);
- 		svc_delete_xprt(xprt);
-+	}
+ 		/* a thread will dequeue and close it soon */
+ 		svc_xprt_enqueue(xprt);
+-		svc_xprt_put(xprt);
+ 	}
++	spin_unlock_bh(&serv->sv_lock);
+ 
+ 	mod_timer(&serv->sv_temptimer, jiffies + svc_conn_age_period * HZ);
  }
- 
-+/*
-+ * Server threads may still be running (especially in the case where the
-+ * service is still running in other network namespaces).
-+ *
-+ * So we shut down sockets the same way we would on a running server, by
-+ * setting XPT_CLOSE, enqueuing, and letting a thread pick it up to do
-+ * the close.  In the case there are no such other threads,
-+ * threads running, svc_clean_up_xprts() does a simple version of a
-+ * server's main event loop, and in the case where there are other
-+ * threads, we may need to wait a little while and then check again to
-+ * see if they're done.
-+ */
- void svc_close_net(struct svc_serv *serv, struct net *net)
- {
--	svc_close_list(serv, &serv->sv_tempsocks, net);
--	svc_close_list(serv, &serv->sv_permsocks, net);
-+	int delay = 0;
-+
-+	while (svc_close_list(serv, &serv->sv_permsocks, net) +
-+	       svc_close_list(serv, &serv->sv_tempsocks, net)) {
- 
--	svc_clear_pools(serv, net);
--	/*
--	 * At this point the sp_sockets lists will stay empty, since
--	 * svc_xprt_enqueue will not add new entries without taking the
--	 * sp_lock and checking XPT_BUSY.
--	 */
--	svc_clear_list(serv, &serv->sv_tempsocks, net);
--	svc_clear_list(serv, &serv->sv_permsocks, net);
-+		svc_clean_up_xprts(serv, net);
-+		msleep(delay++);
-+	}
- }
- 
- /*
 
 
