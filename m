@@ -1,69 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752473Ab3CAVPt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 16:15:49 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:33313 "EHLO
+	id S1752467Ab3CAVYF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 16:24:05 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:33374 "EHLO
 	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751381Ab3CAVPr (ORCPT
+	with ESMTP id S1751988Ab3CAVYD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 16:15:47 -0500
-Date: Fri, 01 Mar 2013 16:15:45 -0500 (EST)
-Message-Id: <20130301.161545.241432708115902321.davem@davemloft.net>
-To: freddy@asix.com.tw
-Cc: netdev@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, louis@asix.com.tw
-Subject: Re: [PATCH resubmit] ax88179_178a: ASIX AX88179_178A USB 3.0/2.0
- to gigabit ethernet adapter driver
+	Fri, 1 Mar 2013 16:24:03 -0500
+Date: Fri, 01 Mar 2013 16:24:00 -0500 (EST)
+Message-Id: <20130301.162400.1645765127882618751.davem@davemloft.net>
+To: eliezer.tamir@linux.jf.intel.com
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        jesse.brandeburg@intel.com, e1000-devel@lists.sourceforge.net,
+        willemb@google.com, andi@firstfloor.org, hpa@zytor.com,
+        eliezer@tamir.org.il
+Subject: Re: [RFC PATCH 0/5] net: low latency Ethernet device polling
 From: David Miller <davem@davemloft.net>
-In-Reply-To: <1361966518-3755-1-git-send-email-freddy@asix.com.tw>
-References: <1361966518-3755-1-git-send-email-freddy@asix.com.tw>
+In-Reply-To: <20130227175549.10611.82188.stgit@gitlad.jf.intel.com>
+References: <20130227175549.10611.82188.stgit@gitlad.jf.intel.com>
 X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
 Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Fri, 01 Mar 2013 13:15:51 -0800 (PST)
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Fri, 01 Mar 2013 13:24:06 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Freddy Xin <freddy@asix.com.tw>
-Date: Wed, 27 Feb 2013 20:01:58 +0800
+From: Eliezer Tamir <eliezer.tamir@linux.jf.intel.com>
+Date: Wed, 27 Feb 2013 09:55:49 -0800
 
-> +	eeprom_buff = kmalloc(sizeof(u16) * (last_word - first_word + 1),
-> +			      GFP_KERNEL);
-> +	if (!eeprom_buff)
-> +		return -ENOMEM;
-> +
-> +	/* ax88179/178A returns 2 bytes from eeprom on read */
-> +	for (i = first_word; i <= last_word; i++) {
-> +		ret = __ax88179_read_cmd(dev, AX_ACCESS_EEPROM, i, 1, 2,
-> +					 &eeprom_buff[i - first_word],
-> +					 0);
-> +		if (ret < 0)
-> +			return -EIO;
+> This patchset adds the ability for the socket layer code to poll directly 
+> on an Ethernet device's RX queue. This eliminates the cost of the interrupt
+> and context switch and with proper tuning allows us to get very close
+> to the HW latency.
+> 
+> This is a follow up to Jesse Brandeburg's Kernel Plumbers talk from last year
+> http://www.linuxplumbersconf.org/2012/wp-content/uploads/2012/09/2012-lpc-Low-Latency-Sockets-slides-brandeburg.pdf
 
-In this -EIO error path we will leak eeprom_buff, you must free it in
-all possible exit cases of this function after the allocation succeeds.
+I just wanted to say that I like this work a lot.
 
-> +	data->rxctl = (__force __le16)(AX_RX_CTL_START | AX_RX_CTL_AB |
-> +				       AX_RX_CTL_IPE);
+It proves a lot of things I try to impress upon people who talk about
+how RDMA is such a "must have" because the software stack can't
+possibly give anything near HW latency.
 
-You're not storying a __le16 in data->rxctl, you're storing the bits
-in cpu endianness.  So make it a plain u16 instead and get rid of
-these pointless casts.
+Obviously such arguments are complete bullshit as is shown by these
+changes.
 
-> +static int __init asix_init(void)
-> +{
-> +	return usb_register(&asix_driver);
-> +}
-> +module_init(asix_init);
-> +
-> +static void __exit asix_exit(void)
-> +{
-> +	usb_deregister(&asix_driver);
-> +}
-> +module_exit(asix_exit);
+This is exactly the kind of approach that makes sense rather than
+trying to put entire TCP stacks in the network card firmware.
 
-You can replace all of this with a simple:
+Thanks again for doing this work and I look forward to applying
+this stuff once all the kinks are worked out.  The folks in the
+Intel NIC group continue to impress me.
 
-module_usb_driver(asix_driver);
