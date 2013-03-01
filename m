@@ -1,66 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752218Ab3CAIDk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 03:03:40 -0500
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:35613 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750884Ab3CAIDj (ORCPT
+	id S1752289Ab3CAIFS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 03:05:18 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:49867 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750709Ab3CAIFR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 03:03:39 -0500
+	Fri, 1 Mar 2013 03:05:17 -0500
+Date: Fri, 1 Mar 2013 16:04:17 +0800
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Tero Kristo <t-kristo@ti.com>, Aaro Koskinen <aaro.koskinen@iki.fi>,
+        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] regulator: twl: Convert twl4030ldo_ops to get_voltage_sel
+Message-ID: <20130301080414.GO25302@opensource.wolfsonmicro.com>
+References: <1360980594.6332.1.camel@phoenix>
 MIME-Version: 1.0
-Reply-To: mtk.manpages@gmail.com
-In-Reply-To: <20130228142440.GA6328@cachalot>
-References: <CAKgNAki=mUYuu_Ewhe7sjCmo+Dq2Vr+FZCixqNRaadcvAxtpFw@mail.gmail.com>
- <20130228142440.GA6328@cachalot>
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Date: Fri, 1 Mar 2013 09:03:18 +0100
-Message-ID: <CAKgNAkjXAfq4RwtX1ELier+GLv0D5e9spM3Os3-oqSCXGqRqOg@mail.gmail.com>
-Subject: Re: For review: pid_namespaces(7) man page
-To: Vasily Kulikov <segoon@openwall.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        linux-man <linux-man@vger.kernel.org>,
-        Linux Containers <containers@lists.linux-foundation.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Lennart Poettering <lennart@poettering.net>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="GPOl6LAGMgeiWDic"
+Content-Disposition: inline
+In-Reply-To: <1360980594.6332.1.camel@phoenix>
+X-Cookie: Condense soup, not books!
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[CC += Lennart]
 
-On Thu, Feb 28, 2013 at 3:24 PM, Vasily Kulikov <segoon@openwall.com> wrote:
-> Hi Michael,
->
-> On Thu, Feb 28, 2013 at 12:24 +0100, Michael Kerrisk (man-pages) wrote:
->>    The namespace init process
->>        The first process created in a new namespace (i.e., the process
->>        created using clone(2) with the CLONE_NEWPID flag, or the first
->>        child created by a process after a call to unshare(2) using the
->>        CLONE_NEWPID flag) has the PID 1, and is the "init" process for
->>        the namespace (see init(1)).  Children that are orphaned within
->>        the namespace will be reparented to this  process  rather  than
->>        init(1).
->
-> Probably it worth noting here that this is true unless
-> prctl() with PR_SET_CHILD_SUBREAPER option is called.
+--GPOl6LAGMgeiWDic
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Thanks Vasily. It probably is worth mentioning that, and I will add some words.
+On Sat, Feb 16, 2013 at 10:09:54AM +0800, Axel Lin wrote:
+> This fixes an inconsistent behavior between list_voltage() and get_voltage()
+> because current implementation of get_voltage() does not check the case
+> IS_UNSUP() is true.
 
-One thing I am not sure of (have not tested), but maybe you (or Eric)
-know the answer: does the effect of PR_SET_CHILD_SUBREAPER  cross a
-PID namespace boundary? In other words, if it was a process in the
-parent PID namespace that employed PR_SET_CHILD_SUBREAPER , will that
-affect child processes in a child PID namespace, or  wiill
-PR_SET_CHILD_SUBREAPER  only apply to child processes in the same PID
-namespace as the caller?
+Applied, thanks.
 
-Thanks,
+--GPOl6LAGMgeiWDic
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Michael
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
+iQIcBAEBAgAGBQJRMGD1AAoJELSic+t+oim96qYP/AlK35/pg7FQuzuRRpUriGBl
+5amFAHhWNmnSAlfba0Y69RJr8uKApXBHUhvXYAoOyP0Yf5l2Y+fmmDoGv+mdZmnD
+og5d71bGSbQI7U+nZmQynvsIxC46aO8inkZeY7F8U1S1uizTpSuf65Q4WpOIzCXT
+O3w57FHyeAEhA0Hoa5RJ0/fDiEWCN5tOn3kvep28Yav6AjljbNVpyE5oS/VyN/u6
+s4PNSwrlj/L8SRRoAmG6heboTzfrNFDkxk6PkZg3udlwcgNkAIp2i8tOFp4U9NqU
+qtcfIXAjQuvAe7BDudHpMuPcS4Yu/4IliI4BE3UPRFeXetJp0ZOSIENRXiHZpBgx
+O/491SlwI0cIcXyEf4aj46NsSuABWdCdrD48/d+vtSs4UjU998QclxlRprt2Zcve
+RXUzMRUaRwdN+YK4B/7UZFcreTnQJCXlFLWDJtzCXSe6M4JZT6l/vXYl0gyn2fQ0
+reT6+RdiRk4vEVoFs7OEK4RiLjVuIWXz5dGEfwreLxbaSst+DBl7FfFLQJVh2OZ8
+F45DK6V7slq7v+VrLbb4Oh4onlkpJRmZAE4vNtx3eoC3kCYIoskLTJZgZoNKQggH
+dH8U56Hakr48mUg89lRv1VJhDZkFDrszDKtxDHbMYEcY0gguUSP6keZ26tRN/v3B
+paXpOpmZAnCawQpNKLws
+=6/j9
+-----END PGP SIGNATURE-----
 
--- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Author of "The Linux Programming Interface"; http://man7.org/tlpi/
+--GPOl6LAGMgeiWDic--
