@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755124Ab3CAUIV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 15:08:21 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51644 "EHLO
+	id S1755081Ab3CAUI5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 15:08:57 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51621 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753453Ab3CATp6 (ORCPT
+	with ESMTP id S1752484Ab3CATp4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 14:45:58 -0500
+	Fri, 1 Mar 2013 14:45:56 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Lingzhu Xiang <lxiang@redhat.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        Jeremy Kerr <jeremy.kerr@canonical.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Matt Fleming <matt.fleming@intel.com>
-Subject: [ 77/77] efivarfs: guid part of filenames are case-insensitive
-Date: Fri,  1 Mar 2013 11:45:02 -0800
-Message-Id: <20130301194400.106143345@linuxfoundation.org>
+        Alexey Klimov <klimov.linux@gmail.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>, Jiri Kosina <jkosina@suse.cz>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: [ 73/77] [hid] usb hid quirks for Masterkit MA901 usb radio
+Date: Fri,  1 Mar 2013 11:44:58 -0800
+Message-Id: <20130301194359.700037464@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130301194351.913471337@linuxfoundation.org>
 References: <20130301194351.913471337@linuxfoundation.org>
@@ -30,162 +28,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Matt Fleming <matt.fleming@intel.com>
+From: Alexey Klimov <klimov.linux@gmail.com>
 
-commit da27a24383b2b10bf6ebd0db29b325548aafecb4 upstream.
+commit 0322bd3980b3ebf7dde8474e22614cb443d6479a upstream.
 
-It makes no sense to treat the following filenames as unique,
+Don't let Masterkit MA901 USB radio be handled by usb hid drivers.
+This device will be handled by radio-ma901.c driver.
 
-	VarName-abcdefab-abcd-abcd-abcd-abcdefabcdef
-	VarName-ABCDEFAB-ABCD-ABCD-ABCD-ABCDEFABCDEF
-	VarName-ABcDEfAB-ABcD-ABcD-ABcD-ABcDEfABcDEf
-	VarName-aBcDEfAB-aBcD-aBcD-aBcD-aBcDEfaBcDEf
-	... etc ...
-
-since the guid will be converted into a binary representation, which
-has no case.
-
-Roll our own dentry operations so that we can treat the variable name
-part of filenames ("VarName" in the above example) as case-sensitive,
-but the guid portion as case-insensitive. That way, efivarfs will
-refuse to create the above files if any one already exists.
-
-Reported-by: Lingzhu Xiang <lxiang@redhat.com>
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: Jeremy Kerr <jeremy.kerr@canonical.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Matt Fleming <matt.fleming@intel.com>
+Signed-off-by: Alexey Klimov <klimov.linux@gmail.com>
+Acked-by: Hans Verkuil <hans.verkuil@cisco.com>
+Acked-by: Jiri Kosina <jkosina@suse.cz>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/firmware/efivars.c |   95 ++++++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 93 insertions(+), 2 deletions(-)
+ drivers/hid/hid-core.c |    1 +
+ drivers/hid/hid-ids.h  |    3 +++
+ 2 files changed, 4 insertions(+)
 
---- a/drivers/firmware/efivars.c
-+++ b/drivers/firmware/efivars.c
-@@ -1043,6 +1043,84 @@ static int efivarfs_unlink(struct inode
- 	return -EINVAL;
- };
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -2071,6 +2071,7 @@ static const struct hid_device_id hid_ig
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_LD, USB_DEVICE_ID_LD_HYBRID) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_LD, USB_DEVICE_ID_LD_HEATCONTROL) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_MADCATZ, USB_DEVICE_ID_MADCATZ_BEATPAD) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_MASTERKIT, USB_DEVICE_ID_MASTERKIT_MA901RADIO) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_MCC, USB_DEVICE_ID_MCC_PMD1024LS) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_MCC, USB_DEVICE_ID_MCC_PMD1208LS) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_MICROCHIP, USB_DEVICE_ID_PICKIT1) },
+--- a/drivers/hid/hid-ids.h
++++ b/drivers/hid/hid-ids.h
+@@ -554,6 +554,9 @@
+ #define USB_VENDOR_ID_MADCATZ		0x0738
+ #define USB_DEVICE_ID_MADCATZ_BEATPAD	0x4540
  
-+/*
-+ * Compare two efivarfs file names.
-+ *
-+ * An efivarfs filename is composed of two parts,
-+ *
-+ *	1. A case-sensitive variable name
-+ *	2. A case-insensitive GUID
-+ *
-+ * So we need to perform a case-sensitive match on part 1 and a
-+ * case-insensitive match on part 2.
-+ */
-+static int efivarfs_d_compare(const struct dentry *parent, const struct inode *pinode,
-+			      const struct dentry *dentry, const struct inode *inode,
-+			      unsigned int len, const char *str,
-+			      const struct qstr *name)
-+{
-+	int guid = len - GUID_LEN;
++#define USB_VENDOR_ID_MASTERKIT			0x16c0
++#define USB_DEVICE_ID_MASTERKIT_MA901RADIO	0x05df
 +
-+	if (name->len != len)
-+		return 1;
-+
-+	/* Case-sensitive compare for the variable name */
-+	if (memcmp(str, name->name, guid))
-+		return 1;
-+
-+	/* Case-insensitive compare for the GUID */
-+	return strncasecmp(name->name + guid, str + guid, GUID_LEN);
-+}
-+
-+static int efivarfs_d_hash(const struct dentry *dentry,
-+			   const struct inode *inode, struct qstr *qstr)
-+{
-+	unsigned long hash = init_name_hash();
-+	const unsigned char *s = qstr->name;
-+	unsigned int len = qstr->len;
-+
-+	if (!efivarfs_valid_name(s, len))
-+		return -EINVAL;
-+
-+	while (len-- > GUID_LEN)
-+		hash = partial_name_hash(*s++, hash);
-+
-+	/* GUID is case-insensitive. */
-+	while (len--)
-+		hash = partial_name_hash(tolower(*s++), hash);
-+
-+	qstr->hash = end_name_hash(hash);
-+	return 0;
-+}
-+
-+/*
-+ * Retaining negative dentries for an in-memory filesystem just wastes
-+ * memory and lookup time: arrange for them to be deleted immediately.
-+ */
-+static int efivarfs_delete_dentry(const struct dentry *dentry)
-+{
-+	return 1;
-+}
-+
-+static struct dentry_operations efivarfs_d_ops = {
-+	.d_compare = efivarfs_d_compare,
-+	.d_hash = efivarfs_d_hash,
-+	.d_delete = efivarfs_delete_dentry,
-+};
-+
-+static struct dentry *efivarfs_alloc_dentry(struct dentry *parent, char *name)
-+{
-+	struct qstr q;
-+
-+	q.name = name;
-+	q.len = strlen(name);
-+
-+	if (efivarfs_d_hash(NULL, NULL, &q))
-+		return NULL;
-+
-+	return d_alloc(parent, &q);
-+}
-+
- static int efivarfs_fill_super(struct super_block *sb, void *data, int silent)
- {
- 	struct inode *inode = NULL;
-@@ -1058,6 +1136,7 @@ static int efivarfs_fill_super(struct su
- 	sb->s_blocksize_bits    = PAGE_CACHE_SHIFT;
- 	sb->s_magic             = EFIVARFS_MAGIC;
- 	sb->s_op                = &efivarfs_ops;
-+	sb->s_d_op		= &efivarfs_d_ops;
- 	sb->s_time_gran         = 1;
- 
- 	inode = efivarfs_get_inode(sb, NULL, S_IFDIR | 0755, 0);
-@@ -1098,7 +1177,7 @@ static int efivarfs_fill_super(struct su
- 		if (!inode)
- 			goto fail_name;
- 
--		dentry = d_alloc_name(root, name);
-+		dentry = efivarfs_alloc_dentry(root, name);
- 		if (!dentry)
- 			goto fail_inode;
- 
-@@ -1148,8 +1227,20 @@ static struct file_system_type efivarfs_
- 	.kill_sb = efivarfs_kill_sb,
- };
- 
-+/*
-+ * Handle negative dentry.
-+ */
-+static struct dentry *efivarfs_lookup(struct inode *dir, struct dentry *dentry,
-+				      unsigned int flags)
-+{
-+	if (dentry->d_name.len > NAME_MAX)
-+		return ERR_PTR(-ENAMETOOLONG);
-+	d_add(dentry, NULL);
-+	return NULL;
-+}
-+
- static const struct inode_operations efivarfs_dir_inode_operations = {
--	.lookup = simple_lookup,
-+	.lookup = efivarfs_lookup,
- 	.unlink = efivarfs_unlink,
- 	.create = efivarfs_create,
- };
+ #define USB_VENDOR_ID_MCC		0x09db
+ #define USB_DEVICE_ID_MCC_PMD1024LS	0x0076
+ #define USB_DEVICE_ID_MCC_PMD1208LS	0x007a
 
 
