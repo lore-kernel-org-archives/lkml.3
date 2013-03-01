@@ -1,64 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751486Ab3CAPDN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 10:03:13 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:56279 "EHLO
+	id S1751688Ab3CAPDi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 10:03:38 -0500
+Received: from moutng.kundenserver.de ([212.227.17.8]:54938 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750915Ab3CAPDK (ORCPT
+	with ESMTP id S1751588Ab3CAPDh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 10:03:10 -0500
-Date: Fri, 1 Mar 2013 16:02:54 +0100 (CET)
+	Fri, 1 Mar 2013 10:03:37 -0500
+Date: Fri, 1 Mar 2013 16:03:17 +0100 (CET)
 From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
 X-X-Sender: lyakh@axis700.grange
 To: Magnus Damm <magnus.damm@gmail.com>
-cc: linux-kernel@vger.kernel.org, linux-sh@vger.kernel.org,
-        benh@kernel.crashing.org, grant.likely@secretlab.ca,
-        horms@verge.net.au, tglx@linutronix.de
-Subject: Re: [PATCH] irqchip: Renesas IRQC driver
-In-Reply-To: <20130227081501.30706.60471.sendpatchset@w520>
-Message-ID: <Pine.LNX.4.64.1303011555350.18776@axis700.grange>
-References: <20130227081501.30706.60471.sendpatchset@w520>
+cc: linux-kernel@vger.kernel.org, kuninori.morimoto.gx@renesas.com,
+        linux-sh@vger.kernel.org, benh@kernel.crashing.org,
+        grant.likely@secretlab.ca, horms@verge.net.au, tglx@linutronix.de
+Subject: Re: [PATCH 00/05] irqchip: Renesas INTC External IRQ pin v2 update
+In-Reply-To: <20130226115834.5630.45471.sendpatchset@w520>
+Message-ID: <Pine.LNX.4.64.1303011603060.18776@axis700.grange>
+References: <20130226115834.5630.45471.sendpatchset@w520>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V02:K0:8rCWcLk7eQsKJ6Q4DoTSc7mcAGkMI3zpRKMxkdfyMAP
- XQPvyXZXRmODpQg83l7LL2z9fJ1CnyqfUhIPffjbqXaIXFOul2
- AcQBDgLvN11Y7XLqkaxG0vuIol823iNS79A6sMSRQNTMhBqDW7
- vrW3oITIpQfYoezCUFfCx0S4DldEUAyFX0u9FMS1QB4zA8Y5e2
- 0HEyTnDClbUjeOCVCapvM92V2SyTfOU4sxPm6mwhumqEI0U7Sy
- nuUsLmT9u2hg1/POsXoFtZ4a1OcawnOxBDNZbcz2YxPXdmXsQo
- O28DBw7bmSxGOhn9TTFV/FWmZcsPyU6VjEUgQkbVjrjac29xMK
- x17QoZ2RHDT02knnNyEq2zFHTS3PdpTJ67XrLPoNy9fXMPy0jP
- vbuuhd86rM1cg==
+X-Provags-ID: V02:K0:UFHg6aO1ZhS2nISjJ0ZPT1eEJAGUk679daQ0ysA5tKt
+ 9EzQvISzEs3YktfJwrF5P+7k1lRP9pLiaDpmJAItvoZArY2cuz
+ r8ugqkNURJWUPp4YhsOLIYvDXzeBtPDQfpJoFuTSe5nnTnUYhR
+ rv8/cFK2yL0rW4KNAfChEtiIqjbWVqRUczQre79TJiif1Skhu+
+ P5s6HOZ5GRqXdskDOXi0EUYLcr8CfHchV/14PtvAd6X4OB1E2u
+ Yqvn2VzyNK5t1jAnb6Gv9O2xaFC375eOaZcQa5hgllx6/G4Urb
+ 12C8ZLl9I3qyF1ApOuRArH+kN4c1VP/n+oif6P7o9EpaJlu0IH
+ j0/q3SeR0gu+wkcfbBiq7TkHBF7fVNmI5vPQ+bNFQpfhU6MXF3
+ 6rCS+wNXUXhDQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 27 Feb 2013, Magnus Damm wrote:
+On Tue, 26 Feb 2013, Magnus Damm wrote:
 
-> From: Magnus Damm <damm@opensource.se>
+> irqchip: Renesas INTC External IRQ pin v2 update
 > 
-> This patch adds a driver for external IRQ pins connected
-> to the IRQC hardware block on recent SoCs from Renesas.
+> [PATCH 01/05] irqchip: intc-irqpin: Whitespace fixes
+> [PATCH 02/05] irqchip: intc-irqpin: Cache mapped IRQ
+> [PATCH 03/05] irqchip: intc-irqpin: Add force comments
+> [PATCH 04/05] irqchip: intc-irqpin: Make use of devm functions
+> [PATCH 05/05] irqchip: intc-irqpin: GPL header for platform data
 > 
-> The IRQC hardware block is used together with more
-> recent ARM based SoCs using the GIC. As usual the GIC
-> requires external IRQ trigger setup somewhere else
-> which in this particular case happens to be IRQC.
+> These patches update the v1 of the INTC External IRQ pin driver
+> in various ways based on feedback kindly received from:
+> - Simon Horman
+> - Kuninori Morimoto
+> - Thomas Gleixner
 > 
-> This driver implements the glue code needed to configure
-> IRQ trigger and also handle mask/unmask and demux of
-> external IRQ pins hooked up from the IRQC to the GIC.
-> 
-> Tested on r8a73a4 but is designed to work with a wide
-> range of SoCs. The driver requires one GIC SPI per
-> external IRQ pin to operate.  Each driver instance
-> will handle up to 32 external IRQ pins.
-> 
-> The SoCs using this driver are currently mainly used
-> together with regular platform devices so this driver
-> allows configuration via platform data to support things
-> like static interrupt base address. DT support will
-> be added incrementally in the not so distant future.
+> With the series applied I see the driver as "v2", but
+> I prefer to keep these changes as incremental ones instead
+> of redoing a single "v2" patch for the driver. The reason
+> behind this is that there are on-going back porting efforts
+> that are better dealt with using incremental patches.
 > 
 > Signed-off-by: Magnus Damm <damm@opensource.se>
 
@@ -73,364 +68,12 @@ Guennadi
 
 > ---
 > 
->  drivers/irqchip/Kconfig                        |    4 
->  drivers/irqchip/Makefile                       |    1 
->  drivers/irqchip/irq-renesas-irqc.c             |  298 ++++++++++++++++++++++++
->  include/linux/platform_data/irq-renesas-irqc.h |   27 ++
->  4 files changed, 330 insertions(+)
+>  Depends on:
+>  [PATCH] irqchip: Renesas INTC External IRQ pin driver
 > 
-> --- 0002/drivers/irqchip/Kconfig
-> +++ work/drivers/irqchip/Kconfig	2013-02-27 16:00:08.000000000 +0900
-> @@ -29,6 +29,10 @@ config RENESAS_INTC_IRQPIN
->  	bool
->  	select IRQ_DOMAIN
->  
-> +config RENESAS_IRQC
-> +	bool
-> +	select IRQ_DOMAIN
-> +
->  config VERSATILE_FPGA_IRQ
->  	bool
->  	select IRQ_DOMAIN
-> --- 0002/drivers/irqchip/Makefile
-> +++ work/drivers/irqchip/Makefile	2013-02-27 16:00:08.000000000 +0900
-> @@ -6,4 +6,5 @@ obj-$(CONFIG_ARCH_SPEAR3XX)		+= spear-sh
->  obj-$(CONFIG_ARM_GIC)			+= irq-gic.o
->  obj-$(CONFIG_ARM_VIC)			+= irq-vic.o
->  obj-$(CONFIG_RENESAS_INTC_IRQPIN)	+= irq-renesas-intc-irqpin.o
-> +obj-$(CONFIG_RENESAS_IRQC)		+= irq-renesas-irqc.o
->  obj-$(CONFIG_VERSATILE_FPGA_IRQ)	+= irq-versatile-fpga.o
-> --- /dev/null
-> +++ work/drivers/irqchip/irq-renesas-irqc.c	2013-02-27 17:04:02.000000000 +0900
-> @@ -0,0 +1,298 @@
-> +/*
-> + * Renesas IRQC Driver
-> + *
-> + *  Copyright (C) 2013 Magnus Damm
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License as published by
-> + * the Free Software Foundation; either version 2 of the License
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + *
-> + * You should have received a copy of the GNU General Public License
-> + * along with this program; if not, write to the Free Software
-> + * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-> + */
-> +
-> +#include <linux/init.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/spinlock.h>
-> +#include <linux/interrupt.h>
-> +#include <linux/ioport.h>
-> +#include <linux/io.h>
-> +#include <linux/irq.h>
-> +#include <linux/irqdomain.h>
-> +#include <linux/err.h>
-> +#include <linux/slab.h>
-> +#include <linux/module.h>
-> +#include <linux/platform_data/irq-renesas-irqc.h>
-> +
-> +#define IRQC_IRQ_MAX 32 /* maximum 32 interrupts per driver instance */
-> +
-> +#define IRQC_REQ_STS 0x00
-> +#define IRQC_EN_STS 0x04
-> +#define IRQC_EN_SET 0x08
-> +#define IRQC_INT_CPU_BASE(n) (0x000 + ((n) * 0x10))
-> +#define DETECT_STATUS 0x100
-> +#define IRQC_CONFIG(n) (0x180 + ((n) * 0x04))
-> +
-> +struct irqc_irq {
-> +	int hw_irq;
-> +	int requested_irq;
-> +	int domain_irq;
-> +	struct irqc_priv *p;
-> +};
-> +
-> +struct irqc_priv {
-> +	void __iomem *iomem;
-> +	void __iomem *cpu_int_base;
-> +	struct irqc_irq irq[IRQC_IRQ_MAX];
-> +	struct renesas_irqc_config config;
-> +	unsigned int number_of_irqs;
-> +	struct platform_device *pdev;
-> +	struct irq_chip irq_chip;
-> +	struct irq_domain *irq_domain;
-> +};
-> +
-> +static void irqc_dbg(struct irqc_irq *i, char *str)
-> +{
-> +	dev_dbg(&i->p->pdev->dev, "%s (%d:%d:%d)\n",
-> +		str, i->requested_irq, i->hw_irq, i->domain_irq);
-> +}
-> +
-> +static void irqc_irq_enable(struct irq_data *d)
-> +{
-> +	struct irqc_priv *p = irq_data_get_irq_chip_data(d);
-> +	int hw_irq = irqd_to_hwirq(d);
-> +
-> +	irqc_dbg(&p->irq[hw_irq], "enable");
-> +	iowrite32(BIT(hw_irq), p->cpu_int_base + IRQC_EN_SET);
-> +}
-> +
-> +static void irqc_irq_disable(struct irq_data *d)
-> +{
-> +	struct irqc_priv *p = irq_data_get_irq_chip_data(d);
-> +	int hw_irq = irqd_to_hwirq(d);
-> +
-> +	irqc_dbg(&p->irq[hw_irq], "disable");
-> +	iowrite32(BIT(hw_irq), p->cpu_int_base + IRQC_EN_STS);
-> +}
-> +
-> +#define INTC_IRQ_SENSE_VALID 0x10
-> +#define INTC_IRQ_SENSE(x) (x + INTC_IRQ_SENSE_VALID)
-> +
-> +static unsigned char irqc_sense[IRQ_TYPE_SENSE_MASK + 1] = {
-> +	[IRQ_TYPE_LEVEL_LOW] = INTC_IRQ_SENSE(0x01),
-> +	[IRQ_TYPE_LEVEL_HIGH] = INTC_IRQ_SENSE(0x02),
-> +	[IRQ_TYPE_EDGE_FALLING] = INTC_IRQ_SENSE(0x04), /* Synchronous */
-> +	[IRQ_TYPE_EDGE_RISING] = INTC_IRQ_SENSE(0x08), /* Synchronous */
-> +	[IRQ_TYPE_EDGE_BOTH] = INTC_IRQ_SENSE(0x0c),  /* Synchronous */
-> +};
-> +
-> +static int irqc_irq_set_type(struct irq_data *d, unsigned int type)
-> +{
-> +	struct irqc_priv *p = irq_data_get_irq_chip_data(d);
-> +	int hw_irq = irqd_to_hwirq(d);
-> +	unsigned char value = irqc_sense[type & IRQ_TYPE_SENSE_MASK];
-> +	unsigned long tmp;
-> +
-> +	irqc_dbg(&p->irq[hw_irq], "sense");
-> +
-> +	if (!(value & INTC_IRQ_SENSE_VALID))
-> +		return -EINVAL;
-> +
-> +	tmp = ioread32(p->iomem + IRQC_CONFIG(hw_irq));
-> +	tmp &= ~0x3f;
-> +	tmp |= value ^ INTC_IRQ_SENSE_VALID;
-> +	iowrite32(tmp, p->iomem + IRQC_CONFIG(hw_irq));
-> +	return 0;
-> +}
-> +
-> +static irqreturn_t irqc_irq_handler(int irq, void *dev_id)
-> +{
-> +	struct irqc_irq *i = dev_id;
-> +	struct irqc_priv *p = i->p;
-> +	unsigned long bit = BIT(i->hw_irq);
-> +
-> +	irqc_dbg(i, "demux1");
-> +
-> +	if (ioread32(p->iomem + DETECT_STATUS) & bit) {
-> +		iowrite32(bit, p->iomem + DETECT_STATUS);
-> +		irqc_dbg(i, "demux2");
-> +		generic_handle_irq(i->domain_irq);
-> +		return IRQ_HANDLED;
-> +	}
-> +	return IRQ_NONE;
-> +}
-> +
-> +static int irqc_irq_domain_map(struct irq_domain *h, unsigned int virq,
-> +			       irq_hw_number_t hw)
-> +{
-> +	struct irqc_priv *p = h->host_data;
-> +
-> +	p->irq[hw].domain_irq = virq;
-> +	p->irq[hw].hw_irq = hw;
-> +
-> +	irqc_dbg(&p->irq[hw], "map");
-> +	irq_set_chip_data(virq, h->host_data);
-> +	irq_set_chip_and_handler(virq, &p->irq_chip, handle_level_irq);
-> +	set_irq_flags(virq, IRQF_VALID); /* kill me now */
-> +	return 0;
-> +}
-> +
-> +static struct irq_domain_ops irqc_irq_domain_ops = {
-> +	.map	= irqc_irq_domain_map,
-> +};
-> +
-> +static int irqc_probe(struct platform_device *pdev)
-> +{
-> +	struct renesas_irqc_config *pdata = pdev->dev.platform_data;
-> +	struct irqc_priv *p;
-> +	struct resource *io;
-> +	struct resource *irq;
-> +	struct irq_chip *irq_chip;
-> +	const char *name = dev_name(&pdev->dev);
-> +	int ret;
-> +	int k;
-> +
-> +	p = kzalloc(sizeof(*p), GFP_KERNEL);
-> +	if (!p) {
-> +		dev_err(&pdev->dev, "failed to allocate driver data\n");
-> +		ret = -ENOMEM;
-> +		goto err0;
-> +	}
-> +
-> +	/* deal with driver instance configuration */
-> +	if (pdata)
-> +		memcpy(&p->config, pdata, sizeof(*pdata));
-> +
-> +	p->pdev = pdev;
-> +	platform_set_drvdata(pdev, p);
-> +
-> +	/* get hold of manadatory IOMEM */
-> +	io = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> +	if (!io) {
-> +		dev_err(&pdev->dev, "not enough IOMEM resources\n");
-> +		ret = -EINVAL;
-> +		goto err1;
-> +	}
-> +
-> +	/* allow any number of IRQs between 1 and IRQC_IRQ_MAX */
-> +	for (k = 0; k < IRQC_IRQ_MAX; k++) {
-> +		irq = platform_get_resource(pdev, IORESOURCE_IRQ, k);
-> +		if (!irq)
-> +			break;
-> +
-> +		p->irq[k].p = p;
-> +		p->irq[k].requested_irq = irq->start;
-> +	}
-> +
-> +	p->number_of_irqs = k;
-> +	if (p->number_of_irqs < 1) {
-> +		dev_err(&pdev->dev, "not enough IRQ resources\n");
-> +		ret = -EINVAL;
-> +		goto err1;
-> +	}
-> +
-> +	/* ioremap IOMEM and setup read/write callbacks */
-> +	p->iomem = ioremap_nocache(io->start, resource_size(io));
-> +	if (!p->iomem) {
-> +		dev_err(&pdev->dev, "failed to remap IOMEM\n");
-> +		ret = -ENXIO;
-> +		goto err2;
-> +	}
-> +
-> +	p->cpu_int_base = p->iomem + IRQC_INT_CPU_BASE(0); /* SYS-SPI */
-> +
-> +	irq_chip = &p->irq_chip;
-> +	irq_chip->name = name;
-> +	irq_chip->irq_mask = irqc_irq_disable;
-> +	irq_chip->irq_unmask = irqc_irq_enable;
-> +	irq_chip->irq_enable = irqc_irq_enable;
-> +	irq_chip->irq_disable = irqc_irq_disable;
-> +	irq_chip->irq_set_type = irqc_irq_set_type;
-> +	irq_chip->flags	= IRQCHIP_SKIP_SET_WAKE;
-> +
-> +	p->irq_domain = irq_domain_add_simple(pdev->dev.of_node,
-> +					      p->number_of_irqs,
-> +					      p->config.irq_base,
-> +					      &irqc_irq_domain_ops, p);
-> +	if (!p->irq_domain) {
-> +		ret = -ENXIO;
-> +		dev_err(&pdev->dev, "cannot initialize irq domain\n");
-> +		goto err2;
-> +	}
-> +
-> +	/* request interrupts one by one */
-> +	for (k = 0; k < p->number_of_irqs; k++) {
-> +		if (request_irq(p->irq[k].requested_irq, irqc_irq_handler,
-> +				0, name, &p->irq[k])) {
-> +			dev_err(&pdev->dev, "failed to request IRQ\n");
-> +			ret = -ENOENT;
-> +			goto err3;
-> +		}
-> +	}
-> +
-> +	dev_info(&pdev->dev, "driving %d irqs\n", p->number_of_irqs);
-> +
-> +	/* warn in case of mismatch if irq base is specified */
-> +	if (p->config.irq_base) {
-> +		if (p->config.irq_base != p->irq[0].domain_irq)
-> +			dev_warn(&pdev->dev, "irq base mismatch (%d/%d)\n",
-> +				 p->config.irq_base, p->irq[0].domain_irq);
-> +	}
-> +
-> +	return 0;
-> +err3:
-> +	for (; k >= 0; k--)
-> +		free_irq(p->irq[k - 1].requested_irq, &p->irq[k - 1]);
-> +
-> +	irq_domain_remove(p->irq_domain);
-> +err2:
-> +	iounmap(p->iomem);
-> +err1:
-> +	kfree(p);
-> +err0:
-> +	return ret;
-> +}
-> +
-> +static int irqc_remove(struct platform_device *pdev)
-> +{
-> +	struct irqc_priv *p = platform_get_drvdata(pdev);
-> +	int k;
-> +
-> +	for (k = 0; k < p->number_of_irqs; k++)
-> +		free_irq(p->irq[k].requested_irq, &p->irq[k]);
-> +
-> +	irq_domain_remove(p->irq_domain);
-> +	iounmap(p->iomem);
-> +	kfree(p);
-> +	return 0;
-> +}
-> +
-> +static struct platform_driver irqc_device_driver = {
-> +	.probe		= irqc_probe,
-> +	.remove		= irqc_remove,
-> +	.driver		= {
-> +		.name	= "renesas_irqc",
-> +	}
-> +};
-> +
-> +static int __init irqc_init(void)
-> +{
-> +	return platform_driver_register(&irqc_device_driver);
-> +}
-> +postcore_initcall(irqc_init);
-> +
-> +static void __exit irqc_exit(void)
-> +{
-> +	platform_driver_unregister(&irqc_device_driver);
-> +}
-> +module_exit(irqc_exit);
-> +
-> +MODULE_AUTHOR("Magnus Damm");
-> +MODULE_DESCRIPTION("Renesas IRQC Driver");
-> +MODULE_LICENSE("GPL v2");
-> --- /dev/null
-> +++ work/include/linux/platform_data/irq-renesas-irqc.h	2013-02-27 16:12:09.000000000 +0900
-> @@ -0,0 +1,27 @@
-> +/*
-> + * Renesas IRQC Driver
-> + *
-> + *  Copyright (C) 2013 Magnus Damm
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License as published by
-> + * the Free Software Foundation; either version 2 of the License
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + *
-> + * You should have received a copy of the GNU General Public License
-> + * along with this program; if not, write to the Free Software
-> + * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-> + */
-> +
-> +#ifndef __IRQ_RENESAS_IRQC_H__
-> +#define __IRQ_RENESAS_IRQC_H__
-> +
-> +struct renesas_irqc_config {
-> +	unsigned int irq_base;
-> +};
-> +
-> +#endif /* __IRQ_RENESAS_IRQC_H__ */
+>  drivers/irqchip/irq-renesas-intc-irqpin.c             |   88 ++++++++---------
+>  include/linux/platform_data/irq-renesas-intc-irqpin.h |   19 +++
+>  2 files changed, 62 insertions(+), 45 deletions(-)
 > --
 > To unsubscribe from this list: send the line "unsubscribe linux-sh" in
 > the body of a message to majordomo@vger.kernel.org
