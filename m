@@ -1,88 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751571Ab3CAHzc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 02:55:32 -0500
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:42407 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750721Ab3CAHza (ORCPT
+	id S1751980Ab3CAH6A (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 02:58:00 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:43425 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750709Ab3CAH57 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 02:55:30 -0500
+	Fri, 1 Mar 2013 02:57:59 -0500
+Date: Fri, 1 Mar 2013 15:57:27 +0800
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Thiago Farina <tfransosi@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lgirdwood@gmail.com>
+Subject: Re: [PATCH] regulators: max8998.c: use dev_err() instead of printk()
+Message-ID: <20130301075724.GN25302@opensource.wolfsonmicro.com>
+References: <1361591555-12729-1-git-send-email-tfarina@chromium.org>
 MIME-Version: 1.0
-In-Reply-To: <5130447F.4070706@jp.fujitsu.com>
-References: <512B7D10.4060304@tpi.com>
-	<512B8407.2090807@canonical.com>
-	<512BD753.4080001@hp.com>
-	<CAE9FiQVY4io_mO3PhTtE6FbGUgo1uZKKXO=pjx_FoZ1JuZmsAw@mail.gmail.com>
-	<CAE9FiQXRZ2VjfG4L2d2zDQ3Sud=JqjS=M9=XW=ORS58_y7i4_g@mail.gmail.com>
-	<CAE9FiQU-CV4mF8x=Bi_4pmpmeZW-tSoes_f-jOt7yYrbrppo+A@mail.gmail.com>
-	<512D58C2.1090403@jp.fujitsu.com>
-	<CAE9FiQV5APHSGXuz3NrsApC+V7rsDQMDXMNwZszZuUqQVaZSew@mail.gmail.com>
-	<512D7FAD.1040003@jp.fujitsu.com>
-	<CAE9FiQWxq-HPKK+XNRLggZSM4NcdfaeGDWCgd3HegEhaDSSTtA@mail.gmail.com>
-	<512D8EDA.3010602@jp.fujitsu.com>
-	<CAE9FiQWAxL6F70fF0dQcBZKTReJOiC+Ez0xcqcosgAdSagS-bA@mail.gmail.com>
-	<512DBD24.7090302@cn.fujitsu.com>
-	<20130227132612.14664a3a.akpm@linux-foundation.org>
-	<CA+55aFz8Yx4=d=Lrmir0Vy0jhUBJMgfrJegDWsDByf28c0MuRQ@mail.gmail.com>
-	<51302481.9070005@cn.fujitsu.com>
-	<CA+55aFw_1wDHmu+wsfV5e0miHC20Guy=u_toG_VSnsqneryAHQ@mail.gmail.com>
-	<513030AF.70208@zytor.com>
-	<CAE9FiQXb7K=QTR4PgMdNSoPm2LgYkxAuXUUZ0BXtgicQOGOaUA@mail.gmail.com>
-	<5130447F.4070706@jp.fujitsu.com>
-Date: Thu, 28 Feb 2013 23:55:29 -0800
-X-Google-Sender-Auth: ugSYWXxFTJYPf5qqBGrBb7UrabU
-Message-ID: <CAE9FiQWLys4BopOzSfVK8Smt6xzN+Q=xNk801nS6ac2qZEgo3w@mail.gmail.com>
-Subject: Re: sched: CPU #1's llc-sibling CPU #0 is not on the same node!
-From: Yinghai Lu <yinghai@kernel.org>
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Tang Chen <tangchen@cn.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Don Morris <don.morris@hp.com>,
-        Tim Gardner <tim.gardner@canonical.com>, Tejun Heo <tj@kernel.org>,
-        Tony Luck <tony.luck@intel.com>, Thomas Renninger <trenn@suse.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Jarkko Sakkinen <jarkko.sakkinen@intel.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Wen Congyang <wency@cn.fujitsu.com>, Lin Feng <linfeng@cn.fujitsu.com>,
-        "guz.fnst@cn.fujitsu.com" <guz.fnst@cn.fujitsu.com>,
-        Gui jianfeng <guijianfeng@cn.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="+cfQkLQGU7KOA/8T"
+Content-Disposition: inline
+In-Reply-To: <1361591555-12729-1-git-send-email-tfarina@chromium.org>
+X-Cookie: Condense soup, not books!
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 28, 2013 at 10:02 PM, Yasuaki Ishimatsu
-<isimatu.yasuaki@jp.fujitsu.com> wrote:
-> 2013/03/01 14:00, Yinghai Lu wrote:
->
-> Original issue occurs by two patches. And it is fixed by Tang's reverting
-> patch. So other patches are obviously unrelated to original problem. Thus
-> there is no reason to revert all patches related with movablemem_map.
->
-> If there is a reason, movablemem_map patches prevent only your work.
->
-> If you keep on developing your work, you should develop it in consideration
-> of those patches.
 
-Let me try again:
+--+cfQkLQGU7KOA/8T
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-movablemem_map is broken idea or poor design.
+On Sat, Feb 23, 2013 at 12:52:35AM -0300, Thiago Farina wrote:
+> Fixes the following checkpatch warning:
+>=20
+> WARNING: Prefer netdev_err(netdev, ... then dev_err(dev, ... then pr_err(=
+=2E..  to printk(KERN_ERR ...
 
-It just push down kernel memory from local node to some place.
+Applied, thanks (and discarded the previous version as it's subsumed in
+there).
 
-It is ridiculous to let use specify mem range in command line to make
-memory hotplug working.
-Think about different memory layout conf, that will drive customer crazy.
-Also not mention there is performance regarding put numa data low.
+--+cfQkLQGU7KOA/8T
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Right way or good pratice is:
-Find out those kernel memory that can not be moved, either put them low
-or make it to local node ram.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-Thanks
+iQIcBAEBAgAGBQJRMF9dAAoJELSic+t+oim9cgAP/jQvfi91SDYVP1rrT6rPPLkS
+t1z7bvJQ2D3bqsyIclHuIgMoX42A0/BXAm6SEFgzg/qkoHiHxS/BhPoxz/t6mMQv
+3nfUrzDe+GrJrgirRI64UsEjdVVsCtW5C546COZqScGC638dZnC9iBrYBS7Oo3o+
+BhWnTKN0EvXN5v6ape3MFlnOfLdZ5T6c30dxQEOlTcMDeLtj1AO3OVu8L1ntHvsn
+kRAKCpA7N/Gumx+8B/jNKinxgiI4KmY91Sg+aBvRMcHPyWw5TVN/CzPEdBrqLDFJ
+BVf7sPSldgRBniqGWYFVZEIg9xga7EzqdisbeJoRruuPzWcWtevHkbupAM7u6SmZ
+Ol94cWu4mdaeuYFPi4xbFVzTl6gxrWXrgO451ByMRWVI8hVz2zYa9sEdpfXYWhkc
+JZE32mUpHTTHBPxcAAzzP1vL4IKpY8lKXIbMrh+6C0PfOsSGuHlFVs/6M3Uy6Pxc
+qijktB9fd9JzCVC8G7lsc72BfakWS7ujM1zjnbfJpizGRK4h3pbig15edqVlsxK9
+6tKt7wop3DuzyLBEGC7N0BeHEUoXo7cj7A7YXf/wJPdPF/VkNVW/PleR+Y6SM8An
+xY/+5z8a5rAmqHWrS0subrISzApMSqfKwyQ7LRdaDfo/eYg8GtEN5QBqV6UfL+Bw
+SoR5Sw16ZVJNV/jK5s+F
+=HwhL
+-----END PGP SIGNATURE-----
 
-Yinghai
+--+cfQkLQGU7KOA/8T--
