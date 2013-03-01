@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754655Ab3CAT6o (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 14:58:44 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51892 "EHLO
+	id S1754866Ab3CAT66 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 14:58:58 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51884 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754005Ab3CATqY (ORCPT
+	with ESMTP id S1752112Ab3CATqX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 14:46:24 -0500
+	Fri, 1 Mar 2013 14:46:23 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Felix Fietkau <nbd@openwrt.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        CAI Qian <caiqian@redhat.com>
-Subject: [ 33/46] ath9k_hw: fix calibration issues on chainmask that dont include chain 0
-Date: Fri,  1 Mar 2013 11:45:21 -0800
-Message-Id: <20130301194435.757582177@linuxfoundation.org>
+        Helge Deller <deller@gmx.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ian Kent <raven@themaw.net>, Catalin Marinas <catalin.marinas@arm.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Rolf Eike Beer <eike-kernel@sf-tec.de>
+Subject: [ 32/46] unbreak automounter support on 64-bit kernel with 32-bit userspace (v2)
+Date: Fri,  1 Mar 2013 11:45:20 -0800
+Message-Id: <20130301194435.638940580@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130301194432.263409302@linuxfoundation.org>
 References: <20130301194432.263409302@linuxfoundation.org>
@@ -28,53 +29,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Felix Fietkau <nbd@openwrt.org>
+From: Helge Deller <deller@gmx.de>
 
-commit 4a8f199508d79ff8a7d1e22f47b912baaf225336 upstream.
+commit 4f4ffc3a5398ef9bdbb32db04756d7d34e356fcf upstream.
 
-Signed-off-by: Felix Fietkau <nbd@openwrt.org>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-Signed-off-by: CAI Qian <caiqian@redhat.com>
-Reviewed-by: John W. Linville <linville@tuxdriver.com>
+automount-support is broken on the parisc architecture, because the existing
+#if list does not include a check for defined(__hppa__). The HPPA (parisc)
+architecture is similiar to other 64bit Linux targets where we have to define
+autofs_wqt_t (which is passed back and forth to user space) as int type which
+has a size of 32bit across 32 and 64bit kernels.
+
+During the discussion on the mailing list, H. Peter Anvin suggested to invert
+the #if list since only specific platforms (specifically those who do not have
+a 32bit userspace, like IA64 and Alpha) should have autofs_wqt_t as unsigned
+long type.
+
+This suggestion is probably the best way to go, since Arm64 (and maybe others?)
+seems to have a non-working automounter. So in the long run even for other new
+upcoming architectures this inverted check seem to be the best solution, since
+it will not require them to change this #if again (unless they are 64bit only).
+
+Signed-off-by: Helge Deller <deller@gmx.de>
+Acked-by: H. Peter Anvin <hpa@zytor.com>
+Acked-by: Ian Kent <raven@themaw.net>
+Acked-by: Catalin Marinas <catalin.marinas@arm.com>
+CC: James Bottomley <James.Bottomley@HansenPartnership.com>
+CC: Rolf Eike Beer <eike-kernel@sf-tec.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/ath/ath9k/ar9003_calib.c |    2 ++
- drivers/net/wireless/ath/ath9k/ar9003_phy.c   |    2 +-
- drivers/net/wireless/ath/ath9k/hw.h           |    1 +
- 3 files changed, 4 insertions(+), 1 deletion(-)
+ include/linux/auto_fs.h |   25 ++++++++-----------------
+ 1 file changed, 8 insertions(+), 17 deletions(-)
 
---- a/drivers/net/wireless/ath/ath9k/ar9003_calib.c
-+++ b/drivers/net/wireless/ath/ath9k/ar9003_calib.c
-@@ -938,6 +938,8 @@ static bool ar9003_hw_init_cal(struct at
- 					  AR_PHY_CL_TAB_1,
- 					  AR_PHY_CL_TAB_2 };
+--- a/include/linux/auto_fs.h
++++ b/include/linux/auto_fs.h
+@@ -31,25 +31,16 @@
+ #define AUTOFS_MIN_PROTO_VERSION	AUTOFS_PROTO_VERSION
  
-+	ar9003_hw_set_chain_masks(ah, ah->caps.rx_chainmask, ah->caps.tx_chainmask);
-+
- 	if (rtt) {
- 		if (!ar9003_hw_rtt_restore(ah, chan))
- 			run_rtt_cal = true;
---- a/drivers/net/wireless/ath/ath9k/ar9003_phy.c
-+++ b/drivers/net/wireless/ath/ath9k/ar9003_phy.c
-@@ -543,7 +543,7 @@ static void ar9003_hw_init_bb(struct ath
- 	udelay(synthDelay + BASE_ACTIVATE_DELAY);
- }
+ /*
+- * Architectures where both 32- and 64-bit binaries can be executed
+- * on 64-bit kernels need this.  This keeps the structure format
+- * uniform, and makes sure the wait_queue_token isn't too big to be
+- * passed back down to the kernel.
+- *
+- * This assumes that on these architectures:
+- * mode     32 bit    64 bit
+- * -------------------------
+- * int      32 bit    32 bit
+- * long     32 bit    64 bit
+- *
+- * If so, 32-bit user-space code should be backwards compatible.
++ * The wait_queue_token (autofs_wqt_t) is part of a structure which is passed
++ * back to the kernel via ioctl from userspace. On architectures where 32- and
++ * 64-bit userspace binaries can be executed it's important that the size of
++ * autofs_wqt_t stays constant between 32- and 64-bit Linux kernels so that we
++ * do not break the binary ABI interface by changing the structure size.
+  */
+-
+-#if defined(__sparc__) || defined(__mips__) || defined(__x86_64__) \
+- || defined(__powerpc__) || defined(__s390__)
+-typedef unsigned int autofs_wqt_t;
+-#else
++#if defined(__ia64__) || defined(__alpha__) /* pure 64bit architectures */
+ typedef unsigned long autofs_wqt_t;
++#else
++typedef unsigned int autofs_wqt_t;
+ #endif
  
--static void ar9003_hw_set_chain_masks(struct ath_hw *ah, u8 rx, u8 tx)
-+void ar9003_hw_set_chain_masks(struct ath_hw *ah, u8 rx, u8 tx)
- {
- 	switch (rx) {
- 	case 0x5:
---- a/drivers/net/wireless/ath/ath9k/hw.h
-+++ b/drivers/net/wireless/ath/ath9k/hw.h
-@@ -1014,6 +1014,7 @@ int ar9003_paprd_setup_gain_table(struct
- int ar9003_paprd_init_table(struct ath_hw *ah);
- bool ar9003_paprd_is_done(struct ath_hw *ah);
- void ar9003_hw_set_paprd_txdesc(struct ath_hw *ah, void *ds, u8 chains);
-+void ar9003_hw_set_chain_masks(struct ath_hw *ah, u8 rx, u8 tx);
- 
- /* Hardware family op attach helpers */
- void ar5008_hw_attach_phy_ops(struct ath_hw *ah);
+ /* Packet types */
 
 
