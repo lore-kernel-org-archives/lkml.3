@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755019Ab3CAUFF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 15:05:05 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51702 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753512Ab3CATqG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753603Ab3CATqG (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 1 Mar 2013 14:46:06 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51670 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753512Ab3CATqC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Mar 2013 14:46:02 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [ 10/46] target: Fix lookup of dynamic NodeACLs during cached demo-mode operation
-Date: Fri,  1 Mar 2013 11:44:58 -0800
-Message-Id: <20130301194433.349290584@linuxfoundation.org>
+        Tejun Heo <tj@kernel.org>, Sasha Levin <sasha.levin@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [ 04/46] posix-timer: Dont call idr_find() with out-of-range ID
+Date: Fri,  1 Mar 2013 11:44:52 -0800
+Message-Id: <20130301194432.742289260@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130301194432.263409302@linuxfoundation.org>
 References: <20130301194432.263409302@linuxfoundation.org>
@@ -26,119 +28,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+From: Tejun Heo <tj@kernel.org>
 
-commit fcf29481fb8e106daad6688f2e898226ee928992 upstream.
+commit e182bb38d7db7494fa5dcd82da17fe0dedf60ecf upstream.
 
-This patch fixes a bug in core_tpg_check_initiator_node_acl() ->
-core_tpg_get_initiator_node_acl() where a dynamically created
-se_node_acl generated during session login would be skipped during
-subsequent lookup due to the '!acl->dynamic_node_acl' check, causing
-a new se_node_acl to be created with a duplicate ->initiatorname.
+When idr_find() was fed a negative ID, it used to look up the ID
+ignoring the sign bit before recent ("idr: remove MAX_IDR_MASK and
+move left MAX_IDR_* into idr.c") patch. Now a negative ID triggers
+a WARN_ON_ONCE().
 
-This would occur when a fabric endpoint was configured with
-TFO->tpg_check_demo_mode()=1 + TPF->tpg_check_demo_mode_cache()=1
-preventing the release of an existing se_node_acl during se_session
-shutdown.
+__lock_timer() feeds timer_id from userland directly to idr_find()
+without sanitizing it which can trigger the above malfunctions.  Add a
+range check on @timer_id before invoking idr_find() in __lock_timer().
 
-Also, drop the unnecessary usage of core_tpg_get_initiator_node_acl()
-within core_dev_init_initiator_node_lun_acl() that originally
-required the extra '!acl->dynamic_node_acl' check, and just pass
-the configfs provided se_node_acl pointer instead.
+While timer_t is defined as int by all archs at the moment, Andrew
+worries that it may be defined as a larger type later on.  Make the
+test cover larger integers too so that it at least is guaranteed to
+not return the wrong timer.
 
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Note that WARN_ON_ONCE() in idr_find() on id < 0 is transitional
+precaution while moving away from ignoring MSB.  Once it's gone we can
+remove the guard as long as timer_t isn't larger than int.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: Sasha Levin <sasha.levin@oracle.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Link: http://lkml.kernel.org/r/20130220232412.GL3570@htj.dyndns.org
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/target/target_core_device.c          |   13 ++++---------
- drivers/target/target_core_fabric_configfs.c |    4 ++--
- drivers/target/target_core_internal.h        |    2 +-
- drivers/target/target_core_tpg.c             |   10 ++--------
- 4 files changed, 9 insertions(+), 20 deletions(-)
+ kernel/posix-timers.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
---- a/drivers/target/target_core_device.c
-+++ b/drivers/target/target_core_device.c
-@@ -1483,24 +1483,18 @@ static struct se_lun *core_dev_get_lun(s
- 
- struct se_lun_acl *core_dev_init_initiator_node_lun_acl(
- 	struct se_portal_group *tpg,
-+	struct se_node_acl *nacl,
- 	u32 mapped_lun,
--	char *initiatorname,
- 	int *ret)
+--- a/kernel/posix-timers.c
++++ b/kernel/posix-timers.c
+@@ -639,6 +639,13 @@ static struct k_itimer *__lock_timer(tim
  {
- 	struct se_lun_acl *lacl;
--	struct se_node_acl *nacl;
+ 	struct k_itimer *timr;
  
--	if (strlen(initiatorname) >= TRANSPORT_IQN_LEN) {
-+	if (strlen(nacl->initiatorname) >= TRANSPORT_IQN_LEN) {
- 		pr_err("%s InitiatorName exceeds maximum size.\n",
- 			tpg->se_tpg_tfo->get_fabric_name());
- 		*ret = -EOVERFLOW;
- 		return NULL;
- 	}
--	nacl = core_tpg_get_initiator_node_acl(tpg, initiatorname);
--	if (!nacl) {
--		*ret = -EINVAL;
--		return NULL;
--	}
- 	lacl = kzalloc(sizeof(struct se_lun_acl), GFP_KERNEL);
- 	if (!lacl) {
- 		pr_err("Unable to allocate memory for struct se_lun_acl.\n");
-@@ -1511,7 +1505,8 @@ struct se_lun_acl *core_dev_init_initiat
- 	INIT_LIST_HEAD(&lacl->lacl_list);
- 	lacl->mapped_lun = mapped_lun;
- 	lacl->se_lun_nacl = nacl;
--	snprintf(lacl->initiatorname, TRANSPORT_IQN_LEN, "%s", initiatorname);
-+	snprintf(lacl->initiatorname, TRANSPORT_IQN_LEN, "%s",
-+		 nacl->initiatorname);
- 
- 	return lacl;
- }
---- a/drivers/target/target_core_fabric_configfs.c
-+++ b/drivers/target/target_core_fabric_configfs.c
-@@ -357,8 +357,8 @@ static struct config_group *target_fabri
- 		goto out;
- 	}
- 
--	lacl = core_dev_init_initiator_node_lun_acl(se_tpg, mapped_lun,
--			config_item_name(acl_ci), &ret);
-+	lacl = core_dev_init_initiator_node_lun_acl(se_tpg, se_nacl,
-+			mapped_lun, &ret);
- 	if (!lacl) {
- 		ret = -EINVAL;
- 		goto out;
---- a/drivers/target/target_core_internal.h
-+++ b/drivers/target/target_core_internal.h
-@@ -61,7 +61,7 @@ struct se_lun *core_dev_add_lun(struct s
- int	core_dev_del_lun(struct se_portal_group *, u32);
- struct se_lun *core_get_lun_from_tpg(struct se_portal_group *, u32);
- struct se_lun_acl *core_dev_init_initiator_node_lun_acl(struct se_portal_group *,
--		u32, char *, int *);
-+		struct se_node_acl *, u32, int *);
- int	core_dev_add_initiator_node_lun_acl(struct se_portal_group *,
- 		struct se_lun_acl *, u32, u32);
- int	core_dev_del_initiator_node_lun_acl(struct se_portal_group *,
---- a/drivers/target/target_core_tpg.c
-+++ b/drivers/target/target_core_tpg.c
-@@ -114,16 +114,10 @@ struct se_node_acl *core_tpg_get_initiat
- 	struct se_node_acl *acl;
- 
- 	spin_lock_irq(&tpg->acl_node_lock);
--	list_for_each_entry(acl, &tpg->acl_node_list, acl_list) {
--		if (!strcmp(acl->initiatorname, initiatorname) &&
--		    !acl->dynamic_node_acl) {
--			spin_unlock_irq(&tpg->acl_node_lock);
--			return acl;
--		}
--	}
-+	acl = __core_tpg_get_initiator_node_acl(tpg, initiatorname);
- 	spin_unlock_irq(&tpg->acl_node_lock);
- 
--	return NULL;
-+	return acl;
- }
- 
- /*	core_tpg_add_node_to_devs():
++	/*
++	 * timer_t could be any type >= int and we want to make sure any
++	 * @timer_id outside positive int range fails lookup.
++	 */
++	if ((unsigned long long)timer_id > INT_MAX)
++		return NULL;
++
+ 	rcu_read_lock();
+ 	timr = idr_find(&posix_timers_id, (int)timer_id);
+ 	if (timr) {
 
 
