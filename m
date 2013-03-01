@@ -1,66 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750983Ab3CAOWa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 09:22:30 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:36170 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750696Ab3CAOW3 (ORCPT
+	id S1751052Ab3CAO3J (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 09:29:09 -0500
+Received: from canardo.mork.no ([148.122.252.1]:50497 "EHLO canardo.mork.no"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750696Ab3CAO3I convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 09:22:29 -0500
-Date: Fri, 1 Mar 2013 22:21:20 +0800
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Michal Bachraty <michal.bachraty@streamunlimited.com>
-Cc: perex@perex.cz, tiwai@suse.de, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org, lgirdwood@gmail.com
-Subject: Re: [PATCH v3] davinci-mcasp: Add support for multichannel playback
-Message-ID: <20130301142117.GC25302@opensource.wolfsonmicro.com>
-References: <1362064028-12666-1-git-send-email-michal.bachraty@streamunlimited.com>
+	Fri, 1 Mar 2013 09:29:08 -0500
+From: =?utf-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
+To: Matthew Garrett <matthew.garrett@nebula.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        platform-driver-x86@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT] x86 platform driver bugfixes for 3.8
+Organization: m
+References: <20130107171722.GA31427@srcf.ucam.org>
+	<CA+55aFzL00K+oURqcnSgbAAkD18DJ8-p1G8vd7KE6RD77dLmCQ@mail.gmail.com>
+	<20130107172616.GB31427@srcf.ucam.org>
+	<20130107174306.GC31427@srcf.ucam.org>
+Date: Fri, 01 Mar 2013 14:36:55 +0100
+In-Reply-To: <20130107174306.GC31427@srcf.ucam.org> (Matthew Garrett's message
+	of "Mon, 7 Jan 2013 17:43:06 +0000")
+Message-ID: <87txov44y0.fsf@nemi.mork.no>
+User-Agent: Gnus/5.11002 (No Gnus v0.20) Emacs/23.4 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="qTzJm9l2qECmSDiM"
-Content-Disposition: inline
-In-Reply-To: <1362064028-12666-1-git-send-email-michal.bachraty@streamunlimited.com>
-X-Cookie: Condense soup, not books!
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Matthew Garrett <matthew.garrett@nebula.com> writes:
 
---qTzJm9l2qECmSDiM
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> This set covers regressions and two obvious bugfixes. The rest can wait 
+> for 3.9.
 
-On Thu, Feb 28, 2013 at 04:07:08PM +0100, Michal Bachraty wrote:
-> Davinci McASP has support for I2S multichannel playback.
-> For I2S playback/receive, each serializer is capable to play 2 channels
-> (L/R) audio data.Serializer function (Playback-receive-none) is configured
+Sorry for nagging, but I assume the 3.9 merge window will close over the
+weekend and I haven't seen the pull request for the rest of these posted
+yet.  I hope that still is the plan?
 
-Applied, thanks.
 
-I am slightly surprised by the TDM slots being in DT but then it's
-already there so no problem for this patch.
-
---qTzJm9l2qECmSDiM
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRMLlWAAoJELSic+t+oim9g9gP/3mCBa0fa1AeNmyv7lBulC9n
-oynUbe9M17fPI3emsTqBjPFk4yp0hx1g98xadZuwGe7F14Vy8jYv6IVEHvBBiq5d
-tTplKQkuzriuWG1KlYP7tJ3f7O1B5dZqq58qId5fku8CuYzVKZOc7GijwBjdcBVw
-kGw+IegKG/8/vfovKXgGVCkZ0hkOgJeCi846pICkW7kpvs/+Ek1vojLDL1F2CBJf
-244hSBdW0Zyoh4u03Uv7nrpncfOwMT+MRKrA9sFogrURDh7vzeyQI2v6R2ik2Uxv
-hXsgk9/+jmE3Z5ByLaM8OiG2/sdY7ulGS3wAfmVlJqVw6YG1fb6LTYOKyNRXoMMN
-PBoloLrdcaxYN+z6sdpyxu4A1IImsz/o4/eSe8O/MjkK5Luqh4Lkheu1eISP7khj
-eY/rMxwdJIml+7BPJy+34bfRhP1iATUmZm+uxMXsu1jO01nMOa2HagdPwpp6pnJO
-Ov1V3QzMwP9yRAbvvnLH/uGeAlrJ2RJgs91rmmhVUm9582+dhxd2v8ytw0HrTGwL
-aDtaQKyBjyNpEFBndixO6qckjBUY2mFQ5uqMc55FIjq1OTchDz24yjl9wWmLpH2Z
-2C+DCGHkUHdfDn4jXMCB4eP0aIlru6iK9wmWTpBTraIA0hvr4rsvBl83C3cgQ+V8
-iAJvUBO0CPV8+bJXaUBk
-=rQ7P
------END PGP SIGNATURE-----
-
---qTzJm9l2qECmSDiM--
+Bjørn
