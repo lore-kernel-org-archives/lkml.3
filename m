@@ -1,68 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751611Ab3CAHeh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 02:34:37 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:45381 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751063Ab3CAHeg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 02:34:36 -0500
-Date: Fri, 1 Mar 2013 15:34:05 +0800
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: "Kim, Milo" <Milo.Kim@ti.com>
-Cc: Axel Lin <axel.lin@ingics.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 0/4] regulator: core: support shared enable GPIO
-Message-ID: <20130301073402.GH25302@opensource.wolfsonmicro.com>
-References: <A874F61F95741C4A9BA573A70FE3998F792729E9@DQHE02.ent.ti.com>
+	id S1751957Ab3CAHgo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 02:36:44 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:30085 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751221Ab3CAHgm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Mar 2013 02:36:42 -0500
+X-IronPort-AV: E=Sophos;i="4.84,760,1355068800"; 
+   d="scan'208";a="6792898"
+Date: Fri, 1 Mar 2013 15:36:48 +0800
+From: Hu Tao <hutao@cn.fujitsu.com>
+To: Eric Blake <eblake@redhat.com>
+Cc: kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>, Gleb Natapov <gleb@redhat.com>,
+        Blue Swirl <blauwirbel@gmail.com>, Andrew Jones <drjones@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Luiz Capitulino <lcapitulino@redhat.com>,
+        Anthony Liguori <aliguori@us.ibm.com>,
+        Markus Armbruster <armbru@redhat.com>,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        Stefan Hajnoczi <stefanha@redhat.com>,
+        Juan Quintela <quintela@redhat.com>,
+        Orit Wasserman <owasserm@redhat.com>, Kevin Wolf <kwolf@redhat.com>,
+        Wen Congyang <wency@cn.fujitsu.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>, Alexander Graf <agraf@suse.de>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        Peter Maydell <peter.maydell@linaro.org>
+Subject: Re: [PATCH v13 1/8] save/load cpu runstate
+Message-ID: <20130301073648.GD16362@localhost.localdomain>
+References: <cover.1362051581.git.hutao@cn.fujitsu.com>
+ <df20999140db716e8b1ccd57a7cbcb0fa343a78c.1362051582.git.hutao@cn.fujitsu.com>
+ <512FC845.9080209@redhat.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="WIIRZ1HQ6FgrlPgb"
-Content-Disposition: inline
-In-Reply-To: <A874F61F95741C4A9BA573A70FE3998F792729E9@DQHE02.ent.ti.com>
-X-Cookie: Condense soup, not books!
+In-Reply-To: <512FC845.9080209@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/03/01 15:35:44,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/03/01 15:35:46,
+	Serialize complete at 2013/03/01 15:35:46
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Feb 28, 2013 at 02:12:37PM -0700, Eric Blake wrote:
+> On 02/28/2013 05:13 AM, Hu Tao wrote:
+> > This patch enables preservation of cpu runstate during save/load vm.
+> > So when a vm is restored from snapshot, the cpu runstate is restored,
+> > too.
+> 
+> What happens if a management app wants to override the runstate when
+> restoring the domain?  I can think of several useful scenarios:
+> 
+> 1. management app pauses the guest, then saves domain state and other
+> things (management state, or disk clones), then resumes the guest.
+> Later, the management wants to revert to the saved state, but have the
+> guest running right away.  I guess here, knowing that the guest was
+> saved in a paused state doesn't hurt, since the management app can
+> resume it right away.
+> 
+> 2. management app saves domain state of a live guest, then copies that
+> state elsewhere.  In its new location, the management app wants to
+> investigate the state for forensic analysis - so even though the guest
+> remembers that it was running, management wants to start it paused.
+> Here, it is important that there must not be a window of time where the
+> guest can run, otherwise, the results are not reproducible.
 
---WIIRZ1HQ6FgrlPgb
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-
-On Mon, Feb 18, 2013 at 06:50:30AM +0000, Kim, Milo wrote:
-> A Regulator can be enabled by external GPIO pin which is configurable in the
-> regulator_config.
-> At this moment, the GPIO can be owned by only one regulator device.
-> In some devices like LP8788 LDOs, multiple regulators are enabled by shared
-> one GPIO pin.
-> This patch-set enables shared enable GPIO concept and fix LP8788 LDO driver
-> as well.
-
-Applied all, thanks.  Axel had a few comments as did I but these can be
-fixed up incrementally.
-
---WIIRZ1HQ6FgrlPgb
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRMFnQAAoJELSic+t+oim9/mAP/3GGhQNk3dowtAJ3OqQOEFMt
-bHyaFhPeE3/7gzaNRZGns4Q5tEWJnwUNRLDVc2oHLFyidiwoDRt27Oy2ooqm/Adi
-vBfgMG/0Nnn/N6Acdn16iPaWRM6mrp7+Nd+vGe5zRWlrZSK67VWlCaupd1hlssZd
-n5J3W+Lhk7+EuF4po9tZsDxnmiEWV7oliftQR4TdZhFK22URrl/y5r+ZXyuvsC4G
-14KbDs8zktUyxi5Lh3TbaxsJUaEP0oNyNhO8ITkRzZtDKGLH75rGxhdXvofqlrdp
-qaq77rk8mtH7aqlOWJm+4QNIHhPVzdJ1WssOWFQFVvgFXnKSUCprKBJ1SgmqoInj
-g+BNljgVQ3GVJnHCn1S1x/Eo99ytKa7IC32zmPHtpECyYDwD6nvTJC9IlJSBQDAa
-QqHSa9BTiFsbbTAXLRwIjjddJyzyJBqk1uyobE3KKycMnVhVlKyLMMKbWDi+bS7q
-a3LTMooRHCOMj4rgnyU8N+ZfqWIEzQNdrcSL+mI3+o8qyRQUMFE9a3xrzwezAwqX
-WXfqUaVj10baY98jr1rgPk/VdOOvM8RYxj2dj5CRf1bTGzWz/YrV2UuT7VhGBiWs
-cYOui/HE81SjO1DT1iqRYSi8BNv+ErpLDPHhLSh91XBXiQlIC/84FnD51EDVfRdm
-1rui+ALo2GkaHAE6ioc2
-=zfXu
------END PGP SIGNATURE-----
-
---WIIRZ1HQ6FgrlPgb--
+-S takes precedence in the case. But for in-migration, runstate is
+loaded from src.
