@@ -1,45 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751486Ab3CAQMM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 11:12:12 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:26424 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751060Ab3CAQMK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 11:12:10 -0500
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Joern Engel <joern@logfs.org>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Borislav Petkov <bp@alien8.de>
-Subject: Re: [PATCH 5/9] blockconsole: use CON_ALLDATA
-References: <1362087602-8979-1-git-send-email-joern@logfs.org>
-	<1362087602-8979-6-git-send-email-joern@logfs.org>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Fri, 01 Mar 2013 11:11:58 -0500
-In-Reply-To: <1362087602-8979-6-git-send-email-joern@logfs.org> (Joern Engel's
-	message of "Thu, 28 Feb 2013 16:39:58 -0500")
-Message-ID: <x49txov14mp.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S1751518Ab3CAQO4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 11:14:56 -0500
+Received: from jacques.telenet-ops.be ([195.130.132.50]:33247 "EHLO
+	jacques.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751223Ab3CAQOz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Mar 2013 11:14:55 -0500
+Message-ID: <5130D3EE.4090205@acm.org>
+Date: Fri, 01 Mar 2013 17:14:38 +0100
+From: Bart Van Assche <bvanassche@acm.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] Final round of SCSI updates for the 3.8+ merge window
+References: <1362129599.2384.13.camel@dabdike.int.hansenpartnership.com>
+In-Reply-To: <1362129599.2384.13.camel@dabdike.int.hansenpartnership.com>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Joern Engel <joern@logfs.org> writes:
+On 03/01/13 10:19, James Bottomley wrote:
+> This is an assorted set of stragglers into the merge window with driver
+> updates for qla2xxx, megaraid_sas, storvsc and ufs.  It also includes
+> pulls of the uapi tree (all the remaining SCSI pieces) and the fcoe tree
+> (updates to fcoe and libfc)
 
-> Blockconsole should really see every message ever printed.  The
-> alternative is to try debugging with information like this:
-> [166135.633974] Stack:
-> [166135.634016] Call Trace:
-> [166135.634029]  <IRQ>
-> [166135.634156]  <EOI>
-> [166135.634177] Code: 00 00 55 48 89 e5 0f 1f 44 00 00 ff 15 31 49 80 00 c9 c3 66 66 66 66 66 66 2e 0f 1f 84 00 00 00 00 00 55 48 89 e5 0f 1f 44 00 00
-> [166135.634384]  48 8b 14 25 98 24 01 00 48 8d 14 92 48 8d 04 bd 00 00 00 00
+Hello James,
 
-What was your log level set to at the time?  By default, all of the
-information for a kernel panic should show up on the console, no?
+I'm curious to know your opinion about the patch called "Fix race 
+between starved list processing and device removal" 
+(http://article.gmane.org/gmane.linux.scsi/80090/match=scsi_run_queue) ? 
+It was posted for the first time several months ago and has been ack-ed 
+and tested by other people. So far I haven't seen any comments from you 
+on that patch.
 
-Cheers,
-Jeff
+Bart.
+
