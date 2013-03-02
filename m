@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752767Ab3CBDsu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 22:48:50 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:22209 "EHLO
+	id S1752225Ab3CBDzc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 22:55:32 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:22206 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751483Ab3CBDst (ORCPT
+	with ESMTP id S1751688Ab3CBDza (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 22:48:49 -0500
-X-Authority-Analysis: v=2.0 cv=H5hZMpki c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=CWa6cfpS1d4A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=67B3l9YICOsA:10 a=cJEugT42xeWdX7EgN7sA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+	Fri, 1 Mar 2013 22:55:30 -0500
+X-Authority-Analysis: v=2.0 cv=UN5f7Vjy c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=dCXt4Z_EDXgA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=VHl0eERhotoA:10 a=vuR0nV-uQgYmcsVhfi4A:9 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-ID: <1362196127.1231.76.camel@gandalf.local.home>
-Subject: Re: [PATCH 3/4] tracing: Annotate event field-defining functions
- with __init
+Message-ID: <1362196529.1231.80.camel@gandalf.local.home>
+Subject: Re: linux-next: build failure after merge of the ftrace tree
 From: Steven Rostedt <rostedt@goodmis.org>
-To: Li Zefan <lizefan@huawei.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Fri, 01 Mar 2013 22:48:47 -0500
-In-Reply-To: <5125877D.5000201@huawei.com>
-References: <51258723.2040301@huawei.com> <5125877D.5000201@huawei.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Fri, 01 Mar 2013 22:55:29 -0500
+In-Reply-To: <20130302144229.f41f56c36992497a1530d65f@canb.auug.org.au>
+References: <20130301134738.ce925e1643a35b0a2c4ff275@canb.auug.org.au>
+	 <1362192318.1231.67.camel@gandalf.local.home>
+	 <20130302144229.f41f56c36992497a1530d65f@canb.auug.org.au>
 Content-Type: text/plain; charset="ISO-8859-15"
 X-Mailer: Evolution 3.4.4-1 
 Mime-Version: 1.0
@@ -29,44 +29,46 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-02-21 at 10:33 +0800, Li Zefan wrote:
-> Those functions are called either during kernel boot or module init.
+On Sat, 2013-03-02 at 14:42 +1100, Stephen Rothwell wrote:
+> Hi Steve,
 > 
-> Before:
+> On Fri, 01 Mar 2013 21:45:18 -0500 Steven Rostedt <rostedt@goodmis.org> wrote:
+> >
+> > On Fri, 2013-03-01 at 13:47 +1100, Stephen Rothwell wrote:
+> > > 
+> > > After merging the ftrace tree, today's linux-next build (x86_64
+> > > allmodconfig) failed like this:
+> > > 
+> > > kernel/trace/trace_kdb.c: In function 'ftrace_dump_buf':
+> > > kernel/trace/trace_kdb.c:29:33: error: invalid type argument of '->' (have 'struct trace_array_cpu')
+> > > kernel/trace/trace_kdb.c:86:33: error: invalid type argument of '->' (have 'struct trace_array_cpu')
+> > > 
+> > > Caused by commit eaac1836c10e ("tracing: Replace the static global
+> > > per_cpu arrays with allocated per_cpu").
+> > > 
+> > > I have used the ftrace tree from next-20130228 for today.
+> > 
+> > I rebased, and it should all be good now. I also fixed breakage to the
+> > new snapshot feature. Here's my diff:
 > 
-> $ dmesg | grep 'Freeing unused kernel memory'
-> Freeing unused kernel memory: 1208k freed
-> Freeing unused kernel memory: 1360k freed
-> Freeing unused kernel memory: 1960k freed
+> Of course, I wonder if this is intended for the current merge window
+> (since it turned up in linux-next so late).  If not, then please don;t
+> put it in your -next included branch until after -rc1 is released.  If
+> you are aiming for this merge window, then good luck!  ;-)
 > 
-> After:
-> 
-> $ dmesg | grep 'Freeing unused kernel memory'
-> Freeing unused kernel memory: 1236k freed
-> Freeing unused kernel memory: 1388k freed
-> Freeing unused kernel memory: 1960k freed
 
-Also nice :-)
+Oh crap, sorry. Quite the contrary. I should have waited for -rc1 as
+this is intended for v3.10.
 
-Here's my numbers (again with lots of debug enabled):
+I made some major changes and wanted testing on it as soon as possible.
+I've done tons of testing on my own but I wanted a broader audience. Do
+you want me to pull my tree and reset it to what is only for 3.9?
 
-old:
-[    0.027087] Freeing SMP alternatives: 12k freed
-[    6.835298] Freeing initrd memory: 8004k freed
-[   18.820837] Freeing unused kernel memory: 1092k freed
-[   18.838487] Freeing unused kernel memory: 1456k freed
-[   18.850665] Freeing unused kernel memory: 1544k freed
-
-new:
-[    0.025087] Freeing SMP alternatives: 12k freed
-[    6.775349] Freeing initrd memory: 8004k freed
-[   18.753519] Freeing unused kernel memory: 1144k freed
-[   18.771447] Freeing unused kernel memory: 1508k freed
-[   18.783637] Freeing unused kernel memory: 1544k freed
-
-Lets hope these pass all my tests.
+All changes I wanted for 3.9 have already made it into Linus's tree.
+Everything I've been pushing is destined for 3.10. But as I said. They
+are big changes and wanted testing on them early. But it can wait for an
+-rc1 window.
 
 -- Steve
-
 
 
