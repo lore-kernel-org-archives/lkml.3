@@ -1,27 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752312Ab3CBAQj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 19:16:39 -0500
-Received: from g4t0016.houston.hp.com ([15.201.24.19]:44140 "EHLO
-	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751559Ab3CBAQi (ORCPT
+	id S1752578Ab3CBAQq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 19:16:46 -0500
+Received: from g4t0017.houston.hp.com ([15.201.24.20]:27698 "EHLO
+	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752413Ab3CBAQn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 19:16:38 -0500
-Message-ID: <1362183392.3420.23.camel@buesod1.americas.hpqcorp.net>
-Subject: [RFC PATCH 0/2] ipc: do not hold ipc lock more than necessary
+	Fri, 1 Mar 2013 19:16:43 -0500
+Message-ID: <1362183400.3420.24.camel@buesod1.americas.hpqcorp.net>
+Subject: [RFC PATCH 1/2] ipc: introduce obtaining a lockless ipc object
 From: Davidlohr Bueso <davidlohr.bueso@hp.com>
-To: Rik van Riel <riel@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Steven Rostedt <rostedt@goodmis.org>,
-        "Vinod, Chegu" <chegu_vinod@hp.com>, "Low, Jason" <jason.low2@hp.com>,
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>
+Cc: "Vinod, Chegu" <chegu_vinod@hp.com>, "Low, Jason" <jason.low2@hp.com>,
         linux-tip-commits@vger.kernel.org,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         "H. Peter Anvin" <hpa@zytor.com>,
         Andrew Morton <akpm@linux-foundation.org>, aquini@redhat.com,
         Michel Lespinasse <walken@google.com>, Ingo Molnar <mingo@kernel.org>,
         Larry Woodman <lwoodman@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Fri, 01 Mar 2013 16:16:32 -0800
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Date: Fri, 01 Mar 2013 16:16:40 -0800
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
 Mime-Version: 1.0
@@ -30,52 +31,126 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following set of not-thoroughly-tested patches are based on the
-discussion of holding the ipc lock unnecessarily, such as for permissions
-and security checks:
+Through ipc_lock() and, therefore, ipc_lock_check() we currently
+return the locked ipc object. This is not necessary for all situations,
+thus introduce, analogous, ipc_obtain_object and ipc_obtain_object_check
+functions that only mark the RCU read critical region without acquiring
+the lock and return the ipc object.
 
-https://lkml.org/lkml/2013/2/28/540
+Signed-off-by: Davidlohr Bueso <davidlohr.bueso@hp.com>
+---
+ ipc/util.c | 42 ++++++++++++++++++++++++++++++++----------
+ ipc/util.h |  2 ++
+ 2 files changed, 34 insertions(+), 10 deletions(-)
 
-Patch 0/1: Introduces new functions, analogous to ipc_lock and ipc_lock_check
-in the ipc utility code, allowing to obtain the ipc object without holding the lock.
+diff --git a/ipc/util.c b/ipc/util.c
+index 464a8ab..902f282 100644
+--- a/ipc/util.c
++++ b/ipc/util.c
+@@ -667,6 +667,21 @@ void ipc64_perm_to_ipc_perm (struct ipc64_perm *in, struct ipc_perm *out)
+ 	out->seq	= in->seq;
+ }
+ 
++struct kern_ipc_perm *ipc_obtain_object(struct ipc_ids *ids, int id)
++{
++	struct kern_ipc_perm *out;
++	int lid = ipcid_to_idx(id);
++
++	rcu_read_lock();
++	out = idr_find(&ids->ipcs_idr, lid);
++	if (!out) {
++		rcu_read_unlock();
++		return ERR_PTR(-EINVAL);
++	}
++
++	return out;
++}
++
+ /**
+  * ipc_lock - Lock an ipc structure without rw_mutex held
+  * @ids: IPC identifier set
+@@ -679,18 +694,13 @@ void ipc64_perm_to_ipc_perm (struct ipc64_perm *in, struct ipc_perm *out)
+ 
+ struct kern_ipc_perm *ipc_lock(struct ipc_ids *ids, int id)
+ {
+-	struct kern_ipc_perm *out;
+-	int lid = ipcid_to_idx(id);
++	struct kern_ipc_perm *out = ipc_obtain_object(ids, id);
+ 
+-	rcu_read_lock();
+-	out = idr_find(&ids->ipcs_idr, lid);
+-	if (out == NULL) {
+-		rcu_read_unlock();
++	if (!out)
+ 		return ERR_PTR(-EINVAL);
+-	}
+ 
+ 	spin_lock(&out->lock);
+-	
++
+ 	/* ipc_rmid() may have already freed the ID while ipc_lock
+ 	 * was spinning: here verify that the structure is still valid
+ 	 */
+@@ -703,6 +713,18 @@ struct kern_ipc_perm *ipc_lock(struct ipc_ids *ids, int id)
+ 	return out;
+ }
+ 
++struct kern_ipc_perm *ipc_obtain_object_check(struct ipc_ids *ids, int id)
++{
++	struct kern_ipc_perm *out = ipc_obtain_object(ids, id);
++
++	if (IS_ERR(out))
++		return out;
++
++	if (ipc_checkid(out, id))
++		return ERR_PTR(-EIDRM);
++	return out;
++}
++
+ struct kern_ipc_perm *ipc_lock_check(struct ipc_ids *ids, int id)
+ {
+ 	struct kern_ipc_perm *out;
+@@ -784,7 +806,7 @@ struct kern_ipc_perm *ipcctl_pre_down(struct ipc_namespace *ns,
+ 	int err;
+ 
+ 	down_write(&ids->rw_mutex);
+-	ipcp = ipc_lock_check(ids, id);
++	ipcp = ipc_obtain_object_check(ids, id);
+ 	if (IS_ERR(ipcp)) {
+ 		err = PTR_ERR(ipcp);
+ 		goto out_up;
+@@ -801,7 +823,7 @@ struct kern_ipc_perm *ipcctl_pre_down(struct ipc_namespace *ns,
+ 		return ipcp;
+ 
+ 	err = -EPERM;
+-	ipc_unlock(ipcp);
++	rcu_read_unlock();
+ out_up:
+ 	up_write(&ids->rw_mutex);
+ 	return ERR_PTR(err);
+diff --git a/ipc/util.h b/ipc/util.h
+index eeb79a1..2c68035 100644
+--- a/ipc/util.h
++++ b/ipc/util.h
+@@ -123,6 +123,7 @@ void ipc_rcu_getref(void *ptr);
+ void ipc_rcu_putref(void *ptr);
+ 
+ struct kern_ipc_perm *ipc_lock(struct ipc_ids *, int);
++struct kern_ipc_perm *ipc_obtain_object(struct ipc_ids *ids, int id);
+ 
+ void kernel_to_ipc64_perm(struct kern_ipc_perm *in, struct ipc64_perm *out);
+ void ipc64_perm_to_ipc_perm(struct ipc64_perm *in, struct ipc_perm *out);
+@@ -173,6 +174,7 @@ static inline void ipc_unlock(struct kern_ipc_perm *perm)
+ }
+ 
+ struct kern_ipc_perm *ipc_lock_check(struct ipc_ids *ids, int id);
++struct kern_ipc_perm *ipc_obtain_object_check(struct ipc_ids *ids, int id);
+ int ipcget(struct ipc_namespace *ns, struct ipc_ids *ids,
+ 			struct ipc_ops *ops, struct ipc_params *params);
+ void free_ipcs(struct ipc_namespace *ns, struct ipc_ids *ids,
+-- 
+1.7.11.7
 
-Patch 0/2: Use the new functions and only acquire the ipc lock when needed.
 
-With Rik's semop-multi.c microbenchmark we can see the following
-results:
-
-256 sems without patches:
-+  59.40%            a.out  [kernel.kallsyms]  [k] _raw_spin_lock
-+   6.14%            a.out  [kernel.kallsyms]  [k] sys_semtimedop
-+   3.84%            a.out  [kernel.kallsyms]  [k] avc_has_perm_flags
-+   3.64%            a.out  [kernel.kallsyms]  [k] __audit_syscall_exit
-+   2.06%            a.out  [kernel.kallsyms]  [k] copy_user_enhanced_fast_string
-+   1.86%            a.out  [kernel.kallsyms]  [k] ipc_lock
-+   1.75%            a.out  [kernel.kallsyms]  [k] __audit_syscall_entry
-+   1.69%            a.out  [kernel.kallsyms]  [k] ipc_has_perm.isra.21
-+   1.47%            a.out  [kernel.kallsyms]  [k] do_smart_update
-+   1.43%            a.out  [kernel.kallsyms]  [k] pid_vnr
-+   1.39%            a.out  [kernel.kallsyms]  [k] try_atomic_semop.isra.5
-
-total operations: 151452270, ops/sec 5048409
-
-256 sems with patches:
-+  17.47%            a.out  [kernel.kallsyms]  [k] _raw_spin_lock
-+  11.08%            a.out  [kernel.kallsyms]  [k] sys_semtimedop
-+   8.81%            a.out  [kernel.kallsyms]  [k] avc_has_perm_flags
-+   7.96%            a.out  [kernel.kallsyms]  [k] ipc_has_perm.isra.21
-+   6.50%            a.out  [kernel.kallsyms]  [k] __audit_syscall_exit
-+   4.67%            a.out  [kernel.kallsyms]  [k] ipc_obtain_object_check
-+   4.19%            a.out  [kernel.kallsyms]  [k] ipcperms
-+   3.75%            a.out  [kernel.kallsyms]  [k] copy_user_enhanced_fast_string
-+   3.38%            a.out  [kernel.kallsyms]  [k] system_call
-+   3.05%            a.out  [kernel.kallsyms]  [k] try_atomic_semop.isra.5
-+   2.70%            a.out  [kernel.kallsyms]  [k] do_smart_update
-+   2.60%            a.out  [kernel.kallsyms]  [k] __audit_syscall_entry
-
-total operations: 266502912, ops/sec 8883430
-
-While the _raw_spin_lock time is drastically reduced, others do increase.
-This results in an overall speedup of ~1.7x regarding ops/sec.
 
 
