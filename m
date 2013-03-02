@@ -1,53 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752261Ab3CBBO6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 20:14:58 -0500
-Received: from mail-vc0-f178.google.com ([209.85.220.178]:60728 "EHLO
-	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751298Ab3CBBO5 (ORCPT
+	id S1752240Ab3CBBQ7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 20:16:59 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:18175 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751186Ab3CBBQ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 20:14:57 -0500
+	Fri, 1 Mar 2013 20:16:58 -0500
+Date: Fri, 1 Mar 2013 20:16:47 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Cc: xen-devel@lists.xensource.com
+Subject: [GIT PULL] (xen) stable/for-linus-3.9-rc1-tag
+Message-ID: <20130302011647.GA12858@phenom.dumpdata.com>
 MIME-Version: 1.0
-In-Reply-To: <1362183400.3420.24.camel@buesod1.americas.hpqcorp.net>
-References: <1362183400.3420.24.camel@buesod1.americas.hpqcorp.net>
-Date: Fri, 1 Mar 2013 17:14:56 -0800
-X-Google-Sender-Auth: GUO_9FalAqxQGPJjV-A3D_arTsE
-Message-ID: <CA+55aFxHg9aCBydM=QGygmuVHnHDZXov=Z2PKOpO3c9XJTTRdw@mail.gmail.com>
-Subject: Re: [RFC PATCH 1/2] ipc: introduce obtaining a lockless ipc object
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Davidlohr Bueso <davidlohr.bueso@hp.com>
-Cc: Rik van Riel <riel@redhat.com>, "Vinod, Chegu" <chegu_vinod@hp.com>,
-        "Low, Jason" <jason.low2@hp.com>, linux-tip-commits@vger.kernel.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>, aquini@redhat.com,
-        Michel Lespinasse <walken@google.com>, Ingo Molnar <mingo@kernel.org>,
-        Larry Woodman <lwoodman@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 1, 2013 at 4:16 PM, Davidlohr Bueso <davidlohr.bueso@hp.com> wrote:
->
-> +struct kern_ipc_perm *ipc_obtain_object(struct ipc_ids *ids, int id)
+Hey Linus,
 
-This looks good..
+Please git pull the following tag:
 
-> +struct kern_ipc_perm *ipc_obtain_object_check(struct ipc_ids *ids, int id)
+ git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git stable/for-linus-3.9-rc1-tag
 
-The comment on ipc_checkid() says that it should only be called with
-the lock held.
+which has <signed tag>
+Bug-fixes:
+ - Update the Xen ACPI memory and CPU hotplug locking mechanism.
+ - Fix PAT issues wherein various applications would not start
+ - Fix handling of multiple MSI as AHCI now does it.
+ - Fix ARM compile failures.
+</signed tag>
 
-Which seems entirely bogus, and I think it's just stale. It's just
-checking the same ipc->seq that is only set at allocation, so it won't
-change, afaik.
+There is an oddity with this tag which is that the branch in which
+this tag lives has this merged: 77be36de8b07027a70fbc8f02703ccd76cd16d09
+(Merge tag 'stable/for-linus-3.9-rc0-tag' of git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen)
+to accomodate the changes you did "Fix up a few semantic conflicts with
+the ACPI interface changes in drivers/xen/xen-acpi-{cpu,mem}hotplug.c."
 
-So I *think* the above is ok, but I'd want people to look at that
-comment and remove it if it is stale. And if it's not stale, think
-about this.
+No rebase thought - just a merge of that so that the patches compile cleanly
+in the branch.
 
-               Linus
+Please pull!
+
+ arch/x86/pci/xen.c                 |  9 +++++++
+ arch/x86/xen/enlighten.c           | 10 +++++++-
+ drivers/xen/xen-acpi-cpuhotplug.c  | 34 +++++++++----------------
+ drivers/xen/xen-acpi-memhotplug.c  | 52 +++++++++++++++++++-------------------
+ drivers/xen/xenbus/xenbus_client.c |  1 +
+ 5 files changed, 57 insertions(+), 49 deletions(-)
+
+Konrad Rzeszutek Wilk (2):
+      xen/pat: Disable PAT using pat_enabled value.
+      xen/pci: We don't do multiple MSI's.
+
+Liu Jinsong (2):
+      xen/acpi: xen memory hotplug minor updates
+      xen/acpi: xen cpu hotplug minor updates
+
+Steven Noonan (1):
+      xenbus: fix compile failure on ARM with Xen enabled
+
