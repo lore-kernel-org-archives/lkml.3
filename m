@@ -1,70 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752608Ab3CBTHU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Mar 2013 14:07:20 -0500
-Received: from multi.imgtec.com ([194.200.65.239]:60408 "EHLO multi.imgtec.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752455Ab3CBTHT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Mar 2013 14:07:19 -0500
-Message-ID: <51324D92.5090100@imgtec.com>
-Date: Sat, 2 Mar 2013 19:05:54 +0000
-From: James Hogan <james.hogan@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Arnd <arnd@arndb.de>, linux-kernel <linux-kernel@vger.kernel.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Re: [GIT PULL] late arch/metag fixes for v3.9-rc1
-References: <5130DD94.2060408@imgtec.com> <CA+55aFw9qvUdrtEk_83-gEjZMTceONk=AuVsHuTtqOj=jpVPQg@mail.gmail.com> <5130F978.9040604@imgtec.com> <5131D2F0.2010705@imgtec.com> <CA+55aFx1wKChQmAWgQR0iOdKr0bhLn7RLsZHj5ZuVVOtk8FXMw@mail.gmail.com>
-In-Reply-To: <CA+55aFx1wKChQmAWgQR0iOdKr0bhLn7RLsZHj5ZuVVOtk8FXMw@mail.gmail.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.154.65]
-X-SEF-Processed: 7_3_0_01181__2013_03_02_19_07_17
+	id S1752616Ab3CBTHp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Mar 2013 14:07:45 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:48913 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752225Ab3CBTHn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 2 Mar 2013 14:07:43 -0500
+Message-ID: <1362251253.3768.127.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [PATCH] tty: Prevent deadlock in n_gsm driver
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Dirkjan Bussink <dirkjan.bussink@nedap.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, stable@vger.kernel.org
+Date: Sat, 02 Mar 2013 19:07:33 +0000
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-2x1jdhKL0Q6YEWJEJnmB"
+X-Mailer: Evolution 3.4.4-2 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/03/13 16:28, Linus Torvalds wrote:
-> You are the
-> architecture maintainer, and your job is not integration, it's to make
-> sure that *your* work is as stable and unsurprising as possible.
 
-Right, make sense. This is what it comes down to.
+--=-2x1jdhKL0Q6YEWJEJnmB
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-> See why I hate rebasing and back-merges so much?
+I'm looking at commit 4d9b109060f690f5c835130ff54165ae157b3087 ('tty:
+Prevent deadlock in n_gsm driver') which was cc'd to stable.  This drops
+the tty lock in gsm_dlci_release().
 
-Yes. To be clear I wasn't keen on the idea of rebasing the tree (which
-is why I had fixes applied on top of it instead of keeping rebasing it),
-but I was missing your point about not being my job to do integration so
-I wasn't sure what other alternative to back-merges there was.
+I could apply it to 3.2.y with some adjustment, but I checked the
+locking context of this function and I think there's another bug to fix.
+Tracing back the callers in 3.2.y I found:
 
-> Right now, I think your best option is to rebase just your own commits
-> on top of v3.8, and then ask me to pull the result, with explanations
-> of what the conflicts will be. And while I much prefer explanations
-> (and also a general over-view, just so that I can put it in the commit
-> message), I actually even prefer unexplained merge conflicts that I
-> have to resolve over the "I did a back-merge at some random point
-> because I was trying to be helpful, or because I wanted to use a new
-> and untested feature that isn't even in a release kernel yet".
+gsm_dlci_release
+<- gsm_cleanup_mux
+   <- gsmld_detach_gsm
+      <- gsmld_close
+         <- tty_ldisc_close
+            <- tty_set_ldisc [with tty_lock]
+            <- tty_ldisc_reinit
+               <- tty_ldisc_hangup [with tty_lock]
+   <- gsmld_config
+      <- gsmld_ioctl
+         <- tty_ioctl [without tty lock]
 
-Okay,
+and I think the call chains are much the same in mainline.  So
+gsmld_config() presumably needs to acquire the tty lock.
 
-> But I do *not* take new trees that do bad things. If I take a new
-> architecture, I want to feel like I'm not just getting the
-> architecture, but I'm also getting a maintainer that knows about
-> keeping his history clean and not mixing with the independent work
-> other people did, or messing up other people by rebasing public
-> commits etc.
+Ben.
 
-I actually take slightly obsessive pride in trying to have a clean
-history where every commit works so that bisection doesn't break, which
-is probably the problem here. I was trying too hard to make it just work
-when everything is integrated (e.g. trying to make linux-next just work,
-which now seems like a conflicting goal) instead of helping you do that.
-Obviously I'll have to do better.
+--=20
+Ben Hutchings
+Computers are not intelligent.	They only think they are.
 
-Thanks
-James
+--=-2x1jdhKL0Q6YEWJEJnmB
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIVAwUAUTJN9ee/yOyVhhEJAQqTSQ/+JyZpYmO5/QI02FKUONBFeDWYJZ/VAB+B
+xpTGjqmXr0dvsw0KFJEcq+Zhw9BuSKex8cIRSKgqerGzPjXnZZhXXLER9Zg3WtFv
+hLdtg3xlHNcbigNJ8B26nk4WvqTfCX32bGrzoh4gHjnHkcsB22JWC1YBI2MzOvPc
+jCqNPsWzaOSV8mYY6Cy2XIr6MoQ41RCmh2MZS6PA8YH0Ccqwg10gdpi9m7IeqfiA
+YXcO9yiMk7EulFfJRr1b0OS7gykeoR6eKfL7AGLci0Far6Y8p/s4ZQmAI4ESBt6w
+g0muvXnrrWkrU86VasthBDG8qD9NFibhRtQfxcAmjYxc13B5CfaUxqmWNqK7UEuF
+gJ6MvclkU6EGsvbVFbsvnJsiQoe4DezGu7s+yLM9C+wABWJsLjwb0JOjxll0SUM6
+ObrQ5RfazMJlqBIDbTNNiiZmJRB5TlL0hP4gm9fTcFWMdFYCwmTF8bD4hVhYkRGv
+u1MYBa7zFFBAUPjk/CpKqRbycLAuy4MnBcPsESdWZdhx2SFL6D+X38HUozoaLtCy
+6u72Z06Yf/k16wc4bK5XYNzj7pj5mKrD4PvuJqj7t3ozIGAH7vDnVzPEk65nPPeo
+mccppuHGA2Og4CjSR1ubQC/9AqqHldwKuDWE18/Bmsm6ICbMIQneczRznCyPjbhv
+6RiNmxRsO0s=
+=M4aj
+-----END PGP SIGNATURE-----
+
+--=-2x1jdhKL0Q6YEWJEJnmB--
