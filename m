@@ -1,63 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752541Ab3CBSmp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Mar 2013 13:42:45 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:57272 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752264Ab3CBSmo (ORCPT
+	id S1752580Ab3CBSsS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Mar 2013 13:48:18 -0500
+Received: from mail.linux-iscsi.org ([67.23.28.174]:59970 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752303Ab3CBSsQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Mar 2013 13:42:44 -0500
-Date: Sat, 2 Mar 2013 18:42:43 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Russ Dill <russ.dill@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: fasync race in fs/fcntl.c
-Message-ID: <20130302184243.GC4503@ZenIV.linux.org.uk>
-References: <CA+Bv8XZM7yO-=vrGZg5LFLik8YkQiMC9ppCgQbyi1yuLiKstJQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+Bv8XZM7yO-=vrGZg5LFLik8YkQiMC9ppCgQbyi1yuLiKstJQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sat, 2 Mar 2013 13:48:16 -0500
+Subject: [GIT PULL] target updates for v3.9-rc1 (round two)
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: target-devel <target-devel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Asias He <asias@redhat.com>,
+        Benjamin ESTRABAUD <be@mpstor.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 02 Mar 2013 10:48:13 -0800
+Message-ID: <1362250094.10892.362.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 02, 2013 at 03:00:28AM -0800, Russ Dill wrote:
-> I'm seeing a race in fs/fcntl.c. I'm not sure exactly how the race is
-> occurring, but the following is my best guess. A kernel log is
-> attached.
-> 
-> The comment for fasync_insert_entry:
-> 
->  * NOTE! It is very important that the FASYNC flag always
->  * match the state "is the filp on a fasync list".
-> 
-> Is not always true leading to deadlock.
-> 
-> CPU0 calls syscall fcntl(fd, F_SETFL, FASYNC)
-> fcntl calls fdget_raw, the count on the filp is 1, so it is not
-> incremented (no reference taken)
+Hi Linus,
 
-You misunderstand what fdget_raw() checks, but in any case...
+Here are the remaining target-pending patches for v3.9-rc1.  Please go
+ahead and pull from:
 
-> pointer points to freed memory. send_sigio is called with this
-> pointer, which calls read_lock(&fown->lock), however, the memory used
-> by that lock has been reused and the system hardlocks.
+  git://git.kernel.org/pub/scm/linux/kernel/git/nab/target-pending.git for-next
 
-... what makes you think that it's fown->lock, in the first place?
+The most important one here is the immediate queue starvation regression
+fix for iscsi-target, which addresses a bug that's effecting v3.5+
+kernels under heavy sustained READ only workloads.  Thanks alot to
+Benjamin Estrabaud for helping to track this down!
 
-> [172635.399651]  <<EOE>>  [<ffffffff816c3e13>] _raw_read_lock+0x13/0x20
-> [172635.399654]  [<ffffffff811a4532>] send_sigio+0x52/0xf0
+Also included is a pSCSI exception bugfix from Asias, along with a
+handful of other minor changes.  Both bugfixes are CC'ed to stable.
 
-send_sigio() is
-	[initialization of a local variable to 1]
-	read_lock(&fown->lock);
-	[getting type and pid, checking them]
-	read_lock(&tasklist_lock);
-	[loop doing the majority of work]
-	read_unlock(&tasklist_lock);
-	read_unlock(&fown->lock);
-and you are at about 1/3 into the function.  Who said it's fown->lock and
-not tasklist_lock?  Could you check (or post) disassembly of send_sigio
-to see which one it is?
+Thank you,
+
+--nab
+
+Asias He (4):
+  target: Add __exit annotation for module_exit functions
+  target/pscsi: Drop unnecessary NULL assignment to bio->bi_next
+  target/pscsi: Fix page increment
+  target/pscsi: Rename sg_num to nr_vecs in pscsi_get_bio()
+
+Nicholas Bellinger (1):
+  iscsi-target: Fix immediate queue starvation regression with DATAIN
+
+ drivers/target/iscsi/iscsi_target.c |   11 +++++++++--
+ drivers/target/sbp/sbp_target.c     |    2 +-
+ drivers/target/target_core_file.c   |    2 +-
+ drivers/target/target_core_iblock.c |    2 +-
+ drivers/target/target_core_pscsi.c  |    9 +++------
+ 5 files changed, 15 insertions(+), 11 deletions(-)
+
