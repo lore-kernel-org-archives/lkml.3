@@ -1,360 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752218Ab3CBCFR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 21:05:17 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:49355 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751298Ab3CBCFQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 21:05:16 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Linux PM list <linux-pm@vger.kernel.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 2/2] PM / QoS: Remove device PM QoS sysfs attributes at the right place
-Date: Sat, 02 Mar 2013 03:11:54 +0100
-Message-ID: <1544982.lMMvPjF71N@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <2252670.qpofTRSm2a@vostro.rjw.lan>
-References: <2252670.qpofTRSm2a@vostro.rjw.lan>
+	id S1752082Ab3CBC2U (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 21:28:20 -0500
+Received: from mail-da0-f52.google.com ([209.85.210.52]:41077 "EHLO
+	mail-da0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751528Ab3CBC2T (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Mar 2013 21:28:19 -0500
+Message-ID: <513163B7.9010309@gmail.com>
+Date: Sat, 02 Mar 2013 10:28:07 +0800
+From: Jiang Liu <liuj97@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Neil Horman <nhorman@tuxdriver.com>, linux-kernel@vger.kernel.org,
+        Prarit Bhargava <prarit@redhat.com>, Don Zickus <dzickus@redhat.com>,
+        Don Dutile <ddutile@redhat.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        Asit Mallick <asit.k.mallick@intel.com>, linux-pci@vger.kernel.org
+Subject: Re: [PATCH] irq: add quirk for broken interrupt remapping on 55XX
+ chipsets
+References: <1362158276-4901-1-git-send-email-nhorman@tuxdriver.com> <CAE9FiQWaunJL+196W_oRxLJ9nSO6PDQePCG2-52NCfGCtvwURA@mail.gmail.com>
+In-Reply-To: <CAE9FiQWaunJL+196W_oRxLJ9nSO6PDQePCG2-52NCfGCtvwURA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+On 03/02/2013 02:20 AM, Yinghai Lu wrote:
+> On Fri, Mar 1, 2013 at 9:17 AM, Neil Horman <nhorman@tuxdriver.com> wrote:
+>> A few years back intel published a spec update:
+>> http://www.intel.com/content/dam/doc/specification-update/5520-and-5500-chipset-ioh-specification-update.pdf
+>>
+>> For the 5520 and 5500 chipsets which contained an errata (specificially errata
+>> 53), which noted that these chipsets can't properly do interrupt remapping, and
+>> as a result the recommend that interrupt remapping be disabled in bios.  While
+>> many vendors have a bios update to do exactly that, not all do, and of course
+>> not all users update their bios to a level that corrects the problem.  As a
+>> result, occasionally interrupts can arrive at a cpu even after affinity for that
+>> interrupt has be moved, leading to lost or spurrious interrupts (usually
+>> characterized by the message:
+>> kernel: do_IRQ: 7.71 No irq handler for vector (irq -1)
+>>
+>> There have been several incidents recently of people seeing this error, and
+>> investigation has shown that they have system for which their BIOS level is such
+>> that this feature was not properly turned off.  As such, it would be good to
+>> give them a reminder that their systems are vulnurable to this problem.
+>>
+>> Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
+>> CC: Prarit Bhargava <prarit@redhat.com>
+>> CC: Don Zickus <dzickus@redhat.com>
+>> CC: Don Dutile <ddutile@redhat.com>
+>> CC: Bjorn Helgaas <bhelgaas@google.com>
+>> CC: Asit Mallick <asit.k.mallick@intel.com>
+>> CC: linux-pci@vger.kernel.org
+>> ---
+>>  drivers/iommu/intel_irq_remapping.c | 20 ++++++++++++++++++++
+>>  include/linux/pci_ids.h             |  2 ++
+>>  2 files changed, 22 insertions(+)
+>>
+>> diff --git a/drivers/iommu/intel_irq_remapping.c b/drivers/iommu/intel_irq_remapping.c
+>> index f3b8f23..9bfb6c2 100644
+>> --- a/drivers/iommu/intel_irq_remapping.c
+>> +++ b/drivers/iommu/intel_irq_remapping.c
+>> @@ -1113,3 +1113,23 @@ struct irq_remap_ops intel_irq_remap_ops = {
+>>         .msi_setup_irq          = intel_msi_setup_irq,
+>>         .setup_hpet_msi         = intel_setup_hpet_msi,
+>>  };
+>> +
+>> +
+>> +static void intel_remapping_check(struct pci_dev *dev)
+>> +{
+>> +       u8 revision;
+>> +
+>> +       pci_read_config_byte(dev, PCI_REVISION_ID, &revision);
+>> +
+>> +       if ((revision == 0x13) && irq_remapping_enabled) {
+>> +               pr_warn("WARNING WARNING WARNING WARNING WARNING WARNING\n"
+>> +                       "This system BIOS has enabled interrupt remapping\n"
+>> +                       "on a chipset that contains an errata making that\n"
+>> +                       "feature unstable.  Please reboot with nointremap\n"
+>> +                       "added to the kernel command line and contact\n"
+>> +                       "your BIOS vendor for an update");
+>> +       }
+>> +}
+>> +DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_5520_IOHUB, intel_remapping_check);
+>> +DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_5500_IOHUB, intel_remapping_check);
+> 
+> only for x86 platform?
+> If so, you can check that in arch/x86/kernel/early-quirks.c::early_quirks()
+> and set one flag and later print warning and skip there if someone
+> need to enable intr-remap.
+> So users will not need to reboot the system...
+We have just struggled with this issue when doing kvm restarting stress tests,
+and finally found it's a chipset errata. Thanks for fix it.
+And I think 5520/5500 is for x86 only, so could move it to x86 arch subdirectory.
 
-Device PM QoS sysfs attributes, if present during device removal,
-are removed from within device_pm_remove(), which is too late,
-since dpm_sysfs_remove() has already removed the whole attribute
-group they belonged to.  However, moving the removal of those
-attributes to dpm_sysfs_remove() alone is not sufficient, because
-in theory they still can be re-added right after being removed by it
-(the device's driver is still bound to it at that point).
+Regards!
+Gerry
 
-For this reason, move the entire desctruction of device PM QoS
-constraints to dpm_sysfs_remove() and make it prevent any new
-constraints from being added after it has run.  Analogously, move
-the initialization of device PM QoS constraints to dpm_sysfs_add().
-
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
----
- drivers/base/power/main.c  |    2 
- drivers/base/power/power.h |    6 --
- drivers/base/power/qos.c   |  104 +++++++++++++++++++++------------------------
- drivers/base/power/sysfs.c |    3 +
- 4 files changed, 53 insertions(+), 62 deletions(-)
-
-Index: linux-pm/drivers/base/power/main.c
-===================================================================
---- linux-pm.orig/drivers/base/power/main.c
-+++ linux-pm/drivers/base/power/main.c
-@@ -99,7 +99,6 @@ void device_pm_add(struct device *dev)
- 		dev_warn(dev, "parent %s should not be sleeping\n",
- 			dev_name(dev->parent));
- 	list_add_tail(&dev->power.entry, &dpm_list);
--	dev_pm_qos_constraints_init(dev);
- 	mutex_unlock(&dpm_list_mtx);
- }
- 
-@@ -113,7 +112,6 @@ void device_pm_remove(struct device *dev
- 		 dev->bus ? dev->bus->name : "No Bus", dev_name(dev));
- 	complete_all(&dev->power.completion);
- 	mutex_lock(&dpm_list_mtx);
--	dev_pm_qos_constraints_destroy(dev);
- 	list_del_init(&dev->power.entry);
- 	mutex_unlock(&dpm_list_mtx);
- 	device_wakeup_disable(dev);
-Index: linux-pm/drivers/base/power/qos.c
-===================================================================
---- linux-pm.orig/drivers/base/power/qos.c
-+++ linux-pm/drivers/base/power/qos.c
-@@ -61,7 +61,7 @@ enum pm_qos_flags_status __dev_pm_qos_fl
- 	struct pm_qos_flags *pqf;
- 	s32 val;
- 
--	if (!qos)
-+	if (IS_ERR_OR_NULL(qos))
- 		return PM_QOS_FLAGS_UNDEFINED;
- 
- 	pqf = &qos->flags;
-@@ -101,7 +101,8 @@ EXPORT_SYMBOL_GPL(dev_pm_qos_flags);
-  */
- s32 __dev_pm_qos_read_value(struct device *dev)
- {
--	return dev->power.qos ? pm_qos_read_value(&dev->power.qos->latency) : 0;
-+	return IS_ERR_OR_NULL(dev->power.qos) ?
-+		0 : pm_qos_read_value(&dev->power.qos->latency);
- }
- 
- /**
-@@ -209,10 +210,12 @@ void dev_pm_qos_constraints_init(struct
- {
- 	mutex_lock(&dev_pm_qos_mtx);
- 	dev->power.qos = NULL;
--	dev->power.power_state = PMSG_ON;
- 	mutex_unlock(&dev_pm_qos_mtx);
- }
- 
-+static void __dev_pm_qos_hide_latency_limit(struct device *dev);
-+static void __dev_pm_qos_hide_flags(struct device *dev);
-+
- /**
-  * dev_pm_qos_constraints_destroy
-  * @dev: target device
-@@ -226,16 +229,15 @@ void dev_pm_qos_constraints_destroy(stru
- 	struct pm_qos_constraints *c;
- 	struct pm_qos_flags *f;
- 
-+	mutex_lock(&dev_pm_qos_mtx);
-+
- 	/*
- 	 * If the device's PM QoS resume latency limit or PM QoS flags have been
- 	 * exposed to user space, they have to be hidden at this point.
- 	 */
--	dev_pm_qos_hide_latency_limit(dev);
--	dev_pm_qos_hide_flags(dev);
--
--	mutex_lock(&dev_pm_qos_mtx);
-+	__dev_pm_qos_hide_latency_limit(dev);
-+	__dev_pm_qos_hide_flags(dev);
- 
--	dev->power.power_state = PMSG_INVALID;
- 	qos = dev->power.qos;
- 	if (!qos)
- 		goto out;
-@@ -257,7 +259,7 @@ void dev_pm_qos_constraints_destroy(stru
- 	}
- 
- 	spin_lock_irq(&dev->power.lock);
--	dev->power.qos = NULL;
-+	dev->power.qos = ERR_PTR(-ENODEV);
- 	spin_unlock_irq(&dev->power.lock);
- 
- 	kfree(c->notifiers);
-@@ -301,32 +303,19 @@ int dev_pm_qos_add_request(struct device
- 		 "%s() called for already added request\n", __func__))
- 		return -EINVAL;
- 
--	req->dev = dev;
--
- 	mutex_lock(&dev_pm_qos_mtx);
- 
--	if (!dev->power.qos) {
--		if (dev->power.power_state.event == PM_EVENT_INVALID) {
--			/* The device has been removed from the system. */
--			req->dev = NULL;
--			ret = -ENODEV;
--			goto out;
--		} else {
--			/*
--			 * Allocate the constraints data on the first call to
--			 * add_request, i.e. only if the data is not already
--			 * allocated and if the device has not been removed.
--			 */
--			ret = dev_pm_qos_constraints_allocate(dev);
--		}
--	}
-+	if (IS_ERR(dev->power.qos))
-+		ret = -ENODEV;
-+	else if (!dev->power.qos)
-+		ret = dev_pm_qos_constraints_allocate(dev);
- 
- 	if (!ret) {
-+		req->dev = dev;
- 		req->type = type;
- 		ret = apply_constraint(req, PM_QOS_ADD_REQ, value);
- 	}
- 
-- out:
- 	mutex_unlock(&dev_pm_qos_mtx);
- 
- 	return ret;
-@@ -351,7 +340,7 @@ static int __dev_pm_qos_update_request(s
- 		 "%s() called for unknown object\n", __func__))
- 		return -EINVAL;
- 
--	if (!req->dev->power.qos)
-+	if (IS_ERR_OR_NULL(req->dev->power.qos))
- 		return -ENODEV;
- 
- 	switch(req->type) {
-@@ -402,7 +391,7 @@ EXPORT_SYMBOL_GPL(dev_pm_qos_update_requ
- 
- static int __dev_pm_qos_remove_request(struct dev_pm_qos_request *req)
- {
--	int ret = 0;
-+	int ret;
- 
- 	if (!req) /*guard against callers passing in null */
- 		return -EINVAL;
-@@ -411,13 +400,11 @@ static int __dev_pm_qos_remove_request(s
- 		 "%s() called for unknown object\n", __func__))
- 		return -EINVAL;
- 
--	if (req->dev->power.qos) {
--		ret = apply_constraint(req, PM_QOS_REMOVE_REQ,
--				       PM_QOS_DEFAULT_VALUE);
--		memset(req, 0, sizeof(*req));
--	} else {
--		ret = -ENODEV;
--	}
-+	if (IS_ERR_OR_NULL(req->dev->power.qos))
-+		return -ENODEV;
-+
-+	ret = apply_constraint(req, PM_QOS_REMOVE_REQ, PM_QOS_DEFAULT_VALUE);
-+	memset(req, 0, sizeof(*req));
- 	return ret;
- }
- 
-@@ -466,9 +453,10 @@ int dev_pm_qos_add_notifier(struct devic
- 
- 	mutex_lock(&dev_pm_qos_mtx);
- 
--	if (!dev->power.qos)
--		ret = dev->power.power_state.event != PM_EVENT_INVALID ?
--			dev_pm_qos_constraints_allocate(dev) : -ENODEV;
-+	if (IS_ERR(dev->power.qos))
-+		ret = -ENODEV;
-+	else if (!dev->power.qos)
-+		ret = dev_pm_qos_constraints_allocate(dev);
- 
- 	if (!ret)
- 		ret = blocking_notifier_chain_register(
-@@ -497,7 +485,7 @@ int dev_pm_qos_remove_notifier(struct de
- 	mutex_lock(&dev_pm_qos_mtx);
- 
- 	/* Silently return if the constraints object is not present. */
--	if (dev->power.qos)
-+	if (!IS_ERR_OR_NULL(dev->power.qos))
- 		retval = blocking_notifier_chain_unregister(
- 				dev->power.qos->latency.notifiers,
- 				notifier);
-@@ -608,7 +596,7 @@ int dev_pm_qos_expose_latency_limit(stru
- 
- 	mutex_lock(&dev_pm_qos_mtx);
- 
--	if (!dev->power.qos)
-+	if (IS_ERR_OR_NULL(dev->power.qos))
- 		ret = -ENODEV;
- 	else if (dev->power.qos->latency_req)
- 		ret = -EEXIST;
-@@ -630,6 +618,14 @@ int dev_pm_qos_expose_latency_limit(stru
- }
- EXPORT_SYMBOL_GPL(dev_pm_qos_expose_latency_limit);
- 
-+static void __dev_pm_qos_hide_latency_limit(struct device *dev)
-+{
-+	if (!IS_ERR_OR_NULL(dev->power.qos) && dev->power.qos->latency_req) {
-+		pm_qos_sysfs_remove_latency(dev);
-+		__dev_pm_qos_drop_user_request(dev, DEV_PM_QOS_LATENCY);
-+	}
-+}
-+
- /**
-  * dev_pm_qos_hide_latency_limit - Hide PM QoS latency limit from user space.
-  * @dev: Device whose PM QoS latency limit is to be hidden from user space.
-@@ -637,12 +633,7 @@ EXPORT_SYMBOL_GPL(dev_pm_qos_expose_late
- void dev_pm_qos_hide_latency_limit(struct device *dev)
- {
- 	mutex_lock(&dev_pm_qos_mtx);
--
--	if (dev->power.qos && dev->power.qos->latency_req) {
--		pm_qos_sysfs_remove_latency(dev);
--		__dev_pm_qos_drop_user_request(dev, DEV_PM_QOS_LATENCY);
--	}
--
-+	__dev_pm_qos_hide_latency_limit(dev);
- 	mutex_unlock(&dev_pm_qos_mtx);
- }
- EXPORT_SYMBOL_GPL(dev_pm_qos_hide_latency_limit);
-@@ -673,7 +664,7 @@ int dev_pm_qos_expose_flags(struct devic
- 	pm_runtime_get_sync(dev);
- 	mutex_lock(&dev_pm_qos_mtx);
- 
--	if (!dev->power.qos)
-+	if (IS_ERR_OR_NULL(dev->power.qos))
- 		ret = -ENODEV;
- 	else if (dev->power.qos->flags_req)
- 		ret = -EEXIST;
-@@ -696,6 +687,14 @@ int dev_pm_qos_expose_flags(struct devic
- }
- EXPORT_SYMBOL_GPL(dev_pm_qos_expose_flags);
- 
-+static void __dev_pm_qos_hide_flags(struct device *dev)
-+{
-+	if (!IS_ERR_OR_NULL(dev->power.qos) && dev->power.qos->flags_req) {
-+		pm_qos_sysfs_remove_flags(dev);
-+		__dev_pm_qos_drop_user_request(dev, DEV_PM_QOS_FLAGS);
-+	}
-+}
-+
- /**
-  * dev_pm_qos_hide_flags - Hide PM QoS flags of a device from user space.
-  * @dev: Device whose PM QoS flags are to be hidden from user space.
-@@ -704,12 +703,7 @@ void dev_pm_qos_hide_flags(struct device
- {
- 	pm_runtime_get_sync(dev);
- 	mutex_lock(&dev_pm_qos_mtx);
--
--	if (dev->power.qos && dev->power.qos->flags_req) {
--		pm_qos_sysfs_remove_flags(dev);
--		__dev_pm_qos_drop_user_request(dev, DEV_PM_QOS_FLAGS);
--	}
--
-+	__dev_pm_qos_hide_flags(dev);
- 	mutex_unlock(&dev_pm_qos_mtx);
- 	pm_runtime_put(dev);
- }
-@@ -729,7 +723,7 @@ int dev_pm_qos_update_flags(struct devic
- 	pm_runtime_get_sync(dev);
- 	mutex_lock(&dev_pm_qos_mtx);
- 
--	if (!dev->power.qos || !dev->power.qos->flags_req) {
-+	if (IS_ERR_OR_NULL(dev->power.qos) || !dev->power.qos->flags_req) {
- 		ret = -EINVAL;
- 		goto out;
- 	}
-Index: linux-pm/drivers/base/power/power.h
-===================================================================
---- linux-pm.orig/drivers/base/power/power.h
-+++ linux-pm/drivers/base/power/power.h
-@@ -56,14 +56,10 @@ extern void device_pm_move_last(struct d
- 
- static inline void device_pm_sleep_init(struct device *dev) {}
- 
--static inline void device_pm_add(struct device *dev)
--{
--	dev_pm_qos_constraints_init(dev);
--}
-+static inline void device_pm_add(struct device *dev) {}
- 
- static inline void device_pm_remove(struct device *dev)
- {
--	dev_pm_qos_constraints_destroy(dev);
- 	pm_runtime_remove(dev);
- }
- 
-Index: linux-pm/drivers/base/power/sysfs.c
-===================================================================
---- linux-pm.orig/drivers/base/power/sysfs.c
-+++ linux-pm/drivers/base/power/sysfs.c
-@@ -664,6 +664,8 @@ int dpm_sysfs_add(struct device *dev)
- 			goto err_out;
- 		}
- 	}
-+
-+	dev_pm_qos_constraints_init(dev);
- 	return 0;
- 
-  err_out:
-@@ -708,6 +710,7 @@ void rpm_sysfs_remove(struct device *dev
- 
- void dpm_sysfs_remove(struct device *dev)
- {
-+	dev_pm_qos_constraints_destroy(dev);
- 	rpm_sysfs_remove(dev);
- 	sysfs_unmerge_group(&dev->kobj, &pm_wakeup_attr_group);
- 	sysfs_remove_group(&dev->kobj, &pm_attr_group);
+> 
+> Thanks
+> 
+> Yinghai
+> 
+>> +
+>> diff --git a/include/linux/pci_ids.h b/include/linux/pci_ids.h
+>> index 31717bd..54027a6 100644
+>> --- a/include/linux/pci_ids.h
+>> +++ b/include/linux/pci_ids.h
+>> @@ -2732,6 +2732,8 @@
+>>  #define PCI_DEVICE_ID_INTEL_LYNNFIELD_MC_CH2_RANK_REV2  0x2db2
+>>  #define PCI_DEVICE_ID_INTEL_LYNNFIELD_MC_CH2_TC_REV2    0x2db3
+>>  #define PCI_DEVICE_ID_INTEL_82855PM_HB 0x3340
+>> +#define PCI_DEVICE_ID_INTEL_5500_IOHUB 0x3403
+>> +#define PCI_DEVICE_ID_INTEL_5520_IOHUB 0x3406
+>>  #define PCI_DEVICE_ID_INTEL_IOAT_TBG4  0x3429
+>>  #define PCI_DEVICE_ID_INTEL_IOAT_TBG5  0x342a
+>>  #define PCI_DEVICE_ID_INTEL_IOAT_TBG6  0x342b
+>> --
+>> 1.7.11.7
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
