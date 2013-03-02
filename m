@@ -1,72 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751725Ab3CBHO5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Mar 2013 02:14:57 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:40195 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750819Ab3CBHOz (ORCPT
+	id S1751936Ab3CBHRJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Mar 2013 02:17:09 -0500
+Received: from g6t0184.atlanta.hp.com ([15.193.32.61]:12777 "EHLO
+	g6t0184.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751164Ab3CBHRH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Mar 2013 02:14:55 -0500
-From: Jerry Snitselaar <jerry.snitselaar@oracle.com>
-To: linux-btrfs@vger.kernel.org
-Cc: chris.mason@fusionio.com, dsterba@suse.cz, linux-kernel@vger.kernel.org
-Subject: [PATCH] btrfs: return EPERM in btrfs_rm_device()
-Date: Sat,  2 Mar 2013 00:13:59 -0700
-Message-Id: <1362208439-19245-1-git-send-email-jerry.snitselaar@oracle.com>
-X-Mailer: git-send-email 1.8.2.rc1
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Sat, 2 Mar 2013 02:17:07 -0500
+From: Vijay Mohan Pandarathil <vijaymohan.pandarathil@hp.com>
+To: alex.williamson@redhat.com, gleb@redhat.com, bhelgaas@google.com,
+        blauwirbel@gmail.com, lance.oritz@hp.com, kvm@vger.kernel.org,
+        qemu-devel@nongnu.org, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v6 0/3] AER-KVM: Error containment of VFIO devices assigned to KVM guests
+Date: Sat,  2 Mar 2013 01:16:56 -0600
+Message-Id: <1362208619-5028-1-git-send-email-vijaymohan.pandarathil@hp.com>
+X-Mailer: git-send-email 1.7.11.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently there are error paths in btrfs_rm_device() where EINVAL is
-returned telling the user they passed an invalid argument even though
-they passed a valid device. Change to return EPERM instead as the
-operation is not permitted.
+Add support for error containment when a VFIO device assigned to a KVM
+guest encounters an error. This is for PCIe devices/drivers that support AER
+functionality. When the host OS is notified of an error in a device either
+through the firmware first approach or through an interrupt handled by the AER
+root port driver, the error handler registered by the vfio-pci driver gets
+invoked. The qemu process is signaled through an eventfd registered per
+VFIO device by the qemu process. In the eventfd handler, qemu decides on
+what action to take. In this implementation, guest is brought down to
+contain the error.
 
-Signed-off-by: Jerry Snitselaar <jerry.snitselaar@oracle.com>
+
+v6:
+ - Rebased to latest upstream
+ - Resolved merge conflict with vfio_dev_present()
+v5:
+ - Rebased to latest upstream stable bits
+ - Incorporated v4 feedback
+v4:
+ - Stop the guest instead of terminating
+ - Remove unwanted returns from functions
+ - Incorporate other feedback
+v3:
+ - Removed PCI_AER* flags from device info ioctl.
+ - Incorporated feedback
+v2:
+ - Rebased to latest upstream stable bits
+ - Changed the new ioctl to be part of VFIO_SET_IRQs ioctl
+ - Added a new patch to get/put reference to a vfio device from struct device
+ - Incorporated all other feedback.
+
 ---
- fs/btrfs/volumes.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/fs/btrfs/volumes.c b/fs/btrfs/volumes.c
-index 5cbb7f4..3e1586c 100644
---- a/fs/btrfs/volumes.c
-+++ b/fs/btrfs/volumes.c
-@@ -1392,14 +1392,14 @@ int btrfs_rm_device(struct btrfs_root *root, char *device_path)
- 	if ((all_avail & BTRFS_BLOCK_GROUP_RAID10) && num_devices <= 4) {
- 		printk(KERN_ERR "btrfs: unable to go below four devices "
- 		       "on raid10\n");
--		ret = -EINVAL;
-+		ret = -EPERM;
- 		goto out;
- 	}
- 
- 	if ((all_avail & BTRFS_BLOCK_GROUP_RAID1) && num_devices <= 2) {
- 		printk(KERN_ERR "btrfs: unable to go below two "
- 		       "devices on raid1\n");
--		ret = -EINVAL;
-+		ret = -EPERM;
- 		goto out;
- 	}
- 
-@@ -1449,14 +1449,14 @@ int btrfs_rm_device(struct btrfs_root *root, char *device_path)
- 
- 	if (device->is_tgtdev_for_dev_replace) {
- 		pr_err("btrfs: unable to remove the dev_replace target dev\n");
--		ret = -EINVAL;
-+		ret = -EPERM;
- 		goto error_brelse;
- 	}
- 
- 	if (device->writeable && root->fs_info->fs_devices->rw_devices == 1) {
- 		printk(KERN_ERR "btrfs: unable to remove the only writeable "
- 		       "device\n");
--		ret = -EINVAL;
-+		ret = -EPERM;
- 		goto error_brelse;
- 	}
- 
--- 
-1.8.2.rc1
+Vijay Mohan Pandarathil(3):
 
+[PATCH 1/3] VFIO: Wrapper to get reference to vfio_device from device 
+[PATCH 2/3] VFIO-AER: Vfio-pci driver changes for supporting AER
+[PATCH 3/3] QEMU-AER: Qemu changes to support AER for VFIO-PCI devices
+
+Kernel files changed
+
+
+ drivers/vfio/vfio.c  | 27 ++++++++++++++++++++++++++-
+ include/linux/vfio.h |  3 +++
+ 2 files changed, 29 insertions(+), 1 deletion(-)
+
+ drivers/vfio/pci/vfio_pci.c         | 44 ++++++++++++++++++++++++++++++++-
+ drivers/vfio/pci/vfio_pci_intrs.c   | 49 +++++++++++++++++++++++++++++++++++++
+ drivers/vfio/pci/vfio_pci_private.h |  1 +
+ include/uapi/linux/vfio.h           |  1 +
+ 4 files changed, 94 insertions(+), 1 deletion(-)
+
+Qemu files changed
+
+ hw/vfio_pci.c              | 123 +++++++++++++++++++++++++++++++++++++++++++++
+ linux-headers/linux/vfio.h |   1 +
+ 2 files changed, 124 insertions(+)
