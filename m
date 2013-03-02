@@ -1,16 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752539Ab3CBRJG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Mar 2013 12:09:06 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:34823 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752345Ab3CBRJE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Mar 2013 12:09:04 -0500
-Date: Sat, 2 Mar 2013 18:06:56 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Michel Lespinasse <walken@google.com>
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+	id S1752559Ab3CBRNn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Mar 2013 12:13:43 -0500
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:55590 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752190Ab3CBRNk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 2 Mar 2013 12:13:40 -0500
+Message-ID: <513232B6.9060905@linux.vnet.ibm.com>
+Date: Sat, 02 Mar 2013 22:41:18 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+MIME-Version: 1.0
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+CC: Michel Lespinasse <walken@google.com>, Oleg Nesterov <oleg@redhat.com>,
         Lai Jiangshan <eag0628@gmail.com>, linux-doc@vger.kernel.org,
         peterz@infradead.org, fweisbec@gmail.com, linux-kernel@vger.kernel.org,
         namhyung@kernel.org, mingo@kernel.org, linux-arch@vger.kernel.org,
@@ -22,25 +25,81 @@ Cc: Lai Jiangshan <laijs@cn.fujitsu.com>,
         linux-arm-kernel@lists.infradead.org, netdev@vger.kernel.org,
         sbw@mit.edu, tj@kernel.org, akpm@linux-foundation.org,
         linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH] lglock: add read-preference local-global rwlock
-Message-ID: <20130302170656.GB29769@redhat.com>
-References: <512C7A38.8060906@linux.vnet.ibm.com> <CACvQF51RvhM8XNqu3-1OTQ=cZUZ=pAX+_zx0a29+W67N1X+BgQ@mail.gmail.com> <512CC509.1050000@linux.vnet.ibm.com> <CACvQF50UgiqPpDk3HCmV86zKSf6tPjqr0bZowfPEOJs0g0r0MQ@mail.gmail.com> <512D0D67.9010609@linux.vnet.ibm.com> <CACvQF53ph2ixdM-otzetjM5cR+2kcZj6sckOp3TnzzA_x-EZ8w@mail.gmail.com> <512E7879.20109@linux.vnet.ibm.com> <5130E8E2.50206@cn.fujitsu.com> <20130301182854.GA3631@redhat.com> <CANN689HEW=b5S93J27p+rBX-5m7jkW4FER=eHDCp7OgMaTWLPw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CANN689HEW=b5S93J27p+rBX-5m7jkW4FER=eHDCp7OgMaTWLPw@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Subject: Re: [PATCH V2] lglock: add read-preference local-global rwlock
+References: <512BBAD8.8010006@linux.vnet.ibm.com> <CACvQF51jCxk5jUqmhD=QBBtUsBkQWZzakacrKO4Gsk=w61rNwQ@mail.gmail.com> <512C7A38.8060906@linux.vnet.ibm.com> <CACvQF51RvhM8XNqu3-1OTQ=cZUZ=pAX+_zx0a29+W67N1X+BgQ@mail.gmail.com> <512CC509.1050000@linux.vnet.ibm.com> <CACvQF50UgiqPpDk3HCmV86zKSf6tPjqr0bZowfPEOJs0g0r0MQ@mail.gmail.com> <512D0D67.9010609@linux.vnet.ibm.com> <CACvQF53ph2ixdM-otzetjM5cR+2kcZj6sckOp3TnzzA_x-EZ8w@mail.gmail.com> <512E7879.20109@linux.vnet.ibm.com>	<5130E8E2.50206@cn.fujitsu.com> <20130301182854.GA3631@redhat.com> <CANN689HEW=b5S93J27p+rBX-5m7jkW4FER=eHDCp7OgMaTWLPw@mail.gmail.com> <5131FB4C.7070408@cn.fujitsu.com>
+In-Reply-To: <5131FB4C.7070408@cn.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13030217-5490-0000-0000-0000030C1868
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/02, Michel Lespinasse wrote:
->
-> My version would be slower if it needs to take the
-> slow path in a reentrant way, but I'm not sure it matters either :)
+On 03/02/2013 06:44 PM, Lai Jiangshan wrote:
+> From 345a7a75c314ff567be48983e0892bc69c4452e7 Mon Sep 17 00:00:00 2001
+> From: Lai Jiangshan <laijs@cn.fujitsu.com>
+> Date: Sat, 2 Mar 2013 20:33:14 +0800
+> Subject: [PATCH] lglock: add read-preference local-global rwlock
+> 
+> Current lglock is not read-preference, so it can't be used on some cases
+> which read-preference rwlock can do. Example, get_cpu_online_atomic().
+> 
+[...]
+> diff --git a/kernel/lglock.c b/kernel/lglock.c
+> index 6535a66..52e9b2c 100644
+> --- a/kernel/lglock.c
+> +++ b/kernel/lglock.c
+> @@ -87,3 +87,71 @@ void lg_global_unlock(struct lglock *lg)
+>  	preempt_enable();
+>  }
+>  EXPORT_SYMBOL(lg_global_unlock);
+> +
+> +#define FALLBACK_BASE	(1UL << 30)
+> +
+> +void lg_rwlock_local_read_lock(struct lgrwlock *lgrw)
+> +{
+> +	struct lglock *lg = &lgrw->lglock;
+> +
+> +	preempt_disable();
+> +	if (likely(!__this_cpu_read(*lgrw->reader_refcnt))) {
+> +		rwlock_acquire_read(&lg->lock_dep_map, 0, 0, _RET_IP_);
+> +		if (unlikely(!arch_spin_trylock(this_cpu_ptr(lg->lock)))) {
+> +			read_lock(&lgrw->fallback_rwlock);
+> +			__this_cpu_write(*lgrw->reader_refcnt, FALLBACK_BASE);
+> +			return;
+> +		}
+> +	}
+> +
+> +	__this_cpu_inc(*lgrw->reader_refcnt);
+> +}
+> +EXPORT_SYMBOL(lg_rwlock_local_read_lock);
+> +
+> +void lg_rwlock_local_read_unlock(struct lgrwlock *lgrw)
+> +{
+> +	switch (__this_cpu_read(*lgrw->reader_refcnt)) {
+> +	case 1:
+> +		__this_cpu_write(*lgrw->reader_refcnt, 0);
+> +		lg_local_unlock(&lgrw->lglock);
+> +		return;
 
-I'd say, this doesn't matter at all, simply because this can only happen
-if we race with the active writer.
+This should be a break, instead of a return, right?
+Otherwise, there will be a preempt imbalance...
 
-Oleg.
+> +	case FALLBACK_BASE:
+> +		__this_cpu_write(*lgrw->reader_refcnt, 0);
+> +		read_unlock(&lgrw->fallback_rwlock);
+> +		rwlock_release(&lg->lock_dep_map, 1, _RET_IP_);
+> +		break;
+> +	default:
+> +		__this_cpu_dec(*lgrw->reader_refcnt);
+> +		break;
+> +	}
+> +
+> +	preempt_enable();
+> +}
+
+
+Regards,
+Srivatsa S. Bhat
 
