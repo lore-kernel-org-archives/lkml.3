@@ -1,88 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752156Ab3CBMNW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Mar 2013 07:13:22 -0500
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:45869 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752022Ab3CBMNS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Mar 2013 07:13:18 -0500
+	id S1752225Ab3CBMNt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Mar 2013 07:13:49 -0500
+Received: from slimlogic.co.uk ([89.16.172.20]:53008 "EHLO slimlogic.co.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751975Ab3CBMNs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 2 Mar 2013 07:13:48 -0500
+Message-ID: <5131ECEF.2080101@slimlogic.co.uk>
+Date: Sat, 02 Mar 2013 20:13:35 +0800
+From: Graeme Gregory <gg@slimlogic.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
 MIME-Version: 1.0
-In-Reply-To: <20130301182854.GA3631@redhat.com>
-References: <512BBAD8.8010006@linux.vnet.ibm.com>
-	<CACvQF51jCxk5jUqmhD=QBBtUsBkQWZzakacrKO4Gsk=w61rNwQ@mail.gmail.com>
-	<512C7A38.8060906@linux.vnet.ibm.com>
-	<CACvQF51RvhM8XNqu3-1OTQ=cZUZ=pAX+_zx0a29+W67N1X+BgQ@mail.gmail.com>
-	<512CC509.1050000@linux.vnet.ibm.com>
-	<CACvQF50UgiqPpDk3HCmV86zKSf6tPjqr0bZowfPEOJs0g0r0MQ@mail.gmail.com>
-	<512D0D67.9010609@linux.vnet.ibm.com>
-	<CACvQF53ph2ixdM-otzetjM5cR+2kcZj6sckOp3TnzzA_x-EZ8w@mail.gmail.com>
-	<512E7879.20109@linux.vnet.ibm.com>
-	<5130E8E2.50206@cn.fujitsu.com>
-	<20130301182854.GA3631@redhat.com>
-Date: Sat, 2 Mar 2013 20:13:17 +0800
-Message-ID: <CANN689HEW=b5S93J27p+rBX-5m7jkW4FER=eHDCp7OgMaTWLPw@mail.gmail.com>
-Subject: Re: [PATCH] lglock: add read-preference local-global rwlock
-From: Michel Lespinasse <walken@google.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Lai Jiangshan <eag0628@gmail.com>, linux-doc@vger.kernel.org,
-        peterz@infradead.org, fweisbec@gmail.com, linux-kernel@vger.kernel.org,
-        namhyung@kernel.org, mingo@kernel.org, linux-arch@vger.kernel.org,
-        linux@arm.linux.org.uk, xiaoguangrong@linux.vnet.ibm.com,
-        wangyun@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com,
-        nikunj@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
-        rusty@rustcorp.com.au, rostedt@goodmis.org, rjw@sisk.pl,
-        vincent.guittot@linaro.org, tglx@linutronix.de,
-        linux-arm-kernel@lists.infradead.org, netdev@vger.kernel.org,
-        sbw@mit.edu, tj@kernel.org, akpm@linux-foundation.org,
-        linuxppc-dev@lists.ozlabs.org
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Stephen Warren <swarren@wwwdotorg.org>,
+        Laxman Dewangan <ldewangan@nvidia.com>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Stephen Warren <swarren@nvidia.com>,
+        "ian@slimlogic.co.uk" <ian@slimlogic.co.uk>
+Subject: Re: [PATCH] mfd: palmas: provide irq flags through DT/platform data
+References: <1362141296-15321-1-git-send-email-ldewangan@nvidia.com> <20130301124350.GA25302@opensource.wolfsonmicro.com> <5130A53C.1000600@nvidia.com> <20130301131633.GB25302@opensource.wolfsonmicro.com> <513102D0.5030609@wwwdotorg.org> <20130302033525.GD6610@opensource.wolfsonmicro.com>
+In-Reply-To: <20130302033525.GD6610@opensource.wolfsonmicro.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 2, 2013 at 2:28 AM, Oleg Nesterov <oleg@redhat.com> wrote:
-> Lai, I didn't read this discussion except the code posted by Michel.
-> I'll try to read this patch carefully later, but I'd like to ask
-> a couple of questions.
+On 02/03/13 11:35, Mark Brown wrote:
+> On Fri, Mar 01, 2013 at 12:34:40PM -0700, Stephen Warren wrote:
 >
-> This version looks more complex than Michel's, why? Just curious, I
-> am trying to understand what I missed. See
-> http://marc.info/?l=linux-kernel&m=136196350213593
+>> Is Palmas a family of chips rather than a single chip then? That
+>> implies that the DT would need two compatible values, e.g.:
+> Yes.
+>
+>> compatible = "ti,12345", "ti,palmas";
+>> ... where "12345" is the actual chip name.
+>> ... rather than just the following which IIRC was in the example in
+>> the DT binding document in another patch series:
+>> compatible = "ti,palmas";
+> Indeed, and in fact this has already been done for the I2C device ID
+> table.  We should have the same list of devices in the OF IDs.
+Currently all members of the palmas family I know about (from memory).
 
->From what I can see, my version used local_refcnt to count how many
-reentrant locks are represented by the fastpath lglock spinlock; Lai's
-version uses it to count how many reentrant locks are represented by
-either the fastpath lglock spinlock or the global rwlock, with
-FALLBACK_BASE being a bit thrown in so we can remember which of these
-locks was acquired. My version would be slower if it needs to take the
-slow path in a reentrant way, but I'm not sure it matters either :)
+For palmas :-
+twl6035, twl6037, tps65913, tps65914
 
-> Interrupt handler on CPU_1 does _read_lock() notices ->reader_refcnt != 0
-> and simply does this_cpu_inc(), so reader_refcnt == FALLBACK_BASE + 1.
->
-> Then irq does _read_unlock(), and
->
->> +void lg_rwlock_local_read_unlock(struct lgrwlock *lgrw)
->> +{
->> +     switch (__this_cpu_dec_return(*lgrw->reader_refcnt)) {
->> +     case 0:
->> +             lg_local_unlock(&lgrw->lglock);
->> +             return;
->> +     case FALLBACK_BASE:
->> +             __this_cpu_sub(*lgrw->reader_refcnt, FALLBACK_BASE);
->> +             read_unlock(&lgrw->fallback_rwlock);
->
-> hits this case?
->
-> Doesn't look right, but most probably I missed something.
+For palmas-charger :-
+twl6036, tps80036
 
-Good catch. I think this is easily fixed by setting reader_refcn
-directly to FALLBACK_BASE+1, instead of setting it to FALLBACK_BASE
-and then incrementing it to FALLBACK_BASE+1.
+All with varying IP blocks or hardware configuration.
 
--- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
+Mainly this is due to misunderstanding I had of DT definitions when I
+originally read docs, when driver project commenced. I will work with
+Ian, Laxman, Keerthy and get these updated.
+
+Should these also flow down into the various drivers for the IP blocks? eg.
+
+compatible = "ti,twl6035-regulator", "ti,palmas-regulator";
+
+Graeme
+
