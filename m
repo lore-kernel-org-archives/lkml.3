@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751988Ab3CBKKP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Mar 2013 05:10:15 -0500
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:49720 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751847Ab3CBKKM (ORCPT
+	id S1752188Ab3CBKKX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Mar 2013 05:10:23 -0500
+Received: from mail-we0-f181.google.com ([74.125.82.181]:48372 "EHLO
+	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751998Ab3CBKKR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Mar 2013 05:10:12 -0500
+	Sat, 2 Mar 2013 05:10:17 -0500
 From: Daniel Lezcano <daniel.lezcano@linaro.org>
 To: john.stultz@linaro.org, tglx@linutronix.de
 Cc: viresh.kumar@linaro.org, jacob.jun.pan@linux.intel.com,
@@ -15,16 +15,18 @@ Cc: viresh.kumar@linaro.org, jacob.jun.pan@linux.intel.com,
         linaro-kernel@lists.linaro.org, patches@linaro.org,
         rickard.andersson@stericsson.com, vincent.guittot@linaro.org,
         linus.walleij@stericsson.com
-Subject: [PATCH 0/4][V2] time: dynamic irq affinity
-Date: Sat,  2 Mar 2013 11:10:09 +0100
-Message-Id: <1362219013-18173-1-git-send-email-daniel.lezcano@linaro.org>
+Subject: [PATCH 2/4][V2] time : set broadcast irq affinity
+Date: Sat,  2 Mar 2013 11:10:11 +0100
+Message-Id: <1362219013-18173-3-git-send-email-daniel.lezcano@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1362219013-18173-1-git-send-email-daniel.lezcano@linaro.org>
+References: <1362219013-18173-1-git-send-email-daniel.lezcano@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 When a cpu goes to a deep idle state where its local timer is shutdown,
-it notifies the time framework to use the broadcast timer instead.
+it notifies the time frame work to use the broadcast timer instead.
 
 Unfortunately, the broadcast device could wake up any CPU, including an
 idle one which is not concerned by the wake up at all.
@@ -38,58 +40,122 @@ guarantee to be the one concerned by the next event and we are safe with
 unnecessary wakeup for another idle CPU.
 
 As the irq affinity is not supported by all the archs, a flag is needed
-to specify which clocksource can handle it : CLOCK_EVT_FEAT_DYNIRQ.
+to specify which clocksource can handle it : CLOCK_EVT_FEAT_DYNIRQ
 
-Tested on a u8500 board with a test program doing indefinitely usleep 10000
-wired on each CPU.
+Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+---
+ include/linux/clockchips.h   |    5 +++++
+ kernel/time/tick-broadcast.c |   40 +++++++++++++++++++++++++++++++++-------
+ 2 files changed, 38 insertions(+), 7 deletions(-)
 
-With dynamic irq affinity:
-Log is 10.042298 secs long with 4190 events
-cpu0/state0, 24 hits, total 2718.00us, avg 113.25us, min 0.00us, max 854.00us
-cpu0/state1, 994 hits, total 9874827.00us, avg 9934.43us, min 30.00us, max 10346.00us
-cpu1/state0, 73 hits, total 17001.00us, avg 232.89us, min 0.00us, max 10040.00us
-cpu1/state1, 1002 hits, total 9883840.00us, avg 9864.11us, min 0.00us, max 10742.00us
-cluster/state0, 0 hits, total 0.00us, avg 0.00us, min 0.00us, max 0.00us
-cluster/state1, 1931 hits, total 9762328.00us, avg 5055.58us, min 30.00us, max 9308.00us
-
-Without dynamic irq affinity:
-Log is 10.036834 secs long with 6574 events
-cpu0/state0, 114 hits, total 20107.00us, avg 176.38us, min 0.00us, max 7233.00us
-cpu0/state1, 1951 hits, total 9833836.00us, avg 5040.41us, min 0.00us, max 9217.00us
-cpu1/state0, 223 hits, total 21140.00us, avg 94.80us, min 0.00us, max 2960.00us
-cpu1/state1, 997 hits, total 9879748.00us, avg 9909.48us, min 0.00us, max 10346.00us
-cluster/state0, 5 hits, total 5462.00us, avg 1092.40us, min 580.00us, max 2899.00us
-cluster/state1, 2298 hits, total 9740988.00us, avg 4238.90us, min 30.00us, max 9217.00us
-
-Results for the specific test case 'usleep 10000'
- * reduced by 40% the number of wake up on the system
- * reduced by 49% the number of wake up for CPU0
- * increased by factor two idle time for CPU0
- * increase by 16% package idle hits + 16% average package idle time
-
-Changelog:
-
-V2 :
- * mentioned CLOCK_EVT_FEAT_DYNIRQ flag name in patch description
- * added comments for CLOCK_EVT_FEAT_DYNIRQ
- * replaced tick_broadcast_set_affinity parameter to use a cpumask
-
-V1 : initial post
-
-Daniel Lezcano (3):
-  time : pass broadcast parameter
-  time : set broadcast irq affinity
-  ARM: nomadik: add dynamic irq flag to the timer
-
-Viresh Kumar (1):
-  ARM: timer-sp: Set dynamic irq affinity
-
- arch/arm/common/timer-sp.c        |    3 ++-
- drivers/clocksource/nomadik-mtu.c |    3 ++-
- include/linux/clockchips.h        |    5 +++++
- kernel/time/tick-broadcast.c      |   41 +++++++++++++++++++++++++++++--------
- 4 files changed, 42 insertions(+), 10 deletions(-)
-
+diff --git a/include/linux/clockchips.h b/include/linux/clockchips.h
+index 6634652..c93e2a6 100644
+--- a/include/linux/clockchips.h
++++ b/include/linux/clockchips.h
+@@ -55,6 +55,11 @@ enum clock_event_nofitiers {
+ #define CLOCK_EVT_FEAT_C3STOP		0x000008
+ #define CLOCK_EVT_FEAT_DUMMY		0x000010
+ 
++/*
++ * Clock event device can set its irq affinity dynamically
++ */
++#define CLOCK_EVT_FEAT_DYNIRQ		0x000020
++
+ /**
+  * struct clock_event_device - clock event device descriptor
+  * @event_handler:	Assigned by the framework to be called by the low
+diff --git a/kernel/time/tick-broadcast.c b/kernel/time/tick-broadcast.c
+index 6197ac0..9ca8ff5 100644
+--- a/kernel/time/tick-broadcast.c
++++ b/kernel/time/tick-broadcast.c
+@@ -406,13 +406,37 @@ struct cpumask *tick_get_broadcast_oneshot_mask(void)
+ 	return to_cpumask(tick_broadcast_oneshot_mask);
+ }
+ 
+-static int tick_broadcast_set_event(struct clock_event_device *bc,
++/*
++ * Set broadcast interrupt affinity
++ */
++static void tick_broadcast_set_affinity(struct clock_event_device *bc,
++					const struct cpumask *cpumask)
++{
++	if (!(bc->features & CLOCK_EVT_FEAT_DYNIRQ))
++		return;
++
++	if (cpumask_equal(bc->cpumask, cpumask))
++		return;
++
++	bc->cpumask = cpumask;
++	irq_set_affinity(bc->irq, bc->cpumask);
++}
++
++static int tick_broadcast_set_event(struct clock_event_device *bc, int cpu,
+ 				    ktime_t expires, int force)
+ {
++	int ret;
++
+ 	if (bc->mode != CLOCK_EVT_MODE_ONESHOT)
+ 		clockevents_set_mode(bc, CLOCK_EVT_MODE_ONESHOT);
+ 
+-	return clockevents_program_event(bc, expires, force);
++	ret = clockevents_program_event(bc, expires, force);
++	if (ret)
++		return ret;
++
++	tick_broadcast_set_affinity(bc, cpumask_of(cpu));
++
++	return 0;
+ }
+ 
+ int tick_resume_broadcast_oneshot(struct clock_event_device *bc)
+@@ -441,7 +465,7 @@ static void tick_handle_oneshot_broadcast(struct clock_event_device *dev)
+ {
+ 	struct tick_device *td;
+ 	ktime_t now, next_event;
+-	int cpu;
++	int cpu, next_cpu;
+ 
+ 	raw_spin_lock(&tick_broadcast_lock);
+ again:
+@@ -454,8 +478,10 @@ again:
+ 		td = &per_cpu(tick_cpu_device, cpu);
+ 		if (td->evtdev->next_event.tv64 <= now.tv64)
+ 			cpumask_set_cpu(cpu, to_cpumask(tmpmask));
+-		else if (td->evtdev->next_event.tv64 < next_event.tv64)
++		else if (td->evtdev->next_event.tv64 < next_event.tv64) {
+ 			next_event.tv64 = td->evtdev->next_event.tv64;
++			next_cpu = cpu;
++		}
+ 	}
+ 
+ 	/*
+@@ -478,7 +504,7 @@ again:
+ 		 * Rearm the broadcast device. If event expired,
+ 		 * repeat the above
+ 		 */
+-		if (tick_broadcast_set_event(dev, next_event, 0))
++		if (tick_broadcast_set_event(dev, next_cpu, next_event, 0))
+ 			goto again;
+ 	}
+ 	raw_spin_unlock(&tick_broadcast_lock);
+@@ -521,7 +547,7 @@ void tick_broadcast_oneshot_control(unsigned long reason)
+ 			cpumask_set_cpu(cpu, tick_get_broadcast_oneshot_mask());
+ 			clockevents_set_mode(dev, CLOCK_EVT_MODE_SHUTDOWN);
+ 			if (dev->next_event.tv64 < bc->next_event.tv64)
+-				tick_broadcast_set_event(bc, dev->next_event, 1);
++				tick_broadcast_set_event(bc, cpu, dev->next_event, 1);
+ 		}
+ 	} else {
+ 		if (cpumask_test_cpu(cpu, tick_get_broadcast_oneshot_mask())) {
+@@ -590,7 +616,7 @@ void tick_broadcast_setup_oneshot(struct clock_event_device *bc)
+ 			clockevents_set_mode(bc, CLOCK_EVT_MODE_ONESHOT);
+ 			tick_broadcast_init_next_event(to_cpumask(tmpmask),
+ 						       tick_next_period);
+-			tick_broadcast_set_event(bc, tick_next_period, 1);
++			tick_broadcast_set_event(bc, cpu, tick_next_period, 1);
+ 		} else
+ 			bc->next_event.tv64 = KTIME_MAX;
+ 	} else {
 -- 
 1.7.9.5
 
