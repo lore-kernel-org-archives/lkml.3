@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754720Ab3CEHFn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 02:05:43 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:50411 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753805Ab3CEHFk (ORCPT
+	id S1754866Ab3CEHFz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 02:05:55 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:44555 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753554Ab3CEHFv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 02:05:40 -0500
+	Tue, 5 Mar 2013 02:05:51 -0500
 From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-Subject: [PATCH v2 08/20] vmcore: modify vmcore clean-up function to free
- buffer on 2nd kernel
+Subject: [PATCH v2 10/20] vmcore: read buffers for vmcore objects copied from
+ old memory
 To: vgoyal@redhat.com, ebiederm@xmission.com, cpw@sgi.com,
         kumagai-atsushi@mxc.nes.nec.co.jp, lisa.mitchell@hp.com,
         heiko.carstens@de.ibm.com, akpm@linux-foundation.org
 Cc: kexec@lists.infradead.org, linux-kernel@vger.kernel.org
-Date: Sat, 02 Mar 2013 17:36:33 +0900
-Message-ID: <20130302083633.31252.48024.stgit@localhost6.localdomain6>
+Date: Sat, 02 Mar 2013 17:36:44 +0900
+Message-ID: <20130302083644.31252.31560.stgit@localhost6.localdomain6>
 In-Reply-To: <20130302083447.31252.93914.stgit@localhost6.localdomain6>
 References: <20130302083447.31252.93914.stgit@localhost6.localdomain6>
 User-Agent: StGIT/0.14.3
@@ -26,28 +26,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If flag MEM_TYPE_CURRENT_KERNEL is set, the object is copied in some
-buffer on the 2nd kernel, so clean-up funciton needs to free it.
+If flag MEM_TYPE_CURRENT_KERNEL is set, the object is copied in the
+buffer on the 2nd kernel, then read_vmcore() reads the buffer. If the
+flag is not set, read_vmcore() reads old memory as usual.
 
 Signed-off-by: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
 ---
 
- fs/proc/vmcore.c |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
+ fs/proc/vmcore.c |   15 +++++++++++----
+ 1 files changed, 11 insertions(+), 4 deletions(-)
 
 diff --git a/fs/proc/vmcore.c b/fs/proc/vmcore.c
-index 6b071b4..e4751ce 100644
+index 09b7f34..c8899dc 100644
 --- a/fs/proc/vmcore.c
 +++ b/fs/proc/vmcore.c
-@@ -926,6 +926,10 @@ void vmcore_cleanup(void)
- 		struct vmcore *m;
- 
- 		m = list_entry(pos, struct vmcore, list);
-+
-+		if (m->flag & MEM_TYPE_CURRENT_KERNEL)
-+			free_pages((unsigned long)m->buf, get_order(m->size));
-+
- 		list_del(&m->list);
- 		kfree(m);
- 	}
+@@ -158,10 +158,17 @@ static ssize_t read_vmcore(struct file *file, char __user *buffer,
+ 			tsz = m->offset + m->size - *fpos;
+ 			if (buflen < tsz)
+ 				tsz = buflen;
+-			start = m->paddr + *fpos - m->offset;
+-			tmp = read_from_oldmem(buffer, tsz, &start, 1);
+-			if (tmp < 0)
+-				return tmp;
++			if (m->flag & MEM_TYPE_CURRENT_KERNEL) {
++				if (copy_to_user(buffer,
++						 m->buf + *fpos - m->offset,
++						 tsz))
++					return -EFAULT;
++			} else {
++				start = m->paddr + *fpos - m->offset;
++				tmp = read_from_oldmem(buffer, tsz, &start, 1);
++				if (tmp < 0)
++					return tmp;
++			}
+ 			buflen -= tsz;
+ 			*fpos += tsz;
+ 			buffer += tsz;
 
