@@ -1,43 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752409Ab3CBSWf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Mar 2013 13:22:35 -0500
-Received: from 77-175-125-29.FTTH.ispfabriek.nl ([77.175.29.125]:51535 "EHLO
-	srv2.net.home" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752225Ab3CBSWe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Mar 2013 13:22:34 -0500
-X-Greylist: delayed 442 seconds by postgrey-1.27 at vger.kernel.org; Sat, 02 Mar 2013 13:22:33 EST
-Message-ID: <513241AC.1080800@net.home>
-Date: Sat, 02 Mar 2013 19:15:08 +0100
-From: Vlad <vovan@vovan.nl>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130223 Thunderbird/17.0.3
+	id S1752473Ab3CBS2d (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Mar 2013 13:28:33 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:23084 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752268Ab3CBS2c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 2 Mar 2013 13:28:32 -0500
+Date: Sat, 2 Mar 2013 19:26:43 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Anton Arapov <anton@redhat.com>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, Josh Stone <jistone@redhat.com>,
+        Frank Eigler <fche@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+Subject: Re: [RFC PATCH v3 4/6] uretprobes: return probe entry, prepare
+	uretprobe
+Message-ID: <20130302182643.GA1075@redhat.com>
+References: <1362049215-5780-1-git-send-email-anton@redhat.com> <1362049215-5780-5-git-send-email-anton@redhat.com>
 MIME-Version: 1.0
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: NFS3/kerberos/ACL - strange problem
-X-Enigmail-Version: 1.5
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1362049215-5780-5-git-send-email-anton@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On 02/28, Anton Arapov wrote:
+>
+> +static void prepare_uretprobe(struct uprobe *uprobe, struct pt_regs *regs)
+> +{
+> +	struct return_uprobe_i *ri;
+> +	struct uprobe_task *utask;
+> +	struct xol_area *area;
+> +	unsigned long rp_trampoline_vaddr = 0;
+> +	uprobe_opcode_t insn = UPROBE_SWBP_INSN;
+> +
+> +	area = get_xol_area();
+> +	if (area)
+> +		rp_trampoline_vaddr = area->rp_trampoline_vaddr;
+> +	if (!rp_trampoline_vaddr) {
+> +		rp_trampoline_vaddr = xol_get_insn_slot(&insn);
+> +		if (!rp_trampoline_vaddr)
+> +			return;
+> +	}
+> +	area->rp_trampoline_vaddr = rp_trampoline_vaddr;
+> +
+> +	ri = kzalloc(sizeof(struct return_uprobe_i), GFP_KERNEL);
+> +	if (!ri)
+> +		return;
+> +
+> +	utask = get_utask();
+> +	ri->orig_ret_vaddr = arch_uretprobe_hijack_return_addr(rp_trampoline_vaddr, regs);
+> +	if (likely(ri->orig_ret_vaddr)) {
+> +		/* TODO: uretprobe bypass logic */
+> +		atomic_inc(&uprobe->ref);
 
-Recently I've discovered quite strange issue with nfs v3 and ACL's.
-While on the clients without updates everything works as expected, on
-the clients with recent updates ACL's simply don't work:
-- "ls" gives "Permission denied" error on folders with ACL's
-- getfacl gives the same "permission denied" error
-- on kerberos server I see strange errors while executing "ls" on the
-client:
-krb5kdc[2661]: TGS_REQ (4 etypes {18 17 16 23}) 192.168.1.2:
-UNKNOWN_SERVER: authtime 0,  xxx@NET.HOME for
-nfsacl/nfs.net.home@NET.HOME, Server not found in Kerberos database
+OK, but even this is not enough.
 
+Once we inserted "int3" we must ensure that handle_swbp() will be
+called even if this uprobe goes away. We have the reference but it
+only protects uprobe itself, it can't protect agains delete_uprobe().
 
-I can track what has been updated but the list is too long... I'd
-appreciate any thoughts on this issue.
+IOW, we must ensure that uprobe_pre_sstep_notifier() can't return 0.
 
-Regards,
-Vlad.
+So this patch needs the additional change in find_active_uprobe(),
+
+	-	if (!uprobe && test_and_clear_bit(MMF_RECALC_UPROBES, &mm->flags))
+	+	if (!uprobe && hlist_empty(->return_uprobes) &&
+	+	    test_and_clear_bit(MMF_RECALC_UPROBES, &mm->flags))
+
+Oleg.
+
