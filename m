@@ -1,53 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753036Ab3CCJXI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 04:23:08 -0500
-Received: from mail-da0-f47.google.com ([209.85.210.47]:65377 "EHLO
-	mail-da0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752733Ab3CCJXC (ORCPT
+	id S1753219Ab3CCJXZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 04:23:25 -0500
+Received: from mail-da0-f49.google.com ([209.85.210.49]:45536 "EHLO
+	mail-da0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752746Ab3CCJXR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Mar 2013 04:23:02 -0500
+	Sun, 3 Mar 2013 04:23:17 -0500
 From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH] Adds support for Open Firmware in MAX730x GPIO Driver
-To: leroy christophe <christophe.leroy@c-s.fr>,
-        Linus Walleij <linus.walleij@linaro.org>
-Cc: linux-kernel@vger.kernel.org, Patrick Vasseur <patrick.vasseur@c-s.fr>
-In-Reply-To: <51304ABD.9020706@c-s.fr>
-References: <201302220926.r1M9Q3wV029855@localhost.localdomain> <CACRpkdY1M8w7o8S4idAx1JN-fc-t221qF_uwR5U9RBsBAn=Jhw@mail.gmail.com> <51304ABD.9020706@c-s.fr>
-Date: Sat, 02 Mar 2013 21:16:56 +0000
-Message-Id: <20130302211656.879443E21F5@localhost>
+Subject: Re: [PATCH v2] gpio: palmas: add in GPIO support for palmas charger
+To: Laxman Dewangan <ldewangan@nvidia.com>, Ian Lartey <ian@slimlogic.co.uk>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        Graeme Gregory <gg@slimlogic.co.uk>
+In-Reply-To: <5131ACC3.10803@nvidia.com>
+References: <1362157598-11458-1-git-send-email-ian@slimlogic.co.uk> <5131ACC3.10803@nvidia.com>
+Date: Sat, 02 Mar 2013 19:35:00 +0000
+Message-Id: <20130302193500.783693E1095@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 01 Mar 2013 07:29:17 +0100, leroy christophe <christophe.leroy@c-s.fr> wrote:
-> 
-> Le 01/03/2013 01:43, Linus Walleij a écrit :
-> > On Fri, Feb 22, 2013 at 10:26 AM, Christophe Leroy
-> > <christophe.leroy@c-s.fr> wrote:
+On Sat, 2 Mar 2013 13:09:47 +0530, Laxman Dewangan <ldewangan@nvidia.com> wrote:
+> On Friday 01 March 2013 10:36 PM, Ian Lartey wrote:
+> > Palmas charger has 16 GPIOs
+> > add palmas_gpio_[read|write|update] api to take account
+> > second bank of GPIOs
 > >
-> >> This patch allows the use of the MAX730x Driver on systems using
-> >> the Open Firmware platform format
-> >>
-> >> Signed-off-by: Patrick Vasseur <patrick.vasseur@c-s.fr>
-> >> Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
-> > (...)
-> >>          /* bits_per_word cannot be configured in platform data */
-> >> -       spi->bits_per_word = 16;
-> >> +       if (spi->dev.platform_data)
-> >> +               spi->bits_per_word = 16;
-> > What about just fixing so you *can* specify that instead?
-> > The comment looks more like a FIXME to me.
-> Euh, ok, why not. But here the purpose of my patch is to allow using 
-> this driver with of_platform in addition to platform.
-> This FIXME is not mine, it was already existing in that driver.
-> As of_platform can configure bits per word, the only thing I did is to 
-> add a test in order to not apply this FIXME on the of_platform case.
+> > Signed-off-by: Ian Lartey <ian@slimlogic.co.uk>
+> > Signed-off-by: Graeme Gregory <gg@slimlogic.co.uk>
+> > ---
 > 
-> Do you think my patch is not acceptable like this ?
+> Looks good.
+> Acked-by: Laxman Dewangan<ldewangan@nvidia.com>
+> 
 
-I would like to know /why/ this specific hunk is necessary. I cannot
-tell from the context. That's the sort of thing that is very helpful to
-have in the commit description. Otherwise the patch looks fine.
+Applied for v3.10, thanks.
 
 g.
+
