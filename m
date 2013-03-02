@@ -1,57 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752329Ab3CBSKj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Mar 2013 13:10:39 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:39918 "EHLO mail.skyhub.de"
+	id S1752507Ab3CBSLm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Mar 2013 13:11:42 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:15849 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752156Ab3CBSKi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Mar 2013 13:10:38 -0500
-Date: Sat, 2 Mar 2013 19:10:25 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: James Hogan <james.hogan@imgtec.com>, Arnd <arnd@arndb.de>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Re: [GIT PULL] late arch/metag fixes for v3.9-rc1
-Message-ID: <20130302181025.GA15498@pd.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	James Hogan <james.hogan@imgtec.com>, Arnd <arnd@arndb.de>,
-	linux-kernel <linux-kernel@vger.kernel.org>,
-	Stephen Rothwell <sfr@canb.auug.org.au>
-References: <5130DD94.2060408@imgtec.com>
- <CA+55aFw9qvUdrtEk_83-gEjZMTceONk=AuVsHuTtqOj=jpVPQg@mail.gmail.com>
- <5130F978.9040604@imgtec.com>
- <5131D2F0.2010705@imgtec.com>
- <CA+55aFx1wKChQmAWgQR0iOdKr0bhLn7RLsZHj5ZuVVOtk8FXMw@mail.gmail.com>
+	id S1751980Ab3CBSLk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 2 Mar 2013 13:11:40 -0500
+Date: Sat, 2 Mar 2013 19:09:39 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Anton Arapov <anton@redhat.com>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, Josh Stone <jistone@redhat.com>,
+        Frank Eigler <fche@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+Subject: Re: [RFC PATCH v3 5/6] uretprobes: invoke return probe handlers
+Message-ID: <20130302180939.GA32596@redhat.com>
+References: <1362049215-5780-1-git-send-email-anton@redhat.com> <1362049215-5780-6-git-send-email-anton@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+55aFx1wKChQmAWgQR0iOdKr0bhLn7RLsZHj5ZuVVOtk8FXMw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1362049215-5780-6-git-send-email-anton@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 02, 2013 at 08:28:56AM -0800, Linus Torvalds wrote:
-> On Sat, Mar 2, 2013 at 2:22 AM, James Hogan <james.hogan@imgtec.com> wrote:
-> >
-> > Okay, I've rebased the arch/metag tree onto mainline to make all the
-> > back-merges unnecessary and applied those simple fixes into "Build
-> > infrastructure" and "Various other headers" commits (additionally
-> > trivially removing ARCH_NO_VIRT_TO_BUS which is also now unnecessary).
-> 
-> No, this is *exactly* the wrong thing to do.
+On 02/28, Anton Arapov wrote:
+>
+> @@ -1576,8 +1622,8 @@ static void handle_swbp(struct pt_regs *regs)
+>  
+>  	if (!uprobe) {
+>  		if (is_swbp > 0) {
+> -			/* No matching uprobe; signal SIGTRAP. */
+> -			send_sig(SIGTRAP, current, 0);
+> +			/* No matching uprobe; Try with uretprobe */
+> +			handle_uretprobe(regs);
 
-<snip good practices and musings about maintainer trees>
+Hmm. at least this looks certainly wrong.
 
-Hmm, so this comes up almost everytime new maintainers send stuff (and
-when seasoned maintainers forget :)), maybe we should hold it down
-somewhere in Documentation/ for future reference?
+You shifted send_sig(SIGSEGV) into handle_uretprobe(), but if nothing
+else printk(KERN_ERR "uprobe: no instance found!") doesn't look nice
+if we hit the regular breakoint.
 
--- 
-Regards/Gruss,
-    Boris.
+In fact everything handle_uretprobe() does in this case looks wrong.
+Including the fact that get_xol_area/get_utask can fail. And unwinding
+looks bogus...
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+I think you need
+
+	if (bp_vaddr == rp_trampoline_vaddr)
+		handle_uretprobe()
+
+like the previous version did.
+
+Oleg.
+
