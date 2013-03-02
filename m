@@ -1,63 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752225Ab3CBMNt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Mar 2013 07:13:49 -0500
-Received: from slimlogic.co.uk ([89.16.172.20]:53008 "EHLO slimlogic.co.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751975Ab3CBMNs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Mar 2013 07:13:48 -0500
-Message-ID: <5131ECEF.2080101@slimlogic.co.uk>
-Date: Sat, 02 Mar 2013 20:13:35 +0800
-From: Graeme Gregory <gg@slimlogic.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
-MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Stephen Warren <swarren@wwwdotorg.org>,
+	id S1752186Ab3CBMVi (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Mar 2013 07:21:38 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:38394 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751975Ab3CBMVh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 2 Mar 2013 07:21:37 -0500
+Date: Sat, 2 Mar 2013 20:21:05 +0800
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Graeme Gregory <gg@slimlogic.co.uk>
+Cc: Stephen Warren <swarren@wwwdotorg.org>,
         Laxman Dewangan <ldewangan@nvidia.com>,
         "sameo@linux.intel.com" <sameo@linux.intel.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         Stephen Warren <swarren@nvidia.com>,
         "ian@slimlogic.co.uk" <ian@slimlogic.co.uk>
 Subject: Re: [PATCH] mfd: palmas: provide irq flags through DT/platform data
-References: <1362141296-15321-1-git-send-email-ldewangan@nvidia.com> <20130301124350.GA25302@opensource.wolfsonmicro.com> <5130A53C.1000600@nvidia.com> <20130301131633.GB25302@opensource.wolfsonmicro.com> <513102D0.5030609@wwwdotorg.org> <20130302033525.GD6610@opensource.wolfsonmicro.com>
-In-Reply-To: <20130302033525.GD6610@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Message-ID: <20130302122101.GB31872@opensource.wolfsonmicro.com>
+References: <1362141296-15321-1-git-send-email-ldewangan@nvidia.com>
+ <20130301124350.GA25302@opensource.wolfsonmicro.com>
+ <5130A53C.1000600@nvidia.com>
+ <20130301131633.GB25302@opensource.wolfsonmicro.com>
+ <513102D0.5030609@wwwdotorg.org>
+ <20130302033525.GD6610@opensource.wolfsonmicro.com>
+ <5131ECEF.2080101@slimlogic.co.uk>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="61jdw2sOBCFtR2d/"
+Content-Disposition: inline
+In-Reply-To: <5131ECEF.2080101@slimlogic.co.uk>
+X-Cookie: You will forget that you ever knew me.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/03/13 11:35, Mark Brown wrote:
-> On Fri, Mar 01, 2013 at 12:34:40PM -0700, Stephen Warren wrote:
->
->> Is Palmas a family of chips rather than a single chip then? That
->> implies that the DT would need two compatible values, e.g.:
-> Yes.
->
->> compatible = "ti,12345", "ti,palmas";
->> ... where "12345" is the actual chip name.
->> ... rather than just the following which IIRC was in the example in
->> the DT binding document in another patch series:
->> compatible = "ti,palmas";
-> Indeed, and in fact this has already been done for the I2C device ID
-> table.  We should have the same list of devices in the OF IDs.
-Currently all members of the palmas family I know about (from memory).
 
-For palmas :-
-twl6035, twl6037, tps65913, tps65914
+--61jdw2sOBCFtR2d/
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-For palmas-charger :-
-twl6036, tps80036
+On Sat, Mar 02, 2013 at 08:13:35PM +0800, Graeme Gregory wrote:
 
-All with varying IP blocks or hardware configuration.
+> Should these also flow down into the various drivers for the IP blocks? eg.
 
-Mainly this is due to misunderstanding I had of DT definitions when I
-originally read docs, when driver project commenced. I will work with
-Ian, Laxman, Keerthy and get these updated.
+> compatible = "ti,twl6035-regulator", "ti,palmas-regulator";
 
-Should these also flow down into the various drivers for the IP blocks? eg.
+Ideally, in case there's chip specific issues.
 
-compatible = "ti,twl6035-regulator", "ti,palmas-regulator";
+--61jdw2sOBCFtR2d/
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Graeme
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
+iQIcBAEBAgAGBQJRMe5hAAoJELSic+t+oim9wdMP/1dO6VtfxVtAAg4nDvR4MeA1
+MzHjJPyJ21jJwhjEiISnHtMFUQTi8M53TtUApC2V4JMuEF0RB7+0qyc6iUDAGas/
+5fJLX/10PYoLFVDD0XxVyqsShETAKdWoBcgVC9SrGHL5KeP1Q58QF/v+urQACicK
+hQfMb/VTPr4Zb1uIvU0Fqk+zWoTQvgSkQgi0L2UOafKvYASdeNhvIic0f/Yp6n+E
+47QLXSLUJtl/sOjHdbo1QU0Fa5lD/WDQFi2jkDCR/XOxtFfMxHIBd5q7/gFqtV8X
+3IBDj3oUX+UKm1/xUwPDdWlQxXMl8y95x1j+cLK8ZoD8EyjDIlmz2ndga2PLPo9Z
+X1g8MvCkEC4Z8DoKhYi3qk1QVV1P68sC4tzfac+H5VsDPuib8nHCnWoFgUtLmne/
+pZrb7UhI11uO0Y10y2iU7g/kd/cybslaYKkuSU/883Lh2uyrHK56S8Ak75tXOq/7
+Rh288kP3duyuM5mP6R3Mn67kngHiRzXhdFJ4tHgZvoyy/08pDi+tt3YKNWmmTWnF
+pHVRIRnJdiZMFTxfPRyxVcb1KCaXrlbMPH4J3lNDPNX/L8qG+Wla+Bjth4iKybMO
+x/wtEfrb2zCru1gKcWMlCAEGBwfIwrp1JFqyuD2qWWBL3BiXhYj9+yF4Q3SdLIJv
+RKvoLzhTHCov30vnQRCK
+=KoX/
+-----END PGP SIGNATURE-----
+
+--61jdw2sOBCFtR2d/--
