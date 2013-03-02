@@ -1,99 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753139Ab3CBDln (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 22:41:43 -0500
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:56670 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753037Ab3CBDlk (ORCPT
+	id S1753118Ab3CBDme (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 22:42:34 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:36906 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752132Ab3CBDmc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 22:41:40 -0500
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: jaegeuk.kim@samsung.com
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-f2fs-devel@lists.sourceforge.net,
-        Namjae Jeon <linkinjeon@gmail.com>,
-        Namjae Jeon <namjae.jeon@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Subject: [PATCH 5/5] f2fs: avoid extra ++ while returning from get_node_path
-Date: Sat,  2 Mar 2013 12:41:31 +0900
-Message-Id: <1362195691-20819-1-git-send-email-linkinjeon@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Fri, 1 Mar 2013 22:42:32 -0500
+Date: Sat, 2 Mar 2013 14:42:29 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the ftrace tree
+Message-Id: <20130302144229.f41f56c36992497a1530d65f@canb.auug.org.au>
+In-Reply-To: <1362192318.1231.67.camel@gandalf.local.home>
+References: <20130301134738.ce925e1643a35b0a2c4ff275@canb.auug.org.au>
+	<1362192318.1231.67.camel@gandalf.local.home>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Sat__2_Mar_2013_14_42_29_+1100_ZKI_Yz5syWdckOBS"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namjae Jeon <namjae.jeon@samsung.com>
+--Signature=_Sat__2_Mar_2013_14_42_29_+1100_ZKI_Yz5syWdckOBS
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-In all the breaking conditions in get_node_path, 'n' is used to
-track index in offset[] array, but while breaking out also, in all
-paths n++ is done.
-So, remove the ++ from breaking paths. Also, avoid
-reset of 'level=0' in first case.
+Hi Steve,
 
-Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
-Signed-off-by: Amit Sahrawat <a.sahrawat@samsung.com>
----
- fs/f2fs/node.c |   13 ++++++-------
- 1 file changed, 6 insertions(+), 7 deletions(-)
+On Fri, 01 Mar 2013 21:45:18 -0500 Steven Rostedt <rostedt@goodmis.org> wro=
+te:
+>
+> On Fri, 2013-03-01 at 13:47 +1100, Stephen Rothwell wrote:
+> >=20
+> > After merging the ftrace tree, today's linux-next build (x86_64
+> > allmodconfig) failed like this:
+> >=20
+> > kernel/trace/trace_kdb.c: In function 'ftrace_dump_buf':
+> > kernel/trace/trace_kdb.c:29:33: error: invalid type argument of '->' (h=
+ave 'struct trace_array_cpu')
+> > kernel/trace/trace_kdb.c:86:33: error: invalid type argument of '->' (h=
+ave 'struct trace_array_cpu')
+> >=20
+> > Caused by commit eaac1836c10e ("tracing: Replace the static global
+> > per_cpu arrays with allocated per_cpu").
+> >=20
+> > I have used the ftrace tree from next-20130228 for today.
+>=20
+> I rebased, and it should all be good now. I also fixed breakage to the
+> new snapshot feature. Here's my diff:
 
-diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
-index e24f747..d10085c 100644
---- a/fs/f2fs/node.c
-+++ b/fs/f2fs/node.c
-@@ -320,15 +320,14 @@ static int get_node_path(long block, int offset[4], unsigned int noffset[4])
- 	noffset[0] = 0;
- 
- 	if (block < direct_index) {
--		offset[n++] = block;
--		level = 0;
-+		offset[n] = block;
- 		goto got;
- 	}
- 	block -= direct_index;
- 	if (block < direct_blks) {
- 		offset[n++] = NODE_DIR1_BLOCK;
- 		noffset[n] = 1;
--		offset[n++] = block;
-+		offset[n] = block;
- 		level = 1;
- 		goto got;
- 	}
-@@ -336,7 +335,7 @@ static int get_node_path(long block, int offset[4], unsigned int noffset[4])
- 	if (block < direct_blks) {
- 		offset[n++] = NODE_DIR2_BLOCK;
- 		noffset[n] = 2;
--		offset[n++] = block;
-+		offset[n] = block;
- 		level = 1;
- 		goto got;
- 	}
-@@ -346,7 +345,7 @@ static int get_node_path(long block, int offset[4], unsigned int noffset[4])
- 		noffset[n] = 3;
- 		offset[n++] = block / direct_blks;
- 		noffset[n] = 4 + offset[n - 1];
--		offset[n++] = block % direct_blks;
-+		offset[n] = block % direct_blks;
- 		level = 2;
- 		goto got;
- 	}
-@@ -356,7 +355,7 @@ static int get_node_path(long block, int offset[4], unsigned int noffset[4])
- 		noffset[n] = 4 + dptrs_per_blk;
- 		offset[n++] = block / direct_blks;
- 		noffset[n] = 5 + dptrs_per_blk + offset[n - 1];
--		offset[n++] = block % direct_blks;
-+		offset[n] = block % direct_blks;
- 		level = 2;
- 		goto got;
- 	}
-@@ -371,7 +370,7 @@ static int get_node_path(long block, int offset[4], unsigned int noffset[4])
- 		noffset[n] = 7 + (dptrs_per_blk * 2) +
- 			      offset[n - 2] * (dptrs_per_blk + 1) +
- 			      offset[n - 1];
--		offset[n++] = block % direct_blks;
-+		offset[n] = block % direct_blks;
- 		level = 3;
- 		goto got;
- 	} else {
--- 
-1.7.9.5
+Of course, I wonder if this is intended for the current merge window
+(since it turned up in linux-next so late).  If not, then please don;t
+put it in your -next included branch until after -rc1 is released.  If
+you are aiming for this merge window, then good luck!  ;-)
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Sat__2_Mar_2013_14_42_29_+1100_ZKI_Yz5syWdckOBS
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRMXUlAAoJEECxmPOUX5FE4bcP/jOJOJd+jwfc9s6XsboifQi9
+1nNzupOV+1WnjxIsm7/jiP0uIgxb+Bn/UtQgjx1Xru3YpW3thwI9DvDYG+rm0F2j
+mf19iVFOXi8snF2HMHdQJa3m8z6fkjpahPPLLfufXzoMEzBFoNsKX3dBq/SxTaue
+BK3mGCZDV0TIqye2z1VV3skdE5imSJnTL9ocpsI2DwKBxmxCq7AL98Oky4j/iF0D
+2FdNrZAT7nPxUTSuy6SknYaK8r4879W9ryqI3Z55wLrBdc4EMsdPgQE6m7qpwB15
+p9dwgAhH/wUwOrwRxUfx2zw9izF+TBUsEnXgMS6Fi1DaKNI6tPYMkL/TzDm/m+oW
+EtOI7O4p8bcJLwy+Q7EALVoY3Bsx0pMuIK9q1lEst6RErxoe/uPJpDCRhhkxAoG6
+kPK0lQbxSN/2RDgW15ho3gN8Rhqh+PLbap2u1koJCFsszHdsaoOJ4yws7Yea9Gr3
+zbFVk97Dl8BhalhB4qtiALyVPW4z6fwdhn0YaC/109DyPAtaYnRFLRi7gHWCf8uU
+uJMAyx6+TBYPvQy47jm5tGZQZUB9pt5pzl5fBQjh9WJ1tUMxI63BUPVPJDKXQ+b/
+8FqI+EkOQTDY3OLbw7vovPkCwY5C9HGk/GwtlPiIrdSeu90NWBVcV3jMBN8MfheL
+RQfE0zJni5bPD/1FNrP8
+=mIbV
+-----END PGP SIGNATURE-----
+
+--Signature=_Sat__2_Mar_2013_14_42_29_+1100_ZKI_Yz5syWdckOBS--
