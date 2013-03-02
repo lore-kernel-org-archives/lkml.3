@@ -1,75 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752600Ab3CBOZS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Mar 2013 09:25:18 -0500
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:54736 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752421Ab3CBOZQ (ORCPT
+	id S1752744Ab3CBOcG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Mar 2013 09:32:06 -0500
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:54413 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752671Ab3CBOcE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Mar 2013 09:25:16 -0500
-MIME-Version: 1.0
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Sat, 2 Mar 2013 14:24:53 +0000
-X-Google-Sender-Auth: ykXV7Vln7B6lEzciXKwvf68k3YM
-Message-ID: <CACxGe6sweLxtsW9OYb8m7esYguGmStEsuZc0tOgZN6H5Zfy1+g@mail.gmail.com>
-Subject: [GIT PULL] gpio changes for v3.9; second round
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Sat, 2 Mar 2013 09:32:04 -0500
+From: Akinobu Mita <akinobu.mita@gmail.com>
+To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
+Cc: Akinobu Mita <akinobu.mita@gmail.com>,
+        Steven Whitehouse <swhiteho@redhat.com>, cluster-devel@redhat.com
+Subject: [PATCH 2/2] gfs2: use memchr_inv
+Date: Sat,  2 Mar 2013 23:31:35 +0900
+Message-Id: <1362234695-5339-2-git-send-email-akinobu.mita@gmail.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1362234695-5339-1-git-send-email-akinobu.mita@gmail.com>
+References: <1362234695-5339-1-git-send-email-akinobu.mita@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Use memchr_inv to verify that the specified memory range is cleared.
 
-Please pull, I missed a few things in the first gpio request I sent.
+Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
+Cc: Steven Whitehouse <swhiteho@redhat.com>
+Cc: cluster-devel@redhat.com
+---
+ fs/gfs2/lock_dlm.c | 8 ++------
+ 1 file changed, 2 insertions(+), 6 deletions(-)
 
-Thanks,
-g.
+diff --git a/fs/gfs2/lock_dlm.c b/fs/gfs2/lock_dlm.c
+index ead5b36..830ad2f 100644
+--- a/fs/gfs2/lock_dlm.c
++++ b/fs/gfs2/lock_dlm.c
+@@ -483,12 +483,8 @@ static void control_lvb_write(struct lm_lockstruct *ls, uint32_t lvb_gen,
+ 
+ static int all_jid_bits_clear(void *lvb)
+ {
+-	int i;
+-	for (i = JID_BITMAP_OFFSET; i < GDLM_LVB_SIZE; i++) {
+-		if (((char *)lvb)[i])
+-			return 0;
+-	}
+-	return 1;
++	return !memchr_inv(lvb + JID_BITMAP_OFFSET, 0,
++			GDLM_LVB_SIZE - JID_BITMAP_OFFSET);
+ }
+ 
+ static void sync_wait_cb(void *arg)
+-- 
+1.8.1.2
 
-The following changes since commit b0af9cd9aab60ceb17d3ebabb9fdf4ff0a99cf50:
-
-  Merge tag 'lzo-update-signature-20130226' of
-git://github.com/markus-oberhumer/linux (2013-02-28 20:45:52 -0800)
-
-are available in the git repository at:
-
-
-  git://git.secretlab.ca/git/linux tags/gpio-for-linus
-
-for you to fetch changes up to 4710e74246a6496b65c8d28ef4a3144a7958264b:
-
-  gpio/tegra: assume CONFIG_OF (2013-03-02 13:20:22 +0000)
-
-----------------------------------------------------------------
-2nd round of GPIO changes for Linux 3.9
-
-This branch contains a few bug fixes that I missed the first time around
-and updates to the gpio_desc series included in the first pull request.
-
-----------------------------------------------------------------
-Alexandre Courbot (3):
-      gpiolib: check descriptors validity before use
-      gpiolib: use const parameters when possible
-      gpiolib: move comment to right function
-
-Gabriel Fernandez (1):
-      gpio/stmpe: pass DT node to irqdomain
-
-Mika Westerberg (1):
-      gpio/gpio-ich: fix ichx_gpio_check_available() return what callers expect
-
-Stephen Warren (1):
-      gpio/tegra: assume CONFIG_OF
-
- drivers/gpio/gpio-ich.c   |    4 +-
- drivers/gpio/gpio-stmpe.c |    7 ++-
- drivers/gpio/gpio-tegra.c |   11 ++--
- drivers/gpio/gpiolib.c    |  143 ++++++++++++++++++++++++++-------------------
- 4 files changed, 94 insertions(+), 71 deletions(-)
-
-
---
-Grant Likely, B.Sc., P.Eng.
-Secret Lab Technologies Ltd.
