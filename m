@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752978Ab3CBDZT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 22:25:19 -0500
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:52017 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752454Ab3CBDYz (ORCPT
+	id S1753131Ab3CBD0Y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 22:26:24 -0500
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:45999 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752952Ab3CBDZR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 22:24:55 -0500
+	Fri, 1 Mar 2013 22:25:17 -0500
 From: Tejun Heo <tj@kernel.org>
 To: linux-kernel@vger.kernel.org, laijs@cn.fujitsu.com
 Cc: axboe@kernel.dk, jmoyer@redhat.com, zab@redhat.com,
-        Tejun Heo <tj@kernel.org>
-Subject: [PATCH 15/31] workqueue: separate out init_worker_pool() from init_workqueues()
-Date: Fri,  1 Mar 2013 19:24:06 -0800
-Message-Id: <1362194662-2344-16-git-send-email-tj@kernel.org>
+        Tejun Heo <tj@kernel.org>, Rusty Russell <rusty@rustcorp.com.au>
+Subject: [PATCH 29/31] cpumask: implement cpumask_parse()
+Date: Fri,  1 Mar 2013 19:24:20 -0800
+Message-Id: <1362194662-2344-30-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1362194662-2344-1-git-send-email-tj@kernel.org>
 References: <1362194662-2344-1-git-send-email-tj@kernel.org>
@@ -21,71 +21,55 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This will be used to implement unbound pools with custom attributes.
+We have cpulist_parse() but not cpumask_parse().  Implement it using
+bitmap_parse().
 
-This patch doesn't introduce any functional changes.
+bitmap_parse() is weird in that it takes @len for a string in
+kernel-memory which also is inconsistent with bitmap_parselist().
+Make cpumask_parse() calculate the length and don't expose the
+inconsistency to cpumask users.  Maybe we can fix up bitmap_parse()
+later.
+
+This will be used to expose workqueue cpumask knobs to userland via
+sysfs.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Rusty Russell <rusty@rustcorp.com.au>
 ---
- kernel/workqueue.c | 37 +++++++++++++++++++++----------------
- 1 file changed, 21 insertions(+), 16 deletions(-)
+Rusty, if this looks okay to you, would it be okay for me to route it
+together with the rest of workqueue changes?
 
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 68b3443..f97539b 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -3121,6 +3121,26 @@ int keventd_up(void)
- 	return system_wq != NULL;
+Thanks.
+
+ include/linux/cpumask.h | 15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
+
+diff --git a/include/linux/cpumask.h b/include/linux/cpumask.h
+index 0325602..d08e4d2 100644
+--- a/include/linux/cpumask.h
++++ b/include/linux/cpumask.h
+@@ -591,6 +591,21 @@ static inline int cpulist_scnprintf(char *buf, int len,
  }
  
-+static void init_worker_pool(struct worker_pool *pool)
+ /**
++ * cpumask_parse - extract a cpumask from from a string
++ * @buf: the buffer to extract from
++ * @dstp: the cpumask to set.
++ *
++ * Returns -errno, or 0 for success.
++ */
++static inline int cpumask_parse(const char *buf, struct cpumask *dstp)
 +{
-+	spin_lock_init(&pool->lock);
-+	pool->flags |= POOL_DISASSOCIATED;
-+	INIT_LIST_HEAD(&pool->worklist);
-+	INIT_LIST_HEAD(&pool->idle_list);
-+	hash_init(pool->busy_hash);
++	char *nl = strchr(buf, '\n');
++	int len = nl ? nl - buf : strlen(buf);
 +
-+	init_timer_deferrable(&pool->idle_timer);
-+	pool->idle_timer.function = idle_worker_timeout;
-+	pool->idle_timer.data = (unsigned long)pool;
-+
-+	setup_timer(&pool->mayday_timer, pool_mayday_timeout,
-+		    (unsigned long)pool);
-+
-+	mutex_init(&pool->manager_mutex);
-+	mutex_init(&pool->assoc_mutex);
-+	ida_init(&pool->worker_ida);
++	return bitmap_parse(buf, len, cpumask_bits(dstp), nr_cpumask_bits);
 +}
 +
- static int alloc_and_link_pwqs(struct workqueue_struct *wq)
- {
- 	bool highpri = wq->flags & WQ_HIGHPRI;
-@@ -3789,23 +3809,8 @@ static int __init init_workqueues(void)
- 		struct worker_pool *pool;
- 
- 		for_each_std_worker_pool(pool, cpu) {
--			spin_lock_init(&pool->lock);
-+			init_worker_pool(pool);
- 			pool->cpu = cpu;
--			pool->flags |= POOL_DISASSOCIATED;
--			INIT_LIST_HEAD(&pool->worklist);
--			INIT_LIST_HEAD(&pool->idle_list);
--			hash_init(pool->busy_hash);
--
--			init_timer_deferrable(&pool->idle_timer);
--			pool->idle_timer.function = idle_worker_timeout;
--			pool->idle_timer.data = (unsigned long)pool;
--
--			setup_timer(&pool->mayday_timer, pool_mayday_timeout,
--				    (unsigned long)pool);
--
--			mutex_init(&pool->manager_mutex);
--			mutex_init(&pool->assoc_mutex);
--			ida_init(&pool->worker_ida);
- 
- 			/* alloc pool ID */
- 			BUG_ON(worker_pool_assign_id(pool));
++/**
+  * cpulist_parse - extract a cpumask from a user string of ranges
+  * @buf: the buffer to extract from
+  * @dstp: the cpumask to set.
 -- 
 1.8.1.2
 
