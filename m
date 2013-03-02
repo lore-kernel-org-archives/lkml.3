@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755716Ab3CEHGw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 02:06:52 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:50299 "EHLO
+	id S1755534Ab3CEHHd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 02:07:33 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:50291 "EHLO
 	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754965Ab3CEHGu (ORCPT
+	with ESMTP id S1754968Ab3CEHGi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 02:06:50 -0500
+	Tue, 5 Mar 2013 02:06:38 -0500
 From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-Subject: [PATCH v2 20/20] vmcore: introduce mmap_vmcore()
+Subject: [PATCH v2 18/20] vmcore: round-up offset of vmcore object in
+ page-size boundary
 To: vgoyal@redhat.com, ebiederm@xmission.com, cpw@sgi.com,
         kumagai-atsushi@mxc.nes.nec.co.jp, lisa.mitchell@hp.com,
         heiko.carstens@de.ibm.com, akpm@linux-foundation.org
 Cc: kexec@lists.infradead.org, linux-kernel@vger.kernel.org
-Date: Sat, 02 Mar 2013 17:37:42 +0900
-Message-ID: <20130302083742.31252.67291.stgit@localhost6.localdomain6>
+Date: Sat, 02 Mar 2013 17:37:31 +0900
+Message-ID: <20130302083731.31252.30477.stgit@localhost6.localdomain6>
 In-Reply-To: <20130302083447.31252.93914.stgit@localhost6.localdomain6>
 References: <20130302083447.31252.93914.stgit@localhost6.localdomain6>
 User-Agent: StGIT/0.14.3
@@ -25,110 +26,81 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduces mmap_vmcore().
-
-If flag MEM_TYPE_CURRENT_KERNEL is set, remapped is the buffer on the
-2nd kernel. If not set, remapped is some area in old memory.
-
-Neither writable nor executable mapping is permitted even with
-mprotect(). Non-writable mapping is also requirement of
-remap_pfn_range() when mapping linear pages on non-consequtive
-physical pages; see is_cow_mapping().
-
-On x86-32 PAE kernels, mmap() supports at most 16TB memory only. This
-limitation comes from the fact that the third argument of
-remap_pfn_range(), pfn, is of 32-bit length on x86-32: unsigned long.
+To satisfy mmap()'s page-size bounary requirement, round-up offset of
+each vmcore objects in page-size boundary; each offset is connected to
+user-space virtual address through mapping of mmap().
 
 Signed-off-by: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
 ---
 
- fs/proc/vmcore.c |   72 ++++++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 72 insertions(+), 0 deletions(-)
+ fs/proc/vmcore.c |   18 ++++++++----------
+ 1 files changed, 8 insertions(+), 10 deletions(-)
 
 diff --git a/fs/proc/vmcore.c b/fs/proc/vmcore.c
-index 709d21a..9433ef0 100644
+index 5582aaa..6660cd5 100644
 --- a/fs/proc/vmcore.c
 +++ b/fs/proc/vmcore.c
-@@ -185,9 +185,81 @@ static ssize_t read_vmcore(struct file *file, char __user *buffer,
- 	return acc;
+@@ -700,7 +700,7 @@ static int __init process_ptload_program_headers_elf32(char *elfptr,
  }
  
-+static int mmap_vmcore(struct file *file, struct vm_area_struct *vma)
-+{
-+	size_t size = vma->vm_end - vma->vm_start;
-+	u64 start, end, len, tsz;
-+	struct vmcore *m;
-+
-+	if (!support_mmap_vmcore)
-+		return -ENODEV;
-+
-+	start = (u64)vma->vm_pgoff << PAGE_SHIFT;
-+	end = start + size;
-+
-+	if (size > vmcore_size || end > vmcore_size)
-+		return -EINVAL;
-+
-+	if (vma->vm_flags & (VM_WRITE | VM_EXEC))
-+		return -EPERM;
-+
-+	vma->vm_flags &= ~(VM_MAYWRITE | VM_MAYEXEC);
-+
-+	len = 0;
-+
-+	if (start < elfcorebuf_sz) {
-+		u64 pfn;
-+
-+		tsz = elfcorebuf_sz - start;
-+		if (size < tsz)
-+			tsz = size;
-+		pfn = __pa(elfcorebuf + start) >> PAGE_SHIFT;
-+		if (remap_pfn_range(vma, vma->vm_start, pfn, tsz,
-+				    vma->vm_page_prot))
-+			return -EAGAIN;
-+		size -= tsz;
-+		start += tsz;
-+		len += tsz;
-+
-+		if (size == 0)
-+			return 0;
-+	}
-+
-+	list_for_each_entry(m, &vmcore_list, list) {
-+		if (start < m->offset + m->size) {
-+			u64 pfn = 0;
-+
-+			tsz = m->offset + m->size - start;
-+			if (size < tsz)
-+				tsz = size;
-+			if (m->flag & MEM_TYPE_CURRENT_KERNEL) {
-+				pfn = __pa(m->buf + start - m->offset)
-+					>> PAGE_SHIFT;
-+			} else {
-+				pfn = (m->paddr + (start - m->offset))
-+					>> PAGE_SHIFT;
-+			}
-+			if (remap_pfn_range(vma, vma->vm_start + len, pfn, tsz,
-+					    vma->vm_page_prot)) {
-+				do_munmap(vma->vm_mm, vma->vm_start, len);
-+				return -EAGAIN;
-+			}
-+			size -= tsz;
-+			start += tsz;
-+			len += tsz;
-+
-+			if (size == 0)
-+				return 0;
-+		}
-+	}
-+
-+	return 0;
-+}
-+
- static const struct file_operations proc_vmcore_operations = {
- 	.read		= read_vmcore,
- 	.llseek		= default_llseek,
-+	.mmap		= mmap_vmcore,
- };
+ /* Sets offset fields of vmcore elements. */
+-static void __init set_vmcore_list_offsets_elf64(char *elfptr,
++static void __init set_vmcore_list_offsets_elf64(char *elfptr, size_t elfsz,
+ 						struct list_head *vc_list)
+ {
+ 	loff_t vmcore_off;
+@@ -710,17 +710,16 @@ static void __init set_vmcore_list_offsets_elf64(char *elfptr,
+ 	ehdr_ptr = (Elf64_Ehdr *)elfptr;
  
- static struct vmcore* __init get_new_element(void)
+ 	/* Skip Elf header and program headers. */
+-	vmcore_off = ehdr_ptr->e_phoff +
+-			(ehdr_ptr->e_phnum) * sizeof(Elf64_Phdr);
++	vmcore_off = elfsz;
+ 
+ 	list_for_each_entry(m, vc_list, list) {
+ 		m->offset = vmcore_off;
+-		vmcore_off += m->size;
++		vmcore_off += roundup(m->size, PAGE_SIZE);
+ 	}
+ }
+ 
+ /* Sets offset fields of vmcore elements. */
+-static void __init set_vmcore_list_offsets_elf32(char *elfptr,
++static void __init set_vmcore_list_offsets_elf32(char *elfptr, size_t elfsz,
+ 						struct list_head *vc_list)
+ {
+ 	loff_t vmcore_off;
+@@ -730,12 +729,11 @@ static void __init set_vmcore_list_offsets_elf32(char *elfptr,
+ 	ehdr_ptr = (Elf32_Ehdr *)elfptr;
+ 
+ 	/* Skip Elf header and program headers. */
+-	vmcore_off = ehdr_ptr->e_phoff +
+-			(ehdr_ptr->e_phnum) * sizeof(Elf32_Phdr);
++	vmcore_off = elfsz;
+ 
+ 	list_for_each_entry(m, vc_list, list) {
+ 		m->offset = vmcore_off;
+-		vmcore_off += m->size;
++		vmcore_off += roundup(m->size, PAGE_SIZE);
+ 	}
+ }
+ 
+@@ -795,7 +793,7 @@ static int __init parse_crash_elf64_headers(void)
+ 			   get_order(elfcorebuf_sz_orig));
+ 		return rc;
+ 	}
+-	set_vmcore_list_offsets_elf64(elfcorebuf, &vmcore_list);
++	set_vmcore_list_offsets_elf64(elfcorebuf, elfcorebuf_sz, &vmcore_list);
+ 	return 0;
+ }
+ 
+@@ -855,7 +853,7 @@ static int __init parse_crash_elf32_headers(void)
+ 			   get_order(elfcorebuf_sz_orig));
+ 		return rc;
+ 	}
+-	set_vmcore_list_offsets_elf32(elfcorebuf, &vmcore_list);
++	set_vmcore_list_offsets_elf32(elfcorebuf, elfcorebuf_sz, &vmcore_list);
+ 	return 0;
+ }
+ 
 
