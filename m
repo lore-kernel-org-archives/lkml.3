@@ -1,95 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755326Ab3CEHIr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 02:08:47 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:27271 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753290Ab3CEHFy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 02:05:54 -0500
-Date: Tue, 5 Mar 2013 09:05:35 +0200
-From: Gleb Natapov <gleb@redhat.com>
-To: Marcelo Tosatti <mtosatti@redhat.com>
-Cc: Hu Tao <hutao@cn.fujitsu.com>, kvm list <kvm@vger.kernel.org>,
-        qemu-devel <qemu-devel@nongnu.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>, Blue Swirl <blauwirbel@gmail.com>,
-        Eric Blake <eblake@redhat.com>, Andrew Jones <drjones@redhat.com>,
-        Sasha Levin <levinsasha928@gmail.com>,
-        Luiz Capitulino <lcapitulino@redhat.com>,
-        Wen Congyang <wency@cn.fujitsu.com>
-Subject: Re: [PATCH v12 rebased] kvm: notify host when the guest is panicked
-Message-ID: <20130305070535.GT23616@redhat.com>
-References: <cover.1358920534.git.hutao@cn.fujitsu.com>
- <1358925575-4505-1-git-send-email-hutao@cn.fujitsu.com>
- <20130208013947.GA3364@amt.cnet>
- <20130228085425.GA16362@localhost.localdomain>
- <20130302000312.GA25309@amt.cnet>
- <20130303130022.GF23616@redhat.com>
- <20130303222953.GB5922@amt.cnet>
- <20130304174913.GC14220@redhat.com>
- <20130304204348.GB20761@amt.cnet>
+	id S1753574Ab3CEHFY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 02:05:24 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:44506 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752467Ab3CEHFT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Mar 2013 02:05:19 -0500
+From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+Subject: [PATCH v2 04/20] vmcore: allocate buffer for ELF headers on page-size
+ alignment
+To: vgoyal@redhat.com, ebiederm@xmission.com, cpw@sgi.com,
+        kumagai-atsushi@mxc.nes.nec.co.jp, lisa.mitchell@hp.com,
+        heiko.carstens@de.ibm.com, akpm@linux-foundation.org
+Cc: kexec@lists.infradead.org, linux-kernel@vger.kernel.org
+Date: Sat, 02 Mar 2013 17:36:11 +0900
+Message-ID: <20130302083610.31252.18601.stgit@localhost6.localdomain6>
+In-Reply-To: <20130302083447.31252.93914.stgit@localhost6.localdomain6>
+References: <20130302083447.31252.93914.stgit@localhost6.localdomain6>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130304204348.GB20761@amt.cnet>
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 04, 2013 at 05:43:48PM -0300, Marcelo Tosatti wrote:
-> On Mon, Mar 04, 2013 at 07:49:13PM +0200, Gleb Natapov wrote:
-> > On Sun, Mar 03, 2013 at 07:29:53PM -0300, Marcelo Tosatti wrote:
-> > > On Sun, Mar 03, 2013 at 03:00:22PM +0200, Gleb Natapov wrote:
-> > > > On Fri, Mar 01, 2013 at 09:03:12PM -0300, Marcelo Tosatti wrote:
-> > > > > On Thu, Feb 28, 2013 at 04:54:25PM +0800, Hu Tao wrote:
-> > > > > > > > diff --git a/arch/x86/include/uapi/asm/kvm_para.h b/arch/x86/include/uapi/asm/kvm_para.h
-> > > > > > > > index 06fdbd9..c15ef33 100644
-> > > > > > > > --- a/arch/x86/include/uapi/asm/kvm_para.h
-> > > > > > > > +++ b/arch/x86/include/uapi/asm/kvm_para.h
-> > > > > > > > @@ -96,5 +96,7 @@ struct kvm_vcpu_pv_apf_data {
-> > > > > > > >  #define KVM_PV_EOI_ENABLED KVM_PV_EOI_MASK
-> > > > > > > >  #define KVM_PV_EOI_DISABLED 0x0
-> > > > > > > >  
-> > > > > > > > +#define KVM_PV_EVENT_PORT	(0x505UL)
-> > > > > > > > +
-> > > > > > > 
-> > > > > > > No need for the ioport to be hard coded. What are the options to
-> > > > > > > communicate an address to the guest? An MSR, via ACPI?
-> > > > > > 
-> > > > > > I'm not quite understanding here. By 'address', you mean an ioport?
-> > > > > > how to communicate an address? (I have little knowledge about ACPI)
-> > > > > 
-> > > > > Yes, the ioport. The address of the ioport should not be fixed (for
-> > > > > example future emulated board could use that fixed ioport address,
-> > > > > 0x505UL).
-> > > > > 
-> > > > > One option is to pass the address via an MSR. Yes, that is probably the
-> > > > > best option because there is no dependency on ACPI.
-> > > > > 
-> > > > Why dependency on ACPI is problematic? ACPI is the standard way on x86
-> > > > to enumerate platform devices. Passing it through MSR makes this panic
-> > > > device CPU interface which it is not. And since relying on #GP to detect
-> > > > valid MSRs is not good interface we will have to guard it by cpuid bit.
-> > > > 
-> > > > --
-> > > > 			Gleb.
-> > > 
-> > > KVM guest <-> KVM host interface is not dependent on ACPI, so far. Say,
-> > > its possible to use a Linux guest without ACPI and have KVM paravirt 
-> > > fully functional.
-> > This is not KVM guest <-> KVM host interface though. This is yet another
-> > device. We could implement real impi device that have crash reporting
-> > capability, but decided to go with something simpler. Without ACPI guest
-> > will not be able to power down itself too, but this is not the reason
-> > for us to introduce non-ACPI interface for power down.
-> 
-> Sure (its more of an aesthetic/organizational point, i guess).
-> 
-> Anyway, one problem with ACPI is whether its initialized early enough
-> (which is the whole point of PIO the x86 specific interface).
-ACPI is needed pretty early in the boot process.
+Allocate buffer for ELF headers on page-size aligned boudary to
+satisfy mmap() requirement. For this, __get_free_pages() is used
+instead of kmalloc().
 
---
-			Gleb.
+Also, later patch will decrease actually used buffer size for ELF
+headers, so it's necessary to keep original buffer size and actually
+used buffer size separately. elfcorebuf_sz_orig keeps the original one
+and elfcorebuf_sz the actually used one.
+
+Signed-off-by: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+---
+
+ fs/proc/vmcore.c |   30 +++++++++++++++++++++---------
+ 1 files changed, 21 insertions(+), 9 deletions(-)
+
+diff --git a/fs/proc/vmcore.c b/fs/proc/vmcore.c
+index b5c9e33..1b02d01 100644
+--- a/fs/proc/vmcore.c
++++ b/fs/proc/vmcore.c
+@@ -31,6 +31,7 @@ static LIST_HEAD(vmcore_list);
+ /* Stores the pointer to the buffer containing kernel elf core headers. */
+ static char *elfcorebuf;
+ static size_t elfcorebuf_sz;
++static size_t elfcorebuf_sz_orig;
+ 
+ /* Total size of vmcore file. */
+ static u64 vmcore_size;
+@@ -610,26 +611,31 @@ static int __init parse_crash_elf64_headers(void)
+ 
+ 	/* Read in all elf headers. */
+ 	elfcorebuf_sz = ehdr.e_phoff + ehdr.e_phnum * sizeof(Elf64_Phdr);
+-	elfcorebuf = kmalloc(elfcorebuf_sz, GFP_KERNEL);
++	elfcorebuf_sz_orig = elfcorebuf_sz;
++	elfcorebuf = (void *) __get_free_pages(GFP_KERNEL | __GFP_ZERO,
++					       get_order(elfcorebuf_sz_orig));
+ 	if (!elfcorebuf)
+ 		return -ENOMEM;
+ 	addr = elfcorehdr_addr;
+ 	rc = read_from_oldmem(elfcorebuf, elfcorebuf_sz, &addr, 0);
+ 	if (rc < 0) {
+-		kfree(elfcorebuf);
++		free_pages((unsigned long)elfcorebuf,
++			   get_order(elfcorebuf_sz_orig));
+ 		return rc;
+ 	}
+ 
+ 	/* Merge all PT_NOTE headers into one. */
+ 	rc = merge_note_headers_elf64(elfcorebuf, &elfcorebuf_sz, &vmcore_list);
+ 	if (rc) {
+-		kfree(elfcorebuf);
++		free_pages((unsigned long)elfcorebuf,
++			   get_order(elfcorebuf_sz_orig));
+ 		return rc;
+ 	}
+ 	rc = process_ptload_program_headers_elf64(elfcorebuf, elfcorebuf_sz,
+ 							&vmcore_list);
+ 	if (rc) {
+-		kfree(elfcorebuf);
++		free_pages((unsigned long)elfcorebuf,
++			   get_order(elfcorebuf_sz_orig));
+ 		return rc;
+ 	}
+ 	set_vmcore_list_offsets_elf64(elfcorebuf, &vmcore_list);
+@@ -665,26 +671,31 @@ static int __init parse_crash_elf32_headers(void)
+ 
+ 	/* Read in all elf headers. */
+ 	elfcorebuf_sz = ehdr.e_phoff + ehdr.e_phnum * sizeof(Elf32_Phdr);
+-	elfcorebuf = kmalloc(elfcorebuf_sz, GFP_KERNEL);
++	elfcorebuf_sz_orig = elfcorebuf_sz;
++	elfcorebuf = (void *) __get_free_pages(GFP_KERNEL | __GFP_ZERO,
++					       get_order(elfcorebuf_sz));
+ 	if (!elfcorebuf)
+ 		return -ENOMEM;
+ 	addr = elfcorehdr_addr;
+ 	rc = read_from_oldmem(elfcorebuf, elfcorebuf_sz, &addr, 0);
+ 	if (rc < 0) {
+-		kfree(elfcorebuf);
++		free_pages((unsigned long)elfcorebuf,
++			   get_order(elfcorebuf_sz_orig));
+ 		return rc;
+ 	}
+ 
+ 	/* Merge all PT_NOTE headers into one. */
+ 	rc = merge_note_headers_elf32(elfcorebuf, &elfcorebuf_sz, &vmcore_list);
+ 	if (rc) {
+-		kfree(elfcorebuf);
++		free_pages((unsigned long)elfcorebuf,
++			   get_order(elfcorebuf_sz_orig));
+ 		return rc;
+ 	}
+ 	rc = process_ptload_program_headers_elf32(elfcorebuf, elfcorebuf_sz,
+ 								&vmcore_list);
+ 	if (rc) {
+-		kfree(elfcorebuf);
++		free_pages((unsigned long)elfcorebuf,
++			   get_order(elfcorebuf_sz_orig));
+ 		return rc;
+ 	}
+ 	set_vmcore_list_offsets_elf32(elfcorebuf, &vmcore_list);
+@@ -766,7 +777,8 @@ void vmcore_cleanup(void)
+ 		list_del(&m->list);
+ 		kfree(m);
+ 	}
+-	kfree(elfcorebuf);
++	free_pages((unsigned long)elfcorebuf,
++		   get_order(elfcorebuf_sz_orig));
+ 	elfcorebuf = NULL;
+ }
+ EXPORT_SYMBOL_GPL(vmcore_cleanup);
+
