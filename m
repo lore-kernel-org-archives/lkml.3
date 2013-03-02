@@ -1,88 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752854Ab3CBN1c (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Mar 2013 08:27:32 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:53392 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752081Ab3CBN13 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Mar 2013 08:27:29 -0500
-X-AuditID: cbfee691-b7faa6d000005ae9-65-5131fe401f15
-From: Vivek Gautam <gautam.vivek@samsung.com>
-To: linux-usb@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, gregkh@linuxfoundation.org,
-        balbi@ti.com
-Subject: [PATCH] usb: dwc3: Set DWC3 context's mode based on selected mode.
-Date: Sat, 02 Mar 2013 18:55:24 +0530
-Message-id: <1362230724-21017-1-git-send-email-gautam.vivek@samsung.com>
-X-Mailer: git-send-email 1.7.6.5
-In-reply-to: <CAFp+6iGGAY=nMg03-bqHz=XuNP+1t9mQR=M53HGoqCXv=t+f0Q@mail.gmail.com>
-References: <CAFp+6iGGAY=nMg03-bqHz=XuNP+1t9mQR=M53HGoqCXv=t+f0Q@mail.gmail.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrELMWRmVeSWpSXmKPExsWyRsSkVtfhn2GgwbSjxhaXd81hs5i9pJ/F
-	Ysb5fUwWi5a1MjuweHzeJBfAGMVlk5Kak1mWWqRvl8CVsf3xLvaC9ZwVi64LNDBeY+9i5OCQ
-	EDCR2L8pqouRE8gUk7hwbz1bFyMXh5DAUkaJ18232CASJhJNK86zQiQWMUpcfLUXLCEkMIVJ
-	4ly7PojNJqAr0fR2FyOILSIgK3H4ym9mkAZmgW5GibmLW5hBEsIC3hJXT+0Gs1kEVCWmr1vL
-	AmLzCnhITPtznRlim4LEm9vPwGxOgWCJpV39UMsCJG4v3Q42VELgNZvEidbXbBCDBCS+TT7E
-	AvGOrMSmA1BzJCUOrrjBMoFReAEjwypG0dSC5ILipPQiU73ixNzi0rx0veT83E2MwPA8/e/Z
-	xB2M9w9YH2JMBho3kVlKNDkfGN55JfGGxibmpsamZkaWlpampAkrifPKX5IJFBJITyxJzU5N
-	LUgtii8qzUktPsTIxMEp1cAYdLk0XVBir8ZFc941u7ty1KQMpv6uWdlns/SqmaD21r39v87v
-	cVte+XFhz3GWogC1SQn+a5mVsv72fQkJ5TjyJ1IpaGXiraNGEz/U1DVInmE2qNLYdctAgcXW
-	vcTx6Z31+/L+H2pwPCwmc+x92zxlVV3bxoI165MOxPLu2D65KchU7FUd1wElluKMREMt5qLi
-	RABM8v/vZQIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrAIsWRmVeSWpSXmKPExsVy+t9jAV2Hf4aBBrvOa1lc3jWHzWL2kn4W
-	ixnn9zFZLFrWyuzA4vF5k1wAY1QDo01GamJKapFCal5yfkpmXrqtkndwvHO8qZmBoa6hpYW5
-	kkJeYm6qrZKLT4CuW2YO0BIlhbLEnFKgUEBicbGSvh2mCaEhbroWMI0Rur4hQXA9RgZoIGEN
-	Y8b2x7vYC9ZzViy6LtDAeI29i5GTQ0LARKJpxXlWCFtM4sK99WxdjFwcQgKLGCUuvtrLBpIQ
-	EpjCJHGuXR/EZhPQlWh6u4sRxBYRkJU4fOU3M0gDs0A3o8TcxS3MIAlhAW+Jq6d2g9ksAqoS
-	09etZQGxeQU8JKb9uc4MsU1B4s3tZ2A2p0CwxNKufqhlARK3l25nnsDIu4CRYRWjaGpBckFx
-	UnqukV5xYm5xaV66XnJ+7iZGcPg/k97BuKrB4hCjAAejEg9vwEeDQCHWxLLiytxDjBIczEoi
-	vOevGgYK8aYkVlalFuXHF5XmpBYfYkwGumois5Rocj4wNvNK4g2NTcxNjU0tTSxMzCxJE1YS
-	52U89SRASCA9sSQ1OzW1ILUIZgsTB6dUA6MSf9t0wZO7CmV3CM0oPSG49R7n2bmL/K2/TOv+
-	sWzeK6m7qq33T/1RWJotrcYi8SBWL/jtu5rXG34uKC+ZdSdjde7bIulTq/8I/UmYNmvO6l/m
-	njENh6/9jG8r+Lb48FOehu3ZuRJdDw/4/NLSPbTy+PuN4V/3b7uma8Fx8vGdE8wvb7qbNW9d
-	r8RSnJFoqMVcVJwIAJRFin7DAgAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1752705Ab3CBN1N (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Mar 2013 08:27:13 -0500
+Received: from mms1.broadcom.com ([216.31.210.17]:4171 "EHLO mms1.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752536Ab3CBN1J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 2 Mar 2013 08:27:09 -0500
+X-Server-Uuid: 06151B78-6688-425E-9DE2-57CB27892261
+Message-ID: <5131FE1F.5010309@broadcom.com>
+Date: Sat, 2 Mar 2013 14:26:55 +0100
+From: "Arend van Spriel" <arend@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US;
+ rv:1.9.2.24) Gecko/20111103 Lightning/1.0b2 Thunderbird/3.1.16
+MIME-Version: 1.0
+To: "Joe Perches" <joe@perches.com>
+cc: "Andy Whitcroft" <apw@canonical.com>, linux-kernel@vger.kernel.org
+Subject: Re: checkpatch bailing out
+References: <5131EA60.40607@broadcom.com>
+ <1362229674.2254.5.camel@joe-AO722>
+In-Reply-To: <1362229674.2254.5.camel@joe-AO722>
+X-WSS-ID: 7D2F222E23C6087755-01-01
+Content-Type: text/plain;
+ charset=iso-8859-1;
+ format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that machines may select the mode of working of DWC3 (HOST only,
-GADGET only or DUAL_ROLE), lets set DWC3 mode based on that
-rather than fixing it to whatever DWC3 hardware says.
-This way we can skip initializing Gadget/Host in case
-we are using Host-only/Gadget-only mode respectively.
+On 03/02/13 14:07, Joe Perches wrote:
+> On Sat, 2013-03-02 at 13:02 +0100, Arend van Spriel wrote:
+>> With my laptop being broken I have to work on a server provided by my
+>> employer and I am preparing some patches for submission. So I intended
+>> to run checkpatch, but I get the following message after which the
+>> script bails out:
+>>
+>> $ git format-patch -1 --stdout | scripts/checkpatch.pl -
+>> Nested quantifiers in regex; marked by<-- HERE in m/(\((?:[^\(\)]++<--
+>> HERE |(?-1))*\))/ at scripts/checkpatch.pl line 347.
+>>
+>> The server runs RHEL5
+>>
+>> 2.6.18-308.20.1.el5 #1 SMP x86_64 GNU/Linux
+>>
+>> Perl interpreter:
+>>
+>> $ /usr/bin/perl -v
+>>
+>> This is perl, v5.8.8 built for x86_64-linux-thread-multi
+>>
+>> My repository is based on wireless-testing repo.
+>>
+>> Did a quick search on LKML, but not finding anything like this. Any help
+>> would be appreciated here.
+>
+> Sorry, I don't have perl 5.8.8, it's pretty old.
+>
+> Perhaps this explains it:
+> http://www.perlmonks.org/?node_id=971814 (question)
+> http://www.perlmonks.org/?node_id=971883 (explanation)
+>
+> Perhaps you could test this patch?
 
-Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
----
+No luck. Fails on the same line although the message is different.
 
-Changes from RFC patch "usb: dwc3: Set GCTL.PrtCapDir based on selected mode"
- - Setting the mode in dwc3 context structure based on
-   selected mode in machine, rather than programming PrtCapDir
+$ git format-patch -1 --stdout | scripts/checkpatch.pl -
+Sequence (?-1...) not recognized in regex; marked by <-- HERE in 
+m/(\((?:(?>[^\(\)]+)|(?-1 <-- HERE ))*\))/ at scripts/checkpatch.pl line 
+347.
 
- drivers/usb/dwc3/core.c |    7 ++++++-
- 1 files changed, 6 insertions(+), 1 deletions(-)
+> ---
+>   scripts/checkpatch.pl | 2 +-
+>   1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+> index b28cc38..fb53845 100755
+> --- a/scripts/checkpatch.pl
+> +++ b/scripts/checkpatch.pl
+> @@ -344,7 +344,7 @@ our $Typecast	= qr{\s*(\(\s*$NonptrType\s*\)){0,1}\s*};
+>   # requires at least perl version v5.10.0
 
-diff --git a/drivers/usb/dwc3/core.c b/drivers/usb/dwc3/core.c
-index 79f335f..be0672f 100644
---- a/drivers/usb/dwc3/core.c
-+++ b/drivers/usb/dwc3/core.c
-@@ -478,7 +478,12 @@ static int dwc3_probe(struct platform_device *pdev)
- 		goto err1;
- 	}
- 
--	mode = DWC3_MODE(dwc->hwparams.hwparams0);
-+	if (IS_ENABLED(CONFIG_USB_DWC3_HOST))
-+		mode = DWC3_MODE_HOST;
-+	else if (IS_ENABLED(CONFIG_USB_DWC3_GADGET))
-+		mode = DWC3_MODE_DEVICE;
-+	else
-+		mode = DWC3_MODE_DRD;
- 
- 	switch (mode) {
- 	case DWC3_MODE_DEVICE:
--- 
-1.7.6.5
+Anyway, I will try to meet this requirement instead of chasing this. 
+Thanks for looking into this.
+
+Regards,
+Arend
 
