@@ -1,146 +1,231 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752541Ab3CBTsQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Mar 2013 14:48:16 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:49186 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752264Ab3CBTsO (ORCPT
+	id S1752589Ab3CBTtZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Mar 2013 14:49:25 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:57387 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752277Ab3CBTtY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Mar 2013 14:48:14 -0500
-Message-ID: <1362253682.3768.136.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [ 34/77] xen/blkback: Dont trust the handle from the frontend.
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Jan Beulich <jbeulich@suse.com>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Date: Sat, 02 Mar 2013 19:48:02 +0000
-In-Reply-To: <1362172344.20156.15.camel@x61.thuisdomein>
-References: <20130301194351.913471337@linuxfoundation.org>
-	 <20130301194355.578429064@linuxfoundation.org>
-	 <1362172344.20156.15.camel@x61.thuisdomein>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-GLnuQQLz7b0Vua9BtO87"
-X-Mailer: Evolution 3.4.4-2 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Sat, 2 Mar 2013 14:49:24 -0500
+Date: Sat, 2 Mar 2013 19:49:23 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Russ Dill <russ.dill@gmail.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: fasync race in fs/fcntl.c
+Message-ID: <20130302194923.GE4503@ZenIV.linux.org.uk>
+References: <CA+Bv8XZM7yO-=vrGZg5LFLik8YkQiMC9ppCgQbyi1yuLiKstJQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+Bv8XZM7yO-=vrGZg5LFLik8YkQiMC9ppCgQbyi1yuLiKstJQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, Mar 02, 2013 at 03:00:28AM -0800, Russ Dill wrote:
+> I'm seeing a race in fs/fcntl.c. I'm not sure exactly how the race is
+> occurring, but the following is my best guess. A kernel log is
+> attached.
 
---=-GLnuQQLz7b0Vua9BtO87
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+[snip the analysis - it's a different lock anyway]
 
-On Fri, 2013-03-01 at 22:12 +0100, Paul Bolle wrote:
-> On Fri, 2013-03-01 at 11:44 -0800, Greg Kroah-Hartman wrote:
-> > 3.8-stable review patch.  If anyone has any objections, please let me k=
-now.
-> >=20
-> > ------------------
-> >=20
-> > From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> >=20
-> > commit 01c681d4c70d64cb72142a2823f27c4146a02e63 upstream.
-> >=20
-> > The 'handle' is the device that the request is from. For the life-time
-> > of the ring we copy it from a request to a response so that the fronten=
-d
-> > is not surprised by it. But we do not need it - when we start processin=
-g
-> > I/Os we have our own 'struct phys_req' which has only most essential
-> > information about the request. In fact the 'vbd_translate' ends up
-> > over-writing the preq.dev with a value from the backend.
->=20
-> Unless that call to vb_translate() fails, doesn't it? Wouldn't preq.dev
-> still contain random data in that case?
->=20
-> > This assignment of preq.dev with the 'handle' value is superfluous
-> > so lets not do it.
-> >=20
-> > Acked-by: Jan Beulich <jbeulich@suse.com>
-> > Acked-by: Ian Campbell <ian.campbell@citrix.com>
-> > Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> > Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> >=20
-> > ---
-> >  drivers/block/xen-blkback/blkback.c |    1 -
-> >  1 file changed, 1 deletion(-)
-> >=20
-> > --- a/drivers/block/xen-blkback/blkback.c
-> > +++ b/drivers/block/xen-blkback/blkback.c
-> > @@ -879,7 +879,6 @@ static int dispatch_rw_block_io(struct x
-> >  		goto fail_response;
-> >  	}
-> > =20
-> > -	preq.dev           =3D req->u.rw.handle;
-> >  	preq.sector_number =3D req->u.rw.sector_number;
-> >  	preq.nr_sects      =3D 0;
-> > =20
->=20
-> This introduces a new GCC warning in the stable 3.8.y tree:
->     drivers/block/xen-blkback/blkback.c: In function 'dispatch_rw_block_i=
-o':
->     drivers/block/xen-blkback/blkback.c:904:3: warning: 'preq.dev' may be=
- used uninitialized in this function [-Wuninitialized]
->=20
-> It does look GCC is right here. But I'm totally new to the code in
-> question, so I'll just ask whether this can really go in stable as is.
+The traces below are essentially sys_execve() getting to get_random_bytes(),
+to kill_fasync(), to send_sigio(), which spins on tasklist_lock.
 
-When gcc compiles something like this:
+Could you rebuild it with lockdep enabled and try to reproduce that?
+I very much doubt that this execve() is a part of deadlock - it's
+getting caught on one, but it shouldn't be holding any locks that
+nest inside tasklist_lock at that point, so even it hadn't been there,
+the process holding tasklist_lock probably wouldn't have progressed any
+further...
 
-static int foo(int *p)
-{
-	if (rand() & 1)
-		return -1;
-	*p =3D 0;
-	return 0;
-}
-
-int bar(void)
-{
-	int i;
-	if (foo(&i) < 0)
-		return 1;
-	return i;
-}
-
-and inlines foo() into bar(), sometimes it fails to recognise that i
-will definitely be initialised before use.  This simple example seems to
-be OK but more complex functions such as these will often trigger this
-warning.  The warning is really quite useless now.
-
-Ben.
-
---=20
-Ben Hutchings
-Computers are not intelligent.	They only think they are.
-
---=-GLnuQQLz7b0Vua9BtO87
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIVAwUAUTJXc+e/yOyVhhEJAQpY1g//QXsGPYdj0UxLAlbyT7xXyeD1t5iZXoE6
-sDQFVbT8DmtCDoLOxUtrkJzz657ZhNGzEJK3ppKJHRPdq0egD2EhxPbzX+bw6fa7
-fxjc10l/nimM8WNiSlcbKO7fZ6yjDziqfXltFOc2vYgTukyoHFVdQkMBoYusz3+7
-eSqMhmVJJyTeHakA8vm2LHTOsW+xiTAXo3oPMu4KIqGUQETA8pmik1F+B2/YlRjZ
-dXA8hE0A/Nmh7y7cwfRGvvLlOBXHYE+k3HPq6N9vk/1nWKX6acGtR1k67/mwlIqM
-aKJM29ZufCWRFm7c1NuH8KUNL7XpkPAMR2BlNzGQadYsi9OAjRtSztNrzf80fmOS
-MRzsQOxNlinXp3Ke4cONB8sfAr9MAoxQBqf9p8ZADrJL6Zfx9hbHLUq7YogRS35L
-l5oHxWIKrL0adsKsE6DridGjWh1mUiMcJ8UN1bftLvwBE81ZVALf5QPMENJis+0H
-fBDZP5DIePyPaPFUFfzS5Ya1H6ALMacubadUEmMr7FphOHhR0GjieQ30/i27w/HD
-rj39CwZR+OBCiyptFt+YzPqcjDMHHaCs6SbzKXdT0UR9+sRGC+qAn6TzIFcKGSwB
-RHpiZhh5y8r/BsVScLxmT8VCECagPa/y61AvensKsJ8Vy+eUUP4r2x1kUUCcRRfP
-asKn8emB8I0=
-=NQDm
------END PGP SIGNATURE-----
-
---=-GLnuQQLz7b0Vua9BtO87--
+> I exercise this by running a UML instance which uses /dev/random.
+> After a day or so, I'll eventually get a crash or a hang. I captured
+> this with netconsole.
+> 
+> 
+> [172635.399438] ------------[ cut here ]------------
+> [172635.399449] WARNING: at
+> /build/buildd/linux-3.8.0/kernel/watchdog.c:246
+> watchdog_overflow_callback+0x9c/0xd0()
+> [172635.399451] Hardware name: VPCSE190X
+> [172635.399454] Watchdog detected hard LOCKUP on cpu 0
+> [172635.399456] Modules linked in: ftdi_sio netconsole(F) configfs(F)
+> ext2(F) nls_iso8859_1(F) usb_storage(F) pl2303 usbserial snd
+> _usb_audio snd_usbmidi_lib parport_pc(F) ppdev(F) lp(F) parport(F)
+> bnep rfcomm bluetooth binfmt_misc(F) dm_crypt(F) uvcvideo arc4(
+> F) snd_hda_codec_hdmi iwldvm snd_hda_codec_realtek snd_hda_intel
+> videobuf2_vmalloc videobuf2_memops mac80211 videobuf2_core snd_hd
+> a_codec videodev snd_hwdep(F) coretemp snd_pcm(F) snd_page_alloc(F)
+> joydev(F) iwlwifi[172635.399521] ------------[ cut here ]------------
+> [172635.399525] WARNING: at
+> /build/buildd/linux-3.8.0/net/core/skbuff.c:573
+> skb_release_head_state+0xed/0x100()
+> [172635.399525] Hardware name: VPCSE190X
+> [172635.399526] Modules linked in: ftdi_sio netconsole(F) configfs(F)
+> ext2(F) nls_iso8859_1(F) usb_storage(F) pl2303 usbserial snd_usb_audio
+> snd_usbmidi_lib parport_pc(F) ppdev(F) lp(F) parport(F) bnep rfcomm
+> bluetooth binfmt_misc(F) dm_crypt(F) uvcvideo arc4(F)
+> snd_hda_codec_hdmi iwldvm snd_hda_codec_realtek snd_hda_intel
+> videobuf2_vmalloc videobuf2_memops mac80211 videobuf2_core
+> snd_hda_codec videodev snd_hwdep(F) coretemp snd_pcm(F)
+> snd_page_alloc(F) joydev(F) iwlwifi kvm_intel snd_seq_midi(F)
+> snd_seq_midi_event(F) snd_rawmidi(F) kvm cfg80211 dm_multipath(F)
+> snd_seq(F) snd_seq_device(F) tpm_infineon snd_timer(F) psmouse(F)
+> snd(F) soundcore(F) scsi_dh serio_raw(F) sony_laptop rtsx_pci_ms mei
+> microcode(F) memstick mac_hid pcspkr lpc_ich tpm_tis firewire_sbp2
+> firewire_core crc_itu_t(F) btrfs(F) zlib_deflate(F) libcrc32c(F)
+> hid_generic usbhid hid rtsx_pci_sdmmc ghash_clmulni_intel(F)
+> aesni_intel(F) aes_x86_64(F) xts(F) lrw(F) gf128mul(F) ablk_helper(F)
+> cryptd(F) radeon ahci(F) libahci(F) r8169 i915 ttm i2c_algo_bit
+> drm_kms_helper video(F) drm rtsx_pci
+> [172635.399572] Pid: 12575, comm: flock Tainted: GF
+> 3.8.0-7-generic #15-Ubuntu
+> [172635.399572] Call Trace:
+> [172635.399573]  <NMI>  [<ffffffff810587cf>] warn_slowpath_common+0x7f/0xc0
+> [172635.399577]  [<ffffffff8105882a>] warn_slowpath_null+0x1a/0x20
+> [172635.399579]  [<ffffffff815b51bd>] skb_release_head_state+0xed/0x100
+> [172635.399580]  [<ffffffff815b4fb2>] __kfree_skb+0x12/0xa0
+> [172635.399582]  [<ffffffff815b551c>] consume_skb+0x2c/0x80
+> [172635.399586]  [<ffffffffa014cf47>] rtl8169_poll+0x4b7/0x6d0 [r8169]
+> [172635.399590]  [<ffffffff815d96c2>] netpoll_poll_dev+0x162/0x580
+> [172635.399593]  [<ffffffff815b666b>] ? __alloc_skb+0x8b/0x2a0
+> [172635.399595]  [<ffffffff815d9c6c>] netpoll_send_skb_on_dev+0x18c/0x3a0
+> [172635.399598]  [<ffffffff815da198>] netpoll_send_udp+0x278/0x2a0
+> [172635.399600]  [<ffffffffa07c4967>] write_msg+0xc7/0x110 [netconsole]
+> [172635.399603]  [<ffffffff810594f1>]
+> call_console_drivers.constprop.13+0x91/0x100
+> [172635.399605]  [<ffffffff81059e4b>] console_unlock+0x2db/0x420
+> [172635.399606]  [<ffffffff8105a7dd>] vprintk_emit+0x1fd/0x4e0
+> [172635.399608]  [<ffffffff810e8ffc>] ? watchdog_overflow_callback+0x9c/0xd0
+> [172635.399610]  [<ffffffff816b78c1>] printk+0x67/0x69
+> [172635.399613]  [<ffffffff810c0423>] print_modules+0xa3/0xd0
+> [172635.399617]  [<ffffffff810587ca>] warn_slowpath_common+0x7a/0xc0
+> [172635.399618]  [<ffffffff810588cc>] warn_slowpath_fmt+0x4c/0x50
+> [172635.399620]  [<ffffffff8109170d>] ? sched_clock_cpu+0xbd/0x110
+> [172635.399623]  [<ffffffff810e8f60>] ? touch_nmi_watchdog+0x80/0x80
+> [172635.399625]  [<ffffffff810e8ffc>] watchdog_overflow_callback+0x9c/0xd0
+> [172635.399627]  [<ffffffff8112609d>] __perf_event_overflow+0x9d/0x230
+> [172635.399630]  [<ffffffff81025277>] ? x86_perf_event_set_period+0xd7/0x160
+> [172635.399632]  [<ffffffff81126cb4>] perf_event_overflow+0x14/0x20
+> [172635.399634]  [<ffffffff8102ad8b>] intel_pmu_handle_irq+0x1ab/0x330
+> [172635.399637]  [<ffffffff816c5b9d>] perf_event_nmi_handler+0x1d/0x20
+> [172635.399640]  [<ffffffff816c5351>] nmi_handle.isra.0+0x51/0x80
+> [172635.399641]  [<ffffffff816c5460>] do_nmi+0xe0/0x360
+> [172635.399643]  [<ffffffff816c4981>] end_repeat_nmi+0x1e/0x2e
+> [172635.399645]  [<ffffffff813536d9>] ? __read_lock_failed+0x9/0x20
+> [172635.399648]  [<ffffffff813536d9>] ? __read_lock_failed+0x9/0x20
+> [172635.399649]  [<ffffffff813536d9>] ? __read_lock_failed+0x9/0x20
+> [172635.399651]  <<EOE>>  [<ffffffff816c3e13>] _raw_read_lock+0x13/0x20
+> [172635.399654]  [<ffffffff811a4532>] send_sigio+0x52/0xf0
+> [172635.399656]  [<ffffffff811a4631>] kill_fasync+0x61/0x90
+> [172635.399658]  [<ffffffff8143ad83>] account+0x113/0x1d0
+> [172635.399661]  [<ffffffff816c4618>] ? page_fault+0x28/0x30
+> [172635.399663]  [<ffffffff8143b335>] extract_entropy+0x65/0x140
+> [172635.399664]  [<ffffffff8143b650>] get_random_bytes+0x20/0x30
+> [172635.399666]  [<ffffffff816bb2a9>] create_elf_tables+0xaa/0x614
+> [172635.399669]  [<ffffffff811e8a84>] load_elf_binary+0xae4/0xe00
+> [172635.399672]  [<ffffffff811e7fa0>] ? load_elf_library+0x240/0x240
+> [172635.399674]  [<ffffffff8119999e>] search_binary_handler+0x19e/0x340
+> [172635.399677]  [<ffffffff8119ad15>] do_execve_common.isra.22+0x3c5/0x470
+> [172635.399679]  [<ffffffff8119add8>] do_execve+0x18/0x20
+> [172635.399680]  [<ffffffff8119b07d>] sys_execve+0x3d/0x60
+> [172635.399682]  [<ffffffff816ccb49>] stub_execve+0x69/0xc0
+> [172635.399685] ---[ end trace 5ccb38c703860d58 ]---
+> [172635.399687] ------------[ cut here ]------------
+> [172635.399688] WARNING: at
+> /build/buildd/linux-3.8.0/net/core/skbuff.c:573
+> skb_release_head_state+0xed/0x100()
+> [172635.399689] Hardware name: VPCSE190X
+> [172635.399689] Modules linked in: ftdi_sio netconsole(F) configfs(F)
+> ext2(F) nls_iso8859_1(F) usb_storage(F) pl2303 usbserial snd_usb_audio
+> snd_usbmidi_lib parport_pc(F) ppdev(F) lp(F) parport(F) bnep rfcomm
+> bluetooth binfmt_misc(F) dm_crypt(F) uvcvideo arc4(F)
+> snd_hda_codec_hdmi iwldvm snd_hda_codec_realtek snd_hda_intel
+> videobuf2_vmalloc videobuf2_memops mac80211 videobuf2_core
+> snd_hda_codec videodev snd_hwdep(F) coretemp snd_pcm(F)
+> snd_page_alloc(F) joydev(F) iwlwifi kvm_intel snd_seq_midi(F)
+> snd_seq_midi_event(F) snd_rawmidi(F) kvm cfg80211 dm_multipath(F)
+> snd_seq(F) snd_seq_device(F) tpm_infineon snd_timer(F) psmouse(F)
+> snd(F) soundcore(F) scsi_dh serio_raw(F) sony_laptop rtsx_pci_ms mei
+> microcode(F) memstick mac_hid pcspkr lpc_ich tpm_tis firewire_sbp2
+> firewire_core crc_itu_t(F) btrfs(F) zlib_deflate(F) libcrc32c(F)
+> hid_generic usbhid hid rtsx_pci_sdmmc ghash_clmulni_intel(F)
+> aesni_intel(F) aes_x86_64(F) xts(F) lrw(F) gf128mul(F) ablk_helper(F)
+> cryptd(F) radeon ahci(F) libahci(F) r8169 i915 ttm i2c_algo_bit
+> drm_kms_helper video(F) drm rtsx_pci
+> [172635.399725] Pid: 12575, comm: flock Tainted: GF       W
+> 3.8.0-7-generic #15-Ubuntu
+> [172635.399726] Call Trace:
+> [172635.399726]  <NMI>  [<ffffffff810587cf>] warn_slowpath_common+0x7f/0xc0
+> [172635.399728]  [<ffffffff8105882a>] warn_slowpath_null+0x1a/0x20
+> [172635.399729]  [<ffffffff815b51bd>] skb_release_head_state+0xed/0x100
+> [172635.399731]  [<ffffffff815b4fb2>] __kfree_skb+0x12/0xa0
+> [172635.399732]  [<ffffffff815b551c>] consume_skb+0x2c/0x80
+> [172635.399735]  [<ffffffffa014cf47>] rtl8169_poll+0x4b7/0x6d0 [r8169]
+> [172635.399738]  [<ffffffff815d96c2>] netpoll_poll_dev+0x162/0x580
+> [172635.399740]  [<ffffffff815b666b>] ? __alloc_skb+0x8b/0x2a0
+> [172635.399742]  [<ffffffff815d9c6c>] netpoll_send_skb_on_dev+0x18c/0x3a0
+> [172635.399744]  [<ffffffff815da198>] netpoll_send_udp+0x278/0x2a0
+> [172635.399746]  [<ffffffffa07c4967>] write_msg+0xc7/0x110 [netconsole]
+> [172635.399749]  [<ffffffff810594f1>]
+> call_console_drivers.constprop.13+0x91/0x100
+> [172635.399750]  [<ffffffff81059e4b>] console_unlock+0x2db/0x420
+> [172635.399752]  [<ffffffff8105a7dd>] vprintk_emit+0x1fd/0x4e0
+> [172635.399754]  [<ffffffff810e8ffc>] ? watchdog_overflow_callback+0x9c/0xd0
+> [172635.399756]  [<ffffffff816b78c1>] printk+0x67/0x69
+> [172635.399757]  [<ffffffff810c0423>] print_modules+0xa3/0xd0
+> [172635.399760]  [<ffffffff810587ca>] warn_slowpath_common+0x7a/0xc0
+> [172635.399761]  [<ffffffff810588cc>] warn_slowpath_fmt+0x4c/0x50
+> [172635.399763]  [<ffffffff8109170d>] ? sched_clock_cpu+0xbd/0x110
+> [172635.399765]  [<ffffffff810e8f60>] ? touch_nmi_watchdog+0x80/0x80
+> [172635.399766]  [<ffffffff816c4981>] end_repeat_nmi+0x1e/0x2e
+>  [<ffffffff811a4631>] kill_fasync+0x61/0x90
+> [172635.399793]  [<ffffffff8143ad83>] account+0x113/0x1d0
+> [172635.399794]  [<ffffffff816c4618>] ? page_fault+0x28/0x30
+> [172635.399796] [172635.399800]  [<ffffffff816bb2a9>]
+> create_elf_tables+0xaa/0x614
+> [172635.399802]  [<ffffffff811e8a84>] load_elf_binary+0xae4/0xe00
+> [172635.399804]  [<ffffffff811e7fa0>] ? load_elf_library+0x240/0x240
+>  [<ffffffff8119ad15>] do_execve_common.isra.22+0x3c5/0x470
+> [172635.399810]  [<ffffffff8119add8>] do_execve+0x18/0x20
+> [172635.399812]  [<ffffffff8119b07d>] sys_execve+0x3d/0x60
+> [172635.399813]  netconsole(F) configfs(F) ext2(F) bnep rfcomm
+> bluetooth binfmt_misc(F) dm_crypt(F) uvcvideo arc4(F)
+> snd_hda_codec_hdmi iwldvm snd_hwdep(F) coretemp snd_pcm(F)
+> snd_page_alloc(F) joydev(F) iwlwifi kvm_intel snd_seq_midi(F) scsi_dh
+> serio_raw(F) sony_laptop rtsx_pci_ms mei aes_x86_64(F) xts(F) lrw(F)
+> gf128mul(F) ablk_helper(F) i2c_algo_bit drm_kms_helper[172635.399858]
+> [<ffffffff815b51bd>] skb_release_head_state+0xed/0x100
+> [172635.399860]  [<ffffffff815b4fb2>] __kfree_skb+0x12/0xa0
+> [172635.399861]  [<ffffffff815b551c>] consume_skb+0x2c/0x80
+>  [<ffffffff815b666b>] ? __alloc_skb+0x8b/0x2a0
+> [172635.399870]  [<ffffffff815d9c6c>] netpoll_send_skb_on_dev+0x18c/0x3a0
+>  [<ffffffff810e8ffc>] ? watchdog_overflow_callback+0x9c/0xd0
+> [172635.399884]  [<ffffffff816b78c1>] printk+0x67/0x69
+>  [<ffffffff810588cc>] warn_slowpath_fmt+0x4c/0x50
+> [172635.399891]  [<ffffffff8109170d>] ? sched_clock_cpu+0xbd/0x110
+> [172635.399893]  [<ffffffff810e8f60>] ? touch_nmi_watchdog+0x80/0x80
+> [172635.399894]  [<ffffffff810e8ffc>] watchdog_overflow_callback+0x9c/0xd0
+> [172635.399896] [172635.399903] [172635.399907] [172635.399912]
+> [<ffffffff813536d9>] ? __read_lock_failed+0x9/0x20
+> [172635.399914]  [<ffffffff813536d9>] ? __read_lock_failed+0x9/0x20
+> [172635.399916]  <<EOE>>  [<ffffffff816c3e13>] _raw_read_lock+0x13/0x20
+> [172635.399918]  [<ffffffff811a4532>] send_sigio+0x52/0xf0
+>  [<ffffffff816bb2a9>] create_elf_tables+0xaa/0x614
+> [172635.399929] [172635.399939]  [<ffffffff8119b07d>] sys_execve+0x3d/0x60
+> [172635.399941]  [<ffffffff816ccb49>] stub_execve+0x69/0xc0
+> [172635.399943] ---[ end trace 5ccb38c703860d5a ]---
+> [172635.399944] ------------[ cut here ]------------
+>  nls_iso8859_1(F) usb_storage(F) parport_pc(F) ppdev(F) bluetooth
+> binfmt_misc(F) snd_hda_intel videobuf2_vmalloc videobuf2_memops
+> mac80211 videobuf2_core snd_hda_codec videodev snd_hwdep(F) snd_pcm(F)
+> snd_page_alloc(F) joydev(F) iwlwifi kvm_intel snd_seq_midi(F)
+> snd_seq_midi_event(F) dm_multipath(F) snd_seq(F) snd_seq_device(F)
+> tpm_infineon snd_timer(F)
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
