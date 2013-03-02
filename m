@@ -1,64 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752087Ab3CBEQU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 23:16:20 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:43438 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751486Ab3CBEQT (ORCPT
+	id S1752463Ab3CBEQq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 23:16:46 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:10023 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751186Ab3CBEQo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 23:16:19 -0500
-Date: Sat, 2 Mar 2013 12:15:50 +0800
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Cc: linux-kernel@vger.kernel.org, Magnus Damm <magnus.damm@gmail.com>,
-        Simon Horman <horms@verge.net.au>, devicetree-discuss@lists.ozlabs.org,
-        Samuel Ortiz <sameo@linux.intel.com>, Liam Girdwood <lrg@ti.com>,
-        Richard Purdie <rpurdie@rpsys.net>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-fbdev@vger.kernel.org
-Subject: Re: [PATCH v2] mfd: as3711: add OF support
-Message-ID: <20130302041547.GJ6610@opensource.wolfsonmicro.com>
-References: <Pine.LNX.4.64.1302181049510.4526@axis700.grange>
+	Fri, 1 Mar 2013 23:16:44 -0500
+X-IronPort-AV: E=Sophos;i="4.84,766,1355126400"; 
+   d="scan'208";a="27414654"
+Message-ID: <51317D2B.6060601@codeaurora.org>
+Date: Fri, 01 Mar 2013 20:16:43 -0800
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ONvqYzh+7ST5RsLk"
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.64.1302181049510.4526@axis700.grange>
-X-Cookie: Don't read everything you believe.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Randy Dunlap <rdunlap@infradead.org>
+CC: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-next@vger.kernel.org
+Subject: Re: mmotm 2013-03-01-15-50 uploaded (strict user copy)
+References: <20130301235135.E9F105A41B2@corp2gmr1-2.hot.corp.google.com> <51316B64.90102@infradead.org> <5131753F.3070302@codeaurora.org>
+In-Reply-To: <5131753F.3070302@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 03/01/13 19:42, Stephen Boyd wrote:
+> On 03/01/13 19:00, Randy Dunlap wrote:
+>> On 03/01/13 15:51, akpm@linux-foundation.org wrote:
+>>> The mm-of-the-moment snapshot 2013-03-01-15-50 has been uploaded to
+>>>
+>>>    http://www.ozlabs.org/~akpm/mmotm/
+>>>
+>> on i386:
+>>
+>> ERROR: "copy_from_user_overflow" [fs/binfmt_misc.ko] undefined!
+>>
+>> which I don't understand.
+>> lib/usercopy.o is built and building binfmt_misc.c says:
+>>
+>>   CC [M]  fs/binfmt_misc.o
+>> In file included from arch/x86/include/asm/uaccess.h:537:0,
+>>                  from include/linux/uaccess.h:5,
+>>                  from include/linux/highmem.h:8,
+>>                  from include/linux/pagemap.h:10,
+>>                  from fs/binfmt_misc.c:27:
+>> arch/x86/include/asm/uaccess_32.h: In function 'parse_command.part.1':
+>> arch/x86/include/asm/uaccess_32.h:211:26: warning: call to 'copy_from_user_overflow' declared with attribute warning: copy_from_user() buffer size is not provably correct [enabled by default]
+> Hm.. That's because it's part of lib and not obj, right?
+>
+> diff --git a/lib/Makefile b/lib/Makefile
+> index 59fabd0..4c55104 100644
+> --- a/lib/Makefile
+> +++ b/lib/Makefile
+> @@ -15,7 +15,7 @@ lib-y := ctype.o string.o vsprintf.o cmdline.o \
+>          is_single_threaded.o plist.o decompress.o kobject_uevent.o \
+>          earlycpio.o percpu-refcount.o
+>  
+> -lib-$(CONFIG_ARCH_HAS_DEBUG_STRICT_USER_COPY_CHECKS) += usercopy.o
+> +obj-$(CONFIG_ARCH_HAS_DEBUG_STRICT_USER_COPY_CHECKS) += usercopy.o
+>  lib-$(CONFIG_MMU) += ioremap.o
+>  lib-$(CONFIG_SMP) += cpumask.o
+>  
+>
 
---ONvqYzh+7ST5RsLk
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+I'm a little confused though because it is lib-y on x86 before my patch.
 
-On Mon, Feb 18, 2013 at 10:57:44AM +0100, Guennadi Liakhovetski wrote:
-> Add device-tree bindings to the AS3711 regulator and backlight drivers.
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
-Reviwed-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-
---ONvqYzh+7ST5RsLk
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRMXzpAAoJELSic+t+oim9mP4P/3LPolOrjtfEHCBXKMZWHybC
-taON9Mh4ilcgDBesKOFeruXg0SUl3aaUPH1ehiqvUvuaTZ6BlGDoNsK/St58iVo2
-d9YYck+IMSPFG/ay6MysSyajSGgIEKgb+fhANML+idVe96f8vJXLG9gfWl7uXuEX
-pu+Zt7P2HEaiWSpGtADhmd0jaBpKNnnWGP0pGK887RgLBrNwGRC4BoFJnKhY9K3y
-lzECew50Vw7cvvWY/EzLt5sqH7WzgRTmMJHH2haN2d/lr/Ch8e9Itb4OeZV8+tMr
-uzdg3Ws1a1OdgBtiplflk8gf6D7bFX/BhQcZuYkfacgAWhVVxPXYLV70a9OrSHk0
-C3wgMqTiEpsaD+O4gqFOvQOCO/cRfQPySihYmDYYa4bDwgkDyAyQFo9WwBms8Ffb
-S8zSofTyosh9N1tCIVjX6aRr2mjJUtYeOozMla57q7j2VKBvVpdo1Q8ScgiPQooY
-JAwbRQg8YphWBR4egBv7+5X6B1LTrRIcX2JOmVWqwygiW5RMKbY3cGZPcI9Jp970
-YO5oRpaIdhwYW1WqpfAVUZacLgEgnoWES03sZAXDa1XATyxYx8nGhk+seGyxG2hr
-oDnuy1Z3pg5RqGQkXEXPm96sbw8HUqshL89MblxFAlEBKoB1jL1tHuaes+/PWBHa
-ps7biEzBkQcUtKHBSWBF
-=0rwG
------END PGP SIGNATURE-----
-
---ONvqYzh+7ST5RsLk--
