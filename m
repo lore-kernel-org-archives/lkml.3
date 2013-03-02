@@ -1,98 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752602Ab3CBUOI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Mar 2013 15:14:08 -0500
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:40879 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752387Ab3CBUOG (ORCPT
+	id S1752608Ab3CBU0V (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Mar 2013 15:26:21 -0500
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:36615 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752460Ab3CBU0U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Mar 2013 15:14:06 -0500
-Date: Sat, 2 Mar 2013 15:13:56 -0500
-From: Neil Horman <nhorman@tuxdriver.com>
-To: Prarit Bhargava <prarit@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Don Zickus <dzickus@redhat.com>,
-        Don Dutile <ddutile@redhat.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        Asit Mallick <asit.k.mallick@intel.com>, linux-pci@vger.kernel.org
-Subject: Re: [PATCH] irq: add quirk for broken interrupt remapping on 55XX
- chipsets
-Message-ID: <20130302201356.GB13985@neilslaptop.think-freely.org>
-References: <1362158276-4901-1-git-send-email-nhorman@tuxdriver.com>
- <51322709.6060702@redhat.com>
+	Sat, 2 Mar 2013 15:26:20 -0500
+Date: Sat, 2 Mar 2013 12:26:15 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, laijs@cn.fujitsu.com, axboe@kernel.dk,
+        jmoyer@redhat.com, zab@redhat.com, Kay Sievers <kay.sievers@vrfy.org>
+Subject: Re: [PATCH 30/31] driver/base: implement subsys_virtual_register()
+Message-ID: <20130302202615.GA3678@htj.dyndns.org>
+References: <1362194662-2344-1-git-send-email-tj@kernel.org>
+ <1362194662-2344-31-git-send-email-tj@kernel.org>
+ <20130302181727.GB2051@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <51322709.6060702@redhat.com>
+In-Reply-To: <20130302181727.GB2051@kroah.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 02, 2013 at 11:21:29AM -0500, Prarit Bhargava wrote:
-> On 03/01/2013 12:17 PM, Neil Horman wrote:
-> > A few years back intel published a spec update:
-> > http://www.intel.com/content/dam/doc/specification-update/5520-and-5500-chipset-ioh-specification-update.pdf
-> > 
-> > For the 5520 and 5500 chipsets which contained an errata (specificially errata
-> > 53), which noted that these chipsets can't properly do interrupt remapping, and
-> > as a result the recommend that interrupt remapping be disabled in bios.  While
-> > many vendors have a bios update to do exactly that, not all do, and of course
-> > not all users update their bios to a level that corrects the problem.  As a
-> > result, occasionally interrupts can arrive at a cpu even after affinity for that
-> > interrupt has be moved, leading to lost or spurrious interrupts (usually
-> > characterized by the message:
-> > kernel: do_IRQ: 7.71 No irq handler for vector (irq -1)
-> > 
-> > There have been several incidents recently of people seeing this error, and
-> > investigation has shown that they have system for which their BIOS level is such
-> > that this feature was not properly turned off.  As such, it would be good to
-> > give them a reminder that their systems are vulnurable to this problem.
-> > 
-> > Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
-> > CC: Prarit Bhargava <prarit@redhat.com>
-> > CC: Don Zickus <dzickus@redhat.com>
-> > CC: Don Dutile <ddutile@redhat.com>
-> > CC: Bjorn Helgaas <bhelgaas@google.com>
-> > CC: Asit Mallick <asit.k.mallick@intel.com>
-> > CC: linux-pci@vger.kernel.org
-> > ---
-> >  drivers/iommu/intel_irq_remapping.c | 20 ++++++++++++++++++++
-> >  include/linux/pci_ids.h             |  2 ++
-> >  2 files changed, 22 insertions(+)
-> > 
-> > diff --git a/drivers/iommu/intel_irq_remapping.c b/drivers/iommu/intel_irq_remapping.c
-> > index f3b8f23..9bfb6c2 100644
-> > --- a/drivers/iommu/intel_irq_remapping.c
-> > +++ b/drivers/iommu/intel_irq_remapping.c
-> > @@ -1113,3 +1113,23 @@ struct irq_remap_ops intel_irq_remap_ops = {
-> >  	.msi_setup_irq		= intel_msi_setup_irq,
-> >  	.setup_hpet_msi		= intel_setup_hpet_msi,
-> >  };
-> > +
-> > +
-> > +static void intel_remapping_check(struct pci_dev *dev)
-> > +{
-> > +	u8 revision;
-> > +
-> > +	pci_read_config_byte(dev, PCI_REVISION_ID, &revision);
-> > +
-> > +	if ((revision == 0x13) && irq_remapping_enabled) {
-> > +		pr_warn("WARNING WARNING WARNING WARNING WARNING WARNING\n"
-> > +			"This system BIOS has enabled interrupt remapping\n"
-> > +			"on a chipset that contains an errata making that\n"
-> > +			"feature unstable.  Please reboot with nointremap\n"
-> > +			"added to the kernel command line and contact\n"
-> > +			"your BIOS vendor for an update");
-> 
-> Make this one line?  Might be too long but I believe the preferred policy is now
-> to keep the output on one line so that it is easy to find in the kernel source.
-> 
-> Also, IMO, remove the WARNING WARNING stuff.
-> 
-> You also should probably use HW_ERR here too.
-> 
-> P.
-> 
-I can do that, I'll post version 2 on monday.
-Neil
+Hello, Greg.
 
+On Sat, Mar 02, 2013 at 10:17:27AM -0800, Greg Kroah-Hartman wrote:
+> I'm almost afraid to ask what you want to export to userspace for a
+> workqueue that userspace would care about...
+
+Workqueue is being extended to support worker pools with custom
+attributes so that it can replace private worker pool implementations
+in writeback, btrfs and other places.  They want to expose
+per-workqueue tunables to userland - nice level, cpu affinity and
+cgroup association of those IO threads to userland, so that's where
+the sysfs interface comes in.  The export is opt-in and those
+workqueues should have well defined name.
+
+> If you create a subsystem, the devices will show up under the virtual
+> "bus" if you don't give them a parent, so this patch shouldn't be
+> needed, unless you are abusing the driver model.  What am I missing
+> here?
+
+If you don't give the parent, it ends up in /sys/devices/ with
+symlinks appearing under /sys/bus/.  I didn't know where to put it.
+Right under /sys/devices/ doesn't seem right to me.  We already have
+one like that /sys/devices/software/ which actually is for perf
+software events and it just is weird.  I was wondering where to put it
+and Kay told me that /sys/devices/virtual/ would be the best fit
+although we don't yet have proper interface for it, so the patch.  I
+don't really care where it shows up and it apparently shouldn't matter
+for userland as long as /sys/bus/ part is there but /sys/virtual/
+seems to be the best fit at the moment.
+
+Thanks.
+
+-- 
+tejun
