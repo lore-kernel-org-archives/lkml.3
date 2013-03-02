@@ -1,80 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752433Ab3CBXWB (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Mar 2013 18:22:01 -0500
-Received: from shrek-wifi.podlesie.net ([93.179.225.50]:44271 "EHLO
-	shrek.podlesie.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751125Ab3CBXWA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Mar 2013 18:22:00 -0500
-X-Greylist: delayed 389 seconds by postgrey-1.27 at vger.kernel.org; Sat, 02 Mar 2013 18:22:00 EST
-From: Krzysztof Mazur <krzysiek@podlesie.net>
-To: x86@kernel.org
-Cc: linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@redhat.com,
-        hpa@zytor.com, len.brown@intel.com,
-        Krzysztof Mazur <krzysiek@podlesie.net>
-Subject: [PATCH] x86: fix 32-bit *_cpu_data initializers
-Date: Sun,  3 Mar 2013 00:14:42 +0100
-Message-Id: <1362266082-2227-1-git-send-email-krzysiek@podlesie.net>
-X-Mailer: git-send-email 1.8.2.rc1.362.gc8d5142
+	id S1752520Ab3CBXYk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Mar 2013 18:24:40 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:48937 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751052Ab3CBXYj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 2 Mar 2013 18:24:39 -0500
+Date: Sun, 3 Mar 2013 01:24:22 +0200
+From: Felipe Balbi <balbi@ti.com>
+To: Felipe Balbi <balbi@ti.com>
+CC: Alan Stern <stern@rowland.harvard.edu>,
+        Vivek Gautam <gautam.vivek@samsung.com>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-samsung-soc@vger.kernel.org>, <gregkh@linuxfoundation.org>,
+        <sarah.a.sharp@linux.intel.com>, <kgene.kim@samsung.com>,
+        <kishon@ti.com>, Doug Anderson <dianders@chromium.org>
+Subject: Re: [PATCH v2 06/10] usb: xhci: Enable runtime pm in xhci-plat
+Message-ID: <20130302232422.GD14558@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <20130302203908.GF12181@arwen.pp.htv.fi>
+ <Pine.LNX.4.44L0.1303021647290.17418-100000@netrider.rowland.org>
+ <20130302232132.GB14558@arwen.pp.htv.fi>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="LKTjZJSUETSlgu2t"
+Content-Disposition: inline
+In-Reply-To: <20130302232132.GB14558@arwen.pp.htv.fi>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The commit 27be457000211a6903968dfce06d5f73f051a217
-(x86 idle: remove 32-bit-only "no-hlt" parameter, hlt_works_ok flag)
-removed the hlt_works_ok flag from struct cpuinfo_x86, but
-boot_cpu_data and new_cpu_data initializers were not changed causing
-setting f00f_bug flag, instead of fdiv_bug. If CONFIG_X86_F00F_BUG
-is not set the f00f_bug flag is never cleared.
+--LKTjZJSUETSlgu2t
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-To avoid such problems in future C99-style initialization is now used.
+Hi,
 
-Signed-off-by: Krzysztof Mazur <krzysiek@podlesie.net>
----
-$ cat < /proc/cpuinfo
-processor	: 0
-vendor_id	: GenuineIntel
-cpu family	: 6
-model		: 13
-model name	: Intel(R) Pentium(R) M processor 1.73GHz
-stepping	: 8
-microcode	: 0x20
-cpu MHz		: 800.000
-cache size	: 2048 KB
-fdiv_bug	: no
-f00f_bug	: yes
-...
-	
-By the way now in struct cpuinfo_x86 for 32-bit systems pad0
-should be extended to 2 bytes or removed, because now 32-bit
-specific bugs area have now 6 bytes + pad0.
+On Sun, Mar 03, 2013 at 01:21:32AM +0200, Felipe Balbi wrote:
+> > I don't know much about clock handling.  In general, the
+> > pm_runtime_set_active() and pm_runtime_enable() parts should be done by
+> > the subsystem, not the driver, whenever possible.
+>=20
+> good to know :-) Though I disagree with calling pm_runtime_enable() at
+> the subsystem level.
+>=20
+> This means we can add pm_runtime_set_active()=20
 
- arch/x86/kernel/setup.c | 10 ++++++++--
- 1 file changed, 8 insertions(+), 2 deletions(-)
+ignore this last line, forgot to delete it.
 
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index 84d3285..90d8cc9 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -171,9 +171,15 @@ static struct resource bss_resource = {
- 
- #ifdef CONFIG_X86_32
- /* cpu data as detected by the assembly code in head.S */
--struct cpuinfo_x86 new_cpu_data __cpuinitdata = {0, 0, 0, 0, -1, 1, 0, 0, -1};
-+struct cpuinfo_x86 new_cpu_data __cpuinitdata = {
-+	.wp_works_ok = -1,
-+	.fdiv_bug = -1,
-+};
- /* common cpu data for all cpus */
--struct cpuinfo_x86 boot_cpu_data __read_mostly = {0, 0, 0, 0, -1, 1, 0, 0, -1};
-+struct cpuinfo_x86 boot_cpu_data __read_mostly = {
-+	.wp_works_ok = -1,
-+	.fdiv_bug = -1,
-+};
- EXPORT_SYMBOL(boot_cpu_data);
- 
- unsigned int def_to_bigsmp;
--- 
-1.8.2.rc1.362.gc8d5142
+--=20
+balbi
 
+--LKTjZJSUETSlgu2t
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRMoomAAoJEIaOsuA1yqREUzkP/RFU9kRyZf14+k/53EJFboLT
+NMA0EDE6i4L8Uvf76KGGiwh7Ypsf74mMtWrt731XrqqJUvJbFcze47TsrF1uXHRR
+sqbyE2vad5T6CfD7aUFWVvw6vE9bKIpFwOcWEBGVbaf+XMVSv3Mq3JrWBuYL+ll7
+en77THA8zT0C3D9CyAX/sG2GS4h9zaVi+NDsLBBRJeqrCS98ZZtgifWh6JtqP7Re
+5l7l4dLMXplmC3+VdxKANcrcKyaDyFwHaMH6eHiEsTt9/tBHCCRQkuOp9Dj9esW2
+24Li5E74yj2eDfkToCFip6ORxYNAmfiD1xjkc9VJ/gfpIu+P4noRlI19yfYzDZFZ
+iWqnqAXANPKI7r6YHk/ZUzYc7EV7qchQlbaUD0/FwZjpnHc4aRT9QkRmZSe7ADhg
+bqcrlZa2lnvBq7m1NBKanBqF8I14yWS7eQG5+4u5JUMMspzxCZgF5S7capSUIA+D
+gHkQY/mtewJ6R65VyZTC8XYppvEdpoYSbyK3LOEqGkZFVBNLZ84+Ynr9hgREPK4J
+fwe+1jofn1xD3UrQT2Hzg2NuYgMaTMn9E3llVjhXJZlx6XWTGWgSRN9vZzRB3SQ9
+bz1mzXHS6EpIsdcDGhueUWHGcZ9V4EjyOSCNUq5R5fQwBIaJQ3+FEz/m+3EpX7xK
+up23dblsEFWYFd2CgME7
+=9N5y
+-----END PGP SIGNATURE-----
+
+--LKTjZJSUETSlgu2t--
