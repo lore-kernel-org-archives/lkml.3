@@ -1,77 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752973Ab3CCJXC (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 04:23:02 -0500
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:64302 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752898Ab3CCJW4 (ORCPT
+	id S1753077Ab3CCJXJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 04:23:09 -0500
+Received: from mail-da0-f51.google.com ([209.85.210.51]:51522 "EHLO
+	mail-da0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752931Ab3CCJXD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Mar 2013 04:22:56 -0500
+	Sun, 3 Mar 2013 04:23:03 -0500
 From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH] gpio: stmpe: pass DT node to irqdomain
-To: Linus Walleij <linus.walleij@stericsson.com>, linux-kernel@vger.kernel.org
-Cc: Anmar Oueja <anmar.oueja@linaro.org>,
-        Gabriel Fernandez <gabriel.fernandez@stericsson.com>,
-        stable@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>
-In-Reply-To: <1362139302-23048-1-git-send-email-linus.walleij@stericsson.com>
-References: <1362139302-23048-1-git-send-email-linus.walleij@stericsson.com>
-Date: Sat, 02 Mar 2013 09:23:09 +0000
-Message-Id: <20130302092309.692CD3E17F8@localhost>
+Subject: Re: [PATCH] spi: Initialize cs_gpio and cs_gpios with -ENOENT
+To: Andreas Larsson <andreas@gaisler.com>
+Cc: spi-devel-general@lists.sourceforge.net,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        software@gaisler.com
+In-Reply-To: <1360761625-15562-1-git-send-email-andreas@gaisler.com>
+References: <1360761625-15562-1-git-send-email-andreas@gaisler.com>
+Date: Sat, 02 Mar 2013 22:46:47 +0000
+Message-Id: <20130302224647.7D72C3E2F21@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 1 Mar 2013 13:01:42 +0100, Linus Walleij <linus.walleij@stericsson.com> wrote:
-> From: Gabriel Fernandez <gabriel.fernandez@stericsson.com>
+On Wed, 13 Feb 2013 14:20:25 +0100, Andreas Larsson <andreas@gaisler.com> wrote:
+> The return value from of_get_named_gpio is -ENOENT when the given index
+> matches a hole in the "cs-gpios" property phandle list. However, the
+> default value of cs_gpio in struct spi_device and entries of cs_gpios in
+> struct spi_master is -EINVAL, which is documented to indicate that a
+> GPIO line should not be used for the given spi_device.
 > 
-> The irq domain was implemented but the device tree
-> node was not transmitted to irq_domain_add_simple().
+> This sets the default value of cs_gpio in struct spi_device and entries
+> of cs_gpios in struct spi_master to -ENOENT. Thus, -ENOENT is the only
+> value used to indicate that no GPIO line should be used.
 > 
-> Cc: stable@vger.kernel.org
-> Signed-off-by: Gabriel Fernandez <gabriel.fernandez@stericsson.com>
-> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+> Signed-off-by: Andreas Larsson <andreas@gaisler.com>
 
 Applied, thanks.
-
-I've got a small branch of fixes that I need to send to Linus for v3.9,
-and then I'll leave the rest of the bug fixes to you.
-
 g.
 
-> ---
->  drivers/gpio/gpio-stmpe.c | 7 +++++--
->  1 file changed, 5 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/gpio/gpio-stmpe.c b/drivers/gpio/gpio-stmpe.c
-> index 770476a..73b691c 100644
-> --- a/drivers/gpio/gpio-stmpe.c
-> +++ b/drivers/gpio/gpio-stmpe.c
-> @@ -309,9 +309,11 @@ static const struct irq_domain_ops stmpe_gpio_irq_simple_ops = {
->  
->  static int stmpe_gpio_irq_init(struct stmpe_gpio *stmpe_gpio)
->  {
-> -	int base = stmpe_gpio->irq_base;
-> +	int base = 0;
-> +	if (!stmpe_gpio->chip.of_node)
-> +		base = stmpe_gpio->irq_base;
->  
-> -	stmpe_gpio->domain = irq_domain_add_simple(NULL,
-> +	stmpe_gpio->domain = irq_domain_add_simple(stmpe_gpio->chip.of_node,
->  				stmpe_gpio->chip.ngpio, base,
->  				&stmpe_gpio_irq_simple_ops, stmpe_gpio);
->  	if (!stmpe_gpio->domain) {
-> @@ -346,6 +348,7 @@ static int stmpe_gpio_probe(struct platform_device *pdev)
->  	stmpe_gpio->chip = template_chip;
->  	stmpe_gpio->chip.ngpio = stmpe->num_gpios;
->  	stmpe_gpio->chip.dev = &pdev->dev;
-> +	stmpe_gpio->chip.of_node = np;
->  	stmpe_gpio->chip.base = pdata ? pdata->gpio_base : -1;
->  
->  	if (pdata)
-> -- 
-> 1.7.11.3
-> 
-
--- 
-Grant Likely, B.Sc, P.Eng.
-Secret Lab Technologies, Ltd.
