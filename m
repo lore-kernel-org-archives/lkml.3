@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752643Ab3CBDlA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 22:41:00 -0500
-Received: from mail-da0-f49.google.com ([209.85.210.49]:33868 "EHLO
-	mail-da0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752507Ab3CBDk6 (ORCPT
+	id S1752790Ab3CBDlQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 22:41:16 -0500
+Received: from mail-da0-f44.google.com ([209.85.210.44]:45419 "EHLO
+	mail-da0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752441Ab3CBDlM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 22:40:58 -0500
+	Fri, 1 Mar 2013 22:41:12 -0500
 From: Namjae Jeon <linkinjeon@gmail.com>
 To: jaegeuk.kim@samsung.com
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
@@ -14,9 +14,9 @@ Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         Namjae Jeon <linkinjeon@gmail.com>,
         Namjae Jeon <namjae.jeon@samsung.com>,
         Amit Sahrawat <a.sahrawat@samsung.com>
-Subject: [PATCH 2/5] f2fs: optimize and change return path in lookup_free_nid_list
-Date: Sat,  2 Mar 2013 12:40:50 +0900
-Message-Id: <1362195650-20717-1-git-send-email-linkinjeon@gmail.com>
+Subject: [PATCH 3/5] f2fs: move f2fs_balance_fs to correct place in unlink
+Date: Sat,  2 Mar 2013 12:41:03 +0900
+Message-Id: <1362195663-20751-1-git-send-email-linkinjeon@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,36 +24,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namjae Jeon <namjae.jeon@samsung.com>
 
-Optimize and change return path in lookup_free_nid_list
+Actual dirty of pages will occur in f2fs_delete_entry so move the
+f2fs_balance_fs just before deletion.
 
 Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
 Signed-off-by: Amit Sahrawat <a.sahrawat@samsung.com>
 ---
- fs/f2fs/node.c |    7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
+ fs/f2fs/namei.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
-index e275218..e24f747 100644
---- a/fs/f2fs/node.c
-+++ b/fs/f2fs/node.c
-@@ -1195,14 +1195,13 @@ const struct address_space_operations f2fs_node_aops = {
- static struct free_nid *__lookup_free_nid_list(nid_t n, struct list_head *head)
- {
- 	struct list_head *this;
--	struct free_nid *i = NULL;
-+	struct free_nid *i;
- 	list_for_each(this, head) {
- 		i = list_entry(this, struct free_nid, list);
- 		if (i->nid == n)
--			break;
--		i = NULL;
-+			return i;
- 	}
--	return i;
-+	return NULL;
- }
+diff --git a/fs/f2fs/namei.c b/fs/f2fs/namei.c
+index 1a49b88..eaa86f5 100644
+--- a/fs/f2fs/namei.c
++++ b/fs/f2fs/namei.c
+@@ -223,8 +223,6 @@ static int f2fs_unlink(struct inode *dir, struct dentry *dentry)
+ 	struct page *page;
+ 	int err = -ENOENT;
  
- static void __del_from_free_nid_list(struct free_nid *i)
+-	f2fs_balance_fs(sbi);
+-
+ 	de = f2fs_find_entry(dir, &dentry->d_name, &page);
+ 	if (!de)
+ 		goto fail;
+@@ -236,6 +234,8 @@ static int f2fs_unlink(struct inode *dir, struct dentry *dentry)
+ 		goto fail;
+ 	}
+ 
++	f2fs_balance_fs(sbi);
++
+ 	f2fs_delete_entry(de, page, inode);
+ 
+ 	/* In order to evict this inode,  we set it dirty */
 -- 
 1.7.9.5
 
