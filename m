@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752943Ab3CBDZP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 22:25:15 -0500
-Received: from mail-da0-f42.google.com ([209.85.210.42]:49249 "EHLO
-	mail-da0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752300Ab3CBDYt (ORCPT
+	id S1752896Ab3CBDZN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 22:25:13 -0500
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:46152 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752292Ab3CBDYs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 22:24:49 -0500
+	Fri, 1 Mar 2013 22:24:48 -0500
 From: Tejun Heo <tj@kernel.org>
 To: linux-kernel@vger.kernel.org, laijs@cn.fujitsu.com
 Cc: axboe@kernel.dk, jmoyer@redhat.com, zab@redhat.com,
         Tejun Heo <tj@kernel.org>
-Subject: [PATCH 12/31] workqueue: update synchronization rules on workqueue->pwqs
-Date: Fri,  1 Mar 2013 19:24:03 -0800
-Message-Id: <1362194662-2344-13-git-send-email-tj@kernel.org>
+Subject: [PATCH 11/31] workqueue: replace get_pwq() with explicit per_cpu_ptr() accesses and first_pwq()
+Date: Fri,  1 Mar 2013 19:24:02 -0800
+Message-Id: <1362194662-2344-12-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1362194662-2344-1-git-send-email-tj@kernel.org>
 References: <1362194662-2344-1-git-send-email-tj@kernel.org>
@@ -21,272 +21,111 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make workqueue->pwqs protected by workqueue_lock for writes and
-sched-RCU protected for reads.  Lockdep assertions are added to
-for_each_pwq() and first_pwq() and all their users are converted to
-either hold workqueue_lock or disable preemption/irq.
+get_pwq() takes @cpu, which can also be WORK_CPU_UNBOUND, and @wq and
+returns the matching pwq (pool_workqueue).  We want to move away from
+using @cpu for identifying pools and pwqs for unbound pools with
+custom attributes and there is only one user - workqueue_congested() -
+which makes use of the WQ_UNBOUND conditional in get_pwq().  All other
+users already know whether they're dealing with a per-cpu or unbound
+workqueue.
 
-alloc_and_link_pwqs() is updated to use list_add_tail_rcu() for
-consistency which isn't strictly necessary as the workqueue isn't
-visible.  destroy_workqueue() isn't updated to sched-RCU release pwqs.
-This is okay as the workqueue should have on users left by that point.
+Replace get_pwq() with explicit per_cpu_ptr(wq->cpu_pwqs, cpu) for
+per-cpu workqueues and first_pwq() for unbound ones, and open-code
+WQ_UNBOUND conditional in workqueue_congested().
 
-The locking is superflous at this point.  This is to help
-implementation of unbound pools/pwqs with custom attributes.
-
-This patch doesn't introduce any behavior changes.
+Note that this makes workqueue_congested() behave sligntly differently
+when @cpu other than WORK_CPU_UNBOUND is specified.  It ignores @cpu
+for unbound workqueues and always uses the first pwq instead of
+oopsing.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- kernel/workqueue.c | 85 +++++++++++++++++++++++++++++++++++++++++++-----------
- 1 file changed, 68 insertions(+), 17 deletions(-)
+ kernel/workqueue.c | 29 ++++++++++++++---------------
+ 1 file changed, 14 insertions(+), 15 deletions(-)
 
 diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 02f51b8..ff51c59 100644
+index 79840b9..02f51b8 100644
 --- a/kernel/workqueue.c
 +++ b/kernel/workqueue.c
-@@ -42,6 +42,7 @@
- #include <linux/lockdep.h>
- #include <linux/idr.h>
- #include <linux/hashtable.h>
-+#include <linux/rculist.h>
- 
- #include "workqueue_internal.h"
- 
-@@ -118,6 +119,8 @@ enum {
-  * F: wq->flush_mutex protected.
-  *
-  * W: workqueue_lock protected.
-+ *
-+ * R: workqueue_lock protected for writes.  Sched-RCU protected for reads.
-  */
- 
- /* struct worker is defined in workqueue_internal.h */
-@@ -169,7 +172,7 @@ struct pool_workqueue {
- 	int			nr_active;	/* L: nr of active works */
- 	int			max_active;	/* L: max active works */
- 	struct list_head	delayed_works;	/* L: delayed works */
--	struct list_head	pwqs_node;	/* I: node on wq->pwqs */
-+	struct list_head	pwqs_node;	/* R: node on wq->pwqs */
- 	struct list_head	mayday_node;	/* W: node on wq->maydays */
- } __aligned(1 << WORK_STRUCT_FLAG_BITS);
- 
-@@ -189,7 +192,7 @@ struct wq_flusher {
- struct workqueue_struct {
- 	unsigned int		flags;		/* W: WQ_* flags */
- 	struct pool_workqueue __percpu *cpu_pwqs; /* I: per-cpu pwq's */
--	struct list_head	pwqs;		/* I: all pwqs of this wq */
-+	struct list_head	pwqs;		/* R: all pwqs of this wq */
- 	struct list_head	list;		/* W: list of all workqueues */
- 
- 	struct mutex		flush_mutex;	/* protects wq flushing */
-@@ -227,6 +230,11 @@ EXPORT_SYMBOL_GPL(system_freezable_wq);
- #define CREATE_TRACE_POINTS
- #include <trace/events/workqueue.h>
- 
-+#define assert_rcu_or_wq_lock()						\
-+	rcu_lockdep_assert(rcu_read_lock_sched_held() ||		\
-+			   lockdep_is_held(&workqueue_lock),		\
-+			   "sched RCU or workqueue lock should be held")
-+
- #define for_each_std_worker_pool(pool, cpu)				\
- 	for ((pool) = &std_worker_pools(cpu)[0];			\
- 	     (pool) < &std_worker_pools(cpu)[NR_STD_WORKER_POOLS]; (pool)++)
-@@ -282,9 +290,16 @@ static inline int __next_wq_cpu(int cpu, const struct cpumask *mask,
-  * for_each_pwq - iterate through all pool_workqueues of the specified workqueue
-  * @pwq: iteration cursor
-  * @wq: the target workqueue
-+ *
-+ * This must be called either with workqueue_lock held or sched RCU read
-+ * locked.  If the pwq needs to be used beyond the locking in effect, the
-+ * caller is responsible for guaranteeing that the pwq stays online.
-+ *
-+ * The if clause exists only for the lockdep assertion and can be ignored.
-  */
- #define for_each_pwq(pwq, wq)						\
--	list_for_each_entry((pwq), &(wq)->pwqs, pwqs_node)
-+	list_for_each_entry_rcu((pwq), &(wq)->pwqs, pwqs_node)		\
-+		if (({ assert_rcu_or_wq_lock(); true; }))
- 
- #ifdef CONFIG_DEBUG_OBJECTS_WORK
- 
-@@ -463,9 +478,19 @@ static struct worker_pool *get_std_worker_pool(int cpu, bool highpri)
+@@ -463,16 +463,9 @@ static struct worker_pool *get_std_worker_pool(int cpu, bool highpri)
  	return &pools[highpri];
  }
  
-+/**
-+ * first_pwq - return the first pool_workqueue of the specified workqueue
-+ * @wq: the target workqueue
-+ *
-+ * This must be called either with workqueue_lock held or sched RCU read
-+ * locked.  If the pwq needs to be used beyond the locking in effect, the
-+ * caller is responsible for guaranteeing that the pwq stays online.
-+ */
- static struct pool_workqueue *first_pwq(struct workqueue_struct *wq)
+-static struct pool_workqueue *get_pwq(int cpu, struct workqueue_struct *wq)
++static struct pool_workqueue *first_pwq(struct workqueue_struct *wq)
  {
--	return list_first_entry(&wq->pwqs, struct pool_workqueue, pwqs_node);
-+	assert_rcu_or_wq_lock();
-+	return list_first_or_null_rcu(&wq->pwqs, struct pool_workqueue,
-+				      pwqs_node);
+-	if (!(wq->flags & WQ_UNBOUND)) {
+-		if (likely(cpu < nr_cpu_ids))
+-			return per_cpu_ptr(wq->cpu_pwqs, cpu);
+-	} else if (likely(cpu == WORK_CPU_UNBOUND)) {
+-		return list_first_entry(&wq->pwqs, struct pool_workqueue,
+-					pwqs_node);
+-	}
+-	return NULL;
++	return list_first_entry(&wq->pwqs, struct pool_workqueue, pwqs_node);
  }
  
  static unsigned int work_color_to_flags(int color)
-@@ -2488,10 +2513,12 @@ static bool flush_workqueue_prep_pwqs(struct workqueue_struct *wq,
- 		atomic_set(&wq->nr_pwqs_to_flush, 1);
- 	}
+@@ -1192,7 +1185,7 @@ static void __queue_work(int cpu, struct workqueue_struct *wq,
+ 		 * work needs to be queued on that cpu to guarantee
+ 		 * non-reentrancy.
+ 		 */
+-		pwq = get_pwq(cpu, wq);
++		pwq = per_cpu_ptr(wq->cpu_pwqs, cpu);
+ 		last_pool = get_work_pool(work);
  
-+	local_irq_disable();
-+
- 	for_each_pwq(pwq, wq) {
- 		struct worker_pool *pool = pwq->pool;
+ 		if (last_pool && last_pool != pwq->pool) {
+@@ -1203,7 +1196,7 @@ static void __queue_work(int cpu, struct workqueue_struct *wq,
+ 			worker = find_worker_executing_work(last_pool, work);
  
--		spin_lock_irq(&pool->lock);
-+		spin_lock(&pool->lock);
- 
- 		if (flush_color >= 0) {
- 			WARN_ON_ONCE(pwq->flush_color != -1);
-@@ -2508,9 +2535,11 @@ static bool flush_workqueue_prep_pwqs(struct workqueue_struct *wq,
- 			pwq->work_color = work_color;
- 		}
- 
--		spin_unlock_irq(&pool->lock);
-+		spin_unlock(&pool->lock);
- 	}
- 
-+	local_irq_enable();
-+
- 	if (flush_color >= 0 && atomic_dec_and_test(&wq->nr_pwqs_to_flush))
- 		complete(&wq->first_flusher->done);
- 
-@@ -2701,12 +2730,14 @@ void drain_workqueue(struct workqueue_struct *wq)
- reflush:
- 	flush_workqueue(wq);
- 
-+	local_irq_disable();
-+
- 	for_each_pwq(pwq, wq) {
- 		bool drained;
- 
--		spin_lock_irq(&pwq->pool->lock);
-+		spin_lock(&pwq->pool->lock);
- 		drained = !pwq->nr_active && list_empty(&pwq->delayed_works);
--		spin_unlock_irq(&pwq->pool->lock);
-+		spin_unlock(&pwq->pool->lock);
- 
- 		if (drained)
- 			continue;
-@@ -2715,13 +2746,17 @@ reflush:
- 		    (flush_cnt % 100 == 0 && flush_cnt <= 1000))
- 			pr_warn("workqueue %s: flush on destruction isn't complete after %u tries\n",
- 				wq->name, flush_cnt);
-+
-+		local_irq_enable();
- 		goto reflush;
- 	}
- 
--	spin_lock_irq(&workqueue_lock);
-+	spin_lock(&workqueue_lock);
- 	if (!--wq->nr_drainers)
- 		wq->flags &= ~WQ_DRAINING;
--	spin_unlock_irq(&workqueue_lock);
-+	spin_unlock(&workqueue_lock);
-+
-+	local_irq_enable();
- }
- EXPORT_SYMBOL_GPL(drain_workqueue);
- 
-@@ -3087,7 +3122,7 @@ static int alloc_and_link_pwqs(struct workqueue_struct *wq)
- 				per_cpu_ptr(wq->cpu_pwqs, cpu);
- 
- 			pwq->pool = get_std_worker_pool(cpu, highpri);
--			list_add_tail(&pwq->pwqs_node, &wq->pwqs);
-+			list_add_tail_rcu(&pwq->pwqs_node, &wq->pwqs);
+ 			if (worker && worker->current_pwq->wq == wq) {
+-				pwq = get_pwq(last_pool->cpu, wq);
++				pwq = per_cpu_ptr(wq->cpu_pwqs, last_pool->cpu);
+ 			} else {
+ 				/* meh... not running there, queue here */
+ 				spin_unlock(&last_pool->lock);
+@@ -1213,7 +1206,7 @@ static void __queue_work(int cpu, struct workqueue_struct *wq,
+ 			spin_lock(&pwq->pool->lock);
  		}
  	} else {
- 		struct pool_workqueue *pwq;
-@@ -3097,7 +3132,7 @@ static int alloc_and_link_pwqs(struct workqueue_struct *wq)
+-		pwq = get_pwq(WORK_CPU_UNBOUND, wq);
++		pwq = first_pwq(wq);
+ 		spin_lock(&pwq->pool->lock);
+ 	}
+ 
+@@ -1652,7 +1645,7 @@ static void rebind_workers(struct worker_pool *pool)
+ 		else
+ 			wq = system_wq;
+ 
+-		insert_work(get_pwq(pool->cpu, wq), rebind_work,
++		insert_work(per_cpu_ptr(wq->cpu_pwqs, pool->cpu), rebind_work,
+ 			    worker->scheduled.next,
+ 			    work_color_to_flags(WORK_NO_COLOR));
+ 	}
+@@ -3090,7 +3083,8 @@ static int alloc_and_link_pwqs(struct workqueue_struct *wq)
  			return -ENOMEM;
  
- 		pwq->pool = get_std_worker_pool(WORK_CPU_UNBOUND, highpri);
--		list_add_tail(&pwq->pwqs_node, &wq->pwqs);
-+		list_add_tail_rcu(&pwq->pwqs_node, &wq->pwqs);
- 	}
+ 		for_each_possible_cpu(cpu) {
+-			struct pool_workqueue *pwq = get_pwq(cpu, wq);
++			struct pool_workqueue *pwq =
++				per_cpu_ptr(wq->cpu_pwqs, cpu);
  
- 	return 0;
-@@ -3174,6 +3209,7 @@ struct workqueue_struct *__alloc_workqueue_key(const char *fmt,
- 	if (alloc_and_link_pwqs(wq) < 0)
- 		goto err;
- 
-+	local_irq_disable();
- 	for_each_pwq(pwq, wq) {
- 		BUG_ON((unsigned long)pwq & WORK_STRUCT_FLAG_MASK);
- 		pwq->wq = wq;
-@@ -3182,6 +3218,7 @@ struct workqueue_struct *__alloc_workqueue_key(const char *fmt,
- 		INIT_LIST_HEAD(&pwq->delayed_works);
- 		INIT_LIST_HEAD(&pwq->mayday_node);
- 	}
-+	local_irq_enable();
- 
- 	if (flags & WQ_RESCUER) {
- 		struct worker *rescuer;
-@@ -3239,24 +3276,32 @@ void destroy_workqueue(struct workqueue_struct *wq)
- 	/* drain it before proceeding with destruction */
- 	drain_workqueue(wq);
- 
-+	spin_lock_irq(&workqueue_lock);
-+
- 	/* sanity checks */
- 	for_each_pwq(pwq, wq) {
- 		int i;
- 
--		for (i = 0; i < WORK_NR_COLORS; i++)
--			if (WARN_ON(pwq->nr_in_flight[i]))
-+		for (i = 0; i < WORK_NR_COLORS; i++) {
-+			if (WARN_ON(pwq->nr_in_flight[i])) {
-+				spin_unlock_irq(&workqueue_lock);
- 				return;
-+			}
-+		}
-+
- 		if (WARN_ON(pwq->nr_active) ||
--		    WARN_ON(!list_empty(&pwq->delayed_works)))
-+		    WARN_ON(!list_empty(&pwq->delayed_works))) {
-+			spin_unlock_irq(&workqueue_lock);
- 			return;
-+		}
- 	}
- 
- 	/*
- 	 * wq list is used to freeze wq, remove from list after
- 	 * flushing is complete in case freeze races us.
- 	 */
--	spin_lock_irq(&workqueue_lock);
- 	list_del(&wq->list);
-+
- 	spin_unlock_irq(&workqueue_lock);
- 
- 	if (wq->flags & WQ_RESCUER) {
-@@ -3340,13 +3385,19 @@ EXPORT_SYMBOL_GPL(workqueue_set_max_active);
+ 			pwq->pool = get_std_worker_pool(cpu, highpri);
+ 			list_add_tail(&pwq->pwqs_node, &wq->pwqs);
+@@ -3345,7 +3339,12 @@ EXPORT_SYMBOL_GPL(workqueue_set_max_active);
+  */
  bool workqueue_congested(int cpu, struct workqueue_struct *wq)
  {
- 	struct pool_workqueue *pwq;
-+	bool ret;
+-	struct pool_workqueue *pwq = get_pwq(cpu, wq);
++	struct pool_workqueue *pwq;
 +
-+	preempt_disable();
++	if (!(wq->flags & WQ_UNBOUND))
++		pwq = per_cpu_ptr(wq->cpu_pwqs, cpu);
++	else
++		pwq = first_pwq(wq);
  
- 	if (!(wq->flags & WQ_UNBOUND))
- 		pwq = per_cpu_ptr(wq->cpu_pwqs, cpu);
- 	else
- 		pwq = first_pwq(wq);
- 
--	return !list_empty(&pwq->delayed_works);
-+	ret = !list_empty(&pwq->delayed_works);
-+	preempt_enable();
-+
-+	return ret;
+ 	return !list_empty(&pwq->delayed_works);
  }
- EXPORT_SYMBOL_GPL(workqueue_congested);
- 
 -- 
 1.8.1.2
 
