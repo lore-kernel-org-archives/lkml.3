@@ -1,39 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752650Ab3CBOnA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Mar 2013 09:43:00 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:56880 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751267Ab3CBOm7 (ORCPT
+	id S1752741Ab3CBOwZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Mar 2013 09:52:25 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:59053 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751967Ab3CBOwY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Mar 2013 09:42:59 -0500
-Date: Sat, 2 Mar 2013 14:42:56 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Heiko Carstens <heiko.carstens@de.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] compat: restore timerfd_settime and timerfd_gettime
- compat
-Message-ID: <20130302144256.GZ4503@ZenIV.linux.org.uk>
-References: <20130302113528.GA3467@osiris>
+	Sat, 2 Mar 2013 09:52:24 -0500
+Message-ID: <51321242.9070707@ti.com>
+Date: Sat, 2 Mar 2013 15:52:50 +0100
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130301 Thunderbird/17.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130302113528.GA3467@osiris>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Samuel Ortiz <sameo@linux.intel.com>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mfd: twl4030-audio: Fix argument type for twl4030_audio_disable_resource()
+References: <1362209435-11029-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+In-Reply-To: <1362209435-11029-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 02, 2013 at 12:35:28PM +0100, Heiko Carstens wrote:
-> >From 16f8402d45de11a1699ca584a6605806fe60bfc5 Mon Sep 17 00:00:00 2001
-> From: Heiko Carstens <heiko.carstens@de.ibm.com>
-> Date: Sat, 2 Mar 2013 12:26:30 +0100
-> Subject: [PATCH] compat: restore timerfd settime and gettime compat syscalls
-> 
-> Both compat syscalls got lost with 9d94b9e2 "switch timerfd compat syscalls
-> to COMPAT_SYSCALL_DEFINE" because of a typo:
-> COMPAT instead of CONFIG_COMPAT.
+On 03/02/2013 08:30 AM, Mark Brown wrote:
+> Looks like the conversion to enum was missed for the definition of this
+> function, the declaration has been updated.
 
-Applied, thanks.  I'll push fixes to Linus in about an hour...
+Acked-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+
+> 
+> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> ---
+>  drivers/mfd/twl4030-audio.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/mfd/twl4030-audio.c b/drivers/mfd/twl4030-audio.c
+> index e16edca..d2ab222 100644
+> --- a/drivers/mfd/twl4030-audio.c
+> +++ b/drivers/mfd/twl4030-audio.c
+> @@ -118,7 +118,7 @@ EXPORT_SYMBOL_GPL(twl4030_audio_enable_resource);
+>   * Disable the resource.
+>   * The function returns with error or the content of the register
+>   */
+> -int twl4030_audio_disable_resource(unsigned id)
+> +int twl4030_audio_disable_resource(enum twl4030_audio_res id)
+>  {
+>  	struct twl4030_audio *audio = platform_get_drvdata(twl4030_audio_dev);
+>  	int val;
+> 
+
+
+-- 
+Péter
