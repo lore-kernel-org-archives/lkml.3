@@ -1,81 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752455Ab3CBPxT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Mar 2013 10:53:19 -0500
-Received: from netrider.rowland.org ([192.131.102.5]:34268 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751992Ab3CBPxR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Mar 2013 10:53:17 -0500
-Date: Sat, 2 Mar 2013 10:53:16 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: Vivek Gautam <gautam.vivek@samsung.com>
-cc: linux-usb@vger.kernel.org, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <linux-samsung-soc@vger.kernel.org>,
-        <gregkh@linuxfoundation.org>, <balbi@ti.com>,
-        <sarah.a.sharp@linux.intel.com>, <kgene.kim@samsung.com>,
-        <kishon@ti.com>, Doug Anderson <dianders@chromium.org>
-Subject: Re: [PATCH v2 06/10] usb: xhci: Enable runtime pm in xhci-plat
-In-Reply-To: <1362230590-20960-7-git-send-email-gautam.vivek@samsung.com>
-Message-ID: <Pine.LNX.4.44L0.1303021050210.11936-100000@netrider.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1752549Ab3CBPzr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Mar 2013 10:55:47 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:23224 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752183Ab3CBPzq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 2 Mar 2013 10:55:46 -0500
+X-IronPort-AV: E=Sophos;i="4.84,768,1355068800"; 
+   d="scan'208";a="6798301"
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+To: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
+Subject: [PATCH] workqueue: fix possible bug which may silence the pool
+Date: Sat, 2 Mar 2013 23:55:29 +0800
+Message-Id: <1362239729-6753-1-git-send-email-laijs@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.7.6
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/03/02 23:54:47,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/03/02 23:54:47,
+	Serialize complete at 2013/03/02 23:54:47
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2 Mar 2013, Vivek Gautam wrote:
+After we introduce multiple pools for cpu pools, a part of the comments
+in wq_unbind_fn() becomes wrong.
 
-> By enabling runtime pm in this driver allows users of
-> xhci-plat to enter into runtime pm. This is not full
-> runtime pm support (AKA xhci-plat doesn't actually power
-> anything off when in runtime suspend mode) but,
-> just basic enablement.
-> 
-> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
-> CC: Doug Anderson <dianders@chromium.org>
-> ---
->  drivers/usb/host/xhci-plat.c |    7 +++++++
->  1 files changed, 7 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/usb/host/xhci-plat.c b/drivers/usb/host/xhci-plat.c
-> index c9c7e13..595cb52 100644
-> --- a/drivers/usb/host/xhci-plat.c
-> +++ b/drivers/usb/host/xhci-plat.c
-> @@ -12,6 +12,7 @@
->   */
->  
->  #include <linux/platform_device.h>
-> +#include <linux/pm_runtime.h>
->  #include <linux/module.h>
->  #include <linux/slab.h>
->  
-> @@ -149,6 +150,8 @@ static int xhci_plat_probe(struct platform_device *pdev)
->  	if (ret)
->  		goto put_usb3_hcd;
->  
-> +	pm_runtime_enable(&pdev->dev);
+It said that "current worker would trigger unbound chain execution".
+It is wrong. current worker only belongs to one of the multiple pools.
 
-This is generally not a good idea.  You shouldn't enable a device for 
-runtime PM without first telling the PM core what state it is in.
+If wq_unbind_fn() does unbind the normal_pri pool(not the pool of the current
+worker), the current worker is not the available worker to trigger unbound
+chain execution of the normal_pri pool, and if all the workers of
+the normal_pri goto sleep after they were set %WORKER_UNBOUND but before
+they finish their current work, unbound chain execution is not triggered
+totally. The pool is stopped!
 
-> @@ -174,6 +177,10 @@ static int xhci_plat_remove(struct platform_device *dev)
->  	struct usb_hcd	*hcd = platform_get_drvdata(dev);
->  	struct xhci_hcd	*xhci = hcd_to_xhci(hcd);
->  
-> +	if (!pm_runtime_suspended(&dev->dev))
-> +		pm_runtime_put(&dev->dev);
-> +	pm_runtime_disable(&dev->dev);
-> +
->  	usb_remove_hcd(xhci->shared_hcd);
->  	usb_put_hcd(xhci->shared_hcd);
+We can change wq_unbind_fn() only does unbind one pool and we launch multiple
+wq_unbind_fn()s, one for each pool to solve the problem.
+But this change will add much latency to hotplug path unnecessarily.
 
-This is very strange.  Why have a pm_runtime_put with no balancing 
-pm_runtime_get?
+So we choice to wake up a worker directly to trigger unbound chain execution.
 
-And why use an async routine when you're about to unbind the driver?  
-Don't you want the callback to occur before the unbinding?
+current worker may sleep on &second_pool->assoc_mutex, so we also move
+the wakeup code into the loop to avoid second_pool silences the first_pool.
 
-Alan Stern
+Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+---
+ kernel/workqueue.c |   45 ++++++++++++++++++++++++++-------------------
+ 1 files changed, 26 insertions(+), 19 deletions(-)
+
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index 81f2457..03159c2 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -3446,28 +3446,35 @@ static void wq_unbind_fn(struct work_struct *work)
+ 
+ 		spin_unlock_irq(&pool->lock);
+ 		mutex_unlock(&pool->assoc_mutex);
+-	}
+ 
+-	/*
+-	 * Call schedule() so that we cross rq->lock and thus can guarantee
+-	 * sched callbacks see the %WORKER_UNBOUND flag.  This is necessary
+-	 * as scheduler callbacks may be invoked from other cpus.
+-	 */
+-	schedule();
++		/*
++		 * Call schedule() so that we cross rq->lock and thus can
++		 * guarantee sched callbacks see the %WORKER_UNBOUND flag.
++		 * This is necessary as scheduler callbacks may be invoked
++		 * from other cpus.
++		 */
++		schedule();
+ 
+-	/*
+-	 * Sched callbacks are disabled now.  Zap nr_running.  After this,
+-	 * nr_running stays zero and need_more_worker() and keep_working()
+-	 * are always true as long as the worklist is not empty.  Pools on
+-	 * @cpu now behave as unbound (in terms of concurrency management)
+-	 * pools which are served by workers tied to the CPU.
+-	 *
+-	 * On return from this function, the current worker would trigger
+-	 * unbound chain execution of pending work items if other workers
+-	 * didn't already.
+-	 */
+-	for_each_std_worker_pool(pool, cpu)
++		/*
++		 * Sched callbacks are disabled now.  Zap nr_running.
++		 * After this, nr_running stays zero and need_more_worker()
++		 * and keep_working() are always true as long as the worklist
++		 * is not empty.  This pool now behave as unbound (in terms of
++		 * concurrency management) pool which are served by workers
++		 * tied to the pool.
++		 */
+ 		atomic_set(&pool->nr_running, 0);
++
++		/* The current busy workers of this pool may goto sleep without
++		 * wake up any other worker after they were set %WORKER_UNBOUND
++		 * flag. Here we wake up another possible worker to start
++		 * the unbound chain execution of pending work items in this
++		 * case.
++		 */
++		spin_lock_irq(&pool->lock);
++		wake_up_worker(pool);
++		spin_unlock_irq(&pool->lock);
++	}
+ }
+ 
+ /*
+-- 
+1.7.7.6
 
