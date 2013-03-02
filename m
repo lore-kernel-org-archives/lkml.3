@@ -1,91 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752460Ab3CBAVz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 19:21:55 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:33671 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751559Ab3CBAVy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 19:21:54 -0500
-Date: Fri, 1 Mar 2013 21:03:12 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Hu Tao <hutao@cn.fujitsu.com>
-Cc: kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>, Gleb Natapov <gleb@redhat.com>,
-        Blue Swirl <blauwirbel@gmail.com>, Eric Blake <eblake@redhat.com>,
-        Andrew Jones <drjones@redhat.com>,
-        Sasha Levin <levinsasha928@gmail.com>,
-        Luiz Capitulino <lcapitulino@redhat.com>,
-        Wen Congyang <wency@cn.fujitsu.com>
-Subject: Re: [PATCH v12 rebased] kvm: notify host when the guest is panicked
-Message-ID: <20130302000312.GA25309@amt.cnet>
-References: <cover.1358920534.git.hutao@cn.fujitsu.com>
- <1358925575-4505-1-git-send-email-hutao@cn.fujitsu.com>
- <20130208013947.GA3364@amt.cnet>
- <20130228085425.GA16362@localhost.localdomain>
+	id S1751992Ab3CBA3c (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 19:29:32 -0500
+Received: from mail-da0-f50.google.com ([209.85.210.50]:42598 "EHLO
+	mail-da0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750779Ab3CBA3b (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Mar 2013 19:29:31 -0500
+Message-ID: <513147E4.9090205@gmail.com>
+Date: Sat, 02 Mar 2013 08:29:24 +0800
+From: Ric Mason <ric.masonn@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130228085425.GA16362@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Andrew Shewmaker <agshew@gmail.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [RFC PATCH v2 1/2] mm: tuning hardcoded reserved memory
+References: <20130227205629.GA8429@localhost.localdomain> <20130228141200.3fe7f459.akpm@linux-foundation.org> <20130228034803.GB3829@localhost.localdomain> <5130152B.9060904@gmail.com> <20130301224102.GA1694@localhost.localdomain>
+In-Reply-To: <20130301224102.GA1694@localhost.localdomain>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 28, 2013 at 04:54:25PM +0800, Hu Tao wrote:
-> > > diff --git a/arch/x86/include/uapi/asm/kvm_para.h b/arch/x86/include/uapi/asm/kvm_para.h
-> > > index 06fdbd9..c15ef33 100644
-> > > --- a/arch/x86/include/uapi/asm/kvm_para.h
-> > > +++ b/arch/x86/include/uapi/asm/kvm_para.h
-> > > @@ -96,5 +96,7 @@ struct kvm_vcpu_pv_apf_data {
-> > >  #define KVM_PV_EOI_ENABLED KVM_PV_EOI_MASK
-> > >  #define KVM_PV_EOI_DISABLED 0x0
-> > >  
-> > > +#define KVM_PV_EVENT_PORT	(0x505UL)
-> > > +
-> > 
-> > No need for the ioport to be hard coded. What are the options to
-> > communicate an address to the guest? An MSR, via ACPI?
-> 
-> I'm not quite understanding here. By 'address', you mean an ioport?
-> how to communicate an address? (I have little knowledge about ACPI)
+On 03/02/2013 06:41 AM, Andrew Shewmaker wrote:
+> On Fri, Mar 01, 2013 at 10:40:43AM +0800, Ric Mason wrote:
+>> On 02/28/2013 11:48 AM, Andrew Shewmaker wrote:
+>>> On Thu, Feb 28, 2013 at 02:12:00PM -0800, Andrew Morton wrote:
+>>>> On Wed, 27 Feb 2013 15:56:30 -0500
+>>>> Andrew Shewmaker <agshew@gmail.com> wrote:
+>>>>
+>>>>> The following patches are against the mmtom git tree as of February 27th.
+>>>>>
+>>>>> The first patch only affects OVERCOMMIT_NEVER mode, entirely removing
+>>>>> the 3% reserve for other user processes.
+>>>>>
+>>>>> The second patch affects both OVERCOMMIT_GUESS and OVERCOMMIT_NEVER
+>>>>> modes, replacing the hardcoded 3% reserve for the root user with a
+>>>>> tunable knob.
+>>>>>
+>>>> Gee, it's been years since anyone thought about the overcommit code.
+>>>>
+>>>> Documentation/vm/overcommit-accounting says that OVERCOMMIT_ALWAYS is
+>>>> "Appropriate for some scientific applications", but doesn't say why.
+>>>> You're running a scientific cluster but you're using OVERCOMMIT_NEVER,
+>>>> I think?  Is the documentation wrong?
+>>> None of my scientists appeared to use sparse arrays as Alan described.
+>>> My users would run jobs that appeared to initialize correctly. However,
+>>> they wouldn't write to every page they malloced (and they wouldn't use
+>>> calloc), so I saw jobs failing well into a computation once the
+>>> simulation tried to access a page and the kernel couldn't give it to them.
+>>>
+>>> I think Roadrunner (http://en.wikipedia.org/wiki/IBM_Roadrunner) was
+>>> the first cluster I put into OVERCOMMIT_NEVER mode. Jobs with
+>>> infeasible memory requirements fail early and the OOM killer
+>>> gets triggered much less often than in guess mode. More often than not
+>>> the OOM killer seemed to kill the wrong thing causing a subtle brokenness.
+>>> Disabling overcommit worked so well during the stabilization and
+>>> early user phases that we did the same with other clusters.
+>> Do you mean OVERCOMMIT_NEVER is more suitable for scientific
+>> application than OVERCOMMIT_GUESS and OVERCOMMIT_ALWAYS? Or should
+>> depend on workload? Since your users would run jobs that wouldn't
+>> write to every page they malloced, so why OVERCOMMIT_GUESS is not
+>> more suitable for you?
+> It depends on the workload. They eventually wrote to every page,
+> but not early in the life of the process, so they thought they
+> were fine until the simulation crashed.
 
-Yes, the ioport. The address of the ioport should not be fixed (for
-example future emulated board could use that fixed ioport address,
-0x505UL).
+Why overcommit guess is not suitable even they eventually wrote to every 
+page? It takes free pages, file pages, available swap pages, reclaimable 
+slab pages into consideration. In other words, these are all pages 
+available, then why overcommit is not suitable? Actually, I confuse 
+what's the root different of overcommit guess and never?
 
-One option is to pass the address via an MSR. Yes, that is probably the
-best option because there is no dependency on ACPI.
-
-> > "pv-event" is a bad name for an interface which is specific to notify
-> > panic events. Please use pv-panic everywhere.
-> 
-> panic event is one of the events supported. Can we keep the name?
-
-> > Call the initialization code from kvm_guest_init, only one function is
-> > necessary.
-> 
-> At the point of kvm_guest_init, rqeust_region (called by
-> kvm_pv_event_init) will block, so the guest kernel won't up.
-
-Why does it block?
-
-> > >  #define PANIC_TIMER_STEP 100
-> > >  #define PANIC_BLINK_SPD 18
-> > > @@ -132,6 +133,9 @@ void panic(const char *fmt, ...)
-> > >  	if (!panic_blink)
-> > >  		panic_blink = no_blink;
-> > >  
-> > > +	if (kvm_pv_event_enabled())
-> > > +		panic_timeout = 0;
-> > > +
-> > 
-> > What is the rationale behind this?
-> 
-> This is a hack to disable reset_on_panic if user enables
-> pv-event.
-
-Condition it to kvm_pv_event_enabled() directly?
+>
+>>>>> __vm_enough_memory reserves 3% of free pages with the default
+>>>>> overcommit mode and 6% when overcommit is disabled. These hardcoded
+>>>>> values have become less reasonable as memory sizes have grown.
+>>>>>
+>>>>> On scientific clusters, systems are generally dedicated to one user.
+>>>>> Also, overcommit is sometimes disabled in order to prevent a long
+>>>>> running job from suddenly failing days or weeks into a calculation.
+>>>>> In this case, a user wishing to allocate as much memory as possible
+>>>>> to one process may be prevented from using, for example, around 7GB
+>>>>> out of 128GB.
+>>>>>
+>>>>> The effect is less, but still significant when a user starts a job
+>>>>> with one process per core. I have repeatedly seen a set of processes
+>>>>> requesting the same amount of memory fail because one of them could
+>>>>> not allocate the amount of memory a user would expect to be able to
+>>>>> allocate.
+>>>>>
+>>>>> ...
+>>>>>
+>>>>> --- a/mm/mmap.c
+>>>>> +++ b/mm/mmap.c
+>>>>> @@ -182,11 +182,6 @@ int __vm_enough_memory(struct mm_struct *mm, long pages, int cap_sys_admin)
+>>>>>   		allowed -= allowed / 32;
+>>>>>   	allowed += total_swap_pages;
+>>>>> -	/* Don't let a single process grow too big:
+>>>>> -	   leave 3% of the size of this process for other processes */
+>>>>> -	if (mm)
+>>>>> -		allowed -= mm->total_vm / 32;
+>>>>> -
+>>>>>   	if (percpu_counter_read_positive(&vm_committed_as) < allowed)
+>>>>>   		return 0;
+>>>> So what might be the downside for this change?  root can't log in, I
+>>>> assume.  Have you actually tested for this scenario and observed the
+>>>> effects?
+>>>>
+>>>> If there *are* observable risks and/or to preserve back-compatibility,
+>>>> I guess we could create a fourth overcommit mode which provides the
+>>>> headroom which you desire.
+>>>>
+>>>> Also, should we be looking at removing root's 3% from OVERCOMMIT_GUESS
+>>>> as well?
+>>> The downside of the first patch, which removes the "other" reserve
+>>> (sorry about the confusing duplicated subject line), is that a user
+>>> may not be able to kill their process, even if they have a shell prompt.
+>>> When testing, I did sometimes get into spot where I attempted to execute
+>>> kill, but got: "bash: fork: Cannot allocate memory". Of course, a
+>>> user can get in the same predicament with the current 3% reserve--they
+>>> just have to start processes until 3% becomes negligible.
+>>>
+>>> With just the first patch, root still has a 3% reserve, so they can
+>>> still log in.
+>>>
+>>> When I resubmit the second patch, adding a tunable rootuser_reserve_pages
+>>> variable, I'll test both guess and never overcommit modes to see what
+>>> minimum initial values allow root to login and kill a user's memory
+>>> hogging process. This will be safer than the current behavior since
+>>> root's reserve will never shrink to something useless in the case where
+>>> a user has grabbed all available memory with many processes.
+>> The idea of two patches looks reasonable to me.
+>>
+>>> As an estimate of a useful rootuser_reserve_pages, the rss+share size of
+>> Sorry for my silly, why you mean share size is not consist in rss size?
+> For some reason I had it in my head that RSS was just the memory
+> private to the process and that I needed to add memory shared for
+> libraries. So yeah, it looks like 8MB, or 2000 pages should be
+> enough of a reserve.
+>
+> I'm testing new versions now, where the reserve is min(%3, k) as
+> Alan suggested. k being 2000 pages in this case.
+>
+>>> sshd, bash, and top is about 16MB. Overcommit disabled mode would need
+>>> closer to 360MB for the same processes. On a 128GB box 3% is 3.8GB, so
+>>> the new tunable would still be a win.
+>>>
+>>> I think the tunable would benefit everyone over the current behavior,
+>>> but would you prefer it if I only made it tunable in a fourth overcommit
+>>> mode in order to preserve back-compatibility?
+>>>
+>>> --
+>>> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+>>> the body to majordomo@kvack.org.  For more info on Linux MM,
+>>> see: http://www.linux-mm.org/ .
+>>> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
