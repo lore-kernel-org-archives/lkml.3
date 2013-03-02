@@ -1,71 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753124Ab3CBDm6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 22:42:58 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:45517 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751483Ab3CBDm4 (ORCPT
+	id S1753098Ab3CBDoE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 22:44:04 -0500
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:64375 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752015Ab3CBDoC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 22:42:56 -0500
-X-IronPort-AV: E=Sophos;i="4.84,766,1355126400"; 
-   d="scan'208";a="27195057"
-Message-ID: <5131753F.3070302@codeaurora.org>
-Date: Fri, 01 Mar 2013 19:42:55 -0800
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
-MIME-Version: 1.0
-To: Randy Dunlap <rdunlap@infradead.org>
-CC: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-next@vger.kernel.org
-Subject: Re: mmotm 2013-03-01-15-50 uploaded (strict user copy)
-References: <20130301235135.E9F105A41B2@corp2gmr1-2.hot.corp.google.com> <51316B64.90102@infradead.org>
-In-Reply-To: <51316B64.90102@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Fri, 1 Mar 2013 22:44:02 -0500
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: hirofumi@mail.parknet.co.jp, akpm@linux-foundation.org
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Namjae Jeon <linkinjeon@gmail.com>,
+        Namjae Jeon <namjae.jeon@samsung.com>
+Subject: [PATCH v7 0/7] fat (exportfs): support stale_rw and nostale_ro mount option.
+Date: Sat,  2 Mar 2013 12:43:52 +0900
+Message-Id: <1362195832-20942-1-git-send-email-linkinjeon@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/01/13 19:00, Randy Dunlap wrote:
-> On 03/01/13 15:51, akpm@linux-foundation.org wrote:
->> The mm-of-the-moment snapshot 2013-03-01-15-50 has been uploaded to
->>
->>    http://www.ozlabs.org/~akpm/mmotm/
->>
->
-> on i386:
->
-> ERROR: "copy_from_user_overflow" [fs/binfmt_misc.ko] undefined!
->
-> which I don't understand.
-> lib/usercopy.o is built and building binfmt_misc.c says:
->
->   CC [M]  fs/binfmt_misc.o
-> In file included from arch/x86/include/asm/uaccess.h:537:0,
->                  from include/linux/uaccess.h:5,
->                  from include/linux/highmem.h:8,
->                  from include/linux/pagemap.h:10,
->                  from fs/binfmt_misc.c:27:
-> arch/x86/include/asm/uaccess_32.h: In function 'parse_command.part.1':
-> arch/x86/include/asm/uaccess_32.h:211:26: warning: call to 'copy_from_user_overflow' declared with attribute warning: copy_from_user() buffer size is not provably correct [enabled by default]
+From: Namjae Jeon <namjae.jeon@samsung.com>
 
-Hm.. That's because it's part of lib and not obj, right?
+This patch set eliminates the client side ESTALE errors when a FAT partition
+exported over NFS has it's dentries evicted from the cache. The idea is to
+find the on-disk location_'i_pos' of the dirent of the inode that has been
+evicted and use it to rebuild the inode.
 
-diff --git a/lib/Makefile b/lib/Makefile
-index 59fabd0..4c55104 100644
---- a/lib/Makefile
-+++ b/lib/Makefile
-@@ -15,7 +15,7 @@ lib-y := ctype.o string.o vsprintf.o cmdline.o \
-         is_single_threaded.o plist.o decompress.o kobject_uevent.o \
-         earlycpio.o percpu-refcount.o
+Change log
+v7:
+Assign i_pos = MSDOS_ROOT_INO in fat_read_root() and drop check in fat _getattr().
+Remove __packed attribute from struct fat_fid.
+Make code in fat_encode_fh() more readable.
+
+v6:
+Dummy inode approach to eliminate custom function fat_traverse_cluster().
+
+v5:
+Modified  fat_ent_read() arguments so that the custom function 
+fat_read_next_clus() can be eliminated.
+
+v(no name):
+Define two nfs export_operation structures, one for 'stale_rw' mounts and 
+the other for 'nostale_ro'
+
+fat_nfs_get_inode does not hold i_mutex of parent directory. So introduce
+fat_lock_build_inode().
+
+v4:                                                                                                                                                                                                  
+Instead of assigning i_pos to inode->i_ino, assign it to kstat->ino
+
+v3:
+Dropped busy-list approach and made the filesystem read only when
+rebuilding evicted inodes, by providing stale_rw and nostale_ro mount options
  
--lib-$(CONFIG_ARCH_HAS_DEBUG_STRICT_USER_COPY_CHECKS) += usercopy.o
-+obj-$(CONFIG_ARCH_HAS_DEBUG_STRICT_USER_COPY_CHECKS) += usercopy.o
- lib-$(CONFIG_MMU) += ioremap.o
- lib-$(CONFIG_SMP) += cpumask.o
- 
+v2:
+Introduced a list of busy i_pos values for inodes that are unlinked but
+having open file handles. Did this to avoid assigning such i_pos values to new
+files created at same location.
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+v1:
+Permanent inode number based approach by assigning i_pos to i_ino.
+Added custom function fat_read_next_clus() and  fat_traverse_cluster()
+to read disk entries.
+
+Namjae Jeon (7):
+  fat: Introduce 2 new values for the -o nfs mount option
+  fat: move fat_i_pos_read to fat.h
+  fat: introduce a helper fat_get_blknr_offset()
+  fat: restructure export_operations
+  fat (exportfs): rebuild inode if ilookup() fails
+  fat (exportfs): rebuild directory-inode if fat_dget() fails
+  Documentation: update nfs option in filesystem/vfat.txt
+---
+1.7.9.5
 
