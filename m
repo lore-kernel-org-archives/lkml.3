@@ -1,72 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752437Ab3CBNuU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Mar 2013 08:50:20 -0500
-Received: from mail-ee0-f48.google.com ([74.125.83.48]:46431 "EHLO
-	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752038Ab3CBNuT (ORCPT
+	id S1752501Ab3CBOJz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Mar 2013 09:09:55 -0500
+Received: from mail-ee0-f54.google.com ([74.125.83.54]:36779 "EHLO
+	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752325Ab3CBOJy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Mar 2013 08:50:19 -0500
-Date: Sat, 2 Mar 2013 14:50:15 +0100
-From: Marcin Jurkowski <marcin1j@gmail.com>
-To: Sven Geggus <lists@fuchsschwanzdomain.de>
-Cc: Evgeniy Polyakov <zbr@ioremap.net>, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/1] w1: fix oops when w1_search is called from netlink
- connector
-Message-ID: <20130302135015.GA21448@gmail.com>
-References: <20130116141627.GA23638@ioremap.net>
- <20130302001103.GB18026@gmail.com>
- <20130302094510.GA4695@geggus.net>
+	Sat, 2 Mar 2013 09:09:54 -0500
+Message-ID: <5132082B.3030409@gmail.com>
+Date: Sat, 02 Mar 2013 15:09:47 +0100
+From: Daniel Mack <zonque@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130219 Thunderbird/17.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130302094510.GA4695@geggus.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Mike Turquette <mturquette@linaro.org>
+CC: Fabio Estevam <festevam@gmail.com>, Russell King <linux@arm.linux.org.uk>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Afzal Mohammed <x0148406@ti.com>, paul@pwsan.com, rnayak@ti.com
+Subject: Re: Question about fixed-clock
+References: <5122BF88.1050007@gmail.com> <CAOMZO5BXVX8=QOV4+tN_w27ztSVkHAnOG2ifbS_Jpd=-cPnAdw@mail.gmail.com> <51234B8E.2000504@gmail.com> <20130219172246.11471.14635@quantum> <5123B719.2080300@gmail.com>
+In-Reply-To: <5123B719.2080300@gmail.com>
+X-Enigmail-Version: 1.5
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 02, 2013 at 10:45:10AM +0100, Sven Geggus wrote:
-> This is the bad commit I found doing git bisect:
-> 04f482faf50535229a5a5c8d629cf963899f857c is the first bad commit
-> commit 04f482faf50535229a5a5c8d629cf963899f857c
-> Author: Patrick McHardy <kaber@trash.net>
-> Date:   Mon Mar 28 08:39:36 2011 +0000
+Hi eyerone,
 
-Good job. I was too lazy to bisect for bad commit;)
+On 19.02.2013 18:32, Daniel Mack wrote:
+> On 19.02.2013 18:22, Mike Turquette wrote:
+>> > Quoting Daniel Mack (2013-02-19 01:53:18)
+>>> >> Hi Fabio,
+>>> >> Hi Afzal,
+>>> >>
+>>> >> On 19.02.2013 02:33, Fabio Estevam wrote:
+>>>> >>> On Mon, Feb 18, 2013 at 8:55 PM, Daniel Mack <zonque@gmail.com> wrote:
+>>>>> >>>> Hi,
+>>>>> >>>>
+>>>>> >>>> This might be a stupid question, but I'm somehow stuck here. I'm using a
+>>>>> >>>> driver with the following DTS sub-node:
+>>>>> >>>>
+>>>>> >>>>         ref25: ref25M {
+>>>>> >>>>                 compatible = "fixed-clock";
+>>>>> >>>>                 #clock-cells = <0>;
+>>>>> >>>>                 clock-frequency = <25000000>;
+>>>>> >>>>         };
+>>>>> >>>>
+>>>>> >>>>         clock-generator@0 {
+>>>>> >>>>                                 /* ... */
+>>>>> >>>>                                 #clock-cells = <1>;
+>>>>> >>>>                                 clocks = <&ref25>;
+>>>>> >>>>         }
+>>>>> >>>>
+>>>>> >>>> The device driver for clock-generator uses something like the following
+>>>>> >>>> call to get its clock:
+>>>>> >>>>
+>>>>> >>>>         clk = of_clk_get(np, 0);
+>>>>> >>>>
+>>>>> >>>> but the return value is ERR_PTR(-ENOENT) and I also can't find this
+>>>>> >>>> clock in the clk debugfs tree.
+>>>>> >>>>
+>>>>> >>>> This is on a OMAP/AM33xx device with kernel 3.8-rc7 plus the -next tips
+>>>>> >>>> of arm-soc and omap, but with no other special clock options selected in
+>>>>> >>>> the config. Is there anything I'm missing to correctly instantiate the
+>>>>> >>>> dummy clock?
+>>>> >>>
+>>>> >>> Have you registered it with clk_register_fixed_rate() ?
+>>>> >>>
+>>>> >>> In imx we use imx_clk_fixed, which in turns call  clk_register_fixed_rate().
+>>>> >>>
+>>>> >>> Take a look at arch/arm/mach-imx/clk-imx51-imx53.c for a reference.
+>>> >>
+>>> >> Hmm no, I didn't do anything else than adding it to the DT in the first
+>>> >> place, hoping that a driver will pick it up and add the clock for me.
+>>> >> But it turns out that of_clk_init() is not called at all on my platform.
+>>> >>
+>>> >> I'm doing this now from omap_generic_init() and it works. If that's an
+>>> >> appropriate place to call it, I can provide a patch.
+>>> >>
+>> > 
+>> > You can provide a patch, but your example above is for a dummy clock,
+>> > correct?
+> No, it's a real clock with a fixed frequency on the board, which feeds
+> another clock chip. I thought this is what fixed-clock is for, just like
+> what a fixed-regulator does? Or how would you describe such a thing in
+> DT, in order to use it as input to another device?
+> 
+>> > It would be best to post your patch along with a real-world
+>> > use for calling of_clk_init().
+> Not sure what you mean exactly, but the patch is attached. However, I
+> still think I lack some understanding here - the fact that compatible
+> strings have to be passed explicitly from generic code feels wrong.
+> 
+> 
+> Thanks,
+> Daniel
+> 
+> 
+> 0001-ARM-OMAP-generic-add-call-to-of_clk_init.patch
+> 
+> 
+> From 850120371830ffb5e2146aeb2d21c724d6ded09e Mon Sep 17 00:00:00 2001
+> From: Daniel Mack <zonque@gmail.com>
+> Date: Tue, 19 Feb 2013 12:05:25 +0100
+> Subject: [PATCH] ARM: OMAP: generic: add call to of_clk_init()
+> 
+> This is needed to instanciate fixed clocks in the DT.
+> 
+> Signed-off-by: Daniel Mack <zonque@gmail.com>
+> ---
+>  arch/arm/mach-omap2/board-generic.c | 7 +++++++
+>  1 file changed, 7 insertions(+)
+> 
+> diff --git a/arch/arm/mach-omap2/board-generic.c b/arch/arm/mach-omap2/board-generic.c
+> index 0274ff7..3580f16 100644
+> --- a/arch/arm/mach-omap2/board-generic.c
+> +++ b/arch/arm/mach-omap2/board-generic.c
+> @@ -15,6 +15,7 @@
+>  #include <linux/of_irq.h>
+>  #include <linux/of_platform.h>
+>  #include <linux/irqdomain.h>
+> +#include <linux/clk-provider.h>
+>  
+>  #include <asm/mach/arch.h>
+>  
+> @@ -35,6 +36,11 @@ static struct of_device_id omap_dt_match_table[] __initdata = {
+>  	{ }
+>  };
+>  
+> +static const __initconst struct of_device_id clk_match[] = {
+> +	{ .compatible = "fixed-clock", .data = of_fixed_clk_setup, },
+> +	{}
+> +};
+> +
+>  static void __init omap_generic_init(void)
+>  {
+>  	omap_sdrc_init(NULL, NULL);
+> @@ -49,6 +55,7 @@ static void __init omap_generic_init(void)
+>  		omap4_panda_display_init_of();
+>  	else if (of_machine_is_compatible("ti,omap4-sdp"))
+>  		omap_4430sdp_display_init_of();
+> +	of_clk_init(clk_match);
+>  }
+>  
+>  #ifdef CONFIG_SOC_OMAP2420
 
-Reading the code I found problematic kthread_should_stop call from netlink 
-connector which causes the oops. After applying a patch, I've been testing 
-owfs+w1 setup for nearly two days and it seems to work very reliable (no 
-hangs, no memleaks etc).
-More detailed description and possible fix is given below:
+Any opinion about this approach?
 
-Function w1_search can be called from either kthread or netlink callback.
-While the former works fine, the latter causes oops due to kthread_should_stop
-invocation.
 
-This patch adds a check if w1_search is serving netlink command, skipping
-kthread_should_stop invocation if so.
-
-Signed-off-by: Marcin Jurkowski <marcin1j@gmail.com>
----
- drivers/w1/w1.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/w1/w1.c b/drivers/w1/w1.c
-index 7994d933..7e2220d 100644
---- a/drivers/w1/w1.c
-+++ b/drivers/w1/w1.c
-@@ -924,7 +924,8 @@ void w1_search(struct w1_master *dev, u8 search_type, w1_slave_found_callback cb
- 			tmp64 = (triplet_ret >> 2);
- 			rn |= (tmp64 << i);
- 
--			if (kthread_should_stop()) {
-+			/* ensure we're called from kthread and not by netlink callback */
-+			if (!dev->priv && kthread_should_stop()) {
- 				mutex_unlock(&dev->bus_mutex);
- 				dev_dbg(&dev->dev, "Abort w1_search\n");
- 				return;
--- 
-1.7.12.4
+Thanks,
+Daniel
 
