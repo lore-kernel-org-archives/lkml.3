@@ -1,156 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752501Ab3CBOJz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Mar 2013 09:09:55 -0500
-Received: from mail-ee0-f54.google.com ([74.125.83.54]:36779 "EHLO
-	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752325Ab3CBOJy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Mar 2013 09:09:54 -0500
-Message-ID: <5132082B.3030409@gmail.com>
-Date: Sat, 02 Mar 2013 15:09:47 +0100
-From: Daniel Mack <zonque@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130219 Thunderbird/17.0.3
-MIME-Version: 1.0
-To: Mike Turquette <mturquette@linaro.org>
-CC: Fabio Estevam <festevam@gmail.com>, Russell King <linux@arm.linux.org.uk>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Afzal Mohammed <x0148406@ti.com>, paul@pwsan.com, rnayak@ti.com
-Subject: Re: Question about fixed-clock
-References: <5122BF88.1050007@gmail.com> <CAOMZO5BXVX8=QOV4+tN_w27ztSVkHAnOG2ifbS_Jpd=-cPnAdw@mail.gmail.com> <51234B8E.2000504@gmail.com> <20130219172246.11471.14635@quantum> <5123B719.2080300@gmail.com>
-In-Reply-To: <5123B719.2080300@gmail.com>
-X-Enigmail-Version: 1.5
-Content-Type: text/plain; charset=UTF-8
+	id S1752554Ab3CBOTH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Mar 2013 09:19:07 -0500
+Received: from mga14.intel.com ([143.182.124.37]:64814 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752345Ab3CBOTG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 2 Mar 2013 09:19:06 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,767,1355126400"; 
+   d="scan'208";a="263492777"
+Message-ID: <1362233972.2745.7.camel@sauron>
+Subject: Re: [PATCH V3 1/3] mtd: add new fields to nand_flash_dev{}
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Huang Shijie <b32955@freescale.com>
+Cc: dwmw2@infradead.org, computersforpeace@gmail.com,
+        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
+Date: Sat, 02 Mar 2013 16:19:32 +0200
+In-Reply-To: <1359349039-11510-2-git-send-email-b32955@freescale.com>
+References: <1359349039-11510-1-git-send-email-b32955@freescale.com>
+	 <1359349039-11510-2-git-send-email-b32955@freescale.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.3 (3.6.3-2.fc18) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi eyerone,
+On Mon, 2013-01-28 at 12:57 +0800, Huang Shijie wrote:
+> As time goes on, we begin to meet the situation that we can not get enough
+> information from some nand chips's id data. Take some Toshiba's nand chips
+> for example. I have 4 Toshiba's nand chips in my hand:
+> 	TC58NVG2S0F, TC58NVG3S0F, TC58NVG5D2, TC58NVG6D2
+> 
+> When we read these chips' datasheets, we will get the geometry of these chips:
+> 	TC58NVG2S0F : 4096 + 224
+> 	TC58NVG3S0F : 4096 + 232
+> 	TC58NVG5D2  : 8192 + 640
+> 	TC58NVG6D2  : 8192 + 640
+> 
+> But we can not parse out the correct oob size for these chips from the id data.
 
-On 19.02.2013 18:32, Daniel Mack wrote:
-> On 19.02.2013 18:22, Mike Turquette wrote:
->> > Quoting Daniel Mack (2013-02-19 01:53:18)
->>> >> Hi Fabio,
->>> >> Hi Afzal,
->>> >>
->>> >> On 19.02.2013 02:33, Fabio Estevam wrote:
->>>> >>> On Mon, Feb 18, 2013 at 8:55 PM, Daniel Mack <zonque@gmail.com> wrote:
->>>>> >>>> Hi,
->>>>> >>>>
->>>>> >>>> This might be a stupid question, but I'm somehow stuck here. I'm using a
->>>>> >>>> driver with the following DTS sub-node:
->>>>> >>>>
->>>>> >>>>         ref25: ref25M {
->>>>> >>>>                 compatible = "fixed-clock";
->>>>> >>>>                 #clock-cells = <0>;
->>>>> >>>>                 clock-frequency = <25000000>;
->>>>> >>>>         };
->>>>> >>>>
->>>>> >>>>         clock-generator@0 {
->>>>> >>>>                                 /* ... */
->>>>> >>>>                                 #clock-cells = <1>;
->>>>> >>>>                                 clocks = <&ref25>;
->>>>> >>>>         }
->>>>> >>>>
->>>>> >>>> The device driver for clock-generator uses something like the following
->>>>> >>>> call to get its clock:
->>>>> >>>>
->>>>> >>>>         clk = of_clk_get(np, 0);
->>>>> >>>>
->>>>> >>>> but the return value is ERR_PTR(-ENOENT) and I also can't find this
->>>>> >>>> clock in the clk debugfs tree.
->>>>> >>>>
->>>>> >>>> This is on a OMAP/AM33xx device with kernel 3.8-rc7 plus the -next tips
->>>>> >>>> of arm-soc and omap, but with no other special clock options selected in
->>>>> >>>> the config. Is there anything I'm missing to correctly instantiate the
->>>>> >>>> dummy clock?
->>>> >>>
->>>> >>> Have you registered it with clk_register_fixed_rate() ?
->>>> >>>
->>>> >>> In imx we use imx_clk_fixed, which in turns call  clk_register_fixed_rate().
->>>> >>>
->>>> >>> Take a look at arch/arm/mach-imx/clk-imx51-imx53.c for a reference.
->>> >>
->>> >> Hmm no, I didn't do anything else than adding it to the DT in the first
->>> >> place, hoping that a driver will pick it up and add the clock for me.
->>> >> But it turns out that of_clk_init() is not called at all on my platform.
->>> >>
->>> >> I'm doing this now from omap_generic_init() and it works. If that's an
->>> >> appropriate place to call it, I can provide a patch.
->>> >>
->> > 
->> > You can provide a patch, but your example above is for a dummy clock,
->> > correct?
-> No, it's a real clock with a fixed frequency on the board, which feeds
-> another clock chip. I thought this is what fixed-clock is for, just like
-> what a fixed-regulator does? Or how would you describe such a thing in
-> DT, in order to use it as input to another device?
-> 
->> > It would be best to post your patch along with a real-world
->> > use for calling of_clk_init().
-> Not sure what you mean exactly, but the patch is attached. However, I
-> still think I lack some understanding here - the fact that compatible
-> strings have to be passed explicitly from generic code feels wrong.
-> 
-> 
-> Thanks,
-> Daniel
-> 
-> 
-> 0001-ARM-OMAP-generic-add-call-to-of_clk_init.patch
-> 
-> 
-> From 850120371830ffb5e2146aeb2d21c724d6ded09e Mon Sep 17 00:00:00 2001
-> From: Daniel Mack <zonque@gmail.com>
-> Date: Tue, 19 Feb 2013 12:05:25 +0100
-> Subject: [PATCH] ARM: OMAP: generic: add call to of_clk_init()
-> 
-> This is needed to instanciate fixed clocks in the DT.
-> 
-> Signed-off-by: Daniel Mack <zonque@gmail.com>
-> ---
->  arch/arm/mach-omap2/board-generic.c | 7 +++++++
->  1 file changed, 7 insertions(+)
-> 
-> diff --git a/arch/arm/mach-omap2/board-generic.c b/arch/arm/mach-omap2/board-generic.c
-> index 0274ff7..3580f16 100644
-> --- a/arch/arm/mach-omap2/board-generic.c
-> +++ b/arch/arm/mach-omap2/board-generic.c
-> @@ -15,6 +15,7 @@
->  #include <linux/of_irq.h>
->  #include <linux/of_platform.h>
->  #include <linux/irqdomain.h>
-> +#include <linux/clk-provider.h>
->  
->  #include <asm/mach/arch.h>
->  
-> @@ -35,6 +36,11 @@ static struct of_device_id omap_dt_match_table[] __initdata = {
->  	{ }
->  };
->  
-> +static const __initconst struct of_device_id clk_match[] = {
-> +	{ .compatible = "fixed-clock", .data = of_fixed_clk_setup, },
-> +	{}
-> +};
-> +
->  static void __init omap_generic_init(void)
->  {
->  	omap_sdrc_init(NULL, NULL);
-> @@ -49,6 +55,7 @@ static void __init omap_generic_init(void)
->  		omap4_panda_display_init_of();
->  	else if (of_machine_is_compatible("ti,omap4-sdp"))
->  		omap_4430sdp_display_init_of();
-> +	of_clk_init(clk_match);
->  }
->  
->  #ifdef CONFIG_SOC_OMAP2420
+Very good start of the commit message - you clearly defined the problem.
 
-Any opinion about this approach?
+> So it is time to add some new fields to the nand_flash_dev{}, and update the
+> detection mechanisms.
 
+But continued with very poor description of how you address the problem.
+Please, provide a better description.
 
-Thanks,
-Daniel
+> This patch just adds some new fields to the nand_flash_dev{}:
+>   @id[8] : the 8 bytes id data.
+
+id[8] = 8 bytes id data, just like password[5] = 5 bytes of password
+data. Please, provide a better commentary.
+
+>   @id_len: the valid length of the id data.
+
+What does "valid" mean? Are "invalid" parts?
+
+>   @oobsize: the oob size.
+
+Try to invent a better comment.
+
+Huang, it is not that I am trying to be difficult, but I truly do not
+understand how you are solving the issue.
+
+-- 
+Best Regards,
+Artem Bityutskiy
 
