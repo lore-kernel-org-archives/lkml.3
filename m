@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752580Ab3CBDbk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 22:31:40 -0500
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:56934 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752384Ab3CBDYx (ORCPT
+	id S1752723Ab3CBDb7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 22:31:59 -0500
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:40571 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751367Ab3CBDYw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 22:24:53 -0500
+	Fri, 1 Mar 2013 22:24:52 -0500
 From: Tejun Heo <tj@kernel.org>
 To: linux-kernel@vger.kernel.org, laijs@cn.fujitsu.com
 Cc: axboe@kernel.dk, jmoyer@redhat.com, zab@redhat.com,
         Tejun Heo <tj@kernel.org>
-Subject: [PATCH 14/31] workqueue: replace POOL_MANAGING_WORKERS flag with worker_pool->manager_mutex
-Date: Fri,  1 Mar 2013 19:24:05 -0800
-Message-Id: <1362194662-2344-15-git-send-email-tj@kernel.org>
+Subject: [PATCH 13/31] workqueue: update synchronization rules on worker_pool_idr
+Date: Fri,  1 Mar 2013 19:24:04 -0800
+Message-Id: <1362194662-2344-14-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1362194662-2344-1-git-send-email-tj@kernel.org>
 References: <1362194662-2344-1-git-send-email-tj@kernel.org>
@@ -21,97 +21,175 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-POOL_MANAGING_WORKERS is used to synchronize the manager role.
-Synchronizing among workers doesn't need blocking and that's why it's
-implemented as a flag.
+Make worker_pool_idr protected by workqueue_lock for writes and
+sched-RCU protected for reads.  Lockdep assertions are added to
+for_each_pool() and get_work_pool() and all their users are converted
+to either hold workqueue_lock or disable preemption/irq.
 
-It got converted to a mutex a while back to add blocking wait from CPU
-hotplug path - 6037315269 ("workqueue: use mutex for global_cwq
-manager exclusion").  Later it turned out that synchronization among
-workers and cpu hotplug need to be done separately.  Eventually,
-POOL_MANAGING_WORKERS is restored and workqueue->manager_mutex got
-morphed into workqueue->assoc_mutex - 552a37e936 ("workqueue: restore
-POOL_MANAGING_WORKERS") and b2eb83d123 ("workqueue: rename
-manager_mutex to assoc_mutex").
+worker_pool_assign_id() is updated to hold workqueue_lock when
+allocating a pool ID.  As idr_get_new() always performs RCU-safe
+assignment, this is enough on the writer side.
 
-Now, we're gonna need to be able to lock out managers from
-destroy_workqueue() to support multiple unbound pools with custom
-attributes making it again necessary to be able to block on the
-manager role.  This patch replaces POOL_MANAGING_WORKERS with
-worker_pool->manager_mutex.
+As standard pools are never destroyed, there's nothing to do on that
+side.
+
+The locking is superflous at this point.  This is to help
+implementation of unbound pools/pwqs with custom attributes.
 
 This patch doesn't introduce any behavior changes.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- kernel/workqueue.c | 13 ++++++-------
- 1 file changed, 6 insertions(+), 7 deletions(-)
+ kernel/workqueue.c | 69 ++++++++++++++++++++++++++++++++++--------------------
+ 1 file changed, 44 insertions(+), 25 deletions(-)
 
 diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 2645218..68b3443 100644
+index ff51c59..2645218 100644
 --- a/kernel/workqueue.c
 +++ b/kernel/workqueue.c
-@@ -64,7 +64,6 @@ enum {
- 	 * create_worker() is in progress.
- 	 */
- 	POOL_MANAGE_WORKERS	= 1 << 0,	/* need to manage workers */
--	POOL_MANAGING_WORKERS   = 1 << 1,       /* managing workers */
- 	POOL_DISASSOCIATED	= 1 << 2,	/* cpu can't serve workers */
- 	POOL_FREEZING		= 1 << 3,	/* freeze in progress */
+@@ -282,9 +282,16 @@ static inline int __next_wq_cpu(int cpu, const struct cpumask *mask,
+  * for_each_pool - iterate through all worker_pools in the system
+  * @pool: iteration cursor
+  * @id: integer used for iteration
++ *
++ * This must be called either with workqueue_lock held or sched RCU read
++ * locked.  If the pool needs to be used beyond the locking in effect, the
++ * caller is responsible for guaranteeing that the pool stays online.
++ *
++ * The if clause exists only for the lockdep assertion and can be ignored.
+  */
+ #define for_each_pool(pool, id)						\
+-	idr_for_each_entry(&worker_pool_idr, pool, id)
++	idr_for_each_entry(&worker_pool_idr, pool, id)			\
++		if (({ assert_rcu_or_wq_lock(); true; }))
  
-@@ -145,6 +144,7 @@ struct worker_pool {
- 	DECLARE_HASHTABLE(busy_hash, BUSY_WORKER_HASH_ORDER);
- 						/* L: hash of busy workers */
+ /**
+  * for_each_pwq - iterate through all pool_workqueues of the specified workqueue
+@@ -430,8 +437,10 @@ static DEFINE_PER_CPU_SHARED_ALIGNED(struct worker_pool [NR_STD_WORKER_POOLS],
+ 				     cpu_std_worker_pools);
+ static struct worker_pool unbound_std_worker_pools[NR_STD_WORKER_POOLS];
  
-+	struct mutex		manager_mutex;	/* the holder is the manager */
- 	struct mutex		assoc_mutex;	/* protect POOL_DISASSOCIATED */
- 	struct ida		worker_ida;	/* L: for worker IDs */
+-/* idr of all pools */
+-static DEFINE_MUTEX(worker_pool_idr_mutex);
++/*
++ * idr of all pools.  Modifications are protected by workqueue_lock.  Read
++ * accesses are protected by sched-RCU protected.
++ */
+ static DEFINE_IDR(worker_pool_idr);
  
-@@ -702,7 +702,7 @@ static bool need_to_manage_workers(struct worker_pool *pool)
- /* Do we have too many workers and should some go away? */
- static bool too_many_workers(struct worker_pool *pool)
+ static int worker_thread(void *__worker);
+@@ -454,23 +463,18 @@ static int worker_pool_assign_id(struct worker_pool *pool)
  {
--	bool managing = pool->flags & POOL_MANAGING_WORKERS;
-+	bool managing = mutex_is_locked(&pool->manager_mutex);
- 	int nr_idle = pool->nr_idle + managing; /* manager is considered idle */
- 	int nr_busy = pool->nr_workers - nr_idle;
+ 	int ret;
  
-@@ -2027,15 +2027,13 @@ static bool manage_workers(struct worker *worker)
- 	struct worker_pool *pool = worker->pool;
- 	bool ret = false;
+-	mutex_lock(&worker_pool_idr_mutex);
+-	idr_pre_get(&worker_pool_idr, GFP_KERNEL);
+-	ret = idr_get_new(&worker_pool_idr, pool, &pool->id);
+-	mutex_unlock(&worker_pool_idr_mutex);
++	do {
++		if (!idr_pre_get(&worker_pool_idr, GFP_KERNEL))
++			return -ENOMEM;
++
++		spin_lock_irq(&workqueue_lock);
++		ret = idr_get_new(&worker_pool_idr, pool, &pool->id);
++		spin_unlock_irq(&workqueue_lock);
++	} while (ret == -EAGAIN);
  
--	if (pool->flags & POOL_MANAGING_WORKERS)
-+	if (!mutex_trylock(&pool->manager_mutex))
- 		return ret;
- 
--	pool->flags |= POOL_MANAGING_WORKERS;
--
- 	/*
- 	 * To simplify both worker management and CPU hotplug, hold off
- 	 * management while hotplug is in progress.  CPU hotplug path can't
--	 * grab %POOL_MANAGING_WORKERS to achieve this because that can
-+	 * grab @pool->manager_mutex to achieve this because that can
- 	 * lead to idle worker depletion (all become busy thinking someone
- 	 * else is managing) which in turn can result in deadlock under
- 	 * extreme circumstances.  Use @pool->assoc_mutex to synchronize
-@@ -2075,8 +2073,8 @@ static bool manage_workers(struct worker *worker)
- 	ret |= maybe_destroy_workers(pool);
- 	ret |= maybe_create_worker(pool);
- 
--	pool->flags &= ~POOL_MANAGING_WORKERS;
- 	mutex_unlock(&pool->assoc_mutex);
-+	mutex_unlock(&pool->manager_mutex);
  	return ret;
  }
  
-@@ -3805,6 +3803,7 @@ static int __init init_workqueues(void)
- 			setup_timer(&pool->mayday_timer, pool_mayday_timeout,
- 				    (unsigned long)pool);
+-/*
+- * Lookup worker_pool by id.  The idr currently is built during boot and
+- * never modified.  Don't worry about locking for now.
+- */
+-static struct worker_pool *worker_pool_by_id(int pool_id)
+-{
+-	return idr_find(&worker_pool_idr, pool_id);
+-}
+-
+ static struct worker_pool *get_std_worker_pool(int cpu, bool highpri)
+ {
+ 	struct worker_pool *pools = std_worker_pools(cpu);
+@@ -584,13 +588,23 @@ static struct pool_workqueue *get_work_pwq(struct work_struct *work)
+  * @work: the work item of interest
+  *
+  * Return the worker_pool @work was last associated with.  %NULL if none.
++ *
++ * Pools are created and destroyed under workqueue_lock, and allows read
++ * access under sched-RCU read lock.  As such, this function should be
++ * called under workqueue_lock or with preemption disabled.
++ *
++ * All fields of the returned pool are accessible as long as the above
++ * mentioned locking is in effect.  If the returned pool needs to be used
++ * beyond the critical section, the caller is responsible for ensuring the
++ * returned pool is and stays online.
+  */
+ static struct worker_pool *get_work_pool(struct work_struct *work)
+ {
+ 	unsigned long data = atomic_long_read(&work->data);
+-	struct worker_pool *pool;
+ 	int pool_id;
  
-+			mutex_init(&pool->manager_mutex);
- 			mutex_init(&pool->assoc_mutex);
- 			ida_init(&pool->worker_ida);
++	assert_rcu_or_wq_lock();
++
+ 	if (data & WORK_STRUCT_PWQ)
+ 		return ((struct pool_workqueue *)
+ 			(data & WORK_STRUCT_WQ_DATA_MASK))->pool;
+@@ -599,9 +613,7 @@ static struct worker_pool *get_work_pool(struct work_struct *work)
+ 	if (pool_id == WORK_OFFQ_POOL_NONE)
+ 		return NULL;
  
+-	pool = worker_pool_by_id(pool_id);
+-	WARN_ON_ONCE(!pool);
+-	return pool;
++	return idr_find(&worker_pool_idr, pool_id);
+ }
+ 
+ /**
+@@ -2767,11 +2779,15 @@ static bool start_flush_work(struct work_struct *work, struct wq_barrier *barr)
+ 	struct pool_workqueue *pwq;
+ 
+ 	might_sleep();
++
++	local_irq_disable();
+ 	pool = get_work_pool(work);
+-	if (!pool)
++	if (!pool) {
++		local_irq_enable();
+ 		return false;
++	}
+ 
+-	spin_lock_irq(&pool->lock);
++	spin_lock(&pool->lock);
+ 	/* see the comment in try_to_grab_pending() with the same code */
+ 	pwq = get_work_pwq(work);
+ 	if (pwq) {
+@@ -3414,19 +3430,22 @@ EXPORT_SYMBOL_GPL(workqueue_congested);
+  */
+ unsigned int work_busy(struct work_struct *work)
+ {
+-	struct worker_pool *pool = get_work_pool(work);
++	struct worker_pool *pool;
+ 	unsigned long flags;
+ 	unsigned int ret = 0;
+ 
+ 	if (work_pending(work))
+ 		ret |= WORK_BUSY_PENDING;
+ 
++	local_irq_save(flags);
++	pool = get_work_pool(work);
+ 	if (pool) {
+-		spin_lock_irqsave(&pool->lock, flags);
++		spin_lock(&pool->lock);
+ 		if (find_worker_executing_work(pool, work))
+ 			ret |= WORK_BUSY_RUNNING;
+-		spin_unlock_irqrestore(&pool->lock, flags);
++		spin_unlock(&pool->lock);
+ 	}
++	local_irq_restore(flags);
+ 
+ 	return ret;
+ }
 -- 
 1.8.1.2
 
