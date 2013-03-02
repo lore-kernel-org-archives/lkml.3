@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752385Ab3CBDYx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 22:24:53 -0500
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:54780 "EHLO
+	id S1752580Ab3CBDbk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 22:31:40 -0500
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:56934 "EHLO
 	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751980Ab3CBDYd (ORCPT
+	with ESMTP id S1752384Ab3CBDYx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 22:24:33 -0500
+	Fri, 1 Mar 2013 22:24:53 -0500
 From: Tejun Heo <tj@kernel.org>
 To: linux-kernel@vger.kernel.org, laijs@cn.fujitsu.com
 Cc: axboe@kernel.dk, jmoyer@redhat.com, zab@redhat.com,
         Tejun Heo <tj@kernel.org>
-Subject: [PATCH 02/31] workqueue: make workqueue_lock irq-safe
-Date: Fri,  1 Mar 2013 19:23:53 -0800
-Message-Id: <1362194662-2344-3-git-send-email-tj@kernel.org>
+Subject: [PATCH 14/31] workqueue: replace POOL_MANAGING_WORKERS flag with worker_pool->manager_mutex
+Date: Fri,  1 Mar 2013 19:24:05 -0800
+Message-Id: <1362194662-2344-15-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1362194662-2344-1-git-send-email-tj@kernel.org>
 References: <1362194662-2344-1-git-send-email-tj@kernel.org>
@@ -21,189 +21,96 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-workqueue_lock will be used to synchronize areas which require
-irq-safety and there isn't much benefit in keeping it not irq-safe.
-Make it irq-safe.
+POOL_MANAGING_WORKERS is used to synchronize the manager role.
+Synchronizing among workers doesn't need blocking and that's why it's
+implemented as a flag.
 
-This patch doesn't introduce any visible behavior changes.
+It got converted to a mutex a while back to add blocking wait from CPU
+hotplug path - 6037315269 ("workqueue: use mutex for global_cwq
+manager exclusion").  Later it turned out that synchronization among
+workers and cpu hotplug need to be done separately.  Eventually,
+POOL_MANAGING_WORKERS is restored and workqueue->manager_mutex got
+morphed into workqueue->assoc_mutex - 552a37e936 ("workqueue: restore
+POOL_MANAGING_WORKERS") and b2eb83d123 ("workqueue: rename
+manager_mutex to assoc_mutex").
+
+Now, we're gonna need to be able to lock out managers from
+destroy_workqueue() to support multiple unbound pools with custom
+attributes making it again necessary to be able to block on the
+manager role.  This patch replaces POOL_MANAGING_WORKERS with
+worker_pool->manager_mutex.
+
+This patch doesn't introduce any behavior changes.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- kernel/workqueue.c | 44 ++++++++++++++++++++++----------------------
- 1 file changed, 22 insertions(+), 22 deletions(-)
+ kernel/workqueue.c | 13 ++++++-------
+ 1 file changed, 6 insertions(+), 7 deletions(-)
 
 diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index a533e77..61f78ef 100644
+index 2645218..68b3443 100644
 --- a/kernel/workqueue.c
 +++ b/kernel/workqueue.c
-@@ -2717,10 +2717,10 @@ void drain_workqueue(struct workqueue_struct *wq)
- 	 * hotter than drain_workqueue() and already looks at @wq->flags.
- 	 * Use WQ_DRAINING so that queue doesn't have to check nr_drainers.
+@@ -64,7 +64,6 @@ enum {
+ 	 * create_worker() is in progress.
  	 */
--	spin_lock(&workqueue_lock);
-+	spin_lock_irq(&workqueue_lock);
- 	if (!wq->nr_drainers++)
- 		wq->flags |= WQ_DRAINING;
--	spin_unlock(&workqueue_lock);
-+	spin_unlock_irq(&workqueue_lock);
- reflush:
- 	flush_workqueue(wq);
+ 	POOL_MANAGE_WORKERS	= 1 << 0,	/* need to manage workers */
+-	POOL_MANAGING_WORKERS   = 1 << 1,       /* managing workers */
+ 	POOL_DISASSOCIATED	= 1 << 2,	/* cpu can't serve workers */
+ 	POOL_FREEZING		= 1 << 3,	/* freeze in progress */
  
-@@ -2742,10 +2742,10 @@ reflush:
- 		goto reflush;
- 	}
+@@ -145,6 +144,7 @@ struct worker_pool {
+ 	DECLARE_HASHTABLE(busy_hash, BUSY_WORKER_HASH_ORDER);
+ 						/* L: hash of busy workers */
  
--	spin_lock(&workqueue_lock);
-+	spin_lock_irq(&workqueue_lock);
- 	if (!--wq->nr_drainers)
- 		wq->flags &= ~WQ_DRAINING;
--	spin_unlock(&workqueue_lock);
-+	spin_unlock_irq(&workqueue_lock);
- }
- EXPORT_SYMBOL_GPL(drain_workqueue);
++	struct mutex		manager_mutex;	/* the holder is the manager */
+ 	struct mutex		assoc_mutex;	/* protect POOL_DISASSOCIATED */
+ 	struct ida		worker_ida;	/* L: for worker IDs */
  
-@@ -3235,7 +3235,7 @@ struct workqueue_struct *__alloc_workqueue_key(const char *fmt,
- 	 * list.  Grab it, set max_active accordingly and add the new
- 	 * workqueue to workqueues list.
- 	 */
--	spin_lock(&workqueue_lock);
-+	spin_lock_irq(&workqueue_lock);
- 
- 	if (workqueue_freezing && wq->flags & WQ_FREEZABLE)
- 		for_each_pwq_cpu(cpu, wq)
-@@ -3243,7 +3243,7 @@ struct workqueue_struct *__alloc_workqueue_key(const char *fmt,
- 
- 	list_add(&wq->list, &workqueues);
- 
--	spin_unlock(&workqueue_lock);
-+	spin_unlock_irq(&workqueue_lock);
- 
- 	return wq;
- err:
-@@ -3287,9 +3287,9 @@ void destroy_workqueue(struct workqueue_struct *wq)
- 	 * wq list is used to freeze wq, remove from list after
- 	 * flushing is complete in case freeze races us.
- 	 */
--	spin_lock(&workqueue_lock);
-+	spin_lock_irq(&workqueue_lock);
- 	list_del(&wq->list);
--	spin_unlock(&workqueue_lock);
-+	spin_unlock_irq(&workqueue_lock);
- 
- 	if (wq->flags & WQ_RESCUER) {
- 		kthread_stop(wq->rescuer->task);
-@@ -3338,7 +3338,7 @@ void workqueue_set_max_active(struct workqueue_struct *wq, int max_active)
- 
- 	max_active = wq_clamp_max_active(max_active, wq->flags, wq->name);
- 
--	spin_lock(&workqueue_lock);
-+	spin_lock_irq(&workqueue_lock);
- 
- 	wq->saved_max_active = max_active;
- 
-@@ -3346,16 +3346,16 @@ void workqueue_set_max_active(struct workqueue_struct *wq, int max_active)
- 		struct pool_workqueue *pwq = get_pwq(cpu, wq);
- 		struct worker_pool *pool = pwq->pool;
- 
--		spin_lock_irq(&pool->lock);
-+		spin_lock(&pool->lock);
- 
- 		if (!(wq->flags & WQ_FREEZABLE) ||
- 		    !(pool->flags & POOL_FREEZING))
- 			pwq_set_max_active(pwq, max_active);
- 
--		spin_unlock_irq(&pool->lock);
-+		spin_unlock(&pool->lock);
- 	}
- 
--	spin_unlock(&workqueue_lock);
-+	spin_unlock_irq(&workqueue_lock);
- }
- EXPORT_SYMBOL_GPL(workqueue_set_max_active);
- 
-@@ -3602,7 +3602,7 @@ void freeze_workqueues_begin(void)
+@@ -702,7 +702,7 @@ static bool need_to_manage_workers(struct worker_pool *pool)
+ /* Do we have too many workers and should some go away? */
+ static bool too_many_workers(struct worker_pool *pool)
  {
- 	unsigned int cpu;
+-	bool managing = pool->flags & POOL_MANAGING_WORKERS;
++	bool managing = mutex_is_locked(&pool->manager_mutex);
+ 	int nr_idle = pool->nr_idle + managing; /* manager is considered idle */
+ 	int nr_busy = pool->nr_workers - nr_idle;
  
--	spin_lock(&workqueue_lock);
-+	spin_lock_irq(&workqueue_lock);
+@@ -2027,15 +2027,13 @@ static bool manage_workers(struct worker *worker)
+ 	struct worker_pool *pool = worker->pool;
+ 	bool ret = false;
  
- 	WARN_ON_ONCE(workqueue_freezing);
- 	workqueue_freezing = true;
-@@ -3612,7 +3612,7 @@ void freeze_workqueues_begin(void)
- 		struct workqueue_struct *wq;
+-	if (pool->flags & POOL_MANAGING_WORKERS)
++	if (!mutex_trylock(&pool->manager_mutex))
+ 		return ret;
  
- 		for_each_std_worker_pool(pool, cpu) {
--			spin_lock_irq(&pool->lock);
-+			spin_lock(&pool->lock);
+-	pool->flags |= POOL_MANAGING_WORKERS;
+-
+ 	/*
+ 	 * To simplify both worker management and CPU hotplug, hold off
+ 	 * management while hotplug is in progress.  CPU hotplug path can't
+-	 * grab %POOL_MANAGING_WORKERS to achieve this because that can
++	 * grab @pool->manager_mutex to achieve this because that can
+ 	 * lead to idle worker depletion (all become busy thinking someone
+ 	 * else is managing) which in turn can result in deadlock under
+ 	 * extreme circumstances.  Use @pool->assoc_mutex to synchronize
+@@ -2075,8 +2073,8 @@ static bool manage_workers(struct worker *worker)
+ 	ret |= maybe_destroy_workers(pool);
+ 	ret |= maybe_create_worker(pool);
  
- 			WARN_ON_ONCE(pool->flags & POOL_FREEZING);
- 			pool->flags |= POOL_FREEZING;
-@@ -3625,11 +3625,11 @@ void freeze_workqueues_begin(void)
- 					pwq->max_active = 0;
- 			}
- 
--			spin_unlock_irq(&pool->lock);
-+			spin_unlock(&pool->lock);
- 		}
- 	}
- 
--	spin_unlock(&workqueue_lock);
-+	spin_unlock_irq(&workqueue_lock);
+-	pool->flags &= ~POOL_MANAGING_WORKERS;
+ 	mutex_unlock(&pool->assoc_mutex);
++	mutex_unlock(&pool->manager_mutex);
+ 	return ret;
  }
  
- /**
-@@ -3650,7 +3650,7 @@ bool freeze_workqueues_busy(void)
- 	unsigned int cpu;
- 	bool busy = false;
+@@ -3805,6 +3803,7 @@ static int __init init_workqueues(void)
+ 			setup_timer(&pool->mayday_timer, pool_mayday_timeout,
+ 				    (unsigned long)pool);
  
--	spin_lock(&workqueue_lock);
-+	spin_lock_irq(&workqueue_lock);
- 
- 	WARN_ON_ONCE(!workqueue_freezing);
- 
-@@ -3674,7 +3674,7 @@ bool freeze_workqueues_busy(void)
- 		}
- 	}
- out_unlock:
--	spin_unlock(&workqueue_lock);
-+	spin_unlock_irq(&workqueue_lock);
- 	return busy;
- }
- 
-@@ -3691,7 +3691,7 @@ void thaw_workqueues(void)
- {
- 	unsigned int cpu;
- 
--	spin_lock(&workqueue_lock);
-+	spin_lock_irq(&workqueue_lock);
- 
- 	if (!workqueue_freezing)
- 		goto out_unlock;
-@@ -3701,7 +3701,7 @@ void thaw_workqueues(void)
- 		struct workqueue_struct *wq;
- 
- 		for_each_std_worker_pool(pool, cpu) {
--			spin_lock_irq(&pool->lock);
-+			spin_lock(&pool->lock);
- 
- 			WARN_ON_ONCE(!(pool->flags & POOL_FREEZING));
- 			pool->flags &= ~POOL_FREEZING;
-@@ -3719,13 +3719,13 @@ void thaw_workqueues(void)
- 
- 			wake_up_worker(pool);
- 
--			spin_unlock_irq(&pool->lock);
-+			spin_unlock(&pool->lock);
- 		}
- 	}
- 
- 	workqueue_freezing = false;
- out_unlock:
--	spin_unlock(&workqueue_lock);
-+	spin_unlock_irq(&workqueue_lock);
- }
- #endif /* CONFIG_FREEZER */
++			mutex_init(&pool->manager_mutex);
+ 			mutex_init(&pool->assoc_mutex);
+ 			ida_init(&pool->worker_ida);
  
 -- 
 1.8.1.2
