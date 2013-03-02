@@ -1,43 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752539Ab3CBNkr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Mar 2013 08:40:47 -0500
-Received: from mail-we0-f172.google.com ([74.125.82.172]:43194 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752248Ab3CBNkq (ORCPT
+	id S1752472Ab3CBNlO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Mar 2013 08:41:14 -0500
+Received: from www.linutronix.de ([62.245.132.108]:52285 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750819Ab3CBNlN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Mar 2013 08:40:46 -0500
+	Sat, 2 Mar 2013 08:41:13 -0500
+Message-ID: <51320173.6000802@linutronix.de>
+Date: Sat, 02 Mar 2013 14:41:07 +0100
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <CA+icZUW4SJ1OTmKtcHWYkaW5pYzJZU8Gv7BtxAeto++aqYB6gA@mail.gmail.com>
-References: <CA+icZUW4SJ1OTmKtcHWYkaW5pYzJZU8Gv7BtxAeto++aqYB6gA@mail.gmail.com>
-Date: Sat, 2 Mar 2013 14:40:44 +0100
-Message-ID: <CA+icZUVyWAog7sxKXLSODaeO8v9BJReR8LhruC1gLux57oJ7Hg@mail.gmail.com>
-Subject: Re: [git.k.o] Old linux-next WebGit points to $NewWebGitURL/tree
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: webmaster@kernel.org
-Cc: Konstantin Ryabitsev <mricon@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-next <linux-next@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Fengguang Wu <fengguang.wu@intel.com>
+CC: Felipe Balbi <balbi@ti.com>, Maarten Lankhorst <m.b.lankhorst@gmail.com>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [usb gadget] WARNING: at kernel/mutex.c:198 __mutex_lock_common()
+References: <20130206020424.GB1175@localhost> <20130227104935.GZ8016@arwen.pp.htv.fi> <20130302133736.GA13058@localhost>
+In-Reply-To: <20130302133736.GA13058@localhost>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[0] should be...
-<http://git.kernel.org/?p=linux/kernel/git/next/linux-next.git>.
+On 03/02/2013 02:37 PM, Fengguang Wu wrote:
+> On Wed, Feb 27, 2013 at 12:49:35PM +0200, Felipe Balbi wrote:
+>> Hi,
+>>
+>> On Wed, Feb 06, 2013 at 10:04:24AM +0800, Fengguang Wu wrote:
+>>> Greetings,
+>>>
+>>> I got the below warning and the first bad commit is
+>>
+>> can you send a fixup patch ?
+> 
+> Sorry I don't have the fix. Maarten once proposed
+> 
+> : Can you change __mutex_lock_common from inline to __always_inline and
+> : check if that gets rid of the warning?
+> 
+> and it worked at that time, however it does not work today when I
+> go out to double check the below patch...
 
-- Sedat -
+This does not get even close to a fix, not to mention a proper one. The
+problem is that a spinlock is hold while a mutex is going to be taken.
+Maybe I get to this…
 
-On Sat, Mar 2, 2013 at 2:39 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
-> Hi,
->
-> invoking the old linux-next WebGit URL [0] results in [1].
-> [2] would be correct.
->
-> Regards,
-> - Sedat -
->
-> [0] git.kernel.org - linux/kernel/git/next/linux-next.git/summary
-> [1] http://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/tree/
-> [2] http://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/
+Sebastian
