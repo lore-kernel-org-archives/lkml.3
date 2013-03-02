@@ -1,74 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752403Ab3CBPsy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Mar 2013 10:48:54 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:53290 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751991Ab3CBPsx (ORCPT
+	id S1752455Ab3CBPxT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Mar 2013 10:53:19 -0500
+Received: from netrider.rowland.org ([192.131.102.5]:34268 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751992Ab3CBPxR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Mar 2013 10:48:53 -0500
-Date: Sun, 3 Mar 2013 02:48:51 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: James Hogan <james.hogan@imgtec.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, Arnd <arnd@arndb.de>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] late arch/metag fixes for v3.9-rc1
-Message-Id: <20130303024851.4be2d2435da42a6010c6c8f8@canb.auug.org.au>
-In-Reply-To: <5131D2F0.2010705@imgtec.com>
-References: <5130DD94.2060408@imgtec.com>
-	<CA+55aFw9qvUdrtEk_83-gEjZMTceONk=AuVsHuTtqOj=jpVPQg@mail.gmail.com>
-	<5130F978.9040604@imgtec.com>
-	<5131D2F0.2010705@imgtec.com>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Sun__3_Mar_2013_02_48_51_+1100_jSINA=Jz1muBeD_N"
+	Sat, 2 Mar 2013 10:53:17 -0500
+Date: Sat, 2 Mar 2013 10:53:16 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: Vivek Gautam <gautam.vivek@samsung.com>
+cc: linux-usb@vger.kernel.org, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <linux-samsung-soc@vger.kernel.org>,
+        <gregkh@linuxfoundation.org>, <balbi@ti.com>,
+        <sarah.a.sharp@linux.intel.com>, <kgene.kim@samsung.com>,
+        <kishon@ti.com>, Doug Anderson <dianders@chromium.org>
+Subject: Re: [PATCH v2 06/10] usb: xhci: Enable runtime pm in xhci-plat
+In-Reply-To: <1362230590-20960-7-git-send-email-gautam.vivek@samsung.com>
+Message-ID: <Pine.LNX.4.44L0.1303021050210.11936-100000@netrider.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Sun__3_Mar_2013_02_48_51_+1100_jSINA=Jz1muBeD_N
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Sat, 2 Mar 2013, Vivek Gautam wrote:
 
-Hi James,
+> By enabling runtime pm in this driver allows users of
+> xhci-plat to enter into runtime pm. This is not full
+> runtime pm support (AKA xhci-plat doesn't actually power
+> anything off when in runtime suspend mode) but,
+> just basic enablement.
+> 
+> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+> CC: Doug Anderson <dianders@chromium.org>
+> ---
+>  drivers/usb/host/xhci-plat.c |    7 +++++++
+>  1 files changed, 7 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/usb/host/xhci-plat.c b/drivers/usb/host/xhci-plat.c
+> index c9c7e13..595cb52 100644
+> --- a/drivers/usb/host/xhci-plat.c
+> +++ b/drivers/usb/host/xhci-plat.c
+> @@ -12,6 +12,7 @@
+>   */
+>  
+>  #include <linux/platform_device.h>
+> +#include <linux/pm_runtime.h>
+>  #include <linux/module.h>
+>  #include <linux/slab.h>
+>  
+> @@ -149,6 +150,8 @@ static int xhci_plat_probe(struct platform_device *pdev)
+>  	if (ret)
+>  		goto put_usb3_hcd;
+>  
+> +	pm_runtime_enable(&pdev->dev);
 
-On Sat, 2 Mar 2013 10:22:40 +0000 James Hogan <james.hogan@imgtec.com> wrot=
-e:
->
-> Okay, I've rebased the arch/metag tree onto mainline to make all the
-> back-merges unnecessary and applied those simple fixes into "Build
-> infrastructure" and "Various other headers" commits (additionally
-> trivially removing ARCH_NO_VIRT_TO_BUS which is also now unnecessary).
+This is generally not a good idea.  You shouldn't enable a device for 
+runtime PM without first telling the PM core what state it is in.
 
-Pleas make sure that what you are submitting to Linus is the same as what
-you have in linux-next (i.e. reset your for-next branch as well).
+> @@ -174,6 +177,10 @@ static int xhci_plat_remove(struct platform_device *dev)
+>  	struct usb_hcd	*hcd = platform_get_drvdata(dev);
+>  	struct xhci_hcd	*xhci = hcd_to_xhci(hcd);
+>  
+> +	if (!pm_runtime_suspended(&dev->dev))
+> +		pm_runtime_put(&dev->dev);
+> +	pm_runtime_disable(&dev->dev);
+> +
+>  	usb_remove_hcd(xhci->shared_hcd);
+>  	usb_put_hcd(xhci->shared_hcd);
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+This is very strange.  Why have a pm_runtime_put with no balancing 
+pm_runtime_get?
 
---Signature=_Sun__3_Mar_2013_02_48_51_+1100_jSINA=Jz1muBeD_N
-Content-Type: application/pgp-signature
+And why use an async routine when you're about to unbind the driver?  
+Don't you want the callback to occur before the unbinding?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Alan Stern
 
-iQIcBAEBCAAGBQJRMh9jAAoJEECxmPOUX5FEIDQP/3BqmOj8OfQCfgxkYkRHV+3r
-sbgVxmvFciM6Oaw4R/whC2MbI5AgSEjeKbQJdnTKKfs+4VzvCzaOJnb9zjn9Q0JV
-+NKMtmutAwwiFPrsvF15/SwY6f0gcDWDplBfqkwcypNcXRRMo0YtiincCItRv+CE
-s1UZaJnXXRE9MIqYEcSzsTvgHgtbYNTusRGKJ2EOimzafNnhgNEO4CJrXqCnhVyN
-q3AjyLZPYPwRzd/FDo/90ZSMpPfiQP130ao63KkSxm5p010udtclYdI/udq+2SB1
-m+tWE5JaqM6Qdj7pWGLqym9iJhaUzoNAvc8xfPwzPRbQkuAlZPKiwsWHP8M5msR0
-cP04eD+EsT0uKg3BADuTWjukVU7ukwUkQ/I8gOSj+RGfVcP3Fqr20Nlhr28bWre+
-SeuMza9+z8GC26i/aeROcXGjAipcWnBQ25nXBwKWFHFbf99GOy9NI8tjdNk8d2jr
-idbWScotRDq0f+AXFViacMvgD5FSOD5ZyaKFGxpzosU9Ajxl0NpZxKBEIzvRpAow
-8lYL+Cxw1lPmkSswEPfiTknMSUVEfE0hWLQvpRT/ZF1Iws3BmovC8P9cObZTyz4b
-kDoCADRYquXmdEIBrGrAoqZanH/0KChcxVJTpkX/8+aJqp7REovuqdNQIhAQojYh
-IqKrt9lghp5RZxZ6irvU
-=fDy2
------END PGP SIGNATURE-----
-
---Signature=_Sun__3_Mar_2013_02_48_51_+1100_jSINA=Jz1muBeD_N--
