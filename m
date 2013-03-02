@@ -1,63 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751991Ab3CBDJM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 22:09:12 -0500
-Received: from mail-da0-f41.google.com ([209.85.210.41]:33466 "EHLO
-	mail-da0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751381Ab3CBDJK (ORCPT
+	id S1751975Ab3CBDR2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 22:17:28 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:15237 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751381Ab3CBDR1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 22:09:10 -0500
-Date: Fri, 1 Mar 2013 19:08:28 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Simon Jeons <simon.jeons@gmail.com>
-cc: Johannes Weiner <hannes@cmpxchg.org>, dormando <dormando@rydia.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, Seiji Aguchi <seiji.aguchi@hds.com>,
-        Satoru Moriya <satoru.moriya@hds.com>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "lwoodman@redhat.com" <lwoodman@redhat.com>,
-        Mel Gorman <mel@csn.ul.ie>
-Subject: Re: [PATCH] add extra free kbytes tunable
-In-Reply-To: <51316727.1040806@gmail.com>
-Message-ID: <alpine.LNX.2.00.1303011900430.23383@eggly.anvils>
-References: <alpine.DEB.2.02.1302111734090.13090@dflat> <A5ED84D3BB3A384992CBB9C77DEDA4D414A98EBF@USINDEM103.corp.hds.com> <511EB5CB.2060602@redhat.com> <alpine.DEB.2.02.1302171546120.10836@dflat> <20130219152936.f079c971.akpm@linux-foundation.org>
- <alpine.DEB.2.02.1302192100100.23162@dflat> <20130222175634.GA4824@cmpxchg.org> <51307354.5000401@gmail.com> <51307583.2020006@gmail.com> <alpine.LNX.2.00.1303011431290.9961@eggly.anvils> <5131438B.4090507@gmail.com> <alpine.LNX.2.00.1303011648330.16381@eggly.anvils>
- <51316727.1040806@gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Fri, 1 Mar 2013 22:17:27 -0500
+X-Authority-Analysis: v=2.0 cv=H5hZMpki c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=9L-SzeXpsv8A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=YxhCV0W8IeoA:10 a=QyXUC8HyAAAA:8 a=i0EeH86SAAAA:8 a=LCoiq5OKWpDlZ0wJITEA:9 a=PUjeQqilurYA:10 a=dGJ0OcVc7YAA:10 a=hPjdaMEvmhQA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1362194245.1231.71.camel@gandalf.local.home>
+Subject: Re: [PATCH 1/4] tracing/syscalls: Anotate some functions static
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Li Zefan <lizefan@huawei.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Fri, 01 Mar 2013 22:17:25 -0500
+In-Reply-To: <51258723.2040301@huawei.com>
+References: <51258723.2040301@huawei.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2 Mar 2013, Simon Jeons wrote:
-> On 03/02/2013 09:42 AM, Hugh Dickins wrote:
-> > On Sat, 2 Mar 2013, Simon Jeons wrote:
-> > > In function __add_to_swap_cache if add to radix tree successfully will
-> > > result
-> > > in increase NR_FILE_PAGES, why? This is anonymous page instead of file
-> > > backed
-> > > page.
-> > Right, that's hard to understand without historical background.
-> > 
-> > I think the quick answer would be that we used to (and still do) think
-> > of file-cache and swap-cache as two halves of page-cache.  And then when
+This has been fixed already in mainline:
+
+commit 6aea49cb5f3001a8275bf9c9f586ec3eb39af194
+tracing/syscalls: Make local functions static
+Author: Fengguang Wu <fengguang.wu@intel.com>
+
+-- Steve
+
+
+On Thu, 2013-02-21 at 10:32 +0800, Li Zefan wrote:
+> Signed-off-by: Li Zefan <lizefan@huawei.com>
+> ---
+>  kernel/trace/trace_syscalls.c | 18 +++++++++---------
+>  1 file changed, 9 insertions(+), 9 deletions(-)
 > 
-> shmem page should be treated as file-cache or swap-cache? It is strange since
-> it is consist of anonymous pages and these pages establish files.
+> diff --git a/kernel/trace/trace_syscalls.c b/kernel/trace/trace_syscalls.c
+> index 7609dd6..5329e13 100644
+> --- a/kernel/trace/trace_syscalls.c
+> +++ b/kernel/trace/trace_syscalls.c
+> @@ -77,7 +77,7 @@ static struct syscall_metadata *syscall_nr_to_meta(int nr)
+>  	return syscalls_metadata[nr];
+>  }
+>  
+> -enum print_line_t
+> +static enum print_line_t
+>  print_syscall_enter(struct trace_iterator *iter, int flags,
+>  		    struct trace_event *event)
+>  {
+> @@ -130,7 +130,7 @@ end:
+>  	return TRACE_TYPE_HANDLED;
+>  }
+>  
 
-A shmem page is swap-backed file-cache, and it may get transferred to or
-from swap-cache: yes, it's a difficult and confusing case, as I said below.
 
-I would never call it "anonymous", but it is counted in /proc/meminfo's
-Active(anon) or Inactive(anon) rather than in (file), because "anon"
-there is shorthand for "swap-backed".
-
-> > So you'll find that shmem and swap are counted as file in some places
-> > and anon in others, and it's hard to grasp which is where and why,
-> > without remembering the history.
-
-Hugh
