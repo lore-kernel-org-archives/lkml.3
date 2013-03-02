@@ -1,133 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752082Ab3CBC2U (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 21:28:20 -0500
-Received: from mail-da0-f52.google.com ([209.85.210.52]:41077 "EHLO
-	mail-da0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751528Ab3CBC2T (ORCPT
+	id S1752022Ab3CBCpW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 21:45:22 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:30144 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751619Ab3CBCpV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 21:28:19 -0500
-Message-ID: <513163B7.9010309@gmail.com>
-Date: Sat, 02 Mar 2013 10:28:07 +0800
-From: Jiang Liu <liuj97@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Neil Horman <nhorman@tuxdriver.com>, linux-kernel@vger.kernel.org,
-        Prarit Bhargava <prarit@redhat.com>, Don Zickus <dzickus@redhat.com>,
-        Don Dutile <ddutile@redhat.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        Asit Mallick <asit.k.mallick@intel.com>, linux-pci@vger.kernel.org
-Subject: Re: [PATCH] irq: add quirk for broken interrupt remapping on 55XX
- chipsets
-References: <1362158276-4901-1-git-send-email-nhorman@tuxdriver.com> <CAE9FiQWaunJL+196W_oRxLJ9nSO6PDQePCG2-52NCfGCtvwURA@mail.gmail.com>
-In-Reply-To: <CAE9FiQWaunJL+196W_oRxLJ9nSO6PDQePCG2-52NCfGCtvwURA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 1 Mar 2013 21:45:21 -0500
+X-Authority-Analysis: v=2.0 cv=H5hZMpki c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=dCXt4Z_EDXgA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=VHl0eERhotoA:10 a=iTawgs62bG0wHPJiu44A:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1362192318.1231.67.camel@gandalf.local.home>
+Subject: Re: linux-next: build failure after merge of the ftrace tree
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Fri, 01 Mar 2013 21:45:18 -0500
+In-Reply-To: <20130301134738.ce925e1643a35b0a2c4ff275@canb.auug.org.au>
+References: <20130301134738.ce925e1643a35b0a2c4ff275@canb.auug.org.au>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/02/2013 02:20 AM, Yinghai Lu wrote:
-> On Fri, Mar 1, 2013 at 9:17 AM, Neil Horman <nhorman@tuxdriver.com> wrote:
->> A few years back intel published a spec update:
->> http://www.intel.com/content/dam/doc/specification-update/5520-and-5500-chipset-ioh-specification-update.pdf
->>
->> For the 5520 and 5500 chipsets which contained an errata (specificially errata
->> 53), which noted that these chipsets can't properly do interrupt remapping, and
->> as a result the recommend that interrupt remapping be disabled in bios.  While
->> many vendors have a bios update to do exactly that, not all do, and of course
->> not all users update their bios to a level that corrects the problem.  As a
->> result, occasionally interrupts can arrive at a cpu even after affinity for that
->> interrupt has be moved, leading to lost or spurrious interrupts (usually
->> characterized by the message:
->> kernel: do_IRQ: 7.71 No irq handler for vector (irq -1)
->>
->> There have been several incidents recently of people seeing this error, and
->> investigation has shown that they have system for which their BIOS level is such
->> that this feature was not properly turned off.  As such, it would be good to
->> give them a reminder that their systems are vulnurable to this problem.
->>
->> Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
->> CC: Prarit Bhargava <prarit@redhat.com>
->> CC: Don Zickus <dzickus@redhat.com>
->> CC: Don Dutile <ddutile@redhat.com>
->> CC: Bjorn Helgaas <bhelgaas@google.com>
->> CC: Asit Mallick <asit.k.mallick@intel.com>
->> CC: linux-pci@vger.kernel.org
->> ---
->>  drivers/iommu/intel_irq_remapping.c | 20 ++++++++++++++++++++
->>  include/linux/pci_ids.h             |  2 ++
->>  2 files changed, 22 insertions(+)
->>
->> diff --git a/drivers/iommu/intel_irq_remapping.c b/drivers/iommu/intel_irq_remapping.c
->> index f3b8f23..9bfb6c2 100644
->> --- a/drivers/iommu/intel_irq_remapping.c
->> +++ b/drivers/iommu/intel_irq_remapping.c
->> @@ -1113,3 +1113,23 @@ struct irq_remap_ops intel_irq_remap_ops = {
->>         .msi_setup_irq          = intel_msi_setup_irq,
->>         .setup_hpet_msi         = intel_setup_hpet_msi,
->>  };
->> +
->> +
->> +static void intel_remapping_check(struct pci_dev *dev)
->> +{
->> +       u8 revision;
->> +
->> +       pci_read_config_byte(dev, PCI_REVISION_ID, &revision);
->> +
->> +       if ((revision == 0x13) && irq_remapping_enabled) {
->> +               pr_warn("WARNING WARNING WARNING WARNING WARNING WARNING\n"
->> +                       "This system BIOS has enabled interrupt remapping\n"
->> +                       "on a chipset that contains an errata making that\n"
->> +                       "feature unstable.  Please reboot with nointremap\n"
->> +                       "added to the kernel command line and contact\n"
->> +                       "your BIOS vendor for an update");
->> +       }
->> +}
->> +DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_5520_IOHUB, intel_remapping_check);
->> +DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_5500_IOHUB, intel_remapping_check);
+On Fri, 2013-03-01 at 13:47 +1100, Stephen Rothwell wrote:
+> Hi Steven,
 > 
-> only for x86 platform?
-> If so, you can check that in arch/x86/kernel/early-quirks.c::early_quirks()
-> and set one flag and later print warning and skip there if someone
-> need to enable intr-remap.
-> So users will not need to reboot the system...
-We have just struggled with this issue when doing kvm restarting stress tests,
-and finally found it's a chipset errata. Thanks for fix it.
-And I think 5520/5500 is for x86 only, so could move it to x86 arch subdirectory.
+> After merging the ftrace tree, today's linux-next build (x86_64
+> allmodconfig) failed like this:
+> 
+> kernel/trace/trace_kdb.c: In function 'ftrace_dump_buf':
+> kernel/trace/trace_kdb.c:29:33: error: invalid type argument of '->' (have 'struct trace_array_cpu')
+> kernel/trace/trace_kdb.c:86:33: error: invalid type argument of '->' (have 'struct trace_array_cpu')
+> 
+> Caused by commit eaac1836c10e ("tracing: Replace the static global
+> per_cpu arrays with allocated per_cpu").
+> 
+> I have used the ftrace tree from next-20130228 for today.
 
-Regards!
-Gerry
+I rebased, and it should all be good now. I also fixed breakage to the
+new snapshot feature. Here's my diff:
 
-> 
-> Thanks
-> 
-> Yinghai
-> 
->> +
->> diff --git a/include/linux/pci_ids.h b/include/linux/pci_ids.h
->> index 31717bd..54027a6 100644
->> --- a/include/linux/pci_ids.h
->> +++ b/include/linux/pci_ids.h
->> @@ -2732,6 +2732,8 @@
->>  #define PCI_DEVICE_ID_INTEL_LYNNFIELD_MC_CH2_RANK_REV2  0x2db2
->>  #define PCI_DEVICE_ID_INTEL_LYNNFIELD_MC_CH2_TC_REV2    0x2db3
->>  #define PCI_DEVICE_ID_INTEL_82855PM_HB 0x3340
->> +#define PCI_DEVICE_ID_INTEL_5500_IOHUB 0x3403
->> +#define PCI_DEVICE_ID_INTEL_5520_IOHUB 0x3406
->>  #define PCI_DEVICE_ID_INTEL_IOAT_TBG4  0x3429
->>  #define PCI_DEVICE_ID_INTEL_IOAT_TBG5  0x342a
->>  #define PCI_DEVICE_ID_INTEL_IOAT_TBG6  0x342b
->> --
->> 1.7.11.7
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+-- Steve
+
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index af7be82..b36befa 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -4133,14 +4133,30 @@ static int tracing_clock_open(struct inode *inode, struct file *file)
+ #ifdef CONFIG_TRACER_SNAPSHOT
+ static int tracing_snapshot_open(struct inode *inode, struct file *file)
+ {
++	struct trace_cpu *tc = inode->i_private;
+ 	struct trace_iterator *iter;
++	struct seq_file *m;
+ 	int ret = 0;
+ 
+ 	if (file->f_mode & FMODE_READ) {
+ 		iter = __tracing_open(inode, file, true);
+ 		if (IS_ERR(iter))
+ 			ret = PTR_ERR(iter);
++	} else {
++		/* Writes still need the seq_file to hold the private data */
++		m = kzalloc(sizeof(*m), GFP_KERNEL);
++		if (!m)
++			return -ENOMEM;
++		iter = kzalloc(sizeof(*iter), GFP_KERNEL);
++		if (!iter) {
++			kfree(m);
++			return -ENOMEM;
++		}
++		iter->tr = tc->tr;
++		m->private = iter;
++		file->private_data = m;
+ 	}
++
+ 	return ret;
+ }
+ 
+@@ -4148,7 +4164,9 @@ static ssize_t
+ tracing_snapshot_write(struct file *filp, const char __user *ubuf, size_t cnt,
+ 		       loff_t *ppos)
+ {
+-	struct trace_array *tr = filp->private_data;
++	struct seq_file *m = filp->private_data;
++	struct trace_iterator *iter = m->private;
++	struct trace_array *tr = iter->tr;
+ 	unsigned long val;
+ 	int ret;
+ 
+@@ -4209,6 +4227,22 @@ out:
+ 	mutex_unlock(&trace_types_lock);
+ 	return ret;
+ }
++
++static int tracing_snapshot_release(struct inode *inode, struct file *file)
++{
++	struct seq_file *m = file->private_data;
++
++	if (file->f_mode & FMODE_READ)
++		return tracing_release(inode, file);
++
++	/* If write only, the seq_file is just a stub */
++	if (m)
++		kfree(m->private);
++	kfree(m);
++
++	return 0;
++}
++
+ #endif /* CONFIG_TRACER_SNAPSHOT */
+ 
+ 
+@@ -4273,7 +4307,7 @@ static const struct file_operations snapshot_fops = {
+ 	.read		= seq_read,
+ 	.write		= tracing_snapshot_write,
+ 	.llseek		= tracing_seek,
+-	.release	= tracing_release,
++	.release	= tracing_snapshot_release,
+ };
+ #endif /* CONFIG_TRACER_SNAPSHOT */
+ 
+@@ -5284,7 +5318,7 @@ static __init int tracer_init_debugfs(void)
+ 
+ #ifdef CONFIG_TRACER_SNAPSHOT
+ 	trace_create_file("snapshot", 0644, d_tracer,
+-			  (void *) RING_BUFFER_ALL_CPUS, &snapshot_fops);
++			  (void *)&global_trace.trace_cpu, &snapshot_fops);
+ #endif
+ 
+ 	create_trace_instances(d_tracer);
+diff --git a/kernel/trace/trace_kdb.c b/kernel/trace/trace_kdb.c
+index cc1dbdc..349f694 100644
+--- a/kernel/trace/trace_kdb.c
++++ b/kernel/trace/trace_kdb.c
+@@ -26,7 +26,7 @@ static void ftrace_dump_buf(int skip_lines, long cpu_file)
+ 	trace_init_global_iter(&iter);
+ 
+ 	for_each_tracing_cpu(cpu) {
+-		atomic_inc(&iter.tr->data[cpu]->disabled);
++		atomic_inc(&per_cpu_ptr(iter.tr->data, cpu)->disabled);
+ 	}
+ 
+ 	old_userobj = trace_flags;
+@@ -83,7 +83,7 @@ out:
+ 	trace_flags = old_userobj;
+ 
+ 	for_each_tracing_cpu(cpu) {
+-		atomic_dec(&iter.tr->data[cpu]->disabled);
++		atomic_dec(&per_cpu_ptr(iter.tr->data, cpu)->disabled);
+ 	}
+ 
+ 	for_each_tracing_cpu(cpu)
+
 
