@@ -1,54 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751720Ab3CBJIt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Mar 2013 04:08:49 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:53401 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751486Ab3CBJIo (ORCPT
+	id S1752051Ab3CBJei (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Mar 2013 04:34:38 -0500
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:45084 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751595Ab3CBJef (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Mar 2013 04:08:44 -0500
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
-        Charles Keepax <ckeepax@opensource.wolfsonmicro.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH] mfd: wm5102: Update rev B patch for latest evaluation
-Date: Sat,  2 Mar 2013 17:08:02 +0800
-Message-Id: <1362215282-14282-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.10.4
+	Sat, 2 Mar 2013 04:34:35 -0500
+From: Amit Daniel Kachhap <amit.daniel@samsung.com>
+To: linux-pm@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, kgene.kim@samsung.com,
+        Thomas Abraham <thomas.abraham@linaro.org>, cpufreq@vger.kernel.org,
+        Inderpal Singh <inderpal.singh@linaro.org>,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH V2 2/4] cpufreq: exynos: Remove error return even if no soc is found
+Date: Sat,  2 Mar 2013 15:04:12 +0530
+Message-Id: <1362216854-6633-2-git-send-email-amit.daniel@samsung.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1362216854-6633-1-git-send-email-amit.daniel@samsung.com>
+References: <1362216854-6633-1-git-send-email-amit.daniel@samsung.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+This patch helps to have single binary for exynos5440 and previous
+exynos soc's. This change is needed for adding exynos5440 cpufreq driver
+which does not uses exynos-cpufreq common file and adds it own driver.
 
-Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
 ---
- drivers/mfd/wm5102-tables.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/cpufreq/exynos-cpufreq.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/mfd/wm5102-tables.c b/drivers/mfd/wm5102-tables.c
-index 4a1cdc4..eee0306 100644
---- a/drivers/mfd/wm5102-tables.c
-+++ b/drivers/mfd/wm5102-tables.c
-@@ -66,6 +66,7 @@ static const struct reg_default wm5102_revb_patch[] = {
- 	{ 0x4B0, 0x0066 },
- 	{ 0x458, 0x000b },
- 	{ 0x212, 0x0000 },
-+	{ 0x171, 0x0000 },
- 	{ 0x80, 0x0000 },
- };
+diff --git a/drivers/cpufreq/exynos-cpufreq.c b/drivers/cpufreq/exynos-cpufreq.c
+index 78057a3..ee75997 100644
+--- a/drivers/cpufreq/exynos-cpufreq.c
++++ b/drivers/cpufreq/exynos-cpufreq.c
+@@ -297,7 +297,7 @@ static int __init exynos_cpufreq_init(void)
+ 	else if (soc_is_exynos5250())
+ 		ret = exynos5250_cpufreq_init(exynos_info);
+ 	else
+-		pr_err("%s: CPU type not found\n", __func__);
++		return 0;
  
-@@ -282,7 +283,7 @@ static const struct reg_default wm5102_reg_default[] = {
- 	{ 0x00000155, 0x0000 },   /* R341   - Rate Estimator 4 */ 
- 	{ 0x00000156, 0x0000 },   /* R342   - Rate Estimator 5 */ 
- 	{ 0x00000161, 0x0000 },   /* R353   - Dynamic Frequency Scaling 1 */ 
--	{ 0x00000171, 0x0002 },   /* R369   - FLL1 Control 1 */
-+	{ 0x00000171, 0x0000 },   /* R369   - FLL1 Control 1 */
- 	{ 0x00000172, 0x0008 },   /* R370   - FLL1 Control 2 */ 
- 	{ 0x00000173, 0x0018 },   /* R371   - FLL1 Control 3 */ 
- 	{ 0x00000174, 0x007D },   /* R372   - FLL1 Control 4 */ 
+ 	if (ret)
+ 		goto err_vdd_arm;
 -- 
-1.7.10.4
+1.7.1
 
