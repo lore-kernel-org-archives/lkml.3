@@ -1,33 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752721Ab3CBVU2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Mar 2013 16:20:28 -0500
-Received: from g1t0029.austin.hp.com ([15.216.28.36]:30906 "EHLO
-	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752501Ab3CBVU0 (ORCPT
+	id S1752730Ab3CBVXR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Mar 2013 16:23:17 -0500
+Received: from g1t0027.austin.hp.com ([15.216.28.34]:28669 "EHLO
+	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752501Ab3CBVXQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Mar 2013 16:20:26 -0500
-Message-ID: <1362259221.3602.8.camel@buesod1.americas.hpqcorp.net>
+	Sat, 2 Mar 2013 16:23:16 -0500
+Message-ID: <1362259393.3602.11.camel@buesod1.americas.hpqcorp.net>
 Subject: Re: [RFC PATCH 0/2] ipc: do not hold ipc lock more than necessary
 From: Davidlohr Bueso <davidlohr.bueso@hp.com>
-To: Emmanuel Benisty <benisty.e@gmail.com>
-Cc: Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Rik van Riel <riel@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
         Steven Rostedt <rostedt@goodmis.org>,
         "Vinod, Chegu" <chegu_vinod@hp.com>, "Low, Jason" <jason.low2@hp.com>,
         linux-tip-commits@vger.kernel.org,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         "H. Peter Anvin" <hpa@zytor.com>,
         Andrew Morton <akpm@linux-foundation.org>, aquini@redhat.com,
-        Ingo Molnar <mingo@kernel.org>, Larry Woodman <lwoodman@redhat.com>,
+        Michel Lespinasse <walken@google.com>, Ingo Molnar <mingo@kernel.org>,
+        Larry Woodman <lwoodman@redhat.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Sat, 02 Mar 2013 13:20:21 -0800
-In-Reply-To: <CA+i8gKJKmZJD8UXGRYrA1X8qO1EqJMJ7eC_qOuDqvEX93ZNYUA@mail.gmail.com>
+Date: Sat, 02 Mar 2013 13:23:13 -0800
+In-Reply-To: <CA+55aFwNoK+Bt07s-fnxRSPHy3Cqq6yZtGP+B2ingxEnkArhVQ@mail.gmail.com>
 References: <1362183392.3420.23.camel@buesod1.americas.hpqcorp.net>
-	 <CA+i8gKJ99-f0Q=kqf2=zY_kjSt8UE6jq0nETWmW0fSdnh00vCw@mail.gmail.com>
-	 <CANN689HH_bqGSjZ15ftnd_Ogm4YQVJj0_OEQ13nofdEy8WtUmw@mail.gmail.com>
-	 <CA+i8gKJKmZJD8UXGRYrA1X8qO1EqJMJ7eC_qOuDqvEX93ZNYUA@mail.gmail.com>
+	 <CA+55aFwNoK+Bt07s-fnxRSPHy3Cqq6yZtGP+B2ingxEnkArhVQ@mail.gmail.com>
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
 Mime-Version: 1.0
@@ -36,36 +33,55 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2013-03-02 at 15:35 +0700, Emmanuel Benisty wrote:
-> On Sat, Mar 2, 2013 at 2:08 PM, Michel Lespinasse <walken@google.com> wrote:
-> > On Sat, Mar 2, 2013 at 12:43 PM, Emmanuel Benisty <benisty.e@gmail.com> wrote:
-> >> Hi,
-> >>
-> >> On Sat, Mar 2, 2013 at 7:16 AM, Davidlohr Bueso <davidlohr.bueso@hp.com> wrote:
-> >>> The following set of not-thoroughly-tested patches are based on the
-> >>> discussion of holding the ipc lock unnecessarily, such as for permissions
-> >>> and security checks:
-> >>>
-> >>> https://lkml.org/lkml/2013/2/28/540
-> >>>
-> >>> Patch 0/1: Introduces new functions, analogous to ipc_lock and ipc_lock_check
-> >>> in the ipc utility code, allowing to obtain the ipc object without holding the lock.
-> >>>
-> >>> Patch 0/2: Use the new functions and only acquire the ipc lock when needed.
-> >>
-> >> Not sure how much a work in progress this is but my machine dies
-> >> immediately when I start chromium, crappy mobile phone picture here:
-> >> http://i.imgur.com/S0hfPz3.jpg
+On Fri, 2013-03-01 at 17:32 -0800, Linus Torvalds wrote:
+> On Fri, Mar 1, 2013 at 4:16 PM, Davidlohr Bueso <davidlohr.bueso@hp.com> wrote:
 > >
-> > We are missing the top of the trace there, so it's hard to be sure -
-> > however, this could well be caused by the if (!out) check (instead of
-> > if (IS_ERR(out)) that I noticed in patch 1/2.
+> > With Rik's semop-multi.c microbenchmark we can see the following
+> > results:
 > 
-> Merci Michel but unfortunately, I'm still getting the same issue.
+> Ok, that certainly looks very good.
+> 
+> > +  59.40%            a.out  [kernel.kallsyms]  [k] _raw_spin_lock
+> > +  17.47%            a.out  [kernel.kallsyms]  [k] _raw_spin_lock
+> 
+> I had somewhat high expectations, but that's just better than I really
+> hoped for. Not only is the percentage down, it's down for the case of
+> a much smaller number of overall cycle cost, so it's a really big
+> reduction in contention spinning.
+> 
+> Of course, contention will come back and overwhelm you at *some*
+> point, but it seems the patches certainly moved the really bad
+> contention point out some way..
+> 
+> > +   6.14%            a.out  [kernel.kallsyms]  [k] sys_semtimedop
+> > +  11.08%            a.out  [kernel.kallsyms]  [k] sys_semtimedop
+> > While the _raw_spin_lock time is drastically reduced, others do increase.
+> > This results in an overall speedup of ~1.7x regarding ops/sec.
+> 
+> Actually, the others don't really increase. Sure, the *percentages* go
+> up, but that's just because it has to add up to 100% in the end. So
+> it's not that you're moving costs from one place to another - the 1.7x
+> speedup is the real reduction in costs, and then that 6.14% -> 11.08%
+> "growth" is really nothing but that (and yes, 1.7 x 6.14 really does
+> get pretty close).
+> 
+> So nothing really got slower, despite the percentages going up.
+> 
+> Looks good to me. Of course, the *real* issue is if this is a win on
+> real code too. And I bet it is, it just won't be quite as noticeable.
+> But if anything, real code is likely to have less contention to begin
+> with, because it has more things going on outside of the spinlocks. So
+> it should see an improvement, but not nearly the kind of improvement
+> you quote here.
+> 
+> Although your 800-user swingbench numbers were pretty horrible, so
+> maybe that case can improve by comparable amounts in the bad cases.
+> 
 
-Will try to reproduce (and further testing on other machines) and debug
-later today.
+Absolutely, I'll be sure to try these changes with my Oracle workloads
+and report with some numbers. This obviously still needs a lot of
+testing.
 
-Thanks for testing,
+Thanks,
 Davidlohr
 
