@@ -1,50 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752809Ab3CBN0R (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Mar 2013 08:26:17 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:30681 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752650Ab3CBNZq (ORCPT
+	id S1752461Ab3CBNZX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Mar 2013 08:25:23 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:12932 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752132Ab3CBNZT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Mar 2013 08:25:46 -0500
-X-AuditID: cbfee68f-b7f6a6d000004969-b9-5131fdd9d847
+	Sat, 2 Mar 2013 08:25:19 -0500
+X-AuditID: cbfee68e-b7fa46d00000627e-e7-5131fdbe3617
 From: Vivek Gautam <gautam.vivek@samsung.com>
 To: linux-usb@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
         linux-samsung-soc@vger.kernel.org, gregkh@linuxfoundation.org,
         balbi@ti.com, sarah.a.sharp@linux.intel.com, kgene.kim@samsung.com,
         kishon@ti.com
-Subject: [PATCH v2 08/10] usb: phy: samsung: Add support for external reference
- clock
-Date: Sat, 02 Mar 2013 18:53:09 +0530
-Message-id: <1362230590-20960-9-git-send-email-gautam.vivek@samsung.com>
+Subject: [PATCH v2 01/10] usb: phy: Add APIs for runtime power management
+Date: Sat, 02 Mar 2013 18:53:02 +0530
+Message-id: <1362230590-20960-2-git-send-email-gautam.vivek@samsung.com>
 X-Mailer: git-send-email 1.7.6.5
 In-reply-to: <1362230590-20960-1-git-send-email-gautam.vivek@samsung.com>
 References: <1362230590-20960-1-git-send-email-gautam.vivek@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrHLMWRmVeSWpSXmKPExsWyRsSkVvfmX8NAg90/RCwO3q+3aF68ns2i
-	d8FVNosLT3vYLC7vmsNmMXtJP4vFjPP7mCwWLWtltmg+cYrZgdNj3slAj/1z17B79G1Zxehx
-	/MZ2Jo/Pm+QCWKO4bFJSczLLUov07RK4Mnpb7QqeylSsW/SUuYHxp3gXIyeHhICJxMGDq5gh
-	bDGJC/fWs3UxcnEICSxllJj3t40Rpujo8vlMEInpjBINx2dDOVOYJPZeu8cEUsUmoCvR9HYX
-	WIeIgKzE4Su/mUGKmAUuMUqsWLGFpYuRg0NYIFxiz0Z/kBoWAVWJT59+sILYvAIeEj9n74Ta
-	piDx5vYzsJM4BTwlpl/fDFYjBFTz595xdpCZEgKr2CV+fD/GAjFIQOLb5ENg8yWAFm86APWO
-	pMTBFTdYJjAKL2BkWMUomlqQXFCclF5krFecmFtcmpeul5yfu4kRGPan/z3r38F494D1IcZk
-	oHETmaVEk/OBcZNXEm9obGJuamxqZmRpaWlKmrCSOK/8JZlAIYH0xJLU7NTUgtSi+KLSnNTi
-	Q4xMHJxSDYybrHsn7ih8vnHGxxWMcjyuCtXPXBfFPtAoPrFqUUu8v8XV+7bfWCdW55zK/8Z2
-	9m2/WG7yq13cslpC6XzTNWzEV9vcOPE08OSVlxG8Xb6hYmsM0pay7vzjv7FldviNDXtXd7+5
-	d5X1ZMuply93XNRtTtkz8cebT2sq+Be3Jp7mLNgeXR7EeG6eEktxRqKhFnNRcSIAUH3N85EC	AAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrNIsWRmVeSWpSXmKPExsVy+t9jQd2bfw0DDa4t5rY4eL/eonnxejaL
-	3gVX2SwuPO1hs7i8aw6bxewl/SwWM87vY7JYtKyV2aL5xClmB06PeScDPfbPXcPu0bdlFaPH
-	8RvbmTw+b5ILYI1qYLTJSE1MSS1SSM1Lzk/JzEu3VfIOjneONzUzMNQ1tLQwV1LIS8xNtVVy
-	8QnQdcvMAbpHSaEsMacUKBSQWFyspG+HaUJoiJuuBUxjhK5vSBBcj5EBGkhYw5jR22pX8FSm
-	Yt2ip8wNjD/Fuxg5OSQETCSOLp/PBGGLSVy4t56ti5GLQ0hgOqNEw/HZTBDOFCaJvdfugVWx
-	CehKNL3dxQhiiwjIShy+8psZpIhZ4BKjxIoVW1i6GDk4hAXCJfZs9AepYRFQlfj06QcriM0r
-	4CHxc/ZORohtChJvbj9jBrE5BTwlpl/fDFYjBFTz595x9gmMvAsYGVYxiqYWJBcUJ6XnGuoV
-	J+YWl+al6yXn525iBEfVM6kdjCsbLA4xCnAwKvHwBnw0CBRiTSwrrsw9xCjBwawkwnv+qmGg
-	EG9KYmVValF+fFFpTmrxIcZkoKsmMkuJJucDIz6vJN7Q2MTc1NjU0sTCxMySNGElcV7GU08C
-	hATSE0tSs1NTC1KLYLYwcXBKNQBdtqRjvUukydcGXsapHfyHFC3r2qcYxa15JLWOyed584HM
-	hOrsWsMplzVyo4/Y+xhfnhhnEpy67fmiJvF/nypajrtNSXwiW/gu8XrLyvh48RutOR3M3lb5
-	By5nR3p3ij95dz/rr7OT05+OP7a75aTVledu3h31oT6Zq8fzvZFvB//tmhfblViKMxINtZiL
-	ihMB7T6cle4CAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrHLMWRmVeSWpSXmKPExsWyRsSkWnffX8NAg657khYH79dbNC9ez2bR
+	u+Aqm8WFpz1sFpd3zWGzmL2kn8Vixvl9TBaLlrUyWzSfOMXswOkx72Sgx/65a9g9+rasYvQ4
+	fmM7k8fnTXIBrFFcNimpOZllqUX6dglcGa93X2MruMVVse33TtYGxk0cXYwcHBICJhJP/8t3
+	MXICmWISF+6tZ+ti5OIQEljKKLH+6WxmiISJxLWbB9ghEtMZJb5seMMGkhASmMIkcXtRMIjN
+	JqAr0fR2FyOILSIgK3H4ym9mkAZmgUuMEitWbGEBSQgLeEosfdLGBGKzCKhK7Gw7AzaIV8BD
+	4uen/4wQ2xQk3tx+BraZE6h++vXNrBDLPCT+3DsOdoWEwDp2iU17v7FCDBKQ+Db5EAvEO7IS
+	mw5AXS0pcXDFDZYJjMILGBlWMYqmFiQXFCelFxnpFSfmFpfmpesl5+duYgSG/el/z/p2MN48
+	YH2IMRlo3ERmKdHkfGDc5JXEGxqbmJsam5oZWVpampImrCTOK39JJlBIID2xJDU7NbUgtSi+
+	qDQntfgQIxMHp1QDY+W2Z2pLNjKm233+kfqP5VuRrvp+w9s3rJsaFN5ynxb0Cyp+dvVP5MYX
+	wrtrv4s+lxFVqNmysSnMzVp/+sJLnPzJ+hrhpulHX+3ecVGUPUyk6uuJ2BUq4WtreGvUVQRY
+	WT0PhIpvm229VM/rzddkef2Dtda21fnLthh35i9MNXz9a3XZMadXSizFGYmGWsxFxYkAn0yy
+	vpECAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrDIsWRmVeSWpSXmKPExsVy+t9jQd19fw0DDbo3CVocvF9v0bx4PZtF
+	74KrbBYXnvawWVzeNYfNYvaSfhaLGef3MVksWtbKbNF84hSzA6fHvJOBHvvnrmH36NuyitHj
+	+I3tTB6fN8kFsEY1MNpkpCampBYppOYl56dk5qXbKnkHxzvHm5oZGOoaWlqYKynkJeam2iq5
+	+AToumXmAN2jpFCWmFMKFApILC5W0rfDNCE0xE3XAqYxQtc3JAiux8gADSSsYcx4vfsaW8Et
+	roptv3eyNjBu4uhi5OSQEDCRuHbzADuELSZx4d56ti5GLg4hgemMEl82vGEDSQgJTGGSuL0o
+	GMRmE9CVaHq7ixHEFhGQlTh85TczSAOzwCVGiRUrtrCAJIQFPCWWPmljArFZBFQldradARvE
+	K+Ah8fPTf0aIbQoSb24/YwaxOYHqp1/fzAqxzEPiz73j7BMYeRcwMqxiFE0tSC4oTkrPNdIr
+	TswtLs1L10vOz93ECI6rZ9I7GFc1WBxiFOBgVOLhDfhoECjEmlhWXJl7iFGCg1lJhPf8VcNA
+	Id6UxMqq1KL8+KLSnNTiQ4zJQFdNZJYSTc4HxnxeSbyhsYm5qbGppYmFiZklacJK4ryMp54E
+	CAmkJ5akZqemFqQWwWxh4uCUamBULF/G5vpB4uIk2dKVL3YclLDTmrPn7tI+pTOHlMpKi1es
+	6Fec+PnDuZScjpUzXymWiWzfv+bjFRlp9nrjMj5lpQ1Ol989vqewz+fj+sJ1At6W7u0Xjh3u
+	3M531qCoqqVu44HrC61d/50ViojXOz059YFUR/JB6S0+d2R36O9dWsz3e4GzQGOdEktxRqKh
+	FnNRcSIAha8ZVu8CAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -52,114 +52,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The PHY controller can choose between ref_pad_clk (XusbXTI-external PLL),
-or EXTREFCLK (XXTI-internal clock crystal) to generate the required clock.
-Adding the provision for ref_pad_clk here.
+Adding  APIs to handle runtime power management on PHY
+devices. PHY consumers may need to wake-up/suspend PHYs
+when they work across autosuspend.
 
 Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
 ---
- drivers/usb/phy/samsung-usb3phy.c |   46 ++++++++++++++++++++++++++++++++-----
- 1 files changed, 40 insertions(+), 6 deletions(-)
+ include/linux/usb/phy.h |   26 ++++++++++++++++++++++++++
+ 1 files changed, 26 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/usb/phy/samsung-usb3phy.c b/drivers/usb/phy/samsung-usb3phy.c
-index 7594cc7..46dd97c 100644
---- a/drivers/usb/phy/samsung-usb3phy.c
-+++ b/drivers/usb/phy/samsung-usb3phy.c
-@@ -33,7 +33,7 @@
- /*
-  * Sets the phy clk as EXTREFCLK (XXTI) which is internal clock from clock core.
-  */
--static u32 samsung_usb3phy_set_refclk(struct samsung_usbphy *sphy)
-+static u32 samsung_usb3phy_set_refclk_int(struct samsung_usbphy *sphy)
- {
- 	u32 reg;
- 	u32 refclk;
-@@ -66,7 +66,22 @@ static u32 samsung_usb3phy_set_refclk(struct samsung_usbphy *sphy)
- 	return reg;
+diff --git a/include/linux/usb/phy.h b/include/linux/usb/phy.h
+index 15847cb..0fe7cac 100644
+--- a/include/linux/usb/phy.h
++++ b/include/linux/usb/phy.h
+@@ -276,4 +276,30 @@ static inline const char *usb_phy_type_string(enum usb_phy_type type)
+ 		return "UNKNOWN PHY TYPE";
+ 	}
  }
- 
--static int samsung_exynos5_usb3phy_enable(struct samsung_usbphy *sphy)
-+/*
-+ * Sets the phy clk as ref_pad_clk (XusbXTI) which is clock from external PLL.
-+ */
-+static u32 samsung_usb3phy_set_refclk_ext(void)
-+{
-+	u32 reg;
 +
-+	reg = PHYCLKRST_REFCLKSEL_PAD_REFCLK |
-+		PHYCLKRST_FSEL_PAD_100MHZ |
-+		PHYCLKRST_MPLL_MULTIPLIER_100MHZ_REF;
-+
-+	return reg;
++#define USB_PHY_AUTOPM(function)					    \
++static inline int usb_phy_autopm_##function(struct usb_phy *x)		    \
++{									    \
++	if (!x || !x->dev) {						    \
++		dev_err(x->dev, "no PHY or attached device available\n");   \
++		return -ENODEV;						    \
++	}								    \
++									    \
++	pm_runtime_##function(x->dev);					    \
++									    \
++	return 0;							    \
 +}
++USB_PHY_AUTOPM(enable)
++USB_PHY_AUTOPM(disable)
++USB_PHY_AUTOPM(get)
++USB_PHY_AUTOPM(get_sync)
++USB_PHY_AUTOPM(put)
++USB_PHY_AUTOPM(put_sync)
++USB_PHY_AUTOPM(allow)
++USB_PHY_AUTOPM(forbid)
++USB_PHY_AUTOPM(suspend)
++USB_PHY_AUTOPM(autosuspend)
++USB_PHY_AUTOPM(resume)
++USB_PHY_AUTOPM(set_active)
 +
-+static int samsung_exynos5_usb3phy_enable(struct samsung_usbphy *sphy,
-+							bool use_ext_clk)
- {
- 	void __iomem *regs = sphy->regs;
- 	u32 phyparam0;
-@@ -81,7 +96,10 @@ static int samsung_exynos5_usb3phy_enable(struct samsung_usbphy *sphy)
- 
- 	phyparam0 = readl(regs + EXYNOS5_DRD_PHYPARAM0);
- 	/* Select PHY CLK source */
--	phyparam0 &= ~PHYPARAM0_REF_USE_PAD;
-+	if (use_ext_clk)
-+		phyparam0 |= PHYPARAM0_REF_USE_PAD;
-+	else
-+		phyparam0 &= ~PHYPARAM0_REF_USE_PAD;
- 	/* Set Loss-of-Signal Detector sensitivity */
- 	phyparam0 &= ~PHYPARAM0_REF_LOSLEVEL_MASK;
- 	phyparam0 |= PHYPARAM0_REF_LOSLEVEL;
-@@ -116,7 +134,10 @@ static int samsung_exynos5_usb3phy_enable(struct samsung_usbphy *sphy)
- 	/* UTMI Power Control */
- 	writel(PHYUTMI_OTGDISABLE, regs + EXYNOS5_DRD_PHYUTMI);
- 
--	phyclkrst = samsung_usb3phy_set_refclk(sphy);
-+	if (use_ext_clk)
-+		phyclkrst = samsung_usb3phy_set_refclk_ext();
-+	else
-+		phyclkrst = samsung_usb3phy_set_refclk_int(sphy);
- 
- 	phyclkrst |= PHYCLKRST_PORTRESET |
- 			/* Digital power supply in normal operating mode */
-@@ -164,7 +185,7 @@ static void samsung_exynos5_usb3phy_disable(struct samsung_usbphy *sphy)
- 	writel(phytest, regs + EXYNOS5_DRD_PHYTEST);
- }
- 
--static int samsung_usb3phy_init(struct usb_phy *phy)
-+static int samsung_exynos5_usb3phy_init(struct usb_phy *phy, bool use_ext_clk)
- {
- 	struct samsung_usbphy *sphy;
- 	unsigned long flags;
-@@ -188,7 +209,7 @@ static int samsung_usb3phy_init(struct usb_phy *phy)
- 	samsung_usbphy_set_isolation(sphy, false);
- 
- 	/* Initialize usb phy registers */
--	samsung_exynos5_usb3phy_enable(sphy);
-+	samsung_exynos5_usb3phy_enable(sphy, use_ext_clk);
- 
- 	spin_unlock_irqrestore(&sphy->lock, flags);
- 
-@@ -199,6 +220,19 @@ static int samsung_usb3phy_init(struct usb_phy *phy)
- }
- 
- /*
-+ * The function passed to the usb driver for phy initialization
-+ */
-+static int samsung_usb3phy_init(struct usb_phy *phy)
-+{
-+	/*
-+	 * We start with using PHY refclk from external PLL,
-+	 * once runtime suspend for the device is called this
-+	 * will change to internal core clock
-+	 */
-+	return samsung_exynos5_usb3phy_init(phy, true);
-+}
-+
-+/*
-  * The function passed to the usb driver for phy shutdown
-  */
- static void samsung_usb3phy_shutdown(struct usb_phy *phy)
+ #endif /* __LINUX_USB_PHY_H */
 -- 
 1.7.6.5
 
