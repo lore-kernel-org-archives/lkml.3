@@ -1,80 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753294Ab3CCMHw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 07:07:52 -0500
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:32782 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753109Ab3CCMHt (ORCPT
+	id S1753397Ab3CCMIB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 07:08:01 -0500
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:47382 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753167Ab3CCMH4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Mar 2013 07:07:49 -0500
+	Sun, 3 Mar 2013 07:07:56 -0500
 From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH] gpio: em: Add Device Tree support
-To: Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-kernel@vger.kernel.org,
-        linus.walleij@linaro.org, linux-sh@vger.kernel.org
-In-Reply-To: <20130228051122.GA12312@verge.net.au>
-References: <20130226132623.18365.36583.sendpatchset@w520> <20130226224106.GC20670@core.coreip.homeip.net> <CANqRtoRUqDsspHQQ11d3c2jc+MvoROwfbv3so5=SGhHOs9k7WA@mail.gmail.com> <20130228051122.GA12312@verge.net.au>
-Date: Sat, 02 Mar 2013 20:07:32 +0000
-Message-Id: <20130302200732.E18BB3E206B@localhost>
+Subject: Re: [PATCH] gpio: gpio-ich: fix ichx_gpio_check_available() return what callers expect
+To: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        linux-kernel@vger.kernel.org
+Cc: Linus Walleij <linus.walleij@linaro.org>, Peter Tyser <ptyser@xes-inc.com>,
+        Jean Delvare <khali@linux-fr.org>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>
+In-Reply-To: <1361978715-14948-1-git-send-email-mika.westerberg@linux.intel.com>
+References: <1361978715-14948-1-git-send-email-mika.westerberg@linux.intel.com>
+Date: Sat, 02 Mar 2013 09:18:36 +0000
+Message-Id: <20130302091836.1DBD83E15E3@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 28 Feb 2013 14:11:23 +0900, Simon Horman <horms@verge.net.au> wrote:
-> On Wed, Feb 27, 2013 at 07:13:46PM +0900, Magnus Damm wrote:
-> > Hi Dmitry,
-> > 
-> > Thanks for your feedback!
-> > 
-> > On Wed, Feb 27, 2013 at 7:41 AM, Dmitry Torokhov
-> > <dmitry.torokhov@gmail.com> wrote:
-> > > Hi Magnus,
-> > >
-> > > On Tue, Feb 26, 2013 at 10:26:23PM +0900, Magnus Damm wrote:
-> > >> From: Magnus Damm <damm@opensource.se>
-> > >>
-> > >> Update the Emma Mobile GPIO driver to add DT support.
-> > >>
-> > >
-> > > ...
-> > >
-> > >> @@ -366,15 +387,33 @@ static int em_gio_remove(struct platform
-> > >>       return 0;
-> > >>  }
-> > >>
-> > >
-> > > #ifdef CONFIG_OF here? No need to have extra aliases in modules if OF
-> > > support is not enabled (or is entire ARM arch now enables device tree?).
-> > >
-> > >> +static const struct of_device_id em_gio_dt_ids[] = {
-> > >> +     { .compatible = "renesas,em-gio", },
-> > >> +     {},
-> > >> +};
-> > >> +MODULE_DEVICE_TABLE(of, em_gio_dt_ids);
-> > >> +
-> > 
-> > I suppose we could sprinkle a couple of #ifdefs across the code, but I
-> > have to say that I'm not that fond of #ifdefs in general. So if it was
-> > up to me only then I would aim at having exactly zero #ifdefs in my
-> > drivers at the expense of slightly larger binaries in some cases.
+On Wed, 27 Feb 2013 17:25:15 +0200, Mika Westerberg <mika.westerberg@linux.intel.com> wrote:
+> ichx_gpio_check_available() returns either 0 or -ENXIO depending on whether
+> the given GPIO is available or not. However, callers of this function treat
+> the return value as boolean:
 > 
-> My take on this is as follows (if anyone cares):
+> 	...
+> 	if (!ichx_gpio_check_available(gpio, nr))
+> 		return -ENXIO;
 > 
-> * The driver in question is currently only useful in conjunction with
->   the Emev2 SoC and the kzm9g board which uses that SoC. The current
->   (and to date only) practice when booting that board and thus SoC
->   with merged upstream code is to do so using DT.
+> which erroneusly fails when the GPIO is available and not vice versa.
 > 
-> * The inclusion of the code above does not appear to cause build-time
->   breakage even if CONFIG_OF is not set.
+> Fix this by making the function return boolean as expected by the callers.
 > 
-> So it seems to me that it is reasonable to leave the code as is
-> without being guarded by an #ifdef.
+> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
 
-I completely agree.  Applied for v3.10
+Applied, thanks.
 
 g.
 
--- 
-Grant Likely, B.Sc, P.Eng.
-Secret Lab Technologies, Ltd.
