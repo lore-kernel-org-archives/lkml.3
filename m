@@ -1,65 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751944Ab3CBC62 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 21:58:28 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:12733 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751367Ab3CBC61 (ORCPT
+	id S1752140Ab3CBC6f (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 21:58:35 -0500
+Received: from mail-da0-f49.google.com ([209.85.210.49]:39113 "EHLO
+	mail-da0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751367Ab3CBC6c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 21:58:27 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Fri, 01 Mar 2013 18:58:21 -0800
-Message-ID: <1362193098.2407.27.camel@bilhuang-vm1>
-Subject: Re: [PATCH 2/5] clk: notifier handler for dynamic voltage scaling
-From: Bill Huang <bilhuang@nvidia.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: Mike Turquette <mturquette@linaro.org>,
-        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "patches@linaro.org" <patches@linaro.org>
-Date: Fri, 1 Mar 2013 18:58:18 -0800
-In-Reply-To: <5131143D.2060904@wwwdotorg.org>
-References: <1362026969-11457-1-git-send-email-mturquette@linaro.org>
-	 <1362026969-11457-3-git-send-email-mturquette@linaro.org>
-	 <1362130891.19498.12.camel@bilhuang-vm1> <5131143D.2060904@wwwdotorg.org>
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	Fri, 1 Mar 2013 21:58:32 -0500
+Date: Fri, 1 Mar 2013 18:57:51 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Ric Mason <ric.masonn@gmail.com>
+cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        Petr Holasek <pholasek@redhat.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Izik Eidus <izik.eidus@ravellosystems.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH 2/7] ksm: treat unstable nid like in stable tree
+In-Reply-To: <51315174.4020200@gmail.com>
+Message-ID: <alpine.LNX.2.00.1303011833490.23290@eggly.anvils>
+References: <alpine.LNX.2.00.1302210013120.17843@eggly.anvils> <alpine.LNX.2.00.1302210019390.17843@eggly.anvils> <51271A7D.6020305@gmail.com> <alpine.LNX.2.00.1302221250440.6100@eggly.anvils> <51303CAB.3080406@gmail.com> <alpine.LNX.2.00.1303011139270.7398@eggly.anvils>
+ <51315174.4020200@gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="ISO-8859-9"
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2013-03-02 at 04:49 +0800, Stephen Warren wrote:
-> On 03/01/2013 02:41 AM, Bill Huang wrote:
-> > On Thu, 2013-02-28 at 12:49 +0800, Mike Turquette wrote:
-> >> There are three prerequisites to using this feature:
-> >>
-> >> 1) the affected clocks must be using the common clk framework
-> >> 2) voltage must be scaled using the regulator framework
-> >> 3) clock frequency and regulator voltage values must be paired via the
-> >> OPP library
+On Sat, 2 Mar 2013, Ric Mason wrote:
+> On 03/02/2013 04:03 AM, Hugh Dickins wrote:
+> > On Fri, 1 Mar 2013, Ric Mason wrote:
+> > > I think the ksm implementation for num awareness  is buggy.
+> > Sorry, I just don't understand your comments below,
+> > but will try to answer or question them as best I can.
 > > 
-> > Just a note, Tegra Core won't meet prerequisite #3 since each regulator
-> > voltage values is associated with clocks driving those many sub-HW
-> > blocks in it.
+> > > For page migratyion stuff, new page is allocated from node *which page is
+> > > migrated to*.
+> > Yes, by definition.
+> > 
+> > > - when meeting a page from the wrong NUMA node in an unstable tree
+> > >      get_kpfn_nid(page_to_pfn(page)) *==* page_to_nid(tree_page)
+> > I thought you were writing of the wrong NUMA node case,
+> > but now you emphasize "*==*", which means the right NUMA node.
 > 
-> Perhaps that "just" means extending the dvfs.c code here to iterate over
-> each clock consumer (rather than each clock provider), and having each
-> set a minimum voltage (rather than a specific voltage), and having the
-> regulator core apply the maximum of those minimum constraints?
+> Yes, I mean the wrong NUMA node. During page migration, new page has already
+> been allocated in new node and old page maybe freed.  So tree_page is the
+> page in new node's unstable tree, page is also new node page, so
+> get_kpfn_nid(page_to_pfn(page)) *==* page_to_nid(tree_page).
+
+I don't understand; but here you seem to be describing a case where two
+pages from the same NUMA node get merged (after both have been migrated
+from another NUMA node?), and there's nothing wrong with that,
+so I won't worry about it further.
+
+> > >     - meeting a page which is ksm page before migration
+> > >       get_kpfn_nid(stable_node->kpfn) != NUMA(stable_node->nid) can't
+> > > capture
+> > > them since stable_node is for tree page in current stable tree. They are
+> > > always equal.
+> > When we meet a ksm page in the stable tree before it's migrated to another
+> > NUMA node, yes, it will be on the right NUMA node (because we were careful
+> > only to merge pages from the right NUMA node there), and that test will not
+> > capture them.  It's for capturng a ksm page in the stable tree after it has
+> > been migrated to another NUMA node.
 > 
-> Or something like that anyway.
+> ksm page migrated to another NUMA node still not freed, why? Who take page
+> count of it?
 
-Thanks, I'll think about this or maybe study a bit, it sounds like we
-can leverage existing api in regulator framework (which I don't know) to
-do what you've proposed, please clarify if I misunderstand.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+The old page, the one which used to be a ksm page on the old NUMA node,
+should be freed very soon: since it was isolated from lru, and its page
+count checked, I cannot think of anything to hold a reference to it,
+apart from migration itself - so it just needs to reach putback_lru_page(),
+and then may rest awhile on __lru_cache_add()'s pagevec before being freed.
 
+But I don't see where I said the old page was still not freed.
 
+> If not  freed, since new page is allocated in new node, it is
+> the copy of current ksm page, so current ksm doesn't change,
+> get_kpfn_nid(stable_node->kpfn) *==* NUMA(stable_node->nid).
+
+But ksm_migrate_page() did
+		VM_BUG_ON(stable_node->kpfn != page_to_pfn(oldpage));
+		stable_node->kpfn = page_to_pfn(newpage);
+without changing stable_node->nid.
+
+Hugh
