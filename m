@@ -1,56 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752627Ab3CBOgP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Mar 2013 09:36:15 -0500
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:43276 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752014Ab3CBOgN (ORCPT
+	id S1752650Ab3CBOnA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Mar 2013 09:43:00 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:56880 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751267Ab3CBOm7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Mar 2013 09:36:13 -0500
-From: Akinobu Mita <akinobu.mita@gmail.com>
-To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
-Cc: Akinobu Mita <akinobu.mita@gmail.com>, Neil Brown <neilb@suse.de>,
-        linux-raid@vger.kernel.org
-Subject: [PATCH] md: use set_bit_le and clear_bit_le
-Date: Sat,  2 Mar 2013 23:35:57 +0900
-Message-Id: <1362234957-5570-1-git-send-email-akinobu.mita@gmail.com>
-X-Mailer: git-send-email 1.8.1.2
+	Sat, 2 Mar 2013 09:42:59 -0500
+Date: Sat, 2 Mar 2013 14:42:56 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] compat: restore timerfd_settime and timerfd_gettime
+ compat
+Message-ID: <20130302144256.GZ4503@ZenIV.linux.org.uk>
+References: <20130302113528.GA3467@osiris>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130302113528.GA3467@osiris>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The value returned by test_and_set_bit_le() drivers/md/bitmap.c is not used.
-So just use set_bit_le(). The same goes for test_and_clear_bit_le().
+On Sat, Mar 02, 2013 at 12:35:28PM +0100, Heiko Carstens wrote:
+> >From 16f8402d45de11a1699ca584a6605806fe60bfc5 Mon Sep 17 00:00:00 2001
+> From: Heiko Carstens <heiko.carstens@de.ibm.com>
+> Date: Sat, 2 Mar 2013 12:26:30 +0100
+> Subject: [PATCH] compat: restore timerfd settime and gettime compat syscalls
+> 
+> Both compat syscalls got lost with 9d94b9e2 "switch timerfd compat syscalls
+> to COMPAT_SYSCALL_DEFINE" because of a typo:
+> COMPAT instead of CONFIG_COMPAT.
 
-Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: Neil Brown <neilb@suse.de>
-Cc: linux-raid@vger.kernel.org
----
- drivers/md/bitmap.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/md/bitmap.c b/drivers/md/bitmap.c
-index 4fd9d6a..5a2c754 100644
---- a/drivers/md/bitmap.c
-+++ b/drivers/md/bitmap.c
-@@ -846,7 +846,7 @@ static void bitmap_file_set_bit(struct bitmap *bitmap, sector_t block)
- 	if (test_bit(BITMAP_HOSTENDIAN, &bitmap->flags))
- 		set_bit(bit, kaddr);
- 	else
--		test_and_set_bit_le(bit, kaddr);
-+		set_bit_le(bit, kaddr);
- 	kunmap_atomic(kaddr);
- 	pr_debug("set file bit %lu page %lu\n", bit, page->index);
- 	/* record page number so it gets flushed to disk when unplug occurs */
-@@ -868,7 +868,7 @@ static void bitmap_file_clear_bit(struct bitmap *bitmap, sector_t block)
- 	if (test_bit(BITMAP_HOSTENDIAN, &bitmap->flags))
- 		clear_bit(bit, paddr);
- 	else
--		test_and_clear_bit_le(bit, paddr);
-+		clear_bit_le(bit, paddr);
- 	kunmap_atomic(paddr);
- 	if (!test_page_attr(bitmap, page->index, BITMAP_PAGE_NEEDWRITE)) {
- 		set_page_attr(bitmap, page->index, BITMAP_PAGE_PENDING);
--- 
-1.8.1.2
-
+Applied, thanks.  I'll push fixes to Linus in about an hour...
