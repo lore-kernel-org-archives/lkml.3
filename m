@@ -1,71 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752969Ab3CEHEX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 02:04:23 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:58988 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752440Ab3CEHEW (ORCPT
+	id S1753124Ab3CEHE6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 02:04:58 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:50325 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752643Ab3CEHE5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 02:04:22 -0500
-Date: Tue, 5 Mar 2013 15:03:41 +0800
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@ingics.com>
-Cc: Haojian Zhuang <haojian.zhuang@gmail.com>,
-        "Jett.Zhou" <jtzhou@marvell.com>, Liam Girdwood <lgirdwood@gmail.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RESEND 1/3] regulator: core: Add enable_is_inverted flag
- to indicate set enable_mask bits to disable
-Message-ID: <20130305070339.GE9391@opensource.wolfsonmicro.com>
-References: <1362464160.1111.1.camel@phoenix>
+	Tue, 5 Mar 2013 02:04:57 -0500
+From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+Subject: [PATCH v2 00/20] kdump, vmcore: support mmap() on /proc/vmcore
+To: vgoyal@redhat.com, ebiederm@xmission.com, cpw@sgi.com,
+        kumagai-atsushi@mxc.nes.nec.co.jp, lisa.mitchell@hp.com,
+        heiko.carstens@de.ibm.com, akpm@linux-foundation.org
+Cc: kexec@lists.infradead.org, linux-kernel@vger.kernel.org
+Date: Sat, 02 Mar 2013 17:35:48 +0900
+Message-ID: <20130302083447.31252.93914.stgit@localhost6.localdomain6>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="4Epv4kl9IRBfg3rk"
-Content-Disposition: inline
-In-Reply-To: <1362464160.1111.1.camel@phoenix>
-X-Cookie: Beware of Bigfoot!
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Currently, read to /proc/vmcore is done by read_oldmem() that uses
+ioremap/iounmap per a single page. For example, if memory is 1GB,
+ioremap/iounmap is called (1GB / 4KB)-times, that is, 262144
+times. This causes big performance degradation.
 
---4Epv4kl9IRBfg3rk
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+In particular, the current main user of this mmap() is makedumpfile,
+which not only reads memory from /proc/vmcore but also does other
+processing like filtering, compression and IO work. Update of page
+table and the following TLB flush makes such processing much slow;
+though I have yet to make patch for makedumpfile and yet to confirm
+how it's improved.
 
-On Tue, Mar 05, 2013 at 02:16:00PM +0800, Axel Lin wrote:
-> Add enable_is_inverted flag to indicate set enable_mask bits to disable
-> when using regulator_enable_regmap and friends APIs.
->=20
-> Signed-off-by: Axel Lin <axel.lin@ingics.com>
-> Reviewed-by: Haojian Zhuang <haojian.zhuang@gmail.com>
-> ---
-> This patch was sent on https://lkml.org/lkml/2013/2/16/14.
-> This resend is against linux-next tree (20130305).
+To address the issue, this patch implements mmap() on /proc/vmcore to
+improve read performance. My simple benchmark shows the improvement
+from 200 [MiB/sec] to over 50.0 [GiB/sec].
 
-This doesn't apply against v3.9-rc1...  what are the dependencies?
+ChangeLog
+=========
 
---4Epv4kl9IRBfg3rk
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+v1 => v2)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+- Clean up the existing codes: use e_phoff, and remove the assumption
+  on PT_NOTE entries.
+  => See PATCH 01, 02.
 
-iQIcBAEBAgAGBQJRNZi2AAoJELSic+t+oim9qmMP/Ra/A/IseMMFEmdvv7Sx/ScR
-0OaERenrXHVkEhxbRGRDtfJPqjFMUxrHhU6YF3t/nyFgCbe19l6OWXKOt7kYTEpo
-O9KU+m3ml0erQ1FKdhugi/dVC9pT5WDEFprJKsxuy1XDlJb0eahHMpYhNJwBnXMR
-C4QD7a7WvkCrT7FOzENL+eUAEC/YgCe9ZRkMCTVFAntNhxaoyuaR7CBvpG20WM7G
-7fjSmHkJ1H5NAIJK71rJdjhCwCIrv3GLhENR9aH0o5eTYX3777uSVETftRPdrS/I
-6QLHrUKePZJWR+Ze/A14HMzlc/BWyMCAxOTvFiKKOJXj4k4VC692nbf0gJpZ4D4z
-SFeNSI5JWSrE417iRE3NGOWBEM8nmzwdpgVJw8zRMkGfNZjIpxZiOXXmDjXsV0Ce
-E8l+zfAf81vRL4q5lXbPgFC3NWaBDCuQ/Du3P0iHNvWwohpK3Mn45pDWffAJznZm
-OvKP7MAvR+Gh4IM8Mvn1kg53N1isW3XxWRKjAaUE8XOb+94QuNVMcCULV0oqt55Z
-5wp3hlo91h21iX1pGXASwsc/oi8S9NOv+h0TJeloNztkGt7zIsqyg245XMpU+BDJ
-OOk6XbfMGTwkKQL5uFtityXh8TVIHiJCUw8T0cBtj+PMBlNiDiGWBE2Qysm/JIX+
-Z7yVAJXPrRut4Yo0Y9jZ
-=vXsT
------END PGP SIGNATURE-----
+- Fix potencial bug that ELF haeader size is not included in exported
+  vmcoreinfo size.
+  => See Patch 03.
 
---4Epv4kl9IRBfg3rk--
+- Divide patch modifying read_vmcore() into two: clean-up and primary
+  code change.
+  => See Patch 9, 10.
+
+- Put ELF note segments in page-size boundary on the 1st kernel
+  instead of copying them into the buffer on the 2nd kernel.
+  => See Patch 11, 12, 13, 14, 16.
+
+Benchmark
+=========
+
+No change is seen from the previous patch series. See the previous
+one from here:
+
+  https://lkml.org/lkml/2013/2/14/89
+
+TODO
+====
+
+- fix makedumpfile to use mmap() on /proc/vmcore and benchmark it to
+  confirm whether we can see enough performance improvement. The idea
+  is described here:
+  http://lists.infradead.org/pipermail/kexec/2013-February/007982.html
+
+- fix crash utility and makedumpfile to support NT_VMCORE_PAD note
+  type. Both tools don't distinguish the same note types from
+  different note names, which is not conform to ELF specification; now
+  both reads NT_VMCORE_PAD note type as NT_VMCORE_DEBUGINFO.
+
+Test
+====
+
+This patch set is composed based on v3.9-rc1.
+
+Done on x86-64, x86-32 both with 1GB and over 4GB memory environments.
+
+---
+
+HATAYAMA Daisuke (20):
+      vmcore: introduce mmap_vmcore()
+      vmcore: count holes generated by round-up operation for vmcore size
+      vmcore: round-up offset of vmcore object in page-size boundary
+      vmcore: check if vmcore objects satify mmap()'s page-size boundary requirement
+      vmcore: check NT_VMCORE_PAD as a mark indicating the end of ELF note buffer
+      kexec: fill note buffers by NT_VMCORE_PAD notes in page-size boundary
+      elf: introduce NT_VMCORE_PAD type
+      kexec, elf: introduce NT_VMCORE_DEBUGINFO note type
+      kexec: allocate vmcoreinfo note buffer on page-size boundary
+      vmcore: allocate per-cpu crash_notes objects on page-size boundary
+      vmcore: read buffers for vmcore objects copied from old memory
+      vmcore: clean up read_vmcore()
+      vmcore: modify vmcore clean-up function to free buffer on 2nd kernel
+      vmcore: copy non page-size aligned head and tail pages in 2nd kernel
+      vmcore, procfs: introduce a flag to distinguish objects copied in 2nd kernel
+      vmcore: round up buffer size of ELF headers by PAGE_SIZE
+      vmcore: allocate buffer for ELF headers on page-size alignment
+      vmcore, sysfs: export ELF note segment size instead of vmcoreinfo data size
+      vmcore: rearrange program headers without assuming consequtive PT_NOTE entries
+      vmcore: refer to e_phoff member explicitly
+
+
+ arch/s390/include/asm/kexec.h |    7 
+ fs/proc/vmcore.c              |  577 ++++++++++++++++++++++++++++++++---------
+ include/linux/kexec.h         |   16 +
+ include/linux/proc_fs.h       |    8 -
+ include/uapi/linux/elf.h      |    5 
+ kernel/kexec.c                |   47 ++-
+ kernel/ksysfs.c               |    2 
+ 7 files changed, 505 insertions(+), 157 deletions(-)
+
+-- 
+Thanks.
+HATAYAMA, Daisuke
