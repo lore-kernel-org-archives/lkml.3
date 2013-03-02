@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752264Ab3CBKKs (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Mar 2013 05:10:48 -0500
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:54410 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752024Ab3CBKKU (ORCPT
+	id S1752353Ab3CBKLG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Mar 2013 05:11:06 -0500
+Received: from mail-we0-f173.google.com ([74.125.82.173]:64338 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751849Ab3CBKKO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Mar 2013 05:10:20 -0500
+	Sat, 2 Mar 2013 05:10:14 -0500
 From: Daniel Lezcano <daniel.lezcano@linaro.org>
 To: john.stultz@linaro.org, tglx@linutronix.de
 Cc: viresh.kumar@linaro.org, jacob.jun.pan@linux.intel.com,
@@ -15,9 +15,9 @@ Cc: viresh.kumar@linaro.org, jacob.jun.pan@linux.intel.com,
         linaro-kernel@lists.linaro.org, patches@linaro.org,
         rickard.andersson@stericsson.com, vincent.guittot@linaro.org,
         linus.walleij@stericsson.com
-Subject: [PATCH 4/4][V2] ARM: timer-sp: Set dynamic irq affinity
-Date: Sat,  2 Mar 2013 11:10:13 +0100
-Message-Id: <1362219013-18173-5-git-send-email-daniel.lezcano@linaro.org>
+Subject: [PATCH 1/4][V2] time : pass broadcast parameter
+Date: Sat,  2 Mar 2013 11:10:10 +0100
+Message-Id: <1362219013-18173-2-git-send-email-daniel.lezcano@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1362219013-18173-1-git-send-email-daniel.lezcano@linaro.org>
 References: <1362219013-18173-1-git-send-email-daniel.lezcano@linaro.org>
@@ -25,40 +25,59 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Viresh Kumar <viresh.kumar@linaro.org>
+The broadcast timer could be passed as parameter to the function
+instead of using again tick_broadcast_device.evtdev which was
+previously used in the caller function.
 
-When a cpu goes to a deep idle state where its local timer is shutdown, it
-notifies the time frame work to use the broadcast timer instead.
-
-Unfortunately, the broadcast device could wake up any CPU, including an idle one
-which is not concerned by the wake up at all.
-
-This implies, in the worst case, an idle CPU will wake up to send an IPI to
-another idle cpu.
-
-This patch fixes this for ARM platforms using timer-sp, by setting
-CLOCK_EVT_FEAT_DYNIRQ feature.
-
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
 ---
- arch/arm/common/timer-sp.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ kernel/time/tick-broadcast.c |   11 +++++------
+ 1 file changed, 5 insertions(+), 6 deletions(-)
 
-diff --git a/arch/arm/common/timer-sp.c b/arch/arm/common/timer-sp.c
-index 9d2d3ba..ae3c0f9 100644
---- a/arch/arm/common/timer-sp.c
-+++ b/arch/arm/common/timer-sp.c
-@@ -158,7 +158,8 @@ static int sp804_set_next_event(unsigned long next,
+diff --git a/kernel/time/tick-broadcast.c b/kernel/time/tick-broadcast.c
+index 2fb8cb8..6197ac0 100644
+--- a/kernel/time/tick-broadcast.c
++++ b/kernel/time/tick-broadcast.c
+@@ -406,10 +406,9 @@ struct cpumask *tick_get_broadcast_oneshot_mask(void)
+ 	return to_cpumask(tick_broadcast_oneshot_mask);
  }
  
- static struct clock_event_device sp804_clockevent = {
--	.features       = CLOCK_EVT_FEAT_PERIODIC | CLOCK_EVT_FEAT_ONESHOT,
-+	.features       = CLOCK_EVT_FEAT_PERIODIC | CLOCK_EVT_FEAT_ONESHOT |
-+		CLOCK_EVT_FEAT_DYNIRQ,
- 	.set_mode	= sp804_set_mode,
- 	.set_next_event	= sp804_set_next_event,
- 	.rating		= 300,
+-static int tick_broadcast_set_event(ktime_t expires, int force)
++static int tick_broadcast_set_event(struct clock_event_device *bc,
++				    ktime_t expires, int force)
+ {
+-	struct clock_event_device *bc = tick_broadcast_device.evtdev;
+-
+ 	if (bc->mode != CLOCK_EVT_MODE_ONESHOT)
+ 		clockevents_set_mode(bc, CLOCK_EVT_MODE_ONESHOT);
+ 
+@@ -479,7 +478,7 @@ again:
+ 		 * Rearm the broadcast device. If event expired,
+ 		 * repeat the above
+ 		 */
+-		if (tick_broadcast_set_event(next_event, 0))
++		if (tick_broadcast_set_event(dev, next_event, 0))
+ 			goto again;
+ 	}
+ 	raw_spin_unlock(&tick_broadcast_lock);
+@@ -522,7 +521,7 @@ void tick_broadcast_oneshot_control(unsigned long reason)
+ 			cpumask_set_cpu(cpu, tick_get_broadcast_oneshot_mask());
+ 			clockevents_set_mode(dev, CLOCK_EVT_MODE_SHUTDOWN);
+ 			if (dev->next_event.tv64 < bc->next_event.tv64)
+-				tick_broadcast_set_event(dev->next_event, 1);
++				tick_broadcast_set_event(bc, dev->next_event, 1);
+ 		}
+ 	} else {
+ 		if (cpumask_test_cpu(cpu, tick_get_broadcast_oneshot_mask())) {
+@@ -591,7 +590,7 @@ void tick_broadcast_setup_oneshot(struct clock_event_device *bc)
+ 			clockevents_set_mode(bc, CLOCK_EVT_MODE_ONESHOT);
+ 			tick_broadcast_init_next_event(to_cpumask(tmpmask),
+ 						       tick_next_period);
+-			tick_broadcast_set_event(tick_next_period, 1);
++			tick_broadcast_set_event(bc, tick_next_period, 1);
+ 		} else
+ 			bc->next_event.tv64 = KTIME_MAX;
+ 	} else {
 -- 
 1.7.9.5
 
