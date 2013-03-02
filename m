@@ -1,110 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751816Ab3CBWdo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Mar 2013 17:33:44 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50278 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751058Ab3CBWdm (ORCPT
+	id S1751617Ab3CBWfe (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Mar 2013 17:35:34 -0500
+Received: from cpsmtpb-ews06.kpnxchange.com ([213.75.39.9]:57906 "EHLO
+	cpsmtpb-ews06.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750970Ab3CBWfd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Mar 2013 17:33:42 -0500
-Message-ID: <1362263610.3768.148.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: Put git commit 51ac8893a7a51b196501164e645583bf78138699 on the
- stable tree please
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Greg KH <greg@kroah.com>, Jan Beulich <JBeulich@suse.com>,
-        stable@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Sat, 02 Mar 2013 22:33:30 +0000
-In-Reply-To: <20130225164654.GA10672@phenom.dumpdata.com>
-References: <5127AED302000078000C0779@nat28.tlf.novell.com>
-	 <20130222165704.GA21811@phenom.dumpdata.com>
-	 <20130222170742.GA5126@kroah.com>
-	 <20130225164654.GA10672@phenom.dumpdata.com>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-/pfL51GJaEZcP6cR59Tg"
-X-Mailer: Evolution 3.4.4-2 
+	Sat, 2 Mar 2013 17:35:33 -0500
+Message-ID: <1362263724.1334.18.camel@x61.thuisdomein>
+Subject: Re: [ 34/77] xen/blkback: Dont trust the handle from the frontend.
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Jan Beulich <jbeulich@suse.com>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Date: Sat, 02 Mar 2013 23:35:24 +0100
+In-Reply-To: <1362253682.3768.136.camel@deadeye.wl.decadent.org.uk>
+References: <20130301194351.913471337@linuxfoundation.org>
+	 <20130301194355.578429064@linuxfoundation.org>
+	 <1362172344.20156.15.camel@x61.thuisdomein>
+	 <1362253682.3768.136.camel@deadeye.wl.decadent.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
 Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 02 Mar 2013 22:35:25.0167 (UTC) FILETIME=[3B88AFF0:01CE1796]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, 2013-03-02 at 19:48 +0000, Ben Hutchings wrote:
+> When gcc compiles something like this:
+> 
+> static int foo(int *p)
+> {
+> 	if (rand() & 1)
+> 		return -1;
+> 	*p = 0;
+> 	return 0;
+> }
+> 
+> int bar(void)
+> {
+> 	int i;
+> 	if (foo(&i) < 0)
+> 		return 1;
+> 	return i;
+> }
+> 
+> and inlines foo() into bar(), sometimes it fails to recognise that i
+> will definitely be initialised before use.  This simple example seems to
+> be OK but more complex functions such as these will often trigger this
+> warning.  The warning is really quite useless now.
 
---=-/pfL51GJaEZcP6cR59Tg
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+0) I've had another look at the relevant code in v3.8.2-rc1. It can be
+summarized like this:
 
-On Mon, 2013-02-25 at 11:46 -0500, Konrad Rzeszutek Wilk wrote:
-> On Fri, Feb 22, 2013 at 09:07:42AM -0800, Greg KH wrote:
-> > On Fri, Feb 22, 2013 at 11:57:04AM -0500, Konrad Rzeszutek Wilk wrote:
-> > > On Fri, Feb 22, 2013 at 08:19:30AM -0800, Greg KH wrote:
-> > > > On Fri, Feb 22, 2013 at 10:46:45AM -0500, Konrad Rzeszutek Wilk wro=
-te:
-> > > > > Hey Greg,
-> > > > >=20
-> > > > > Please put git commit 51ac8893a7a51b196501164e645583bf78138699
-> > > > > commit 51ac8893a7a51b196501164e645583bf78138699
-> > > > > Author: Jan Beulich <jbeulich@suse.com>
-> > > > > Date:   Wed Feb 6 10:30:38 2013 -0500
-> > > > >=20
-> > > > >     xen-pciback: rate limit error messages from xen_pcibk_enable_=
-msi{,x}()
-> > > > >=20
-> > > > > on the stable tree please. It is an security errata fix and shoul=
-d
-> > > > > have had the CC: stable@vger.kernel.org but did not.
-> > > >=20
-> > > > Thanks, what stable kernel releases should it be queued up for?
-> > >=20
-> > > 3.4 and later please.
-> >=20
-> > On Fri, Feb 22, 2013 at 04:45:55PM +0000, Jan Beulich wrote:
-> > > Anyone from 3.1 onwards that is still being maintained.
-> >=20
-> > Hm, who should I believe here...  :)
->=20
-> Just in case my previous email crossed paths or got deleted.
-> >=20
-> > It doesn't matter for me, but for the 3.2 tree, it does.
->=20
-> 3.1 and later please.
+static int xen_vbd_translate()
+{
+	[...]
+	int rc = -EACCES;
 
-Queued up for 3.2.
+	if ([...])
+		goto out;
+	[...]
 
-I had to add '#include <linux/ratelimit.h>' in
-drivers/xen/xen-pciback/xen-pciback.c, as printk_ratelimited() uses
-DEFINE_RATELIMIT_STATE() which is defined in <linux/ratelimit.h>.  (In
-mainline this is inclued in <linux/device.h>, but really it ought to be
-included in <linux/kernel.h> as well.)
+	[p]req->dev  = vbd->pdevice;
+	[p]req->bdev = vbd->bdev;
+	[...]
 
-Ben.
+ out:
+	return rc;
+}
 
---=20
-Ben Hutchings
-Computers are not intelligent.	They only think they are.
+static int dispatch_rw_block_io()
+{
+	struct phys_req preq;
+	[...]
 
---=-/pfL51GJaEZcP6cR59Tg
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
+	preq.sector_number = req->u.rw.sector_number;
+	preq.nr_sects      = 0;
+	[...]
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+	for ([...]) {
+		[...]
+		preq.nr_sects += seg[i].nsec;
+	}
 
-iQIVAwUAUTJ+Oue/yOyVhhEJAQqwuhAAqxj+ADkjDEZbTPCLoL7TMib9UnJisY32
-f8a91/STZhGH2SnyzcngEnpIm9rVZ/x8D5hhwtjzoLt3R78Jej2qB70C1ip5x5tV
-l0q1sVDLDV3DnC4TxQ/O7yTqkIaBmKPvywq308bWT1+eU+A8vvjB/7T6c0rEl1Gw
-Wh7Z1dBNCVWXZTUo7JNeD6jDMdU8XSqh0UD8DJAS2SbMNYUI0zGr2fOCeEXB4D8Z
-bGvdhLElMRbEPZpNurTq1V2Snuac5lzqjOFhWiIzqBUq4b/shTDj6zUJ6TH7qnfd
-tMP280/D5PSxoS8AVUYyRfTvgqdOMdpYE934JYcj52b9WCpEgfDKr0t0NjeDXgUM
-avhsyhFaKRSCFxoiFC4kS4058frAKf27oJkCVIg8tCnPYO9CMD33A+nx8xBbcL23
-1+/WCD/moLdT8GdXmg2PJCGK9gfm4+Qp/poVHikFuuWzHVqLIU/bpXV4NfNZPJbu
-ldnlwooFHnUGmpegdF9cRGKHgdDZD+TVK3GMkKqNuqKNMgocfJYwvwb/lPEff1NW
-/s5PB8ihAG6SuB1GtNz/x6k8umaNeleJE93Zp3fZHDWpRb2hB9+bRHHedB2m4E49
-MIE3/h9UREwzcBZXf5YNtGGrrGVVR0TuFiWcUkWrpufDZkjueJz4mKUC6zqSwvAP
-s/0YXBPxjUY=
-=taf2
------END PGP SIGNATURE-----
+	if (xen_vbd_translate(&preq, blkif, operation) != 0) {
+		pr_debug(DRV_PFX "access denied: %s of [%llu,%llu] on dev=%04x\n",
+			 operation == READ ? "read" : "write",
+			 preq.sector_number,
+			 preq.sector_number + preq.nr_sects, preq.dev);
+		goto [...];
+	}
+	[...]
+}
 
---=-/pfL51GJaEZcP6cR59Tg--
+1) So if xen_vbd_translate() fails, it can return before setting
+preq.dev. That makes the call of pr_debug() use an uninitialized value,
+doesn't it? Does inlining xen_vbd_translate() and/or
+dispatch_rw_block_io() generate code were that can't happen anymore?
+(Both functions being static they probably are inlined.)
+
+2) And even if inlining does generate code where this can't happen,
+isn't it enough that preq.dev can be used uninitialized if no code were
+inlined?
+
+
+Paul Bolle
+
