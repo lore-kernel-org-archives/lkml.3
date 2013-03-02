@@ -1,161 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751992Ab3CBA3c (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 19:29:32 -0500
-Received: from mail-da0-f50.google.com ([209.85.210.50]:42598 "EHLO
-	mail-da0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750779Ab3CBA3b (ORCPT
+	id S1752153Ab3CBAcV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 19:32:21 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:14115 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751269Ab3CBAcU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 19:29:31 -0500
-Message-ID: <513147E4.9090205@gmail.com>
-Date: Sat, 02 Mar 2013 08:29:24 +0800
-From: Ric Mason <ric.masonn@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
-MIME-Version: 1.0
-To: Andrew Shewmaker <agshew@gmail.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [RFC PATCH v2 1/2] mm: tuning hardcoded reserved memory
-References: <20130227205629.GA8429@localhost.localdomain> <20130228141200.3fe7f459.akpm@linux-foundation.org> <20130228034803.GB3829@localhost.localdomain> <5130152B.9060904@gmail.com> <20130301224102.GA1694@localhost.localdomain>
-In-Reply-To: <20130301224102.GA1694@localhost.localdomain>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Fri, 1 Mar 2013 19:32:20 -0500
+X-Authority-Analysis: v=2.0 cv=It2cgcDg c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=j1elf0Sz7wMA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=R21XNUEkRdcA:10 a=ipMJ9Fi02BOBQUBO2eEA:9 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1362184337.1231.49.camel@gandalf.local.home>
+Subject: [URGENT] trace-cmd: Fix for all stable versions for up coming fix
+ in Linux v3.10
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>,
+        linux-trace-users <linux-trace-users@vger.kernel.org>
+Cc: John Kacur <jkacur@gmail.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        ubuntu-motu@lists.ubuntu.com,
+        "Ying-Chun Liu (PaulLiu)" <paul.liu@canonical.com>,
+        Neependra Kumar Khare <nkhare@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, David Sharp <dhsharp@google.com>
+Date: Fri, 01 Mar 2013 19:32:17 -0500
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/02/2013 06:41 AM, Andrew Shewmaker wrote:
-> On Fri, Mar 01, 2013 at 10:40:43AM +0800, Ric Mason wrote:
->> On 02/28/2013 11:48 AM, Andrew Shewmaker wrote:
->>> On Thu, Feb 28, 2013 at 02:12:00PM -0800, Andrew Morton wrote:
->>>> On Wed, 27 Feb 2013 15:56:30 -0500
->>>> Andrew Shewmaker <agshew@gmail.com> wrote:
->>>>
->>>>> The following patches are against the mmtom git tree as of February 27th.
->>>>>
->>>>> The first patch only affects OVERCOMMIT_NEVER mode, entirely removing
->>>>> the 3% reserve for other user processes.
->>>>>
->>>>> The second patch affects both OVERCOMMIT_GUESS and OVERCOMMIT_NEVER
->>>>> modes, replacing the hardcoded 3% reserve for the root user with a
->>>>> tunable knob.
->>>>>
->>>> Gee, it's been years since anyone thought about the overcommit code.
->>>>
->>>> Documentation/vm/overcommit-accounting says that OVERCOMMIT_ALWAYS is
->>>> "Appropriate for some scientific applications", but doesn't say why.
->>>> You're running a scientific cluster but you're using OVERCOMMIT_NEVER,
->>>> I think?  Is the documentation wrong?
->>> None of my scientists appeared to use sparse arrays as Alan described.
->>> My users would run jobs that appeared to initialize correctly. However,
->>> they wouldn't write to every page they malloced (and they wouldn't use
->>> calloc), so I saw jobs failing well into a computation once the
->>> simulation tried to access a page and the kernel couldn't give it to them.
->>>
->>> I think Roadrunner (http://en.wikipedia.org/wiki/IBM_Roadrunner) was
->>> the first cluster I put into OVERCOMMIT_NEVER mode. Jobs with
->>> infeasible memory requirements fail early and the OOM killer
->>> gets triggered much less often than in guess mode. More often than not
->>> the OOM killer seemed to kill the wrong thing causing a subtle brokenness.
->>> Disabling overcommit worked so well during the stabilization and
->>> early user phases that we did the same with other clusters.
->> Do you mean OVERCOMMIT_NEVER is more suitable for scientific
->> application than OVERCOMMIT_GUESS and OVERCOMMIT_ALWAYS? Or should
->> depend on workload? Since your users would run jobs that wouldn't
->> write to every page they malloced, so why OVERCOMMIT_GUESS is not
->> more suitable for you?
-> It depends on the workload. They eventually wrote to every page,
-> but not early in the life of the process, so they thought they
-> were fine until the simulation crashed.
+I recently fixed a long standing bug in the splice code for ftrace. This
+was something that I wanted fixed so that trace-cmd would work better.
+The fix is to finally have the splice system call block until data is
+available, instead of having trace-cmd poll reading the trace_pipe_raw
+data file.
 
-Why overcommit guess is not suitable even they eventually wrote to every 
-page? It takes free pages, file pages, available swap pages, reclaimable 
-slab pages into consideration. In other words, these are all pages 
-available, then why overcommit is not suitable? Actually, I confuse 
-what's the root different of overcommit guess and never?
+This fix is queued to go in to mainline for v3.10. Unfortunately, even
+though I've wanted this for trace-cmd since day one, my trace-cmd
+implementation to use this had a bug in it, that the kernel fix now
+triggers. Basically, when tracing is finished (when the command that is
+being recorded is done), trace-cmd stops tracing, signals the recording
+threads to finish and then waits for the recording threads to exit.
 
->
->>>>> __vm_enough_memory reserves 3% of free pages with the default
->>>>> overcommit mode and 6% when overcommit is disabled. These hardcoded
->>>>> values have become less reasonable as memory sizes have grown.
->>>>>
->>>>> On scientific clusters, systems are generally dedicated to one user.
->>>>> Also, overcommit is sometimes disabled in order to prevent a long
->>>>> running job from suddenly failing days or weeks into a calculation.
->>>>> In this case, a user wishing to allocate as much memory as possible
->>>>> to one process may be prevented from using, for example, around 7GB
->>>>> out of 128GB.
->>>>>
->>>>> The effect is less, but still significant when a user starts a job
->>>>> with one process per core. I have repeatedly seen a set of processes
->>>>> requesting the same amount of memory fail because one of them could
->>>>> not allocate the amount of memory a user would expect to be able to
->>>>> allocate.
->>>>>
->>>>> ...
->>>>>
->>>>> --- a/mm/mmap.c
->>>>> +++ b/mm/mmap.c
->>>>> @@ -182,11 +182,6 @@ int __vm_enough_memory(struct mm_struct *mm, long pages, int cap_sys_admin)
->>>>>   		allowed -= allowed / 32;
->>>>>   	allowed += total_swap_pages;
->>>>> -	/* Don't let a single process grow too big:
->>>>> -	   leave 3% of the size of this process for other processes */
->>>>> -	if (mm)
->>>>> -		allowed -= mm->total_vm / 32;
->>>>> -
->>>>>   	if (percpu_counter_read_positive(&vm_committed_as) < allowed)
->>>>>   		return 0;
->>>> So what might be the downside for this change?  root can't log in, I
->>>> assume.  Have you actually tested for this scenario and observed the
->>>> effects?
->>>>
->>>> If there *are* observable risks and/or to preserve back-compatibility,
->>>> I guess we could create a fourth overcommit mode which provides the
->>>> headroom which you desire.
->>>>
->>>> Also, should we be looking at removing root's 3% from OVERCOMMIT_GUESS
->>>> as well?
->>> The downside of the first patch, which removes the "other" reserve
->>> (sorry about the confusing duplicated subject line), is that a user
->>> may not be able to kill their process, even if they have a shell prompt.
->>> When testing, I did sometimes get into spot where I attempted to execute
->>> kill, but got: "bash: fork: Cannot allocate memory". Of course, a
->>> user can get in the same predicament with the current 3% reserve--they
->>> just have to start processes until 3% becomes negligible.
->>>
->>> With just the first patch, root still has a 3% reserve, so they can
->>> still log in.
->>>
->>> When I resubmit the second patch, adding a tunable rootuser_reserve_pages
->>> variable, I'll test both guess and never overcommit modes to see what
->>> minimum initial values allow root to login and kill a user's memory
->>> hogging process. This will be safer than the current behavior since
->>> root's reserve will never shrink to something useless in the case where
->>> a user has grabbed all available memory with many processes.
->> The idea of two patches looks reasonable to me.
->>
->>> As an estimate of a useful rootuser_reserve_pages, the rss+share size of
->> Sorry for my silly, why you mean share size is not consist in rss size?
-> For some reason I had it in my head that RSS was just the memory
-> private to the process and that I needed to add memory shared for
-> libraries. So yeah, it looks like 8MB, or 2000 pages should be
-> enough of a reserve.
->
-> I'm testing new versions now, where the reserve is min(%3, k) as
-> Alan suggested. k being 2000 pages in this case.
->
->>> sshd, bash, and top is about 16MB. Overcommit disabled mode would need
->>> closer to 360MB for the same processes. On a 128GB box 3% is 3.8GB, so
->>> the new tunable would still be a win.
->>>
->>> I think the tunable would benefit everyone over the current behavior,
->>> but would you prefer it if I only made it tunable in a fourth overcommit
->>> mode in order to preserve back-compatibility?
->>>
->>> --
->>> To unsubscribe, send a message with 'unsubscribe linux-mm' in
->>> the body to majordomo@kvack.org.  For more info on Linux MM,
->>> see: http://www.linux-mm.org/ .
->>> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+Well, there's a race where the recording threads may make one last read
+of the splice system call. The problem is that this read is blocking.
+Now that tracing has been disabled by the main thread, this read will
+block indefinitely as there is no more data to read. The main thread
+waiting for the recorder threads to finish will continue to wait.
+Hitting Ctrl-C kicks it and the threads all finish, but that's not what
+should happen. The threads should finish when tracing is done, and not
+require input from the user.
+
+The fix is quite simple, and has been included in the latest trace-cmd
+repo. I back ported the fix to the following versions, and tested all of
+them running on a kernel with the splice fix. Without this update, all
+the versions can end up blocked on splice and require user input to
+continue. With the fix, they all work fine.
+
+Here's the new stable trace-cmd versions that contain the fix:
+
+  v1.0.7
+  v1.1.2
+  v1.2.3
+  v2.0.3
+  v2.1.1
+
+and the main repo has it as well.
+
+-- Steve
+
+>From 4b04db879a99d600988bc302e7ac88e8c012f98f Mon Sep 17 00:00:00 2001
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+Date: Thu, 28 Feb 2013 11:29:43 -0500
+Subject: [PATCH] trace-cmd: Do not block on reads when record is finished
+
+Starting with Linux v3.10, trace_pipe_raw will block on reads.
+We need to make sure that when the trace is done, the reads do
+not block, and flushing finishes reading the ring buffer.
+
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ trace-recorder.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/trace-recorder.c b/trace-recorder.c
+index 1b9723d..4e15b86 100644
+--- a/trace-recorder.c
++++ b/trace-recorder.c
+@@ -249,9 +249,15 @@ int tracecmd_start_recording(struct tracecmd_recorder *recorder, unsigned long s
+ 
+ void tracecmd_stop_recording(struct tracecmd_recorder *recorder)
+ {
++	long flags;
++
+ 	if (!recorder)
+ 		return;
+ 
++	/* Do not block on reads for flushing */
++	flags = fcntl(recorder->trace_fd, F_GETFL);
++	fcntl(recorder->trace_fd, F_SETFL, flags | O_NONBLOCK);
++
+ 	recorder->stop = 1;
+ }
+ 
+-- 
+1.7.10.4
+
+
 
