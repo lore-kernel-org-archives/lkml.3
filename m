@@ -1,86 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752589Ab3CBERM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 23:17:12 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:50064 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751720Ab3CBERK (ORCPT
+	id S1752500Ab3CBERm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 23:17:42 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:9625 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751595Ab3CBERl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 23:17:10 -0500
-Date: Sat, 2 Mar 2013 15:17:00 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the ftrace tree
-Message-Id: <20130302151700.89f98f5c132a913510b5a621@canb.auug.org.au>
-In-Reply-To: <1362196529.1231.80.camel@gandalf.local.home>
-References: <20130301134738.ce925e1643a35b0a2c4ff275@canb.auug.org.au>
-	<1362192318.1231.67.camel@gandalf.local.home>
-	<20130302144229.f41f56c36992497a1530d65f@canb.auug.org.au>
-	<1362196529.1231.80.camel@gandalf.local.home>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+	Fri, 1 Mar 2013 23:17:41 -0500
+X-Authority-Analysis: v=2.0 cv=It2cgcDg c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=i_T0xk-kDUsA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=9MfQyeY-N7UA:10 a=i0EeH86SAAAA:8 a=XFyvp_UXoxGQGQ9I_6oA:9 a=PUjeQqilurYA:10 a=hPjdaMEvmhQA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1362197859.1231.81.camel@gandalf.local.home>
+Subject: Re: [PATCH 4/4] tracing/syscalls: Annotate field-defining functions
+ with __init
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Li Zefan <lizefan@huawei.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Fri, 01 Mar 2013 23:17:39 -0500
+In-Reply-To: <51258796.7020704@huawei.com>
+References: <51258723.2040301@huawei.com> <51258796.7020704@huawei.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.4-1 
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Sat__2_Mar_2013_15_17_00_+1100_z3WG7sT6YEITOe56"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Sat__2_Mar_2013_15_17_00_+1100_z3WG7sT6YEITOe56
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, 2013-02-21 at 10:33 +0800, Li Zefan wrote:
+> These two functions are called during kernel boot only.
+> 
 
-Hi Steve,
+Applied, thanks Li!
 
-On Fri, 01 Mar 2013 22:55:29 -0500 Steven Rostedt <rostedt@goodmis.org> wro=
-te:
->
-> Oh crap, sorry. Quite the contrary. I should have waited for -rc1 as
-> this is intended for v3.10.
->=20
-> I made some major changes and wanted testing on it as soon as possible.
-> I've done tons of testing on my own but I wanted a broader audience. Do
-> you want me to pull my tree and reset it to what is only for 3.9?
+-- Steve
 
-Yes, please.  The reasoning is that until -rc1 is out we don't want to
-complicate life for people whose code has not yet been merged by
-reporting problems in code that will not be merged until the next merge
-window.
+> Signed-off-by: Li Zefan <lizefan@huawei.com>
+> ---
+>  kernel/trace/trace_syscalls.c | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/kernel/trace/trace_syscalls.c b/kernel/trace/trace_syscalls.c
+> index 5329e13..a70fa19 100644
+> --- a/kernel/trace/trace_syscalls.c
+> +++ b/kernel/trace/trace_syscalls.c
+> @@ -232,7 +232,7 @@ static void free_syscall_print_fmt(struct ftrace_event_call *call)
+>  		kfree(call->print_fmt);
+>  }
+>  
+> -static int syscall_enter_define_fields(struct ftrace_event_call *call)
+> +static int __init syscall_enter_define_fields(struct ftrace_event_call *call)
+>  {
+>  	struct syscall_trace_enter trace;
+>  	struct syscall_metadata *meta = call->data;
+> @@ -255,7 +255,7 @@ static int syscall_enter_define_fields(struct ftrace_event_call *call)
+>  	return ret;
+>  }
+>  
+> -static int syscall_exit_define_fields(struct ftrace_event_call *call)
+> +static int __init syscall_exit_define_fields(struct ftrace_event_call *call)
+>  {
+>  	struct syscall_trace_exit trace;
+>  	int ret;
 
-That is why my daily reports during the merge window start with:
 
-"Please do not add any work destined for v3.10 to your -next included
-branches until after Linus has release v3.9-rc1."
-
-But I am beginning to realise that not many actually read those reports (I
-had the date wrong on two of them this week and it was only noticed after
-the second one :-().
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Sat__2_Mar_2013_15_17_00_+1100_z3WG7sT6YEITOe56
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRMX08AAoJEECxmPOUX5FEMdUP/1VnlklmOqjetVgVLMUm+vMM
-k6rFiWLXxHTqPyy9D/DfGuRBqvEHhaorS8347H2Qqxt6jZNHVniQydyh6IUm0bHd
-3xnuW+WVJfsS3YQKtjoAOC7ShTgtOgc/1inWZp96I63j2g+pKS2phxyCPk5XTN/Q
-utJlcJBErCoPWebqauTYXiM/M5GLGijFYcvrbQg9yarsnM3SXgB+QUdBxed8JE9x
-Hyc54FdcWcfB2JLmeVVih6VzgdUtTy4I97vUKO8YzJSZjDZXAGu/IXGQgx7HnO5h
-6p1JvoKGk6OARu5z5YxIHNEXPwYK4lztVsLErAb2+LvPi9fyEB0WZLg7agyAa6hM
-WPbibQ5+4E4gD0It6un3Oasd2DL0D8cH+P3vQn0vvvFV69Eyd05M3gkDf40+xfe1
-aPXcC/7IQzY2WeGOqxgmffIb+5jlIim5FMkq6dZtyQbCLXYZY5vImvnonToHEvTg
-LM0tq/i442Rw6EikWTP1eDh7IwiIvHMTtCTBTEWt1m74FGxDEquU7BmLcBhFSke0
-ii+ymnRc22sJNca9FD2+mWcMCJRbhT0eOGO7ne4YTSzYdUQMRCw4vdpkiZV+tO68
-b1Z4DXevlmMn9GwvrOMmkB5tS1qIJRMUgyBlrYUrZVmtl7mknLM/Bl/cdrCprFC6
-QAk1IUzLGGreAUHyUlvU
-=ugZP
------END PGP SIGNATURE-----
-
---Signature=_Sat__2_Mar_2013_15_17_00_+1100_z3WG7sT6YEITOe56--
