@@ -1,50 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752749Ab3CBN2R (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Mar 2013 08:28:17 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:30661 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752112Ab3CBNZW (ORCPT
+	id S1752366Ab3CBNZV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Mar 2013 08:25:21 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:12932 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752112Ab3CBNZS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Mar 2013 08:25:22 -0500
-X-AuditID: cbfee68d-b7f636d0000009be-e7-5131fdc052ca
+	Sat, 2 Mar 2013 08:25:18 -0500
+X-AuditID: cbfee68e-b7fa46d00000627e-e0-5131fdbc41c0
 From: Vivek Gautam <gautam.vivek@samsung.com>
 To: linux-usb@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
         linux-samsung-soc@vger.kernel.org, gregkh@linuxfoundation.org,
         balbi@ti.com, sarah.a.sharp@linux.intel.com, kgene.kim@samsung.com,
-        kishon@ti.com, Doug Anderson <dianders@chromium.org>
-Subject: [PATCH v2 02/10] USB: dwc3: Adjust runtime pm to allow autosuspend
-Date: Sat, 02 Mar 2013 18:53:03 +0530
-Message-id: <1362230590-20960-3-git-send-email-gautam.vivek@samsung.com>
+        kishon@ti.com
+Subject: [PATCH v2 00/10] usb: dwc3/xhci/phy: Enable runtime power management
+Date: Sat, 02 Mar 2013 18:53:01 +0530
+Message-id: <1362230590-20960-1-git-send-email-gautam.vivek@samsung.com>
 X-Mailer: git-send-email 1.7.6.5
-In-reply-to: <1362230590-20960-1-git-send-email-gautam.vivek@samsung.com>
-References: <1362230590-20960-1-git-send-email-gautam.vivek@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupikeLIzCtJLcpLzFFi42JZI2JSq3vgr2Ggwb8tMhYH79dbnF12kM2i
-	efF6NoveBVfZLC487WGzuLxrDpvF7CX9LBYzzu9jsli0rJXZovnEKWYHLo/ZDRdZPOadDPTY
-	P3cNu0ffllWMHsdvbGfy+LxJLoAtissmJTUnsyy1SN8ugStj/8ff7AX3OCt2fp7H3MDYxtHF
-	yMkhIWAisa/zGyuELSZx4d56ti5GLg4hgaWMEo3zb7HCFG1ovckOkZjOKHF1zmYoZwqTRNem
-	Q0wgVWwCuhJNb3cxgtgiArISh6/8ZgYpYhb4zShxfvccsFHCAt4SH7+2sIPYLAKqEifufGMG
-	sXkFPCQ23rnLArFOQeLN7WdgcU4BT4np1zeD9QoB1fy5dxxss4TALnaJY4uvQQ0SkPg2+RBQ
-	MwdQQlZi0wFmiDmSEgdX3GCZwCi8gJFhFaNoakFyQXFSepGhXnFibnFpXrpecn7uJkZgPJz+
-	96x3B+PtA9aHGJOBxk1klhJNzgfGU15JvKGxibmpsamZkaWlpSlpwkrivHKXZAKFBNITS1Kz
-	U1MLUovii0pzUosPMTJxcEo1MOpPFVKqZxEyPNvxI0Bb2OFg4qs5Ar25BRePKbzV2tnB/4Kh
-	bbrfsbdJToErXzIXbVkZNG/T/F01vwzrd8UEV/2arnzibvqflXMa5v9V/MUdPYXlWEmzQQHj
-	uZlT7twTMJOcs+/xXP3TYf8n5LjV28lc2eGeM11Eo2/J68VbW94m3+LI3qjyT0CJpTgj0VCL
-	uag4EQDBAWDYnQIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrOIsWRmVeSWpSXmKPExsVy+t9jQd0Dfw0DDV5/E7Q4eL/e4uyyg2wW
-	zYvXs1n0LrjKZnHhaQ+bxeVdc9gsZi/pZ7GYcX4fk8WiZa3MFs0nTjE7cHnMbrjI4jHvZKDH
-	/rlr2D36tqxi9Dh+YzuTx+dNcgFsUQ2MNhmpiSmpRQqpecn5KZl56bZK3sHxzvGmZgaGuoaW
-	FuZKCnmJuam2Si4+AbpumTlAlykplCXmlAKFAhKLi5X07TBNCA1x07WAaYzQ9Q0JgusxMkAD
-	CWsYM/Z//M1ecI+zYufnecwNjG0cXYycHBICJhIbWm+yQ9hiEhfurWfrYuTiEBKYzihxdc5m
-	dghnCpNE16ZDTCBVbAK6Ek1vdzGC2CICshKHr/xmBiliFvjNKHF+9xxWkISwgLfEx68tYGNZ
-	BFQlTtz5xgxi8wp4SGy8c5cFYp2CxJvbz8DinAKeEtOvbwbrFQKq+XPvOPsERt4FjAyrGEVT
-	C5ILipPScw31ihNzi0vz0vWS83M3MYKj7ZnUDsaVDRaHGAU4GJV4eAM+GgQKsSaWFVfmHmKU
-	4GBWEuE9f9UwUIg3JbGyKrUoP76oNCe1+BBjMtBVE5mlRJPzgYkgryTe0NjE3NTY1NLEwsTM
-	kjRhJXFexlNPAoQE0hNLUrNTUwtSi2C2MHFwSjUw1jQnfzsdcdn7oUort0V60ZvXRZftAooX
-	72mxc7i7diJz12Gm57XCOWrLzkwX89M4s523N8vvaN+CmXFduobyU/NPaVzfp9H8cWX2j7WT
-	TwvJNSaJlnILnLo+b+evh1eCV+tKthsKprAV7phwgK8p49Vvn23uciLOS84ErmLPmltsG93k
-	/2CREktxRqKhFnNRcSIAIvrLqvoCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrOLMWRmVeSWpSXmKPExsWyRsSkWnfPX8NAg6a/qhYH79dbNC9ez2bR
+	u+Aqm8WFpz1sFpd3zWGzmL2kn8Vixvl9TBaLlrUyWzSfOMXswOkx72Sgx/65a9g9+rasYvQ4
+	fmM7k8fnTXIBrFFcNimpOZllqUX6dglcGa2LjzIW9ApWvDu8mr2B8TlvFyMnh4SAicT1m19Z
+	IGwxiQv31rN1MXJxCAksZZRYPP0JO0zRg6XNzBCJ6YwSm2d+ZoJwpjBJrDl3jxGkik1AV6Lp
+	7S4wW0RAVuLwld9gHcwClxglVqzYArSDg0NYwFfi8apakBoWAVWJvpMLwDbwCnhIXJvTxQax
+	TUHize1nYL0SApPZJf68O80K0SAg8W3yIbA5EkALNh1ghqiXlDi44gbLBEbBBYwMqxhFUwuS
+	C4qT0ouM9IoTc4tL89L1kvNzNzECA/n0v2d9OxhvHrA+xJgMNG4is5Rocj4wEvJK4g2NTcxN
+	jU3NjCwtLU1JE1YS55W/JBMoJJCeWJKanZpakFoUX1Sak1p8iJGJg1OqgVExeu1+J7V9f/wO
+	zJ5j6fGYb2H2fFaL+7yP7z+93tNeL3m4ZofqftHPTdaq3VWpHF8Z1Guk7qf+e3rua8g0oWyu
+	ynteUemf1VqNeXdmPNr3y2I2m+Gu65kZD46aNDt8fF7+umFTdtwJ/nuS15fHXy8+Hetq892g
+	Y1WuxjyXrRqdiZ4dKe7tOUosxRmJhlrMRcWJAJfafgN6AgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrCIsWRmVeSWpSXmKPExsVy+t9jQd09fw0DDXYtk7E4eL/eonnxejaL
+	3gVX2SwuPO1hs7i8aw6bxewl/SwWM87vY7JYtKyV2aL5xClmB06PeScDPfbPXcPu0bdlFaPH
+	8RvbmTw+b5ILYI1qYLTJSE1MSS1SSM1Lzk/JzEu3VfIOjneONzUzMNQ1tLQwV1LIS8xNtVVy
+	8QnQdcvMAbpHSaEsMacUKBSQWFyspG+HaUJoiJuuBUxjhK5vSBBcj5EBGkhYw5jRuvgoY0Gv
+	YMW7w6vZGxif83YxcnJICJhIPFjazAxhi0lcuLeerYuRi0NIYDqjxOaZn5kgnClMEmvO3WME
+	qWIT0JVoersLzBYRkJU4fOU3M0gRs8AlRokVK7awdDFycAgL+Eo8XlULUsMioCrRd3IBO4jN
+	K+AhcW1OFxvENgWJN7efMU9g5F7AyLCKUTS1ILmgOCk910ivODG3uDQvXS85P3cTIzhOnknv
+	YFzVYHGIUYCDUYmHN+CjQaAQa2JZcWXuIUYJDmYlEd7zVw0DhXhTEiurUovy44tKc1KLDzEm
+	A22fyCwlmpwPjOG8knhDYxNzU2NTSxMLEzNL0oSVxHkZTz0JEBJITyxJzU5NLUgtgtnCxMEp
+	1cAok7Smb1Hsi9zPj8rTS2o2vgh7euqaqOOdzLkMKfGNJYvviWjOkNm+V3dVf1CtfX/H6X85
+	MxJWGTH3HElNdXS68V9JxeXYT50JU1f8zThosZ93gUC4UvH0iUkH6n3VpBZLPu0J4m2cIjbf
+	8Eq1fNxK0zodb82c/+WTe5Y0zipe1fA72FRAUluJpTgj0VCLuag4EQDyTa2P1wIAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -52,47 +48,51 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The current code in the dwc3 probe effectively disables runtime pm
-from ever working because it calls a get() that was never put() until
-device removal.  Change the runtime pm code to match the standard
-formula and allow runtime pm to function.
+This patch-series enables runtime power management on xhci-plat,
+dwc3-core, dwc3-exynos as well as on samsung-usb3 type PHY.
+This allows usb 3.0 host ports to be power managed at runtime.
+We also turn off the PHY ref_clk PLL, which supplies reference clock
+to USB3 type phy, when ports are not in use.
 
-Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
-CC: Doug Anderson <dianders@chromium.org>
----
- drivers/usb/dwc3/core.c |    5 ++++-
- 1 files changed, 4 insertions(+), 1 deletions(-)
+Based on 'usb-next' alongwith following patch series:
+  [PATCH v4 00/11] usb: dwc3: PM support patchset
+  http://www.mail-archive.com/linux-usb@vger.kernel.org/msg14676.html
 
-diff --git a/drivers/usb/dwc3/core.c b/drivers/usb/dwc3/core.c
-index be0672f..85914e0 100644
---- a/drivers/usb/dwc3/core.c
-+++ b/drivers/usb/dwc3/core.c
-@@ -528,6 +528,7 @@ static int dwc3_probe(struct platform_device *pdev)
- 		goto err3;
- 	}
- 
-+	pm_runtime_put_sync(dev);
- 	pm_runtime_allow(dev);
- 
- 	return 0;
-@@ -557,6 +558,7 @@ err1:
- 
- err0:
- 	dwc3_free_event_buffers(dwc);
-+	pm_runtime_disable(&pdev->dev);
- 
- 	return ret;
- }
-@@ -568,7 +570,8 @@ static int dwc3_remove(struct platform_device *pdev)
- 	usb_phy_set_suspend(dwc->usb2_phy, 1);
- 	usb_phy_set_suspend(dwc->usb3_phy, 1);
- 
--	pm_runtime_put(&pdev->dev);
-+	if (!pm_runtime_suspended(&pdev->dev))
-+		pm_runtime_put(&pdev->dev);
- 	pm_runtime_disable(&pdev->dev);
- 
- 	dwc3_debugfs_exit(dwc);
+  [PATCH v2] usb: xhci: add the suspend/resume functionality
+  http://www.mail-archive.com/linux-usb@vger.kernel.org/msg14614.html
+
+  [PATCH v6 0/2] Adding USB 3.0 DRD-phy support for exynos5250
+  http://www.mail-archive.com/linux-usb@vger.kernel.org/msg15813.html
+
+Changes from v1:
+ - Adding required PHY APIs to handle runtime power management
+   instead of directly twiddling with phy->dev.
+ - Handling runtime power management of usb PHYs in dwc3 core
+   driver instead of in any glue layer.
+ - Splitting the patch "[PATCH 4/4] usb: phy: samsung: Enable runtime power management on samsung-usb"
+   to required number to bifurcate functionality.
+
+Vivek Gautam (10):
+  usb: phy: Add APIs for runtime power management
+  USB: dwc3: Adjust runtime pm to allow autosuspend
+  usb: dwc3: Enable runtime pm only after PHYs are initialized
+  usb: dwc3: Add runtime power management callbacks
+  usb: dwc3: exynos: Enable runtime power management
+  usb: xhci: Enable runtime pm in xhci-plat
+  usb: phy: samsung: Enable runtime power management on usb3phy
+  usb: phy: samsung: Add support for external reference clock
+  usb: phy: samsung: Add support for PHY ref_clk gpio
+  usb: phy: samsung: Add support for PHY refclk switching
+
+ drivers/usb/dwc3/core.c           |   40 +++++++++++--
+ drivers/usb/dwc3/dwc3-exynos.c    |   13 ++++
+ drivers/usb/host/xhci-plat.c      |    7 ++
+ drivers/usb/phy/samsung-usb3phy.c |  122 +++++++++++++++++++++++++++++++++++--
+ drivers/usb/phy/samsung-usbphy.c  |   26 ++++++++
+ drivers/usb/phy/samsung-usbphy.h  |    1 +
+ include/linux/usb/phy.h           |   26 ++++++++
+ 7 files changed, 224 insertions(+), 11 deletions(-)
+
 -- 
 1.7.6.5
 
