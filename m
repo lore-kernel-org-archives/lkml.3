@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753454Ab3CBDoo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 22:44:44 -0500
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:38956 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752712Ab3CBDol (ORCPT
+	id S1753504Ab3CBDo4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 22:44:56 -0500
+Received: from mail-da0-f41.google.com ([209.85.210.41]:51169 "EHLO
+	mail-da0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753475Ab3CBDox (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 22:44:41 -0500
+	Fri, 1 Mar 2013 22:44:53 -0500
 From: Namjae Jeon <linkinjeon@gmail.com>
 To: hirofumi@mail.parknet.co.jp, akpm@linux-foundation.org
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
@@ -14,9 +14,9 @@ Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         Namjae Jeon <namjae.jeon@samsung.com>,
         Ravishankar N <ravi.n1@samsung.com>,
         Amit Sahrawat <a.sahrawat@samsung.com>
-Subject: [PATCH v7 3/7] fat: introduce a helper fat_get_blknr_offset()
-Date: Sat,  2 Mar 2013 12:44:33 +0900
-Message-Id: <1362195873-21045-1-git-send-email-linkinjeon@gmail.com>
+Subject: [PATCH v7 4/7] fat: restructure export_operations
+Date: Sat,  2 Mar 2013 12:44:46 +0900
+Message-Id: <1362195886-21079-1-git-send-email-linkinjeon@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,69 +24,312 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namjae Jeon <namjae.jeon@samsung.com>
 
-Introduce helper function to get the block number and offset for a given
-i_pos value. Use it in __fat_write_inode() now and later on in nfs.c
+Define two nfs export_operation structures,one for 'stale_rw' mounts and
+the other for 'nostale_ro'. The latter uses i_pos as a basis for encoding
+and decoding file handles.
+
+Also, assign i_pos to kstat->ino. The logic for rebuilding the inode is
+added in the subsequent patches.
 
 Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
 Signed-off-by: Ravishankar N <ravi.n1@samsung.com>
 Signed-off-by: Amit Sahrawat <a.sahrawat@samsung.com>
 ---
- fs/fat/fat.h   |    7 +++++++
- fs/fat/inode.c |    9 +++++----
- 2 files changed, 12 insertions(+), 4 deletions(-)
+ fs/fat/fat.h             |    8 +--
+ fs/fat/file.c            |    5 ++
+ fs/fat/inode.c           |   13 ++---
+ fs/fat/nfs.c             |  130 ++++++++++++++++++++++++++++++++++++++++++++--
+ include/linux/exportfs.h |   11 ++++
+ 5 files changed, 147 insertions(+), 20 deletions(-)
 
 diff --git a/fs/fat/fat.h b/fs/fat/fat.h
-index f16948e..980c034 100644
+index 980c034..c517fc0 100644
 --- a/fs/fat/fat.h
 +++ b/fs/fat/fat.h
-@@ -218,6 +218,13 @@ static inline sector_t fat_clus_to_blknr(struct msdos_sb_info *sbi, int clus)
- 		+ sbi->data_start;
- }
+@@ -406,12 +406,8 @@ int fat_cache_init(void);
+ void fat_cache_destroy(void);
  
-+static inline void fat_get_blknr_offset(struct msdos_sb_info *sbi,
-+				loff_t i_pos, sector_t *blknr, int *offset)
-+{
-+	*blknr = i_pos >> sbi->dir_per_block_bits;
-+	*offset = i_pos & (sbi->dir_per_block - 1);
-+}
+ /* fat/nfs.c */
+-struct fid;
+-extern struct dentry *fat_fh_to_dentry(struct super_block *sb, struct fid *fid,
+-				       int fh_len, int fh_type);
+-extern struct dentry *fat_fh_to_parent(struct super_block *sb, struct fid *fid,
+-				       int fh_len, int fh_type);
+-extern struct dentry *fat_get_parent(struct dentry *child_dir);
++extern const struct export_operations fat_export_ops;
++extern const struct export_operations fat_export_ops_nostale;
+ 
+ /* helper for printk */
+ typedef unsigned long long	llu;
+diff --git a/fs/fat/file.c b/fs/fat/file.c
+index 3978f8c..b0b632e 100644
+--- a/fs/fat/file.c
++++ b/fs/fat/file.c
+@@ -306,6 +306,11 @@ int fat_getattr(struct vfsmount *mnt, struct dentry *dentry, struct kstat *stat)
+ 	struct inode *inode = dentry->d_inode;
+ 	generic_fillattr(inode, stat);
+ 	stat->blksize = MSDOS_SB(inode->i_sb)->cluster_size;
 +
- static inline loff_t fat_i_pos_read(struct msdos_sb_info *sbi,
- 					struct inode *inode)
- {
++	if (MSDOS_SB(inode->i_sb)->options.nfs == FAT_NFS_NOSTALE_RO) {
++		/* Use i_pos for ino. This is used as fileid of nfs. */
++		stat->ino = fat_i_pos_read(MSDOS_SB(inode->i_sb), inode);
++	}
+ 	return 0;
+ }
+ EXPORT_SYMBOL_GPL(fat_getattr);
 diff --git a/fs/fat/inode.c b/fs/fat/inode.c
-index d89f79f..8356a05 100644
+index 8356a05..a42f2c2 100644
 --- a/fs/fat/inode.c
 +++ b/fs/fat/inode.c
-@@ -663,7 +663,8 @@ static int __fat_write_inode(struct inode *inode, int wait)
- 	struct buffer_head *bh;
- 	struct msdos_dir_entry *raw_entry;
- 	loff_t i_pos;
--	int err;
-+	sector_t blocknr;
-+	int err, offset;
+@@ -18,7 +18,6 @@
+ #include <linux/pagemap.h>
+ #include <linux/mpage.h>
+ #include <linux/buffer_head.h>
+-#include <linux/exportfs.h>
+ #include <linux/mount.h>
+ #include <linux/aio.h>
+ #include <linux/vfs.h>
+@@ -749,12 +748,6 @@ static const struct super_operations fat_sops = {
+ 	.show_options	= fat_show_options,
+ };
  
- 	if (inode->i_ino == MSDOS_ROOT_INO)
- 		return 0;
-@@ -673,7 +674,8 @@ retry:
- 	if (!i_pos)
- 		return 0;
+-static const struct export_operations fat_export_ops = {
+-	.fh_to_dentry	= fat_fh_to_dentry,
+-	.fh_to_parent	= fat_fh_to_parent,
+-	.get_parent	= fat_get_parent,
+-};
+-
+ static int fat_show_options(struct seq_file *m, struct dentry *root)
+ {
+ 	struct msdos_sb_info *sbi = MSDOS_SB(root->d_sb);
+@@ -1178,8 +1171,10 @@ out:
+ 		opts->allow_utime = ~opts->fs_dmask & (S_IWGRP | S_IWOTH);
+ 	if (opts->unicode_xlate)
+ 		opts->utf8 = 0;
+-	if (opts->nfs == FAT_NFS_NOSTALE_RO)
++	if (opts->nfs == FAT_NFS_NOSTALE_RO) {
+ 		sb->s_flags |= MS_RDONLY;
++		sb->s_export_op = &fat_export_ops_nostale;
++	}
  
--	bh = sb_bread(sb, i_pos >> sbi->dir_per_block_bits);
-+	fat_get_blknr_offset(sbi, i_pos, &blocknr, &offset);
-+	bh = sb_bread(sb, blocknr);
- 	if (!bh) {
- 		fat_msg(sb, KERN_ERR, "unable to read inode block "
- 		       "for updating (i_pos %lld)", i_pos);
-@@ -686,8 +688,7 @@ retry:
- 		goto retry;
- 	}
+ 	return 0;
+ }
+@@ -1190,7 +1185,7 @@ static int fat_read_root(struct inode *inode)
+ 	struct msdos_sb_info *sbi = MSDOS_SB(sb);
+ 	int error;
  
--	raw_entry = &((struct msdos_dir_entry *) (bh->b_data))
--	    [i_pos & (sbi->dir_per_block - 1)];
-+	raw_entry = &((struct msdos_dir_entry *) (bh->b_data))[offset];
- 	if (S_ISDIR(inode->i_mode))
- 		raw_entry->size = 0;
- 	else
+-	MSDOS_I(inode)->i_pos = 0;
++	MSDOS_I(inode)->i_pos = MSDOS_ROOT_INO;
+ 	inode->i_uid = sbi->options.fs_uid;
+ 	inode->i_gid = sbi->options.fs_gid;
+ 	inode->i_version++;
+diff --git a/fs/fat/nfs.c b/fs/fat/nfs.c
+index 499c104..d59c025 100644
+--- a/fs/fat/nfs.c
++++ b/fs/fat/nfs.c
+@@ -14,6 +14,18 @@
+ #include <linux/exportfs.h>
+ #include "fat.h"
+ 
++struct fat_fid {
++	u32 i_gen;
++	u32 i_pos_low;
++	u16 i_pos_hi;
++	u16 parent_i_pos_hi;
++	u32 parent_i_pos_low;
++	u32 parent_i_gen;
++};
++
++#define FAT_FID_SIZE_WITHOUT_PARENT 3
++#define FAT_FID_SIZE_WITH_PARENT (sizeof(struct fat_fid)/sizeof(u32))
++
+ /**
+  * Look up a directory inode given its starting cluster.
+  */
+@@ -38,8 +50,8 @@ static struct inode *fat_dget(struct super_block *sb, int i_logstart)
+ 	return inode;
+ }
+ 
+-static struct inode *fat_nfs_get_inode(struct super_block *sb,
+-				       u64 ino, u32 generation)
++static struct inode *__fat_nfs_get_inode(struct super_block *sb,
++				       u64 ino, u32 generation, loff_t i_pos)
+ {
+ 	struct inode *inode;
+ 
+@@ -55,35 +67,130 @@ static struct inode *fat_nfs_get_inode(struct super_block *sb,
+ 	return inode;
+ }
+ 
++static struct inode *fat_nfs_get_inode(struct super_block *sb,
++				       u64 ino, u32 generation)
++{
++
++	return __fat_nfs_get_inode(sb, ino, generation, 0);
++}
++
++static int
++fat_encode_fh_nostale(struct inode *inode, __u32 *fh, int *lenp,
++		      struct inode *parent)
++{
++	int len = *lenp;
++	struct msdos_sb_info *sbi = MSDOS_SB(inode->i_sb);
++	struct fat_fid *fid = (struct fat_fid *) fh;
++	loff_t i_pos;
++	int type = FILEID_FAT_WITHOUT_PARENT;
++
++	if (parent) {
++		if (len < FAT_FID_SIZE_WITH_PARENT) {
++			*lenp = FAT_FID_SIZE_WITH_PARENT;
++			return FILEID_INVALID;
++		}
++	} else {
++		if (len < FAT_FID_SIZE_WITHOUT_PARENT) {
++			*lenp = FAT_FID_SIZE_WITHOUT_PARENT;
++			return FILEID_INVALID;
++		}
++	}
++
++	i_pos = fat_i_pos_read(sbi, inode);
++	*lenp = FAT_FID_SIZE_WITHOUT_PARENT;
++	fid->i_gen = inode->i_generation;
++	fid->i_pos_low = i_pos & 0xFFFFFFFF;
++	fid->i_pos_hi = (i_pos >> 32) & 0xFFFF;
++	if (parent) {
++		i_pos = fat_i_pos_read(sbi, parent);
++		fid->parent_i_pos_hi = (i_pos >> 32) & 0xFFFF;
++		fid->parent_i_pos_low = i_pos & 0xFFFFFFFF;
++		fid->parent_i_gen = parent->i_generation;
++		type = FILEID_FAT_WITH_PARENT;
++		*lenp = FAT_FID_SIZE_WITH_PARENT;
++	}
++
++	return type;
++}
++
+ /**
+  * Map a NFS file handle to a corresponding dentry.
+  * The dentry may or may not be connected to the filesystem root.
+  */
+-struct dentry *fat_fh_to_dentry(struct super_block *sb, struct fid *fid,
++static struct dentry *fat_fh_to_dentry(struct super_block *sb, struct fid *fid,
+ 				int fh_len, int fh_type)
+ {
+ 	return generic_fh_to_dentry(sb, fid, fh_len, fh_type,
+ 				    fat_nfs_get_inode);
+ }
+ 
++static struct dentry *fat_fh_to_dentry_nostale(struct super_block *sb,
++					       struct fid *fh, int fh_len,
++					       int fh_type)
++{
++	struct inode *inode = NULL;
++	struct fat_fid *fid = (struct fat_fid *)fh;
++	loff_t i_pos;
++
++	switch (fh_type) {
++	case FILEID_FAT_WITHOUT_PARENT:
++		if (fh_len < FAT_FID_SIZE_WITHOUT_PARENT)
++			return NULL;
++		break;
++	case FILEID_FAT_WITH_PARENT:
++		if (fh_len < FAT_FID_SIZE_WITH_PARENT)
++			return NULL;
++		break;
++	default:
++		return NULL;
++	}
++	i_pos = fid->i_pos_hi;
++	i_pos = (i_pos << 32) | (fid->i_pos_low);
++	inode = __fat_nfs_get_inode(sb, 0, fid->i_gen, i_pos);
++
++	return d_obtain_alias(inode);
++}
++
+ /*
+  * Find the parent for a file specified by NFS handle.
+  * This requires that the handle contain the i_ino of the parent.
+  */
+-struct dentry *fat_fh_to_parent(struct super_block *sb, struct fid *fid,
++static struct dentry *fat_fh_to_parent(struct super_block *sb, struct fid *fid,
+ 				int fh_len, int fh_type)
+ {
+ 	return generic_fh_to_parent(sb, fid, fh_len, fh_type,
+ 				    fat_nfs_get_inode);
+ }
+ 
++static struct dentry *fat_fh_to_parent_nostale(struct super_block *sb,
++					       struct fid *fh, int fh_len,
++					       int fh_type)
++{
++	struct inode *inode = NULL;
++	struct fat_fid *fid = (struct fat_fid *)fh;
++	loff_t i_pos;
++
++	if (fh_len < FAT_FID_SIZE_WITH_PARENT)
++		return NULL;
++
++	switch (fh_type) {
++	case FILEID_FAT_WITH_PARENT:
++		i_pos = fid->parent_i_pos_hi;
++		i_pos = (i_pos << 32) | (fid->parent_i_pos_low);
++		inode = __fat_nfs_get_inode(sb, 0, fid->parent_i_gen, i_pos);
++		break;
++	}
++
++	return d_obtain_alias(inode);
++}
++
+ /*
+  * Find the parent for a directory that is not currently connected to
+  * the filesystem root.
+  *
+  * On entry, the caller holds child_dir->d_inode->i_mutex.
+  */
+-struct dentry *fat_get_parent(struct dentry *child_dir)
++static struct dentry *fat_get_parent(struct dentry *child_dir)
+ {
+ 	struct super_block *sb = child_dir->d_sb;
+ 	struct buffer_head *bh = NULL;
+@@ -98,3 +205,16 @@ struct dentry *fat_get_parent(struct dentry *child_dir)
+ 
+ 	return d_obtain_alias(parent_inode);
+ }
++
++const struct export_operations fat_export_ops = {
++	.fh_to_dentry   = fat_fh_to_dentry,
++	.fh_to_parent   = fat_fh_to_parent,
++	.get_parent     = fat_get_parent,
++};
++
++const struct export_operations fat_export_ops_nostale = {
++	.encode_fh      = fat_encode_fh_nostale,
++	.fh_to_dentry   = fat_fh_to_dentry_nostale,
++	.fh_to_parent   = fat_fh_to_parent_nostale,
++	.get_parent     = fat_get_parent,
++};
+diff --git a/include/linux/exportfs.h b/include/linux/exportfs.h
+index 5b9b5b3..41b223a 100644
+--- a/include/linux/exportfs.h
++++ b/include/linux/exportfs.h
+@@ -85,6 +85,17 @@ enum fid_type {
+ 	FILEID_NILFS_WITH_PARENT = 0x62,
+ 
+ 	/*
++	 * 32 bit generation number, 40 bit i_pos.
++	 */
++	FILEID_FAT_WITHOUT_PARENT = 0x71,
++
++	/*
++	 * 32 bit generation number, 40 bit i_pos,
++	 * 32 bit parent generation number, 40 bit parent i_pos
++	 */
++	FILEID_FAT_WITH_PARENT = 0x72,
++
++	/*
+ 	 * Filesystems must not use 0xff file ID.
+ 	 */
+ 	FILEID_INVALID = 0xff,
 -- 
 1.7.9.5
 
