@@ -1,50 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752461Ab3CBNZX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Mar 2013 08:25:23 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:12932 "EHLO
+	id S1752509Ab3CBN1P (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Mar 2013 08:27:15 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:12947 "EHLO
 	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752132Ab3CBNZT (ORCPT
+	with ESMTP id S1752467Ab3CBNZZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Mar 2013 08:25:19 -0500
-X-AuditID: cbfee68e-b7fa46d00000627e-e7-5131fdbe3617
+	Sat, 2 Mar 2013 08:25:25 -0500
+X-AuditID: cbfee68e-b7fa46d00000627e-ff-5131fdc4aea2
 From: Vivek Gautam <gautam.vivek@samsung.com>
 To: linux-usb@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
         linux-samsung-soc@vger.kernel.org, gregkh@linuxfoundation.org,
         balbi@ti.com, sarah.a.sharp@linux.intel.com, kgene.kim@samsung.com,
         kishon@ti.com
-Subject: [PATCH v2 01/10] usb: phy: Add APIs for runtime power management
-Date: Sat, 02 Mar 2013 18:53:02 +0530
-Message-id: <1362230590-20960-2-git-send-email-gautam.vivek@samsung.com>
+Subject: [PATCH v2 04/10] usb: dwc3: Add runtime power management callbacks
+Date: Sat, 02 Mar 2013 18:53:05 +0530
+Message-id: <1362230590-20960-5-git-send-email-gautam.vivek@samsung.com>
 X-Mailer: git-send-email 1.7.6.5
 In-reply-to: <1362230590-20960-1-git-send-email-gautam.vivek@samsung.com>
 References: <1362230590-20960-1-git-send-email-gautam.vivek@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrHLMWRmVeSWpSXmKPExsWyRsSkWnffX8NAg657khYH79dbNC9ez2bR
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrHLMWRmVeSWpSXmKPExsWyRsSkWvfIX8NAg8aTihYH79dbNC9ez2bR
 	u+Aqm8WFpz1sFpd3zWGzmL2kn8Vixvl9TBaLlrUyWzSfOMXswOkx72Sgx/65a9g9+rasYvQ4
-	fmM7k8fnTXIBrFFcNimpOZllqUX6dglcGa93X2MruMVVse33TtYGxk0cXYwcHBICJhJP/8t3
-	MXICmWISF+6tZ+ti5OIQEljKKLH+6WxmiISJxLWbB9ghEtMZJb5seMMGkhASmMIkcXtRMIjN
-	JqAr0fR2FyOILSIgK3H4ym9mkAZmgUuMEitWbGEBSQgLeEosfdLGBGKzCKhK7Gw7AzaIV8BD
-	4uen/4wQ2xQk3tx+BraZE6h++vXNrBDLPCT+3DsOdoWEwDp2iU17v7FCDBKQ+Db5EAvEO7IS
-	mw5AXS0pcXDFDZYJjMILGBlWMYqmFiQXFCelFxnpFSfmFpfmpesl5+duYgSG/el/z/p2MN48
-	YH2IMRlo3ERmKdHkfGDc5JXEGxqbmJsam5oZWVpampImrCTOK39JJlBIID2xJDU7NbUgtSi+
-	qDQntfgQIxMHp1QDY+W2Z2pLNjKm233+kfqP5VuRrvp+w9s3rJsaFN5ynxb0Cyp+dvVP5MYX
-	wrtrv4s+lxFVqNmysSnMzVp/+sJLnPzJ+hrhpulHX+3ecVGUPUyk6uuJ2BUq4WtreGvUVQRY
-	WT0PhIpvm229VM/rzddkef2Dtda21fnLthh35i9MNXz9a3XZMadXSizFGYmGWsxFxYkAn0yy
-	vpECAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrDIsWRmVeSWpSXmKPExsVy+t9jQd19fw0DDbo3CVocvF9v0bx4PZtF
-	74KrbBYXnvawWVzeNYfNYvaSfhaLGef3MVksWtbKbNF84hSzA6fHvJOBHvvnrmH36NuyitHj
-	+I3tTB6fN8kFsEY1MNpkpCampBYppOYl56dk5qXbKnkHxzvHm5oZGOoaWlqYKynkJeam2iq5
-	+AToumXmAN2jpFCWmFMKFApILC5W0rfDNCE0xE3XAqYxQtc3JAiux8gADSSsYcx4vfsaW8Et
-	roptv3eyNjBu4uhi5OSQEDCRuHbzADuELSZx4d56ti5GLg4hgemMEl82vGEDSQgJTGGSuL0o
-	GMRmE9CVaHq7ixHEFhGQlTh85TczSAOzwCVGiRUrtrCAJIQFPCWWPmljArFZBFQldradARvE
-	K+Ah8fPTf0aIbQoSb24/YwaxOYHqp1/fzAqxzEPiz73j7BMYeRcwMqxiFE0tSC4oTkrPNdIr
-	TswtLs1L10vOz93ECI6rZ9I7GFc1WBxiFOBgVOLhDfhoECjEmlhWXJl7iFGCg1lJhPf8VcNA
-	Id6UxMqq1KL8+KLSnNTiQ4zJQFdNZJYSTc4HxnxeSbyhsYm5qbGppYmFiZklacJK4ryMp54E
-	CAmkJ5akZqemFqQWwWxh4uCUamBULF/G5vpB4uIk2dKVL3YclLDTmrPn7tI+pTOHlMpKi1es
-	6Fec+PnDuZScjpUzXymWiWzfv+bjFRlp9nrjMj5lpQ1Ol989vqewz+fj+sJ1At6W7u0Xjh3u
-	3M531qCoqqVu44HrC61d/50ViojXOz059YFUR/JB6S0+d2R36O9dWsz3e4GzQGOdEktxRqKh
-	FnNRcSIAha8ZVu8CAAA=
+	fmM7k8fnTXIBrFFcNimpOZllqUX6dglcGU07N7IXTOeu+H38MmMD42bOLkZODgkBE4m+I11s
+	ELaYxIV764FsLg4hgaWMEhPntrLCFE38PJEdIjGdUeJN1wkoZwqTxIEld8Ha2QR0JZre7mIE
+	sUUEZCUOX/nNDFLELHCJUWLFii0sXYwcHMIC3hJTG2xAalgEVCW+n3rKDhLmFfCQ2L06E2KZ
+	gsSb28+YQWxOAU+J6dc3gx0hBFTy595xsL0SAuvYJZZtn8UGMUdA4tvkQ2DjJYD2bjrADDFH
+	UuLgihssExiFFzAyrGIUTS1ILihOSi8y0itOzC0uzUvXS87P3cQIDPvT/5717WC8ecD6EGMy
+	0LiJzFKiyfnAuMkriTc0NjE3NTY1M7K0tDQlTVhJnFf+kkygkEB6YklqdmpqQWpRfFFpTmrx
+	IUYmDk6pBsZZe1rkWf9/cqtiKNy8YvopueijbR9t9zwu/9Vodejzuwd+4r0/3Dqycm/0yThJ
+	WnjcLZmgtO34TpFVsaFOMbffajjMCimT5Vzz0PPktomJIhM2sK1gMFnvb9A+ewLvypvOkgHn
+	P+4LWvZyWdvzHfWMrxV6g3T32NTeM9n6OTLGfsqkiGsef3SVWIozEg21mIuKEwFUyBXtkQIA	AA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrNIsWRmVeSWpSXmKPExsVy+t9jQd0jfw0DDb7NlbQ4eL/eonnxejaL
+	3gVX2SwuPO1hs7i8aw6bxewl/SwWM87vY7JYtKyV2aL5xClmB06PeScDPfbPXcPu0bdlFaPH
+	8RvbmTw+b5ILYI1qYLTJSE1MSS1SSM1Lzk/JzEu3VfIOjneONzUzMNQ1tLQwV1LIS8xNtVVy
+	8QnQdcvMAbpHSaEsMacUKBSQWFyspG+HaUJoiJuuBUxjhK5vSBBcj5EBGkhYw5jRtHMje8F0
+	7orfxy8zNjBu5uxi5OSQEDCRmPh5IjuELSZx4d56ti5GLg4hgemMEm+6TrBDOFOYJA4sucsG
+	UsUmoCvR9HYXI4gtIiArcfjKb2aQImaBS4wSK1ZsYeli5OAQFvCWmNpgA1LDIqAq8f3UU3aQ
+	MK+Ah8Tu1ZkQyxQk3tx+xgxicwp4Sky/vpkVxBYCKvlz7zj7BEbeBYwMqxhFUwuSC4qT0nON
+	9IoTc4tL89L1kvNzNzGCo+qZ9A7GVQ0WhxgFOBiVeHgDPhoECrEmlhVX5h5ilOBgVhLhPX/V
+	MFCINyWxsiq1KD++qDQntfgQYzLQUROZpUST84ERn1cSb2hsYm5qbGppYmFiZkmasJI4L+Op
+	JwFCAumJJanZqakFqUUwW5g4OKUaGNuf7loUtMr6is405/vfq8o6Wp0XvdusdD2oe8PrmpUv
+	PrlalDlZefyxnJDCZPu/s2Qur13f7r83J6lcjdh3Xr6pzatIOas5Y2XQRYMJrB6Pg7411U7t
+	WRSuZVeh4aUbzD8902n7KoaQkFaFq6wa85Ki39+Zm1ZRfOgq/5f4zImswoGcb8vclViKMxIN
+	tZiLihMBCgbEbe4CAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -52,50 +51,58 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding  APIs to handle runtime power management on PHY
-devices. PHY consumers may need to wake-up/suspend PHYs
-when they work across autosuspend.
+Right now it doesn't handle full runtime suspend/resume
+functionality. However it allows to handle PHYs' sleep
+and wakeup across runtime suspend/resume.
 
 Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
 ---
- include/linux/usb/phy.h |   26 ++++++++++++++++++++++++++
- 1 files changed, 26 insertions(+), 0 deletions(-)
+ drivers/usb/dwc3/core.c |   27 +++++++++++++++++++++++++++
+ 1 files changed, 27 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/usb/phy.h b/include/linux/usb/phy.h
-index 15847cb..0fe7cac 100644
---- a/include/linux/usb/phy.h
-+++ b/include/linux/usb/phy.h
-@@ -276,4 +276,30 @@ static inline const char *usb_phy_type_string(enum usb_phy_type type)
- 		return "UNKNOWN PHY TYPE";
- 	}
+diff --git a/drivers/usb/dwc3/core.c b/drivers/usb/dwc3/core.c
+index 2a77327..45e1aae 100644
+--- a/drivers/usb/dwc3/core.c
++++ b/drivers/usb/dwc3/core.c
+@@ -704,11 +704,38 @@ static int dwc3_resume(struct device *dev)
+ 	return 0;
  }
+ 
++#ifdef CONFIG_PM_RUNTIME
++static int dwc3_runtime_suspend(struct device *dev)
++{
++	struct dwc3	*dwc = dev_get_drvdata(dev);
 +
-+#define USB_PHY_AUTOPM(function)					    \
-+static inline int usb_phy_autopm_##function(struct usb_phy *x)		    \
-+{									    \
-+	if (!x || !x->dev) {						    \
-+		dev_err(x->dev, "no PHY or attached device available\n");   \
-+		return -ENODEV;						    \
-+	}								    \
-+									    \
-+	pm_runtime_##function(x->dev);					    \
-+									    \
-+	return 0;							    \
++	usb_phy_autopm_put_sync(dwc->usb2_phy);
++	usb_phy_autopm_put_sync(dwc->usb3_phy);
++
++	return 0;
 +}
-+USB_PHY_AUTOPM(enable)
-+USB_PHY_AUTOPM(disable)
-+USB_PHY_AUTOPM(get)
-+USB_PHY_AUTOPM(get_sync)
-+USB_PHY_AUTOPM(put)
-+USB_PHY_AUTOPM(put_sync)
-+USB_PHY_AUTOPM(allow)
-+USB_PHY_AUTOPM(forbid)
-+USB_PHY_AUTOPM(suspend)
-+USB_PHY_AUTOPM(autosuspend)
-+USB_PHY_AUTOPM(resume)
-+USB_PHY_AUTOPM(set_active)
 +
- #endif /* __LINUX_USB_PHY_H */
++static int dwc3_runtime_resume(struct device *dev)
++{
++	struct dwc3	*dwc = dev_get_drvdata(dev);
++
++	usb_phy_autopm_get_sync(dwc->usb2_phy);
++	usb_phy_autopm_get_sync(dwc->usb3_phy);
++
++	return 0;
++}
++#else
++#define dwc3_runtime_suspend		NULL
++#define dwc3_runtime_resume		NULL
++#endif
++
+ static const struct dev_pm_ops dwc3_dev_pm_ops = {
+ 	.prepare	= dwc3_prepare,
+ 	.complete	= dwc3_complete,
+ 
+ 	SET_SYSTEM_SLEEP_PM_OPS(dwc3_suspend, dwc3_resume)
++	SET_RUNTIME_PM_OPS(dwc3_runtime_suspend,
++				dwc3_runtime_resume, NULL)
+ };
+ 
+ #define DWC3_PM_OPS	&(dwc3_dev_pm_ops)
 -- 
 1.7.6.5
 
