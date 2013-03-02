@@ -1,55 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752741Ab3CBOwZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Mar 2013 09:52:25 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:59053 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751967Ab3CBOwY (ORCPT
+	id S1752304Ab3CBPMk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Mar 2013 10:12:40 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:56939 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751962Ab3CBPMi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Mar 2013 09:52:24 -0500
-Message-ID: <51321242.9070707@ti.com>
-Date: Sat, 2 Mar 2013 15:52:50 +0100
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130301 Thunderbird/17.0.3
+	Sat, 2 Mar 2013 10:12:38 -0500
+Date: Sat, 2 Mar 2013 15:12:37 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
+Subject: [git pull] signal.git fixes
+Message-ID: <20130302151237.GA4503@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Samuel Ortiz <sameo@linux.intel.com>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mfd: twl4030-audio: Fix argument type for twl4030_audio_disable_resource()
-References: <1362209435-11029-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-In-Reply-To: <1362209435-11029-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/02/2013 08:30 AM, Mark Brown wrote:
-> Looks like the conversion to enum was missed for the definition of this
-> function, the declaration has been updated.
+Fixes for several regressions introduced in the last signal.git pile,
+along with fixing bugs in truncate and ftruncate compat (on just about
+anything biarch at least one of those two had been done wrong).
 
-Acked-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Please, pull from
+git://git.kernel.org/pub/scm/linux/kernel/git/viro/signal for-linus
 
-> 
-> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> ---
->  drivers/mfd/twl4030-audio.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/mfd/twl4030-audio.c b/drivers/mfd/twl4030-audio.c
-> index e16edca..d2ab222 100644
-> --- a/drivers/mfd/twl4030-audio.c
-> +++ b/drivers/mfd/twl4030-audio.c
-> @@ -118,7 +118,7 @@ EXPORT_SYMBOL_GPL(twl4030_audio_enable_resource);
->   * Disable the resource.
->   * The function returns with error or the content of the register
->   */
-> -int twl4030_audio_disable_resource(unsigned id)
-> +int twl4030_audio_disable_resource(enum twl4030_audio_res id)
->  {
->  	struct twl4030_audio *audio = platform_get_drvdata(twl4030_audio_dev);
->  	int val;
-> 
+Shortlog:
+Al Viro (4):
+      lseek() and truncate() on sparc really need sign extension
+      switch lseek to COMPAT_SYSCALL_DEFINE
+      fix compat truncate/ftruncate
+      [regression] braino in "sparc: convert to ksignal"
 
+Heiko Carstens (1):
+      compat: restore timerfd settime and gettime compat syscalls
 
--- 
-Péter
+Diffstat:
+ arch/arm64/include/asm/unistd32.h  |    6 +++---
+ arch/arm64/kernel/sys32.S          |    5 -----
+ arch/mips/kernel/scall64-o32.S     |    4 ++--
+ arch/parisc/kernel/sys_parisc32.c  |   10 ----------
+ arch/parisc/kernel/syscall_table.S |    6 +++---
+ arch/powerpc/include/asm/systbl.h  |    2 +-
+ arch/powerpc/kernel/sys_ppc32.c    |   18 ------------------
+ arch/s390/kernel/compat_wrapper.S  |   16 ----------------
+ arch/s390/kernel/syscalls.S        |    6 +++---
+ arch/sparc/kernel/signal32.c       |    2 +-
+ arch/sparc/kernel/systbls_64.S     |    6 +++---
+ arch/x86/ia32/sys_ia32.c           |    5 -----
+ arch/x86/include/asm/sys_ia32.h    |    1 -
+ arch/x86/syscalls/syscall_32.tbl   |    6 +++---
+ fs/open.c                          |   15 +++++++++++++++
+ fs/read_write.c                    |    9 ++++++++-
+ fs/timerfd.c                       |   10 +++++-----
+ include/linux/compat.h             |    3 +++
+ 18 files changed, 50 insertions(+), 80 deletions(-)
