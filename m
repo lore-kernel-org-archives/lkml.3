@@ -1,67 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751696Ab3CBXpb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Mar 2013 18:45:31 -0500
-Received: from smtp-02.mandic.com.br ([200.225.81.133]:52753 "EHLO
-	smtp-02.mandic.com.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750970Ab3CBXpa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Mar 2013 18:45:30 -0500
-X-Greylist: delayed 398 seconds by postgrey-1.27 at vger.kernel.org; Sat, 02 Mar 2013 18:45:29 EST
-Message-ID: <51328D83.9030105@cesarb.net>
-Date: Sat, 02 Mar 2013 20:38:43 -0300
-From: Cesar Eduardo Barros <cesarb@cesarb.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130219 Thunderbird/17.0.3
+	id S1752793Ab3CBXqh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Mar 2013 18:46:37 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:44914 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751332Ab3CBXqg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 2 Mar 2013 18:46:36 -0500
+Date: Sun, 3 Mar 2013 00:46:23 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Krzysztof Mazur <krzysiek@podlesie.net>
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org, tglx@linutronix.de,
+        mingo@redhat.com, hpa@zytor.com, len.brown@intel.com
+Subject: Re: [PATCH] x86: fix 32-bit *_cpu_data initializers
+Message-ID: <20130302234623.GB15498@pd.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Krzysztof Mazur <krzysiek@podlesie.net>, x86@kernel.org,
+	linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@redhat.com,
+	hpa@zytor.com, len.brown@intel.com
+References: <1362266082-2227-1-git-send-email-krzysiek@podlesie.net>
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: Paul Bolle <pebolle@tiscali.nl>, Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Simtec Linux Team <linux@simtec.co.uk>,
-        Ben Dooks <ben-linux@fluff.org>
-Subject: Re: [PATCH V2] MAINTAINERS: Update SIMTEC file patterns, remove Vincent
- Sanders
-References: <1362166088.2116.10.camel@joe-AO722>  <1362168132.2116.17.camel@joe-AO722>  <1362169225.20156.6.camel@x61.thuisdomein> <1362170264.2116.24.camel@joe-AO722>
-In-Reply-To: <1362170264.2116.24.camel@joe-AO722>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1362266082-2227-1-git-send-email-krzysiek@podlesie.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 01-03-2013 17:37, Joe Perches escreveu:
-> On Fri, 2013-03-01 at 21:20 +0100, Paul Bolle wrote:
->> On Fri, 2013-03-01 at 12:02 -0800, Joe Perches wrote:
->>> commit 85fd6d6 ("ARM: S3C2410: move mach-s3c2410/* into mach-s3c24xx/")
->>> moved the files, update the F: patterns.
->>
->> The BAST MAINTAINER entry has come up a few times already. I commented
->> on the last time that happened in https://lkml.org/lkml/2012/11/24/96 .
->> Nothing has changed. I suggest to remove this entry entirely.
->
-> Seems sensible to me.  Ben?
->
-> I'm a bit surprised that all of Cesar Eduardo Barros' patches
-> to MAINTAINERS weren't applied.  I thought they were.  It
-> seems that only some of them are in.
->
-> https://lkml.org/lkml/2012/11/23/439
->
-> Cesar?  Can you please resend whatever scraps weren't applied
-> and make sure you cc Andrew Morton?
+On Sun, Mar 03, 2013 at 12:14:42AM +0100, Krzysztof Mazur wrote:
+> The commit 27be457000211a6903968dfce06d5f73f051a217
+> (x86 idle: remove 32-bit-only "no-hlt" parameter, hlt_works_ok flag)
+> removed the hlt_works_ok flag from struct cpuinfo_x86, but
+> boot_cpu_data and new_cpu_data initializers were not changed causing
+> setting f00f_bug flag, instead of fdiv_bug. If CONFIG_X86_F00F_BUG
+> is not set the f00f_bug flag is never cleared.
+> 
+> To avoid such problems in future C99-style initialization is now used.
+> 
+> Signed-off-by: Krzysztof Mazur <krzysiek@podlesie.net>
 
-I just checked on my local tree, and it is only the BAST one. For some 
-reason, Andrew Morton did not add that one to his tree (probably because 
-there was discussion about removing the whole block instead of fixing 
-it, so he prefered to take the uncontroversial ones only).
+Good catch.
 
-The ones which were not in Andrew's tree all went in via other trees.
+Acked-by: Borislav Petkov <bp@suse.de>
 
-It might be best for me to make a new series instead. My 
-checkmaintainers.py already gives me 15 lines of output, and that is on 
-top of what I have pending (BAST and part 2 of the uapi mess) rebased 
-over the Linus tree. On the Linus tree, it gives me 42 lines of output.
+> ---
+> $ cat < /proc/cpuinfo
+> processor	: 0
+> vendor_id	: GenuineIntel
+> cpu family	: 6
+> model		: 13
+> model name	: Intel(R) Pentium(R) M processor 1.73GHz
+> stepping	: 8
+> microcode	: 0x20
+> cpu MHz		: 800.000
+> cache size	: 2048 KB
+> fdiv_bug	: no
+> f00f_bug	: yes
+> ...
+>
+> By the way now in struct cpuinfo_x86 for 32-bit systems pad0
+> should be extended to 2 bytes or removed, because now 32-bit
+> specific bugs area have now 6 bytes + pad0.
+
+It's good that you bring this up - I have a patchset which removes all
+those *_bug fields in cpuinfo_x86 which means the padding goes away too.
 
 -- 
-Cesar Eduardo Barros
-cesarb@cesarb.net
-cesar.barros@gmail.com
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
