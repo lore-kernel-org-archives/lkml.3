@@ -1,49 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752587Ab3CBNZb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Mar 2013 08:25:31 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:12955 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752539Ab3CBNZ2 (ORCPT
+	id S1752638Ab3CBNZj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Mar 2013 08:25:39 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:53326 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752539Ab3CBNZg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Mar 2013 08:25:28 -0500
-X-AuditID: cbfee68e-b7fa46d00000627e-08-5131fdc75965
+	Sat, 2 Mar 2013 08:25:36 -0500
+X-AuditID: cbfee68d-b7f636d0000009be-1f-5131fdce1cb6
 From: Vivek Gautam <gautam.vivek@samsung.com>
 To: linux-usb@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
         linux-samsung-soc@vger.kernel.org, gregkh@linuxfoundation.org,
         balbi@ti.com, sarah.a.sharp@linux.intel.com, kgene.kim@samsung.com,
-        kishon@ti.com
-Subject: [PATCH v2 05/10] usb: dwc3: exynos: Enable runtime power management
-Date: Sat, 02 Mar 2013 18:53:06 +0530
-Message-id: <1362230590-20960-6-git-send-email-gautam.vivek@samsung.com>
+        kishon@ti.com, Doug Anderson <dianders@chromium.org>
+Subject: [PATCH v2 06/10] usb: xhci: Enable runtime pm in xhci-plat
+Date: Sat, 02 Mar 2013 18:53:07 +0530
+Message-id: <1362230590-20960-7-git-send-email-gautam.vivek@samsung.com>
 X-Mailer: git-send-email 1.7.6.5
 In-reply-to: <1362230590-20960-1-git-send-email-gautam.vivek@samsung.com>
 References: <1362230590-20960-1-git-send-email-gautam.vivek@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrPLMWRmVeSWpSXmKPExsWyRsSkWvf4X8NAg/dtghYH79dbNC9ez2bR
-	u+Aqm8WFpz1sFpd3zWGzmL2kn8Vixvl9TBaLlrUyWzSfOMXswOkx72Sgx/65a9g9+rasYvQ4
-	fmM7k8fnTXIBrFFcNimpOZllqUX6dglcGbeePWUtOM1bMfHxdeYGxqPcXYycHBICJhKHn7Qw
-	Q9hiEhfurWfrYuTiEBJYyihx5uwrJpiic8+vQCWmM0rMP78aypnCJHH98DM2kCo2AV2Jpre7
-	GEFsEQFZicNXfjODFDELXGKUWLFiCwtIQljAR6L92F0wm0VAVaJnxXyw3bwCHhIn565ih1in
-	IPHm9jOwOKeAp8T065tZQWwhoJo/945D1Sxjl3j3VQBijoDEt8mHgGZyAMVlJTYdgHpHUuLg
-	ihssExiFFzAyrGIUTS1ILihOSi8y0itOzC0uzUvXS87P3cQIDPzT/5717WC8ecD6EGMy0LiJ
-	zFKiyfnAyMkriTc0NjE3NTY1M7K0tDQlTVhJnFf+kkygkEB6YklqdmpqQWpRfFFpTmrxIUYm
-	Dk6pBsZ232r9RgblOKbLETx7n8gt8sm/63jKVMDm6s8mrRkJq/etXzDf5/I0q+uyvAoLtXod
-	r3pdN0t9fXvPTM/uh1te/y/Zf0lfsedTt+sfmx/cHgXWZxPPW6S8ePPg3+YLi9R0TVlYFczD
-	L19aefxDz0kx82dCGwuz//Plfrp0dev8hPp/d7V1vVuUWIozEg21mIuKEwFQJBS1kgIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrLIsWRmVeSWpSXmKPExsVy+t9jQd3jfw0DDb5O5rA4eL/eonnxejaL
-	3gVX2SwuPO1hs7i8aw6bxewl/SwWM87vY7JYtKyV2aL5xClmB06PeScDPfbPXcPu0bdlFaPH
-	8RvbmTw+b5ILYI1qYLTJSE1MSS1SSM1Lzk/JzEu3VfIOjneONzUzMNQ1tLQwV1LIS8xNtVVy
-	8QnQdcvMAbpHSaEsMacUKBSQWFyspG+HaUJoiJuuBUxjhK5vSBBcj5EBGkhYw5hx69lT1oLT
-	vBUTH19nbmA8yt3FyMkhIWAice75FTYIW0ziwr31QDYXh5DAdEaJ+edXQzlTmCSuH34GVsUm
-	oCvR9HYXI4gtIiArcfjKb2aQImaBS4wSK1ZsYQFJCAv4SLQfuwtmswioSvSsmM8MYvMKeEic
-	nLuKHWKdgsSb28/A4pwCnhLTr29mBbGFgGr+3DvOPoGRdwEjwypG0dSC5ILipPRcI73ixNzi
-	0rx0veT83E2M4Mh6Jr2DcVWDxSFGAQ5GJR7egI8GgUKsiWXFlbmHGCU4mJVEeM9fNQwU4k1J
-	rKxKLcqPLyrNSS0+xJgMdNVEZinR5Hxg1OeVxBsam5ibGptamliYmFmSJqwkzst46kmAkEB6
-	YklqdmpqQWoRzBYmDk6pBkYJIz+jJ3+dLPi3TwzzMfCa2M7sE6f/3eGoZEuzLMeZ1GmhazPX
-	rxNSSdqq4F25eOLOmyVnp8WE57074xXAZnPDZTZbqOMuMZ7pnfv5BKp2RuxN7wnrzNLO5tsh
-	/JXltrtSgt+rVxs5lzOcnxQnJ3dls2BSt7WvS8/dKrNYjzCDhqw1DQvtlFiKMxINtZiLihMB
-	gBfU5fACAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupikeLIzCtJLcpLzFFi42JZI2JSp3vur2GgwZdNkhYH79dbnF12kM2i
+	efF6NoveBVfZLC487WGzuLxrDpvF7CX9LBYzzu9jsli0rJXZovnEKWYHLo/ZDRdZPOadDPTY
+	P3cNu0ffllWMHsdvbGfy+LxJLoAtissmJTUnsyy1SN8ugStj5+bTbAW7uSr2P77K3sB4h6OL
+	kZNDQsBEYvGry6wQtpjEhXvr2boYuTiEBJYySpxes5QZpujfjAmMEInpjBLNWzrYIZwpTBKt
+	D1tYQKrYBHQlmt7uYgSxRQRkJQ5f+c0MUsQs8JtR4vzuOWA7hAWcJfb0zmQDsVkEVCVOdu1j
+	B7F5BTwkVt2fzAKxTkHize1nYKs5BTwlpl/fDNYrBFTz595xsM0SArvYJc6t6GCGGCQg8W3y
+	IaBmDqCErMSmA1BnS0ocXHGDZQKj8AJGhlWMoqkFyQXFSelFhnrFibnFpXnpesn5uZsYgfFw
+	+t+z3h2Mtw9YH2JMBho3kVlKNDkfGE95JfGGxibmpsamZkaWlpampAkrifPKXZIJFBJITyxJ
+	zU5NLUgtii8qzUktPsTIxMEp1cA47fa5nxozxR3vsNnGzvp2Rb2SLftRyVWepLu1ORUn9BJ2
+	xEnNucngdjshw3Xr3DjOv2L/NA/ET/D9bjR/87Xr33Z9z0qR23HbsDB/4bfy7+sERCpvleTb
+	PVNbxrHt+7ubCt4veU9snZn2vrXPanNesp/NtH3zVJ9z7ztedDKs45xRexPXR1UvJZbijERD
+	Leai4kQACiI3Zp0CAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrOIsWRmVeSWpSXmKPExsVy+t9jQd1zfw0DDY73ClgcvF9vcXbZQTaL
+	5sXr2Sx6F1xls7jwtIfN4vKuOWwWs5f0s1jMOL+PyWLRslZmi+YTp5gduDxmN1xk8Zh3MtBj
+	/9w17B59W1Yxehy/sZ3J4/MmuQC2qAZGm4zUxJTUIoXUvOT8lMy8dFsl7+B453hTMwNDXUNL
+	C3MlhbzE3FRbJRefAF23zBygy5QUyhJzSoFCAYnFxUr6dpgmhIa46VrANEbo+oYEwfUYGaCB
+	hDWMGTs3n2Yr2M1Vsf/xVfYGxjscXYycHBICJhL/ZkxghLDFJC7cW8/WxcjFISQwnVGieUsH
+	O4QzhUmi9WELC0gVm4CuRNPbXWAdIgKyEoev/GYGKWIW+M0ocX73HFaQhLCAs8Se3plsIDaL
+	gKrEya597CA2r4CHxKr7k1kg1ilIvLn9jBnE5hTwlJh+fTNYrxBQzZ97x9knMPIuYGRYxSia
+	WpBcUJyUnmukV5yYW1yal66XnJ+7iREcbc+kdzCuarA4xCjAwajEwxvw0SBQiDWxrLgy9xCj
+	BAezkgjv+auGgUK8KYmVValF+fFFpTmpxYcYk4GumsgsJZqcD0wEeSXxhsYm5qbGppYmFiZm
+	lqQJK4nzMp56EiAkkJ5YkpqdmlqQWgSzhYmDU6qBsWOexbOTSfarMjYcbVkeeOkC28Mun6iT
+	Ec8ivXcm5uSf+lTwZybTpoWnHzwLie9qeTtjg6ipYcLVKX5ZHa6sz1OeOJ7bdeBFyKXJUt8t
+	/XbIXPH0rTaseSe44kBaX3SaxRmDyQXLUo7Fe916W5zS/7w5bKkIW5Dvx2WHw2bzit2Y07Yr
+	R3yRkxJLcUaioRZzUXEiAOuITej6AgAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -51,64 +52,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enabling runtime power management on dwc3-exynos
-letting dwc3 controller to be autosuspended on exynos
-platform when not in use.
+By enabling runtime pm in this driver allows users of
+xhci-plat to enter into runtime pm. This is not full
+runtime pm support (AKA xhci-plat doesn't actually power
+anything off when in runtime suspend mode) but,
+just basic enablement.
 
 Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+CC: Doug Anderson <dianders@chromium.org>
 ---
- drivers/usb/dwc3/dwc3-exynos.c |   13 +++++++++++++
- 1 files changed, 13 insertions(+), 0 deletions(-)
+ drivers/usb/host/xhci-plat.c |    7 +++++++
+ 1 files changed, 7 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/usb/dwc3/dwc3-exynos.c b/drivers/usb/dwc3/dwc3-exynos.c
-index e6771d9..28b5f8a 100644
---- a/drivers/usb/dwc3/dwc3-exynos.c
-+++ b/drivers/usb/dwc3/dwc3-exynos.c
-@@ -19,6 +19,7 @@
- #include <linux/platform_data/dwc3-exynos.h>
- #include <linux/dma-mapping.h>
- #include <linux/clk.h>
+diff --git a/drivers/usb/host/xhci-plat.c b/drivers/usb/host/xhci-plat.c
+index c9c7e13..595cb52 100644
+--- a/drivers/usb/host/xhci-plat.c
++++ b/drivers/usb/host/xhci-plat.c
+@@ -12,6 +12,7 @@
+  */
+ 
+ #include <linux/platform_device.h>
 +#include <linux/pm_runtime.h>
- #include <linux/usb/otg.h>
- #include <linux/usb/nop-usb-xceiv.h>
- #include <linux/of.h>
-@@ -143,6 +144,10 @@ static int dwc3_exynos_probe(struct platform_device *pdev)
- 	exynos->dev	= dev;
- 	exynos->clk	= clk;
+ #include <linux/module.h>
+ #include <linux/slab.h>
  
-+	pm_runtime_enable(dev);
-+	pm_runtime_get_sync(dev);
-+	pm_runtime_forbid(dev);
-+
- 	clk_enable(exynos->clk);
+@@ -149,6 +150,8 @@ static int xhci_plat_probe(struct platform_device *pdev)
+ 	if (ret)
+ 		goto put_usb3_hcd;
  
- 	ret = platform_device_add_resources(dwc3, pdev->resource,
-@@ -158,10 +163,14 @@ static int dwc3_exynos_probe(struct platform_device *pdev)
- 		goto err2;
- 	}
- 
-+	pm_runtime_put_sync(dev);
-+	pm_runtime_allow(dev);
++	pm_runtime_enable(&pdev->dev);
 +
  	return 0;
  
- err2:
- 	clk_disable(clk);
-+	pm_runtime_disable(dev);
- err1:
- 	platform_device_put(dwc3);
+ put_usb3_hcd:
+@@ -174,6 +177,10 @@ static int xhci_plat_remove(struct platform_device *dev)
+ 	struct usb_hcd	*hcd = platform_get_drvdata(dev);
+ 	struct xhci_hcd	*xhci = hcd_to_xhci(hcd);
  
-@@ -172,6 +181,10 @@ static int dwc3_exynos_remove(struct platform_device *pdev)
- {
- 	struct dwc3_exynos	*exynos = platform_get_drvdata(pdev);
- 
-+	if (!pm_runtime_suspended(&pdev->dev))
-+		pm_runtime_put(&pdev->dev);
-+	pm_runtime_disable(&pdev->dev);
++	if (!pm_runtime_suspended(&dev->dev))
++		pm_runtime_put(&dev->dev);
++	pm_runtime_disable(&dev->dev);
 +
- 	platform_device_unregister(exynos->dwc3);
- 	platform_device_unregister(exynos->usb2_phy);
- 	platform_device_unregister(exynos->usb3_phy);
+ 	usb_remove_hcd(xhci->shared_hcd);
+ 	usb_put_hcd(xhci->shared_hcd);
+ 
 -- 
 1.7.6.5
 
