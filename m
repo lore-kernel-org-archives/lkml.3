@@ -1,302 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751896Ab3CBIl5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Mar 2013 03:41:57 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:37671 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751222Ab3CBIl4 (ORCPT
+	id S1751918Ab3CBIyZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Mar 2013 03:54:25 -0500
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:46556 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751559Ab3CBIyY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Mar 2013 03:41:56 -0500
+	Sat, 2 Mar 2013 03:54:24 -0500
+Date: Sat, 2 Mar 2013 16:54:57 +0800
+From: Wang YanQing <udknight@gmail.com>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: gregkh@linuxfoundation.org, swarren@wwwdotorg.org, jslaby@suse.cz,
+        alan@linux.intel.com, arnd@arndb.de, damm@opensource.se,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH]serial: 8250: Fix detect XScale port wrong
+Message-ID: <20130302085457.GA3669@udknight>
+Mail-Followup-To: Wang YanQing <udknight@gmail.com>,
+	Paul Gortmaker <paul.gortmaker@windriver.com>,
+	gregkh@linuxfoundation.org, swarren@wwwdotorg.org, jslaby@suse.cz,
+	alan@linux.intel.com, arnd@arndb.de, damm@opensource.se,
+	linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20130301055610.GA31770@udknight>
+ <5130FEBC.7030806@windriver.com>
 MIME-Version: 1.0
-In-Reply-To: <513120AF.5030501@oracle.com>
-References: <CAFLxGvzUqQhbxpp4jAGW68-7GCc6jw8b4BFU7p_5H1utFxdkQQ@mail.gmail.com>
-	<513120AF.5030501@oracle.com>
-Date: Sat, 2 Mar 2013 09:41:54 +0100
-Message-ID: <CAFLxGvw0mzPPrKv9GxKMwJr5vUy14ZAXKFfhCf0HDwE7-FQ7vQ@mail.gmail.com>
-Subject: Re: [Ocfs2-users] [OCFS2] Crash at o2net_shutdown_sc()
-From: richard -rw- weinberger <richard.weinberger@gmail.com>
-To: Srinivas Eeda <srinivas.eeda@oracle.com>
-Cc: ocfs2-devel@oss.oracle.com, linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        ocfs2-users@oss.oracle.com, LKML <linux-kernel@vger.kernel.org>,
-        tj@kernel.org, Ingo Molnar <mingo@redhat.com>,
-        akpm@linux-foundation.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5130FEBC.7030806@windriver.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 1, 2013 at 10:42 PM, Srinivas Eeda <srinivas.eeda@oracle.com> wrote:
-> Yes that was the crash I was referring to which stopped me from testing my
-> other patch on mainline. I think the crashes started since some workqueue
-> patches introduced by commit  57b30ae77bf00d2318df711ef9a4d2a9be0a3a2a
-> Earlier kernels should be fine.
+On Fri, Mar 01, 2013 at 02:17:16PM -0500, Paul Gortmaker wrote:
+> On 13-03-01 12:56 AM, Wang YanQing wrote:
+> > Some UARTs add enhanced functions with unused bit in
+> > 16550 standard, like UART_IER_UUE bit, it cause XScale
+> 
+> Which xscale platform?  It would be nice to know the specifics.
+The "XScale" mean the XScale port detect code in autoconfig_16550a,
+I meet the problem in a normal pc motherboard, I should rephrase
+the subject use "Fix detect 16550A ports as XScale ports wrong"
+> 
+> > detect wrong. Now detect UART_IER_UUE and UART_IER_RTOIE
+> > to reduce the annoying wrong result which cause UARTs don't
+> > work.
+> 
+> You should ideally identify the original commit which caused
+> the regression.  Assuming you have fully understood the problem
+> you should be able to do this with "git blame" and not need to
+> do the full bisect.
 >
-> Patch https://lkml.org/lkml/2012/10/18/592 tried to address one fix which
-> helped ramster that uses same ocfs2/o2net code. There still seems to be
-> another problem that crashes ocfs2.
+No it is not a regression, it is caused just like you say
+there are many 8250/16550 variations, and I meet one, that is it.
 
-If commit 57b30ae (workqueue: reimplement cancel_delayed_work() using
-try_to_grab_pending())
-introduced that regression, it is time to CC Tejun.
+> 
+> > 
+> > Serial controller: Device 4348:3253(CH352 PCI based Multi-I/O Controller)
+> > is a example. It use UART_IER_UUE as the LOWPOWER function,
+> > you can get the datasheet from below urls:
+> > 
+> > http://wch-ic.com/download/list.asp?id=116
+> > CH352DS1.PDF
+> > 
+> > http://wch-ic.com/download/list.asp?id=117
+> > CH352DS2.PDF.
+> 
+> Rather than quote links that will expire and no longer be
+> valid in six months, it would be better if you described
+> exactly how and why these ports are different directly in
+> your commit long log.
 
->
-> On 03/01/2013 01:25 PM, richard -rw- weinberger wrote:
->>
->> Hi!
->>
->> Using 3.8.1 OCFS2 crashes while joining nodes to the cluster.
->> The cluster consists of 10 nodes, while node3 joins the kernel on node3
->> crashes.
->> (Somtimes later...)
->> See dmesg below.
->> Is this a known issue? I didn't test older kernels so far.
->>
->> node1:
->> [ 1471.881922] o2dlm: Joining domain 1352E2692E704EEB8040E5B8FF560997
->> ( 0 ) 1 nodes
->> [ 1471.919522] JBD2: Ignoring recovery information on journal
->> [ 1471.947027] ocfs2: Mounting device (253,16) on (node 0, slot 0)
->> with ordered data mode.
->> [ 1475.802497] o2net: Accepted connection from node node2 (num 1) at
->> 192.168.66.2:7777
->> [ 1481.814048] o2net: Connection to node node2 (num 1) at
->> 192.168.66.2:7777 shutdown, state 8
->> [ 1481.814955] o2net: No longer connected to node node2 (num 1) at
->> 192.168.66.2:7777
->> [ 1482.468827] o2net: Accepted connection from node node3 (num 2) at
->> 192.168.66.3:7777
->> [ 1511.904100] o2net: No connection established with node 1 after 30.0
->> seconds, giving up.
->> [ 1514.472995] o2net: Connection to node node3 (num 2) at
->> 192.168.66.3:7777 shutdown, state 8
->> [ 1514.473960] o2net: No longer connected to node node3 (num 2) at
->> 192.168.66.3:7777
->> [ 1516.076044] o2net: Accepted connection from node node2 (num 1) at
->> 192.168.66.2:7777
->> [ 1520.181430] o2dlm: Node 1 joins domain
->> 1352E2692E704EEB8040E5B8FF560997 ( 0 1 ) 2 nodes
->> [ 1544.544030] o2net: No connection established with node 2 after 30.0
->> seconds, giving up.
->> [ 1574.624029] o2net: No connection established with node 2 after 30.0
->> seconds, giving up.
->>
->> node2:
->> [ 1475.613170] o2net: Connected to node node1 (num 0) at 192.168.66.1:7777
->> [ 1481.620253] o2hb: Unable to stabilize heartbeart on region
->> 1352E2692E704EEB8040E5B8FF560997 (vdb)
->> [ 1481.622489] o2net: No longer connected to node node1 (num 0) at
->> 192.168.66.1:7777
->> [ 1515.886605] o2net: Connected to node node1 (num 0) at 192.168.66.1:7777
->> [ 1519.992766] o2dlm: Joining domain 1352E2692E704EEB8040E5B8FF560997
->> ( 0 1 ) 2 nodes
->> [ 1520.017054] JBD2: Ignoring recovery information on journal
->> [ 1520.078888] ocfs2: Mounting device (253,16) on (node 1, slot 1)
->> with ordered data mode.
->> [ 1520.159590] mount.ocfs2 (2186) used greatest stack depth: 2568 bytes
->> left
->>
->> node3:
->> [ 1482.836865] o2net: Connected to node node1 (num 0) at 192.168.66.1:7777
->> [ 1482.837542] o2net: Connection to node node2 (num 1) at
->> 192.168.66.2:7777 shutdown, state 7
->> [ 1484.840952] o2net: Connection to node node2 (num 1) at
->> 192.168.66.2:7777 shutdown, state 7
->> [ 1486.844994] o2net: Connection to node node2 (num 1) at
->> 192.168.66.2:7777 shutdown, state 7
->> [ 1488.848952] o2net: Connection to node node2 (num 1) at
->> 192.168.66.2:7777 shutdown, state 7
->> [ 1490.853052] o2net: Connection to node node2 (num 1) at
->> 192.168.66.2:7777 shutdown, state 7
->> [ 1492.857046] o2net: Connection to node node2 (num 1) at
->> 192.168.66.2:7777 shutdown, state 7
->> [ 1494.861042] o2net: Connection to node node2 (num 1) at
->> 192.168.66.2:7777 shutdown, state 7
->> [ 1496.865024] o2net: Connection to node node2 (num 1) at
->> 192.168.66.2:7777 shutdown, state 7
->> [ 1498.869021] o2net: Connection to node node2 (num 1) at
->> 192.168.66.2:7777 shutdown, state 7
->> [ 1500.873016] o2net: Connection to node node2 (num 1) at
->> 192.168.66.2:7777 shutdown, state 7
->> [ 1502.877056] o2net: Connection to node node2 (num 1) at
->> 192.168.66.2:7777 shutdown, state 7
->> [ 1504.881042] o2net: Connection to node node2 (num 1) at
->> 192.168.66.2:7777 shutdown, state 7
->> [ 1506.885040] o2net: Connection to node node2 (num 1) at
->> 192.168.66.2:7777 shutdown, state 7
->> [ 1508.888991] o2net: Connection to node node2 (num 1) at
->> 192.168.66.2:7777 shutdown, state 7
->> [ 1510.893077] o2net: Connection to node node2 (num 1) at
->> 192.168.66.2:7777 shutdown, state 7
->> [ 1512.843172] (mount.ocfs2,2179,0):dlm_request_join:1477 ERROR: Error
->> -107 when sending message 510 (key 0x666c6172) to node 1
->> [ 1512.845580] (mount.ocfs2,2179,0):dlm_try_to_join_domain:1653 ERROR:
->> status = -107
->> [ 1512.847778] (mount.ocfs2,2179,0):dlm_join_domain:1955 ERROR: status =
->> -107
->> [ 1512.849334] (mount.ocfs2,2179,0):dlm_register_domain:2214 ERROR:
->> status = -107
->> [ 1512.850921] (mount.ocfs2,2179,0):o2cb_cluster_connect:368 ERROR:
->> status = -107
->> [ 1512.852511] (mount.ocfs2,2179,0):ocfs2_dlm_init:3004 ERROR: status =
->> -107
->> [ 1512.854090] (mount.ocfs2,2179,0):ocfs2_mount_volume:1881 ERROR: status
->> = -107
->> [ 1512.855476] ocfs2: Unmounting device (253,16) on (node 0)
->> [ 1512.855915] (mount.ocfs2,2179,0):ocfs2_fill_super:1230 ERROR: status =
->> -107
->> [ 1514.839138] o2net: No longer connected to node node1 (num 0) at
->> 192.168.66.1:7777
->> [ 1514.840690] BUG: unable to handle kernel NULL pointer dereference
->> at 0000000000000028
->> [ 1514.841627] IP: [<ffffffff816ce840>] kernel_sock_ioctl+0x50/0x50
->> [ 1514.841627] PGD 1d980067 PUD 1db0c067 PMD 0
->> [ 1514.841627] Oops: 0000 [#1] PREEMPT SMP
->> [ 1514.841627] Modules linked in:
->> [ 1514.841627] CPU 0
->> [ 1514.841627] Pid: 6, comm: kworker/u:0 Not tainted 3.8.1+ #8 Bochs Bochs
->> [ 1514.841627] RIP: 0010:[<ffffffff816ce840>]  [<ffffffff816ce840>]
->> kernel_sock_ioctl+0x50/0x50
->> [ 1514.841627] RSP: 0018:ffff88001f949d40  EFLAGS: 00010292
->> [ 1514.841627] RAX: ffff88001e6e9c01 RBX: ffff88001e6e9000 RCX:
->> 0000000180080006
->> [ 1514.841627] RDX: 0000000180080007 RSI: 0000000000000002 RDI:
->> 0000000000000000
->> [ 1514.841627] RBP: ffff88001f949dc8 R08: 0000000000016090 R09:
->> 0000000000000001
->> [ 1514.841627] R10: ffffea000079ba40 R11: ffffffff81321207 R12:
->> ffff88001db69440
->> [ 1514.841627] R13: ffffffff8204c760 R14: ffff88001db695a8 R15:
->> ffff88001e6e9058
->> [ 1514.841627] FS:  0000000000000000(0000) GS:ffff88001fc00000(0000)
->> knlGS:0000000000000000
->> [ 1514.841627] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
->> [ 1514.841627] CR2: 0000000000000028 CR3: 000000001c009000 CR4:
->> 00000000000006f0
->> [ 1514.841627] DR0: 0000000000000000 DR1: 0000000000000000 DR2:
->> 0000000000000000
->> [ 1514.841627] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7:
->> 0000000000000400
->> [ 1514.841627] Process kworker/u:0 (pid: 6, threadinfo
->> ffff88001f948000, task ffff88001f90a670)
->> [ 1514.841627] Stack:
->> [ 1514.841627]  ffffffff81323776 ffff88001fad2e20 0000000000010500
->> ffff88001f949d98
->> [ 1514.841627]  ffffffff810013fa ffff88001f949d78 ffffffff818a5c22
->> ffff88001f949da8
->> [ 1514.841627]  ffffffff81069d26 0000000000012900 0000000000012900
->> 0000000000000000
->> [ 1514.841627] Call Trace:
->> [ 1514.841627]  [<ffffffff81323776>] ? o2net_shutdown_sc+0x106/0x1e0
->> [ 1514.841627]  [<ffffffff810013fa>] ? __switch_to+0x2a/0x4a0
->> [ 1514.841627]  [<ffffffff818a5c22>] ? _raw_spin_unlock_irq+0x12/0x40
->> [ 1514.841627]  [<ffffffff81069d26>] ? finish_task_switch+0x56/0xc0
->> [ 1514.841627]  [<ffffffff81056eb3>] process_one_work+0x133/0x510
->> [ 1514.841627]  [<ffffffff81323670>] ?
->> o2net_sc_connect_completed+0xf0/0xf0
->> [ 1514.841627]  [<ffffffff810585ed>] worker_thread+0x15d/0x450
->> [ 1514.841627]  [<ffffffff81058490>] ? busy_worker_rebind_fn+0x100/0x100
->> [ 1514.841627]  [<ffffffff8105e10b>] kthread+0xbb/0xc0
->> [ 1514.841627]  [<ffffffff818a0000>] ? e1000_regdump+0x262/0x3be
->> [ 1514.841627]  [<ffffffff8105e050>] ? kthread_create_on_node+0x130/0x130
->> [ 1514.841627]  [<ffffffff818accac>] ret_from_fork+0x7c/0xb0
->> [ 1514.841627]  [<ffffffff8105e050>] ? kthread_create_on_node+0x130/0x130
->> [ 1514.841627] Code: ff ff ff ff ff ff 48 8b 47 28 ff 50 48 4c 89 a3
->> 48 e0 ff ff 48 8b 5d f0 4c 8b 65 f8 c9 c3 66 66 66 66 2e 0f 1f 84 00
->> 00 00 00 00 <48> 8b 47 28 55 48 89 e5 ff 50 60 5d c3 0f 1f 00 55 41 b8
->> 4b 43
->> [ 1514.841627] RIP  [<ffffffff816ce840>] kernel_sock_ioctl+0x50/0x50
->> [ 1514.841627]  RSP <ffff88001f949d40>
->> [ 1514.841627] CR2: 0000000000000028
->> [ 1514.867242] ---[ end trace 36ffe9378168cdc2 ]---
->> [ 1514.867619] BUG: unable to handle kernel paging request at
->> ffffffffffffffd8
->> [ 1514.868007] IP: [<ffffffff8105e3cb>] kthread_data+0xb/0x20
->> [ 1514.868007] PGD 1e0d067 PUD 1e0e067 PMD 0
->> [ 1514.868007] Oops: 0000 [#2] PREEMPT SMP
->> [ 1514.868007] Modules linked in:
->> [ 1514.868007] CPU 0
->> [ 1514.868007] Pid: 6, comm: kworker/u:0 Tainted: G      D      3.8.1+
->> #8 Bochs Bochs
->> [ 1514.868007] RIP: 0010:[<ffffffff8105e3cb>]  [<ffffffff8105e3cb>]
->> kthread_data+0xb/0x20
->> [ 1514.868007] RSP: 0018:ffff88001f949928  EFLAGS: 00010092
->> [ 1514.868007] RAX: 0000000000000000 RBX: 0000000000000000 RCX:
->> 0000000000000006
->> [ 1514.868007] RDX: 0000000000000000 RSI: 0000000000000000 RDI:
->> ffff88001f90a670
->> [ 1514.868007] RBP: ffff88001f949928 R08: 0000000000000001 R09:
->> 0000000000000196
->> [ 1514.868007] R10: ffff88001f9116a0 R11: 0000000000000004 R12:
->> ffff88001f90aa40
->> [ 1514.868007] R13: 0000000000000000 R14: ffff88001f90a660 R15:
->> ffff88001f90a670
->> [ 1514.868007] FS:  0000000000000000(0000) GS:ffff88001fc00000(0000)
->> knlGS:0000000000000000
->> [ 1514.868007] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
->> [ 1514.868007] CR2: ffffffffffffffd8 CR3: 000000001d83d000 CR4:
->> 00000000000006f0
->> [ 1514.868007] DR0: 0000000000000000 DR1: 0000000000000000 DR2:
->> 0000000000000000
->> [ 1514.868007] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7:
->> 0000000000000400
->> [ 1514.868007] Process kworker/u:0 (pid: 6, threadinfo
->> ffff88001f948000, task ffff88001f90a670)
->> [ 1514.868007] Stack:
->> [ 1514.868007]  ffff88001f949948 ffffffff81059980 ffff88001f949948
->> ffff88001fc12900
->> [ 1514.868007]  ffff88001f9499c8 ffffffff818a4c48 ffff88001f949978
->> 0000000000000000
->> [ 1514.868007]  ffff88001f949fd8 ffff88001f90a670 ffff88001f949fd8
->> ffff88001f949fd8
->> [ 1514.868007] Call Trace:
->> [ 1514.868007]  [<ffffffff81059980>] wq_worker_sleeping+0x10/0xc0
->> [ 1514.868007]  [<ffffffff818a4c48>] __schedule+0x528/0x770
->> [ 1514.868007]  [<ffffffff818a4fa4>] schedule+0x24/0x70
->> [ 1514.868007]  [<ffffffff81040c72>] do_exit+0x702/0xad0
->> [ 1514.868007]  [<ffffffff818a7071>] oops_end+0x91/0xe0
->> [ 1514.868007]  [<ffffffff8189a00d>] no_context+0x24e/0x279
->> [ 1514.868007]  [<ffffffff817436f8>] ? tcp_rearm_rto+0xa8/0xd0
->> [ 1514.868007]  [<ffffffff8189a1ed>] __bad_area_nosemaphore+0x1b5/0x1d4
->> [ 1514.868007]  [<ffffffff8189a21a>] bad_area_nosemaphore+0xe/0x10
->> [ 1514.868007]  [<ffffffff818a90b6>] __do_page_fault+0x296/0x490
->> [ 1514.868007]  [<ffffffff816ce8ce>] ? sock_destroy_inode+0x2e/0x40
->> [ 1514.868007]  [<ffffffff8114e787>] ? destroy_inode+0x37/0x60
->> [ 1514.868007]  [<ffffffff8114e8ca>] ? evict+0x11a/0x1b0
->> [ 1514.868007]  [<ffffffff81321207>] ? sc_kref_release+0x77/0x160
->> [ 1514.868007]  [<ffffffff8112d421>] ? kfree+0x121/0x160
->> [ 1514.868007]  [<ffffffff81321207>] ? sc_kref_release+0x77/0x160
->> [ 1514.868007]  [<ffffffff818a92b9>] do_page_fault+0x9/0x10
->> [ 1514.868007]  [<ffffffff818a65e2>] page_fault+0x22/0x30
->> [ 1514.868007]  [<ffffffff81321207>] ? sc_kref_release+0x77/0x160
->> [ 1514.868007]  [<ffffffff816ce840>] ? kernel_sock_ioctl+0x50/0x50
->> [ 1514.868007]  [<ffffffff81323776>] ? o2net_shutdown_sc+0x106/0x1e0
->> [ 1514.868007]  [<ffffffff810013fa>] ? __switch_to+0x2a/0x4a0
->> [ 1514.868007]  [<ffffffff818a5c22>] ? _raw_spin_unlock_irq+0x12/0x40
->> [ 1514.868007]  [<ffffffff81069d26>] ? finish_task_switch+0x56/0xc0
->> [ 1514.868007]  [<ffffffff81056eb3>] process_one_work+0x133/0x510
->> [ 1514.868007]  [<ffffffff81323670>] ?
->> o2net_sc_connect_completed+0xf0/0xf0
->> [ 1514.868007]  [<ffffffff810585ed>] worker_thread+0x15d/0x450
->> [ 1514.868007]  [<ffffffff81058490>] ? busy_worker_rebind_fn+0x100/0x100
->> [ 1514.868007]  [<ffffffff8105e10b>] kthread+0xbb/0xc0
->> [ 1514.868007]  [<ffffffff818a0000>] ? e1000_regdump+0x262/0x3be
->> [ 1514.868007]  [<ffffffff8105e050>] ? kthread_create_on_node+0x130/0x130
->> [ 1514.868007]  [<ffffffff818accac>] ret_from_fork+0x7c/0xb0
->> [ 1514.868007]  [<ffffffff8105e050>] ? kthread_create_on_node+0x130/0x130
->> [ 1514.868007] Code: 00 48 89 e5 5d 48 8b 40 c8 48 c1 e8 02 83 e0 01
->> c3 66 66 66 66 66 66 2e 0f 1f 84 00 00 00 00 00 48 8b 87 78 03 00 00
->> 55 48 89 e5 <48> 8b 40 d8 5d c3 66 66 66 66 66 66 2e 0f 1f 84 00 00 00
->> 00 00
->> [ 1514.868007] RIP  [<ffffffff8105e3cb>] kthread_data+0xb/0x20
->> [ 1514.868007]  RSP <ffff88001f949928>
->> [ 1514.868007] CR2: ffffffffffffffd8
->> [ 1514.868007] ---[ end trace 36ffe9378168cdc3 ]---
->> [ 1514.868007] Fixing recursive fault but reboot is needed!
->>
->
+Device 4348:3253 use the UART_IER_UUE
+as the LOWPOWER function , so it is readable and writable,
+quote out the origin words in datasheet.
 
+"
+LOWPOWER:When the bit is 1, close the internal benchmark clock
+of serial port to set into low-power status.
+"
 
+That is  the convict cause our XScale detect code work wrong.
 
--- 
-Thanks,
-//richard
+> What does your change do to Xscale that do not do UART_IER_RTOIE?
+Yes, you are right, I don't have experience with Xscale, so I will
+fix the problem in another way, set it fix type in 8250_pci code 
+maybe is good.
+
+Thanks.
+
