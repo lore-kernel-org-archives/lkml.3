@@ -1,59 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752460Ab3CBNpm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Mar 2013 08:45:42 -0500
-Received: from mga01.intel.com ([192.55.52.88]:27250 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750819Ab3CBNpl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Mar 2013 08:45:41 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,767,1355126400"; 
-   d="scan'208";a="293918919"
-Date: Sat, 2 Mar 2013 21:45:36 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: Felipe Balbi <balbi@ti.com>, Maarten Lankhorst <m.b.lankhorst@gmail.com>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [usb gadget] WARNING: at kernel/mutex.c:198 __mutex_lock_common()
-Message-ID: <20130302134536.GA16893@localhost>
-References: <20130206020424.GB1175@localhost>
- <20130227104935.GZ8016@arwen.pp.htv.fi>
- <20130302133736.GA13058@localhost>
- <51320173.6000802@linutronix.de>
+	id S1752437Ab3CBNuU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Mar 2013 08:50:20 -0500
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:46431 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752038Ab3CBNuT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 2 Mar 2013 08:50:19 -0500
+Date: Sat, 2 Mar 2013 14:50:15 +0100
+From: Marcin Jurkowski <marcin1j@gmail.com>
+To: Sven Geggus <lists@fuchsschwanzdomain.de>
+Cc: Evgeniy Polyakov <zbr@ioremap.net>, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/1] w1: fix oops when w1_search is called from netlink
+ connector
+Message-ID: <20130302135015.GA21448@gmail.com>
+References: <20130116141627.GA23638@ioremap.net>
+ <20130302001103.GB18026@gmail.com>
+ <20130302094510.GA4695@geggus.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <51320173.6000802@linutronix.de>
+In-Reply-To: <20130302094510.GA4695@geggus.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 02, 2013 at 02:41:07PM +0100, Sebastian Andrzej Siewior wrote:
-> On 03/02/2013 02:37 PM, Fengguang Wu wrote:
-> > On Wed, Feb 27, 2013 at 12:49:35PM +0200, Felipe Balbi wrote:
-> >> Hi,
-> >>
-> >> On Wed, Feb 06, 2013 at 10:04:24AM +0800, Fengguang Wu wrote:
-> >>> Greetings,
-> >>>
-> >>> I got the below warning and the first bad commit is
-> >>
-> >> can you send a fixup patch ?
-> > 
-> > Sorry I don't have the fix. Maarten once proposed
-> > 
-> > : Can you change __mutex_lock_common from inline to __always_inline and
-> > : check if that gets rid of the warning?
-> > 
-> > and it worked at that time, however it does not work today when I
-> > go out to double check the below patch...
-> 
-> This does not get even close to a fix, not to mention a proper one. The
-> problem is that a spinlock is hold while a mutex is going to be taken.
-> Maybe I get to this?
+On Sat, Mar 02, 2013 at 10:45:10AM +0100, Sven Geggus wrote:
+> This is the bad commit I found doing git bisect:
+> 04f482faf50535229a5a5c8d629cf963899f857c is the first bad commit
+> commit 04f482faf50535229a5a5c8d629cf963899f857c
+> Author: Patrick McHardy <kaber@trash.net>
+> Date:   Mon Mar 28 08:39:36 2011 +0000
 
-That'd be great. I can help test your patch out.
+Good job. I was too lazy to bisect for bad commit;)
 
-Thanks,
-Fengguang
+Reading the code I found problematic kthread_should_stop call from netlink 
+connector which causes the oops. After applying a patch, I've been testing 
+owfs+w1 setup for nearly two days and it seems to work very reliable (no 
+hangs, no memleaks etc).
+More detailed description and possible fix is given below:
+
+Function w1_search can be called from either kthread or netlink callback.
+While the former works fine, the latter causes oops due to kthread_should_stop
+invocation.
+
+This patch adds a check if w1_search is serving netlink command, skipping
+kthread_should_stop invocation if so.
+
+Signed-off-by: Marcin Jurkowski <marcin1j@gmail.com>
+---
+ drivers/w1/w1.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/w1/w1.c b/drivers/w1/w1.c
+index 7994d933..7e2220d 100644
+--- a/drivers/w1/w1.c
++++ b/drivers/w1/w1.c
+@@ -924,7 +924,8 @@ void w1_search(struct w1_master *dev, u8 search_type, w1_slave_found_callback cb
+ 			tmp64 = (triplet_ret >> 2);
+ 			rn |= (tmp64 << i);
+ 
+-			if (kthread_should_stop()) {
++			/* ensure we're called from kthread and not by netlink callback */
++			if (!dev->priv && kthread_should_stop()) {
+ 				mutex_unlock(&dev->bus_mutex);
+ 				dev_dbg(&dev->dev, "Abort w1_search\n");
+ 				return;
+-- 
+1.7.12.4
+
