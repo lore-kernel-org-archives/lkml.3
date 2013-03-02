@@ -1,160 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752022Ab3CBCpW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 21:45:22 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:30144 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751619Ab3CBCpV (ORCPT
+	id S1752090Ab3CBCs3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 21:48:29 -0500
+Received: from mail-ia0-f181.google.com ([209.85.210.181]:51678 "EHLO
+	mail-ia0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751744Ab3CBCs2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 21:45:21 -0500
-X-Authority-Analysis: v=2.0 cv=H5hZMpki c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=dCXt4Z_EDXgA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=VHl0eERhotoA:10 a=iTawgs62bG0wHPJiu44A:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1362192318.1231.67.camel@gandalf.local.home>
-Subject: Re: linux-next: build failure after merge of the ftrace tree
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Fri, 01 Mar 2013 21:45:18 -0500
-In-Reply-To: <20130301134738.ce925e1643a35b0a2c4ff275@canb.auug.org.au>
-References: <20130301134738.ce925e1643a35b0a2c4ff275@canb.auug.org.au>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
+	Fri, 1 Mar 2013 21:48:28 -0500
+Message-ID: <51316727.1040806@gmail.com>
+Date: Sat, 02 Mar 2013 10:42:47 +0800
+From: Simon Jeons <simon.jeons@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
+MIME-Version: 1.0
+To: Hugh Dickins <hughd@google.com>
+CC: Johannes Weiner <hannes@cmpxchg.org>, dormando <dormando@rydia.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Seiji Aguchi <seiji.aguchi@hds.com>,
+        Satoru Moriya <satoru.moriya@hds.com>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "lwoodman@redhat.com" <lwoodman@redhat.com>,
+        Mel Gorman <mel@csn.ul.ie>
+Subject: Re: [PATCH] add extra free kbytes tunable
+References: <alpine.DEB.2.02.1302111734090.13090@dflat> <A5ED84D3BB3A384992CBB9C77DEDA4D414A98EBF@USINDEM103.corp.hds.com> <511EB5CB.2060602@redhat.com> <alpine.DEB.2.02.1302171546120.10836@dflat> <20130219152936.f079c971.akpm@linux-foundation.org> <alpine.DEB.2.02.1302192100100.23162@dflat> <20130222175634.GA4824@cmpxchg.org> <51307354.5000401@gmail.com> <51307583.2020006@gmail.com> <alpine.LNX.2.00.1303011431290.9961@eggly.anvils> <5131438B.4090507@gmail.com> <alpine.LNX.2.00.1303011648330.16381@eggly.anvils>
+In-Reply-To: <alpine.LNX.2.00.1303011648330.16381@eggly.anvils>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-03-01 at 13:47 +1100, Stephen Rothwell wrote:
-> Hi Steven,
-> 
-> After merging the ftrace tree, today's linux-next build (x86_64
-> allmodconfig) failed like this:
-> 
-> kernel/trace/trace_kdb.c: In function 'ftrace_dump_buf':
-> kernel/trace/trace_kdb.c:29:33: error: invalid type argument of '->' (have 'struct trace_array_cpu')
-> kernel/trace/trace_kdb.c:86:33: error: invalid type argument of '->' (have 'struct trace_array_cpu')
-> 
-> Caused by commit eaac1836c10e ("tracing: Replace the static global
-> per_cpu arrays with allocated per_cpu").
-> 
-> I have used the ftrace tree from next-20130228 for today.
+On 03/02/2013 09:42 AM, Hugh Dickins wrote:
+> On Sat, 2 Mar 2013, Simon Jeons wrote:
+>> In function __add_to_swap_cache if add to radix tree successfully will result
+>> in increase NR_FILE_PAGES, why? This is anonymous page instead of file backed
+>> page.
+> Right, that's hard to understand without historical background.
+>
+> I think the quick answer would be that we used to (and still do) think
+> of file-cache and swap-cache as two halves of page-cache.  And then when
 
-I rebased, and it should all be good now. I also fixed breakage to the
-new snapshot feature. Here's my diff:
+shmem page should be treated as file-cache or swap-cache? It is strange 
+since it is consist of anonymous pages and these pages establish files.
 
--- Steve
-
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index af7be82..b36befa 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -4133,14 +4133,30 @@ static int tracing_clock_open(struct inode *inode, struct file *file)
- #ifdef CONFIG_TRACER_SNAPSHOT
- static int tracing_snapshot_open(struct inode *inode, struct file *file)
- {
-+	struct trace_cpu *tc = inode->i_private;
- 	struct trace_iterator *iter;
-+	struct seq_file *m;
- 	int ret = 0;
- 
- 	if (file->f_mode & FMODE_READ) {
- 		iter = __tracing_open(inode, file, true);
- 		if (IS_ERR(iter))
- 			ret = PTR_ERR(iter);
-+	} else {
-+		/* Writes still need the seq_file to hold the private data */
-+		m = kzalloc(sizeof(*m), GFP_KERNEL);
-+		if (!m)
-+			return -ENOMEM;
-+		iter = kzalloc(sizeof(*iter), GFP_KERNEL);
-+		if (!iter) {
-+			kfree(m);
-+			return -ENOMEM;
-+		}
-+		iter->tr = tc->tr;
-+		m->private = iter;
-+		file->private_data = m;
- 	}
-+
- 	return ret;
- }
- 
-@@ -4148,7 +4164,9 @@ static ssize_t
- tracing_snapshot_write(struct file *filp, const char __user *ubuf, size_t cnt,
- 		       loff_t *ppos)
- {
--	struct trace_array *tr = filp->private_data;
-+	struct seq_file *m = filp->private_data;
-+	struct trace_iterator *iter = m->private;
-+	struct trace_array *tr = iter->tr;
- 	unsigned long val;
- 	int ret;
- 
-@@ -4209,6 +4227,22 @@ out:
- 	mutex_unlock(&trace_types_lock);
- 	return ret;
- }
-+
-+static int tracing_snapshot_release(struct inode *inode, struct file *file)
-+{
-+	struct seq_file *m = file->private_data;
-+
-+	if (file->f_mode & FMODE_READ)
-+		return tracing_release(inode, file);
-+
-+	/* If write only, the seq_file is just a stub */
-+	if (m)
-+		kfree(m->private);
-+	kfree(m);
-+
-+	return 0;
-+}
-+
- #endif /* CONFIG_TRACER_SNAPSHOT */
- 
- 
-@@ -4273,7 +4307,7 @@ static const struct file_operations snapshot_fops = {
- 	.read		= seq_read,
- 	.write		= tracing_snapshot_write,
- 	.llseek		= tracing_seek,
--	.release	= tracing_release,
-+	.release	= tracing_snapshot_release,
- };
- #endif /* CONFIG_TRACER_SNAPSHOT */
- 
-@@ -5284,7 +5318,7 @@ static __init int tracer_init_debugfs(void)
- 
- #ifdef CONFIG_TRACER_SNAPSHOT
- 	trace_create_file("snapshot", 0644, d_tracer,
--			  (void *) RING_BUFFER_ALL_CPUS, &snapshot_fops);
-+			  (void *)&global_trace.trace_cpu, &snapshot_fops);
- #endif
- 
- 	create_trace_instances(d_tracer);
-diff --git a/kernel/trace/trace_kdb.c b/kernel/trace/trace_kdb.c
-index cc1dbdc..349f694 100644
---- a/kernel/trace/trace_kdb.c
-+++ b/kernel/trace/trace_kdb.c
-@@ -26,7 +26,7 @@ static void ftrace_dump_buf(int skip_lines, long cpu_file)
- 	trace_init_global_iter(&iter);
- 
- 	for_each_tracing_cpu(cpu) {
--		atomic_inc(&iter.tr->data[cpu]->disabled);
-+		atomic_inc(&per_cpu_ptr(iter.tr->data, cpu)->disabled);
- 	}
- 
- 	old_userobj = trace_flags;
-@@ -83,7 +83,7 @@ out:
- 	trace_flags = old_userobj;
- 
- 	for_each_tracing_cpu(cpu) {
--		atomic_dec(&iter.tr->data[cpu]->disabled);
-+		atomic_dec(&per_cpu_ptr(iter.tr->data, cpu)->disabled);
- 	}
- 
- 	for_each_tracing_cpu(cpu)
-
+> someone changed the way stats were gathered, they couldn't very well
+> name the stat for page-cache pages NR_PAGE_PAGES, so they called it
+> NR_FILE_PAGES - but it still included swap.
+>
+> We have tried down the years to keep the info shown in /proc/meminfo
+> (for example, but it is the prime example) consistent across releases,
+> while adding new lines and new distinctions.
+>
+> But it has often been hard to find good enough short enough names for
+> those new distinctions: when 2.6.28 split the LRUs between file-backed
+> and swap-backed, it used "anon" for swap-backed in /proc/meminfo.
+>
+> So you'll find that shmem and swap are counted as file in some places
+> and anon in others, and it's hard to grasp which is where and why,
+> without remembering the history.
+>
+> I notice that fs/proc/meminfo.c:meminfo_proc_show() subtracts
+> total_swapcache_pages from the NR_FILE_PAGES count for /proc/meminfo:
+> so it's undoing what you observe __add_to_swap_cache() to be doing.
+>
+> It's quite possible that if you went through all the users of
+> NR_FILE_PAGES, you'd find it makes much more sense to leave out
+> the swap-cache pages, and just add those on where needed.
+>
+> But you might find a few places where it's hard to decide whether
+> the swap-cache pages were ever intended to be included or not, and
+> hard to decide if it's safe to change those numbers now or not.
+>
+> Hugh
 
