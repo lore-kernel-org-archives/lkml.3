@@ -1,115 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752549Ab3CBPzr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Mar 2013 10:55:47 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:23224 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752183Ab3CBPzq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Mar 2013 10:55:46 -0500
-X-IronPort-AV: E=Sophos;i="4.84,768,1355068800"; 
-   d="scan'208";a="6798301"
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-To: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
-Subject: [PATCH] workqueue: fix possible bug which may silence the pool
-Date: Sat, 2 Mar 2013 23:55:29 +0800
-Message-Id: <1362239729-6753-1-git-send-email-laijs@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.7.6
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/03/02 23:54:47,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/03/02 23:54:47,
-	Serialize complete at 2013/03/02 23:54:47
+	id S1752541Ab3CBP7q (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Mar 2013 10:59:46 -0500
+Received: from rhlx01.hs-esslingen.de ([129.143.116.10]:40156 "EHLO
+	rhlx01.hs-esslingen.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751725Ab3CBP7o (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 2 Mar 2013 10:59:44 -0500
+Date: Sat, 2 Mar 2013 16:59:42 +0100
+From: Andreas Mohr <andi@lisas.de>
+To: Neil Horman <nhorman@tuxdriver.com>
+Cc: linux-kernel@vger.kernel.org, Neil Horman <nhorman@tuxdriver.com>,
+        Prarit Bhargava <prarit@redhat.com>, Don Zickus <dzickus@redhat.com>,
+        Don Dutile <ddutile@redhat.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        Asit Mallick <asit.k.mallick@intel.com>, linux-pci@vger.kernel.org
+Subject: Re: [PATCH] irq: add quirk for broken interrupt remapping on 55XX
+ chipsets
+Message-ID: <20130302155942.GA353@rhlx01.hs-esslingen.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1362158276-4901-1-git-send-email-nhorman@tuxdriver.com>
+X-Priority: none
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After we introduce multiple pools for cpu pools, a part of the comments
-in wq_unbind_fn() becomes wrong.
+Hi,
 
-It said that "current worker would trigger unbound chain execution".
-It is wrong. current worker only belongs to one of the multiple pools.
+> if ((revision == 0x13) && irq_remapping_enabled) {
+> +		pr_warn("WARNING WARNING WARNING WARNING WARNING
+> WARNING\n"
+> +			"This system BIOS has enabled interrupt
+> remapping\n"
+> +			"on a chipset that contains an errata making
+> that\n"
+> +			"feature unstable.  Please reboot with
+> nointremap\n"
+> +			"added to the kernel command line and contact\n"
+> +			"your BIOS vendor for an update");
+> +	}
 
-If wq_unbind_fn() does unbind the normal_pri pool(not the pool of the current
-worker), the current worker is not the available worker to trigger unbound
-chain execution of the normal_pri pool, and if all the workers of
-the normal_pri goto sleep after they were set %WORKER_UNBOUND but before
-they finish their current work, unbound chain execution is not triggered
-totally. The pool is stopped!
+Forgive me, but ISTR that there's a special BIOS firmware quirk bug annotating
+logger warning message mechanism (have I managed to hit all keywords yet? ;)
+in the kernel which might be useful in this case.
 
-We can change wq_unbind_fn() only does unbind one pool and we launch multiple
-wq_unbind_fn()s, one for each pool to solve the problem.
-But this change will add much latency to hotplug path unnecessarily.
 
-So we choice to wake up a worker directly to trigger unbound chain execution.
+OK, found something (but I don't think it was the mechanism
+that ISTR - perhaps it got modernized?):
 
-current worker may sleep on &second_pool->assoc_mutex, so we also move
-the wakeup code into the loop to avoid second_pool silences the first_pool.
 
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
----
- kernel/workqueue.c |   45 ++++++++++++++++++++++++++-------------------
- 1 files changed, 26 insertions(+), 19 deletions(-)
+include/linux/printk.h:
 
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 81f2457..03159c2 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -3446,28 +3446,35 @@ static void wq_unbind_fn(struct work_struct *work)
- 
- 		spin_unlock_irq(&pool->lock);
- 		mutex_unlock(&pool->assoc_mutex);
--	}
- 
--	/*
--	 * Call schedule() so that we cross rq->lock and thus can guarantee
--	 * sched callbacks see the %WORKER_UNBOUND flag.  This is necessary
--	 * as scheduler callbacks may be invoked from other cpus.
--	 */
--	schedule();
-+		/*
-+		 * Call schedule() so that we cross rq->lock and thus can
-+		 * guarantee sched callbacks see the %WORKER_UNBOUND flag.
-+		 * This is necessary as scheduler callbacks may be invoked
-+		 * from other cpus.
-+		 */
-+		schedule();
- 
--	/*
--	 * Sched callbacks are disabled now.  Zap nr_running.  After this,
--	 * nr_running stays zero and need_more_worker() and keep_working()
--	 * are always true as long as the worklist is not empty.  Pools on
--	 * @cpu now behave as unbound (in terms of concurrency management)
--	 * pools which are served by workers tied to the CPU.
--	 *
--	 * On return from this function, the current worker would trigger
--	 * unbound chain execution of pending work items if other workers
--	 * didn't already.
--	 */
--	for_each_std_worker_pool(pool, cpu)
-+		/*
-+		 * Sched callbacks are disabled now.  Zap nr_running.
-+		 * After this, nr_running stays zero and need_more_worker()
-+		 * and keep_working() are always true as long as the worklist
-+		 * is not empty.  This pool now behave as unbound (in terms of
-+		 * concurrency management) pool which are served by workers
-+		 * tied to the pool.
-+		 */
- 		atomic_set(&pool->nr_running, 0);
-+
-+		/* The current busy workers of this pool may goto sleep without
-+		 * wake up any other worker after they were set %WORKER_UNBOUND
-+		 * flag. Here we wake up another possible worker to start
-+		 * the unbound chain execution of pending work items in this
-+		 * case.
-+		 */
-+		spin_lock_irq(&pool->lock);
-+		wake_up_worker(pool);
-+		spin_unlock_irq(&pool->lock);
-+	}
- }
- 
- /*
--- 
-1.7.7.6
+/*
+ * FW_BUG
+ * Add this to a message where you are sure the firmware is buggy or
+ * behaves
+ * really stupid or out of spec. Be aware that the responsible BIOS
+ * developer
+ * should be able to fix this issue or at least get a concrete idea of
+ * the
+ * problem by reading your message without the need of looking at the
+ * kernel
+ * code.
+ *
+ * Use it for definite and high priority BIOS bugs.
+ *
+ * FW_WARN
+ * Use it for not that clear (e.g. could the kernel messed up things
+ * already?)
+ * and medium priority BIOS bugs.
+ *
+ * FW_INFO
+ * Use this one if you want to tell the user or vendor about something
+ * suspicious, but generally harmless related to the firmware.
+ *
+ * Use it for information or very low priority BIOS bugs.
+ */
 
+
+So perhaps it is appropriate to be used here.
+
+
+HTH,
+
+Andreas Mohr
