@@ -1,70 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753363Ab3CCMH7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 07:07:59 -0500
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:55754 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752924Ab3CCMHy (ORCPT
+	id S1753456Ab3CCMIc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 07:08:32 -0500
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:45173 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753314Ab3CCMH5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Mar 2013 07:07:54 -0500
+	Sun, 3 Mar 2013 07:07:57 -0500
 From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH v2 7/7] spi: spi-fsl-spi: Add support for gpio chipselects for GRLIB type cores
-To: Anton Vorontsov <anton@enomsg.org>, Andreas Larsson <andreas@gaisler.com>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        spi-devel-general@lists.sourceforge.net,
-        Mingkai Hu <Mingkai.hu@freescale.com>,
-        Joakim Tjernlund <Joakim.Tjernlund@transmode.se>,
-        Kumar Gala <galak@kernel.crashing.org>,
-        Peter Korsgaard <jacmet@sunsite.dk>, linux-kernel@vger.kernel.org,
-        software@gaisler.com
-In-Reply-To: <20130207160821.GA22224@lizard.gateway.2wire.net>
-References: <1360242731-13700-1-git-send-email-andreas@gaisler.com> <1360242731-13700-8-git-send-email-andreas@gaisler.com> <20130207160821.GA22224@lizard.gateway.2wire.net>
-Date: Sat, 02 Mar 2013 21:34:47 +0000
-Message-Id: <20130302213447.2478B3E2249@localhost>
+Subject: Re: [PATCH V3] spi: tegra114: add spi driver
+To: Manish Badarkhe <badarkhe.manish@gmail.com>,
+        Laxman Dewangan <ldewangan@nvidia.com>
+Cc: rob.herring@calxeda.com, broonie@opensource.wolfsonmicro.com,
+        linux-doc@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, spi-devel-general@lists.sourceforge.net,
+        linux-tegra@vger.kernel.org, swarren@nvidia.com
+In-Reply-To: <CAKDJKT5yngpZQC-ZvHSaKeBVHW97wo4QwLSXQ4KsVWCs5J1YKg@mail.gmail.com>
+References: <1361536659-23225-1-git-send-email-ldewangan@nvidia.com> <CAKDJKT5yngpZQC-ZvHSaKeBVHW97wo4QwLSXQ4KsVWCs5J1YKg@mail.gmail.com>
+Date: Sat, 02 Mar 2013 23:09:06 +0000
+Message-Id: <20130302230906.141BE3E336A@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 7 Feb 2013 08:08:21 -0800, Anton Vorontsov <anton@enomsg.org> wrote:
-> On Thu, Feb 07, 2013 at 02:12:11PM +0100, Andreas Larsson wrote:
-> > This relies upon of_spi_register_master to find out which gpios to use.
-> > 
-> > Signed-off-by: Andreas Larsson <andreas@gaisler.com>
-> > ---
-> >  drivers/spi/spi-fsl-lib.h |    1 +
-> >  drivers/spi/spi-fsl-spi.c |   53 +++++++++++++++++++++++++++++++++++++++-----
-> >  2 files changed, 48 insertions(+), 6 deletions(-)
+On Fri, 22 Feb 2013 19:59:11 +0530, Manish Badarkhe <badarkhe.manish@gmail.com> wrote:
+> On Fri, Feb 22, 2013 at 6:07 PM, Laxman Dewangan <ldewangan@nvidia.com> wrote:
+> > Add SPI driver for NVIDIA's Tegra114 SPI controller. This controller
+> > is different than the older SoCs SPI controller in internal design as
+> > well as register interface.
+> >
+> > This driver supports the:
+> > - non DMA based transfer for smaller transfer i.e. less than FIFO depth.
+> > - APB DMA based transfer for lager transfer i.e. more than FIFO depth.
 > 
-> Just a couple of minor nits...
-> 
-> > diff --git a/drivers/spi/spi-fsl-lib.h b/drivers/spi/spi-fsl-lib.h
-> > index d5c788b..52db693 100644
-> > --- a/drivers/spi/spi-fsl-lib.h
-> > +++ b/drivers/spi/spi-fsl-lib.h
-> > @@ -71,6 +71,7 @@ struct mpc8xxx_spi {
-> >  
-> >  #ifdef CONFIG_SPI_FSL_SPI
-> >  	int type;
-> > +	int native_chipselects;
-> >  	u8 max_bits_per_word;
-> >  
-> >  	void (*set_shifts)(u32 *rx_shift, u32 *tx_shift,
-> > diff --git a/drivers/spi/spi-fsl-spi.c b/drivers/spi/spi-fsl-spi.c
-> > index 55652e6..2befe16 100644
-> > --- a/drivers/spi/spi-fsl-spi.c
-> > +++ b/drivers/spi/spi-fsl-spi.c
-> > @@ -418,7 +418,7 @@ static int fsl_spi_setup(struct spi_device *spi)
-> >  {
-> >  	struct mpc8xxx_spi *mpc8xxx_spi;
-> >  	struct fsl_spi_reg *reg_base;
-> > -	int retval;
-> > +	int retval, desel;
-> 
-> We don't usually place variable declarations on the same line, unless the
-> variables are closely related.
+> s/lager/larger
 
-That's not something I've ever heard before. I certainly won't reject a
-patch over it.
+Applied, thanks. And I fixed up the typo when I did.
+
+> > +       spi_irq = platform_get_irq(pdev, 0);
+> > +       tspi->irq = spi_irq;
+> > +       ret = request_threaded_irq(tspi->irq, tegra_spi_isr,
+> > +                       tegra_spi_isr_thread, IRQF_ONESHOT,
+> > +                       dev_name(&pdev->dev), tspi);
+> 
+> Can we use devm_request_threaded_irq instead? to save some code.
+
+I don't have any quams about applying it as-is. That can be done as a
+follow on patch.
 
 g.
 
