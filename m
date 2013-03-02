@@ -1,82 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751988Ab3CBJ4Q (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Mar 2013 04:56:16 -0500
-Received: from mail-wg0-f43.google.com ([74.125.82.43]:54406 "EHLO
-	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751584Ab3CBJ4N convert rfc822-to-8bit (ORCPT
+	id S1751974Ab3CBKGP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Mar 2013 05:06:15 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:55710 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751697Ab3CBKGM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Mar 2013 04:56:13 -0500
+	Sat, 2 Mar 2013 05:06:12 -0500
+Date: Sat, 2 Mar 2013 02:05:41 -0800
+From: Joel Becker <jlbec@evilplan.org>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Mark Fasheh <mfasheh@suse.de>, Richard Weinberger <richard@nod.at>,
+        ocfs2-devel@oss.oracle.com, ocfs2-user@oss.oracle.com,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        david@sigma-star.at
+Subject: Re: OCFS2 mainline state?
+Message-ID: <20130302100540.GB22177@localhost>
+Mail-Followup-To: Al Viro <viro@ZenIV.linux.org.uk>,
+	Mark Fasheh <mfasheh@suse.de>, Richard Weinberger <richard@nod.at>,
+	ocfs2-devel@oss.oracle.com, ocfs2-user@oss.oracle.com,
+	linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+	david@sigma-star.at
+References: <512BCA9E.4090702@nod.at>
+ <20130225211103.GA13510@wotan.suse.de>
+ <20130225211617.GF4503@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <5130C148.3070203@kernel.org>
-References: <CA+icZUXWA1JQ11Ph-JL8snYAvc-FvMCZGBvTi9vNLwhyn-3S2g@mail.gmail.com>
-	<CA+icZUXJNDTFSjh4MnUjx7hsX8sxcP2E5DEANe757CcDuayp5g@mail.gmail.com>
-	<CA+icZUWQsKo7dX9f4uVP7_L0iX2SuCrSXUjv+G_s2SHQ7+0pbg@mail.gmail.com>
-	<CA+icZUUUEAe+ZEsonW1CXjXLP3g97WVmC0xg0GXwB2oKrXUgEg@mail.gmail.com>
-	<5130C148.3070203@kernel.org>
-Date: Sat, 2 Mar 2013 10:56:12 +0100
-Message-ID: <CA+icZUXjQE4n=GrFq45D6rUaLkR4QM8UFhqSR7m0Cevqvut+CQ@mail.gmail.com>
-Subject: Re: Pulling linux-next GIT
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Konstantin Ryabitsev <mricon@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-next <linux-next@vger.kernel.org>, webmaster@kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130225211617.GF4503@ZenIV.linux.org.uk>
+X-Burt-Line: Trees are cool.
+X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
+ come to perfection.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 1, 2013 at 3:55 PM, Konstantin Ryabitsev <mricon@kernel.org> wrote:
-> On 01/03/13 08:35 AM, Sedat Dilek wrote:
->> 2 hours passed - same problems!
->>
->> I looked at <www.kernel.org>, but there is no message in the news area.
->
-> Hi, all:
->
-> We had early-morning hardware failure on the sole "old-skin" frontend
-> that was up (in preparation for site roll-over). This forced my hand to
-> go live with the new site slightly ahead of time and without redundancy
-> (for the moment), but this should be fixed in the nearest future.
->
-> Please enjoy the new www.kernel.org and let me know if the problem
-> cloning git repositories still persists.
->
+On Mon, Feb 25, 2013 at 09:16:18PM +0000, Al Viro wrote:
+> On Mon, Feb 25, 2013 at 01:11:03PM -0800, Mark Fasheh wrote:
+> 
+> > I've seen that patch actually and yes it should have been in mainline
+> > already. I didn't see whether it's in -mm (Andrew is pickup up some of the
+> > patches for us right now).
+> > 
+> > I'll check and if it's not I'll try to send him a version of it today.
+> 
+> Normally filesystem trees are fed to Linus...  Or I can pick that patch via
+> VFS tree (and send it to Linus tomorrow).  There also had been Jan's ocfs2
+> patch a while ago; I picked only the VFS part of that series, ext* and
+> IIRC xfs ones went to corresponding filesystem trees.  Should I just pick
+> the ocfs2 stuff from now on?
 
-[ git.kernel.org ]
+Andrew's been picking it up.  I'm doing the Acked-by thing, until I have
+a test environment back.  Thank you for offering, and if Andrew gets
+tired of it before I'm fully operational, we'll happily take you up on
+this.
 
-Great, switching to cgit!
-
-Can you please, check at your own the formatted outputs of lines:
-Name	- Description - Owner - Idle etc.?
-On a laptop (13xx x 7yy) LCD this looks a bit ugly.
-Think of mobile devices!
-Especially, Name and Description seems to be too long.
-
-Then please look at Tag and Download, here the commit-ids are truncated...
-
-[ www.kernel.org ]
-
-Last point:
-Where are the old NEWS?
-News like security breach etc.
-Is "site-news" the new NEWS website?
-
-Just my 2 cents.
-
-- Sedat -
+Joel
 
 
-[1] http://git.kernel.org/cgit/docs/kernel/website.git/commit/?id=a1df320ffb90d08c7e1b823004d7efcfb94912d1
-[2] https://www.kernel.org/category/site-news.html
+-- 
 
-> Best,
-> --
-> Konstantin Ryabitsev
-> Systems Administrator
-> Linux Foundation, kernel.org
-> Montréal, Québec
->
+"There is no more evil thing on earth than race prejudice, none at 
+ all.  I write deliberately -- it is the worst single thing in life 
+ now.  It justifies and holds together more baseness, cruelty and
+ abomination than any other sort of error in the world." 
+        - H. G. Wells
+
+			http://www.jlbec.org/
+			jlbec@evilplan.org
