@@ -1,66 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751957Ab3CBEXB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 23:23:01 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:6111 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751186Ab3CBEW7 (ORCPT
+	id S1751975Ab3CBEcc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 23:32:32 -0500
+Received: from mail-ia0-f175.google.com ([209.85.210.175]:35766 "EHLO
+	mail-ia0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751462Ab3CBEcb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 23:22:59 -0500
-X-Authority-Analysis: v=2.0 cv=It2cgcDg c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=dCXt4Z_EDXgA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=VHl0eERhotoA:10 a=QZLT4aqRdLNKTwHmQDIA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1362198178.1231.83.camel@gandalf.local.home>
-Subject: Re: linux-next: build failure after merge of the ftrace tree
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Fri, 01 Mar 2013 23:22:58 -0500
-In-Reply-To: <20130302151700.89f98f5c132a913510b5a621@canb.auug.org.au>
-References: <20130301134738.ce925e1643a35b0a2c4ff275@canb.auug.org.au>
-	 <1362192318.1231.67.camel@gandalf.local.home>
-	 <20130302144229.f41f56c36992497a1530d65f@canb.auug.org.au>
-	 <1362196529.1231.80.camel@gandalf.local.home>
-	 <20130302151700.89f98f5c132a913510b5a621@canb.auug.org.au>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 1 Mar 2013 23:32:31 -0500
+MIME-Version: 1.0
+In-Reply-To: <1362183400.3420.24.camel@buesod1.americas.hpqcorp.net>
+References: <1362183400.3420.24.camel@buesod1.americas.hpqcorp.net>
+Date: Sat, 2 Mar 2013 12:32:30 +0800
+Message-ID: <CANN689EqgPZVw=Sy_WAkB+=MJJCZeRMq_CmF1gec+cRVCS2xtA@mail.gmail.com>
+Subject: Re: [RFC PATCH 1/2] ipc: introduce obtaining a lockless ipc object
+From: Michel Lespinasse <walken@google.com>
+To: Davidlohr Bueso <davidlohr.bueso@hp.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, "Vinod, Chegu" <chegu_vinod@hp.com>,
+        "Low, Jason" <jason.low2@hp.com>, linux-tip-commits@vger.kernel.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>, aquini@redhat.com,
+        Ingo Molnar <mingo@kernel.org>, Larry Woodman <lwoodman@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2013-03-02 at 15:17 +1100, Stephen Rothwell wrote:
->  
-> > I made some major changes and wanted testing on it as soon as possible.
-> > I've done tons of testing on my own but I wanted a broader audience. Do
-> > you want me to pull my tree and reset it to what is only for 3.9?
-> 
-> Yes, please.  The reasoning is that until -rc1 is out we don't want to
-> complicate life for people whose code has not yet been merged by
-> reporting problems in code that will not be merged until the next merge
-> window.
+On Sat, Mar 2, 2013 at 8:16 AM, Davidlohr Bueso <davidlohr.bueso@hp.com> wrote:
+> Through ipc_lock() and, therefore, ipc_lock_check() we currently
+> return the locked ipc object. This is not necessary for all situations,
+> thus introduce, analogous, ipc_obtain_object and ipc_obtain_object_check
+> functions that only mark the RCU read critical region without acquiring
+> the lock and return the ipc object.
+>
+> Signed-off-by: Davidlohr Bueso <davidlohr.bueso@hp.com>
+> ---
+>  ipc/util.c | 42 ++++++++++++++++++++++++++++++++----------
+>  ipc/util.h |  2 ++
+>  2 files changed, 34 insertions(+), 10 deletions(-)
+>
+> diff --git a/ipc/util.c b/ipc/util.c
+> index 464a8ab..902f282 100644
+> --- a/ipc/util.c
+> +++ b/ipc/util.c
+> @@ -667,6 +667,21 @@ void ipc64_perm_to_ipc_perm (struct ipc64_perm *in, struct ipc_perm *out)
+>         out->seq        = in->seq;
+>  }
+>
+> +struct kern_ipc_perm *ipc_obtain_object(struct ipc_ids *ids, int id)
+> +{
+> +       struct kern_ipc_perm *out;
+> +       int lid = ipcid_to_idx(id);
+> +
+> +       rcu_read_lock();
+> +       out = idr_find(&ids->ipcs_idr, lid);
+> +       if (!out) {
+> +               rcu_read_unlock();
+> +               return ERR_PTR(-EINVAL);
+> +       }
+> +
+> +       return out;
+> +}
 
-OK, I reset it to what I based my work on, and that commit is in Linus's
-tree.
+I think it may be nicer to take the rcu read lock at the call site
+rather than in ipc_obtain_object(), to make the rcu read lock/unlock
+sites pair up more nicely. Either that or make an inline
+ipc_release_object function that pairs up with ipc_obtain_object() and
+just does an rcu_read_unlock().
 
-> 
-> That is why my daily reports during the merge window start with:
-> 
-> "Please do not add any work destined for v3.10 to your -next included
-> branches until after Linus has release v3.9-rc1."
-> 
-> But I am beginning to realise that not many actually read those reports (I
+> +
+>  /**
+>   * ipc_lock - Lock an ipc structure without rw_mutex held
+>   * @ids: IPC identifier set
+> @@ -679,18 +694,13 @@ void ipc64_perm_to_ipc_perm (struct ipc64_perm *in, struct ipc_perm *out)
+>
+>  struct kern_ipc_perm *ipc_lock(struct ipc_ids *ids, int id)
+>  {
+> -       struct kern_ipc_perm *out;
+> -       int lid = ipcid_to_idx(id);
+> +       struct kern_ipc_perm *out = ipc_obtain_object(ids, id);
+>
+> -       rcu_read_lock();
+> -       out = idr_find(&ids->ipcs_idr, lid);
+> -       if (out == NULL) {
+> -               rcu_read_unlock();
+> +       if (!out)
 
-/me is guilty :-(
+I think this should be if (IS_ERR(out)) ?
 
-> had the date wrong on two of them this week and it was only noticed after
-> the second one :-().
-> 
+Looks great otherwise.
 
-I'm try to be better next time.
+Acked-by: Michel Lespinasse <walken@google.com>
 
--- Steve
-
-
+-- 
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
