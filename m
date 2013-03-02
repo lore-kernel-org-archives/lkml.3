@@ -1,73 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751993Ab3CBBnB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Mar 2013 20:43:01 -0500
-Received: from mail-da0-f41.google.com ([209.85.210.41]:61555 "EHLO
-	mail-da0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751518Ab3CBBnA (ORCPT
+	id S1752241Ab3CBBxQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Mar 2013 20:53:16 -0500
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:53099 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751632Ab3CBBxO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Mar 2013 20:43:00 -0500
-Date: Fri, 1 Mar 2013 17:42:19 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Simon Jeons <simon.jeons@gmail.com>
-cc: Johannes Weiner <hannes@cmpxchg.org>, dormando <dormando@rydia.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, Seiji Aguchi <seiji.aguchi@hds.com>,
-        Satoru Moriya <satoru.moriya@hds.com>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "lwoodman@redhat.com" <lwoodman@redhat.com>,
-        Mel Gorman <mel@csn.ul.ie>
-Subject: Re: [PATCH] add extra free kbytes tunable
-In-Reply-To: <5131438B.4090507@gmail.com>
-Message-ID: <alpine.LNX.2.00.1303011648330.16381@eggly.anvils>
-References: <alpine.DEB.2.02.1302111734090.13090@dflat> <A5ED84D3BB3A384992CBB9C77DEDA4D414A98EBF@USINDEM103.corp.hds.com> <511EB5CB.2060602@redhat.com> <alpine.DEB.2.02.1302171546120.10836@dflat> <20130219152936.f079c971.akpm@linux-foundation.org>
- <alpine.DEB.2.02.1302192100100.23162@dflat> <20130222175634.GA4824@cmpxchg.org> <51307354.5000401@gmail.com> <51307583.2020006@gmail.com> <alpine.LNX.2.00.1303011431290.9961@eggly.anvils> <5131438B.4090507@gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Fri, 1 Mar 2013 20:53:14 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <511E0807.8000200@ti.com>
+References: <1355326422-12357-1-git-send-email-matthias.bgg@gmail.com>
+ <50C8AC3C.9020908@ti.com> <CABuKBeJsHCq98Pe-BwPajbQ+2OLQpwrbtVTJe=j9thPDQCCBrg@mail.gmail.com>
+ <CAAwP0s01Jxh0f-T0sd5D980dZPcEV0J1KzjPbNHkrXLaKA3YUg@mail.gmail.com>
+ <CABuKBeJsg_P=aDr0s9iVOD+7YTNoVUFQJCJymJyJ7NqXHUBzKQ@mail.gmail.com> <511E0807.8000200@ti.com>
+From: Javier Martinez Canillas <martinez.javier@gmail.com>
+Date: Sat, 2 Mar 2013 02:52:53 +0100
+Message-ID: <CAAwP0s3bs=uqCRPgQiXQUnHq-6L61ayrP0WrXdJrNxNuGfmV0A@mail.gmail.com>
+Subject: Re: [PATCH] arm: dts: Add uart1 and uart2 to igep boards.
+To: "Cousson, Benoit" <b-cousson@ti.com>
+Cc: Matthias Brugger <matthias.bgg@gmail.com>,
+        "tony@atomide.com" <tony@atomide.com>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "eballetbo@gmail.com" <eballetbo@gmail.com>,
+        "elezegarcia@gmail.com" <elezegarcia@gmail.com>,
+        "ebutera@gmail.com" <ebutera@gmail.com>,
+        "javier.martinez@collabora.co.uk" <javier.martinez@collabora.co.uk>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2 Mar 2013, Simon Jeons wrote:
-> 
-> In function __add_to_swap_cache if add to radix tree successfully will result
-> in increase NR_FILE_PAGES, why? This is anonymous page instead of file backed
-> page.
+On Fri, Feb 15, 2013 at 11:03 AM, Cousson, Benoit <b-cousson@ti.com> wrote:
+> Hi Matthias,
+>
+>
+> On 2/15/2013 10:35 AM, Matthias Brugger wrote:
+>>
+>> 2013/1/26 Javier Martinez Canillas <martinez.javier@gmail.com>:
+>>>
+>>> On Sat, Jan 26, 2013 at 4:16 PM, Matthias Brugger
+>>> <matthias.bgg@gmail.com>
+>>> wrote:
+>>>>
+>>>> Hi Benoit,
+>>>>
+>>>> 2012/12/12 Benoit Cousson <b-cousson@ti.com>:
+>>>>>
+>>>>> Hi Matthias,
+>>>>>
+>>>>> On 12/12/2012 04:33 PM, Matthias Brugger wrote:
+>>>>>>
+>>>>>> This patch is a follow-up patch for Javier Martinez effort adding
+>>>>>> initial
+>>>>>> device tree support to IGEP technology devices. [1]
+>>>>>>
+>>>>>> It adds uart1 and uart2 bindings to the generic dtsi for the IGEP
+>>>>>> boards.
+>>>>>>
+>>>>>> [1] http://www.spinics.net/lists/linux-omap/msg83409.html
+>>>>>>
+>>>>>> Signed-off-by: Matthias Brugger <matthias.bgg@gmail.com>
+>>>>>> ---
+>>>>>>   arch/arm/boot/dts/omap3-igep.dtsi |   24 ++++++++++++++++++++++++
+>>>>>>   1 file changed, 24 insertions(+)
+>>>>>>
+>>>>>> diff --git a/arch/arm/boot/dts/omap3-igep.dtsi
+>>>>>> b/arch/arm/boot/dts/omap3-igep.dtsi
+>>>>>> index 125fe00..c02e3c0 100644
+>>>>>> --- a/arch/arm/boot/dts/omap3-igep.dtsi
+>>>>>> +++ b/arch/arm/boot/dts/omap3-igep.dtsi
+>>>>>> @@ -27,6 +27,20 @@
+>>>>>>   };
+>>>>>>
+>>>>>>   &omap3_pmx_core {
+>>>>>> +     uart1_pins: pinmux_uart1_pins {
+>>>>>> +             pinctrl-single,pins = <
+>>>>>> +                     0x152 0x100     /* uart1_rx.uart1_rx INPUT |
+>>>>>> MODE0
+>>>>>> */
+>>>>>> +                     0x14c 0         /* uart1_tx.uart1_tx OUTPUT |
+>>>>>> MODE0 */
+>>>>>> +             >;
+>>>>>> +     };
+>>>>>> +
+>>>>>> +     uart2_pins: pinmux_uart2_pins {
+>>>>>> +             pinctrl-single,pins = <
+>>>>>> +                     0x14a 0x100     /* uart2_rx.uart2_rx INPUT |
+>>>>>> MODE0
+>>>>>> */
+>>>>>> +                     0x148 0         /* uart2_tx.uart2_tx OUTPUT |
+>>>>>> MODE0 */
+>>>>>> +             >;
+>>>>>> +     };
+>>>>>> +
+>>>>>>        uart3_pins: pinmux_uart3_pins {
+>>>>>>                pinctrl-single,pins = <
+>>>>>>                        0x16e 0x100     /* uart3_rx.uart3_rx INPUT |
+>>>>>> MODE0
+>>>>>> */
+>>>>>> @@ -77,6 +91,16 @@
+>>>>>>        status = "disabled";
+>>>>>>   };
+>>>>>>
+>>>>>> +&uart1 {
+>>>>>> +       pinctrl-names = "default";
+>>>>>> +       pinctrl-0 = <&uart1_pins>;
+>>>>>> +};
+>>>>>> +
+>>>>>> +&uart2 {
+>>>>>> +       pinctrl-names = "default";
+>>>>>> +       pinctrl-0 = <&uart2_pins>;
+>>>>>> +};
+>>>>>> +
+>>>>>>   &uart3 {
+>>>>>>          pinctrl-names = "default";
+>>>>>>          pinctrl-0 = <&uart3_pins>;
+>>>>>>
+>>>>>
+>>>>> That looks good to me. I'll apply it on top of javier's series for 3.9.
+>>>>
+>>>>
+>>>> Can you pin-point me to the repository where this patches are in right
+>>>> now? I tried to figure it out these days, but didn't found where to
+>>>> clone the repository from.
+>>>>
+>>>> Thanks,
+>>>> Matthias
+>>>>
+>>>
+>>> Hi Matthias,
+>>>
+>>> OMAP DT tree is:
+>>> git://git.kernel.org/pub/scm/linux/kernel/git/bcousson/linux-omap-dt.git
+>>
+>>
+>> Hi all,
+>>
+>> unfortunately I can't find the patch in this tree.
+>
+>
+> Sorry about that. I've never pushed the latest branch, and was busy the past
+> month. I'll refresh the branch with all the pending patches.
+>
+> Regards,
+> Benoit
+>
 
-Right, that's hard to understand without historical background.
+Hi Benoit,
 
-I think the quick answer would be that we used to (and still do) think
-of file-cache and swap-cache as two halves of page-cache.  And then when
-someone changed the way stats were gathered, they couldn't very well
-name the stat for page-cache pages NR_PAGE_PAGES, so they called it
-NR_FILE_PAGES - but it still included swap.
+I realized that your for_3.9/dts branch has not landed in mainline yet
+and we are near to the end of the merge window.
 
-We have tried down the years to keep the info shown in /proc/meminfo
-(for example, but it is the prime example) consistent across releases,
-while adding new lines and new distinctions.
+Are you still planing to include those changes for 3.9 or are you
+going to wait until the next release?
 
-But it has often been hard to find good enough short enough names for
-those new distinctions: when 2.6.28 split the LRUs between file-backed
-and swap-backed, it used "anon" for swap-backed in /proc/meminfo.
-
-So you'll find that shmem and swap are counted as file in some places
-and anon in others, and it's hard to grasp which is where and why,
-without remembering the history.
-
-I notice that fs/proc/meminfo.c:meminfo_proc_show() subtracts
-total_swapcache_pages from the NR_FILE_PAGES count for /proc/meminfo:
-so it's undoing what you observe __add_to_swap_cache() to be doing.
-
-It's quite possible that if you went through all the users of
-NR_FILE_PAGES, you'd find it makes much more sense to leave out
-the swap-cache pages, and just add those on where needed.
-
-But you might find a few places where it's hard to decide whether
-the swap-cache pages were ever intended to be included or not, and
-hard to decide if it's safe to change those numbers now or not.
-
-Hugh
+Thanks a lot and best regards,
+Javier
