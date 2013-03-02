@@ -1,85 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752762Ab3CBVgx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Mar 2013 16:36:53 -0500
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:33575 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752461Ab3CBVgw (ORCPT
+	id S1752638Ab3CBVgv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Mar 2013 16:36:51 -0500
+Received: from mail-we0-f170.google.com ([74.125.82.170]:65323 "EHLO
+	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752461Ab3CBVgu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Mar 2013 16:36:52 -0500
+	Sat, 2 Mar 2013 16:36:50 -0500
 From: Nicolas Palix <nicolas.palix@imag.fr>
 To: Julia Lawall <Julia.Lawall@lip6.fr>, Gilles Muller <Gilles.Muller@lip6.fr>,
         Nicolas Palix <nicolas.palix@imag.fr>, cocci@systeme.lip6.fr,
         linux-kernel@vger.kernel.org, Michal Marek <mmarek@suse.cz>
-Subject: [PATCH 2/4] Coccinelle: Cleanup the setting of the FLAGS and OPTIONS variables
-Date: Sat,  2 Mar 2013 22:36:26 +0100
-Message-Id: <1362260188-14138-2-git-send-email-nicolas.palix@imag.fr>
+Subject: [PATCH 1/4] Coccinelle: Restore coccicheck verbosity in ONLINE mode (C=1 or C=2)
+Date: Sat,  2 Mar 2013 22:36:25 +0100
+Message-Id: <1362260188-14138-1-git-send-email-nicolas.palix@imag.fr>
 X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1362260188-14138-1-git-send-email-nicolas.palix@imag.fr>
-References: <1362260188-14138-1-git-send-email-nicolas.palix@imag.fr>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The FLAGS variable is factorized independently of the ONLINE mode.
-The OPTIONS variable is now based on LINUXINCLUDE and explicit
-includes are thus removed.
-
-The format of the -I option differs between gcc and spatch.
-The COCCIINCLUDE is used to adapt the format. This rewritting
-needs bash.
+A recent patch have introduce the VERBOSE variable and comments
+now depend on it. However, the message printed for each cocci file
+such not be printed when the ONLINE mode is active, whatever is
+the value of VERBOSE.
 
 Signed-off-by: Nicolas Palix <nicolas.palix@imag.fr>
 ---
- scripts/coccicheck |   25 +++++++++++++------------
- 1 file changed, 13 insertions(+), 12 deletions(-)
+ scripts/coccicheck |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/scripts/coccicheck b/scripts/coccicheck
-index 7f0d6a6..cdde8e0 100755
+index 85d3189..7f0d6a6 100755
 --- a/scripts/coccicheck
 +++ b/scripts/coccicheck
-@@ -1,4 +1,4 @@
--#!/bin/sh
-+#!/bin/bash
+@@ -72,7 +72,7 @@ coccinelle () {
+ #
+ #    $SPATCH -D $MODE $FLAGS -parse_cocci $COCCI $OPT > /dev/null
  
- SPATCH="`which ${SPATCH:=spatch}`"
+-    if [ $VERBOSE -ne 0 ] ; then
++    if [ $VERBOSE -ne 0 -a $ONLINE -eq 0 ] ; then
  
-@@ -11,24 +11,25 @@ else
- 	VERBOSE=0
- fi
- 
-+FLAGS="-very_quiet"
-+
-+# spatch only allows include directories with the syntax "-I include"
-+# while gcc also allows "-Iinclude" and "-include include"
-+COCCIINCLUDE=${LINUXINCLUDE//-I/-I }
-+COCCIINCLUDE=${COCCIINCLUDE//-include/-I}
-+
- if [ "$C" = "1" -o "$C" = "2" ]; then
-     ONLINE=1
- 
--# This requires Coccinelle >= 0.2.3
--#    FLAGS="-ignore_unknown_options -very_quiet"
--#    OPTIONS=$*
--
--# Workaround for Coccinelle < 0.2.3
--	FLAGS="-I $srctree/include -very_quiet"
--	shift $(( $# - 1 ))
--	OPTIONS=$1
-+    # Take only the last argument, which is the C file to test
-+    shift $(( $# - 1 ))
-+    OPTIONS="$COCCIINCLUDE $1"
- else
-     ONLINE=0
--    FLAGS="-very_quiet"
-     if [ "$KBUILD_EXTMOD" = "" ] ; then
--        OPTIONS="-dir $srctree"
-+        OPTIONS="-dir $srctree $COCCIINCLUDE"
-     else
--        OPTIONS="-dir $KBUILD_EXTMOD -patch $srctree -I $srctree/include -I $KBUILD_EXTMOD/include"
-+        OPTIONS="-dir $KBUILD_EXTMOD -patch $srctree $COCCIINCLUDE"
-     fi
- fi
+ 	FILE=`echo $COCCI | sed "s|$srctree/||"`
  
 -- 
 1.7.10.4
