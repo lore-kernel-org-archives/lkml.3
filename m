@@ -1,81 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753397Ab3CCOXF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 09:23:05 -0500
-Received: from mail-ia0-f173.google.com ([209.85.210.173]:41593 "EHLO
-	mail-ia0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753243Ab3CCOXD (ORCPT
+	id S1753389Ab3CCPHf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 10:07:35 -0500
+Received: from www262.sakura.ne.jp ([202.181.97.72]:62640 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753219Ab3CCPHe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Mar 2013 09:23:03 -0500
-Message-ID: <51335CBD.6040206@kernel.org>
-Date: Sun, 03 Mar 2013 09:22:53 -0500
-From: Konstantin Ryabitsev <mricon@kernel.org>
-Organization: Linux Foundation/Kernel.org
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130219 Thunderbird/17.0.3
-MIME-Version: 1.0
-To: sedat.dilek@gmail.com
-CC: webmaster@kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [git.k.o] gitweb->cgit: Re-add Git snapshot tarball feature
-References: <CA+icZUUWqeHdgjP-Hi630DDwO65evWUUCX2tBYfj=Cn1w3dEAg@mail.gmail.com> <513355C5.2010505@kernel.org> <CA+icZUXxJ=4fuKCOckLfvc=V9XV5u8qy07nhVB_9jt5LPvHJ+A@mail.gmail.com> <CA+icZUUQypdXaqYApQ-uP=q02RBKvEvpqW3sjSh4PTOowzECoQ@mail.gmail.com>
-In-Reply-To: <CA+icZUUQypdXaqYApQ-uP=q02RBKvEvpqW3sjSh4PTOowzECoQ@mail.gmail.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="----enig2NSOXTOSHHFIKHKFLCQPV"
+	Sun, 3 Mar 2013 10:07:34 -0500
+X-Nat-Received: from [202.181.97.72]:59055 [ident-empty]
+	by smtp-proxy.isp with TPROXY id 1362323251.7503
+To: sam@ravnborg.org, dhowells@redhat.com, mmarek@suse.c
+Cc: arnd@arndb.de, tglx@linutronix.de, paulmck@linux.vnet.ibm.com,
+        davej@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [3.7-rc6] Build failure with scripts/Makefile.headersinst
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+References: <24020.1353323415@warthog.procyon.org.uk>
+	<26846.1353334165@warthog.procyon.org.uk>
+	<201211202322.AED21884.FJtLHOFSOOQVMF@I-love.SAKURA.ne.jp>
+	<26876.1354110914@warthog.procyon.org.uk>
+	<20130303120221.GA32000@merkur.ravnborg.org>
+In-Reply-To: <20130303120221.GA32000@merkur.ravnborg.org>
+Message-Id: <201303040007.CCB29424.MHFOFtSFOJQVOL@I-love.SAKURA.ne.jp>
+X-Mailer: Winbiff [Version 2.51 PL2]
+X-Accept-Language: ja,en,zh
+Date: Mon, 4 Mar 2013 00:07:31 +0900
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 03032013 #9651214, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
-------enig2NSOXTOSHHFIKHKFLCQPV
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+Sam Ravnborg wrote:
+> On Wed, Nov 28, 2012 at 01:55:14PM +0000, David Howells wrote:
+> > Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp> wrote:
+> > 
+> > > Tetsuo Handa wrote:
+> > > > Linux 3.6 builds fine. I can't use "git bisect" until Linux 3.7-rc6 but
+> > > > possibly caused by either commit 10b63956 "UAPI: Plumb the UAPI Kbuilds
+> > > > into the user header installation and checking" or commit 40f1d4c2 "UAPI:
+> > > > Remove the objhdr-y export list".
+> > > 
+> > > Bisected to commit 10b63956 "UAPI: Plumb the UAPI Kbuilds into the user header
+> > > installation and checking".
+> > 
+> > Indeed, but that doesn't help much.  The problem is that make's behaviour has
+> > apparently changed.  I could do with Sam Ravnborg's help to work around this
+> > since I think he's mainly responsible for the Makefile infrastructure.
+> 
+> Mical is the kbuild person these days.
+> Anyway - it this still relevant?
+> 
+Yes, as of commit a7c1120d "Merge tag 'ext4_for_linus' of
+git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4" in linux.git still
+has this problem.
 
-On 03/03/13 09:17 AM, Sedat Dilek wrote:
-> $ wget http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/s=
-napshot/linux-6ec40b423032ca769c96fbf9a080db822821893d.tar.gz
->=20
-> It's downloadable, but not visible in the CGIT website if you select
-> the commit-id (missing download section and link).
->=20
-> See <http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/com=
-mit/?id=3D6ec40b423032ca769c96fbf9a080db822821893d>.
+> I took a quick look and my suspect is the use of $(or ..),
+> as this feature was added recently to make.
+> 
+> 	Sam
+> 
 
-It'll show up in a little bit. Older commit pages are cached and are
-unaffected by the config change until cache expires.
+Michal, this thread starts at https://lkml.org/lkml/2012/11/17/71 .
 
-E.g. this page was generated after the change:
-http://git.kernel.org/cgit/docs/kernel/website.git/commit/?id=3D12d4c6167=
-0617f0e3ea306b27fedcb470dac6ba6
-
-Regards,
---=20
-Konstantin Ryabitsev
-Systems Administrator
-Linux Foundation, kernel.org
-Montr=C3=A9al, Qu=C3=A9bec
-
-
-------enig2NSOXTOSHHFIKHKFLCQPV
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.13 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iQGcBAEBAgAGBQJRM1y9AAoJEI6WedmufElepNwL/RKOWJs1Q4UON2jQZMChABEJ
-9s82u/6I45NJh7gYPV5DsbHIeR0wXoxjiLbXxRid6CppEhlOKuGyVMOPxBpoSySb
-A4D+Xb33cufjYnFasTpEmQnSZzx2EL2jXWKJnUAGjosPWeZF/WZFIrRC2SACM27v
-xQgGLUHMHC06pALwjd64Fw9NZ1KcmlciOP/zrGsD1uE7fUXyR84WJA+LgnWofebw
-PQzBRZBWMRY/aYc4JVcRzG/7YpsMzbGWZxxfeqytK6Nb5pHvefUdwOJUaIq09+de
-H3utyLVmN51Nd1boL2wvT4aZglZTkxniCblgNub9h8fk7bIU6cHz5OMZOcNjmTp1
-7ejD6lCB4axy2r2AHlF8SvnYMxNljrkU78qiMRvLOmpu0KFq3LwtXNWjpoG9cI+2
-+3qMIhl6znNdjjZN6R6YBS5X5jgLmqxz/uraofkpPeTo7nDDv6DTr+fu0QGWtG5B
-CVAjnvjpDNdrtosaAnfwe/CyVKDkeiUTjGNKs0UA1Q==
-=gl5H
------END PGP SIGNATURE-----
-
-------enig2NSOXTOSHHFIKHKFLCQPV--
+Regards.
