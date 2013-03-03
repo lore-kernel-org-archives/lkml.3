@@ -1,48 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754679Ab3CCWeD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 17:34:03 -0500
-Received: from mail-ve0-f174.google.com ([209.85.128.174]:33195 "EHLO
-	mail-ve0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754503Ab3CCWeB (ORCPT
+	id S1754691Ab3CCWgp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 17:36:45 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:29243 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754503Ab3CCWgn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Mar 2013 17:34:01 -0500
-MIME-Version: 1.0
-In-Reply-To: <20130303184736.GM4503@ZenIV.linux.org.uk>
-References: <20130303184736.GM4503@ZenIV.linux.org.uk>
-Date: Sun, 3 Mar 2013 14:34:00 -0800
-X-Google-Sender-Auth: AbthzgqQpZ8TZ7COUJYqkOSqTLQ
-Message-ID: <CA+55aFzxNKDdJsjT-xtv_XEWkCstFxN4hhhPz078p4LJZuHD2Q@mail.gmail.com>
-Subject: Re: [RFC][PATCH] making vfree() safe from interrupt contexts
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, David Miller <davem@davemloft.net>
-Content-Type: text/plain; charset=UTF-8
+	Sun, 3 Mar 2013 17:36:43 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+To: samuel@sortiz.org
+Cc: davem@davemloft.net, gregkh@linuxfoundation.org, jslaby@suse.cz,
+        peter@hurleysoftware.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Sasha Levin <sasha.levin@oracle.com>
+Subject: [PATCH] ircomm: release tty before sleeping potentially indefintely
+Date: Sun,  3 Mar 2013 17:35:53 -0500
+Message-Id: <1362350153-26225-1-git-send-email-sasha.levin@oracle.com>
+X-Mailer: git-send-email 1.8.1.4
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 3, 2013 at 10:47 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
->         To bring back the thing discussed back in, IIRC, December: we have
-> a bunch of places where inability to do vfree() from interrupt contexts
-> (the most common case is doing that from RCU callback) leads to very
-> ugly open-coded schemes that delay it one way or another.  We can let vfree()
-> itself do that instead.  AFAICS, it works; the diff below covers several
-> obvious cases found just by grep.  I'm fairly sure that there's more code
-> that could benefit from that...
+ircomm_tty_block_til_ready would hold tty lock while blocking. Since the sleep
+might take a long time we can prevent other processes from accessing the tty,
+causing hung tasks and a dead tty.
 
-I have nothing against the patch, but I hate seeing it just before I
-am getting ready to close the merge window.
+Diagnosed-by: Peter Hurley <peter@hurleysoftware.com>
+Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+---
+ net/irda/ircomm/ircomm_tty.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-And I'm not willing to apply it, since I think it's buggy: the whole
-point of deferred_vfree() is that it is for irq context, yet it's not
-using an irq-safe lock. So nested interrupts can deadlock.
+diff --git a/net/irda/ircomm/ircomm_tty.c b/net/irda/ircomm/ircomm_tty.c
+index 9a5fd3c..7844cb3 100644
+--- a/net/irda/ircomm/ircomm_tty.c
++++ b/net/irda/ircomm/ircomm_tty.c
+@@ -355,7 +355,9 @@ static int ircomm_tty_block_til_ready(struct ircomm_tty_cb *self,
+ 		IRDA_DEBUG(1, "%s(%d):block_til_ready blocking on %s open_count=%d\n",
+ 		      __FILE__, __LINE__, tty->driver->name, port->count);
+ 
++		tty_unlock(tty);
+ 		schedule();
++		tty_lock(tty);
+ 	}
+ 
+ 	__set_current_state(TASK_RUNNING);
+-- 
+1.8.1.4
 
-So I think the concept is fine, the patch is probably fine after just
-changing the spinlock to be irq-safe, but the timing is horrible. It
-doesn't seem to be *that* urgent, so maybe you could just put it in
-your queue for 3.10 after fixing the irq locking?
-
-            Linus
