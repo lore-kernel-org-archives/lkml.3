@@ -1,40 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752578Ab3CCBlh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Mar 2013 20:41:37 -0500
-Received: from mail-bk0-f53.google.com ([209.85.214.53]:65186 "EHLO
-	mail-bk0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751624Ab3CCBlg (ORCPT
+	id S1752938Ab3CCByU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Mar 2013 20:54:20 -0500
+Received: from smtp-01.mandic.com.br ([200.225.81.132]:38514 "EHLO
+	smtp-01.mandic.com.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751624Ab3CCByP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Mar 2013 20:41:36 -0500
-MIME-Version: 1.0
-In-Reply-To: <1361820175.6781.13.camel@edumazet-glaptop>
-References: <CAOPLpQcs5GgVRqXhnxF0Ui0k-39-xX5N2nYWYY4DhVWMYCMQ7w@mail.gmail.com>
- <1361820175.6781.13.camel@edumazet-glaptop>
-From: Ulrich Drepper <drepper@gmail.com>
-Date: Sat, 2 Mar 2013 20:41:14 -0500
-Message-ID: <CAOPLpQe5SfdWYv5QD4Fu90PXyS7SrSN_5Gntk2x5D5ea8ke64g@mail.gmail.com>
-Subject: Re: sendfile and EAGAIN
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Content-Type: text/plain; charset=UTF-8
+	Sat, 2 Mar 2013 20:54:15 -0500
+From: Cesar Eduardo Barros <cesarb@cesarb.net>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Joe Perches <joe@perches.com>,
+        Cesar Eduardo Barros <cesarb@cesarb.net>
+Subject: [PATCH 00/14] MAINTAINERS: fix file patterns (part 2)
+Date: Sat,  2 Mar 2013 22:53:38 -0300
+Message-Id: <1362275632-20242-1-git-send-email-cesarb@cesarb.net>
+X-Mailer: git-send-email 1.7.11.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 25, 2013 at 2:22 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
-> I don't understand the issue.
->
-> sendfile() returns -EAGAIN only if no bytes were copied to the socket.
+This patch series attempts to fix the remaining F: patterns on the
+MAINTAINERS file which point to non-existing files or directories.
 
-There is something wrong/unexpected/...
+Several more problems with the F: patterns appeared since the previous
+patch series was sent. This patch series fixes all of them, except for
+the removal of drivers/rtc/rtc-sec.c (which was NAKed). It also has a
+copy of the single patch from the previous series which was not applied
+(fix BAST).
 
-I have a program which can use either sendfile or send.  When using
-sendfile to transmit a large block (I've seen it with 900k) the
-sendfile call does not transmit everything.  There receiver gets only
-about 600k.  This is the situation when I think I've seen EAGAIN
-errors from sendmail but I cannot just now reproduce it.  This is with
-sockets of AF_UNIX type.
+Patch 12 also attempts to add matching uapi/ patterns to all include
+directory patterns where this was not yet done, if applicable.
 
-Are there any limits to take into account?
+The last two patches in this series are optional. They add the small
+script which I used to find the broken patterns, and change one pattern
+to avoid a false positive from the script.
+
+Cesar Eduardo Barros (14):
+  MAINTAINERS: remove 3c505
+  MAINTAINERS: remove arch/arm/plat-nomadik/
+  MAINTAINERS: remove arch/arm/plat-s3c24xx/
+  MAINTAINERS: fix drivers/media/i2c/cx2341x.c
+  MAINTAINERS: remove drivers/net/wan/cycx*
+  MAINTAINERS: fix drivers/edac/ghes-edac.c
+  MAINTAINERS: remove eexpress
+  MAINTAINERS: fix mach-omap2 clockdomain/powerdomain
+  MAINTAINERS: fix Documentation/video4linux/saa7134/
+  MAINTAINERS: remove include/media/sh_veu.h
+  MAINTAINERS: fix BAST
+  MAINTAINERS: adjust for UAPI (part 2)
+  scripts: add checkmaintainers.py
+  MAINTAINERS: use same pattern for firewire in uapi
+
+ MAINTAINERS                 | 69 ++++++++++++++++++++++++---------------------
+ scripts/checkmaintainers.py | 35 +++++++++++++++++++++++
+ 2 files changed, 72 insertions(+), 32 deletions(-)
+ create mode 100755 scripts/checkmaintainers.py
+
+-- 
+1.7.11.7
+
