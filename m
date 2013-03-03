@@ -1,161 +1,219 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752207Ab3CCAio (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Mar 2013 19:38:44 -0500
-Received: from fieldses.org ([174.143.236.118]:54038 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751370Ab3CCAim (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Mar 2013 19:38:42 -0500
-Date: Sat, 2 Mar 2013 19:38:29 -0500
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Jeff Layton <jlayton@redhat.com>,
-        Stanislav Kinsbursky <skinsbursky@parallels.com>
-Subject: Re: nfsd changes for 3.9
-Message-ID: <20130303003829.GB20389@fieldses.org>
-References: <20130228184521.GB30236@fieldses.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130228184521.GB30236@fieldses.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752549Ab3CCAkb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Mar 2013 19:40:31 -0500
+Received: from cavan.codon.org.uk ([93.93.128.6]:39329 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751219Ab3CCAka (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 2 Mar 2013 19:40:30 -0500
+From: Matthew Garrett <matthew.garrett@nebula.com>
+To: matt.fleming@intel.com
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org,
+        Matthew Garrett <matthew.garrett@nebula.com>
+Subject: [PATCH] efi: be more paranoid about available space when creating variables
+Date: Sat,  2 Mar 2013 19:40:17 -0500
+Message-Id: <1362271217-31747-1-git-send-email-matthew.garrett@nebula.com>
+X-Mailer: git-send-email 1.8.1.2
+X-SA-Do-Not-Run: Yes
+X-SA-Exim-Connect-IP: 2001:470:1f07:1371:5578:da7b:a9ef:737
+X-SA-Exim-Mail-From: matthew.garrett@nebula.com
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 28, 2013 at 01:45:21PM -0500, bfields wrote:
-> Please pull nfsd changes for 3.9 from the for-3.9 branch at:
-> 
->   git://linux-nfs.org/~bfields/linux.git for-3.9
+UEFI variables are typically stored in flash. For various reasons, avaiable
+space is typically not reclaimed immediately upon the deletion of a
+variable - instead, the system will garbage collect during initialisation
+after a reboot.
 
-And thanks for handling the merge problems!  The results look right.
+Some systems appear to handle this garbage collection extremely poorly,
+failing if more than 50% of the system flash is in use. This can result in
+the machine refusing to boot. The safest thing to do for the moment is to
+forbid writes if they'd end up using more than half of the storage space.
+We can make this more finegrained later if we come up with a method for
+identifying the broken machines.
 
---b.
+Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
+---
+ drivers/firmware/efivars.c | 106 +++++++++++++++++++++++++++++++++------------
+ 1 file changed, 79 insertions(+), 27 deletions(-)
 
-> 
-> Miscellaneous bugfixes, plus:
-> 
-> 	- An overhaul of the DRC cache by Jeff Layton.  The main effect
-> 	  is just to make it larger.  This decreases the chances of
-> 	  intermittent errors especially in the UDP case.  But we'll
-> 	  need to watch for any reports of performance regressions.
-> 
-> 	- Containerized nfsd: with some limitations, we now support
-> 	  per-container nfs-service, thanks to extensive work from
-> 	  Stanislav Kinsbursky over the last year.
-> 
-> --b.
-> 
-> ----------------------------------------------------------------
-> Andriy Skulysh (1):
->       sunrpc: Fix lockd sleeping until timeout
-> 
-> Fengguang Wu (1):
->       nfsd4: free_stid can be static
-> 
-> J. Bruce Fields (7):
->       nfsd4: simplify nfsd4_encode_fattr interface slightly
->       svcrpc: silence "unused variable" warning in !RPC_DEBUG case
->       nfsd4: require version 4 when enabling or disabling minorversion
->       nfsd4: simplify idr allocation
->       svcrpc: make svc_age_temp_xprts enqueue under sv_lock
->       svcrpc: fix rpc server shutdown races
->       SUNRPC: make AF_LOCAL connect synchronous
-> 
-> Jeff Layton (23):
->       nfsd: fix IPv6 address handling in the DRC
->       nfsd: remove unneeded spinlock in nfsd_cache_update
->       nfsd: get rid of RC_INTR
->       nfsd: create a dedicated slabcache for DRC entries
->       nfsd: add alloc and free functions for DRC entries
->       nfsd: remove redundant test from nfsd_reply_cache_free
->       nfsd: clean up and clarify the cache expiration code
->       nfsd: break out hashtable search into separate function
->       nfsd: initialize the exp->ex_uuid field in svc_export_init
->       nfsd: always move DRC entries to the end of LRU list when updating timestamp
->       nfsd: track the number of DRC entries in the cache
->       nfsd: dynamically allocate DRC entries
->       nfsd: remove the cache_disabled flag
->       nfsd: when updating an entry with RC_NOCACHE, just free it
->       nfsd: add recurring workqueue job to clean the cache
->       nfsd: register a shrinker for DRC cache entries
->       sunrpc: copy scope ID in __rpc_copy_addr6
->       sunrpc: move address copy/cmp/convert routines and prototypes from clnt.h to addr.h
->       sunrpc: fix comment in struct xdr_buf definition
->       sunrpc: trim off trailing checksum before returning decrypted or integrity authenticated buffer
->       nfsd: keep a checksum of the first 256 bytes of request
->       nfsd: fix comments on nfsd_cache_lookup
->       nfsd: fix compiler warning about ambiguous types in nfsd_cache_csum
-> 
-> Stanislav Kinsbursky (11):
->       nfsd: fix unused "nn" variable warning in free_client()
->       NFS: use SUNRPC cache creation and destruction helper for DNS cache
->       NFS: simplify and clean cache library
->       SUNRPC: introduce cache_detail->cache_request callback
->       SUNRPC: rework cache upcall logic
->       SUNRPC: remove "cache_request" argument in sunrpc_cache_pipe_upcall() function
->       SUNRPC: move cache_detail->cache_request callback call to cache_read()
->       nfsd: containerize NFSd filesystem
->       nfsd: use proper net while reading "exports" file
->       nfsd: disable usermode helper client tracker in container
->       nfsd: enable NFSv4 state in containers
-> 
-> Tim Gardner (1):
->       lockd: nlmclnt_reclaim(): avoid stack overflow
-> 
-> Yanchuan Nian (3):
->       nfsd: Pass correct slot number to nfsd4_put_drc_mem()
->       nfsd: Don't unlock the state while it's not locked
->       nfsd: Remove write permission from file content
-> 
-> majianpeng (2):
->       nfsd: Fix memleak in svc_export_put
->       nfsd: Fix memleak
-> 
->  fs/lockd/clntlock.c                 |  14 +-
->  fs/lockd/clntproc.c                 |   6 +-
->  fs/lockd/host.c                     |   1 +
->  fs/lockd/mon.c                      |   1 +
->  fs/lockd/svcsubs.c                  |   2 +-
->  fs/nfs/cache_lib.c                  |  12 +-
->  fs/nfs/cache_lib.h                  |   2 -
->  fs/nfs/dns_resolve.c                |  67 +++----
->  fs/nfs/nfs4client.c                 |   1 +
->  fs/nfs/nfs4filelayoutdev.c          |   1 +
->  fs/nfs/nfs4namespace.c              |   1 +
->  fs/nfs/super.c                      |   1 +
->  fs/nfsd/cache.h                     |  17 +-
->  fs/nfsd/export.c                    |  16 +-
->  fs/nfsd/fault_inject.c              |   2 +-
->  fs/nfsd/nfs4idmap.c                 |  16 +-
->  fs/nfsd/nfs4proc.c                  |   7 +-
->  fs/nfsd/nfs4recover.c               |   6 +
->  fs/nfsd/nfs4state.c                 | 102 ++++++-----
->  fs/nfsd/nfs4xdr.c                   |  21 +--
->  fs/nfsd/nfscache.c                  | 354 ++++++++++++++++++++++++++++--------
->  fs/nfsd/nfsctl.c                    |  81 ++++++---
->  fs/nfsd/nfssvc.c                    |   6 +-
->  fs/nfsd/xdr4.h                      |   2 +-
->  include/linux/lockd/lockd.h         |   3 +-
->  include/linux/sunrpc/addr.h         | 170 +++++++++++++++++
->  include/linux/sunrpc/cache.h        |  10 +-
->  include/linux/sunrpc/clnt.h         | 152 ----------------
->  include/linux/sunrpc/svc.h          |   1 +
->  include/linux/sunrpc/xdr.h          |   3 +-
->  net/sunrpc/addr.c                   |   3 +-
->  net/sunrpc/auth_gss/gss_krb5_wrap.c |   2 +
->  net/sunrpc/auth_gss/svcauth_gss.c   |  18 +-
->  net/sunrpc/cache.c                  |  51 +++---
->  net/sunrpc/clnt.c                   |   1 +
->  net/sunrpc/rpcb_clnt.c              |   1 +
->  net/sunrpc/svc.c                    |  13 +-
->  net/sunrpc/svc_xprt.c               |  81 +++++----
->  net/sunrpc/svcauth_unix.c           |  16 +-
->  net/sunrpc/xdr.c                    |  41 +++++
->  net/sunrpc/xprtrdma/transport.c     |   1 +
->  net/sunrpc/xprtsock.c               |  36 +++-
->  42 files changed, 834 insertions(+), 508 deletions(-)
->  create mode 100644 include/linux/sunrpc/addr.h
+diff --git a/drivers/firmware/efivars.c b/drivers/firmware/efivars.c
+index 7320bf8..0d50497 100644
+--- a/drivers/firmware/efivars.c
++++ b/drivers/firmware/efivars.c
+@@ -426,6 +426,44 @@ get_var_data(struct efivars *efivars, struct efi_variable *var)
+ 	return status;
+ }
+ 
++static efi_status_t
++check_var_size_locked(struct efivars *efivars, u32 attributes,
++			unsigned long size)
++{
++	u64 storage_size, remaining_size, max_size;
++	efi_status_t status;
++	const struct efivar_operations *fops = efivars->ops;
++
++	if (!efivars->ops->query_variable_info)
++		return EFI_UNSUPPORTED;
++
++	status = fops->query_variable_info(attributes, &storage_size,
++					   &remaining_size, &max_size);
++
++	if (status != EFI_SUCCESS)
++		return status;
++
++	if (!storage_size || size > remaining_size || size > max_size ||
++	    (remaining_size - size) < (storage_size / 2))
++		return EFI_OUT_OF_RESOURCES;
++
++	return status;
++}
++
++
++static efi_status_t
++check_var_size(struct efivars *efivars, u32 attributes, unsigned long size)
++{
++	efi_status_t status;
++	unsigned long flags;
++
++	spin_lock_irqsave(&efivars->lock, flags);
++	status = check_var_size_locked(efivars, attributes, size);
++	spin_unlock_irqrestore(&efivars->lock, flags);
++
++	return status;
++}
++
+ static ssize_t
+ efivar_guid_read(struct efivar_entry *entry, char *buf)
+ {
+@@ -547,11 +585,16 @@ efivar_store_raw(struct efivar_entry *entry, const char *buf, size_t count)
+ 	}
+ 
+ 	spin_lock_irq(&efivars->lock);
+-	status = efivars->ops->set_variable(new_var->VariableName,
+-					    &new_var->VendorGuid,
+-					    new_var->Attributes,
+-					    new_var->DataSize,
+-					    new_var->Data);
++
++	status = check_var_size_locked(efivars, new_var->Attributes,
++	       new_var->DataSize + utf16_strsize(new_var->VariableName, 1024));
++
++	if (status == EFI_SUCCESS || status == EFI_UNSUPPORTED)
++		status = efivars->ops->set_variable(new_var->VariableName,
++						    &new_var->VendorGuid,
++						    new_var->Attributes,
++						    new_var->DataSize,
++						    new_var->Data);
+ 
+ 	spin_unlock_irq(&efivars->lock);
+ 
+@@ -702,8 +745,7 @@ static ssize_t efivarfs_file_write(struct file *file,
+ 	u32 attributes;
+ 	struct inode *inode = file->f_mapping->host;
+ 	unsigned long datasize = count - sizeof(attributes);
+-	unsigned long newdatasize;
+-	u64 storage_size, remaining_size, max_size;
++	unsigned long newdatasize, varsize;
+ 	ssize_t bytes = 0;
+ 
+ 	if (count < sizeof(attributes))
+@@ -722,28 +764,18 @@ static ssize_t efivarfs_file_write(struct file *file,
+ 	 * amounts of memory. Pick a default size of 64K if
+ 	 * QueryVariableInfo() isn't supported by the firmware.
+ 	 */
+-	spin_lock_irq(&efivars->lock);
+ 
+-	if (!efivars->ops->query_variable_info)
+-		status = EFI_UNSUPPORTED;
+-	else {
+-		const struct efivar_operations *fops = efivars->ops;
+-		status = fops->query_variable_info(attributes, &storage_size,
+-						   &remaining_size, &max_size);
+-	}
+-
+-	spin_unlock_irq(&efivars->lock);
++	varsize = datasize + utf16_strsize(var->var.VariableName, 1024);
++	status = check_var_size(efivars, attributes, varsize);
+ 
+ 	if (status != EFI_SUCCESS) {
+ 		if (status != EFI_UNSUPPORTED)
+ 			return efi_status_to_err(status);
+ 
+-		remaining_size = 65536;
++		if (datasize > 65536)
++			return -ENOSPC;
+ 	}
+ 
+-	if (datasize > remaining_size)
+-		return -ENOSPC;
+-
+ 	data = kmalloc(datasize, GFP_KERNEL);
+ 	if (!data)
+ 		return -ENOMEM;
+@@ -765,6 +797,19 @@ static ssize_t efivarfs_file_write(struct file *file,
+ 	 */
+ 	spin_lock_irq(&efivars->lock);
+ 
++	/*
++	 * Ensure that the available space hasn't shrunk below the safe level
++	 */
++
++	status = check_var_size_locked(efivars, attributes, varsize);
++
++	if (status != EFI_SUCCESS && status != EFI_UNSUPPORTED) {
++		spin_unlock_irq(&efivars->lock);
++		kfree(data);
++
++		return efi_status_to_err(status);
++	}
++
+ 	status = efivars->ops->set_variable(var->var.VariableName,
+ 					    &var->var.VendorGuid,
+ 					    attributes, datasize,
+@@ -1345,7 +1390,6 @@ static int efi_pstore_write(enum pstore_type_id type,
+ 	efi_guid_t vendor = LINUX_EFI_CRASH_GUID;
+ 	struct efivars *efivars = psi->data;
+ 	int i, ret = 0;
+-	u64 storage_space, remaining_space, max_variable_size;
+ 	efi_status_t status = EFI_NOT_FOUND;
+ 	unsigned long flags;
+ 
+@@ -1365,11 +1409,11 @@ static int efi_pstore_write(enum pstore_type_id type,
+ 	 * size: a size of logging data
+ 	 * DUMP_NAME_LEN * 2: a maximum size of variable name
+ 	 */
+-	status = efivars->ops->query_variable_info(PSTORE_EFI_ATTRIBUTES,
+-						   &storage_space,
+-						   &remaining_space,
+-						   &max_variable_size);
+-	if (status || remaining_space < size + DUMP_NAME_LEN * 2) {
++
++	status = check_var_size_locked(efivars, PSTORE_EFI_ATTRIBUTES,
++					 size + DUMP_NAME_LEN * 2);
++
++	if (status) {
+ 		spin_unlock_irqrestore(&efivars->lock, flags);
+ 		*id = part;
+ 		return -ENOSPC;
+@@ -1544,6 +1588,14 @@ static ssize_t efivar_create(struct file *filp, struct kobject *kobj,
+ 		return -EINVAL;
+ 	}
+ 
++	status = check_var_size_locked(efivars, new_var->Attributes,
++	       new_var->DataSize + utf16_strsize(new_var->VariableName, 1024));
++
++	if (status && status != EFI_UNSUPPORTED) {
++		spin_unlock_irq(&efivars->lock);
++		return efi_status_to_err(status);
++	}
++
+ 	/* now *really* create the variable via EFI */
+ 	status = efivars->ops->set_variable(new_var->VariableName,
+ 					    &new_var->VendorGuid,
+-- 
+1.8.1.2
+
