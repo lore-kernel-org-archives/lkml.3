@@ -1,39 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752746Ab3CCDLD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Mar 2013 22:11:03 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:57862 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752538Ab3CCDLB (ORCPT
+	id S1752818Ab3CCDQf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Mar 2013 22:16:35 -0500
+Received: from mail-bk0-f49.google.com ([209.85.214.49]:49945 "EHLO
+	mail-bk0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752671Ab3CCDQe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Mar 2013 22:11:01 -0500
-Date: Sun, 3 Mar 2013 03:10:56 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org
-Subject: [git pull] another embarrassing braino fix in signal.git
-Message-ID: <20130303031056.GK4503@ZenIV.linux.org.uk>
+	Sat, 2 Mar 2013 22:16:34 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1362280145.15793.70.camel@edumazet-glaptop>
+References: <CAOPLpQcs5GgVRqXhnxF0Ui0k-39-xX5N2nYWYY4DhVWMYCMQ7w@mail.gmail.com>
+ <1361820175.6781.13.camel@edumazet-glaptop> <CAOPLpQe5SfdWYv5QD4Fu90PXyS7SrSN_5Gntk2x5D5ea8ke64g@mail.gmail.com>
+ <1362280145.15793.70.camel@edumazet-glaptop>
+From: Ulrich Drepper <drepper@gmail.com>
+Date: Sat, 2 Mar 2013 22:16:12 -0500
+Message-ID: <CAOPLpQcpCsNoW6o7M4ALNhLtUFvJM0FSmavZPbz+Bjeq=mZitg@mail.gmail.com>
+Subject: Re: sendfile and EAGAIN
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-	generic compat_sys_rt_sigprocmask() had a very dumb braino; I'd
-spent quite a while staring at the offending commit before finally managing
-to spot the idiocy ;-/  Dave, could you verify that it fixes all the problems
-you've seen on sparc?  FWIW, the symptoms I'd been seeing got fixed by that
-and AFAICS your reproducer is also taken care of.  The fix is definitely
-needed; the only question is if there's something else going on.  Linus,
-please, pull from
-git://git.kernel.org/pub/scm/linux/kernel/git/viro/signal for-linus
+On Sat, Mar 2, 2013 at 10:09 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+>
+> Using non blocking IO means the sender (and the receiver) must be able
+> to perform several operations, as long as the whole transfert is not
+> finished.
 
-Shortlog:
-Al Viro (1):
-      fix compat_sys_rt_sigprocmask()
+Certainly, and this is implemented.  But the receiver never gets the
+rest of the data while the sender (most of the time) gets notified
+that everything is sent.
 
-Diffstat:
- kernel/signal.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+I don't have a reduced test case yet.  Hopefully I'll get to it
+sometime soon.  For now I worked around it by not using sendfile.
