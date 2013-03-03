@@ -1,66 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753389Ab3CCPHf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 10:07:35 -0500
-Received: from www262.sakura.ne.jp ([202.181.97.72]:62640 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753219Ab3CCPHe (ORCPT
+	id S1753438Ab3CCP02 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 10:26:28 -0500
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:52947 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753367Ab3CCP01 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Mar 2013 10:07:34 -0500
-X-Nat-Received: from [202.181.97.72]:59055 [ident-empty]
-	by smtp-proxy.isp with TPROXY id 1362323251.7503
-To: sam@ravnborg.org, dhowells@redhat.com, mmarek@suse.c
-Cc: arnd@arndb.de, tglx@linutronix.de, paulmck@linux.vnet.ibm.com,
-        davej@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [3.7-rc6] Build failure with scripts/Makefile.headersinst
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-References: <24020.1353323415@warthog.procyon.org.uk>
-	<26846.1353334165@warthog.procyon.org.uk>
-	<201211202322.AED21884.FJtLHOFSOOQVMF@I-love.SAKURA.ne.jp>
-	<26876.1354110914@warthog.procyon.org.uk>
-	<20130303120221.GA32000@merkur.ravnborg.org>
-In-Reply-To: <20130303120221.GA32000@merkur.ravnborg.org>
-Message-Id: <201303040007.CCB29424.MHFOFtSFOJQVOL@I-love.SAKURA.ne.jp>
-X-Mailer: Winbiff [Version 2.51 PL2]
-X-Accept-Language: ja,en,zh
-Date: Mon, 4 Mar 2013 00:07:31 +0900
-Mime-Version: 1.0
+	Sun, 3 Mar 2013 10:26:27 -0500
+Date: Sun, 3 Mar 2013 23:26:39 +0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Satoru Takeuchi <satoru.takeuchi@gmail.com>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, stable@vger.kernel.org
+Subject: Re: [ 00/77] 3.8.2-stable review
+Message-ID: <20130303152639.GB3559@kroah.com>
+References: <20130301194351.913471337@linuxfoundation.org>
+ <87lia4r9e6.wl%satoru.takeuchi@gmail.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 03032013 #9651214, status: clean
+Content-Disposition: inline
+In-Reply-To: <87lia4r9e6.wl%satoru.takeuchi@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sam Ravnborg wrote:
-> On Wed, Nov 28, 2012 at 01:55:14PM +0000, David Howells wrote:
-> > Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp> wrote:
+On Sun, Mar 03, 2013 at 08:49:05PM +0900, Satoru Takeuchi wrote:
+> At Fri,  1 Mar 2013 11:43:45 -0800,
+> Greg Kroah-Hartman wrote:
 > > 
-> > > Tetsuo Handa wrote:
-> > > > Linux 3.6 builds fine. I can't use "git bisect" until Linux 3.7-rc6 but
-> > > > possibly caused by either commit 10b63956 "UAPI: Plumb the UAPI Kbuilds
-> > > > into the user header installation and checking" or commit 40f1d4c2 "UAPI:
-> > > > Remove the objhdr-y export list".
-> > > 
-> > > Bisected to commit 10b63956 "UAPI: Plumb the UAPI Kbuilds into the user header
-> > > installation and checking".
+> > This is the start of the stable review cycle for the 3.8.2 release.
+> > There are 77 patches in this series, all will be posted as a response
+> > to this one.  If anyone has any issues with these being applied, please
+> > let me know.
 > > 
-> > Indeed, but that doesn't help much.  The problem is that make's behaviour has
-> > apparently changed.  I could do with Sam Ravnborg's help to work around this
-> > since I think he's mainly responsible for the Makefile infrastructure.
+> > Responses should be made by Sun Mar  3 19:42:25 UTC 2013.
+> > Anything received after that time might be too late.
 > 
-> Mical is the kbuild person these days.
-> Anyway - it this still relevant?
-> 
-Yes, as of commit a7c1120d "Merge tag 'ext4_for_linus' of
-git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4" in linux.git still
-has this problem.
+> This kernel can be built and boot without any problem.
+> Building a kernel with this kernel also works fine.
 
-> I took a quick look and my suspect is the use of $(or ..),
-> as this feature was added recently to make.
-> 
-> 	Sam
-> 
+Thanks for testing this, and the other -rc stable kernels and letting us
+know.
 
-Michal, this thread starts at https://lkml.org/lkml/2012/11/17/71 .
-
-Regards.
+greg k-h
