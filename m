@@ -1,250 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754528Ab3CCV6Y (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 16:58:24 -0500
-Received: from out01.mta.xmission.com ([166.70.13.231]:54926 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753432Ab3CCV6X (ORCPT
+	id S1754560Ab3CCWDX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 17:03:23 -0500
+Received: from www262.sakura.ne.jp ([202.181.97.72]:50453 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754503Ab3CCWDW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Mar 2013 16:58:23 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Kees Cook <keescook@google.com>
-Cc: "Serge E. Hallyn" <serge@hallyn.com>, LKML <linux-kernel@vger.kernel.org>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Brad Spengler <spender@grsecurity.net>,
-        Al Viro <viro@zeniv.linux.org.uk>, PaX Team <pageexec@freemail.hu>
-References: <CAGXu5jK7x+gFKgCN5=ZF+kSc4xSNbGtSERHCoOnCEgiJ1_wNGg@mail.gmail.com>
-	<20130303005700.GA32213@austin.hallyn.com>
-	<874ngtxgt5.fsf@xmission.com>
-	<CAGXu5j+bwUx6r++ttvYg4yJrUUHxoQ86tQ0JzEBoQQU6KAh9ww@mail.gmail.com>
-Date: Sun, 03 Mar 2013 13:58:10 -0800
-In-Reply-To: <CAGXu5j+bwUx6r++ttvYg4yJrUUHxoQ86tQ0JzEBoQQU6KAh9ww@mail.gmail.com>
-	(Kees Cook's message of "Sun, 3 Mar 2013 10:18:14 -0800")
-Message-ID: <874ngsrvrh.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1/IjB7N0MkIRZrlik//nqkK9LFdnjFcNMI=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -0.0 BAYES_20 BODY: Bayes spam probability is 5 to 20%
-	*      [score: 0.0927]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_XMDrugObfuBody_08 obfuscated drug references
-X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Kees Cook <keescook@google.com>
-X-Spam-Relay-Country: 
-Subject: Re: user ns: arbitrary module loading
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+	Sun, 3 Mar 2013 17:03:22 -0500
+X-Nat-Received: from [202.181.97.72]:62044 [ident-empty]
+	by smtp-proxy.isp with TPROXY id 1362348200.26551
+To: sam@ravnborg.org
+Cc: dhowells@redhat.com, mmarek@suse.cz, arnd@arndb.de, tglx@linutronix.de,
+        paulmck@linux.vnet.ibm.com, davej@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [3.7-rc6] Build failure with scripts/Makefile.headersinst
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+References: <201211202322.AED21884.FJtLHOFSOOQVMF@I-love.SAKURA.ne.jp>
+	<26876.1354110914@warthog.procyon.org.uk>
+	<20130303120221.GA32000@merkur.ravnborg.org>
+	<201303040007.CCB29424.MHFOFtSFOJQVOL@I-love.SAKURA.ne.jp>
+	<20130303153444.GA9329@merkur.ravnborg.org>
+In-Reply-To: <20130303153444.GA9329@merkur.ravnborg.org>
+Message-Id: <201303040703.IIB34337.OJSQVOFtFFOMHL@I-love.SAKURA.ne.jp>
+X-Mailer: Winbiff [Version 2.51 PL2]
+X-Accept-Language: ja,en,zh
+Date: Mon, 4 Mar 2013 07:03:19 +0900
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 03032013 #9653777, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kees Cook <keescook@google.com> writes:
+Sam Ravnborg wrote:
+> On Mon, Mar 04, 2013 at 12:07:31AM +0900, Tetsuo Handa wrote:
+> > Sam Ravnborg wrote:
+> > > On Wed, Nov 28, 2012 at 01:55:14PM +0000, David Howells wrote:
+> > > > Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp> wrote:
+> > > > 
+> > > > > Tetsuo Handa wrote:
+> > > > > > Linux 3.6 builds fine. I can't use "git bisect" until Linux 3.7-rc6 but
+> > > > > > possibly caused by either commit 10b63956 "UAPI: Plumb the UAPI Kbuilds
+> > > > > > into the user header installation and checking" or commit 40f1d4c2 "UAPI:
+> > > > > > Remove the objhdr-y export list".
+> > > > > 
+> > > > > Bisected to commit 10b63956 "UAPI: Plumb the UAPI Kbuilds into the user header
+> > > > > installation and checking".
+> > > > 
+> > > > Indeed, but that doesn't help much.  The problem is that make's behaviour has
+> > > > apparently changed.  I could do with Sam Ravnborg's help to work around this
+> > > > since I think he's mainly responsible for the Makefile infrastructure.
+> > > 
+> > > Mical is the kbuild person these days.
+> > > Anyway - it this still relevant?
+> > > 
+> > Yes, as of commit a7c1120d "Merge tag 'ext4_for_linus' of
+> > git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4" in linux.git still
+> > has this problem.
+> > 
+> > > I took a quick look and my suspect is the use of $(or ..),
+> > > as this feature was added recently to make.
+> 
+> Hi Tetsuo.
+> 
+> If my guess is correct this patch should help.
+> I have gmake 3.81 and I do nto see the beforementioned problem.
 
-> On Sat, Mar 2, 2013 at 8:12 PM, Eric W. Biederman <ebiederm@xmission.com> wrote:
->> "Serge E. Hallyn" <serge@hallyn.com> writes:
->>
->>> Quoting Kees Cook (keescook@google.com):
->>>> The rearranging done for user ns has resulted in allowing arbitrary
->>>> kernel module loading[1] (i.e. re-introducing a form of CVE-2011-1019)
->>>> by what is assumed to be an unprivileged process.
->>>>
->>>> At present, it does look to require at least CAP_SETUID along the way
->>>> to set up the uidmap (but things like the setuid helper newuidmap
->>>> might soon start providing such a thing by default).
->>
->> CAP_SETUID is not needed.
->
-> Do you have an example? I wasn't able to gain capabilities within the
-> userns until I had a uid map set that allowed my uid to map to root.
-> (I needed CAP_SYS_ADMIN in the mnt ns to get past may_mount() before I
-> could touch get_fs_type().)
+Yes, I'm using 3.80 and this patch fixes my problem. Thank you.
 
-Likely because exec drops capbilities if your uid isn't 0.
-
-Without CAP_SETUID you can still map uid to 0 to your current uid.
-
-The following shell script is an easy basis for testing and playing
-around with things.  It does assume a recent version of unshare from util-linux.
-
-#!/bin/sh
-export IFIFO=/tmp/userns-test-$$-in
-export OFIFO=/tmp/userns-test-$$-out
-rm -f $IFIFO $OFIFO
-mkfifo $IFIFO
-mkfifo $OFIFO
-unshare --user -- /bin/bash -s <<'EOF' &
-echo waiting-for-uid-and-gid-maps > $OFIFO
-read LINE < $IFIFO
-exec unshare --mount --net -- /bin/sh -s <<'EOF2'
-mount --bind $HOME /root/
-mount --bind /dev/null /dev/log
-# Start a shell to keep the namespace reference alive
-$SHELL -i < /dev/tty > /dev/tty 2> /dev/tty
-EOF2
-EOF
-child=$!
-read LINE < $OFIFO
-uid=$(id --user)
-gid=$(id --group)
-echo "0 $uid 1" > /proc/$child/uid_map
-echo "0 $gid 1" > /proc/$child/gid_map
-echo uid-and-gid-maps > $IFIFO
-wait $child
-
-
->> At a practical level I don't see adding a capalbe(CAP_SYS_ADMIN) check
->> as having much effect for the functionality currently present in user
->> namespaces today as the filesystems that an legal to mount in a user
->> namespace (ramfs, tmpfs, mqueuefs, sysfs, proc, devpts) are so common
->> most of them can not even be built as modules and even if they are
->> modules the modules will already be loaded.  So I will see about adding
->> a capable(CAP_SYS_ADMIN) check to shore things up for the short term.
->
-> For the short-term, yes, this solves the "regression". But it
-> obviously isn't what is desired for userns in the long term.
-
-
->> So I am wondering what I a good policy should be.  Should we trust
->> kernel modules to not be buggy (especially if they were signed as part
->> of the build process)?  Do we add some defense in depth and add
->> filesystem registration magic?  Thinking...
->
-> If we can produce a mechanism that provides some defensive design, we
-> should do it. There will always be bugs, so we should always try to
-> make them harder to get to or harder to exploit. Reducing the
-> available attack surface to "just filesystems" would be a win here,
-> and it would be consistent with the _intent_ of existing kernel code.
-
-Agreed.
-
->> We can limit the request_module in get_fs_type to just filesystems
->> fairly easily.
->>
->> In include/linux/fs.h:
->>
->>         #define MODULE_ALIAS_FS(type) MODULE_ALIAS("fs-" __stringify(type))
->>
->> In fs/filesystems.c:
->>
->>         if (request_moudle("fs-%.*s", len, name) == 0)
->>
->> Then just add the appropriate MODULE_ALIAS_FS lines in all of the
->> filesystems.  This also allows user space to say set the module loading
->> policy for filesystems using the blacklist and the alias keywords
->> in /etc/modprobe.d/*.conf.
->
-> This was the solution for netdev. The backward compat situation is this:
->
->         if (no_module && capable(CAP_NET_ADMIN))
->                 no_module = request_module("netdev-%s", name);
->         if (no_module && capable(CAP_SYS_MODULE)) {
->                 if (!request_module("%s", name))
->                         pr_warn("Loading kernel module for a network
-> device with CAP_SYS_MODULE (deprecated).  Use CAP_NET_ADMIN and alias
-> netdev-%s instead.\n",
->                                 name);
->         }
-
-If I have read it right the backwards compat case is there to be
-compatibile with existing peoples configuration who had created specific
-aliases like eth0 for specific network devices in
-/etc/modprobe.d/*.conf.  Where the new netdev-* would break userspace.
-
-I don't believe anyone does anything like that for filesystems, and even
-if they tried it wouldn't work because the registered filesystem type
-would have a different name.  So I don't see needing to worry about that
-kind of backwards compatibility for filesystems.
-
-> Those aren't ns_capable, though, so right now userns can't trigger
-> loading new network drivers via ifconfig, but this seems like a
-> reasonable approach to take.
-
-Yes.  I saw those and deliberately didn't make those ns_capable, to be
-on the safe side when I made the rest of the networking ns_capable.
-That and ns_capabable is not meaningful as a check for loading modules.
-The only interesting question is can the global root user trigger them
-or can everyone trigger module loading.
-
->> That seems a whole lot simpler, more powerful and more maintainable than
->> what little I saw in GRKERNSEC_MODHARDEN to prevent loading of
->> non-filesystem modules from get_fs_type.
->>
->> Eric
->>
->> p.s.  This is the patch I am looking at pushing to Linus in the near
->> future.
->>
->> diff --git a/fs/filesystems.c b/fs/filesystems.c
->> index da165f6..5b0644d 100644
->> --- a/fs/filesystems.c
->> +++ b/fs/filesystems.c
->> @@ -273,7 +273,8 @@ struct file_system_type *get_fs_type(const char *name)
->>         int len = dot ? dot - name : strlen(name);
->>
->>         fs = __get_fs_type(name, len);
->> -       if (!fs && (request_module("%.*s", len, name) == 0))
->> +       if (!fs && capable(CAP_SYS_ADMIN) &&
->> +           (request_module("%.*s", len, name) == 0))
->>                 fs = __get_fs_type(name, len);
->>
->>         if (dot && fs && !(fs->fs_flags & FS_HAS_SUBTYPE)) {
->
-> Will this break other users of get_fs_type()? I think it's okay; it
-> looks like all the other users are expected to be privileged.
-
-I read through them all, and I didn't see problems.  The most concerning
-one is tomoyo's use of get_fs_type before capabilities are checked in
-do_mount.  But that is neither here nor there.
-
-> Should this look like netdev in the future? Something like this, after
-> making may_mount() available to fs/filesystems.c:
->
-> -       if (!fs && (request_module("%.*s", len, name) == 0))
-> +       if (!fs && ((may_mount() && request_module("fs-%.*s", len,
-> name) == 0) ||
-> +                   (capable(CAP_SYS_ADMIN) && request_module("%.*s",
-> len, name) == 0)))
->
-> and adding all the filesystem module aliases.
->
-> At some point maybe we can add a flag to kill the old unqualified
-> paths available to CAP_SYS_ADMIN for netdev and mount...
-
-For netdev at least I don't see it as being particularly interesting.
-The case for tunnels is already as unprivileged as you can reasonably
-get with "request_module("rtnl-link-%s", kind);" in
-net/core/rtnetlink.c:rtnl_newlink().  For real physical devices there is
-both greater chance of a buggy module and no realy need as udev will
-load the module based on hardware auto-discovery.
-
-This leads to the fundamental question: Should we require privilege to
-request the load filesystem modules?
-
-I have looked at GRKERNSEC_MODHARDEN to see if that could give me some
-guidance.  Unfortunately GRKERNSEC_MODHARDEN takes the position that fs
-kernel modules are the only kernel modules that should ever auto-load
-and only in very specific situations.  So I can't see that being the
-normal kernel policy, especially since there are the sysctls
-/proc/sys/kernel/modprobe and /proc/sys/kernel/modules_disabled.
-
-Overall the basic policy building blocks for controlling which modules
-are loaded seem solid and in use.  So I don't see any particular reason
-why the kernel's default policy should not be to allow any users actions
-to request modules.
-
-So I think I am going to scrap the change sitting in my development tree
-to require capalbe(CAP_SYS_ADMIN) to load a filesystem module and just
-go with my request_module("fs-%.*",...); change. That is simple and
-seems to match the rest of the kernel.
-
-Does anyone see a reason why we should need CAP_SYS_ADMIN or be in the
-initial user namespace to trigger a request of filesystem modules?
-
-Eric
+> 
+> 	Sam
+> 
+> diff --git a/scripts/Makefile.headersinst b/scripts/Makefile.headersinst
+> index 25f216a..477d137 100644
+> --- a/scripts/Makefile.headersinst
+> +++ b/scripts/Makefile.headersinst
+> @@ -14,7 +14,7 @@ kbuild-file := $(srctree)/$(obj)/Kbuild
+>  include $(kbuild-file)
+>  
+>  # called may set destination dir (when installing to asm/)
+> -_dst := $(or $(destination-y),$(dst),$(obj))
+> +_dst := $(if $(destination-y),$(destination-y),$(if $(dst),$(dst),$(obj)))
+>  
+>  old-kbuild-file := $(srctree)/$(subst uapi/,,$(obj))/Kbuild
+>  ifneq ($(wildcard $(old-kbuild-file)),)
+> @@ -48,13 +48,14 @@ all-files     := $(header-y) $(genhdr-y) $(wrapper-files)
+>  output-files  := $(addprefix $(installdir)/, $(all-files))
+>  
+>  input-files   := $(foreach hdr, $(header-y), \
+> -		   $(or \
+> +		   $(if $(wildcard $(srcdir)/$(hdr)), \
+>  			$(wildcard $(srcdir)/$(hdr)), \
+> -			$(wildcard $(oldsrcdir)/$(hdr)), \
+> -			$(error Missing UAPI file $(srcdir)/$(hdr)) \
+> +			$(if $(wildcard $(oldsrcdir)/$(hdr)), \
+> +				$(wildcard $(oldsrcdir)/$(hdr)), \
+> +				$(error Missing UAPI file $(srcdir)/$(hdr))) \
+>  		   )) \
+>  		 $(foreach hdr, $(genhdr-y), \
+> -		   $(or \
+> +		   $(if	$(wildcard $(gendir)/$(hdr)), \
+>  			$(wildcard $(gendir)/$(hdr)), \
+>  			$(error Missing generated UAPI file $(gendir)/$(hdr)) \
+>  		   ))
+> 
