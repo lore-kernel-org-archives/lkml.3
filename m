@@ -1,66 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753863Ab3CCRR4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 12:17:56 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:35607 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751501Ab3CCRRz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Mar 2013 12:17:55 -0500
-Date: Sun, 3 Mar 2013 18:20:26 +0100
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Syam Sidhardhan <syamsidhardh@gmail.com>
-Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        airlied@linux.ie, daniel.vetter@ffwll.ch,
-        Paulo Zanoni <przanoni@gmail.com>
-Subject: Re: [PATCH] drm/i915: Fix missing variable initilization
-Message-ID: <20130303172026.GG9021@phenom.ffwll.local>
-Mail-Followup-To: Syam Sidhardhan <syamsidhardh@gmail.com>,
-	dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-	airlied@linux.ie, Paulo Zanoni <przanoni@gmail.com>
-References: <1361745338-28522-1-git-send-email-s.syam@samsung.com>
+	id S1753898Ab3CCRna (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 12:43:30 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:56215 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753151Ab3CCRn2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Mar 2013 12:43:28 -0500
+Date: Sun, 3 Mar 2013 18:40:56 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: Michel Lespinasse <walken@google.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Lai Jiangshan <eag0628@gmail.com>, linux-doc@vger.kernel.org,
+        peterz@infradead.org, fweisbec@gmail.com, linux-kernel@vger.kernel.org,
+        namhyung@kernel.org, mingo@kernel.org, linux-arch@vger.kernel.org,
+        linux@arm.linux.org.uk, xiaoguangrong@linux.vnet.ibm.com,
+        wangyun@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com,
+        nikunj@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
+        rusty@rustcorp.com.au, rostedt@goodmis.org, rjw@sisk.pl,
+        vincent.guittot@linaro.org, tglx@linutronix.de,
+        linux-arm-kernel@lists.infradead.org, netdev@vger.kernel.org,
+        sbw@mit.edu, tj@kernel.org, akpm@linux-foundation.org,
+        linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH V2] lglock: add read-preference local-global rwlock
+Message-ID: <20130303174056.GA30176@redhat.com>
+References: <512CC509.1050000@linux.vnet.ibm.com> <CACvQF50UgiqPpDk3HCmV86zKSf6tPjqr0bZowfPEOJs0g0r0MQ@mail.gmail.com> <512D0D67.9010609@linux.vnet.ibm.com> <CACvQF53ph2ixdM-otzetjM5cR+2kcZj6sckOp3TnzzA_x-EZ8w@mail.gmail.com> <512E7879.20109@linux.vnet.ibm.com> <5130E8E2.50206@cn.fujitsu.com> <20130301182854.GA3631@redhat.com> <CANN689HEW=b5S93J27p+rBX-5m7jkW4FER=eHDCp7OgMaTWLPw@mail.gmail.com> <5131FB4C.7070408@cn.fujitsu.com> <20130302172003.GC29769@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1361745338-28522-1-git-send-email-s.syam@samsung.com>
-X-Operating-System: Linux phenom 3.7.0-rc4+
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130302172003.GC29769@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 25, 2013 at 04:05:38AM +0530, Syam Sidhardhan wrote:
-> Need to initialize the variable wait to false.
-> 
-> Signed-off-by: Syam Sidhardhan <s.syam@samsung.com>
+On 03/02, Oleg Nesterov wrote:
+>
+> On 03/02, Lai Jiangshan wrote:
+> >
+> > +void lg_rwlock_local_read_unlock(struct lgrwlock *lgrw)
+> > +{
+> > +	switch (__this_cpu_read(*lgrw->reader_refcnt)) {
+> > +	case 1:
+> > +		__this_cpu_write(*lgrw->reader_refcnt, 0);
+> > +		lg_local_unlock(&lgrw->lglock);
+> > +		return;
+> > +	case FALLBACK_BASE:
+> > +		__this_cpu_write(*lgrw->reader_refcnt, 0);
+> > +		read_unlock(&lgrw->fallback_rwlock);
+> > +		rwlock_release(&lg->lock_dep_map, 1, _RET_IP_);
+>
+> I guess "case 1:" should do rwlock_release() too.
+>
+> Otherwise, at first glance looks correct...
+>
+> However, I still think that FALLBACK_BASE only adds the unnecessary
+> complications. But even if I am right this is subjective of course, please
+> feel free to ignore.
 
-Looks sane, thanks for the patch. Cc'ing Paulo in case I've missed
-something.
--Daniel
+Yes, but...
 
-> ---
->  drivers/gpu/drm/i915/intel_ddi.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/gpu/drm/i915/intel_ddi.c b/drivers/gpu/drm/i915/intel_ddi.c
-> index fc95ef0..5d0a687 100644
-> --- a/drivers/gpu/drm/i915/intel_ddi.c
-> +++ b/drivers/gpu/drm/i915/intel_ddi.c
-> @@ -1391,8 +1391,8 @@ void intel_ddi_prepare_link_retrain(struct drm_encoder *encoder)
->  	struct intel_dp *intel_dp = &intel_dig_port->dp;
->  	struct drm_i915_private *dev_priv = encoder->dev->dev_private;
->  	enum port port = intel_dig_port->port;
-> -	bool wait;
->  	uint32_t val;
-> +	bool wait = false;
->  
->  	if (I915_READ(DP_TP_CTL(port)) & DP_TP_CTL_ENABLE) {
->  		val = I915_READ(DDI_BUF_CTL(port));
-> -- 
-> 1.7.9.5
-> 
+> And btw, I am not sure about lg->lock_dep_map, perhaps we should use
+> fallback_rwlock->dep_map ?
+>
+> We need rwlock_acquire_read() even in the fast-path, and this acquire_read
+> should be paired with rwlock_acquire() in _write_lock(), but it does
+> spin_acquire(lg->lock_dep_map). Yes, currently this is the same (afaics)
+> but perhaps fallback_rwlock->dep_map would be more clean.
 
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+Please ignore this part.
+
+I missed that lg_rwlock_global_write_lock() relies on lg_global_lock(),
+and I just noticed that it does rwlock_acquire(lg->lock_dep_map).
+
+Hmm. But then I do not understand the lglock annotations. Obviously,
+rwlock_acquire_read() in lg_local_lock() can't even detect the simplest
+deadlock, say, lg_local_lock(LOCK) + lg_local_lock(LOCK). Not to mention
+spin_lock(X) + lg_local_lock(Y) vs lg_local_lock(Y) + spin_lock(X).
+
+OK, I understand that it is not easy to make these annotations correct...
+
+Oleg.
+
