@@ -1,165 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752815Ab3CCEMf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Mar 2013 23:12:35 -0500
-Received: from out02.mta.xmission.com ([166.70.13.232]:54015 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752578Ab3CCEMe (ORCPT
+	id S1752856Ab3CCESV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Mar 2013 23:18:21 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:40017 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752578Ab3CCEST (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Mar 2013 23:12:34 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: "Serge E. Hallyn" <serge@hallyn.com>
-Cc: Kees Cook <keescook@google.com>, LKML <linux-kernel@vger.kernel.org>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Brad Spengler <spender@grsecurity.net>,
-        Al Viro <viro@zeniv.linux.org.uk>
-References: <CAGXu5jK7x+gFKgCN5=ZF+kSc4xSNbGtSERHCoOnCEgiJ1_wNGg@mail.gmail.com>
-	<20130303005700.GA32213@austin.hallyn.com>
-Date: Sat, 02 Mar 2013 20:12:22 -0800
-In-Reply-To: <20130303005700.GA32213@austin.hallyn.com> (Serge E. Hallyn's
-	message of "Sat, 2 Mar 2013 18:57:00 -0600")
-Message-ID: <874ngtxgt5.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1957SBX3RoQvsQZDe55BSnoFQZrZYX1Fdo=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
-X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;"Serge E. Hallyn" <serge@hallyn.com>
-X-Spam-Relay-Country: 
-Subject: Re: user ns: arbitrary module loading
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+	Sat, 2 Mar 2013 23:18:19 -0500
+X-AuditID: cbfee68e-b7fa46d00000627e-e7-5132cf0997ed
+Message-id: <1362284257.14386.1.camel@kjgkr>
+Subject: Re: [PATCH 1/5] f2fs: change victim segmap test condition in
+ get_victim_by_default
+From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+Reply-to: jaegeuk.kim@samsung.com
+To: Namjae Jeon <linkinjeon@gmail.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-f2fs-devel@lists.sourceforge.net,
+        Namjae Jeon <namjae.jeon@samsung.com>,
+        Amit Sahrawat <a.sahrawat@samsung.com>
+Date: Sun, 03 Mar 2013 13:17:37 +0900
+In-reply-to: <1362195637-20683-1-git-send-email-linkinjeon@gmail.com>
+References: <1362195637-20683-1-git-send-email-linkinjeon@gmail.com>
+Organization: samsung
+Content-type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature"; boundary="=-NP34TRCN5Ug5KlyNlq3B"
+X-Mailer: Evolution 3.2.3-0ubuntu6
+MIME-version: 1.0
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrCIsWRmVeSWpSXmKPExsVy+t8zA13O80aBBqsnqVrs2XuSxeLyrjls
+	DkwenzfJBTBGcdmkpOZklqUW6dslcGXcf7yUqaBBuOLAq71MDYzHBLoYOTkkBEwk3hzuYISw
+	xSQu3FvP1sXIxSEksIxR4ums9ewwRb/nTGaCSCxilJh46BJU1WtGiU8TrrCAVPEK6Eic6PrN
+	BGILC8RKNFxtBLI5ONgEtCU27zcACQsJKEq83X+XFSQsIqAmMeFZKsgYZoFdjBLHji4BG8Mi
+	oCpxftccsDGcAq4S8/v6WSF6XSS+724Hq+EXEJU42foJ7GpmgSqJ5af6WSAOVZLY3d7JDnGO
+	oMSPyfdYQBZICNxjl7i94RkzxAIBiW+TD7GAHCEhICux6QAzRK+kxMEVN1gmMIrPQjJ2FpJR
+	EHFNidbtv9khbG2JZQtfM0PYthLr1r2HqrGR2HR1ASOELS+x/e0c5gWM7KsYRVMLkguKk9KL
+	jPSKE3OLS/PS9ZLzczcxQqKybwfjzQPWhxirgE6cyCwlmpwPjOq8knhDY2MTMxNTE3NLU3NT
+	qggrifPKX5IJFBJITyxJzU5NLUgtii8qzUktPsTIxMEp1cDIulBe0NT6oI6X6mfuq23Te6dk
+	RknMPeJ22bSb5Vz1LGv3vthypW7ni1MNxDSabDyYKmb9YP0dtH/Nl9SDC1y07PUUS/pOFbIf
+	Uyz4bjRvR1//1nq/H9MNHSvLLaXqH3ErWBS5OTjyHtv6S8ZX//YVl/ktf3ilAsUc2tymJ64X
+	6Tp61UDplRJLcUaioRZzUXEiALdnrwn3AgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrKKsWRmVeSWpSXmKPExsVy+t9jAV2O80aBBhcPmVrs2XuSxeLyrjls
+	DkwenzfJBTBGNTDaZKQmpqQWKaTmJeenZOal2yp5B8c7x5uaGRjqGlpamCsp5CXmptoqufgE
+	6Lpl5gCNVlIoS8wpBQoFJBYXK+nbYZoQGuKmawHTGKHrGxIE12NkgAYS1jFm3H+8lKmgQbji
+	wKu9TA2MxwS6GDk5JARMJH7PmcwEYYtJXLi3nq2LkYtDSGARo8TEQ5egnNeMEp8mXGEBqeIV
+	0JE40fUbrENYIFai4WojkM3BwSagLbF5vwFIWEhAUeLt/rusIGERATWJCc9SQcYwC+xilDh2
+	dAnYGBYBVYnzu+aAjeEUcJWY39fPCtHrIvF9dztYDb+AqMTJ1k+MIDazQJXE8lP9LBCHKkns
+	bu9khzhHUOLH5HssExgFZyEpm4UkBRHXlGjd/psdwtaWWLbwNTOEbSuxbt17qBobiU1XFzBC
+	2PIS29/OYV7AyL6KUTS1ILmgOCk910ivODG3uDQvXS85P3cTIzjmn0nvYFzVYHGIUYCDUYmH
+	98Uio0Ah1sSy4srcQ4wqQHMebVh9gVGKJS8/L1VJhDd1D1CaNyWxsiq1KD++qDQntfgQ40RG
+	YHBMZJYSTc4HJqq8knhDYxMzI0sjMwsjE3NzWgorifMynnoSICSQnliSmp2aWpBaBHMUEwen
+	VAPjJA07rpT14qKHOE6onNm/We3OmqDSv6G/uM1+pXJfPX/3KttkvTv7sv4YPY+T7NYuVTum
+	/Oa8ykGd25OZPFVPlgrfnfqs8PhZ+9IVy9Yk2zBPsY4KOMR1M2BWWVhJd+7lZ+k/KgQ+n2o4
+	+WHKmhf/uzRu/Uuf0Tijx6JBw4FD+dOJ/PyLnXnnlFiKMxINtZiLihMBYt8gWHgDAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Serge E. Hallyn" <serge@hallyn.com> writes:
 
-> Quoting Kees Cook (keescook@google.com):
->> The rearranging done for user ns has resulted in allowing arbitrary
->> kernel module loading[1] (i.e. re-introducing a form of CVE-2011-1019)
->> by what is assumed to be an unprivileged process.
->> 
->> At present, it does look to require at least CAP_SETUID along the way
->> to set up the uidmap (but things like the setuid helper newuidmap
->> might soon start providing such a thing by default).
+--=-NP34TRCN5Ug5KlyNlq3B
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-CAP_SETUID is not needed.
+2013-03-02 (=ED=86=A0), 12:40 +0900, Namjae Jeon:
+> From: Namjae Jeon <namjae.jeon@samsung.com>
+>=20
+> Instead of checking for victim_segmap(FG_GC) OR
+> (gc_type =3D=3D BG_GC) && victim_segmap(BG_GC);
+> to continue for the victim selection. The 2 conditions
+> can simply be merged and decision can directly be made using 'gc_type'.
+>=20
+> Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
+> Signed-off-by: Amit Sahrawat <a.sahrawat@samsung.com>
+> ---
+>  fs/f2fs/gc.c |    5 +----
+>  1 file changed, 1 insertion(+), 4 deletions(-)
+>=20
+> diff --git a/fs/f2fs/gc.c b/fs/f2fs/gc.c
+> index 94b8a0c..16b4148 100644
+> --- a/fs/f2fs/gc.c
+> +++ b/fs/f2fs/gc.c
+> @@ -266,10 +266,7 @@ static int get_victim_by_default(struct f2fs_sb_info=
+ *sbi,
+>  		}
+>  		p.offset =3D ((segno / p.ofs_unit) * p.ofs_unit) + p.ofs_unit;
+> =20
+> -		if (test_bit(segno, dirty_i->victim_segmap[FG_GC]))
+> -			continue;
+> -		if (gc_type =3D=3D BG_GC &&
+> -				test_bit(segno, dirty_i->victim_segmap[BG_GC]))
+> +		if (test_bit(segno, dirty_i->victim_segmap[gc_type]))
 
->> It might be worth examining GRKERNSEC_MODHARDEN in grsecurity, which
->> examines module symbols to verify that request_module() for a
->> filesystem only loads a module that defines "register_filesystem"
->> (among other things).
->> 
->> -Kees
->> 
->> [1] https://twitter.com/grsecurity/status/307473816672665600
->
-> So the concern is root in a child user namespace doing
->
-> 	mount -t randomfs <...>
->
-> in which case do_new_mount() checks ns_capable(), not capable(),
-> before trying to load a module for randomfs.
->
-> As well as (secondly) the fact that there is no enforcement on
-> the format of the module names (i.e. fs-*).
->
-> Kees, from what I've seen the GRKERNSEC_MODHARDEN won't be acceptable.
-> At least Eric Paris is strongly against it.
+Negative.
+We should check FG_GC all the time.
+Thanks,
 
-What is wrong with GRKERNSEC_MODHARDEN?  It took a quick look and the
-code is far from clean.  But that would not be a fundamental objection
-from keeping code like that out of the kernel.
+>  			continue;
+>  		if (IS_CURSEC(sbi, GET_SECNO(sbi, segno)))
+>  			continue;
 
-It is also entertaining to read security code that won't even build with
-CONFIG_UIDGID_STRICT_TYPE_CHECKS enabled.
+--=20
+Jaegeuk Kim
+Samsung
 
-> But how about if we
-> add a check for 'current_user_ns() == &init_user_ns' at that place
-> instead?
->
-> Eric Biederman, do you have any objections to that?
+--=-NP34TRCN5Ug5KlyNlq3B
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
 
-The obvious solution here is to test for CAP_SYS_ADMIN rather than
-current_user_ns == &init_user_ns before we request the module here.  As
-that is what was previously required on this path.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-Reading the comments the concerns are.
-- Non-root users are allowed to load obscure and possibly kernel
-  modules.
-- get_fs_type can trigger the load of any kernel module.
+iQIcBAABAgAGBQJRMs7hAAoJEEAUqH6CSFDSrasP/iT9hNl8lRF1ERl8oV8iYdp0
+JUwIS3LITxjGRKX8LowuaYsAjRvZcn0yv/B8XKZ7UNgt+sTTg8/DSpqmOq8xmw3x
+JvKIOl2tu+iQ/yaWPIdfJ7Ie2NUOyb4u1dyvGtFcxnTfHQNj4aKMdm92xxsWw0lg
+S6I0Rx12RDOKMt89El5aLQ2HSfc/4jYkSjxptlfnmi7SYd52a6ihliH1jz4/eGDS
+hbTaxX2hhD9V6k48RY5qELbODz8/qV5IleEh78BbcfAiccnYnQaWCaTZwgA6yIkH
+n9/VMcOmoQ1NJbV8oHIhOHvPo3v/vEa135NH9EzIV/w5nV20srGwM8ywwHw3s8RG
+jgZpNU8KtoO6xs7pEJiOazeT+u7SYIt3KejEAWJccH/6Ul72q+Kj5R1qPNt02pEY
+H8PNs5jtdFkZEfwP3PU/IhOjuO5mt6Z2Af/VEqrJfDqe5QqD21qcQetZ6kIQjwCE
+x9OreKLc2AOz5vlRopZzCzcds+x7kjmJjFSLwb814eIVrKi3Hc4cJnp51ccsD+oH
+rrY5Fqf1YI4WwJ7JzRI5k1Ze1hpJhRJ6n32RJGc5NFfGHnuQDtp+9YSKGTV8E2SR
+5iOU5lTq9shaDjarAH7F5q3Bzigp9jB7vHBajbG2hxsRZb3xWOTU+Ddt1OH3wYJH
+4uEA8HKeOOtSzKkwYRqH
+=Qxf1
+-----END PGP SIGNATURE-----
 
-At a practical level I don't see adding a capalbe(CAP_SYS_ADMIN) check
-as having much effect for the functionality currently present in user
-namespaces today as the filesystems that an legal to mount in a user
-namespace (ramfs, tmpfs, mqueuefs, sysfs, proc, devpts) are so common
-most of them can not even be built as modules and even if they are
-modules the modules will already be loaded.  So I will see about adding
-a capable(CAP_SYS_ADMIN) check to shore things up for the short term.
-
-In the longer term I very much would like to get loopback devices
-and mounts of filesystems on those loopback devices working, and being
-able to mount filesystems from usb sticks that people commonly plug in,
-and remove the need for privileged daemons to do that work.  At that
-point manually having to do something that was automatic before will
-either mean a regression in functionality or bugs as people manually
-load things.
-
-
-So I am wondering what I a good policy should be.  Should we trust
-kernel modules to not be buggy (especially if they were signed as part
-of the build process)?  Do we add some defense in depth and add
-filesystem registration magic?  Thinking...
-
-We can limit the request_module in get_fs_type to just filesystems
-fairly easily.
-
-In include/linux/fs.h:
-
-	#define MODULE_ALIAS_FS(type) MODULE_ALIAS("fs-" __stringify(type))
-
-In fs/filesystems.c:
-
-	if (request_moudle("fs-%.*s", len, name) == 0)
-
-Then just add the appropriate MODULE_ALIAS_FS lines in all of the
-filesystems.  This also allows user space to say set the module loading
-policy for filesystems using the blacklist and the alias keywords
-in /etc/modprobe.d/*.conf.
-
-That seems a whole lot simpler, more powerful and more maintainable than
-what little I saw in GRKERNSEC_MODHARDEN to prevent loading of
-non-filesystem modules from get_fs_type.
-
-Eric
-
-p.s.  This is the patch I am looking at pushing to Linus in the near
-future.
-
-diff --git a/fs/filesystems.c b/fs/filesystems.c
-index da165f6..5b0644d 100644
---- a/fs/filesystems.c
-+++ b/fs/filesystems.c
-@@ -273,7 +273,8 @@ struct file_system_type *get_fs_type(const char *name)
-        int len = dot ? dot - name : strlen(name);
- 
-        fs = __get_fs_type(name, len);
--       if (!fs && (request_module("%.*s", len, name) == 0))
-+       if (!fs && capable(CAP_SYS_ADMIN) &&
-+           (request_module("%.*s", len, name) == 0))
-                fs = __get_fs_type(name, len);
- 
-        if (dot && fs && !(fs->fs_flags & FS_HAS_SUBTYPE)) {
-
-
+--=-NP34TRCN5Ug5KlyNlq3B--
 
