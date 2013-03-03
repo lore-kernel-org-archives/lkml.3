@@ -1,48 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753478Ab3CCUNx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 15:13:53 -0500
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:39816 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753275Ab3CCUNw (ORCPT
+	id S1753594Ab3CCUXk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 15:23:40 -0500
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:57080 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753392Ab3CCUXj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Mar 2013 15:13:52 -0500
+	Sun, 3 Mar 2013 15:23:39 -0500
 From: "Yann E. MORIN" <yann.morin.1998@free.fr>
 Organization: BZH lan
 To: linux-kbuild@vger.kernel.org
-Subject: Re: [PATCH] menuconfig: use config scripts to detect ncurses libs
-Date: Sun, 3 Mar 2013 21:13:47 +0100
+Subject: Re: [PATCH 2/2] kconfig: use config scripts to detect ncurses libs
+Date: Sun, 3 Mar 2013 21:23:33 +0100
 User-Agent: KMail/1.13.5 (Linux/3.8.0-treguer; KDE/4.4.5; x86_64; ; )
-Cc: Michal Marek <mmarek@suse.cz>, jlec@gentoo.org,
+Cc: Sven Joachim <svenjoac@gmx.de>, jlec@gentoo.org,
         linux-kernel@vger.kernel.org
-References: <jlec@gentoo.org> <201302281916.00257.yann.morin.1998@free.fr> <513095F6.2010000@suse.cz>
-In-Reply-To: <513095F6.2010000@suse.cz>
+References: <jlec@gentoo.org> <1362045557-9123-1-git-send-email-jlec@gentoo.org> <874ngwhzuy.fsf@turtle.gmx.de>
+In-Reply-To: <874ngwhzuy.fsf@turtle.gmx.de>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201303032113.47632.yann.morin.1998@free.fr>
+Message-Id: <201303032123.34125.yann.morin.1998@free.fr>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Michal, All,
+Sven, Justin, All,
 
-On Friday 01 March 2013 Michal Marek wrote:
-> On 28.2.2013 19:16, Yann E. MORIN wrote:
-> > On Thursday 28 February 2013 jlec@gentoo.org wrote:
-> >> This patch replaces the old heuristic for detection of ncurses libs for
-> >> linking the ncurses menuconfig dialog by the use of the config scripts.
-> >> This results in the requirement of ncurses version 5.6 or newer for menuconfig.
-> > 
-> > OTOH, RHEL4 is still a widely used distro, and was released in 2005,
-> > so is using an ncurses older than 5.6, so I'm afraid we can't drop
-> > the legacy code like that.
+Sorry for the delay...
+
+On Thursday 28 February 2013 Sven Joachim wrote:
+> On 2013-02-28 10:59 +0100, jlec@gentoo.org wrote:
 > 
-> Yes, please keep support for older libraries if it does not require too
-> much effort.
+> > Ncurses provides a config script (ncurses5-config) to assist finding ncurses.
+> > This patch makes use of it to detect the necessary libs for linking of the
+> > ncurses nconfig dialog.
+> 
+> That script is not necessarily called ncurses5-config, it might also be
+> called ncurses6-config is ncurses is configured for a different ABI
+> (--enable-ext-colors, --enable-ext-mouse).  Although I would suspect
+> that any distribution who does that provides a compatibility symlink.
 
-Yes, we want to keep support for old systems, indeed.
+Cygwin does provide nurses{,w}{5,6}-config.
+
+> >  scripts/kconfig/Makefile | 4 +++-
+> >  1 file changed, 3 insertions(+), 1 deletion(-)
+> >
+> > diff --git a/scripts/kconfig/Makefile b/scripts/kconfig/Makefile
+> > index 3091794..c372976 100644
+> > --- a/scripts/kconfig/Makefile
+> > +++ b/scripts/kconfig/Makefile
+> > @@ -216,7 +216,9 @@ HOSTCFLAGS_gconf.o	= `pkg-config --cflags gtk+-2.0 gmodule-2.0 libglade-2.0` \
+> >  
+> >  HOSTLOADLIBES_mconf   = $(shell $(CONFIG_SHELL) $(check-lxdialog) -ldflags $(HOSTCC))
+> >  
+> > -HOSTLOADLIBES_nconf	= -lmenu -lpanel -lncurses
+> > +HOSTLOADLIBES_nconf	= -lmenu -lpanel
+> > +HOSTLOADLIBES_nconf	+= $(shell    ncursesw5-config --libs 2>/dev/null \
+> > +				   || ncurses5-config --libs 2>/dev/null  )
+> 
+> This will link with ncursesw, not ncurses.  Probably not what you want,
+> since nconf.h does not #include the right headers for that.
+> 
+> On Debian/Ubuntu, there's also the problem that ncursesw5-config exists
+> even if the libncursesw5-dev package is not installed, so this patch
+> makes the build fail in such cases.
+
+The same goes for ncurses5-config, which is provided by ncurses-bin, and
+so is present even if the devel package is not installed, and the build
+will break, too.
 
 Regards,
 Yann E. MORIN.
