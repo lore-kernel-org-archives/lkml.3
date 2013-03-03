@@ -1,51 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753961Ab3CCTc0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 14:32:26 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:59474 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753852Ab3CCTcZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Mar 2013 14:32:25 -0500
-Date: Sun, 3 Mar 2013 19:32:23 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, David Miller <davem@davemloft.net>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [RFC][PATCH] making vfree() safe from interrupt contexts
-Message-ID: <20130303193223.GN4503@ZenIV.linux.org.uk>
-References: <20130303184736.GM4503@ZenIV.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130303184736.GM4503@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754010Ab3CCTgW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 14:36:22 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:17613 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753514Ab3CCTgV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Mar 2013 14:36:21 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+To: torvalds@linux-foundation.org
+cc: dhowells@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org
+Subject: UAPI: The end is nigh!
+Date: Sun, 03 Mar 2013 19:36:18 +0000
+Message-ID: <23533.1362339378@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 03, 2013 at 06:47:36PM +0000, Al Viro wrote:
-> 	To bring back the thing discussed back in, IIRC, December: we have
-> a bunch of places where inability to do vfree() from interrupt contexts
-> (the most common case is doing that from RCU callback) leads to very
-> ugly open-coded schemes that delay it one way or another.  We can let vfree()
-> itself do that instead.  AFAICS, it works; the diff below covers several
-> obvious cases found just by grep.  I'm fairly sure that there's more code
-> that could benefit from that...
-> 
-> 	I'm not sure which tree should it go through, though.  Suggestions?
-> The reason I'm interested in this sucker is the mess in fs/file.c (fdtable
-> freeing), but the main change here is in mm/vmalloc.c...
-> 
-> 	Note that the patch obviously ought to be split - mm/vmalloc.c
-> part, allowing vfree() in interrupt contexts (current mainline has
-> BUG_ON() triggered in that case) and a chunk for each ad-hoc vfree()
-> deferral scheme killed.
-> 
-> 	Comments?
 
-BTW, looking a bit more shows another place that might benefit from that -
-kernel/events/ring_buffer.c:rb_free_work() is called via schedule_work()
-and I don't see anything in it besides vfree() that would demand that
-kind of treatment.
+Hi Linus,
+
+You'll be glad to here that the end is nigh for the UAPI patches.  Only the
+fbdev/framebuffer piece remains now that the SCSI stuff has gone in.
+
+As far as I can tell, no changes have been merged that affect the UAPI parts
+of the include/video headers, so my previous request should still be good to
+go.
+
+David
+---
+Here are the UAPI disintegration bits for the fbdev drivers.  It appears that
+Florian hasn't had time to deal with my patch, but back in December he did say
+he didn't mind if I pushed it forward.  I recommend pulling it after any other
+fbdev stuff and I can easily regenerate it if necessary.
+---
+The following changes since commit 1800098549fc310cffffefdcb3722adaad0edda8:
+
+  ARM: OMAP: Fix build breakage due to missing include in i2c.c (2012-12-20 08:43:25 -0800)
+
+are available in the git repository at:
+
+  git://git.infradead.org/users/dhowells/linux-headers.git tags/disintegrate-fbdev-20121220
+
+for you to fetch changes up to b889fcf63cb62e7fdb7816565e28f44dbe4a76a5:
+
+  UAPI: (Scripted) Disintegrate include/video (2012-12-20 17:14:26 +0000)
+
+----------------------------------------------------------------
+UAPI disintegration 2012-12-20
+
+----------------------------------------------------------------
+David Howells (1):
+      UAPI: (Scripted) Disintegrate include/video
+
+ include/uapi/video/Kbuild    |   3 +
+ include/uapi/video/edid.h    |   9 ++
+ include/uapi/video/sisfb.h   | 209 +++++++++++++++++++++++++++++++++++++++++++
+ include/uapi/video/uvesafb.h |  60 +++++++++++++
+ include/video/Kbuild         |   3 -
+ include/video/edid.h         |   7 +-
+ include/video/sisfb.h        | 189 +-------------------------------------
+ include/video/uvesafb.h      |  58 +-----------
+ 8 files changed, 284 insertions(+), 254 deletions(-)
+ create mode 100644 include/uapi/video/edid.h
+ create mode 100644 include/uapi/video/sisfb.h
+ create mode 100644 include/uapi/video/uvesafb.h
+
+
