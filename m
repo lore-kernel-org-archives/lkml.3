@@ -1,85 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752705Ab3CCCMJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Mar 2013 21:12:09 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:56752 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751617Ab3CCCMI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Mar 2013 21:12:08 -0500
-Date: Sun, 3 Mar 2013 13:11:54 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: James Hogan <james.hogan@imgtec.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, Arnd <arnd@arndb.de>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] late arch/metag fixes for v3.9-rc1
-Message-Id: <20130303131154.218a17f2ea1cad037ca3859c@canb.auug.org.au>
-In-Reply-To: <CAAG0J9_dB0t-pnTW8in8=FpZw__HJF9Auhee4WJ3diOxy1DDrQ@mail.gmail.com>
-References: <5130DD94.2060408@imgtec.com>
-	<CA+55aFw9qvUdrtEk_83-gEjZMTceONk=AuVsHuTtqOj=jpVPQg@mail.gmail.com>
-	<5130F978.9040604@imgtec.com>
-	<5131D2F0.2010705@imgtec.com>
-	<20130303024851.4be2d2435da42a6010c6c8f8@canb.auug.org.au>
-	<CAAG0J9_dB0t-pnTW8in8=FpZw__HJF9Auhee4WJ3diOxy1DDrQ@mail.gmail.com>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Sun__3_Mar_2013_13_11_54_+1100_Srd3F3ze9btBlpqJ"
+	id S1752638Ab3CCCT2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Mar 2013 21:19:28 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:35647 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751432Ab3CCCT1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 2 Mar 2013 21:19:27 -0500
+Message-ID: <5132B2FB.4020004@redhat.com>
+Date: Sat, 02 Mar 2013 21:18:35 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Michel Lespinasse <walken@google.com>
+CC: Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "Vinod, Chegu" <chegu_vinod@hp.com>, "Low, Jason" <jason.low2@hp.com>,
+        linux-tip-commits@vger.kernel.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>, aquini@redhat.com,
+        Ingo Molnar <mingo@kernel.org>, Larry Woodman <lwoodman@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [RFC PATCH 1/2] ipc: introduce obtaining a lockless ipc object
+References: <1362183400.3420.24.camel@buesod1.americas.hpqcorp.net> <CANN689EqgPZVw=Sy_WAkB+=MJJCZeRMq_CmF1gec+cRVCS2xtA@mail.gmail.com>
+In-Reply-To: <CANN689EqgPZVw=Sy_WAkB+=MJJCZeRMq_CmF1gec+cRVCS2xtA@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Sun__3_Mar_2013_13_11_54_+1100_Srd3F3ze9btBlpqJ
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 03/01/2013 11:32 PM, Michel Lespinasse wrote:
 
-Hi James,
+> I think it may be nicer to take the rcu read lock at the call site
+> rather than in ipc_obtain_object(), to make the rcu read lock/unlock
+> sites pair up more nicely. Either that or make an inline
+> ipc_release_object function that pairs up with ipc_obtain_object() and
+> just does an rcu_read_unlock().
 
-On Sat, 2 Mar 2013 16:22:15 +0000 James Hogan <james.hogan@imgtec.com> wrot=
-e:
->
-> On 2 March 2013 15:48, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> > On Sat, 2 Mar 2013 10:22:40 +0000 James Hogan <james.hogan@imgtec.com> =
-wrote:
-> >>
-> >> Okay, I've rebased the arch/metag tree onto mainline to make all the
-> >> back-merges unnecessary and applied those simple fixes into "Build
-> >> infrastructure" and "Various other headers" commits (additionally
-> >> trivially removing ARCH_NO_VIRT_TO_BUS which is also now unnecessary).
-> >
-> > Pleas make sure that what you are submitting to Linus is the same as wh=
-at
-> > you have in linux-next (i.e. reset your for-next branch as well).
->=20
-> Yes, for-next now moved to the rebased version.
+I started on a patch series to untangle the IPC locking, so
+it will be a little more readable, and easier to maintain.
 
-Thanks.
+It is a slower approach than Davidlohr's, as in, it will take
+a little longer to put a patch series together, but I hope it
+will be easier to debug...
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+I hope to post a first iteration of the series by the middle
+of next week.
 
---Signature=_Sun__3_Mar_2013_13_11_54_+1100_Srd3F3ze9btBlpqJ
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRMrFqAAoJEECxmPOUX5FEuW0QAIM03d51+FyTPbP4WqADnP+U
-eIvUt4Q9dKxf4tcZDEM0PvEYIAslotZhZsP6cVYUZiBKkJ9EYMCO/ork6hqWUQ9Y
-l2V8p5reZX97s5imw+FbSAgYvIvrsfbbLMZJQlJdcpoEEWY5dTBnxlXdfVXvlVJB
-W4DFhnTjCGmTnyNkfbX5mjdUXjkSwfutF7bNMomXx/fNJGJVTJGex//hq6DZoAPF
-64o/vDVqrQgQc3buuV6MY7384J2ru39zDeIX5vxiRdqHGMzce4FkhWIlRcVw/ZNC
-CqNiF6rkBHqTP/UwZadF8MjNJRK7YKS9vHfqRltz8+F29hqURuTCSfpueaIdZJuJ
-MuS6tTXsLhiqOCLf7S7SFb9l8b9HFFWakSIwkJMxmGdqD6mA2KTFj6tga9ycHq3F
-J0S721RTlOuyipojEw28PN1bUb5IzdueCzb5p+/+YUmSdyUwObnT2lM1B5FCNMdS
-s4nO9IKhji+bLwN+w+w6IdKCDnIf1QVezIuyW5jmHMp13PYlaoiPz2oHYa9nxpfZ
-8D31SUtu+p6DsIsKXFJCkvHK4BouVJmOBQ5jR3gFlggXWdYnWYLxOJAKlFW7ct4l
-BDRLnycWUoHtXN62J/EaBf39w4WEhjG4vPA6AnjrKdC2iB2hJDH9ZgaAOS7989LM
-LpwUX1rTT1xsXsJCT5S6
-=WWNw
------END PGP SIGNATURE-----
-
---Signature=_Sun__3_Mar_2013_13_11_54_+1100_Srd3F3ze9btBlpqJ--
+-- 
+All rights reversed
