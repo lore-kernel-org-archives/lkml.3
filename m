@@ -1,71 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753866Ab3CCTtq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 14:49:46 -0500
-Received: from mail1.windriver.com ([147.11.146.13]:57745 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751115Ab3CCTto (ORCPT
+	id S1753478Ab3CCUNx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 15:13:53 -0500
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:39816 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753275Ab3CCUNw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Mar 2013 14:49:44 -0500
-From: Jason Wessel <jason.wessel@windriver.com>
-To: <mmarek@suse.cz>
-CC: <linux-kbuild@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH] menuconfig,check-lxdiaglog.sh: Allow specification of ncurses location
-Date: Sun, 3 Mar 2013 13:48:44 -0600
-Message-ID: <1362340124-2768-1-git-send-email-jason.wessel@windriver.com>
-X-Mailer: git-send-email 1.7.9.5
+	Sun, 3 Mar 2013 15:13:52 -0500
+From: "Yann E. MORIN" <yann.morin.1998@free.fr>
+Organization: BZH lan
+To: linux-kbuild@vger.kernel.org
+Subject: Re: [PATCH] menuconfig: use config scripts to detect ncurses libs
+Date: Sun, 3 Mar 2013 21:13:47 +0100
+User-Agent: KMail/1.13.5 (Linux/3.8.0-treguer; KDE/4.4.5; x86_64; ; )
+Cc: Michal Marek <mmarek@suse.cz>, jlec@gentoo.org,
+        linux-kernel@vger.kernel.org
+References: <jlec@gentoo.org> <201302281916.00257.yann.morin.1998@free.fr> <513095F6.2010000@suse.cz>
+In-Reply-To: <513095F6.2010000@suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201303032113.47632.yann.morin.1998@free.fr>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In some cross build environments such as the Yocto Project build
-environment it provides an ncurses library that is compiled
-differently than the host's version.  This causes display corruption
-problems when the host's curses includes are used instead of the
-includes from the provided compiler are overridden.  There is a second
-case where there is no curses libraries at all on the host system and
-menuconfig will just fail entirely.
+Michal, All,
 
-The solution is simply to allow an override variable in
-check-lxdialog.sh for environments such as the Yocto Project.  Adding
-a CROSS_CURSES_LIB and CROSS_CURSES_INC solves the issue and allowing
-compiling and linking against the right headers and libraries.
+On Friday 01 March 2013 Michal Marek wrote:
+> On 28.2.2013 19:16, Yann E. MORIN wrote:
+> > On Thursday 28 February 2013 jlec@gentoo.org wrote:
+> >> This patch replaces the old heuristic for detection of ncurses libs for
+> >> linking the ncurses menuconfig dialog by the use of the config scripts.
+> >> This results in the requirement of ncurses version 5.6 or newer for menuconfig.
+> > 
+> > OTOH, RHEL4 is still a widely used distro, and was released in 2005,
+> > so is using an ncurses older than 5.6, so I'm afraid we can't drop
+> > the legacy code like that.
+> 
+> Yes, please keep support for older libraries if it does not require too
+> much effort.
 
-Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
-cc: Michal Marek <mmarek@suse.cz>
-cc: linux-kbuild@vger.kernel.org
----
- scripts/kconfig/lxdialog/check-lxdialog.sh |    8 ++++++++
- 1 file changed, 8 insertions(+)
+Yes, we want to keep support for old systems, indeed.
 
-diff --git a/scripts/kconfig/lxdialog/check-lxdialog.sh b/scripts/kconfig/lxdialog/check-lxdialog.sh
-index 8078813..99473e4 100644
---- a/scripts/kconfig/lxdialog/check-lxdialog.sh
-+++ b/scripts/kconfig/lxdialog/check-lxdialog.sh
-@@ -4,6 +4,10 @@
- # What library to link
- ldflags()
- {
-+	if [ x"$CROSS_CURSES_LIB" != x ]; then
-+		echo "$CROSS_CURSES_LIB"
-+		exit
-+	fi
- 	for ext in so a dll.a dylib ; do
- 		for lib in ncursesw ncurses curses ; do
- 			$cc -print-file-name=lib${lib}.${ext} | grep -q /
-@@ -19,6 +23,10 @@ ldflags()
- # Where is ncurses.h?
- ccflags()
- {
-+	if [ x"$CROSS_CURSES_INC" != x ]; then
-+		echo "$CROSS_CURSES_INC"
-+		exit
-+	fi
- 	if [ -f /usr/include/ncursesw/curses.h ]; then
- 		echo '-I/usr/include/ncursesw -DCURSES_LOC="<ncursesw/curses.h>"'
- 		echo ' -DNCURSES_WIDECHAR=1'
+Regards,
+Yann E. MORIN.
+
 -- 
-1.7.9.5
-
+.-----------------.--------------------.------------------.--------------------.
+|  Yann E. MORIN  | Real-Time Embedded | /"\ ASCII RIBBON | Erics' conspiracy: |
+| +33 662 376 056 | Software  Designer | \ / CAMPAIGN     |  ___               |
+| +33 223 225 172 `------------.-------:  X  AGAINST      |  \e/  There is no  |
+| http://ymorin.is-a-geek.org/ | _/*\_ | / \ HTML MAIL    |   v   conspiracy.  |
+'------------------------------^-------^------------------^--------------------'
