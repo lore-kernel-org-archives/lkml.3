@@ -1,233 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753306Ab3CCNe7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 08:34:59 -0500
-Received: from 8.mo4.mail-out.ovh.net ([188.165.33.112]:57763 "EHLO
-	mo4.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753120Ab3CCNe6 (ORCPT
+	id S1753380Ab3CCNf3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 08:35:29 -0500
+Received: from mail-ia0-f173.google.com ([209.85.210.173]:43310 "EHLO
+	mail-ia0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753120Ab3CCNfF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Mar 2013 08:34:58 -0500
-X-Greylist: delayed 7799 seconds by postgrey-1.27 at vger.kernel.org; Sun, 03 Mar 2013 08:34:57 EST
-Date: Sun, 3 Mar 2013 11:28:59 +0100
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: Wenyou Yang <wenyou.yang@atmel.com>
-Cc: linux-arm-kernel@lists.infradead.org, grant.likely@secretlab.ca,
-        nicolas.ferre@atmel.com, richard.genoud@gmail.com, JM.Lin@atmel.com,
-        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org
-X-Ovh-Mailout: 178.32.228.4 (mo4.mail-out.ovh.net)
-Subject: Re: [PATCH v5 02/16] spi/spi-atmel: detect the capabilities of SPI
- core by reading the VERSION register.
-Message-ID: <20130303102859.GN30595@game.jcrosoft.org>
-References: <1361861289-30332-1-git-send-email-wenyou.yang@atmel.com>
- <1361861289-30332-3-git-send-email-wenyou.yang@atmel.com>
+	Sun, 3 Mar 2013 08:35:05 -0500
+Message-ID: <51335181.5070309@kernel.org>
+Date: Sun, 03 Mar 2013 08:34:57 -0500
+From: Konstantin Ryabitsev <mricon@kernel.org>
+Organization: Linux Foundation/Kernel.org
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130219 Thunderbird/17.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1361861289-30332-3-git-send-email-wenyou.yang@atmel.com>
-X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
-X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Ovh-Tracer-Id: 2747477248629648261
-X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiuddrudefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiuddrudefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+To: sedat.dilek@gmail.com
+CC: webmaster@kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        linux-next <linux-next@vger.kernel.org>
+Subject: Re: [git.k.o] Old linux-next WebGit points to $NewWebGitURL/tree
+References: <CA+icZUW4SJ1OTmKtcHWYkaW5pYzJZU8Gv7BtxAeto++aqYB6gA@mail.gmail.com> <CA+icZUVyWAog7sxKXLSODaeO8v9BJReR8LhruC1gLux57oJ7Hg@mail.gmail.com> <CA+icZUWoqYWirP7F-pEUzqK4KoN357ST5eM=3a-esG_nP2G3yA@mail.gmail.com>
+In-Reply-To: <CA+icZUWoqYWirP7F-pEUzqK4KoN357ST5eM=3a-esG_nP2G3yA@mail.gmail.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="----enig2SXFSQVFKODDDCUIGSBCI"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14:47 Tue 26 Feb     , Wenyou Yang wrote:
-> the "has_dma_support" needed for future use with dmaengine driver.
-> 
-> Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
-> Cc: spi-devel-general@lists.sourceforge.net
-> Cc: linux-kernel@vger.kernel.org
-> ---
->  drivers/spi/spi-atmel.c |   70 ++++++++++++++++++++++++++++++++++++++---------
->  1 file changed, 57 insertions(+), 13 deletions(-)
-> 
-> diff --git a/drivers/spi/spi-atmel.c b/drivers/spi/spi-atmel.c
-> index 5bf3786..a8e091b 100644
-> --- a/drivers/spi/spi-atmel.c
-> +++ b/drivers/spi/spi-atmel.c
-> @@ -39,6 +39,7 @@
->  #define SPI_CSR1				0x0034
->  #define SPI_CSR2				0x0038
->  #define SPI_CSR3				0x003c
-> +#define SPI_VERSION				0x00fc
->  #define SPI_RPR					0x0100
->  #define SPI_RCR					0x0104
->  #define SPI_TPR					0x0108
-> @@ -71,6 +72,8 @@
->  #define SPI_FDIV_SIZE				1
->  #define SPI_MODFDIS_OFFSET			4
->  #define SPI_MODFDIS_SIZE			1
-> +#define SPI_WDRBT_OFFSET			5
-> +#define SPI_WDRBT_SIZE				1
->  #define SPI_LLB_OFFSET				7
->  #define SPI_LLB_SIZE				1
->  #define SPI_PCS_OFFSET				16
-> @@ -180,6 +183,11 @@
->  #define spi_writel(port,reg,value) \
->  	__raw_writel((value), (port)->regs + SPI_##reg)
->  
-> +struct atmel_spi_caps {
-> +	bool	is_spi2;
-> +	bool	has_wdrbt;
-> +	bool	has_dma_support;
-> +};
->  
->  /*
->   * The core SPI transfer engine just talks to a register bank to set up
-> @@ -204,6 +212,8 @@ struct atmel_spi {
->  
->  	void			*buffer;
->  	dma_addr_t		buffer_dma;
-> +
-> +	struct atmel_spi_caps	caps;
->  };
->  
->  /* Controller-specific per-slave state */
-> @@ -222,14 +232,10 @@ struct atmel_spi_device {
->   *  - SPI_SR.TXEMPTY, SPI_SR.NSSR (and corresponding irqs)
->   *  - SPI_CSRx.CSAAT
->   *  - SPI_CSRx.SBCR allows faster clocking
-> - *
-> - * We can determine the controller version by reading the VERSION
-> - * register, but I haven't checked that it exists on all chips, and
-> - * this is cheaper anyway.
->   */
-> -static bool atmel_spi_is_v2(void)
-> +static bool atmel_spi_is_v2(struct atmel_spi *as)
->  {
-> -	return !cpu_is_at91rm9200();
-> +	return as->caps.is_spi2;
->  }
->  
->  /*
-> @@ -263,15 +269,20 @@ static void cs_activate(struct atmel_spi *as, struct spi_device *spi)
->  	unsigned active = spi->mode & SPI_CS_HIGH;
->  	u32 mr;
->  
-> -	if (atmel_spi_is_v2()) {
-> +	if (atmel_spi_is_v2(as)) {
->  		/*
->  		 * Always use CSR0. This ensures that the clock
->  		 * switches to the correct idle polarity before we
->  		 * toggle the CS.
->  		 */
->  		spi_writel(as, CSR0, asd->csr);
-> -		spi_writel(as, MR, SPI_BF(PCS, 0x0e) | SPI_BIT(MODFDIS)
-> +		if (as->caps.has_wdrbt) {
-> +			spi_writel(as, MR, SPI_BF(PCS, 0x0e) | SPI_BIT(WDRBT)
-> +				| SPI_BIT(MODFDIS) | SPI_BIT(MSTR));
-> +		} else {
-> +			spi_writel(as, MR, SPI_BF(PCS, 0x0e) | SPI_BIT(MODFDIS)
->  				| SPI_BIT(MSTR));
-> +		}
->  		mr = spi_readl(as, MR);
->  		gpio_set_value(asd->npcs_pin, active);
->  	} else {
-> @@ -318,7 +329,7 @@ static void cs_deactivate(struct atmel_spi *as, struct spi_device *spi)
->  			asd->npcs_pin, active ? " (low)" : "",
->  			mr);
->  
-> -	if (atmel_spi_is_v2() || spi->chip_select != 0)
-> +	if (atmel_spi_is_v2(as) || spi->chip_select != 0)
->  		gpio_set_value(asd->npcs_pin, !active);
->  }
->  
-> @@ -719,7 +730,7 @@ static int atmel_spi_setup(struct spi_device *spi)
->  	}
->  
->  	/* see notes above re chipselect */
-> -	if (!atmel_spi_is_v2()
-> +	if (!atmel_spi_is_v2(as)
->  			&& spi->chip_select == 0
->  			&& (spi->mode & SPI_CS_HIGH)) {
->  		dev_dbg(&spi->dev, "setup: can't be active-high\n");
-> @@ -728,7 +739,7 @@ static int atmel_spi_setup(struct spi_device *spi)
->  
->  	/* v1 chips start out at half the peripheral bus speed. */
->  	bus_hz = clk_get_rate(as->clk);
-> -	if (!atmel_spi_is_v2())
-> +	if (!atmel_spi_is_v2(as))
->  		bus_hz /= 2;
->  
->  	if (spi->max_speed_hz) {
-> @@ -804,7 +815,7 @@ static int atmel_spi_setup(struct spi_device *spi)
->  		"setup: %lu Hz bpw %u mode 0x%x -> csr%d %08x\n",
->  		bus_hz / scbr, bits, spi->mode, spi->chip_select, csr);
->  
-> -	if (!atmel_spi_is_v2())
-> +	if (!atmel_spi_is_v2(as))
->  		spi_writel(as, CSR0 + 4 * spi->chip_select, csr);
->  
->  	return 0;
-> @@ -910,6 +921,32 @@ static void atmel_spi_cleanup(struct spi_device *spi)
->  	kfree(asd);
->  }
->  
-> +static inline unsigned int atmel_get_version(struct atmel_spi *as)
-> +{
-> +	return spi_readl(as, VERSION) & 0x00000fff;
-> +}
-> +
-> +static void __init atmel_get_caps(struct atmel_spi *as)
-> +{
-> +	unsigned int version;
-> +
-> +	version = atmel_get_version(as);
-> +	dev_info(&as->pdev->dev, "version: 0x%x\n", version);
-> +
-> +	as->caps.is_spi2 = false;
-> +	as->caps.has_wdrbt = false;
-> +	as->caps.has_dma_support = false;
-> +
-> +	if (version > 0x121)
-> +		as->caps.is_spi2 = true;
-> +
-> +	if (version >= 0x210)
-> +		as->caps.has_wdrbt = true;
-> +
-> +	if (version >= 0x212)
-> +		as->caps.has_dma_support = true;
-use switch here
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+------enig2SXFSQVFKODDDCUIGSBCI
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-or filled struct
-> +}
-> +
->  /*-------------------------------------------------------------------------*/
->  
->  static int atmel_spi_probe(struct platform_device *pdev)
-> @@ -970,6 +1007,8 @@ static int atmel_spi_probe(struct platform_device *pdev)
->  	as->irq = irq;
->  	as->clk = clk;
->  
-> +	atmel_get_caps(as);
-> +
->  	ret = request_irq(irq, atmel_spi_interrupt, 0,
->  			dev_name(&pdev->dev), master);
->  	if (ret)
-> @@ -979,7 +1018,12 @@ static int atmel_spi_probe(struct platform_device *pdev)
->  	clk_enable(clk);
->  	spi_writel(as, CR, SPI_BIT(SWRST));
->  	spi_writel(as, CR, SPI_BIT(SWRST)); /* AT91SAM9263 Rev B workaround */
-> -	spi_writel(as, MR, SPI_BIT(MSTR) | SPI_BIT(MODFDIS));
-> +	if (as->caps.has_wdrbt) {
-> +		spi_writel(as, MR, SPI_BIT(WDRBT) | SPI_BIT(MODFDIS)
-> +				| SPI_BIT(MSTR));
-> +	} else {
-> +		spi_writel(as, MR, SPI_BIT(MSTR) | SPI_BIT(MODFDIS));
-> +	}
->  	spi_writel(as, PTCR, SPI_BIT(RXTDIS) | SPI_BIT(TXTDIS));
->  	spi_writel(as, CR, SPI_BIT(SPIEN));
->  
-> -- 
-> 1.7.9.5
-> 
+On 03/03/13 03:26 AM, Sedat Dilek wrote:
+> Same happens with ext4 GIT...
+>=20
+> OLD: http://git.kernel.org/?p=3Dlinux/kernel/git/tytso/ext4.git
+>=20
+> NEW: http://git.kernel.org/cgit/linux/kernel/git/tytso/ext4.git/tree/
+>=20
+> FIXED: http://git.kernel.org/cgit/linux/kernel/git/tytso/ext4.git
+
+Hello:
+
+This is now fixed globally.
+
+Best,
+--=20
+Konstantin Ryabitsev
+Systems Administrator
+Linux Foundation, kernel.org
+Montr=C3=A9al, Qu=C3=A9bec
+
+
+------enig2SXFSQVFKODDDCUIGSBCI
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.13 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iQGcBAEBAgAGBQJRM1GBAAoJEI6WedmufEleyHEL/jJNxmnxM8x2dKwU9loWuMPo
+lEy+V3gyEOL7FqaJmRyNRFfXAthG8Cjcv5QkDBgnigbCrHXSd0KgMDbvGQCgJOWk
+3Wtu9LEPCtX7Cdft+kezb9ZkVZRE8eHAwEpgAkpkXCX2U/pbavNejlcaaXZIH5aG
+ujLV/Z75qdA1k46VqAVWcvgR/VREKoN38Ug/kjVDPNtjVfMbb6+C9UVktf8+P6Uq
+1o1puM0OJGTmfYOb1fM0m2Wp7cWsbuV8qbs4eBnL+N/yeftHq65zzYgn/qzUOu8u
+3cgHkppOnofOOY4LoA64s2XWpnlN+bpmsWLecAOGpBtDZkgdPkyxL0D/uII7Z06B
+6KsSHl11CPnaG4TC/BspwMZ/Oy7F0fCH6SjUs2Ki1WIrL3bZnWDWG/q1gvHDBCbN
+vS/Jps2D49sqQCLT5fUf0Igms9V+11NS04N/FqATpE4xpUQBSoVga+d0l/KrJKaY
+sJxYO3JwxIoazQenjotlJlc/AkKVi0UWw58bVGcESA==
+=lYuv
+-----END PGP SIGNATURE-----
+
+------enig2SXFSQVFKODDDCUIGSBCI--
