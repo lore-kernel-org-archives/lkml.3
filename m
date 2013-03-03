@@ -1,44 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753246Ab3CCMvo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 07:51:44 -0500
-Received: from mail-wg0-f43.google.com ([74.125.82.43]:43015 "EHLO
-	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753000Ab3CCMvn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Mar 2013 07:51:43 -0500
+	id S1753317Ab3CCNAj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 08:00:39 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:15997 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753089Ab3CCNAi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Mar 2013 08:00:38 -0500
+Date: Sun, 3 Mar 2013 15:00:22 +0200
+From: Gleb Natapov <gleb@redhat.com>
+To: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: Hu Tao <hutao@cn.fujitsu.com>, kvm list <kvm@vger.kernel.org>,
+        qemu-devel <qemu-devel@nongnu.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>, Blue Swirl <blauwirbel@gmail.com>,
+        Eric Blake <eblake@redhat.com>, Andrew Jones <drjones@redhat.com>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Luiz Capitulino <lcapitulino@redhat.com>,
+        Wen Congyang <wency@cn.fujitsu.com>
+Subject: Re: [PATCH v12 rebased] kvm: notify host when the guest is panicked
+Message-ID: <20130303130022.GF23616@redhat.com>
+References: <cover.1358920534.git.hutao@cn.fujitsu.com>
+ <1358925575-4505-1-git-send-email-hutao@cn.fujitsu.com>
+ <20130208013947.GA3364@amt.cnet>
+ <20130228085425.GA16362@localhost.localdomain>
+ <20130302000312.GA25309@amt.cnet>
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-Date: Sun, 3 Mar 2013 13:51:42 +0100
-Message-ID: <CA+icZUXfREDxtvoZTJEhCOMJWtYVwzNm3m1REQXtyDeQ8bh4Uw@mail.gmail.com>
-Subject: Re: [git.k.o] Add git archive $remote-repository support?
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: webmaster@kernel.org
-Cc: Konstantin Ryabitsev <mricon@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130302000312.GA25309@amt.cnet>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-( More background infos see [1]. )
+On Fri, Mar 01, 2013 at 09:03:12PM -0300, Marcelo Tosatti wrote:
+> On Thu, Feb 28, 2013 at 04:54:25PM +0800, Hu Tao wrote:
+> > > > diff --git a/arch/x86/include/uapi/asm/kvm_para.h b/arch/x86/include/uapi/asm/kvm_para.h
+> > > > index 06fdbd9..c15ef33 100644
+> > > > --- a/arch/x86/include/uapi/asm/kvm_para.h
+> > > > +++ b/arch/x86/include/uapi/asm/kvm_para.h
+> > > > @@ -96,5 +96,7 @@ struct kvm_vcpu_pv_apf_data {
+> > > >  #define KVM_PV_EOI_ENABLED KVM_PV_EOI_MASK
+> > > >  #define KVM_PV_EOI_DISABLED 0x0
+> > > >  
+> > > > +#define KVM_PV_EVENT_PORT	(0x505UL)
+> > > > +
+> > > 
+> > > No need for the ioport to be hard coded. What are the options to
+> > > communicate an address to the guest? An MSR, via ACPI?
+> > 
+> > I'm not quite understanding here. By 'address', you mean an ioport?
+> > how to communicate an address? (I have little knowledge about ACPI)
+> 
+> Yes, the ioport. The address of the ioport should not be fixed (for
+> example future emulated board could use that fixed ioport address,
+> 0x505UL).
+> 
+> One option is to pass the address via an MSR. Yes, that is probably the
+> best option because there is no dependency on ACPI.
+> 
+Why dependency on ACPI is problematic? ACPI is the standard way on x86
+to enumerate platform devices. Passing it through MSR makes this panic
+device CPU interface which it is not. And since relying on #GP to detect
+valid MSRs is not good interface we will have to guard it by cpuid bit.
 
-Here as an example to extract kbuild-system from $repository:
-
-repository="git://repo.or.cz/linux-2.6.git"
-
-paths="scripts/basic,scripts/kconfig,scripts/Kbuild.include,scripts/Makefile.build,scripts/Makefile.host,scripts/Makefile.lib"
-
-version="v3.8"
-
-$ git archive --verbose --format=tar --remote="$repository"
---prefix="kbuild-$version/" $version $paths | tar -xv
-
-NOTE: <git://repo.or.cz/linux-2.6.git> supports remote-git-archive support.
-
-Can you implement this?
-
-- Sedat -
-
-[1] http://marc.info/?l=linux-kernel&m=136231049311175&w=2
+--
+			Gleb.
