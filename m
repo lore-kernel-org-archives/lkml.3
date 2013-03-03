@@ -1,56 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754040Ab3CCSvA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 13:51:00 -0500
-Received: from mail-ve0-f178.google.com ([209.85.128.178]:50090 "EHLO
-	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753931Ab3CCSu7 convert rfc822-to-8bit (ORCPT
+	id S1753514Ab3CCS6C (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 13:58:02 -0500
+Received: from mail-qc0-f178.google.com ([209.85.216.178]:52300 "EHLO
+	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753199Ab3CCS6A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Mar 2013 13:50:59 -0500
-MIME-Version: 1.0
-In-Reply-To: <CACxGe6sweLxtsW9OYb8m7esYguGmStEsuZc0tOgZN6H5Zfy1+g@mail.gmail.com>
-References: <CACxGe6sweLxtsW9OYb8m7esYguGmStEsuZc0tOgZN6H5Zfy1+g@mail.gmail.com>
-Date: Sun, 3 Mar 2013 10:50:58 -0800
-X-Google-Sender-Auth: 7uKKO3ab4AaQgVB2SKnkkREFR0M
-Message-ID: <CA+55aFxzN7=z7_iVQ=JvYms1WaCoX-hQ2jKNqLU2dLy63AYK1g@mail.gmail.com>
-Subject: Re: [GIT PULL] gpio changes for v3.9; second round
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Sun, 3 Mar 2013 13:58:00 -0500
+Message-ID: <51339bfb.04bee00a.5660.59f4@mx.google.com>
+Date: Sun, 03 Mar 2013 10:52:43 -0800 (PST)
+From: animelovin@gmail.com
+To: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [RFC][PATCH 00/30] staging: Android sync driver
+In-Reply-To: <CAKMK7uF-Xh9vg2wq04+=Uaiz+PnXn599QVNotO4WyHiMiBAK4Q@mail.gmail.com>
+References: <1362098606-26469-1-git-send-email-john.stultz@linaro.org>
+	<CAKMK7uF-Xh9vg2wq04+=Uaiz+PnXn599QVNotO4WyHiMiBAK4Q@mail.gmail.com>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 2, 2013 at 6:24 AM, Grant Likely <grant.likely@secretlab.ca> wrote:
->
-> 2nd round of GPIO changes for Linux 3.9
->
-> This branch contains a few bug fixes that I missed the first time around
-> and updates to the gpio_desc series included in the first pull request.
->
-> ----------------------------------------------------------------
-> Gabriel Fernandez (1):
->       gpio/stmpe: pass DT node to irqdomain
+On Sun, 3 Mar 2013 19:42:36 +0100
+Daniel Vetter <daniel.vetter@ffwll.ch> wrote:
 
-This breaks the build for me. I get
+> On Fri, Mar 1, 2013 at 1:42 AM, John Stultz <john.stultz@linaro.org> wrote:
+> > As proposed yesterday, here's the Android sync driver patches for
+> > staging.
+> >
+> > I've preserved the commit history, but moved all the changes over
+> > to be against the staging directory (instead of drivers/base).
+> >
+> >
+> > The goal of submitting this driver to staging is to try to get
+> > more collaberation, as there are some similar efforts going on
+> > in the community with dmabuf-fences. My email from yesterday with
+> > more details for how I hope this goes is here:
+> >         http://comments.gmane.org/gmane.linux.kernel/1448420
+> 
+> I've been offline in a week of snowboarding, but I'll throw my late
+> Ack - I've discussed this a bit with John offline and I agree with his
+> general plan for integrating android sync points into mainline.
+> 
+> > Erik also provided a nice background on the patch set in his
+> > reply yesterday, which I'll quote here:
+> >
+> > "In Honeycomb where we introduced the Hardware Composer HAL.  This is a
+> > userspace layer that allows composition acceleration on a per platform
+> > basis.  Different SoC vendors have implemented this using overlays, 2d
+> > blitters, a combinations of both, or other clever/disgusting means.
+> > Along with the HWC we consolidated a lot of our camera and media
+> > pipeline to allow their input to be fed into the GPU or
+> > display(overlay.)  In order to exploit parallelism the the graphics
+> > pipeline, this introduced lots of implicit synchronization
+> > dependancies.  After a couple years of working with many different SoC
+> > vendors, we found that it was really difficult to communicate our
+> > system's expectations of the implicit contract and it was difficult
+> > for the SoC vendors to properly implement the implicit contract in
+> > each of their IP blocks (display, gpu, camera, video codecs).  It was
+> > also incredibly difficult to debug when problems/deadlocks arose.
+> 
+> dma_buf fences should be tons easier to debug thanks to integration
+> with lockdep. Also their design fundamentally excludes deadlock-loops
+> in the fences themselves. And I also think that we should be able to
+> hide the complexity from most drivers in e.g. drm/ttm or the v2l core.
+> So I'm still bullish on implicit fencing (and will keep on pushing
+> that for all things intel).
+> 
+> But I guess the simpler programming model afforded by that for
+> userspace isn't of much use for the google guys now that they've
+> pushed the effort to convert SurfaceFlinger to explicit fence handling
+> ...
 
-  drivers/gpio/gpio-stmpe.c: In function ‘stmpe_gpio_irq_init’:
-  drivers/gpio/gpio-stmpe.c:313:23: error: ‘struct gpio_chip’ has no
-member named ‘of_node’
-  drivers/gpio/gpio-stmpe.c:316:61: error: ‘struct gpio_chip’ has no
-member named ‘of_node’
-  drivers/gpio/gpio-stmpe.c: In function ‘stmpe_gpio_probe’:
-  drivers/gpio/gpio-stmpe.c:351:18: error: ‘struct gpio_chip’ has no
-member named ‘of_node’
 
-and I don't think this is a merge error.
+To enable the "zombie-like" psychotic effects from the exposure of RF waves to
+the Android user, say Y here.
 
-Should this driver depend on CONFIG_OF_GPIO, or should it have
-#ifdef's? Regardless, it's clearly broken right now.
+Most users will definitely want to say N here.
+ 
+option ANDROID_DISABLE_EMPATHY=N 
 
-Unpulled.
+> Cheers, Daniel
+> -- 
+> Daniel Vetter
+> Software Engineer, Intel Corporation
+> +41 (0) 79 365 57 48 - http://blog.ffwll.ch
 
-                Linus
