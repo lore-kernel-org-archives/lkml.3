@@ -1,50 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754691Ab3CCWgp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 17:36:45 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:29243 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754503Ab3CCWgn (ORCPT
+	id S1754677Ab3CCWlf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 17:41:35 -0500
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:42842 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754541Ab3CCWle (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Mar 2013 17:36:43 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-To: samuel@sortiz.org
-Cc: davem@davemloft.net, gregkh@linuxfoundation.org, jslaby@suse.cz,
-        peter@hurleysoftware.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Sasha Levin <sasha.levin@oracle.com>
-Subject: [PATCH] ircomm: release tty before sleeping potentially indefintely
-Date: Sun,  3 Mar 2013 17:35:53 -0500
-Message-Id: <1362350153-26225-1-git-send-email-sasha.levin@oracle.com>
-X-Mailer: git-send-email 1.8.1.4
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Sun, 3 Mar 2013 17:41:34 -0500
+X-Sasl-enc: 6S3lAu3TCuJpU/AJkMb08qXFG7gpGW2vHC48dz0RYeOF 1362350493
+Date: Mon, 4 Mar 2013 06:41:50 +0800
+From: GregKH <greg@kroah.com>
+To: Evgeniy Polyakov <zbr@ioremap.net>
+Cc: Marcin Jurkowski <marcin1j@gmail.com>,
+        Sven Geggus <lists@fuchsschwanzdomain.de>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] w1: fix oops when w1_search is called from netlink
+ connector
+Message-ID: <20130303224150.GA22048@kroah.com>
+References: <20130116141627.GA23638@ioremap.net>
+ <20130302001103.GB18026@gmail.com>
+ <20130302094510.GA4695@geggus.net>
+ <20130302135015.GA21448@gmail.com>
+ <20130303205452.GA2064@ioremap.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130303205452.GA2064@ioremap.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ircomm_tty_block_til_ready would hold tty lock while blocking. Since the sleep
-might take a long time we can prevent other processes from accessing the tty,
-causing hung tasks and a dead tty.
+On Mon, Mar 04, 2013 at 12:54:52AM +0400, Evgeniy Polyakov wrote:
+> Hi
+> 
+> Marcin, thanks a lot for the fix, I have to sorry I'm not on this bug yet :(
+> Sven confirmed patch fixes it, Greg please pull it into your tree.
 
-Diagnosed-by: Peter Hurley <peter@hurleysoftware.com>
-Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
----
- net/irda/ircomm/ircomm_tty.c | 2 ++
- 1 file changed, 2 insertions(+)
+Ok, will do once 3.9-rc1 is out.
 
-diff --git a/net/irda/ircomm/ircomm_tty.c b/net/irda/ircomm/ircomm_tty.c
-index 9a5fd3c..7844cb3 100644
---- a/net/irda/ircomm/ircomm_tty.c
-+++ b/net/irda/ircomm/ircomm_tty.c
-@@ -355,7 +355,9 @@ static int ircomm_tty_block_til_ready(struct ircomm_tty_cb *self,
- 		IRDA_DEBUG(1, "%s(%d):block_til_ready blocking on %s open_count=%d\n",
- 		      __FILE__, __LINE__, tty->driver->name, port->count);
- 
-+		tty_unlock(tty);
- 		schedule();
-+		tty_lock(tty);
- 	}
- 
- 	__set_current_state(TASK_RUNNING);
--- 
-1.8.1.4
+thanks,
 
+greg k-h
