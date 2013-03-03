@@ -1,58 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754655Ab3CCXSg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 18:18:36 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:46100 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753027Ab3CCXSe (ORCPT
+	id S1754744Ab3CCXiR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 18:38:17 -0500
+Received: from mail-lb0-f177.google.com ([209.85.217.177]:53782 "EHLO
+	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754624Ab3CCXiP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Mar 2013 18:18:34 -0500
-Message-ID: <5133DA12.8020907@oracle.com>
-Date: Sun, 03 Mar 2013 18:17:38 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130227 Thunderbird/17.0.3
+	Sun, 3 Mar 2013 18:38:15 -0500
+Date: Mon, 4 Mar 2013 00:38:12 +0100
+From: Fredrik Gustafsson <iveqy@iveqy.com>
+To: linux-kernel@vger.kernel.org
+Subject: Questions about multiprocessor architectures
+Message-ID: <20130303233812.GA10609@paksenarrion.iveqy.com>
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: samuel@sortiz.org, gregkh@linuxfoundation.org, jslaby@suse.cz,
-        peter@hurleysoftware.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ircomm: release tty before sleeping potentially indefintely
-References: <1362350153-26225-1-git-send-email-sasha.levin@oracle.com> <20130303.174739.1195645942179862011.davem@davemloft.net>
-In-Reply-To: <20130303.174739.1195645942179862011.davem@davemloft.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/03/2013 05:47 PM, David Miller wrote:
-> From: Sasha Levin <sasha.levin@oracle.com>
-> Date: Sun,  3 Mar 2013 17:35:53 -0500
-> 
->> ircomm_tty_block_til_ready would hold tty lock while blocking. Since the sleep
->> might take a long time we can prevent other processes from accessing the tty,
->> causing hung tasks and a dead tty.
->>
->> Diagnosed-by: Peter Hurley <peter@hurleysoftware.com>
->> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
-> 
-> But then you invalidate all of the tty state tests made under
-> the lock at the beginning of this function, before enterring
-> the loop.  If you drop the lock, those pieces of state could
-> change.
-> 
-> I'm not applying this.
+Hi,
+I've got some questions about multiprocessor architectures, or more
+correct linux behavior on them.
 
-I'm unsure. A similar patch was applied back in 2010 that does the same thing
-to a bunch of drivers, including the core tty code (e142a31da "tty: release
-BTM while sleeping in block_til_ready").
+Is there any restriction on how two processors are connected to
+eachother. My interests are Intels qpi (which I suppose that linux
+supports, at least from my research) and thunderbolt (which should be
+fast enough for inter CPU communication). Does linux support those
+interfaces?
 
-This IR code looks very much like tty_port_block_til_ready() where it was
-okay to do that change, so I should be the same with ircomm_tty_block_til_ready.
+Is it possible to connect two processors with different architecture?
+For example and ARM processor with a amd64 processor?
 
+I'm a novince on the subject and takes gladly pointers to good
+litterature or places to educate myself and apologizes if my questions
+seems strange formulated.
 
-Thanks,
-Sasha
+--
+Med vänliga hälsningar
+Fredrik Gustafsson
 
-
+tel: 0733-608274
+e-post: iveqy@iveqy.com
