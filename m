@@ -1,80 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753363Ab3CCNxS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 08:53:18 -0500
-Received: from mail-ia0-f177.google.com ([209.85.210.177]:46533 "EHLO
-	mail-ia0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753219Ab3CCNxQ (ORCPT
+	id S1753350Ab3CCONU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 09:13:20 -0500
+Received: from mail-we0-f169.google.com ([74.125.82.169]:48022 "EHLO
+	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753187Ab3CCONT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Mar 2013 08:53:16 -0500
-Message-ID: <513355C5.2010505@kernel.org>
-Date: Sun, 03 Mar 2013 08:53:09 -0500
-From: Konstantin Ryabitsev <mricon@kernel.org>
-Organization: Linux Foundation/Kernel.org
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130219 Thunderbird/17.0.3
+	Sun, 3 Mar 2013 09:13:19 -0500
 MIME-Version: 1.0
-To: sedat.dilek@gmail.com
-CC: webmaster@kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [git.k.o] gitweb->cgit: Re-add Git snapshot tarball feature
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <513355C5.2010505@kernel.org>
 References: <CA+icZUUWqeHdgjP-Hi630DDwO65evWUUCX2tBYfj=Cn1w3dEAg@mail.gmail.com>
-In-Reply-To: <CA+icZUUWqeHdgjP-Hi630DDwO65evWUUCX2tBYfj=Cn1w3dEAg@mail.gmail.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="----enig2AFNCBDEFAMWAHDFRIPGN"
+	<513355C5.2010505@kernel.org>
+Date: Sun, 3 Mar 2013 15:13:18 +0100
+Message-ID: <CA+icZUXxJ=4fuKCOckLfvc=V9XV5u8qy07nhVB_9jt5LPvHJ+A@mail.gmail.com>
+Subject: Re: [git.k.o] gitweb->cgit: Re-add Git snapshot tarball feature
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Konstantin Ryabitsev <mricon@kernel.org>
+Cc: webmaster@kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
-------enig2AFNCBDEFAMWAHDFRIPGN
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+On Sun, Mar 3, 2013 at 2:53 PM, Konstantin Ryabitsev <mricon@kernel.org> wrote:
+> On 03/03/13 06:34 AM, Sedat Dilek wrote:
+>> Hi,
+>>
+>> unfortunately, the Git snapshot tarball feature was dropped when
+>> switching from gitweb->cgit interface.
+>>
+>> For example the Freetz router project extracted the Kbuild-system out
+>> of Linux-kernel sources.
+>> This is no more possible (see old version [2] and new one in [3]).
+>> Freetz introduced "git_archive" checkout method [3] to fix it.
+>>
+>> Can you please re-add?
+>
+> I've cautiously re-enabled the snapshot feature. I'll keep an eye on the
+> impact this has on the system load and the cache size.
+>
 
-On 03/03/13 06:34 AM, Sedat Dilek wrote:
-> Hi,
->=20
-> unfortunately, the Git snapshot tarball feature was dropped when
-> switching from gitweb->cgit interface.
->=20
-> For example the Freetz router project extracted the Kbuild-system out
-> of Linux-kernel sources.
-> This is no more possible (see old version [2] and new one in [3]).
-> Freetz introduced "git_archive" checkout method [3] to fix it.
->=20
-> Can you please re-add?
+Thanks.
 
-I've cautiously re-enabled the snapshot feature. I'll keep an eye on the
-impact this has on the system load and the cache size.
+Each commit-id it should be downloadable as a snapshot tarball, not
+only he latest commit-id.
 
-Regards,
---=20
-Konstantin Ryabitsev
-Systems Administrator
-Linux Foundation, kernel.org
-Montr=C3=A9al, Qu=C3=A9bec
+LATEST: http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/snapshot/linux-a7c1120d2dcc83691bafa034d98f70285757e826.tar.gz
+
+PREVIOUS: Not available as TGZ
+
+I would also like to see it as on fdo in the form:
+
+$GIT_URL/$PATH/snapshot/$PKG_NAME-$COMMIT_ID.tar.gz
+
+$GIT_URL=http://cgit.freedesktop.org
+PATH=xorg/driver/xf86-video-intel
+PKG_NAME=xf86-video-intel
+COMMIT_ID=995abb46754eba7524afcb852159a31ea19add82
+
+EXAMPLE:
+http://cgit.freedesktop.org/xorg/driver/xf86-video-intel/snapshot/xf86-video-intel-995abb46754eba7524afcb852159a31ea19add82.tar.gz
+
+/me is no cgit expert...
+
+- Sedat -
 
 
-------enig2AFNCBDEFAMWAHDFRIPGN
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.13 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iQGcBAEBAgAGBQJRM1XFAAoJEI6WedmufEle8t4L/11Zc+YfBziUPjip//3pWUPF
-2BgtmQR0MAfr6AIamlsCGFozJkYXGU4Joaux9Hsk9+/sJaM1Vof7bIkltwDhN9Mq
-4jY2wKCxijKXtKJHGyKpg8IN57S3UHSuqVshgZiBx8QMsBPe+PVro1h5+ufYrF2w
-paNrf95igV5FbZIVIEnSoOKtvd2yK9pRzlOmeGQVMnu0wm7hAThdNGi+MdCwoRws
-HhTA3YZkD+uY9jFVBbF2BHZRHHj2IObPTDOpDDL5yYB2tCLR2B1vOO3Far8+RBU7
-O8WjUKxIoi5WnyNJDzkXjH99CDi5NtzBVHT6KCcIb5A2knJMmxq8M4oe+ZdytR4/
-2uWt4dO4ICmy/NjAuHfJxCsoW6sJKxPc8ZUWmFoxWVZre8L3WCVvKmCC757KwUJw
-iBpGSk/9txN5Jr8NHJbLQ4yacBzSm7NtRhbkj+ma23+wwU22KBh1yWChJ/omRmEM
-0hVVkLVSDgFUwuh9W2J0vM5WTw7GeeuWZPoJbXBROQ==
-=3wx3
------END PGP SIGNATURE-----
-
-------enig2AFNCBDEFAMWAHDFRIPGN--
+> Regards,
+> --
+> Konstantin Ryabitsev
+> Systems Administrator
+> Linux Foundation, kernel.org
+> Montréal, Québec
+>
