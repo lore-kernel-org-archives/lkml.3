@@ -1,44 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754677Ab3CCWlf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 17:41:35 -0500
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:42842 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754541Ab3CCWle (ORCPT
+	id S1754671Ab3CCWrp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 17:47:45 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:57021 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754551Ab3CCWrn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Mar 2013 17:41:34 -0500
-X-Sasl-enc: 6S3lAu3TCuJpU/AJkMb08qXFG7gpGW2vHC48dz0RYeOF 1362350493
-Date: Mon, 4 Mar 2013 06:41:50 +0800
-From: GregKH <greg@kroah.com>
-To: Evgeniy Polyakov <zbr@ioremap.net>
-Cc: Marcin Jurkowski <marcin1j@gmail.com>,
-        Sven Geggus <lists@fuchsschwanzdomain.de>,
+	Sun, 3 Mar 2013 17:47:43 -0500
+Date: Sun, 03 Mar 2013 17:47:39 -0500 (EST)
+Message-Id: <20130303.174739.1195645942179862011.davem@davemloft.net>
+To: sasha.levin@oracle.com
+Cc: samuel@sortiz.org, gregkh@linuxfoundation.org, jslaby@suse.cz,
+        peter@hurleysoftware.com, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] w1: fix oops when w1_search is called from netlink
- connector
-Message-ID: <20130303224150.GA22048@kroah.com>
-References: <20130116141627.GA23638@ioremap.net>
- <20130302001103.GB18026@gmail.com>
- <20130302094510.GA4695@geggus.net>
- <20130302135015.GA21448@gmail.com>
- <20130303205452.GA2064@ioremap.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130303205452.GA2064@ioremap.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Subject: Re: [PATCH] ircomm: release tty before sleeping potentially
+ indefintely
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1362350153-26225-1-git-send-email-sasha.levin@oracle.com>
+References: <1362350153-26225-1-git-send-email-sasha.levin@oracle.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Sun, 03 Mar 2013 14:47:47 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 04, 2013 at 12:54:52AM +0400, Evgeniy Polyakov wrote:
-> Hi
+From: Sasha Levin <sasha.levin@oracle.com>
+Date: Sun,  3 Mar 2013 17:35:53 -0500
+
+> ircomm_tty_block_til_ready would hold tty lock while blocking. Since the sleep
+> might take a long time we can prevent other processes from accessing the tty,
+> causing hung tasks and a dead tty.
 > 
-> Marcin, thanks a lot for the fix, I have to sorry I'm not on this bug yet :(
-> Sven confirmed patch fixes it, Greg please pull it into your tree.
+> Diagnosed-by: Peter Hurley <peter@hurleysoftware.com>
+> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
 
-Ok, will do once 3.9-rc1 is out.
+But then you invalidate all of the tty state tests made under
+the lock at the beginning of this function, before enterring
+the loop.  If you drop the lock, those pieces of state could
+change.
 
-thanks,
-
-greg k-h
+I'm not applying this.
