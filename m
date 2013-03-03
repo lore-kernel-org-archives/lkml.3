@@ -1,56 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753726Ab3CCTZx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 14:25:53 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:59087 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753336Ab3CCTZw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Mar 2013 14:25:52 -0500
-From: Borislav Petkov <bp@alien8.de>
-To: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>
-Subject: [PATCH] perf, liblk: Fix _FORTIFY_SOURCE builds
-Date: Sun,  3 Mar 2013 20:25:33 +0100
-Message-Id: <1362338733-8718-1-git-send-email-bp@alien8.de>
-X-Mailer: git-send-email 1.8.1.3.535.ga923c31
+	id S1753961Ab3CCTc0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 14:32:26 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:59474 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753852Ab3CCTcZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Mar 2013 14:32:25 -0500
+Date: Sun, 3 Mar 2013 19:32:23 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, David Miller <davem@davemloft.net>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [RFC][PATCH] making vfree() safe from interrupt contexts
+Message-ID: <20130303193223.GN4503@ZenIV.linux.org.uk>
+References: <20130303184736.GM4503@ZenIV.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130303184736.GM4503@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Borislav Petkov <bp@suse.de>
+On Sun, Mar 03, 2013 at 06:47:36PM +0000, Al Viro wrote:
+> 	To bring back the thing discussed back in, IIRC, December: we have
+> a bunch of places where inability to do vfree() from interrupt contexts
+> (the most common case is doing that from RCU callback) leads to very
+> ugly open-coded schemes that delay it one way or another.  We can let vfree()
+> itself do that instead.  AFAICS, it works; the diff below covers several
+> obvious cases found just by grep.  I'm fairly sure that there's more code
+> that could benefit from that...
+> 
+> 	I'm not sure which tree should it go through, though.  Suggestions?
+> The reason I'm interested in this sucker is the mess in fs/file.c (fdtable
+> freeing), but the main change here is in mm/vmalloc.c...
+> 
+> 	Note that the patch obviously ought to be split - mm/vmalloc.c
+> part, allowing vfree() in interrupt contexts (current mainline has
+> BUG_ON() triggered in that case) and a chunk for each ad-hoc vfree()
+> deferral scheme killed.
+> 
+> 	Comments?
 
-Jiri Olsa triggers the following build error:
-
-    SUBDIR ../lib/lk/
-    CC debugfs.o
-In file included from /usr/include/errno.h:29:0,
-                 from debugfs.c:1:
-/usr/include/features.h:314:4: error: #warning _FORTIFY_SOURCE requires compiling with optimization (-O) [-Werror=cpp]
-
-This is because enabling buffer overflow checks through _FORTIFY_SOURCE
-require compiler optimizations to be enabled too. However, those are
-not. Enable them by simply copying the perf optimization level. It can
-be expanded later if we want to support debug builds, etc.
-
-Reported-by: Jiri Olsa <jolsa@redhat.com>
-Signed-off-by: Borislav Petkov <bp@suse.de>
----
- tools/lib/lk/Makefile | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/tools/lib/lk/Makefile b/tools/lib/lk/Makefile
-index 8cf576f1a003..926cbf3efc7f 100644
---- a/tools/lib/lk/Makefile
-+++ b/tools/lib/lk/Makefile
-@@ -10,7 +10,7 @@ LIB_OBJS += $(OUTPUT)debugfs.o
- 
- LIBFILE = liblk.a
- 
--CFLAGS = -ggdb3 -Wall -Wextra -std=gnu99 -Werror $(CFLAGS_OPTIMIZE) -D_FORTIFY_SOURCE=2 $(EXTRA_WARNINGS) $(EXTRA_CFLAGS) -fPIC
-+CFLAGS = -ggdb3 -Wall -Wextra -std=gnu99 -Werror -O6 -D_FORTIFY_SOURCE=2 $(EXTRA_WARNINGS) $(EXTRA_CFLAGS) -fPIC
- EXTLIBS = -lpthread -lrt -lelf -lm
- ALL_CFLAGS = $(CFLAGS) $(BASIC_CFLAGS) -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64
- ALL_LDFLAGS = $(LDFLAGS)
--- 
-1.8.1.3.535.ga923c31
-
+BTW, looking a bit more shows another place that might benefit from that -
+kernel/events/ring_buffer.c:rb_free_work() is called via schedule_work()
+and I don't see anything in it besides vfree() that would demand that
+kind of treatment.
