@@ -1,52 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753219Ab3CCMUZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 07:20:25 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:62516 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752946Ab3CCMUY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Mar 2013 07:20:24 -0500
-From: Prarit Bhargava <prarit@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Prarit Bhargava <prarit@redhat.com>, John Stultz <john.stultz@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org
-Subject: [PATCH] x86, clocksource, fix !CONFIG_CLOCKSOURCE_WATCHDOG compile [v2]
-Date: Sun,  3 Mar 2013 07:20:14 -0500
-Message-Id: <1362313214-24110-1-git-send-email-prarit@redhat.com>
+	id S1753275Ab3CCMcx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 07:32:53 -0500
+Received: from dkim1.fusionio.com ([66.114.96.53]:55393 "EHLO
+	dkim1.fusionio.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753131Ab3CCMcw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Mar 2013 07:32:52 -0500
+X-ASG-Debug-ID: 1362313971-0421b54549164a0001-xx1T2L
+X-Barracuda-Envelope-From: clmason@fusionio.com
+Date: Sun, 3 Mar 2013 07:32:49 -0500
+From: Chris Mason <chris.mason@fusionio.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        <linux-btrfs@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        "JBottomley@parallels.com" <JBottomley@parallels.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [GIT PULL] Btrfs fixup
+Message-ID: <20130303123249.GB18135@shiny.masoncoding.com>
+X-ASG-Orig-Subj: [GIT PULL] Btrfs fixup
+Mail-Followup-To: Chris Mason <chris.mason@fusionio.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+	"JBottomley@parallels.com" <JBottomley@parallels.com>,
+	Geert Uytterhoeven <geert@linux-m68k.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2011-07-01)
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1362313971
+X-Barracuda-Encrypted: AES128-SHA
+X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.124128
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If I explicitly disable the clocksource watchdog in the x86 Kconfig,
-the x86 kernel will not compile unless this is properly defined.
+Hi Linus,
 
-v2: Oops ... move this to clocksource.h where it belongs
+Geert and James both sent this one in, sorry guys.
 
-Signed-off-by: Prarit Bhargava <prarit@redhat.com>
-Cc: John Stultz <john.stultz@linaro.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: x86@kernel.org
----
- include/linux/clocksource.h |    5 +++++
- 1 file changed, 5 insertions(+)
+git://git.kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs.git for-linus
 
-diff --git a/include/linux/clocksource.h b/include/linux/clocksource.h
-index 27cfda4..8292fe6 100644
---- a/include/linux/clocksource.h
-+++ b/include/linux/clocksource.h
-@@ -285,7 +285,12 @@ extern void clocksource_change_rating(struct clocksource *cs, int rating);
- extern void clocksource_suspend(void);
- extern void clocksource_resume(void);
- extern struct clocksource * __init __weak clocksource_default_clock(void);
-+#ifdef CONFIG_CLOCKSOURCE_WATCHDOG
- extern void clocksource_mark_unstable(struct clocksource *cs);
-+#else
-+static inline void clocksource_mark_unstable(struct clocksource *cs) { }
-+#endif
-+
- 
- extern void
- clocks_calc_mult_shift(u32 *mult, u32 *shift, u32 from, u32 to, u32 minsec);
--- 
-1.7.9.3
+Geert Uytterhoeven (1) commits (+1/-0):
+    btrfs/raid56: Add missing #include <linux/vmalloc.h>
 
+Total: (1) commits (+1/-0)
+
+ fs/btrfs/raid56.c | 1 +
+ 1 file changed, 1 insertion(+)
