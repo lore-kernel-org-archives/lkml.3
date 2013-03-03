@@ -1,74 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753581Ab3CCUyf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 15:54:35 -0500
-Received: from mout.gmx.net ([212.227.15.19]:50251 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753408Ab3CCUye (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Mar 2013 15:54:34 -0500
-X-Authenticated: #1045983
-X-Provags-ID: V01U2FsdGVkX1+3McQ3ZAO3MWett3Mj2UhSy+hX1VDT5SSywKAKu7
-	Q9eUMSXzokhgZb
-Date: Sun, 3 Mar 2013 21:41:49 +0100
-From: Helge Deller <deller@gmx.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Development <linux-kernel@vger.kernel.org>,
-        linux-parisc@vger.kernel.org,
-        James Bottomley <James.Bottomley@HansenPartnership.com>
-Subject: [GIT PULL] parisc updates for v3.9
-Message-ID: <20130303204149.GA28970@p100.box>
+	id S1753795Ab3CCUy7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 15:54:59 -0500
+Received: from host-176-100-244-43.masterbit.su ([176.100.244.43]:49144 "EHLO
+	tservice.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753456Ab3CCUy5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Mar 2013 15:54:57 -0500
+Date: Mon, 4 Mar 2013 00:54:52 +0400
+From: Evgeniy Polyakov <zbr@ioremap.net>
+To: Marcin Jurkowski <marcin1j@gmail.com>
+Cc: Sven Geggus <lists@fuchsschwanzdomain.de>, linux-kernel@vger.kernel.org,
+        GregKH <greg@kroah.com>
+Subject: Re: [PATCH 1/1] w1: fix oops when w1_search is called from netlink
+ connector
+Message-ID: <20130303205452.GA2064@ioremap.net>
+References: <20130116141627.GA23638@ioremap.net>
+ <20130302001103.GB18026@gmail.com>
+ <20130302094510.GA4695@geggus.net>
+ <20130302135015.GA21448@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Y-GMX-Trusted: 0
+In-Reply-To: <20130302135015.GA21448@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Hi
 
-The following changes since commit b0af9cd9aab60ceb17d3ebabb9fdf4ff0a99cf50:
+Marcin, thanks a lot for the fix, I have to sorry I'm not on this bug yet :(
+Sven confirmed patch fixes it, Greg please pull it into your tree.
 
-  Merge tag 'lzo-update-signature-20130226' of git://github.com/markus-oberhumer/linux (2013-02-28 20:45:52 -0800)
+I believe this is stable material.
+Thanks everyone.
 
-are available in the git repository at:
+Acked-by: Evgeniy Polyakov <zbr@ioremap.net>
 
+On Sat, Mar 02, 2013 at 02:50:15PM +0100, Marcin Jurkowski (marcin1j@gmail.com) wrote:
+> On Sat, Mar 02, 2013 at 10:45:10AM +0100, Sven Geggus wrote:
+> > This is the bad commit I found doing git bisect:
+> > 04f482faf50535229a5a5c8d629cf963899f857c is the first bad commit
+> > commit 04f482faf50535229a5a5c8d629cf963899f857c
+> > Author: Patrick McHardy <kaber@trash.net>
+> > Date:   Mon Mar 28 08:39:36 2011 +0000
+> 
+> Good job. I was too lazy to bisect for bad commit;)
+> 
+> Reading the code I found problematic kthread_should_stop call from netlink 
+> connector which causes the oops. After applying a patch, I've been testing 
+> owfs+w1 setup for nearly two days and it seems to work very reliable (no 
+> hangs, no memleaks etc).
+> More detailed description and possible fix is given below:
+> 
+> Function w1_search can be called from either kthread or netlink callback.
+> While the former works fine, the latter causes oops due to kthread_should_stop
+> invocation.
+> 
+> This patch adds a check if w1_search is serving netlink command, skipping
+> kthread_should_stop invocation if so.
+> 
+> Signed-off-by: Marcin Jurkowski <marcin1j@gmail.com>
+> ---
+>  drivers/w1/w1.c | 3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/w1/w1.c b/drivers/w1/w1.c
+> index 7994d933..7e2220d 100644
+> --- a/drivers/w1/w1.c
+> +++ b/drivers/w1/w1.c
+> @@ -924,7 +924,8 @@ void w1_search(struct w1_master *dev, u8 search_type, w1_slave_found_callback cb
+>  			tmp64 = (triplet_ret >> 2);
+>  			rn |= (tmp64 << i);
+>  
+> -			if (kthread_should_stop()) {
+> +			/* ensure we're called from kthread and not by netlink callback */
+> +			if (!dev->priv && kthread_should_stop()) {
+>  				mutex_unlock(&dev->bus_mutex);
+>  				dev_dbg(&dev->dev, "Abort w1_search\n");
+>  				return;
+> -- 
+> 1.7.12.4
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/deller/parisc-linux.git fixes-for-3.9-latest
-
-for you to fetch changes up to cf8e18ea2f8be26e8f9e44ed677d25f558ca301a:
-
-  parisc: fix redefinition of SET_PERSONALITY (2013-03-02 20:15:28 +0100)
-
-----------------------------------------------------------------
-
-Second round of patches for the parisc architecture for Linux 3.9
-
-The most important fix in this branch is the switch of io_setup,
-io_getevents and io_submit syscalls to use the available compat
-syscalls when running 32bit userspace on 64bit kernel.
-Other than that it's mostly removal of compile warnings.
-
-----------------------------------------------------------------
-Helge Deller (7):
-      parisc: select ARCH_WANT_FRAME_POINTERS
-      parisc: switch to compat_functions of io_setup, io_getevents and io_submit
-      parisc: remove unused variable 'compat_val'
-      parisc: avoid unitialized variable warning in pa_memcpy()
-      parisc: check return value of down_interruptible() in hp_sdc_rtc.c
-      parisc: fix compile warnings triggered by atomic_sub(sizeof(),v)
-      parisc: fix redefinition of SET_PERSONALITY
-
-Rolf Eike Beer (1):
-      parisc: do not install modules when installing kernel
-
- arch/parisc/Kconfig                |  1 +
- arch/parisc/Makefile               |  4 +---
- arch/parisc/include/asm/atomic.h   |  4 ++--
- arch/parisc/kernel/binfmt_elf32.c  |  1 +
- arch/parisc/kernel/signal.c        |  1 -
- arch/parisc/kernel/syscall_table.S |  6 +++---
- arch/parisc/lib/memcpy.c           |  2 +-
- drivers/input/misc/hp_sdc_rtc.c    | 15 ++++++++++++---
- 8 files changed, 21 insertions(+), 13 deletions(-)
+-- 
+	Evgeniy Polyakov
