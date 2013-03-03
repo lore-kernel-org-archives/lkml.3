@@ -1,92 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754786Ab3CCXqT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 18:46:19 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:36912 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753217Ab3CCXqS (ORCPT
+	id S1754832Ab3CCXtT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 18:49:19 -0500
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:37982 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754655Ab3CCXtS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Mar 2013 18:46:18 -0500
-Date: Mon, 4 Mar 2013 10:46:05 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: consider tidying up the xen-two tree
-Message-Id: <20130304104605.7878c0c7f3d0ba795c9e7384@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__4_Mar_2013_10_46_05_+1100_sxBH5ZEj5KTpQKVz"
+	Sun, 3 Mar 2013 18:49:18 -0500
+Message-ID: <5133E178.90405@gmail.com>
+Date: Mon, 04 Mar 2013 07:49:12 +0800
+From: Will Huck <will.huckk@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
+MIME-Version: 1.0
+To: Hugh Dickins <hughd@google.com>
+CC: Greg Thelen <gthelen@google.com>, akpm@linux-foundation.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] tmpfs: fix mempolicy object leaks
+References: <1361344302-26565-1-git-send-email-gthelen@google.com> <1361344302-26565-2-git-send-email-gthelen@google.com> <alpine.LNX.2.00.1302201221270.1152@eggly.anvils>
+In-Reply-To: <alpine.LNX.2.00.1302201221270.1152@eggly.anvils>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__4_Mar_2013_10_46_05_+1100_sxBH5ZEj5KTpQKVz
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-Hi Konrad,
+Hi Hugh,
+On 02/21/2013 04:26 AM, Hugh Dickins wrote:
+> On Tue, 19 Feb 2013, Greg Thelen wrote:
+>
+>> This patch fixes several mempolicy leaks in the tmpfs mount logic.
+>> These leaks are slow - on the order of one object leaked per mount
+>> attempt.
+>>
+>> Leak 1 (umount doesn't free mpol allocated in mount):
+>>      while true; do
+>>          mount -t tmpfs -o mpol=interleave,size=100M nodev /mnt
+>>          umount /mnt
+>>      done
+>>
+>> Leak 2 (errors parsing remount options will leak mpol):
+>>      mount -t tmpfs -o size=100M nodev /mnt
+>>      while true; do
+>>          mount -o remount,mpol=interleave,size=x /mnt 2> /dev/null
+>>      done
+>>      umount /mnt
+>>
+>> Leak 3 (multiple mpol per mount leak mpol):
+>>      while true; do
+>>          mount -t tmpfs -o mpol=interleave,mpol=interleave,size=100M nodev /mnt
+>>          umount /mnt
+>>      done
+>>
+>> This patch fixes all of the above.  I could have broken the patch into
+>> three pieces but is seemed easier to review as one.
+> Yes, I agree, and nicely fixed - but one doubt below.  If you resolve
+> that, please add my Acked-by: Hugh Dickins <hughd@google.com>
 
-We are at the end of the merge window and the xen-two tree still looks
-like this:
+Could you explain me why shmem has more relationship with mempolicy? It 
+seems that there are many codes in shmem handle mempolicy, but other 
+components in mm subsystem just have little.
 
- arch/x86/include/asm/xen/interface.h |  11 ++-
- arch/x86/include/asm/xen/page.h      |   3 +
- arch/x86/pci/xen.c                   |   9 ++
- arch/x86/xen/Kconfig                 |   8 ++
- arch/x86/xen/enlighten.c             |  76 ++++++++++++-----
- arch/x86/xen/irq.c                   |   5 +-
- arch/x86/xen/mmu.c                   | 159 +++++++++++++++++++++++++++++++=
-+---
- arch/x86/xen/mmu.h                   |   2 +
- arch/x86/xen/p2m.c                   |   2 +-
- arch/x86/xen/setup.c                 |  59 ++++++++++---
- arch/x86/xen/smp.c                   |  39 ++++++---
- arch/x86/xen/xen-head.S              |  10 ++-
- drivers/net/xen-netback/netback.c    |  11 ++-
- drivers/xen/balloon.c                |  14 +--
- drivers/xen/cpu_hotplug.c            |   4 +-
- drivers/xen/events.c                 |   9 +-
- drivers/xen/gntdev.c                 |   3 +-
- drivers/xen/grant-table.c            | 115 +++++++++++++------------
- drivers/xen/privcmd.c                |   2 +-
- drivers/xen/xenbus/xenbus_client.c   |   9 +-
- include/xen/grant_table.h            |  12 ---
- 21 files changed, 422 insertions(+), 140 deletions(-)
+>
+>> Signed-off-by: Greg Thelen <gthelen@google.com>
+>> ---
+>>   mm/shmem.c | 12 +++++++++---
+>>   1 file changed, 9 insertions(+), 3 deletions(-)
+>>
+>> diff --git a/mm/shmem.c b/mm/shmem.c
+>> index efd0b3a..ed2cb26 100644
+>> --- a/mm/shmem.c
+>> +++ b/mm/shmem.c
+>> @@ -2386,6 +2386,7 @@ static int shmem_parse_options(char *options, struct shmem_sb_info *sbinfo,
+>>   			       bool remount)
+>>   {
+>>   	char *this_char, *value, *rest;
+>> +	struct mempolicy *mpol = NULL;
+>>   	uid_t uid;
+>>   	gid_t gid;
+>>   
+>> @@ -2414,7 +2415,7 @@ static int shmem_parse_options(char *options, struct shmem_sb_info *sbinfo,
+>>   			printk(KERN_ERR
+>>   			    "tmpfs: No value for mount option '%s'\n",
+>>   			    this_char);
+>> -			return 1;
+>> +			goto error;
+>>   		}
+>>   
+>>   		if (!strcmp(this_char,"size")) {
+>> @@ -2463,19 +2464,23 @@ static int shmem_parse_options(char *options, struct shmem_sb_info *sbinfo,
+>>   			if (!gid_valid(sbinfo->gid))
+>>   				goto bad_val;
+>>   		} else if (!strcmp(this_char,"mpol")) {
+>> -			if (mpol_parse_str(value, &sbinfo->mpol))
+>> +			mpol_put(mpol);
+> I haven't tested to check, but don't we need
+> 			mpol = NULL;
+> here, in case the new option turns out to be bad?
+>
+>> +			if (mpol_parse_str(value, &mpol))
+>>   				goto bad_val;
+>>   		} else {
+>>   			printk(KERN_ERR "tmpfs: Bad mount option %s\n",
+>>   			       this_char);
+>> -			return 1;
+>> +			goto error;
+>>   		}
+>>   	}
+>> +	sbinfo->mpol = mpol;
+>>   	return 0;
+>>   
+>>   bad_val:
+>>   	printk(KERN_ERR "tmpfs: Bad value '%s' for mount option '%s'\n",
+>>   	       value, this_char);
+>> +error:
+>> +	mpol_put(mpol);
+>>   	return 1;
+>>   
+>>   }
+>> @@ -2551,6 +2556,7 @@ static void shmem_put_super(struct super_block *sb)
+>>   	struct shmem_sb_info *sbinfo = SHMEM_SB(sb);
+>>   
+>>   	percpu_counter_destroy(&sbinfo->used_blocks);
+>> +	mpol_put(sbinfo->mpol);
+>>   	kfree(sbinfo);
+>>   	sb->s_fs_info = NULL;
+>>   }
+>> -- 
+>> 1.8.1.3
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
-Some of this is from commits going back to December 2011.  And there
-are several duplicate commits (with reversions of old versions) as well
-as many merges.
-
-I assume that what is left in there is now v3.10 material (or
-bug/regression fixes), so maybe you should take the opportunity and
-rebase the whole lot onto v3.9-rc1 when that is released.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Mon__4_Mar_2013_10_46_05_+1100_sxBH5ZEj5KTpQKVz
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRM+C9AAoJEECxmPOUX5FEM9wP/ixtFpH7GksLiNmwd0SmEoym
-rlL8fmqLf4HgFHzjuspJRrvwUQbaGA1/h8MnaEBRfgbM2feDuh9m5m4Lbl2bvAz4
-5aDrtYNeolk7ejWXWkHV+opsXYJutY9NWmPACTZITf/RaGQNwNE7wO/p9QdQnXoH
-MTy+bNPI9WofBEkKlQIPxW8vztkzdZBGPnSrgOiXeScSUx1gC6JhpByzqmJLqIIx
-JZOcsjs2hS1C9g+eKIltE57+SOL3QoINmyL7o7NAkReUpoi98ybWvA0wBhDvEPjG
-PH/ag9BMJgs8r0YJXsimwRT7TGSh+c9JaD3PtV2HYXbL74XqXfL12YfKwD9J5I1u
-Cvgxen24gJeh84ffEpI8dLW3ifUnvuFRl/YHN0mrNg4UuYGjmmefOHvlBfaAN09G
-Zx9wpMedL5o5hQ46woZ0yatnCGka8Wc4vorxIcG4lCnmlXu3QyN/wsWqDdLGYYdt
-qpGpTiQqBEwC6KaNB/DDmrLHqkyeqRPokBNslccnKr5i/GK8yollS5SZVfWrDMlv
-QdgkZuKxk2tR6fyPiJwBN84icNlogqXau6PGd6llV+6cgorpCIPJO7L5GTL+pcYV
-H4edkfpl7CBiFWKeM4rwYefeycBPky/S3QwcQxKY4+8qutKk8SVdSrmwDqxQa+dI
-PI0zAMa4ChUJ2VCWemT/
-=a5et
------END PGP SIGNATURE-----
-
---Signature=_Mon__4_Mar_2013_10_46_05_+1100_sxBH5ZEj5KTpQKVz--
