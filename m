@@ -1,49 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753649Ab3CCTV4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 14:21:56 -0500
-Received: from two.firstfloor.org ([193.170.194.197]:34132 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753336Ab3CCTVz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Mar 2013 14:21:55 -0500
-Date: Sun, 3 Mar 2013 20:21:53 +0100
-From: Andi Kleen <andi@firstfloor.org>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Eliezer Tamir <eliezer.tamir@linux.jf.intel.com>,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        Dave Miller <davem@davemloft.net>,
-        Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        e1000-devel@lists.sourceforge.net,
-        Willem de Bruijn <willemb@google.com>,
-        Andi Kleen <andi@firstfloor.org>, HPA <hpa@zytor.com>,
-        Eliezer Tamir <eliezer@tamir.org.il>
-Subject: Re: [RFC PATCH 1/5] net: implement support for low latency socket
- polling
-Message-ID: <20130303192153.GC3401@two.firstfloor.org>
-References: <20130227175549.10611.82188.stgit@gitlad.jf.intel.com>
- <20130227175555.10611.42794.stgit@gitlad.jf.intel.com>
- <1362335704.15793.81.camel@edumazet-glaptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1362335704.15793.81.camel@edumazet-glaptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753726Ab3CCTZx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 14:25:53 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:59087 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753336Ab3CCTZw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Mar 2013 14:25:52 -0500
+From: Borislav Petkov <bp@alien8.de>
+To: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>
+Subject: [PATCH] perf, liblk: Fix _FORTIFY_SOURCE builds
+Date: Sun,  3 Mar 2013 20:25:33 +0100
+Message-Id: <1362338733-8718-1-git-send-email-bp@alien8.de>
+X-Mailer: git-send-email 1.8.1.3.535.ga923c31
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Alternative to 2) would be to use a generation id, incremented every
-> time a napi used in spin polling enabled driver is dismantled (and freed
-> after RCU grace period)
-> 
-> And store in sockets not only the pointer to napi_struct, but the
-> current generation id : If the generation id doesnt match, disable
-> the spinpoll until next packet rebuilds the cache again.
+From: Borislav Petkov <bp@suse.de>
 
-This would require rcu_read_lock, aka preempt off, during polling, right?
+Jiri Olsa triggers the following build error:
 
--Andi
+    SUBDIR ../lib/lk/
+    CC debugfs.o
+In file included from /usr/include/errno.h:29:0,
+                 from debugfs.c:1:
+/usr/include/features.h:314:4: error: #warning _FORTIFY_SOURCE requires compiling with optimization (-O) [-Werror=cpp]
 
+This is because enabling buffer overflow checks through _FORTIFY_SOURCE
+require compiler optimizations to be enabled too. However, those are
+not. Enable them by simply copying the perf optimization level. It can
+be expanded later if we want to support debug builds, etc.
+
+Reported-by: Jiri Olsa <jolsa@redhat.com>
+Signed-off-by: Borislav Petkov <bp@suse.de>
+---
+ tools/lib/lk/Makefile | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/tools/lib/lk/Makefile b/tools/lib/lk/Makefile
+index 8cf576f1a003..926cbf3efc7f 100644
+--- a/tools/lib/lk/Makefile
++++ b/tools/lib/lk/Makefile
+@@ -10,7 +10,7 @@ LIB_OBJS += $(OUTPUT)debugfs.o
+ 
+ LIBFILE = liblk.a
+ 
+-CFLAGS = -ggdb3 -Wall -Wextra -std=gnu99 -Werror $(CFLAGS_OPTIMIZE) -D_FORTIFY_SOURCE=2 $(EXTRA_WARNINGS) $(EXTRA_CFLAGS) -fPIC
++CFLAGS = -ggdb3 -Wall -Wextra -std=gnu99 -Werror -O6 -D_FORTIFY_SOURCE=2 $(EXTRA_WARNINGS) $(EXTRA_CFLAGS) -fPIC
+ EXTLIBS = -lpthread -lrt -lelf -lm
+ ALL_CFLAGS = $(CFLAGS) $(BASIC_CFLAGS) -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64
+ ALL_LDFLAGS = $(LDFLAGS)
 -- 
-ak@linux.intel.com -- Speaking for myself only.
+1.8.1.3.535.ga923c31
+
