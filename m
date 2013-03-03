@@ -1,77 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753718Ab3CCUie (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 15:38:34 -0500
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:64803 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753417Ab3CCUid (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Mar 2013 15:38:33 -0500
-From: "Yann E. MORIN" <yann.morin.1998@free.fr>
-Organization: BZH lan
-To: linux-kbuild@vger.kernel.org
-Subject: Re: [PATCH 2/2] kconfig: use config scripts to detect ncurses libs
-Date: Sun, 3 Mar 2013 21:38:29 +0100
-User-Agent: KMail/1.13.5 (Linux/3.8.0-treguer; KDE/4.4.5; x86_64; ; )
-Cc: jlec@gentoo.org, linux-kernel@vger.kernel.org
-References: <jlec@gentoo.org> <1362153044-23611-1-git-send-email-jlec@gentoo.org> <1362153044-23611-3-git-send-email-jlec@gentoo.org>
-In-Reply-To: <1362153044-23611-3-git-send-email-jlec@gentoo.org>
+	id S1753581Ab3CCUyf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 15:54:35 -0500
+Received: from mout.gmx.net ([212.227.15.19]:50251 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753408Ab3CCUye (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Mar 2013 15:54:34 -0500
+X-Authenticated: #1045983
+X-Provags-ID: V01U2FsdGVkX1+3McQ3ZAO3MWett3Mj2UhSy+hX1VDT5SSywKAKu7
+	Q9eUMSXzokhgZb
+Date: Sun, 3 Mar 2013 21:41:49 +0100
+From: Helge Deller <deller@gmx.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Development <linux-kernel@vger.kernel.org>,
+        linux-parisc@vger.kernel.org,
+        James Bottomley <James.Bottomley@HansenPartnership.com>
+Subject: [GIT PULL] parisc updates for v3.9
+Message-ID: <20130303204149.GA28970@p100.box>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201303032138.29138.yann.morin.1998@free.fr>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Justin, All,
+Hi Linus,
 
-On Friday 01 March 2013 jlec@gentoo.org wrote:
-> When building ncurses with --with-termlib several symbols get moved from
-> libncurses.so to libtinfo.so. Thus when linking with libncurses.so, one
-> additionally needs to link with libtinfo.so. Ncurses provides a config script
-> (ncurses5-config) or in very recent version even a pkg-config module to assist
-> finding ncurses.
-> 
-> This patch makes use of it to detect the necessary libs for linking of the
-> ncurses nconfig dialog
-> 
-> Signed-off-by: Justin Lecher <jlec@gentoo.org>
-> ---
->  scripts/kconfig/Makefile | 6 +++++-
->  1 file changed, 5 insertions(+), 1 deletion(-)
-> 
-> diff --git a/scripts/kconfig/Makefile b/scripts/kconfig/Makefile
-> index 231b475..cc81db5 100644
-> --- a/scripts/kconfig/Makefile
-> +++ b/scripts/kconfig/Makefile
-> @@ -219,7 +219,11 @@ HOSTCFLAGS_gconf.o	= `pkg-config --cflags gtk+-2.0 gmodule-2.0 libglade-2.0` \
->  
->  HOSTLOADLIBES_mconf   = $(shell $(CONFIG_SHELL) $(check-lxdialog) -ldflags $(HOSTCC))
->  
-> -HOSTLOADLIBES_nconf	= -lmenu -lpanel -lncurses
-> +HOSTLOADLIBES_nconf	= -lmenu -lpanel
-> +HOSTLOADLIBES_nconf	+= $(shell \
-> +				pkg-config --libs ncurses 2>/dev/null \
-> +				|| ncurses5-config --libs 2>/dev/null \
-> +				|| ncurses6-config --libs 2>/dev/null  )
+The following changes since commit b0af9cd9aab60ceb17d3ebabb9fdf4ff0a99cf50:
 
-Ditto as for menuconfig: drop the ncurses*-config scripts, and:
-  - try pkg-config;
-  - fallback to -lncurses.
+  Merge tag 'lzo-update-signature-20130226' of git://github.com/markus-oberhumer/linux (2013-02-28 20:45:52 -0800)
 
-HOSTLOADLIBES_nconf	+= $(shell \
-				pkg-config --libs ncurses 2>/dev/null \
-				|| echo -lncurses )
+are available in the git repository at:
 
-Regards,
-Yann E. MORIN.
 
--- 
-.-----------------.--------------------.------------------.--------------------.
-|  Yann E. MORIN  | Real-Time Embedded | /"\ ASCII RIBBON | Erics' conspiracy: |
-| +33 662 376 056 | Software  Designer | \ / CAMPAIGN     |  ___               |
-| +33 223 225 172 `------------.-------:  X  AGAINST      |  \e/  There is no  |
-| http://ymorin.is-a-geek.org/ | _/*\_ | / \ HTML MAIL    |   v   conspiracy.  |
-'------------------------------^-------^------------------^--------------------'
+  git://git.kernel.org/pub/scm/linux/kernel/git/deller/parisc-linux.git fixes-for-3.9-latest
+
+for you to fetch changes up to cf8e18ea2f8be26e8f9e44ed677d25f558ca301a:
+
+  parisc: fix redefinition of SET_PERSONALITY (2013-03-02 20:15:28 +0100)
+
+----------------------------------------------------------------
+
+Second round of patches for the parisc architecture for Linux 3.9
+
+The most important fix in this branch is the switch of io_setup,
+io_getevents and io_submit syscalls to use the available compat
+syscalls when running 32bit userspace on 64bit kernel.
+Other than that it's mostly removal of compile warnings.
+
+----------------------------------------------------------------
+Helge Deller (7):
+      parisc: select ARCH_WANT_FRAME_POINTERS
+      parisc: switch to compat_functions of io_setup, io_getevents and io_submit
+      parisc: remove unused variable 'compat_val'
+      parisc: avoid unitialized variable warning in pa_memcpy()
+      parisc: check return value of down_interruptible() in hp_sdc_rtc.c
+      parisc: fix compile warnings triggered by atomic_sub(sizeof(),v)
+      parisc: fix redefinition of SET_PERSONALITY
+
+Rolf Eike Beer (1):
+      parisc: do not install modules when installing kernel
+
+ arch/parisc/Kconfig                |  1 +
+ arch/parisc/Makefile               |  4 +---
+ arch/parisc/include/asm/atomic.h   |  4 ++--
+ arch/parisc/kernel/binfmt_elf32.c  |  1 +
+ arch/parisc/kernel/signal.c        |  1 -
+ arch/parisc/kernel/syscall_table.S |  6 +++---
+ arch/parisc/lib/memcpy.c           |  2 +-
+ drivers/input/misc/hp_sdc_rtc.c    | 15 ++++++++++++---
+ 8 files changed, 21 insertions(+), 13 deletions(-)
