@@ -1,61 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754520Ab3CCVdI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 16:33:08 -0500
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:37321 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754464Ab3CCVdG convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Mar 2013 16:33:06 -0500
+	id S1754536Ab3CCVm0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 16:42:26 -0500
+Received: from mout.gmx.net ([212.227.15.19]:57944 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753563Ab3CCVmW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Mar 2013 16:42:22 -0500
+X-Authenticated: #28250155
+X-Provags-ID: V01U2FsdGVkX1/S8lsCRf7SEqb1h5Zi8qcM/hEpbOoq9iF8sEq4Kq
+	iiqLmFz1bdqrG8
+From: Sven Joachim <svenjoac@gmx.de>
+To: "Yann E. MORIN" <yann.morin.1998@free.fr>
+Cc: linux-kbuild@vger.kernel.org, jlec@gentoo.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] kconfig: use config scripts to detect ncurses libs
+References: <jlec@gentoo.org>
+	<1362045557-9123-1-git-send-email-jlec@gentoo.org>
+	<874ngwhzuy.fsf@turtle.gmx.de>
+	<201303032123.34125.yann.morin.1998@free.fr>
+Date: Sun, 03 Mar 2013 22:37:16 +0100
+In-Reply-To: <201303032123.34125.yann.morin.1998@free.fr> (Yann E. MORIN's
+	message of "Sun, 3 Mar 2013 21:23:33 +0100")
+Message-ID: <874ngsf9mb.fsf@turtle.gmx.de>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2.93 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFxzN7=z7_iVQ=JvYms1WaCoX-hQ2jKNqLU2dLy63AYK1g@mail.gmail.com>
-References: <CACxGe6sweLxtsW9OYb8m7esYguGmStEsuZc0tOgZN6H5Zfy1+g@mail.gmail.com>
- <CA+55aFxzN7=z7_iVQ=JvYms1WaCoX-hQ2jKNqLU2dLy63AYK1g@mail.gmail.com>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Mon, 4 Mar 2013 05:32:45 +0800
-X-Google-Sender-Auth: XDQNl2owltOhdb8MRJSfe75wNGM
-Message-ID: <CACxGe6s=TW1W+S4715sf+N+t+dKjTVBk+mRVYC_74rRC0r4QvA@mail.gmail.com>
-Subject: Re: [GIT PULL] gpio changes for v3.9; second round
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 4, 2013 at 2:50 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Sat, Mar 2, 2013 at 6:24 AM, Grant Likely <grant.likely@secretlab.ca> wrote:
->>
->> 2nd round of GPIO changes for Linux 3.9
->>
->> This branch contains a few bug fixes that I missed the first time around
->> and updates to the gpio_desc series included in the first pull request.
->>
->> ----------------------------------------------------------------
->> Gabriel Fernandez (1):
->>       gpio/stmpe: pass DT node to irqdomain
->
-> This breaks the build for me. I get
->
->   drivers/gpio/gpio-stmpe.c: In function ‘stmpe_gpio_irq_init’:
->   drivers/gpio/gpio-stmpe.c:313:23: error: ‘struct gpio_chip’ has no
-> member named ‘of_node’
->   drivers/gpio/gpio-stmpe.c:316:61: error: ‘struct gpio_chip’ has no
-> member named ‘of_node’
->   drivers/gpio/gpio-stmpe.c: In function ‘stmpe_gpio_probe’:
->   drivers/gpio/gpio-stmpe.c:351:18: error: ‘struct gpio_chip’ has no
-> member named ‘of_node’
->
-> and I don't think this is a merge error.
->
-> Should this driver depend on CONFIG_OF_GPIO, or should it have
-> #ifdef's? Regardless, it's clearly broken right now.
->
-> Unpulled.
+On 2013-03-03 21:23 +0100, Yann E. MORIN wrote:
 
-Ugh. Well I clearly screwed that up. Sorry. I'll fix that right away.
+> On Thursday 28 February 2013 Sven Joachim wrote:
+>> On 2013-02-28 10:59 +0100, jlec@gentoo.org wrote:
+>
+>> >  scripts/kconfig/Makefile | 4 +++-
+>> >  1 file changed, 3 insertions(+), 1 deletion(-)
+>> >
+>> > diff --git a/scripts/kconfig/Makefile b/scripts/kconfig/Makefile
+>> > index 3091794..c372976 100644
+>> > --- a/scripts/kconfig/Makefile
+>> > +++ b/scripts/kconfig/Makefile
+>> > @@ -216,7 +216,9 @@ HOSTCFLAGS_gconf.o	= `pkg-config --cflags gtk+-2.0 gmodule-2.0 libglade-2.0` \
+>> >  
+>> >  HOSTLOADLIBES_mconf   = $(shell $(CONFIG_SHELL) $(check-lxdialog) -ldflags $(HOSTCC))
+>> >  
+>> > -HOSTLOADLIBES_nconf	= -lmenu -lpanel -lncurses
+>> > +HOSTLOADLIBES_nconf	= -lmenu -lpanel
+>> > +HOSTLOADLIBES_nconf	+= $(shell    ncursesw5-config --libs 2>/dev/null \
+>> > +				   || ncurses5-config --libs 2>/dev/null  )
+>> 
+>> This will link with ncursesw, not ncurses.  Probably not what you want,
+>> since nconf.h does not #include the right headers for that.
+>> 
+>> On Debian/Ubuntu, there's also the problem that ncursesw5-config exists
+>> even if the libncursesw5-dev package is not installed, so this patch
+>> makes the build fail in such cases.
+>
+> The same goes for ncurses5-config, which is provided by ncurses-bin, and
+> so is present even if the devel package is not installed, and the build
+> will break, too.
 
-g.
+This is not the same: if libncurses5-dev is not installed, the build is
+going to fail anyway, since there is no -lmenu or -lpanel then.
+
+I second the proposal to try pkg-config and fall back to -lncurses, BTW.
+
+Cheers,
+       Sven
