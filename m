@@ -1,25 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753252Ab3CCMLs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 07:11:48 -0500
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:43356 "EHLO
+	id S1753277Ab3CCMQj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 07:16:39 -0500
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:43395 "EHLO
 	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752988Ab3CCMLq (ORCPT
+	with ESMTP id S1753070Ab3CCMQh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Mar 2013 07:11:46 -0500
-Message-ID: <51333DFD.3080207@kernel.org>
-Date: Sun, 03 Mar 2013 12:11:41 +0000
+	Sun, 3 Mar 2013 07:16:37 -0500
+Message-ID: <51333F22.70702@kernel.org>
+Date: Sun, 03 Mar 2013 12:16:34 +0000
 From: Jonathan Cameron <jic23@kernel.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130109 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Jonathan Cameron <jic23@jic23.retrosnub.co.uk>
+To: Naveen Krishna Ch <naveenkrishna.ch@gmail.com>
 CC: Lars-Peter Clausen <lars@metafoo.de>,
-        Christophe Leroy <christophe.leroy@c-s.fr>,
-        linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
-        patrick.vasseur@c-s.fr
-Subject: Re: [PATCH v3] IIO ADC support for AD7923
-References: <201302130647.r1D6lICI029467@localhost.localdomain> <511B5AAB.9020502@metafoo.de> <511B5AC5.50905@jic23.retrosnub.co.uk>
-In-Reply-To: <511B5AC5.50905@jic23.retrosnub.co.uk>
+        Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
+        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        dianders@chromium.org, gregkh@linuxfoundation.org
+Subject: Re: [PATCH v7] iio: adc: add exynos adc driver under iio framwork
+References: <1360843890-28466-1-git-send-email-ch.naveen@samsung.com> <1360911394-19873-1-git-send-email-ch.naveen@samsung.com> <511E346C.3060701@metafoo.de> <CAHfPSqAQd7TJqX2FVmkvy_aX0yXm25qLu3A9kPoteUGaBLZPQQ@mail.gmail.com> <511E3772.7000605@metafoo.de> <CAHfPSqABgb8P5js8hz2_Xr2vXQ0F3OkTi2B7jZTqiDg_H6Uo4g@mail.gmail.com>
+In-Reply-To: <CAHfPSqABgb8P5js8hz2_Xr2vXQ0F3OkTi2B7jZTqiDg_H6Uo4g@mail.gmail.com>
 X-Enigmail-Version: 1.5
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
@@ -27,370 +29,110 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/13/2013 09:20 AM, Jonathan Cameron wrote:
-> On 13/02/13 09:19, Lars-Peter Clausen wrote:
->> On 02/13/2013 07:47 AM, Christophe Leroy wrote:
->>> This patch adds support for Analog Devices AD7923 ADC in the IIO Subsystem.
->>>
->>> Signed-off-by: Patrick Vasseur <patrick.vasseur@c-s.fr>
->>> Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
->>
->> Looks good, thanks.
->>
->> Reviewed-by: Lars-Peter Clausen <lars@metafoo.de>
-> Just missed the merge window I'm afraid. I'll queue this up for
-> going into staging-next after Linus closes the main merge window.
+On 02/15/2013 01:35 PM, Naveen Krishna Ch wrote:
+> On 15 February 2013 18:56, Lars-Peter Clausen <lars@metafoo.de> wrote:
+>> On 02/15/2013 02:17 PM, Naveen Krishna Ch wrote:
+>>> On 15 February 2013 18:43, Lars-Peter Clausen <lars@metafoo.de> wrote:
+>>>> On 02/15/2013 07:56 AM, Naveen Krishna Chatradhi wrote:
+>>>>> This patch adds New driver to support:
+>>>>> 1. Supports ADC IF found on EXYNOS4412/EXYNOS5250
+>>>>>    and future SoCs from Samsung
+>>>>> 2. Add ADC driver under iio/adc framework
+>>>>> 3. Also adds the Documentation for device tree bindings
+>>>>>
+>>>>> Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+>>>>
+>>>> Looks good.
+>>>>
+>>>> Reviewed-by: Lars-Peter Clausen <lars@metafoo.de>
+Applied to togreg branch of iio.git
 
-Applied to the togreg branch of iio.git
->>
+Thanks,
+
+>>>>
+>>>> One minor thing though, there are a couple of places where you break a line
+>>>> into multiple lines, even though the line fits easily inside the 80 chars
+>>>> per line limit. In my opinion this doesn't help the legibility of the code.
+>>>> E.g.:
+>>>>
+>>>> +       info->value = readl(ADC_V1_DATX(info->regs)) &
+>>>> +                                               ADC_DATX_MASK;
+>>>>
+>>>> There is no need to respin the patch just for this, but if you happen to
+>>>> make another version of the patch, that's something to consider.
+>>>>
+>>>>> ---
+>>>>> Changes since v1:
+>>>>>
+>>>>> 1. Fixed comments from Lars
+>>>>> 2. Added support for ADC on EXYNOS5410
+>>>>>
+>>>>> Changes since v2:
+>>>>>
+>>>>> 1. Changed the instance name for (struct iio_dev *) to indio_dev
+>>>>> 2. Changed devm_request_irq to request_irq
+>>>>>
+>>>>> Few doubts regarding the mappings and child device handling.
+>>>>> Kindly, suggest me better methods.
+>>>>>
+>>>>> Changes since v3:
+>>>>>
+>>>>> 1. Added clk_prepare_disable and regulator_disable calls in _remove()
+>>>>> 2. Moved init_completion before irq_request
+>>>>> 3. Added NULL pointer check for devm_request_and_ioremap() return value.
+>>>>> 4. Use number of channels as per the ADC version
+>>>>> 5. Change the define ADC_V1_CHANNEL to ADC_CHANNEL
+>>>>> 6. Update the Documentation to include EXYNOS5410 compatible
+>>>>>
+>>>>> Changes since v4:
+>>>>>
+>>>>> 1. if devm_request_and_ioremap() failes, free iio_device before returning
+>>>>>
+>>>>> Changes since v5:
+>>>>>
+>>>>> 1. Fixed comments from Olof (ADC hardware version handling)
+>>>>> 2. Rebased on top of comming OF framework for IIO by "Guenter Roeck".
+>>>>>
+>>>>> Changes since v6:
+>>>>>
+>>>>> 1. Addressed comments from Lars-Peter Clausen
+>>>>
+>>>>
+>>>> btw. these kind of change logs are not really helpful, it would be better to
+>>>> list the actual changes made.
+>>> Hello Lars,
 >>>
->>> diff -urN linux-next-e347c98/drivers/iio/adc/Kconfig linux-next-e347c98.new/drivers/iio/adc/Kconfig
->>> --- linux-next-e347c98/drivers/iio/adc/Kconfig    2013-02-08 05:22:35.000000000 +0100
->>> +++ linux-next-e347c98.new/drivers/iio/adc/Kconfig    2013-02-12 13:02:52.000000000 +0100
->>> @@ -30,6 +30,18 @@
->>>         To compile this driver as a module, choose M here: the
->>>         module will be called ad7298.
->>>
->>> +config AD7923
->>> +    tristate "Analog Devices AD7923 ADC driver"
->>> +    depends on SPI
->>> +    select IIO_BUFFER
->>> +    select IIO_TRIGGERED_BUFFER
->>> +    help
->>> +      Say yes here to build support for Analog Devices AD7923
->>> +      4 Channel ADC with temperature sensor.
->>> +
->>> +      To compile this driver as a module, choose M here: the
->>> +      module will be called ad7923.
->>> +
->>>   config AD7791
->>>       tristate "Analog Devices AD7791 ADC driver"
->>>       depends on SPI
->>> diff -urN linux-next-e347c98/drivers/iio/adc/Makefile linux-next-e347c98.new/drivers/iio/adc/Makefile
->>> --- linux-next-e347c98/drivers/iio/adc/Makefile    2013-02-08 05:22:35.000000000 +0100
->>> +++ linux-next-e347c98.new/drivers/iio/adc/Makefile    2013-02-12 13:03:02.000000000 +0100
->>> @@ -5,6 +5,7 @@
->>>   obj-$(CONFIG_AD_SIGMA_DELTA) += ad_sigma_delta.o
->>>   obj-$(CONFIG_AD7266) += ad7266.o
->>>   obj-$(CONFIG_AD7298) += ad7298.o
->>> +obj-$(CONFIG_AD7923) += ad7923.o
->>>   obj-$(CONFIG_AD7476) += ad7476.o
->>>   obj-$(CONFIG_AD7791) += ad7791.o
->>>   obj-$(CONFIG_AD7793) += ad7793.o
->>> diff -urN linux-next-e347c98/drivers/iio/adc/ad7923.c linux-next-e347c98.new/drivers/iio/adc/ad7923.c
->>> --- linux-next-e347c98/drivers/iio/adc/ad7923.c    1970-01-01 01:00:00.000000000 +0100
->>> +++ linux-next-e347c98.new/drivers/iio/adc/ad7923.c    2013-02-13 02:03:38.000000000 +0100
->>> @@ -0,0 +1,298 @@
->>> +/*
->>> + * AD7923 SPI ADC driver
->>> + *
->>> + * Copyright 2011 Analog Devices Inc (from AD7923 Driver)
->>> + * Copyright 2012 CS Systemes d'Information
->>> + *
->>> + * Licensed under the GPL-2.
->>> + */
->>> +
->>> +#include <linux/device.h>
->>> +#include <linux/kernel.h>
->>> +#include <linux/slab.h>
->>> +#include <linux/sysfs.h>
->>> +#include <linux/spi/spi.h>
->>> +#include <linux/err.h>
->>> +#include <linux/delay.h>
->>> +#include <linux/module.h>
->>> +#include <linux/interrupt.h>
->>> +
->>> +#include <linux/iio/iio.h>
->>> +#include <linux/iio/sysfs.h>
->>> +#include <linux/iio/buffer.h>
->>> +#include <linux/iio/trigger_consumer.h>
->>> +#include <linux/iio/triggered_buffer.h>
->>> +
->>> +#define AD7923_WRITE_CR        (1 << 11)    /* write control register */
->>> +#define AD7923_RANGE        (1 << 1)    /* range to REFin */
->>> +#define AD7923_CODING        (1 << 0)    /* coding is straight binary */
->>> +#define AD7923_PM_MODE_AS    (1)        /* auto shutdown */
->>> +#define AD7923_PM_MODE_FS    (2)        /* full shutdown */
->>> +#define AD7923_PM_MODE_OPS    (3)        /* normal operation */
->>> +#define AD7923_CHANNEL_0    (0)        /* analog input 0 */
->>> +#define AD7923_CHANNEL_1    (1)        /* analog input 1 */
->>> +#define AD7923_CHANNEL_2    (2)        /* analog input 2 */
->>> +#define AD7923_CHANNEL_3    (3)        /* analog input 3 */
->>> +#define AD7923_SEQUENCE_OFF    (0)        /* no sequence fonction */
->>> +#define AD7923_SEQUENCE_PROTECT    (2)        /* no interrupt write cycle */
->>> +#define AD7923_SEQUENCE_ON    (3)        /* continuous sequence */
->>> +
->>> +#define AD7923_MAX_CHAN        4
->>> +
->>> +#define AD7923_PM_MODE_WRITE(mode)    (mode << 4)    /* write mode */
->>> +#define AD7923_CHANNEL_WRITE(channel)    (channel << 6)    /* write channel */
->>> +#define AD7923_SEQUENCE_WRITE(sequence)    (((sequence & 1) << 3) \
->>> +                    + ((sequence & 2) << 9))
->>> +                        /* write sequence fonction */
->>> +/* left shift for CR : bit 11 transmit in first */
->>> +#define AD7923_SHIFT_REGISTER    4
->>> +
->>> +/* val = value, dec = left shift, bits = number of bits of the mask */
->>> +#define EXTRACT(val, dec, bits)        ((val >> dec) & ((1 << bits) - 1))
->>> +
->>> +struct ad7923_state {
->>> +    struct spi_device        *spi;
->>> +    struct spi_transfer        ring_xfer[5];
->>> +    struct spi_transfer        scan_single_xfer[2];
->>> +    struct spi_message        ring_msg;
->>> +    struct spi_message        scan_single_msg;
->>> +    /*
->>> +     * DMA (thus cache coherency maintenance) requires the
->>> +     * transfer buffers to live in their own cache lines.
->>> +     */
->>> +    __be16                rx_buf[4] ____cacheline_aligned;
->>> +    __be16                tx_buf[4];
->>> +};
->>> +
->>> +#define AD7923_V_CHAN(index)                        \
->>> +    {                                \
->>> +        .type = IIO_VOLTAGE,                    \
->>> +        .indexed = 1,                        \
->>> +        .channel = index,                    \
->>> +        .info_mask = IIO_CHAN_INFO_RAW_SEPARATE_BIT |        \
->>> +        IIO_CHAN_INFO_SCALE_SHARED_BIT,                \
->>> +        .address = index,                    \
->>> +        .scan_index = index,                    \
->>> +        .scan_type = {                        \
->>> +            .sign = 'u',                    \
->>> +            .realbits = 12,                    \
->>> +            .storagebits = 16,                \
->>> +            .endianness = IIO_BE,                \
->>> +        },                            \
->>> +    }
->>> +
->>> +static const struct iio_chan_spec ad7923_channels[] = {
->>> +    AD7923_V_CHAN(0),
->>> +    AD7923_V_CHAN(1),
->>> +    AD7923_V_CHAN(2),
->>> +    AD7923_V_CHAN(3),
->>> +    IIO_CHAN_SOFT_TIMESTAMP(4),
->>> +};
->>> +
->>> +/**
->>> + * ad7923_update_scan_mode() setup the spi transfer buffer for the new scan mask
->>> + **/
->>> +static int ad7923_update_scan_mode(struct iio_dev *indio_dev,
->>> +    const unsigned long *active_scan_mask)
->>> +{
->>> +    struct ad7923_state *st = iio_priv(indio_dev);
->>> +    int i, cmd, len;
->>> +
->>> +    len = 0;
->>> +    for_each_set_bit(i, active_scan_mask, AD7923_MAX_CHAN) {
->>> +        cmd = AD7923_WRITE_CR | AD7923_CODING | AD7923_RANGE |
->>> +            AD7923_PM_MODE_WRITE(AD7923_PM_MODE_OPS) |
->>> +            AD7923_SEQUENCE_WRITE(AD7923_SEQUENCE_OFF) |
->>> +            AD7923_CHANNEL_WRITE(i);
->>> +        cmd <<= AD7923_SHIFT_REGISTER;
->>> +        st->tx_buf[len++] = cpu_to_be16(cmd);
->>> +    }
->>> +    /* build spi ring message */
->>> +    st->ring_xfer[0].tx_buf = &st->tx_buf[0];
->>> +    st->ring_xfer[0].len = len;
->>> +    st->ring_xfer[0].cs_change = 1;
->>> +
->>> +    spi_message_init(&st->ring_msg);
->>> +    spi_message_add_tail(&st->ring_xfer[0], &st->ring_msg);
->>> +
->>> +    for (i = 0; i < len; i++) {
->>> +        st->ring_xfer[i + 1].rx_buf = &st->rx_buf[i];
->>> +        st->ring_xfer[i + 1].len = 2;
->>> +        st->ring_xfer[i + 1].cs_change = 1;
->>> +        spi_message_add_tail(&st->ring_xfer[i + 1], &st->ring_msg);
->>> +    }
->>> +    /* make sure last transfer cs_change is not set */
->>> +    st->ring_xfer[i + 1].cs_change = 0;
->>> +
->>> +    return 0;
->>> +}
->>> +
->>> +/**
->>> + * ad7923_trigger_handler() bh of trigger launched polling to ring buffer
->>> + *
->>> + * Currently there is no option in this driver to disable the saving of
->>> + * timestamps within the ring.
->>> + **/
->>> +static irqreturn_t ad7923_trigger_handler(int irq, void *p)
->>> +{
->>> +    struct iio_poll_func *pf = p;
->>> +    struct iio_dev *indio_dev = pf->indio_dev;
->>> +    struct ad7923_state *st = iio_priv(indio_dev);
->>> +    s64 time_ns = 0;
->>> +    int b_sent;
->>> +
->>> +    b_sent = spi_sync(st->spi, &st->ring_msg);
->>> +    if (b_sent)
->>> +        goto done;
->>> +
->>> +    if (indio_dev->scan_timestamp) {
->>> +        time_ns = iio_get_time_ns();
->>> +        memcpy((u8 *)st->rx_buf + indio_dev->scan_bytes - sizeof(s64),
->>> +            &time_ns, sizeof(time_ns));
->>> +    }
->>> +
->>> +    iio_push_to_buffers(indio_dev, (u8 *)st->rx_buf);
->>> +
->>> +done:
->>> +    iio_trigger_notify_done(indio_dev->trig);
->>> +
->>> +    return IRQ_HANDLED;
->>> +}
->>> +
->>> +static int ad7923_scan_direct(struct ad7923_state *st, unsigned ch)
->>> +{
->>> +    int ret, cmd;
->>> +
->>> +    cmd = AD7923_WRITE_CR | AD7923_PM_MODE_WRITE(AD7923_PM_MODE_OPS) |
->>> +        AD7923_SEQUENCE_WRITE(AD7923_SEQUENCE_OFF) | AD7923_CODING |
->>> +        AD7923_CHANNEL_WRITE(ch) | AD7923_RANGE;
->>> +    cmd <<= AD7923_SHIFT_REGISTER;
->>> +    st->tx_buf[0] = cpu_to_be16(cmd);
->>> +
->>> +    ret = spi_sync(st->spi, &st->scan_single_msg);
->>> +    if (ret)
->>> +        return ret;
->>> +
->>> +    return be16_to_cpu(st->rx_buf[0]);
->>> +}
->>> +
->>> +static int ad7923_read_raw(struct iio_dev *indio_dev,
->>> +               struct iio_chan_spec const *chan,
->>> +               int *val,
->>> +               int *val2,
->>> +               long m)
->>> +{
->>> +    int ret;
->>> +    struct ad7923_state *st = iio_priv(indio_dev);
->>> +
->>> +    switch (m) {
->>> +    case IIO_CHAN_INFO_RAW:
->>> +        mutex_lock(&indio_dev->mlock);
->>> +        if (iio_buffer_enabled(indio_dev))
->>> +            ret = -EBUSY;
->>> +        else
->>> +            ret = ad7923_scan_direct(st, chan->address);
->>> +        mutex_unlock(&indio_dev->mlock);
->>> +
->>> +        if (ret < 0)
->>> +            return ret;
->>> +
->>> +        if (chan->address == EXTRACT(ret, 12, 4))
->>> +            *val = EXTRACT(ret, 0, 12);
->>> +
->>> +        return IIO_VAL_INT;
->>> +    }
->>> +    return -EINVAL;
->>> +}
->>> +
->>> +static const struct iio_info ad7923_info = {
->>> +    .read_raw = &ad7923_read_raw,
->>> +    .update_scan_mode = ad7923_update_scan_mode,
->>> +    .driver_module = THIS_MODULE,
->>> +};
->>> +
->>> +static int ad7923_probe(struct spi_device *spi)
->>> +{
->>> +    struct ad7923_state *st;
->>> +    struct iio_dev *indio_dev = iio_device_alloc(sizeof(*st));
->>> +    int ret;
->>> +
->>> +    if (indio_dev == NULL)
->>> +        return -ENOMEM;
->>> +
->>> +    st = iio_priv(indio_dev);
->>> +
->>> +    spi_set_drvdata(spi, indio_dev);
->>> +
->>> +    st->spi = spi;
->>> +
->>> +    indio_dev->name = spi_get_device_id(spi)->name;
->>> +    indio_dev->dev.parent = &spi->dev;
->>> +    indio_dev->modes = INDIO_DIRECT_MODE;
->>> +    indio_dev->channels = ad7923_channels;
->>> +    indio_dev->num_channels = ARRAY_SIZE(ad7923_channels);
->>> +    indio_dev->info = &ad7923_info;
->>> +
->>> +    /* Setup default message */
->>> +
->>> +    st->scan_single_xfer[0].tx_buf = &st->tx_buf[0];
->>> +    st->scan_single_xfer[0].len = 2;
->>> +    st->scan_single_xfer[0].cs_change = 1;
->>> +    st->scan_single_xfer[1].rx_buf = &st->rx_buf[0];
->>> +    st->scan_single_xfer[1].len = 2;
->>> +
->>> +    spi_message_init(&st->scan_single_msg);
->>> +    spi_message_add_tail(&st->scan_single_xfer[0], &st->scan_single_msg);
->>> +    spi_message_add_tail(&st->scan_single_xfer[1], &st->scan_single_msg);
->>> +
->>> +    ret = iio_triggered_buffer_setup(indio_dev, NULL,
->>> +            &ad7923_trigger_handler, NULL);
->>> +    if (ret)
->>> +        goto error_free;
->>> +
->>> +    ret = iio_device_register(indio_dev);
->>> +    if (ret)
->>> +        goto error_cleanup_ring;
->>> +
->>> +    return 0;
->>> +
->>> +error_cleanup_ring:
->>> +    iio_triggered_buffer_cleanup(indio_dev);
->>> +error_free:
->>> +    iio_device_free(indio_dev);
->>> +
->>> +    return ret;
->>> +}
->>> +
->>> +static int ad7923_remove(struct spi_device *spi)
->>> +{
->>> +    struct iio_dev *indio_dev = spi_get_drvdata(spi);
->>> +
->>> +    iio_device_unregister(indio_dev);
->>> +    iio_triggered_buffer_cleanup(indio_dev);
->>> +    iio_device_free(indio_dev);
->>> +
->>> +    return 0;
->>> +}
->>> +
->>> +static const struct spi_device_id ad7923_id[] = {
->>> +    {"ad7923", 0},
->>> +    {}
->>> +};
->>> +MODULE_DEVICE_TABLE(spi, ad7923_id);
->>> +
->>> +static struct spi_driver ad7923_driver = {
->>> +    .driver = {
->>> +        .name    = "ad7923",
->>> +        .owner    = THIS_MODULE,
->>> +    },
->>> +    .probe        = ad7923_probe,
->>> +    .remove        = ad7923_remove,
->>> +    .id_table    = ad7923_id,
->>> +};
->>> +module_spi_driver(ad7923_driver);
->>> +
->>> +MODULE_AUTHOR("Michael Hennerich <hennerich@blackfin.uclinux.org>");
->>> +MODULE_AUTHOR("Patrick Vasseur <patrick.vasseur@c-s.fr>");
->>> +MODULE_DESCRIPTION("Analog Devices AD7923 ADC");
->>> +MODULE_LICENSE("GPL v2");
->>> -- 
->>> To unsubscribe from this list: send the line "unsubscribe linux-iio" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>> No other changes from my side. But, I can send another version.
+>>> Do you want me to list the latest change alone instead of the whole
+>>> change list ?
 >>
->> -- 
->> To unsubscribe from this list: send the line "unsubscribe linux-iio" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Hi,
+>>
+>> No need to resend the patch, this is just something to consider for the
+>> future. A changelog entry which reads like "Addressed Jon Does comments" is
+>> not really useful since most people will probably not know or not longer
+>> remember all the details of those comments, instead a nice list of all the
+>> changes which have been made is much better. E.g.:
+>>
+>> Changes since v6:
+>>         * Fixed debugfs_read_reg
+>>         * Introduced timeout when waiting for the data ready IRQ
+>>         * Slightly reformatted exynos_read_raw for better legibility
+>>
+>> - Lars
+> 
+> Thanks for your comments and valuable time.
+> Sure Lars, Will do it.
+>>
 >>
 > 
-> -- 
+> 
+> 
+> --
+> Shine bright,
+> (: Nav :)
+> --
 > To unsubscribe from this list: send the line "unsubscribe linux-iio" in
 > the body of a message to majordomo@vger.kernel.org
 > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
