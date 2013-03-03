@@ -1,40 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754886Ab3CDAdQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 19:33:16 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:58067 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754624Ab3CDAdP (ORCPT
+	id S1754916Ab3CDAeZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 19:34:25 -0500
+Received: from mail-ye0-f181.google.com ([209.85.213.181]:34819 "EHLO
+	mail-ye0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754646Ab3CDAeY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Mar 2013 19:33:15 -0500
-Date: Sun, 03 Mar 2013 19:33:13 -0500 (EST)
-Message-Id: <20130303.193313.408641189137321065.davem@davemloft.net>
-To: peter@hurleysoftware.com
-Cc: sasha.levin@oracle.com, samuel@sortiz.org, gregkh@linuxfoundation.org,
-        jslaby@suse.cz, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ircomm: release tty before sleeping potentially
- indefintely
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1362355465.3221.82.camel@thor.lan>
-References: <1362350153-26225-1-git-send-email-sasha.levin@oracle.com>
-	<20130303.174739.1195645942179862011.davem@davemloft.net>
-	<1362355465.3221.82.camel@thor.lan>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Sun, 03 Mar 2013 16:33:18 -0800 (PST)
+	Sun, 3 Mar 2013 19:34:24 -0500
+X-Greylist: delayed 2311 seconds by postgrey-1.27 at vger.kernel.org; Sun, 03 Mar 2013 19:34:24 EST
+From: Claudiu Ghioc <claudiughioc@gmail.com>
+To: davem@davemloft.net
+Cc: edumazet@google.com, dborkman@redhat.com, jpirko@redhat.com,
+        akpm@linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Claudiu Ghioc <claudiu.ghioc@gmail.com>
+Subject: [PATCH] filter: fix sparse warning for bpf_internal_load_pointer_neg_helper
+Date: Mon,  4 Mar 2013 01:30:04 +0200
+Message-Id: <1362353404-27034-1-git-send-email-claudiu.ghioc@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Hurley <peter@hurleysoftware.com>
-Date: Sun, 03 Mar 2013 19:04:25 -0500
+Removed the following sparse warning:
+*   net/core/filter.c:48:6: warning: symbol
+    'bpf_internal_load_pointer_neg_helper' was
+    not declared. Should it be static?
 
-> All these are re-tested in the loop. What state test isn't repeated?
+Signed-off-by: Claudiu Ghioc <claudiu.ghioc@gmail.com>
+---
+ net/core/filter.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-One that rechecks the non-blocking filp flag, the
-TTY_IO_ERROR tty flag and the termios settings.
+diff --git a/net/core/filter.c b/net/core/filter.c
+index 2e20b55..f6c907c 100644
+--- a/net/core/filter.c
++++ b/net/core/filter.c
+@@ -45,7 +45,7 @@
+  *
+  * Exported for the bpf jit load helper.
+  */
+-void *bpf_internal_load_pointer_neg_helper(const struct sk_buff *skb, int k, unsigned int size)
++static void *bpf_internal_load_pointer_neg_helper(const struct sk_buff *skb, int k, unsigned int size)
+ {
+ 	u8 *ptr = NULL;
+ 
+-- 
+1.7.10.4
 
-Like I said, all of the state tests performed at the beginning of
-this function, before enterring the loop.
