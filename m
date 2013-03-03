@@ -1,84 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753898Ab3CCRna (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 12:43:30 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:56215 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753151Ab3CCRn2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Mar 2013 12:43:28 -0500
-Date: Sun, 3 Mar 2013 18:40:56 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: Michel Lespinasse <walken@google.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Lai Jiangshan <eag0628@gmail.com>, linux-doc@vger.kernel.org,
-        peterz@infradead.org, fweisbec@gmail.com, linux-kernel@vger.kernel.org,
-        namhyung@kernel.org, mingo@kernel.org, linux-arch@vger.kernel.org,
-        linux@arm.linux.org.uk, xiaoguangrong@linux.vnet.ibm.com,
-        wangyun@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com,
-        nikunj@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
-        rusty@rustcorp.com.au, rostedt@goodmis.org, rjw@sisk.pl,
-        vincent.guittot@linaro.org, tglx@linutronix.de,
-        linux-arm-kernel@lists.infradead.org, netdev@vger.kernel.org,
-        sbw@mit.edu, tj@kernel.org, akpm@linux-foundation.org,
-        linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH V2] lglock: add read-preference local-global rwlock
-Message-ID: <20130303174056.GA30176@redhat.com>
-References: <512CC509.1050000@linux.vnet.ibm.com> <CACvQF50UgiqPpDk3HCmV86zKSf6tPjqr0bZowfPEOJs0g0r0MQ@mail.gmail.com> <512D0D67.9010609@linux.vnet.ibm.com> <CACvQF53ph2ixdM-otzetjM5cR+2kcZj6sckOp3TnzzA_x-EZ8w@mail.gmail.com> <512E7879.20109@linux.vnet.ibm.com> <5130E8E2.50206@cn.fujitsu.com> <20130301182854.GA3631@redhat.com> <CANN689HEW=b5S93J27p+rBX-5m7jkW4FER=eHDCp7OgMaTWLPw@mail.gmail.com> <5131FB4C.7070408@cn.fujitsu.com> <20130302172003.GC29769@redhat.com>
+	id S1753897Ab3CCRsx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 12:48:53 -0500
+Received: from mail-ob0-f175.google.com ([209.85.214.175]:50211 "EHLO
+	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753842Ab3CCRsv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Mar 2013 12:48:51 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130302172003.GC29769@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20130303035608.GA2703@austin.hallyn.com>
+References: <CAGXu5jK7x+gFKgCN5=ZF+kSc4xSNbGtSERHCoOnCEgiJ1_wNGg@mail.gmail.com>
+	<20130303005700.GA32213@austin.hallyn.com>
+	<CAGXu5jLciqXcuhzDVPKPqA+mwv8e28zGAMScatzov3U07BuBaQ@mail.gmail.com>
+	<20130303035608.GA2703@austin.hallyn.com>
+Date: Sun, 3 Mar 2013 09:48:50 -0800
+Message-ID: <CAGXu5jKphNv9+wYE1GwfXKXDdzeWB_AtiqxT0e2PEzqCXNPkfQ@mail.gmail.com>
+Subject: Re: user ns: arbitrary module loading
+From: Kees Cook <keescook@google.com>
+To: "Serge E. Hallyn" <serge@hallyn.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Brad Spengler <spender@grsecurity.net>,
+        Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>,
+        Rusty Russell <rusty@rustcorp.com.au>, PaX Team <pageexec@freemail.hu>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/02, Oleg Nesterov wrote:
+On Sat, Mar 2, 2013 at 7:56 PM, Serge E. Hallyn <serge@hallyn.com> wrote:
+> Quoting Kees Cook (keescook@google.com):
+>> On Sat, Mar 2, 2013 at 4:57 PM, Serge E. Hallyn <serge@hallyn.com> wrote:
+>> > Quoting Kees Cook (keescook@google.com):
+>> >> The rearranging done for user ns has resulted in allowing arbitrary
+>> >> kernel module loading[1] (i.e. re-introducing a form of CVE-2011-1019)
+>> >> by what is assumed to be an unprivileged process.
+>> >>
+>> >> At present, it does look to require at least CAP_SETUID along the way
+>> >> to set up the uidmap (but things like the setuid helper newuidmap
+>> >> might soon start providing such a thing by default).
+>> >>
+>> >> It might be worth examining GRKERNSEC_MODHARDEN in grsecurity, which
+>> >> examines module symbols to verify that request_module() for a
+>> >> filesystem only loads a module that defines "register_filesystem"
+>> >> (among other things).
+>> >>
+>> >> -Kees
+>> >>
+>> >> [1] https://twitter.com/grsecurity/status/307473816672665600
+>> >
+>> > So the concern is root in a child user namespace doing
+>> >
+>> >         mount -t randomfs <...>
+>> >
+>> > in which case do_new_mount() checks ns_capable(), not capable(),
+>> > before trying to load a module for randomfs.
+>>
+>> Well, not just randomfs. Any module that modprobe in the init ns can find.
 >
-> On 03/02, Lai Jiangshan wrote:
-> >
-> > +void lg_rwlock_local_read_unlock(struct lgrwlock *lgrw)
-> > +{
-> > +	switch (__this_cpu_read(*lgrw->reader_refcnt)) {
-> > +	case 1:
-> > +		__this_cpu_write(*lgrw->reader_refcnt, 0);
-> > +		lg_local_unlock(&lgrw->lglock);
-> > +		return;
-> > +	case FALLBACK_BASE:
-> > +		__this_cpu_write(*lgrw->reader_refcnt, 0);
-> > +		read_unlock(&lgrw->fallback_rwlock);
-> > +		rwlock_release(&lg->lock_dep_map, 1, _RET_IP_);
+> right
 >
-> I guess "case 1:" should do rwlock_release() too.
+>> > As well as (secondly) the fact that there is no enforcement on
+>> > the format of the module names (i.e. fs-*).
+>> >
+>> > Kees, from what I've seen the GRKERNSEC_MODHARDEN won't be acceptable.
+>> > At least Eric Paris is strongly against it.
+>>
+>> I'd be curious to hear the objections. It seems pretty nice to me to
 >
-> Otherwise, at first glance looks correct...
+> Wait, sorry, I mis-spoke.  The objection would have been to requiring
+> CAP_SYS_MODULE, which is different.  Sorry!
 >
-> However, I still think that FALLBACK_BASE only adds the unnecessary
-> complications. But even if I am right this is subjective of course, please
-> feel free to ignore.
-
-Yes, but...
-
-> And btw, I am not sure about lg->lock_dep_map, perhaps we should use
-> fallback_rwlock->dep_map ?
+>> add a new argument to every request_module() that specifies the
+>> "subsystem" it expects a module to load from. Maybe pass
+>> "request_module=filesystem" or "...=netdev" to the modprobe call. And
 >
-> We need rwlock_acquire_read() even in the fast-path, and this acquire_read
-> should be paired with rwlock_acquire() in _write_lock(), but it does
-> spin_acquire(lg->lock_dep_map). Yes, currently this is the same (afaics)
-> but perhaps fallback_rwlock->dep_map would be more clean.
+> That would be useful for adding to the separation of privileges,
+> i.e. helping contain the leaking of posix caps.  It sounds good to
+> me.
+>
+>> then in init_module(), check the userargs for which subsystem was
+>> requested and look up in a table for the entry point module symbol for
+>> that subsystem to require. e.g. for "request_module=filesystem",
+>> require that the module contains the "register_filesystem" symbol,
+>> etc.
+>>
+>> > But how about if we
+>> > add a check for 'current_user_ns() == &init_user_ns' at that place
+>> > instead?
+>>
+>> Well, we'd need to mostly revert
+>> 57eccb830f1cc93d4b506ba306d8dfa685e0c88f ("mount: consolidate
+>> permission checks") since get_fs_type() is being called before
+>> may_mount() right now. (And then, as you suggest, we should strengthen
+>> the test.) I think this will require either more plumbing into
+>> get_fs_type (something like "bool load_module_if_missing") or the
+>> subsystem verification stuff in request_module. I think the latter is
+>> MUCH nicer as it covers this problem in all places, not just this
+>> "mount" case.
+>
+> My first instinct was to say I'd like to have the kernel 100% belonging
+> to the init_user_ns, with child user namespaces having zero ability to
+> induce loading of any kernel modules, period.  So a check for current
+> being in init_user_ns at request_module itself.
+>
+> However (thinking more) that seems maybe wrong.  You don't need privs to
+> induce the loading of a new binfmt module right?  The host's
+> /lib/modules and module blacklists should be set up right by the admin
+> (or distro)...  If we require that the host admin manually modprobe
+> every module which a task in a child user namespace might need, that
+> goes counter to the goal of kernel modules.
 
-Please ignore this part.
+Several subsystems already have an implicit subsystem restriction
+because they load with aliases. (e.g. binfmt-XXXX, net-pf=NNN,
+snd-card-NNN, FOO-iosched, etc). This isn't the case for filesystems
+and a few others, unfortunately:
 
-I missed that lg_rwlock_global_write_lock() relies on lg_global_lock(),
-and I just noticed that it does rwlock_acquire(lg->lock_dep_map).
+$ git grep 'request_module("%.*s"' | grep -vi prefix
+crypto/api.c:           request_module("%s", name);
+drivers/mtd/chips/chipreg.c:    if (!drv && !request_module("%s", name))
+drivers/mtd/mtdpart.c:          if (!parser && !request_module("%s", *types))
+drivers/net/wireless/iwlwifi/iwl-drv.c:         request_module("%s", op->name);
+drivers/staging/rtl8192e/rtllib_wx.c:           request_module("%s", tempbuf);
+fs/filesystems.c:       if (!fs && (request_module("%.*s", len, name) == 0))
+net/core/dev_ioctl.c:           if (!request_module("%s", name))
 
-Hmm. But then I do not understand the lglock annotations. Obviously,
-rwlock_acquire_read() in lg_local_lock() can't even detect the simplest
-deadlock, say, lg_local_lock(LOCK) + lg_local_lock(LOCK). Not to mention
-spin_lock(X) + lg_local_lock(Y) vs lg_local_lock(Y) + spin_lock(X).
+Several of these come from hardcoded values, though (e.g. crypto, chipreg).
 
-OK, I understand that it is not easy to make these annotations correct...
+>> > Eric Biederman, do you have any objections to that?
+>
+> -serge
 
-Oleg.
+-Kees
 
+--
+Kees Cook
+Chrome OS Security
