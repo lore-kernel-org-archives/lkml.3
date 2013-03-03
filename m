@@ -1,72 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754010Ab3CCTgW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 14:36:22 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:17613 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753514Ab3CCTgV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Mar 2013 14:36:21 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-To: torvalds@linux-foundation.org
-cc: dhowells@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org
-Subject: UAPI: The end is nigh!
-Date: Sun, 03 Mar 2013 19:36:18 +0000
-Message-ID: <23533.1362339378@warthog.procyon.org.uk>
+	id S1753866Ab3CCTtq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 14:49:46 -0500
+Received: from mail1.windriver.com ([147.11.146.13]:57745 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751115Ab3CCTto (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Mar 2013 14:49:44 -0500
+From: Jason Wessel <jason.wessel@windriver.com>
+To: <mmarek@suse.cz>
+CC: <linux-kbuild@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH] menuconfig,check-lxdiaglog.sh: Allow specification of ncurses location
+Date: Sun, 3 Mar 2013 13:48:44 -0600
+Message-ID: <1362340124-2768-1-git-send-email-jason.wessel@windriver.com>
+X-Mailer: git-send-email 1.7.9.5
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+In some cross build environments such as the Yocto Project build
+environment it provides an ncurses library that is compiled
+differently than the host's version.  This causes display corruption
+problems when the host's curses includes are used instead of the
+includes from the provided compiler are overridden.  There is a second
+case where there is no curses libraries at all on the host system and
+menuconfig will just fail entirely.
 
-Hi Linus,
+The solution is simply to allow an override variable in
+check-lxdialog.sh for environments such as the Yocto Project.  Adding
+a CROSS_CURSES_LIB and CROSS_CURSES_INC solves the issue and allowing
+compiling and linking against the right headers and libraries.
 
-You'll be glad to here that the end is nigh for the UAPI patches.  Only the
-fbdev/framebuffer piece remains now that the SCSI stuff has gone in.
-
-As far as I can tell, no changes have been merged that affect the UAPI parts
-of the include/video headers, so my previous request should still be good to
-go.
-
-David
+Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
+cc: Michal Marek <mmarek@suse.cz>
+cc: linux-kbuild@vger.kernel.org
 ---
-Here are the UAPI disintegration bits for the fbdev drivers.  It appears that
-Florian hasn't had time to deal with my patch, but back in December he did say
-he didn't mind if I pushed it forward.  I recommend pulling it after any other
-fbdev stuff and I can easily regenerate it if necessary.
----
-The following changes since commit 1800098549fc310cffffefdcb3722adaad0edda8:
+ scripts/kconfig/lxdialog/check-lxdialog.sh |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-  ARM: OMAP: Fix build breakage due to missing include in i2c.c (2012-12-20 08:43:25 -0800)
-
-are available in the git repository at:
-
-  git://git.infradead.org/users/dhowells/linux-headers.git tags/disintegrate-fbdev-20121220
-
-for you to fetch changes up to b889fcf63cb62e7fdb7816565e28f44dbe4a76a5:
-
-  UAPI: (Scripted) Disintegrate include/video (2012-12-20 17:14:26 +0000)
-
-----------------------------------------------------------------
-UAPI disintegration 2012-12-20
-
-----------------------------------------------------------------
-David Howells (1):
-      UAPI: (Scripted) Disintegrate include/video
-
- include/uapi/video/Kbuild    |   3 +
- include/uapi/video/edid.h    |   9 ++
- include/uapi/video/sisfb.h   | 209 +++++++++++++++++++++++++++++++++++++++++++
- include/uapi/video/uvesafb.h |  60 +++++++++++++
- include/video/Kbuild         |   3 -
- include/video/edid.h         |   7 +-
- include/video/sisfb.h        | 189 +-------------------------------------
- include/video/uvesafb.h      |  58 +-----------
- 8 files changed, 284 insertions(+), 254 deletions(-)
- create mode 100644 include/uapi/video/edid.h
- create mode 100644 include/uapi/video/sisfb.h
- create mode 100644 include/uapi/video/uvesafb.h
-
+diff --git a/scripts/kconfig/lxdialog/check-lxdialog.sh b/scripts/kconfig/lxdialog/check-lxdialog.sh
+index 8078813..99473e4 100644
+--- a/scripts/kconfig/lxdialog/check-lxdialog.sh
++++ b/scripts/kconfig/lxdialog/check-lxdialog.sh
+@@ -4,6 +4,10 @@
+ # What library to link
+ ldflags()
+ {
++	if [ x"$CROSS_CURSES_LIB" != x ]; then
++		echo "$CROSS_CURSES_LIB"
++		exit
++	fi
+ 	for ext in so a dll.a dylib ; do
+ 		for lib in ncursesw ncurses curses ; do
+ 			$cc -print-file-name=lib${lib}.${ext} | grep -q /
+@@ -19,6 +23,10 @@ ldflags()
+ # Where is ncurses.h?
+ ccflags()
+ {
++	if [ x"$CROSS_CURSES_INC" != x ]; then
++		echo "$CROSS_CURSES_INC"
++		exit
++	fi
+ 	if [ -f /usr/include/ncursesw/curses.h ]; then
+ 		echo '-I/usr/include/ncursesw -DCURSES_LOC="<ncursesw/curses.h>"'
+ 		echo ' -DNCURSES_WIDECHAR=1'
+-- 
+1.7.9.5
 
