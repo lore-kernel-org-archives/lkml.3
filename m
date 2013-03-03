@@ -1,70 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754020Ab3CCStQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 13:49:16 -0500
-Received: from cdptpa-omtalb.mail.rr.com ([75.180.132.120]:35839 "EHLO
-	cdptpa-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753908Ab3CCStP (ORCPT
+	id S1754040Ab3CCSvA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 13:51:00 -0500
+Received: from mail-ve0-f178.google.com ([209.85.128.178]:50090 "EHLO
+	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753931Ab3CCSu7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Mar 2013 13:49:15 -0500
-X-Authority-Analysis: v=2.0 cv=cYNQXw/M c=1 sm=0 a=C56BoFkcj+OI1kjAe8jE5A==:17 a=MtVMNMWb1ewA:10 a=BjhBlCK6cPEA:10 a=S1A5HrydsesA:10 a=fxJcL_dCAAAA:8 a=okkl7HI8WYwA:10 a=OXeuF8pxMM_4sejTAF4A:9 a=2eKvNQJKnqYA:10 a=C56BoFkcj+OI1kjAe8jE5A==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 142.196.87.46
-From: Phillip Susi <psusi@ubuntu.com>
-To: axboe@kernel.dk
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] loop: cleanup partitions when detaching loop device
-Date: Sun,  3 Mar 2013 13:49:13 -0500
-Message-Id: <1362336553-16880-1-git-send-email-psusi@ubuntu.com>
-X-Mailer: git-send-email 1.8.1.2
+	Sun, 3 Mar 2013 13:50:59 -0500
+MIME-Version: 1.0
+In-Reply-To: <CACxGe6sweLxtsW9OYb8m7esYguGmStEsuZc0tOgZN6H5Zfy1+g@mail.gmail.com>
+References: <CACxGe6sweLxtsW9OYb8m7esYguGmStEsuZc0tOgZN6H5Zfy1+g@mail.gmail.com>
+Date: Sun, 3 Mar 2013 10:50:58 -0800
+X-Google-Sender-Auth: 7uKKO3ab4AaQgVB2SKnkkREFR0M
+Message-ID: <CA+55aFxzN7=z7_iVQ=JvYms1WaCoX-hQ2jKNqLU2dLy63AYK1g@mail.gmail.com>
+Subject: Re: [GIT PULL] gpio changes for v3.9; second round
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Any partitions added by user space to the loop device were being
-left in place after detaching the loop device.  This was because
-the detach path issued a BLKRRPART to clean up partitions if
-LO_FLAGS_PARTSCAN was set, meaning that the partitions were auto
-scanned on attach.  Replace this BLKRRPART with code that
-unconditionally cleans up partitions on detach instead.
+On Sat, Mar 2, 2013 at 6:24 AM, Grant Likely <grant.likely@secretlab.ca> wrote:
+>
+> 2nd round of GPIO changes for Linux 3.9
+>
+> This branch contains a few bug fixes that I missed the first time around
+> and updates to the gpio_desc series included in the first pull request.
+>
+> ----------------------------------------------------------------
+> Gabriel Fernandez (1):
+>       gpio/stmpe: pass DT node to irqdomain
 
-Signed-off-by: Phillip Susi <psusi@ubuntu.com>
----
- drivers/block/loop.c | 16 ++++++++++++++--
- 1 file changed, 14 insertions(+), 2 deletions(-)
+This breaks the build for me. I get
 
-diff --git a/drivers/block/loop.c b/drivers/block/loop.c
-index ae12512..38f0239 100644
---- a/drivers/block/loop.c
-+++ b/drivers/block/loop.c
-@@ -1039,12 +1039,24 @@ static int loop_clr_fd(struct loop_device *lo)
- 	lo->lo_state = Lo_unbound;
- 	/* This is safe: open() is still holding a reference. */
- 	module_put(THIS_MODULE);
--	if (lo->lo_flags & LO_FLAGS_PARTSCAN && bdev)
--		ioctl_by_bdev(bdev, BLKRRPART, 0);
- 	lo->lo_flags = 0;
- 	if (!part_shift)
- 		lo->lo_disk->flags |= GENHD_FL_NO_PART_SCAN;
- 	mutex_unlock(&lo->lo_ctl_mutex);
-+	if (bdev)
-+	{
-+		struct disk_part_iter piter;
-+		struct hd_struct *part;
-+
-+		mutex_lock_nested(&bdev->bd_mutex, 1);
-+		invalidate_partition(bdev->bd_disk, 0);
-+		disk_part_iter_init(&piter, bdev->bd_disk, DISK_PITER_INCL_EMPTY);
-+		while ((part = disk_part_iter_next(&piter)))
-+			delete_partition(bdev->bd_disk, part->partno);
-+		disk_part_iter_exit(&piter);
-+		mutex_unlock(&bdev->bd_mutex);
-+	}
-+
- 	/*
- 	 * Need not hold lo_ctl_mutex to fput backing file.
- 	 * Calling fput holding lo_ctl_mutex triggers a circular
--- 
-1.8.1.2
+  drivers/gpio/gpio-stmpe.c: In function ‘stmpe_gpio_irq_init’:
+  drivers/gpio/gpio-stmpe.c:313:23: error: ‘struct gpio_chip’ has no
+member named ‘of_node’
+  drivers/gpio/gpio-stmpe.c:316:61: error: ‘struct gpio_chip’ has no
+member named ‘of_node’
+  drivers/gpio/gpio-stmpe.c: In function ‘stmpe_gpio_probe’:
+  drivers/gpio/gpio-stmpe.c:351:18: error: ‘struct gpio_chip’ has no
+member named ‘of_node’
 
+and I don't think this is a merge error.
+
+Should this driver depend on CONFIG_OF_GPIO, or should it have
+#ifdef's? Regardless, it's clearly broken right now.
+
+Unpulled.
+
+                Linus
