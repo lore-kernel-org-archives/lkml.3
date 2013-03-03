@@ -1,77 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753380Ab3CCNf3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 08:35:29 -0500
-Received: from mail-ia0-f173.google.com ([209.85.210.173]:43310 "EHLO
-	mail-ia0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753120Ab3CCNfF (ORCPT
+	id S1753346Ab3CCNuM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 08:50:12 -0500
+Received: from zoneX.GCU-Squad.org ([194.213.125.0]:36682 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753120Ab3CCNuL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Mar 2013 08:35:05 -0500
-Message-ID: <51335181.5070309@kernel.org>
-Date: Sun, 03 Mar 2013 08:34:57 -0500
-From: Konstantin Ryabitsev <mricon@kernel.org>
-Organization: Linux Foundation/Kernel.org
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130219 Thunderbird/17.0.3
-MIME-Version: 1.0
-To: sedat.dilek@gmail.com
-CC: webmaster@kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        linux-next <linux-next@vger.kernel.org>
-Subject: Re: [git.k.o] Old linux-next WebGit points to $NewWebGitURL/tree
-References: <CA+icZUW4SJ1OTmKtcHWYkaW5pYzJZU8Gv7BtxAeto++aqYB6gA@mail.gmail.com> <CA+icZUVyWAog7sxKXLSODaeO8v9BJReR8LhruC1gLux57oJ7Hg@mail.gmail.com> <CA+icZUWoqYWirP7F-pEUzqK4KoN357ST5eM=3a-esG_nP2G3yA@mail.gmail.com>
-In-Reply-To: <CA+icZUWoqYWirP7F-pEUzqK4KoN357ST5eM=3a-esG_nP2G3yA@mail.gmail.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="----enig2SXFSQVFKODDDCUIGSBCI"
+	Sun, 3 Mar 2013 08:50:11 -0500
+Date: Sun, 3 Mar 2013 14:49:58 +0100
+From: Jean Delvare <khali@linux-fr.org>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
+        Peter Tyser <ptyser@xes-inc.com>, Andreas Schultz <aschultz@tpip.net>
+Subject: Re: [PATCH] gpio: gpio-ich: fix ichx_gpio_check_available() return
+ what callers expect
+Message-ID: <20130303144958.1d35592b@endymion.delvare>
+In-Reply-To: <20130302091836.1DBD83E15E3@localhost>
+References: <1361978715-14948-1-git-send-email-mika.westerberg@linux.intel.com>
+	<20130302091836.1DBD83E15E3@localhost>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
-------enig2SXFSQVFKODDDCUIGSBCI
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+Hi all,
 
-On 03/03/13 03:26 AM, Sedat Dilek wrote:
-> Same happens with ext4 GIT...
->=20
-> OLD: http://git.kernel.org/?p=3Dlinux/kernel/git/tytso/ext4.git
->=20
-> NEW: http://git.kernel.org/cgit/linux/kernel/git/tytso/ext4.git/tree/
->=20
-> FIXED: http://git.kernel.org/cgit/linux/kernel/git/tytso/ext4.git
+On Sat, 02 Mar 2013 09:18:36 +0000, Grant Likely wrote:
+> On Wed, 27 Feb 2013 17:25:15 +0200, Mika Westerberg <mika.westerberg@linux.intel.com> wrote:
+> > ichx_gpio_check_available() returns either 0 or -ENXIO depending on whether
+> > the given GPIO is available or not. However, callers of this function treat
+> > the return value as boolean:
+> > 
+> > 	...
+> > 	if (!ichx_gpio_check_available(gpio, nr))
+> > 		return -ENXIO;
+> > 
+> > which erroneusly fails when the GPIO is available and not vice versa.
+> > 
+> > Fix this by making the function return boolean as expected by the callers.
+> > 
+> > Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> 
+> Applied, thanks.
 
-Hello:
+I am very sorry for introducing this bug. Thanks Andreas and Mika for
+catching it and fixing it. Too bad stable kernel 3.7 already reached
+end of life :(
 
-This is now fixed globally.
+My original code has been working for me for months. The reason is
+that, of the 4 affected functions, only ichx_gpio_direction_output() is
+ever called, and its return value is never checked by the driver
+(i2c-mux-gpio.) I'll update the driver to properly check the return
+value so that any issue is caught earlier in the future.
 
-Best,
---=20
-Konstantin Ryabitsev
-Systems Administrator
-Linux Foundation, kernel.org
-Montr=C3=A9al, Qu=C3=A9bec
+Looking at the gpio-ich code, there are two things I do not understand.
 
+The first one is in my own code. I see that there is no usability check
+on ichx_gpio_request(), while there is one on ichx_gpio_get(). This
+makes little sense to me and I am really curious why I made things that
+way. ichx_gpio_get() could be called repeatedly so from a performance
+perspective checking for usability again and again is no good. Checking
+at GPIO request time would seem preferable, allowing to catch problems
+earlier. I'll change that unless anyone can figure out why I made it
+the way it is.
 
-------enig2SXFSQVFKODDDCUIGSBCI
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+The second one is in Peter's code:
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.13 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+static int ichx_gpio_request(struct gpio_chip *chip, unsigned nr)
+{
+	/*
+	 * Note we assume the BIOS properly set a bridge's USE value.  Some
+	 * chips (eg Intel 3100) have bogus USE values though, so first see if
+	 * the chipset's USE value can be trusted for this specific bit.
+	 * If it can't be trusted, assume that the pin can be used as a GPIO.
+	 */
+	if (ichx_priv.desc->use_sel_ignore[nr / 32] & (1 << (nr & 0x1f)))
+		return 1;
 
-iQGcBAEBAgAGBQJRM1GBAAoJEI6WedmufEleyHEL/jJNxmnxM8x2dKwU9loWuMPo
-lEy+V3gyEOL7FqaJmRyNRFfXAthG8Cjcv5QkDBgnigbCrHXSd0KgMDbvGQCgJOWk
-3Wtu9LEPCtX7Cdft+kezb9ZkVZRE8eHAwEpgAkpkXCX2U/pbavNejlcaaXZIH5aG
-ujLV/Z75qdA1k46VqAVWcvgR/VREKoN38Ug/kjVDPNtjVfMbb6+C9UVktf8+P6Uq
-1o1puM0OJGTmfYOb1fM0m2Wp7cWsbuV8qbs4eBnL+N/yeftHq65zzYgn/qzUOu8u
-3cgHkppOnofOOY4LoA64s2XWpnlN+bpmsWLecAOGpBtDZkgdPkyxL0D/uII7Z06B
-6KsSHl11CPnaG4TC/BspwMZ/Oy7F0fCH6SjUs2Ki1WIrL3bZnWDWG/q1gvHDBCbN
-vS/Jps2D49sqQCLT5fUf0Igms9V+11NS04N/FqATpE4xpUQBSoVga+d0l/KrJKaY
-sJxYO3JwxIoazQenjotlJlc/AkKVi0UWw58bVGcESA==
-=lYuv
------END PGP SIGNATURE-----
+	return ichx_read_bit(GPIO_USE_SEL, nr) ? 0 : -ENODEV;
+}
 
-------enig2SXFSQVFKODDDCUIGSBCI--
+Documentation/gpio.txt says: "the return value is zero for success,
+else a negative errno." So I have no idea what the "1" returned here is
+supposed to mean. Depending on whether the caller checks for "ret" or
+"ret < 0" it will see this as success or as error. This doesn't seem
+right. If I understand the comment properly, we should return 0
+(success) instead. Peter?
+
+-- 
+Jean Delvare
