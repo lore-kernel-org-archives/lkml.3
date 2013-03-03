@@ -1,73 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753961Ab3CCSfK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 13:35:10 -0500
-Received: from mail-da0-f41.google.com ([209.85.210.41]:60006 "EHLO
-	mail-da0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751490Ab3CCSfI (ORCPT
+	id S1753983Ab3CCSmi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 13:42:38 -0500
+Received: from mail-ia0-f178.google.com ([209.85.210.178]:60034 "EHLO
+	mail-ia0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753912Ab3CCSmh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Mar 2013 13:35:08 -0500
-Message-ID: <1362335704.15793.81.camel@edumazet-glaptop>
-Subject: Re: [RFC PATCH 1/5] net: implement support for low latency socket
- polling
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Eliezer Tamir <eliezer.tamir@linux.jf.intel.com>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        Dave Miller <davem@davemloft.net>,
-        Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        e1000-devel@lists.sourceforge.net,
-        Willem de Bruijn <willemb@google.com>,
-        Andi Kleen <andi@firstfloor.org>, HPA <hpa@zytor.com>,
-        Eliezer Tamir <eliezer@tamir.org.il>
-Date: Sun, 03 Mar 2013 10:35:04 -0800
-In-Reply-To: <20130227175555.10611.42794.stgit@gitlad.jf.intel.com>
-References: <20130227175549.10611.82188.stgit@gitlad.jf.intel.com>
-	 <20130227175555.10611.42794.stgit@gitlad.jf.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Sun, 3 Mar 2013 13:42:37 -0500
+MIME-Version: 1.0
+X-Originating-IP: [178.83.130.250]
+In-Reply-To: <1362098606-26469-1-git-send-email-john.stultz@linaro.org>
+References: <1362098606-26469-1-git-send-email-john.stultz@linaro.org>
+Date: Sun, 3 Mar 2013 19:42:36 +0100
+Message-ID: <CAKMK7uF-Xh9vg2wq04+=Uaiz+PnXn599QVNotO4WyHiMiBAK4Q@mail.gmail.com>
+Subject: Re: [RFC][PATCH 00/30] staging: Android sync driver
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
+To: John Stultz <john.stultz@linaro.org>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+        Erik Gilling <konkers@android.com>, Rob Clark <robclark@gmail.com>,
+        Sumit Semwal <sumit.semwal@linaro.org>,
+        Greg KH <gregkh@linuxfoundation.org>, dri-devel@lists.freedesktop.org,
+        linaro-mm-sig@lists.linaro.org,
+        Android Kernel Team <kernel-team@android.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-02-27 at 09:55 -0800, Eliezer Tamir wrote:
+On Fri, Mar 1, 2013 at 1:42 AM, John Stultz <john.stultz@linaro.org> wrote:
+> As proposed yesterday, here's the Android sync driver patches for
+> staging.
+>
+> I've preserved the commit history, but moved all the changes over
+> to be against the staging directory (instead of drivers/base).
+>
+>
+> The goal of submitting this driver to staging is to try to get
+> more collaberation, as there are some similar efforts going on
+> in the community with dmabuf-fences. My email from yesterday with
+> more details for how I hope this goes is here:
+>         http://comments.gmane.org/gmane.linux.kernel/1448420
 
-> index 821c7f4..d1d1016 100644
-> --- a/include/linux/skbuff.h
-> +++ b/include/linux/skbuff.h
-> @@ -408,6 +408,10 @@ struct sk_buff {
->  	struct sock		*sk;
->  	struct net_device	*dev;
->  
-> +#ifdef CONFIG_INET_LL_RX_POLL
-> +	struct napi_struct	*dev_ref; /* where this skb came from */
-> +#endif
-> +
->  	/*
->  	 * This is the control buffer. It is free to use for every
->  	 * layer. Please put your private variables there. If you
+I've been offline in a week of snowboarding, but I'll throw my late
+Ack - I've discussed this a bit with John offline and I agree with his
+general plan for integrating android sync points into mainline.
 
-Yes, thats the killer, because :
+> Erik also provided a nice background on the patch set in his
+> reply yesterday, which I'll quote here:
+>
+> "In Honeycomb where we introduced the Hardware Composer HAL.  This is a
+> userspace layer that allows composition acceleration on a per platform
+> basis.  Different SoC vendors have implemented this using overlays, 2d
+> blitters, a combinations of both, or other clever/disgusting means.
+> Along with the HWC we consolidated a lot of our camera and media
+> pipeline to allow their input to be fed into the GPU or
+> display(overlay.)  In order to exploit parallelism the the graphics
+> pipeline, this introduced lots of implicit synchronization
+> dependancies.  After a couple years of working with many different SoC
+> vendors, we found that it was really difficult to communicate our
+> system's expectations of the implicit contract and it was difficult
+> for the SoC vendors to properly implement the implicit contract in
+> each of their IP blocks (display, gpu, camera, video codecs).  It was
+> also incredibly difficult to debug when problems/deadlocks arose.
 
-1) It adds 8 bytes per skb, and we are going to reach the 256 bytes per
-sk_buff boundary. cloned skbs will use an extra cache line.
+dma_buf fences should be tons easier to debug thanks to integration
+with lockdep. Also their design fundamentally excludes deadlock-loops
+in the fences themselves. And I also think that we should be able to
+hide the complexity from most drivers in e.g. drm/ttm or the v2l core.
+So I'm still bullish on implicit fencing (and will keep on pushing
+that for all things intel).
 
-It might make sense to union this on dma_cookie, as dma_cookie is only
-used on TX path.
+But I guess the simpler programming model afforded by that for
+userspace isn't of much use for the google guys now that they've
+pushed the effort to convert SurfaceFlinger to explicit fence handling
+...
 
-2) We need to reference count napi structs.
-
-For 2) , we would need to add a percpu ref counter (a bit like struct
-netdevice -> pcpu_refcnt)
-
-Alternative to 2) would be to use a generation id, incremented every
-time a napi used in spin polling enabled driver is dismantled (and freed
-after RCU grace period)
-
-And store in sockets not only the pointer to napi_struct, but the
-current generation id : If the generation id doesnt match, disable
-the spinpoll until next packet rebuilds the cache again.
-
-
-
+Cheers, Daniel
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
