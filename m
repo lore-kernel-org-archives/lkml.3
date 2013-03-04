@@ -1,49 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932709Ab3CDVxQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 16:53:16 -0500
-Received: from mail-ee0-f49.google.com ([74.125.83.49]:40333 "EHLO
-	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932596Ab3CDVxO (ORCPT
+	id S932689Ab3CDVzy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 16:55:54 -0500
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:63789 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932114Ab3CDVzx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 16:53:14 -0500
+	Mon, 4 Mar 2013 16:55:53 -0500
 MIME-Version: 1.0
-In-Reply-To: <5134A37D.9000704@broadcom.com>
-References: <1362401911-14074-1-git-send-email-akinobu.mita@gmail.com>
-	<1362401911-14074-17-git-send-email-akinobu.mita@gmail.com>
-	<5134A37D.9000704@broadcom.com>
-Date: Tue, 5 Mar 2013 06:53:12 +0900
-Message-ID: <CAC5umyjMvMW8ZZ1JFJcZVYo7PiUkG+dVgUNQ3bd87SW_6LnYqw@mail.gmail.com>
-Subject: Re: [PATCH -v3 16/23] drivers/net: rename random32() to prandom_u32()
-From: Akinobu Mita <akinobu.mita@gmail.com>
-To: Arend van Spriel <arend@broadcom.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Michael Chan <mchan@broadcom.com>,
-        Thomas Sailer <t.sailer@alumni.ethz.ch>,
-        Jean-Paul Roubelat <jpr@f6fbb.org>, Bing Zhao <bzhao@marvell.com>,
-        Brett Rudley <brudley@broadcom.com>,
-        "Franky (Zhenhui) Lin" <frankyl@broadcom.com>,
-        Hante Meuleman <meuleman@broadcom.com>,
-        brcm80211-dev-list@broadcom.com, netdev <netdev@vger.kernel.org>,
-        linux-hams@vger.kernel.org, linux-wireless@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <014501ce18ae$96f88a90$c4e99fb0$%han@samsung.com>
+References: <013a01ce18ad$e45caa10$ad15fe30$%han@samsung.com>
+	<014501ce18ae$96f88a90$c4e99fb0$%han@samsung.com>
+Date: Mon, 4 Mar 2013 22:55:52 +0100
+X-Google-Sender-Auth: HB3uUu0JBCabKiRNm2Rf6I9_UZM
+Message-ID: <CAMuHMdX4w0F_qH66gpvXq=j=k3+6OLk19LPXd2MEbTokjvWxDA@mail.gmail.com>
+Subject: Re: [PATCH 12/24] rtc: rtc-msm6242: use module_platform_driver_probe()
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Jingoo Han <jg1.han@samsung.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/3/4 Arend van Spriel <arend@broadcom.com>
->>
->> @@ -1118,7 +1118,7 @@ static void brcmf_p2p_afx_handler(struct work_struct *work)
->>         if (afx_hdl->is_listen&&  afx_hdl->my_listen_chan)
->>
->>                 /* 100ms ~ 300ms */
->>                 err = brcmf_p2p_discover_listen(p2p, afx_hdl->my_listen_chan,
->> -                                               100 * (1 + (random32() % 3)));
->> +                                       100 * (1 + (prandom_u32() % 3)));
+On Mon, Mar 4, 2013 at 9:02 AM, Jingoo Han <jg1.han@samsung.com> wrote:
+> This patch uses module_platform_driver_probe() macro which makes
+> the code smaller and simpler.
 >
->
-> Seems like indentation is wrong now. Please retain the alignment.
+> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 
-OK, I'll fix it.
+Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
+
+> ---
+>  drivers/rtc/rtc-msm6242.c |   13 +------------
+>  1 files changed, 1 insertions(+), 12 deletions(-)
+>
+> diff --git a/drivers/rtc/rtc-msm6242.c b/drivers/rtc/rtc-msm6242.c
+> index fcb113c..3ac1e8e 100644
+> --- a/drivers/rtc/rtc-msm6242.c
+> +++ b/drivers/rtc/rtc-msm6242.c
+> @@ -252,18 +252,7 @@ static struct platform_driver msm6242_rtc_driver = {
+>         .remove = __exit_p(msm6242_rtc_remove),
+>  };
+>
+> -static int __init msm6242_rtc_init(void)
+> -{
+> -       return platform_driver_probe(&msm6242_rtc_driver, msm6242_rtc_probe);
+> -}
+> -
+> -static void __exit msm6242_rtc_fini(void)
+> -{
+> -       platform_driver_unregister(&msm6242_rtc_driver);
+> -}
+> -
+> -module_init(msm6242_rtc_init);
+> -module_exit(msm6242_rtc_fini);
+> +module_platform_driver_probe(msm6242_rtc_driver, msm6242_rtc_probe);
+>
+>  MODULE_AUTHOR("Geert Uytterhoeven <geert@linux-m68k.org>");
+>  MODULE_LICENSE("GPL");
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
