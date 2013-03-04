@@ -1,47 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932400Ab3CDUeu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 15:34:50 -0500
-Received: from moutng.kundenserver.de ([212.227.17.9]:54251 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932185Ab3CDUes (ORCPT
+	id S932379Ab3CDUg1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 15:36:27 -0500
+Received: from smtp.snhosting.dk ([87.238.248.203]:41236 "EHLO
+	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932242Ab3CDUg0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 15:34:48 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Russell King - ARM Linux" <linux@arm.linux.org.uk>
-Subject: Re: Latest randconfig build errors
-Date: Mon, 4 Mar 2013 20:34:43 +0000
-User-Agent: KMail/1.12.2 (Linux/3.8.0-8-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        Tony Lindgren <tony@atomide.com>, arm@kernel.org,
-        linux-kernel@vger.kernel.org
-References: <20130304095136.GI17833@n2100.arm.linux.org.uk>
-In-Reply-To: <20130304095136.GI17833@n2100.arm.linux.org.uk>
+	Mon, 4 Mar 2013 15:36:26 -0500
+Date: Mon, 4 Mar 2013 21:36:24 +0100
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Michal Marek <mmarek@suse.cz>, linux-kbuild <linux-kbuild@vger.kernel.org>
+Cc: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        David Howells <dhowells@redhat.com>,
+        lkml <linux-kernel@vger.kernel.org>, arnd@arndb.de, tglx@linutronix.de,
+        paulmck@linux.vnet.ibm.com, davej@redhat.com
+Subject: [PATCH - Regression] kbuild: fix make headers_check with make 3.80
+Message-ID: <20130304203624.GA10846@merkur.ravnborg.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201303042034.43833.arnd@arndb.de>
-X-Provags-ID: V02:K0:UgjbgQ1Cjm2+1g39phYkp2QWE8NzqO/VGSJScWTXGvB
- he6Qm/2T0pwfCmy8pZUNeWyFS/hI0y192/pGkX6h5fRmp2ZUbP
- F/kwMYy9KaDu3MRa1FSvRAqya0TSP8nhL9OVEfKu+miJ4rbY7w
- r1WpoGK7fOBBxiKOmv7+5rPYPW6Dc0gc6gYDxMaKCY570nWRsN
- OBfRtsIHnj1YefZ108OnnM6BWDuNZRkqYWBITHVStVhxYDDzWH
- 5EAY++j8mTKwybbNXbKPTZYZcueiXj309KS0QT+QyIPkdovNVe
- nnb0Co9+Vc64vZ6FxbKZ8UKDQzr2jG515OC33FTJf658XhNI8q
- t5L8LvBp9mBZdjHceaKA=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 04 March 2013, Russell King - ARM Linux wrote:
+Commit 10b63956 ("UAPI: Plumb the UAPI Kbuilds into the user header
+installation and checking") introduced a dependency of make 3.81
+due to use of $(or ...)
 
-> Versatile randconfig:
-> 
-> ERROR: "irq_domain_add_simple" [drivers/gpio/gpio-em.ko] undefined!
-> 
+We do not want to lift the requirement to gmake 3.81 just yet...
+Included are a straightforward conversion to $(if ...)
 
-I'm pretty sure I submitted a patch for this one before. I'll go looking
-for it. IIRC the solution was to export that symbol.
+Bisected-and-tested-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Cc: David Howells <dhowells@redhat.com>
+Signed-off-by: Sam Ravnborg <sam@ravnborg.org>
+---
 
-	Arnd
+diff --git a/scripts/Makefile.headersinst b/scripts/Makefile.headersinst
+index 25f216a..477d137 100644
+--- a/scripts/Makefile.headersinst
++++ b/scripts/Makefile.headersinst
+@@ -14,7 +14,7 @@ kbuild-file := $(srctree)/$(obj)/Kbuild
+ include $(kbuild-file)
+ 
+ # called may set destination dir (when installing to asm/)
+-_dst := $(or $(destination-y),$(dst),$(obj))
++_dst := $(if $(destination-y),$(destination-y),$(if $(dst),$(dst),$(obj)))
+ 
+ old-kbuild-file := $(srctree)/$(subst uapi/,,$(obj))/Kbuild
+ ifneq ($(wildcard $(old-kbuild-file)),)
+@@ -48,13 +48,14 @@ all-files     := $(header-y) $(genhdr-y) $(wrapper-files)
+ output-files  := $(addprefix $(installdir)/, $(all-files))
+ 
+ input-files   := $(foreach hdr, $(header-y), \
+-		   $(or \
++		   $(if $(wildcard $(srcdir)/$(hdr)), \
+ 			$(wildcard $(srcdir)/$(hdr)), \
+-			$(wildcard $(oldsrcdir)/$(hdr)), \
+-			$(error Missing UAPI file $(srcdir)/$(hdr)) \
++			$(if $(wildcard $(oldsrcdir)/$(hdr)), \
++				$(wildcard $(oldsrcdir)/$(hdr)), \
++				$(error Missing UAPI file $(srcdir)/$(hdr))) \
+ 		   )) \
+ 		 $(foreach hdr, $(genhdr-y), \
+-		   $(or \
++		   $(if	$(wildcard $(gendir)/$(hdr)), \
+ 			$(wildcard $(gendir)/$(hdr)), \
+ 			$(error Missing generated UAPI file $(gendir)/$(hdr)) \
+ 		   ))
