@@ -1,48 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757137Ab3CDMri (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 07:47:38 -0500
-Received: from mail-ob0-f172.google.com ([209.85.214.172]:34616 "EHLO
-	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756636Ab3CDMrg (ORCPT
+	id S1757267Ab3CDMtL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 07:49:11 -0500
+Received: from mail-da0-f42.google.com ([209.85.210.42]:58057 "EHLO
+	mail-da0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756407Ab3CDMtJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 07:47:36 -0500
+	Mon, 4 Mar 2013 07:49:09 -0500
 MIME-Version: 1.0
-Date: Mon, 4 Mar 2013 20:47:31 +0800
-Message-ID: <CAJd=RBD0UWxpMv7W78fH0U_zBAOozP1owaMePGaUEVitotRfBg@mail.gmail.com>
-Subject: [PATCH resend] rmap: recompute pgoff for unmapping huge page
-From: Hillf Danton <dhillf@gmail.com>
-To: Linux-MM <linux-mm@kvack.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Michal Hocko <mhocko@suse.cz>,
-        Michel Lespinasse <walken@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hillf Danton <dhillf@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Reply-To: mtk.manpages@gmail.com
+In-Reply-To: <876217olp0.fsf@xmission.com>
+References: <CAKgNAki=mUYuu_Ewhe7sjCmo+Dq2Vr+FZCixqNRaadcvAxtpFw@mail.gmail.com>
+ <1362110504.15531.4@driftwood> <CAKgNAkgVKnhRT1Lpq4a_UdBKB+tn6XmWSDF2QJXG0aSLtNH6dg@mail.gmail.com>
+ <1362369010.29250.3@driftwood> <876217olp0.fsf@xmission.com>
+From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Date: Mon, 4 Mar 2013 13:48:48 +0100
+Message-ID: <CAKgNAkhyu6G_X5Smkq02a6GU7FcLQ1rR+e7f+KK4ruUy5-Z6AQ@mail.gmail.com>
+Subject: Re: For review: pid_namespaces(7) man page
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Rob Landley <rob@landley.net>, linux-man <linux-man@vger.kernel.org>,
+        Linux Containers <containers@lists.linux-foundation.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Resend due to error in delivering to linux-kernel@vger.kernel.org,
-caused probably by the rich format provided by the mail agent by default.]
+On Mon, Mar 4, 2013 at 5:03 AM, Eric W. Biederman <ebiederm@xmission.com> wrote:
+> Rob Landley <rob@landley.net> writes:
+>
+>> On 03/01/2013 03:57:40 AM, Michael Kerrisk (man-pages) wrote:
+>>> > And yet the glibc guys insist on #define
+>>> GNU_GNU_GNU_ALL_HAIL_STALLMAN in
+>>> > order to access this Linux-specific feature which has nothing
+>>> whatsoever to
+>>> > do with the FSF.
+>>>
+>>> This is a misunderstanding. _GNU_SOURCE is the standard way to expose
+>>> Linux-specific functionality from POSIX header files.
+>>
+>> What standard? The Linux kernel is not, and never was, part of the GNU
+>> project.
+>
+> Is the argument that there should be a _LINUX_SOURCE directive in glibc
+> for this?
+>
+> Although come to think of it I can't imagine how <sched.h> is a POSIX
+> header.  Last I looked it only had linux specific bits in it.  Which
+> makes needing any kind of #define strange.
 
-We have to recompute pgoff if the given page is huge, since result based on
-HPAGE_SIZE is not approapriate for scanning the vma interval tree, as shown
-by commit 36e4f20af833(hugetlb: do not use vma_hugecache_offset() for
-vma_prio_tree_foreach)
+I think you may be thinking of the wrong sched.h. The glibc
+/usr/include/sched.h declares many user-space functions from POSIX.
 
-Signed-off-by: Hillf Danton <dhillf@gmail.com>
----
 
---- a/mm/rmap.c	Mon Mar  4 20:00:00 2013
-+++ b/mm/rmap.c	Mon Mar  4 20:02:16 2013
-@@ -1513,6 +1513,9 @@ static int try_to_unmap_file(struct page
- 	unsigned long max_nl_size = 0;
- 	unsigned int mapcount;
+Cheers,
 
-+	if (PageHuge(page))
-+		pgoff = page->index << compound_order(page);
-+
- 	mutex_lock(&mapping->i_mmap_mutex);
- 	vma_interval_tree_foreach(vma, &mapping->i_mmap, pgoff, pgoff) {
- 		unsigned long address = vma_address(page, vma);
---
+Mcihael
