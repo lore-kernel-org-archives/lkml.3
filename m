@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756993Ab3CDDoa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 22:44:30 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33048 "EHLO
+	id S1757834Ab3CDDyP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 22:54:15 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33071 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756900Ab3CDDoX (ORCPT
+	by vger.kernel.org with ESMTP id S1756950Ab3CDDo2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Mar 2013 22:44:23 -0500
-Message-Id: <20130304033713.050717345@decadent.org.uk>
+	Sun, 3 Mar 2013 22:44:28 -0500
+Message-Id: <20130304033712.754098899@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 04 Mar 2013 03:38:02 +0000
+Date: Mon, 04 Mar 2013 03:37:59 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, George Spelvin <linux@horizon.com>,
-        Rodolfo Giometti <giometti@enneenne.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [ 055/153] pps: Fix a use-after free bug when unregistering a source.
+Cc: akpm@linux-foundation.org, Philipp Reisner <philipp.reisner@linbit.com>
+Subject: [ 052/153] idr: idr_for_each_entry() macro
 In-Reply-To: <20130304033707.648729212@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,80 +26,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: George Spelvin <linux@horizon.com>
+From: Philipp Reisner <philipp.reisner@linbit.com>
 
-commit d953e0e837e65ecc1ddaa4f9560f7925878a0de6 upstream.
+commit 9749f30f1a387070e6e8351f35aeb829eacc3ab6 upstream.
 
-Remove the cdev from the system (with cdev_del) *before* deallocating it
-(in pps_device_destruct, called via kobject_put from device_destroy).
+Inspired by the list_for_each_entry() macro
 
-Also prevent deallocating a device with open file handles.
-
-A better long-term fix is probably to remove the cdev from the pps_device
-entirely, and instead have all devices reference one global cdev.  Then
-the deallocation ordering becomes simpler.
-
-But that's more complex and invasive change, so we leave that
-for later.
-
-Signed-off-by: George Spelvin <linux@horizon.com>
-Acked-by: Rodolfo Giometti <giometti@enneenne.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/pps/pps.c |   14 ++++++++++----
- 1 file changed, 10 insertions(+), 4 deletions(-)
+ include/linux/idr.h |   11 +++++++++++
+ 1 file changed, 11 insertions(+)
 
---- a/drivers/pps/pps.c
-+++ b/drivers/pps/pps.c
-@@ -247,12 +247,15 @@ static int pps_cdev_open(struct inode *i
- 	struct pps_device *pps = container_of(inode->i_cdev,
- 						struct pps_device, cdev);
- 	file->private_data = pps;
--
-+	kobject_get(&pps->dev->kobj);
- 	return 0;
- }
+diff --git a/include/linux/idr.h b/include/linux/idr.h
+index 255491c..52a9da2 100644
+--- a/include/linux/idr.h
++++ b/include/linux/idr.h
+@@ -152,4 +152,15 @@ void ida_simple_remove(struct ida *ida, unsigned int id);
  
- static int pps_cdev_release(struct inode *inode, struct file *file)
- {
-+	struct pps_device *pps = container_of(inode->i_cdev,
-+						struct pps_device, cdev);
-+	kobject_put(&pps->dev->kobj);
- 	return 0;
- }
+ void __init idr_init_cache(void);
  
-@@ -274,8 +277,10 @@ static void pps_device_destruct(struct d
- {
- 	struct pps_device *pps = dev_get_drvdata(dev);
- 
--	/* release id here to protect others from using it while it's
--	 * still in use */
-+	cdev_del(&pps->cdev);
++/**
++ * idr_for_each_entry - iterate over an idr's elements of a given type
++ * @idp:     idr handle
++ * @entry:   the type * to use as cursor
++ * @id:      id entry's key
++ */
++#define idr_for_each_entry(idp, entry, id)				\
++	for (id = 0, entry = (typeof(entry))idr_get_next((idp), &(id)); \
++	     entry != NULL;                                             \
++	     ++id, entry = (typeof(entry))idr_get_next((idp), &(id)))
 +
-+	/* Now we can release the ID for re-use */
-+	pr_debug("deallocating pps%d\n", pps->id);
- 	mutex_lock(&pps_idr_lock);
- 	idr_remove(&pps_idr, pps->id);
- 	mutex_unlock(&pps_idr_lock);
-@@ -330,6 +335,7 @@ int pps_register_cdev(struct pps_device
- 	if (IS_ERR(pps->dev))
- 		goto del_cdev;
- 
-+	/* Override the release function with our own */
- 	pps->dev->release = pps_device_destruct;
- 
- 	pr_debug("source %s got cdev (%d:%d)\n", pps->info.name,
-@@ -350,9 +356,9 @@ free_idr:
- 
- void pps_unregister_cdev(struct pps_device *pps)
- {
-+	pr_debug("unregistering pps%d\n", pps->id);
- 	pps->lookup_cookie = NULL;
- 	device_destroy(pps_class, pps->dev->devt);
--	cdev_del(&pps->cdev);
- }
- 
- /*
+ #endif /* __IDR_H__ */
 
 
