@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758088Ab3CDEE4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 23:04:56 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:32840 "EHLO
+	id S1758079Ab3CDEEy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 23:04:54 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:32843 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756273Ab3CDDnc (ORCPT
+	by vger.kernel.org with ESMTP id S1756293Ab3CDDnc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 3 Mar 2013 22:43:32 -0500
-Message-Id: <20130304033718.183623282@decadent.org.uk>
+Message-Id: <20130304033716.989555237@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 04 Mar 2013 03:38:54 +0000
+Date: Mon, 04 Mar 2013 03:38:42 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Jeff Liu <jeff.liu@oracle.com>,
-        Tao Ma <boyu.mt@taobao.com>, Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        Joel Becker <jlbec@evilplan.org>, Mark Fasheh <mfasheh@suse.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 107/153] ocfs2: fix ocfs2_init_security_and_acl() to initialize acl correctly
+Cc: akpm@linux-foundation.org, Jan Kara <jack@suse.cz>,
+        Christoph Hellwig <hch@infradead.org>, Jens Axboe <axboe@kernel.dk>,
+        Jeff Moyer <jmoyer@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>
+Subject: [ 095/153] fs: Fix possible use-after-free with AIO
 In-Reply-To: <20130304033707.648729212@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,162 +28,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeff Liu <jeff.liu@oracle.com>
+From: Jan Kara <jack@suse.cz>
 
-commit 32918dd9f19e5960af4cdfa41190bb843fb2247b upstream.
+commit 54c807e71d5ac59dee56c685f2b66e27cd54c475 upstream.
 
-We need to re-initialize the security for a new reflinked inode with its
-parent dirs if it isn't specified to be preserved for ocfs2_reflink().
-However, the code logic is broken at ocfs2_init_security_and_acl()
-although ocfs2_init_security_get() succeed.  As a result,
-ocfs2_acl_init() does not involked and therefore the default ACL of
-parent dir was missing on the new inode.
+Running AIO is pinning inode in memory using file reference. Once AIO
+is completed using aio_complete(), file reference is put and inode can
+be freed from memory. So we have to be sure that calling aio_complete()
+is the last thing we do with the inode.
 
-Note this was introduced by 9d8f13ba3 ("security: new
-security_inode_init_security API adds function callback")
-
-To reproduce:
-
-    set default ACL for the parent dir(ocfs2 in this case):
-    $ setfacl -m default:user:jeff:rwx ../ocfs2/
-    $ getfacl ../ocfs2/
-    # file: ../ocfs2/
-    # owner: jeff
-    # group: jeff
-    user::rwx
-    group::r-x
-    other::r-x
-    default:user::rwx
-    default:user:jeff:rwx
-    default:group::r-x
-    default:mask::rwx
-    default:other::r-x
-
-    $ touch a
-    $ getfacl a
-    # file: a
-    # owner: jeff
-    # group: jeff
-    user::rw-
-    group::rw-
-    other::r--
-
-Before patching, create reflink file b from a, the user
-default ACL entry(user:jeff:rwx)was missing:
-
-    $ ./ocfs2_reflink a b
-    $ getfacl b
-    # file: b
-    # owner: jeff
-    # group: jeff
-    user::rw-
-    group::rw-
-    other::r--
-
-In this case, the end user can also observed an error message at syslog:
-
-  (ocfs2_reflink,3229,2):ocfs2_init_security_and_acl:7193 ERROR: status = 0
-
-After applying this patch, create reflink file c from a:
-
-    $ ./ocfs2_reflink a c
-    $ getfacl c
-    # file: c
-    # owner: jeff
-    # group: jeff
-    user::rw-
-    user:jeff:rwx			#effective:rw-
-    group::r-x			#effective:r--
-    mask::rw-
-    other::r--
-
-Test program:
-/* Usage: reflink <source> <dest> */
-#include <stdio.h>
-#include <stdint.h>
-#include <stdbool.h>
-#include <string.h>
-#include <errno.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <sys/ioctl.h>
-
-static int
-reflink_file(char const *src_name, char const *dst_name,
-	     bool preserve_attrs)
-{
-	int fd;
-
-#ifndef REFLINK_ATTR_NONE
-#  define REFLINK_ATTR_NONE 0
-#endif
-#ifndef REFLINK_ATTR_PRESERVE
-#  define REFLINK_ATTR_PRESERVE 1
-#endif
-#ifndef OCFS2_IOC_REFLINK
-	struct reflink_arguments {
-		uint64_t old_path;
-		uint64_t new_path;
-		uint64_t preserve;
-	};
-
-#  define OCFS2_IOC_REFLINK _IOW ('o', 4, struct reflink_arguments)
-#endif
-	struct reflink_arguments args = {
-		.old_path = (unsigned long) src_name,
-		.new_path = (unsigned long) dst_name,
-		.preserve = preserve_attrs ? REFLINK_ATTR_PRESERVE :
-					     REFLINK_ATTR_NONE,
-	};
-
-	fd = open(src_name, O_RDONLY);
-	if (fd < 0) {
-		fprintf(stderr, "Failed to open %s: %s\n",
-			src_name, strerror(errno));
-		return -1;
-	}
-
-	if (ioctl(fd, OCFS2_IOC_REFLINK, &args) < 0) {
-		fprintf(stderr, "Failed to reflink %s to %s: %s\n",
-			src_name, dst_name, strerror(errno));
-		return -1;
-	}
-}
-
-int
-main(int argc, char *argv[])
-{
-	if (argc != 3) {
-		fprintf(stdout, "Usage: %s source dest\n", argv[0]);
-		return 1;
-	}
-
-	return reflink_file(argv[1], argv[2], 0);
-}
-
-Signed-off-by: Jie Liu <jeff.liu@oracle.com>
-Reviewed-by: Tao Ma <boyu.mt@taobao.com>
-Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Cc: Joel Becker <jlbec@evilplan.org>
-Cc: Mark Fasheh <mfasheh@suse.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Christoph Hellwig <hch@infradead.org>
+CC: Jens Axboe <axboe@kernel.dk>
+CC: Jeff Moyer <jmoyer@redhat.com>
+Acked-by: Jeff Moyer <jmoyer@redhat.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/ocfs2/xattr.c |    2 +-
+ fs/direct-io.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/ocfs2/xattr.c
-+++ b/fs/ocfs2/xattr.c
-@@ -7189,7 +7189,7 @@ int ocfs2_init_security_and_acl(struct i
- 	struct buffer_head *dir_bh = NULL;
- 
- 	ret = ocfs2_init_security_get(inode, dir, qstr, NULL);
--	if (!ret) {
-+	if (ret) {
- 		mlog_errno(ret);
- 		goto leave;
+--- a/fs/direct-io.c
++++ b/fs/direct-io.c
+@@ -304,9 +304,9 @@ static ssize_t dio_complete(struct dio *
+ 		dio->end_io(dio->iocb, offset, transferred,
+ 			    dio->private, ret, is_async);
+ 	} else {
++		inode_dio_done(dio->inode);
+ 		if (is_async)
+ 			aio_complete(dio->iocb, ret, 0);
+-		inode_dio_done(dio->inode);
  	}
+ 
+ 	return ret;
 
 
