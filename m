@@ -1,59 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755623Ab3CDHzh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 02:55:37 -0500
-Received: from nat28.tlf.novell.com ([130.57.49.28]:42268 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755567Ab3CDHze convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:6:1>);
-	Mon, 4 Mar 2013 02:55:34 -0500
-Message-Id: <5134617F02000078000C2AD8@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.1 
-Date: Mon, 04 Mar 2013 07:55:27 +0000
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Ben Hutchings" <ben@decadent.org.uk>, "Paul Bolle" <pebolle@tiscali.nl>
-Cc: "Ian Campbell" <ian.campbell@citrix.com>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        "KonradRzeszutek Wilk" <konrad.wilk@oracle.com>,
-        <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>
-Subject: Re: [ 34/77] xen/blkback: Dont trust the handle from the
- frontend.
-References: <20130301194351.913471337@linuxfoundation.org>
- <20130301194355.578429064@linuxfoundation.org>
- <1362172344.20156.15.camel@x61.thuisdomein>
- <1362253682.3768.136.camel@deadeye.wl.decadent.org.uk>
- <1362263724.1334.18.camel@x61.thuisdomein>
- <1362265843.3768.162.camel@deadeye.wl.decadent.org.uk>
- <1362306002.1334.29.camel@x61.thuisdomein>
-In-Reply-To: <1362306002.1334.29.camel@x61.thuisdomein>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1755710Ab3CDHzs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 02:55:48 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:56244 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755663Ab3CDHzq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Mar 2013 02:55:46 -0500
+Message-ID: <51345380.5030504@canonical.com>
+Date: Mon, 04 Mar 2013 08:55:44 +0100
+From: David Henningsson <david.henningsson@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
+MIME-Version: 1.0
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Ben Hutchings <ben@decadent.org.uk>, stable@vger.kernel.org,
+        akpm@linux-foundation.org, LKML <linux-kernel@vger.kernel.org>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: Re: [ 093/153] ALSA: hda - hdmi: Make jacks phantom, if theyre not
+ detectable
+References: <20130304033716.795093499@decadent.org.uk> <1362374037.3768.298.camel@deadeye.wl.decadent.org.uk> <51345148.1040102@canonical.com> <20130304074850.GA1136@kroah.com>
+In-Reply-To: <20130304074850.GA1136@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 03.03.13 at 11:20, Paul Bolle <pebolle@tiscali.nl> wrote:
-> Perhaps Konrad, Jan, Or Ian can tell whether the patch still needs to go
-> in stable as is, because the problem it fixes is more severe than the
-> problem it apparently creates. Maybe a mainline fix is needed before
-> this can go in, or perhaps even a stable specific fix (if context
-> changes are to blame).
+On 03/04/2013 08:48 AM, Greg Kroah-Hartman wrote:
+> On Mon, Mar 04, 2013 at 08:46:16AM +0100, David Henningsson wrote:
+>> On 03/04/2013 06:13 AM, Ben Hutchings wrote:
+>>> On Mon, 2013-03-04 at 03:38 +0000, Ben Hutchings wrote:
+>>>> 3.2-stable review patch.  If anyone has any objections, please let me know.
+>>>>
+>>>> ------------------
+>>>>
+>>>> From: David Henningsson <david.henningsson@canonical.com>
+>>>>
+>>>> commit 30efd8debd1ef30be342d374f01e993509f5b76b upstream.
+>>>>
+>>>> Just as for analog codecs, a jack that isn't suitable for detection
+>>>> (in this case, NO_PRESENCE was set) should be a phantom Jack
+>>>> instead of a normal one.
+>>>>
+>>>> Thanks to Raymond Yau for spotting.
+>>>>
+>>>> BugLink: https://bugs.launchpad.net/bugs/961286
+>>>> BugLink: https://bugzilla.redhat.com/show_bug.cgi?id=903869
+>>>> Signed-off-by: David Henningsson <david.henningsson@canonical.com>
+>>>> Signed-off-by: Takashi Iwai <tiwai@suse.de>
+>>>> [bwh: Backported to 3.2: adjust context]
+>>>> Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+>>>
+>>> David, do I need to change this further for 3.2.y?
+>>
+>> Greg and Ben,
+>>
+>> Given some thought, the definition of is_jack_detectable has
+>> changed/improved over kernels. Therefore I think it's safer not to
+>> apply the patch at all for kernels earlier than 3.6. Let's revisit
+>> this decision if there's actually a user demand for this fix.
+>
+> So should I revert this in the next 3.4 release, as it's now in the
+> 3.4.35 release.
 
-For one, a fix for the (indeed valid) compiler warning has been in
-Konrad's tree for several days
-(http://git.kernel.org/cgit/linux/kernel/git/konrad/xen.git/commit/drivers/block/xen-blkback/blkback.c?id=a72d9002f80bffd7e4c7d60e5a9caa0cddffe894).
+That seems to be the safest option; given that we don't get people with 
+the actual hardware to test the different options and report back which 
+one works best.
 
-And second, there's nothing really being fixed with the patch in
-question here. The title is kind of misleading, as the handle
-coming from the frontend is - without said patch - in the worst
-case being used for the very message that triggered the
-compiler warning. Nothing else is affected, the code just gave
-the impression that the handle was used.
+Sorry for the late reply.
 
-IOW I don't see why this got proposed for stable at all.
-
-Jan
-
-
+-- 
+David Henningsson, Canonical Ltd.
+https://launchpad.net/~diwic
