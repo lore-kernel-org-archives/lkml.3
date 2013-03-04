@@ -1,46 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932097Ab3CDP7x (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 10:59:53 -0500
-Received: from mail.us.es ([193.147.175.20]:48755 "EHLO mail.us.es"
+	id S932121Ab3CDQLL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 11:11:11 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:52279 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758378Ab3CDP7v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 10:59:51 -0500
-X-Qmail-Scanner-Diagnostics: from 127.0.0.1 by antivirus1 (envelope-from <pneira@us.es>, uid 501) with qmail-scanner-2.10 
- (clamdscan: 0.97.6/16782. spamassassin: 3.3.2.  
- Clear:RC:1(127.0.0.1):SA:0(-97.0/7.5):. 
- Processed in 1.933446 secs); 04 Mar 2013 15:59:49 -0000
-X-Envelope-From: pneira@us.es
-Date: Mon, 4 Mar 2013 16:59:46 +0100
-From: Pablo Neira Ayuso <pablo@netfilter.org>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Patrick McHardy <kaber@trash.net>, "David S. Miller" <davem@davemloft.net>,
-        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
-        coreteam@netfilter.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] netfilter: nfnetlink: silence warning if
- CONFIG_PROVE_RCU isn't set
-Message-ID: <20130304155946.GA25980@localhost>
-References: <1362401141.16460.24.camel@x61.thuisdomein>
+	id S1754493Ab3CDQLJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Mar 2013 11:11:09 -0500
+From: Thomas Renninger <trenn@suse.de>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Hannes Reinecke <hare@suse.de>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Bjorn Helgaas <bhelgaas@google.com>,
+        Oliver Neukum <oneukum@suse.de>, Yinghai Lu <yinghai@kernel.org>,
+        Frederik Himpe <fhimpe@vub.ac.be>, David Haerdeman <david@hardeman.nu>,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Subject: Re: [PATCH][v2] xhci: correctly enable interrupts
+Date: Mon, 04 Mar 2013 17:11:07 +0100
+Message-ID: <2130794.oLej0IcHh2@skinner.arch.suse.de>
+Organization: SUSE Products GmbH
+User-Agent: KMail/4.10 (Linux/3.7.7-1.2-desktop; KDE/4.10.0; x86_64; ; )
+In-Reply-To: <Pine.LNX.4.44L0.1303041025470.1750-100000@iolanthe.rowland.org>
+References: <Pine.LNX.4.44L0.1303041025470.1750-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1362401141.16460.24.camel@x61.thuisdomein>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 04, 2013 at 01:45:41PM +0100, Paul Bolle wrote:
-> Since commit c14b78e7decd0d1d5add6a4604feb8609fe920a9 ("netfilter:
-> nfnetlink: add mutex per subsystem") building nefnetlink.o without
-> CONFIG_PROVE_RCU set, triggers this GCC warning:
->     net/netfilter/nfnetlink.c:65:22: warning: ‘nfnl_get_lock’ defined but not used [-Wunused-function]
+On Monday, March 04, 2013 10:26:40 AM Alan Stern wrote:
+> On Mon, 4 Mar 2013, Hannes Reinecke wrote:
+> > xhci has its own interrupt enabling routine, which will try to
+> > use MSI-X/MSI if present. So the usb core shouldn't try to enable
+> > legacy interrupts; on some machines the xhci legacy IRQ setting
+> > is invalid.
 > 
-> The cause of that warning is, in short, that rcu_lockdep_assert()
-> compiles away if CONFIG_PROVE_RCU is not set. Silence this warning by
-> open coding nfnl_get_lock() in the sole place it was called, which
-> allows to remove that function.
+> This version of the patch is much better than the first one, IMO.
 
-Applied, thanks Paul.
+I also have this issue. Unfortunately pci read only gives an irq of 255
+in secure boot mode and I don't want to struggle with kernel/module
+signing to test this.
+
+I found one issue with this patch:
+For xhci legacy PCI is not tried to be set up now anymore (before MSI(x)
+is tried) which is a correct fix.
+
+But in xhci_try_enable_msi() drivers/usb/host/xhci.c if MSI is known broken
+(xhci->quirks & XHCI_BROKEN_MSI), it relies on legacy IRQ being enabled
+already.
+Instead it should use the "enable legacy IRQ" code later in the same function 
+which is the fallback if MSI setup does not succeed.
+
+I send an updated version taking care about above and including the "do not 
+split string" concern Sergei mentioned.
+
+        Thomas
