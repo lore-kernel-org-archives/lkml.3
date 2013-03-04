@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757994Ab3CDD7a (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 22:59:30 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:32965 "EHLO
+	id S1757149Ab3CDD73 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 22:59:29 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:32974 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756666Ab3CDDoF (ORCPT
+	by vger.kernel.org with ESMTP id S1756700Ab3CDDoG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Mar 2013 22:44:05 -0500
-Message-Id: <20130304033714.677687576@decadent.org.uk>
+	Sun, 3 Mar 2013 22:44:06 -0500
+Message-Id: <20130304033714.452150027@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 04 Mar 2013 03:38:19 +0000
+Date: Mon, 04 Mar 2013 03:38:17 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [ 072/153] target: Fix lookup of dynamic NodeACLs during cached demo-mode
- operation
+Cc: akpm@linux-foundation.org, Linus Torvalds <torvalds@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>
+Subject: [ 070/153] mm: fix pageblock bitmap allocation
 In-Reply-To: <20130304033707.648729212@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,113 +27,82 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-commit fcf29481fb8e106daad6688f2e898226ee928992 upstream.
+commit 7c45512df987c5619db041b5c9b80d281e26d3db upstream.
 
-This patch fixes a bug in core_tpg_check_initiator_node_acl() ->
-core_tpg_get_initiator_node_acl() where a dynamically created
-se_node_acl generated during session login would be skipped during
-subsequent lookup due to the '!acl->dynamic_node_acl' check, causing
-a new se_node_acl to be created with a duplicate ->initiatorname.
+Commit c060f943d092 ("mm: use aligned zone start for pfn_to_bitidx
+calculation") fixed out calculation of the index into the pageblock
+bitmap when a !SPARSEMEM zome was not aligned to pageblock_nr_pages.
 
-This would occur when a fabric endpoint was configured with
-TFO->tpg_check_demo_mode()=1 + TPF->tpg_check_demo_mode_cache()=1
-preventing the release of an existing se_node_acl during se_session
-shutdown.
+However, the _allocation_ of that bitmap had never taken this alignment
+requirement into accout, so depending on the exact size and alignment of
+the zone, the use of that index could then access past the allocation,
+resulting in some very subtle memory corruption.
 
-Also, drop the unnecessary usage of core_tpg_get_initiator_node_acl()
-within core_dev_init_initiator_node_lun_acl() that originally
-required the extra '!acl->dynamic_node_acl' check, and just pass
-the configfs provided se_node_acl pointer instead.
+This was reported (and bisected) by Ingo Molnar: one of his random
+config builds would hang with certain very specific kernel command line
+options.
 
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
-[bwh: Backported to 3.2: adjust context, filename of header]
+In the meantime, commit c060f943d092 has been marked for stable, so this
+fix needs to be back-ported to the stable kernels that backported the
+commit to use the right alignment.
+
+Bisected-and-tested-by: Ingo Molnar <mingo@kernel.org>
+Acked-by: Mel Gorman <mgorman@suse.de>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
---- a/drivers/target/target_core_device.c
-+++ b/drivers/target/target_core_device.c
-@@ -1439,24 +1439,18 @@ static struct se_lun *core_dev_get_lun(s
- 
- struct se_lun_acl *core_dev_init_initiator_node_lun_acl(
- 	struct se_portal_group *tpg,
-+	struct se_node_acl *nacl,
- 	u32 mapped_lun,
--	char *initiatorname,
- 	int *ret)
+ mm/page_alloc.c |   15 +++++++++------
+ 1 file changed, 9 insertions(+), 6 deletions(-)
+
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -4253,10 +4253,11 @@ static void __meminit calculate_node_tot
+  * round what is now in bits to nearest long in bits, then return it in
+  * bytes.
+  */
+-static unsigned long __init usemap_size(unsigned long zonesize)
++static unsigned long __init usemap_size(unsigned long zone_start_pfn, unsigned long zonesize)
  {
- 	struct se_lun_acl *lacl;
--	struct se_node_acl *nacl;
+ 	unsigned long usemapsize;
  
--	if (strlen(initiatorname) >= TRANSPORT_IQN_LEN) {
-+	if (strlen(nacl->initiatorname) >= TRANSPORT_IQN_LEN) {
- 		pr_err("%s InitiatorName exceeds maximum size.\n",
- 			tpg->se_tpg_tfo->get_fabric_name());
- 		*ret = -EOVERFLOW;
- 		return NULL;
- 	}
--	nacl = core_tpg_get_initiator_node_acl(tpg, initiatorname);
--	if (!nacl) {
--		*ret = -EINVAL;
--		return NULL;
--	}
- 	lacl = kzalloc(sizeof(struct se_lun_acl), GFP_KERNEL);
- 	if (!lacl) {
- 		pr_err("Unable to allocate memory for struct se_lun_acl.\n");
-@@ -1467,7 +1461,8 @@ struct se_lun_acl *core_dev_init_initiat
- 	INIT_LIST_HEAD(&lacl->lacl_list);
- 	lacl->mapped_lun = mapped_lun;
- 	lacl->se_lun_nacl = nacl;
--	snprintf(lacl->initiatorname, TRANSPORT_IQN_LEN, "%s", initiatorname);
-+	snprintf(lacl->initiatorname, TRANSPORT_IQN_LEN, "%s",
-+		 nacl->initiatorname);
- 
- 	return lacl;
- }
---- a/drivers/target/target_core_fabric_configfs.c
-+++ b/drivers/target/target_core_fabric_configfs.c
-@@ -355,8 +355,8 @@ static struct config_group *target_fabri
- 		goto out;
- 	}
- 
--	lacl = core_dev_init_initiator_node_lun_acl(se_tpg, mapped_lun,
--			config_item_name(acl_ci), &ret);
-+	lacl = core_dev_init_initiator_node_lun_acl(se_tpg, se_nacl,
-+			mapped_lun, &ret);
- 	if (!lacl) {
- 		ret = -EINVAL;
- 		goto out;
---- a/include/target/target_core_device.h
-+++ b/include/target/target_core_device.h
-@@ -50,7 +50,7 @@ extern struct se_lun *core_dev_add_lun(s
- extern int core_dev_del_lun(struct se_portal_group *, u32);
- extern struct se_lun *core_get_lun_from_tpg(struct se_portal_group *, u32);
- extern struct se_lun_acl *core_dev_init_initiator_node_lun_acl(struct se_portal_group *,
--							u32, char *, int *);
-+		struct se_node_acl *, u32, int *);
- extern int core_dev_add_initiator_node_lun_acl(struct se_portal_group *,
- 						struct se_lun_acl *, u32, u32);
- extern int core_dev_del_initiator_node_lun_acl(struct se_portal_group *,
---- a/drivers/target/target_core_tpg.c
-+++ b/drivers/target/target_core_tpg.c
-@@ -117,16 +117,10 @@ struct se_node_acl *core_tpg_get_initiat
- 	struct se_node_acl *acl;
- 
- 	spin_lock_irq(&tpg->acl_node_lock);
--	list_for_each_entry(acl, &tpg->acl_node_list, acl_list) {
--		if (!strcmp(acl->initiatorname, initiatorname) &&
--		    !acl->dynamic_node_acl) {
--			spin_unlock_irq(&tpg->acl_node_lock);
--			return acl;
--		}
--	}
-+	acl = __core_tpg_get_initiator_node_acl(tpg, initiatorname);
- 	spin_unlock_irq(&tpg->acl_node_lock);
- 
--	return NULL;
-+	return acl;
++	zonesize += zone_start_pfn & (pageblock_nr_pages-1);
+ 	usemapsize = roundup(zonesize, pageblock_nr_pages);
+ 	usemapsize = usemapsize >> pageblock_order;
+ 	usemapsize *= NR_PAGEBLOCK_BITS;
+@@ -4266,17 +4267,19 @@ static unsigned long __init usemap_size(
  }
  
- /*	core_tpg_add_node_to_devs():
+ static void __init setup_usemap(struct pglist_data *pgdat,
+-				struct zone *zone, unsigned long zonesize)
++				struct zone *zone,
++				unsigned long zone_start_pfn,
++				unsigned long zonesize)
+ {
+-	unsigned long usemapsize = usemap_size(zonesize);
++	unsigned long usemapsize = usemap_size(zone_start_pfn, zonesize);
+ 	zone->pageblock_flags = NULL;
+ 	if (usemapsize)
+ 		zone->pageblock_flags = alloc_bootmem_node_nopanic(pgdat,
+ 								   usemapsize);
+ }
+ #else
+-static inline void setup_usemap(struct pglist_data *pgdat,
+-				struct zone *zone, unsigned long zonesize) {}
++static inline void setup_usemap(struct pglist_data *pgdat, struct zone *zone,
++				unsigned long zone_start_pfn, unsigned long zonesize) {}
+ #endif /* CONFIG_SPARSEMEM */
+ 
+ #ifdef CONFIG_HUGETLB_PAGE_SIZE_VARIABLE
+@@ -4401,7 +4404,7 @@ static void __paginginit free_area_init_
+ 			continue;
+ 
+ 		set_pageblock_order();
+-		setup_usemap(pgdat, zone, size);
++		setup_usemap(pgdat, zone, zone_start_pfn, size);
+ 		ret = init_currently_empty_zone(zone, zone_start_pfn,
+ 						size, MEMMAP_EARLY);
+ 		BUG_ON(ret);
 
 
