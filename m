@@ -1,152 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932643Ab3CDVtx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 16:49:53 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:18986 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932249Ab3CDVtw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 16:49:52 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Mon, 04 Mar 2013 13:44:00 -0800
-From: Andrew Chew <achew@nvidia.com>
-To: <thierry.reding@avionic-design.de>
-CC: <achew@nvidia.com>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH 1/1] pwm_bl: Add support for backlight enable GPIO
-Date: Mon, 4 Mar 2013 13:49:49 -0800
-Message-ID: <1362433790-22560-1-git-send-email-achew@nvidia.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S932654Ab3CDVvM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 16:51:12 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:54131 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932249Ab3CDVvL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Mar 2013 16:51:11 -0500
+Date: Mon, 4 Mar 2013 22:50:56 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Bjorn Helgaas <bhelgaas@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Jiri Slaby <jslaby@suse.cz>, x86@kernel.org,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: Uhhuh. NMI received for unknown reason 2c on CPU 0.
+Message-ID: <20130304215056.GG22274@pd.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Konstantin Khlebnikov <khlebnikov@openvz.org>,
+	Bjorn Helgaas <bhelgaas@google.com>,
+	"Rafael J. Wysocki" <rjw@sisk.pl>, Jiri Slaby <jslaby@suse.cz>,
+	x86@kernel.org, lkml <linux-kernel@vger.kernel.org>
+References: <20130129202848.GE25415@pd.tnic>
+ <3066730.6MVSAfNyye@vostro.rjw.lan>
+ <20130131131034.GF4926@pd.tnic>
+ <2293454.v8QRHr8txR@vostro.rjw.lan>
+ <20130203144656.GB5844@pd.tnic>
+ <20130214143905.GC5700@pd.tnic>
+ <CAErSpo6Mi31O1YA5PKnRjQMinB284Ag6PY8LuZpD0NwuZ6QZuw@mail.gmail.com>
+ <20130214191234.GH5700@pd.tnic>
+ <511DF7B4.8060504@openvz.org>
+ <20130215091641.GA14387@pd.tnic>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20130215091641.GA14387@pd.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The backlight enable GPIO is specified in the device tree node for
-backlight.
+On Fri, Feb 15, 2013 at 10:16:41AM +0100, Borislav Petkov wrote:
+> So it looks Bjorn has taken most of them and the e1000e one will go
+> through the e1000e maintainers. I'll test after the merge window is
+> done.
 
-Signed-off-by: Andrew Chew <achew@nvidia.com>
----
- .../bindings/video/backlight/pwm-backlight.txt     |    2 ++
- drivers/video/backlight/pwm_bl.c                   |   32 +++++++++++++++++---
- include/linux/pwm_backlight.h                      |    2 ++
- 3 files changed, 32 insertions(+), 4 deletions(-)
+Issue still persists on 3.9-rc1 :-( :
 
-diff --git a/Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt b/Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt
-index 1e4fc72..1ed4f0f 100644
---- a/Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt
-+++ b/Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt
-@@ -14,6 +14,8 @@ Required properties:
- Optional properties:
-   - pwm-names: a list of names for the PWM devices specified in the
-                "pwms" property (see PWM binding[0])
-+  - enable-gpio: a GPIO that needs to be used to enable the backlight
-+  - enable-gpio-active-high: polarity of GPIO is active high (default is low)
- 
- [0]: Documentation/devicetree/bindings/pwm/pwm.txt
- 
-diff --git a/drivers/video/backlight/pwm_bl.c b/drivers/video/backlight/pwm_bl.c
-index 069983c..f29f9c7 100644
---- a/drivers/video/backlight/pwm_bl.c
-+++ b/drivers/video/backlight/pwm_bl.c
-@@ -20,10 +20,13 @@
- #include <linux/pwm.h>
- #include <linux/pwm_backlight.h>
- #include <linux/slab.h>
-+#include <linux/of_gpio.h>
- 
- struct pwm_bl_data {
- 	struct pwm_device	*pwm;
- 	struct device		*dev;
-+	int			enable_gpio;
-+	unsigned int		enable_gpio_flags;
- 	unsigned int		period;
- 	unsigned int		lth_brightness;
- 	unsigned int		*levels;
-@@ -146,10 +149,15 @@ static int pwm_backlight_parse_dt(struct device *dev,
- 	}
- 
- 	/*
--	 * TODO: Most users of this driver use a number of GPIOs to control
--	 *       backlight power. Support for specifying these needs to be
--	 *       added.
-+	 * If "enable-gpio" is present, use that GPIO to enable the backlight.
-+	 * The presence (or not) of "enable-gpio-active-high" will determine
-+	 * the value of the GPIO.
- 	 */
-+	data->enable_gpio = of_get_named_gpio(node, "enable-gpio", 0);
-+	if (of_property_read_bool(node, "enable-gpio-active-high"))
-+		data->enable_gpio_flags = GPIOF_OUT_INIT_HIGH;
-+	else
-+		data->enable_gpio_flags = GPIOF_OUT_INIT_LOW;
- 
- 	return 0;
- }
-@@ -207,12 +215,23 @@ static int pwm_backlight_probe(struct platform_device *pdev)
- 	} else
- 		max = data->max_brightness;
- 
-+	pb->enable_gpio = data->enable_gpio;
-+	pb->enable_gpio_flags = data->enable_gpio_flags;
- 	pb->notify = data->notify;
- 	pb->notify_after = data->notify_after;
- 	pb->check_fb = data->check_fb;
- 	pb->exit = data->exit;
- 	pb->dev = &pdev->dev;
- 
-+	if (gpio_is_valid(pb->enable_gpio)) {
-+		ret = gpio_request_one(pb->enable_gpio,
-+			GPIOF_DIR_OUT | pb->enable_gpio_flags, "bl_en");
-+		if (ret) {
-+			dev_err(&pdev->dev, "failed to allocate bl_en gpio");
-+			goto err_alloc;
-+		}
-+	}
-+
- 	pb->pwm = devm_pwm_get(&pdev->dev, NULL);
- 	if (IS_ERR(pb->pwm)) {
- 		dev_err(&pdev->dev, "unable to request PWM, trying legacy API\n");
-@@ -221,7 +240,7 @@ static int pwm_backlight_probe(struct platform_device *pdev)
- 		if (IS_ERR(pb->pwm)) {
- 			dev_err(&pdev->dev, "unable to request legacy PWM\n");
- 			ret = PTR_ERR(pb->pwm);
--			goto err_alloc;
-+			goto err_gpio;
- 		}
- 	}
- 
-@@ -255,6 +274,9 @@ static int pwm_backlight_probe(struct platform_device *pdev)
- 	platform_set_drvdata(pdev, bl);
- 	return 0;
- 
-+err_gpio:
-+	if (gpio_is_valid(data->enable_gpio))
-+		gpio_free(data->enable_gpio);
- err_alloc:
- 	if (data->exit)
- 		data->exit(&pdev->dev);
-@@ -269,6 +291,8 @@ static int pwm_backlight_remove(struct platform_device *pdev)
- 	backlight_device_unregister(bl);
- 	pwm_config(pb->pwm, 0, pb->period);
- 	pwm_disable(pb->pwm);
-+	if (gpio_is_valid(pb->enable_gpio))
-+		gpio_free(pb->enable_gpio);
- 	if (pb->exit)
- 		pb->exit(&pdev->dev);
- 	return 0;
-diff --git a/include/linux/pwm_backlight.h b/include/linux/pwm_backlight.h
-index 56f4a86..2706805 100644
---- a/include/linux/pwm_backlight.h
-+++ b/include/linux/pwm_backlight.h
-@@ -8,6 +8,8 @@
- 
- struct platform_pwm_backlight_data {
- 	int pwm_id;
-+	int enable_gpio;
-+	unsigned int enable_gpio_flags;
- 	unsigned int max_brightness;
- 	unsigned int dft_brightness;
- 	unsigned int lth_brightness;
+Mar  4 21:47:34 nazgul vmunix: [ 3223.412541] e1000e: eth0 NIC Link is Up 100 Mbps Full Duplex, Flow Control: Rx/Tx
+Mar  4 21:47:34 nazgul vmunix: [ 3223.412554] e1000e 0000:00:19.0 eth0: 10/100 speed: disabling TSO
+Mar  4 21:47:35 nazgul vmunix: [ 3224.034158] Uhhuh. NMI received for unknown reason 2c on CPU 0.
+Mar  4 21:47:35 nazgul vmunix: [ 3224.034166] Do you have a strange power saving mode enabled?
+Mar  4 21:47:35 nazgul vmunix: [ 3224.034168] Dazed and confused, but trying to continue
+
 -- 
-1.7.9.5
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
