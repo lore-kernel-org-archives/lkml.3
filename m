@@ -1,46 +1,230 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757643Ab3CDDuT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 22:50:19 -0500
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:47241 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757237Ab3CDDuO convert rfc822-to-8bit (ORCPT
+	id S1757211Ab3CDDom (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 22:44:42 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33123 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756861Ab3CDDok (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Mar 2013 22:50:14 -0500
-Date: Sun, 03 Mar 2013 21:50:10 -0600
-From: Rob Landley <rob@landley.net>
-Subject: Re: For review: pid_namespaces(7) man page
-To: mtk.manpages@gmail.com
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        linux-man <linux-man@vger.kernel.org>,
-        Linux Containers <containers@lists.linux-foundation.org>,
-        lkml <linux-kernel@vger.kernel.org>
-References: <CAKgNAki=mUYuu_Ewhe7sjCmo+Dq2Vr+FZCixqNRaadcvAxtpFw@mail.gmail.com>
-	<1362110504.15531.4@driftwood>
-	<CAKgNAkgVKnhRT1Lpq4a_UdBKB+tn6XmWSDF2QJXG0aSLtNH6dg@mail.gmail.com>
-In-Reply-To: <CAKgNAkgVKnhRT1Lpq4a_UdBKB+tn6XmWSDF2QJXG0aSLtNH6dg@mail.gmail.com>
-	(from mtk.manpages@gmail.com on Fri Mar  1 03:57:40 2013)
-X-Mailer: Balsa 2.4.11
-Message-Id: <1362369010.29250.3@driftwood>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
+	Sun, 3 Mar 2013 22:44:40 -0500
+Message-Id: <20130304033711.235458785@decadent.org.uk>
+User-Agent: quilt/0.60-1
+Date: Mon, 04 Mar 2013 03:37:44 +0000
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: akpm@linux-foundation.org, Takashi Iwai <tiwai@suse.de>,
+        Alan Cox <alan@linux.intel.com>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        Jiri Kosina <jkosina@suse.cz>, Sedat Dilek <sedat.dilek@gmail.com>,
+        Dave Airlie <airlied@redhat.com>
+Subject: [ 037/153] fb: Yet another band-aid for fixing lockdep mess
+In-Reply-To: <20130304033707.648729212@decadent.org.uk>
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/01/2013 03:57:40 AM, Michael Kerrisk (man-pages) wrote:
-> > And yet the glibc guys insist on #define  
-> GNU_GNU_GNU_ALL_HAIL_STALLMAN in
-> > order to access this Linux-specific feature which has nothing  
-> whatsoever to
-> > do with the FSF.
-> 
-> This is a misunderstanding. _GNU_SOURCE is the standard way to expose
-> Linux-specific functionality from POSIX header files.
+3.2-stable review patch.  If anyone has any objections, please let me know.
 
-What standard? The Linux kernel is not, and never was, part of the GNU  
-project.
+------------------
 
-Rob
+From: Takashi Iwai <tiwai@suse.de>
+
+commit e93a9a868792ad71cdd09d75e5a02d8067473c4e upstream.
+
+I've still got lockdep warnings even after Alan's patch, and it seems that
+yet more band aids are required to paper over similar paths for
+unbind_con_driver() and unregister_con_driver().  After this hack, lockdep
+warnings are finally gone.
+
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Cc: Alan Cox <alan@linux.intel.com>
+Cc: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Cc: Jiri Kosina <jkosina@suse.cz>
+Tested-by: Sedat Dilek <sedat.dilek@gmail.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ drivers/tty/vt/vt.c           |   43 +++++++++++++++++++++++++++--------------
+ drivers/video/console/fbcon.c |    4 ++--
+ drivers/video/fbmem.c         |    4 ++++
+ include/linux/console.h       |    1 +
+ include/linux/vt_kern.h       |    2 ++
+ 5 files changed, 37 insertions(+), 17 deletions(-)
+
+--- a/drivers/tty/vt/vt.c
++++ b/drivers/tty/vt/vt.c
+@@ -3164,6 +3164,18 @@ static int con_is_graphics(const struct
+  */
+ int unbind_con_driver(const struct consw *csw, int first, int last, int deflt)
+ {
++	int retval;
++
++	console_lock();
++	retval = do_unbind_con_driver(csw, first, last, deflt);
++	console_unlock();
++	return retval;
++}
++EXPORT_SYMBOL(unbind_con_driver);
++
++/* unlocked version of unbind_con_driver() */
++int do_unbind_con_driver(const struct consw *csw, int first, int last, int deflt)
++{
+ 	struct module *owner = csw->owner;
+ 	const struct consw *defcsw = NULL;
+ 	struct con_driver *con_driver = NULL, *con_back = NULL;
+@@ -3172,7 +3184,7 @@ int unbind_con_driver(const struct consw
+ 	if (!try_module_get(owner))
+ 		return -ENODEV;
+ 
+-	console_lock();
++	WARN_CONSOLE_UNLOCKED();
+ 
+ 	/* check if driver is registered and if it is unbindable */
+ 	for (i = 0; i < MAX_NR_CON_DRIVER; i++) {
+@@ -3185,10 +3197,8 @@ int unbind_con_driver(const struct consw
+ 		}
+ 	}
+ 
+-	if (retval) {
+-		console_unlock();
++	if (retval)
+ 		goto err;
+-	}
+ 
+ 	retval = -ENODEV;
+ 
+@@ -3204,15 +3214,11 @@ int unbind_con_driver(const struct consw
+ 		}
+ 	}
+ 
+-	if (retval) {
+-		console_unlock();
++	if (retval)
+ 		goto err;
+-	}
+ 
+-	if (!con_is_bound(csw)) {
+-		console_unlock();
++	if (!con_is_bound(csw))
+ 		goto err;
+-	}
+ 
+ 	first = max(first, con_driver->first);
+ 	last = min(last, con_driver->last);
+@@ -3241,13 +3247,12 @@ int unbind_con_driver(const struct consw
+ 
+ 	/* ignore return value, binding should not fail */
+ 	do_bind_con_driver(defcsw, first, last, deflt);
+-	console_unlock();
+ err:
+ 	module_put(owner);
+ 	return retval;
+ 
+ }
+-EXPORT_SYMBOL(unbind_con_driver);
++EXPORT_SYMBOL_GPL(do_unbind_con_driver);
+ 
+ static int vt_bind(struct con_driver *con)
+ {
+@@ -3621,9 +3626,18 @@ EXPORT_SYMBOL(register_con_driver);
+  */
+ int unregister_con_driver(const struct consw *csw)
+ {
+-	int i, retval = -ENODEV;
++	int retval;
+ 
+ 	console_lock();
++	retval = do_unregister_con_driver(csw);
++	console_unlock();
++	return retval;
++}
++EXPORT_SYMBOL(unregister_con_driver);
++
++int do_unregister_con_driver(const struct consw *csw)
++{
++	int i, retval = -ENODEV;
+ 
+ 	/* cannot unregister a bound driver */
+ 	if (con_is_bound(csw))
+@@ -3649,10 +3663,9 @@ int unregister_con_driver(const struct c
+ 		}
+ 	}
+ err:
+-	console_unlock();
+ 	return retval;
+ }
+-EXPORT_SYMBOL(unregister_con_driver);
++EXPORT_SYMBOL_GPL(do_unregister_con_driver);
+ 
+ /*
+  *	If we support more console drivers, this function is used
+--- a/drivers/video/console/fbcon.c
++++ b/drivers/video/console/fbcon.c
+@@ -3011,7 +3011,7 @@ static int fbcon_unbind(void)
+ {
+ 	int ret;
+ 
+-	ret = unbind_con_driver(&fb_con, first_fb_vc, last_fb_vc,
++	ret = do_unbind_con_driver(&fb_con, first_fb_vc, last_fb_vc,
+ 				fbcon_is_default);
+ 
+ 	if (!ret)
+@@ -3084,7 +3084,7 @@ static int fbcon_fb_unregistered(struct
+ 		primary_device = -1;
+ 
+ 	if (!num_registered_fb)
+-		unregister_con_driver(&fb_con);
++		do_unregister_con_driver(&fb_con);
+ 
+ 	return 0;
+ }
+--- a/drivers/video/fbmem.c
++++ b/drivers/video/fbmem.c
+@@ -1646,8 +1646,10 @@ static int do_unregister_framebuffer(str
+ 
+ 	if (!lock_fb_info(fb_info))
+ 		return -ENODEV;
++	console_lock();
+ 	event.info = fb_info;
+ 	ret = fb_notifier_call_chain(FB_EVENT_FB_UNBIND, &event);
++	console_unlock();
+ 	unlock_fb_info(fb_info);
+ 
+ 	if (ret)
+@@ -1662,7 +1664,9 @@ static int do_unregister_framebuffer(str
+ 	num_registered_fb--;
+ 	fb_cleanup_device(fb_info);
+ 	event.info = fb_info;
++	console_lock();
+ 	fb_notifier_call_chain(FB_EVENT_FB_UNREGISTERED, &event);
++	console_unlock();
+ 
+ 	/* this may free fb info */
+ 	put_fb_info(fb_info);
+--- a/include/linux/console.h
++++ b/include/linux/console.h
+@@ -77,6 +77,7 @@ extern const struct consw prom_con;	/* S
+ int con_is_bound(const struct consw *csw);
+ int register_con_driver(const struct consw *csw, int first, int last);
+ int unregister_con_driver(const struct consw *csw);
++int do_unregister_con_driver(const struct consw *csw);
+ int take_over_console(const struct consw *sw, int first, int last, int deflt);
+ int do_take_over_console(const struct consw *sw, int first, int last, int deflt);
+ void give_up_console(const struct consw *sw);
+--- a/include/linux/vt_kern.h
++++ b/include/linux/vt_kern.h
+@@ -132,6 +132,8 @@ void vt_event_post(unsigned int event, u
+ int vt_waitactive(int n);
+ void change_console(struct vc_data *new_vc);
+ void reset_vc(struct vc_data *vc);
++extern int do_unbind_con_driver(const struct consw *csw, int first, int last,
++			     int deflt);
+ extern int unbind_con_driver(const struct consw *csw, int first, int last,
+ 			     int deflt);
+ int vty_init(const struct file_operations *console_fops);
+
+
