@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757975Ab3CDD5k (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 22:57:40 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:32995 "EHLO
+	id S1758068Ab3CDD6V (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 22:58:21 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:32983 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756759Ab3CDDoJ (ORCPT
+	by vger.kernel.org with ESMTP id S1756702Ab3CDDoI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Mar 2013 22:44:09 -0500
-Message-Id: <20130304033716.401099892@decadent.org.uk>
+	Sun, 3 Mar 2013 22:44:08 -0500
+Message-Id: <20130304033714.571152871@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 04 Mar 2013 03:38:36 +0000
+Date: Mon, 04 Mar 2013 03:38:18 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Jim Somerville <Jim.Somerville@windriver.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Jerome Marchand <jmarchan@redhat.com>,
-        John McCutchan <john@johnmccutchan.com>, Robert Love <rlove@rlove.org>,
-        Eric Paris <eparis@parisplace.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 089/153] inotify: remove broken mask checks causing unmount to be EINVAL
+Cc: akpm@linux-foundation.org, Jussi Kivilinna <jussi.kivilinna@mbnet.fi>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 071/153] rtlwifi: usb: allocate URB control message setup_packet and data
+ buffer separately
 In-Reply-To: <20130304033707.648729212@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,79 +28,112 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jim Somerville <Jim.Somerville@windriver.com>
+From: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>
 
-commit 676a0675cf9200ac047fb50825f80867b3bb733b upstream.
+commit bc6b89237acb3dee6af6e64e51a18255fef89cc2 upstream.
 
-Running the command:
+rtlwifi allocates both setup_packet and data buffer of control message urb,
+using shared kmalloc in _usbctrl_vendorreq_async_write. Structure used for
+allocating is:
+	struct {
+		u8 data[254];
+		struct usb_ctrlrequest dr;
+	};
 
-	inotifywait -e unmount /mnt/disk
+Because 'struct usb_ctrlrequest' is __packed, setup packet is unaligned and
+DMA mapping of both 'data' and 'dr' confuses ARM/sunxi, leading to memory
+corruptions and freezes.
 
-immediately aborts with a -EINVAL return code.  This is however a valid
-parameter.  This abort occurs only if unmount is the sole event
-parameter.  If other event parameters are supplied, then the unmount
-event wait will work.
+Patch changes setup packet to be allocated separately.
 
-The problem was introduced by commit 44b350fc23e ("inotify: Fix mask
-checks").  In that commit, it states:
+[v2]:
+ - Use WARN_ON_ONCE instead of WARN_ON
 
-	The mask checks in inotify_update_existing_watch() and
-	inotify_new_watch() are useless because inotify_arg_to_mask()
-	sets FS_IN_IGNORED and FS_EVENT_ON_CHILD bits anyway.
-
-But instead of removing the useless checks, it did this:
-
-	        mask = inotify_arg_to_mask(arg);
-	-       if (unlikely(!mask))
-	+       if (unlikely(!(mask & IN_ALL_EVENTS)))
-	                return -EINVAL;
-
-The problem is that IN_ALL_EVENTS doesn't include IN_UNMOUNT, and other
-parts of the code keep IN_UNMOUNT separate from IN_ALL_EVENTS.  So the
-check should be:
-
-	if (unlikely(!(mask & (IN_ALL_EVENTS | IN_UNMOUNT))))
-
-But inotify_arg_to_mask(arg) always sets the IN_UNMOUNT bit in the mask
-anyway, so the check is always going to pass and thus should simply be
-removed.  Also note that inotify_arg_to_mask completely controls what
-mask bits get set from arg, there's no way for invalid bits to get
-enabled there.
-
-Lets fix it by simply removing the useless broken checks.
-
-Signed-off-by: Jim Somerville <Jim.Somerville@windriver.com>
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Jerome Marchand <jmarchan@redhat.com>
-Cc: John McCutchan <john@johnmccutchan.com>
-Cc: Robert Love <rlove@rlove.org>
-Cc: Eric Paris <eparis@parisplace.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/notify/inotify/inotify_user.c |    4 ----
- 1 file changed, 4 deletions(-)
+ drivers/net/wireless/rtlwifi/usb.c |   44 +++++++++++++++++++++++-------------
+ 1 file changed, 28 insertions(+), 16 deletions(-)
 
---- a/fs/notify/inotify/inotify_user.c
-+++ b/fs/notify/inotify/inotify_user.c
-@@ -579,8 +579,6 @@ static int inotify_update_existing_watch
+--- a/drivers/net/wireless/rtlwifi/usb.c
++++ b/drivers/net/wireless/rtlwifi/usb.c
+@@ -44,8 +44,12 @@
  
- 	/* don't allow invalid bits: we don't want flags set */
- 	mask = inotify_arg_to_mask(arg);
--	if (unlikely(!(mask & IN_ALL_EVENTS)))
--		return -EINVAL;
+ static void usbctrl_async_callback(struct urb *urb)
+ {
+-	if (urb)
+-		kfree(urb->context);
++	if (urb) {
++		/* free dr */
++		kfree(urb->setup_packet);
++		/* free databuf */
++		kfree(urb->transfer_buffer);
++	}
+ }
  
- 	fsn_mark = fsnotify_find_inode_mark(group, inode);
- 	if (!fsn_mark)
-@@ -632,8 +630,6 @@ static int inotify_new_watch(struct fsno
+ static int _usbctrl_vendorreq_async_write(struct usb_device *udev, u8 request,
+@@ -57,38 +61,46 @@ static int _usbctrl_vendorreq_async_writ
+ 	u8 reqtype;
+ 	struct usb_ctrlrequest *dr;
+ 	struct urb *urb;
+-	struct rtl819x_async_write_data {
+-		u8 data[REALTEK_USB_VENQT_MAX_BUF_SIZE];
+-		struct usb_ctrlrequest dr;
+-	} *buf;
++	const u16 databuf_maxlen = REALTEK_USB_VENQT_MAX_BUF_SIZE;
++	u8 *databuf;
++
++	if (WARN_ON_ONCE(len > databuf_maxlen))
++		len = databuf_maxlen;
  
- 	/* don't allow invalid bits: we don't want flags set */
- 	mask = inotify_arg_to_mask(arg);
--	if (unlikely(!(mask & IN_ALL_EVENTS)))
--		return -EINVAL;
+ 	pipe = usb_sndctrlpipe(udev, 0); /* write_out */
+ 	reqtype =  REALTEK_USB_VENQT_WRITE;
  
- 	tmp_i_mark = kmem_cache_alloc(inotify_inode_mark_cachep, GFP_KERNEL);
- 	if (unlikely(!tmp_i_mark))
+-	buf = kmalloc(sizeof(*buf), GFP_ATOMIC);
+-	if (!buf)
++	dr = kmalloc(sizeof(*dr), GFP_ATOMIC);
++	if (!dr)
+ 		return -ENOMEM;
+ 
++	databuf = kmalloc(databuf_maxlen, GFP_ATOMIC);
++	if (!databuf) {
++		kfree(dr);
++		return -ENOMEM;
++	}
++
+ 	urb = usb_alloc_urb(0, GFP_ATOMIC);
+ 	if (!urb) {
+-		kfree(buf);
++		kfree(databuf);
++		kfree(dr);
+ 		return -ENOMEM;
+ 	}
+ 
+-	dr = &buf->dr;
+-
+ 	dr->bRequestType = reqtype;
+ 	dr->bRequest = request;
+ 	dr->wValue = cpu_to_le16(value);
+ 	dr->wIndex = cpu_to_le16(index);
+ 	dr->wLength = cpu_to_le16(len);
+-	memcpy(buf, pdata, len);
++	memcpy(databuf, pdata, len);
+ 	usb_fill_control_urb(urb, udev, pipe,
+-			     (unsigned char *)dr, buf, len,
+-			     usbctrl_async_callback, buf);
++			     (unsigned char *)dr, databuf, len,
++			     usbctrl_async_callback, NULL);
+ 	rc = usb_submit_urb(urb, GFP_ATOMIC);
+-	if (rc < 0)
+-		kfree(buf);
++	if (rc < 0) {
++		kfree(databuf);
++		kfree(dr);
++	}
+ 	usb_free_urb(urb);
+ 	return rc;
+ }
 
 
