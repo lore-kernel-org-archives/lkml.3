@@ -1,74 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755710Ab3CDHzs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 02:55:48 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:56244 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755663Ab3CDHzq (ORCPT
+	id S1755468Ab3CDH51 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 02:57:27 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:49861 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753251Ab3CDH50 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 02:55:46 -0500
-Message-ID: <51345380.5030504@canonical.com>
-Date: Mon, 04 Mar 2013 08:55:44 +0100
-From: David Henningsson <david.henningsson@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
-MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Ben Hutchings <ben@decadent.org.uk>, stable@vger.kernel.org,
-        akpm@linux-foundation.org, LKML <linux-kernel@vger.kernel.org>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: Re: [ 093/153] ALSA: hda - hdmi: Make jacks phantom, if theyre not
- detectable
-References: <20130304033716.795093499@decadent.org.uk> <1362374037.3768.298.camel@deadeye.wl.decadent.org.uk> <51345148.1040102@canonical.com> <20130304074850.GA1136@kroah.com>
-In-Reply-To: <20130304074850.GA1136@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Mon, 4 Mar 2013 02:57:26 -0500
+X-AuditID: cbfee68d-b7f636d0000009be-eb-513453defaf5
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Andrew Morton'" <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, "'Alessandro Zummo'" <a.zummo@towertech.it>,
+        rtc-linux@googlegroups.com, "'Jingoo Han'" <jg1.han@samsung.com>
+Subject: [PATCH 01/24] rtc: rtc-ab3100: use module_platform_driver_probe()
+Date: Mon, 04 Mar 2013 16:57:17 +0900
+Message-id: <013a01ce18ad$e45caa10$ad15fe30$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac4YreQ8fe1F97iqQuy+DT8iOTwTtA==
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprBIsWRmVeSWpSXmKPExsVy+t8zA917wSaBBnMe81tc3jWHzYHR4/Mm
+	uQDGKC6blNSczLLUIn27BK6M3nXzWQumcFQ0HT/D1MD4j62LkZNDQsBE4s2V+cwQtpjEhXvr
+	geJcHEICyxglnrVcYIYpmtk3BSqxiFHi0r+VrBDObCaJZ1emsINUsQmoSXz5chjI5uAQEdCX
+	aGvRAKlhFuhllDjTuxusRljAS2L6jb1gU1kEVCXWzdsFFucVsJXoXXOMGcIWlPgx+R4LiM0s
+	oCWxfudxJghbXmLzmrfMIPMlBNQlHv3VBQmLCOhJPF93lBmiRERi34t3jCB7JQS62SX2bmxn
+	h9glIPFt8iEWiF5ZiU0HoB6TlDi44gbLBEaxWUg2z0KyeRaSzbOQrFjAyLKKUTS1ILmgOCm9
+	yFCvODG3uDQvXS85P3cTIyRWencw3j5gfYgxGWj9RGYp0eR8YKzllcQbGhubmJmYmphbmpqb
+	kiasJM4rd0kmUEggPbEkNTs1tSC1KL6oNCe1+BAjEwenVANjZ7bNkqtTFrpkfF9ZOuGVzTrF
+	NM0M4TPNTx34RHMzrCM4v+7gUwta5HvkXegaOb7bDt46N9m2/egxf7Hu7SHv7ZKTZhV/2/pa
+	aufc9sfmb9Ovrtt5+MM09+AHaYfd+V+nrypcrVimxhAtvuOxh4rgNTO/ede/rD8RI6Jru3r7
+	I3/Or+rbKmeHK7EUZyQaajEXFScCAH511ZKrAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrKIsWRmVeSWpSXmKPExsVy+t9jAd17wSaBBu8PcVlc3jWHzYHR4/Mm
+	uQDGqAZGm4zUxJTUIoXUvOT8lMy8dFsl7+B453hTMwNDXUNLC3MlhbzE3FRbJRefAF23zByg
+	qUoKZYk5pUChgMTiYiV9O0wTQkPcdC1gGiN0fUOC4HqMDNBAwjrGjN5181kLpnBUNB0/w9TA
+	+I+ti5GTQ0LARGJm3xQoW0ziwr31QDYXh5DAIkaJS/9WskI4s5kknl2Zwg5SxSagJvHly2Eg
+	m4NDREBfoq1FA6SGWaCXUeJM726wGmEBL4npN/Yyg9gsAqoS6+btAovzCthK9K45xgxhC0r8
+	mHyPBcRmFtCSWL/zOBOELS+xec1bZpD5EgLqEo/+6oKERQT0JJ6vO8oMUSIise/FO8YJjAKz
+	kEyahWTSLCSTZiFpWcDIsopRNLUguaA4KT3XSK84Mbe4NC9dLzk/dxMjOBKfSe9gXNVgcYhR
+	gINRiYdX4JNxoBBrYllxZe4hRgkOZiUR3jIJk0Ah3pTEyqrUovz4otKc1OJDjMlAj05klhJN
+	zgcmibySeENjEzMjSyMzCyMTc3PShJXEeRlPPQkQEkhPLEnNTk0tSC2C2cLEwSnVwLiVY0X8
+	vN1tptNnfDI8u+CkwX3ph0u76o2771jv0Tl6ovg/w5aTiXZt8+RDjnGzKzYJOKmm127emSZq
+	xjf1/9zlicpC0jcU5rgwbpr1uvDhfIb46xKdh/99vVDzRnHObUtfQQbDP7s2+e8r/17MtfV0
+	uoB31haWY3F/1Xxik+41HYgO1q3M+6jEUpyRaKjFXFScCAChCJ9YCAMAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/04/2013 08:48 AM, Greg Kroah-Hartman wrote:
-> On Mon, Mar 04, 2013 at 08:46:16AM +0100, David Henningsson wrote:
->> On 03/04/2013 06:13 AM, Ben Hutchings wrote:
->>> On Mon, 2013-03-04 at 03:38 +0000, Ben Hutchings wrote:
->>>> 3.2-stable review patch.  If anyone has any objections, please let me know.
->>>>
->>>> ------------------
->>>>
->>>> From: David Henningsson <david.henningsson@canonical.com>
->>>>
->>>> commit 30efd8debd1ef30be342d374f01e993509f5b76b upstream.
->>>>
->>>> Just as for analog codecs, a jack that isn't suitable for detection
->>>> (in this case, NO_PRESENCE was set) should be a phantom Jack
->>>> instead of a normal one.
->>>>
->>>> Thanks to Raymond Yau for spotting.
->>>>
->>>> BugLink: https://bugs.launchpad.net/bugs/961286
->>>> BugLink: https://bugzilla.redhat.com/show_bug.cgi?id=903869
->>>> Signed-off-by: David Henningsson <david.henningsson@canonical.com>
->>>> Signed-off-by: Takashi Iwai <tiwai@suse.de>
->>>> [bwh: Backported to 3.2: adjust context]
->>>> Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
->>>
->>> David, do I need to change this further for 3.2.y?
->>
->> Greg and Ben,
->>
->> Given some thought, the definition of is_jack_detectable has
->> changed/improved over kernels. Therefore I think it's safer not to
->> apply the patch at all for kernels earlier than 3.6. Let's revisit
->> this decision if there's actually a user demand for this fix.
->
-> So should I revert this in the next 3.4 release, as it's now in the
-> 3.4.35 release.
+This patch uses module_platform_driver_probe() macro which makes
+the code smaller and simpler.
 
-That seems to be the safest option; given that we don't get people with 
-the actual hardware to test the different options and report back which 
-one works best.
+Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+---
+ drivers/rtc/rtc-ab3100.c |   14 +-------------
+ 1 files changed, 1 insertions(+), 13 deletions(-)
 
-Sorry for the late reply.
-
+diff --git a/drivers/rtc/rtc-ab3100.c b/drivers/rtc/rtc-ab3100.c
+index 261a07e..c2f12d3 100644
+--- a/drivers/rtc/rtc-ab3100.c
++++ b/drivers/rtc/rtc-ab3100.c
+@@ -257,19 +257,7 @@ static struct platform_driver ab3100_rtc_driver = {
+ 	.remove	 = __exit_p(ab3100_rtc_remove),
+ };
+ 
+-static int __init ab3100_rtc_init(void)
+-{
+-	return platform_driver_probe(&ab3100_rtc_driver,
+-				     ab3100_rtc_probe);
+-}
+-
+-static void __exit ab3100_rtc_exit(void)
+-{
+-	platform_driver_unregister(&ab3100_rtc_driver);
+-}
+-
+-module_init(ab3100_rtc_init);
+-module_exit(ab3100_rtc_exit);
++module_platform_driver_probe(ab3100_rtc_driver, ab3100_rtc_probe);
+ 
+ MODULE_AUTHOR("Linus Walleij <linus.walleij@stericsson.com>");
+ MODULE_DESCRIPTION("AB3100 RTC Driver");
 -- 
-David Henningsson, Canonical Ltd.
-https://launchpad.net/~diwic
+1.7.2.5
+
+
