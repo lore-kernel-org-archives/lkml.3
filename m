@@ -1,92 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757280Ab3CDLXA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 06:23:00 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:14449 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757197Ab3CDLW5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 06:22:57 -0500
-Date: Mon, 4 Mar 2013 13:20:23 +0200
-From: Gleb Natapov <gleb@redhat.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: Hu Tao <hutao@cn.fujitsu.com>, kvm list <kvm@vger.kernel.org>,
-        qemu-devel <qemu-devel@nongnu.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>, Blue Swirl <blauwirbel@gmail.com>,
-        Eric Blake <eblake@redhat.com>, Andrew Jones <drjones@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Sasha Levin <levinsasha928@gmail.com>,
-        Luiz Capitulino <lcapitulino@redhat.com>,
-        Anthony Liguori <aliguori@us.ibm.com>,
-        Markus Armbruster <armbru@redhat.com>,
-        Stefan Hajnoczi <stefanha@redhat.com>,
-        Juan Quintela <quintela@redhat.com>,
-        Orit Wasserman <owasserm@redhat.com>, Kevin Wolf <kwolf@redhat.com>,
-        Wen Congyang <wency@cn.fujitsu.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>, Alexander Graf <agraf@suse.de>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Peter Maydell <peter.maydell@linaro.org>
-Subject: Re: [PATCH v13 0/8] pv event interface between host and guest
-Message-ID: <20130304112023.GN23616@redhat.com>
-References: <cover.1362051581.git.hutao@cn.fujitsu.com>
- <20130303091738.GB23616@redhat.com>
- <513471F1.5020702@redhat.com>
- <20130304102131.GK23616@redhat.com>
- <51347735.9090204@redhat.com>
- <20130304104301.GL23616@redhat.com>
- <51347C23.8080802@redhat.com>
- <20130304105928.GM23616@redhat.com>
- <51348142.4070206@redhat.com>
+	id S1757267Ab3CDLZl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 06:25:41 -0500
+Received: from 1-1-12-13a.han.sth.bostream.se ([82.182.30.168]:54003 "EHLO
+	palpatine.hardeman.nu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756573Ab3CDLZj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Mar 2013 06:25:39 -0500
+Date: Mon, 4 Mar 2013 12:25:28 +0100
+From: David =?iso-8859-1?Q?H=E4rdeman?= <david@hardeman.nu>
+To: Hannes Reinecke <hare@suse.de>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Bjorn Helgaas <bhelgaas@google.com>, Oliver Neukum <oneukum@suse.de>,
+        Thomas Renninger <trenn@suse.de>, Yinghai Lu <yinghai@kernel.org>,
+        Frederik Himpe <fhimpe@vub.ac.be>,
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: Re: [PATCH][v2] xhci: correctly enable interrupts
+Message-ID: <20130304112528.GA4345@hardeman.nu>
+Mail-Followup-To: Hannes Reinecke <hare@suse.de>, linux-usb@vger.kernel.org,
+	linux-kernel@vger.kernel.org, Bjorn Helgaas <bhelgaas@google.com>,
+	Oliver Neukum <oneukum@suse.de>, Thomas Renninger <trenn@suse.de>,
+	Yinghai Lu <yinghai@kernel.org>, Frederik Himpe <fhimpe@vub.ac.be>,
+	Alan Stern <stern@rowland.harvard.edu>
+References: <1362385324-15228-1-git-send-email-hare@suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <51348142.4070206@redhat.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1362385324-15228-1-git-send-email-hare@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 04, 2013 at 12:10:58PM +0100, Paolo Bonzini wrote:
-> Il 04/03/2013 11:59, Gleb Natapov ha scritto:
-> > > I want to make the ioport configurable in the device, but the PIIX and
-> > > ICH9 (which are what the DSDT is written for) will always use port 0x505.
-> > 
-> > But the device is not part of PIIX or ICH9.
-> 
-> So is kvmclock, or kvmvapic.  I think it makes sense to add this device
-> to PIIX or ICH9 since it is an ISA device.
-> 
-Those are CPU interfaces, not chipset. fw_cfg or our PIIX ACPI additions would
-be better examples, but since they are always present and non configurable they
-are in a different category.
+On Mon, Mar 04, 2013 at 09:22:04AM +0100, Hannes Reinecke wrote:
+>xhci has its own interrupt enabling routine, which will try to
+>use MSI-X/MSI if present. So the usb core shouldn't try to enable
+>legacy interrupts; on some machines the xhci legacy IRQ setting
+>is invalid.
+>
+>Cc: Bjorn Helgaas <bhelgaas@google.com>
+>Cc: Oliver Neukum <oneukum@suse.de>
+>Cc: Thomas Renninger <trenn@suse.de>
+>Cc: Yinghai Lu <yinghai@kernel.org>
+>Cc: Frederik Himpe <fhimpe@vub.ac.be>
+>Cc: David Haerdeman <david@hardeman.nu>
+>Cc: Alan Stern <stern@rowland.harvard.edu>
+>Signed-off-by: Hannes Reinecke <hare@suse.de>
 
-> > It is additional device that
-> > may or may not be present depending on a command line. So what if
-> > someone configures debugcon or debugexit to use this port?
-> 
-> I haven't checked if debug{con,exit} will pass the _STA test, but if
-> they do, the user will get a Ctrl-A or respectively an exit of QEMU when
-> the guest panics.
-> 
-> What if someone configures debugcon on port 0x3f8?  Some guest will use
-> it, some will not.
-> 
-Qemu should fail to start since conflict will be detected during
-initialization.
+No idea if it's the "right" solution but it works for me.
 
-> > We can always
-> > blame the users, but I fill that we are making unnecessary compromises.
-> 
-> Once we choose an ISA device, where the user has full control of the
-> address space, we already know we'll have to accept compromises.  I
-> don't think this compromise is particularly bad: do discovery via ACPI
-> (nice), accept that the user can trick the AML (ugly).
-> 
-Why would have we accept compromises, we may, but I disagree that it
-is necessary? If user configures conflicting ports QEMU will detect
-it during init, if configuration is correct DSDT should provide enough
-information for guests to use configured devices.
+Tested-by: David Härdeman <david@hardeman.nu>
 
---
-			Gleb.
+>
+>diff --git a/drivers/usb/core/hcd-pci.c b/drivers/usb/core/hcd-pci.c
+>index 622b4a4..2647e75 100644
+>--- a/drivers/usb/core/hcd-pci.c
+>+++ b/drivers/usb/core/hcd-pci.c
+>@@ -173,6 +173,7 @@ int usb_hcd_pci_probe(struct pci_dev *dev, const struct pci_device_id *id)
+> 	struct hc_driver	*driver;
+> 	struct usb_hcd		*hcd;
+> 	int			retval;
+>+	int			hcd_irq = 0;
+> 
+> 	if (usb_disabled())
+> 		return -ENODEV;
+>@@ -187,15 +188,21 @@ int usb_hcd_pci_probe(struct pci_dev *dev, const struct pci_device_id *id)
+> 		return -ENODEV;
+> 	dev->current_state = PCI_D0;
+> 
+>-	/* The xHCI driver supports MSI and MSI-X,
+>-	 * so don't fail if the BIOS doesn't provide a legacy IRQ.
+>+	/*
+>+	 * The xHCI driver supports MSI and MSI-X,
+>+	 * so don't fail if the BIOS doesn't provide a legacy IRQ
+>+	 * and do not try to enable legacy IRQs.
+> 	 */
+>-	if (!dev->irq && (driver->flags & HCD_MASK) != HCD_USB3) {
+>-		dev_err(&dev->dev,
+>-			"Found HC with no IRQ.  Check BIOS/PCI %s setup!\n",
+>-			pci_name(dev));
+>-		retval = -ENODEV;
+>-		goto disable_pci;
+>+	if ((driver->flags & HCD_MASK) != HCD_USB3) {
+>+		if (!dev->irq) {
+>+			dev_err(&dev->dev,
+>+				"Found HC with no IRQ.  "
+>+				"Check BIOS/PCI %s setup!\n",
+>+				pci_name(dev));
+>+			retval = -ENODEV;
+>+			goto disable_pci;
+>+		}
+>+		hcd_irq = dev->irq;
+> 	}
+> 
+> 	hcd = usb_create_hcd(driver, &dev->dev, pci_name(dev));
+>@@ -245,7 +252,7 @@ int usb_hcd_pci_probe(struct pci_dev *dev, const struct pci_device_id *id)
+> 
+> 	pci_set_master(dev);
+> 
+>-	retval = usb_add_hcd(hcd, dev->irq, IRQF_SHARED);
+>+	retval = usb_add_hcd(hcd, hcd_irq, IRQF_SHARED);
+> 	if (retval != 0)
+> 		goto unmap_registers;
+> 	set_hs_companion(dev, hcd);
+>
+
+-- 
+David Härdeman
