@@ -1,54 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758641Ab3CDRib (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 12:38:31 -0500
-Received: from mail-pb0-f51.google.com ([209.85.160.51]:64401 "EHLO
-	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757390Ab3CDRi3 (ORCPT
+	id S1758684Ab3CDRih (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 12:38:37 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:45030 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1758648Ab3CDRie (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 12:38:29 -0500
-Date: Mon, 4 Mar 2013 09:38:25 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Li Zefan <lizefan@huawei.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, LKML <linux-kernel@vger.kernel.org>,
-        Cgroups <cgroups@vger.kernel.org>
-Subject: Re: [PATCH 2/3] cgroup: add cgroup_name() API
-Message-ID: <20130304173825.GC30413@htj.dyndns.org>
-References: <512C8D84.7090707@huawei.com>
- <CAOS58YMb7HRQ3X+Z92vi3+jKr4DuNmAgxtc5e3Jkhy-s-7Os-g@mail.gmail.com>
- <512DE4A8.5050303@huawei.com>
- <CAOS58YMhm6Uia0bx6oUHwheXUhu8i31LPhh8VVggvg0vg-UmUQ@mail.gmail.com>
- <512EFEDF.8080205@huawei.com>
- <CAOS58YMBcvhfBWdQmt=JersRgB9nVgsrLACtLovz===2ZXfR=w@mail.gmail.com>
- <51304C6D.8050207@huawei.com>
- <20130301203917.GT4503@ZenIV.linux.org.uk>
- <CAOS58YPNAPhWUwNq9G39Airo+TvV2ecXBiNU5s9PFqkL3RbRFg@mail.gmail.com>
- <51340ECD.1030905@huawei.com>
+	Mon, 4 Mar 2013 12:38:34 -0500
+Date: Mon, 4 Mar 2013 12:38:33 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Stephen Warren <swarren@wwwdotorg.org>
+cc: Venu Byravarasu <vbyravarasu@nvidia.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] usb: host: tegra: Reset Tegra USB controller before init
+In-Reply-To: <5134D210.3060405@wwwdotorg.org>
+Message-ID: <Pine.LNX.4.44L0.1303041237540.1750-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51340ECD.1030905@huawei.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Mon, 4 Mar 2013, Stephen Warren wrote:
 
-On Mon, Mar 04, 2013 at 11:02:37AM +0800, Li Zefan wrote:
-> > Yeah, that's what I meant by the "anal" part although it seems like
-> > c99 doesn't even allow that. Do we care tho? It seems like a logical
-> > feature which should show up in the standard eventually. Maybe it
-> > could be a problem for clang?
-> > 
+> On 03/04/2013 12:55 AM, Venu Byravarasu wrote:
+> > Stephen Warren wrote at Thursday, February 28, 2013 11:47 PM:
+> >> On 02/27/2013 11:36 PM, Venu Byravarasu wrote:
+> >>> To clear any configurations made by U-Boot on Tegra USB controller,
+> >>> reset it before init in probe.
+> >>
+> >>> diff --git a/drivers/usb/host/ehci-tegra.c b/drivers/usb/host/ehci-tegra.c
+> >>
+> >>> @@ -691,6 +692,10 @@ static int tegra_ehci_probe(struct platform_device
+> >> *pdev)
+> >>>  	if (err)
+> >>>  		goto fail_clk;
+> >>>
+> >>> +	tegra_periph_reset_assert(tegra->clk);
+> >>> +	udelay(1);
+> >>> +	tegra_periph_reset_deassert(tegra->clk);
+
+> OK, in that case I have no objection to this patch.
 > 
-> Do we have a decision now? Please pick v4 if this GNU extension can't be used
-> in kernel code, otherwise v5.
+> I'd like to hold off on applying this though; I suspect I'll want to
+> take the Tegra USB patches through the Tegra tree rather than the USB
+> tree again for the 3.10 kernel cycle. I think I may have screwed the
+> pooch on the DT binding I set up for the USB controller clocks, and
+> fixing this may require some Tegra DT changes, which would be easiest
+> taken through the Tegra tree, and so to reduce conflicts in the USB
+> code, taking the rest through there migth just be easiest.
+> 
+> Alan, Greg, if you're OK with this patch now, or for any revised
+> version, an Ack so I can take it through the Tegra tree would be great,
+> thanks.
 
-I'm just gonna apply the one with the initializer.  It's simpler and
-not like we can't back out easily if it ever becomes a problem.
+I have no other objections.
 
-Thanks.
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
 
--- 
-tejun
+Alan Stern
+
