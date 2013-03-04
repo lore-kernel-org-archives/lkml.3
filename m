@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758027Ab3CDEGy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 23:06:54 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:32815 "EHLO
+	id S1758075Ab3CDEG4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 23:06:56 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:32811 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756240Ab3CDDna (ORCPT
+	by vger.kernel.org with ESMTP id S1756235Ab3CDDna (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 3 Mar 2013 22:43:30 -0500
-Message-Id: <20130304033717.804996924@decadent.org.uk>
+Message-Id: <20130304033718.024375654@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 04 Mar 2013 03:38:50 +0000
+Date: Mon, 04 Mar 2013 03:38:52 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [ 103/153] doc, xen: Mention earlyprintk=xen in the documentation.
+Cc: akpm@linux-foundation.org, Jan Kara <jack@suse.cz>,
+        Jeff Moyer <jmoyer@redhat.com>, Joel Becker <jlbec@evilplan.org>,
+        Mark Fasheh <mfasheh@suse.com>, Al Viro <viro@zeniv.linux.org.uk>
+Subject: [ 105/153] ocfs2: fix possible use-after-free with AIO
 In-Reply-To: <20130304033707.648729212@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,43 +28,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+From: Jan Kara <jack@suse.cz>
 
-commit 2482a92e7d17187301d7313cfe5021b13393a0b4 upstream.
+commit 9b171e0c74ca0549d0610990a862dd895870f04a upstream.
 
-The earlyprintk for Xen PV guests utilizes a simple hypercall
-(console_io) to provide output to Xen emergency console.
+Running AIO is pinning inode in memory using file reference. Once AIO
+is completed using aio_complete(), file reference is put and inode can
+be freed from memory. So we have to be sure that calling aio_complete()
+is the last thing we do with the inode.
 
-Note that the Xen hypervisor should be booted with 'loglevel=all'
-to output said information.
-
-Reported-by: H. Peter Anvin <hpa@zytor.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Link: http://lkml.kernel.org/r/1361825650-14031-2-git-send-email-konrad.wilk@oracle.com
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
+Acked-by: Jeff Moyer <jmoyer@redhat.com>
+Acked-by: Joel Becker <jlbec@evilplan.org>
+Cc: Mark Fasheh <mfasheh@suse.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- Documentation/kernel-parameters.txt |    3 +++
- 1 file changed, 3 insertions(+)
+ fs/ocfs2/aops.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -703,6 +703,7 @@ bytes respectively. Such letter suffixes
+--- a/fs/ocfs2/aops.c
++++ b/fs/ocfs2/aops.c
+@@ -593,9 +593,9 @@ static void ocfs2_dio_end_io(struct kioc
+ 	level = ocfs2_iocb_rw_locked_level(iocb);
+ 	ocfs2_rw_unlock(inode, level);
  
- 	earlyprintk=	[X86,SH,BLACKFIN]
- 			earlyprintk=vga
-+			earlyprintk=xen
- 			earlyprintk=serial[,ttySn[,baudrate]]
- 			earlyprintk=ttySn[,baudrate]
- 			earlyprintk=dbgp[debugController#]
-@@ -720,6 +721,8 @@ bytes respectively. Such letter suffixes
- 			The VGA output is eventually overwritten by the real
- 			console.
++	inode_dio_done(inode);
+ 	if (is_async)
+ 		aio_complete(iocb, ret, 0);
+-	inode_dio_done(inode);
+ }
  
-+			The xen output can only be used by Xen PV guests.
-+
- 	ekgdboc=	[X86,KGDB] Allow early kernel console debugging
- 			ekgdboc=kbd
- 
+ /*
 
 
