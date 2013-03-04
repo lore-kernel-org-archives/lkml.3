@@ -1,84 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758273Ab3CDPEi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 10:04:38 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:21164 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757741Ab3CDPEg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 10:04:36 -0500
-Date: Mon, 4 Mar 2013 10:04:32 -0500
-From: Jeff Layton <jlayton@redhat.com>
-To: Ming Lei <ming.lei@canonical.com>
-Cc: "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>
-Subject: Re: LOCKDEP: 3.9-rc1: mount.nfs/4272 still has locks held!
-Message-ID: <20130304100432.5c7ea704@tlielax.poochiereds.net>
-In-Reply-To: <CACVXFVM5VhU_ZgYr1KxERY7DXxMQpkWoiTyjyar91Hz=vU4-ug@mail.gmail.com>
-References: <CACVXFVMKN6aeCvJcn7dyuonJYJDfYxWeW5KE6gfKRKJKFj2M4A@mail.gmail.com>
-	<4FA345DA4F4AE44899BD2B03EEEC2FA9286AD113@sacexcmbx05-prd.hq.netapp.com>
-	<CACVXFVM5VhU_ZgYr1KxERY7DXxMQpkWoiTyjyar91Hz=vU4-ug@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1758312Ab3CDPEw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 10:04:52 -0500
+Received: from ppsw-50.csi.cam.ac.uk ([131.111.8.150]:58152 "EHLO
+	ppsw-50.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757826Ab3CDPEv convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Mar 2013 10:04:51 -0500
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.ucs.cam.ac.uk/email/scanner/
+Subject: Re: cifs: bugfix for unreclaimed writeback pages in cifs_writev_requeue()
+Mime-Version: 1.0 (Mac OS X Mail 6.2 \(1499\))
+Content-Type: text/plain; charset=utf-8
+From: Anton Altaparmakov <aia21@cam.ac.uk>
+In-Reply-To: <20130302195530.6EACF6605DF@gitolite.kernel.org>
+Date: Mon, 4 Mar 2013 15:04:49 +0000
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Jeff Layton <jlayton@samba.org>,
+        "linux-cifs@vger.kernel.org" <linux-cifs@vger.kernel.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <F7FD7D54-C7FE-47E4-8741-FF56A3CC035A@cam.ac.uk>
+References: <20130302195530.6EACF6605DF@gitolite.kernel.org>
+To: Steve French <sfrench@samba.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+X-Mailer: Apple Mail (2.1499)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 4 Mar 2013 22:40:02 +0800
-Ming Lei <ming.lei@canonical.com> wrote:
+Hi,
 
-> On Mon, Mar 4, 2013 at 10:14 PM, Myklebust, Trond
-> <Trond.Myklebust@netapp.com> wrote:
-> > On Mon, 2013-03-04 at 21:57 +0800, Ming Lei wrote:
-> >> Hi,
-> >>
-> >> The below warning can be triggered each time when mount.nfs is
-> >> running on 3.9-rc1.
-> >>
-> >> Not sure if freezable_schedule() inside rpc_wait_bit_killable should
-> >> be changed to schedule() since nfs_clid_init_mutex is held in the path.
-> >
-> > Cc:ing Jeff, who added freezable_schedule(), and applied it to
-> > rpc_wait_bit_killable.
-> >
-> > So this is occurring when the kernel enters the freeze state?
+The below commit that is present in 3.9-rc1 is buggy.  It releases the page at which point it may no longer exist and then it unlocks it afterwards.  Even if you are somehow getting away with it I think it is an explosion/memory corruption waiting to happen...
+
+Best regards,
+
+	Anton
+
+On 2 Mar 2013, at 19:55, Linux Kernel Mailing List <linux-kernel@vger.kernel.org> wrote:
+
+> Gitweb:     http://git.kernel.org/linus/;a=commit;h=c51bb0ea40ca038da26b1fa7d450f4078124af03
+> Commit:     c51bb0ea40ca038da26b1fa7d450f4078124af03
+> Parent:     0b7bc84000d71f3647ca33ab1bf5bd928535c846
+> Author:     Ouyang Maochun <ouyang.maochun@zte.com.cn>
+> AuthorDate: Mon Feb 18 09:54:52 2013 -0600
+> Committer:  Steve French <sfrench@us.ibm.com>
+> CommitDate: Thu Feb 28 09:01:47 2013 -0600
 > 
-> No, but the situation can really be triggered in freeze case, so
-> lockdep forecasts the problem correctly, :-)
+>    cifs: bugfix for unreclaimed writeback pages in cifs_writev_requeue()
 > 
-> > Why does it occur only with nfs_clid_init_mutex, and not with all the
-> > other mutexes that we hold across RPC calls? We hold inode->i_mutex
-> > across RPC calls all the time when doing renames, unlinks, file
-> > creation,...
+>    Pages get the PG_writeback flag set before cifs sends its
+>    request to SMB server in cifs_writepages(), if the SMB service
+>    goes down, cifs may try to recommit the writing requests in
+>    cifs_writev_requeue(). However, it does not clean its PG_writeback
+>    flag and relaimed the pages even if it fails again in
+>    cifs_writev_requeue(), which may lead to the hanging of the
+>    processes accessing the cifs directory. This patch just cleans
+>    the PG_writeback flags and reclaims the pages under that circumstances.
 > 
-> At least in the mount.nfs context, only nfs_clid_init_mutex is held.
+>        Steps to reproduce the bug(trying serveral times may trigger the issue):
+>        1.Write from cifs client continuously.(e.g dd if=/dev/zero of=<cifs file>)
+>        2.Stop SMB service from server.(e.g service smb stop)
+>        3.Wait for two minutes， and then start SMB service from
+>    server.(e.g service smb start)
+>        4.The processes which are accessing cifs directory may hang up.
 > 
-> IMO, if locks might be held in the path, it isn't wise to call
-> freezable_schedule
-> inside rpc_wait_bit_killable().
+>    Signed-off-by: Ouyang Maochun <ouyang.maochun@zte.com.cn>
+>    Signed-off-by: Jiang Yong <jian.yong5@zte.com.cn>
+>    Tested-by: Zhang Xianwei <zhang.xianwei8@zte.com.cn>
+>    Reviewed-by: Wang Liang <wang.liang82@zte.com.cn>
+>    Reviewed-by: Cai Qu <cai.qu@zte.com.cn>
+>    Reviewed-by: Jiang Biao <jiang.biao2@zte.com.cn>
+>    Reviewed-by: Jeff Layton <jlayton@redhat.com>
+>    Reviewed-by: Pavel Shilovsky <piastry@etersoft.ru>
+>    Signed-off-by: Steve French <sfrench@us.ibm.com>
+> ---
+> fs/cifs/cifssmb.c |    5 ++++-
+> 1 files changed, 4 insertions(+), 1 deletions(-)
 > 
-
-I don't get it -- why is it bad to hold a lock across a freeze event?
-
-The problem that we have is that we must often hold locks across
-long-running syscalls (consider something like sync()). In the event
-that there is a lot of dirty data, it might take a long time for that
-to finish.
-
-There's also the problem that it's not uncommon for the freezer to take
-down userland processes (such as NetworkManager) which in turn take
-down network interfaces that we need to talk to the server.
-
-The fix from a couple of years ago (which admittedly needs more work)
-was to allow the freezing of tasks that are waiting on a reply from the
-server. That sort of necessitates that we are allowed to hold our locks
-across the try_to_freeze call though.
-
-If that's no longer allowed then we're back to square one with laptops
-that fail to suspend when they have NFS mounts. Is there some other
-solution we should pursue instead?
+> diff --git a/fs/cifs/cifssmb.c b/fs/cifs/cifssmb.c
+> index 00e12f2..7353bc5 100644
+> --- a/fs/cifs/cifssmb.c
+> +++ b/fs/cifs/cifssmb.c
+> @@ -1909,8 +1909,11 @@ cifs_writev_requeue(struct cifs_writedata *wdata)
+> 	} while (rc == -EAGAIN);
+> 
+> 	for (i = 0; i < wdata->nr_pages; i++) {
+> -		if (rc != 0)
+> +		if (rc != 0) {
+> 			SetPageError(wdata->pages[i]);
+> +			end_page_writeback(wdata->pages[i]);
+> +			page_cache_release(wdata->pages[i]);
+> +		}
+> 		unlock_page(wdata->pages[i]);
+> 	}
+> 
 
 -- 
-Jeff Layton <jlayton@redhat.com>
+Anton Altaparmakov <aia21 at cam.ac.uk> (replace at with @)
+Unix Support, Computing Service, University of Cambridge, CB2 3QH, UK
+Linux NTFS maintainer, http://www.linux-ntfs.org/
+
