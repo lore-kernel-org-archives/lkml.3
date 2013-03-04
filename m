@@ -1,51 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932494Ab3CDW7J (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 17:59:09 -0500
-Received: from g1t0026.austin.hp.com ([15.216.28.33]:33974 "EHLO
-	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758783Ab3CDW7I (ORCPT
+	id S932526Ab3CDXCh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 18:02:37 -0500
+Received: from mail.green-internet.de ([213.252.188.14]:36916 "EHLO
+	mail.green-internet.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1758783Ab3CDXCg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 17:59:08 -0500
-Message-ID: <1362437940.4591.24.camel@lorien2>
-Subject: [PATCH] arch/x86: fix unused variable warning in mwait_play_dead()
-From: Shuah Khan <shuah.khan@hp.com>
-Reply-To: shuah.khan@hp.com
-To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        a.p.zijlstra@chello.nl, jarkko.sakkinen@intel.com
-Cc: LKML <linux-kernel@vger.kernel.org>, x86@kernel.org, shuahkhan@gmail.com
-Date: Mon, 04 Mar 2013 15:59:00 -0700
-Organization: ISS-Linux
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	Mon, 4 Mar 2013 18:02:36 -0500
+X-Greylist: delayed 2026 seconds by postgrey-1.27 at vger.kernel.org; Mon, 04 Mar 2013 18:02:35 EST
+Message-ID: <5135201F.4030200@draisberghof.de>
+Date: Mon, 04 Mar 2013 23:28:47 +0100
+From: Josua Dietze <digidietze@draisberghof.de>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: =?ISO-8859-15?Q?Bj=F8rn_Mork?= <bjorn@mork.no>
+CC: Matthew Dharm <mdharm-usb@one-eyed-alien.net>,
+        Ben Hutchings <ben@decadent.org.uk>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Fangxiaozhi (Franko)" <fangxiaozhi@huawei.com>, zihan@huawei.com,
+        Lin.Lei@huawei.com, Greg KH <gregkh@linuxfoundation.org>,
+        "Yili (Neil)" <neil.yi@huawei.com>,
+        "Wangyuhua \(Roger\, Credit\)" <wangyuhua@huawei.com>,
+        Huqiao <huqiao36@huawei.com>, Felipe Balbi <balbi@ti.com>,
+        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
+        stable <stable@vger.kernel.org>
+Subject: Re: [PATCH] USB: storage: fix Huawei mode switching regression
+References: <87obezs888.fsf@nemi.mork.no> <1362403161-23501-1-git-send-email-bjorn@mork.no> <1362407359.3768.337.camel@deadeye.wl.decadent.org.uk> <878v63ru2i.fsf@nemi.mork.no> <CAA6KcBBdPeS1yEq0SUCzrqSkow1-fCUdp+pfsDX3CWX-uuBGdA@mail.gmail.com> <87wqtnq8bb.fsf@nemi.mork.no>
+In-Reply-To: <87wqtnq8bb.fsf@nemi.mork.no>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
 Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix arch/x86/kernel/smpboot.c: In function ‘mwait_play_dead’:
-arch/x86/kernel/smpboot.c:1370:22: warning: unused variable ‘c’ [-Wunused-variable]
+Am 04.03.2013 20:22, schrieb Bj�rn Mork:
+> Matthew Dharm <mdharm-usb@one-eyed-alien.net> writes:
+>> The question is not one of reminding me of what I said earlier....
+>> it's one of pointing people in the right direction.  Frankly, some of
+>> the fault for this patch lies with Greg and myself for letting it
+>> through.  I had just assumed that the Huawei guys had already been in
+>> touch with usb-modeswitch for some reason, and that this was just an
+>> optimization of existing logic (not an expansion).
 
-Signed-off-by: Shuah Khan <shuah.khan@hp.com>
----
- arch/x86/kernel/smpboot.c |    1 -
- 1 file changed, 1 deletion(-)
+I was contacted at one point by a Huawei engineer who convinced me to change the default mode-switching 'message' for all Huawei devices.
+The reason was the introduction of an 'advanced' Linux driver by Huawei which requires a specific target mode. This was in October 2010.
+No contact attempt since then.
 
-diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-index a6ceaed..7bc998a 100644
---- a/arch/x86/kernel/smpboot.c
-+++ b/arch/x86/kernel/smpboot.c
-@@ -1367,7 +1367,6 @@ static inline void mwait_play_dead(void)
- 	unsigned int highest_subcstate = 0;
- 	int i;
- 	void *mwait_ptr;
--	struct cpuinfo_x86 *c = __this_cpu_ptr(&cpu_info);
- 
- 	if (!this_cpu_has(X86_FEATURE_MWAIT))
- 		return;
--- 
-1.7.10.4
+>> Who is maintaining usb-modeswitch these days, anyway?  The comment in
+>> the file should point people directly there....
+
+I never ceased work on it and intend to do so for years to come. I would certainly welcome any pointer to the usb_modeswitch main site in the code or the documentation. Although modem developers or engineers should not have a problem finding the site and providing new device information.
+
+>> And, as of now, I would really like to see as many of these devices
+>> migrated (albeit slowly) to using usb-modeswitch wherever possible.  I
+>> know there are a few devices for which that might not be possible, but
+>> I am DONE dealing with this same issue over and over and over again.
+>> It will certainly be work to migrate support; maybe we should wrap all
+>> the relevant unusual_devs.h entires with
+>> CONFIG_UPDATED_MODESWITCH_INSTALLED_SO_MAKE_THESE_GO_AWAY during a
+>> transition period?
+
+I think it's safe to say that usb_modeswitch is included in all distributions now. Usually, no user interaction is necessary.
+
+> I guess the real problem will be verifying that all of the entries *can*
+> go away. This type of hardware tends to get old very fast, but there is
+> always someone having a really ancient device.
+
+I will check this and add any missing USB IDs to usb_modeswitch, but I can't shake the feeling that not *all* Huawei entries in "unusual_devs.h" did actually materialize as devices ...
+
+Anyway, as Bj�rn said, putting that initialization into the storage driver takes away quite some possibilities to handle these modems in a flexible way.
 
 
+Josua Dietze
 
