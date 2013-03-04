@@ -1,88 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755623Ab3CDIWM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 03:22:12 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:58166 "EHLO mx2.suse.de"
+	id S1755688Ab3CDIXg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 03:23:36 -0500
+Received: from mga14.intel.com ([143.182.124.37]:9457 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755373Ab3CDIWK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 03:22:10 -0500
-From: Hannes Reinecke <hare@suse.de>
-To: linux-usb@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Hannes Reinecke <hare@suse.de>,
-        Bjorn Helgaas <bhelgaas@google.com>, Oliver Neukum <oneukum@suse.de>,
-        Thomas Renninger <trenn@suse.de>, Yinghai Lu <yinghai@kernel.org>,
-        Frederik Himpe <fhimpe@vub.ac.be>, David Haerdeman <david@hardeman.nu>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: [PATCH][v2] xhci: correctly enable interrupts
-Date: Mon,  4 Mar 2013 09:22:04 +0100
-Message-Id: <1362385324-15228-1-git-send-email-hare@suse.de>
-X-Mailer: git-send-email 1.7.4.2
+	id S1755373Ab3CDIXf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Mar 2013 03:23:35 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,777,1355126400"; 
+   d="scan'208";a="263953322"
+Message-ID: <1362385446.2943.7.camel@sauron>
+Subject: Re: [PATCH V3 1/3] mtd: add new fields to nand_flash_dev{}
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Huang Shijie <b32955@freescale.com>
+Cc: Huang Shijie <shijie8@gmail.com>, dwmw2@infradead.org,
+        computersforpeace@gmail.com, linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Date: Mon, 04 Mar 2013 10:24:06 +0200
+In-Reply-To: <5134566C.2090405@freescale.com>
+References: <1359349039-11510-1-git-send-email-b32955@freescale.com>
+			 <1359349039-11510-2-git-send-email-b32955@freescale.com>
+			 <1360684037.12703.117.camel@sauron.fi.intel.com>
+			 <CAMiH66ExMK8rPMw3kvs9M2b-0ZSkfxBYteTi8QTZf+XCzJw5Dw@mail.gmail.com>
+		 <1362234094.2745.9.camel@sauron> <513437DF.2030505@freescale.com>
+	 <1362383434.2943.5.camel@sauron> <5134566C.2090405@freescale.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.3 (3.6.3-2.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-xhci has its own interrupt enabling routine, which will try to
-use MSI-X/MSI if present. So the usb core shouldn't try to enable
-legacy interrupts; on some machines the xhci legacy IRQ setting
-is invalid.
+On Mon, 2013-03-04 at 16:08 +0800, Huang Shijie wrote:
+> 于 2013年03月04日 15:50, Artem Bityutskiy 写道:
+> > On Mon, 2013-03-04 at 13:57 +0800, Huang Shijie wrote:
+> >> The current code uses the @id to store the device id(byte 1).
+> >> But if we use the 8 bytes id data as the keyword, and expand the @id
+> >> field to 8byte array,
+> >> the device id is the second byte now. All the added zeros are for the
+> > I do not think you need to store the full array of ID's. Device ID's for
+> > all the 4 of above chips are different, which is enough to distinguish
+> > between them.
+> >
+> > The only thing you need to add is the OOB size field to 'struct
+> > nand_flash_dev'.
+> >
+> If i only add the oob size field. There will be two items with the same 
+> Device ID in nand_flash_ids table,
+> one has oob_size, one does not have. such as:
+> 
+>     {"NAND 8GIB 3,3V 8-bit", 0xDE, 0, 8192, 0, LP_OPTIONS},
 
-Cc: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Oliver Neukum <oneukum@suse.de>
-Cc: Thomas Renninger <trenn@suse.de>
-Cc: Yinghai Lu <yinghai@kernel.org>
-Cc: Frederik Himpe <fhimpe@vub.ac.be>
-Cc: David Haerdeman <david@hardeman.nu>
-Cc: Alan Stern <stern@rowland.harvard.edu>
-Signed-off-by: Hannes Reinecke <hare@suse.de>
+Do you know what is this chip?
 
-diff --git a/drivers/usb/core/hcd-pci.c b/drivers/usb/core/hcd-pci.c
-index 622b4a4..2647e75 100644
---- a/drivers/usb/core/hcd-pci.c
-+++ b/drivers/usb/core/hcd-pci.c
-@@ -173,6 +173,7 @@ int usb_hcd_pci_probe(struct pci_dev *dev, const struct pci_device_id *id)
- 	struct hc_driver	*driver;
- 	struct usb_hcd		*hcd;
- 	int			retval;
-+	int			hcd_irq = 0;
- 
- 	if (usb_disabled())
- 		return -ENODEV;
-@@ -187,15 +188,21 @@ int usb_hcd_pci_probe(struct pci_dev *dev, const struct pci_device_id *id)
- 		return -ENODEV;
- 	dev->current_state = PCI_D0;
- 
--	/* The xHCI driver supports MSI and MSI-X,
--	 * so don't fail if the BIOS doesn't provide a legacy IRQ.
-+	/*
-+	 * The xHCI driver supports MSI and MSI-X,
-+	 * so don't fail if the BIOS doesn't provide a legacy IRQ
-+	 * and do not try to enable legacy IRQs.
- 	 */
--	if (!dev->irq && (driver->flags & HCD_MASK) != HCD_USB3) {
--		dev_err(&dev->dev,
--			"Found HC with no IRQ.  Check BIOS/PCI %s setup!\n",
--			pci_name(dev));
--		retval = -ENODEV;
--		goto disable_pci;
-+	if ((driver->flags & HCD_MASK) != HCD_USB3) {
-+		if (!dev->irq) {
-+			dev_err(&dev->dev,
-+				"Found HC with no IRQ.  "
-+				"Check BIOS/PCI %s setup!\n",
-+				pci_name(dev));
-+			retval = -ENODEV;
-+			goto disable_pci;
-+		}
-+		hcd_irq = dev->irq;
- 	}
- 
- 	hcd = usb_create_hcd(driver, &dev->dev, pci_name(dev));
-@@ -245,7 +252,7 @@ int usb_hcd_pci_probe(struct pci_dev *dev, const struct pci_device_id *id)
- 
- 	pci_set_master(dev);
- 
--	retval = usb_add_hcd(hcd, dev->irq, IRQF_SHARED);
-+	retval = usb_add_hcd(hcd, hcd_irq, IRQF_SHARED);
- 	if (retval != 0)
- 		goto unmap_registers;
- 	set_hs_companion(dev, hcd);
+>     {"NAND 8GIB 3,3V 8-bit", 0xDE, 0, 8192, 0, LP_OPTIONS, 640},   //OOB 
+> size is 640
+
+So there are really 2 different chips with the same device id and
+different OOB size? If you had 2 datasheets for me demonstrating this,
+I'd be grateful.
+
+-- 
+Best Regards,
+Artem Bityutskiy
+
