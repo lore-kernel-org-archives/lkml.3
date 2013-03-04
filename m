@@ -1,108 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755192Ab3CDEaf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 23:30:35 -0500
-Received: from mailout01.c08.mtsvc.net ([205.186.168.189]:41233 "EHLO
-	mailout01.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752564Ab3CDEad (ORCPT
+	id S1755310Ab3CDEtP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 23:49:15 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:58074 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754845Ab3CDEtO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Mar 2013 23:30:33 -0500
-Message-ID: <1362371409.23313.2.camel@thor.lan>
-Subject: Re: [PATCH] ircomm: release tty before sleeping potentially
- indefintely
-From: Peter Hurley <peter@hurleysoftware.com>
-To: David Miller <davem@davemloft.net>
-Cc: sasha.levin@oracle.com, samuel@sortiz.org, gregkh@linuxfoundation.org,
-        jslaby@suse.cz, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Sun, 03 Mar 2013 23:30:09 -0500
-In-Reply-To: <20130303.213601.1201168888595187293.davem@davemloft.net>
-References: <1362355465.3221.82.camel@thor.lan>
-	 <20130303.193313.408641189137321065.davem@davemloft.net>
-	 <1362359178.3221.118.camel@thor.lan>
-	 <20130303.213601.1201168888595187293.davem@davemloft.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.3-0pjh1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 125194 peter@hurleysoftware.com
+	Sun, 3 Mar 2013 23:49:14 -0500
+X-AuditID: 9c930197-b7c43ae0000006e1-94-513427c8f481
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Russell King <linux@arm.linux.org.uk>
+Cc: linux-arm-kernel@lists.infradead.org, Nicolas Pitre <nico@linaro.org>,
+        linux-kernel@vger.kernel.org, Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Subject: [PATCH] ARM: mm: clean-up in order to reduce to call kmap_high_get()
+Date: Mon,  4 Mar 2013 13:50:09 +0900
+Message-Id: <1362372609-877-1-git-send-email-iamjoonsoo.kim@lge.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+In kmap_atomic(), kmap_high_get() is invoked for checking already
+mapped area. In __flush_dcache_page() and dma_cache_maint_page(),
+we explicitly call kmap_high_get() before kmap_atomic()
+when cache_is_vipt(), so kmap_high_get() can be invoked twice.
+This is useless operation, so remove one.
 
-On Sun, 2013-03-03 at 21:36 -0500, David Miller wrote:
-> From: Peter Hurley <peter@hurleysoftware.com>
-> Date: Sun, 03 Mar 2013 20:06:18 -0500
-> 
-> > But regardless, this function __cannot__ sleep holding the tty_lock().
-> 
-> So drop it across the schedule(), but recheck the termios after
-> regrabbing it.
+Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 
-I'll have to do some research on that.
-
-1) The code is using a deliberate snapshot.
-
-	if (tty->termios.c_cflag & CLOCAL) {
-		IRDA_DEBUG(1, "%s(), doing CLOCAL!\n", __func__ );
-		do_clocal = 1;
-	}
-
-	.....
-
-	while (1) {
-
-		.........
-
-		/*
-		 * Check if link is ready now. Even if CLOCAL is
-		 * specified, we cannot return before the IrCOMM link is
-		 * ready
-		 */
-		if (!test_bit(ASYNCB_CLOSING, &port->flags) &&
-		    (do_clocal || tty_port_carrier_raised(port)) &&
-		    self->state == IRCOMM_TTY_READY)
-		{
-			break;
-		}
-
-
-2) The only reason this driver isn't using tty_port_block_til_ready() is
-the lone state check:
-		    self->state == IRCOMM_TTY_READY
-
-I take it IRDA has some kind of virtual cabling protocol. But it's
-unclear why this can't be implemented in the driver without duplicating
-tty_port_block_til_ready(). For example, if the device can't do CLOCAL
-open (meaning no underlying device attached prior to open) then why
-specify that in the driver flags? Additionally, CLOCAL can be masked out
-by the driver's set_termios() method. And then it could implement the
-state check in its .carrier_raised() method.
-
-The net result of which would obviate the need for
-ircomm_tty_block_til_ready() at all.
-
-3) The do_clocal snapshot is universally employed by every tty driver. I
-don't mean that as some kind of lame excuse. But if this should change,
-it should change across every tty driver with a really good reason.
-
-4) Rechecking termios will change the way the user-space open() for this
-device behaves. And I need to think more on how that might or might not
-be a problem.
-
-5) The code behavior pre-dates the 2005 check-in so I'll probably have
-to do some code archaeology.
-
-
-That's probably going to take some time.
-
-In the meantime, while reviewing that code, I noticed there's a handful
-of serious bugs in that one function that I'll send a patchset for.
-
-Plus, someone could be back to me on if and why the driver needs to be
-virtually cabled to open().
-
-Regards,
-Peter Hurley
-
+diff --git a/arch/arm/mm/dma-mapping.c b/arch/arm/mm/dma-mapping.c
+index c7e3759..b7711be 100644
+--- a/arch/arm/mm/dma-mapping.c
++++ b/arch/arm/mm/dma-mapping.c
+@@ -822,16 +822,16 @@ static void dma_cache_maint_page(struct page *page, unsigned long offset,
+ 		if (PageHighMem(page)) {
+ 			if (len + offset > PAGE_SIZE)
+ 				len = PAGE_SIZE - offset;
+-			vaddr = kmap_high_get(page);
+-			if (vaddr) {
+-				vaddr += offset;
+-				op(vaddr, len, dir);
+-				kunmap_high(page);
+-			} else if (cache_is_vipt()) {
+-				/* unmapped pages might still be cached */
++			if (cache_is_vipt()) {
+ 				vaddr = kmap_atomic(page);
+ 				op(vaddr + offset, len, dir);
+ 				kunmap_atomic(vaddr);
++			} else {
++				vaddr = kmap_high_get(page);
++				if (vaddr) {
++					op(vaddr + offset, len, dir);
++					kunmap_high(page);
++				}
+ 			}
+ 		} else {
+ 			vaddr = page_address(page) + offset;
+diff --git a/arch/arm/mm/flush.c b/arch/arm/mm/flush.c
+index 1c8f7f5..e6a03d0 100644
+--- a/arch/arm/mm/flush.c
++++ b/arch/arm/mm/flush.c
+@@ -170,15 +170,18 @@ void __flush_dcache_page(struct address_space *mapping, struct page *page)
+ 	if (!PageHighMem(page)) {
+ 		__cpuc_flush_dcache_area(page_address(page), PAGE_SIZE);
+ 	} else {
+-		void *addr = kmap_high_get(page);
+-		if (addr) {
+-			__cpuc_flush_dcache_area(addr, PAGE_SIZE);
+-			kunmap_high(page);
+-		} else if (cache_is_vipt()) {
+-			/* unmapped pages might still be cached */
++		void *addr;
++
++		if (cache_is_vipt()) {
+ 			addr = kmap_atomic(page);
+ 			__cpuc_flush_dcache_area(addr, PAGE_SIZE);
+ 			kunmap_atomic(addr);
++		} else {
++			addr = kmap_high_get(page);
++			if (addr) {
++				__cpuc_flush_dcache_area(addr, PAGE_SIZE);
++				kunmap_high(page);
++			}
+ 		}
+ 	}
+ 
+-- 
+1.7.9.5
 
