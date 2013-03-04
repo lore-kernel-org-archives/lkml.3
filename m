@@ -1,65 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756220Ab3CDIHw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 03:07:52 -0500
-Received: from db3ehsobe005.messaging.microsoft.com ([213.199.154.143]:9042
-	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755458Ab3CDIHv convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 03:07:51 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 3
-X-BigFish: VS3(z3121kz98dIc89bh936eI1432Izz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ah1082kzzz2dh2a8h668h839h93fhd25he5bhf0ah1288h12a5h12a9h12bdh1354h137ah13b6h1441h1504h1537h153bh162dh1631h1758h1765h18e1h190ch1946h19c3h1ad9h1155h)
-Message-ID: <5134566C.2090405@freescale.com>
-Date: Mon, 4 Mar 2013 16:08:12 +0800
-From: Huang Shijie <b32955@freescale.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Thunderbird/3.1.16
+	id S1755900Ab3CDIIt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 03:08:49 -0500
+Received: from mail-bk0-f50.google.com ([209.85.214.50]:35083 "EHLO
+	mail-bk0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755536Ab3CDIIr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Mar 2013 03:08:47 -0500
 MIME-Version: 1.0
-To: <dedekind1@gmail.com>
-CC: Huang Shijie <shijie8@gmail.com>, <dwmw2@infradead.org>,
-        <computersforpeace@gmail.com>, <linux-mtd@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V3 1/3] mtd: add new fields to nand_flash_dev{}
-References: <1359349039-11510-1-git-send-email-b32955@freescale.com>		 <1359349039-11510-2-git-send-email-b32955@freescale.com>		 <1360684037.12703.117.camel@sauron.fi.intel.com>		 <CAMiH66ExMK8rPMw3kvs9M2b-0ZSkfxBYteTi8QTZf+XCzJw5Dw@mail.gmail.com>	 <1362234094.2745.9.camel@sauron> <513437DF.2030505@freescale.com> <1362383434.2943.5.camel@sauron>
-In-Reply-To: <1362383434.2943.5.camel@sauron>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: freescale.com
+In-Reply-To: <Pine.LNX.4.44L0.1303021050210.11936-100000@netrider.rowland.org>
+References: <1362230590-20960-7-git-send-email-gautam.vivek@samsung.com>
+	<Pine.LNX.4.44L0.1303021050210.11936-100000@netrider.rowland.org>
+Date: Mon, 4 Mar 2013 13:38:45 +0530
+Message-ID: <CAFp+6iFsR1H8kRmg2ynGto0ZERydOc-Vk+niS_ucH20o2R7SCg@mail.gmail.com>
+Subject: Re: [PATCH v2 06/10] usb: xhci: Enable runtime pm in xhci-plat
+From: Vivek Gautam <gautamvivek1987@gmail.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Vivek Gautam <gautam.vivek@samsung.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, gregkh@linuxfoundation.org,
+        balbi@ti.com, sarah.a.sharp@linux.intel.com, kgene.kim@samsung.com,
+        kishon@ti.com, Doug Anderson <dianders@chromium.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2013年03月04日 15:50, Artem Bityutskiy 写道:
-> On Mon, 2013-03-04 at 13:57 +0800, Huang Shijie wrote:
->> The current code uses the @id to store the device id(byte 1).
->> But if we use the 8 bytes id data as the keyword, and expand the @id
->> field to 8byte array,
->> the device id is the second byte now. All the added zeros are for the
-> I do not think you need to store the full array of ID's. Device ID's for
-> all the 4 of above chips are different, which is enough to distinguish
-> between them.
+Hi,
+
+
+On Sat, Mar 2, 2013 at 9:23 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
+> On Sat, 2 Mar 2013, Vivek Gautam wrote:
 >
-> The only thing you need to add is the OOB size field to 'struct
-> nand_flash_dev'.
+>> By enabling runtime pm in this driver allows users of
+>> xhci-plat to enter into runtime pm. This is not full
+>> runtime pm support (AKA xhci-plat doesn't actually power
+>> anything off when in runtime suspend mode) but,
+>> just basic enablement.
+>>
+>> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+>> CC: Doug Anderson <dianders@chromium.org>
+>> ---
+>>  drivers/usb/host/xhci-plat.c |    7 +++++++
+>>  1 files changed, 7 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/drivers/usb/host/xhci-plat.c b/drivers/usb/host/xhci-plat.c
+>> index c9c7e13..595cb52 100644
+>> --- a/drivers/usb/host/xhci-plat.c
+>> +++ b/drivers/usb/host/xhci-plat.c
+>> @@ -12,6 +12,7 @@
+>>   */
+>>
+>>  #include <linux/platform_device.h>
+>> +#include <linux/pm_runtime.h>
+>>  #include <linux/module.h>
+>>  #include <linux/slab.h>
+>>
+>> @@ -149,6 +150,8 @@ static int xhci_plat_probe(struct platform_device *pdev)
+>>       if (ret)
+>>               goto put_usb3_hcd;
+>>
+>> +     pm_runtime_enable(&pdev->dev);
 >
-If i only add the oob size field. There will be two items with the same 
-Device ID in nand_flash_ids table,
-one has oob_size, one does not have. such as:
+> This is generally not a good idea.  You shouldn't enable a device for
+> runtime PM without first telling the PM core what state it is in.
+>
+Right, but i am not completely sure on any fixed path to follow for
+enabling runtime
+power management on a device. :-(
+Does it become necessary to "pm_runtime_set_active" or
+"pm_runtime_set_suspended" a device
+before "pm_runtime_enable" ? pm_runtime_enable would just try to
+decrement the disable_depth
+of the device.
 
-    {"NAND 8GIB 3,3V 8-bit", 0xDE, 0, 8192, 0, LP_OPTIONS},
-    {"NAND 8GIB 3,3V 8-bit", 0xDE, 0, 8192, 0, LP_OPTIONS, 640},   //OOB 
-size is 640.
+>> @@ -174,6 +177,10 @@ static int xhci_plat_remove(struct platform_device *dev)
+>>       struct usb_hcd  *hcd = platform_get_drvdata(dev);
+>>       struct xhci_hcd *xhci = hcd_to_xhci(hcd);
+>>
+>> +     if (!pm_runtime_suspended(&dev->dev))
+>> +             pm_runtime_put(&dev->dev);
+>> +     pm_runtime_disable(&dev->dev);
+>> +
+>>       usb_remove_hcd(xhci->shared_hcd);
+>>       usb_put_hcd(xhci->shared_hcd);
+>
+> This is very strange.  Why have a pm_runtime_put with no balancing
+> pm_runtime_get?
+>
+> And why use an async routine when you're about to unbind the driver?
+> Don't you want the callback to occur before the unbinding?
+>
+> Alan Stern
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-usb" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
 
-How can i distinguish them? In which case, i choose the item with the 
-oob_size, and in which case, i choose
-the item without the oobsize?
 
-thanks
-Huang Shijie
-
-
-
-
-
-
+-- 
+Thanks & Regards
+Vivek
