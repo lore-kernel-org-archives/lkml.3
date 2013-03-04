@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756870Ab3CDEHj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 23:07:39 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:32806 "EHLO
+	id S1756459Ab3CDEHh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 23:07:37 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:32823 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756233Ab3CDDn3 (ORCPT
+	by vger.kernel.org with ESMTP id S1756234Ab3CDDn3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 3 Mar 2013 22:43:29 -0500
-Message-Id: <20130304033718.110016576@decadent.org.uk>
+Message-Id: <20130304033717.087885897@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 04 Mar 2013 03:38:53 +0000
+Date: Mon, 04 Mar 2013 03:38:43 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, "H. Peter Anvin" <hpa@linux.intel.com>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Matt Fleming <matt.fleming@intel.com>
-Subject: [ 106/153] x86: Make sure we can boot in the case the BDA contains pure garbage
+Cc: akpm@linux-foundation.org, Phileas Fogg <phileas-fogg@mail.ru>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [ 096/153] powerpc/kexec: Disable hard IRQ before kexec
 In-Reply-To: <20130304033707.648729212@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,121 +27,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "H. Peter Anvin" <hpa@linux.intel.com>
+From: Phileas Fogg <phileas-fogg@mail.ru>
 
-commit 7c10093692ed2e6f318387d96b829320aa0ca64c upstream.
+commit 8520e443aa56cc157b015205ea53e7b9fc831291 upstream.
 
-On non-BIOS platforms it is possible that the BIOS data area contains
-garbage instead of being zeroed or something equivalent (firmware
-people: we are talking of 1.5K here, so please do the sane thing.)
+Disable hard IRQ before kexec a new kernel image.
+Not doing it can result in corrupted data in the memory segments
+reserved for the new kernel.
 
-We need on the order of 20-30K of low memory in order to boot, which
-may grow up to < 64K in the future.  We probably want to avoid the
-lowest of the low memory.  At the same time, it seems extremely
-unlikely that a legitimate EBDA would ever reach down to the 128K
-(which would require it to be over half a megabyte in size.)  Thus,
-pick 128K as the cutoff for "this is insane, ignore."  We may still
-end up reserving a bunch of extra memory on the low megabyte, but that
-is not really a major issue these days.  In the worst case we lose
-512K of RAM.
-
-This code really should be merged with trim_bios_range() in
-arch/x86/kernel/setup.c, but that is a bigger patch for a later merge
-window.
-
-Reported-by: Darren Hart <dvhart@linux.intel.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Cc: Matt Fleming <matt.fleming@intel.com>
-Link: http://lkml.kernel.org/n/tip-oebml055yyfm8yxmria09rja@git.kernel.org
+Signed-off-by: Phileas Fogg <phileas-fogg@mail.ru>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/x86/kernel/head.c |   53 +++++++++++++++++++++++++++++++-----------------
- 1 file changed, 34 insertions(+), 19 deletions(-)
+ arch/powerpc/kernel/machine_kexec_64.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/arch/x86/kernel/head.c
-+++ b/arch/x86/kernel/head.c
-@@ -5,8 +5,6 @@
- #include <asm/setup.h>
- #include <asm/bios_ebda.h>
- 
--#define BIOS_LOWMEM_KILOBYTES 0x413
--
- /*
-  * The BIOS places the EBDA/XBDA at the top of conventional
-  * memory, and usually decreases the reported amount of
-@@ -16,17 +14,30 @@
-  * chipset: reserve a page before VGA to prevent PCI prefetch
-  * into it (errata #56). Usually the page is reserved anyways,
-  * unless you have no PS/2 mouse plugged in.
-+ *
-+ * This functions is deliberately very conservative.  Losing
-+ * memory in the bottom megabyte is rarely a problem, as long
-+ * as we have enough memory to install the trampoline.  Using
-+ * memory that is in use by the BIOS or by some DMA device
-+ * the BIOS didn't shut down *is* a big problem.
-  */
-+
-+#define BIOS_LOWMEM_KILOBYTES	0x413
-+#define LOWMEM_CAP		0x9f000U	/* Absolute maximum */
-+#define INSANE_CUTOFF		0x20000U	/* Less than this = insane */
-+
- void __init reserve_ebda_region(void)
+--- a/arch/powerpc/kernel/machine_kexec_64.c
++++ b/arch/powerpc/kernel/machine_kexec_64.c
+@@ -162,6 +162,8 @@ static int kexec_all_irq_disabled = 0;
+ static void kexec_smp_down(void *arg)
  {
- 	unsigned int lowmem, ebda_addr;
- 
--	/* To determine the position of the EBDA and the */
--	/* end of conventional memory, we need to look at */
--	/* the BIOS data area. In a paravirtual environment */
--	/* that area is absent. We'll just have to assume */
--	/* that the paravirt case can handle memory setup */
--	/* correctly, without our help. */
-+	/*
-+	 * To determine the position of the EBDA and the
-+	 * end of conventional memory, we need to look at
-+	 * the BIOS data area. In a paravirtual environment
-+	 * that area is absent. We'll just have to assume
-+	 * that the paravirt case can handle memory setup
-+	 * correctly, without our help.
-+	 */
- 	if (paravirt_enabled())
- 		return;
- 
-@@ -37,19 +48,23 @@ void __init reserve_ebda_region(void)
- 	/* start of EBDA area */
- 	ebda_addr = get_bios_ebda();
- 
--	/* Fixup: bios puts an EBDA in the top 64K segment */
--	/* of conventional memory, but does not adjust lowmem. */
--	if ((lowmem - ebda_addr) <= 0x10000)
--		lowmem = ebda_addr;
--
--	/* Fixup: bios does not report an EBDA at all. */
--	/* Some old Dells seem to need 4k anyhow (bugzilla 2990) */
--	if ((ebda_addr == 0) && (lowmem >= 0x9f000))
--		lowmem = 0x9f000;
--
--	/* Paranoia: should never happen, but... */
--	if ((lowmem == 0) || (lowmem >= 0x100000))
--		lowmem = 0x9f000;
-+	/*
-+	 * Note: some old Dells seem to need 4k EBDA without
-+	 * reporting so, so just consider the memory above 0x9f000
-+	 * to be off limits (bugzilla 2990).
-+	 */
+ 	local_irq_disable();
++	hard_irq_disable();
 +
-+	/* If the EBDA address is below 128K, assume it is bogus */
-+	if (ebda_addr < INSANE_CUTOFF)
-+		ebda_addr = LOWMEM_CAP;
+ 	mb(); /* make sure our irqs are disabled before we say they are */
+ 	get_paca()->kexec_state = KEXEC_STATE_IRQS_OFF;
+ 	while(kexec_all_irq_disabled == 0)
+@@ -244,6 +246,8 @@ static void kexec_prepare_cpus(void)
+ 	wake_offline_cpus();
+ 	smp_call_function(kexec_smp_down, NULL, /* wait */0);
+ 	local_irq_disable();
++	hard_irq_disable();
 +
-+	/* If lowmem is less than 128K, assume it is bogus */
-+	if (lowmem < INSANE_CUTOFF)
-+		lowmem = LOWMEM_CAP;
-+
-+	/* Use the lower of the lowmem and EBDA markers as the cutoff */
-+	lowmem = min(lowmem, ebda_addr);
-+	lowmem = min(lowmem, LOWMEM_CAP); /* Absolute cap */
+ 	mb(); /* make sure IRQs are disabled before we say they are */
+ 	get_paca()->kexec_state = KEXEC_STATE_IRQS_OFF;
  
- 	/* reserve all memory between lowmem and the 1MB mark */
- 	memblock_x86_reserve_range(lowmem, 0x100000, "* BIOS reserved");
+@@ -281,6 +285,7 @@ static void kexec_prepare_cpus(void)
+ 	if (ppc_md.kexec_cpu_down)
+ 		ppc_md.kexec_cpu_down(0, 0);
+ 	local_irq_disable();
++	hard_irq_disable();
+ }
+ 
+ #endif /* SMP */
 
 
