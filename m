@@ -1,53 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756195Ab3CDJJy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 04:09:54 -0500
-Received: from mga01.intel.com ([192.55.52.88]:56622 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755016Ab3CDJJw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 04:09:52 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,778,1355126400"; 
-   d="scan'208";a="298628348"
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: linux-kernel@vger.kernel.org, Vinod Koul <vinod.koul@intel.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: [PATCH 00/10] dmatest: update the module to use debugfs
-Date: Mon,  4 Mar 2013 11:09:24 +0200
-Message-Id: <1362388174-3435-1-git-send-email-andriy.shevchenko@linux.intel.com>
-X-Mailer: git-send-email 1.8.2.rc0.22.gb3600c3
+	id S1756334Ab3CDJQ7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 04:16:59 -0500
+Received: from mail-da0-f42.google.com ([209.85.210.42]:34925 "EHLO
+	mail-da0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755588Ab3CDJQ5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Mar 2013 04:16:57 -0500
+From: Sachin Kamat <sachin.kamat@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: vinod.koul@intel.com, sachin.kamat@linaro.org, patches@linaro.org,
+        thierry.reding@avionic-design.de
+Subject: [PATCH Resend] dma: pl330: Convert to devm_ioremap_resource()
+Date: Mon,  4 Mar 2013 14:36:27 +0530
+Message-Id: <1362387987-26718-1-git-send-email-sachin.kamat@linaro.org>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The first approach to get dmatest module more flexible and easier to play with.
-The amount of patches could be reduced, but I would like to get a comments
-first on smaller pieces. The entire series creates dmatest.txt file in the
-Documentation folder. Similar description is scattered through the commit
-messages.
+Use the newly introduced devm_ioremap_resource() instead of
+devm_request_and_ioremap() which provides more consistent error handling.
 
-Module was tested on Intel Medfield and Lynxpoint systems with dw_dmac DMA
-controller embedded.
+Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
+Reviewed-by: Thierry Reding <thierry.reding@avionic-design.de>
+---
+ drivers/dma/pl330.c |    7 ++++---
+ 1 files changed, 4 insertions(+), 3 deletions(-)
 
-Andy Shevchenko (10):
-  dmatest: cancel thread immediately when asked for
-  dmatest: allocate memory for pq_coefs from heap
-  dmatest: create dmatest_info to keep test parameters
-  dmatest: move dmatest_channels and nr_channels to dmatest_info
-  dmatest: split test parameters to separate structure
-  dmatest: run test via debugfs
-  dmatest: return actual state in 'run' file
-  dmatest: define MAX_ERROR_COUNT constant
-  dmatest: gather test results in the linked list
-  dmatest: append verify result to results
-
- Documentation/dmatest.txt |  81 +++++
- drivers/dma/dmatest.c     | 887 +++++++++++++++++++++++++++++++++++++++-------
- 2 files changed, 832 insertions(+), 136 deletions(-)
- create mode 100644 Documentation/dmatest.txt
-
+diff --git a/drivers/dma/pl330.c b/drivers/dma/pl330.c
+index 7181531..10005ec 100644
+--- a/drivers/dma/pl330.c
++++ b/drivers/dma/pl330.c
+@@ -26,6 +26,7 @@
+ #include <linux/scatterlist.h>
+ #include <linux/of.h>
+ #include <linux/of_dma.h>
++#include <linux/err.h>
+ 
+ #include "dmaengine.h"
+ #define PL330_MAX_CHAN		8
+@@ -2904,9 +2905,9 @@ pl330_probe(struct amba_device *adev, const struct amba_id *id)
+ 	pi->mcbufsz = pdat ? pdat->mcbuf_sz : 0;
+ 
+ 	res = &adev->res;
+-	pi->base = devm_request_and_ioremap(&adev->dev, res);
+-	if (!pi->base)
+-		return -ENXIO;
++	pi->base = devm_ioremap_resource(&adev->dev, res);
++	if (IS_ERR(pi->base))
++		return PTR_ERR(pi->base);
+ 
+ 	amba_set_drvdata(adev, pdmac);
+ 
 -- 
-1.8.2.rc0.22.gb3600c3
+1.7.4.1
 
