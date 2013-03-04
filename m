@@ -1,77 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932137Ab3CDPbi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 10:31:38 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:65095 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758033Ab3CDPbf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 10:31:35 -0500
-Date: Sun, 3 Mar 2013 19:29:53 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Gleb Natapov <gleb@redhat.com>
-Cc: Hu Tao <hutao@cn.fujitsu.com>, kvm list <kvm@vger.kernel.org>,
-        qemu-devel <qemu-devel@nongnu.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>, Blue Swirl <blauwirbel@gmail.com>,
-        Eric Blake <eblake@redhat.com>, Andrew Jones <drjones@redhat.com>,
-        Sasha Levin <levinsasha928@gmail.com>,
-        Luiz Capitulino <lcapitulino@redhat.com>,
-        Wen Congyang <wency@cn.fujitsu.com>
-Subject: Re: [PATCH v12 rebased] kvm: notify host when the guest is panicked
-Message-ID: <20130303222953.GB5922@amt.cnet>
-References: <cover.1358920534.git.hutao@cn.fujitsu.com>
- <1358925575-4505-1-git-send-email-hutao@cn.fujitsu.com>
- <20130208013947.GA3364@amt.cnet>
- <20130228085425.GA16362@localhost.localdomain>
- <20130302000312.GA25309@amt.cnet>
- <20130303130022.GF23616@redhat.com>
+	id S932097Ab3CDPdx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 10:33:53 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58680 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757041Ab3CDPdv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Mar 2013 10:33:51 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130303130022.GF23616@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130304100432.5c7ea704@tlielax.poochiereds.net>
+References: <CACVXFVMKN6aeCvJcn7dyuonJYJDfYxWeW5KE6gfKRKJKFj2M4A@mail.gmail.com>
+	<4FA345DA4F4AE44899BD2B03EEEC2FA9286AD113@sacexcmbx05-prd.hq.netapp.com>
+	<CACVXFVM5VhU_ZgYr1KxERY7DXxMQpkWoiTyjyar91Hz=vU4-ug@mail.gmail.com>
+	<20130304100432.5c7ea704@tlielax.poochiereds.net>
+Date: Mon, 4 Mar 2013 23:33:49 +0800
+Message-ID: <CACVXFVPvTnfH98KqAQxDzMi5Pbf1fbi5HEGb=ggWWg4FX_4G=g@mail.gmail.com>
+Subject: Re: LOCKDEP: 3.9-rc1: mount.nfs/4272 still has locks held!
+From: Ming Lei <ming.lei@canonical.com>
+To: Jeff Layton <jlayton@redhat.com>
+Cc: "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        Mandeep Singh Baines <msb@chromium.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Ben Chan <benchan@chromium.org>,
+        Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 03, 2013 at 03:00:22PM +0200, Gleb Natapov wrote:
-> On Fri, Mar 01, 2013 at 09:03:12PM -0300, Marcelo Tosatti wrote:
-> > On Thu, Feb 28, 2013 at 04:54:25PM +0800, Hu Tao wrote:
-> > > > > diff --git a/arch/x86/include/uapi/asm/kvm_para.h b/arch/x86/include/uapi/asm/kvm_para.h
-> > > > > index 06fdbd9..c15ef33 100644
-> > > > > --- a/arch/x86/include/uapi/asm/kvm_para.h
-> > > > > +++ b/arch/x86/include/uapi/asm/kvm_para.h
-> > > > > @@ -96,5 +96,7 @@ struct kvm_vcpu_pv_apf_data {
-> > > > >  #define KVM_PV_EOI_ENABLED KVM_PV_EOI_MASK
-> > > > >  #define KVM_PV_EOI_DISABLED 0x0
-> > > > >  
-> > > > > +#define KVM_PV_EVENT_PORT	(0x505UL)
-> > > > > +
-> > > > 
-> > > > No need for the ioport to be hard coded. What are the options to
-> > > > communicate an address to the guest? An MSR, via ACPI?
-> > > 
-> > > I'm not quite understanding here. By 'address', you mean an ioport?
-> > > how to communicate an address? (I have little knowledge about ACPI)
-> > 
-> > Yes, the ioport. The address of the ioport should not be fixed (for
-> > example future emulated board could use that fixed ioport address,
-> > 0x505UL).
-> > 
-> > One option is to pass the address via an MSR. Yes, that is probably the
-> > best option because there is no dependency on ACPI.
-> > 
-> Why dependency on ACPI is problematic? ACPI is the standard way on x86
-> to enumerate platform devices. Passing it through MSR makes this panic
-> device CPU interface which it is not. And since relying on #GP to detect
-> valid MSRs is not good interface we will have to guard it by cpuid bit.
-> 
-> --
-> 			Gleb.
+Hi,
 
-KVM guest <-> KVM host interface is not dependent on ACPI, so far. Say,
-its possible to use a Linux guest without ACPI and have KVM paravirt 
-fully functional.
+CC guys who introduced the lockdep change.
 
+On Mon, Mar 4, 2013 at 11:04 PM, Jeff Layton <jlayton@redhat.com> wrote:
+
+>
+> I don't get it -- why is it bad to hold a lock across a freeze event?
+
+At least this may deadlock another mount.nfs during freezing, :-)
+
+See detailed explanation in the commit log:
+
+commit 6aa9707099c4b25700940eb3d016f16c4434360d
+Author: Mandeep Singh Baines <msb@chromium.org>
+Date:   Wed Feb 27 17:03:18 2013 -0800
+
+    lockdep: check that no locks held at freeze time
+
+    We shouldn't try_to_freeze if locks are held.  Holding a lock can cause a
+    deadlock if the lock is later acquired in the suspend or hibernate path
+    (e.g.  by dpm).  Holding a lock can also cause a deadlock in the case of
+    cgroup_freezer if a lock is held inside a frozen cgroup that is later
+    acquired by a process outside that group.
+
+> The problem that we have is that we must often hold locks across
+> long-running syscalls (consider something like sync()). In the event
+> that there is a lot of dirty data, it might take a long time for that
+> to finish.
+>
+> There's also the problem that it's not uncommon for the freezer to take
+> down userland processes (such as NetworkManager) which in turn take
+> down network interfaces that we need to talk to the server.
+>
+> The fix from a couple of years ago (which admittedly needs more work)
+> was to allow the freezing of tasks that are waiting on a reply from the
+> server. That sort of necessitates that we are allowed to hold our locks
+> across the try_to_freeze call though.
+>
+> If that's no longer allowed then we're back to square one with laptops
+> that fail to suspend when they have NFS mounts. Is there some other
+> solution we should pursue instead?
+
+
+Thanks,
+--
+Ming Lei
