@@ -1,84 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757007Ab3CDLGA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 06:06:00 -0500
-Received: from mail-ve0-f177.google.com ([209.85.128.177]:59947 "EHLO
-	mail-ve0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756222Ab3CDLF6 (ORCPT
+	id S1757110Ab3CDLLo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 06:11:44 -0500
+Received: from mail-ve0-f179.google.com ([209.85.128.179]:35299 "EHLO
+	mail-ve0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756222Ab3CDLLm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 06:05:58 -0500
+	Mon, 4 Mar 2013 06:11:42 -0500
 MIME-Version: 1.0
-In-Reply-To: <20130301194359.700037464@linuxfoundation.org>
-References: <20130301194351.913471337@linuxfoundation.org>
-	<20130301194359.700037464@linuxfoundation.org>
-Date: Mon, 4 Mar 2013 14:05:57 +0300
-Message-ID: <CALW4P+LD1Ah8cgTYBeAT5zR4mwq-K+_LP7rMq=ytBWW2Gp0P3w@mail.gmail.com>
-Subject: Re: [ 73/77] [hid] usb hid quirks for Masterkit MA901 usb radio
-From: Alexey Klimov <klimov.linux@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Hans Verkuil <hans.verkuil@cisco.com>, Jiri Kosina <jkosina@suse.cz>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
+Date: Mon, 4 Mar 2013 13:11:41 +0200
+Message-ID: <CA+ydwtpcOqA+qp6OCS9c_vpKwXDAuf75st+o1v+CKLF30zF+kQ@mail.gmail.com>
+Subject: hpet ioctl() divide error: 0000
+From: Tommi Rantala <tt.rantala@gmail.com>
+To: Clemens Ladisch <clemens@ladisch.de>, Arnd Bergmann <arnd@arndb.de>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+Hello,
 
-On Fri, Mar 1, 2013 at 11:44 PM, Greg Kroah-Hartman
-<gregkh@linuxfoundation.org> wrote:
-> 3.8-stable review patch.  If anyone has any objections, please let me know.
->
-> ------------------
->
-> From: Alexey Klimov <klimov.linux@gmail.com>
->
-> commit 0322bd3980b3ebf7dde8474e22614cb443d6479a upstream.
->
-> Don't let Masterkit MA901 USB radio be handled by usb hid drivers.
-> This device will be handled by radio-ma901.c driver.
->
-> Signed-off-by: Alexey Klimov <klimov.linux@gmail.com>
-> Acked-by: Hans Verkuil <hans.verkuil@cisco.com>
-> Acked-by: Jiri Kosina <jkosina@suse.cz>
-> Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
-> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->
-> ---
->  drivers/hid/hid-core.c |    1 +
->  drivers/hid/hid-ids.h  |    3 +++
->  2 files changed, 4 insertions(+)
->
-> --- a/drivers/hid/hid-core.c
-> +++ b/drivers/hid/hid-core.c
-> @@ -2071,6 +2071,7 @@ static const struct hid_device_id hid_ig
->         { HID_USB_DEVICE(USB_VENDOR_ID_LD, USB_DEVICE_ID_LD_HYBRID) },
->         { HID_USB_DEVICE(USB_VENDOR_ID_LD, USB_DEVICE_ID_LD_HEATCONTROL) },
->         { HID_USB_DEVICE(USB_VENDOR_ID_MADCATZ, USB_DEVICE_ID_MADCATZ_BEATPAD) },
-> +       { HID_USB_DEVICE(USB_VENDOR_ID_MASTERKIT, USB_DEVICE_ID_MASTERKIT_MA901RADIO) },
->         { HID_USB_DEVICE(USB_VENDOR_ID_MCC, USB_DEVICE_ID_MCC_PMD1024LS) },
->         { HID_USB_DEVICE(USB_VENDOR_ID_MCC, USB_DEVICE_ID_MCC_PMD1208LS) },
->         { HID_USB_DEVICE(USB_VENDOR_ID_MICROCHIP, USB_DEVICE_ID_PICKIT1) },
-> --- a/drivers/hid/hid-ids.h
-> +++ b/drivers/hid/hid-ids.h
-> @@ -554,6 +554,9 @@
->  #define USB_VENDOR_ID_MADCATZ          0x0738
->  #define USB_DEVICE_ID_MADCATZ_BEATPAD  0x4540
->
-> +#define USB_VENDOR_ID_MASTERKIT                        0x16c0
-> +#define USB_DEVICE_ID_MASTERKIT_MA901RADIO     0x05df
-> +
->  #define USB_VENDOR_ID_MCC              0x09db
->  #define USB_DEVICE_ID_MCC_PMD1024LS    0x0076
->  #define USB_DEVICE_ID_MCC_PMD1208LS    0x007a
+I'm seeing this bug while fuzzing 3.9.0-rc1 with trinity (in a qemu
+virtual machine as the root user).
 
-These usb hid quirks are related to new usb radio driver
-media/radio/radio-ma901.c  (commit
-4834f4d1ff1dc574024e1a6de920ea99571090ff in upstream) that was merged
-during 3.9 merge window. So i am not sure if they have any sense
-without driver itself. Also, they shouldn't make any damage as far as
-i can imagine.
+[   95.509983] divide error: 0000 [#1] SMP
+[   95.510072] CPU 0
+[   95.510072] Pid: 2421, comm: trinity-child8 Not tainted 3.9.0-rc1+
+#95 Bochs Bochs
+[   95.510072] RIP: 0010:[<ffffffff81440865>]  [<ffffffff81440865>]
+hpet_ioctl_common+0x465/0x500
+[   95.510072] RSP: 0018:ffff8800780afde8  EFLAGS: 00010206
+[   95.510072] RAX: 0000000105f5e100 RBX: ffff88007c792c00 RCX: 0000000000000000
+[   95.510072] RDX: 0000000000000000 RSI: 0000000000000001 RDI: 0000000000000246
+[   95.510072] RBP: ffff8800780afe38 R08: 0000000000000000 R09: 0000000000000000
+[   95.510072] R10: 0000000000000000 R11: 0000000000000000 R12: 0000000200000000
+[   95.510072] R13: 0000000040086806 R14: ffff88007c792d78 R15: 0000000000000007
+[   95.510072] FS:  00007f2867124700(0000) GS:ffff88007f800000(0000)
+knlGS:0000000000000000
+[   95.510072] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[   95.510072] CR2: 00000000062608c8 CR3: 0000000078238000 CR4: 00000000000006f0
+[   95.510072] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[   95.510072] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+[   95.510072] Process trinity-child8 (pid: 2421, threadinfo
+ffff8800780ae000, task ffff88007afd8000)
+[   95.510072] Stack:
+[   95.510072]  2222222222222222 0000000200000000 2222222222222222
+2222222222222222
+[   95.510072]  ffffffff813056a8 ffff8800775aca80 0000000200000000
+0000000040086806
+[   95.510072]  0000000200000000 0000000000000007 ffff8800780afe88
+ffffffff81440a31
+[   95.510072] Call Trace:
+[   95.510072]  [<ffffffff813056a8>] ? avc_has_perm_flags+0x28/0x370
+[   95.510072]  [<ffffffff81440a31>] hpet_ioctl+0x41/0xa0
+[   95.510072]  [<ffffffff811b9502>] do_vfs_ioctl+0x522/0x570
+[   95.510072]  [<ffffffff81306ab3>] ? file_has_perm+0x83/0xa0
+[   95.510072]  [<ffffffff811b95ad>] sys_ioctl+0x5d/0xa0
+[   95.510072]  [<ffffffff81362a2e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+[   95.510072]  [<ffffffff81ced2a9>] system_call_fastpath+0x16/0x1b
+[   95.510072] Code: 00 48 89 55 b8 e8 9c 48 c6 ff 89 c1 48 8b 55 b8
+b8 f3 ff ff ff 84 c9 0f 84 89 00 00 00 48 89 d0 89 d1 31 d2 48 d1 e8
+48 03 43 20 <48> f7 f1 49 89 46 18 31 c0 eb 70 48 85 d2 75 e2 0f 1f 00
+b8 ea
+[   95.510072] RIP  [<ffffffff81440865>] hpet_ioctl_common+0x465/0x500
+[   95.510072]  RSP <ffff8800780afde8>
+[   95.660390] ---[ end trace 0802d990ba159991 ]---
 
--- 
-Best regards, Klimov Alexey
+Tommi
