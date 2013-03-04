@@ -1,108 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755186Ab3CDGgM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 01:36:12 -0500
-Received: from am1ehsobe005.messaging.microsoft.com ([213.199.154.208]:41777
-	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750727Ab3CDGgL convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 01:36:11 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VS-2(zz9371I542I1432Izz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ahzz8275dhz2dh2a8h668h839h8e2h8e3h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1ad9hbe9i1155h)
-From: Sethi Varun-B16395 <B16395@freescale.com>
-To: Yoder Stuart-B08248 <B08248@freescale.com>,
-        Alexey Kardashevskiy <aik@ozlabs.ru>
-CC: Kumar Gala <galak@kernel.crashing.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linuxppc-dev@lists.ozlabs.org list" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org list" <linux-kernel@vger.kernel.org>,
-        Wood Scott-B07421 <B07421@freescale.com>,
-        Joerg Roedel <joro@8bytes.org>, Paul Mackerras <paulus@samba.org>,
-        David Gibson <david@gibson.dropbear.id.au>,
-        Alex Williamson <alex.williamson@redhat.com>
-Subject: RE: [PATCH 1/6 v8] iommu/fsl: Store iommu domain information
- pointer in archdata.
-Thread-Topic: [PATCH 1/6 v8] iommu/fsl: Store iommu domain information
- pointer in archdata.
-Thread-Index: AQHODdfGismM9fsq90SfjKazZaDao5iNoBSAgAAIE4CAAdMTgIAAoD+AgAAiKoCAAG/AAIAAaLeAgAQSpDA=
-Date: Mon, 4 Mar 2013 06:35:55 +0000
-Message-ID: <C5ECD7A89D1DC44195F34B25E172658D3D06A1@039-SN2MPN1-013.039d.mgd.msft.net>
-References: <1361191939-21260-1-git-send-email-Varun.Sethi@freescale.com>
- <1361191939-21260-2-git-send-email-Varun.Sethi@freescale.com>
- <20130227113045.GH26252@8bytes.org>
- <C5ECD7A89D1DC44195F34B25E172658D3C26F6@039-SN2MPN1-013.039d.mgd.msft.net>
- <BAB98EA5-5324-4FB2-97C2-A28A96C569DC@kernel.crashing.org>
- <51300367.6080300@ozlabs.ru>
- <C5ECD7A89D1DC44195F34B25E172658D3C802F@039-SN2MPN1-013.039d.mgd.msft.net>
- <51307DCE.1050506@ozlabs.ru>
- <9F6FE96B71CF29479FF1CDC8046E1503565876@039-SN1MPN1-003.039d.mgd.msft.net>
-In-Reply-To: <9F6FE96B71CF29479FF1CDC8046E1503565876@039-SN1MPN1-003.039d.mgd.msft.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.232.132.143]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1755256Ab3CDGjx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 01:39:53 -0500
+Received: from relay.parallels.com ([195.214.232.42]:38563 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753904Ab3CDGjv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Mar 2013 01:39:51 -0500
+Message-ID: <51344175.40503@parallels.com>
+Date: Mon, 4 Mar 2013 10:38:45 +0400
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+To: Jeff Layton <jlayton@redhat.com>
+CC: <bfields@fieldses.org>, <linux-nfs@vger.kernel.org>, <devel@openvz.org>,
+        <Trond.Myklebust@netapp.com>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] nfsd: try nfsdcld client tracker in containers
+References: <20130301082423.21663.37825.stgit@localhost.localdomain> <20130301080911.2a1a28a2@corrin.poochiereds.net>
+In-Reply-To: <20130301080911.2a1a28a2@corrin.poochiereds.net>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.30.29.37]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+01.03.2013 17:09, Jeff Layton пишет:
+> On Fri, 01 Mar 2013 11:24:23 +0300
+> Stanislav Kinsbursky <skinsbursky@parallels.com> wrote:
+>
+>> Currently, UMH and Legacy trackers are disabled in containers.
+>> But existent logic can lookup nfs4_recoverydir in a container, and in this
+>> case will try to init Legacy tracker and skip nfsdcld client tracker.
+>> This actually means, that no client tracker will be started in a container at
+>> all, because Legacy tracker init will return -EINVAL for a container.
+>> So, let's change "-EINVAL" on "-ENOTSUPP" for legacy tracker init call in a
+>> container and in case of this error code, try nfsdcld client tracker instead
+>> of returning a error.
+>>
+>> Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+>> ---
+>>   fs/nfsd/nfs4recover.c |   12 ++++++++----
+>>   1 files changed, 8 insertions(+), 4 deletions(-)
+>>
+>> diff --git a/fs/nfsd/nfs4recover.c b/fs/nfsd/nfs4recover.c
+>> index e0ae1cf..8aa069a 100644
+>> --- a/fs/nfsd/nfs4recover.c
+>> +++ b/fs/nfsd/nfs4recover.c
+>> @@ -524,7 +524,7 @@ nfsd4_legacy_tracking_init(struct net *net)
+>>   	if (net != &init_net) {
+>>   		WARN(1, KERN_ERR "NFSD: attempt to initialize legacy client "
+>>   			"tracking in a container!\n");
+>> -		return -EINVAL;
+>> +		return -ENOTSUPP;
+>>   	}
+>>
+>>   	status = nfs4_legacy_state_init(net);
+>> @@ -1285,14 +1285,17 @@ nfsd4_client_tracking_init(struct net *net)
+>>   	/*
+>>   	 * See if the recoverydir exists and is a directory. If it is,
+>>   	 * then use the legacy ops.
+>> +	 * If legacy ops init return -ENOSUPP, then we are in a container and
+>> +	 * should try nfsdcld client tracking.
+>>   	 */
+>>   	nn->client_tracking_ops = &nfsd4_legacy_tracking_ops;
+>>   	status = kern_path(nfs4_recoverydir(), LOOKUP_FOLLOW, &path);
+>>   	if (!status) {
+>> -		status = S_ISDIR(path.dentry->d_inode->i_mode);
+>> +		if (S_ISDIR(path.dentry->d_inode->i_mode))
+>> +			status = nn->client_tracking_ops->init(net);
+>>   		path_put(&path);
+>> -		if (status)
+>> -			goto do_init;
+>> +		if (status != -ENOTSUPP)
+>> +			goto do_exit;
+>>   	}
+>>
+>>   	/* Finally, try to use nfsdcld */
+>> @@ -1302,6 +1305,7 @@ nfsd4_client_tracking_init(struct net *net)
+>>   			"nfsdcltrack.\n");
+>>   do_init:
+>>   	status = nn->client_tracking_ops->init(net);
+>> +do_exit:
+>>   	if (status) {
+>>   		printk(KERN_WARNING "NFSD: Unable to initialize client "
+>>   				    "recovery tracking! (%d)\n", status);
+>>
+>
+> Seems OK as a stopgap fix. We're removing nfsdcld in 3.10 though so
+> this won't help prospective users of nfsd in a container for
+> long...particularly since our expectation is that no one has actually
+> ever deployed nfsdcld.
+>
+> This is something that really needs to be fixed the right way since a
+> NFS server that doesn't allow clients to reclaim state after a reboot is
+> potentially dangerous...
+>
+> I'm afraid I haven't been following along as closely as I should have
+> been. What's the rationale for disabling the UMH upcall? Is there no
+> way to make it so that new processes it spawns are done within the
+> correct container?
+>
 
+Straight answer is "no, there is no way to do so": UMH threads are spawned in "init" context.
+But we solve the problem in a slightly different way.
 
-> -----Original Message-----
-> From: Yoder Stuart-B08248
-> Sent: Friday, March 01, 2013 9:52 PM
-> To: Alexey Kardashevskiy; Sethi Varun-B16395
-> Cc: Kumar Gala; Benjamin Herrenschmidt; iommu@lists.linux-foundation.org;
-> linuxppc-dev@lists.ozlabs.org list; linux-kernel@vger.kernel.org list;
-> Wood Scott-B07421; Joerg Roedel; Paul Mackerras; David Gibson; Alex
-> Williamson
-> Subject: RE: [PATCH 1/6 v8] iommu/fsl: Store iommu domain information
-> pointer in archdata.
-> 
-> 
-> 
-> > -----Original Message-----
-> > From: Alexey Kardashevskiy [mailto:aik@ozlabs.ru]
-> > Sent: Friday, March 01, 2013 4:07 AM
-> > To: Sethi Varun-B16395
-> > Cc: Kumar Gala; Benjamin Herrenschmidt;
-> > iommu@lists.linux-foundation.org; linuxppc-dev@lists.ozlabs.org list;
-> > linux-kernel@vger.kernel.org list; Wood Scott-B07421; Yoder
-> > Stuart-B08248; Joerg Roedel; Paul Mackerras; David Gibson; Alex
-> > Williamson
-> > Subject: Re: [PATCH 1/6 v8] iommu/fsl: Store iommu domain information
-> pointer in archdata.
-> >
-> > btw the device struct already has a pointer to its iommu_group, and
-> > the iommu_group struct itself has a pointer void *iommu_data which you
-> > could use for anything you want (iommu_group_get_iommudata(),
-> > iommu_group_set_iommudata()).
-> >
-> > By design you are expected to add iommu groups to a domain but not
-> > devices so I am not so sure that you really need a pointer to domain
-> > in the device struct.
-> 
-> Well, at the lowest level the IOMMU API does attach devices to domains--
-> i.e.
-> API attach_dev().  So, it seems to conceptually make sense to have a ptr
-> from the device to the associated domain.  When you implement
-> attach_dev() you need to be able to see whether the device is already
-> attached to
-> a domain.   Adding a couple of levels of indirection...from device to
-> group to domain...doesn't seems to make things simpler or better IMHO.
-> 
-> x86 keeps a pointer to the domain in device archdata and since there is a
-> direct correlation between a device and domain I'd rather see it where
-> this patch has it.
-> 
+So, here are my ideas about all the trackers (I haven't shared them yet, so I do it now):
 
-As Stuart stated this allows us to maintain the device <-> domain relationship at the lowest level.
+1) nfsdcld uses SUNRPC pipefs, which is containerised already. So it was very easy to containerise it.
 
--Varun
+2) Legacy tracker uses path. All is great and simple until we imagine two containers with the same root. In this case we have to make sure, that we can start 
+only one NFSd with this path (I don't care about user-space problems).
+I was thinking about global in-kernel RB tree for all paths. But maybe even a simple global list is enough (not so many NFSd can be started, and it not a 
+fast-path to optimise the search over all used paths).
 
+3) UMH lookup and execute binary from current root. This problem just chasing all the containerisation work. So, either UHM logic have to updated (which is not 
+trivial or easy to implement and push upstream), or process root have to swapped to the right (container's) one. This, BTW, not that hard, because UMH call 
+accept "init" callback, which can be used to swap the root right before do_execve() is called.
+
+What do you, guys, think about all this?
+
+-- 
+Best regards,
+Stanislav Kinsbursky
