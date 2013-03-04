@@ -1,72 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758872Ab3CDVDR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 16:03:17 -0500
-Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:44179 "EHLO
-	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758717Ab3CDVDP (ORCPT
+	id S1758898Ab3CDVGB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 16:06:01 -0500
+Received: from zimbra.linbit.com ([212.69.161.123]:50009 "EHLO
+	zimbra.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758751Ab3CDVGA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 16:03:15 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AhshAAsLNVF5Layr/2dsb2JhbABEvTuFFQECAYEIF3OCHwEBBAEnExwjBQsIAw4KCSUPBSUDIROIDQWyPo8xFY12GB9KB4NAA5ZFiWWHCIMc
-Date: Tue, 5 Mar 2013 08:03:11 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Tony Lu <zlu@tilera.com>
-Cc: Mark Tinguely <tinguely@sgi.com>, Alex Elder <elder@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        "xfs@oss.sgi.com" <xfs@oss.sgi.com>, Ben Myers <bpm@sgi.com>,
-        Dave Chinner <dchinner@redhat.com>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH] xfs: Fix possible truncation of log data in
- xlog_bread_noalign()
-Message-ID: <20130304210311.GQ23616@dastard>
-References: <BAB94DBB0E89D8409949BC28AC95914C47C485E5@USMAExch1.tad.internal.tilera.com>
- <20130223000802.GB26081@dastard>
- <BAB94DBB0E89D8409949BC28AC95914C47C48702@USMAExch1.tad.internal.tilera.com>
- <20130223235546.GA5551@dastard>
- <BAB94DBB0E89D8409949BC28AC95914C47C488D8@USMAExch1.tad.internal.tilera.com>
- <20130224141017.GC5551@dastard>
- <BAB94DBB0E89D8409949BC28AC95914C47C49005@USMAExch1.tad.internal.tilera.com>
- <5130CE9E.9080501@sgi.com>
- <51310E7A.1000905@sgi.com>
- <BAB94DBB0E89D8409949BC28AC95914C47C4C19C@USMAExch1.tad.internal.tilera.com>
+	Mon, 4 Mar 2013 16:06:00 -0500
+From: Philipp Reisner <philipp.reisner@linbit.com>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: stable@vger.kernel.org, akpm@linux-foundation.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [ 052/153] idr: idr_for_each_entry() macro
+Date: Mon, 04 Mar 2013 22:05:52 +0100
+Message-ID: <1607973.Qpkavuy2AM@quad>
+User-Agent: KMail/4.8.5 (Linux/3.2.0-35-generic; KDE/4.8.5; x86_64; ; )
+In-Reply-To: <1362373013.3768.295.camel@deadeye.wl.decadent.org.uk>
+References: <20130304033712.754098899@decadent.org.uk> <1362373013.3768.295.camel@deadeye.wl.decadent.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BAB94DBB0E89D8409949BC28AC95914C47C4C19C@USMAExch1.tad.internal.tilera.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 04, 2013 at 08:32:45AM +0000, Tony Lu wrote:
-> Thanks for you following up.
-> 
-> My apologize that I just found that it is one change I made before
-> that causes this problem. This change forces mkfs.xfs to format
-> xfs partitions whose sectorsize were not smaller than 4096 bytes,
-> which was due to a bug that earlier versions of xfs used (struct
-> *page)->private(long) as a bitmap to represent each block's state
-> within a page (the size of a page could be 64K or larger, then it
-> needs 128 bit or more to represent each block's state within a
-> page).
+Sure, here it is:
+----------
 
-You do realise that bug doesn't affect x86-64 platforms as they
-don't support 64k pages?
+From: Philipp Reisner <philipp.reisner@linbit.com>
 
-> This is reproducible on 2.6.38.6 kernel on X86. But I do not get
-> why this change makes the xfs log inconsistent during
-> mount/cp/umount operations.
+commit 9749f30f1a387070e6e8351f35aeb829eacc3ab6 upstream.
 
-Neither do I, and I don't care to look any further because the
-problem is of your own making. In future, please check first that
-the bug you are reporting is reproducable on a current upstream
-kernel and userspace.
+Inspired by the list_for_each_entry() macro
 
-Cheers,
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
+---
+ include/linux/idr.h |   11 +++++++++++
+ 1 file changed, 11 insertions(+)
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+diff --git a/include/linux/idr.h b/include/linux/idr.h
+index 255491c..52a9da2 100644
+--- a/include/linux/idr.h
++++ b/include/linux/idr.h
+@@ -152,4 +152,15 @@ void ida_simple_remove(struct ida *ida, unsigned int id);
+ 
+ void __init idr_init_cache(void);
+ 
++/**
++ * idr_for_each_entry - iterate over an idr's elements of a given type
++ * @idp:     idr handle
++ * @entry:   the type * to use as cursor
++ * @id:      id entry's key
++ */
++#define idr_for_each_entry(idp, entry, id)                             \
++       for (id = 0, entry = (typeof(entry))idr_get_next((idp), &(id)); \
++            entry != NULL;                                             \
++            ++id, entry = (typeof(entry))idr_get_next((idp), &(id)))
++
+ #endif /* __IDR_H__ */
+
