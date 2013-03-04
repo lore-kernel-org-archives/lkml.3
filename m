@@ -1,171 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755317Ab3CDEX0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 23:23:26 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60724 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755215Ab3CDDm1 (ORCPT
+	id S1755404Ab3CDEYv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 23:24:51 -0500
+Received: from mailout01.c08.mtsvc.net ([205.186.168.189]:41036 "EHLO
+	mailout01.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755067Ab3CDEYt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Mar 2013 22:42:27 -0500
-Message-Id: <20130304033708.085187157@decadent.org.uk>
-User-Agent: quilt/0.60-1
-Date: Mon, 04 Mar 2013 03:37:11 +0000
-From: Ben Hutchings <ben@decadent.org.uk>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Tejun Heo <tj@kernel.org>,
-        Andrey Isakov <andy51@gmx.ru>
-Subject: [ 004/153] workqueue: consider work function when searching for busy work items
-In-Reply-To: <20130304033707.648729212@decadent.org.uk>
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Sun, 3 Mar 2013 23:24:49 -0500
+Message-ID: <1362371063.3221.185.camel@thor.lan>
+Subject: Re: [PATCH] ircomm: release tty before sleeping potentially
+ indefintely
+From: Peter Hurley <peter@hurleysoftware.com>
+To: David Miller <davem@davemloft.net>
+Cc: sasha.levin@oracle.com, samuel@sortiz.org, gregkh@linuxfoundation.org,
+        jslaby@suse.cz, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Sun, 03 Mar 2013 23:24:23 -0500
+In-Reply-To: <20130303.213601.1201168888595187293.davem@davemloft.net>
+References: <1362355465.3221.82.camel@thor.lan>
+	 <20130303.193313.408641189137321065.davem@davemloft.net>
+	 <1362359178.3221.118.camel@thor.lan>
+	 <20130303.213601.1201168888595187293.davem@davemloft.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.3-0pjh1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 125194 peter@hurleysoftware.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2-stable review patch.  If anyone has any objections, please let me know.
+On Sun, 2013-03-03 at 21:36 -0500, David Miller wrote:
+> From: Peter Hurley <peter@hurleysoftware.com>
+> Date: Sun, 03 Mar 2013 20:06:18 -0500
+> 
+> > But regardless, this function __cannot__ sleep holding the tty_lock().
+> 
+> So drop it across the schedule(), but recheck the termios after
+> regrabbing it.
 
-------------------
+I'll have to do some research on that.
 
-From: Tejun Heo <tj@kernel.org>
+1) The code is using a deliberate snapshot.
 
-commit a2c1c57be8d9fd5b716113c8991d3d702eeacf77 upstream.
+	if (tty->termios.c_cflag & CLOCAL) {
+		IRDA_DEBUG(1, "%s(), doing CLOCAL!\n", __func__ );
+		do_clocal = 1;
+	}
 
-To avoid executing the same work item concurrenlty, workqueue hashes
-currently busy workers according to their current work items and looks
-up the the table when it wants to execute a new work item.  If there
-already is a worker which is executing the new work item, the new item
-is queued to the found worker so that it gets executed only after the
-current execution finishes.
+	.....
 
-Unfortunately, a work item may be freed while being executed and thus
-recycled for different purposes.  If it gets recycled for a different
-work item and queued while the previous execution is still in
-progress, workqueue may make the new work item wait for the old one
-although the two aren't really related in any way.
+	while (1) {
 
-In extreme cases, this false dependency may lead to deadlock although
-it's extremely unlikely given that there aren't too many self-freeing
-work item users and they usually don't wait for other work items.
+		.........
 
-To alleviate the problem, record the current work function in each
-busy worker and match it together with the work item address in
-find_worker_executing_work().  While this isn't complete, it ensures
-that unrelated work items don't interact with each other and in the
-very unlikely case where a twisted wq user triggers it, it's always
-onto itself making the culprit easy to spot.
+		/*
+		 * Check if link is ready now. Even if CLOCAL is
+		 * specified, we cannot return before the IrCOMM link is
+		 * ready
+		 */
+		if (!test_bit(ASYNCB_CLOSING, &port->flags) &&
+		    (do_clocal || tty_port_carrier_raised(port)) &&
+		    self->state == IRCOMM_TTY_READY)
+		{
+			break;
+		}
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: Andrey Isakov <andy51@gmx.ru>
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=51701
-[bwh: Backported to 3.2:
- - Adjust context
- - Incorporate earlier logging cleanup in process_one_work() from
-   044c782ce3a9 ('workqueue: fix checkpatch issues')]
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
----
- kernel/workqueue.c |   39 +++++++++++++++++++++++++++++++--------
- 1 file changed, 31 insertions(+), 8 deletions(-)
 
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -128,6 +128,7 @@ struct worker {
- 	};
- 
- 	struct work_struct	*current_work;	/* L: work being processed */
-+	work_func_t		current_func;	/* L: current_work's fn */
- 	struct cpu_workqueue_struct *current_cwq; /* L: current_work's cwq */
- 	struct list_head	scheduled;	/* L: scheduled works */
- 	struct task_struct	*task;		/* I: worker task */
-@@ -843,7 +844,8 @@ static struct worker *__find_worker_exec
- 	struct hlist_node *tmp;
- 
- 	hlist_for_each_entry(worker, tmp, bwh, hentry)
--		if (worker->current_work == work)
-+		if (worker->current_work == work &&
-+		    worker->current_func == work->func)
- 			return worker;
- 	return NULL;
- }
-@@ -853,9 +855,27 @@ static struct worker *__find_worker_exec
-  * @gcwq: gcwq of interest
-  * @work: work to find worker for
-  *
-- * Find a worker which is executing @work on @gcwq.  This function is
-- * identical to __find_worker_executing_work() except that this
-- * function calculates @bwh itself.
-+ * Find a worker which is executing @work on @gcwq by searching
-+ * @gcwq->busy_hash which is keyed by the address of @work.  For a worker
-+ * to match, its current execution should match the address of @work and
-+ * its work function.  This is to avoid unwanted dependency between
-+ * unrelated work executions through a work item being recycled while still
-+ * being executed.
-+ *
-+ * This is a bit tricky.  A work item may be freed once its execution
-+ * starts and nothing prevents the freed area from being recycled for
-+ * another work item.  If the same work item address ends up being reused
-+ * before the original execution finishes, workqueue will identify the
-+ * recycled work item as currently executing and make it wait until the
-+ * current execution finishes, introducing an unwanted dependency.
-+ *
-+ * This function checks the work item address, work function and workqueue
-+ * to avoid false positives.  Note that this isn't complete as one may
-+ * construct a work function which can introduce dependency onto itself
-+ * through a recycled work item.  Well, if somebody wants to shoot oneself
-+ * in the foot that badly, there's only so much we can do, and if such
-+ * deadlock actually occurs, it should be easy to locate the culprit work
-+ * function.
-  *
-  * CONTEXT:
-  * spin_lock_irq(gcwq->lock).
-@@ -1816,7 +1836,6 @@ __acquires(&gcwq->lock)
- 	struct global_cwq *gcwq = cwq->gcwq;
- 	struct hlist_head *bwh = busy_worker_head(gcwq, work);
- 	bool cpu_intensive = cwq->wq->flags & WQ_CPU_INTENSIVE;
--	work_func_t f = work->func;
- 	int work_color;
- 	struct worker *collision;
- #ifdef CONFIG_LOCKDEP
-@@ -1845,6 +1864,7 @@ __acquires(&gcwq->lock)
- 	debug_work_deactivate(work);
- 	hlist_add_head(&worker->hentry, bwh);
- 	worker->current_work = work;
-+	worker->current_func = work->func;
- 	worker->current_cwq = cwq;
- 	work_color = get_work_color(work);
- 
-@@ -1882,7 +1902,7 @@ __acquires(&gcwq->lock)
- 	lock_map_acquire_read(&cwq->wq->lockdep_map);
- 	lock_map_acquire(&lockdep_map);
- 	trace_workqueue_execute_start(work);
--	f(work);
-+	worker->current_func(work);
- 	/*
- 	 * While we must be careful to not use "work" after this, the trace
- 	 * point will only record its address.
-@@ -1892,11 +1912,10 @@ __acquires(&gcwq->lock)
- 	lock_map_release(&cwq->wq->lockdep_map);
- 
- 	if (unlikely(in_atomic() || lockdep_depth(current) > 0)) {
--		printk(KERN_ERR "BUG: workqueue leaked lock or atomic: "
--		       "%s/0x%08x/%d\n",
--		       current->comm, preempt_count(), task_pid_nr(current));
--		printk(KERN_ERR "    last function: ");
--		print_symbol("%s\n", (unsigned long)f);
-+		pr_err("BUG: workqueue leaked lock or atomic: %s/0x%08x/%d\n"
-+		       "     last function: %pf\n",
-+		       current->comm, preempt_count(), task_pid_nr(current),
-+		       worker->current_func);
- 		debug_show_held_locks(current);
- 		dump_stack();
- 	}
-@@ -1910,6 +1929,7 @@ __acquires(&gcwq->lock)
- 	/* we're done with it, release */
- 	hlist_del_init(&worker->hentry);
- 	worker->current_work = NULL;
-+	worker->current_func = NULL;
- 	worker->current_cwq = NULL;
- 	cwq_dec_nr_in_flight(cwq, work_color, false);
- }
+2) The only reason this driver isn't using tty_port_block_til_ready() is
+the lone state check:
+		    self->state == IRCOMM_TTY_READY
 
+I take it IRDA has some kind of virtual cabling protocol. But it's
+unclear why this can't be implemented in the driver without duplicating
+tty_port_block_til_ready(). For example, if the device can't do CLOCAL
+open (meaning no underlying device attached prior to open) then why
+specify that in the driver flags? Additionally, CLOCAL can be masked out
+by the driver's set_termios() method. And then it could implement the
+state check in its .carrier_raised() method.
+
+3) The do_clocal snapshot is universally employed by every tty driver. I
+don't mean that as some kind of lame excuse. But if this should change,
+it should change across every tty driver with a really good reason.
+
+4) Rechecking termios will change the way the user-space open() for this
+device behaves. And I need to think more on how that might or might not
+be a problem.
+
+5) The code behavior pre-dates the 2005 check-in so I'll probably have
+to do some code archaeology.
+
+
+That's probably going to take some time.
+
+In the meantime, while reviewing that code, I noticed there's a handful
+of serious bugs in that one function that I'll send a patchset for.
+
+Plus, someone could be back to me on if and why the driver needs to be
+virtually cabled to open().
+
+Regards,
+Peter Hurley
 
