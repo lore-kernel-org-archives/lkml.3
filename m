@@ -1,128 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757925Ab3CDOO1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 09:14:27 -0500
-Received: from mx2.netapp.com ([216.240.18.37]:6043 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757587Ab3CDOO0 convert rfc822-to-8bit (ORCPT
+	id S1757989Ab3CDOPf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 09:15:35 -0500
+Received: from mail-bl2lp0212.outbound.protection.outlook.com ([207.46.163.212]:12097
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1757845Ab3CDOPd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 09:14:26 -0500
-X-IronPort-AV: E=Sophos;i="4.84,779,1355126400"; 
-   d="scan'208";a="13096225"
-From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-To: Ming Lei <ming.lei@canonical.com>, Jeff Layton <jlayton@redhat.com>
-CC: "J. Bruce Fields" <bfields@fieldses.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>
-Subject: Re: LOCKDEP: 3.9-rc1: mount.nfs/4272 still has locks held!
-Thread-Topic: LOCKDEP: 3.9-rc1: mount.nfs/4272 still has locks held!
-Thread-Index: AQHOGOA9OOKbapJ+RE+tLJb3WRyEW5iWGYKA
-Date: Mon, 4 Mar 2013 14:14:23 +0000
-Message-ID: <4FA345DA4F4AE44899BD2B03EEEC2FA9286AD113@sacexcmbx05-prd.hq.netapp.com>
-References: <CACVXFVMKN6aeCvJcn7dyuonJYJDfYxWeW5KE6gfKRKJKFj2M4A@mail.gmail.com>
-In-Reply-To: <CACVXFVMKN6aeCvJcn7dyuonJYJDfYxWeW5KE6gfKRKJKFj2M4A@mail.gmail.com>
+	Mon, 4 Mar 2013 09:15:33 -0500
+X-Forefront-Antispam-Report-Untrusted: CIP:157.56.240.21;KIP:(null);UIP:(null);(null);H:BL2PRD0310HT005.namprd03.prod.outlook.com;R:internal;EFV:INT
+X-SpamScore: -1
+X-BigFish: PS-1(zz9371I542I1432Izz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ahz97hz8275bhz31h2a8h668h839h944hd24hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h19ceh1ad9h9a9j1155h)
+X-Forefront-Antispam-Report-Untrusted: SFV:SKI;SFS:;DIR:OUT;SFP:;SCL:-1;SRVR:SN2PR03MB064;H:SN2PR03MB061.namprd03.prod.outlook.com;LANG:en;
+From: KY Srinivasan <kys@microsoft.com>
+To: KY Srinivasan <kys@microsoft.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "jasowang@redhat.com" <jasowang@redhat.com>
+Subject: RE: [PATCH 0/3] Drivers: hv 
+Thread-Topic: [PATCH 0/3] Drivers: hv 
+Thread-Index: AQHODVIuVPzr/yIiA06A7EpNQJzmiJiVqceg
+Date: Mon, 4 Mar 2013 14:12:44 +0000
+Message-ID: <f0040812fcdc4b7c8f0c1289c634a9c3@SN2PR03MB061.namprd03.prod.outlook.com>
+References: <1361136655-30979-1-git-send-email-kys@microsoft.com>
+In-Reply-To: <1361136655-30979-1-git-send-email-kys@microsoft.com>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
-x-originating-ip: [10.104.60.117]
-Content-Type: text/plain; charset=US-ASCII
-Content-ID: <D3863343C9031B489EF1F5938FBF2361@tahoe.netapp.com>
-Content-Transfer-Encoding: 7BIT
+x-originating-ip: [66.235.28.25]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
+X-OrganizationHeadersPreserved: SN2PR03MB064.namprd03.prod.outlook.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%AEPFLE.DE$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%CANONICAL.COM$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%REDHAT.COM$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUXFOUNDATION.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUXDRIVERPROJECT.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-CrossPremisesHeadersPromoted: TK5EX14HUBC103.redmond.corp.microsoft.com
+X-CrossPremisesHeadersFiltered: TK5EX14HUBC103.redmond.corp.microsoft.com
+X-Forefront-Antispam-Report: CIP:131.107.125.37;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(377454001)(199002)(189002)(13464002)(51704002)(56816002)(74502001)(47446002)(65816001)(16676001)(54316002)(6806001)(53806001)(59766001)(44976002)(31966008)(74662001)(33646001)(46102001)(49866001)(47736001)(5343635001)(51856001)(77982001)(4396001)(50466001)(63696002)(56776001)(66066001)(54356001)(47976001)(76482001)(46406002)(47776003)(20776003)(50986001)(1511001)(79102001)(23726001)(80022001)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BL2FFO11HUB020;H:TK5EX14HUBC103.redmond.corp.microsoft.com;RD:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-OriginatorOrg: microsoft.onmicrosoft.com
+X-Forefront-PRVS: 0775716B9D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-03-04 at 21:57 +0800, Ming Lei wrote:
-> Hi,
-> 
-> The below warning can be triggered each time when mount.nfs is
-> running on 3.9-rc1.
-> 
-> Not sure if freezable_schedule() inside rpc_wait_bit_killable should
-> be changed to schedule() since nfs_clid_init_mutex is held in the path.
 
-Cc:ing Jeff, who added freezable_schedule(), and applied it to
-rpc_wait_bit_killable.
 
-So this is occurring when the kernel enters the freeze state?
-Why does it occur only with nfs_clid_init_mutex, and not with all the
-other mutexes that we hold across RPC calls? We hold inode->i_mutex
-across RPC calls all the time when doing renames, unlinks, file
-creation,...
-
-> [   41.387939] =====================================
-> [   41.392913] [ BUG: mount.nfs/643 still has locks held! ]
-> [   41.398559] 3.9.0-rc1+ #1740 Not tainted
-> [   41.402709] -------------------------------------
-> [   41.407714] 1 lock held by mount.nfs/643:
-> [   41.411956]  #0:  (nfs_clid_init_mutex){+.+...}, at: [<c0226d6c>]
-> nfs4_discover_server_trunking+0x60/0x1d4
-> [   41.422363]
-> [   41.422363] stack backtrace:
-> [   41.427032] [<c0014dd4>] (unwind_backtrace+0x0/0xe0) from
-> [<c04a8300>] (rpc_wait_bit_killable+0x38/0xc8)
-> [   41.437103] [<c04a8300>] (rpc_wait_bit_killable+0x38/0xc8) from
-> [<c054e454>] (__wait_on_bit+0x54/0x9c)
-> [   41.446990] [<c054e454>] (__wait_on_bit+0x54/0x9c) from
-> [<c054e514>] (out_of_line_wait_on_bit+0x78/0x84)
-> [   41.457061] [<c054e514>] (out_of_line_wait_on_bit+0x78/0x84) from
-> [<c04a8f88>] (__rpc_execute+0x170/0x348)
-> [   41.467407] [<c04a8f88>] (__rpc_execute+0x170/0x348) from
-> [<c04a250c>] (rpc_run_task+0x9c/0xa4)
-> [   41.476715] [<c04a250c>] (rpc_run_task+0x9c/0xa4) from [<c04a265c>]
-> (rpc_call_sync+0x70/0xb0)
-> [   41.485778] [<c04a265c>] (rpc_call_sync+0x70/0xb0) from
-> [<c021af54>] (nfs4_proc_setclientid+0x1a0/0x1c8)
-> [   41.495819] [<c021af54>] (nfs4_proc_setclientid+0x1a0/0x1c8) from
-> [<c0224eb4>] (nfs40_discover_server_trunki
-> ng+0xec/0x148)
-> [   41.507507] [<c0224eb4>]
-> (nfs40_discover_server_trunking+0xec/0x148) from [<c0226da0>]
-> (nfs4_discover_server
-> _trunking+0x94/0x1d4)
-> [   41.519866] [<c0226da0>] (nfs4_discover_server_trunking+0x94/0x1d4)
-> from [<c022c664>] (nfs4_init_client+0x15
-> 0/0x1b0)
-> [   41.531036] [<c022c664>] (nfs4_init_client+0x150/0x1b0) from
-> [<c01fe954>] (nfs_get_client+0x2cc/0x320)
-> [   41.540863] [<c01fe954>] (nfs_get_client+0x2cc/0x320) from
-> [<c022c080>] (nfs4_set_client+0x80/0xb0)
-> [   41.550476] [<c022c080>] (nfs4_set_client+0x80/0xb0) from
-> [<c022cef8>] (nfs4_create_server+0xb0/0x21c)
-> [   41.560333] [<c022cef8>] (nfs4_create_server+0xb0/0x21c) from
-> [<c0227524>] (nfs4_remote_mount+0x28/0x54)
-> [   41.570373] [<c0227524>] (nfs4_remote_mount+0x28/0x54) from
-> [<c0113a8c>] (mount_fs+0x6c/0x160)
-> [   41.579498] [<c0113a8c>] (mount_fs+0x6c/0x160) from [<c012a47c>]
-> (vfs_kern_mount+0x4c/0xc0)
-> [   41.588378] [<c012a47c>] (vfs_kern_mount+0x4c/0xc0) from
-> [<c022734c>] (nfs_do_root_mount+0x74/0x90)
-> [   41.597961] [<c022734c>] (nfs_do_root_mount+0x74/0x90) from
-> [<c0227574>] (nfs4_try_mount+0x24/0x3c)
-> [   41.607513] [<c0227574>] (nfs4_try_mount+0x24/0x3c) from
-> [<c02070f8>] (nfs_fs_mount+0x6dc/0x7a0)
-> [   41.616821] [<c02070f8>] (nfs_fs_mount+0x6dc/0x7a0) from
-> [<c0113a8c>] (mount_fs+0x6c/0x160)
-> [   41.625701] [<c0113a8c>] (mount_fs+0x6c/0x160) from [<c012a47c>]
-> (vfs_kern_mount+0x4c/0xc0)
-> [   41.634582] [<c012a47c>] (vfs_kern_mount+0x4c/0xc0) from
-> [<c012c330>] (do_mount+0x710/0x81c)
-> [   41.643524] [<c012c330>] (do_mount+0x710/0x81c) from [<c012c4c0>]
-> (sys_mount+0x84/0xb8)
-> [   41.652008] [<c012c4c0>] (sys_mount+0x84/0xb8) from [<c000d6c0>]
-> (ret_fast_syscall+0x0/0x48)
-> [   41.715911] device: '0:28': device_add
-> [   41.720062] PM: Adding info for No Bus:0:28
-> [   41.746887] device: '0:29': device_add
-> [   41.751037] PM: Adding info for No Bus:0:29
-> [   41.780700] device: '0:28': device_unregister
-> [   41.785400] PM: Removing info for No Bus:0:28
-> [   41.790344] device: '0:28': device_create_release
+> -----Original Message-----
+> From: K. Y. Srinivasan [mailto:kys@microsoft.com]
+> Sent: Sunday, February 17, 2013 4:31 PM
+> To: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
+> devel@linuxdriverproject.org; olaf@aepfle.de; apw@canonical.com;
+> jasowang@redhat.com
+> Cc: KY Srinivasan
+> Subject: [PATCH 0/3] Drivers: hv
 > 
+> The patch for the vmbus drivers properly cleans up the channel state on receipt
+> of the "offer rescind" message. The balloon driver patches permit the execution
+> of both "balloon up" operation as well as the "hot-add" operation in separate
+> execution contexts. This allows the balloon driver to be more responsive both
+> in terms of reporting pressure to the host as well as responding to the requests
+> from the host.
 > 
-> Thanks,
+> K. Y. Srinivasan (3):
+>   Drivers: hv: vmbus: Handle channel rescind message correctly
+>   Drivers: hv: balloon: Execute balloon inflation in a separate context
+>   Drivers: hv: balloon: Execute hot-add code in a separate context
+> 
+>  drivers/hv/channel_mgmt.c |   11 +++++++
+>  drivers/hv/hv_balloon.c   |   74 ++++++++++++++++++++++++++++----------------
+> -
+>  2 files changed, 57 insertions(+), 28 deletions(-)
+> 
 > --
-> Ming Lei
+> 1.7.4.1
+
+Greg,
+
+Please drop this set; I will resend these with some fixes.
+
+Regards,
+
+K. Y
+> 
+> 
+
 
