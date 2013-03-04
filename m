@@ -1,62 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754845Ab3CDCvm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 21:51:42 -0500
-Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:16597 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752449Ab3CDCvk (ORCPT
+	id S1755000Ab3CDCzE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 21:55:04 -0500
+Received: from mail-vc0-f169.google.com ([209.85.220.169]:49154 "EHLO
+	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754552Ab3CDCzC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Mar 2013 21:51:40 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VS0(zzzz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ahzzz2dh87h2a8h668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1155h)
-X-FB-DOMAIN-IP-MATCH: fail
-Date: Mon, 4 Mar 2013 10:52:10 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: <linux-kernel@vger.kernel.org>
-CC: <linux-arm-kernel@lists.infradead.org>
-Subject: v3.9-rc1: [BUG: swapper/1 still has locks held!]
-Message-ID: <20130304025206.GB30431@S2101-09.ap.freescale.net>
+	Sun, 3 Mar 2013 21:55:02 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: sigmatel.com
+In-Reply-To: <513407AC.8060009@infradead.org>
+References: <CA+55aFx0HcOXKpxmZzM5jcbAaOroxafomX5ggMFV4A=py1qh-Q@mail.gmail.com>
+	<alpine.LRH.2.00.1303040213590.11934@twin.jikos.cz>
+	<CA+55aFxA1pH_aKJc85DXuS2-Q=7b4pP-h_ms6XQiSzQcpWaO6Q@mail.gmail.com>
+	<513407AC.8060009@infradead.org>
+Date: Sun, 3 Mar 2013 18:55:01 -0800
+X-Google-Sender-Auth: KZfIl30tHdWuzWtWIFl6YbzOpng
+Message-ID: <CA+55aFx7s_-Cv6Qa89CSyyMEESyGO_vbR1N42pOxRgkuCWf8mg@mail.gmail.com>
+Subject: Re: Linux 3.9-rc1
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Randy Dunlap <rdunlap@infradead.org>
+Cc: Jiri Kosina <jkosina@suse.cz>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm running v3.9-rc1 kernel on an ARM platform (i.MX28) with
-arch/arm/mxs_defconfig and getting the following BUG warning.
+On Sun, Mar 3, 2013 at 6:32 PM, Randy Dunlap <rdunlap@infradead.org> wrote:
+>
+> I suppose that this omits individual contributor patches by design?
+> I had 3 patches merged, but they are hidden by this method.
 
-Shawn
+Absolutely.
 
-[    5.681034] =====================================
-[    5.685885] [ BUG: swapper/1 still has locks held! ]
-[    5.690885] 3.9.0-rc1 #774 Not tainted
-[    5.694734] -------------------------------------
-[    5.699475] 2 locks held by swapper/1:
-[    5.703323]  #0:  (&sig->cred_guard_mutex){+.+.+.}, at: [<c00d20e0>] prepare_bprm_creds+0x28/0x64
-[    5.712326]  #1:  (&type->i_mutex_dir_key){+.+.+.}, at: [<c00d5350>] lookup_slow+0x2c/0xa0
-[    5.720966]
-[    5.720966] stack backtrace:
-[    5.725528] [<c0013c78>] (unwind_backtrace+0x0/0xf0) from [<c0426f94>] (rpc_wait_bit_killable+0x94/0xb4)
-[    5.735184] [<c0426f94>] (rpc_wait_bit_killable+0x94/0xb4) from [<c044684c>] (__wait_on_bit+0x74/0xb8)
-[    5.744645] [<c044684c>] (__wait_on_bit+0x74/0xb8) from [<c04468f4>] (out_of_line_wait_on_bit+0x64/0x70)
-[    5.754278] [<c04468f4>] (out_of_line_wait_on_bit+0x64/0x70) from [<c0427e38>] (__rpc_execute+0xf4/0x370)
-[    5.763991] [<c0427e38>] (__rpc_execute+0xf4/0x370) from [<c042124c>] (rpc_run_task+0xa4/0xb0)
-[    5.772660] [<c042124c>] (rpc_run_task+0xa4/0xb0) from [<c0421350>] (rpc_call_sync+0x40/0xac)
-[    5.781335] [<c0421350>] (rpc_call_sync+0x40/0xac) from [<c01c2e08>] (nfs3_rpc_wrapper.constprop.6+0x58/0xdc)
-[    5.791406] [<c01c2e08>] (nfs3_rpc_wrapper.constprop.6+0x58/0xdc) from [<c01c2fbc>] (nfs3_proc_lookup+0x88/0xf4)
-[    5.801751] [<c01c2fbc>] (nfs3_proc_lookup+0x88/0xf4) from [<c01b282c>] (nfs_lookup+0xe8/0x18c)
-[    5.810659] [<c01b282c>] (nfs_lookup+0xe8/0x18c) from [<c00d49f8>] (lookup_real+0x20/0x50)
-[    5.819097] [<c00d49f8>] (lookup_real+0x20/0x50) from [<c00d5314>] (__lookup_hash+0x34/0x44)
-[    5.827696] [<c00d5314>] (__lookup_hash+0x34/0x44) from [<c00d5360>] (lookup_slow+0x3c/0xa0)
-[    5.836297] [<c00d5360>] (lookup_slow+0x3c/0xa0) from [<c00d61bc>] (link_path_walk+0x2a4/0x848)
-[    5.845144] [<c00d61bc>] (link_path_walk+0x2a4/0x848) from [<c00d9204>] (path_openat+0x278/0x444)
-[    5.854176] [<c00d9204>] (path_openat+0x278/0x444) from [<c00d96cc>] (do_filp_open+0x2c/0x80)
-[    5.862755] [<c00d96cc>] (do_filp_open+0x2c/0x80) from [<c00d12fc>] (open_exec+0x30/0x10c)
-[    5.871166] [<c00d12fc>] (open_exec+0x30/0x10c) from [<c00d232c>] (do_execve+0x1b8/0x4c4)
-[    5.879500] [<c00d232c>] (do_execve+0x1b8/0x4c4) from [<c0440b54>] (kernel_init+0x80/0xe4)
-[    5.887963] [<c0440b54>] (kernel_init+0x80/0xe4) from [<c000e9c8>] (ret_from_fork+0x14/0x2c)
+We had over ten thousand commits in between 3.8 and 3.9-rc1 (10942 if
+you count merges, 10265 if you don't). So the whole shortlog format
+(that gives authorship for individual commits) is simply not very
+useful. It's over half a megabyte of data.
 
+You show up in the shortlog:
+
+  Randy Dunlap (5):
+        lguest: select CONFIG_TTY to build properly.
+        i2c: fix i2c-ismt.c printk format warning
+        [SCSI] scsi: fix lpfc build when wmb() is defined as mb()
+        watchdog: da9055_wdt needs to select WATCHDOG_CORE
+        hsi: fix kernel-doc warnings
+
+but it's *so* much data that it's not worth posting in lkml. Nobody
+would read it, and more importantly, it's so much that there's no feel
+for any kind of overview.
+
+The *mergelog* I post is literally just a list of merges I do, and the
+names that get credited are neither the authors nor the committers,
+but literally just the people who send me the pull request. Now,
+*often* that has high correlation with committers, but not always. For
+example, David Miller is who asks me to pull the networking tree, but
+in reality, that hides not just all the authors, but also all the
+submaintainers who he in turn pulls from. Similarly, most of the x86
+tree pull requests come from Ingo, even though there are other people
+involved as maintainers.
+
+So the mergelog really only gives you an idea of which *subsystems*
+got merged, and generally the top-level maintainer for that subsystem.
+And even then, the "top-level maintainer" can be just "one of several
+top-level maintainers", so even that particular data point is not
+really completely unambiguous.
+
+                   Linus
