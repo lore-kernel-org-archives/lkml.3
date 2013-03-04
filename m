@@ -1,83 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755939Ab3CDIDc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 03:03:32 -0500
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:39750 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755618Ab3CDIDb (ORCPT
+	id S1755971Ab3CDIDo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 03:03:44 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:51424 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755826Ab3CDIDc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 03:03:31 -0500
-From: Russ Dill <russ.dill@gmail.com>
-To: stable@kernel.org, linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, Nick Kossifidis <mickflemm@gmail.com>,
-        "Theodore Ts'o" <tytso@mit.edu>
-Subject: [PATCH] Revert "random: Mix cputime from each thread that exits to the pool"
-Date: Mon,  4 Mar 2013 00:03:28 -0800
-Message-Id: <1362384208-6687-1-git-send-email-Russ.Dill@gmail.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <20130304073908.GA982@kroah.com>
-References: <20130304073908.GA982@kroah.com>
+	Mon, 4 Mar 2013 03:03:32 -0500
+X-AuditID: cbfee68d-b7f636d0000009be-3f-513455526f8f
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Andrew Morton'" <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, "'Alessandro Zummo'" <a.zummo@towertech.it>,
+        rtc-linux@googlegroups.com, "'Jingoo Han'" <jg1.han@samsung.com>
+References: <013a01ce18ad$e45caa10$ad15fe30$%han@samsung.com>
+In-reply-to: <013a01ce18ad$e45caa10$ad15fe30$%han@samsung.com>
+Subject: [PATCH 15/24] rtc: rtc-omap: use module_platform_driver_probe()
+Date: Mon, 04 Mar 2013 17:03:30 +0900
+Message-id: <014801ce18ae$c2836450$478a2cf0$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac4YreQ8fe1F97iqQuy+DT8iOTwTtAAANBWw
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrHIsWRmVeSWpSXmKPExsVy+t8zA92gUJNAg8YfVhaXd81hc2D0+LxJ
+	LoAxissmJTUnsyy1SN8ugSvj9IouloJl7BWNG1vZGxjnsnUxcnBICJhI3J+g2cXICWSKSVy4
+	tx4ozMUhJLCMUeLmmpnsEAkTiWWr+8FsIYFFjBIT/ytCFM1mkliy4g4jSIJNQE3iy5fD7CBD
+	RQT0JdpaNEBqmAV6GSXO9O6GaraV+PLwAROIzSlgJ3H/3CpWEFtYwEPi5pLjYHEWAVWJH9ue
+	MIPYvED1hzZ/Y4KwBSV+TL7HAmIzC2hJrN8JUc8sIC+xec1bZohn1CUe/dUFCYsIGEkcm94H
+	VS4ise/FO0aQeyQElrFLnJqwEGqXgMS3yYdYIHplJTYdYIb4V1Li4IobLBMYJWYh2TwLyeZZ
+	SDbPQrJiASPLKkbR1ILkguKk9CJDveLE3OLSvHS95PzcTYyQuOrdwXj7gPUhxmSg9ROZpUST
+	84FxmVcSb2hsbGJmYmpibmlqbkqasJI4r9wlmUAhgfTEktTs1NSC1KL4otKc1OJDjEwcnFIN
+	jAs7PrIVva7/ELNfmCW9rzxuzz0+s9pJJo+8OE7N/NWoo56h9+FlT/Pe3v9nGBfvSKo2uWqq
+	4cCvUHY6+NEKnaYdpZPu3//ps2nBgvVLEnnfTHnEayy8dPn+uHonnX31+z79i5ptJJCf8mtK
+	fj9D+TW5/tyZhzfVGy9+4rfw0c7eiOm9s9hkxZVYijMSDbWYi4oTAcA6lQHBAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuphleLIzCtJLcpLzFFi42I5/e+xgG5QqEmgwerPphaXd81hc2D0+LxJ
+	LoAxqoHRJiM1MSW1SCE1Lzk/JTMv3VbJOzjeOd7UzMBQ19DSwlxJIS8xN9VWycUnQNctMwdo
+	qpJCWWJOKVAoILG4WEnfDtOE0BA3XQuYxghd35AguB4jAzSQsI4x4/SKLpaCZewVjRtb2RsY
+	57J1MXJySAiYSCxb3c8OYYtJXLi3HiwuJLCIUWLif8UuRi4gezaTxJIVdxhBEmwCahJfvhwG
+	auDgEBHQl2hr0QCpYRboZZQ407ubHaLZVuLLwwdMIDangJ3E/XOrWEFsYQEPiZtLjoPFWQRU
+	JX5se8IMYvMC1R/a/I0JwhaU+DH5HguIzSygJbF+J0Q9s4C8xOY1b5lB9koIqEs8+qsLEhYR
+	MJI4Nr0PqlxEYt+Ld4wTGIVmIZk0C8mkWUgmzULSsoCRZRWjaGpBckFxUnquoV5xYm5xaV66
+	XnJ+7iZGcNw+k9rBuLLB4hCjAAejEg+vwCfjQCHWxLLiytxDjBIczEoivGUSJoFCvCmJlVWp
+	RfnxRaU5qcWHGJOBHp3ILCWanA9MKXkl8YbGJmZGlkZmFkYm5uakCSuJ8zKeehIgJJCeWJKa
+	nZpakFoEs4WJg1OqgXH3sWtenhdiGf1kP0gmP3K10Ts4pUC/9pORB7eRu3utbR7zUpZjqyN2
+	sTu9KZ66arvhgbaFfyZs2s2/pHltUmK5Y72E0A5VtllTH6xor34yoyXx7dwbrIKWov+iplWI
+	RNnc/Xt72uv9PItvfNqkM0X0dnrOFtPkFMuVDIax3rZXet7fUl1/iEOJpTgj0VCLuag4EQBj
+	Lfy1HwMAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This reverts commit 6133705494bb02953e1e2cc3018a4373981b3c97.
+This patch uses module_platform_driver_probe() macro which makes
+the code smaller and simpler.
 
-The above commit introduces a circular locking dependacy. Existing code
-takes nonblocking_port.lock and then tasklist_lock. The code in this
-commit takes nonblocking_port.lock while talklist_lock is already held
-leading to a potential deadlock. For now, simply revert the commit.
-
-Existing lock order:
-
-send_sigio /* takes read lock on tasklist_lock */
-kill_fasync_rcu
-kill_fasync
-account /* takes nonblocking_pool.lock */
-extract_entropy
-get_random_bytes
-create_elf_tables
-load_elf_binary
-load_elf_library
-search_binary_handler
-
-New code:
-
-mix_pool_bytes /* takes nonblocking_pool.lock */
-add_device_randomness
-posix_cpu_timers_exit
-__exit_signal
-release_task /* takes write lock on tasklist_lock */
-do_exit
-__module_put_and_exit
-cryptomgr_test
-
-Signed-off-by: Russ Dill <Russ.Dill@gmail.com>
+Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- kernel/posix-cpu-timers.c | 3 ---
- 1 file changed, 3 deletions(-)
+ drivers/rtc/rtc-omap.c |   12 +-----------
+ 1 files changed, 1 insertions(+), 11 deletions(-)
 
-diff --git a/kernel/posix-cpu-timers.c b/kernel/posix-cpu-timers.c
-index 942ca27..1f2ef3d 100644
---- a/kernel/posix-cpu-timers.c
-+++ b/kernel/posix-cpu-timers.c
-@@ -9,7 +9,6 @@
- #include <asm/uaccess.h>
- #include <linux/kernel_stat.h>
- #include <trace/events/timer.h>
--#include <linux/random.h>
+diff --git a/drivers/rtc/rtc-omap.c b/drivers/rtc/rtc-omap.c
+index 6009714..172cc5c 100644
+--- a/drivers/rtc/rtc-omap.c
++++ b/drivers/rtc/rtc-omap.c
+@@ -550,17 +550,7 @@ static struct platform_driver omap_rtc_driver = {
+ 	.id_table	= omap_rtc_devtype,
+ };
  
- /*
-  * Called after updating RLIMIT_CPU to run cpu timer and update
-@@ -471,8 +470,6 @@ static void cleanup_timers(struct list_head *head,
-  */
- void posix_cpu_timers_exit(struct task_struct *tsk)
- {
--	add_device_randomness((const void*) &tsk->se.sum_exec_runtime,
--						sizeof(unsigned long long));
- 	cleanup_timers(tsk->cpu_timers,
- 		       tsk->utime, tsk->stime, tsk->se.sum_exec_runtime);
+-static int __init rtc_init(void)
+-{
+-	return platform_driver_probe(&omap_rtc_driver, omap_rtc_probe);
+-}
+-module_init(rtc_init);
+-
+-static void __exit rtc_exit(void)
+-{
+-	platform_driver_unregister(&omap_rtc_driver);
+-}
+-module_exit(rtc_exit);
++module_platform_driver_probe(omap_rtc_driver, omap_rtc_probe);
  
+ MODULE_AUTHOR("George G. Davis (and others)");
+ MODULE_LICENSE("GPL");
 -- 
-1.8.1.2
+1.7.2.5
+
 
