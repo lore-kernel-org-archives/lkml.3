@@ -1,59 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757918Ab3CDDzd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 22:55:33 -0500
-Received: from two.firstfloor.org ([193.170.194.197]:35118 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757109Ab3CDDz3 (ORCPT
+	id S1757218Ab3CDD4A (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 22:56:00 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33030 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756767Ab3CDDoU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Mar 2013 22:55:29 -0500
-Date: Mon, 4 Mar 2013 04:55:27 +0100
-From: Andi Kleen <andi@firstfloor.org>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Andi Kleen <andi@firstfloor.org>,
-        Eliezer Tamir <eliezer.tamir@linux.jf.intel.com>,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        Dave Miller <davem@davemloft.net>,
-        Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        e1000-devel@lists.sourceforge.net,
-        Willem de Bruijn <willemb@google.com>, HPA <hpa@zytor.com>,
-        Eliezer Tamir <eliezer@tamir.org.il>
-Subject: Re: [RFC PATCH 1/5] net: implement support for low latency socket
- polling
-Message-ID: <20130304035527.GF3401@two.firstfloor.org>
-References: <20130227175549.10611.82188.stgit@gitlad.jf.intel.com>
- <20130227175555.10611.42794.stgit@gitlad.jf.intel.com>
- <1362335704.15793.81.camel@edumazet-glaptop>
- <20130303192153.GC3401@two.firstfloor.org>
- <1362345601.15793.83.camel@edumazet-glaptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1362345601.15793.83.camel@edumazet-glaptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Sun, 3 Mar 2013 22:44:20 -0500
+Message-Id: <20130304033713.560293807@decadent.org.uk>
+User-Agent: quilt/0.60-1
+Date: Mon, 04 Mar 2013 03:38:07 +0000
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: akpm@linux-foundation.org, Arnd Bergmann <arnd@arndb.de>,
+        Wan ZongShun <mcuos.com@gmail.com>
+Subject: [ 060/153] ARM: w90x900: fix legacy assembly syntax
+In-Reply-To: <20130304033707.648729212@decadent.org.uk>
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 03, 2013 at 01:20:01PM -0800, Eric Dumazet wrote:
-> On Sun, 2013-03-03 at 20:21 +0100, Andi Kleen wrote:
-> > > Alternative to 2) would be to use a generation id, incremented every
-> > > time a napi used in spin polling enabled driver is dismantled (and freed
-> > > after RCU grace period)
-> > > 
-> > > And store in sockets not only the pointer to napi_struct, but the
-> > > current generation id : If the generation id doesnt match, disable
-> > > the spinpoll until next packet rebuilds the cache again.
-> > 
-> > This would require rcu_read_lock, aka preempt off, during polling, right?
-> > 
-> 
-> Of course, polling probably needs BH disabling as well to get the per
-> napi lock
+3.2-stable review patch.  If anyone has any objections, please let me know.
 
-Ok maybe the cond_resched() is good enough.
+------------------
 
--Andi
+From: Arnd Bergmann <arnd@arndb.de>
 
--- 
-ak@linux.intel.com -- Speaking for myself only.
+commit fa5ce5f94c0f2bfa41ba68d2d2524298e1fc405e upstream.
+
+New ARM binutils don't allow extraneous whitespace inside
+of brackets, which causes this error on all mach-w90x900
+defconfigs:
+
+arch/arm/kernel/entry-armv.S: Assembler messages:
+arch/arm/kernel/entry-armv.S:214: Error: ARM register expected -- `ldr r0,[ r6,#(0x10C)]'
+arch/arm/kernel/entry-armv.S:214: Error: ARM register expected -- `ldr r0,[ r6,#(0x110)]'
+arch/arm/kernel/entry-armv.S:430: Error: ARM register expected -- `ldr r0,[ r6,#(0x10C)]'
+arch/arm/kernel/entry-armv.S:430: Error: ARM register expected -- `ldr r0,[ r6,#(0x110)]'
+
+This removes the whitespace in order to build the kernel
+again.
+
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Cc: Wan ZongShun <mcuos.com@gmail.com>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ arch/arm/mach-w90x900/include/mach/entry-macro.S |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+--- a/arch/arm/mach-w90x900/include/mach/entry-macro.S
++++ b/arch/arm/mach-w90x900/include/mach/entry-macro.S
+@@ -22,8 +22,8 @@
+ 
+ 		mov	\base, #AIC_BA
+ 
+-		ldr	\irqnr, [ \base, #AIC_IPER]
+-		ldr	\irqnr, [ \base, #AIC_ISNR]
++		ldr	\irqnr, [\base, #AIC_IPER]
++		ldr	\irqnr, [\base, #AIC_ISNR]
+ 		cmp	\irqnr, #0
+ 
+ 	.endm
+
+
