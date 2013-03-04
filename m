@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756432Ab3CDDno (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 22:43:44 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:32878 "EHLO
+	id S1756711Ab3CDEDb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 23:03:31 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:32888 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756385Ab3CDDnl (ORCPT
+	by vger.kernel.org with ESMTP id S1756415Ab3CDDnn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Mar 2013 22:43:41 -0500
-Message-Id: <20130304033716.712428378@decadent.org.uk>
+	Sun, 3 Mar 2013 22:43:43 -0500
+Message-Id: <20130304033716.164533423@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 04 Mar 2013 03:38:39 +0000
+Date: Mon, 04 Mar 2013 03:38:34 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Lars-Peter Clausen <lars@metafoo.de>,
-        Michael Hennerich <michael.hennerich@analog.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 092/153] drivers/video/backlight/adp88?0_bl.c: fix resume
+Cc: akpm@linux-foundation.org, Pawel Moll <mail@pawelmoll.com>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [ 087/153] ALSA: usb: Fix Processing Unit Descriptor parsers
 In-Reply-To: <20130304033707.648729212@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,45 +27,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lars-Peter Clausen <lars@metafoo.de>
+From: Pawel Moll <mail@pawelmoll.com>
 
-commit 5eb02c01bd1f3ef195989ab05e835e2b0711b5a9 upstream.
+commit b531f81b0d70ffbe8d70500512483227cc532608 upstream.
 
-Clearing the NSTBY bit in the control register also automatically clears
-the BLEN bit.  So we need to make sure to set it again during resume,
-otherwise the backlight will stay off.
+Commit 99fc86450c439039d2ef88d06b222fd51a779176 "ALSA: usb-mixer:
+parse descriptors with structs" introduced a set of useful parsers
+for descriptors. Unfortunately the parses for the Processing Unit
+Descriptor came with a very subtle bug...
 
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-Acked-by: Michael Hennerich <michael.hennerich@analog.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Functions uac_processing_unit_iProcessing() and
+uac_processing_unit_specific() were indexing the baSourceID array
+forgetting the fields before the iProcessing and process-specific
+descriptors.
+
+The problem was observed with Sound Blaster Extigy mixer,
+where nNrModes in Up/Down-mix Processing Unit Descriptor
+was accessed at offset 10 of the descriptor (value 0)
+instead of offset 15 (value 7). In result the resulting
+control had interesting limit values:
+
+Simple mixer control 'Channel Routing Mode Select',0
+  Capabilities: volume volume-joined penum
+  Playback channels: Mono
+  Capture channels: Mono
+  Limits: 0 - -1
+  Mono: -1 [100%]
+
+Fixed by starting from the bmControls, which was calculated
+correctly, instead of baSourceID.
+
+Now the mentioned control is fine:
+
+Simple mixer control 'Channel Routing Mode Select',0
+  Capabilities: volume volume-joined penum
+  Playback channels: Mono
+  Capture channels: Mono
+  Limits: 0 - 6
+  Mono: 0 [0%]
+
+Signed-off-by: Pawel Moll <mail@pawelmoll.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+[bwh: Backported to 3.2: adjust filename]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/video/backlight/adp8860_bl.c |    2 +-
- drivers/video/backlight/adp8870_bl.c |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ include/linux/usb/audio.h |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/drivers/video/backlight/adp8860_bl.c
-+++ b/drivers/video/backlight/adp8860_bl.c
-@@ -791,7 +791,7 @@ static int adp8860_i2c_suspend(struct i2
- 
- static int adp8860_i2c_resume(struct i2c_client *client)
+--- a/include/linux/usb/audio.h
++++ b/include/linux/usb/audio.h
+@@ -384,14 +384,16 @@ static inline __u8 uac_processing_unit_i
+ 						   int protocol)
  {
--	adp8860_set_bits(client, ADP8860_MDCR, NSTBY);
-+	adp8860_set_bits(client, ADP8860_MDCR, NSTBY | BLEN);
- 
- 	return 0;
+ 	__u8 control_size = uac_processing_unit_bControlSize(desc, protocol);
+-	return desc->baSourceID[desc->bNrInPins + control_size];
++	return *(uac_processing_unit_bmControls(desc, protocol)
++			+ control_size);
  }
---- a/drivers/video/backlight/adp8870_bl.c
-+++ b/drivers/video/backlight/adp8870_bl.c
-@@ -965,7 +965,7 @@ static int adp8870_i2c_suspend(struct i2
  
- static int adp8870_i2c_resume(struct i2c_client *client)
+ static inline __u8 *uac_processing_unit_specific(struct uac_processing_unit_descriptor *desc,
+ 						 int protocol)
  {
--	adp8870_set_bits(client, ADP8870_MDCR, NSTBY);
-+	adp8870_set_bits(client, ADP8870_MDCR, NSTBY | BLEN);
- 
- 	return 0;
+ 	__u8 control_size = uac_processing_unit_bControlSize(desc, protocol);
+-	return &desc->baSourceID[desc->bNrInPins + control_size + 1];
++	return uac_processing_unit_bmControls(desc, protocol)
++			+ control_size + 1;
  }
+ 
+ /* 4.5.2 Class-Specific AS Interface Descriptor */
 
 
