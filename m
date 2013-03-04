@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932851Ab3CDWcV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 17:32:21 -0500
-Received: from casper.infradead.org ([85.118.1.10]:44010 "EHLO
+	id S932870Ab3CDWc0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 17:32:26 -0500
+Received: from casper.infradead.org ([85.118.1.10]:44013 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932654Ab3CDWcT (ORCPT
+	with ESMTP id S932654Ab3CDWcY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 17:32:19 -0500
-Message-ID: <51352116.5030702@infradead.org>
-Date: Mon, 04 Mar 2013 14:32:54 -0800
+	Mon, 4 Mar 2013 17:32:24 -0500
+Message-ID: <5135211B.2070408@infradead.org>
+Date: Mon, 04 Mar 2013 14:32:59 -0800
 From: Randy Dunlap <rdunlap@infradead.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
 MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
+To: LKML <linux-kernel@vger.kernel.org>, Al Viro <viro@zeniv.linux.org.uk>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH] idr: fix new kernel-doc warnings
+Subject: [PATCH] signals: fix new kernel-doc warnings
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
@@ -23,38 +23,25 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Randy Dunlap <rdunlap@infradead.org>
 
-Fix new kernel-doc warnings in idr:
+Fix new kernel-doc warnings in kernel/signal.c:
 
-Warning(include/linux/idr.h:113): No description found for parameter 'idr'
-Warning(include/linux/idr.h:113): Excess function parameter 'idp' description in 'idr_find'
-Warning(lib/idr.c:232): Excess function parameter 'id' description in 'sub_alloc'
-Warning(lib/idr.c:232): Excess function parameter 'id' description in 'sub_alloc'
+Warning(kernel/signal.c:2689): No description found for parameter 'uset'
+Warning(kernel/signal.c:2689): Excess function parameter 'set' description in 'sys_rt_sigpending'
 
 Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
-Cc:	Tejun Heo <tj@kernel.org>
+Cc:	Alexander Viro <viro@zeniv.linux.org.uk>
 ---
- include/linux/idr.h |    2 +-
- lib/idr.c           |    1 -
- 2 files changed, 1 insertion(+), 2 deletions(-)
+ kernel/signal.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- lnx-39-rc1.orig/include/linux/idr.h
-+++ lnx-39-rc1/include/linux/idr.h
-@@ -99,7 +99,7 @@ static inline void idr_preload_end(void)
- 
+--- lnx-39-rc1.orig/kernel/signal.c
++++ lnx-39-rc1/kernel/signal.c
+@@ -2682,7 +2682,7 @@ static int do_sigpending(void *set, unsi
  /**
-  * idr_find - return pointer for given id
-- * @idp: idr handle
-+ * @idr: idr handle
-  * @id: lookup key
-  *
-  * Return the pointer given the id it has been registered with.  A %NULL
---- lnx-39-rc1.orig/lib/idr.c
-+++ lnx-39-rc1/lib/idr.c
-@@ -214,7 +214,6 @@ EXPORT_SYMBOL(idr_pre_get);
-  * sub_alloc - try to allocate an id without growing the tree depth
-  * @idp: idr handle
-  * @starting_id: id to start search at
-- * @id: pointer to the allocated handle
-  * @pa: idr_layer[MAX_IDR_LEVEL] used as backtrack buffer
-  * @gfp_mask: allocation mask for idr_layer_alloc()
-  * @layer_idr: optional idr passed to idr_layer_alloc()
+  *  sys_rt_sigpending - examine a pending signal that has been raised
+  *			while blocked
+- *  @set: stores pending signals
++ *  @uset: stores pending signals
+  *  @sigsetsize: size of sigset_t type or larger
+  */
+ SYSCALL_DEFINE2(rt_sigpending, sigset_t __user *, uset, size_t, sigsetsize)
