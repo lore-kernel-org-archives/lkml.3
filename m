@@ -1,62 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932576Ab3CDVT2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 16:19:28 -0500
-Received: from fieldses.org ([174.143.236.118]:42197 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758173Ab3CDVT0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 16:19:26 -0500
-Date: Mon, 4 Mar 2013 16:19:24 -0500
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Pavel Shilovsky <piastry@etersoft.ru>, linux-kernel@vger.kernel.org,
-        linux-cifs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-nfs@vger.kernel.org, wine-devel@winehq.org
-Subject: Re: [PATCH v3 0/7] Add O_DENY* support for VFS and CIFS/NFS
-Message-ID: <20130304211923.GI20389@fieldses.org>
-References: <1362065133-9490-1-git-send-email-piastry@etersoft.ru>
- <512FD1D5.3010106@mit.edu>
+	id S932525Ab3CDVVe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 16:21:34 -0500
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:39604 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758726Ab3CDVVd convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Mar 2013 16:21:33 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <512FD1D5.3010106@mit.edu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-From: "J. Bruce Fields" <bfields@fieldses.org>
+In-Reply-To: <1362417555.5510.58.camel@mattotaupa>
+References: <1362415549-18653-1-git-send-email-taysom@chromium.org>
+	<1362417555.5510.58.camel@mattotaupa>
+Date: Mon, 4 Mar 2013 13:21:31 -0800
+Message-ID: <CAKwO_5GOMN+GL+SO4cBNyhSK_OEbrrDYR=wwEWbgG9S51=tJQg@mail.gmail.com>
+Subject: Re: [PATCH] md: dm-verity: Fix to avoid a deadlock in dm-bufio
+From: Paul Taysom <taysom@google.com>
+To: Paul Menzel <pm.debian@googlemail.com>
+Cc: Paul Taysom <taysom@chromium.org>, agk@redhat.com, dm-devel@redhat.com,
+        neilb@suse.de, linux-raid@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Mandeep Singh Baines <msb@chromium.org>,
+        Mikulas Patocka <mpatocka@redhat.com>,
+        Olof Johansson <olofj@chromium.org>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 28, 2013 at 01:53:25PM -0800, Andy Lutomirski wrote:
-> [possible resend -- sorry]
-> 
-> On 02/28/2013 07:25 AM, Pavel Shilovsky wrote:
-> > This patchset adds support of O_DENY* flags for Linux fs layer. These flags can be used by any application that needs share reservations to organize a file access. VFS already has some sort of this capability - now it's done through flock/LOCK_MAND mechanis, but that approach is non-atomic. This patchset build new capabilities on top of the existing one but doesn't bring any changes into the flock call semantic.
-> > 
-> > These flags can be used by NFS (built-in-kernel) and CIFS (Samba) servers and Wine applications through VFS (for local filesystems) or CIFS/NFS modules. This will help when e.g. Samba and NFS server share the same directory for Windows and Linux users or Wine applications use Samba/NFS share to access the same data from different clients.
-> > 
-> > According to the previous discussions the most problematic question is how to prevent situations like DoS attacks where e.g /lib/liba.so file can be open with DENYREAD, or smth like this. That's why one extra flag O_DENYMAND is added. It indicates to underlying layer that an application want to use O_DENY* flags semantic. It allows us not affect native Linux applications (that don't use O_DENYMAND flag) - so, these flags (and the semantic of open syscall that they bring) are used only for those applications that really want it proccessed that way.
-> > 
-> > So, we have four new flags:
-> > O_DENYREAD - to prevent other opens with read access,
-> > O_DENYWRITE - to prevent other opens with write access,
-> > O_DENYDELETE - to prevent delete operations (this flag is not implemented in VFS and NFS part and only suitable for CIFS module),
-> > O_DENYMAND - to switch on/off three flags above.
-> 
-> O_DENYMAND doesn't deny anything.  Would a name like O_RESPECT_DENY be
-> better?
-> 
-> Other than that, this seems like a sensible mechanism.
+On Mon, Mar 4, 2013 at 9:19 AM, Paul Menzel <pm.debian@googlemail.com> wrote:
+>
+> Am Montag, den 04.03.2013, 08:45 -0800 schrieb Paul Taysom:
+> > Changed the dm-verity prefetching to use a worker thread to avoid
+> > a deadlock in dm-bufio.
+>
+> Do you know of any bug reports about this? Searching for »dm-verity dead
+> lock« I found [1], which seems to be the issue, right? If yes, please
+> reference it.
+>
+> > If generic_make_request is called recursively, it queues the I/O
+> > request on the current->bio_list without making the I/O request
+> > and returns. The routine making the recursive call cannot wait
+> > for the I/O to complete.
+> >
+> > The deadlock occurred when one thread grabbed the bufio_client
+> > mutex and waited for an I/O to complete but the I/O was queued
+> > on another thread’s current->bio_list and it was waiting to get
+> > the mutex held by the first thread.
+> >
+> > The fix allows only one I/O request from dm-verity to dm-bufio
+> > per thread. To do this, the prefetch requests were queued on worker
+> > threads.
+> >
+> > In addition to avoiding the deadlock, this fix made a slight
+> > improvement in performance.
+> >
+> > seconds_kernel_to_login:
+> >   with prefetch:    8.43s
+> >   without prefetch: 9.2s
+> >   worker prefetch:  8.28s
+> >
+> > Signed-off-by: Paul Taysom <taysom@chromium.org>
+> > ---
+> >  drivers/md/dm-verity.c | 29 +++++++++++++++++++++++++++--
+> >  1 file changed, 27 insertions(+), 2 deletions(-)
+>
+> Acked-by: Paul Menzel <paulepanter@users.sourceforge.net>
+>
+>
+> Thanks,
+>
+> Paul
+>
+>
+> [1] https://code.google.com/p/chromium-os/issues/detail?id=39148
 
-I'm a little more worried: these are mandatory locks, and applications
-that use them are used to the locks being enforced correctly.  Are we
-sure that an application that opens a file O_DENYWRITE won't crash if it
-sees the file data change while it holds the open?
-
-In general the idea of making a mandatory lock opt-in makes me nervous.
-I'd prefer something like a mount option, so that we know that everyone
-on that one filesystem is playing by the same rules, but we can still
-mount filesystems like / without the option.
-
-But I'll admit I'm definitely not an expert on Windows locking and may
-be missing something about how these locks are meant to work.
-
---b.
+Yes, I should have included that this fix addresses http://crosbug.com/39148
+Thanks,
+Paul
