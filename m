@@ -1,75 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754922Ab3CDBpZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 20:45:25 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:51469 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752996Ab3CDBpY (ORCPT
+	id S1754886Ab3CDBsa (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 20:48:30 -0500
+Received: from mail-ie0-f181.google.com ([209.85.223.181]:45004 "EHLO
+	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752794Ab3CDBs3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Mar 2013 20:45:24 -0500
-Date: Mon, 4 Mar 2013 12:45:13 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Gabriel Fernandez <gabriel.fernandez@stericsson.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: linux-next: build failure after merge of the gpio tree
-Message-Id: <20130304124513.cf97f6249b0759a1ea1cb34d@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__4_Mar_2013_12_45_13_+1100_MYpeKRkhG8fykMTc"
+	Sun, 3 Mar 2013 20:48:29 -0500
+MIME-Version: 1.0
+In-Reply-To: <CACxGe6s=TW1W+S4715sf+N+t+dKjTVBk+mRVYC_74rRC0r4QvA@mail.gmail.com>
+References: <CACxGe6sweLxtsW9OYb8m7esYguGmStEsuZc0tOgZN6H5Zfy1+g@mail.gmail.com>
+ <CA+55aFxzN7=z7_iVQ=JvYms1WaCoX-hQ2jKNqLU2dLy63AYK1g@mail.gmail.com> <CACxGe6s=TW1W+S4715sf+N+t+dKjTVBk+mRVYC_74rRC0r4QvA@mail.gmail.com>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Mon, 4 Mar 2013 09:48:09 +0800
+X-Google-Sender-Auth: 3tkMWhL2v6MbeVrJt4V9dsbOMnc
+Message-ID: <CACxGe6u-7PxSzNovNZ5ujsOjWgMGTje1aOtkRuXoJkDB7uEqbg@mail.gmail.com>
+Subject: Re: [GIT PULL] gpio changes for v3.9; second round
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__4_Mar_2013_12_45_13_+1100_MYpeKRkhG8fykMTc
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, Mar 4, 2013 at 5:32 AM, Grant Likely <grant.likely@secretlab.ca> wrote:
+> On Mon, Mar 4, 2013 at 2:50 AM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+>> Should this driver depend on CONFIG_OF_GPIO, or should it have
+>> #ifdef's? Regardless, it's clearly broken right now.
+>>
+>> Unpulled.
+>
+> Ugh. Well I clearly screwed that up. Sorry. I'll fix that right away.
 
-Hi Grant,
+Okay, I've dropped the top two commits from that tag. The broken
+commit and the one above it were certainly not critical. They can wait
+until v3.10. Here's a new pull request.
 
-After merging the gpio tree, today's linux-next build (x86_64
-allmodconfig) failed like this:
+g.
 
-drivers/gpio/gpio-stmpe.c: In function 'stmpe_gpio_irq_init':
-drivers/gpio/gpio-stmpe.c:313:23: error: 'struct gpio_chip' has no member n=
-amed 'of_node'
-drivers/gpio/gpio-stmpe.c:316:61: error: 'struct gpio_chip' has no member n=
-amed 'of_node'
-drivers/gpio/gpio-stmpe.c: In function 'stmpe_gpio_probe':
-drivers/gpio/gpio-stmpe.c:351:18: error: 'struct gpio_chip' has no member n=
-amed 'of_node'
+The following changes since commit b0af9cd9aab60ceb17d3ebabb9fdf4ff0a99cf50:
 
-Caused by commit f7719903b7c7 ("").
+  Merge tag 'lzo-update-signature-20130226' of
+git://github.com/markus-oberhumer/linux (2013-02-28 20:45:52 -0800)
 
-I have used the gpio tree from next-20130301 for today.
+are available in the git repository at:
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
 
---Signature=_Mon__4_Mar_2013_12_45_13_+1100_MYpeKRkhG8fykMTc
-Content-Type: application/pgp-signature
+  git://git.secretlab.ca/git/linux tags/gpio-for-linus
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+for you to fetch changes up to e97f9b5277afeabb54892ebc6f68500098467ba1:
 
-iQIcBAEBCAAGBQJRM/ypAAoJEECxmPOUX5FECI4P/j9QaDuVP2EkOfJD/MOVHsNL
-eZA9S5DwU6D93vO61U+IiMcqctkXZog7UHSwMxUKLmoou5mC0rfXz5wAD8ObKf/K
-nV5KnoQSCZFf9ErjxP5kFGWUs4pvBE24CduEV9AEAc+EJ+fRzQsnSJZMcnEGUdBG
-clld1eMfFwib9i0cMA21HKiGpFD4ZCynWNUMNe8xmh+VjjAkZSe60ntDYKjxz32S
-SgxFPU6oSkwJ3rziT4DpaSpA8f3ewTdiXGVcF3B2punVRN96z5+OA+FlarXLVfe1
-qnZVwvc91LGz3JfQCyFlXQK9sX9ndVXXZbkiOaGzvdEyZkECmSbyPORHZLtVWb7V
-3zcrGT8VOOKryB3Ae6VkMtZtjUynRfhVDwDsM6P4iRChJU/uy2Jql7tkb7x2WH7o
-JtmALtaRwJ/usHcwwgk7GlBjwURqQWQcv/Adkilju6RgP+S8EPT+ADezso2yLnJE
-fLoq9s17tMKBTtbxXlRKa6shiMNUmWL6z//PuENrS9qoaiMBXtE6O+JWR79vWeo8
-XjtYplLOp9hgge+tByDV4cKeMNiX4UzW25NnXL+m2FhBapQ9dzbhFG4DFnd0lrQ2
-6gGoCGQ0JgTIsXk5Yeht0bYCaMO4NCRGqDWeWCM1dK8+FVcUk3l2Z6aZoGLfniCZ
-FqFiAq7ptjW7SRnEpzFi
-=lMgE
------END PGP SIGNATURE-----
+  gpio/gpio-ich: fix ichx_gpio_check_available() return what callers
+expect (2013-03-02 13:20:21 +0000)
 
---Signature=_Mon__4_Mar_2013_12_45_13_+1100_MYpeKRkhG8fykMTc--
+----------------------------------------------------------------
+2nd round of GPIO changes for Linux 3.9
+
+This branch contains a few bug fixes that I missed the first time around
+and updates to the gpio_desc series included in the first pull request.
+This tag has been retagged to drop the 2 head commits because the one of
+them caused a build failure.
+
+----------------------------------------------------------------
+Alexandre Courbot (3):
+      gpiolib: check descriptors validity before use
+      gpiolib: use const parameters when possible
+      gpiolib: move comment to right function
+
+Mika Westerberg (1):
+      gpio/gpio-ich: fix ichx_gpio_check_available() return what callers expect
+
+ drivers/gpio/gpio-ich.c |    4 +-
+ drivers/gpio/gpiolib.c  |  143 +++++++++++++++++++++++++++--------------------
+ 2 files changed, 84 insertions(+), 63 deletions(-)
