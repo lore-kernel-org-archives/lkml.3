@@ -1,66 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755501Ab3CDEUC (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 23:20:02 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:60536 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755434Ab3CDET7 (ORCPT
+	id S1755503Ab3CDEUg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 23:20:36 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60750 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755394Ab3CDDmg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Mar 2013 23:19:59 -0500
-Date: Mon, 4 Mar 2013 04:19:27 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Soren Brinkmann <soren.brinkmann@xilinx.com>
-Cc: Michal Simek <michal.simek@xilinx.com>,
-        "monstr@monstr.eu" <monstr@monstr.eu>,
-        Russell King <linux@arm.linux.org.uk>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Jason Cooper <jason@lakedaemon.net>, Tony Lindgren <tony@atomide.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH RFC] arm: l2x0: Leverage power saving features
-Message-ID: <20130304041927.GA14686@mudshark.cambridge.arm.com>
-References: <da92149b-159b-40e3-87b4-a0a448d1da8b@CO1EHSMHS031.ehs.local>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <da92149b-159b-40e3-87b4-a0a448d1da8b@CO1EHSMHS031.ehs.local>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 3 Mar 2013 22:42:36 -0500
+Message-Id: <20130304033709.244001909@decadent.org.uk>
+User-Agent: quilt/0.60-1
+Date: Mon, 04 Mar 2013 03:37:24 +0000
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: akpm@linux-foundation.org, Ian Abbott <abbotti@mev.co.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [ 017/153] staging: comedi: disallow COMEDI_DEVCONFIG on non-board minors
+In-Reply-To: <20130304033707.648729212@decadent.org.uk>
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Soren,
+3.2-stable review patch.  If anyone has any objections, please let me know.
 
-On Fri, Mar 01, 2013 at 06:51:26PM +0000, Soren Brinkmann wrote:
-> Enable the 'dynamic clock stop' and 'standby mode' features in the
-> l2x0 disable path.
-> 
-> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
-> ---
-> Hi,
-> 
-> we are currently implementing a suspend to RAM like low power mode for
-> Zynq.
-> The code for entering suspend looks like this:
-> 	outer_disable();                                                 
->         cpu_suspend(0, zynq_pm_suspend);                                 
->         outer_resume();
-> 
-> In our low power guidelines we mention the pl310's standby and clock stop
-> feature and that they should be enabled for low power modes. The question
-> arising here now is: Does the outer_disable() make these features redundant,
-> or does it make sense to add it like shown in this patch?
+------------------
 
-The settings in the power control register are unrelated to CPU suspend
-afaict. Instead, they are for semi-autonomous entry to non-destructive
-low-power states (e.g. when the L2 is idle for n cycles, or all of the L1
-masters have asserted WFI).
+From: Ian Abbott <abbotti@mev.co.uk>
 
-This raises the question of whether or not we should poke this register at
-all (other than saving/restoring it across suspend, which *is* destructive).
-I personally think that this stuff is better off being dealt with in
-firmware and initialised there, which follows what we do for other registers
-like this.
+commit 754ab5c0e55dd118273ca2c217c4d95e9fbc8259 upstream.
 
-Will
+Comedi has two sorts of minor devices:
+(a) normal board minor devices in the range 0 to
+COMEDI_NUM_BOARD_MINORS-1 inclusive; and
+(b) special subdevice minor devices in the range COMEDI_NUM_BOARD_MINORS
+upwards that are used to open the same underlying comedi device as the
+normal board minor devices, but with non-default read and write
+subdevices for asynchronous commands.
+
+The special subdevice minor devices get created when a board supporting
+asynchronous commands is attached to a normal board minor device, and
+destroyed when the board is detached from the normal board minor device.
+One way to attach or detach a board is by using the COMEDI_DEVCONFIG
+ioctl.  This should only be used on normal board minors as the special
+subdevice minors are too ephemeral.  In particular, the change
+introduced in commit 7d3135af399e92cf4c9bbc5f86b6c140aab3b88c ("staging:
+comedi: prevent auto-unconfig of manually configured devices") breaks
+horribly for special subdevice minor devices.
+
+Since there's no legitimate use for the COMEDI_DEVCONFIG ioctl on a
+special subdevice minor device node, disallow it and return -ENOTTY.
+
+Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ drivers/staging/comedi/comedi_fops.c |    5 +++++
+ 1 file changed, 5 insertions(+)
+
+--- a/drivers/staging/comedi/comedi_fops.c
++++ b/drivers/staging/comedi/comedi_fops.c
+@@ -136,6 +136,11 @@ static long comedi_unlocked_ioctl(struct
+ 	/* Device config is special, because it must work on
+ 	 * an unconfigured device. */
+ 	if (cmd == COMEDI_DEVCONFIG) {
++		if (minor >= COMEDI_NUM_BOARD_MINORS) {
++			/* Device config not appropriate on non-board minors. */
++			rc = -ENOTTY;
++			goto done;
++		}
+ 		rc = do_devconfig_ioctl(dev,
+ 					(struct comedi_devconfig __user *)arg);
+ 		goto done;
+
+
