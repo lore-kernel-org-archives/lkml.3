@@ -1,66 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932450Ab3CDUbS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 15:31:18 -0500
-Received: from zimbra.linbit.com ([212.69.161.123]:49013 "EHLO
-	zimbra.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932375Ab3CDUbR (ORCPT
+	id S932400Ab3CDUeu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 15:34:50 -0500
+Received: from moutng.kundenserver.de ([212.227.17.9]:54251 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932185Ab3CDUes (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 15:31:17 -0500
-From: Philipp Reisner <philipp.reisner@linbit.com>
-To: Alexey Khoroshilov <khoroshilov@ispras.ru>
-Cc: Lars Ellenberg <drbd-dev@lists.linbit.com>, drbd-user@lists.linbit.com,
-        linux-kernel@vger.kernel.org, ldv-project@linuxtesting.org
-Subject: Re: [PATCH] drbd: add module_put() on error path in drbd_proc_open()
-Date: Mon, 04 Mar 2013 21:31:09 +0100
-Message-ID: <9738633.yZ4agRkgQF@quad>
-User-Agent: KMail/4.8.5 (Linux/3.2.0-35-generic; KDE/4.8.5; x86_64; ; )
-In-Reply-To: <1362173982-26454-1-git-send-email-khoroshilov@ispras.ru>
-References: <1362173982-26454-1-git-send-email-khoroshilov@ispras.ru>
+	Mon, 4 Mar 2013 15:34:48 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: "Russell King - ARM Linux" <linux@arm.linux.org.uk>
+Subject: Re: Latest randconfig build errors
+Date: Mon, 4 Mar 2013 20:34:43 +0000
+User-Agent: KMail/1.12.2 (Linux/3.8.0-8-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
+        Tony Lindgren <tony@atomide.com>, arm@kernel.org,
+        linux-kernel@vger.kernel.org
+References: <20130304095136.GI17833@n2100.arm.linux.org.uk>
+In-Reply-To: <20130304095136.GI17833@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201303042034.43833.arnd@arndb.de>
+X-Provags-ID: V02:K0:UgjbgQ1Cjm2+1g39phYkp2QWE8NzqO/VGSJScWTXGvB
+ he6Qm/2T0pwfCmy8pZUNeWyFS/hI0y192/pGkX6h5fRmp2ZUbP
+ F/kwMYy9KaDu3MRa1FSvRAqya0TSP8nhL9OVEfKu+miJ4rbY7w
+ r1WpoGK7fOBBxiKOmv7+5rPYPW6Dc0gc6gYDxMaKCY570nWRsN
+ OBfRtsIHnj1YefZ108OnnM6BWDuNZRkqYWBITHVStVhxYDDzWH
+ 5EAY++j8mTKwybbNXbKPTZYZcueiXj309KS0QT+QyIPkdovNVe
+ nnb0Co9+Vc64vZ6FxbKZ8UKDQzr2jG515OC33FTJf658XhNI8q
+ t5L8LvBp9mBZdjHceaKA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alexey,
+On Monday 04 March 2013, Russell King - ARM Linux wrote:
 
-Thanks a lot! I have put it into our tree.
-http://git.drbd.org/gitweb.cgi?p=drbd-8.4.git
+> Versatile randconfig:
+> 
+> ERROR: "irq_domain_add_simple" [drivers/gpio/gpio-em.ko] undefined!
+> 
 
-I intend to get it into the 3.10 merge window.
+I'm pretty sure I submitted a patch for this one before. I'll go looking
+for it. IIRC the solution was to export that symbol.
 
-Best,
- Phil
-
-> If single_open() fails in drbd_proc_open(), module refcount is left
-> incremented. The patch adds module_put() on the error path.
-> 
-> Found by Linux Driver Verification project (linuxtesting.org).
-> 
-> Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
-> ---
->  drivers/block/drbd/drbd_proc.c |   10 ++++++++--
->  1 file changed, 8 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/block/drbd/drbd_proc.c b/drivers/block/drbd/drbd_proc.c
-> index 56672a6..30fe0a5 100644
-> --- a/drivers/block/drbd/drbd_proc.c
-> +++ b/drivers/block/drbd/drbd_proc.c
-> @@ -313,8 +313,14 @@ static int drbd_seq_show(struct seq_file *seq, void *v)
-> 
->  static int drbd_proc_open(struct inode *inode, struct file *file)
->  {
-> -	if (try_module_get(THIS_MODULE))
-> -		return single_open(file, drbd_seq_show, PDE(inode)->data);
-> +	int err;
-> +
-> +	if (try_module_get(THIS_MODULE)) {
-> +		err = single_open(file, drbd_seq_show, PDE(inode)->data);
-> +		if (err)
-> +			module_put(THIS_MODULE);
-> +		return err;
-> +	}
->  	return -ENODEV;
->  }
+	Arnd
