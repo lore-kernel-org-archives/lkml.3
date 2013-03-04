@@ -1,72 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758935Ab3CDW5E (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 17:57:04 -0500
-Received: from fn.samba.org ([216.83.154.106]:32768 "EHLO mail.samba.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758788Ab3CDW5B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 17:57:01 -0500
-X-Greylist: delayed 433 seconds by postgrey-1.27 at vger.kernel.org; Mon, 04 Mar 2013 17:57:01 EST
-Message-ID: <5135250A.30604@samba.org>
-Date: Mon, 04 Mar 2013 17:49:46 -0500
-From: Simo <simo@samba.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130219 Thunderbird/17.0.3
-MIME-Version: 1.0
-To: "J. Bruce Fields" <bfields@fieldses.org>
-CC: Andy Lutomirski <luto@amacapital.net>,
-        Pavel Shilovsky <piastry@etersoft.ru>, linux-kernel@vger.kernel.org,
-        linux-cifs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-nfs@vger.kernel.org, wine-devel@winehq.org
-Subject: Re: [PATCH v3 0/7] Add O_DENY* support for VFS and CIFS/NFS
-References: <1362065133-9490-1-git-send-email-piastry@etersoft.ru> <512FD1D5.3010106@mit.edu> <20130304211923.GI20389@fieldses.org>
-In-Reply-To: <20130304211923.GI20389@fieldses.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S932494Ab3CDW7J (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 17:59:09 -0500
+Received: from g1t0026.austin.hp.com ([15.216.28.33]:33974 "EHLO
+	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758783Ab3CDW7I (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Mar 2013 17:59:08 -0500
+Message-ID: <1362437940.4591.24.camel@lorien2>
+Subject: [PATCH] arch/x86: fix unused variable warning in mwait_play_dead()
+From: Shuah Khan <shuah.khan@hp.com>
+Reply-To: shuah.khan@hp.com
+To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        a.p.zijlstra@chello.nl, jarkko.sakkinen@intel.com
+Cc: LKML <linux-kernel@vger.kernel.org>, x86@kernel.org, shuahkhan@gmail.com
+Date: Mon, 04 Mar 2013 15:59:00 -0700
+Organization: ISS-Linux
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/04/2013 04:19 PM, J. Bruce Fields wrote:
-> On Thu, Feb 28, 2013 at 01:53:25PM -0800, Andy Lutomirski wrote:
->> [possible resend -- sorry]
->>
->> On 02/28/2013 07:25 AM, Pavel Shilovsky wrote:
->>> This patchset adds support of O_DENY* flags for Linux fs layer. These flags can be used by any application that needs share reservations to organize a file access. VFS already has some sort of this capability - now it's done through flock/LOCK_MAND mechanis, but that approach is non-atomic. This patchset build new capabilities on top of the existing one but doesn't bring any changes into the flock call semantic.
->>>
->>> These flags can be used by NFS (built-in-kernel) and CIFS (Samba) servers and Wine applications through VFS (for local filesystems) or CIFS/NFS modules. This will help when e.g. Samba and NFS server share the same directory for Windows and Linux users or Wine applications use Samba/NFS share to access the same data from different clients.
->>>
->>> According to the previous discussions the most problematic question is how to prevent situations like DoS attacks where e.g /lib/liba.so file can be open with DENYREAD, or smth like this. That's why one extra flag O_DENYMAND is added. It indicates to underlying layer that an application want to use O_DENY* flags semantic. It allows us not affect native Linux applications (that don't use O_DENYMAND flag) - so, these flags (and the semantic of open syscall that they bring) are used only for those applications that really want it proccessed that way.
->>>
->>> So, we have four new flags:
->>> O_DENYREAD - to prevent other opens with read access,
->>> O_DENYWRITE - to prevent other opens with write access,
->>> O_DENYDELETE - to prevent delete operations (this flag is not implemented in VFS and NFS part and only suitable for CIFS module),
->>> O_DENYMAND - to switch on/off three flags above.
->> O_DENYMAND doesn't deny anything.  Would a name like O_RESPECT_DENY be
->> better?
->>
->> Other than that, this seems like a sensible mechanism.
-> I'm a little more worried: these are mandatory locks, and applications
-> that use them are used to the locks being enforced correctly.  Are we
-> sure that an application that opens a file O_DENYWRITE won't crash if it
-> sees the file data change while it holds the open?
+Fix arch/x86/kernel/smpboot.c: In function ‘mwait_play_dead’:
+arch/x86/kernel/smpboot.c:1370:22: warning: unused variable ‘c’ [-Wunused-variable]
 
-The redirector may simply assume it has full control of that part of the 
-file and not read nor send data until the lock is released too, so you 
-get conflicting views of the file contents between different clients if 
-you let a mandatory lock not be mandatory.
+Signed-off-by: Shuah Khan <shuah.khan@hp.com>
+---
+ arch/x86/kernel/smpboot.c |    1 -
+ 1 file changed, 1 deletion(-)
 
-> In general the idea of making a mandatory lock opt-in makes me nervous.
-> I'd prefer something like a mount option, so that we know that everyone
-> on that one filesystem is playing by the same rules, but we can still
-> mount filesystems like / without the option.
+diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+index a6ceaed..7bc998a 100644
+--- a/arch/x86/kernel/smpboot.c
++++ b/arch/x86/kernel/smpboot.c
+@@ -1367,7 +1367,6 @@ static inline void mwait_play_dead(void)
+ 	unsigned int highest_subcstate = 0;
+ 	int i;
+ 	void *mwait_ptr;
+-	struct cpuinfo_x86 *c = __this_cpu_ptr(&cpu_info);
+ 
+ 	if (!this_cpu_has(X86_FEATURE_MWAIT))
+ 		return;
+-- 
+1.7.10.4
 
-+1
 
-> But I'll admit I'm definitely not an expert on Windows locking and may
-> be missing something about how these locks are meant to work.
 
-Mandatory locks really are mandatory in Windows.
-That may not be nice to a Unix system but what can you do ?
-
-Simo.
