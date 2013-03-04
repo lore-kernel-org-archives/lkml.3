@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755822Ab3CDETl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 23:19:41 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60751 "EHLO
+	id S1755426Ab3CDDmh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 22:42:37 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60757 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755429Ab3CDDmi (ORCPT
+	by vger.kernel.org with ESMTP id S1755352Ab3CDDmc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Mar 2013 22:42:38 -0500
-Message-Id: <20130304033709.003966848@decadent.org.uk>
+	Sun, 3 Mar 2013 22:42:32 -0500
+Message-Id: <20130304033707.972521649@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 04 Mar 2013 03:37:21 +0000
+Date: Mon, 04 Mar 2013 03:37:10 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Theodore Tso <tytso@mit.edu>,
-        Carlos Maiolino <cmaiolino@redhat.com>, Jan Kara <jack@suse.cz>
-Subject: [ 014/153] quota: autoload the quota_v2 module for QFMT_VFS_V1 quota format
+Cc: akpm@linux-foundation.org, Cornelia Huck <cornelia.huck@de.ibm.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Alexander Graf <agraf@suse.de>,
+        Gleb Natapov <gleb@redhat.com>
+Subject: [ 003/153] KVM: s390: Handle hosts not supporting s390-virtio.
 In-Reply-To: <20130304033707.648729212@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,31 +28,86 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Theodore Ts'o <tytso@mit.edu>
+From: Cornelia Huck <cornelia.huck@de.ibm.com>
 
-commit c3ad83d9efdfe6a86efd44945a781f00c879b7b4 upstream.
+commit 55c171a6d90dc0574021f9c836127cfd1a7d2e30 upstream.
 
-Otherwise, ext4 file systems with the quota featured enable will get a
-very confusing "No such process" error message if the quota code is
-built as a module and the quota_v2 module has not been loaded.
+Running under a kvm host does not necessarily imply the presence of
+a page mapped above the main memory with the virtio information;
+however, the code includes a hard coded access to that page.
 
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Reviewed-by: Carlos Maiolino <cmaiolino@redhat.com>
-Acked-by: Jan Kara <jack@suse.cz>
+Instead, check for the presence of the page and exit gracefully
+before we hit an addressing exception if it does not exist.
+
+Reviewed-by: Marcelo Tosatti <mtosatti@redhat.com>
+Reviewed-by: Alexander Graf <agraf@suse.de>
+Signed-off-by: Cornelia Huck <cornelia.huck@de.ibm.com>
+Signed-off-by: Gleb Natapov <gleb@redhat.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- include/linux/quota.h |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/s390/kvm/kvm_virtio.c |   38 ++++++++++++++++++++++++++++++--------
+ 1 file changed, 30 insertions(+), 8 deletions(-)
 
---- a/include/linux/quota.h
-+++ b/include/linux/quota.h
-@@ -413,6 +413,7 @@ struct quota_module_name {
- #define INIT_QUOTA_MODULE_NAMES {\
- 	{QFMT_VFS_OLD, "quota_v1"},\
- 	{QFMT_VFS_V0, "quota_v2"},\
-+	{QFMT_VFS_V1, "quota_v2"},\
- 	{0, NULL}}
+--- a/drivers/s390/kvm/kvm_virtio.c
++++ b/drivers/s390/kvm/kvm_virtio.c
+@@ -414,6 +414,26 @@ static void kvm_extint_handler(unsigned
+ }
  
- #endif /* __KERNEL__ */
+ /*
++ * For s390-virtio, we expect a page above main storage containing
++ * the virtio configuration. Try to actually load from this area
++ * in order to figure out if the host provides this page.
++ */
++static int __init test_devices_support(unsigned long addr)
++{
++	int ret = -EIO;
++
++	asm volatile(
++		"0:	lura	0,%1\n"
++		"1:	xgr	%0,%0\n"
++		"2:\n"
++		EX_TABLE(0b,2b)
++		EX_TABLE(1b,2b)
++		: "+d" (ret)
++		: "a" (addr)
++		: "0", "cc");
++	return ret;
++}
++/*
+  * Init function for virtio
+  * devices are in a single page above top of "normal" mem
+  */
+@@ -424,21 +444,23 @@ static int __init kvm_devices_init(void)
+ 	if (!MACHINE_IS_KVM)
+ 		return -ENODEV;
+ 
++	if (test_devices_support(real_memory_size) < 0)
++		return -ENODEV;
++
++	rc = vmem_add_mapping(real_memory_size, PAGE_SIZE);
++	if (rc)
++		return rc;
++
++	kvm_devices = (void *) real_memory_size;
++
+ 	kvm_root = root_device_register("kvm_s390");
+ 	if (IS_ERR(kvm_root)) {
+ 		rc = PTR_ERR(kvm_root);
+ 		printk(KERN_ERR "Could not register kvm_s390 root device");
++		vmem_remove_mapping(real_memory_size, PAGE_SIZE);
+ 		return rc;
+ 	}
+ 
+-	rc = vmem_add_mapping(real_memory_size, PAGE_SIZE);
+-	if (rc) {
+-		root_device_unregister(kvm_root);
+-		return rc;
+-	}
+-
+-	kvm_devices = (void *) real_memory_size;
+-
+ 	INIT_WORK(&hotplug_work, hotplug_devices);
+ 
+ 	service_subclass_irq_register();
 
 
