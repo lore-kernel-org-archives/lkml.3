@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757519Ab3CDDpy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 22:45:54 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33202 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757465Ab3CDDo4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1757496Ab3CDDo4 (ORCPT <rfc822;w@1wt.eu>);
 	Sun, 3 Mar 2013 22:44:56 -0500
-Message-Id: <20130304033709.938916745@decadent.org.uk>
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33188 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757442Ab3CDDox (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Mar 2013 22:44:53 -0500
+Message-Id: <20130304033710.320592652@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 04 Mar 2013 03:37:31 +0000
+Date: Mon, 04 Mar 2013 03:37:35 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Takashi Iwai <tiwai@suse.de>
-Subject: [ 024/153] ALSA: aloop: Fix Oops while PM resume
+Cc: akpm@linux-foundation.org, majianpeng <majianpeng@gmail.com>,
+        "J. Bruce Fields" <bfields@redhat.com>
+Subject: [ 028/153] nfsd: Fix memleak
 In-Reply-To: <20130304033707.648729212@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -26,48 +27,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: majianpeng <majianpeng@gmail.com>
 
-commit edac894389f9c9de2a1368c78809c824b343f3a5 upstream.
+commit 2d32b29a1c2830f7c42caa8258c714acd983961f upstream.
 
-snd-aloop driver has no proper PM implementation, thus the PM resume
-may trigger Oops due to leftover timer instance.  This patch adds the
-missing suspend/resume implementation.
+When free nfs-client, it must free the ->cl_stateids.
 
-Reported-and-tested-by: El boulangero <elboulangero@gmail.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-[bwh: Backported to 3.2: adjust context]
+Signed-off-by: Jianpeng Ma <majianpeng@gmail.com>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- sound/drivers/aloop.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ fs/nfsd/nfs4state.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/sound/drivers/aloop.c
-+++ b/sound/drivers/aloop.c
-@@ -287,12 +287,14 @@ static int loopback_trigger(struct snd_p
- 			loopback_active_notify(dpcm);
- 		break;
- 	case SNDRV_PCM_TRIGGER_PAUSE_PUSH:
-+	case SNDRV_PCM_TRIGGER_SUSPEND:
- 		spin_lock(&cable->lock);	
- 		cable->pause |= stream;
- 		spin_unlock(&cable->lock);
- 		loopback_timer_stop(dpcm);
- 		break;
- 	case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
-+	case SNDRV_PCM_TRIGGER_RESUME:
- 		spin_lock(&cable->lock);
- 		dpcm->last_jiffies = jiffies;
- 		cable->pause &= ~stream;
-@@ -552,7 +554,8 @@ static snd_pcm_uframes_t loopback_pointe
- static struct snd_pcm_hardware loopback_pcm_hardware =
- {
- 	.info =		(SNDRV_PCM_INFO_INTERLEAVED | SNDRV_PCM_INFO_MMAP |
--			 SNDRV_PCM_INFO_MMAP_VALID | SNDRV_PCM_INFO_PAUSE),
-+			 SNDRV_PCM_INFO_MMAP_VALID | SNDRV_PCM_INFO_PAUSE |
-+			 SNDRV_PCM_INFO_RESUME),
- 	.formats =	(SNDRV_PCM_FMTBIT_S16_LE | SNDRV_PCM_FMTBIT_S16_BE |
- 			 SNDRV_PCM_FMTBIT_S32_LE | SNDRV_PCM_FMTBIT_S32_BE |
- 			 SNDRV_PCM_FMTBIT_FLOAT_LE | SNDRV_PCM_FMTBIT_FLOAT_BE),
+--- a/fs/nfsd/nfs4state.c
++++ b/fs/nfsd/nfs4state.c
+@@ -1009,6 +1009,8 @@ free_client(struct nfs4_client *clp)
+ 		put_group_info(clp->cl_cred.cr_group_info);
+ 	kfree(clp->cl_principal);
+ 	kfree(clp->cl_name.data);
++	idr_remove_all(&clp->cl_stateids);
++	idr_destroy(&clp->cl_stateids);
+ 	kfree(clp);
+ }
+ 
 
 
