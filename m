@@ -1,65 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757587Ab3CDNe0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 08:34:26 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:59975 "EHLO mail.skyhub.de"
+	id S1757593Ab3CDNhb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 08:37:31 -0500
+Received: from mms1.broadcom.com ([216.31.210.17]:1457 "EHLO mms1.broadcom.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757325Ab3CDNeZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 08:34:25 -0500
-Date: Mon, 4 Mar 2013 14:34:10 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Peter Feuerer <peter@piie.net>, Andreas Mohr <andi@lisas.de>
-Cc: Zhang Rui <rui.zhang@intel.com>, LKML <linux-kernel@vger.kernel.org>,
-        Durgadoss R <durgadoss.r@intel.com>,
-        Alexander Lam <azl@andrew.cmu.edu>
-Subject: Re: [PATCH] acerhdf: Fix fan activation with new thermal governor
-Message-ID: <20130304133410.GC22274@pd.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Peter Feuerer <peter@piie.net>, Andreas Mohr <andi@lisas.de>,
-	Zhang Rui <rui.zhang@intel.com>,
-	LKML <linux-kernel@vger.kernel.org>,
-	Durgadoss R <durgadoss.r@intel.com>,
-	Alexander Lam <azl@andrew.cmu.edu>
-References: <20130222111521.GA25473@pd.tnic>
- <1361647210-12983-1-git-send-email-bp@alien8.de>
- <20130224112851.GA19609@pd.tnic>
- <cone.1361706175.908398.1806.1000@galar>
- <20130224143452.GE19609@pd.tnic>
- <1361762514.2303.21.camel@rzhang1-mobl4>
- <20130225102526.GB12067@pd.tnic>
- <20130225121608.GC12067@pd.tnic>
+	id S1757325Ab3CDNh3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Mar 2013 08:37:29 -0500
+X-Server-Uuid: 06151B78-6688-425E-9DE2-57CB27892261
+Message-ID: <5134A37D.9000704@broadcom.com>
+Date: Mon, 4 Mar 2013 14:37:01 +0100
+From: "Arend van Spriel" <arend@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US;
+ rv:1.9.2.24) Gecko/20111103 Lightning/1.0b2 Thunderbird/3.1.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20130225121608.GC12067@pd.tnic>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Akinobu Mita" <akinobu.mita@gmail.com>
+cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        "David S. Miller" <davem@davemloft.net>,
+        "Michael Chan" <mchan@broadcom.com>,
+        "Thomas Sailer" <t.sailer@alumni.ethz.ch>,
+        "Jean-Paul Roubelat" <jpr@f6fbb.org>, "Bing Zhao" <bzhao@marvell.com>,
+        "Brett Rudley" <brudley@broadcom.com>,
+        "Franky (Zhenhui) Lin" <frankyl@broadcom.com>,
+        "Hante Meuleman" <meuleman@broadcom.com>,
+        brcm80211-dev-list@broadcom.com, netdev@vger.kernel.org,
+        linux-hams@vger.kernel.org, linux-wireless@vger.kernel.org
+Subject: Re: [PATCH -v3 16/23] drivers/net: rename random32() to
+ prandom_u32()
+References: <1362401911-14074-1-git-send-email-akinobu.mita@gmail.com>
+ <1362401911-14074-17-git-send-email-akinobu.mita@gmail.com>
+In-Reply-To: <1362401911-14074-17-git-send-email-akinobu.mita@gmail.com>
+X-WSS-ID: 7D2A7C8E23C6875220-01-01
+Content-Type: text/plain;
+ charset=iso-8859-1;
+ format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 25, 2013 at 01:16:08PM +0100, Borislav Petkov wrote:
-> On Mon, Feb 25, 2013 at 11:25:26AM +0100, Borislav Petkov wrote:
-> > > has anybody checked if the patch at lkml.org/lkml/2012/12/30/47 fixes
-> > > the problem, without any other patch?
-> > 
-> > Ok, let me try it out.
-> 
-> Ok, doing a short test here proves successful. I'll run it the next days
-> too to make sure - it would be nice if people could confirm my test
-> results, though.
-> 
-> Tested-by: Borislav Petkov <bp@suse.de>
+On 03/04/13 13:58, Akinobu Mita wrote:
+> Use more preferable function name which implies using a pseudo-random
+> number generator.
+>
+> Signed-off-by: Akinobu Mita<akinobu.mita@gmail.com>
+> Acked-by: Thomas Sailer<t.sailer@alumni.ethz.ch>
+> Acked-by: Bing Zhao<bzhao@marvell.com>  [mwifiex]
+> Cc: "David S. Miller"<davem@davemloft.net>
+> Cc: Michael Chan<mchan@broadcom.com>
+> Cc: Thomas Sailer<t.sailer@alumni.ethz.ch>
+> Cc: Jean-Paul Roubelat<jpr@f6fbb.org>
+> Cc: Bing Zhao<bzhao@marvell.com>
+> Cc: Brett Rudley<brudley@broadcom.com>
+> Cc: Arend van Spriel<arend@broadcom.com>
+> Cc: "Franky (Zhenhui) Lin"<frankyl@broadcom.com>
+> Cc: Hante Meuleman<meuleman@broadcom.com>
+> Cc: brcm80211-dev-list@broadcom.com
+> Cc: netdev@vger.kernel.org
+> Cc: linux-hams@vger.kernel.org
+> Cc: linux-wireless@vger.kernel.org
+> ---
+> * Changes from v2
+> - add Acked-by: line
+> - add rename for brcm80211
+>
+>   drivers/net/ethernet/broadcom/cnic.c          | 4 ++--
+>   drivers/net/hamradio/baycom_epp.c             | 2 +-
+>   drivers/net/hamradio/hdlcdrv.c                | 2 +-
+>   drivers/net/hamradio/yam.c                    | 2 +-
+>   drivers/net/wireless/brcm80211/brcmfmac/p2p.c | 2 +-
+>   drivers/net/wireless/mwifiex/cfg80211.c       | 4 ++--
+>   6 files changed, 8 insertions(+), 8 deletions(-)
+>
+> diff --git a/drivers/net/wireless/brcm80211/brcmfmac/p2p.c b/drivers/net/wireless/brcm80211/brcmfmac/p2p.c
+> index 4166e64..bca31a8 100644
+> --- a/drivers/net/wireless/brcm80211/brcmfmac/p2p.c
+> +++ b/drivers/net/wireless/brcm80211/brcmfmac/p2p.c
+> @@ -1118,7 +1118,7 @@ static void brcmf_p2p_afx_handler(struct work_struct *work)
+>   	if (afx_hdl->is_listen&&  afx_hdl->my_listen_chan)
+>   		/* 100ms ~ 300ms */
+>   		err = brcmf_p2p_discover_listen(p2p, afx_hdl->my_listen_chan,
+> -						100 * (1 + (random32() % 3)));
+> +					100 * (1 + (prandom_u32() % 3)));
 
-Pjooiiing!
+Seems like indentation is wrong now. Please retain the alignment.
 
-Andreas, Peter, can you guys give http://lkml.org/lkml/2012/12/30/47 a run?
+Regards,
+Arend
 
-Thanks.
-
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
