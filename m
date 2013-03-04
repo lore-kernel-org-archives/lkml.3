@@ -1,95 +1,528 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757528Ab3CDNKb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 08:10:31 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:59686 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756823Ab3CDNK2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 08:10:28 -0500
-Date: Mon, 4 Mar 2013 14:10:23 +0100
-From: Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Toshi Kani <toshi.kani@hp.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        LKML <linux-kernel@vger.kernel.org>, Yinghai Lu <yinghai@kernel.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Jiang Liu <liuj97@gmail.com>
-Subject: Re: [Update 4][PATCH 2/7] ACPI / scan: Introduce common code for
- ACPI-based device hotplug
-Message-ID: <20130304131023.GA4561@dhcp-192-168-178-175.profitbricks.localdomain>
-References: <3260206.bhaAobGhpZ@vostro.rjw.lan>
- <1478394.ryVNRuTre2@vostro.rjw.lan>
- <1361815672.12845.71.camel@misato.fc.hp.com>
- <18666371.hyHAvqrdQ6@vostro.rjw.lan>
+	id S1757416Ab3CDNUG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 08:20:06 -0500
+Received: from canardo.mork.no ([148.122.252.1]:45418 "EHLO canardo.mork.no"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755443Ab3CDNUE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Mar 2013 08:20:04 -0500
+From: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
+To: linux-usb@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, fangxiaozhi@huawei.com, zihan@huawei.com,
+        Lin.Lei@huawei.com, Greg KH <gregkh@linuxfoundation.org>,
+        neil.yi@huawei.com, wangyuhua@huawei.com, huqiao36@huawei.com,
+        balbi@ti.com, mdharm-usb@one-eyed-alien.net, sebastian@breakpoint.cc,
+        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
+        stable <stable@vger.kernel.org>
+Subject: [PATCH] USB: storage: fix Huawei mode switching regression
+Date: Mon,  4 Mar 2013 14:19:21 +0100
+Message-Id: <1362403161-23501-1-git-send-email-bjorn@mork.no>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <87obezs888.fsf@nemi.mork.no>
+References: <87obezs888.fsf@nemi.mork.no>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <18666371.hyHAvqrdQ6@vostro.rjw.lan>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+This reverts commit 200e0d99 ("USB: storage: optimize to match the
+Huawei USB storage devices and support new switch command" and the
+followup bugfix commit cd060956 ("USB: storage: properly handle
+the endian issues of idProduct").
 
-On Tue, Feb 26, 2013 at 12:39:50AM +0100, Rafael J. Wysocki wrote:
-> On Monday, February 25, 2013 11:07:52 AM Toshi Kani wrote:
-> > On Sat, 2013-02-23 at 22:38 +0000, Rafael J. Wysocki wrote:
-> > > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > > 
-> > > Multiple drivers handling hotplug-capable ACPI device nodes install
-> > > notify handlers covering the same types of events in a very similar
-> > > way.  Moreover, those handlers are installed in separate namespace
-> > > walks, although that really should be done during namespace scans
-> > > carried out by acpi_bus_scan().  This leads to substantial code
-> > > duplication, unnecessary overhead and behavior that is hard to
-> > > follow.
-> > > 
-> > > For this reason, introduce common code in drivers/acpi/scan.c for
-> > > handling hotplug-related notification and carrying out device
-> > > insertion and eject operations in a generic fashion, such that it
-> > > may be used by all of the relevant drivers in the future.  To cover
-> > > the existing differences between those drivers introduce struct
-> > > acpi_hotplug_profile for representing collections of hotplug
-> > > settings associated with different ACPI scan handlers that can be
-> > > used by the drivers to make the common code reflect their current
-> > > behavior.
-[...]
-> That's correct, but I don't know what the user space expectations are
-> currently.
-> 
-> > So, I'd suggest the following changes.
-> >  - Remove the "uevents" attribute.  KOBJ_ONLINE/OFFLINE are not used for
-> > ACPI device objects.
-> >  - Make the !autoeject case as an exception for now, and emit
-> > KOBJ_OFFLINE as a way to request off-lining to user.  This uevent is
-> > tied with the !autoeject case.  We can then revisit if this use-case
-> > needs to be supported going forward.  If so, we may want to consider a
-> > different event type.
-> 
-> Well, what about avoiding to expose uevents and autoeject for now and
-> exposing enabled only?  Drivers would still be able to set the other flags on
-> init on init to enforce the backwards-compatible behavior.
+The commit effectively added a large number of Huawei devices to
+the deprecated usb-storage mode switching logic.  Many of these
+devices have been in use and supported by the userspace
+usb_modeswitch utility for years.  Forcing the switching inside
+the kernel causes a number of regressions as a result of ignoring
+existing onfigurations, and also completely takes away the ability
+to configure mode switching per device/system/user.
 
-Now that we don't define uevents and autoeject in v2 of this series, could you
-explain how we get safe ejection from userspace e.g. for memory hot-remove? What
-are the other flags drivers can use (on init?) to avoid autoeject and only issue
-KOBJ_OFFLINE?
+Known regressions caused by this:
+ - Some of the devices support multiple modes, using different
+  switching commands.  There are existing configurations taking
+  advantage of this.
 
-> 
-> I agree that it would be sufficient to use one additional flag then, to start
-> with, but its meaning would be something like "keep backwards compatibility
-> with the old container driver", so perhaps "autoeject" is not a good name.
-> 
-> What about "user_eject" (that won't be exposed to user space) instead?  Where,
-> if set, it would meand "do not autoeject and emit KOBJ_OFFLINE/ONLINE uevents
-> like the old container driver did"?
+ - There is a real use case for disabling mode switching and
+  instead mounting the exposed storage device. This becomes
+  impossible with switching logic inside the usb-storage driver.
 
-I don't see user_eject in v2. Is it unnecessary for userspace ejection control
-or planned for later? Also why shouldn't it be exposed to userpace?
+ - At least on device fail as a result of the usb-storage switching
+  command, becoming completely unswitchable. This is possibly a
+  firmware bug, but still a regression because the device work as
+  expected using usb_modeswitch defaults.
 
-thanks,
+In-kernel mode switching was deprecated years ago with the
+development of the more user friendly userspace alternatives. The
+existing list of devices in usb-storage was only kept to prevent
+breaking already working systems.  The long term plan is to remove
+the list, not to add to it. Ref:
+http://permalink.gmane.org/gmane.linux.usb.general/28543
 
-- Vasilis
+Cc: <fangxiaozhi@huawei.com>
+Cc: stable <stable@vger.kernel.org>
+Signed-off-by: Bjørn Mork <bjorn@mork.no>
+---
+I just realized that this already had gone into maintained stable
+series', making the fix so much more urgent.  This needs to be
+reverted before it starts hitting innocent distro users.  So I
+am sending the patch now instead of waiting for Huawei to respond.
+
+
+Bjørn
+
+ drivers/usb/storage/initializers.c |   76 +--------
+ drivers/usb/storage/initializers.h |    4 +-
+ drivers/usb/storage/unusual_devs.h |  329 +++++++++++++++++++++++++++++++++++-
+ 3 files changed, 331 insertions(+), 78 deletions(-)
+
+diff --git a/drivers/usb/storage/initializers.c b/drivers/usb/storage/initializers.c
+index 7ab9046..105d900 100644
+--- a/drivers/usb/storage/initializers.c
++++ b/drivers/usb/storage/initializers.c
+@@ -92,8 +92,8 @@ int usb_stor_ucr61s2b_init(struct us_data *us)
+ 	return 0;
+ }
+ 
+-/* This places the HUAWEI usb dongles in multi-port mode */
+-static int usb_stor_huawei_feature_init(struct us_data *us)
++/* This places the HUAWEI E220 devices in multi-port mode */
++int usb_stor_huawei_e220_init(struct us_data *us)
+ {
+ 	int result;
+ 
+@@ -104,75 +104,3 @@ static int usb_stor_huawei_feature_init(struct us_data *us)
+ 	US_DEBUGP("Huawei mode set result is %d\n", result);
+ 	return 0;
+ }
+-
+-/*
+- * It will send a scsi switch command called rewind' to huawei dongle.
+- * When the dongle receives this command at the first time,
+- * it will reboot immediately. After rebooted, it will ignore this command.
+- * So it is  unnecessary to read its response.
+- */
+-static int usb_stor_huawei_scsi_init(struct us_data *us)
+-{
+-	int result = 0;
+-	int act_len = 0;
+-	struct bulk_cb_wrap *bcbw = (struct bulk_cb_wrap *) us->iobuf;
+-	char rewind_cmd[] = {0x11, 0x06, 0x20, 0x00, 0x00, 0x01, 0x01, 0x00,
+-			0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+-
+-	bcbw->Signature = cpu_to_le32(US_BULK_CB_SIGN);
+-	bcbw->Tag = 0;
+-	bcbw->DataTransferLength = 0;
+-	bcbw->Flags = bcbw->Lun = 0;
+-	bcbw->Length = sizeof(rewind_cmd);
+-	memset(bcbw->CDB, 0, sizeof(bcbw->CDB));
+-	memcpy(bcbw->CDB, rewind_cmd, sizeof(rewind_cmd));
+-
+-	result = usb_stor_bulk_transfer_buf(us, us->send_bulk_pipe, bcbw,
+-					US_BULK_CB_WRAP_LEN, &act_len);
+-	US_DEBUGP("transfer actual length=%d, result=%d\n", act_len, result);
+-	return result;
+-}
+-
+-/*
+- * It tries to find the supported Huawei USB dongles.
+- * In Huawei, they assign the following product IDs
+- * for all of their mobile broadband dongles,
+- * including the new dongles in the future.
+- * So if the product ID is not included in this list,
+- * it means it is not Huawei's mobile broadband dongles.
+- */
+-static int usb_stor_huawei_dongles_pid(struct us_data *us)
+-{
+-	struct usb_interface_descriptor *idesc;
+-	int idProduct;
+-
+-	idesc = &us->pusb_intf->cur_altsetting->desc;
+-	idProduct = le16_to_cpu(us->pusb_dev->descriptor.idProduct);
+-	/* The first port is CDROM,
+-	 * means the dongle in the single port mode,
+-	 * and a switch command is required to be sent. */
+-	if (idesc && idesc->bInterfaceNumber == 0) {
+-		if ((idProduct == 0x1001)
+-			|| (idProduct == 0x1003)
+-			|| (idProduct == 0x1004)
+-			|| (idProduct >= 0x1401 && idProduct <= 0x1500)
+-			|| (idProduct >= 0x1505 && idProduct <= 0x1600)
+-			|| (idProduct >= 0x1c02 && idProduct <= 0x2202)) {
+-			return 1;
+-		}
+-	}
+-	return 0;
+-}
+-
+-int usb_stor_huawei_init(struct us_data *us)
+-{
+-	int result = 0;
+-
+-	if (usb_stor_huawei_dongles_pid(us)) {
+-		if (le16_to_cpu(us->pusb_dev->descriptor.idProduct) >= 0x1446)
+-			result = usb_stor_huawei_scsi_init(us);
+-		else
+-			result = usb_stor_huawei_feature_init(us);
+-	}
+-	return result;
+-}
+diff --git a/drivers/usb/storage/initializers.h b/drivers/usb/storage/initializers.h
+index 5376d4f..529327f 100644
+--- a/drivers/usb/storage/initializers.h
++++ b/drivers/usb/storage/initializers.h
+@@ -46,5 +46,5 @@ int usb_stor_euscsi_init(struct us_data *us);
+  * flash reader */
+ int usb_stor_ucr61s2b_init(struct us_data *us);
+ 
+-/* This places the HUAWEI usb dongles in multi-port mode */
+-int usb_stor_huawei_init(struct us_data *us);
++/* This places the HUAWEI E220 devices in multi-port mode */
++int usb_stor_huawei_e220_init(struct us_data *us);
+diff --git a/drivers/usb/storage/unusual_devs.h b/drivers/usb/storage/unusual_devs.h
+index 72923b5..d305a5a 100644
+--- a/drivers/usb/storage/unusual_devs.h
++++ b/drivers/usb/storage/unusual_devs.h
+@@ -1527,10 +1527,335 @@ UNUSUAL_DEV(  0x1210, 0x0003, 0x0100, 0x0100,
+ /* Reported by fangxiaozhi <huananhu@huawei.com>
+  * This brings the HUAWEI data card devices into multi-port mode
+  */
+-UNUSUAL_VENDOR_INTF(0x12d1, 0x08, 0x06, 0x50,
++UNUSUAL_DEV(  0x12d1, 0x1001, 0x0000, 0x0000,
+ 		"HUAWEI MOBILE",
+ 		"Mass Storage",
+-		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_init,
++		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
++		0),
++UNUSUAL_DEV(  0x12d1, 0x1003, 0x0000, 0x0000,
++		"HUAWEI MOBILE",
++		"Mass Storage",
++		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
++		0),
++UNUSUAL_DEV(  0x12d1, 0x1004, 0x0000, 0x0000,
++		"HUAWEI MOBILE",
++		"Mass Storage",
++		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
++		0),
++UNUSUAL_DEV(  0x12d1, 0x1401, 0x0000, 0x0000,
++		"HUAWEI MOBILE",
++		"Mass Storage",
++		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
++		0),
++UNUSUAL_DEV(  0x12d1, 0x1402, 0x0000, 0x0000,
++		"HUAWEI MOBILE",
++		"Mass Storage",
++		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
++		0),
++UNUSUAL_DEV(  0x12d1, 0x1403, 0x0000, 0x0000,
++		"HUAWEI MOBILE",
++		"Mass Storage",
++		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
++		0),
++UNUSUAL_DEV(  0x12d1, 0x1404, 0x0000, 0x0000,
++		"HUAWEI MOBILE",
++		"Mass Storage",
++		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
++		0),
++UNUSUAL_DEV(  0x12d1, 0x1405, 0x0000, 0x0000,
++		"HUAWEI MOBILE",
++		"Mass Storage",
++		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
++		0),
++UNUSUAL_DEV(  0x12d1, 0x1406, 0x0000, 0x0000,
++		"HUAWEI MOBILE",
++		"Mass Storage",
++		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
++		0),
++UNUSUAL_DEV(  0x12d1, 0x1407, 0x0000, 0x0000,
++		"HUAWEI MOBILE",
++		"Mass Storage",
++		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
++		0),
++UNUSUAL_DEV(  0x12d1, 0x1408, 0x0000, 0x0000,
++		"HUAWEI MOBILE",
++		"Mass Storage",
++		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
++		0),
++UNUSUAL_DEV(  0x12d1, 0x1409, 0x0000, 0x0000,
++		"HUAWEI MOBILE",
++		"Mass Storage",
++		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
++		0),
++UNUSUAL_DEV(  0x12d1, 0x140A, 0x0000, 0x0000,
++		"HUAWEI MOBILE",
++		"Mass Storage",
++		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
++		0),
++UNUSUAL_DEV(  0x12d1, 0x140B, 0x0000, 0x0000,
++		"HUAWEI MOBILE",
++		"Mass Storage",
++		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
++		0),
++UNUSUAL_DEV(  0x12d1, 0x140C, 0x0000, 0x0000,
++		"HUAWEI MOBILE",
++		"Mass Storage",
++		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
++		0),
++UNUSUAL_DEV(  0x12d1, 0x140D, 0x0000, 0x0000,
++		"HUAWEI MOBILE",
++		"Mass Storage",
++		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
++		0),
++UNUSUAL_DEV(  0x12d1, 0x140E, 0x0000, 0x0000,
++		"HUAWEI MOBILE",
++		"Mass Storage",
++		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
++		0),
++UNUSUAL_DEV(  0x12d1, 0x140F, 0x0000, 0x0000,
++		"HUAWEI MOBILE",
++		"Mass Storage",
++		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
++		0),
++UNUSUAL_DEV(  0x12d1, 0x1410, 0x0000, 0x0000,
++		"HUAWEI MOBILE",
++		"Mass Storage",
++		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
++		0),
++UNUSUAL_DEV(  0x12d1, 0x1411, 0x0000, 0x0000,
++		"HUAWEI MOBILE",
++		"Mass Storage",
++		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
++		0),
++UNUSUAL_DEV(  0x12d1, 0x1412, 0x0000, 0x0000,
++		"HUAWEI MOBILE",
++		"Mass Storage",
++		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
++		0),
++UNUSUAL_DEV(  0x12d1, 0x1413, 0x0000, 0x0000,
++		"HUAWEI MOBILE",
++		"Mass Storage",
++		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
++		0),
++UNUSUAL_DEV(  0x12d1, 0x1414, 0x0000, 0x0000,
++		"HUAWEI MOBILE",
++		"Mass Storage",
++		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
++		0),
++UNUSUAL_DEV(  0x12d1, 0x1415, 0x0000, 0x0000,
++		"HUAWEI MOBILE",
++		"Mass Storage",
++		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
++		0),
++UNUSUAL_DEV(  0x12d1, 0x1416, 0x0000, 0x0000,
++		"HUAWEI MOBILE",
++		"Mass Storage",
++		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
++		0),
++UNUSUAL_DEV(  0x12d1, 0x1417, 0x0000, 0x0000,
++		"HUAWEI MOBILE",
++		"Mass Storage",
++		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
++		0),
++UNUSUAL_DEV(  0x12d1, 0x1418, 0x0000, 0x0000,
++		"HUAWEI MOBILE",
++		"Mass Storage",
++		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
++		0),
++UNUSUAL_DEV(  0x12d1, 0x1419, 0x0000, 0x0000,
++		"HUAWEI MOBILE",
++		"Mass Storage",
++		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
++		0),
++UNUSUAL_DEV(  0x12d1, 0x141A, 0x0000, 0x0000,
++		"HUAWEI MOBILE",
++		"Mass Storage",
++		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
++		0),
++UNUSUAL_DEV(  0x12d1, 0x141B, 0x0000, 0x0000,
++		"HUAWEI MOBILE",
++		"Mass Storage",
++		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
++		0),
++UNUSUAL_DEV(  0x12d1, 0x141C, 0x0000, 0x0000,
++		"HUAWEI MOBILE",
++		"Mass Storage",
++		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
++		0),
++UNUSUAL_DEV(  0x12d1, 0x141D, 0x0000, 0x0000,
++		"HUAWEI MOBILE",
++		"Mass Storage",
++		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
++		0),
++UNUSUAL_DEV(  0x12d1, 0x141E, 0x0000, 0x0000,
++		"HUAWEI MOBILE",
++		"Mass Storage",
++		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
++		0),
++UNUSUAL_DEV(  0x12d1, 0x141F, 0x0000, 0x0000,
++		"HUAWEI MOBILE",
++		"Mass Storage",
++		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
++		0),
++UNUSUAL_DEV(  0x12d1, 0x1420, 0x0000, 0x0000,
++		"HUAWEI MOBILE",
++		"Mass Storage",
++		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
++		0),
++UNUSUAL_DEV(  0x12d1, 0x1421, 0x0000, 0x0000,
++		"HUAWEI MOBILE",
++		"Mass Storage",
++		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
++		0),
++UNUSUAL_DEV(  0x12d1, 0x1422, 0x0000, 0x0000,
++		"HUAWEI MOBILE",
++		"Mass Storage",
++		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
++		0),
++UNUSUAL_DEV(  0x12d1, 0x1423, 0x0000, 0x0000,
++		"HUAWEI MOBILE",
++		"Mass Storage",
++		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
++		0),
++UNUSUAL_DEV(  0x12d1, 0x1424, 0x0000, 0x0000,
++		"HUAWEI MOBILE",
++		"Mass Storage",
++		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
++		0),
++UNUSUAL_DEV(  0x12d1, 0x1425, 0x0000, 0x0000,
++		"HUAWEI MOBILE",
++		"Mass Storage",
++		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
++		0),
++UNUSUAL_DEV(  0x12d1, 0x1426, 0x0000, 0x0000,
++		"HUAWEI MOBILE",
++		"Mass Storage",
++		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
++		0),
++UNUSUAL_DEV(  0x12d1, 0x1427, 0x0000, 0x0000,
++		"HUAWEI MOBILE",
++		"Mass Storage",
++		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
++		0),
++UNUSUAL_DEV(  0x12d1, 0x1428, 0x0000, 0x0000,
++		"HUAWEI MOBILE",
++		"Mass Storage",
++		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
++		0),
++UNUSUAL_DEV(  0x12d1, 0x1429, 0x0000, 0x0000,
++		"HUAWEI MOBILE",
++		"Mass Storage",
++		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
++		0),
++UNUSUAL_DEV(  0x12d1, 0x142A, 0x0000, 0x0000,
++		"HUAWEI MOBILE",
++		"Mass Storage",
++		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
++		0),
++UNUSUAL_DEV(  0x12d1, 0x142B, 0x0000, 0x0000,
++		"HUAWEI MOBILE",
++		"Mass Storage",
++		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
++		0),
++UNUSUAL_DEV(  0x12d1, 0x142C, 0x0000, 0x0000,
++		"HUAWEI MOBILE",
++		"Mass Storage",
++		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
++		0),
++UNUSUAL_DEV(  0x12d1, 0x142D, 0x0000, 0x0000,
++		"HUAWEI MOBILE",
++		"Mass Storage",
++		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
++		0),
++UNUSUAL_DEV(  0x12d1, 0x142E, 0x0000, 0x0000,
++		"HUAWEI MOBILE",
++		"Mass Storage",
++		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
++		0),
++UNUSUAL_DEV(  0x12d1, 0x142F, 0x0000, 0x0000,
++		"HUAWEI MOBILE",
++		"Mass Storage",
++		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
++		0),
++UNUSUAL_DEV(  0x12d1, 0x1430, 0x0000, 0x0000,
++		"HUAWEI MOBILE",
++		"Mass Storage",
++		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
++		0),
++UNUSUAL_DEV(  0x12d1, 0x1431, 0x0000, 0x0000,
++		"HUAWEI MOBILE",
++		"Mass Storage",
++		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
++		0),
++UNUSUAL_DEV(  0x12d1, 0x1432, 0x0000, 0x0000,
++		"HUAWEI MOBILE",
++		"Mass Storage",
++		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
++		0),
++UNUSUAL_DEV(  0x12d1, 0x1433, 0x0000, 0x0000,
++		"HUAWEI MOBILE",
++		"Mass Storage",
++		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
++		0),
++UNUSUAL_DEV(  0x12d1, 0x1434, 0x0000, 0x0000,
++		"HUAWEI MOBILE",
++		"Mass Storage",
++		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
++		0),
++UNUSUAL_DEV(  0x12d1, 0x1435, 0x0000, 0x0000,
++		"HUAWEI MOBILE",
++		"Mass Storage",
++		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
++		0),
++UNUSUAL_DEV(  0x12d1, 0x1436, 0x0000, 0x0000,
++		"HUAWEI MOBILE",
++		"Mass Storage",
++		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
++		0),
++UNUSUAL_DEV(  0x12d1, 0x1437, 0x0000, 0x0000,
++		"HUAWEI MOBILE",
++		"Mass Storage",
++		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
++		0),
++UNUSUAL_DEV(  0x12d1, 0x1438, 0x0000, 0x0000,
++		"HUAWEI MOBILE",
++		"Mass Storage",
++		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
++		0),
++UNUSUAL_DEV(  0x12d1, 0x1439, 0x0000, 0x0000,
++		"HUAWEI MOBILE",
++		"Mass Storage",
++		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
++		0),
++UNUSUAL_DEV(  0x12d1, 0x143A, 0x0000, 0x0000,
++		"HUAWEI MOBILE",
++		"Mass Storage",
++		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
++		0),
++UNUSUAL_DEV(  0x12d1, 0x143B, 0x0000, 0x0000,
++		"HUAWEI MOBILE",
++		"Mass Storage",
++		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
++		0),
++UNUSUAL_DEV(  0x12d1, 0x143C, 0x0000, 0x0000,
++		"HUAWEI MOBILE",
++		"Mass Storage",
++		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
++		0),
++UNUSUAL_DEV(  0x12d1, 0x143D, 0x0000, 0x0000,
++		"HUAWEI MOBILE",
++		"Mass Storage",
++		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
++		0),
++UNUSUAL_DEV(  0x12d1, 0x143E, 0x0000, 0x0000,
++		"HUAWEI MOBILE",
++		"Mass Storage",
++		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
++		0),
++UNUSUAL_DEV(  0x12d1, 0x143F, 0x0000, 0x0000,
++		"HUAWEI MOBILE",
++		"Mass Storage",
++		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
+ 		0),
+ 
+ /* Reported by Vilius Bilinkevicius <vilisas AT xxx DOT lt) */
+-- 
+1.7.10.4
+
