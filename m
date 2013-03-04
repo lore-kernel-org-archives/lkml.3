@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756151Ab3CDDnQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 22:43:16 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60955 "EHLO
+	id S1756720Ab3CDEIk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 23:08:40 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:32780 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755754Ab3CDDnE (ORCPT
+	by vger.kernel.org with ESMTP id S1755826Ab3CDDnQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Mar 2013 22:43:04 -0500
-Message-Id: <20130304033719.801947791@decadent.org.uk>
+	Sun, 3 Mar 2013 22:43:16 -0500
+Message-Id: <20130304033718.706151947@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 04 Mar 2013 03:39:11 +0000
+Date: Mon, 04 Mar 2013 03:39:00 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, David Vrabel <david.vrabel@citrix.com>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        "Christopher S. Aker" <caker@theshore.net>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 124/153] xen-netback: cancel the credit timer when taking the vif  down
+Cc: akpm@linux-foundation.org, Hugh Dickins <hughd@google.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Li Zefan <lizf@cn.fujitsu.com>, Eric Dumazet <eric.dumazet@gmail.com>,
+        Tejun Heo <tj@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 113/153] idr: make idr_get_next() good for rcu_read_lock()
 In-Reply-To: <20130304033707.648729212@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,56 +30,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Vrabel <david.vrabel@citrix.com>
+From: Hugh Dickins <hughd@google.com>
 
-[ Upstream commit 3e55f8b306cf305832a4ac78aa82e1b40e818ece ]
+commit 9f7de8275b46d9d11b1505adbfe6c2bb48df4741 upstream.
 
-If the credit timer is left armed after calling
-xen_netbk_remove_xenvif(), then it may fire and attempt to schedule
-the vif which will then oops as vif->netbk == NULL.
+Make one small adjustment to idr_get_next(): take the height from the top
+layer (stable under RCU) instead of from the root (unprotected by RCU), as
+idr_find() does: so that it can be used with RCU locking.  Copied comment
+on RCU locking from idr_find().
 
-This may happen both in the fatal error path and during normal
-disconnection from the front end.
-
-The sequencing during shutdown is critical to ensure that: a)
-vif->netbk doesn't become unexpectedly NULL; and b) the net device/vif
-is not freed.
-
-1. Mark as unschedulable (netif_carrier_off()).
-2. Synchronously cancel the timer.
-3. Remove the vif from the schedule list.
-4. Remove it from it netback thread group.
-5. Wait for vif->refcnt to become 0.
-
-Signed-off-by: David Vrabel <david.vrabel@citrix.com>
-Acked-by: Ian Campbell <ian.campbell@citrix.com>
-Reported-by: Christopher S. Aker <caker@theshore.net>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Hugh Dickins <hughd@google.com>
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Acked-by: Li Zefan <lizf@cn.fujitsu.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Acked-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/xen-netback/interface.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ lib/idr.c |    8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/net/xen-netback/interface.c b/drivers/net/xen-netback/interface.c
-index 5925e0b..8eaf0e2 100644
---- a/drivers/net/xen-netback/interface.c
-+++ b/drivers/net/xen-netback/interface.c
-@@ -132,6 +132,7 @@ static void xenvif_up(struct xenvif *vif)
- static void xenvif_down(struct xenvif *vif)
- {
- 	disable_irq(vif->irq);
-+	del_timer_sync(&vif->credit_timeout);
- 	xen_netbk_deschedule_xenvif(vif);
- 	xen_netbk_remove_xenvif(vif);
- }
-@@ -362,8 +363,6 @@ void xenvif_disconnect(struct xenvif *vif)
- 	atomic_dec(&vif->refcnt);
- 	wait_event(vif->waiting_to_free, atomic_read(&vif->refcnt) == 0);
- 
--	del_timer_sync(&vif->credit_timeout);
+--- a/lib/idr.c
++++ b/lib/idr.c
+@@ -595,8 +595,10 @@ EXPORT_SYMBOL(idr_for_each);
+  * Returns pointer to registered object with id, which is next number to
+  * given id. After being looked up, *@nextidp will be updated for the next
+  * iteration.
++ *
++ * This function can be called under rcu_read_lock(), given that the leaf
++ * pointers lifetimes are correctly managed.
+  */
 -
- 	if (vif->irq)
- 		unbind_from_irqhandler(vif->irq, vif);
+ void *idr_get_next(struct idr *idp, int *nextidp)
+ {
+ 	struct idr_layer *p, *pa[MAX_LEVEL];
+@@ -605,11 +607,11 @@ void *idr_get_next(struct idr *idp, int
+ 	int n, max;
  
+ 	/* find first ent */
+-	n = idp->layers * IDR_BITS;
+-	max = 1 << n;
+ 	p = rcu_dereference_raw(idp->top);
+ 	if (!p)
+ 		return NULL;
++	n = (p->layer + 1) * IDR_BITS;
++	max = 1 << n;
+ 
+ 	while (id < max) {
+ 		while (n > 0 && p) {
 
 
