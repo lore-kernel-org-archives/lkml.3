@@ -1,61 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758134Ab3CDOw1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 09:52:27 -0500
-Received: from mail-la0-f49.google.com ([209.85.215.49]:52223 "EHLO
-	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756641Ab3CDOwZ (ORCPT
+	id S1758245Ab3CDOwx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 09:52:53 -0500
+Received: from mail-da0-f51.google.com ([209.85.210.51]:63225 "EHLO
+	mail-da0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757325Ab3CDOwv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 09:52:25 -0500
-Date: Mon, 4 Mar 2013 15:51:33 +0100
-From: Johan Hovold <jhovold@gmail.com>
-To: Olof Johansson <olof@lixom.net>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>, Arnd Bergmann <arnd@arndb.de>,
-        FlorianSchandinat@gmx.de,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-fbdev@vger.kernel.org, jhovold@gmail.com, jacmet@sunsite.dk
-Subject: Re: [PATCH 0/5] at91: atmel_lcdfb: regression fixes and cpu_is
- removal
-Message-ID: <20130304145133.GA24001@localhost>
-References: <cover.1360340791.git.nicolas.ferre@atmel.com>
- <20130210004740.GH16278@quad.lixom.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130210004740.GH16278@quad.lixom.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 4 Mar 2013 09:52:51 -0500
+Message-ID: <1362408768.15793.89.camel@edumazet-glaptop>
+Subject: Re: [RFC PATCH 1/5] net: implement support for low latency socket
+ polling
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+Cc: Eliezer Tamir <eliezer.tamir@linux.jf.intel.com>,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        Dave Miller <davem@davemloft.net>,
+        Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        e1000-devel@lists.sourceforge.net,
+        Willem de Bruijn <willemb@google.com>,
+        Andi Kleen <andi@firstfloor.org>, HPA <hpa@zytor.com>,
+        Eliezer Tamir <eliezer@tamir.org.il>
+Date: Mon, 04 Mar 2013 06:52:48 -0800
+In-Reply-To: <51345EB8.9050309@linux.intel.com>
+References: <20130227175549.10611.82188.stgit@gitlad.jf.intel.com>
+	  <20130227175555.10611.42794.stgit@gitlad.jf.intel.com>
+	 <1362335704.15793.81.camel@edumazet-glaptop>
+	 <51345EB8.9050309@linux.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 09, 2013 at 04:47:40PM -0800, Olof Johansson wrote:
-> On Fri, Feb 08, 2013 at 05:35:13PM +0100, Nicolas Ferre wrote:
-> > These patches fix a regression in 16-bpp support for older SOCs which use
-> > IBGR:555 rather than BGR:565 pixel layout. Use SOC-type to determine if the
-> > controller uses the intensity-bit and restore the old layout in that case.
-> > 
-> > The last patch is a removal of uses of cpu_is_xxxx() macros in atmel_lcdfb with
-> > a platform-device-id table and static configurations.
-> > 
-> > 
-> > Patches from Johan Hovold taken from:
-> > "[PATCH 0/3] atmel_lcdfb: fix 16-bpp regression"
-> > and
-> > "[PATCH v2 0/3] ARM: at91/avr32/atmel_lcdfb: remove cpu_is macros"
-> > patch series to form a clean patch series with my signature.
-> > 
-> > Arnd, Olof,
-> > as it seems that old fbdev drivers are not so much reviewed those days, can we
-> > take the decision to queue this material through arm-soc with other AT91
-> > drivers updates?
-> 
-> It would be beneficial to get an ack from Florian. Was he involved in the
-> review of the code that regressed 16-bpp support in the first place? When was
-> the regression introduced?
+On Mon, 2013-03-04 at 10:43 +0200, Eliezer Tamir wrote:
 
-Thought I'd send a reminder about these fixes. Has anyone picked them up
-for 3.9-rc?
+> One could for example increment the generation id every time the RTNL is 
+> taken. or is this too much?
 
-Thanks,
-Johan
+RTNL is taken for a lot of operations, it would be better to have a
+finer grained increment.
+
+
