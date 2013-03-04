@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756281Ab3CDENf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 23:13:35 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60846 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755578Ab3CDDm4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755748Ab3CDDm4 (ORCPT <rfc822;w@1wt.eu>);
 	Sun, 3 Mar 2013 22:42:56 -0500
-Message-Id: <20130304033721.802296788@decadent.org.uk>
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60848 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755580Ab3CDDmu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Mar 2013 22:42:50 -0500
+Message-Id: <20130304033722.620536177@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 04 Mar 2013 03:39:32 +0000
+Date: Mon, 04 Mar 2013 03:39:40 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Oleg Nesterov <oleg@redhat.com>,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        Rusty Russell <rusty@rustcorp.com.au>, Tejun Heo <tj@kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 145/153] usermodehelper: implement UMH_KILLABLE
+Cc: akpm@linux-foundation.org, Theodore Tso <tytso@mit.edu>,
+        =?ISO-8859-15?q?Maciej=20=C5=BBenczykowski?= <maze@google.com>,
+        Marti Raudsepp <marti@juffo.org>,
+        Fengguang Wu <fengguang.wu@intel.com>
+Subject: [ 153/153] ext4: fix kernel BUG on large-scale rm -rf commands
 In-Reply-To: <20130304033707.648729212@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,105 +29,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oleg Nesterov <oleg@redhat.com>
+From: Theodore Ts'o <tytso@mit.edu>
 
-commit d0bd587a80960d7ba7e0c8396e154028c9045c54 upstream.
+commit 89a4e48f8479f8145eca9698f39fe188c982212f upstream.
 
-Implement UMH_KILLABLE, should be used along with UMH_WAIT_EXEC/PROC.
-The caller must ensure that subprocess_info->path/etc can not go away
-until call_usermodehelper_freeinfo().
+Commit 968dee7722: "ext4: fix hole punch failure when depth is greater
+than 0" introduced a regression in v3.5.1/v3.6-rc1 which caused kernel
+crashes when users ran run "rm -rf" on large directory hierarchy on
+ext4 filesystems on RAID devices:
 
-call_usermodehelper_exec(UMH_KILLABLE) does
-wait_for_completion_killable.  If it fails, it uses
-xchg(&sub_info->complete, NULL) to serialize with umh_complete() which
-does the same xhcg() to access sub_info->complete.
+    BUG: unable to handle kernel NULL pointer dereference at 0000000000000028
 
-If call_usermodehelper_exec wins, it can safely return.  umh_complete()
-should get NULL and call call_usermodehelper_freeinfo().
+    Process rm (pid: 18229, threadinfo ffff8801276bc000, task ffff880123631710)
+    Call Trace:
+     [<ffffffff81236483>] ? __ext4_handle_dirty_metadata+0x83/0x110
+     [<ffffffff812353d3>] ext4_ext_truncate+0x193/0x1d0
+     [<ffffffff8120a8cf>] ? ext4_mark_inode_dirty+0x7f/0x1f0
+     [<ffffffff81207e05>] ext4_truncate+0xf5/0x100
+     [<ffffffff8120cd51>] ext4_evict_inode+0x461/0x490
+     [<ffffffff811a1312>] evict+0xa2/0x1a0
+     [<ffffffff811a1513>] iput+0x103/0x1f0
+     [<ffffffff81196d84>] do_unlinkat+0x154/0x1c0
+     [<ffffffff8118cc3a>] ? sys_newfstatat+0x2a/0x40
+     [<ffffffff81197b0b>] sys_unlinkat+0x1b/0x50
+     [<ffffffff816135e9>] system_call_fastpath+0x16/0x1b
+    Code: 8b 4d 20 0f b7 41 02 48 8d 04 40 48 8d 04 81 49 89 45 18 0f b7 49 02 48 83 c1 01 49 89 4d 00 e9 ae f8 ff ff 0f 1f 00 49 8b 45 28 <48> 8b 40 28 49 89 45 20 e9 85 f8 ff ff 0f 1f 80 00 00 00
 
-Otherwise we know that umh_complete() was already called, in this case
-call_usermodehelper_exec() falls back to wait_for_completion() which
-should succeed "very soon".
+    RIP  [<ffffffff81233164>] ext4_ext_remove_space+0xa34/0xdf0
 
-Note: UMH_NO_WAIT == -1 but it obviously should not be used with
-UMH_KILLABLE.  We delay the neccessary cleanup to simplify the back
-porting.
+This could be reproduced as follows:
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Cc: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: David Rientjes <rientjes@google.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+The problem in commit 968dee7722 was that caused the variable 'i' to
+be left uninitialized if the truncate required more space than was
+available in the journal.  This resulted in the function
+ext4_ext_truncate_extend_restart() returning -EAGAIN, which caused
+ext4_ext_remove_space() to restart the truncate operation after
+starting a new jbd2 handle.
+
+Reported-by: Maciej Żenczykowski <maze@google.com>
+Reported-by: Marti Raudsepp <marti@juffo.org>
+Tested-by: Fengguang Wu <fengguang.wu@intel.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- include/linux/kmod.h |    2 ++
- kernel/kmod.c        |   27 +++++++++++++++++++++++++--
- 2 files changed, 27 insertions(+), 2 deletions(-)
+ fs/ext4/extents.c | 1 +
+ 1 file changed, 1 insertion(+)
 
---- a/include/linux/kmod.h
-+++ b/include/linux/kmod.h
-@@ -54,6 +54,8 @@ enum umh_wait {
- 	UMH_WAIT_PROC = 1,	/* wait for the process to complete */
- };
+--- a/fs/ext4/extents.c
++++ b/fs/ext4/extents.c
+@@ -2614,6 +2614,7 @@ cont:
+ 		}
+ 		path[0].p_depth = depth;
+ 		path[0].p_hdr = ext_inode_hdr(inode);
++		i = 0;
  
-+#define UMH_KILLABLE	4	/* wait for EXEC/PROC killable */
-+
- struct subprocess_info {
- 	struct work_struct work;
- 	struct completion *complete;
---- a/kernel/kmod.c
-+++ b/kernel/kmod.c
-@@ -199,7 +199,15 @@ EXPORT_SYMBOL(call_usermodehelper_freein
- 
- static void umh_complete(struct subprocess_info *sub_info)
- {
--	complete(sub_info->complete);
-+	struct completion *comp = xchg(&sub_info->complete, NULL);
-+	/*
-+	 * See call_usermodehelper_exec(). If xchg() returns NULL
-+	 * we own sub_info, the UMH_KILLABLE caller has gone away.
-+	 */
-+	if (comp)
-+		complete(comp);
-+	else
-+		call_usermodehelper_freeinfo(sub_info);
- }
- 
- /* Keventd can't block, but this (a child) can. */
-@@ -250,6 +258,9 @@ static void __call_usermodehelper(struct
- 	enum umh_wait wait = sub_info->wait;
- 	pid_t pid;
- 
-+	if (wait != UMH_NO_WAIT)
-+		wait &= ~UMH_KILLABLE;
-+
- 	/* CLONE_VFORK: wait until the usermode helper has execve'd
- 	 * successfully We need the data structures to stay around
- 	 * until that is done.  */
-@@ -440,9 +451,21 @@ int call_usermodehelper_exec(struct subp
- 	queue_work(khelper_wq, &sub_info->work);
- 	if (wait == UMH_NO_WAIT)	/* task has freed sub_info */
- 		goto unlock;
-+
-+	if (wait & UMH_KILLABLE) {
-+		retval = wait_for_completion_killable(&done);
-+		if (!retval)
-+			goto wait_done;
-+
-+		/* umh_complete() will see NULL and free sub_info */
-+		if (xchg(&sub_info->complete, NULL))
-+			goto unlock;
-+		/* fallthrough, umh_complete() was already called */
-+	}
-+
- 	wait_for_completion(&done);
-+wait_done:
- 	retval = sub_info->retval;
--
- out:
- 	call_usermodehelper_freeinfo(sub_info);
- unlock:
+ 		if (ext4_ext_check(inode, path[0].p_hdr, depth)) {
+ 			err = -EIO;
 
 
