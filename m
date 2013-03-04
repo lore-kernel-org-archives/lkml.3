@@ -1,101 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932699Ab3CDVst (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 16:48:49 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:37835 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932538Ab3CDVsr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 16:48:47 -0500
-Date: Mon, 4 Mar 2013 22:48:30 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Morten Stevens <mstevens@imt-systems.com>
-Cc: Mihai =?utf-8?B?RG9uyJt1?= <mihai.dontu@gmail.com>,
-        linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        e1000-devel@lists.sourceforge.net, netdev@vger.kernel.org,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: e1000e 3.9-rc1 suspend failure (was: Re: e1000e: nic does not work
- properly after cold power on)
-Message-ID: <20130304214830.GB22306@pd.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Morten Stevens <mstevens@imt-systems.com>,
-	Mihai =?utf-8?B?RG9uyJt1?= <mihai.dontu@gmail.com>,
-	linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
-	e1000-devel@lists.sourceforge.net, netdev@vger.kernel.org,
-	Jiri Slaby <jslaby@suse.cz>
-References: <20130304124631.2ac730f3@mdontu-l.dsd.ro>
- <5134E4AB.2010504@imt-systems.com>
+	id S932643Ab3CDVtx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 16:49:53 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:18986 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932249Ab3CDVtw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Mar 2013 16:49:52 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Mon, 04 Mar 2013 13:44:00 -0800
+From: Andrew Chew <achew@nvidia.com>
+To: <thierry.reding@avionic-design.de>
+CC: <achew@nvidia.com>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH 1/1] pwm_bl: Add support for backlight enable GPIO
+Date: Mon, 4 Mar 2013 13:49:49 -0800
+Message-ID: <1362433790-22560-1-git-send-email-achew@nvidia.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <5134E4AB.2010504@imt-systems.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 04, 2013 at 07:15:07PM +0100, Morten Stevens wrote:
-> Can you reproduce this with linux 3.9-rc1? 3.9-rc1 has the latest
-> upstream driver (e1000e 2.2.14) which contains many bugfixes.
+The backlight enable GPIO is specified in the device tree node for
+backlight.
 
-This e1000e thing gets more b0rked by the minute. This is what happens
-when I try to suspend with 3.9-rc1:
+Signed-off-by: Andrew Chew <achew@nvidia.com>
+---
+ .../bindings/video/backlight/pwm-backlight.txt     |    2 ++
+ drivers/video/backlight/pwm_bl.c                   |   32 +++++++++++++++++---
+ include/linux/pwm_backlight.h                      |    2 ++
+ 3 files changed, 32 insertions(+), 4 deletions(-)
 
-[   83.502908] PM: Syncing filesystems ... done.
-[   83.509886] Freezing user space processes ... (elapsed 0.01 seconds) done.
-[   83.523352] PM: Preallocating image memory... done (allocated 95652 pages)
-[   83.675083] PM: Allocated 382608 kbytes in 0.15 seconds (2550.72 MB/s)
-[   83.675782] Freezing remaining freezable tasks ... (elapsed 0.01 seconds) done.
-[   83.688524] Suspending console(s) (use no_console_suspend to debug)
-[   84.251024] e1000e 0000:00:19.0 eth0: Hardware Error
-[   84.458866] ------------[ cut here ]------------
-[   84.458871] WARNING: at kernel/irq/manage.c:1249 __free_irq+0xa3/0x1e0()
-[   84.458872] Hardware name: 2320CTO
-[   84.458872] Trying to free already-free IRQ 20
-[   84.458898] Modules linked in: cpufreq_powersave cpufreq_userspace cpufreq_conservative cpufreq_stats uinput loop hid_generic usb
-hid hid coretemp kvm_intel arc4 kvm crc32_pclmul iwldvm crc32c_intel ghash_clmulni_intel mac80211 aesni_intel xts ipv6 aes_x86_64 lr
-w gf128mul ablk_helper cryptd iTCO_wdt iTCO_vendor_support iwlwifi sdhci_pci sdhci cfg80211 snd_hda_codec_hdmi snd_hda_codec_realtek
- mmc_core microcode e1000e thinkpad_acpi pcspkr lpc_ich i2c_i801 mfd_core nvram snd_hda_intel rfkill snd_hda_codec battery ac snd_hw
-dep led_class snd_pcm snd_page_alloc snd_timer snd acpi_cpufreq soundcore mperf ptp wmi pps_core xhci_hcd ehci_pci ehci_hcd processo
-r thermal
-[   84.458900] Pid: 3353, comm: kworker/u:35 Tainted: G        W    3.9.0-rc1 #1
-[   84.458901] Call Trace:
-[   84.458905]  [<ffffffff8103ef7f>] warn_slowpath_common+0x7f/0xc0
-[   84.458907]  [<ffffffff8103f076>] warn_slowpath_fmt+0x46/0x50
-[   84.458910]  [<ffffffff81537bfe>] ? _raw_spin_lock_irqsave+0x4e/0x60
-[   84.458911]  [<ffffffff810bc8d5>] ? __free_irq+0x55/0x1e0
-[   84.458913]  [<ffffffff810bc923>] __free_irq+0xa3/0x1e0
-[   84.458914]  [<ffffffff810bcab4>] free_irq+0x54/0xc0
-[   84.458919]  [<ffffffffa017745d>] e1000_free_irq+0x7d/0x90 [e1000e]
-[   84.458922]  [<ffffffffa01834af>] __e1000_shutdown+0x8f/0x8a0 [e1000e]
-[   84.458924]  [<ffffffff813c92a7>] ? __device_suspend+0xb7/0x200
-[   84.458927]  [<ffffffff81073b71>] ? get_parent_ip+0x11/0x50
-[   84.458931]  [<ffffffffa0183d33>] e1000_suspend+0x23/0x50 [e1000e]
-[   84.458932]  [<ffffffff813c92a7>] ? __device_suspend+0xb7/0x200
-[   84.458933]  [<ffffffff8153c049>] ? sub_preempt_count+0x79/0xd0
-[   84.458936]  [<ffffffff812a2ff5>] pci_pm_freeze+0x55/0xc0
-[   84.458937]  [<ffffffff812a2fa0>] ? pci_pm_resume_noirq+0xd0/0xd0
-[   84.458938]  [<ffffffff813c8b45>] dpm_run_callback.isra.5+0x25/0x50
-[   84.458939]  [<ffffffff813c92d3>] __device_suspend+0xe3/0x200
-[   84.458941]  [<ffffffff813c940f>] async_suspend+0x1f/0xa0
-[   84.458942]  [<ffffffff8106bcfb>] async_run_entry_fn+0x3b/0x140
-[   84.458944]  [<ffffffff8105d00d>] process_one_work+0x1ed/0x510
-[   84.458946]  [<ffffffff8105cfab>] ? process_one_work+0x18b/0x510
-[   84.458948]  [<ffffffff8105e7b5>] worker_thread+0x115/0x390
-[   84.458949]  [<ffffffff8105e6a0>] ? manage_workers+0x300/0x300
-[   84.458951]  [<ffffffff81064e2a>] kthread+0xea/0xf0
-[   84.458953]  [<ffffffff81064d40>] ? kthread_create_on_node+0x160/0x160
-[   84.458954]  [<ffffffff8153ff9c>] ret_from_fork+0x7c/0xb0
-[   84.458955]  [<ffffffff81064d40>] ? kthread_create_on_node+0x160/0x160
-[   84.458956] ---[ end trace 3114e23ce50d2357 ]---
-[   85.082276] pci_pm_freeze(): e1000_suspend+0x0/0x50 [e1000e] returns -2
-[   85.082278] dpm_run_callback(): pci_pm_freeze+0x0/0xc0 returns -2
-[   85.082281] PM: Device 0000:00:19.0 failed to freeze async: error -2
-
-Let's add more folks to CC.
-
+diff --git a/Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt b/Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt
+index 1e4fc72..1ed4f0f 100644
+--- a/Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt
++++ b/Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt
+@@ -14,6 +14,8 @@ Required properties:
+ Optional properties:
+   - pwm-names: a list of names for the PWM devices specified in the
+                "pwms" property (see PWM binding[0])
++  - enable-gpio: a GPIO that needs to be used to enable the backlight
++  - enable-gpio-active-high: polarity of GPIO is active high (default is low)
+ 
+ [0]: Documentation/devicetree/bindings/pwm/pwm.txt
+ 
+diff --git a/drivers/video/backlight/pwm_bl.c b/drivers/video/backlight/pwm_bl.c
+index 069983c..f29f9c7 100644
+--- a/drivers/video/backlight/pwm_bl.c
++++ b/drivers/video/backlight/pwm_bl.c
+@@ -20,10 +20,13 @@
+ #include <linux/pwm.h>
+ #include <linux/pwm_backlight.h>
+ #include <linux/slab.h>
++#include <linux/of_gpio.h>
+ 
+ struct pwm_bl_data {
+ 	struct pwm_device	*pwm;
+ 	struct device		*dev;
++	int			enable_gpio;
++	unsigned int		enable_gpio_flags;
+ 	unsigned int		period;
+ 	unsigned int		lth_brightness;
+ 	unsigned int		*levels;
+@@ -146,10 +149,15 @@ static int pwm_backlight_parse_dt(struct device *dev,
+ 	}
+ 
+ 	/*
+-	 * TODO: Most users of this driver use a number of GPIOs to control
+-	 *       backlight power. Support for specifying these needs to be
+-	 *       added.
++	 * If "enable-gpio" is present, use that GPIO to enable the backlight.
++	 * The presence (or not) of "enable-gpio-active-high" will determine
++	 * the value of the GPIO.
+ 	 */
++	data->enable_gpio = of_get_named_gpio(node, "enable-gpio", 0);
++	if (of_property_read_bool(node, "enable-gpio-active-high"))
++		data->enable_gpio_flags = GPIOF_OUT_INIT_HIGH;
++	else
++		data->enable_gpio_flags = GPIOF_OUT_INIT_LOW;
+ 
+ 	return 0;
+ }
+@@ -207,12 +215,23 @@ static int pwm_backlight_probe(struct platform_device *pdev)
+ 	} else
+ 		max = data->max_brightness;
+ 
++	pb->enable_gpio = data->enable_gpio;
++	pb->enable_gpio_flags = data->enable_gpio_flags;
+ 	pb->notify = data->notify;
+ 	pb->notify_after = data->notify_after;
+ 	pb->check_fb = data->check_fb;
+ 	pb->exit = data->exit;
+ 	pb->dev = &pdev->dev;
+ 
++	if (gpio_is_valid(pb->enable_gpio)) {
++		ret = gpio_request_one(pb->enable_gpio,
++			GPIOF_DIR_OUT | pb->enable_gpio_flags, "bl_en");
++		if (ret) {
++			dev_err(&pdev->dev, "failed to allocate bl_en gpio");
++			goto err_alloc;
++		}
++	}
++
+ 	pb->pwm = devm_pwm_get(&pdev->dev, NULL);
+ 	if (IS_ERR(pb->pwm)) {
+ 		dev_err(&pdev->dev, "unable to request PWM, trying legacy API\n");
+@@ -221,7 +240,7 @@ static int pwm_backlight_probe(struct platform_device *pdev)
+ 		if (IS_ERR(pb->pwm)) {
+ 			dev_err(&pdev->dev, "unable to request legacy PWM\n");
+ 			ret = PTR_ERR(pb->pwm);
+-			goto err_alloc;
++			goto err_gpio;
+ 		}
+ 	}
+ 
+@@ -255,6 +274,9 @@ static int pwm_backlight_probe(struct platform_device *pdev)
+ 	platform_set_drvdata(pdev, bl);
+ 	return 0;
+ 
++err_gpio:
++	if (gpio_is_valid(data->enable_gpio))
++		gpio_free(data->enable_gpio);
+ err_alloc:
+ 	if (data->exit)
+ 		data->exit(&pdev->dev);
+@@ -269,6 +291,8 @@ static int pwm_backlight_remove(struct platform_device *pdev)
+ 	backlight_device_unregister(bl);
+ 	pwm_config(pb->pwm, 0, pb->period);
+ 	pwm_disable(pb->pwm);
++	if (gpio_is_valid(pb->enable_gpio))
++		gpio_free(pb->enable_gpio);
+ 	if (pb->exit)
+ 		pb->exit(&pdev->dev);
+ 	return 0;
+diff --git a/include/linux/pwm_backlight.h b/include/linux/pwm_backlight.h
+index 56f4a86..2706805 100644
+--- a/include/linux/pwm_backlight.h
++++ b/include/linux/pwm_backlight.h
+@@ -8,6 +8,8 @@
+ 
+ struct platform_pwm_backlight_data {
+ 	int pwm_id;
++	int enable_gpio;
++	unsigned int enable_gpio_flags;
+ 	unsigned int max_brightness;
+ 	unsigned int dft_brightness;
+ 	unsigned int lth_brightness;
 -- 
-Regards/Gruss,
-    Boris.
+1.7.9.5
 
-Sent from a fat crate under my desk. Formatting is fine.
---
