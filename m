@@ -1,88 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754823Ab3CDA5Z (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 19:57:25 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:33180 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754544Ab3CDA5X (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Mar 2013 19:57:23 -0500
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <5133F14D.4060906@jp.fujitsu.com>
-Date: Mon, 04 Mar 2013 09:56:45 +0900
-From: Takao Indoh <indou.takao@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
-MIME-Version: 1.0
-To: trenn@suse.de
-CC: yinghai@kernel.org, muneda.takahiro@jp.fujitsu.com,
-        linux-pci@vger.kernel.org, x86@kernel.org,
-        linux-kernel@vger.kernel.org, andi@firstfloor.org,
-        tokunaga.keiich@jp.fujitsu.com, kexec@lists.infradead.org,
-        hbabu@us.ibm.com, mingo@redhat.com, ddutile@redhat.com,
-        vgoyal@redhat.com, ishii.hironobu@jp.fujitsu.com, hpa@zytor.com,
-        bhelgaas@google.com, tglx@linutronix.de, khalid@gonehiking.org
-Subject: Re: [PATCH v7 0/5] Reset PCIe devices to address DMA problem on kdump
- with iommu
-References: <20121127004144.3604.61708.sendpatchset@tindoh.g01.fujitsu.local> <1593084.QhbTkmoq3N@hammer82.arch.suse.de> <50FC95A8.6060402@jp.fujitsu.com> <1508535.gXZDAVy6sT@hammer82.arch.suse.de>
-In-Reply-To: <1508535.gXZDAVy6sT@hammer82.arch.suse.de>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+	id S1754852Ab3CDA6c (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 19:58:32 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:46477 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754544Ab3CDA6b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Mar 2013 19:58:31 -0500
+Date: Mon, 4 Mar 2013 11:58:21 +1100
+From: NeilBrown <neilb@suse.de>
+To: Akinobu Mita <akinobu.mita@gmail.com>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        linux-raid@vger.kernel.org
+Subject: Re: [PATCH] md: use set_bit_le and clear_bit_le
+Message-ID: <20130304115821.06bba2f5@notabene.brown>
+In-Reply-To: <1362234957-5570-1-git-send-email-akinobu.mita@gmail.com>
+References: <1362234957-5570-1-git-send-email-akinobu.mita@gmail.com>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/FZrWcepgNLey4SAKwd8iDPT"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/01/23 9:47), Thomas Renninger wrote:
-> On Monday, January 21, 2013 10:11:04 AM Takao Indoh wrote:
->> (2013/01/08 4:09), Thomas Renninger wrote:
-> ...
->>> I tried the provided patches first on 2.6.32, then I verfied with 3.8-rc2
->>> and in both cases the disk is not detected anymore in
->>> reset_devices (kexec'ed/kdump) case (but things work fine without these
->>> patches).
->>
->> So the problem that the disk is not detected was caused by exactmap
->> problem you guys are discussing? Or still not detected even if exactmap
->> problem is fixed?
-> This problem is related to the 5 PCI resetting patches.
-> Dumping worked with a 2.6.32 and a 3.8-rc2 kernel, adding the PCI resetting
-> patches broke both. I first tried 2.6.32 and verified with 3.8-rc2 to make sure
-> I didn't mess up the backport adjustings of the patches to 2.6.32.
->
-> Unfortunately this Dell platform takes really long to boot.
-> I can give it the one or other test, but please do not bomb me with patches.
->
-> For info:
-> About the interrupt remapping error interrupt storm in kdump case I tried to
-> reproduce on this machine, but never could: The guys who saw that also cannot
-> reproduce this anymore.
->
-> Two ideas I had about this:
->    - As said already, (also) try to catch the error case and try to reset the
->      the device in AER/Specific iterrupt remapping error interrupt caught.
+--Sig_/FZrWcepgNLey4SAKwd8iDPT
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-I tried this idea but it did not work on megaraid_sas.
+On Sat,  2 Mar 2013 23:35:57 +0900 Akinobu Mita <akinobu.mita@gmail.com>
+wrote:
 
-I made a experimental patch so that devices are reset when DMAR error is
-detected on it. What happened is that:
-1) megaraid_sas module is loaded.
-2) DMAR error is detected during the driver initialization.
-3) Reset device
-4) kdump fails because the disk is not found.
+> The value returned by test_and_set_bit_le() drivers/md/bitmap.c is not us=
+ed.
+> So just use set_bit_le(). The same goes for test_and_clear_bit_le().
+>=20
+> Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
+> Cc: Neil Brown <neilb@suse.de>
+> Cc: linux-raid@vger.kernel.org
+> ---
+>  drivers/md/bitmap.c | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+>=20
+> diff --git a/drivers/md/bitmap.c b/drivers/md/bitmap.c
+> index 4fd9d6a..5a2c754 100644
+> --- a/drivers/md/bitmap.c
+> +++ b/drivers/md/bitmap.c
+> @@ -846,7 +846,7 @@ static void bitmap_file_set_bit(struct bitmap *bitmap=
+, sector_t block)
+>  	if (test_bit(BITMAP_HOSTENDIAN, &bitmap->flags))
+>  		set_bit(bit, kaddr);
+>  	else
+> -		test_and_set_bit_le(bit, kaddr);
+> +		set_bit_le(bit, kaddr);
+>  	kunmap_atomic(kaddr);
+>  	pr_debug("set file bit %lu page %lu\n", bit, page->index);
+>  	/* record page number so it gets flushed to disk when unplug occurs */
+> @@ -868,7 +868,7 @@ static void bitmap_file_clear_bit(struct bitmap *bitm=
+ap, sector_t block)
+>  	if (test_bit(BITMAP_HOSTENDIAN, &bitmap->flags))
+>  		clear_bit(bit, paddr);
+>  	else
+> -		test_and_clear_bit_le(bit, paddr);
+> +		clear_bit_le(bit, paddr);
+>  	kunmap_atomic(paddr);
+>  	if (!test_page_attr(bitmap, page->index, BITMAP_PAGE_NEEDWRITE)) {
+>  		set_page_attr(bitmap, page->index, BITMAP_PAGE_PENDING);
 
-When I tested patches which reset all devices in early boot time, the
-disk was recognized correctly, so it seems that device reset during its
-driver loading does something wrong. I think we need reset device at
-least before its driver is loaded.
+applied, thanks.
 
-Thanks,
-Takao Indoh
+NeilBrown
 
+--Sig_/FZrWcepgNLey4SAKwd8iDPT
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
->    - Have a look at coreboot, these guys should know how to initialize the PCI
->      subsystem from scratch and might have some well tested PCI resetting
->      code in place already (no idea, just a thought).
->
->      Thomas
->
->
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
 
+iQIVAwUBUTPxrTnsnt1WYoG5AQKwoRAAhhyRlsnFZPkRL3Zfkzz3RKbKvfxdZLug
+hwa+ICEOygrMy1rbYhB3N/t+bY2MK+WhbBvXGr6B3lBdjN0qA0td7Xd2XSpBU0A0
+HMApqXAIrsV4z73iTXoN+t5xij1Do2kCSl0e4FE87YUK9nHOm1HTOW5MBynkj/iJ
+4zGiC7OWAbOzrrtqXIFytJUt6U+iesc9CUrzKnf+xKN4yYkxe/9wDUEliLIGMOFs
+wvBPhLpEu+h+5//9M8rb53jCQCOxZ9R3JIOmfSJrQHM81/acddwGiKCZyKUmH/wF
+OOptR9XxDJvmK6fS0rOcneeIcx7zc+BtRtGYab38KmYEmkfEVx4Vda/I1msfeE7Y
+tguYg8+SrZ9whPNxSn1yof8fmXaVt+baBBJ0UYXIZaaF5+QS8hFoXvOiG57JSrgu
+We+gq8Tk1dt2LQQjFmZezHJWi64wPLfke8JG07REUGuUyjHTTWg1z9S25IHtOA7J
+uAdhX7uZMK95yzZcSdI0iVhRCHvgaa4FS10O7tTvUuK99Ctwwjg3Ee57RZE3oNeW
+QkJtC/vfxxI0MQXZFKcfY1AlOGyaEsMxtGK8/nLFkECQcoQPYkzYD6UFgyCFtb68
+MHQk1469nuPA+J37eEPGdEJ6ysrzRZZhxAr7/nhauACdijfa+Phg1DQih7vDn6Py
+XgMuomRiW84=
+=hYfh
+-----END PGP SIGNATURE-----
+
+--Sig_/FZrWcepgNLey4SAKwd8iDPT--
