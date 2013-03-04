@@ -1,113 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755426Ab3CDDmh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 22:42:37 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60757 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755352Ab3CDDmc (ORCPT
+	id S1755501Ab3CDEUC (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 23:20:02 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:60536 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755434Ab3CDET7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Mar 2013 22:42:32 -0500
-Message-Id: <20130304033707.972521649@decadent.org.uk>
-User-Agent: quilt/0.60-1
-Date: Mon, 04 Mar 2013 03:37:10 +0000
-From: Ben Hutchings <ben@decadent.org.uk>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Cornelia Huck <cornelia.huck@de.ibm.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>, Alexander Graf <agraf@suse.de>,
-        Gleb Natapov <gleb@redhat.com>
-Subject: [ 003/153] KVM: s390: Handle hosts not supporting s390-virtio.
-In-Reply-To: <20130304033707.648729212@decadent.org.uk>
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Sun, 3 Mar 2013 23:19:59 -0500
+Date: Mon, 4 Mar 2013 04:19:27 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: Soren Brinkmann <soren.brinkmann@xilinx.com>
+Cc: Michal Simek <michal.simek@xilinx.com>,
+        "monstr@monstr.eu" <monstr@monstr.eu>,
+        Russell King <linux@arm.linux.org.uk>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Jason Cooper <jason@lakedaemon.net>, Tony Lindgren <tony@atomide.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH RFC] arm: l2x0: Leverage power saving features
+Message-ID: <20130304041927.GA14686@mudshark.cambridge.arm.com>
+References: <da92149b-159b-40e3-87b4-a0a448d1da8b@CO1EHSMHS031.ehs.local>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <da92149b-159b-40e3-87b4-a0a448d1da8b@CO1EHSMHS031.ehs.local>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2-stable review patch.  If anyone has any objections, please let me know.
+Hello Soren,
 
-------------------
+On Fri, Mar 01, 2013 at 06:51:26PM +0000, Soren Brinkmann wrote:
+> Enable the 'dynamic clock stop' and 'standby mode' features in the
+> l2x0 disable path.
+> 
+> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+> ---
+> Hi,
+> 
+> we are currently implementing a suspend to RAM like low power mode for
+> Zynq.
+> The code for entering suspend looks like this:
+> 	outer_disable();                                                 
+>         cpu_suspend(0, zynq_pm_suspend);                                 
+>         outer_resume();
+> 
+> In our low power guidelines we mention the pl310's standby and clock stop
+> feature and that they should be enabled for low power modes. The question
+> arising here now is: Does the outer_disable() make these features redundant,
+> or does it make sense to add it like shown in this patch?
 
-From: Cornelia Huck <cornelia.huck@de.ibm.com>
+The settings in the power control register are unrelated to CPU suspend
+afaict. Instead, they are for semi-autonomous entry to non-destructive
+low-power states (e.g. when the L2 is idle for n cycles, or all of the L1
+masters have asserted WFI).
 
-commit 55c171a6d90dc0574021f9c836127cfd1a7d2e30 upstream.
+This raises the question of whether or not we should poke this register at
+all (other than saving/restoring it across suspend, which *is* destructive).
+I personally think that this stuff is better off being dealt with in
+firmware and initialised there, which follows what we do for other registers
+like this.
 
-Running under a kvm host does not necessarily imply the presence of
-a page mapped above the main memory with the virtio information;
-however, the code includes a hard coded access to that page.
-
-Instead, check for the presence of the page and exit gracefully
-before we hit an addressing exception if it does not exist.
-
-Reviewed-by: Marcelo Tosatti <mtosatti@redhat.com>
-Reviewed-by: Alexander Graf <agraf@suse.de>
-Signed-off-by: Cornelia Huck <cornelia.huck@de.ibm.com>
-Signed-off-by: Gleb Natapov <gleb@redhat.com>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
----
- drivers/s390/kvm/kvm_virtio.c |   38 ++++++++++++++++++++++++++++++--------
- 1 file changed, 30 insertions(+), 8 deletions(-)
-
---- a/drivers/s390/kvm/kvm_virtio.c
-+++ b/drivers/s390/kvm/kvm_virtio.c
-@@ -414,6 +414,26 @@ static void kvm_extint_handler(unsigned
- }
- 
- /*
-+ * For s390-virtio, we expect a page above main storage containing
-+ * the virtio configuration. Try to actually load from this area
-+ * in order to figure out if the host provides this page.
-+ */
-+static int __init test_devices_support(unsigned long addr)
-+{
-+	int ret = -EIO;
-+
-+	asm volatile(
-+		"0:	lura	0,%1\n"
-+		"1:	xgr	%0,%0\n"
-+		"2:\n"
-+		EX_TABLE(0b,2b)
-+		EX_TABLE(1b,2b)
-+		: "+d" (ret)
-+		: "a" (addr)
-+		: "0", "cc");
-+	return ret;
-+}
-+/*
-  * Init function for virtio
-  * devices are in a single page above top of "normal" mem
-  */
-@@ -424,21 +444,23 @@ static int __init kvm_devices_init(void)
- 	if (!MACHINE_IS_KVM)
- 		return -ENODEV;
- 
-+	if (test_devices_support(real_memory_size) < 0)
-+		return -ENODEV;
-+
-+	rc = vmem_add_mapping(real_memory_size, PAGE_SIZE);
-+	if (rc)
-+		return rc;
-+
-+	kvm_devices = (void *) real_memory_size;
-+
- 	kvm_root = root_device_register("kvm_s390");
- 	if (IS_ERR(kvm_root)) {
- 		rc = PTR_ERR(kvm_root);
- 		printk(KERN_ERR "Could not register kvm_s390 root device");
-+		vmem_remove_mapping(real_memory_size, PAGE_SIZE);
- 		return rc;
- 	}
- 
--	rc = vmem_add_mapping(real_memory_size, PAGE_SIZE);
--	if (rc) {
--		root_device_unregister(kvm_root);
--		return rc;
--	}
--
--	kvm_devices = (void *) real_memory_size;
--
- 	INIT_WORK(&hotplug_work, hotplug_devices);
- 
- 	service_subclass_irq_register();
-
-
+Will
