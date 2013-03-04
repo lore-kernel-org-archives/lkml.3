@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757653Ab3CDM7O (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 07:59:14 -0500
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:55733 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757419Ab3CDM7M (ORCPT
+	id S1757755Ab3CDM7X (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 07:59:23 -0500
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:55295 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757106Ab3CDM7U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 07:59:12 -0500
+	Mon, 4 Mar 2013 07:59:20 -0500
 From: Akinobu Mita <akinobu.mita@gmail.com>
 To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
-Cc: Akinobu Mita <akinobu.mita@gmail.com>
-Subject: [PATCH -v3 05/23] lib/: rename random32() to prandom_u32()
-Date: Mon,  4 Mar 2013 21:58:13 +0900
-Message-Id: <1362401911-14074-6-git-send-email-akinobu.mita@gmail.com>
+Cc: Akinobu Mita <akinobu.mita@gmail.com>, drbd-dev@lists.linbit.com,
+        Jens Axboe <axboe@kernel.dk>
+Subject: [PATCH -v3 08/23] drbd: rename random32() to prandom_u32()
+Date: Mon,  4 Mar 2013 21:58:16 +0900
+Message-Id: <1362401911-14074-9-git-send-email-akinobu.mita@gmail.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1362401911-14074-1-git-send-email-akinobu.mita@gmail.com>
 References: <1362401911-14074-1-git-send-email-akinobu.mita@gmail.com>
@@ -24,40 +25,38 @@ Use more preferable function name which implies using a pseudo-random
 number generator.
 
 Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
+Cc: drbd-dev@lists.linbit.com
+Cc: Jens Axboe <axboe@kernel.dk>
 ---
 
 No change from v2
 
- lib/fault-inject.c | 2 +-
- lib/list_sort.c    | 2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/block/drbd/drbd_receiver.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/lib/fault-inject.c b/lib/fault-inject.c
-index f7210ad..c5c7a76 100644
---- a/lib/fault-inject.c
-+++ b/lib/fault-inject.c
-@@ -122,7 +122,7 @@ bool should_fail(struct fault_attr *attr, ssize_t size)
- 			return false;
- 	}
+diff --git a/drivers/block/drbd/drbd_receiver.c b/drivers/block/drbd/drbd_receiver.c
+index a9eccfc..83c5ae0 100644
+--- a/drivers/block/drbd/drbd_receiver.c
++++ b/drivers/block/drbd/drbd_receiver.c
+@@ -757,7 +757,8 @@ static struct socket *drbd_wait_for_connect(struct drbd_tconn *tconn, struct acc
+ 	rcu_read_unlock();
  
--	if (attr->probability <= random32() % 100)
-+	if (attr->probability <= prandom_u32() % 100)
- 		return false;
+ 	timeo = connect_int * HZ;
+-	timeo += (random32() & 1) ? timeo / 7 : -timeo / 7; /* 28.5% random jitter */
++	/* 28.5% random jitter */
++	timeo += (prandom_u32() & 1) ? timeo / 7 : -timeo / 7;
  
- 	if (!fail_stacktrace(attr))
-diff --git a/lib/list_sort.c b/lib/list_sort.c
-index d7325c6..1183fa7 100644
---- a/lib/list_sort.c
-+++ b/lib/list_sort.c
-@@ -229,7 +229,7 @@ static int __init list_sort_test(void)
- 			goto exit;
+ 	err = wait_for_completion_interruptible_timeout(&ad->door_bell, timeo);
+ 	if (err <= 0)
+@@ -953,7 +954,7 @@ retry:
+ 				conn_warn(tconn, "Error receiving initial packet\n");
+ 				sock_release(s);
+ randomize:
+-				if (random32() & 1)
++				if (prandom_u32() & 1)
+ 					goto retry;
+ 			}
  		}
- 		 /* force some equivalencies */
--		el->value = random32() % (TEST_LIST_LEN/3);
-+		el->value = prandom_u32() % (TEST_LIST_LEN / 3);
- 		el->serial = i;
- 		el->poison1 = TEST_POISON1;
- 		el->poison2 = TEST_POISON2;
 -- 
 1.8.1.2
 
