@@ -1,96 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755082Ab3CDDg7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 22:36:59 -0500
-Received: from [207.46.163.210] ([207.46.163.210]:51911 "EHLO
-	na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754872Ab3CDDg5 convert rfc822-to-8bit (ORCPT
+	id S1755167Ab3CDDjN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 22:39:13 -0500
+Received: from mail-ve0-f174.google.com ([209.85.128.174]:52207 "EHLO
+	mail-ve0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754981Ab3CDDjL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Mar 2013 22:36:57 -0500
-X-Forefront-Antispam-Report-Untrusted: CIP:157.56.240.21;KIP:(null);UIP:(null);(null);H:BL2PRD0310HT003.namprd03.prod.outlook.com;R:internal;EFV:INT
-X-SpamScore: -1
-X-BigFish: PS-1(zz9371I542I1432Izz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ahz97hz8275bhz31h2a8h668h839h944hd24hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h19ceh1ad9h9a9j1155h)
-X-Forefront-Antispam-Report-Untrusted: SFV:SKI;SFS:;DIR:OUT;SFP:;SCL:-1;SRVR:SN2PR03MB064;H:SN2PR03MB061.namprd03.prod.outlook.com;LANG:en;
-From: KY Srinivasan <kys@microsoft.com>
-To: KY Srinivasan <kys@microsoft.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "olaf@aepfle.de" <olaf@aepfle.de>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "jasowang@redhat.com" <jasowang@redhat.com>
-Subject: RE: [PATCH 0/3] Drivers: hv 
-Thread-Topic: [PATCH 0/3] Drivers: hv 
-Thread-Index: AQHODVIuVPzr/yIiA06A7EpNQJzmiJiU9c4g
-Date: Mon, 4 Mar 2013 03:31:06 +0000
-Message-ID: <18519df9e8634fd3966654880b565f4e@SN2PR03MB061.namprd03.prod.outlook.com>
-References: <1361136655-30979-1-git-send-email-kys@microsoft.com>
-In-Reply-To: <1361136655-30979-1-git-send-email-kys@microsoft.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [66.235.28.25]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Sun, 3 Mar 2013 22:39:11 -0500
 MIME-Version: 1.0
-X-OrganizationHeadersPreserved: SN2PR03MB064.namprd03.prod.outlook.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%AEPFLE.DE$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%CANONICAL.COM$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%REDHAT.COM$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXFOUNDATION.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXDRIVERPROJECT.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-CrossPremisesHeadersPromoted: TK5EX14HUBC102.redmond.corp.microsoft.com
-X-CrossPremisesHeadersFiltered: TK5EX14HUBC102.redmond.corp.microsoft.com
-X-Forefront-Antispam-Report: CIP:131.107.125.37;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(13464002)(51704002)(377454001)(189002)(199002)(23726001)(16676001)(74662001)(5343635001)(53806001)(47736001)(46406002)(74502001)(47776003)(59766001)(66066001)(77982001)(20776003)(50986001)(63696002)(56776001)(76482001)(44976002)(47976001)(47446002)(46102001)(6806001)(54316002)(4396001)(31966008)(1511001)(50466001)(56816002)(51856001)(80022001)(33646001)(79102001)(49866001)(65816001)(54356001)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BY2FFO11HUB012;H:TK5EX14HUBC102.redmond.corp.microsoft.com;RD:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-X-OriginatorOrg: microsoft.onmicrosoft.com
-X-Forefront-PRVS: 0775716B9D
+In-Reply-To: <CA+55aFxA1pH_aKJc85DXuS2-Q=7b4pP-h_ms6XQiSzQcpWaO6Q@mail.gmail.com>
+References: <CA+55aFx0HcOXKpxmZzM5jcbAaOroxafomX5ggMFV4A=py1qh-Q@mail.gmail.com>
+	<alpine.LRH.2.00.1303040213590.11934@twin.jikos.cz>
+	<CA+55aFxA1pH_aKJc85DXuS2-Q=7b4pP-h_ms6XQiSzQcpWaO6Q@mail.gmail.com>
+Date: Sun, 3 Mar 2013 19:39:11 -0800
+X-Google-Sender-Auth: J-QHULFLavJ_ysUy-8Fzb2e4-bM
+Message-ID: <CA+55aFxVL1Nm=msUFJQY+K64aB8=CD8VCSiWY9pnKr7F6PfN4w@mail.gmail.com>
+Subject: Re: Linux 3.9-rc1
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, Mar 3, 2013 at 5:42 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+>     git log v3.8.. --author=Torvalds --merges |
+>         egrep '^    ((Merge)|(Pull)) .* from '
+>
+> and then some nasty sed+sort crud, followed by some manual fixup. It's
+> the kind of thing perl is perfect for, but I'm not much of a perl
+> person, so I have never written a *good* script to just do this right.
 
+Ok, this is still not good, but this at least makes my manual editing
+minimal. There's a few extra lines that match the pattern that need
+manual fixup, and some people with two different names (Ted vs
+Theodore) but other than that it looks ok.
 
-> -----Original Message-----
-> From: K. Y. Srinivasan [mailto:kys@microsoft.com]
-> Sent: Sunday, February 17, 2013 4:31 PM
-> To: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
-> devel@linuxdriverproject.org; olaf@aepfle.de; apw@canonical.com;
-> jasowang@redhat.com
-> Cc: KY Srinivasan
-> Subject: [PATCH 0/3] Drivers: hv
-> 
-> The patch for the vmbus drivers properly cleans up the channel state on receipt
-> of the "offer rescind" message. The balloon driver patches permit the execution
-> of both "balloon up" operation as well as the "hot-add" operation in separate
-> execution contexts. This allows the balloon driver to be more responsive both
-> in terms of reporting pressure to the host as well as responding to the requests
-> from the host.
-> 
-> K. Y. Srinivasan (3):
->   Drivers: hv: vmbus: Handle channel rescind message correctly
->   Drivers: hv: balloon: Execute balloon inflation in a separate context
->   Drivers: hv: balloon: Execute hot-add code in a separate context
-> 
->  drivers/hv/channel_mgmt.c |   11 +++++++
->  drivers/hv/hv_balloon.c   |   74 ++++++++++++++++++++++++++++----------------
-> -
->  2 files changed, 57 insertions(+), 28 deletions(-)
+So do the above git long + egrep pipeline, and then pipe it to the
+perl script below. I feel a git alias coming up in my future..
 
-Greg,
+Real perl people may want to avert their eyes..
 
-I had sent these patches a couple of weeks ago. Should I resend these.
+                Linus
 
-Regards,
+---
+#!/usr/bin/perl -w
+use strict;
 
-K. Y
-> 
-> --
-> 1.7.4.1
-> 
-> 
+my (%map);
 
+sub add_entry($$) {
+    my ($key,$desc) = @_;
 
+    if (exists $map{$key}) {
+        my $obj = $map{$key};
+        push(@$obj, $desc);
+    } else {
+        my @arr = ($desc);
+        $map{$key} = \@arr;
+    }
+}
+
+sub input {
+    while (<>) {
+        my ($type,$desc,$key) = (/^ *(\S*) *(.*) from *(.*)/);
+        chomp($key = $3);
+        chomp($desc = $2);
+        chop $key if ($key =~ /(:|\.)$/);
+        add_entry($key, $desc);
+    }
+}
+
+sub by_name($$) {
+        my ($a, $b) = @_;
+        uc($a) cmp uc($b);
+}
+
+sub output {
+    my ($key);
+
+    foreach $key (sort by_name keys %map) {
+        my ($obj, $desc);
+
+        $obj = $map{$key};
+        printf "%s: (%d)\n", $key, scalar(@$obj);
+        print "\t$_\n" foreach @$obj;
+        print "\n";
+    }
+}
+
+input;
+output;
+exit(0)
