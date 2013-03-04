@@ -1,68 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755688Ab3CDIXg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 03:23:36 -0500
-Received: from mga14.intel.com ([143.182.124.37]:9457 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755373Ab3CDIXf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 03:23:35 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,777,1355126400"; 
-   d="scan'208";a="263953322"
-Message-ID: <1362385446.2943.7.camel@sauron>
-Subject: Re: [PATCH V3 1/3] mtd: add new fields to nand_flash_dev{}
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Huang Shijie <b32955@freescale.com>
-Cc: Huang Shijie <shijie8@gmail.com>, dwmw2@infradead.org,
-        computersforpeace@gmail.com, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Date: Mon, 04 Mar 2013 10:24:06 +0200
-In-Reply-To: <5134566C.2090405@freescale.com>
-References: <1359349039-11510-1-git-send-email-b32955@freescale.com>
-			 <1359349039-11510-2-git-send-email-b32955@freescale.com>
-			 <1360684037.12703.117.camel@sauron.fi.intel.com>
-			 <CAMiH66ExMK8rPMw3kvs9M2b-0ZSkfxBYteTi8QTZf+XCzJw5Dw@mail.gmail.com>
-		 <1362234094.2745.9.camel@sauron> <513437DF.2030505@freescale.com>
-	 <1362383434.2943.5.camel@sauron> <5134566C.2090405@freescale.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.3 (3.6.3-2.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	id S1755623Ab3CDIdB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 03:33:01 -0500
+Received: from usmamail.tilera.com ([12.216.194.151]:40989 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755350Ab3CDIc7 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Mar 2013 03:32:59 -0500
+From: Tony Lu <zlu@tilera.com>
+To: Mark Tinguely <tinguely@sgi.com>
+CC: Alex Elder <elder@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        "xfs@oss.sgi.com" <xfs@oss.sgi.com>, Ben Myers <bpm@sgi.com>,
+        Dave Chinner <dchinner@redhat.com>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
+Subject: RE: [PATCH] xfs: Fix possible truncation of log data in
+ xlog_bread_noalign()
+Thread-Topic: [PATCH] xfs: Fix possible truncation of log data in
+ xlog_bread_noalign()
+Thread-Index: Ac4Q1GkSs67IJq+zR5aVm2NJSgVsAwAr1ggAACdj+ZYAHdvY9AD+/4OnABP7wQAAcqHZwA==
+Date: Mon, 4 Mar 2013 08:32:45 +0000
+Message-ID: <BAB94DBB0E89D8409949BC28AC95914C47C4C19C@USMAExch1.tad.internal.tilera.com>
+References: <BAB94DBB0E89D8409949BC28AC95914C47C485E5@USMAExch1.tad.internal.tilera.com>
+ <20130223000802.GB26081@dastard>
+ <BAB94DBB0E89D8409949BC28AC95914C47C48702@USMAExch1.tad.internal.tilera.com>
+ <20130223235546.GA5551@dastard>
+ <BAB94DBB0E89D8409949BC28AC95914C47C488D8@USMAExch1.tad.internal.tilera.com>
+ <20130224141017.GC5551@dastard>
+ <BAB94DBB0E89D8409949BC28AC95914C47C49005@USMAExch1.tad.internal.tilera.com>
+ <5130CE9E.9080501@sgi.com> <51310E7A.1000905@sgi.com>
+In-Reply-To: <51310E7A.1000905@sgi.com>
+Accept-Language: zh-CN, en-US
+Content-Language: zh-CN
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-03-04 at 16:08 +0800, Huang Shijie wrote:
-> 于 2013年03月04日 15:50, Artem Bityutskiy 写道:
-> > On Mon, 2013-03-04 at 13:57 +0800, Huang Shijie wrote:
-> >> The current code uses the @id to store the device id(byte 1).
-> >> But if we use the 8 bytes id data as the keyword, and expand the @id
-> >> field to 8byte array,
-> >> the device id is the second byte now. All the added zeros are for the
-> > I do not think you need to store the full array of ID's. Device ID's for
-> > all the 4 of above chips are different, which is enough to distinguish
-> > between them.
-> >
-> > The only thing you need to add is the OOB size field to 'struct
-> > nand_flash_dev'.
-> >
-> If i only add the oob size field. There will be two items with the same 
-> Device ID in nand_flash_ids table,
-> one has oob_size, one does not have. such as:
-> 
->     {"NAND 8GIB 3,3V 8-bit", 0xDE, 0, 8192, 0, LP_OPTIONS},
+Thanks for you following up.
 
-Do you know what is this chip?
+My apologize that I just found that it is one change I made before that causes this problem. This change forces mkfs.xfs to format xfs partitions whose sectorsize were not smaller than 4096 bytes, which was due to a bug that earlier versions of xfs used (struct *page)->private(long) as a bitmap to represent each block's state within a page (the size of a page could be 64K or larger, then it needs 128 bit or more to represent each block's state within a page).
 
->     {"NAND 8GIB 3,3V 8-bit", 0xDE, 0, 8192, 0, LP_OPTIONS, 640},   //OOB 
-> size is 640
+This is reproducible on 2.6.38.6 kernel on X86. But I do not get why this change makes the xfs log inconsistent during mount/cp/umount operations.
 
-So there are really 2 different chips with the same device id and
-different OOB size? If you had 2 datasheets for me demonstrating this,
-I'd be grateful.
+diff -dur xfsprogs-3.1.4.ori/include/xfs_alloc_btree.h xfsprogs-3.1.4/include/xfs_alloc_btree.h
+--- xfsprogs-3.1.4.ori/include/xfs_alloc_btree.h        2010-01-30 03:46:13.000000000 +0800
++++ xfsprogs-3.1.4/include/xfs_alloc_btree.h    2013-03-04 16:11:41.000000000 +0800
+@@ -59,7 +59,7 @@
+ #define XFS_MAX_BLOCKSIZE_LOG  16      /* i.e. 65536 bytes */
+ #define XFS_MIN_BLOCKSIZE      (1 << XFS_MIN_BLOCKSIZE_LOG)
+ #define XFS_MAX_BLOCKSIZE      (1 << XFS_MAX_BLOCKSIZE_LOG)
+-#define XFS_MIN_SECTORSIZE_LOG 9       /* i.e. 512 bytes */
++#define XFS_MIN_SECTORSIZE_LOG 12      /* i.e. 512 bytes */
+ #define XFS_MAX_SECTORSIZE_LOG 15      /* i.e. 32768 bytes */
+ #define XFS_MIN_SECTORSIZE     (1 << XFS_MIN_SECTORSIZE_LOG)
+ #define XFS_MAX_SECTORSIZE     (1 << XFS_MAX_SECTORSIZE_LOG)
 
--- 
-Best Regards,
-Artem Bityutskiy
+Thanks
+-Tony
 
+>-----Original Message-----
+>From: Mark Tinguely [mailto:tinguely@sgi.com]
+>Sent: Saturday, March 02, 2013 4:24 AM
+>To: Tony Lu
+>Cc: Alex Elder; linux-kernel@vger.kernel.org; Chris Metcalf; xfs@oss.sgi.com;
+>Ben Myers; Dave Chinner; linux-fsdevel@vger.kernel.org
+>Subject: Re: [PATCH] xfs: Fix possible truncation of log data in
+>xlog_bread_noalign()
+>
+>On 03/01/13 09:51, Mark Tinguely wrote:
+>> On 02/26/13 01:28, Tony Lu wrote:
+>>> I get a reliable way to reproduce this bug. The logprint and metadump
+>>> are attached.
+>>>
+>>> Kernel version: 2.6.38.8
+>>> Mkfs.xfs version: xfsprogs-3.1.1
+>>> mkfs.xfs -s size=4096 /dev/sda1
+>>>
+>>> Run the following mount-cp-umount script to reproduce:
+>>> #!/bin/sh
+>>> device=/dev/sda1
+>>> mount_point=/mnt
+>>> times=10
+>>>
+>>> for ((num=1;num<=$times;num++))
+>>> do
+>>> echo "$num mount $device $mount_point"
+>>> mount $device $mount_point
+>>>
+>>> echo "cp -rf /bin $mount_point/$num"
+>>> cp -rf /bin $mount_point/$num
+>>>
+>>> echo "$num umount $device $mount_point"
+>>> umount $mount_point
+>>>
+>>> #num=$(($num + 1))
+>>> done
+>>>
+>>> After several times of mount/cp/umount, this xfs crashes, and the xfs
+>>> partition can not be mounted any more. Here is the output of console.
+>>> -sh-4.1# ./umount-test
+>>> 1 mount /dev/sda1 /mnt
+>>> XFS mounting filesystem sda1
+>>> cp -rf /bin /mnt/1
+>>> 1 umount /dev/sda1 /mnt
+>>> 2 mount /dev/sda1 /mnt
+>>> XFS mounting filesystem sda1
+>>> cp -rf /bin /mnt/2
+>>> 2 umount /dev/sda1 /mnt
+>>> 3 mount /dev/sda1 /mnt
+>>> XFS mounting filesystem sda1
+>>> cp -rf /bin /mnt/3
+>>> 3 umount /dev/sda1 /mnt
+>>> 4 mount /dev/sda1 /mnt
+>>> XFS mounting filesystem sda1
+>>> cp -rf /bin /mnt/4
+>>> 4 umount /dev/sda1 /mnt
+>>> 5 mount /dev/sda1 /mnt
+>>> XFS mounting filesystem sda1
+>>> Starting XFS recovery on filesystem: sda1 (logdev: internal)
+>>> Ending XFS recovery on filesystem: sda1 (logdev: internal)cp -rf /bin
+>>> /mnt/5
+>>> 5 umount /dev/sda1 /mnt
+>>> 6 mount /dev/sda1 /mnt
+>>>
+>>> XFS mounting filesystem sda1
+>>> Starting XFS recovery on filesystem: sda1 (logdev: internal)
+>>> Ending XFS recovery on filesystem: sda1 (logdev: internal)Interrupt
+>>> cp -rf /bin /mnt/6
+>>> 6 umount /dev/sda1 /mnt
+>>> 7 mount /dev/sda1 /mnt
+>>>
+>>> XFS mounting filesystem sda1
+>>> cp -rf /bin /mnt/7
+>>> 7 umount /dev/sda1 /mnt
+>>> Interrupt
+>>> 8 mount /dev/sda1 /mnt
+>>> XFS mounting filesystem sda1
+>>> Starting XFS recovery on filesystem: sda1 (logdev: internal)
+>>> XFS: xlog_recover_process_data: bad clientid
+>>> XFS: log mount/recovery failed: error 5
+>>> XFS: log mount failed
+>>>
+>>> Thanks
+>>> -Tony
+>>
+>> It works fine on a 2.6.32 machine I had sitting around - and I never
+>> required log recovery.
+>>
+>> I think you need to answer Dave's question as to why is your unmounts
+>> are requiring recovery?
+>>
+>> Are there errors in the /var/log/messages?
+>>
+>> I downloaded the Linux 2.6.38.8 source and take a look if I can recreate
+>> the problem.
+>>
+>> --Mark.
+>
+>I could not reproduce the problem on a vanilla install. XFS shutdown and
+>remounted cleanly running your script (several iterations looping set to
+>100).
+>
+>I started fsstress on another XFS partition on the same disk to see if I
+>could force a shutdown race. With CONFIG_XFS_DEBUG=y, I could trigger
+>other ASSERTs on the fsstress partition so I never stayed up long enough
+>to cause a shutdown race.
+>
+>Not wanting to patch that version of Linux/XFS, I am bailing here. If
+>you want to turn on the XFS debug it may point out why your filesystem
+>is not shutting down cleanly.
+>
+>--Mark.
