@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757631Ab3CDDyO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 22:54:14 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33076 "EHLO
+	id S1757900Ab3CDDyo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 22:54:44 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33068 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756892Ab3CDDo3 (ORCPT
+	by vger.kernel.org with ESMTP id S1756919Ab3CDDo2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Mar 2013 22:44:29 -0500
-Message-Id: <20130304033712.634150894@decadent.org.uk>
+	Sun, 3 Mar 2013 22:44:28 -0500
+Message-Id: <20130304033712.861646866@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 04 Mar 2013 03:37:58 +0000
+Date: Mon, 04 Mar 2013 03:38:00 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Johan Hovold <jhovold@gmail.com>,
-        Chris Ruehl <chris.ruehl@gtsys.com.hk>,
+Cc: akpm@linux-foundation.org, George Spelvin <linux@horizon.com>,
+        Rodolfo Giometti <giometti@enneenne.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [ 051/153] USB: serial: fix null-pointer dereferences on disconnect
+Subject: [ 053/153] pps: Add pps_lookup_dev() function
 In-Reply-To: <20130304033707.648729212@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,202 +28,125 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: George Spelvin <linux@horizon.com>
 
-commit b2ca699076573c94fee9a73cb0d8645383b602a0 upstream.
+commit 513b032c98b4b9414aa4e9b4a315cb1bf0380101 upstream.
 
-Make sure serial-driver dtr_rts is called with disc_mutex held after
-checking the disconnected flag.
+The PPS serial line discipline wants to attach a PPS device to a tty
+without changing the tty code to add a struct pps_device * pointer.
 
-Due to a bug in the tty layer, dtr_rts may get called after a device has
-been disconnected and the tty-device unregistered. Some drivers have had
-individual checks for disconnect to make sure the disconnected interface
-was not accessed, but this should really be handled in usb-serial core
-(at least until the long-standing tty-bug has been fixed).
+Since the number of PPS devices in a typical system is generally very low
+(n=1 is by far the most common), it's practical to search the entire list
+of allocated pps devices.  (We capture the timestamp before the lookup,
+so the timing isn't affected.)
 
-Note that the problem has been made more acute with commit 0998d0631001
-("device-core: Ensure drvdata = NULL when no driver is bound") as the
-port data is now also NULL when dtr_rts is called resulting in further
-oopses.
+It is a bit ugly that this function, which is part of the in-kernel
+PPS API, has to be in pps.c as opposed to kapi,c, but that's not
+something that affects users.
 
-Reported-by: Chris Ruehl <chris.ruehl@gtsys.com.hk>
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: George Spelvin <linux@horizon.com>
+Acked-by: Rodolfo Giometti <giometti@enneenne.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-[bwh: Backported to 3.2:
- - Adjust context
- - Drop changes to quatech2.c]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -1916,24 +1916,22 @@ static void ftdi_dtr_rts(struct usb_seri
- {
- 	struct ftdi_private *priv = usb_get_serial_port_data(port);
+ drivers/pps/pps.c          |   33 +++++++++++++++++++++++++++++++++
+ include/linux/pps_kernel.h |   17 ++++++++++++++---
+ 2 files changed, 47 insertions(+), 3 deletions(-)
+
+--- a/drivers/pps/pps.c
++++ b/drivers/pps/pps.c
+@@ -350,11 +350,44 @@ free_idr:
  
--	mutex_lock(&port->serial->disc_mutex);
--	if (!port->serial->disconnected) {
--		/* Disable flow control */
--		if (!on && usb_control_msg(port->serial->dev,
-+	/* Disable flow control */
-+	if (!on) {
-+		if (usb_control_msg(port->serial->dev,
- 			    usb_sndctrlpipe(port->serial->dev, 0),
- 			    FTDI_SIO_SET_FLOW_CTRL_REQUEST,
- 			    FTDI_SIO_SET_FLOW_CTRL_REQUEST_TYPE,
- 			    0, priv->interface, NULL, 0,
- 			    WDR_TIMEOUT) < 0) {
--			    dev_err(&port->dev, "error from flowcontrol urb\n");
-+			dev_err(&port->dev, "error from flowcontrol urb\n");
- 		}
--		/* drop RTS and DTR */
--		if (on)
--			set_mctrl(port, TIOCM_DTR | TIOCM_RTS);
--		else
--			clear_mctrl(port, TIOCM_DTR | TIOCM_RTS);
- 	}
--	mutex_unlock(&port->serial->disc_mutex);
-+	/* drop RTS and DTR */
-+	if (on)
-+		set_mctrl(port, TIOCM_DTR | TIOCM_RTS);
-+	else
-+		clear_mctrl(port, TIOCM_DTR | TIOCM_RTS);
+ void pps_unregister_cdev(struct pps_device *pps)
+ {
++	pps->lookup_cookie = NULL;
+ 	device_destroy(pps_class, pps->dev->devt);
+ 	cdev_del(&pps->cdev);
  }
  
  /*
---- a/drivers/usb/serial/mct_u232.c
-+++ b/drivers/usb/serial/mct_u232.c
-@@ -558,19 +558,15 @@ static void mct_u232_dtr_rts(struct usb_
- 	unsigned int control_state;
- 	struct mct_u232_private *priv = usb_get_serial_port_data(port);
- 
--	mutex_lock(&port->serial->disc_mutex);
--	if (!port->serial->disconnected) {
--		/* drop DTR and RTS */
--		spin_lock_irq(&priv->lock);
--		if (on)
--			priv->control_state |= TIOCM_DTR | TIOCM_RTS;
--		else
--			priv->control_state &= ~(TIOCM_DTR | TIOCM_RTS);
--		control_state = priv->control_state;
--		spin_unlock_irq(&priv->lock);
--		mct_u232_set_modem_ctrl(port->serial, control_state);
--	}
--	mutex_unlock(&port->serial->disc_mutex);
-+	spin_lock_irq(&priv->lock);
-+	if (on)
-+		priv->control_state |= TIOCM_DTR | TIOCM_RTS;
-+	else
-+		priv->control_state &= ~(TIOCM_DTR | TIOCM_RTS);
-+	control_state = priv->control_state;
-+	spin_unlock_irq(&priv->lock);
++ * Look up a pps device by magic cookie.
++ * The cookie is usually a pointer to some enclosing device, but this
++ * code doesn't care; you should never be dereferencing it.
++ *
++ * This is a bit of a kludge that is currently used only by the PPS
++ * serial line discipline.  It may need to be tweaked when a second user
++ * is found.
++ *
++ * There is no function interface for setting the lookup_cookie field.
++ * It's initialized to NULL when the pps device is created, and if a
++ * client wants to use it, just fill it in afterward.
++ *
++ * The cookie is automatically set to NULL in pps_unregister_source()
++ * so that it will not be used again, even if the pps device cannot
++ * be removed from the idr due to pending references holding the minor
++ * number in use.
++ */
++struct pps_device *pps_lookup_dev(void const *cookie)
++{
++	struct pps_device *pps;
++	unsigned id;
 +
-+	mct_u232_set_modem_ctrl(port->serial, control_state);
- }
- 
- static void mct_u232_close(struct usb_serial_port *port)
---- a/drivers/usb/serial/sierra.c
-+++ b/drivers/usb/serial/sierra.c
-@@ -891,19 +891,13 @@ static int sierra_open(struct tty_struct
- 
- static void sierra_dtr_rts(struct usb_serial_port *port, int on)
- {
--	struct usb_serial *serial = port->serial;
- 	struct sierra_port_private *portdata;
- 
- 	portdata = usb_get_serial_port_data(port);
- 	portdata->rts_state = on;
- 	portdata->dtr_state = on;
- 
--	if (serial->dev) {
--		mutex_lock(&serial->disc_mutex);
--		if (!serial->disconnected)
--			sierra_send_setup(port);
--		mutex_unlock(&serial->disc_mutex);
--	}
-+	sierra_send_setup(port);
- }
- 
- static int sierra_startup(struct usb_serial *serial)
---- a/drivers/usb/serial/ssu100.c
-+++ b/drivers/usb/serial/ssu100.c
-@@ -533,19 +533,16 @@ static void ssu100_dtr_rts(struct usb_se
- 
- 	dbg("%s\n", __func__);
- 
--	mutex_lock(&port->serial->disc_mutex);
--	if (!port->serial->disconnected) {
--		/* Disable flow control */
--		if (!on &&
--		    ssu100_setregister(dev, 0, UART_MCR, 0) < 0)
-+	/* Disable flow control */
-+	if (!on) {
-+		if (ssu100_setregister(dev, 0, UART_MCR, 0) < 0)
- 			dev_err(&port->dev, "error from flowcontrol urb\n");
--		/* drop RTS and DTR */
--		if (on)
--			set_mctrl(dev, TIOCM_DTR | TIOCM_RTS);
--		else
--			clear_mctrl(dev, TIOCM_DTR | TIOCM_RTS);
- 	}
--	mutex_unlock(&port->serial->disc_mutex);
-+	/* drop RTS and DTR */
-+	if (on)
-+		set_mctrl(dev, TIOCM_DTR | TIOCM_RTS);
-+	else
-+		clear_mctrl(dev, TIOCM_DTR | TIOCM_RTS);
- }
- 
- static void ssu100_update_msr(struct usb_serial_port *port, u8 msr)
---- a/drivers/usb/serial/usb-serial.c
-+++ b/drivers/usb/serial/usb-serial.c
-@@ -697,9 +697,20 @@ static int serial_carrier_raised(struct
- static void serial_dtr_rts(struct tty_port *port, int on)
- {
- 	struct usb_serial_port *p = container_of(port, struct usb_serial_port, port);
--	struct usb_serial_driver *drv = p->serial->type;
--	if (drv->dtr_rts)
-+	struct usb_serial *serial = p->serial;
-+	struct usb_serial_driver *drv = serial->type;
++	rcu_read_lock();
++	idr_for_each_entry(&pps_idr, pps, id)
++		if (cookie == pps->lookup_cookie)
++			break;
++	rcu_read_unlock();
++	return pps;
++}
++EXPORT_SYMBOL(pps_lookup_dev);
 +
-+	if (!drv->dtr_rts)
-+		return;
-+	/*
-+	 * Work-around bug in the tty-layer which can result in dtr_rts
-+	 * being called after a disconnect (and tty_unregister_device
-+	 * has returned). Remove once bug has been squashed.
-+	 */
-+	mutex_lock(&serial->disc_mutex);
-+	if (!serial->disconnected)
- 		drv->dtr_rts(p, on);
-+	mutex_unlock(&serial->disc_mutex);
- }
++/*
+  * Module stuff
+  */
  
- static const struct tty_port_operations serial_port_ops = {
---- a/drivers/usb/serial/usb_wwan.c
-+++ b/drivers/usb/serial/usb_wwan.c
-@@ -41,7 +41,6 @@ static int debug;
+--- a/include/linux/pps_kernel.h
++++ b/include/linux/pps_kernel.h
+@@ -43,7 +43,7 @@ struct pps_source_info {
+ 			int event, void *data);	/* PPS echo function */
  
- void usb_wwan_dtr_rts(struct usb_serial_port *port, int on)
- {
--	struct usb_serial *serial = port->serial;
- 	struct usb_wwan_port_private *portdata;
+ 	struct module *owner;
+-	struct device *dev;
++	struct device *dev;		/* Parent device for device_create */
+ };
  
- 	struct usb_wwan_intf_private *intfdata;
-@@ -54,12 +53,11 @@ void usb_wwan_dtr_rts(struct usb_serial_
- 		return;
+ struct pps_event_time {
+@@ -69,6 +69,7 @@ struct pps_device {
+ 	wait_queue_head_t queue;		/* PPS event queue */
  
- 	portdata = usb_get_serial_port_data(port);
--	mutex_lock(&serial->disc_mutex);
-+	/* FIXME: locking */
- 	portdata->rts_state = on;
- 	portdata->dtr_state = on;
--	if (serial->dev)
--		intfdata->send_setup(port);
--	mutex_unlock(&serial->disc_mutex);
+ 	unsigned int id;			/* PPS source unique ID */
++	void const *lookup_cookie;		/* pps_lookup_dev only */
+ 	struct cdev cdev;
+ 	struct device *dev;
+ 	struct fasync_struct *async_queue;	/* fasync method */
+@@ -82,16 +83,26 @@ struct pps_device {
+ extern struct device_attribute pps_attrs[];
+ 
+ /*
++ * Internal functions.
++ *
++ * These are not actually part of the exported API, but this is a
++ * convenient header file to put them in.
++ */
 +
-+	intfdata->send_setup(port);
- }
- EXPORT_SYMBOL(usb_wwan_dtr_rts);
++extern int pps_register_cdev(struct pps_device *pps);
++extern void pps_unregister_cdev(struct pps_device *pps);
++
++/*
+  * Exported functions
+  */
  
+ extern struct pps_device *pps_register_source(
+ 		struct pps_source_info *info, int default_params);
+ extern void pps_unregister_source(struct pps_device *pps);
+-extern int pps_register_cdev(struct pps_device *pps);
+-extern void pps_unregister_cdev(struct pps_device *pps);
+ extern void pps_event(struct pps_device *pps,
+ 		struct pps_event_time *ts, int event, void *data);
++/* Look up a pps device by magic cookie */
++struct pps_device *pps_lookup_dev(void const *cookie);
+ 
+ static inline void timespec_to_pps_ktime(struct pps_ktime *kt,
+ 		struct timespec ts)
 
 
