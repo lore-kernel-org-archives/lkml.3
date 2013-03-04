@@ -1,54 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756250Ab3CDJUI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 04:20:08 -0500
-Received: from mail-da0-f48.google.com ([209.85.210.48]:46980 "EHLO
-	mail-da0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755754Ab3CDJUH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 04:20:07 -0500
-From: Sachin Kamat <sachin.kamat@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: linux@prisktech.co.nz, grant.likely@secretlab.ca, linus.walleij@linaro.org,
-        sachin.kamat@linaro.org, thierry.reding@avionic-design.de
-Subject: [PATCH 1/1] gpio/vt8500: Convert to devm_ioremap_resource()
-Date: Mon,  4 Mar 2013 14:39:39 +0530
-Message-Id: <1362388179-26841-1-git-send-email-sachin.kamat@linaro.org>
-X-Mailer: git-send-email 1.7.4.1
+	id S1756232Ab3CDJVk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 04:21:40 -0500
+Received: from mga11.intel.com ([192.55.52.93]:62346 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755754Ab3CDJVj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Mar 2013 04:21:39 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,778,1355126400"; 
+   d="scan'208";a="294406296"
+Date: Mon, 4 Mar 2013 17:21:36 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Jan Kara <jack@suse.cz>
+Cc: Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org
+Subject: Re: [printk A-A deadlock] possible reason: unannotated irqs-on
+Message-ID: <20130304092136.GA32204@localhost>
+References: <20130304054254.GA21630@localhost>
+ <20130304091458.GA17223@quack.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130304091458.GA17223@quack.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the newly introduced devm_ioremap_resource() instead of
-devm_request_and_ioremap() which provides more consistent error handling.
+On Mon, Mar 04, 2013 at 10:14:58AM +0100, Jan Kara wrote:
+> On Mon 04-03-13 13:42:54, Wu Fengguang wrote:
+> > Greetings,
+> > 
+> > I got the below oops and the first bad commit is
+>   Thanks for report! BTW, I didn't see any oops in the log, just complaints
+> from lockdep about a bug in irq handling (which seems to be just a problem
+> with lockdep turning on-off in vprintk_emit() which I broke).
 
-devm_ioremap_resource() provides its own error messages; so all explicit
-error messages can be removed from the failure code paths.
+You are welcome! And sorry for the misword..
 
-Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
----
- drivers/gpio/gpio-vt8500.c |    8 +++-----
- 1 files changed, 3 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/gpio/gpio-vt8500.c b/drivers/gpio/gpio-vt8500.c
-index 81683ca..b2d8d6f 100644
---- a/drivers/gpio/gpio-vt8500.c
-+++ b/drivers/gpio/gpio-vt8500.c
-@@ -309,11 +309,9 @@ static int vt8500_gpio_probe(struct platform_device *pdev)
- 		return -ENODEV;
- 	}
- 
--	gpio_base = devm_request_and_ioremap(&pdev->dev, res);
--	if (!gpio_base) {
--		dev_err(&pdev->dev, "Unable to map GPIO registers\n");
--		return -ENOMEM;
--	}
-+	gpio_base = devm_ioremap_resource(&pdev->dev, res);
-+	if (IS_ERR(gpio_base))
-+		return PTR_ERR(gpio_base);
- 
- 	ret = vt8500_add_chips(pdev, gpio_base, of_id->data);
- 
--- 
-1.7.4.1
-
+Thanks,
+Fengguang
