@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758127Ab3CDESH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 23:18:07 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60799 "EHLO
+	id S1758101Ab3CDESF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 23:18:05 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60801 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755481Ab3CDDmk (ORCPT
+	by vger.kernel.org with ESMTP id S1755350Ab3CDDmk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 3 Mar 2013 22:42:40 -0500
-Message-Id: <20130304033721.609087372@decadent.org.uk>
+Message-Id: <20130304033720.971379045@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 04 Mar 2013 03:39:30 +0000
+Date: Mon, 04 Mar 2013 03:39:23 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, ryan <draziw+deb@gmail.com>,
-        Corentin Chary <corentin.chary@gmail.com>,
-        Matthew Garrett <matthew.garrett@nebula.com>
-Subject: [ 143/153] asus-laptop: Do not call HWRS on init
+Cc: akpm@linux-foundation.org, Douglas Bagnall <douglas@paradise.net.nz>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: [ 136/153] [media] Avoid sysfs oops when an rc_devs raw device is absent
 In-Reply-To: <20130304033707.648729212@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,68 +27,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Hutchings <ben@decadent.org.uk>
+From: Douglas Bagnall <douglas@paradise.net.nz>
 
-commit cb7da022450cdaaebd33078b6b32fb7dd2aaf6db upstream.
+commit 720bb6436ff30fccad05cf5bdf961ea5b1f5686d upstream.
 
-Since commit 8871e99f89b7 ('asus-laptop: HRWS/HWRS typo'), module
-initialisation is very slow on the Asus UL30A.  The HWRS method takes
-about 12 seconds to run, and subsequent initialisation also seems to
-be delayed.  Since we don't really need the result, don't bother
-calling it on init.  Those who are curious can still get the result
-through the 'infos' device attribute.
+For some reason, when the lirc daemon learns that a usb remote control
+has been unplugged, it wants to read the sysfs attributes of the
+disappearing device. This is useful for uncovering transient
+inconsistencies, but less so for keeping the system running when such
+inconsistencies exist.
 
-Update the comment about HWRS in show_infos().
+Under some circumstances (like every time I unplug my dvb stick from
+my laptop), lirc catches an rc_dev whose raw event handler has been
+removed (presumably by ir_raw_event_unregister), and proceeds to
+interrogate the raw protocols supported by the NULL pointer.
 
-Reported-by: ryan <draziw+deb@gmail.com>
-References: http://bugs.debian.org/692436
+This patch avoids the NULL dereference, and ignores the issue of how
+this state of affairs came about in the first place.
+
+Version 2 incorporates changes recommended by Mauro Carvalho Chehab
+(-ENODEV instead of -EINVAL, and a signed-off-by).
+
+Signed-off-by: Douglas Bagnall <douglas@paradise.net.nz>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Signed-off-by: Corentin Chary <corentin.chary@gmail.com>
-Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
 ---
- drivers/platform/x86/asus-laptop.c |   17 ++++-------------
- 1 file changed, 4 insertions(+), 13 deletions(-)
+ drivers/media/rc/rc-main.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/drivers/platform/x86/asus-laptop.c
-+++ b/drivers/platform/x86/asus-laptop.c
-@@ -820,8 +820,10 @@ static ssize_t show_infos(struct device
- 	/*
- 	 * The HWRS method return informations about the hardware.
- 	 * 0x80 bit is for WLAN, 0x100 for Bluetooth.
-+	 * 0x40 for WWAN, 0x10 for WIMAX.
- 	 * The significance of others is yet to be found.
--	 * If we don't find the method, we assume the device are present.
-+	 * We don't currently use this for device detection, and it
-+	 * takes several seconds to run on some systems.
- 	 */
- 	rv = acpi_evaluate_integer(asus->handle, "HWRS", NULL, &temp);
- 	if (!ACPI_FAILURE(rv))
-@@ -1591,7 +1593,7 @@ static int asus_laptop_get_info(struct a
- {
- 	struct acpi_buffer buffer = { ACPI_ALLOCATE_BUFFER, NULL };
- 	union acpi_object *model = NULL;
--	unsigned long long bsts_result, hwrs_result;
-+	unsigned long long bsts_result;
- 	char *string = NULL;
- 	acpi_status status;
+--- a/drivers/media/rc/rc-main.c
++++ b/drivers/media/rc/rc-main.c
+@@ -774,10 +774,11 @@ static ssize_t show_protocols(struct dev
+ 	if (dev->driver_type == RC_DRIVER_SCANCODE) {
+ 		enabled = dev->rc_map.rc_type;
+ 		allowed = dev->allowed_protos;
+-	} else {
++	} else if (dev->raw) {
+ 		enabled = dev->raw->enabled_protocols;
+ 		allowed = ir_raw_get_allowed_protocols();
+-	}
++	} else
++		return -ENODEV;
  
-@@ -1653,17 +1655,6 @@ static int asus_laptop_get_info(struct a
- 	if (*string)
- 		pr_notice("  %s model detected\n", string);
- 
--	/*
--	 * The HWRS method return informations about the hardware.
--	 * 0x80 bit is for WLAN, 0x100 for Bluetooth,
--	 * 0x40 for WWAN, 0x10 for WIMAX.
--	 * The significance of others is yet to be found.
--	 */
--	status =
--	    acpi_evaluate_integer(asus->handle, "HWRS", NULL, &hwrs_result);
--	if (!ACPI_FAILURE(status))
--		pr_notice("  HWRS returned %x", (int)hwrs_result);
--
- 	if (!acpi_check_handle(asus->handle, METHOD_WL_STATUS, NULL))
- 		asus->have_rsts = true;
- 
+ 	IR_dprintk(1, "allowed - 0x%llx, enabled - 0x%llx\n",
+ 		   (long long)allowed,
 
 
