@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755549Ab3CDDmo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 22:42:44 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60806 "EHLO
+	id S1757304Ab3CDEQp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 23:16:45 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60821 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755504Ab3CDDmm (ORCPT
+	by vger.kernel.org with ESMTP id S1755526Ab3CDDmp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Mar 2013 22:42:42 -0500
-Message-Id: <20130304033709.432302392@decadent.org.uk>
+	Sun, 3 Mar 2013 22:42:45 -0500
+Message-Id: <20130304033721.420513463@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 04 Mar 2013 03:37:26 +0000
+Date: Mon, 04 Mar 2013 03:39:28 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Dave Hansen <dave@linux.vnet.ibm.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [ 019/153] x86-32, mm: Rip out x86_32 NUMA remapping code
+Cc: akpm@linux-foundation.org,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [ 141/153] usb: Add USB_QUIRK_RESET_RESUME for all Logitech UVC webcams
 In-Reply-To: <20130304033707.648729212@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,61 +29,103 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Hansen <dave@linux.vnet.ibm.com>
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
 
-commit f03574f2d5b2d6229dcdf2d322848065f72953c7 upstream.
+commit e387ef5c47ddeaeaa3cbdc54424cdb7a28dae2c0 upstream.
 
-This code was an optimization for 32-bit NUMA systems.
+Most Logitech UVC webcams (both early models that don't advertise UVC
+compatibility and newer UVC-advertised devices) require the RESET_RESUME
+quirk. Instead of listing each and every model, match the devices based
+on the UVC interface information.
 
-It has probably been the cause of a number of subtle bugs over
-the years, although the conditions to excite them would have
-been hard to trigger.  Essentially, we remap part of the kernel
-linear mapping area, and then sometimes part of that area gets
-freed back in to the bootmem allocator.  If those pages get
-used by kernel data structures (say mem_map[] or a dentry),
-there's no big deal.  But, if anyone ever tried to use the
-linear mapping for these pages _and_ cared about their physical
-address, bad things happen.
-
-For instance, say you passed __GFP_ZERO to the page allocator
-and then happened to get handed one of these pages, it zero the
-remapped page, but it would make a pte to the _old_ page.
-There are probably a hundred other ways that it could screw
-with things.
-
-We don't need to hang on to performance optimizations for
-these old boxes any more.  All my 32-bit NUMA systems are long
-dead and buried, and I probably had access to more than most
-people.
-
-This code is causing real things to break today:
-
-	https://lkml.org/lkml/2013/1/9/376
-
-I looked in to actually fixing this, but it requires surgery
-to way too much brittle code, as well as stuff like
-per_cpu_ptr_to_phys().
-
-[ hpa: Cc: this for -stable, since it is a memory corruption issue.
-  However, an alternative is to simply mark NUMA as depends BROKEN
-  rather than EXPERIMENTAL in the X86_32 subclause... ]
-
-Link: http://lkml.kernel.org/r/20130131005616.1C79F411@kernel.stglabs.ibm.com
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-[bwh: For 3.2, using the suggested alternative]
+Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+[bwh: Adjust context to apply after 3.2.38]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
+ drivers/usb/core/quirks.c |   58 +++++++++++++--------------------------------
+ 1 file changed, 16 insertions(+), 42 deletions(-)
 
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -1150,7 +1150,7 @@ config DIRECT_GBPAGES
- config NUMA
- 	bool "Numa Memory Allocation and Scheduler Support"
- 	depends on SMP
--	depends on X86_64 || (X86_32 && HIGHMEM64G && (X86_NUMAQ || X86_BIGSMP || X86_SUMMIT && ACPI) && EXPERIMENTAL)
-+	depends on X86_64 || (X86_32 && HIGHMEM64G && (X86_NUMAQ || X86_BIGSMP || X86_SUMMIT && ACPI) && BROKEN)
- 	default y if (X86_NUMAQ || X86_SUMMIT || X86_BIGSMP)
- 	---help---
- 	  Enable NUMA (Non Uniform Memory Access) support.
+--- a/drivers/usb/core/quirks.c
++++ b/drivers/usb/core/quirks.c
+@@ -46,53 +46,23 @@ static const struct usb_device_id usb_qu
+ 	/* Microsoft LifeCam-VX700 v2.0 */
+ 	{ USB_DEVICE(0x045e, 0x0770), .driver_info = USB_QUIRK_RESET_RESUME },
+ 
+-	/* Logitech Webcam C200 */
+-	{ USB_DEVICE(0x046d, 0x0802), .driver_info = USB_QUIRK_RESET_RESUME },
++	/* Logitech Quickcam Fusion */
++	{ USB_DEVICE(0x046d, 0x08c1), .driver_info = USB_QUIRK_RESET_RESUME },
+ 
+-	/* Logitech Webcam C250 */
+-	{ USB_DEVICE(0x046d, 0x0804), .driver_info = USB_QUIRK_RESET_RESUME },
++	/* Logitech Quickcam Orbit MP */
++	{ USB_DEVICE(0x046d, 0x08c2), .driver_info = USB_QUIRK_RESET_RESUME },
+ 
+-	/* Logitech Webcam C300 */
+-	{ USB_DEVICE(0x046d, 0x0805), .driver_info = USB_QUIRK_RESET_RESUME },
++	/* Logitech Quickcam Pro for Notebook */
++	{ USB_DEVICE(0x046d, 0x08c3), .driver_info = USB_QUIRK_RESET_RESUME },
+ 
+-	/* Logitech Webcam B/C500 */
+-	{ USB_DEVICE(0x046d, 0x0807), .driver_info = USB_QUIRK_RESET_RESUME },
++	/* Logitech Quickcam Pro 5000 */
++	{ USB_DEVICE(0x046d, 0x08c5), .driver_info = USB_QUIRK_RESET_RESUME },
+ 
+-	/* Logitech Webcam C600 */
+-	{ USB_DEVICE(0x046d, 0x0808), .driver_info = USB_QUIRK_RESET_RESUME },
++	/* Logitech Quickcam OEM Dell Notebook */
++	{ USB_DEVICE(0x046d, 0x08c6), .driver_info = USB_QUIRK_RESET_RESUME },
+ 
+-	/* Logitech Webcam Pro 9000 */
+-	{ USB_DEVICE(0x046d, 0x0809), .driver_info = USB_QUIRK_RESET_RESUME },
+-
+-	/* Logitech Webcam C905 */
+-	{ USB_DEVICE(0x046d, 0x080a), .driver_info = USB_QUIRK_RESET_RESUME },
+-
+-	/* Logitech Webcam C210 */
+-	{ USB_DEVICE(0x046d, 0x0819), .driver_info = USB_QUIRK_RESET_RESUME },
+-
+-	/* Logitech Webcam C260 */
+-	{ USB_DEVICE(0x046d, 0x081a), .driver_info = USB_QUIRK_RESET_RESUME },
+-
+-	/* Logitech Webcam C310 */
+-	{ USB_DEVICE(0x046d, 0x081b), .driver_info = USB_QUIRK_RESET_RESUME },
+-
+-	/* Logitech Webcam C910 */
+-	{ USB_DEVICE(0x046d, 0x0821), .driver_info = USB_QUIRK_RESET_RESUME },
+-
+-	/* Logitech Webcam C160 */
+-	{ USB_DEVICE(0x046d, 0x0824), .driver_info = USB_QUIRK_RESET_RESUME },
+-
+-	/* Logitech Webcam C270 */
+-	{ USB_DEVICE(0x046d, 0x0825), .driver_info = USB_QUIRK_RESET_RESUME },
+-
+-	/* Logitech Quickcam Pro 9000 */
+-	{ USB_DEVICE(0x046d, 0x0990), .driver_info = USB_QUIRK_RESET_RESUME },
+-
+-	/* Logitech Quickcam E3500 */
+-	{ USB_DEVICE(0x046d, 0x09a4), .driver_info = USB_QUIRK_RESET_RESUME },
+-
+-	/* Logitech Quickcam Vision Pro */
+-	{ USB_DEVICE(0x046d, 0x09a6), .driver_info = USB_QUIRK_RESET_RESUME },
++	/* Logitech Quickcam OEM Cisco VT Camera II */
++	{ USB_DEVICE(0x046d, 0x08c7), .driver_info = USB_QUIRK_RESET_RESUME },
+ 
+ 	/* Logitech Harmony 700-series */
+ 	{ USB_DEVICE(0x046d, 0xc122), .driver_info = USB_QUIRK_DELAY_INIT },
+@@ -169,6 +139,10 @@ static const struct usb_device_id usb_qu
+ };
+ 
+ static const struct usb_device_id usb_interface_quirk_list[] = {
++	/* Logitech UVC Cameras */
++	{ USB_VENDOR_AND_INTERFACE_INFO(0x046d, USB_CLASS_VIDEO, 1, 0),
++	  .driver_info = USB_QUIRK_RESET_RESUME },
++
+ 	{ }  /* terminating entry must be last */
+ };
+ 
+
 
 
