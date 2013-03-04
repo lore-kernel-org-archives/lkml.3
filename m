@@ -1,112 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757648Ab3CDQqE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 11:46:04 -0500
-Received: from mail-ob0-f180.google.com ([209.85.214.180]:61414 "EHLO
-	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756963Ab3CDQqB (ORCPT
+	id S1757496Ab3CDQr3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 11:47:29 -0500
+Received: from mail-qc0-f202.google.com ([209.85.216.202]:42987 "EHLO
+	mail-qc0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756765Ab3CDQr1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 11:46:01 -0500
+	Mon, 4 Mar 2013 11:47:27 -0500
+From: Paul Taysom <taysom@chromium.org>
+To: agk@redhat.com
+Cc: dm-devel@redhat.com, neilb@suse.de, linux-raid@vger.kernel.org,
+        linux-kernel@vger.kernel.org, msb@chromium.org, mpatocka@redhat.com,
+        olofj@chromium.org, Paul Taysom <taysom@chromium.org>
+Subject: [PATCH] md: dm-verity: Fix to avoid a deadlock in dm-bufio
+Date: Mon,  4 Mar 2013 08:45:48 -0800
+Message-Id: <1362415549-18653-1-git-send-email-taysom@chromium.org>
+X-Mailer: git-send-email 1.8.1.3
 MIME-Version: 1.0
-In-Reply-To: <20130304082959.GA22087@r00tworld.net>
-References: <CAGXu5jK7x+gFKgCN5=ZF+kSc4xSNbGtSERHCoOnCEgiJ1_wNGg@mail.gmail.com>
-	<20130303005700.GA32213@austin.hallyn.com>
-	<CAGXu5jLciqXcuhzDVPKPqA+mwv8e28zGAMScatzov3U07BuBaQ@mail.gmail.com>
-	<20130303035608.GA2703@austin.hallyn.com>
-	<CAGXu5jKphNv9+wYE1GwfXKXDdzeWB_AtiqxT0e2PEzqCXNPkfQ@mail.gmail.com>
-	<20130304082959.GA22087@r00tworld.net>
-Date: Mon, 4 Mar 2013 08:46:01 -0800
-Message-ID: <CAGXu5j+4quUZ3Lw7AiOSe1e0iewPCDSZZPXcp-KPahQy6cGjww@mail.gmail.com>
-Subject: Re: user ns: arbitrary module loading
-From: Kees Cook <keescook@google.com>
-To: Mathias Krause <minipli@googlemail.com>
-Cc: "Serge E. Hallyn" <serge@hallyn.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Brad Spengler <spender@grsecurity.net>,
-        Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>,
-        Rusty Russell <rusty@rustcorp.com.au>, PaX Team <pageexec@freemail.hu>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        "David S. Miller" <davem@davemloft.net>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 4, 2013 at 12:29 AM, Mathias Krause <minipli@googlemail.com> wrote:
-> On Sun, Mar 03, 2013 at 09:48:50AM -0800, Kees Cook wrote:
->> Several subsystems already have an implicit subsystem restriction
->> because they load with aliases. (e.g. binfmt-XXXX, net-pf=NNN,
->> snd-card-NNN, FOO-iosched, etc). This isn't the case for filesystems
->> and a few others, unfortunately:
->>
->> $ git grep 'request_module("%.*s"' | grep -vi prefix
->> crypto/api.c:           request_module("%s", name);
->>
->> [...]
->>
->> Several of these come from hardcoded values, though (e.g. crypto, chipreg).
->
-> Well, crypto does not. Try the code snippet below on a system with
-> CONFIG_CRYPTO_USER_API=y. It'll abuse the above request_module() call
-> to load any module the user requests -- iregardless of being contained
-> in a user ns or not.
+Changed the dm-verity prefetching to use a worker thread to avoid
+a deadlock in dm-bufio.
 
-Oh ew. Yeah, I must have missed the path through the user api. Arg.
+If generic_make_request is called recursively, it queues the I/O
+request on the current->bio_list without making the I/O request
+and returns. The routine making the recursive call cannot wait
+for the I/O to complete.
 
-> ---8<---
-> /* Loading arbitrary modules using crypto api since v2.6.38
->  *
->  * - minipli
->  */
-> #include <linux/if_alg.h>
-> #include <sys/socket.h>
-> #include <unistd.h>
-> #include <stdlib.h>
-> #include <string.h>
-> #include <stdio.h>
->
-> #ifndef AF_ALG
-> #define AF_ALG 38
-> #endif
->
->
-> int main(int argc, char **argv) {
->         struct sockaddr_alg sa_alg = {
->                 .salg_family = AF_ALG,
->                 .salg_type = "hash",
->         };
->         int sock;
->
->         if (argc != 2) {
->                 printf("usage: %s MODULE_NAME\n", argv[0]);
->                 exit(1);
->         }
->
->         sock = socket(AF_ALG, SOCK_SEQPACKET, 0);
->         if (sock < 0) {
->                 perror("socket(AF_ALG)");
->                 exit(1);
->         }
->
->         strncpy((char *) sa_alg.salg_name, argv[1], sizeof(sa_alg.salg_name));
->         bind(sock, (struct sockaddr *) &sa_alg, sizeof(sa_alg));
->         close(sock);
->
->         return 0;
-> }
-> --->8---
->
-> If people care about unprivileged users not being able to load arbitrary
-> modules, could someone please fix this in crypto API, then? Herbert?
+The deadlock occurred when one thread grabbed the bufio_client
+mutex and waited for an I/O to complete but the I/O was queued
+on another thread’s current->bio_list and it was waiting to get
+the mutex held by the first thread.
 
-So, should this get a prefix too?  Maybe we need to change the
-request_module primitive to request_module(prefix, fmt, args) to stop
-these request_module("%s", name) things from continuing to exist...
+The fix allows only one I/O request from dm-verity to dm-bufio
+per thread. To do this, the prefetch requests were queued on worker
+threads.
 
--Kees
+In addition to avoiding the deadlock, this fix made a slight
+improvement in performance.
 
+seconds_kernel_to_login:
+  with prefetch:    8.43s
+  without prefetch: 9.2s
+  worker prefetch:  8.28s
+
+Signed-off-by: Paul Taysom <taysom@chromium.org>
+---
+ drivers/md/dm-verity.c | 29 +++++++++++++++++++++++++++--
+ 1 file changed, 27 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/md/dm-verity.c b/drivers/md/dm-verity.c
+index 52cde98..7313498 100644
+--- a/drivers/md/dm-verity.c
++++ b/drivers/md/dm-verity.c
+@@ -93,6 +93,13 @@ struct dm_verity_io {
+ 	 */
+ };
+ 
++struct dm_verity_prefetch_work {
++	struct work_struct work;
++	struct dm_bufio_client *bufio;
++	sector_t block;
++	unsigned n_blocks;
++};
++
+ static struct shash_desc *io_hash_desc(struct dm_verity *v, struct dm_verity_io *io)
+ {
+ 	return (struct shash_desc *)(io + 1);
+@@ -419,6 +426,17 @@ static void verity_end_io(struct bio *bio, int error)
+ 	queue_work(io->v->verify_wq, &io->work);
+ }
+ 
++
++static void do_verity_prefetch_work(struct work_struct *work)
++{
++	struct dm_verity_prefetch_work *vw =
++		container_of(work, struct dm_verity_prefetch_work, work);
++
++	dm_bufio_prefetch(vw->bufio, vw->block, vw->n_blocks);
++
++	kfree(vw);
++}
++
+ /*
+  * Prefetch buffers for the specified io.
+  * The root buffer is not prefetched, it is assumed that it will be cached
+@@ -427,6 +445,7 @@ static void verity_end_io(struct bio *bio, int error)
+ static void verity_prefetch_io(struct dm_verity *v, struct dm_verity_io *io)
+ {
+ 	int i;
++	struct dm_verity_prefetch_work *vw;
+ 
+ 	for (i = v->levels - 2; i >= 0; i--) {
+ 		sector_t hash_block_start;
+@@ -449,8 +468,14 @@ static void verity_prefetch_io(struct dm_verity *v, struct dm_verity_io *io)
+ 				hash_block_end = v->hash_blocks - 1;
+ 		}
+ no_prefetch_cluster:
+-		dm_bufio_prefetch(v->bufio, hash_block_start,
+-				  hash_block_end - hash_block_start + 1);
++		vw = kmalloc(sizeof(*vw), GFP_KERNEL);
++		if (!vw)  /* Just prefetching, ignore errors */
++			return;
++		vw->bufio = v->bufio;
++		vw->block = hash_block_start;
++		vw->n_blocks = hash_block_end - hash_block_start + 1;
++		INIT_WORK(&vw->work, do_verity_prefetch_work);
++		queue_work(v->verify_wq, &vw->work);
+ 	}
+ }
+ 
 -- 
-Kees Cook
-Chrome OS Security
+1.8.1.3
+
