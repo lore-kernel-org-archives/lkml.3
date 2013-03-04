@@ -1,185 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932847Ab3CDWQd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 17:16:33 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:49654 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932378Ab3CDWQb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 17:16:31 -0500
-Date: Mon, 4 Mar 2013 17:15:45 -0500 (EST)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@file.rdu.redhat.com
-To: Paul Taysom <taysom@google.com>
-cc: Paul Taysom <taysom@chromium.org>, agk@redhat.com, dm-devel@redhat.com,
-        neilb@suse.de, linux-raid@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Mandeep Singh Baines <msb@chromium.org>,
-        Olof Johansson <olofj@chromium.org>
-Subject: Re: [PATCH] md: dm-verity: Fix to avoid a deadlock in dm-bufio
-In-Reply-To: <CAKwO_5GwN8PCtK6tM=KWvZMJHb357O+Bh3TpF3k3vB_0x_FtpQ@mail.gmail.com>
-Message-ID: <Pine.LNX.4.64.1303041711070.28666@file.rdu.redhat.com>
-References: <1362415549-18653-1-git-send-email-taysom@chromium.org>
- <20130304174254.GF8913@agk.fab.redhat.com>
- <CAKwO_5GwN8PCtK6tM=KWvZMJHb357O+Bh3TpF3k3vB_0x_FtpQ@mail.gmail.com>
+	id S932834Ab3CDWRR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 17:17:17 -0500
+Received: from casper.infradead.org ([85.118.1.10]:43956 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932378Ab3CDWRQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Mar 2013 17:17:16 -0500
+Message-ID: <51351D88.7060100@infradead.org>
+Date: Mon, 04 Mar 2013 14:17:44 -0800
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Mike Snitzer <snitzer@redhat.com>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, dmdevel <dm-devel@redhat.com>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ejt@redhat.com
+Subject: Re: linux-next: Tree for Mar 4 (dm-cache-target)
+References: <20130304144358.bd62a57601d4d4793921213e@canb.auug.org.au> <5134EE05.30305@infradead.org> <20130304221207.GA12140@redhat.com>
+In-Reply-To: <20130304221207.GA12140@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 03/04/13 14:12, Mike Snitzer wrote:
+> On Mon, Mar 04 2013 at  1:55pm -0500,
+> Randy Dunlap <rdunlap@infradead.org> wrote:
+> 
+>> On 03/03/13 19:43, Stephen Rothwell wrote:
+>>> Hi all,
+>>>
+>>> Changes since 20130301:
+>>>
+>>> The device-mapper tree gained a conflict against Linus' tree.
+>>>
+>>
+>>
+>> on i386:
+>>
+>> drivers/built-in.o: In function `is_discarded_oblock':
+>> dm-cache-target.c:(.text+0x1ea28e): undefined reference to `__udivdi3'
+>> drivers/built-in.o: In function `remap_to_origin_clear_discard':
+>> dm-cache-target.c:(.text+0x1ea3ac): undefined reference to `__udivdi3'
+>> drivers/built-in.o: In function `remap_to_cache_dirty.part.21':
+>> dm-cache-target.c:(.text+0x1ea48f): undefined reference to `__udivdi3'
+>> drivers/built-in.o: In function `cache_ctr':
+>> dm-cache-target.c:(.text+0x1eaa2b): undefined reference to `__udivdi3'
+>> dm-cache-target.c:(.text+0x1eaa71): undefined reference to `__udivdi3'
+>> drivers/built-in.o:dm-cache-target.c:(.text+0x1eac51): more undefined references to `__udivdi3' follow
+>>
+>>
+>>
+>> Full randconfig file is attached.
+> 
+> I was able to reproduce using your randconfig file.
+> 
+> This patch fixed the build for my v3.9-rc1 tree:
 
+Acked-by: Randy Dunlap <rdunlap@infradead.org>
 
-On Mon, 4 Mar 2013, Paul Taysom wrote:
+Thanks.
 
-> On Mon, Mar 4, 2013 at 9:42 AM, Alasdair G Kergon <agk@redhat.com> wrote:
-> > On Mon, Mar 04, 2013 at 08:45:48AM -0800, Paul Taysom wrote:
-> >> @@ -449,8 +468,14 @@ static void verity_prefetch_io(struct dm_verity *v, struct dm_verity_io *io)
-> >>                               hash_block_end = v->hash_blocks - 1;
-> >>               }
-> >>  no_prefetch_cluster:
-> >> -             dm_bufio_prefetch(v->bufio, hash_block_start,
-> >> -                               hash_block_end - hash_block_start + 1);
-> >> +             vw = kmalloc(sizeof(*vw), GFP_KERNEL);
-> >
-> > kmalloc?  mempool? ...
-> >
-> > Alasdair
-> >
-> The use of mempool would be a separate patch that would have to be
-> measured for performance impact.
-> -Paul
+> diff --git a/drivers/md/dm-cache-target.c b/drivers/md/dm-cache-target.c
+> index 0f4e84b..96bfec1 100644
+> --- a/drivers/md/dm-cache-target.c
+> +++ b/drivers/md/dm-cache-target.c
+> @@ -415,7 +415,7 @@ static bool block_size_is_power_of_two(struct cache *cache)
+>  static dm_dblock_t oblock_to_dblock(struct cache *cache, dm_oblock_t oblock)
+>  {
+>  	sector_t discard_blocks = cache->discard_block_size;
+> -	dm_block_t b = from_oblock(oblock);
+> +	sector_t b = from_oblock(oblock);
+>  
+>  	if (!block_size_is_power_of_two(cache))
+>  		(void) sector_div(discard_blocks, cache->sectors_per_block);
+> @@ -999,7 +999,7 @@ static void process_discard_bio(struct cache *cache, struct bio *bio)
+>  {
+>  	dm_block_t start_block = dm_sector_div_up(bio->bi_sector,
+>  						  cache->discard_block_size);
+> -	dm_block_t end_block = bio->bi_sector + bio_sectors(bio);
+> +	sector_t end_block = bio->bi_sector + bio_sectors(bio);
+>  	dm_block_t b;
+>  
+>  	(void) sector_div(end_block, cache->discard_block_size);
+> @@ -1801,7 +1801,7 @@ static int cache_create(struct cache_args *ca, struct cache **result)
+>  	char **error = &ca->ti->error;
+>  	struct cache *cache;
+>  	struct dm_target *ti = ca->ti;
+> -	dm_block_t origin_blocks;
+> +	sector_t origin_blocks;
+>  	struct dm_cache_metadata *cmd;
+>  	bool may_format = ca->features.mode == CM_WRITE;
+>  
+> @@ -1845,7 +1845,7 @@ static int cache_create(struct cache_args *ca, struct cache **result)
+>  	}
+>  
+>  	if (ca->block_size & (ca->block_size - 1)) {
+> -		dm_block_t cache_size = ca->cache_sectors;
+> +		sector_t cache_size = ca->cache_sectors;
+>  
+>  		cache->sectors_per_block_shift = -1;
+>  		(void) sector_div(cache_size, ca->block_size);
 > 
 
-You don't have to use mempool. Just avoid prefetching if there is not 
-enough memory for the prefetch structure.
 
-I reworked the patch, is uses an allocation that can fail and it generates 
-just one workqueue entry for one request (the original patch generated one 
-workqueue entry for hash tree level).
-
-Please test the patch and if it works and performs well, let's submit it.
-
-Mikulas
-
----
-
-Changed the dm-verity prefetching to use a worker thread to avoid
-a deadlock in dm-bufio.
-
-If generic_make_request is called recursively, it queues the I/O
-request on the current->bio_list without making the I/O request
-and returns. The routine making the recursive call cannot wait
-for the I/O to complete.
-
-The deadlock occurred when one thread grabbed the bufio_client
-mutex and waited for an I/O to complete but the I/O was queued
-on another thread's current->bio_list and it was waiting to get
-the mutex held by the first thread.
-
-The fix allows only one I/O request from dm-verity to dm-bufio
-per thread. To do this, the prefetch requests were queued on worker
-threads.
-
-In addition to avoiding the deadlock, this fix made a slight
-improvement in performance.
-
-seconds_kernel_to_login:
-  with prefetch:    8.43s
-  without prefetch: 9.2s
-  worker prefetch:  8.28s
-
-Signed-off-by: Paul Taysom <taysom@chromium.org>
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Cc: stable@kernel.org
----
- drivers/md/dm-bufio.c  |    2 ++
- drivers/md/dm-verity.c |   37 +++++++++++++++++++++++++++++++++----
- 2 files changed, 35 insertions(+), 4 deletions(-)
-
-Index: linux-3.8-fast/drivers/md/dm-verity.c
-===================================================================
---- linux-3.8-fast.orig/drivers/md/dm-verity.c	2013-03-04 22:49:20.000000000 +0100
-+++ linux-3.8-fast/drivers/md/dm-verity.c	2013-03-04 23:10:45.000000000 +0100
-@@ -93,6 +93,13 @@ struct dm_verity_io {
- 	 */
- };
- 
-+struct dm_verity_prefetch_work {
-+	struct work_struct work;
-+	struct dm_verity *v;
-+	sector_t block;
-+	unsigned n_blocks;
-+};
-+
- static struct shash_desc *io_hash_desc(struct dm_verity *v, struct dm_verity_io *io)
- {
- 	return (struct shash_desc *)(io + 1);
-@@ -424,15 +431,18 @@ static void verity_end_io(struct bio *bi
-  * The root buffer is not prefetched, it is assumed that it will be cached
-  * all the time.
-  */
--static void verity_prefetch_io(struct dm_verity *v, struct dm_verity_io *io)
-+static void verity_prefetch_io(struct work_struct *work)
- {
-+	struct dm_verity_prefetch_work *pw =
-+		container_of(work, struct dm_verity_prefetch_work, work);
-+	struct dm_verity *v = pw->v;
- 	int i;
- 
- 	for (i = v->levels - 2; i >= 0; i--) {
- 		sector_t hash_block_start;
- 		sector_t hash_block_end;
--		verity_hash_at_level(v, io->block, i, &hash_block_start, NULL);
--		verity_hash_at_level(v, io->block + io->n_blocks - 1, i, &hash_block_end, NULL);
-+		verity_hash_at_level(v, pw->block, i, &hash_block_start, NULL);
-+		verity_hash_at_level(v, pw->block + pw->n_blocks - 1, i, &hash_block_end, NULL);
- 		if (!i) {
- 			unsigned cluster = ACCESS_ONCE(dm_verity_prefetch_cluster);
- 
-@@ -452,6 +462,25 @@ no_prefetch_cluster:
- 		dm_bufio_prefetch(v->bufio, hash_block_start,
- 				  hash_block_end - hash_block_start + 1);
- 	}
-+
-+	kfree(pw);
-+}
-+
-+static void verity_submit_prefetch(struct dm_verity *v, struct dm_verity_io *io)
-+{
-+	struct dm_verity_prefetch_work *pw;
-+
-+	pw = kmalloc(sizeof(struct dm_verity_prefetch_work),
-+		GFP_NOIO | __GFP_NORETRY | __GFP_NOMEMALLOC | __GFP_NOWARN);
-+
-+	if (!pw)
-+		return;
-+
-+	INIT_WORK(&pw->work, verity_prefetch_io);
-+	pw->v = v;
-+	pw->block = io->block;
-+	pw->n_blocks = io->n_blocks;
-+	queue_work(v->verify_wq, &pw->work);
- }
- 
- /*
-@@ -498,7 +527,7 @@ static int verity_map(struct dm_target *
- 	memcpy(io->io_vec, bio_iovec(bio),
- 	       io->io_vec_size * sizeof(struct bio_vec));
- 
--	verity_prefetch_io(v, io);
-+	verity_submit_prefetch(v, io);
- 
- 	generic_make_request(bio);
- 
-Index: linux-3.8-fast/drivers/md/dm-bufio.c
-===================================================================
---- linux-3.8-fast.orig/drivers/md/dm-bufio.c	2013-03-04 23:03:14.000000000 +0100
-+++ linux-3.8-fast/drivers/md/dm-bufio.c	2013-03-04 23:04:19.000000000 +0100
-@@ -1026,6 +1026,8 @@ void dm_bufio_prefetch(struct dm_bufio_c
- {
- 	struct blk_plug plug;
- 
-+	BUG_ON(dm_bufio_in_request());
-+
- 	blk_start_plug(&plug);
- 	dm_bufio_lock(c);
- 
+-- 
+~Randy
