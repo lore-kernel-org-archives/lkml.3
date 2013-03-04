@@ -1,286 +1,592 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932505Ab3CDUUx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 15:20:53 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:51827 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932465Ab3CDUUu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 15:20:50 -0500
-From: Borislav Petkov <bp@alien8.de>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: X86 ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <bp@suse.de>
-Subject: [PATCH 2/2] x86: Make Linux guest support optional
-Date: Mon,  4 Mar 2013 21:20:21 +0100
-Message-Id: <1362428421-9244-3-git-send-email-bp@alien8.de>
-X-Mailer: git-send-email 1.8.1.3.535.ga923c31
-In-Reply-To: <1362428421-9244-1-git-send-email-bp@alien8.de>
-References: <1362428421-9244-1-git-send-email-bp@alien8.de>
+	id S1758840Ab3CDUW5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 15:22:57 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:36862 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757555Ab3CDUW4 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Mar 2013 15:22:56 -0500
+Date: Mon, 4 Mar 2013 15:22:48 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Roger Pau Monne <roger.pau@citrix.com>
+Cc: linux-kernel@vger.kernel.org, xen-devel@lists.xen.org
+Subject: Re: [PATCH RFC 08/12] xen-blkback: use balloon pages for all mappings
+Message-ID: <20130304202248.GK15386@phenom.dumpdata.com>
+References: <1362047335-26402-1-git-send-email-roger.pau@citrix.com>
+ <1362047335-26402-9-git-send-email-roger.pau@citrix.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <1362047335-26402-9-git-send-email-roger.pau@citrix.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Borislav Petkov <bp@suse.de>
+On Thu, Feb 28, 2013 at 11:28:51AM +0100, Roger Pau Monne wrote:
+> Using balloon pages for all granted pages allows us to simplify the
+> logic in blkback, specially in the xen_blkbk_map function, since now
 
-Put all config options needed to run Linux as a guest behind a
-CONFIG_HYPERVISOR_GUEST menu so that they don't get built-in by default
-but be selectable by the user. Also, make all units which depend on
-x86_hyper, depend on this new symbol so that compilation doesn't fail
-when CONFIG_HYPERVISOR_GUEST is disabled but those units assume its
-presence.
+especially
 
-Sort options in the new HYPERVISOR_GUEST menu, adapt config text and
-drop redundant select.
+> we can decide if we want to map a grant persistently or not after we
+> have actually mapped it. This could not be done before because
+> persistent grants used ballooned pages, and non-persistent grants used
+                                          ^^^whereas
+> pages from the kernel.
+> 
+> This patch also introduces several changes, the first one is that the
+> list of free pages is no longer global, now each blkback instance has
+> it's own list of free pages that can be used to map grants. Also, a
+> run time parameter (max_buffer_pages) has been added in order to tune
+> the maximum number of free pages each blkback instance will keep in
+> it's buffer.
+> 
+> Signed-off-by: Roger Pau Monné <roger.pau@citrix.com>
+> Cc: xen-devel@lists.xen.org
+> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> ---
+>  drivers/block/xen-blkback/blkback.c |  278 +++++++++++++++++++----------------
+>  drivers/block/xen-blkback/common.h  |    5 +
+>  drivers/block/xen-blkback/xenbus.c  |    3 +
 
-Signed-off-by: Borislav Petkov <bp@suse.de>
-Cc: Dmitry Torokhov <dtor@vmware.com>
-Cc: K. Y. Srinivasan <kys@microsoft.com>
-Cc: Haiyang Zhang <haiyangz@microsoft.com>
-Cc: devel@linuxdriverproject.org
----
- arch/x86/Kconfig                  | 89 ++++++++++++++++++++-------------------
- arch/x86/include/asm/hypervisor.h | 16 ++++---
- arch/x86/kernel/cpu/Makefile      |  3 +-
- arch/x86/lguest/Kconfig           |  3 +-
- arch/x86/xen/Kconfig              |  2 +-
- drivers/hv/Kconfig                |  2 +-
- drivers/misc/Kconfig              |  2 +-
- 7 files changed, 62 insertions(+), 55 deletions(-)
+You also need a Documentation/ABI/sysfs-stable/... file.
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index f922a9b9a319..e9e4623bd4da 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -389,7 +389,7 @@ config X86_NUMACHIP
- 
- config X86_VSMP
- 	bool "ScaleMP vSMP"
--	select PARAVIRT_GUEST
-+	select HYPERVISOR_GUEST
- 	select PARAVIRT
- 	depends on X86_64 && PCI
- 	depends on X86_EXTENDED_PLATFORM
-@@ -596,44 +596,17 @@ config SCHED_OMIT_FRAME_POINTER
- 
- 	  If in doubt, say "Y".
- 
--menuconfig PARAVIRT_GUEST
--	bool "Paravirtualized guest support"
-+menuconfig HYPERVISOR_GUEST
-+	bool "Linux guest support"
- 	---help---
--	  Say Y here to get to see options related to running Linux under
--	  various hypervisors.  This option alone does not add any kernel code.
-+	  Say Y here to enable options for running Linux under various hyper-
-+	  visors. This option enables basic hypervisor detection and platform
-+	  setup.
- 
--	  If you say N, all options in this submenu will be skipped and disabled.
-+	  If you say N, all options in this submenu will be skipped and
-+	  disabled, and Linux guest support won't be built in.
- 
--if PARAVIRT_GUEST
--
--config PARAVIRT_TIME_ACCOUNTING
--	bool "Paravirtual steal time accounting"
--	select PARAVIRT
--	default n
--	---help---
--	  Select this option to enable fine granularity task steal time
--	  accounting. Time spent executing other tasks in parallel with
--	  the current vCPU is discounted from the vCPU power. To account for
--	  that, there can be a small performance impact.
--
--	  If in doubt, say N here.
--
--source "arch/x86/xen/Kconfig"
--
--config KVM_GUEST
--	bool "KVM Guest support (including kvmclock)"
--	select PARAVIRT
--	select PARAVIRT
--	select PARAVIRT_CLOCK
--	default y if PARAVIRT_GUEST
--	---help---
--	  This option enables various optimizations for running under the KVM
--	  hypervisor. It includes a paravirtualized clock, so that instead
--	  of relying on a PIT (or probably other) emulation by the
--	  underlying device model, the host provides the guest with
--	  timing infrastructure such as time of day, and system time
--
--source "arch/x86/lguest/Kconfig"
-+if HYPERVISOR_GUEST
- 
- config PARAVIRT
- 	bool "Enable paravirtualization code"
-@@ -643,6 +616,13 @@ config PARAVIRT
- 	  over full virtualization.  However, when run without a hypervisor
- 	  the kernel is theoretically slower and slightly larger.
- 
-+config PARAVIRT_DEBUG
-+	bool "paravirt-ops debugging"
-+	depends on PARAVIRT && DEBUG_KERNEL
-+	---help---
-+	  Enable to debug paravirt_ops internals.  Specifically, BUG if
-+	  a paravirt_op is missing when it is called.
-+
- config PARAVIRT_SPINLOCKS
- 	bool "Paravirtualization layer for spinlocks"
- 	depends on PARAVIRT && SMP
-@@ -656,17 +636,38 @@ config PARAVIRT_SPINLOCKS
- 
- 	  If you are unsure how to answer this question, answer N.
- 
--config PARAVIRT_CLOCK
--	bool
-+source "arch/x86/xen/Kconfig"
- 
--config PARAVIRT_DEBUG
--	bool "paravirt-ops debugging"
--	depends on PARAVIRT && DEBUG_KERNEL
-+config KVM_GUEST
-+	bool "KVM Guest support (including kvmclock)"
-+	depends on PARAVIRT
-+	select PARAVIRT_CLOCK
-+	default y
- 	---help---
--	  Enable to debug paravirt_ops internals.  Specifically, BUG if
--	  a paravirt_op is missing when it is called.
-+	  This option enables various optimizations for running under the KVM
-+	  hypervisor. It includes a paravirtualized clock, so that instead
-+	  of relying on a PIT (or probably other) emulation by the
-+	  underlying device model, the host provides the guest with
-+	  timing infrastructure such as time of day, and system time
-+
-+source "arch/x86/lguest/Kconfig"
-+
-+config PARAVIRT_TIME_ACCOUNTING
-+	bool "Paravirtual steal time accounting"
-+	depends on PARAVIRT
-+	default n
-+	---help---
-+	  Select this option to enable fine granularity task steal time
-+	  accounting. Time spent executing other tasks in parallel with
-+	  the current vCPU is discounted from the vCPU power. To account for
-+	  that, there can be a small performance impact.
-+
-+	  If in doubt, say N here.
-+
-+config PARAVIRT_CLOCK
-+	bool
- 
--endif #PARAVIRT_GUEST
-+endif #HYPERVISOR_GUEST
- 
- config NO_BOOTMEM
- 	def_bool y
-diff --git a/arch/x86/include/asm/hypervisor.h b/arch/x86/include/asm/hypervisor.h
-index 86095ed14135..2d4b5e6107cd 100644
---- a/arch/x86/include/asm/hypervisor.h
-+++ b/arch/x86/include/asm/hypervisor.h
-@@ -20,13 +20,11 @@
- #ifndef _ASM_X86_HYPERVISOR_H
- #define _ASM_X86_HYPERVISOR_H
- 
-+#ifdef CONFIG_HYPERVISOR_GUEST
-+
- #include <asm/kvm_para.h>
- #include <asm/xen/hypervisor.h>
- 
--extern void init_hypervisor(struct cpuinfo_x86 *c);
--extern void init_hypervisor_platform(void);
--extern bool hypervisor_x2apic_available(void);
--
- /*
-  * x86 hypervisor information
-  */
-@@ -55,4 +53,12 @@ extern const struct hypervisor_x86 x86_hyper_ms_hyperv;
- extern const struct hypervisor_x86 x86_hyper_xen_hvm;
- extern const struct hypervisor_x86 x86_hyper_kvm;
- 
--#endif
-+extern void init_hypervisor(struct cpuinfo_x86 *c);
-+extern void init_hypervisor_platform(void);
-+extern bool hypervisor_x2apic_available(void);
-+#else
-+static inline void init_hypervisor(struct cpuinfo_x86 *c) { }
-+static inline void init_hypervisor_platform(void) { }
-+static inline bool hypervisor_x2apic_available(void) { return false; }
-+#endif /* CONFIG_HYPERVISOR_GUEST */
-+#endif /* _ASM_X86_HYPERVISOR_H */
-diff --git a/arch/x86/kernel/cpu/Makefile b/arch/x86/kernel/cpu/Makefile
-index a0e067d3d96c..5f81bcefbe14 100644
---- a/arch/x86/kernel/cpu/Makefile
-+++ b/arch/x86/kernel/cpu/Makefile
-@@ -14,7 +14,6 @@ CFLAGS_common.o		:= $(nostackp)
- 
- obj-y			:= intel_cacheinfo.o scattered.o topology.o
- obj-y			+= proc.o capflags.o powerflags.o common.o
--obj-y			+= vmware.o hypervisor.o mshyperv.o
- obj-y			+= rdrand.o
- obj-y			+= match.o
- 
-@@ -42,6 +41,8 @@ obj-$(CONFIG_MTRR)			+= mtrr/
- 
- obj-$(CONFIG_X86_LOCAL_APIC)		+= perfctr-watchdog.o perf_event_amd_ibs.o
- 
-+obj-$(CONFIG_HYPERVISOR_GUEST)		+= vmware.o hypervisor.o mshyperv.o
-+
- quiet_cmd_mkcapflags = MKCAP   $@
-       cmd_mkcapflags = $(PERL) $(srctree)/$(src)/mkcapflags.pl $< $@
- 
-diff --git a/arch/x86/lguest/Kconfig b/arch/x86/lguest/Kconfig
-index 29043d2048a0..4a0890f815c4 100644
---- a/arch/x86/lguest/Kconfig
-+++ b/arch/x86/lguest/Kconfig
-@@ -1,7 +1,6 @@
- config LGUEST_GUEST
- 	bool "Lguest guest support"
--	select PARAVIRT
--	depends on X86_32
-+	depends on X86_32 && PARAVIRT
- 	select TTY
- 	select VIRTUALIZATION
- 	select VIRTIO
-diff --git a/arch/x86/xen/Kconfig b/arch/x86/xen/Kconfig
-index 131dacd2748a..1a3c76505649 100644
---- a/arch/x86/xen/Kconfig
-+++ b/arch/x86/xen/Kconfig
-@@ -4,7 +4,7 @@
- 
- config XEN
- 	bool "Xen guest support"
--	select PARAVIRT
-+	depends on PARAVIRT
- 	select PARAVIRT_CLOCK
- 	select XEN_HAVE_PVMMU
- 	depends on X86_64 || (X86_32 && X86_PAE && !X86_VISWS)
-diff --git a/drivers/hv/Kconfig b/drivers/hv/Kconfig
-index 64630f15f181..0403b51d20ba 100644
---- a/drivers/hv/Kconfig
-+++ b/drivers/hv/Kconfig
-@@ -2,7 +2,7 @@ menu "Microsoft Hyper-V guest support"
- 
- config HYPERV
- 	tristate "Microsoft Hyper-V client drivers"
--	depends on X86 && ACPI && PCI && X86_LOCAL_APIC
-+	depends on X86 && ACPI && PCI && X86_LOCAL_APIC && HYPERVISOR_GUEST
- 	help
- 	  Select this option to run Linux as a Hyper-V client operating
- 	  system.
-diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
-index e83fdfe0c8ca..891123e31932 100644
---- a/drivers/misc/Kconfig
-+++ b/drivers/misc/Kconfig
-@@ -418,7 +418,7 @@ config TI_DAC7512
- 
- config VMWARE_BALLOON
- 	tristate "VMware Balloon Driver"
--	depends on X86
-+	depends on X86 && HYPERVISOR_GUEST
- 	help
- 	  This is VMware physical memory management driver which acts
- 	  like a "balloon" that can be inflated to reclaim physical pages
--- 
-1.8.1.3.535.ga923c31
+>  3 files changed, 159 insertions(+), 127 deletions(-)
+> 
+> diff --git a/drivers/block/xen-blkback/blkback.c b/drivers/block/xen-blkback/blkback.c
+> index b5e7495..ba27fc3 100644
+> --- a/drivers/block/xen-blkback/blkback.c
+> +++ b/drivers/block/xen-blkback/blkback.c
+> @@ -101,6 +101,21 @@ module_param_named(lru_num_clean, xen_blkif_lru_num_clean, int, 0644);
+>  MODULE_PARM_DESC(lru_num_clean,
+>  "Number of persistent grants to unmap when the list is full");
+>  
+> +/*
+> + * Maximum number of unused free pages to keep in the internal buffer.
+> + * Setting this to a value too low will reduce memory used in each backend,
+> + * but can have a performance penalty.
+> + *
+> + * A sane value is xen_blkif_reqs * BLKIF_MAX_SEGMENTS_PER_REQUEST, but can
 
+Should that value be default value then?
+
+> + * be set to a lower value that might degrade performance on some intensive
+> + * IO workloads.
+> + */
+> +
+> +static int xen_blkif_max_buffer_pages = 1024;
+> +module_param_named(max_buffer_pages, xen_blkif_max_buffer_pages, int, 0644);
+> +MODULE_PARM_DESC(max_buffer_pages,
+> +"Maximum number of free pages to keep in each block backend buffer");
+> +
+>  /* Run-time switchable: /sys/module/blkback/parameters/ */
+>  static unsigned int log_stats;
+>  module_param(log_stats, int, 0644);
+> @@ -120,6 +135,7 @@ struct pending_req {
+>  	int			status;
+>  	struct list_head	free_list;
+>  	struct persistent_gnt	*persistent_gnts[BLKIF_MAX_SEGMENTS_PER_REQUEST];
+> +	struct page		*pages[BLKIF_MAX_SEGMENTS_PER_REQUEST];
+>  };
+>  
+>  #define BLKBACK_INVALID_HANDLE (~0)
+> @@ -131,8 +147,6 @@ struct xen_blkbk {
+>  	/* And its spinlock. */
+>  	spinlock_t		pending_free_lock;
+>  	wait_queue_head_t	pending_free_wq;
+> -	/* The list of all pages that are available. */
+> -	struct page		**pending_pages;
+>  	/* And the grant handles that are available. */
+>  	grant_handle_t		*pending_grant_handles;
+>  };
+> @@ -151,14 +165,66 @@ static inline int vaddr_pagenr(struct pending_req *req, int seg)
+>  		BLKIF_MAX_SEGMENTS_PER_REQUEST + seg;
+>  }
+>  
+> -#define pending_page(req, seg) pending_pages[vaddr_pagenr(req, seg)]
+> +static inline int get_free_page(struct xen_blkif *blkif, struct page **page)
+> +{
+> +	unsigned long flags;
+> +
+> +	spin_lock_irqsave(&blkif->free_pages_lock, flags);
+> +	if (list_empty(&blkif->free_pages)) {
+> +		BUG_ON(blkif->free_pages_num != 0);
+> +		spin_unlock_irqrestore(&blkif->free_pages_lock, flags);
+> +		return alloc_xenballooned_pages(1, page, false);
+> +	}
+> +	BUG_ON(blkif->free_pages_num == 0);
+> +	page[0] = list_first_entry(&blkif->free_pages, struct page, lru);
+> +	list_del(&page[0]->lru);
+> +	blkif->free_pages_num--;
+> +	spin_unlock_irqrestore(&blkif->free_pages_lock, flags);
+> +
+> +	return 0;
+> +}
+> +
+> +static inline void put_free_pages(struct xen_blkif *blkif, struct page **page,
+> +                                  int num)
+> +{
+> +	unsigned long flags;
+> +	int i;
+> +
+> +	spin_lock_irqsave(&blkif->free_pages_lock, flags);
+> +	for (i = 0; i < num; i++)
+> +		list_add(&page[i]->lru, &blkif->free_pages);
+> +	blkif->free_pages_num += num;
+> +	spin_unlock_irqrestore(&blkif->free_pages_lock, flags);
+> +}
+>  
+> -static inline unsigned long vaddr(struct pending_req *req, int seg)
+> +static inline void remove_free_pages(struct xen_blkif *blkif, int num)
+
+Perhaps 'shrink_free_pagepool'?
+
+>  {
+> -	unsigned long pfn = page_to_pfn(blkbk->pending_page(req, seg));
+> -	return (unsigned long)pfn_to_kaddr(pfn);
+> +	/* Remove requested pages in batches of 10 */
+> +	struct page *page[10];
+
+Hrmp. #define!
+
+> +	unsigned long flags;
+> +	int num_pages = 0;
+
+unsigned int
+
+> +
+> +	spin_lock_irqsave(&blkif->free_pages_lock, flags);
+> +	while (blkif->free_pages_num > num) {
+> +		BUG_ON(list_empty(&blkif->free_pages));
+> +		page[num_pages] = list_first_entry(&blkif->free_pages,
+> +		                                   struct page, lru);
+> +		list_del(&page[num_pages]->lru);
+> +		blkif->free_pages_num--;
+> +		if (++num_pages == 10) {
+> +			spin_unlock_irqrestore(&blkif->free_pages_lock, flags);
+> +			free_xenballooned_pages(num_pages, page);
+> +			spin_lock_irqsave(&blkif->free_pages_lock, flags);
+> +			num_pages = 0;
+> +		}
+> +	}
+> +	spin_unlock_irqrestore(&blkif->free_pages_lock, flags);
+> +	if (num_pages != 0)
+> +		free_xenballooned_pages(num_pages, page);
+>  }
+>  
+> +#define vaddr(page) ((unsigned long)pfn_to_kaddr(page_to_pfn(page)))
+> +
+>  #define pending_handle(_req, _seg) \
+>  	(blkbk->pending_grant_handles[vaddr_pagenr(_req, _seg)])
+>  
+> @@ -178,7 +244,7 @@ static void make_response(struct xen_blkif *blkif, u64 id,
+>  	     (n) = (&(pos)->node != NULL) ? rb_next(&(pos)->node) : NULL)
+>  
+>  
+> -static void add_persistent_gnt(struct rb_root *root,
+> +static int add_persistent_gnt(struct rb_root *root,
+>  			       struct persistent_gnt *persistent_gnt)
+>  {
+>  	struct rb_node **new = &(root->rb_node), *parent = NULL;
+> @@ -194,14 +260,15 @@ static void add_persistent_gnt(struct rb_root *root,
+>  		else if (persistent_gnt->gnt > this->gnt)
+>  			new = &((*new)->rb_right);
+>  		else {
+> -			pr_alert(DRV_PFX " trying to add a gref that's already in the tree\n");
+> -			BUG();
+> +			pr_alert_ratelimited(DRV_PFX " trying to add a gref that's already in the tree\n");
+> +			return -EINVAL;
+
+That looks like a seperate bug-fix patch? Especially the pr_alert_ratelimited
+part?
+
+>  		}
+>  	}
+>  
+>  	/* Add new node and rebalance tree. */
+>  	rb_link_node(&(persistent_gnt->node), parent, new);
+>  	rb_insert_color(&(persistent_gnt->node), root);
+> +	return 0;
+>  }
+>  
+>  static struct persistent_gnt *get_persistent_gnt(struct rb_root *root,
+> @@ -223,7 +290,8 @@ static struct persistent_gnt *get_persistent_gnt(struct rb_root *root,
+>  	return NULL;
+>  }
+>  
+> -static void free_persistent_gnts(struct rb_root *root, unsigned int num)
+> +static void free_persistent_gnts(struct xen_blkif *blkif, struct rb_root *root,
+> +                                 unsigned int num)
+>  {
+>  	struct gnttab_unmap_grant_ref unmap[BLKIF_MAX_SEGMENTS_PER_REQUEST];
+>  	struct page *pages[BLKIF_MAX_SEGMENTS_PER_REQUEST];
+> @@ -248,7 +316,7 @@ static void free_persistent_gnts(struct rb_root *root, unsigned int num)
+>  			ret = gnttab_unmap_refs(unmap, NULL, pages,
+>  				segs_to_unmap);
+>  			BUG_ON(ret);
+> -			free_xenballooned_pages(segs_to_unmap, pages);
+> +			put_free_pages(blkif, pages, segs_to_unmap);
+>  			segs_to_unmap = 0;
+>  		}
+>  
+> @@ -259,7 +327,8 @@ static void free_persistent_gnts(struct rb_root *root, unsigned int num)
+>  	BUG_ON(num != 0);
+>  }
+>  
+> -static int purge_persistent_gnt(struct rb_root *root, int num)
+> +static int purge_persistent_gnt(struct xen_blkif *blkif, struct rb_root *root,
+> +                                int num)
+>  {
+>  	struct gnttab_unmap_grant_ref unmap[BLKIF_MAX_SEGMENTS_PER_REQUEST];
+>  	struct page *pages[BLKIF_MAX_SEGMENTS_PER_REQUEST];
+> @@ -294,7 +363,7 @@ purge_list:
+>  			ret = gnttab_unmap_refs(unmap, NULL, pages,
+>  				segs_to_unmap);
+>  			BUG_ON(ret);
+> -			free_xenballooned_pages(segs_to_unmap, pages);
+> +			put_free_pages(blkif, pages, segs_to_unmap);
+>  			segs_to_unmap = 0;
+>  		}
+>  
+> @@ -317,7 +386,7 @@ finished:
+>  	if (segs_to_unmap > 0) {
+>  		ret = gnttab_unmap_refs(unmap, NULL, pages, segs_to_unmap);
+>  		BUG_ON(ret);
+> -		free_xenballooned_pages(segs_to_unmap, pages);
+> +		put_free_pages(blkif, pages, segs_to_unmap);
+>  	}
+>  	/* Finally remove the "used" flag from all the persistent grants */
+>  	foreach_grant_safe(persistent_gnt, n, root, node) {
+> @@ -521,7 +590,7 @@ purge_gnt_list:
+>  				           xen_blkif_lru_num_clean;
+>  				rq_purge = rq_purge > blkif->persistent_gnt_c ?
+>  				           blkif->persistent_gnt_c : rq_purge;
+> -				purged = purge_persistent_gnt(
+> +				purged = purge_persistent_gnt(blkif,
+>  					  &blkif->persistent_gnts, rq_purge);
+>  				if (purged != rq_purge)
+>  					pr_debug(DRV_PFX " unable to meet persistent grants purge requirements for device %#x, domain %u, requested %d done %d\n",
+> @@ -535,13 +604,17 @@ purge_gnt_list:
+>  			        msecs_to_jiffies(xen_blkif_lru_interval);
+>  		}
+>  
+> +		remove_free_pages(blkif, xen_blkif_max_buffer_pages);
+> +
+>  		if (log_stats && time_after(jiffies, blkif->st_print))
+>  			print_stats(blkif);
+>  	}
+>  
+> +	remove_free_pages(blkif, 0);
+
+What purpose does that have?
+
+> +
+>  	/* Free all persistent grant pages */
+>  	if (!RB_EMPTY_ROOT(&blkif->persistent_gnts))
+> -		free_persistent_gnts(&blkif->persistent_gnts,
+> +		free_persistent_gnts(blkif, &blkif->persistent_gnts,
+>  			blkif->persistent_gnt_c);
+>  
+>  	BUG_ON(!RB_EMPTY_ROOT(&blkif->persistent_gnts));
+> @@ -571,6 +644,7 @@ static void xen_blkbk_unmap(struct pending_req *req)
+>  	struct persistent_gnt *persistent_gnt;
+>  	unsigned int i, invcount = 0;
+>  	grant_handle_t handle;
+> +	struct xen_blkif *blkif = req->blkif;
+>  	int ret;
+>  
+>  	for (i = 0; i < req->nr_pages; i++) {
+> @@ -581,17 +655,18 @@ static void xen_blkbk_unmap(struct pending_req *req)
+>  			continue;
+>  		}
+>  		handle = pending_handle(req, i);
+> +		pages[invcount] = req->pages[i];
+>  		if (handle == BLKBACK_INVALID_HANDLE)
+>  			continue;
+> -		gnttab_set_unmap_op(&unmap[invcount], vaddr(req, i),
+> +		gnttab_set_unmap_op(&unmap[invcount], vaddr(pages[invcount]),
+>  				    GNTMAP_host_map, handle);
+>  		pending_handle(req, i) = BLKBACK_INVALID_HANDLE;
+> -		pages[invcount] = virt_to_page(vaddr(req, i));
+>  		invcount++;
+>  	}
+>  
+>  	ret = gnttab_unmap_refs(unmap, NULL, pages, invcount);
+>  	BUG_ON(ret);
+> +	put_free_pages(blkif, pages, invcount);
+>  }
+>  
+>  static int xen_blkbk_map(struct blkif_request *req,
+> @@ -606,7 +681,6 @@ static int xen_blkbk_map(struct blkif_request *req,
+>  	struct xen_blkif *blkif = pending_req->blkif;
+>  	phys_addr_t addr = 0;
+>  	int i, j;
+> -	bool new_map;
+>  	int nseg = req->u.rw.nr_segments;
+>  	int segs_to_map = 0;
+>  	int ret = 0;
+> @@ -632,69 +706,17 @@ static int xen_blkbk_map(struct blkif_request *req,
+>  			 * We are using persistent grants and
+>  			 * the grant is already mapped
+>  			 */
+> -			new_map = false;
+>  			persistent_gnt->flags |= PERSISTENT_GNT_ACTIVE;
+> -		} else if (use_persistent_gnts &&
+> -			   blkif->persistent_gnt_c < xen_blkif_max_pgrants) {
+> -			/*
+> -			 * We are using persistent grants, the grant is
+> -			 * not mapped but we have room for it
+> -			 */
+> -			new_map = true;
+> -			persistent_gnt = kmalloc(
+> -				sizeof(struct persistent_gnt),
+> -				GFP_KERNEL);
+> -			if (!persistent_gnt)
+> -				return -ENOMEM;
+> -			if (alloc_xenballooned_pages(1, &persistent_gnt->page,
+> -			    false)) {
+> -				kfree(persistent_gnt);
+> -				return -ENOMEM;
+> -			}
+> -			persistent_gnt->gnt = req->u.rw.seg[i].gref;
+> -			persistent_gnt->handle = BLKBACK_INVALID_HANDLE;
+> -			persistent_gnt->flags = PERSISTENT_GNT_ACTIVE;
+> -
+> -			pages_to_gnt[segs_to_map] =
+> -				persistent_gnt->page;
+> -			addr = (unsigned long) pfn_to_kaddr(
+> -				page_to_pfn(persistent_gnt->page));
+> -
+> -			add_persistent_gnt(&blkif->persistent_gnts,
+> -				persistent_gnt);
+> -			blkif->persistent_gnt_c++;
+> -			pr_debug(DRV_PFX " grant %u added to the tree of persistent grants, using %u/%u\n",
+> -				 persistent_gnt->gnt, blkif->persistent_gnt_c,
+> -				 xen_blkif_max_pgrants);
+> -		} else {
+> -			/*
+> -			 * We are either using persistent grants and
+> -			 * hit the maximum limit of grants mapped,
+> -			 * or we are not using persistent grants.
+> -			 */
+> -			if (use_persistent_gnts &&
+> -				!blkif->vbd.overflow_max_grants) {
+> -				blkif->vbd.overflow_max_grants = 1;
+> -				pr_debug(DRV_PFX " domain %u, device %#x is using maximum number of persistent grants\n",
+> -					 blkif->domid, blkif->vbd.handle);
+> -			}
+> -			new_map = true;
+> -			pages[i] = blkbk->pending_page(pending_req, i);
+> -			addr = vaddr(pending_req, i);
+> -			pages_to_gnt[segs_to_map] =
+> -				blkbk->pending_page(pending_req, i);
+> -		}
+> -
+> -		if (persistent_gnt) {
+>  			pages[i] = persistent_gnt->page;
+>  			persistent_gnts[i] = persistent_gnt;
+>  		} else {
+> +			if (get_free_page(blkif, &pages[i]))
+> +				goto out_of_memory;
+> +			addr = vaddr(pages[i]);
+> +			pages_to_gnt[segs_to_map] = pages[i];
+>  			persistent_gnts[i] = NULL;
+> -		}
+> -
+> -		if (new_map) {
+>  			flags = GNTMAP_host_map;
+> -			if (!persistent_gnt &&
+> +			if (!use_persistent_gnts &&
+>  			    (pending_req->operation != BLKIF_OP_READ))
+>  				flags |= GNTMAP_readonly;
+>  			gnttab_set_map_op(&map[segs_to_map++], addr,
+> @@ -714,54 +736,71 @@ static int xen_blkbk_map(struct blkif_request *req,
+>  	 * the page from the other domain.
+>  	 */
+>  	for (i = 0, j = 0; i < nseg; i++) {
+> -		if (!persistent_gnts[i] ||
+> -		    persistent_gnts[i]->handle == BLKBACK_INVALID_HANDLE) {
+> +		if (!persistent_gnts[i]) {
+>  			/* This is a newly mapped grant */
+>  			BUG_ON(j >= segs_to_map);
+>  			if (unlikely(map[j].status != 0)) {
+>  				pr_debug(DRV_PFX "invalid buffer -- could not remap it\n");
+> -				map[j].handle = BLKBACK_INVALID_HANDLE;
+> +				pending_handle(pending_req, i) =
+> +					BLKBACK_INVALID_HANDLE;
+>  				ret |= 1;
+> -				if (persistent_gnts[i]) {
+> -					rb_erase(&persistent_gnts[i]->node,
+> -						 &blkif->persistent_gnts);
+> -					blkif->persistent_gnt_c--;
+> -					kfree(persistent_gnts[i]);
+> -					persistent_gnts[i] = NULL;
+> -				}
+> +				j++;
+> +				continue;
+>  			}
+> +			pending_handle(pending_req, i) = map[j].handle;
+>  		}
+> -		if (persistent_gnts[i]) {
+> -			if (persistent_gnts[i]->handle ==
+> -			    BLKBACK_INVALID_HANDLE) {
+> +		if (persistent_gnts[i])
+> +			goto next;
+> +		if (use_persistent_gnts &&
+> +		    blkif->persistent_gnt_c < xen_blkif_max_pgrants) {
+> +			/*
+> +			 * We are using persistent grants, the grant is
+> +			 * not mapped but we have room for it
+> +			 */
+> +			persistent_gnt = kmalloc(sizeof(struct persistent_gnt),
+> +				                 GFP_KERNEL);
+> +			if (!persistent_gnt) {
+>  				/*
+> -				 * If this is a new persistent grant
+> -				 * save the handler
+> +				 * If we don't have enough memory to
+> +				 * allocate the persistent_gnt struct
+> +				 * map this grant non-persistenly
+>  				 */
+> -				persistent_gnts[i]->handle = map[j++].handle;
+> -			}
+> -			pending_handle(pending_req, i) =
+> -				persistent_gnts[i]->handle;
+> -
+> -			if (ret)
+> -				continue;
+> -
+> -			seg[i].buf = pfn_to_mfn(page_to_pfn(
+> -				persistent_gnts[i]->page)) << PAGE_SHIFT |
+> -				(req->u.rw.seg[i].first_sect << 9);
+> -		} else {
+> -			pending_handle(pending_req, i) = map[j].handle;
+> -
+> -			if (ret) {
+>  				j++;
+> -				continue;
+> +				goto next;
+>  			}
+> -
+> -			seg[i].buf = map[j++].dev_bus_addr |
+> -				(req->u.rw.seg[i].first_sect << 9);
+> +			persistent_gnt->gnt = map[j].ref;
+> +			persistent_gnt->handle = map[j].handle;
+> +			persistent_gnt->flags = PERSISTENT_GNT_ACTIVE;
+> +			persistent_gnt->page = pages[i];
+> +			if (add_persistent_gnt(&blkif->persistent_gnts,
+> +			                       persistent_gnt)) {
+> +				kfree(persistent_gnt);
+> +				goto next;
+> +			}
+> +			blkif->persistent_gnt_c++;
+> +			persistent_gnts[i] = persistent_gnt;
+> +			pr_debug(DRV_PFX " grant %u added to the tree of persistent grants, using %u/%u\n",
+> +				 persistent_gnt->gnt, blkif->persistent_gnt_c,
+> +				 xen_blkif_max_pgrants);
+> +			j++;
+> +			goto next;
+> +		}
+> +		if (use_persistent_gnts && !blkif->vbd.overflow_max_grants) {
+> +			blkif->vbd.overflow_max_grants = 1;
+> +			pr_debug(DRV_PFX " domain %u, device %#x is using maximum number of persistent grants\n",
+> +			         blkif->domid, blkif->vbd.handle);
+>  		}
+> +		j++;
+> +next:
+> +		seg[i].buf = pfn_to_mfn(page_to_pfn(pages[i])) << PAGE_SHIFT |
+> +		             (req->u.rw.seg[i].first_sect << 9);
+>  	}
+>  	return ret;
+> +
+> +out_of_memory:
+> +	pr_alert(DRV_PFX "%s: out of memory\n", __func__);
+> +	put_free_pages(blkif, pages_to_gnt, segs_to_map);
+> +	return -ENOMEM;
+>  }
+>  
+>  static int dispatch_discard_io(struct xen_blkif *blkif,
+> @@ -962,7 +1001,7 @@ static int dispatch_rw_block_io(struct xen_blkif *blkif,
+>  	int operation;
+>  	struct blk_plug plug;
+>  	bool drain = false;
+> -	struct page *pages[BLKIF_MAX_SEGMENTS_PER_REQUEST];
+> +	struct page **pages = pending_req->pages;
+>  
+>  	switch (req->operation) {
+>  	case BLKIF_OP_READ:
+> @@ -1193,22 +1232,14 @@ static int __init xen_blkif_init(void)
+>  					xen_blkif_reqs, GFP_KERNEL);
+>  	blkbk->pending_grant_handles = kmalloc(sizeof(blkbk->pending_grant_handles[0]) *
+>  					mmap_pages, GFP_KERNEL);
+> -	blkbk->pending_pages         = kzalloc(sizeof(blkbk->pending_pages[0]) *
+> -					mmap_pages, GFP_KERNEL);
+>  
+> -	if (!blkbk->pending_reqs || !blkbk->pending_grant_handles ||
+> -	    !blkbk->pending_pages) {
+> +	if (!blkbk->pending_reqs || !blkbk->pending_grant_handles) {
+>  		rc = -ENOMEM;
+>  		goto out_of_memory;
+>  	}
+>  
+>  	for (i = 0; i < mmap_pages; i++) {
+>  		blkbk->pending_grant_handles[i] = BLKBACK_INVALID_HANDLE;
+> -		blkbk->pending_pages[i] = alloc_page(GFP_KERNEL);
+> -		if (blkbk->pending_pages[i] == NULL) {
+> -			rc = -ENOMEM;
+> -			goto out_of_memory;
+> -		}
+>  	}
+>  	rc = xen_blkif_interface_init();
+>  	if (rc)
+> @@ -1233,13 +1264,6 @@ static int __init xen_blkif_init(void)
+>   failed_init:
+>  	kfree(blkbk->pending_reqs);
+>  	kfree(blkbk->pending_grant_handles);
+> -	if (blkbk->pending_pages) {
+> -		for (i = 0; i < mmap_pages; i++) {
+> -			if (blkbk->pending_pages[i])
+> -				__free_page(blkbk->pending_pages[i]);
+> -		}
+> -		kfree(blkbk->pending_pages);
+> -	}
+>  	kfree(blkbk);
+>  	blkbk = NULL;
+>  	return rc;
+> diff --git a/drivers/block/xen-blkback/common.h b/drivers/block/xen-blkback/common.h
+> index bd44d75..604bd30 100644
+> --- a/drivers/block/xen-blkback/common.h
+> +++ b/drivers/block/xen-blkback/common.h
+> @@ -209,6 +209,11 @@ struct xen_blkif {
+>  	unsigned int		persistent_gnt_c;
+>  	unsigned long		next_lru;
+>  
+> +	/* buffer of free pages to map grant refs */
+> +	spinlock_t		free_pages_lock;
+> +	int			free_pages_num;
+> +	struct list_head	free_pages;
+> +
+>  	/* statistics */
+>  	unsigned long		st_print;
+>  	int			st_rd_req;
+> diff --git a/drivers/block/xen-blkback/xenbus.c b/drivers/block/xen-blkback/xenbus.c
+> index abb399a..d7926ec 100644
+> --- a/drivers/block/xen-blkback/xenbus.c
+> +++ b/drivers/block/xen-blkback/xenbus.c
+> @@ -119,6 +119,9 @@ static struct xen_blkif *xen_blkif_alloc(domid_t domid)
+>  	blkif->next_lru = jiffies;
+>  	init_waitqueue_head(&blkif->waiting_to_free);
+>  	blkif->persistent_gnts.rb_node = NULL;
+> +	spin_lock_init(&blkif->free_pages_lock);
+> +	INIT_LIST_HEAD(&blkif->free_pages);
+> +	blkif->free_pages_num = 0;
+>  
+>  	return blkif;
+>  }
+> -- 
+> 1.7.7.5 (Apple Git-26)
+> 
