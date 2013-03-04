@@ -1,47 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758594Ab3CDRgN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 12:36:13 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:45020 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1758430Ab3CDRgM (ORCPT
+	id S1758633Ab3CDRgU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 12:36:20 -0500
+Received: from mail-bk0-f53.google.com ([209.85.214.53]:41293 "EHLO
+	mail-bk0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758431Ab3CDRgR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 12:36:12 -0500
-Date: Mon, 4 Mar 2013 12:36:11 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-cc: Thomas Renninger <trenn@suse.de>, Hannes Reinecke <hare@suse.de>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, Oliver Neukum <oneukum@suse.de>,
-        Yinghai Lu <yinghai@kernel.org>, Frederik Himpe <fhimpe@vub.ac.be>,
-        David Haerdeman <david@hardeman.nu>
-Subject: Re: [PATCH][v3] xhci: correctly enable interrupts
-In-Reply-To: <5134E331.30303@cogentembedded.com>
-Message-ID: <Pine.LNX.4.44L0.1303041234460.1750-100000@iolanthe.rowland.org>
+	Mon, 4 Mar 2013 12:36:17 -0500
+Date: Mon, 4 Mar 2013 21:36:11 +0400
+From: Vasily Kulikov <segoon@openwall.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Kees Cook <keescook@google.com>, Brad Spengler <spender@grsecurity.net>,
+        Linux Containers <containers@lists.linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
+        Al Viro <viro@zeniv.linux.org.uk>, PaX Team <pageexec@freemail.hu>,
+        Dave Jones <davej@redhat.com>, kernel-hardening@lists.openwall.com
+Subject: Re: [PATCH 2/2] fs: Limit sys_mount to only request filesystem
+ modules.
+Message-ID: <20130304173611.GA8500@cachalot>
+References: <CAGXu5jK7x+gFKgCN5=ZF+kSc4xSNbGtSERHCoOnCEgiJ1_wNGg@mail.gmail.com>
+ <20130303005700.GA32213@austin.hallyn.com>
+ <874ngtxgt5.fsf@xmission.com>
+ <CAGXu5j+bwUx6r++ttvYg4yJrUUHxoQ86tQ0JzEBoQQU6KAh9ww@mail.gmail.com>
+ <874ngsrvrh.fsf@xmission.com>
+ <CAGXu5jJiO=BmjVbpVJhxHbafn5T_SQbe5g-RLxRbmknNnQMyfQ@mail.gmail.com>
+ <87k3pnmwpk.fsf_-_@xmission.com>
+ <878v63mwm3.fsf_-_@xmission.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <878v63mwm3.fsf_-_@xmission.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 4 Mar 2013, Sergei Shtylyov wrote:
+(cc'ed kernel-hardening)
 
-> > @@ -371,6 +371,7 @@ static int xhci_try_enable_msi(struct usb_hcd *hcd)
-> >   		return -EINVAL;
-> >   	}
-> >
-> > + legacy_irq:
-> >    
+On Sun, Mar 03, 2013 at 23:51 -0800, Eric W. Biederman wrote:
+> Modify the request_module to prefix the file system type with "fs-"
+> and add aliases to all of the filesystems that can be built as modules
+> to match.
 > 
->     Labels shouldn't be indented by a space (unless the existing coding 
-> style has them indented already, of course).
-> Although that might be a rule dropped by checkpatch.pl already -- it 
-> doesn't complain.
+> A common practice is to build all of the kernel code and leave code
+> that is not commonly needed as modules, with the result that many
+> users are exposed to any bug anywhere in the kernel.
+> 
+> Looking for filesystems with a fs- prefix limits the pool of possible
+> modules that can be loaded by mount to just filesystems trivially
+> making things safer with no real cost.
+> 
+> Using aliases means user space can control the policy of which
+> filesystem modules are auto-loaded by editing /etc/modprobe.d/*.conf
+> with blacklist and alias directives.  Allowing simple, safe,
+> well understood work-arounds to known problematic software.
+> 
+> This also addresses a rare but unfortunate problem where the filesystem
+> name is not the same as it's module name and module auto-loading
+> would not work.  While writing this patch I saw a handful of such
+> cases.  The most significant being autofs that lives in the module
+> autofs4.
+> 
+> This is relevant to user namespaces because we can reach the request
+> module in get_fs_type() without having any special permissions, and
+> people get uncomfortable when a user specified string (in this case
+> the filesystem type) goes all of the way to request_module.
+> 
+> After having looked at this issue I don't think there is any
+> particular reason to perform any filtering or permission checks beyond
+> making it clear in the module request that we want a filesystem
+> module.  The common pattern in the kernel is to call request_module()
+> without regards to the users permissions.  In general all a filesystem
+> module does once loaded is call register_filesystem() and go to sleep.
+> Which means there is not much attack surface exposed by loading a
+> filesytem module unless the filesystem is mounted.  In a user
+> namespace filesystems are not mounted unless .fs_flags = FS_USERNS_MOUNT,
+> which most filesystems do not set today.
+> 
+> Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
+> Acked-by: Kees Cook <keescook@chromium.org>
+> Reported-by: Kees Cook <keescook@google.com>
+> Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
+...
+> diff --git a/fs/filesystems.c b/fs/filesystems.c
+> index da165f6..92567d9 100644
+> --- a/fs/filesystems.c
+> +++ b/fs/filesystems.c
+> @@ -273,7 +273,7 @@ struct file_system_type *get_fs_type(const char *name)
+>  	int len = dot ? dot - name : strlen(name);
+>  
+>  	fs = __get_fs_type(name, len);
+> -	if (!fs && (request_module("%.*s", len, name) == 0))
+> +	if (!fs && (request_module("fs-%.*s", len, name) == 0))
+>  		fs = __get_fs_type(name, len);
+>  
+>  	if (dot && fs && !(fs->fs_flags & FS_HAS_SUBTYPE)) {
 
-Indeed, there's a definite advantage to putting a space before a label:  
-The diff program doesn't get confused into thinking the label is the
-start of a new function.
+Maybe we should divide request_module() into several functions regarding
+expected caller's privileges?
 
-Alan Stern
+- request_module() for CAP_SYS_MODULE in init_ns
+- request_module_relaxed() for everybody
 
+request_module_relaxed() is used in get_fs_type(), dev_load() and all
+places where the safety of module loading is manually checked.  All old
+not yet checked users of request_module() will not be triggerable from user_ns.
+That's the same scheme as with capable() and ns_capable().
+
+Thanks,
+
+-- 
+Vasily Kulikov
+http://www.openwall.com - bringing security into open computing environments
