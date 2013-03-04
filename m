@@ -1,165 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758672Ab3CDR4d (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 12:56:33 -0500
-Received: from relay.parallels.com ([195.214.232.42]:59136 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758173Ab3CDR4c (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 12:56:32 -0500
-Message-ID: <5134E043.70609@parallels.com>
-Date: Mon, 4 Mar 2013 21:56:19 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
+	id S932166Ab3CDR75 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 12:59:57 -0500
+Received: from mga03.intel.com ([143.182.124.21]:56080 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757994Ab3CDR74 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Mar 2013 12:59:56 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,781,1355126400"; 
+   d="scan'208";a="208649663"
+Subject: [PATCH] ioatdma: make debug output more readable
+To: djbw@fb.com
+From: Dave Jiang <dave.jiang@intel.com>
+Cc: vinod.koul@intel.com, linux-kernel@vger.kernel.org
+Date: Mon, 04 Mar 2013 10:59:54 -0700
+Message-ID: <20130304175954.9792.19327.stgit@djiang5-linux2.ch.intel.com>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-To: Jeff Layton <jlayton@redhat.com>
-CC: <bfields@fieldses.org>, <linux-nfs@vger.kernel.org>, <devel@openvz.org>,
-        <Trond.Myklebust@netapp.com>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] nfsd: try nfsdcld client tracker in containers
-References: <20130301082423.21663.37825.stgit@localhost.localdomain> <20130301080911.2a1a28a2@corrin.poochiereds.net> <51344175.40503@parallels.com> <20130304094736.57a288b9@tlielax.poochiereds.net>
-In-Reply-To: <20130304094736.57a288b9@tlielax.poochiereds.net>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [5.228.107.146]
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-04.03.2013 18:47, Jeff Layton пишет:
-> On Mon, 4 Mar 2013 10:38:45 +0400
-> Stanislav Kinsbursky <skinsbursky@parallels.com> wrote:
->
->> 01.03.2013 17:09, Jeff Layton пишет:
->>> On Fri, 01 Mar 2013 11:24:23 +0300
->>> Stanislav Kinsbursky <skinsbursky@parallels.com> wrote:
->>>
->>>> Currently, UMH and Legacy trackers are disabled in containers.
->>>> But existent logic can lookup nfs4_recoverydir in a container, and in this
->>>> case will try to init Legacy tracker and skip nfsdcld client tracker.
->>>> This actually means, that no client tracker will be started in a container at
->>>> all, because Legacy tracker init will return -EINVAL for a container.
->>>> So, let's change "-EINVAL" on "-ENOTSUPP" for legacy tracker init call in a
->>>> container and in case of this error code, try nfsdcld client tracker instead
->>>> of returning a error.
->>>>
->>>> Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
->>>> ---
->>>>    fs/nfsd/nfs4recover.c |   12 ++++++++----
->>>>    1 files changed, 8 insertions(+), 4 deletions(-)
->>>>
->>>> diff --git a/fs/nfsd/nfs4recover.c b/fs/nfsd/nfs4recover.c
->>>> index e0ae1cf..8aa069a 100644
->>>> --- a/fs/nfsd/nfs4recover.c
->>>> +++ b/fs/nfsd/nfs4recover.c
->>>> @@ -524,7 +524,7 @@ nfsd4_legacy_tracking_init(struct net *net)
->>>>    	if (net != &init_net) {
->>>>    		WARN(1, KERN_ERR "NFSD: attempt to initialize legacy client "
->>>>    			"tracking in a container!\n");
->>>> -		return -EINVAL;
->>>> +		return -ENOTSUPP;
->>>>    	}
->>>>
->>>>    	status = nfs4_legacy_state_init(net);
->>>> @@ -1285,14 +1285,17 @@ nfsd4_client_tracking_init(struct net *net)
->>>>    	/*
->>>>    	 * See if the recoverydir exists and is a directory. If it is,
->>>>    	 * then use the legacy ops.
->>>> +	 * If legacy ops init return -ENOSUPP, then we are in a container and
->>>> +	 * should try nfsdcld client tracking.
->>>>    	 */
->>>>    	nn->client_tracking_ops = &nfsd4_legacy_tracking_ops;
->>>>    	status = kern_path(nfs4_recoverydir(), LOOKUP_FOLLOW, &path);
->>>>    	if (!status) {
->>>> -		status = S_ISDIR(path.dentry->d_inode->i_mode);
->>>> +		if (S_ISDIR(path.dentry->d_inode->i_mode))
->>>> +			status = nn->client_tracking_ops->init(net);
->>>>    		path_put(&path);
->>>> -		if (status)
->>>> -			goto do_init;
->>>> +		if (status != -ENOTSUPP)
->>>> +			goto do_exit;
->>>>    	}
->>>>
->>>>    	/* Finally, try to use nfsdcld */
->>>> @@ -1302,6 +1305,7 @@ nfsd4_client_tracking_init(struct net *net)
->>>>    			"nfsdcltrack.\n");
->>>>    do_init:
->>>>    	status = nn->client_tracking_ops->init(net);
->>>> +do_exit:
->>>>    	if (status) {
->>>>    		printk(KERN_WARNING "NFSD: Unable to initialize client "
->>>>    				    "recovery tracking! (%d)\n", status);
->>>>
->>> Seems OK as a stopgap fix. We're removing nfsdcld in 3.10 though so
->>> this won't help prospective users of nfsd in a container for
->>> long...particularly since our expectation is that no one has actually
->>> ever deployed nfsdcld.
->>>
->>> This is something that really needs to be fixed the right way since a
->>> NFS server that doesn't allow clients to reclaim state after a reboot is
->>> potentially dangerous...
->>>
->>> I'm afraid I haven't been following along as closely as I should have
->>> been. What's the rationale for disabling the UMH upcall? Is there no
->>> way to make it so that new processes it spawns are done within the
->>> correct container?
->>>
->> Straight answer is "no, there is no way to do so": UMH threads are spawned in "init" context.
->> But we solve the problem in a slightly different way.
->>
->> So, here are my ideas about all the trackers (I haven't shared them yet, so I do it now):
->>
->> 1) nfsdcld uses SUNRPC pipefs, which is containerised already. So it was very easy to containerise it.
->>
-> Right, but we want this one to just go away. It got superceded by the
-> UMH upcall and probably shouldn't have been merged in the first place
-> (mea culpa). That'll get ripped out when the 3.10 merge window opens,
-> so we don't really want to encourage anyone to use it.
->
->> 2) Legacy tracker uses path. All is great and simple until we imagine two containers with the same root. In this case we have to make sure, that we can start
->> only one NFSd with this path (I don't care about user-space problems).
->> I was thinking about global in-kernel RB tree for all paths. But maybe even a simple global list is enough (not so many NFSd can be started, and it not a
->> fast-path to optimise the search over all used paths).
->>
-> Well, you have a path, sure. In principle you could make that path
-> relative to the correct namespace for each server, and maybe allow this
-> to be settable on a per-namespace basis.
->
-> That said, it's probably best not to put to much effort into this
-> either. We want to eventually deprecate the legacy tracker too. So
-> limiting its use to the "init" namespace seems like a reasonable
-> stopgap fix, IMO...
+Making OP field a hex instead of integer to make it more readable. Also add
+the dump out of the NEXT field.
 
-Ok, let's leave it for a while...
+Signed-off-by: Dave Jiang <dave.jiang@intel.com>
+---
+ drivers/dma/ioat/dma.h    |    2 +-
+ drivers/dma/ioat/dma_v3.c |    3 ++-
+ 2 files changed, 3 insertions(+), 2 deletions(-)
 
->
->> 3) UMH lookup and execute binary from current root. This problem just chasing all the containerisation work. So, either UHM logic have to updated (which is not
->> trivial or easy to implement and push upstream), or process root have to swapped to the right (container's) one. This, BTW, not that hard, because UMH call
->> accept "init" callback, which can be used to swap the root right before do_execve() is called.
->>
->> What do you, guys, think about all this?
->>
-> You mean just change to use call_usermodehelper_fns() and pasn the
-> correct namespace info? Yeah that looks like the easiest fix and sounds
-> quite reasonable.
->
-
-Nope. The problem here is not a namespace, but root path:
-mount point + dentry.
-do_execve() uses root path from current for search for any string path.
-And this root path is inherited from the kernel thread. Which means,
-that this is global "init" root path.
-Thus, if is we want to search for path in a container (which could
-have it's own nested root), we have to swap the root in usermode
-helper thread before do_execve() call.
-We can use call_usermodehelper_fns() to pass init callback and swap root 
-in it.
-But the problem here is that root swaping is not that... gentle.
-I.e. we were trying to avoid it. For example, local SUNRPC transports
-now connects synchronously (to make sure, that connection will be done in
-proper root environment).
-Nevertheless, I don't see any other way to containerize UMH so far.
-
-Bruce, what's your opinion about this?
-
+diff --git a/drivers/dma/ioat/dma.h b/drivers/dma/ioat/dma.h
+index 53a4cbb..95ae7b3 100644
+--- a/drivers/dma/ioat/dma.h
++++ b/drivers/dma/ioat/dma.h
+@@ -179,7 +179,7 @@ __dump_desc_dbg(struct ioat_chan_common *chan, struct ioat_dma_descriptor *hw,
+ 	struct device *dev = to_dev(chan);
+ 
+ 	dev_dbg(dev, "desc[%d]: (%#llx->%#llx) cookie: %d flags: %#x"
+-		" ctl: %#x (op: %d int_en: %d compl: %d)\n", id,
++		" ctl: %#10.8x (op: %#x int_en: %d compl: %d)\n", id,
+ 		(unsigned long long) tx->phys,
+ 		(unsigned long long) hw->next, tx->cookie, tx->flags,
+ 		hw->ctl, hw->ctl_f.op, hw->ctl_f.int_en, hw->ctl_f.compl_write);
+diff --git a/drivers/dma/ioat/dma_v3.c b/drivers/dma/ioat/dma_v3.c
+index 53ea4bd..ce6fcee 100644
+--- a/drivers/dma/ioat/dma_v3.c
++++ b/drivers/dma/ioat/dma_v3.c
+@@ -605,7 +605,7 @@ dump_pq_desc_dbg(struct ioat2_dma_chan *ioat, struct ioat_ring_ent *desc, struct
+ 	int i;
+ 
+ 	dev_dbg(dev, "desc[%d]: (%#llx->%#llx) flags: %#x"
+-		" sz: %#x ctl: %#x (op: %d int: %d compl: %d pq: '%s%s' src_cnt: %d)\n",
++		" sz: %#10.8x ctl: %#x (op: %#x int: %d compl: %d pq: '%s%s' src_cnt: %d)\n",
+ 		desc_id(desc), (unsigned long long) desc->txd.phys,
+ 		(unsigned long long) (pq_ex ? pq_ex->next : pq->next),
+ 		desc->txd.flags, pq->size, pq->ctl, pq->ctl_f.op, pq->ctl_f.int_en,
+@@ -617,6 +617,7 @@ dump_pq_desc_dbg(struct ioat2_dma_chan *ioat, struct ioat_ring_ent *desc, struct
+ 			(unsigned long long) pq_get_src(descs, i), pq->coef[i]);
+ 	dev_dbg(dev, "\tP: %#llx\n", pq->p_addr);
+ 	dev_dbg(dev, "\tQ: %#llx\n", pq->q_addr);
++	dev_dbg(dev, "\tNEXT: %#llx\n", pq->next);
+ }
+ 
+ static struct dma_async_tx_descriptor *
 
