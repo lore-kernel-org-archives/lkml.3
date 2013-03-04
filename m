@@ -1,65 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932789Ab3CDWZ6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 17:25:58 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:35878 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932367Ab3CDWZ5 (ORCPT
+	id S932796Ab3CDW2p (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 17:28:45 -0500
+Received: from mail-ee0-f50.google.com ([74.125.83.50]:57468 "EHLO
+	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932367Ab3CDW2o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 17:25:57 -0500
-Date: Tue, 5 Mar 2013 09:25:47 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Boaz Harrosh <bharrosh@panasas.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: error fetching the osd tree
-Message-Id: <20130305092547.be2378f0caa8c2139865de87@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__5_Mar_2013_09_25_47_+1100_6aL4NqQkTUAMTEXE"
+	Mon, 4 Mar 2013 17:28:44 -0500
+From: Alexandru Gheorghiu <gheorghiuandru@gmail.com>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
+        Alexandru Gheorghiu <gheorghiuandru@gmail.com>
+Subject: [PATCH] arch: x86: kernel: smpboot: fixed unused variable warning
+Date: Tue,  5 Mar 2013 00:28:00 +0200
+Message-Id: <1362436081-28782-1-git-send-email-gheorghiuandru@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__5_Mar_2013_09_25_47_+1100_6aL4NqQkTUAMTEXE
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Removed unused variable 'c' and fixed the following warning:
+arch/x86/kernel/smpboot.c: In function ‘mwait_play_dead’:
+arch/x86/kernel/smpboot.c:1370:22: warning: unused variable ‘c’ [-Wunused-variable]
 
-Hi Boaz,
+Signed-off-by: Alexandru Gheorghiu <gheorghiuandru@gmail.com>
+---
+ arch/x86/kernel/smpboot.c |    1 -
+ 1 file changed, 1 deletion(-)
 
-Fetching the osd tree
-(git://git.open-osd.org/linux-open-osd.git#linux-next) produces this
-error:
+diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+index a6ceaed..7bc998a 100644
+--- a/arch/x86/kernel/smpboot.c
++++ b/arch/x86/kernel/smpboot.c
+@@ -1367,7 +1367,6 @@ static inline void mwait_play_dead(void)
+ 	unsigned int highest_subcstate = 0;
+ 	int i;
+ 	void *mwait_ptr;
+-	struct cpuinfo_x86 *c = __this_cpu_ptr(&cpu_info);
+ 
+ 	if (!this_cpu_has(X86_FEATURE_MWAIT))
+ 		return;
+-- 
+1.7.9.5
 
-fatal: read error: Connection reset by peer
-
-It has been doing that for a few days, now.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Tue__5_Mar_2013_09_25_47_+1100_6aL4NqQkTUAMTEXE
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRNR9rAAoJEECxmPOUX5FEZtkP/2w1c/XxWZ1FAANrr0j6JG36
-iuAGKS+BABmPooaYAFSMREZ9juNaGqRo7g3ojWAoPXMnbhtXaF0/VLPRC4xPdNj1
-0CvbHeZHAc1VP948ZpzUR18gtBJhMh1nrj9x8fmKdziSvcxGPuGT53Nd7IhfFwGc
-HxFUOvUWoaYCvgeTBptk3mGQZwmBDNyQM5+t9aVNksAM1OGhldx09SM5dal1wLjo
-xpm/xlJ3zd+584W4UJFfFpjT/EFhqH0d0nGMNEotEsB2bc/J3g5o84grWUyDdPGU
-MvC7qvrNg4FYhJ/znA3dW8f4cFu8i9ud1WX/qaxfIwK/63ABnBagsWChmq1oSRBh
-dAacGiC71KZRN0XuPx16aowVWMHYUnH9q9rv/XCuH1sNcjUgD7hMXsjZONaj17TG
-NS+hzcypfCfGsBJObM4MhjYLrDf1rwKuOZ/fNsLPwFql9Ut7SSZWhLlXUDK3ur9u
-KzkM1OsrYfC8whvW80RldfPYKfTAOcVTHOgqfGVQcT3stWUPeHxhU0ZOw2tzXpyM
-lUY8nW7JGI31dlnJ8F2wVhtJx50n1lQZIvmCG+AxiMn6Yh489bIvpIqQtlnzLOv+
-pNaFRDdNX22EnKxENaM0YZhVbBTllTB9XVsDJVI+KyI//WrivC+C6Fa4oD0YsYmQ
-L49MA+9om8/c7I9CySjA
-=c0Ev
------END PGP SIGNATURE-----
-
---Signature=_Tue__5_Mar_2013_09_25_47_+1100_6aL4NqQkTUAMTEXE--
