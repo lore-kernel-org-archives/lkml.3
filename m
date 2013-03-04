@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755922Ab3CDDnG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 22:43:06 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60896 "EHLO
+	id S1756139Ab3CDELH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 23:11:07 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60965 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755878Ab3CDDnC (ORCPT
+	by vger.kernel.org with ESMTP id S1755895Ab3CDDnG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Mar 2013 22:43:02 -0500
-Message-Id: <20130304033719.986319283@decadent.org.uk>
+	Sun, 3 Mar 2013 22:43:06 -0500
+Message-Id: <20130304033718.994259747@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 04 Mar 2013 03:39:13 +0000
+Date: Mon, 04 Mar 2013 03:39:03 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Eric Dumazet <edumazet@google.com>,
-        Neal Cardwell <ncardwell@google.com>,
-        Yuchung Cheng <ycheng@google.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 126/153] ipv6: use a stronger hash for tcp
+Cc: akpm@linux-foundation.org, Paolo Bonzini <pbonzini@redhat.com>,
+        Paul Clements <Paul.Clements@steeleye.com>,
+        Alex Bligh <alex@alex.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 116/153] nbd: fsync and kill block device on shutdown
 In-Reply-To: <20130304033707.648729212@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,127 +29,128 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Paolo Bonzini <pbonzini@redhat.com>
 
-[ Upstream commit 08dcdbf6a7b9d14c2302c5bd0c5390ddf122f664 ]
+commit 3a2d63f87989e01437ba994df5f297528c353d7d upstream.
 
-It looks like its possible to open thousands of TCP IPv6
-sessions on a server, all landing in a single slot of TCP hash
-table. Incoming packets have to lookup sockets in a very
-long list.
+There are two problems with shutdown in the NBD driver.
 
-We should hash all bits from foreign IPv6 addresses, using
-a salt and hash mix, not a simple XOR.
+1: Receiving the NBD_DISCONNECT ioctl does not sync the filesystem.
 
-inet6_ehashfn() can also separately use the ports, instead
-of xoring them.
+   This patch adds the sync operation into __nbd_ioctl()'s
+   NBD_DISCONNECT handler.  This is useful because BLKFLSBUF is restricted
+   to processes that have CAP_SYS_ADMIN, and the NBD client may not
+   possess it (fsync of the block device does not sync the filesystem,
+   either).
 
-Reported-by: Neal Cardwell <ncardwell@google.com>
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Cc: Yuchung Cheng <ycheng@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+2: Once we clear the socket we have no guarantee that later reads will
+   come from the same backing storage.
+
+   The patch adds calls to kill_bdev() in __nbd_ioctl()'s socket
+   clearing code so the page cache is cleaned, lest reads that hit on the
+   page cache will return stale data from the previously-accessible disk.
+
+Example:
+
+    # qemu-nbd -r -c/dev/nbd0 /dev/sr0
+    # file -s /dev/nbd0
+    /dev/stdin: # UDF filesystem data (version 1.5) etc.
+    # qemu-nbd -d /dev/nbd0
+    # qemu-nbd -r -c/dev/nbd0 /dev/sda
+    # file -s /dev/nbd0
+    /dev/stdin: # UDF filesystem data (version 1.5) etc.
+
+While /dev/sda has:
+
+    # file -s /dev/sda
+    /dev/sda: x86 boot sector; etc.
+
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Acked-by: Paul Clements <Paul.Clements@steeleye.com>
+Cc: Alex Bligh <alex@alex.org.uk>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[bwh: Backported to 3.2:
+ - Adjusted context
+ - s/\bnbd\b/lo/
+ - Incorporate export of kill_bdev() from commit ff01bb483265
+   ('fs: move code out of buffer.c')]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- include/net/inet6_hashtables.h |  8 ++++----
- include/net/inet_sock.h        |  1 +
- include/net/ipv6.h             | 12 ++++++++++++
- net/ipv4/af_inet.c             |  9 +++++++--
- 4 files changed, 24 insertions(+), 6 deletions(-)
-
-diff --git a/include/net/inet6_hashtables.h b/include/net/inet6_hashtables.h
-index e46674d..f9ce2fa 100644
---- a/include/net/inet6_hashtables.h
-+++ b/include/net/inet6_hashtables.h
-@@ -28,16 +28,16 @@
+--- a/drivers/block/nbd.c
++++ b/drivers/block/nbd.c
+@@ -584,12 +584,20 @@ static int __nbd_ioctl(struct block_devi
+ 		struct request sreq;
  
- struct inet_hashinfo;
+ 		dev_info(disk_to_dev(lo->disk), "NBD_DISCONNECT\n");
++		if (!lo->sock)
++			return -EINVAL;
  
--/* I have no idea if this is a good hash for v6 or not. -DaveM */
- static inline unsigned int inet6_ehashfn(struct net *net,
- 				const struct in6_addr *laddr, const u16 lport,
- 				const struct in6_addr *faddr, const __be16 fport)
- {
--	u32 ports = (lport ^ (__force u16)fport);
-+	u32 ports = (((u32)lport) << 16) | (__force u32)fport;
- 
- 	return jhash_3words((__force u32)laddr->s6_addr32[3],
--			    (__force u32)faddr->s6_addr32[3],
--			    ports, inet_ehash_secret + net_hash_mix(net));
-+			    ipv6_addr_jhash(faddr),
-+			    ports,
-+			    inet_ehash_secret + net_hash_mix(net));
++		mutex_unlock(&lo->tx_lock);
++		fsync_bdev(bdev);
++		mutex_lock(&lo->tx_lock);
+ 		blk_rq_init(NULL, &sreq);
+ 		sreq.cmd_type = REQ_TYPE_SPECIAL;
+ 		nbd_cmd(&sreq) = NBD_CMD_DISC;
++
++		/* Check again after getting mutex back.  */
+ 		if (!lo->sock)
+ 			return -EINVAL;
++
+ 		nbd_send_req(lo, &sreq);
+                 return 0;
+ 	}
+@@ -603,6 +611,7 @@ static int __nbd_ioctl(struct block_devi
+ 		nbd_clear_que(lo);
+ 		BUG_ON(!list_empty(&lo->queue_head));
+ 		BUG_ON(!list_empty(&lo->waiting_queue));
++		kill_bdev(bdev);
+ 		if (file)
+ 			fput(file);
+ 		return 0;
+@@ -683,6 +692,7 @@ static int __nbd_ioctl(struct block_devi
+ 		lo->file = NULL;
+ 		nbd_clear_que(lo);
+ 		dev_warn(disk_to_dev(lo->disk), "queue cleared\n");
++		kill_bdev(bdev);
+ 		if (file)
+ 			fput(file);
+ 		lo->bytesize = 0;
+--- a/fs/block_dev.c
++++ b/fs/block_dev.c
+@@ -82,13 +82,14 @@ sector_t blkdev_max_block(struct block_d
  }
  
- static inline int inet6_sk_ehashfn(const struct sock *sk)
-diff --git a/include/net/inet_sock.h b/include/net/inet_sock.h
-index f941964..ee4ee91 100644
---- a/include/net/inet_sock.h
-+++ b/include/net/inet_sock.h
-@@ -199,6 +199,7 @@ static inline void inet_sk_copy_descendant(struct sock *sk_to,
- extern int inet_sk_rebuild_header(struct sock *sk);
- 
- extern u32 inet_ehash_secret;
-+extern u32 ipv6_hash_secret;
- extern void build_ehash_secret(void);
- 
- static inline unsigned int inet_ehashfn(struct net *net,
-diff --git a/include/net/ipv6.h b/include/net/ipv6.h
-index a366a8a..4d549cf 100644
---- a/include/net/ipv6.h
-+++ b/include/net/ipv6.h
-@@ -15,6 +15,7 @@
- 
- #include <linux/ipv6.h>
- #include <linux/hardirq.h>
-+#include <linux/jhash.h>
- #include <net/if_inet6.h>
- #include <net/ndisc.h>
- #include <net/flow.h>
-@@ -386,6 +387,17 @@ struct ip6_create_arg {
- void ip6_frag_init(struct inet_frag_queue *q, void *a);
- int ip6_frag_match(struct inet_frag_queue *q, void *a);
- 
-+/* more secured version of ipv6_addr_hash() */
-+static inline u32 ipv6_addr_jhash(const struct in6_addr *a)
-+{
-+	u32 v = (__force u32)a->s6_addr32[0] ^ (__force u32)a->s6_addr32[1];
-+
-+	return jhash_3words(v,
-+			    (__force u32)a->s6_addr32[2],
-+			    (__force u32)a->s6_addr32[3],
-+			    ipv6_hash_secret);
-+}
-+
- static inline int ipv6_addr_any(const struct in6_addr *a)
+ /* Kill _all_ buffers and pagecache , dirty or not.. */
+-static void kill_bdev(struct block_device *bdev)
++void kill_bdev(struct block_device *bdev)
  {
- 	return (a->s6_addr32[0] | a->s6_addr32[1] |
-diff --git a/net/ipv4/af_inet.c b/net/ipv4/af_inet.c
-index 1b5096a..5d228de 100644
---- a/net/ipv4/af_inet.c
-+++ b/net/ipv4/af_inet.c
-@@ -226,8 +226,12 @@ EXPORT_SYMBOL(inet_listen);
- u32 inet_ehash_secret __read_mostly;
- EXPORT_SYMBOL(inet_ehash_secret);
+ 	if (bdev->bd_inode->i_mapping->nrpages == 0)
+ 		return;
+ 	invalidate_bh_lrus();
+ 	truncate_inode_pages(bdev->bd_inode->i_mapping, 0);
+ }	
++EXPORT_SYMBOL(kill_bdev);
  
-+u32 ipv6_hash_secret __read_mostly;
-+EXPORT_SYMBOL(ipv6_hash_secret);
-+
- /*
-- * inet_ehash_secret must be set exactly once
-+ * inet_ehash_secret must be set exactly once, and to a non nul value
-+ * ipv6_hash_secret must be set exactly once.
-  */
- void build_ehash_secret(void)
+ int set_blocksize(struct block_device *bdev, int size)
  {
-@@ -237,7 +241,8 @@ void build_ehash_secret(void)
- 		get_random_bytes(&rnd, sizeof(rnd));
- 	} while (rnd == 0);
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -2103,6 +2103,7 @@ extern void bd_forget(struct inode *inod
+ extern void bdput(struct block_device *);
+ extern void invalidate_bdev(struct block_device *);
+ extern int sync_blockdev(struct block_device *bdev);
++extern void kill_bdev(struct block_device *);
+ extern struct super_block *freeze_bdev(struct block_device *);
+ extern void emergency_thaw_all(void);
+ extern int thaw_bdev(struct block_device *bdev, struct super_block *sb);
+@@ -2110,6 +2111,7 @@ extern int fsync_bdev(struct block_devic
+ #else
+ static inline void bd_forget(struct inode *inode) {}
+ static inline int sync_blockdev(struct block_device *bdev) { return 0; }
++static inline void kill_bdev(struct block_device *bdev) {}
+ static inline void invalidate_bdev(struct block_device *bdev) {}
  
--	cmpxchg(&inet_ehash_secret, 0, rnd);
-+	if (cmpxchg(&inet_ehash_secret, 0, rnd) == 0)
-+		get_random_bytes(&ipv6_hash_secret, sizeof(ipv6_hash_secret));
- }
- EXPORT_SYMBOL(build_ehash_secret);
- 
+ static inline struct super_block *freeze_bdev(struct block_device *sb)
 
 
