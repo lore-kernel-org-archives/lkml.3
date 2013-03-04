@@ -1,73 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754960Ab3CDD2a (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 22:28:30 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:53639 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752080Ab3CDD23 (ORCPT
+	id S1755054Ab3CDDcg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 22:32:36 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:61030 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754503Ab3CDDcf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Mar 2013 22:28:29 -0500
-Date: Mon, 4 Mar 2013 14:28:21 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jan Kara <jack@suse.cz>
-Subject: linux-next: build failure after merge of the final tree (akpm tree
- related)
-Message-Id: <20130304142821.b61bd9800c4ea35331829a79@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__4_Mar_2013_14_28_21_+1100_.JcSKTG3uZ/d28tT"
+	Sun, 3 Mar 2013 22:32:35 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Ley Foon Tan <lftan@altera.com>
+Subject: Re: [PATCH 1/1] drivers/misc: Add Altera System ID driver
+Date: Mon, 4 Mar 2013 03:32:19 +0000
+User-Agent: KMail/1.12.2 (Linux/3.8.0-8-generic; KDE/4.3.2; x86_64; ; )
+Cc: "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        Rob Landley <rob@landley.net>, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org
+References: <1362366697-2768-1-git-send-email-lftan@altera.com>
+In-Reply-To: <1362366697-2768-1-git-send-email-lftan@altera.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201303040332.20076.arnd@arndb.de>
+X-Provags-ID: V02:K0:v/Ko/zRl0P4bwntLaokedZqBR1vWN++gVQGRoxM5PVz
+ 76/v3Ep+flLDUQhRVj2HX1t0oOhnLY5lSNhaOjlGyj7gGnWcdY
+ PdqNEc6amJQIfRYt4YksDlxqzeGfhSb69sqaNqOmtCxlJqil6F
+ WLHlAI9/opzPQaCnDAavZCkRiLEvdEqM6zOdwQhSA0bacSP0Vv
+ ZUlluR1OoDhs/n6oZ9FBR2LEJ1zQGzZ+xG9jKeacjh3uvQgKpE
+ E9lgo24WJTGLOjyGo1kHdL/QE8QwqLBbZ9SU8T/0Z1YWjlKiND
+ ZrWdZdTVixuYh7kfVHyr8QjQa0aE/8pC144G8dYCL4IiFKevUk
+ tczfJ2JQQZZtJWIaHvo8=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__4_Mar_2013_14_28_21_+1100_.JcSKTG3uZ/d28tT
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Monday 04 March 2013, Ley Foon Tan wrote:
+> This patch is to add Altera System ID driver.
+> User can obtain the system ID and timestamp of the system by
+> reading the sysfs entry.
+> 
+> Usage:
+> cat /sys/bus/platform/devices/[addr].sysid/sysid/id
+> cat /sys/bus/platform/devices/[addr].sysid/sysid/timestamp
+> 
+> Signed-off-by: Ley Foon Tan <lftan@altera.com>
 
-Hi all,
+All sysfs files need documentation in Documentation/ABI/.
 
-After merging the final tree, today's linux-next build (arm defconfig)
-failed like this:
+This driver looks like it should instead be using the infrastructure we
+have for identifying an SoC in drivers/base/soc.c, which is currently
+only used by the ARM u8500 platform but was introduced as a generic
+interface for this a while ago.
 
-kernel/built-in.o: In function `console_unlock':
-cpu_pm.c:(.text+0x4418): undefined reference to `__bad_udelay'
-
-Caused by commit 4df7323a125f ("printk: avoid softlockups in
-console_unlock()") which added
-
-	ndelay(max_interrupt_disabled_duration() / 2);
-
-to console_unlock() which can be a 2.5 second delay ... and the maximum
-delayed allowed by udelay (at least in this build) is 2ms.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Mon__4_Mar_2013_14_28_21_+1100_.JcSKTG3uZ/d28tT
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRNBTVAAoJEECxmPOUX5FEyLAP/Ah/+6IXdcmS/XwB/8axAPLn
-oOVZ1sWLXcklUc5fK+P1BvE4oNz/ceACrwqvG2CDuOYZTINd+BXAM3+ChdMCtFF7
-yIuBRXNRDFCpxm6fbXmcm/mVBvDCSWdYbG/c4VxGnMEHmWmauqWJUDikr4ofDSe+
-Hef48a38l4vmTpy0k20EIbp1Mip4D8cTBc7e+0Q/yeLk4gYES49alL3WPl/0jhU6
-uQF3UXUFZO1xlX8gD1GkC2WPBEuDJlmaB0HMzw4XOleGdHnnmgfyQTLm+AsWHMFl
-GlmgL0Lke9s/y16uYJno9zGDefbKyYTQBC3zeZ4OrJ1r6auMLMgVWlAf3jsiKrv6
-L5QNfpQmPqiOULGjExmjCg2+LM6zX38KPHR71zh/P0D3gKyaeKq3fpCWKZzYIdJo
-lLJjNd/HLZ53DYT7B9PXDIAht8w8idUba19jOFKXb9xf6MAMpKkMm+EZD/XNu5zw
-jZp+ubLZM8CucO41a6Mcwd2A9u8NFvgY3SIqyLpaCc9Z0s552UBB78WhDT8W6v7p
-bO04bZBot3vR+l0IQQNy+d/hVx+smY57YnRzFWFEkN9DPFGr+ZtbqWC9wVZIP5od
-hse2z6cRbCGpi8aR2OQCmQduDS84bbGHPJ/Vfach1LgJBw50iO+4PkIhmZfghwNd
-XBvUIPU7hTEWc0AruZA8
-=4GU4
------END PGP SIGNATURE-----
-
---Signature=_Mon__4_Mar_2013_14_28_21_+1100_.JcSKTG3uZ/d28tT--
+	Arnd
