@@ -1,104 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756142Ab3CDLoE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 06:44:04 -0500
-Received: from canardo.mork.no ([148.122.252.1]:44510 "EHLO canardo.mork.no"
+	id S1756407Ab3CDLrd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 06:47:33 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:51458 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755488Ab3CDLoC convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 06:44:02 -0500
-From: =?utf-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
-To: fangxiaozhi 00110321 <fangxiaozhi@huawei.com>
-Cc: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <zihan@huawei.com>, <Lin.Lei@huawei.com>, <greg@kroah.com>,
-        <neil.yi@huawei.com>, <wangyuhua@huawei.com>, <huqiao36@huawei.com>,
-        <balbi@ti.com>, <mdharm-usb@one-eyed-alien.net>,
-        <sebastian@breakpoint.cc>
-Subject: v3.8 regression: Huawei mode switching fails (was Re: [PATCH 2/2]linux-usb:optimize to match the Huawei USB storage devices and support new switch command)
-Organization: m
-References: <fe8c966212fb.12fbfe8c9662@huawei.com>
-Date: Mon, 04 Mar 2013 12:41:11 +0100
-In-Reply-To: <fe8c966212fb.12fbfe8c9662@huawei.com> (fangxiaozhi@huawei.com's
-	message of "Mon, 4 Feb 2013 15:16:34 +0800")
-Message-ID: <87obezs888.fsf@nemi.mork.no>
-User-Agent: Gnus/5.11002 (No Gnus v0.20) Emacs/23.4 (gnu/linux)
+	id S1755820Ab3CDLrc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Mar 2013 06:47:32 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the pm tree
+Date: Mon, 04 Mar 2013 12:54:23 +0100
+Message-ID: <12853583.ZUFP9lbocK@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <20130304105841.39ba4afbd1b45cf0b31e4449@canb.auug.org.au>
+References: <20130304105841.39ba4afbd1b45cf0b31e4449@canb.auug.org.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Franko,
+On Monday, March 04, 2013 10:58:41 AM Stephen Rothwell wrote:
+> Hi Rafael,
+> 
+> After merging the pm tree, today's linux-next build (powerpc
+> ppc64_defconfig) failed like this:
+> 
+> drivers/base/power/qos.c: In function '__dev_pm_qos_flags':
+> drivers/base/power/qos.c:64:2: error: implicit declaration of function 'IS_ERR_OR_NULL' [-Werror=implicit-function-declaration]
+> drivers/base/power/qos.c: In function 'dev_pm_qos_constraints_destroy':
+> drivers/base/power/qos.c:248:2: error: implicit declaration of function 'ERR_PTR' [-Werror=implicit-function-declaration]
+> drivers/base/power/qos.c:248:17: warning: assignment makes pointer from integer without a cast [enabled by default]
+> drivers/base/power/qos.c: In function 'dev_pm_qos_add_request':
+> drivers/base/power/qos.c:294:2: error: implicit declaration of function 'IS_ERR' [-Werror=implicit-function-declaration]
+> drivers/base/power/qos.c: At top level:
+> drivers/base/power/qos.c:202:13: warning: '__dev_pm_qos_hide_latency_limit' used but never defined [enabled by default]
+> drivers/base/power/qos.c:203:13: warning: '__dev_pm_qos_hide_flags' used but never defined [enabled by default]
+> 
+> Caused by commit 1e3b5df683e2 ("PM / QoS: Remove device PM QoS sysfs
+> attributes at the right place").
+> 
+> I have used the pm tree from next-20130301 for today.
 
-This patch causes a number of regressions for both the Huawei devices I
-have available for testing. One of them is completely unusable in v3.8
-(unable to switch to modem mode) unless the usb-storage driver is
-disabled.
+Thanks for the report and sorry for the breakage.  It should be fixed now.
 
-I realize that some devices are historically handled by the usb-storage
-driver, but userspace modeswitching is the rule for new devices AFAIK.
-I see absolutely no valid argument for adding new devices.  And there is
-absolutely no excuse for adding devices which have been handled by
-userspace switching for years!  The patch does not just "optimize"
-matching.  It adds a large number of devices which were previously
-handled just fine by usb_modeswitch. This is guaranteed to confuse users
-with existing configurations, and users looking up any of the existing
-documentation pointing to usb_modeswitch.
-
-There is no need to repeat the discussion of kernel vs userspace
-switching.  I will only note that userspace switching:
- - has been selected as the rule for new devices,
- - allow the user to temporarily disable switching e.g. for mounting and
-   inspecting the usb-storage exported data,
- - allow the user/system to apply device specific switching quirks
-
-
-The v3.7->v3.8 regressions I observe are:
-
-1) Temporarily disabling mode switching and mounting the CD image is now
-  impossible. Mode switching can only be disabled by blacklisting
-  usb-storage, which of course prevents usb-storage from working
-
-  Prior to v3.8, modeswitching could easily be disabled by userspace
-  configuration. The change breaks existing configurations.
-
-2) Switching to non-default modes is now impossible.  The E392
- (initially appearing as 12d1:1505) Windows drivers will use a different
- command than the one used by Linux, causing the device to select a
- different configuration in Linux and Windows. This forces Linux and
- Windows to see the device differently.
-
- Prior to v3.8, different modeswitching commands could be configured 
- per device. The change breaks existing configurations.
-
-3) Switching fails for some devices. The E367 (initially appearing as
- 12d1:1446) does not switch when it receives the command sent by
- usb-storage.  But the command disable further switching, preventing
- userspace switching from working as well.
-
- Prior to v3.8, the device would switch fine using a default
- usb_modeswitch configuration. The change breaks existing
- configurations.
-
- I do note that there is a slight difference between the known working
- usb_modeswitch command:
-
-   55534243123456780000000000000011062000000100000000000000000000
-
- and the command sent by usb-storage:
-
-	char rewind_cmd[] = {0x11, 0x06, 0x20, 0x00, 0x00, 0x01, 0x01, 0x00,
-			0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-
- I assume the cause of the failure is either this difference or some
- timing issue.
-
-Anyway, I believe this patch must be reverted.  It disables currently
-used, well documented, and extremely useful, userspace funtionaliy for
-all devices implicitly added by the conversion from device matching to
-vendor matching.
+Rafael
 
 
-
-Bjørn
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
