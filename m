@@ -1,50 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932900Ab3CDXJb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 18:09:31 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:11274 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932547Ab3CDXIb (ORCPT
+	id S932761Ab3CDXPk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 18:15:40 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:8025 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932384Ab3CDXPj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 18:08:31 -0500
+	Mon, 4 Mar 2013 18:15:39 -0500
 X-IronPort-AV: E=Sophos;i="4.84,783,1355126400"; 
-   d="scan'208";a="27434820"
+   d="scan'208";a="27657328"
 From: Stephen Boyd <sboyd@codeaurora.org>
-To: David Brown <davidb@codeaurora.org>, Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>
+To: Will Deacon <will.deacon@arm.com>
 Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org
-Subject: [PATCH/RESEND 2/4] mmc: msm_sdcc: Remove unnecessary include
-Date: Mon,  4 Mar 2013 15:08:26 -0800
-Message-Id: <1362438508-26614-3-git-send-email-sboyd@codeaurora.org>
+Subject: [PATCH] ARM: perf: Fix section mismatch on armpmu_init()
+Date: Mon,  4 Mar 2013 15:15:37 -0800
+Message-Id: <1362438937-28143-1-git-send-email-sboyd@codeaurora.org>
 X-Mailer: git-send-email 1.7.9.7.1.ge545
-In-Reply-To: <1362438508-26614-1-git-send-email-sboyd@codeaurora.org>
-References: <1362438508-26614-1-git-send-email-sboyd@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This driver has no reason to include msm_iomap.h. Remove it so
-that we can remove msm_iomap.h from include/mach in the near future.
+WARNING: vmlinux.o(.text+0xfb80): Section mismatch in reference
+from the function armpmu_register() to the function
+.init.text:armpmu_init()
+The function armpmu_register() references
+the function __init armpmu_init().
+This is often because armpmu_register lacks a __init
+annotation or the annotation of armpmu_init is wrong.
 
-Acked-by: Chris Ball <cjb@laptop.org>
+Just drop the __init marking on armpmu_init() because
+armpmu_register() no longer has an __init marking.
+
 Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 ---
- drivers/mmc/host/msm_sdcc.c |    1 -
- 1 file changed, 1 deletion(-)
 
-diff --git a/drivers/mmc/host/msm_sdcc.c b/drivers/mmc/host/msm_sdcc.c
-index 7c0af0e..0ee4a57 100644
---- a/drivers/mmc/host/msm_sdcc.c
-+++ b/drivers/mmc/host/msm_sdcc.c
-@@ -43,7 +43,6 @@
- #include <asm/sizes.h>
+I doubt anyone is actually experiencing any problems because this
+driver probes before kernel init is over. But the warning is a bit
+annoying.
+
+ arch/arm/kernel/perf_event.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm/kernel/perf_event.c b/arch/arm/kernel/perf_event.c
+index 31e0eb3..32081ad 100644
+--- a/arch/arm/kernel/perf_event.c
++++ b/arch/arm/kernel/perf_event.c
+@@ -484,7 +484,7 @@ const struct dev_pm_ops armpmu_dev_pm_ops = {
+ 	SET_RUNTIME_PM_OPS(armpmu_runtime_suspend, armpmu_runtime_resume, NULL)
+ };
  
- #include <linux/platform_data/mmc-msm_sdcc.h>
--#include <mach/msm_iomap.h>
- #include <mach/dma.h>
- #include <mach/clk.h>
- 
+-static void __init armpmu_init(struct arm_pmu *armpmu)
++static void armpmu_init(struct arm_pmu *armpmu)
+ {
+ 	atomic_set(&armpmu->active_events, 0);
+ 	mutex_init(&armpmu->reserve_mutex);
 -- 
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
 hosted by The Linux Foundation
