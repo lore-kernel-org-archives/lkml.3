@@ -1,89 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932368Ab3CDURQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 15:17:16 -0500
-Received: from mail-oa0-f41.google.com ([209.85.219.41]:54956 "EHLO
-	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932250Ab3CDURN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 15:17:13 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAM0nabEZvLSKYSQ7YvxZwtiHn5-Z2FXAEjGDgzPN9T1=LQq12w@mail.gmail.com>
-References: <1362408106-8632-1-git-send-email-peter.huewe@infineon.com>
- <20130304174104.GA10811@ennui.austin.ibm.com> <201303042054.16849.PeterHuewe@gmx.de>
- <CAM0nabEZvLSKYSQ7YvxZwtiHn5-Z2FXAEjGDgzPN9T1=LQq12w@mail.gmail.com>
-From: Kent Yoder <shpedoikal@gmail.com>
-Date: Mon, 4 Mar 2013 14:16:42 -0600
-Message-ID: <CAM0nabHeSB7A5SmA7QXJ7y45uLZUcYOdEip_0eLmqG2H7_GcdA@mail.gmail.com>
-Subject: Re: [tpmdd-devel] [PATCH v2] tpm: Add support for new Infineon I2C
- TPM (SLB 9645 TT 1.2 I2C)
-To: =?ISO-8859-1?Q?Peter_H=FCwe?= <PeterHuewe@gmx.de>
-Cc: tpmdd-devel@lists.sourceforge.net, Kent Yoder <key@linux.vnet.ibm.com>,
-        Peter Huewe <peter.huewe@infineon.com>,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S932491Ab3CDURe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 15:17:34 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:55853 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932397Ab3CDUQh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Mar 2013 15:16:37 -0500
+From: Borislav Petkov <bp@alien8.de>
+To: X86 ML <x86@kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@alien8.de>
+Subject: [PATCH 2/5] x86: Drop KERNEL_IMAGE_START
+Date: Mon,  4 Mar 2013 21:16:17 +0100
+Message-Id: <1362428180-8865-3-git-send-email-bp@alien8.de>
+X-Mailer: git-send-email 1.8.1.3.535.ga923c31
+In-Reply-To: <1362428180-8865-1-git-send-email-bp@alien8.de>
+References: <1362428180-8865-1-git-send-email-bp@alien8.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 4, 2013 at 2:08 PM, Kent Yoder <shpedoikal@gmail.com> wrote:
->>> >
->>> > +
->>> > +#ifdef CONFIG_OF
->>> > +static const struct of_device_id tpm_tis_i2c_of_match[] = {
->>> > +   { .compatible = "infineon,tpm_i2c_infineon", .data = (void *)0 },
->>> > +   { .compatible = "infineon,slb9635tt", .data = (void *)0 },
->>> > +   { .compatible = "infineon,slb9645tt", .data = (void *)1 },
->>>
->>>   Here "name" and "type" are left empty in of_device_id. Will there be
->>> times when those are needed? Like informational messages from the OF
->>> subsystem?
->>
->> Hmm, what do you propose?
->> name = chip type ? or name = tpm_i2c_infineon?
->> type = tpm ?
->
->   Doesn't matter to me, I just wanted to be sure you hadn't missed anything.
->
->>> > +              .of_match_table = of_match_ptr(tpm_tis_i2c_of_match),
->>>
->>>   Please put this line inside an ifdef CONFIG_OF, since of_match_ptr
->>> lives in there.
->> NACK.
->> of.h has already the ifdef CONFIG_OF for of_match_ptr and defines it either as
->>
->> #define of_match_ptr(_ptr)      (_ptr)
->> or
->> #define of_match_ptr(_ptr)      NULL
->> depending on CONFIG_OF is set.
->
->   Thanks.
->
->>>   Won't you also need to add OF to Kconfig?
->> Not really, as the only stuff we're using is the compatible id - the driver can
->> live without it and can be probed from userspace or plain old platform data.
->> I probably have compile tested it with and without CONFIG_OF.
->
->   Ok.
->
->> Is it worth a v3?
->>  or a small update patch which adds the of name/type and the space? (I can
->> create this patch immediately)
->
->   Not a problem, I can apply as-is with the fixup.
+We have KERNEL_IMAGE_START and __START_KERNEL_map which both contain the
+start of the kernel text mapping's virtual address. Remove the prior one
+which has been replicated a lot less times around the tree.
 
-Staged here:
+No functionality change.
 
-https://github.com/shpedoikal/linux.git tpmdd-03-04-13
+Signed-off-by: Borislav Petkov <bp@alien8.de>
+---
+ arch/x86/include/asm/page_64_types.h | 1 -
+ arch/x86/kernel/head64.c             | 6 +++---
+ 2 files changed, 3 insertions(+), 4 deletions(-)
 
-Thanks,
-Kent
+diff --git a/arch/x86/include/asm/page_64_types.h b/arch/x86/include/asm/page_64_types.h
+index 8b491e66eaa8..6c896fbe21db 100644
+--- a/arch/x86/include/asm/page_64_types.h
++++ b/arch/x86/include/asm/page_64_types.h
+@@ -48,6 +48,5 @@
+  * arch/x86/kernel/head_64.S), and it is mapped here:
+  */
+ #define KERNEL_IMAGE_SIZE	(512 * 1024 * 1024)
+-#define KERNEL_IMAGE_START	_AC(0xffffffff80000000, UL)
+ 
+ #endif /* _ASM_X86_PAGE_64_DEFS_H */
+diff --git a/arch/x86/kernel/head64.c b/arch/x86/kernel/head64.c
+index c5e403f6d869..101ac1a9263e 100644
+--- a/arch/x86/kernel/head64.c
++++ b/arch/x86/kernel/head64.c
+@@ -144,10 +144,10 @@ void __init x86_64_start_kernel(char * real_mode_data)
+ 	 * Build-time sanity checks on the kernel image and module
+ 	 * area mappings. (these are purely build-time and produce no code)
+ 	 */
+-	BUILD_BUG_ON(MODULES_VADDR < KERNEL_IMAGE_START);
+-	BUILD_BUG_ON(MODULES_VADDR-KERNEL_IMAGE_START < KERNEL_IMAGE_SIZE);
++	BUILD_BUG_ON(MODULES_VADDR < __START_KERNEL_map);
++	BUILD_BUG_ON(MODULES_VADDR - __START_KERNEL_map < KERNEL_IMAGE_SIZE);
+ 	BUILD_BUG_ON(MODULES_LEN + KERNEL_IMAGE_SIZE > 2*PUD_SIZE);
+-	BUILD_BUG_ON((KERNEL_IMAGE_START & ~PMD_MASK) != 0);
++	BUILD_BUG_ON((__START_KERNEL_map & ~PMD_MASK) != 0);
+ 	BUILD_BUG_ON((MODULES_VADDR & ~PMD_MASK) != 0);
+ 	BUILD_BUG_ON(!(MODULES_VADDR > __START_KERNEL));
+ 	BUILD_BUG_ON(!(((MODULES_END - 1) & PGDIR_MASK) ==
+-- 
+1.8.1.3.535.ga923c31
 
-> Kent
->
->>
->> Thanks,
->> Peter
->>
->>
->>
