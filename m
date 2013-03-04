@@ -1,63 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932572Ab3CDVRD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 16:17:03 -0500
-Received: from mout.gmx.net ([212.227.17.21]:53410 "EHLO mout.gmx.net"
+	id S932576Ab3CDVT2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 16:19:28 -0500
+Received: from fieldses.org ([174.143.236.118]:42197 "EHLO fieldses.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932434Ab3CDVRA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 16:17:00 -0500
-X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX1/kl8o3MU/kf2nQu3BKNSYqVu+9TgIaXO0mlbm2PL
-	4AJE8x4y5U6CVx
-From: Peter Huewe <peterhuewe@gmx.de>
-To: Kent Yoder <key@linux.vnet.ibm.com>
-Cc: tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        Peter Huewe <peterhuewe@gmx.de>, Kent Yoder <shpedoikal@gmail.com>
-Subject: [PATCH] tpm/tpm_i2c_infineon: Add small comment about return value of __i2c_transfer
-Date: Mon,  4 Mar 2013 22:17:15 +0100
-Message-Id: <1362431835-21443-1-git-send-email-peterhuewe@gmx.de>
-X-Mailer: git-send-email 1.7.12.4
-X-Y-GMX-Trusted: 0
+	id S1758173Ab3CDVT0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Mar 2013 16:19:26 -0500
+Date: Mon, 4 Mar 2013 16:19:24 -0500
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Pavel Shilovsky <piastry@etersoft.ru>, linux-kernel@vger.kernel.org,
+        linux-cifs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-nfs@vger.kernel.org, wine-devel@winehq.org
+Subject: Re: [PATCH v3 0/7] Add O_DENY* support for VFS and CIFS/NFS
+Message-ID: <20130304211923.GI20389@fieldses.org>
+References: <1362065133-9490-1-git-send-email-piastry@etersoft.ru>
+ <512FD1D5.3010106@mit.edu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <512FD1D5.3010106@mit.edu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+From: "J. Bruce Fields" <bfields@fieldses.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kent Yoder indicated that the code might be a bit clearer with a comment
-here, so this patch adds a small explanation of the code.
+On Thu, Feb 28, 2013 at 01:53:25PM -0800, Andy Lutomirski wrote:
+> [possible resend -- sorry]
+> 
+> On 02/28/2013 07:25 AM, Pavel Shilovsky wrote:
+> > This patchset adds support of O_DENY* flags for Linux fs layer. These flags can be used by any application that needs share reservations to organize a file access. VFS already has some sort of this capability - now it's done through flock/LOCK_MAND mechanis, but that approach is non-atomic. This patchset build new capabilities on top of the existing one but doesn't bring any changes into the flock call semantic.
+> > 
+> > These flags can be used by NFS (built-in-kernel) and CIFS (Samba) servers and Wine applications through VFS (for local filesystems) or CIFS/NFS modules. This will help when e.g. Samba and NFS server share the same directory for Windows and Linux users or Wine applications use Samba/NFS share to access the same data from different clients.
+> > 
+> > According to the previous discussions the most problematic question is how to prevent situations like DoS attacks where e.g /lib/liba.so file can be open with DENYREAD, or smth like this. That's why one extra flag O_DENYMAND is added. It indicates to underlying layer that an application want to use O_DENY* flags semantic. It allows us not affect native Linux applications (that don't use O_DENYMAND flag) - so, these flags (and the semantic of open syscall that they bring) are used only for those applications that really want it proccessed that way.
+> > 
+> > So, we have four new flags:
+> > O_DENYREAD - to prevent other opens with read access,
+> > O_DENYWRITE - to prevent other opens with write access,
+> > O_DENYDELETE - to prevent delete operations (this flag is not implemented in VFS and NFS part and only suitable for CIFS module),
+> > O_DENYMAND - to switch on/off three flags above.
+> 
+> O_DENYMAND doesn't deny anything.  Would a name like O_RESPECT_DENY be
+> better?
+> 
+> Other than that, this seems like a sensible mechanism.
 
-CC: Kent Yoder <shpedoikal@gmail.com>
-Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
----
- drivers/char/tpm/tpm_i2c_infineon.c | 9 +++++++++
- 1 file changed, 9 insertions(+)
+I'm a little more worried: these are mandatory locks, and applications
+that use them are used to the locks being enforced correctly.  Are we
+sure that an application that opens a file O_DENYWRITE won't crash if it
+sees the file data change while it holds the open?
 
-diff --git a/drivers/char/tpm/tpm_i2c_infineon.c b/drivers/char/tpm/tpm_i2c_infineon.c
-index d83bb8c..37d5dcc 100644
---- a/drivers/char/tpm/tpm_i2c_infineon.c
-+++ b/drivers/char/tpm/tpm_i2c_infineon.c
-@@ -162,6 +162,10 @@ out:
- 	/* take care of 'guard time' */
- 	usleep_range(SLEEP_DURATION_LOW, SLEEP_DURATION_HI);
- 
-+	/* __i2c_transfer returns the number of successfully transferred
-+	 * messages.
-+	 * So rc should be greater than 0 here otherwise we have an error.
-+	 */
- 	if (rc <= 0)
- 		return -EIO;
- 
-@@ -208,6 +212,11 @@ static int iic_tpm_write_generic(u8 addr, u8 *buffer, size_t len,
- 	i2c_unlock_adapter(tpm_dev.client->adapter);
- 	/* take care of 'guard time' */
- 	usleep_range(SLEEP_DURATION_LOW, SLEEP_DURATION_HI);
-+
-+	/* __i2c_transfer returns the number of successfully transferred
-+	 * messages.
-+	 * So rc should be greater than 0 here otherwise we have an error.
-+	 */
- 	if (rc <= 0)
- 		return -EIO;
- 
--- 
-1.7.12.4
+In general the idea of making a mandatory lock opt-in makes me nervous.
+I'd prefer something like a mount option, so that we know that everyone
+on that one filesystem is playing by the same rules, but we can still
+mount filesystems like / without the option.
 
+But I'll admit I'm definitely not an expert on Windows locking and may
+be missing something about how these locks are meant to work.
+
+--b.
