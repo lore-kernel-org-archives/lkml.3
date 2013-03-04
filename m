@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756288Ab3CDDnc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 22:43:32 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:32822 "EHLO
+	id S1757736Ab3CDEGi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 23:06:38 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:32807 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756180Ab3CDDn2 (ORCPT
+	by vger.kernel.org with ESMTP id S1756239Ab3CDDnb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Mar 2013 22:43:28 -0500
-Message-Id: <20130304033717.721719715@decadent.org.uk>
+	Sun, 3 Mar 2013 22:43:31 -0500
+Message-Id: <20130304033718.262730828@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 04 Mar 2013 03:38:49 +0000
+Date: Mon, 04 Mar 2013 03:38:55 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Shawn Guo <shawn.guo@linaro.org>,
-        Chris Ball <cjb@laptop.org>
-Subject: [ 102/153] mmc: sdhci-esdhc-imx: fix host version read
+Cc: akpm@linux-foundation.org, "Xiaowei.Hu" <xiaowei.hu@oracle.com>,
+        Srinivas Eeda <srinivas.eeda@oracle.com>,
+        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 108/153] ocfs2: ac->ac_allow_chain_relink=0 wont disable group relink
 In-Reply-To: <20130304033707.648729212@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,55 +29,107 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Shawn Guo <shawn.guo@linaro.org>
+From: "Xiaowei.Hu" <xiaowei.hu@oracle.com>
 
-commit ef4d0888bb7e1b963880f086575081c3d39cad2d upstream.
+commit 309a85b6861fedbb48a22d45e0e079d1be993b3a upstream.
 
-When commit 95a2482 (mmc: sdhci-esdhc-imx: add basic imx6q usdhc
-support) works around host version issue on imx6q, it gets the
-register address fixup "reg ^= 2" lost for imx25/35/51/53 esdhc.
-Thus, the controller version on these SoCs is wrongly identified
-as v1 while it's actually v2.
+ocfs2_block_group_alloc_discontig() disables chain relink by setting
+ac->ac_allow_chain_relink = 0 because it grabs clusters from multiple
+cluster groups.
 
-Add the address fixup back and take a different approach to correct
-imx6q host version, so that the host version read gets back to work
-for all SoCs.
+It doesn't keep the credits for all chain relink,but
+ocfs2_claim_suballoc_bits overrides this in this call trace:
+ocfs2_block_group_claim_bits()->ocfs2_claim_clusters()->
+__ocfs2_claim_clusters()->ocfs2_claim_suballoc_bits()
+ocfs2_claim_suballoc_bits set ac->ac_allow_chain_relink = 1; then call
+ocfs2_search_chain() one time and disable it again, and then we run out
+of credits.
 
-Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
-Signed-off-by: Chris Ball <cjb@laptop.org>
+Fix is to allow relink by default and disable it in
+ocfs2_block_group_alloc_discontig.
+
+Without this patch, End-users will run into a crash due to run out of
+credits, backtrace like this:
+
+  RIP: 0010:[<ffffffffa0808b14>]  [<ffffffffa0808b14>]
+  jbd2_journal_dirty_metadata+0x164/0x170 [jbd2]
+  RSP: 0018:ffff8801b919b5b8  EFLAGS: 00010246
+  RAX: 0000000000000000 RBX: ffff88022139ddc0 RCX: ffff880159f652d0
+  RDX: ffff880178aa3000 RSI: ffff880159f652d0 RDI: ffff880087f09bf8
+  RBP: ffff8801b919b5e8 R08: 0000000000000000 R09: 0000000000000000
+  R10: 0000000000001e00 R11: 00000000000150b0 R12: ffff880159f652d0
+  R13: ffff8801a0cae908 R14: ffff880087f09bf8 R15: ffff88018d177800
+  FS:  00007fc9b0b6b6e0(0000) GS:ffff88022fd40000(0000) knlGS:0000000000000000
+  CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+  CR2: 000000000040819c CR3: 0000000184017000 CR4: 00000000000006e0
+  DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+  DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+  Process dd (pid: 9945, threadinfo ffff8801b919a000, task ffff880149a264c0)
+  Call Trace:
+    ocfs2_journal_dirty+0x2f/0x70 [ocfs2]
+    ocfs2_relink_block_group+0x111/0x480 [ocfs2]
+    ocfs2_search_chain+0x455/0x9a0 [ocfs2]
+    ...
+
+Signed-off-by: Xiaowei.Hu <xiaowei.hu@oracle.com>
+Reviewed-by: Srinivas Eeda <srinivas.eeda@oracle.com>
+Cc: Mark Fasheh <mfasheh@suse.com>
+Cc: Joel Becker <jlbec@evilplan.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/mmc/host/sdhci-esdhc-imx.c |   19 +++++++++++--------
- 1 file changed, 11 insertions(+), 8 deletions(-)
+ fs/ocfs2/suballoc.c |    7 +++----
+ fs/ocfs2/suballoc.h |    2 +-
+ 2 files changed, 4 insertions(+), 5 deletions(-)
 
---- a/drivers/mmc/host/sdhci-esdhc-imx.c
-+++ b/drivers/mmc/host/sdhci-esdhc-imx.c
-@@ -232,15 +232,18 @@ static void esdhc_writel_le(struct sdhci
+--- a/fs/ocfs2/suballoc.c
++++ b/fs/ocfs2/suballoc.c
+@@ -642,7 +642,7 @@ ocfs2_block_group_alloc_discontig(handle
+ 	 * cluster groups will be staying in cache for the duration of
+ 	 * this operation.
+ 	 */
+-	ac->ac_allow_chain_relink = 0;
++	ac->ac_disable_chain_relink = 1;
  
- static u16 esdhc_readw_le(struct sdhci_host *host, int reg)
- {
-+	struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
-+	struct pltfm_imx_data *imx_data = pltfm_host->priv;
-+
- 	if (unlikely(reg == SDHCI_HOST_VERSION)) {
--		u16 val = readw(host->ioaddr + (reg ^ 2));
--		/*
--		 * uSDHC supports SDHCI v3.0, but it's encoded as value
--		 * 0x3 in host controller version register, which violates
--		 * SDHCI_SPEC_300 definition.  Work it around here.
--		 */
--		if ((val & SDHCI_SPEC_VER_MASK) == 3)
--			return --val;
-+		reg ^= 2;
-+		if (is_imx6q_usdhc(imx_data)) {
-+			/*
-+			 * The usdhc register returns a wrong host version.
-+			 * Correct it here.
-+			 */
-+			return SDHCI_SPEC_300;
-+		}
- 	}
+ 	/* Claim the first region */
+ 	status = ocfs2_block_group_claim_bits(osb, handle, ac, min_bits,
+@@ -1823,7 +1823,7 @@ static int ocfs2_search_chain(struct ocf
+ 	 * Do this *after* figuring out how many bits we're taking out
+ 	 * of our target group.
+ 	 */
+-	if (ac->ac_allow_chain_relink &&
++	if (!ac->ac_disable_chain_relink &&
+ 	    (prev_group_bh) &&
+ 	    (ocfs2_block_group_reasonably_empty(bg, res->sr_bits))) {
+ 		status = ocfs2_relink_block_group(handle, alloc_inode,
+@@ -1928,7 +1928,6 @@ static int ocfs2_claim_suballoc_bits(str
  
- 	return readw(host->ioaddr + reg);
+ 	victim = ocfs2_find_victim_chain(cl);
+ 	ac->ac_chain = victim;
+-	ac->ac_allow_chain_relink = 1;
+ 
+ 	status = ocfs2_search_chain(ac, handle, bits_wanted, min_bits,
+ 				    res, &bits_left);
+@@ -1947,7 +1946,7 @@ static int ocfs2_claim_suballoc_bits(str
+ 	 * searching each chain in order. Don't allow chain relinking
+ 	 * because we only calculate enough journal credits for one
+ 	 * relink per alloc. */
+-	ac->ac_allow_chain_relink = 0;
++	ac->ac_disable_chain_relink = 1;
+ 	for (i = 0; i < le16_to_cpu(cl->cl_next_free_rec); i ++) {
+ 		if (i == victim)
+ 			continue;
+--- a/fs/ocfs2/suballoc.h
++++ b/fs/ocfs2/suballoc.h
+@@ -49,7 +49,7 @@ struct ocfs2_alloc_context {
+ 
+ 	/* these are used by the chain search */
+ 	u16    ac_chain;
+-	int    ac_allow_chain_relink;
++	int    ac_disable_chain_relink;
+ 	group_search_t *ac_group_search;
+ 
+ 	u64    ac_last_group;
 
 
