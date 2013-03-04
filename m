@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755914Ab3CDEXJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 23:23:09 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60731 "EHLO
+	id S1755317Ab3CDEX0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 23:23:26 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60724 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755225Ab3CDDm2 (ORCPT
+	by vger.kernel.org with ESMTP id S1755215Ab3CDDm1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Mar 2013 22:42:28 -0500
-Message-Id: <20130304033708.921881619@decadent.org.uk>
+	Sun, 3 Mar 2013 22:42:27 -0500
+Message-Id: <20130304033708.085187157@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 04 Mar 2013 03:37:20 +0000
+Date: Mon, 04 Mar 2013 03:37:11 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [ 013/153] USB: option: add and update Alcatel modems
+Cc: akpm@linux-foundation.org, Tejun Heo <tj@kernel.org>,
+        Andrey Isakov <andy51@gmx.ru>
+Subject: [ 004/153] workqueue: consider work function when searching for busy work items
 In-Reply-To: <20130304033707.648729212@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,70 +27,145 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bjørn Mork <bjorn@mork.no>
+From: Tejun Heo <tj@kernel.org>
 
-commit f8f0302bbcbd1b14655bef29f6996a2152be559d upstream.
+commit a2c1c57be8d9fd5b716113c8991d3d702eeacf77 upstream.
 
-Adding three currently unsupported modems based on information
-from .inf driver files:
+To avoid executing the same work item concurrenlty, workqueue hashes
+currently busy workers according to their current work items and looks
+up the the table when it wants to execute a new work item.  If there
+already is a worker which is executing the new work item, the new item
+is queued to the found worker so that it gets executed only after the
+current execution finishes.
 
-  Diag  VID_1BBB&PID_0052&MI_00
-  AGPS  VID_1BBB&PID_0052&MI_01
-  VOICE VID_1BBB&PID_0052&MI_02
-  AT    VID_1BBB&PID_0052&MI_03
-  Modem VID_1BBB&PID_0052&MI_05
-  wwan  VID_1BBB&PID_0052&MI_06
+Unfortunately, a work item may be freed while being executed and thus
+recycled for different purposes.  If it gets recycled for a different
+work item and queued while the previous execution is still in
+progress, workqueue may make the new work item wait for the old one
+although the two aren't really related in any way.
 
-  Diag  VID_1BBB&PID_00B6&MI_00
-  AT    VID_1BBB&PID_00B6&MI_01
-  Modem VID_1BBB&PID_00B6&MI_02
-  wwan  VID_1BBB&PID_00B6&MI_03
+In extreme cases, this false dependency may lead to deadlock although
+it's extremely unlikely given that there aren't too many self-freeing
+work item users and they usually don't wait for other work items.
 
-  Diag  VID_1BBB&PID_00B7&MI_00
-  AGPS  VID_1BBB&PID_00B7&MI_01
-  VOICE VID_1BBB&PID_00B7&MI_02
-  AT    VID_1BBB&PID_00B7&MI_03
-  Modem VID_1BBB&PID_00B7&MI_04
-  wwan  VID_1BBB&PID_00B7&MI_05
+To alleviate the problem, record the current work function in each
+busy worker and match it together with the work item address in
+find_worker_executing_work().  While this isn't complete, it ensures
+that unrelated work items don't interact with each other and in the
+very unlikely case where a twisted wq user triggers it, it's always
+onto itself making the culprit easy to spot.
 
-Updating the blacklist info for the X060S_X200 and X220_X500D,
-reserving interfaces for a wwan driver, based on
-
-  wwan VID_1BBB&PID_0000&MI_04
-  wwan VID_1BBB&PID_0017&MI_06
-
-Signed-off-by: Bjørn Mork <bjorn@mork.no>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: Andrey Isakov <andy51@gmx.ru>
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=51701
+[bwh: Backported to 3.2:
+ - Adjust context
+ - Incorporate earlier logging cleanup in process_one_work() from
+   044c782ce3a9 ('workqueue: fix checkpatch issues')]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/serial/option.c |   10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
+ kernel/workqueue.c |   39 +++++++++++++++++++++++++++++++--------
+ 1 file changed, 31 insertions(+), 8 deletions(-)
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -479,6 +479,7 @@ static const struct option_blacklist_inf
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -128,6 +128,7 @@ struct worker {
+ 	};
  
- static const struct option_blacklist_info alcatel_x200_blacklist = {
- 	.sendsetup = BIT(0) | BIT(1),
-+	.reserved = BIT(4),
- };
+ 	struct work_struct	*current_work;	/* L: work being processed */
++	work_func_t		current_func;	/* L: current_work's fn */
+ 	struct cpu_workqueue_struct *current_cwq; /* L: current_work's cwq */
+ 	struct list_head	scheduled;	/* L: scheduled works */
+ 	struct task_struct	*task;		/* I: worker task */
+@@ -843,7 +844,8 @@ static struct worker *__find_worker_exec
+ 	struct hlist_node *tmp;
  
- static const struct option_blacklist_info zte_0037_blacklist = {
-@@ -1215,7 +1216,14 @@ static const struct usb_device_id option
- 	{ USB_DEVICE(ALCATEL_VENDOR_ID, ALCATEL_PRODUCT_X060S_X200),
- 	  .driver_info = (kernel_ulong_t)&alcatel_x200_blacklist
- 	},
--	{ USB_DEVICE(ALCATEL_VENDOR_ID, ALCATEL_PRODUCT_X220_X500D) },
-+	{ USB_DEVICE(ALCATEL_VENDOR_ID, ALCATEL_PRODUCT_X220_X500D),
-+	  .driver_info = (kernel_ulong_t)&net_intf6_blacklist },
-+	{ USB_DEVICE(ALCATEL_VENDOR_ID, 0x0052),
-+	  .driver_info = (kernel_ulong_t)&net_intf6_blacklist },
-+	{ USB_DEVICE(ALCATEL_VENDOR_ID, 0x00b6),
-+	  .driver_info = (kernel_ulong_t)&net_intf3_blacklist },
-+	{ USB_DEVICE(ALCATEL_VENDOR_ID, 0x00b7),
-+	  .driver_info = (kernel_ulong_t)&net_intf5_blacklist },
- 	{ USB_DEVICE(ALCATEL_VENDOR_ID, ALCATEL_PRODUCT_L100V),
- 	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
- 	{ USB_DEVICE(AIRPLUS_VENDOR_ID, AIRPLUS_PRODUCT_MCD650) },
+ 	hlist_for_each_entry(worker, tmp, bwh, hentry)
+-		if (worker->current_work == work)
++		if (worker->current_work == work &&
++		    worker->current_func == work->func)
+ 			return worker;
+ 	return NULL;
+ }
+@@ -853,9 +855,27 @@ static struct worker *__find_worker_exec
+  * @gcwq: gcwq of interest
+  * @work: work to find worker for
+  *
+- * Find a worker which is executing @work on @gcwq.  This function is
+- * identical to __find_worker_executing_work() except that this
+- * function calculates @bwh itself.
++ * Find a worker which is executing @work on @gcwq by searching
++ * @gcwq->busy_hash which is keyed by the address of @work.  For a worker
++ * to match, its current execution should match the address of @work and
++ * its work function.  This is to avoid unwanted dependency between
++ * unrelated work executions through a work item being recycled while still
++ * being executed.
++ *
++ * This is a bit tricky.  A work item may be freed once its execution
++ * starts and nothing prevents the freed area from being recycled for
++ * another work item.  If the same work item address ends up being reused
++ * before the original execution finishes, workqueue will identify the
++ * recycled work item as currently executing and make it wait until the
++ * current execution finishes, introducing an unwanted dependency.
++ *
++ * This function checks the work item address, work function and workqueue
++ * to avoid false positives.  Note that this isn't complete as one may
++ * construct a work function which can introduce dependency onto itself
++ * through a recycled work item.  Well, if somebody wants to shoot oneself
++ * in the foot that badly, there's only so much we can do, and if such
++ * deadlock actually occurs, it should be easy to locate the culprit work
++ * function.
+  *
+  * CONTEXT:
+  * spin_lock_irq(gcwq->lock).
+@@ -1816,7 +1836,6 @@ __acquires(&gcwq->lock)
+ 	struct global_cwq *gcwq = cwq->gcwq;
+ 	struct hlist_head *bwh = busy_worker_head(gcwq, work);
+ 	bool cpu_intensive = cwq->wq->flags & WQ_CPU_INTENSIVE;
+-	work_func_t f = work->func;
+ 	int work_color;
+ 	struct worker *collision;
+ #ifdef CONFIG_LOCKDEP
+@@ -1845,6 +1864,7 @@ __acquires(&gcwq->lock)
+ 	debug_work_deactivate(work);
+ 	hlist_add_head(&worker->hentry, bwh);
+ 	worker->current_work = work;
++	worker->current_func = work->func;
+ 	worker->current_cwq = cwq;
+ 	work_color = get_work_color(work);
+ 
+@@ -1882,7 +1902,7 @@ __acquires(&gcwq->lock)
+ 	lock_map_acquire_read(&cwq->wq->lockdep_map);
+ 	lock_map_acquire(&lockdep_map);
+ 	trace_workqueue_execute_start(work);
+-	f(work);
++	worker->current_func(work);
+ 	/*
+ 	 * While we must be careful to not use "work" after this, the trace
+ 	 * point will only record its address.
+@@ -1892,11 +1912,10 @@ __acquires(&gcwq->lock)
+ 	lock_map_release(&cwq->wq->lockdep_map);
+ 
+ 	if (unlikely(in_atomic() || lockdep_depth(current) > 0)) {
+-		printk(KERN_ERR "BUG: workqueue leaked lock or atomic: "
+-		       "%s/0x%08x/%d\n",
+-		       current->comm, preempt_count(), task_pid_nr(current));
+-		printk(KERN_ERR "    last function: ");
+-		print_symbol("%s\n", (unsigned long)f);
++		pr_err("BUG: workqueue leaked lock or atomic: %s/0x%08x/%d\n"
++		       "     last function: %pf\n",
++		       current->comm, preempt_count(), task_pid_nr(current),
++		       worker->current_func);
+ 		debug_show_held_locks(current);
+ 		dump_stack();
+ 	}
+@@ -1910,6 +1929,7 @@ __acquires(&gcwq->lock)
+ 	/* we're done with it, release */
+ 	hlist_del_init(&worker->hentry);
+ 	worker->current_work = NULL;
++	worker->current_func = NULL;
+ 	worker->current_cwq = NULL;
+ 	cwq_dec_nr_in_flight(cwq, work_color, false);
+ }
 
 
