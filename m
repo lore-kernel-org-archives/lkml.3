@@ -1,82 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932281Ab3CDS6R (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 13:58:17 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:29704 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932182Ab3CDS6Q (ORCPT
+	id S1758760Ab3CDS7d (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 13:59:33 -0500
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:49120 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757617Ab3CDS7b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 13:58:16 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/PigcvLShl8EjU90VU8fxj
-Date: Mon, 4 Mar 2013 10:58:06 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Nishanth Menon <nm@ti.com>
-Cc: =?utf-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= 
-	<freemangordon@abv.bg>,
-        pali.rohar@gmail.com, linux@arm.linux.org.uk,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] arm: omap: RX-51: ARM errata 430973 workaround
-Message-ID: <20130304185806.GS11806@atomide.com>
-References: <517283541.62064.1362124023621.JavaMail.apache@mail81.abv.bg>
- <CAGo_u6omQdSzpfthHNAU1UvgSvkgq3ZC6g1Ha9oi0nc9QJ71nA@mail.gmail.com>
+	Mon, 4 Mar 2013 13:59:31 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAGo_u6omQdSzpfthHNAU1UvgSvkgq3ZC6g1Ha9oi0nc9QJ71nA@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CAA9_cmfa1hhijh4g_hSwMy_GR81rxjEFMurJwSvhBruh1R5dtw@mail.gmail.com>
+References: <20130223074001.GA5199@www.outflux.net>
+	<CAA9_cmfa1hhijh4g_hSwMy_GR81rxjEFMurJwSvhBruh1R5dtw@mail.gmail.com>
+Date: Mon, 4 Mar 2013 10:59:30 -0800
+X-Google-Sender-Auth: 5ch8z7kFLkvv7VPBygPI50B1ENw
+Message-ID: <CAGXu5jKpdVFoEvbGv3K620XDx2bjqQYeCLE511h-071XaPQUGg@mail.gmail.com>
+Subject: Re: [PATCH] md/raid456: remove depends on CONFIG_EXPERIMENTAL
+From: Kees Cook <keescook@chromium.org>
+To: Dan Williams <djbw@fb.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Neil Brown <neilb@suse.de>,
+        linux-raid@vger.kernel.org, Arjan van de Ven <arjan@linux.intel.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Alasdair G Kergon <agk@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Nishanth Menon <nm@ti.com> [130301 06:42]:
-> On Fri, Mar 1, 2013 at 1:47 AM, Ивайло Димитров <freemangordon@abv.bg> wrote:
-> >
-> > They look similar, but they are not equivalent :). The first major difference is here (code taken from omap-smc.S)
-> >
-> >> ENTRY(omap_smc2)
-> >>          stmfd   sp!, {r4-r12, lr}
-> >>          mov     r3, r2
-> >>          mov     r2, r1
-> >>          mov     r1, #0x0        @ Process ID
-> >>          mov     r6, #0xff
-> >>          mov     r12, #0x00      @ Secure Service ID
-> >
-> > Always zero, while RX51 PPA expects a real value. I wonder if it is a bug, but anyway I don't see the id parameter (R0) used.
-> >
-> >>          mov     r7, #0
-> >>          mcr     p15, 0, r7, c7, c5, 6
-> >
-> > According to ARM TRM, this is "Invalidate entire branch predictor array"(IIUC). NFC why it is needed here, but this will not work on RX-51 until IBE bit in ACR is set.
-> >
-> >>          dsb
-> >>          dmb
-> >>          smc     #0
-> >
-> > RX-51 needs smc #1 ;)
-> >
-> >>          ldmfd   sp!, {r4-r12, pc}
-> >
-> >
-> > The next major difference is that RX-51 expects parameter count passed in R3[0] to be the count of the remaining parameters +1, but omap_secure_dispatcher (in omap-secure.c) is passing the exact count of the remaining parameters.
-> >
-> > I guess all of the above problems can be fixed/workarounded, but I wonder does it worth. Not to say that I don't have BB around to test if the code still works if I make changes to omap2-secure.c/omap-smc.S :)
-> >
-> >
-> 
-> Yep, that was my point - instead of introducing new functions,
-> extending the existing functions to handle new requirements is better
-> solution, IMHO.
+On Tue, Feb 26, 2013 at 5:27 PM, Dan Williams <djbw@fb.com> wrote:
+> On Fri, Feb 22, 2013 at 11:40 PM, Kees Cook <keescook@chromium.org> wrote:
+>> The CONFIG_EXPERIMENTAL config item has not carried much meaning for a
+>> while now and is almost always enabled by default. As agreed during the
+>> Linux kernel summit, remove it from any "depends on" lines in Kconfigs.
+>>
+>> Signed-off-by: Kees Cook <keescook@chromium.org>
+>> Cc: Arjan van de Ven <arjan@linux.intel.com>
+>> Cc: Dan Williams <dan.j.williams@intel.com>
+>> Cc: Alasdair G Kergon <agk@redhat.com>
+>> ---
+>>  drivers/md/Kconfig |    1 -
+>>  1 file changed, 1 deletion(-)
+>>
+>> diff --git a/drivers/md/Kconfig b/drivers/md/Kconfig
+>> index 7cdf359..0cc3a3d 100644
+>> --- a/drivers/md/Kconfig
+>> +++ b/drivers/md/Kconfig
+>> @@ -158,7 +158,6 @@ config MULTICORE_RAID456
+>>         bool "RAID-4/RAID-5/RAID-6 Multicore processing (EXPERIMENTAL)"
+>>         depends on MD_RAID456
+>>         depends on SMP
+>> -       depends on EXPERIMENTAL
+>
+> In this case MULTICORE_RAID456 and the related code should go as
+> well... now that there are patches to supersede this implementation in
+> md-next.
 
-I think there have been patches posted for ARM generic SMC
-handling. Might be worth looking at those a bit and see if
-this can be made generic. I think only the SMC call numbering
-is different for various SoCs?
+Can my original patch go through as-is for Linus's tree? Right now,
+this is the last use of EXPERIMENTAL in v3.9-rc1. If we can drop it,
+we can remove the config item entirely from v3.9.
 
-Regards,
+-Kees
 
-Tony
+-- 
+Kees Cook
+Chrome OS Security
