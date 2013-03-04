@@ -1,148 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758033Ab3CDOrp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 09:47:45 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:19360 "EHLO mx1.redhat.com"
+	id S1758224Ab3CDOsJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 09:48:09 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:33993 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756641Ab3CDOro convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 09:47:44 -0500
-Date: Mon, 4 Mar 2013 09:47:36 -0500
-From: Jeff Layton <jlayton@redhat.com>
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: <bfields@fieldses.org>, <linux-nfs@vger.kernel.org>, <devel@openvz.org>,
-        <Trond.Myklebust@netapp.com>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] nfsd: try nfsdcld client tracker in containers
-Message-ID: <20130304094736.57a288b9@tlielax.poochiereds.net>
-In-Reply-To: <51344175.40503@parallels.com>
-References: <20130301082423.21663.37825.stgit@localhost.localdomain>
-	<20130301080911.2a1a28a2@corrin.poochiereds.net>
-	<51344175.40503@parallels.com>
+	id S1758113Ab3CDOsH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Mar 2013 09:48:07 -0500
+Subject: Re: [PATCH 1/2] gfs2: fix bitmap declaration
+From: Steven Whitehouse <swhiteho@redhat.com>
+To: Akinobu Mita <akinobu.mita@gmail.com>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        cluster-devel@redhat.com
+In-Reply-To: <1362234695-5339-1-git-send-email-akinobu.mita@gmail.com>
+References: <1362234695-5339-1-git-send-email-akinobu.mita@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Red Hat UK Ltd
+Date: Mon, 04 Mar 2013 14:46:32 +0000
+Message-ID: <1362408392.2684.31.camel@menhir>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 4 Mar 2013 10:38:45 +0400
-Stanislav Kinsbursky <skinsbursky@parallels.com> wrote:
+Hi,
 
-> 01.03.2013 17:09, Jeff Layton пишет:
-> > On Fri, 01 Mar 2013 11:24:23 +0300
-> > Stanislav Kinsbursky <skinsbursky@parallels.com> wrote:
-> >
-> >> Currently, UMH and Legacy trackers are disabled in containers.
-> >> But existent logic can lookup nfs4_recoverydir in a container, and in this
-> >> case will try to init Legacy tracker and skip nfsdcld client tracker.
-> >> This actually means, that no client tracker will be started in a container at
-> >> all, because Legacy tracker init will return -EINVAL for a container.
-> >> So, let's change "-EINVAL" on "-ENOTSUPP" for legacy tracker init call in a
-> >> container and in case of this error code, try nfsdcld client tracker instead
-> >> of returning a error.
-> >>
-> >> Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
-> >> ---
-> >>   fs/nfsd/nfs4recover.c |   12 ++++++++----
-> >>   1 files changed, 8 insertions(+), 4 deletions(-)
-> >>
-> >> diff --git a/fs/nfsd/nfs4recover.c b/fs/nfsd/nfs4recover.c
-> >> index e0ae1cf..8aa069a 100644
-> >> --- a/fs/nfsd/nfs4recover.c
-> >> +++ b/fs/nfsd/nfs4recover.c
-> >> @@ -524,7 +524,7 @@ nfsd4_legacy_tracking_init(struct net *net)
-> >>   	if (net != &init_net) {
-> >>   		WARN(1, KERN_ERR "NFSD: attempt to initialize legacy client "
-> >>   			"tracking in a container!\n");
-> >> -		return -EINVAL;
-> >> +		return -ENOTSUPP;
-> >>   	}
-> >>
-> >>   	status = nfs4_legacy_state_init(net);
-> >> @@ -1285,14 +1285,17 @@ nfsd4_client_tracking_init(struct net *net)
-> >>   	/*
-> >>   	 * See if the recoverydir exists and is a directory. If it is,
-> >>   	 * then use the legacy ops.
-> >> +	 * If legacy ops init return -ENOSUPP, then we are in a container and
-> >> +	 * should try nfsdcld client tracking.
-> >>   	 */
-> >>   	nn->client_tracking_ops = &nfsd4_legacy_tracking_ops;
-> >>   	status = kern_path(nfs4_recoverydir(), LOOKUP_FOLLOW, &path);
-> >>   	if (!status) {
-> >> -		status = S_ISDIR(path.dentry->d_inode->i_mode);
-> >> +		if (S_ISDIR(path.dentry->d_inode->i_mode))
-> >> +			status = nn->client_tracking_ops->init(net);
-> >>   		path_put(&path);
-> >> -		if (status)
-> >> -			goto do_init;
-> >> +		if (status != -ENOTSUPP)
-> >> +			goto do_exit;
-> >>   	}
-> >>
-> >>   	/* Finally, try to use nfsdcld */
-> >> @@ -1302,6 +1305,7 @@ nfsd4_client_tracking_init(struct net *net)
-> >>   			"nfsdcltrack.\n");
-> >>   do_init:
-> >>   	status = nn->client_tracking_ops->init(net);
-> >> +do_exit:
-> >>   	if (status) {
-> >>   		printk(KERN_WARNING "NFSD: Unable to initialize client "
-> >>   				    "recovery tracking! (%d)\n", status);
-> >>
-> >
-> > Seems OK as a stopgap fix. We're removing nfsdcld in 3.10 though so
-> > this won't help prospective users of nfsd in a container for
-> > long...particularly since our expectation is that no one has actually
-> > ever deployed nfsdcld.
-> >
-> > This is something that really needs to be fixed the right way since a
-> > NFS server that doesn't allow clients to reclaim state after a reboot is
-> > potentially dangerous...
-> >
-> > I'm afraid I haven't been following along as closely as I should have
-> > been. What's the rationale for disabling the UMH upcall? Is there no
-> > way to make it so that new processes it spawns are done within the
-> > correct container?
-> >
+Both patches now in the GFS2 -nmw tree. Thanks,
+
+Steve.
+
+On Sat, 2013-03-02 at 23:31 +0900, Akinobu Mita wrote:
+> The bitmap accessed by bitops like set_bit_le and clear_bit_le must
+> be aligned to the size of an "unsigned long".  But there are bitmaps
+> that are declared as char array.
 > 
-> Straight answer is "no, there is no way to do so": UMH threads are spawned in "init" context.
-> But we solve the problem in a slightly different way.
+> This converts these bitmaps to properly declared ones.
 > 
-> So, here are my ideas about all the trackers (I haven't shared them yet, so I do it now):
+> Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
+> Cc: Steven Whitehouse <swhiteho@redhat.com>
+> Cc: cluster-devel@redhat.com
+> ---
+>  fs/gfs2/lock_dlm.c | 14 +++++++-------
+>  1 file changed, 7 insertions(+), 7 deletions(-)
 > 
-> 1) nfsdcld uses SUNRPC pipefs, which is containerised already. So it was very easy to containerise it.
-> 
+> diff --git a/fs/gfs2/lock_dlm.c b/fs/gfs2/lock_dlm.c
+> index 9802de0..ead5b36 100644
+> --- a/fs/gfs2/lock_dlm.c
+> +++ b/fs/gfs2/lock_dlm.c
+> @@ -464,7 +464,7 @@ static void gdlm_cancel(struct gfs2_glock *gl)
+>  #define JID_BITMAP_OFFSET 8 /* 4 byte generation number + 4 byte unused */
+>  
+>  static void control_lvb_read(struct lm_lockstruct *ls, uint32_t *lvb_gen,
+> -			     char *lvb_bits)
+> +			     void *lvb_bits)
+>  {
+>  	uint32_t gen;
+>  	memcpy(lvb_bits, ls->ls_control_lvb, GDLM_LVB_SIZE);
+> @@ -473,7 +473,7 @@ static void control_lvb_read(struct lm_lockstruct *ls, uint32_t *lvb_gen,
+>  }
+>  
+>  static void control_lvb_write(struct lm_lockstruct *ls, uint32_t lvb_gen,
+> -			      char *lvb_bits)
+> +			      void *lvb_bits)
+>  {
+>  	uint32_t gen;
+>  	memcpy(ls->ls_control_lvb, lvb_bits, GDLM_LVB_SIZE);
+> @@ -481,11 +481,11 @@ static void control_lvb_write(struct lm_lockstruct *ls, uint32_t lvb_gen,
+>  	memcpy(ls->ls_control_lvb, &gen, sizeof(uint32_t));
+>  }
+>  
+> -static int all_jid_bits_clear(char *lvb)
+> +static int all_jid_bits_clear(void *lvb)
+>  {
+>  	int i;
+>  	for (i = JID_BITMAP_OFFSET; i < GDLM_LVB_SIZE; i++) {
+> -		if (lvb[i])
+> +		if (((char *)lvb)[i])
+>  			return 0;
+>  	}
+>  	return 1;
+> @@ -580,7 +580,7 @@ static void gfs2_control_func(struct work_struct *work)
+>  {
+>  	struct gfs2_sbd *sdp = container_of(work, struct gfs2_sbd, sd_control_work.work);
+>  	struct lm_lockstruct *ls = &sdp->sd_lockstruct;
+> -	char lvb_bits[GDLM_LVB_SIZE];
+> +	DECLARE_BITMAP(lvb_bits, GDLM_LVB_SIZE * BITS_PER_BYTE);
+>  	uint32_t block_gen, start_gen, lvb_gen, flags;
+>  	int recover_set = 0;
+>  	int write_lvb = 0;
+> @@ -758,7 +758,7 @@ static void gfs2_control_func(struct work_struct *work)
+>  static int control_mount(struct gfs2_sbd *sdp)
+>  {
+>  	struct lm_lockstruct *ls = &sdp->sd_lockstruct;
+> -	char lvb_bits[GDLM_LVB_SIZE];
+> +	DECLARE_BITMAP(lvb_bits, GDLM_LVB_SIZE * BITS_PER_BYTE);
+>  	uint32_t start_gen, block_gen, mount_gen, lvb_gen;
+>  	int mounted_mode;
+>  	int retries = 0;
+> @@ -949,7 +949,7 @@ static int dlm_recovery_wait(void *word)
+>  static int control_first_done(struct gfs2_sbd *sdp)
+>  {
+>  	struct lm_lockstruct *ls = &sdp->sd_lockstruct;
+> -	char lvb_bits[GDLM_LVB_SIZE];
+> +	DECLARE_BITMAP(lvb_bits, GDLM_LVB_SIZE * BITS_PER_BYTE);
+>  	uint32_t start_gen, block_gen;
+>  	int error;
+>  
 
-Right, but we want this one to just go away. It got superceded by the
-UMH upcall and probably shouldn't have been merged in the first place
-(mea culpa). That'll get ripped out when the 3.10 merge window opens,
-so we don't really want to encourage anyone to use it.
 
-> 2) Legacy tracker uses path. All is great and simple until we imagine two containers with the same root. In this case we have to make sure, that we can start 
-> only one NFSd with this path (I don't care about user-space problems).
-> I was thinking about global in-kernel RB tree for all paths. But maybe even a simple global list is enough (not so many NFSd can be started, and it not a 
-> fast-path to optimise the search over all used paths).
-> 
-
-Well, you have a path, sure. In principle you could make that path
-relative to the correct namespace for each server, and maybe allow this
-to be settable on a per-namespace basis.
-
-That said, it's probably best not to put to much effort into this
-either. We want to eventually deprecate the legacy tracker too. So
-limiting its use to the "init" namespace seems like a reasonable
-stopgap fix, IMO...
-
-> 3) UMH lookup and execute binary from current root. This problem just chasing all the containerisation work. So, either UHM logic have to updated (which is not 
-> trivial or easy to implement and push upstream), or process root have to swapped to the right (container's) one. This, BTW, not that hard, because UMH call 
-> accept "init" callback, which can be used to swap the root right before do_execve() is called.
-> 
-> What do you, guys, think about all this?
-> 
-
-You mean just change to use call_usermodehelper_fns() and pass in the
-correct namespace info? Yeah that looks like the easiest fix and sounds
-quite reasonable.
-
--- 
-Jeff Layton <jlayton@redhat.com>
