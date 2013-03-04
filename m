@@ -1,192 +1,227 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932768Ab3CDWFS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 17:05:18 -0500
-Received: from mail-ia0-f174.google.com ([209.85.210.174]:56955 "EHLO
-	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751792Ab3CDWFO (ORCPT
+	id S1758880Ab3CDWGg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 17:06:36 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:53416 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751792Ab3CDWGf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 17:05:14 -0500
-Date: Mon, 4 Mar 2013 17:05:35 -0500
-From: Matt Porter <mporter@ti.com>
-To: Sekhar Nori <nsekhar@ti.com>
-Cc: Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Benoit Cousson <b-cousson@ti.com>, Arnd Bergmann <arnd@arndb.de>,
-        Linux Documentation List <linux-doc@vger.kernel.org>,
-        Tony Lindgren <tony@atomide.com>,
-        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Vinod Koul <vinod.koul@intel.com>, Rob Landley <rob@landley.net>,
-        Dan Williams <djbw@fb.com>,
-        Linux SPI Devel List 
-	<spi-devel-general@lists.sourceforge.net>,
-        Chris Ball <cjb@laptop.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v7 01/10] ARM: davinci: move private EDMA API to
- arm/common
-Message-ID: <20130304220535.GF6209@beef>
-References: <1359742975-10421-1-git-send-email-mporter@ti.com>
- <1359742975-10421-2-git-send-email-mporter@ti.com>
- <511673E1.7000908@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <511673E1.7000908@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 4 Mar 2013 17:06:35 -0500
+X-IronPort-AV: E=Sophos;i="4.84,783,1355126400"; 
+   d="scan'208";a="27428721"
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: David Brown <davidb@codeaurora.org>, Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH] ARM: msm: Concentrate defconfig on DT supported devices
+Date: Mon,  4 Mar 2013 14:06:31 -0800
+Message-Id: <1362434791-22494-1-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.7.9.7.1.ge545
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 09, 2013 at 09:35:53PM +0530, Sekhar Nori wrote:
-> Hi Matt,
-> 
-> This version introduces build/bisect issues.
+Make msm_defconfig more focused on DT devices, i.e. MSM8660 and
+MSM8960. This will encourage us to focus our efforts on the
+devicetree-ification of mach-msm, and help us catch build errors
+quicker.
 
-Ok, see later comment which addresses this...
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+---
 
-> On 2/1/2013 11:52 PM, Matt Porter wrote:
-> > Move mach-davinci/dma.c to common/edma.c so it can be used
-> > by OMAP (specifically AM33xx) as well.
-> > 
-> > Signed-off-by: Matt Porter <mporter@ti.com>
-> > Acked-by: Sekhar Nori <nsekhar@ti.com>
-> 
-> > diff --git a/arch/arm/mach-davinci/dma.c b/arch/arm/common/edma.c
-> 
-> > @@ -25,7 +25,7 @@
-> >  #include <linux/io.h>
-> >  #include <linux/slab.h>
-> >  
-> > -#include <mach/edma.h>
-> > +#include <linux/platform_data/edma.h>
-> 
-> >  /*-----------------------------------------------------------------------*/
-> > +static int edma_of_read_u32_to_s8_array(const struct device_node *np,
-> > +					 const char *propname, s8 *out_values,
-> > +					 size_t sz)
-> > +{
-> > +	int ret;
-> > +
-> > +	ret = of_property_read_u8_array(np, propname, out_values, sz);
-> 
-> This needs <linux/of.h> to be included in this file.
-> 
-> > +static int edma_xbar_event_map(struct device *dev,
-> > +			       struct device_node *node,
-> > +			       struct edma_soc_info *pdata, int len)
-> > +{
-> > +	int ret = 0;
-> > +	int i;
-> > +	struct resource res;
-> > +	void *xbar;
-> > +	const s16 (*xbar_chans)[2];
-> > +	u32 shift, offset, mux;
-> > +
-> > +	xbar_chans = devm_kzalloc(dev,
-> > +				  len/sizeof(s16) + 2*sizeof(s16),
-> > +				  GFP_KERNEL);
-> > +	if (!xbar_chans)
-> > +		return -ENOMEM;
-> > +
-> > +	ret = of_address_to_resource(node, 1, &res);
-> 
-> of_address_to_resource() needs <linux/of_address.h>
-> 
-> > +	if (IS_ERR_VALUE(ret))
-> 
-> This needs <linux/err.h>
-> 
-> > +		return -EIO;
-> > +
-> > +	xbar = devm_ioremap(dev, res.start, resource_size(&res));
-> > +	if (!xbar)
-> > +		return -ENOMEM;
-> > +
-> > +	ret = edma_of_read_u32_to_s16_array(node,
-> > +					    "ti,edma-xbar-event-map",
-> > +					    (s16 *)xbar_chans,
-> > +					    len/sizeof(u32));
-> > +	if (IS_ERR_VALUE(ret))
-> > +		return -EIO;
-> > +
-> > +	for (i = 0; xbar_chans[i][0] != -1; i++) {
-> > +		shift = (xbar_chans[i][1] % 4) * 8;
-> > +		offset = xbar_chans[i][1] >> 2;
-> > +		offset <<= 2;
-> > +		mux = readl((void *)((u32)xbar + offset));
-> > +		mux &= ~(0xff << shift);
-> > +		mux |= xbar_chans[i][0] << shift;
-> > +		writel(mux, (void *)((u32)xbar + offset));
-> > +	}
-> > +
-> > +	pdata->xbar_chans = xbar_chans;
-> 
-> There is no member xbar_chans ATM. It seems to be introduced in 03/10.
-> 
-> > +
-> > +static struct of_dma_filter_info edma_filter_info = {
-> 
-> of_dma_filter_info needs <linux/of_dma.h>.
-> 
-> > +	.filter_fn = edma_filter_fn,
-> 
-> edma_filter_fn needs <linux/edma.h>
-> 
-> BTW, I am not sure if you really intended to introduce EDMA DT support
-> in this patch. I thought 1/10 was supposed to just move EDMA private API
-> to a common place. If you really want to introduce DT support as well,
-> that should be noted in the description. I think it is better done in a
-> later patch.
+This is a dump of my 8660/8960 defconfig with most of the kernel hacking
+options stripped out.
 
-This was a complete fubared rebase for this patch. As you noticed, I
-got hunks from 3/10 in there and the bisect test didn't run so it was
-missed. I've got this fixed up for v8 which address all these comments
-that stem from that issue.
+ arch/arm/configs/msm_defconfig |  153 ++++++++++++++++++++++++++++------------
+ 1 file changed, 108 insertions(+), 45 deletions(-)
 
-> > diff --git a/sound/soc/davinci/davinci-sffsdr.c b/sound/soc/davinci/davinci-sffsdr.c
-> 
-> > @@ -17,6 +17,7 @@
-> >  #include <linux/timer.h>
-> >  #include <linux/interrupt.h>
-> >  #include <linux/platform_device.h>
-> > +#include <linux/platform_data/edma.h>
-> >  #include <linux/gpio.h>
-> >  #include <sound/core.h>
-> >  #include <sound/pcm.h>
-> > @@ -28,12 +29,14 @@
-> >  #include <asm/plat-sffsdr/sffsdr-fpga.h>
-> >  #endif
-> >  
-> > -#include <mach/edma.h>
-> >  
-> >  #include "../codecs/pcm3008.h"
-> >  #include "davinci-pcm.h"
-> >  #include "davinci-i2s.h"
-> >  
-> > +#define DAVINCI_DMA_MCBSP_TX	2
-> > +#define DAVINCI_DMA_MCBSP_RX	3
-> > +
-> >  /*
-> >   * CLKX and CLKR are the inputs for the Sample Rate Generator.
-> >   * FSX and FSR are outputs, driven by the sample Rate Generator.
-> > @@ -124,7 +127,7 @@ static struct resource sffsdr_snd_resources[] = {
-> >  
-> >  static struct evm_snd_platform_data sffsdr_snd_data = {
-> >  	.tx_dma_ch	= DAVINCI_DMA_MCBSP_TX,
-> > -	.rx_dma_ch	= DAVINCI_DMA_MCBSP_RX,
-> 
-> > +	.rx_dma_ch	= DAVINCI_DMA_MCBAP_RX,
-> 
-> Typo here. Should be DAVINCI_DMA_MCBSP_RX. Unfortunately
-> davinci-sffsdr.c seems to be broken already.
+diff --git a/arch/arm/configs/msm_defconfig b/arch/arm/configs/msm_defconfig
+index 2b8f7af..3a5e519 100644
+--- a/arch/arm/configs/msm_defconfig
++++ b/arch/arm/configs/msm_defconfig
+@@ -1,72 +1,135 @@
+-CONFIG_EXPERIMENTAL=y
++CONFIG_SYSVIPC=y
++CONFIG_NO_HZ=y
++CONFIG_HIGH_RES_TIMERS=y
+ CONFIG_IKCONFIG=y
+ CONFIG_IKCONFIG_PROC=y
+ CONFIG_BLK_DEV_INITRD=y
+-CONFIG_SLAB=y
+-# CONFIG_BLK_DEV_BSG is not set
+-# CONFIG_IOSCHED_DEADLINE is not set
+-# CONFIG_IOSCHED_CFQ is not set
++CONFIG_SYSCTL_SYSCALL=y
++CONFIG_KALLSYMS_ALL=y
++CONFIG_EMBEDDED=y
++# CONFIG_SLUB_DEBUG is not set
++# CONFIG_COMPAT_BRK is not set
++CONFIG_PROFILING=y
++CONFIG_OPROFILE=y
++CONFIG_KPROBES=y
++CONFIG_MODULES=y
++CONFIG_MODULE_UNLOAD=y
++CONFIG_MODULE_FORCE_UNLOAD=y
++CONFIG_MODVERSIONS=y
++CONFIG_PARTITION_ADVANCED=y
+ CONFIG_ARCH_MSM=y
+-CONFIG_MACH_HALIBUT=y
+-CONFIG_NO_HZ=y
+-CONFIG_HIGH_RES_TIMERS=y
++CONFIG_ARCH_MSM8X60=y
++CONFIG_ARCH_MSM8960=y
++CONFIG_SMP=y
+ CONFIG_PREEMPT=y
+ CONFIG_AEABI=y
+-# CONFIG_OABI_COMPAT is not set
+-CONFIG_ZBOOT_ROM_TEXT=0x0
+-CONFIG_ZBOOT_ROM_BSS=0x0
+-CONFIG_CMDLINE="mem=64M console=ttyMSM,115200n8"
+-CONFIG_PM=y
++CONFIG_HIGHMEM=y
++CONFIG_HIGHPTE=y
++CONFIG_CLEANCACHE=y
++CONFIG_CC_STACKPROTECTOR=y
++CONFIG_ARM_APPENDED_DTB=y
++CONFIG_ARM_ATAG_DTB_COMPAT=y
++CONFIG_AUTO_ZRELADDR=y
++CONFIG_VFP=y
++CONFIG_NEON=y
++# CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS is not set
+ CONFIG_NET=y
++CONFIG_PACKET=y
+ CONFIG_UNIX=y
+ CONFIG_INET=y
++CONFIG_IP_ADVANCED_ROUTER=y
++CONFIG_IP_MULTIPLE_TABLES=y
++CONFIG_IP_ROUTE_VERBOSE=y
++CONFIG_IP_PNP=y
++CONFIG_IP_PNP_DHCP=y
+ # CONFIG_INET_XFRM_MODE_TRANSPORT is not set
+ # CONFIG_INET_XFRM_MODE_TUNNEL is not set
+ # CONFIG_INET_XFRM_MODE_BEET is not set
+-# CONFIG_INET_DIAG is not set
++# CONFIG_INET_LRO is not set
+ # CONFIG_IPV6 is not set
+-CONFIG_MTD=y
+-CONFIG_MTD_PARTITIONS=y
+-CONFIG_MTD_CMDLINE_PARTS=y
+-CONFIG_MTD_CHAR=y
+-CONFIG_MTD_BLOCK=y
++CONFIG_CFG80211=y
++CONFIG_RFKILL=y
++CONFIG_BLK_DEV_LOOP=y
++CONFIG_BLK_DEV_RAM=y
++CONFIG_SCSI=y
++CONFIG_SCSI_TGT=y
++CONFIG_BLK_DEV_SD=y
++CONFIG_CHR_DEV_SG=y
++CONFIG_CHR_DEV_SCH=y
++CONFIG_SCSI_MULTI_LUN=y
++CONFIG_SCSI_CONSTANTS=y
++CONFIG_SCSI_LOGGING=y
++CONFIG_SCSI_SCAN_ASYNC=y
+ CONFIG_NETDEVICES=y
+ CONFIG_DUMMY=y
+-CONFIG_NET_ETHERNET=y
+-CONFIG_SMC91X=y
+-CONFIG_PPP=y
+-CONFIG_PPP_ASYNC=y
+-CONFIG_PPP_DEFLATE=y
+-CONFIG_PPP_BSDCOMP=y
+-# CONFIG_INPUT_MOUSEDEV_PSAUX is not set
++CONFIG_PHYLIB=y
++CONFIG_SLIP=y
++CONFIG_SLIP_COMPRESSED=y
++CONFIG_SLIP_MODE_SLIP6=y
++CONFIG_USB_USBNET=y
++# CONFIG_USB_NET_AX8817X is not set
++# CONFIG_USB_NET_ZAURUS is not set
+ CONFIG_INPUT_EVDEV=y
+ # CONFIG_KEYBOARD_ATKBD is not set
+-# CONFIG_INPUT_MOUSE is not set
++# CONFIG_MOUSE_PS2 is not set
++CONFIG_INPUT_JOYSTICK=y
+ CONFIG_INPUT_TOUCHSCREEN=y
+ CONFIG_INPUT_MISC=y
+-# CONFIG_SERIO is not set
+-CONFIG_VT_HW_CONSOLE_BINDING=y
++CONFIG_INPUT_UINPUT=y
++CONFIG_SERIO_LIBPS2=y
++# CONFIG_LEGACY_PTYS is not set
+ CONFIG_SERIAL_MSM=y
+ CONFIG_SERIAL_MSM_CONSOLE=y
+-# CONFIG_LEGACY_PTYS is not set
+-# CONFIG_HW_RANDOM is not set
++CONFIG_HW_RANDOM=y
+ CONFIG_I2C=y
+-# CONFIG_HWMON is not set
+-CONFIG_VIDEO_OUTPUT_CONTROL=y
++CONFIG_I2C_CHARDEV=y
++CONFIG_SPI=y
++CONFIG_DEBUG_GPIO=y
++CONFIG_GPIO_SYSFS=y
++CONFIG_POWER_SUPPLY=y
++CONFIG_THERMAL=y
++CONFIG_REGULATOR=y
++CONFIG_MEDIA_SUPPORT=y
+ CONFIG_FB=y
+-CONFIG_FB_MODE_HELPERS=y
+-CONFIG_FB_TILEBLITTING=y
+-CONFIG_FB_MSM=y
+-# CONFIG_VGA_CONSOLE is not set
+-CONFIG_FRAMEBUFFER_CONSOLE=y
++CONFIG_SOUND=y
++CONFIG_SND=y
++CONFIG_SND_DYNAMIC_MINORS=y
++# CONFIG_SND_ARM is not set
++# CONFIG_SND_SPI is not set
++# CONFIG_SND_USB is not set
++CONFIG_SND_SOC=y
++CONFIG_HID_BATTERY_STRENGTH=y
++CONFIG_USB=y
++CONFIG_USB_ANNOUNCE_NEW_DEVICES=y
++CONFIG_USB_MON=y
++CONFIG_USB_EHCI_HCD=y
++CONFIG_USB_EHCI_MSM=y
++CONFIG_USB_ACM=y
++CONFIG_USB_SERIAL=y
++CONFIG_USB_GADGET=y
++CONFIG_USB_GADGET_DEBUG_FILES=y
++CONFIG_USB_GADGET_VBUS_DRAW=500
+ CONFIG_NEW_LEDS=y
+-CONFIG_LEDS_CLASS=y
+-CONFIG_INOTIFY=y
++CONFIG_RTC_CLASS=y
++CONFIG_STAGING=y
++CONFIG_MSM_IOMMU=y
++CONFIG_EXT2_FS=y
++CONFIG_EXT2_FS_XATTR=y
++CONFIG_EXT3_FS=y
++# CONFIG_EXT3_DEFAULTS_TO_ORDERED is not set
++CONFIG_EXT4_FS=y
++CONFIG_FUSE_FS=y
++CONFIG_VFAT_FS=y
+ CONFIG_TMPFS=y
++CONFIG_NFS_FS=y
++CONFIG_NFS_V3_ACL=y
++CONFIG_NFS_V4=y
++CONFIG_CIFS=y
++CONFIG_PRINTK_TIME=y
+ CONFIG_MAGIC_SYSRQ=y
+-CONFIG_DEBUG_KERNEL=y
+-CONFIG_SCHEDSTATS=y
+-CONFIG_DEBUG_MUTEXES=y
+-CONFIG_DEBUG_SPINLOCK_SLEEP=y
++CONFIG_LOCKUP_DETECTOR=y
++# CONFIG_DETECT_HUNG_TASK is not set
++# CONFIG_SCHED_DEBUG is not set
++CONFIG_TIMER_STATS=y
+ CONFIG_DEBUG_INFO=y
+-CONFIG_DEBUG_LL=y
++CONFIG_DYNAMIC_DEBUG=y
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
 
-Ok, fixed..definitely shouldn't break it more.
-
--Matt
