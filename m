@@ -1,66 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932357Ab3CDUa5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 15:30:57 -0500
-Received: from moutng.kundenserver.de ([212.227.17.9]:50594 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758577Ab3CDUaz (ORCPT
+	id S932450Ab3CDUbS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 15:31:18 -0500
+Received: from zimbra.linbit.com ([212.69.161.123]:49013 "EHLO
+	zimbra.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932375Ab3CDUbR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 15:30:55 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Subject: Re: [PATCH 05/32] lib: devres: don't enclose pcim_*() functions in CONFIG_HAS_IOPORT
-Date: Mon, 4 Mar 2013 20:30:01 +0000
-User-Agent: KMail/1.12.2 (Linux/3.8.0-8-generic; KDE/4.3.2; x86_64; ; )
-Cc: Lior Amsalem <alior@marvell.com>, Andrew Lunn <andrew@lunn.ch>,
-        "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Tawfik Bayouk <tawfik@marvell.com>,
-        Stephen Warren <swarren@wwwdotorg.org>, linux-pci@vger.kernel.org,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        linux-kernel@vger.kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>,
-        "Eran Ben-Avi" <benavi@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
-        Maen Suleiman <maen@marvell.com>, Shadi Ammouri <shadi@marvell.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Yinghai Lu <yinghai@kernel.org>, linux-arm-kernel@lists.infradead.org,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-References: <1360686546-24277-1-git-send-email-thomas.petazzoni@free-electrons.com> <201302122236.37491.arnd@arndb.de> <20130304172850.5e18fbfb@skate>
-In-Reply-To: <20130304172850.5e18fbfb@skate>
+	Mon, 4 Mar 2013 15:31:17 -0500
+From: Philipp Reisner <philipp.reisner@linbit.com>
+To: Alexey Khoroshilov <khoroshilov@ispras.ru>
+Cc: Lars Ellenberg <drbd-dev@lists.linbit.com>, drbd-user@lists.linbit.com,
+        linux-kernel@vger.kernel.org, ldv-project@linuxtesting.org
+Subject: Re: [PATCH] drbd: add module_put() on error path in drbd_proc_open()
+Date: Mon, 04 Mar 2013 21:31:09 +0100
+Message-ID: <9738633.yZ4agRkgQF@quad>
+User-Agent: KMail/4.8.5 (Linux/3.2.0-35-generic; KDE/4.8.5; x86_64; ; )
+In-Reply-To: <1362173982-26454-1-git-send-email-khoroshilov@ispras.ru>
+References: <1362173982-26454-1-git-send-email-khoroshilov@ispras.ru>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201303042030.01817.arnd@arndb.de>
-X-Provags-ID: V02:K0:HqviucrZdduFbgR6tZVVC0HyCbkoFoxyy2SE45n8fIm
- gOcJgIVnrPaZAPH0/F6um11WhY+0oHGrmzRwC97zNKXdJKaNfG
- ObayikwWU92MZGN5poVXDQNMWew2411EuV7b/84jq9d4fo2zqf
- FwGeg5GN5VG/H909twflJ6pQuVRmEdlLuldhB31xYUxeItclOv
- DpZNLE6OJZTPwjPx2IdIfd0XFXyO5T71Pnt1LWU+FBF2zQKCZq
- foxfv66RClfeBhK8UsPs/uYabLpul4zFlIK8Hh2nkZRy7y9fGn
- shyDIafJOfewjVvrLdYYZq7EUkOhIPscIfGo3u6iaUno+TNvZC
- ZxMqW3/Pg/wGrXrH/F+o=
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 04 March 2013, Thomas Petazzoni wrote:
-> FWIW, a patch that is doing what I was initially proposing has been
-> merged for 3.9, and it doesn't contain the
-> IS_ENABLED(CONFIG_HAS_IOPORT) test you were proposing (and which I
-> think was correct). See:
+Hi Alexey,
+
+Thanks a lot! I have put it into our tree.
+http://git.drbd.org/gitweb.cgi?p=drbd-8.4.git
+
+I intend to get it into the 3.10 merge window.
+
+Best,
+ Phil
+
+> If single_open() fails in drbd_proc_open(), module refcount is left
+> incremented. The patch adds module_put() on the error path.
 > 
-> commit 9ed8a30f3471347c1b763bd062fa78ae80f18eae
-> Author: Jingoo Han <jg1.han@samsung.com>
-> Date:   Wed Feb 27 17:02:42 2013 -0800
+> Found by Linux Driver Verification project (linuxtesting.org).
 > 
-
-Sigh.
-
-I'll take it as an additional incentive to finally clean up the logic behind
-CONFIG_HAS_IOPORT by introducing a CONFIG_HAS_IOPORT_MAP symbol to replace it.
-
-Thanks for the heads up.
-
-	Arnd
+> Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+> ---
+>  drivers/block/drbd/drbd_proc.c |   10 ++++++++--
+>  1 file changed, 8 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/block/drbd/drbd_proc.c b/drivers/block/drbd/drbd_proc.c
+> index 56672a6..30fe0a5 100644
+> --- a/drivers/block/drbd/drbd_proc.c
+> +++ b/drivers/block/drbd/drbd_proc.c
+> @@ -313,8 +313,14 @@ static int drbd_seq_show(struct seq_file *seq, void *v)
+> 
+>  static int drbd_proc_open(struct inode *inode, struct file *file)
+>  {
+> -	if (try_module_get(THIS_MODULE))
+> -		return single_open(file, drbd_seq_show, PDE(inode)->data);
+> +	int err;
+> +
+> +	if (try_module_get(THIS_MODULE)) {
+> +		err = single_open(file, drbd_seq_show, PDE(inode)->data);
+> +		if (err)
+> +			module_put(THIS_MODULE);
+> +		return err;
+> +	}
+>  	return -ENODEV;
+>  }
