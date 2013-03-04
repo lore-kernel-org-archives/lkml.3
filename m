@@ -1,41 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758485Ab3CDP4i (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 10:56:38 -0500
-Received: from mail-ea0-f180.google.com ([209.85.215.180]:51952 "EHLO
-	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757741Ab3CDP4g (ORCPT
+	id S1758508Ab3CDP5Q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 10:57:16 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:44971 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1758371Ab3CDP5O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 10:56:36 -0500
-From: Peter Wu <lekensteyn@gmail.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Len Brown <lenb@kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] PCI / ACPI: Rework ACPI device nodes lookup for the PCI bus type
-Date: Mon, 04 Mar 2013 16:56:32 +0100
-Message-ID: <3708737.8uVhOFRC2j@al>
-User-Agent: KMail/4.10 (Linux/3.8.0-2-custom; KDE/4.10.0; x86_64; ; )
-In-Reply-To: <3268331.1fmya6KvOh@vostro.rjw.lan>
-References: <16168955.038G1kVfN2@vostro.rjw.lan> <4892526.yENRuuZvDT@al> <3268331.1fmya6KvOh@vostro.rjw.lan>
+	Mon, 4 Mar 2013 10:57:14 -0500
+Date: Mon, 4 Mar 2013 10:57:14 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Felipe Balbi <balbi@ti.com>
+cc: Vivek Gautam <gautam.vivek@samsung.com>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-samsung-soc@vger.kernel.org>, <gregkh@linuxfoundation.org>,
+        <sarah.a.sharp@linux.intel.com>, <kgene.kim@samsung.com>,
+        <kishon@ti.com>, Doug Anderson <dianders@chromium.org>
+Subject: Re: [PATCH v2 06/10] usb: xhci: Enable runtime pm in xhci-plat
+In-Reply-To: <20130302232132.GB14558@arwen.pp.htv.fi>
+Message-ID: <Pine.LNX.4.44L0.1303041038390.1750-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 23 January 2013 20:12:59 Rafael J. Wysocki wrote:
-> On Wednesday, January 23, 2013 08:00:31 PM Peter Wu wrote:
-> > Hi,
-> > 
-> > Any progress on this one? I guess it won't make into 3.8, perhaps 3.9?
-> 
-> No, that doesn't go anywhere for now.
-> 
-> In fact, I need to discuss that with Len.
-Is this patch still valid? If not, what patch do you suggest for users of the 
-affected Lenovo machines? (please CC me in a related discussion)
+On Sun, 3 Mar 2013, Felipe Balbi wrote:
 
-Regards,
-Peter
+> > > this is good point and, in fact, a doubt I have myself. How are we
+> > > supposed to check if device is suspended ? In case it _is_ suspended we
+> > > might not be able to read device's registers due to clocks possibly
+> > > being gated.
+> > 
+> > That's really a separate question.  It has a simple answer, though: If 
+> > you want to access a device's registers, call pm_runtime_get_sync() 
+> > beforehand and pm_runtime_put() (or _put_sync()) afterward.  Then it 
+> > won't matter if the device was suspended originally.
+> 
+> that's alright, but how do you want me to check if my device is enabled
+> or not before pm_runtime_enable() ?
+
+You're not supposed to check.  Just make sure your own 
+pm_runtime_enable() and _disable() calls are done correctly, and let 
+the PM core worry about the rest.  :-)
+
+More to the point, the question of what code enables a device for
+runtime PM is decided by the subsystem.  Many subsystems will do it
+automatically so that their drivers don't have to worry about it.  
+Other subsystems will leave it entirely up to the drivers.  You have to
+know what the subsystem wants.
+
+In this case, it's appropriate to do the enable here in the probe
+routine because the platform core doesn't do it for you.  This also
+means the driver should disable the device in the remove routine.
+
+> > I don't know much about clock handling.  In general, the
+> > pm_runtime_set_active() and pm_runtime_enable() parts should be done by
+> > the subsystem, not the driver, whenever possible.
+> 
+> good to know :-) Though I disagree with calling pm_runtime_enable() at
+> the subsystem level.
+
+It depends on the subsystem.  For some (like the USB host subsystem),
+it is appropriate.
+
+> > Whichever piece of code is responsible for associating a clock with a
+> > device should also be responsible for making sure that neither is
+> > suspended when the driver's probe routine runs.  I'm not sure how 
+> > different platforms do this; using a PM domain could be one answer.
+> 
+> that's alright, but it generates a different set of problems. That same
+> piece of code which associates a device with its clock, doesn't really
+> know if the driver is even available which means we could be enabling
+> clocks for no reason and just wasting precious battery juice ;-)
+
+Better than wasting our precious bodily fluids...  :-)
+
+I guess the best answer is to set up the association but then leave the
+device and clocks in a runtime-suspended status.  Then do a
+pm_runtime_get_sync() just before calling the driver's probe routine
+and a pm_runtime_put_sync() just after calling the remove routine.  
+That should leave the device and the clocks in the state the driver
+expects.  (But be careful that these two calls don't invoke the
+driver's runtime-PM callbacks!)
+
+Probably nobody has thought these problems through very carefully for 
+the platform subsystem.  Nevertheless, that's where the decisions need 
+to be made.
+
+Alan Stern
+
