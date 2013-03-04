@@ -1,51 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758251Ab3CDPVh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 10:21:37 -0500
-Received: from mail-ee0-f52.google.com ([74.125.83.52]:61226 "EHLO
-	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757041Ab3CDPVg (ORCPT
+	id S1758271Ab3CDPYG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 10:24:06 -0500
+Received: from mail-da0-f54.google.com ([209.85.210.54]:50382 "EHLO
+	mail-da0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757041Ab3CDPYF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 10:21:36 -0500
-Message-ID: <5134BBFC.2050907@suse.cz>
-Date: Mon, 04 Mar 2013 16:21:32 +0100
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:19.0) Gecko/20130124 Thunderbird/19.0
-MIME-Version: 1.0
-To: =?UTF-8?B?TWloYWkgRG9uyJt1?= <mihai.dontu@gmail.com>,
-        linux-kernel@vger.kernel.org
-CC: e1000-devel@lists.sourceforge.net
-Subject: Re: e1000e: nic does not work properly after cold power on
-References: <20130304124631.2ac730f3@mdontu-l.dsd.ro>
-In-Reply-To: <20130304124631.2ac730f3@mdontu-l.dsd.ro>
-X-Enigmail-Version: 1.6a1pre
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Mon, 4 Mar 2013 10:24:05 -0500
+Message-ID: <1362410642.15793.95.camel@edumazet-glaptop>
+Subject: Re: [PATCH 1/1] reset nf before xmit vxlan encapsulated packet
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Zang MingJie <zealot0630@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Date: Mon, 04 Mar 2013 07:24:02 -0800
+In-Reply-To: <1362406139-29135-1-git-send-email-zealot0630@gmail.com>
+References: <1362406139-29135-1-git-send-email-zealot0630@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/04/2013 11:46 AM, Mihai Donțu wrote:
-> Hi,
+On Mon, 2013-03-04 at 22:08 +0800, Zang MingJie wrote:
+> We should reset nf settings bond to the skb as ipip/ipgre do.
 > 
-> I apologize in advance for posting on two lists at once and for not
-> even being subscribed to e1000-devel.
+> If not, the conntrack/nat info bond to the origin packet may continually
+> redirect the packet to vxlan interface causing a routing loop.
 > 
-> Ever since upgrading to 3.8.x, I'm unable to use my wired connection
-> (e1000e - Intel Corporation 82579LM Gigabit) immediately after power
-> on. I have to boot into an older kernel (3.2.0 I happen to have around)
-> and _then_ boot into 3.8.1. There are no errors in dmesg that I can
-> see. The only one behaving strangely is NetworkManager who simply says
-> the device is managed and skips it. Also, there's no 'link becomes
-> ready' in dmesg either (and I swear the cable is plugged in).
+> this is the scenario:
 > 
-> Has anyone else encountered this?
+>      VETP     VXLAN Gateway
+>     /----\  /---------------\
+>     |    |  |               |
+>     |  vx+--+vx --NAT-> eth0+--> Internet
+>     |    |  |               |
+>     \----/  \---------------/
+> 
+> when there are any packet coming from internet to the vetp, there will be lots
+> of garbage packets coming out the gateway's vxlan interface, but none actually
+> sent to the physical interface, because they are redirected back to the vxlan
+> interface in the postrouting chain of NAT rule, and dmesg complains:
+> 
+>     Mar  1 21:52:53 debian kernel: [ 8802.997699] Dead loop on virtual device vxlan0, fix it urgently!
+>     Mar  1 21:52:54 debian kernel: [ 8804.004907] Dead loop on virtual device vxlan0, fix it urgently!
+>     Mar  1 21:52:55 debian kernel: [ 8805.012189] Dead loop on virtual device vxlan0, fix it urgently!
+>     Mar  1 21:52:56 debian kernel: [ 8806.020593] Dead loop on virtual device vxlan0, fix it urgently!
+> 
+> the patch should fix the problem
+> 
+> Signed-off-by: Zang MingJie <zealot0630@gmail.com>
+> ---
+>  drivers/net/vxlan.c |    2 ++
+>  1 file changed, 2 insertions(+)
+> 
+> diff --git a/drivers/net/vxlan.c b/drivers/net/vxlan.c
+> index f10e58a..c3e3d29 100644
+> --- a/drivers/net/vxlan.c
+> +++ b/drivers/net/vxlan.c
+> @@ -961,6 +961,8 @@ static netdev_tx_t vxlan_xmit(struct sk_buff *skb, struct net_device *dev)
+>  	iph->ttl	= ttl ? : ip4_dst_hoplimit(&rt->dst);
+>  	tunnel_ip_select_ident(skb, old_iph, &rt->dst);
+>  
+> +	nf_reset(skb);
+> +
+>  	vxlan_set_owner(dev, skb);
+>  
+>  	/* See iptunnel_xmit() */
 
-Hi, I think so:
-http://lists.opensuse.org/opensuse-factory/2013-03/msg00099.html
 
-(I have no idea what the issue is, just adding another report.)
+As mentioned in MAINTAINERS file, networking patches should be sent to :
 
--- 
-js
-suse labs
+M:      "David S. Miller" <davem@davemloft.net>
+L:      netdev@vger.kernel.org
+
+Thanks !
+
+
