@@ -1,267 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755256Ab3CDDm3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 22:42:29 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60720 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754960Ab3CDDm0 (ORCPT
+	id S1755516Ab3CDEWj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 23:22:39 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:57513 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755321Ab3CDEWi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Mar 2013 22:42:26 -0500
-Message-Id: <20130304033708.557694317@decadent.org.uk>
-User-Agent: quilt/0.60-1
-Date: Mon, 04 Mar 2013 03:37:16 +0000
-From: Ben Hutchings <ben@decadent.org.uk>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Theodore Tso <tytso@mit.edu>
-Subject: [ 009/153] ext4: return ENOMEM if sb_getblk() fails
-In-Reply-To: <20130304033707.648729212@decadent.org.uk>
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Sun, 3 Mar 2013 23:22:38 -0500
+Date: Mon, 4 Mar 2013 15:22:22 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: linux-next stats (Was: Linux 3.9-rc1)
+Message-Id: <20130304152222.c0a3d97a4d6e4c5b0e343865@canb.auug.org.au>
+In-Reply-To: <CA+55aFx0HcOXKpxmZzM5jcbAaOroxafomX5ggMFV4A=py1qh-Q@mail.gmail.com>
+References: <CA+55aFx0HcOXKpxmZzM5jcbAaOroxafomX5ggMFV4A=py1qh-Q@mail.gmail.com>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__4_Mar_2013_15_22_22_+1100_mcDwM2B.cl6mSznY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2-stable review patch.  If anyone has any objections, please let me know.
+--Signature=_Mon__4_Mar_2013_15_22_22_+1100_mcDwM2B.cl6mSznY
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-------------------
+On Sun, 3 Mar 2013 16:28:25 -0800 Linus Torvalds <torvalds@linux-foundation=
+.org> wrote:
+>
+> It's been two weeks (ok, thirteen days, but close enough), and the
+> merge window is closed, and I've cut the 3.9-rc1 release.
+>=20
+> I don't know if it's just me, but this merge window had more "Uhhuh"
+> moments than I'm used to. I stopped merging a couple of times, because
+> we had bugs that looked really scary, but thankfully each time people
+> were on them like paparazzi on Justin Bieber. Special thanks to Peter,
+> Ted and Rafael (and the people who reported the bugs too!) for being
+> so responsive. It could have been so much worse.
 
-From: Theodore Ts'o <tytso@mit.edu>
+Well here are this merge windows' stats:
 
-commit 860d21e2c585f7ee8a4ecc06f474fdc33c9474f4 upstream.
+(No merge commits counted, next-20130220 is the linux-next based exactly
+on v3.8)
 
-The only reason for sb_getblk() failing is if it can't allocate the
-buffer_head.  So ENOMEM is more appropriate than EIO.  In addition,
-make sure that the file system is marked as being inconsistent if
-sb_getblk() fails.
+Commits in v3.9-rc1 (relative to v3.8): 10265
+Commits in next-20130220:		 9903
+Commits with the same SHA1:		 8493
+Commits with the same patch_id:		  727	(1)
+Commits with the same subject line:	   80	(1)
 
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-[bwh: Backported to 3.2:
- - Adjust context
- - Drop change to inline.c
- - Call to ext4_ext_check() from ext4_ext_find_extent() is conditional]
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
----
- fs/ext4/extents.c  |   25 ++++++++++++++-----------
- fs/ext4/indirect.c |    9 ++++++---
- fs/ext4/inline.c   |    2 +-
- fs/ext4/inode.c    |    9 +++------
- fs/ext4/mmp.c      |    2 ++
- fs/ext4/resize.c   |    8 ++++----
- fs/ext4/xattr.c    |    3 ++-
- 7 files changed, 32 insertions(+), 26 deletions(-)
+(1) not counting those in the lines above.
 
---- a/fs/ext4/extents.c
-+++ b/fs/ext4/extents.c
-@@ -636,6 +636,7 @@ ext4_ext_find_extent(struct inode *inode
- 	struct ext4_extent_header *eh;
- 	struct buffer_head *bh;
- 	short int depth, i, ppos = 0, alloc = 0;
-+	int ret;
- 
- 	eh = ext_inode_hdr(inode);
- 	depth = ext_depth(inode);
-@@ -665,12 +666,15 @@ ext4_ext_find_extent(struct inode *inode
- 		path[ppos].p_ext = NULL;
- 
- 		bh = sb_getblk(inode->i_sb, path[ppos].p_block);
--		if (unlikely(!bh))
-+		if (unlikely(!bh)) {
-+			ret = -ENOMEM;
- 			goto err;
-+		}
- 		if (!bh_uptodate_or_lock(bh)) {
- 			trace_ext4_ext_load_extent(inode, block,
- 						path[ppos].p_block);
--			if (bh_submit_read(bh) < 0) {
-+			ret = bh_submit_read(bh);
-+			if (ret < 0) {
- 				put_bh(bh);
- 				goto err;
- 			}
-@@ -683,13 +687,15 @@ ext4_ext_find_extent(struct inode *inode
- 			put_bh(bh);
- 			EXT4_ERROR_INODE(inode,
- 					 "ppos %d > depth %d", ppos, depth);
-+			ret = -EIO;
- 			goto err;
- 		}
- 		path[ppos].p_bh = bh;
- 		path[ppos].p_hdr = eh;
- 		i--;
- 
--		if (need_to_validate && ext4_ext_check(inode, eh, i))
-+		ret = need_to_validate ? ext4_ext_check(inode, eh, i) : 0;
-+		if (ret < 0)
- 			goto err;
- 	}
- 
-@@ -711,7 +717,7 @@ err:
- 	ext4_ext_drop_refs(path);
- 	if (alloc)
- 		kfree(path);
--	return ERR_PTR(-EIO);
-+	return ERR_PTR(ret);
- }
- 
- /*
-@@ -866,7 +872,7 @@ static int ext4_ext_split(handle_t *hand
- 	}
- 	bh = sb_getblk(inode->i_sb, newblock);
- 	if (!bh) {
--		err = -EIO;
-+		err = -ENOMEM;
- 		goto cleanup;
- 	}
- 	lock_buffer(bh);
-@@ -938,7 +944,7 @@ static int ext4_ext_split(handle_t *hand
- 		newblock = ablocks[--a];
- 		bh = sb_getblk(inode->i_sb, newblock);
- 		if (!bh) {
--			err = -EIO;
-+			err = -ENOMEM;
- 			goto cleanup;
- 		}
- 		lock_buffer(bh);
-@@ -1049,11 +1055,8 @@ static int ext4_ext_grow_indepth(handle_
- 		return err;
- 
- 	bh = sb_getblk(inode->i_sb, newblock);
--	if (!bh) {
--		err = -EIO;
--		ext4_std_error(inode->i_sb, err);
--		return err;
--	}
-+	if (!bh)
-+		return -ENOMEM;
- 	lock_buffer(bh);
- 
- 	err = ext4_journal_get_create_access(handle, bh);
---- a/fs/ext4/indirect.c
-+++ b/fs/ext4/indirect.c
-@@ -146,6 +146,7 @@ static Indirect *ext4_get_branch(struct
- 	struct super_block *sb = inode->i_sb;
- 	Indirect *p = chain;
- 	struct buffer_head *bh;
-+	int ret = -EIO;
- 
- 	*err = 0;
- 	/* i_data is not going away, no lock needed */
-@@ -154,8 +155,10 @@ static Indirect *ext4_get_branch(struct
- 		goto no_block;
- 	while (--depth) {
- 		bh = sb_getblk(sb, le32_to_cpu(p->key));
--		if (unlikely(!bh))
-+		if (unlikely(!bh)) {
-+			ret = -ENOMEM;
- 			goto failure;
-+		}
- 
- 		if (!bh_uptodate_or_lock(bh)) {
- 			if (bh_submit_read(bh) < 0) {
-@@ -177,7 +180,7 @@ static Indirect *ext4_get_branch(struct
- 	return NULL;
- 
- failure:
--	*err = -EIO;
-+	*err = ret;
- no_block:
- 	return p;
- }
-@@ -471,7 +474,7 @@ static int ext4_alloc_branch(handle_t *h
- 		 */
- 		bh = sb_getblk(inode->i_sb, new_blocks[n-1]);
- 		if (unlikely(!bh)) {
--			err = -EIO;
-+			err = -ENOMEM;
- 			goto failed;
- 		}
- 
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -661,7 +661,7 @@ struct buffer_head *ext4_getblk(handle_t
- 
- 	bh = sb_getblk(inode->i_sb, map.m_pblk);
- 	if (!bh) {
--		*errp = -EIO;
-+		*errp = -ENOMEM;
- 		return NULL;
- 	}
- 	if (map.m_flags & EXT4_MAP_NEW) {
-@@ -3575,11 +3575,8 @@ static int __ext4_get_inode_loc(struct i
- 	iloc->offset = (inode_offset % inodes_per_block) * EXT4_INODE_SIZE(sb);
- 
- 	bh = sb_getblk(sb, block);
--	if (!bh) {
--		EXT4_ERROR_INODE_BLOCK(inode, block,
--				       "unable to read itable block");
--		return -EIO;
--	}
-+	if (!bh)
-+		return -ENOMEM;
- 	if (!buffer_uptodate(bh)) {
- 		lock_buffer(bh);
- 
---- a/fs/ext4/mmp.c
-+++ b/fs/ext4/mmp.c
-@@ -41,6 +41,8 @@ static int read_mmp_block(struct super_b
- 	 * is not blocked in the elevator. */
- 	if (!*bh)
- 		*bh = sb_getblk(sb, mmp_block);
-+	if (!*bh)
-+		return -ENOMEM;
- 	if (*bh) {
- 		get_bh(*bh);
- 		lock_buffer(*bh);
---- a/fs/ext4/resize.c
-+++ b/fs/ext4/resize.c
-@@ -142,7 +142,7 @@ static struct buffer_head *bclean(handle
- 
- 	bh = sb_getblk(sb, blk);
- 	if (!bh)
--		return ERR_PTR(-EIO);
-+		return ERR_PTR(-ENOMEM);
- 	if ((err = ext4_journal_get_write_access(handle, bh))) {
- 		brelse(bh);
- 		bh = ERR_PTR(err);
-@@ -220,7 +220,7 @@ static int setup_new_group_blocks(struct
- 
- 		gdb = sb_getblk(sb, block);
- 		if (!gdb) {
--			err = -EIO;
-+			err = -ENOMEM;
- 			goto exit_journal;
- 		}
- 		if ((err = ext4_journal_get_write_access(handle, gdb))) {
-@@ -694,7 +694,7 @@ static void update_backups(struct super_
- 
- 		bh = sb_getblk(sb, group * bpg + blk_off);
- 		if (!bh) {
--			err = -EIO;
-+			err = -ENOMEM;
- 			break;
- 		}
- 		ext4_debug("update metadata backup %#04lx\n",
---- a/fs/ext4/xattr.c
-+++ b/fs/ext4/xattr.c
-@@ -839,16 +839,17 @@ inserted:
- 
- 			new_bh = sb_getblk(sb, block);
- 			if (!new_bh) {
-+				error = -ENOMEM;
- getblk_failed:
- 				ext4_free_blocks(handle, inode, NULL, block, 1,
- 						 EXT4_FREE_BLOCKS_METADATA);
--				error = -EIO;
- 				goto cleanup;
- 			}
- 			lock_buffer(new_bh);
- 			error = ext4_journal_get_create_access(handle, new_bh);
- 			if (error) {
- 				unlock_buffer(new_bh);
-+				error = -EIO;
- 				goto getblk_failed;
- 			}
- 			memcpy(new_bh->b_data, s->base, new_bh->b_size);
+So commits in -rc1 that were "in" next-20130220:	9300	90.6%
+						(down from 90.0% last time)
+Commits in -rc1 that were not in next-20120722:		 965	9.4%
 
+Pretty good, but it would be still nice to figure out where the last lot
+came from.  I have the "git log --oneline --no-walk" list if someone wants =
+them.
 
+Some break down of the onelines list:
+
+	grep for drm gives 134
+		 btrfs gives 118
+		 mips gives 85
+		 ceph gives 41
+
+Quite a few of the rest appear to be bug fixes.
+
+As of today, there are 752 commits left in linux-next ... .  There are
+161 commits in the akpm tree, 135 in the xen-two tree, 78 in the renesas
+tree and everything else is in the noise.
+
+There are also ~550 merge commits in there (not counting mine), so some
+trees could definitely do with some cleaning up.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Mon__4_Mar_2013_15_22_22_+1100_mcDwM2B.cl6mSznY
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRNCF+AAoJEECxmPOUX5FEc7AP/RMOh5p81BAjQk3TdJUuH2q7
+dyhx/zOxqyMNGxR1ax/6riYKJCNzC6QdGeu4YtXOeicWJm78COxTprZsNl116lYL
+q7QDnCsfsUduM5PGZ+XfyFkgVua4mjOkGF1MzzrmR45bgFr+8YTIXONsI9nRfNqF
+Kqo1UPHCH5Utv22DVjD7BlniKWsi2HjDXlNcCgZE4QQ7vcO3SabbOtx5vKnjivFi
+rtpHGnPBNCMns2oguW+QUkoYX4e3XPK0RuvqBubT/5LuS/EGT8HJOcb9S/TRRVvQ
+Wzq7pRLpYAq+TYN4H6GFNAGW3BNnrR98CIUr498m4OdceElFCl8czZ/xltF+qd9z
+gwA8VeQYqud29RvusOWH3j1Sb1Ktv50I3wMJ/yDJcs0eugfAsig7G4lc1xmtJp5y
+bDptT9qxHgpPnAikbgjoYL62mZTZOnO53LUPuniO06xPtaqUonjdMIEIp1kIPH/e
+vCsRML8o34z6vVFtcRsZhKRlHFbk81IyzUg2whgRuCyqo4tK0ULmz8rmNnJBbz58
+jMtEcSv8th/uWsi/g5rq4csMnXXwIpusTAIua3ueesvhn0BzvRcj7q9rmt390AAz
+2eGLF19EpR40wwPL7+WYzRB7ZtiufQ8aSc+0k1ZQSYfsf35yMBmGLgMVDnyfBCV3
+WjELa6shn09M5Wh22bXL
+=H07u
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__4_Mar_2013_15_22_22_+1100_mcDwM2B.cl6mSznY--
