@@ -1,57 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754823Ab3CDBLW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 20:11:22 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:42564 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754552Ab3CDBLU (ORCPT
+	id S1754916Ab3CDBLb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 20:11:31 -0500
+Received: from g4t0017.houston.hp.com ([15.201.24.20]:44947 "EHLO
+	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754552Ab3CDBL2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Mar 2013 20:11:20 -0500
-Date: Mon, 4 Mar 2013 09:11:21 +0800
-From: Wang YanQing <udknight@gmail.com>
-To: gregkh@linuxfoundation.org, swarren@wwwdotorg.org, jslaby@suse.cz,
-        alan@linux.intel.com, arnd@arndb.de, paul.gortmaker@windriver.com,
-        damm@opensource.se, linux-serial@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH]8250_pci: Add additional WCH CH352 device
-Message-ID: <20130304011120.GA15022@udknight>
-Mail-Followup-To: Wang YanQing <udknight@gmail.com>,
-	gregkh@linuxfoundation.org, swarren@wwwdotorg.org, jslaby@suse.cz,
-	alan@linux.intel.com, arnd@arndb.de, paul.gortmaker@windriver.com,
-	damm@opensource.se, linux-serial@vger.kernel.org,
-	linux-kernel@vger.kernel.org
-References: <20130302094555.GA9572@udknight>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130302094555.GA9572@udknight>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 3 Mar 2013 20:11:28 -0500
+From: "Li, Zhen-Hua" <zhen-hual@hp.com>
+To: <linux-kernel@vger.kernel.org>
+Cc: "Li, Zhen-Hua" <zhen-hual@hp.com>
+Subject: [PATCH 1/1] iommu: add a dma remap fault reason.
+Date: Mon,  4 Mar 2013 09:10:49 +0800
+Message-Id: <1362359449-29653-1-git-send-email-zhen-hual@hp.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 02, 2013 at 05:45:55PM +0800, Wang YanQing wrote:
-> This patch fix a problem XScale port
-> detect code in autoconfig_16550a treat
-> 16550A port as XScale port, caused by
-> CH352 device use the 6th bit(UART_IER_UUE)
-> in IER as a enhance function make this bit
-> w/r.
-> 
-> for the below device:
-> "
-> 01:08.0 Serial controller: Device 4348:3253 (rev 10) (prog-if 02 [16550])
-> 	Subsystem: Device 4348:3253
-> 	Control: I/O+ Mem- BusMaster- SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR- FastB2B- DisINTx-
-> 	Status: Cap- 66MHz- UDF- FastB2B- ParErr- DEVSEL=medium >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-> 	Interrupt: pin A routed to IRQ 20
-> 	Region 0: I/O ports at e010 [size=8]
-> 	Region 1: I/O ports at e000 [size=8]
-> 	Kernel driver in use: serial
-> "
-> [Note: I haven't test this patch, because I can't
-> access the hardware now, but it should be right]
-> 
-I have tested it this morning, it works.
+The number of dma fault reasons in intel's document are from 1 to 0xD, but in dmar.c I cannot find fault reason 0xD.
 
-Thanks.
+In this document:
+Intel Virtualization Technology for Directed I/O Architecture Specification
+http://download.intel.com/technology/computing/vptech/Intel(r)_VT_for_Direct_IO.pdf
+
+Chapter 4. Support For Device-IOTLBs
+
+Table 6. Unsuccessful Translated Requests
+
+There is fault reason for 0xD not listed in kernel:
+    Present context-entry used to process translation request
+    specifies blocking of Translation Requests (Translation Type (T)
+    field value not equal to 01b).
+
+So I think 0xD should be added.
+
+Signed-off-by: Li, Zhen-Hua <zhen-hual@hp.com>
+---
+ drivers/iommu/dmar.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/iommu/dmar.c b/drivers/iommu/dmar.c
+index dc7e478..e5cdaf8 100644
+--- a/drivers/iommu/dmar.c
++++ b/drivers/iommu/dmar.c
+@@ -1083,6 +1083,7 @@ static const char *dma_remap_fault_reasons[] =
+ 	"non-zero reserved fields in RTP",
+ 	"non-zero reserved fields in CTP",
+ 	"non-zero reserved fields in PTE",
++	"PCE for translation request specifies blocking",
+ };
+ 
+ static const char *irq_remap_fault_reasons[] =
+-- 
+1.7.10.4
+
