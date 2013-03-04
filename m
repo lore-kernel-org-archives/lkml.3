@@ -1,103 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758312Ab3CDPEw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 10:04:52 -0500
-Received: from ppsw-50.csi.cam.ac.uk ([131.111.8.150]:58152 "EHLO
-	ppsw-50.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757826Ab3CDPEv convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 10:04:51 -0500
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.ucs.cam.ac.uk/email/scanner/
-Subject: Re: cifs: bugfix for unreclaimed writeback pages in cifs_writev_requeue()
-Mime-Version: 1.0 (Mac OS X Mail 6.2 \(1499\))
-Content-Type: text/plain; charset=utf-8
-From: Anton Altaparmakov <aia21@cam.ac.uk>
-In-Reply-To: <20130302195530.6EACF6605DF@gitolite.kernel.org>
-Date: Mon, 4 Mar 2013 15:04:49 +0000
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Jeff Layton <jlayton@samba.org>,
-        "linux-cifs@vger.kernel.org" <linux-cifs@vger.kernel.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <F7FD7D54-C7FE-47E4-8741-FF56A3CC035A@cam.ac.uk>
-References: <20130302195530.6EACF6605DF@gitolite.kernel.org>
-To: Steve French <sfrench@samba.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-X-Mailer: Apple Mail (2.1499)
+	id S1758261Ab3CDPJt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 10:09:49 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:40773 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757835Ab3CDPJs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Mar 2013 10:09:48 -0500
+Date: Mon, 4 Mar 2013 10:09:37 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Li Haifeng <omycle@gmail.com>
+Cc: "open list:MEMORY MANAGEMENT" <linux-mm@kvack.org>,
+        open list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] mm: Fixup the condition whether the page cache is free
+Message-ID: <20130304150937.GB23767@cmpxchg.org>
+References: <CAFNq8R7tq9kvD9LyhZJ-Cj0kexQfDsPhB4iQYyZ9s9+8Jo82QA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAFNq8R7tq9kvD9LyhZJ-Cj0kexQfDsPhB4iQYyZ9s9+8Jo82QA@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-The below commit that is present in 3.9-rc1 is buggy.  It releases the page at which point it may no longer exist and then it unlocks it afterwards.  Even if you are somehow getting away with it I think it is an explosion/memory corruption waiting to happen...
-
-Best regards,
-
-	Anton
-
-On 2 Mar 2013, at 19:55, Linux Kernel Mailing List <linux-kernel@vger.kernel.org> wrote:
-
-> Gitweb:     http://git.kernel.org/linus/;a=commit;h=c51bb0ea40ca038da26b1fa7d450f4078124af03
-> Commit:     c51bb0ea40ca038da26b1fa7d450f4078124af03
-> Parent:     0b7bc84000d71f3647ca33ab1bf5bd928535c846
-> Author:     Ouyang Maochun <ouyang.maochun@zte.com.cn>
-> AuthorDate: Mon Feb 18 09:54:52 2013 -0600
-> Committer:  Steve French <sfrench@us.ibm.com>
-> CommitDate: Thu Feb 28 09:01:47 2013 -0600
+On Mon, Mar 04, 2013 at 09:54:26AM +0800, Li Haifeng wrote:
+> When a page cache is to reclaim, we should to decide whether the page
+> cache is free.
+> IMO, the condition whether a page cache is free should be 3 in page
+> frame reclaiming. The reason lists as below.
 > 
->    cifs: bugfix for unreclaimed writeback pages in cifs_writev_requeue()
-> 
->    Pages get the PG_writeback flag set before cifs sends its
->    request to SMB server in cifs_writepages(), if the SMB service
->    goes down, cifs may try to recommit the writing requests in
->    cifs_writev_requeue(). However, it does not clean its PG_writeback
->    flag and relaimed the pages even if it fails again in
->    cifs_writev_requeue(), which may lead to the hanging of the
->    processes accessing the cifs directory. This patch just cleans
->    the PG_writeback flags and reclaims the pages under that circumstances.
-> 
->        Steps to reproduce the bug(trying serveral times may trigger the issue):
->        1.Write from cifs client continuously.(e.g dd if=/dev/zero of=<cifs file>)
->        2.Stop SMB service from server.(e.g service smb stop)
->        3.Wait for two minutes， and then start SMB service from
->    server.(e.g service smb start)
->        4.The processes which are accessing cifs directory may hang up.
-> 
->    Signed-off-by: Ouyang Maochun <ouyang.maochun@zte.com.cn>
->    Signed-off-by: Jiang Yong <jian.yong5@zte.com.cn>
->    Tested-by: Zhang Xianwei <zhang.xianwei8@zte.com.cn>
->    Reviewed-by: Wang Liang <wang.liang82@zte.com.cn>
->    Reviewed-by: Cai Qu <cai.qu@zte.com.cn>
->    Reviewed-by: Jiang Biao <jiang.biao2@zte.com.cn>
->    Reviewed-by: Jeff Layton <jlayton@redhat.com>
->    Reviewed-by: Pavel Shilovsky <piastry@etersoft.ru>
->    Signed-off-by: Steve French <sfrench@us.ibm.com>
-> ---
-> fs/cifs/cifssmb.c |    5 ++++-
-> 1 files changed, 4 insertions(+), 1 deletions(-)
-> 
-> diff --git a/fs/cifs/cifssmb.c b/fs/cifs/cifssmb.c
-> index 00e12f2..7353bc5 100644
-> --- a/fs/cifs/cifssmb.c
-> +++ b/fs/cifs/cifssmb.c
-> @@ -1909,8 +1909,11 @@ cifs_writev_requeue(struct cifs_writedata *wdata)
-> 	} while (rc == -EAGAIN);
-> 
-> 	for (i = 0; i < wdata->nr_pages; i++) {
-> -		if (rc != 0)
-> +		if (rc != 0) {
-> 			SetPageError(wdata->pages[i]);
-> +			end_page_writeback(wdata->pages[i]);
-> +			page_cache_release(wdata->pages[i]);
-> +		}
-> 		unlock_page(wdata->pages[i]);
-> 	}
-> 
+> When page is allocated, the page->_count is 1(code fragment is code-1 ).
+> And when the page is allocated for reading files from extern disk, the
+> page->_count will increment 1 by page_cache_get() in
+> add_to_page_cache_locked()(code fragment is code-2). When the page is to
+> reclaim, the isolated LRU list also increase the page->_count(code
+> fragment is code-3).
 
--- 
-Anton Altaparmakov <aia21 at cam.ac.uk> (replace at with @)
-Unix Support, Computing Service, University of Cambridge, CB2 3QH, UK
-Linux NTFS maintainer, http://www.linux-ntfs.org/
+The page count is initialized to 1, but that does not stay with the
+object.  It's a reference that is passed to the allocating task, which
+drops it again when it's done with the page.  I.e. the pattern is like
+this:
 
+instantiation:
+page = page_cache_alloc()	/* instantiator reference -> 1 */
+add_to_page_cache(page, mapping, offset)
+  get_page(page)		/* page cache reference -> 2 */
+lru_cache_add(page)
+  get_page(page)		/* pagevec reference -> 3 */
+/* ...initiate read, write, associate buffers, ... */
+page_cache_release(page)	/* drop instantiator reference -> 2 + private */
+
+reclaim:
+lru_add_drain()
+  page_cache_release(page)	/* drop pagevec reference -> 1 + private */
+__isolate_lru_page(page)
+  page_cache_get(page)		/* reclaim reference -> 2 + private */
+is_page_cache_freeable(page)
+try_to_free_buffers()		/* drop buffer ref -> 2 */
+__remove_mapping()		/* drop page cache and isolator ref -> 0 */
+free_hot_cold_page()
