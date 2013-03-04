@@ -1,104 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757625Ab3CDN5l (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 08:57:41 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58057 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756992Ab3CDN5j (ORCPT
+	id S1757477Ab3CDOHJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 09:07:09 -0500
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:34751 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756683Ab3CDOHH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 08:57:39 -0500
+	Mon, 4 Mar 2013 09:07:07 -0500
+Date: Mon, 4 Mar 2013 22:07:00 +0800
+From: Zach Pfeffer <zach.pfeffer@gmail.com>
+To: linux-kernel@vger.kernel.org
+Subject: 2013 Android Microconference at Linux Plumbers: Call for
+ Participation
+Message-ID: <20130304140700.GB11031@zach-linaro-w530>
 MIME-Version: 1.0
-Date: Mon, 4 Mar 2013 21:57:36 +0800
-Message-ID: <CACVXFVMKN6aeCvJcn7dyuonJYJDfYxWeW5KE6gfKRKJKFj2M4A@mail.gmail.com>
-Subject: LOCKDEP: 3.9-rc1: mount.nfs/4272 still has locks held!
-From: Ming Lei <ming.lei@canonical.com>
-To: Trond Myklebust <Trond.Myklebust@netapp.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-nfs@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+There's interest in having an Android microconference at this year's Linux Plumbers Conference. I've started a Wiki at:
 
-The below warning can be triggered each time when mount.nfs is
-running on 3.9-rc1.
+http://wiki.linuxplumbersconf.org/2013:android
 
-Not sure if freezable_schedule() inside rpc_wait_bit_killable should
-be changed to schedule() since nfs_clid_init_mutex is held in the path.
+I'd like to invite people to add topics to the Wiki. Please include a description of the topic you'd like to discuss. In general, topics that present work to close the gap between the mainstream kernel and the Android kernel are preferred as well as topics for future mechanisms that may be needed by Android and other mobile usecases. In addition, topics related to successful out-of-tree patch maintenance and challenges in commercialization would also be useful.
 
-[   41.387939] =====================================
-[   41.392913] [ BUG: mount.nfs/643 still has locks held! ]
-[   41.398559] 3.9.0-rc1+ #1740 Not tainted
-[   41.402709] -------------------------------------
-[   41.407714] 1 lock held by mount.nfs/643:
-[   41.411956]  #0:  (nfs_clid_init_mutex){+.+...}, at: [<c0226d6c>]
-nfs4_discover_server_trunking+0x60/0x1d4
-[   41.422363]
-[   41.422363] stack backtrace:
-[   41.427032] [<c0014dd4>] (unwind_backtrace+0x0/0xe0) from
-[<c04a8300>] (rpc_wait_bit_killable+0x38/0xc8)
-[   41.437103] [<c04a8300>] (rpc_wait_bit_killable+0x38/0xc8) from
-[<c054e454>] (__wait_on_bit+0x54/0x9c)
-[   41.446990] [<c054e454>] (__wait_on_bit+0x54/0x9c) from
-[<c054e514>] (out_of_line_wait_on_bit+0x78/0x84)
-[   41.457061] [<c054e514>] (out_of_line_wait_on_bit+0x78/0x84) from
-[<c04a8f88>] (__rpc_execute+0x170/0x348)
-[   41.467407] [<c04a8f88>] (__rpc_execute+0x170/0x348) from
-[<c04a250c>] (rpc_run_task+0x9c/0xa4)
-[   41.476715] [<c04a250c>] (rpc_run_task+0x9c/0xa4) from [<c04a265c>]
-(rpc_call_sync+0x70/0xb0)
-[   41.485778] [<c04a265c>] (rpc_call_sync+0x70/0xb0) from
-[<c021af54>] (nfs4_proc_setclientid+0x1a0/0x1c8)
-[   41.495819] [<c021af54>] (nfs4_proc_setclientid+0x1a0/0x1c8) from
-[<c0224eb4>] (nfs40_discover_server_trunki
-ng+0xec/0x148)
-[   41.507507] [<c0224eb4>]
-(nfs40_discover_server_trunking+0xec/0x148) from [<c0226da0>]
-(nfs4_discover_server
-_trunking+0x94/0x1d4)
-[   41.519866] [<c0226da0>] (nfs4_discover_server_trunking+0x94/0x1d4)
-from [<c022c664>] (nfs4_init_client+0x15
-0/0x1b0)
-[   41.531036] [<c022c664>] (nfs4_init_client+0x150/0x1b0) from
-[<c01fe954>] (nfs_get_client+0x2cc/0x320)
-[   41.540863] [<c01fe954>] (nfs_get_client+0x2cc/0x320) from
-[<c022c080>] (nfs4_set_client+0x80/0xb0)
-[   41.550476] [<c022c080>] (nfs4_set_client+0x80/0xb0) from
-[<c022cef8>] (nfs4_create_server+0xb0/0x21c)
-[   41.560333] [<c022cef8>] (nfs4_create_server+0xb0/0x21c) from
-[<c0227524>] (nfs4_remote_mount+0x28/0x54)
-[   41.570373] [<c0227524>] (nfs4_remote_mount+0x28/0x54) from
-[<c0113a8c>] (mount_fs+0x6c/0x160)
-[   41.579498] [<c0113a8c>] (mount_fs+0x6c/0x160) from [<c012a47c>]
-(vfs_kern_mount+0x4c/0xc0)
-[   41.588378] [<c012a47c>] (vfs_kern_mount+0x4c/0xc0) from
-[<c022734c>] (nfs_do_root_mount+0x74/0x90)
-[   41.597961] [<c022734c>] (nfs_do_root_mount+0x74/0x90) from
-[<c0227574>] (nfs4_try_mount+0x24/0x3c)
-[   41.607513] [<c0227574>] (nfs4_try_mount+0x24/0x3c) from
-[<c02070f8>] (nfs_fs_mount+0x6dc/0x7a0)
-[   41.616821] [<c02070f8>] (nfs_fs_mount+0x6dc/0x7a0) from
-[<c0113a8c>] (mount_fs+0x6c/0x160)
-[   41.625701] [<c0113a8c>] (mount_fs+0x6c/0x160) from [<c012a47c>]
-(vfs_kern_mount+0x4c/0xc0)
-[   41.634582] [<c012a47c>] (vfs_kern_mount+0x4c/0xc0) from
-[<c012c330>] (do_mount+0x710/0x81c)
-[   41.643524] [<c012c330>] (do_mount+0x710/0x81c) from [<c012c4c0>]
-(sys_mount+0x84/0xb8)
-[   41.652008] [<c012c4c0>] (sys_mount+0x84/0xb8) from [<c000d6c0>]
-(ret_fast_syscall+0x0/0x48)
-[   41.715911] device: '0:28': device_add
-[   41.720062] PM: Adding info for No Bus:0:28
-[   41.746887] device: '0:29': device_add
-[   41.751037] PM: Adding info for No Bus:0:29
-[   41.780700] device: '0:28': device_unregister
-[   41.785400] PM: Removing info for No Bus:0:28
-[   41.790344] device: '0:28': device_create_release
+Most of the big pain points people are seeing are related to buffer passing and synchronization for that reason it was thought that the following topics may be good to discuss:
 
+dmabuf fences / sync
+unified in-kernel IPC
+ION/dmabuf/Common Display Framework
 
-Thanks,
---
-Ming Lei
+I've listed these on the Wiki to get things started.
