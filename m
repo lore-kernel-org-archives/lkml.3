@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755748Ab3CDDm4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 22:42:56 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60848 "EHLO
+	id S1757271Ab3CDEN5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 23:13:57 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60887 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755580Ab3CDDmu (ORCPT
+	by vger.kernel.org with ESMTP id S1755657Ab3CDDmz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Mar 2013 22:42:50 -0500
-Message-Id: <20130304033722.620536177@decadent.org.uk>
+	Sun, 3 Mar 2013 22:42:55 -0500
+Message-Id: <20130304033720.172220784@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 04 Mar 2013 03:39:40 +0000
+Date: Mon, 04 Mar 2013 03:39:15 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Theodore Tso <tytso@mit.edu>,
-        =?ISO-8859-15?q?Maciej=20=C5=BBenczykowski?= <maze@google.com>,
-        Marti Raudsepp <marti@juffo.org>,
-        Fengguang Wu <fengguang.wu@intel.com>
-Subject: [ 153/153] ext4: fix kernel BUG on large-scale rm -rf commands
+Cc: akpm@linux-foundation.org, Ian Abbott <abbotti@mev.co.uk>
+Subject: [ 128/153] staging: comedi: ni_labpc: set up  command4 register *after* command3
 In-Reply-To: <20130304033707.648729212@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,61 +26,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Theodore Ts'o <tytso@mit.edu>
+From: Ian Abbott <abbotti@mev.co.uk>
 
-commit 89a4e48f8479f8145eca9698f39fe188c982212f upstream.
+commit 22056e2b46246d97ff0f7c6e21a77b8daa07f02c upstream.
 
-Commit 968dee7722: "ext4: fix hole punch failure when depth is greater
-than 0" introduced a regression in v3.5.1/v3.6-rc1 which caused kernel
-crashes when users ran run "rm -rf" on large directory hierarchy on
-ext4 filesystems on RAID devices:
+Tuomas <tvainikk _at_ gmail _dot_ com> reported problems getting
+meaningful output from a Lab-PC+ in differential mode for AI cmds, but
+AI insn reads gave correct readings.  He tracked it down to two
+problems, one of which is addressed by this patch.
 
-    BUG: unable to handle kernel NULL pointer dereference at 0000000000000028
+It seems that writing to the command3 register after writing to the
+command4 register in `labpc_ai_cmd()` messes up the differential
+reference bit setting in the command4 register.  Set up the command4
+register after the command3 register (as in `labpc_ai_rinsn()`) to avoid
+the problem.
 
-    Process rm (pid: 18229, threadinfo ffff8801276bc000, task ffff880123631710)
-    Call Trace:
-     [<ffffffff81236483>] ? __ext4_handle_dirty_metadata+0x83/0x110
-     [<ffffffff812353d3>] ext4_ext_truncate+0x193/0x1d0
-     [<ffffffff8120a8cf>] ? ext4_mark_inode_dirty+0x7f/0x1f0
-     [<ffffffff81207e05>] ext4_truncate+0xf5/0x100
-     [<ffffffff8120cd51>] ext4_evict_inode+0x461/0x490
-     [<ffffffff811a1312>] evict+0xa2/0x1a0
-     [<ffffffff811a1513>] iput+0x103/0x1f0
-     [<ffffffff81196d84>] do_unlinkat+0x154/0x1c0
-     [<ffffffff8118cc3a>] ? sys_newfstatat+0x2a/0x40
-     [<ffffffff81197b0b>] sys_unlinkat+0x1b/0x50
-     [<ffffffff816135e9>] system_call_fastpath+0x16/0x1b
-    Code: 8b 4d 20 0f b7 41 02 48 8d 04 40 48 8d 04 81 49 89 45 18 0f b7 49 02 48 83 c1 01 49 89 4d 00 e9 ae f8 ff ff 0f 1f 00 49 8b 45 28 <48> 8b 40 28 49 89 45 20 e9 85 f8 ff ff 0f 1f 80 00 00 00
+Thanks to Tuomas for suggesting the fix.
 
-    RIP  [<ffffffff81233164>] ext4_ext_remove_space+0xa34/0xdf0
-
-This could be reproduced as follows:
-
-The problem in commit 968dee7722 was that caused the variable 'i' to
-be left uninitialized if the truncate required more space than was
-available in the journal.  This resulted in the function
-ext4_ext_truncate_extend_restart() returning -EAGAIN, which caused
-ext4_ext_remove_space() to restart the truncate operation after
-starting a new jbd2 handle.
-
-Reported-by: Maciej Żenczykowski <maze@google.com>
-Reported-by: Marti Raudsepp <marti@juffo.org>
-Tested-by: Fengguang Wu <fengguang.wu@intel.com>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/ext4/extents.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/staging/comedi/drivers/ni_labpc.c | 31 ++++++++++++++++---------------
+ 1 file changed, 16 insertions(+), 15 deletions(-)
 
---- a/fs/ext4/extents.c
-+++ b/fs/ext4/extents.c
-@@ -2614,6 +2614,7 @@ cont:
- 		}
- 		path[0].p_depth = depth;
- 		path[0].p_hdr = ext_inode_hdr(inode);
-+		i = 0;
+--- a/drivers/staging/comedi/drivers/ni_labpc.c
++++ b/drivers/staging/comedi/drivers/ni_labpc.c
+@@ -1282,21 +1282,6 @@ static int labpc_ai_cmd(struct comedi_de
+ 		devpriv->write_byte(devpriv->command1_bits,
+ 				    dev->iobase + COMMAND1_REG);
+ 	}
+-	/*  setup any external triggering/pacing (command4 register) */
+-	devpriv->command4_bits = 0;
+-	if (cmd->convert_src != TRIG_EXT)
+-		devpriv->command4_bits |= EXT_CONVERT_DISABLE_BIT;
+-	/* XXX should discard first scan when using interval scanning
+-	 * since manual says it is not synced with scan clock */
+-	if (labpc_use_continuous_mode(cmd) == 0) {
+-		devpriv->command4_bits |= INTERVAL_SCAN_EN_BIT;
+-		if (cmd->scan_begin_src == TRIG_EXT)
+-			devpriv->command4_bits |= EXT_SCAN_EN_BIT;
+-	}
+-	/*  single-ended/differential */
+-	if (aref == AREF_DIFF)
+-		devpriv->command4_bits |= ADC_DIFF_BIT;
+-	devpriv->write_byte(devpriv->command4_bits, dev->iobase + COMMAND4_REG);
  
- 		if (ext4_ext_check(inode, path[0].p_hdr, depth)) {
- 			err = -EIO;
+ 	devpriv->write_byte(cmd->chanlist_len,
+ 			    dev->iobase + INTERVAL_COUNT_REG);
+@@ -1376,6 +1361,22 @@ static int labpc_ai_cmd(struct comedi_de
+ 		devpriv->command3_bits &= ~ADC_FNE_INTR_EN_BIT;
+ 	devpriv->write_byte(devpriv->command3_bits, dev->iobase + COMMAND3_REG);
+ 
++	/*  setup any external triggering/pacing (command4 register) */
++	devpriv->command4_bits = 0;
++	if (cmd->convert_src != TRIG_EXT)
++		devpriv->command4_bits |= EXT_CONVERT_DISABLE_BIT;
++	/* XXX should discard first scan when using interval scanning
++	 * since manual says it is not synced with scan clock */
++	if (labpc_use_continuous_mode(cmd) == 0) {
++		devpriv->command4_bits |= INTERVAL_SCAN_EN_BIT;
++		if (cmd->scan_begin_src == TRIG_EXT)
++			devpriv->command4_bits |= EXT_SCAN_EN_BIT;
++	}
++	/*  single-ended/differential */
++	if (aref == AREF_DIFF)
++		devpriv->command4_bits |= ADC_DIFF_BIT;
++	devpriv->write_byte(devpriv->command4_bits, dev->iobase + COMMAND4_REG);
++
+ 	/*  startup acquisition */
+ 
+ 	/*  command2 reg */
 
 
