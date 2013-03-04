@@ -1,67 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757398Ab3CDDuD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 22:50:03 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33146 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757220Ab3CDDon (ORCPT
+	id S1757643Ab3CDDuT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 22:50:19 -0500
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:47241 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757237Ab3CDDuO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Mar 2013 22:44:43 -0500
-Message-Id: <20130304033711.019756775@decadent.org.uk>
-User-Agent: quilt/0.60-1
-Date: Mon, 04 Mar 2013 03:37:42 +0000
-From: Ben Hutchings <ben@decadent.org.uk>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, "H. Peter Anvin" <hpa@linux.intel.com>,
-        Andi Kleen <ak@linux.intel.com>
-Subject: [ 035/153] timeconst.pl: Eliminate Perl warning
-In-Reply-To: <20130304033707.648729212@decadent.org.uk>
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Sun, 3 Mar 2013 22:50:14 -0500
+Date: Sun, 03 Mar 2013 21:50:10 -0600
+From: Rob Landley <rob@landley.net>
+Subject: Re: For review: pid_namespaces(7) man page
+To: mtk.manpages@gmail.com
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        linux-man <linux-man@vger.kernel.org>,
+        Linux Containers <containers@lists.linux-foundation.org>,
+        lkml <linux-kernel@vger.kernel.org>
+References: <CAKgNAki=mUYuu_Ewhe7sjCmo+Dq2Vr+FZCixqNRaadcvAxtpFw@mail.gmail.com>
+	<1362110504.15531.4@driftwood>
+	<CAKgNAkgVKnhRT1Lpq4a_UdBKB+tn6XmWSDF2QJXG0aSLtNH6dg@mail.gmail.com>
+In-Reply-To: <CAKgNAkgVKnhRT1Lpq4a_UdBKB+tn6XmWSDF2QJXG0aSLtNH6dg@mail.gmail.com>
+	(from mtk.manpages@gmail.com on Fri Mar  1 03:57:40 2013)
+X-Mailer: Balsa 2.4.11
+Message-Id: <1362369010.29250.3@driftwood>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2-stable review patch.  If anyone has any objections, please let me know.
+On 03/01/2013 03:57:40 AM, Michael Kerrisk (man-pages) wrote:
+> > And yet the glibc guys insist on #define  
+> GNU_GNU_GNU_ALL_HAIL_STALLMAN in
+> > order to access this Linux-specific feature which has nothing  
+> whatsoever to
+> > do with the FSF.
+> 
+> This is a misunderstanding. _GNU_SOURCE is the standard way to expose
+> Linux-specific functionality from POSIX header files.
 
-------------------
+What standard? The Linux kernel is not, and never was, part of the GNU  
+project.
 
-From: "H. Peter Anvin" <hpa@linux.intel.com>
-
-commit 63a3f603413ffe82ad775f2d62a5afff87fd94a0 upstream.
-
-defined(@array) is deprecated in Perl and gives off a warning.
-Restructure the code to remove that warning.
-
-[ hpa: it would be interesting to revert to the timeconst.bc script.
-  It appears that the failures reported by akpm during testing of
-  that script was due to a known broken version of make, not a problem
-  with bc.  The Makefile rules could probably be restructured to avoid
-  the make bug, or it is probably old enough that it doesn't matter. ]
-
-Reported-by: Andi Kleen <ak@linux.intel.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
----
- kernel/timeconst.pl |    6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
-
---- a/kernel/timeconst.pl
-+++ b/kernel/timeconst.pl
-@@ -369,10 +369,8 @@ if ($hz eq '--can') {
- 		die "Usage: $0 HZ\n";
- 	}
- 
--	@val = @{$canned_values{$hz}};
--	if (!defined(@val)) {
--		@val = compute_values($hz);
--	}
-+	$cv = $canned_values{$hz};
-+	@val = defined($cv) ? @$cv : compute_values($hz);
- 	output($hz, @val);
- }
- exit 0;
-
-
+Rob
