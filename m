@@ -1,175 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758007Ab3CDQzS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 11:55:18 -0500
-Received: from co9ehsobe005.messaging.microsoft.com ([207.46.163.28]:58926
-	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756866Ab3CDQzQ convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 11:55:16 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -8
-X-BigFish: VS-8(z551biz98dI9371I542I1432I179dNzz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ahzz8275bhz2dh2a8h668h839h8e2h8e3h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1ad9hbe9i1155h)
-From: Yoder Stuart-B08248 <B08248@freescale.com>
-To: Sethi Varun-B16395 <B16395@freescale.com>
-CC: "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Wood Scott-B07421 <B07421@freescale.com>,
-        Joerg Roedel <joro@8bytes.org>
-Subject: RE: [PATCH 6/6 v8] iommu/fsl: Freescale PAMU driver and IOMMU API
- implementation.
-Thread-Topic: [PATCH 6/6 v8] iommu/fsl: Freescale PAMU driver and IOMMU API
- implementation.
-Thread-Index: AQHODdfbgGU1NqcYVkONwLkDSaaXgpiRjR4AgAO/QXCAAIOA8A==
-Date: Mon, 4 Mar 2013 16:55:10 +0000
-Message-ID: <9F6FE96B71CF29479FF1CDC8046E15035664E9@039-SN1MPN1-003.039d.mgd.msft.net>
-References: <1361191939-21260-1-git-send-email-Varun.Sethi@freescale.com>
-	<1361191939-21260-7-git-send-email-Varun.Sethi@freescale.com>
- <CALRxmdDEccTaS2Houuns44DoQ_8wUbXAMiXQ8w0Ks9R2F2u-Ag@mail.gmail.com>
- <C5ECD7A89D1DC44195F34B25E172658D3D12D9@039-SN2MPN1-013.039d.mgd.msft.net>
-In-Reply-To: <C5ECD7A89D1DC44195F34B25E172658D3D12D9@039-SN2MPN1-013.039d.mgd.msft.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.82.121.95]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1758179Ab3CDQzt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 11:55:49 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:57856 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758050Ab3CDQzs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Mar 2013 11:55:48 -0500
+Message-ID: <5134D210.3060405@wwwdotorg.org>
+Date: Mon, 04 Mar 2013 09:55:44 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+To: Venu Byravarasu <vbyravarasu@nvidia.com>
+CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "stern@rowland.harvard.edu" <stern@rowland.harvard.edu>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] usb: host: tegra: Reset Tegra USB controller before init
+References: <1362033418-7332-1-git-send-email-vbyravarasu@nvidia.com> <512F9F0B.1040303@wwwdotorg.org> <D958900912E20642BCBC71664EFECE3E6E4F7216C0@BGMAIL02.nvidia.com>
+In-Reply-To: <D958900912E20642BCBC71664EFECE3E6E4F7216C0@BGMAIL02.nvidia.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-> -----Original Message-----
-> From: Sethi Varun-B16395
-> Sent: Monday, March 04, 2013 5:31 AM
-> To: Stuart Yoder
-> Cc: iommu@lists.linux-foundation.org; linuxppc-dev@lists.ozlabs.org; linux-kernel@vger.kernel.org; Wood
-> Scott-B07421; Joerg Roedel; Yoder Stuart-B08248
-> Subject: RE: [PATCH 6/6 v8] iommu/fsl: Freescale PAMU driver and IOMMU API implementation.
+On 03/04/2013 12:55 AM, Venu Byravarasu wrote:
+> Stephen Warren wrote at Thursday, February 28, 2013 11:47 PM:
+>> On 02/27/2013 11:36 PM, Venu Byravarasu wrote:
+>>> To clear any configurations made by U-Boot on Tegra USB controller,
+>>> reset it before init in probe.
+>>
+>>> diff --git a/drivers/usb/host/ehci-tegra.c b/drivers/usb/host/ehci-tegra.c
+>>
+>>> @@ -691,6 +692,10 @@ static int tegra_ehci_probe(struct platform_device
+>> *pdev)
+>>>  	if (err)
+>>>  		goto fail_clk;
+>>>
+>>> +	tegra_periph_reset_assert(tegra->clk);
+>>> +	udelay(1);
+>>> +	tegra_periph_reset_deassert(tegra->clk);
+>>
+>> I think this patch might cause unintended consequences.
+>>
+>> When the Tegra PHY code is converted to a driver (i.e. has its own
+>> probe), the initial order of execution of the PHY and EHCI driver probes
+>> will not be guaranteed.
+>>
+>> In particular, since the EHCI probe will attempt to "find" the PHY
+>> device, and defer the EHCI probe until it can do so, this guarantees
+>> that the PHY's probe() will have completed before EHCI's probe()
+>> completes (although EHCI's probe may start running first some number of
+>> times, and be retried with -EPROBE_DEFERRED for a variety of reasons).
+>>
+>> Now, if the PHY driver's probe() actually touches HW and sets up some
+>> registers, isn't this reset call going to trash any of that register
+>> setup? Or, will PHY probe() not touch registers, but only do so during
+>> the standard PHY open/init "op"/API calls?
+>  
+> Yes, PHY driver probe does not touch any registers. It just sets up the PHY API hooks.
+> These APIs will be called from ehci-tegra.c as part of ehci tegra probe function, after
+> getting  PHY handle, which in turn happens after issuing above reset.
 > 
-> 
-> 
-> > -----Original Message-----
-> > From: Stuart Yoder [mailto:b08248@gmail.com]
-> > Sent: Saturday, March 02, 2013 4:58 AM
-> > To: Sethi Varun-B16395
-> > Cc: iommu@lists.linux-foundation.org; linuxppc-dev@lists.ozlabs.org;
-> > linux-kernel@vger.kernel.org; Wood Scott-B07421; Joerg Roedel; Yoder
-> > Stuart-B08248
-> > Subject: Re: [PATCH 6/6 v8] iommu/fsl: Freescale PAMU driver and IOMMU
-> > API implementation.
-> >
-> > On Mon, Feb 18, 2013 at 6:52 AM, Varun Sethi <Varun.Sethi@freescale.com>
-> > wrote:
-> > [cut]
-> > > +static phys_addr_t get_phys_addr(struct fsl_dma_domain *dma_domain,
-> > > +unsigned long iova) {
-> > > +       u32 win_cnt = dma_domain->win_cnt;
-> > > +       struct dma_window *win_ptr =
-> > > +                               &dma_domain->win_arr[0];
-> > > +       struct iommu_domain_geometry *geom;
-> > > +
-> > > +       geom = &dma_domain->iommu_domain->geometry;
-> > > +
-> > > +       if (!win_cnt || !dma_domain->geom_size) {
-> > > +               pr_err("Number of windows/geometry not configured for
-> > the domain\n");
-> > > +               return 0;
-> > > +       }
-> > > +
-> > > +       if (win_cnt > 1) {
-> > > +               u64 subwin_size;
-> > > +               unsigned long subwin_iova;
-> > > +               u32 wnd;
-> > > +
-> > > +               subwin_size = dma_domain->geom_size >> ilog2(win_cnt);
-> >
-> > Could it be just geom_size / win_cnt ??
-> [Sethi Varun-B16395] You would run in to linking issues with respect to u64 division on 32 bit kernels.
-> 
-> >
-> > > +               subwin_iova = iova & ~(subwin_size - 1);
-> > > +               wnd = (subwin_iova - geom->aperture_start) >>
-> > ilog2(subwin_size);
-> > > +               win_ptr = &dma_domain->win_arr[wnd];
-> > > +       }
-> > > +
-> > > +       if (win_ptr->valid)
-> > > +               return (win_ptr->paddr + (iova & (win_ptr->size -
-> > > + 1)));
-> > > +
-> > > +       return 0;
-> > > +}
-> > > +
-> > > +static int map_liodn_subwins(int liodn, struct fsl_dma_domain
-> > > +*dma_domain)
-> >
-> > Just call it map_subwins().  They are just sub windows, not "liodn sub
-> > windows".
-> >
-> [Sethi Varun-B16395] This would be called per liodn.
->
-> > [cut]
-> >
-> > > +static int map_liodn_win(int liodn, struct fsl_dma_domain
-> > > +*dma_domain)
-> >
-> > Call it map_win().
-> [Sethi Varun-B16395] This would again be called per liodn.
+> Thanks to Stephen & Alan, for the review comments.
 
-On the function names-- function names are typically named
-with a noun describing some object and a verb describing
-the action...and sometimes a subsystem identifier:
-    kmem_cache + zalloc
-    spin + lock
+OK, in that case I have no objection to this patch.
 
-I don't think inserting liodn in the function name to indicates that it 
-operates per liodn makes it more clear and reads a little awkward to me:
+I'd like to hold off on applying this though; I suspect I'll want to
+take the Tegra USB patches through the Tegra tree rather than the USB
+tree again for the 3.10 kernel cycle. I think I may have screwed the
+pooch on the DT binding I set up for the USB controller clocks, and
+fixing this may require some Tegra DT changes, which would be easiest
+taken through the Tegra tree, and so to reduce conflicts in the USB
+code, taking the rest through there migth just be easiest.
 
-    map + liodn_win
-
-...it's almost like there is a "liodn_win" object.
-
-I think plain map_win() is more clear and the function prototype makes
-it pretty clear that you are operating on an liodn.
- 
-> > [cut]
-> > > +static  bool check_pci_ctl_endpt_part(struct pci_controller *pci_ctl)
-> > > +{
-> > > +       u32 version;
-> > > +
-> > > +       /* Check the PCI controller version number by readding BRR1
-> > register */
-> > > +       version = in_be32(pci_ctl->cfg_addr + (PCI_FSL_BRR1 >> 2));
-> > > +       version &= PCI_FSL_BRR1_VER;
-> > > +       /* If PCI controller version is >= 0x204 we can partition
-> > endpoints*/
-> > > +       if (version >= 0x204)
-> > > +               return 1;
-> > > +
-> > > +       return 0;
-> > > +}
-> >
-> > Can we just use the compatible string here to identify the different
-> > kinds of PCI
-> > controllers?   Reading the actual device registers is ugly right now
-> > because
-> > you are #defining the BRR1 stuff in a generic powerpc header.
-> >
-> [Sethi Varun-B16395] hmmm......, I would have to check for various different compatible strings in that
-> case. May be I can move the defines to a different file. What if I move them to some other header?
-
-Don't personally feel too strongly about version register or header...but it should be some fsl
-PCI header that you define those regs.
-
-You'll either need to check for a hardware version number or a compatible,
-so a compatible check may be just as easy...look for "fsl,qoriq-pcie-v2.4"?
-
-Stuart
-
-
+Alan, Greg, if you're OK with this patch now, or for any revised
+version, an Ack so I can take it through the Tegra tree would be great,
+thanks.
