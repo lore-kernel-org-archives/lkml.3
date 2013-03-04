@@ -1,151 +1,271 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932205Ab3CDSgP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 13:36:15 -0500
-Received: from out03.mta.xmission.com ([166.70.13.233]:47557 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932160Ab3CDSgN (ORCPT
+	id S1758656Ab3CDShs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 13:37:48 -0500
+Received: from mail-da0-f51.google.com ([209.85.210.51]:61439 "EHLO
+	mail-da0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758246Ab3CDShr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 13:36:13 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Vasily Kulikov <segoon@openwall.com>
-Cc: Kees Cook <keescook@google.com>, Brad Spengler <spender@grsecurity.net>,
-        Linux Containers <containers@lists.linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>, PaX Team <pageexec@freemail.hu>,
-        Dave Jones <davej@redhat.com>, kernel-hardening@lists.openwall.com
-References: <CAGXu5jK7x+gFKgCN5=ZF+kSc4xSNbGtSERHCoOnCEgiJ1_wNGg@mail.gmail.com>
-	<20130303005700.GA32213@austin.hallyn.com>
-	<874ngtxgt5.fsf@xmission.com>
-	<CAGXu5j+bwUx6r++ttvYg4yJrUUHxoQ86tQ0JzEBoQQU6KAh9ww@mail.gmail.com>
-	<874ngsrvrh.fsf@xmission.com>
-	<CAGXu5jJiO=BmjVbpVJhxHbafn5T_SQbe5g-RLxRbmknNnQMyfQ@mail.gmail.com>
-	<87k3pnmwpk.fsf_-_@xmission.com> <878v63mwm3.fsf_-_@xmission.com>
-	<20130304173611.GA8500@cachalot>
-Date: Mon, 04 Mar 2013 10:36:01 -0800
-In-Reply-To: <20130304173611.GA8500@cachalot> (Vasily Kulikov's message of
-	"Mon, 4 Mar 2013 21:36:11 +0400")
-Message-ID: <87y5e3dnce.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Mon, 4 Mar 2013 13:37:47 -0500
+Date: Mon, 4 Mar 2013 10:37:42 -0800
+From: Tejun Heo <tj@kernel.org>
+To: linux-kernel@vger.kernel.org, laijs@cn.fujitsu.com
+Cc: axboe@kernel.dk, jmoyer@redhat.com, zab@redhat.com,
+        kbuild test robot <fengguang.wu@intel.com>
+Subject: [PATCH v2 16/31] workqueue: introduce workqueue_attrs
+Message-ID: <20130304183742.GI30413@htj.dyndns.org>
+References: <1362194662-2344-1-git-send-email-tj@kernel.org>
+ <1362194662-2344-17-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX19+rBxsjJnENIfwYsuv0+SVTTQRjZle1pY=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  0.1 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0003]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa02 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  0.0 T_TooManySym_02 5+ unique symbols in subject
-X-Spam-DCC: XMission; sa02 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Vasily Kulikov <segoon@openwall.com>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH 2/2] fs: Limit sys_mount to only request filesystem modules.
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1362194662-2344-17-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vasily Kulikov <segoon@openwall.com> writes:
+Introduce struct workqueue_attrs which carries worker attributes -
+currently the nice level and allowed cpumask along with helper
+routines alloc_workqueue_attrs() and free_workqueue_attrs().
 
-> (cc'ed kernel-hardening)
->
-> On Sun, Mar 03, 2013 at 23:51 -0800, Eric W. Biederman wrote:
->> Modify the request_module to prefix the file system type with "fs-"
->> and add aliases to all of the filesystems that can be built as modules
->> to match.
->> 
->> A common practice is to build all of the kernel code and leave code
->> that is not commonly needed as modules, with the result that many
->> users are exposed to any bug anywhere in the kernel.
->> 
->> Looking for filesystems with a fs- prefix limits the pool of possible
->> modules that can be loaded by mount to just filesystems trivially
->> making things safer with no real cost.
->> 
->> Using aliases means user space can control the policy of which
->> filesystem modules are auto-loaded by editing /etc/modprobe.d/*.conf
->> with blacklist and alias directives.  Allowing simple, safe,
->> well understood work-arounds to known problematic software.
->> 
->> This also addresses a rare but unfortunate problem where the filesystem
->> name is not the same as it's module name and module auto-loading
->> would not work.  While writing this patch I saw a handful of such
->> cases.  The most significant being autofs that lives in the module
->> autofs4.
->> 
->> This is relevant to user namespaces because we can reach the request
->> module in get_fs_type() without having any special permissions, and
->> people get uncomfortable when a user specified string (in this case
->> the filesystem type) goes all of the way to request_module.
->> 
->> After having looked at this issue I don't think there is any
->> particular reason to perform any filtering or permission checks beyond
->> making it clear in the module request that we want a filesystem
->> module.  The common pattern in the kernel is to call request_module()
->> without regards to the users permissions.  In general all a filesystem
->> module does once loaded is call register_filesystem() and go to sleep.
->> Which means there is not much attack surface exposed by loading a
->> filesytem module unless the filesystem is mounted.  In a user
->> namespace filesystems are not mounted unless .fs_flags = FS_USERNS_MOUNT,
->> which most filesystems do not set today.
->> 
->> Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
->> Acked-by: Kees Cook <keescook@chromium.org>
->> Reported-by: Kees Cook <keescook@google.com>
->> Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
-> ...
->> diff --git a/fs/filesystems.c b/fs/filesystems.c
->> index da165f6..92567d9 100644
->> --- a/fs/filesystems.c
->> +++ b/fs/filesystems.c
->> @@ -273,7 +273,7 @@ struct file_system_type *get_fs_type(const char *name)
->>  	int len = dot ? dot - name : strlen(name);
->>  
->>  	fs = __get_fs_type(name, len);
->> -	if (!fs && (request_module("%.*s", len, name) == 0))
->> +	if (!fs && (request_module("fs-%.*s", len, name) == 0))
->>  		fs = __get_fs_type(name, len);
->>  
->>  	if (dot && fs && !(fs->fs_flags & FS_HAS_SUBTYPE)) {
->
-> Maybe we should divide request_module() into several functions regarding
-> expected caller's privileges?
->
-> - request_module() for CAP_SYS_MODULE in init_ns
-> - request_module_relaxed() for everybody
->
-> request_module_relaxed() is used in get_fs_type(), dev_load() and all
-> places where the safety of module loading is manually checked.  All old
-> not yet checked users of request_module() will not be triggerable from user_ns.
-> That's the same scheme as with capable() and ns_capable().
+Each worker_pool now carries ->attrs describing the attributes of its
+workers.  All functions dealing with cpumask and nice level of workers
+are updated to follow worker_pool->attrs instead of determining them
+from other characteristics of the worker_pool, and init_workqueues()
+is updated to set worker_pool->attrs appropriately for all standard
+pools.
 
-User namespaces in this discussion are pretty much a red-herring.  You
-can already reach most request_module callers without having any
-capabilities.  And honestly that seems fine.
+Note that create_worker() is updated to always perform set_user_nice()
+and use set_cpus_allowed_ptr() combined with manual assertion of
+PF_THREAD_BOUND instead of kthread_bind().  This simplifies handling
+random attributes without affecting the outcome.
 
-It never ever hurts to request a module.
+This patch doesn't introduce any behavior changes.
 
-It only sometimes when something else has already gone wrong hurts to
-get the module.
+v2: Missing cpumask_var_t definition caused build failure on some
+    archs.  linux/cpumask.h included.
 
-It makes sense to add a prefix when sending the module request to make
-it clear what kind of module we are looking for.  That makes it easy to
-tell why we are requesting the module and makes it easy to implement
-policy controls in userspace.
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: kbuild test robot <fengguang.wu@intel.com>
+---
+ include/linux/workqueue.h |   13 +++++
+ kernel/workqueue.c        |  103 ++++++++++++++++++++++++++++++++++++----------
+ 2 files changed, 94 insertions(+), 22 deletions(-)
 
-I don't see any reason to limit request_module to people with some
-capability or other.  The filesystem module_request just happened to be
-after a capable(CAP_SYS_AMDIN) in this case which is the case people
-noticed was a little fishy.
-
-But if I have overlooked something I am happy to hear it.
-
-Eric
+--- a/include/linux/workqueue.h
++++ b/include/linux/workqueue.h
+@@ -11,6 +11,7 @@
+ #include <linux/lockdep.h>
+ #include <linux/threads.h>
+ #include <linux/atomic.h>
++#include <linux/cpumask.h>
+ 
+ struct workqueue_struct;
+ 
+@@ -115,6 +116,15 @@ struct delayed_work {
+ 	int cpu;
+ };
+ 
++/*
++ * A struct for workqueue attributes.  This can be used to change
++ * attributes of an unbound workqueue.
++ */
++struct workqueue_attrs {
++	int			nice;		/* nice level */
++	cpumask_var_t		cpumask;	/* allowed CPUs */
++};
++
+ static inline struct delayed_work *to_delayed_work(struct work_struct *work)
+ {
+ 	return container_of(work, struct delayed_work, work);
+@@ -399,6 +409,9 @@ __alloc_workqueue_key(const char *fmt, u
+ 
+ extern void destroy_workqueue(struct workqueue_struct *wq);
+ 
++struct workqueue_attrs *alloc_workqueue_attrs(gfp_t gfp_mask);
++void free_workqueue_attrs(struct workqueue_attrs *attrs);
++
+ extern bool queue_work_on(int cpu, struct workqueue_struct *wq,
+ 			struct work_struct *work);
+ extern bool queue_work(struct workqueue_struct *wq, struct work_struct *work);
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -148,6 +148,8 @@ struct worker_pool {
+ 	struct mutex		assoc_mutex;	/* protect POOL_DISASSOCIATED */
+ 	struct ida		worker_ida;	/* L: for worker IDs */
+ 
++	struct workqueue_attrs	*attrs;		/* I: worker attributes */
++
+ 	/*
+ 	 * The current concurrency level.  As it's likely to be accessed
+ 	 * from other CPUs during try_to_wake_up(), put it in a separate
+@@ -1563,14 +1565,13 @@ __acquires(&pool->lock)
+ 		 * against POOL_DISASSOCIATED.
+ 		 */
+ 		if (!(pool->flags & POOL_DISASSOCIATED))
+-			set_cpus_allowed_ptr(current, get_cpu_mask(pool->cpu));
++			set_cpus_allowed_ptr(current, pool->attrs->cpumask);
+ 
+ 		spin_lock_irq(&pool->lock);
+ 		if (pool->flags & POOL_DISASSOCIATED)
+ 			return false;
+ 		if (task_cpu(current) == pool->cpu &&
+-		    cpumask_equal(&current->cpus_allowed,
+-				  get_cpu_mask(pool->cpu)))
++		    cpumask_equal(&current->cpus_allowed, pool->attrs->cpumask))
+ 			return true;
+ 		spin_unlock_irq(&pool->lock);
+ 
+@@ -1677,7 +1678,7 @@ static void rebind_workers(struct worker
+ 		 * wq doesn't really matter but let's keep @worker->pool
+ 		 * and @pwq->pool consistent for sanity.
+ 		 */
+-		if (std_worker_pool_pri(worker->pool))
++		if (worker->pool->attrs->nice < 0)
+ 			wq = system_highpri_wq;
+ 		else
+ 			wq = system_wq;
+@@ -1719,7 +1720,7 @@ static struct worker *alloc_worker(void)
+  */
+ static struct worker *create_worker(struct worker_pool *pool)
+ {
+-	const char *pri = std_worker_pool_pri(pool) ? "H" : "";
++	const char *pri = pool->attrs->nice < 0  ? "H" : "";
+ 	struct worker *worker = NULL;
+ 	int id = -1;
+ 
+@@ -1749,24 +1750,23 @@ static struct worker *create_worker(stru
+ 	if (IS_ERR(worker->task))
+ 		goto fail;
+ 
+-	if (std_worker_pool_pri(pool))
+-		set_user_nice(worker->task, HIGHPRI_NICE_LEVEL);
++	set_user_nice(worker->task, pool->attrs->nice);
++	set_cpus_allowed_ptr(worker->task, pool->attrs->cpumask);
+ 
+ 	/*
+-	 * Determine CPU binding of the new worker depending on
+-	 * %POOL_DISASSOCIATED.  The caller is responsible for ensuring the
+-	 * flag remains stable across this function.  See the comments
+-	 * above the flag definition for details.
+-	 *
+-	 * As an unbound worker may later become a regular one if CPU comes
+-	 * online, make sure every worker has %PF_THREAD_BOUND set.
++	 * %PF_THREAD_BOUND is used to prevent userland from meddling with
++	 * cpumask of workqueue workers.  This is an abuse.  We need
++	 * %PF_KERNEL_CPUMASK.
+ 	 */
+-	if (!(pool->flags & POOL_DISASSOCIATED)) {
+-		kthread_bind(worker->task, pool->cpu);
+-	} else {
+-		worker->task->flags |= PF_THREAD_BOUND;
++	worker->task->flags |= PF_THREAD_BOUND;
++
++	/*
++	 * The caller is responsible for ensuring %POOL_DISASSOCIATED
++	 * remains stable across this function.  See the comments above the
++	 * flag definition for details.
++	 */
++	if (pool->flags & POOL_DISASSOCIATED)
+ 		worker->flags |= WORKER_UNBOUND;
+-	}
+ 
+ 	return worker;
+ fail:
+@@ -3121,7 +3121,52 @@ int keventd_up(void)
+ 	return system_wq != NULL;
+ }
+ 
+-static void init_worker_pool(struct worker_pool *pool)
++/**
++ * free_workqueue_attrs - free a workqueue_attrs
++ * @attrs: workqueue_attrs to free
++ *
++ * Undo alloc_workqueue_attrs().
++ */
++void free_workqueue_attrs(struct workqueue_attrs *attrs)
++{
++	if (attrs) {
++		free_cpumask_var(attrs->cpumask);
++		kfree(attrs);
++	}
++}
++
++/**
++ * alloc_workqueue_attrs - allocate a workqueue_attrs
++ * @gfp_mask: allocation mask to use
++ *
++ * Allocate a new workqueue_attrs, initialize with default settings and
++ * return it.  Returns NULL on failure.
++ */
++struct workqueue_attrs *alloc_workqueue_attrs(gfp_t gfp_mask)
++{
++	struct workqueue_attrs *attrs;
++
++	attrs = kzalloc(sizeof(*attrs), gfp_mask);
++	if (!attrs)
++		goto fail;
++	if (!alloc_cpumask_var(&attrs->cpumask, gfp_mask))
++		goto fail;
++
++	cpumask_setall(attrs->cpumask);
++	return attrs;
++fail:
++	free_workqueue_attrs(attrs);
++	return NULL;
++}
++
++/**
++ * init_worker_pool - initialize a newly zalloc'd worker_pool
++ * @pool: worker_pool to initialize
++ *
++ * Initiailize a newly zalloc'd @pool.  It also allocates @pool->attrs.
++ * Returns 0 on success, -errno on failure.
++ */
++static int init_worker_pool(struct worker_pool *pool)
+ {
+ 	spin_lock_init(&pool->lock);
+ 	pool->flags |= POOL_DISASSOCIATED;
+@@ -3139,6 +3184,11 @@ static void init_worker_pool(struct work
+ 	mutex_init(&pool->manager_mutex);
+ 	mutex_init(&pool->assoc_mutex);
+ 	ida_init(&pool->worker_ida);
++
++	pool->attrs = alloc_workqueue_attrs(GFP_KERNEL);
++	if (!pool->attrs)
++		return -ENOMEM;
++	return 0;
+ }
+ 
+ static int alloc_and_link_pwqs(struct workqueue_struct *wq)
+@@ -3791,7 +3841,8 @@ out_unlock:
+ 
+ static int __init init_workqueues(void)
+ {
+-	int cpu;
++	int std_nice[NR_STD_WORKER_POOLS] = { 0, HIGHPRI_NICE_LEVEL };
++	int i, cpu;
+ 
+ 	/* make sure we have enough bits for OFFQ pool ID */
+ 	BUILD_BUG_ON((1LU << (BITS_PER_LONG - WORK_OFFQ_POOL_SHIFT)) <
+@@ -3808,10 +3859,18 @@ static int __init init_workqueues(void)
+ 	for_each_wq_cpu(cpu) {
+ 		struct worker_pool *pool;
+ 
++		i = 0;
+ 		for_each_std_worker_pool(pool, cpu) {
+-			init_worker_pool(pool);
++			BUG_ON(init_worker_pool(pool));
+ 			pool->cpu = cpu;
+ 
++			if (cpu != WORK_CPU_UNBOUND)
++				cpumask_copy(pool->attrs->cpumask, cpumask_of(cpu));
++			else
++				cpumask_setall(pool->attrs->cpumask);
++
++			pool->attrs->nice = std_nice[i++];
++
+ 			/* alloc pool ID */
+ 			BUG_ON(worker_pool_assign_id(pool));
+ 		}
