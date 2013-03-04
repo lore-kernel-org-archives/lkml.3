@@ -1,120 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755000Ab3CDDY2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 22:24:28 -0500
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:42852 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754741Ab3CDDY1 (ORCPT
+	id S1754960Ab3CDD2a (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 22:28:30 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:53639 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752080Ab3CDD23 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Mar 2013 22:24:27 -0500
-MIME-Version: 1.0
-In-Reply-To: <20130225235313.GE2679@htj.dyndns.org>
-References: <CAJFUiJhxqWeQ9PiinpRYCUF8U_3dpaAdvsEKHW2i-QqZ=vkYsQ@mail.gmail.com>
- <20130225235313.GE2679@htj.dyndns.org>
-From: Lianwei Wang <lianwei.wang@gmail.com>
-Date: Mon, 4 Mar 2013 11:24:06 +0800
-Message-ID: <CAJFUiJjy-7sS9xH76XMLs5SU6fUQ1Bk4Xn67jjHeZNQRjC54dg@mail.gmail.com>
-Subject: Re: PATCH: freezer: add fake signal clearing back when thaw task
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Oleg Nesterov <oleg@redhat.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Content-Type: text/plain; charset=ISO-8859-1
+	Sun, 3 Mar 2013 22:28:29 -0500
+Date: Mon, 4 Mar 2013 14:28:21 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jan Kara <jack@suse.cz>
+Subject: linux-next: build failure after merge of the final tree (akpm tree
+ related)
+Message-Id: <20130304142821.b61bd9800c4ea35331829a79@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__4_Mar_2013_14_28_21_+1100_.JcSKTG3uZ/d28tT"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry for the late response.
+--Signature=_Mon__4_Mar_2013_14_28_21_+1100_.JcSKTG3uZ/d28tT
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Freeze/Thaw is a hot path for the Linux based mobile OS, e.g. Android.
-If we don't remove the pending fake signal, then the user space apps
-or the related kernel driver has to handle such error. And yes, the
-user can handle such case by checking the return value, but it mislead
-the user and confuse to them that why wait_event_freezable and friends
-return a error on resume path every time? Can we avoid such useless
-error return?
+Hi all,
 
-(Resend with plain text)
+After merging the final tree, today's linux-next build (arm defconfig)
+failed like this:
 
-2013/2/26 Tejun Heo <tj@kernel.org>:
-> (cc'ing Rafael and Oleg and quoting whole body)
->
-> On Thu, Feb 21, 2013 at 02:19:21PM +0800, Lianwei Wang wrote:
->> Hi Tejun Heo and all,
->>
->> The commit of "34b087e freezer: kill unused
->> set_freezable_with_signal()" remove recalc_sigpending*() calls in
->> freezer, so the user tasks get TIF_SIGPENDING fake signal that is set
->> when freezing userspace process. It left the fake signal to userspcae
->> which cause the userspace task that wait_event_freezable and friends
->> return a wrong ERESTARTSYS. This is not good because it waste cpu time
->> to handle the fake signal.
->
-> Is this even measureable?  Freeze / thaw isn't exactly a hot path and
-> I'm having difficult time believing -ERESTARTSYS would have a
-> noticeable impact on anything.  Can you please explain why this is a
-> problem?
->
->> Can we just call the recalc_sigpending to clear the fake signal for
->> userspace tasks? as below patch do:
->>
->> From 176fccee178bc0185d92853dd2f521c9166b0853 Mon Sep 17 00:00:00 2001
->> From: Lianwei Wang <lianwei.wang@gmail.com>
->> Date: Mon, 21 Jan 2013 18:21:26 +0800
->> Subject: [PATCH] freezer: add fake signal clearing back when thaw task
->>
->> The fake TIF_SIGPENDING is set during freeze userspace process, but it
->> is not cleared when thaw tasks after below commit:
->>   34b087e freezer: kill unused set_freezable_with_signal()
->>
->> This will cause the userspace task that wait_event_freezable and friends
->> return a wrong ERESTARTSYS. This is not good because it waste cpu time to
->> handle the fake signal.
->>
->> Try to clear the TIF_SIGPENDING flag for userspace apps when wakeup the
->> frozen task to fix this issue.
->>
->> Change-Id: I91c90ad2ee9a46c42e3b39a7384ec81e97bc0394
->> Signed-off-by: Lianwei Wang <lianwei.wang@gmail.com>
->> ---
->>  kernel/freezer.c |   14 ++++++++++++++
->>  1 files changed, 14 insertions(+), 0 deletions(-)
->>
->> diff --git a/kernel/freezer.c b/kernel/freezer.c
->> index c38893b..09557f6 100644
->> --- a/kernel/freezer.c
->> +++ b/kernel/freezer.c
->> @@ -46,6 +46,16 @@ bool freezing_slow_path(struct task_struct *p)
->>  }
->>  EXPORT_SYMBOL(freezing_slow_path);
->>
->> +static void fake_signal_clear(struct task_struct *p)
->> +{
->> + unsigned long flags;
->> +
->> + if (lock_task_sighand(p, &flags)) {
->> +     recalc_sigpending();
->> +     unlock_task_sighand(p, &flags);
->> + }
->> +}
->> +
->>  /* Refrigerator is place where frozen processes are stored :-). */
->>  bool __refrigerator(bool check_kthr_stop)
->>  {
->> @@ -74,6 +84,10 @@ bool __refrigerator(bool check_kthr_stop)
->>
->>   pr_debug("%s left refrigerator\n", current->comm);
->>
->> + if (!(current->flags & PF_KTHREAD))
->> +     if (test_tsk_thread_flag(current, TIF_SIGPENDING))
->> +         fake_signal_clear(current);
->> +
->>   /*
->>   * Restore saved task state before returning.  The mb'd version
->>   * needs to be used; otherwise, it might silently break
->> --
->> 1.7.4.1
->
->
->
-> --
-> tejun
+kernel/built-in.o: In function `console_unlock':
+cpu_pm.c:(.text+0x4418): undefined reference to `__bad_udelay'
+
+Caused by commit 4df7323a125f ("printk: avoid softlockups in
+console_unlock()") which added
+
+	ndelay(max_interrupt_disabled_duration() / 2);
+
+to console_unlock() which can be a 2.5 second delay ... and the maximum
+delayed allowed by udelay (at least in this build) is 2ms.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Mon__4_Mar_2013_14_28_21_+1100_.JcSKTG3uZ/d28tT
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRNBTVAAoJEECxmPOUX5FEyLAP/Ah/+6IXdcmS/XwB/8axAPLn
+oOVZ1sWLXcklUc5fK+P1BvE4oNz/ceACrwqvG2CDuOYZTINd+BXAM3+ChdMCtFF7
+yIuBRXNRDFCpxm6fbXmcm/mVBvDCSWdYbG/c4VxGnMEHmWmauqWJUDikr4ofDSe+
+Hef48a38l4vmTpy0k20EIbp1Mip4D8cTBc7e+0Q/yeLk4gYES49alL3WPl/0jhU6
+uQF3UXUFZO1xlX8gD1GkC2WPBEuDJlmaB0HMzw4XOleGdHnnmgfyQTLm+AsWHMFl
+GlmgL0Lke9s/y16uYJno9zGDefbKyYTQBC3zeZ4OrJ1r6auMLMgVWlAf3jsiKrv6
+L5QNfpQmPqiOULGjExmjCg2+LM6zX38KPHR71zh/P0D3gKyaeKq3fpCWKZzYIdJo
+lLJjNd/HLZ53DYT7B9PXDIAht8w8idUba19jOFKXb9xf6MAMpKkMm+EZD/XNu5zw
+jZp+ubLZM8CucO41a6Mcwd2A9u8NFvgY3SIqyLpaCc9Z0s552UBB78WhDT8W6v7p
+bO04bZBot3vR+l0IQQNy+d/hVx+smY57YnRzFWFEkN9DPFGr+ZtbqWC9wVZIP5od
+hse2z6cRbCGpi8aR2OQCmQduDS84bbGHPJ/Vfach1LgJBw50iO+4PkIhmZfghwNd
+XBvUIPU7hTEWc0AruZA8
+=4GU4
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__4_Mar_2013_14_28_21_+1100_.JcSKTG3uZ/d28tT--
