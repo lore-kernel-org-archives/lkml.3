@@ -1,73 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932724Ab3CDV43 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 16:56:29 -0500
-Received: from mail-ia0-f173.google.com ([209.85.210.173]:42754 "EHLO
-	mail-ia0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932114Ab3CDV42 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 16:56:28 -0500
+	id S1758849Ab3CDV44 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 16:56:56 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:41362 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758158Ab3CDV4z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Mar 2013 16:56:55 -0500
+Date: Mon, 4 Mar 2013 22:56:39 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: X86 ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/5] x86-64, docs, mm: Add vsyscall range to virtual
+ address space layout
+Message-ID: <20130304215639.GH22274@pd.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Andy Lutomirski <luto@amacapital.net>, X86 ML <x86@kernel.org>,
+	LKML <linux-kernel@vger.kernel.org>
+References: <1362428180-8865-1-git-send-email-bp@alien8.de>
+ <1362428180-8865-4-git-send-email-bp@alien8.de>
+ <513515F0.7050603@mit.edu>
 MIME-Version: 1.0
-In-Reply-To: <014a01ce18ae$e294c5e0$a7be51a0$%han@samsung.com>
-References: <013a01ce18ad$e45caa10$ad15fe30$%han@samsung.com>
-	<014a01ce18ae$e294c5e0$a7be51a0$%han@samsung.com>
-Date: Mon, 4 Mar 2013 22:56:27 +0100
-X-Google-Sender-Auth: lXWlrf_dOx9WeRtvztOyzwTh6oQ
-Message-ID: <CAMuHMdW_rXNRLs4Och6KdEpbnN32uf_Mj3RM79N_ovz+kpz=Qg@mail.gmail.com>
-Subject: Re: [PATCH 17/24] rtc: rtc-ps3: use module_platform_driver_probe()
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Jingoo Han <jg1.han@samsung.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <513515F0.7050603@mit.edu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 4, 2013 at 9:04 AM, Jingoo Han <jg1.han@samsung.com> wrote:
-> This patch uses module_platform_driver_probe() macro which makes
-> the code smaller and simpler.
->
-> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+On Mon, Mar 04, 2013 at 01:45:20PM -0800, Andy Lutomirski wrote:
+> vsyscalls are only 4k.  Am I missing something obvious her?
 
-Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Right, but we're reserving 5 level2 pages for this, i.e. 5*512*4K = 10M.
+I.e., each level2 page contains 512 ptes, each pointing to a 4K page.
 
-> ---
->  drivers/rtc/rtc-ps3.c |   13 +------------
->  1 files changed, 1 insertions(+), 12 deletions(-)
->
-> diff --git a/drivers/rtc/rtc-ps3.c b/drivers/rtc/rtc-ps3.c
-> index 968133c..846722d 100644
-> --- a/drivers/rtc/rtc-ps3.c
-> +++ b/drivers/rtc/rtc-ps3.c
-> @@ -85,18 +85,7 @@ static struct platform_driver ps3_rtc_driver = {
->         .remove = __exit_p(ps3_rtc_remove),
->  };
->
-> -static int __init ps3_rtc_init(void)
-> -{
-> -       return platform_driver_probe(&ps3_rtc_driver, ps3_rtc_probe);
-> -}
-> -
-> -static void __exit ps3_rtc_fini(void)
-> -{
-> -       platform_driver_unregister(&ps3_rtc_driver);
-> -}
-> -
-> -module_init(ps3_rtc_init);
-> -module_exit(ps3_rtc_fini);
-> +module_platform_driver_probe(ps3_rtc_driver, ps3_rtc_probe);
->
->  MODULE_AUTHOR("Sony Corporation");
->  MODULE_LICENSE("GPL");
+arch/x86/kernel/head_64.S:
 
-Gr{oetje,eeting}s,
+...
+NEXT_PAGE(level2_fixmap_pgt)
+	.fill	506,8,0
+	.quad	level1_fixmap_pgt - __START_KERNEL_map + _PAGE_TABLE
+	/* 8MB reserved for vsyscalls + a 2MB hole = 4 + 1 entries */
+	.fill	5,8,0
 
-                        Geert
+NEXT_PAGE(level1_fixmap_pgt)
+	.fill	512,8,0
 
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
 --
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
