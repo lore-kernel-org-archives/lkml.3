@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756849Ab3CDEPN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 23:15:13 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60855 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755582Ab3CDDmt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755618Ab3CDDmt (ORCPT <rfc822;w@1wt.eu>);
 	Sun, 3 Mar 2013 22:42:49 -0500
-Message-Id: <20130304033722.097085881@decadent.org.uk>
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60822 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755524Ab3CDDmo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Mar 2013 22:42:44 -0500
+Message-Id: <20130304033708.479195432@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 04 Mar 2013 03:39:35 +0000
+Date: Mon, 04 Mar 2013 03:37:15 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Oleg Nesterov <oleg@redhat.com>,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        Rusty Russell <rusty@rustcorp.com.au>, Tejun Heo <tj@kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 148/153] kmod: make __request_module() killable
+Cc: akpm@linux-foundation.org,
+        Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>,
+        Gavin Shan <shangw@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [ 008/153] powerpc/eeh: Fix crash when adding a device in a slot with DDW
 In-Reply-To: <20130304033707.648729212@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,80 +29,125 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oleg Nesterov <oleg@redhat.com>
+From: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
 
-commit 1cc684ab75123efe7ff446eb821d44375ba8fa30 upstream.
+commit 6a040ce72598159a74969a2d01ab0ba5ee6536b3 upstream.
 
-As Tetsuo Handa pointed out, request_module() can stress the system
-while the oom-killed caller sleeps in TASK_UNINTERRUPTIBLE.
+The DDW code uses a eeh_dev struct from the pci_dev. However, this is
+not set until eeh_add_device_late is called.
 
-The task T uses "almost all" memory, then it does something which
-triggers request_module().  Say, it can simply call sys_socket().  This
-in turn needs more memory and leads to OOM.  oom-killer correctly
-chooses T and kills it, but this can't help because it sleeps in
-TASK_UNINTERRUPTIBLE and after that oom-killer becomes "disabled" by the
-TIF_MEMDIE task T.
+Since pci_bus_add_devices is called before eeh_add_device_late, the PCI
+devices are added to the bus, making drivers' probe hooks to be called.
+These will call set_dma_mask, which will call the DDW code, which will
+require the eeh_dev struct from pci_dev. This would result in a crash,
+due to a NULL dereference.
 
-Make __request_module() killable.  The only necessary change is that
-call_modprobe() should kmalloc argv and module_name, they can't live in
-the stack if we use UMH_KILLABLE.  This memory is freed via
-call_usermodehelper_freeinfo()->cleanup.
+Calling eeh_add_device_late after pci_bus_add_devices would make the
+system BUG, because device files shouldn't be added to devices there
+were not added to the system. So, a new function is needed to add such
+files only after pci_bus_add_devices have been called.
 
-Reported-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: David Rientjes <rientjes@google.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
+Acked-by: Gavin Shan <shangw@linux.vnet.ibm.com>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- kernel/kmod.c |   26 ++++++++++++++++++++++++--
- 1 file changed, 24 insertions(+), 2 deletions(-)
+ arch/powerpc/include/asm/eeh.h       |    3 +++
+ arch/powerpc/kernel/of_platform.c    |    3 +++
+ arch/powerpc/kernel/pci-common.c     |    7 +++++--
+ arch/powerpc/platforms/pseries/eeh.c |   24 +++++++++++++++++++++++-
+ 4 files changed, 34 insertions(+), 3 deletions(-)
 
---- a/kernel/kmod.c
-+++ b/kernel/kmod.c
-@@ -58,6 +58,12 @@ static DEFINE_SPINLOCK(umh_sysctl_lock);
- */
- char modprobe_path[KMOD_PATH_LEN] = "/sbin/modprobe";
- 
-+static void free_modprobe_argv(struct subprocess_info *info)
-+{
-+	kfree(info->argv[3]); /* check call_modprobe() */
-+	kfree(info->argv);
-+}
-+
- static int call_modprobe(char *module_name, int wait)
- {
- 	static char *envp[] = {
-@@ -67,10 +73,26 @@ static int call_modprobe(char *module_na
- 		NULL
- 	};
- 
--	char *argv[] = { modprobe_path, "-q", "--", module_name, NULL };
-+	char **argv = kmalloc(sizeof(char *[5]), GFP_KERNEL);
-+	if (!argv)
-+		goto out;
-+
-+	module_name = kstrdup(module_name, GFP_KERNEL);
-+	if (!module_name)
-+		goto free_argv;
-+
-+	argv[0] = modprobe_path;
-+	argv[1] = "-q";
-+	argv[2] = "--";
-+	argv[3] = module_name;	/* check free_modprobe_argv() */
-+	argv[4] = NULL;
- 
- 	return call_usermodehelper_fns(modprobe_path, argv, envp,
--					wait, NULL, NULL, NULL);
-+		wait | UMH_KILLABLE, NULL, free_modprobe_argv, NULL);
-+free_argv:
-+	kfree(argv);
-+out:
-+	return -ENOMEM;
- }
+--- a/arch/powerpc/include/asm/eeh.h
++++ b/arch/powerpc/include/asm/eeh.h
+@@ -61,6 +61,7 @@ void __init pci_addr_cache_build(void);
+  */
+ void eeh_add_device_tree_early(struct device_node *);
+ void eeh_add_device_tree_late(struct pci_bus *);
++void eeh_add_sysfs_files(struct pci_bus *);
  
  /**
+  * eeh_remove_device_recursive - undo EEH for device & children.
+@@ -105,6 +106,8 @@ static inline void eeh_add_device_tree_e
+ 
+ static inline void eeh_add_device_tree_late(struct pci_bus *bus) { }
+ 
++static inline void eeh_add_sysfs_files(struct pci_bus *bus) { }
++
+ static inline void eeh_remove_bus_device(struct pci_dev *dev) { }
+ #define EEH_POSSIBLE_ERROR(val, type) (0)
+ #define EEH_IO_ERROR_VALUE(size) (-1UL)
+--- a/arch/powerpc/kernel/of_platform.c
++++ b/arch/powerpc/kernel/of_platform.c
+@@ -91,6 +91,9 @@ static int __devinit of_pci_phb_probe(st
+ 	/* Add probed PCI devices to the device model */
+ 	pci_bus_add_devices(phb->bus);
+ 
++	/* sysfs files should only be added after devices are added */
++	eeh_add_sysfs_files(phb->bus);
++
+ 	return 0;
+ }
+ 
+--- a/arch/powerpc/kernel/pci-common.c
++++ b/arch/powerpc/kernel/pci-common.c
+@@ -1536,11 +1536,14 @@ void pcibios_finish_adding_to_bus(struct
+ 	pcibios_allocate_bus_resources(bus);
+ 	pcibios_claim_one_bus(bus);
+ 
++	/* Fixup EEH */
++	eeh_add_device_tree_late(bus);
++
+ 	/* Add new devices to global lists.  Register in proc, sysfs. */
+ 	pci_bus_add_devices(bus);
+ 
+-	/* Fixup EEH */
+-	eeh_add_device_tree_late(bus);
++	/* sysfs files should only be added after devices are added */
++	eeh_add_sysfs_files(bus);
+ }
+ EXPORT_SYMBOL_GPL(pcibios_finish_adding_to_bus);
+ 
+--- a/arch/powerpc/platforms/pseries/eeh.c
++++ b/arch/powerpc/platforms/pseries/eeh.c
+@@ -1238,7 +1238,6 @@ static void eeh_add_device_late(struct p
+ 	pdn->pcidev = dev;
+ 
+ 	pci_addr_cache_insert_device(dev);
+-	eeh_sysfs_add_device(dev);
+ }
+ 
+ void eeh_add_device_tree_late(struct pci_bus *bus)
+@@ -1257,6 +1256,29 @@ void eeh_add_device_tree_late(struct pci
+ EXPORT_SYMBOL_GPL(eeh_add_device_tree_late);
+ 
+ /**
++ * eeh_add_sysfs_files - Add EEH sysfs files for the indicated PCI bus
++ * @bus: PCI bus
++ *
++ * This routine must be used to add EEH sysfs files for PCI
++ * devices which are attached to the indicated PCI bus. The PCI bus
++ * is added after system boot through hotplug or dlpar.
++ */
++void eeh_add_sysfs_files(struct pci_bus *bus)
++{
++	struct pci_dev *dev;
++
++	list_for_each_entry(dev, &bus->devices, bus_list) {
++		eeh_sysfs_add_device(dev);
++		if (dev->hdr_type == PCI_HEADER_TYPE_BRIDGE) {
++			struct pci_bus *subbus = dev->subordinate;
++			if (subbus)
++				eeh_add_sysfs_files(subbus);
++		}
++	}
++}
++EXPORT_SYMBOL_GPL(eeh_add_sysfs_files);
++
++/**
+  * eeh_remove_device - undo EEH setup for the indicated pci device
+  * @dev: pci device to be removed
+  *
 
 
