@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756053Ab3CDEK3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 23:10:29 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60960 "EHLO
+	id S1756088Ab3CDEKt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 23:10:49 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60983 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755939Ab3CDDnI (ORCPT
+	by vger.kernel.org with ESMTP id S1755878Ab3CDDnH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Mar 2013 22:43:08 -0500
-Message-Id: <20130304033719.507309068@decadent.org.uk>
+	Sun, 3 Mar 2013 22:43:07 -0500
+Message-Id: <20130304033719.409605094@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 04 Mar 2013 03:39:08 +0000
+Date: Mon, 04 Mar 2013 03:39:07 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Jan Beulich <jbeulich@suse.com>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [ 121/153] xen-pciback: rate limit error messages from
- xen_pcibk_enable_msi{,x}()
+Cc: akpm@linux-foundation.org, Helge Deller <deller@gmx.de>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ian Kent <raven@themaw.net>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Rolf Eike Beer <eike-kernel@sf-tec.de>
+Subject: [ 120/153] unbreak automounter support on 64-bit kernel with 32-bit userspace
+ (v2)
 In-Reply-To: <20130304033707.648729212@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,71 +31,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Beulich <jbeulich@suse.com>
+From: Helge Deller <deller@gmx.de>
 
-commit 51ac8893a7a51b196501164e645583bf78138699 upstream.
+commit 4f4ffc3a5398ef9bdbb32db04756d7d34e356fcf upstream.
 
-... as being guest triggerable (e.g. by invoking
-XEN_PCI_OP_enable_msi{,x} on a device not being MSI/MSI-X capable).
+automount-support is broken on the parisc architecture, because the existing
+#if list does not include a check for defined(__hppa__). The HPPA (parisc)
+architecture is similiar to other 64bit Linux targets where we have to define
+autofs_wqt_t (which is passed back and forth to user space) as int type which
+has a size of 32bit across 32 and 64bit kernels.
 
-This is CVE-2013-0231 / XSA-43.
+During the discussion on the mailing list, H. Peter Anvin suggested to invert
+the #if list since only specific platforms (specifically those who do not have
+a 32bit userspace, like IA64 and Alpha) should have autofs_wqt_t as unsigned
+long type.
 
-Also make the two messages uniform in both their wording and severity.
+This suggestion is probably the best way to go, since Arm64 (and maybe others?)
+seems to have a non-working automounter. So in the long run even for other new
+upcoming architectures this inverted check seem to be the best solution, since
+it will not require them to change this #if again (unless they are 64bit only).
 
-Signed-off-by: Jan Beulich <jbeulich@suse.com>
-Acked-by: Ian Campbell <ian.campbell@citrix.com>
-Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-[bwh: Backported to 3.2: add #include <linux/ratelimited.h>, needed by
- printk_ratelimited()]
+Signed-off-by: Helge Deller <deller@gmx.de>
+Acked-by: H. Peter Anvin <hpa@zytor.com>
+Acked-by: Ian Kent <raven@themaw.net>
+Acked-by: Catalin Marinas <catalin.marinas@arm.com>
+CC: James Bottomley <James.Bottomley@HansenPartnership.com>
+CC: Rolf Eike Beer <eike-kernel@sf-tec.de>
+[bwh: Backported to 3.2: adjust filename]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/xen/xen-pciback/pciback_ops.c |   14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
-
---- a/drivers/xen/xen-pciback/pciback_ops.c
-+++ b/drivers/xen/xen-pciback/pciback_ops.c
-@@ -8,6 +8,7 @@
- #include <linux/bitops.h>
- #include <xen/events.h>
- #include <linux/sched.h>
-+#include <linux/ratelimit.h>
- #include "pciback.h"
+--- a/include/linux/auto_fs.h
++++ b/include/linux/auto_fs.h
+@@ -31,25 +31,16 @@
+ #define AUTOFS_MIN_PROTO_VERSION	AUTOFS_PROTO_VERSION
  
- int verbose_request;
-@@ -135,7 +136,6 @@ int xen_pcibk_enable_msi(struct xen_pcib
- 			 struct pci_dev *dev, struct xen_pci_op *op)
- {
- 	struct xen_pcibk_dev_data *dev_data;
--	int otherend = pdev->xdev->otherend_id;
- 	int status;
+ /*
+- * Architectures where both 32- and 64-bit binaries can be executed
+- * on 64-bit kernels need this.  This keeps the structure format
+- * uniform, and makes sure the wait_queue_token isn't too big to be
+- * passed back down to the kernel.
+- *
+- * This assumes that on these architectures:
+- * mode     32 bit    64 bit
+- * -------------------------
+- * int      32 bit    32 bit
+- * long     32 bit    64 bit
+- *
+- * If so, 32-bit user-space code should be backwards compatible.
++ * The wait_queue_token (autofs_wqt_t) is part of a structure which is passed
++ * back to the kernel via ioctl from userspace. On architectures where 32- and
++ * 64-bit userspace binaries can be executed it's important that the size of
++ * autofs_wqt_t stays constant between 32- and 64-bit Linux kernels so that we
++ * do not break the binary ABI interface by changing the structure size.
+  */
+-
+-#if defined(__sparc__) || defined(__mips__) || defined(__x86_64__) \
+- || defined(__powerpc__) || defined(__s390__)
+-typedef unsigned int autofs_wqt_t;
+-#else
++#if defined(__ia64__) || defined(__alpha__) /* pure 64bit architectures */
+ typedef unsigned long autofs_wqt_t;
++#else
++typedef unsigned int autofs_wqt_t;
+ #endif
  
- 	if (unlikely(verbose_request))
-@@ -144,8 +144,9 @@ int xen_pcibk_enable_msi(struct xen_pcib
- 	status = pci_enable_msi(dev);
- 
- 	if (status) {
--		printk(KERN_ERR "error enable msi for guest %x status %x\n",
--			otherend, status);
-+		pr_warn_ratelimited(DRV_NAME ": %s: error enabling MSI for guest %u: err %d\n",
-+				    pci_name(dev), pdev->xdev->otherend_id,
-+				    status);
- 		op->value = 0;
- 		return XEN_PCI_ERR_op_failed;
- 	}
-@@ -223,10 +224,10 @@ int xen_pcibk_enable_msix(struct xen_pci
- 						pci_name(dev), i,
- 						op->msix_entries[i].vector);
- 		}
--	} else {
--		printk(KERN_WARNING DRV_NAME ": %s: failed to enable MSI-X: err %d!\n",
--			pci_name(dev), result);
--	}
-+	} else
-+		pr_warn_ratelimited(DRV_NAME ": %s: error enabling MSI-X for guest %u: err %d!\n",
-+				    pci_name(dev), pdev->xdev->otherend_id,
-+				    result);
- 	kfree(entries);
- 
- 	op->value = result;
+ /* Packet types */
 
 
