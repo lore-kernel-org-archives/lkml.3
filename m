@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756711Ab3CDEDb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 23:03:31 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:32888 "EHLO
+	id S1756968Ab3CDEDs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 23:03:48 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:32866 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756415Ab3CDDnn (ORCPT
+	by vger.kernel.org with ESMTP id S1756347Ab3CDDnh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Mar 2013 22:43:43 -0500
-Message-Id: <20130304033716.164533423@decadent.org.uk>
+	Sun, 3 Mar 2013 22:43:37 -0500
+Message-Id: <20130304033716.795093499@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 04 Mar 2013 03:38:34 +0000
+Date: Mon, 04 Mar 2013 03:38:40 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Pawel Moll <mail@pawelmoll.com>,
+Cc: akpm@linux-foundation.org,
+        David Henningsson <david.henningsson@canonical.com>,
         Takashi Iwai <tiwai@suse.de>
-Subject: [ 087/153] ALSA: usb: Fix Processing Unit Descriptor parsers
+Subject: [ 093/153] ALSA: hda - hdmi: Make jacks phantom, if theyre not detectable
 In-Reply-To: <20130304033707.648729212@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,73 +28,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Pawel Moll <mail@pawelmoll.com>
+From: David Henningsson <david.henningsson@canonical.com>
 
-commit b531f81b0d70ffbe8d70500512483227cc532608 upstream.
+commit 30efd8debd1ef30be342d374f01e993509f5b76b upstream.
 
-Commit 99fc86450c439039d2ef88d06b222fd51a779176 "ALSA: usb-mixer:
-parse descriptors with structs" introduced a set of useful parsers
-for descriptors. Unfortunately the parses for the Processing Unit
-Descriptor came with a very subtle bug...
+Just as for analog codecs, a jack that isn't suitable for detection
+(in this case, NO_PRESENCE was set) should be a phantom Jack
+instead of a normal one.
 
-Functions uac_processing_unit_iProcessing() and
-uac_processing_unit_specific() were indexing the baSourceID array
-forgetting the fields before the iProcessing and process-specific
-descriptors.
+Thanks to Raymond Yau for spotting.
 
-The problem was observed with Sound Blaster Extigy mixer,
-where nNrModes in Up/Down-mix Processing Unit Descriptor
-was accessed at offset 10 of the descriptor (value 0)
-instead of offset 15 (value 7). In result the resulting
-control had interesting limit values:
-
-Simple mixer control 'Channel Routing Mode Select',0
-  Capabilities: volume volume-joined penum
-  Playback channels: Mono
-  Capture channels: Mono
-  Limits: 0 - -1
-  Mono: -1 [100%]
-
-Fixed by starting from the bmControls, which was calculated
-correctly, instead of baSourceID.
-
-Now the mentioned control is fine:
-
-Simple mixer control 'Channel Routing Mode Select',0
-  Capabilities: volume volume-joined penum
-  Playback channels: Mono
-  Capture channels: Mono
-  Limits: 0 - 6
-  Mono: 0 [0%]
-
-Signed-off-by: Pawel Moll <mail@pawelmoll.com>
+BugLink: https://bugs.launchpad.net/bugs/961286
+BugLink: https://bugzilla.redhat.com/show_bug.cgi?id=903869
+Signed-off-by: David Henningsson <david.henningsson@canonical.com>
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
-[bwh: Backported to 3.2: adjust filename]
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- include/linux/usb/audio.h |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ sound/pci/hda/patch_hdmi.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/include/linux/usb/audio.h
-+++ b/include/linux/usb/audio.h
-@@ -384,14 +384,16 @@ static inline __u8 uac_processing_unit_i
- 						   int protocol)
- {
- 	__u8 control_size = uac_processing_unit_bControlSize(desc, protocol);
--	return desc->baSourceID[desc->bNrInPins + control_size];
-+	return *(uac_processing_unit_bmControls(desc, protocol)
-+			+ control_size);
- }
+--- a/sound/pci/hda/patch_hdmi.c
++++ b/sound/pci/hda/patch_hdmi.c
+@@ -1228,6 +1228,9 @@ static int generic_hdmi_build_jack(struc
+ 	int pcmdev = spec->pcm_rec[pin_idx].device;
  
- static inline __u8 *uac_processing_unit_specific(struct uac_processing_unit_descriptor *desc,
- 						 int protocol)
- {
- 	__u8 control_size = uac_processing_unit_bControlSize(desc, protocol);
--	return &desc->baSourceID[desc->bNrInPins + control_size + 1];
-+	return uac_processing_unit_bmControls(desc, protocol)
-+			+ control_size + 1;
- }
+ 	snprintf(hdmi_str, sizeof(hdmi_str), "HDMI/DP,pcm=%d", pcmdev);
++	if (!is_jack_detectable(codec, per_pin->pin_nid))
++		strncat(hdmi_str, " Phantom",
++			sizeof(hdmi_str) - strlen(hdmi_str) - 1);
  
- /* 4.5.2 Class-Specific AS Interface Descriptor */
+ 	err = snd_hda_input_jack_add(codec, per_pin->pin_nid,
+ 			     SND_JACK_VIDEOOUT, pcmdev > 0 ? hdmi_str : NULL);
 
 
