@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757955Ab3CDERW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 23:17:22 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60816 "EHLO
+	id S1755512Ab3CDDml (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 22:42:41 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60748 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754823Ab3CDDmn (ORCPT
+	by vger.kernel.org with ESMTP id S1754823Ab3CDDmf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Mar 2013 22:42:43 -0500
-Message-Id: <20130304033722.200526197@decadent.org.uk>
+	Sun, 3 Mar 2013 22:42:35 -0500
+Message-Id: <20130304033708.853079921@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 04 Mar 2013 03:39:36 +0000
+Date: Mon, 04 Mar 2013 03:37:19 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Kees Cook <keescook@chromium.org>,
-        halfdog <me@halfdog.net>, P J P <ppandit@redhat.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>
-Subject: [ 149/153] exec: use -ELOOP for max recursion depth
+Cc: akpm@linux-foundation.org, Igor Grinberg <grinberg@compulab.co.il>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>
+Subject: [ 012/153] ARM: PXA3xx: program the CSMSADRCFG register
 In-Reply-To: <20130304033707.648729212@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,137 +28,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kees Cook <keescook@chromium.org>
+From: Igor Grinberg <grinberg@compulab.co.il>
 
-commit d740269867021faf4ce38a449353d2b986c34a67 upstream.
+commit d107a204154ddd79339203c2deeb7433f0cf6777 upstream.
 
-To avoid an explosion of request_module calls on a chain of abusive
-scripts, fail maximum recursion with -ELOOP instead of -ENOEXEC. As soon
-as maximum recursion depth is hit, the error will fail all the way back
-up the chain, aborting immediately.
+The Chip Select Configuration Register must be programmed to 0x2 in
+order to achieve the correct behavior of the Static Memory Controller.
 
-This also has the side-effect of stopping the user's shell from attempting
-to reexecute the top-level file as a shell script. As seen in the
-dash source:
+Without this patch devices wired to DFI and accessed through SMC cannot
+be accessed after resume from S2.
 
-        if (cmd != path_bshell && errno == ENOEXEC) {
-                *argv-- = cmd;
-                *argv = cmd = path_bshell;
-                goto repeat;
-        }
+Do not rely on the boot loader to program the CSMSADRCFG register by
+programming it in the kernel smemc module.
 
-The above logic was designed for running scripts automatically that lacked
-the "#!" header, not to re-try failed recursion. On a legitimate -ENOEXEC,
-things continue to behave as the shell expects.
-
-Additionally, when tracking recursion, the binfmt handlers should not be
-involved. The recursion being tracked is the depth of calls through
-search_binary_handler(), so that function should be exclusively responsible
-for tracking the depth.
-
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Cc: halfdog <me@halfdog.net>
-Cc: P J P <ppandit@redhat.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-[bwh: Backported to 3.2: adjust context]
+Signed-off-by: Igor Grinberg <grinberg@compulab.co.il>
+Acked-by: Eric Miao <eric.y.miao@gmail.com>
+Signed-off-by: Haojian Zhuang <haojian.zhuang@gmail.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/binfmt_em86.c        |    1 -
- fs/binfmt_misc.c        |    6 ------
- fs/binfmt_script.c      |    4 +---
- fs/exec.c               |   10 +++++-----
- include/linux/binfmts.h |    2 --
- 5 files changed, 6 insertions(+), 17 deletions(-)
+ arch/arm/mach-pxa/include/mach/smemc.h |    1 +
+ arch/arm/mach-pxa/smemc.c              |   15 ++++++++++++++-
+ 2 files changed, 15 insertions(+), 1 deletion(-)
 
---- a/fs/binfmt_em86.c
-+++ b/fs/binfmt_em86.c
-@@ -42,7 +42,6 @@ static int load_em86(struct linux_binprm
- 			return -ENOEXEC;
- 	}
+--- a/arch/arm/mach-pxa/include/mach/smemc.h
++++ b/arch/arm/mach-pxa/include/mach/smemc.h
+@@ -37,6 +37,7 @@
+ #define CSADRCFG1	(SMEMC_VIRT + 0x84)  /* Address Configuration Register for CS1 */
+ #define CSADRCFG2	(SMEMC_VIRT + 0x88)  /* Address Configuration Register for CS2 */
+ #define CSADRCFG3	(SMEMC_VIRT + 0x8C)  /* Address Configuration Register for CS3 */
++#define CSMSADRCFG	(SMEMC_VIRT + 0xA0)  /* Chip Select Configuration Register */
  
--	bprm->recursion_depth++; /* Well, the bang-shell is implicit... */
- 	allow_write_access(bprm->file);
- 	fput(bprm->file);
- 	bprm->file = NULL;
---- a/fs/binfmt_misc.c
-+++ b/fs/binfmt_misc.c
-@@ -116,10 +116,6 @@ static int load_misc_binary(struct linux
- 	if (!enabled)
- 		goto _ret;
+ /*
+  * More handy macros for PCMCIA
+--- a/arch/arm/mach-pxa/smemc.c
++++ b/arch/arm/mach-pxa/smemc.c
+@@ -40,6 +40,8 @@ static void pxa3xx_smemc_resume(void)
+ 	__raw_writel(csadrcfg[1], CSADRCFG1);
+ 	__raw_writel(csadrcfg[2], CSADRCFG2);
+ 	__raw_writel(csadrcfg[3], CSADRCFG3);
++	/* CSMSADRCFG wakes up in its default state (0), so we need to set it */
++	__raw_writel(0x2, CSMSADRCFG);
+ }
  
--	retval = -ENOEXEC;
--	if (bprm->recursion_depth > BINPRM_MAX_RECURSION)
--		goto _ret;
--
- 	/* to keep locking time low, we copy the interpreter string */
- 	read_lock(&entries_lock);
- 	fmt = check_file(bprm);
-@@ -199,8 +195,6 @@ static int load_misc_binary(struct linux
- 	if (retval < 0)
- 		goto _error;
+ static struct syscore_ops smemc_syscore_ops = {
+@@ -49,8 +51,19 @@ static struct syscore_ops smemc_syscore_
  
--	bprm->recursion_depth++;
--
- 	retval = search_binary_handler (bprm, regs);
- 	if (retval < 0)
- 		goto _error;
---- a/fs/binfmt_script.c
-+++ b/fs/binfmt_script.c
-@@ -22,15 +22,13 @@ static int load_script(struct linux_binp
- 	char interp[BINPRM_BUF_SIZE];
- 	int retval;
- 
--	if ((bprm->buf[0] != '#') || (bprm->buf[1] != '!') ||
--	    (bprm->recursion_depth > BINPRM_MAX_RECURSION))
-+	if ((bprm->buf[0] != '#') || (bprm->buf[1] != '!'))
- 		return -ENOEXEC;
- 	/*
- 	 * This section does the #! interpretation.
- 	 * Sorta complicated, but hopefully it will work.  -TYT
- 	 */
- 
--	bprm->recursion_depth++;
- 	allow_write_access(bprm->file);
- 	fput(bprm->file);
- 	bprm->file = NULL;
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -1385,6 +1385,10 @@ int search_binary_handler(struct linux_b
- 	struct linux_binfmt *fmt;
- 	pid_t old_pid;
- 
-+	/* This allows 4 levels of binfmt rewrites before failing hard. */
-+	if (depth > 5)
-+		return -ELOOP;
+ static int __init smemc_init(void)
+ {
+-	if (cpu_is_pxa3xx())
++	if (cpu_is_pxa3xx()) {
++		/*
++		 * The only documentation we have on the
++		 * Chip Select Configuration Register (CSMSADRCFG) is that
++		 * it must be programmed to 0x2.
++		 * Moreover, in the bit definitions, the second bit
++		 * (CSMSADRCFG[1]) is called "SETALWAYS".
++		 * Other bits are reserved in this register.
++		 */
++		__raw_writel(0x2, CSMSADRCFG);
 +
- 	retval = security_bprm_check(bprm);
- 	if (retval)
- 		return retval;
-@@ -1408,12 +1412,8 @@ int search_binary_handler(struct linux_b
- 			if (!try_module_get(fmt->module))
- 				continue;
- 			read_unlock(&binfmt_lock);
-+			bprm->recursion_depth = depth + 1;
- 			retval = fn(bprm, regs);
--			/*
--			 * Restore the depth counter to its starting value
--			 * in this call, so we don't have to rely on every
--			 * load_binary function to restore it on return.
--			 */
- 			bprm->recursion_depth = depth;
- 			if (retval >= 0) {
- 				if (depth == 0)
---- a/include/linux/binfmts.h
-+++ b/include/linux/binfmts.h
-@@ -67,8 +67,6 @@ struct linux_binprm {
- #define BINPRM_FLAGS_EXECFD_BIT 1
- #define BINPRM_FLAGS_EXECFD (1 << BINPRM_FLAGS_EXECFD_BIT)
+ 		register_syscore_ops(&smemc_syscore_ops);
++	}
  
--#define BINPRM_MAX_RECURSION 4
--
- /* Function parameter for binfmt->coredump */
- struct coredump_params {
- 	long signr;
+ 	return 0;
+ }
 
 
