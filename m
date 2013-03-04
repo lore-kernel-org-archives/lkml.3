@@ -1,66 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758760Ab3CDS7d (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 13:59:33 -0500
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:49120 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757617Ab3CDS7b (ORCPT
+	id S1758776Ab3CDS76 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 13:59:58 -0500
+Received: from e39.co.us.ibm.com ([32.97.110.160]:57761 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758118Ab3CDS7z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 13:59:31 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAA9_cmfa1hhijh4g_hSwMy_GR81rxjEFMurJwSvhBruh1R5dtw@mail.gmail.com>
-References: <20130223074001.GA5199@www.outflux.net>
-	<CAA9_cmfa1hhijh4g_hSwMy_GR81rxjEFMurJwSvhBruh1R5dtw@mail.gmail.com>
-Date: Mon, 4 Mar 2013 10:59:30 -0800
-X-Google-Sender-Auth: 5ch8z7kFLkvv7VPBygPI50B1ENw
-Message-ID: <CAGXu5jKpdVFoEvbGv3K620XDx2bjqQYeCLE511h-071XaPQUGg@mail.gmail.com>
-Subject: Re: [PATCH] md/raid456: remove depends on CONFIG_EXPERIMENTAL
-From: Kees Cook <keescook@chromium.org>
-To: Dan Williams <djbw@fb.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Neil Brown <neilb@suse.de>,
-        linux-raid@vger.kernel.org, Arjan van de Ven <arjan@linux.intel.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Alasdair G Kergon <agk@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 4 Mar 2013 13:59:55 -0500
+Message-ID: <1362423581.4392.46.camel@falcor1>
+Subject: Re: IMA: How to manage user space signing policy with others
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Eric Paris <eparis@parisplace.org>,
+        linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        LSM List <linux-security-module@vger.kernel.org>
+Date: Mon, 04 Mar 2013 13:59:41 -0500
+In-Reply-To: <20130304152919.GA15199@redhat.com>
+References: <1362079419.2908.390.camel@falcor1.watson.ibm.com>
+	 <20130228213534.GF11360@redhat.com>
+	 <CACLa4pum7kXK+7+8ceVSuQsKDCFebdgGVYRTMKH9GQarqCEgMQ@mail.gmail.com>
+	 <1362102544.9158.35.camel@falcor1> <1362140107.9158.101.camel@falcor1>
+	 <20130301152839.GA3457@redhat.com> <20130301184027.GB3457@redhat.com>
+	 <1362166753.9158.169.camel@falcor1> <20130301213329.GC3457@redhat.com>
+	 <1362346944.18325.1.camel@falcor1> <20130304152919.GA15199@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13030418-3620-0000-0000-00000176ECE0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 26, 2013 at 5:27 PM, Dan Williams <djbw@fb.com> wrote:
-> On Fri, Feb 22, 2013 at 11:40 PM, Kees Cook <keescook@chromium.org> wrote:
->> The CONFIG_EXPERIMENTAL config item has not carried much meaning for a
->> while now and is almost always enabled by default. As agreed during the
->> Linux kernel summit, remove it from any "depends on" lines in Kconfigs.
->>
->> Signed-off-by: Kees Cook <keescook@chromium.org>
->> Cc: Arjan van de Ven <arjan@linux.intel.com>
->> Cc: Dan Williams <dan.j.williams@intel.com>
->> Cc: Alasdair G Kergon <agk@redhat.com>
->> ---
->>  drivers/md/Kconfig |    1 -
->>  1 file changed, 1 deletion(-)
->>
->> diff --git a/drivers/md/Kconfig b/drivers/md/Kconfig
->> index 7cdf359..0cc3a3d 100644
->> --- a/drivers/md/Kconfig
->> +++ b/drivers/md/Kconfig
->> @@ -158,7 +158,6 @@ config MULTICORE_RAID456
->>         bool "RAID-4/RAID-5/RAID-6 Multicore processing (EXPERIMENTAL)"
->>         depends on MD_RAID456
->>         depends on SMP
->> -       depends on EXPERIMENTAL
->
-> In this case MULTICORE_RAID456 and the related code should go as
-> well... now that there are patches to supersede this implementation in
-> md-next.
+On Mon, 2013-03-04 at 10:29 -0500, Vivek Goyal wrote:
+[...]
 
-Can my original patch go through as-is for Linus's tree? Right now,
-this is the last use of EXPERIMENTAL in v3.9-rc1. If we can drop it,
-we can remove the config item entirely from v3.9.
+> Hi Mimi,
+> 
+> If we decide to merge flags, then practically we modified the
+> ima_appraise_tcb policy. ima_appraise_tcb policy expects to cache the
+> results and we will not do that. And this conflict just grows if we
+> are forced to add more options in future.
+> 
+> Also as you mentioned that in some cases flag merging is OR operation
+> and in another cases it might be AND operation. And we will most likely
+> end up hardcoding all this. I think slowly this is getting complicated
+> and as people add more complex rules things can quickly get out of hand.
+> 
+> I am wondering that why are we trying to make multiple policies work
+> together. Can we try to keep it simple and say that at one point of
+> time only one policy can be effective. It could either be a built in
+> policy or user defined one. In fact that's how things are working right now.
+> User defined policy replaces built-in policy.
+> 
+> For the sake of backward compatibility "ima_tcb" and "ima_appraise_tcb"
+> can co-exist together (like today). But ima_secureboot_policy will not
+> be compatible with other policies. I understand that there might be a
+> desire to use multiple policies together down the line, but I guess in
+> that case policies need to specified using "policy" interface. And
+> ima_secureboot will be odd man out here as it can not trust the root
+> to specify policy. So practically ima_secureboot will be disabled.
+> 
+> We just have to provide an IMA interface so that caller can query what's
+> the effective policy currently. Say, IMA_POLICY_SECUREBOOT,
+> IMA_POLICY_TCB, or IMA_POLICY_USER. Caller of the bprm_check() or
+> bprm_post_load() can also check for current policy in force and give
+> CAP_SIGNED only if desired policy is in effect.  
+> 
+> This reduces our options but trying to make multiple policies co-exist
+> together is just making it complicated. We can take it up again when
+> somebody has a strong use case of using secureboot policy along with
+> other policies. In fact a user can still define a custom policy which
+> is mix of multiple policies. Just that it is not compatible with
+> "secureboot" policy because for that we can't trust "root" to define
+> policy.
 
--Kees
+Let me get this straight.  You're suggesting that distros/users will
+need to make a Kconfig build decision of enabling secureboot, including
+the secureboot built-in policy, or be allowed to enable other integrity
+policies.  If RH enables secureboot, then no other integrity policy will
+be permitted.  Is that what you're saying, and if so, why would I agree
+to this?
 
--- 
-Kees Cook
-Chrome OS Security
+thanks,
+
+Mimi
+
