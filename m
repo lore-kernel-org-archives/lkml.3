@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755681Ab3CDDmx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 22:42:53 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60872 "EHLO
+	id S1756849Ab3CDEPN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 23:15:13 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60855 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755524Ab3CDDmt (ORCPT
+	by vger.kernel.org with ESMTP id S1755582Ab3CDDmt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 3 Mar 2013 22:42:49 -0500
-Message-Id: <20130304033720.572774793@decadent.org.uk>
+Message-Id: <20130304033722.097085881@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 04 Mar 2013 03:39:19 +0000
+Date: Mon, 04 Mar 2013 03:39:35 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, James Ralston <james.d.ralston@intel.com>,
-        Jeff Garzik <jgarzik@redhat.com>
-Subject: [ 132/153] ata_piix: Add Device IDs for Intel Lynx Point-LP PCH
+Cc: akpm@linux-foundation.org, Oleg Nesterov <oleg@redhat.com>,
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        Rusty Russell <rusty@rustcorp.com.au>, Tejun Heo <tj@kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 148/153] kmod: make __request_module() killable
 In-Reply-To: <20130304033707.648729212@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,35 +30,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: James Ralston <james.d.ralston@intel.com>
+From: Oleg Nesterov <oleg@redhat.com>
 
-commit 389cd784969e9148fedcde0608f15bd74d6b769e upstream.
+commit 1cc684ab75123efe7ff446eb821d44375ba8fa30 upstream.
 
-This patch adds the IDE-mode SATA Device IDs for the Intel Lynx Point-LP PCH
+As Tetsuo Handa pointed out, request_module() can stress the system
+while the oom-killed caller sleeps in TASK_UNINTERRUPTIBLE.
 
-Signed-off-by: James Ralston <james.d.ralston@intel.com>
-Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
+The task T uses "almost all" memory, then it does something which
+triggers request_module().  Say, it can simply call sys_socket().  This
+in turn needs more memory and leads to OOM.  oom-killer correctly
+chooses T and kills it, but this can't help because it sleeps in
+TASK_UNINTERRUPTIBLE and after that oom-killer becomes "disabled" by the
+TIF_MEMDIE task T.
+
+Make __request_module() killable.  The only necessary change is that
+call_modprobe() should kmalloc argv and module_name, they can't live in
+the stack if we use UMH_KILLABLE.  This memory is freed via
+call_usermodehelper_freeinfo()->cleanup.
+
+Reported-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Tejun Heo <tj@kernel.org>
+Cc: David Rientjes <rientjes@google.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/ata/ata_piix.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ kernel/kmod.c |   26 ++++++++++++++++++++++++--
+ 1 file changed, 24 insertions(+), 2 deletions(-)
 
---- a/drivers/ata/ata_piix.c
-+++ b/drivers/ata/ata_piix.c
-@@ -329,6 +329,14 @@ static const struct pci_device_id piix_p
- 	{ 0x8086, 0x8c08, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
- 	/* SATA Controller IDE (Lynx Point) */
- 	{ 0x8086, 0x8c09, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
-+	/* SATA Controller IDE (Lynx Point-LP) */
-+	{ 0x8086, 0x9c00, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_sata_snb },
-+	/* SATA Controller IDE (Lynx Point-LP) */
-+	{ 0x8086, 0x9c01, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_sata_snb },
-+	/* SATA Controller IDE (Lynx Point-LP) */
-+	{ 0x8086, 0x9c08, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
-+	/* SATA Controller IDE (Lynx Point-LP) */
-+	{ 0x8086, 0x9c09, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
- 	/* SATA Controller IDE (DH89xxCC) */
- 	{ 0x8086, 0x2326, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
- 	{ }	/* terminate list */
+--- a/kernel/kmod.c
++++ b/kernel/kmod.c
+@@ -58,6 +58,12 @@ static DEFINE_SPINLOCK(umh_sysctl_lock);
+ */
+ char modprobe_path[KMOD_PATH_LEN] = "/sbin/modprobe";
+ 
++static void free_modprobe_argv(struct subprocess_info *info)
++{
++	kfree(info->argv[3]); /* check call_modprobe() */
++	kfree(info->argv);
++}
++
+ static int call_modprobe(char *module_name, int wait)
+ {
+ 	static char *envp[] = {
+@@ -67,10 +73,26 @@ static int call_modprobe(char *module_na
+ 		NULL
+ 	};
+ 
+-	char *argv[] = { modprobe_path, "-q", "--", module_name, NULL };
++	char **argv = kmalloc(sizeof(char *[5]), GFP_KERNEL);
++	if (!argv)
++		goto out;
++
++	module_name = kstrdup(module_name, GFP_KERNEL);
++	if (!module_name)
++		goto free_argv;
++
++	argv[0] = modprobe_path;
++	argv[1] = "-q";
++	argv[2] = "--";
++	argv[3] = module_name;	/* check free_modprobe_argv() */
++	argv[4] = NULL;
+ 
+ 	return call_usermodehelper_fns(modprobe_path, argv, envp,
+-					wait, NULL, NULL, NULL);
++		wait | UMH_KILLABLE, NULL, free_modprobe_argv, NULL);
++free_argv:
++	kfree(argv);
++out:
++	return -ENOMEM;
+ }
+ 
+ /**
 
 
