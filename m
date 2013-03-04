@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757280Ab3CDDop (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 22:44:45 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33119 "EHLO
+	id S1757431Ab3CDDow (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 22:44:52 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33157 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757156Ab3CDDoj (ORCPT
+	by vger.kernel.org with ESMTP id S1757343Ab3CDDos (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Mar 2013 22:44:39 -0500
-Message-Id: <20130304033711.840774937@decadent.org.uk>
+	Sun, 3 Mar 2013 22:44:48 -0500
+Message-Id: <20130304033710.623093483@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 04 Mar 2013 03:37:50 +0000
+Date: Mon, 04 Mar 2013 03:37:38 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Stoney Wang <song-bo.wang@hp.com>,
-        Yinghai Lu <yinghai@kernel.org>, Ingo Molnar <mingo@kernel.org>
-Subject: [ 043/153] x86/apic: Work around boot failure on HP ProLiant DL980 G7 Server
- systems
+Cc: akpm@linux-foundation.org, Dave Airlie <airlied@redhat.com>
+Subject: [ 031/153] vgacon/vt: clear buffer attributes when we load a 512 character font
+ (v2)
 In-Reply-To: <20130304033707.648729212@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,96 +27,102 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stoney Wang <song-bo.wang@hp.com>
+From: Dave Airlie <airlied@redhat.com>
 
-commit cb214ede7657db458fd0b2a25ea0b28dbf900ebc upstream.
+commit 2a2483072393b27f4336ab068a1f48ca19ff1c1e upstream.
 
-When a HP ProLiant DL980 G7 Server boots a regular kernel,
-there will be intermittent lost interrupts which could
-result in a hang or (in extreme cases) data loss.
+When we switch from 256->512 byte font rendering mode, it means the
+current contents of the screen is being reinterpreted. The bit that holds
+the high bit of the 9-bit font, may have been previously set, and thus
+the new font misrenders.
 
-The reason is that this system only supports x2apic physical
-mode, while the kernel boots with a logical-cluster default
-setting.
+The problem case we see is grub2 writes spaces with the bit set, so it
+ends up with data like 0x820, which gets reinterpreted into 0x120 char
+which the font translates into G with a circumflex. This flashes up on
+screen at boot and is quite ugly.
 
-This bug can be worked around by specifying the "x2apic_phys" or
-"nox2apic" boot option, but we want to handle this system
-without requiring manual workarounds.
+A current side effect of this patch though is that any rendering on the
+screen changes color to a slightly darker color, but at least the screen
+no longer corrupts.
 
-The BIOS sets ACPI_FADT_APIC_PHYSICAL in FADT table.
-As all apicids are smaller than 255, BIOS need to pass the
-control to the OS with xapic mode, according to x2apic-spec,
-chapter 2.9.
+v2: as suggested by hpa, always clear the attribute space, whether we
+are are going to or from 512 chars.
 
-Current code handle x2apic when BIOS pass with xapic mode
-enabled:
-
-When user specifies x2apic_phys, or FADT indicates PHYSICAL:
-
-1. During madt oem check, apic driver is set with xapic logical
-   or xapic phys driver at first.
-
-2. enable_IR_x2apic() will enable x2apic_mode.
-
-3. if user specifies x2apic_phys on the boot line, x2apic_phys_probe()
-   will install the correct x2apic phys driver and use x2apic phys mode.
-   Otherwise it will skip the driver will let x2apic_cluster_probe to
-   take over to install x2apic cluster driver (wrong one) even though FADT
-   indicates PHYSICAL, because x2apic_phys_probe does not check
-   FADT PHYSICAL.
-
-Add checking x2apic_fadt_phys in x2apic_phys_probe() to fix the
-problem.
-
-Signed-off-by: Stoney Wang <song-bo.wang@hp.com>
-[ updated the changelog and simplified the code ]
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Link: http://lkml.kernel.org/r/1360263182-16226-1-git-send-email-yinghai@kernel.org
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/x86/kernel/apic/x2apic_phys.c |   21 +++++++++++----------
- 1 file changed, 11 insertions(+), 10 deletions(-)
+ drivers/tty/vt/vt.c            |    2 +-
+ drivers/video/console/vgacon.c |   22 +++++++++++++++-------
+ include/linux/vt_kern.h        |    1 +
+ 3 files changed, 17 insertions(+), 8 deletions(-)
 
---- a/arch/x86/kernel/apic/x2apic_phys.c
-+++ b/arch/x86/kernel/apic/x2apic_phys.c
-@@ -20,18 +20,19 @@ static int set_x2apic_phys_mode(char *ar
- }
- early_param("x2apic_phys", set_x2apic_phys_mode);
+--- a/drivers/tty/vt/vt.c
++++ b/drivers/tty/vt/vt.c
+@@ -657,7 +657,7 @@ static inline void save_screen(struct vc
+  *	Redrawing of screen
+  */
  
--static int x2apic_acpi_madt_oem_check(char *oem_id, char *oem_table_id)
-+static bool x2apic_fadt_phys(void)
+-static void clear_buffer_attributes(struct vc_data *vc)
++void clear_buffer_attributes(struct vc_data *vc)
  {
--	if (x2apic_phys)
--		return x2apic_enabled();
--	else if ((acpi_gbl_FADT.header.revision >= FADT2_REVISION_ID) &&
--		(acpi_gbl_FADT.flags & ACPI_FADT_APIC_PHYSICAL) &&
--		x2apic_enabled()) {
-+	if ((acpi_gbl_FADT.header.revision >= FADT2_REVISION_ID) &&
-+		(acpi_gbl_FADT.flags & ACPI_FADT_APIC_PHYSICAL)) {
- 		printk(KERN_DEBUG "System requires x2apic physical mode\n");
--		return 1;
-+		return true;
+ 	unsigned short *p = (unsigned short *)vc->vc_origin;
+ 	int count = vc->vc_screenbuf_size / 2;
+--- a/drivers/video/console/vgacon.c
++++ b/drivers/video/console/vgacon.c
+@@ -1064,7 +1064,7 @@ static int vgacon_do_font_op(struct vgas
+ 	unsigned short video_port_status = vga_video_port_reg + 6;
+ 	int font_select = 0x00, beg, i;
+ 	char *charmap;
+-	
++	bool clear_attribs = false;
+ 	if (vga_video_type != VIDEO_TYPE_EGAM) {
+ 		charmap = (char *) VGA_MAP_MEM(colourmap, 0);
+ 		beg = 0x0e;
+@@ -1169,12 +1169,6 @@ static int vgacon_do_font_op(struct vgas
+ 
+ 	/* if 512 char mode is already enabled don't re-enable it. */
+ 	if ((set) && (ch512 != vga_512_chars)) {
+-		/* attribute controller */
+-		for (i = 0; i < MAX_NR_CONSOLES; i++) {
+-			struct vc_data *c = vc_cons[i].d;
+-			if (c && c->vc_sw == &vga_con)
+-				c->vc_hi_font_mask = ch512 ? 0x0800 : 0;
+-		}
+ 		vga_512_chars = ch512;
+ 		/* 256-char: enable intensity bit
+ 		   512-char: disable intensity bit */
+@@ -1185,8 +1179,22 @@ static int vgacon_do_font_op(struct vgas
+ 		   it means, but it works, and it appears necessary */
+ 		inb_p(video_port_status);
+ 		vga_wattr(state->vgabase, VGA_AR_ENABLE_DISPLAY, 0);	
++		clear_attribs = true;
  	}
--	else
--		return 0;
-+	return false;
-+}
+ 	raw_spin_unlock_irq(&vga_lock);
 +
-+static int x2apic_acpi_madt_oem_check(char *oem_id, char *oem_table_id)
-+{
-+	return x2apic_enabled() && (x2apic_phys || x2apic_fadt_phys());
++	if (clear_attribs) {
++		for (i = 0; i < MAX_NR_CONSOLES; i++) {
++			struct vc_data *c = vc_cons[i].d;
++			if (c && c->vc_sw == &vga_con) {
++				/* force hi font mask to 0, so we always clear
++				   the bit on either transition */
++				c->vc_hi_font_mask = 0x00;
++				clear_buffer_attributes(c);
++				c->vc_hi_font_mask = ch512 ? 0x0800 : 0;
++			}
++		}
++	}
+ 	return 0;
  }
  
- static void
-@@ -114,7 +115,7 @@ static void init_x2apic_ldr(void)
- 
- static int x2apic_phys_probe(void)
- {
--	if (x2apic_mode && x2apic_phys)
-+	if (x2apic_mode && (x2apic_phys || x2apic_fadt_phys()))
- 		return 1;
- 
- 	return apic == &apic_x2apic_phys;
+--- a/include/linux/vt_kern.h
++++ b/include/linux/vt_kern.h
+@@ -47,6 +47,7 @@ int con_set_cmap(unsigned char __user *c
+ int con_get_cmap(unsigned char __user *cmap);
+ void scrollback(struct vc_data *vc, int lines);
+ void scrollfront(struct vc_data *vc, int lines);
++void clear_buffer_attributes(struct vc_data *vc);
+ void update_region(struct vc_data *vc, unsigned long start, int count);
+ void redraw_screen(struct vc_data *vc, int is_switch);
+ #define update_screen(x) redraw_screen(x, 0)
 
 
