@@ -1,73 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754998Ab3CDCbr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 21:31:47 -0500
-Received: from casper.infradead.org ([85.118.1.10]:38811 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752449Ab3CDCbq (ORCPT
+	id S1754991Ab3CDCdI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 21:33:08 -0500
+Received: from mail-da0-f41.google.com ([209.85.210.41]:61749 "EHLO
+	mail-da0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754651Ab3CDCdF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Mar 2013 21:31:46 -0500
-Message-ID: <513407AC.8060009@infradead.org>
-Date: Sun, 03 Mar 2013 18:32:12 -0800
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Jiri Kosina <jkosina@suse.cz>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Linux 3.9-rc1
-References: <CA+55aFx0HcOXKpxmZzM5jcbAaOroxafomX5ggMFV4A=py1qh-Q@mail.gmail.com> <alpine.LRH.2.00.1303040213590.11934@twin.jikos.cz> <CA+55aFxA1pH_aKJc85DXuS2-Q=7b4pP-h_ms6XQiSzQcpWaO6Q@mail.gmail.com>
-In-Reply-To: <CA+55aFxA1pH_aKJc85DXuS2-Q=7b4pP-h_ms6XQiSzQcpWaO6Q@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Sun, 3 Mar 2013 21:33:05 -0500
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: linux-next: build failure after merge of the gpio tree
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Gabriel Fernandez <gabriel.fernandez@stericsson.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+In-Reply-To: <20130304124513.cf97f6249b0759a1ea1cb34d@canb.auug.org.au>
+References: <20130304124513.cf97f6249b0759a1ea1cb34d@canb.auug.org.au>
+Date: Mon, 04 Mar 2013 10:32:31 +0800
+Message-Id: <20130304023231.9DB013E14C0@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/03/13 17:42, Linus Torvalds wrote:
-> On Sun, Mar 3, 2013 at 5:17 PM, Jiri Kosina <jkosina@suse.cz> wrote:
->>
->> I actually quite liked your merge shortlog, which of course I can generate
->> easily myself, but it was nice to have for free :)
+On Mon, 4 Mar 2013 12:45:13 +1100, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi Grant,
 > 
-> No, you're right, I should do it. In fact, I should automate it better
-> so that I do it by default and don't have to do so much hand-editing
-> of the result of a (really) stupid shell script.
+> After merging the gpio tree, today's linux-next build (x86_64
+> allmodconfig) failed like this:
 > 
-> It's all based on just
+> drivers/gpio/gpio-stmpe.c: In function 'stmpe_gpio_irq_init':
+> drivers/gpio/gpio-stmpe.c:313:23: error: 'struct gpio_chip' has no member named 'of_node'
+> drivers/gpio/gpio-stmpe.c:316:61: error: 'struct gpio_chip' has no member named 'of_node'
+> drivers/gpio/gpio-stmpe.c: In function 'stmpe_gpio_probe':
+> drivers/gpio/gpio-stmpe.c:351:18: error: 'struct gpio_chip' has no member named 'of_node'
 > 
->     git log v3.8.. --author=Torvalds --merges |
->         egrep '^    ((Merge)|(Pull)) .* from '
+> Caused by commit f7719903b7c7 ("").
 > 
-> and then some nasty sed+sort crud, followed by some manual fixup. It's
-> the kind of thing perl is perfect for, but I'm not much of a perl
-> person, so I have never written a *good* script to just do this right.
+> I have used the gpio tree from next-20130301 for today.
+
+Yup, I messed that one up. I've now pushed out a fixed branch.
+
+g.
+
 > 
-> Anyway, here it is, the merge-log of stuff that happened in the merge
-> window for 3.9.
-> 
->                    Linus
-> 
-> ---
+> -- 
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
 
-I suppose that this omits individual contributor patches by design?
-I had 3 patches merged, but they are hidden by this method.
-
-
-> James Bottomley:
->         first round of SCSI updates
->         SCSI updates
-
-1 here
-
-> Wim Van Sebroeck:
->         watchdog updates
-
-1 here
-
-and 1 merged by Linus Torvalds.
-
-
-thanks,
 -- 
-~Randy
+Grant Likely, B.Sc, P.Eng.
+Secret Lab Technologies, Ltd.
