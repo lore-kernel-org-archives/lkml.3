@@ -1,79 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932525Ab3CDVVe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 16:21:34 -0500
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:39604 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758726Ab3CDVVd convert rfc822-to-8bit (ORCPT
+	id S932569Ab3CDVXv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 16:23:51 -0500
+Received: from filtteri1.pp.htv.fi ([213.243.153.184]:45745 "EHLO
+	filtteri1.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932236Ab3CDVXt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 16:21:33 -0500
-MIME-Version: 1.0
-In-Reply-To: <1362417555.5510.58.camel@mattotaupa>
-References: <1362415549-18653-1-git-send-email-taysom@chromium.org>
-	<1362417555.5510.58.camel@mattotaupa>
-Date: Mon, 4 Mar 2013 13:21:31 -0800
-Message-ID: <CAKwO_5GOMN+GL+SO4cBNyhSK_OEbrrDYR=wwEWbgG9S51=tJQg@mail.gmail.com>
-Subject: Re: [PATCH] md: dm-verity: Fix to avoid a deadlock in dm-bufio
-From: Paul Taysom <taysom@google.com>
-To: Paul Menzel <pm.debian@googlemail.com>
-Cc: Paul Taysom <taysom@chromium.org>, agk@redhat.com, dm-devel@redhat.com,
-        neilb@suse.de, linux-raid@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Mandeep Singh Baines <msb@chromium.org>,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        Olof Johansson <olofj@chromium.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+	Mon, 4 Mar 2013 16:23:49 -0500
+From: Aaro Koskinen <aaro.koskinen@iki.fi>
+To: Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
+        linux-kernel@vger.kernel.org
+Cc: Aaro Koskinen <aaro.koskinen@iki.fi>, stable@vger.kernel.org
+Subject: [PATCH RESEND] MIPS: loongson: fix random early boot hang
+Date: Mon,  4 Mar 2013 23:23:29 +0200
+Message-Id: <1362432209-25673-1-git-send-email-aaro.koskinen@iki.fi>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 4, 2013 at 9:19 AM, Paul Menzel <pm.debian@googlemail.com> wrote:
->
-> Am Montag, den 04.03.2013, 08:45 -0800 schrieb Paul Taysom:
-> > Changed the dm-verity prefetching to use a worker thread to avoid
-> > a deadlock in dm-bufio.
->
-> Do you know of any bug reports about this? Searching for »dm-verity dead
-> lock« I found [1], which seems to be the issue, right? If yes, please
-> reference it.
->
-> > If generic_make_request is called recursively, it queues the I/O
-> > request on the current->bio_list without making the I/O request
-> > and returns. The routine making the recursive call cannot wait
-> > for the I/O to complete.
-> >
-> > The deadlock occurred when one thread grabbed the bufio_client
-> > mutex and waited for an I/O to complete but the I/O was queued
-> > on another thread’s current->bio_list and it was waiting to get
-> > the mutex held by the first thread.
-> >
-> > The fix allows only one I/O request from dm-verity to dm-bufio
-> > per thread. To do this, the prefetch requests were queued on worker
-> > threads.
-> >
-> > In addition to avoiding the deadlock, this fix made a slight
-> > improvement in performance.
-> >
-> > seconds_kernel_to_login:
-> >   with prefetch:    8.43s
-> >   without prefetch: 9.2s
-> >   worker prefetch:  8.28s
-> >
-> > Signed-off-by: Paul Taysom <taysom@chromium.org>
-> > ---
-> >  drivers/md/dm-verity.c | 29 +++++++++++++++++++++++++++--
-> >  1 file changed, 27 insertions(+), 2 deletions(-)
->
-> Acked-by: Paul Menzel <paulepanter@users.sourceforge.net>
->
->
-> Thanks,
->
-> Paul
->
->
-> [1] https://code.google.com/p/chromium-os/issues/detail?id=39148
+Some Loongson boards (e.g. Lemote FuLoong mini-PC) use ISA/southbridge
+device (CS5536 general purpose timer) for the timer interrupt. It starts
+running early and is already enabled during the PCI configuration,
+during which there is a small window in pci_read_base() when the register
+access is temporarily disabled. If the timer interrupts at this point,
+the system will hang. Fix this by adding a fixup that keeps the register
+access always enabled.
 
-Yes, I should have included that this fix addresses http://crosbug.com/39148
-Thanks,
-Paul
+The hang the patch fixes usually looks like this:
+
+[    0.844000] pci 0000:00:0e.0: [1022:2090] type 00 class 0x060100
+[    0.848000] pci 0000:00:0e.0: reg 10: [io  0xb410-0xb417]
+[    0.852000] pci 0000:00:0e.0: reg 14: [io  0xb000-0xb0ff]
+[    0.856000] pci 0000:00:0e.0: reg 18: [io  0xb380-0xb3bf]
+[   28.140000] BUG: soft lockup - CPU#0 stuck for 23s! [swapper:1]
+[   28.140000] Modules linked in:
+[   28.140000] irq event stamp: 37965
+[   28.140000] hardirqs last  enabled at (37964): [<ffffffff80204c0c>] restore_partial+0x6c/0x13c
+[   28.140000] hardirqs last disabled at (37965): [<ffffffff80204f8c>] handle_int+0x144/0x15c
+[   28.140000] softirqs last  enabled at (24316): [<ffffffff802381f4>] __do_softirq+0x1cc/0x258
+[   28.140000] softirqs last disabled at (24327): [<ffffffff80238420>] do_softirq+0xc8/0xd0
+[   28.140000] Cpu 0
+[   28.140000] $ 0   : 0000000000000000 00000000140044e1 980000009f090000 0000000000000001
+[   28.140000] $ 4   : 980000009f090000 0000000000000000 0000000000000100 03b7fff87fbde011
+[   28.140000] $ 8   : ffffffff812b1928 000000000001e000 043ffff87fbde011 fffffff87fbde011
+[   28.140000] $12   : 000000000000000e ffffffff807a0000 0000000000000698 0000000000000000
+[   28.140000] $16   : 0000000000000002 ffffffff81055e20 ffffffff80786810 0000000000000000
+[   28.140000] $20   : 000000000000000a ffffffff807bc244 ffffffff807e6350 ffffffff80770000
+[   28.140000] $24   : 0000000000000d80 00000000fffedbe0
+[   28.140000] $28   : 980000009f07c000 980000009f07fa10 ffffffff81050000 ffffffff802380f8
+[   28.140000] Hi    : 0000000000d0fc00
+[   28.140000] Lo    : 0000000000f82b40
+[   28.140000] epc   : ffffffff8023810c __do_softirq+0xe4/0x258
+[   28.140000]     Not tainted
+[   28.140000] ra    : ffffffff802380f8 __do_softirq+0xd0/0x258
+[   28.140000] Status: 140044e3    KX SX UX KERNEL EXL IE
+[   28.140000] Cause : 10008400
+[   28.140000] PrId  : 00006303 (ICT Loongson-2)
+
+Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
+Cc: stable@vger.kernel.org
+---
+ arch/mips/loongson/common/cs5536/cs5536_isa.c |   14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
+
+diff --git a/arch/mips/loongson/common/cs5536/cs5536_isa.c b/arch/mips/loongson/common/cs5536/cs5536_isa.c
+index a6eb2e8..924be39 100644
+--- a/arch/mips/loongson/common/cs5536/cs5536_isa.c
++++ b/arch/mips/loongson/common/cs5536/cs5536_isa.c
+@@ -13,6 +13,7 @@
+  * option) any later version.
+  */
+ 
++#include <linux/pci.h>
+ #include <cs5536/cs5536.h>
+ #include <cs5536/cs5536_pci.h>
+ 
+@@ -314,3 +315,16 @@ u32 pci_isa_read_reg(int reg)
+ 
+ 	return conf_data;
+ }
++
++/*
++ * The mfgpt timer interrupt is running early, so we must keep the south bridge
++ * mmio always enabled. Otherwise we may race with the PCI configuration which
++ * may temporarily disable it. When that happens and the timer interrupt fires,
++ * we are not able to clear it and the system will hang.
++ */
++static void cs5536_isa_mmio_always_on(struct pci_dev *dev)
++{
++	dev->mmio_always_on = 1;
++}
++DECLARE_PCI_FIXUP_CLASS_EARLY(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_CS5536_ISA,
++	PCI_CLASS_BRIDGE_ISA, 8, cs5536_isa_mmio_always_on);
+-- 
+1.7.10.4
+
