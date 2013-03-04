@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758144Ab3CDESJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 23:18:09 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60795 "EHLO
+	id S1758127Ab3CDESH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 23:18:07 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60799 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755479Ab3CDDmk (ORCPT
+	by vger.kernel.org with ESMTP id S1755481Ab3CDDmk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 3 Mar 2013 22:42:40 -0500
-Message-Id: <20130304033721.510750565@decadent.org.uk>
+Message-Id: <20130304033721.609087372@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 04 Mar 2013 03:39:29 +0000
+Date: Mon, 04 Mar 2013 03:39:30 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Samuel Thibault <samuel.thibault@ens-lyon.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [ 142/153] speakup: lower default software speech rate
+Cc: akpm@linux-foundation.org, ryan <draziw+deb@gmail.com>,
+        Corentin Chary <corentin.chary@gmail.com>,
+        Matthew Garrett <matthew.garrett@nebula.com>
+Subject: [ 143/153] asus-laptop: Do not call HWRS on init
 In-Reply-To: <20130304033707.648729212@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,38 +28,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Samuel Thibault <samuel.thibault@ens-lyon.org>
+From: Ben Hutchings <ben@decadent.org.uk>
 
-commit cfd757010691eae4e17acc246f74e7622c3a2f05 upstream.
+commit cb7da022450cdaaebd33078b6b32fb7dd2aaf6db upstream.
 
-Speech synthesis beginners need a low speech rate, and trained people
-want a high speech rate.  A medium speech rate is thus actually not a
-good default for neither.  Since trained people will typically know how
-to change the rate, better default for a low speech rate, which
-beginners can grasp and learn how to increase it afterwards
+Since commit 8871e99f89b7 ('asus-laptop: HRWS/HWRS typo'), module
+initialisation is very slow on the Asus UL30A.  The HWRS method takes
+about 12 seconds to run, and subsequent initialisation also seems to
+be delayed.  Since we don't really need the result, don't bother
+calling it on init.  Those who are curious can still get the result
+through the 'infos' device attribute.
 
-This was agreed with users on the speakup mailing list.
+Update the comment about HWRS in show_infos().
 
-Signed-off-by: Samuel Thibault <samuel.thibault@ens-lyon.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Reported-by: ryan <draziw+deb@gmail.com>
+References: http://bugs.debian.org/692436
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Corentin Chary <corentin.chary@gmail.com>
+Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
 ---
- drivers/staging/speakup/speakup_soft.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/platform/x86/asus-laptop.c |   17 ++++-------------
+ 1 file changed, 4 insertions(+), 13 deletions(-)
 
-diff --git a/drivers/staging/speakup/speakup_soft.c b/drivers/staging/speakup/speakup_soft.c
-index 42cdafe..2a67610 100644
---- a/drivers/staging/speakup/speakup_soft.c
-+++ b/drivers/staging/speakup/speakup_soft.c
-@@ -46,7 +46,7 @@ static int misc_registered;
- static struct var_t vars[] = {
- 	{ CAPS_START, .u.s = {"\x01+3p" } },
- 	{ CAPS_STOP, .u.s = {"\x01-3p" } },
--	{ RATE, .u.n = {"\x01%ds", 5, 0, 9, 0, 0, NULL } },
-+	{ RATE, .u.n = {"\x01%ds", 2, 0, 9, 0, 0, NULL } },
- 	{ PITCH, .u.n = {"\x01%dp", 5, 0, 9, 0, 0, NULL } },
- 	{ VOL, .u.n = {"\x01%dv", 5, 0, 9, 0, 0, NULL } },
- 	{ TONE, .u.n = {"\x01%dx", 1, 0, 2, 0, 0, NULL } },
-
+--- a/drivers/platform/x86/asus-laptop.c
++++ b/drivers/platform/x86/asus-laptop.c
+@@ -820,8 +820,10 @@ static ssize_t show_infos(struct device
+ 	/*
+ 	 * The HWRS method return informations about the hardware.
+ 	 * 0x80 bit is for WLAN, 0x100 for Bluetooth.
++	 * 0x40 for WWAN, 0x10 for WIMAX.
+ 	 * The significance of others is yet to be found.
+-	 * If we don't find the method, we assume the device are present.
++	 * We don't currently use this for device detection, and it
++	 * takes several seconds to run on some systems.
+ 	 */
+ 	rv = acpi_evaluate_integer(asus->handle, "HWRS", NULL, &temp);
+ 	if (!ACPI_FAILURE(rv))
+@@ -1591,7 +1593,7 @@ static int asus_laptop_get_info(struct a
+ {
+ 	struct acpi_buffer buffer = { ACPI_ALLOCATE_BUFFER, NULL };
+ 	union acpi_object *model = NULL;
+-	unsigned long long bsts_result, hwrs_result;
++	unsigned long long bsts_result;
+ 	char *string = NULL;
+ 	acpi_status status;
+ 
+@@ -1653,17 +1655,6 @@ static int asus_laptop_get_info(struct a
+ 	if (*string)
+ 		pr_notice("  %s model detected\n", string);
+ 
+-	/*
+-	 * The HWRS method return informations about the hardware.
+-	 * 0x80 bit is for WLAN, 0x100 for Bluetooth,
+-	 * 0x40 for WWAN, 0x10 for WIMAX.
+-	 * The significance of others is yet to be found.
+-	 */
+-	status =
+-	    acpi_evaluate_integer(asus->handle, "HWRS", NULL, &hwrs_result);
+-	if (!ACPI_FAILURE(status))
+-		pr_notice("  HWRS returned %x", (int)hwrs_result);
+-
+ 	if (!acpi_check_handle(asus->handle, METHOD_WL_STATUS, NULL))
+ 		asus->have_rsts = true;
+ 
 
 
