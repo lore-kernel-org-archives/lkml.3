@@ -1,113 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932761Ab3CDWId (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 17:08:33 -0500
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:55737 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932634Ab3CDWIb (ORCPT
+	id S932781Ab3CDWIx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 17:08:53 -0500
+Received: from mx12.netapp.com ([216.240.18.77]:61854 "EHLO mx12.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932634Ab3CDWIv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 17:08:31 -0500
+	Mon, 4 Mar 2013 17:08:51 -0500
+X-IronPort-AV: E=Sophos;i="4.84,783,1355126400"; 
+   d="scan'208";a="27862361"
+From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+To: Oleg Nesterov <oleg@redhat.com>
+CC: Mandeep Singh Baines <msb@chromium.org>, Jeff Layton <jlayton@redhat.com>,
+        Ming Lei <ming.lei@canonical.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: LOCKDEP: 3.9-rc1: mount.nfs/4272 still has locks held!
+Thread-Topic: LOCKDEP: 3.9-rc1: mount.nfs/4272 still has locks held!
+Thread-Index: AQHOGOA9OOKbapJ+RE+tLJb3WRyEW5iWGYKAgAACcQCAAFy3AIAAED2AgAAVFoA=
+Date: Mon, 4 Mar 2013 22:08:34 +0000
+Message-ID: <4FA345DA4F4AE44899BD2B03EEEC2FA9286AEEB0@sacexcmbx05-prd.hq.netapp.com>
+References: <CACVXFVMKN6aeCvJcn7dyuonJYJDfYxWeW5KE6gfKRKJKFj2M4A@mail.gmail.com>
+	 <4FA345DA4F4AE44899BD2B03EEEC2FA9286AD113@sacexcmbx05-prd.hq.netapp.com>
+	 <20130304092310.1d21100c@tlielax.poochiereds.net>
+	 <CACBanvrc0orXGZ1v+gKHtVPKWYKGEFx46dwoDCjTU78+nPtZyg@mail.gmail.com>
+	 <20130304205307.GA13527@redhat.com>
+In-Reply-To: <20130304205307.GA13527@redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.104.60.117]
+Content-Type: text/plain; charset=US-ASCII
+Content-ID: <D5FD60E17F9C644BAF9200DDCCC7043A@tahoe.netapp.com>
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-In-Reply-To: <1361446379-7970-1-git-send-email-jlayton@redhat.com>
-References: <1361446379-7970-1-git-send-email-jlayton@redhat.com>
-Date: Mon, 4 Mar 2013 16:08:30 -0600
-Message-ID: <CAH2r5muojf9w9QxkPK5vCQs5Av_wxm+twJ044+Mf8Q_9D=b63Q@mail.gmail.com>
-Subject: Re: [PATCH] cifs: remove the sockopt= mount option
-From: Steve French <smfrench@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Cc: linux-cifs@vger.kernel.org, Jeff Layton <jlayton@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Resending patch to a slightly broader list for last minute check if
-anyone objects.  Although setting this particular socket option
-(TCP_NODELAY) may not be as useful when corking/uncorking explicitly,
-I want to doublecheck before removing them because there has been some
-utility to the server allowing override of various sockopt options.
-Samba server has long supported at least the following set of settable
-socket options (although I don't know if the defaults are frequently
-overridden now, by setting sockopts in smb.conf as used to be common
-for the server).
+On Mon, 2013-03-04 at 21:53 +0100, Oleg Nesterov wrote:
+> On 03/04, Mandeep Singh Baines wrote:
+> >
+> > The problem is that freezer_count() calls try_to_freeze(). In this
+> > case, try_to_freeze() is not really adding any value.
+> 
+> Well, I tend to agree.
+> 
+> If a task calls __refrigerator() holding a lock which another freezable
+> task can wait for, this is not freezer-friendly.
+> 
+> freezable_schedule/freezer_do_not_count/etc not only means "I won't be
+> active if freezing()", it should also mean "I won't block suspend/etc".
 
-SO_KEEPALIVE
-SO_REUSEADDR
-SO_BROADCAST
-TCP_NODELAY
-IPTOS_LOWDELAY
-IPTOS_THROUGHPUT
-SO_SNDBUF *
-SO_RCVBUF *
-SO_SNDLOWAT *
-SO_RCVLOWAT *
+If suspend for some reason requires a re-entrant mount, then yes, I can
+see how it might be a problem that we're holding a mount-related lock.
+The question is why is that necessary?
 
-* takes an integer argument rather than a boolean on/off
+> OTOH, I understand that probably it is not trivial to change this code
+> to make it freezer-friendly. But at least  I disagree with "push your
+> problems onto others".
 
-Any objections to removing the ability to set socket options
-explicitly for the cifs network file system client?
+That code can't be made freezer-friendly if it isn't allowed to hold
+basic filesystem-related locks across RPC calls. A number of those RPC
+calls do things that need to be protected by VFS or MM-level locks.
+i.e.: lookups, file creation/deletion, page fault in/out, ...
+ 
+IOW: the problem would need to be solved differently, possibly by adding
+a new FIFREEZE-like call to allow the filesystem to quiesce itself
+_before_ NetworkManager pulls the rug out from underneath it. There
+would still be plenty of corner cases to keep people entertained (e.g.
+the server goes down before the quiesce call is invoked) but at least
+the top 90% of cases would be solved.
 
-On Thu, Feb 21, 2013 at 5:32 AM, Jeff Layton <jlayton@redhat.com> wrote:
->
-> ...as promised for 3.9.
->
-> Signed-off-by: Jeff Layton <jlayton@redhat.com>
-> ---
->  fs/cifs/connect.c | 16 +---------------
->  1 file changed, 1 insertion(+), 15 deletions(-)
->
-> diff --git a/fs/cifs/connect.c b/fs/cifs/connect.c
-> index d997737..8609c42 100644
-> --- a/fs/cifs/connect.c
-> +++ b/fs/cifs/connect.c
-> @@ -97,7 +97,7 @@ enum {
->         Opt_user, Opt_pass, Opt_ip,
->         Opt_unc, Opt_domain,
->         Opt_srcaddr, Opt_prefixpath,
-> -       Opt_iocharset, Opt_sockopt,
-> +       Opt_iocharset,
->         Opt_netbiosname, Opt_servern,
->         Opt_ver, Opt_vers, Opt_sec, Opt_cache,
->
-> @@ -202,7 +202,6 @@ static const match_table_t cifs_mount_option_tokens =
-> {
->         { Opt_srcaddr, "srcaddr=%s" },
->         { Opt_prefixpath, "prefixpath=%s" },
->         { Opt_iocharset, "iocharset=%s" },
-> -       { Opt_sockopt, "sockopt=%s" },
->         { Opt_netbiosname, "netbiosname=%s" },
->         { Opt_servern, "servern=%s" },
->         { Opt_ver, "ver=%s" },
-> @@ -1722,19 +1721,6 @@ cifs_parse_mount_options(const char *mountdata,
-> const char *devname,
->                          */
->                         cFYI(1, "iocharset set to %s", string);
->                         break;
-> -               case Opt_sockopt:
-> -                       string = match_strdup(args);
-> -                       if (string == NULL)
-> -                               goto out_nomem;
-> -
-> -                       if (strnicmp(string, "TCP_NODELAY", 11) == 0) {
-> -                               printk(KERN_WARNING "CIFS: the "
-> -                                       "sockopt=TCP_NODELAY option has
-> been "
-> -                                       "deprecated and will be removed "
-> -                                       "in 3.9\n");
-> -                               vol->sockopt_tcp_nodelay = 1;
-> -                       }
-> -                       break;
->                 case Opt_netbiosname:
->                         string = match_strdup(args);
->                         if (string == NULL)
-> --
-> 1.7.11.7
->
+-- 
+Trond Myklebust
+Linux NFS client maintainer
 
-
-
---
-Thanks,
-
-Steve
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
