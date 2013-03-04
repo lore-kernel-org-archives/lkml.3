@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756222Ab3CDDnX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 22:43:23 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:32788 "EHLO
+	id S1756367Ab3CDDni (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 22:43:38 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:32803 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756180Ab3CDDnT (ORCPT
+	by vger.kernel.org with ESMTP id S1756325Ab3CDDne (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Mar 2013 22:43:19 -0500
-Message-Id: <20130304033718.413492459@decadent.org.uk>
+	Sun, 3 Mar 2013 22:43:34 -0500
+Message-Id: <20130304033718.509647354@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 04 Mar 2013 03:38:57 +0000
+Date: Mon, 04 Mar 2013 03:38:58 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, Tejun Heo <tj@kernel.org>,
-        David Teigland <teigland@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Jens Axboe <axboe@kernel.dk>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 110/153] idr: fix a subtle bug in idr_get_next()
+Subject: [ 111/153] block: fix synchronization and limit check in blk_alloc_devt()
 In-Reply-To: <20130304033707.648729212@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,70 +30,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Tejun Heo <tj@kernel.org>
 
-commit 6cdae7416a1c45c2ce105a78187d9b7e8feb9e24 upstream.
+commit ce23bba842aee98092225d9576dba47c82352521 upstream.
 
-The iteration logic of idr_get_next() is borrowed mostly verbatim from
-idr_for_each().  It walks down the tree looking for the slot matching
-the current ID.  If the matching slot is not found, the ID is
-incremented by the distance of single slot at the given level and
-repeats.
+idr allocation in blk_alloc_devt() wasn't synchronized against lookup
+and removal, and its limit check was off by one - 1 << MINORBITS is
+the number of minors allowed, not the maximum allowed minor.
 
-The implementation assumes that during the whole iteration id is aligned
-to the layer boundaries of the level closest to the leaf, which is true
-for all iterations starting from zero or an existing element and thus is
-fine for idr_for_each().
-
-However, idr_get_next() may be given any point and if the starting id
-hits in the middle of a non-existent layer, increment to the next layer
-will end up skipping the same offset into it.  For example, an IDR with
-IDs filled between [64, 127] would look like the following.
-
-          [  0  64 ... ]
-       /----/   |
-       |        |
-      NULL    [ 64 ... 127 ]
-
-If idr_get_next() is called with 63 as the starting point, it will try
-to follow down the pointer from 0.  As it is NULL, it will then try to
-proceed to the next slot in the same level by adding the slot distance
-at that level which is 64 - making the next try 127.  It goes around the
-loop and finds and returns 127 skipping [64, 126].
-
-Note that this bug also triggers in idr_for_each_entry() loop which
-deletes during iteration as deletions can make layers go away leaving
-the iteration with unaligned ID into missing layers.
-
-Fix it by ensuring proceeding to the next slot doesn't carry over the
-unaligned offset - ie.  use round_up(id + 1, slot_distance) instead of
-id += slot_distance.
+Add locking and rename MAX_EXT_DEVT to NR_EXT_DEVT and fix limit
+checking.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: David Teigland <teigland@redhat.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Acked-by: Jens Axboe <axboe@kernel.dk>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- lib/idr.c |    9 ++++++++-
- 1 file changed, 8 insertions(+), 1 deletion(-)
+ block/genhd.c |   13 +++++--------
+ 1 file changed, 5 insertions(+), 8 deletions(-)
 
---- a/lib/idr.c
-+++ b/lib/idr.c
-@@ -623,7 +623,14 @@ void *idr_get_next(struct idr *idp, int
- 			return p;
- 		}
+--- a/block/genhd.c
++++ b/block/genhd.c
+@@ -26,7 +26,7 @@ static DEFINE_MUTEX(block_class_lock);
+ struct kobject *block_depr;
  
--		id += 1 << n;
-+		/*
-+		 * Proceed to the next layer at the current level.  Unlike
-+		 * idr_for_each(), @id isn't guaranteed to be aligned to
-+		 * layer boundary at this point and adding 1 << n may
-+		 * incorrectly skip IDs.  Make sure we jump to the
-+		 * beginning of the next layer using round_up().
-+		 */
-+		id = round_up(id + 1, 1 << n);
- 		while (n < fls(id)) {
- 			n += IDR_BITS;
- 			p = *--paa;
+ /* for extended dynamic devt allocation, currently only one major is used */
+-#define MAX_EXT_DEVT		(1 << MINORBITS)
++#define NR_EXT_DEVT		(1 << MINORBITS)
+ 
+ /* For extended devt allocation.  ext_devt_mutex prevents look up
+  * results from going away underneath its user.
+@@ -423,19 +423,16 @@ int blk_alloc_devt(struct hd_struct *par
+ 			return -ENOMEM;
+ 		mutex_lock(&ext_devt_mutex);
+ 		rc = idr_get_new(&ext_devt_idr, part, &idx);
++		if (!rc && idx >= NR_EXT_DEVT) {
++			idr_remove(&ext_devt_idr, idx);
++			rc = -EBUSY;
++		}
+ 		mutex_unlock(&ext_devt_mutex);
+ 	} while (rc == -EAGAIN);
+ 
+ 	if (rc)
+ 		return rc;
+ 
+-	if (idx > MAX_EXT_DEVT) {
+-		mutex_lock(&ext_devt_mutex);
+-		idr_remove(&ext_devt_idr, idx);
+-		mutex_unlock(&ext_devt_mutex);
+-		return -EBUSY;
+-	}
+-
+ 	*devt = MKDEV(BLOCK_EXT_MAJOR, blk_mangle_minor(idx));
+ 	return 0;
+ }
 
 
