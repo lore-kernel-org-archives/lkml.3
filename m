@@ -1,51 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755118Ab3CDDPG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 22:15:06 -0500
-Received: from e23smtp03.au.ibm.com ([202.81.31.145]:41860 "EHLO
-	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752564Ab3CDDPE (ORCPT
+	id S1755000Ab3CDDY2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 22:24:28 -0500
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:42852 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754741Ab3CDDY1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Mar 2013 22:15:04 -0500
-Message-ID: <513411AD.5010408@linux.vnet.ibm.com>
-Date: Mon, 04 Mar 2013 11:14:53 +0800
-From: Mike Qiu <qiudayu@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
+	Sun, 3 Mar 2013 22:24:27 -0500
 MIME-Version: 1.0
-To: Michael Ellerman <michael@ellerman.id.au>
-CC: linuxppc-dev@lists.ozlabs.org, tglx@linutronix.de,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/3] Enable multiple MSI feature in pSeries
-References: <1358235536-32741-1-git-send-email-qiudayu@linux.vnet.ibm.com> <1362107325.2712.2.camel@localhost> <20130301035417.GA17236@concordia>
-In-Reply-To: <20130301035417.GA17236@concordia>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13030403-6102-0000-0000-000003173E46
+In-Reply-To: <20130225235313.GE2679@htj.dyndns.org>
+References: <CAJFUiJhxqWeQ9PiinpRYCUF8U_3dpaAdvsEKHW2i-QqZ=vkYsQ@mail.gmail.com>
+ <20130225235313.GE2679@htj.dyndns.org>
+From: Lianwei Wang <lianwei.wang@gmail.com>
+Date: Mon, 4 Mar 2013 11:24:06 +0800
+Message-ID: <CAJFUiJjy-7sS9xH76XMLs5SU6fUQ1Bk4Xn67jjHeZNQRjC54dg@mail.gmail.com>
+Subject: Re: PATCH: freezer: add fake signal clearing back when thaw task
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Oleg Nesterov <oleg@redhat.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2013/3/1 11:54, Michael Ellerman 写道:
-> On Fri, Mar 01, 2013 at 11:08:45AM +0800, Mike wrote:
->> Hi all
->>
->> Any comments? or any questions about my patchset?
-> You were going to get some performance numbers that show a definite
-> benefit for using more than one MSI.
-Yes, but my patch just enable the kernel to support this feature, whether
-to use it depens on the device driver.
+Sorry for the late response.
 
-And this feature has been merged to the kernel for X86 for a long time.
-See commit: 5ca72c4f7c412c2002363218901eba5516c476b1
-51906e779f2b13b38f8153774c4c7163d412ffd9
+Freeze/Thaw is a hot path for the Linux based mobile OS, e.g. Android.
+If we don't remove the pending fake signal, then the user space apps
+or the related kernel driver has to handle such error. And yes, the
+user can handle such case by checking the return value, but it mislead
+the user and confuse to them that why wait_event_freezable and friends
+return a error on resume path every time? Can we avoid such useless
+error return?
 
-Actually, I'm trying to do the test. but it is difficult to do that test,
-because it mostly depends on how the device driver to use this feature,
-while the ipr driver patch was wrote by another person. also no any reply
-from her.
+(Resend with plain text)
 
-
-> cheers
+2013/2/26 Tejun Heo <tj@kernel.org>:
+> (cc'ing Rafael and Oleg and quoting whole body)
 >
-
+> On Thu, Feb 21, 2013 at 02:19:21PM +0800, Lianwei Wang wrote:
+>> Hi Tejun Heo and all,
+>>
+>> The commit of "34b087e freezer: kill unused
+>> set_freezable_with_signal()" remove recalc_sigpending*() calls in
+>> freezer, so the user tasks get TIF_SIGPENDING fake signal that is set
+>> when freezing userspace process. It left the fake signal to userspcae
+>> which cause the userspace task that wait_event_freezable and friends
+>> return a wrong ERESTARTSYS. This is not good because it waste cpu time
+>> to handle the fake signal.
+>
+> Is this even measureable?  Freeze / thaw isn't exactly a hot path and
+> I'm having difficult time believing -ERESTARTSYS would have a
+> noticeable impact on anything.  Can you please explain why this is a
+> problem?
+>
+>> Can we just call the recalc_sigpending to clear the fake signal for
+>> userspace tasks? as below patch do:
+>>
+>> From 176fccee178bc0185d92853dd2f521c9166b0853 Mon Sep 17 00:00:00 2001
+>> From: Lianwei Wang <lianwei.wang@gmail.com>
+>> Date: Mon, 21 Jan 2013 18:21:26 +0800
+>> Subject: [PATCH] freezer: add fake signal clearing back when thaw task
+>>
+>> The fake TIF_SIGPENDING is set during freeze userspace process, but it
+>> is not cleared when thaw tasks after below commit:
+>>   34b087e freezer: kill unused set_freezable_with_signal()
+>>
+>> This will cause the userspace task that wait_event_freezable and friends
+>> return a wrong ERESTARTSYS. This is not good because it waste cpu time to
+>> handle the fake signal.
+>>
+>> Try to clear the TIF_SIGPENDING flag for userspace apps when wakeup the
+>> frozen task to fix this issue.
+>>
+>> Change-Id: I91c90ad2ee9a46c42e3b39a7384ec81e97bc0394
+>> Signed-off-by: Lianwei Wang <lianwei.wang@gmail.com>
+>> ---
+>>  kernel/freezer.c |   14 ++++++++++++++
+>>  1 files changed, 14 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/kernel/freezer.c b/kernel/freezer.c
+>> index c38893b..09557f6 100644
+>> --- a/kernel/freezer.c
+>> +++ b/kernel/freezer.c
+>> @@ -46,6 +46,16 @@ bool freezing_slow_path(struct task_struct *p)
+>>  }
+>>  EXPORT_SYMBOL(freezing_slow_path);
+>>
+>> +static void fake_signal_clear(struct task_struct *p)
+>> +{
+>> + unsigned long flags;
+>> +
+>> + if (lock_task_sighand(p, &flags)) {
+>> +     recalc_sigpending();
+>> +     unlock_task_sighand(p, &flags);
+>> + }
+>> +}
+>> +
+>>  /* Refrigerator is place where frozen processes are stored :-). */
+>>  bool __refrigerator(bool check_kthr_stop)
+>>  {
+>> @@ -74,6 +84,10 @@ bool __refrigerator(bool check_kthr_stop)
+>>
+>>   pr_debug("%s left refrigerator\n", current->comm);
+>>
+>> + if (!(current->flags & PF_KTHREAD))
+>> +     if (test_tsk_thread_flag(current, TIF_SIGPENDING))
+>> +         fake_signal_clear(current);
+>> +
+>>   /*
+>>   * Restore saved task state before returning.  The mb'd version
+>>   * needs to be used; otherwise, it might silently break
+>> --
+>> 1.7.4.1
+>
+>
+>
+> --
+> tejun
