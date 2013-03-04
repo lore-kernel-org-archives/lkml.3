@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755581Ab3CDDmr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 22:42:47 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60828 "EHLO
+	id S1756148Ab3CDEQ2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 23:16:28 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60824 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755540Ab3CDDmo (ORCPT
+	by vger.kernel.org with ESMTP id S1755530Ab3CDDmq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Mar 2013 22:42:44 -0500
-Message-Id: <20130304033722.523635795@decadent.org.uk>
+	Sun, 3 Mar 2013 22:42:46 -0500
+Message-Id: <20130304033721.334089413@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 04 Mar 2013 03:39:39 +0000
+Date: Mon, 04 Mar 2013 03:39:27 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Ashish Sangwan <ashishsangwan2@gmail.com>,
-        Ashish Sangwan <ashish.sangwan2@gmail.com>,
-        Namjae Jeon <linkinjeon@gmail.com>,
-        Lukas Czerner <lczerner@redhat.com>,
+Cc: akpm@linux-foundation.org,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [ 152/153] ext4: fix hole punch failure when depth is greater than 0
+Subject: [ 140/153] usb: Add quirk detection based on interface information
 In-Reply-To: <20130304033707.648729212@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,124 +29,254 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ashish Sangwan <ashishsangwan2@gmail.com>
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
 
-commit 968dee77220768a5f52cf8b21d0bdb73486febef upstream.
+commit 80da2e0df5af700518611b7d1cc4fc9945bcaf95 upstream.
 
-Whether to continue removing extents or not is decided by the return
-value of function ext4_ext_more_to_rm() which checks 2 conditions:
-a) if there are no more indexes to process.
-b) if the number of entries are decreased in the header of "depth -1".
+When a whole class of devices (possibly from a specific vendor, or
+across multiple vendors) require a quirk, explictly listing all devices
+in the class make the quirks table unnecessarily large. Fix this by
+allowing matching devices based on interface information.
 
-In case of hole punch, if the last block to be removed is not part of
-the last extent index than this index will not be deleted, hence the
-number of valid entries in the extent header of "depth - 1" will
-remain as it is and ext4_ext_more_to_rm will return 0 although the
-required blocks are not yet removed.
-
-This patch fixes the above mentioned problem as instead of removing
-the extents from the end of file, it starts removing the blocks from
-the particular extent from which removing blocks is actually required
-and continue backward until done.
-
-Signed-off-by: Ashish Sangwan <ashish.sangwan2@gmail.com>
-Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
-Reviewed-by: Lukas Czerner <lczerner@redhat.com>
+Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/ext4/extents.c | 46 +++++++++++++++++++++++++++++-----------------
- 1 file changed, 29 insertions(+), 17 deletions(-)
+ drivers/usb/core/driver.c |   38 ++++++++++--------
+ drivers/usb/core/hub.c    |   10 +++--
+ drivers/usb/core/quirks.c |   93 +++++++++++++++++++++++++++++++++++----------
+ drivers/usb/core/usb.h    |    4 ++
+ 4 files changed, 106 insertions(+), 39 deletions(-)
 
---- a/fs/ext4/extents.c
-+++ b/fs/ext4/extents.c
-@@ -2521,10 +2521,10 @@ static int ext4_ext_remove_space(struct
+--- a/drivers/usb/core/driver.c
++++ b/drivers/usb/core/driver.c
+@@ -541,22 +541,10 @@ int usb_match_device(struct usb_device *
+ }
+ 
+ /* returns 0 if no match, 1 if match */
+-int usb_match_one_id(struct usb_interface *interface,
+-		     const struct usb_device_id *id)
++int usb_match_one_id_intf(struct usb_device *dev,
++			  struct usb_host_interface *intf,
++			  const struct usb_device_id *id)
  {
- 	struct super_block *sb = inode->i_sb;
- 	int depth = ext_depth(inode);
--	struct ext4_ext_path *path;
-+	struct ext4_ext_path *path = NULL;
- 	ext4_fsblk_t partial_cluster = 0;
- 	handle_t *handle;
--	int i, err;
-+	int i = 0, err;
- 
- 	ext_debug("truncate since %u to %u\n", start, end);
- 
-@@ -2557,8 +2557,12 @@ again:
- 		}
- 		depth = ext_depth(inode);
- 		ex = path[depth].p_ext;
--		if (!ex)
-+		if (!ex) {
-+			ext4_ext_drop_refs(path);
-+			kfree(path);
-+			path = NULL;
- 			goto cont;
-+		}
- 
- 		ee_block = le32_to_cpu(ex->ee_block);
- 
-@@ -2588,8 +2592,6 @@ again:
- 			if (err < 0)
- 				goto out;
- 		}
--		ext4_ext_drop_refs(path);
--		kfree(path);
- 	}
- cont:
- 
-@@ -2598,19 +2600,27 @@ cont:
- 	 * after i_size and walking into the tree depth-wise.
- 	 */
- 	depth = ext_depth(inode);
--	path = kzalloc(sizeof(struct ext4_ext_path) * (depth + 1), GFP_NOFS);
--	if (path == NULL) {
--		ext4_journal_stop(handle);
--		return -ENOMEM;
--	}
--	path[0].p_depth = depth;
--	path[0].p_hdr = ext_inode_hdr(inode);
+-	struct usb_host_interface *intf;
+-	struct usb_device *dev;
 -
--	if (ext4_ext_check(inode, path[0].p_hdr, depth)) {
--		err = -EIO;
--		goto out;
-+	if (path) {
-+		int k = i = depth;
-+		while (--k > 0)
-+			path[k].p_block =
-+				le16_to_cpu(path[k].p_hdr->eh_entries)+1;
-+	} else {
-+		path = kzalloc(sizeof(struct ext4_ext_path) * (depth + 1),
-+			       GFP_NOFS);
-+		if (path == NULL) {
-+			ext4_journal_stop(handle);
-+			return -ENOMEM;
-+		}
-+		path[0].p_depth = depth;
-+		path[0].p_hdr = ext_inode_hdr(inode);
+-	/* proc_connectinfo in devio.c may call us with id == NULL. */
+-	if (id == NULL)
+-		return 0;
+-
+-	intf = interface->cur_altsetting;
+-	dev = interface_to_usbdev(interface);
+-
+-	if (!usb_match_device(dev, id))
+-		return 0;
+-
+ 	/* The interface class, subclass, and protocol should never be
+ 	 * checked for a match if the device class is Vendor Specific,
+ 	 * unless the match record specifies the Vendor ID. */
+@@ -581,6 +569,26 @@ int usb_match_one_id(struct usb_interfac
+ 
+ 	return 1;
+ }
 +
-+		if (ext4_ext_check(inode, path[0].p_hdr, depth)) {
-+			err = -EIO;
-+			goto out;
-+		}
++/* returns 0 if no match, 1 if match */
++int usb_match_one_id(struct usb_interface *interface,
++		     const struct usb_device_id *id)
++{
++	struct usb_host_interface *intf;
++	struct usb_device *dev;
++
++	/* proc_connectinfo in devio.c may call us with id == NULL. */
++	if (id == NULL)
++		return 0;
++
++	intf = interface->cur_altsetting;
++	dev = interface_to_usbdev(interface);
++
++	if (!usb_match_device(dev, id))
++		return 0;
++
++	return usb_match_one_id_intf(dev, intf, id);
++}
+ EXPORT_SYMBOL_GPL(usb_match_one_id);
+ 
+ /**
+--- a/drivers/usb/core/hub.c
++++ b/drivers/usb/core/hub.c
+@@ -1883,7 +1883,7 @@ static int usb_enumerate_device(struct u
+ 		if (err < 0) {
+ 			dev_err(&udev->dev, "can't read configurations, error %d\n",
+ 				err);
+-			goto fail;
++			return err;
+ 		}
  	}
--	i = err = 0;
-+	err = 0;
+ 	if (udev->wusb == 1 && udev->authorized == 0) {
+@@ -1899,8 +1899,12 @@ static int usb_enumerate_device(struct u
+ 		udev->serial = usb_cache_string(udev, udev->descriptor.iSerialNumber);
+ 	}
+ 	err = usb_enumerate_device_otg(udev);
+-fail:
+-	return err;
++	if (err < 0)
++		return err;
++
++	usb_detect_interface_quirks(udev);
++
++	return 0;
+ }
  
- 	while (i >= 0 && err == 0) {
- 		if (i == depth) {
-@@ -2724,8 +2734,10 @@ cont:
- out:
- 	ext4_ext_drop_refs(path);
- 	kfree(path);
--	if (err == -EAGAIN)
-+	if (err == -EAGAIN) {
-+		path = NULL;
- 		goto again;
+ 
+--- a/drivers/usb/core/quirks.c
++++ b/drivers/usb/core/quirks.c
+@@ -15,17 +15,22 @@
+ #include <linux/usb/quirks.h>
+ #include "usb.h"
+ 
+-/* List of quirky USB devices.  Please keep this list ordered by:
++/* Lists of quirky USB devices, split in device quirks and interface quirks.
++ * Device quirks are applied at the very beginning of the enumeration process,
++ * right after reading the device descriptor. They can thus only match on device
++ * information.
++ *
++ * Interface quirks are applied after reading all the configuration descriptors.
++ * They can match on both device and interface information.
++ *
++ * Note that the DELAY_INIT and HONOR_BNUMINTERFACES quirks do not make sense as
++ * interface quirks, as they only influence the enumeration process which is run
++ * before processing the interface quirks.
++ *
++ * Please keep the lists ordered by:
+  * 	1) Vendor ID
+  * 	2) Product ID
+  * 	3) Class ID
+- *
+- * as we want specific devices to be overridden first, and only after that, any
+- * class specific quirks.
+- *
+- * Right now the logic aborts if it finds a valid device in the table, we might
+- * want to change that in the future if it turns out that a whole class of
+- * devices is broken...
+  */
+ static const struct usb_device_id usb_quirk_list[] = {
+ 	/* CBM - Flash disk */
+@@ -163,16 +168,53 @@ static const struct usb_device_id usb_qu
+ 	{ }  /* terminating entry must be last */
+ };
+ 
+-static const struct usb_device_id *find_id(struct usb_device *udev)
++static const struct usb_device_id usb_interface_quirk_list[] = {
++	{ }  /* terminating entry must be last */
++};
++
++static bool usb_match_any_interface(struct usb_device *udev,
++				    const struct usb_device_id *id)
++{
++	unsigned int i;
++
++	for (i = 0; i < udev->descriptor.bNumConfigurations; ++i) {
++		struct usb_host_config *cfg = &udev->config[i];
++		unsigned int j;
++
++		for (j = 0; j < cfg->desc.bNumInterfaces; ++j) {
++			struct usb_interface_cache *cache;
++			struct usb_host_interface *intf;
++
++			cache = cfg->intf_cache[j];
++			if (cache->num_altsetting == 0)
++				continue;
++
++			intf = &cache->altsetting[0];
++			if (usb_match_one_id_intf(udev, intf, id))
++				return true;
++		}
 +	}
- 	ext4_journal_stop(handle);
++
++	return false;
++}
++
++static u32 __usb_detect_quirks(struct usb_device *udev,
++			       const struct usb_device_id *id)
+ {
+-	const struct usb_device_id *id = usb_quirk_list;
++	u32 quirks = 0;
  
- 	return err;
+-	for (; id->idVendor || id->bDeviceClass || id->bInterfaceClass ||
+-			id->driver_info; id++) {
+-		if (usb_match_device(udev, id))
+-			return id;
++	for (; id->match_flags; id++) {
++		if (!usb_match_device(udev, id))
++			continue;
++
++		if ((id->match_flags & USB_DEVICE_ID_MATCH_INT_INFO) &&
++		    !usb_match_any_interface(udev, id))
++			continue;
++
++		quirks |= (u32)(id->driver_info);
+ 	}
+-	return NULL;
++
++	return quirks;
+ }
+ 
+ /*
+@@ -180,14 +222,10 @@ static const struct usb_device_id *find_
+  */
+ void usb_detect_quirks(struct usb_device *udev)
+ {
+-	const struct usb_device_id *id = usb_quirk_list;
+-
+-	id = find_id(udev);
+-	if (id)
+-		udev->quirks = (u32)(id->driver_info);
++	udev->quirks = __usb_detect_quirks(udev, usb_quirk_list);
+ 	if (udev->quirks)
+ 		dev_dbg(&udev->dev, "USB quirks for this device: %x\n",
+-				udev->quirks);
++			udev->quirks);
+ 
+ 	/* For the present, all devices default to USB-PERSIST enabled */
+ #if 0		/* was: #ifdef CONFIG_PM */
+@@ -204,3 +242,16 @@ void usb_detect_quirks(struct usb_device
+ 		udev->persist_enabled = 1;
+ #endif	/* CONFIG_PM */
+ }
++
++void usb_detect_interface_quirks(struct usb_device *udev)
++{
++	u32 quirks;
++
++	quirks = __usb_detect_quirks(udev, usb_interface_quirk_list);
++	if (quirks == 0)
++		return;
++
++	dev_dbg(&udev->dev, "USB interface quirks for this device: %x\n",
++		quirks);
++	udev->quirks |= quirks;
++}
+--- a/drivers/usb/core/usb.h
++++ b/drivers/usb/core/usb.h
+@@ -24,6 +24,7 @@ extern void usb_disable_device(struct us
+ extern int usb_deauthorize_device(struct usb_device *);
+ extern int usb_authorize_device(struct usb_device *);
+ extern void usb_detect_quirks(struct usb_device *udev);
++extern void usb_detect_interface_quirks(struct usb_device *udev);
+ extern int usb_remove_device(struct usb_device *udev);
+ 
+ extern int usb_get_device_descriptor(struct usb_device *dev,
+@@ -35,6 +36,9 @@ extern int usb_set_configuration(struct
+ extern int usb_choose_configuration(struct usb_device *udev);
+ 
+ extern void usb_kick_khubd(struct usb_device *dev);
++extern int usb_match_one_id_intf(struct usb_device *dev,
++				 struct usb_host_interface *intf,
++				 const struct usb_device_id *id);
+ extern int usb_match_device(struct usb_device *dev,
+ 			    const struct usb_device_id *id);
+ extern void usb_forced_unbind_intf(struct usb_interface *intf);
 
 
