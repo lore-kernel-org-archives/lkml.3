@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757076Ab3CDDoe (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 22:44:34 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33031 "EHLO
+	id S1757149Ab3CDDoi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 22:44:38 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33036 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756895Ab3CDDoX (ORCPT
+	by vger.kernel.org with ESMTP id S1756861Ab3CDDoW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Mar 2013 22:44:23 -0500
-Message-Id: <20130304033713.728709636@decadent.org.uk>
+	Sun, 3 Mar 2013 22:44:22 -0500
+Message-Id: <20130304033713.452203175@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 04 Mar 2013 03:38:09 +0000
+Date: Mon, 04 Mar 2013 03:38:06 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Josh Boyer <jwboyer@redhat.com>,
-        "Carsten S." <carsteniq@yahoo.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [ 062/153] USB: usb-storage: unusual_devs update for Super TOP SATA bridge
+Cc: akpm@linux-foundation.org, Arnd Bergmann <arnd@arndb.de>,
+        Kukjin Kim <kgene.kim@samsung.com>, Ben Dooks <ben-linux@fluff.org>
+Subject: [ 059/153] ARM: samsung: fix assembly syntax for new gas
 In-Reply-To: <20130304033707.648729212@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,40 +27,246 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Josh Boyer <jwboyer@redhat.com>
+From: Arnd Bergmann <arnd@arndb.de>
 
-commit 18e03310b5caa6d11c1a8c61b982c37047693fba upstream.
+commit 2815774bb38445006074e16251b9ef5123bdc616 upstream.
 
-The current entry in unusual_cypress.h for the Super TOP SATA bridge devices
-seems to be causing corruption on newer revisions of this device.  This has
-been reported in Arch Linux and Fedora.  The original patch was tested on
-devices with bcdDevice of 1.60, whereas the newer devices report bcdDevice
-as 2.20.  Limit the UNUSUAL_DEV entry to devices less than 2.20.
+Recent assembler versions complain about extraneous
+whitespace inside [] brackets. This fixes all of
+these instances for the samsung platforms. We should
+backport this to all kernels that might need to
+be built with new binutils.
 
-This fixes https://bugzilla.redhat.com/show_bug.cgi?id=909591
+arch/arm/kernel/entry-armv.S: Assembler messages:
+arch/arm/kernel/entry-armv.S:214: Error: ARM register expected -- `ldr r2,[ r6,#(0x10)]'
+arch/arm/kernel/entry-armv.S:214: Error: ARM register expected -- `ldr r0,[ r6,#(0x14)]'
+arch/arm/kernel/entry-armv.S:430: Error: ARM register expected -- `ldr r2,[ r6,#(0x10)]'
+arch/arm/kernel/entry-armv.S:430: Error: ARM register expected -- `ldr r0,[ r6,#(0x14)]'
+arch/arm/mach-s3c24xx/sleep-s3c2410.S: Assembler messages:
+arch/arm/mach-s3c24xx/sleep-s3c2410.S:48: Error: ARM register expected -- `ldr r7,[ r4 ]'
+arch/arm/mach-s3c24xx/sleep-s3c2410.S:49: Error: ARM register expected -- `ldr r8,[ r5 ]'
+arch/arm/mach-s3c24xx/sleep-s3c2410.S:50: Error: ARM register expected -- `ldr r9,[ r6 ]'
+arch/arm/mach-s3c24xx/sleep-s3c2410.S:64: Error: ARM register expected -- `streq r7,[ r4 ]'
+arch/arm/mach-s3c24xx/sleep-s3c2410.S:65: Error: ARM register expected -- `streq r8,[ r5 ]'
+arch/arm/mach-s3c24xx/sleep-s3c2410.S:66: Error: ARM register expected -- `streq r9,[ r6 ]'
+arch/arm/kernel/debug.S: Assembler messages:
+arch/arm/kernel/debug.S:83: Error: ARM register expected -- `ldr r2,[ r2,#((0x0B0)+(((0x56000000)-(0x50000000))+(0xF6000000+(0x01000000))))-((0)+(((0x56000000)-(0x50000000))+(0xF6000000+(0x01000000))))]'
+arch/arm/kernel/debug.S:83: Error: ARM register expected -- `ldr r2,[ r3,#(0x18)]'
+arch/arm/kernel/debug.S:85: Error: ARM register expected -- `ldr r2,[ r2,#((0x0B0)+(((0x56000000)-(0x50000000))+(0xF6000000+(0x01000000))))-((0)+(((0x56000000)-(0x50000000))+(0xF6000000+(0x01000000))))]'
+arch/arm/kernel/debug.S:85: Error: ARM register expected -- `ldr r2,[ r3,#(0x18)]'
+arch/arm/mach-s3c24xx/pm-h1940.S: Assembler messages:
+arch/arm/mach-s3c24xx/pm-h1940.S:33: Error: ARM register expected -- `ldr pc,[ r0,#((0x0B8)+(((0x56000000)-(0x50000000))+(0xF6000000+(0x01000000))))-(((0x56000000)-(0x50000000))+(0xF6000000+(0x01000000)))]'
+arch/arm/mach-s3c24xx/sleep-s3c2412.S: Assembler messages:
+arch/arm/mach-s3c24xx/sleep-s3c2412.S:60: Error: ARM register expected -- `ldrne r9,[ r1 ]'
+arch/arm/mach-s3c24xx/sleep-s3c2412.S:61: Error: ARM register expected -- `strne r9,[ r1 ]'
+arch/arm/mach-s3c24xx/sleep-s3c2412.S:62: Error: ARM register expected -- `ldrne r9,[ r2 ]'
+arch/arm/mach-s3c24xx/sleep-s3c2412.S:63: Error: ARM register expected -- `strne r9,[ r2 ]'
+arch/arm/mach-s3c24xx/sleep-s3c2412.S:64: Error: ARM register expected -- `ldrne r9,[ r3 ]'
+arch/arm/mach-s3c24xx/sleep-s3c2412.S:65: Error: ARM register expected -- `strne r9,[ r3 ]'
+arch/arm/kernel/debug.S:83: Error: ARM register expected -- `ldr r2,[ r3,#(0x08)]'
+arch/arm/kernel/debug.S:83: Error: ARM register expected -- `ldr r2,[ r3,#(0x18)]'
+arch/arm/kernel/debug.S:83: Error: ARM register expected -- `ldr r2,[ r3,#(0x10)]'
+arch/arm/kernel/debug.S:85: Error: ARM register expected -- `ldr r2,[ r3,#(0x08)]'
+arch/arm/kernel/debug.S:85: Error: ARM register expected -- `ldr r2,[ r3,#(0x18)]'
+arch/arm/kernel/debug.S:85: Error: ARM register expected -- `ldr r2,[ r3,#(0x10)]'
 
-The Arch Forum post on this is here:
-	https://bbs.archlinux.org/viewtopic.php?id=152011
-
-Reported-by: Carsten S. <carsteniq@yahoo.com>
-Tested-by: Carsten S. <carsteniq@yahoo.com>
-Signed-off-by: Josh Boyer <jwboyer@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Acked-by: Kukjin Kim <kgene.kim@samsung.com>
+Cc: Ben Dooks <ben-linux@fluff.org>
+[bwh: Backported to 3.2: adjust filenames]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/storage/unusual_cypress.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/drivers/usb/storage/unusual_cypress.h
-+++ b/drivers/usb/storage/unusual_cypress.h
-@@ -31,7 +31,7 @@ UNUSUAL_DEV(  0x04b4, 0x6831, 0x0000, 0x
- 		"Cypress ISD-300LP",
- 		USB_SC_CYP_ATACB, USB_PR_DEVICE, NULL, 0),
+--- a/arch/arm/mach-s3c2410/include/mach/debug-macro.S
++++ b/arch/arm/mach-s3c2410/include/mach/debug-macro.S
+@@ -40,17 +40,17 @@
+ 		addeq	\rd, \rx, #(S3C24XX_PA_GPIO - S3C24XX_PA_UART)
+ 		addne	\rd, \rx, #(S3C24XX_VA_GPIO - S3C24XX_VA_UART)
+ 		bic	\rd, \rd, #0xff000
+-		ldr	\rd, [ \rd, # S3C2410_GSTATUS1 - S3C2410_GPIOREG(0) ]
++		ldr	\rd, [\rd, # S3C2410_GSTATUS1 - S3C2410_GPIOREG(0)]
+ 		and	\rd, \rd, #0x00ff0000
+ 		teq	\rd, #0x00440000		@ is it 2440?
+ 1004:
+-		ldr	\rd, [ \rx, # S3C2410_UFSTAT ]
++		ldr	\rd, [\rx, # S3C2410_UFSTAT]
+ 		moveq	\rd, \rd, lsr #SHIFT_2440TXF
+ 		tst	\rd, #S3C2410_UFSTAT_TXFULL
+ 	.endm
  
--UNUSUAL_DEV( 0x14cd, 0x6116, 0x0000, 0x9999,
-+UNUSUAL_DEV( 0x14cd, 0x6116, 0x0000, 0x0219,
- 		"Super Top",
- 		"USB 2.0  SATA BRIDGE",
- 		USB_SC_CYP_ATACB, USB_PR_DEVICE, NULL, 0),
+ 	.macro  fifo_full_s3c2410 rd, rx
+-		ldr	\rd, [ \rx, # S3C2410_UFSTAT ]
++		ldr	\rd, [\rx, # S3C2410_UFSTAT]
+ 		tst	\rd, #S3C2410_UFSTAT_TXFULL
+ 	.endm
+ 
+@@ -68,18 +68,18 @@
+ 		addeq	\rd, \rx, #(S3C24XX_PA_GPIO - S3C24XX_PA_UART)
+ 		addne	\rd, \rx, #(S3C24XX_VA_GPIO - S3C24XX_VA_UART)
+ 		bic	\rd, \rd, #0xff000
+-		ldr	\rd, [ \rd, # S3C2410_GSTATUS1 - S3C2410_GPIOREG(0) ]
++		ldr	\rd, [\rd, # S3C2410_GSTATUS1 - S3C2410_GPIOREG(0)]
+ 		and	\rd, \rd, #0x00ff0000
+ 		teq	\rd, #0x00440000		@ is it 2440?
+ 
+ 10000:
+-		ldr	\rd, [ \rx, # S3C2410_UFSTAT ]
++		ldr	\rd, [\rx, # S3C2410_UFSTAT]
+ 		andne	\rd, \rd, #S3C2410_UFSTAT_TXMASK
+ 		andeq	\rd, \rd, #S3C2440_UFSTAT_TXMASK
+ 	.endm
+ 
+ 	.macro fifo_level_s3c2410 rd, rx
+-		ldr	\rd, [ \rx, # S3C2410_UFSTAT ]
++		ldr	\rd, [\rx, # S3C2410_UFSTAT]
+ 		and	\rd, \rd, #S3C2410_UFSTAT_TXMASK
+ 	.endm
+ 
+--- a/arch/arm/mach-s3c2410/include/mach/entry-macro.S
++++ b/arch/arm/mach-s3c2410/include/mach/entry-macro.S
+@@ -34,10 +34,10 @@
+ 
+ 		@@ try the interrupt offset register, since it is there
+ 
+-		ldr	\irqstat, [ \base, #INTPND ]
++		ldr	\irqstat, [\base, #INTPND ]
+ 		teq	\irqstat, #0
+ 		beq	1002f
+-		ldr	\irqnr, [ \base, #INTOFFSET ]
++		ldr	\irqnr, [\base, #INTOFFSET ]
+ 		mov	\tmp, #1
+ 		tst	\irqstat, \tmp, lsl \irqnr
+ 		bne	1001f
+--- a/arch/arm/mach-s3c2410/pm-h1940.S
++++ b/arch/arm/mach-s3c2410/pm-h1940.S
+@@ -30,4 +30,4 @@
+ 
+ h1940_pm_return:
+ 	mov	r0, #S3C2410_PA_GPIO
+-	ldr	pc, [ r0, #S3C2410_GSTATUS3 - S3C24XX_VA_GPIO ]
++	ldr	pc, [r0, #S3C2410_GSTATUS3 - S3C24XX_VA_GPIO]
+--- a/arch/arm/mach-s3c2410/sleep.S
++++ b/arch/arm/mach-s3c2410/sleep.S
+@@ -45,9 +45,9 @@ ENTRY(s3c2410_cpu_suspend)
+ 	ldr	r4, =S3C2410_REFRESH
+ 	ldr	r5, =S3C24XX_MISCCR
+ 	ldr	r6, =S3C2410_CLKCON
+-	ldr	r7, [ r4 ]		@ get REFRESH (and ensure in TLB)
+-	ldr	r8, [ r5 ]		@ get MISCCR (and ensure in TLB)
+-	ldr	r9, [ r6 ]		@ get CLKCON (and ensure in TLB)
++	ldr	r7, [r4]		@ get REFRESH (and ensure in TLB)
++	ldr	r8, [r5]		@ get MISCCR (and ensure in TLB)
++	ldr	r9, [r6]		@ get CLKCON (and ensure in TLB)
+ 
+ 	orr	r7, r7, #S3C2410_REFRESH_SELF	@ SDRAM sleep command
+ 	orr	r8, r8, #S3C2410_MISCCR_SDSLEEP @ SDRAM power-down signals
+@@ -61,8 +61,8 @@ ENTRY(s3c2410_cpu_suspend)
+ 	@@ align next bit of code to cache line
+ 	.align	5
+ s3c2410_do_sleep:
+-	streq	r7, [ r4 ]			@ SDRAM sleep command
+-	streq	r8, [ r5 ]			@ SDRAM power-down config
+-	streq	r9, [ r6 ]			@ CPU sleep
++	streq	r7, [r4]			@ SDRAM sleep command
++	streq	r8, [r5]			@ SDRAM power-down config
++	streq	r9, [r6]			@ CPU sleep
+ 1:	beq	1b
+ 	mov	pc, r14
+--- a/arch/arm/mach-s3c2412/sleep.S
++++ b/arch/arm/mach-s3c2412/sleep.S
+@@ -57,12 +57,12 @@ s3c2412_sleep_enter1:
+ 	 * retry, as simply returning causes the system to lock.
+ 	*/
+ 
+-	ldrne	r9, [ r1 ]
+-	strne	r9, [ r1 ]
+-	ldrne	r9, [ r2 ]
+-	strne	r9, [ r2 ]
+-	ldrne	r9, [ r3 ]
+-	strne	r9, [ r3 ]
++	ldrne	r9, [r1]
++	strne	r9, [r1]
++	ldrne	r9, [r2]
++	strne	r9, [r2]
++	ldrne	r9, [r3]
++	strne	r9, [r3]
+ 	bne	s3c2412_sleep_enter1
+ 
+ 	mov	pc, r14
+--- a/arch/arm/plat-samsung/include/plat/debug-macro.S
++++ b/arch/arm/plat-samsung/include/plat/debug-macro.S
+@@ -14,12 +14,12 @@
+ /* The S5PV210/S5PC110 implementations are as belows. */
+ 
+ 	.macro fifo_level_s5pv210 rd, rx
+-		ldr	\rd, [ \rx, # S3C2410_UFSTAT ]
++		ldr	\rd, [\rx, # S3C2410_UFSTAT]
+ 		and	\rd, \rd, #S5PV210_UFSTAT_TXMASK
+ 	.endm
+ 
+ 	.macro  fifo_full_s5pv210 rd, rx
+-		ldr	\rd, [ \rx, # S3C2410_UFSTAT ]
++		ldr	\rd, [\rx, # S3C2410_UFSTAT]
+ 		tst	\rd, #S5PV210_UFSTAT_TXFULL
+ 	.endm
+ 
+@@ -27,7 +27,7 @@
+  * most widely re-used */
+ 
+ 	.macro fifo_level_s3c2440 rd, rx
+-		ldr	\rd, [ \rx, # S3C2410_UFSTAT ]
++		ldr	\rd, [\rx, # S3C2410_UFSTAT]
+ 		and	\rd, \rd, #S3C2440_UFSTAT_TXMASK
+ 	.endm
+ 
+@@ -36,7 +36,7 @@
+ #endif
+ 
+ 	.macro  fifo_full_s3c2440 rd, rx
+-		ldr	\rd, [ \rx, # S3C2410_UFSTAT ]
++		ldr	\rd, [\rx, # S3C2410_UFSTAT]
+ 		tst	\rd, #S3C2440_UFSTAT_TXFULL
+ 	.endm
+ 
+@@ -45,11 +45,11 @@
+ #endif
+ 
+ 	.macro	senduart,rd,rx
+-		strb 	\rd, [\rx, # S3C2410_UTXH ]
++		strb 	\rd, [\rx, # S3C2410_UTXH]
+ 	.endm
+ 
+ 	.macro	busyuart, rd, rx
+-		ldr	\rd, [ \rx, # S3C2410_UFCON ]
++		ldr	\rd, [\rx, # S3C2410_UFCON]
+ 		tst	\rd, #S3C2410_UFCON_FIFOMODE	@ fifo enabled?
+ 		beq	1001f				@
+ 		@ FIFO enabled...
+@@ -60,7 +60,7 @@
+ 
+ 1001:
+ 		@ busy waiting for non fifo
+-		ldr	\rd, [ \rx, # S3C2410_UTRSTAT ]
++		ldr	\rd, [\rx, # S3C2410_UTRSTAT]
+ 		tst	\rd, #S3C2410_UTRSTAT_TXFE
+ 		beq	1001b
+ 
+@@ -68,7 +68,7 @@
+ 	.endm
+ 
+ 	.macro	waituart,rd,rx
+-		ldr	\rd, [ \rx, # S3C2410_UFCON ]
++		ldr	\rd, [\rx, # S3C2410_UFCON]
+ 		tst	\rd, #S3C2410_UFCON_FIFOMODE	@ fifo enabled?
+ 		beq	1001f				@
+ 		@ FIFO enabled...
+@@ -79,7 +79,7 @@
+ 		b	1002f
+ 1001:
+ 		@ idle waiting for non fifo
+-		ldr	\rd, [ \rx, # S3C2410_UTRSTAT ]
++		ldr	\rd, [\rx, # S3C2410_UTRSTAT]
+ 		tst	\rd, #S3C2410_UTRSTAT_TXFE
+ 		beq	1001b
+ 
 
 
