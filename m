@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757832Ab3CDM72 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 07:59:28 -0500
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:39369 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757760Ab3CDM7Y (ORCPT
+	id S1758305Ab3CDNDq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 08:03:46 -0500
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:43443 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757787Ab3CDM70 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 07:59:24 -0500
+	Mon, 4 Mar 2013 07:59:26 -0500
 From: Akinobu Mita <akinobu.mita@gmail.com>
 To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
-Cc: Akinobu Mita <akinobu.mita@gmail.com>, Roland Dreier <roland@kernel.org>,
-        Sean Hefty <sean.hefty@intel.com>,
-        Hal Rosenstock <hal.rosenstock@gmail.com>,
-        Steve Wise <swise@chelsio.com>, linux-rdma@vger.kernel.org
-Subject: [PATCH -v3 09/23] infiniband: rename random32() to prandom_u32()
-Date: Mon,  4 Mar 2013 21:58:17 +0900
-Message-Id: <1362401911-14074-10-git-send-email-akinobu.mita@gmail.com>
+Cc: Akinobu Mita <akinobu.mita@gmail.com>, Chris Ball <cjb@laptop.org>,
+        linux-mmc@vger.kernel.org
+Subject: [PATCH -v3 10/23] mmc: rename random32() to prandom_u32()
+Date: Mon,  4 Mar 2013 21:58:18 +0900
+Message-Id: <1362401911-14074-11-git-send-email-akinobu.mita@gmail.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1362401911-14074-1-git-send-email-akinobu.mita@gmail.com>
 References: <1362401911-14074-1-git-send-email-akinobu.mita@gmail.com>
@@ -27,90 +25,30 @@ Use more preferable function name which implies using a pseudo-random
 number generator.
 
 Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-Reviewed-by: Steve Wise <swise@opengridcomputing.com>
-Cc: Roland Dreier <roland@kernel.org>
-Cc: Sean Hefty <sean.hefty@intel.com>
-Cc: Hal Rosenstock <hal.rosenstock@gmail.com>
-Cc: Steve Wise <swise@chelsio.com>
-Cc: linux-rdma@vger.kernel.org
+Cc: Chris Ball <cjb@laptop.org>
+Cc: linux-mmc@vger.kernel.org
 ---
-* Change from v2
-- add Reviewed-by: line
 
- drivers/infiniband/hw/cxgb3/cxio_resource.c | 4 ++--
- drivers/infiniband/hw/cxgb4/id_table.c      | 4 ++--
- drivers/infiniband/hw/mlx4/mad.c            | 2 +-
- drivers/infiniband/ulp/ipoib/ipoib_cm.c     | 2 +-
- 4 files changed, 6 insertions(+), 6 deletions(-)
+No change from v2
 
-diff --git a/drivers/infiniband/hw/cxgb3/cxio_resource.c b/drivers/infiniband/hw/cxgb3/cxio_resource.c
-index 31f9201..c40088e 100644
---- a/drivers/infiniband/hw/cxgb3/cxio_resource.c
-+++ b/drivers/infiniband/hw/cxgb3/cxio_resource.c
-@@ -62,13 +62,13 @@ static int __cxio_init_resource_fifo(struct kfifo *fifo,
- 		kfifo_in(fifo, (unsigned char *) &entry, sizeof(u32));
- 	if (random) {
- 		j = 0;
--		random_bytes = random32();
-+		random_bytes = prandom_u32();
- 		for (i = 0; i < RANDOM_SIZE; i++)
- 			rarray[i] = i + skip_low;
- 		for (i = skip_low + RANDOM_SIZE; i < nr - skip_high; i++) {
- 			if (j >= RANDOM_SIZE) {
- 				j = 0;
--				random_bytes = random32();
-+				random_bytes = prandom_u32();
- 			}
- 			idx = (random_bytes >> (j * 2)) & 0xF;
- 			kfifo_in(fifo,
-diff --git a/drivers/infiniband/hw/cxgb4/id_table.c b/drivers/infiniband/hw/cxgb4/id_table.c
-index f95e5df..0161ae6 100644
---- a/drivers/infiniband/hw/cxgb4/id_table.c
-+++ b/drivers/infiniband/hw/cxgb4/id_table.c
-@@ -54,7 +54,7 @@ u32 c4iw_id_alloc(struct c4iw_id_table *alloc)
+ drivers/mmc/core/core.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
+index 08a3cf2..9290bb5 100644
+--- a/drivers/mmc/core/core.c
++++ b/drivers/mmc/core/core.c
+@@ -120,8 +120,8 @@ static void mmc_should_fail_request(struct mmc_host *host,
+ 	    !should_fail(&host->fail_mmc_request, data->blksz * data->blocks))
+ 		return;
  
- 	if (obj < alloc->max) {
- 		if (alloc->flags & C4IW_ID_TABLE_F_RANDOM)
--			alloc->last += random32() % RANDOM_SKIP;
-+			alloc->last += prandom_u32() % RANDOM_SKIP;
- 		else
- 			alloc->last = obj + 1;
- 		if (alloc->last >= alloc->max)
-@@ -88,7 +88,7 @@ int c4iw_id_table_alloc(struct c4iw_id_table *alloc, u32 start, u32 num,
- 	alloc->start = start;
- 	alloc->flags = flags;
- 	if (flags & C4IW_ID_TABLE_F_RANDOM)
--		alloc->last = random32() % RANDOM_SKIP;
-+		alloc->last = prandom_u32() % RANDOM_SKIP;
- 	else
- 		alloc->last = 0;
- 	alloc->max  = num;
-diff --git a/drivers/infiniband/hw/mlx4/mad.c b/drivers/infiniband/hw/mlx4/mad.c
-index 934792c..4d599ce 100644
---- a/drivers/infiniband/hw/mlx4/mad.c
-+++ b/drivers/infiniband/hw/mlx4/mad.c
-@@ -93,7 +93,7 @@ static void __propagate_pkey_ev(struct mlx4_ib_dev *dev, int port_num,
- __be64 mlx4_ib_gen_node_guid(void)
- {
- #define NODE_GUID_HI	((u64) (((u64)IB_OPENIB_OUI) << 40))
--	return cpu_to_be64(NODE_GUID_HI | random32());
-+	return cpu_to_be64(NODE_GUID_HI | prandom_u32());
+-	data->error = data_errors[random32() % ARRAY_SIZE(data_errors)];
+-	data->bytes_xfered = (random32() % (data->bytes_xfered >> 9)) << 9;
++	data->error = data_errors[prandom_u32() % ARRAY_SIZE(data_errors)];
++	data->bytes_xfered = (prandom_u32() % (data->bytes_xfered >> 9)) << 9;
  }
  
- __be64 mlx4_ib_get_new_demux_tid(struct mlx4_ib_demux_ctx *ctx)
-diff --git a/drivers/infiniband/ulp/ipoib/ipoib_cm.c b/drivers/infiniband/ulp/ipoib/ipoib_cm.c
-index 67b0c1d..249976c 100644
---- a/drivers/infiniband/ulp/ipoib/ipoib_cm.c
-+++ b/drivers/infiniband/ulp/ipoib/ipoib_cm.c
-@@ -460,7 +460,7 @@ static int ipoib_cm_req_handler(struct ib_cm_id *cm_id, struct ib_cm_event *even
- 		goto err_qp;
- 	}
- 
--	psn = random32() & 0xffffff;
-+	psn = prandom_u32() & 0xffffff;
- 	ret = ipoib_cm_modify_rx_qp(dev, cm_id, p->qp, psn);
- 	if (ret)
- 		goto err_modify;
+ #else /* CONFIG_FAIL_MMC_REQUEST */
 -- 
 1.8.1.2
 
