@@ -1,126 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758669Ab3CDTEp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 14:04:45 -0500
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:33654 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758166Ab3CDTEn (ORCPT
+	id S932182Ab3CDTNX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 14:13:23 -0500
+Received: from smtp-out-108.synserver.de ([212.40.185.108]:1053 "EHLO
+	smtp-out-103.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753079Ab3CDTNW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 14:04:43 -0500
-From: Neil Horman <nhorman@tuxdriver.com>
-To: linux-kernel@vger.kernel.org
-Cc: Neil Horman <nhorman@tuxdriver.com>, Prarit Bhargava <prarit@redhat.com>,
-        Don Zickus <dzickus@redhat.com>, Don Dutile <ddutile@redhat.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Asit Mallick <asit.k.mallick@intel.com>, linux-pci@vger.kernel.org
-Subject: [PATCH v2] irq: add quirk for broken interrupt remapping on 55XX chipsets
-Date: Mon,  4 Mar 2013 14:04:19 -0500
-Message-Id: <1362423859-18516-1-git-send-email-nhorman@tuxdriver.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1362158276-4901-1-git-send-email-nhorman@tuxdriver.com>
-References: <1362158276-4901-1-git-send-email-nhorman@tuxdriver.com>
-X-Spam-Score: -2.9 (--)
+	Mon, 4 Mar 2013 14:13:22 -0500
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 13713
+Message-ID: <5134F2B9.2060605@metafoo.de>
+Date: Mon, 04 Mar 2013 20:15:05 +0100
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
+MIME-Version: 1.0
+To: Randy Dunlap <rdunlap@infradead.org>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
+        Jonathan Cameron <jic23@cam.ac.uk>, Guenter Roeck <linux@roeck-us.net>
+Subject: Re: linux-next: Tree for Mar 4 (iio)
+References: <20130304144358.bd62a57601d4d4793921213e@canb.auug.org.au> <5134EAB7.1040004@infradead.org>
+In-Reply-To: <5134EAB7.1040004@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A few years back intel published a spec update:
-http://www.intel.com/content/dam/doc/specification-update/5520-and-5500-chipset-ioh-specification-update.pdf
+On 03/04/2013 07:40 PM, Randy Dunlap wrote:
+> On 03/03/13 19:43, Stephen Rothwell wrote:
+>> Hi all,
+>>
+>> Changes since 20130301:
+>>
+> 
+> on x86_64:
+> 
+> warning: (AD7606 && AD799X_RING_BUFFER && MXS_LRADC && IIO_ADIS_LIB_BUFFER && INV_MPU6050_IIO && HID_SENSOR_ACCEL_3D && AD_SIGMA_DELTA && AD7266 && AD7298 && AD7476 && AD7887 && AT91_ADC && MAX1363 && HID_SENSOR_GYRO_3D && ADJD_S311 && HID_SENSOR_ALS && HID_SENSOR_MAGNETOMETER_3D) selects IIO_TRIGGERED_BUFFER which has unmet direct dependencies (IIO && IIO_BUFFER)
+> 
+> and then:
+> 
+> drivers/iio/industrialio-triggered-buffer.c:20:16: error: 'iio_sw_buffer_preenable' undeclared here (not in a function)
+> make[3]: *** [drivers/iio/industrialio-triggered-buffer.o] Error 1
+> 
 
-For the 5520 and 5500 chipsets which contained an errata (specificially errata
-53), which noted that these chipsets can't properly do interrupt remapping, and
-as a result the recommend that interrupt remapping be disabled in bios.  While
-many vendors have a bios update to do exactly that, not all do, and of course
-not all users update their bios to a level that corrects the problem.  As a
-result, occasionally interrupts can arrive at a cpu even after affinity for that
-interrupt has be moved, leading to lost or spurrious interrupts (usually
-characterized by the message:
-kernel: do_IRQ: 7.71 No irq handler for vector (irq -1)
+Hi,
 
-There have been several incidents recently of people seeing this error, and
-investigation has shown that they have system for which their BIOS level is such
-that this feature was not properly turned off.  As such, it would be good to
-give them a reminder that their systems are vulnurable to this problem.
+Thanks for the report. Guenter already fixed the problem last Friday, so the
+patch should hopefully show up in next soon.
 
-Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
-CC: Prarit Bhargava <prarit@redhat.com>
-CC: Don Zickus <dzickus@redhat.com>
-CC: Don Dutile <ddutile@redhat.com>
-CC: Bjorn Helgaas <bhelgaas@google.com>
-CC: Asit Mallick <asit.k.mallick@intel.com>
-CC: linux-pci@vger.kernel.org
-
----
-
-Change notes:
-
-v2)
-
-* Moved the quirk to the x86 arch, since consensus seems to be that the 55XX
-chipset series is x86 only.  I decided however to keep the quirk as a regular
-quirk, not an early_quirk.  Early quirks have no way currently to determine if
-BIOS has properly disabled the feature in the iommu, at least not without
-significant hacking, and since its quite possible this will be a short lived
-quirk, should Don Z's workaround code prove successful (and it looks like it may
-well), I don't think that necessecary.
-
-* Removed the WARNING banner from the quirk, and added the HW_ERR token to the
-string, I opted to leave the newlines in place however, as I really couldnt
-find a way to keep the text on a single line is still legible from a code
-perspective.  I think theres enough language in there that using cscope on just
-about any substring however will turn it up, and again, this may be a short
-lived quirk.
----
- arch/x86/kernel/quirks.c | 18 ++++++++++++++++++
- include/linux/pci_ids.h  |  2 ++
- 2 files changed, 20 insertions(+)
-
-diff --git a/arch/x86/kernel/quirks.c b/arch/x86/kernel/quirks.c
-index 26ee48a..a718ea2 100644
---- a/arch/x86/kernel/quirks.c
-+++ b/arch/x86/kernel/quirks.c
-@@ -5,6 +5,7 @@
- #include <linux/irq.h>
- 
- #include <asm/hpet.h>
-+#include "../../../drivers/iommu/irq_remapping.h"
- 
- #if defined(CONFIG_X86_IO_APIC) && defined(CONFIG_SMP) && defined(CONFIG_PCI)
- 
-@@ -567,3 +568,20 @@ DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_15H_NB_F5,
- 			quirk_amd_nb_node);
- 
- #endif
-+
-+static void intel_remapping_check(struct pci_dev *dev)
-+{
-+	u8 revision;
-+
-+	pci_read_config_byte(dev, PCI_REVISION_ID, &revision);
-+
-+	if ((revision == 0x13) && irq_remapping_enabled) {
-+                pr_warn(HW_ERR "This system BIOS has enabled interrupt remapping\n"
-+                        "on a chipset that contains an errata making that\n"
-+                        "feature unstable.  Please reboot with nointremap\n"
-+                        "added to the kernel command line and contact\n"
-+                        "your BIOS vendor for an update");
-+	}
-+}
-+DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_5520_IOHUB, intel_remapping_check);
-+DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_5500_IOHUB, intel_remapping_check);
-diff --git a/include/linux/pci_ids.h b/include/linux/pci_ids.h
-index 31717bd..54027a6 100644
---- a/include/linux/pci_ids.h
-+++ b/include/linux/pci_ids.h
-@@ -2732,6 +2732,8 @@
- #define PCI_DEVICE_ID_INTEL_LYNNFIELD_MC_CH2_RANK_REV2  0x2db2
- #define PCI_DEVICE_ID_INTEL_LYNNFIELD_MC_CH2_TC_REV2    0x2db3
- #define PCI_DEVICE_ID_INTEL_82855PM_HB	0x3340
-+#define PCI_DEVICE_ID_INTEL_5500_IOHUB	0x3403
-+#define PCI_DEVICE_ID_INTEL_5520_IOHUB	0x3406
- #define PCI_DEVICE_ID_INTEL_IOAT_TBG4	0x3429
- #define PCI_DEVICE_ID_INTEL_IOAT_TBG5	0x342a
- #define PCI_DEVICE_ID_INTEL_IOAT_TBG6	0x342b
--- 
-1.7.11.7
-
+- Lars
