@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757149Ab3CDDoi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 22:44:38 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33036 "EHLO
+	id S1757280Ab3CDDop (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 22:44:45 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33119 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756861Ab3CDDoW (ORCPT
+	by vger.kernel.org with ESMTP id S1757156Ab3CDDoj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Mar 2013 22:44:22 -0500
-Message-Id: <20130304033713.452203175@decadent.org.uk>
+	Sun, 3 Mar 2013 22:44:39 -0500
+Message-Id: <20130304033711.840774937@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 04 Mar 2013 03:38:06 +0000
+Date: Mon, 04 Mar 2013 03:37:50 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Arnd Bergmann <arnd@arndb.de>,
-        Kukjin Kim <kgene.kim@samsung.com>, Ben Dooks <ben-linux@fluff.org>
-Subject: [ 059/153] ARM: samsung: fix assembly syntax for new gas
+Cc: akpm@linux-foundation.org, Stoney Wang <song-bo.wang@hp.com>,
+        Yinghai Lu <yinghai@kernel.org>, Ingo Molnar <mingo@kernel.org>
+Subject: [ 043/153] x86/apic: Work around boot failure on HP ProLiant DL980 G7 Server
+ systems
 In-Reply-To: <20130304033707.648729212@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,246 +28,96 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Arnd Bergmann <arnd@arndb.de>
+From: Stoney Wang <song-bo.wang@hp.com>
 
-commit 2815774bb38445006074e16251b9ef5123bdc616 upstream.
+commit cb214ede7657db458fd0b2a25ea0b28dbf900ebc upstream.
 
-Recent assembler versions complain about extraneous
-whitespace inside [] brackets. This fixes all of
-these instances for the samsung platforms. We should
-backport this to all kernels that might need to
-be built with new binutils.
+When a HP ProLiant DL980 G7 Server boots a regular kernel,
+there will be intermittent lost interrupts which could
+result in a hang or (in extreme cases) data loss.
 
-arch/arm/kernel/entry-armv.S: Assembler messages:
-arch/arm/kernel/entry-armv.S:214: Error: ARM register expected -- `ldr r2,[ r6,#(0x10)]'
-arch/arm/kernel/entry-armv.S:214: Error: ARM register expected -- `ldr r0,[ r6,#(0x14)]'
-arch/arm/kernel/entry-armv.S:430: Error: ARM register expected -- `ldr r2,[ r6,#(0x10)]'
-arch/arm/kernel/entry-armv.S:430: Error: ARM register expected -- `ldr r0,[ r6,#(0x14)]'
-arch/arm/mach-s3c24xx/sleep-s3c2410.S: Assembler messages:
-arch/arm/mach-s3c24xx/sleep-s3c2410.S:48: Error: ARM register expected -- `ldr r7,[ r4 ]'
-arch/arm/mach-s3c24xx/sleep-s3c2410.S:49: Error: ARM register expected -- `ldr r8,[ r5 ]'
-arch/arm/mach-s3c24xx/sleep-s3c2410.S:50: Error: ARM register expected -- `ldr r9,[ r6 ]'
-arch/arm/mach-s3c24xx/sleep-s3c2410.S:64: Error: ARM register expected -- `streq r7,[ r4 ]'
-arch/arm/mach-s3c24xx/sleep-s3c2410.S:65: Error: ARM register expected -- `streq r8,[ r5 ]'
-arch/arm/mach-s3c24xx/sleep-s3c2410.S:66: Error: ARM register expected -- `streq r9,[ r6 ]'
-arch/arm/kernel/debug.S: Assembler messages:
-arch/arm/kernel/debug.S:83: Error: ARM register expected -- `ldr r2,[ r2,#((0x0B0)+(((0x56000000)-(0x50000000))+(0xF6000000+(0x01000000))))-((0)+(((0x56000000)-(0x50000000))+(0xF6000000+(0x01000000))))]'
-arch/arm/kernel/debug.S:83: Error: ARM register expected -- `ldr r2,[ r3,#(0x18)]'
-arch/arm/kernel/debug.S:85: Error: ARM register expected -- `ldr r2,[ r2,#((0x0B0)+(((0x56000000)-(0x50000000))+(0xF6000000+(0x01000000))))-((0)+(((0x56000000)-(0x50000000))+(0xF6000000+(0x01000000))))]'
-arch/arm/kernel/debug.S:85: Error: ARM register expected -- `ldr r2,[ r3,#(0x18)]'
-arch/arm/mach-s3c24xx/pm-h1940.S: Assembler messages:
-arch/arm/mach-s3c24xx/pm-h1940.S:33: Error: ARM register expected -- `ldr pc,[ r0,#((0x0B8)+(((0x56000000)-(0x50000000))+(0xF6000000+(0x01000000))))-(((0x56000000)-(0x50000000))+(0xF6000000+(0x01000000)))]'
-arch/arm/mach-s3c24xx/sleep-s3c2412.S: Assembler messages:
-arch/arm/mach-s3c24xx/sleep-s3c2412.S:60: Error: ARM register expected -- `ldrne r9,[ r1 ]'
-arch/arm/mach-s3c24xx/sleep-s3c2412.S:61: Error: ARM register expected -- `strne r9,[ r1 ]'
-arch/arm/mach-s3c24xx/sleep-s3c2412.S:62: Error: ARM register expected -- `ldrne r9,[ r2 ]'
-arch/arm/mach-s3c24xx/sleep-s3c2412.S:63: Error: ARM register expected -- `strne r9,[ r2 ]'
-arch/arm/mach-s3c24xx/sleep-s3c2412.S:64: Error: ARM register expected -- `ldrne r9,[ r3 ]'
-arch/arm/mach-s3c24xx/sleep-s3c2412.S:65: Error: ARM register expected -- `strne r9,[ r3 ]'
-arch/arm/kernel/debug.S:83: Error: ARM register expected -- `ldr r2,[ r3,#(0x08)]'
-arch/arm/kernel/debug.S:83: Error: ARM register expected -- `ldr r2,[ r3,#(0x18)]'
-arch/arm/kernel/debug.S:83: Error: ARM register expected -- `ldr r2,[ r3,#(0x10)]'
-arch/arm/kernel/debug.S:85: Error: ARM register expected -- `ldr r2,[ r3,#(0x08)]'
-arch/arm/kernel/debug.S:85: Error: ARM register expected -- `ldr r2,[ r3,#(0x18)]'
-arch/arm/kernel/debug.S:85: Error: ARM register expected -- `ldr r2,[ r3,#(0x10)]'
+The reason is that this system only supports x2apic physical
+mode, while the kernel boots with a logical-cluster default
+setting.
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Acked-by: Kukjin Kim <kgene.kim@samsung.com>
-Cc: Ben Dooks <ben-linux@fluff.org>
-[bwh: Backported to 3.2: adjust filenames]
+This bug can be worked around by specifying the "x2apic_phys" or
+"nox2apic" boot option, but we want to handle this system
+without requiring manual workarounds.
+
+The BIOS sets ACPI_FADT_APIC_PHYSICAL in FADT table.
+As all apicids are smaller than 255, BIOS need to pass the
+control to the OS with xapic mode, according to x2apic-spec,
+chapter 2.9.
+
+Current code handle x2apic when BIOS pass with xapic mode
+enabled:
+
+When user specifies x2apic_phys, or FADT indicates PHYSICAL:
+
+1. During madt oem check, apic driver is set with xapic logical
+   or xapic phys driver at first.
+
+2. enable_IR_x2apic() will enable x2apic_mode.
+
+3. if user specifies x2apic_phys on the boot line, x2apic_phys_probe()
+   will install the correct x2apic phys driver and use x2apic phys mode.
+   Otherwise it will skip the driver will let x2apic_cluster_probe to
+   take over to install x2apic cluster driver (wrong one) even though FADT
+   indicates PHYSICAL, because x2apic_phys_probe does not check
+   FADT PHYSICAL.
+
+Add checking x2apic_fadt_phys in x2apic_phys_probe() to fix the
+problem.
+
+Signed-off-by: Stoney Wang <song-bo.wang@hp.com>
+[ updated the changelog and simplified the code ]
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Link: http://lkml.kernel.org/r/1360263182-16226-1-git-send-email-yinghai@kernel.org
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
---- a/arch/arm/mach-s3c2410/include/mach/debug-macro.S
-+++ b/arch/arm/mach-s3c2410/include/mach/debug-macro.S
-@@ -40,17 +40,17 @@
- 		addeq	\rd, \rx, #(S3C24XX_PA_GPIO - S3C24XX_PA_UART)
- 		addne	\rd, \rx, #(S3C24XX_VA_GPIO - S3C24XX_VA_UART)
- 		bic	\rd, \rd, #0xff000
--		ldr	\rd, [ \rd, # S3C2410_GSTATUS1 - S3C2410_GPIOREG(0) ]
-+		ldr	\rd, [\rd, # S3C2410_GSTATUS1 - S3C2410_GPIOREG(0)]
- 		and	\rd, \rd, #0x00ff0000
- 		teq	\rd, #0x00440000		@ is it 2440?
- 1004:
--		ldr	\rd, [ \rx, # S3C2410_UFSTAT ]
-+		ldr	\rd, [\rx, # S3C2410_UFSTAT]
- 		moveq	\rd, \rd, lsr #SHIFT_2440TXF
- 		tst	\rd, #S3C2410_UFSTAT_TXFULL
- 	.endm
+ arch/x86/kernel/apic/x2apic_phys.c |   21 +++++++++++----------
+ 1 file changed, 11 insertions(+), 10 deletions(-)
+
+--- a/arch/x86/kernel/apic/x2apic_phys.c
++++ b/arch/x86/kernel/apic/x2apic_phys.c
+@@ -20,18 +20,19 @@ static int set_x2apic_phys_mode(char *ar
+ }
+ early_param("x2apic_phys", set_x2apic_phys_mode);
  
- 	.macro  fifo_full_s3c2410 rd, rx
--		ldr	\rd, [ \rx, # S3C2410_UFSTAT ]
-+		ldr	\rd, [\rx, # S3C2410_UFSTAT]
- 		tst	\rd, #S3C2410_UFSTAT_TXFULL
- 	.endm
+-static int x2apic_acpi_madt_oem_check(char *oem_id, char *oem_table_id)
++static bool x2apic_fadt_phys(void)
+ {
+-	if (x2apic_phys)
+-		return x2apic_enabled();
+-	else if ((acpi_gbl_FADT.header.revision >= FADT2_REVISION_ID) &&
+-		(acpi_gbl_FADT.flags & ACPI_FADT_APIC_PHYSICAL) &&
+-		x2apic_enabled()) {
++	if ((acpi_gbl_FADT.header.revision >= FADT2_REVISION_ID) &&
++		(acpi_gbl_FADT.flags & ACPI_FADT_APIC_PHYSICAL)) {
+ 		printk(KERN_DEBUG "System requires x2apic physical mode\n");
+-		return 1;
++		return true;
+ 	}
+-	else
+-		return 0;
++	return false;
++}
++
++static int x2apic_acpi_madt_oem_check(char *oem_id, char *oem_table_id)
++{
++	return x2apic_enabled() && (x2apic_phys || x2apic_fadt_phys());
+ }
  
-@@ -68,18 +68,18 @@
- 		addeq	\rd, \rx, #(S3C24XX_PA_GPIO - S3C24XX_PA_UART)
- 		addne	\rd, \rx, #(S3C24XX_VA_GPIO - S3C24XX_VA_UART)
- 		bic	\rd, \rd, #0xff000
--		ldr	\rd, [ \rd, # S3C2410_GSTATUS1 - S3C2410_GPIOREG(0) ]
-+		ldr	\rd, [\rd, # S3C2410_GSTATUS1 - S3C2410_GPIOREG(0)]
- 		and	\rd, \rd, #0x00ff0000
- 		teq	\rd, #0x00440000		@ is it 2440?
+ static void
+@@ -114,7 +115,7 @@ static void init_x2apic_ldr(void)
  
- 10000:
--		ldr	\rd, [ \rx, # S3C2410_UFSTAT ]
-+		ldr	\rd, [\rx, # S3C2410_UFSTAT]
- 		andne	\rd, \rd, #S3C2410_UFSTAT_TXMASK
- 		andeq	\rd, \rd, #S3C2440_UFSTAT_TXMASK
- 	.endm
+ static int x2apic_phys_probe(void)
+ {
+-	if (x2apic_mode && x2apic_phys)
++	if (x2apic_mode && (x2apic_phys || x2apic_fadt_phys()))
+ 		return 1;
  
- 	.macro fifo_level_s3c2410 rd, rx
--		ldr	\rd, [ \rx, # S3C2410_UFSTAT ]
-+		ldr	\rd, [\rx, # S3C2410_UFSTAT]
- 		and	\rd, \rd, #S3C2410_UFSTAT_TXMASK
- 	.endm
- 
---- a/arch/arm/mach-s3c2410/include/mach/entry-macro.S
-+++ b/arch/arm/mach-s3c2410/include/mach/entry-macro.S
-@@ -34,10 +34,10 @@
- 
- 		@@ try the interrupt offset register, since it is there
- 
--		ldr	\irqstat, [ \base, #INTPND ]
-+		ldr	\irqstat, [\base, #INTPND ]
- 		teq	\irqstat, #0
- 		beq	1002f
--		ldr	\irqnr, [ \base, #INTOFFSET ]
-+		ldr	\irqnr, [\base, #INTOFFSET ]
- 		mov	\tmp, #1
- 		tst	\irqstat, \tmp, lsl \irqnr
- 		bne	1001f
---- a/arch/arm/mach-s3c2410/pm-h1940.S
-+++ b/arch/arm/mach-s3c2410/pm-h1940.S
-@@ -30,4 +30,4 @@
- 
- h1940_pm_return:
- 	mov	r0, #S3C2410_PA_GPIO
--	ldr	pc, [ r0, #S3C2410_GSTATUS3 - S3C24XX_VA_GPIO ]
-+	ldr	pc, [r0, #S3C2410_GSTATUS3 - S3C24XX_VA_GPIO]
---- a/arch/arm/mach-s3c2410/sleep.S
-+++ b/arch/arm/mach-s3c2410/sleep.S
-@@ -45,9 +45,9 @@ ENTRY(s3c2410_cpu_suspend)
- 	ldr	r4, =S3C2410_REFRESH
- 	ldr	r5, =S3C24XX_MISCCR
- 	ldr	r6, =S3C2410_CLKCON
--	ldr	r7, [ r4 ]		@ get REFRESH (and ensure in TLB)
--	ldr	r8, [ r5 ]		@ get MISCCR (and ensure in TLB)
--	ldr	r9, [ r6 ]		@ get CLKCON (and ensure in TLB)
-+	ldr	r7, [r4]		@ get REFRESH (and ensure in TLB)
-+	ldr	r8, [r5]		@ get MISCCR (and ensure in TLB)
-+	ldr	r9, [r6]		@ get CLKCON (and ensure in TLB)
- 
- 	orr	r7, r7, #S3C2410_REFRESH_SELF	@ SDRAM sleep command
- 	orr	r8, r8, #S3C2410_MISCCR_SDSLEEP @ SDRAM power-down signals
-@@ -61,8 +61,8 @@ ENTRY(s3c2410_cpu_suspend)
- 	@@ align next bit of code to cache line
- 	.align	5
- s3c2410_do_sleep:
--	streq	r7, [ r4 ]			@ SDRAM sleep command
--	streq	r8, [ r5 ]			@ SDRAM power-down config
--	streq	r9, [ r6 ]			@ CPU sleep
-+	streq	r7, [r4]			@ SDRAM sleep command
-+	streq	r8, [r5]			@ SDRAM power-down config
-+	streq	r9, [r6]			@ CPU sleep
- 1:	beq	1b
- 	mov	pc, r14
---- a/arch/arm/mach-s3c2412/sleep.S
-+++ b/arch/arm/mach-s3c2412/sleep.S
-@@ -57,12 +57,12 @@ s3c2412_sleep_enter1:
- 	 * retry, as simply returning causes the system to lock.
- 	*/
- 
--	ldrne	r9, [ r1 ]
--	strne	r9, [ r1 ]
--	ldrne	r9, [ r2 ]
--	strne	r9, [ r2 ]
--	ldrne	r9, [ r3 ]
--	strne	r9, [ r3 ]
-+	ldrne	r9, [r1]
-+	strne	r9, [r1]
-+	ldrne	r9, [r2]
-+	strne	r9, [r2]
-+	ldrne	r9, [r3]
-+	strne	r9, [r3]
- 	bne	s3c2412_sleep_enter1
- 
- 	mov	pc, r14
---- a/arch/arm/plat-samsung/include/plat/debug-macro.S
-+++ b/arch/arm/plat-samsung/include/plat/debug-macro.S
-@@ -14,12 +14,12 @@
- /* The S5PV210/S5PC110 implementations are as belows. */
- 
- 	.macro fifo_level_s5pv210 rd, rx
--		ldr	\rd, [ \rx, # S3C2410_UFSTAT ]
-+		ldr	\rd, [\rx, # S3C2410_UFSTAT]
- 		and	\rd, \rd, #S5PV210_UFSTAT_TXMASK
- 	.endm
- 
- 	.macro  fifo_full_s5pv210 rd, rx
--		ldr	\rd, [ \rx, # S3C2410_UFSTAT ]
-+		ldr	\rd, [\rx, # S3C2410_UFSTAT]
- 		tst	\rd, #S5PV210_UFSTAT_TXFULL
- 	.endm
- 
-@@ -27,7 +27,7 @@
-  * most widely re-used */
- 
- 	.macro fifo_level_s3c2440 rd, rx
--		ldr	\rd, [ \rx, # S3C2410_UFSTAT ]
-+		ldr	\rd, [\rx, # S3C2410_UFSTAT]
- 		and	\rd, \rd, #S3C2440_UFSTAT_TXMASK
- 	.endm
- 
-@@ -36,7 +36,7 @@
- #endif
- 
- 	.macro  fifo_full_s3c2440 rd, rx
--		ldr	\rd, [ \rx, # S3C2410_UFSTAT ]
-+		ldr	\rd, [\rx, # S3C2410_UFSTAT]
- 		tst	\rd, #S3C2440_UFSTAT_TXFULL
- 	.endm
- 
-@@ -45,11 +45,11 @@
- #endif
- 
- 	.macro	senduart,rd,rx
--		strb 	\rd, [\rx, # S3C2410_UTXH ]
-+		strb 	\rd, [\rx, # S3C2410_UTXH]
- 	.endm
- 
- 	.macro	busyuart, rd, rx
--		ldr	\rd, [ \rx, # S3C2410_UFCON ]
-+		ldr	\rd, [\rx, # S3C2410_UFCON]
- 		tst	\rd, #S3C2410_UFCON_FIFOMODE	@ fifo enabled?
- 		beq	1001f				@
- 		@ FIFO enabled...
-@@ -60,7 +60,7 @@
- 
- 1001:
- 		@ busy waiting for non fifo
--		ldr	\rd, [ \rx, # S3C2410_UTRSTAT ]
-+		ldr	\rd, [\rx, # S3C2410_UTRSTAT]
- 		tst	\rd, #S3C2410_UTRSTAT_TXFE
- 		beq	1001b
- 
-@@ -68,7 +68,7 @@
- 	.endm
- 
- 	.macro	waituart,rd,rx
--		ldr	\rd, [ \rx, # S3C2410_UFCON ]
-+		ldr	\rd, [\rx, # S3C2410_UFCON]
- 		tst	\rd, #S3C2410_UFCON_FIFOMODE	@ fifo enabled?
- 		beq	1001f				@
- 		@ FIFO enabled...
-@@ -79,7 +79,7 @@
- 		b	1002f
- 1001:
- 		@ idle waiting for non fifo
--		ldr	\rd, [ \rx, # S3C2410_UTRSTAT ]
-+		ldr	\rd, [\rx, # S3C2410_UTRSTAT]
- 		tst	\rd, #S3C2410_UTRSTAT_TXFE
- 		beq	1001b
- 
+ 	return apic == &apic_x2apic_phys;
 
 
