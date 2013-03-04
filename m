@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756782Ab3CDDoK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 22:44:10 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:32970 "EHLO
+	id S1756854Ab3CDDoT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 22:44:19 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33001 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756673Ab3CDDoF (ORCPT
+	by vger.kernel.org with ESMTP id S1756767Ab3CDDoK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Mar 2013 22:44:05 -0500
-Message-Id: <20130304033714.884454164@decadent.org.uk>
+	Sun, 3 Mar 2013 22:44:10 -0500
+Message-Id: <20130304033713.943510555@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 04 Mar 2013 03:38:21 +0000
+Date: Mon, 04 Mar 2013 03:38:12 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org,
-        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Subject: [ 074/153] ftrace: Call ftrace cleanup module notifier after all other
- notifiers
+Cc: akpm@linux-foundation.org, Weston Andros Adamson <dros@netapp.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [ 065/153] NFSv4.1: Dont decode skipped layoutgets
 In-Reply-To: <20130304033707.648729212@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,126 +27,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+From: Weston Andros Adamson <dros@netapp.com>
 
-commit 8c189ea64eea01ca20d102ddb74d6936dd16c579 upstream.
+commit 085b7a45c63d3da5be155faab9249a5cab224561 upstream.
 
-Commit: c1bf08ac "ftrace: Be first to run code modification on modules"
+layoutget's prepare hook can call rpc_exit with status = NFS4_OK (0).
+Because of this, nfs4_proc_layoutget can't depend on a 0 status to mean
+that the RPC was successfully sent, received and parsed.
 
-changed ftrace module notifier's priority to INT_MAX in order to
-process the ftrace nops before anything else could touch them
-(namely kprobes). This was the correct thing to do.
+To fix this, use the result's len member to see if parsing took place.
 
-Unfortunately, the ftrace module notifier also contains the ftrace
-clean up code. As opposed to the set up code, this code should be
-run *after* all the module notifiers have run in case a module is doing
-correct clean-up and unregisters its ftrace hooks. Basically, ftrace
-needs to do clean up on module removal, as it needs to know about code
-being removed so that it doesn't try to modify that code. But after it
-removes the module from its records, if a ftrace user tries to remove
-a probe, that removal will fail due as the record of that code segment
-no longer exists.
+This fixes the following OOPS -- calling xdr_init_decode() with a buffer length
+0 doesn't set the stream's 'p' member and ends up using uninitialized memory
+in filelayout_decode_layout.
 
-Nothing really bad happens if the probe removal is called after ftrace
-did the clean up, but the ftrace removal function will return an error.
-Correct code (such as kprobes) will produce a WARN_ON() if it fails
-to remove the probe. As people get annoyed by frivolous warnings, it's
-best to do the ftrace clean up after everything else.
+BUG: unable to handle kernel paging request at 0000000000008050
+IP: [<ffffffff81282e78>] memcpy+0x18/0x120
+PGD 0
+Oops: 0000 [#1] SMP
+last sysfs file: /sys/devices/pci0000:00/0000:00:11.0/0000:02:01.0/irq
+CPU 1
+Modules linked in: nfs_layout_nfsv41_files nfs lockd fscache auth_rpcgss nfs_acl autofs4 sunrpc ipt_REJECT nf_conntrack_ipv4 nf_defrag_ipv4 iptable_filter ip_tables ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 xt_state nf_conntrack ip6table_filter ip6_tables ipv6 dm_mirror dm_region_hash dm_log dm_mod ppdev parport_pc parport snd_ens1371 snd_rawmidi snd_ac97_codec ac97_bus snd_seq snd_seq_device snd_pcm snd_timer snd soundcore snd_page_alloc e1000 microcode vmware_balloon i2c_piix4 i2c_core sg shpchp ext4 mbcache jbd2 sr_mod cdrom sd_mod crc_t10dif pata_acpi ata_generic ata_piix mptspi mptscsih mptbase scsi_transport_spi [last unloaded: speedstep_lib]
 
-By splitting the ftrace_module_notifier into two notifiers, one that
-does the module load setup that is run at high priority, and the other
-that is called for module clean up that is run at low priority, the
-problem is solved.
+Pid: 1665, comm: flush-0:22 Not tainted 2.6.32-356-test-2 #2 VMware, Inc. VMware Virtual Platform/440BX Desktop Reference Platform
+RIP: 0010:[<ffffffff81282e78>]  [<ffffffff81282e78>] memcpy+0x18/0x120
+RSP: 0018:ffff88003dfab588  EFLAGS: 00010206
+RAX: ffff88003dc42000 RBX: ffff88003dfab610 RCX: 0000000000000009
+RDX: 000000003f807ff0 RSI: 0000000000008050 RDI: ffff88003dc42000
+RBP: ffff88003dfab5b0 R08: 0000000000000000 R09: 0000000000000000
+R10: 0000000000000000 R11: 0000000000000080 R12: 0000000000000024
+R13: ffff88003dc42000 R14: ffff88003f808030 R15: ffff88003dfab6a0
+FS:  0000000000000000(0000) GS:ffff880003420000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0018 ES: 0018 CR0: 000000008005003b
+CR2: 0000000000008050 CR3: 000000003bc92000 CR4: 00000000001407e0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Process flush-0:22 (pid: 1665, threadinfo ffff88003dfaa000, task ffff880037f77540)
+Stack:
+ffffffffa0398ac1 ffff8800397c5940 ffff88003dfab610 ffff88003dfab6a0
+<d> ffff88003dfab5d0 ffff88003dfab680 ffffffffa01c150b ffffea0000d82e70
+<d> 000000508116713b 0000000000000000 0000000000000000 0000000000000000
+Call Trace:
+[<ffffffffa0398ac1>] ? xdr_inline_decode+0xb1/0x120 [sunrpc]
+[<ffffffffa01c150b>] filelayout_decode_layout+0xeb/0x350 [nfs_layout_nfsv41_files]
+[<ffffffffa01c17fc>] filelayout_alloc_lseg+0x8c/0x3c0 [nfs_layout_nfsv41_files]
+[<ffffffff8150e6ce>] ? __wait_on_bit+0x7e/0x90
 
-Reported-by: Frank Ch. Eigler <fche@redhat.com>
-Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Weston Andros Adamson <dros@netapp.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- kernel/trace/ftrace.c |   46 ++++++++++++++++++++++++++++++++--------------
- 1 file changed, 32 insertions(+), 14 deletions(-)
+ fs/nfs/nfs4proc.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -3454,37 +3454,51 @@ static void ftrace_init_module(struct mo
- 	ftrace_process_locs(mod, start, end);
- }
- 
--static int ftrace_module_notify(struct notifier_block *self,
--				unsigned long val, void *data)
-+static int ftrace_module_notify_enter(struct notifier_block *self,
-+				      unsigned long val, void *data)
- {
- 	struct module *mod = data;
- 
--	switch (val) {
--	case MODULE_STATE_COMING:
-+	if (val == MODULE_STATE_COMING)
- 		ftrace_init_module(mod, mod->ftrace_callsites,
- 				   mod->ftrace_callsites +
- 				   mod->num_ftrace_callsites);
--		break;
--	case MODULE_STATE_GOING:
-+	return 0;
-+}
-+
-+static int ftrace_module_notify_exit(struct notifier_block *self,
-+				     unsigned long val, void *data)
-+{
-+	struct module *mod = data;
-+
-+	if (val == MODULE_STATE_GOING)
- 		ftrace_release_mod(mod);
--		break;
--	}
- 
- 	return 0;
- }
- #else
--static int ftrace_module_notify(struct notifier_block *self,
--				unsigned long val, void *data)
-+static int ftrace_module_notify_enter(struct notifier_block *self,
-+				      unsigned long val, void *data)
-+{
-+	return 0;
-+}
-+static int ftrace_module_notify_exit(struct notifier_block *self,
-+				     unsigned long val, void *data)
- {
- 	return 0;
- }
- #endif /* CONFIG_MODULES */
- 
--struct notifier_block ftrace_module_nb = {
--	.notifier_call = ftrace_module_notify,
-+struct notifier_block ftrace_module_enter_nb = {
-+	.notifier_call = ftrace_module_notify_enter,
- 	.priority = INT_MAX,	/* Run before anything that can use kprobes */
- };
- 
-+struct notifier_block ftrace_module_exit_nb = {
-+	.notifier_call = ftrace_module_notify_exit,
-+	.priority = INT_MIN,	/* Run after anything that can remove kprobes */
-+};
-+
- extern unsigned long __start_mcount_loc[];
- extern unsigned long __stop_mcount_loc[];
- 
-@@ -3516,9 +3530,13 @@ void __init ftrace_init(void)
- 				  __start_mcount_loc,
- 				  __stop_mcount_loc);
- 
--	ret = register_module_notifier(&ftrace_module_nb);
-+	ret = register_module_notifier(&ftrace_module_enter_nb);
-+	if (ret)
-+		pr_warning("Failed to register trace ftrace module enter notifier\n");
-+
-+	ret = register_module_notifier(&ftrace_module_exit_nb);
- 	if (ret)
--		pr_warning("Failed to register trace ftrace module notifier\n");
-+		pr_warning("Failed to register trace ftrace module exit notifier\n");
- 
- 	set_ftrace_early_filters();
- 
+--- a/fs/nfs/nfs4proc.c
++++ b/fs/nfs/nfs4proc.c
+@@ -5891,7 +5891,8 @@ int nfs4_proc_layoutget(struct nfs4_layo
+ 	status = nfs4_wait_for_completion_rpc_task(task);
+ 	if (status == 0)
+ 		status = task->tk_status;
+-	if (status == 0)
++	/* if layoutp->len is 0, nfs4_layoutget_prepare called rpc_exit */
++	if (status == 0 && lgp->res.layoutp->len)
+ 		status = pnfs_layout_process(lgp);
+ 	rpc_put_task(task);
+ 	dprintk("<-- %s status=%d\n", __func__, status);
 
 
