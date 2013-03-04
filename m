@@ -1,101 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758166Ab3CDRFQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 12:05:16 -0500
-Received: from li9-11.members.linode.com ([67.18.176.11]:51247 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757586Ab3CDRFO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 12:05:14 -0500
-Date: Mon, 4 Mar 2013 12:05:08 -0500
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Russ Dill <russ.dill@gmail.com>
-Cc: stable@kernel.org, linux-kernel <linux-kernel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Nick Kossifidis <mickflemm@gmail.com>
-Subject: Re: [PATCH] Revert "random: Mix cputime from each thread that exits
- to the pool"
-Message-ID: <20130304170508.GA11382@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Russ Dill <russ.dill@gmail.com>, stable@kernel.org,
-	linux-kernel <linux-kernel@vger.kernel.org>,
-	Al Viro <viro@zeniv.linux.org.uk>,
-	Nick Kossifidis <mickflemm@gmail.com>
-References: <20130304073908.GA982@kroah.com>
- <1362384208-6687-1-git-send-email-Russ.Dill@gmail.com>
+	id S1758225Ab3CDRGa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 12:06:30 -0500
+Received: from e31.co.us.ibm.com ([32.97.110.149]:56193 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757398Ab3CDRG3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Mar 2013 12:06:29 -0500
+Message-ID: <5134D476.3040302@linux.vnet.ibm.com>
+Date: Mon, 04 Mar 2013 09:05:58 -0800
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1362384208-6687-1-git-send-email-Russ.Dill@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+To: KY Srinivasan <kys@microsoft.com>
+CC: Greg KH <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "andi@firstfloor.org" <andi@firstfloor.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: [PATCH 1/1] mm: Export split_page().
+References: <1362364075-14564-1-git-send-email-kys@microsoft.com> <20130304020747.GA8265@kroah.com> <3a362e994ab64efda79ae3c80342db95@SN2PR03MB061.namprd03.prod.outlook.com> <20130304022508.GA8638@kroah.com> <b863089d05f442fb9dfc90faa158a001@SN2PR03MB061.namprd03.prod.outlook.com>
+In-Reply-To: <b863089d05f442fb9dfc90faa158a001@SN2PR03MB061.namprd03.prod.outlook.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13030417-7282-0000-0000-000014E5CD4A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Russ, how about this patch instead?  Can you verify whether or not
-this fixes your issue?  If so, I'll push it to Linus.
+On 03/03/2013 06:36 PM, KY Srinivasan wrote:
+>> I guess the most obvious question about exporting this symbol is, "Why
+>> doesn't any of the other hypervisor balloon drivers need this?  What is
+>> so special about hyper-v?"
+> 
+> The balloon protocol that Hyper-V has specified is designed around the ability to
+> move 2M pages. While the protocol can handle 4k allocations, it is going to be very chatty
+> with 4K allocations.
 
-     	   		       	    - Ted
+What does "very chatty" mean?  Do you think that there will be a
+noticeable performance difference ballooning 2M pages vs 4k?
 
->From 24c598b5abd466f2bab954d0cc8c225e0d3a2a74 Mon Sep 17 00:00:00 2001
-From: Theodore Ts'o <tytso@mit.edu>
-Date: Mon, 4 Mar 2013 11:59:12 -0500
-Subject: [PATCH] random: fix locking dependency with the tasklist_lock
+> Furthermore, the Memory Balancer on the host is also designed to work
+> best with memory moving around in 2M chunks. While I have not seen the code on the Windows
+> host that does this memory balancing, looking at how Windows guests behave in this environment,
+> (relative to Linux) I have to assume that the 2M allocations that Windows guests do are a big part of
+> the difference we see.
 
-Commit 6133705494bb introduced a circular lock dependency because
-posix_cpu_timers_exit() is called by release_task(), which is holding
-a writer lock on tasklist_lock, and this can cause a deadlock since
-kill_fasync() gets called with nonblocking_pool.lock taken.
+You've been talking about differences.  Could you elaborate on what the
+differences in behavior are that you are trying to rectify here?
 
-There's no reason why kill_fasync() needs to be taken while the random
-pool is locked, so move it out to fix this locking dependency.
+>> Or can those other drivers also need/use it as well, and they were just
+>> too chicken to be asking for the export?  :)
+> 
+> The 2M balloon allocations would make sense if the host is designed accordingly.
 
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Reported-by: Russ Dill <Russ.Dill@gmail.com>
-Cc: stable@kernel.org
----
- drivers/char/random.c | 12 ++++++++----
- 1 file changed, 8 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/char/random.c b/drivers/char/random.c
-index 85e81ec..57d4b15 100644
---- a/drivers/char/random.c
-+++ b/drivers/char/random.c
-@@ -852,6 +852,7 @@ static size_t account(struct entropy_store *r, size_t nbytes, int min,
- 		      int reserved)
- {
- 	unsigned long flags;
-+	int wakeup_write = 0;
- 
- 	/* Hold lock while accounting */
- 	spin_lock_irqsave(&r->lock, flags);
-@@ -873,10 +874,8 @@ static size_t account(struct entropy_store *r, size_t nbytes, int min,
- 		else
- 			r->entropy_count = reserved;
- 
--		if (r->entropy_count < random_write_wakeup_thresh) {
--			wake_up_interruptible(&random_write_wait);
--			kill_fasync(&fasync, SIGIO, POLL_OUT);
--		}
-+		if (r->entropy_count < random_write_wakeup_thresh)
-+			wakeup_write = 1;
- 	}
- 
- 	DEBUG_ENT("debiting %zu entropy credits from %s%s\n",
-@@ -884,6 +883,11 @@ static size_t account(struct entropy_store *r, size_t nbytes, int min,
- 
- 	spin_unlock_irqrestore(&r->lock, flags);
- 
-+	if (wakeup_write) {
-+		wake_up_interruptible(&random_write_wait);
-+		kill_fasync(&fasync, SIGIO, POLL_OUT);
-+	}
-+
- 	return nbytes;
- }
- 
--- 
-1.7.12.rc0.22.gcdd159b
+How does the guest decide which size pages to allocate?  It seems like a
+relatively bad idea to be inflating the balloon with 2M pages from the
+guest in the case where the guest is under memory pressure _and_
+fragmented.
 
