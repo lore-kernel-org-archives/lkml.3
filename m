@@ -1,62 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758898Ab3CDVGB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 16:06:01 -0500
-Received: from zimbra.linbit.com ([212.69.161.123]:50009 "EHLO
-	zimbra.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758751Ab3CDVGA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 16:06:00 -0500
-From: Philipp Reisner <philipp.reisner@linbit.com>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: stable@vger.kernel.org, akpm@linux-foundation.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [ 052/153] idr: idr_for_each_entry() macro
-Date: Mon, 04 Mar 2013 22:05:52 +0100
-Message-ID: <1607973.Qpkavuy2AM@quad>
-User-Agent: KMail/4.8.5 (Linux/3.2.0-35-generic; KDE/4.8.5; x86_64; ; )
-In-Reply-To: <1362373013.3768.295.camel@deadeye.wl.decadent.org.uk>
-References: <20130304033712.754098899@decadent.org.uk> <1362373013.3768.295.camel@deadeye.wl.decadent.org.uk>
+	id S932465Ab3CDVGN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 16:06:13 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:38600 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758751Ab3CDVGJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Mar 2013 16:06:09 -0500
+Date: Mon, 4 Mar 2013 22:05:51 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Alexandru Gheorghiu <gheorghiuandru@gmail.com>
+Cc: Pablo Neira Ayuso <pablo@netfilter.org>, Patrick McHardy <kaber@trash.net>,
+        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] net: netfilter: nfnetlink: Fixed warning for
+ nfnl_get_lock
+Message-ID: <20130304210551.GA22306@pd.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Alexandru Gheorghiu <gheorghiuandru@gmail.com>,
+	Pablo Neira Ayuso <pablo@netfilter.org>,
+	Patrick McHardy <kaber@trash.net>,
+	"David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+	linux-kernel@vger.kernel.org
+References: <1362426192-2921-1-git-send-email-gheorghiuandru@gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1362426192-2921-1-git-send-email-gheorghiuandru@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sure, here it is:
-----------
+On Mon, Mar 04, 2013 at 09:43:11PM +0200, Alexandru Gheorghiu wrote:
+> Removed unused function nfnl_get_lock which fixed the following warning:
+> net/netfilter/nfnetlink.c:65:22: warning: ‘nfnl_get_lock’ defined but not used [-Wunused-function]
+> 
+> Signed-off-by: Alexandru Gheorghiu <gheorghiuandru@gmail.com>
+> ---
+>  net/netfilter/nfnetlink.c |    5 -----
+>  1 file changed, 5 deletions(-)
+> 
+> diff --git a/net/netfilter/nfnetlink.c b/net/netfilter/nfnetlink.c
+> index d578ec2..44aa0a7 100644
+> --- a/net/netfilter/nfnetlink.c
+> +++ b/net/netfilter/nfnetlink.c
+> @@ -62,11 +62,6 @@ void nfnl_unlock(__u8 subsys_id)
+>  }
+>  EXPORT_SYMBOL_GPL(nfnl_unlock);
+> 
+> -static struct mutex *nfnl_get_lock(__u8 subsys_id)
+> -{
+> -	return &table[subsys_id].mutex;
+> -}
+> -
 
-From: Philipp Reisner <philipp.reisner@linbit.com>
+I see the same warning here, gcc (Debian 4.7.2-5) 4.7.2.
 
-commit 9749f30f1a387070e6e8351f35aeb829eacc3ab6 upstream.
+Actually this function *is* used a bit further in the same file in
+nfnetlink_rcv_msg().
 
-Inspired by the list_for_each_entry() macro
+But gcc complains for some reason of which I don't even have the
+slightest idea. However, if you declare the above function "static
+inline..." the warning is gone.
 
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
----
- include/linux/idr.h |   11 +++++++++++
- 1 file changed, 11 insertions(+)
+-- 
+Regards/Gruss,
+    Boris.
 
-diff --git a/include/linux/idr.h b/include/linux/idr.h
-index 255491c..52a9da2 100644
---- a/include/linux/idr.h
-+++ b/include/linux/idr.h
-@@ -152,4 +152,15 @@ void ida_simple_remove(struct ida *ida, unsigned int id);
- 
- void __init idr_init_cache(void);
- 
-+/**
-+ * idr_for_each_entry - iterate over an idr's elements of a given type
-+ * @idp:     idr handle
-+ * @entry:   the type * to use as cursor
-+ * @id:      id entry's key
-+ */
-+#define idr_for_each_entry(idp, entry, id)                             \
-+       for (id = 0, entry = (typeof(entry))idr_get_next((idp), &(id)); \
-+            entry != NULL;                                             \
-+            ++id, entry = (typeof(entry))idr_get_next((idp), &(id)))
-+
- #endif /* __IDR_H__ */
-
+Sent from a fat crate under my desk. Formatting is fine.
+--
