@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756677Ab3CDEVe (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 23:21:34 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60745 "EHLO
+	id S1755304Ab3CDDma (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 22:42:30 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60723 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755334Ab3CDDmc (ORCPT
+	by vger.kernel.org with ESMTP id S1755000Ab3CDDm0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Mar 2013 22:42:32 -0500
-Message-Id: <20130304033707.877845434@decadent.org.uk>
+	Sun, 3 Mar 2013 22:42:26 -0500
+Message-Id: <20130304033708.182071615@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 04 Mar 2013 03:37:09 +0000
+Date: Mon, 04 Mar 2013 03:37:12 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Thomas Gleixner <tglx@linutronix.de>,
-        Edward Donovan <edward.donovan@numble.net>,
-        "Wang, Song-Bo (Stoney)" <song-bo.wang@hp.com>
-Subject: [ 002/153] genirq: Avoid deadlock in spurious handling
+Cc: akpm@linux-foundation.org,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: [ 005/153] [media] v4l: Reset subdev v4l2_dev field to NULL if registration
+ fails
 In-Reply-To: <20130304033707.648729212@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,55 +30,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
 
-commit e716efde75267eab919cdb2bef5b2cb77f305326 upstream.
+commit 317efce991620adc589b3005b9baed433dcb2a56 upstream.
 
-commit 52553ddf(genirq: fix regression in irqfixup, irqpoll)
-introduced a potential deadlock by calling the action handler with the
-irq descriptor lock held.
+When subdev registration fails the subdev v4l2_dev field is left to a
+non-NULL value. Later calls to v4l2_device_unregister_subdev() will
+consider the subdev as registered and will module_put() the subdev
+module without any matching module_get().
+Fix this by setting the subdev v4l2_dev field to NULL in
+v4l2_device_register_subdev() when the function fails.
 
-Remove the call and let the handling code run even for an interrupt
-where only a single action is registered. That matches the goal of
-the above commit and avoids the deadlock.
-
-Document the confusing action = desc->action reload in the handling
-loop while at it.
-
-Reported-and-tested-by: "Wang, Warner" <warner.wang@hp.com>
-Tested-by: Edward Donovan <edward.donovan@numble.net>
-Cc: "Wang, Song-Bo (Stoney)" <song-bo.wang@hp.com>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Acked-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+[bwh: Backported to 3.2: adjust context, filename]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- kernel/irq/spurious.c |    7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
-
---- a/kernel/irq/spurious.c
-+++ b/kernel/irq/spurious.c
-@@ -80,13 +80,11 @@ static int try_one_irq(int irq, struct i
+--- a/drivers/media/video/v4l2-device.c
++++ b/drivers/media/video/v4l2-device.c
+@@ -159,31 +159,21 @@ int v4l2_device_register_subdev(struct v
+ 	sd->v4l2_dev = v4l2_dev;
+ 	if (sd->internal_ops && sd->internal_ops->registered) {
+ 		err = sd->internal_ops->registered(sd);
+-		if (err) {
+-			module_put(sd->owner);
+-			return err;
+-		}
++		if (err)
++			goto error_module;
+ 	}
  
- 	/*
- 	 * All handlers must agree on IRQF_SHARED, so we test just the
--	 * first. Check for action->next as well.
-+	 * first.
- 	 */
- 	action = desc->action;
- 	if (!action || !(action->flags & IRQF_SHARED) ||
--	    (action->flags & __IRQF_TIMER) ||
--	    (action->handler(irq, action->dev_id) == IRQ_HANDLED) ||
--	    !action->next)
-+	    (action->flags & __IRQF_TIMER))
- 		goto out;
+ 	/* This just returns 0 if either of the two args is NULL */
+ 	err = v4l2_ctrl_add_handler(v4l2_dev->ctrl_handler, sd->ctrl_handler);
+-	if (err) {
+-		if (sd->internal_ops && sd->internal_ops->unregistered)
+-			sd->internal_ops->unregistered(sd);
+-		module_put(sd->owner);
+-		return err;
+-	}
++	if (err)
++		goto error_unregister;
  
- 	/* Already running on another processor */
-@@ -104,6 +102,7 @@ static int try_one_irq(int irq, struct i
- 	do {
- 		if (handle_irq_event(desc) == IRQ_HANDLED)
- 			ret = IRQ_HANDLED;
-+		/* Make sure that there is still a valid action */
- 		action = desc->action;
- 	} while ((desc->istate & IRQS_PENDING) && action);
- 	desc->istate &= ~IRQS_POLL_INPROGRESS;
+ #if defined(CONFIG_MEDIA_CONTROLLER)
+ 	/* Register the entity. */
+ 	if (v4l2_dev->mdev) {
+ 		err = media_device_register_entity(v4l2_dev->mdev, entity);
+-		if (err < 0) {
+-			if (sd->internal_ops && sd->internal_ops->unregistered)
+-				sd->internal_ops->unregistered(sd);
+-			module_put(sd->owner);
+-			return err;
+-		}
++		if (err < 0)
++			goto error_unregister;
+ 	}
+ #endif
+ 
+@@ -192,6 +182,14 @@ int v4l2_device_register_subdev(struct v
+ 	spin_unlock(&v4l2_dev->lock);
+ 
+ 	return 0;
++
++error_unregister:
++	if (sd->internal_ops && sd->internal_ops->unregistered)
++		sd->internal_ops->unregistered(sd);
++error_module:
++	module_put(sd->owner);
++	sd->v4l2_dev = NULL;
++	return err;
+ }
+ EXPORT_SYMBOL_GPL(v4l2_device_register_subdev);
+ 
 
 
