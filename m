@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758014Ab3CDD5m (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 22:57:42 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:32992 "EHLO
+	id S1757975Ab3CDD5k (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 22:57:40 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:32995 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756748Ab3CDDoJ (ORCPT
+	by vger.kernel.org with ESMTP id S1756759Ab3CDDoJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 3 Mar 2013 22:44:09 -0500
-Message-Id: <20130304033714.130705521@decadent.org.uk>
+Message-Id: <20130304033716.401099892@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 04 Mar 2013 03:38:14 +0000
+Date: Mon, 04 Mar 2013 03:38:36 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Li Zefan <lizefan@huawei.com>,
-        Tejun Heo <tj@kernel.org>
-Subject: [ 067/153] cgroup: fix exit() vs rmdir() race
+Cc: akpm@linux-foundation.org, Jim Somerville <Jim.Somerville@windriver.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Jerome Marchand <jmarchan@redhat.com>,
+        John McCutchan <john@johnmccutchan.com>, Robert Love <rlove@rlove.org>,
+        Eric Paris <eparis@parisplace.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 089/153] inotify: remove broken mask checks causing unmount to be EINVAL
 In-Reply-To: <20130304033707.648729212@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,54 +31,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Li Zefan <lizefan@huawei.com>
+From: Jim Somerville <Jim.Somerville@windriver.com>
 
-commit 71b5707e119653039e6e95213f00479668c79b75 upstream.
+commit 676a0675cf9200ac047fb50825f80867b3bb733b upstream.
 
-In cgroup_exit() put_css_set_taskexit() is called without any lock,
-which might lead to accessing a freed cgroup:
+Running the command:
 
-thread1                           thread2
----------------------------------------------
-exit()
-  cgroup_exit()
-    put_css_set_taskexit()
-      atomic_dec(cgrp->count);
-                                   rmdir();
-      /* not safe !! */
-      check_for_release(cgrp);
+	inotifywait -e unmount /mnt/disk
 
-rcu_read_lock() can be used to make sure the cgroup is alive.
+immediately aborts with a -EINVAL return code.  This is however a valid
+parameter.  This abort occurs only if unmount is the sole event
+parameter.  If other event parameters are supplied, then the unmount
+event wait will work.
 
-Signed-off-by: Li Zefan <lizefan@huawei.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+The problem was introduced by commit 44b350fc23e ("inotify: Fix mask
+checks").  In that commit, it states:
+
+	The mask checks in inotify_update_existing_watch() and
+	inotify_new_watch() are useless because inotify_arg_to_mask()
+	sets FS_IN_IGNORED and FS_EVENT_ON_CHILD bits anyway.
+
+But instead of removing the useless checks, it did this:
+
+	        mask = inotify_arg_to_mask(arg);
+	-       if (unlikely(!mask))
+	+       if (unlikely(!(mask & IN_ALL_EVENTS)))
+	                return -EINVAL;
+
+The problem is that IN_ALL_EVENTS doesn't include IN_UNMOUNT, and other
+parts of the code keep IN_UNMOUNT separate from IN_ALL_EVENTS.  So the
+check should be:
+
+	if (unlikely(!(mask & (IN_ALL_EVENTS | IN_UNMOUNT))))
+
+But inotify_arg_to_mask(arg) always sets the IN_UNMOUNT bit in the mask
+anyway, so the check is always going to pass and thus should simply be
+removed.  Also note that inotify_arg_to_mask completely controls what
+mask bits get set from arg, there's no way for invalid bits to get
+enabled there.
+
+Lets fix it by simply removing the useless broken checks.
+
+Signed-off-by: Jim Somerville <Jim.Somerville@windriver.com>
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Jerome Marchand <jmarchan@redhat.com>
+Cc: John McCutchan <john@johnmccutchan.com>
+Cc: Robert Love <rlove@rlove.org>
+Cc: Eric Paris <eparis@parisplace.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- kernel/cgroup.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ fs/notify/inotify/inotify_user.c |    4 ----
+ 1 file changed, 4 deletions(-)
 
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -361,12 +361,20 @@ static void __put_css_set(struct css_set
- 		struct cgroup *cgrp = link->cgrp;
- 		list_del(&link->cg_link_list);
- 		list_del(&link->cgrp_link_list);
-+
-+		/*
-+		 * We may not be holding cgroup_mutex, and if cgrp->count is
-+		 * dropped to 0 the cgroup can be destroyed at any time, hence
-+		 * rcu_read_lock is used to keep it alive.
-+		 */
-+		rcu_read_lock();
- 		if (atomic_dec_and_test(&cgrp->count) &&
- 		    notify_on_release(cgrp)) {
- 			if (taskexit)
- 				set_bit(CGRP_RELEASABLE, &cgrp->flags);
- 			check_for_release(cgrp);
- 		}
-+		rcu_read_unlock();
+--- a/fs/notify/inotify/inotify_user.c
++++ b/fs/notify/inotify/inotify_user.c
+@@ -579,8 +579,6 @@ static int inotify_update_existing_watch
  
- 		kfree(link);
- 	}
+ 	/* don't allow invalid bits: we don't want flags set */
+ 	mask = inotify_arg_to_mask(arg);
+-	if (unlikely(!(mask & IN_ALL_EVENTS)))
+-		return -EINVAL;
+ 
+ 	fsn_mark = fsnotify_find_inode_mark(group, inode);
+ 	if (!fsn_mark)
+@@ -632,8 +630,6 @@ static int inotify_new_watch(struct fsno
+ 
+ 	/* don't allow invalid bits: we don't want flags set */
+ 	mask = inotify_arg_to_mask(arg);
+-	if (unlikely(!(mask & IN_ALL_EVENTS)))
+-		return -EINVAL;
+ 
+ 	tmp_i_mark = kmem_cache_alloc(inotify_inode_mark_cachep, GFP_KERNEL);
+ 	if (unlikely(!tmp_i_mark))
 
 
