@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755503Ab3CDEUg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 23:20:36 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60750 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755394Ab3CDDmg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755396Ab3CDDmg (ORCPT <rfc822;w@1wt.eu>);
 	Sun, 3 Mar 2013 22:42:36 -0500
-Message-Id: <20130304033709.244001909@decadent.org.uk>
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60762 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755220Ab3CDDmd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Mar 2013 22:42:33 -0500
+Message-Id: <20130304033709.092475518@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 04 Mar 2013 03:37:24 +0000
+Date: Mon, 04 Mar 2013 03:37:22 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Ian Abbott <abbotti@mev.co.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [ 017/153] staging: comedi: disallow COMEDI_DEVCONFIG on non-board minors
+Cc: akpm@linux-foundation.org, Jan Kara <jack@suse.cz>,
+        Carlos Maiolino <cmaiolino@redhat.com>, Jeff Moyer <jmoyer@redhat.com>,
+        "Theodore Tso" <tytso@mit.edu>
+Subject: [ 015/153] ext4: fix possible use-after-free with AIO
 In-Reply-To: <20130304033707.648729212@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,51 +28,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ian Abbott <abbotti@mev.co.uk>
+From: Jan Kara <jack@suse.cz>
 
-commit 754ab5c0e55dd118273ca2c217c4d95e9fbc8259 upstream.
+commit 091e26dfc156aeb3b73bc5c5f277e433ad39331c upstream.
 
-Comedi has two sorts of minor devices:
-(a) normal board minor devices in the range 0 to
-COMEDI_NUM_BOARD_MINORS-1 inclusive; and
-(b) special subdevice minor devices in the range COMEDI_NUM_BOARD_MINORS
-upwards that are used to open the same underlying comedi device as the
-normal board minor devices, but with non-default read and write
-subdevices for asynchronous commands.
+Running AIO is pinning inode in memory using file reference. Once AIO
+is completed using aio_complete(), file reference is put and inode can
+be freed from memory. So we have to be sure that calling aio_complete()
+is the last thing we do with the inode.
 
-The special subdevice minor devices get created when a board supporting
-asynchronous commands is attached to a normal board minor device, and
-destroyed when the board is detached from the normal board minor device.
-One way to attach or detach a board is by using the COMEDI_DEVCONFIG
-ioctl.  This should only be used on normal board minors as the special
-subdevice minors are too ephemeral.  In particular, the change
-introduced in commit 7d3135af399e92cf4c9bbc5f86b6c140aab3b88c ("staging:
-comedi: prevent auto-unconfig of manually configured devices") breaks
-horribly for special subdevice minor devices.
-
-Since there's no legitimate use for the COMEDI_DEVCONFIG ioctl on a
-special subdevice minor device node, disallow it and return -ENOTTY.
-
-Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Reviewed-by: Carlos Maiolino <cmaiolino@redhat.com>
+Acked-by: Jeff Moyer <jmoyer@redhat.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/staging/comedi/comedi_fops.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ fs/ext4/inode.c   |    2 +-
+ fs/ext4/page-io.c |    9 ++++-----
+ 2 files changed, 5 insertions(+), 6 deletions(-)
 
---- a/drivers/staging/comedi/comedi_fops.c
-+++ b/drivers/staging/comedi/comedi_fops.c
-@@ -136,6 +136,11 @@ static long comedi_unlocked_ioctl(struct
- 	/* Device config is special, because it must work on
- 	 * an unconfigured device. */
- 	if (cmd == COMEDI_DEVCONFIG) {
-+		if (minor >= COMEDI_NUM_BOARD_MINORS) {
-+			/* Device config not appropriate on non-board minors. */
-+			rc = -ENOTTY;
-+			goto done;
-+		}
- 		rc = do_devconfig_ioctl(dev,
- 					(struct comedi_devconfig __user *)arg);
- 		goto done;
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -2795,9 +2795,9 @@ static void ext4_end_io_dio(struct kiocb
+ 	if (!(io_end->flag & EXT4_IO_END_UNWRITTEN)) {
+ 		ext4_free_io_end(io_end);
+ out:
++		inode_dio_done(inode);
+ 		if (is_async)
+ 			aio_complete(iocb, ret, 0);
+-		inode_dio_done(inode);
+ 		return;
+ 	}
+ 
+--- a/fs/ext4/page-io.c
++++ b/fs/ext4/page-io.c
+@@ -108,14 +108,13 @@ int ext4_end_io_nolock(ext4_io_end_t *io
+ 			 inode->i_ino, offset, size, ret);
+ 	}
+ 
+-	if (io->iocb)
+-		aio_complete(io->iocb, io->result, 0);
+-
+-	if (io->flag & EXT4_IO_END_DIRECT)
+-		inode_dio_done(inode);
+ 	/* Wake up anyone waiting on unwritten extent conversion */
+ 	if (atomic_dec_and_test(&EXT4_I(inode)->i_aiodio_unwritten))
+ 		wake_up_all(ext4_ioend_wq(io->inode));
++	if (io->flag & EXT4_IO_END_DIRECT)
++		inode_dio_done(inode);
++	if (io->iocb)
++		aio_complete(io->iocb, io->result, 0);
+ 	return ret;
+ }
+ 
 
 
