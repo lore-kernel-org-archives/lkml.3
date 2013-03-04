@@ -1,73 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932603Ab3CDVX4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 16:23:56 -0500
-Received: from mail.us.es ([193.147.175.20]:49944 "EHLO mail.us.es"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932542Ab3CDVXv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 16:23:51 -0500
-X-Qmail-Scanner-Diagnostics: from 127.0.0.1 by antivirus2 (envelope-from <pneira@us.es>, uid 501) with qmail-scanner-2.10 
- (clamdscan: 0.97.6/16784. spamassassin: 3.3.2.  
- Clear:RC:1(127.0.0.1):SA:0(-97.0/7.5):. 
- Processed in 2.065728 secs); 04 Mar 2013 21:23:50 -0000
-X-Envelope-From: pneira@us.es
-Date: Mon, 4 Mar 2013 22:23:38 +0100
-From: Pablo Neira Ayuso <pablo@netfilter.org>
-To: Borislav Petkov <bp@alien8.de>,
-        Alexandru Gheorghiu <gheorghiuandru@gmail.com>,
-        Patrick McHardy <kaber@trash.net>,
-        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] net: netfilter: nfnetlink: Fixed warning for
- nfnl_get_lock
-Message-ID: <20130304212338.GA3594@localhost>
-References: <1362426192-2921-1-git-send-email-gheorghiuandru@gmail.com>
- <20130304210551.GA22306@pd.tnic>
+	id S932625Ab3CDVYN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 16:24:13 -0500
+Received: from mail-wg0-f50.google.com ([74.125.82.50]:53290 "EHLO
+	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932581Ab3CDVXz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Mar 2013 16:23:55 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130304210551.GA22306@pd.tnic>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130304174254.GF8913@agk.fab.redhat.com>
+References: <1362415549-18653-1-git-send-email-taysom@chromium.org>
+	<20130304174254.GF8913@agk.fab.redhat.com>
+Date: Mon, 4 Mar 2013 13:23:54 -0800
+Message-ID: <CAKwO_5GwN8PCtK6tM=KWvZMJHb357O+Bh3TpF3k3vB_0x_FtpQ@mail.gmail.com>
+Subject: Re: [PATCH] md: dm-verity: Fix to avoid a deadlock in dm-bufio
+From: Paul Taysom <taysom@google.com>
+To: Paul Taysom <taysom@chromium.org>, agk@redhat.com, dm-devel@redhat.com,
+        neilb@suse.de, linux-raid@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Mandeep Singh Baines <msb@chromium.org>,
+        Mikulas Patocka <mpatocka@redhat.com>,
+        Olof Johansson <olofj@chromium.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 04, 2013 at 10:05:51PM +0100, Borislav Petkov wrote:
-> On Mon, Mar 04, 2013 at 09:43:11PM +0200, Alexandru Gheorghiu wrote:
-> > Removed unused function nfnl_get_lock which fixed the following warning:
-> > net/netfilter/nfnetlink.c:65:22: warning: ‘nfnl_get_lock’ defined but not used [-Wunused-function]
-> > 
-> > Signed-off-by: Alexandru Gheorghiu <gheorghiuandru@gmail.com>
-> > ---
-> >  net/netfilter/nfnetlink.c |    5 -----
-> >  1 file changed, 5 deletions(-)
-> > 
-> > diff --git a/net/netfilter/nfnetlink.c b/net/netfilter/nfnetlink.c
-> > index d578ec2..44aa0a7 100644
-> > --- a/net/netfilter/nfnetlink.c
-> > +++ b/net/netfilter/nfnetlink.c
-> > @@ -62,11 +62,6 @@ void nfnl_unlock(__u8 subsys_id)
-> >  }
-> >  EXPORT_SYMBOL_GPL(nfnl_unlock);
-> > 
-> > -static struct mutex *nfnl_get_lock(__u8 subsys_id)
-> > -{
-> > -	return &table[subsys_id].mutex;
-> > -}
-> > -
-> 
-> I see the same warning here, gcc (Debian 4.7.2-5) 4.7.2.
-> 
-> Actually this function *is* used a bit further in the same file in
-> nfnetlink_rcv_msg().
-> 
-> But gcc complains for some reason of which I don't even have the
-> slightest idea. However, if you declare the above function "static
-> inline..." the warning is gone.
-
-Already got a fix for compilation warning in my tree:
-
-http://1984.lsi.us.es/git/nf/commit/?id=9df9e7832391cf699abbf39fc8d95d7e78297462
-
-Thanks!
+On Mon, Mar 4, 2013 at 9:42 AM, Alasdair G Kergon <agk@redhat.com> wrote:
+> On Mon, Mar 04, 2013 at 08:45:48AM -0800, Paul Taysom wrote:
+>> @@ -449,8 +468,14 @@ static void verity_prefetch_io(struct dm_verity *v, struct dm_verity_io *io)
+>>                               hash_block_end = v->hash_blocks - 1;
+>>               }
+>>  no_prefetch_cluster:
+>> -             dm_bufio_prefetch(v->bufio, hash_block_start,
+>> -                               hash_block_end - hash_block_start + 1);
+>> +             vw = kmalloc(sizeof(*vw), GFP_KERNEL);
+>
+> kmalloc?  mempool? ...
+>
+> Alasdair
+>
+The use of mempool would be a separate patch that would have to be
+measured for performance impact.
+-Paul
