@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756130Ab3CDELf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 23:11:35 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60963 "EHLO
+	id S1755800Ab3CDDm6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 22:42:58 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60863 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755882Ab3CDDnE (ORCPT
+	by vger.kernel.org with ESMTP id S1755540Ab3CDDmt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Mar 2013 22:43:04 -0500
-Message-Id: <20130304033719.712583634@decadent.org.uk>
+	Sun, 3 Mar 2013 22:42:49 -0500
+Message-Id: <20130304033721.050183480@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 04 Mar 2013 03:39:10 +0000
+Date: Mon, 04 Mar 2013 03:39:24 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, David Vrabel <david.vrabel@citrix.com>,
-        Wei Liu <wei.liu2@citrix.com>, Jan Beulich <JBeulich@suse.com>,
-        "Christopher S. Aker" <caker@theshore.net>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 123/153] xen-netback: correctly return errors from  netbk_count_requests()
+Cc: akpm@linux-foundation.org, Dan Carpenter <dan.carpenter@oracle.com>,
+        "Herton R. Krzesinski" <herton.krzesinski@canonical.com>,
+        Douglas Bagnall <douglas@paradise.net.nz>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: [ 137/153] [media] rc: unlock on error in show_protocols()
 In-Reply-To: <20130304033707.648729212@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,74 +29,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Vrabel <david.vrabel@citrix.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-[ Upstream commit 35876b5ffc154c357476b2c3bdab10feaf4bd8f0 ]
+commit 30ebc5e44d057a1619ad63fe32c8c1670c37c4b8 upstream.
 
-netbk_count_requests() could detect an error, call
-netbk_fatal_tx_error() but return 0.  The vif may then be used
-afterwards (e.g., in a call to netbk_tx_error().
+We recently introduced a new return -ENODEV in this function but we need
+to unlock before returning.
 
-Since netbk_fatal_tx_error() could set vif->refcnt to 1, the vif may
-be freed immediately after the call to netbk_fatal_tx_error() (e.g.,
-if the vif is also removed).
+[mchehab@redhat.com: found two patches with the same fix. Merged SOB's/acks into one patch]
+Acked-by: Herton R. Krzesinski <herton.krzesinski@canonical.com>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Douglas Bagnall <douglas@paradise.net.nz>
 
-Netback thread              Xenwatch thread
--------------------------------------------
-netbk_fatal_tx_err()        netback_remove()
-                              xenvif_disconnect()
-                                ...
-                                free_netdev()
-netbk_tx_err() Oops!
-
-Signed-off-by: Wei Liu <wei.liu2@citrix.com>
-Signed-off-by: Jan Beulich <JBeulich@suse.com>
-Signed-off-by: David Vrabel <david.vrabel@citrix.com>
-Reported-by: Christopher S. Aker <caker@theshore.net>
-Acked-by: Ian Campbell <ian.campbell@citrix.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/xen-netback/netback.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/media/rc/rc-main.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
-index b802bb3..185a0eb 100644
---- a/drivers/net/xen-netback/netback.c
-+++ b/drivers/net/xen-netback/netback.c
-@@ -883,13 +883,13 @@ static int netbk_count_requests(struct xenvif *vif,
- 		if (frags >= work_to_do) {
- 			netdev_err(vif->dev, "Need more frags\n");
- 			netbk_fatal_tx_err(vif);
--			return -frags;
-+			return -ENODATA;
- 		}
+--- a/drivers/media/rc/rc-main.c
++++ b/drivers/media/rc/rc-main.c
+@@ -777,8 +777,10 @@ static ssize_t show_protocols(struct dev
+ 	} else if (dev->raw) {
+ 		enabled = dev->raw->enabled_protocols;
+ 		allowed = ir_raw_get_allowed_protocols();
+-	} else
++	} else {
++		mutex_unlock(&dev->lock);
+ 		return -ENODEV;
++	}
  
- 		if (unlikely(frags >= MAX_SKB_FRAGS)) {
- 			netdev_err(vif->dev, "Too many frags\n");
- 			netbk_fatal_tx_err(vif);
--			return -frags;
-+			return -E2BIG;
- 		}
- 
- 		memcpy(txp, RING_GET_REQUEST(&vif->tx, cons + frags),
-@@ -897,7 +897,7 @@ static int netbk_count_requests(struct xenvif *vif,
- 		if (txp->size > first->size) {
- 			netdev_err(vif->dev, "Frag is bigger than frame.\n");
- 			netbk_fatal_tx_err(vif);
--			return -frags;
-+			return -EIO;
- 		}
- 
- 		first->size -= txp->size;
-@@ -907,7 +907,7 @@ static int netbk_count_requests(struct xenvif *vif,
- 			netdev_err(vif->dev, "txp->offset: %x, size: %u\n",
- 				 txp->offset, txp->size);
- 			netbk_fatal_tx_err(vif);
--			return -frags;
-+			return -EINVAL;
- 		}
- 	} while ((txp++)->flags & XEN_NETTXF_more_data);
- 	return frags;
+ 	IR_dprintk(1, "allowed - 0x%llx, enabled - 0x%llx\n",
+ 		   (long long)allowed,
 
 
