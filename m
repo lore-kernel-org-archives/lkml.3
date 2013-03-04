@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756088Ab3CDEKt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 23:10:49 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60983 "EHLO
+	id S1755922Ab3CDDnG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 22:43:06 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60896 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755878Ab3CDDnH (ORCPT
+	by vger.kernel.org with ESMTP id S1755878Ab3CDDnC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Mar 2013 22:43:07 -0500
-Message-Id: <20130304033719.409605094@decadent.org.uk>
+	Sun, 3 Mar 2013 22:43:02 -0500
+Message-Id: <20130304033719.986319283@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 04 Mar 2013 03:39:07 +0000
+Date: Mon, 04 Mar 2013 03:39:13 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Helge Deller <deller@gmx.de>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ian Kent <raven@themaw.net>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Rolf Eike Beer <eike-kernel@sf-tec.de>
-Subject: [ 120/153] unbreak automounter support on 64-bit kernel with 32-bit userspace
- (v2)
+Cc: akpm@linux-foundation.org, Eric Dumazet <edumazet@google.com>,
+        Neal Cardwell <ncardwell@google.com>,
+        Yuchung Cheng <ycheng@google.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 126/153] ipv6: use a stronger hash for tcp
 In-Reply-To: <20130304033707.648729212@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,70 +29,127 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Helge Deller <deller@gmx.de>
+From: Eric Dumazet <edumazet@google.com>
 
-commit 4f4ffc3a5398ef9bdbb32db04756d7d34e356fcf upstream.
+[ Upstream commit 08dcdbf6a7b9d14c2302c5bd0c5390ddf122f664 ]
 
-automount-support is broken on the parisc architecture, because the existing
-#if list does not include a check for defined(__hppa__). The HPPA (parisc)
-architecture is similiar to other 64bit Linux targets where we have to define
-autofs_wqt_t (which is passed back and forth to user space) as int type which
-has a size of 32bit across 32 and 64bit kernels.
+It looks like its possible to open thousands of TCP IPv6
+sessions on a server, all landing in a single slot of TCP hash
+table. Incoming packets have to lookup sockets in a very
+long list.
 
-During the discussion on the mailing list, H. Peter Anvin suggested to invert
-the #if list since only specific platforms (specifically those who do not have
-a 32bit userspace, like IA64 and Alpha) should have autofs_wqt_t as unsigned
-long type.
+We should hash all bits from foreign IPv6 addresses, using
+a salt and hash mix, not a simple XOR.
 
-This suggestion is probably the best way to go, since Arm64 (and maybe others?)
-seems to have a non-working automounter. So in the long run even for other new
-upcoming architectures this inverted check seem to be the best solution, since
-it will not require them to change this #if again (unless they are 64bit only).
+inet6_ehashfn() can also separately use the ports, instead
+of xoring them.
 
-Signed-off-by: Helge Deller <deller@gmx.de>
-Acked-by: H. Peter Anvin <hpa@zytor.com>
-Acked-by: Ian Kent <raven@themaw.net>
-Acked-by: Catalin Marinas <catalin.marinas@arm.com>
-CC: James Bottomley <James.Bottomley@HansenPartnership.com>
-CC: Rolf Eike Beer <eike-kernel@sf-tec.de>
-[bwh: Backported to 3.2: adjust filename]
+Reported-by: Neal Cardwell <ncardwell@google.com>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Cc: Yuchung Cheng <ycheng@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
---- a/include/linux/auto_fs.h
-+++ b/include/linux/auto_fs.h
-@@ -31,25 +31,16 @@
- #define AUTOFS_MIN_PROTO_VERSION	AUTOFS_PROTO_VERSION
+ include/net/inet6_hashtables.h |  8 ++++----
+ include/net/inet_sock.h        |  1 +
+ include/net/ipv6.h             | 12 ++++++++++++
+ net/ipv4/af_inet.c             |  9 +++++++--
+ 4 files changed, 24 insertions(+), 6 deletions(-)
+
+diff --git a/include/net/inet6_hashtables.h b/include/net/inet6_hashtables.h
+index e46674d..f9ce2fa 100644
+--- a/include/net/inet6_hashtables.h
++++ b/include/net/inet6_hashtables.h
+@@ -28,16 +28,16 @@
  
+ struct inet_hashinfo;
+ 
+-/* I have no idea if this is a good hash for v6 or not. -DaveM */
+ static inline unsigned int inet6_ehashfn(struct net *net,
+ 				const struct in6_addr *laddr, const u16 lport,
+ 				const struct in6_addr *faddr, const __be16 fport)
+ {
+-	u32 ports = (lport ^ (__force u16)fport);
++	u32 ports = (((u32)lport) << 16) | (__force u32)fport;
+ 
+ 	return jhash_3words((__force u32)laddr->s6_addr32[3],
+-			    (__force u32)faddr->s6_addr32[3],
+-			    ports, inet_ehash_secret + net_hash_mix(net));
++			    ipv6_addr_jhash(faddr),
++			    ports,
++			    inet_ehash_secret + net_hash_mix(net));
+ }
+ 
+ static inline int inet6_sk_ehashfn(const struct sock *sk)
+diff --git a/include/net/inet_sock.h b/include/net/inet_sock.h
+index f941964..ee4ee91 100644
+--- a/include/net/inet_sock.h
++++ b/include/net/inet_sock.h
+@@ -199,6 +199,7 @@ static inline void inet_sk_copy_descendant(struct sock *sk_to,
+ extern int inet_sk_rebuild_header(struct sock *sk);
+ 
+ extern u32 inet_ehash_secret;
++extern u32 ipv6_hash_secret;
+ extern void build_ehash_secret(void);
+ 
+ static inline unsigned int inet_ehashfn(struct net *net,
+diff --git a/include/net/ipv6.h b/include/net/ipv6.h
+index a366a8a..4d549cf 100644
+--- a/include/net/ipv6.h
++++ b/include/net/ipv6.h
+@@ -15,6 +15,7 @@
+ 
+ #include <linux/ipv6.h>
+ #include <linux/hardirq.h>
++#include <linux/jhash.h>
+ #include <net/if_inet6.h>
+ #include <net/ndisc.h>
+ #include <net/flow.h>
+@@ -386,6 +387,17 @@ struct ip6_create_arg {
+ void ip6_frag_init(struct inet_frag_queue *q, void *a);
+ int ip6_frag_match(struct inet_frag_queue *q, void *a);
+ 
++/* more secured version of ipv6_addr_hash() */
++static inline u32 ipv6_addr_jhash(const struct in6_addr *a)
++{
++	u32 v = (__force u32)a->s6_addr32[0] ^ (__force u32)a->s6_addr32[1];
++
++	return jhash_3words(v,
++			    (__force u32)a->s6_addr32[2],
++			    (__force u32)a->s6_addr32[3],
++			    ipv6_hash_secret);
++}
++
+ static inline int ipv6_addr_any(const struct in6_addr *a)
+ {
+ 	return (a->s6_addr32[0] | a->s6_addr32[1] |
+diff --git a/net/ipv4/af_inet.c b/net/ipv4/af_inet.c
+index 1b5096a..5d228de 100644
+--- a/net/ipv4/af_inet.c
++++ b/net/ipv4/af_inet.c
+@@ -226,8 +226,12 @@ EXPORT_SYMBOL(inet_listen);
+ u32 inet_ehash_secret __read_mostly;
+ EXPORT_SYMBOL(inet_ehash_secret);
+ 
++u32 ipv6_hash_secret __read_mostly;
++EXPORT_SYMBOL(ipv6_hash_secret);
++
  /*
-- * Architectures where both 32- and 64-bit binaries can be executed
-- * on 64-bit kernels need this.  This keeps the structure format
-- * uniform, and makes sure the wait_queue_token isn't too big to be
-- * passed back down to the kernel.
-- *
-- * This assumes that on these architectures:
-- * mode     32 bit    64 bit
-- * -------------------------
-- * int      32 bit    32 bit
-- * long     32 bit    64 bit
-- *
-- * If so, 32-bit user-space code should be backwards compatible.
-+ * The wait_queue_token (autofs_wqt_t) is part of a structure which is passed
-+ * back to the kernel via ioctl from userspace. On architectures where 32- and
-+ * 64-bit userspace binaries can be executed it's important that the size of
-+ * autofs_wqt_t stays constant between 32- and 64-bit Linux kernels so that we
-+ * do not break the binary ABI interface by changing the structure size.
+- * inet_ehash_secret must be set exactly once
++ * inet_ehash_secret must be set exactly once, and to a non nul value
++ * ipv6_hash_secret must be set exactly once.
   */
--
--#if defined(__sparc__) || defined(__mips__) || defined(__x86_64__) \
-- || defined(__powerpc__) || defined(__s390__)
--typedef unsigned int autofs_wqt_t;
--#else
-+#if defined(__ia64__) || defined(__alpha__) /* pure 64bit architectures */
- typedef unsigned long autofs_wqt_t;
-+#else
-+typedef unsigned int autofs_wqt_t;
- #endif
+ void build_ehash_secret(void)
+ {
+@@ -237,7 +241,8 @@ void build_ehash_secret(void)
+ 		get_random_bytes(&rnd, sizeof(rnd));
+ 	} while (rnd == 0);
  
- /* Packet types */
+-	cmpxchg(&inet_ehash_secret, 0, rnd);
++	if (cmpxchg(&inet_ehash_secret, 0, rnd) == 0)
++		get_random_bytes(&ipv6_hash_secret, sizeof(ipv6_hash_secret));
+ }
+ EXPORT_SYMBOL(build_ehash_secret);
+ 
 
 
