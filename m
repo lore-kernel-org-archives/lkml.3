@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756934Ab3CDEAw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 23:00:52 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:32947 "EHLO
+	id S1757266Ab3CDEBK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 23:01:10 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:32943 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756634Ab3CDDn6 (ORCPT
+	by vger.kernel.org with ESMTP id S1756575Ab3CDDn5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Mar 2013 22:43:58 -0500
-Message-Id: <20130304033715.956410242@decadent.org.uk>
+	Sun, 3 Mar 2013 22:43:57 -0500
+Message-Id: <20130304033716.499797637@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 04 Mar 2013 03:38:32 +0000
+Date: Mon, 04 Mar 2013 03:38:37 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Stefan Bader <stefan.bader@canonical.com>,
-        Jan Beulich <JBeulich@suse.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [ 085/153] xen: Send spinlock IPI to all waiters
+Cc: akpm@linux-foundation.org, MITSUNARI Shigeo <herumi@nifty.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Jeff Moyer <jmoyer@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 090/153] fs/block_dev.c: page cache wrongly left invalidated after
+ revalidate_disk()
 In-Reply-To: <20130304033707.648729212@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,62 +29,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stefan Bader <stefan.bader@canonical.com>
+From: MITSUNARI Shigeo <herumi@nifty.com>
 
-commit 76eaca031f0af2bb303e405986f637811956a422 upstream.
+commit 7630b661da330b35dd57b6f5d6d62b386f2dd751 upstream.
 
-There is a loophole between Xen's current implementation of
-pv-spinlocks and the scheduler. This was triggerable through
-a testcase until v3.6 changed the TLB flushing code. The
-problem potentially is still there just not observable in the
-same way.
+We found that bdev->bd_invalidated was left set once revalidate_disk()
+is called, which results in page cache flush every time that device is
+open.
 
-What could happen was (is):
+Specifically, we found this problem in MD block device.  Once we resize
+a MD device, mdadm --monitor periodically flush all page cache for that
+device every 60 or 1000 seconds when it opens the device.
 
-1. CPU n tries to schedule task x away and goes into a slow
-   wait for the runq lock of CPU n-# (must be one with a lower
-   number).
-2. CPU n-#, while processing softirqs, tries to balance domains
-   and goes into a slow wait for its own runq lock (for updating
-   some records). Since this is a spin_lock_irqsave in softirq
-   context, interrupts will be re-enabled for the duration of
-   the poll_irq hypercall used by Xen.
-3. Before the runq lock of CPU n-# is unlocked, CPU n-1 receives
-   an interrupt (e.g. endio) and when processing the interrupt,
-   tries to wake up task x. But that is in schedule and still
-   on_cpu, so try_to_wake_up goes into a tight loop.
-4. The runq lock of CPU n-# gets unlocked, but the message only
-   gets sent to the first waiter, which is CPU n-# and that is
-   busily stuck.
-5. CPU n-# never returns from the nested interruption to take and
-   release the lock because the scheduler uses a busy wait.
-   And CPU n never finishes the task migration because the unlock
-   notification only went to CPU n-#.
+This bug lies since at least 3.2.0 till the latest kernel(3.6.2).  Patch
+is attached.
 
-To avoid this and since the unlocking code has no real sense of
-which waiter is best suited to grab the lock, just send the IPI
-to all of them. This causes the waiters to return from the hyper-
-call (those not interrupted at least) and do active spinlocking.
+The following steps will reproduce the problem.
 
-BugLink: http://bugs.launchpad.net/bugs/1011792
+1. prepair a block device (eg /dev/sdb).
 
-Acked-by: Jan Beulich <JBeulich@suse.com>
-Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+2. create two partitions:
+
+   sudo parted /dev/sdb
+   mklabel gpt
+   mkpart primary 0% 50%
+   mkpart primary 50% 100%
+
+3. create a md device.
+
+   sudo mdadm -C /dev/md/hoge -l 1 -n 2 -e 1.2 --assume-clean --auto=md --symlink=no /dev/sdb1 /dev/sdb2
+
+4. create file system and mount it
+
+   sudo mkfs.ext3 /dev/md/hoge
+   sudo mkdir /mnt/test
+   sudo mount /dev/md/hoge /mnt/test
+
+5. try to resize the device
+
+   sudo mdadm -G /dev/md/hoge --size=max
+
+6. create a file to fill file cache.
+
+  sudo dd if=/dev/urandom of=/mnt/test/data bs=1M count=10
+
+and verify the current status of file by free command.
+
+7. mdadm monitor will open the md device every 1000 seconds and you
+   will find all file cache on the device are cleared.
+
+The timing can be reduced by the following steps.
+
+a) kill mdadm and restart it with --delay option
+
+   /sbin/mdadm --monitor --delay=30 --pid-file /var/run/mdadm/monitor.pid --daemonise --scan --syslog
+
+or open the md device directly.
+
+   sudo dd if=/dev/md/hoge of=/dev/null bs=4096 count=1
+
+Signed-off-by: MITSUNARI Shigeo <herumi@nifty.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Jeff Moyer <jmoyer@redhat.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/x86/xen/spinlock.c |    1 -
- 1 file changed, 1 deletion(-)
+ fs/block_dev.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/arch/x86/xen/spinlock.c
-+++ b/arch/x86/xen/spinlock.c
-@@ -328,7 +328,6 @@ static noinline void xen_spin_unlock_slo
- 		if (per_cpu(lock_spinners, cpu) == xl) {
- 			ADD_STATS(released_slow_kicked, 1);
- 			xen_send_IPI_one(cpu, XEN_SPIN_UNLOCK_VECTOR);
--			break;
- 		}
- 	}
- }
+--- a/fs/block_dev.c
++++ b/fs/block_dev.c
+@@ -1024,6 +1024,7 @@ int revalidate_disk(struct gendisk *disk
+ 
+ 	mutex_lock(&bdev->bd_mutex);
+ 	check_disk_size_change(disk, bdev);
++	bdev->bd_invalidated = 0;
+ 	mutex_unlock(&bdev->bd_mutex);
+ 	bdput(bdev);
+ 	return ret;
 
 
