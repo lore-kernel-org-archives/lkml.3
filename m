@@ -1,36 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757477Ab3CDOHJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 09:07:09 -0500
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:34751 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756683Ab3CDOHH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 09:07:07 -0500
-Date: Mon, 4 Mar 2013 22:07:00 +0800
-From: Zach Pfeffer <zach.pfeffer@gmail.com>
-To: linux-kernel@vger.kernel.org
-Subject: 2013 Android Microconference at Linux Plumbers: Call for
- Participation
-Message-ID: <20130304140700.GB11031@zach-linaro-w530>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757706Ab3CDOIB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 09:08:01 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:39327 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756683Ab3CDOIA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Mar 2013 09:08:00 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <1362275632-20242-13-git-send-email-cesarb@cesarb.net>
+References: <1362275632-20242-13-git-send-email-cesarb@cesarb.net> <1362275632-20242-1-git-send-email-cesarb@cesarb.net>
+To: Cesar Eduardo Barros <cesarb@cesarb.net>
+Cc: dhowells@redhat.com, Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Joe Perches <joe@perches.com>
+Subject: Re: [PATCH 12/14] MAINTAINERS: adjust for UAPI (part 2)
+Date: Mon, 04 Mar 2013 14:07:50 +0000
+Message-ID: <8282.1362406070@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There's interest in having an Android microconference at this year's Linux Plumbers Conference. I've started a Wiki at:
+Cesar Eduardo Barros <cesarb@cesarb.net> wrote:
 
-http://wiki.linuxplumbersconf.org/2013:android
+>  F:	include/linux/*aio*.h
+> +F:	include/uapi/linux/*aio*.h
 
-I'd like to invite people to add topics to the Wiki. Please include a description of the topic you'd like to discuss. In general, topics that present work to close the gap between the mainstream kernel and the Android kernel are preferred as well as topics for future mechanisms that may be needed by Android and other mobile usecases. In addition, topics related to successful out-of-tree patch maintenance and challenges in commercialization would also be useful.
+I wonder if we can infer things like this in the scripts rather than needing
+to make it explicit.
 
-Most of the big pain points people are seeing are related to buffer passing and synchronization for that reason it was thought that the following topics may be good to discuss:
-
-dmabuf fences / sync
-unified in-kernel IPC
-ION/dmabuf/Common Display Framework
-
-I've listed these on the Wiki to get things started.
+David
