@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756436Ab3CDJKO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 04:10:14 -0500
-Received: from mga03.intel.com ([143.182.124.21]:4286 "EHLO mga03.intel.com"
+	id S1756464Ab3CDJKU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 04:10:20 -0500
+Received: from mga09.intel.com ([134.134.136.24]:22479 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756222Ab3CDJKA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 04:10:00 -0500
+	id S1755883Ab3CDJKR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Mar 2013 04:10:17 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,778,1355126400"; 
-   d="scan'208";a="208485586"
+   d="scan'208";a="293180850"
 From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 To: linux-kernel@vger.kernel.org, Vinod Koul <vinod.koul@intel.com>,
         Viresh Kumar <viresh.kumar@linaro.org>,
         Andrew Morton <akpm@linux-foundation.org>
 Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: [PATCH 03/10] dmatest: create dmatest_info to keep test parameters
-Date: Mon,  4 Mar 2013 11:09:27 +0200
-Message-Id: <1362388174-3435-4-git-send-email-andriy.shevchenko@linux.intel.com>
+Subject: [PATCH 06/10] dmatest: run test via debugfs
+Date: Mon,  4 Mar 2013 11:09:30 +0200
+Message-Id: <1362388174-3435-7-git-send-email-andriy.shevchenko@linux.intel.com>
 X-Mailer: git-send-email 1.8.2.rc0.22.gb3600c3
 In-Reply-To: <1362388174-3435-1-git-send-email-andriy.shevchenko@linux.intel.com>
 References: <1362388174-3435-1-git-send-email-andriy.shevchenko@linux.intel.com>
@@ -24,435 +24,437 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The proposed change will remove usage of the module parameters as global
-variables. In future it helps to run different test cases sequentially.
+Instead of doing
+	modprobe dmatest ...
+	modprobe -r dmatest
+we allow user to run tests interactively.
 
-The patch introduces the run_threaded_test() and stop_threaded_test() functions
-that could be used later outside of dmatest_init, dmatest_exit scope.
+The dmatest could be built as module or inside kernel. Let's consider those
+cases.
+
+1. When dmatest is built as a module...
+
+After mounting debugfs and loading the module, the /sys/kernel/debug/dmatest
+folder with nodes will be created. They are the same as module parameters with
+addition of the 'run' node that controls run and stop phases of the test.
+
+Note that in this case test will not run on load automatically.
+
+Example of usage:
+	% echo dma0chan0 > /sys/kernel/debug/dmatest/channel
+	% echo 2000 > /sys/kernel/debug/dmatest/timeout
+	% echo 1 > /sys/kernel/debug/dmatest/iterations
+	% echo 1 > /sys/kernel/debug/dmatest/run
+
+After a while you will start to get messages about current status or error like
+in the original code.
+
+Note that running a new test will stop any in progress test.
+
+2. When built-in in the kernel...
+
+The module parameters that is supplied to the kernel command line will be used
+for the first performed test. After user gets a control, the test could be
+interrupted or re-run with same or different parameters. For the details see
+the above section "1. When dmatest is built as a module..."
+
+In both cases the module parameters are used as initial values for the test case.
+You always could check them at run-time by running
+	% grep -H . /sys/module/dmatest/parameters/*
 
 Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 ---
- drivers/dma/dmatest.c | 160 +++++++++++++++++++++++++++++++++++---------------
- 1 file changed, 113 insertions(+), 47 deletions(-)
+ Documentation/dmatest.txt |  48 +++++++++
+ drivers/dma/dmatest.c     | 257 +++++++++++++++++++++++++++++++++++++++++++++-
+ 2 files changed, 303 insertions(+), 2 deletions(-)
+ create mode 100644 Documentation/dmatest.txt
 
+diff --git a/Documentation/dmatest.txt b/Documentation/dmatest.txt
+new file mode 100644
+index 0000000..9a90729
+--- /dev/null
++++ b/Documentation/dmatest.txt
+@@ -0,0 +1,48 @@
++				DMA Test Guide
++				==============
++
++		Andy Shevchenko <andriy.shevchenko@linux.intel.com>
++
++This small document introduces how to test DMA drivers using dmatest module.
++
++	Part 1 - How to build the test module
++
++The menuconfig contains an option that could be found by following path:
++	Device Drivers -> DMA Engine support -> DMA Test client
++
++In the configuration file the option called CONFIG_DMATEST. The dmatest could
++be built as module or inside kernel. Let's consider those cases.
++
++	Part 2 - When dmatest is built as a module...
++
++After mounting debugfs and loading the module, the /sys/kernel/debug/dmatest
++folder with nodes will be created. They are the same as module parameters with
++addition of the 'run' node that controls run and stop phases of the test.
++
++Note that in this case test will not run on load automatically.
++
++Example of usage:
++	% echo dma0chan0 > /sys/kernel/debug/dmatest/channel
++	% echo 2000 > /sys/kernel/debug/dmatest/timeout
++	% echo 1 > /sys/kernel/debug/dmatest/iterations
++	% echo 1 > /sys/kernel/debug/dmatest/run
++
++Hint: available channel list could be extracted by running the following
++command:
++	% ls -1 /sys/class/dma/
++
++After a while you will start to get messages about current status or error like
++in the original code.
++
++Note that running a new test will stop any in progress test.
++
++	Part 3 - When built-in in the kernel...
++
++The module parameters that is supplied to the kernel command line will be used
++for the first performed test. After user gets a control, the test could be
++interrupted or re-run with same or different parameters. For the details see
++the above section "Part 2 - When dmatest is built as a module..."
++
++In both cases the module parameters are used as initial values for the test case.
++You always could check them at run-time by running
++	% grep -H . /sys/module/dmatest/parameters/*
 diff --git a/drivers/dma/dmatest.c b/drivers/dma/dmatest.c
-index e3955be..7f9e3cc 100644
+index c6e5d83..fc31542 100644
 --- a/drivers/dma/dmatest.c
 +++ b/drivers/dma/dmatest.c
-@@ -78,8 +78,11 @@ MODULE_PARM_DESC(timeout, "Transfer Timeout in msec (default: 3000), "
- #define PATTERN_OVERWRITE	0x20
- #define PATTERN_COUNT_MASK	0x1f
+@@ -2,6 +2,7 @@
+  * DMA Engine test module
+  *
+  * Copyright (C) 2007 Atmel Corporation
++ * Copyright (C) 2013 Intel Corporation
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License version 2 as
+@@ -18,6 +19,10 @@
+ #include <linux/random.h>
+ #include <linux/slab.h>
+ #include <linux/wait.h>
++#include <linux/ctype.h>
++#include <linux/debugfs.h>
++#include <linux/uaccess.h>
++#include <linux/seq_file.h>
  
-+struct dmatest_info;
+ static unsigned int test_buf_size = 16384;
+ module_param(test_buf_size, uint, S_IRUGO);
+@@ -123,6 +128,7 @@ struct dmatest_params {
+ /**
+  * struct dmatest_info - test information.
+  * @params:		test parameters
++ * @lock:		access protection to the fields of this structure
+  */
+ struct dmatest_info {
+ 	/* Test parameters */
+@@ -131,6 +137,11 @@ struct dmatest_info {
+ 	/* Internal state */
+ 	struct list_head	channels;
+ 	unsigned int		nr_channels;
++	struct mutex		lock;
 +
- struct dmatest_thread {
- 	struct list_head	node;
-+	struct dmatest_info	*info;
- 	struct task_struct	*task;
- 	struct dma_chan		*chan;
- 	u8			**srcs;
-@@ -93,6 +96,32 @@ struct dmatest_chan {
- 	struct list_head	threads;
++	/* debugfs related stuff */
++	struct dentry		*root;
++	struct dmatest_params	dbgfs_params;
  };
  
-+/**
-+ * struct dmatest_info - test information.
-+ * @buf_size:		size of the memcpy test buffer
-+ * @channel:		bus ID of the channel to test
-+ * @device:		bus ID of the DMA Engine to test
-+ * @threads_per_chan:	number of threads to start per channel
-+ * @max_channels:	maximum number of channels to use
-+ * @iterations:		iterations before stopping test
-+ * @xor_sources:	number of xor source buffers
-+ * @pq_sources:		number of p+q source buffers
-+ * @timeout:		transfer timeout in msec, -1 for infinite timeout
-+ */
-+struct dmatest_info {
-+	unsigned int	buf_size;
-+	char		channel[20];
-+	char		device[20];
-+	unsigned int	threads_per_chan;
-+	unsigned int	max_channels;
-+	unsigned int	iterations;
-+	unsigned int	xor_sources;
-+	unsigned int	pq_sources;
-+	int		timeout;
-+};
-+
-+static struct dmatest_info test_info;
-+
- /*
-  * These are protected by dma_list_mutex since they're only used by
-  * the DMA filter function callback
-@@ -100,18 +129,20 @@ struct dmatest_chan {
- static LIST_HEAD(dmatest_channels);
- static unsigned int nr_channels;
- 
--static bool dmatest_match_channel(struct dma_chan *chan)
-+static bool dmatest_match_channel(struct dmatest_info *info,
-+		struct dma_chan *chan)
- {
--	if (test_channel[0] == '\0')
-+	if (info->channel[0] == '\0')
- 		return true;
--	return strcmp(dma_chan_name(chan), test_channel) == 0;
-+	return strcmp(dma_chan_name(chan), info->channel) == 0;
- }
- 
--static bool dmatest_match_device(struct dma_device *device)
-+static bool dmatest_match_device(struct dmatest_info *info,
-+		struct dma_device *device)
- {
--	if (test_device[0] == '\0')
-+	if (info->device[0] == '\0')
- 		return true;
--	return strcmp(dev_name(device->dev), test_device) == 0;
-+	return strcmp(dev_name(device->dev), info->device) == 0;
- }
- 
- static unsigned long dmatest_random(void)
-@@ -122,7 +153,8 @@ static unsigned long dmatest_random(void)
- 	return buf;
- }
- 
--static void dmatest_init_srcs(u8 **bufs, unsigned int start, unsigned int len)
-+static void dmatest_init_srcs(u8 **bufs, unsigned int start, unsigned int len,
-+		unsigned int buf_size)
- {
- 	unsigned int i;
- 	u8 *buf;
-@@ -133,13 +165,14 @@ static void dmatest_init_srcs(u8 **bufs, unsigned int start, unsigned int len)
- 		for ( ; i < start + len; i++)
- 			buf[i] = PATTERN_SRC | PATTERN_COPY
- 				| (~i & PATTERN_COUNT_MASK);
--		for ( ; i < test_buf_size; i++)
-+		for ( ; i < buf_size; i++)
- 			buf[i] = PATTERN_SRC | (~i & PATTERN_COUNT_MASK);
- 		buf++;
- 	}
- }
- 
--static void dmatest_init_dsts(u8 **bufs, unsigned int start, unsigned int len)
-+static void dmatest_init_dsts(u8 **bufs, unsigned int start, unsigned int len,
-+		unsigned int buf_size)
- {
- 	unsigned int i;
- 	u8 *buf;
-@@ -150,7 +183,7 @@ static void dmatest_init_dsts(u8 **bufs, unsigned int start, unsigned int len)
- 		for ( ; i < start + len; i++)
- 			buf[i] = PATTERN_DST | PATTERN_OVERWRITE
- 				| (~i & PATTERN_COUNT_MASK);
--		for ( ; i < test_buf_size; i++)
-+		for ( ; i < buf_size; i++)
- 			buf[i] = PATTERN_DST | (~i & PATTERN_COUNT_MASK);
- 	}
- }
-@@ -268,6 +301,7 @@ static int dmatest_func(void *data)
- 	DECLARE_WAIT_QUEUE_HEAD_ONSTACK(done_wait);
- 	struct dmatest_thread	*thread = data;
- 	struct dmatest_done	done = { .wait = &done_wait };
-+	struct dmatest_info	*info;
- 	struct dma_chan		*chan;
- 	struct dma_device	*dev;
- 	const char		*thread_name;
-@@ -290,20 +324,21 @@ static int dmatest_func(void *data)
- 	ret = -ENOMEM;
- 
- 	smp_rmb();
-+	info = thread->info;
- 	chan = thread->chan;
- 	dev = chan->device;
- 	if (thread->type == DMA_MEMCPY)
- 		src_cnt = dst_cnt = 1;
- 	else if (thread->type == DMA_XOR) {
- 		/* force odd to ensure dst = src */
--		src_cnt = min_odd(xor_sources | 1, dev->max_xor);
-+		src_cnt = min_odd(info->xor_sources | 1, dev->max_xor);
- 		dst_cnt = 1;
- 	} else if (thread->type == DMA_PQ) {
- 		/* force odd to ensure dst = src */
--		src_cnt = min_odd(pq_sources | 1, dma_maxpq(dev, 0));
-+		src_cnt = min_odd(info->pq_sources | 1, dma_maxpq(dev, 0));
- 		dst_cnt = 2;
- 
--		pq_coefs = kmalloc(pq_sources+1, GFP_KERNEL);
-+		pq_coefs = kmalloc(info->pq_sources+1, GFP_KERNEL);
- 		if (!pq_coefs)
- 			goto err_thread_type;
- 
-@@ -316,7 +351,7 @@ static int dmatest_func(void *data)
- 	if (!thread->srcs)
- 		goto err_srcs;
- 	for (i = 0; i < src_cnt; i++) {
--		thread->srcs[i] = kmalloc(test_buf_size, GFP_KERNEL);
-+		thread->srcs[i] = kmalloc(info->buf_size, GFP_KERNEL);
- 		if (!thread->srcs[i])
- 			goto err_srcbuf;
- 	}
-@@ -326,7 +361,7 @@ static int dmatest_func(void *data)
- 	if (!thread->dsts)
- 		goto err_dsts;
- 	for (i = 0; i < dst_cnt; i++) {
--		thread->dsts[i] = kmalloc(test_buf_size, GFP_KERNEL);
-+		thread->dsts[i] = kmalloc(info->buf_size, GFP_KERNEL);
- 		if (!thread->dsts[i])
- 			goto err_dstbuf;
- 	}
-@@ -342,7 +377,7 @@ static int dmatest_func(void *data)
- 	      | DMA_COMPL_SKIP_DEST_UNMAP | DMA_COMPL_SRC_UNMAP_SINGLE;
- 
- 	while (!kthread_should_stop()
--	       && !(iterations && total_tests >= iterations)) {
-+	       && !(info->iterations && total_tests >= info->iterations)) {
- 		struct dma_async_tx_descriptor *tx = NULL;
- 		dma_addr_t dma_srcs[src_cnt];
- 		dma_addr_t dma_dsts[dst_cnt];
-@@ -358,24 +393,24 @@ static int dmatest_func(void *data)
- 		else if (thread->type == DMA_PQ)
- 			align = dev->pq_align;
- 
--		if (1 << align > test_buf_size) {
-+		if (1 << align > info->buf_size) {
- 			pr_err("%u-byte buffer too small for %d-byte alignment\n",
--			       test_buf_size, 1 << align);
-+			       info->buf_size, 1 << align);
- 			break;
- 		}
- 
--		len = dmatest_random() % test_buf_size + 1;
-+		len = dmatest_random() % info->buf_size + 1;
- 		len = (len >> align) << align;
- 		if (!len)
- 			len = 1 << align;
--		src_off = dmatest_random() % (test_buf_size - len + 1);
--		dst_off = dmatest_random() % (test_buf_size - len + 1);
-+		src_off = dmatest_random() % (info->buf_size - len + 1);
-+		dst_off = dmatest_random() % (info->buf_size - len + 1);
- 
- 		src_off = (src_off >> align) << align;
- 		dst_off = (dst_off >> align) << align;
- 
--		dmatest_init_srcs(thread->srcs, src_off, len);
--		dmatest_init_dsts(thread->dsts, dst_off, len);
-+		dmatest_init_srcs(thread->srcs, src_off, len, info->buf_size);
-+		dmatest_init_dsts(thread->dsts, dst_off, len, info->buf_size);
- 
- 		for (i = 0; i < src_cnt; i++) {
- 			u8 *buf = thread->srcs[i] + src_off;
-@@ -396,16 +431,16 @@ static int dmatest_func(void *data)
- 		/* map with DMA_BIDIRECTIONAL to force writeback/invalidate */
- 		for (i = 0; i < dst_cnt; i++) {
- 			dma_dsts[i] = dma_map_single(dev->dev, thread->dsts[i],
--						     test_buf_size,
-+						     info->buf_size,
- 						     DMA_BIDIRECTIONAL);
- 			ret = dma_mapping_error(dev->dev, dma_dsts[i]);
- 			if (ret) {
- 				unmap_src(dev->dev, dma_srcs, len, src_cnt);
--				unmap_dst(dev->dev, dma_dsts, test_buf_size, i);
-+				unmap_dst(dev->dev, dma_dsts, info->buf_size, i);
- 				pr_warn("%s: #%u: mapping error %d with "
- 					"dst_off=0x%x len=0x%x\n",
- 					thread_name, total_tests - 1, ret,
--					dst_off, test_buf_size);
-+					dst_off, info->buf_size);
- 				failed_tests++;
- 				continue;
- 			}
-@@ -433,7 +468,7 @@ static int dmatest_func(void *data)
- 
- 		if (!tx) {
- 			unmap_src(dev->dev, dma_srcs, len, src_cnt);
--			unmap_dst(dev->dev, dma_dsts, test_buf_size, dst_cnt);
-+			unmap_dst(dev->dev, dma_dsts, info->buf_size, dst_cnt);
- 			pr_warning("%s: #%u: prep error with src_off=0x%x "
- 					"dst_off=0x%x len=0x%x\n",
- 					thread_name, total_tests - 1,
-@@ -461,7 +496,7 @@ static int dmatest_func(void *data)
- 
- 		wait_event_freezable_timeout(done_wait,
- 					     done.done || kthread_should_stop(),
--					     msecs_to_jiffies(timeout));
-+					     msecs_to_jiffies(info->timeout));
- 
- 		status = dma_async_is_tx_complete(chan, cookie, NULL, NULL);
- 
-@@ -488,7 +523,7 @@ static int dmatest_func(void *data)
- 		}
- 
- 		/* Unmap by myself (see DMA_COMPL_SKIP_DEST_UNMAP above) */
--		unmap_dst(dev->dev, dma_dsts, test_buf_size, dst_cnt);
-+		unmap_dst(dev->dev, dma_dsts, info->buf_size, dst_cnt);
- 
- 		error_count = 0;
- 
-@@ -499,7 +534,7 @@ static int dmatest_func(void *data)
- 				src_off + len, src_off,
- 				PATTERN_SRC | PATTERN_COPY, true);
- 		error_count += dmatest_verify(thread->srcs, src_off + len,
--				test_buf_size, src_off + len,
-+				info->buf_size, src_off + len,
- 				PATTERN_SRC, true);
- 
- 		pr_debug("%s: verifying dest buffer...\n",
-@@ -510,7 +545,7 @@ static int dmatest_func(void *data)
- 				dst_off + len, src_off,
- 				PATTERN_SRC | PATTERN_COPY, false);
- 		error_count += dmatest_verify(thread->dsts, dst_off + len,
--				test_buf_size, dst_off + len,
-+				info->buf_size, dst_off + len,
- 				PATTERN_DST, false);
- 
- 		if (error_count) {
-@@ -547,7 +582,7 @@ err_thread_type:
- 	if (ret)
- 		dmaengine_terminate_all(chan);
- 
--	if (iterations > 0)
-+	if (info->iterations > 0)
- 		while (!kthread_should_stop()) {
- 			DECLARE_WAIT_QUEUE_HEAD_ONSTACK(wait_dmatest_exit);
- 			interruptible_sleep_on(&wait_dmatest_exit);
-@@ -576,7 +611,8 @@ static void dmatest_cleanup_channel(struct dmatest_chan *dtc)
- 	kfree(dtc);
- }
- 
--static int dmatest_add_threads(struct dmatest_chan *dtc, enum dma_transaction_type type)
-+static int dmatest_add_threads(struct dmatest_info *info,
-+		struct dmatest_chan *dtc, enum dma_transaction_type type)
- {
- 	struct dmatest_thread *thread;
- 	struct dma_chan *chan = dtc->chan;
-@@ -592,7 +628,7 @@ static int dmatest_add_threads(struct dmatest_chan *dtc, enum dma_transaction_ty
- 	else
- 		return -EINVAL;
- 
--	for (i = 0; i < threads_per_chan; i++) {
-+	for (i = 0; i < info->threads_per_chan; i++) {
- 		thread = kzalloc(sizeof(struct dmatest_thread), GFP_KERNEL);
- 		if (!thread) {
- 			pr_warning("dmatest: No memory for %s-%s%u\n",
-@@ -600,6 +636,7 @@ static int dmatest_add_threads(struct dmatest_chan *dtc, enum dma_transaction_ty
- 
- 			break;
- 		}
-+		thread->info = info;
- 		thread->chan = dtc->chan;
- 		thread->type = type;
- 		smp_wmb();
-@@ -620,7 +657,8 @@ static int dmatest_add_threads(struct dmatest_chan *dtc, enum dma_transaction_ty
- 	return i;
- }
- 
--static int dmatest_add_channel(struct dma_chan *chan)
-+static int dmatest_add_channel(struct dmatest_info *info,
-+		struct dma_chan *chan)
- {
- 	struct dmatest_chan	*dtc;
- 	struct dma_device	*dma_dev = chan->device;
-@@ -637,15 +675,15 @@ static int dmatest_add_channel(struct dma_chan *chan)
- 	INIT_LIST_HEAD(&dtc->threads);
- 
- 	if (dma_has_cap(DMA_MEMCPY, dma_dev->cap_mask)) {
--		cnt = dmatest_add_threads(dtc, DMA_MEMCPY);
-+		cnt = dmatest_add_threads(info, dtc, DMA_MEMCPY);
- 		thread_count += cnt > 0 ? cnt : 0;
- 	}
- 	if (dma_has_cap(DMA_XOR, dma_dev->cap_mask)) {
--		cnt = dmatest_add_threads(dtc, DMA_XOR);
-+		cnt = dmatest_add_threads(info, dtc, DMA_XOR);
- 		thread_count += cnt > 0 ? cnt : 0;
- 	}
- 	if (dma_has_cap(DMA_PQ, dma_dev->cap_mask)) {
--		cnt = dmatest_add_threads(dtc, DMA_PQ);
-+		cnt = dmatest_add_threads(info, dtc, DMA_PQ);
- 		thread_count += cnt > 0 ? cnt : 0;
- 	}
- 
-@@ -660,13 +698,16 @@ static int dmatest_add_channel(struct dma_chan *chan)
- 
- static bool filter(struct dma_chan *chan, void *param)
- {
--	if (!dmatest_match_channel(chan) || !dmatest_match_device(chan->device))
-+	struct dmatest_info *info = param;
-+
-+	if (!dmatest_match_channel(info, chan) ||
-+	    !dmatest_match_device(info, chan->device))
- 		return false;
- 	else
+ static struct dmatest_info test_info;
+@@ -718,7 +729,7 @@ static bool filter(struct dma_chan *chan, void *param)
  		return true;
  }
  
--static int __init dmatest_init(void)
-+static int run_threaded_test(struct dmatest_info *info)
+-static int run_threaded_test(struct dmatest_info *info)
++static int __run_threaded_test(struct dmatest_info *info)
  {
  	dma_cap_mask_t mask;
  	struct dma_chan *chan;
-@@ -675,25 +716,22 @@ static int __init dmatest_init(void)
- 	dma_cap_zero(mask);
- 	dma_cap_set(DMA_MEMCPY, mask);
- 	for (;;) {
--		chan = dma_request_channel(mask, filter, NULL);
-+		chan = dma_request_channel(mask, filter, info);
- 		if (chan) {
--			err = dmatest_add_channel(chan);
-+			err = dmatest_add_channel(info, chan);
- 			if (err) {
- 				dma_release_channel(chan);
- 				break; /* add_channel failed, punt */
- 			}
- 		} else
- 			break; /* no more channels available */
--		if (max_channels && nr_channels >= max_channels)
-+		if (info->max_channels && nr_channels >= info->max_channels)
- 			break; /* we have all we need */
- 	}
--
+@@ -744,7 +755,19 @@ static int run_threaded_test(struct dmatest_info *info)
  	return err;
  }
--/* when compiled-in wait for drivers to load first */
--late_initcall(dmatest_init);
  
--static void __exit dmatest_exit(void)
-+static void stop_threaded_test(struct dmatest_info *info)
+-static void stop_threaded_test(struct dmatest_info *info)
++#ifndef MODULE
++static int run_threaded_test(struct dmatest_info *info)
++{
++	int ret;
++
++	mutex_lock(&info->lock);
++	ret = __run_threaded_test(info);
++	mutex_unlock(&info->lock);
++	return ret;
++}
++#endif
++
++static void __stop_threaded_test(struct dmatest_info *info)
  {
  	struct dmatest_chan *dtc, *_dtc;
  	struct dma_chan *chan;
-@@ -707,6 +745,34 @@ static void __exit dmatest_exit(void)
- 		dma_release_channel(chan);
- 	}
+@@ -760,13 +783,234 @@ static void stop_threaded_test(struct dmatest_info *info)
+ 	info->nr_channels = 0;
  }
-+
-+static int __init dmatest_init(void)
-+{
-+	struct dmatest_info *info = &test_info;
-+
-+	memset(info, 0, sizeof(*info));
-+
-+	info->buf_size = test_buf_size;
-+	strlcpy(info->channel, test_channel, sizeof(info->channel));
-+	strlcpy(info->device, test_device, sizeof(info->device));
-+	info->threads_per_chan = threads_per_chan;
-+	info->max_channels = max_channels;
-+	info->iterations = iterations;
-+	info->xor_sources = xor_sources;
-+	info->pq_sources = pq_sources;
-+	info->timeout = timeout;
-+
-+	return run_threaded_test(info);
-+}
-+/* when compiled-in wait for drivers to load first */
-+late_initcall(dmatest_init);
-+
-+static void __exit dmatest_exit(void)
-+{
-+	struct dmatest_info *info = &test_info;
-+
-+	stop_threaded_test(info);
-+}
- module_exit(dmatest_exit);
  
- MODULE_AUTHOR("Haavard Skinnemoen (Atmel)");
++static void stop_threaded_test(struct dmatest_info *info)
++{
++	mutex_lock(&info->lock);
++	__stop_threaded_test(info);
++	mutex_unlock(&info->lock);
++}
++
++static int __restart_threaded_test(struct dmatest_info *info, bool run)
++{
++	struct dmatest_params *params = &info->params;
++	int ret;
++
++	/* Stop any running test first */
++	__stop_threaded_test(info);
++
++	if (run == false)
++		return 0;
++
++	/* Copy test parameters */
++	memcpy(params, &info->dbgfs_params, sizeof(*params));
++
++	/* Run test with new parameters */
++	ret = __run_threaded_test(info);
++	if (ret) {
++		__stop_threaded_test(info);
++		pr_err("dmatest: Can't run test\n");
++	}
++
++	return ret;
++}
++
++static ssize_t dtf_write_string(void *to, size_t available, loff_t *ppos,
++		const void __user *from, size_t count)
++{
++	char tmp[20];
++	ssize_t len;
++
++	len = simple_write_to_buffer(tmp, sizeof(tmp) - 1, ppos, from, count);
++	if (len >= 0) {
++		tmp[len] = '\0';
++		strlcpy(to, strim(tmp), available);
++	}
++
++	return len;
++}
++
++static ssize_t dtf_read_channel(struct file *file, char __user *buf,
++		size_t count, loff_t *ppos)
++{
++	struct dmatest_info *info = file->private_data;
++	return simple_read_from_buffer(buf, count, ppos,
++			info->dbgfs_params.channel,
++			strlen(info->dbgfs_params.channel));
++}
++
++static ssize_t dtf_write_channel(struct file *file, const char __user *buf,
++		size_t size, loff_t *ppos)
++{
++	struct dmatest_info *info = file->private_data;
++	return dtf_write_string(info->dbgfs_params.channel,
++				sizeof(info->dbgfs_params.channel),
++				ppos, buf, size);
++}
++
++static const struct file_operations dtf_channel_fops = {
++	.read	= dtf_read_channel,
++	.write	= dtf_write_channel,
++	.open	= simple_open,
++	.llseek	= default_llseek,
++};
++
++static ssize_t dtf_read_device(struct file *file, char __user *buf,
++		size_t count, loff_t *ppos)
++{
++	struct dmatest_info *info = file->private_data;
++	return simple_read_from_buffer(buf, count, ppos,
++			info->dbgfs_params.device,
++			strlen(info->dbgfs_params.device));
++}
++
++static ssize_t dtf_write_device(struct file *file, const char __user *buf,
++		size_t size, loff_t *ppos)
++{
++	struct dmatest_info *info = file->private_data;
++	return dtf_write_string(info->dbgfs_params.device,
++				sizeof(info->dbgfs_params.device),
++				ppos, buf, size);
++}
++
++static const struct file_operations dtf_device_fops = {
++	.read	= dtf_read_device,
++	.write	= dtf_write_device,
++	.open	= simple_open,
++	.llseek	= default_llseek,
++};
++
++static ssize_t dtf_read_run(struct file *file, char __user *user_buf,
++		size_t count, loff_t *ppos)
++{
++	struct dmatest_info *info = file->private_data;
++	char buf[3];
++
++	mutex_lock(&info->lock);
++	if (info->nr_channels)
++		buf[0] = 'Y';
++	else
++		buf[0] = 'N';
++	mutex_unlock(&info->lock);
++	buf[1] = '\n';
++	buf[2] = 0x00;
++	return simple_read_from_buffer(user_buf, count, ppos, buf, 2);
++}
++
++static ssize_t dtf_write_run(struct file *file, const char __user *user_buf,
++		size_t count, loff_t *ppos)
++{
++	struct dmatest_info *info = file->private_data;
++	char buf[16];
++	bool bv;
++	int ret = 0;
++
++	if (copy_from_user(buf, user_buf, min(count, (sizeof(buf) - 1))))
++		return -EFAULT;
++
++	if (strtobool(buf, &bv) == 0) {
++		mutex_lock(&info->lock);
++		ret = __restart_threaded_test(info, bv);
++		mutex_unlock(&info->lock);
++	}
++
++	return ret ? ret : count;
++}
++
++static const struct file_operations dtf_run_fops = {
++	.read	= dtf_read_run,
++	.write	= dtf_write_run,
++	.open	= simple_open,
++	.llseek	= default_llseek,
++};
++
++static int dmatest_register_dbgfs(struct dmatest_info *info)
++{
++	struct dentry *d;
++	struct dmatest_params *params = &info->dbgfs_params;
++	int ret = -ENOMEM;
++
++	d = debugfs_create_dir("dmatest", NULL);
++	if (IS_ERR(d))
++		return PTR_ERR(d);
++	if (!d)
++		goto err_root;
++
++	info->root = d;
++
++	/* Copy initial values */
++	memcpy(params, &info->params, sizeof(*params));
++
++	/* Test parameters */
++
++	d = debugfs_create_u32("test_buf_size", S_IWUSR | S_IRUGO, info->root,
++			       (u32 *)&params->buf_size);
++	if (IS_ERR_OR_NULL(d))
++		goto err_node;
++
++	d = debugfs_create_file("channel", S_IRUGO | S_IWUSR, info->root,
++				info, &dtf_channel_fops);
++	if (IS_ERR_OR_NULL(d))
++		goto err_node;
++
++	d = debugfs_create_file("device", S_IRUGO | S_IWUSR, info->root,
++				info, &dtf_device_fops);
++	if (IS_ERR_OR_NULL(d))
++		goto err_node;
++
++	d = debugfs_create_u32("threads_per_chan", S_IWUSR | S_IRUGO, info->root,
++			       (u32 *)&params->threads_per_chan);
++	if (IS_ERR_OR_NULL(d))
++		goto err_node;
++
++	d = debugfs_create_u32("max_channels", S_IWUSR | S_IRUGO, info->root,
++			       (u32 *)&params->max_channels);
++	if (IS_ERR_OR_NULL(d))
++		goto err_node;
++
++	d = debugfs_create_u32("iterations", S_IWUSR | S_IRUGO, info->root,
++			       (u32 *)&params->iterations);
++	if (IS_ERR_OR_NULL(d))
++		goto err_node;
++
++	d = debugfs_create_u32("xor_sources", S_IWUSR | S_IRUGO, info->root,
++			       (u32 *)&params->xor_sources);
++	if (IS_ERR_OR_NULL(d))
++		goto err_node;
++
++	d = debugfs_create_u32("pq_sources", S_IWUSR | S_IRUGO, info->root,
++			       (u32 *)&params->pq_sources);
++	if (IS_ERR_OR_NULL(d))
++		goto err_node;
++
++	d = debugfs_create_u32("timeout", S_IWUSR | S_IRUGO, info->root,
++			       (u32 *)&params->timeout);
++	if (IS_ERR_OR_NULL(d))
++		goto err_node;
++
++	/* Run or stop threaded test */
++	d = debugfs_create_file("run", S_IWUSR | S_IRUGO, info->root,
++				info, &dtf_run_fops);
++	if (IS_ERR_OR_NULL(d))
++		goto err_node;
++
++	return 0;
++
++err_node:
++	debugfs_remove_recursive(info->root);
++err_root:
++	pr_err("dmatest: Failed to initialize debugfs\n");
++	return ret;
++}
++
+ static int __init dmatest_init(void)
+ {
+ 	struct dmatest_info *info = &test_info;
+ 	struct dmatest_params *params = &info->params;
++	int ret;
+ 
+ 	memset(info, 0, sizeof(*info));
+ 
++	mutex_init(&info->lock);
+ 	INIT_LIST_HEAD(&info->channels);
+ 
+ 	/* Set default parameters */
+@@ -780,7 +1024,15 @@ static int __init dmatest_init(void)
+ 	params->pq_sources = pq_sources;
+ 	params->timeout = timeout;
+ 
++	ret = dmatest_register_dbgfs(info);
++	if (ret)
++		return ret;
++
++#ifdef MODULE
++	return 0;
++#else
+ 	return run_threaded_test(info);
++#endif
+ }
+ /* when compiled-in wait for drivers to load first */
+ late_initcall(dmatest_init);
+@@ -789,6 +1041,7 @@ static void __exit dmatest_exit(void)
+ {
+ 	struct dmatest_info *info = &test_info;
+ 
++	debugfs_remove_recursive(info->root);
+ 	stop_threaded_test(info);
+ }
+ module_exit(dmatest_exit);
 -- 
 1.8.2.rc0.22.gb3600c3
 
