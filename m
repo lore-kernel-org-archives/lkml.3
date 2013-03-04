@@ -1,122 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757760Ab3CDOMl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 09:12:41 -0500
-Received: from fieldses.org ([174.143.236.118]:51602 "EHLO fieldses.org"
+	id S1757925Ab3CDOO1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 09:14:27 -0500
+Received: from mx2.netapp.com ([216.240.18.37]:6043 "EHLO mx2.netapp.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757156Ab3CDOMk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 09:12:40 -0500
-Date: Mon, 4 Mar 2013 09:12:30 -0500
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: linux-fsdevel@vger.kernel.org,
-        Linux Containers <containers@lists.linux-foundation.org>,
-        linux-kernel@vger.kernel.org, "Serge E. Hallyn" <serge@hallyn.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: Re: [PATCH review 49/85] sunrpc: Update svcgss xdr handle to
- rpsec_contect cache
-Message-ID: <20130304141230.GE20389@fieldses.org>
-References: <87621w14vs.fsf@xmission.com>
- <1360777934-5663-1-git-send-email-ebiederm@xmission.com>
- <1360777934-5663-49-git-send-email-ebiederm@xmission.com>
+	id S1757587Ab3CDOO0 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Mar 2013 09:14:26 -0500
+X-IronPort-AV: E=Sophos;i="4.84,779,1355126400"; 
+   d="scan'208";a="13096225"
+From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+To: Ming Lei <ming.lei@canonical.com>, Jeff Layton <jlayton@redhat.com>
+CC: "J. Bruce Fields" <bfields@fieldses.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>
+Subject: Re: LOCKDEP: 3.9-rc1: mount.nfs/4272 still has locks held!
+Thread-Topic: LOCKDEP: 3.9-rc1: mount.nfs/4272 still has locks held!
+Thread-Index: AQHOGOA9OOKbapJ+RE+tLJb3WRyEW5iWGYKA
+Date: Mon, 4 Mar 2013 14:14:23 +0000
+Message-ID: <4FA345DA4F4AE44899BD2B03EEEC2FA9286AD113@sacexcmbx05-prd.hq.netapp.com>
+References: <CACVXFVMKN6aeCvJcn7dyuonJYJDfYxWeW5KE6gfKRKJKFj2M4A@mail.gmail.com>
+In-Reply-To: <CACVXFVMKN6aeCvJcn7dyuonJYJDfYxWeW5KE6gfKRKJKFj2M4A@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.104.60.117]
+Content-Type: text/plain; charset=US-ASCII
+Content-ID: <D3863343C9031B489EF1F5938FBF2361@tahoe.netapp.com>
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1360777934-5663-49-git-send-email-ebiederm@xmission.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 13, 2013 at 09:51:38AM -0800, Eric W. Biederman wrote:
-> From: "Eric W. Biederman" <ebiederm@xmission.com>
+On Mon, 2013-03-04 at 21:57 +0800, Ming Lei wrote:
+> Hi,
 > 
-> For each received uid call make_kuid and validate the result.
-> For each received gid call make_kgid and validate the result.
+> The below warning can be triggered each time when mount.nfs is
+> running on 3.9-rc1.
 > 
-> Cc: "J. Bruce Fields" <bfields@fieldses.org>
-> Cc: Trond Myklebust <Trond.Myklebust@netapp.com>
-> Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
-> ---
->  net/sunrpc/auth_gss/svcauth_gss.c |   18 +++++++++++++-----
->  1 files changed, 13 insertions(+), 5 deletions(-)
+> Not sure if freezable_schedule() inside rpc_wait_bit_killable should
+> be changed to schedule() since nfs_clid_init_mutex is held in the path.
+
+Cc:ing Jeff, who added freezable_schedule(), and applied it to
+rpc_wait_bit_killable.
+
+So this is occurring when the kernel enters the freeze state?
+Why does it occur only with nfs_clid_init_mutex, and not with all the
+other mutexes that we hold across RPC calls? We hold inode->i_mutex
+across RPC calls all the time when doing renames, unlinks, file
+creation,...
+
+> [   41.387939] =====================================
+> [   41.392913] [ BUG: mount.nfs/643 still has locks held! ]
+> [   41.398559] 3.9.0-rc1+ #1740 Not tainted
+> [   41.402709] -------------------------------------
+> [   41.407714] 1 lock held by mount.nfs/643:
+> [   41.411956]  #0:  (nfs_clid_init_mutex){+.+...}, at: [<c0226d6c>]
+> nfs4_discover_server_trunking+0x60/0x1d4
+> [   41.422363]
+> [   41.422363] stack backtrace:
+> [   41.427032] [<c0014dd4>] (unwind_backtrace+0x0/0xe0) from
+> [<c04a8300>] (rpc_wait_bit_killable+0x38/0xc8)
+> [   41.437103] [<c04a8300>] (rpc_wait_bit_killable+0x38/0xc8) from
+> [<c054e454>] (__wait_on_bit+0x54/0x9c)
+> [   41.446990] [<c054e454>] (__wait_on_bit+0x54/0x9c) from
+> [<c054e514>] (out_of_line_wait_on_bit+0x78/0x84)
+> [   41.457061] [<c054e514>] (out_of_line_wait_on_bit+0x78/0x84) from
+> [<c04a8f88>] (__rpc_execute+0x170/0x348)
+> [   41.467407] [<c04a8f88>] (__rpc_execute+0x170/0x348) from
+> [<c04a250c>] (rpc_run_task+0x9c/0xa4)
+> [   41.476715] [<c04a250c>] (rpc_run_task+0x9c/0xa4) from [<c04a265c>]
+> (rpc_call_sync+0x70/0xb0)
+> [   41.485778] [<c04a265c>] (rpc_call_sync+0x70/0xb0) from
+> [<c021af54>] (nfs4_proc_setclientid+0x1a0/0x1c8)
+> [   41.495819] [<c021af54>] (nfs4_proc_setclientid+0x1a0/0x1c8) from
+> [<c0224eb4>] (nfs40_discover_server_trunki
+> ng+0xec/0x148)
+> [   41.507507] [<c0224eb4>]
+> (nfs40_discover_server_trunking+0xec/0x148) from [<c0226da0>]
+> (nfs4_discover_server
+> _trunking+0x94/0x1d4)
+> [   41.519866] [<c0226da0>] (nfs4_discover_server_trunking+0x94/0x1d4)
+> from [<c022c664>] (nfs4_init_client+0x15
+> 0/0x1b0)
+> [   41.531036] [<c022c664>] (nfs4_init_client+0x150/0x1b0) from
+> [<c01fe954>] (nfs_get_client+0x2cc/0x320)
+> [   41.540863] [<c01fe954>] (nfs_get_client+0x2cc/0x320) from
+> [<c022c080>] (nfs4_set_client+0x80/0xb0)
+> [   41.550476] [<c022c080>] (nfs4_set_client+0x80/0xb0) from
+> [<c022cef8>] (nfs4_create_server+0xb0/0x21c)
+> [   41.560333] [<c022cef8>] (nfs4_create_server+0xb0/0x21c) from
+> [<c0227524>] (nfs4_remote_mount+0x28/0x54)
+> [   41.570373] [<c0227524>] (nfs4_remote_mount+0x28/0x54) from
+> [<c0113a8c>] (mount_fs+0x6c/0x160)
+> [   41.579498] [<c0113a8c>] (mount_fs+0x6c/0x160) from [<c012a47c>]
+> (vfs_kern_mount+0x4c/0xc0)
+> [   41.588378] [<c012a47c>] (vfs_kern_mount+0x4c/0xc0) from
+> [<c022734c>] (nfs_do_root_mount+0x74/0x90)
+> [   41.597961] [<c022734c>] (nfs_do_root_mount+0x74/0x90) from
+> [<c0227574>] (nfs4_try_mount+0x24/0x3c)
+> [   41.607513] [<c0227574>] (nfs4_try_mount+0x24/0x3c) from
+> [<c02070f8>] (nfs_fs_mount+0x6dc/0x7a0)
+> [   41.616821] [<c02070f8>] (nfs_fs_mount+0x6dc/0x7a0) from
+> [<c0113a8c>] (mount_fs+0x6c/0x160)
+> [   41.625701] [<c0113a8c>] (mount_fs+0x6c/0x160) from [<c012a47c>]
+> (vfs_kern_mount+0x4c/0xc0)
+> [   41.634582] [<c012a47c>] (vfs_kern_mount+0x4c/0xc0) from
+> [<c012c330>] (do_mount+0x710/0x81c)
+> [   41.643524] [<c012c330>] (do_mount+0x710/0x81c) from [<c012c4c0>]
+> (sys_mount+0x84/0xb8)
+> [   41.652008] [<c012c4c0>] (sys_mount+0x84/0xb8) from [<c000d6c0>]
+> (ret_fast_syscall+0x0/0x48)
+> [   41.715911] device: '0:28': device_add
+> [   41.720062] PM: Adding info for No Bus:0:28
+> [   41.746887] device: '0:29': device_add
+> [   41.751037] PM: Adding info for No Bus:0:29
+> [   41.780700] device: '0:28': device_unregister
+> [   41.785400] PM: Removing info for No Bus:0:28
+> [   41.790344] device: '0:28': device_create_release
 > 
-> diff --git a/net/sunrpc/auth_gss/svcauth_gss.c b/net/sunrpc/auth_gss/svcauth_gss.c
-> index 73e9573..ecd1d58 100644
-> --- a/net/sunrpc/auth_gss/svcauth_gss.c
-> +++ b/net/sunrpc/auth_gss/svcauth_gss.c
-> @@ -418,6 +418,7 @@ static int rsc_parse(struct cache_detail *cd,
->  {
->  	/* contexthandle expiry [ uid gid N <n gids> mechname ...mechdata... ] */
->  	char *buf = mesg;
-> +	int id;
->  	int len, rv;
->  	struct rsc rsci, *rscp = NULL;
->  	time_t expiry;
-> @@ -444,7 +445,7 @@ static int rsc_parse(struct cache_detail *cd,
->  		goto out;
->  
->  	/* uid, or NEGATIVE */
-> -	rv = get_int(&mesg, &rsci.cred.cr_uid);
-> +	rv = get_int(&mesg, &id);
->  	if (rv == -EINVAL)
->  		goto out;
->  	if (rv == -ENOENT)
-> @@ -452,8 +453,16 @@ static int rsc_parse(struct cache_detail *cd,
->  	else {
->  		int N, i;
->  
-> +		/* uid */
-> +		rsci.cred.cr_uid = make_kuid(&init_user_ns, id);
-> +		if (!uid_valid(rsci.cred.cr_uid))
-> +			goto out;
-> +
->  		/* gid */
-> -		if (get_int(&mesg, &rsci.cred.cr_gid))
-> +		if (get_int(&mesg, &id))
-> +			goto out;
-> +		rsci.cred.cr_gid = make_kgid(&init_user_ns, id);
-> +		if (!gid_valid(rsci.cred.cr_gid))
->  			goto out;
+> 
+> Thanks,
+> --
+> Ming Lei
 
-krb5 mounts started failing for me as of this patch (upstream as
-683428fae8c73d7d7da0fa2e0b6beb4d8df4e808), and I believe the problem is
-these uid/gid_valid checks: if I recall correctly, gssd uses -1 uid/gid
-values to indicate "authentication succeeded, but treat this user as
-anonymous".  We delay mapping -1 id's to the (configurable-per-export)
-anonymous id's till fs/nfsd/auth.c:nfsd_setuser():
-
-        if (uid_eq(new->fsuid, INVALID_UID))
-		new->fsuid = exp->ex_anon_uid;
-	if (gid_eq(new->fsgid, INVALID_GID))
-		new->fsgid = exp->ex_anon_gid;
-
-(We wouldn't be able to do that earlier because we don't know the export
-yet.)
-
-Confirmed that the following fixes the regression.
-
-Eric, any objection to removing those checks?
-
---b.
-
-diff --git a/net/sunrpc/auth_gss/svcauth_gss.c b/net/sunrpc/auth_gss/svcauth_gss.c
-index f7d34e7..59a089d 100644
---- a/net/sunrpc/auth_gss/svcauth_gss.c
-+++ b/net/sunrpc/auth_gss/svcauth_gss.c
-@@ -449,15 +449,11 @@ static int rsc_parse(struct cache_detail *cd,
- 
- 		/* uid */
- 		rsci.cred.cr_uid = make_kuid(&init_user_ns, id);
--		if (!uid_valid(rsci.cred.cr_uid))
--			goto out;
- 
- 		/* gid */
- 		if (get_int(&mesg, &id))
- 			goto out;
- 		rsci.cred.cr_gid = make_kgid(&init_user_ns, id);
--		if (!gid_valid(rsci.cred.cr_gid))
--			goto out;
- 
- 		/* number of additional gid's */
- 		if (get_int(&mesg, &N))
