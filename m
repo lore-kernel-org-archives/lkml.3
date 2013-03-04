@@ -1,57 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757667Ab3CDNF3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 08:05:29 -0500
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:50915 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757550Ab3CDM7D (ORCPT
+	id S1757528Ab3CDNKb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 08:10:31 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:59686 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756823Ab3CDNK2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 07:59:03 -0500
-From: Akinobu Mita <akinobu.mita@gmail.com>
-To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
-Cc: Akinobu Mita <akinobu.mita@gmail.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Huang Ying <ying.huang@intel.com>
-Subject: [PATCH -v3 02/23] uuid: use prandom_bytes()
-Date: Mon,  4 Mar 2013 21:58:10 +0900
-Message-Id: <1362401911-14074-3-git-send-email-akinobu.mita@gmail.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1362401911-14074-1-git-send-email-akinobu.mita@gmail.com>
-References: <1362401911-14074-1-git-send-email-akinobu.mita@gmail.com>
+	Mon, 4 Mar 2013 08:10:28 -0500
+Date: Mon, 4 Mar 2013 14:10:23 +0100
+From: Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Toshi Kani <toshi.kani@hp.com>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        LKML <linux-kernel@vger.kernel.org>, Yinghai Lu <yinghai@kernel.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Jiang Liu <liuj97@gmail.com>
+Subject: Re: [Update 4][PATCH 2/7] ACPI / scan: Introduce common code for
+ ACPI-based device hotplug
+Message-ID: <20130304131023.GA4561@dhcp-192-168-178-175.profitbricks.localdomain>
+References: <3260206.bhaAobGhpZ@vostro.rjw.lan>
+ <1478394.ryVNRuTre2@vostro.rjw.lan>
+ <1361815672.12845.71.camel@misato.fc.hp.com>
+ <18666371.hyHAvqrdQ6@vostro.rjw.lan>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <18666371.hyHAvqrdQ6@vostro.rjw.lan>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use prandom_bytes() to generate 16 bytes of pseudo-random bytes.
+Hi,
 
-Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Huang Ying <ying.huang@intel.com>
----
+On Tue, Feb 26, 2013 at 12:39:50AM +0100, Rafael J. Wysocki wrote:
+> On Monday, February 25, 2013 11:07:52 AM Toshi Kani wrote:
+> > On Sat, 2013-02-23 at 22:38 +0000, Rafael J. Wysocki wrote:
+> > > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > > 
+> > > Multiple drivers handling hotplug-capable ACPI device nodes install
+> > > notify handlers covering the same types of events in a very similar
+> > > way.  Moreover, those handlers are installed in separate namespace
+> > > walks, although that really should be done during namespace scans
+> > > carried out by acpi_bus_scan().  This leads to substantial code
+> > > duplication, unnecessary overhead and behavior that is hard to
+> > > follow.
+> > > 
+> > > For this reason, introduce common code in drivers/acpi/scan.c for
+> > > handling hotplug-related notification and carrying out device
+> > > insertion and eject operations in a generic fashion, such that it
+> > > may be used by all of the relevant drivers in the future.  To cover
+> > > the existing differences between those drivers introduce struct
+> > > acpi_hotplug_profile for representing collections of hotplug
+> > > settings associated with different ACPI scan handlers that can be
+> > > used by the drivers to make the common code reflect their current
+> > > behavior.
+[...]
+> That's correct, but I don't know what the user space expectations are
+> currently.
+> 
+> > So, I'd suggest the following changes.
+> >  - Remove the "uevents" attribute.  KOBJ_ONLINE/OFFLINE are not used for
+> > ACPI device objects.
+> >  - Make the !autoeject case as an exception for now, and emit
+> > KOBJ_OFFLINE as a way to request off-lining to user.  This uevent is
+> > tied with the !autoeject case.  We can then revisit if this use-case
+> > needs to be supported going forward.  If so, we may want to consider a
+> > different event type.
+> 
+> Well, what about avoiding to expose uevents and autoeject for now and
+> exposing enabled only?  Drivers would still be able to set the other flags on
+> init on init to enforce the backwards-compatible behavior.
 
-No change from v2
+Now that we don't define uevents and autoeject in v2 of this series, could you
+explain how we get safe ejection from userspace e.g. for memory hot-remove? What
+are the other flags drivers can use (on init?) to avoid autoeject and only issue
+KOBJ_OFFLINE?
 
- lib/uuid.c | 8 +-------
- 1 file changed, 1 insertion(+), 7 deletions(-)
+> 
+> I agree that it would be sufficient to use one additional flag then, to start
+> with, but its meaning would be something like "keep backwards compatibility
+> with the old container driver", so perhaps "autoeject" is not a good name.
+> 
+> What about "user_eject" (that won't be exposed to user space) instead?  Where,
+> if set, it would meand "do not autoeject and emit KOBJ_OFFLINE/ONLINE uevents
+> like the old container driver did"?
 
-diff --git a/lib/uuid.c b/lib/uuid.c
-index 52a6fe6..398821e 100644
---- a/lib/uuid.c
-+++ b/lib/uuid.c
-@@ -25,13 +25,7 @@
- 
- static void __uuid_gen_common(__u8 b[16])
- {
--	int i;
--	u32 r;
--
--	for (i = 0; i < 4; i++) {
--		r = random32();
--		memcpy(b + i * 4, &r, 4);
--	}
-+	prandom_bytes(b, 16);
- 	/* reversion 0b10 */
- 	b[8] = (b[8] & 0x3F) | 0x80;
- }
--- 
-1.8.1.2
+I don't see user_eject in v2. Is it unnecessary for userspace ejection control
+or planned for later? Also why shouldn't it be exposed to userpace?
 
+thanks,
+
+- Vasilis
