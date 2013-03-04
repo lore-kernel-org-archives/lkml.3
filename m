@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756183Ab3CDDnS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 22:43:18 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60934 "EHLO
+	id S1756222Ab3CDDnX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 22:43:23 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:32788 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755857Ab3CDDnC (ORCPT
+	by vger.kernel.org with ESMTP id S1756180Ab3CDDnT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Mar 2013 22:43:02 -0500
-Message-Id: <20130304033719.298931871@decadent.org.uk>
+	Sun, 3 Mar 2013 22:43:19 -0500
+Message-Id: <20130304033718.413492459@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 04 Mar 2013 03:39:06 +0000
+Date: Mon, 04 Mar 2013 03:38:57 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>
-Subject: [ 119/153] s390/timer: avoid overflow when programming clock comparator
+Cc: akpm@linux-foundation.org, Tejun Heo <tj@kernel.org>,
+        David Teigland <teigland@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 110/153] idr: fix a subtle bug in idr_get_next()
 In-Reply-To: <20130304033707.648729212@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,48 +29,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
+From: Tejun Heo <tj@kernel.org>
 
-commit d911e03d097bdc01363df5d81c43f69432eb785c upstream.
+commit 6cdae7416a1c45c2ce105a78187d9b7e8feb9e24 upstream.
 
-Since ed4f209 "s390/time: fix sched_clock() overflow" a new helper function
-is used to avoid overflows when converting TOD format values to nanosecond
-values.
-The kvm interrupt code formerly however only worked by accident because of
-an overflow. It tried to program a timer that would expire in more than ~29
-years. Because of the old TOD-to-nanoseconds overflow bug the real expiry
-value however was much smaller, but now it isn't anymore.
-This however triggers yet another bug in the function that programs the clock
-comparator s390_next_ktime(): if the absolute "expires" value is after 2042
-this will result in an overflow and the programmed value is lower than the
-current TOD value which immediatly triggers a clock comparator (= timer)
-interrupt.
-Since the timer isn't expired it will be programmed immediately again and so
-on... the result is a dead system.
-To fix this simply program the maximum possible value if an overflow is
-detected.
+The iteration logic of idr_get_next() is borrowed mostly verbatim from
+idr_for_each().  It walks down the tree looking for the slot matching
+the current ID.  If the matching slot is not found, the ID is
+incremented by the distance of single slot at the given level and
+repeats.
 
-Reported-by: Christian Borntraeger <borntraeger@de.ibm.com>
-Tested-by: Christian Borntraeger <borntraeger@de.ibm.com>
-Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+The implementation assumes that during the whole iteration id is aligned
+to the layer boundaries of the level closest to the leaf, which is true
+for all iterations starting from zero or an existing element and thus is
+fine for idr_for_each().
+
+However, idr_get_next() may be given any point and if the starting id
+hits in the middle of a non-existent layer, increment to the next layer
+will end up skipping the same offset into it.  For example, an IDR with
+IDs filled between [64, 127] would look like the following.
+
+          [  0  64 ... ]
+       /----/   |
+       |        |
+      NULL    [ 64 ... 127 ]
+
+If idr_get_next() is called with 63 as the starting point, it will try
+to follow down the pointer from 0.  As it is NULL, it will then try to
+proceed to the next slot in the same level by adding the slot distance
+at that level which is 64 - making the next try 127.  It goes around the
+loop and finds and returns 127 skipping [64, 126].
+
+Note that this bug also triggers in idr_for_each_entry() loop which
+deletes during iteration as deletions can make layers go away leaving
+the iteration with unaligned ID into missing layers.
+
+Fix it by ensuring proceeding to the next slot doesn't carry over the
+unaligned offset - ie.  use round_up(id + 1, slot_distance) instead of
+id += slot_distance.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: David Teigland <teigland@redhat.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/s390/kernel/time.c |    3 +++
- 1 file changed, 3 insertions(+)
+ lib/idr.c |    9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
 
-diff --git a/arch/s390/kernel/time.c b/arch/s390/kernel/time.c
-index a5f4f5a..0aa98db 100644
---- a/arch/s390/kernel/time.c
-+++ b/arch/s390/kernel/time.c
-@@ -120,6 +120,9 @@ static int s390_next_ktime(ktime_t expires,
- 	nsecs = ktime_to_ns(ktime_add(timespec_to_ktime(ts), expires));
- 	do_div(nsecs, 125);
- 	S390_lowcore.clock_comparator = sched_clock_base_cc + (nsecs << 9);
-+	/* Program the maximum value if we have an overflow (== year 2042) */
-+	if (unlikely(S390_lowcore.clock_comparator < sched_clock_base_cc))
-+		S390_lowcore.clock_comparator = -1ULL;
- 	set_clock_comparator(S390_lowcore.clock_comparator);
- 	return 0;
- }
+--- a/lib/idr.c
++++ b/lib/idr.c
+@@ -623,7 +623,14 @@ void *idr_get_next(struct idr *idp, int
+ 			return p;
+ 		}
+ 
+-		id += 1 << n;
++		/*
++		 * Proceed to the next layer at the current level.  Unlike
++		 * idr_for_each(), @id isn't guaranteed to be aligned to
++		 * layer boundary at this point and adding 1 << n may
++		 * incorrectly skip IDs.  Make sure we jump to the
++		 * beginning of the next layer using round_up().
++		 */
++		id = round_up(id + 1, 1 << n);
+ 		while (n < fls(id)) {
+ 			n += IDR_BITS;
+ 			p = *--paa;
 
 
