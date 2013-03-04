@@ -1,57 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756772Ab3CDMV2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 07:21:28 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:57633 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756641Ab3CDMV0 (ORCPT
+	id S1756910Ab3CDMVl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 07:21:41 -0500
+Received: from mail-wi0-f196.google.com ([209.85.212.196]:54678 "EHLO
+	mail-wi0-f196.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756660Ab3CDMV1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 07:21:26 -0500
-Message-ID: <513491C3.9060402@ubuntu.com>
-Date: Mon, 04 Mar 2013 12:21:23 +0000
-From: James Hunt <james.hunt@ubuntu.com>
-Reply-To: james.hunt@ubuntu.com
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130227 Thunderbird/17.0.3
+	Mon, 4 Mar 2013 07:21:27 -0500
 MIME-Version: 1.0
-To: "upstart-devel >> \"upstart-devel >> Upstart Devel List\"" 
-	<upstart-devel@lists.ubuntu.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Upstart 1.7 released
+In-Reply-To: <51347A6E.8010608@iskon.hr>
+References: <CAAO_Xo7sEH5W_9xoOjax8ynyjLCx7GBpse+EU0mF=9mEBFhrgw@mail.gmail.com>
+	<51347A6E.8010608@iskon.hr>
+Date: Mon, 4 Mar 2013 20:21:25 +0800
+Message-ID: <CAAO_Xo6bWo4QOvdowLG88NoQr2AEq4jxCWHQXeA8g-VBT4Yk9Q@mail.gmail.com>
+Subject: Re: Inactive memory keep growing and how to release it?
+From: Lenky Gao <lenky.gao@gmail.com>
+To: Zlatko Calusic <zlatko.calusic@iskon.hr>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "andi@firstfloor.org" <andi@firstfloor.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Summary of changes:
+2013/3/4 Zlatko Calusic <zlatko.calusic@iskon.hr>:
+>
+> The drop_caches mechanism doesn't free dirty page cache pages. And your bash
+> script is creating a lot of dirty pages. Run it like this and see if it
+> helps your case:
+>
+> sync; echo 3 > /proc/sys/vm/drop_caches
 
-* New initctl commands: set-env, unset-env, get-env, list-env,
-  reset-env, list-sessions (all except last with corresponding
-  D-Bus methods).
-* New D-Bus-only signals EventEmitted, Restarted, and EndSession method.
-* Ability to run with PID >1 to allow Upstart to manage a user session.
-  Running Upstart as a 'Session Init' in this way provides features
-  above and beyond those provided by the original User Jobs such that
-  the User Job facility has been removed entirely: to migrate from
-  a system using User Jobs, simply ensure the user session is started with
-  'init --user'.
-* New upstart-event-bridge bridge which proxies system-level events down
-  to Session Inits, allowing users jobs to react to udev events.
-* Ability to read job configuration and override files from multiple
-  freedesktop-compliant locations (Session Init only).
-* Ability to shutdown both via a system shutdown request and via a user
-  logout request (Session Init only).
-* Additionally, there are a few bug fixes and 94 new tests.
+Thanks for your advice.
 
-Thanks to all the contributors, reviewers, testers and users.
+The inactive memory still cannot be reclaimed after i execute the sync command:
 
-Download it from launchpad: https://launchpad.net/upstart
+# cat /proc/meminfo | grep Inactive\(file\);
+Inactive(file):   882824 kB
+# sync;
+# echo 3 > /proc/sys/vm/drop_caches
+# cat /proc/meminfo | grep Inactive\(file\);
+Inactive(file):   777664 kB
 
-Kind regards,
+I find these page becomes orphaned in this function, but do not understand why:
 
-James.
---
-James Hunt
-____________________________________
-http://upstart.ubuntu.com/cookbook
-http://upstart.ubuntu.com/cookbook/upstart_cookbook.pdf
+/*
+ * If truncate cannot remove the fs-private metadata from the page, the page
+ * becomes orphaned.  It will be left on the LRU and may even be mapped into
+ * user pagetables if we're racing with filemap_fault().
+ *
+ * We need to bale out if page->mapping is no longer equal to the original
+ * mapping.  This happens a) when the VM reclaimed the page while we waited on
+ * its lock, b) when a concurrent invalidate_mapping_pages got there first and
+ * c) when tmpfs swizzles a page between a tmpfs inode and swapper_space.
+ */
+static int
+truncate_complete_page(struct address_space *mapping, struct page *page)
+{
+...
+
+My file system type is ext3, mounted with the opteion data=journal and
+it is easy to reproduce.
+
+
+-- 
+Regards,
+
+Lenky
