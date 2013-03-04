@@ -1,46 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755175Ab3CDCzo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 21:55:44 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:45814 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755138Ab3CDCzn (ORCPT
+	id S1755196Ab3CDC4I (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 21:56:08 -0500
+Received: from mail-ia0-f181.google.com ([209.85.210.181]:46466 "EHLO
+	mail-ia0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755124Ab3CDC4G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Mar 2013 21:55:43 -0500
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH] of: Support a PCI device that is compatible with 'simple-bus'
-To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-Cc: linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        Rob Herring <rob.herring@calxeda.com>
-In-Reply-To: <20121219191800.GA1169@obsidianresearch.com>
-References: <20121210215119.GA32011@obsidianresearch.com> <20121214202629.BD40C3E0BDD@localhost> <20121214215814.GA14149@obsidianresearch.com> <20121219125451.3F1FB3E0AD7@localhost> <20121219191800.GA1169@obsidianresearch.com>
-Date: Mon, 04 Mar 2013 10:55:36 +0800
-Message-Id: <20130304025536.4CC7E3E17F8@localhost>
+	Sun, 3 Mar 2013 21:56:06 -0500
+MIME-Version: 1.0
+In-Reply-To: <5130FD73.9030601@infradead.org>
+References: <5130FD73.9030601@infradead.org>
+Date: Mon, 4 Mar 2013 03:56:04 +0100
+Message-ID: <CACRpkdb83GYi7FNjz-ZgbatTQzgZsB=PdkiCuVFt4TK1s2kM+g@mail.gmail.com>
+Subject: Re: [PATCH resend] hsi: fix kernel-doc warnings
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Randy Dunlap <rdunlap@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Nishanth Menon <nm@ti.com>, Carlos Chinea <carlos.chinea@nokia.com>,
+        linux-omap@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 19 Dec 2012 12:18:00 -0700, Jason Gunthorpe <jgunthorpe@obsidianresearch.com> wrote:
-> On Wed, Dec 19, 2012 at 12:54:51PM +0000, Grant Likely wrote:
-> > In both cases, the type of transfer is encoded by the BAR address and
-> > does not get exposed to the child device. Exposing the PCI flags into
-> > the child bus(es) really isn't a very good idea because they don't make
-> > sense in that context. It may seem expedient, but it will be fragile.
-> 
-> Well, it makes as much sense as for a PCI driver - each of the three
-> transfer types has different coding requirements in the driver, so
-> each of the three type must be kept separate.
-> 
-> I haven't looked super closely at this, but the basic desire is to
-> have IORESOURCE_PREFETCH tagged on the struct resource that reaches
-> the platform driver. 'get_flags' for a non-PCI addresses scheme always
-> returns IORESOURCE_MEM, and translating through a ranges doesn't
-> appear to fix that. This is where 3dw is desirable because it uses a
-> get_flags that understands the three resource types.
+On Fri, Mar 1, 2013 at 8:11 PM, Randy Dunlap <rdunlap@infradead.org> wrote:
 
-We could possibly change the ranges translation code to pick up
-IORESOURCE_PREFETCH when a translation crosses a PREFETCH bar. That
-would also ensure that child nodes don't have to keep the flags field
-consistent with the ranges mapping.
+> From: Randy Dunlap <rdunlap@infradead.org>
+>
+> Fix kernel-doc warnings in hsi files:
+>
+> Warning(include/linux/hsi/hsi.h:136): Excess struct/union/enum/typedef member 'e_handler' description in 'hsi_client'
+> Warning(include/linux/hsi/hsi.h:136): Excess struct/union/enum/typedef member 'pclaimed' description in 'hsi_client'
+> Warning(include/linux/hsi/hsi.h:136): Excess struct/union/enum/typedef member 'nb' description in 'hsi_client'
+> Warning(drivers/hsi/hsi.c:434): No description found for parameter 'handler'
+> Warning(drivers/hsi/hsi.c:434): Excess function parameter 'cb' description in 'hsi_register_port_event'
+>
+> Don't document "private:" fields with kernel-doc notation.
+> If you want to leave them fully documented, that's OK, but
+> then don't mark them as "private:".
+>
+> Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
+> Cc: Carlos Chinea <carlos.chinea@nokia.com>
+> Cc: Linus Walleij <linus.walleij@linaro.org>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Cc: linux-kernel@vger.kernel.org
+> Cc: linux-omap@vger.kernel.org
+> Acked-by: Nishanth Menon <nm@ti.com>
 
-g.
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
+
+HSI is basically orphaned FTM.
+
+Andrew can you pick this into your orphanage?
+
+Yours,
+Linus Walleij
