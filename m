@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756493Ab3CDDnr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 22:43:47 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:32880 "EHLO
+	id S1756587Ab3CDECc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 23:02:32 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:32905 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756387Ab3CDDnl (ORCPT
+	by vger.kernel.org with ESMTP id S1756468Ab3CDDnq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Mar 2013 22:43:41 -0500
-Message-Id: <20130304033716.068432725@decadent.org.uk>
+	Sun, 3 Mar 2013 22:43:46 -0500
+Message-Id: <20130304033715.447220421@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 04 Mar 2013 03:38:33 +0000
+Date: Mon, 04 Mar 2013 03:38:27 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Matt Fleming <matt.fleming@intel.com>,
-        Walt Nelson Jr <walt0924@gmail.com>,
-        Satoru Takeuchi <takeuchi_satoru@jp.fujitsu.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [ 086/153] x86, efi: Make "noefi" really disable EFI runtime serivces
+Cc: akpm@linux-foundation.org, Mika Kuoppala <mika.kuoppala@linux.intel.com>,
+        Mika Kuoppala <mika.kuoppala@intel.com>,
+        Andreas Sturmlechner <andreas.sturmlechner@gmail.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 080/153] drm/i915: disable shared panel fitter for pipe
 In-Reply-To: <20130304033707.648729212@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,109 +29,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Matt Fleming <matt.fleming@intel.com>
+From: Mika Kuoppala <mika.kuoppala@linux.intel.com>
 
-commit fb834c7acc5e140cf4f9e86da93a66de8c0514da upstream.
+commit 24a1f16de97c4cf0029d9acd04be06db32208726 upstream.
 
-commit 1de63d60cd5b ("efi: Clear EFI_RUNTIME_SERVICES rather than
-EFI_BOOT by "noefi" boot parameter") attempted to make "noefi" true to
-its documentation and disable EFI runtime services to prevent the
-bricking bug described in commit e0094244e41c ("samsung-laptop:
-Disable on EFI hardware"). However, it's not possible to clear
-EFI_RUNTIME_SERVICES from an early param function because
-EFI_RUNTIME_SERVICES is set in efi_init() *after* parse_early_param().
+If encoder is switched off by BIOS, but the panel fitter is left on,
+we never try to turn off the panel fitter and leave it still attached
+to the pipe - which can cause blurry output elsewhere.
 
-This resulted in "noefi" effectively becoming a no-op and no longer
-providing users with a way to disable EFI, which is bad for those
-users that have buggy machines.
+Based on work by Chris Wilson <chris@chris-wilson.co.uk>
 
-Reported-by: Walt Nelson Jr <walt0924@gmail.com>
-Cc: Satoru Takeuchi <takeuchi_satoru@jp.fujitsu.com>
-Signed-off-by: Matt Fleming <matt.fleming@intel.com>
-Link: http://lkml.kernel.org/r/1361392572-25657-1-git-send-email-matt@console-pimps.org
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-[bwh: Backported to 3.2: efi_runtime_init() is not a separate function,
- so put a whole set of statements in an if (!disable_runtime) block]
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=58867
+Signed-off-by: Mika Kuoppala <mika.kuoppala@intel.com>
+Tested-by: Andreas Sturmlechner <andreas.sturmlechner@gmail.com>
+[danvet: Remove the redundant HAS_PCH_SPLIT check and add a tiny
+comment.]
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
---- a/arch/x86/platform/efi/efi.c
-+++ b/arch/x86/platform/efi/efi.c
-@@ -83,9 +83,10 @@ int efi_enabled(int facility)
- }
- EXPORT_SYMBOL(efi_enabled);
+ drivers/gpu/drm/i915/intel_display.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -3242,6 +3242,7 @@ static void i9xx_crtc_disable(struct drm
+ 	struct intel_crtc *intel_crtc = to_intel_crtc(crtc);
+ 	int pipe = intel_crtc->pipe;
+ 	int plane = intel_crtc->plane;
++	u32 pctl;
  
-+static bool disable_runtime = false;
- static int __init setup_noefi(char *arg)
- {
--	clear_bit(EFI_RUNTIME_SERVICES, &x86_efi_facility);
-+	disable_runtime = true;
- 	return 0;
- }
- early_param("noefi", setup_noefi);
-@@ -549,35 +550,37 @@ void __init efi_init(void)
+ 	if (!intel_crtc->active)
+ 		return;
+@@ -3257,6 +3258,13 @@ static void i9xx_crtc_disable(struct drm
  
- 	set_bit(EFI_CONFIG_TABLES, &x86_efi_facility);
+ 	intel_disable_plane(dev_priv, plane, pipe);
+ 	intel_disable_pipe(dev_priv, pipe);
++
++	/* Disable pannel fitter if it is on this pipe. */
++	pctl = I915_READ(PFIT_CONTROL);
++	if ((pctl & PFIT_ENABLE) &&
++	    ((pctl & PFIT_PIPE_MASK) >> PFIT_PIPE_SHIFT) == pipe)
++		I915_WRITE(PFIT_CONTROL, 0);
++
+ 	intel_disable_pll(dev_priv, pipe);
  
--	/*
--	 * Check out the runtime services table. We need to map
--	 * the runtime services table so that we can grab the physical
--	 * address of several of the EFI runtime functions, needed to
--	 * set the firmware into virtual mode.
--	 */
--	runtime = early_ioremap((unsigned long)efi.systab->runtime,
--				sizeof(efi_runtime_services_t));
--	if (runtime != NULL) {
--		/*
--		 * We will only need *early* access to the following
--		 * two EFI runtime services before set_virtual_address_map
--		 * is invoked.
--		 */
--		efi_phys.get_time = (efi_get_time_t *)runtime->get_time;
--		efi_phys.set_virtual_address_map =
--			(efi_set_virtual_address_map_t *)
--			runtime->set_virtual_address_map;
-+	if (!disable_runtime) {
- 		/*
--		 * Make efi_get_time can be called before entering
--		 * virtual mode.
-+		 * Check out the runtime services table. We need to map
-+		 * the runtime services table so that we can grab the physical
-+		 * address of several of the EFI runtime functions, needed to
-+		 * set the firmware into virtual mode.
- 		 */
--		efi.get_time = phys_efi_get_time;
--
--		set_bit(EFI_RUNTIME_SERVICES, &x86_efi_facility);
--	} else
--		printk(KERN_ERR "Could not map the EFI runtime service "
--		       "table!\n");
--	early_iounmap(runtime, sizeof(efi_runtime_services_t));
-+		runtime = early_ioremap((unsigned long)efi.systab->runtime,
-+					sizeof(efi_runtime_services_t));
-+		if (runtime != NULL) {
-+			/*
-+			 * We will only need *early* access to the following
-+			 * two EFI runtime services before set_virtual_address_map
-+			 * is invoked.
-+			 */
-+			efi_phys.get_time = (efi_get_time_t *)runtime->get_time;
-+			efi_phys.set_virtual_address_map =
-+				(efi_set_virtual_address_map_t *)
-+				runtime->set_virtual_address_map;
-+			/*
-+			 * Make efi_get_time can be called before entering
-+			 * virtual mode.
-+			 */
-+			efi.get_time = phys_efi_get_time;
-+			
-+			set_bit(EFI_RUNTIME_SERVICES, &x86_efi_facility);
-+		} else
-+			printk(KERN_ERR "Could not map the EFI runtime service "
-+			       "table!\n");
-+		early_iounmap(runtime, sizeof(efi_runtime_services_t));
-+	}
- 
- 	/* Map the EFI memory map */
- 	memmap.map = early_ioremap((unsigned long)memmap.phys_map,
+ 	intel_crtc->active = false;
 
 
