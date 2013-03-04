@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757718Ab3CDEGN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 23:06:13 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:32813 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756242Ab3CDDnc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1756288Ab3CDDnc (ORCPT <rfc822;w@1wt.eu>);
 	Sun, 3 Mar 2013 22:43:32 -0500
-Message-Id: <20130304033717.607143131@decadent.org.uk>
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:32822 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756180Ab3CDDn2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Mar 2013 22:43:28 -0500
+Message-Id: <20130304033717.721719715@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 04 Mar 2013 03:38:48 +0000
+Date: Mon, 04 Mar 2013 03:38:49 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Greg Thelen <gthelen@google.com>,
-        Hugh Dickins <hughd@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 101/153] tmpfs: fix use-after-free of mempolicy object
+Cc: akpm@linux-foundation.org, Shawn Guo <shawn.guo@linaro.org>,
+        Chris Ball <cjb@laptop.org>
+Subject: [ 102/153] mmc: sdhci-esdhc-imx: fix host version read
 In-Reply-To: <20130304033707.648729212@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,106 +27,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Greg Thelen <gthelen@google.com>
+From: Shawn Guo <shawn.guo@linaro.org>
 
-commit 5f00110f7273f9ff04ac69a5f85bb535a4fd0987 upstream.
+commit ef4d0888bb7e1b963880f086575081c3d39cad2d upstream.
 
-The tmpfs remount logic preserves filesystem mempolicy if the mpol=M
-option is not specified in the remount request.  A new policy can be
-specified if mpol=M is given.
+When commit 95a2482 (mmc: sdhci-esdhc-imx: add basic imx6q usdhc
+support) works around host version issue on imx6q, it gets the
+register address fixup "reg ^= 2" lost for imx25/35/51/53 esdhc.
+Thus, the controller version on these SoCs is wrongly identified
+as v1 while it's actually v2.
 
-Before this patch remounting an mpol bound tmpfs without specifying
-mpol= mount option in the remount request would set the filesystem's
-mempolicy object to a freed mempolicy object.
+Add the address fixup back and take a different approach to correct
+imx6q host version, so that the host version read gets back to work
+for all SoCs.
 
-To reproduce the problem boot a DEBUG_PAGEALLOC kernel and run:
-    # mkdir /tmp/x
-
-    # mount -t tmpfs -o size=100M,mpol=interleave nodev /tmp/x
-
-    # grep /tmp/x /proc/mounts
-    nodev /tmp/x tmpfs rw,relatime,size=102400k,mpol=interleave:0-3 0 0
-
-    # mount -o remount,size=200M nodev /tmp/x
-
-    # grep /tmp/x /proc/mounts
-    nodev /tmp/x tmpfs rw,relatime,size=204800k,mpol=??? 0 0
-        # note ? garbage in mpol=... output above
-
-    # dd if=/dev/zero of=/tmp/x/f count=1
-        # panic here
-
-Panic:
-    BUG: unable to handle kernel NULL pointer dereference at           (null)
-    IP: [<          (null)>]           (null)
-    [...]
-    Oops: 0010 [#1] SMP DEBUG_PAGEALLOC
-    Call Trace:
-      mpol_shared_policy_init+0xa5/0x160
-      shmem_get_inode+0x209/0x270
-      shmem_mknod+0x3e/0xf0
-      shmem_create+0x18/0x20
-      vfs_create+0xb5/0x130
-      do_last+0x9a1/0xea0
-      path_openat+0xb3/0x4d0
-      do_filp_open+0x42/0xa0
-      do_sys_open+0xfe/0x1e0
-      compat_sys_open+0x1b/0x20
-      cstar_dispatch+0x7/0x1f
-
-Non-debug kernels will not crash immediately because referencing the
-dangling mpol will not cause a fault.  Instead the filesystem will
-reference a freed mempolicy object, which will cause unpredictable
-behavior.
-
-The problem boils down to a dropped mpol reference below if
-shmem_parse_options() does not allocate a new mpol:
-
-    config = *sbinfo
-    shmem_parse_options(data, &config, true)
-    mpol_put(sbinfo->mpol)
-    sbinfo->mpol = config.mpol  /* BUG: saves unreferenced mpol */
-
-This patch avoids the crash by not releasing the mempolicy if
-shmem_parse_options() doesn't create a new mpol.
-
-How far back does this issue go? I see it in both 2.6.36 and 3.3.  I did
-not look back further.
-
-Signed-off-by: Greg Thelen <gthelen@google.com>
-Acked-by: Hugh Dickins <hughd@google.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
+Signed-off-by: Chris Ball <cjb@laptop.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- mm/shmem.c |   10 ++++++++--
- 1 file changed, 8 insertions(+), 2 deletions(-)
+ drivers/mmc/host/sdhci-esdhc-imx.c |   19 +++++++++++--------
+ 1 file changed, 11 insertions(+), 8 deletions(-)
 
---- a/mm/shmem.c
-+++ b/mm/shmem.c
-@@ -2121,6 +2121,7 @@ static int shmem_remount_fs(struct super
- 	unsigned long inodes;
- 	int error = -EINVAL;
+--- a/drivers/mmc/host/sdhci-esdhc-imx.c
++++ b/drivers/mmc/host/sdhci-esdhc-imx.c
+@@ -232,15 +232,18 @@ static void esdhc_writel_le(struct sdhci
  
-+	config.mpol = NULL;
- 	if (shmem_parse_options(data, &config, true))
- 		return error;
+ static u16 esdhc_readw_le(struct sdhci_host *host, int reg)
+ {
++	struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
++	struct pltfm_imx_data *imx_data = pltfm_host->priv;
++
+ 	if (unlikely(reg == SDHCI_HOST_VERSION)) {
+-		u16 val = readw(host->ioaddr + (reg ^ 2));
+-		/*
+-		 * uSDHC supports SDHCI v3.0, but it's encoded as value
+-		 * 0x3 in host controller version register, which violates
+-		 * SDHCI_SPEC_300 definition.  Work it around here.
+-		 */
+-		if ((val & SDHCI_SPEC_VER_MASK) == 3)
+-			return --val;
++		reg ^= 2;
++		if (is_imx6q_usdhc(imx_data)) {
++			/*
++			 * The usdhc register returns a wrong host version.
++			 * Correct it here.
++			 */
++			return SDHCI_SPEC_300;
++		}
+ 	}
  
-@@ -2145,8 +2146,13 @@ static int shmem_remount_fs(struct super
- 	sbinfo->max_inodes  = config.max_inodes;
- 	sbinfo->free_inodes = config.max_inodes - inodes;
- 
--	mpol_put(sbinfo->mpol);
--	sbinfo->mpol        = config.mpol;	/* transfers initial ref */
-+	/*
-+	 * Preserve previous mempolicy unless mpol remount option was specified.
-+	 */
-+	if (config.mpol) {
-+		mpol_put(sbinfo->mpol);
-+		sbinfo->mpol = config.mpol;	/* transfers initial ref */
-+	}
- out:
- 	spin_unlock(&sbinfo->stat_lock);
- 	return error;
+ 	return readw(host->ioaddr + reg);
 
 
