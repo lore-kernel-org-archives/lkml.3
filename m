@@ -1,124 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758622Ab3CDSbJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 13:31:09 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:30068 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758241Ab3CDSbH convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 13:31:07 -0500
+	id S932149Ab3CDSfq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 13:35:46 -0500
+Received: from zfrontend1.aha.ru ([195.2.83.147]:41212 "EHLO aha.ru"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754493Ab3CDSfp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Mar 2013 13:35:45 -0500
+From: "werner" <w.landgraf@ru.ru>
+Subject: 3.9-rc1   ath wil6210  ,    lp8788 charger  problems
+To: linux-kernel@vger.kernel.org
+X-Mailer: CommuniGate Pro WebUser Interface v.4.3.12
+Date: Mon, 04 Mar 2013 14:35:39 -0400
+Message-ID: <web-851594569@zbackend1.aha.ru>
 MIME-Version: 1.0
-Message-ID: <4e603875-823e-4bc9-afc5-ae85ce4ca0ef@default>
-Date: Mon, 4 Mar 2013 10:29:32 -0800 (PST)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Ric Mason <ric.masonn@gmail.com>
-Cc: minchan@kernel.org, sjenning@linux.vnet.ibm.com,
-        Nitin Gupta <nitingupta910@gmail.com>,
-        Konrad Wilk <konrad.wilk@oracle.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Bob Liu <lliubbo@gmail.com>,
-        Luigi Semenzato <semenzato@google.com>, Mel Gorman <mgorman@suse.de>
-Subject: RE: zsmalloc limitations and related topics
-References: <0efe9610-1aa5-4aa9-bde9-227acfa969ca@default>
- <51300702.1050006@gmail.com>
-In-Reply-To: <51300702.1050006@gmail.com>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.7  (607090) [OL
- 12.0.6665.5003 (x86)]
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+Content-Type: text/plain; charset="utf-8"; format="flowed"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Ric Mason [mailto:ric.masonn@gmail.com]
-> Subject: Re: zsmalloc limitations and related topics
-> 
-> On 02/28/2013 07:24 AM, Dan Magenheimer wrote:
-> > Hi all --
-> >
-> > I've been doing some experimentation on zsmalloc in preparation
-> > for my topic proposed for LSFMM13 and have run across some
-> > perplexing limitations.  Those familiar with the intimate details
-> > of zsmalloc might be well aware of these limitations, but they
-> > aren't documented or immediately obvious, so I thought it would
-> > be worthwhile to air them publicly.  I've also included some
-> > measurements from the experimentation and some related thoughts.
-> >
-> > (Some of the terms here are unusual and may be used inconsistently
-> > by different developers so a glossary of definitions of the terms
-> > used here is appended.)
-> >
-> > ZSMALLOC LIMITATIONS
-> >
-> > Zsmalloc is used for two zprojects: zram and the out-of-tree
-> > zswap.  Zsmalloc can achieve high density when "full".  But:
-> >
-> > 1) Zsmalloc has a worst-case density of 0.25 (one zpage per
-> >     four pageframes).
-> > 2) When not full and especially when nearly-empty _after_
-> >     being full, density may fall below 1.0 as a result of
-> >     fragmentation.
-> 
-> What's the meaning of nearly-empty _after_ being full?
+wil6210 don't compile , lp8788-charger  don't link good  , 
+several section mismatchs.
+Perhaps someone want to correct that
 
-Step 1:  Add a few (N) pages to zsmalloc.  It is "nearly empty".
-Step 2:  Now add many more pages to zsmalloc until allocation
-         limits are reached.  It is "full".
-Step 3:  Now remove many pages from zsmalloc until there are
-         N pages remaining.  It is now "nearly empty after
-         being full".
+wl
 
-Fragmentation characteristics are different comparing
-after Step 1 and after Step 3 even though, in both cases,
-zsmalloc contains N pages.
- 
-> > 3) Zsmalloc has a density of exactly 1.0 for any number of
-> >     zpages with zsize >= 0.8.
-> > 4) Zsmalloc contains several compile-time parameters;
-> >     the best value of these parameters may be very workload
-> >     dependent.
-> >
-> > If density == 1.0, that means we are paying the overhead of
-> > compression+decompression for no space advantage.  If
-> > density < 1.0, that means using zsmalloc is detrimental,
-> > resulting in worse memory pressure than if it were not used.
-> >
-> > WORKLOAD ANALYSIS
-> >
-> > These limitations emphasize that the workload used to evaluate
-> > zsmalloc is very important.  Benchmarks that measure data
-> 
-> Could you share your benchmark? In order that other guys can take
-> advantage of it.
 
-As Seth does, I just used "make" of a kernel.  I run it on
-a full graphical installation of EL6.  In order to ensure there
-is memory pressure, I limit physical memory to 1GB, and use
-"make -j20".
 
-> > throughput or CPU utilization are of questionable value because
-> > it is the _content_ of the data that is particularly relevant
-> > for compression.  Even more precisely, it is the "entropy"
-> > of the data that is relevant, because the amount of
-> > compressibility in the data is related to the entropy:
-> > I.e. an entirely random pagefull of bits will compress poorly
-> > and a highly-regular pagefull of bits will compress well.
-> > Since the zprojects manage a large number of zpages, both
-> > the mean and distribution of zsize of the workload should
-> > be "representative".
-> >
-> > The workload most widely used to publish results for
-> > the various zprojects is a kernel-compile using "make -jN"
-> > where N is artificially increased to impose memory pressure.
-> > By adding some debug code to zswap, I was able to analyze
-> > this workload and found the following:
-> >
-> > 1) The average page compressed by almost a factor of six
-> >     (mean zsize == 694, stddev == 474)
-> 
-> stddev is what?
 
-Standard deviation.  See:
-http://en.wikipedia.org/wiki/Standard_deviation 
 
+
+cc1: warnings being treated as errors
+drivers/net/wireless/ath/wil6210/txrx.c: In function 
+'wil_vring_free':
+drivers/net/wireless/ath/wil6210/txrx.c:142: warning: 
+passing argument 3 of 'dma_free_attrs' discards qualifiers 
+from pointer target type
+make[5]: [drivers/net/wireless/ath/wil6210/txrx.o] Error 1 
+(ignored)
+   LD [M]  drivers/net/wireless/ath/wil6210/wil6210.o
+ld: drivers/net/wireless/ath/wil6210/txrx.o: No such file: 
+No such file or directory
+make[5]: [drivers/net/wireless/ath/wil6210/wil6210.o] 
+Error 1 (ignored)
+
+
+
+
+drivers/built-in.o: In function 
+`lp8788_release_adc_channel':
+lp8788-charger.c:(.text+0xcd3148): undefined reference to 
+`iio_channel_release'
+drivers/built-in.o: In function 
+`lp8788_setup_adc_channel':
+lp8788-charger.c:(.text+0xcd3235): undefined reference to 
+`iio_channel_get'
+lp8788-charger.c:(.text+0xcd3253): undefined reference to 
+`iio_channel_get'
+drivers/built-in.o: In function 
+`lp8788_get_battery_temperature':
+lp8788-charger.c:(.text+0xcd331f): undefined reference to 
+`iio_read_channel_processed'
+drivers/built-in.o: In function `lp8788_get_vbatt_adc':
+lp8788-charger.c:(.text+0xcd3352): undefined reference to 
+`iio_read_channel_processed'
+make: [vmlinux] Error 1 (ignored)
+
+
+
+
+WARNING: vmlinux.o(.text+0x2a656): Section mismatch in 
+reference from the function apply_microcode_early() to the 
+function .cpuinit.text:print_ucode()
+The function apply_microcode_early() references
+the function __cpuinit print_ucode().
+This is often because apply_microcode_early lacks a 
+__cpuinit
+annotation or the annotation of print_ucode is wrong.
+
+WARNING: vmlinux.o(.text+0x769a8e): Section mismatch in 
+reference from the function acpi_sleep_dmi_check() to the 
+variable .init.data:acpisleep_dmi_table
+The function acpi_sleep_dmi_check() references
+the variable __initdata acpisleep_dmi_table.
+This is often because acpi_sleep_dmi_check lacks a 
+__initdata
+annotation or the annotation of acpisleep_dmi_table is 
+wrong.
+
+WARNING: vmlinux.o(.text+0x9de64e): Section mismatch in 
+reference from the function cpqarray_register_ctlr() to 
+the function .init.text:ida_procinit()
+The function cpqarray_register_ctlr() references
+the function __init ida_procinit().
+This is often because cpqarray_register_ctlr lacks a 
+__init
+annotation or the annotation of ida_procinit is wrong.
+
+WARNING: vmlinux.o(.text+0xa3c8e3): Section mismatch in 
+reference from the function bmp085_init_client() to the 
+function .init.text:bmp085_get_of_properties()
+The function bmp085_init_client() references
+the function __init bmp085_get_of_properties().
+This is often because bmp085_init_client lacks a __init
+annotation or the annotation of bmp085_get_of_properties 
+is wrong.
+
+WARNING: vmlinux.o(.data+0xa5c1c): Section mismatch in 
+reference from the variable sim710_eisa_driver to the 
+function .init.text:sim710_eisa_probe()
+The variable sim710_eisa_driver references
+the function __init sim710_eisa_probe()
+If the reference is valid then annotate the
+variable with __init* or __refdata (see linux/init.h) or 
+name the variable:
+*_template, *_timer, *_sht, *_ops, *_probe, *_probe_one, 
+*_console
+
+WARNING: vmlinux.o(.data+0xe1654): Section mismatch in 
+reference from the variable el3_eisa_driver to the 
+function .init.text:el3_eisa_probe()
+The variable el3_eisa_driver references
+the function __init el3_eisa_probe()
+If the reference is valid then annotate the
+variable with __init* or __refdata (see linux/init.h) or 
+name the variable:
+*_template, *_timer, *_sht, *_ops, *_probe, *_probe_one, 
+*_console
+
+WARNING: vmlinux.o(.data+0xe1d18): Section mismatch in 
+reference from the variable vortex_eisa_driver to the 
+function .init.text:vortex_eisa_probe()
+The variable vortex_eisa_driver references
+the function __init vortex_eisa_probe()
+If the reference is valid then annotate the
+variable with __init* or __refdata (see linux/init.h) or 
+name the variable:
+*_template, *_timer, *_sht, *_ops, *_probe, *_probe_one, 
+*_console
+
+WARNING: vmlinux.o(.data+0xe6ac0): Section mismatch in 
+reference from the variable de4x5_eisa_driver to the 
+function .init.text:de4x5_eisa_probe()
+The variable de4x5_eisa_driver references
+the function __init de4x5_eisa_probe()
+If the reference is valid then annotate the
+variable with __init* or __refdata (see linux/init.h) or 
+name the variable:
+*_template, *_timer, *_sht, *_ops, *_probe, *_probe_one, 
+*_console
+
+WARNING: vmlinux.o(.data+0xe7344): Section mismatch in 
+reference from the variable hp100_eisa_driver to the 
+function .init.text:hp100_eisa_probe()
+The variable hp100_eisa_driver references
+the function __init hp100_eisa_probe()
+If the reference is valid then annotate the
+variable with __init* or __refdata (see linux/init.h) or 
+name the variable:
+*_template, *_timer, *_sht, *_ops, *_probe, *_probe_one, 
+*_console
+
+---
+Professional hosting for everyone - http://www.host.ru
