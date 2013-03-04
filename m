@@ -1,76 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932526Ab3CDXCh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 18:02:37 -0500
-Received: from mail.green-internet.de ([213.252.188.14]:36916 "EHLO
-	mail.green-internet.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1758783Ab3CDXCg (ORCPT
+	id S932785Ab3CDXGb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 18:06:31 -0500
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:36657 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932576Ab3CDXG3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 18:02:36 -0500
-X-Greylist: delayed 2026 seconds by postgrey-1.27 at vger.kernel.org; Mon, 04 Mar 2013 18:02:35 EST
-Message-ID: <5135201F.4030200@draisberghof.de>
-Date: Mon, 04 Mar 2013 23:28:47 +0100
-From: Josua Dietze <digidietze@draisberghof.de>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: =?ISO-8859-15?Q?Bj=F8rn_Mork?= <bjorn@mork.no>
-CC: Matthew Dharm <mdharm-usb@one-eyed-alien.net>,
-        Ben Hutchings <ben@decadent.org.uk>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Fangxiaozhi (Franko)" <fangxiaozhi@huawei.com>, zihan@huawei.com,
-        Lin.Lei@huawei.com, Greg KH <gregkh@linuxfoundation.org>,
-        "Yili (Neil)" <neil.yi@huawei.com>,
-        "Wangyuhua \(Roger\, Credit\)" <wangyuhua@huawei.com>,
-        Huqiao <huqiao36@huawei.com>, Felipe Balbi <balbi@ti.com>,
-        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
-        stable <stable@vger.kernel.org>
-Subject: Re: [PATCH] USB: storage: fix Huawei mode switching regression
-References: <87obezs888.fsf@nemi.mork.no> <1362403161-23501-1-git-send-email-bjorn@mork.no> <1362407359.3768.337.camel@deadeye.wl.decadent.org.uk> <878v63ru2i.fsf@nemi.mork.no> <CAA6KcBBdPeS1yEq0SUCzrqSkow1-fCUdp+pfsDX3CWX-uuBGdA@mail.gmail.com> <87wqtnq8bb.fsf@nemi.mork.no>
-In-Reply-To: <87wqtnq8bb.fsf@nemi.mork.no>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 8bit
+	Mon, 4 Mar 2013 18:06:29 -0500
+Date: Tue, 5 Mar 2013 00:58:36 +0200
+From: Mihai =?UTF-8?B?RG9uyJt1?= <mihai.dontu@gmail.com>
+To: Morten Stevens <mstevens@imt-systems.com>
+Cc: Borislav Petkov <bp@alien8.de>, linux-kernel@vger.kernel.org,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, e1000-devel@lists.sourceforge.net,
+        netdev@vger.kernel.org, Jiri Slaby <jslaby@suse.cz>
+Subject: Re: e1000e 3.9-rc1 suspend failure (was: Re: e1000e: nic does not
+ work properly after cold power on)
+Message-ID: <20130305005836.4f84c065@mdontu-l.dsd.ro>
+In-Reply-To: <20130304214830.GB22306@pd.tnic>
+References: <20130304124631.2ac730f3@mdontu-l.dsd.ro>
+	<5134E4AB.2010504@imt-systems.com>
+	<20130304214830.GB22306@pd.tnic>
+Organization: Home
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 04.03.2013 20:22, schrieb Bjørn Mork:
-> Matthew Dharm <mdharm-usb@one-eyed-alien.net> writes:
->> The question is not one of reminding me of what I said earlier....
->> it's one of pointing people in the right direction.  Frankly, some of
->> the fault for this patch lies with Greg and myself for letting it
->> through.  I had just assumed that the Huawei guys had already been in
->> touch with usb-modeswitch for some reason, and that this was just an
->> optimization of existing logic (not an expansion).
+On Mon, 4 Mar 2013 22:48:30 +0100 Borislav Petkov wrote:
+> On Mon, Mar 04, 2013 at 07:15:07PM +0100, Morten Stevens wrote:
+> > Can you reproduce this with linux 3.9-rc1? 3.9-rc1 has the latest
+> > upstream driver (e1000e 2.2.14) which contains many bugfixes.
+> 
 
-I was contacted at one point by a Huawei engineer who convinced me to change the default mode-switching 'message' for all Huawei devices.
-The reason was the introduction of an 'advanced' Linux driver by Huawei which requires a specific target mode. This was in October 2010.
-No contact attempt since then.
+On my system (ThinkPad T420) I get:
 
->> Who is maintaining usb-modeswitch these days, anyway?  The comment in
->> the file should point people directly there....
+[   10.694743] e1000e: Intel(R) PRO/1000 Network Driver - 2.2.14-k
+[   10.694746] e1000e: Copyright(c) 1999 - 2013 Intel Corporation.
+[   10.694852] e1000e 0000:00:19.0: setting latency timer to 64
+[   10.694911] e1000e 0000:00:19.0: Interrupt Throttling Rate (ints/sec) set to dynamic conservative mode
+[   10.694949] e1000e 0000:00:19.0: irq 47 for MSI/MSI-X
+[   10.975086] e1000e 0000:00:19.0 eth0: registered PHC clock
+[   10.975091] e1000e 0000:00:19.0 eth0: (PCI Express:2.5GT/s:Width x1) 00:21:cc:70:17:a0
+[   10.975093] e1000e 0000:00:19.0 eth0: Intel(R) PRO/1000 Network Connection
+[   10.975127] e1000e 0000:00:19.0 eth0: MAC: 10, PHY: 11, PBA No: 1000FF-0FF
+[   89.716695] e1000e 0000:00:19.0 eth0: Hardware Error
+[   90.025403] e1000e 0000:00:19.0 eth0: Timesync Tx Control register not set as expected
+[   90.349197] e1000e 0000:00:19.0: irq 47 for MSI/MSI-X
+[   90.449760] e1000e 0000:00:19.0: irq 47 for MSI/MSI-X
 
-I never ceased work on it and intend to do so for years to come. I would certainly welcome any pointer to the usb_modeswitch main site in the code or the documentation. Although modem developers or engineers should not have a problem finding the site and providing new device information.
+The 'hardware error' line caught my attention.
 
->> And, as of now, I would really like to see as many of these devices
->> migrated (albeit slowly) to using usb-modeswitch wherever possible.  I
->> know there are a few devices for which that might not be possible, but
->> I am DONE dealing with this same issue over and over and over again.
->> It will certainly be work to migrate support; maybe we should wrap all
->> the relevant unusual_devs.h entires with
->> CONFIG_UPDATED_MODESWITCH_INSTALLED_SO_MAKE_THESE_GO_AWAY during a
->> transition period?
+> This e1000e thing gets more b0rked by the minute. This is what happens
+> when I try to suspend with 3.9-rc1:
+> 
+> [   83.502908] PM: Syncing filesystems ... done.
+> [   83.509886] Freezing user space processes ... (elapsed 0.01
+> seconds) done. [   83.523352] PM: Preallocating image memory... done
+> (allocated 95652 pages) [   83.675083] PM: Allocated 382608 kbytes in
+> 0.15 seconds (2550.72 MB/s) [   83.675782] Freezing remaining
+> freezable tasks ... (elapsed 0.01 seconds) done. [   83.688524]
+> Suspending console(s) (use no_console_suspend to debug)
+> [   84.251024] e1000e 0000:00:19.0 eth0: Hardware Error
+> [   84.458866] ------------[ cut here ]------------ [   84.458871]
+> WARNING: at kernel/irq/manage.c:1249 __free_irq+0xa3/0x1e0()
+> [   84.458872] Hardware name: 2320CTO [   84.458872] Trying to free
+> already-free IRQ 20 [   84.458898] Modules linked in:
+> cpufreq_powersave cpufreq_userspace cpufreq_conservative
+> cpufreq_stats uinput loop hid_generic usb hid hid coretemp kvm_intel
+> arc4 kvm crc32_pclmul iwldvm crc32c_intel ghash_clmulni_intel
+> mac80211 aesni_intel xts ipv6 aes_x86_64 lr w gf128mul ablk_helper
+> cryptd iTCO_wdt iTCO_vendor_support iwlwifi sdhci_pci sdhci cfg80211
+> snd_hda_codec_hdmi snd_hda_codec_realtek mmc_core microcode e1000e
+> thinkpad_acpi pcspkr lpc_ich i2c_i801 mfd_core nvram snd_hda_intel
+> rfkill snd_hda_codec battery ac snd_hw dep led_class snd_pcm
+> snd_page_alloc snd_timer snd acpi_cpufreq soundcore mperf ptp wmi
+> pps_core xhci_hcd ehci_pci ehci_hcd processo r thermal [   84.458900]
+> Pid: 3353, comm: kworker/u:35 Tainted: G        W    3.9.0-rc1 #1
+> [   84.458901] Call Trace: [   84.458905]  [<ffffffff8103ef7f>]
+> warn_slowpath_common+0x7f/0xc0 [   84.458907]  [<ffffffff8103f076>]
+> warn_slowpath_fmt+0x46/0x50 [   84.458910]  [<ffffffff81537bfe>] ?
+> _raw_spin_lock_irqsave+0x4e/0x60 [   84.458911]
+> [<ffffffff810bc8d5>] ? __free_irq+0x55/0x1e0 [   84.458913]
+> [<ffffffff810bc923>] __free_irq+0xa3/0x1e0 [   84.458914]
+> [<ffffffff810bcab4>] free_irq+0x54/0xc0 [   84.458919]
+> [<ffffffffa017745d>] e1000_free_irq+0x7d/0x90 [e1000e]
+> [   84.458922]  [<ffffffffa01834af>] __e1000_shutdown+0x8f/0x8a0
+> [e1000e] [   84.458924]  [<ffffffff813c92a7>] ?
+> __device_suspend+0xb7/0x200 [   84.458927]  [<ffffffff81073b71>] ?
+> get_parent_ip+0x11/0x50 [   84.458931]  [<ffffffffa0183d33>]
+> e1000_suspend+0x23/0x50 [e1000e] [   84.458932]
+> [<ffffffff813c92a7>] ? __device_suspend+0xb7/0x200 [   84.458933]
+> [<ffffffff8153c049>] ? sub_preempt_count+0x79/0xd0 [   84.458936]
+> [<ffffffff812a2ff5>] pci_pm_freeze+0x55/0xc0 [   84.458937]
+> [<ffffffff812a2fa0>] ? pci_pm_resume_noirq+0xd0/0xd0 [   84.458938]
+> [<ffffffff813c8b45>] dpm_run_callback.isra.5+0x25/0x50
+> [   84.458939]  [<ffffffff813c92d3>] __device_suspend+0xe3/0x200
+> [   84.458941]  [<ffffffff813c940f>] async_suspend+0x1f/0xa0
+> [   84.458942]  [<ffffffff8106bcfb>] async_run_entry_fn+0x3b/0x140
+> [   84.458944]  [<ffffffff8105d00d>] process_one_work+0x1ed/0x510
+> [   84.458946]  [<ffffffff8105cfab>] ? process_one_work+0x18b/0x510
+> [   84.458948]  [<ffffffff8105e7b5>] worker_thread+0x115/0x390
+> [   84.458949]  [<ffffffff8105e6a0>] ? manage_workers+0x300/0x300
+> [   84.458951]  [<ffffffff81064e2a>] kthread+0xea/0xf0
+> [   84.458953]  [<ffffffff81064d40>] ?
+> kthread_create_on_node+0x160/0x160 [   84.458954]
+> [<ffffffff8153ff9c>] ret_from_fork+0x7c/0xb0 [   84.458955]
+> [<ffffffff81064d40>] ? kthread_create_on_node+0x160/0x160
+> [   84.458956] ---[ end trace 3114e23ce50d2357 ]--- [   85.082276]
+> pci_pm_freeze(): e1000_suspend+0x0/0x50 [e1000e] returns -2
+> [   85.082278] dpm_run_callback(): pci_pm_freeze+0x0/0xc0 returns -2
+> [   85.082281] PM: Device 0000:00:19.0 failed to freeze async: error
+> -2
+> 
+> Let's add more folks to CC.
+> 
 
-I think it's safe to say that usb_modeswitch is included in all distributions now. Usually, no user interaction is necessary.
-
-> I guess the real problem will be verifying that all of the entries *can*
-> go away. This type of hardware tends to get old very fast, but there is
-> always someone having a really ancient device.
-
-I will check this and add any missing USB IDs to usb_modeswitch, but I can't shake the feeling that not *all* Huawei entries in "unusual_devs.h" did actually materialize as devices ...
-
-Anyway, as Bjørn said, putting that initialization into the storage driver takes away quite some possibilities to handle these modems in a flexible way.
-
-
-Josua Dietze
-
+-- 
+Mihai DonÈ›u
