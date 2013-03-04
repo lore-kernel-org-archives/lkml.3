@@ -1,110 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932834Ab3CDWRR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 17:17:17 -0500
-Received: from casper.infradead.org ([85.118.1.10]:43956 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932378Ab3CDWRQ (ORCPT
+	id S932756Ab3CDWXP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 17:23:15 -0500
+Received: from mail-qc0-f170.google.com ([209.85.216.170]:42984 "EHLO
+	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754643Ab3CDWXO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 17:17:16 -0500
-Message-ID: <51351D88.7060100@infradead.org>
-Date: Mon, 04 Mar 2013 14:17:44 -0800
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
+	Mon, 4 Mar 2013 17:23:14 -0500
+Message-ID: <51351CDF.6070003@pobox.com>
+Date: Mon, 04 Mar 2013 17:14:55 -0500
+From: Jeff Garzik <jgarzik@pobox.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130219 Thunderbird/17.0.3
 MIME-Version: 1.0
-To: Mike Snitzer <snitzer@redhat.com>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, dmdevel <dm-devel@redhat.com>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ejt@redhat.com
-Subject: Re: linux-next: Tree for Mar 4 (dm-cache-target)
-References: <20130304144358.bd62a57601d4d4793921213e@canb.auug.org.au> <5134EE05.30305@infradead.org> <20130304221207.GA12140@redhat.com>
-In-Reply-To: <20130304221207.GA12140@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Aaron Lu <aaron.lu@intel.com>
+CC: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        Tejun Heo <tj@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        Jeff Garzik <jgarzik@redhat.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>
+Subject: Re: [PATCH v2] [libata] Avoid specialized TLA's in ZPODD's Kconfig
+References: <1663657.ypAtqGpGAq@vostro.rjw.lan> <1781256.mPQbtiUPYR@vostro.rjw.lan> <CA+55aFyzjN_wMH+2RCEA+aNLY0Z7fn4YU7VOtTALbgngn1+vCw@mail.gmail.com> <2223198.XmyRLgb3Gv@vostro.rjw.lan> <20130226161049.GA9303@kahuna> <CA+55aFy24fp+9zXiDmAgvsz6YvWQh2L0BAJ2hAhF7cNSdyMd8w@mail.gmail.com> <CA+55aFyu5woJsH2y3y=w4UFneOG8hKz_cLXgZQbJzn5asn8=hQ@mail.gmail.com> <20130226163712.GA30433@htj.dyndns.org> <CA+55aFyFRbMX9G_0Mv0nUZgw9mHAPzE0zCw5mCSbGG_r1diFHg@mail.gmail.com> <20130226165813.GB30433@htj.dyndns.org> <512CF809.8010102@pobox.com> <5130052E.9070403@intel.com> <5130A8DF.7080709@cogentembedded.com> <51318775.1060309@intel.com>
+In-Reply-To: <51318775.1060309@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/04/13 14:12, Mike Snitzer wrote:
-> On Mon, Mar 04 2013 at  1:55pm -0500,
-> Randy Dunlap <rdunlap@infradead.org> wrote:
-> 
->> On 03/03/13 19:43, Stephen Rothwell wrote:
->>> Hi all,
->>>
->>> Changes since 20130301:
->>>
->>> The device-mapper tree gained a conflict against Linus' tree.
->>>
->>
->>
->> on i386:
->>
->> drivers/built-in.o: In function `is_discarded_oblock':
->> dm-cache-target.c:(.text+0x1ea28e): undefined reference to `__udivdi3'
->> drivers/built-in.o: In function `remap_to_origin_clear_discard':
->> dm-cache-target.c:(.text+0x1ea3ac): undefined reference to `__udivdi3'
->> drivers/built-in.o: In function `remap_to_cache_dirty.part.21':
->> dm-cache-target.c:(.text+0x1ea48f): undefined reference to `__udivdi3'
->> drivers/built-in.o: In function `cache_ctr':
->> dm-cache-target.c:(.text+0x1eaa2b): undefined reference to `__udivdi3'
->> dm-cache-target.c:(.text+0x1eaa71): undefined reference to `__udivdi3'
->> drivers/built-in.o:dm-cache-target.c:(.text+0x1eac51): more undefined references to `__udivdi3' follow
->>
->>
->>
->> Full randconfig file is attached.
-> 
-> I was able to reproduce using your randconfig file.
-> 
-> This patch fixed the build for my v3.9-rc1 tree:
+On 03/02/2013 12:00 AM, Aaron Lu wrote:
+> ODD is not a common TLA for non-ATA people so they will get confused
+> by its meaning when they are configuring the kernel. This patch fixed
+> this problem by using ODD only after stating what it is.
+>
+> Signed-off-by: Aaron Lu <aaron.lu@intel.com>
+> ---
+> v2:
+> Add a space before open paren as suggested by Sergei Shtylyov.
+>
+>   drivers/ata/Kconfig | 13 +++++++------
+>   1 file changed, 7 insertions(+), 6 deletions(-)
 
-Acked-by: Randy Dunlap <rdunlap@infradead.org>
-
-Thanks.
-
-> diff --git a/drivers/md/dm-cache-target.c b/drivers/md/dm-cache-target.c
-> index 0f4e84b..96bfec1 100644
-> --- a/drivers/md/dm-cache-target.c
-> +++ b/drivers/md/dm-cache-target.c
-> @@ -415,7 +415,7 @@ static bool block_size_is_power_of_two(struct cache *cache)
->  static dm_dblock_t oblock_to_dblock(struct cache *cache, dm_oblock_t oblock)
->  {
->  	sector_t discard_blocks = cache->discard_block_size;
-> -	dm_block_t b = from_oblock(oblock);
-> +	sector_t b = from_oblock(oblock);
->  
->  	if (!block_size_is_power_of_two(cache))
->  		(void) sector_div(discard_blocks, cache->sectors_per_block);
-> @@ -999,7 +999,7 @@ static void process_discard_bio(struct cache *cache, struct bio *bio)
->  {
->  	dm_block_t start_block = dm_sector_div_up(bio->bi_sector,
->  						  cache->discard_block_size);
-> -	dm_block_t end_block = bio->bi_sector + bio_sectors(bio);
-> +	sector_t end_block = bio->bi_sector + bio_sectors(bio);
->  	dm_block_t b;
->  
->  	(void) sector_div(end_block, cache->discard_block_size);
-> @@ -1801,7 +1801,7 @@ static int cache_create(struct cache_args *ca, struct cache **result)
->  	char **error = &ca->ti->error;
->  	struct cache *cache;
->  	struct dm_target *ti = ca->ti;
-> -	dm_block_t origin_blocks;
-> +	sector_t origin_blocks;
->  	struct dm_cache_metadata *cmd;
->  	bool may_format = ca->features.mode == CM_WRITE;
->  
-> @@ -1845,7 +1845,7 @@ static int cache_create(struct cache_args *ca, struct cache **result)
->  	}
->  
->  	if (ca->block_size & (ca->block_size - 1)) {
-> -		dm_block_t cache_size = ca->cache_sectors;
-> +		sector_t cache_size = ca->cache_sectors;
->  
->  		cache->sectors_per_block_shift = -1;
->  		(void) sector_div(cache_size, ca->block_size);
-> 
+applied
 
 
--- 
-~Randy
+
