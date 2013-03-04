@@ -1,61 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932542Ab3CDXwH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 18:52:07 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:4132 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758320Ab3CDXwF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 18:52:05 -0500
-X-IronPort-AV: E=Sophos;i="4.84,783,1355126400"; 
-   d="scan'208";a="27660825"
-Message-ID: <513533A4.3060300@codeaurora.org>
-Date: Mon, 04 Mar 2013 15:52:04 -0800
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
+	id S932734Ab3CDXzL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 18:55:11 -0500
+Received: from ozlabs.org ([203.10.76.45]:33322 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758341Ab3CDXzK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Mar 2013 18:55:10 -0500
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: <torvalds@linux-foundation.org>, "LKML" <linux-kernel@vger.kernel.org>
+Cc: Aurelien Jarno <aurelien@aurel32.net>, Ben Hutchings <ben@decadent.org.uk>,
+        ian@mnementh.co.uk
+Subject: [PULL] virtio randomness fix
+User-Agent: Notmuch/0.14 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
+Date: Tue, 05 Mar 2013 10:22:38 +1030
+Message-ID: <87ip56d8op.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-To: Mark Rutland <mark.rutland@arm.com>
-CC: Paul Mundt <lethal@linux-sh.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 8/8] ARM: smp: Remove local timer API
-References: <1361518039-16663-1-git-send-email-sboyd@codeaurora.org> <1361518039-16663-9-git-send-email-sboyd@codeaurora.org> <20130222111545.GA15020@e106331-lin.cambridge.arm.com> <20130222162458.GA19670@linux-sh.org> <20130225134041.GA22785@e106331-lin.cambridge.arm.com> <5135333E.6030305@codeaurora.org>
-In-Reply-To: <5135333E.6030305@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/04/13 15:50, Stephen Boyd wrote:
->
->> +
->> +	evt->name	= "dummy timer";
->> +	evt->features	= CLOCK_EVT_FEAT_PERIODIC |
->> +			  CLOCK_EVT_FEAT_ONESHOT |
->> +			  CLOCK_EVT_FEAT_DUMMY;
->> +	evt->rating	= 100;
->> +	evt->set_mode	= dummy_set_mode;
->> +	evt->cpumask	= cpumask_of(cpu);
->> +
->> +	clockevents_register_device(evt);
->> +}
->> +
->> +static int __cpuinit dummy_cpu_notify(struct notifier_block *self,
->> +				      unsigned long action, void *hcpu)
->> +{
->> +	if ((action & ~CPU_TASKS_FROZEN) == CPU_STARTING)
->> +		dummy_setup();
-> There are already two dummy_setup() functions. Perhaps we can
-> s/dummy/dummy_broadcast/ throughout this file?
->
+The following changes since commit 6dbe51c251a327e012439c4772097a13df43c5b8:
 
-Sorry, meant to say dummy_timer not dummy_broadcast.
+  Linux 3.9-rc1 (2013-03-03 15:11:05 -0800)
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+are available in the git repository at:
 
+  git://git.kernel.org/pub/scm/linux/kernel/git/rusty/linux.git tags/fixes-for-linus
+
+for you to fetch changes up to f7f154f1246ccc5a0a7e9ce50932627d60a0c878:
+
+  hw_random: make buffer usable in scatterlist. (2013-03-05 10:11:41 +1030)
+
+----------------------------------------------------------------
+Nasty side-effect of vmalloc'ing modules: their static vars cannot be put
+into scatterlists.  Jens has a check queued for this, so it shouldn't happen
+again.
+
+Thanks,
+Rusty.
+
+----------------------------------------------------------------
+Rusty Russell (1):
+      hw_random: make buffer usable in scatterlist.
+
+ drivers/char/hw_random/core.c |   19 ++++++++++++++++---
+ 1 file changed, 16 insertions(+), 3 deletions(-)
