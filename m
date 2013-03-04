@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757431Ab3CDDow (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 22:44:52 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33157 "EHLO
+	id S1757594Ab3CDDpC (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 22:45:02 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33207 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757343Ab3CDDos (ORCPT
+	by vger.kernel.org with ESMTP id S1757474Ab3CDDo6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Mar 2013 22:44:48 -0500
-Message-Id: <20130304033710.623093483@decadent.org.uk>
+	Sun, 3 Mar 2013 22:44:58 -0500
+Message-Id: <20130304033709.832263379@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 04 Mar 2013 03:37:38 +0000
+Date: Mon, 04 Mar 2013 03:37:30 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Dave Airlie <airlied@redhat.com>
-Subject: [ 031/153] vgacon/vt: clear buffer attributes when we load a 512 character font
- (v2)
+Cc: akpm@linux-foundation.org, Bjorn Helgaas <bhelgaas@google.com>,
+        Joonsoo Kim <js1304@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [ 023/153] Driver core: treat unregistered bus_types as having no devices
 In-Reply-To: <20130304033707.648729212@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,102 +28,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Airlie <airlied@redhat.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
 
-commit 2a2483072393b27f4336ab068a1f48ca19ff1c1e upstream.
+commit 4fa3e78be7e985ca814ce2aa0c09cbee404efcf7 upstream.
 
-When we switch from 256->512 byte font rendering mode, it means the
-current contents of the screen is being reinterpreted. The bit that holds
-the high bit of the 9-bit font, may have been previously set, and thus
-the new font misrenders.
+A bus_type has a list of devices (klist_devices), but the list and the
+subsys_private structure that contains it are not initialized until the
+bus_type is registered with bus_register().
 
-The problem case we see is grub2 writes spaces with the bit set, so it
-ends up with data like 0x820, which gets reinterpreted into 0x120 char
-which the font translates into G with a circumflex. This flashes up on
-screen at boot and is quite ugly.
+The panic/reboot path has fixups that look up devices in pci_bus_type.  If
+we panic before registering pci_bus_type, the bus_type exists but the list
+does not, so mach_reboot_fixups() trips over a null pointer and panics
+again:
 
-A current side effect of this patch though is that any rendering on the
-screen changes color to a slightly darker color, but at least the screen
-no longer corrupts.
+    mach_reboot_fixups
+      pci_get_device
+        ..
+          bus_find_device(&pci_bus_type, ...)
+            bus->p is NULL
 
-v2: as suggested by hpa, always clear the attribute space, whether we
-are are going to or from 512 chars.
+Joonsoo reported a problem when panicking before PCI was initialized.
+I think this patch should be sufficient to replace the patch he posted
+here: https://lkml.org/lkml/2012/12/28/75 ("[PATCH] x86, reboot: skip
+reboot_fixups in early boot phase")
 
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Reported-by: Joonsoo Kim <js1304@gmail.com>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/tty/vt/vt.c            |    2 +-
- drivers/video/console/vgacon.c |   22 +++++++++++++++-------
- include/linux/vt_kern.h        |    1 +
- 3 files changed, 17 insertions(+), 8 deletions(-)
+ drivers/base/bus.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/tty/vt/vt.c
-+++ b/drivers/tty/vt/vt.c
-@@ -657,7 +657,7 @@ static inline void save_screen(struct vc
-  *	Redrawing of screen
-  */
+--- a/drivers/base/bus.c
++++ b/drivers/base/bus.c
+@@ -289,7 +289,7 @@ int bus_for_each_dev(struct bus_type *bu
+ 	struct device *dev;
+ 	int error = 0;
  
--static void clear_buffer_attributes(struct vc_data *vc)
-+void clear_buffer_attributes(struct vc_data *vc)
- {
- 	unsigned short *p = (unsigned short *)vc->vc_origin;
- 	int count = vc->vc_screenbuf_size / 2;
---- a/drivers/video/console/vgacon.c
-+++ b/drivers/video/console/vgacon.c
-@@ -1064,7 +1064,7 @@ static int vgacon_do_font_op(struct vgas
- 	unsigned short video_port_status = vga_video_port_reg + 6;
- 	int font_select = 0x00, beg, i;
- 	char *charmap;
--	
-+	bool clear_attribs = false;
- 	if (vga_video_type != VIDEO_TYPE_EGAM) {
- 		charmap = (char *) VGA_MAP_MEM(colourmap, 0);
- 		beg = 0x0e;
-@@ -1169,12 +1169,6 @@ static int vgacon_do_font_op(struct vgas
+-	if (!bus)
++	if (!bus || !bus->p)
+ 		return -EINVAL;
  
- 	/* if 512 char mode is already enabled don't re-enable it. */
- 	if ((set) && (ch512 != vga_512_chars)) {
--		/* attribute controller */
--		for (i = 0; i < MAX_NR_CONSOLES; i++) {
--			struct vc_data *c = vc_cons[i].d;
--			if (c && c->vc_sw == &vga_con)
--				c->vc_hi_font_mask = ch512 ? 0x0800 : 0;
--		}
- 		vga_512_chars = ch512;
- 		/* 256-char: enable intensity bit
- 		   512-char: disable intensity bit */
-@@ -1185,8 +1179,22 @@ static int vgacon_do_font_op(struct vgas
- 		   it means, but it works, and it appears necessary */
- 		inb_p(video_port_status);
- 		vga_wattr(state->vgabase, VGA_AR_ENABLE_DISPLAY, 0);	
-+		clear_attribs = true;
- 	}
- 	raw_spin_unlock_irq(&vga_lock);
-+
-+	if (clear_attribs) {
-+		for (i = 0; i < MAX_NR_CONSOLES; i++) {
-+			struct vc_data *c = vc_cons[i].d;
-+			if (c && c->vc_sw == &vga_con) {
-+				/* force hi font mask to 0, so we always clear
-+				   the bit on either transition */
-+				c->vc_hi_font_mask = 0x00;
-+				clear_buffer_attributes(c);
-+				c->vc_hi_font_mask = ch512 ? 0x0800 : 0;
-+			}
-+		}
-+	}
- 	return 0;
- }
+ 	klist_iter_init_node(&bus->p->klist_devices, &i,
+@@ -323,7 +323,7 @@ struct device *bus_find_device(struct bu
+ 	struct klist_iter i;
+ 	struct device *dev;
  
---- a/include/linux/vt_kern.h
-+++ b/include/linux/vt_kern.h
-@@ -47,6 +47,7 @@ int con_set_cmap(unsigned char __user *c
- int con_get_cmap(unsigned char __user *cmap);
- void scrollback(struct vc_data *vc, int lines);
- void scrollfront(struct vc_data *vc, int lines);
-+void clear_buffer_attributes(struct vc_data *vc);
- void update_region(struct vc_data *vc, unsigned long start, int count);
- void redraw_screen(struct vc_data *vc, int is_switch);
- #define update_screen(x) redraw_screen(x, 0)
+-	if (!bus)
++	if (!bus || !bus->p)
+ 		return NULL;
+ 
+ 	klist_iter_init_node(&bus->p->klist_devices, &i,
 
 
