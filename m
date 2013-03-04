@@ -1,80 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932276Ab3CDUIr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 15:08:47 -0500
-Received: from mail-oa0-f41.google.com ([209.85.219.41]:43424 "EHLO
-	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932169Ab3CDUIq (ORCPT
+	id S932321Ab3CDUJ3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 15:09:29 -0500
+Received: from mail-ve0-f171.google.com ([209.85.128.171]:42485 "EHLO
+	mail-ve0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932147Ab3CDUJ1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 15:08:46 -0500
+	Mon, 4 Mar 2013 15:09:27 -0500
 MIME-Version: 1.0
-In-Reply-To: <201303042054.16849.PeterHuewe@gmx.de>
-References: <1362408106-8632-1-git-send-email-peter.huewe@infineon.com>
- <20130304174104.GA10811@ennui.austin.ibm.com> <201303042054.16849.PeterHuewe@gmx.de>
-From: Kent Yoder <shpedoikal@gmail.com>
-Date: Mon, 4 Mar 2013 14:08:15 -0600
-Message-ID: <CAM0nabEZvLSKYSQ7YvxZwtiHn5-Z2FXAEjGDgzPN9T1=LQq12w@mail.gmail.com>
-Subject: Re: [tpmdd-devel] [PATCH v2] tpm: Add support for new Infineon I2C
- TPM (SLB 9645 TT 1.2 I2C)
-To: =?ISO-8859-1?Q?Peter_H=FCwe?= <PeterHuewe@gmx.de>
-Cc: tpmdd-devel@lists.sourceforge.net, Kent Yoder <key@linux.vnet.ibm.com>,
-        Peter Huewe <peter.huewe@infineon.com>,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <4FA345DA4F4AE44899BD2B03EEEC2FA9286AD381@sacexcmbx05-prd.hq.netapp.com>
+References: <CACVXFVMKN6aeCvJcn7dyuonJYJDfYxWeW5KE6gfKRKJKFj2M4A@mail.gmail.com>
+	<4FA345DA4F4AE44899BD2B03EEEC2FA9286AD113@sacexcmbx05-prd.hq.netapp.com>
+	<CACVXFVM5VhU_ZgYr1KxERY7DXxMQpkWoiTyjyar91Hz=vU4-ug@mail.gmail.com>
+	<20130304100432.5c7ea704@tlielax.poochiereds.net>
+	<CACVXFVPvTnfH98KqAQxDzMi5Pbf1fbi5HEGb=ggWWg4FX_4G=g@mail.gmail.com>
+	<4FA345DA4F4AE44899BD2B03EEEC2FA9286AD381@sacexcmbx05-prd.hq.netapp.com>
+Date: Mon, 4 Mar 2013 12:09:26 -0800
+X-Google-Sender-Auth: C-A6_uely9Lo792k9euRumKkKIQ
+Message-ID: <CACBanvqfW7P-TfKnVGgsumPdLhx-Z4ZS8wUHyUNRA9mM=txK8A@mail.gmail.com>
+Subject: Re: LOCKDEP: 3.9-rc1: mount.nfs/4272 still has locks held!
+From: Mandeep Singh Baines <msb@chromium.org>
+To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+Cc: Ming Lei <ming.lei@canonical.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Jeff Layton <jlayton@redhat.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Ben Chan <benchan@chromium.org>,
+        Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@redhat.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Mar 4, 2013 at 7:53 AM, Myklebust, Trond
+<Trond.Myklebust@netapp.com> wrote:
+> On Mon, 2013-03-04 at 23:33 +0800, Ming Lei wrote:
+>> Hi,
+>>
+>> CC guys who introduced the lockdep change.
+>>
+>> On Mon, Mar 4, 2013 at 11:04 PM, Jeff Layton <jlayton@redhat.com> wrote:
+>>
 >> >
->> > +
->> > +#ifdef CONFIG_OF
->> > +static const struct of_device_id tpm_tis_i2c_of_match[] = {
->> > +   { .compatible = "infineon,tpm_i2c_infineon", .data = (void *)0 },
->> > +   { .compatible = "infineon,slb9635tt", .data = (void *)0 },
->> > +   { .compatible = "infineon,slb9645tt", .data = (void *)1 },
+>> > I don't get it -- why is it bad to hold a lock across a freeze event?
 >>
->>   Here "name" and "type" are left empty in of_device_id. Will there be
->> times when those are needed? Like informational messages from the OF
->> subsystem?
->
-> Hmm, what do you propose?
-> name = chip type ? or name = tpm_i2c_infineon?
-> type = tpm ?
-
-  Doesn't matter to me, I just wanted to be sure you hadn't missed anything.
-
->> > +              .of_match_table = of_match_ptr(tpm_tis_i2c_of_match),
+>> At least this may deadlock another mount.nfs during freezing, :-)
 >>
->>   Please put this line inside an ifdef CONFIG_OF, since of_match_ptr
->> lives in there.
-> NACK.
-> of.h has already the ifdef CONFIG_OF for of_match_ptr and defines it either as
+>> See detailed explanation in the commit log:
+>>
+>> commit 6aa9707099c4b25700940eb3d016f16c4434360d
+>> Author: Mandeep Singh Baines <msb@chromium.org>
+>> Date:   Wed Feb 27 17:03:18 2013 -0800
+>>
+>>     lockdep: check that no locks held at freeze time
+>>
+>>     We shouldn't try_to_freeze if locks are held.  Holding a lock can cause a
+>>     deadlock if the lock is later acquired in the suspend or hibernate path
+>>     (e.g.  by dpm).  Holding a lock can also cause a deadlock in the case of
+>>     cgroup_freezer if a lock is held inside a frozen cgroup that is later
+>>     acquired by a process outside that group.
+>>
 >
-> #define of_match_ptr(_ptr)      (_ptr)
-> or
-> #define of_match_ptr(_ptr)      NULL
-> depending on CONFIG_OF is set.
-
-  Thanks.
-
->>   Won't you also need to add OF to Kconfig?
-> Not really, as the only stuff we're using is the compatible id - the driver can
-> live without it and can be probed from userspace or plain old platform data.
-> I probably have compile tested it with and without CONFIG_OF.
-
-  Ok.
-
-> Is it worth a v3?
->  or a small update patch which adds the of name/type and the space? (I can
-> create this patch immediately)
-
-  Not a problem, I can apply as-is with the fixup.
-
-Kent
-
+> This is bloody ridiculous... If you want to add functionality to
+> implement cgroup or per-process freezing, then do it through some other
+> api instead of trying to push your problems onto others by adding new
+> global locking rules.
 >
-> Thanks,
-> Peter
+> Filesystems are a shared resource that have _nothing_ to do with process
+> cgroups. They need to be suspended when the network goes down or other
+> resources that they depend on are suspended. At that point, there is no
+> "what if I launch a new mount command?" scenario.
 >
+
+Hi Trond,
+
+My intention was to introduce new rules. My change simply introduces a
+check for a deadlock case that can already happen.
+
+I think a deadlock could happen under the following scenario:
+
+1) An administrator wants to freeze a container. Perhaps to checkpoint
+it and it migrate it some place else.
+2) An nfs mount was in progress so we hit this code path and freeze
+with a lock held.
+3) Another container tries to nfs mount.
+4) Deadlock.
+
+Regards,
+Mandeep
+
+> Trond
+> --
+> Trond Myklebust
+> Linux NFS client maintainer
 >
->
+> NetApp
+> Trond.Myklebust@netapp.com
+> www.netapp.com
