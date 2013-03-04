@@ -1,57 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756877Ab3CDKo2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 05:44:28 -0500
-Received: from smtp4.epfl.ch ([128.178.224.219]:58751 "HELO smtp4.epfl.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1756457Ab3CDKo1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 05:44:27 -0500
-Message-ID: <51347B06.8090604@epfl.ch>
-Date: Mon, 04 Mar 2013 11:44:22 +0100
-From: Florian Vaussard <florian.vaussard@epfl.ch>
-Reply-To: florian.vaussard@epfl.ch
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130219 Thunderbird/17.0.3
+	id S1756967Ab3CDKoy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 05:44:54 -0500
+Received: from mga03.intel.com ([143.182.124.21]:55166 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756612Ab3CDKox (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Mar 2013 05:44:53 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,778,1355126400"; 
+   d="scan'208";a="208511400"
+Date: Mon, 4 Mar 2013 11:44:49 +0100
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Ian Lartey <ian@slimlogic.co.uk>
+Cc: linux-kernel@vger.kernel.org, grant.likely@secretlab.ca,
+        linus.walleij@linaro.org, ldewangan@nvidia.com,
+        Graeme Gregory <gg@slimlogic.co.uk>
+Subject: Re: [PATCH] mfd: palmas: is_palmas_charger needed by multiple drivers
+Message-ID: <20130304104449.GB25973@sortiz-mobl>
+References: <1361890048-24555-1-git-send-email-ian@slimlogic.co.uk>
 MIME-Version: 1.0
-To: Bryan Wu <cooloney@gmail.com>, Richard Purdie <rpurdie@rpsys.net>
-CC: Thierry Reding <thierry.reding@avionic-design.de>,
-        Peter Ujfalusi <peter.ujfalusi@ti.com>, linux-leds@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 3/3] leds: leds-pwm: Defer led_pwm_set() if PWM can
- sleep
-References: <1359381659-24454-1-git-send-email-florian.vaussard@epfl.ch> <1359381659-24454-4-git-send-email-florian.vaussard@epfl.ch> <20130130081728.GC13568@avionic-0098.mockup.avionic-design.de> <512E2F98.6070404@epfl.ch>
-In-Reply-To: <512E2F98.6070404@epfl.ch>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1361890048-24555-1-git-send-email-ian@slimlogic.co.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Bryan, Richard,
+Hi Ian,
 
-> On 01/30/2013 09:17 AM, Thierry Reding wrote:
->> On Mon, Jan 28, 2013 at 03:00:59PM +0100, Florian Vaussard wrote:
->>> Call to led_pwm_set() can happen inside atomic context, like triggers.
->>> If the PWM call can sleep, defer using a worker.
->>>
->>> Cc: Peter Ujfalusi <peter.ujfalusi@ti.com>
->>> Signed-off-by: Florian Vaussard <florian.vaussard@epfl.ch>
->>> ---
->>>   drivers/leds/leds-pwm.c |   50
->>> +++++++++++++++++++++++++++++++++++++++-------
->>>   1 files changed, 42 insertions(+), 8 deletions(-)
->>
->> Bryan, I assume that you'll be taking this? It doesn't apply cleanly to
->> my tree, probably because of Peter's recent changes that you took
->> through your tree and Florian based his patches on top of that. The
->> conflict resolution should be trivial, though.
->>
->
-> It seems that this patch was not taken. Could you pull it, as the other
-> part is already in linux-pwm? Or is there any show stopper?
->
+On Tue, Feb 26, 2013 at 02:47:28PM +0000, Ian Lartey wrote:
+> is_palmas_charger checks for the presence of charging
+> functionality in the device
+> 
+> Signed-off-by: Graeme Gregory <gg@slimlogic.co.uk>
+> Signed-off-by: Ian Lartey <ian@slimlogic.co.uk>
+> Acked-by: Laxman Dewangan<ldewangan@nvidia.com>
+Acked-by: Samuel Ortiz <sameo@linux.intel.com>
 
-Ping? Who should merge this?
+Cheers,
+Samuel.
 
-Many thanks!
-
-Florian
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
