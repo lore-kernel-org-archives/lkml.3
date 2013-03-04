@@ -1,83 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758461Ab3CDRTL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 12:19:11 -0500
-Received: from smtp.eu.citrix.com ([46.33.159.39]:21681 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757989Ab3CDRTK (ORCPT
+	id S932139Ab3CDRTb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 12:19:31 -0500
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:36641 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758536Ab3CDRTW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 12:19:10 -0500
-X-IronPort-AV: E=Sophos;i="4.84,781,1355097600"; 
-   d="scan'208";a="2155218"
-Message-ID: <5134D78B.4060400@citrix.com>
-Date: Mon, 4 Mar 2013 18:19:07 +0100
-From: =?ISO-8859-1?Q?Roger_Pau_Monn=E9?= <roger.pau@citrix.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:17.0) Gecko/20130216 Thunderbird/17.0.3
-MIME-Version: 1.0
-To: Jan Beulich <JBeulich@suse.com>
-CC: "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCH RFC 01/12] xen-blkback: don't store dev_bus_addr
-References: <1362047335-26402-1-git-send-email-roger.pau@citrix.com> <1362047335-26402-2-git-send-email-roger.pau@citrix.com> <512F467602000078000C1E0C@nat28.tlf.novell.com>
-In-Reply-To: <512F467602000078000C1E0C@nat28.tlf.novell.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+	Mon, 4 Mar 2013 12:19:22 -0500
+Date: Mon, 4 Mar 2013 09:19:16 -0800
+From: Stephen Hemminger <stephen@networkplumber.org>
+To: Eliezer Tamir <eliezer.tamir@linux.jf.intel.com>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        Dave Miller <davem@davemloft.net>,
+        Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        e1000-devel@lists.sourceforge.net,
+        Willem de Bruijn <willemb@google.com>,
+        Andi Kleen <andi@firstfloor.org>, HPA <hpa@zytor.com>,
+        Eliezer Tamir <eliezer@tamir.org.il>
+Subject: Re: [RFC PATCH 0/5] net: low latency Ethernet device polling
+Message-ID: <20130304091916.1fae5788@nehalam.linuxnetplumber.net>
+In-Reply-To: <20130227175549.10611.82188.stgit@gitlad.jf.intel.com>
+References: <20130227175549.10611.82188.stgit@gitlad.jf.intel.com>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28/02/13 11:58, Jan Beulich wrote:
->>>> On 28.02.13 at 11:28, Roger Pau Monne <roger.pau@citrix.com> wrote:
->> dev_bus_addr returned in the grant ref map operation is the mfn of the
->> passed page, there's no need to store it in the persistent grant
->> entry, since we can always get it provided that we have the page.
+On Wed, 27 Feb 2013 09:55:49 -0800
+Eliezer Tamir <eliezer.tamir@linux.jf.intel.com> wrote:
+
+> This patchset adds the ability for the socket layer code to poll directly 
+> on an Ethernet device's RX queue. This eliminates the cost of the interrupt
+> and context switch and with proper tuning allows us to get very close
+> to the HW latency.
 > 
-> Interesting that you come up with this, as I have a similar patch
-> pending (not posted yet), aiming at reducing the stack usage in
-> dispatch_rw_block_io(): seg[].buf is really unnecessary with the
-> dev_bus_addr storing removed, as the only reader of that field
-> can equally well use req->u.rw.seg[i].first_sect.
-
-Well, it can if we are not using indirect descriptors, because once we
-start using indirect descriptors segments are inside a gref frame, so
-it's quite comfortable to store first_sect inside a separate array, this
-way we can map indirect segments, copy whatever data we need from them
-and unmap them, without having them around for the whole lifetime of the
-request.
-
+> This is a follow up to Jesse Brandeburg's Kernel Plumbers talk from last year
+> http://www.linuxplumbersconf.org/2012/wp-content/uploads/2012/09/2012-lpc-Low-Latency-Sockets-slides-brandeburg.pdf
 > 
-> And then the biolist[] array really can be folded into a union
-> with the remaining seg[] one, as their usage scopes are easily
-> separable.
-
-Could we leave that for a further patch? I would like to avoid messing
-any more with blkback, as I'm already touching a lot of bits with this
-patch series.
-
+> Patch 1 adds ndo_ll_poll and the IP code to use it.
+> Patch 2 is an example of how TCP can use ndo_ll_poll.
+> Patch 3 shows how this method would be implemented for the ixgbe driver.
+> Patch 4 adds statistics to the ixgbe driver for ndo_ll_poll events.
+> (Optional) Patch 5 is a handy kprobes module to measure detailed latency 
+> numbers.
 > 
->> --- a/drivers/block/xen-blkback/blkback.c
->> +++ b/drivers/block/xen-blkback/blkback.c
->> @@ -621,9 +621,7 @@ static int xen_blkbk_map(struct blkif_request *req,
->>  				 * If this is a new persistent grant
->>  				 * save the handler
->>  				 */
->> -				persistent_gnts[i]->handle = map[j].handle;
->> -				persistent_gnts[i]->dev_bus_addr =
->> -					map[j++].dev_bus_addr;
->> +				persistent_gnts[i]->handle = map[j++].handle;
->>  			}
->>  			pending_handle(pending_req, i) =
->>  				persistent_gnts[i]->handle;
->> @@ -631,7 +629,8 @@ static int xen_blkbk_map(struct blkif_request *req,
->>  			if (ret)
->>  				continue;
->>  
->> -			seg[i].buf = persistent_gnts[i]->dev_bus_addr |
->> +			seg[i].buf = pfn_to_mfn(page_to_pfn(
->> +				persistent_gnts[i]->page)) << PAGE_SHIFT |
+> this patchset is also available in the following git branch
+> git://github.com/jbrandeb/lls.git rfc
 > 
-> So why do you do this? The only reader masks the field with
-> ~PAGE_MASK anyway.
+> Performance numbers:
+> Kernel   Config     C3/6  rx-usecs  TCP  UDP
+> 3.8rc6   typical    off   adaptive  37k  40k
+> 3.8rc6   typical    off   0*        50k  56k
+> 3.8rc6   optimized  off   0*        61k  67k
+> 3.8rc6   optimized  on    adaptive  26k  29k
+> patched  typical    off   adaptive  70k  78k
+> patched  optimized  off   adaptive  79k  88k
+> patched  optimized  off   100       84k  92k
+> patched  optimized  on    adaptive  83k  91k
+> *rx-usecs=0 is usually not useful in a production environment.
+> 
+> Notice that the patched kernel gives good results even with no tweaking.
+> Performance for the default configuration is up by almost 100%,
+> tuning will get you another 14%. Comparing best-case performance
+> patched vs. unpatched, we are up 36%.
+> 
+> Test setup details:
+> Machines: each with two Intel Xeon 2680 CPUs and X520 (82599) optical NICs
+> Tests: Netperf tcp_rr and udp_rr, 1 byte (round trips per second)
+> Kernel: unmodified 3.8rc6 and patched 3.8rc6
+> Config: typical is derived from RH6.2, optimized is a stripped down config
+> Interrupt coalescing (ethtool rx-usecs) settings: 0=off, 1=adaptive, 100 us
+> C3/6 states were turned on and off through BIOS.
+> When C states were on the performance governor was used.
+> 
+> Design:
+> Pointers to a napi_struct were added both to struct sk_buff and struct sk.
+> These are used to track which NAPI we need to poll for a specific socket.
+> (more about this in the open issues section)
+> The device driver marks every incoming skb.
+> This info is propagated to the sk when an skb is added to the socket queue.
+> When the socket code does not find any more data on the socket queue,
+> it now may call ndo_ll_poll which will crank the device's rx queue and feed
+> incoming packets to the stack directly from the context of the socket.
+> A sysctl value (net.ipv4.ip_low_latency_poll) controls how many cycles we 
+> busy-wait before giving up. (setting to 0 globally disables busy-polling)
+> 
+> Locking: 
+> Since what needs to be locked between a device's NAPI poll and ndo_ll_poll,
+> is highly device / configuration dependent, we do this inside the
+> Ethernet driver. For example, when packets for high priority connections
+> are sent to separate rx queues, you might not need locking at all.
+> For ixgbe we only lock the RX queue.
+> ndo_ll_poll does not touch the interrupt state or the TX queues.
+> (earlier versions of this patchset did touch them,
+> but this design is simpler and works better.)
+> Ndo_ll_poll is called with local BHs disabled. 
+> 
+> If a queue is actively polled by a socket (on another CPU) napi poll
+> will not service it, but will wait until the queue can be locked 
+> and cleaned before doing a napi_complete().
+> If a socket can't lock the queue because another CPU has it,
+> either from NAPI or from another socket polling on it,
+> the socket code can busy wait on the socket's skb queue.
+> Ndo_ll_poll does not have preferential treatment for the data from the
+> calling socket vs. data from others, so if another CPU is polling,
+> you will see your data on this socket's queue when it arrives.
+> 
+> Open issues:
+> 1. Find a way to avoid the need to change the sk and skb structs.
+> One big disadvantage of how we do this right now is that when a device is
+> removed, it's hard to prevent it from getting polled by a socket
+> which holds a stale reference. 
+> 
+> 2. How do we decide which sockets are eligible to do busy polling?
+> Do we add a socket option to control this?
+> How do we provide sane defaults while allowing flexibility and performance?
+> 
+> 3. Andi Kleen and HPA pointed out that using get_cycles() is not portable.
+> 
+> 4. How and where do we call ndo_ll_poll from the socket code?
+> One good place seems to be wherever the kernel puts the process to sleep,
+> waiting for more data, but this makes doing something intelligent about
+> poll (the system call) hard. From the perspective of how ndo_ll_poll
+> itself is implemented this does not seem to matter.
+> 
+> 5. I would like to hear suggestions on naming conventions and where
+> to put the code that for now I have put in include/net/ll_poll.h 
+> 
+> How to test:
+> 1. The patchset should apply cleanly to either net  or Linux 3.8 
+> (don't forget to configure INET_LL_RX_POLL and INET_LL_TCP_POLL).
+> 
+> 2. The ethtool -c setting for rx-usecs should be on the order of 100.
+> 
+> 3. Sysctl value net.ipv4.ip_low_latency_poll controls how long
+> (in cycles) to busy-wait for more data, You are encouraged to play
+> with this and see what works for you. (setting it to 0 would
+> globally disable the new mechanism altogether.)
+> 
+> 4. benchmark thread and IRQ should be bound to separate cores.
+> Both cores should be on the same CPU NUMA node as the NIC.
+> When the app and the IRQ run on the same CPU  you get a ~5% penalty.
+> If interrupt coalescing is set to a low value this penalty
+> can be very large.
+> 
+> 5. If you suspect that your machine is not configured properly,
+> use numademo to make sure that the CPU to memory BW is OK.
+> numademo 128m memcpy local copy numbers should be more than  
+> 8GB/s on a properly configured machine.
+> 
+> Credit:
+> Jesse Brandeburg, Arun Chekhov Ilango, Alexander Duyck, Eric Geisler,
+> Jason Neighbors, Yadong Li, Mike Polehn, Anil Vasudevan, Don Wood
+> Special thanks for finding bugs in earlier versions:
+> Willem de Bruijn and Andi Kleen
 
-Yes, I only need to store first_sect.
+This is not a criticism of this patch, but it seems that gradually, we have gotten
+worse and worse at making network devices generic. There are more and more features
+that require special case code in every device driver. This is fine for Intel devices but makes
+the feature less generally useable and more error prone. 
