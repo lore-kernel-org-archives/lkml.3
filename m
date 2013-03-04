@@ -1,70 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755000Ab3CDCzE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 21:55:04 -0500
-Received: from mail-vc0-f169.google.com ([209.85.220.169]:49154 "EHLO
-	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754552Ab3CDCzC (ORCPT
+	id S1755086Ab3CDCzT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 21:55:19 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:51068 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755031Ab3CDCzN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Mar 2013 21:55:02 -0500
-MIME-Version: 1.0
-In-Reply-To: <513407AC.8060009@infradead.org>
-References: <CA+55aFx0HcOXKpxmZzM5jcbAaOroxafomX5ggMFV4A=py1qh-Q@mail.gmail.com>
-	<alpine.LRH.2.00.1303040213590.11934@twin.jikos.cz>
-	<CA+55aFxA1pH_aKJc85DXuS2-Q=7b4pP-h_ms6XQiSzQcpWaO6Q@mail.gmail.com>
-	<513407AC.8060009@infradead.org>
-Date: Sun, 3 Mar 2013 18:55:01 -0800
-X-Google-Sender-Auth: KZfIl30tHdWuzWtWIFl6YbzOpng
-Message-ID: <CA+55aFx7s_-Cv6Qa89CSyyMEESyGO_vbR1N42pOxRgkuCWf8mg@mail.gmail.com>
-Subject: Re: Linux 3.9-rc1
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: Jiri Kosina <jkosina@suse.cz>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Sun, 3 Mar 2013 21:55:13 -0500
+X-AuditID: cbfee68d-b7f636d0000009be-da-51340d0e5298
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Andrew Morton'" <akpm@linux-foundation.org>
+Cc: "'LKML'" <linux-kernel@vger.kernel.org>,
+        "'Richard Purdie'" <rpurdie@rpsys.net>,
+        "'Jingoo Han'" <jg1.han@samsung.com>
+Subject: [PATCH] backlight: atmel-pwm-bl: add __init annotation
+Date: Mon, 04 Mar 2013 11:55:09 +0900
+Message-id: <012b01ce1883$af1d04a0$0d570de0$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac4Yg67BmnAMc5MaQ0Kw1twIywQfVQ==
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrCIsWRmVeSWpSXmKPExsVy+t8zfV0+XpNAg3V9XBZz1q9hs7i88BKr
+	xeVdc9gsdu96yurA4nFixm8Wjz3zf7B69G1ZxejxeZNcAEsUl01Kak5mWWqRvl0CV8adZW+Z
+	C/6xVTQcWMPewPiftYuRk0NCwETi1a+PjBC2mMSFe+vZuhi5OIQEljFK/Jk3Fa5o7/MvTBCJ
+	6YwSM89+ZYdwfjFKvDu+gA2kik1ATeLLl8NACQ4OEQF9ibYWDZAws0CpxNYH71lAwsIC9hLX
+	J4MtYxFQlXg0tQHM5hWwlVh06QArhC0o8WPyPRaIVi2J9TuPM0HY8hKb17xlBhkjIaAu8eiv
+	LkhYREBPYu+8h6wQJSIS+168YwS5TEJgG7vEi2m72CF2CUh8m3yIBaJXVmLTAWaItyQlDq64
+	wTKBUWwWks2zkGyehWTzLCQrFjCyrGIUTS1ILihOSi8y1CtOzC0uzUvXS87P3cQIibHeHYy3
+	D1gfYkwGWj+RWUo0OR8Yo3kl8YbGxiZmJqYm5pam5qakCSuJ88pdkgkUEkhPLEnNTk0tSC2K
+	LyrNSS0+xMjEwSnVwHhddAurvNmntVd21bZbrJx1NGjuQWWp3hmpBe92Sc6UWhh01bhi8UTz
+	pauEbX4cepgiOSHsy9xDp6TuuS/T7Tq0OCKlIWS9axfLW//mi29PfW+5voDr8+QdJbOe/t6W
+	/XN90PXdyxy3FXJXdcXZ94onvlbd5M+nYpCxbvK/oGP7lZpPq3U83RStxFKckWioxVxUnAgA
+	LZiUFccCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprIKsWRmVeSWpSXmKPExsVy+t9jQV0+XpNAg6t3WC3mrF/DZnF54SVW
+	i8u75rBZ7N71lNWBxePEjN8sHnvm/2D16NuyitHj8ya5AJaoBkabjNTElNQihdS85PyUzLx0
+	WyXv4HjneFMzA0NdQ0sLcyWFvMTcVFslF58AXbfMHKCdSgpliTmlQKGAxOJiJX07TBNCQ9x0
+	LWAaI3R9Q4LgeowM0EDCOsaMO8veMhf8Y6toOLCGvYHxP2sXIyeHhICJxN7nX5ggbDGJC/fW
+	s3UxcnEICUxnlJh59is7hPOLUeLd8QVsIFVsAmoSX74cBkpwcIgI6Eu0tWiAhJkFSiW2PnjP
+	AhIWFrCXuD6ZESTMIqAq8WhqA5jNK2ArsejSAVYIW1Dix+R7LBCtWhLrdx5ngrDlJTavecsM
+	MkZCQF3i0V9dkLCIgJ7E3nkPWSFKRCT2vXjHOIFRYBaSSbOQTJqFZNIsJC0LGFlWMYqmFiQX
+	FCel5xrqFSfmFpfmpesl5+duYgRH8DOpHYwrGywOMQpwMCrx8Ap8Mg4UYk0sK67MPcQowcGs
+	JML7DCTEm5JYWZValB9fVJqTWnyIMRno0YnMUqLJ+cDkklcSb2hsYmZkaWRmYWRibk6asJI4
+	L+OpJwFCAumJJanZqakFqUUwW5g4OKUaGCcnyx45pJ58aIe5dv+GU/zf6j/c8bwd9M9ZNFbo
+	atkUic27Ok/tVt9iu65i2vzmzzVHr93fIsracd2np/uYnnS7nPW08j9NpqX+kcGLdrFm+R6y
+	YfFLu6hRz3p9nXncvusMBmv5lJ4eNpz2WSU793GNyk3rQ7Offtqy/K7ZFMfPV7btnWu24I8S
+	S3FGoqEWc1FxIgCTQzmOJAMAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 3, 2013 at 6:32 PM, Randy Dunlap <rdunlap@infradead.org> wrote:
->
-> I suppose that this omits individual contributor patches by design?
-> I had 3 patches merged, but they are hidden by this method.
+When platform_driver_probe() is used, bind/unbind via sysfs is
+disabled. Thus, __init/__exit annotations can be added to
+probe()/remove().
 
-Absolutely.
+Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+---
+ drivers/video/backlight/atmel-pwm-bl.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-We had over ten thousand commits in between 3.8 and 3.9-rc1 (10942 if
-you count merges, 10265 if you don't). So the whole shortlog format
-(that gives authorship for individual commits) is simply not very
-useful. It's over half a megabyte of data.
+diff --git a/drivers/video/backlight/atmel-pwm-bl.c b/drivers/video/backlight/atmel-pwm-bl.c
+index de5e5e7..9b43663 100644
+--- a/drivers/video/backlight/atmel-pwm-bl.c
++++ b/drivers/video/backlight/atmel-pwm-bl.c
+@@ -118,7 +118,7 @@ static const struct backlight_ops atmel_pwm_bl_ops = {
+ 	.update_status  = atmel_pwm_bl_set_intensity,
+ };
+ 
+-static int atmel_pwm_bl_probe(struct platform_device *pdev)
++static int __init atmel_pwm_bl_probe(struct platform_device *pdev)
+ {
+ 	struct backlight_properties props;
+ 	const struct atmel_pwm_bl_platform_data *pdata;
+-- 
+1.7.2.5
 
-You show up in the shortlog:
 
-  Randy Dunlap (5):
-        lguest: select CONFIG_TTY to build properly.
-        i2c: fix i2c-ismt.c printk format warning
-        [SCSI] scsi: fix lpfc build when wmb() is defined as mb()
-        watchdog: da9055_wdt needs to select WATCHDOG_CORE
-        hsi: fix kernel-doc warnings
-
-but it's *so* much data that it's not worth posting in lkml. Nobody
-would read it, and more importantly, it's so much that there's no feel
-for any kind of overview.
-
-The *mergelog* I post is literally just a list of merges I do, and the
-names that get credited are neither the authors nor the committers,
-but literally just the people who send me the pull request. Now,
-*often* that has high correlation with committers, but not always. For
-example, David Miller is who asks me to pull the networking tree, but
-in reality, that hides not just all the authors, but also all the
-submaintainers who he in turn pulls from. Similarly, most of the x86
-tree pull requests come from Ingo, even though there are other people
-involved as maintainers.
-
-So the mergelog really only gives you an idea of which *subsystems*
-got merged, and generally the top-level maintainer for that subsystem.
-And even then, the "top-level maintainer" can be just "one of several
-top-level maintainers", so even that particular data point is not
-really completely unambiguous.
-
-                   Linus
