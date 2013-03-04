@@ -1,30 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758417Ab3CDPlN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 10:41:13 -0500
-Received: from smtp.opengridcomputing.com ([72.48.136.20]:40596 "EHLO
-	smtp.opengridcomputing.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758198Ab3CDPlM (ORCPT
+	id S1758464Ab3CDPxi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 10:53:38 -0500
+Received: from mx12.netapp.com ([216.240.18.77]:60846 "EHLO mx12.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758440Ab3CDPxg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 10:41:12 -0500
-Message-ID: <5134C0A1.5000108@opengridcomputing.com>
-Date: Mon, 04 Mar 2013 09:41:21 -0600
-From: Steve Wise <swise@opengridcomputing.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
+	Mon, 4 Mar 2013 10:53:36 -0500
+X-IronPort-AV: E=Sophos;i="4.84,780,1355126400"; 
+   d="scan'208";a="27757458"
+From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+To: Ming Lei <ming.lei@canonical.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Al Viro <viro@ZenIV.linux.org.uk>
+CC: Jeff Layton <jlayton@redhat.com>, "J. Bruce Fields" <bfields@fieldses.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        Mandeep Singh Baines <msb@chromium.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Ben Chan <benchan@chromium.org>,
+        "Oleg Nesterov" <oleg@redhat.com>, Ingo Molnar <mingo@redhat.com>
+Subject: Re: LOCKDEP: 3.9-rc1: mount.nfs/4272 still has locks held!
+Thread-Topic: LOCKDEP: 3.9-rc1: mount.nfs/4272 still has locks held!
+Thread-Index: AQHOGOA9OOKbapJ+RE+tLJb3WRyEW5iWGYKAgAAHKACAAAbYAIAACC+AgAAFioA=
+Date: Mon, 4 Mar 2013 15:53:33 +0000
+Message-ID: <4FA345DA4F4AE44899BD2B03EEEC2FA9286AD381@sacexcmbx05-prd.hq.netapp.com>
+References: <CACVXFVMKN6aeCvJcn7dyuonJYJDfYxWeW5KE6gfKRKJKFj2M4A@mail.gmail.com>
+	 <4FA345DA4F4AE44899BD2B03EEEC2FA9286AD113@sacexcmbx05-prd.hq.netapp.com>
+	 <CACVXFVM5VhU_ZgYr1KxERY7DXxMQpkWoiTyjyar91Hz=vU4-ug@mail.gmail.com>
+	 <20130304100432.5c7ea704@tlielax.poochiereds.net>
+	 <CACVXFVPvTnfH98KqAQxDzMi5Pbf1fbi5HEGb=ggWWg4FX_4G=g@mail.gmail.com>
+In-Reply-To: <CACVXFVPvTnfH98KqAQxDzMi5Pbf1fbi5HEGb=ggWWg4FX_4G=g@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.104.60.117]
+Content-Type: text/plain; charset=US-ASCII
+Content-ID: <2C86164DF3F17A4C944CF55F1F19F173@tahoe.netapp.com>
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-To: Akinobu Mita <akinobu.mita@gmail.com>
-CC: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        Roland Dreier <roland@kernel.org>, Sean Hefty <sean.hefty@intel.com>,
-        Hal Rosenstock <hal.rosenstock@gmail.com>,
-        Steve Wise <swise@chelsio.com>, linux-rdma@vger.kernel.org
-Subject: Re: [PATCH -v3 09/23] infiniband: rename random32() to prandom_u32()
-References: <1362401911-14074-1-git-send-email-akinobu.mita@gmail.com> <1362401911-14074-10-git-send-email-akinobu.mita@gmail.com>
-In-Reply-To: <1362401911-14074-10-git-send-email-akinobu.mita@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reviewed-by: Steve Wise <swise@opengridcomputing.com>
+On Mon, 2013-03-04 at 23:33 +0800, Ming Lei wrote:
+> Hi,
+> 
+> CC guys who introduced the lockdep change.
+> 
+> On Mon, Mar 4, 2013 at 11:04 PM, Jeff Layton <jlayton@redhat.com> wrote:
+> 
+> >
+> > I don't get it -- why is it bad to hold a lock across a freeze event?
+> 
+> At least this may deadlock another mount.nfs during freezing, :-)
+> 
+> See detailed explanation in the commit log:
+> 
+> commit 6aa9707099c4b25700940eb3d016f16c4434360d
+> Author: Mandeep Singh Baines <msb@chromium.org>
+> Date:   Wed Feb 27 17:03:18 2013 -0800
+> 
+>     lockdep: check that no locks held at freeze time
+> 
+>     We shouldn't try_to_freeze if locks are held.  Holding a lock can cause a
+>     deadlock if the lock is later acquired in the suspend or hibernate path
+>     (e.g.  by dpm).  Holding a lock can also cause a deadlock in the case of
+>     cgroup_freezer if a lock is held inside a frozen cgroup that is later
+>     acquired by a process outside that group.
+> 
 
+This is bloody ridiculous... If you want to add functionality to
+implement cgroup or per-process freezing, then do it through some other
+api instead of trying to push your problems onto others by adding new
+global locking rules.
+
+Filesystems are a shared resource that have _nothing_ to do with process
+cgroups. They need to be suspended when the network goes down or other
+resources that they depend on are suspended. At that point, there is no
+"what if I launch a new mount command?" scenario.
+
+Trond
+-- 
+Trond Myklebust
+Linux NFS client maintainer
+
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
