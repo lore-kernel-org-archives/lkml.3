@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756651Ab3CDDn7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 22:43:59 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:32941 "EHLO
+	id S1756782Ab3CDDoK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 22:44:10 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:32970 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756387Ab3CDDn4 (ORCPT
+	by vger.kernel.org with ESMTP id S1756673Ab3CDDoF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Mar 2013 22:43:56 -0500
-Message-Id: <20130304033715.161468371@decadent.org.uk>
+	Sun, 3 Mar 2013 22:44:05 -0500
+Message-Id: <20130304033714.884454164@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 04 Mar 2013 03:38:24 +0000
+Date: Mon, 04 Mar 2013 03:38:21 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org,
-        David Henningsson <david.henningsson@canonical.com>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [ 077/153] ALSA: hda - hdmi: ELD shouldnt be valid after unplug
+        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Subject: [ 074/153] ftrace: Call ftrace cleanup module notifier after all other
+ notifiers
 In-Reply-To: <20130304033707.648729212@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,30 +30,126 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Henningsson <david.henningsson@canonical.com>
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-commit bbfd8a19b6913f50a362457c34d49bfafe5e456e upstream.
+commit 8c189ea64eea01ca20d102ddb74d6936dd16c579 upstream.
 
-Currently, eld_valid is never set to false, except at kernel module
-load time. This patch makes sure that eld is no longer valid when
-the cable is (hot-)unplugged.
+Commit: c1bf08ac "ftrace: Be first to run code modification on modules"
 
-Signed-off-by: David Henningsson <david.henningsson@canonical.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+changed ftrace module notifier's priority to INT_MAX in order to
+process the ftrace nops before anything else could touch them
+(namely kprobes). This was the correct thing to do.
+
+Unfortunately, the ftrace module notifier also contains the ftrace
+clean up code. As opposed to the set up code, this code should be
+run *after* all the module notifiers have run in case a module is doing
+correct clean-up and unregisters its ftrace hooks. Basically, ftrace
+needs to do clean up on module removal, as it needs to know about code
+being removed so that it doesn't try to modify that code. But after it
+removes the module from its records, if a ftrace user tries to remove
+a probe, that removal will fail due as the record of that code segment
+no longer exists.
+
+Nothing really bad happens if the probe removal is called after ftrace
+did the clean up, but the ftrace removal function will return an error.
+Correct code (such as kprobes) will produce a WARN_ON() if it fails
+to remove the probe. As people get annoyed by frivolous warnings, it's
+best to do the ftrace clean up after everything else.
+
+By splitting the ftrace_module_notifier into two notifiers, one that
+does the module load setup that is run at high priority, and the other
+that is called for module clean up that is run at low priority, the
+problem is solved.
+
+Reported-by: Frank Ch. Eigler <fche@redhat.com>
+Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- sound/pci/hda/patch_hdmi.c |    1 +
- 1 file changed, 1 insertion(+)
+ kernel/trace/ftrace.c |   46 ++++++++++++++++++++++++++++++++--------------
+ 1 file changed, 32 insertions(+), 14 deletions(-)
 
---- a/sound/pci/hda/patch_hdmi.c
-+++ b/sound/pci/hda/patch_hdmi.c
-@@ -987,6 +987,7 @@ static void hdmi_present_sense(struct hd
- 		"HDMI status: Codec=%d Pin=%d Presence_Detect=%d ELD_Valid=%d\n",
- 		codec->addr, pin_nid, eld->monitor_present, eld_valid);
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -3454,37 +3454,51 @@ static void ftrace_init_module(struct mo
+ 	ftrace_process_locs(mod, start, end);
+ }
  
-+	eld->eld_valid = false;
- 	if (eld_valid) {
- 		if (!snd_hdmi_get_eld(eld, codec, pin_nid))
- 			snd_hdmi_show_eld(eld);
+-static int ftrace_module_notify(struct notifier_block *self,
+-				unsigned long val, void *data)
++static int ftrace_module_notify_enter(struct notifier_block *self,
++				      unsigned long val, void *data)
+ {
+ 	struct module *mod = data;
+ 
+-	switch (val) {
+-	case MODULE_STATE_COMING:
++	if (val == MODULE_STATE_COMING)
+ 		ftrace_init_module(mod, mod->ftrace_callsites,
+ 				   mod->ftrace_callsites +
+ 				   mod->num_ftrace_callsites);
+-		break;
+-	case MODULE_STATE_GOING:
++	return 0;
++}
++
++static int ftrace_module_notify_exit(struct notifier_block *self,
++				     unsigned long val, void *data)
++{
++	struct module *mod = data;
++
++	if (val == MODULE_STATE_GOING)
+ 		ftrace_release_mod(mod);
+-		break;
+-	}
+ 
+ 	return 0;
+ }
+ #else
+-static int ftrace_module_notify(struct notifier_block *self,
+-				unsigned long val, void *data)
++static int ftrace_module_notify_enter(struct notifier_block *self,
++				      unsigned long val, void *data)
++{
++	return 0;
++}
++static int ftrace_module_notify_exit(struct notifier_block *self,
++				     unsigned long val, void *data)
+ {
+ 	return 0;
+ }
+ #endif /* CONFIG_MODULES */
+ 
+-struct notifier_block ftrace_module_nb = {
+-	.notifier_call = ftrace_module_notify,
++struct notifier_block ftrace_module_enter_nb = {
++	.notifier_call = ftrace_module_notify_enter,
+ 	.priority = INT_MAX,	/* Run before anything that can use kprobes */
+ };
+ 
++struct notifier_block ftrace_module_exit_nb = {
++	.notifier_call = ftrace_module_notify_exit,
++	.priority = INT_MIN,	/* Run after anything that can remove kprobes */
++};
++
+ extern unsigned long __start_mcount_loc[];
+ extern unsigned long __stop_mcount_loc[];
+ 
+@@ -3516,9 +3530,13 @@ void __init ftrace_init(void)
+ 				  __start_mcount_loc,
+ 				  __stop_mcount_loc);
+ 
+-	ret = register_module_notifier(&ftrace_module_nb);
++	ret = register_module_notifier(&ftrace_module_enter_nb);
++	if (ret)
++		pr_warning("Failed to register trace ftrace module enter notifier\n");
++
++	ret = register_module_notifier(&ftrace_module_exit_nb);
+ 	if (ret)
+-		pr_warning("Failed to register trace ftrace module notifier\n");
++		pr_warning("Failed to register trace ftrace module exit notifier\n");
+ 
+ 	set_ftrace_early_filters();
+ 
 
 
