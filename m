@@ -1,68 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756683Ab3CDJi6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 04:38:58 -0500
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:49730 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756459Ab3CDJi5 (ORCPT
+	id S1756707Ab3CDJlN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 04:41:13 -0500
+Received: from mail-ee0-f41.google.com ([74.125.83.41]:60294 "EHLO
+	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755016Ab3CDJlL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 04:38:57 -0500
+	Mon, 4 Mar 2013 04:41:11 -0500
+Message-ID: <51346C33.6080504@suse.cz>
+Date: Mon, 04 Mar 2013 10:41:07 +0100
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:19.0) Gecko/20130124 Thunderbird/19.0
 MIME-Version: 1.0
-In-Reply-To: <CAFRkauDBR-P48oG0vk=HzE+dJ3wV4oVGBUpeo5jOUmBJ1rNgRw@mail.gmail.com>
-References: <1362376059.414.1.camel@phoenix>
-	<CAD6h2NSnH68_2iXd5g3vxuoADdWkQhiFCjXHbKKAg3KgA5wgQQ@mail.gmail.com>
-	<CAFRkauDBR-P48oG0vk=HzE+dJ3wV4oVGBUpeo5jOUmBJ1rNgRw@mail.gmail.com>
-Date: Mon, 4 Mar 2013 17:38:56 +0800
-Message-ID: <CAD6h2NSHeOCwC7vsUUSh5S6VNM5kxUzRioFWjFeXmNXgFXJM+g@mail.gmail.com>
-Subject: Re: [PATCH RFT] pinctrl: single: Fix build error
-From: Haojian Zhuang <haojian.zhuang@linaro.org>
-To: Axel Lin <axel.lin@ingics.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>, Tony Lindgren <tony@atomide.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Peter Hurley <peter@hurleysoftware.com>,
+        Grant Likely <grant.likely@secretlab.ca>
+CC: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH] tty/serial: Fix uninitialized variable warning
+References: <1362360907-4439-1-git-send-email-grant.likely@secretlab.ca> <1362364613.3221.144.camel@thor.lan>
+In-Reply-To: <1362364613.3221.144.camel@thor.lan>
+X-Enigmail-Version: 1.6a1pre
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4 March 2013 17:18, Axel Lin <axel.lin@ingics.com> wrote:
-> 2013/3/4 Haojian Zhuang <haojian.zhuang@linaro.org>:
->> On 4 March 2013 13:47, Axel Lin <axel.lin@ingics.com> wrote:
->>> If pcs->is_pinconf is false, it means does not support pinconf.
->>> If pcs->is_pinconf is true, is_generic flag is always true.
->>>
->>> This patch fixes below build error:
->>>
->>>   CC [M]  drivers/pinctrl/pinctrl-single.o
->>> drivers/pinctrl/pinctrl-single.c: In function 'pcs_probe':
->>> drivers/pinctrl/pinctrl-single.c:1441:3: error: assignment of member 'is_generic' in read-only object
->>> make[2]: *** [drivers/pinctrl/pinctrl-single.o] Error 1
->>> make[1]: *** [drivers/pinctrl] Error 2
->>> make: *** [drivers] Error 2
->>>
->>> Signed-off-by: Axel Lin <axel.lin@ingics.com>
->>> ---
->>>  drivers/pinctrl/pinctrl-single.c |    6 +++---
->>>  1 file changed, 3 insertions(+), 3 deletions(-)
->>>
->>> diff --git a/drivers/pinctrl/pinctrl-single.c b/drivers/pinctrl/pinctrl-single.c
->>> index 4cdcf85..e35dabd 100644
->>> --- a/drivers/pinctrl/pinctrl-single.c
->>> +++ b/drivers/pinctrl/pinctrl-single.c
->>> @@ -734,6 +734,7 @@ static const struct pinconf_ops pcs_pinconf_ops = {
->>>         .pin_config_dbg_show = pcs_pinconf_dbg_show,
->>>         .pin_config_group_dbg_show = pcs_pinconf_group_dbg_show,
->>>         .pin_config_config_dbg_show = pcs_pinconf_config_dbg_show,
->>> +       .is_generic = true,
+On 03/04/2013 03:36 AM, Peter Hurley wrote:
+> On Mon, 2013-03-04 at 09:35 +0800, Grant Likely wrote:
+>> drivers/tty/serial/8250/8250.c: In function 'serial_unlink_irq_chain':
+>> drivers/tty/serial/8250/8250.c:1676:19: warning: 'i' may be used uninitialized in this function
 >>
->> There's two cases for is_generic. Your fix only make thing worse.
->
-> AFAICT, in current code ( linux-next 20130304, before applying this patch):
-> if match->data is false, pcs->is_pinconf is also false which means
-> pinconf isn't supported.
->
-> In the case pcs->is_pinconf is true, is_generic actually is *always*
-> true in current code.
->
-You're right. Your fix could work.
+>> There isn't an actual bug here since the function tests the condition
+>> that would cause i to be uninitialized before dereferencing i. However,
+>> at least some versions of GCC complain as shown above. (in my case,
+>> powerpc gcc 2.5.2). Initializing i to NULL makes it clear to GCC and the
+>> casual code reviewer that i will not be dereferenced to a random
+>> address.
+>>
+>> Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+>> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>> ---
+>> Greg, some may argue that this is a tool problem, not a kernel problem,
+>> but it is useful to me. If anyone objects I'm not going to spend any
+>> time championing for this patch.
+>>
+>> g.
+>>
+>>  drivers/tty/serial/8250/8250.c |    2 +-
+>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/drivers/tty/serial/8250/8250.c b/drivers/tty/serial/8250/8250.c
+>> index 0efc815..cbbedcf 100644
+>> --- a/drivers/tty/serial/8250/8250.c
+>> +++ b/drivers/tty/serial/8250/8250.c
+>> @@ -1673,7 +1673,7 @@ static int serial_link_irq_chain(struct uart_8250_port *up)
+>>  
+>>  static void serial_unlink_irq_chain(struct uart_8250_port *up)
+>>  {
+>> -	struct irq_info *i;
+>> +	struct irq_info *i = NULL;
+> 
+> struct irq_info *uninitialized_var(i);
+> 
+> For gcc, the uninitialized_var() #define is in
+> include/linux/compiler-gcc.h
 
-Reviewed-by: Haojian Zhuang <haojian.zhuang@linaro.org>
+As far as I remember, we decided not to use that macro any more after a
+bug stemming out of its use.
+
+And Grant uses a very old toolchain as we can see in the commit log. I'm
+not sure whether it's worth to hide a potential bug in the future by
+this patch.
+
+thanks,
+-- 
+js
+suse labs
