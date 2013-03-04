@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755800Ab3CDDm6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 22:42:58 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60863 "EHLO
+	id S1756195Ab3CDEMn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 23:12:43 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60902 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755540Ab3CDDmt (ORCPT
+	by vger.kernel.org with ESMTP id S1755777Ab3CDDm6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Mar 2013 22:42:49 -0500
-Message-Id: <20130304033721.050183480@decadent.org.uk>
+	Sun, 3 Mar 2013 22:42:58 -0500
+Message-Id: <20130304033719.902945622@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 04 Mar 2013 03:39:24 +0000
+Date: Mon, 04 Mar 2013 03:39:12 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Dan Carpenter <dan.carpenter@oracle.com>,
-        "Herton R. Krzesinski" <herton.krzesinski@canonical.com>,
-        Douglas Bagnall <douglas@paradise.net.nz>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: [ 137/153] [media] rc: unlock on error in show_protocols()
+Cc: akpm@linux-foundation.org, Li Wei <lw@cn.fujitsu.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 125/153] ipv4: fix a bug in ping_err().
 In-Reply-To: <20130304033707.648729212@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,37 +27,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Li Wei <lw@cn.fujitsu.com>
 
-commit 30ebc5e44d057a1619ad63fe32c8c1670c37c4b8 upstream.
+[ Upstream commit b531ed61a2a2a77eeb2f7c88b49aa5ec7d9880d8 ]
 
-We recently introduced a new return -ENODEV in this function but we need
-to unlock before returning.
+We should get 'type' and 'code' from the outer ICMP header.
 
-[mchehab@redhat.com: found two patches with the same fix. Merged SOB's/acks into one patch]
-Acked-by: Herton R. Krzesinski <herton.krzesinski@canonical.com>
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Douglas Bagnall <douglas@paradise.net.nz>
-
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+Signed-off-by: Li Wei <lw@cn.fujitsu.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/media/rc/rc-main.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ net/ipv4/ping.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/media/rc/rc-main.c
-+++ b/drivers/media/rc/rc-main.c
-@@ -777,8 +777,10 @@ static ssize_t show_protocols(struct dev
- 	} else if (dev->raw) {
- 		enabled = dev->raw->enabled_protocols;
- 		allowed = ir_raw_get_allowed_protocols();
--	} else
-+	} else {
-+		mutex_unlock(&dev->lock);
- 		return -ENODEV;
-+	}
- 
- 	IR_dprintk(1, "allowed - 0x%llx, enabled - 0x%llx\n",
- 		   (long long)allowed,
+diff --git a/net/ipv4/ping.c b/net/ipv4/ping.c
+index 43d4c3b..294a380 100644
+--- a/net/ipv4/ping.c
++++ b/net/ipv4/ping.c
+@@ -321,8 +321,8 @@ void ping_err(struct sk_buff *skb, u32 info)
+ 	struct iphdr *iph = (struct iphdr *)skb->data;
+ 	struct icmphdr *icmph = (struct icmphdr *)(skb->data+(iph->ihl<<2));
+ 	struct inet_sock *inet_sock;
+-	int type = icmph->type;
+-	int code = icmph->code;
++	int type = icmp_hdr(skb)->type;
++	int code = icmp_hdr(skb)->code;
+ 	struct net *net = dev_net(skb->dev);
+ 	struct sock *sk;
+ 	int harderr;
 
 
