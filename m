@@ -1,30 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755443Ab3CDHiL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 02:38:11 -0500
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:50777 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755373Ab3CDHiI (ORCPT
+	id S1755473Ab3CDHiS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 02:38:18 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:35936 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755155Ab3CDHiO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 02:38:08 -0500
+	Mon, 4 Mar 2013 02:38:14 -0500
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: rjw@sisk.pl
 Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
         robin.randhawa@arm.com, Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
         charles.garcia-tobin@arm.com, Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH V3 0/4] CPUFreq: Implement per policy instances of governors
-Date: Mon,  4 Mar 2013 15:37:52 +0800
-Message-Id: <cover.1362381470.git.viresh.kumar@linaro.org>
+Subject: [PATCH V3 1/4] cpufreq: Add per policy governor-init/exit infrastructure
+Date: Mon,  4 Mar 2013 15:37:53 +0800
+Message-Id: <5f69096f1e7b255967aa3f5af1645868b7c4325a.1362381470.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
+In-Reply-To: <cover.1362381470.git.viresh.kumar@linaro.org>
+References: <cover.1362381470.git.viresh.kumar@linaro.org>
+In-Reply-To: <cover.1362381470.git.viresh.kumar@linaro.org>
+References: <cover.1362381470.git.viresh.kumar@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-
-This is targetted for 3.10-rc1 or linux-next just after the merge window.
-
-All patches are pushed here for others to apply:
-http://git.linaro.org/gitweb?p=people/vireshk/linux.git;a=shortlog;h=refs/heads/for-3.10
 
 Currently, there can't be multiple instances of single governor_type. If we have
 a multi-package system, where we have multiple instances of struct policy (per
@@ -38,43 +37,99 @@ governor_type in the system.
 This is a bottleneck for multicluster system, where we want different packages
 to use same governor type, but with different tunables.
 
-This patchset is inclined towards fixing this issue. Now we will create
-governors directory in cpu/cpu*/cpufreq/<gov> for platforms which have multiple
-struct policy alive at any moment. For others the interface is kept same:
-cpu/cpufreq/<gov>.
+This patch is inclined towards providing this infrastructure. Because we are
+required to allocate governor's resources dynamically now, we must do it at
+policy creation and end. And so got CPUFREQ_GOV_POLICY_INIT/EXIT.
 
-@Rafael: Clearly, I don't want to have following patch: "cpufreq: Add Kconfig
-option to enable/disable have_multiple_policies" and added it because of comment
-from Borislov against which nobody else replied :)
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+---
+ drivers/cpufreq/cpufreq.c | 21 ++++++++++++++++++---
+ include/linux/cpufreq.h   |  9 ++++++---
+ 2 files changed, 24 insertions(+), 6 deletions(-)
 
-So, please drop it if you agree over my comments with earlier version.
-
-V2->V3:
-- Fixed value of CPUFREQ_GOV_POLICY_EXIT in the correct patch
-- Drop indentation fixes from intel_pstate.c
-
-V1->V2:
-- Few patches from V1 are already picked up by Rafael for 3.9-rc1
-- Last two patches are new
-- Added dbs_data->exit() routines to free up memory used for struct tuners.
-
-Viresh Kumar (4):
-  cpufreq: Add per policy governor-init/exit infrastructure
-  cpufreq: governor: Implement per policy instances of governors
-  cpufreq: Get rid of "struct global_attr"
-  cpufreq: Add Kconfig option to enable/disable have_multiple_policies
-
- drivers/cpufreq/Kconfig                |   3 +
- drivers/cpufreq/acpi-cpufreq.c         |   9 +-
- drivers/cpufreq/cpufreq.c              |  27 +++--
- drivers/cpufreq/cpufreq_conservative.c | 148 +++++++++++++---------
- drivers/cpufreq/cpufreq_governor.c     | 159 ++++++++++++++----------
- drivers/cpufreq/cpufreq_governor.h     |  43 +++++--
- drivers/cpufreq/cpufreq_ondemand.c     | 216 +++++++++++++++++++--------------
- drivers/cpufreq/intel_pstate.c         |  20 +--
- include/linux/cpufreq.h                |  44 ++++---
- 9 files changed, 397 insertions(+), 272 deletions(-)
-
+diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+index b02824d..7d59688 100644
+--- a/drivers/cpufreq/cpufreq.c
++++ b/drivers/cpufreq/cpufreq.c
+@@ -1070,6 +1070,8 @@ static int __cpufreq_remove_dev(struct device *dev, struct subsys_interface *sif
+ 
+ 	/* If cpu is last user of policy, free policy */
+ 	if (cpus == 1) {
++		__cpufreq_governor(data, CPUFREQ_GOV_POLICY_EXIT);
++
+ 		lock_policy_rwsem_read(cpu);
+ 		kobj = &data->kobj;
+ 		cmp = &data->kobj_unregister;
+@@ -1651,7 +1653,7 @@ EXPORT_SYMBOL(cpufreq_get_policy);
+ static int __cpufreq_set_policy(struct cpufreq_policy *data,
+ 				struct cpufreq_policy *policy)
+ {
+-	int ret = 0;
++	int ret = 0, failed = 1;
+ 
+ 	pr_debug("setting new policy for CPU %u: %u - %u kHz\n", policy->cpu,
+ 		policy->min, policy->max);
+@@ -1705,18 +1707,31 @@ static int __cpufreq_set_policy(struct cpufreq_policy *data,
+ 			pr_debug("governor switch\n");
+ 
+ 			/* end old governor */
+-			if (data->governor)
++			if (data->governor) {
+ 				__cpufreq_governor(data, CPUFREQ_GOV_STOP);
++				__cpufreq_governor(data,
++						CPUFREQ_GOV_POLICY_EXIT);
++			}
+ 
+ 			/* start new governor */
+ 			data->governor = policy->governor;
+-			if (__cpufreq_governor(data, CPUFREQ_GOV_START)) {
++			if (!__cpufreq_governor(data, CPUFREQ_GOV_POLICY_INIT)) {
++				if (!__cpufreq_governor(data, CPUFREQ_GOV_START))
++					failed = 0;
++				else
++					__cpufreq_governor(data,
++							CPUFREQ_GOV_POLICY_EXIT);
++			}
++
++			if (failed) {
+ 				/* new governor failed, so re-start old one */
+ 				pr_debug("starting governor %s failed\n",
+ 							data->governor->name);
+ 				if (old_gov) {
+ 					data->governor = old_gov;
+ 					__cpufreq_governor(data,
++							CPUFREQ_GOV_POLICY_INIT);
++					__cpufreq_governor(data,
+ 							   CPUFREQ_GOV_START);
+ 				}
+ 				ret = -EINVAL;
+diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
+index a22944c..b7393b5 100644
+--- a/include/linux/cpufreq.h
++++ b/include/linux/cpufreq.h
+@@ -106,6 +106,7 @@ struct cpufreq_policy {
+ 					 * governors are used */
+ 	unsigned int		policy; /* see above */
+ 	struct cpufreq_governor	*governor; /* see below */
++	void			*governor_data;
+ 
+ 	struct work_struct	update; /* if update_policy() needs to be
+ 					 * called, but you're in IRQ context */
+@@ -178,9 +179,11 @@ static inline unsigned long cpufreq_scale(unsigned long old, u_int div, u_int mu
+  *                          CPUFREQ GOVERNORS                        *
+  *********************************************************************/
+ 
+-#define CPUFREQ_GOV_START  1
+-#define CPUFREQ_GOV_STOP   2
+-#define CPUFREQ_GOV_LIMITS 3
++#define CPUFREQ_GOV_START	1
++#define CPUFREQ_GOV_STOP	2
++#define CPUFREQ_GOV_LIMITS	3
++#define CPUFREQ_GOV_POLICY_INIT	4
++#define CPUFREQ_GOV_POLICY_EXIT	5
+ 
+ struct cpufreq_governor {
+ 	char	name[CPUFREQ_NAME_LEN];
 -- 
 1.7.12.rc2.18.g61b472e
 
