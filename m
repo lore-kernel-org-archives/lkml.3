@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757796Ab3CDDrm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 22:47:42 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33165 "EHLO
+	id S1757745Ab3CDDrl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 22:47:41 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33170 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757357Ab3CDDou (ORCPT
+	by vger.kernel.org with ESMTP id S1757176Ab3CDDov (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Mar 2013 22:44:50 -0500
-Message-Id: <20130304033710.732683605@decadent.org.uk>
+	Sun, 3 Mar 2013 22:44:51 -0500
+Message-Id: <20130304033710.534793219@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 04 Mar 2013 03:37:39 +0000
+Date: Mon, 04 Mar 2013 03:37:37 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Dave Airlie <airlied@redhat.com>,
-        Kay Sievers <kay.sievers@vrfy.org>
-Subject: [ 032/153] fbcon: dont lose the console font across generic->chip driver
- switch
+Cc: akpm@linux-foundation.org,
+        Joseph Salisbury <joseph.salisbury@canonical.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [ 030/153] ACPI: Add DMI entry for Sony VGN-FW41E_H
 In-Reply-To: <20130304033707.648729212@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,91 +28,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Airlie <airlied@redhat.com>
+From: Joseph Salisbury <joseph.salisbury@canonical.com>
 
-commit ae1287865f5361fa138d4d3b1b6277908b54eac9 upstream.
+commit 66f2fda93b67fa744d406e6dcf443f67bac204b6 upstream.
 
-If grub2 loads efifb/vesafb, then when systemd starts it can set the console
-font on that framebuffer device, however when we then load the native KMS
-driver, the first thing it does is tear down the generic framebuffer driver.
+This patch adds a quirk to allow the Sony VGN-FW41E_H to suspend/resume
+properly.
 
-The thing is the generic code is doing the right thing, it frees the font
-because otherwise it would leak memory. However we can assume that if you
-are removing the generic firmware driver (vesa/efi/offb), that a new driver
-*should* be loading soon after, so we effectively leak the font.
-
-However the old code left a dangling pointer in vc->vc_font.data and we
-can now reuse that dangling pointer to load the font into the new
-driver, now that we aren't freeing it.
-
-Bugzilla: https://bugzilla.redhat.com/show_bug.cgi?id=892340
-
-Cc: Kay Sievers <kay.sievers@vrfy.org>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+References: http://bugs.launchpad.net/bugs/1113547
+Signed-off-by: Joseph Salisbury <joseph.salisbury@canonical.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/video/console/fbcon.c |   14 ++++++++++----
- 1 file changed, 10 insertions(+), 4 deletions(-)
+ drivers/acpi/sleep.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/drivers/video/console/fbcon.c
-+++ b/drivers/video/console/fbcon.c
-@@ -991,7 +991,7 @@ static const char *fbcon_startup(void)
- 	}
- 
- 	/* Setup default font */
--	if (!p->fontdata) {
-+	if (!p->fontdata && !vc->vc_font.data) {
- 		if (!fontname[0] || !(font = find_font(fontname)))
- 			font = get_default_font(info->var.xres,
- 						info->var.yres,
-@@ -1001,6 +1001,8 @@ static const char *fbcon_startup(void)
- 		vc->vc_font.height = font->height;
- 		vc->vc_font.data = (void *)(p->fontdata = font->data);
- 		vc->vc_font.charcount = 256; /* FIXME  Need to support more fonts */
-+	} else {
-+		p->fontdata = vc->vc_font.data;
- 	}
- 
- 	cols = FBCON_SWAP(ops->rotate, info->var.xres, info->var.yres);
-@@ -1160,9 +1162,9 @@ static void fbcon_init(struct vc_data *v
- 	ops->p = &fb_display[fg_console];
- }
- 
--static void fbcon_free_font(struct display *p)
-+static void fbcon_free_font(struct display *p, bool freefont)
- {
--	if (p->userfont && p->fontdata && (--REFCOUNT(p->fontdata) == 0))
-+	if (freefont && p->userfont && p->fontdata && (--REFCOUNT(p->fontdata) == 0))
- 		kfree(p->fontdata - FONT_EXTRA_WORDS * sizeof(int));
- 	p->fontdata = NULL;
- 	p->userfont = 0;
-@@ -1174,8 +1176,8 @@ static void fbcon_deinit(struct vc_data
- 	struct fb_info *info;
- 	struct fbcon_ops *ops;
- 	int idx;
-+	bool free_font = true;
- 
--	fbcon_free_font(p);
- 	idx = con2fb_map[vc->vc_num];
- 
- 	if (idx == -1)
-@@ -1186,6 +1188,8 @@ static void fbcon_deinit(struct vc_data
- 	if (!info)
- 		goto finished;
- 
-+	if (info->flags & FBINFO_MISC_FIRMWARE)
-+		free_font = false;
- 	ops = info->fbcon_par;
- 
- 	if (!ops)
-@@ -1197,6 +1201,8 @@ static void fbcon_deinit(struct vc_data
- 	ops->flags &= ~FBCON_FLAGS_INIT;
- finished:
- 
-+	fbcon_free_font(p, free_font);
-+
- 	if (!con_is_bound(&fb_con))
- 		fbcon_exit();
- 
+--- a/drivers/acpi/sleep.c
++++ b/drivers/acpi/sleep.c
+@@ -156,6 +156,14 @@ static struct dmi_system_id __initdata a
+ 	},
+ 	{
+ 	.callback = init_nvs_nosave,
++	.ident = "Sony Vaio VGN-FW41E_H",
++	.matches = {
++		DMI_MATCH(DMI_SYS_VENDOR, "Sony Corporation"),
++		DMI_MATCH(DMI_PRODUCT_NAME, "VGN-FW41E_H"),
++		},
++	},
++	{
++	.callback = init_nvs_nosave,
+ 	.ident = "Sony Vaio VGN-FW21E",
+ 	.matches = {
+ 		DMI_MATCH(DMI_SYS_VENDOR, "Sony Corporation"),
 
 
