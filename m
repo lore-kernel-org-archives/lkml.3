@@ -1,105 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757555Ab3CDN5X (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 08:57:23 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:37231 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756992Ab3CDN5W (ORCPT
+	id S1757625Ab3CDN5l (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 08:57:41 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58057 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756992Ab3CDN5j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 08:57:22 -0500
-Message-ID: <1362405431.3768.314.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [ 093/153] ALSA: hda - hdmi: Make jacks phantom, if theyre not
- detectable
-From: Ben Hutchings <ben@decadent.org.uk>
-To: David Henningsson <david.henningsson@canonical.com>
-Cc: stable@vger.kernel.org, akpm@linux-foundation.org,
-        LKML <linux-kernel@vger.kernel.org>, Takashi Iwai <tiwai@suse.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Date: Mon, 04 Mar 2013 13:57:11 +0000
-In-Reply-To: <51345148.1040102@canonical.com>
-References: <20130304033716.795093499@decadent.org.uk>
-	 <1362374037.3768.298.camel@deadeye.wl.decadent.org.uk>
-	 <51345148.1040102@canonical.com>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-tppISj53lcgFPn91aPvB"
-X-Mailer: Evolution 3.4.4-2 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Mon, 4 Mar 2013 08:57:39 -0500
+MIME-Version: 1.0
+Date: Mon, 4 Mar 2013 21:57:36 +0800
+Message-ID: <CACVXFVMKN6aeCvJcn7dyuonJYJDfYxWeW5KE6gfKRKJKFj2M4A@mail.gmail.com>
+Subject: LOCKDEP: 3.9-rc1: mount.nfs/4272 still has locks held!
+From: Ming Lei <ming.lei@canonical.com>
+To: Trond Myklebust <Trond.Myklebust@netapp.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-nfs@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
---=-tppISj53lcgFPn91aPvB
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+The below warning can be triggered each time when mount.nfs is
+running on 3.9-rc1.
 
-On Mon, 2013-03-04 at 08:46 +0100, David Henningsson wrote:
-> On 03/04/2013 06:13 AM, Ben Hutchings wrote:
-> > On Mon, 2013-03-04 at 03:38 +0000, Ben Hutchings wrote:
-> >> 3.2-stable review patch.  If anyone has any objections, please let me =
-know.
-> >>
-> >> ------------------
-> >>
-> >> From: David Henningsson <david.henningsson@canonical.com>
-> >>
-> >> commit 30efd8debd1ef30be342d374f01e993509f5b76b upstream.
-> >>
-> >> Just as for analog codecs, a jack that isn't suitable for detection
-> >> (in this case, NO_PRESENCE was set) should be a phantom Jack
-> >> instead of a normal one.
-> >>
-> >> Thanks to Raymond Yau for spotting.
-> >>
-> >> BugLink: https://bugs.launchpad.net/bugs/961286
-> >> BugLink: https://bugzilla.redhat.com/show_bug.cgi?id=3D903869
-> >> Signed-off-by: David Henningsson <david.henningsson@canonical.com>
-> >> Signed-off-by: Takashi Iwai <tiwai@suse.de>
-> >> [bwh: Backported to 3.2: adjust context]
-> >> Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-> >
-> > David, do I need to change this further for 3.2.y?
->=20
-> Greg and Ben,
->=20
-> Given some thought, the definition of is_jack_detectable has=20
-> changed/improved over kernels. Therefore I think it's safer not to apply=
-=20
-> the patch at all for kernels earlier than 3.6. Let's revisit this=20
-> decision if there's actually a user demand for this fix.
+Not sure if freezable_schedule() inside rpc_wait_bit_killable should
+be changed to schedule() since nfs_clid_init_mutex is held in the path.
 
-OK, I've dropped this from the 3.2.y queue.
+[   41.387939] =====================================
+[   41.392913] [ BUG: mount.nfs/643 still has locks held! ]
+[   41.398559] 3.9.0-rc1+ #1740 Not tainted
+[   41.402709] -------------------------------------
+[   41.407714] 1 lock held by mount.nfs/643:
+[   41.411956]  #0:  (nfs_clid_init_mutex){+.+...}, at: [<c0226d6c>]
+nfs4_discover_server_trunking+0x60/0x1d4
+[   41.422363]
+[   41.422363] stack backtrace:
+[   41.427032] [<c0014dd4>] (unwind_backtrace+0x0/0xe0) from
+[<c04a8300>] (rpc_wait_bit_killable+0x38/0xc8)
+[   41.437103] [<c04a8300>] (rpc_wait_bit_killable+0x38/0xc8) from
+[<c054e454>] (__wait_on_bit+0x54/0x9c)
+[   41.446990] [<c054e454>] (__wait_on_bit+0x54/0x9c) from
+[<c054e514>] (out_of_line_wait_on_bit+0x78/0x84)
+[   41.457061] [<c054e514>] (out_of_line_wait_on_bit+0x78/0x84) from
+[<c04a8f88>] (__rpc_execute+0x170/0x348)
+[   41.467407] [<c04a8f88>] (__rpc_execute+0x170/0x348) from
+[<c04a250c>] (rpc_run_task+0x9c/0xa4)
+[   41.476715] [<c04a250c>] (rpc_run_task+0x9c/0xa4) from [<c04a265c>]
+(rpc_call_sync+0x70/0xb0)
+[   41.485778] [<c04a265c>] (rpc_call_sync+0x70/0xb0) from
+[<c021af54>] (nfs4_proc_setclientid+0x1a0/0x1c8)
+[   41.495819] [<c021af54>] (nfs4_proc_setclientid+0x1a0/0x1c8) from
+[<c0224eb4>] (nfs40_discover_server_trunki
+ng+0xec/0x148)
+[   41.507507] [<c0224eb4>]
+(nfs40_discover_server_trunking+0xec/0x148) from [<c0226da0>]
+(nfs4_discover_server
+_trunking+0x94/0x1d4)
+[   41.519866] [<c0226da0>] (nfs4_discover_server_trunking+0x94/0x1d4)
+from [<c022c664>] (nfs4_init_client+0x15
+0/0x1b0)
+[   41.531036] [<c022c664>] (nfs4_init_client+0x150/0x1b0) from
+[<c01fe954>] (nfs_get_client+0x2cc/0x320)
+[   41.540863] [<c01fe954>] (nfs_get_client+0x2cc/0x320) from
+[<c022c080>] (nfs4_set_client+0x80/0xb0)
+[   41.550476] [<c022c080>] (nfs4_set_client+0x80/0xb0) from
+[<c022cef8>] (nfs4_create_server+0xb0/0x21c)
+[   41.560333] [<c022cef8>] (nfs4_create_server+0xb0/0x21c) from
+[<c0227524>] (nfs4_remote_mount+0x28/0x54)
+[   41.570373] [<c0227524>] (nfs4_remote_mount+0x28/0x54) from
+[<c0113a8c>] (mount_fs+0x6c/0x160)
+[   41.579498] [<c0113a8c>] (mount_fs+0x6c/0x160) from [<c012a47c>]
+(vfs_kern_mount+0x4c/0xc0)
+[   41.588378] [<c012a47c>] (vfs_kern_mount+0x4c/0xc0) from
+[<c022734c>] (nfs_do_root_mount+0x74/0x90)
+[   41.597961] [<c022734c>] (nfs_do_root_mount+0x74/0x90) from
+[<c0227574>] (nfs4_try_mount+0x24/0x3c)
+[   41.607513] [<c0227574>] (nfs4_try_mount+0x24/0x3c) from
+[<c02070f8>] (nfs_fs_mount+0x6dc/0x7a0)
+[   41.616821] [<c02070f8>] (nfs_fs_mount+0x6dc/0x7a0) from
+[<c0113a8c>] (mount_fs+0x6c/0x160)
+[   41.625701] [<c0113a8c>] (mount_fs+0x6c/0x160) from [<c012a47c>]
+(vfs_kern_mount+0x4c/0xc0)
+[   41.634582] [<c012a47c>] (vfs_kern_mount+0x4c/0xc0) from
+[<c012c330>] (do_mount+0x710/0x81c)
+[   41.643524] [<c012c330>] (do_mount+0x710/0x81c) from [<c012c4c0>]
+(sys_mount+0x84/0xb8)
+[   41.652008] [<c012c4c0>] (sys_mount+0x84/0xb8) from [<c000d6c0>]
+(ret_fast_syscall+0x0/0x48)
+[   41.715911] device: '0:28': device_add
+[   41.720062] PM: Adding info for No Bus:0:28
+[   41.746887] device: '0:29': device_add
+[   41.751037] PM: Adding info for No Bus:0:29
+[   41.780700] device: '0:28': device_unregister
+[   41.785400] PM: Removing info for No Bus:0:28
+[   41.790344] device: '0:28': device_create_release
 
-Ben.
 
---=20
-Ben Hutchings
-Always try to do things in chronological order;
-it's less confusing that way.
-
---=-tppISj53lcgFPn91aPvB
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIVAwUAUTSoN+e/yOyVhhEJAQqa5g//TKW48fUYF73E6pzap2zX5RF+TJmihmcr
-Ppz0gv1CbdW7mBQFSvck3ISEnfbK6YjepTRICGs3PXQ917kLUD8Ksl9buKtY3V81
-CqaC2lG8234WOeeokyjC1sriGgIfrW+nYeIL8GBBeWHnJI3ItiuKzuS88naAVgp0
-Ii6oOy+z37cTYA8taBoqtq9YMB3bWtto9KkQtdtXbDcWo4U2gEWlLIy9VCaJHb7j
-Bg8Bvq4JrufGilzlvqZ32+Q70BM8/87HSfznkFEZD/5KPAAVdxgtmr9CxrtwLoYh
-1Lp2WMc1e5PwxEfBvxcDCQM5OUxAFTic96ynyXsVHuEu/cj0CSqMWUh01G68rQ0k
-OooK9obxQ7Y7WCqIRddftWIxt4YhangitzkRg89+v4AYoLXtBKTIAjai+YnrW9D2
-GYyFOH/mt83CCP7unlHOvEqXz9DZnCbJD2VUTxx3Er5M+o6lVIa4vkbXxnSq4P5W
-wPHA3zF4tLefc1nBp+77LeodVinqCyFW5QTQm79Ra3jlWAs9W8WWbus8rdbo+XXz
-yAoOPASY+SSxD0oTeDveSTBDqksU4a1OpBeMNiNOZRIyh8SeqJV+OqsI/QFZYdfu
-XVfvNqxLP1SXZ0glvEk8Z+qs7gSdJk0ytbhzl6ej2+C7xZdr95EIcCSkwNBdVwt5
-nDCgc/0R9hY=
-=kETF
------END PGP SIGNATURE-----
-
---=-tppISj53lcgFPn91aPvB--
+Thanks,
+--
+Ming Lei
