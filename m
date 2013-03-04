@@ -1,69 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756720Ab3CDM36 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 07:29:58 -0500
-Received: from mail-ee0-f47.google.com ([74.125.83.47]:54861 "EHLO
-	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756220Ab3CDM35 (ORCPT
+	id S1756797Ab3CDMoi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 07:44:38 -0500
+Received: from mail-ia0-f174.google.com ([209.85.210.174]:50673 "EHLO
+	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756407Ab3CDMog convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 07:29:57 -0500
-Message-ID: <513493C1.6070206@gmail.com>
-Date: Mon, 04 Mar 2013 13:29:53 +0100
-From: Roberto Oppedisano <roberto.oppedisano@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
+	Mon, 4 Mar 2013 07:44:36 -0500
+Date: Mon, 04 Mar 2013 06:44:31 -0600
+From: Rob Landley <rob@landley.net>
+Subject: Re: [PATCH v7 7/7] Documentation: update nfs option in
+ filesystem/vfat.txt
+To: Namjae Jeon <linkinjeon@gmail.com>
+Cc: hirofumi@mail.parknet.co.jp, akpm@linux-foundation.org,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Namjae Jeon <linkinjeon@gmail.com>,
+        Namjae Jeon <namjae.jeon@samsung.com>,
+        Ravishankar N <ravi.n1@samsung.com>,
+        Amit Sahrawat <a.sahrawat@samsung.com>
+References: <1362195925-21181-1-git-send-email-linkinjeon@gmail.com>
+In-Reply-To: <1362195925-21181-1-git-send-email-linkinjeon@gmail.com> (from
+	linkinjeon@gmail.com on Fri Mar  1 21:45:25 2013)
+X-Mailer: Balsa 2.4.11
+Message-Id: <1362401071.29250.11@driftwood>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: Ville Syrjala <syrjala@sci.fi>
-Subject: Re: regression in linux 3.7 - fan speed at 100% after suspend/resume
- at 100%
-References: <50BDF345.60804@gmail.com> <loom.20130303T010825-770@post.gmane.org>
-In-Reply-To: <loom.20130303T010825-770@post.gmane.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 03/03/2013 01:22, Ville Syrjala ha scritto:
-> Roberto Oppedisano <roberto.oppedisano <at> gmail.com> writes:
->
->> Hello,
->>       with recent kernels after a suspend/resume cycle on my laptop (HP
->> 6730b) the fans stays at full speed.
-> I too have been hit by this regression w/ a HP Compaq NC6000 laptop.
->
-> >From what I can tell 3.7.x gets confused about trip points after resume. Based
-> on the information in sysfs, it seems to always think that the CPU temp > 65C,
-> when in fact it's usually 40C or so. Loading the CPU enough to rise the
-> temperature past the trip point where the kernel thinks we're at seems to
-> re-synchronize the kernel's reality with the firmware's reality. On a few
-> occasions however the fan did stop, but the trip points were still confused the
-> same way. So what happened is that the fan didn't come back to life until I hit
-> the next higher trip point at 80C. Under normal conditions I've never reached
-> the 80C trip point on this laptop.
->
-> I also tried this tree:
-> git://git.kernel.org/pub/scm/linux/kernel/git/rzhang/linux.git next
-> $ git describe
-> v3.8-rc2-72-gf5b6d45
->
-> Sadly I must report that it's even worse than 3.7. Even without any
-> suspend/resume cycles, the system gets confused. When I heat up the CPU the fan
-> comes on correctly and speeds up as the temperature rises. Unfortunately when
-> the temperature drops the fan doesn't slow down at all. So once I hit a high
-> trip point the fan stays at that speed forever.
+On 03/01/2013 09:45:25 PM, Namjae Jeon wrote:
+> From: Namjae Jeon <namjae.jeon@samsung.com>
+> 
+> Add descriptions about 'stale_rw' and 'nostale_ro' nfs options in
+> filesystem/vfat.txt
+> 
+> Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
+> Signed-off-by: Ravishankar N <ravi.n1@samsung.com>
+> Signed-off-by: Amit Sahrawat <a.sahrawat@samsung.com>
 
-I'm running now with:
+Acked-by: Rob Landley <rob@landley.net>
 
-$ git describe
-v3.9-rc1
-
-and it seem that the behaviour of my laptop is similar to yours.
-Also, immediately after a suspend/resume cycle, the fan speed goes down,
-and again the speeds correctly goes up as the temperature rises, but when
-the temperature drops the fan doesn't slow.
-
-Now the suspend/resume cycle seems almost unrelated with the issue 
-(except for
-the fan speed reset at resume).
-
+Rob
