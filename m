@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755458Ab3CDDmi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 22:42:38 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60771 "EHLO
+	id S1755822Ab3CDETl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 23:19:41 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60751 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755356Ab3CDDme (ORCPT
+	by vger.kernel.org with ESMTP id S1755429Ab3CDDmi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Mar 2013 22:42:34 -0500
-Message-Id: <20130304033721.248498992@decadent.org.uk>
+	Sun, 3 Mar 2013 22:42:38 -0500
+Message-Id: <20130304033709.003966848@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 04 Mar 2013 03:39:26 +0000
+Date: Mon, 04 Mar 2013 03:37:21 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org
-Subject: [ 139/153] 8250: use correct value for PORT_BRCM_TRUMANAGE
+Cc: akpm@linux-foundation.org, Theodore Tso <tytso@mit.edu>,
+        Carlos Maiolino <cmaiolino@redhat.com>, Jan Kara <jack@suse.cz>
+Subject: [ 014/153] quota: autoload the quota_v2 module for QFMT_VFS_V1 quota format
 In-Reply-To: <20130304033707.648729212@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -26,56 +27,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Hutchings <ben@decadent.org.uk>
+From: Theodore Ts'o <tytso@mit.edu>
 
-When backporting commit ebebd49a8eab ('8250/16?50: Add support for
-Broadcom TruManage redirected serial port') I took the next
-available port type number for PORT_BRCM_TRUMANAGE (22).
+commit c3ad83d9efdfe6a86efd44945a781f00c879b7b4 upstream.
 
-However, the 8250 port type numbers are exposed to userland through
-the TIOC{G,S}SERIAL ioctls and so must remain stable.  Redefine
-PORT_BRCM_TRUMANAGE as 25, matching mainline as of commit
-85f024401bf807.
+Otherwise, ext4 file systems with the quota featured enable will get a
+very confusing "No such process" error message if the quota code is
+built as a module and the quota_v2 module has not been loaded.
 
-This leaves port types 22-24 within the valid range for 8250 but not
-implemented there.  Change serial8250_verify_port() to specifically
-reject these and change serial8250_type() to return "unknown" for them
-(though I'm not sure why it would ever see them).
-
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Reviewed-by: Carlos Maiolino <cmaiolino@redhat.com>
+Acked-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
---- a/drivers/tty/serial/8250.c
-+++ b/drivers/tty/serial/8250.c
-@@ -2695,7 +2695,7 @@ serial8250_verify_port(struct uart_port
- 	if (ser->irq >= nr_irqs || ser->irq < 0 ||
- 	    ser->baud_base < 9600 || ser->type < PORT_UNKNOWN ||
- 	    ser->type >= ARRAY_SIZE(uart_config) || ser->type == PORT_CIRRUS ||
--	    ser->type == PORT_STARTECH)
-+	    ser->type == PORT_STARTECH || uart_config[ser->type].name == NULL)
- 		return -EINVAL;
- 	return 0;
- }
-@@ -2705,7 +2705,7 @@ serial8250_type(struct uart_port *port)
- {
- 	int type = port->type;
+ include/linux/quota.h |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- a/include/linux/quota.h
++++ b/include/linux/quota.h
+@@ -413,6 +413,7 @@ struct quota_module_name {
+ #define INIT_QUOTA_MODULE_NAMES {\
+ 	{QFMT_VFS_OLD, "quota_v1"},\
+ 	{QFMT_VFS_V0, "quota_v2"},\
++	{QFMT_VFS_V1, "quota_v2"},\
+ 	{0, NULL}}
  
--	if (type >= ARRAY_SIZE(uart_config))
-+	if (type >= ARRAY_SIZE(uart_config) || uart_config[type].name == NULL)
- 		type = 0;
- 	return uart_config[type].name;
- }
---- a/include/linux/serial_core.h
-+++ b/include/linux/serial_core.h
-@@ -47,8 +47,8 @@
- #define PORT_U6_16550A	19	/* ST-Ericsson U6xxx internal UART */
- #define PORT_TEGRA	20	/* NVIDIA Tegra internal UART */
- #define PORT_XR17D15X	21	/* Exar XR17D15x UART */
--#define PORT_BRCM_TRUMANAGE	22
--#define PORT_MAX_8250	22	/* max port ID */
-+#define PORT_BRCM_TRUMANAGE	25
-+#define PORT_MAX_8250	25	/* max port ID */
- 
- /*
-  * ARM specific type numbers.  These are not currently guaranteed
+ #endif /* __KERNEL__ */
 
 
