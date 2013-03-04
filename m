@@ -1,123 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932250Ab3CDTxm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 14:53:42 -0500
-Received: from mout.gmx.net ([212.227.17.21]:62339 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758295Ab3CDTxl convert rfc822-to-8bit (ORCPT
+	id S932272Ab3CDTzF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 14:55:05 -0500
+Received: from mail-vc0-f178.google.com ([209.85.220.178]:50353 "EHLO
+	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758118Ab3CDTzC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 14:53:41 -0500
-X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX1+UwGVBvlyUaMbaJwv1c2o/gCws/qn+SIXbo1Zwu8
-	Dm5s7U+87da1nz
-From: Peter =?iso-8859-1?q?H=FCwe?= <PeterHuewe@gmx.de>
-To: tpmdd-devel@lists.sourceforge.net
-Subject: Re: [tpmdd-devel] [PATCH v2] tpm: Add support for new Infineon I2C TPM (SLB 9645 TT 1.2 I2C)
-Date: Mon, 4 Mar 2013 20:54:16 +0100
-User-Agent: KMail/1.13.7 (Linux/3.7.7; KDE/4.9.5; x86_64; ; )
-Cc: Kent Yoder <key@linux.vnet.ibm.com>,
-        Peter Huewe <peter.huewe@infineon.com>,
-        linux-security-module@vger.kernel.org, shpedoikal@gmail.com,
-        linux-kernel@vger.kernel.org
-References: <1362408106-8632-1-git-send-email-peter.huewe@infineon.com> <20130304174104.GA10811@ennui.austin.ibm.com>
-In-Reply-To: <20130304174104.GA10811@ennui.austin.ibm.com>
+	Mon, 4 Mar 2013 14:55:02 -0500
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201303042054.16849.PeterHuewe@gmx.de>
-X-Y-GMX-Trusted: 0
+In-Reply-To: <20130304092310.1d21100c@tlielax.poochiereds.net>
+References: <CACVXFVMKN6aeCvJcn7dyuonJYJDfYxWeW5KE6gfKRKJKFj2M4A@mail.gmail.com>
+	<4FA345DA4F4AE44899BD2B03EEEC2FA9286AD113@sacexcmbx05-prd.hq.netapp.com>
+	<20130304092310.1d21100c@tlielax.poochiereds.net>
+Date: Mon, 4 Mar 2013 11:55:00 -0800
+X-Google-Sender-Auth: W67aDI6k9md4CttNugrw21t4MAE
+Message-ID: <CACBanvrc0orXGZ1v+gKHtVPKWYKGEFx46dwoDCjTU78+nPtZyg@mail.gmail.com>
+Subject: Re: LOCKDEP: 3.9-rc1: mount.nfs/4272 still has locks held!
+From: Mandeep Singh Baines <msb@chromium.org>
+To: Jeff Layton <jlayton@redhat.com>
+Cc: "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
+        Ming Lei <ming.lei@canonical.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, Oleg Nesterov <oleg@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kent,
++ rjw, akpm, tejun, mingo, oleg
 
-short reply from my private account - so only talking on behalf of myself.
+On Mon, Mar 4, 2013 at 6:23 AM, Jeff Layton <jlayton@redhat.com> wrote:
+> On Mon, 4 Mar 2013 14:14:23 +0000
+> "Myklebust, Trond" <Trond.Myklebust@netapp.com> wrote:
+>
+>> On Mon, 2013-03-04 at 21:57 +0800, Ming Lei wrote:
+>> > Hi,
+>> >
+>> > The below warning can be triggered each time when mount.nfs is
+>> > running on 3.9-rc1.
+>> >
+>> > Not sure if freezable_schedule() inside rpc_wait_bit_killable should
+>> > be changed to schedule() since nfs_clid_init_mutex is held in the path.
+>>
+>> Cc:ing Jeff, who added freezable_schedule(), and applied it to
+>> rpc_wait_bit_killable.
+>>
+>> So this is occurring when the kernel enters the freeze state?
+>> Why does it occur only with nfs_clid_init_mutex, and not with all the
+>> other mutexes that we hold across RPC calls? We hold inode->i_mutex
+>> across RPC calls all the time when doing renames, unlinks, file
+>> creation,...
+>>
+>
+> cc'ing Mandeep as well since his patch caused this to start popping up...
+>
+> We've also gotten some similar lockdep pops in the nfsd code recently.
+> I responded to an email about it here on Friday, and I'll re-post what
+> I said there below:
+>
+> -------------------------[snip]----------------------
+> Ok, I see...
+>
+> rpc_wait_bit_killable() calls freezable_schedule(). That calls
+> freezer_count() which calls try_to_freeze(). try_to_freeze does this
+> lockdep check now as of commit 6aa9707099.
+>
+> The assumption seems to be that freezing a thread while holding any
+> sort of lock is bad. The rationale in that patch seems a bit sketchy to
+> me though. We can be fairly certain that we're not going to deadlock by
+> holding these locks, but I guess there could be something I've missed.
+>
+> Mandeep, can you elaborate on whether there's really a deadlock
+> scenario here? If not, then is there some way to annotate these locks
+> so this lockdep pop goes away?
 
-Am Montag, 4. März 2013, 18:41:04 schrieb Kent Yoder:
-> Hi Peter,
-> 
->   Sorry for the long delay in getting this reviewed...
-No problem.
+We were seeing deadlocks on suspend that were root caused to locks
+held at freeze time. In this case, the locks were device locks. I
+wanted a way to detect if a process tried to freeze with a device_lock
+held.
 
-> 
-> > -	for (count = 0; count < MAX_COUNT; count++) {
-> > -		usleep_range(SLEEP_DURATION_LOW, SLEEP_DURATION_HI);
-> > -		rc = __i2c_transfer(tpm_dev.client->adapter, &msg2, 1);
-> > -		if (rc > 0)
-> > -			break;
-> > +	if (tpm_dev.chip_type == SLB9645) {
-> > +		/* use a combined read for newer chips
-> > +		 * unfortunately the smbus functions are not suitable due to
-> > +		 * the 32 byte limit of the smbus.
-> > +		 * retries should usually not be needed, but are kept just to
-> > +		 * be on the safe side.
-> > +		*/
-> 
->   Bump out that last line of comment by a column.
+Then I thought about the cgroup_freezer subsystem (which I recently
+turned on in our system). If you were to freeze a cgroup and a process
+were holding a lock, you could deadlock. Seems reasonable that this
+code path could cause a deadlock that way.
 
-You mean I should add 1 space - okay, no problem.
-(and I'm nitty picky.... ;) *g*
+The problem is that freezer_count() calls try_to_freeze(). In this
+case, try_to_freeze() is not really adding any value.
 
+If we didn't try_to_freeze() in this instance of freezer_count() you'd
+avoid the potential deadlock and not block suspend. I think a lot of
+call sites are like that. They want to avoid blocking suspend but
+aren't really interested in trying to freeze at the moment they call
+freezer_count().
 
-> > 
-> >  	if (rc <= 0)
-> >  	
-> >  		return -EIO;
-> 
->  This confused me for a second, but I see __i2c_transfer returns the number
-> of messages transferred. Maybe worth adding a comment.
+Regards,
+Mandeep
 
-Maybe I can add one - I'll think about it.
-
-
-> > 
-> > +
-> > +#ifdef CONFIG_OF
-> > +static const struct of_device_id tpm_tis_i2c_of_match[] = {
-> > +	{ .compatible = "infineon,tpm_i2c_infineon", .data = (void *)0 },
-> > +	{ .compatible = "infineon,slb9635tt", .data = (void *)0 },
-> > +	{ .compatible = "infineon,slb9645tt", .data = (void *)1 },
-> 
->   Here "name" and "type" are left empty in of_device_id. Will there be
-> times when those are needed? Like informational messages from the OF
-> subsystem?
-
-Hmm, what do you propose?
-name = chip type ? or name = tpm_i2c_infineon?
-type = tpm ?
-
-
-
-> > 
-> > +		   .of_match_table = of_match_ptr(tpm_tis_i2c_of_match),
-> 
->   Please put this line inside an ifdef CONFIG_OF, since of_match_ptr
-> lives in there.
-NACK.
-of.h has already the ifdef CONFIG_OF for of_match_ptr and defines it either as 
-
-#define of_match_ptr(_ptr)      (_ptr)
-or
-#define of_match_ptr(_ptr)      NULL
-depending on CONFIG_OF is set.
-
-
-
->   Won't you also need to add OF to Kconfig?
-Not really, as the only stuff we're using is the compatible id - the driver can 
-live without it and can be probed from userspace or plain old platform data.
-I probably have compile tested it with and without CONFIG_OF.
-
-
-Is it worth a v3?
- or a small update patch which adds the of name/type and the space? (I can 
-create this patch immediately)
-
-
-Thanks,
-Peter
-
-
-
+> -------------------------[snip]----------------------
+>
+>
+>> > [   41.387939] =====================================
+>> > [   41.392913] [ BUG: mount.nfs/643 still has locks held! ]
+>> > [   41.398559] 3.9.0-rc1+ #1740 Not tainted
+>> > [   41.402709] -------------------------------------
+>> > [   41.407714] 1 lock held by mount.nfs/643:
+>> > [   41.411956]  #0:  (nfs_clid_init_mutex){+.+...}, at: [<c0226d6c>]
+>> > nfs4_discover_server_trunking+0x60/0x1d4
+>> > [   41.422363]
+>> > [   41.422363] stack backtrace:
+>> > [   41.427032] [<c0014dd4>] (unwind_backtrace+0x0/0xe0) from
+>> > [<c04a8300>] (rpc_wait_bit_killable+0x38/0xc8)
+>> > [   41.437103] [<c04a8300>] (rpc_wait_bit_killable+0x38/0xc8) from
+>> > [<c054e454>] (__wait_on_bit+0x54/0x9c)
+>> > [   41.446990] [<c054e454>] (__wait_on_bit+0x54/0x9c) from
+>> > [<c054e514>] (out_of_line_wait_on_bit+0x78/0x84)
+>> > [   41.457061] [<c054e514>] (out_of_line_wait_on_bit+0x78/0x84) from
+>> > [<c04a8f88>] (__rpc_execute+0x170/0x348)
+>> > [   41.467407] [<c04a8f88>] (__rpc_execute+0x170/0x348) from
+>> > [<c04a250c>] (rpc_run_task+0x9c/0xa4)
+>> > [   41.476715] [<c04a250c>] (rpc_run_task+0x9c/0xa4) from [<c04a265c>]
+>> > (rpc_call_sync+0x70/0xb0)
+>> > [   41.485778] [<c04a265c>] (rpc_call_sync+0x70/0xb0) from
+>> > [<c021af54>] (nfs4_proc_setclientid+0x1a0/0x1c8)
+>> > [   41.495819] [<c021af54>] (nfs4_proc_setclientid+0x1a0/0x1c8) from
+>> > [<c0224eb4>] (nfs40_discover_server_trunki
+>> > ng+0xec/0x148)
+>> > [   41.507507] [<c0224eb4>]
+>> > (nfs40_discover_server_trunking+0xec/0x148) from [<c0226da0>]
+>> > (nfs4_discover_server
+>> > _trunking+0x94/0x1d4)
+>> > [   41.519866] [<c0226da0>] (nfs4_discover_server_trunking+0x94/0x1d4)
+>> > from [<c022c664>] (nfs4_init_client+0x15
+>> > 0/0x1b0)
+>> > [   41.531036] [<c022c664>] (nfs4_init_client+0x150/0x1b0) from
+>> > [<c01fe954>] (nfs_get_client+0x2cc/0x320)
+>> > [   41.540863] [<c01fe954>] (nfs_get_client+0x2cc/0x320) from
+>> > [<c022c080>] (nfs4_set_client+0x80/0xb0)
+>> > [   41.550476] [<c022c080>] (nfs4_set_client+0x80/0xb0) from
+>> > [<c022cef8>] (nfs4_create_server+0xb0/0x21c)
+>> > [   41.560333] [<c022cef8>] (nfs4_create_server+0xb0/0x21c) from
+>> > [<c0227524>] (nfs4_remote_mount+0x28/0x54)
+>> > [   41.570373] [<c0227524>] (nfs4_remote_mount+0x28/0x54) from
+>> > [<c0113a8c>] (mount_fs+0x6c/0x160)
+>> > [   41.579498] [<c0113a8c>] (mount_fs+0x6c/0x160) from [<c012a47c>]
+>> > (vfs_kern_mount+0x4c/0xc0)
+>> > [   41.588378] [<c012a47c>] (vfs_kern_mount+0x4c/0xc0) from
+>> > [<c022734c>] (nfs_do_root_mount+0x74/0x90)
+>> > [   41.597961] [<c022734c>] (nfs_do_root_mount+0x74/0x90) from
+>> > [<c0227574>] (nfs4_try_mount+0x24/0x3c)
+>> > [   41.607513] [<c0227574>] (nfs4_try_mount+0x24/0x3c) from
+>> > [<c02070f8>] (nfs_fs_mount+0x6dc/0x7a0)
+>> > [   41.616821] [<c02070f8>] (nfs_fs_mount+0x6dc/0x7a0) from
+>> > [<c0113a8c>] (mount_fs+0x6c/0x160)
+>> > [   41.625701] [<c0113a8c>] (mount_fs+0x6c/0x160) from [<c012a47c>]
+>> > (vfs_kern_mount+0x4c/0xc0)
+>> > [   41.634582] [<c012a47c>] (vfs_kern_mount+0x4c/0xc0) from
+>> > [<c012c330>] (do_mount+0x710/0x81c)
+>> > [   41.643524] [<c012c330>] (do_mount+0x710/0x81c) from [<c012c4c0>]
+>> > (sys_mount+0x84/0xb8)
+>> > [   41.652008] [<c012c4c0>] (sys_mount+0x84/0xb8) from [<c000d6c0>]
+>> > (ret_fast_syscall+0x0/0x48)
+>> > [   41.715911] device: '0:28': device_add
+>> > [   41.720062] PM: Adding info for No Bus:0:28
+>> > [   41.746887] device: '0:29': device_add
+>> > [   41.751037] PM: Adding info for No Bus:0:29
+>> > [   41.780700] device: '0:28': device_unregister
+>> > [   41.785400] PM: Removing info for No Bus:0:28
+>> > [   41.790344] device: '0:28': device_create_release
+>> >
+>> >
+>> > Thanks,
+>> > --
+>> > Ming Lei
+>>
+>
+>
+> --
+> Jeff Layton <jlayton@redhat.com>
