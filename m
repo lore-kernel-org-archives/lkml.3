@@ -1,91 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757555Ab3CDN22 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 08:28:28 -0500
-Received: from mail-la0-f49.google.com ([209.85.215.49]:52375 "EHLO
-	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757105Ab3CDN21 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 08:28:27 -0500
-Message-ID: <5134A153.6080707@cogentembedded.com>
-Date: Mon, 04 Mar 2013 17:27:47 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
+	id S1757611Ab3CDN2o (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 08:28:44 -0500
+Received: from pequod.mess.org ([46.65.169.142]:46762 "EHLO pequod.mess.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757129Ab3CDN2m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Mar 2013 08:28:42 -0500
+Date: Mon, 4 Mar 2013 13:28:40 +0000
+From: Sean Young <sean@mess.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Vincent Deffontaines <vincent@gryzor.com>, Alan Cox <alan@linux.intel.com>,
+        stable@vger.kernel.org
+Subject: Re: [PATCH] tty/8250_pnp: serial port detection regression since
+ v3.7
+Message-ID: <20130304132839.GA6965@pequod.mess.org>
+References: <1361550439-23504-1-git-send-email-sean@mess.org>
 MIME-Version: 1.0
-To: Hannes Reinecke <hare@suse.de>
-CC: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Bjorn Helgaas <bhelgaas@google.com>, Oliver Neukum <oneukum@suse.de>,
-        Thomas Renninger <trenn@suse.de>, Yinghai Lu <yinghai@kernel.org>,
-        Frederik Himpe <fhimpe@vub.ac.be>, David Haerdeman <david@hardeman.nu>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: Re: [PATCH][v2] xhci: correctly enable interrupts
-References: <1362385324-15228-1-git-send-email-hare@suse.de>
-In-Reply-To: <1362385324-15228-1-git-send-email-hare@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1361550439-23504-1-git-send-email-sean@mess.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+Greg,
 
-On 04-03-2013 12:22, Hannes Reinecke wrote:
+On Fri, Feb 22, 2013 at 04:27:19PM +0000, Sean Young wrote:
+> The InsydeH2O BIOS (version dated 09/12/2011) has the following in
+> its pnp resouces for its serial ports:
+> 
+> $ cat /sys/bus/pnp/devices/00:0b/resources
+> state = active
+> io disabled
+> irq disabled
+> 
+> We do not check if the resources are disabled, and create a bogus
+> ttyS* device. Since commit 835d844d1a28e (8250_pnp: do pnp probe
+> before legacy probe) we get a bogus ttyS0, which prevents the legacy
+> probe from detecting it.
 
-> xhci has its own interrupt enabling routine, which will try to
-> use MSI-X/MSI if present. So the usb core shouldn't try to enable
-> legacy interrupts; on some machines the xhci legacy IRQ setting
-> is invalid.
+Would you mind accepting this patch please -- it fixes a regression I 
+introduced in 3.7.
 
-> Cc: Bjorn Helgaas <bhelgaas@google.com>
-> Cc: Oliver Neukum <oneukum@suse.de>
-> Cc: Thomas Renninger <trenn@suse.de>
-> Cc: Yinghai Lu <yinghai@kernel.org>
-> Cc: Frederik Himpe <fhimpe@vub.ac.be>
-> Cc: David Haerdeman <david@hardeman.nu>
-> Cc: Alan Stern <stern@rowland.harvard.edu>
-> Signed-off-by: Hannes Reinecke <hare@suse.de>
+Thanks,
+Sean
 
-> diff --git a/drivers/usb/core/hcd-pci.c b/drivers/usb/core/hcd-pci.c
-> index 622b4a4..2647e75 100644
-> --- a/drivers/usb/core/hcd-pci.c
-> +++ b/drivers/usb/core/hcd-pci.c
-[...]
-> @@ -187,15 +188,21 @@ int usb_hcd_pci_probe(struct pci_dev *dev, const struct pci_device_id *id)
->   		return -ENODEV;
->   	dev->current_state = PCI_D0;
->
-> -	/* The xHCI driver supports MSI and MSI-X,
-> -	 * so don't fail if the BIOS doesn't provide a legacy IRQ.
-> +	/*
-> +	 * The xHCI driver supports MSI and MSI-X,
-> +	 * so don't fail if the BIOS doesn't provide a legacy IRQ
-> +	 * and do not try to enable legacy IRQs.
->   	 */
-> -	if (!dev->irq && (driver->flags & HCD_MASK) != HCD_USB3) {
-> -		dev_err(&dev->dev,
-> -			"Found HC with no IRQ.  Check BIOS/PCI %s setup!\n",
-> -			pci_name(dev));
-> -		retval = -ENODEV;
-> -		goto disable_pci;
-> +	if ((driver->flags & HCD_MASK) != HCD_USB3) {
-> +		if (!dev->irq) {
-> +			dev_err(&dev->dev,
-> +				"Found HC with no IRQ.  "
-> +				"Check BIOS/PCI %s setup!\n",
-
-    The message strings are allowed to take more than 80 chars (to facilitate 
-grepping for them), so no need to break this one; checkpatch.pl should not 
-complain...
-
-> +				pci_name(dev));
-> +			retval = -ENODEV;
-> +			goto disable_pci;
-> +		}
-> +		hcd_irq = dev->irq;
->   	}
->
->   	hcd = usb_create_hcd(driver, &dev->dev, pci_name(dev));
-
-WBR, Sergei
-
+> Reported-by: Vincent Deffontaines <vincent@gryzor.com>
+> Tested-by: Vincent Deffontaines <vincent@gryzor.com>
+> Signed-off-by: Sean Young <sean@mess.org>
+> Cc: stable@vger.kernel.org
+> ---
+>  drivers/tty/serial/8250/8250_pnp.c |   12 +++++++-----
+>  1 files changed, 7 insertions(+), 5 deletions(-)
+> 
+> diff --git a/drivers/tty/serial/8250/8250_pnp.c b/drivers/tty/serial/8250/8250_pnp.c
+> index 35d9ab9..b3455a9 100644
+> --- a/drivers/tty/serial/8250/8250_pnp.c
+> +++ b/drivers/tty/serial/8250/8250_pnp.c
+> @@ -429,6 +429,7 @@ serial_pnp_probe(struct pnp_dev *dev, const struct pnp_device_id *dev_id)
+>  {
+>  	struct uart_8250_port uart;
+>  	int ret, line, flags = dev_id->driver_data;
+> +	struct resource *res = NULL;
+>  
+>  	if (flags & UNKNOWN_DEV) {
+>  		ret = serial_pnp_guess_board(dev);
+> @@ -439,11 +440,12 @@ serial_pnp_probe(struct pnp_dev *dev, const struct pnp_device_id *dev_id)
+>  	memset(&uart, 0, sizeof(uart));
+>  	if (pnp_irq_valid(dev, 0))
+>  		uart.port.irq = pnp_irq(dev, 0);
+> -	if ((flags & CIR_PORT) && pnp_port_valid(dev, 2)) {
+> -		uart.port.iobase = pnp_port_start(dev, 2);
+> -		uart.port.iotype = UPIO_PORT;
+> -	} else if (pnp_port_valid(dev, 0)) {
+> -		uart.port.iobase = pnp_port_start(dev, 0);
+> +	if ((flags & CIR_PORT) && pnp_port_valid(dev, 2))
+> +		res = pnp_get_resource(dev, IORESOURCE_IO, 2);
+> +	else if (pnp_port_valid(dev, 0))
+> +		res = pnp_get_resource(dev, IORESOURCE_IO, 0);
+> +	if (pnp_resource_enabled(res)) {
+> +		uart.port.iobase = res->start;
+>  		uart.port.iotype = UPIO_PORT;
+>  	} else if (pnp_mem_valid(dev, 0)) {
+>  		uart.port.mapbase = pnp_mem_start(dev, 0);
+> -- 
+> 1.7.2.5
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-serial" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
