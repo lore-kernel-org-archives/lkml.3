@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757945Ab3CDM7i (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 07:59:38 -0500
-Received: from mail-pb0-f51.google.com ([209.85.160.51]:33246 "EHLO
-	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757764Ab3CDM7f (ORCPT
+	id S1758302Ab3CDNDV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 08:03:21 -0500
+Received: from mail-da0-f45.google.com ([209.85.210.45]:52114 "EHLO
+	mail-da0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757858Ab3CDM7c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 07:59:35 -0500
+	Mon, 4 Mar 2013 07:59:32 -0500
 From: Akinobu Mita <akinobu.mita@gmail.com>
 To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
-Cc: Akinobu Mita <akinobu.mita@gmail.com>, linux-usb@vger.kernel.org
-Subject: [PATCH -v3 13/23] uwb: rename random32() to prandom_u32()
-Date: Mon,  4 Mar 2013 21:58:21 +0900
-Message-Id: <1362401911-14074-14-git-send-email-akinobu.mita@gmail.com>
+Cc: Akinobu Mita <akinobu.mita@gmail.com>, Ben Myers <bpm@sgi.com>,
+        Alex Elder <elder@kernel.org>, xfs@oss.sgi.com
+Subject: [PATCH -v3 12/23] xfs: rename random32() to prandom_u32()
+Date: Mon,  4 Mar 2013 21:58:20 +0900
+Message-Id: <1362401911-14074-13-git-send-email-akinobu.mita@gmail.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1362401911-14074-1-git-send-email-akinobu.mita@gmail.com>
 References: <1362401911-14074-1-git-send-email-akinobu.mita@gmail.com>
@@ -24,36 +25,73 @@ Use more preferable function name which implies using a pseudo-random
 number generator.
 
 Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: linux-usb@vger.kernel.org
+Acked-by: <bpm@sgi.com>
+Cc: Ben Myers <bpm@sgi.com>
+Cc: Alex Elder <elder@kernel.org>
+Cc: xfs@oss.sgi.com
 ---
 
-No change from v2
+* Change from v2
+- add Acked-by: line
 
- drivers/uwb/rsv.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ fs/xfs/xfs_alloc.c  | 2 +-
+ fs/xfs/xfs_error.c  | 2 +-
+ fs/xfs/xfs_ialloc.c | 2 +-
+ fs/xfs/xfs_log.c    | 2 +-
+ 4 files changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/uwb/rsv.c b/drivers/uwb/rsv.c
-index 0b0d8bc..f4ae05f 100644
---- a/drivers/uwb/rsv.c
-+++ b/drivers/uwb/rsv.c
-@@ -231,7 +231,7 @@ void uwb_rsv_backoff_win_increment(struct uwb_rc *rc)
- 		return;
+diff --git a/fs/xfs/xfs_alloc.c b/fs/xfs/xfs_alloc.c
+index 0ad2325..a8beb5c 100644
+--- a/fs/xfs/xfs_alloc.c
++++ b/fs/xfs/xfs_alloc.c
+@@ -842,7 +842,7 @@ xfs_alloc_ag_vextent_near(
+ 	 */
+ 	int		dofirst;	/* set to do first algorithm */
  
- 	bow->window <<= 1;
--	bow->n = random32() & (bow->window - 1);
-+	bow->n = prandom_u32() & (bow->window - 1);
- 	dev_dbg(dev, "new_window=%d, n=%d\n: ", bow->window, bow->n);
+-	dofirst = random32() & 1;
++	dofirst = prandom_u32() & 1;
+ #endif
  
- 	/* reset the timer associated variables */
-@@ -557,7 +557,7 @@ int uwb_rsv_establish(struct uwb_rsv *rsv)
- 	if (ret)
- 		goto out;
+ restart:
+diff --git a/fs/xfs/xfs_error.c b/fs/xfs/xfs_error.c
+index 6104560..07bf3b9 100644
+--- a/fs/xfs/xfs_error.c
++++ b/fs/xfs/xfs_error.c
+@@ -66,7 +66,7 @@ xfs_error_test(int error_tag, int *fsidp, char *expression,
+ 	int i;
+ 	int64_t fsid;
  
--	rsv->tiebreaker = random32() & 1;
-+	rsv->tiebreaker = prandom_u32() & 1;
- 	/* get available mas bitmap */
- 	uwb_drp_available(rc, &available);
+-	if (random32() % randfactor)
++	if (prandom_u32() % randfactor)
+ 		return 0;
  
+ 	memcpy(&fsid, fsidp, sizeof(xfs_fsid_t));
+diff --git a/fs/xfs/xfs_ialloc.c b/fs/xfs/xfs_ialloc.c
+index 515bf71..ba62661 100644
+--- a/fs/xfs/xfs_ialloc.c
++++ b/fs/xfs/xfs_ialloc.c
+@@ -369,7 +369,7 @@ xfs_ialloc_ag_alloc(
+ 	 * number from being easily guessable.
+ 	 */
+ 	error = xfs_ialloc_inode_init(args.mp, tp, agno, args.agbno,
+-			args.len, random32());
++			args.len, prandom_u32());
+ 
+ 	if (error)
+ 		return error;
+diff --git a/fs/xfs/xfs_log.c b/fs/xfs/xfs_log.c
+index eec226f..b345a7c 100644
+--- a/fs/xfs/xfs_log.c
++++ b/fs/xfs/xfs_log.c
+@@ -3485,7 +3485,7 @@ xlog_ticket_alloc(
+ 	tic->t_curr_res		= unit_bytes;
+ 	tic->t_cnt		= cnt;
+ 	tic->t_ocnt		= cnt;
+-	tic->t_tid		= random32();
++	tic->t_tid		= prandom_u32();
+ 	tic->t_clientid		= client;
+ 	tic->t_flags		= XLOG_TIC_INITED;
+ 	tic->t_trans_type	= 0;
 -- 
 1.8.1.2
 
