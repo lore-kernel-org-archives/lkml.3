@@ -1,81 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758056Ab3CDO3f (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 09:29:35 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:37440 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756797Ab3CDO3e (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 09:29:34 -0500
-Message-ID: <1362407359.3768.337.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [PATCH] USB: storage: fix Huawei mode switching regression
-From: Ben Hutchings <ben@decadent.org.uk>
-To: =?ISO-8859-1?Q?Bj=F8rn?= Mork <bjorn@mork.no>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        fangxiaozhi@huawei.com, zihan@huawei.com, Lin.Lei@huawei.com,
-        Greg KH <gregkh@linuxfoundation.org>, neil.yi@huawei.com,
-        wangyuhua@huawei.com, huqiao36@huawei.com, balbi@ti.com,
-        mdharm-usb@one-eyed-alien.net, sebastian@breakpoint.cc,
-        stable <stable@vger.kernel.org>
-Date: Mon, 04 Mar 2013 14:29:19 +0000
-In-Reply-To: <1362403161-23501-1-git-send-email-bjorn@mork.no>
-References: <87obezs888.fsf@nemi.mork.no>
-	 <1362403161-23501-1-git-send-email-bjorn@mork.no>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-2f1p6SXJc79WBba+KTqy"
-X-Mailer: Evolution 3.4.4-2 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	id S1758014Ab3CDOi0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 09:38:26 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:51357 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757041Ab3CDOiZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Mar 2013 09:38:25 -0500
+Date: Mon, 4 Mar 2013 16:38:10 +0200
+From: Felipe Balbi <balbi@ti.com>
+To: Fabio Baltieri <fabio.baltieri@linaro.org>
+CC: Felipe Balbi <balbi@ti.com>, Linus Walleij <linus.walleij@linaro.org>,
+        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>
+Subject: Re: [PATCH 3/5] usb: musb: ux500: add otg notifier support
+Message-ID: <20130304143810.GJ3397@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <1362047934-22337-1-git-send-email-fabio.baltieri@linaro.org>
+ <1362047934-22337-4-git-send-email-fabio.baltieri@linaro.org>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="9RxwyT9MtfFuvYYZ"
+Content-Disposition: inline
+In-Reply-To: <1362047934-22337-4-git-send-email-fabio.baltieri@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---=-2f1p6SXJc79WBba+KTqy
-Content-Type: text/plain; charset="UTF-8"
+--9RxwyT9MtfFuvYYZ
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Mon, 2013-03-04 at 14:19 +0100, Bj=C3=B8rn Mork wrote:
-[...]
-> In-kernel mode switching was deprecated years ago with the
-> development of the more user friendly userspace alternatives. The
-> existing list of devices in usb-storage was only kept to prevent
-> breaking already working systems.  The long term plan is to remove
-> the list, not to add to it. Ref:
-> http://permalink.gmane.org/gmane.linux.usb.general/28543
-[...]
+On Thu, Feb 28, 2013 at 11:38:52AM +0100, Fabio Baltieri wrote:
+> Add transceiver notifier event handling to the ux500 driver to set vbus
+> on specific transceiver events.
+>=20
+> Acked-by: Linus Walleij <linus.walleij@linaro.org>
+> Signed-off-by: Fabio Baltieri <fabio.baltieri@linaro.org>
+> ---
+>  drivers/usb/musb/ux500.c | 41 +++++++++++++++++++++++++++++++++++++++++
+>  1 file changed, 41 insertions(+)
+>=20
+> diff --git a/drivers/usb/musb/ux500.c b/drivers/usb/musb/ux500.c
+> index 5b742ba..b20326bb 100644
+> --- a/drivers/usb/musb/ux500.c
+> +++ b/drivers/usb/musb/ux500.c
+> @@ -98,6 +98,36 @@ static void ux500_musb_set_vbus(struct musb *musb, int=
+ is_on)
+>  		musb_readb(musb->mregs, MUSB_DEVCTL));
+>  }
+> =20
+> +static int musb_otg_notifications(struct notifier_block *nb,
+> +		unsigned long event, void *unused)
+> +{
+> +	struct musb *musb =3D container_of(nb, struct musb, nb);
+> +
+> +	dev_dbg(musb->controller, "musb_otg_notifications %ld %s\n",
+> +			event, otg_state_string(musb->xceiv->state));
+> +
+> +	switch (event) {
+> +	case USB_EVENT_ID:
+> +		dev_dbg(musb->controller, "ID GND\n");
+> +		ux500_musb_set_vbus(musb, 1);
+> +		break;
+> +	case USB_EVENT_VBUS:
+> +		dev_dbg(musb->controller, "VBUS Connect\n");
 
-Can you add a comment to this effect?
-
-Ben.
+are you sure this is correct ? you're not doing anything in case of
+vbus event. Shouldn't you make sure your vbus is off ? What if your user
+uses a non-standard cable which has id-pin grounded on both sides ?
 
 --=20
-Ben Hutchings
-Always try to do things in chronological order;
-it's less confusing that way.
+balbi
 
---=-2f1p6SXJc79WBba+KTqy
+--9RxwyT9MtfFuvYYZ
 Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
+Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIVAwUAUTSvv+e/yOyVhhEJAQrAUA/+LmsYlMDXDzQty+QQ8gjoKOfc3n0w9sRz
-gnMT/telsoHHmABZG9Slt56kGNaQvCeXkTmFJ9hGcgms1L9UjTXYlUpPeINo4CnO
-kklqrWYUewNGziGDQ9+5+B4HdmkqiDc27rYxoefZC4rkAmLCow9GRJ9Go2R3R4qI
-Rno0Mn3pxR1Dsjc5Phjc+g+TEIahMWHntYzEkfOE0Z+0yi/d8yk0HLA1VZ4YAHls
-2erHuTQU2/+s4lj9yB2GHmGLcr82YYoy1TM032oTemO1YdOWqCodFCuaCWDi1PDS
-jZxwHm5VdHi/sv2fOr+zqwqqvKqMUsNz8eCG5IMls2kg22AX5SvgbRXm+bgltWLr
-Tl0IRp4XAPMEyhiT8Bi1sEpFPkH/but7tmbCUmBQFE0V3wmaRtLQICktVMjxjR5j
-C8odST/FMEb1dRl5EhRg28K9iKz5YftpiRVrfKSVOmTWi9eH04b8154ObD7yGfGi
-CItfSk9vUPQesTxlKRYAOHbTocI29j37A4UPGidwouLwBzQA96zjIC4uRF4XkdYW
-LR3qVN5UmcmeUAP8O+iup5UJ4eamLJv5SHnVnF4FrwYWFoqzJNRh3ny6e2pIoEmD
-o9xW6V1m29pkNzeLH9m0Mopg7n7YbZDzUUTBufFpZS9DxMsyOVvMb4jn4USXMbuO
-pFw9v/gidAQ=
-=eexo
+iQIcBAEBAgAGBQJRNLHSAAoJEIaOsuA1yqREMDEP/jQtj04O2wV609RVG92+H2p+
+pfsTMJpPiqxzVng7WHYwkNIov0oGJf5aAnaxWdb07BRN+spYKm2ghQvq8E/h2Q8t
+3NSIFeQniwHWJH4BOJjLeKzQwGK3CDJMjwLp/4PmX4VmMgXT42XfrAcUChUeVGZ2
+uwN6aYFITppbpJgNKTuZuJZcSfKT1bMEGlF39QjfRihRo83T00Yq6Q+dxtnsNGY5
+25uZ8b21vZLD33O9nEw5e+pZqZvbZVMXKuuII/ITaxHzdnXuziy1BEqSvRgp6zCp
+zUBrmakaKoxMm3FcPEZ9x5/mSOvHYDVeiYiZS69dyvmAGP65fO3mABglNUakoW5b
+XHUlCxDMMgg4dRPm50Yb0mqss5ffDJZFoQiP3xXPHDQ58HwbNjKe44aWf7L3JcCF
+WQ8TrbUT8Z2gBFgw5W4ytboFmdMpYKi9aQjcmtGgGdW0nvaQns4P8zsTKDgt1ngX
+CKpibqV+95vPZOJ2plhg0dp62alQs+2P8m4Bald1YHbL6chBy7Ip7Cwc++WgKGpH
+//f8ZmTbPNN+HMkBq9e+Sl7C3kTDyF0aGpRH7yKY8dlctySv6j0QwiV43xovwDE6
+szVBaW9Py88nQHFhwrwLbh80e9ixfib8e2qntuWX7CK5g8ClbudZszq/mWWUzbkQ
+Bm+WP962NwgDOFbo8+bl
+=00LD
 -----END PGP SIGNATURE-----
 
---=-2f1p6SXJc79WBba+KTqy--
+--9RxwyT9MtfFuvYYZ--
