@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757070Ab3CDD77 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 22:59:59 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:32968 "EHLO
+	id S1756910Ab3CDEAa (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 23:00:30 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:32960 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756668Ab3CDDoE (ORCPT
+	by vger.kernel.org with ESMTP id S1756660Ab3CDDoD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Mar 2013 22:44:04 -0500
-Message-Id: <20130304033714.778546002@decadent.org.uk>
+	Sun, 3 Mar 2013 22:44:03 -0500
+Message-Id: <20130304033715.075678690@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 04 Mar 2013 03:38:20 +0000
+Date: Mon, 04 Mar 2013 03:38:23 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Nicholas Bellinger <nab@linux-iscsi.org>,
-        Jan Engelhardt <jengelh@inai.de>
-Subject: [ 073/153] target: Add missing mapped_lun bounds checking during make_mappedlun
- setup
+Cc: akpm@linux-foundation.org, Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Wangyuan Zhang <Wangyuan.Zhang@netapp.com>
+Subject: [ 076/153] NLM: Ensure that we resend all pending blocking locks after a
+ reclaim
 In-Reply-To: <20130304033707.648729212@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,42 +28,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit fbbf8555a986ed31e54f006b6cc637ea4ff1425b upstream.
+commit 666b3d803a511fbc9bc5e5ea8ce66010cf03ea13 upstream.
 
-This patch adds missing bounds checking for the configfs provided
-mapped_lun value during target_fabric_make_mappedlun() setup ahead
-of se_lun_acl initialization.
+Currently, nlmclnt_lock will break out of the for(;;) loop when
+the reclaimer wakes up the blocking lock thread by setting
+nlm_lck_denied_grace_period. This causes the lock request to fail
+with an ENOLCK error.
+The intention was always to ensure that we resend the lock request
+after the grace period has expired.
 
-This addresses a potential OOPs when using a mapped_lun value that
-exceeds the hardcoded TRANSPORT_MAX_LUNS_PER_TPG-1 value within
-se_node_acl->device_list[].
-
-Reported-by: Jan Engelhardt <jengelh@inai.de>
-Cc: Jan Engelhardt <jengelh@inai.de>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Reported-by: Wangyuan Zhang <Wangyuan.Zhang@netapp.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/target/target_core_fabric_configfs.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ fs/lockd/clntproc.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/target/target_core_fabric_configfs.c
-+++ b/drivers/target/target_core_fabric_configfs.c
-@@ -354,6 +354,14 @@ static struct config_group *target_fabri
- 		ret = -EINVAL;
- 		goto out;
+--- a/fs/lockd/clntproc.c
++++ b/fs/lockd/clntproc.c
+@@ -551,6 +551,9 @@ again:
+ 		status = nlmclnt_block(block, req, NLMCLNT_POLL_TIMEOUT);
+ 		if (status < 0)
+ 			break;
++		/* Resend the blocking lock request after a server reboot */
++		if (resp->status ==  nlm_lck_denied_grace_period)
++			continue;
+ 		if (resp->status != nlm_lck_blocked)
+ 			break;
  	}
-+	if (mapped_lun > (TRANSPORT_MAX_LUNS_PER_TPG-1)) {
-+		pr_err("Mapped LUN: %lu exceeds TRANSPORT_MAX_LUNS_PER_TPG"
-+			"-1: %u for Target Portal Group: %u\n", mapped_lun,
-+			TRANSPORT_MAX_LUNS_PER_TPG-1,
-+			se_tpg->se_tpg_tfo->tpg_get_tag(se_tpg));
-+		ret = -EINVAL;
-+		goto out;
-+	}
- 
- 	lacl = core_dev_init_initiator_node_lun_acl(se_tpg, se_nacl,
- 			mapped_lun, &ret);
 
 
