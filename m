@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757972Ab3CDEEv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 23:04:51 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:32820 "EHLO
+	id S1757749Ab3CDEEu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 23:04:50 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:32818 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756180Ab3CDDnd (ORCPT
+	by vger.kernel.org with ESMTP id S1756245Ab3CDDnd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 3 Mar 2013 22:43:33 -0500
-Message-Id: <20130304033716.895610888@decadent.org.uk>
+Message-Id: <20130304033717.513730902@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 04 Mar 2013 03:38:41 +0000
+Date: Mon, 04 Mar 2013 03:38:47 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Lukas Czerner <lczerner@redhat.com>,
-        "Theodore Tso" <tytso@mit.edu>
-Subject: [ 094/153] ext4: fix free clusters calculation in bigalloc filesystem
+Cc: akpm@linux-foundation.org, Mel Gorman <mgorman@suse.de>,
+        Rob van der Heij <rvdheij@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 100/153] mm/fadvise.c: drain all pagevecs if POSIX_FADV_DONTNEED fails to
+ discard all pages
 In-Reply-To: <20130304033707.648729212@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,60 +29,197 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lukas Czerner <lczerner@redhat.com>
+From: Mel Gorman <mgorman@suse.de>
 
-commit 304e220f0879198b1f5309ad6f0be862b4009491 upstream.
+commit 67d46b296a1ba1477c0df8ff3bc5e0167a0b0732 upstream.
 
-ext4_has_free_clusters() should tell us whether there is enough free
-clusters to allocate, however number of free clusters in the file system
-is converted to blocks using EXT4_C2B() which is not only wrong use of
-the macro (we should have used EXT4_NUM_B2C) but it's also completely
-wrong concept since everything else is in cluster units.
+Rob van der Heij reported the following (paraphrased) on private mail.
 
-Moreover when calculating number of root clusters we should be using
-macro EXT4_NUM_B2C() instead of EXT4_B2C() otherwise the result might be
-off by one. However r_blocks_count should always be a multiple of the
-cluster ratio so doing a plain bit shift should be enough here. We
-avoid using EXT4_B2C() because it's confusing.
+	The scenario is that I want to avoid backups to fill up the page
+	cache and purge stuff that is more likely to be used again (this is
+	with s390x Linux on z/VM, so I don't give it as much memory that
+	we don't care anymore). So I have something with LD_PRELOAD that
+	intercepts the close() call (from tar, in this case) and issues
+	a posix_fadvise() just before closing the file.
 
-As a result of the first problem number of free clusters is much bigger
-than it should have been and ext4_has_free_clusters() would return 1 even
-if there is really not enough free clusters available.
+	This mostly works, except for small files (less than 14 pages)
+	that remains in page cache after the face.
 
-Fix this by removing the EXT4_C2B() conversion of free clusters and
-using bit shift when calculating number of root clusters. This bug
-affects number of xfstests tests covering file system ENOSPC situation
-handling. With this patch most of the ENOSPC problems with bigalloc file
-system disappear, especially the errors caused by delayed allocation not
-having enough space when the actual allocation is finally requested.
+Unfortunately Rob has not had a chance to test this exact patch but the
+test program below should be reproducing the problem he described.
 
-Signed-off-by: Lukas Czerner <lczerner@redhat.com>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+The issue is the per-cpu pagevecs for LRU additions.  If the pages are
+added by one CPU but fadvise() is called on another then the pages
+remain resident as the invalidate_mapping_pages() only drains the local
+pagevecs via its call to pagevec_release().  The user-visible effect is
+that a program that uses fadvise() properly is not obeyed.
+
+A possible fix for this is to put the necessary smarts into
+invalidate_mapping_pages() to globally drain the LRU pagevecs if a
+pagevec page could not be discarded.  The downside with this is that an
+inode cache shrink would send a global IPI and memory pressure
+potentially causing global IPI storms is very undesirable.
+
+Instead, this patch adds a check during fadvise(POSIX_FADV_DONTNEED) to
+check if invalidate_mapping_pages() discarded all the requested pages.
+If a subset of pages are discarded it drains the LRU pagevecs and tries
+again.  If the second attempt fails, it assumes it is due to the pages
+being mapped, locked or dirty and does not care.  With this patch, an
+application using fadvise() correctly will be obeyed but there is a
+downside that a malicious application can force the kernel to send
+global IPIs and increase overhead.
+
+If accepted, I would like this to be considered as a -stable candidate.
+It's not an urgent issue but it's a system call that is not working as
+advertised which is weak.
+
+The following test program demonstrates the problem.  It should never
+report that pages are still resident but will without this patch.  It
+assumes that CPU 0 and 1 exist.
+
+int main() {
+	int fd;
+	int pagesize = getpagesize();
+	ssize_t written = 0, expected;
+	char *buf;
+	unsigned char *vec;
+	int resident, i;
+	cpu_set_t set;
+
+	/* Prepare a buffer for writing */
+	expected = FILESIZE_PAGES * pagesize;
+	buf = malloc(expected + 1);
+	if (buf == NULL) {
+		printf("ENOMEM\n");
+		exit(EXIT_FAILURE);
+	}
+	buf[expected] = 0;
+	memset(buf, 'a', expected);
+
+	/* Prepare the mincore vec */
+	vec = malloc(FILESIZE_PAGES);
+	if (vec == NULL) {
+		printf("ENOMEM\n");
+		exit(EXIT_FAILURE);
+	}
+
+	/* Bind ourselves to CPU 0 */
+	CPU_ZERO(&set);
+	CPU_SET(0, &set);
+	if (sched_setaffinity(getpid(), sizeof(set), &set) == -1) {
+		perror("sched_setaffinity");
+		exit(EXIT_FAILURE);
+	}
+
+	/* open file, unlink and write buffer */
+	fd = open("fadvise-test-file", O_CREAT|O_EXCL|O_RDWR);
+	if (fd == -1) {
+		perror("open");
+		exit(EXIT_FAILURE);
+	}
+	unlink("fadvise-test-file");
+	while (written < expected) {
+		ssize_t this_write;
+		this_write = write(fd, buf + written, expected - written);
+
+		if (this_write == -1) {
+			perror("write");
+			exit(EXIT_FAILURE);
+		}
+
+		written += this_write;
+	}
+	free(buf);
+
+	/*
+	 * Force ourselves to another CPU. If fadvise only flushes the local
+	 * CPUs pagevecs then the fadvise will fail to discard all file pages
+	 */
+	CPU_ZERO(&set);
+	CPU_SET(1, &set);
+	if (sched_setaffinity(getpid(), sizeof(set), &set) == -1) {
+		perror("sched_setaffinity");
+		exit(EXIT_FAILURE);
+	}
+
+	/* sync and fadvise to discard the page cache */
+	fsync(fd);
+	if (posix_fadvise(fd, 0, expected, POSIX_FADV_DONTNEED) == -1) {
+		perror("posix_fadvise");
+		exit(EXIT_FAILURE);
+	}
+
+	/* map the file and use mincore to see which parts of it are resident */
+	buf = mmap(NULL, expected, PROT_READ, MAP_SHARED, fd, 0);
+	if (buf == NULL) {
+		perror("mmap");
+		exit(EXIT_FAILURE);
+	}
+	if (mincore(buf, expected, vec) == -1) {
+		perror("mincore");
+		exit(EXIT_FAILURE);
+	}
+
+	/* Check residency */
+	for (i = 0, resident = 0; i < FILESIZE_PAGES; i++) {
+		if (vec[i])
+			resident++;
+	}
+	if (resident != 0) {
+		printf("Nr unexpected pages resident: %d\n", resident);
+		exit(EXIT_FAILURE);
+	}
+
+	munmap(buf, expected);
+	close(fd);
+	free(vec);
+	exit(EXIT_SUCCESS);
+}
+
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Reported-by: Rob van der Heij <rvdheij@gmail.com>
+Tested-by: Rob van der Heij <rvdheij@gmail.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/ext4/balloc.c |    9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+ mm/fadvise.c |   18 ++++++++++++++++--
+ 1 file changed, 16 insertions(+), 2 deletions(-)
 
---- a/fs/ext4/balloc.c
-+++ b/fs/ext4/balloc.c
-@@ -420,11 +420,16 @@ static int ext4_has_free_clusters(struct
+--- a/mm/fadvise.c
++++ b/mm/fadvise.c
+@@ -17,6 +17,7 @@
+ #include <linux/fadvise.h>
+ #include <linux/writeback.h>
+ #include <linux/syscalls.h>
++#include <linux/swap.h>
  
- 	free_clusters  = percpu_counter_read_positive(fcc);
- 	dirty_clusters = percpu_counter_read_positive(dcc);
--	root_clusters = EXT4_B2C(sbi, ext4_r_blocks_count(sbi->s_es));
+ #include <asm/unistd.h>
+ 
+@@ -123,9 +124,22 @@ SYSCALL_DEFINE(fadvise64_64)(int fd, lof
+ 		start_index = (offset+(PAGE_CACHE_SIZE-1)) >> PAGE_CACHE_SHIFT;
+ 		end_index = (endbyte >> PAGE_CACHE_SHIFT);
+ 
+-		if (end_index >= start_index)
+-			invalidate_mapping_pages(mapping, start_index,
++		if (end_index >= start_index) {
++			unsigned long count = invalidate_mapping_pages(mapping,
++						start_index, end_index);
 +
-+	/*
-+	 * r_blocks_count should always be multiple of the cluster ratio so
-+	 * we are safe to do a plane bit shift only.
-+	 */
-+	root_clusters = ext4_r_blocks_count(sbi->s_es) >> sbi->s_cluster_bits;
- 
- 	if (free_clusters - (nclusters + root_clusters + dirty_clusters) <
- 					EXT4_FREECLUSTERS_WATERMARK) {
--		free_clusters  = EXT4_C2B(sbi, percpu_counter_sum_positive(fcc));
-+		free_clusters  = percpu_counter_sum_positive(fcc);
- 		dirty_clusters = percpu_counter_sum_positive(dcc);
- 	}
- 	/* Check whether we have space after accounting for current
++			/*
++			 * If fewer pages were invalidated than expected then
++			 * it is possible that some of the pages were on
++			 * a per-cpu pagevec for a remote CPU. Drain all
++			 * pagevecs and try again.
++			 */
++			if (count < (end_index - start_index + 1)) {
++				lru_add_drain_all();
++				invalidate_mapping_pages(mapping, start_index,
+ 						end_index);
++			}
++		}
+ 		break;
+ 	default:
+ 		ret = -EINVAL;
 
 
