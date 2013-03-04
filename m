@@ -1,131 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754823Ab3CDCVv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 21:21:51 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:49149 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752794Ab3CDCVu (ORCPT
+	id S1754936Ab3CDCXZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 21:23:25 -0500
+Received: from mailout01.c08.mtsvc.net ([205.186.168.189]:36184 "EHLO
+	mailout01.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752794Ab3CDCXX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Mar 2013 21:21:50 -0500
-Date: Mon, 4 Mar 2013 13:21:39 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: linux-next: manual merge of the akpm tree with Linus' tree
-Message-Id: <20130304132139.f9efee7b45655d9f75abf643@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+	Sun, 3 Mar 2013 21:23:23 -0500
+Message-ID: <1362363784.3221.141.camel@thor.lan>
+Subject: Re: [PATCH] ircomm: release tty before sleeping potentially
+ indefintely
+From: Peter Hurley <peter@hurleysoftware.com>
+To: David Miller <davem@davemloft.net>
+Cc: sasha.levin@oracle.com, samuel@sortiz.org, gregkh@linuxfoundation.org,
+        jslaby@suse.cz, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Sun, 03 Mar 2013 21:23:04 -0500
+In-Reply-To: <20130303.174739.1195645942179862011.davem@davemloft.net>
+References: <1362350153-26225-1-git-send-email-sasha.levin@oracle.com>
+	 <20130303.174739.1195645942179862011.davem@davemloft.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.3-0pjh1 
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__4_Mar_2013_13_21_39_+1100_hDWWe2EnhxaeGjC6"
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 125194 peter@hurleysoftware.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__4_Mar_2013_13_21_39_+1100_hDWWe2EnhxaeGjC6
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Sun, 2013-03-03 at 17:47 -0500, David Miller wrote:
+> From: Sasha Levin <sasha.levin@oracle.com>
+> Date: Sun,  3 Mar 2013 17:35:53 -0500
+> 
+> > ircomm_tty_block_til_ready would hold tty lock while blocking. Since the sleep
+> > might take a long time we can prevent other processes from accessing the tty,
+> > causing hung tasks and a dead tty.
+> > 
+> > Diagnosed-by: Peter Hurley <peter@hurleysoftware.com>
+> > Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+> 
+> But then you invalidate all of the tty state tests made under
+> the lock at the beginning of this function, before enterring
+> the loop.  If you drop the lock, those pieces of state could
+> change.
+> 
+> I'm not applying this.
 
-Hi Andrew,
+BTW, Sasha deserves a medal for finding and fixing this. Here's the
+initial report [1] by him from Halloween. And he doesn't even have an IR
+device.
 
-Today's linux-next merge of the akpm tree got a conflict in mm/shmem.c
-between commit 26567cdbbf1a ("fix nommu breakage in shmem.c") from Linus'
-tree and commit "shmem-fix-build-regression-fix" from the akpm tree.
+So this fix needs to be cc'd to stable too.
 
-I fixed it up (I used the latter version - see the full new version
-below) and can carry the fix as necessary (no action is required).
+Regards,
+Peter Hurley
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
 
-diff --git a/include/linux/ramfs.h b/include/linux/ramfs.h
-index 5bf5500..69e37c2 100644
---- a/include/linux/ramfs.h
-+++ b/include/linux/ramfs.h
-@@ -6,7 +6,13 @@ struct inode *ramfs_get_inode(struct super_block *sb, cons=
-t struct inode *dir,
- extern struct dentry *ramfs_mount(struct file_system_type *fs_type,
- 	 int flags, const char *dev_name, void *data);
-=20
--#ifndef CONFIG_MMU
-+#ifdef CONFIG_MMU
-+static inline int
-+ramfs_nommu_expand_for_mapping(struct inode *inode, size_t newsize)
-+{
-+	return 0;
-+}
-+#else
- extern int ramfs_nommu_expand_for_mapping(struct inode *inode, size_t news=
-ize);
- extern unsigned long ramfs_nommu_get_unmapped_area(struct file *file,
- 						   unsigned long addr,
-diff --git a/mm/shmem.c b/mm/shmem.c
-index b863bf3..a8d9da0 100644
---- a/mm/shmem.c
-+++ b/mm/shmem.c
-@@ -25,6 +25,7 @@
- #include <linux/init.h>
- #include <linux/vfs.h>
- #include <linux/mount.h>
-+#include <linux/ramfs.h>
- #include <linux/pagemap.h>
- #include <linux/file.h>
- #include <linux/mm.h>
-@@ -2830,8 +2831,6 @@ out4:
-  * effectively equivalent, but much lighter weight.
-  */
-=20
--#include <linux/ramfs.h>
--
- static struct file_system_type shmem_fs_type =3D {
- 	.name		=3D "tmpfs",
- 	.mount		=3D ramfs_mount,
-@@ -2897,7 +2896,6 @@ static struct dentry_operations anon_ops =3D {
-  */
- struct file *shmem_file_setup(const char *name, loff_t size, unsigned long=
- flags)
- {
--	int error;
- 	struct file *res;
- 	struct inode *inode;
- 	struct path path;
-@@ -2932,11 +2930,10 @@ struct file *shmem_file_setup(const char *name, lof=
-f_t size, unsigned long flags
- 	d_instantiate(path.dentry, inode);
- 	inode->i_size =3D size;
- 	clear_nlink(inode);	/* It is unlinked */
--#ifndef CONFIG_MMU
-+
- 	res =3D ERR_PTR(ramfs_nommu_expand_for_mapping(inode, size));
- 	if (IS_ERR(res))
- 		goto put_dentry;
--#endif
-=20
- 	res =3D alloc_file(&path, FMODE_WRITE | FMODE_READ,
- 		  &shmem_file_operations);
+[1]
 
---Signature=_Mon__4_Mar_2013_13_21_39_+1100_hDWWe2EnhxaeGjC6
-Content-Type: application/pgp-signature
+On Wed, 2012-10-31 at 16:10 -0400, Sasha Levin wrote:
+On 10/31/2012 11:32 AM, Jiri Slaby wrote:
+> > On 10/31/2012 04:30 PM, Sasha Levin wrote:
+> >> On Wed, Oct 31, 2012 at 8:53 AM, Jiri Slaby <jslaby@suse.cz> wrote:
+> >>> On 10/25/2012 08:02 PM, Sasha Levin wrote:
+> >>>> Fuzzing with trinity inside a KVM tools (lkvm) guest with -next kernel
+> >>>> uncovered the following warning:
+> >>>
+> >>> I cannot reproduce that :(. Do you still see it?
+> >>
+> >> Yes, it reproduces pretty easily while fuzzing.
+> > 
+> > What is your exact setup? I tried trinity with 100 000 syscalls inside
+> > KVM with an LDEP-enabled kernel. How many serial ports do you have in
+> > the guest? Any USB serials in there?
+> 
+> btw, I'm also seeing the following lockups, don't know if it's related:
+> 
+> 
+> [ 2283.070569] INFO: task trinity-child20:9161 blocked for more than 120 seconds.
+> [ 2283.071775] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+> [ 2283.074673] trinity-child20 D ffff8800276cb000  5424  9161   6364 0x00000000
+> [ 2283.076018]  ffff880059d9da58 0000000000000002 0000000000000002 0000000000000000
+> [ 2283.077393]  ffff880059d7b000 ffff880059d9dfd8 ffff880059d9dfd8 ffff880059d9dfd8
+> [ 2283.078763]  ffff8800276cb000 ffff880059d7b000 ffff880059d9da78 ffff88001a095180
+> [ 2283.084144] Call Trace:
+> [ 2283.085039]  [<ffffffff83a98bd5>] schedule+0x55/0x60
+> [ 2283.086748]  [<ffffffff83a98bf3>] schedule_preempt_disabled+0x13/0x20
+> [ 2283.089000]  [<ffffffff83a9735d>] __mutex_lock_common+0x36d/0x5a0
+> [ 2283.090658]  [<ffffffff83a9afb3>] ? tty_lock_nested+0x73/0x80
+> [ 2283.091691]  [<ffffffff83a9afb3>] ? tty_lock_nested+0x73/0x80
+> [ 2283.092779]  [<ffffffff83a975cf>] mutex_lock_nested+0x3f/0x50
+> [ 2283.093875]  [<ffffffff83a9afb3>] tty_lock_nested+0x73/0x80
+> [ 2283.094872]  [<ffffffff83a9afcb>] tty_lock+0xb/0x10
+> [ 2283.095443]  [<ffffffff81bae880>] tty_open+0x270/0x5f0
+> [ 2283.096181]  [<ffffffff8127cda8>] chrdev_open+0xf8/0x1d0
+> [ 2283.097054]  [<ffffffff8127693c>] do_dentry_open+0x1fc/0x310
+> [ 2283.098015]  [<ffffffff8127ccb0>] ? cdev_put+0x20/0x20
+> [ 2283.098943]  [<ffffffff8127777a>] finish_open+0x4a/0x60
+> [ 2283.099935]  [<ffffffff81286947>] do_last+0xb87/0xe70
+> [ 2283.100910]  [<ffffffff812844b0>] ? link_path_walk+0x70/0x900
+> [ 2283.101553]  [<ffffffff81286cf2>] path_openat+0xc2/0x500
+> [ 2283.102282]  [<ffffffff83a9a314>] ? _raw_spin_unlock_irqrestore+0x84/0xb0
+> [ 2283.103506]  [<ffffffff8128716c>] do_filp_open+0x3c/0xa0
+> [ 2283.104282]  [<ffffffff81296c11>] ? __alloc_fd+0x1e1/0x200
+> [ 2283.105278]  [<ffffffff81277c0c>] do_sys_open+0x11c/0x1c0
+> [ 2283.106519]  [<ffffffff81277ccc>] sys_open+0x1c/0x20
+> [ 2283.107241]  [<ffffffff81277d01>] sys_creat+0x11/0x20
+> [ 2283.107975]  [<ffffffff83a9be18>] tracesys+0xe1/0xe6
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRNAUzAAoJEECxmPOUX5FETUAP/AvvQoW+a2qxKdUUmsyTe9Bu
-vnSBTRO8IsyB/cMtXdDHAH4PMhgpcX1JoHtluGYWHax9s5SOg63VkH4gHRSraX9z
-s1OIPvvEB6gNZgEmdMEtyHyKJ9ZmfskMW+wYwD9AhzmlslJf61aOvVO92lrILtb4
-EV8xkte9bvOHIWp+VFwQv3ADQCV8gvTXyBKS4UV46qmF0IgWzOi5sFKUQMo0kd27
-qAN3edQZL/cvS1wjETbhF5imDr6sP4aXHOS0U0Up2U8AVrt5+Mg9OI98hfYbFL8U
-USqmbgkkjiUJ6bWWz9+Qn/h7YO+1lSWe303nRen91MubfLrxkIcqlVsQrsMnFvhz
-7IV3FxsHZDYDanjMl9KL9mc3jaSJXWkbhTc0VbnO1WX594gnkgnhU0WMwuQ67KDh
-Vcnh/zA/hzILlZ5KM9lvdD9AINZPJPL+Znh2vvZbs5Vz1STgnSTKac+N/15cAyFd
-WwHEcSJ6pSFvUX2i1g1Ki7GP/RSCNz3X7z7Db6lbx5PCYewCfgwVhK6MPUBlnfP1
-0o4GoATBjBtsqY2In1LEDLUe20MgWE4q+aXl4cq8eaUKOmcYotHZTE/0en9eXDed
-3s9paeizpaRtgrDAidSJYq2rxhfyfbtGMEEms0VcxNGcJhr/W981TSBg7GC2Rs3O
-sQhtjyTzloPtbKLhfi9c
-=Pb0o
------END PGP SIGNATURE-----
-
---Signature=_Mon__4_Mar_2013_13_21_39_+1100_hDWWe2EnhxaeGjC6--
