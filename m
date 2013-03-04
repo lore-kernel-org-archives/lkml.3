@@ -1,61 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755446Ab3CDE5z (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 23:57:55 -0500
-Received: from mga03.intel.com ([143.182.124.21]:33521 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754503Ab3CDE5y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Mar 2013 23:57:54 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,777,1355126400"; 
-   d="scan'208";a="263892933"
-Date: Mon, 4 Mar 2013 10:27:39 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Tomoya MORINAGA <tomoya.rohm@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] pch_dma: Use GFP_ATOMIC because called from interrupt
- context
-Message-ID: <20130304045739.GE22513@intel.com>
-References: <1360635933-5818-1-git-send-email-tomoya.rohm@gmail.com>
- <CANKRQnhp_+mKnezqWZ2OZxecpac-N0EpmKuV8p285LC3jSEw2w@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CANKRQnhp_+mKnezqWZ2OZxecpac-N0EpmKuV8p285LC3jSEw2w@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1752453Ab3CDFCJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 00:02:09 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:51894 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750727Ab3CDFCH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Mar 2013 00:02:07 -0500
+Date: Mon, 4 Mar 2013 16:02:00 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next stats (Was: Linux 3.9-rc1)
+Message-Id: <20130304160200.f8a59900ee025ac082275a38@canb.auug.org.au>
+In-Reply-To: <20130304152222.c0a3d97a4d6e4c5b0e343865@canb.auug.org.au>
+References: <CA+55aFx0HcOXKpxmZzM5jcbAaOroxafomX5ggMFV4A=py1qh-Q@mail.gmail.com>
+	<20130304152222.c0a3d97a4d6e4c5b0e343865@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__4_Mar_2013_16_02_00_+1100_Yv9xq.b=JEjLvDVm"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Tue, Feb 12, 2013 at 11:25 AM, Tomoya MORINAGA <tomoya.rohm@gmail.com> wrote:
-> > pdc_desc_get() is called from pd_prep_slave_sg, and the function is
-> > called from interrupt context(e.g. Uart driver "pch_uart.c").
-> > In fact, I saw kernel error message.
-> > So, GFP_ATOMIC must be used not GFP_NOIO.
-> >
-> > Signed-off-by: Tomoya MORINAGA <tomoya.rohm@gmail.com>
-Applied, thanks
+--Signature=_Mon__4_Mar_2013_16_02_00_+1100_Yv9xq.b=JEjLvDVm
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> > ---
-> >  drivers/dma/pch_dma.c |    2 +-
-> >  1 files changed, 1 insertions(+), 1 deletions(-)
-> >
-> > diff --git a/drivers/dma/pch_dma.c b/drivers/dma/pch_dma.c
-> > index 987ab5c..d5cbd44 100644
-> > --- a/drivers/dma/pch_dma.c
-> > +++ b/drivers/dma/pch_dma.c
-> > @@ -476,7 +476,7 @@ static struct pch_dma_desc *pdc_desc_get(struct pch_dma_chan *pd_chan)
-> >         dev_dbg(chan2dev(&pd_chan->chan), "scanned %d descriptors\n", i);
-> >
-> >         if (!ret) {
-> > -               ret = pdc_alloc_desc(&pd_chan->chan, GFP_NOIO);
-> > +               ret = pdc_alloc_desc(&pd_chan->chan, GFP_ATOMIC);
-> >                 if (ret) {
-> >                         spin_lock(&pd_chan->lock);
-> >                         pd_chan->descs_allocated++;
-> > --
-> > 1.7.4.4
-> 
-> -- 
-> ROHM Co., Ltd.
-> tomoya
+Hi all,
+
+On Mon, 4 Mar 2013 15:22:22 +1100 Stephen Rothwell <sfr@canb.auug.org.au> w=
+rote:
+>
+> So commits in -rc1 that were "in" next-20130220:	9300	90.6%
+> 						(down from 90.0% last time)
+
+That should read "down from 90.9% last time".
+
+At least I know that one person reads my postings (thanks Ted :-))
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Mon__4_Mar_2013_16_02_00_+1100_Yv9xq.b=JEjLvDVm
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRNCrIAAoJEECxmPOUX5FE0+EP/jgb4H+Ezcv/FOoCCFx5LdR3
+YpB62LLd49JppMQkVksg/jEtxPZOh/7j1xhxEUG7DuiIZYVSHLy+Gw2qxMMWzWA4
+FkjySdAcWJrH7hWdGqMU7zSRT3vNAU0ofZoq6rUBthI7zu0xuX/+pZAXmcDJkFct
+GImoKXwYjaL7X+Gl7taIngH6N5vHlzfPmTUxNPtfdx71yOnSd7ulIRrmGN6TQfR9
+kP7Q56x7jlfJ2EW7G8E6Had57aCAPRJiQGHWZr/iLr6NHXafXb8BJxGuJSpbMJ3K
+1/ynSAj1ezJMwwamPejrChCeaJL0Ra8wt23ZzqD66EeRNunEqTR6CO+1zo+RHaxW
+8A0LOeEIc9VgpiwPgpBGYMf6wnirNySHZP77P4iQaep8P3u0sMDG69/L1/EbXoXh
+8CwuZxNlMTIzjgxUmZPM9LuRYK5ifTAevZBLW2KlV3HoA/oacDwxso/+8pzoh9nu
+JQMyyEgdl5huRzMKN3+jgr1iFw2AvqJiCH3eIgzkygbBw1nMFdyw/6N+2DfEUoRS
+2BSStpj7X/+tTV0vzIT2/nLphD3ZEljC+uoULX7tgKxFSsx07EvjE0fLu96rdyVh
+fAigHW4lRqZ+cM7EhB6dSPs+LEWpm0iJpea/vlearYOZw0p2PYUBz1i+wIxonHp6
+QYRiGG76D9CXo6Vo99Kd
+=HqhY
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__4_Mar_2013_16_02_00_+1100_Yv9xq.b=JEjLvDVm--
