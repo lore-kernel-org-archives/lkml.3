@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758075Ab3CDEG4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 23:06:56 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:32811 "EHLO
+	id S1757643Ab3CDEHk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 23:07:40 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:32801 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756235Ab3CDDna (ORCPT
+	by vger.kernel.org with ESMTP id S1756232Ab3CDDn3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Mar 2013 22:43:30 -0500
-Message-Id: <20130304033718.024375654@decadent.org.uk>
+	Sun, 3 Mar 2013 22:43:29 -0500
+Message-Id: <20130304033718.347256661@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 04 Mar 2013 03:38:52 +0000
+Date: Mon, 04 Mar 2013 03:38:56 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Jan Kara <jack@suse.cz>,
-        Jeff Moyer <jmoyer@redhat.com>, Joel Becker <jlbec@evilplan.org>,
-        Mark Fasheh <mfasheh@suse.com>, Al Viro <viro@zeniv.linux.org.uk>
-Subject: [ 105/153] ocfs2: fix possible use-after-free with AIO
+Cc: akpm@linux-foundation.org, Tomas Henzl <thenzl@redhat.com>,
+        Jens Axboe <axboe@kernel.dk>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 109/153] block: fix ext_devt_idr handling
 In-Reply-To: <20130304033707.648729212@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,39 +28,110 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Tomas Henzl <thenzl@redhat.com>
 
-commit 9b171e0c74ca0549d0610990a862dd895870f04a upstream.
+commit 7b74e912785a11572da43292786ed07ada7e3e0c upstream.
 
-Running AIO is pinning inode in memory using file reference. Once AIO
-is completed using aio_complete(), file reference is put and inode can
-be freed from memory. So we have to be sure that calling aio_complete()
-is the last thing we do with the inode.
+While adding and removing a lot of disks disks and partitions this
+sometimes shows up:
 
-Signed-off-by: Jan Kara <jack@suse.cz>
-Acked-by: Jeff Moyer <jmoyer@redhat.com>
-Acked-by: Joel Becker <jlbec@evilplan.org>
-Cc: Mark Fasheh <mfasheh@suse.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
+  WARNING: at fs/sysfs/dir.c:512 sysfs_add_one+0xc9/0x130() (Not tainted)
+  Hardware name:
+  sysfs: cannot create duplicate filename '/dev/block/259:751'
+  Modules linked in: raid1 autofs4 bnx2fc cnic uio fcoe libfcoe libfc 8021q scsi_transport_fc scsi_tgt garp stp llc sunrpc cpufreq_ondemand powernow_k8 freq_table mperf ipv6 dm_mirror dm_region_hash dm_log power_meter microcode dcdbas serio_raw amd64_edac_mod edac_core edac_mce_amd i2c_piix4 i2c_core k10temp bnx2 sg ixgbe dca mdio ext4 mbcache jbd2 dm_round_robin sr_mod cdrom sd_mod crc_t10dif ata_generic pata_acpi pata_atiixp ahci mptsas mptscsih mptbase scsi_transport_sas dm_multipath dm_mod [last unloaded: scsi_wait_scan]
+  Pid: 44103, comm: async/16 Not tainted 2.6.32-195.el6.x86_64 #1
+  Call Trace:
+    warn_slowpath_common+0x87/0xc0
+    warn_slowpath_fmt+0x46/0x50
+    sysfs_add_one+0xc9/0x130
+    sysfs_do_create_link+0x12b/0x170
+    sysfs_create_link+0x13/0x20
+    device_add+0x317/0x650
+    idr_get_new+0x13/0x50
+    add_partition+0x21c/0x390
+    rescan_partitions+0x32b/0x470
+    sd_open+0x81/0x1f0 [sd_mod]
+    __blkdev_get+0x1b6/0x3c0
+    blkdev_get+0x10/0x20
+    register_disk+0x155/0x170
+    add_disk+0xa6/0x160
+    sd_probe_async+0x13b/0x210 [sd_mod]
+    add_wait_queue+0x46/0x60
+    async_thread+0x102/0x250
+    default_wake_function+0x0/0x20
+    async_thread+0x0/0x250
+    kthread+0x96/0xa0
+    child_rip+0xa/0x20
+    kthread+0x0/0xa0
+    child_rip+0x0/0x20
+
+This most likely happens because dev_t is freed while the number is
+still used and idr_get_new() is not protected on every use.  The fix
+adds a mutex where it wasn't before and moves the dev_t free function so
+it is called after device del.
+
+Signed-off-by: Tomas Henzl <thenzl@redhat.com>
+Cc: Jens Axboe <axboe@kernel.dk>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[bwh: Backported to 3.2: adjust filename]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/ocfs2/aops.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ block/genhd.c             |    6 +++++-
+ block/partition-generic.c |    2 +-
+ 2 files changed, 6 insertions(+), 2 deletions(-)
 
---- a/fs/ocfs2/aops.c
-+++ b/fs/ocfs2/aops.c
-@@ -593,9 +593,9 @@ static void ocfs2_dio_end_io(struct kioc
- 	level = ocfs2_iocb_rw_locked_level(iocb);
- 	ocfs2_rw_unlock(inode, level);
+--- a/block/genhd.c
++++ b/block/genhd.c
+@@ -421,14 +421,18 @@ int blk_alloc_devt(struct hd_struct *par
+ 	do {
+ 		if (!idr_pre_get(&ext_devt_idr, GFP_KERNEL))
+ 			return -ENOMEM;
++		mutex_lock(&ext_devt_mutex);
+ 		rc = idr_get_new(&ext_devt_idr, part, &idx);
++		mutex_unlock(&ext_devt_mutex);
+ 	} while (rc == -EAGAIN);
  
-+	inode_dio_done(inode);
- 	if (is_async)
- 		aio_complete(iocb, ret, 0);
--	inode_dio_done(inode);
+ 	if (rc)
+ 		return rc;
+ 
+ 	if (idx > MAX_EXT_DEVT) {
++		mutex_lock(&ext_devt_mutex);
+ 		idr_remove(&ext_devt_idr, idx);
++		mutex_unlock(&ext_devt_mutex);
+ 		return -EBUSY;
+ 	}
+ 
+@@ -645,7 +649,6 @@ void del_gendisk(struct gendisk *disk)
+ 	disk_part_iter_exit(&piter);
+ 
+ 	invalidate_partition(disk, 0);
+-	blk_free_devt(disk_to_dev(disk)->devt);
+ 	set_capacity(disk, 0);
+ 	disk->flags &= ~GENHD_FL_UP;
+ 
+@@ -663,6 +666,7 @@ void del_gendisk(struct gendisk *disk)
+ 	if (!sysfs_deprecated)
+ 		sysfs_remove_link(block_depr, dev_name(disk_to_dev(disk)));
+ 	device_del(disk_to_dev(disk));
++	blk_free_devt(disk_to_dev(disk)->devt);
  }
+ EXPORT_SYMBOL(del_gendisk);
  
- /*
+--- a/fs/partitions/check.c
++++ b/fs/partitions/check.c
+@@ -399,11 +399,11 @@ void delete_partition(struct gendisk *di
+ 	if (!part)
+ 		return;
+ 
+-	blk_free_devt(part_devt(part));
+ 	rcu_assign_pointer(ptbl->part[partno], NULL);
+ 	rcu_assign_pointer(ptbl->last_lookup, NULL);
+ 	kobject_put(part->holder_dir);
+ 	device_del(part_to_dev(part));
++	blk_free_devt(part_devt(part));
+ 
+ 	hd_struct_put(part);
+ }
 
 
