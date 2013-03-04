@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757915Ab3CDEPs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 23:15:48 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60853 "EHLO
+	id S1755581Ab3CDDmr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 22:42:47 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60828 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755584Ab3CDDms (ORCPT
+	by vger.kernel.org with ESMTP id S1755540Ab3CDDmo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Mar 2013 22:42:48 -0500
-Message-Id: <20130304033721.894388317@decadent.org.uk>
+	Sun, 3 Mar 2013 22:42:44 -0500
+Message-Id: <20130304033722.523635795@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 04 Mar 2013 03:39:33 +0000
+Date: Mon, 04 Mar 2013 03:39:39 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Oleg Nesterov <oleg@redhat.com>,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        Rusty Russell <rusty@rustcorp.com.au>, Tejun Heo <tj@kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 146/153] usermodehelper: ____call_usermodehelper() doesnt need do_exit()
+Cc: akpm@linux-foundation.org, Ashish Sangwan <ashishsangwan2@gmail.com>,
+        Ashish Sangwan <ashish.sangwan2@gmail.com>,
+        Namjae Jeon <linkinjeon@gmail.com>,
+        Lukas Czerner <lczerner@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [ 152/153] ext4: fix hole punch failure when depth is greater than 0
 In-Reply-To: <20130304033707.648729212@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,35 +30,124 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oleg Nesterov <oleg@redhat.com>
+From: Ashish Sangwan <ashishsangwan2@gmail.com>
 
-commit 5b9bd473e3b8a8c6c4ae99be475e6e9b27568555 upstream.
+commit 968dee77220768a5f52cf8b21d0bdb73486febef upstream.
 
-Minor cleanup.  ____call_usermodehelper() can simply return, no need to
-call do_exit() explicitely.
+Whether to continue removing extents or not is decided by the return
+value of function ext4_ext_more_to_rm() which checks 2 conditions:
+a) if there are no more indexes to process.
+b) if the number of entries are decreased in the header of "depth -1".
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Cc: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: David Rientjes <rientjes@google.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+In case of hole punch, if the last block to be removed is not part of
+the last extent index than this index will not be deleted, hence the
+number of valid entries in the extent header of "depth - 1" will
+remain as it is and ext4_ext_more_to_rm will return 0 although the
+required blocks are not yet removed.
+
+This patch fixes the above mentioned problem as instead of removing
+the extents from the end of file, it starts removing the blocks from
+the particular extent from which removing blocks is actually required
+and continue backward until done.
+
+Signed-off-by: Ashish Sangwan <ashish.sangwan2@gmail.com>
+Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
+Reviewed-by: Lukas Czerner <lczerner@redhat.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- kernel/kmod.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/ext4/extents.c | 46 +++++++++++++++++++++++++++++-----------------
+ 1 file changed, 29 insertions(+), 17 deletions(-)
 
---- a/kernel/kmod.c
-+++ b/kernel/kmod.c
-@@ -186,7 +186,7 @@ static int ____call_usermodehelper(void
- 	/* Exec failed? */
- fail:
- 	sub_info->retval = retval;
--	do_exit(0);
-+	return 0;
- }
+--- a/fs/ext4/extents.c
++++ b/fs/ext4/extents.c
+@@ -2521,10 +2521,10 @@ static int ext4_ext_remove_space(struct
+ {
+ 	struct super_block *sb = inode->i_sb;
+ 	int depth = ext_depth(inode);
+-	struct ext4_ext_path *path;
++	struct ext4_ext_path *path = NULL;
+ 	ext4_fsblk_t partial_cluster = 0;
+ 	handle_t *handle;
+-	int i, err;
++	int i = 0, err;
  
- void call_usermodehelper_freeinfo(struct subprocess_info *info)
+ 	ext_debug("truncate since %u to %u\n", start, end);
+ 
+@@ -2557,8 +2557,12 @@ again:
+ 		}
+ 		depth = ext_depth(inode);
+ 		ex = path[depth].p_ext;
+-		if (!ex)
++		if (!ex) {
++			ext4_ext_drop_refs(path);
++			kfree(path);
++			path = NULL;
+ 			goto cont;
++		}
+ 
+ 		ee_block = le32_to_cpu(ex->ee_block);
+ 
+@@ -2588,8 +2592,6 @@ again:
+ 			if (err < 0)
+ 				goto out;
+ 		}
+-		ext4_ext_drop_refs(path);
+-		kfree(path);
+ 	}
+ cont:
+ 
+@@ -2598,19 +2600,27 @@ cont:
+ 	 * after i_size and walking into the tree depth-wise.
+ 	 */
+ 	depth = ext_depth(inode);
+-	path = kzalloc(sizeof(struct ext4_ext_path) * (depth + 1), GFP_NOFS);
+-	if (path == NULL) {
+-		ext4_journal_stop(handle);
+-		return -ENOMEM;
+-	}
+-	path[0].p_depth = depth;
+-	path[0].p_hdr = ext_inode_hdr(inode);
+-
+-	if (ext4_ext_check(inode, path[0].p_hdr, depth)) {
+-		err = -EIO;
+-		goto out;
++	if (path) {
++		int k = i = depth;
++		while (--k > 0)
++			path[k].p_block =
++				le16_to_cpu(path[k].p_hdr->eh_entries)+1;
++	} else {
++		path = kzalloc(sizeof(struct ext4_ext_path) * (depth + 1),
++			       GFP_NOFS);
++		if (path == NULL) {
++			ext4_journal_stop(handle);
++			return -ENOMEM;
++		}
++		path[0].p_depth = depth;
++		path[0].p_hdr = ext_inode_hdr(inode);
++
++		if (ext4_ext_check(inode, path[0].p_hdr, depth)) {
++			err = -EIO;
++			goto out;
++		}
+ 	}
+-	i = err = 0;
++	err = 0;
+ 
+ 	while (i >= 0 && err == 0) {
+ 		if (i == depth) {
+@@ -2724,8 +2734,10 @@ cont:
+ out:
+ 	ext4_ext_drop_refs(path);
+ 	kfree(path);
+-	if (err == -EAGAIN)
++	if (err == -EAGAIN) {
++		path = NULL;
+ 		goto again;
++	}
+ 	ext4_journal_stop(handle);
+ 
+ 	return err;
 
 
