@@ -1,62 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932799Ab3CDWwz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 17:52:55 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:51026 "EHLO comal.ext.ti.com"
+	id S1758935Ab3CDW5E (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 17:57:04 -0500
+Received: from fn.samba.org ([216.83.154.106]:32768 "EHLO mail.samba.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758655Ab3CDWww (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 17:52:52 -0500
-From: Nishanth Menon <nm@ti.com>
-To: <linux-usb@vger.kernel.org>
-CC: Nishanth Menon <nm@ti.com>, Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Kosina <trivial@kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH] USB: fix trivial usb_device kernel-doc errors
-Date: Mon, 4 Mar 2013 16:52:49 -0600
-Message-ID: <1362437569-30821-1-git-send-email-nm@ti.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1758788Ab3CDW5B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Mar 2013 17:57:01 -0500
+X-Greylist: delayed 433 seconds by postgrey-1.27 at vger.kernel.org; Mon, 04 Mar 2013 17:57:01 EST
+Message-ID: <5135250A.30604@samba.org>
+Date: Mon, 04 Mar 2013 17:49:46 -0500
+From: Simo <simo@samba.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130219 Thunderbird/17.0.3
 MIME-Version: 1.0
-Content-Type: text/plain
+To: "J. Bruce Fields" <bfields@fieldses.org>
+CC: Andy Lutomirski <luto@amacapital.net>,
+        Pavel Shilovsky <piastry@etersoft.ru>, linux-kernel@vger.kernel.org,
+        linux-cifs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-nfs@vger.kernel.org, wine-devel@winehq.org
+Subject: Re: [PATCH v3 0/7] Add O_DENY* support for VFS and CIFS/NFS
+References: <1362065133-9490-1-git-send-email-piastry@etersoft.ru> <512FD1D5.3010106@mit.edu> <20130304211923.GI20389@fieldses.org>
+In-Reply-To: <20130304211923.GI20389@fieldses.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix trivial kernel-doc warnings:
-Warning(include/linux/usb.h:574): No description found for parameter 'usb3_lpm_enabled'
-Warning(include/linux/usb.h:574): Excess struct/union/enum/typedef member 'usb_classdev' description in 'usb_device'
-Warning(include/linux/usb.h:574): Excess struct/union/enum/typedef member 'usbfs_dentry' description in 'usb_device'
+On 03/04/2013 04:19 PM, J. Bruce Fields wrote:
+> On Thu, Feb 28, 2013 at 01:53:25PM -0800, Andy Lutomirski wrote:
+>> [possible resend -- sorry]
+>>
+>> On 02/28/2013 07:25 AM, Pavel Shilovsky wrote:
+>>> This patchset adds support of O_DENY* flags for Linux fs layer. These flags can be used by any application that needs share reservations to organize a file access. VFS already has some sort of this capability - now it's done through flock/LOCK_MAND mechanis, but that approach is non-atomic. This patchset build new capabilities on top of the existing one but doesn't bring any changes into the flock call semantic.
+>>>
+>>> These flags can be used by NFS (built-in-kernel) and CIFS (Samba) servers and Wine applications through VFS (for local filesystems) or CIFS/NFS modules. This will help when e.g. Samba and NFS server share the same directory for Windows and Linux users or Wine applications use Samba/NFS share to access the same data from different clients.
+>>>
+>>> According to the previous discussions the most problematic question is how to prevent situations like DoS attacks where e.g /lib/liba.so file can be open with DENYREAD, or smth like this. That's why one extra flag O_DENYMAND is added. It indicates to underlying layer that an application want to use O_DENY* flags semantic. It allows us not affect native Linux applications (that don't use O_DENYMAND flag) - so, these flags (and the semantic of open syscall that they bring) are used only for those applications that really want it proccessed that way.
+>>>
+>>> So, we have four new flags:
+>>> O_DENYREAD - to prevent other opens with read access,
+>>> O_DENYWRITE - to prevent other opens with write access,
+>>> O_DENYDELETE - to prevent delete operations (this flag is not implemented in VFS and NFS part and only suitable for CIFS module),
+>>> O_DENYMAND - to switch on/off three flags above.
+>> O_DENYMAND doesn't deny anything.  Would a name like O_RESPECT_DENY be
+>> better?
+>>
+>> Other than that, this seems like a sensible mechanism.
+> I'm a little more worried: these are mandatory locks, and applications
+> that use them are used to the locks being enforced correctly.  Are we
+> sure that an application that opens a file O_DENYWRITE won't crash if it
+> sees the file data change while it holds the open?
 
-Cc: Felipe Balbi <balbi@ti.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Jiri Kosina <trivial@kernel.org>
-Cc: linux-usb@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
+The redirector may simply assume it has full control of that part of the 
+file and not read nor send data until the lock is released too, so you 
+get conflicting views of the file contents between different clients if 
+you let a mandatory lock not be mandatory.
 
-Signed-off-by: Nishanth Menon <nm@ti.com>
----
- include/linux/usb.h |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+> In general the idea of making a mandatory lock opt-in makes me nervous.
+> I'd prefer something like a mount option, so that we know that everyone
+> on that one filesystem is playing by the same rules, but we can still
+> mount filesystems like / without the option.
 
-diff --git a/include/linux/usb.h b/include/linux/usb.h
-index 4d22d0f..52464fb 100644
---- a/include/linux/usb.h
-+++ b/include/linux/usb.h
-@@ -469,14 +469,12 @@ struct usb3_lpm_parameters {
-  * @lpm_capable: device supports LPM
-  * @usb2_hw_lpm_capable: device can perform USB2 hardware LPM
-  * @usb2_hw_lpm_enabled: USB2 hardware LPM enabled
-+ * @usb3_lpm_enabled: USB3 hardware LPM enabled
-  * @string_langid: language ID for strings
-  * @product: iProduct string, if present (static)
-  * @manufacturer: iManufacturer string, if present (static)
-  * @serial: iSerialNumber string, if present (static)
-  * @filelist: usbfs files that are open to this device
-- * @usb_classdev: USB class device that was created for usbfs device
-- *	access from userspace
-- * @usbfs_dentry: usbfs dentry entry for the device
-  * @maxchild: number of ports if hub
-  * @quirks: quirks of the whole device
-  * @urbnum: number of URBs submitted for the whole device
--- 
-1.7.9.5
++1
 
+> But I'll admit I'm definitely not an expert on Windows locking and may
+> be missing something about how these locks are meant to work.
+
+Mandatory locks really are mandatory in Windows.
+That may not be nice to a Unix system but what can you do ?
+
+Simo.
