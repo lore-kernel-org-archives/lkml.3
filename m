@@ -1,63 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932520Ab3CDVO6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 16:14:58 -0500
-Received: from moutng.kundenserver.de ([212.227.17.9]:60538 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932160Ab3CDVO5 (ORCPT
+	id S932538Ab3CDVPy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 16:15:54 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:16510 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758173Ab3CDVPw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 16:14:57 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [GIT PULL 0/3] arm-soc: late changes for 3.9
-Date: Mon, 4 Mar 2013 21:14:48 +0000
-User-Agent: KMail/1.12.2 (Linux/3.8.0-8-generic; KDE/4.3.2; x86_64; ; )
-Cc: Olof Johansson <olof@lixom.net>, Chris Ball <cjb@laptop.org>,
-        linux-arm-kernel@lists.infradead.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        ARM SoC <arm@kernel.org>
-References: <1362092093-4839-1-git-send-email-olof@lixom.net> <CA+55aFx2Cuuq2YW6mexxZ88TNm=FLYUYPzeLqN=y46oYxZJ3wQ@mail.gmail.com>
-In-Reply-To: <CA+55aFx2Cuuq2YW6mexxZ88TNm=FLYUYPzeLqN=y46oYxZJ3wQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201303042114.49096.arnd@arndb.de>
-X-Provags-ID: V02:K0:b3L1D6UCZsBTKzGuKlzl/v0fQfinoqPcZAuFKE7dvrG
- PRNnbmxSq704WcBnTPO6GjSYdPvc8eTTh4dOJWJeXMr08rLXpL
- A2EqBC81Y5y96ne/EI1uNhrNhXLYYi4PdFlxzPGOHA3Z19Q438
- 5Xo3cFeMPaGZQG5RmwOA/XK4JwYB0LqcZd8US1n3zCmZVIFdr1
- bhAL7N6V4K/AQDirRukHdEFKm/b6D1Hn0v0gbJR6hH+0ebOdzj
- qxzeDMEUHqkDZLnyLG/bSa+pzXSASbaQ9UMHUPsdTjPHhZu//E
- +YrPcrB0Dokl7g7RyxUcdn31x92/6G5GuJln4kjPkGXntKMQTg
- lqKAxa8BPSKDwRGuyNL0=
+	Mon, 4 Mar 2013 16:15:52 -0500
+From: Daniel Kiper <daniel.kiper@oracle.com>
+To: carsten@schiers.de, darren.s.shepherd@gmail.com, david.vrabel@citrix.com,
+        james-xen@dingwall.me.uk, konrad.wilk@oracle.com,
+        linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com
+Cc: Daniel Kiper <daniel.kiper@oracle.com>
+Subject: [PATCH 1/1] xen/balloon: Enforce various limits on target
+Date: Mon,  4 Mar 2013 22:14:51 +0100
+Message-Id: <1362431691-5167-1-git-send-email-daniel.kiper@oracle.com>
+X-Mailer: git-send-email 1.7.10.4
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 01 March 2013, Linus Torvalds wrote:
-> On Thu, Feb 28, 2013 at 2:54 PM, Olof Johansson <olof@lixom.net> wrote:
-> >
-> > Final two pull requests are for the same code. As Arnd describes in the
-> > tags, they are for a set of mvebu patches that depend on contents in
-> > the MMC tree. We had pulled in part of the MMC branch as a dependency,
-> > but unfortunately Chris Ball rebased it.
-> 
-> Has Chris Ball been told what an incredible pain this kind of crap is,
-> and that there's a damn good reason why WE DO NOT REBASE PUBLIC TREES
-> THAT OTHERS MAY BE BASING THEIR DEVELOPMENT ON!
-> 
-> Chris, can you hear me shouting? Don't do that.
+This patch enforces on target limit statically defined in Linux Kernel
+source and limit defined by hypervisor or host.
 
-I talked to Chris while I prepared the two branches, and he now understands
-the consequences and won't do it again.
+Particularly this patch fixes bug which led to flood
+of dom0 kernel log with messages similar to:
 
-I also talked to Jason Cooper about it and he is going to do his branches
-differently now to avoid building deep dependency chains on other trees.
-We've had similar problems with other subsystem maintainers before, but
-there are a lot more subsystems that one can depend on. We generally
-try to do the branches in a way that we can drop a small part of the stuff
-in arm-soc without rebasing when someone else screws up, but that did not
-happen in this case.
+System RAM resource [mem 0x1b8000000-0x1bfffffff] cannot be added
+xen_balloon: reserve_additional_memory: add_memory() failed: -17
 
-	Arnd
+It does not allow balloon driver to execute infinite
+loops when target exceeds limits in other cases too.
+
+Signed-off-by: Daniel Kiper <daniel.kiper@oracle.com>
+---
+ drivers/xen/balloon.c |   47 ++++++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 46 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/xen/balloon.c b/drivers/xen/balloon.c
+index a56776d..07da753 100644
+--- a/drivers/xen/balloon.c
++++ b/drivers/xen/balloon.c
+@@ -65,6 +65,7 @@
+ #include <xen/balloon.h>
+ #include <xen/features.h>
+ #include <xen/page.h>
++#include <xen/xenbus.h>
+ 
+ /*
+  * balloon_process() state:
+@@ -490,11 +491,55 @@ static void balloon_process(struct work_struct *work)
+ 	mutex_unlock(&balloon_mutex);
+ }
+ 
+-/* Resets the Xen limit, sets new target, and kicks off processing. */
++/* Enforce limits, set new target and kick off processing. */
+ void balloon_set_new_target(unsigned long target)
+ {
++	domid_t domid = DOMID_SELF;
++	int rc;
++	unsigned long long host_limit;
++
++	/* Enforce statically defined limit. */
++	target = min(target, MAX_DOMAIN_PAGES);
++
++	if (xen_initial_domain()) {
++		rc = HYPERVISOR_memory_op(XENMEM_maximum_reservation, &domid);
++
++		/* Limit is not enforced by hypervisor. */
++		if (rc == -EPERM)
++			goto no_host_limit;
++
++		if (rc <= 0) {
++			pr_info("xen_balloon: %s: Initial domain target limit "
++				"could not be established: %i\n", __func__, rc);
++			goto no_host_limit;
++		}
++
++		host_limit = rc;
++	} else {
++		rc = xenbus_scanf(XBT_NIL, "memory", "static-max",
++							"%llu", &host_limit);
++
++		if (rc != 1) {
++			pr_info("xen_balloon: %s: Guest domain target limit "
++				"could not be established: %i\n", __func__, rc);
++			goto no_host_limit;
++		}
++
++		/*
++		 * The given memory target limit value is in KiB, so it needs
++		 * converting to pages. PAGE_SHIFT converts bytes to pages,
++		 * hence PAGE_SHIFT - 10.
++		 */
++		host_limit >>= (PAGE_SHIFT - 10);
++	}
++
++	/* Enforce hypervisor/host defined limit. */
++	target = min(target, (unsigned long)host_limit);
++
++no_host_limit:
+ 	/* No need for lock. Not read-modify-write updates. */
+ 	balloon_stats.target_pages = target;
++
+ 	schedule_delayed_work(&balloon_worker, 0);
+ }
+ EXPORT_SYMBOL_GPL(balloon_set_new_target);
+-- 
+1.7.10.4
+
