@@ -1,86 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756919Ab3CDKfp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 05:35:45 -0500
-Received: from mail-la0-f43.google.com ([209.85.215.43]:47469 "EHLO
-	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755776Ab3CDKfo (ORCPT
+	id S1756647Ab3CDKl2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 05:41:28 -0500
+Received: from cpsmtpb-ews03.kpnxchange.com ([213.75.39.6]:64461 "EHLO
+	cpsmtpb-ews03.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756361Ab3CDKl1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 05:35:44 -0500
-Date: Mon, 4 Mar 2013 12:35:37 +0200 (EET)
-From: Pekka Enberg <penberg@kernel.org>
-X-X-Sender: penberg@tux.localdomain
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Lameter <cl@linux.com>, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] SLAB changes for v3.9-rc1
-Message-ID: <alpine.LFD.2.02.1303041234550.3981@tux.localdomain>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 4 Mar 2013 05:41:27 -0500
+Message-ID: <1362393685.16460.16.camel@x61.thuisdomein>
+Subject: Re: [PATCH v2] hlist: drop the node parameter from iterators
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: Peter Senna Tschudin <peter.senna@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Date: Mon, 04 Mar 2013 11:41:25 +0100
+In-Reply-To: <1359597622-31532-1-git-send-email-sasha.levin@oracle.com>
+References: <1359597622-31532-1-git-send-email-sasha.levin@oracle.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
+X-OriginalArrivalTime: 04 Mar 2013 10:41:25.0626 (UTC) FILETIME=[D200FDA0:01CE18C4]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Wed, 2013-01-30 at 21:00 -0500, Sasha Levin wrote:
+> I'm not sure why, but the hlist for each entry iterators were conceived
+> differently from the list ones. While the list ones are nice and elegant:
+> 
+>         list_for_each_entry(pos, head, member)
+> 
+> The hlist ones were greedy and wanted an extra parameter:
+> 
+>         hlist_for_each_entry(tpos, pos, head, member)
+> 
+> Why did they need an extra pos parameter? I'm not quite sure. Not only
+> they don't really need it, it also prevents the iterator from looking
+> exactly like the list iterator, which is unfortunate.
+> 
+> Besides the semantic patch, there was some manual work required:
+> 
+>  - Fix up the actual hlist iterators in linux/list.h
+>  - Fix up the declaration of other iterators based on the hlist ones.
+>  - A very small amount of places were using the 'node' parameter, this
+>  was modified to use 'obj->member' instead.
+>  - Coccinelle didn't handle the hlist_for_each_entry_safe iterator
+>  properly, so those had to be fixed up manually.
 
-I managed to miss the merge window. Sorry about that!
+This patch seems to have become commit
+b67bfe0d42cac56c512dd5da4b1b347a23f4b70a in v3.9-rc1. It triggers this
+(obviously correct) warning:
+    net/9p/trans_virtio.c:350:1: warning: ‘p9_virtio_zc_request’ defined but not used [-Wunused-function]
 
-Please consider pull the latest SLAB tree from:
+> diff --git a/net/9p/trans_virtio.c b/net/9p/trans_virtio.c
+> index fd05c81..d7a3fe3 100644
+> --- a/net/9p/trans_virtio.c
+> +++ b/net/9p/trans_virtio.c
+> @@ -655,7 +655,7 @@ static struct p9_trans_module p9_virtio_trans = {
+>  	.create = p9_virtio_create,
+>  	.close = p9_virtio_close,
+>  	.request = p9_virtio_request,
+> -	.zc_request = p9_virtio_zc_request,
+> +	//.zc_request = p9_virtio_zc_request,
+>  	.cancel = p9_virtio_cancel,
+>  	/*
+>  	 * We leave one entry for input and one entry for response
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/penberg/linux.git slab/for-linus
+Why was that line commented out? There's no comment nor is there
+anything in the commit explanation on this change.
 
-It contains more of Christoph's SLAB unification work that reduce the
-differences between different slab allocators. The code has been sitting
-in linux-next without problems.
 
-If you feel this is inappropriate for -rc2, just skip the pull and I'll
-requeue it for 3.10.
+Paul Bolle
 
-			Pekka
-
------------------->
-The following changes since commit 6dbe51c251a327e012439c4772097a13df43c5b8:
-
-  Linux 3.9-rc1 (2013-03-03 15:11:05 -0800)
-
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/penberg/linux.git slab/for-linus
-
-Christoph Lameter (15):
-      slab: Use proper formatting specs for unsigned size_t
-      slab: Move kmalloc related function defs
-      slab: Common kmalloc slab index determination
-      slab: Use common kmalloc_index/kmalloc_size functions
-      slab: Common name for the per node structures
-      slab: Rename nodelists to node
-      slab: Common constants for kmalloc boundaries
-      slab: Common definition for the array of kmalloc caches
-      slab: Common function to create the kmalloc array
-      stat: Use size_t for sizes instead of unsigned
-      slab: Common Kmalloc cache determination
-      slab: Rename list3/l3 to node
-      slab: Common definition for kmem_cache_node
-      slab: Handle ARCH_DMA_MINALIGN correctly
-      slab: Fixup CONFIG_PAGE_ALLOC/DEBUG_SLAB_LEAK sections
-
-Glauber Costa (1):
-      slub: correctly bootstrap boot caches
-
-Joonsoo Kim (1):
-      mm/sl[au]b: correct allocation type check in kmalloc_slab()
-
-Pekka Enberg (1):
-      Merge branch 'slab/next' into slab/for-linus
-
- fs/proc/stat.c                |    2 +-
- include/linux/kmalloc_sizes.h |   45 ---
- include/linux/slab.h          |  231 +++++++++----
- include/linux/slab_def.h      |   48 +--
- include/linux/slub_def.h      |  136 +-------
- mm/slab.c                     |  789 +++++++++++++++++------------------------
- mm/slab.h                     |   43 +++-
- mm/slab_common.c              |  165 +++++++++-
- mm/slub.c                     |  188 +---------
- 9 files changed, 745 insertions(+), 902 deletions(-)
- delete mode 100644 include/linux/kmalloc_sizes.h
