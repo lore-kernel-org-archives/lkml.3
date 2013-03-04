@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757129Ab3CDD4m (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 22:56:42 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33024 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756811Ab3CDDoR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1756823Ab3CDDoR (ORCPT <rfc822;w@1wt.eu>);
 	Sun, 3 Mar 2013 22:44:17 -0500
-Message-Id: <20130304033714.034605871@decadent.org.uk>
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33005 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756673Ab3CDDoL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Mar 2013 22:44:11 -0500
+Message-Id: <20130304033713.869066939@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 04 Mar 2013 03:38:13 +0000
+Date: Mon, 04 Mar 2013 03:38:11 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, fanchaoting <fanchaoting@cn.fujitsu.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [ 066/153] umount oops when remove blocklayoutdriver first
+Cc: akpm@linux-foundation.org, "J. Bruce Fields" <bfields@redhat.com>,
+        Jason Tibbitts <tibbs@math.uh.edu>,
+        =?ISO-8859-15?q?Pawe=C5=82=20Sikora?= <pawel.sikora@agmk.net>
+Subject: [ 064/153] svcrpc: make svc_age_temp_xprts enqueue under sv_lock
 In-Reply-To: <20130304033707.648729212@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,84 +28,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: fanchaoting <fanchaoting@cn.fujitsu.com>
+From: "J. Bruce Fields" <bfields@redhat.com>
 
-commit 5a12cca697aca5dfba42a7d4c3356acc0445a2b0 upstream.
+commit e75bafbff2270993926abcc31358361db74a9bc2 upstream.
 
-now pnfs client uses block layout, maybe we can remove
-blocklayoutdriver first. if we umount later,
-it can cause oops in unset_pnfs_layoutdriver.
-because nfss->pnfs_curr_ld->clear_layoutdriver is invalid.
+svc_age_temp_xprts expires xprts in a two-step process: first it takes
+the sv_lock and moves the xprts to expire off their server-wide list
+(sv_tempsocks or sv_permsocks) to a local list.  Then it drops the
+sv_lock and enqueues and puts each one.
 
-reproduce it:
- modprobe  blocklayoutdriver
- mount -t nfs4 -o minorversion=1 pnfsip:/ /mnt/
- rmmod blocklayoutdriver
- umount /mnt
+I see no reason for this: svc_xprt_enqueue() will take sp_lock, but the
+sv_lock and sp_lock are not otherwise nested anywhere (and documentation
+at the top of this file claims it's correct to nest these with sp_lock
+inside.)
 
-then you can see following
-
-CPU 0
-Pid: 17023, comm: umount.nfs4 Tainted: GF          O 3.7.0-rc6-pnfs #1 VMware, Inc. VMware Virtual Platform/440BX Desktop Reference Platform
-RIP: 0010:[<ffffffffa04cfe6d>]  [<ffffffffa04cfe6d>] unset_pnfs_layoutdriver+0x1d/0x70 [nfsv4]
-RSP: 0018:ffff8800022d9e48  EFLAGS: 00010286
-RAX: ffffffffa04a1b00 RBX: ffff88000b013800 RCX: 0000000000000001
-RDX: ffffffff81ae8ee0 RSI: ffff880001ee94b8 RDI: ffff88000b013800
-RBP: ffff8800022d9e58 R08: 0000000000000001 R09: 0000000000000000
-R10: 0000000000000000 R11: 0000000000000000 R12: ffff880001ee9400
-R13: ffff8800105978c0 R14: 00007fff25846c08 R15: 0000000001bba550
-FS:  00007f45ae7f0700(0000) GS:ffff880012c00000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-CR2: ffffffffa04a1b38 CR3: 0000000002c0c000 CR4: 00000000000006f0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Process umount.nfs4 (pid: 17023, threadinfo ffff8800022d8000, task ffff880006e48aa0)
-Stack:
-ffff8800105978c0 ffff88000b013800 ffff8800022d9e78 ffffffffa04cd0ce
-ffff8800022d9e78 ffff88000b013800 ffff8800022d9ea8 ffffffffa04755a7
-ffff8800022d9ea8 ffff880002f96400 ffff88000b013800 ffff880002f96400
-Call Trace:
-[<ffffffffa04cd0ce>] nfs4_destroy_server+0x1e/0x30 [nfsv4]
-[<ffffffffa04755a7>] nfs_free_server+0xb7/0x150 [nfs]
-[<ffffffffa047d4d5>] nfs_kill_super+0x35/0x40 [nfs]
-[<ffffffff81178d35>] deactivate_locked_super+0x45/0x70
-[<ffffffff8117986a>] deactivate_super+0x4a/0x70
-[<ffffffff81193ee2>] mntput_no_expire+0xd2/0x130
-[<ffffffff81194d62>] sys_umount+0x72/0xe0
-[<ffffffff8154af59>] system_call_fastpath+0x16/0x1b
-Code: 06 e1 b8 ea ff ff ff eb 9e 0f 1f 44 00 00 55 48 89 e5 53 48 83 ec 08 66 66 66 66 90 48 8b 87 80 03 00 00 48 89 fb 48 85 c0 74 29 <48> 8b 40 38 48 85 c0 74 02 ff d0 48 8b 03 3e ff 48 04 0f 94 c2
-RIP  [<ffffffffa04cfe6d>] unset_pnfs_layoutdriver+0x1d/0x70 [nfsv4]
-RSP <ffff8800022d9e48>
-CR2: ffffffffa04a1b38
----[ end trace 29f75aaedda058bf ]---
-
-Signed-off-by: fanchaoting<fanchaoting@cn.fujitsu.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Tested-by: Jason Tibbitts <tibbs@math.uh.edu>
+Tested-by: Paweł Sikora <pawel.sikora@agmk.net>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/nfs/blocklayout/blocklayout.c |    1 +
- fs/nfs/objlayout/objio_osd.c     |    1 +
- 2 files changed, 2 insertions(+)
+ net/sunrpc/svc_xprt.c |   15 ++-------------
+ 1 file changed, 2 insertions(+), 13 deletions(-)
 
---- a/fs/nfs/blocklayout/blocklayout.c
-+++ b/fs/nfs/blocklayout/blocklayout.c
-@@ -1101,6 +1101,7 @@ static const struct nfs_pageio_ops bl_pg
- static struct pnfs_layoutdriver_type blocklayout_type = {
- 	.id				= LAYOUT_BLOCK_VOLUME,
- 	.name				= "LAYOUT_BLOCK_VOLUME",
-+	.owner				= THIS_MODULE,
- 	.read_pagelist			= bl_read_pagelist,
- 	.write_pagelist			= bl_write_pagelist,
- 	.alloc_layout_hdr		= bl_alloc_layout_hdr,
---- a/fs/nfs/objlayout/objio_osd.c
-+++ b/fs/nfs/objlayout/objio_osd.c
-@@ -569,6 +569,7 @@ static struct pnfs_layoutdriver_type obj
- 	.flags                   = PNFS_LAYOUTRET_ON_SETATTR |
- 				   PNFS_LAYOUTRET_ON_ERROR,
+--- a/net/sunrpc/svc_xprt.c
++++ b/net/sunrpc/svc_xprt.c
+@@ -816,7 +816,6 @@ static void svc_age_temp_xprts(unsigned
+ 	struct svc_serv *serv = (struct svc_serv *)closure;
+ 	struct svc_xprt *xprt;
+ 	struct list_head *le, *next;
+-	LIST_HEAD(to_be_aged);
  
-+	.owner		       	 = THIS_MODULE,
- 	.alloc_layout_hdr        = objlayout_alloc_layout_hdr,
- 	.free_layout_hdr         = objlayout_free_layout_hdr,
+ 	dprintk("svc_age_temp_xprts\n");
  
+@@ -837,25 +836,15 @@ static void svc_age_temp_xprts(unsigned
+ 		if (atomic_read(&xprt->xpt_ref.refcount) > 1 ||
+ 		    test_bit(XPT_BUSY, &xprt->xpt_flags))
+ 			continue;
+-		svc_xprt_get(xprt);
+-		list_move(le, &to_be_aged);
++		list_del_init(le);
+ 		set_bit(XPT_CLOSE, &xprt->xpt_flags);
+ 		set_bit(XPT_DETACHED, &xprt->xpt_flags);
+-	}
+-	spin_unlock_bh(&serv->sv_lock);
+-
+-	while (!list_empty(&to_be_aged)) {
+-		le = to_be_aged.next;
+-		/* fiddling the xpt_list node is safe 'cos we're XPT_DETACHED */
+-		list_del_init(le);
+-		xprt = list_entry(le, struct svc_xprt, xpt_list);
+-
+ 		dprintk("queuing xprt %p for closing\n", xprt);
+ 
+ 		/* a thread will dequeue and close it soon */
+ 		svc_xprt_enqueue(xprt);
+-		svc_xprt_put(xprt);
+ 	}
++	spin_unlock_bh(&serv->sv_lock);
+ 
+ 	mod_timer(&serv->sv_temptimer, jiffies + svc_conn_age_period * HZ);
+ }
 
 
