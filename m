@@ -1,111 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932379Ab3CDUKK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 15:10:10 -0500
-Received: from mail-ve0-f179.google.com ([209.85.128.179]:42362 "EHLO
-	mail-ve0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932147Ab3CDUKG (ORCPT
+	id S932404Ab3CDULX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 15:11:23 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:10203 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932307Ab3CDULT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 15:10:06 -0500
+	Mon, 4 Mar 2013 15:11:19 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Mon, 04 Mar 2013 12:11:14 -0800
+From: Rhyland Klein <rklein@nvidia.com>
+To: Grant Likely <grant.likely@secretlab.ca>, Anton Vorontsov <cbou@mail.ru>
+CC: David Woodhouse <dwmw2@infradead.org>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
+        <linux-tegra@vger.kernel.org>, Rhyland Klein <rklein@nvidia.com>
+Subject: [Patch v1 1/3] power_supply: Define Binding for power-supplies
+Date: Mon, 4 Mar 2013 15:11:56 -0500
+Message-ID: <1362427918-14504-2-git-send-email-rklein@nvidia.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1362427918-14504-1-git-send-email-rklein@nvidia.com>
+References: <1362427918-14504-1-git-send-email-rklein@nvidia.com>
+X-NVConfidentiality: public
 MIME-Version: 1.0
-In-Reply-To: <CACBanvqfW7P-TfKnVGgsumPdLhx-Z4ZS8wUHyUNRA9mM=txK8A@mail.gmail.com>
-References: <CACVXFVMKN6aeCvJcn7dyuonJYJDfYxWeW5KE6gfKRKJKFj2M4A@mail.gmail.com>
-	<4FA345DA4F4AE44899BD2B03EEEC2FA9286AD113@sacexcmbx05-prd.hq.netapp.com>
-	<CACVXFVM5VhU_ZgYr1KxERY7DXxMQpkWoiTyjyar91Hz=vU4-ug@mail.gmail.com>
-	<20130304100432.5c7ea704@tlielax.poochiereds.net>
-	<CACVXFVPvTnfH98KqAQxDzMi5Pbf1fbi5HEGb=ggWWg4FX_4G=g@mail.gmail.com>
-	<4FA345DA4F4AE44899BD2B03EEEC2FA9286AD381@sacexcmbx05-prd.hq.netapp.com>
-	<CACBanvqfW7P-TfKnVGgsumPdLhx-Z4ZS8wUHyUNRA9mM=txK8A@mail.gmail.com>
-Date: Mon, 4 Mar 2013 12:10:05 -0800
-X-Google-Sender-Auth: kPWMc_lffC_kRLNvOijQEA-bcV8
-Message-ID: <CACBanvroaxd-nAJd+7o6eJMW7gOLT+=Dq2fbNPR7adZpXOEN8g@mail.gmail.com>
-Subject: Re: LOCKDEP: 3.9-rc1: mount.nfs/4272 still has locks held!
-From: Mandeep Singh Baines <msb@chromium.org>
-To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-Cc: Ming Lei <ming.lei@canonical.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Jeff Layton <jlayton@redhat.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Ben Chan <benchan@chromium.org>,
-        Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 4, 2013 at 12:09 PM, Mandeep Singh Baines <msb@chromium.org> wrote:
-> On Mon, Mar 4, 2013 at 7:53 AM, Myklebust, Trond
-> <Trond.Myklebust@netapp.com> wrote:
->> On Mon, 2013-03-04 at 23:33 +0800, Ming Lei wrote:
->>> Hi,
->>>
->>> CC guys who introduced the lockdep change.
->>>
->>> On Mon, Mar 4, 2013 at 11:04 PM, Jeff Layton <jlayton@redhat.com> wrote:
->>>
->>> >
->>> > I don't get it -- why is it bad to hold a lock across a freeze event?
->>>
->>> At least this may deadlock another mount.nfs during freezing, :-)
->>>
->>> See detailed explanation in the commit log:
->>>
->>> commit 6aa9707099c4b25700940eb3d016f16c4434360d
->>> Author: Mandeep Singh Baines <msb@chromium.org>
->>> Date:   Wed Feb 27 17:03:18 2013 -0800
->>>
->>>     lockdep: check that no locks held at freeze time
->>>
->>>     We shouldn't try_to_freeze if locks are held.  Holding a lock can cause a
->>>     deadlock if the lock is later acquired in the suspend or hibernate path
->>>     (e.g.  by dpm).  Holding a lock can also cause a deadlock in the case of
->>>     cgroup_freezer if a lock is held inside a frozen cgroup that is later
->>>     acquired by a process outside that group.
->>>
->>
->> This is bloody ridiculous... If you want to add functionality to
->> implement cgroup or per-process freezing, then do it through some other
->> api instead of trying to push your problems onto others by adding new
->> global locking rules.
->>
->> Filesystems are a shared resource that have _nothing_ to do with process
->> cgroups. They need to be suspended when the network goes down or other
->> resources that they depend on are suspended. At that point, there is no
->> "what if I launch a new mount command?" scenario.
->>
->
-> Hi Trond,
->
-> My intention was to introduce new rules. My change simply introduces a
+This property is meant to be used in device nodes which represent
+power_supply devices that wish to provide a list of supplies which
+provide them power, such as a battery listing its chargers.
 
-D'oh.
+Signed-off-by: Rhyland Klein <rklein@nvidia.com>
+---
+v1:
+ - changed from RFC v2 -> patch v1
+ - made poropery plural as it can be a list
+ - update example with plural & changed once charger address
 
-s/was/was not/
+v2 (RFC):
+ - changed property to "power-supply" which should be contained in the
+   battery rather than the charger. Also updated example to match
 
-Regards,
-Mandeep
+ .../bindings/power_supply/power_supply.txt         |   23 ++++++++++++++++++++
+ 1 file changed, 23 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/power_supply/power_supply.txt
 
-> check for a deadlock case that can already happen.
->
-> I think a deadlock could happen under the following scenario:
->
-> 1) An administrator wants to freeze a container. Perhaps to checkpoint
-> it and it migrate it some place else.
-> 2) An nfs mount was in progress so we hit this code path and freeze
-> with a lock held.
-> 3) Another container tries to nfs mount.
-> 4) Deadlock.
->
-> Regards,
-> Mandeep
->
->> Trond
->> --
->> Trond Myklebust
->> Linux NFS client maintainer
->>
->> NetApp
->> Trond.Myklebust@netapp.com
->> www.netapp.com
+diff --git a/Documentation/devicetree/bindings/power_supply/power_supply.txt b/Documentation/devicetree/bindings/power_supply/power_supply.txt
+new file mode 100644
+index 0000000..8391bfa
+--- /dev/null
++++ b/Documentation/devicetree/bindings/power_supply/power_supply.txt
+@@ -0,0 +1,23 @@
++Power Supply Core Support
++
++Optional Properties:
++ - power-supplies : This property is added to a supply in order to list the
++   devices which supply it power, referenced by their phandles.
++
++Example:
++
++	usb-charger: power@e {
++		compatible = "some,usb-charger";
++		...
++	};
++
++	ac-charger: power@c {
++		compatible = "some,ac-charger";
++		...
++	};
++
++	battery@b {
++		compatible = "some,battery";
++		...
++		power-supplies = <&usb-charger>, <&ac-charger>;
++	};
+-- 
+1.7.9.5
+
