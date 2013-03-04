@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757191Ab3CDLWu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 06:22:50 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:30498 "EHLO mx1.redhat.com"
+	id S1757280Ab3CDLXA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 06:23:00 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:14449 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756573Ab3CDLWt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 06:22:49 -0500
-Date: Mon, 4 Mar 2013 12:21:31 +0200
+	id S1757197Ab3CDLW5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Mar 2013 06:22:57 -0500
+Date: Mon, 4 Mar 2013 13:20:23 +0200
 From: Gleb Natapov <gleb@redhat.com>
 To: Paolo Bonzini <pbonzini@redhat.com>
 Cc: Hu Tao <hutao@cn.fujitsu.com>, kvm list <kvm@vger.kernel.org>,
@@ -29,59 +29,64 @@ Cc: Hu Tao <hutao@cn.fujitsu.com>, kvm list <kvm@vger.kernel.org>,
         Alex Williamson <alex.williamson@redhat.com>,
         Peter Maydell <peter.maydell@linaro.org>
 Subject: Re: [PATCH v13 0/8] pv event interface between host and guest
-Message-ID: <20130304102131.GK23616@redhat.com>
+Message-ID: <20130304112023.GN23616@redhat.com>
 References: <cover.1362051581.git.hutao@cn.fujitsu.com>
  <20130303091738.GB23616@redhat.com>
  <513471F1.5020702@redhat.com>
+ <20130304102131.GK23616@redhat.com>
+ <51347735.9090204@redhat.com>
+ <20130304104301.GL23616@redhat.com>
+ <51347C23.8080802@redhat.com>
+ <20130304105928.GM23616@redhat.com>
+ <51348142.4070206@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <513471F1.5020702@redhat.com>
+In-Reply-To: <51348142.4070206@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 04, 2013 at 11:05:37AM +0100, Paolo Bonzini wrote:
-> > Guest uses acpi_get_devices() to discover a platform device by
-> > its name (QEMU0001).  Then you put the driver for the platform device
-> > into drivers/platform/x86/ and QEMU/kvm/Xen all will be able to use it.
+On Mon, Mar 04, 2013 at 12:10:58PM +0100, Paolo Bonzini wrote:
+> Il 04/03/2013 11:59, Gleb Natapov ha scritto:
+> > > I want to make the ioport configurable in the device, but the PIIX and
+> > > ICH9 (which are what the DSDT is written for) will always use port 0x505.
+> > 
+> > But the device is not part of PIIX or ICH9.
 > 
-> Just to clarify it for Hu Tao, the read from a random ioport is how the
-> ACPI code will detect presence of the device.
+> So is kvmclock, or kvmvapic.  I think it makes sense to add this device
+> to PIIX or ICH9 since it is an ISA device.
 > 
-Actually no (at least in the long run, for the first version it may be
-OK). Since we want to move DSDT generation into QEMU if device will not
-be present QEMU will not generate corresponded Device() in DSDT, or it
-will generate it with _STA() { Return (0x00)} hard coded. Seabios can do
-the same if we will pass it info about device presence via fw_cfg. Not
-sure Kevin will like it now when we plan to move DSDT into QEMU anyway :)
+Those are CPU interfaces, not chipset. fw_cfg or our PIIX ACPI additions would
+be better examples, but since they are always present and non configurable they
+are in a different category.
 
-> Something like this should work (in SeaBIOS's src/acpi-dsdt-isa.dsl):
+> > It is additional device that
+> > may or may not be present depending on a command line. So what if
+> > someone configures debugcon or debugexit to use this port?
 > 
->     Device(PEVT) {
->         Name(_HID, EisaId("QEMU0001"))
->         OperationRegion(PEOR, SystemIO, 0x505, 0x01)
->         Field(PEOR, ByteAcc, NoLock, Preserve) {
->             PEPT,   8,
->         }
+> I haven't checked if debug{con,exit} will pass the _STA test, but if
+> they do, the user will get a Ctrl-A or respectively an exit of QEMU when
+> the guest panics.
 > 
->         Method(_STA, 0, NotSerialized) {
->             Store(PEPT, Local0)
->             If (LEqual(Local0, Zero)) {
->                 Return (0x00)
->             } Else {
->                 Return (0x0F)
->             }
->         }
+> What if someone configures debugcon on port 0x3f8?  Some guest will use
+> it, some will not.
 > 
->         Name(_CRS, ResourceTemplate() {
->             IO(Decode16, 0x505, 0x505, 0x01, 0x01)
->         })
->     }
+Qemu should fail to start since conflict will be detected during
+initialization.
+
+> > We can always
+> > blame the users, but I fill that we are making unnecessary compromises.
 > 
-> Please test this with a QEMU option like "-M pc-1.4".  The device should
-> _not_ be detected if you're doing it right.
+> Once we choose an ISA device, where the user has full control of the
+> address space, we already know we'll have to accept compromises.  I
+> don't think this compromise is particularly bad: do discovery via ACPI
+> (nice), accept that the user can trick the AML (ugly).
 > 
+Why would have we accept compromises, we may, but I disagree that it
+is necessary? If user configures conflicting ports QEMU will detect
+it during init, if configuration is correct DSDT should provide enough
+information for guests to use configured devices.
 
 --
 			Gleb.
