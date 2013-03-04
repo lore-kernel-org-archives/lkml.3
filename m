@@ -1,88 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755227Ab3CDGQc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 01:16:32 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:40144 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750727Ab3CDGQb (ORCPT
+	id S1755067Ab3CDGZO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 01:25:14 -0500
+Received: from mail-oa0-f50.google.com ([209.85.219.50]:56866 "EHLO
+	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750803Ab3CDGZL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 01:16:31 -0500
-Message-ID: <51343C1F.2050502@huawei.com>
-Date: Mon, 4 Mar 2013 14:15:59 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
+	Mon, 4 Mar 2013 01:25:11 -0500
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: LKML <linux-kernel@vger.kernel.org>, Fengguang Wu <fengguang.wu@intel.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH] tracing: Fix some section mismatch warninings
-Content-Type: text/plain; charset="GB2312"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
+In-Reply-To: <1362287099.14386.13.camel@kjgkr>
+References: <1362195678-20785-1-git-send-email-linkinjeon@gmail.com>
+	<1362287099.14386.13.camel@kjgkr>
+Date: Mon, 4 Mar 2013 15:25:11 +0900
+Message-ID: <CAKYAXd8VzmxdrUq-vCbhDpLWirmUUxRjj_-5FUmNutBG5cojVA@mail.gmail.com>
+Subject: Re: [PATCH 4/5] f2fs: align f2fs maximum name length to linux based filesystem
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: jaegeuk.kim@samsung.com
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-f2fs-devel@lists.sourceforge.net,
+        Namjae Jeon <namjae.jeon@samsung.com>,
+        Amit Sahrawat <a.sahrawat@samsung.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As we've added __init annotation to field-defining functions, we should
-add __refdata annotation to event_call variables, which reference those
-functions.
+2013/3/3, Jaegeuk Kim <jaegeuk.kim@samsung.com>:
+> We should not change the on-disk layout.
+> Instead, simply we can deal with it by changing original condition check
+> like below.
 
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Signed-off-by: Li Zefan <lizefan@huawei.com>
----
- include/trace/ftrace.h        | 2 +-
- kernel/trace/trace_export.c   | 2 +-
- kernel/trace/trace_syscalls.c | 4 ++--
- 3 files changed, 4 insertions(+), 4 deletions(-)
+Even though the changes you suggested are ok. But there is one doubt.
+By not changing the on-disk layout and just taking care of the limits
+using the code is just causing confusion and looks a make-shift
+arrangement.
+Even though ‘256’ is the space reserved for the name ‘on-disk’ but by
+changing the code – we are limiting it to use ‘255’.
+If we chance the on-disk to make use of ‘255’ bytes it allows for
+keeping all code intact and also like the code changes suggested, it
+will still refer only the ‘255’ bytes.
 
-diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
-index dc18af3..3ffaf52 100644
---- a/include/trace/ftrace.h
-+++ b/include/trace/ftrace.h
-@@ -570,7 +570,7 @@ static inline void ftrace_test_probe_##call(void)			\
- #define DECLARE_EVENT_CLASS(call, proto, args, tstruct, assign, print)	\
- _TRACE_PERF_PROTO(call, PARAMS(proto));					\
- static const char print_fmt_##call[] = print;				\
--static struct ftrace_event_class __used event_class_##call = {		\
-+static struct ftrace_event_class __used __refdata event_class_##call = { \
- 	.system			= __stringify(TRACE_SYSTEM),		\
- 	.define_fields		= ftrace_define_fields_##call,		\
- 	.fields			= LIST_HEAD_INIT(event_class_##call.fields),\
-diff --git a/kernel/trace/trace_export.c b/kernel/trace/trace_export.c
-index 4f6a91c..d21a746 100644
---- a/kernel/trace/trace_export.c
-+++ b/kernel/trace/trace_export.c
-@@ -168,7 +168,7 @@ ftrace_define_fields_##name(struct ftrace_event_call *event_call)	\
- #define FTRACE_ENTRY_REG(call, struct_name, etype, tstruct, print, filter,\
- 			 regfn)						\
- 									\
--struct ftrace_event_class event_class_ftrace_##call = {			\
-+struct ftrace_event_class __refdata event_class_ftrace_##call = {	\
- 	.system			= __stringify(TRACE_SYSTEM),		\
- 	.define_fields		= ftrace_define_fields_##call,		\
- 	.fields			= LIST_HEAD_INIT(event_class_ftrace_##call.fields),\
-diff --git a/kernel/trace/trace_syscalls.c b/kernel/trace/trace_syscalls.c
-index c57fe3d..07d75e5 100644
---- a/kernel/trace/trace_syscalls.c
-+++ b/kernel/trace/trace_syscalls.c
-@@ -438,7 +438,7 @@ struct trace_event_functions exit_syscall_print_funcs = {
- 	.trace		= print_syscall_exit,
- };
- 
--struct ftrace_event_class event_class_syscall_enter = {
-+struct ftrace_event_class __refdata event_class_syscall_enter = {
- 	.system		= "syscalls",
- 	.reg		= syscall_enter_register,
- 	.define_fields	= syscall_enter_define_fields,
-@@ -446,7 +446,7 @@ struct ftrace_event_class event_class_syscall_enter = {
- 	.raw_init	= init_syscall_trace,
- };
- 
--struct ftrace_event_class event_class_syscall_exit = {
-+struct ftrace_event_class __refdata event_class_syscall_exit = {
- 	.system		= "syscalls",
- 	.reg		= syscall_exit_register,
- 	.define_fields	= syscall_exit_define_fields,
--- 
-1.8.0.2
+More so, changing the on-disk allows for ‘1byte’ which is still padded
+at the same position to be used in future. Otherwise, this ‘extra’
+byte will continue to exist without having that to be used for some
+extra work.
+
+Let me know your opinion.
+Thanks.
+
+>
+> ---
+> From ccc2546eded1efd2d6ed98f8aee7d7ce247cb4a2 Mon Sep 17 00:00:00 2001
+> From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+> Date: Sun, 3 Mar 2013 13:58:05 +0900
+> Subject: [PATCH] f2fs: align f2fs maximum name length to linux based
+>  filesystem
+> Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+> linux-f2fs-devel@lists.sourceforge.net
+>
+> The maximum filename length supported in linux is 255 characters.
+> So let's follow that.
+>
+> Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
+> Signed-off-by: Amit Sahrawat <a.sahrawat@samsung.com>
+> Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+> ---
+>  fs/f2fs/dir.c           |  3 +++
+>  fs/f2fs/namei.c         |  2 +-
+>  fs/f2fs/super.c         |  2 +-
+>  include/linux/f2fs_fs.h | 14 ++++++++------
+>  4 files changed, 13 insertions(+), 8 deletions(-)
+>
+> diff --git a/fs/f2fs/dir.c b/fs/f2fs/dir.c
+> index c395c50..4ac8a7b 100644
+> --- a/fs/f2fs/dir.c
+> +++ b/fs/f2fs/dir.c
+> @@ -189,6 +189,9 @@ struct f2fs_dir_entry *f2fs_find_entry(struct inode
+> *dir,
+>  	unsigned int max_depth;
+>  	unsigned int level;
+>
+> +	if (namelen > F2FS_NAME_LEN)
+> +		return NULL;
+> +
+>  	if (npages == 0)
+>  		return NULL;
+>
+> diff --git a/fs/f2fs/namei.c b/fs/f2fs/namei.c
+> index 1a49b88..d4a171b 100644
+> --- a/fs/f2fs/namei.c
+> +++ b/fs/f2fs/namei.c
+> @@ -197,7 +197,7 @@ static struct dentry *f2fs_lookup(struct inode *dir,
+> struct dentry *dentry,
+>  	struct f2fs_dir_entry *de;
+>  	struct page *page;
+>
+> -	if (dentry->d_name.len > F2FS_MAX_NAME_LEN)
+> +	if (dentry->d_name.len > F2FS_NAME_LEN)
+>  		return ERR_PTR(-ENAMETOOLONG);
+>
+>  	de = f2fs_find_entry(dir, &dentry->d_name, &page);
+> diff --git a/fs/f2fs/super.c b/fs/f2fs/super.c
+> index 8c11764..1c7f595 100644
+> --- a/fs/f2fs/super.c
+> +++ b/fs/f2fs/super.c
+> @@ -180,7 +180,7 @@ static int f2fs_statfs(struct dentry *dentry, struct
+> kstatfs *buf)
+>  	buf->f_files = sbi->total_node_count;
+>  	buf->f_ffree = sbi->total_node_count - valid_inode_count(sbi);
+>
+> -	buf->f_namelen = F2FS_MAX_NAME_LEN;
+> +	buf->f_namelen = F2FS_NAME_LEN;
+>  	buf->f_fsid.val[0] = (u32)id;
+>  	buf->f_fsid.val[1] = (u32)(id >> 32);
+>
+> diff --git a/include/linux/f2fs_fs.h b/include/linux/f2fs_fs.h
+> index f9a12f6..7b50991 100644
+> --- a/include/linux/f2fs_fs.h
+> +++ b/include/linux/f2fs_fs.h
+> @@ -139,6 +139,8 @@ struct f2fs_extent {
+>  	__le32 len;		/* lengh of the extent */
+>  } __packed;
+>
+> +/* We can store F2FS_MAX_NAME_LEN, but lets follow linux convention. */
+> +#define F2FS_NAME_LEN		255
+>  #define F2FS_MAX_NAME_LEN	256
+>  #define ADDRS_PER_INODE         923	/* Address Pointers in an Inode */
+>  #define ADDRS_PER_BLOCK         1018	/* Address Pointers in a Direct
+> Block */
+> @@ -362,10 +364,10 @@ struct f2fs_summary_block {
+>  typedef __le32	f2fs_hash_t;
+>
+>  /* One directory entry slot covers 8bytes-long file name */
+> -#define F2FS_NAME_LEN		8
+> -#define F2FS_NAME_LEN_BITS	3
+> +#define F2FS_SLOT_LEN		8
+> +#define F2FS_SLOT_LEN_BITS	3
+>
+> -#define GET_DENTRY_SLOTS(x)	((x + F2FS_NAME_LEN - 1) >>
+> F2FS_NAME_LEN_BITS)
+> +#define GET_DENTRY_SLOTS(x)	((x + F2FS_SLOT_LEN - 1) >>
+> F2FS_SLOT_LEN_BITS)
+>
+>  /* the number of dentry in a block */
+>  #define NR_DENTRY_IN_BLOCK	214
+> @@ -377,10 +379,10 @@ typedef __le32	f2fs_hash_t;
+>  #define SIZE_OF_DENTRY_BITMAP	((NR_DENTRY_IN_BLOCK + BITS_PER_BYTE -
+> 1) / \
+>  					BITS_PER_BYTE)
+>  #define SIZE_OF_RESERVED	(PAGE_SIZE - ((SIZE_OF_DIR_ENTRY + \
+> -				F2FS_NAME_LEN) * \
+> +				F2FS_SLOT_LEN) * \
+>  				NR_DENTRY_IN_BLOCK + SIZE_OF_DENTRY_BITMAP))
+>
+> -/* One directory entry slot representing F2FS_NAME_LEN-sized file name
+> */
+> +/* One directory entry slot representing F2FS_SLOT_LEN-sized file name
+> */
+>  struct f2fs_dir_entry {
+>  	__le32 hash_code;	/* hash code of file name */
+>  	__le32 ino;		/* inode number */
+> @@ -394,7 +396,7 @@ struct f2fs_dentry_block {
+>  	__u8 dentry_bitmap[SIZE_OF_DENTRY_BITMAP];
+>  	__u8 reserved[SIZE_OF_RESERVED];
+>  	struct f2fs_dir_entry dentry[NR_DENTRY_IN_BLOCK];
+> -	__u8 filename[NR_DENTRY_IN_BLOCK][F2FS_NAME_LEN];
+> +	__u8 filename[NR_DENTRY_IN_BLOCK][F2FS_SLOT_LEN];
+>  } __packed;
+>
+>  /* file types used in inode_info->flags */
+> --
+> 1.8.1.3.566.gaa39828
+>
+>
+>
+>
+> --
+> Jaegeuk Kim
+> Samsung
+>
