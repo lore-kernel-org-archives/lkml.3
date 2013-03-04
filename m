@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756557Ab3CDDnt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 22:43:49 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:32909 "EHLO
+	id S1756838Ab3CDEBe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 23:01:34 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:32931 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756387Ab3CDDnr (ORCPT
+	by vger.kernel.org with ESMTP id S1756569Ab3CDDnv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Mar 2013 22:43:47 -0500
-Message-Id: <20130304033715.655904985@decadent.org.uk>
+	Sun, 3 Mar 2013 22:43:51 -0500
+Message-Id: <20130304033715.343516170@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 04 Mar 2013 03:38:29 +0000
+Date: Mon, 04 Mar 2013 03:38:26 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Patrik Jakobsson <patrik.r.jakobsson@gmail.com>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 082/153] drm/i915: Set i9xx sdvo clock limits according to specifications
+Cc: akpm@linux-foundation.org, Paulo Zanoni <paulo.r.zanoni@intel.com>,
+        Alex Deucher <alexander.deucher@amd.com>,
+        Adam Jackson <ajax@redhat.com>, Dave Airlie <airlied@redhat.com>
+Subject: [ 079/153] drm: dont add inferred modes for monitors that dont support them
 In-Reply-To: <20130304033707.648729212@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,35 +28,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
+From: Paulo Zanoni <paulo.r.zanoni@intel.com>
 
-commit 4f7dfb6788dd022446847fbbfbe45e13bedb5be2 upstream.
+commit 196e077dc165a307efbd9e7569f81bbdbcf18f65 upstream.
 
-The Intel PRM says the M1 and M2 divisors must be in the range of 10-20 and 5-9.
-Since we do all calculations based on them being register values (which are
-subtracted by 2) we need to specify them accordingly.
+If bit 0 of the features byte (0x18) is set to 0, then, according to
+the EDID spec, "the display is non-continuous frequency (multi-mode)
+and is only specified to accept the video timing formats that are
+listed in Base EDID and certain Extension Blocks".
 
-Signed-off-by: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
-Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=56359
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+For more information, please see the EDID spec, check the notes of the
+table that explains the "Feature Support" byte (18h) and also the
+notes on the tables of the section that explains "Display Range Limits
+& Additional Timing Description Definition (tag #FDh)".
+
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=45729
+Reviewed-by: Alex Deucher <alexander.deucher@amd.com>
+Reviewed-by: Adam Jackson <ajax@redhat.com>
+Signed-off-by: Paulo Zanoni <paulo.r.zanoni@intel.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/gpu/drm/i915/intel_display.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/drm_edid.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -138,8 +138,8 @@ static const intel_limit_t intel_limits_
- 	.vco = { .min = 1400000, .max = 2800000 },
- 	.n = { .min = 1, .max = 6 },
- 	.m = { .min = 70, .max = 120 },
--	.m1 = { .min = 10, .max = 22 },
--	.m2 = { .min = 5, .max = 9 },
-+	.m1 = { .min = 8, .max = 18 },
-+	.m2 = { .min = 3, .max = 7 },
- 	.p = { .min = 5, .max = 80 },
- 	.p1 = { .min = 1, .max = 8 },
- 	.p2 = { .dot_limit = 200000,
+--- a/drivers/gpu/drm/drm_edid.c
++++ b/drivers/gpu/drm/drm_edid.c
+@@ -1740,7 +1740,8 @@ int drm_add_edid_modes(struct drm_connec
+ 	num_modes += add_cvt_modes(connector, edid);
+ 	num_modes += add_standard_modes(connector, edid);
+ 	num_modes += add_established_modes(connector, edid);
+-	num_modes += add_inferred_modes(connector, edid);
++	if (edid->features & DRM_EDID_FEATURE_DEFAULT_GTF)
++		num_modes += add_inferred_modes(connector, edid);
+ 
+ 	if (quirks & (EDID_QUIRK_PREFER_LARGE_60 | EDID_QUIRK_PREFER_LARGE_75))
+ 		edid_fixup_preferred(connector, quirks);
 
 
