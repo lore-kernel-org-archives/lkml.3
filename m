@@ -1,69 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756772Ab3CDNn1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 08:43:27 -0500
-Received: from cpsmtpb-ews05.kpnxchange.com ([213.75.39.8]:59332 "EHLO
-	cpsmtpb-ews05.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754497Ab3CDNn0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 08:43:26 -0500
-Message-ID: <1362404600.16460.26.camel@x61.thuisdomein>
-Subject: [PATCH] [media] m920x: let GCC see 'ret' is used initialized
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Antonio Ospite <ospite@studenti.unina.it>, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Mon, 04 Mar 2013 14:43:20 +0100
+	id S1757137Ab3CDNtG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 08:49:06 -0500
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:58864 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755900Ab3CDNtD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Mar 2013 08:49:03 -0500
+Message-ID: <1362404916.4392.25.camel@falcor1>
+Subject: Re: [PATCH 2/6] ima: Return INTEGRITY_FAIL if digital signature
+ can't be verified
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dmitry.kasatkin@intel.com
+Date: Mon, 04 Mar 2013 08:48:36 -0500
+In-Reply-To: <1360871745-20616-3-git-send-email-vgoyal@redhat.com>
+References: <1360871745-20616-1-git-send-email-vgoyal@redhat.com>
+	 <1360871745-20616-3-git-send-email-vgoyal@redhat.com>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
-X-OriginalArrivalTime: 04 Mar 2013 13:43:20.0449 (UTC) FILETIME=[3BBECF10:01CE18DE]
-X-RcptDomain: vger.kernel.org
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13030413-7182-0000-0000-000005A12840
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since commit 7543f344e9b06afe86b55a2620f5c11b38bd5642 ("[media] m920x:
-factor out a m920x_write_seq() function") building m920x.o triggers this
-GCC warning:
-    drivers/media/usb/dvb-usb/m920x.c: In function ‘m920x_probe’:
-    drivers/media/usb/dvb-usb/m920x.c:91:6: warning: ‘ret’ may be used uninitialized in this function [-Wuninitialized]
+On Thu, 2013-02-14 at 14:55 -0500, Vivek Goyal wrote:
+> Digital signature verification happens using integrity_digsig_verify().
+> Curently we set integrity to FAIL for all error codes except -EOPNOTSUPP.
+> This sounds out of line.
+> 
+> - If appropriate kernel code is not compiled in to verify signature of
+>   a file, then prractically it is a failed signature.
+> 
+> - For so many other possible errors we are setting the status to fail.
+>   For example, -EINVAL, -ENOKEY, -ENOMEM, -EINVAL, -ENOTSUPP etc, it
+>   beats me that why -EOPNOTSUPP is special.
+> 
+> This patch should make the semantics more consistent. That is, if digital
+> signature is present in security.ima, then any error happened during
+> signature processing leads to status INTEGRITY_FAIL.
+> 
+> AFAICS, it should not have any user visible effect on existing
+> application. In some cases we will start returning INTEGRITY_FAIL
+> instead of INTEGRITY_UNKNOWN. And process_measurement() will deny access
+> to file both in case of INTEGRITY_UNKNOWN and INTEGRITY_FAIL.
+> 
+> Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
 
-This warning is caused by m920x_write_seq(), which is apparently inlined
-into m920x_probe(). It is clear why GCC thinks 'ret' may be used
-uninitialized. But in practice the first seq->address will always be
-non-zero when this function is called. That means we can change the
-while()-do{} loop into a do{}-while() loop. And that suffices to make
-GCC see that 'ret' will not be used uninitialized.
+A number of patches in this patchset more finely differentiate return
+codes, which is good.  I agree with you totally that there is no good
+reason for -EOPNOTSUPP to be handled differently.  Unfortunately, the
+initramfs is CPIO, which doesn't support xattrs.  With the proposed
+change and 'ima_appraise_tcb' flag enabled, we wouldn't be able to boot.
+I really dislike hard coding policy in the kernel.
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-Compile tested only!
+thanks,
 
- drivers/media/usb/dvb-usb/m920x.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+Mimi
 
-diff --git a/drivers/media/usb/dvb-usb/m920x.c b/drivers/media/usb/dvb-usb/m920x.c
-index 92afeb2..79b31ae 100644
---- a/drivers/media/usb/dvb-usb/m920x.c
-+++ b/drivers/media/usb/dvb-usb/m920x.c
-@@ -68,13 +68,13 @@ static inline int m920x_write_seq(struct usb_device *udev, u8 request,
- 				  struct m920x_inits *seq)
- {
- 	int ret;
--	while (seq->address) {
-+	do {
- 		ret = m920x_write(udev, request, seq->data, seq->address);
- 		if (ret != 0)
- 			return ret;
- 
- 		seq++;
--	}
-+	} while (seq->address);
- 
- 	return ret;
- }
--- 
-1.7.11.7
+> ---
+>  security/integrity/ima/ima_appraise.c |    4 +---
+>  1 files changed, 1 insertions(+), 3 deletions(-)
+> 
+> diff --git a/security/integrity/ima/ima_appraise.c b/security/integrity/ima/ima_appraise.c
+> index 3710f44..6f1eeb8 100644
+> --- a/security/integrity/ima/ima_appraise.c
+> +++ b/security/integrity/ima/ima_appraise.c
+> @@ -178,9 +178,7 @@ int ima_appraise_measurement(int func, struct integrity_iint_cache *iint,
+>  					     xattr_value->digest, rc - 1,
+>  					     iint->ima_xattr.digest,
+>  					     IMA_DIGEST_SIZE);
+> -		if (rc == -EOPNOTSUPP) {
+> -			status = INTEGRITY_UNKNOWN;
+> -		} else if (rc) {
+> +		if (rc) {
+>  			cause = "invalid-signature";
+>  			status = INTEGRITY_FAIL;
+>  		} else {
+
+
 
