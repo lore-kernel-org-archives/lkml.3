@@ -1,76 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754850Ab3CDBGs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 20:06:48 -0500
-Received: from mailout02.c08.mtsvc.net ([205.186.168.190]:42864 "EHLO
-	mailout02.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754654Ab3CDBGr (ORCPT
+	id S1754823Ab3CDBLW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 20:11:22 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:42564 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754552Ab3CDBLU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Mar 2013 20:06:47 -0500
-Message-ID: <1362359178.3221.118.camel@thor.lan>
-Subject: Re: [PATCH] ircomm: release tty before sleeping potentially
- indefintely
-From: Peter Hurley <peter@hurleysoftware.com>
-To: David Miller <davem@davemloft.net>
-Cc: sasha.levin@oracle.com, samuel@sortiz.org, gregkh@linuxfoundation.org,
-        jslaby@suse.cz, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Sun, 03 Mar 2013 20:06:18 -0500
-In-Reply-To: <20130303.193313.408641189137321065.davem@davemloft.net>
-References: <1362350153-26225-1-git-send-email-sasha.levin@oracle.com>
-	 <20130303.174739.1195645942179862011.davem@davemloft.net>
-	 <1362355465.3221.82.camel@thor.lan>
-	 <20130303.193313.408641189137321065.davem@davemloft.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.3-0pjh1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 125194 peter@hurleysoftware.com
+	Sun, 3 Mar 2013 20:11:20 -0500
+Date: Mon, 4 Mar 2013 09:11:21 +0800
+From: Wang YanQing <udknight@gmail.com>
+To: gregkh@linuxfoundation.org, swarren@wwwdotorg.org, jslaby@suse.cz,
+        alan@linux.intel.com, arnd@arndb.de, paul.gortmaker@windriver.com,
+        damm@opensource.se, linux-serial@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH]8250_pci: Add additional WCH CH352 device
+Message-ID: <20130304011120.GA15022@udknight>
+Mail-Followup-To: Wang YanQing <udknight@gmail.com>,
+	gregkh@linuxfoundation.org, swarren@wwwdotorg.org, jslaby@suse.cz,
+	alan@linux.intel.com, arnd@arndb.de, paul.gortmaker@windriver.com,
+	damm@opensource.se, linux-serial@vger.kernel.org,
+	linux-kernel@vger.kernel.org
+References: <20130302094555.GA9572@udknight>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130302094555.GA9572@udknight>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2013-03-03 at 19:33 -0500, David Miller wrote:
-> From: Peter Hurley <peter@hurleysoftware.com>
-> Date: Sun, 03 Mar 2013 19:04:25 -0500
+On Sat, Mar 02, 2013 at 05:45:55PM +0800, Wang YanQing wrote:
+> This patch fix a problem XScale port
+> detect code in autoconfig_16550a treat
+> 16550A port as XScale port, caused by
+> CH352 device use the 6th bit(UART_IER_UUE)
+> in IER as a enhance function make this bit
+> w/r.
 > 
-> > All these are re-tested in the loop. What state test isn't repeated?
+> for the below device:
+> "
+> 01:08.0 Serial controller: Device 4348:3253 (rev 10) (prog-if 02 [16550])
+> 	Subsystem: Device 4348:3253
+> 	Control: I/O+ Mem- BusMaster- SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR- FastB2B- DisINTx-
+> 	Status: Cap- 66MHz- UDF- FastB2B- ParErr- DEVSEL=medium >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
+> 	Interrupt: pin A routed to IRQ 20
+> 	Region 0: I/O ports at e010 [size=8]
+> 	Region 1: I/O ports at e000 [size=8]
+> 	Kernel driver in use: serial
+> "
+> [Note: I haven't test this patch, because I can't
+> access the hardware now, but it should be right]
 > 
-> One that rechecks the non-blocking filp flag, the
-> TTY_IO_ERROR tty flag and the termios settings.
-> 
-> Like I said, all of the state tests performed at the beginning of
-> this function, before enterring the loop.
+I have tested it this morning, it works.
 
-How is O_NONBLOCK going to change? This function is sitting on the
-user-space open.
-
-The filp parameter is only on this task stack. It hasn't been linked in
-anywhere else. Because of course the file isn't open yet because this
-function hasn't returned success.
-
-The TTY_IO_ERROR flag is used by drivers (this one included) to turn
-away concurrent reads and writes when shutting down. The tty core does
-not set this. Now this driver might set this, if commanded to hangup via
-ircomm_tty_hangup, but like I said that's already handled in the loop
-by testing tty_hung_up_p.
-
-The initial termios setting cflag settings are set by the driver open().
-In this driver, its here:
-
-	driver->init_termios    = tty_std_termios;
-	driver->init_termios.c_cflag = B9600 | CS8 | CREAD | HUPCL | CLOCAL;
-
-
-Now, it's possible that one could construct an imaginary race, where the
-tty has already been opened and that task now sets the termios without
-CLOCAL and meanwhile a second task is racing this termios setting with
-an open() of its own, but since there is no expectation from userspace
-that those operations are serialized, there's no reason to serialize
-them here.
-
-But regardless, this function __cannot__ sleep holding the tty_lock().
-
-Regards,
-Peter Hurley
-
-
+Thanks.
