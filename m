@@ -1,98 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756670Ab3CDJqj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 04:46:39 -0500
-Received: from www.linutronix.de ([62.245.132.108]:57487 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755016Ab3CDJqi (ORCPT
+	id S1756813Ab3CDJqs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 04:46:48 -0500
+Received: from vsp-authed02.binero.net ([195.74.38.226]:22820 "HELO
+	vsp-authed-03-02.binero.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1755776Ab3CDJqq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 04:46:38 -0500
-Date: Mon, 4 Mar 2013 10:46:35 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: LKML <linux-kernel@vger.kernel.org>, akm@linutronix.de,
-        Ingo Molnar <mingo@kernel.org>
-Subject: [GIT pull] core urgent updates for 3.9-rc1
-Message-ID: <alpine.LFD.2.02.1303041045080.22263@ionos>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Mon, 4 Mar 2013 04:46:46 -0500
+Message-ID: <51346D7C.5080307@gaisler.com>
+Date: Mon, 04 Mar 2013 10:46:36 +0100
+From: Andreas Larsson <andreas@gaisler.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        software@gaisler.com
+Subject: Re: [PATCH v3] gpio: Add device driver for GRGPIO cores and support
+ custom accessors with gpio-generic
+References: <1360653873-25368-1-git-send-email-andreas@gaisler.com> <CACRpkdaYQSrzm_Yj3ZH9YZLC_zPJN06X-9ZM9jd7=X0OB1shXQ@mail.gmail.com>
+In-Reply-To: <CACRpkdaYQSrzm_Yj3ZH9YZLC_zPJN06X-9ZM9jd7=X0OB1shXQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On 2013-03-01 01:24, Linus Walleij wrote:
+> On Tue, Feb 12, 2013 at 8:24 AM, Andreas Larsson <andreas@gaisler.com> wrote:
+>
+>> This driver supports GRGPIO gpio cores available in the GRLIB VHDL IP
+>> core library from Aeroflex Gaisler.
+>>
+>> This also adds support to gpio-generic for using custom accessor
+>> functions. The grgpio driver uses this to use ioread32be and iowrite32be
+>> for big endian register accesses.
+>>
+>> Signed-off-by: Andreas Larsson <andreas@gaisler.com>
+>
+> Can you split this in two patches: one that adds the custom accessors
+> and one that adds the driver?
 
-please pull the latest core-urgent-for-linus git tree from:
+Sure!
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git core-urgent-for-linus
+> Grant is currently thinking about optimizations on the call graph
+> depths of the GPIO functions and may want to take this opportunity
+> to alter something there.
+>
+>> +++ b/drivers/gpio/gpio-grgpio.c
+> (...)
+>> +struct grgpio_priv {
+>> +       struct bgpio_chip bgc;
+>> +       struct grgpio_regs __iomem *regs;
+>> +
+>> +       u32 imask;      /* irq mask shadow register */
+>> +       s32 *irqmap;    /* maps offset to irq or -1 if no irq */
+>
+> irqmap? Argh what is this... I think you want to use irqdomain
+> for this instead. (Documentation/IRQ-domain.txt)
 
-* Single bugfix for a regression introduced with the conversion of the
-  stop machine threads to the generic smpboot thread management
-  facility
+Yeah, that comment is not clear. An entry in the irqmap array (for a 
+gpio line) can be either -1 indicating no irq for that line or an index 
+into the array of irq:s for the of device. Thus it is simply either -1 
+or a valid second argument to irq_of_parse_and_map.
 
-Thanks,
+Given that this is generally running on SPARC, it seems irqdomain is not 
+an option (IRQ_DOMAIN is not selected by SPARC).
 
-	tglx
+Given this, is just a better formulated comment OK with you in this case?
 
------------------->
-Thomas Gleixner (1):
-      stop_machine: Mark per cpu stopper enabled early
+>
+> Check other GPIO drivers (e.g. STMPE or TC3589x) for some
+> example of how to use irqdomain.
+>
+>> +static int grgpio_to_irq(struct gpio_chip *gc, unsigned offset)
+>> +{
+>> +       struct grgpio_priv *priv = grgpio_gc_to_priv(gc);
+>> +       int index, irq;
+>
+> This is wher you should use irq_create_mapping(domain, hwirq);
 
+Thanks for the feedback!
 
- include/linux/smpboot.h |    4 ++++
- kernel/smpboot.c        |    2 ++
- kernel/stop_machine.c   |    2 +-
- 3 files changed, 7 insertions(+), 1 deletions(-)
+Cheers,
+Andreas
 
-diff --git a/include/linux/smpboot.h b/include/linux/smpboot.h
-index c65dee0..13e9296 100644
---- a/include/linux/smpboot.h
-+++ b/include/linux/smpboot.h
-@@ -24,6 +24,9 @@ struct smpboot_thread_data;
-  *			parked (cpu offline)
-  * @unpark:		Optional unpark function, called when the thread is
-  *			unparked (cpu online)
-+ * @pre_unpark:		Optional unpark function, called before the thread is
-+ *			unparked (cpu online). This is not guaranteed to be
-+ *			called on the target cpu of the thread. Careful!
-  * @selfparking:	Thread is not parked by the park function.
-  * @thread_comm:	The base name of the thread
-  */
-@@ -37,6 +40,7 @@ struct smp_hotplug_thread {
- 	void				(*cleanup)(unsigned int cpu, bool online);
- 	void				(*park)(unsigned int cpu);
- 	void				(*unpark)(unsigned int cpu);
-+	void				(*pre_unpark)(unsigned int cpu);
- 	bool				selfparking;
- 	const char			*thread_comm;
- };
-diff --git a/kernel/smpboot.c b/kernel/smpboot.c
-index d4abac2..8eaed9a 100644
---- a/kernel/smpboot.c
-+++ b/kernel/smpboot.c
-@@ -209,6 +209,8 @@ static void smpboot_unpark_thread(struct smp_hotplug_thread *ht, unsigned int cp
- {
- 	struct task_struct *tsk = *per_cpu_ptr(ht->store, cpu);
- 
-+	if (ht->pre_unpark)
-+		ht->pre_unpark(cpu);
- 	kthread_unpark(tsk);
- }
- 
-diff --git a/kernel/stop_machine.c b/kernel/stop_machine.c
-index 95d178c..c09f295 100644
---- a/kernel/stop_machine.c
-+++ b/kernel/stop_machine.c
-@@ -336,7 +336,7 @@ static struct smp_hotplug_thread cpu_stop_threads = {
- 	.create			= cpu_stop_create,
- 	.setup			= cpu_stop_unpark,
- 	.park			= cpu_stop_park,
--	.unpark			= cpu_stop_unpark,
-+	.pre_unpark		= cpu_stop_unpark,
- 	.selfparking		= true,
- };
- 
