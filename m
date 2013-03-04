@@ -1,111 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758608Ab3CDRiN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 12:38:13 -0500
-Received: from [212.90.139.82] ([212.90.139.82]:37235 "EHLO smtp2.goneo.de"
-	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1757538Ab3CDRiM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 12:38:12 -0500
-X-Spam-Flag: NO
-X-Spam-Score: -2.884
-From: Lars Poeschel <poeschel@lemonage.de>
-To: Rob Landley <rob@landley.net>
-Subject: Re: [PATCH RFC] pwm: add sysfs interface
-Date: Mon, 4 Mar 2013 18:38:14 +0100
-User-Agent: KMail/1.13.7 (Linux/3.2.0-4-amd64; KDE/4.8.4; x86_64; ; )
-Cc: Lars Poeschel <larsi@wh2.tu-dresden.de>, thierry.reding@avionic-design.de,
-        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org
-References: <1361664888.11282.16@driftwood>
-In-Reply-To: <1361664888.11282.16@driftwood>
+	id S1758641Ab3CDRib (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 12:38:31 -0500
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:64401 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757390Ab3CDRi3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Mar 2013 12:38:29 -0500
+Date: Mon, 4 Mar 2013 09:38:25 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Li Zefan <lizefan@huawei.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, LKML <linux-kernel@vger.kernel.org>,
+        Cgroups <cgroups@vger.kernel.org>
+Subject: Re: [PATCH 2/3] cgroup: add cgroup_name() API
+Message-ID: <20130304173825.GC30413@htj.dyndns.org>
+References: <512C8D84.7090707@huawei.com>
+ <CAOS58YMb7HRQ3X+Z92vi3+jKr4DuNmAgxtc5e3Jkhy-s-7Os-g@mail.gmail.com>
+ <512DE4A8.5050303@huawei.com>
+ <CAOS58YMhm6Uia0bx6oUHwheXUhu8i31LPhh8VVggvg0vg-UmUQ@mail.gmail.com>
+ <512EFEDF.8080205@huawei.com>
+ <CAOS58YMBcvhfBWdQmt=JersRgB9nVgsrLACtLovz===2ZXfR=w@mail.gmail.com>
+ <51304C6D.8050207@huawei.com>
+ <20130301203917.GT4503@ZenIV.linux.org.uk>
+ <CAOS58YPNAPhWUwNq9G39Airo+TvV2ecXBiNU5s9PFqkL3RbRFg@mail.gmail.com>
+ <51340ECD.1030905@huawei.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201303041838.14792.poeschel@lemonage.de>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51340ECD.1030905@huawei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 24 February 2013 at 01:14:48, Rob Landley wrote:
-> On 02/19/2013 08:27:41 AM, Lars Poeschel wrote:
-> > From: Lars Poeschel <poeschel@lemonage.de>
+Hello,
+
+On Mon, Mar 04, 2013 at 11:02:37AM +0800, Li Zefan wrote:
+> > Yeah, that's what I meant by the "anal" part although it seems like
+> > c99 doesn't even allow that. Do we care tho? It seems like a logical
+> > feature which should show up in the standard eventually. Maybe it
+> > could be a problem for clang?
 > > 
-> > This adds a simple sysfs interface to the pwm subsystem. It is
-> > heavily inspired by the gpio sysfs interface.
 > 
-> Docs!
+> Do we have a decision now? Please pick v4 if this GNU extension can't be used
+> in kernel code, otherwise v5.
 
-This means I have to add more information to the commit message ?
- 
-> > diff --git a/Documentation/pwm.txt b/Documentation/pwm.txt
-> > index 7d2b4c9..b349d16 100644
-> > --- a/Documentation/pwm.txt
-> > +++ b/Documentation/pwm.txt
-> > @@ -45,6 +45,52 @@ int pwm_config(struct pwm_device *pwm, int
-> > duty_ns, int period_ns);
-> > 
-> >  To start/stop toggling the PWM output use pwm_enable()/pwm_disable().
-> 
-> Hm, read read read existing file...
-> 
-> So a PWM is a GPIO that blinks on its own, in hardware, without needing
-> a kernel thread and a timer to tell it to? (I think? Correction, an
-> output-only gpio...)
+I'm just gonna apply the one with the initializer.  It's simpler and
+not like we can't back out easily if it ever becomes a problem.
 
-You are right on that. I would add, that a PWM is working periodically and 
-this period has an active portion (where the output is high) and an inactive 
-one. You can choose, how long the active portion should last. The rest of the 
-period is the inactive portion.
+Thanks.
 
-[snip]
-
-> 
-> Doc part looks good to me:
-> 
-> Acked-by Rob Landley <rob@landley.net>
-
-Thanks!
- 
-> > diff --git a/drivers/pwm/Kconfig b/drivers/pwm/Kconfig
-> > index e513cd9..1c3432e 100644
-> > --- a/drivers/pwm/Kconfig
-> > +++ b/drivers/pwm/Kconfig
-> > @@ -28,6 +28,21 @@ menuconfig PWM
-> > 
-> >  if PWM
-> > 
-> > +config PWM_SYSFS
-> > +	bool "/sys/class/pwm/... (sysfs interface)"
-> > +	depends on SYSFS
-> > +	help
-> > +	  Say Y here to add a sysfs interface for PWMs.
-> > +
-> > +	  This exports directories and files to userspace using sysfs.
-> 
-> Given that that's what a sysfs interface _is_, does that last line
-> actually add anything?
-> 
-> > +	  This way the PWM outputs of a device can easyly be used,
-> 
-> s/easyly/easily/
-> 
-> > +	  controlled and tested.
-> 
-> And again, this sentence isn't hugely helpful if you already know what
-> 
-> sysfs is. Why not start here:
-> > +	  For every instance of an PWM capable
-> > +	  device there is a pwmchipX directory exported to
-> > +	  /sys/class/pwm. If you want to use a PWM, you have to export
-> > +	  it to sysfs, which is done by writing the number into
-> > +	  /sys/class/pwm/export. After that /sys/class/pwm/pwmX is
-> > +	  reaady to be used.
-> > +
-> 
-> s/reaady/ready/
-
-Thank you for your feedback!
-I'll try to be a bit more descriptive in the Kconfig help.
-
-Regards,
-Lars
+-- 
+tejun
