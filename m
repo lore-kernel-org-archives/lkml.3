@@ -1,93 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758563Ab3CDRT3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 12:19:29 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:59850 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758523Ab3CDRTT (ORCPT
+	id S932186Ab3CDR0X (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 12:26:23 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:24050 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758442Ab3CDR0S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 12:19:19 -0500
-Message-ID: <1362417555.5510.58.camel@mattotaupa>
-Subject: Re: [PATCH] md: dm-verity: Fix to avoid a deadlock in dm-bufio
-From: Paul Menzel <pm.debian@googlemail.com>
-To: Paul Taysom <taysom@chromium.org>
-Cc: agk@redhat.com, dm-devel@redhat.com, neilb@suse.de,
-        linux-raid@vger.kernel.org, linux-kernel@vger.kernel.org,
-        msb@chromium.org, mpatocka@redhat.com, olofj@chromium.org
-Date: Mon, 04 Mar 2013 18:19:15 +0100
-In-Reply-To: <1362415549-18653-1-git-send-email-taysom@chromium.org>
-References: <1362415549-18653-1-git-send-email-taysom@chromium.org>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-6xVxZC4vaXKOU7+mguUp"
-X-Mailer: Evolution 3.4.4-2 
-Mime-Version: 1.0
+	Mon, 4 Mar 2013 12:26:18 -0500
+X-Authority-Analysis: v=2.0 cv=BZhaI8R2 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=Zn14S0Ndon8A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=2Rohm2fEs2QA:10 a=i0EeH86SAAAA:8 a=VwQbUJbxAAAA:8 a=QyXUC8HyAAAA:8 a=2O6cZUrYPlWD74PgEMAA:9 a=hPjdaMEvmhQA:10 a=dGJ0OcVc7YAA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-Id: <20130304172616.171323661@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Mon, 04 Mar 2013 12:20:11 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Fengguang Wu <fengguang.wu@intel.com>, Li Zefan <lizefan@huawei.com>
+Subject: [for-next][PATCH 6/6] tracing: Fix some section mismatch warnings
+References: <20130304172005.362537932@goodmis.org>
+Content-Disposition: inline; filename=0006-tracing-Fix-some-section-mismatch-warnings.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Li Zefan <lizefan@huawei.com>
 
---=-6xVxZC4vaXKOU7+mguUp
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+As we've added __init annotation to field-defining functions, we should
+add __refdata annotation to event_call variables, which reference those
+functions.
 
-Am Montag, den 04.03.2013, 08:45 -0800 schrieb Paul Taysom:
-> Changed the dm-verity prefetching to use a worker thread to avoid
-> a deadlock in dm-bufio.
+Link: http://lkml.kernel.org/r/51343C1F.2050502@huawei.com
 
-Do you know of any bug reports about this? Searching for =C2=BBdm-verity de=
-ad
-lock=C2=AB I found [1], which seems to be the issue, right? If yes, please
-reference it.
+Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+Signed-off-by: Li Zefan <lizefan@huawei.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ include/trace/ftrace.h        |    2 +-
+ kernel/trace/trace_export.c   |    2 +-
+ kernel/trace/trace_syscalls.c |    4 ++--
+ 3 files changed, 4 insertions(+), 4 deletions(-)
 
-> If generic_make_request is called recursively, it queues the I/O
-> request on the current->bio_list without making the I/O request
-> and returns. The routine making the recursive call cannot wait
-> for the I/O to complete.
->=20
-> The deadlock occurred when one thread grabbed the bufio_client
-> mutex and waited for an I/O to complete but the I/O was queued
-> on another thread=E2=80=99s current->bio_list and it was waiting to get
-> the mutex held by the first thread.
->=20
-> The fix allows only one I/O request from dm-verity to dm-bufio
-> per thread. To do this, the prefetch requests were queued on worker
-> threads.
->=20
-> In addition to avoiding the deadlock, this fix made a slight
-> improvement in performance.
->=20
-> seconds_kernel_to_login:
->   with prefetch:    8.43s
->   without prefetch: 9.2s
->   worker prefetch:  8.28s
->=20
-> Signed-off-by: Paul Taysom <taysom@chromium.org>
-> ---
->  drivers/md/dm-verity.c | 29 +++++++++++++++++++++++++++--
->  1 file changed, 27 insertions(+), 2 deletions(-)
+diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
+index a536f66..bbf09c2 100644
+--- a/include/trace/ftrace.h
++++ b/include/trace/ftrace.h
+@@ -572,7 +572,7 @@ static inline void ftrace_test_probe_##call(void)			\
+ #define DECLARE_EVENT_CLASS(call, proto, args, tstruct, assign, print)	\
+ _TRACE_PERF_PROTO(call, PARAMS(proto));					\
+ static const char print_fmt_##call[] = print;				\
+-static struct ftrace_event_class __used event_class_##call = {		\
++static struct ftrace_event_class __used __refdata event_class_##call = { \
+ 	.system			= __stringify(TRACE_SYSTEM),		\
+ 	.define_fields		= ftrace_define_fields_##call,		\
+ 	.fields			= LIST_HEAD_INIT(event_class_##call.fields),\
+diff --git a/kernel/trace/trace_export.c b/kernel/trace/trace_export.c
+index 4f6a91c..d21a746 100644
+--- a/kernel/trace/trace_export.c
++++ b/kernel/trace/trace_export.c
+@@ -168,7 +168,7 @@ ftrace_define_fields_##name(struct ftrace_event_call *event_call)	\
+ #define FTRACE_ENTRY_REG(call, struct_name, etype, tstruct, print, filter,\
+ 			 regfn)						\
+ 									\
+-struct ftrace_event_class event_class_ftrace_##call = {			\
++struct ftrace_event_class __refdata event_class_ftrace_##call = {	\
+ 	.system			= __stringify(TRACE_SYSTEM),		\
+ 	.define_fields		= ftrace_define_fields_##call,		\
+ 	.fields			= LIST_HEAD_INIT(event_class_ftrace_##call.fields),\
+diff --git a/kernel/trace/trace_syscalls.c b/kernel/trace/trace_syscalls.c
+index 00b5c3e..1cd37ff 100644
+--- a/kernel/trace/trace_syscalls.c
++++ b/kernel/trace/trace_syscalls.c
+@@ -479,7 +479,7 @@ struct trace_event_functions exit_syscall_print_funcs = {
+ 	.trace		= print_syscall_exit,
+ };
+ 
+-struct ftrace_event_class event_class_syscall_enter = {
++struct ftrace_event_class __refdata event_class_syscall_enter = {
+ 	.system		= "syscalls",
+ 	.reg		= syscall_enter_register,
+ 	.define_fields	= syscall_enter_define_fields,
+@@ -487,7 +487,7 @@ struct ftrace_event_class event_class_syscall_enter = {
+ 	.raw_init	= init_syscall_trace,
+ };
+ 
+-struct ftrace_event_class event_class_syscall_exit = {
++struct ftrace_event_class __refdata event_class_syscall_exit = {
+ 	.system		= "syscalls",
+ 	.reg		= syscall_exit_register,
+ 	.define_fields	= syscall_exit_define_fields,
+-- 
+1.7.10.4
 
-Acked-by: Paul Menzel <paulepanter@users.sourceforge.net>
-
-
-Thanks,
-
-Paul
-
-
-[1] https://code.google.com/p/chromium-os/issues/detail?id=3D39148
-
---=-6xVxZC4vaXKOU7+mguUp
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iEYEABECAAYFAlE015MACgkQPX1aK2wOHVh4ywCfV6fZq9PARP4vvrn2k0MnnkxM
-wekAoIkuco2QjsJpDplLL5FB5igmY2IJ
-=2YzE
------END PGP SIGNATURE-----
-
---=-6xVxZC4vaXKOU7+mguUp--
 
