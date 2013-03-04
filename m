@@ -1,89 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758776Ab3CDS76 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 13:59:58 -0500
-Received: from e39.co.us.ibm.com ([32.97.110.160]:57761 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758118Ab3CDS7z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 13:59:55 -0500
-Message-ID: <1362423581.4392.46.camel@falcor1>
-Subject: Re: IMA: How to manage user space signing policy with others
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Eric Paris <eparis@parisplace.org>,
-        linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        LSM List <linux-security-module@vger.kernel.org>
-Date: Mon, 04 Mar 2013 13:59:41 -0500
-In-Reply-To: <20130304152919.GA15199@redhat.com>
-References: <1362079419.2908.390.camel@falcor1.watson.ibm.com>
-	 <20130228213534.GF11360@redhat.com>
-	 <CACLa4pum7kXK+7+8ceVSuQsKDCFebdgGVYRTMKH9GQarqCEgMQ@mail.gmail.com>
-	 <1362102544.9158.35.camel@falcor1> <1362140107.9158.101.camel@falcor1>
-	 <20130301152839.GA3457@redhat.com> <20130301184027.GB3457@redhat.com>
-	 <1362166753.9158.169.camel@falcor1> <20130301213329.GC3457@redhat.com>
-	 <1362346944.18325.1.camel@falcor1> <20130304152919.GA15199@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13030418-3620-0000-0000-00000176ECE0
+	id S1758794Ab3CDTAK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 14:00:10 -0500
+Received: from quartz.orcorp.ca ([184.70.90.242]:43288 "EHLO quartz.orcorp.ca"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758118Ab3CDTAF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Mar 2013 14:00:05 -0500
+Date: Mon, 4 Mar 2013 11:59:52 -0700
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: Kent Yoder <key@linux.vnet.ibm.com>
+Cc: Peter Huewe <peter.huewe@infineon.com>, tpmdd-devel@lists.sourceforge.net,
+        linux-security-module@vger.kernel.org, shpedoikal@gmail.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [tpmdd-devel] [PATCH v2] tpm: Add support for new Infineon I2C
+ TPM (SLB 9645 TT 1.2 I2C)
+Message-ID: <20130304185952.GA24196@obsidianresearch.com>
+References: <1362408106-8632-1-git-send-email-peter.huewe@infineon.com>
+ <20130304174104.GA10811@ennui.austin.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130304174104.GA10811@ennui.austin.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.162
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-03-04 at 10:29 -0500, Vivek Goyal wrote:
-[...]
+On Mon, Mar 04, 2013 at 11:41:04AM -0600, Kent Yoder wrote:
+> >  	.id_table = tpm_tis_i2c_table,
+> >  	.probe = tpm_tis_i2c_probe,
+> >  	.remove = tpm_tis_i2c_remove,
+> > @@ -703,11 +759,12 @@ static struct i2c_driver tpm_tis_i2c_driver = {
+> >  		   .name = "tpm_i2c_infineon",
+> >  		   .owner = THIS_MODULE,
+> >  		   .pm = &tpm_tis_i2c_ops,
+> > +		   .of_match_table = of_match_ptr(tpm_tis_i2c_of_match),
+> 
+>   Please put this line inside an ifdef CONFIG_OF, since of_match_ptr
+> lives in there.
 
-> Hi Mimi,
-> 
-> If we decide to merge flags, then practically we modified the
-> ima_appraise_tcb policy. ima_appraise_tcb policy expects to cache the
-> results and we will not do that. And this conflict just grows if we
-> are forced to add more options in future.
-> 
-> Also as you mentioned that in some cases flag merging is OR operation
-> and in another cases it might be AND operation. And we will most likely
-> end up hardcoding all this. I think slowly this is getting complicated
-> and as people add more complex rules things can quickly get out of hand.
-> 
-> I am wondering that why are we trying to make multiple policies work
-> together. Can we try to keep it simple and say that at one point of
-> time only one policy can be effective. It could either be a built in
-> policy or user defined one. In fact that's how things are working right now.
-> User defined policy replaces built-in policy.
-> 
-> For the sake of backward compatibility "ima_tcb" and "ima_appraise_tcb"
-> can co-exist together (like today). But ima_secureboot_policy will not
-> be compatible with other policies. I understand that there might be a
-> desire to use multiple policies together down the line, but I guess in
-> that case policies need to specified using "policy" interface. And
-> ima_secureboot will be odd man out here as it can not trust the root
-> to specify policy. So practically ima_secureboot will be disabled.
-> 
-> We just have to provide an IMA interface so that caller can query what's
-> the effective policy currently. Say, IMA_POLICY_SECUREBOOT,
-> IMA_POLICY_TCB, or IMA_POLICY_USER. Caller of the bprm_check() or
-> bprm_post_load() can also check for current policy in force and give
-> CAP_SIGNED only if desired policy is in effect.  
-> 
-> This reduces our options but trying to make multiple policies co-exist
-> together is just making it complicated. We can take it up again when
-> somebody has a strong use case of using secureboot policy along with
-> other policies. In fact a user can still define a custom policy which
-> is mix of multiple policies. Just that it is not compatible with
-> "secureboot" policy because for that we can't trust "root" to define
-> policy.
+The OF stuff is designed to hide the CONFIG_OF from using code, 
+of_match_ptr(x) expends to NULL when CONFIG_OF is not set.
 
-Let me get this straight.  You're suggesting that distros/users will
-need to make a Kconfig build decision of enabling secureboot, including
-the secureboot built-in policy, or be allowed to enable other integrity
-policies.  If RH enables secureboot, then no other integrity policy will
-be permitted.  Is that what you're saying, and if so, why would I agree
-to this?
+It is optional to include the MATCH_TABLE bit in a CONFI_OF #ifdef,
+lots of places don't.
 
-thanks,
-
-Mimi
-
+Jason
