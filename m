@@ -1,126 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756702Ab3CDJuk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 04:50:40 -0500
-Received: from www.linutronix.de ([62.245.132.108]:57513 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755922Ab3CDJuj (ORCPT
+	id S1756755Ab3CDJwZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 04:52:25 -0500
+Received: from mail-wi0-f193.google.com ([209.85.212.193]:45849 "EHLO
+	mail-wi0-f193.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755776Ab3CDJwY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 04:50:39 -0500
-Date: Mon, 4 Mar 2013 10:50:37 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: [GIT pull] irq urgent updates for 3.9-rc1
-Message-ID: <alpine.LFD.2.02.1303041046380.22263@ionos>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Mon, 4 Mar 2013 04:52:24 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Date: Mon, 4 Mar 2013 17:52:22 +0800
+Message-ID: <CAAO_Xo7sEH5W_9xoOjax8ynyjLCx7GBpse+EU0mF=9mEBFhrgw@mail.gmail.com>
+Subject: Inactive memory keep growing and how to release it?
+From: Lenky Gao <lenky.gao@gmail.com>
+To: Greg KH <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "andi@firstfloor.org" <andi@firstfloor.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+Hi,
 
-please pull the latest irq-urgent-for-linus git tree from:
+When i just run a test on Centos 6.2 as follows:
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git irq-urgent-for-linus
+#!/bin/bash
 
-* "e5ab012: nohz: Make tick_nohz_irq_exit() irq safe" is the first
-  commit in the series and the minimal necessary bugfix, which needs
-  to go back into stable.
+while true
+do
 
-* The remanining commits enforce irq disabling in irq_exit(), sanitize
-  the hardirq/softirq preempt count transition and remove a bunch of
-  not longer necessary conditionals.
+	file="/tmp/filetest"
 
-Thanks,
+	echo $file
 
-	tglx
+	dd if=/dev/zero of=${file} bs=512 count=204800 &> /dev/null
 
------------------->
-Frederic Weisbecker (3):
-      nohz: Make tick_nohz_irq_exit() irq safe
-      irq: Remove IRQ_EXIT_OFFSET workaround
-      irq: Don't re-enable interrupts at the end of irq_exit
+	sleep 5
+done
 
-Thomas Gleixner (3):
-      irq: Ensure irq_exit() code runs with interrupts disabled
-      irq: Sanitize invoke_softirq
-      Revert "nohz: Make tick_nohz_irq_exit() irq safe"
+the inactive memory keep growing:
+
+#cat /proc/meminfo | grep Inactive\(fi
+Inactive(file):   420144 kB
+...
+#cat /proc/meminfo | grep Inactive\(fi
+Inactive(file):   911912 kB
+...
+#cat /proc/meminfo | grep Inactive\(fi
+Inactive(file):  1547484 kB
+...
+
+and i cannot reclaim it:
+
+# cat /proc/meminfo | grep Inactive\(fi
+Inactive(file):  1557684 kB
+# echo 3 > /proc/sys/vm/drop_caches
+# cat /proc/meminfo | grep Inactive\(fi
+Inactive(file):  1520832 kB
+
+I have tested on other version kernel, such as 2.6.30 and .6.11, the
+problom also exists.
+
+When in the final situation, i cannot kmalloc a larger contiguous
+memory, especially in interrupt context.
+Can you give some tips to avoid this?
+
+PS:
+# uname -a
+Linux localhost.localdomain 2.6.32-220.el6.x86_64 #1 SMP Tue Dec 6
+19:48:22 GMT 2011 x86_64 x86_64 x86_64 GNU/Linux
 
 
- include/linux/hardirq.h |    2 --
- kernel/softirq.c        |   21 +++++++++------------
- 2 files changed, 9 insertions(+), 14 deletions(-)
 
-diff --git a/include/linux/hardirq.h b/include/linux/hardirq.h
-index 29eb805..c1d6555 100644
---- a/include/linux/hardirq.h
-+++ b/include/linux/hardirq.h
-@@ -118,10 +118,8 @@
- 
- #ifdef CONFIG_PREEMPT_COUNT
- # define preemptible()	(preempt_count() == 0 && !irqs_disabled())
--# define IRQ_EXIT_OFFSET (HARDIRQ_OFFSET-1)
- #else
- # define preemptible()	0
--# define IRQ_EXIT_OFFSET HARDIRQ_OFFSET
- #endif
- 
- #if defined(CONFIG_SMP) || defined(CONFIG_GENERIC_HARDIRQS)
-diff --git a/kernel/softirq.c b/kernel/softirq.c
-index f5cc25f..dce38fa 100644
---- a/kernel/softirq.c
-+++ b/kernel/softirq.c
-@@ -322,18 +322,10 @@ void irq_enter(void)
- 
- static inline void invoke_softirq(void)
- {
--	if (!force_irqthreads) {
--#ifdef __ARCH_IRQ_EXIT_IRQS_DISABLED
-+	if (!force_irqthreads)
- 		__do_softirq();
--#else
--		do_softirq();
--#endif
--	} else {
--		__local_bh_disable((unsigned long)__builtin_return_address(0),
--				SOFTIRQ_OFFSET);
-+	else
- 		wakeup_softirqd();
--		__local_bh_enable(SOFTIRQ_OFFSET);
--	}
- }
- 
- /*
-@@ -341,9 +333,15 @@ static inline void invoke_softirq(void)
-  */
- void irq_exit(void)
- {
-+#ifndef __ARCH_IRQ_EXIT_IRQS_DISABLED
-+	local_irq_disable();
-+#else
-+	WARN_ON_ONCE(!irqs_disabled());
-+#endif
-+
- 	account_irq_exit_time(current);
- 	trace_hardirq_exit();
--	sub_preempt_count(IRQ_EXIT_OFFSET);
-+	sub_preempt_count(HARDIRQ_OFFSET);
- 	if (!in_interrupt() && local_softirq_pending())
- 		invoke_softirq();
- 
-@@ -353,7 +351,6 @@ void irq_exit(void)
- 		tick_nohz_irq_exit();
- #endif
- 	rcu_irq_exit();
--	sched_preempt_enable_no_resched();
- }
- 
- /*
+--
+Regards,
+
+Lenky
