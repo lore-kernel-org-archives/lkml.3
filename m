@@ -1,49 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756849Ab3CDD5D (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 22:57:03 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:54094 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756798Ab3CDDoQ (ORCPT
+	id S1757003Ab3CDD5W (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 22:57:22 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33017 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756790Ab3CDDoP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Mar 2013 22:44:16 -0500
-Date: Mon, 4 Mar 2013 11:44:30 +0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Ley Foon Tan <lftan@altera.com>, Rob Landley <rob@landley.net>,
-        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org
-Subject: Re: [PATCH 1/1] drivers/misc: Add Altera System ID driver
-Message-ID: <20130304034430.GA1274@kroah.com>
-References: <1362366697-2768-1-git-send-email-lftan@altera.com>
- <201303040332.20076.arnd@arndb.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201303040332.20076.arnd@arndb.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 3 Mar 2013 22:44:15 -0500
+Message-Id: <20130304033713.641952444@decadent.org.uk>
+User-Agent: quilt/0.60-1
+Date: Mon, 04 Mar 2013 03:38:08 +0000
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: akpm@linux-foundation.org, Roger Quadros <rogerq@ti.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [ 061/153] USB: ehci-omap: Fix autoloading of module
+In-Reply-To: <20130304033707.648729212@decadent.org.uk>
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 04, 2013 at 03:32:19AM +0000, Arnd Bergmann wrote:
-> On Monday 04 March 2013, Ley Foon Tan wrote:
-> > This patch is to add Altera System ID driver.
-> > User can obtain the system ID and timestamp of the system by
-> > reading the sysfs entry.
-> > 
-> > Usage:
-> > cat /sys/bus/platform/devices/[addr].sysid/sysid/id
-> > cat /sys/bus/platform/devices/[addr].sysid/sysid/timestamp
-> > 
-> > Signed-off-by: Ley Foon Tan <lftan@altera.com>
-> 
-> All sysfs files need documentation in Documentation/ABI/.
-> 
-> This driver looks like it should instead be using the infrastructure we
-> have for identifying an SoC in drivers/base/soc.c, which is currently
-> only used by the ARM u8500 platform but was introduced as a generic
-> interface for this a while ago.
+3.2-stable review patch.  If anyone has any objections, please let me know.
 
-I agree, this shouldn't be a one-off sysfs file.
+------------------
 
-greg k-h
+From: Roger Quadros <rogerq@ti.com>
+
+commit 04753523266629b1cd0518091da1658755787198 upstream.
+
+The module alias should be "ehci-omap" and not
+"omap-ehci" to match the platform device name.
+The omap-ehci module should now autoload correctly.
+
+Signed-off-by: Roger Quadros <rogerq@ti.com>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ drivers/usb/host/ehci-omap.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/drivers/usb/host/ehci-omap.c
++++ b/drivers/usb/host/ehci-omap.c
+@@ -337,7 +337,7 @@ static const struct hc_driver ehci_omap_
+ 	.clear_tt_buffer_complete = ehci_clear_tt_buffer_complete,
+ };
+ 
+-MODULE_ALIAS("platform:omap-ehci");
++MODULE_ALIAS("platform:ehci-omap");
+ MODULE_AUTHOR("Texas Instruments, Inc.");
+ MODULE_AUTHOR("Felipe Balbi <felipe.balbi@nokia.com>");
+ 
+
+
