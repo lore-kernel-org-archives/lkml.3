@@ -1,87 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932548Ab3CDUSx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 15:18:53 -0500
-Received: from fieldses.org ([174.143.236.118]:55453 "EHLO fieldses.org"
+	id S932461Ab3CDUUi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 15:20:38 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:51823 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758738Ab3CDUSv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 15:18:51 -0500
-Date: Mon, 4 Mar 2013 15:18:46 -0500
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Jeff Layton <jlayton@redhat.com>
-Cc: Stanislav Kinsbursky <skinsbursky@parallels.com>,
-        linux-nfs@vger.kernel.org, devel@openvz.org,
-        Trond.Myklebust@netapp.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] nfsd: try nfsdcld client tracker in containers
-Message-ID: <20130304201846.GH20389@fieldses.org>
-References: <20130301082423.21663.37825.stgit@localhost.localdomain>
- <20130301080911.2a1a28a2@corrin.poochiereds.net>
- <51344175.40503@parallels.com>
- <20130304094736.57a288b9@tlielax.poochiereds.net>
- <5134E043.70609@parallels.com>
- <20130304150422.0a1743f4@tlielax.poochiereds.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130304150422.0a1743f4@tlielax.poochiereds.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932319Ab3CDUUg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Mar 2013 15:20:36 -0500
+From: Borislav Petkov <bp@alien8.de>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: X86 ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <bp@suse.de>
+Subject: [PATCH 1/2] x86, Kconfig: Move PARAVIRT_DEBUG into the paravirt menu
+Date: Mon,  4 Mar 2013 21:20:20 +0100
+Message-Id: <1362428421-9244-2-git-send-email-bp@alien8.de>
+X-Mailer: git-send-email 1.8.1.3.535.ga923c31
+In-Reply-To: <1362428421-9244-1-git-send-email-bp@alien8.de>
+References: <1362428421-9244-1-git-send-email-bp@alien8.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 04, 2013 at 03:04:22PM -0500, Jeff Layton wrote:
-> On Mon, 4 Mar 2013 21:56:19 +0400
-> Stanislav Kinsbursky <skinsbursky@parallels.com> wrote:
-> 
-> > 04.03.2013 18:47, Jeff Layton пишет:
-> > > On Mon, 4 Mar 2013 10:38:45 +0400
-> > > Stanislav Kinsbursky <skinsbursky@parallels.com> wrote:
-> > >> 3) UMH lookup and execute binary from current root. This problem just chasing all the containerisation work. So, either UHM logic have to updated (which is not
-> > >> trivial or easy to implement and push upstream), or process root have to swapped to the right (container's) one. This, BTW, not that hard, because UMH call
-> > >> accept "init" callback, which can be used to swap the root right before do_execve() is called.
-> > >>
-> > >> What do you, guys, think about all this?
-> > >>
-> > > You mean just change to use call_usermodehelper_fns() and pasn the
-> > > correct namespace info? Yeah that looks like the easiest fix and sounds
-> > > quite reasonable.
-> > >
-> > 
-> > Nope. The problem here is not a namespace, but root path:
-> > mount point + dentry.
-> > do_execve() uses root path from current for search for any string path.
-> > And this root path is inherited from the kernel thread. Which means,
-> > that this is global "init" root path.
-> > Thus, if is we want to search for path in a container (which could
-> > have it's own nested root), we have to swap the root in usermode
-> > helper thread before do_execve() call.
-> > We can use call_usermodehelper_fns() to pass init callback and swap root 
-> > in it.
-> > But the problem here is that root swaping is not that... gentle.
-> > I.e. we were trying to avoid it. For example, local SUNRPC transports
-> > now connects synchronously (to make sure, that connection will be done in
-> > proper root environment).
-> > Nevertheless, I don't see any other way to containerize UMH so far.
-> > 
-> > Bruce, what's your opinion about this?
-> > 
-> > 
-> 
-> It doesn't seem all that awful here. Once we've spawned this new
-> process it'll just run to completion and exit within the container. We
-> shouldn't ever need to go back to the original root.
-> 
-> In the sunrpc layer, it's a little more complicated since you're
-> working with kernel threads and workqueues that may be shared between
-> containers (right?).
+From: Borislav Petkov <bp@suse.de>
 
-Also, is this really the only place that needs this?
+This should be under the PARAVIRT_GUEST menu.
 
-I guess NFS for now allows mounts only in the initial namespace, so the
-idmap upcalls can always be done there.  Module lookup and any usermode
-helpers used for hardware setup probably also only happen in the initial
-namespace.  Hrm.  Still, seems likely to be useful to someone
-eventually.
+Signed-off-by: Borislav Petkov <bp@suse.de>
+---
+ arch/x86/Kconfig | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---b.
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index a4f24f5b1218..f922a9b9a319 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -659,8 +659,6 @@ config PARAVIRT_SPINLOCKS
+ config PARAVIRT_CLOCK
+ 	bool
+ 
+-endif
+-
+ config PARAVIRT_DEBUG
+ 	bool "paravirt-ops debugging"
+ 	depends on PARAVIRT && DEBUG_KERNEL
+@@ -668,6 +666,8 @@ config PARAVIRT_DEBUG
+ 	  Enable to debug paravirt_ops internals.  Specifically, BUG if
+ 	  a paravirt_op is missing when it is called.
+ 
++endif #PARAVIRT_GUEST
++
+ config NO_BOOTMEM
+ 	def_bool y
+ 
+-- 
+1.8.1.3.535.ga923c31
+
