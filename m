@@ -1,88 +1,213 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754760Ab3CDBV7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 20:21:59 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:29779 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751473Ab3CDBV4 convert rfc822-to-8bit (ORCPT
+	id S1754776Ab3CDBfS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 20:35:18 -0500
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:47273 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751233Ab3CDBfQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Mar 2013 20:21:56 -0500
-X-IronPort-AV: E=Sophos;i="4.84,776,1355068800"; 
-   d="scan'208";a="6803352"
-Subject: Re: [rebased-again][PATCH 0/4] acpi: do some changes for numa info
-From: li guang <lig.fnst@cn.fujitsu.com>
-To: tglx@linutronix.de
-Cc: hpa@zytor.com, pavel@ucw.cz, rjw@sisk.pl, lv.zheng@intel.com,
-        jarkko.sakkinen@intel.com, dave@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        x86@kernel.org
-In-Reply-To: <1361759917-5195-1-git-send-email-lig.fnst@cn.fujitsu.com>
-References: <1361759917-5195-1-git-send-email-lig.fnst@cn.fujitsu.com>
-Date: Mon, 04 Mar 2013 09:21:19 +0800
-Message-ID: <1362360079.19928.1.camel@liguang.fnst.cn.fujitsu.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/03/04 09:20:54,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/03/04 09:20:55,
-	Serialize complete at 2013/03/04 09:20:55
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="UTF-8"
+	Sun, 3 Mar 2013 20:35:16 -0500
+MIME-Version: 1.0
+In-Reply-To: <00b701ce16d3$0aabe0f0$2003a2d0$@lucidpixels.com>
+References: <1354533387-4110-1-git-send-email-acooks@gmail.com>
+	<1355914703-28576-1-git-send-email-acooks@gmail.com>
+	<1362126373-32318-1-git-send-email-acooks@gmail.com>
+	<CAO9zADxjoP+R9ccz7vMPmcFvdYwNjErSjaWc_RFkW_FY3+SK=w@mail.gmail.com>
+	<CAJtEV7Zs2BiwJ9jdDeoceh9hiVXvVaSvj=9H+4+vEzhY72AS9g@mail.gmail.com>
+	<00b701ce16d3$0aabe0f0$2003a2d0$@lucidpixels.com>
+Date: Mon, 4 Mar 2013 09:35:13 +0800
+Message-ID: <CAJtEV7bvPORPoXgQY2OahNVMj+SY5z=xxQ=nueX7=kLVfpyF_A@mail.gmail.com>
+Subject: Re: [PATCH] Quirk to support Marvell 88SE91xx SATA controllers with
+ Intel IOMMU.
+From: Andrew Cooks <acooks@gmail.com>
+To: Justin Piszcz <jpiszcz@lucidpixels.com>
+Cc: Joerg Roedel <joro@8bytes.org>, YingChu <xjtuychu@hotmail.com>,
+        Chu Ying <gm.ychu@gmail.com>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        "bhelgaas@google.com" <bhelgaas@google.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        "open list:INTEL IOMMU (VT-d)" <iommu@lists.linux-foundation.org>,
+        open list <linux-kernel@vger.kernel.org>,
+        "open list:PCI SUBSYSTEM" <linux-pci@vger.kernel.org>
+Content-Type: multipart/mixed; boundary=bcaec555549456d3d004d70f5ee8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Thomas, Peter, Ingo
+--bcaec555549456d3d004d70f5ee8
+Content-Type: text/plain; charset=ISO-8859-1
 
-can you help to merge these 4 patches?
-or do you have any other comments?
+On Sat, Mar 2, 2013 at 7:18 AM, Justin Piszcz <jpiszcz@lucidpixels.com> wrote:
+>
+> Against a clean 3.7.10 (from ftp.kernel.org)
+>
+> # patch -p1 <
+> ../patch/RFC-Fix-Intel-IOMMU-support-for-Marvell-88SE91xx-SATA-controllers..
+> patch
+> patching file drivers/iommu/intel-iommu.c
+> patching file drivers/pci/quirks.c
+> Hunk #1 succeeded at 3230 (offset 3 lines).
+> patching file include/linux/pci.h
+> # pwd
+> /usr/src/linux-3.7.10
+>
 
+I've downloaded and patched the 3.7.10 tarball and still get the same
+output I got before; different output from yours. I'm not sure the
+patch is complete or applying correctly, are you?
+Could you please check whether the patch you're applying is the same
+as the attached file?
 
-在 2013-02-25一的 10:38 +0800，liguang写道：
-> just do some trivial changes to make acpi's numa info
-> operation more cleaner.
-> 
-> ChangeLog
-> 
-> v3->v4
->  1.fix srat_disabled function
->  spotted by Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-> 
-> v2->v3
->  1. rebase on linux-next
->  2. bring back lost Makefile changes
->  spotted by David Rientjes <rientjes@google.com>
->  spotted by Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-> 
-> v1->v2
->  1. fix-up several coding issues
->  2. finish srat.c change
->  spotted by David Rientjes <rientjes@google.com>
-> 
-> Li Guang (4)
-> 	 acpi: move x86/mm/srat.c to x86/kernel/acpi/srat.c
-> 	 numa: avoid export acpi_numa variable
-> 	 acpi: add clock_domain field to acpi_srat_cpu_affinity
-> 	 remove include asm/acpi.h in process_driver.c
-> 
-> arch/x86/include/asm/acpi.h     | 2 +-
-> arch/x86/kernel/acpi/Makefile   | 1 +
-> arch/x86/kernel/acpi/srat.c     | 299 +++++++++++++++++++++++++++++++++++++++++
-> arch/x86/mm/Makefile            | 1 -
-> arch/x86/mm/numa.c              | 2 +-
-> arch/x86/mm/srat.c              | 278 -----------------------------------------
-> arch/x86/xen/enlighten.c        | 2 +-
-> drivers/acpi/processor_driver.c | 1 -
-> include/acpi/actbl1.h           | 2 +-
-> 9 files changed, 296 insertions(+), 292 deletions(-)
->  create mode 100644 arch/x86/kernel/acpi/srat.c
->  delete mode 100644 arch/x86/mm/srat.c
->  
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> Full dmesg with the patch applied: (but with IOMMU off)
+> http://home.comcast.net/~jpiszcz/20130301/dmesg-full.txt
+>
+> Full dmesg (as much as possible through netconsole with IOMMU on)
+> http://home.comcast.net/~jpiszcz/20130301/dmesg-iommu-on.txt
+>
+> Let me know if anything else is needed, thanks.
 
+I think some important error messages might have been lost here.
 
+You captured a complete dmesg at
+https://home.comcast.net/~jpiszcz/20121128/dmesg.txt
+with iommu on. Are you still able to get the same with 3.7.10 if you
+exclude this patch, or has something else changed?
+
+a.
+
+--bcaec555549456d3d004d70f5ee8
+Content-Type: application/octet-stream; name="marvell_ghost_funcs.patch"
+Content-Disposition: attachment; filename="marvell_ghost_funcs.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hduwen4s0
+
+RnJvbTogQW5kcmV3IENvb2tzIDxhY29va3NAZ21haWwuY29tPgpEYXRlOiBGcmksIDEgTWFyIDIw
+MTMgMTU6MjU6MTcgKzA4MDAKU3ViamVjdDogW1BBVENIXSBRdWlyayB0byBzdXBwb3J0IE1hcnZl
+bGwgODhTRTkxeHggU0FUQSBjb250cm9sbGVycyB3aXRoIEludGVsIElPTU1VLgoKVGhpcyBpcyBt
+eSB0aGlyZCBzdWJtaXR0ZWQgcGF0Y2ggdG8gbWFrZSBNYXJ2ZWxsIDg4U0U5MXh4IFNBVEEgY29u
+dHJvbGxlcnMgd29yayB3aGVuIElPTU1VIGlzIGVuYWJsZWQuWzFdWzJdCgpXaGF0J3MgY2hhbmdl
+ZDoKKiBBZG9wdCBEYXZpZCBXb29kaG91c2UncyB0ZXJtaW5vbG9neSBieSByZWZlcnJpbmcgdG8g
+dGhlIHF1aXJreSBmdW5jdGlvbnMgYXMgJ2dob3N0JyBmdW5jdGlvbnMuCiogVW5tYXAgZ2hvc3Qg
+ZnVuY3Rpb25zIHdoZW4gZGV2aWNlIGlzIGRldGFjaGVkIGZyb20gSU9NTVUuCiogU3R1YiBmdW5j
+dGlvbiBmb3Igd2hlbiBDT05GSUdfUENJX1FVSVJLUyBpcyBub3QgZW5hYmxlZC4KClRoZSBiYWQ6
+CiogU3RpbGwgbm8gQU1EIHN1cHBvcnQuCiogVGhlIHRhYmxlIG9mIGFmZmVjdGVkIGNoaXAgSURz
+IGlzIGFzIGNvbXBsZXRlIGFzIEkgY2FuIG1ha2UgaXQgYnkgZ29vZ2xpbmcgZm9yIGJ1ZyByZXBv
+cnRzLgoKVGhpcyBwYXRjaCB3YXMgZ2VuZXJhdGVkIGFnYWluc3QgY29tbWl0IGIwYWY5Y2Q5YWFi
+NjBjZWIxN2QzZWJhYmI5ZmRmNGZmMGE5OWNmNTAsIGJ1dCB3aWxsIGFsc28gYXBwbHkgY2xlYW5s
+eSB0byAzLjcuMTAuCgpCdWcgcmVwb3J0czoKMS4gaHR0cHM6Ly9idWd6aWxsYS5yZWRoYXQuY29t
+L3Nob3dfYnVnLmNnaT9pZD03NTcxNjYKMi4gaHR0cHM6Ly9idWd6aWxsYS5rZXJuZWwub3JnL3No
+b3dfYnVnLmNnaT9pZD00MjY3OQoKU2lnbmVkLW9mZi1ieTogQW5kcmV3IENvb2tzIDxhY29va3NA
+Z21haWwuY29tPgotLS0KIGRyaXZlcnMvaW9tbXUvaW50ZWwtaW9tbXUuYyB8ICAgNTAgKysrKysr
+KysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKwogZHJpdmVycy9wY2kvcXVpcmtz
+LmMgICAgICAgIHwgICA0NyArKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKyst
+CiBpbmNsdWRlL2xpbnV4L3BjaS5oICAgICAgICAgfCAgICA1ICsrKysKIGluY2x1ZGUvbGludXgv
+cGNpX2lkcy5oICAgICB8ICAgIDEgKwogNCBmaWxlcyBjaGFuZ2VkLCAxMDIgaW5zZXJ0aW9ucygr
+KSwgMSBkZWxldGlvbnMoLSkKCmRpZmYgLS1naXQgYS9kcml2ZXJzL2lvbW11L2ludGVsLWlvbW11
+LmMgYi9kcml2ZXJzL2lvbW11L2ludGVsLWlvbW11LmMKaW5kZXggMDA5OTY2Ny4uMTMzMjNmMiAx
+MDA2NDQKLS0tIGEvZHJpdmVycy9pb21tdS9pbnRlbC1pb21tdS5jCisrKyBiL2RyaXZlcnMvaW9t
+bXUvaW50ZWwtaW9tbXUuYwpAQCAtMTY3NCw2ICsxNjc0LDUwIEBAIHN0YXRpYyBpbnQgZG9tYWlu
+X2NvbnRleHRfbWFwcGluZ19vbmUoc3RydWN0IGRtYXJfZG9tYWluICpkb21haW4sIGludCBzZWdt
+ZW50LAogCXJldHVybiAwOwogfQogCisvKiBGb3IgcXVpcmt5IGRldmljZXMgbGlrZSBNYXJ2ZWxs
+IDg4U0U5MXh4IGNoaXBzIHRoYXQgdXNlIGdob3N0IGZ1bmN0aW9ucy4gKi8KK3N0YXRpYyBpbnQg
+bWFwX2dob3N0X2RtYV9mbihzdHJ1Y3QgZG1hcl9kb21haW4gKmRvbWFpbiwKKwkJc3RydWN0IHBj
+aV9kZXYgKnBkZXYsCisJCWludCB0cmFuc2xhdGlvbikKK3sKKwl1OCBmbiwgZm5fbWFwOworCWlu
+dCBlcnIgPSAwOworCisJZm5fbWFwID0gcGNpX2dldF9kbWFfc291cmNlX21hcChwZGV2KTsKKwor
+CWZvciAoZm4gPSAxOyBmbiA8IDg7IGZuKyspIHsKKwkJaWYgKGZuX21hcCAmICgxIDw8IGZuKSkg
+eworCQkJZXJyID0gZG9tYWluX2NvbnRleHRfbWFwcGluZ19vbmUoZG9tYWluLAorCQkJCQlwY2lf
+ZG9tYWluX25yKHBkZXYtPmJ1cyksCisJCQkJCXBkZXYtPmJ1cy0+bnVtYmVyLAorCQkJCQlQQ0lf
+REVWRk4oUENJX1NMT1QocGRldi0+ZGV2Zm4pLCBmbiksCisJCQkJCXRyYW5zbGF0aW9uKTsKKwkJ
+CWlmIChlcnIpCisJCQkJcmV0dXJuIGVycjsKKwkJCWRldl9kYmcoJnBkZXYtPmRldiwgImRtYSBx
+dWlyazsgZnVuYyAlZCBtYXBwZWQiLCBmbik7CisJCX0KKwl9CisJcmV0dXJuIDA7Cit9CisKK3N0
+YXRpYyB2b2lkIGlvbW11X2RldGFjaF9kZXYoc3RydWN0IGludGVsX2lvbW11ICppb21tdSwgdTgg
+YnVzLCB1OCBkZXZmbik7CisKK3N0YXRpYyB2b2lkIHVubWFwX2dob3N0X2RtYV9mbihzdHJ1Y3Qg
+aW50ZWxfaW9tbXUgKmlvbW11LAorCQlzdHJ1Y3QgcGNpX2RldiAqcGRldikKK3sKKwl1OCBmbiwg
+Zm5fbWFwOworCisJZm5fbWFwID0gcGNpX2dldF9kbWFfc291cmNlX21hcChwZGV2KTsKKworCWZv
+ciAoZm4gPSAxOyBmbiA8IDg7IGZuKyspIHsKKwkJaWYgKGZuX21hcCAmICgxIDw8IGZuKSkgewor
+CQkJaW9tbXVfZGV0YWNoX2Rldihpb21tdSwKKwkJCQkJcGRldi0+YnVzLT5udW1iZXIsCisJCQkJ
+CVBDSV9ERVZGTihQQ0lfU0xPVChwZGV2LT5kZXZmbiksIGZuKSk7CisJCQlkZXZfZGJnKCZwZGV2
+LT5kZXYsICJkbWEgcXVpcms7IGZ1bmMgJWQgdW5tYXBwZWQiLCBmbik7CisJCX0KKwl9Cit9CisK
+IHN0YXRpYyBpbnQKIGRvbWFpbl9jb250ZXh0X21hcHBpbmcoc3RydWN0IGRtYXJfZG9tYWluICpk
+b21haW4sIHN0cnVjdCBwY2lfZGV2ICpwZGV2LAogCQkJaW50IHRyYW5zbGF0aW9uKQpAQCAtMTY4
+Nyw2ICsxNzMxLDExIEBAIGRvbWFpbl9jb250ZXh0X21hcHBpbmcoc3RydWN0IGRtYXJfZG9tYWlu
+ICpkb21haW4sIHN0cnVjdCBwY2lfZGV2ICpwZGV2LAogCWlmIChyZXQpCiAJCXJldHVybiByZXQ7
+CiAKKwkvKiBxdWlyayBmb3IgdW5kZWNsYXJlZC9naG9zdCBwY2kgZnVuY3Rpb25zICovCisJcmV0
+ID0gbWFwX2dob3N0X2RtYV9mbihkb21haW4sIHBkZXYsIHRyYW5zbGF0aW9uKTsKKwlpZiAocmV0
+KQorCQlyZXR1cm4gcmV0OworCiAJLyogZGVwZW5kZW50IGRldmljZSBtYXBwaW5nICovCiAJdG1w
+ID0gcGNpX2ZpbmRfdXBzdHJlYW1fcGNpZV9icmlkZ2UocGRldik7CiAJaWYgKCF0bXApCkBAIC0z
+Nzg2LDYgKzM4MzUsNyBAQCBzdGF0aWMgdm9pZCBkb21haW5fcmVtb3ZlX29uZV9kZXZfaW5mbyhz
+dHJ1Y3QgZG1hcl9kb21haW4gKmRvbWFpbiwKIAkJCWlvbW11X2Rpc2FibGVfZGV2X2lvdGxiKGlu
+Zm8pOwogCQkJaW9tbXVfZGV0YWNoX2Rldihpb21tdSwgaW5mby0+YnVzLCBpbmZvLT5kZXZmbik7
+CiAJCQlpb21tdV9kZXRhY2hfZGVwZW5kZW50X2RldmljZXMoaW9tbXUsIHBkZXYpOworCQkJdW5t
+YXBfZ2hvc3RfZG1hX2ZuKGlvbW11LCBwZGV2KTsKIAkJCWZyZWVfZGV2aW5mb19tZW0oaW5mbyk7
+CiAKIAkJCXNwaW5fbG9ja19pcnFzYXZlKCZkZXZpY2VfZG9tYWluX2xvY2ssIGZsYWdzKTsKZGlm
+ZiAtLWdpdCBhL2RyaXZlcnMvcGNpL3F1aXJrcy5jIGIvZHJpdmVycy9wY2kvcXVpcmtzLmMKaW5k
+ZXggMDM2OWZiNi4uZDMxMTEwMCAxMDA2NDQKLS0tIGEvZHJpdmVycy9wY2kvcXVpcmtzLmMKKysr
+IGIvZHJpdmVycy9wY2kvcXVpcmtzLmMKQEAgLTMyNDksNiArMzI0OSwxMCBAQCBzdGF0aWMgc3Ry
+dWN0IHBjaV9kZXYgKnBjaV9mdW5jXzBfZG1hX3NvdXJjZShzdHJ1Y3QgcGNpX2RldiAqZGV2KQog
+CXJldHVybiBwY2lfZ2V0X3Nsb3QoZGV2LT5idXMsIFBDSV9ERVZGTihQQ0lfU0xPVChkZXYtPmRl
+dmZuKSwgMCkpOwogfQogCisvKiBUYWJsZSBvZiBzb3VyY2UgZnVuY3Rpb25zIGZvciByZWFsIGRl
+dmljZXMuIFRoZSBETUEgcmVxdWVzdHMgZm9yIHRoZQorICogZGV2aWNlIGFyZSB0YWdnZWQgd2l0
+aCBhIGRpZmZlcmVudCByZWFsIGZ1bmN0aW9uIGFzIHNvdXJjZS4gVGhpcyBpcworICogcmVsZXZh
+bnQgdG8gbXVsdGlmdW5jdGlvbiBkZXZpY2VzLgorICovCiBzdGF0aWMgY29uc3Qgc3RydWN0IHBj
+aV9kZXZfZG1hX3NvdXJjZSB7CiAJdTE2IHZlbmRvcjsKIAl1MTYgZGV2aWNlOwpAQCAtMzI3NSw3
+ICszMjc5LDggQEAgc3RhdGljIGNvbnN0IHN0cnVjdCBwY2lfZGV2X2RtYV9zb3VyY2UgewogICog
+dGhlIGRldmljZSBkb2luZyB0aGUgRE1BLCBidXQgc29tZXRpbWVzIGhhcmR3YXJlIGlzIGJyb2tl
+biBhbmQgd2lsbAogICogdGFnIHRoZSBETUEgYXMgYmVpbmcgc291cmNlZCBmcm9tIGEgZGlmZmVy
+ZW50IGRldmljZS4gIFRoaXMgZnVuY3Rpb24KICAqIGFsbG93cyB0aGF0IHRyYW5zbGF0aW9uLiAg
+Tm90ZSB0aGF0IHRoZSByZWZlcmVuY2UgY291bnQgb2YgdGhlCi0gKiByZXR1cm5lZCBkZXZpY2Ug
+aXMgaW5jcmVtZW50ZWQgb24gYWxsIHBhdGhzLgorICogcmV0dXJuZWQgZGV2aWNlIGlzIGluY3Jl
+bWVudGVkIG9uIGFsbCBwYXRocy4gVHJhbnNsYXRpb24gaXMgZG9uZSB3aGVuCisgKiB0aGUgZGV2
+aWNlIGlzIGFkZGVkIHRvIGFuIElPTU1VIGdyb3VwLgogICovCiBzdHJ1Y3QgcGNpX2RldiAqcGNp
+X2dldF9kbWFfc291cmNlKHN0cnVjdCBwY2lfZGV2ICpkZXYpCiB7CkBAIC0zMjkyLDYgKzMyOTcs
+NDYgQEAgc3RydWN0IHBjaV9kZXYgKnBjaV9nZXRfZG1hX3NvdXJjZShzdHJ1Y3QgcGNpX2RldiAq
+ZGV2KQogCXJldHVybiBwY2lfZGV2X2dldChkZXYpOwogfQogCisvKiBUYWJsZSBvZiBtdWx0aXBs
+ZSAoZ2hvc3QpIHNvdXJjZSBmdW5jdGlvbnMuIFRoaXMgaXMgc2ltaWxhciB0byB0aGUKKyAqIHRy
+YW5zbGF0ZWQgc291cmNlcyBhYm92ZSwgYnV0IHdpdGggdGhlIGZvbGxvd2luZyBkaWZmZXJlbmNl
+czoKKyAqIDEuIHRoZSBkZXZpY2UgbWF5IHVzZSBtdWx0aXBsZSBmdW5jdGlvbnMgYXMgRE1BIHNv
+dXJjZXMsCisgKiAyLiB0aGVzZSBmdW5jdGlvbnMgY2Fubm90IGJlIGFzc3VtZWQgdG8gYmUgYWN0
+dWFsIGRldmljZXMsCisgKiAzLiB0aGUgc3BlY2lmaWMgZ2hvc3QgZnVuY3Rpb24gZm9yIGEgcmVx
+dWVzdCBjYW4gbm90IGJlIGV4YWN0bHkgcHJlZGljdGVkLgorICogVGhlIGJpdG1hcCBvbmx5IGNv
+bnRhaW5zIHRoZSBhZGRpdGlvbmFsIHF1aXJrIGZ1bmN0aW9ucy4KKyAqLworc3RhdGljIGNvbnN0
+IHN0cnVjdCBwY2lfZGV2X2RtYV9tdWx0aV9mdW5jX3NvdXJjZXMgeworCXUxNiB2ZW5kb3I7CisJ
+dTE2IGRldmljZTsKKwl1OCBmdW5jX21hcDsJLyogYml0IG1hcC4gbHNiIGlzIGZuIDAuICovCit9
+IHBjaV9kZXZfZG1hX211bHRpX2Z1bmNfc291cmNlc1tdID0geworCXsgUENJX1ZFTkRPUl9JRF9N
+QVJWRUxMXzIsIDB4OTEyMywgKDE8PDApfCgxPDwxKX0sCisJeyBQQ0lfVkVORE9SX0lEX01BUlZF
+TExfMiwgMHg5MTI1LCAoMTw8MCl8KDE8PDEpfSwKKwl7IFBDSV9WRU5ET1JfSURfTUFSVkVMTF8y
+LCAweDkxMjgsICgxPDwwKXwoMTw8MSl9LAorCXsgUENJX1ZFTkRPUl9JRF9NQVJWRUxMXzIsIDB4
+OTEzMCwgKDE8PDApfCgxPDwxKX0sCisJeyBQQ0lfVkVORE9SX0lEX01BUlZFTExfMiwgMHg5MTcy
+LCAoMTw8MCl8KDE8PDEpfSwKKwl7IDAgfQorfTsKKworLyoKKyAqIFRoZSBtYXBwaW5nIG9mIGZh
+a2UvZ2hvc3QgZnVuY3Rpb25zIGlzIHVzZWQgd2hlbiB0aGUgcmVhbCBkZXZpY2UgaXMKKyAqIGF0
+dGFjaGVkIHRvIGFuIElPTU1VIGRvbWFpbi4gSU9NTVUgZ3JvdXBzIGFyZSBub3QgYXdhcmUgb2Yg
+dGhlc2UKKyAqIGZ1bmN0aW9ucywgYmVjYXVzZSB0aGV5J3JlIG5vdCByZWFsIGRldmljZXMuCisg
+Ki8KK3U4IHBjaV9nZXRfZG1hX3NvdXJjZV9tYXAoc3RydWN0IHBjaV9kZXYgKmRldikKK3sKKwlj
+b25zdCBzdHJ1Y3QgcGNpX2Rldl9kbWFfbXVsdGlfZnVuY19zb3VyY2VzICppOworCisJZm9yIChp
+ID0gcGNpX2Rldl9kbWFfbXVsdGlfZnVuY19zb3VyY2VzOyBpLT5mdW5jX21hcDsgaSsrKSB7CisJ
+CWlmICgoaS0+dmVuZG9yID09IGRldi0+dmVuZG9yIHx8CisJCSAgICAgaS0+dmVuZG9yID09ICh1
+MTYpUENJX0FOWV9JRCkgJiYKKwkJICAgIChpLT5kZXZpY2UgPT0gZGV2LT5kZXZpY2UgfHwKKwkJ
+ICAgICBpLT5kZXZpY2UgPT0gKHUxNilQQ0lfQU5ZX0lEKSkgeworCQkJcmV0dXJuIGktPmZ1bmNf
+bWFwOworCQl9CisJfQorCXJldHVybiAwOworfQorCiBzdGF0aWMgY29uc3Qgc3RydWN0IHBjaV9k
+ZXZfYWNzX2VuYWJsZWQgewogCXUxNiB2ZW5kb3I7CiAJdTE2IGRldmljZTsKZGlmZiAtLWdpdCBh
+L2luY2x1ZGUvbGludXgvcGNpLmggYi9pbmNsdWRlL2xpbnV4L3BjaS5oCmluZGV4IDI0NjEwMzMu
+LjVhZDM4MjIgMTAwNjQ0Ci0tLSBhL2luY2x1ZGUvbGludXgvcGNpLmgKKysrIGIvaW5jbHVkZS9s
+aW51eC9wY2kuaApAQCAtMTU3OCw2ICsxNTc4LDcgQEAgZW51bSBwY2lfZml4dXBfcGFzcyB7CiAj
+aWZkZWYgQ09ORklHX1BDSV9RVUlSS1MKIHZvaWQgcGNpX2ZpeHVwX2RldmljZShlbnVtIHBjaV9m
+aXh1cF9wYXNzIHBhc3MsIHN0cnVjdCBwY2lfZGV2ICpkZXYpOwogc3RydWN0IHBjaV9kZXYgKnBj
+aV9nZXRfZG1hX3NvdXJjZShzdHJ1Y3QgcGNpX2RldiAqZGV2KTsKK3U4IHBjaV9nZXRfZG1hX3Nv
+dXJjZV9tYXAoc3RydWN0IHBjaV9kZXYgKmRldik7CiBpbnQgcGNpX2Rldl9zcGVjaWZpY19hY3Nf
+ZW5hYmxlZChzdHJ1Y3QgcGNpX2RldiAqZGV2LCB1MTYgYWNzX2ZsYWdzKTsKICNlbHNlCiBzdGF0
+aWMgaW5saW5lIHZvaWQgcGNpX2ZpeHVwX2RldmljZShlbnVtIHBjaV9maXh1cF9wYXNzIHBhc3Ms
+CkBAIC0xNTg2LDYgKzE1ODcsMTAgQEAgc3RhdGljIGlubGluZSBzdHJ1Y3QgcGNpX2RldiAqcGNp
+X2dldF9kbWFfc291cmNlKHN0cnVjdCBwY2lfZGV2ICpkZXYpCiB7CiAJcmV0dXJuIHBjaV9kZXZf
+Z2V0KGRldik7CiB9Cit1OCBwY2lfZ2V0X2RtYV9zb3VyY2VfbWFwKHN0cnVjdCBwY2lfZGV2ICpk
+ZXYpCit7CisJcmV0dXJuIDA7Cit9CiBzdGF0aWMgaW5saW5lIGludCBwY2lfZGV2X3NwZWNpZmlj
+X2Fjc19lbmFibGVkKHN0cnVjdCBwY2lfZGV2ICpkZXYsCiAJCQkJCSAgICAgICB1MTYgYWNzX2Zs
+YWdzKQogewpkaWZmIC0tZ2l0IGEvaW5jbHVkZS9saW51eC9wY2lfaWRzLmggYi9pbmNsdWRlL2xp
+bnV4L3BjaV9pZHMuaAppbmRleCBmMTFjMWMyLi5kZjU3NDk2IDEwMDY0NAotLS0gYS9pbmNsdWRl
+L2xpbnV4L3BjaV9pZHMuaAorKysgYi9pbmNsdWRlL2xpbnV4L3BjaV9pZHMuaApAQCAtMTYwNCw2
+ICsxNjA0LDcgQEAKICNkZWZpbmUgUENJX1NVQkRFVklDRV9JRF9LRVlTUEFOX1NYMgkweDUzMzQK
+IAogI2RlZmluZSBQQ0lfVkVORE9SX0lEX01BUlZFTEwJCTB4MTFhYgorI2RlZmluZSBQQ0lfVkVO
+RE9SX0lEX01BUlZFTExfMgkweDFiNGIKICNkZWZpbmUgUENJX0RFVklDRV9JRF9NQVJWRUxMX0dU
+NjQxMTEJMHg0MTQ2CiAjZGVmaW5lIFBDSV9ERVZJQ0VfSURfTUFSVkVMTF9HVDY0MjYwCTB4NjQz
+MAogI2RlZmluZSBQQ0lfREVWSUNFX0lEX01BUlZFTExfTVY2NDM2MAkweDY0NjAKLS0gCjEuNy4x
+Cgo=
+--bcaec555549456d3d004d70f5ee8--
