@@ -1,80 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932552Ab3CDVNe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 16:13:34 -0500
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:59382 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932375Ab3CDVNb (ORCPT
+	id S932520Ab3CDVO6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 16:14:58 -0500
+Received: from moutng.kundenserver.de ([212.227.17.9]:60538 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932160Ab3CDVO5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 16:13:31 -0500
+	Mon, 4 Mar 2013 16:14:57 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [GIT PULL 0/3] arm-soc: late changes for 3.9
+Date: Mon, 4 Mar 2013 21:14:48 +0000
+User-Agent: KMail/1.12.2 (Linux/3.8.0-8-generic; KDE/4.3.2; x86_64; ; )
+Cc: Olof Johansson <olof@lixom.net>, Chris Ball <cjb@laptop.org>,
+        linux-arm-kernel@lists.infradead.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        ARM SoC <arm@kernel.org>
+References: <1362092093-4839-1-git-send-email-olof@lixom.net> <CA+55aFx2Cuuq2YW6mexxZ88TNm=FLYUYPzeLqN=y46oYxZJ3wQ@mail.gmail.com>
+In-Reply-To: <CA+55aFx2Cuuq2YW6mexxZ88TNm=FLYUYPzeLqN=y46oYxZJ3wQ@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20130305081102.73211ef9@notabene.brown>
-References: <20130223074001.GA5199@www.outflux.net>
-	<CAA9_cmfa1hhijh4g_hSwMy_GR81rxjEFMurJwSvhBruh1R5dtw@mail.gmail.com>
-	<CAGXu5jKpdVFoEvbGv3K620XDx2bjqQYeCLE511h-071XaPQUGg@mail.gmail.com>
-	<20130305081102.73211ef9@notabene.brown>
-Date: Mon, 4 Mar 2013 13:13:31 -0800
-X-Google-Sender-Auth: jIQ9sD_ZkTb0LLDjMTIOd3iduZk
-Message-ID: <CAGXu5jLweh+0=fYfDFVM9MhvBCww82U89evsmK2EO6t8Zp42Dg@mail.gmail.com>
-Subject: Re: [PATCH] md/raid456: remove depends on CONFIG_EXPERIMENTAL
-From: Kees Cook <keescook@chromium.org>
-To: NeilBrown <neilb@suse.de>
-Cc: Dan Williams <djbw@fb.com>, LKML <linux-kernel@vger.kernel.org>,
-        linux-raid@vger.kernel.org, Arjan van de Ven <arjan@linux.intel.com>,
-        Alasdair G Kergon <agk@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201303042114.49096.arnd@arndb.de>
+X-Provags-ID: V02:K0:b3L1D6UCZsBTKzGuKlzl/v0fQfinoqPcZAuFKE7dvrG
+ PRNnbmxSq704WcBnTPO6GjSYdPvc8eTTh4dOJWJeXMr08rLXpL
+ A2EqBC81Y5y96ne/EI1uNhrNhXLYYi4PdFlxzPGOHA3Z19Q438
+ 5Xo3cFeMPaGZQG5RmwOA/XK4JwYB0LqcZd8US1n3zCmZVIFdr1
+ bhAL7N6V4K/AQDirRukHdEFKm/b6D1Hn0v0gbJR6hH+0ebOdzj
+ qxzeDMEUHqkDZLnyLG/bSa+pzXSASbaQ9UMHUPsdTjPHhZu//E
+ +YrPcrB0Dokl7g7RyxUcdn31x92/6G5GuJln4kjPkGXntKMQTg
+ lqKAxa8BPSKDwRGuyNL0=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 4, 2013 at 1:11 PM, NeilBrown <neilb@suse.de> wrote:
-> On Mon, 4 Mar 2013 10:59:30 -0800 Kees Cook <keescook@chromium.org> wrote:
->
->> On Tue, Feb 26, 2013 at 5:27 PM, Dan Williams <djbw@fb.com> wrote:
->> > On Fri, Feb 22, 2013 at 11:40 PM, Kees Cook <keescook@chromium.org> wrote:
->> >> The CONFIG_EXPERIMENTAL config item has not carried much meaning for a
->> >> while now and is almost always enabled by default. As agreed during the
->> >> Linux kernel summit, remove it from any "depends on" lines in Kconfigs.
->> >>
->> >> Signed-off-by: Kees Cook <keescook@chromium.org>
->> >> Cc: Arjan van de Ven <arjan@linux.intel.com>
->> >> Cc: Dan Williams <dan.j.williams@intel.com>
->> >> Cc: Alasdair G Kergon <agk@redhat.com>
->> >> ---
->> >>  drivers/md/Kconfig |    1 -
->> >>  1 file changed, 1 deletion(-)
->> >>
->> >> diff --git a/drivers/md/Kconfig b/drivers/md/Kconfig
->> >> index 7cdf359..0cc3a3d 100644
->> >> --- a/drivers/md/Kconfig
->> >> +++ b/drivers/md/Kconfig
->> >> @@ -158,7 +158,6 @@ config MULTICORE_RAID456
->> >>         bool "RAID-4/RAID-5/RAID-6 Multicore processing (EXPERIMENTAL)"
->> >>         depends on MD_RAID456
->> >>         depends on SMP
->> >> -       depends on EXPERIMENTAL
->> >
->> > In this case MULTICORE_RAID456 and the related code should go as
->> > well... now that there are patches to supersede this implementation in
->> > md-next.
->>
->> Can my original patch go through as-is for Linus's tree? Right now,
->> this is the last use of EXPERIMENTAL in v3.9-rc1. If we can drop it,
->> we can remove the config item entirely from v3.9.
->
-> My pull request which removes CONFIG_MULTICORE_RAID456 completely was a little
-> late and missed -rc1.  Hopefully it will appear soon.
-> But if it isn't gone by -rc2, I have no objection to your patch going in then.
+On Friday 01 March 2013, Linus Torvalds wrote:
+> On Thu, Feb 28, 2013 at 2:54 PM, Olof Johansson <olof@lixom.net> wrote:
+> >
+> > Final two pull requests are for the same code. As Arnd describes in the
+> > tags, they are for a set of mvebu patches that depend on contents in
+> > the MMC tree. We had pulled in part of the MMC branch as a dependency,
+> > but unfortunately Chris Ball rebased it.
+> 
+> Has Chris Ball been told what an incredible pain this kind of crap is,
+> and that there's a damn good reason why WE DO NOT REBASE PUBLIC TREES
+> THAT OTHERS MAY BE BASING THEIR DEVELOPMENT ON!
+> 
+> Chris, can you hear me shouting? Don't do that.
 
-Ah-ha! Okay, it sounded like the other stuff was scheduled for 3.10.
-If it's going into 3.9, then I'll just wait for -rc2 before pushing
-the final removal patch.
+I talked to Chris while I prepared the two branches, and he now understands
+the consequences and won't do it again.
 
-Thanks!
+I also talked to Jason Cooper about it and he is going to do his branches
+differently now to avoid building deep dependency chains on other trees.
+We've had similar problems with other subsystem maintainers before, but
+there are a lot more subsystems that one can depend on. We generally
+try to do the branches in a way that we can drop a small part of the stuff
+in arm-soc without rebasing when someone else screws up, but that did not
+happen in this case.
 
--Kees
-
--- 
-Kees Cook
-Chrome OS Security
+	Arnd
