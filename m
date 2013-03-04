@@ -1,19 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756319Ab3CDELh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 23:11:37 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60935 "EHLO
+	id S1756130Ab3CDELf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 23:11:35 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60963 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755862Ab3CDDnB (ORCPT
+	by vger.kernel.org with ESMTP id S1755882Ab3CDDnE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Mar 2013 22:43:01 -0500
-Message-Id: <20130304033719.200264575@decadent.org.uk>
+	Sun, 3 Mar 2013 22:43:04 -0500
+Message-Id: <20130304033719.712583634@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 04 Mar 2013 03:39:05 +0000
+Date: Mon, 04 Mar 2013 03:39:10 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 118/153] drm/radeon/evergreen+: wait for the MC to settle after MC  blackout
+Cc: akpm@linux-foundation.org, David Vrabel <david.vrabel@citrix.com>,
+        Wei Liu <wei.liu2@citrix.com>, Jan Beulich <JBeulich@suse.com>,
+        "Christopher S. Aker" <caker@theshore.net>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 123/153] xen-netback: correctly return errors from  netbk_count_requests()
 In-Reply-To: <20130304033707.648729212@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -26,33 +30,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: David Vrabel <david.vrabel@citrix.com>
 
-commit ed39fadd6df01095378e499fac3674883f16b853 upstream.
+[ Upstream commit 35876b5ffc154c357476b2c3bdab10feaf4bd8f0 ]
 
-Some chips seem to need a little delay after blacking out
-the MC before the requests actually stop.
+netbk_count_requests() could detect an error, call
+netbk_fatal_tx_error() but return 0.  The vif may then be used
+afterwards (e.g., in a call to netbk_tx_error().
 
-May fix:
-https://bugs.freedesktop.org/show_bug.cgi?id=56139
-https://bugs.freedesktop.org/show_bug.cgi?id=57567
+Since netbk_fatal_tx_error() could set vif->refcnt to 1, the vif may
+be freed immediately after the call to netbk_fatal_tx_error() (e.g.,
+if the vif is also removed).
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Netback thread              Xenwatch thread
+-------------------------------------------
+netbk_fatal_tx_err()        netback_remove()
+                              xenvif_disconnect()
+                                ...
+                                free_netdev()
+netbk_tx_err() Oops!
+
+Signed-off-by: Wei Liu <wei.liu2@citrix.com>
+Signed-off-by: Jan Beulich <JBeulich@suse.com>
+Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+Reported-by: Christopher S. Aker <caker@theshore.net>
+Acked-by: Ian Campbell <ian.campbell@citrix.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/gpu/drm/radeon/evergreen.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/net/xen-netback/netback.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/drivers/gpu/drm/radeon/evergreen.c
-+++ b/drivers/gpu/drm/radeon/evergreen.c
-@@ -1137,6 +1137,8 @@ void evergreen_mc_stop(struct radeon_dev
- 		blackout &= ~BLACKOUT_MODE_MASK;
- 		WREG32(MC_SHARED_BLACKOUT_CNTL, blackout | 1);
- 	}
-+	/* wait for the MC to settle */
-+	udelay(100);
- }
+diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
+index b802bb3..185a0eb 100644
+--- a/drivers/net/xen-netback/netback.c
++++ b/drivers/net/xen-netback/netback.c
+@@ -883,13 +883,13 @@ static int netbk_count_requests(struct xenvif *vif,
+ 		if (frags >= work_to_do) {
+ 			netdev_err(vif->dev, "Need more frags\n");
+ 			netbk_fatal_tx_err(vif);
+-			return -frags;
++			return -ENODATA;
+ 		}
  
- void evergreen_mc_resume(struct radeon_device *rdev, struct evergreen_mc_save *save)
+ 		if (unlikely(frags >= MAX_SKB_FRAGS)) {
+ 			netdev_err(vif->dev, "Too many frags\n");
+ 			netbk_fatal_tx_err(vif);
+-			return -frags;
++			return -E2BIG;
+ 		}
+ 
+ 		memcpy(txp, RING_GET_REQUEST(&vif->tx, cons + frags),
+@@ -897,7 +897,7 @@ static int netbk_count_requests(struct xenvif *vif,
+ 		if (txp->size > first->size) {
+ 			netdev_err(vif->dev, "Frag is bigger than frame.\n");
+ 			netbk_fatal_tx_err(vif);
+-			return -frags;
++			return -EIO;
+ 		}
+ 
+ 		first->size -= txp->size;
+@@ -907,7 +907,7 @@ static int netbk_count_requests(struct xenvif *vif,
+ 			netdev_err(vif->dev, "txp->offset: %x, size: %u\n",
+ 				 txp->offset, txp->size);
+ 			netbk_fatal_tx_err(vif);
+-			return -frags;
++			return -EINVAL;
+ 		}
+ 	} while ((txp++)->flags & XEN_NETTXF_more_data);
+ 	return frags;
 
 
