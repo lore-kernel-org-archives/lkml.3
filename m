@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932205Ab3CDSSk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 13:18:40 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:22778 "EHLO
+	id S932172Ab3CDSSi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 13:18:38 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:22777 "EHLO
 	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758370Ab3CDSSe (ORCPT
+	with ESMTP id S1758007Ab3CDSSe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 4 Mar 2013 13:18:34 -0500
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
         devel@driverdev.osuosl.org
 Cc: dan.magenheimer@oracle.com, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 08/11] zcache: Move the last of the debugfs counters out
-Date: Mon,  4 Mar 2013 13:18:18 -0500
-Message-Id: <1362421101-15896-9-git-send-email-konrad.wilk@oracle.com>
+Subject: [PATCH 01/11] zcache: s/int/bool/ on the various options.
+Date: Mon,  4 Mar 2013 13:18:11 -0500
+Message-Id: <1362421101-15896-2-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.8.0.2
 In-Reply-To: <1362421101-15896-1-git-send-email-konrad.wilk@oracle.com>
 References: <1362421101-15896-1-git-send-email-konrad.wilk@oracle.com>
@@ -22,332 +22,115 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We now have in zcache-main only the counters that are
-are not debugfs related.
+There are so many, but this allows us to at least have them
+right in as bool.
 
 Acked-by: Dan Magenheimer <dan.magenheimer@oracle.com>
+[v1: Rebase on ramster->zcache move]
+[v2: Rebase on staging/zcache: Fix/improve zcache writeback code, tie to a config option]
 Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- drivers/staging/zcache/debug.h       | 80 +++++++++++++++++++++++++++---------
- drivers/staging/zcache/zcache-main.c | 75 +++++++++++++--------------------
- 2 files changed, 89 insertions(+), 66 deletions(-)
+ drivers/staging/zcache/zcache-main.c | 30 +++++++++++++++---------------
+ 1 file changed, 15 insertions(+), 15 deletions(-)
 
-diff --git a/drivers/staging/zcache/debug.h b/drivers/staging/zcache/debug.h
-index 98dc491..eef67db 100644
---- a/drivers/staging/zcache/debug.h
-+++ b/drivers/staging/zcache/debug.h
-@@ -128,34 +128,56 @@ static inline unsigned long curr_pageframes_count(void)
- 		atomic_read(&zcache_pers_pageframes_atomic);
- };
- /* but for the rest of these, counting races are ok */
--extern ssize_t zcache_flush_total;
--extern ssize_t zcache_flush_found;
--extern ssize_t zcache_flobj_total;
--extern ssize_t zcache_flobj_found;
--extern ssize_t zcache_failed_eph_puts;
--extern ssize_t zcache_failed_pers_puts;
--extern ssize_t zcache_failed_getfreepages;
--extern ssize_t zcache_failed_alloc;
--extern ssize_t zcache_put_to_flush;
--extern ssize_t zcache_compress_poor;
--extern ssize_t zcache_mean_compress_poor;
--extern ssize_t zcache_eph_ate_tail;
--extern ssize_t zcache_eph_ate_tail_failed;
--extern ssize_t zcache_pers_ate_eph;
--extern ssize_t zcache_pers_ate_eph_failed;
--extern ssize_t zcache_evicted_eph_zpages;
--extern ssize_t zcache_evicted_eph_pageframes;
-+static ssize_t zcache_flush_total;
-+static ssize_t zcache_flush_found;
-+static ssize_t zcache_flobj_total;
-+static ssize_t zcache_flobj_found;
-+static ssize_t zcache_failed_eph_puts;
-+static ssize_t zcache_failed_pers_puts;
-+static ssize_t zcache_failed_getfreepages;
-+static ssize_t zcache_failed_alloc;
-+static ssize_t zcache_put_to_flush;
-+static ssize_t zcache_compress_poor;
-+static ssize_t zcache_mean_compress_poor;
-+static ssize_t zcache_eph_ate_tail;
-+static ssize_t zcache_eph_ate_tail_failed;
-+static ssize_t zcache_pers_ate_eph;
-+static ssize_t zcache_pers_ate_eph_failed;
-+static ssize_t zcache_evicted_eph_zpages;
-+static ssize_t zcache_evicted_eph_pageframes;
-+
- extern ssize_t zcache_last_active_file_pageframes;
- extern ssize_t zcache_last_inactive_file_pageframes;
- extern ssize_t zcache_last_active_anon_pageframes;
- extern ssize_t zcache_last_inactive_anon_pageframes;
--extern ssize_t zcache_eph_nonactive_puts_ignored;
--extern ssize_t zcache_pers_nonactive_puts_ignored;
-+static ssize_t zcache_eph_nonactive_puts_ignored;
-+static ssize_t zcache_pers_nonactive_puts_ignored;
- #ifdef CONFIG_ZCACHE_WRITEBACK
- extern ssize_t zcache_writtenback_pages;
- extern ssize_t zcache_outstanding_writeback_pages;
- #endif
- 
-+static inline void inc_zcache_flush_total(void) { zcache_flush_total ++; };
-+static inline void inc_zcache_flush_found(void) { zcache_flush_found ++; };
-+static inline void inc_zcache_flobj_total(void) { zcache_flobj_total ++; };
-+static inline void inc_zcache_flobj_found(void) { zcache_flobj_found ++; };
-+static inline void inc_zcache_failed_eph_puts(void) { zcache_failed_eph_puts ++; };
-+static inline void inc_zcache_failed_pers_puts(void) { zcache_failed_pers_puts ++; };
-+static inline void inc_zcache_failed_getfreepages(void) { zcache_failed_getfreepages ++; };
-+static inline void inc_zcache_failed_alloc(void) { zcache_failed_alloc ++; };
-+static inline void inc_zcache_put_to_flush(void) { zcache_put_to_flush ++; };
-+static inline void inc_zcache_compress_poor(void) { zcache_compress_poor ++; };
-+static inline void inc_zcache_mean_compress_poor(void) { zcache_mean_compress_poor ++; };
-+static inline void inc_zcache_eph_ate_tail(void) { zcache_eph_ate_tail ++; };
-+static inline void inc_zcache_eph_ate_tail_failed(void) { zcache_eph_ate_tail_failed ++; };
-+static inline void inc_zcache_pers_ate_eph(void) { zcache_pers_ate_eph ++; };
-+static inline void inc_zcache_pers_ate_eph_failed(void) { zcache_pers_ate_eph_failed ++; };
-+static inline void inc_zcache_evicted_eph_zpages(unsigned zpages) { zcache_evicted_eph_zpages += zpages; };
-+static inline void inc_zcache_evicted_eph_pageframes(void) { zcache_evicted_eph_pageframes ++; };
-+
-+static inline void inc_zcache_eph_nonactive_puts_ignored(void) { zcache_eph_nonactive_puts_ignored ++; };
-+static inline void inc_zcache_pers_nonactive_puts_ignored(void) { zcache_pers_nonactive_puts_ignored ++; };
-+
- int zcache_debugfs_init(void);
- #else
- static inline void inc_zcache_obj_count(void) { };
-@@ -184,4 +206,24 @@ static inline int zcache_debugfs_init(void)
- {
- 	return 0;
- };
-+static inline void inc_zcache_flush_total(void) { };
-+static inline void inc_zcache_flush_found(void) { };
-+static inline void inc_zcache_flobj_total(void) { };
-+static inline void inc_zcache_flobj_found(void) { };
-+static inline void inc_zcache_failed_eph_puts(void) { };
-+static inline void inc_zcache_failed_pers_puts(void) { };
-+static inline void inc_zcache_failed_getfreepages(void) { };
-+static inline void inc_zcache_failed_alloc(void) { };
-+static inline void inc_zcache_put_to_flush(void) { };
-+static inline void inc_zcache_compress_poor(void) { };
-+static inline void inc_zcache_mean_compress_poor(void) { };
-+static inline void inc_zcache_eph_ate_tail(void) { };
-+static inline void inc_zcache_eph_ate_tail_failed(void) { };
-+static inline void inc_zcache_pers_ate_eph(void) { };
-+static inline void inc_zcache_pers_ate_eph_failed(void) { };
-+static inline void inc_zcache_evicted_eph_zpages(unsigned zpages) { };
-+static inline void inc_zcache_evicted_eph_pageframes(void) { };
-+
-+static inline void inc_zcache_eph_nonactive_puts_ignored(void) { };
-+static inline void inc_zcache_pers_nonactive_puts_ignored(void) { };
- #endif
 diff --git a/drivers/staging/zcache/zcache-main.c b/drivers/staging/zcache/zcache-main.c
-index 9d6cf96..059c0f2 100644
+index 328898e..d7dd02c 100644
 --- a/drivers/staging/zcache/zcache-main.c
 +++ b/drivers/staging/zcache/zcache-main.c
-@@ -142,32 +142,13 @@ ssize_t zcache_eph_pageframes;
- ssize_t zcache_pers_pageframes;
- 
- /* Used by this code. */
--static ssize_t zcache_flush_total;
--static ssize_t zcache_flush_found;
--static ssize_t zcache_flobj_total;
--static ssize_t zcache_flobj_found;
--static ssize_t zcache_failed_eph_puts;
--static ssize_t zcache_failed_pers_puts;
--static ssize_t zcache_failed_getfreepages;
--static ssize_t zcache_failed_alloc;
--static ssize_t zcache_put_to_flush;
--static ssize_t zcache_compress_poor;
--static ssize_t zcache_mean_compress_poor;
--static ssize_t zcache_eph_ate_tail;
--static ssize_t zcache_eph_ate_tail_failed;
--static ssize_t zcache_pers_ate_eph;
--static ssize_t zcache_pers_ate_eph_failed;
--static ssize_t zcache_evicted_eph_zpages;
--static ssize_t zcache_evicted_eph_pageframes;
--static ssize_t zcache_last_active_file_pageframes;
--static ssize_t zcache_last_inactive_file_pageframes;
--static ssize_t zcache_last_active_anon_pageframes;
--static ssize_t zcache_last_inactive_anon_pageframes;
--static ssize_t zcache_eph_nonactive_puts_ignored;
--static ssize_t zcache_pers_nonactive_puts_ignored;
-+ssize_t zcache_last_active_file_pageframes;
-+ssize_t zcache_last_inactive_file_pageframes;
-+ssize_t zcache_last_active_anon_pageframes;
-+ssize_t zcache_last_inactive_anon_pageframes;
- #ifdef CONFIG_ZCACHE_WRITEBACK
--static ssize_t zcache_writtenback_pages;
--static ssize_t zcache_outstanding_writeback_pages;
-+ssize_t zcache_writtenback_pages;
-+ssize_t zcache_outstanding_writeback_pages;
+@@ -34,9 +34,9 @@
+ #include "zbud.h"
+ #include "ramster.h"
+ #ifdef CONFIG_RAMSTER
+-static int ramster_enabled;
++static bool ramster_enabled __read_mostly;
+ #else
+-#define ramster_enabled 0
++#define ramster_enabled false
  #endif
- /*
-  * zcache core code starts here
-@@ -354,7 +335,7 @@ static void *zcache_pampd_eph_create(char *data, size_t size, bool raw,
- 	if (!raw) {
- 		zcache_compress(page, &cdata, &clen);
- 		if (clen > zbud_max_buddy_size()) {
--			zcache_compress_poor++;
-+			inc_zcache_compress_poor();
- 			goto out;
- 		}
- 	} else {
-@@ -371,14 +352,14 @@ static void *zcache_pampd_eph_create(char *data, size_t size, bool raw,
- 	if (newpage != NULL)
- 		goto create_in_new_page;
  
--	zcache_failed_getfreepages++;
-+	inc_zcache_failed_getfreepages();
- 	/* can't allocate a page, evict an ephemeral page via LRU */
- 	newpage = zcache_evict_eph_pageframe();
- 	if (newpage == NULL) {
--		zcache_eph_ate_tail_failed++;
-+		inc_zcache_eph_ate_tail_failed();
- 		goto out;
- 	}
--	zcache_eph_ate_tail++;
-+	inc_zcache_eph_ate_tail();
+ #ifndef __PG_WAS_ACTIVE
+@@ -62,11 +62,11 @@ static inline void frontswap_tmem_exclusive_gets(bool b)
+ /* enable (or fix code) when Seth's patches are accepted upstream */
+ #define zcache_writeback_enabled 0
  
- create_in_new_page:
- 	pampd = (void *)zbud_create_prep(th, true, cdata, clen, newpage);
-@@ -413,7 +394,7 @@ static void *zcache_pampd_pers_create(char *data, size_t size, bool raw,
- 		zcache_compress(page, &cdata, &clen);
- 	/* reject if compression is too poor */
- 	if (clen > zbud_max_zsize) {
--		zcache_compress_poor++;
-+		inc_zcache_compress_poor();
- 		goto out;
- 	}
- 	/* reject if mean compression is too poor */
-@@ -424,7 +405,7 @@ static void *zcache_pampd_pers_create(char *data, size_t size, bool raw,
- 		zbud_mean_zsize = div_u64(total_zsize,
- 					curr_pers_zpages);
- 		if (zbud_mean_zsize > zbud_max_mean_zsize) {
--			zcache_mean_compress_poor++;
-+			inc_zcache_mean_compress_poor();
- 			goto out;
- 		}
- 	}
-@@ -445,14 +426,14 @@ create_pampd:
- 	 * (global_page_state(NR_LRU_BASE + LRU_ACTIVE_FILE) +
- 	 * global_page_state(NR_LRU_BASE + LRU_INACTIVE_FILE)))
- 	 */
--	zcache_failed_getfreepages++;
-+	inc_zcache_failed_getfreepages();
- 	/* can't allocate a page, evict an ephemeral page via LRU */
- 	newpage = zcache_evict_eph_pageframe();
- 	if (newpage == NULL) {
--		zcache_pers_ate_eph_failed++;
-+		inc_zcache_pers_ate_eph_failed();
- 		goto out;
- 	}
--	zcache_pers_ate_eph++;
-+	inc_zcache_pers_ate_eph();
+-static int zcache_enabled __read_mostly;
+-static int disable_cleancache __read_mostly;
+-static int disable_frontswap __read_mostly;
+-static int disable_frontswap_ignore_nonactive __read_mostly;
+-static int disable_cleancache_ignore_nonactive __read_mostly;
++static bool zcache_enabled __read_mostly;
++static bool disable_cleancache __read_mostly;
++static bool disable_frontswap __read_mostly;
++static bool disable_frontswap_ignore_nonactive __read_mostly;
++static bool disable_cleancache_ignore_nonactive __read_mostly;
+ static char *namestr __read_mostly = "zcache";
  
- create_in_new_page:
- 	pampd = (void *)zbud_create_prep(th, false, cdata, clen, newpage);
-@@ -492,7 +473,7 @@ void *zcache_pampd_create(char *data, unsigned int size, bool raw,
- 			objnode = kmem_cache_alloc(zcache_objnode_cache,
- 							ZCACHE_GFP_MASK);
- 			if (unlikely(objnode == NULL)) {
--				zcache_failed_alloc++;
-+				inc_zcache_failed_alloc();
- 				goto out;
- 			}
- 			kp->objnodes[i] = objnode;
-@@ -503,7 +484,7 @@ void *zcache_pampd_create(char *data, unsigned int size, bool raw,
- 		kp->obj = obj;
- 	}
- 	if (unlikely(kp->obj == NULL)) {
--		zcache_failed_alloc++;
-+		inc_zcache_failed_alloc();
- 		goto out;
- 	}
- 	/*
-@@ -781,9 +762,9 @@ static struct page *zcache_evict_eph_pageframe(void)
- 		goto out;
- 	dec_zcache_eph_zbytes(zsize);
- 	dec_zcache_eph_zpages(zpages);
--	zcache_evicted_eph_zpages += zpages;
-+	inc_zcache_evicted_eph_zpages(zpages);
- 	dec_zcache_eph_pageframes();
--	zcache_evicted_eph_pageframes++;
-+	inc_zcache_evicted_eph_pageframes();
- out:
- 	return page;
+ #define ZCACHE_GFP_MASK \
+@@ -1841,16 +1841,16 @@ struct frontswap_ops zcache_frontswap_register_ops(void)
+ 
+ static int __init enable_zcache(char *s)
+ {
+-	zcache_enabled = 1;
++	zcache_enabled = true;
+ 	return 1;
  }
-@@ -1166,9 +1147,9 @@ int zcache_put_page(int cli_id, int pool_id, struct tmem_oid *oidp,
- 		if (pampd == NULL) {
- 			ret = -ENOMEM;
- 			if (ephemeral)
--				zcache_failed_eph_puts++;
-+				inc_zcache_failed_eph_puts();
- 			else
--				zcache_failed_pers_puts++;
-+				inc_zcache_failed_pers_puts();
- 		} else {
- 			if (ramster_enabled)
- 				ramster_do_preload_flnode(pool);
-@@ -1178,7 +1159,7 @@ int zcache_put_page(int cli_id, int pool_id, struct tmem_oid *oidp,
- 		}
- 		zcache_put_pool(pool);
- 	} else {
--		zcache_put_to_flush++;
-+		inc_zcache_put_to_flush();
- 		if (ramster_enabled)
- 			ramster_do_preload_flnode(pool);
- 		if (atomic_read(&pool->obj_count) > 0)
-@@ -1228,7 +1209,7 @@ int zcache_flush_page(int cli_id, int pool_id,
- 	unsigned long flags;
+ __setup("zcache", enable_zcache);
  
- 	local_irq_save(flags);
--	zcache_flush_total++;
-+	inc_zcache_flush_total();
- 	pool = zcache_get_pool_by_id(cli_id, pool_id);
- 	if (ramster_enabled)
- 		ramster_do_preload_flnode(pool);
-@@ -1238,7 +1219,7 @@ int zcache_flush_page(int cli_id, int pool_id,
- 		zcache_put_pool(pool);
- 	}
- 	if (ret >= 0)
--		zcache_flush_found++;
-+		inc_zcache_flush_found();
- 	local_irq_restore(flags);
- 	return ret;
+ static int __init enable_ramster(char *s)
+ {
+-	zcache_enabled = 1;
++	zcache_enabled = true;
+ #ifdef CONFIG_RAMSTER
+-	ramster_enabled = 1;
++	ramster_enabled = true;
+ #endif
+ 	return 1;
  }
-@@ -1251,7 +1232,7 @@ int zcache_flush_object(int cli_id, int pool_id,
- 	unsigned long flags;
+@@ -1860,7 +1860,7 @@ __setup("ramster", enable_ramster);
  
- 	local_irq_save(flags);
--	zcache_flobj_total++;
-+	inc_zcache_flobj_total();
- 	pool = zcache_get_pool_by_id(cli_id, pool_id);
- 	if (ramster_enabled)
- 		ramster_do_preload_flnode(pool);
-@@ -1261,7 +1242,7 @@ int zcache_flush_object(int cli_id, int pool_id,
- 		zcache_put_pool(pool);
- 	}
- 	if (ret >= 0)
--		zcache_flobj_found++;
-+		inc_zcache_flobj_found();
- 	local_irq_restore(flags);
- 	return ret;
+ static int __init no_cleancache(char *s)
+ {
+-	disable_cleancache = 1;
++	disable_cleancache = true;
+ 	return 1;
  }
-@@ -1424,7 +1405,7 @@ static void zcache_cleancache_put_page(int pool_id,
- 	struct tmem_oid oid = *(struct tmem_oid *)&key;
  
- 	if (!disable_cleancache_ignore_nonactive && !PageWasActive(page)) {
--		zcache_eph_nonactive_puts_ignored++;
-+		inc_zcache_eph_nonactive_puts_ignored();
- 		return;
- 	}
- 	if (likely(ind == index))
-@@ -1553,7 +1534,7 @@ static int zcache_frontswap_put_page(unsigned type, pgoff_t offset,
+@@ -1868,7 +1868,7 @@ __setup("nocleancache", no_cleancache);
  
- 	BUG_ON(!PageLocked(page));
- 	if (!disable_frontswap_ignore_nonactive && !PageWasActive(page)) {
--		zcache_pers_nonactive_puts_ignored++;
-+		inc_zcache_pers_nonactive_puts_ignored();
- 		ret = -ERANGE;
- 		goto out;
- 	}
+ static int __init no_frontswap(char *s)
+ {
+-	disable_frontswap = 1;
++	disable_frontswap = true;
+ 	return 1;
+ }
+ 
+@@ -1884,7 +1884,7 @@ __setup("nofrontswapexclusivegets", no_frontswap_exclusive_gets);
+ 
+ static int __init no_frontswap_ignore_nonactive(char *s)
+ {
+-	disable_frontswap_ignore_nonactive = 1;
++	disable_frontswap_ignore_nonactive = true;
+ 	return 1;
+ }
+ 
+@@ -1892,7 +1892,7 @@ __setup("nofrontswapignorenonactive", no_frontswap_ignore_nonactive);
+ 
+ static int __init no_cleancache_ignore_nonactive(char *s)
+ {
+-	disable_cleancache_ignore_nonactive = 1;
++	disable_cleancache_ignore_nonactive = true;
+ 	return 1;
+ }
+ 
+@@ -1901,7 +1901,7 @@ __setup("nocleancacheignorenonactive", no_cleancache_ignore_nonactive);
+ static int __init enable_zcache_compressor(char *s)
+ {
+ 	strncpy(zcache_comp_name, s, ZCACHE_COMP_NAME_SZ);
+-	zcache_enabled = 1;
++	zcache_enabled = true;
+ 	return 1;
+ }
+ __setup("zcache=", enable_zcache_compressor);
 -- 
 1.8.0.2
 
