@@ -1,181 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932286Ab3CDUEf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 15:04:35 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:46078 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932117Ab3CDUEd convert rfc822-to-8bit (ORCPT
+	id S932276Ab3CDUIr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 15:08:47 -0500
+Received: from mail-oa0-f41.google.com ([209.85.219.41]:43424 "EHLO
+	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932169Ab3CDUIq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 15:04:33 -0500
-Date: Mon, 4 Mar 2013 15:04:22 -0500
-From: Jeff Layton <jlayton@redhat.com>
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: <bfields@fieldses.org>, <linux-nfs@vger.kernel.org>, <devel@openvz.org>,
-        <Trond.Myklebust@netapp.com>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] nfsd: try nfsdcld client tracker in containers
-Message-ID: <20130304150422.0a1743f4@tlielax.poochiereds.net>
-In-Reply-To: <5134E043.70609@parallels.com>
-References: <20130301082423.21663.37825.stgit@localhost.localdomain>
-	<20130301080911.2a1a28a2@corrin.poochiereds.net>
-	<51344175.40503@parallels.com>
-	<20130304094736.57a288b9@tlielax.poochiereds.net>
-	<5134E043.70609@parallels.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Mon, 4 Mar 2013 15:08:46 -0500
+MIME-Version: 1.0
+In-Reply-To: <201303042054.16849.PeterHuewe@gmx.de>
+References: <1362408106-8632-1-git-send-email-peter.huewe@infineon.com>
+ <20130304174104.GA10811@ennui.austin.ibm.com> <201303042054.16849.PeterHuewe@gmx.de>
+From: Kent Yoder <shpedoikal@gmail.com>
+Date: Mon, 4 Mar 2013 14:08:15 -0600
+Message-ID: <CAM0nabEZvLSKYSQ7YvxZwtiHn5-Z2FXAEjGDgzPN9T1=LQq12w@mail.gmail.com>
+Subject: Re: [tpmdd-devel] [PATCH v2] tpm: Add support for new Infineon I2C
+ TPM (SLB 9645 TT 1.2 I2C)
+To: =?ISO-8859-1?Q?Peter_H=FCwe?= <PeterHuewe@gmx.de>
+Cc: tpmdd-devel@lists.sourceforge.net, Kent Yoder <key@linux.vnet.ibm.com>,
+        Peter Huewe <peter.huewe@infineon.com>,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 4 Mar 2013 21:56:19 +0400
-Stanislav Kinsbursky <skinsbursky@parallels.com> wrote:
+>> >
+>> > +
+>> > +#ifdef CONFIG_OF
+>> > +static const struct of_device_id tpm_tis_i2c_of_match[] = {
+>> > +   { .compatible = "infineon,tpm_i2c_infineon", .data = (void *)0 },
+>> > +   { .compatible = "infineon,slb9635tt", .data = (void *)0 },
+>> > +   { .compatible = "infineon,slb9645tt", .data = (void *)1 },
+>>
+>>   Here "name" and "type" are left empty in of_device_id. Will there be
+>> times when those are needed? Like informational messages from the OF
+>> subsystem?
+>
+> Hmm, what do you propose?
+> name = chip type ? or name = tpm_i2c_infineon?
+> type = tpm ?
 
-> 04.03.2013 18:47, Jeff Layton пишет:
-> > On Mon, 4 Mar 2013 10:38:45 +0400
-> > Stanislav Kinsbursky <skinsbursky@parallels.com> wrote:
-> >
-> >> 01.03.2013 17:09, Jeff Layton пишет:
-> >>> On Fri, 01 Mar 2013 11:24:23 +0300
-> >>> Stanislav Kinsbursky <skinsbursky@parallels.com> wrote:
-> >>>
-> >>>> Currently, UMH and Legacy trackers are disabled in containers.
-> >>>> But existent logic can lookup nfs4_recoverydir in a container, and in this
-> >>>> case will try to init Legacy tracker and skip nfsdcld client tracker.
-> >>>> This actually means, that no client tracker will be started in a container at
-> >>>> all, because Legacy tracker init will return -EINVAL for a container.
-> >>>> So, let's change "-EINVAL" on "-ENOTSUPP" for legacy tracker init call in a
-> >>>> container and in case of this error code, try nfsdcld client tracker instead
-> >>>> of returning a error.
-> >>>>
-> >>>> Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
-> >>>> ---
-> >>>>    fs/nfsd/nfs4recover.c |   12 ++++++++----
-> >>>>    1 files changed, 8 insertions(+), 4 deletions(-)
-> >>>>
-> >>>> diff --git a/fs/nfsd/nfs4recover.c b/fs/nfsd/nfs4recover.c
-> >>>> index e0ae1cf..8aa069a 100644
-> >>>> --- a/fs/nfsd/nfs4recover.c
-> >>>> +++ b/fs/nfsd/nfs4recover.c
-> >>>> @@ -524,7 +524,7 @@ nfsd4_legacy_tracking_init(struct net *net)
-> >>>>    	if (net != &init_net) {
-> >>>>    		WARN(1, KERN_ERR "NFSD: attempt to initialize legacy client "
-> >>>>    			"tracking in a container!\n");
-> >>>> -		return -EINVAL;
-> >>>> +		return -ENOTSUPP;
-> >>>>    	}
-> >>>>
-> >>>>    	status = nfs4_legacy_state_init(net);
-> >>>> @@ -1285,14 +1285,17 @@ nfsd4_client_tracking_init(struct net *net)
-> >>>>    	/*
-> >>>>    	 * See if the recoverydir exists and is a directory. If it is,
-> >>>>    	 * then use the legacy ops.
-> >>>> +	 * If legacy ops init return -ENOSUPP, then we are in a container and
-> >>>> +	 * should try nfsdcld client tracking.
-> >>>>    	 */
-> >>>>    	nn->client_tracking_ops = &nfsd4_legacy_tracking_ops;
-> >>>>    	status = kern_path(nfs4_recoverydir(), LOOKUP_FOLLOW, &path);
-> >>>>    	if (!status) {
-> >>>> -		status = S_ISDIR(path.dentry->d_inode->i_mode);
-> >>>> +		if (S_ISDIR(path.dentry->d_inode->i_mode))
-> >>>> +			status = nn->client_tracking_ops->init(net);
-> >>>>    		path_put(&path);
-> >>>> -		if (status)
-> >>>> -			goto do_init;
-> >>>> +		if (status != -ENOTSUPP)
-> >>>> +			goto do_exit;
-> >>>>    	}
-> >>>>
-> >>>>    	/* Finally, try to use nfsdcld */
-> >>>> @@ -1302,6 +1305,7 @@ nfsd4_client_tracking_init(struct net *net)
-> >>>>    			"nfsdcltrack.\n");
-> >>>>    do_init:
-> >>>>    	status = nn->client_tracking_ops->init(net);
-> >>>> +do_exit:
-> >>>>    	if (status) {
-> >>>>    		printk(KERN_WARNING "NFSD: Unable to initialize client "
-> >>>>    				    "recovery tracking! (%d)\n", status);
-> >>>>
-> >>> Seems OK as a stopgap fix. We're removing nfsdcld in 3.10 though so
-> >>> this won't help prospective users of nfsd in a container for
-> >>> long...particularly since our expectation is that no one has actually
-> >>> ever deployed nfsdcld.
-> >>>
-> >>> This is something that really needs to be fixed the right way since a
-> >>> NFS server that doesn't allow clients to reclaim state after a reboot is
-> >>> potentially dangerous...
-> >>>
-> >>> I'm afraid I haven't been following along as closely as I should have
-> >>> been. What's the rationale for disabling the UMH upcall? Is there no
-> >>> way to make it so that new processes it spawns are done within the
-> >>> correct container?
-> >>>
-> >> Straight answer is "no, there is no way to do so": UMH threads are spawned in "init" context.
-> >> But we solve the problem in a slightly different way.
-> >>
-> >> So, here are my ideas about all the trackers (I haven't shared them yet, so I do it now):
-> >>
-> >> 1) nfsdcld uses SUNRPC pipefs, which is containerised already. So it was very easy to containerise it.
-> >>
-> > Right, but we want this one to just go away. It got superceded by the
-> > UMH upcall and probably shouldn't have been merged in the first place
-> > (mea culpa). That'll get ripped out when the 3.10 merge window opens,
-> > so we don't really want to encourage anyone to use it.
-> >
-> >> 2) Legacy tracker uses path. All is great and simple until we imagine two containers with the same root. In this case we have to make sure, that we can start
-> >> only one NFSd with this path (I don't care about user-space problems).
-> >> I was thinking about global in-kernel RB tree for all paths. But maybe even a simple global list is enough (not so many NFSd can be started, and it not a
-> >> fast-path to optimise the search over all used paths).
-> >>
-> > Well, you have a path, sure. In principle you could make that path
-> > relative to the correct namespace for each server, and maybe allow this
-> > to be settable on a per-namespace basis.
-> >
-> > That said, it's probably best not to put to much effort into this
-> > either. We want to eventually deprecate the legacy tracker too. So
-> > limiting its use to the "init" namespace seems like a reasonable
-> > stopgap fix, IMO...
-> 
-> Ok, let's leave it for a while...
-> 
-> >
-> >> 3) UMH lookup and execute binary from current root. This problem just chasing all the containerisation work. So, either UHM logic have to updated (which is not
-> >> trivial or easy to implement and push upstream), or process root have to swapped to the right (container's) one. This, BTW, not that hard, because UMH call
-> >> accept "init" callback, which can be used to swap the root right before do_execve() is called.
-> >>
-> >> What do you, guys, think about all this?
-> >>
-> > You mean just change to use call_usermodehelper_fns() and pasn the
-> > correct namespace info? Yeah that looks like the easiest fix and sounds
-> > quite reasonable.
-> >
-> 
-> Nope. The problem here is not a namespace, but root path:
-> mount point + dentry.
-> do_execve() uses root path from current for search for any string path.
-> And this root path is inherited from the kernel thread. Which means,
-> that this is global "init" root path.
-> Thus, if is we want to search for path in a container (which could
-> have it's own nested root), we have to swap the root in usermode
-> helper thread before do_execve() call.
-> We can use call_usermodehelper_fns() to pass init callback and swap root 
-> in it.
-> But the problem here is that root swaping is not that... gentle.
-> I.e. we were trying to avoid it. For example, local SUNRPC transports
-> now connects synchronously (to make sure, that connection will be done in
-> proper root environment).
-> Nevertheless, I don't see any other way to containerize UMH so far.
-> 
-> Bruce, what's your opinion about this?
-> 
-> 
+  Doesn't matter to me, I just wanted to be sure you hadn't missed anything.
 
-It doesn't seem all that awful here. Once we've spawned this new
-process it'll just run to completion and exit within the container. We
-shouldn't ever need to go back to the original root.
+>> > +              .of_match_table = of_match_ptr(tpm_tis_i2c_of_match),
+>>
+>>   Please put this line inside an ifdef CONFIG_OF, since of_match_ptr
+>> lives in there.
+> NACK.
+> of.h has already the ifdef CONFIG_OF for of_match_ptr and defines it either as
+>
+> #define of_match_ptr(_ptr)      (_ptr)
+> or
+> #define of_match_ptr(_ptr)      NULL
+> depending on CONFIG_OF is set.
 
-In the sunrpc layer, it's a little more complicated since you're
-working with kernel threads and workqueues that may be shared between
-containers (right?).
+  Thanks.
 
--- 
-Jeff Layton <jlayton@redhat.com>
+>>   Won't you also need to add OF to Kconfig?
+> Not really, as the only stuff we're using is the compatible id - the driver can
+> live without it and can be probed from userspace or plain old platform data.
+> I probably have compile tested it with and without CONFIG_OF.
+
+  Ok.
+
+> Is it worth a v3?
+>  or a small update patch which adds the of name/type and the space? (I can
+> create this patch immediately)
+
+  Not a problem, I can apply as-is with the fixup.
+
+Kent
+
+>
+> Thanks,
+> Peter
+>
+>
+>
