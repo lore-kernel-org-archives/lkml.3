@@ -1,48 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756870Ab3CDK3A (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 05:29:00 -0500
-Received: from dcvr.yhbt.net ([64.71.152.64]:45321 "EHLO dcvr.yhbt.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756361Ab3CDK27 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 05:28:59 -0500
-Date: Mon, 4 Mar 2013 10:28:59 +0000
-From: Eric Wong <normalperson@yhbt.net>
-To: Ulrich Drepper <drepper@gmail.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: sendfile and EAGAIN
-Message-ID: <20130304102859.GA23311@dcvr.yhbt.net>
-References: <CAOPLpQcs5GgVRqXhnxF0Ui0k-39-xX5N2nYWYY4DhVWMYCMQ7w@mail.gmail.com>
- <1361820175.6781.13.camel@edumazet-glaptop>
- <CAOPLpQe5SfdWYv5QD4Fu90PXyS7SrSN_5Gntk2x5D5ea8ke64g@mail.gmail.com>
+	id S1756919Ab3CDKfp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 05:35:45 -0500
+Received: from mail-la0-f43.google.com ([209.85.215.43]:47469 "EHLO
+	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755776Ab3CDKfo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Mar 2013 05:35:44 -0500
+Date: Mon, 4 Mar 2013 12:35:37 +0200 (EET)
+From: Pekka Enberg <penberg@kernel.org>
+X-X-Sender: penberg@tux.localdomain
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Lameter <cl@linux.com>, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] SLAB changes for v3.9-rc1
+Message-ID: <alpine.LFD.2.02.1303041234550.3981@tux.localdomain>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAOPLpQe5SfdWYv5QD4Fu90PXyS7SrSN_5Gntk2x5D5ea8ke64g@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ulrich Drepper <drepper@gmail.com> wrote:
-> On Mon, Feb 25, 2013 at 2:22 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
-> > I don't understand the issue.
-> >
-> > sendfile() returns -EAGAIN only if no bytes were copied to the socket.
-> 
-> There is something wrong/unexpected/...
-> 
-> I have a program which can use either sendfile or send.  When using
-> sendfile to transmit a large block (I've seen it with 900k) the
-> sendfile call does not transmit everything.  There receiver gets only
-> about 600k.  This is the situation when I think I've seen EAGAIN
-> errors from sendmail but I cannot just now reproduce it.  This is with
-> sockets of AF_UNIX type.
+Hi Linus,
 
-If you manage to reproduce it, can you pass an offset to sendfile() and
-see if the offset changed when you get EAGAIN?
+I managed to miss the merge window. Sorry about that!
 
-Also, which kernel version are you using?  Perhaps it's triggered
-by memory pressure.
+Please consider pull the latest SLAB tree from:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/penberg/linux.git slab/for-linus
+
+It contains more of Christoph's SLAB unification work that reduce the
+differences between different slab allocators. The code has been sitting
+in linux-next without problems.
+
+If you feel this is inappropriate for -rc2, just skip the pull and I'll
+requeue it for 3.10.
+
+			Pekka
+
+------------------>
+The following changes since commit 6dbe51c251a327e012439c4772097a13df43c5b8:
+
+  Linux 3.9-rc1 (2013-03-03 15:11:05 -0800)
+
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/penberg/linux.git slab/for-linus
+
+Christoph Lameter (15):
+      slab: Use proper formatting specs for unsigned size_t
+      slab: Move kmalloc related function defs
+      slab: Common kmalloc slab index determination
+      slab: Use common kmalloc_index/kmalloc_size functions
+      slab: Common name for the per node structures
+      slab: Rename nodelists to node
+      slab: Common constants for kmalloc boundaries
+      slab: Common definition for the array of kmalloc caches
+      slab: Common function to create the kmalloc array
+      stat: Use size_t for sizes instead of unsigned
+      slab: Common Kmalloc cache determination
+      slab: Rename list3/l3 to node
+      slab: Common definition for kmem_cache_node
+      slab: Handle ARCH_DMA_MINALIGN correctly
+      slab: Fixup CONFIG_PAGE_ALLOC/DEBUG_SLAB_LEAK sections
+
+Glauber Costa (1):
+      slub: correctly bootstrap boot caches
+
+Joonsoo Kim (1):
+      mm/sl[au]b: correct allocation type check in kmalloc_slab()
+
+Pekka Enberg (1):
+      Merge branch 'slab/next' into slab/for-linus
+
+ fs/proc/stat.c                |    2 +-
+ include/linux/kmalloc_sizes.h |   45 ---
+ include/linux/slab.h          |  231 +++++++++----
+ include/linux/slab_def.h      |   48 +--
+ include/linux/slub_def.h      |  136 +-------
+ mm/slab.c                     |  789 +++++++++++++++++------------------------
+ mm/slab.h                     |   43 +++-
+ mm/slab_common.c              |  165 +++++++++-
+ mm/slub.c                     |  188 +---------
+ 9 files changed, 745 insertions(+), 902 deletions(-)
+ delete mode 100644 include/linux/kmalloc_sizes.h
