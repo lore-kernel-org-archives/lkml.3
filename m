@@ -1,87 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755913Ab3CDI5b (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 03:57:31 -0500
-Received: from co1ehsobe006.messaging.microsoft.com ([216.32.180.189]:20535
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753563Ab3CDI5a convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 03:57:30 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 3
-X-BigFish: VS3(z3121kz98dIc89bh936eI1432Izz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ah1082kzzz2dh2a8h668h839h93fhd25he5bhf0ah1288h12a5h12a9h12bdh1354h137ah13b6h1441h1504h1537h153bh162dh1631h1758h1765h18e1h190ch1946h19c3h1ad9h1155h)
-Message-ID: <5134620F.8010306@freescale.com>
-Date: Mon, 4 Mar 2013 16:57:51 +0800
-From: Huang Shijie <b32955@freescale.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Thunderbird/3.1.16
-MIME-Version: 1.0
-To: <dedekind1@gmail.com>
-CC: Huang Shijie <shijie8@gmail.com>, <dwmw2@infradead.org>,
-        <computersforpeace@gmail.com>, <linux-mtd@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V3 1/3] mtd: add new fields to nand_flash_dev{}
-References: <1359349039-11510-1-git-send-email-b32955@freescale.com>			 <1359349039-11510-2-git-send-email-b32955@freescale.com>			 <1360684037.12703.117.camel@sauron.fi.intel.com>			 <CAMiH66ExMK8rPMw3kvs9M2b-0ZSkfxBYteTi8QTZf+XCzJw5Dw@mail.gmail.com>		 <1362234094.2745.9.camel@sauron> <513437DF.2030505@freescale.com>	 <1362383434.2943.5.camel@sauron> <5134566C.2090405@freescale.com> <1362386260.2943.9.camel@sauron>
-In-Reply-To: <1362386260.2943.9.camel@sauron>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: freescale.com
+	id S1755678Ab3CDI7f (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 03:59:35 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:24658 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753109Ab3CDI7e (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Mar 2013 03:59:34 -0500
+X-AuditID: cbfee68e-b7fa46d00000627e-96-51346275e7bf
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Andrew Morton'" <akpm@linux-foundation.org>
+Cc: "'LKML'" <linux-kernel@vger.kernel.org>,
+        "'Richard Purdie'" <rpurdie@rpsys.net>,
+        "'Jingoo Han'" <jg1.han@samsung.com>
+References: <015501ce18b6$3819c310$a84d4930$%han@samsung.com>
+In-reply-to: <015501ce18b6$3819c310$a84d4930$%han@samsung.com>
+Subject: Re: [PATCH] backlight: ep93xx_bl: remove incorrect __exit annotation
+Date: Mon, 04 Mar 2013 17:59:32 +0900
+Message-id: <015601ce18b6$96a73ca0$c3f5b5e0$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac4YtjgDnfWDblDbSP+ou/QMT1c6bgAADV5g
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrJIsWRmVeSWpSXmKPExsVy+t8zA93SJJNAg7YbQhZz1q9hs7i88BKr
+	xeVdc9gsdu96yurA4nFixm8Wjz3zf7B69G1ZxejxeZNcAEsUl01Kak5mWWqRvl0CV8aiu4sZ
+	C25zVLx7fpG5gXE6excjB4eEgIlE336FLkZOIFNM4sK99WxdjFwcQgLLGCUWPXvCBpEwkfh2
+	+hc7iC0kMJ1R4sAOXYiiX4wSv6fsZgVJsAmoSXz5chhsqIiAvkRbiwZImFmgVGLrg/csEL22
+	ElenfGACsTkF7CSebNjLClIuLOAr8WS7KEiYRUBV4n3vWbC1vEDlH/v7mCFsQYkfk++xQIzU
+	kli/8zgThC0vsXnNW2aIV9QlHv3VhTjASGLLRF+IChGJfS/eMYIcLCFwil3i4IpFjBCrBCS+
+	TT7EAtEqK7HpADPEs5JAJTdYJjBKzEKyeBaSxbOQLJ6FZMUCRpZVjKKpBckFxUnpRUZ6xYm5
+	xaV56XrJ+bmbGCHR2LeD8eYB60OMyUDrJzJLiSbnA6M5ryTe0NjYxMzE1MTc0tTclDRhJXFe
+	+UsygUIC6YklqdmpqQWpRfFFpTmpxYcYmTg4pRoYk916FxcdDfhTGLZV0Xhbf6aK+Oq4aY8E
+	zO8enTVBNowrilM17gbbpcnnkr/4HFo3m0ntZkl38owlm71EmUsPM1ep37ON9Xn46sTp4pxT
+	60/Ydj9h//72cpxRW+cVN67GVxcef7o/7V1YwfzwI+yWt4/z3GlpW3b6ArvndI+9zUv5dmy9
+	lLsoSYmlOCPRUIu5qDgRAM0pE3XcAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrOKsWRmVeSWpSXmKPExsVy+t9jQd3SJJNAg0vr+SzmrF/DZnF54SVW
+	i8u75rBZ7N71lNWBxePEjN8sHnvm/2D16NuyitHj8ya5AJaoBkabjNTElNQihdS85PyUzLx0
+	WyXv4HjneFMzA0NdQ0sLcyWFvMTcVFslF58AXbfMHKCdSgpliTmlQKGAxOJiJX07TBNCQ9x0
+	LWAaI3R9Q4LgeowM0EDCOsaMRXcXMxbc5qh49/wicwPjdPYuRk4OCQETiW+nf0HZYhIX7q1n
+	A7GFBKYzShzYodvFyAVk/2KU+D1lNytIgk1ATeLLl8NADRwcIgL6Em0tGiBhZoFSia0P3rNA
+	9NpKXJ3ygQnE5hSwk3iyYS8rSLmwgK/Ek+2iIGEWAVWJ971nwVbxApV/7O9jhrAFJX5MvscC
+	MVJLYv3O40wQtrzE5jVvmUHGSAioSzz6qwtxgJHElom+EBUiEvtevGOcwCg0C8mgWUgGzUIy
+	aBaSlgWMLKsYRVMLkguKk9JzjfSKE3OLS/PS9ZLzczcxgqP9mfQOxlUNFocYBTgYlXh4BT4Z
+	BwqxJpYVV+YeYpTgYFYS4Y1IMAkU4k1JrKxKLcqPLyrNSS0+xJgM9OdEZinR5HxgIsoriTc0
+	NjEzsjQyszAyMTcnTVhJnJfx1JMAIYH0xJLU7NTUgtQimC1MHJxSDYyFElnPVB1MH+/w++gj
+	qLZtk8qOWxOlGxy/Jz78zPK4+N7HgPks1449FwmQuH7/XXng889vT5wrLH++yP+N6r2Zq1ac
+	331SMtrFWTiyWLOyROixYARn+NzbRtnz94QwX999TKOdPejr1de91cZmuw76Bz37+69o4d93
+	hq4xExn9OPc0cYm/P5OuxFKckWioxVxUnAgANgQlQzoDAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2013年03月04日 16:37, Artem Bityutskiy 写道:
-> On Mon, 2013-03-04 at 16:08 +0800, Huang Shijie wrote:
->> 于 2013年03月04日 15:50, Artem Bityutskiy 写道:
->>> On Mon, 2013-03-04 at 13:57 +0800, Huang Shijie wrote:
->>>> The current code uses the @id to store the device id(byte 1).
->>>> But if we use the 8 bytes id data as the keyword, and expand the @id
->>>> field to 8byte array,
->>>> the device id is the second byte now. All the added zeros are for the
->>> I do not think you need to store the full array of ID's. Device ID's for
->>> all the 4 of above chips are different, which is enough to distinguish
->>> between them.
->>>
->>> The only thing you need to add is the OOB size field to 'struct
->>> nand_flash_dev'.
->>>
->> If i only add the oob size field. There will be two items with the same
->> Device ID in nand_flash_ids table,
->> one has oob_size, one does not have. such as:
->>
->>      {"NAND 8GIB 3,3V 8-bit", 0xDE, 0, 8192, 0, LP_OPTIONS},
-> OK, I guess for this one:
->
-> {"NAND 8GIB 3,3V 8-bit", 0xDE, 0, 8192, 0, LP_OPTIONS, 0},
->
-> nand_decode_ext_id() will calculate the OOB size.
->
->>      {"NAND 8GIB 3,3V 8-bit", 0xDE, 0, 8192, 0, LP_OPTIONS, 640},   //OOB
->> size is 640.
-> And for this one 'nand_decode_ext_id()' will calculate it too, but
-> _afterwards_ we change OOB size to 640.
->
-> Does this sound sane?
->
-I think not.
+On Monday, March 04, 2013 5:57 PM, Jingoo Han wrote:
+> Subject: [PATCH] backlight: ep93xx_bl: remove incorrect __exit annotation
 
-The problem is : we can not know which nand_flash_dev item we should use 
-when the same Device ID occurs.
-When we meet a nand whose Device ID is 0xDE, the current code will 
-select the first one:
-    {"NAND 8GIB 3,3V 8-bit", 0xDE, 0, 8192, 0, LP_OPTIONS, 0}
+Sorry, subject is wrong.
+__exit should be __init.
 
-Could you tell me how can we choose the seconde one? The second same 
-device-id item is
-   {"NAND 8GIB 3,3V 8-bit", 0xDE, 0, 8192, 0, LP_OPTIONS, 640}
+I will send the v2 patch, soon.
 
-thanks
-Huang Shijie
-
-
-
-
-
-
-
+> 
+> When platform_driver_probe() is not used, bind/unbind via sysfs is
+> enabled. Thus, __init/__exit annotations should be removed from
+> probe()/remove().
+> 
+> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+> ---
+>  drivers/video/backlight/ep93xx_bl.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/video/backlight/ep93xx_bl.c b/drivers/video/backlight/ep93xx_bl.c
+> index ef3e21e..fd073b2 100644
+> --- a/drivers/video/backlight/ep93xx_bl.c
+> +++ b/drivers/video/backlight/ep93xx_bl.c
+> @@ -60,7 +60,7 @@ static const struct backlight_ops ep93xxbl_ops = {
+>  	.get_brightness	= ep93xxbl_get_brightness,
+>  };
+> 
+> -static int __init ep93xxbl_probe(struct platform_device *dev)
+> +static int ep93xxbl_probe(struct platform_device *dev)
+>  {
+>  	struct ep93xxbl *ep93xxbl;
+>  	struct backlight_device *bl;
+> --
+> 1.7.2.5
 
 
