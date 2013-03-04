@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758101Ab3CDESF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 23:18:05 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60801 "EHLO
+	id S1756716Ab3CDESD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 23:18:03 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60798 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755350Ab3CDDmk (ORCPT
+	by vger.kernel.org with ESMTP id S1755485Ab3CDDmk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 3 Mar 2013 22:42:40 -0500
-Message-Id: <20130304033720.971379045@decadent.org.uk>
+Message-Id: <20130304033708.379229021@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 04 Mar 2013 03:39:23 +0000
+Date: Mon, 04 Mar 2013 03:37:14 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Douglas Bagnall <douglas@paradise.net.nz>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: [ 136/153] [media] Avoid sysfs oops when an rc_devs raw device is absent
+Cc: akpm@linux-foundation.org, Maciej Sosnowski <maciej.sosnowski@intel.com>,
+        Jiang Liu <jiang.liu@huawei.com>, Gaohuai Han <hangaohuai@huawei.com>,
+        Dan Williams <djbw@fb.com>
+Subject: [ 007/153] dca: check against empty dca_domains list before unregister provider
 In-Reply-To: <20130304033707.648729212@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,49 +28,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Douglas Bagnall <douglas@paradise.net.nz>
+From: Maciej Sosnowski <maciej.sosnowski@intel.com>
 
-commit 720bb6436ff30fccad05cf5bdf961ea5b1f5686d upstream.
+commit c419fcfd071cf34ba00f9f65282583772d2655e7 upstream.
 
-For some reason, when the lirc daemon learns that a usb remote control
-has been unplugged, it wants to read the sysfs attributes of the
-disappearing device. This is useful for uncovering transient
-inconsistencies, but less so for keeping the system running when such
-inconsistencies exist.
+When providers get blocked unregister_dca_providers() is called ending up
+with dca_providers and dca_domain lists emptied. Dca should be prevented from
+trying to unregister any provider if dca_domain list is found empty.
 
-Under some circumstances (like every time I unplug my dvb stick from
-my laptop), lirc catches an rc_dev whose raw event handler has been
-removed (presumably by ir_raw_event_unregister), and proceeds to
-interrogate the raw protocols supported by the NULL pointer.
-
-This patch avoids the NULL dereference, and ignores the issue of how
-this state of affairs came about in the first place.
-
-Version 2 incorporates changes recommended by Mauro Carvalho Chehab
-(-ENODEV instead of -EINVAL, and a signed-off-by).
-
-Signed-off-by: Douglas Bagnall <douglas@paradise.net.nz>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+Reported-by: Jiang Liu <jiang.liu@huawei.com>
+Tested-by: Gaohuai Han <hangaohuai@huawei.com>
+Signed-off-by: Maciej Sosnowski <maciej.sosnowski@intel.com>
+Signed-off-by: Dan Williams <djbw@fb.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/media/rc/rc-main.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ drivers/dca/dca-core.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/drivers/media/rc/rc-main.c
-+++ b/drivers/media/rc/rc-main.c
-@@ -774,10 +774,11 @@ static ssize_t show_protocols(struct dev
- 	if (dev->driver_type == RC_DRIVER_SCANCODE) {
- 		enabled = dev->rc_map.rc_type;
- 		allowed = dev->allowed_protos;
--	} else {
-+	} else if (dev->raw) {
- 		enabled = dev->raw->enabled_protocols;
- 		allowed = ir_raw_get_allowed_protocols();
--	}
-+	} else
-+		return -ENODEV;
+--- a/drivers/dca/dca-core.c
++++ b/drivers/dca/dca-core.c
+@@ -420,6 +420,11 @@ void unregister_dca_provider(struct dca_
  
- 	IR_dprintk(1, "allowed - 0x%llx, enabled - 0x%llx\n",
- 		   (long long)allowed,
+ 	raw_spin_lock_irqsave(&dca_lock, flags);
+ 
++	if (list_empty(&dca_domains)) {
++		raw_spin_unlock_irqrestore(&dca_lock, flags);
++		return;
++	}
++
+ 	list_del(&dca->node);
+ 
+ 	pci_rc = dca_pci_rc_from_dev(dev);
 
 
