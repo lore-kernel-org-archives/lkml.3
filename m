@@ -1,67 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754776Ab3CDAFZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 19:05:25 -0500
-Received: from mailout02.c08.mtsvc.net ([205.186.168.190]:39901 "EHLO
-	mailout02.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754624Ab3CDAFY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Mar 2013 19:05:24 -0500
-Message-ID: <1362355465.3221.82.camel@thor.lan>
-Subject: Re: [PATCH] ircomm: release tty before sleeping potentially
- indefintely
-From: Peter Hurley <peter@hurleysoftware.com>
-To: David Miller <davem@davemloft.net>
-Cc: sasha.levin@oracle.com, samuel@sortiz.org, gregkh@linuxfoundation.org,
-        jslaby@suse.cz, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Sun, 03 Mar 2013 19:04:25 -0500
-In-Reply-To: <20130303.174739.1195645942179862011.davem@davemloft.net>
-References: <1362350153-26225-1-git-send-email-sasha.levin@oracle.com>
-	 <20130303.174739.1195645942179862011.davem@davemloft.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.3-0pjh1 
+	id S1754838Ab3CDARF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 19:17:05 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:45478 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753652Ab3CDARD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Mar 2013 19:17:03 -0500
+Date: Mon, 4 Mar 2013 11:16:40 +1100
+From: NeilBrown <neilb@suse.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        linux RAID <linux-raid@vger.kernel.org>,
+        Jonathan Brassow <jbrassow@redhat.com>,
+        Joe Lawrence <Joe.Lawrence@stratus.com>,
+        Sebastian Riemer <sebastian.riemer@profitbricks.com>,
+        Ben Hutchings <ben@decadent.org.uk>, Dan Williams <djbw@fb.com>,
+        Kees Cook <keescook@chromium.org>,
+        Tregaron Bayly <tbayly@bluehost.com>
+Subject: [PULL REQUEST] md updates for 3.9
+Message-ID: <20130304111640.32c428a0@notabene.brown>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-suse-linux-gnu)
 Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 125194 peter@hurleysoftware.com
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/N6r4ySdiHrw0nrxpbyoZ0nl"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2013-03-03 at 17:47 -0500, David Miller wrote:
-> From: Sasha Levin <sasha.levin@oracle.com>
-> Date: Sun,  3 Mar 2013 17:35:53 -0500
-> 
-> > ircomm_tty_block_til_ready would hold tty lock while blocking. Since the sleep
-> > might take a long time we can prevent other processes from accessing the tty,
-> > causing hung tasks and a dead tty.
-> > 
-> > Diagnosed-by: Peter Hurley <peter@hurleysoftware.com>
-> > Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
-> 
-> But then you invalidate all of the tty state tests made under
-> the lock at the beginning of this function, before enterring
-> the loop.  If you drop the lock, those pieces of state could
-> change.
+--Sig_/N6r4ySdiHrw0nrxpbyoZ0nl
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Yes, the state could change. For example, the tty could be hung up while
-ircomm_tty_block_til_ready() is sleeping. Or the session leader could be
-exiting and SIGHUPed this task. Or the port could have been shutdown.
+The following changes since commit 19f949f52599ba7c3f67a5897ac6be14bfcb1200:
 
-All these are re-tested in the loop. What state test isn't repeated?
+  Linux 3.8 (2013-02-18 15:58:34 -0800)
 
-> I'm not applying this.
+are available in the git repository at:
 
-That's certainly your perogative.
-But you should know this bug hangs the entire tty subsystem.
+  git://neil.brown.name/md tags/md-3.9
 
-This is the correct fix and exactly how this is done by the tty port.
+for you to fetch changes up to f3378b48705154b9089affb2d2e939622aea68f1:
 
-Regards,
-Peter Hurley
+  md: expedite metadata update when switching  read-auto -> active (2013-02=
+-28 11:59:03 +1100)
+
+Thanks,
+NeilBrown
 
 
 
+----------------------------------------------------------------
+md updates for 3.9
 
+mostly little bugfixes.
+Only "feature" is a new RAID10 layout which slightly
+improves the number of sets of devices that can concurrently
+fail, without data loss.
 
+----------------------------------------------------------------
+Joe Lawrence (1):
+      md: raid1,10: Handle REQ_WRITE_SAME flag in write bios
 
+Jonathan Brassow (4):
+      MD RAID10: Minor non-functional code changes
+      MD RAID10: Improve redundancy for 'far' and 'offset' algorithms (part=
+ 1)
+      MD RAID10: Improve redundancy for 'far' and 'offset' algorithms (part=
+ 2)
+      DM RAID: Add support for MD's RAID10 "far" and "offset" algorithms
 
+NeilBrown (6):
+      md: fix two bugs when attempting to resize RAID0 array.
+      md: raid0: fix error return from create_stripe_zones.
+      md/raid0: improve error message when converting RAID4-with-spares to =
+RAID0
+      md/raid1,raid10: fix deadlock with freeze_array()
+      md: remove CONFIG_MULTICORE_RAID456
+      md: expedite metadata update when switching  read-auto -> active
+
+Sebastian Riemer (1):
+      md: protect against crash upon fsync on ro array
+
+ Documentation/device-mapper/dm-raid.txt |  44 +++++++++++++---
+ drivers/md/Kconfig                      |  11 ----
+ drivers/md/dm-raid.c                    | 123 ++++++++++++++++++++++++++++=
+++++++++-------
+ drivers/md/md.c                         |  19 ++++++-
+ drivers/md/raid0.c                      |  13 +++--
+ drivers/md/raid1.c                      |   8 ++-
+ drivers/md/raid10.c                     |  97 ++++++++++++++++++++++++++--=
+------
+ drivers/md/raid10.h                     |   5 ++
+ drivers/md/raid5.c                      |  38 +------------
+ 9 files changed, 256 insertions(+), 102 deletions(-)
+
+--Sig_/N6r4ySdiHrw0nrxpbyoZ0nl
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIVAwUBUTPn6Dnsnt1WYoG5AQJ+oBAAg+2xRZxttGjUsLj96mu1BCo97u9ink2V
+TSJ1KtIx2cPD6mVJTtoO+r0U4EdXNoAk2TbuqLTWmYW/O8qeSgARsefMxujJv6KJ
+hF9kEtrUowo0wYPqeYFVIrkL0llXcd3iVP+oj44D2SjuwrwnfHLX4uTO3k/Dfxif
+hHnKnM2lW+3hnNWijKxR4hjJv4INWlvIesrThJHyspzdnzP6z6C6sFEBkic5/J6o
+vIxBPvPUx3b6mSCIObNJ8BwUX7toT6ltMED4TPL1KUQEn1zsbWIYB1NVf7yZrHeC
+LCz/653qNxajJ/lJdmyM/0SVFZZ9UnKDXex8VCnZPzKIlJbsQ38y2UBxjPZtbTTz
+tGYH5w8BkQ8nTev/TOXPtjYWZJ0/RfuhSMuRzYXq6JDH3J9WLnFr/Mhv7FkAkRaP
+o5//dUPtAGh7dU9okUrm/KPnfbT36U5Eg83BDM9o4F2EIEfQVcFQMOr8PfFF2ROS
+5/F6fnz7Man6KxXGk/NZYashgTTrYtggUZC+s86iJGXM22kKyE3NWEAdREl2ncBw
+V0EiuhCwskLqmYcMdES63VdVKNzLoSs0uGOW/XdvCgQZChWJcYwy8Oxm/ZNIj3dm
+zp8hNm9qsmMXIm6pAxGOKb3KmzEYmRbF3BrORclQf0XPnhacAmuOCXAdAys0t3FI
+vFupkzlcYU4=
+=mPES
+-----END PGP SIGNATURE-----
+
+--Sig_/N6r4ySdiHrw0nrxpbyoZ0nl--
