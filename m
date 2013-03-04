@@ -1,103 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755260Ab3CDDGZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Mar 2013 22:06:25 -0500
-Received: from dcvr.yhbt.net ([64.71.152.64]:42981 "EHLO dcvr.yhbt.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754503Ab3CDDGX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Mar 2013 22:06:23 -0500
-From: Eric Wong <normalperson@yhbt.net>
-To: linux-kernel@vger.kernel.org
-Cc: linux-fsdevel@vger.kernel.org, Eric Wong <normalperson@yhbt.net>,
-        Davide Libenzi <davidel@xmailserver.org>,
-        Al Viro <viro@ZenIV.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 1/2] epoll: hoist out duplicated wake up logic
-Date: Mon,  4 Mar 2013 03:06:07 +0000
-Message-Id: <1362366368-15246-1-git-send-email-normalperson@yhbt.net>
-X-Mailer: git-send-email 1.8.1.2.526.gf51a757
-In-Reply-To: <20130304030500.GA29365@dcvr.yhbt.net>
-References: <20130304030500.GA29365@dcvr.yhbt.net>
+	id S1755116Ab3CDDLF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Mar 2013 22:11:05 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:51288 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754936Ab3CDDLD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Mar 2013 22:11:03 -0500
+Date: Mon, 4 Mar 2013 14:10:51 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: linux-next: build failure after merge of the final tree (akpm tree
+ related)
+Message-Id: <20130304141051.a630590df1007f2d349a2d8a@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__4_Mar_2013_14_10_51_+1100_fMAxWi3o1Wu1Kw/e"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This makes the kernel slightly smaller, and hopefully easier to follow.
+--Signature=_Mon__4_Mar_2013_14_10_51_+1100_fMAxWi3o1Wu1Kw/e
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Eric Wong <normalperson@yhbt.net>
-Cc: Davide Libenzi <davidel@xmailserver.org>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Andrew Morton <akpm@linux-foundation.org>
----
- fs/eventpoll.c | 27 +++++++++++----------------
- 1 file changed, 11 insertions(+), 16 deletions(-)
+Hi all,
 
-diff --git a/fs/eventpoll.c b/fs/eventpoll.c
-index 5a1a596..6a70b7d 100644
---- a/fs/eventpoll.c
-+++ b/fs/eventpoll.c
-@@ -536,6 +536,13 @@ static void ep_unregister_pollwait(struct eventpoll *ep, struct epitem *epi)
- 	}
- }
- 
-+static int __must_check ep_wake_up_locked(struct eventpoll *ep)
-+{
-+	if (waitqueue_active(&ep->wq))
-+		wake_up_locked(&ep->wq);
-+	return waitqueue_active(&ep->poll_wait);
-+}
-+
- /**
-  * ep_scan_ready_list - Scans the ready list in a way that makes possible for
-  *                      the scan code, to call f_op->poll(). Also allows for
-@@ -620,10 +627,7 @@ static int ep_scan_ready_list(struct eventpoll *ep,
- 		 * Wake up (if active) both the eventpoll wait list and
- 		 * the ->poll() wait list (delayed after we release the lock).
- 		 */
--		if (waitqueue_active(&ep->wq))
--			wake_up_locked(&ep->wq);
--		if (waitqueue_active(&ep->poll_wait))
--			pwake++;
-+		pwake = ep_wake_up_locked(ep);
- 	}
- 	spin_unlock_irqrestore(&ep->lock, flags);
- 
-@@ -991,10 +995,7 @@ static int ep_poll_callback(wait_queue_t *wait, unsigned mode, int sync, void *k
- 	 * Wake up ( if active ) both the eventpoll wait list and the ->poll()
- 	 * wait list.
- 	 */
--	if (waitqueue_active(&ep->wq))
--		wake_up_locked(&ep->wq);
--	if (waitqueue_active(&ep->poll_wait))
--		pwake++;
-+	pwake = ep_wake_up_locked(ep);
- 
- out_unlock:
- 	spin_unlock_irqrestore(&ep->lock, flags);
-@@ -1250,10 +1251,7 @@ static int ep_insert(struct eventpoll *ep, struct epoll_event *event,
- 		__pm_stay_awake(epi->ws);
- 
- 		/* Notify waiting tasks that events are available */
--		if (waitqueue_active(&ep->wq))
--			wake_up_locked(&ep->wq);
--		if (waitqueue_active(&ep->poll_wait))
--			pwake++;
-+		pwake = ep_wake_up_locked(ep);
- 	}
- 
- 	spin_unlock_irqrestore(&ep->lock, flags);
-@@ -1360,10 +1358,7 @@ static int ep_modify(struct eventpoll *ep, struct epitem *epi, struct epoll_even
- 			__pm_stay_awake(epi->ws);
- 
- 			/* Notify waiting tasks that events are available */
--			if (waitqueue_active(&ep->wq))
--				wake_up_locked(&ep->wq);
--			if (waitqueue_active(&ep->poll_wait))
--				pwake++;
-+			pwake = ep_wake_up_locked(ep);
- 		}
- 		spin_unlock_irq(&ep->lock);
- 	}
--- 
-1.8.1.2.526.gf51a757
+After merging the final tree, today's linux-next build (sparc64 defconfig)
+failed like this:
 
+arch/sparc/built-in.o: In function `setup_arch':
+(.init.text+0xc38): undefined reference to `early_console'
+arch/sparc/built-in.o: In function `setup_arch':
+(.init.text+0xc44): undefined reference to `early_console'
+
+Caused by commit 16ac99bd7acd ("early_printk: consolidate random copies
+of identical code").  This build does not have CONFIG_EARLY_PRINTK defined.
+
+I have reverted that commit for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Mon__4_Mar_2013_14_10_51_+1100_fMAxWi3o1Wu1Kw/e
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRNBC7AAoJEECxmPOUX5FE2wQQAJcgrA8vC7iM6YQmLHKMo5t8
+YP/cc0ebTzT/huytRH1qClkrCyeFoFxjEYRqtrSX9Cb35KTd2jDoONm7W9NRfgSV
+0tXFids2sdmNtRMSf/5fBdqmAmzBMJB1kgEbeo+O1JE09HZq9w1+IWCUFAmRkwvc
+Wu04KAEOUff5714f7CpBaYwJ+voxIpIUJZ2xR8UFty0rjaJuVhaVNVREMoTTFiTR
+lBJr5b/LnaRXxCt873JgW2UfSErT2jpAqDP3Gg41bsPqX7PttVieyp2rZnQyC5Rw
+4TRky1s9VtNyAcv+WHj+kpBeO0818ViC4Dr82hv0hLPXd7QcRZv8TMqvG1h295Qc
+V+PQapht66PTPtjaeJ494ahZQL5y1asBrF3QHKnOAcGGX3RTKsFGOyK4H/wOJKeo
+zvAmZTb/n8EppwIxOdqWXES0zZvsfdqOb6u1QLCyCRkdGRRMDmIFofA98ldmF/Pt
+vgXXxG+9EYLQwcoUp3v2KSxD1nLhw47M3SSNdZWEK4Ue8EheC4RFBp19bZ0KTZw0
+9CvgZGnNpraKRddeGkqoVH0iXYiZc5Zp7s9ufPTvXA9CQxpnOFB9hQX9GTng8Bsd
+FPoqSQrh0g73OifzmKfpvm1aiGf2NM0SHXyFH5fWfprr68sIP+d0/JD+a/zIxkHB
+awDczXOpSGPEyEz+oT8R
+=8mbw
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__4_Mar_2013_14_10_51_+1100_fMAxWi3o1Wu1Kw/e--
