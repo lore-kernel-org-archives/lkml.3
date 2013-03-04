@@ -1,49 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932796Ab3CDW2p (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 17:28:45 -0500
-Received: from mail-ee0-f50.google.com ([74.125.83.50]:57468 "EHLO
-	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932367Ab3CDW2o (ORCPT
+	id S932851Ab3CDWcV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 17:32:21 -0500
+Received: from casper.infradead.org ([85.118.1.10]:44010 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932654Ab3CDWcT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 17:28:44 -0500
-From: Alexandru Gheorghiu <gheorghiuandru@gmail.com>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
-        Alexandru Gheorghiu <gheorghiuandru@gmail.com>
-Subject: [PATCH] arch: x86: kernel: smpboot: fixed unused variable warning
-Date: Tue,  5 Mar 2013 00:28:00 +0200
-Message-Id: <1362436081-28782-1-git-send-email-gheorghiuandru@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Mon, 4 Mar 2013 17:32:19 -0500
+Message-ID: <51352116.5030702@infradead.org>
+Date: Mon, 04 Mar 2013 14:32:54 -0800
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: LKML <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH] idr: fix new kernel-doc warnings
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removed unused variable 'c' and fixed the following warning:
-arch/x86/kernel/smpboot.c: In function ‘mwait_play_dead’:
-arch/x86/kernel/smpboot.c:1370:22: warning: unused variable ‘c’ [-Wunused-variable]
+From: Randy Dunlap <rdunlap@infradead.org>
 
-Signed-off-by: Alexandru Gheorghiu <gheorghiuandru@gmail.com>
+Fix new kernel-doc warnings in idr:
+
+Warning(include/linux/idr.h:113): No description found for parameter 'idr'
+Warning(include/linux/idr.h:113): Excess function parameter 'idp' description in 'idr_find'
+Warning(lib/idr.c:232): Excess function parameter 'id' description in 'sub_alloc'
+Warning(lib/idr.c:232): Excess function parameter 'id' description in 'sub_alloc'
+
+Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
+Cc:	Tejun Heo <tj@kernel.org>
 ---
- arch/x86/kernel/smpboot.c |    1 -
- 1 file changed, 1 deletion(-)
+ include/linux/idr.h |    2 +-
+ lib/idr.c           |    1 -
+ 2 files changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-index a6ceaed..7bc998a 100644
---- a/arch/x86/kernel/smpboot.c
-+++ b/arch/x86/kernel/smpboot.c
-@@ -1367,7 +1367,6 @@ static inline void mwait_play_dead(void)
- 	unsigned int highest_subcstate = 0;
- 	int i;
- 	void *mwait_ptr;
--	struct cpuinfo_x86 *c = __this_cpu_ptr(&cpu_info);
+--- lnx-39-rc1.orig/include/linux/idr.h
++++ lnx-39-rc1/include/linux/idr.h
+@@ -99,7 +99,7 @@ static inline void idr_preload_end(void)
  
- 	if (!this_cpu_has(X86_FEATURE_MWAIT))
- 		return;
--- 
-1.7.9.5
-
+ /**
+  * idr_find - return pointer for given id
+- * @idp: idr handle
++ * @idr: idr handle
+  * @id: lookup key
+  *
+  * Return the pointer given the id it has been registered with.  A %NULL
+--- lnx-39-rc1.orig/lib/idr.c
++++ lnx-39-rc1/lib/idr.c
+@@ -214,7 +214,6 @@ EXPORT_SYMBOL(idr_pre_get);
+  * sub_alloc - try to allocate an id without growing the tree depth
+  * @idp: idr handle
+  * @starting_id: id to start search at
+- * @id: pointer to the allocated handle
+  * @pa: idr_layer[MAX_IDR_LEVEL] used as backtrack buffer
+  * @gfp_mask: allocation mask for idr_layer_alloc()
+  * @layer_idr: optional idr passed to idr_layer_alloc()
