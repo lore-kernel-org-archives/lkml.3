@@ -1,155 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932313Ab3CDSVq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 13:21:46 -0500
-Received: from out02.mta.xmission.com ([166.70.13.232]:54310 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932095Ab3CDSVn (ORCPT
+	id S932229Ab3CDSU5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 13:20:57 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:35934 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758472Ab3CDSSf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 13:21:43 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Kees Cook <keescook@google.com>
-Cc: Mathias Krause <minipli@googlemail.com>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Brad Spengler <spender@grsecurity.net>,
-        Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>,
-        Rusty Russell <rusty@rustcorp.com.au>, PaX Team <pageexec@freemail.hu>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        "David S. Miller" <davem@davemloft.net>
-References: <CAGXu5jK7x+gFKgCN5=ZF+kSc4xSNbGtSERHCoOnCEgiJ1_wNGg@mail.gmail.com>
-	<20130303005700.GA32213@austin.hallyn.com>
-	<CAGXu5jLciqXcuhzDVPKPqA+mwv8e28zGAMScatzov3U07BuBaQ@mail.gmail.com>
-	<20130303035608.GA2703@austin.hallyn.com>
-	<CAGXu5jKphNv9+wYE1GwfXKXDdzeWB_AtiqxT0e2PEzqCXNPkfQ@mail.gmail.com>
-	<20130304082959.GA22087@r00tworld.net>
-	<CAGXu5j+4quUZ3Lw7AiOSe1e0iewPCDSZZPXcp-KPahQy6cGjww@mail.gmail.com>
-Date: Mon, 04 Mar 2013 10:21:28 -0800
-In-Reply-To: <CAGXu5j+4quUZ3Lw7AiOSe1e0iewPCDSZZPXcp-KPahQy6cGjww@mail.gmail.com>
-	(Kees Cook's message of "Mon, 4 Mar 2013 08:46:01 -0800")
-Message-ID: <87boazgh5j.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1/nwlyws+FXg/N6kMydMaIq+iMywPYu9bQ=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0001]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_XMDrugObfuBody_08 obfuscated drug references
-X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Kees Cook <keescook@google.com>
-X-Spam-Relay-Country: 
-Subject: Re: user ns: arbitrary module loading
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+	Mon, 4 Mar 2013 13:18:35 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
+        devel@driverdev.osuosl.org
+Cc: dan.magenheimer@oracle.com, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH 11/11] zcache/zbud: Add incremental accessory counters
+Date: Mon,  4 Mar 2013 13:18:21 -0500
+Message-Id: <1362421101-15896-12-git-send-email-konrad.wilk@oracle.com>
+X-Mailer: git-send-email 1.8.0.2
+In-Reply-To: <1362421101-15896-1-git-send-email-konrad.wilk@oracle.com>
+References: <1362421101-15896-1-git-send-email-konrad.wilk@oracle.com>
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kees Cook <keescook@google.com> writes:
+that are going to be used for debug fs entries.
 
-> On Mon, Mar 4, 2013 at 12:29 AM, Mathias Krause <minipli@googlemail.com> wrote:
->> On Sun, Mar 03, 2013 at 09:48:50AM -0800, Kees Cook wrote:
->>> Several subsystems already have an implicit subsystem restriction
->>> because they load with aliases. (e.g. binfmt-XXXX, net-pf=NNN,
->>> snd-card-NNN, FOO-iosched, etc). This isn't the case for filesystems
->>> and a few others, unfortunately:
->>>
->>> $ git grep 'request_module("%.*s"' | grep -vi prefix
->>> crypto/api.c:           request_module("%s", name);
->>>
->>> [...]
->>>
->>> Several of these come from hardcoded values, though (e.g. crypto, chipreg).
->>
->> Well, crypto does not. Try the code snippet below on a system with
->> CONFIG_CRYPTO_USER_API=y. It'll abuse the above request_module() call
->> to load any module the user requests -- iregardless of being contained
->> in a user ns or not.
->
-> Oh ew. Yeah, I must have missed the path through the user api. Arg.
+Acked-by: Dan Magenheimer <dan.magenheimer@oracle.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ drivers/staging/zcache/zbud.c | 58 +++++++++++++++++++++++++++++--------------
+ 1 file changed, 39 insertions(+), 19 deletions(-)
 
-I will let someone else write the patch that adds the module aliases to
-crypto.
-
-It seems worth doing even outside of any security concerns as it just
-makes the reqest to modprobe make more sense, and allows the existing
-modprobe policy controls to work.
-
-Whereas an ill-formed string just doesn't tell modprobe enough to really
-act intelligently.
-
->> ---8<---
->> /* Loading arbitrary modules using crypto api since v2.6.38
->>  *
->>  * - minipli
->>  */
->> #include <linux/if_alg.h>
->> #include <sys/socket.h>
->> #include <unistd.h>
->> #include <stdlib.h>
->> #include <string.h>
->> #include <stdio.h>
->>
->> #ifndef AF_ALG
->> #define AF_ALG 38
->> #endif
->>
->>
->> int main(int argc, char **argv) {
->>         struct sockaddr_alg sa_alg = {
->>                 .salg_family = AF_ALG,
->>                 .salg_type = "hash",
->>         };
->>         int sock;
->>
->>         if (argc != 2) {
->>                 printf("usage: %s MODULE_NAME\n", argv[0]);
->>                 exit(1);
->>         }
->>
->>         sock = socket(AF_ALG, SOCK_SEQPACKET, 0);
->>         if (sock < 0) {
->>                 perror("socket(AF_ALG)");
->>                 exit(1);
->>         }
->>
->>         strncpy((char *) sa_alg.salg_name, argv[1], sizeof(sa_alg.salg_name));
->>         bind(sock, (struct sockaddr *) &sa_alg, sizeof(sa_alg));
->>         close(sock);
->>
->>         return 0;
->> }
->> --->8---
->>
->> If people care about unprivileged users not being able to load arbitrary
->> modules, could someone please fix this in crypto API, then? Herbert?
->
-> So, should this get a prefix too?  Maybe we need to change the
-> request_module primitive to request_module(prefix, fmt, args) to stop
-> these request_module("%s", name) things from continuing to exist...
-
-Something like the patch below?
-
-diff --git a/kernel/kmod.c b/kernel/kmod.c
-index 56dd349..859aa3a 100644
---- a/kernel/kmod.c
-+++ b/kernel/kmod.c
-@@ -131,6 +131,10 @@ int __request_module(bool wait, const char *fmt, ...)
- #define MAX_KMOD_CONCURRENT 50 /* Completely arbitrary value - KAO */
-        static int kmod_loop_msg;
+diff --git a/drivers/staging/zcache/zbud.c b/drivers/staging/zcache/zbud.c
+index fdff5c6..0feb856 100644
+--- a/drivers/staging/zcache/zbud.c
++++ b/drivers/staging/zcache/zbud.c
+@@ -301,6 +301,26 @@ static ssize_t zbud_eph_unbuddied_count;
+ static ssize_t zbud_pers_unbuddied_count;
+ static ssize_t zbud_eph_zombie_count;
+ static ssize_t zbud_pers_zombie_count;
++static inline void inc_zbud_eph_pageframes(void) { zbud_eph_pageframes++; };
++static inline void inc_zbud_pers_pageframes(void) { zbud_pers_pageframes++; };
++static inline void inc_zbud_eph_zpages(void) { zbud_eph_zpages++; };
++static inline void inc_zbud_pers_zpages(void) { zbud_pers_zpages++; };
++static inline void inc_zbud_eph_zbytes(ssize_t bytes) { zbud_eph_zbytes += bytes; };
++static inline void inc_zbud_pers_zbytes(ssize_t bytes) { zbud_pers_zbytes += bytes; };
++static inline void inc_zbud_eph_evicted_pageframes(void) { zbud_eph_evicted_pageframes++; };
++static inline void inc_zbud_pers_evicted_pageframes(void) { zbud_pers_evicted_pageframes++; };
++static inline void inc_zbud_eph_cumul_zpages(void) { zbud_eph_cumul_zpages++; };
++static inline void inc_zbud_pers_cumul_zpages(void) { zbud_pers_cumul_zpages++; };
++static inline void inc_zbud_eph_cumul_zbytes(ssize_t bytes) { zbud_eph_cumul_zbytes += bytes; };
++static inline void inc_zbud_pers_cumul_zbytes(ssize_t bytes) { zbud_pers_cumul_zbytes += bytes; };
++static inline void inc_zbud_eph_cumul_chunk_counts(unsigned n) { zbud_eph_cumul_chunk_counts[n]++; };
++static inline void inc_zbud_pers_cumul_chunk_counts(unsigned n) { zbud_pers_cumul_chunk_counts[n]++; };
++static inline void inc_zbud_eph_buddied_count(void) { zbud_eph_buddied_count++; };
++static inline void inc_zbud_pers_buddied_count(void) { zbud_pers_buddied_count++; };
++static inline void inc_zbud_eph_unbuddied_count(void) { zbud_eph_unbuddied_count++; };
++static inline void inc_zbud_pers_unbuddied_count(void) { zbud_pers_unbuddied_count++; };
++static inline void inc_zbud_eph_zombie_count(void) { zbud_eph_zombie_count++; };
++static inline void inc_zbud_pers_zombie_count(void) { zbud_pers_zombie_count++; };
+ static atomic_t zbud_eph_zombie_atomic;
+ static atomic_t zbud_pers_zombie_atomic;
  
-+       /* Require that calls to request module have a little structure */
-+       if (fmt[0] == '%')
-+               return -EINVAL;
-+
-        /*
-         * We don't allow synchronous module loading from async.  Module
-         * init may invoke async_synchronize_full() which will end up
+@@ -379,9 +399,9 @@ static inline struct zbudpage *zbud_init_zbudpage(struct page *page, bool eph)
+ 	zbudpage->zbud1_size = 0;
+ 	zbudpage->unevictable = 0;
+ 	if (eph)
+-		zbud_eph_pageframes++;
++		inc_zbud_eph_pageframes();
+ 	else
+-		zbud_pers_pageframes++;
++		inc_zbud_pers_pageframes();
+ 	return zbudpage;
+ }
+ 
+@@ -465,17 +485,17 @@ static void zbud_init_zbud(struct zbudpage *zbudpage, struct tmem_handle *th,
+ 	else
+ 		zbudpage->zbud1_size = size;
+ 	if (eph) {
+-		zbud_eph_cumul_chunk_counts[nchunks]++;
+-		zbud_eph_zpages++;
+-		zbud_eph_cumul_zpages++;
+-		zbud_eph_zbytes += size;
+-		zbud_eph_cumul_zbytes += size;
++		inc_zbud_eph_cumul_chunk_counts(nchunks);
++		inc_zbud_eph_zpages();
++		inc_zbud_eph_cumul_zpages();
++		inc_zbud_eph_zbytes(size);
++		inc_zbud_eph_cumul_zbytes(size);
+ 	} else {
+-		zbud_pers_cumul_chunk_counts[nchunks]++;
+-		zbud_pers_zpages++;
+-		zbud_pers_cumul_zpages++;
+-		zbud_pers_zbytes += size;
+-		zbud_pers_cumul_zbytes += size;
++		inc_zbud_pers_cumul_chunk_counts(nchunks);
++		inc_zbud_pers_zpages();
++		inc_zbud_pers_cumul_zpages();
++		inc_zbud_pers_zbytes(size);
++		inc_zbud_pers_cumul_zbytes(size);
+ 	}
+ }
+ 
+@@ -603,9 +623,9 @@ struct page *zbud_free_and_delist(struct zbudref *zref, bool eph,
+ 		}
+ 		if (eph) {
+ 			zbud_eph_buddied_count--;
+-			zbud_eph_unbuddied_count++;
++			inc_zbud_eph_unbuddied_count();
+ 		} else {
+-			zbud_pers_unbuddied_count++;
++			inc_zbud_pers_unbuddied_count();
+ 			zbud_pers_buddied_count--;
+ 		}
+ 		/* don't mess with lru, no need to move it */
+@@ -664,7 +684,7 @@ found_unbuddied:
+ 		list_add_tail(&zbudpage->budlist, &zbud_eph_buddied_list);
+ 		unbud[found_good_buddy].count--;
+ 		zbud_eph_unbuddied_count--;
+-		zbud_eph_buddied_count++;
++		inc_zbud_eph_buddied_count();
+ 		/* "promote" raw zbudpage to most-recently-used */
+ 		list_del_init(&zbudpage->lru);
+ 		list_add_tail(&zbudpage->lru, &zbud_eph_lru_list);
+@@ -672,7 +692,7 @@ found_unbuddied:
+ 		list_add_tail(&zbudpage->budlist, &zbud_pers_buddied_list);
+ 		unbud[found_good_buddy].count--;
+ 		zbud_pers_unbuddied_count--;
+-		zbud_pers_buddied_count++;
++		inc_zbud_pers_buddied_count();
+ 		/* "promote" raw zbudpage to most-recently-used */
+ 		list_del_init(&zbudpage->lru);
+ 		list_add_tail(&zbudpage->lru, &zbud_pers_lru_list);
+@@ -723,10 +743,10 @@ struct zbudref *zbud_create_prep(struct tmem_handle *th, bool eph,
+ 	list_add_tail(&zbudpage->budlist, &unbud[nchunks].list);
+ 	if (eph) {
+ 		list_add_tail(&zbudpage->lru, &zbud_eph_lru_list);
+-		zbud_eph_unbuddied_count++;
++		inc_zbud_eph_unbuddied_count();
+ 	} else {
+ 		list_add_tail(&zbudpage->lru, &zbud_pers_lru_list);
+-		zbud_pers_unbuddied_count++;
++		inc_zbud_pers_unbuddied_count();
+ 	}
+ 	unbud[nchunks].count++;
+ 	zbud_init_zbud(zbudpage, th, eph, cdata, budnum, size);
+@@ -951,7 +971,7 @@ evict_page:
+ 		BUG();
+ 	}
+ 	spin_unlock(&zbud_eph_lists_lock);
+-	zbud_eph_evicted_pageframes++;
++	inc_zbud_eph_evicted_pageframes();
+ 	if (*zpages == 1)
+ 		zbud_eph_unbuddied_count--;
+ 	else
+-- 
+1.8.0.2
+
