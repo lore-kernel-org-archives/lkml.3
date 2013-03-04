@@ -1,70 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932149Ab3CDQQJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 11:16:09 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:44155 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758458Ab3CDQQF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 11:16:05 -0500
-Message-ID: <1362413759.15793.98.camel@edumazet-glaptop>
-Subject: Re: [RFC PATCH 1/5] net: implement support for low latency socket
- polling
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Eliezer Tamir <eliezer.tamir@linux.intel.com>
-Cc: Eliezer Tamir <eliezer.tamir@linux.jf.intel.com>,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        Dave Miller <davem@davemloft.net>,
-        Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        e1000-devel@lists.sourceforge.net,
-        Willem de Bruijn <willemb@google.com>,
-        Andi Kleen <andi@firstfloor.org>, HPA <hpa@zytor.com>,
-        Eliezer Tamir <eliezer@tamir.org.il>
-Date: Mon, 04 Mar 2013 08:15:59 -0800
-In-Reply-To: <5134BD9B.2080003@linux.intel.com>
-References: <20130227175549.10611.82188.stgit@gitlad.jf.intel.com>
-	   <20130227175555.10611.42794.stgit@gitlad.jf.intel.com>
-	  <1362335704.15793.81.camel@edumazet-glaptop>
-	  <51345EB8.9050309@linux.intel.com>
-	 <1362408768.15793.89.camel@edumazet-glaptop>
-	 <5134BD9B.2080003@linux.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S932144Ab3CDQU4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 11:20:56 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:37294 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758165Ab3CDQUy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Mar 2013 11:20:54 -0500
+Date: Mon, 4 Mar 2013 11:20:33 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dmitry.kasatkin@intel.com
+Subject: Re: [PATCH 2/6] ima: Return INTEGRITY_FAIL if digital signature
+ can't be verified
+Message-ID: <20130304162033.GB15199@redhat.com>
+References: <1360871745-20616-1-git-send-email-vgoyal@redhat.com>
+ <1360871745-20616-3-git-send-email-vgoyal@redhat.com>
+ <1362404916.4392.25.camel@falcor1>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1362404916.4392.25.camel@falcor1>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-03-04 at 17:28 +0200, Eliezer Tamir wrote:
-> On 04/03/2013 16:52, Eric Dumazet wrote:
-> > On Mon, 2013-03-04 at 10:43 +0200, Eliezer Tamir wrote:
-> >
-> >> One could for example increment the generation id every time the RTNL is
-> >> taken. or is this too much?
-> >
-> > RTNL is taken for a lot of operations, it would be better to have a
-> > finer grained increment.
+On Mon, Mar 04, 2013 at 08:48:36AM -0500, Mimi Zohar wrote:
+> On Thu, 2013-02-14 at 14:55 -0500, Vivek Goyal wrote:
+> > Digital signature verification happens using integrity_digsig_verify().
+> > Curently we set integrity to FAIL for all error codes except -EOPNOTSUPP.
+> > This sounds out of line.
+> > 
+> > - If appropriate kernel code is not compiled in to verify signature of
+> >   a file, then prractically it is a failed signature.
+> > 
+> > - For so many other possible errors we are setting the status to fail.
+> >   For example, -EINVAL, -ENOKEY, -ENOMEM, -EINVAL, -ENOTSUPP etc, it
+> >   beats me that why -EOPNOTSUPP is special.
+> > 
+> > This patch should make the semantics more consistent. That is, if digital
+> > signature is present in security.ima, then any error happened during
+> > signature processing leads to status INTEGRITY_FAIL.
+> > 
+> > AFAICS, it should not have any user visible effect on existing
+> > application. In some cases we will start returning INTEGRITY_FAIL
+> > instead of INTEGRITY_UNKNOWN. And process_measurement() will deny access
+> > to file both in case of INTEGRITY_UNKNOWN and INTEGRITY_FAIL.
+> > 
+> > Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
 > 
-> If is taken rarely enough it will still be worth it.
-> 
+> A number of patches in this patchset more finely differentiate return
+> codes, which is good.  I agree with you totally that there is no good
+> reason for -EOPNOTSUPP to be handled differently.  Unfortunately, the
+> initramfs is CPIO, which doesn't support xattrs.  With the proposed
+> change and 'ima_appraise_tcb' flag enabled, we wouldn't be able to boot.
+> I really dislike hard coding policy in the kernel.
 
-Yes, but eventually it makes attempts to get rid of RTNL a nightmare.
+Hi Mimi,
 
-When adding new network features, just use the right semantic from the
-beginning.
+If there are no xattr, then we will not even hit this code. We will
+bail out early in vfs_getxattr_alloc().
 
-> Otherwise it may be hard to know what operations need to invalidate the 
-> napi reference. It can very well be HW dependent, and then you end up 
-> adding a function for drivers to call to do the invalidation.
-> 
-> Or we can decide that we only care about catastrophic events and only 
-> worry about a napi completely going away and not worry about 
-> configuration changes.(Polling the wrong queue will not kill you, it's 
-> just a waste of perfectly good CPU cycles.)
+I thought that one of the DON_APPRAISE rules will kick in for initramfs
+and files in initramfs will not be appraised and boot will continue.
 
-As long as the incoming packets are able to update the information, who
-cares if one packet missed the poll ?
- 
+{.action = DONT_APPRAISE,.fsmagic = TMPFS_MAGIC,.flags = IMA_FSMAGIC},
+{.action = DONT_APPRAISE,.fsmagic = RAMFS_MAGIC,.flags = IMA_FSMAGIC},
 
+Is that not the case here?
 
+Thanks
+Vivek
