@@ -1,55 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752577Ab3CEHoV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 02:44:21 -0500
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:34292 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750762Ab3CEHoU (ORCPT
+	id S1752467Ab3CEH5r (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 02:57:47 -0500
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:45985 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751176Ab3CEH5p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 02:44:20 -0500
-Message-ID: <5135A248.4010205@linux.vnet.ibm.com>
-Date: Tue, 05 Mar 2013 15:44:08 +0800
-From: Mike Qiu <qiudayu@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
-MIME-Version: 1.0
-To: Paul Mundt <lethal@linux-sh.org>
-CC: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        benh@kernel.crashing.org, tglx@linutronix.de
-Subject: Re: [PATCH 2/3] irq: Add hw continuous IRQs map to virtual continuous
- IRQs support
-References: <1358235536-32741-1-git-send-email-qiudayu@linux.vnet.ibm.com> <1358235536-32741-3-git-send-email-qiudayu@linux.vnet.ibm.com> <20130305024110.GB14275@linux-sh.org>
-In-Reply-To: <20130305024110.GB14275@linux-sh.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13030507-8256-0000-0000-00000678BD58
+	Tue, 5 Mar 2013 02:57:45 -0500
+From: Alexandru Gheorghiu <gheorghiuandru@gmail.com>
+To: Al Viro <viro@zenic.linux.org.uk>, Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: linux-kernel@vger.kernel.org,
+        Alexandru Gheorghiu <gheorghiuandru@gmail.com>
+Subject: [PATCH 2/2] :kernel:signal: Fixed coding style issue.
+Date: Tue,  5 Mar 2013 01:13:54 +0200
+Message-Id: <1362438834-28949-1-git-send-email-gheorghiuandru@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2013/3/5 10:41, Paul Mundt 写道:
-> On Tue, Jan 15, 2013 at 03:38:55PM +0800, Mike Qiu wrote:
->> Adding a function irq_create_mapping_many() which can associate
->> multiple MSIs to a continous irq mapping.
->>
->> This is needed to enable multiple MSI support for pSeries.
->>
->> +int irq_create_mapping_many(struct irq_domain *domain,
->> +		irq_hw_number_t hwirq_base, int count)
->> +{
-> Other than the other review comments already made, I think you can
-> simplify this considerably by simply doing what irq_create_strict_mappings() does,
-> and relaxing the irq_base requirements.
->
-> In any event, as you are creating a new interface, I don't think you want
-> to carry around half of the legacy crap that irq_create_mapping() has to
-> deal with. We made the decision to avoid this with irq_create_strict_mappings()
-> intentionally, too.
->
-Oh, yes, you are right, I will send out V2 of my patch to make it more 
-comfortable , and hope you can review my patch again
+Fixed coding style issue by removing trailing whitespaces.
 
-Thanks
+Signed-off-by: Alexandru Gheorghiu <gheorghiuandru@gmail.com>
+---
+ kernel/signal.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-Mike
+diff --git a/kernel/signal.c b/kernel/signal.c
+index 2ec870a..fd9a953 100644
+--- a/kernel/signal.c
++++ b/kernel/signal.c
+@@ -2369,7 +2369,7 @@ relock:
+ }
+ 
+ /**
+- * signal_delivered - 
++ * signal_delivered -
+  * @sig:		number of signal being delivered
+  * @info:		siginfo_t of signal being delivered
+  * @ka:			sigaction setting that chose the handler
+@@ -3128,7 +3128,7 @@ int do_sigaction(int sig, struct k_sigaction *act, struct k_sigaction *oact)
+ 	return 0;
+ }
+ 
+-static int 
++static int
+ do_sigaltstack (const stack_t __user *uss, stack_t __user *uoss, unsigned long sp)
+ {
+ 	stack_t oss;
+@@ -3272,7 +3272,7 @@ int __compat_save_altstack(compat_stack_t __user *uss, unsigned long sp)
+  */
+ SYSCALL_DEFINE1(sigpending, old_sigset_t __user *, set)
+ {
+-	return sys_rt_sigpending((sigset_t __user *)set, sizeof(old_sigset_t)); 
++	return sys_rt_sigpending((sigset_t __user *)set, sizeof(old_sigset_t));
+ }
+ 
+ #endif
+@@ -3397,7 +3397,7 @@ COMPAT_SYSCALL_DEFINE4(rt_sigaction, int, sig,
+ 	ret = do_sigaction(sig, act ? &new_ka : NULL, oact ? &old_ka : NULL);
+ 	if (!ret && oact) {
+ 		sigset_to_compat(&mask, &old_ka.sa.sa_mask);
+-		ret = put_user(ptr_to_compat(old_ka.sa.sa_handler), 
++		ret = put_user(ptr_to_compat(old_ka.sa.sa_handler),
+ 			       &oact->sa_handler);
+ 		ret |= copy_to_user(&oact->sa_mask, &mask, sizeof(mask));
+ 		ret |= __put_user(old_ka.sa.sa_flags, &oact->sa_flags);
+@@ -3573,7 +3573,7 @@ SYSCALL_DEFINE2(rt_sigsuspend, sigset_t __user *, unewset, size_t, sigsetsize)
+ 		return -EFAULT;
+ 	return sigsuspend(&newset);
+ }
+- 
++
+ #ifdef CONFIG_COMPAT
+ COMPAT_SYSCALL_DEFINE2(rt_sigsuspend, compat_sigset_t __user *, unewset, compat_size_t, sigsetsize)
+ {
+-- 
+1.7.9.5
 
