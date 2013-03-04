@@ -1,69 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932166Ab3CDR75 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 12:59:57 -0500
-Received: from mga03.intel.com ([143.182.124.21]:56080 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757994Ab3CDR74 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 12:59:56 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,781,1355126400"; 
-   d="scan'208";a="208649663"
-Subject: [PATCH] ioatdma: make debug output more readable
-To: djbw@fb.com
-From: Dave Jiang <dave.jiang@intel.com>
-Cc: vinod.koul@intel.com, linux-kernel@vger.kernel.org
-Date: Mon, 04 Mar 2013 10:59:54 -0700
-Message-ID: <20130304175954.9792.19327.stgit@djiang5-linux2.ch.intel.com>
-User-Agent: StGit/0.16
+	id S932176Ab3CDSEh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 13:04:37 -0500
+Received: from mail-da0-f54.google.com ([209.85.210.54]:57338 "EHLO
+	mail-da0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758556Ab3CDSEf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Mar 2013 13:04:35 -0500
+Date: Mon, 4 Mar 2013 10:04:30 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Li Zefan <lizefan@huawei.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, cgroups <cgroups@vger.kernel.org>
+Subject: Re: [PATCH 2/2] cgroup: avoid accessing modular cgroup subsys
+ structure without locking
+Message-ID: <20130304180430.GE30413@htj.dyndns.org>
+References: <5130535F.7060201@huawei.com>
+ <5130537C.5010608@huawei.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5130537C.5010608@huawei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Making OP field a hex instead of integer to make it more readable. Also add
-the dump out of the NEXT field.
+Hello, Li.
 
-Signed-off-by: Dave Jiang <dave.jiang@intel.com>
----
- drivers/dma/ioat/dma.h    |    2 +-
- drivers/dma/ioat/dma_v3.c |    3 ++-
- 2 files changed, 3 insertions(+), 2 deletions(-)
+On Fri, Mar 01, 2013 at 03:06:36PM +0800, Li Zefan wrote:
+>  /* Define the enumeration of all builtin cgroup subsystems */
+>  #define SUBSYS(_x) _x ## _subsys_id,
+> -#define IS_SUBSYS_ENABLED(option) IS_ENABLED(option)
+>  enum cgroup_subsys_id {
+> +#define IS_SUBSYS_ENABLED(option) IS_BUILTIN(option)
+>  #include <linux/cgroup_subsys.h>
+> +#undef IS_SUBSYS_ENABLED
+> +	CGROUP_BUILTIN_SUBSYS_COUNT,
+> +
+> +	__CGROUP_SUBSYS_TEMP_PLACEHOLDER = CGROUP_BUILTIN_SUBSYS_COUNT - 1,
+> +
+> +#define IS_SUBSYS_ENABLED(option) IS_MODULE(option)
+> +#include <linux/cgroup_subsys.h>
+> +#undef IS_SUBSYS_ENABLED
+>  	CGROUP_SUBSYS_COUNT,
+>  };
+> -#undef IS_SUBSYS_ENABLED
+>  #undef SUBSYS
 
-diff --git a/drivers/dma/ioat/dma.h b/drivers/dma/ioat/dma.h
-index 53a4cbb..95ae7b3 100644
---- a/drivers/dma/ioat/dma.h
-+++ b/drivers/dma/ioat/dma.h
-@@ -179,7 +179,7 @@ __dump_desc_dbg(struct ioat_chan_common *chan, struct ioat_dma_descriptor *hw,
- 	struct device *dev = to_dev(chan);
- 
- 	dev_dbg(dev, "desc[%d]: (%#llx->%#llx) cookie: %d flags: %#x"
--		" ctl: %#x (op: %d int_en: %d compl: %d)\n", id,
-+		" ctl: %#10.8x (op: %#x int_en: %d compl: %d)\n", id,
- 		(unsigned long long) tx->phys,
- 		(unsigned long long) hw->next, tx->cookie, tx->flags,
- 		hw->ctl, hw->ctl_f.op, hw->ctl_f.int_en, hw->ctl_f.compl_write);
-diff --git a/drivers/dma/ioat/dma_v3.c b/drivers/dma/ioat/dma_v3.c
-index 53ea4bd..ce6fcee 100644
---- a/drivers/dma/ioat/dma_v3.c
-+++ b/drivers/dma/ioat/dma_v3.c
-@@ -605,7 +605,7 @@ dump_pq_desc_dbg(struct ioat2_dma_chan *ioat, struct ioat_ring_ent *desc, struct
- 	int i;
- 
- 	dev_dbg(dev, "desc[%d]: (%#llx->%#llx) flags: %#x"
--		" sz: %#x ctl: %#x (op: %d int: %d compl: %d pq: '%s%s' src_cnt: %d)\n",
-+		" sz: %#10.8x ctl: %#x (op: %#x int: %d compl: %d pq: '%s%s' src_cnt: %d)\n",
- 		desc_id(desc), (unsigned long long) desc->txd.phys,
- 		(unsigned long long) (pq_ex ? pq_ex->next : pq->next),
- 		desc->txd.flags, pq->size, pq->ctl, pq->ctl_f.op, pq->ctl_f.int_en,
-@@ -617,6 +617,7 @@ dump_pq_desc_dbg(struct ioat2_dma_chan *ioat, struct ioat_ring_ent *desc, struct
- 			(unsigned long long) pq_get_src(descs, i), pq->coef[i]);
- 	dev_dbg(dev, "\tP: %#llx\n", pq->p_addr);
- 	dev_dbg(dev, "\tQ: %#llx\n", pq->q_addr);
-+	dev_dbg(dev, "\tNEXT: %#llx\n", pq->next);
- }
- 
- static struct dma_async_tx_descriptor *
+Arghh.... can we at least have a comment explaining what we're doing
+here?  It's ugly and confusing.
 
+> @@ -5019,13 +5019,17 @@ void cgroup_exit(struct task_struct *tsk, int run_callbacks)
+>  	tsk->cgroups = &init_css_set;
+>  
+>  	if (run_callbacks && need_forkexit_callback) {
+> -		for (i = 0; i < CGROUP_SUBSYS_COUNT; i++) {
+> +		/*
+> +		 * fork/exit callbacks are supported only for builtin
+> +		 * subsystems, and the builtin section of the subsys
+> +		 * array is immutable, so we don't need to lock the
+> +		 * subsys array here. On the other hand, modular section
+> +		 * of the array can be freed at module unload, so we
+> +		 * can't touch that.
+> +		 */
+> +		for (i = 0; i < CGROUP_BUILTIN_SUBSYS_COUNT; i++) {
+
+Probably enough to say "for/exit callback are supported only for
+builtin subsys, see cgroup_for() for details"?
+
+Thanks.
+
+-- 
+tejun
