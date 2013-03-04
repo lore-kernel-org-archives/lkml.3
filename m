@@ -1,103 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932677Ab3CDWoS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 17:44:18 -0500
-Received: from mx12.netapp.com ([216.240.18.77]:46040 "EHLO mx12.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758655Ab3CDWoQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 17:44:16 -0500
-X-IronPort-AV: E=Sophos;i="4.84,783,1355126400"; 
-   d="asc'?scan'208";a="27875492"
-From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-To: Akinobu Mita <akinobu.mita@gmail.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>
-Subject: Re: [PATCH -v3 17/23] net/sunrpc: rename random32() to prandom_u32()
-Thread-Topic: [PATCH -v3 17/23] net/sunrpc: rename random32() to
- prandom_u32()
-Thread-Index: AQHOGNgn1P9N1GJFqEeLni6XXE+V15iWqAUA
-Date: Mon, 4 Mar 2013 22:44:13 +0000
-Message-ID: <4FA345DA4F4AE44899BD2B03EEEC2FA9286AF0DB@sacexcmbx05-prd.hq.netapp.com>
-References: <1362401911-14074-1-git-send-email-akinobu.mita@gmail.com>
-	 <1362401911-14074-18-git-send-email-akinobu.mita@gmail.com>
-In-Reply-To: <1362401911-14074-18-git-send-email-akinobu.mita@gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: yes
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.104.60.117]
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="=-SQIidN/DRVZ2+Ig/p9iA"
+	id S932814Ab3CDWoi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 17:44:38 -0500
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:45069 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932506Ab3CDWoh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Mar 2013 17:44:37 -0500
 MIME-Version: 1.0
+In-Reply-To: <CANeMGR5a78oq63N4Fr9x0kEQue3GiXeMX7L9Om5-AqUUxdzEPQ@mail.gmail.com>
+References: <CANeMGR5a78oq63N4Fr9x0kEQue3GiXeMX7L9Om5-AqUUxdzEPQ@mail.gmail.com>
+From: Guan Xin <guanx.bac@gmail.com>
+Date: Mon, 4 Mar 2013 23:43:55 +0100
+Message-ID: <CANeMGR7fTCV7tgnOXj20AT9RA4MxXi6JdhWv-TcspjzMRYauhQ@mail.gmail.com>
+Subject: Re: [Bug] Various abnormal WiFi behaviors with Linux 3.8 on arm/imx23
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-SQIidN/DRVZ2+Ig/p9iA
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: quoted-printable
+On Mon, Mar 4, 2013 at 1:44 AM, Guan Xin <guanx.bac@gmail.com> wrote:
+> Hello,
+>
+> I have just moved from Linux 3.7.x to Linux 3.8.x because 3.7.x is
+> EOL-ed. On an iMX233-OLinuXino-MICRO with USB WiFi adapters I got the
+> following problems which were never present in Linux 3.7.x.
+> ... ...
 
-On Mon, 2013-03-04 at 21:58 +0900, Akinobu Mita wrote:
-> Use more preferable function name which implies using a pseudo-random
-> number generator.
->=20
-> Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-> Cc: "J. Bruce Fields" <bfields@fieldses.org>
-> Cc: Trond Myklebust <Trond.Myklebust@netapp.com>
-> Cc: "David S. Miller" <davem@davemloft.net>
-> Cc: netdev@vger.kernel.org
-> Cc: linux-nfs@vger.kernel.org
-> ---
->=20
-> No change from v2
->=20
->  net/sunrpc/auth_gss/gss_krb5_wrap.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
->=20
-> diff --git a/net/sunrpc/auth_gss/gss_krb5_wrap.c b/net/sunrpc/auth_gss/gs=
-s_krb5_wrap.c
-> index 88edec9..1da52d1 100644
-> --- a/net/sunrpc/auth_gss/gss_krb5_wrap.c
-> +++ b/net/sunrpc/auth_gss/gss_krb5_wrap.c
-> @@ -130,8 +130,8 @@ gss_krb5_make_confounder(char *p, u32 conflen)
-> =20
->  	/* initialize to random value */
->  	if (i =3D=3D 0) {
-> -		i =3D random32();
-> -		i =3D (i << 32) | random32();
-> +		i =3D prandom_u32();
-> +		i =3D (i << 32) | prandom_u32();
->  	}
-> =20
->  	switch (conflen) {
+Today I upgraded from 3.8.1 to 3.8.2 and started to see some errors in dmesg:
 
-Acked-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+[   35.160000] rtl8192cu: Chip version 0x11
+[   35.160000] rtl8192cu:_rtl92cu_read_adapter_info():<0-0> EEPROM
+ID(0xffff) is invalid!!
+[   35.160000] rtlwifi: rx_max_size 15360, rx_urb_num 8, in_ep 1
+[   35.160000] rtl8192cu: Loading firmware rtlwifi/rtl8192cufw.bin
+[   35.170000] usbcore: registered new interface driver rtl8192cu
+[   35.240000] ieee80211 phy0: Selected rate control algorithm 'rtl_rc'
+[   35.240000] rtlwifi: wireless switch is on
+... ...
+[   89.900000] rtl8192cu: MAC auto ON okay!
+[   89.980000] rtl8192cu:rtl92c_llt_write():<0-0> Failed to polling
+write LLT done at address 0! _LLT_OP_VALUE(3)
+[   89.980000] rtl8192cu: ===> rtl92c_init_llt_table #1 fail
+[   89.980000] rtl8192cu:_rtl92cu_init_mac():<0-0> Failed to init LLT Table!
+[   89.980000] rtl8192cu:rtl92cu_hw_init():<0-0> init mac failed!
 
---=-SQIidN/DRVZ2+Ig/p9iA
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.13 (GNU/Linux)
-
-iQIcBAABAgAGBQJRNSPAAAoJEGcL54qWCgDywo0P+gJT0QdtovcdlKjovq/XK/kY
-HvzP26Z0Agri5kA5xLdQvhWEjUe+G1j+rraNLO6iUMF09EwG4rqnlYSAMHq0SsL5
-f9SuBNFdRK7Vd/jvnQjyL2Sf05PFT9OEAYplMcMgI0Cew5NMMYXtI7GQU4y+ucxF
-vyzw7WeKqbYrUsQV99plJ5fpq63lSmEgn4uzURudzbIq0cuz8uYGkWTfQllZRdaa
-bJ3Ov375udPvNHN696s+KopVelg28TEA9ooBufwJr7ynUzNjSs9VgyJPPvpB/+NA
-QFVfdbpCrh/n4/cucmtLh6OBoCl1I0uzHZCXU9Px/thR7Nr2lZ78jaTE1qR8QJh1
-MYQOe3ugzc4IFouhgKYic+MgTrRtEALa/8sZ7rYjx2/rz/gHCkc6CSzuZy5w7jf0
-FJ4a8hBSz0fEGkgz5NcgGPsCG8xOOjA9uQnB2GcyN4Ni2p3USAaSoriLT+gr8zqX
-oC05AU5IaxO29c+wYC7EyKLJjfGJeDR6I/7CKfRnjBmvFg+2/4fwAnoI0vGd03US
-o99gDvGEQ3S9uw4zMGuwirBEP73V5OhqENpqEMn39F0+nuG0u4QXpOsB5IXRTiNT
-UXmvQWCG4kdGK98/Ra+z8TrBL+JpowuKGhaoMgQgLNW0wp+wJW8Ftw7nLAAbL4Ed
-/8LAEAJGld12kQ+CiiXN
-=K/Tl
------END PGP SIGNATURE-----
-
---=-SQIidN/DRVZ2+Ig/p9iA--
+Guan
