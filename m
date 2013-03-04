@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932256Ab3CDTmJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 14:42:09 -0500
-Received: from gerard.telenet-ops.be ([195.130.132.48]:39518 "EHLO
-	gerard.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758573Ab3CDTmI (ORCPT
+	id S1758820Ab3CDTn7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 14:43:59 -0500
+Received: from mail-ea0-f176.google.com ([209.85.215.176]:47817 "EHLO
+	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757496Ab3CDTn5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 14:42:08 -0500
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Peter Huewe <peterhuewe@gmx.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Fengguang Wu <fengguang.wu@intel.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH] staging/vt6656: Fix too large integer constant warning on 32-bit
-Date: Mon,  4 Mar 2013 20:42:00 +0100
-Message-Id: <1362426120-18545-1-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.7.0.4
+	Mon, 4 Mar 2013 14:43:57 -0500
+From: Alexandru Gheorghiu <gheorghiuandru@gmail.com>
+To: Pablo Neira Ayuso <pablo@netfilter.org>, Patrick McHardy <kaber@trash.net>,
+        "David S. Miller" <davem@davemloft.net>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Alexandru Gheorghiu <gheorghiuandru@gmail.com>
+Subject: [PATCH] net: netfilter: nfnetlink: Fixed warning for nfnl_get_lock
+Date: Mon,  4 Mar 2013 21:43:11 +0200
+Message-Id: <1362426192-2921-1-git-send-email-gheorghiuandru@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -24,32 +23,30 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-drivers/staging/vt6656/card.c: In function ‘CARDqGetNextTBTT’:
-drivers/staging/vt6656/card.c:793: warning: integer constant is too large for ‘unsigned long’ type
+Removed unused function nfnl_get_lock which fixed the following warning:
+net/netfilter/nfnetlink.c:65:22: warning: ‘nfnl_get_lock’ defined but not used [-Wunused-function]
 
-Commit c7b7cad0d8df823ea063c86a54316bbcbfa04a7c ("staging/vt6656: Fix
-sparse warning constant 0xffffffff00000000U is so big it is unsigned long")
-changed the constant to "0xffffffff00000000UL", but that only works on
-64-bit.  Change it "0xffffffff00000000ULL" to fix it for 32-bit, too.
-
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Signed-off-by: Alexandru Gheorghiu <gheorghiuandru@gmail.com>
 ---
- drivers/staging/vt6656/card.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ net/netfilter/nfnetlink.c |    5 -----
+ 1 file changed, 5 deletions(-)
 
-diff --git a/drivers/staging/vt6656/card.c b/drivers/staging/vt6656/card.c
-index 22918a1..d2479b7 100644
---- a/drivers/staging/vt6656/card.c
-+++ b/drivers/staging/vt6656/card.c
-@@ -790,7 +790,7 @@ u64 CARDqGetNextTBTT(u64 qwTSF, WORD wBeaconInterval)
- 	if ((~uLowNextTBTT) < uLowRemain)
- 		qwTSF = ((qwTSF >> 32) + 1) << 32;
- 
--	qwTSF = (qwTSF & 0xffffffff00000000UL) |
-+	qwTSF = (qwTSF & 0xffffffff00000000ULL) |
- 		(u64)(uLowNextTBTT + uLowRemain);
- 
-     return (qwTSF);
--- 
-1.7.0.4
+diff --git a/net/netfilter/nfnetlink.c b/net/netfilter/nfnetlink.c
+index d578ec2..44aa0a7 100644
+--- a/net/netfilter/nfnetlink.c
++++ b/net/netfilter/nfnetlink.c
+@@ -62,11 +62,6 @@ void nfnl_unlock(__u8 subsys_id)
+ }
+ EXPORT_SYMBOL_GPL(nfnl_unlock);
+
+-static struct mutex *nfnl_get_lock(__u8 subsys_id)
+-{
+-	return &table[subsys_id].mutex;
+-}
+-
+ int nfnetlink_subsys_register(const struct nfnetlink_subsystem *n)
+ {
+ 	nfnl_lock(n->subsys_id);
+--
+1.7.9.5
 
