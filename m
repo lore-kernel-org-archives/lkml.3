@@ -1,222 +1,360 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758251Ab3CDOkr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 09:40:47 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:40494 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758094Ab3CDOkq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 09:40:46 -0500
-From: Anton Arapov <anton@redhat.com>
-To: Anton Arapov <anton@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Josh Stone <jistone@redhat.com>,
-        Frank Eigler <fche@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-Subject: [RFC PATCH v4 4/6] uretprobes: return probe entry, prepare uretprobe
-Date: Mon,  4 Mar 2013 15:38:11 +0100
-Message-Id: <1362407893-32505-5-git-send-email-anton@redhat.com>
-In-Reply-To: <1362407893-32505-1-git-send-email-anton@redhat.com>
-References: <1362407893-32505-1-git-send-email-anton@redhat.com>
+	id S1758178Ab3CDOmH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 09:42:07 -0500
+Received: from smtp2.infineon.com ([217.10.60.23]:27848 "EHLO
+	smtp2.infineon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758042Ab3CDOmD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Mar 2013 09:42:03 -0500
+X-SBRS: None
+From: Peter Huewe <peter.huewe@infineon.com>
+To: <key@linux.vnet.ibm.com>
+CC: <shpedoikal@gmail.com>, <tpmdd-devel@lists.sourceforge.net>,
+        <linux-security-module@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Peter Huewe <peter.huewe@infineon.com>
+Subject: [PATCH v2] tpm: Add support for new Infineon I2C TPM (SLB 9645 TT 1.2 I2C)
+Date: Mon, 4 Mar 2013 15:41:46 +0100
+Message-ID: <1362408106-8632-1-git-send-email-peter.huewe@infineon.com>
+X-Mailer: git-send-email 1.8.1.msysgit.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [172.29.170.170]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  When a uprobe with return consumer is hit, prepare_uretprobe function is
-invoked. It creates return_instance, hijacks return address and replaces
-it with the trampoline.
+This driver adds support for Infineon's new SLB 9645 TT 1.2 I2C TPMs,
+which supports clockstretching, combined reads and a bus speed of
+up to 400khz. The device also has a new device id.
 
- N.B. it might be a good idea to introduce get_uprobe() to reflect
-put_uprobe() later, but it is not a subject of this patchset.
+The driver works now also fine with device trees, so you can
+instantiate your device by adding:
+ +       tpm {
+ +               compatible = "infineon,slb9645tt";
+ +               reg = <0x20>;
+ +       };
+ for SLB 9645 devices or
 
-v4:
- - get rid of area->rp_trampoline_vaddr as it always the same as ->vaddr
- - preallocate slot, as the first one in xol_add_vma()
- - cleanup ->return_uprobes list in uprobe_free_utask(), because the
-   task can exit from inside the ret-probe'd function(s).
- - in find_active_uprobe(): Once we inserted "int3" we must ensure that
-   handle_swbp() will be called even if this uprobe goes away. We have
-   the reference but it only protects uprobe itself, it can't protect
-   agains delete_uprobe().
-   IOW, we must ensure that uprobe_pre_sstep_notifier() can't return 0.
-v3:
- - protected uprobe with refcounter. See atomic_inc in prepare_uretprobe()
-and put_uprobe() in a following patch in handle_uretprobe()
-v2:
- - get rid of ->return_consumers member from struct uprobe, introduce
-rp_handler() in consumer
+ +       tpm {
+ +               compatible = "infineon,slb9635tt";
+ +               reg = <0x20>;
+ +       };
+ for SLB 9635 devices
 
-Signed-off-by: Anton Arapov <anton@redhat.com>
+to your device tree.
+tpm_i2c_infineon is also retained as a compatible id as a fallback to
+slb9635 protocol.
+
+The driver was tested on Beaglebone.
+
+Signed-off-by: Peter Huewe <peter.huewe@infineon.com>
 ---
- include/linux/uprobes.h |  4 +++
- kernel/events/uprobes.c | 67 ++++++++++++++++++++++++++++++++++++++++++++++---
- 2 files changed, 68 insertions(+), 3 deletions(-)
+Please apply on top of "char/tpm: Convert struct i2c_msg initialization to C99 format" by Shubhrajyoti Datta
 
-diff --git a/include/linux/uprobes.h b/include/linux/uprobes.h
-index a28bdee..6b0a309 100644
---- a/include/linux/uprobes.h
-+++ b/include/linux/uprobes.h
-@@ -69,6 +69,10 @@ struct uprobe_task {
- 	enum uprobe_task_state		state;
- 	struct arch_uprobe_task		autask;
+ .../devicetree/bindings/i2c/trivial-devices.txt    |   2 +
+ drivers/char/tpm/tpm_i2c_infineon.c                | 137 +++++++++++++++------
+ 2 files changed, 99 insertions(+), 40 deletions(-)
+
+diff --git a/Documentation/devicetree/bindings/i2c/trivial-devices.txt b/Documentation/devicetree/bindings/i2c/trivial-devices.txt
+index 446859f..ad6a738 100644
+--- a/Documentation/devicetree/bindings/i2c/trivial-devices.txt
++++ b/Documentation/devicetree/bindings/i2c/trivial-devices.txt
+@@ -35,6 +35,8 @@ fsl,mc13892		MC13892: Power Management Integrated Circuit (PMIC) for i.MX35/51
+ fsl,mma8450		MMA8450Q: Xtrinsic Low-power, 3-axis Xtrinsic Accelerometer
+ fsl,mpr121		MPR121: Proximity Capacitive Touch Sensor Controller
+ fsl,sgtl5000		SGTL5000: Ultra Low-Power Audio Codec
++infineon,slb9635tt	Infineon SLB9635 (Soft-) I2C TPM (old protocol, max 100khz)
++infineon,slb9645tt	Infineon SLB9645 I2C TPM (new protocol, max 400khz)
+ maxim,ds1050		5 Bit Programmable, Pulse-Width Modulator
+ maxim,max1237		Low-Power, 4-/12-Channel, 2-Wire Serial, 12-Bit ADCs
+ maxim,max6625		9-Bit/12-Bit Temperature Sensors with I²C-Compatible Serial Interface
+diff --git a/drivers/char/tpm/tpm_i2c_infineon.c b/drivers/char/tpm/tpm_i2c_infineon.c
+index 8e47e2b..e868dde 100644
+--- a/drivers/char/tpm/tpm_i2c_infineon.c
++++ b/drivers/char/tpm/tpm_i2c_infineon.c
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (C) 2012 Infineon Technologies
++ * Copyright (C) 2012,2013 Infineon Technologies
+  *
+  * Authors:
+  * Peter Huewe <peter.huewe@infineon.com>
+@@ -56,13 +56,21 @@
+ #define TPM_TIMEOUT_US_HI  (TPM_TIMEOUT_US_LOW + 2000)
  
-+	/*
-+	 * list for tracking uprobes with return consumers
-+	 */
-+	struct hlist_head		return_uprobes;
- 	struct uprobe			*active_uprobe;
- 
- 	unsigned long			xol_vaddr;
-diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index 69bf060..12acc10 100644
---- a/kernel/events/uprobes.c
-+++ b/kernel/events/uprobes.c
-@@ -57,6 +57,8 @@ static struct mutex uprobes_mmap_mutex[UPROBES_HASH_SZ];
- 
- static struct percpu_rw_semaphore dup_mmap_sem;
- 
-+static unsigned long xol_get_insn_slot(unsigned char *insn);
+ /* expected value for DIDVID register */
+-#define TPM_TIS_I2C_DID_VID 0x000b15d1L
++#define TPM_TIS_I2C_DID_VID_9635 0xd1150b00L
++#define TPM_TIS_I2C_DID_VID_9645 0x001a15d1L
 +
- /* Have a copy of original instruction */
- #define UPROBE_COPY_INSN	0
- /* Can skip singlestep */
-@@ -75,6 +77,12 @@ struct uprobe {
- 	struct arch_uprobe	arch;
++enum i2c_chip_type {
++	SLB9635,
++	SLB9645,
++	UNKNOWN,
++};
+ 
+ /* Structure to store I2C TPM specific stuff */
+ struct tpm_inf_dev {
+ 	struct i2c_client *client;
+ 	u8 buf[TPM_BUFSIZE + sizeof(u8)]; /* max. buffer size + addr */
+ 	struct tpm_chip *chip;
++	enum i2c_chip_type chip_type;
  };
  
-+struct return_uprobe_i {
-+	struct uprobe		*uprobe;
-+	struct hlist_node	hlist;		/* node in list */
-+	unsigned long		orig_ret_vaddr; /* original return address */
-+};
-+
- /*
-  * valid_vma: Verify if the specified vma is an executable vma
-  * Relax restrictions while unregistering: vm_flags might have
-@@ -1085,6 +1093,7 @@ static int xol_add_vma(struct xol_area *area)
- {
- 	struct mm_struct *mm = current->mm;
- 	int ret = -EALREADY;
-+	uprobe_opcode_t insn = UPROBE_SWBP_INSN;
+ static struct tpm_inf_dev tpm_dev;
+@@ -101,8 +109,9 @@ static int iic_tpm_read(u8 addr, u8 *buffer, size_t len)
+ 		.len = len,
+ 		.buf = buffer
+ 	};
++	struct i2c_msg msgs[] = {msg1, msg2};
  
- 	down_write(&mm->mmap_sem);
- 	if (mm->uprobes_state.xol_area)
-@@ -1106,6 +1115,13 @@ static int xol_add_vma(struct xol_area *area)
- 	smp_wmb();	/* pairs with get_xol_area() */
- 	mm->uprobes_state.xol_area = area;
- 	ret = 0;
-+
-+	/*
-+	 * If we reached this place, we did allocate a new area. We want
-+	 * pre-alloc a slot for the return probes here.
-+	 */
-+	xol_get_insn_slot(&insn);
-+
-  fail:
- 	up_write(&mm->mmap_sem);
+-	int rc;
++	int rc = 0;
+ 	int count;
  
-@@ -1306,6 +1322,9 @@ unsigned long __weak uprobe_get_swbp_addr(struct pt_regs *regs)
- void uprobe_free_utask(struct task_struct *t)
- {
- 	struct uprobe_task *utask = t->utask;
-+	struct hlist_head *head;
-+	struct hlist_node *tmp;
-+	struct return_uprobe_i *ri;
+ 	/* Lock the adapter for the duration of the whole sequence. */
+@@ -110,30 +119,49 @@ static int iic_tpm_read(u8 addr, u8 *buffer, size_t len)
+ 		return -EOPNOTSUPP;
+ 	i2c_lock_adapter(tpm_dev.client->adapter);
  
- 	if (!utask)
- 		return;
-@@ -1313,6 +1332,13 @@ void uprobe_free_utask(struct task_struct *t)
- 	if (utask->active_uprobe)
- 		put_uprobe(utask->active_uprobe);
+-	for (count = 0; count < MAX_COUNT; count++) {
+-		rc = __i2c_transfer(tpm_dev.client->adapter, &msg1, 1);
+-		if (rc > 0)
+-			break;	/* break here to skip sleep */
+-
+-		usleep_range(SLEEP_DURATION_LOW, SLEEP_DURATION_HI);
+-	}
+-
+-	if (rc <= 0)
+-		goto out;
+-
+-	/* After the TPM has successfully received the register address it needs
+-	 * some time, thus we're sleeping here again, before retrieving the data
+-	 */
+-	for (count = 0; count < MAX_COUNT; count++) {
+-		usleep_range(SLEEP_DURATION_LOW, SLEEP_DURATION_HI);
+-		rc = __i2c_transfer(tpm_dev.client->adapter, &msg2, 1);
+-		if (rc > 0)
+-			break;
++	if (tpm_dev.chip_type == SLB9645) {
++		/* use a combined read for newer chips
++		 * unfortunately the smbus functions are not suitable due to
++		 * the 32 byte limit of the smbus.
++		 * retries should usually not be needed, but are kept just to
++		 * be on the safe side.
++		*/
++		for (count = 0; count < MAX_COUNT; count++) {
++			rc = __i2c_transfer(tpm_dev.client->adapter, msgs, 2);
++			if (rc > 0)
++				break;	/* break here to skip sleep */
++			usleep_range(SLEEP_DURATION_LOW, SLEEP_DURATION_HI);
++		}
++	} else {
++		/* slb9635 protocol should work in all cases */
++		for (count = 0; count < MAX_COUNT; count++) {
++			rc = __i2c_transfer(tpm_dev.client->adapter, &msg1, 1);
++			if (rc > 0)
++				break;	/* break here to skip sleep */
++
++			usleep_range(SLEEP_DURATION_LOW, SLEEP_DURATION_HI);
++		}
  
-+	head = &utask->return_uprobes;
-+	hlist_for_each_entry_safe(ri, tmp, head, hlist) {
-+		put_uprobe(ri->uprobe);
-+		hlist_del(&ri->hlist);
-+		kfree(ri);
-+	}
++		if (rc <= 0)
++			goto out;
 +
- 	xol_free_insn_slot(t);
- 	kfree(utask);
- 	t->utask = NULL;
-@@ -1336,11 +1362,37 @@ void uprobe_copy_process(struct task_struct *t)
-  */
- static struct uprobe_task *get_utask(void)
- {
--	if (!current->utask)
-+	if (!current->utask) {
- 		current->utask = kzalloc(sizeof(struct uprobe_task), GFP_KERNEL);
-+		if (current->utask)
-+			INIT_HLIST_HEAD(&current->utask->return_uprobes);
-+	}
- 	return current->utask;
- }
- 
-+static void prepare_uretprobe(struct uprobe *uprobe, struct pt_regs *regs)
-+{
-+	struct return_uprobe_i *ri;
-+	struct uprobe_task *utask;
-+	struct xol_area *area;
-+
-+	ri = kzalloc(sizeof(struct return_uprobe_i), GFP_KERNEL);
-+	if (!ri)
-+		return;
-+
-+	area = get_xol_area();
-+	utask = get_utask();
-+	ri->orig_ret_vaddr = arch_uretprobe_hijack_return_addr(area->vaddr, regs);
-+	if (likely(ri->orig_ret_vaddr)) {
-+		/* TODO: uretprobe bypass logic */
-+		atomic_inc(&uprobe->ref);
-+		ri->uprobe = uprobe;
-+		INIT_HLIST_NODE(&ri->hlist);
-+		hlist_add_head(&ri->hlist, &utask->return_uprobes);
-+	} else
-+		kfree(ri);
-+}
-+
- /* Prepare to single-step probed instruction out of line. */
- static int
- pre_ssout(struct uprobe *uprobe, struct pt_regs *regs, unsigned long bp_vaddr)
-@@ -1468,6 +1520,7 @@ static struct uprobe *find_active_uprobe(unsigned long bp_vaddr, int *is_swbp)
- 	struct mm_struct *mm = current->mm;
- 	struct uprobe *uprobe = NULL;
- 	struct vm_area_struct *vma;
-+	struct uprobe_task *utask;
- 
- 	down_read(&mm->mmap_sem);
- 	vma = find_vma(mm, bp_vaddr);
-@@ -1485,8 +1538,11 @@ static struct uprobe *find_active_uprobe(unsigned long bp_vaddr, int *is_swbp)
- 		*is_swbp = -EFAULT;
++		/* After the TPM has successfully received the register address
++		 * it needs some time, thus we're sleeping here again, before
++		 * retrieving the data
++		 */
++		for (count = 0; count < MAX_COUNT; count++) {
++			usleep_range(SLEEP_DURATION_LOW, SLEEP_DURATION_HI);
++			rc = __i2c_transfer(tpm_dev.client->adapter, &msg2, 1);
++			if (rc > 0)
++				break;
++		}
  	}
  
--	if (!uprobe && test_and_clear_bit(MMF_RECALC_UPROBES, &mm->flags))
-+	utask = get_utask();
-+	if (!uprobe && hlist_empty(&utask->return_uprobes) &&
-+	    test_and_clear_bit(MMF_RECALC_UPROBES, &mm->flags)) {
- 		mmf_recalc_uprobes(mm);
-+	}
- 	up_read(&mm->mmap_sem);
- 
- 	return uprobe;
-@@ -1494,12 +1550,17 @@ static struct uprobe *find_active_uprobe(unsigned long bp_vaddr, int *is_swbp)
- 
- static void handler_chain(struct uprobe *uprobe, struct pt_regs *regs)
- {
-+	int rc = 0;
- 	struct uprobe_consumer *uc;
- 	int remove = UPROBE_HANDLER_REMOVE;
- 
- 	down_read(&uprobe->register_rwsem);
- 	for (uc = uprobe->consumers; uc; uc = uc->next) {
--		int rc = uc->handler(uc, regs);
-+		if (uc->handler)
-+			rc = uc->handler(uc, regs);
+ out:
+ 	i2c_unlock_adapter(tpm_dev.client->adapter);
++	/* take care of 'guard time' */
++	usleep_range(SLEEP_DURATION_LOW, SLEEP_DURATION_HI);
 +
-+		if (uc->rp_handler)
-+			prepare_uretprobe(uprobe, regs); /* put bp at return */
+ 	if (rc <= 0)
+ 		return -EIO;
  
- 		WARN(rc & ~UPROBE_HANDLER_MASK,
- 			"bad rc=0x%x from %pf()\n", rc, uc->handler);
+@@ -167,16 +195,19 @@ static int iic_tpm_write_generic(u8 addr, u8 *buffer, size_t len,
+ 	/*
+ 	 * NOTE: We have to use these special mechanisms here and unfortunately
+ 	 * cannot rely on the standard behavior of i2c_transfer.
++	 * Even for newer chips the smbus functions are not
++	 * suitable due to the 32 byte limit of the smbus.
+ 	 */
+ 	for (count = 0; count < max_count; count++) {
+ 		rc = __i2c_transfer(tpm_dev.client->adapter, &msg1, 1);
+ 		if (rc > 0)
+ 			break;
+-
+ 		usleep_range(sleep_low, sleep_hi);
+ 	}
+ 
+ 	i2c_unlock_adapter(tpm_dev.client->adapter);
++	/* take care of 'guard time' */
++	usleep_range(SLEEP_DURATION_LOW, SLEEP_DURATION_HI);
+ 	if (rc <= 0)
+ 		return -EIO;
+ 
+@@ -296,11 +327,18 @@ static int request_locality(struct tpm_chip *chip, int loc)
+ static u8 tpm_tis_i2c_status(struct tpm_chip *chip)
+ {
+ 	/* NOTE: since I2C read may fail, return 0 in this case --> time-out */
+-	u8 buf;
+-	if (iic_tpm_read(TPM_STS(chip->vendor.locality), &buf, 1) < 0)
+-		return 0;
+-	else
+-		return buf;
++	u8 buf = 0xFF;
++	u8 i = 0;
++
++	do {
++		if (iic_tpm_read(TPM_STS(chip->vendor.locality), &buf, 1) < 0)
++			return 0;
++
++		i++;
++	/* if locallity is set STS should not be 0xFF */
++	} while ((buf == 0xFF) && i < 10);
++
++	return buf;
+ }
+ 
+ static void tpm_tis_i2c_ready(struct tpm_chip *chip)
+@@ -341,7 +379,7 @@ static int wait_for_stat(struct tpm_chip *chip, u8 mask, unsigned long timeout,
+ 
+ 	/* check current status */
+ 	*status = tpm_tis_i2c_status(chip);
+-	if ((*status & mask) == mask)
++	if ((*status != 0xFF) && (*status & mask) == mask)
+ 		return 0;
+ 
+ 	stop = jiffies + timeout;
+@@ -385,7 +423,6 @@ static int recv_data(struct tpm_chip *chip, u8 *buf, size_t count)
+ 		/* avoid endless loop in case of broken HW */
+ 		if (retries > MAX_COUNT_LONG)
+ 			return -EIO;
+-
+ 	}
+ 	return size;
+ }
+@@ -493,7 +530,6 @@ static int tpm_tis_i2c_send(struct tpm_chip *chip, u8 *buf, size_t len)
+ 			rc = -EIO;
+ 			goto out_err;
+ 		}
+-
+ 	}
+ 
+ 	/* write last byte */
+@@ -581,6 +617,7 @@ static int tpm_tis_i2c_init(struct device *dev)
+ 
+ 	chip = tpm_register_hardware(dev, &tpm_tis_i2c);
+ 	if (!chip) {
++		dev_err(dev, "could not register hardware\n");
+ 		rc = -ENODEV;
+ 		goto out_err;
+ 	}
+@@ -595,20 +632,24 @@ static int tpm_tis_i2c_init(struct device *dev)
+ 	chip->vendor.timeout_d = msecs_to_jiffies(TIS_SHORT_TIMEOUT);
+ 
+ 	if (request_locality(chip, 0) != 0) {
++		dev_err(dev, "could not request locality\n");
+ 		rc = -ENODEV;
+ 		goto out_vendor;
+ 	}
+ 
+ 	/* read four bytes from DID_VID register */
+ 	if (iic_tpm_read(TPM_DID_VID(0), (u8 *)&vendor, 4) < 0) {
++		dev_err(dev, "could not read vendor id\n");
+ 		rc = -EIO;
+ 		goto out_release;
+ 	}
+ 
+-	/* create DID_VID register value, after swapping to little-endian */
+-	vendor = be32_to_cpu((__be32) vendor);
+-
+-	if (vendor != TPM_TIS_I2C_DID_VID) {
++	if (vendor == TPM_TIS_I2C_DID_VID_9645) {
++		tpm_dev.chip_type = SLB9645;
++	} else if (vendor == TPM_TIS_I2C_DID_VID_9635) {
++		tpm_dev.chip_type = SLB9635;
++	} else {
++		dev_err(dev, "vendor id did not match! ID was %08x\n", vendor);
+ 		rc = -ENODEV;
+ 		goto out_release;
+ 	}
+@@ -644,22 +685,38 @@ out_err:
+ 
+ static const struct i2c_device_id tpm_tis_i2c_table[] = {
+ 	{"tpm_i2c_infineon", 0},
++	{"slb9635tt", 0},
++	{"slb9645tt", 1},
+ 	{},
+ };
+ 
+ MODULE_DEVICE_TABLE(i2c, tpm_tis_i2c_table);
++
++#ifdef CONFIG_OF
++static const struct of_device_id tpm_tis_i2c_of_match[] = {
++	{ .compatible = "infineon,tpm_i2c_infineon", .data = (void *)0 },
++	{ .compatible = "infineon,slb9635tt", .data = (void *)0 },
++	{ .compatible = "infineon,slb9645tt", .data = (void *)1 },
++	{},
++};
++MODULE_DEVICE_TABLE(of, tpm_tis_i2c_of_match);
++#endif
++
+ static SIMPLE_DEV_PM_OPS(tpm_tis_i2c_ops, tpm_pm_suspend, tpm_pm_resume);
+ 
+ static int tpm_tis_i2c_probe(struct i2c_client *client,
+ 			     const struct i2c_device_id *id)
+ {
+ 	int rc;
+-	if (tpm_dev.client != NULL)
++	struct device *dev = &(client->dev);
++
++	if (tpm_dev.client != NULL) {
++		dev_err(dev, "This driver only supports one client at a time\n");
+ 		return -EBUSY;	/* We only support one client */
++	}
+ 
+ 	if (!i2c_check_functionality(client->adapter, I2C_FUNC_I2C)) {
+-		dev_err(&client->dev,
+-			"no algorithms associated to the i2c bus\n");
++		dev_err(dev, "no algorithms associated to the i2c bus\n");
+ 		return -ENODEV;
+ 	}
+ 
+@@ -695,7 +752,6 @@ static int tpm_tis_i2c_remove(struct i2c_client *client)
+ }
+ 
+ static struct i2c_driver tpm_tis_i2c_driver = {
+-
+ 	.id_table = tpm_tis_i2c_table,
+ 	.probe = tpm_tis_i2c_probe,
+ 	.remove = tpm_tis_i2c_remove,
+@@ -703,11 +759,12 @@ static struct i2c_driver tpm_tis_i2c_driver = {
+ 		   .name = "tpm_i2c_infineon",
+ 		   .owner = THIS_MODULE,
+ 		   .pm = &tpm_tis_i2c_ops,
++		   .of_match_table = of_match_ptr(tpm_tis_i2c_of_match),
+ 		   },
+ };
+ 
+ module_i2c_driver(tpm_tis_i2c_driver);
+ MODULE_AUTHOR("Peter Huewe <peter.huewe@infineon.com>");
+ MODULE_DESCRIPTION("TPM TIS I2C Infineon Driver");
+-MODULE_VERSION("2.1.5");
++MODULE_VERSION("2.2.0");
+ MODULE_LICENSE("GPL");
 -- 
-1.8.1.2
+1.8.1.msysgit.1
+
