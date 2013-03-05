@@ -1,151 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932980Ab3CECMA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 21:12:00 -0500
-Received: from mga01.intel.com ([192.55.52.88]:16249 "EHLO mga01.intel.com"
+	id S932991Ab3CECMi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 21:12:38 -0500
+Received: from mga11.intel.com ([192.55.52.93]:58952 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932732Ab3CECL6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 21:11:58 -0500
+	id S932690Ab3CECMf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Mar 2013 21:12:35 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,784,1355126400"; 
-   d="scan'208";a="294820293"
-From: "Allan, Bruce W" <bruce.w.allan@intel.com>
-To: =?utf-8?B?TWloYWkgRG9uyJt1?= <mihai.dontu@gmail.com>,
-        Morten Stevens <mstevens@imt-systems.com>
-CC: "e1000-devel@lists.sourceforge.net" 
-	<e1000-devel@lists.sourceforge.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Borislav Petkov <bp@alien8.de>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: RE: [E1000-devel] e1000e 3.9-rc1 suspend failure (was: Re: e1000e:
- nic does not work properly after cold power on)
-Thread-Topic: [E1000-devel] e1000e 3.9-rc1 suspend failure (was: Re: e1000e:
- nic does not work properly after cold power on)
-Thread-Index: AQHOGSIdGsLs+X8iJUiQ6k5Fz1vcn5iWq3IA//+u5UA=
-Date: Tue, 5 Mar 2013 02:11:56 +0000
-Message-ID: <804857E1F29AAC47BF68C404FC60A1844D02FD84@ORSMSX102.amr.corp.intel.com>
-References: <20130304124631.2ac730f3@mdontu-l.dsd.ro>
-	<5134E4AB.2010504@imt-systems.com> <20130304214830.GB22306@pd.tnic>
- <20130305005836.4f84c065@mdontu-l.dsd.ro>
-In-Reply-To: <20130305005836.4f84c065@mdontu-l.dsd.ro>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.138]
-Content-Type: text/plain; charset="utf-8"
+   d="scan'208";a="299038144"
+Date: Tue, 5 Mar 2013 09:21:14 -0500
+From: Youquan Song <youquan.song@linux.intel.com>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: htejun@gmail.com, ming.lei@canonical.com, sshtylyov@mvista.com,
+        lpechacek@suse.cz, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org, seth.heasley@intel.com, jlee@suse.com,
+        james.d.ralston@intel.com, stable@vger.kernel.org,
+        Youquan Song <youquan.song@linux.intel.com>
+Subject: Re: [PATCH v3] ata: Fix DVD not dectected at some Haswell platforms
+Message-ID: <20130305142114.GA27413@linux-youquan.bj.intel.com>
+References: <1361203255-1670-1-git-send-email-youquan.song@intel.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1361203255-1670-1-git-send-email-youquan.song@intel.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r252CIvh004883
 
-> -----Original Message-----
-> From: Mihai DonÈ›u [mailto:mihai.dontu@gmail.com]
-> Sent: Monday, March 04, 2013 2:59 PM
-> To: Morten Stevens
-> Cc: e1000-devel@lists.sourceforge.net; netdev@vger.kernel.org; linux-
-> kernel@vger.kernel.org; Rafael J. Wysocki; Borislav Petkov; Jiri Slaby
-> Subject: Re: [E1000-devel] e1000e 3.9-rc1 suspend failure (was: Re: e1000e:
-> nic does not work properly after cold power on)
-> 
-> On Mon, 4 Mar 2013 22:48:30 +0100 Borislav Petkov wrote:
-> > On Mon, Mar 04, 2013 at 07:15:07PM +0100, Morten Stevens wrote:
-> > > Can you reproduce this with linux 3.9-rc1? 3.9-rc1 has the latest
-> > > upstream driver (e1000e 2.2.14) which contains many bugfixes.
-> >
-> 
-> On my system (ThinkPad T420) I get:
-> 
-> [   10.694743] e1000e: Intel(R) PRO/1000 Network Driver - 2.2.14-k
-> [   10.694746] e1000e: Copyright(c) 1999 - 2013 Intel Corporation.
-> [   10.694852] e1000e 0000:00:19.0: setting latency timer to 64
-> [   10.694911] e1000e 0000:00:19.0: Interrupt Throttling Rate (ints/sec) set to
-> dynamic conservative mode
-> [   10.694949] e1000e 0000:00:19.0: irq 47 for MSI/MSI-X
-> [   10.975086] e1000e 0000:00:19.0 eth0: registered PHC clock
-> [   10.975091] e1000e 0000:00:19.0 eth0: (PCI Express:2.5GT/s:Width x1)
-> 00:21:cc:70:17:a0
-> [   10.975093] e1000e 0000:00:19.0 eth0: Intel(R) PRO/1000 Network
-> Connection
-> [   10.975127] e1000e 0000:00:19.0 eth0: MAC: 10, PHY: 11, PBA No: 1000FF-
-> 0FF
-> [   89.716695] e1000e 0000:00:19.0 eth0: Hardware Error
-> [   90.025403] e1000e 0000:00:19.0 eth0: Timesync Tx Control register not set
-> as expected
-> [   90.349197] e1000e 0000:00:19.0: irq 47 for MSI/MSI-X
-> [   90.449760] e1000e 0000:00:19.0: irq 47 for MSI/MSI-X
-> 
-> The 'hardware error' line caught my attention.
-> 
-> > This e1000e thing gets more b0rked by the minute. This is what happens
-> > when I try to suspend with 3.9-rc1:
-> >
-> > [   83.502908] PM: Syncing filesystems ... done.
-> > [   83.509886] Freezing user space processes ... (elapsed 0.01
-> > seconds) done. [   83.523352] PM: Preallocating image memory... done
-> > (allocated 95652 pages) [   83.675083] PM: Allocated 382608 kbytes in
-> > 0.15 seconds (2550.72 MB/s) [   83.675782] Freezing remaining
-> > freezable tasks ... (elapsed 0.01 seconds) done. [   83.688524]
-> > Suspending console(s) (use no_console_suspend to debug)
-> > [   84.251024] e1000e 0000:00:19.0 eth0: Hardware Error
-> > [   84.458866] ------------[ cut here ]------------ [   84.458871]
-> > WARNING: at kernel/irq/manage.c:1249 __free_irq+0xa3/0x1e0()
-> > [   84.458872] Hardware name: 2320CTO [   84.458872] Trying to free
-> > already-free IRQ 20 [   84.458898] Modules linked in:
-> > cpufreq_powersave cpufreq_userspace cpufreq_conservative
-> > cpufreq_stats uinput loop hid_generic usb hid hid coretemp kvm_intel
-> > arc4 kvm crc32_pclmul iwldvm crc32c_intel ghash_clmulni_intel
-> > mac80211 aesni_intel xts ipv6 aes_x86_64 lr w gf128mul ablk_helper
-> > cryptd iTCO_wdt iTCO_vendor_support iwlwifi sdhci_pci sdhci cfg80211
-> > snd_hda_codec_hdmi snd_hda_codec_realtek mmc_core microcode
-> e1000e
-> > thinkpad_acpi pcspkr lpc_ich i2c_i801 mfd_core nvram snd_hda_intel
-> > rfkill snd_hda_codec battery ac snd_hw dep led_class snd_pcm
-> > snd_page_alloc snd_timer snd acpi_cpufreq soundcore mperf ptp wmi
-> > pps_core xhci_hcd ehci_pci ehci_hcd processo r thermal [   84.458900]
-> > Pid: 3353, comm: kworker/u:35 Tainted: G        W    3.9.0-rc1 #1
-> > [   84.458901] Call Trace: [   84.458905]  [<ffffffff8103ef7f>]
-> > warn_slowpath_common+0x7f/0xc0 [   84.458907]  [<ffffffff8103f076>]
-> > warn_slowpath_fmt+0x46/0x50 [   84.458910]  [<ffffffff81537bfe>] ?
-> > _raw_spin_lock_irqsave+0x4e/0x60 [   84.458911]
-> > [<ffffffff810bc8d5>] ? __free_irq+0x55/0x1e0 [   84.458913]
-> > [<ffffffff810bc923>] __free_irq+0xa3/0x1e0 [   84.458914]
-> > [<ffffffff810bcab4>] free_irq+0x54/0xc0 [   84.458919]
-> > [<ffffffffa017745d>] e1000_free_irq+0x7d/0x90 [e1000e]
-> > [   84.458922]  [<ffffffffa01834af>] __e1000_shutdown+0x8f/0x8a0
-> > [e1000e] [   84.458924]  [<ffffffff813c92a7>] ?
-> > __device_suspend+0xb7/0x200 [   84.458927]  [<ffffffff81073b71>] ?
-> > get_parent_ip+0x11/0x50 [   84.458931]  [<ffffffffa0183d33>]
-> > e1000_suspend+0x23/0x50 [e1000e] [   84.458932]
-> > [<ffffffff813c92a7>] ? __device_suspend+0xb7/0x200 [   84.458933]
-> > [<ffffffff8153c049>] ? sub_preempt_count+0x79/0xd0 [   84.458936]
-> > [<ffffffff812a2ff5>] pci_pm_freeze+0x55/0xc0 [   84.458937]
-> > [<ffffffff812a2fa0>] ? pci_pm_resume_noirq+0xd0/0xd0 [   84.458938]
-> > [<ffffffff813c8b45>] dpm_run_callback.isra.5+0x25/0x50
-> > [   84.458939]  [<ffffffff813c92d3>] __device_suspend+0xe3/0x200
-> > [   84.458941]  [<ffffffff813c940f>] async_suspend+0x1f/0xa0
-> > [   84.458942]  [<ffffffff8106bcfb>] async_run_entry_fn+0x3b/0x140
-> > [   84.458944]  [<ffffffff8105d00d>] process_one_work+0x1ed/0x510
-> > [   84.458946]  [<ffffffff8105cfab>] ? process_one_work+0x18b/0x510
-> > [   84.458948]  [<ffffffff8105e7b5>] worker_thread+0x115/0x390
-> > [   84.458949]  [<ffffffff8105e6a0>] ? manage_workers+0x300/0x300
-> > [   84.458951]  [<ffffffff81064e2a>] kthread+0xea/0xf0
-> > [   84.458953]  [<ffffffff81064d40>] ?
-> > kthread_create_on_node+0x160/0x160 [   84.458954]
-> > [<ffffffff8153ff9c>] ret_from_fork+0x7c/0xb0 [   84.458955]
-> > [<ffffffff81064d40>] ? kthread_create_on_node+0x160/0x160
-> > [   84.458956] ---[ end trace 3114e23ce50d2357 ]--- [   85.082276]
-> > pci_pm_freeze(): e1000_suspend+0x0/0x50 [e1000e] returns -2
-> > [   85.082278] dpm_run_callback(): pci_pm_freeze+0x0/0xc0 returns -2
-> > [   85.082281] PM: Device 0000:00:19.0 failed to freeze async: error
-> > -2
-> >
-> > Let's add more folks to CC.
+Hi Maintainer,
 
-This may be related to some runtime power management issues for which there are a
-number of patches currently in test.
+Can you take the patch which is needed by some new platforms?
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Thanks
+-Youquan
+
+On Mon, Feb 18, 2013 at 11:00:55AM -0500, Youquan Song wrote:
+> There is a quirk patch 5e5a4f5d5a08c9c504fe956391ac3dae2c66556d 
+> "ata_piix: make DVD Drive recognisable on systems with Intel Sandybridge
+>  chipsets(v2)" fixing the 4 ports IDE controller 32bit PIO mode. 
+> 
+> We've hit a problem with DVD not recognized on Haswell Desktop platform which
+> includes Lynx Point 2-port SATA controller.
+> 
+> This quirk patch disables 32bit PIO on this controller in IDE mode.
+> 
+> v2: Change spelling error in statememnt pointed by Sergei Shtylyov.
+> v3: Change comment statememnt and spliting line over 80 characters pointed by
+>     Libor Pechacek and also rebase the patch against 3.8-rc7 kernel.
+> 
+> Tested-by: Lee, Chun-Yi <jlee@suse.com>
+> Signed-off-by: Youquan Song <youquan.song@intel.com>
+> Cc: stable@vger.kernel.org
+> ---
+>  drivers/ata/ata_piix.c |   14 +++++++++++++-
+>  1 files changed, 13 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/ata/ata_piix.c b/drivers/ata/ata_piix.c
+> index 174eca6..4aab550 100644
+> --- a/drivers/ata/ata_piix.c
+> +++ b/drivers/ata/ata_piix.c
+> @@ -150,6 +150,7 @@ enum piix_controller_ids {
+>  	tolapai_sata,
+>  	piix_pata_vmw,			/* PIIX4 for VMware, spurious DMA_ERR */
+>  	ich8_sata_snb,
+> +	ich8_2port_sata_snb,
+>  };
+>  
+>  struct piix_map_db {
+> @@ -304,7 +305,7 @@ static const struct pci_device_id piix_pci_tbl[] = {
+>  	/* SATA Controller IDE (Lynx Point) */
+>  	{ 0x8086, 0x8c01, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_sata_snb },
+>  	/* SATA Controller IDE (Lynx Point) */
+> -	{ 0x8086, 0x8c08, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
+> +	{ 0x8086, 0x8c08, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata_snb },
+>  	/* SATA Controller IDE (Lynx Point) */
+>  	{ 0x8086, 0x8c09, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
+>  	/* SATA Controller IDE (Lynx Point-LP) */
+> @@ -422,6 +423,7 @@ static const struct piix_map_db *piix_map_db_table[] = {
+>  	[ich8m_apple_sata]	= &ich8m_apple_map_db,
+>  	[tolapai_sata]		= &tolapai_map_db,
+>  	[ich8_sata_snb]		= &ich8_map_db,
+> +	[ich8_2port_sata_snb]	= &ich8_2port_map_db,
+>  };
+>  
+>  static struct pci_bits piix_enable_bits[] = {
+> @@ -1225,6 +1227,16 @@ static struct ata_port_info piix_port_info[] = {
+>  		.udma_mask	= ATA_UDMA6,
+>  		.port_ops	= &piix_sata_ops,
+>  	},
+> +
+> +	[ich8_2port_sata_snb] =
+> +	{
+> +		.flags		= PIIX_SATA_FLAGS | PIIX_FLAG_SIDPR
+> +					| PIIX_FLAG_PIO16,
+> +		.pio_mask	= ATA_PIO4,
+> +		.mwdma_mask	= ATA_MWDMA2,
+> +		.udma_mask	= ATA_UDMA6,
+> +		.port_ops	= &piix_sata_ops,
+> +	},
+>  };
+>  
+>  #define AHCI_PCI_BAR 5
+> -- 
+> 1.7.7.4
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
