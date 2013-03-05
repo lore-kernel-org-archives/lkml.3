@@ -1,68 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755477Ab3CEWUt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 17:20:49 -0500
-Received: from mailout01.c08.mtsvc.net ([205.186.168.189]:53488 "EHLO
-	mailout01.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755104Ab3CEWUs (ORCPT
+	id S1755488Ab3CEWWt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 17:22:49 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:54977 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754592Ab3CEWWs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 17:20:48 -0500
-Message-ID: <1362522029.18799.145.camel@thor.lan>
-Subject: Re: [PATCH v3 00/23] ldisc fixes
-From: Peter Hurley <peter@hurleysoftware.com>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, Sasha Levin <levinsasha928@gmail.com>,
-        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ilya Zykov <ilya@ilyx.ru>, Dave Jones <davej@redhat.com>
-Date: Tue, 05 Mar 2013 17:20:29 -0500
-In-Reply-To: <20130305205033.GA5771@linutronix.de>
-References: <1355509370-5883-1-git-send-email-peter@hurleysoftware.com>
-	 <1360095638-6624-1-git-send-email-peter@hurleysoftware.com>
-	 <20130305205033.GA5771@linutronix.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.3-0pjh1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 125194 peter@hurleysoftware.com
+	Tue, 5 Mar 2013 17:22:48 -0500
+Date: Wed, 6 Mar 2013 00:22:24 +0200
+From: Felipe Balbi <balbi@ti.com>
+To: Arnd Bergmann <arnd@arndb.de>
+CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <arm@kernel.org>, Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linux USB Mailing List <linux-usb@vger.kernel.org>
+Subject: Re: [PATCH 4/9] usb: gadget: fix omap_udc build errors
+Message-ID: <20130305222224.GA26278@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <1362521809-22989-1-git-send-email-arnd@arndb.de>
+ <1362521809-22989-5-git-send-email-arnd@arndb.de>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="SUOF0GtieIMvvwua"
+Content-Disposition: inline
+In-Reply-To: <1362521809-22989-5-git-send-email-arnd@arndb.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[--cc Alan Cox]
+--SUOF0GtieIMvvwua
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Tue, 2013-03-05 at 21:50 +0100, Sebastian Andrzej Siewior wrote:
-> * Peter Hurley | 2013-02-05 15:20:15 [-0500]:
-> 
-> >  Please re-test with your dummy_hcd/g_nokia testcase, although
-> >  I'm not convinced that usb gadget is using tty_hangup() appropriately.
-> >  tty drivers use this for async carrier loss coming from an IRQ
-> >  which will be disabled if the tty has been shutdown. Does gserial
-> >  prevent async hangup to a dead tty in a similar fashion?
-> 
-> Not sure I understood. tty_hangup() is only called from within
-> gserial_disconnect() which calls right after usb_ep_disable(). After
-> usb_ep_disable() no further serial packets can be received until the
-> endpoints are re-enabled. This happens in gserial_connect().
+Hi,
 
-That's why I asked. There are two potential issues:
+On Tue, Mar 05, 2013 at 11:16:44PM +0100, Arnd Bergmann wrote:
+> 1bf0cf6040 "usb: gadget: omap_udc: convert to udc_start/udc_stop"
+> made some trivial changes but was missing a ';' character.
+>=20
+> 8c4cc00552 "ARM: OMAP1: DMA: Moving OMAP1 DMA channel definitions
+> to mach-omap1" added a definition for OMAP_DMA_USB_W2FC_TX0 to
+> the driver while making the header file it was defined in
+> unavailable for drivers, but this driver actually needs
+> OMAP_DMA_USB_W2FC_RX0 as well.
+>=20
+> Both changes appear trivial, so let's add the missing semicolon
+> and the macro definition.
+>=20
+> Cc: Felipe Balbi <balbi@ti.com>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> ---
+>  drivers/usb/gadget/omap_udc.c | 3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+>=20
+> diff --git a/drivers/usb/gadget/omap_udc.c b/drivers/usb/gadget/omap_udc.c
+> index 06be85c..f844565 100644
+> --- a/drivers/usb/gadget/omap_udc.c
+> +++ b/drivers/usb/gadget/omap_udc.c
+> @@ -62,6 +62,7 @@
+>  #define	DRIVER_VERSION	"4 October 2004"
+> =20
+>  #define OMAP_DMA_USB_W2FC_TX0		29
+> +#define OMAP_DMA_USB_W2FC_RX0		26
+> =20
+>  /*
+>   * The OMAP UDC needs _very_ early endpoint setup:  before enabling the
+> @@ -1310,7 +1311,7 @@ static int omap_pullup(struct usb_gadget *gadget, i=
+nt is_on)
+>  }
+> =20
+>  static int omap_udc_start(struct usb_gadget *g,
+> -		struct usb_gadget_driver *driver)
+> +		struct usb_gadget_driver *driver);
 
-First, tty_hangup() is asynchronous -- ie., it returns immediately. It
-does not wait for the tty device to actually perform the hangup. So if
-the gadget layers start cleanup immediately after, expecting that they
-won't get a flurry of tty calls, that would be bad.
+good catch, thanks. I'll queue it for v3.6-rc3. Make sure to Cc
+linux-usb for anything under drivers/usb/ though
 
-tty_vhangup() is synchronous -- ie., you wait while it cleans up. This
-is what the usb serial core does on it's disconnect() method. But I
-didn't research further if the circumstances were the same.
+--=20
+balbi
 
-Second, when the hangup actually does run -- in __tty_hangup() -- it
-expects the tty to exist. I didn't go looking through the gadget layers
-to see if the tty was disposed some other way, which might race the
-asynchronous tty hangup.
+--SUOF0GtieIMvvwua
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Thanks,
-Peter Hurley
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
+iQIcBAEBAgAGBQJRNnAgAAoJEIaOsuA1yqREn5wP+wc5Ycera0NmG7fUJxZmVlk8
+XCyeY8dEXasbbpqD8tjRAqTiu3kLJh/WoSkHsGbCh1b8B2JK+rdbz3mWamPE1ix5
+mPuRDKxiSSjua6P1/9sOY5G6utlSx8PhlvolETTsjt5IeK3pHGqKEsAcavH2PGcg
+pFs/ZfQioVQcg57Eb+Nih6qyvqd8/gPBTEXwp9kZEXMbYVrTzmPAXD35KrqX4h/W
+R+1K0qoikwTWEwC5zs35U7H7V3Z09exrC4S35MO2K+8vyw8DQlrFZBHRQaC9yKvA
+cJU1cT2ygFnzyB9bXIqCcXissQvEESo0SMyxCKs1SGG71UuaawgTyzHXY0qhU4XP
+GF492hEBIXfke8R/tmsYZ0TncSEgpAYrzKZtYh0ICdE7C29cXFYqPTqP06tthifD
+fRxXWsqqnrCAxLepQzdgaQ9KNukfSeXTE+bcK4f0U2/V8eRWxGOSZJXilZv1pJQY
+/+7NVFLaBpi/mhSW/UwDVXyJL7Im0bHir46BJEq55KuaK/ljFrlr3YSC+/bubWoS
+4tn3BdomqFhleOa3+2JT08svTqnBYg9tVGwtQiFeDHY2c5Ruanzol5xkfuyTKi5Q
+spra3heBk62bgQx7K59ENRgTOgrMtriSkzd0u4Jiw4LtDflzGZWMfHUA7bTuvL0j
+yuBBZvFqmxqBbqDHQOSk
+=BuQ2
+-----END PGP SIGNATURE-----
 
-
+--SUOF0GtieIMvvwua--
