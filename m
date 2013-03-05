@@ -1,78 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933051Ab3CEC3h (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 21:29:37 -0500
-Received: from mga02.intel.com ([134.134.136.20]:18332 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932729Ab3CEC2Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 21:28:25 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,784,1355126400"; 
-   d="scan'208";a="293621013"
-From: Feng Tang <feng.tang@intel.com>
-To: Thomas Gleixner <tglx@linutronix.de>, John Stultz <john.stultz@linaro.org>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        x86@kernel.org, Len Brown <lenb@kernel.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+	id S1758964Ab3CECcL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 21:32:11 -0500
+Received: from kirsty.vergenet.net ([202.4.237.240]:50542 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751579Ab3CECcJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Mar 2013 21:32:09 -0500
+Date: Tue, 5 Mar 2013 11:32:06 +0900
+From: Simon Horman <horms@verge.net.au>
+To: Vladimir Davydov <vdavydov@parallels.com>
+Cc: Eric Biederman <ebiederm@xmission.com>, kexec@lists.infradead.org,
         linux-kernel@vger.kernel.org
-Cc: gong.chen@linux.intel.com, Feng Tang <feng.tang@intel.com>
-Subject: [RFC PATCH v2 1/4] x86: Add cpu capability flag X86_FEATURE_NONSTOP_TSC_S3
-Date: Tue,  5 Mar 2013 10:27:03 +0800
-Message-Id: <1362450426-4232-2-git-send-email-feng.tang@intel.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1362450426-4232-1-git-send-email-feng.tang@intel.com>
-References: <1362450426-4232-1-git-send-email-feng.tang@intel.com>
+Subject: Re: [PATCH] kexec: consolidate crash late initialization
+Message-ID: <20130305023206.GL16128@verge.net.au>
+References: <1338372309-24983-1-git-send-email-vdavydov@parallels.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1338372309-24983-1-git-send-email-vdavydov@parallels.com>
+Organisation: Horms Solutions Ltd.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On some new Intel Atom processors (Penwell and Cloverview), there is
-a feature that the TSC won't stop in S3 state, say the TSC value
-won't be reset to 0 after resume. This feature makes TSC a more reliable
-clocksource and could benefit the timekeeping code during system
-suspend/resume cycle, so add a flag for it.
+On Wed, May 30, 2012 at 02:05:09PM +0400, Vladimir Davydov wrote:
+> Use one module_init() instead of two.
 
-Signed-off-by: Feng Tang <feng.tang@intel.com>
----
- arch/x86/include/asm/cpufeature.h |    1 +
- arch/x86/kernel/cpu/intel.c       |   12 ++++++++++++
- 2 files changed, 13 insertions(+), 0 deletions(-)
+I'm not sure I understand the motivation for this change.
 
-diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
-index 93fe929..a8466f2 100644
---- a/arch/x86/include/asm/cpufeature.h
-+++ b/arch/x86/include/asm/cpufeature.h
-@@ -100,6 +100,7 @@
- #define X86_FEATURE_AMD_DCM     (3*32+27) /* multi-node processor */
- #define X86_FEATURE_APERFMPERF	(3*32+28) /* APERFMPERF */
- #define X86_FEATURE_EAGER_FPU	(3*32+29) /* "eagerfpu" Non lazy FPU restore */
-+#define X86_FEATURE_NONSTOP_TSC_S3 (3*32+30) /* TSC doesn't stop in S3 state */
- 
- /* Intel-defined CPU features, CPUID level 0x00000001 (ecx), word 4 */
- #define X86_FEATURE_XMM3	(4*32+ 0) /* "pni" SSE-3 */
-diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
-index 1905ce9..fe57544 100644
---- a/arch/x86/kernel/cpu/intel.c
-+++ b/arch/x86/kernel/cpu/intel.c
-@@ -96,6 +96,18 @@ static void __cpuinit early_init_intel(struct cpuinfo_x86 *c)
- 			sched_clock_stable = 1;
- 	}
- 
-+	/* Penwell and Cloverview have the TSC which doesn't sleep on S3 */
-+	if (c->x86 == 6) {
-+		switch (c->x86_model) {
-+		case 0x27:	/* Penwell */
-+		case 0x35:	/* Cloverview */
-+			set_cpu_cap(c, X86_FEATURE_NONSTOP_TSC_S3);
-+			break;
-+		default:
-+			;
-+		}
-+	}
-+
- 	/*
- 	 * There is a known erratum on Pentium III and Core Solo
- 	 * and Core Duo CPUs.
--- 
-1.7.0.4
-
+> ---
+>  kernel/kexec.c |    9 +++++++--
+>  1 files changed, 7 insertions(+), 2 deletions(-)
+> 
+> diff --git a/kernel/kexec.c b/kernel/kexec.c
+> index 4e2e472..c3341cb 100644
+> --- a/kernel/kexec.c
+> +++ b/kernel/kexec.c
+> @@ -1240,7 +1240,6 @@ static int __init crash_notes_memory_init(void)
+>  	}
+>  	return 0;
+>  }
+> -module_init(crash_notes_memory_init)
+>  
+>  
+>  /*
+> @@ -1520,7 +1519,13 @@ static int __init crash_save_vmcoreinfo_init(void)
+>  	return 0;
+>  }
+>  
+> -module_init(crash_save_vmcoreinfo_init)
+> +static int __init crash_init(void)
+> +{
+> +	crash_notes_memory_init();
+> +	crash_save_vmcoreinfo_init();
+> +	return 0;
+> +}
+> +module_init(crash_init)
+>  
+>  /*
+>   * Move into place and start executing a preloaded standalone
+> -- 
+> 1.7.1
+> 
+> 
+> _______________________________________________
+> kexec mailing list
+> kexec@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/kexec
+> 
