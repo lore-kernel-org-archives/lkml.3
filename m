@@ -1,170 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756575Ab3CEWom (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 17:44:42 -0500
-Received: from g6t0187.atlanta.hp.com ([15.193.32.64]:22331 "EHLO
-	g6t0187.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755831Ab3CEWoi (ORCPT
+	id S1756214Ab3CEWsL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 17:48:11 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:46619 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755666Ab3CEWsJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 17:44:38 -0500
-From: Toshi Kani <toshi.kani@hp.com>
-To: rjw@sisk.pl
-Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        yinghai@kernel.org, jiang.liu@huawei.com,
-        isimatu.yasuaki@jp.fujitsu.com, Toshi Kani <toshi.kani@hp.com>
-Subject: [PATCH] ACPI: Update _OST handling for notify
-Date: Tue,  5 Mar 2013 15:33:31 -0700
-Message-Id: <1362522811-29063-1-git-send-email-toshi.kani@hp.com>
-X-Mailer: git-send-email 1.7.11.7
+	Tue, 5 Mar 2013 17:48:09 -0500
+Message-ID: <51367625.2090405@wwwdotorg.org>
+Date: Tue, 05 Mar 2013 15:48:05 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+CC: linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Mike Turquette <mturquette@linaro.org>,
+        Stephen Warren <swarren@nvidia.com>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>, linux-kernel@vger.kernel.org
+Subject: Re: [REPOST PATCH 0/2] Table lookup for mux clock type
+References: <1361545358-22721-1-git-send-email-pdeschrijver@nvidia.com>
+In-Reply-To: <1361545358-22721-1-git-send-email-pdeschrijver@nvidia.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When the kernel calls _OSC with OSC_SB_HOTPLUG_OST_SUPPORT bit
-set at boot-time, the OS is responsible for calling _OST for
-ACPI hotplug events.  However, when hotplug.enabled attribute
-is unset for ACPI scan drivers, their notify handlers are removed
-and _OST is not called for ACPI hotplug events as a result.
+On 02/22/2013 08:02 AM, Peter De Schrijver wrote:
+> This patchset adds a table lookup feature to the mux clock type. This will
+> be used by the forthcoming Tegra114 clock implementation. Also instead of
+> a fixed field width, a mask is used. This is because Tegra114 has some muxes
+> where the parent selector is spread over several bitfields. The second patch
+> adapts the tegra periph clock implementation which uses struct clk_mux
+> directly.
+> 
+> --
+> 
+> Mike,
+> 
+> This patch is a dependency for the Tegra114 CCF implementation. Could you
+> review it and merge on a topic branch so Stephen can pull it in to verify
+> the integration?
 
-This patch keeps the notify handler of ACPI scan drivers,
-acpi_hotplug_notify_cb(), installed regardless of the state of
-hotplug.enabled.  The notify handler then checks if hotplug.enabled
-is set for the associated scan handler.  If unset, the notify
-handler calls _OST with a proper error code.  The patch also
-eliminates ACPI namespace walk when hotplug.enabled is changed
-via sysfs.
+Peter, does this repost you resolve the issue I pointed out at:
+http://www.spinics.net/lists/arm-kernel/msg220873.html
 
-Signed-off-by: Toshi Kani <toshi.kani@hp.com>
----
+To quote:
 
-This patch applies on top of the following patchset.
-https://lkml.org/lkml/2013/3/4/455
-
----
- drivers/acpi/scan.c |   87 +++++++++++++++++++++------------------------------
- 1 file changed, 35 insertions(+), 52 deletions(-)
-
-diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
-index 3f6ec0d..dfdbcfd 100644
---- a/drivers/acpi/scan.c
-+++ b/drivers/acpi/scan.c
-@@ -259,11 +259,43 @@ static void acpi_scan_device_check(void *context)
- 				   ACPI_NOTIFY_DEVICE_CHECK);
- }
- 
--static void acpi_hotplug_notify_cb(acpi_handle handle, u32 type, void *not_used)
-+static void acpi_hotplug_unsupported(acpi_handle handle, u32 type)
-+{
-+	u32 ost_status;
-+
-+	switch (type) {
-+	case ACPI_NOTIFY_BUS_CHECK:
-+		acpi_handle_debug(handle,
-+			"ACPI_NOTIFY_BUS_CHECK event: unsupported\n");
-+		ost_status = ACPI_OST_SC_INSERT_NOT_SUPPORTED;
-+		break;
-+	case ACPI_NOTIFY_DEVICE_CHECK:
-+		acpi_handle_debug(handle,
-+			"ACPI_NOTIFY_DEVICE_CHECK event: unsupported\n");
-+		ost_status = ACPI_OST_SC_INSERT_NOT_SUPPORTED;
-+		break;
-+	case ACPI_NOTIFY_EJECT_REQUEST:
-+		acpi_handle_debug(handle,
-+			"ACPI_NOTIFY_EJECT_REQUEST event: unsupported\n");
-+		ost_status = ACPI_OST_SC_EJECT_NOT_SUPPORTED;
-+		break;
-+	default:
-+		/* non-hotplug event; possibly handled by other handler */
-+		return;
-+	}
-+
-+	acpi_evaluate_hotplug_ost(handle, type, ost_status, NULL);
-+}
-+
-+static void acpi_hotplug_notify_cb(acpi_handle handle, u32 type, void *data)
- {
- 	acpi_osd_exec_callback callback;
-+	struct acpi_scan_handler *handler = data;
- 	acpi_status status;
- 
-+	if (!handler->hotplug.enabled)
-+		return acpi_hotplug_unsupported(handle, type);
-+
- 	switch (type) {
- 	case ACPI_NOTIFY_BUS_CHECK:
- 		acpi_handle_debug(handle, "ACPI_NOTIFY_BUS_CHECK event\n");
-@@ -1715,61 +1747,14 @@ static struct acpi_scan_handler *acpi_scan_match_handler(char *idstr,
- 	return NULL;
- }
- 
--static acpi_status acpi_scan_hotplug_modify(acpi_handle handle,
--					    u32 lvl_not_used, void *data,
--					    void **ret_not_used)
--{
--	struct acpi_device_pnp pnp = {};
--	struct acpi_scan_handler *tgt_handler = data, *handler;
--	struct acpi_hardware_id *hwid;
--	unsigned long long sta_not_used;
--	int type;
--	bool match = false;
--
--	if (acpi_bus_type_and_status(handle, &type, &sta_not_used))
--		return AE_OK;
--
--	INIT_LIST_HEAD(&pnp.ids);
--	acpi_set_pnp_ids(handle, &pnp, type);
--
--	if (!pnp.type.hardware_id)
--		return AE_OK;
--
--	list_for_each_entry(hwid, &pnp.ids, list) {
--		handler = acpi_scan_match_handler(hwid->id, NULL);
--		if (handler && handler == tgt_handler) {
--			match = true;
--			break;
--		}
--	}
--	if (!match)
--		goto out;
--
--	if (handler->hotplug.enabled)
--		acpi_install_notify_handler(handle, ACPI_SYSTEM_NOTIFY,
--					    acpi_hotplug_notify_cb, NULL);
--	else
--		acpi_remove_notify_handler(handle, ACPI_SYSTEM_NOTIFY,
--					   acpi_hotplug_notify_cb);
--
--out:
--	acpi_free_pnp_ids(&pnp);
--	return AE_OK;
--}
--
- void acpi_scan_hotplug_enabled(struct acpi_hotplug_profile *hotplug, bool val)
- {
--	struct acpi_scan_handler *handler;
--
- 	if (!!hotplug->enabled == !!val)
- 		return;
- 
- 	mutex_lock(&acpi_scan_lock);
- 
- 	hotplug->enabled = val;
--	handler = container_of(hotplug, struct acpi_scan_handler, hotplug);
--	acpi_walk_namespace(ACPI_TYPE_DEVICE, ACPI_ROOT_OBJECT, ACPI_UINT32_MAX,
--			    acpi_scan_hotplug_modify, NULL, handler, NULL);
- 
- 	mutex_unlock(&acpi_scan_lock);
- }
-@@ -1793,10 +1778,8 @@ static void acpi_scan_init_hotplug(acpi_handle handle, int type)
- 	list_for_each_entry(hwid, &pnp.ids, list) {
- 		handler = acpi_scan_match_handler(hwid->id, NULL);
- 		if (handler) {
--			if (handler->hotplug.enabled)
--				acpi_install_notify_handler(handle,
--					ACPI_SYSTEM_NOTIFY,
--					acpi_hotplug_notify_cb, NULL);
-+			acpi_install_notify_handler(handle, ACPI_SYSTEM_NOTIFY,
-+					acpi_hotplug_notify_cb, handler);
- 			break;
- 		}
- 	}
+>>> Just a quick note on patch dependencies here:
+>>>
+>>> Patch 1/2 can presumably be taken through the clk tree whenever Mike is
+>>> OK with it.
+>>>
+>>> Patch 2/2 depends on patches in the Tegra tree for 3.9. Since patch 2/2
+>>> is useful mostly for the Tegra114 clock driver, and I don't imagine that
+>>> will get posted/merged in time for 3.9, it's probably easiest to just
+>>> take patch 2/2 for 3.10 along with the Tegra114 clock driver. Also, I
+>>> imagine there won't be any more clk/Tegra tree dependencies in 3.10, so
+>>> patch 2/2 and the Tegra114 clk driver patches can likely go through the
+>>> clk tree itself for 3.10.
+>> 
+>> No. Because 1/2 changes struct clk_mux and the tegra peripheral clock type 
+>> uses struct clk_mux directly, 2/2 needs to be applied together with 1/2, even
+>> if the new functionality is not yet used.
+> 
+> Oh, then they can't be two separate patches then, or "git bisect" won't
+> work. I guess it's best to wait for 3.10 for this:-(
