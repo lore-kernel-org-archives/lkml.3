@@ -1,51 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757280Ab3CERdX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 12:33:23 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:41573 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755862Ab3CERdW (ORCPT
+	id S1757223Ab3CEReI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 12:34:08 -0500
+Received: from mail-qa0-f50.google.com ([209.85.216.50]:63618 "EHLO
+	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751135Ab3CEReG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 12:33:22 -0500
-X-IronPort-AV: E=Sophos;i="4.84,788,1355126400"; 
-   d="scan'208";a="27549352"
-From: David Brown <davidb@codeaurora.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org
-Subject: Re: [PATCH] ARM: Scorpion is a v7 architecture, not v6
-References: <1362439159-29258-1-git-send-email-sboyd@codeaurora.org>
-	<201303050831.37177.arnd@arndb.de>
-Date: Tue, 05 Mar 2013 09:33:21 -0800
-In-Reply-To: <201303050831.37177.arnd@arndb.de> (Arnd Bergmann's message of
-	"Tue, 5 Mar 2013 08:31:36 +0000")
-Message-ID: <8yappzd21lq.fsf@huya.qualcomm.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2 (gnu/linux)
+	Tue, 5 Mar 2013 12:34:06 -0500
+Date: Tue, 5 Mar 2013 09:34:01 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Li Zefan <lizefan@huawei.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>
+Subject: Re: [PATCH v2] cgroup: avoid accessing modular cgroup subsys
+ structure without locking
+Message-ID: <20130305173401.GB12795@htj.dyndns.org>
+References: <51355EFF.3080804@huawei.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51355EFF.3080804@huawei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnd Bergmann <arnd@arndb.de> writes:
+On Tue, Mar 05, 2013 at 10:57:03AM +0800, Li Zefan wrote:
+> subsys[i] is set to NULL in cgroup_unload_subsys() at modular unload,
+> and that's protected by cgroup_mutex, and then the memory *subsys[i]
+> resides will be freed.
+> 
+> So this is unsafe without any locking:
+> 
+>   if (!ss || ss->module)
+>   ...
+> 
+> v2:
+> - add a comment for enum cgroup_subsys_id
+> - simplify the comment in cgroup_exit()
+> 
+> Signed-off-by: Li Zefan <lizefan@huawei.com>
 
-> On Monday 04 March 2013, Stephen Boyd wrote:
->>  config ARCH_MULTI_V6
->> -       bool "ARMv6 based platforms (ARM11, Scorpion, ...)"
->> +       bool "ARMv6 based platforms (ARM11)"
->>         select ARCH_MULTI_V6_V7
->>         select CPU_V6
->
-> Sorry about that, my fault.
->
-> Was there also an ARMv6 core from Qualcomm, or did you only use ARM11 at
-> the time?
+Applied to cgroup/for-3.10.
 
-I believe the v6 core in the Qualcomm chips was an ARM11.
-
-David
+Thanks.
 
 -- 
-sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+tejun
