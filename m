@@ -1,102 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933141Ab3CEDyJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 22:54:09 -0500
-Received: from mga14.intel.com ([143.182.124.37]:24537 "EHLO mga14.intel.com"
+	id S933191Ab3CED7h (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 22:59:37 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:9026 "EHLO SMTP02.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932542Ab3CEDyH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 22:54:07 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,784,1355126400"; 
-   d="scan'208";a="264390755"
-Date: Tue, 5 Mar 2013 11:53:02 +0800
-From: Feng Tang <feng.tang@intel.com>
-To: Thomas Gleixner <tglx@linutronix.de>, John Stultz <john.stultz@linaro.org>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        x86@kernel.org, Len Brown <lenb@kernel.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        linux-kernel@vger.kernel.org,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-Cc: gong.chen@linux.intel.com
-Subject: Re: [RFC PATCH v2 0/4] Add support for S3 non-stop TSC support.
-Message-ID: <20130305035302.GA5239@feng-snb>
-References: <1362450426-4232-1-git-send-email-feng.tang@intel.com>
+	id S932533Ab3CED7g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Mar 2013 22:59:36 -0500
+X-IronPort-AV: E=Sophos;i="4.84,784,1355097600"; 
+   d="scan'208";a="10566724"
+Message-ID: <1362455801.8941.24.camel@hastur.hellion.org.uk>
+Subject: Re: [PATCH LINUX v5] xen: event channel arrays are xen_ulong_t and
+ not unsigned long
+From: Ian Campbell <ian.campbell@citrix.com>
+To: Rob Herring <robherring2@gmail.com>
+CC: "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
+        "Keir (Xen.org)" <keir@xen.org>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "Tim (Xen.org)" <tim@xen.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jan Beulich <JBeulich@suse.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Nicolas Pitre <nico@fluxnic.net>, Will Deacon <will.deacon@arm.com>
+Date: Tue, 5 Mar 2013 03:56:41 +0000
+In-Reply-To: <51340ACD.70904@gmail.com>
+References: <1361285327.1051.115.camel@zakaz.uk.xensource.com>
+	 <1361360886-2956-1-git-send-email-ian.campbell@citrix.com>
+	 <51340ACD.70904@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-2 
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1362450426-4232-1-git-send-email-feng.tang@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jason,
-
-Thanks for the review and suggestions!
-
-On Mon, Mar 04, 2013 at 08:20:36PM -0700, Jason Gunthorpe wrote:
-> On Tue, Mar 05, 2013 at 02:34:25AM +0000, Tang, Feng wrote:
-> > Hi Jason,
-> > 
-> > Sorry, I forgot to add you in cc list in the first place. Please
-> > help to review the patch series, thanks!
+> > diff --git a/arch/arm/include/asm/xen/events.h b/arch/arm/include/asm/xen/events.h
+> > index 94b4e90..5c27696 100644
+> > --- a/arch/arm/include/asm/xen/events.h
+> > +++ b/arch/arm/include/asm/xen/events.h
+> > @@ -15,4 +15,26 @@ static inline int xen_irqs_disabled(struct pt_regs *regs)
+> >  	return raw_irqs_disabled_flags(regs->ARM_cpsr);
+> >  }
+> >  
+> > +/*
+> > + * We cannot use xchg because it does not support 8-byte
+> > + * values. However it is safe to use {ldr,dtd}exd directly because all
+> > + * platforms which Xen can run on support those instructions.
 > 
-> Sure, I didn't get CC'd on the patches, so this is an imperfect reply,
-> but..
+> Why does atomic64_cmpxchg not work here?
 
-I've copied your comments back to the main thread.
+Just that we don't want/need the cmp aspect, we don't mind if an extra
+bit gets set as we read the value, so long as we atomically read and set
+to zero.
 
+> > + */
+> > +static inline xen_ulong_t xchg_xen_ulong(xen_ulong_t *ptr, xen_ulong_t val)
+> > +{
+> > +	xen_ulong_t oldval;
+> > +	unsigned int tmp;
+> > +
+> > +	wmb();
 > 
-> Did you consider an approach closer to the function I outlined to
-> Jonh:
+> Based on atomic64_cmpxchg implementation, you could use smp_mb here
+> which avoids an outer cache flush.
+
+Good point.
+
+> > +	asm volatile("@ xchg_xen_ulong\n"
+> > +		"1:     ldrexd  %0, %H0, [%3]\n"
+> > +		"       strexd  %1, %2, %H2, [%3]\n"
+> > +		"       teq     %1, #0\n"
+> > +		"       bne     1b"
+> > +		: "=&r" (oldval), "=&r" (tmp)
+> > +		: "r" (val), "r" (ptr)
+> > +		: "memory", "cc");
 > 
-> // Drops some small precision along the way but is simple..
-> static inline u64 cyclecounter_cyc2ns_128(const struct cyclecounter *cc,
->                                           cycle_t cycles)
-> {
->     u64 max = U64_MAX/cc->mult;
->     u64 num = cycles/max;
->     u64 result = num * ((max * cc->mult) >> cc->shift);
->     return result + cyclecounter_cyc2ns(cc, cycles - num*cc->mult);
-> }
+> And a smp_mb is needed here.
 
-Your way is surely more accurate, if maintainers are ok with adding
-the new API, I will use it.
+I think for the specific caller which we have here it isn't strictly
+necessary, but for generic correctness I think you are right.
 
-> 
-> Rather than the while loop, which, I suspect, drops more precision
-> that something like the above. (replace cyclecounter with clocksource)
-> At the very least, keeping it as a distinct inline will let someone
-> come by one day and implement a proper 128 bit multiply...
+Thanks for reviewing.
 
-> 
-> You may want to also CC the maintainers of all the ARM subsystems that
-> use read_persistent_clock and check with them to ensure this new
-> interface will let them migrate their implementations as well.
+Konrad, IIRC you have already picked this up (and sent to Linus?) so an
+incremental fix is required? See below.
 
-Maybe I didn't get it well, my patches didn't change the read_persistent_clock(),
-but inject a new way of counting suspended time. It should have no
-functional changes to existing platforms.
+Ian.
 
+8<------------------------------------
+
+>From 4ed928274dad4c3ed610e769b2ae11eb2d1ea433 Mon Sep 17 00:00:00 2001
+From: Ian Campbell <ijc@hellion.org.uk>
+Date: Tue, 5 Mar 2013 03:37:23 +0000
+Subject: [PATCH] arm: xen: correct barriers in xchg_xen_ulong
+
+We can use an smp_wmb rather than a wmb here and we also need one after the
+exchange. Spotted by Rob Herring.
+
+Signed-off-by: Ian Campbell <ijc@hellion.org.uk>
+---
+ arch/arm/include/asm/xen/events.h |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/include/asm/xen/events.h b/arch/arm/include/asm/xen/events.h
+index 5c27696..0e1f59e 100644
+--- a/arch/arm/include/asm/xen/events.h
++++ b/arch/arm/include/asm/xen/events.h
+@@ -25,7 +25,7 @@ static inline xen_ulong_t xchg_xen_ulong(xen_ulong_t *ptr, xen_ulong_t val)
+ 	xen_ulong_t oldval;
+ 	unsigned int tmp;
  
-> > 	    * Solve the problem of judging S3/S4, as the clocksource
-> > 	      counter will be reset after coming out S4.
-> 
-> Hrm, what if it wraps during suspend? This probably isn't a problem
-> for a 64 bit TSC though..
+-	wmb();
++	smp_wmb();
+ 	asm volatile("@ xchg_xen_ulong\n"
+ 		"1:     ldrexd  %0, %H0, [%3]\n"
+ 		"       strexd  %1, %2, %H2, [%3]\n"
+@@ -34,6 +34,7 @@ static inline xen_ulong_t xchg_xen_ulong(xen_ulong_t *ptr, xen_ulong_t val)
+ 		: "=&r" (oldval), "=&r" (tmp)
+ 		: "r" (val), "r" (ptr)
+ 		: "memory", "cc");
++	smp_wmb();
+ 	return oldval;
+ }
+ 
+-- 
+1.7.10.4
 
-Nice catch! I've added a wrap check in the patch, and will stop to use it
-if there is a wrap founded.
-
-+	if ((clock->flags & CLOCK_SOURCE_SUSPEND_NOTSTOP) &&
-+		cycle_now > clock->cycle_last) {
-
-> 
-> Is it impossible to track if S4 or S3 was entered in the clocksource?
-
-Currently there is no easy way to check it.
-
-Thanks,
-Feng
 
 
