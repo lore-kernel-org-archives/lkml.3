@@ -1,143 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933048Ab3CEC3K (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 21:29:10 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:13436 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932483Ab3CEC3G (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 21:29:06 -0500
-From: "Fangxiaozhi (Franko)" <fangxiaozhi@huawei.com>
-To: =?utf-8?B?QmrDuHJuIE1vcms=?= <bjorn@mork.no>
-CC: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Xueguiying (Zihan)" <zihan.xue@huawei.com>,
-        "Linlei (Lei Lin)" <lei.lin@huawei.com>,
-        "greg@kroah.com" <greg@kroah.com>, "Yili (Neil)" <neil.yi@huawei.com>,
-        "Wangyuhua (Roger, Credit)" <wangyuhua@huawei.com>,
-        "Huqiao (C)" <huqiao36@huawei.com>, "balbi@ti.com" <balbi@ti.com>,
-        "mdharm-usb@one-eyed-alien.net" <mdharm-usb@one-eyed-alien.net>,
-        "sebastian@breakpoint.cc" <sebastian@breakpoint.cc>
-Subject: RE: v3.8 regression: Huawei mode switching fails (was Re: [PATCH
- 2/2]linux-usb:optimize to match the Huawei USB storage devices and support
- new switch command)
-Thread-Topic: v3.8 regression: Huawei mode switching fails (was Re: [PATCH
- 2/2]linux-usb:optimize to match the Huawei USB storage devices and support
- new switch command)
-Thread-Index: AQHOGM1yHvGzXjho9E6JnFnGf6g04ZiWXYtQ
-Date: Tue, 5 Mar 2013 02:28:07 +0000
-Message-ID: <910F9D9E13B84F4C8FA771DC9BDE99F327098368@szxeml546-mbx.china.huawei.com>
-References: <fe8c966212fb.12fbfe8c9662@huawei.com>
- <87obezs888.fsf@nemi.mork.no>
-In-Reply-To: <87obezs888.fsf@nemi.mork.no>
-Accept-Language: zh-CN, en-US
-Content-Language: zh-CN
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.11.34.145]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-X-CFilter-Loop: Reflected
+	id S933051Ab3CEC3h (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 21:29:37 -0500
+Received: from mga02.intel.com ([134.134.136.20]:18332 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932729Ab3CEC2Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Mar 2013 21:28:25 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,784,1355126400"; 
+   d="scan'208";a="293621013"
+From: Feng Tang <feng.tang@intel.com>
+To: Thomas Gleixner <tglx@linutronix.de>, John Stultz <john.stultz@linaro.org>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        x86@kernel.org, Len Brown <lenb@kernel.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        linux-kernel@vger.kernel.org
+Cc: gong.chen@linux.intel.com, Feng Tang <feng.tang@intel.com>
+Subject: [RFC PATCH v2 1/4] x86: Add cpu capability flag X86_FEATURE_NONSTOP_TSC_S3
+Date: Tue,  5 Mar 2013 10:27:03 +0800
+Message-Id: <1362450426-4232-2-git-send-email-feng.tang@intel.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1362450426-4232-1-git-send-email-feng.tang@intel.com>
+References: <1362450426-4232-1-git-send-email-feng.tang@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r252TBJh004960
 
-Dear Mork:
+On some new Intel Atom processors (Penwell and Cloverview), there is
+a feature that the TSC won't stop in S3 state, say the TSC value
+won't be reset to 0 after resume. This feature makes TSC a more reliable
+clocksource and could benefit the timekeeping code during system
+suspend/resume cycle, so add a flag for it.
 
-	Thank you very much for your test.
+Signed-off-by: Feng Tang <feng.tang@intel.com>
+---
+ arch/x86/include/asm/cpufeature.h |    1 +
+ arch/x86/kernel/cpu/intel.c       |   12 ++++++++++++
+ 2 files changed, 13 insertions(+), 0 deletions(-)
 
-> -----Original Message-----
-> From: BjÃ¸rn Mork [mailto:bjorn@mork.no]
-> Sent: Monday, March 04, 2013 7:41 PM
-> To: Fangxiaozhi (Franko)
-> Cc: linux-usb@vger.kernel.org; linux-kernel@vger.kernel.org; Xueguiying
-> (Zihan); Linlei (Lei Lin); greg@kroah.com; Yili (Neil); Wangyuhua (Roger, Credit);
-> Huqiao (C); balbi@ti.com; mdharm-usb@one-eyed-alien.net;
-> sebastian@breakpoint.cc
-> Subject: v3.8 regression: Huawei mode switching fails (was Re: [PATCH
-> 2/2]linux-usb:optimize to match the Huawei USB storage devices and support
-> new switch command)
-> 
-> Hello Franko,
-> 
-> This patch causes a number of regressions for both the Huawei devices I have
-> available for testing. One of them is completely unusable in v3.8 (unable to
-> switch to modem mode) unless the usb-storage driver is disabled.
-------Which device, can you tell me more information?
-------Which model? And what's its firmware version?
-> 
-> I realize that some devices are historically handled by the usb-storage driver,
-> but userspace modeswitching is the rule for new devices AFAIK.
-> I see absolutely no valid argument for adding new devices.  And there is
-> absolutely no excuse for adding devices which have been handled by
-> userspace switching for years!  The patch does not just "optimize"
-> matching.  It adds a large number of devices which were previously handled
-> just fine by usb_modeswitch. This is guaranteed to confuse users with existing
-> configurations, and users looking up any of the existing documentation
-> pointing to usb_modeswitch.
-------Yes. But there is some problems for this:
-	1. As far as I know, usb_modeswitch is now only integrated in the PC Linux. It isn't integrated to other system with linux kernel, such as Android, Chrome OS, etc. On these system, how can we switch the device?
+diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
+index 93fe929..a8466f2 100644
+--- a/arch/x86/include/asm/cpufeature.h
++++ b/arch/x86/include/asm/cpufeature.h
+@@ -100,6 +100,7 @@
+ #define X86_FEATURE_AMD_DCM     (3*32+27) /* multi-node processor */
+ #define X86_FEATURE_APERFMPERF	(3*32+28) /* APERFMPERF */
+ #define X86_FEATURE_EAGER_FPU	(3*32+29) /* "eagerfpu" Non lazy FPU restore */
++#define X86_FEATURE_NONSTOP_TSC_S3 (3*32+30) /* TSC doesn't stop in S3 state */
+ 
+ /* Intel-defined CPU features, CPUID level 0x00000001 (ecx), word 4 */
+ #define X86_FEATURE_XMM3	(4*32+ 0) /* "pni" SSE-3 */
+diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
+index 1905ce9..fe57544 100644
+--- a/arch/x86/kernel/cpu/intel.c
++++ b/arch/x86/kernel/cpu/intel.c
+@@ -96,6 +96,18 @@ static void __cpuinit early_init_intel(struct cpuinfo_x86 *c)
+ 			sched_clock_stable = 1;
+ 	}
+ 
++	/* Penwell and Cloverview have the TSC which doesn't sleep on S3 */
++	if (c->x86 == 6) {
++		switch (c->x86_model) {
++		case 0x27:	/* Penwell */
++		case 0x35:	/* Cloverview */
++			set_cpu_cap(c, X86_FEATURE_NONSTOP_TSC_S3);
++			break;
++		default:
++			;
++		}
++	}
++
+ 	/*
+ 	 * There is a known erratum on Pentium III and Core Solo
+ 	 * and Core Duo CPUs.
+-- 
+1.7.0.4
 
-	2. usb_modeswitch often sends the Windows switching command to switch Huawei device, but not sends Linux switching command. This maybe causes some unexpected problem.
-> 
-> There is no need to repeat the discussion of kernel vs userspace switching.  I
-> will only note that userspace switching:
->  - has been selected as the rule for new devices,
->  - allow the user to temporarily disable switching e.g. for mounting and
->    inspecting the usb-storage exported data,
->  - allow the user/system to apply device specific switching quirks
-> 
-> 
-> The v3.7->v3.8 regressions I observe are:
-> 
-> 1) Temporarily disabling mode switching and mounting the CD image is now
->   impossible. Mode switching can only be disabled by blacklisting
->   usb-storage, which of course prevents usb-storage from working
-> 
->   Prior to v3.8, modeswitching could easily be disabled by userspace
->   configuration. The change breaks existing configurations.
-> 
-> 2) Switching to non-default modes is now impossible.  The E392  (initially
-> appearing as 12d1:1505) Windows drivers will use a different  command than
-> the one used by Linux, causing the device to select a  different configuration
-> in Linux and Windows. This forces Linux and  Windows to see the device
-> differently.
-> 
->  Prior to v3.8, different modeswitching commands could be configured  per
-> device. The change breaks existing configurations.
-> 
-> 3) Switching fails for some devices. The E367 (initially appearing as
->  12d1:1446) does not switch when it receives the command sent by
-> usb-storage.  But the command disable further switching, preventing
-> userspace switching from working as well.
-> 
->  Prior to v3.8, the device would switch fine using a default  usb_modeswitch
-> configuration. The change breaks existing  configurations.
-> 
->  I do note that there is a slight difference between the known working
-> usb_modeswitch command:
-> 
-> 
-> 55534243123456780000000000000011062000000100000000000000000000
-> 
->  and the command sent by usb-storage:
-> 
-> 	char rewind_cmd[] = {0x11, 0x06, 0x20, 0x00, 0x00, 0x01, 0x01, 0x00,
-> 			0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-> 
->  I assume the cause of the failure is either this difference or some  timing
-> issue.
-> 
-> Anyway, I believe this patch must be reverted.  It disables currently used, well
-> documented, and extremely useful, userspace funtionaliy for all devices
-> implicitly added by the conversion from device matching to vendor matching.
-> 
-> 
-> 
-> BjÃ¸rn
-
-Best Regards,
-Franko Fang
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
