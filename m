@@ -1,63 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754916Ab3CEIbo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 03:31:44 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:52830 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753097Ab3CEIbn (ORCPT
+	id S1755027Ab3CEIcT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 03:32:19 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:56179 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752883Ab3CEIcS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 03:31:43 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Subject: Re: [PATCH] ARM: Scorpion is a v7 architecture, not v6
-Date: Tue, 5 Mar 2013 08:31:36 +0000
-User-Agent: KMail/1.12.2 (Linux/3.8.0-8-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org
-References: <1362439159-29258-1-git-send-email-sboyd@codeaurora.org>
-In-Reply-To: <1362439159-29258-1-git-send-email-sboyd@codeaurora.org>
+	Tue, 5 Mar 2013 03:32:18 -0500
+From: Oliver Neukum <oneukum@suse.de>
+To: Josua Dietze <digidietze@draisberghof.de>
+Cc: =?ISO-8859-1?Q?Bj=F8rn?= Mork <bjorn@mork.no>,
+        Matthew Dharm <mdharm-usb@one-eyed-alien.net>,
+        Ben Hutchings <ben@decadent.org.uk>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Fangxiaozhi (Franko)" <fangxiaozhi@huawei.com>, zihan@huawei.com,
+        Lin.Lei@huawei.com, Greg KH <gregkh@linuxfoundation.org>,
+        "Yili (Neil)" <neil.yi@huawei.com>,
+        "Wangyuhua (Roger, Credit)" <wangyuhua@huawei.com>,
+        Huqiao <huqiao36@huawei.com>, Felipe Balbi <balbi@ti.com>,
+        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
+        stable <stable@vger.kernel.org>
+Subject: Re: [PATCH] USB: storage: fix Huawei mode switching regression
+Date: Tue, 05 Mar 2013 09:32:32 +0100
+Message-ID: <4661149.JOvxeICSJy@linux-5eaq.site>
+Organization: SUSE
+User-Agent: KMail/4.8.5 (Linux/3.8.0-rc7-12-desktop+; KDE/4.8.5; x86_64; ; )
+In-Reply-To: <5135201F.4030200@draisberghof.de>
+References: <87obezs888.fsf@nemi.mork.no> <87wqtnq8bb.fsf@nemi.mork.no> <5135201F.4030200@draisberghof.de>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201303050831.37177.arnd@arndb.de>
-X-Provags-ID: V02:K0:9XgVavhbfiUwT0JuITeRkS6uHvt5ExPEnPDAOUKWTYB
- QrvPXPjpgNgHz07RmHfhYTY1SKvp7V/7+k1SPyKA8PzI5fL446
- rtu2ttaRu5u1zjJBC8xr7r53Py3qgmgDuq4R4K1LmaCb8yO1do
- fbLWUvyrFBgq5aZJ57EirlzcaMmIOzSKoLGuNoOmViAxsDCGfz
- 2bEz3ZCEDCnZF5nDAHS6AAb0WKuFW+lfVXTsEz+TfoMFu97gz6
- GyZhLTkstNI6pgYJoOVB550J1e2Pc7/QrUsGZk3oTaHqAypGK0
- buS3z8idNDTe+b2nMNfLAD4Jd4cX3EpTRr2tGf1PmD0oyl2/Yp
- Qbm1pCo/cIOKmFWk/PT0=
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="iso-8859-1"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 04 March 2013, Stephen Boyd wrote:
-> Scorpion processors have always been v7 CPUs. Fix the Kconfig
-> text to reflect this.
+On Monday 04 March 2013 23:28:47 Josua Dietze wrote:
+> > I guess the real problem will be verifying that all of the entries can
+> > go away. This type of hardware tends to get old very fast, but there is
+> > always someone having a really ancient device.
 > 
-> Reported-by: Stepan Moskovchenko <stepanm@codeaurora.org>
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> ---
->  arch/arm/Kconfig |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
+> I will check this and add any missing USB IDs to usb_modeswitch, but I can't shake the feeling that not all Huawei entries in "unusual_devs.h" did actually materialize as devices ...
 > 
-> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-> index dedf02b..dc3bbbc 100644
-> --- a/arch/arm/Kconfig
-> +++ b/arch/arm/Kconfig
-> @@ -1006,12 +1006,12 @@ config ARCH_MULTI_V4_V5
->         bool
->  
->  config ARCH_MULTI_V6
-> -       bool "ARMv6 based platforms (ARM11, Scorpion, ...)"
-> +       bool "ARMv6 based platforms (ARM11)"
->         select ARCH_MULTI_V6_V7
->         select CPU_V6
+> Anyway, as Bjørn said, putting that initialization into the storage driver takes away quite some possibilities to handle these modems in a flexible way.
 
-Sorry about that, my fault.
+But it adds the ability to handle loss of power in the suspend case
+cleanly. As long as the switch only makes additional devices appear,
+doing it in kernel space is the nicer approach.
 
-Was there also an ARMv6 core from Qualcomm, or did you only use ARM11 at
-the time?
+	Regards
+		Oliver
 
-	Arnd
