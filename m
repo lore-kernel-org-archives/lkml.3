@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757686Ab3CEPAo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 10:00:44 -0500
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:59457 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756784Ab3CEPAl (ORCPT
+	id S1757742Ab3CEPAz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 10:00:55 -0500
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:35007 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757698Ab3CEPAx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 10:00:41 -0500
+	Tue, 5 Mar 2013 10:00:53 -0500
 From: Jiang Liu <liuj97@gmail.com>
 To: Andrew Morton <akpm@linux-foundation.org>,
         David Rientjes <rientjes@google.com>
@@ -18,10 +18,10 @@ Cc: Jiang Liu <jiang.liu@huawei.com>, Wen Congyang <wency@cn.fujitsu.com>,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
         Michal Hocko <mhocko@suse.cz>, Jianguo Wu <wujianguo@huawei.com>,
         linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>
-Subject: [RFC PATCH v1 15/33] mm/mn10300: use common help functions to free reserved pages
-Date: Tue,  5 Mar 2013 22:54:58 +0800
-Message-Id: <1362495317-32682-16-git-send-email-jiang.liu@huawei.com>
+        Jonas Bonn <jonas@southpole.se>
+Subject: [RFC PATCH v1 16/33] mm/openrisc: use common help functions to free reserved pages
+Date: Tue,  5 Mar 2013 22:54:59 +0800
+Message-Id: <1362495317-32682-17-git-send-email-jiang.liu@huawei.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1362495317-32682-1-git-send-email-jiang.liu@huawei.com>
 References: <1362495317-32682-1-git-send-email-jiang.liu@huawei.com>
@@ -30,57 +30,69 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Use common help functions to free reserved pages.
+Also include <asm/sections.h> to avoid local declarations.
 
 Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Cc: Koichi Yasutake <yasutake.koichi@jp.panasonic.com>
+Cc: Jonas Bonn <jonas@southpole.se>
 ---
- arch/mn10300/mm/init.c |   23 ++---------------------
- 1 file changed, 2 insertions(+), 21 deletions(-)
+ arch/openrisc/mm/init.c |   27 +++------------------------
+ 1 file changed, 3 insertions(+), 24 deletions(-)
 
-diff --git a/arch/mn10300/mm/init.c b/arch/mn10300/mm/init.c
-index e57e5bc..5a8ace6 100644
---- a/arch/mn10300/mm/init.c
-+++ b/arch/mn10300/mm/init.c
-@@ -139,30 +139,11 @@ void __init mem_init(void)
- }
+diff --git a/arch/openrisc/mm/init.c b/arch/openrisc/mm/init.c
+index e7fdc50..b3cbc67 100644
+--- a/arch/openrisc/mm/init.c
++++ b/arch/openrisc/mm/init.c
+@@ -43,6 +43,7 @@
+ #include <asm/kmap_types.h>
+ #include <asm/fixmap.h>
+ #include <asm/tlbflush.h>
++#include <asm/sections.h>
  
- /*
-- *
-- */
--void free_init_pages(char *what, unsigned long begin, unsigned long end)
--{
--	unsigned long addr;
+ int mem_init_done;
+ 
+@@ -201,9 +202,6 @@ void __init paging_init(void)
+ 
+ /* References to section boundaries */
+ 
+-extern char _stext, _etext, _edata, __bss_start, _end;
+-extern char __init_begin, __init_end;
 -
--	for (addr = begin; addr < end; addr += PAGE_SIZE) {
--		ClearPageReserved(virt_to_page(addr));
--		init_page_count(virt_to_page(addr));
--		memset((void *) addr, 0xcc, PAGE_SIZE);
--		free_page(addr);
--		totalram_pages++;
--	}
--	printk(KERN_INFO "Freeing %s: %ldk freed\n", what, (end - begin) >> 10);
--}
--
--/*
-  * recycle memory containing stuff only required for initialisation
-  */
- void free_initmem(void)
+ static int __init free_pages_init(void)
  {
--	free_init_pages("unused kernel memory",
--			(unsigned long) &__init_begin,
--			(unsigned long) &__init_end);
-+	free_initmem_default(POISON_FREE_INITMEM);
- }
- 
- /*
-@@ -171,6 +152,6 @@ void free_initmem(void)
+ 	int reservedpages, pfn;
+@@ -263,30 +261,11 @@ void __init mem_init(void)
  #ifdef CONFIG_BLK_DEV_INITRD
  void free_initrd_mem(unsigned long start, unsigned long end)
  {
--	free_init_pages("initrd memory", start, end);
-+	free_reserved_area(start, end, POISON_FREE_INITMEM, "initrd");
+-	printk(KERN_INFO "Freeing initrd memory: %ldk freed\n",
+-	       (end - start) >> 10);
+-
+-	for (; start < end; start += PAGE_SIZE) {
+-		ClearPageReserved(virt_to_page(start));
+-		init_page_count(virt_to_page(start));
+-		free_page(start);
+-		totalram_pages++;
+-	}
++	free_reserved_area(start, end, 0, "initrd");
  }
  #endif
+ 
+ void free_initmem(void)
+ {
+-	unsigned long addr;
+-
+-	addr = (unsigned long)(&__init_begin);
+-	for (; addr < (unsigned long)(&__init_end); addr += PAGE_SIZE) {
+-		ClearPageReserved(virt_to_page(addr));
+-		init_page_count(virt_to_page(addr));
+-		free_page(addr);
+-		totalram_pages++;
+-	}
+-	printk(KERN_INFO "Freeing unused kernel memory: %luk freed\n",
+-	       ((unsigned long)&__init_end -
+-		(unsigned long)&__init_begin) >> 10);
++	free_initmem_default(0);
+ }
 -- 
 1.7.9.5
 
