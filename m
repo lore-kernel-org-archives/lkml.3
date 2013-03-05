@@ -1,66 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755153Ab3CEXqs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 18:46:48 -0500
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:42356 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754960Ab3CEXqq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 18:46:46 -0500
-Message-ID: <513683DC.3070405@linux.vnet.ibm.com>
-Date: Tue, 05 Mar 2013 15:46:36 -0800
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1755425Ab3CEXrI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 18:47:08 -0500
+Received: from mail-ye0-f182.google.com ([209.85.213.182]:63356 "EHLO
+	mail-ye0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753391Ab3CEXrE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Mar 2013 18:47:04 -0500
+Date: Tue, 5 Mar 2013 15:47:00 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Jeff Layton <jlayton@redhat.com>
+Cc: "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Mandeep Singh Baines <msb@chromium.org>,
+        Ming Lei <ming.lei@canonical.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@redhat.com>, Al Viro <viro@ZenIV.linux.org.uk>
+Subject: Re: LOCKDEP: 3.9-rc1: mount.nfs/4272 still has locks held!
+Message-ID: <20130305234700.GE1227@htj.dyndns.org>
+References: <20130304092310.1d21100c@tlielax.poochiereds.net>
+ <CACBanvrc0orXGZ1v+gKHtVPKWYKGEFx46dwoDCjTU78+nPtZyg@mail.gmail.com>
+ <20130304205307.GA13527@redhat.com>
+ <4FA345DA4F4AE44899BD2B03EEEC2FA9286AEEB0@sacexcmbx05-prd.hq.netapp.com>
+ <20130305082308.6607d4db@tlielax.poochiereds.net>
+ <20130305174648.GF12795@htj.dyndns.org>
+ <20130305174954.GG12795@htj.dyndns.org>
+ <20130305140312.243cb094@tlielax.poochiereds.net>
+ <20130305190923.GI12795@htj.dyndns.org>
+ <20130305183941.19ff39ce@tlielax.poochiereds.net>
 MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@linux.intel.com>
-CC: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>, bp@alien8.de,
-        linux-kernel@vger.kernel.org
-Subject: Re: [3.9-rc1 x86] Bug in ioremap code?
-References: <201302060035.GCJ00057.FLHMOOFtJFSQOV@I-love.SAKURA.ne.jp> <201303050015.GGI39081.LOVFtOFHQOJFSM@I-love.SAKURA.ne.jp> <201303052031.JFG81705.FSOOFQHJMVFOLt@I-love.SAKURA.ne.jp> <201303060041.AIF15342.tJFOHLQFFOMVSO@I-love.SAKURA.ne.jp> <20130305180650.GD4914@pd.tnic> <201303060628.CBG00578.OJtMFFHLQVSFOO@I-love.SAKURA.ne.jp> <51366E6F.1050409@linux.intel.com>
-In-Reply-To: <51366E6F.1050409@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13030523-7182-0000-0000-000005A82509
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130305183941.19ff39ce@tlielax.poochiereds.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Not sure if it's related by 3.9-rc1 gets in to a reboot loop for me.  I
-assume it's triple-faulting.  The last line on the console I see is:
+Hello, Jeff.
 
-[    0.085702] SMP alternatives: lockdep: fixing up alternatives
-[    0.086859] smpboot: Booting Node   0, Processors [    0.086859]
-smpboot: Booting Node   0, Processors  #1 OK
- #1 OK
+On Tue, Mar 05, 2013 at 06:39:41PM -0500, Jeff Layton wrote:
+> Al was in the middle of his signal handling/execve rework though and I
+> ran the idea past him. He pointedly told me that I was crazy for even
+> considering it. This is rather non-trivial to handle since it means
+> mucking around in a bunch of arch-specific code and dealing with all of
+> the weirdo corner cases.
 
-I bisected it down to the neighborhood of c47f39e.  After that, I get
-some compile errors:
+Hmmm... I tried it a couple years ago while I was working on ptrace
+improvements to support checkpoint-restart in userland (PTRACE_SEIZE
+and friends) and had a half-working code.  At the time, Oleg was
+against the idea and something else came up so I didn't push it all
+the way but IIRC it didn't need to touch any arch code.  It should be
+able to just share the existing trap path with ptrace.
 
-> arch/x86/built-in.o: In function `generic_load_microcode':
-> microcode_intel.c:(.text+0x28195): undefined reference to `microcode_sanity_check'
-> microcode_intel.c:(.text+0x281ab): undefined reference to `get_matching_microcode'
+> Anyone up for working out how to handle a freeze event on a process
+> that already has a pending signal, while it's being ptraced? It's
+> probably best to chat with Al (cc'ed here) before you embark on this
+> plan since he was just in that code recently.
 
-Turning off CONFIG_MICROCODE:
+Maybe Al sees something that I don't but AFAICS it should be doable in
+generic code proper and I don't think it's gonna be that hard.
 
--CONFIG_MICROCODE=y
--CONFIG_MICROCODE_INTEL=y
--# CONFIG_MICROCODE_AMD is not set
--CONFIG_MICROCODE_OLD_INTERFACE=y
--CONFIG_MICROCODE_INTEL_LIB=y
--CONFIG_MICROCODE_INTEL_EARLY=y
--CONFIG_MICROCODE_EARLY=y
-+# CONFIG_MICROCODE is not set
+Oleg, are you still opposed to the idea of making freezer share trap
+points with ptrace?
 
-lets it boot again and fixes those compile errors.  This is with this
-config:
+Thanks.
 
-	http://i-love.sakura.ne.jp/tmp/config-3.9-rc1
-
-running under a kvm guest:
-
-qemu-system-x86_64 -append 'earlyprintk=ttyS0,115200,keep
-console=ttyS0,115200 nmi_watchdog=0 root=/dev/sda1 bootmem_debug'
--kernel vmlinuz -usbdevice tablet  -vnc :1 -net user -net
-nic,model=e1000  -hda sarge-amd64-runme-1G.img -m 10240 -smp 2
-
+-- 
+tejun
