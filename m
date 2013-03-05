@@ -1,103 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752042Ab3CEGSH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 01:18:07 -0500
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:34252 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750970Ab3CEGSG (ORCPT
+	id S1752371Ab3CEGSN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 01:18:13 -0500
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:64653 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751320Ab3CEGSI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 01:18:06 -0500
-Message-ID: <1362464277.1111.3.camel@phoenix>
-Subject: [PATCH RESEND 3/3] regulator: max8649: Use enable_is_inverted flag
- with regulator_enable_regmap and friends APIs
-From: Axel Lin <axel.lin@ingics.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Haojian Zhuang <haojian.zhuang@gmail.com>,
-        "Jett.Zhou" <jtzhou@marvell.com>, Liam Girdwood <lgirdwood@gmail.com>,
-        linux-kernel@vger.kernel.org
-Date: Tue, 05 Mar 2013 14:17:57 +0800
-In-Reply-To: <1362464160.1111.1.camel@phoenix>
-References: <1362464160.1111.1.camel@phoenix>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	Tue, 5 Mar 2013 01:18:08 -0500
+Message-ID: <51358E17.8000106@linaro.org>
+Date: Tue, 05 Mar 2013 14:17:59 +0800
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
+MIME-Version: 1.0
+To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+CC: Feng Tang <feng.tang@intel.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        x86@kernel.org, Len Brown <lenb@kernel.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        linux-kernel@vger.kernel.org, gong.chen@linux.intel.com
+Subject: Re: [RFC PATCH v2 0/4] Add support for S3 non-stop TSC support.
+References: <1362450426-4232-1-git-send-email-feng.tang@intel.com> <20130305035302.GA5239@feng-snb> <20130305043203.GA26678@obsidianresearch.com>
+In-Reply-To: <20130305043203.GA26678@obsidianresearch.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
-Reviewed-by: Haojian Zhuang <haojian.zhuang@gmail.com>
----
- drivers/regulator/max8649.c |   39 ++++++---------------------------------
- 1 file changed, 6 insertions(+), 33 deletions(-)
+On 03/05/2013 12:32 PM, Jason Gunthorpe wrote:
+> On Tue, Mar 05, 2013 at 11:53:02AM +0800, Feng Tang wrote:
+>
+>>> // Drops some small precision along the way but is simple..
+>>> static inline u64 cyclecounter_cyc2ns_128(const struct cyclecounter *cc,
+>>>                                            cycle_t cycles)
+>>> {
+>>>      u64 max = U64_MAX/cc->mult;
+>>>      u64 num = cycles/max;
+>>>      u64 result = num * ((max * cc->mult) >> cc->shift);
+>>>      return result + cyclecounter_cyc2ns(cc, cycles - num*cc->mult);
+>>> }
+>> Your way is surely more accurate, if maintainers are ok with adding
+>> the new API, I will use it.
+> Okay, give it a good look though, I only wrote it out in email, never
+> tested it :)
+>
+Probably want to use clocksource instead of cyclecounter, but I think 
+Jason's approach sounds ok. I might suggest that you initially make the 
+function static to the timekeeping code, just so we don't get unexpected 
+users.
 
-diff --git a/drivers/regulator/max8649.c b/drivers/regulator/max8649.c
-index 3ca1438..fdb67ff 100644
---- a/drivers/regulator/max8649.c
-+++ b/drivers/regulator/max8649.c
-@@ -60,36 +60,6 @@ struct max8649_regulator_info {
- 	unsigned	ramp_down:1;
- };
- 
--/* EN_PD means pulldown on EN input */
--static int max8649_enable(struct regulator_dev *rdev)
--{
--	struct max8649_regulator_info *info = rdev_get_drvdata(rdev);
--	return regmap_update_bits(info->regmap, MAX8649_CONTROL, MAX8649_EN_PD, 0);
--}
--
--/*
-- * Applied internal pulldown resistor on EN input pin.
-- * If pulldown EN pin outside, it would be better.
-- */
--static int max8649_disable(struct regulator_dev *rdev)
--{
--	struct max8649_regulator_info *info = rdev_get_drvdata(rdev);
--	return regmap_update_bits(info->regmap, MAX8649_CONTROL, MAX8649_EN_PD,
--				MAX8649_EN_PD);
--}
--
--static int max8649_is_enabled(struct regulator_dev *rdev)
--{
--	struct max8649_regulator_info *info = rdev_get_drvdata(rdev);
--	unsigned int val;
--	int ret;
--
--	ret = regmap_read(info->regmap, MAX8649_CONTROL, &val);
--	if (ret != 0)
--		return ret;
--	return !((unsigned char)val & MAX8649_EN_PD);
--}
--
- static int max8649_enable_time(struct regulator_dev *rdev)
- {
- 	struct max8649_regulator_info *info = rdev_get_drvdata(rdev);
-@@ -151,9 +121,9 @@ static struct regulator_ops max8649_dcdc_ops = {
- 	.get_voltage_sel = regulator_get_voltage_sel_regmap,
- 	.list_voltage	= regulator_list_voltage_linear,
- 	.map_voltage	= regulator_map_voltage_linear,
--	.enable		= max8649_enable,
--	.disable	= max8649_disable,
--	.is_enabled	= max8649_is_enabled,
-+	.enable		= regulator_enable_regmap,
-+	.disable	= regulator_disable_regmap,
-+	.is_enabled	= regulator_is_enabled_regmap,
- 	.enable_time	= max8649_enable_time,
- 	.set_mode	= max8649_set_mode,
- 	.get_mode	= max8649_get_mode,
-@@ -169,6 +139,9 @@ static struct regulator_desc dcdc_desc = {
- 	.vsel_mask	= MAX8649_VOL_MASK,
- 	.min_uV		= MAX8649_DCDC_VMIN,
- 	.uV_step	= MAX8649_DCDC_STEP,
-+	.enable_reg	= MAX8649_CONTROL,
-+	.enable_mask	= MAX8649_EN_PD,
-+	.enable_is_inverted = true,
- };
- 
- static struct regmap_config max8649_regmap_config = {
--- 
-1.7.9.5
-
-
-
+thanks
+-john
