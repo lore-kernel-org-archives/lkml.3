@@ -1,102 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755626Ab3CEKUQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 05:20:16 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:60037 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755104Ab3CEKUO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 05:20:14 -0500
-From: Serban Constantinescu <serban.constantinescu@arm.com>
-To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        kernel-team@android.com, arve@android.com, john.stultz@linaro.org,
-        Dave.Butcher@arm.com
-Cc: Serban Constantinescu <serban.constantinescu@arm.com>
-Subject: [PATCH] staging: android: ashmem: Add support for 32bit ashmem calls in a 64bit kernel
-Date: Tue,  5 Mar 2013 10:18:27 +0000
-Message-Id: <1362478708-26946-1-git-send-email-serban.constantinescu@arm.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <20130305083707.GA7513@kroah.com>
-References: <20130305083707.GA7513@kroah.com>
+	id S1755983Ab3CEKZS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 05:25:18 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:60190 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752694Ab3CEKZP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Mar 2013 05:25:15 -0500
+Date: Tue, 5 Mar 2013 11:25:13 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Youquan Song <youquan.song@linux.intel.com>
+Cc: "David S. Miller" <davem@davemloft.net>, htejun@gmail.com,
+        ming.lei@canonical.com, sshtylyov@mvista.com, lpechacek@suse.cz,
+        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
+        seth.heasley@intel.com, jlee@suse.com, james.d.ralston@intel.com,
+        stable@vger.kernel.org
+Subject: Re: [PATCH v3] ata: Fix DVD not dectected at some Haswell platforms
+Message-ID: <20130305102513.GA4914@pd.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Youquan Song <youquan.song@linux.intel.com>,
+	"David S. Miller" <davem@davemloft.net>, htejun@gmail.com,
+	ming.lei@canonical.com, sshtylyov@mvista.com, lpechacek@suse.cz,
+	linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
+	seth.heasley@intel.com, jlee@suse.com, james.d.ralston@intel.com,
+	stable@vger.kernel.org
+References: <1361203255-1670-1-git-send-email-youquan.song@intel.com>
+ <20130305142114.GA27413@linux-youquan.bj.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20130305142114.GA27413@linux-youquan.bj.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Android's shared memory subsystem, Ashmem, does not support calls from a
-32bit userspace in a 64 bit kernel. This patch adds support for syscalls
-coming from a 32bit userspace in a 64bit kernel.
+On Tue, Mar 05, 2013 at 09:21:14AM -0500, Youquan Song wrote:
+> Hi Maintainer,
+> 
+> Can you take the patch which is needed by some new platforms?
 
-The patch has been successfully tested on ARMv8 AEM(64bit
-platform model) and Versatile Express A9(32bit platform).
+I think you've got the wrong guy. Here's how you can find out who the
+maintainer is:
 
-Signed-off-by: Serban Constantinescu <serban.constantinescu@arm.com>
----
- drivers/staging/android/ashmem.c |   22 +++++++++++++++++++++-
- drivers/staging/android/ashmem.h |    6 ++++++
- 2 files changed, 27 insertions(+), 1 deletion(-)
+So your patch is against drivers/ata/ata_piix.c. So you do:
 
-diff --git a/drivers/staging/android/ashmem.c b/drivers/staging/android/ashmem.c
-index 72064fc..e96f381 100644
---- a/drivers/staging/android/ashmem.c
-+++ b/drivers/staging/android/ashmem.c
-@@ -31,6 +31,7 @@
- #include <linux/bitops.h>
- #include <linux/mutex.h>
- #include <linux/shmem_fs.h>
-+#include <linux/compat.h>
- #include "ashmem.h"
- 
- #define ASHMEM_NAME_PREFIX "dev/ashmem/"
-@@ -674,6 +675,23 @@ static long ashmem_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
- 	return ret;
- }
- 
-+/* support of 32bit userspace on 64bit platforms */
-+#ifdef CONFIG_COMPAT
-+static long compat_ashmem_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
-+{
-+
-+	switch (cmd) {
-+	case COMPAT_ASHMEM_SET_SIZE:
-+		cmd = ASHMEM_SET_SIZE;
-+		break;
-+	case COMPAT_ASHMEM_SET_PROT_MASK:
-+		cmd = ASHMEM_SET_PROT_MASK;
-+		break;
-+	}
-+	return ashmem_ioctl(file, cmd, arg);
-+}
-+#endif
-+
- static const struct file_operations ashmem_fops = {
- 	.owner = THIS_MODULE,
- 	.open = ashmem_open,
-@@ -682,7 +700,9 @@ static const struct file_operations ashmem_fops = {
- 	.llseek = ashmem_llseek,
- 	.mmap = ashmem_mmap,
- 	.unlocked_ioctl = ashmem_ioctl,
--	.compat_ioctl = ashmem_ioctl,
-+#ifdef CONFIG_COMPAT
-+	.compat_ioctl = compat_ashmem_ioctl,
-+#endif
- };
- 
- static struct miscdevice ashmem_misc = {
-diff --git a/drivers/staging/android/ashmem.h b/drivers/staging/android/ashmem.h
-index 1976b10..2809d31 100644
---- a/drivers/staging/android/ashmem.h
-+++ b/drivers/staging/android/ashmem.h
-@@ -45,4 +45,10 @@ struct ashmem_pin {
- #define ASHMEM_GET_PIN_STATUS	_IO(__ASHMEMIOC, 9)
- #define ASHMEM_PURGE_ALL_CACHES	_IO(__ASHMEMIOC, 10)
- 
-+/* support of 32bit userspace on 64bit platforms */
-+#ifdef CONFIG_COMPAT
-+#define COMPAT_ASHMEM_SET_SIZE		_IOW(__ASHMEMIOC, 3, compat_size_t)
-+#define COMPAT_ASHMEM_SET_PROT_MASK	_IOW(__ASHMEMIOC, 5, unsigned int)
-+#endif
-+
- #endif	/* _LINUX_ASHMEM_H */
+$ ./scripts/get_maintainer.pl -f drivers/ata/ata_piix.c
+Jeff Garzik <jgarzik@pobox.com> (supporter:SERIAL ATA (SATA)...)
+linux-ide@vger.kernel.org (open list:SERIAL ATA (SATA)...)
+linux-kernel@vger.kernel.org (open list)
+
+And this is the CC list you can use to send the patch to.
+
+HTH.
+
 -- 
-1.7.9.5
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
