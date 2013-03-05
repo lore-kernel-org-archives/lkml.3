@@ -1,42 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759099Ab3CETRJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 14:17:09 -0500
-Received: from Chamillionaire.breakpoint.cc ([80.244.247.6]:34886 "EHLO
-	Chamillionaire.breakpoint.cc" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756932Ab3CETRH convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 14:17:07 -0500
-Date: Tue, 5 Mar 2013 20:16:48 +0100
-From: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-To: Felipe Balbi <balbi@ti.com>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Fengguang Wu <fengguang.wu@intel.com>
-Subject: Re: [PATCH] usb/gadget: initialize gadget functions helper befor
- functions & gadgets
-Message-ID: <20130305191647.GA18329@kibibi>
-References: <20130206020424.GB1175@localhost>
- <1362432489-6325-1-git-send-email-sebastian@breakpoint.cc>
- <20130305104944.GE7899@arwen.pp.htv.fi>
+	id S1758979Ab3CETS7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 14:18:59 -0500
+Received: from mail-ee0-f53.google.com ([74.125.83.53]:50518 "EHLO
+	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752847Ab3CETS5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Mar 2013 14:18:57 -0500
+From: Maciej Rutecki <maciej.rutecki@gmail.com>
+Reply-To: maciej.rutecki@gmail.com
+To: Mandeep Singh Baines <msb@chromium.org>
+Subject: Re: [PATCH] thinkpad-acpi: fix potential suspend blocking issue
+Date: Tue, 5 Mar 2013 20:18:52 +0100
+User-Agent: KMail/1.13.7 (Linux/3.9.0-rc1; KDE/4.8.4; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+        ibm-acpi@hmh.eng.br, ibm-acpi-devel@lists.sourceforge.net,
+        platform-driver-x86@vger.kernel.org, Aaron Lu <aaron.lu@intel.com>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+References: <201303042055.38040.maciej.rutecki@gmail.com> <1362504883-9180-1-git-send-email-msb@chromium.org>
+In-Reply-To: <1362504883-9180-1-git-send-email-msb@chromium.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <20130305104944.GE7899@arwen.pp.htv.fi>
-X-Key-Id: 97C4700B
-X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201303052018.52320.maciej.rutecki@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Felipe Balbi | 2013-03-05 12:49:44 [+0200]:
+On wtorek, 5 marca 2013 o 18:34:43 Mandeep Singh Baines wrote:
+> Fixes the following lockdep error:
+> 
+> [ BUG: ktpacpi_nvramd/446 still has locks held! ]
+> 
+> hotkey_kthread() calls set_freezable() after acquiring the
+> hotkey_kthread_mutex(). set_freezable() calls try_to_freeze().
+> This could block suspend if we were to freeze at this point
+> and another task were to block on the mutex, potentially via
+> writing to one of the sysfs attrs. This race is unlikely but
+> can be easily fixed by moving the set_freezable() call.
+> 
+> Reported-by: Maciej Rutecki <maciej.rutecki@gmail.com>
+> Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
+> CC: Aaron Lu <aaron.lu@intel.com>
+> CC: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+> CC: Tejun Heo <tj@kernel.org>
+> CC: Oleg Nesterov <oleg@redhat.com>
+> CC: Andrew Morton <akpm@linux-foundation.org>
+Tested-by: Maciej Rutecki <maciej.rutecki@gmail.com>
 
->> I kinda assumed that this was already fixed (i.e. a patch like this was sent)
->> but it seems not to be that case.
->
->already in Greg's queue, cheers
+Patch fixes the problem. Thanks!
 
-great…
+Regards
 
-Sebastian
+-- 
+Maciej Rutecki
+http://www.mrutecki.pl
