@@ -1,121 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759389Ab3CEUyQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 15:54:16 -0500
-Received: from mail-ia0-f182.google.com ([209.85.210.182]:37415 "EHLO
-	mail-ia0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757898Ab3CEUxF (ORCPT
+	id S1759464Ab3CEUyS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 15:54:18 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:54215 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758832Ab3CEUxF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 5 Mar 2013 15:53:05 -0500
-From: Matt Porter <mporter@ti.com>
-To: Tony Lindgren <tony@atomide.com>, Sekhar Nori <nsekhar@ti.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Benoit Cousson <b-cousson@ti.com>,
-        Russell King <linux@arm.linux.org.uk>, Rob Landley <rob@landley.net>
-Cc: Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Documentation List <linux-doc@vger.kernel.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Linux SPI Devel List 
-	<spi-devel-general@lists.sourceforge.net>,
-        Arnd Bergmann <arnd@arndb.de>, Rob Herring <rob.herring@calxeda.com>
-Subject: [PATCH v8 7/9] spi: omap2-mcspi: convert to dma_request_slave_channel_compat()
-Date: Tue,  5 Mar 2013 15:53:13 -0500
-Message-Id: <1362516795-6346-8-git-send-email-mporter@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1362516795-6346-1-git-send-email-mporter@ti.com>
-References: <1362516795-6346-1-git-send-email-mporter@ti.com>
+Date: Tue, 05 Mar 2013 15:53:00 -0500 (EST)
+Message-Id: <20130305.155300.1299712636968046625.davem@davemloft.net>
+To: peter@hurleysoftware.com
+Cc: jslaby@suse.cz, gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
+Subject: Re: WARNING at tty_buffer.c:428 process_one_work()
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1362516424.18799.81.camel@thor.lan>
+References: <51364B31.1010808@suse.cz>
+	<20130305.150338.470704111422696046.davem@davemloft.net>
+	<1362516424.18799.81.camel@thor.lan>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Tue, 05 Mar 2013 12:53:08 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert dmaengine channel requests to use
-dma_request_slave_channel_compat(). This supports the DT case of
-platforms requiring channel selection from either the OMAP DMA or
-the EDMA engine. AM33xx only boots from DT and is the only user
-implementing EDMA so in the !DT case we can default to the OMAP DMA
-filter.
+From: Peter Hurley <peter@hurleysoftware.com>
+Date: Tue, 05 Mar 2013 15:47:04 -0500
 
-Signed-off-by: Matt Porter <mporter@ti.com>
-Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
----
- drivers/spi/spi-omap2-mcspi.c |   27 ++++++++++++++++++++-------
- 1 file changed, 20 insertions(+), 7 deletions(-)
+> On Tue, 2013-03-05 at 15:03 -0500, David Miller wrote:
+>> From: Jiri Slaby <jslaby@suse.cz>
+>> Date: Tue, 05 Mar 2013 20:44:49 +0100
+>> 
+>> > Hi, I must admit I don't understand. I now checked both of them and they
+>> > call uart_handle_sysrq_char unconditionally, or?
+>> 
+>> Nope, in the sunsab.c receive function, we used to handle the SYSRQ
+>> stuff before break checking when TTY is NULL, now we don't.
+> 
+> Hi David,
+> 
+> SysRq is signalled first by a BRK condition, then followed by the input
+> character indicating which SysRq function to perform.
+> 
+> sunsab.c: receive_char() is behaving as you would expect.
+> 
+> First, a BRK status is indicated so uart_handle_break() records a
+> timestamp. If the next input is received within 5 sec. of that
+> timestamp, the character received is interpreted as a SysRq function --
+> handled by uart_handle_sysrq_char().
+> 
+> Are you observing that SysRq processing is not occurring with this
+> driver when only a console exists, or are you hypothesizing that this is
+> possible?
 
-diff --git a/drivers/spi/spi-omap2-mcspi.c b/drivers/spi/spi-omap2-mcspi.c
-index 893c3d7..38d0915 100644
---- a/drivers/spi/spi-omap2-mcspi.c
-+++ b/drivers/spi/spi-omap2-mcspi.c
-@@ -102,6 +102,9 @@ struct omap2_mcspi_dma {
- 
- 	struct completion dma_tx_completion;
- 	struct completion dma_rx_completion;
-+
-+	char dma_rx_ch_name[14];
-+	char dma_tx_ch_name[14];
- };
- 
- /* use PIO for small transfers, avoiding DMA setup/teardown overhead and
-@@ -822,14 +825,23 @@ static int omap2_mcspi_request_dma(struct spi_device *spi)
- 	dma_cap_zero(mask);
- 	dma_cap_set(DMA_SLAVE, mask);
- 	sig = mcspi_dma->dma_rx_sync_dev;
--	mcspi_dma->dma_rx = dma_request_channel(mask, omap_dma_filter_fn, &sig);
-+
-+	mcspi_dma->dma_rx =
-+		dma_request_slave_channel_compat(mask, omap_dma_filter_fn,
-+						 &sig, &master->dev,
-+						 mcspi_dma->dma_rx_ch_name);
-+
- 	if (!mcspi_dma->dma_rx) {
- 		dev_err(&spi->dev, "no RX DMA engine channel for McSPI\n");
- 		return -EAGAIN;
- 	}
- 
- 	sig = mcspi_dma->dma_tx_sync_dev;
--	mcspi_dma->dma_tx = dma_request_channel(mask, omap_dma_filter_fn, &sig);
-+	mcspi_dma->dma_tx =
-+		dma_request_slave_channel_compat(mask, omap_dma_filter_fn,
-+						 &sig, &master->dev,
-+						 mcspi_dma->dma_tx_ch_name);
-+
- 	if (!mcspi_dma->dma_tx) {
- 		dev_err(&spi->dev, "no TX DMA engine channel for McSPI\n");
- 		dma_release_channel(mcspi_dma->dma_rx);
-@@ -1240,12 +1252,13 @@ static int omap2_mcspi_probe(struct platform_device *pdev)
- 		goto free_master;
- 
- 	for (i = 0; i < master->num_chipselect; i++) {
--		char dma_ch_name[14];
-+		char *dma_rx_ch_name = mcspi->dma_channels[i].dma_rx_ch_name;
-+		char *dma_tx_ch_name = mcspi->dma_channels[i].dma_tx_ch_name;
- 		struct resource *dma_res;
- 
--		sprintf(dma_ch_name, "rx%d", i);
-+		sprintf(dma_rx_ch_name, "rx%d", i);
- 		dma_res = platform_get_resource_byname(pdev, IORESOURCE_DMA,
--				dma_ch_name);
-+				dma_rx_ch_name);
- 		if (!dma_res) {
- 			dev_dbg(&pdev->dev, "cannot get DMA RX channel\n");
- 			status = -ENODEV;
-@@ -1253,9 +1266,9 @@ static int omap2_mcspi_probe(struct platform_device *pdev)
- 		}
- 
- 		mcspi->dma_channels[i].dma_rx_sync_dev = dma_res->start;
--		sprintf(dma_ch_name, "tx%d", i);
-+		sprintf(dma_tx_ch_name, "tx%d", i);
- 		dma_res = platform_get_resource_byname(pdev, IORESOURCE_DMA,
--				dma_ch_name);
-+				dma_tx_ch_name);
- 		if (!dma_res) {
- 			dev_dbg(&pdev->dev, "cannot get DMA TX channel\n");
- 			status = -ENODEV;
--- 
-1.7.9.5
+Before we go down this road we need to first address the fact that
+non-trivial semantic changes we made to these functions without any
+of that being documented.
 
+And it was done to a large swath of serial and TTY drivers.
+
+The author of these changes doesn't even grok that receive interrupts
+for these devices can be enabled even if TTY is NULL.
