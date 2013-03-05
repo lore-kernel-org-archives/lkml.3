@@ -1,147 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758815Ab3CETQN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 14:16:13 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:22688 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755457Ab3CETQL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 14:16:11 -0500
-Date: Tue, 5 Mar 2013 14:13:50 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: zohar@linux.vnet.ibm.com, linux-security-module@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, dmitry.kasatkin@intel.com
-Subject: Re: [PATCH 5/6] ima: Allow appraisal of digitally signed files only
-Message-ID: <20130305191350.GD4519@redhat.com>
-References: <1360871745-20616-1-git-send-email-vgoyal@redhat.com>
- <1360871745-20616-6-git-send-email-vgoyal@redhat.com>
+	id S1759040Ab3CETQV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 14:16:21 -0500
+Received: from mail-we0-f182.google.com ([74.125.82.182]:38548 "EHLO
+	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754911Ab3CETQS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Mar 2013 14:16:18 -0500
+Date: Tue, 5 Mar 2013 20:18:49 +0100
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Dave Airlie <airlied@linux.ie>, Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Imre Deak <imre.deak@intel.com>,
+        DRI mailing list <dri-devel@lists.freedesktop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Paulo Zanoni <przanoni@gmail.com>
+Subject: Re: [git pull] drm merge for 3.9-rc1
+Message-ID: <20130305191849.GL9021@phenom.ffwll.local>
+Mail-Followup-To: Linus Torvalds <torvalds@linux-foundation.org>,
+	Dave Airlie <airlied@linux.ie>, Imre Deak <imre.deak@intel.com>,
+	DRI mailing list <dri-devel@lists.freedesktop.org>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	Paulo Zanoni <przanoni@gmail.com>
+References: <alpine.DEB.2.00.1302260003460.24684@skynet.skynet.ie>
+ <CA+55aFzRRxTjuQcLhkhfxDWpHEg3EoSY8CMP+v78i+_Z-EkQ1g@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1360871745-20616-6-git-send-email-vgoyal@redhat.com>
+In-Reply-To: <CA+55aFzRRxTjuQcLhkhfxDWpHEg3EoSY8CMP+v78i+_Z-EkQ1g@mail.gmail.com>
+X-Operating-System: Linux phenom 3.7.0-rc4+
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 14, 2013 at 02:55:44PM -0500, Vivek Goyal wrote:
-> Currently ima appraises all the files as specified by the rule. So
-> if one wants to create a system where only few executables are
-> signed, that system will not work with IMA.
+On Tue, Feb 26, 2013 at 05:39:46PM -0800, Linus Torvalds wrote:
+> On Mon, Feb 25, 2013 at 4:05 PM, Dave Airlie <airlied@linux.ie> wrote:
+> >
+> > Highlights:
+> >
+> > i915: all over the map, haswell power well enhancements, valleyview macro horrors cleaned up, killing lots of legacy GTT
+> > code,
 > 
-> With secureboot, one needs to disable kexec so that unsigned kernels
-> can't be booted. To avoid this problem, it was proposed that sign
-> /sbin/kexec binary and if signatures are verified successfully, give
-> an special capability to the /sbin/kexec process. And in secureboot
-> mode processes with that special capability can invoke sys_kexec()
-> system call.
+> Lowlight:
 > 
-> So there is a need for IMA to allow appraising only signed binaries.
-> Unsigned binaries will pass the appraisal too, but will not get the
-> special capability. (Capability patches for that are yet to be written).
+> There's something wrong with i915 DP detection or whatever. I get
+> stuff like this:
 > 
-> This patch adds new option, appraise_type=imasig_optional to allow
-> appraisal to pass even if no signatures are present on the file. If
-> signatures are present, then it has to be valid digital signature,
-> otherwise appraisal will fail.
+> [    5.710827] [drm:intel_dp_aux_wait_done] *ERROR* dp aux hw did not
+> signal timeout (has irq: 1)!
+> [    5.720810] [drm:intel_dp_aux_wait_done] *ERROR* dp aux hw did not
+> signal timeout (has irq: 1)!
+> [    5.730794] [drm:intel_dp_aux_wait_done] *ERROR* dp aux hw did not
+> signal timeout (has irq: 1)!
+> [    5.740782] [drm:intel_dp_aux_wait_done] *ERROR* dp aux hw did not
+> signal timeout (has irq: 1)!
+> [    5.750775] [drm:intel_dp_aux_wait_done] *ERROR* dp aux hw did not
+> signal timeout (has irq: 1)!
+> [    5.750778] [drm:intel_dp_aux_ch] *ERROR* dp_aux_ch not done status
+> 0xa145003f
+> .....
+> [    8.149931] [drm:intel_dp_aux_ch] *ERROR* dp_aux_ch not done status
+> 0xa145003f
 > 
-> Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
-> ---
->  Documentation/ABI/testing/ima_policy |    2 +-
->  security/integrity/ima/ima_main.c    |   14 ++++++++++++--
->  security/integrity/ima/ima_policy.c  |    2 ++
->  security/integrity/integrity.h       |    1 +
->  4 files changed, 16 insertions(+), 3 deletions(-)
+> and after that the screen ends up black.
 > 
-> diff --git a/Documentation/ABI/testing/ima_policy b/Documentation/ABI/testing/ima_policy
-> index de16de3..cc69872 100644
-> --- a/Documentation/ABI/testing/ima_policy
-> +++ b/Documentation/ABI/testing/ima_policy
-> @@ -30,7 +30,7 @@ Description:
->  			uid:= decimal value
->  			fowner:=decimal value
->  		lsm:  	are LSM specific
-> -		option:	appraise_type:= [imasig]
-> +		option:	appraise_type:= [imasig] | [optional]
->  
->  		default policy:
->  			# PROC_SUPER_MAGIC
-> diff --git a/security/integrity/ima/ima_main.c b/security/integrity/ima/ima_main.c
-> index 3e751a9..da9e348 100644
-> --- a/security/integrity/ima/ima_main.c
-> +++ b/security/integrity/ima/ima_main.c
-> @@ -207,8 +207,18 @@ out_digsig:
->  		rc = -EACCES;
->  out:
->  	mutex_unlock(&inode->i_mutex);
-> -	if ((rc && must_appraise) && (ima_appraise & IMA_APPRAISE_ENFORCE))
-> -		return -EACCES;
-> +	if ((rc && must_appraise) && (ima_appraise & IMA_APPRAISE_ENFORCE)) {
-> +		/*
-> +		 * If IMA_APPRAISAL_OPT is set, then access is allowed
-> +		 * even if hash or digital signatures are not present.
-> +		 */
-> +		if ((iint->flags & IMA_APPRAISAL_OPT) &&
-> +		     (rc == INTEGRITY_XATTR_NOTSUPP ||
-> +		      rc == INTEGRITY_IMA_NOLABEL))
-> +			return 0;
-> +		else
-> +			return -EACCES;
+> It's happened twice now, but is not 100% repeatable. It looks like the
+> message itself is new,  but the black screen is also new and does seem
+> to happen when I get the message, so...
+> 
+> The second time I touched the power button, and the machine came back.
+> Apparently the suspend/resume cycle made it all magically work: the
+> suspend caused the same errors, but then the resume made it all good
+> again.
+> 
+> Some kind of missed initialization at bootup? It's not reliable enough
+> to bisect, but I obviously suspect commit 9ee32fea5fe8 ("drm/i915:
+> irq-drive the dp aux communication") since that is where the message
+> was added..
+> 
+> Btw, looking at that commit, what do you think the semantics of the
+> timeout in something like
+> 
+>     done = wait_event_timeout(dev_priv->gmbus_wait_queue, C, 10);
+> 
+> would be? What's that magic "10"? It's some totally random number.
+> 
+> Guys, it should be something meaningful. If you meant a tenth of a
+> second, use HZ/10 or something. Because just the plain "10" is crazy.
+> I happen to have CONFIG_HZ_1000=y, and you're apparently waiting for a
+> hundreth of a second. Was that what you intended? Because if it was,
+> it is still crap, since CONFIG_HZ might be 100, and then you're
+> waiting for ten times longer.
+> 
+> IOW, passing in a random number like that is crazy. It cannot possibly
+> be right.
+> 
+> I have no idea whether the timeout has anything to do with anything,
+> but it reinforces my suspicion that there is something wrong with that
+> commit.
 
-I think there is problem here. "appraise_type=optional" can be specified
-per rule/hook. So two different hooks can specify two different rules.
+Ok, I've merged two patches from Paulo, one to fixup the harmless jiffies
+vs. msec confusion. And the other to plug a race in our irq handler which
+did lead to missed dp aux interrupts according to some digging done by
+Imre. The important patch is the current tip of
 
-appraise func=MMAP_CHECK appraise_type=optional
-appraise func=BPRM_CHECK
+git://people.freedesktop.org/~danvet/drm-intel drm-intel-fixes
 
-I think if a file is first mmaped(), then appraisal will take place and
-IMA_APPRAISAL_OPT will be set in iint->flags.
+44498aea293b37af1d463acd9658cdce1ecdf427 drm/i915: also disable south interrupts when handling them
 
-Later when BPRM_CHECK hook gets executed, and it will return success
-based on IMA_APPRAISAL_OPT even if there was no label. And that's not
-what exec() expects.
+Just in case you want to give it a quick whirl. Since the failed dp aux
+transaction caused the resume modeset to fail for you (resulting in the
+black screen) I hope that this should fix both issues.
 
-So storing IMA_APPRAISAL_OPT in iint->flags seems wrong (espectially as
-part of IMA_ACTION_FLAGS bits). I think only bits which are valid
-across all rules/hooks should be stored here.
+I'll forward the pull to Dave in a few days since atm I'm stalling a bit
+for confirmation on another little regression fix. And there's nothing
+earth-shattering in my -fixes queue right now.
 
-Any property which is hook/rule specific should either not be stored
-or should be stroed in hook specific property area.
-
-We don't have enough space to store more hook specific properties, so 
-I will explore the option of passing around this flag when hook is being
-executed and then discard it.
-
-Thanks
-Vivek
- 
-> +	}
->  	return 0;
->  }
->  
-> diff --git a/security/integrity/ima/ima_policy.c b/security/integrity/ima/ima_policy.c
-> index 4adcd0f..fd92dc3d4 100644
-> --- a/security/integrity/ima/ima_policy.c
-> +++ b/security/integrity/ima/ima_policy.c
-> @@ -598,6 +598,8 @@ static int ima_parse_rule(char *rule, struct ima_rule_entry *entry)
->  			ima_log_string(ab, "appraise_type", args[0].from);
->  			if ((strcmp(args[0].from, "imasig")) == 0)
->  				entry->flags |= IMA_DIGSIG_REQUIRED;
-> +			else if ((strcmp(args[0].from, "optional")) == 0)
-> +				entry->flags |= IMA_APPRAISAL_OPT;
->  			else
->  				result = -EINVAL;
->  			break;
-> diff --git a/security/integrity/integrity.h b/security/integrity/integrity.h
-> index 0ae08fc..4d330a7 100644
-> --- a/security/integrity/integrity.h
-> +++ b/security/integrity/integrity.h
-> @@ -29,6 +29,7 @@
->  #define IMA_ACTION_FLAGS	0xff000000
->  #define IMA_DIGSIG		0x01000000
->  #define IMA_DIGSIG_REQUIRED	0x02000000
-> +#define IMA_APPRAISAL_OPT	0x04000000
->  
->  #define IMA_DO_MASK		(IMA_MEASURE | IMA_APPRAISE | IMA_AUDIT | \
->  				 IMA_APPRAISE_SUBMASK)
-> -- 
-> 1.7.7.6
+Cheers, Daniel
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
