@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756428Ab3CEUDG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 15:03:06 -0500
-Received: from mail-qc0-f175.google.com ([209.85.216.175]:58147 "EHLO
-	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751244Ab3CEUDE (ORCPT
+	id S1757070Ab3CEUDO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 15:03:14 -0500
+Received: from mail-qe0-f48.google.com ([209.85.128.48]:40053 "EHLO
+	mail-qe0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756509Ab3CEUDJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 15:03:04 -0500
+	Tue, 5 Mar 2013 15:03:09 -0500
 From: Tejun Heo <tj@kernel.org>
 To: akpm@linux-foundation.org
 Cc: linux-kernel@vger.kernel.org, bfields@fieldses.org,
         jackm@dev.mellanox.co.il, ogerlitz@mellanox.com,
         roland@purestorage.com, dan.magenheimer@oracle.com,
         gregkh@linuxfoundation.org, vjaquez@igalia.com, rene.sapiens@ti.com,
-        x0095078@ti.com, omar.ramirez@ti.com, Tejun Heo <tj@kernel.org>,
-        linux-nfs@vger.kernel.org
-Subject: [PATCH 1/7] nfsd: remove unused get_new_stid()
-Date: Tue,  5 Mar 2013 12:02:46 -0800
-Message-Id: <1362513772-15174-2-git-send-email-tj@kernel.org>
+        x0095078@ti.com, omar.ramirez@ti.com, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 3/7] workqueue: convert to idr_alloc()
+Date: Tue,  5 Mar 2013 12:02:48 -0800
+Message-Id: <1362513772-15174-4-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1362513772-15174-1-git-send-email-tj@kernel.org>
 References: <1362513772-15174-1-git-send-email-tj@kernel.org>
@@ -25,58 +24,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-get_new_stid() is no longer used since 3abdb607125 ("nfsd4: simplify
-idr allocation").  Remove it.
+idr_get_new*() and friends are about to be deprecated.  Convert to the
+new idr_alloc() interface.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: linux-nfs@vger.kernel.org
 ---
- fs/nfsd/nfs4state.c | 31 -------------------------------
- 1 file changed, 31 deletions(-)
+ kernel/workqueue.c | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
-index 16d39c6..d91d6db 100644
---- a/fs/nfsd/nfs4state.c
-+++ b/fs/nfsd/nfs4state.c
-@@ -230,37 +230,6 @@ static void nfs4_file_put_access(struct nfs4_file *fp, int oflag)
- 		__nfs4_file_put_access(fp, oflag);
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index 81f2457..55fac5b 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -457,11 +457,12 @@ static int worker_pool_assign_id(struct worker_pool *pool)
+ 	int ret;
+ 
+ 	mutex_lock(&worker_pool_idr_mutex);
+-	idr_pre_get(&worker_pool_idr, GFP_KERNEL);
+-	ret = idr_get_new(&worker_pool_idr, pool, &pool->id);
++	ret = idr_alloc(&worker_pool_idr, pool, 0, 0, GFP_KERNEL);
++	if (ret >= 0)
++		pool->id = ret;
+ 	mutex_unlock(&worker_pool_idr_mutex);
+ 
+-	return ret;
++	return ret < 0 ? ret : 0;
  }
  
--static inline int get_new_stid(struct nfs4_stid *stid)
--{
--	static int min_stateid = 0;
--	struct idr *stateids = &stid->sc_client->cl_stateids;
--	int new_stid;
--	int error;
--
--	error = idr_get_new_above(stateids, stid, min_stateid, &new_stid);
--	/*
--	 * Note: the necessary preallocation was done in
--	 * nfs4_alloc_stateid().  The idr code caps the number of
--	 * preallocations that can exist at a time, but the state lock
--	 * prevents anyone from using ours before we get here:
--	 */
--	WARN_ON_ONCE(error);
--	/*
--	 * It shouldn't be a problem to reuse an opaque stateid value.
--	 * I don't think it is for 4.1.  But with 4.0 I worry that, for
--	 * example, a stray write retransmission could be accepted by
--	 * the server when it should have been rejected.  Therefore,
--	 * adopt a trick from the sctp code to attempt to maximize the
--	 * amount of time until an id is reused, by ensuring they always
--	 * "increase" (mod INT_MAX):
--	 */
--
--	min_stateid = new_stid+1;
--	if (min_stateid == INT_MAX)
--		min_stateid = 0;
--	return new_stid;
--}
--
- static struct nfs4_stid *nfs4_alloc_stid(struct nfs4_client *cl, struct
- kmem_cache *slab)
- {
+ /*
 -- 
 1.8.1.4
 
