@@ -1,69 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756214Ab3CEWsL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 17:48:11 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:46619 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755666Ab3CEWsJ (ORCPT
+	id S1756099Ab3CEW5O (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 17:57:14 -0500
+Received: from smtp.snhosting.dk ([87.238.248.203]:43330 "EHLO
+	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755104Ab3CEW5N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 17:48:09 -0500
-Message-ID: <51367625.2090405@wwwdotorg.org>
-Date: Tue, 05 Mar 2013 15:48:05 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Tue, 5 Mar 2013 17:57:13 -0500
+Date: Tue, 5 Mar 2013 23:57:11 +0100
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Jiang Liu <liuj97@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>, Jiang Liu <jiang.liu@huawei.com>,
+        Wen Congyang <wency@cn.fujitsu.com>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Chris Clayton <chris2553@googlemail.com>,
+        "Rafael J . Wysocki" <rjw@sisk.pl>, Mel Gorman <mgorman@suse.de>,
+        Minchan Kim <minchan@kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>, Jianguo Wu <wujianguo@huawei.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [RFC PATCH v1 22/33] mm/SPARC: use common help functions to
+	free reserved pages
+Message-ID: <20130305225711.GA12811@merkur.ravnborg.org>
+References: <1362495317-32682-1-git-send-email-jiang.liu@huawei.com> <1362495317-32682-23-git-send-email-jiang.liu@huawei.com> <20130305195845.GB12225@merkur.ravnborg.org>
 MIME-Version: 1.0
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Mike Turquette <mturquette@linaro.org>,
-        Stephen Warren <swarren@nvidia.com>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>, linux-kernel@vger.kernel.org
-Subject: Re: [REPOST PATCH 0/2] Table lookup for mux clock type
-References: <1361545358-22721-1-git-send-email-pdeschrijver@nvidia.com>
-In-Reply-To: <1361545358-22721-1-git-send-email-pdeschrijver@nvidia.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130305195845.GB12225@merkur.ravnborg.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/22/2013 08:02 AM, Peter De Schrijver wrote:
-> This patchset adds a table lookup feature to the mux clock type. This will
-> be used by the forthcoming Tegra114 clock implementation. Also instead of
-> a fixed field width, a mask is used. This is because Tegra114 has some muxes
-> where the parent selector is spread over several bitfields. The second patch
-> adapts the tegra periph clock implementation which uses struct clk_mux
-> directly.
+On Tue, Mar 05, 2013 at 08:58:46PM +0100, Sam Ravnborg wrote:
+> On Tue, Mar 05, 2013 at 10:55:05PM +0800, Jiang Liu wrote:
+> > Use common help functions to free reserved pages.
 > 
-> --
+> I like how this simplify things!
 > 
-> Mike,
-> 
-> This patch is a dependency for the Tegra114 CCF implementation. Could you
-> review it and merge on a topic branch so Stephen can pull it in to verify
-> the integration?
+> Please consider how you can also cover the HIGHMEM case,
+> so map_high_region(...) is simplified too (in init_32.c).
 
-Peter, does this repost you resolve the issue I pointed out at:
-http://www.spinics.net/lists/arm-kernel/msg220873.html
+I now see this is done in a later patch - good!
 
-To quote:
-
->>> Just a quick note on patch dependencies here:
->>>
->>> Patch 1/2 can presumably be taken through the clk tree whenever Mike is
->>> OK with it.
->>>
->>> Patch 2/2 depends on patches in the Tegra tree for 3.9. Since patch 2/2
->>> is useful mostly for the Tegra114 clock driver, and I don't imagine that
->>> will get posted/merged in time for 3.9, it's probably easiest to just
->>> take patch 2/2 for 3.10 along with the Tegra114 clock driver. Also, I
->>> imagine there won't be any more clk/Tegra tree dependencies in 3.10, so
->>> patch 2/2 and the Tegra114 clk driver patches can likely go through the
->>> clk tree itself for 3.10.
->> 
->> No. Because 1/2 changes struct clk_mux and the tegra peripheral clock type 
->> uses struct clk_mux directly, 2/2 needs to be applied together with 1/2, even
->> if the new functionality is not yet used.
-> 
-> Oh, then they can't be two separate patches then, or "git bisect" won't
-> work. I guess it's best to wait for 3.10 for this:-(
+	Sam
