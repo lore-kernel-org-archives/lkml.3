@@ -1,45 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756428Ab3CENzr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 08:55:47 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:48575 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753608Ab3CENzq (ORCPT
+	id S1756124Ab3CEN7a (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 08:59:30 -0500
+Received: from cpsmtpb-ews09.kpnxchange.com ([213.75.39.14]:64334 "EHLO
+	cpsmtpb-ews09.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754580Ab3CEN73 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 08:55:46 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-To: akpm@linux-foundation.org
-Cc: viro@zeniv.linux.org.uk, ebiederm@xmission.com, nzimmer@sgi.com,
-        linux-kernel@vger.kernel.org, Sasha Levin <sasha.levin@oracle.com>
-Subject: [PATCH] procfs: missing rcu unlock in proc_reg_release
-Date: Tue,  5 Mar 2013 08:55:47 -0500
-Message-Id: <1362491747-25610-1-git-send-email-sasha.levin@oracle.com>
-X-Mailer: git-send-email 1.8.1.4
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	Tue, 5 Mar 2013 08:59:29 -0500
+Message-ID: <1362491963.16460.93.camel@x61.thuisdomein>
+Subject: [PATCH] [RESEND] ia64: change "select DMAR" to "select INTEL_IOMMU"
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>
+Cc: linux-ia64@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Suresh Siddha <suresh.b.siddha@intel.com>, Ingo Molnar <mingo@elte.hu>
+Date: Tue, 05 Mar 2013 14:59:23 +0100
+In-Reply-To: <1321127461.27598.102.camel@x61.thuisdomein>
+References: <1321127461.27598.102.camel@x61.thuisdomein>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 05 Mar 2013 13:59:23.0943 (UTC) FILETIME=[A4721370:01CE19A9]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit "procfs: improve scaling in proc" forgot to unlock rcu read lock
-if the proc file didn't have ops struct.
+Commit d3f138106b ("iommu: Rename the DMAR and INTR_REMAP config
+options") changed all references to DMAR in Kconfig files to INTEL_IOMMU
+(and, likewise, changed the references to CONFIG_DMAR everywhere else
+to CONFIG_INTEL_IOMMU). That commit missed one "select DMAR" statement
+in ia64's Kconfig file. Change that one too.
 
-Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
 ---
- fs/proc/inode.c | 1 +
- 1 file changed, 1 insertion(+)
+0) This patch was first send over a year ago. Now I have reapplied it on
+top of v3.9-rc1, which only added an offset of two lines.
 
-diff --git a/fs/proc/inode.c b/fs/proc/inode.c
-index 6cccc4d..d9292ac 100644
---- a/fs/proc/inode.c
-+++ b/fs/proc/inode.c
-@@ -400,6 +400,7 @@ static int proc_reg_release(struct inode *inode, struct file *file)
- 	rcu_read_lock();
- 	fops = rcu_dereference(pde->proc_fops);
- 	if (!fops) {
-+		rcu_read_unlock();
- 		/*
- 		 * Can't simply exit, __fput() will think that everything is OK,
- 		 * and move on to freeing struct file. remove_proc_entry() will
+1) Still tested with "make ARCH=ia64 menuconfig" only (which makes it
+rather lightly tested).
+
+2) Everything suggests this was simply an oversight. Otherwise that
+select line would have been dropped, wouldn't it?
+
+ arch/ia64/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/ia64/Kconfig b/arch/ia64/Kconfig
+index 33f3fdc..436605b 100644
+--- a/arch/ia64/Kconfig
++++ b/arch/ia64/Kconfig
+@@ -187,7 +187,7 @@ config IA64_DIG
+ 
+ config IA64_DIG_VTD
+ 	bool "DIG+Intel+IOMMU"
+-	select DMAR
++	select INTEL_IOMMU
+ 	select PCI_MSI
+ 
+ config IA64_HP_ZX1
 -- 
-1.8.1.4
+1.7.11.7
 
