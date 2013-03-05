@@ -1,63 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757964Ab3CER7O (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 12:59:14 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:6527 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753298Ab3CER7N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 12:59:13 -0500
-X-IronPort-AV: E=Sophos;i="4.84,788,1355097600"; 
-   d="scan'208";a="11276817"
-From: Zoltan Kiss <zoltan.kiss@citrix.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        <linux-kernel@vger.kernel.org>
-CC: Zoltan Kiss <zoltan.kiss@citrix.com>
-Subject: [PATCH 1/1] xen-blkback: Change statistics counter types to unsigned
-Date: Tue, 5 Mar 2013 17:59:32 +0000
-Message-ID: <1362506372-19079-1-git-send-email-zoltan.kiss@citrix.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S1758088Ab3CER7d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 12:59:33 -0500
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:50698 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755208Ab3CER7b (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Mar 2013 12:59:31 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.80.2.133]
+In-Reply-To: <20130305174838.GA7276@redhat.com>
+References: <201303042055.38040.maciej.rutecki@gmail.com>
+	<1362504883-9180-1-git-send-email-msb@chromium.org>
+	<20130305174838.GA7276@redhat.com>
+Date: Tue, 5 Mar 2013 09:59:30 -0800
+X-Google-Sender-Auth: p_-jJcbqzTXHyEtvTiDfgRlrI-Q
+Message-ID: <CACBanvqHRDsOQiMsQMw5_QDt1wFrb8_DRoiASSvqeA6XdFrwZQ@mail.gmail.com>
+Subject: Re: [PATCH] thinkpad-acpi: fix potential suspend blocking issue
+From: Mandeep Singh Baines <msb@chromium.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-acpi@vger.kernel.org, ibm-acpi@hmh.eng.br,
+        ibm-acpi-devel@lists.sourceforge.net,
+        platform-driver-x86@vger.kernel.org, Aaron Lu <aaron.lu@intel.com>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These values shouldn't be negative, but after an overflow their value
-can turn into negative, if they are signed. xentop can show bogus
-values in this case.
+On Tue, Mar 5, 2013 at 9:48 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+> On 03/05, Mandeep Singh Baines wrote:
+>>
+>> @@ -2462,13 +2462,13 @@ static int hotkey_kthread(void *data)
+>>       unsigned int poll_freq;
+>>       bool was_frozen;
+>>
+>> +     set_freezable();
+>> +
+>>       mutex_lock(&hotkey_thread_mutex);
+>>
+>>       if (tpacpi_lifecycle == TPACPI_LIFE_EXITING)
+>>               goto exit;
+>>
+>> -     set_freezable();
+>> -
+>
+> I don't understand this code... but don't we have the same problem
+> with kthread_freezable_should_stop() below? It can call __refrigerator()
+> too under the same lock.
+>
 
-Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
-Reported-by: Ichiro Ogino <ichiro.ogino@citrix.co.jp>
----
- drivers/block/xen-blkback/common.h |   14 +++++++-------
- 1 files changed, 7 insertions(+), 7 deletions(-)
+I don't think the lock is held at that point. There is an unlock right
+before entering the while loop and at the bottom of the loop.
 
-diff --git a/drivers/block/xen-blkback/common.h b/drivers/block/xen-blkback/common.h
-index 6072390..72d09ac 100644
---- a/drivers/block/xen-blkback/common.h
-+++ b/drivers/block/xen-blkback/common.h
-@@ -208,13 +208,13 @@ struct xen_blkif {
- 
- 	/* statistics */
- 	unsigned long		st_print;
--	int			st_rd_req;
--	int			st_wr_req;
--	int			st_oo_req;
--	int			st_f_req;
--	int			st_ds_req;
--	int			st_rd_sect;
--	int			st_wr_sect;
-+	unsigned long long			st_rd_req;
-+	unsigned long long			st_wr_req;
-+	unsigned long long			st_oo_req;
-+	unsigned long long			st_f_req;
-+	unsigned long long			st_ds_req;
-+	unsigned long long			st_rd_sect;
-+	unsigned long long			st_wr_sect;
- 
- 	wait_queue_head_t	waiting_to_free;
- };
--- 
-1.7.0.4
-
+> Oleg.
+>
