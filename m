@@ -1,63 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757191Ab3CEQJz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 11:09:55 -0500
-Received: from mailout01.c08.mtsvc.net ([205.186.168.189]:41140 "EHLO
-	mailout01.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756813Ab3CEQJv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 11:09:51 -0500
-From: Peter Hurley <peter@hurleysoftware.com>
-To: David Miller <davem@davemloft.net>, Samuel Ortiz <samuel@sortiz.org>
-Cc: Sasha Levin <sasha.levin@oracle.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        netdev@vger.kernel.org, Jiri Slaby <jslaby@suse.cz>,
-        linux-kernel@vger.kernel.org, Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH 2/4] net/irda: Hold port lock while bumping blocked_open
-Date: Tue,  5 Mar 2013 11:09:05 -0500
-Message-Id: <1362499747-4262-3-git-send-email-peter@hurleysoftware.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1362499747-4262-1-git-send-email-peter@hurleysoftware.com>
-References: <1362371063.3221.185.camel@thor.lan>
- <1362499747-4262-1-git-send-email-peter@hurleysoftware.com>
-X-Authenticated-User: 125194 peter@hurleysoftware.com
+	id S1757118Ab3CEQRP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 11:17:15 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:33882 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756506Ab3CEQRO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Mar 2013 11:17:14 -0500
+User-Agent: K-9 Mail for Android
+In-Reply-To: <1362484056-9778-6-git-send-email-kyungsik.lee@lge.com>
+References: <1362484056-9778-1-git-send-email-kyungsik.lee@lge.com> <1362484056-9778-6-git-send-email-kyungsik.lee@lge.com>
+MIME-Version: 1.0
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH v3 -next 5/5] Kconfig: Make x86 and arm kernels default to the LZ4-compressed
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Tue, 05 Mar 2013 08:13:06 -0800
+To: Kyungsik Lee <kyungsik.lee@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-kbuild@vger.kernel.org, x86@kernel.org,
+        celinux-dev@lists.celinuxforum.org
+CC: Nicolas Pitre <nico@fluxnic.net>, David Sterba <dsterba@suse.cz>,
+        Nitin Gupta <nitingupta910@gmail.com>,
+        Joe Millenbach <jmillenbach@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Michal Marek <mmarek@suse.cz>,
+        hyojun.im@lge.com, chan.jeong@lge.com, raphael.andy.lee@gmail.com
+Message-ID: <951ecce5-9669-4d1e-97db-1d1946e83eb4@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Although tty_lock() already protects concurrent update to
-blocked_open, that fails to meet the separation-of-concerns between
-tty_port and tty.
+I'm ok with this only if the patch is clearly marked LINUS DO NOT MERGE.
 
-Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
----
- net/irda/ircomm/ircomm_tty.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+Kyungsik Lee <kyungsik.lee@lge.com> wrote:
 
-diff --git a/net/irda/ircomm/ircomm_tty.c b/net/irda/ircomm/ircomm_tty.c
-index 1721dc7..d282bbe 100644
---- a/net/irda/ircomm/ircomm_tty.c
-+++ b/net/irda/ircomm/ircomm_tty.c
-@@ -317,8 +317,8 @@ static int ircomm_tty_block_til_ready(struct ircomm_tty_cb *self,
- 	spin_lock_irqsave(&port->lock, flags);
- 	if (!tty_hung_up_p(filp))
- 		port->count--;
--	spin_unlock_irqrestore(&port->lock, flags);
- 	port->blocked_open++;
-+	spin_unlock_irqrestore(&port->lock, flags);
- 
- 	while (1) {
- 		if (tty->termios.c_cflag & CBAUD)
-@@ -362,8 +362,8 @@ static int ircomm_tty_block_til_ready(struct ircomm_tty_cb *self,
- 	spin_lock_irqsave(&port->lock, flags);
- 	if (!tty_hung_up_p(filp))
- 		port->count++;
--	spin_unlock_irqrestore(&port->lock, flags);
- 	port->blocked_open--;
-+	spin_unlock_irqrestore(&port->lock, flags);
- 
- 	IRDA_DEBUG(1, "%s(%d):block_til_ready after blocking on %s open_count=%d\n",
- 	      __FILE__, __LINE__, tty->driver->name, port->count);
+>This patch makes x86 and arm kernels default to the LZ4-compressed
+>to test new LZ4 code in the linux-next. This is requested by
+>Andrew Morton.
+>
+>Signed-off-by: Kyungsik Lee <kyungsik.lee@lge.com>
+>---
+> init/Kconfig | 2 +-
+> 1 file changed, 1 insertion(+), 1 deletion(-)
+>
+>diff --git a/init/Kconfig b/init/Kconfig
+>index fc8eb1f..de3cb00 100644
+>--- a/init/Kconfig
+>+++ b/init/Kconfig
+>@@ -138,7 +138,7 @@ config HAVE_KERNEL_LZ4
+> 
+> choice
+> 	prompt "Kernel compression mode"
+>-	default KERNEL_GZIP
+>+	default KERNEL_LZ4
+>	depends on HAVE_KERNEL_GZIP || HAVE_KERNEL_BZIP2 || HAVE_KERNEL_LZMA
+>|| HAVE_KERNEL_XZ || HAVE_KERNEL_LZO || HAVE_KERNEL_LZ4
+> 	help
+> 	  The linux kernel is a kind of self-extracting executable.
+
 -- 
-1.8.1.2
-
+Sent from my mobile phone. Please excuse brevity and lack of formatting.
