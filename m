@@ -1,86 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756197Ab3CENVL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 08:21:11 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:58696 "EHLO mx1.redhat.com"
+	id S1756271Ab3CENX0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 08:23:26 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:59263 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752633Ab3CENVK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 08:21:10 -0500
-Date: Tue, 5 Mar 2013 14:20:55 +0100
-From: Anton Arapov <anton@redhat.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, Josh Stone <jistone@redhat.com>,
-        Frank Eigler <fche@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-Subject: Re: [RFC PATCH v4 4/6] uretprobes: return probe entry, prepare
- uretprobe
-Message-ID: <20130305132055.GB24229@bandura.brq.redhat.com>
-References: <1362407893-32505-1-git-send-email-anton@redhat.com>
- <1362407893-32505-5-git-send-email-anton@redhat.com>
- <20130304164753.GA3328@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130304164753.GA3328@redhat.com>
-X-PGP-Key: http://people.redhat.com/aarapov/gpg
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752818Ab3CENXZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Mar 2013 08:23:25 -0500
+Date: Tue, 5 Mar 2013 08:23:08 -0500
+From: Jeff Layton <jlayton@redhat.com>
+To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+Cc: Oleg Nesterov <oleg@redhat.com>, Mandeep Singh Baines <msb@chromium.org>,
+        Ming Lei <ming.lei@canonical.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: LOCKDEP: 3.9-rc1: mount.nfs/4272 still has locks held!
+Message-ID: <20130305082308.6607d4db@tlielax.poochiereds.net>
+In-Reply-To: <4FA345DA4F4AE44899BD2B03EEEC2FA9286AEEB0@sacexcmbx05-prd.hq.netapp.com>
+References: <CACVXFVMKN6aeCvJcn7dyuonJYJDfYxWeW5KE6gfKRKJKFj2M4A@mail.gmail.com>
+	<4FA345DA4F4AE44899BD2B03EEEC2FA9286AD113@sacexcmbx05-prd.hq.netapp.com>
+	<20130304092310.1d21100c@tlielax.poochiereds.net>
+	<CACBanvrc0orXGZ1v+gKHtVPKWYKGEFx46dwoDCjTU78+nPtZyg@mail.gmail.com>
+	<20130304205307.GA13527@redhat.com>
+	<4FA345DA4F4AE44899BD2B03EEEC2FA9286AEEB0@sacexcmbx05-prd.hq.netapp.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 04, 2013 at 05:47:53PM +0100, Oleg Nesterov wrote:
-> On 03/04, Anton Arapov wrote:
-> >
-> > @@ -1085,6 +1093,7 @@ static int xol_add_vma(struct xol_area *area)
-> >  {
-> >  	struct mm_struct *mm = current->mm;
-> >  	int ret = -EALREADY;
-> > +	uprobe_opcode_t insn = UPROBE_SWBP_INSN;
-> >
-> >  	down_write(&mm->mmap_sem);
-> >  	if (mm->uprobes_state.xol_area)
-> > @@ -1106,6 +1115,13 @@ static int xol_add_vma(struct xol_area *area)
-> >  	smp_wmb();	/* pairs with get_xol_area() */
-> >  	mm->uprobes_state.xol_area = area;
-> >  	ret = 0;
-> > +
-> > +	/*
-> > +	 * If we reached this place, we did allocate a new area. We want
-> > +	 * pre-alloc a slot for the return probes here.
-> > +	 */
-> > +	xol_get_insn_slot(&insn);
-> Just change get_xol_area() to do set_bit(0, bitmap) and copy_to_page(page, int3)
-> (extacted from xol_get_insn_slot().
-ah yes, right. Thanks for this hint.
+On Mon, 4 Mar 2013 22:08:34 +0000
+"Myklebust, Trond" <Trond.Myklebust@netapp.com> wrote:
 
+> On Mon, 2013-03-04 at 21:53 +0100, Oleg Nesterov wrote:
+> > On 03/04, Mandeep Singh Baines wrote:
+> > >
+> > > The problem is that freezer_count() calls try_to_freeze(). In this
+> > > case, try_to_freeze() is not really adding any value.
+> > 
+> > Well, I tend to agree.
+> > 
+> > If a task calls __refrigerator() holding a lock which another freezable
+> > task can wait for, this is not freezer-friendly.
+> > 
+> > freezable_schedule/freezer_do_not_count/etc not only means "I won't be
+> > active if freezing()", it should also mean "I won't block suspend/etc".
 > 
-> > @@ -1485,8 +1538,11 @@ static struct uprobe *find_active_uprobe(unsigned long bp_vaddr, int *is_swbp)
-> >  		*is_swbp = -EFAULT;
-> >  	}
-> >  
-> > -	if (!uprobe && test_and_clear_bit(MMF_RECALC_UPROBES, &mm->flags))
-> > +	utask = get_utask();
-> > +	if (!uprobe && hlist_empty(&utask->return_uprobes) &&
-> > +	    test_and_clear_bit(MMF_RECALC_UPROBES, &mm->flags)) {
-> >  		mmf_recalc_uprobes(mm);
-> Wait, I was wrong. We should not clear MMF_* if another thread has
-> ->return_uprobes. Perhaps we should change uprobe_pre_sstep_notifier()
-> instead...
-Will look into it.
+> If suspend for some reason requires a re-entrant mount, then yes, I can
+> see how it might be a problem that we're holding a mount-related lock.
+> The question is why is that necessary?
+> 
+> > OTOH, I understand that probably it is not trivial to change this code
+> > to make it freezer-friendly. But at least  I disagree with "push your
+> > problems onto others".
+> 
+> That code can't be made freezer-friendly if it isn't allowed to hold
+> basic filesystem-related locks across RPC calls. A number of those RPC
+> calls do things that need to be protected by VFS or MM-level locks.
+> i.e.: lookups, file creation/deletion, page fault in/out, ...
+>  
+> IOW: the problem would need to be solved differently, possibly by adding
+> a new FIFREEZE-like call to allow the filesystem to quiesce itself
+> _before_ NetworkManager pulls the rug out from underneath it. There
+> would still be plenty of corner cases to keep people entertained (e.g.
+> the server goes down before the quiesce call is invoked) but at least
+> the top 90% of cases would be solved.
+> 
 
-> >  	down_read(&uprobe->register_rwsem);
-> >  	for (uc = uprobe->consumers; uc; uc = uc->next) {
-> > -		int rc = uc->handler(uc, regs);
-> > +		if (uc->handler)
-> > +			rc = uc->handler(uc, regs);
-> > +
-> > +		if (uc->rp_handler)
-> > +			prepare_uretprobe(uprobe, regs); /* put bp at return */
-> Again, this is not right. We should do this only once after the main
-> loop.
-fixed for v5.
+Ok, I think I'm starting to get it. It doesn't necessarily need a
+reentrant mount or anything like that. Consider this case (which is not
+even that unlikely):
 
-Thanks!
-Anton.
+Suppose there are two tasks calling unlink() on files in the same NFS
+directory.
+
+First task takes the i_mutex on the parent directory and goes to ask
+the server to remove the file. Second task calls unlink just
+afterward and blocks on the parent's i_mutex.
+
+Now, a suspend event comes in and freezes the first task while it's
+waiting on the response. It still holds the parent's i_mutex. Freezer
+now gets to the second task and can't freeze it because the sleep on
+that mutex isn't freezable.
+
+So, not a deadlock per-se in this case but it does prevent the freezer
+from running to completion. I don't see any way to solve it though w/o
+making all mutexes freezable. Note that I don't think this is really
+limited to NFS either -- a lot of other filesystems will have similar
+problems: CIFS, some FUSE variants, etc...
+
+-- 
+Jeff Layton <jlayton@redhat.com>
