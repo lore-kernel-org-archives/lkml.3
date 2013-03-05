@@ -1,123 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757442Ab3CETV4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 14:21:56 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:25829 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752847Ab3CETVz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 14:21:55 -0500
-X-Authority-Analysis: v=2.0 cv=BZhaI8R2 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=gbv-QcFlf00A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=8qTMOilz3ZcA:10 a=z6gsHLkEAAAA:8 a=Hz4M5SUGhm5sNDVxS5kA:9 a=PUjeQqilurYA:10 a=UvJCa7pecocA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1362511312.31874.34.camel@gandalf.local.home>
-Subject: Re: [RFC][RT][PATCH RESEND] mm: Do not use stop_machine() for
- __zone_pcp_udpate() for CONFIG_PREEMPT_RT_FULL
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Aaditya Kumar <aaditya.kumar.30@gmail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        frank.rowand@am.sony.com, tim.bird@am.sony.com, jamshed.a@ap.sony.com,
-        takuzo.ohara@ap.sony.com, amit.agarwal@ap.sony.com,
-        kan.iibuchi@jp.sony.com
-Date: Tue, 05 Mar 2013 14:21:52 -0500
-In-Reply-To: <CAEtiSatJh-FpoMAWykPBaJgwOy6d6qhhdH-jLGw8ZFkiKRXpMQ@mail.gmail.com>
-References: <CAEtiSauEdKP3Jsi_O6Q=yc9AWkSKDvNrLe0faicQWJGqdKxLwg@mail.gmail.com>
-	 <CAEtiSatJh-FpoMAWykPBaJgwOy6d6qhhdH-jLGw8ZFkiKRXpMQ@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4-1 
+	id S1759143Ab3CETWY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 14:22:24 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:58825 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755467Ab3CETWX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Mar 2013 14:22:23 -0500
+Date: Tue, 5 Mar 2013 14:22:20 -0500
+From: Jeff Layton <jlayton@redhat.com>
+To: Jeff Layton <jlayton@redhat.com>
+Cc: Ben Greear <greearb@candelatech.com>, linux-cifs@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: 3.7.10+:  BUG Dentry still in use [unmount of cifs cifs]
+Message-ID: <20130305142220.6fc20a2b@tlielax.poochiereds.net>
+In-Reply-To: <20130305140849.67d52088@tlielax.poochiereds.net>
+References: <51363F80.8070609@candelatech.com>
+	<20130305140849.67d52088@tlielax.poochiereds.net>
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-03-06 at 00:10 +0530, Aaditya Kumar wrote:
-> The code path of __zone_pcp_update() has following locks, which in
-> CONFIG_PREEMPT_RT_FULL=y are rt-mutex.
->   - pa_lock locked by cpu_lock_irqsave()
->   - zone->lock locked by free_pcppages_bulk()
-> 
-> Since __zone_pcp_update() is called from stop_machine(), so with
-> CONFIG_PREEMPT_RT_FULL=y
-> we get following backtrace when __zone_pcp_update() is called during
-> memory hot plugging while
-> doing heavy file I/O.
-> 
-> stop_machine() may not be required for calling __zone_pcp_update()
+On Tue, 5 Mar 2013 14:08:49 -0500
+Jeff Layton <jlayton@redhat.com> wrote:
 
-"may not be required" is not a technical sufficient reason for a change.
+> On Tue, 05 Mar 2013 10:54:56 -0800
+> Ben Greear <greearb@candelatech.com> wrote:
+> 
+> > In doing some CIFS testing (utilizing it's feature to bind to local
+> > address..but not sure that matters), we saw this error when trying
+> > to un-mount.
+> > 
+> > Our kernel is patched (nfs, some networking related patches), but there
+> > are no out-of-kernel patches to CIFS, so I don't *think* this is anything
+> > we could have caused.
+> > 
+> > This problem appears to be easily reproducible, so we will be happy
+> > to test patches if anyone has any suggestions.
+> > 
+> > BUG: Dentry ffff8800c07e43c0{i=45762,n=cifs2-01.7.lf-data} still in use (1) [unmount of cifs cifs]
+> > ------------[ cut here ]------------
+> > kernel BUG at /home/greearb/git/linux-3.7.dev.y/fs/dcache.c:967!
+> > invalid opcode: 0000 [#1] PREEMPT SMP
+> > Modules linked in: nls_utf8 cifs 8021q garp stp llc iptable_raw xt_CT veth nf_nat_ipv4 nf_nat fuse macvlan wanlink(O) pktgen nfsv3 nfs_acl nfsv4 auth_rpcgss nfs 
+> > fscache lockd sunrpc be2iscsi iscsi_boot_sysfs bnx2i cnic uio cxgb4i cxgb4 cxgb3i cxgb3 mdio libcxgbi ib_iser rdma_cm ib_addr iw_cm ib_cm ib_sa ib_mad ib_core 
+> > w83793 iscsi_tcp w83627hf libiscsi_tcp hwmon_vid libiscsi scsi_transport_iscsi coretemp mperf kvm_intel kvm i5k_amb uinput i5000_edac gpio_ich edac_core 
+> > iTCO_wdt e1000e iTCO_vendor_support lpc_ich i2c_i801 pcspkr ioatdma dca microcode shpchp ipv6 floppy radeon i2c_algo_bit hwmon drm_kms_helper ttm drm i2c_core 
+> > [last unloaded: iptable_nat]
+> > CPU 6
+> > Pid: 6610, comm: umount Tainted: G         C O 3.7.10+ #74 Supermicro X7DBU/X7DBU
+> > RIP: 0010:[<ffffffff811591c9>]  [<ffffffff811591c9>] shrink_dcache_for_umount_subtree+0x84/0x194
+> > RSP: 0018:ffff8800c0085dc8  EFLAGS: 00010296
+> > RAX: 0000000000000062 RBX: ffff8800c07e43c0 RCX: 0000000000000059
+> > RDX: ffffffff81bc25a8 RSI: 0000000000000046 RDI: 0000000000000246
+> > RBP: ffff8800c0085de8 R08: 0000000000000001 R09: ffff8800c0085cc8
+> > R10: 0000000000000000 R11: 0000000000000000 R12: ffff8800c050e9c0
+> > R13: ffff880128ee8000 R14: 0000000000000000 R15: ffff8800c0085f28
+> > FS:  00007f6084847840(0000) GS:ffff88012fd80000(0000) knlGS:0000000000000000
+> > CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> > CR2: 00007f608442c3a0 CR3: 00000000c7c2d000 CR4: 00000000000007e0
+> > DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> > DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> > Process umount (pid: 6610, threadinfo ffff8800c0084000, task ffff88012a6a0000)
+> > Stack:
+> >   ffff880128ee8310 00000000000128c0 ffff880128ee8000 ffffffffa06b96b0
+> >   ffff8800c0085e08 ffffffff81159310 ffff8800c0084000 ffff880128ee8000
+> >   ffff8800c0085e38 ffffffff81149afe ffff8800c0085e38 0000000000000021
+> > Call Trace:
+> >   [<ffffffff81159310>] shrink_dcache_for_umount+0x37/0x49
+> >   [<ffffffff81149afe>] generic_shutdown_super+0x20/0xd2
+> >   [<ffffffff81149c25>] kill_anon_super+0x11/0x1c
+> >   [<ffffffffa068b1ea>] cifs_kill_sb+0x15/0x21 [cifs]
+> >   [<ffffffff81149e48>] deactivate_locked_super+0x32/0x5e
+> >   [<ffffffff8114a942>] deactivate_super+0x40/0x46
+> >   [<ffffffff8115fdb3>] mntput_no_expire+0x12d/0x136
+> >   [<ffffffff81160b59>] sys_umount+0x321/0x34c
+> >   [<ffffffff8114f846>] ? path_put+0x1d/0x21
+> >   [<ffffffff81525229>] system_call_fastpath+0x16/0x1b
+> > Code: 50 28 4c 8b 0a 31 d2 48 85 f6 74 04 48 8b 56 40 48 05 10 03 00 00 48 89 de 48 c7 c7 9d d0 7b 81 48 89 04 24 31 c0 e8 b9 4e 3c 00 <0f> 0b eb fe 4c 8b 63 18 
+> > 4c 39 e3 75 3c 48 8b 93 90 00 00 00 48
+> > RIP  [<ffffffff811591c9>] shrink_dcache_for_umount_subtree+0x84/0x194
+> >   RSP <ffff8800c0085dc8>
+> > ---[ end trace 9b2978a89532c292 ]---
+> 
+> Hmmm...dentry leak. Are there any jobs queued to the cifsiod workqueue
+> when the box oopses?
+> 
 
-Why is this called from stop_machine() in mainline, and what exactly
-makes it "OK" to not use it in PREEMPT_RT? Just because the routine uses
-mutexes doesn't mean that its safe.
+In fact...
 
-Actually, spinlocks are meaningless when used in stop_machine(), thus a
-question can be made, why is it taking spinlocks in a stop_machine()
-routine in the first place. As stop_machine() will stop all other CPUs
-from running there should not be any need for spinlocks. Is it just
-because it's using routines that are used in normal operations?
+It's just a guess, but does this patch help at all? Note that it builds
+but is otherwise untested ;). If it works we might want to go with
+something a bit less invasive but this may tell us if we're on the
+right track.
 
-Note, stop_machine() synchronizes things outside of locks. Which means
-if it's needed for mainline it is most likely needed for PREEMPT_RT as
-well.
+------------------[snip]------------------
 
-The real solution is to figure out why stop_machine() is required in the
-first place, and remove it completely if possible. Both from PREEMPT_RT
-*and* mainline!
+[PATCH] cifs: flush cifsiod workqueue before unmounting
 
--- Steve
+It's possible that we'll end up with some writeback activity going on
+while the fs is unmounted. If that happens we'll queue some work to a
+workqueue to handle the last bit of cleanup. At that point though,
+there's nothing pinning down the superblock, so it's possible to race
+with a umount.
 
-> in case of CONFIG_PREEMPT_RT_FULL=y as acquiring pa_lock in __zone_pcp_update()
-> should be sufficient to isolate pcp pages and to setup per cpu pagesets.
-> 
-> 
-> The backtrace that this patch fixes:
->  BUG: scheduling while atomic: migration/0/7/0x00000002
->  Modules linked in: v2p
->  Backtrace:
->  [<800111a0>] (dump_backtrace+0x0/0x10c) from [<802d7b7c>]
-> (dump_stack+0x18/0x1c)
->   r6:80c8fc28 r5:80c8f9a0 r4:00000000 r3:60000013
->  [<802d7b64>] (dump_stack+0x0/0x1c) from [<8001e81c>] (__schedule_bug+0x64/0x74)
->  [<8001e7b8>] (__schedule_bug+0x0/0x74) from [<802d7fa0>]
-> (__schedule+0x68/0x604)
->   r4:8051bf00 r3:00000000
->  [<802d7f38>] (__schedule+0x0/0x604) from [<802d8a78>] (schedule+0x98/0xbc)
->  [<802d89e0>] (schedule+0x0/0xbc) from [<802d9e14>]
-> (rt_spin_lock_slowlock+0x168/0x240)
->   r4:805228f4 r3:00000000
->  [<802d9cac>] (rt_spin_lock_slowlock+0x0/0x240) from [<802da234>]
-> (rt_spin_lock+0x10/0x14)
->  [<802da224>] (rt_spin_lock+0x0/0x14) from [<8008694c>]
-> (__zone_pcp_update+0x58/0xd8)
->  [<800868f4>] (__zone_pcp_update+0x0/0xd8) from [<800603ec>]
-> (stop_machine_cpu_stop+0xb0/0x104)
->  [<8006033c>] (stop_machine_cpu_stop+0x0/0x104) from [<80060200>]
-> (cpu_stopper_thread+0xd4/0x188)
-> 
-> 
-> Signed-off-by: Aaditya Kumar <aaditya.kumar@ap.sony.com>
-> 
-> ---
->  mm/page_alloc.c |    4         4 +     0 -     0 !
->  1 file changed, 4 insertions(+)
-> 
-> Index: b/mm/page_alloc.c
-> ===================================================================
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -3868,7 +3868,11 @@ static int __zone_pcp_update(void *data)
-> 
->  void zone_pcp_update(struct zone *zone)
->  {
-> +#ifndef CONFIG_PREEMPT_RT_FULL
->         stop_machine(__zone_pcp_update, zone, NULL);
-> +#else
-> +       __zone_pcp_update(zone);
-> +#endif
->  }
-> 
->  static __meminit void zone_pcp_init(struct zone *zone)
+There will still be an active cifsFileInfo reference, and that will
+hold a reference to a dentry. That, in turn, can cause a "Dentry still
+in use" error. Flush the cifsiod workqueue before allowing a umount
+to proceed.
 
+Reported-by: Ben Greear <greearb@candelatech.com>
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+---
+ fs/cifs/connect.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/fs/cifs/connect.c b/fs/cifs/connect.c
+index 991c63c..7840f3f 100644
+--- a/fs/cifs/connect.c
++++ b/fs/cifs/connect.c
+@@ -3815,6 +3815,7 @@ cifs_umount(struct cifs_sb_info *cifs_sb)
+ 	struct tcon_link *tlink;
+ 
+ 	cancel_delayed_work_sync(&cifs_sb->prune_tlinks);
++	flush_workqueue(cifsiod_wq);
+ 
+ 	spin_lock(&cifs_sb->tlink_tree_lock);
+ 	while ((node = rb_first(root))) {
+-- 
+1.7.11.7
 
