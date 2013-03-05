@@ -1,46 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757538Ab3CEUuo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 15:50:44 -0500
-Received: from www.linutronix.de ([62.245.132.108]:39102 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755276Ab3CEUul (ORCPT
+	id S1757617Ab3CEUwZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 15:52:25 -0500
+Received: from mail-vc0-f176.google.com ([209.85.220.176]:35356 "EHLO
+	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755276Ab3CEUwY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 15:50:41 -0500
-Date: Tue, 5 Mar 2013 21:50:33 +0100
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alan Cox <alan@linux.intel.com>, Jiri Slaby <jslaby@suse.cz>,
-        Sasha Levin <levinsasha928@gmail.com>, linux-serial@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Ilya Zykov <ilya@ilyx.ru>,
-        Dave Jones <davej@redhat.com>
-Subject: Re: [PATCH v3 00/23] ldisc fixes
-Message-ID: <20130305205033.GA5771@linutronix.de>
-References: <1355509370-5883-1-git-send-email-peter@hurleysoftware.com>
- <1360095638-6624-1-git-send-email-peter@hurleysoftware.com>
+	Tue, 5 Mar 2013 15:52:24 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1360095638-6624-1-git-send-email-peter@hurleysoftware.com>
-X-Key-Id: 97C4700B
-X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <51364AB9.80206@hp.com>
+References: <1362476149.2225.50.camel@buesod1.americas.hpqcorp.net>
+	<513626E9.2040509@redhat.com>
+	<51364AB9.80206@hp.com>
+Date: Tue, 5 Mar 2013 12:52:23 -0800
+X-Google-Sender-Auth: PS27tp0QwZiSE4OCDk_cqFTrsMA
+Message-ID: <CA+55aFwYOUyG_DQUqVPrQNi_a=AUwS53U-Yi6jbvJTGRxQ_aEQ@mail.gmail.com>
+Subject: Re: [PATCH v2 0/4] ipc: reduce ipc lock contention
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Waiman Long <Waiman.Long@hp.com>
+Cc: Rik van Riel <riel@redhat.com>, Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Emmanuel Benisty <benisty.e@gmail.com>,
+        "Vinod, Chegu" <chegu_vinod@hp.com>, "Low, Jason" <jason.low2@hp.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>, aquini@redhat.com,
+        Michel Lespinasse <walken@google.com>, Ingo Molnar <mingo@kernel.org>,
+        Larry Woodman <lwoodman@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Peter Hurley | 2013-02-05 15:20:15 [-0500]:
+On Tue, Mar 5, 2013 at 11:42 AM, Waiman Long <Waiman.Long@hp.com> wrote:
+>
+> The recommended kernel.sem value from Oracle is "250 32000 100 128". I have
+> tried to reduce the maximum semaphores per array (1st value) while
+> increasing the max number of arrays. That tends to reduce the ipc_lock
+> contention in kernel, but it is against Oracle's recommendation.
 
->  Please re-test with your dummy_hcd/g_nokia testcase, although
->  I'm not convinced that usb gadget is using tty_hangup() appropriately.
->  tty drivers use this for async carrier loss coming from an IRQ
->  which will be disabled if the tty has been shutdown. Does gserial
->  prevent async hangup to a dead tty in a similar fashion?
+Ok, the Oracle recommendations seem to be assuming that we'd be
+scaling the semaphore locking sanely, which we don't. Since we share
+one single lock for all semaphores in the whole array, Oracle's
+recommendation does the wrong thing for our ipc_lock contention.
 
-Not sure I understood. tty_hangup() is only called from within
-gserial_disconnect() which calls right after usb_ep_disable(). After
-usb_ep_disable() no further serial packets can be received until the
-endpoints are re-enabled. This happens in gserial_connect().
+At the same time, I have to say that Oracle's recommendation is the
+right thing to do, and it's really a kernel limitation that we scale
+badly with lots of semaphores in the array. I'm surprised this hasn't
+really come up before. It seems such a basic scalability issue for
+such a traditional Unix load. And while everybody hates the SysV IPC
+stuff, it's not like it's all *that* complicated. We've had people who
+worked on much more fundamental and complex scalability things.
 
-Sebastian
+David's patch should make it much easier to do the locking more
+fine-grained, and it sounds like Rik is actively working on that, so
+I'm hopeful that we can actually do this right in the not too distant
+future. The fact that oracle recomments using large semaphore arrays
+actually makes me very hopeful that they use semaphores correctly, so
+that if we just do our scalability work, you'd get the full advantage
+of it..
+
+                Linus
