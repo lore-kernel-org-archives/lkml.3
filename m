@@ -1,243 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933201Ab3CEEAV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 23:00:21 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:11353 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932533Ab3CEEAU convert rfc822-to-8bit (ORCPT
+	id S933216Ab3CEEBj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 23:01:39 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:60007 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758759Ab3CEEBi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 23:00:20 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Mon, 04 Mar 2013 19:54:21 -0800
-From: Andrew Chew <AChew@nvidia.com>
-To: Alex Courbot <acourbot@nvidia.com>,
-        Thierry Reding <thierry.reding@avionic-design.de>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 4 Mar 2013 20:00:14 -0800
-Subject: RE: [PATCH 1/1] pwm_bl: Add support for backlight enable GPIO
-Thread-Topic: [PATCH 1/1] pwm_bl: Add support for backlight enable GPIO
-Thread-Index: Ac4ZTRGiIUFeRrDYQY2KWZ2CyNwU7AAB7WVA
-Message-ID: <643E69AA4436674C8F39DCC2C05F7638629BFE1B02@HQMAIL03.nvidia.com>
-References: <1362433790-22560-1-git-send-email-achew@nvidia.com>
- <20130304224611.GB17149@avionic-0098.mockup.avionic-design.de>
- <51355FA4.1090909@nvidia.com>
-In-Reply-To: <51355FA4.1090909@nvidia.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Mon, 4 Mar 2013 23:01:38 -0500
+X-AuditID: cbfee68d-b7f636d0000009be-41-51356e205f88
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Anton Vorontsov'" <anton@enomsg.org>
+Cc: "'David Woodhouse'" <dwmw2@infradead.org>, linux-kernel@vger.kernel.org,
+        "'Jingoo Han'" <jg1.han@samsung.com>
+Subject: [PATCH] twl4030_charger: use module_platform_driver_probe()
+Date: Tue, 05 Mar 2013 13:01:36 +0900
+Message-id: <005a01ce1956$21f306a0$65d913e0$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=iso-8859-2
+Content-transfer-encoding: 8BIT
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac4ZViHZJpbC2ArySBGXIYqICSLLiw==
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprMIsWRmVeSWpSXmKPExsVy+t8zI13FPNNAg08FFpd3zWFzYPT4vEku
+	gDGKyyYlNSezLLVI3y6BK6Pr3xS2gv0cFee2zWNpYNzC3sXIwSEhYCLxYJ1PFyMnkCkmceHe
+	erYuRi4OIYFljBIXf95ggkiYSPx984QJIrGIUWLLrNeMEM5sJonvL5awgFSxCahJfPlymB3E
+	FhHQkGhbPQUsziyQL3H40GUwW1jARWLlxZtgU1kEVCW6pywAq+cVsJWYtOooE4QtKPFj8j0W
+	kOuYBXQkvk6KgBijLfHk3QVWiKPVJR791YXYpCcxcz/EVmYBEYl9L94xQtzczi7x6ZwGxCYB
+	iW+TD7FAtMpKbDrADFEiKXFwxQ2WCYxis5DsnYWwdxaSvbOQLFjAyLKKUTS1ILmgOCm9yFCv
+	ODG3uDQvXS85P3cTIyRCencw3j5gfYgxGWj7RGYp0eR8YITllcQbGhubmJmYmphbmpqbkias
+	JM4rd0kmUEggPbEkNTs1tSC1KL6oNCe1+BAjEwenVANjbtjXOjfVEOVEF6bnMY99JjkXGU5h
+	SXZrnPrLVIkvf8+DS3dl3P7OO/T0mLF0VN/z/aKzLws9sbytPS9As8tqhczFefqWJ5wuZknv
+	7lhwh+1a4R4DsR0BM41kHp43u8g5yXCeVPIH9/tGlrL/i6+Zu+vp+izPuz/nwfRZWr2sAW28
+	p808FiQqsRRnJBpqMRcVJwIA2asTNaYCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrMIsWRmVeSWpSXmKPExsVy+t9jAV2FPNNAg32HLC0u75rD5sDo8XmT
+	XABjVAOjTUZqYkpqkUJqXnJ+SmZeuq2Sd3C8c7ypmYGhrqGlhbmSQl5ibqqtkotPgK5bZg7Q
+	VCWFssScUqBQQGJxsZK+HaYJoSFuuhYwjRG6viFBcD1GBmggYR1jRte/KWwF+zkqzm2bx9LA
+	uIW9i5GTQ0LAROLvmydMELaYxIV769m6GLk4hAQWMUpsmfWaEcKZzSTx/cUSFpAqNgE1iS9f
+	DoN1iwhoSLStngIWZxbIlzh86DKYLSzgIrHy4k2wqSwCqhLdUxaA1fMK2EpMWnWUCcIWlPgx
+	+R5QPQdQr47E10kREGO0JZ68u8AKEpYQUJd49FcXYpOexMz9EFuZBUQk9r14xziBUWAWkkGz
+	EAbNQjJoFpKOBYwsqxhFUwuSC4qT0nMN9YoTc4tL89L1kvNzNzGCo/CZ1A7GlQ0WhxgFOBiV
+	eHgZjpoECrEmlhVX5h5ilOBgVhLhvc9rGijEm5JYWZValB9fVJqTWnyIMRnozYnMUqLJ+cAE
+	kVcSb2hsYmZkaWRmYWRibk6asJI4L+OpJwFCAumJJanZqakFqUUwW5g4OKUaGDUWbi3j9quL
+	1tp8Psgx651uYmTMux6vHyz8h3yDRLZv8GyKYOJc4LF43qPOu/6POV6+uHTCYeL74xphecdN
+	Zl+w3np+y5wZ129kaTg4Tb7+uKDv5WYJrqb97E4pm12Cpvru/LdbRzbA1s3pdCvDCxXBf9/F
+	Aq5kXj0btvqE/0u95N0vd1aGKCmxFGckGmoxFxUnAgDgUy7GBgMAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Alex Courbot
-> Sent: Monday, March 04, 2013 7:00 PM
-> To: Thierry Reding
-> Cc: Andrew Chew; linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH 1/1] pwm_bl: Add support for backlight enable GPIO
-> 
-> On 03/05/2013 07:46 AM, Thierry Reding wrote:
-> > * PGP Signed by an unknown key
-> >
-> > On Mon, Mar 04, 2013 at 01:49:49PM -0800, Andrew Chew wrote:
-> >> The backlight enable GPIO is specified in the device tree node for
-> >> backlight.
-> >>
-> >> Signed-off-by: Andrew Chew <achew@nvidia.com>
-> >> ---
-> >>   .../bindings/video/backlight/pwm-backlight.txt     |    2 ++
-> >>   drivers/video/backlight/pwm_bl.c                   |   32 +++++++++++++++++--
-> -
-> >>   include/linux/pwm_backlight.h                      |    2 ++
-> >>   3 files changed, 32 insertions(+), 4 deletions(-)
-> >>
-> >> diff --git
-> >> a/Documentation/devicetree/bindings/video/backlight/pwm-
-> backlight.txt
-> >> b/Documentation/devicetree/bindings/video/backlight/pwm-
-> backlight.txt
-> >> index 1e4fc72..1ed4f0f 100644
-> >> ---
-> >> a/Documentation/devicetree/bindings/video/backlight/pwm-
-> backlight.txt
-> >> +++ b/Documentation/devicetree/bindings/video/backlight/pwm-
-> backlight
-> >> +++ .txt
-> >> @@ -14,6 +14,8 @@ Required properties:
-> >>   Optional properties:
-> >>     - pwm-names: a list of names for the PWM devices specified in the
-> >>                  "pwms" property (see PWM binding[0])
-> >> +  - enable-gpio: a GPIO that needs to be used to enable the
-> >> + backlight
-> >> +  - enable-gpio-active-high: polarity of GPIO is active high
-> >> + (default is low)
-> >>
-> >>   [0]: Documentation/devicetree/bindings/pwm/pwm.txt
-> >>
-> >> diff --git a/drivers/video/backlight/pwm_bl.c
-> >> b/drivers/video/backlight/pwm_bl.c
-> >> index 069983c..f29f9c7 100644
-> >> --- a/drivers/video/backlight/pwm_bl.c
-> >> +++ b/drivers/video/backlight/pwm_bl.c
-> >> @@ -20,10 +20,13 @@
-> >>   #include <linux/pwm.h>
-> >>   #include <linux/pwm_backlight.h>
-> >>   #include <linux/slab.h>
-> >> +#include <linux/of_gpio.h>
-> >>
-> >>   struct pwm_bl_data {
-> >>   	struct pwm_device	*pwm;
-> >>   	struct device		*dev;
-> >> +	int			enable_gpio;
-> >> +	unsigned int		enable_gpio_flags;
-> >>   	unsigned int		period;
-> >>   	unsigned int		lth_brightness;
-> >>   	unsigned int		*levels;
-> >> @@ -146,10 +149,15 @@ static int pwm_backlight_parse_dt(struct device
-> *dev,
-> >>   	}
-> >>
-> >>   	/*
-> >> -	 * TODO: Most users of this driver use a number of GPIOs to control
-> >> -	 *       backlight power. Support for specifying these needs to be
-> >> -	 *       added.
-> >> +	 * If "enable-gpio" is present, use that GPIO to enable the backlight.
-> >> +	 * The presence (or not) of "enable-gpio-active-high" will determine
-> >> +	 * the value of the GPIO.
-> >>   	 */
-> >> +	data->enable_gpio = of_get_named_gpio(node, "enable-gpio", 0);
-> >> +	if (of_property_read_bool(node, "enable-gpio-active-high"))
-> >> +		data->enable_gpio_flags = GPIOF_OUT_INIT_HIGH;
-> >> +	else
-> >> +		data->enable_gpio_flags = GPIOF_OUT_INIT_LOW;
-> >>
-> >>   	return 0;
-> >>   }
-> >> @@ -207,12 +215,23 @@ static int pwm_backlight_probe(struct
-> platform_device *pdev)
-> >>   	} else
-> >>   		max = data->max_brightness;
-> >>
-> >> +	pb->enable_gpio = data->enable_gpio;
-> >> +	pb->enable_gpio_flags = data->enable_gpio_flags;
-> >>   	pb->notify = data->notify;
-> >>   	pb->notify_after = data->notify_after;
-> >>   	pb->check_fb = data->check_fb;
-> >>   	pb->exit = data->exit;
-> >>   	pb->dev = &pdev->dev;
-> >>
-> >> +	if (gpio_is_valid(pb->enable_gpio)) {
-> >> +		ret = gpio_request_one(pb->enable_gpio,
-> >> +			GPIOF_DIR_OUT | pb->enable_gpio_flags, "bl_en");
-> >> +		if (ret) {
-> >> +			dev_err(&pdev->dev, "failed to allocate bl_en gpio");
-> >> +			goto err_alloc;
-> >> +		}
-> >> +	}
-> >> +
-> >>   	pb->pwm = devm_pwm_get(&pdev->dev, NULL);
-> >>   	if (IS_ERR(pb->pwm)) {
-> >>   		dev_err(&pdev->dev, "unable to request PWM, trying legacy
-> >> API\n"); @@ -221,7 +240,7 @@ static int pwm_backlight_probe(struct
-> platform_device *pdev)
-> >>   		if (IS_ERR(pb->pwm)) {
-> >>   			dev_err(&pdev->dev, "unable to request legacy
-> PWM\n");
-> >>   			ret = PTR_ERR(pb->pwm);
-> >> -			goto err_alloc;
-> >> +			goto err_gpio;
-> >>   		}
-> >>   	}
-> >>
-> >> @@ -255,6 +274,9 @@ static int pwm_backlight_probe(struct
-> platform_device *pdev)
-> >>   	platform_set_drvdata(pdev, bl);
-> >>   	return 0;
-> >>
-> >> +err_gpio:
-> >> +	if (gpio_is_valid(data->enable_gpio))
-> >> +		gpio_free(data->enable_gpio);
-> >>   err_alloc:
-> >>   	if (data->exit)
-> >>   		data->exit(&pdev->dev);
-> >> @@ -269,6 +291,8 @@ static int pwm_backlight_remove(struct
-> platform_device *pdev)
-> >>   	backlight_device_unregister(bl);
-> >>   	pwm_config(pb->pwm, 0, pb->period);
-> >>   	pwm_disable(pb->pwm);
-> >> +	if (gpio_is_valid(pb->enable_gpio))
-> >> +		gpio_free(pb->enable_gpio);
-> >>   	if (pb->exit)
-> >>   		pb->exit(&pdev->dev);
-> >>   	return 0;
-> >> diff --git a/include/linux/pwm_backlight.h
-> >> b/include/linux/pwm_backlight.h index 56f4a86..2706805 100644
-> >> --- a/include/linux/pwm_backlight.h
-> >> +++ b/include/linux/pwm_backlight.h
-> >> @@ -8,6 +8,8 @@
-> >>
-> >>   struct platform_pwm_backlight_data {
-> >>   	int pwm_id;
-> >> +	int enable_gpio;
-> >> +	unsigned int enable_gpio_flags;
-> >>   	unsigned int max_brightness;
-> >>   	unsigned int dft_brightness;
-> >>   	unsigned int lth_brightness;
-> >
-> > Hi Andrew,
-> >
-> > I'm Cc'ing Alexandre Courbot, who has been working on supporting this
-> > in a more generic way using power sequences. Generally this kind of
-> > support really belongs in the common display framework, but I guess we
-> > could add this one GPIO since it really is related only to the
-> > backlight. Usually more than just an enable for the backlight is
-> > required so I'm not sure how useful this really is.
-> >
-> > Alex, any thought?
-> 
-> It is very common for a GPIO to be involved in powering the backlight on,
-> indeed. However it seems that in this patch the GPIO is set once and for all
-> during probe and never touched afterwards. This means the backlight is still
-> enabled (and consuming power) even when its value is zero - I'd at least like
-> to see the GPIO disabled when this is the case to save power. Otherwise you
-> can achieve the same result with a gpio-regulator defined to be always on in
-> the DT, without touching the pwm-backlight driver.
-> 
-> Another issue is that if the GPIO is not explicitly set to -1 in the platform data,
-> probe will try to acquire GPIO 0 and will fail. This would break compatibility
-> with all existing users of pwm-backlight that rely on platform data.
-> 
-> And there is also the fact that the powering of backlights is often slightly
-> more complicated than just an enabling GPIO - for Ventana we have at least
-> one more regulator/GPIO involved. Maybe this regulator could be turned on
-> forever in the DT - then pwm-backlight could use the enable GPIO to save
-> power, but I suspect we would save even more power if we could turn the
-> regulator off as well.
-> 
-> But overall I'm not against having enable GPIO support in this driver if this
-> helps getting the job done while I finish proper power-sequence support.
-> Andrew, does this single patch allow you to enable the backlight on some
-> boards?
+This patch uses module_platform_driver_probe() macro which makes
+the code smaller and simpler.
 
-I did come to the same conclusion regarding the platform data breakage.
-I'm expecting that the use of platform data will go away, at least on ARM,
-since we are all aggressively moving what used to be in platform data into
-the device tree.  Do other platforms use this driver?
+Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+---
+ drivers/power/twl4030_charger.c |   12 +-----------
+ 1 files changed, 1 insertions(+), 11 deletions(-)
 
-I remember hearing that there is some work in progress to encapsulate
-gpios into a struct, rather than passing it around as a bare integer, so when
-that happens, we can use NULL for no-gpio, which should take care of the
-platform data issue as well.  It's kind of difficult to work around this problem
-otherwise.
+diff --git a/drivers/power/twl4030_charger.c b/drivers/power/twl4030_charger.c
+index a69d0d1..bed4581 100644
+--- a/drivers/power/twl4030_charger.c
++++ b/drivers/power/twl4030_charger.c
+@@ -636,17 +636,7 @@ static struct platform_driver twl4030_bci_driver = {
+ 	.remove	= __exit_p(twl4030_bci_remove),
+ };
+ 
+-static int __init twl4030_bci_init(void)
+-{
+-	return platform_driver_probe(&twl4030_bci_driver, twl4030_bci_probe);
+-}
+-module_init(twl4030_bci_init);
+-
+-static void __exit twl4030_bci_exit(void)
+-{
+-	platform_driver_unregister(&twl4030_bci_driver);
+-}
+-module_exit(twl4030_bci_exit);
++module_platform_driver_probe(twl4030_bci_driver, twl4030_bci_probe);
+ 
+ MODULE_AUTHOR("Gra¾vydas Ignotas");
+ MODULE_DESCRIPTION("TWL4030 Battery Charger Interface driver");
+-- 
+1.7.2.5
 
-I agree that we should be turning on and off the backlight enable gpio as
-needed to save power.  I just haven't gotten there yet.  I can try to modify
-this patch if that's your preference, or I can follow up with a patch to add
-this in the very near future.
 
-To answer your last question, yes, this single patch does allow me to enable
-the backlight on some boards (in particular, the one I'm working on).
