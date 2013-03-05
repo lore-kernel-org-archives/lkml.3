@@ -1,30 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932886Ab3CEBex (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 20:34:53 -0500
-Received: from mga01.intel.com ([192.55.52.88]:24861 "EHLO mga01.intel.com"
+	id S932931Ab3CEBfn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 20:35:43 -0500
+Received: from mga02.intel.com ([134.134.136.20]:5388 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932114Ab3CEBew (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 20:34:52 -0500
+	id S932114Ab3CEBfm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Mar 2013 20:35:42 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,784,1355126400"; 
-   d="asc'?scan'208";a="299027060"
-Message-ID: <1362447288.2183.4.camel@jtkirshe-mobl>
-Subject: Re: [PATCH  RESEND 2/3] e1000e: fix runtime power management
- transitions
+   d="asc'?scan'208";a="293607590"
+Message-ID: <1362447339.2183.5.camel@jtkirshe-mobl>
+Subject: Re: [PATCH  RESEND 3/3] e1000e: fix accessing to suspended device
 From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
 Reply-To: jeffrey.t.kirsher@intel.com
 To: Konstantin Khlebnikov <khlebnikov@openvz.org>
 Cc: linux-kernel@vger.kernel.org, e1000-devel@lists.sourceforge.net,
         "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
         Bruce Allan <bruce.w.allan@intel.com>
-Date: Mon, 04 Mar 2013 17:34:48 -0800
-In-Reply-To: <20130225051907.12689.44621.stgit@zurg>
+Date: Mon, 04 Mar 2013 17:35:39 -0800
+In-Reply-To: <20130225051911.12689.11167.stgit@zurg>
 References: <20130225051010.12689.28611.stgit@zurg>
-	 <20130225051907.12689.44621.stgit@zurg>
+	 <20130225051911.12689.11167.stgit@zurg>
 Organization: Intel Corporation
 Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-KAcMB3EP4o0FwBSX6Y8o"
+	protocol="application/pgp-signature"; boundary="=-2tFXg4VWXzJr0mkRc+wC"
 X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
@@ -32,38 +31,14 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---=-KAcMB3EP4o0FwBSX6Y8o
+--=-2tFXg4VWXzJr0mkRc+wC
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
 On Mon, 2013-02-25 at 09:19 +0400, Konstantin Khlebnikov wrote:
-> This patch removes redundant actions from driver and fixes its
-> interaction
-> with actions in pci-bus runtime power management code.
->=20
-> It removes pci_save_state() from __e1000_shutdown() for normal
-> adapters,
-> PCI bus callbacks pci_pm_*() will do all this for us. Now
-> __e1000_shutdown()
-> switches to D3-state only quad-port adapters, because they needs quirk
-> for
-> clearing false-positive error from downsteam pci-e port.
->=20
-> pci_save_state() now called after clearing bus-master bit, thus
-> __e1000_resume()
-> and e1000_io_slot_reset() must set it back after restoring
-> configuration space.
->=20
-> This patch set get_link_status before calling pm_runtime_put() in
-> e1000_open()
-> to allow e1000_idle() get real link status and schedule first runtime
-> suspend.
->=20
-> This patch also enables wakeup for device if management mode is
-> enabled
-> (like for WoL) as result pci_prepare_to_sleep() would setup wakeup
-> without
-> special actions like custom 'enable_wakeup' sign.
+> This patch fixes some annoying messages like 'Error reading PHY
+> register' and
+> 'Hardware Erorr' and saves several seconds on reboot.
 >=20
 > Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
 > Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
@@ -71,13 +46,13 @@ On Mon, 2013-02-25 at 09:19 +0400, Konstantin Khlebnikov wrote:
 > Cc: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
 > Cc: Bruce Allan <bruce.w.allan@intel.com>
 > ---
->  drivers/net/ethernet/intel/e1000e/netdev.c |   78
-> ++++++----------------------
->  1 file changed, 18 insertions(+), 60 deletions(-)=20
+>  drivers/net/ethernet/intel/e1000e/ethtool.c |   13 +++++++++++++
+>  drivers/net/ethernet/intel/e1000e/netdev.c  |    2 ++
+>  2 files changed, 15 insertions(+)=20
 
-I have added this patch to my e1000e patch queue.
+I have added this patch as well to my e1000e queue of patches.
 
---=-KAcMB3EP4o0FwBSX6Y8o
+--=-2tFXg4VWXzJr0mkRc+wC
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: This is a digitally signed message part
 Content-Transfer-Encoding: 7bit
@@ -85,20 +60,20 @@ Content-Transfer-Encoding: 7bit
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.13 (GNU/Linux)
 
-iQIcBAABCgAGBQJRNUu4AAoJEOVv75VaS+3O9c8P/0nMp41jA5fNrL65MzSFbaAs
-cFtLmRp6GrKcaD/R9UGQcZdJaiBH2gB6lxSsHvJev7XRk6coQMfEeAQRyCial9r4
-ZRlJBJHs6xnt8A1IBFp4HvTMrKlKwT8Bebj9QOe/SSnVjR8RsS58UdTeXEpjkHEm
-ljt+AEu26PD94ZOliA8uJQ4bJaU1iOJeFCZaD41vFcJ+i5QheXXJfVcJOj/4b4d+
-7ETEp7ieqsVjWlVWrow2T2yN6qcMklPZG2rUKR/i2YdMl0bnnJ8L7glAuRHCGKAJ
-CxPJSEvjOO6wovfANxOIrjIHjol2BNpG4MLFiQJSyAp9m8onYP8jAlLSAkx7peAA
-Jj1n8kHdUt8hklZAIugf+Oa+spPJw+hpHHsrqb6cnnUGMfZt7BRYpWKmPC46qgtN
-FXmROzVlYFqQAcgsp/BaPvlz7+kkEYlv+uUcc6hn6MrI5Rj/VuirnDNmIDw0QSKP
-2FqQJ6bSAVqoEdFmFDkCDaWtCdFTiEgtcIkDGppCQlJmoJn8EX+MDwrMQn9fnDR3
-EH4rxWeneVR+gNrrBF0c9cv+YTtiKsOFcItgeHDGdp2g7EnnkGNDbUulp1gFoGzv
-LZGDo2ibH3WVziMptQYvnDamDRMUEtoJN0WUeDlqVUVAcODiOLsiO8HtxoVjT/sF
-1ixYepf2q1KcSZG/lzmx
-=ntAh
+iQIcBAABCgAGBQJRNUvrAAoJEOVv75VaS+3OMLgQAI8K0PLZX4Peter4DNGnXQoD
+2VWiuhtq0zbgAZ/v0MnsP+c6nUaSOoNdxdMWhLlkldXJFrI+BLOxC3umha+2zJUU
+CXltHBrJ2iXEpE+Rwv6U3bMuDPN0mBAgiKQcetUqKFroIMPmoAKeU5GMj+0SOlau
+Ll74FiCdwXaB7YVbXmyJwOtSkPlT1TXVikozLzDTGdnkKeARsOv3DYtjqpshkD9c
+nbzrItKExfLp/mme16Eh/hZu+X89tzF/7GBIr9+foE5d1cegTOPeXce7qPXEGAsd
+C4tcUpdNLao+wiyxKVMRzqolbv/mt5jNFnGrjIxFIPXxgOSF647wIGXSIp5OJwvr
+Ye+u4S2AOlDvXJhuPDdDHC8qS3Em+6TxnbjB1SDByi42JBZMNZKS6mFHfQuN8kwC
+1G+KM3lvrgPr+WtgGz2xjic2Opd5+U9Erkhvdr7wvVRK/s0m8uMXV1jMOGH+VDV/
+dZSjwl/9gtLts8ycZ4b5y57KYsZ8o3YK1BTT+rEP8x+8x7PjuP6usWdTx1BWHtMd
+dQiteisO7JybXxFqNFreddISnqIZ4bE6wYIXvUhrl+ORyOcXFerbeAlv2iQ0k7v6
+HIIjAz4U2ffNGWZhU0+1YE/M+qpXJGuK1SHRC3fRrnKz27yVZ5jZnNR88qEu5xRs
+3a4e+UsXCdcs++d18F3M
+=zPEt
 -----END PGP SIGNATURE-----
 
---=-KAcMB3EP4o0FwBSX6Y8o--
+--=-2tFXg4VWXzJr0mkRc+wC--
 
