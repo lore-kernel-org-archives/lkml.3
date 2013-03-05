@@ -1,51 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932916Ab3CECCZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 21:02:25 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:27431 "EHLO
+	id S932959Ab3CECDa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 21:03:30 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:27805 "EHLO
 	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932659Ab3CECCX (ORCPT
+	with ESMTP id S932659Ab3CECD3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 21:02:23 -0500
-X-AuditID: cbfee691-b7faa6d000005ae9-e2-5135522e3b3c
+	Mon, 4 Mar 2013 21:03:29 -0500
+X-AuditID: cbfee68f-b7f6a6d000004969-95-51355266e238
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Arnd Bergmann'" <arnd@arndb.de>,
         "'Greg Kroah-Hartman'" <gregkh@linuxfoundation.org>
 Cc: linux-kernel@vger.kernel.org, "'Jingoo Han'" <jg1.han@samsung.com>
-Subject: [PATCH 1/3] misc: arm-charlcd: use module_platform_driver_probe()
-Date: Tue, 05 Mar 2013 11:02:21 +0900
-Message-id: <004b01ce1945$79486af0$6bd940d0$%han@samsung.com>
+References: <004b01ce1945$79486af0$6bd940d0$%han@samsung.com>
+In-reply-to: <004b01ce1945$79486af0$6bd940d0$%han@samsung.com>
+Subject: [PATCH 2/3] misc: atmel_pwm: use module_platform_driver_probe()
+Date: Tue, 05 Mar 2013 11:03:18 +0900
+Message-id: <004c01ce1945$9b253db0$d16fb910$%han@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=US-ASCII
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac4ZRXktbgD8B1v7QgSgtGTX79fL8Q==
+Thread-index: Ac4ZRXktbgD8B1v7QgSgtGTX79fL8QAAAYEQ
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrMIsWRmVeSWpSXmKPExsVy+t8zI129INNAgzNLeSz+TjrGbtG8eD2b
-	xeWFl1gtLu+aw+bA4vH71yRGj/1z17B79G1ZxejxeZNcAEsUl01Kak5mWWqRvl0CV8bWw64F
-	r9grrvz5wtrAeI+ti5GTQ0LAROJly3IoW0ziwr31QDYXh5DAMkaJc0+mMMIUbfq1jgkiMZ1R
-	ovXSZWYI5xejxL2rE8Da2QTUJL58OcwOYosIREi0tDYDdXNwMAu4SBydJgISFhbwkljdd5sF
-	JMwioCrR2qAEEuYVsJV4c+MCO4QtKPFj8j0WEJtZQEti87YmVghbXmLzmrfMIK0SAuoSj/7q
-	QizSk1jzfjI7RImIxL4X7xhBLpMQ2MYucfvQD7BeFgEBiW+TD7FA9MpKbDrADPGWpMTBFTdY
-	JjCKzUKyeRaSzbOQbJ6FZMUCRpZVjKKpBckFxUnpRaZ6xYm5xaV56XrJ+bmbGCERNnEH4/0D
-	1ocYk4HWT2SWEk3OB0ZoXkm8obGxiZmJqYm5pam5KWnCSuK88pdkAoUE0hNLUrNTUwtSi+KL
-	SnNSiw8xMnFwSjUwXhDSmKSgIM58xPE773q5iIvcU//d/m6S2WS4tfV2UEHTWfXuQrm4So6S
-	5mSh1wr2UWybFrl9tjgqZTjvysXjN6V6zpvtKeVxnZ6sIbZcOMqg4+3J7+1XGUJjN8XnMSze
-	qdXB5KJtsm0za4eZam3urwk/fZXSr108JFd9eNeHdRP22s+VZ/urxFKckWioxVxUnAgAU7jq
-	OsYCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprAKsWRmVeSWpSXmKPExsVy+t9jQV29INNAgwcTOSz+TjrGbtG8eD2b
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrFIsWRmVeSWpSXmKPExsVy+t8zQ920INNAgxVfLC3+TjrGbtG8eD2b
+	xeWFl1gtLu+aw+bA4vH71yRGj/1z17B79G1ZxejxeZNcAEsUl01Kak5mWWqRvl0CV8a7Tc/Z
+	C2awV0w7lt3AOIGti5GTQ0LAROLFlJksELaYxIV764HiXBxCAssYJfY9PMQOU3Ri4xpGEFtI
+	YDqjxN2zOhBFvxgl/jdfBCtiE1CT+PLlMJgtIhAh0dLaDNTAwcEs4CJxdJoIRK+tRMudH2Bz
+	OAXsJE5tmMYKYgsLeEhcObaPCcRmEVCV6NzdwQLSygtU/3GGMEiYV0BQ4sfke2B3MgtoSWze
+	1sQKYctLbF7zlhmkXEJAXeLRX12IA4wkZkxYxw5RIiKx78U7RpCLJQTOsUtsP/KCDWKVgMS3
+	yYdYIHplJTYdYIb4VlLi4IobLBMYJWYh2TwLyeZZSDbPQrJiASPLKkbR1ILkguKk9CJjveLE
+	3OLSvHS95PzcTYyQeOzfwXj3gPUhxmSg9ROZpUST84HxnFcSb2hsbGJmYmpibmlqbkqasJI4
+	r/wlmUAhgfTEktTs1NSC1KL4otKc1OJDjEwcnFINjDlsZ/3r7nj+8zPnVTtodyoumXfROhnz
+	b/LnLzNp7VdxXmNzcx6DrWzvkutzYjnPv1h7Zh3r4lml+9n0Ti+Y36vS05fUYbf00e1z9ydK
+	ctw+dS9za0/epySJPE+NO5+vHeB5/8XNXMHwwouoHTvrvzN5Rpb2Psk9+sgj9XqiIEOcUYOv
+	mIj9NSWW4oxEQy3mouJEAO5GZWXdAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrOKsWRmVeSWpSXmKPExsVy+t9jQd20INNAg+vnTC3+TjrGbtG8eD2b
 	xeWFl1gtLu+aw+bA4vH71yRGj/1z17B79G1ZxejxeZNcAEtUA6NNRmpiSmqRQmpecn5KZl66
 	rZJ3cLxzvKmZgaGuoaWFuZJCXmJuqq2Si0+ArltmDtBOJYWyxJxSoFBAYnGxkr4dpgmhIW66
-	FjCNEbq+IUFwPUYGaCBhHWPG1sOuBa/YK678+cLawHiPrYuRk0NCwERi0691TBC2mMSFe+uB
-	4lwcQgLTGSVaL11mhnB+MUrcuzoBrINNQE3iy5fD7CC2iECEREtrM2MXIwcHs4CLxNFpIiBh
-	YQEvidV9t1lAwiwCqhKtDUogYV4BW4k3Ny6wQ9iCEj8m32MBsZkFtCQ2b2tihbDlJTavecsM
-	0iohoC7x6K8uxCI9iTXvJ7NDlIhI7HvxjnECo8AsJJNmIZk0C8mkWUhaFjCyrGIUTS1ILihO
-	Ss810itOzC0uzUvXS87P3cQIjt9n0jsYVzVYHGIU4GBU4uFlOGoSKMSaWFZcmXuIUYKDWUmE
-	9z6vaaAQb0piZVVqUX58UWlOavEhxmSgPycyS4km5wNTS15JvKGxiZmRpZGZhZGJuTlpwkri
-	vIynngQICaQnlqRmp6YWpBbBbGHi4JRqYKx2DdocsM7ulLHzxz8J331aUjStZ7edDLn7uVFd
-	+sSnOUbJ3zgmfulQnPZl+a5mjzWZq1jldP6GVHeGup/YsnZbzZW36bqKPwt5/8UubVicpBny
-	cVWZjoDo8sDu3yv0axclf9nQs2u3ydLegzt7bn/LiXTe19Yse3X/ZCUhy3Pr6j+ke71dME2J
-	pTgj0VCLuag4EQDqBoUEIwMAAA==
+	FjCNEbq+IUFwPUYGaCBhHWPGu03P2QtmsFdMO5bdwDiBrYuRk0NCwETixMY1jBC2mMSFe+vB
+	4kIC0xkl7p7V6WLkArJ/MUr8b77IDpJgE1CT+PLlMJgtIhAh0dLaDNTMwcEs4CJxdJoIRK+t
+	RMudH2AzOQXsJE5tmMYKYgsLeEhcObaPCcRmEVCV6NzdwQLSygtU/3GGMEiYV0BQ4sfkeywg
+	NrOAlsTmbU2sELa8xOY1b5lByiUE1CUe/dWFOMBIYsaEdewQJSIS+168Y5zAKDQLyaRZSCbN
+	QjJpFpKWBYwsqxhFUwuSC4qT0nMN9YoTc4tL89L1kvNzNzGCo/2Z1A7GlQ0WhxgFOBiVeHgZ
+	jpoECrEmlhVX5h5ilOBgVhLhvc9rGijEm5JYWZValB9fVJqTWnyIMRnoz4nMUqLJ+cBElFcS
+	b2hsYmZkaWRmYWRibk6asJI4L+OpJwFCAumJJanZqakFqUUwW5g4OKUaGNcXHu1/f+ubW7qK
+	GpOardGVP2qTZr3kfjNJSI0rsiQ6WXWnT+VDiZ/VstHz7/8yn39z1YTkx0o6/ra+flbTTJw0
+	hGY1+l5qSlloYfJ1U9aE2p8Xd/D1eD6OWbN29q1XkUx/ij6uaJwUckMtj33OgzvqZ0pVv1XI
+	/Lii8X9j5NZ/PvWTD1ox/VViKc5INNRiLipOBABLRDg1OgMAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -58,33 +60,32 @@ the code smaller and simpler.
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/misc/arm-charlcd.c |   13 +------------
- 1 files changed, 1 insertions(+), 12 deletions(-)
+ drivers/misc/atmel_pwm.c |   12 +-----------
+ 1 files changed, 1 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/misc/arm-charlcd.c b/drivers/misc/arm-charlcd.c
-index fe8616a..48651ef 100644
---- a/drivers/misc/arm-charlcd.c
-+++ b/drivers/misc/arm-charlcd.c
-@@ -378,18 +378,7 @@ static struct platform_driver charlcd_driver = {
- 	.remove = __exit_p(charlcd_remove),
+diff --git a/drivers/misc/atmel_pwm.c b/drivers/misc/atmel_pwm.c
+index 28f5aaa..494d050 100644
+--- a/drivers/misc/atmel_pwm.c
++++ b/drivers/misc/atmel_pwm.c
+@@ -393,17 +393,7 @@ static struct platform_driver atmel_pwm_driver = {
+ 	 */
  };
  
--static int __init charlcd_init(void)
+-static int __init pwm_init(void)
 -{
--	return platform_driver_probe(&charlcd_driver, charlcd_probe);
+-	return platform_driver_probe(&atmel_pwm_driver, pwm_probe);
 -}
+-module_init(pwm_init);
 -
--static void __exit charlcd_exit(void)
+-static void __exit pwm_exit(void)
 -{
--	platform_driver_unregister(&charlcd_driver);
+-	platform_driver_unregister(&atmel_pwm_driver);
 -}
--
--module_init(charlcd_init);
--module_exit(charlcd_exit);
-+module_platform_driver_probe(charlcd_driver, charlcd_probe);
+-module_exit(pwm_exit);
++module_platform_driver_probe(atmel_pwm_driver, pwm_probe);
  
- MODULE_AUTHOR("Linus Walleij <triad@df.lth.se>");
- MODULE_DESCRIPTION("ARM Character LCD Driver");
+ MODULE_DESCRIPTION("Driver for AT32/AT91 PWM module");
+ MODULE_LICENSE("GPL");
 -- 
 1.7.2.5
 
