@@ -1,199 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758031Ab3CEPCH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 10:02:07 -0500
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:65233 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755734Ab3CEPCE (ORCPT
+	id S1758092Ab3CEPCP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 10:02:15 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:55594 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756051Ab3CEPCM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 10:02:04 -0500
-From: Jiang Liu <liuj97@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>
-Cc: Jiang Liu <jiang.liu@huawei.com>, Wen Congyang <wency@cn.fujitsu.com>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Chris Clayton <chris2553@googlemail.com>,
-        "Rafael J . Wysocki" <rjw@sisk.pl>, Mel Gorman <mgorman@suse.de>,
-        Minchan Kim <minchan@kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>, Jianguo Wu <wujianguo@huawei.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>,
-        Sam Ravnborg <sam@ravnborg.org>
-Subject: [RFC PATCH v1 22/33] mm/SPARC: use common help functions to free reserved pages
-Date: Tue,  5 Mar 2013 22:55:05 +0800
-Message-Id: <1362495317-32682-23-git-send-email-jiang.liu@huawei.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1362495317-32682-1-git-send-email-jiang.liu@huawei.com>
-References: <1362495317-32682-1-git-send-email-jiang.liu@huawei.com>
+	Tue, 5 Mar 2013 10:02:12 -0500
+Message-ID: <513608E6.3010502@ti.com>
+Date: Tue, 5 Mar 2013 20:31:58 +0530
+From: kishon <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: <balbi@ti.com>
+CC: <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>, <rob@landley.net>,
+        <gregkh@linuxfoundation.org>, <s-guiriec@ti.com>, <gg@slimlogic.co.uk>,
+        <sameo@linux.intel.com>, <broonie@opensource.wolfsonmicro.com>,
+        <ldewangan@nvidia.com>, <devicetree-discuss@lists.ozlabs.org>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>
+Subject: Re: [PATCH 2/4] usb: dwc3: dwc3-omap: return -EPROBE_DEFER if probe
+ has not yet executed
+References: <1362493320-13913-1-git-send-email-kishon@ti.com> <1362493320-13913-3-git-send-email-kishon@ti.com> <20130305145645.GG12123@arwen.pp.htv.fi>
+In-Reply-To: <20130305145645.GG12123@arwen.pp.htv.fi>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use common help functions to free reserved pages.
+Hi,
 
-Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Sam Ravnborg <sam@ravnborg.org>
----
- arch/sparc/kernel/leon_smp.c |   15 +++------------
- arch/sparc/mm/init_32.c      |   40 ++++++----------------------------------
- arch/sparc/mm/init_64.c      |   25 ++++---------------------
- 3 files changed, 13 insertions(+), 67 deletions(-)
+On Tuesday 05 March 2013 08:26 PM, Felipe Balbi wrote:
+> On Tue, Mar 05, 2013 at 07:51:58PM +0530, Kishon Vijay Abraham I wrote:
+>> return -EPROBE_DEFER from dwc3_omap_mailbox in dwc3-omap.c, if the probe of
+>> dwc3-omap has not yet been executed or failed.
+>>
+>> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+>> ---
+>>   drivers/usb/dwc3/dwc3-omap.c  |    7 +++++--
+>>   include/linux/usb/dwc3-omap.h |    6 +++---
+>>   2 files changed, 8 insertions(+), 5 deletions(-)
+>>
+>> diff --git a/drivers/usb/dwc3/dwc3-omap.c b/drivers/usb/dwc3/dwc3-omap.c
+>> index 19c6e72..9428f4e 100644
+>> --- a/drivers/usb/dwc3/dwc3-omap.c
+>> +++ b/drivers/usb/dwc3/dwc3-omap.c
+>> @@ -138,11 +138,14 @@ static inline void dwc3_omap_writel(void __iomem *base, u32 offset, u32 value)
+>>   	writel(value, base + offset);
+>>   }
+>>
+>> -void dwc3_omap_mailbox(enum omap_dwc3_vbus_id_status status)
+>> +int dwc3_omap_mailbox(enum omap_dwc3_vbus_id_status status)
+>>   {
+>>   	u32			val;
+>>   	struct dwc3_omap	*omap = _omap;
+>>
+>> +	if (!omap)
+>> +		return -EPROBE_DEFER;
+>> +
+>>   	switch (status) {
+>>   	case OMAP_DWC3_ID_GROUND:
+>>   		dev_dbg(omap->dev, "ID GND\n");
+>> @@ -185,7 +188,7 @@ void dwc3_omap_mailbox(enum omap_dwc3_vbus_id_status status)
+>>   		dev_dbg(omap->dev, "ID float\n");
+>>   	}
+>>
+>> -	return;
+>> +	return IRQ_HANDLED;
+>
+> IRQ_HANDLED ????
 
-diff --git a/arch/sparc/kernel/leon_smp.c b/arch/sparc/kernel/leon_smp.c
-index 9b40c9c..6cfc1b0 100644
---- a/arch/sparc/kernel/leon_smp.c
-+++ b/arch/sparc/kernel/leon_smp.c
-@@ -253,24 +253,15 @@ void __init leon_smp_done(void)
- 
- 	/* Free unneeded trap tables */
- 	if (!cpu_present(1)) {
--		ClearPageReserved(virt_to_page(&trapbase_cpu1));
--		init_page_count(virt_to_page(&trapbase_cpu1));
--		free_page((unsigned long)&trapbase_cpu1);
--		totalram_pages++;
-+		free_reserved_page(virt_to_page(&trapbase_cpu1));
- 		num_physpages++;
- 	}
- 	if (!cpu_present(2)) {
--		ClearPageReserved(virt_to_page(&trapbase_cpu2));
--		init_page_count(virt_to_page(&trapbase_cpu2));
--		free_page((unsigned long)&trapbase_cpu2);
--		totalram_pages++;
-+		free_reserved_page(virt_to_page(&trapbase_cpu2));
- 		num_physpages++;
- 	}
- 	if (!cpu_present(3)) {
--		ClearPageReserved(virt_to_page(&trapbase_cpu3));
--		init_page_count(virt_to_page(&trapbase_cpu3));
--		free_page((unsigned long)&trapbase_cpu3);
--		totalram_pages++;
-+		free_reserved_page(virt_to_page(&trapbase_cpu3));
- 		num_physpages++;
- 	}
- 	/* Ok, they are spinning and ready to go. */
-diff --git a/arch/sparc/mm/init_32.c b/arch/sparc/mm/init_32.c
-index 48e0c03..2a7b6eb 100644
---- a/arch/sparc/mm/init_32.c
-+++ b/arch/sparc/mm/init_32.c
-@@ -374,45 +374,17 @@ void __init mem_init(void)
- 
- void free_initmem (void)
- {
--	unsigned long addr;
--	unsigned long freed;
--
--	addr = (unsigned long)(&__init_begin);
--	freed = (unsigned long)(&__init_end) - addr;
--	for (; addr < (unsigned long)(&__init_end); addr += PAGE_SIZE) {
--		struct page *p;
--
--		memset((void *)addr, POISON_FREE_INITMEM, PAGE_SIZE);
--		p = virt_to_page(addr);
--
--		ClearPageReserved(p);
--		init_page_count(p);
--		__free_page(p);
--		totalram_pages++;
--		num_physpages++;
--	}
--	printk(KERN_INFO "Freeing unused kernel memory: %ldk freed\n",
--		freed >> 10);
-+	num_physpages += free_reserved_area((unsigned long)(&__init_begin),
-+					    (unsigned long)(&__init_end),
-+					    POISON_FREE_INITMEM,
-+					    "unused kernel");
- }
- 
- #ifdef CONFIG_BLK_DEV_INITRD
- void free_initrd_mem(unsigned long start, unsigned long end)
- {
--	if (start < end)
--		printk(KERN_INFO "Freeing initrd memory: %ldk freed\n",
--			(end - start) >> 10);
--	for (; start < end; start += PAGE_SIZE) {
--		struct page *p;
--
--		memset((void *)start, POISON_FREE_INITMEM, PAGE_SIZE);
--		p = virt_to_page(start);
--
--		ClearPageReserved(p);
--		init_page_count(p);
--		__free_page(p);
--		totalram_pages++;
--		num_physpages++;
--	}
-+	num_physpages += free_reserved_area(start, end, POISON_FREE_INITMEM,
-+					    "initrd");
- }
- #endif
- 
-diff --git a/arch/sparc/mm/init_64.c b/arch/sparc/mm/init_64.c
-index 1588d33..03bfd10 100644
---- a/arch/sparc/mm/init_64.c
-+++ b/arch/sparc/mm/init_64.c
-@@ -2060,8 +2060,7 @@ void __init mem_init(void)
- 	/* We subtract one to account for the mem_map_zero page
- 	 * allocated below.
- 	 */
--	totalram_pages -= 1;
--	num_physpages = totalram_pages;
-+	num_physpages = totalram_pages - 1;
- 
- 	/*
- 	 * Set up the zero page, mark it reserved, so that page count
-@@ -2072,7 +2071,7 @@ void __init mem_init(void)
- 		prom_printf("paging_init: Cannot alloc zero page.\n");
- 		prom_halt();
- 	}
--	SetPageReserved(mem_map_zero);
-+	mark_page_reserved(mem_map_zero);
- 
- 	codepages = (((unsigned long) _etext) - ((unsigned long) _start));
- 	codepages = PAGE_ALIGN(codepages) >> PAGE_SHIFT;
-@@ -2112,7 +2111,6 @@ void free_initmem(void)
- 	initend = (unsigned long)(__init_end) & PAGE_MASK;
- 	for (; addr < initend; addr += PAGE_SIZE) {
- 		unsigned long page;
--		struct page *p;
- 
- 		page = (addr +
- 			((unsigned long) __va(kern_base)) -
-@@ -2120,13 +2118,8 @@ void free_initmem(void)
- 		memset((void *)addr, POISON_FREE_INITMEM, PAGE_SIZE);
- 
- 		if (do_free) {
--			p = virt_to_page(page);
--
--			ClearPageReserved(p);
--			init_page_count(p);
--			__free_page(p);
-+			free_reserved_page(virt_to_page(page));
- 			num_physpages++;
--			totalram_pages++;
- 		}
- 	}
- }
-@@ -2134,17 +2127,7 @@ void free_initmem(void)
- #ifdef CONFIG_BLK_DEV_INITRD
- void free_initrd_mem(unsigned long start, unsigned long end)
- {
--	if (start < end)
--		printk ("Freeing initrd memory: %ldk freed\n", (end - start) >> 10);
--	for (; start < end; start += PAGE_SIZE) {
--		struct page *p = virt_to_page(start);
--
--		ClearPageReserved(p);
--		init_page_count(p);
--		__free_page(p);
--		num_physpages++;
--		totalram_pages++;
--	}
-+	num_physpages += free_reserved_area(start, end, 0, "initrd");
- }
- #endif
- 
--- 
-1.7.9.5
+Actually I did it that way since palmas_vbus_wakeup_irq can directly 
+return the return value from dwc3_omap_mailbox. If this seems hacky to 
+you, I'll change it.
 
+Thanks
+Kishon
