@@ -1,53 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932959Ab3CECDa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 21:03:30 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:27805 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932659Ab3CECD3 (ORCPT
+	id S932972Ab3CECEK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 21:04:10 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:39365 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932659Ab3CECEJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 21:03:29 -0500
-X-AuditID: cbfee68f-b7f6a6d000004969-95-51355266e238
+	Mon, 4 Mar 2013 21:04:09 -0500
+X-AuditID: cbfee68e-b7fa46d00000627e-ef-513552977f29
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Arnd Bergmann'" <arnd@arndb.de>,
         "'Greg Kroah-Hartman'" <gregkh@linuxfoundation.org>
 Cc: linux-kernel@vger.kernel.org, "'Jingoo Han'" <jg1.han@samsung.com>
 References: <004b01ce1945$79486af0$6bd940d0$%han@samsung.com>
 In-reply-to: <004b01ce1945$79486af0$6bd940d0$%han@samsung.com>
-Subject: [PATCH 2/3] misc: atmel_pwm: use module_platform_driver_probe()
-Date: Tue, 05 Mar 2013 11:03:18 +0900
-Message-id: <004c01ce1945$9b253db0$d16fb910$%han@samsung.com>
+Subject: [PATCH 3/3] misc: ep93xx_pwm: use module_platform_driver_probe()
+Date: Tue, 05 Mar 2013 11:04:07 +0900
+Message-id: <004d01ce1945$b845c0e0$28d142a0$%han@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=US-ASCII
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac4ZRXktbgD8B1v7QgSgtGTX79fL8QAAAYEQ
+Thread-index: Ac4ZRXktbgD8B1v7QgSgtGTX79fL8QAACLYQ
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrFIsWRmVeSWpSXmKPExsVy+t8zQ920INNAgxVfLC3+TjrGbtG8eD2b
-	xeWFl1gtLu+aw+bA4vH71yRGj/1z17B79G1ZxejxeZNcAEsUl01Kak5mWWqRvl0CV8a7Tc/Z
-	C2awV0w7lt3AOIGti5GTQ0LAROLFlJksELaYxIV764HiXBxCAssYJfY9PMQOU3Ri4xpGEFtI
-	YDqjxN2zOhBFvxgl/jdfBCtiE1CT+PLlMJgtIhAh0dLaDNTAwcEs4CJxdJoIRK+tRMudH2Bz
-	OAXsJE5tmMYKYgsLeEhcObaPCcRmEVCV6NzdwQLSygtU/3GGMEiYV0BQ4sfke2B3MgtoSWze
-	1sQKYctLbF7zlhmkXEJAXeLRX12IA4wkZkxYxw5RIiKx78U7RpCLJQTOsUtsP/KCDWKVgMS3
-	yYdYIHplJTYdYIb4VlLi4IobLBMYJWYh2TwLyeZZSDbPQrJiASPLKkbR1ILkguKk9CJjveLE
-	3OLSvHS95PzcTYyQeOzfwXj3gPUhxmSg9ROZpUST84HxnFcSb2hsbGJmYmpibmlqbkqasJI4
-	r/wlmUAhgfTEktTs1NSC1KL4otKc1OJDjEwcnFINjDlsZ/3r7nj+8zPnVTtodyoumXfROhnz
-	b/LnLzNp7VdxXmNzcx6DrWzvkutzYjnPv1h7Zh3r4lml+9n0Ti+Y36vS05fUYbf00e1z9ydK
-	ctw+dS9za0/epySJPE+NO5+vHeB5/8XNXMHwwouoHTvrvzN5Rpb2Psk9+sgj9XqiIEOcUYOv
-	mIj9NSWW4oxEQy3mouJEAO5GZWXdAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrOKsWRmVeSWpSXmKPExsVy+t9jQd20INNAg+vnTC3+TjrGbtG8eD2b
-	xeWFl1gtLu+aw+bA4vH71yRGj/1z17B79G1ZxejxeZNcAEtUA6NNRmpiSmqRQmpecn5KZl66
-	rZJ3cLxzvKmZgaGuoaWFuZJCXmJuqq2Si0+ArltmDtBOJYWyxJxSoFBAYnGxkr4dpgmhIW66
-	FjCNEbq+IUFwPUYGaCBhHWPGu03P2QtmsFdMO5bdwDiBrYuRk0NCwETixMY1jBC2mMSFe+vB
-	4kIC0xkl7p7V6WLkArJ/MUr8b77IDpJgE1CT+PLlMJgtIhAh0dLaDNTMwcEs4CJxdJoIRK+t
-	RMudH2AzOQXsJE5tmMYKYgsLeEhcObaPCcRmEVCV6NzdwQLSygtU/3GGMEiYV0BQ4sfkeywg
-	NrOAlsTmbU2sELa8xOY1b5lByiUE1CUe/dWFOMBIYsaEdewQJSIS+168Y5zAKDQLyaRZSCbN
-	QjJpFpKWBYwsqxhFUwuSC4qT0nMN9YoTc4tL89L1kvNzNzGCo/2Z1A7GlQ0WhxgFOBiVeHgZ
-	jpoECrEmlhVX5h5ilOBgVhLhvc9rGijEm5JYWZValB9fVJqTWnyIMRnoz4nMUqLJ+cBElFcS
-	b2hsYmZkaWRmYWRibk6asJI4L+OpJwFCAumJJanZqakFqUUwW5g4OKUaGNcXHu1/f+ubW7qK
-	GpOardGVP2qTZr3kfjNJSI0rsiQ6WXWnT+VDiZ/VstHz7/8yn39z1YTkx0o6/ra+flbTTJw0
-	hGY1+l5qSlloYfJ1U9aE2p8Xd/D1eD6OWbN29q1XkUx/ij6uaJwUckMtj33OgzvqZ0pVv1XI
-	/Lii8X9j5NZ/PvWTD1ox/VViKc5INNRiLipOBABLRDg1OgMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrPIsWRmVeSWpSXmKPExsVy+t8zA93pQaaBBrunG1tc3jWHzYHR4/Mm
+	uQDGKC6blNSczLLUIn27BK6MV/tXMRVM56g4s30uawNjE3sXIyeHhICJxJ2dP9ggbDGJC/fW
+	A9lcHEICyxgl7nVtgCs6P+skC0RiEaPEv39dzBDObCaJeb8uMYFUsQmoSXz5chisQ0QgQqKl
+	tZmxi5GDg1nAReLoNBGQsJCArUTLnR+MIDangJ3EqQ3TWEFsYQFPiQMHz4HFWQRUJWY1TQMb
+	yQtUv2baanYIW1Dix+R7LCA2s4CWxOZtTawQtrzE5jVvmUFWSQioSzz6qwtxgZHE4U0LoMpF
+	JPa9eMcIcrKEwCJ2ie0rn7FB7BKQ+Db5EAtEr6zEpgPMEP9KShxccYNlAqPELCSbZyHZPAvJ
+	5llIVixgZFnFKJpakFxQnJReZKRXnJhbXJqXrpecn7uJERJZfTsYbx6wPsSYDLR+IrOUaHI+
+	MDLzSuINjY1NzExMTcwtTc1NSRNWEueVvyQTKCSQnliSmp2aWpBaFF9UmpNafIiRiYNTqoEx
+	yTrHeVr22/WXb73dt1j4heq3XOa7T3L9npoubRdP0xAKu1bSsiPBftmJmTlmTkIzf09jFUmY
+	cK5EYL3xuy634hsLCr8vfiNr8pSfUfuM91R9y4hTQQbCB4JSBM2YMvYdOvX90soHtjZ8ag4F
+	F49YGc63vZBWwSf1W0d/bgj7Ky7G1tkX3fmUWIozEg21mIuKEwFlg7nmwgIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuphleLIzCtJLcpLzFFi42I5/e+xgO70INNAgzdndS0u75rD5sDo8XmT
+	XABjVAOjTUZqYkpqkUJqXnJ+SmZeuq2Sd3C8c7ypmYGhrqGlhbmSQl5ibqqtkotPgK5bZg7Q
+	VCWFssScUqBQQGJxsZK+HaYJoSFuuhYwjRG6viFBcD1GBmggYR1jxqv9q5gKpnNUnNk+l7WB
+	sYm9i5GTQ0LAROL8rJMsELaYxIV769m6GLk4hAQWMUr8+9fFDOHMZpKY9+sSE0gVm4CaxJcv
+	h8G6RQQiJFpamxm7GDk4mAVcJI5OEwEJCwnYSrTc+cEIYnMK2Emc2jCNFcQWFvCUOHDwHFic
+	RUBVYlbTNLCRvED1a6atZoewBSV+TL4HdhCzgJbE5m1NrBC2vMTmNW+ZQVZJCKhLPPqrC3GB
+	kcThTQugykUk9r14xziBUWgWkkmzkEyahWTSLCQtCxhZVjGKphYkFxQnpeca6hUn5haX5qXr
+	JefnbmIEx+0zqR2MKxssDjEKcDAq8fAyHDUJFGJNLCuuzD3EKMHBrCTCe5/XNFCINyWxsiq1
+	KD++qDQntfgQYzLQoxOZpUST84EpJa8k3tDYxMzI0sjMwsjE3Jw0YSVxXsZTTwKEBNITS1Kz
+	U1MLUotgtjBxcEo1MNaYb/BQsk5ao3a+7Z/XasWK7n0vDgu8uZ0xqct5SVrXq2rF79I3Hup+
+	5l1edZUvb+t3h8Azwmeysqdzm9/uD6wz2tanctNkpm5f/5fM2/1pjIeWVS6Iclja27J28b7G
+	kLILm2U7HtdXnyy3qDuxoW+1zaGopo+NHKLn41/EsR0xt93990TqfSWW4oxEQy3mouJEAOpu
+	PxcfAwAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -60,32 +59,33 @@ the code smaller and simpler.
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/misc/atmel_pwm.c |   12 +-----------
- 1 files changed, 1 insertions(+), 11 deletions(-)
+ drivers/misc/ep93xx_pwm.c |   13 +------------
+ 1 files changed, 1 insertions(+), 12 deletions(-)
 
-diff --git a/drivers/misc/atmel_pwm.c b/drivers/misc/atmel_pwm.c
-index 28f5aaa..494d050 100644
---- a/drivers/misc/atmel_pwm.c
-+++ b/drivers/misc/atmel_pwm.c
-@@ -393,17 +393,7 @@ static struct platform_driver atmel_pwm_driver = {
- 	 */
+diff --git a/drivers/misc/ep93xx_pwm.c b/drivers/misc/ep93xx_pwm.c
+index 16d7179..96787ec 100644
+--- a/drivers/misc/ep93xx_pwm.c
++++ b/drivers/misc/ep93xx_pwm.c
+@@ -365,18 +365,7 @@ static struct platform_driver ep93xx_pwm_driver = {
+ 	.remove		= __exit_p(ep93xx_pwm_remove),
  };
  
--static int __init pwm_init(void)
+-static int __init ep93xx_pwm_init(void)
 -{
--	return platform_driver_probe(&atmel_pwm_driver, pwm_probe);
+-	return platform_driver_probe(&ep93xx_pwm_driver, ep93xx_pwm_probe);
 -}
--module_init(pwm_init);
 -
--static void __exit pwm_exit(void)
+-static void __exit ep93xx_pwm_exit(void)
 -{
--	platform_driver_unregister(&atmel_pwm_driver);
+-	platform_driver_unregister(&ep93xx_pwm_driver);
 -}
--module_exit(pwm_exit);
-+module_platform_driver_probe(atmel_pwm_driver, pwm_probe);
+-
+-module_init(ep93xx_pwm_init);
+-module_exit(ep93xx_pwm_exit);
++module_platform_driver_probe(ep93xx_pwm_driver, ep93xx_pwm_probe);
  
- MODULE_DESCRIPTION("Driver for AT32/AT91 PWM module");
- MODULE_LICENSE("GPL");
+ MODULE_AUTHOR("Matthieu Crapet <mcrapet@gmail.com>, "
+ 	      "H Hartley Sweeten <hsweeten@visionengravers.com>");
 -- 
 1.7.2.5
 
