@@ -1,56 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753563Ab3CEIGf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 03:06:35 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:36385 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753283Ab3CEIGd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753403Ab3CEIGd (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 5 Mar 2013 03:06:33 -0500
-Message-ID: <5135A75F.4070202@huawei.com>
-Date: Tue, 5 Mar 2013 16:05:51 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
-MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-CC: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 2/9] sched: Remove test_sd_parent()
-References: <5135A736.8050104@huawei.com>
-In-Reply-To: <5135A736.8050104@huawei.com>
-Content-Type: text/plain; charset="GB2312"
+Received: from zoneX.GCU-Squad.org ([194.213.125.0]:48984 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753290Ab3CEIGc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Mar 2013 03:06:32 -0500
+Date: Tue, 5 Mar 2013 09:06:20 +0100
+From: Jean Delvare <khali@linux-fr.org>
+To: Peter Tyser <ptyser@xes-inc.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH 1/2] gpio-ich: Check for pin availability at request time
+Message-ID: <20130305090620.2c9f1ff5@endymion.delvare>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It's unused.
+Stop checking for pin availability in get functions. These functions
+can be called repeatedly, so checking every time is bad for
+performance.
 
-Signed-off-by: Li Zefan <lizefan@huawei.com>
+Instead, check at pin request time. This only happens once, and we can
+let the caller know of the unavailability much earlier.
+
+Signed-off-by: Jean Delvare <khali@linux-fr.org>
+Cc: Peter Tyser <ptyser@xes-inc.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>
+Cc: Linus Walleij <linus.walleij@linaro.org>
 ---
- include/linux/sched.h | 9 ---------
- 1 file changed, 9 deletions(-)
+ drivers/gpio/gpio-ich.c |    9 +++------
+ 1 file changed, 3 insertions(+), 6 deletions(-)
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 2715fbb..e880d7d 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -959,15 +959,6 @@ extern void partition_sched_domains(int ndoms_new, cpumask_var_t doms_new[],
- cpumask_var_t *alloc_sched_domains(unsigned int ndoms);
- void free_sched_domains(cpumask_var_t doms[], unsigned int ndoms);
+--- linux-3.7.orig/drivers/gpio/gpio-ich.c	2013-03-05 08:36:40.940199905 +0100
++++ linux-3.7/drivers/gpio/gpio-ich.c	2013-03-05 08:36:51.047437884 +0100
+@@ -169,9 +169,6 @@ static int ichx_gpio_direction_output(st
  
--/* Test a flag in parent sched domain */
--static inline int test_sd_parent(struct sched_domain *sd, int flag)
--{
--	if (sd->parent && (sd->parent->flags & flag))
--		return 1;
+ static int ichx_gpio_get(struct gpio_chip *chip, unsigned nr)
+ {
+-	if (!ichx_gpio_check_available(chip, nr))
+-		return -ENXIO;
 -
--	return 0;
--}
--
- unsigned long default_scale_freq_power(struct sched_domain *sd, int cpu);
- unsigned long default_scale_smt_power(struct sched_domain *sd, int cpu);
+ 	return ichx_read_bit(GPIO_LVL, nr);
+ }
  
+@@ -180,9 +177,6 @@ static int ich6_gpio_get(struct gpio_chi
+ 	unsigned long flags;
+ 	u32 data;
+ 
+-	if (!ichx_gpio_check_available(chip, nr))
+-		return -ENXIO;
+-
+ 	/*
+ 	 * GPI 0 - 15 need to be read from the power management registers on
+ 	 * a ICH6/3100 bridge.
+@@ -207,6 +201,9 @@ static int ich6_gpio_get(struct gpio_chi
+ 
+ static int ichx_gpio_request(struct gpio_chip *chip, unsigned nr)
+ {
++	if (!ichx_gpio_check_available(chip, nr))
++		return -ENXIO;
++
+ 	/*
+ 	 * Note we assume the BIOS properly set a bridge's USE value.  Some
+ 	 * chips (eg Intel 3100) have bogus USE values though, so first see if
+
+
 -- 
-1.8.0.2
+Jean Delvare
