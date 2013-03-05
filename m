@@ -1,60 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758979Ab3CETS7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 14:18:59 -0500
-Received: from mail-ee0-f53.google.com ([74.125.83.53]:50518 "EHLO
-	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752847Ab3CETS5 (ORCPT
+	id S932069Ab3CETTF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 14:19:05 -0500
+Received: from Chamillionaire.breakpoint.cc ([80.244.247.6]:34902 "EHLO
+	Chamillionaire.breakpoint.cc" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759000Ab3CETTB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 14:18:57 -0500
-From: Maciej Rutecki <maciej.rutecki@gmail.com>
-Reply-To: maciej.rutecki@gmail.com
-To: Mandeep Singh Baines <msb@chromium.org>
-Subject: Re: [PATCH] thinkpad-acpi: fix potential suspend blocking issue
-Date: Tue, 5 Mar 2013 20:18:52 +0100
-User-Agent: KMail/1.13.7 (Linux/3.9.0-rc1; KDE/4.8.4; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        ibm-acpi@hmh.eng.br, ibm-acpi-devel@lists.sourceforge.net,
-        platform-driver-x86@vger.kernel.org, Aaron Lu <aaron.lu@intel.com>,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-References: <201303042055.38040.maciej.rutecki@gmail.com> <1362504883-9180-1-git-send-email-msb@chromium.org>
-In-Reply-To: <1362504883-9180-1-git-send-email-msb@chromium.org>
+	Tue, 5 Mar 2013 14:19:01 -0500
+Date: Tue, 5 Mar 2013 20:18:40 +0100
+From: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: linux-usb@vger.kernel.org, Felipe Balbi <balbi@ti.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] usb/gadget: initialize gadget functions helper befor
+ functions & gadgets
+Message-ID: <20130305191840.GB18329@kibibi>
+References: <20130206020424.GB1175@localhost>
+ <1362432489-6325-1-git-send-email-sebastian@breakpoint.cc>
+ <20130305095734.GA30166@localhost>
+ <20130305103513.GA31454@localhost>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201303052018.52320.maciej.rutecki@gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20130305103513.GA31454@localhost>
+X-Key-Id: 97C4700B
+X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On wtorek, 5 marca 2013 o 18:34:43 Mandeep Singh Baines wrote:
-> Fixes the following lockdep error:
-> 
-> [ BUG: ktpacpi_nvramd/446 still has locks held! ]
-> 
-> hotkey_kthread() calls set_freezable() after acquiring the
-> hotkey_kthread_mutex(). set_freezable() calls try_to_freeze().
-> This could block suspend if we were to freeze at this point
-> and another task were to block on the mutex, potentially via
-> writing to one of the sysfs attrs. This race is unlikely but
-> can be easily fixed by moving the set_freezable() call.
-> 
-> Reported-by: Maciej Rutecki <maciej.rutecki@gmail.com>
-> Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
-> CC: Aaron Lu <aaron.lu@intel.com>
-> CC: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-> CC: Tejun Heo <tj@kernel.org>
-> CC: Oleg Nesterov <oleg@redhat.com>
-> CC: Andrew Morton <akpm@linux-foundation.org>
-Tested-by: Maciej Rutecki <maciej.rutecki@gmail.com>
+* Fengguang Wu | 2013-03-05 18:35:13 [+0800]:
 
-Patch fixes the problem. Thanks!
+>Note that I still get this warning, however looks like an unrelated
+>issue:
+>
+>[  602.536679] [ INFO: possible circular locking dependency detected ]
+>[  602.536672] 
+>[  602.536679] ======================================================
+>[  602.536679] [ INFO: possible circular locking dependency detected ]
+>[  602.536693] 3.8.0-bisect-next-20130301-dirty #212 Not tainted
+>[  602.536694] -------------------------------------------------------
+>[  602.536698] kworker/0:1/27 is trying to acquire lock:
+>[  602.536750]  (&fb_info->lock){+.+.+.}, at: [<ffffffff814c0176>] lock_fb_info+0x26/0x60
+>[  602.536751] 
+>[  602.536751] but task is already holding lock:
+>[  602.536773]  (console_lock){+.+.+.}, at: [<ffffffff815a6a13>] console_callback+0x13/0x150
+>[  602.536774]                 
+>[  602.536774] which lock already depends on the new lock.
 
-Regards
+This does not look good but it does not like USB. It looks more like the
+tty/fb area.
 
--- 
-Maciej Rutecki
-http://www.mrutecki.pl
+>Thanks,
+>Fengguang
+
+Sebastian
