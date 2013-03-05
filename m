@@ -1,62 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755550Ab3CEWQv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 17:16:51 -0500
-Received: from moutng.kundenserver.de ([212.227.17.9]:64029 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755304Ab3CEWQt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755397Ab3CEWQt (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 5 Mar 2013 17:16:49 -0500
+Received: from moutng.kundenserver.de ([212.227.126.171]:64762 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754697Ab3CEWQs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Mar 2013 17:16:48 -0500
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-kernel@vger.kernel.org
 Cc: linux-arm-kernel@lists.infradead.org, arm@kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, Alessandro Rubini <rubini@gnudd.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH 9/9] ARM: spear3xx: Use correct pl080 header file
-Date: Tue,  5 Mar 2013 23:16:49 +0100
-Message-Id: <1362521809-22989-10-git-send-email-arnd@arndb.de>
+        Arnd Bergmann <arnd@arndb.de>, Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [PATCH 4/9] usb: gadget: fix omap_udc build errors
+Date: Tue,  5 Mar 2013 23:16:44 +0100
+Message-Id: <1362521809-22989-5-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1362521809-22989-1-git-send-email-arnd@arndb.de>
 References: <1362521809-22989-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:h/CxWSjkua89siXGEQ0lPTgaeKSQjrdvq6yZSE1Rsde
- 3bjmfLN70Wp38tEE34OaXkllOMoIXLF0uvw7AzFM2idz/YRBVy
- 7urjOjy/ulEgJN6OYh1ba1wa1aFsoC2qE/Sg/a17ZsLJRfreMs
- n3yu83jDzHlttauVDpgCvujMlD0eVeDvC2UExkLnV827ejiMe7
- 4BMMHOO1lVBKPfcdOwvkpsHoVQwiLp+s0ibVvnHrhpnyrMPeeQ
- GFmWs0iFW6VUMU7RSfx0U7BDfV6QZ9JDJ0pPKJgoh0SQi08WjE
- 8NMgZFSAXg1N+hU8V8xyMI4jAFWk0MGG3zhHjm2YFDapwDaLwF
- mA/i6Ufr/t9LbMR9sKU2RyJpzrYj1bGUGcyE+5aef
+X-Provags-ID: V02:K0:9qO+VhneO9WFIGxzKIlU4g+wbfIsa4OIInbo3IKVuTa
+ 9fS5lj4joFVVwR8A/f+DswRnspm3T8mEuQdnvjWpislF+uuupZ
+ YF41H7LY0F5yBfZ7U++d1dzOM6dpEviTcNiQ3jr1QN0B3mxDV2
+ a8JT5JQOYRyUxaJ4gDvjgZiw0b3Z/EMVvXC5o52+PdQUkGAsG9
+ 0+ty0zTzenYGGcxTsVoahgppipOo5+8Rt4JChg7s3bF6DTpezP
+ 2ttY0x6K66BgYTfOgH7G05iB7f7lRErlwcSc5Ys583E0Sgzm7r
+ dNTvJ/loHp0ukMnoiwT2ZS7ABp/fYiaZjJWST7c1cD0VqR3uIy
+ ePG8iXrPe29dyf18vc0fVfNPOxfnihLWdTC6n0ZcA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The definitions have move around recently, causing build errors
-in spear3xx for all configurations:
+1bf0cf6040 "usb: gadget: omap_udc: convert to udc_start/udc_stop"
+made some trivial changes but was missing a ';' character.
 
-spear3xx.c:47:5: error: 'PL080_BSIZE_16' undeclared here (not in a function)
-spear3xx.c:47:23: error: 'PL080_CONTROL_SB_SIZE_SHIFT' undeclared here (not in a function)
-spear3xx.c:48:22: error: 'PL080_CONTROL_DB_SIZE_SHIFT' undeclared here (not in a function)
+8c4cc00552 "ARM: OMAP1: DMA: Moving OMAP1 DMA channel definitions
+to mach-omap1" added a definition for OMAP_DMA_USB_W2FC_TX0 to
+the driver while making the header file it was defined in
+unavailable for drivers, but this driver actually needs
+OMAP_DMA_USB_W2FC_RX0 as well.
 
+Both changes appear trivial, so let's add the missing semicolon
+and the macro definition.
+
+Cc: Felipe Balbi <balbi@ti.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Alessandro Rubini <rubini@gnudd.com>
-Cc: Viresh Kumar <viresh.kumar@linaro.org>
 ---
- arch/arm/mach-spear3xx/spear3xx.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/gadget/omap_udc.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/arch/arm/mach-spear3xx/spear3xx.c b/arch/arm/mach-spear3xx/spear3xx.c
-index f9d754f..d2b3937 100644
---- a/arch/arm/mach-spear3xx/spear3xx.c
-+++ b/arch/arm/mach-spear3xx/spear3xx.c
-@@ -14,7 +14,7 @@
- #define pr_fmt(fmt) "SPEAr3xx: " fmt
+diff --git a/drivers/usb/gadget/omap_udc.c b/drivers/usb/gadget/omap_udc.c
+index 06be85c..f844565 100644
+--- a/drivers/usb/gadget/omap_udc.c
++++ b/drivers/usb/gadget/omap_udc.c
+@@ -62,6 +62,7 @@
+ #define	DRIVER_VERSION	"4 October 2004"
  
- #include <linux/amba/pl022.h>
--#include <linux/amba/pl08x.h>
-+#include <linux/amba/pl080.h>
- #include <linux/io.h>
- #include <plat/pl080.h>
- #include <mach/generic.h>
+ #define OMAP_DMA_USB_W2FC_TX0		29
++#define OMAP_DMA_USB_W2FC_RX0		26
+ 
+ /*
+  * The OMAP UDC needs _very_ early endpoint setup:  before enabling the
+@@ -1310,7 +1311,7 @@ static int omap_pullup(struct usb_gadget *gadget, int is_on)
+ }
+ 
+ static int omap_udc_start(struct usb_gadget *g,
+-		struct usb_gadget_driver *driver)
++		struct usb_gadget_driver *driver);
+ static int omap_udc_stop(struct usb_gadget *g,
+ 		struct usb_gadget_driver *driver);
+ 
 -- 
 1.8.1.2
 
