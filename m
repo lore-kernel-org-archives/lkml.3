@@ -1,58 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755216Ab3CEIod (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 03:44:33 -0500
-Received: from mail-da0-f54.google.com ([209.85.210.54]:42728 "EHLO
-	mail-da0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754553Ab3CEIoc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 03:44:32 -0500
-Date: Tue, 5 Mar 2013 16:44:53 +0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-        dan.magenheimer@oracle.com
-Subject: Re: [PATCH 11/11] zcache/zbud: Add incremental accessory counters
-Message-ID: <20130305084453.GA861@kroah.com>
-References: <1362421101-15896-1-git-send-email-konrad.wilk@oracle.com>
- <1362421101-15896-12-git-send-email-konrad.wilk@oracle.com>
+	id S1755186Ab3CEIsl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 03:48:41 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:56913 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753536Ab3CEIsk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Mar 2013 03:48:40 -0500
+From: Oliver Neukum <oneukum@suse.de>
+To: "Fangxiaozhi (Franko)" <fangxiaozhi@huawei.com>
+Cc: =?ISO-8859-1?Q?Bj=F8rn?= Mork <bjorn@mork.no>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Xueguiying (Zihan)" <zihan.xue@huawei.com>,
+        "Linlei (Lei Lin)" <lei.lin@huawei.com>,
+        "greg@kroah.com" <greg@kroah.com>, "Yili (Neil)" <neil.yi@huawei.com>,
+        "Wangyuhua (Roger, Credit)" <wangyuhua@huawei.com>,
+        "Huqiao (C)" <huqiao36@huawei.com>, "balbi@ti.com" <balbi@ti.com>,
+        "mdharm-usb@one-eyed-alien.net" <mdharm-usb@one-eyed-alien.net>,
+        "sebastian@breakpoint.cc" <sebastian@breakpoint.cc>
+Subject: Re: v3.8 regression: Huawei mode switching fails (was Re: [PATCH 2/2]linux-usb:optimize to match the Huawei USB storage devices and support new switch command)
+Date: Tue, 05 Mar 2013 09:48:55 +0100
+Message-ID: <3774811.9hgnDZEBaM@linux-5eaq.site>
+Organization: SUSE
+User-Agent: KMail/4.8.5 (Linux/3.8.0-rc7-12-desktop+; KDE/4.8.5; x86_64; ; )
+In-Reply-To: <910F9D9E13B84F4C8FA771DC9BDE99F327098368@szxeml546-mbx.china.huawei.com>
+References: <fe8c966212fb.12fbfe8c9662@huawei.com> <87obezs888.fsf@nemi.mork.no> <910F9D9E13B84F4C8FA771DC9BDE99F327098368@szxeml546-mbx.china.huawei.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1362421101-15896-12-git-send-email-konrad.wilk@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 04, 2013 at 01:18:21PM -0500, Konrad Rzeszutek Wilk wrote:
-> that are going to be used for debug fs entries.
+On Tuesday 05 March 2013 02:28:07 Fangxiaozhi wrote:
 
-what debugfs entries?
+Hi,
 
-> 
-> Acked-by: Dan Magenheimer <dan.magenheimer@oracle.com>
-> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> ---
->  drivers/staging/zcache/zbud.c | 58 +++++++++++++++++++++++++++++--------------
->  1 file changed, 39 insertions(+), 19 deletions(-)
-> 
-> diff --git a/drivers/staging/zcache/zbud.c b/drivers/staging/zcache/zbud.c
-> index fdff5c6..0feb856 100644
-> --- a/drivers/staging/zcache/zbud.c
-> +++ b/drivers/staging/zcache/zbud.c
-> @@ -301,6 +301,26 @@ static ssize_t zbud_eph_unbuddied_count;
->  static ssize_t zbud_pers_unbuddied_count;
->  static ssize_t zbud_eph_zombie_count;
->  static ssize_t zbud_pers_zombie_count;
-> +static inline void inc_zbud_eph_pageframes(void) { zbud_eph_pageframes++; };
-> +static inline void inc_zbud_pers_pageframes(void) { zbud_pers_pageframes++; };
-> +static inline void inc_zbud_eph_zpages(void) { zbud_eph_zpages++; };
+> 	1. As far as I know, usb_modeswitch is now only integrated in the PC Linux. It isn't integrated to other system with linux kernel, such as Android, Chrome OS, etc. On these system, how can we switch the device?
 
-<snip>
+Then those systems will have to add modeswitch.
+If we are to do mode switching in kernel space, there has to be
+an additional technical benefit over the existing and well working solution
+in user space.
 
-That's just insane, why are you doing this?
+> 	2. usb_modeswitch often sends the Windows switching command to switch Huawei device, but not sends Linux switching command. This maybe causes some unexpected problem.
 
-As you aren't using this yet, I'm not going to apply this patch, sorry.
+You have two commands? What is the difference? Anyway, if usb_modeswitch
+has issues, these problems need to be fixed.
 
-greg k-h
+Independent from that, there is a problem with user space mode switching.
+Namely it doesn't work with reset_resume(). Thus we cannot do sane S4
+with the user space solution.
+However, the problem cannot be solved by merely by adding the switch
+to the storage driver.
+
+	Regards
+		Oliver
+
