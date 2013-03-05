@@ -1,97 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757117Ab3CEUWu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 15:22:50 -0500
-Received: from zoneX.GCU-Squad.org ([194.213.125.0]:34452 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753462Ab3CEUWt (ORCPT
+	id S1756882Ab3CEU2G (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 15:28:06 -0500
+Received: from mail-ee0-f43.google.com ([74.125.83.43]:44094 "EHLO
+	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753867Ab3CEU2E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 15:22:49 -0500
-Date: Tue, 5 Mar 2013 21:22:38 +0100
-From: Jean Delvare <khali@linux-fr.org>
-To: Peter Tyser <ptyser@xes-inc.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 1/2 v2] gpio-ich: Check for pin availability at request time
-Message-ID: <20130305212238.5bf8d974@endymion.delvare>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Tue, 5 Mar 2013 15:28:04 -0500
+Message-ID: <5136554F.3060006@suse.cz>
+Date: Tue, 05 Mar 2013 21:27:59 +0100
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:19.0) Gecko/20130124 Thunderbird/19.0
+MIME-Version: 1.0
+To: David Miller <davem@davemloft.net>
+CC: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
+Subject: Re: WARNING at tty_buffer.c:428 process_one_work()
+References: <5135D072.8070101@suse.cz> <20130305.143940.1976678289652676624.davem@davemloft.net> <51364B31.1010808@suse.cz> <20130305.150338.470704111422696046.davem@davemloft.net>
+In-Reply-To: <20130305.150338.470704111422696046.davem@davemloft.net>
+X-Enigmail-Version: 1.6a1pre
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stop checking for pin availability in direction and get functions.
-These functions can be called repeatedly, so checking every time is
-bad for performance. Now that requesting GPIO pins is no longer
-optional, checking for availability at pin request time is enough.
+On 03/05/2013 09:03 PM, David Miller wrote:
+> From: Jiri Slaby <jslaby@suse.cz>
+> Date: Tue, 05 Mar 2013 20:44:49 +0100
+> 
+>> Hi, I must admit I don't understand. I now checked both of them and they
+>> call uart_handle_sysrq_char unconditionally, or?
+> 
+> Nope, in the sunsab.c receive function, we used to handle the SYSRQ
+> stuff before break checking when TTY is NULL, now we don't.
 
-Signed-off-by: Jean Delvare <khali@linux-fr.org>
-Cc: Peter Tyser <ptyser@xes-inc.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>
-Cc: Linus Walleij <linus.walleij@linaro.org>
----
-Changes since v1:
-* Also drop the check from direction functions, as suggested by Peter.
-
- drivers/gpio/gpio-ich.c |   15 +++------------
- 1 file changed, 3 insertions(+), 12 deletions(-)
-
---- linux-3.7.orig/drivers/gpio/gpio-ich.c	2013-03-05 08:36:40.940199905 +0100
-+++ linux-3.7/drivers/gpio/gpio-ich.c	2013-03-05 20:41:10.407249750 +0100
-@@ -135,9 +135,6 @@ static bool ichx_gpio_check_available(st
- 
- static int ichx_gpio_direction_input(struct gpio_chip *gpio, unsigned nr)
- {
--	if (!ichx_gpio_check_available(gpio, nr))
--		return -ENXIO;
--
- 	/*
- 	 * Try setting pin as an input and verify it worked since many pins
- 	 * are output-only.
-@@ -151,9 +148,6 @@ static int ichx_gpio_direction_input(str
- static int ichx_gpio_direction_output(struct gpio_chip *gpio, unsigned nr,
- 					int val)
- {
--	if (!ichx_gpio_check_available(gpio, nr))
--		return -ENXIO;
--
- 	/* Set GPIO output value. */
- 	ichx_write_bit(GPIO_LVL, nr, val, 0);
- 
-@@ -169,9 +163,6 @@ static int ichx_gpio_direction_output(st
- 
- static int ichx_gpio_get(struct gpio_chip *chip, unsigned nr)
- {
--	if (!ichx_gpio_check_available(chip, nr))
--		return -ENXIO;
--
- 	return ichx_read_bit(GPIO_LVL, nr);
- }
- 
-@@ -180,9 +171,6 @@ static int ich6_gpio_get(struct gpio_chi
- 	unsigned long flags;
- 	u32 data;
- 
--	if (!ichx_gpio_check_available(chip, nr))
--		return -ENXIO;
--
- 	/*
- 	 * GPI 0 - 15 need to be read from the power management registers on
- 	 * a ICH6/3100 bridge.
-@@ -207,6 +195,9 @@ static int ich6_gpio_get(struct gpio_chi
- 
- static int ichx_gpio_request(struct gpio_chip *chip, unsigned nr)
- {
-+	if (!ichx_gpio_check_available(chip, nr))
-+		return -ENXIO;
-+
- 	/*
- 	 * Note we assume the BIOS properly set a bridge's USE value.  Some
- 	 * chips (eg Intel 3100) have bogus USE values though, so first see if
-
+But how could tty be NULL in there? subsab enables interrupts after the
+TTY is open and disables before it is closed/hupped. So the tty couldn't
+be NULL there, right?
 
 -- 
-Jean Delvare
+js
+suse labs
