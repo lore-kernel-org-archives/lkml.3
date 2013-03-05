@@ -1,135 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756015Ab3CEKhD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 05:37:03 -0500
-Received: from mga01.intel.com ([192.55.52.88]:23869 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751126Ab3CEKhB convert rfc822-to-8bit (ORCPT
+	id S1756239Ab3CEKhe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 05:37:34 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:13394 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755888Ab3CEKhb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 05:37:01 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,787,1355126400"; 
-   d="scan'208";a="294992455"
-Message-ID: <1362479804.28241.114.camel@smile>
-Subject: Re: [PATCH 06/10] dmatest: run test via debugfs
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Vinod Koul <vinod.koul@intel.com>
-Cc: Andy Shevchenko <andriy.shevchenko@linux.jf.intel.com>,
-        linux-kernel@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Date: Tue, 05 Mar 2013 12:36:44 +0200
-In-Reply-To: <20130305092649.GD28136@intel.com>
-References: <1362388174-3435-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	 <1362388174-3435-7-git-send-email-andriy.shevchenko@linux.intel.com>
-	 <20130305092649.GD28136@intel.com>
-Organization: Intel Finland Oy
+	Tue, 5 Mar 2013 05:37:31 -0500
+Message-ID: <5135CAD8.2020409@huawei.com>
+Date: Tue, 5 Mar 2013 18:37:12 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
+MIME-Version: 1.0
+To: Stephane Eranian <eranian@google.com>
+CC: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Cgroups <cgroups@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH] perf: remove include of cgroup.h from perf_event.h
+References: <513568A0.6020804@huawei.com> <CABPqkBTTn6E=FS6WiCWopcScHDVa9F6bu5-pw8Ma7TK2aunkvQ@mail.gmail.com>
+In-Reply-To: <CABPqkBTTn6E=FS6WiCWopcScHDVa9F6bu5-pw8Ma7TK2aunkvQ@mail.gmail.com>
 Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.4.4-2 
-Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-03-05 at 14:56 +0530, Vinod Koul wrote: 
-> On Mon, Mar 04, 2013 at 11:09:30AM +0200, Andy Shevchenko wrote:
-> > @@ -0,0 +1,48 @@
-> > +				DMA Test Guide
-> > +				==============
-> > +
-> > +		Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-> > +
-> > +This small document introduces how to test DMA drivers using dmatest module.
-> > +
-> > +	Part 1 - How to build the test module
-> > +
-> > +The menuconfig contains an option that could be found by following path:
-> > +	Device Drivers -> DMA Engine support -> DMA Test client
-> > +
-> > +In the configuration file the option called CONFIG_DMATEST. The dmatest could
-> > +be built as module or inside kernel. Let's consider those cases.
-> > +
-> > +	Part 2 - When dmatest is built as a module...
-> > +
-> > +After mounting debugfs and loading the module, the /sys/kernel/debug/dmatest
-> > +folder with nodes will be created. They are the same as module parameters with
-> > +addition of the 'run' node that controls run and stop phases of the test.
-> > +
-> > +Note that in this case test will not run on load automatically.
-> > +
-> > +Example of usage:
-> > +	% echo dma0chan0 > /sys/kernel/debug/dmatest/channel
-> > +	% echo 2000 > /sys/kernel/debug/dmatest/timeout
-> > +	% echo 1 > /sys/kernel/debug/dmatest/iterations
-> > +	% echo 1 > /sys/kernel/debug/dmatest/run
-> How do you terminate a test? Esp if you have started bunch of concurent tests
-> and want to terminate one of them...
+On 2013/3/5 16:33, Stephane Eranian wrote:
+> On Tue, Mar 5, 2013 at 4:38 AM, Li Zefan <lizefan@huawei.com> wrote:
+>> Move struct perf_cgroup_info and perf_cgroup to kernel/perf/core.c,
+>> and then we can remove include of cgroup.h.
+>>
+>> Signed-off-by: Li Zefan <lizefan@huawei.com>
+>> ---
+>>  include/linux/perf_event.h | 18 +-----------------
+>>  kernel/events/core.c       | 15 +++++++++++++++
+>>  2 files changed, 16 insertions(+), 17 deletions(-)
+>>
+>> diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+>> index e47ee46..8737e1c 100644
+>> --- a/include/linux/perf_event.h
+>> +++ b/include/linux/perf_event.h
+>> @@ -21,7 +21,6 @@
+>>   */
+>>
+>>  #ifdef CONFIG_PERF_EVENTS
+>> -# include <linux/cgroup.h>
+>>  # include <asm/perf_event.h>
+>>  # include <asm/local64.h>
+>>  #endif
+>> @@ -299,22 +298,7 @@ struct swevent_hlist {
+>>  #define PERF_ATTACH_GROUP      0x02
+>>  #define PERF_ATTACH_TASK       0x04
+>>
+>> -#ifdef CONFIG_CGROUP_PERF
+>> -/*
+>> - * perf_cgroup_info keeps track of time_enabled for a cgroup.
+>> - * This is a per-cpu dynamically allocated data structure.
+>> - */
+>> -struct perf_cgroup_info {
+>> -       u64                             time;
+>> -       u64                             timestamp;
+>> -};
+>> -
+>> -struct perf_cgroup {
+>> -       struct                          cgroup_subsys_state css;
+>> -       struct                          perf_cgroup_info *info; /* timing info, one per cpu */
+>> -};
+>> -#endif
+>> -
+>> +struct perf_cgroup;
+> 
+> The problem is that you have struct perf_cgroup in the struct perf_event
+> structure. Today, this field is not referenced outside of kernel/events/core.c
+> But it is available outside this file. If someday the field is reference, your
+> changes will have to do reverted. So I am wondering what is the point
+> of the change right now?
+> 
 
-There is only one test in progress is possible.
+I touch cgroup.h quite frequently, so I'd like to reduce the compile time caused
+by cgroup.h changes, so I've made a few patches to remove cgroup.h from some
+header files.
 
-To stop the test simple echo 0 > run (Probable that should be in
-documentation as well)
+It's better to expose as less interfaces as possible, and if someone wants to
+export someting he should think about if it's the right thing to do.
 
-> >  static struct dmatest_info test_info;
-> > @@ -718,7 +729,7 @@ static bool filter(struct dma_chan *chan, void *param)
-> >  		return true;
-> >  }
-> >  
-> > -static int run_threaded_test(struct dmatest_info *info)
-> > +static int __run_threaded_test(struct dmatest_info *info)
-> >  {
-> >  	dma_cap_mask_t mask;
-> >  	struct dma_chan *chan;
-> > @@ -744,7 +755,19 @@ static int run_threaded_test(struct dmatest_info *info)
-> >  	return err;
-> >  }
-> >  
-> > -static void stop_threaded_test(struct dmatest_info *info)
-> > +#ifndef MODULE
-> > +static int run_threaded_test(struct dmatest_info *info)
-> > +{
-> > +	int ret;
-> > +
-> > +	mutex_lock(&info->lock);
-> > +	ret = __run_threaded_test(info);
-> > +	mutex_unlock(&info->lock);
-> > +	return ret;
-> > +}
-> > +#endif
-> > +
-> > +static void __stop_threaded_test(struct dmatest_info *info)
-> >  {
-> >  	struct dmatest_chan *dtc, *_dtc;
-> >  	struct dma_chan *chan;
-> > @@ -760,13 +783,234 @@ static void stop_threaded_test(struct dmatest_info *info)
-> >  	info->nr_channels = 0;
-> >  }
-> >  
-> > +static void stop_threaded_test(struct dmatest_info *info)
-> > +{
-> > +	mutex_lock(&info->lock);
-> > +	__stop_threaded_test(info);
-> > +	mutex_unlock(&info->lock);
-> > +}
-> > +
-> > +static int __restart_threaded_test(struct dmatest_info *info, bool run)
-> > +{
-> > +	struct dmatest_params *params = &info->params;
-> > +	int ret;
-> > +
-> > +	/* Stop any running test first */
-> > +	__stop_threaded_test(info);
-> > +
-> > +	if (run == false)
-> > +		return 0;
-> > +
-> > +	/* Copy test parameters */
-> > +	memcpy(params, &info->dbgfs_params, sizeof(*params));
-> what if the params are not yet filled by user... for module case?
+Like we often make static functions usable to external users, and also often do the
+reverse thing, this patch is nothing special.
 
-Defaults are provided by constants in the top of file. They are copied
-when module_init is called.
-
--- 
-Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Intel Finland Oy
