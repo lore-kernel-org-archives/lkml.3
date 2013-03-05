@@ -1,273 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759200Ab3CEDDI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 22:03:08 -0500
-Received: from mga14.intel.com ([143.182.124.37]:7557 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759102Ab3CEDCz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 22:02:55 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,784,1355126400"; 
-   d="scan'208";a="264376217"
-From: Aaron Lu <aaron.lu@intel.com>
-To: Alan Stern <stern@rowland.harvard.edu>, Jens Axboe <axboe@kernel.dk>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>
-Cc: linux-pm@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
-        Aaron Lu <aaron.lwe@gmail.com>, Aaron Lu <aaron.lu@intel.com>,
-        Shane Huang <shane.huang@amd.com>
-Subject: [PATCH v11 2/4] block: add runtime pm helpers
-Date: Tue,  5 Mar 2013 11:03:52 +0800
-Message-Id: <1362452634-12524-3-git-send-email-aaron.lu@intel.com>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1362452634-12524-1-git-send-email-aaron.lu@intel.com>
-References: <1362452634-12524-1-git-send-email-aaron.lu@intel.com>
+	id S1759181Ab3CEDFS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 22:05:18 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:52986 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759000Ab3CEDFQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Mar 2013 22:05:16 -0500
+Date: Tue, 5 Mar 2013 03:04:36 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: Rob Herring <robherring2@gmail.com>
+Cc: Ian Campbell <ian.campbell@citrix.com>,
+        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
+        "Keir (Xen.org)" <keir@xen.org>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Tim Deegan <tim@xen.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jan Beulich <JBeulich@suse.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Nicolas Pitre <nico@fluxnic.net>
+Subject: Re: [PATCH LINUX v5] xen: event channel arrays are xen_ulong_t and
+ not unsigned long
+Message-ID: <20130305030436.GA18040@mudshark.cambridge.arm.com>
+References: <1361285327.1051.115.camel@zakaz.uk.xensource.com>
+ <1361360886-2956-1-git-send-email-ian.campbell@citrix.com>
+ <51340ACD.70904@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51340ACD.70904@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lin Ming <ming.m.lin@intel.com>
+Hi guys,
 
-Add runtime pm helper functions:
+On Mon, Mar 04, 2013 at 02:45:33AM +0000, Rob Herring wrote:
+> On 02/20/2013 05:48 AM, Ian Campbell wrote:
+> > On ARM we want these to be the same size on 32- and 64-bit.
+> > 
+> > This is an ABI change on ARM. X86 does not change.
+> > 
+> > Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
+> > Cc: Jan Beulich <JBeulich@suse.com>
+> > Cc: Keir (Xen.org) <keir@xen.org>
+> > Cc: Tim Deegan <tim@xen.org>
+> > Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> > Cc: linux-arm-kernel@lists.infradead.org
+> > Cc: xen-devel@lists.xen.org
+> > Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-void blk_pm_runtime_init(struct request_queue *q, struct device *dev)
-  - Initialization function for drivers to call.
+[...]
 
-int blk_pre_runtime_suspend(struct request_queue *q)
-  - If any requests are in the queue, mark last busy and return -EBUSY.
-    Otherwise set q->rpm_status to RPM_SUSPENDING and return 0.
+> I'm seeing some some build failures on randconfig builds with this change:
+> 
+> /tmp/ccJaIZOW.s: Assembler messages:
+> /tmp/ccJaIZOW.s:831: Error: even register required -- `ldrexd r5,r6,[r4]'
+> 
+> This is with ubuntu 12.04 cross compiler (gcc version 4.6.3
+> (Ubuntu/Linaro 4.6.3-1ubuntu5)).
+> 
+> This register restriction is on ARM, but not Thumb builds. Comparing
+> this to atomic64_cmpxchg, I don't see how to fix this. Perhaps Will or
+> Nico have thoughts.
 
-void blk_post_runtime_suspend(struct request_queue *q, int err)
-  - If the suspend succeeded then set q->rpm_status to RPM_SUSPENDED.
-    Otherwise set it to RPM_ACTIVE and mark last busy.
+[...]
 
-void blk_pre_runtime_resume(struct request_queue *q)
-  - Set q->rpm_status to RPM_RESUMING.
+> > +	asm volatile("@ xchg_xen_ulong\n"
+> > +		"1:     ldrexd  %0, %H0, [%3]\n"
+> > +		"       strexd  %1, %2, %H2, [%3]\n"
+> > +		"       teq     %1, #0\n"
+> > +		"       bne     1b"
+> > +		: "=&r" (oldval), "=&r" (tmp)
+> > +		: "r" (val), "r" (ptr)
+> > +		: "memory", "cc");
 
-void blk_post_runtime_resume(struct request_queue *q, int err)
-  - If the resume succeeded then set q->rpm_status to RPM_ACTIVE
-    and call __blk_run_queue, then mark last busy and autosuspend.
-    Otherwise set q->rpm_status to RPM_SUSPENDED.
+I also can't immediately see why GCC would allocate oldval to an odd base
+register. Can you share your .config please?
 
-The idea and API is designed by Alan Stern and described here:
-http://marc.info/?l=linux-scsi&m=133727953625963&w=2
-
-Signed-off-by: Lin Ming <ming.m.lin@intel.com>
-Signed-off-by: Aaron Lu <aaron.lu@intel.com>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
----
- block/blk-core.c       | 144 +++++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/blkdev.h |  27 ++++++++++
- 2 files changed, 171 insertions(+)
-
-diff --git a/block/blk-core.c b/block/blk-core.c
-index 074b758..123d240 100644
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -30,6 +30,7 @@
- #include <linux/list_sort.h>
- #include <linux/delay.h>
- #include <linux/ratelimit.h>
-+#include <linux/pm_runtime.h>
- 
- #define CREATE_TRACE_POINTS
- #include <trace/events/block.h>
-@@ -3045,6 +3046,149 @@ void blk_finish_plug(struct blk_plug *plug)
- }
- EXPORT_SYMBOL(blk_finish_plug);
- 
-+#ifdef CONFIG_PM_RUNTIME
-+/**
-+ * blk_pm_runtime_init - Block layer runtime PM initialization routine
-+ * @q: the queue of the device
-+ * @dev: the device the queue belongs to
-+ *
-+ * Description:
-+ *    Initialize runtime-PM-related fields for @q and start auto suspend for
-+ *    @dev. Drivers that want to take advantage of request-based runtime PM
-+ *    should call this function after @dev has been initialized, and its
-+ *    request queue @q has been allocated, and runtime PM for it can not happen
-+ *    yet(either due to disabled/forbidden or its usage_count > 0). In most
-+ *    cases, driver should call this function before any I/O has taken place.
-+ *
-+ *    This function takes care of setting up using auto suspend for the device,
-+ *    the autosuspend delay is set to -1 to make runtime suspend impossible
-+ *    until an updated value is either set by user or by driver. Drivers do
-+ *    not need to touch other autosuspend settings.
-+ *
-+ *    The block layer runtime PM is request based, so only works for drivers
-+ *    that use request as their IO unit instead of those directly use bio's.
-+ */
-+void blk_pm_runtime_init(struct request_queue *q, struct device *dev)
-+{
-+	q->dev = dev;
-+	q->rpm_status = RPM_ACTIVE;
-+	pm_runtime_set_autosuspend_delay(q->dev, -1);
-+	pm_runtime_use_autosuspend(q->dev);
-+}
-+EXPORT_SYMBOL(blk_pm_runtime_init);
-+
-+/**
-+ * blk_pre_runtime_suspend - Pre runtime suspend check
-+ * @q: the queue of the device
-+ *
-+ * Description:
-+ *    This function will check if runtime suspend is allowed for the device
-+ *    by examining if there are any requests pending in the queue. If there
-+ *    are requests pending, the device can not be runtime suspended; otherwise,
-+ *    the queue's status will be updated to SUSPENDING and the driver can
-+ *    proceed to suspend the device.
-+ *
-+ *    For the not allowed case, we mark last busy for the device so that
-+ *    runtime PM core will try to autosuspend it some time later.
-+ *
-+ *    This function should be called near the start of the device's
-+ *    runtime_suspend callback.
-+ *
-+ * Return:
-+ *    0		- OK to runtime suspend the device
-+ *    -EBUSY	- Device should not be runtime suspended
-+ */
-+int blk_pre_runtime_suspend(struct request_queue *q)
-+{
-+	int ret = 0;
-+
-+	spin_lock_irq(q->queue_lock);
-+	if (q->nr_pending) {
-+		ret = -EBUSY;
-+		pm_runtime_mark_last_busy(q->dev);
-+	} else {
-+		q->rpm_status = RPM_SUSPENDING;
-+	}
-+	spin_unlock_irq(q->queue_lock);
-+	return ret;
-+}
-+EXPORT_SYMBOL(blk_pre_runtime_suspend);
-+
-+/**
-+ * blk_post_runtime_suspend - Post runtime suspend processing
-+ * @q: the queue of the device
-+ * @err: return value of the device's runtime_suspend function
-+ *
-+ * Description:
-+ *    Update the queue's runtime status according to the return value of the
-+ *    device's runtime suspend function and mark last busy for the device so
-+ *    that PM core will try to auto suspend the device at a later time.
-+ *
-+ *    This function should be called near the end of the device's
-+ *    runtime_suspend callback.
-+ */
-+void blk_post_runtime_suspend(struct request_queue *q, int err)
-+{
-+	spin_lock_irq(q->queue_lock);
-+	if (!err) {
-+		q->rpm_status = RPM_SUSPENDED;
-+	} else {
-+		q->rpm_status = RPM_ACTIVE;
-+		pm_runtime_mark_last_busy(q->dev);
-+	}
-+	spin_unlock_irq(q->queue_lock);
-+}
-+EXPORT_SYMBOL(blk_post_runtime_suspend);
-+
-+/**
-+ * blk_pre_runtime_resume - Pre runtime resume processing
-+ * @q: the queue of the device
-+ *
-+ * Description:
-+ *    Update the queue's runtime status to RESUMING in preparation for the
-+ *    runtime resume of the device.
-+ *
-+ *    This function should be called near the start of the device's
-+ *    runtime_resume callback.
-+ */
-+void blk_pre_runtime_resume(struct request_queue *q)
-+{
-+	spin_lock_irq(q->queue_lock);
-+	q->rpm_status = RPM_RESUMING;
-+	spin_unlock_irq(q->queue_lock);
-+}
-+EXPORT_SYMBOL(blk_pre_runtime_resume);
-+
-+/**
-+ * blk_post_runtime_resume - Post runtime resume processing
-+ * @q: the queue of the device
-+ * @err: return value of the device's runtime_resume function
-+ *
-+ * Description:
-+ *    Update the queue's runtime status according to the return value of the
-+ *    device's runtime_resume function. If it is successfully resumed, process
-+ *    the requests that are queued into the device's queue when it is resuming
-+ *    and then mark last busy and initiate autosuspend for it.
-+ *
-+ *    This function should be called near the end of the device's
-+ *    runtime_resume callback.
-+ */
-+void blk_post_runtime_resume(struct request_queue *q, int err)
-+{
-+	spin_lock_irq(q->queue_lock);
-+	if (!err) {
-+		q->rpm_status = RPM_ACTIVE;
-+		__blk_run_queue(q);
-+		pm_runtime_mark_last_busy(q->dev);
-+		pm_runtime_autosuspend(q->dev);
-+	} else {
-+		q->rpm_status = RPM_SUSPENDED;
-+	}
-+	spin_unlock_irq(q->queue_lock);
-+}
-+EXPORT_SYMBOL(blk_post_runtime_resume);
-+#endif
-+
- int __init blk_dev_init(void)
- {
- 	BUILD_BUG_ON(__REQ_NR_BITS > 8 *
-diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
-index 78feda9..89d89c7 100644
---- a/include/linux/blkdev.h
-+++ b/include/linux/blkdev.h
-@@ -361,6 +361,12 @@ struct request_queue {
- 	 */
- 	struct kobject kobj;
- 
-+#ifdef CONFIG_PM_RUNTIME
-+	struct device		*dev;
-+	int			rpm_status;
-+	unsigned int		nr_pending;
-+#endif
-+
- 	/*
- 	 * queue settings
- 	 */
-@@ -961,6 +967,27 @@ struct request_queue *blk_alloc_queue_node(gfp_t, int);
- extern void blk_put_queue(struct request_queue *);
- 
- /*
-+ * block layer runtime pm functions
-+ */
-+#ifdef CONFIG_PM_RUNTIME
-+extern void blk_pm_runtime_init(struct request_queue *q, struct device *dev);
-+extern int blk_pre_runtime_suspend(struct request_queue *q);
-+extern void blk_post_runtime_suspend(struct request_queue *q, int err);
-+extern void blk_pre_runtime_resume(struct request_queue *q);
-+extern void blk_post_runtime_resume(struct request_queue *q, int err);
-+#else
-+static inline void blk_pm_runtime_init(struct request_queue *q,
-+	struct device *dev) {}
-+static inline int blk_pre_runtime_suspend(struct request_queue *q)
-+{
-+	return -ENOSYS;
-+}
-+static inline void blk_post_runtime_suspend(struct request_queue *q, int err) {}
-+static inline void blk_pre_runtime_resume(struct request_queue *q) {}
-+static inline void blk_post_runtime_resume(struct request_queue *q, int err) {}
-+#endif
-+
-+/*
-  * blk_plug permits building a queue of related requests by holding the I/O
-  * fragments for a short period. This allows merging of sequential requests
-  * into single larger request. As the requests are moved from a per-task list to
--- 
-1.8.1.4
-
+Will
