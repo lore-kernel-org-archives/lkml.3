@@ -1,42 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752733Ab3CEVhO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 16:37:14 -0500
-Received: from mail-da0-f50.google.com ([209.85.210.50]:41938 "EHLO
-	mail-da0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751354Ab3CEVhM (ORCPT
+	id S1752525Ab3CEVjJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 16:39:09 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:40628 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751233Ab3CEVjH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 16:37:12 -0500
-Date: Wed, 6 Mar 2013 05:37:32 +0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        bfields@fieldses.org, jackm@dev.mellanox.co.il, ogerlitz@mellanox.com,
-        roland@purestorage.com, dan.magenheimer@oracle.com, vjaquez@igalia.com,
-        rene.sapiens@ti.com, x0095078@ti.com, omar.ramirez@ti.com
-Subject: Re: [PATCH 5/7] zcache: convert to idr_alloc()
-Message-ID: <20130305213732.GB10826@kroah.com>
-References: <1362513772-15174-1-git-send-email-tj@kernel.org>
- <1362513772-15174-6-git-send-email-tj@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1362513772-15174-6-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 5 Mar 2013 16:39:07 -0500
+Date: Wed, 6 Mar 2013 08:38:56 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Wim Van Sebroeck <wim@iguana.be>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: failure to fetch the watchdog tree
+Message-Id: <20130306083856.5ba4d203ec0c7320af862047@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__6_Mar_2013_08_38_56_+1100_4OxX=1H35iyM5X4y"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 05, 2013 at 12:02:50PM -0800, Tejun Heo wrote:
-> idr_get_new*() and friends are about to be deprecated.  Convert to the
-> new idr_alloc() interface.
-> 
-> Only compile tested.
-> 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Cc: Dan Magenheimer <dan.magenheimer@oracle.com>
-> ---
->  drivers/staging/zcache/ramster/tcp.c | 25 ++++++++++---------------
->  1 file changed, 10 insertions(+), 15 deletions(-)
+--Signature=_Wed__6_Mar_2013_08_38_56_+1100_4OxX=1H35iyM5X4y
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Hi Wim,
+
+Fetching the watchdog tree produces this message:
+
+fatal: unable to connect to www.linux-watchdog.org:
+www.linux-watchdog.org[0: 83.149.101.17]: errno=3DConnection refused
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Wed__6_Mar_2013_08_38_56_+1100_4OxX=1H35iyM5X4y
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRNmXwAAoJEECxmPOUX5FEyGMP/Ry3YOU2lAheXXik+LLBycUm
+IbTk8ieBirf/VJvFCHEjbAfUJLUx894ElW1ncd6lmB4E2nUiTmsRilzU3ENcb3TM
+Eh4v+JrmrtpDroESiXlvpLiG0QgNJxl+sg6CNlFCi+aNLplD8Ycp17Yaibeyhoik
+W5f8bWXw23tZPLEGmPH1+8rbzPMC6ztvLAg0b4EN9dpwOnPYXfEiF6wm3JQph0v4
+CrB+igMJ5wO7sPxBkxcSEvVuLmDfXjttKBkdPXiPoTkPwNigwF45JdFYdqjdt6xv
+V+9EvATle8yY7OnwlLXhtH+ImFzM9h6kK8i/LWKfbHsJ4BjEmwdslxz9+dw6y0JY
+UvBxjFJoDnwFEdKVfOmKLDtgCPBmux8FbzicgwVQu7LSnA48+qo22/RfOk6fD23n
+A4ysEFlkrg46PWdjKo6oXDS3j23KoqWpzBGl/elrvvWzKjb8SrX+LEtp5NaABUXD
+/JvENGLH7bf7Gc4vveNUGw0HReU0nCa3HMqp8qpv/9IEDC4zpurFlWlV3bvnt2xp
+aUuxNlaU3+NWo9MtfND7E5xtfDA1hCun/aNK6DVVctQUzfYBQnG+IUJd51OT/GPQ
+MSNVZG46MxuT9NVeF3mYtamb4eohMn16pf9S9GkEMP+1omXHrzKwPmBKqnYij3q7
+ma32EPojY1J34u0LM2H7
+=rG+e
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__6_Mar_2013_08_38_56_+1100_4OxX=1H35iyM5X4y--
