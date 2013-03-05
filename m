@@ -1,132 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757823Ab3CEVJ1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 16:09:27 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:39321 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755709Ab3CEVJZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 16:09:25 -0500
-Date: Tue, 5 Mar 2013 16:09:22 -0500
-From: Jeff Layton <jlayton@redhat.com>
-To: Ben Greear <greearb@candelatech.com>
-Cc: linux-cifs@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: 3.7.10+:  BUG Dentry still in use [unmount of cifs cifs]
-Message-ID: <20130305160922.62ca61a9@tlielax.poochiereds.net>
-In-Reply-To: <51364AB6.8070804@candelatech.com>
-References: <51363F80.8070609@candelatech.com>
-	<20130305140849.67d52088@tlielax.poochiereds.net>
-	<20130305142220.6fc20a2b@tlielax.poochiereds.net>
-	<51364AB6.8070804@candelatech.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1757686Ab3CEVNB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 16:13:01 -0500
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:65115 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756428Ab3CEVM7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Mar 2013 16:12:59 -0500
+From: Matt Porter <mporter@ti.com>
+To: Balaji T K <balajitk@ti.com>, Chris Ball <cjb@laptop.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>
+Cc: Vinod Koul <vinod.koul@intel.com>, Tony Lindgren <tony@atomide.com>,
+        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, Dan Williams <djbw@fb.com>,
+        Jon Hunter <jon-hunter@ti.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>
+Subject: [PATCH v2 0/3] omap_hsmmc DT DMA Client support
+Date: Tue,  5 Mar 2013 16:13:21 -0500
+Message-Id: <1362518004-7083-1-git-send-email-mporter@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 05 Mar 2013 11:42:46 -0800
-Ben Greear <greearb@candelatech.com> wrote:
+Changes since v1:
+	- rebase to 3.9-rc1, previous dependencies upstream
 
-> On 03/05/2013 11:22 AM, Jeff Layton wrote:
-> > On Tue, 5 Mar 2013 14:08:49 -0500
-> > Jeff Layton <jlayton@redhat.com> wrote:
-> >
-> >> On Tue, 05 Mar 2013 10:54:56 -0800
-> >> Ben Greear <greearb@candelatech.com> wrote:
-> >>
-> >>> In doing some CIFS testing (utilizing it's feature to bind to local
-> >>> address..but not sure that matters), we saw this error when trying
-> >>> to un-mount.
-> >>>
-> >>> Our kernel is patched (nfs, some networking related patches), but there
-> >>> are no out-of-kernel patches to CIFS, so I don't *think* this is anything
-> >>> we could have caused.
-> >>>
-> >>> This problem appears to be easily reproducible, so we will be happy
-> >>> to test patches if anyone has any suggestions.
-> >>>
-> >>> BUG: Dentry ffff8800c07e43c0{i=45762,n=cifs2-01.7.lf-data} still in use (1) [unmount of cifs cifs]
-> >>> ------------[ cut here ]------------
-> >>> kernel BUG at /home/greearb/git/linux-3.7.dev.y/fs/dcache.c:967!
-> >>> invalid opcode: 0000 [#1] PREEMPT SMP
-> >>> Modules linked in: nls_utf8 cifs 8021q garp stp llc iptable_raw xt_CT veth nf_nat_ipv4 nf_nat fuse macvlan wanlink(O) pktgen nfsv3 nfs_acl nfsv4 auth_rpcgss nfs
-> >>> fscache lockd sunrpc be2iscsi iscsi_boot_sysfs bnx2i cnic uio cxgb4i cxgb4 cxgb3i cxgb3 mdio libcxgbi ib_iser rdma_cm ib_addr iw_cm ib_cm ib_sa ib_mad ib_core
-> >>> w83793 iscsi_tcp w83627hf libiscsi_tcp hwmon_vid libiscsi scsi_transport_iscsi coretemp mperf kvm_intel kvm i5k_amb uinput i5000_edac gpio_ich edac_core
-> >>> iTCO_wdt e1000e iTCO_vendor_support lpc_ich i2c_i801 pcspkr ioatdma dca microcode shpchp ipv6 floppy radeon i2c_algo_bit hwmon drm_kms_helper ttm drm i2c_core
-> >>> [last unloaded: iptable_nat]
-> >>> CPU 6
-> >>> Pid: 6610, comm: umount Tainted: G         C O 3.7.10+ #74 Supermicro X7DBU/X7DBU
-> >>> RIP: 0010:[<ffffffff811591c9>]  [<ffffffff811591c9>] shrink_dcache_for_umount_subtree+0x84/0x194
-> >>> RSP: 0018:ffff8800c0085dc8  EFLAGS: 00010296
-> >>> RAX: 0000000000000062 RBX: ffff8800c07e43c0 RCX: 0000000000000059
-> >>> RDX: ffffffff81bc25a8 RSI: 0000000000000046 RDI: 0000000000000246
-> >>> RBP: ffff8800c0085de8 R08: 0000000000000001 R09: ffff8800c0085cc8
-> >>> R10: 0000000000000000 R11: 0000000000000000 R12: ffff8800c050e9c0
-> >>> R13: ffff880128ee8000 R14: 0000000000000000 R15: ffff8800c0085f28
-> >>> FS:  00007f6084847840(0000) GS:ffff88012fd80000(0000) knlGS:0000000000000000
-> >>> CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> >>> CR2: 00007f608442c3a0 CR3: 00000000c7c2d000 CR4: 00000000000007e0
-> >>> DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> >>> DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> >>> Process umount (pid: 6610, threadinfo ffff8800c0084000, task ffff88012a6a0000)
-> >>> Stack:
-> >>>    ffff880128ee8310 00000000000128c0 ffff880128ee8000 ffffffffa06b96b0
-> >>>    ffff8800c0085e08 ffffffff81159310 ffff8800c0084000 ffff880128ee8000
-> >>>    ffff8800c0085e38 ffffffff81149afe ffff8800c0085e38 0000000000000021
-> >>> Call Trace:
-> >>>    [<ffffffff81159310>] shrink_dcache_for_umount+0x37/0x49
-> >>>    [<ffffffff81149afe>] generic_shutdown_super+0x20/0xd2
-> >>>    [<ffffffff81149c25>] kill_anon_super+0x11/0x1c
-> >>>    [<ffffffffa068b1ea>] cifs_kill_sb+0x15/0x21 [cifs]
-> >>>    [<ffffffff81149e48>] deactivate_locked_super+0x32/0x5e
-> >>>    [<ffffffff8114a942>] deactivate_super+0x40/0x46
-> >>>    [<ffffffff8115fdb3>] mntput_no_expire+0x12d/0x136
-> >>>    [<ffffffff81160b59>] sys_umount+0x321/0x34c
-> >>>    [<ffffffff8114f846>] ? path_put+0x1d/0x21
-> >>>    [<ffffffff81525229>] system_call_fastpath+0x16/0x1b
-> >>> Code: 50 28 4c 8b 0a 31 d2 48 85 f6 74 04 48 8b 56 40 48 05 10 03 00 00 48 89 de 48 c7 c7 9d d0 7b 81 48 89 04 24 31 c0 e8 b9 4e 3c 00 <0f> 0b eb fe 4c 8b 63 18
-> >>> 4c 39 e3 75 3c 48 8b 93 90 00 00 00 48
-> >>> RIP  [<ffffffff811591c9>] shrink_dcache_for_umount_subtree+0x84/0x194
-> >>>    RSP <ffff8800c0085dc8>
-> >>> ---[ end trace 9b2978a89532c292 ]---
-> >>
-> >> Hmmm...dentry leak. Are there any jobs queued to the cifsiod workqueue
-> >> when the box oopses?
-> >>
-> >
-> > In fact...
-> >
-> > It's just a guess, but does this patch help at all? Note that it builds
-> > but is otherwise untested ;). If it works we might want to go with
-> > something a bit less invasive but this may tell us if we're on the
-> > right track.
-> 
-> This does not fix the problem, though possibly it is still
-> a correct fix for some other bug.  Some more details on this test case:
-> 
-> We create 8 writer processes (which do one mount per thread), write some files.
-> 
-> Then, stop those, and un-mount.
-> 
-> Then, start 8 reader processes, which will create 8 mounts and then start
-> reading data.
-> 
-> Finally, stop these readers, which will stop the read IO calls and immediately
-> try to un-mount the the 8 mounts.  These unmount attempts cause the bug.
-> 
-> Thanks,
-> Ben
-> 
-> 
+This series adds DT DMA Engine Client support to the omap_hsmmc.
+It leverages the generic DMA OF helpers in -next and the
+dma_request_slave_channel_compat() wrapper introduced in the
+AM33XX DMA Engine series to support DMA in omap_hsmmc on platforms
+booting via DT. These platforms include omap2/3/4/5 and am33xx.
 
-Ok, thanks...it was worth a shot. I guess we'll have to track this down
-the hard way then and try to figure out where the dentry leak is coming
-from.
+These patches were split out from the v5 version of the AM33XX DMA
+series and split from the EDMA-specific omap_hsmmc changes.
 
-My guess would be that it's coming from the async read code path
-somewhere. When you stop the processes doing the reading, how do you do
-it? Are they sent a signal?
+Matt Porter (2):
+  mmc: omap_hsmmc: convert to dma_request_slave_channel_compat()
+  mmc: omap_hsmmc: add generic DMA request support to the DT binding
+
+Santosh Shilimkar (1):
+  mmc: omap_hsmmc: Skip platform_get_resource_byname() for dt case
+
+ .../devicetree/bindings/mmc/ti-omap-hsmmc.txt      |   26 +++++++++++++-
+ drivers/mmc/host/omap_hsmmc.c                      |   38 ++++++++++++--------
+ 2 files changed, 48 insertions(+), 16 deletions(-)
 
 -- 
-Jeff Layton <jlayton@redhat.com>
+1.7.9.5
+
