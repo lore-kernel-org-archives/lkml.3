@@ -1,68 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755776Ab3CEWTN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 17:19:13 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:54543 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754943Ab3CEWQt (ORCPT
+	id S1755477Ab3CEWUt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 17:20:49 -0500
+Received: from mailout01.c08.mtsvc.net ([205.186.168.189]:53488 "EHLO
+	mailout01.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755104Ab3CEWUs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 17:16:49 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-kernel@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org, arm@kernel.org,
-        Arnd Bergmann <arnd@arndb.de>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: [PATCH 7/9] [media] s5p-fimc: fix s5pv210 build
-Date: Tue,  5 Mar 2013 23:16:47 +0100
-Message-Id: <1362521809-22989-8-git-send-email-arnd@arndb.de>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1362521809-22989-1-git-send-email-arnd@arndb.de>
-References: <1362521809-22989-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:MGP+QcStZ8BBElqkHPw+0WoeA2pXbQ+rNpfU5Cfwi7Q
- VeiLBSgviUB1ywdW0m8ZAMYdGTnHs0W3YmOCgRzrub0RjKovZ/
- OeicMmgZeB/ETue22/lqzekXeEA00n3rz9qV2R78vYjdhDcpe8
- CgWNdn3av8q6rUC9Af0EEQLiU82jskFPMZfWjiRaqROzWwrBu9
- EToXiwQYWRsj3vh2AKRay1m3gSuCCu6PlEY4+1fUheG5SzAb6y
- 9N2BGgIMP8HEyLyFG7rvNnAO9cSWN3vfhYvH4/dDzdDfTjWcyk
- OF2ZSvoW/BPJIRFG+fAbl8GMEuY4MeTlZcj0fGr96b4JOwQWv1
- 77/XsSq229briU33c6C5Rh1FtdergfVL1+iTSWEyM
+	Tue, 5 Mar 2013 17:20:48 -0500
+Message-ID: <1362522029.18799.145.camel@thor.lan>
+Subject: Re: [PATCH v3 00/23] ldisc fixes
+From: Peter Hurley <peter@hurleysoftware.com>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, Sasha Levin <levinsasha928@gmail.com>,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ilya Zykov <ilya@ilyx.ru>, Dave Jones <davej@redhat.com>
+Date: Tue, 05 Mar 2013 17:20:29 -0500
+In-Reply-To: <20130305205033.GA5771@linutronix.de>
+References: <1355509370-5883-1-git-send-email-peter@hurleysoftware.com>
+	 <1360095638-6624-1-git-send-email-peter@hurleysoftware.com>
+	 <20130305205033.GA5771@linutronix.de>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.3-0pjh1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 125194 peter@hurleysoftware.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-56bc911 "[media] s5p-fimc: Redefine platform data structure for fimc-is"
-changed the bus_type member of struct fimc_source_info treewide, but
-got one instance wrong in mach-s5pv210, which was evidently not
-even build tested.
+[--cc Alan Cox]
 
-This adds the missing change to get s5pv210_defconfig to build again.
-Applies on the Mauro's media tree.
+On Tue, 2013-03-05 at 21:50 +0100, Sebastian Andrzej Siewior wrote:
+> * Peter Hurley | 2013-02-05 15:20:15 [-0500]:
+> 
+> >  Please re-test with your dummy_hcd/g_nokia testcase, although
+> >  I'm not convinced that usb gadget is using tty_hangup() appropriately.
+> >  tty drivers use this for async carrier loss coming from an IRQ
+> >  which will be disabled if the tty has been shutdown. Does gserial
+> >  prevent async hangup to a dead tty in a similar fashion?
+> 
+> Not sure I understood. tty_hangup() is only called from within
+> gserial_disconnect() which calls right after usb_ep_disable(). After
+> usb_ep_disable() no further serial packets can be received until the
+> endpoints are re-enabled. This happens in gserial_connect().
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>
-Cc: Kyungmin Park <kyungmin.park@samsung.com>
-Cc: Kukjin Kim <kgene.kim@samsung.com>
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
----
- arch/arm/mach-s5pv210/mach-goni.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+That's why I asked. There are two potential issues:
 
-diff --git a/arch/arm/mach-s5pv210/mach-goni.c b/arch/arm/mach-s5pv210/mach-goni.c
-index 3a38f7b..e373de4 100644
---- a/arch/arm/mach-s5pv210/mach-goni.c
-+++ b/arch/arm/mach-s5pv210/mach-goni.c
-@@ -845,7 +845,7 @@ static struct fimc_source_info goni_camera_sensors[] = {
- 		.mux_id		= 0,
- 		.flags		= V4L2_MBUS_PCLK_SAMPLE_FALLING |
- 				  V4L2_MBUS_VSYNC_ACTIVE_LOW,
--		.bus_type	= FIMC_BUS_TYPE_ITU_601,
-+		.fimc_bus_type	= FIMC_BUS_TYPE_ITU_601,
- 		.board_info	= &noon010pc30_board_info,
- 		.i2c_bus_num	= 0,
- 		.clk_frequency	= 16000000UL,
--- 
-1.8.1.2
+First, tty_hangup() is asynchronous -- ie., it returns immediately. It
+does not wait for the tty device to actually perform the hangup. So if
+the gadget layers start cleanup immediately after, expecting that they
+won't get a flurry of tty calls, that would be bad.
+
+tty_vhangup() is synchronous -- ie., you wait while it cleans up. This
+is what the usb serial core does on it's disconnect() method. But I
+didn't research further if the circumstances were the same.
+
+Second, when the hangup actually does run -- in __tty_hangup() -- it
+expects the tty to exist. I didn't go looking through the gadget layers
+to see if the tty was disposed some other way, which might race the
+asynchronous tty hangup.
+
+Thanks,
+Peter Hurley
+
+
 
