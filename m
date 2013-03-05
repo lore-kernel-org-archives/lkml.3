@@ -1,163 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756537Ab3CEQCw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 11:02:52 -0500
-Received: from mail-ee0-f54.google.com ([74.125.83.54]:58829 "EHLO
-	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755793Ab3CEQCs (ORCPT
+	id S1756668Ab3CEQEh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 11:04:37 -0500
+Received: from mail-oa0-f52.google.com ([209.85.219.52]:32960 "EHLO
+	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755540Ab3CEQEf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 11:02:48 -0500
-Message-ID: <51361724.4050107@suse.cz>
-Date: Tue, 05 Mar 2013 17:02:44 +0100
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:19.0) Gecko/20130124 Thunderbird/19.0
+	Tue, 5 Mar 2013 11:04:35 -0500
 MIME-Version: 1.0
-To: jhovold@gmail.com
-CC: Peter Hurley <peter@hurleysoftware.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        USB list <linux-usb@vger.kernel.org>, linux-serial@vger.kernel.org,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [Fwd: [PATCH v2 0/4] TTY: port hangup and close fixes]
-References: <1362085054.3337.20.camel@thor.lan>
-In-Reply-To: <1362085054.3337.20.camel@thor.lan>
-X-Enigmail-Version: 1.6a1pre
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <51359E9D.7040802@intel.com>
+References: <201303042055.38040.maciej.rutecki@gmail.com>
+	<51359E9D.7040802@intel.com>
+Date: Tue, 5 Mar 2013 08:04:34 -0800
+X-Google-Sender-Auth: rMw83gVKi1CrzWs1CGzzCBAxuMk
+Message-ID: <CACBanvptz6rvoiOqDA96EsFAZBo9-xtrtVnTqoDr8F3964eP8Q@mail.gmail.com>
+Subject: Re: [REGRESSION] [3.9-rc1] BUG: ktpacpi_nvramd/446 still has locks held!
+From: Mandeep Singh Baines <msb@chromium.org>
+To: Aaron Lu <aaron.lu@intel.com>
+Cc: maciej.rutecki@gmail.com, Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        LKML <linux-kernel@vger.kernel.org>, linux-acpi@vger.kernel.org,
+        ibm-acpi@hmh.eng.br, ibm-acpi-devel@lists.sourceforge.net,
+        platform-driver-x86@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/28/2013 09:57 PM, Peter Hurley wrote:
-> Hi Jiri,
-> 
-> Just wanted to make sure you saw this series.
+On Mon, Mar 4, 2013 at 11:28 PM, Aaron Lu <aaron.lu@intel.com> wrote:
+> On 03/05/2013 03:55 AM, Maciej Rutecki wrote:
+>> Last known good: 3.8.0
+>> Bad version: 3.9-rc1
+>>
+>> [    6.116492] =====================================
+>> [    6.116614] [ BUG: ktpacpi_nvramd/446 still has locks held! ]
+>> [    6.116737] 3.9.0-rc1 #1 Not tainted
+>> [    6.116821] -------------------------------------
+>> [    6.116900] 1 lock held by ktpacpi_nvramd/446:
+>> [    6.116973]  #0:  (&hotkey_thread_mutex){+.+...}, at: [<ffffffffa024e87e>]
+>> hotkey_kthread+0x1f/0x354 [thinkpad_acpi]
+>> [    6.117193]
+>> [    6.117193] stack backtrace:
+>> [    6.117268] Pid: 446, comm: ktpacpi_nvramd Not tainted 3.9.0-rc1 #1
+>> [    6.117381] Call Trace:
+>> [    6.117445]  [<ffffffff810877ea>] debug_check_no_locks_held+0x8f/0x93
+>> [    6.117600]  [<ffffffff8107d8ac>] set_freezable+0x3e/0x64
+>> [    6.117703] input: ThinkPad Extra Buttons as
+>> /devices/platform/thinkpad_acpi/input/input5
+>> [    6.117918]  [<ffffffffa024e890>] hotkey_kthread+0x31/0x354 [thinkpad_acpi]
+>> [    6.118088]  [<ffffffffa024e85f>] ? issue_volchange.29885+0x54/0x54
+>> [thinkpad_acpi]
+>> [    6.118250]  [<ffffffff8105e296>] kthread+0xac/0xb4
+>> [    6.118356]  [<ffffffff8105e1ea>] ? __kthread_parkme+0x60/0x60
+>> [    6.118491]  [<ffffffff814b243c>] ret_from_fork+0x7c/0xb0
+>> [    6.118614]  [<ffffffff8105e1ea>] ? __kthread_parkme+0x60/0x60
+>>
+>> Config:
+>> http://mrutecki.pl/download/kernel/3.9.0-rc1/config-3.9.0-rc1
+>>
+>> full dmesg:
+>> http://mrutecki.pl/download/kernel/3.9.0-rc1/dmesg-3.9.0-rc1.txt
+>>
+>
+> Thanks for the report!
+>
+> Looks like the following commit is related:
+> commit 6aa9707099c4b25700940eb3d016f16c4434360d
+> Author: Mandeep Singh Baines <msb@chromium.org>  Thu Feb 28 09:03:18 2013
+>
+> lockdep: check that no locks held at freeze time
+>
+> And the code to trigger this problem is here:
+> static int hotkey_kthread(void *data)
+> {
+>         struct tp_nvram_state s[2];
+>         u32 poll_mask, event_mask;
+>         unsigned int si, so;
+>         unsigned long t;
+>         unsigned int change_detector;
+>         unsigned int poll_freq;
+>         bool was_frozen;
+>
+>         mutex_lock(&hotkey_thread_mutex);
+>
+>         if (tpacpi_lifecycle == TPACPI_LIFE_EXITING)
+>                 goto exit;
+>
+>         set_freezable();
+> ~~~~~~~~~~~~~~~~~~~~~~~~~~
+> in thinkpad_acpi.c.
+>
+> I don't know much about freeze, I've no idea what is the problem.
+> So Mandeep and Henrique, can you please kindly take a look? Thanks.
+>
 
-Hi, thanks for letting me know. Johan, care to CC Alan Cox and me (or at
-least LKML) when you're changing the TTY core next time?
+Hi Aaron,
 
-I have a couple of questions for 2/4:
+I will take a look at this.
 
-> Move HUPCL handling to port shutdown so that DTR is dropped also on
-> hang up (tty_port_close is a noop for hung-up ports).
+In general, you don't want to grab a lock and freeze. You will block
+suspend because another thread may try go grab the lock. In the case
+of cgroup freezer, you could cause a deadlock.
 
-It makes sense, but I'm not sure -- is this expected, i.e. does this
-conform to standards and/or BSDs?
+There is also discussion happening on this thread:
 
-> @@ -196,13 +196,20 @@ void tty_port_tty_set(struct tty_port *port, struct
-> tty_struct *tty)
->  }
->  EXPORT_SYMBOL(tty_port_tty_set);
+https://lkml.org/lkml/2013/3/4/221
 
--static void tty_port_shutdown(struct tty_port *port)
-+static void tty_port_shutdown(struct tty_port *port, struct tty_struct
-*tty)
- {
-        mutex_lock(&port->mutex);
-        if (port->console)
-                goto out;
+Regards,
+Mandeep
 
-        if (test_and_clear_bit(ASYNCB_INITIALIZED, &port->flags)) {
-+               /*
-+                * Drop DTR/RTS if HUPCL is set. This causes any attached
-+                * modem to hang up the line.
-+                */
-+               if (!tty || tty->termios.c_cflag & HUPCL)
-> +                       tty_port_lower_dtr_rts(port);
-> +
-
-So you drop the line even thought the user didn't necessarily want to,
-in case the tty is gone already?
-
-> @@ -225,15 +232,13 @@ void tty_port_hangup(struct tty_port *port)
-        spin_lock_irqsave(&port->lock, flags);
-        port->count = 0;
-        port->flags &= ~ASYNC_NORMAL_ACTIVE;
--       if (port->tty) {
-+       if (port->tty)
-                set_bit(TTY_IO_ERROR, &port->tty->flags);
--               tty_kref_put(port->tty);
--       }
--       port->tty = NULL;
-        spin_unlock_irqrestore(&port->lock, flags);
-> +       tty_port_shutdown(port, port->tty);
-
-What prevents port->tty to be NULL here already?
-
-> +       tty_port_tty_set(port, NULL);
->         wake_up_interruptible(&port->open_wait);
->         wake_up_interruptible(&port->delta_msr_wait);
-> -       tty_port_shutdown(port);
-
-Did you investigate if the order matters here? I don't know, just curious...
-
-> @@ -452,11 +457,6 @@ int tty_port_close_start(struct tty_port *port,
-        /* Flush the ldisc buffering */
-        tty_ldisc_flush(tty);
-
--       /* Drop DTR/RTS if HUPCL is set. This causes any attached modem to
--          hang up the line */
--       if (tty->termios.c_cflag & HUPCL)
--               tty_port_lower_dtr_rts(port);
--
-        /* Don't call port->drop for the last reference. Callers will want
-           to drop the last active reference in ->shutdown() or the tty
->            shutdown path */
-
-> -------- Forwarded Message --------
-> From: Johan Hovold <jhovold@gmail.com>
-> To: Greg KH <gregkh@linuxfoundation.org>
-> Cc: Alan Stern <stern@rowland.harvard.edu>, linux-usb@vger.kernel.org,
-> linux-serial@vger.kernel.org, Peter Hurley <peter@hurleysoftware.com>,
-> Johan Hovold <jhovold@gmail.com>
-> Subject: [PATCH v2 0/4] TTY: port hangup and close fixes
-> Date: Tue, 26 Feb 2013 12:14:28 +0100
-> 
-> These patches against tty-next fix a few issues with tty-port hangup and
-> close.
-> 
-> The first and third patch are essentially clean ups.
-> 
-> The second patch makes sure DTR is dropped also on hangup and that DTR
-> is only dropped for initialised ports (where is could have been raised
-> in the first place).
-> 
-> The fourth and final patch, make sure no tty callbacks are made from
-> tty_port_close_start when the port has not been initialised (successfully
-> opened). This was previously only done for wait_until_sent but there's
-> no reason to call flush_buffer or to honour port drain delay either.
-> The latter could cause a failed open to stall for up to two seconds.
-> 
-> As a side-effect, these patches also fix an issue in USB-serial where we could
-> get tty-port callbacks on an uninitialised port after having hung up and
-> unregistered a device after disconnect.
-> 
-> Johan
-> 
-> 
-> v2:
->  - reuse tty reference from hangup and close in shutdown. Both call sites
->    guarantee tty is either NULL or has a kref.
-> 
-> Changes since RFC-series:
->  - fix up the two driver relying on tty_port_close_start directly but
->    that did not manage DTR themselves
-> 
-> 
-> Johan Hovold (4):
->   TTY: clean up port shutdown
->   TTY: fix DTR not being dropped on hang up
->   TTY: clean up port drain-delay handling
->   TTY: fix close of uninitialised ports
-> 
->  drivers/tty/mxser.c    |  4 +++
->  drivers/tty/n_gsm.c    |  4 +++
->  drivers/tty/tty_port.c | 72 +++++++++++++++++++++++++++++---------------------
->  3 files changed, 50 insertions(+), 30 deletions(-)
-> 
-
-thanks,
--- 
-js
-suse labs
+> -Aaron
+>
