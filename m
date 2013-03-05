@@ -1,36 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933234Ab3CEEEJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 23:04:09 -0500
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:58925 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932602Ab3CEEEI (ORCPT
+	id S933248Ab3CEEIU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 23:08:20 -0500
+Received: from mail-lb0-f180.google.com ([209.85.217.180]:44400 "EHLO
+	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932570Ab3CEEIT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 23:04:08 -0500
+	Mon, 4 Mar 2013 23:08:19 -0500
 MIME-Version: 1.0
-In-Reply-To: <004b01ce1945$79486af0$6bd940d0$%han@samsung.com>
-References: <004b01ce1945$79486af0$6bd940d0$%han@samsung.com>
-Date: Tue, 5 Mar 2013 05:04:05 +0100
-Message-ID: <CACRpkdbb96AitnBxyRcx7XBLEqHx48MzhuV688cCfqepttuPrg@mail.gmail.com>
-Subject: Re: [PATCH 1/3] misc: arm-charlcd: use module_platform_driver_probe()
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Jingoo Han <jg1.han@samsung.com>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
+In-Reply-To: <51354A28.3040607@lwfinger.net>
+References: <1362445374.4591.28.camel@lorien2>
+	<51354A28.3040607@lwfinger.net>
+Date: Mon, 4 Mar 2013 21:08:16 -0700
+Message-ID: <CAKocOOOJRpaq-e=XX584e1JQDYq_N4q8rka0otZBWbdvzdLyuA@mail.gmail.com>
+Subject: Re: [PATCH] net/wireless/brcm80211: remove PCI_BUS define from defs.h
+ to fix warnings
+From: Shuah Khan <shuahkhan@gmail.com>
+To: Larry Finger <Larry.Finger@lwfinger.net>
+Cc: shuah.khan@hp.com, brudley@broadcom.com, arend@broadcom.com,
+        frankyl@broadcom.com, linville@tuxdriver.com,
+        seth.forshee@canonical.com, pieterpg@broadcom.com,
+        linux-wireless@vger.kernel.org, brcm80211-dev-list@broadcom.com,
+        netdev@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 5, 2013 at 3:02 AM, Jingoo Han <jg1.han@samsung.com> wrote:
-
-> This patch uses module_platform_driver_probe() macro which makes
-> the code smaller and simpler.
+On Mon, Mar 4, 2013 at 6:28 PM, Larry Finger <Larry.Finger@lwfinger.net> wrote:
+> On 03/04/2013 07:02 PM, Shuah Khan wrote:
+>>
+>> PCI_BUS defined in defs.h results in warnings from all brcm80211 source
+>> files
+>> including defs.h. This define is not used in brcm80211. Removing this
+>> define
+>> fixes the warning.
+>>
+>> In file included from
+>> drivers/net/wireless/brcm80211/brcmfmac/dhd_sdio.c:35:0:
+>> drivers/net/wireless/brcm80211/include/defs.h:23:0: warning: "PCI_BUS"
+>> redefined [enabled by default]
+>> include/uapi/linux/pci.h:36:0: note: this is the location of the previous
+>> definition
+>>    CC [M]  drivers/net/wireless/b43legacy/dma.o
+>>    CC [M]  drivers/net/wireless/brcm80211/brcmfmac/bcmsdh.o
+>>    CC [M]  drivers/net/wireless/b43legacy/pio.o
+>> In file included from
+>> drivers/net/wireless/brcm80211/brcmfmac/bcmsdh.c:29:0:
+>> drivers/net/wireless/brcm80211/include/defs.h:23:0: warning: "PCI_BUS"
+>> redefined [enabled by default]
+>> include/uapi/linux/pci.h:36:0: note: this is the location of the previous
+>> definition
+>> In file included from
+>> drivers/net/wireless/brcm80211/brcmfmac/bcmsdh.c:29:0:
+>> drivers/net/wireless/brcm80211/include/defs.h:23:0: warning: "PCI_BUS"
+>> redefined [enabled by default]
+>> include/uapi/linux/pci.h:36:0: note: this is the location of the previous
+>> definition
 >
-> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+>
+> Strange, I do not see PCI_BUS defined anywhere in the include/ branch in
+> either 3.8 or 3.9. In addition, I don't get these warnings. What is
+> different in your system?
+>
+> Larry
 
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
+I am sorry. Please ignore this patch. I had a old commit for a change
+I was working on
+and I thought I undid the changes. My apologies for the noise.
 
-Yours,
-Linus Walleij
+-- Shuah
