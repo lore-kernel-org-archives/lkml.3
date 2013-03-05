@@ -1,174 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755395Ab3CELnR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 06:43:17 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:44464 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753403Ab3CELnP (ORCPT
+	id S1755676Ab3CELsI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 06:48:08 -0500
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:64529 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752978Ab3CELsB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 06:43:15 -0500
-From: "Vishwanathrao Badarkhe, Manish" <manishv.b@ti.com>
-To: <davinci-linux-open-source@linux.davincidsp.com>,
-        <linux-i2c@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: <nsekhar@ti.com>, <khilman@deeprootsystems.com>, <ben-linux@fluff.org>,
-        <w.sang@pengutronix.de>, <manishv.b@ti.com>
-Subject: [PATCH V4] i2c: davinci: update to devm_* API
-Date: Tue, 5 Mar 2013 17:14:45 +0530
-Message-ID: <1362483885-16561-1-git-send-email-manishv.b@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-MIME-Version: 1.0
-Content-Type: text/plain
+	Tue, 5 Mar 2013 06:48:01 -0500
+X-AuditID: 9c93016f-b7b46ae000000e4b-73-5135db7085ca
+From: Kyungsik Lee <kyungsik.lee@lge.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
+        x86@kernel.org, celinux-dev@lists.celinuxforum.org
+Cc: Nicolas Pitre <nico@fluxnic.net>, David Sterba <dsterba@suse.cz>,
+        Nitin Gupta <nitingupta910@gmail.com>,
+        Joe Millenbach <jmillenbach@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Michal Marek <mmarek@suse.cz>,
+        hyojun.im@lge.com, chan.jeong@lge.com, raphael.andy.lee@gmail.com,
+        Kyungsik Lee <kyungsik.lee@lge.com>
+Subject: [PATCH v3 -next 5/5] Kconfig: Make x86 and arm kernels default to the LZ4-compressed
+Date: Tue,  5 Mar 2013 20:47:36 +0900
+Message-Id: <1362484056-9778-6-git-send-email-kyungsik.lee@lge.com>
+X-Mailer: git-send-email 1.8.1.1
+In-Reply-To: <1362484056-9778-1-git-send-email-kyungsik.lee@lge.com>
+References: <1362484056-9778-1-git-send-email-kyungsik.lee@lge.com>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Update the code to use devm_* API so that driver
-core will manage resources.
+This patch makes x86 and arm kernels default to the LZ4-compressed
+to test new LZ4 code in the linux-next. This is requested by
+Andrew Morton.
 
-Signed-off-by: Vishwanathrao Badarkhe, Manish <manishv.b@ti.com>
+Signed-off-by: Kyungsik Lee <kyungsik.lee@lge.com>
 ---
-Changes since V3:
-  - Use devm_ioremap_resource API instead of devm_request_and_ioremap.
-  - Update commit message.
-  - Rebase on top of v3.9-rc1 linus tree. 
-Changes since V2:
-  - if "devm_request_and_ioremap" fails return -EADDRNOTAVAIL.
-    instead of -EBUSY.
-Changes since V1:
-  - Rebase on top of v3.8-rc6 of linus tree.
-  - Apply devm operation on clk_get.
+ init/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-:100644 100644 7d1e590... 1fb5a22... M	drivers/i2c/busses/i2c-davinci.c
- drivers/i2c/busses/i2c-davinci.c |   49 +++++++++++--------------------------
- 1 files changed, 15 insertions(+), 34 deletions(-)
-
-diff --git a/drivers/i2c/busses/i2c-davinci.c b/drivers/i2c/busses/i2c-davinci.c
-index 7d1e590..1fb5a22 100644
---- a/drivers/i2c/busses/i2c-davinci.c
-+++ b/drivers/i2c/busses/i2c-davinci.c
-@@ -643,7 +643,7 @@ static int davinci_i2c_probe(struct platform_device *pdev)
- {
- 	struct davinci_i2c_dev *dev;
- 	struct i2c_adapter *adap;
--	struct resource *mem, *irq, *ioarea;
-+	struct resource *mem, *irq;
- 	int r;
+diff --git a/init/Kconfig b/init/Kconfig
+index fc8eb1f..de3cb00 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -138,7 +138,7 @@ config HAVE_KERNEL_LZ4
  
- 	/* NOTE: driver uses the static register mapping */
-@@ -659,17 +659,11 @@ static int davinci_i2c_probe(struct platform_device *pdev)
- 		return -ENODEV;
- 	}
- 
--	ioarea = request_mem_region(mem->start, resource_size(mem),
--				    pdev->name);
--	if (!ioarea) {
--		dev_err(&pdev->dev, "I2C region already claimed\n");
--		return -EBUSY;
--	}
--
--	dev = kzalloc(sizeof(struct davinci_i2c_dev), GFP_KERNEL);
-+	dev = devm_kzalloc(&pdev->dev, sizeof(struct davinci_i2c_dev),
-+			GFP_KERNEL);
- 	if (!dev) {
--		r = -ENOMEM;
--		goto err_release_region;
-+		dev_err(&pdev->dev, "Memory allocation failed\n");
-+		return -ENOMEM;
- 	}
- 
- 	init_completion(&dev->cmd_complete);
-@@ -699,22 +693,24 @@ static int davinci_i2c_probe(struct platform_device *pdev)
- 		dev->pdata = &davinci_i2c_platform_data_default;
- 	}
- 
--	dev->clk = clk_get(&pdev->dev, NULL);
-+	dev->clk = devm_clk_get(&pdev->dev, NULL);
- 	if (IS_ERR(dev->clk)) {
- 		r = -ENODEV;
- 		goto err_free_mem;
- 	}
- 	clk_prepare_enable(dev->clk);
- 
--	dev->base = ioremap(mem->start, resource_size(mem));
--	if (!dev->base) {
--		r = -EBUSY;
--		goto err_mem_ioremap;
-+	dev->base = devm_ioremap_resource(&pdev->dev, mem);
-+	if (IS_ERR(dev->base)) {
-+		r = PTR_ERR(dev->base);
-+		dev_err(&pdev->dev, "I2C region already claimed\n");
-+		goto err_unuse_clocks;
- 	}
- 
- 	i2c_davinci_init(dev);
- 
--	r = request_irq(dev->irq, i2c_davinci_isr, 0, pdev->name, dev);
-+	r = devm_request_irq(&pdev->dev, dev->irq, i2c_davinci_isr, 0,
-+			pdev->name, dev);
- 	if (r) {
- 		dev_err(&pdev->dev, "failure requesting irq %i\n", dev->irq);
- 		goto err_unuse_clocks;
-@@ -723,7 +719,7 @@ static int davinci_i2c_probe(struct platform_device *pdev)
- 	r = i2c_davinci_cpufreq_register(dev);
- 	if (r) {
- 		dev_err(&pdev->dev, "failed to register cpufreq\n");
--		goto err_free_irq;
-+		goto err_unuse_clocks;
- 	}
- 
- 	adap = &dev->adapter;
-@@ -740,25 +736,17 @@ static int davinci_i2c_probe(struct platform_device *pdev)
- 	r = i2c_add_numbered_adapter(adap);
- 	if (r) {
- 		dev_err(&pdev->dev, "failure adding adapter\n");
--		goto err_free_irq;
-+		goto err_unuse_clocks;
- 	}
- 	of_i2c_register_devices(adap);
- 
- 	return 0;
- 
--err_free_irq:
--	free_irq(dev->irq, dev);
- err_unuse_clocks:
--	iounmap(dev->base);
--err_mem_ioremap:
- 	clk_disable_unprepare(dev->clk);
--	clk_put(dev->clk);
- 	dev->clk = NULL;
- err_free_mem:
- 	put_device(&pdev->dev);
--	kfree(dev);
--err_release_region:
--	release_mem_region(mem->start, resource_size(mem));
- 
- 	return r;
- }
-@@ -766,7 +754,6 @@ err_release_region:
- static int davinci_i2c_remove(struct platform_device *pdev)
- {
- 	struct davinci_i2c_dev *dev = platform_get_drvdata(pdev);
--	struct resource *mem;
- 
- 	i2c_davinci_cpufreq_deregister(dev);
- 
-@@ -774,16 +761,10 @@ static int davinci_i2c_remove(struct platform_device *pdev)
- 	put_device(&pdev->dev);
- 
- 	clk_disable_unprepare(dev->clk);
--	clk_put(dev->clk);
- 	dev->clk = NULL;
- 
- 	davinci_i2c_write_reg(dev, DAVINCI_I2C_MDR_REG, 0);
--	free_irq(dev->irq, dev);
--	iounmap(dev->base);
--	kfree(dev);
- 
--	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	release_mem_region(mem->start, resource_size(mem));
- 	return 0;
- }
- 
+ choice
+ 	prompt "Kernel compression mode"
+-	default KERNEL_GZIP
++	default KERNEL_LZ4
+ 	depends on HAVE_KERNEL_GZIP || HAVE_KERNEL_BZIP2 || HAVE_KERNEL_LZMA || HAVE_KERNEL_XZ || HAVE_KERNEL_LZO || HAVE_KERNEL_LZ4
+ 	help
+ 	  The linux kernel is a kind of self-extracting executable.
 -- 
-1.7.4.1
+1.8.1.1
 
