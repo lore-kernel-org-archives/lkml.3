@@ -1,122 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756833Ab3CEPsu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 10:48:50 -0500
-Received: from mail-ve0-f171.google.com ([209.85.128.171]:45650 "EHLO
-	mail-ve0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753098Ab3CEPst (ORCPT
+	id S1757011Ab3CEPuM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 10:50:12 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:11574 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753098Ab3CEPuK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 10:48:49 -0500
-MIME-Version: 1.0
-In-Reply-To: <CA+5PVA40SFq1EprA9Y1U-eUdmYTzqDbxbTaC1Y1WSh7EwEEqfw@mail.gmail.com>
-References: <alpine.DEB.2.00.1302260003460.24684@skynet.skynet.ie>
-	<CA+5PVA5wtZipQRTPfvbh1U8gjDMaW0095EsNz==Co+iww3YN1g@mail.gmail.com>
-	<CA+5PVA5vvw-JyODTtRwVhQSEiGrt=3wzDoCmeButEMTZxWAhbA@mail.gmail.com>
-	<CA+5PVA5za2stXYxQ_Tu3D6Lbif94cqK_5wvPXFhUpvsh_DOXVg@mail.gmail.com>
-	<CA+5PVA6CQ0YrSGkXPGtmzB9BgabXyiRnMSMKYDCJM+OuF5t6gQ@mail.gmail.com>
-	<CADnq5_PqAAhQZ-4Fd0UNoT5aEhUDdtu4n+1qXYucXsnyi0sQwQ@mail.gmail.com>
-	<CA+5PVA7Yzrx_=k9HB-D5v=7gsmn1ZyNb7YpzwDW-1j35Bbrs4Q@mail.gmail.com>
-	<CADnq5_OadSJ1thVEvfQVfTZ3De0vivVjnCKwepVxabs6i6ivLQ@mail.gmail.com>
-	<CA+5PVA6P2igBMmOeVwhoA5cy0NQHzd-MM6jw5ySUBfZUsMK=ag@mail.gmail.com>
-	<CA+5PVA5ApepOTJGJR0zXF5C_p7cFjShr3_shynAHX_M=ya5o7Q@mail.gmail.com>
-	<CA+5PVA40SFq1EprA9Y1U-eUdmYTzqDbxbTaC1Y1WSh7EwEEqfw@mail.gmail.com>
-Date: Tue, 5 Mar 2013 10:48:48 -0500
-Message-ID: <CADnq5_OXKQP3-ra5d2k26cGcL-jtPbXOkN6eg5m2R8SaM6hmJg@mail.gmail.com>
-Subject: Re: [git pull] drm merge for 3.9-rc1
-From: Alex Deucher <alexdeucher@gmail.com>
-To: Josh Boyer <jwboyer@gmail.com>
-Cc: Dave Airlie <airlied@linux.ie>, Alex Deucher <alexander.deucher@amd.com>,
-        Jerome Glisse <jglisse@redhat.com>, torvalds@linux-foundation.org,
-        linux-kernel@vger.kernel.org,
-        DRI mailing list <dri-devel@lists.freedesktop.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 5 Mar 2013 10:50:10 -0500
+X-Authority-Analysis: v=2.0 cv=adbjbGUt c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=QIvdI-ESzzIA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=aG2A6zNsvYEA:10 a=MLgBt4qJIxULhIdcTSsA:9 a=PUjeQqilurYA:10 a=bEATC11fGy_3KvLx:21 a=t3sitlCHVz4dg34s:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1362498608.31874.28.camel@gandalf.local.home>
+Subject: snapshot error on non allocated buffer?
+From: Steven Rostedt <rostedt@goodmis.org>
+To: hiraku.toyooka.gu@hitachi.com
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Date: Tue, 05 Mar 2013 10:50:08 -0500
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 5, 2013 at 10:21 AM, Josh Boyer <jwboyer@gmail.com> wrote:
-> On Thu, Feb 28, 2013 at 1:59 PM, Josh Boyer <jwboyer@gmail.com> wrote:
->> On Thu, Feb 28, 2013 at 10:15 AM, Josh Boyer <jwboyer@gmail.com> wrote:
->>> On Thu, Feb 28, 2013 at 10:09 AM, Alex Deucher <alexdeucher@gmail.com> wrote:
->>>> On Thu, Feb 28, 2013 at 8:44 AM, Josh Boyer <jwboyer@gmail.com> wrote:
->>>>> On Thu, Feb 28, 2013 at 8:38 AM, Alex Deucher <alexdeucher@gmail.com> wrote:
->>>>>>>>>> ca57802e521de54341efc8a56f70571f79ffac72 is the first bad commit
->>>>>>>>>
->>>>>>>>> So I don't think that's actually the cause of the problem.  Or at least
->>>>>>>>> not that alone.  I reverted it on top of Linus' latest tree and I still
->>>>>>>>> get the lockups.
->>>>>>>>
->>>>>>>> Actually, git bisect does seem to have gotten it correct.  Once I
->>>>>>>> actually tested the revert of just that on top of Linus' tree (commit
->>>>>>>> d895cb1af1), things seem to be working much better.  I've rebooted a
->>>>>>>> dozen times without a lockup.  The most I've seen it take on a kernel
->>>>>>>> with that commit included is 3 reboots, so that's definitely at least an
->>>>>>>> improvement.
->>>>>>>
->>>>>>> I give up.  GPU issues are not my thing.  2 reboots after I sent that it
->>>>>>> gave me pretty rainbow static again.  So it might have been an
->>>>>>> improvement, but revert it is not a solution.
->>>>>>>
->>>>>>> Looking at there rest of the commits, the whole GPU rework might be
->>>>>>> suspect, but I clearly have no clue.
->>>>>>
->>>>>> GPUs are tricky beasts :)
->>>>>
->>>>> Understatement ;).
->>>>>
->>>>>> ca57802e521de54341efc8a56f70571f79ffac72 mostly likely wasn't the
->>>>>> problem anyway since it only affects 6xx/7xx and your card is handled
->>>>>> by the evergreen code.  I'll put together some patches to help narrow
->>>>>> down the problem.
->>>>>
->>>>> Yeah, that's the biggest problem I have, not knowing which functions are
->>>>> actually being executed for this card.  It looks like a combination of
->>>>> stuff in evergreen.c and ni.c, but I have no idea.
->>>>>
->>>>> Patches would be great.  If nothing else, I'm really good at building
->>>>> kernels and rebooting by now.
->>>>
->>>> Two possible fixes attached.  The first attempts a full reset of all
->>>> blocks if the MC (memory controller) is hung.  That may work better
->>>> than just resetting the MC.  The second just disables MC reset.  I'm
->>>> not sure we can reliably tell if it's busy due to display requests
->>>> hitting the MC periodically which would lead to needlessly resetting
->>>> it possibly leading to failures like you are seeing.
->>>
->>> OK.  I'll test them individually.  It will probably take a bit because
->>> I'll want to do numerous reboots if things seem "fixed" with one or the
->>> other.
->>>
->>> I'll let you know how things go.
->>
->> I applied each individually on top of Linus' tree as of this morning
->> (commit 2a7d2b96d5) built, installed, and tested.
->>
->> 0001-drm-radeon-XXX-try-a-full-reset-if-the-MC-is-busy.patch failed in
->> two reboots.
->>
->> 0001-drm-radeon-XXX-skip-MC-reset-as-it-s-probably-not-hu.patch has gone
->> 21 reboots without a hang/rainbow static.  You'll understand if I'm
->> hesitant to declare success, but resetting the MC does indeed appear to
->> be the issue.  I'll keep rebooting for a while to make sure.
->
-> OK, I'm still running on the kernel with that patch and things still
-> work.  The only other "issue" I'm seeing at the moment is my dmesg is
-> full of:
->
-> [349316.595749] radeon 0000:01:00.0: MC busy: 0x00000409, clearing.
-> [349436.654946] radeon 0000:01:00.0: MC busy: 0x00000409, clearing.
-> [349436.655997] radeon 0000:01:00.0: MC busy: 0x00000409, clearing.
-> [349496.698441] radeon 0000:01:00.0: MC busy: 0x00000409, clearing.
-> [349556.726767] radeon 0000:01:00.0: MC busy: 0x00000409, clearing.
-> [349556.727797] radeon 0000:01:00.0: MC busy: 0x00000409, clearing.
->
+Hi Hiraku,
 
-I'll make those debug only when the patch goes upstream.
+I'm doing a lot of reconstruction of ftrace's buffering, and I'm also
+modifying a lot of the snapshot feature to work with the new stuff
+that's coming.
 
-> So hopefully your patch is on the way into Linus' tree at some point
-> soon.
+I'm looking at the -EINVAL when you write something other than '0' or
+'1' into the snapshot file when the snapshot is not allocated. I'm
+thinking that it should just return as if it succeeded. I don't
+understand why it should return -EINVAL?
 
-It'll be in my next -fixes pull.
+Now if you want to know if the snapshot is allocated or not, I have a
+patch that shows how to use the snapshot feature when the snapshot is
+empty, and also give the status of the snapshot itself:
 
-Alex
+[root] # cat /debug/tracing/snapshot 
+# tracer: nop
+#
+#
+# * Snapshot is freed *
+#
+# Snapshot commands:
+# echo 0 > snapshot : Clears and frees snapshot buffer
+# echo 1 > snapshot : Allocates snapshot buffer, if not already
+allocated.
+#                      Takes a snapshot of the main buffer.
+# echo 2 > snapshot : Clears snapshot buffer (but does not allocate)
+#                      (Doesn't have to be '2' works with any number
+that
+#                       is not a '0' or '1')
+
+[root] # echo 1 > /debug/tracing/snapshot
+[root] # echo 2 > /debug/tracing/snapshot
+[root] # cat /debug/tracing/snapshot
+# tracer: nop
+#
+#
+# * Snapshot is allocated *
+#
+# Snapshot commands:
+# echo 0 > snapshot : Clears and frees snapshot buffer
+# echo 1 > snapshot : Allocates snapshot buffer, if not already
+allocated.
+#                      Takes a snapshot of the main buffer.
+# echo 2 > snapshot : Clears snapshot buffer (but does not allocate)
+#                      (Doesn't have to be '2' works with any number
+that
+#                       is not a '0' or '1')
+
+
+As this is a new feature for 3.9, and we are still in -rc1, I think this
+might be a good thing to add now. As well as not returning -EINVAL on
+writing to the file when the snapshot buffer isn't allocated.
+
+What do you think?
+
+-- Steve
+
+
