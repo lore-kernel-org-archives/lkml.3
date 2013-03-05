@@ -1,97 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756271Ab3CENX0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 08:23:26 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:59263 "EHLO mx1.redhat.com"
+	id S1756312Ab3CEN2Y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 08:28:24 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:27291 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752818Ab3CENXZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 08:23:25 -0500
-Date: Tue, 5 Mar 2013 08:23:08 -0500
-From: Jeff Layton <jlayton@redhat.com>
-To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, Mandeep Singh Baines <msb@chromium.org>,
-        Ming Lei <ming.lei@canonical.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: LOCKDEP: 3.9-rc1: mount.nfs/4272 still has locks held!
-Message-ID: <20130305082308.6607d4db@tlielax.poochiereds.net>
-In-Reply-To: <4FA345DA4F4AE44899BD2B03EEEC2FA9286AEEB0@sacexcmbx05-prd.hq.netapp.com>
-References: <CACVXFVMKN6aeCvJcn7dyuonJYJDfYxWeW5KE6gfKRKJKFj2M4A@mail.gmail.com>
-	<4FA345DA4F4AE44899BD2B03EEEC2FA9286AD113@sacexcmbx05-prd.hq.netapp.com>
-	<20130304092310.1d21100c@tlielax.poochiereds.net>
-	<CACBanvrc0orXGZ1v+gKHtVPKWYKGEFx46dwoDCjTU78+nPtZyg@mail.gmail.com>
-	<20130304205307.GA13527@redhat.com>
-	<4FA345DA4F4AE44899BD2B03EEEC2FA9286AEEB0@sacexcmbx05-prd.hq.netapp.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753547Ab3CEN2X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Mar 2013 08:28:23 -0500
+Date: Tue, 5 Mar 2013 14:28:05 +0100
+From: Anton Arapov <anton@redhat.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, Josh Stone <jistone@redhat.com>,
+        Frank Eigler <fche@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+Subject: Re: [RFC PATCH v4 5/6] uretprobes: invoke return probe handlers
+Message-ID: <20130305132805.GC24229@bandura.brq.redhat.com>
+References: <1362407893-32505-1-git-send-email-anton@redhat.com>
+ <1362407893-32505-6-git-send-email-anton@redhat.com>
+ <20130304165120.GB3328@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130304165120.GB3328@redhat.com>
+X-PGP-Key: http://people.redhat.com/aarapov/gpg
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 4 Mar 2013 22:08:34 +0000
-"Myklebust, Trond" <Trond.Myklebust@netapp.com> wrote:
+On Mon, Mar 04, 2013 at 05:51:20PM +0100, Oleg Nesterov wrote:
+> On 03/04, Anton Arapov wrote:
+> >
+> > +static void handle_uretprobe(struct xol_area *area, struct pt_regs *regs)
+> > +{
+> > +	struct hlist_head *head;
+> > +	struct hlist_node *tmp;
+> > +	struct return_uprobe_i *ri;
+> > +	struct uprobe_task *utask;
+> > +	unsigned long orig_ret_vaddr;
+> > +
+> > +	/* TODO: uretprobe bypass logic */
+> > +
+> > +	utask = get_utask();
+> > +	if (!utask) {
+> > +		/* TODO:RFC task is not probed, do we want printk here? */
+> > +		return;
+> > +	}
+> > +	head = &utask->return_uprobes;
+> > +	hlist_for_each_entry_safe(ri, tmp, head, hlist) {
+> > +		if (ri->uprobe->consumers) {
+> > +			instruction_pointer_set(regs, ri->orig_ret_vaddr);
+> This doesn't look right if ri->orig_ret_vaddr == area->vaddr. We should
+> splice the list and find orig_ret_vaddr in advance.
+True, this cycle is buggy. I will rework handle_uretprobe().
 
-> On Mon, 2013-03-04 at 21:53 +0100, Oleg Nesterov wrote:
-> > On 03/04, Mandeep Singh Baines wrote:
-> > >
-> > > The problem is that freezer_count() calls try_to_freeze(). In this
-> > > case, try_to_freeze() is not really adding any value.
-> > 
-> > Well, I tend to agree.
-> > 
-> > If a task calls __refrigerator() holding a lock which another freezable
-> > task can wait for, this is not freezer-friendly.
-> > 
-> > freezable_schedule/freezer_do_not_count/etc not only means "I won't be
-> > active if freezing()", it should also mean "I won't block suspend/etc".
+> > @@ -1589,8 +1639,11 @@ static void handle_swbp(struct pt_regs *regs)
+> >
+> >  	if (!uprobe) {
+> >  		if (is_swbp > 0) {
+> > -			/* No matching uprobe; signal SIGTRAP. */
+> > -			send_sig(SIGTRAP, current, 0);
+> > +			area = get_xol_area();
+> > +			if (area && bp_vaddr == area->vaddr)
+> > +				handle_uretprobe(area, regs);
+> > +			else
+> > +				send_sig(SIGTRAP, current, 0);
 > 
-> If suspend for some reason requires a re-entrant mount, then yes, I can
-> see how it might be a problem that we're holding a mount-related lock.
-> The question is why is that necessary?
-> 
-> > OTOH, I understand that probably it is not trivial to change this code
-> > to make it freezer-friendly. But at least  I disagree with "push your
-> > problems onto others".
-> 
-> That code can't be made freezer-friendly if it isn't allowed to hold
-> basic filesystem-related locks across RPC calls. A number of those RPC
-> calls do things that need to be protected by VFS or MM-level locks.
-> i.e.: lookups, file creation/deletion, page fault in/out, ...
->  
-> IOW: the problem would need to be solved differently, possibly by adding
-> a new FIFREEZE-like call to allow the filesystem to quiesce itself
-> _before_ NetworkManager pulls the rug out from underneath it. There
-> would still be plenty of corner cases to keep people entertained (e.g.
-> the server goes down before the quiesce call is invoked) but at least
-> the top 90% of cases would be solved.
-> 
+> Why? We can check bp_vaddr at the start, before find_active_uprobe().
+For some reason, I was thinking it is better to hide this logic under
+if (!uprobe). Will correct this chunk.
 
-Ok, I think I'm starting to get it. It doesn't necessarily need a
-reentrant mount or anything like that. Consider this case (which is not
-even that unlikely):
+> And I'd suggest to not use area->vaddr directly, imho a trivial helper
+> makes sense.
+I see the idea behind, with this change it will be more clear and
+fragile in case someone change the underneath logic. Will do this.
 
-Suppose there are two tasks calling unlink() on files in the same NFS
-directory.
-
-First task takes the i_mutex on the parent directory and goes to ask
-the server to remove the file. Second task calls unlink just
-afterward and blocks on the parent's i_mutex.
-
-Now, a suspend event comes in and freezes the first task while it's
-waiting on the response. It still holds the parent's i_mutex. Freezer
-now gets to the second task and can't freeze it because the sleep on
-that mutex isn't freezable.
-
-So, not a deadlock per-se in this case but it does prevent the freezer
-from running to completion. I don't see any way to solve it though w/o
-making all mutexes freezable. Note that I don't think this is really
-limited to NFS either -- a lot of other filesystems will have similar
-problems: CIFS, some FUSE variants, etc...
-
--- 
-Jeff Layton <jlayton@redhat.com>
+thank you very much!
+Anton.
