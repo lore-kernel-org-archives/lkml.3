@@ -1,230 +1,260 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757267Ab3CEQTY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 11:19:24 -0500
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:57873 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752440Ab3CEQTS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 11:19:18 -0500
-Date: Tue, 5 Mar 2013 08:19:12 -0800
-From: Michel Lespinasse <walken@google.com>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: Oleg Nesterov <oleg@redhat.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Lai Jiangshan <eag0628@gmail.com>, linux-doc@vger.kernel.org,
-        peterz@infradead.org, fweisbec@gmail.com, linux-kernel@vger.kernel.org,
-        namhyung@kernel.org, mingo@kernel.org, linux-arch@vger.kernel.org,
-        linux@arm.linux.org.uk, xiaoguangrong@linux.vnet.ibm.com,
-        wangyun@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com,
-        nikunj@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
-        rusty@rustcorp.com.au, rostedt@goodmis.org, rjw@sisk.pl,
-        vincent.guittot@linaro.org, tglx@linutronix.de,
-        linux-arm-kernel@lists.infradead.org, netdev@vger.kernel.org,
-        sbw@mit.edu, tj@kernel.org, akpm@linux-foundation.org,
-        linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH V2] lglock: add read-preference local-global rwlock
-Message-ID: <20130305161912.GA30756@google.com>
-References: <CACvQF50UgiqPpDk3HCmV86zKSf6tPjqr0bZowfPEOJs0g0r0MQ@mail.gmail.com>
- <512D0D67.9010609@linux.vnet.ibm.com>
- <CACvQF53ph2ixdM-otzetjM5cR+2kcZj6sckOp3TnzzA_x-EZ8w@mail.gmail.com>
- <512E7879.20109@linux.vnet.ibm.com>
- <5130E8E2.50206@cn.fujitsu.com>
- <20130301182854.GA3631@redhat.com>
- <CANN689HEW=b5S93J27p+rBX-5m7jkW4FER=eHDCp7OgMaTWLPw@mail.gmail.com>
- <5131FB4C.7070408@cn.fujitsu.com>
- <20130302172003.GC29769@redhat.com>
- <51360ED1.3030104@cn.fujitsu.com>
+	id S1757206Ab3CEQXV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 11:23:21 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:28816 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752404Ab3CEQXT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Mar 2013 11:23:19 -0500
+X-IronPort-AV: E=Sophos;i="4.84,788,1355068800"; 
+   d="scan'208";a="6818548"
+Message-ID: <51361C71.5060502@cn.fujitsu.com>
+Date: Wed, 06 Mar 2013 00:25:21 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51360ED1.3030104@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+CC: Lai Jiangshan <eag0628@gmail.com>, Michel Lespinasse <walken@google.com>,
+        linux-doc@vger.kernel.org, peterz@infradead.org, fweisbec@gmail.com,
+        linux-kernel@vger.kernel.org, namhyung@kernel.org, mingo@kernel.org,
+        linux-arch@vger.kernel.org, linux@arm.linux.org.uk,
+        xiaoguangrong@linux.vnet.ibm.com, wangyun@linux.vnet.ibm.com,
+        paulmck@linux.vnet.ibm.com, nikunj@linux.vnet.ibm.com,
+        linux-pm@vger.kernel.org, rusty@rustcorp.com.au, rostedt@goodmis.org,
+        rjw@sisk.pl, vincent.guittot@linaro.org, tglx@linutronix.de,
+        linux-arm-kernel@lists.infradead.org, netdev@vger.kernel.org,
+        oleg@redhat.com, sbw@mit.edu, tj@kernel.org, akpm@linux-foundation.org,
+        linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH v6 04/46] percpu_rwlock: Implement the core design of
+ Per-CPU Reader-Writer Locks
+References: <20130218123714.26245.61816.stgit@srivatsabhat.in.ibm.com> <20130218123856.26245.46705.stgit@srivatsabhat.in.ibm.com> <CANN689F9S7c1M8+cEpz3tsxGF34+NTRBLvxgPUOtbvav5u+RRA@mail.gmail.com> <5122551E.1080703@linux.vnet.ibm.com>	<51226B46.9080707@linux.vnet.ibm.com> <CANN689FSxOz+0Cu7EG_yKD8ZE1OpT4kyT+ybLfXSqaifodJRpw@mail.gmail.com> <51226F91.7000108@linux.vnet.ibm.com> <CACvQF53bdh4_BxF0y1fnTVR+T2OmRc0jmWQYftsvx92-fg-Lug@mail.gmail.com> <512BBAD8.8010006@linux.vnet.ibm.com> <CACvQF51jCxk5jUqmhD=QBBtUsBkQWZzakacrKO4Gsk=w61rNwQ@mail.gmail.com> <512C7A38.8060906@linux.vnet.ibm.com> <CACvQF51RvhM8XNqu3-1OTQ=cZUZ=pAX+_zx0a29+W67N1X+BgQ@mail.gmail.com> <512CC509.1050000@linux.vnet.ibm.com> <CACvQF50UgiqPpDk3HCmV86zKSf6tPjqr0bZowfPEOJs0g0r0MQ@mail.gmail.com> <512D0D67.9010609@linux.vnet.ibm.com> <CACvQF53ph2ixdM-otzetjM5cR+2kcZj6sckOp3TnzzA_x-EZ8w@mail.gmail.com> <512E7879.20109@linux.vnet.ibm.com> <5130EA6B.6030901@cn.fujitsu.com> <513105DD.8010908@linux.vnet.ibm.com>
+In-Reply-To: <513105DD.8010908@linux.vnet.ibm.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/03/06 00:22:12,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/03/06 00:22:14,
+	Serialize complete at 2013/03/06 00:22:14
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Lai,
+On 02/03/13 03:47, Srivatsa S. Bhat wrote:
+> On 03/01/2013 11:20 PM, Lai Jiangshan wrote:
+>> On 28/02/13 05:19, Srivatsa S. Bhat wrote:
+>>> On 02/27/2013 06:03 AM, Lai Jiangshan wrote:
+>>>> On Wed, Feb 27, 2013 at 3:30 AM, Srivatsa S. Bhat
+>>>> <srivatsa.bhat@linux.vnet.ibm.com> wrote:
+>>>>> On 02/26/2013 09:55 PM, Lai Jiangshan wrote:
+>>>>>> On Tue, Feb 26, 2013 at 10:22 PM, Srivatsa S. Bhat
+>>>>>> <srivatsa.bhat@linux.vnet.ibm.com> wrote:
+>>>>>>>
+>>>>>>> Hi Lai,
+>>>>>>>
+>>>>>>> I'm really not convinced that piggy-backing on lglocks would help
+>>>>>>> us in any way. But still, let me try to address some of the points
+>>>>>>> you raised...
+>>>>>>>
+>>>>>>> On 02/26/2013 06:29 PM, Lai Jiangshan wrote:
+>>>>>>>> On Tue, Feb 26, 2013 at 5:02 PM, Srivatsa S. Bhat
+>>>>>>>> <srivatsa.bhat@linux.vnet.ibm.com> wrote:
+>>>>>>>>> On 02/26/2013 05:47 AM, Lai Jiangshan wrote:
+>>>>>>>>>> On Tue, Feb 26, 2013 at 3:26 AM, Srivatsa S. Bhat
+>>>>>>>>>> <srivatsa.bhat@linux.vnet.ibm.com> wrote:
+>>>>>>>>>>> Hi Lai,
+>>>>>>>>>>>
+>>>>>>>>>>> On 02/25/2013 09:23 PM, Lai Jiangshan wrote:
+>>>>>>>>>>>> Hi, Srivatsa,
+>>>>>>>>>>>>
+>>>>>>>>>>>> The target of the whole patchset is nice for me.
+>>>>>>>>>>>
+>>>>>>>>>>> Cool! Thanks :-)
+>>>>>>>>>>>
+>>>>>>>>> [...]
+>>>>>>>>>
+>>>>>>>>> Unfortunately, I see quite a few issues with the code above. IIUC, the
+>>>>>>>>> writer and the reader both increment the same counters. So how will the
+>>>>>>>>> unlock() code in the reader path know when to unlock which of the locks?
+>>>>>>>>
+>>>>>>>> The same as your code, the reader(which nested in write C.S.) just dec
+>>>>>>>> the counters.
+>>>>>>>
+>>>>>>> And that works fine in my case because the writer and the reader update
+>>>>>>> _two_ _different_ counters.
+>>>>>>
+>>>>>> I can't find any magic in your code, they are the same counter.
+>>>>>>
+>>>>>>         /*
+>>>>>>          * It is desirable to allow the writer to acquire the percpu-rwlock
+>>>>>>          * for read (if necessary), without deadlocking or getting complaints
+>>>>>>          * from lockdep. To achieve that, just increment the reader_refcnt of
+>>>>>>          * this CPU - that way, any attempt by the writer to acquire the
+>>>>>>          * percpu-rwlock for read, will get treated as a case of nested percpu
+>>>>>>          * reader, which is safe, from a locking perspective.
+>>>>>>          */
+>>>>>>         this_cpu_inc(pcpu_rwlock->rw_state->reader_refcnt);
+>>>>>>
+>>>>>
+>>>>> Whoa! Hold on, were you really referring to _this_ increment when you said
+>>>>> that, in your patch you would increment the refcnt at the writer? Then I guess
+>>>>> there is a major disconnect in our conversations. (I had assumed that you were
+>>>>> referring to the update of writer_signal, and were just trying to have a single
+>>>>> refcnt instead of reader_refcnt and writer_signal).
+>>>>
+>>>> https://github.com/laijs/linux/commit/53e5053d5b724bea7c538b11743d0f420d98f38d
+>>>>
+>>>> Sorry the name "fallback_reader_refcnt" misled you.
+>>>>
+>>> [...]
+>>>
+>>>>>> All I was considered is "nested reader is seldom", so I always
+>>>>>> fallback to rwlock when nested.
+>>>>>> If you like, I can add 6 lines of code, the overhead is
+>>>>>> 1 spin_try_lock()(fast path)  + N  __this_cpu_inc()
+>>>>>>
+>>>>>
+>>>>> I'm assuming that calculation is no longer valid, considering that
+>>>>> we just discussed how the per-cpu refcnt that you were using is quite
+>>>>> unnecessary and can be removed.
+>>>>>
+>>>>> IIUC, the overhead with your code, as per above discussion would be:
+>>>>> 1 spin_try_lock() [non-nested] + N read_lock(global_rwlock).
+>>>>
+>>>> https://github.com/laijs/linux/commit/46334544bb7961550b7065e015da76f6dab21f16
+>>>>
+>>>> Again, I'm so sorry the name "fallback_reader_refcnt" misled you.
+>>>>
+>>>
+>>> At this juncture I really have to admit that I don't understand your
+>>> intentions at all. What are you really trying to prove? Without giving
+>>> a single good reason why my code is inferior, why are you even bringing
+>>> up the discussion about a complete rewrite of the synchronization code?
+>>> http://article.gmane.org/gmane.linux.kernel.cross-arch/17103
+>>> http://article.gmane.org/gmane.linux.power-management.general/31345
+>>>
+>>> I'm beginning to add 2 + 2 together based on the kinds of questions you
+>>> have been asking...
+>>>
+>>> You posted a patch in this thread and started a discussion around it without
+>>> even establishing a strong reason to do so. Now you point me to your git
+>>> tree where your patches have even more traces of ideas being borrowed from
+>>> my patchset (apart from my own ideas/code, there are traces of others' ideas
+>>> being borrowed too - for example, it was Oleg who originally proposed the
+>>> idea of splitting up the counter into 2 parts and I'm seeing that it is
+>>> slowly crawling into your code with no sign of appropriate credits).
+>>> http://article.gmane.org/gmane.linux.network/260288
+>>>
+>>> And in reply to my mail pointing out the performance implications of the
+>>> global read_lock at the reader side in your code, you said you'll come up
+>>> with a comparison between that and my patchset.
+>>> http://article.gmane.org/gmane.linux.network/260288
+>>> The issue has been well-documented in my patch description of patch 4.
+>>> http://article.gmane.org/gmane.linux.kernel/1443258
+>>>
+>>> Are you really trying to pit bits and pieces of my own ideas/versions
+>>> against one another and claiming them as your own?
+>>>
+>>> You projected the work involved in handling the locking issues pertaining
+>>> to CPU_DYING notifiers etc as a TODO, despite the fact that I had explicitly
+>>> noted in my cover letter that I had audited and taken care of all of them.
+>>> http://article.gmane.org/gmane.linux.documentation/9727
+>>> http://article.gmane.org/gmane.linux.documentation/9520
+>>>
+>>> You failed to acknowledge (on purpose?) that I had done a tree-wide
+>>> conversion despite the fact that you were replying to the very thread which
+>>> had the 46 patches which did exactly that (and I had also mentioned it
+>>> explicitly in my cover letter).
+>>> http://article.gmane.org/gmane.linux.documentation/9727
+>>> http://article.gmane.org/gmane.linux.documentation/9520
+>>>
+>>> You then started probing more and more about the technique I used to do
+>>> the tree-wide conversion.
+>>> http://article.gmane.org/gmane.linux.kernel.cross-arch/17111
+>>>
+>>> You also retorted saying you did go through my patch descriptions, so
+>>> its not like you have missed reading them.
+>>> http://article.gmane.org/gmane.linux.power-management.general/31345
+>>>
+>>> Each of these when considered individually, might appear like innocuous and
+>>> honest attempts at evaluating my code. But when put together, I'm beginning
+>>> to sense a whole different angle to it altogether, as if you are trying
+>>> to spin your own patch series, complete with the locking framework _and_
+>>> the tree-wide conversion, heavily borrowed from mine. At the beginning of
+>>> this discussion, I predicted that the lglock version that you are proposing
+>>> would end up being either less efficient than my version or look very similar
+>>> to my version. http://article.gmane.org/gmane.linux.kernel/1447139
+>>>
+>>> I thought it was just the former till now, but its not hard to see how it
+>>> is getting closer to becoming the latter too. So yeah, I'm not amused.
+>>>
+>>> Maybe (and hopefully) you are just trying out different ideas on your own,
+>>> and I'm just being paranoid. I really hope that is the case. If you are just
+>>> trying to review my code, then please stop sending patches with borrowed ideas
+>>> with your sole Signed-off-by, and purposefully ignoring the work already done
+>>> in my patchset, because it is really starting to look suspicious, at least
+>>> to me.
+>>>
+>>> Don't get me wrong - I'll whole-heartedly acknowledge and appreciate if
+>>> _your_ code is better than mine. I just don't like the idea of somebody
+>>> plagiarizing my ideas/code (or even others' ideas for that matter).
+>>> However, I sincerely apologize in advance if I misunderstood/misjudged your
+>>> intentions; I just wanted to voice my concerns out loud at this point,
+>>> considering the bad feeling I got by looking at your responses collectively.
+>>>
+>>
+>> Hi, Srivatsa
+>>
+>> I'm sorry, big apology to you.
+>> I'm bad in communication and I did be wrong.
+>> I tended to improve the codes but in false direction.
+>>
+> 
+> OK, in that case, I'm extremely sorry too, for jumping on you like that.
+> I hope you'll forgive me for the uneasiness it caused.
+> 
+> Now that I understand that you were simply trying to help, I would like to
+> express my gratitude for your time, effort and inputs in improving the design
+> of the stop-machine replacement.
+> 
+> I'm looking forward to working with you on this as well as future endeavours,
+> so I sincerely hope that we can put this unfortunate incident behind us and
+> collaborate effectively with renewed mutual trust and good-will.
+> 
+> Thank you very much!
+> 
 
-Just a few comments about your v2 proposal. Hopefully you'll catch
-these before you send out v3 :)
+Hi, Srivatsa,
 
-- I would prefer reader_refcnt to be unsigned int instead of unsigned long
-- I would like some comment to indicate that lgrwlocks don't have
-  reader-writer fairness and are thus somewhat discouraged
-  (people could use plain lglock if they don't need reader preference,
-  though even that use (as brlock) is discouraged already :)
-- I don't think FALLBACK_BASE is necessary (you already mentioned you'd
-  drop it)
-- I prefer using the fallback_rwlock's dep_map for lockdep tracking.
-  I feel this is more natural since we want the lgrwlock to behave as
-  the rwlock, not as the lglock.
-- I prefer to avoid return statements in the middle of functions when
-  it's easyto do so.
+I'm sorry again, I delayed your works.
 
-Attached is my current version (based on an earlier version of your code).
-You don't have to take it as is but I feel it makes for a more concrete
-suggestion :)
+I have some thinkings about the way how to get this work done.
+
+First step: (2~3 patches)
+Use preempt_disable() to implement get_online_cpu_atomic(), and add lockdep for it.
+
+Second step:
+Conversion patches.
+
+We can send the patchset of the above steps at first.
+{
+It does not change any behavior of the kernel.
+and it is annotation(instead of direct preempt_diable() without comments sometimes),
+so I expected they can be merged very early.
+}
+
+Third step:
+After all people confide the conversion patches covered all cases and cpuhotplug site is ready for it,
+we will implement get_online_cpu_atomic() via locks and remove stop_machine() from cpuhotplug.
+
+Any thought?
 
 Thanks,
+Lai
 
-----------------------------8<-------------------------------------------
-lglock: add read-preference lgrwlock
+If I have time, I will help you for the patches of the first step.
+(I was assigned bad job in office-time, I can only do kernel-dev work in night.)
 
-Current lglock may be used as a fair rwlock; however sometimes a
-read-preference rwlock is preferred. One such use case recently came
-up for get_cpu_online_atomic().
+And for step2, I will write a checklist or spatch-script.
 
-This change adds a new lgrwlock with the following properties:
-- high performance read side, using only cpu-local structures when there
-  is no write side to contend with;
-- correctness guarantees similar to rwlock_t: recursive readers are allowed
-  and the lock's read side is not ordered vs other locks;
-- low performance write side (comparable to lglocks' global side).
 
-The implementation relies on the following principles:
-- reader_refcnt is a local lock count; it indicates how many recursive
-  read locks are taken using the local lglock;
-- lglock is used by readers for local locking; it must be acquired
-  before reader_refcnt becomes nonzero and released after reader_refcnt
-  goes back to zero;
-- fallback_rwlock is used by readers for global locking; it is acquired
-  when fallback_reader_refcnt is zero and the trylock fails on lglock.
-- writers take both the lglock write side and the fallback_rwlock, thus
-  making sure to exclude both local and global readers.
-
-Thanks to Srivatsa S. Bhat for proposing a lock with these requirements
-and Lai Jiangshan for proposing this algorithm as an lglock extension.
-
-Signed-off-by: Michel Lespinasse <walken@google.com>
-
----
- include/linux/lglock.h | 46 +++++++++++++++++++++++++++++++++++++++
- kernel/lglock.c        | 58 ++++++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 104 insertions(+)
-
-diff --git a/include/linux/lglock.h b/include/linux/lglock.h
-index 0d24e932db0b..8b59084935d5 100644
---- a/include/linux/lglock.h
-+++ b/include/linux/lglock.h
-@@ -67,4 +67,50 @@ void lg_local_unlock_cpu(struct lglock *lg, int cpu);
- void lg_global_lock(struct lglock *lg);
- void lg_global_unlock(struct lglock *lg);
- 
-+/*
-+ * lglock may be used as a read write spinlock if desired (though this is
-+ * not encouraged as the write side scales badly on high CPU count machines).
-+ * It has reader/writer fairness when used that way.
-+ *
-+ * However, sometimes it is desired to have an unfair rwlock instead, with
-+ * reentrant readers that don't need to be ordered vs other locks, comparable
-+ * to rwlock_t. lgrwlock implements such semantics.
-+ */
-+struct lgrwlock {
-+	unsigned int __percpu *reader_refcnt;
-+	struct lglock lglock;
-+	rwlock_t fallback_rwlock;
-+};
-+
-+#define __DEFINE_LGRWLOCK_PERCPU_DATA(name)				\
-+	static DEFINE_PER_CPU(unsigned int, name ## _refcnt);		\
-+	static DEFINE_PER_CPU(arch_spinlock_t, name ## _lock)		\
-+	= __ARCH_SPIN_LOCK_UNLOCKED;
-+
-+#define __LGRWLOCK_INIT(name) {						\
-+	.reader_refcnt = &name ## _refcnt,				\
-+	.lglock = { .lock = &name ## _lock },				\
-+	.fallback_rwlock = __RW_LOCK_UNLOCKED(name.fallback_rwlock)	\
-+}
-+
-+#define DEFINE_LGRWLOCK(name)						\
-+	__DEFINE_LGRWLOCK_PERCPU_DATA(name)				\
-+	struct lgrwlock name = __LGRWLOCK_INIT(name)
-+
-+#define DEFINE_STATIC_LGRWLOCK(name)					\
-+	__DEFINE_LGRWLOCK_PERCPU_DATA(name)				\
-+	static struct lgrwlock name = __LGRWLOCK_INIT(name)
-+
-+static inline void lg_rwlock_init(struct lgrwlock *lgrw, char *name)
-+{
-+	lg_lock_init(&lgrw->lglock, name);
-+}
-+
-+void lg_read_lock(struct lgrwlock *lgrw);
-+void lg_read_unlock(struct lgrwlock *lgrw);
-+void lg_write_lock(struct lgrwlock *lgrw);
-+void lg_write_unlock(struct lgrwlock *lgrw);
-+void __lg_read_write_lock(struct lgrwlock *lgrw);
-+void __lg_read_write_unlock(struct lgrwlock *lgrw);
-+
- #endif
-diff --git a/kernel/lglock.c b/kernel/lglock.c
-index 86ae2aebf004..e78a7c95dbfd 100644
---- a/kernel/lglock.c
-+++ b/kernel/lglock.c
-@@ -87,3 +87,61 @@ void lg_global_unlock(struct lglock *lg)
- 	preempt_enable();
- }
- EXPORT_SYMBOL(lg_global_unlock);
-+
-+void lg_read_lock(struct lgrwlock *lgrw)
-+{
-+	preempt_disable();
-+
-+	if (__this_cpu_read(*lgrw->reader_refcnt) ||
-+	    arch_spin_trylock(this_cpu_ptr(lgrw->lglock.lock))) {
-+		__this_cpu_inc(*lgrw->reader_refcnt);
-+		rwlock_acquire_read(&lgrw->fallback_rwlock.dep_map,
-+				    0, 0, _RET_IP_);
-+	} else {
-+		read_lock(&lgrw->fallback_rwlock);
-+	}
-+}
-+EXPORT_SYMBOL(lg_read_lock);
-+
-+void lg_read_unlock(struct lgrwlock *lgrw)
-+{
-+	if (likely(__this_cpu_read(*lgrw->reader_refcnt))) {
-+		rwlock_release(&lgrw->fallback_rwlock.dep_map,
-+			       1, _RET_IP_);
-+		if (!__this_cpu_dec_return(*lgrw->reader_refcnt))
-+			arch_spin_unlock(this_cpu_ptr(lgrw->lglock.lock));
-+	} else {
-+		read_unlock(&lgrw->fallback_rwlock);
-+	}
-+
-+	preempt_enable();
-+}
-+EXPORT_SYMBOL(lg_read_unlock);
-+
-+void lg_write_lock(struct lgrwlock *lgrw)
-+{
-+	lg_global_lock(&lgrw->lglock);
-+	write_lock(&lgrw->fallback_rwlock);
-+}
-+EXPORT_SYMBOL(lg_write_lock);
-+
-+void lg_write_unlock(struct lgrwlock *lgrw)
-+{
-+	write_unlock(&lgrw->fallback_rwlock);
-+	lg_global_unlock(&lgrw->lglock);
-+}
-+EXPORT_SYMBOL(lg_write_unlock);
-+
-+void __lg_read_write_lock(struct lgrwlock *lgrw)
-+{
-+	lg_write_lock(lgrw);
-+	__this_cpu_write(*lgrw->reader_refcnt, 1);
-+}
-+EXPORT_SYMBOL(__lg_read_write_lock);
-+
-+void __lg_read_write_unlock(struct lgrwlock *lgrw)
-+{
-+	__this_cpu_write(*lgrw->reader_refcnt, 0);
-+	lg_write_unlock(lgrw);
-+}
-+EXPORT_SYMBOL(__lg_read_write_unlock);
-
--- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
