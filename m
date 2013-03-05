@@ -1,75 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933120Ab3CEDwW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 22:52:22 -0500
-Received: from na01-sn2-obe.ptr.o365filtering.com ([157.55.158.24]:10950 "EHLO
-	na01-sn2-obe.outbound.o365filtering.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932566Ab3CEDwU convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 22:52:20 -0500
-X-Greylist: delayed 308 seconds by postgrey-1.27 at vger.kernel.org; Mon, 04 Mar 2013 22:52:19 EST
-From: Haiyang Zhang <haiyangz@microsoft.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: "FlorianSchandinat@gmx.de" <FlorianSchandinat@gmx.de>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        "olaf@aepfle.de" <olaf@aepfle.de>,
-        "jasowang@redhat.com" <jasowang@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>
-Subject: RE: [PATCH v2] video: Add Hyper-V Synthetic Video Frame Buffer
- Driver
-Thread-Topic: [PATCH v2] video: Add Hyper-V Synthetic Video Frame Buffer
- Driver
-Thread-Index: AQHOGR8rR1d2Cn5OekKWK9Y81PDGP5iW0euA//+jKXA=
-Date: Tue, 5 Mar 2013 03:46:46 +0000
-Message-ID: <f2a49f00794e4e2bbd2f2a0201a5b544@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
-References: <1362434172-25070-1-git-send-email-haiyangz@microsoft.com>
- <20130305011613.GA21499@kroah.com>
-In-Reply-To: <20130305011613.GA21499@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.51.13]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S933141Ab3CEDyJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 22:54:09 -0500
+Received: from mga14.intel.com ([143.182.124.37]:24537 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932542Ab3CEDyH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Mar 2013 22:54:07 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,784,1355126400"; 
+   d="scan'208";a="264390755"
+Date: Tue, 5 Mar 2013 11:53:02 +0800
+From: Feng Tang <feng.tang@intel.com>
+To: Thomas Gleixner <tglx@linutronix.de>, John Stultz <john.stultz@linaro.org>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        x86@kernel.org, Len Brown <lenb@kernel.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        linux-kernel@vger.kernel.org,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+Cc: gong.chen@linux.intel.com
+Subject: Re: [RFC PATCH v2 0/4] Add support for S3 non-stop TSC support.
+Message-ID: <20130305035302.GA5239@feng-snb>
+References: <1362450426-4232-1-git-send-email-feng.tang@intel.com>
 MIME-Version: 1.0
-X-Forefront-Antispam-Report: CIP:131.107.1.27;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(52604002)(13464002)(377454001)(51704002)(24454001)(189002)(199002)(33646001)(66066001)(47976001)(54356001)(51856001)(54316002)(50986001)(65816001)(23726001)(49866001)(47736001)(46102001)(50466001)(80022001)(79102001)(16406001)(47446002)(31966008)(53806001)(63696002)(74502001)(77982001)(47776003)(876001)(20776003)(46406002)(76482001)(5343655001)(4396001)(44976002)(59766001)(56776001)(69226001)(56816002)(74662001)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:CH1SR01MB612;H:hybrid.exchange.microsoft.com;RD:mail7.exchange.microsoft.com;MX:1;A:1;LANG:en;
-X-Forefront-PRVS: 0776C39A48
-X-OriginatorOrg: DuplicateDomain-7923a859-03c9-4312-a77c-440aa45aaf52.microsoft.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1362450426-4232-1-git-send-email-feng.tang@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Jason,
 
+Thanks for the review and suggestions!
 
-> -----Original Message-----
-> From: linux-fbdev-owner@vger.kernel.org [mailto:linux-fbdev-
-> owner@vger.kernel.org] On Behalf Of Greg KH
-> Sent: Monday, March 04, 2013 8:16 PM
-> To: Haiyang Zhang
-> Cc: FlorianSchandinat@gmx.de; linux-fbdev@vger.kernel.org;
-> olaf@aepfle.de; jasowang@redhat.com; linux-kernel@vger.kernel.org;
-> devel@linuxdriverproject.org
-> Subject: Re: [PATCH v2] video: Add Hyper-V Synthetic Video Frame Buffer
-> Driver
+On Mon, Mar 04, 2013 at 08:20:36PM -0700, Jason Gunthorpe wrote:
+> On Tue, Mar 05, 2013 at 02:34:25AM +0000, Tang, Feng wrote:
+> > Hi Jason,
+> > 
+> > Sorry, I forgot to add you in cc list in the first place. Please
+> > help to review the patch series, thanks!
 > 
-> On Mon, Mar 04, 2013 at 01:56:12PM -0800, Haiyang Zhang wrote:
-> > --- a/include/linux/pci_ids.h
-> > +++ b/include/linux/pci_ids.h
-> > @@ -2951,3 +2951,6 @@
-> >  #define PCI_DEVICE_ID_XEN_PLATFORM	0x0001
-> >
-> >  #define PCI_VENDOR_ID_OCZ		0x1b85
-> > +
-> > +#define PCI_VENDOR_ID_MICROSOFT		0x1414
-> > +#define PCI_DEVICE_ID_HYPERV_VIDEO	0x5353
+> Sure, I didn't get CC'd on the patches, so this is an imperfect reply,
+> but..
+
+I've copied your comments back to the main thread.
+
 > 
-> Please see the top of this while for why you shouldn't be adding any lines to
-> this file.
+> Did you consider an approach closer to the function I outlined to
+> Jonh:
+> 
+> // Drops some small precision along the way but is simple..
+> static inline u64 cyclecounter_cyc2ns_128(const struct cyclecounter *cc,
+>                                           cycle_t cycles)
+> {
+>     u64 max = U64_MAX/cc->mult;
+>     u64 num = cycles/max;
+>     u64 result = num * ((max * cc->mult) >> cc->shift);
+>     return result + cyclecounter_cyc2ns(cc, cycles - num*cc->mult);
+> }
 
-I will move the defines back to the hyperv_fb.c.
-Thanks for pointing this out.
+Your way is surely more accurate, if maintainers are ok with adding
+the new API, I will use it.
 
-- Haiyang
+> 
+> Rather than the while loop, which, I suspect, drops more precision
+> that something like the above. (replace cyclecounter with clocksource)
+> At the very least, keeping it as a distinct inline will let someone
+> come by one day and implement a proper 128 bit multiply...
+
+> 
+> You may want to also CC the maintainers of all the ARM subsystems that
+> use read_persistent_clock and check with them to ensure this new
+> interface will let them migrate their implementations as well.
+
+Maybe I didn't get it well, my patches didn't change the read_persistent_clock(),
+but inject a new way of counting suspended time. It should have no
+functional changes to existing platforms.
+
+ 
+> > 	    * Solve the problem of judging S3/S4, as the clocksource
+> > 	      counter will be reset after coming out S4.
+> 
+> Hrm, what if it wraps during suspend? This probably isn't a problem
+> for a 64 bit TSC though..
+
+Nice catch! I've added a wrap check in the patch, and will stop to use it
+if there is a wrap founded.
+
++	if ((clock->flags & CLOCK_SOURCE_SUSPEND_NOTSTOP) &&
++		cycle_now > clock->cycle_last) {
+
+> 
+> Is it impossible to track if S4 or S3 was entered in the clocksource?
+
+Currently there is no easy way to check it.
+
+Thanks,
+Feng
+
 
