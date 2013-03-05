@@ -1,108 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755179Ab3CEO5N (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 09:57:13 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:55282 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751320Ab3CEO5L (ORCPT
+	id S1755978Ab3CEO6Q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 09:58:16 -0500
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:50667 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753867Ab3CEO6P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 09:57:11 -0500
-Date: Tue, 5 Mar 2013 16:56:45 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Kishon Vijay Abraham I <kishon@ti.com>
-CC: <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>, <rob@landley.net>,
-        <balbi@ti.com>, <gregkh@linuxfoundation.org>, <s-guiriec@ti.com>,
-        <gg@slimlogic.co.uk>, <sameo@linux.intel.com>,
-        <broonie@opensource.wolfsonmicro.com>, <ldewangan@nvidia.com>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>
-Subject: Re: [PATCH 2/4] usb: dwc3: dwc3-omap: return -EPROBE_DEFER if probe
- has not yet executed
-Message-ID: <20130305145645.GG12123@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <1362493320-13913-1-git-send-email-kishon@ti.com>
- <1362493320-13913-3-git-send-email-kishon@ti.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="df+09Je9rNq3P+GE"
-Content-Disposition: inline
-In-Reply-To: <1362493320-13913-3-git-send-email-kishon@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 5 Mar 2013 09:58:15 -0500
+From: Jiang Liu <liuj97@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>
+Cc: Jiang Liu <jiang.liu@huawei.com>, Wen Congyang <wency@cn.fujitsu.com>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Chris Clayton <chris2553@googlemail.com>,
+        "Rafael J . Wysocki" <rjw@sisk.pl>, Mel Gorman <mgorman@suse.de>,
+        Minchan Kim <minchan@kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>, Jianguo Wu <wujianguo@huawei.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Richard Henderson <rth@twiddle.net>,
+        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
+        Matt Turner <mattst88@gmail.com>
+Subject: [RFC PATCH v1 02/33] mm/alpha: use common help functions to free reserved pages
+Date: Tue,  5 Mar 2013 22:54:45 +0800
+Message-Id: <1362495317-32682-3-git-send-email-jiang.liu@huawei.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1362495317-32682-1-git-send-email-jiang.liu@huawei.com>
+References: <1362495317-32682-1-git-send-email-jiang.liu@huawei.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---df+09Je9rNq3P+GE
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Use common help functions to free reserved pages.
+Also include <asm/sections.h> to avoid local declarations.
 
-On Tue, Mar 05, 2013 at 07:51:58PM +0530, Kishon Vijay Abraham I wrote:
-> return -EPROBE_DEFER from dwc3_omap_mailbox in dwc3-omap.c, if the probe =
-of
-> dwc3-omap has not yet been executed or failed.
->=20
-> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
-> ---
->  drivers/usb/dwc3/dwc3-omap.c  |    7 +++++--
->  include/linux/usb/dwc3-omap.h |    6 +++---
->  2 files changed, 8 insertions(+), 5 deletions(-)
->=20
-> diff --git a/drivers/usb/dwc3/dwc3-omap.c b/drivers/usb/dwc3/dwc3-omap.c
-> index 19c6e72..9428f4e 100644
-> --- a/drivers/usb/dwc3/dwc3-omap.c
-> +++ b/drivers/usb/dwc3/dwc3-omap.c
-> @@ -138,11 +138,14 @@ static inline void dwc3_omap_writel(void __iomem *b=
-ase, u32 offset, u32 value)
->  	writel(value, base + offset);
->  }
-> =20
-> -void dwc3_omap_mailbox(enum omap_dwc3_vbus_id_status status)
-> +int dwc3_omap_mailbox(enum omap_dwc3_vbus_id_status status)
->  {
->  	u32			val;
->  	struct dwc3_omap	*omap =3D _omap;
-> =20
-> +	if (!omap)
-> +		return -EPROBE_DEFER;
-> +
->  	switch (status) {
->  	case OMAP_DWC3_ID_GROUND:
->  		dev_dbg(omap->dev, "ID GND\n");
-> @@ -185,7 +188,7 @@ void dwc3_omap_mailbox(enum omap_dwc3_vbus_id_status =
-status)
->  		dev_dbg(omap->dev, "ID float\n");
->  	}
-> =20
-> -	return;
-> +	return IRQ_HANDLED;
+Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+Cc: Richard Henderson <rth@twiddle.net>
+Cc: Ivan Kokshaysky <ink@jurassic.park.msu.ru>
+Cc: Matt Turner <mattst88@gmail.com>
+---
+ arch/alpha/kernel/sys_nautilus.c |    5 ++---
+ arch/alpha/mm/init.c             |   24 +++---------------------
+ arch/alpha/mm/numa.c             |    3 +--
+ 3 files changed, 6 insertions(+), 26 deletions(-)
 
-IRQ_HANDLED ????
+diff --git a/arch/alpha/kernel/sys_nautilus.c b/arch/alpha/kernel/sys_nautilus.c
+index 4d4c046..a8b9d66 100644
+--- a/arch/alpha/kernel/sys_nautilus.c
++++ b/arch/alpha/kernel/sys_nautilus.c
+@@ -185,7 +185,6 @@ nautilus_machine_check(unsigned long vector, unsigned long la_ptr)
+ 	mb();
+ }
+ 
+-extern void free_reserved_mem(void *, void *);
+ extern void pcibios_claim_one_bus(struct pci_bus *);
+ 
+ static struct resource irongate_mem = {
+@@ -234,8 +233,8 @@ nautilus_init_pci(void)
+ 	if (pci_mem < memtop)
+ 		memtop = pci_mem;
+ 	if (memtop > alpha_mv.min_mem_address) {
+-		free_reserved_mem(__va(alpha_mv.min_mem_address),
+-				  __va(memtop));
++		free_reserved_area((unsigned long)__va(alpha_mv.min_mem_address),
++				   (unsigned long)__va(memtop), 0, NULL);
+ 		printk("nautilus_init_pci: %ldk freed\n",
+ 			(memtop - alpha_mv.min_mem_address) >> 10);
+ 	}
+diff --git a/arch/alpha/mm/init.c b/arch/alpha/mm/init.c
+index 1ad6ca7..0ba85ee 100644
+--- a/arch/alpha/mm/init.c
++++ b/arch/alpha/mm/init.c
+@@ -31,6 +31,7 @@
+ #include <asm/console.h>
+ #include <asm/tlb.h>
+ #include <asm/setup.h>
++#include <asm/sections.h>
+ 
+ extern void die_if_kernel(char *,struct pt_regs *,long);
+ 
+@@ -281,8 +282,6 @@ printk_memory_info(void)
+ {
+ 	unsigned long codesize, reservedpages, datasize, initsize, tmp;
+ 	extern int page_is_ram(unsigned long) __init;
+-	extern char _text, _etext, _data, _edata;
+-	extern char __init_begin, __init_end;
+ 
+ 	/* printk all informations */
+ 	reservedpages = 0;
+@@ -318,32 +317,15 @@ mem_init(void)
+ #endif /* CONFIG_DISCONTIGMEM */
+ 
+ void
+-free_reserved_mem(void *start, void *end)
+-{
+-	void *__start = start;
+-	for (; __start < end; __start += PAGE_SIZE) {
+-		ClearPageReserved(virt_to_page(__start));
+-		init_page_count(virt_to_page(__start));
+-		free_page((long)__start);
+-		totalram_pages++;
+-	}
+-}
+-
+-void
+ free_initmem(void)
+ {
+-	extern char __init_begin, __init_end;
+-
+-	free_reserved_mem(&__init_begin, &__init_end);
+-	printk ("Freeing unused kernel memory: %ldk freed\n",
+-		(&__init_end - &__init_begin) >> 10);
++	free_initmem_default(0);
+ }
+ 
+ #ifdef CONFIG_BLK_DEV_INITRD
+ void
+ free_initrd_mem(unsigned long start, unsigned long end)
+ {
+-	free_reserved_mem((void *)start, (void *)end);
+-	printk ("Freeing initrd memory: %ldk freed\n", (end - start) >> 10);
++	free_reserved_area(start, end, 0, "initrd");
+ }
+ #endif
+diff --git a/arch/alpha/mm/numa.c b/arch/alpha/mm/numa.c
+index 3973ae3..3388504 100644
+--- a/arch/alpha/mm/numa.c
++++ b/arch/alpha/mm/numa.c
+@@ -17,6 +17,7 @@
+ 
+ #include <asm/hwrpb.h>
+ #include <asm/pgalloc.h>
++#include <asm/sections.h>
+ 
+ pg_data_t node_data[MAX_NUMNODES];
+ EXPORT_SYMBOL(node_data);
+@@ -325,8 +326,6 @@ void __init mem_init(void)
+ {
+ 	unsigned long codesize, reservedpages, datasize, initsize, pfn;
+ 	extern int page_is_ram(unsigned long) __init;
+-	extern char _text, _etext, _data, _edata;
+-	extern char __init_begin, __init_end;
+ 	unsigned long nid, i;
+ 	high_memory = (void *) __va(max_low_pfn << PAGE_SHIFT);
+ 
+-- 
+1.7.9.5
 
---=20
-balbi
-
---df+09Je9rNq3P+GE
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRNgetAAoJEIaOsuA1yqRE+7YP/2TwLfmHDDw6P9y3LyGISIS3
-34GgGJLOPO+LORBu/AaAz9w+vjxpkdo17BIMAl5AsfYg6DeZaJF6yO4EA/I2cS0N
-0HJhn/7HFyuxzd1zDHAFHthehdVcLf68q+C3VoCwip382Usverbz0EquVlyg2CTm
-iXXYFiFaWCG/ZTfVbhBtPeMdSs0Y0m8oAUduaTXOIIgZUNUSfFl447KPe/6obtgG
-URjJ/vOQx0RgR75k58mLd97N60jaevVQPRCcvcwtt0+hna0TQNd1SYKixmWjagvu
-BO/r0alGUNoJkxtJVg/BB/8zuvpf4ciDZb5X5RuynzlSqtzdVYzQ90iZ04UucdmT
-jFpUexGMOhavm5yyewWjFJ3ijuiRzi4iZgyNO7TfArSet4In+C/HaeLycVL70+P7
-mLTm4NL3fsC5hHYfYg+DyhgUUa4GS4+SYiL/LOf+CUAwl1LvqfHMjGnWJWOWdMig
-9dQVijJTuekPLOXoG5NYX+aKW3W2d9ILqDSgg8M4BLwhQHnydfLtGalbyXJ2n1bT
-OP+I++VOiNYEU789418obJzjhFoANbgtKgoDrceT+CTOyEEurnrn+mC5yGuchwE6
-greWUtDYheTpkeCDAtOXEbR+Q82OKA+ps1UKUlO9buDINGN1sWLVj6NA3p6JSnvb
-Rf9ho/O1Y7dWGrFeKaRn
-=5IBN
------END PGP SIGNATURE-----
-
---df+09Je9rNq3P+GE--
