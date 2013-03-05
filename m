@@ -1,405 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933266Ab3CEEyh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 23:54:37 -0500
-Received: from mail.active-venture.com ([67.228.131.205]:61424 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932566Ab3CEEyd (ORCPT
+	id S933234Ab3CEE7L (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 23:59:11 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:14876 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932907Ab3CEE7K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 23:54:33 -0500
-X-Virus-Scan: Scanned by ClamAV 0.97.2 (no viruses);
-  Mon, 04 Mar 2013 22:54:29 -0600
-X-Originating-IP: 108.223.40.66
-From: Guenter Roeck <linux@roeck-us.net>
-To: linux-watchdog@vger.kernel.org
-Cc: Wim Van Sebroeck <wim@iguana.be>, linux-kernel@vger.kernel.org,
-        Guenter Roeck <linux@roeck-us.net>
-Subject: =?UTF-8?q?=5BPATCH=201/8=5D=20watchdog=3A=20w83627hf=3A=20Convert=20to=20watchdog=20infrastructure?=
-Date: Mon,  4 Mar 2013 20:54:12 -0800
-Message-Id: <1362459259-9733-2-git-send-email-linux@roeck-us.net>
-X-Mailer: git-send-email 1.7.9.7
-In-Reply-To: <1362459259-9733-1-git-send-email-linux@roeck-us.net>
-References: <1362459259-9733-1-git-send-email-linux@roeck-us.net>
+	Mon, 4 Mar 2013 23:59:10 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Mon, 04 Mar 2013 20:53:15 -0800
+Message-ID: <51357B9A.8080004@nvidia.com>
+Date: Tue, 5 Mar 2013 13:59:06 +0900
+From: Alex Courbot <acourbot@nvidia.com>
+Organization: NVIDIA
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Andrew Chew <AChew@nvidia.com>
+CC: Thierry Reding <thierry.reding@avionic-design.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/1] pwm_bl: Add support for backlight enable GPIO
+References: <1362433790-22560-1-git-send-email-achew@nvidia.com> <20130304224611.GB17149@avionic-0098.mockup.avionic-design.de> <51355FA4.1090909@nvidia.com> <643E69AA4436674C8F39DCC2C05F7638629BFE1B02@HQMAIL03.nvidia.com> <5135774D.6080708@nvidia.com> <643E69AA4436674C8F39DCC2C05F7638629BFE1B11@HQMAIL03.nvidia.com>
+In-Reply-To: <643E69AA4436674C8F39DCC2C05F7638629BFE1B11@HQMAIL03.nvidia.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
----
- drivers/watchdog/Kconfig        |    1 +
- drivers/watchdog/w83627hf_wdt.c |  234 ++++++++-------------------------------
- 2 files changed, 47 insertions(+), 188 deletions(-)
+On 03/05/2013 01:48 PM, Andrew Chew wrote:
+> I sent out a new patch that enables/disables the backlight enable gpio.
+>
+>> On 03/05/2013 01:00 PM, Andrew Chew wrote:
+>>> I did come to the same conclusion regarding the platform data breakage.
+>>> I'm expecting that the use of platform data will go away, at least on
+>>> ARM, since we are all aggressively moving what used to be in platform
+>>> data into the device tree.  Do other platforms use this driver?
+>>
+>> I can see at least 29 users of platform_pwm_backlight_data, all ARM with the
+>> exception of one unicore32. I guess at least for the foreseeable future
+>> platform data will remain.
+>
+> I'm not sure how to solve this, then.  Any suggestions?
 
-diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
-index 9fcc70c..dd462af 100644
---- a/drivers/watchdog/Kconfig
-+++ b/drivers/watchdog/Kconfig
-@@ -856,6 +856,7 @@ config VIA_WDT
- config W83627HF_WDT
- 	tristate "W83627HF/W83627DHG Watchdog Timer"
- 	depends on X86
-+	select WATCHDOG_CORE
- 	---help---
- 	  This is the driver for the hardware watchdog on the W83627HF chipset
- 	  as used in Advantech PC-9578 and Tyan S2721-533 motherboards
-diff --git a/drivers/watchdog/w83627hf_wdt.c b/drivers/watchdog/w83627hf_wdt.c
-index 92f1326..cd82a47 100644
---- a/drivers/watchdog/w83627hf_wdt.c
-+++ b/drivers/watchdog/w83627hf_wdt.c
-@@ -1,6 +1,9 @@
- /*
-  *	w83627hf/thf WDT driver
-  *
-+ *	(c) Copyright 2013 Guenter Roeck
-+ *		converted to watchdog infrastructure
-+ *
-  *	(c) Copyright 2007 Vlad Drukker <vlad@storewiz.com>
-  *		added support for W83627THF.
-  *
-@@ -31,42 +34,21 @@
- #include <linux/module.h>
- #include <linux/moduleparam.h>
- #include <linux/types.h>
--#include <linux/miscdevice.h>
- #include <linux/watchdog.h>
--#include <linux/fs.h>
- #include <linux/ioport.h>
--#include <linux/notifier.h>
- #include <linux/reboot.h>
- #include <linux/init.h>
- #include <linux/spinlock.h>
- #include <linux/io.h>
--#include <linux/uaccess.h>
--
- 
- #define WATCHDOG_NAME "w83627hf/thf/hg/dhg WDT"
- #define WATCHDOG_TIMEOUT 60		/* 60 sec default timeout */
- 
--static unsigned long wdt_is_open;
--static char expect_close;
--static DEFINE_SPINLOCK(io_lock);
--
- /* You must set this - there is no sane way to probe for this board. */
- static int wdt_io = 0x2E;
- module_param(wdt_io, int, 0);
- MODULE_PARM_DESC(wdt_io, "w83627hf/thf WDT io port (default 0x2E)");
- 
--static int timeout = WATCHDOG_TIMEOUT;	/* in seconds */
--module_param(timeout, int, 0);
--MODULE_PARM_DESC(timeout,
--		"Watchdog timeout in seconds. 1 <= timeout <= 255, default="
--				__MODULE_STRING(WATCHDOG_TIMEOUT) ".");
--
--static bool nowayout = WATCHDOG_NOWAYOUT;
--module_param(nowayout, bool, 0);
--MODULE_PARM_DESC(nowayout,
--		"Watchdog cannot be stopped once started (default="
--				__MODULE_STRING(WATCHDOG_NOWAYOUT) ")");
--
- /*
-  *	Kernel methods.
-  */
-@@ -120,8 +102,8 @@ static void w83627hf_init(void)
- 	t = inb_p(WDT_EFDR);      /* read CRF6 */
- 	if (t != 0) {
- 		pr_info("Watchdog already running. Resetting timeout to %d sec\n",
--			timeout);
--		outb_p(timeout, WDT_EFDR);    /* Write back to CRF6 */
-+			WATCHDOG_TIMEOUT);
-+		outb_p(WATCHDOG_TIMEOUT, WDT_EFDR);    /* Write back to CRF6 */
- 	}
- 
- 	outb_p(0xF5, WDT_EFER); /* Select CRF5 */
-@@ -141,171 +123,53 @@ static void w83627hf_init(void)
- 	w83627hf_unselect_wd_register();
- }
- 
--static void wdt_set_time(int timeout)
-+static int wdt_set_time(unsigned int timeout)
- {
--	spin_lock(&io_lock);
--
- 	w83627hf_select_wd_register();
--
- 	outb_p(0xF6, WDT_EFER);    /* Select CRF6 */
- 	outb_p(timeout, WDT_EFDR); /* Write Timeout counter to CRF6 */
--
- 	w83627hf_unselect_wd_register();
--
--	spin_unlock(&io_lock);
-+	return 0;
- }
- 
--static int wdt_ping(void)
-+static int wdt_start(struct watchdog_device *wdog)
- {
--	wdt_set_time(timeout);
--	return 0;
-+	return wdt_set_time(wdog->timeout);
- }
- 
--static int wdt_disable(void)
-+static int wdt_stop(struct watchdog_device *wdog)
- {
--	wdt_set_time(0);
--	return 0;
-+	return wdt_set_time(0);
- }
- 
--static int wdt_set_heartbeat(int t)
-+static int wdt_set_timeout(struct watchdog_device *wdog, unsigned int timeout)
- {
--	if (t < 1 || t > 255)
--		return -EINVAL;
--	timeout = t;
-+	wdt_set_time(timeout);
-+	wdog->timeout = timeout;
-+
- 	return 0;
- }
- 
--static int wdt_get_time(void)
-+static unsigned int wdt_get_time(struct watchdog_device *wdog)
- {
--	int timeleft;
--
--	spin_lock(&io_lock);
-+	unsigned int timeleft;
- 
- 	w83627hf_select_wd_register();
--
--	outb_p(0xF6, WDT_EFER);    /* Select CRF6 */
--	timeleft = inb_p(WDT_EFDR); /* Read Timeout counter to CRF6 */
--
-+	outb_p(0xF6, WDT_EFER);
-+	timeleft = inb(WDT_EFDR);
- 	w83627hf_unselect_wd_register();
- 
--	spin_unlock(&io_lock);
--
- 	return timeleft;
- }
- 
--static ssize_t wdt_write(struct file *file, const char __user *buf,
--						size_t count, loff_t *ppos)
--{
--	if (count) {
--		if (!nowayout) {
--			size_t i;
--
--			expect_close = 0;
--
--			for (i = 0; i != count; i++) {
--				char c;
--				if (get_user(c, buf + i))
--					return -EFAULT;
--				if (c == 'V')
--					expect_close = 42;
--			}
--		}
--		wdt_ping();
--	}
--	return count;
--}
--
--static long wdt_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
--{
--	void __user *argp = (void __user *)arg;
--	int __user *p = argp;
--	int timeval;
--	static const struct watchdog_info ident = {
--		.options = WDIOF_KEEPALIVEPING | WDIOF_SETTIMEOUT |
--							WDIOF_MAGICCLOSE,
--		.firmware_version = 1,
--		.identity = "W83627HF WDT",
--	};
--
--	switch (cmd) {
--	case WDIOC_GETSUPPORT:
--		if (copy_to_user(argp, &ident, sizeof(ident)))
--			return -EFAULT;
--		break;
--	case WDIOC_GETSTATUS:
--	case WDIOC_GETBOOTSTATUS:
--		return put_user(0, p);
--	case WDIOC_SETOPTIONS:
--	{
--		int options, retval = -EINVAL;
--
--		if (get_user(options, p))
--			return -EFAULT;
--		if (options & WDIOS_DISABLECARD) {
--			wdt_disable();
--			retval = 0;
--		}
--		if (options & WDIOS_ENABLECARD) {
--			wdt_ping();
--			retval = 0;
--		}
--		return retval;
--	}
--	case WDIOC_KEEPALIVE:
--		wdt_ping();
--		break;
--	case WDIOC_SETTIMEOUT:
--		if (get_user(timeval, p))
--			return -EFAULT;
--		if (wdt_set_heartbeat(timeval))
--			return -EINVAL;
--		wdt_ping();
--		/* Fall */
--	case WDIOC_GETTIMEOUT:
--		return put_user(timeout, p);
--	case WDIOC_GETTIMELEFT:
--		timeval = wdt_get_time();
--		return put_user(timeval, p);
--	default:
--		return -ENOTTY;
--	}
--	return 0;
--}
--
--static int wdt_open(struct inode *inode, struct file *file)
--{
--	if (test_and_set_bit(0, &wdt_is_open))
--		return -EBUSY;
--	/*
--	 *	Activate
--	 */
--
--	wdt_ping();
--	return nonseekable_open(inode, file);
--}
--
--static int wdt_close(struct inode *inode, struct file *file)
--{
--	if (expect_close == 42)
--		wdt_disable();
--	else {
--		pr_crit("Unexpected close, not stopping watchdog!\n");
--		wdt_ping();
--	}
--	expect_close = 0;
--	clear_bit(0, &wdt_is_open);
--	return 0;
--}
--
- /*
-  *	Notifier for system down
-  */
--
- static int wdt_notify_sys(struct notifier_block *this, unsigned long code,
- 	void *unused)
- {
- 	if (code == SYS_DOWN || code == SYS_HALT)
--		wdt_disable();	/* Turn the WDT off */
-+		wdt_set_time(0);	/* Turn the WDT off */
- 
- 	return NOTIFY_DONE;
- }
-@@ -314,19 +178,26 @@ static int wdt_notify_sys(struct notifier_block *this, unsigned long code,
-  *	Kernel Interfaces
-  */
- 
--static const struct file_operations wdt_fops = {
--	.owner		= THIS_MODULE,
--	.llseek		= no_llseek,
--	.write		= wdt_write,
--	.unlocked_ioctl	= wdt_ioctl,
--	.open		= wdt_open,
--	.release	= wdt_close,
-+static struct watchdog_info wdt_info = {
-+	.options = WDIOF_SETTIMEOUT | WDIOF_KEEPALIVEPING | WDIOF_MAGICCLOSE,
-+	.identity = "W83627HF Watchdog",
-+};
-+
-+static struct watchdog_ops wdt_ops = {
-+	.owner = THIS_MODULE,
-+	.start = wdt_start,
-+	.stop = wdt_stop,
-+	.ping = wdt_start,
-+	.set_timeout = wdt_set_timeout,
-+	.get_timeleft = wdt_get_time,
- };
- 
--static struct miscdevice wdt_miscdev = {
--	.minor = WATCHDOG_MINOR,
--	.name = "watchdog",
--	.fops = &wdt_fops,
-+static struct watchdog_device wdt_dev = {
-+	.info = &wdt_info,
-+	.ops = &wdt_ops,
-+	.timeout = WATCHDOG_TIMEOUT,
-+	.min_timeout = 1,
-+	.max_timeout = 255,
- };
- 
- /*
-@@ -341,19 +212,13 @@ static struct notifier_block wdt_notifier = {
- static int __init wdt_init(void)
- {
- 	int ret;
-+	bool nowayout = WATCHDOG_NOWAYOUT;
- 
- 	pr_info("WDT driver for the Winbond(TM) W83627HF/THF/HG/DHG Super I/O chip initialising\n");
- 
--	if (wdt_set_heartbeat(timeout)) {
--		wdt_set_heartbeat(WATCHDOG_TIMEOUT);
--		pr_info("timeout value must be 1 <= timeout <= 255, using %d\n",
--			WATCHDOG_TIMEOUT);
--	}
--
- 	if (!request_region(wdt_io, 1, WATCHDOG_NAME)) {
- 		pr_err("I/O address 0x%04x already in use\n", wdt_io);
--		ret = -EIO;
--		goto out;
-+		return -EIO;
- 	}
- 
- 	w83627hf_init();
-@@ -364,28 +229,22 @@ static int __init wdt_init(void)
- 		goto unreg_regions;
- 	}
- 
--	ret = misc_register(&wdt_miscdev);
--	if (ret != 0) {
--		pr_err("cannot register miscdev on minor=%d (err=%d)\n",
--		       WATCHDOG_MINOR, ret);
-+	watchdog_set_nowayout(&wdt_dev, nowayout);
-+	ret = watchdog_register_device(&wdt_dev);
-+	if (ret)
- 		goto unreg_reboot;
--	}
--
--	pr_info("initialized. timeout=%d sec (nowayout=%d)\n",
--		timeout, nowayout);
--
--out:
- 	return ret;
-+
- unreg_reboot:
- 	unregister_reboot_notifier(&wdt_notifier);
- unreg_regions:
- 	release_region(wdt_io, 1);
--	goto out;
-+	return ret;
- }
- 
- static void __exit wdt_exit(void)
- {
--	misc_deregister(&wdt_miscdev);
-+	watchdog_unregister_device(&wdt_dev);
- 	unregister_reboot_notifier(&wdt_notifier);
- 	release_region(wdt_io, 1);
- }
-@@ -396,4 +255,3 @@ module_exit(wdt_exit);
- MODULE_LICENSE("GPL");
- MODULE_AUTHOR("Pádraig  Brady <P@draigBrady.com>");
- MODULE_DESCRIPTION("w83627hf/thf WDT driver");
--MODULE_ALIAS_MISCDEV(WATCHDOG_MINOR);
--- 
-1.7.9.7
+In one of my (many) attempts to add power sequencing to pwm-backlight, I 
+just added a boolean to the platform data that must be explicitly set in 
+order to enable control by GPIO. I.e.
+
+	bool			use_enable_gpio
+	int			enable_gpio;
+	unsigned int		enable_gpio_flags;
+
+enable_gpio and enable_gpio_flags would then only be considered if 
+use_enable_gpio is true. Granted, it's not the best solution here but 
+that's the only way to handle this correctly with integer GPIOS, and it 
+does not pollute the DT anyway (use_enable_gpio will only be set by 
+pwm_backlight_parse_dt() if of_get_named_gpio() returned a valid GPIO. 
+Btw, you also want to check if the enable-gpio property exists first 
+because otherwise probe() will fails if no GPIO is specified).
+
+>> Yes, actually I am doing the GPIO rework. If you are not too much in a hurry
+>> you might want for it to happen (should not be too long now that the core
+>> has been reworked). At the same time, GPIO descriptors will also enable the
+>> power sequences, so if you wait even longer (or help me with it), this patch
+>> might not even be needed at all. Of course if you want to support this
+>> *now*, this is still the shortest path.
+>
+> Sadly, I do need this now, and I'd rather do it as cleanly as possible rather
+> than maintaining a hack.  The project I am working on is very pedantic.
+
+Well, if you can get this right and make the GPIO optional, I think this 
+is a reasonable feature to have in pwm-backlight, until a more generic 
+powerseq-backlight driver takes over. ;)
+
+>>> To answer your last question, yes, this single patch does allow me to
+>>> enable the backlight on some boards (in particular, the one I'm working
+>> on).
+>>
+>> Cool - may I ask which one? All the NV boards I tried to far required more
+>> complex sequences for their panels.
+>
+> This is for t114-dalmore.  There may be other gpios that are needed that I'm
+> not aware of off the top of my head.  For the backlight itself, this seems to
+> be the only one.
+
+I don't know the details of Dalmore but would think there must also be 
+at least one regulator involved. If it is set to be always on in the DT, 
+then your solution of using an enable GPIO should work then, even if not 
+necessarily optimal wrt power usage.
+
+Alex.
 
