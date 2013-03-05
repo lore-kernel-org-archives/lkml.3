@@ -1,72 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756195Ab3CEWSV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 17:18:21 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60141 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755849Ab3CEWST (ORCPT
+	id S1755919Ab3CEWSo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 17:18:44 -0500
+Received: from moutng.kundenserver.de ([212.227.17.9]:57066 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755582Ab3CEWQw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 17:18:19 -0500
-Date: Tue, 5 Mar 2013 14:18:17 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Mandeep Singh Baines <msb@chromium.org>
-Cc: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        ibm-acpi@hmh.eng.br, ibm-acpi-devel@lists.sourceforge.net,
-        platform-driver-x86@vger.kernel.org, Aaron Lu <aaron.lu@intel.com>,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Artem Savkov <artem.savkov@gmail.com>
-Subject: Re: [PATCH] thinkpad-acpi: fix potential suspend blocking issue
-Message-Id: <20130305141817.4e27e83aa66598115e52eb9e@linux-foundation.org>
-In-Reply-To: <1362504883-9180-1-git-send-email-msb@chromium.org>
-References: <201303042055.38040.maciej.rutecki@gmail.com>
-	<1362504883-9180-1-git-send-email-msb@chromium.org>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 5 Mar 2013 17:16:52 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-kernel@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, arm@kernel.org,
+        Arnd Bergmann <arnd@arndb.de>, Bill Pemberton <wfp5p@virginia.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [PATCH 3/9] mfd: remove __exit_p annotation for twl4030_madc_remove
+Date: Tue,  5 Mar 2013 23:16:43 +0100
+Message-Id: <1362521809-22989-4-git-send-email-arnd@arndb.de>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1362521809-22989-1-git-send-email-arnd@arndb.de>
+References: <1362521809-22989-1-git-send-email-arnd@arndb.de>
+X-Provags-ID: V02:K0:QK8rzCQUZvM+0LnwyaHqRCbcH0x7Lxr7GoAhMyJ3w2Y
+ tcgq/GZ1avVT1f9xBi3GOy1sOyo4YrHVUpIqfddk7NhZrw1v1t
+ QKDpczvCcZ2zddF72jZRV+6CVJkD2ZwOuCik03ti+XnycADcfH
+ 0IGPU4DgASCJCb2sXI+KeVZerIrYjYUvZ8xuVLuKLcGFE3C8TY
+ AN9BIAvH/9n0uLAjxhEX5oJAIrHXTCoAKsbw/9u12WSa+T9knG
+ /ps+Y0hxxsVuMAPmV0NpqyjqtG1O4wcOv6Ob+i9hLxeX1Oon25
+ tFa2mwPdHD0vgWB1uSyEznph2lU9OWFfD1tN5oNMvxT6jhgFRv
+ /CCFvviPicJSHk3YTJQJeWgU++qWKUrgxABkQ44hW
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue,  5 Mar 2013 09:34:43 -0800 Mandeep Singh Baines <msb@chromium.org> wrote:
+4740f73fe5 "mfd: remove use of __devexit" removed the __devexit annotation
+on the twl4030_madc_remove function, but left an __exit_p() present on the
+pointer to this function. Using __exit_p was as wrong with the devexit in
+place as it is now, but now we get a gcc warning about an unused function.
 
-> Fixes the following lockdep error:
-> 
-> [ BUG: ktpacpi_nvramd/446 still has locks held! ]
-> 
-> hotkey_kthread() calls set_freezable() after acquiring the
-> hotkey_kthread_mutex(). set_freezable() calls try_to_freeze().
-> This could block suspend if we were to freeze at this point
-> and another task were to block on the mutex, potentially via
-> writing to one of the sysfs attrs. This race is unlikely but
-> can be easily fixed by moving the set_freezable() call.
->
-> ...
->
-> --- a/drivers/platform/x86/thinkpad_acpi.c
-> +++ b/drivers/platform/x86/thinkpad_acpi.c
-> @@ -2462,13 +2462,13 @@ static int hotkey_kthread(void *data)
->  	unsigned int poll_freq;
->  	bool was_frozen;
->  
-> +	set_freezable();
-> +
->  	mutex_lock(&hotkey_thread_mutex);
->  
->  	if (tpacpi_lifecycle == TPACPI_LIFE_EXITING)
->  		goto exit;
->  
-> -	set_freezable();
-> -
->  	so = 0;
->  	si = 1;
->  	t = 0;
+In order for the twl4030_madc_remove to work correctly in built-in code, we
+have to remove the __exit_p.
 
-Basically the same as
-http://ozlabs.org/~akpm/mmots/broken-out/drivers-platform-x86-thinkpad_acpic-move-hotkey_thread_mutex-lock-after-set_freezable.patch.
- I think Artem's patch is a little better.  There doesn't appear to be
-any locking protocol for tpacpi_lifecycle.
+Cc: Bill Pemberton <wfp5p@virginia.edu>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+---
+ drivers/mfd/twl4030-madc.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-I'll move Artem's patch into my for-3.9-rc2 queue.
+diff --git a/drivers/mfd/twl4030-madc.c b/drivers/mfd/twl4030-madc.c
+index 88ff9dc..942b666 100644
+--- a/drivers/mfd/twl4030-madc.c
++++ b/drivers/mfd/twl4030-madc.c
+@@ -800,7 +800,7 @@ static int twl4030_madc_remove(struct platform_device *pdev)
+ 
+ static struct platform_driver twl4030_madc_driver = {
+ 	.probe = twl4030_madc_probe,
+-	.remove = __exit_p(twl4030_madc_remove),
++	.remove = twl4030_madc_remove,
+ 	.driver = {
+ 		   .name = "twl4030_madc",
+ 		   .owner = THIS_MODULE,
+-- 
+1.8.1.2
+
