@@ -1,126 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752350Ab3CEGYF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 01:24:05 -0500
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:58195 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751701Ab3CEGYC convert rfc822-to-8bit (ORCPT
+	id S1752501Ab3CEG1n (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 01:27:43 -0500
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:59726 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751974Ab3CEG1m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 01:24:02 -0500
+	Tue, 5 Mar 2013 01:27:42 -0500
+Message-ID: <51359056.60506@linaro.org>
+Date: Tue, 05 Mar 2013 14:27:34 +0800
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
 MIME-Version: 1.0
-Reply-To: mtk.manpages@gmail.com
-In-Reply-To: <CAKgNAkjYmvjMzC+nYqsjHf4bQn2ZwdE5wawoP2p32ZSo+0dfcQ@mail.gmail.com>
-References: <CAKgNAki=mUYuu_Ewhe7sjCmo+Dq2Vr+FZCixqNRaadcvAxtpFw@mail.gmail.com>
- <1362110504.15531.4@driftwood> <CAKgNAkgVKnhRT1Lpq4a_UdBKB+tn6XmWSDF2QJXG0aSLtNH6dg@mail.gmail.com>
- <87wqtr3zg5.fsf@xmission.com> <CAKgNAkjGD0FdQqpA+rYR=+Yc5uVPB8mE5JjCqy-5WS85cPsvng@mail.gmail.com>
- <87k3pnhx2k.fsf@xmission.com> <CAKgNAkjYmvjMzC+nYqsjHf4bQn2ZwdE5wawoP2p32ZSo+0dfcQ@mail.gmail.com>
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Date: Tue, 5 Mar 2013 07:23:41 +0100
-Message-ID: <CAKgNAkgQ2g+6OwExdJ8imsbi5yXJwbpnOVta_YR6DsuVmmr-UA@mail.gmail.com>
-Subject: Re: For review: pid_namespaces(7) man page
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Rob Landley <rob@landley.net>, linux-man <linux-man@vger.kernel.org>,
-        Linux Containers <containers@lists.linux-foundation.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Feng Tang <feng.tang@intel.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, x86@kernel.org,
+        Len Brown <lenb@kernel.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        linux-kernel@vger.kernel.org, gong.chen@linux.intel.com
+Subject: Re: [RFC PATCH v2 4/4] timekeeping: utilize the suspend-nonstop clocksource
+ to count suspended time
+References: <1362450426-4232-1-git-send-email-feng.tang@intel.com> <1362450426-4232-5-git-send-email-feng.tang@intel.com>
+In-Reply-To: <1362450426-4232-5-git-send-email-feng.tang@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Resending, since my mobile device turned things into HTML]
-
-Eric,
-
-On Mon, Mar 4, 2013 at 6:52 PM, Eric W. Biederman <ebiederm@xmission.com> wrote:
-> "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com> writes:
+On 03/05/2013 10:27 AM, Feng Tang wrote:
+> There are some new processors whose TSC clocksource won't stop during
+> suspend. Currently, after system resumes, kernel will use persistent
+> clock or RTC to compensate the sleep time, but for those new types of
+> clocksources, we could skip the special compensation from external
+> sources, and just use current clocksource for time recounting.
 >
->> On Fri, Mar 1, 2013 at 4:35 PM, Eric W. Biederman <ebiederm@xmission.com> wrote:
->>> "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com> writes:
->>>
->>>> Hi Rob,
->>>>
->>>> On Fri, Mar 1, 2013 at 5:01 AM, Rob Landley <rob@landley.net> wrote:
->>>>> On 02/28/2013 05:24:07 AM, Michael Kerrisk (man-pages) wrote:
-[...]
->>>>>> Because the above unshare(2) and setns(2) calls only change the
->>>>>> PID namespace for created children, the clone(2) calls neces‐
->>>>>> sarily put the new thread in a different PID namespace from the
->>>>>> calling thread.
->>>>>
->>>>>
->>>>> Um, no they don't. They fail. That's the point.
->>>>
->>>> (Good catch.)
->>>>
->>>>> They _would_ put the new
->>>>> thread in a different PID namespace, which breaks the definition of threads.
->>>>>
->>>>> How about:
->>>>>
->>>>> The above unshare(2) and setns(2) calls change the PID namespace of
->>>>> children created by subsequent clone(2) calls, which is incompatible
->>>>> with CLONE_VM.
->>>>
->>>> I decided on:
->>>>
->>>> The point here is that unshare(2) and setns(2) change the PID
->>>> namespace for created children but not for the calling process,
->>>> while clone(2) CLONE_VM specifies the creation of a new thread
->>>> in the same process.
->>>
->>> Can we make that "for all new tasks created" instead of "created
->>> children"
->>>
->>> Othewise someone might expect CLONE_THREAD would work as you
->>> CLONE_THREAD creates a thread and not a child...
->>
->> The term "task" is kernel-space talk that rarely appears in man pages,
->> so I am reluctant to use it.
+> This can solve some time drift bugs caused by some not-so-accurate or
+> error-prone RTC devices.
 >
-> With respect to clone and in this case I am not certain we can properly
-> describe what happens without talking about tasks. But it is worth
-> a try.
+> The current way to count suspened time is first try to use the persistent
+> clock, and then try the rtc if persistent clock can't be used. This
+> patch will change the trying order to:
+> 	suspend-nonstop clocksource -> persistent clock -> rtc
+
+Thanks for sending out another iteration of this code. Jason's feedback 
+has been good, but I think this is starting to shape up nicely.
+
+More below
+
+> Signed-off-by: Feng Tang <feng.tang@intel.com>
+> ---
+>   kernel/time/timekeeping.c |   57 ++++++++++++++++++++++++++++++++++++++------
+>   1 files changed, 49 insertions(+), 8 deletions(-)
 >
->
->> How about this:
->>
->> The point here is that unshare(2) and setns(2) change the PID
->> namespace for processes subsequently created by the caller, but
->> not for the calling process, while clone(2) CLONE_VM specifies
->> the creation of a new thread in the same process.
->
-> Hmm. How about this.
->
-> The point here is that unshare(2) and setns(2) change the PID
-> namespace that will be used by in all subsequent calls to clone
-> and fork by the caller, but not for the calling process, and
-> that all threads in a process must share the same PID
-> namespace. Which makes a subsequent clone(2) CLONE_VM
-> specify the creation of a new thread in the a different PID
-> namespace but in the same process which is impossible.
+> diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+> index 9a0bc98..15cc086 100644
+> --- a/kernel/time/timekeeping.c
+> +++ b/kernel/time/timekeeping.c
+> @@ -788,22 +788,63 @@ void timekeeping_inject_sleeptime(struct timespec *delta)
+>   static void timekeeping_resume(void)
+>   {
+>   	struct timekeeper *tk = &timekeeper;
+> +	struct clocksource *clock = tk->clock;
+>   	unsigned long flags;
+> -	struct timespec ts;
+> +	struct timespec ts_new, ts_delta;
+> +	cycle_t cycle_now, cycle_delta;
+> +	s64 nsec;
+>   
+> -	read_persistent_clock(&ts);
+> +	ts_delta.tv_sec = 0;
+> +	read_persistent_clock(&ts_new);
+>   
+>   	clockevents_resume();
+>   	clocksource_resume();
+>   
+>   	write_seqlock_irqsave(&tk->lock, flags);
+>   
+> -	if (timespec_compare(&ts, &timekeeping_suspend_time) > 0) {
+> -		ts = timespec_sub(ts, timekeeping_suspend_time);
+> -		__timekeeping_inject_sleeptime(tk, &ts);
+> -	}
+> -	/* re-base the last cycle value */
+> -	tk->clock->cycle_last = tk->clock->read(tk->clock);
+> +	/*
+> +	 * After system resumes, we need to calculate the suspended time and
+> +	 * compensate it for the OS time. There are 3 sources that could be
+> +	 * used: Nonstop clocksource during suspend, persistent clock and rtc
+> +	 * device.
+> +	 *
+> +	 * One specific platform may have 1 or 2 or all of them, and the
+> +	 * preference will be:
+> +	 *	suspend-nonstop clocksource > persistent clock > rtc
+> +	 * The less preferred source will only be tried if there is no better
+> +	 * usable source. The rtc part is handled separately in rtc core code.
+> +	 */
+> +	cycle_now = clock->read(clock);
 
-I did a little tidying:
+So this might be ok for an initial implementation, as on the 
+non-stop-tsc hardware, the TSC is the best clocksource available. One 
+concern long term is that there may be cases where the non-stop 
+clocksource is not the most performant clocksource on a system. In that 
+case, we may want to use a non-stop clocksource that is not the current 
+timekeeping clocksource. So that may require some extra clocksource core 
+interfaces to access the non-stop clocksource instead of using the 
+timekeeper's clocksource, also we'll have to be sure to use something 
+other then cycle_last in that case, since we'll need to read the nonstop 
+clocksource at suspend, rather then trusting that forward_now updates 
+cycle_last as is done here.
 
-The point here is that unshare(2) and setns(2) change the
-PID namespace that will be used in all subsequent calls
-to clone(2) and fork(2), but do not change the PID names‐
-pace of the calling process. Because a subsequent
-clone(2) CLONE_VM would imply the creation of a new
-thread in a different PID namespace, the operation is not
-permitted.
+thanks
+-john
 
-Okay?
-
-Having asked that, I realize that I'm still not quite comfortable with
-this text. I think the problem is really one of terminology. At the
-start of this passage in the page, there is the sentence:
-
-Every thread in a process must be in the
-same PID namespace.
-
-Can you define "thread" in this context?
-
-Thanks,
-
-Michael
