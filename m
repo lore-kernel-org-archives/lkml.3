@@ -1,76 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756214Ab3CEPVK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 10:21:10 -0500
-Received: from va3ehsobe010.messaging.microsoft.com ([216.32.180.30]:39016
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755799Ab3CEPVI (ORCPT
+	id S1756186Ab3CEPWB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 10:22:01 -0500
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:57104 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755689Ab3CEPWA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 10:21:08 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VS-2(zz98dI1432Izz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ahzz17326ah8275dhz2dh87h2a8h668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1155h)
-X-FB-DOMAIN-IP-MATCH: fail
-Date: Tue, 5 Mar 2013 23:20:44 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: <linux-kernel@vger.kernel.org>
-CC: <linux-arm-kernel@lists.infradead.org>,
-        Mandeep Singh Baines <msb@chromium.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: v3.9-rc1: [BUG: swapper/1 still has locks held!]
-Message-ID: <20130305152041.GA23742@S2101-09.ap.freescale.net>
-References: <20130304025206.GB30431@S2101-09.ap.freescale.net>
+	Tue, 5 Mar 2013 10:22:00 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20130304025206.GB30431@S2101-09.ap.freescale.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: sigmatel.com
+In-Reply-To: <CA+5PVA5ApepOTJGJR0zXF5C_p7cFjShr3_shynAHX_M=ya5o7Q@mail.gmail.com>
+References: <alpine.DEB.2.00.1302260003460.24684@skynet.skynet.ie>
+	<CA+5PVA5wtZipQRTPfvbh1U8gjDMaW0095EsNz==Co+iww3YN1g@mail.gmail.com>
+	<CA+5PVA5vvw-JyODTtRwVhQSEiGrt=3wzDoCmeButEMTZxWAhbA@mail.gmail.com>
+	<CA+5PVA5za2stXYxQ_Tu3D6Lbif94cqK_5wvPXFhUpvsh_DOXVg@mail.gmail.com>
+	<CA+5PVA6CQ0YrSGkXPGtmzB9BgabXyiRnMSMKYDCJM+OuF5t6gQ@mail.gmail.com>
+	<CADnq5_PqAAhQZ-4Fd0UNoT5aEhUDdtu4n+1qXYucXsnyi0sQwQ@mail.gmail.com>
+	<CA+5PVA7Yzrx_=k9HB-D5v=7gsmn1ZyNb7YpzwDW-1j35Bbrs4Q@mail.gmail.com>
+	<CADnq5_OadSJ1thVEvfQVfTZ3De0vivVjnCKwepVxabs6i6ivLQ@mail.gmail.com>
+	<CA+5PVA6P2igBMmOeVwhoA5cy0NQHzd-MM6jw5ySUBfZUsMK=ag@mail.gmail.com>
+	<CA+5PVA5ApepOTJGJR0zXF5C_p7cFjShr3_shynAHX_M=ya5o7Q@mail.gmail.com>
+Date: Tue, 5 Mar 2013 10:21:59 -0500
+Message-ID: <CA+5PVA40SFq1EprA9Y1U-eUdmYTzqDbxbTaC1Y1WSh7EwEEqfw@mail.gmail.com>
+Subject: Re: [git pull] drm merge for 3.9-rc1
+From: Josh Boyer <jwboyer@gmail.com>
+To: Alex Deucher <alexdeucher@gmail.com>
+Cc: Dave Airlie <airlied@linux.ie>, Alex Deucher <alexander.deucher@amd.com>,
+        Jerome Glisse <jglisse@redhat.com>, torvalds@linux-foundation.org,
+        linux-kernel@vger.kernel.org,
+        DRI mailing list <dri-devel@lists.freedesktop.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 04, 2013 at 10:52:10AM +0800, Shawn Guo wrote:
-> I'm running v3.9-rc1 kernel on an ARM platform (i.MX28) with
-> arch/arm/mxs_defconfig and getting the following BUG warning.
-> 
-git bisect points me to the commit 6aa9707 (lockdep: check that no locks
-held at freeze time).
+On Thu, Feb 28, 2013 at 1:59 PM, Josh Boyer <jwboyer@gmail.com> wrote:
+> On Thu, Feb 28, 2013 at 10:15 AM, Josh Boyer <jwboyer@gmail.com> wrote:
+>> On Thu, Feb 28, 2013 at 10:09 AM, Alex Deucher <alexdeucher@gmail.com> wrote:
+>>> On Thu, Feb 28, 2013 at 8:44 AM, Josh Boyer <jwboyer@gmail.com> wrote:
+>>>> On Thu, Feb 28, 2013 at 8:38 AM, Alex Deucher <alexdeucher@gmail.com> wrote:
+>>>>>>>>> ca57802e521de54341efc8a56f70571f79ffac72 is the first bad commit
+>>>>>>>>
+>>>>>>>> So I don't think that's actually the cause of the problem.  Or at least
+>>>>>>>> not that alone.  I reverted it on top of Linus' latest tree and I still
+>>>>>>>> get the lockups.
+>>>>>>>
+>>>>>>> Actually, git bisect does seem to have gotten it correct.  Once I
+>>>>>>> actually tested the revert of just that on top of Linus' tree (commit
+>>>>>>> d895cb1af1), things seem to be working much better.  I've rebooted a
+>>>>>>> dozen times without a lockup.  The most I've seen it take on a kernel
+>>>>>>> with that commit included is 3 reboots, so that's definitely at least an
+>>>>>>> improvement.
+>>>>>>
+>>>>>> I give up.  GPU issues are not my thing.  2 reboots after I sent that it
+>>>>>> gave me pretty rainbow static again.  So it might have been an
+>>>>>> improvement, but revert it is not a solution.
+>>>>>>
+>>>>>> Looking at there rest of the commits, the whole GPU rework might be
+>>>>>> suspect, but I clearly have no clue.
+>>>>>
+>>>>> GPUs are tricky beasts :)
+>>>>
+>>>> Understatement ;).
+>>>>
+>>>>> ca57802e521de54341efc8a56f70571f79ffac72 mostly likely wasn't the
+>>>>> problem anyway since it only affects 6xx/7xx and your card is handled
+>>>>> by the evergreen code.  I'll put together some patches to help narrow
+>>>>> down the problem.
+>>>>
+>>>> Yeah, that's the biggest problem I have, not knowing which functions are
+>>>> actually being executed for this card.  It looks like a combination of
+>>>> stuff in evergreen.c and ni.c, but I have no idea.
+>>>>
+>>>> Patches would be great.  If nothing else, I'm really good at building
+>>>> kernels and rebooting by now.
+>>>
+>>> Two possible fixes attached.  The first attempts a full reset of all
+>>> blocks if the MC (memory controller) is hung.  That may work better
+>>> than just resetting the MC.  The second just disables MC reset.  I'm
+>>> not sure we can reliably tell if it's busy due to display requests
+>>> hitting the MC periodically which would lead to needlessly resetting
+>>> it possibly leading to failures like you are seeing.
+>>
+>> OK.  I'll test them individually.  It will probably take a bit because
+>> I'll want to do numerous reboots if things seem "fixed" with one or the
+>> other.
+>>
+>> I'll let you know how things go.
+>
+> I applied each individually on top of Linus' tree as of this morning
+> (commit 2a7d2b96d5) built, installed, and tested.
+>
+> 0001-drm-radeon-XXX-try-a-full-reset-if-the-MC-is-busy.patch failed in
+> two reboots.
+>
+> 0001-drm-radeon-XXX-skip-MC-reset-as-it-s-probably-not-hu.patch has gone
+> 21 reboots without a hang/rainbow static.  You'll understand if I'm
+> hesitant to declare success, but resetting the MC does indeed appear to
+> be the issue.  I'll keep rebooting for a while to make sure.
 
-Shawn
+OK, I'm still running on the kernel with that patch and things still
+work.  The only other "issue" I'm seeing at the moment is my dmesg is
+full of:
 
-> [    5.681034] =====================================
-> [    5.685885] [ BUG: swapper/1 still has locks held! ]
-> [    5.690885] 3.9.0-rc1 #774 Not tainted
-> [    5.694734] -------------------------------------
-> [    5.699475] 2 locks held by swapper/1:
-> [    5.703323]  #0:  (&sig->cred_guard_mutex){+.+.+.}, at: [<c00d20e0>] prepare_bprm_creds+0x28/0x64
-> [    5.712326]  #1:  (&type->i_mutex_dir_key){+.+.+.}, at: [<c00d5350>] lookup_slow+0x2c/0xa0
-> [    5.720966]
-> [    5.720966] stack backtrace:
-> [    5.725528] [<c0013c78>] (unwind_backtrace+0x0/0xf0) from [<c0426f94>] (rpc_wait_bit_killable+0x94/0xb4)
-> [    5.735184] [<c0426f94>] (rpc_wait_bit_killable+0x94/0xb4) from [<c044684c>] (__wait_on_bit+0x74/0xb8)
-> [    5.744645] [<c044684c>] (__wait_on_bit+0x74/0xb8) from [<c04468f4>] (out_of_line_wait_on_bit+0x64/0x70)
-> [    5.754278] [<c04468f4>] (out_of_line_wait_on_bit+0x64/0x70) from [<c0427e38>] (__rpc_execute+0xf4/0x370)
-> [    5.763991] [<c0427e38>] (__rpc_execute+0xf4/0x370) from [<c042124c>] (rpc_run_task+0xa4/0xb0)
-> [    5.772660] [<c042124c>] (rpc_run_task+0xa4/0xb0) from [<c0421350>] (rpc_call_sync+0x40/0xac)
-> [    5.781335] [<c0421350>] (rpc_call_sync+0x40/0xac) from [<c01c2e08>] (nfs3_rpc_wrapper.constprop.6+0x58/0xdc)
-> [    5.791406] [<c01c2e08>] (nfs3_rpc_wrapper.constprop.6+0x58/0xdc) from [<c01c2fbc>] (nfs3_proc_lookup+0x88/0xf4)
-> [    5.801751] [<c01c2fbc>] (nfs3_proc_lookup+0x88/0xf4) from [<c01b282c>] (nfs_lookup+0xe8/0x18c)
-> [    5.810659] [<c01b282c>] (nfs_lookup+0xe8/0x18c) from [<c00d49f8>] (lookup_real+0x20/0x50)
-> [    5.819097] [<c00d49f8>] (lookup_real+0x20/0x50) from [<c00d5314>] (__lookup_hash+0x34/0x44)
-> [    5.827696] [<c00d5314>] (__lookup_hash+0x34/0x44) from [<c00d5360>] (lookup_slow+0x3c/0xa0)
-> [    5.836297] [<c00d5360>] (lookup_slow+0x3c/0xa0) from [<c00d61bc>] (link_path_walk+0x2a4/0x848)
-> [    5.845144] [<c00d61bc>] (link_path_walk+0x2a4/0x848) from [<c00d9204>] (path_openat+0x278/0x444)
-> [    5.854176] [<c00d9204>] (path_openat+0x278/0x444) from [<c00d96cc>] (do_filp_open+0x2c/0x80)
-> [    5.862755] [<c00d96cc>] (do_filp_open+0x2c/0x80) from [<c00d12fc>] (open_exec+0x30/0x10c)
-> [    5.871166] [<c00d12fc>] (open_exec+0x30/0x10c) from [<c00d232c>] (do_execve+0x1b8/0x4c4)
-> [    5.879500] [<c00d232c>] (do_execve+0x1b8/0x4c4) from [<c0440b54>] (kernel_init+0x80/0xe4)
-> [    5.887963] [<c0440b54>] (kernel_init+0x80/0xe4) from [<c000e9c8>] (ret_from_fork+0x14/0x2c)
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+[349316.595749] radeon 0000:01:00.0: MC busy: 0x00000409, clearing.
+[349436.654946] radeon 0000:01:00.0: MC busy: 0x00000409, clearing.
+[349436.655997] radeon 0000:01:00.0: MC busy: 0x00000409, clearing.
+[349496.698441] radeon 0000:01:00.0: MC busy: 0x00000409, clearing.
+[349556.726767] radeon 0000:01:00.0: MC busy: 0x00000409, clearing.
+[349556.727797] radeon 0000:01:00.0: MC busy: 0x00000409, clearing.
 
+So hopefully your patch is on the way into Linus' tree at some point
+soon.
+
+josh
