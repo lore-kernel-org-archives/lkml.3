@@ -1,54 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756214Ab3CEWek (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 17:34:40 -0500
-Received: from mail-gg0-f172.google.com ([209.85.161.172]:61310 "EHLO
-	mail-gg0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755197Ab3CEWej (ORCPT
+	id S1756329Ab3CEWes (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 17:34:48 -0500
+Received: from moutng.kundenserver.de ([212.227.126.187]:64465 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756233Ab3CEWeq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 17:34:39 -0500
-Date: Tue, 5 Mar 2013 14:34:34 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Ryan Mallon <rmallon@gmail.com>
-Cc: linux-kernel@vger.kernel.org, laijs@cn.fujitsu.com, axboe@kernel.dk,
-        jmoyer@redhat.com, zab@redhat.com,
-        kbuild test robot <fengguang.wu@intel.com>
-Subject: Re: [PATCH v2 16/31] workqueue: introduce workqueue_attrs
-Message-ID: <20130305223434.GB1227@htj.dyndns.org>
-References: <1362194662-2344-1-git-send-email-tj@kernel.org>
- <1362194662-2344-17-git-send-email-tj@kernel.org>
- <20130304183742.GI30413@htj.dyndns.org>
- <513671CF.5050705@gmail.com>
- <20130305223327.GA1227@htj.dyndns.org>
+	Tue, 5 Mar 2013 17:34:46 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCHv2] ARM: Push selects for TWD/SCU into machine entries
+Date: Tue, 5 Mar 2013 22:34:32 +0000
+User-Agent: KMail/1.12.2 (Linux/3.8.0-8-generic; KDE/4.3.2; x86_64; ; )
+Cc: Stephen Boyd <sboyd@codeaurora.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
+        Tony Lindgren <tony@atomide.com>, linux-arm-msm@vger.kernel.org,
+        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
+        Rob Herring <rob.herring@calxeda.com>,
+        Sascha Hauer <kernel@pengutronix.de>, Barry Song <baohua.song@csr.com>,
+        Olof Johansson <olof@lixom.net>
+References: <1362007694-3419-1-git-send-email-sboyd@codeaurora.org> <512E9A39.3070207@wwwdotorg.org> <51354E35.1080804@codeaurora.org>
+In-Reply-To: <51354E35.1080804@codeaurora.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130305223327.GA1227@htj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201303052234.32723.arnd@arndb.de>
+X-Provags-ID: V02:K0:vQoTZYx2DzkpBYahKlTA9xKA66oQdVWlURc4tZ+gfNk
+ XXUV3qhm7r1eOLvgx37NpBshAJHLUVHYYmgy9UMVFfOcfX7Q0R
+ AvwHstNPw6OixboZ4H6fkJYSEHKc8rIY/0sCJzPSqfdTq5CIQ/
+ 0G6sKUYGzAurA3HaF0FL2GJNPwJ3E65AUDTTuG02YY32gqijpV
+ qU5/5/hXfoLqPlXvzNiy/9LFB+WmdN0zOiUnz8Wz0XysHI/43P
+ Mfip0uRx73FyWwXR0+0iQi6V9qgDLXs2j9q6T20TjIVU4Ei2Er
+ Cp4epmhcv/aFCocZTItJSIjMn391as/6dQD5Xe7RjEXlhYh1sk
+ tEif41UKbR3IojTnb3OI=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 05, 2013 at 02:33:27PM -0800, Tejun Heo wrote:
-> Hello, Ryan.
+On Tuesday 05 March 2013, Stephen Boyd wrote:
+> On 02/27/13 15:43, Stephen Warren wrote:
+> >
+> > Seems simple enough it doesn't really need many, but for Tegra,
+> > Acked-by: Stephen Warren <swarren@nvidia.com>
+> >
+> > Which kernel is this going into? It's possible Tegra will get converted
+> > to multi-platform in 3.10, which might move that main ARCH_TEGRA block
+> > from arch/arm/Kconfig into arch/arm/mach-tegra/Kconfig, although I
+> > suppose it doesn't have to move it. I think some/all(?) other
+> > multi-platform conversions have moved their main Kconfig option like
+> > that though.
 > 
-> On Wed, Mar 06, 2013 at 09:29:35AM +1100, Ryan Mallon wrote:
-> > > @@ -148,6 +148,8 @@ struct worker_pool {
-> > >  	struct mutex		assoc_mutex;	/* protect POOL_DISASSOCIATED */
-> > >  	struct ida		worker_ida;	/* L: for worker IDs */
-> > >  
-> > > +	struct workqueue_attrs	*attrs;		/* I: worker attributes */
-> > 
-> > If attrs always exists, why not just embed the struct and avoid the
-> > need to alloc/free it?
+> Thanks. I'm hoping that Arnd/Olof can pick this up. I'm not sure which
+> version it will go into.
 > 
-> Because then it'll need a separate init paths for embedded ones.  If
-> the field was in any way hot, I'd have embedded it but it isn't and
-> it's just less code to share the alloc path.
 
-Ooh, right, and that cpumask_t is going away and you can't statically
-allocate cpumask_var_t, so it needs an allocation and error check from
-it anyway.
+Hmm, it certainly looks useful to me. I think it should go into the next
+cleanup branch as a base, so others can build on top of it. We will
+also need it for the Exynos multiplatform patches that I hope can land
+in 3.10 as well.
 
--- 
-tejun
+Sneaking it in through the fixes branch would make life easier for us,
+but it doesn't feel right.
+
+	Arnd
