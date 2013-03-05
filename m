@@ -1,27 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759355Ab3CED1p (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 22:27:45 -0500
-Received: from mail-gh0-f182.google.com ([209.85.160.182]:50355 "EHLO
-	mail-gh0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759092Ab3CED1o (ORCPT
+	id S1759416Ab3CED3W (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 22:29:22 -0500
+Received: from mail-gh0-f179.google.com ([209.85.160.179]:49219 "EHLO
+	mail-gh0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759092Ab3CED3V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 22:27:44 -0500
-From: "Eric W. Biederman" <raphael.scarv@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>, Oleg Nesterov <oleg@redhat.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
+	Mon, 4 Mar 2013 22:29:21 -0500
+From: "Raphael S.Carvalho" <raphael.scarv@gmail.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>, Cyrill Gorcunov <gorcunov@openvz.org>,
         Serge Hallyn <serge.hallyn@canonical.com>
 Cc: linux-kernel@vger.kernel.org,
         "Raphael S.Carvalho" <raphael.scarv@gmail.com>
 Subject: [PATCH 1/1] kernel/pid_namespace.c: Fixing a lack of cleanup (Probable resources leak).
-Date: Tue,  5 Mar 2013 00:26:47 -0300
-Message-Id: <1362454007-353-1-git-send-email-ebiederm@xmission.com>
+Date: Tue,  5 Mar 2013 00:28:23 -0300
+Message-Id: <1362454103-391-1-git-send-email-raphael.scarv@gmail.com>
 X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-
-From: Raphael S.Carvalho <raphael.scarv@gmail.com>
 
 Starting point: create_pid_namespace()
 
