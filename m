@@ -1,78 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757523Ab3CEQcS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 11:32:18 -0500
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:47122 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755387Ab3CEQcP (ORCPT
+	id S1757701Ab3CEQcf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 11:32:35 -0500
+Received: from mail-qe0-f54.google.com ([209.85.128.54]:36510 "EHLO
+	mail-qe0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751126Ab3CEQcd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 11:32:15 -0500
+	Tue, 5 Mar 2013 11:32:33 -0500
+Date: Tue, 5 Mar 2013 08:32:28 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Lei Wen <adrian.wenl@gmail.com>
+Cc: linux-kernel@vger.kernel.org, leiwen@marvell.com
+Subject: Re: workqueue panic in 3.4 kernel
+Message-ID: <20130305163228.GA12795@htj.dyndns.org>
+References: <CALZhoSR0+SzPLHzJafmny=o8PJ2d7MaH9N6_6s0QZ_oCQm43Xg@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <51361540.3060603@cn.fujitsu.com>
-References: <512C7A38.8060906@linux.vnet.ibm.com>
-	<CACvQF51RvhM8XNqu3-1OTQ=cZUZ=pAX+_zx0a29+W67N1X+BgQ@mail.gmail.com>
-	<512CC509.1050000@linux.vnet.ibm.com>
-	<CACvQF50UgiqPpDk3HCmV86zKSf6tPjqr0bZowfPEOJs0g0r0MQ@mail.gmail.com>
-	<512D0D67.9010609@linux.vnet.ibm.com>
-	<CACvQF53ph2ixdM-otzetjM5cR+2kcZj6sckOp3TnzzA_x-EZ8w@mail.gmail.com>
-	<512E7879.20109@linux.vnet.ibm.com>
-	<5130E8E2.50206@cn.fujitsu.com>
-	<20130301182854.GA3631@redhat.com>
-	<CANN689HEW=b5S93J27p+rBX-5m7jkW4FER=eHDCp7OgMaTWLPw@mail.gmail.com>
-	<20130302170656.GB29769@redhat.com>
-	<51361540.3060603@cn.fujitsu.com>
-Date: Tue, 5 Mar 2013 08:32:14 -0800
-Message-ID: <CANN689EKsSZpq-oVPL3_y+ReT+vbz5wPbOs8iz8YzS_Wo-FboQ@mail.gmail.com>
-Subject: Re: [PATCH] lglock: add read-preference local-global rwlock
-From: Michel Lespinasse <walken@google.com>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: Oleg Nesterov <oleg@redhat.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Lai Jiangshan <eag0628@gmail.com>, linux-doc@vger.kernel.org,
-        peterz@infradead.org, fweisbec@gmail.com, linux-kernel@vger.kernel.org,
-        namhyung@kernel.org, mingo@kernel.org, linux-arch@vger.kernel.org,
-        linux@arm.linux.org.uk, xiaoguangrong@linux.vnet.ibm.com,
-        wangyun@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com,
-        nikunj@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
-        rusty@rustcorp.com.au, rostedt@goodmis.org, rjw@sisk.pl,
-        vincent.guittot@linaro.org, tglx@linutronix.de,
-        linux-arm-kernel@lists.infradead.org, netdev@vger.kernel.org,
-        sbw@mit.edu, tj@kernel.org, akpm@linux-foundation.org,
-        linuxppc-dev@lists.ozlabs.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALZhoSR0+SzPLHzJafmny=o8PJ2d7MaH9N6_6s0QZ_oCQm43Xg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 5, 2013 at 7:54 AM, Lai Jiangshan <laijs@cn.fujitsu.com> wrote:
-> On 03/03/13 01:06, Oleg Nesterov wrote:
->> On 03/02, Michel Lespinasse wrote:
->>>
->>> My version would be slower if it needs to take the
->>> slow path in a reentrant way, but I'm not sure it matters either :)
->>
->> I'd say, this doesn't matter at all, simply because this can only happen
->> if we race with the active writer.
->>
->
-> It can also happen when interrupted. (still very rarely)
->
-> arch_spin_trylock()
->         ------->interrupted,
->                 __this_cpu_read() returns 0.
->                 arch_spin_trylock() fails
->                 slowpath, any nested will be slowpath too.
->                 ...
->                 ..._read_unlock()
->         <-------interrupt
-> __this_cpu_inc()
-> ....
+Hello,
 
-Yes (and I think this is actually the most likely way for it to happen).
+On Tue, Mar 05, 2013 at 03:31:45PM +0800, Lei Wen wrote:
+> With checking memory,  we find work->data becomes 0x300, when it try
+> to call get_work_cwq
 
-We do need this to work correctly, but I don't expect we need it to be fast.
-(could be wrong, this is only my intuition)
+Why would that become 0x300?  Who's writing to that memory?  Nobody
+should be.
+
+> in delayed_work_timer_fn. Thus cwq becomes NULL before calls __queue_work.
+> So it is reasonable kernel get panic when it try to access wq with cwq->wq.
+> 
+> To fix it, we try to backport below patches:
+> commit 60c057bca22285efefbba033624763a778f243bf
+> Author: Lai Jiangshan <laijs@cn.fujitsu.com>
+> Date:   Wed Feb 6 18:04:53 2013 -0800
+> 
+>     workqueue: add delayed_work->wq to simplify reentrancy handling
+> 
+> commit 1265057fa02c7bed3b6d9ddc8a2048065a370364
+> Author: Tejun Heo <tj@kernel.org>
+> Date:   Wed Aug 8 09:38:42 2012 -0700
+> 
+>     workqueue: fix CPU binding of flush_delayed_work[_sync]()
+
+Neither should affect the problem you described above.  It *could*
+make the problem go away just because it would stop using wq->data to
+record cwq if the corruption was contained to that field but that
+isn't a proper fix and the underlying problem could easily cause other
+issues.
+
+> And add below change to make sure __cancel_work_timer cannot preempt
+> between run_timer_softirq and delayed_work_timer_fn.
+> diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+> index bf4888c..0e9f77c 100644
+> --- a/kernel/workqueue.c
+> +++ b/kernel/workqueue.c
+> @@ -2627,7 +2627,7 @@ static bool __cancel_work_timer(struct work_struct *work,
+>                 ret = (timer && likely(del_timer(timer)));
+>                 if (!ret)
+>                         ret = try_to_grab_pending(work);
+> -               wait_on_work(work);
+> +               flush_work(work);
+>         } while (unlikely(ret < 0));
+> 
+>         clear_work_data(work);
+> 
+> Do you think this fix is enough? And add flush_work directly in
+> __cancel_work_timer is ok for
+> the fix?
+
+Maybe I'm missing something but it looks like the root cause hasn't
+been diagnosed and you're piling up band-aids in workqueue code.  You
+might get away with it but could also be making the problem just more
+obscure and difficult to debug (reproducible bugs are happy bugs).
+
+I'd suggest finding out who owns the delayed_work item and examining
+why the delayed_work is getting corrupted in the first place.
+
+Thanks.
 
 -- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
+tejun
