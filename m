@@ -1,64 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754878Ab3CEIVb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 03:21:31 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:37765 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753291Ab3CEIVI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 03:21:08 -0500
-X-IronPort-AV: E=Sophos;i="4.84,785,1355068800"; 
-   d="scan'208";a="6815903"
-From: Tang Chen <tangchen@cn.fujitsu.com>
-To: lenb@kernel.org, rjw@sisk.pl, robert.moore@intel.com, lv.zheng@intel.com,
-        ming.m.lin@intel.com, mpm@selenic.com, herbert@gondor.hengli.com.au,
-        rob@landley.net
-Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org, trival@kernel.org
-Subject: [PATCH 2/6] In acpi_get_table_with_size()
-Date: Tue, 5 Mar 2013 16:23:24 +0800
-Message-Id: <1362471808-9437-3-git-send-email-tangchen@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.10.1
-In-Reply-To: <1362471808-9437-1-git-send-email-tangchen@cn.fujitsu.com>
-References: <1362471808-9437-1-git-send-email-tangchen@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/03/05 16:20:01,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/03/05 16:20:02,
-	Serialize complete at 2013/03/05 16:20:02
+	id S1753301Ab3CEI1S (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 03:27:18 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:30109 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751656Ab3CEI1R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Mar 2013 03:27:17 -0500
+Message-ID: <5135ABB8.5070202@redhat.com>
+Date: Tue, 05 Mar 2013 09:24:24 +0100
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Hu Tao <hutao@cn.fujitsu.com>
+CC: kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>, Gleb Natapov <gleb@redhat.com>,
+        Blue Swirl <blauwirbel@gmail.com>, Eric Blake <eblake@redhat.com>,
+        Andrew Jones <drjones@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Luiz Capitulino <lcapitulino@redhat.com>,
+        Anthony Liguori <aliguori@us.ibm.com>,
+        Markus Armbruster <armbru@redhat.com>,
+        Stefan Hajnoczi <stefanha@redhat.com>,
+        Juan Quintela <quintela@redhat.com>,
+        Orit Wasserman <owasserm@redhat.com>, Kevin Wolf <kwolf@redhat.com>,
+        Wen Congyang <wency@cn.fujitsu.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>, Alexander Graf <agraf@suse.de>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        Peter Maydell <peter.maydell@linaro.org>
+Subject: Re: [PATCH v13 1/8] save/load cpu runstate
+References: <cover.1362051581.git.hutao@cn.fujitsu.com> <df20999140db716e8b1ccd57a7cbcb0fa343a78c.1362051582.git.hutao@cn.fujitsu.com> <513469C8.30602@redhat.com> <20130305023308.GK16362@localhost.localdomain>
+In-Reply-To: <20130305023308.GK16362@localhost.localdomain>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the comment of acpi_get_table_with_size(), one parameter tbl_size
-is missing. And the definitions of i and j begin with space, not tab.
+Il 05/03/2013 03:33, Hu Tao ha scritto:
+> On Mon, Mar 04, 2013 at 10:30:48AM +0100, Paolo Bonzini wrote:
+>> Il 28/02/2013 13:13, Hu Tao ha scritto:
+>>> This patch enables preservation of cpu runstate during save/load vm.
+>>> So when a vm is restored from snapshot, the cpu runstate is restored,
+>>> too.
+>>
+>> I don't think this feature is worth breaking backwards migration
+>> compatibility.  It is usually handled at a higher-level (management,
+>> like libvirt).
+> 
+> If guest panic happens during migration, runstate will still be running
+> on destination host without this patch. But, it does be a problem to break
+> backwards migration compatibility.
 
-Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
----
- drivers/acpi/acpica/tbxface.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+Yes, but the source management (libvirt for example) will have the
+occasion to observe the change and cancel the migration or forward the
+information on the wire.  There are already similar reasons why libvirt
+always starts guests with -S.
 
-diff --git a/drivers/acpi/acpica/tbxface.c b/drivers/acpi/acpica/tbxface.c
-index b35a5e6..93d1432 100644
---- a/drivers/acpi/acpica/tbxface.c
-+++ b/drivers/acpi/acpica/tbxface.c
-@@ -304,6 +304,7 @@ ACPI_EXPORT_SYMBOL(acpi_unload_table_id)
-  * PARAMETERS:  signature           - ACPI signature of needed table
-  *              instance            - Which instance (for SSDTs)
-  *              out_table           - Where the pointer to the table is returned
-+ *              tbl_size            - Size of the table
-  *
-  * RETURN:      Status and pointer to table
-  *
-@@ -315,8 +316,7 @@ acpi_get_table_with_size(char *signature,
- 	       u32 instance, struct acpi_table_header **out_table,
- 	       acpi_size *tbl_size)
- {
--       u32 i;
--       u32 j;
-+	u32 i, j;
- 	acpi_status status;
- 
- 	/* Parameter validation */
--- 
-1.7.1
-
+Paolo
