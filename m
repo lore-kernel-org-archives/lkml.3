@@ -1,38 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755826Ab3CEKRT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 05:17:19 -0500
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:63554 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751035Ab3CEKRS (ORCPT
+	id S1755626Ab3CEKUQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 05:20:16 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:60037 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755104Ab3CEKUO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 05:17:18 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAMXyS3N49hjWtJEkPKm3bgGqr7LfHEcNzPUBh-VO9gRxjq6axQ@mail.gmail.com>
-References: <CAMXyS3Mvc8SkJxu4fCcUn+XpNcHrzEQ=M5w2eenVr-YKwa3AEQ@mail.gmail.com>
-	<CAMXyS3MRx3D__60xtt4G4CCyHSTW2iHd1x1AR1LCQkrZrOiJ2g@mail.gmail.com>
-	<CAD9gYJL1GjZtPuEWozmgM37NzhJeAO1Oe69Tnzxi5bCPMijmcA@mail.gmail.com>
-	<1357703565.7140.217.camel@LTIRV-MCHAN1.corp.ad.broadcom.com>
-	<CAMXyS3PhStKo_xeiTRH+kbZXNUcwmMvrvTHrDOR-6qkuUCVH2A@mail.gmail.com>
-	<1358206365.4596.23.camel@LTIRV-MCHAN1.corp.ad.broadcom.com>
-	<CAMXyS3PBAOraPTYRW9BSmoccVWAuY0RzZNgKe-L4Z3WHQDDgbA@mail.gmail.com>
-	<1358449457.4596.64.camel@LTIRV-MCHAN1.corp.ad.broadcom.com>
-	<CAMXyS3N49hjWtJEkPKm3bgGqr7LfHEcNzPUBh-VO9gRxjq6axQ@mail.gmail.com>
-Date: Tue, 5 Mar 2013 11:17:17 +0100
-Message-ID: <CAMXyS3MD1-jiX_L15C8zDU22y5=BK88xy-ThGUm3n7sj9COxbw@mail.gmail.com>
-Subject: Re: tg3 v3.123 in 100Mbps Full-Duplex mode with autoneg off
-From: Marcin Miotk <marcinmiotk81@gmail.com>
-To: Michael Chan <mchan@broadcom.com>
-Cc: =?UTF-8?B?546L6YeR5rWm?= <jinpuwang@gmail.com>, nsujir@broadcom.com,
-        Benjamin Li <benli@broadcom.com>, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 5 Mar 2013 05:20:14 -0500
+From: Serban Constantinescu <serban.constantinescu@arm.com>
+To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        kernel-team@android.com, arve@android.com, john.stultz@linaro.org,
+        Dave.Butcher@arm.com
+Cc: Serban Constantinescu <serban.constantinescu@arm.com>
+Subject: [PATCH] staging: android: ashmem: Add support for 32bit ashmem calls in a 64bit kernel
+Date: Tue,  5 Mar 2013 10:18:27 +0000
+Message-Id: <1362478708-26946-1-git-send-email-serban.constantinescu@arm.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <20130305083707.GA7513@kroah.com>
+References: <20130305083707.GA7513@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Michael,
+Android's shared memory subsystem, Ashmem, does not support calls from a
+32bit userspace in a 64 bit kernel. This patch adds support for syscalls
+coming from a 32bit userspace in a 64bit kernel.
 
-did you have time to look into it?
+The patch has been successfully tested on ARMv8 AEM(64bit
+platform model) and Versatile Express A9(32bit platform).
 
-Regards,
-Marcin
+Signed-off-by: Serban Constantinescu <serban.constantinescu@arm.com>
+---
+ drivers/staging/android/ashmem.c |   22 +++++++++++++++++++++-
+ drivers/staging/android/ashmem.h |    6 ++++++
+ 2 files changed, 27 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/staging/android/ashmem.c b/drivers/staging/android/ashmem.c
+index 72064fc..e96f381 100644
+--- a/drivers/staging/android/ashmem.c
++++ b/drivers/staging/android/ashmem.c
+@@ -31,6 +31,7 @@
+ #include <linux/bitops.h>
+ #include <linux/mutex.h>
+ #include <linux/shmem_fs.h>
++#include <linux/compat.h>
+ #include "ashmem.h"
+ 
+ #define ASHMEM_NAME_PREFIX "dev/ashmem/"
+@@ -674,6 +675,23 @@ static long ashmem_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+ 	return ret;
+ }
+ 
++/* support of 32bit userspace on 64bit platforms */
++#ifdef CONFIG_COMPAT
++static long compat_ashmem_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
++{
++
++	switch (cmd) {
++	case COMPAT_ASHMEM_SET_SIZE:
++		cmd = ASHMEM_SET_SIZE;
++		break;
++	case COMPAT_ASHMEM_SET_PROT_MASK:
++		cmd = ASHMEM_SET_PROT_MASK;
++		break;
++	}
++	return ashmem_ioctl(file, cmd, arg);
++}
++#endif
++
+ static const struct file_operations ashmem_fops = {
+ 	.owner = THIS_MODULE,
+ 	.open = ashmem_open,
+@@ -682,7 +700,9 @@ static const struct file_operations ashmem_fops = {
+ 	.llseek = ashmem_llseek,
+ 	.mmap = ashmem_mmap,
+ 	.unlocked_ioctl = ashmem_ioctl,
+-	.compat_ioctl = ashmem_ioctl,
++#ifdef CONFIG_COMPAT
++	.compat_ioctl = compat_ashmem_ioctl,
++#endif
+ };
+ 
+ static struct miscdevice ashmem_misc = {
+diff --git a/drivers/staging/android/ashmem.h b/drivers/staging/android/ashmem.h
+index 1976b10..2809d31 100644
+--- a/drivers/staging/android/ashmem.h
++++ b/drivers/staging/android/ashmem.h
+@@ -45,4 +45,10 @@ struct ashmem_pin {
+ #define ASHMEM_GET_PIN_STATUS	_IO(__ASHMEMIOC, 9)
+ #define ASHMEM_PURGE_ALL_CACHES	_IO(__ASHMEMIOC, 10)
+ 
++/* support of 32bit userspace on 64bit platforms */
++#ifdef CONFIG_COMPAT
++#define COMPAT_ASHMEM_SET_SIZE		_IOW(__ASHMEMIOC, 3, compat_size_t)
++#define COMPAT_ASHMEM_SET_PROT_MASK	_IOW(__ASHMEMIOC, 5, unsigned int)
++#endif
++
+ #endif	/* _LINUX_ASHMEM_H */
+-- 
+1.7.9.5
+
