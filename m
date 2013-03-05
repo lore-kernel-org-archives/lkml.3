@@ -1,74 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932924Ab3CEB2P (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 20:28:15 -0500
-Received: from mail-ob0-f170.google.com ([209.85.214.170]:34596 "EHLO
-	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932589Ab3CEB2N (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 20:28:13 -0500
-Message-ID: <51354A28.3040607@lwfinger.net>
-Date: Mon, 04 Mar 2013 19:28:08 -0600
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
-MIME-Version: 1.0
-To: shuah.khan@hp.com
-CC: brudley@broadcom.com, arend@broadcom.com, frankyl@broadcom.com,
-        linville@tuxdriver.com, seth.forshee@canonical.com,
-        pieterpg@broadcom.com, linux-wireless@vger.kernel.org,
-        brcm80211-dev-list@broadcom.com, netdev@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, shuahkhan@gmail.com
-Subject: Re: [PATCH] net/wireless/brcm80211: remove PCI_BUS define from defs.h
- to fix warnings
-References: <1362445374.4591.28.camel@lorien2>
-In-Reply-To: <1362445374.4591.28.camel@lorien2>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S932733Ab3CEBdw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 20:33:52 -0500
+Received: from mga01.intel.com ([192.55.52.88]:28306 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758723Ab3CEBdv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Mar 2013 20:33:51 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,784,1355126400"; 
+   d="asc'?scan'208";a="294806723"
+Message-ID: <1362447219.2183.3.camel@jtkirshe-mobl>
+Subject: Re: [PATCH  RESEND 1/3] e1000e: fix pci-device enable-counter
+ balance
+From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Reply-To: jeffrey.t.kirsher@intel.com
+To: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: linux-kernel@vger.kernel.org, e1000-devel@lists.sourceforge.net,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Bruce Allan <bruce.w.allan@intel.com>
+Date: Mon, 04 Mar 2013 17:33:39 -0800
+In-Reply-To: <20130225051903.12689.77185.stgit@zurg>
+References: <20130225051010.12689.28611.stgit@zurg>
+	 <20130225051903.12689.77185.stgit@zurg>
+Organization: Intel Corporation
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-G4Gatqn1MRwR3rAkgwUN"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/04/2013 07:02 PM, Shuah Khan wrote:
-> PCI_BUS defined in defs.h results in warnings from all brcm80211 source files
-> including defs.h. This define is not used in brcm80211. Removing this define
-> fixes the warning.
->
-> In file included from drivers/net/wireless/brcm80211/brcmfmac/dhd_sdio.c:35:0:
-> drivers/net/wireless/brcm80211/include/defs.h:23:0: warning: "PCI_BUS" redefined [enabled by default]
-> include/uapi/linux/pci.h:36:0: note: this is the location of the previous definition
->    CC [M]  drivers/net/wireless/b43legacy/dma.o
->    CC [M]  drivers/net/wireless/brcm80211/brcmfmac/bcmsdh.o
->    CC [M]  drivers/net/wireless/b43legacy/pio.o
-> In file included from drivers/net/wireless/brcm80211/brcmfmac/bcmsdh.c:29:0:
-> drivers/net/wireless/brcm80211/include/defs.h:23:0: warning: "PCI_BUS" redefined [enabled by default]
-> include/uapi/linux/pci.h:36:0: note: this is the location of the previous definition
-> In file included from drivers/net/wireless/brcm80211/brcmfmac/bcmsdh.c:29:0:
-> drivers/net/wireless/brcm80211/include/defs.h:23:0: warning: "PCI_BUS" redefined [enabled by default]
-> include/uapi/linux/pci.h:36:0: note: this is the location of the previous definition
 
-Strange, I do not see PCI_BUS defined anywhere in the include/ branch in either 
-3.8 or 3.9. In addition, I don't get these warnings. What is different in your 
-system?
+--=-G4Gatqn1MRwR3rAkgwUN
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Larry
-
->
-> Signed-off-by: Shuah Khan <shuah.khan@hp.com>
+On Mon, 2013-02-25 at 09:19 +0400, Konstantin Khlebnikov wrote:
+> This patch removes redundant and unbalanced pci_disable_device() from
+> __e1000_shutdown(). pci_clear_master() is enough, device can go into
+> suspended state with elevated enable_cnt.
+>=20
+> Bug was introduced in commit 23606cf5d1192c2b17912cb2ef6e62f9b11de133
+> ("e1000e / PCI / PM: Add basic runtime PM support (rev. 4)") in
+> v2.6.35
+>=20
+> Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+> Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> Cc: e1000-devel@lists.sourceforge.net
+> Cc: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+> Cc: Bruce Allan <bruce.w.allan@intel.com>
 > ---
->   drivers/net/wireless/brcm80211/include/defs.h |    1 -
->   1 file changed, 1 deletion(-)
->
-> diff --git a/drivers/net/wireless/brcm80211/include/defs.h b/drivers/net/wireless/brcm80211/include/defs.h
-> index fb7cbcf..3608436 100644
-> --- a/drivers/net/wireless/brcm80211/include/defs.h
-> +++ b/drivers/net/wireless/brcm80211/include/defs.h
-> @@ -20,7 +20,6 @@
->   #include <linux/types.h>
->
->   #define	SI_BUS			0
-> -#define	PCI_BUS			1
->   #define	PCMCIA_BUS		2
->   #define SDIO_BUS		3
->   #define JTAG_BUS		4
->
+>  drivers/net/ethernet/intel/e1000e/netdev.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)=20
+
+I have added the patch to my queue of e1000e patches.
+
+--=-G4Gatqn1MRwR3rAkgwUN
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.13 (GNU/Linux)
+
+iQIcBAABCgAGBQJRNUtzAAoJEOVv75VaS+3O8nMQAIfptFBnAtAUXv/53xZ5k/S7
+XkUWeMHm4rzco9hpFI0G0Ybz6ZUISKi4GeIb3zx/zbsYSCw8NeiGLHPQOBDbitO1
+B1477iqsqmH0qgWxa3kzaiDOT9SIwmAQ2jXhDPGUUZr50d0VSNH4Pn+hG85DU53u
+meCslLGT/OHM2VFXcE9KdZU0S7ZB3fBBT5FuDr8OoXOPbXshNryGI7KifCfAth9n
+bmEHLsCXgQ8zHIaHWM4AToIzXcyfq/UmQE//idEBLCt1J3HNhwIbhfeGs2CcIFpG
+X6Z/9/AyNL/QBhlMGsabyy0njY8v9Cinwc6Yz6w8LxahMxC7evBJ6AE62Arg2exS
+bo+sFhJ0fJcTXXZM8AoEIaUOUFbXv2Na311EBNBW81/w+dPShiLBC/qK5RvF8+5l
+ujpXchNwOMWSoGXDCx456rY2reRmlv5YbjWOAMqug5xZabmHfgtOgS0059Q9us40
+p6YUNkcEUcmexOLh/k65YJ9zAAz6JGMjpcJ5L4rlihAflojHyB1fr/3i4W5C0DH6
+JmyuHbDNxcs0VeBM7AIbN08pbzvYxxyrjEj3Rj61mY9kDpK0p3Em2Ij6xaIT63yi
+2g8Qj//kN9WUIJF4+dLLRkfcBZiKGHDzWnkMeM9BRNv2/mpVJJ36qFoVTb/jQXEJ
+18Vg5yHHz7zTDoLd+iSm
+=3Wny
+-----END PGP SIGNATURE-----
+
+--=-G4Gatqn1MRwR3rAkgwUN--
 
