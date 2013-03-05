@@ -1,59 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756132Ab3CEKZx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 05:25:53 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:51058 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755473Ab3CEKZv convert rfc822-to-8bit (ORCPT
+	id S1756149Ab3CEK12 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 05:27:28 -0500
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:33546 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752256Ab3CEK10 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 05:25:51 -0500
-Message-ID: <5135C833.8080209@arm.com>
-Date: Tue, 05 Mar 2013 10:25:55 +0000
-From: Serban Constantinescu <Serban.Constantinescu@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kernel-team@android.com" <kernel-team@android.com>,
-        "arve@android.com" <arve@android.com>,
-        "john.stultz@linaro.org" <john.stultz@linaro.org>,
-        Dave Butcher <Dave.Butcher@arm.com>
+	Tue, 5 Mar 2013 05:27:26 -0500
+Date: Tue, 5 Mar 2013 18:27:45 +0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Serban Constantinescu <serban.constantinescu@arm.com>
+Cc: linux-kernel@vger.kernel.org, kernel-team@android.com, arve@android.com,
+        john.stultz@linaro.org, Dave.Butcher@arm.com
 Subject: Re: [PATCH] staging: android: ashmem: Add support for 32bit ashmem
  calls in a 64bit kernel
-References: <1361817876-24747-1-git-send-email-serban.constantinescu@arm.com> <1361817876-24747-2-git-send-email-serban.constantinescu@arm.com> <20130305083707.GA7513@kroah.com>
-In-Reply-To: <20130305083707.GA7513@kroah.com>
-X-OriginalArrivalTime: 05 Mar 2013 10:25:49.0045 (UTC) FILETIME=[CE2BD250:01CE198B]
-X-MC-Unique: 113030510254903501
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8BIT
+Message-ID: <20130305102745.GA3327@kroah.com>
+References: <20130305083707.GA7513@kroah.com>
+ <1362478708-26946-1-git-send-email-serban.constantinescu@arm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1362478708-26946-1-git-send-email-serban.constantinescu@arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/03/13 08:37, Greg KH wrote:
-> On Mon, Feb 25, 2013 at 06:44:36PM +0000, Serban Constantinescu wrote:
->> Android's shared memory subsystem, Ashmem, does not support calls from a
->> 32bit userspace in a 64 bit kernel. This patch adds support for syscalls
->> coming from a 32bit userspace in a 64bit kernel.
->>
->> The patch has been successfully tested on ARMv8 AEM(64bit
->> platform model) and Versatile Express A9(32bit platform).
->>
->> Signed-off-by: Serban Constantinescu <serban.constantinescu@arm.com>
->> Acked-by: Arve Hjønnevåg <arve@android.com>
->> Acked-by: John Stultz <john.stultz@linaro.org>
->
-> This patch breaks the build on my machine:
-> drivers/staging/android/ashmem.c: In function ‘compat_ashmem_ioctl’:
-> drivers/staging/android/ashmem.c:711:7: error: ‘compat_size_t’ undeclared (first use in this function)
-> drivers/staging/android/ashmem.c:711:7: note: each undeclared identifier is reported only once for each function it appears in
+On Tue, Mar 05, 2013 at 10:18:27AM +0000, Serban Constantinescu wrote:
+> Android's shared memory subsystem, Ashmem, does not support calls from a
+> 32bit userspace in a 64 bit kernel. This patch adds support for syscalls
+> coming from a 32bit userspace in a 64bit kernel.
+> 
+> The patch has been successfully tested on ARMv8 AEM(64bit
+> platform model) and Versatile Express A9(32bit platform).
+> 
+> Signed-off-by: Serban Constantinescu <serban.constantinescu@arm.com>
+> ---
+>  drivers/staging/android/ashmem.c |   22 +++++++++++++++++++++-
+>  drivers/staging/android/ashmem.h |    6 ++++++
+>  2 files changed, 27 insertions(+), 1 deletion(-)
 
-When building for x86_64 we need <linux/compat.h>. Sorry I forgot it, 
-should build fine now.
+Ok, what has changed from your previous version that I rejected that is
+going to actually allow this to build?
 
->
-> so of course, I can't take it :(
+Hint, you gotta tell me what version of the patch this is, and what
+changed, otherwise I'll just assume this is a resend of the previous
+patch and go ahead and delete it from my queue.
 
-Thanks,
-Serban
+In fact, I might as well do that, now deleted :)
 
+greg k-h
