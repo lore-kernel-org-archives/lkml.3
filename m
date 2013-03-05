@@ -1,99 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755666Ab3CEWoh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 17:44:37 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:42025 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753281Ab3CEWof (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 17:44:35 -0500
-Date: Tue, 5 Mar 2013 23:44:32 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Dave Hansen <dave@linux.vnet.ibm.com>,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
-Cc: hpa@linux.intel.com, linux-kernel@vger.kernel.org
-Subject: Re: [3.9-rc1 x86] Bug in ioremap code?
-Message-ID: <20130305224432.GD27022@pd.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Dave Hansen <dave@linux.vnet.ibm.com>,
-	Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-	hpa@linux.intel.com, linux-kernel@vger.kernel.org
-References: <201302060035.GCJ00057.FLHMOOFtJFSQOV@I-love.SAKURA.ne.jp>
- <201303050015.GGI39081.LOVFtOFHQOJFSM@I-love.SAKURA.ne.jp>
- <201303052031.JFG81705.FSOOFQHJMVFOLt@I-love.SAKURA.ne.jp>
- <201303060041.AIF15342.tJFOHLQFFOMVSO@I-love.SAKURA.ne.jp>
- <20130305180650.GD4914@pd.tnic>
- <201303060628.CBG00578.OJtMFFHLQVSFOO@I-love.SAKURA.ne.jp>
- <51367104.5050200@linux.vnet.ibm.com>
+	id S1756769Ab3CEWov (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 17:44:51 -0500
+Received: from mail-gh0-f180.google.com ([209.85.160.180]:54788 "EHLO
+	mail-gh0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755052Ab3CEWot (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Mar 2013 17:44:49 -0500
+Date: Tue, 5 Mar 2013 14:44:44 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Ryan Mallon <rmallon@gmail.com>
+Cc: linux-kernel@vger.kernel.org, laijs@cn.fujitsu.com, axboe@kernel.dk,
+        jmoyer@redhat.com, zab@redhat.com,
+        kbuild test robot <fengguang.wu@intel.com>
+Subject: Re: [PATCH v2 16/31] workqueue: introduce workqueue_attrs
+Message-ID: <20130305224444.GC1227@htj.dyndns.org>
+References: <1362194662-2344-1-git-send-email-tj@kernel.org>
+ <1362194662-2344-17-git-send-email-tj@kernel.org>
+ <20130304183742.GI30413@htj.dyndns.org>
+ <513671CF.5050705@gmail.com>
+ <20130305223327.GA1227@htj.dyndns.org>
+ <20130305223434.GB1227@htj.dyndns.org>
+ <51367470.5040909@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <51367104.5050200@linux.vnet.ibm.com>
+In-Reply-To: <51367470.5040909@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 05, 2013 at 02:26:12PM -0800, Dave Hansen wrote:
-> Just booted a qemu-kvm guest with this .config.  It didn't trip over
-> anything, so I'm looking for some more ACPI tables to feed in to it.
+Hello,
+
+On Wed, Mar 06, 2013 at 09:40:48AM +1100, Ryan Mallon wrote:
+> > Ooh, right, and that cpumask_t is going away and you can't statically
+> > allocate cpumask_var_t, so it needs an allocation and error check from
+> > it anyway.
 > 
-> Looking through the code, it looks like this is the __pa() that's
-> hitting the BUG_ON():
+> Not sure I follow. I mean drop the pointer, eg:
+> 
+> 	struct workqueue_attr attrs;
+> 
+> Since, at least in this patch, struct worker_pool appears to always
+> alloc the attrs field. You do still of course need the cpumask_t
+> initialisation. Am I missing something?
 
-Shouldn't it be this one:
-
-#ifdef CONFIG_DEBUG_VIRTUAL
-unsigned long __phys_addr(unsigned long x)
-{
-        unsigned long phys_addr = x - PAGE_OFFSET;
-        /* VMALLOC_* aren't constants  */
-        VIRTUAL_BUG_ON(x < PAGE_OFFSET);
-        VIRTUAL_BUG_ON(__vmalloc_start_set && is_vmalloc_addr((void *) x));
-        /* max_low_pfn is set early, but not _that_ early */
-        if (max_low_pfn) {
-                VIRTUAL_BUG_ON((phys_addr >> PAGE_SHIFT) > max_low_pfn);
-                BUG_ON(slow_virt_to_phys((void *)x) != phys_addr); 		<--- **
-        }
-        return phys_addr;
-}
-EXPORT_SYMBOL(__phys_addr);
-#endif
-
-?
-
-At least this is what the oops says:
-
-> [    0.083350] ------------[ cut here ]------------
-> [    0.084000] kernel BUG at arch/x86/mm/physaddr.c:79!
-> [    0.084000] invalid opcode: 0000 [#1] SMP DEBUG_PAGEALLOC
-
-
-Tetsuo says in some of the earlier mails:
-
-"But I get VMware's virtual machine kernel stack fault (hardware reset)
-as soon as kernel is loaded if CONFIG_DEBUG_VIRTUAL=y is added to the
-config above."
-
-> What kind of hardware is this?
-
-[    0.084000] Pid: 0, comm: swapper/0 Not tainted 3.8.0-rc5-00105-g68d00bb #47 VMware, Inc. VMware Virtual Platform/440BX Desktop Reference Platform
-
-I asked Tetsuo to confirm but it looks like 32-bit guest running in
-vmware.
-
-Ok, before we continue guessing stuff, Tetsuo, can you please explain
-how exactly you're triggering this. More specifically, we need .config,
-hypervisor version, I'm assuming kernel is 3.9-rc1, Linux is guest/host
-etc, etc.
-
-Basically everything one would need to know if one would like to
-reproduce this bug in his environment.
+So, new usages of cpumask_t is frowned upon and we gotta use
+cpumask_var_t which needs alloc_cpumask_var() which may fail, so we
+have try-to-alloc-and-check-for-failure no matter what.  Now, if we
+want to embed workqueue_attrs, we have to separate out initialization
+of allocated attrs from the actaul allocation.  ie. we'll need
+init_workqueue_attrs() and alloc_workqueue_attrs() and as the former
+may fail too, it doesn't really simplify pool initilaization path.
+So, we end up with more code.  The added code is minor but it also
+doesn't buy anything.
 
 Thanks.
 
 -- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+tejun
