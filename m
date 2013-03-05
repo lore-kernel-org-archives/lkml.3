@@ -1,52 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751619Ab3CEHeX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 02:34:23 -0500
-Received: from mail-ob0-f172.google.com ([209.85.214.172]:40704 "EHLO
-	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750781Ab3CEHeV (ORCPT
+	id S1752239Ab3CEHhm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 02:37:42 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:63745 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1750781Ab3CEHhl convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 02:34:21 -0500
+	Tue, 5 Mar 2013 02:37:41 -0500
+X-IronPort-AV: E=Sophos;i="4.84,785,1355068800"; 
+   d="scan'208";a="6815568"
+Message-ID: <5135A054.7010401@cn.fujitsu.com>
+Date: Tue, 05 Mar 2013 15:35:48 +0800
+From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.8) Gecko/20121012 Thunderbird/10.0.8
 MIME-Version: 1.0
-In-Reply-To: <51358117.9060902@semaphore.gr>
-References: <51351CC3.4010301@semaphore.gr>
-	<CAOh2x=m0KLbjGKvLvTH7-yQb4SU5-v=-r4Ba3LSZz=NvfvO6mg@mail.gmail.com>
-	<51358117.9060902@semaphore.gr>
-Date: Tue, 5 Mar 2013 15:34:20 +0800
-Message-ID: <CAKohpokvqe8860J=XO_GXqxpNtrt9XEuUeqCeR=A4PpSaAsHYg@mail.gmail.com>
-Subject: Re: [PATCH linux-next] cpufreq: conservative: Fix sampling_down_factor
- functionality
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Stratos Karafotis <stratosk@semaphore.gr>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+CC: vgoyal@redhat.com, ebiederm@xmission.com, cpw@sgi.com,
+        kumagai-atsushi@mxc.nes.nec.co.jp, lisa.mitchell@hp.com,
+        heiko.carstens@de.ibm.com, akpm@linux-foundation.org,
+        kexec@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 01/20] vmcore: refer to e_phoff member explicitly
+References: <20130302083447.31252.93914.stgit@localhost6.localdomain6> <20130302083554.31252.30615.stgit@localhost6.localdomain6>
+In-Reply-To: <20130302083554.31252.30615.stgit@localhost6.localdomain6>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/03/05 15:36:37,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/03/05 15:36:38
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5 March 2013 13:22, Stratos Karafotis <stratosk@semaphore.gr> wrote:
-> I had the same thoughts, but I saw the comments in the code:
->
-> /*
->  * Every sampling_rate, we check, if current idle time is less than 20%
->  * (default), then we try to increase frequency Every sampling_rate *
->  * sampling_down_factor, we check, if current idle time is more than 80%, then
->  * we try to decrease frequency
+于 2013年03月02日 16:35, HATAYAMA Daisuke 写道:
+> Code around /proc/vmcore currently assumes program header table is
+> next to ELF header. But future change can break the assumption on
+> kexec-tools and the 1st kernel. To avoid worst case, now refer to
+> e_phoff member that indicates position of program header table in
+> file-offset.
 
-I misread it here when i looked at this mail for the first time. :)
-I strongly believe that we need a full stop (.) before "Every sampling_rate",
-otherwise it looks like we check for down_factor while increasing freq :)
+Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
 
->  *
->
-> Also checking the code before the commit 8e677ce83bf41ba9c74e5b6d9ee60b07d4e5ed93 you may see that sampling down factor works in this way.
-> So, I decided to keep the original functionality (also down_skip was already there unused).
+> 
+> Signed-off-by: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+> ---
+> 
+>  fs/proc/vmcore.c |   40 ++++++++++++++++++++--------------------
+>  1 files changed, 20 insertions(+), 20 deletions(-)
+> 
+> diff --git a/fs/proc/vmcore.c b/fs/proc/vmcore.c
+> index b870f74..abf4f01 100644
+> --- a/fs/proc/vmcore.c
+> +++ b/fs/proc/vmcore.c
+> @@ -221,8 +221,8 @@ static u64 __init get_vmcore_size_elf64(char *elfptr)
+>  	Elf64_Phdr *phdr_ptr;
+>  
+>  	ehdr_ptr = (Elf64_Ehdr *)elfptr;
+> -	phdr_ptr = (Elf64_Phdr*)(elfptr + sizeof(Elf64_Ehdr));
+> -	size = sizeof(Elf64_Ehdr) + ((ehdr_ptr->e_phnum) * sizeof(Elf64_Phdr));
+> +	phdr_ptr = (Elf64_Phdr*)(elfptr + ehdr_ptr->e_phoff);
+> +	size = ehdr_ptr->e_phoff + ((ehdr_ptr->e_phnum) * sizeof(Elf64_Phdr));
+>  	for (i = 0; i < ehdr_ptr->e_phnum; i++) {
+>  		size += phdr_ptr->p_memsz;
+>  		phdr_ptr++;
+> @@ -238,8 +238,8 @@ static u64 __init get_vmcore_size_elf32(char *elfptr)
+>  	Elf32_Phdr *phdr_ptr;
+>  
+>  	ehdr_ptr = (Elf32_Ehdr *)elfptr;
+> -	phdr_ptr = (Elf32_Phdr*)(elfptr + sizeof(Elf32_Ehdr));
+> -	size = sizeof(Elf32_Ehdr) + ((ehdr_ptr->e_phnum) * sizeof(Elf32_Phdr));
+> +	phdr_ptr = (Elf32_Phdr*)(elfptr + ehdr_ptr->e_phoff);
+> +	size = ehdr_ptr->e_phoff + ((ehdr_ptr->e_phnum) * sizeof(Elf32_Phdr));
+>  	for (i = 0; i < ehdr_ptr->e_phnum; i++) {
+>  		size += phdr_ptr->p_memsz;
+>  		phdr_ptr++;
+> @@ -259,7 +259,7 @@ static int __init merge_note_headers_elf64(char *elfptr, size_t *elfsz,
+>  	u64 phdr_sz = 0, note_off;
+>  
+>  	ehdr_ptr = (Elf64_Ehdr *)elfptr;
+> -	phdr_ptr = (Elf64_Phdr*)(elfptr + sizeof(Elf64_Ehdr));
+> +	phdr_ptr = (Elf64_Phdr*)(elfptr + ehdr_ptr->e_phoff);
+>  	for (i = 0; i < ehdr_ptr->e_phnum; i++, phdr_ptr++) {
+>  		int j;
+>  		void *notes_section;
+> @@ -305,7 +305,7 @@ static int __init merge_note_headers_elf64(char *elfptr, size_t *elfsz,
+>  	/* Prepare merged PT_NOTE program header. */
+>  	phdr.p_type    = PT_NOTE;
+>  	phdr.p_flags   = 0;
+> -	note_off = sizeof(Elf64_Ehdr) +
+> +	note_off = ehdr_ptr->e_phoff +
+>  			(ehdr_ptr->e_phnum - nr_ptnote +1) * sizeof(Elf64_Phdr);
+>  	phdr.p_offset  = note_off;
+>  	phdr.p_vaddr   = phdr.p_paddr = 0;
+> @@ -313,14 +313,14 @@ static int __init merge_note_headers_elf64(char *elfptr, size_t *elfsz,
+>  	phdr.p_align   = 0;
+>  
+>  	/* Add merged PT_NOTE program header*/
+> -	tmp = elfptr + sizeof(Elf64_Ehdr);
+> +	tmp = elfptr + ehdr_ptr->e_phoff;
+>  	memcpy(tmp, &phdr, sizeof(phdr));
+>  	tmp += sizeof(phdr);
+>  
+>  	/* Remove unwanted PT_NOTE program headers. */
+>  	i = (nr_ptnote - 1) * sizeof(Elf64_Phdr);
+>  	*elfsz = *elfsz - i;
+> -	memmove(tmp, tmp+i, ((*elfsz)-sizeof(Elf64_Ehdr)-sizeof(Elf64_Phdr)));
+> +	memmove(tmp, tmp+i, ((*elfsz)-ehdr_ptr->e_phoff-sizeof(Elf64_Phdr)));
+>  
+>  	/* Modify e_phnum to reflect merged headers. */
+>  	ehdr_ptr->e_phnum = ehdr_ptr->e_phnum - nr_ptnote + 1;
+> @@ -340,7 +340,7 @@ static int __init merge_note_headers_elf32(char *elfptr, size_t *elfsz,
+>  	u64 phdr_sz = 0, note_off;
+>  
+>  	ehdr_ptr = (Elf32_Ehdr *)elfptr;
+> -	phdr_ptr = (Elf32_Phdr*)(elfptr + sizeof(Elf32_Ehdr));
+> +	phdr_ptr = (Elf32_Phdr*)(elfptr + ehdr_ptr->e_phoff);
+>  	for (i = 0; i < ehdr_ptr->e_phnum; i++, phdr_ptr++) {
+>  		int j;
+>  		void *notes_section;
+> @@ -386,7 +386,7 @@ static int __init merge_note_headers_elf32(char *elfptr, size_t *elfsz,
+>  	/* Prepare merged PT_NOTE program header. */
+>  	phdr.p_type    = PT_NOTE;
+>  	phdr.p_flags   = 0;
+> -	note_off = sizeof(Elf32_Ehdr) +
+> +	note_off = ehdr_ptr->e_phoff +
+>  			(ehdr_ptr->e_phnum - nr_ptnote +1) * sizeof(Elf32_Phdr);
+>  	phdr.p_offset  = note_off;
+>  	phdr.p_vaddr   = phdr.p_paddr = 0;
+> @@ -394,14 +394,14 @@ static int __init merge_note_headers_elf32(char *elfptr, size_t *elfsz,
+>  	phdr.p_align   = 0;
+>  
+>  	/* Add merged PT_NOTE program header*/
+> -	tmp = elfptr + sizeof(Elf32_Ehdr);
+> +	tmp = elfptr + ehdr_ptr->e_phoff;
+>  	memcpy(tmp, &phdr, sizeof(phdr));
+>  	tmp += sizeof(phdr);
+>  
+>  	/* Remove unwanted PT_NOTE program headers. */
+>  	i = (nr_ptnote - 1) * sizeof(Elf32_Phdr);
+>  	*elfsz = *elfsz - i;
+> -	memmove(tmp, tmp+i, ((*elfsz)-sizeof(Elf32_Ehdr)-sizeof(Elf32_Phdr)));
+> +	memmove(tmp, tmp+i, ((*elfsz)-ehdr_ptr->e_phoff-sizeof(Elf32_Phdr)));
+>  
+>  	/* Modify e_phnum to reflect merged headers. */
+>  	ehdr_ptr->e_phnum = ehdr_ptr->e_phnum - nr_ptnote + 1;
+> @@ -422,10 +422,10 @@ static int __init process_ptload_program_headers_elf64(char *elfptr,
+>  	struct vmcore *new;
+>  
+>  	ehdr_ptr = (Elf64_Ehdr *)elfptr;
+> -	phdr_ptr = (Elf64_Phdr*)(elfptr + sizeof(Elf64_Ehdr)); /* PT_NOTE hdr */
+> +	phdr_ptr = (Elf64_Phdr*)(elfptr + ehdr_ptr->e_phoff); /* PT_NOTE hdr */
+>  
+>  	/* First program header is PT_NOTE header. */
+> -	vmcore_off = sizeof(Elf64_Ehdr) +
+> +	vmcore_off = ehdr_ptr->e_phoff +
+>  			(ehdr_ptr->e_phnum) * sizeof(Elf64_Phdr) +
+>  			phdr_ptr->p_memsz; /* Note sections */
+>  
+> @@ -459,10 +459,10 @@ static int __init process_ptload_program_headers_elf32(char *elfptr,
+>  	struct vmcore *new;
+>  
+>  	ehdr_ptr = (Elf32_Ehdr *)elfptr;
+> -	phdr_ptr = (Elf32_Phdr*)(elfptr + sizeof(Elf32_Ehdr)); /* PT_NOTE hdr */
+> +	phdr_ptr = (Elf32_Phdr*)(elfptr + ehdr_ptr->e_phoff); /* PT_NOTE hdr */
+>  
+>  	/* First program header is PT_NOTE header. */
+> -	vmcore_off = sizeof(Elf32_Ehdr) +
+> +	vmcore_off = ehdr_ptr->e_phoff +
+>  			(ehdr_ptr->e_phnum) * sizeof(Elf32_Phdr) +
+>  			phdr_ptr->p_memsz; /* Note sections */
+>  
+> @@ -496,7 +496,7 @@ static void __init set_vmcore_list_offsets_elf64(char *elfptr,
+>  	ehdr_ptr = (Elf64_Ehdr *)elfptr;
+>  
+>  	/* Skip Elf header and program headers. */
+> -	vmcore_off = sizeof(Elf64_Ehdr) +
+> +	vmcore_off = ehdr_ptr->e_phoff +
+>  			(ehdr_ptr->e_phnum) * sizeof(Elf64_Phdr);
+>  
+>  	list_for_each_entry(m, vc_list, list) {
+> @@ -516,7 +516,7 @@ static void __init set_vmcore_list_offsets_elf32(char *elfptr,
+>  	ehdr_ptr = (Elf32_Ehdr *)elfptr;
+>  
+>  	/* Skip Elf header and program headers. */
+> -	vmcore_off = sizeof(Elf32_Ehdr) +
+> +	vmcore_off = ehdr_ptr->e_phoff +
+>  			(ehdr_ptr->e_phnum) * sizeof(Elf32_Phdr);
+>  
+>  	list_for_each_entry(m, vc_list, list) {
+> @@ -553,7 +553,7 @@ static int __init parse_crash_elf64_headers(void)
+>  	}
+>  
+>  	/* Read in all elf headers. */
+> -	elfcorebuf_sz = sizeof(Elf64_Ehdr) + ehdr.e_phnum * sizeof(Elf64_Phdr);
+> +	elfcorebuf_sz = ehdr.e_phoff + ehdr.e_phnum * sizeof(Elf64_Phdr);
+>  	elfcorebuf = kmalloc(elfcorebuf_sz, GFP_KERNEL);
+>  	if (!elfcorebuf)
+>  		return -ENOMEM;
+> @@ -608,7 +608,7 @@ static int __init parse_crash_elf32_headers(void)
+>  	}
+>  
+>  	/* Read in all elf headers. */
+> -	elfcorebuf_sz = sizeof(Elf32_Ehdr) + ehdr.e_phnum * sizeof(Elf32_Phdr);
+> +	elfcorebuf_sz = ehdr.e_phoff + ehdr.e_phnum * sizeof(Elf32_Phdr);
+>  	elfcorebuf = kmalloc(elfcorebuf_sz, GFP_KERNEL);
+>  	if (!elfcorebuf)
+>  		return -ENOMEM;
+> 
+> 
+> _______________________________________________
+> kexec mailing list
+> kexec@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/kexec
+> 
 
-I got that comment but i belive the code was never according to that comment
-and not even now. Check the initial patch for conservative governor:
-b9170836d1aa4ded7cc1ac1cb8fbc7867061c98c
-
-Even now we aren't checking this 80% thing, right? And so in your patch we can
-actually fix the patch too with the right logic of code.. And
-documentation too :)
