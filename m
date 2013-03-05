@@ -1,106 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755130Ab3CEWGx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 17:06:53 -0500
-Received: from sema.semaphore.gr ([78.46.194.137]:53825 "EHLO
-	sema.semaphore.gr" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755022Ab3CEWGu (ORCPT
+	id S1754960Ab3CEWKN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 17:10:13 -0500
+Received: from mail-ee0-f43.google.com ([74.125.83.43]:54145 "EHLO
+	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751921Ab3CEWKL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 17:06:50 -0500
-Message-ID: <51366C77.3080309@semaphore.gr>
-Date: Wed, 06 Mar 2013 00:06:47 +0200
-From: Stratos Karafotis <stratosk@semaphore.gr>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130219 Thunderbird/17.0.3
+	Tue, 5 Mar 2013 17:10:11 -0500
+Message-ID: <51366D3E.2050903@suse.cz>
+Date: Tue, 05 Mar 2013 23:10:06 +0100
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:19.0) Gecko/20130124 Thunderbird/19.0
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Viresh Kumar <viresh.kumar@linaro.org>, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 3/3 linux-next] cpufreq: conservative: Use an inline function
- to evaluate freq_target
-Content-Type: text/plain; charset=ISO-8859-1
+To: Peter Hurley <peter@hurleysoftware.com>
+CC: jhovold@gmail.com, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        USB list <linux-usb@vger.kernel.org>, linux-serial@vger.kernel.org,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [Fwd: [PATCH v2 0/4] TTY: port hangup and close fixes]
+References: <1362085054.3337.20.camel@thor.lan> <51361724.4050107@suse.cz>  <1362503170.18799.33.camel@thor.lan> <51366A29.2060808@suse.cz> <1362520976.18799.134.camel@thor.lan>
+In-Reply-To: <1362520976.18799.134.camel@thor.lan>
+X-Enigmail-Version: 1.6a1pre
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use an inline function to evaluate freq_target to avoid duplicate code.
+On 03/05/2013 11:02 PM, Peter Hurley wrote:
+> On Tue, 2013-03-05 at 22:56 +0100, Jiri Slaby wrote:
+>> On 03/05/2013 06:06 PM, Peter Hurley wrote:
+>>>>> @@ -225,15 +232,13 @@ void tty_port_hangup(struct tty_port *port)
+>>>>         spin_lock_irqsave(&port->lock, flags);
+>>>>         port->count = 0;
+>>>>         port->flags &= ~ASYNC_NORMAL_ACTIVE;
+>>>> -       if (port->tty) {
+>>>> +       if (port->tty)
+>>>>                 set_bit(TTY_IO_ERROR, &port->tty->flags);
+>>>> -               tty_kref_put(port->tty);
+>>>> -       }
+>>>> -       port->tty = NULL;
+>>>>         spin_unlock_irqrestore(&port->lock, flags);
+>>>>> +       tty_port_shutdown(port, port->tty);
+>>>>
+>>>> What prevents port->tty to be NULL here already?
+>>>
+>>> Nothing. That's why it's tested in tty_port_shutdown() above.
+>>
+>> I know :).
+> 
+> Sorry :)
+> 
+>> But the question is rather don't we want to pass the real
+>> refcounted port->tty (take a snapshot inside the lock) instead?
+> 
+> I think that's why he moved the kref release to after the shutdown (via
+> tty_port_set_tty()) -- but I'm tired and maybe I'm missing something
+> here?
 
-Also, define a macro for the default frequency step and fix the
-calculation of freq_target when the max freq is less that 100.
+port->tty can be changed right after the unlock. So I'm thinking about
+something like this:
 
-Signed-off-by: Stratos Karafotis <stratosk@semaphore.gr>
----
- drivers/cpufreq/cpufreq_conservative.c | 27 +++++++++++++++------------
- 1 file changed, 15 insertions(+), 12 deletions(-)
+if (port->tty)
+   set_bit(TTY_IO_ERROR, &port->tty->flags);
+tty = port->tty; <=== take a snapshot
+spin_unlock_irqrestore(&port->lock, flags);
+tty_port_shutdown(port, tty); <=== use the snapshot
+set_tty_port(port, NULL); <=== put kref on that tty
 
-diff --git a/drivers/cpufreq/cpufreq_conservative.c b/drivers/cpufreq/cpufreq_conservative.c
-index 08be431..029de49 100644
---- a/drivers/cpufreq/cpufreq_conservative.c
-+++ b/drivers/cpufreq/cpufreq_conservative.c
-@@ -28,6 +28,7 @@
- /* Conservative governor macros */
- #define DEF_FREQUENCY_UP_THRESHOLD		(80)
- #define DEF_FREQUENCY_DOWN_THRESHOLD		(20)
-+#define DEF_FREQUENCY_STEP			(5)
- #define DEF_SAMPLING_DOWN_FACTOR		(1)
- #define MAX_SAMPLING_DOWN_FACTOR		(10)
- 
-@@ -39,9 +40,20 @@ static struct cs_dbs_tuners cs_tuners = {
- 	.down_threshold = DEF_FREQUENCY_DOWN_THRESHOLD,
- 	.sampling_down_factor = DEF_SAMPLING_DOWN_FACTOR,
- 	.ignore_nice = 0,
--	.freq_step = 5,
-+	.freq_step = DEF_FREQUENCY_STEP,
- };
- 
-+static inline unsigned int get_freq_target(struct cpufreq_policy *policy)
-+{
-+	unsigned int freq_target = (cs_tuners.freq_step * policy->max) / 100;
-+
-+	/* max freq cannot be less than 100. But who knows... */
-+	if (unlikely(freq_target == 0))
-+		freq_target = DEF_FREQUENCY_STEP * 1000; /* frequency in KHz */
-+
-+	return freq_target;
-+}
-+
- /*
-  * Every sampling_rate, we check, if current idle time is less than 20%
-  * (default), then we try to increase frequency. Every sampling_rate *
-@@ -55,7 +67,6 @@ static void cs_check_cpu(int cpu, unsigned int load)
- {
- 	struct cs_cpu_dbs_info_s *dbs_info = &per_cpu(cs_cpu_dbs_info, cpu);
- 	struct cpufreq_policy *policy = dbs_info->cdbs.cur_policy;
--	unsigned int freq_target;
- 
- 	/*
- 	 * break out if we 'cannot' reduce the speed as the user might
-@@ -72,13 +83,7 @@ static void cs_check_cpu(int cpu, unsigned int load)
- 		if (dbs_info->requested_freq == policy->max)
- 			return;
- 
--		freq_target = (cs_tuners.freq_step * policy->max) / 100;
--
--		/* max freq cannot be less than 100. But who knows.... */
--		if (unlikely(freq_target == 0))
--			freq_target = 5;
--
--		dbs_info->requested_freq += freq_target;
-+		dbs_info->requested_freq += get_freq_target(policy);
- 		if (dbs_info->requested_freq > policy->max)
- 			dbs_info->requested_freq = policy->max;
- 
-@@ -94,9 +99,7 @@ static void cs_check_cpu(int cpu, unsigned int load)
- 
- 	/* Check for frequency decrease */
- 	if (load < cs_tuners.down_threshold) {
--		freq_target = (cs_tuners.freq_step * policy->max) / 100;
--
--		dbs_info->requested_freq -= freq_target;
-+		dbs_info->requested_freq -= get_freq_target(policy);
- 		if (dbs_info->requested_freq < policy->min)
- 			dbs_info->requested_freq = policy->min;
- 
 -- 
-1.8.1.4
-
+js
+suse labs
