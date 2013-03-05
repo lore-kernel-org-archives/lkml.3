@@ -1,74 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756649Ab3CERJl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 12:09:41 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:30846 "EHLO mx1.redhat.com"
+	id S1756981Ab3CERKe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 12:10:34 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:34437 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752622Ab3CERJk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 12:09:40 -0500
-Date: Tue, 5 Mar 2013 18:06:42 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Michel Lespinasse <walken@google.com>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@redhat.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        paulmck@linux.vnet.ibm.com, Rusty Russell <rusty@rustcorp.com.au>,
-        rostedt@goodmis.org, tglx@linutronix.de,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 1/2] lockdep: introduce lock_acquire_exclusive/shared
-	helper macros
-Message-ID: <20130305170642.GA5012@redhat.com>
-References: <1362449845-7492-1-git-send-email-walken@google.com> <1362449845-7492-2-git-send-email-walken@google.com>
+	id S1753547Ab3CERKd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Mar 2013 12:10:33 -0500
+Message-ID: <513626E9.2040509@redhat.com>
+Date: Tue, 05 Mar 2013 12:10:01 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1362449845-7492-2-git-send-email-walken@google.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Davidlohr Bueso <davidlohr.bueso@hp.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Emmanuel Benisty <benisty.e@gmail.com>,
+        "Vinod, Chegu" <chegu_vinod@hp.com>, "Low, Jason" <jason.low2@hp.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>, aquini@redhat.com,
+        Michel Lespinasse <walken@google.com>, Ingo Molnar <mingo@kernel.org>,
+        Larry Woodman <lwoodman@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH v2 0/4] ipc: reduce ipc lock contention
+References: <1362476149.2225.50.camel@buesod1.americas.hpqcorp.net>
+In-Reply-To: <1362476149.2225.50.camel@buesod1.americas.hpqcorp.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/04, Michel Lespinasse wrote:
+On 03/05/2013 04:35 AM, Davidlohr Bueso wrote:
+
+> 2) While on an Oracle swingbench DSS (data mining) workload the
+> improvements are not as exciting as with Rik's benchmark, we can see
+> some positive numbers. For an 8 socket machine the following are the
+> percentages of %sys time incurred in the ipc lock:
 >
-> In lockdep.h, the spinlock/mutex/rwsem/rwlock/lock_map acquire macros
-> have different definitions based on the value of CONFIG_PROVE_LOCKING.
-> We have separate ifdefs for each of these definitions, which seems
-> redundant.
+> Baseline (3.9-rc1):
+> 100 swingbench users: 8,74%
+> 400 swingbench users: 21,86%
+> 800 swingbench users: 84,35%
+>
+> With this patchset:
+> 100 swingbench users: 8,11%
+> 400 swingbench users: 19,93%
+> 800 swingbench users: 77,69%
 
-You know, I should not even try to comment this patch. I never really
-understood this magic, and I forgot everything I knew.
+Does the swingbench DSS workload use multiple semaphores, or
+just one?
 
-But I like this patch because it makes lockdep.h more readable to me,
-so I hope it is correct ;)
+Your patches look like a great start to make the semaphores
+more scalable. If the swingbench DSS workload uses multiple
+semaphores, I have ideas for follow-up patches to make things
+scale better.
 
-One question,
+What does ipcs output look like while running swingbench DSS?
 
-> +#ifdef CONFIG_PROVE_LOCKING
-> + #define lock_acquire_exclusive(l, s, t, n, i)		lock_acquire(l, s, t, 0, 2, n, i)
-> + #define lock_acquire_shared(l, s, t, n, i)		lock_acquire(l, s, t, 1, 2, n, i)
-> + #define lock_acquire_shared_recursive(l, s, t, n, i)	lock_acquire(l, s, t, 2, 2, n, i)
->  #else
-> -# define spin_acquire(l, s, t, i)		do { } while (0)
-> -# define spin_release(l, n, i)			do { } while (0)
-> + #define lock_acquire_exclusive(l, s, t, n, i)		lock_acquire(l, s, t, 0, 1, n, i)
-> + #define lock_acquire_shared(l, s, t, n, i)		lock_acquire(l, s, t, 1, 1, n, i)
-> + #define lock_acquire_shared_recursive(l, s, t, n, i)	lock_acquire(l, s, t, 2, 1, n, i)
->  #endif
-
-Do we really need this ifdef? Can't we pass check == 2 unconditionally?
-
-__lock_acquire() does:
-
-	if (!prove_locking)
-		check = 1;
-
-anyway, and without CONFIG_PROVE_LOCKING prove_locking == 0.
-
-And every time I need to look into lockdep.h these hardcoded constants
-confuse me, and of course it is not possible to remember if this particular
-"1" means "read" or "check". Imho it would be nice to add some symbolic
-names. But this is offtopic.
-
-Oleg.
-
+-- 
+All rights reversed
