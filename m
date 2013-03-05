@@ -1,69 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932907Ab3CEBDJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 20:03:09 -0500
-Received: from g6t0186.atlanta.hp.com ([15.193.32.63]:39759 "EHLO
-	g6t0186.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932432Ab3CEBDI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 20:03:08 -0500
-Message-ID: <1362445374.4591.28.camel@lorien2>
-Subject: [PATCH] net/wireless/brcm80211: remove PCI_BUS define from defs.h
- to fix warnings
-From: Shuah Khan <shuah.khan@hp.com>
-Reply-To: shuah.khan@hp.com
-To: brudley@broadcom.com, arend@broadcom.com, frankyl@broadcom.com,
-        linville@tuxdriver.com, seth.forshee@canonical.com,
-        pieterpg@broadcom.com
-Cc: linux-wireless@vger.kernel.org, brcm80211-dev-list@broadcom.com,
-        netdev@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        shuahkhan@gmail.com
-Date: Mon, 04 Mar 2013 18:02:54 -0700
-Organization: ISS-Linux
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	id S932891Ab3CEBPO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 20:15:14 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:30232 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1758440Ab3CEBPM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Mar 2013 20:15:12 -0500
+X-IronPort-AV: E=Sophos;i="4.84,784,1355068800"; 
+   d="scan'208";a="6810817"
+Message-ID: <5135479C.4060209@cn.fujitsu.com>
+Date: Tue, 05 Mar 2013 09:17:16 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] workqueue: fix possible bug which may silence the pool
+References: <1362239729-6753-1-git-send-email-laijs@cn.fujitsu.com> <20130304192028.GM30413@htj.dyndns.org>
+In-Reply-To: <20130304192028.GM30413@htj.dyndns.org>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/03/05 09:14:09,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/03/05 09:14:10,
+	Serialize complete at 2013/03/05 09:14:10
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-PCI_BUS defined in defs.h results in warnings from all brcm80211 source files
-including defs.h. This define is not used in brcm80211. Removing this define
-fixes the warning.
+On 03/05/2013 03:20 AM, Tejun Heo wrote:
+> Hello, Lai.
+> 
+> On Sat, Mar 02, 2013 at 11:55:29PM +0800, Lai Jiangshan wrote:
+>> After we introduce multiple pools for cpu pools, a part of the comments
+>> in wq_unbind_fn() becomes wrong.
+>>
+>> It said that "current worker would trigger unbound chain execution".
+>> It is wrong. current worker only belongs to one of the multiple pools.
+>>
+>> If wq_unbind_fn() does unbind the normal_pri pool(not the pool of the current
+>> worker), the current worker is not the available worker to trigger unbound
+>> chain execution of the normal_pri pool, and if all the workers of
+>> the normal_pri goto sleep after they were set %WORKER_UNBOUND but before
+>> they finish their current work, unbound chain execution is not triggered
+>> totally. The pool is stopped!
+>>
+>> We can change wq_unbind_fn() only does unbind one pool and we launch multiple
+>> wq_unbind_fn()s, one for each pool to solve the problem.
+>> But this change will add much latency to hotplug path unnecessarily.
+>>
+>> So we choice to wake up a worker directly to trigger unbound chain execution.
+>>
+>> current worker may sleep on &second_pool->assoc_mutex, so we also move
+>> the wakeup code into the loop to avoid second_pool silences the first_pool.
+>>
+>> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+> 
+> Nice catch.
+> 
+>> @@ -3446,28 +3446,35 @@ static void wq_unbind_fn(struct work_struct *work)
+>>  
+>>  		spin_unlock_irq(&pool->lock);
+>>  		mutex_unlock(&pool->assoc_mutex);
+>> -	}
+>>  
+>> -	/*
+>> -	 * Call schedule() so that we cross rq->lock and thus can guarantee
+>> -	 * sched callbacks see the %WORKER_UNBOUND flag.  This is necessary
+>> -	 * as scheduler callbacks may be invoked from other cpus.
+>> -	 */
+>> -	schedule();
+>> +		/*
+>> +		 * Call schedule() so that we cross rq->lock and thus can
+>> +		 * guarantee sched callbacks see the %WORKER_UNBOUND flag.
+>> +		 * This is necessary as scheduler callbacks may be invoked
+>> +		 * from other cpus.
+>> +		 */
+>> +		schedule();
+>>  
+>> -	/*
+>> -	 * Sched callbacks are disabled now.  Zap nr_running.  After this,
+>> -	 * nr_running stays zero and need_more_worker() and keep_working()
+>> -	 * are always true as long as the worklist is not empty.  Pools on
+>> -	 * @cpu now behave as unbound (in terms of concurrency management)
+>> -	 * pools which are served by workers tied to the CPU.
+>> -	 *
+>> -	 * On return from this function, the current worker would trigger
+>> -	 * unbound chain execution of pending work items if other workers
+>> -	 * didn't already.
+>> -	 */
+>> -	for_each_std_worker_pool(pool, cpu)
+>> +		/*
+>> +		 * Sched callbacks are disabled now.  Zap nr_running.
+>> +		 * After this, nr_running stays zero and need_more_worker()
+>> +		 * and keep_working() are always true as long as the worklist
+>> +		 * is not empty.  This pool now behave as unbound (in terms of
+>> +		 * concurrency management) pool which are served by workers
+>> +		 * tied to the pool.
+>> +		 */
+>>  		atomic_set(&pool->nr_running, 0);
+>> +
+>> +		/* The current busy workers of this pool may goto sleep without
+>> +		 * wake up any other worker after they were set %WORKER_UNBOUND
+>> +		 * flag. Here we wake up another possible worker to start
+>> +		 * the unbound chain execution of pending work items in this
+>> +		 * case.
+>> +		 */
+>> +		spin_lock_irq(&pool->lock);
+>> +		wake_up_worker(pool);
+>> +		spin_unlock_irq(&pool->lock);
+>> +	}
+> 
+> But can we please just addd wake_up_worker() in the
+> for_each_std_worker_pool() loop?  
 
-In file included from drivers/net/wireless/brcm80211/brcmfmac/dhd_sdio.c:35:0:
-drivers/net/wireless/brcm80211/include/defs.h:23:0: warning: "PCI_BUS" redefined [enabled by default]
-include/uapi/linux/pci.h:36:0: note: this is the location of the previous definition
-  CC [M]  drivers/net/wireless/b43legacy/dma.o
-  CC [M]  drivers/net/wireless/brcm80211/brcmfmac/bcmsdh.o
-  CC [M]  drivers/net/wireless/b43legacy/pio.o
-In file included from drivers/net/wireless/brcm80211/brcmfmac/bcmsdh.c:29:0:
-drivers/net/wireless/brcm80211/include/defs.h:23:0: warning: "PCI_BUS" redefined [enabled by default]
-include/uapi/linux/pci.h:36:0: note: this is the location of the previous definition
-In file included from drivers/net/wireless/brcm80211/brcmfmac/bcmsdh.c:29:0:
-drivers/net/wireless/brcm80211/include/defs.h:23:0: warning: "PCI_BUS" redefined [enabled by default]
-include/uapi/linux/pci.h:36:0: note: this is the location of the previous definition
-
-Signed-off-by: Shuah Khan <shuah.khan@hp.com>
----
- drivers/net/wireless/brcm80211/include/defs.h |    1 -
- 1 file changed, 1 deletion(-)
-
-diff --git a/drivers/net/wireless/brcm80211/include/defs.h b/drivers/net/wireless/brcm80211/include/defs.h
-index fb7cbcf..3608436 100644
---- a/drivers/net/wireless/brcm80211/include/defs.h
-+++ b/drivers/net/wireless/brcm80211/include/defs.h
-@@ -20,7 +20,6 @@
- #include <linux/types.h>
- 
- #define	SI_BUS			0
--#define	PCI_BUS			1
- #define	PCMCIA_BUS		2
- #define SDIO_BUS		3
- #define JTAG_BUS		4
--- 
-1.7.9.5
+wake_up_worker() needed be put on the same loop which do set %WORKER_UNBOUND.
 
 
+mutex_lock(&pool->assoc_mutex);
+do set %WORKER_UNBOUND for normal_pri pool
+mutex_unlock(&pool->assoc_mutex);
+
+// no wakeup for normal_pri pool
+// but all workers of normal_pri pool goto sleep
+
+// try to  do set %WORKER_UNBOUND for high_pri pool
+mutex_lock(&pool->assoc_mutex);
+	waiting forever here due to high_pri pool's manage_workers()
+	waiting on allocating memory forever(waiting normal_pri pool
+	free memory, but normal_pri pool is silenced)
+mutex_unlock(&pool->assoc_mutex);
+
+
+> We want to mark the patch for
+> -stable and keep it short and to the point.  This patch is a couple
+> times larger than necessary.
+> 
+> Thanks.
+> 
 
