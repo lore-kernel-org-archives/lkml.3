@@ -1,76 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752256Ab3CEKuT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 05:50:19 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:50633 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750729Ab3CEKuP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 05:50:15 -0500
-Date: Tue, 5 Mar 2013 12:49:44 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-CC: <linux-usb@vger.kernel.org>, Felipe Balbi <balbi@ti.com>,
-        <linux-kernel@vger.kernel.org>, Fengguang Wu <fengguang.wu@intel.com>
-Subject: Re: [PATCH] usb/gadget: initialize gadget functions helper befor
- functions & gadgets
-Message-ID: <20130305104944.GE7899@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <20130206020424.GB1175@localhost>
- <1362432489-6325-1-git-send-email-sebastian@breakpoint.cc>
+	id S1752851Ab3CEKxN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 05:53:13 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:54113 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751469Ab3CEKxM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Mar 2013 05:53:12 -0500
+Date: Tue, 5 Mar 2013 10:52:51 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: rjw@sisk.pl, Steve.Bannister@arm.com, linux-pm@vger.kernel.org,
+        Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>,
+        Liviu.Dudau@arm.com, linux-kernel@vger.kernel.org,
+        cpufreq@vger.kernel.org, robin.randhawa@arm.com,
+        linux-arm-kernel@lists.infradead.org, mark.hambleton@broadcom.com,
+        linaro-kernel@lists.linaro.org, charles.garcia-tobin@arm.com
+Subject: Re: [PATCH] cpufreq: ARM big LITTLE: Add generic cpufreq driver
+	and its DT glue
+Message-ID: <20130305105251.GL17833@n2100.arm.linux.org.uk>
+References: <f20e3c5e822c4bd28a3b71264d73143cc1f850b0.1362458878.git.viresh.kumar@linaro.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="tMbDGjvJuJijemkf"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1362432489-6325-1-git-send-email-sebastian@breakpoint.cc>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <f20e3c5e822c4bd28a3b71264d73143cc1f850b0.1362458878.git.viresh.kumar@linaro.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---tMbDGjvJuJijemkf
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, Mar 05, 2013 at 12:52:41PM +0800, Viresh Kumar wrote:
+> +static void put_cluster_clk_and_freq_table(u32 cluster)
+> +{
+> +	if (!atomic_dec_return(&cluster_usage[cluster])) {
+> +		clk_put(clk[cluster]);
+> +		clk[cluster] = NULL;
 
-On Mon, Mar 04, 2013 at 10:28:09PM +0100, Sebastian Andrzej Siewior wrote:
-> Fengguang Wu run into a kernel ops after he complied dummy_hcd and g_cdc
-> into the kernel. The problem was that u_serial was used by g_cdc before
-> u_serial was initialized. In the module case eveything is initialized in
-> the correct order but if we compile it into the kernel we rely on
-> Makefile order which I did wrong and now I correct this.
->=20
-> Cc: Fengguang Wu <fengguang.wu@intel.com>
-> Signed-off-by: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-> ---
-> I kinda assumed that this was already fixed (i.e. a patch like this was s=
-ent)
-> but it seems not to be that case.
+What's the point in setting the clk to NULL?
 
-already in Greg's queue, cheers
+> +static int get_cluster_clk_and_freq_table(u32 cluster)
+> +{
+> +	char name[9] = "cluster";
+> +	int count;
+> +
+> +	if (atomic_inc_return(&cluster_usage[cluster]) != 1)
+> +		return 0;
+> +
+> +	freq_table[cluster] = arm_bL_ops->get_freq_tbl(cluster, &count);
+> +	if (!freq_table[cluster])
+> +		goto atomic_dec;
+> +
+> +	name[7] = cluster + '0';
+> +	clk[cluster] = clk_get(NULL, name);
+> +	if (!IS_ERR_OR_NULL(clk[cluster])) {
 
---=20
-balbi
+NAK.  Two reasons.
 
---tMbDGjvJuJijemkf
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+1. IS_ERR_OR_NULL.  You know about this, it's been on the list several
+   times.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRNc3IAAoJEIaOsuA1yqREcVsQAKfXYP8nPOwDFozKSTi76o19
-GGjVaa9Y/gPuisrwlrUGrm8tCXOhvJxbIQpyVx41jgSiMrQDHa7PHpSNCL+X2uRw
-uG5fyIlpdgKtVQK7Ot3min2iFkd9Ay31hva7wEzIxUCg+1197/jbPk//LXp3oZWg
-lLBaMFrcvHFwZ0l+70ZOnjhXunQphUKZyxOVzUq7B3TmANRdbB8mgF/aCxrXiXPo
-iPX64cFY130CUgDv8HnQ0hz0X3h1DLk9Dq0YKP1LwqMZazQnR7YTZle5+ndsdNLk
-BwqKfo4oP+2q6YjqJ731EDV1zLT8C/FSdvuLJuydlY+OJhdjLvvjqD1wUCZeC3nF
-o3IadeWBEKFxsQUTV7fFExIRPB+n9HmchdLHczB4CSORqwyRaPHJvq6fvBWZbREe
-c0yjf559EdZBeEcEqz31S9sC5eBrMkoQ+xGLGFnpIYFiBDJcyi8+Pwy+CbRl7gP5
-egy2HFq6N4Z5Bdc19YqvMM/uvLR+3TFfijMGk67o2yi/+ZOjzW04Qv4ct2ga4cOw
-QedrMuGExEAUUhH71E8xY3SpQaIaQBphCcgMk402tDpfWzAS15lwpA3kNIEyKs0M
-weEKGvxbeF5Qd6VrTlXMLkCS2PycKbcmmY3fCw50w0nw39yMz9Qts+jC9s5HEyY+
-FlZEbHtLuHWAsotDbebh
-=Z5F/
------END PGP SIGNATURE-----
-
---tMbDGjvJuJijemkf--
+2. Maybe clk_get_sys() rather than clk_get() and use a sensible device
+   name ("cpu-cluster.%u" maybe) rather than a connection name with a
+   NULL device?
