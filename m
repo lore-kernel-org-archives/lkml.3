@@ -1,76 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755507Ab3CEJbI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 04:31:08 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:44594 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1755104Ab3CEJbF convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 04:31:05 -0500
-X-IronPort-AV: E=Sophos;i="4.84,786,1355068800"; 
-   d="scan'208";a="6816564"
-Message-ID: <5135BAE8.8050405@cn.fujitsu.com>
-Date: Tue, 05 Mar 2013 17:29:12 +0800
-From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.8) Gecko/20121012 Thunderbird/10.0.8
+	id S1755533Ab3CEJcp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 04:32:45 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:39303 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752592Ab3CEJcm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Mar 2013 04:32:42 -0500
+X-IronPort-AV: E=Sophos;i="4.84,786,1355097600"; 
+   d="scan'208";a="11147535"
+Message-ID: <1362475797.8941.67.camel@hastur.hellion.org.uk>
+Subject: Re: [PATCH LINUX v5] xen: event channel arrays are xen_ulong_t and
+ not unsigned long
+From: Ian Campbell <ian.campbell@citrix.com>
+To: Will Deacon <will.deacon@arm.com>
+CC: Rob Herring <robherring2@gmail.com>,
+        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
+        "Keir (Xen.org)" <keir@xen.org>,
+        "Stefano Stabellini" <Stefano.Stabellini@eu.citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "Tim (Xen.org)" <tim@xen.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jan Beulich <JBeulich@suse.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Nicolas Pitre <nico@fluxnic.net>
+Date: Tue, 5 Mar 2013 09:29:57 +0000
+In-Reply-To: <20130305080845.GA19097@mudshark.cambridge.arm.com>
+References: <1361285327.1051.115.camel@zakaz.uk.xensource.com>
+	 <1361360886-2956-1-git-send-email-ian.campbell@citrix.com>
+	 <51340ACD.70904@gmail.com>
+	 <20130305030436.GA18040@mudshark.cambridge.arm.com>
+	 <513596F2.1000701@gmail.com>
+	 <20130305080845.GA19097@mudshark.cambridge.arm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-2 
 MIME-Version: 1.0
-To: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-CC: vgoyal@redhat.com, ebiederm@xmission.com, cpw@sgi.com,
-        kumagai-atsushi@mxc.nes.nec.co.jp, lisa.mitchell@hp.com,
-        heiko.carstens@de.ibm.com, akpm@linux-foundation.org,
-        kexec@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 03/20] vmcore, sysfs: export ELF note segment size
- instead of vmcoreinfo data size
-References: <20130302083447.31252.93914.stgit@localhost6.localdomain6> <20130302083605.31252.26646.stgit@localhost6.localdomain6>
-In-Reply-To: <20130302083605.31252.26646.stgit@localhost6.localdomain6>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/03/05 17:30:02,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/03/05 17:30:02
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2013年03月02日 16:36, HATAYAMA Daisuke 写道:
-> p_memsz member of program header entry with PT_NOTE type needs to have
-> size of the corresponding ELF note segment. Currently, vmcoreinfo
-> exports data part only. If vmcoreinfo reachs vmcoreinfo_max_size, then
-> in merge_note_headers_elf{32,64}, empty ELF note header cannot be
-> found or buffer overrun can happen.
-> 
-> Note: kexec-tools assigns PAGE_SIZE to p_memsz for other ELF note
-> types. Due to the above reason, the same issue occurs if actual ELF
-> note data exceeds (PAGE_SIZE - 2 * KEXEC_NOTE_HEAD_BYTES).
-> 
-> Signed-off-by: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-> ---
-> 
->  kernel/ksysfs.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/kernel/ksysfs.c b/kernel/ksysfs.c
-> index 6ada93c..97d2763 100644
-> --- a/kernel/ksysfs.c
-> +++ b/kernel/ksysfs.c
-> @@ -126,7 +126,7 @@ static ssize_t vmcoreinfo_show(struct kobject *kobj,
->  {
->  	return sprintf(buf, "%lx %x\n",
->  		       paddr_vmcoreinfo_note(),
-> -		       (unsigned int)vmcoreinfo_max_size);
-> +		       (unsigned int)sizeof(vmcoreinfo_note));
->  }
->  KERNEL_ATTR_RO(vmcoreinfo);
+On Tue, 2013-03-05 at 08:08 +0000, Will Deacon wrote:
+> Cheers Rob, that was enough to reproduce for me. The problem is likely that
+> CONFIG_AEABI=n, so the ABI doesn't actually mandate even base registers for
+> 64-bit values in registers.
 
-Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Me too.
 
->  
-> 
-> 
-> _______________________________________________
-> kexec mailing list
-> kexec@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/kexec
-> 
+> Ian -- this would be fixed if you used our atomic64 routines instead of
+> inventing your own :)
+
+I looked and couldn't see an existing 64 bit xchg, was I looking in the
+wrong place? Ah, wait, I see atomic64_xchg now. But that needs an
+atomic64_t while I have a xen_ulong_t (which == 64 bits on ARM). This is
+a kernel<->hypervisor ABI so I can't just change it to an atomic64_t. I
+suppose I could cast (see below, untested) but that seems rather icky.
+
+Ian.
+
+diff --git a/arch/arm/include/asm/xen/events.h b/arch/arm/include/asm/xen/events.h
+index 0e1f59e..e86a1b3 100644
+--- a/arch/arm/include/asm/xen/events.h
++++ b/arch/arm/include/asm/xen/events.h
+@@ -2,6 +2,7 @@
+ #define _ASM_ARM_XEN_EVENTS_H
+ 
+ #include <asm/ptrace.h>
++#include <asm/atomic.h>
+ 
+ enum ipi_vector {
+ 	XEN_PLACEHOLDER_VECTOR,
+@@ -15,27 +16,6 @@ static inline int xen_irqs_disabled(struct pt_regs *regs)
+ 	return raw_irqs_disabled_flags(regs->ARM_cpsr);
+ }
+ 
+-/*
+- * We cannot use xchg because it does not support 8-byte
+- * values. However it is safe to use {ldr,dtd}exd directly because all
+- * platforms which Xen can run on support those instructions.
+- */
+-static inline xen_ulong_t xchg_xen_ulong(xen_ulong_t *ptr, xen_ulong_t val)
+-{
+-	xen_ulong_t oldval;
+-	unsigned int tmp;
+-
+-	smp_wmb();
+-	asm volatile("@ xchg_xen_ulong\n"
+-		"1:     ldrexd  %0, %H0, [%3]\n"
+-		"       strexd  %1, %2, %H2, [%3]\n"
+-		"       teq     %1, #0\n"
+-		"       bne     1b"
+-		: "=&r" (oldval), "=&r" (tmp)
+-		: "r" (val), "r" (ptr)
+-		: "memory", "cc");
+-	smp_wmb();
+-	return oldval;
+-}
++#define xchg_xen_ulong(ptr, val) atomic64_xchg((atomic64_t *)(ptr), (val))
+ 
+ #endif /* _ASM_ARM_XEN_EVENTS_H */
+
 
