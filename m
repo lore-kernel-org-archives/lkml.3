@@ -1,115 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754848Ab3CEJCq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 04:02:46 -0500
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:37013 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751851Ab3CEJCm (ORCPT
+	id S1754728Ab3CEJDC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 04:03:02 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:50783 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754903Ab3CEJCw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 04:02:42 -0500
-Message-ID: <5135B4AD.5030609@numascale-asia.com>
-Date: Tue, 05 Mar 2013 17:02:37 +0800
-From: Daniel J Blueman <daniel@numascale-asia.com>
-Organization: Numascale Asia
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130227 Thunderbird/17.0.3
-MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com
-CC: "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        Steffen Persvold <sp@numascale.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: False-positive RCU stall warnings on large systems...
-References: <5123A984.4000704@numascale-asia.com> <20130219181624.GG3093@linux.vnet.ibm.com> <5124449D.3060808@numascale-asia.com> <20130225163225.GA3302@linux.vnet.ibm.com>
-In-Reply-To: <20130225163225.GA3302@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Tue, 5 Mar 2013 04:02:52 -0500
+Date: Tue, 05 Mar 2013 18:02:43 +0900 (JST)
+Message-Id: <20130305.180243.45653001.d.hatayama@jp.fujitsu.com>
+To: zhangyanfei@cn.fujitsu.com
+Cc: kexec@lists.infradead.org, heiko.carstens@de.ibm.com,
+        linux-kernel@vger.kernel.org, lisa.mitchell@hp.com,
+        kumagai-atsushi@mxc.nes.nec.co.jp, ebiederm@xmission.com,
+        akpm@linux-foundation.org, cpw@sgi.com, vgoyal@redhat.com
+Subject: Re: [PATCH v2 02/20] vmcore: rearrange program headers without
+ assuming consequtive PT_NOTE entries
+From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+In-Reply-To: <5135AEA5.7000605@cn.fujitsu.com>
+References: <20130302083447.31252.93914.stgit@localhost6.localdomain6>
+	<20130302083559.31252.60341.stgit@localhost6.localdomain6>
+	<5135AEA5.7000605@cn.fujitsu.com>
+X-Mailer: Mew version 6.3 on Emacs 24.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=iso-2022-jp
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/26/2013 12:32 AM, Paul E. McKenney wrote:
-> On Wed, Feb 20, 2013 at 11:35:57AM +0800, Daniel J Blueman wrote:
->> On 20/02/2013 02:16, Paul E. McKenney wrote:
->>> On Wed, Feb 20, 2013 at 12:34:12AM +0800, Daniel J Blueman wrote:
->>>> Hi Paul,
->>>>
->>>> On some of our larger servers with many hundreds of cores and when
->>>> under high duress, we can see scheduler RCU stall warnings [1], so
->>>> find we have to increase the hardcoded RCU_STALL_RAT_DELAY up from 2
->>>> and RCU_JIFFIES_TILL_FORCE_QS up from 3.
->
-> Disabling RCU_FAST_NO_HZ will likely remove the need to adjust
-> RCU_JIFFIES_TILL_FORCE_QS.  Changes in my -rcu tree will likely remove the
-> need to adjust these two in 3.10 or 3.11, depending on how testing goes.
->
->>>> Is there a more sustainable way to account for this to avoid it
->>>> being hard-coded, such as making it and dependent timeouts a
->>>> fraction of CONFIG_RCU_CPU_STALL_TIMEOUT?
->
-> Maybe...  But what this means is that your system is so heavily loaded
-> that the CPU in question is failing to make it to RCU's softirq handler
-> in two jiffies worth of time.  This is a function of workload rather
-> than of the number of CPUs.
->
->>>> On the other hand, perhaps this is just caused by clock jitter (eg
->>>> due to distance from a contended clock source)? So increasing these
->>>> a bit may just be adequate in general...
->>>
->>> Hmmm...  What version of the kernel are you running?
->>
->> The example below occurs with v3.8, but we see the same with
->> previous kernels eg v3.5.
->
-> There is always the rcutree.rcu_cpu_stall_timeout parameter that sets
-> the stall timeout in seconds.  This may be specified at boot time or
-> via sysfs at runtime.  The default is now 21 seconds.
->
->> Of course, when using the local TSC, you'd see no jitter relative to
->> coherent transactions (eg memory writes), but when the HPET is used
->> across a large system, coherent transactions to distant cores are
->> just so much faster, as there's massive congestion to the shared
->> HPET behind various HT and PCIe bridges. This could be where the
->> jitter arises from, if I'm guessing jitter is the problem here.
->
-> Agreed, timing jitter could cause problems.  That said, the code uses
-> the jiffies counter to compute these timings.  Are you seeing similar
-> memory contention on the jiffies counter itself?
+From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Subject: Re: [PATCH v2 02/20] vmcore: rearrange program headers without assuming consequtive PT_NOTE entries
+Date: Tue, 5 Mar 2013 16:36:53 +0800
 
-The contention we see in general are when cores contend for a spinlock 
-and when there are lots of concurrent HPET reads (Opterons allow only 4 
-outstanding reads to the IO hub).
+> 于 2013年03月02日 16:35, HATAYAMA Daisuke 写道:
+>> Current code assumes all PT_NOTE headers are placed at the beginning
+>> of program header table and they are consequtive. But the assumption
+>> could be broken by future changes on either kexec-tools or the 1st
+>> kernel. This patch removes the assumption and rearranges program
+>> headers as the following conditions are satisfied:
+>> 
+>> - PT_NOTE entry is unique at the first entry,
+>> 
+>> - the order of program headers are unchanged during this
+>>   rearrangement, only their positions are changed in positive
+>>   direction.
+>> 
+>> - unused part that occurs in the bottom of program headers are filled
+>>   with 0.
+>> 
+>> Also, this patch adds one exceptional case where the number of PT_NOTE
+>> entries is somehow 0. Then, immediately go out of the function.
+>> 
+>> Signed-off-by: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+>> ---
+>> 
+>>  fs/proc/vmcore.c |   92 +++++++++++++++++++++++++++++++++++++++++++-----------
+>>  1 files changed, 74 insertions(+), 18 deletions(-)
+>> 
+>> diff --git a/fs/proc/vmcore.c b/fs/proc/vmcore.c
+>> index abf4f01..b5c9e33 100644
+>> --- a/fs/proc/vmcore.c
+>> +++ b/fs/proc/vmcore.c
+>> @@ -251,8 +251,7 @@ static u64 __init get_vmcore_size_elf32(char *elfptr)
+>>  static int __init merge_note_headers_elf64(char *elfptr, size_t *elfsz,
+>>  						struct list_head *vc_list)
+>>  {
+>> -	int i, nr_ptnote=0, rc=0;
+>> -	char *tmp;
+>> +	int i, j, nr_ptnote=0, i_ptnote, rc=0;
+> 
+> After applying the patch, there are two "j" defined.
+> 
+> 251 static int __init merge_note_headers_elf64(char *elfptr, size_t *elfsz,
+> 252                                                 struct list_head *vc_list)
+> 253 {
+> 254         int i, j, nr_ptnote=0, i_ptnote, rc=0;
+> 255         Elf64_Ehdr *ehdr_ptr;
+> 256         Elf64_Phdr phdr, *phdr_ptr;
+> 257         Elf64_Nhdr *nhdr_ptr;
+> 258         u64 phdr_sz = 0, note_off;
+> 259 
+> 260         ehdr_ptr = (Elf64_Ehdr *)elfptr;
+> 261         phdr_ptr = (Elf64_Phdr*)(elfptr + ehdr_ptr->e_phoff);
+> 262         for (i = 0; i < ehdr_ptr->e_phnum; i++, phdr_ptr++) {
+> 263                 int j;
+> 264                 void *notes_section;
+> 265                 struct vmcore *new;
+> 
+> 
+> line 254 and 263.
+> 
 
-It's probably possible to reproduce rcu_sched stalls on a quad-socket 
-box with 64 cores and the right workload with the TSC disabled.
+I've already noticed the name of the inner j is never best in meaning
+under development but I didn't make patch for it; it's beyond the
+scope of this patch series.
 
-In 3.9-rc1 with RCU_FAST_NO_HZ disabled, we've seen stalls of 4 jiffies 
-[2], but without the "Stall ended" message. This is with a workload 
-which allocates ~256GB of memory over 192 cores.
+I'll replace the outer j by another incremental variable like k. 
 
-Thanks,
-   Daniel
+> 
+>>  	Elf64_Ehdr *ehdr_ptr;
+>>  	Elf64_Phdr phdr, *phdr_ptr;
+>>  	Elf64_Nhdr *nhdr_ptr;
+>> @@ -302,6 +301,39 @@ static int __init merge_note_headers_elf64(char *elfptr, size_t *elfsz,
+>>  		kfree(notes_section);
+>>  	}
+>>  
+>> +	if (nr_ptnote == 0)
+>> +		goto out;
+>> +
+>> +	phdr_ptr = (Elf64_Phdr *)(elfptr + ehdr_ptr->e_phoff);
+>> +
+>> +	/* Remove unwanted PT_NOTE program headers. */
+>> +
+>> +        /* - 1st pass shifts non-PT_NOTE entries until the first
+>> +	     PT_NOTE entry. */
+>> +	i_ptnote = -1;
+>> +	for (i = 0; i < ehdr_ptr->e_phnum; ++i) {
+>> +		if (phdr_ptr[i].p_type == PT_NOTE) {
+>> +			i_ptnote = i;
+>> +			break;
+>> +		}
+>> +	}
+>> +	BUG_ON(i_ptnote == -1); /* impossible case since nr_ptnote > 0. */
+>> +	memmove(phdr_ptr + 1, phdr_ptr,	i_ptnote * sizeof(Elf64_Phdr));
+> 
+> is there any problem with this move? What is the batch bytes for every loop
+> of memmove? 
+> 
+> if i_ptnode == 2, so we have
+> 
+> -------------------------------------
+> | PT_LOAD 1 | PT_LOAD 2 | PT_NOTE 1 |
+> -------------------------------------
+> 
+> -->
+> 
+> -------------------------------------
+> |           | PT_LOAD 1 | PT_LOAD 2 |
+> -------------------------------------
+> 
+> right? In the move, Does PT_LOAD 1 overwrite the original PT_LOAD 2?
+> 
 
->>>> --- [1]
->>>>
->>>> [ 3939.010085] INFO: rcu_sched detected stalls on CPUs/tasks: {}
->>>> (detected by 1, t=29662 jiffies, g=3053, c=3052, q=598)
->>>> [ 3939.020008] INFO: Stall ended before state dump start
+Right and yes, see man memmove and man memcpy, and please compare
+them.
 
---- [2]
+Thanks.
+HATAYAMA, Daisuke
 
-[10660.110620] INFO: rcu_sched self-detected stall on CPU { 39}  (t=4 
-jiffies g=1169 c=1168 q=8)
-[10660.110620] Pid: 11747, comm: sp.B Not tainted 3.9.0-rc1-advanced #6
-[10660.110620] Call Trace:
-[10660.110620]  <IRQ>  [<ffffffff810b2a42>] ? 
-rcu_check_callbacks+0x2d2/0x5f0
-[10660.110620]  [<ffffffff8107d94a>] ? run_posix_cpu_timers+0x3a/0x790
-[10660.110620]  [<ffffffff8106c86f>] ? update_process_times+0x3f/0x80
-[10660.110620]  [<ffffffff81098280>] ? tick_sched_handle.isra.8+0x30/0x40
-[10660.110620]  [<ffffffff810983b2>] ? tick_sched_timer+0x42/0x70
-[10660.110620]  [<ffffffff8107e66a>] ? __run_hrtimer.isra.30+0x4a/0xe0
-[10660.110620]  [<ffffffff8107ef45>] ? hrtimer_interrupt+0xe5/0x220
-[10660.110620]  [<ffffffff8104c5a3>] ? smp_apic_timer_interrupt+0x63/0xa0
-[10660.110620]  [<ffffffff8186e887>] ? apic_timer_interrupt+0x67/0x70
--- 
-Daniel J Blueman
-Principal Software Engineer, Numascale Asia
