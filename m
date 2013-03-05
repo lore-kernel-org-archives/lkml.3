@@ -1,89 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758788Ab3CEVNn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 16:13:43 -0500
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:54170 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756428Ab3CEVND (ORCPT
+	id S1757538Ab3CEVSf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 16:18:35 -0500
+Received: from www.linutronix.de ([62.245.132.108]:39311 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756385Ab3CEVSd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 16:13:03 -0500
-From: Matt Porter <mporter@ti.com>
-To: Balaji T K <balajitk@ti.com>, Chris Ball <cjb@laptop.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>
-Cc: Vinod Koul <vinod.koul@intel.com>, Tony Lindgren <tony@atomide.com>,
-        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, Dan Williams <djbw@fb.com>,
-        Jon Hunter <jon-hunter@ti.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>
-Subject: [PATCH v2 2/3] mmc: omap_hsmmc: Skip platform_get_resource_byname() for dt case
-Date: Tue,  5 Mar 2013 16:13:23 -0500
-Message-Id: <1362518004-7083-3-git-send-email-mporter@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1362518004-7083-1-git-send-email-mporter@ti.com>
-References: <1362518004-7083-1-git-send-email-mporter@ti.com>
+	Tue, 5 Mar 2013 16:18:33 -0500
+Date: Tue, 5 Mar 2013 22:18:27 +0100
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, Sasha Levin <levinsasha928@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
+        Ilya Zykov <ilya@ilyx.ru>, Dave Jones <davej@redhat.com>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Shawn Guo <shawn.guo@linaro.org>
+Subject: Re: [PATCH v4 00/32] ldisc patchset
+Message-ID: <20130305211827.GB5771@linutronix.de>
+References: <1360095638-6624-1-git-send-email-peter@hurleysoftware.com>
+ <1361390599-15195-1-git-send-email-peter@hurleysoftware.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1361390599-15195-1-git-send-email-peter@hurleysoftware.com>
+X-Key-Id: 97C4700B
+X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+* Peter Hurley | 2013-02-20 15:02:47 [-0500]:
 
-MMC driver probe will abort for DT case because of failed
-platform_get_resource_byname() lookup. Fix it by skipping resource
-byname lookup for device tree build.
+>Sebastian, please re-test your g_nokia+dummy_hcd testcase with
+>this series.
 
-Issue is hidden because hwmod popullates the IO resources which
-helps to succeed platform_get_resource_byname() and probe.
+I tested this on top ov v3.9-rc1. Without this series I see often a
+warning in drivers/tty/tty_buffer.c:428 / flush_to_ldisc(). With this
+things seem to work fine.
 
-Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
----
- drivers/mmc/host/omap_hsmmc.c |   28 +++++++++++++++-------------
- 1 file changed, 15 insertions(+), 13 deletions(-)
-
-diff --git a/drivers/mmc/host/omap_hsmmc.c b/drivers/mmc/host/omap_hsmmc.c
-index e79b12d..8ae1225 100644
---- a/drivers/mmc/host/omap_hsmmc.c
-+++ b/drivers/mmc/host/omap_hsmmc.c
-@@ -1896,21 +1896,23 @@ static int omap_hsmmc_probe(struct platform_device *pdev)
- 
- 	omap_hsmmc_conf_bus_power(host);
- 
--	res = platform_get_resource_byname(pdev, IORESOURCE_DMA, "tx");
--	if (!res) {
--		dev_err(mmc_dev(host->mmc), "cannot get DMA TX channel\n");
--		ret = -ENXIO;
--		goto err_irq;
--	}
--	tx_req = res->start;
-+	if (!pdev->dev.of_node) {
-+		res = platform_get_resource_byname(pdev, IORESOURCE_DMA, "tx");
-+		if (!res) {
-+			dev_err(mmc_dev(host->mmc), "cannot get DMA TX channel\n");
-+			ret = -ENXIO;
-+			goto err_irq;
-+		}
-+		tx_req = res->start;
- 
--	res = platform_get_resource_byname(pdev, IORESOURCE_DMA, "rx");
--	if (!res) {
--		dev_err(mmc_dev(host->mmc), "cannot get DMA RX channel\n");
--		ret = -ENXIO;
--		goto err_irq;
-+		res = platform_get_resource_byname(pdev, IORESOURCE_DMA, "rx");
-+		if (!res) {
-+			dev_err(mmc_dev(host->mmc), "cannot get DMA RX channel\n");
-+			ret = -ENXIO;
-+			goto err_irq;
-+		}
-+		rx_req = res->start;
- 	}
--	rx_req = res->start;
- 
- 	dma_cap_zero(mask);
- 	dma_cap_set(DMA_SLAVE, mask);
--- 
-1.7.9.5
-
+Sebastian
