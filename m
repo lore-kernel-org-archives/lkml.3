@@ -1,255 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755735Ab3CEKHb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 05:07:31 -0500
-Received: from canardo.mork.no ([148.122.252.1]:58223 "EHLO canardo.mork.no"
+	id S1755970Ab3CEKOl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 05:14:41 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:60570 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754561Ab3CEKH2 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 05:07:28 -0500
-From: =?utf-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
-To: "Fangxiaozhi \(Franko\)" <fangxiaozhi@huawei.com>
-Cc: "linux-usb\@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Xueguiying \(Zihan\)" <zihan.xue@huawei.com>,
-        "Linlei \(Lei Lin\)" <lei.lin@huawei.com>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        "Yili \(Neil\)" <neil.yi@huawei.com>,
-        "Wangyuhua \(Roger\, Credit\)" <wangyuhua@huawei.com>,
-        "Huqiao \(C\)" <huqiao36@huawei.com>, "balbi\@ti.com" <balbi@ti.com>,
-        "mdharm-usb\@one-eyed-alien.net" <mdharm-usb@one-eyed-alien.net>,
-        "sebastian\@breakpoint.cc" <sebastian@breakpoint.cc>,
-        stable <stable@vger.kernel.org>
-Subject: Re: [PATCH] USB: storage: fix Huawei mode switching regression
-Organization: m
-References: <87obezs888.fsf@nemi.mork.no>
-	<1362403161-23501-1-git-send-email-bjorn@mork.no>
-	<910F9D9E13B84F4C8FA771DC9BDE99F32709833E@szxeml546-mbx.china.huawei.com>
-Date: Tue, 05 Mar 2013 11:07:05 +0100
-In-Reply-To: <910F9D9E13B84F4C8FA771DC9BDE99F32709833E@szxeml546-mbx.china.huawei.com>
-	(fangxiaozhi@huawei.com's message of "Tue, 5 Mar 2013 02:15:31 +0000")
-Message-ID: <8738waqhx2.fsf@nemi.mork.no>
-User-Agent: Gnus/5.11002 (No Gnus v0.20) Emacs/23.4 (gnu/linux)
+	id S1750967Ab3CEKOk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Mar 2013 05:14:40 -0500
+Date: Tue, 5 Mar 2013 11:14:37 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Cc: Jiri Slaby <jslaby@suse.cz>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>, x86@kernel.org,
+        lkml <linux-kernel@vger.kernel.org>, e1000-devel@lists.sourceforge.net,
+        Bruce Allan <bruce.w.allan@intel.com>
+Subject: Re: Uhhuh. NMI received for unknown reason 2c on CPU 0.
+Message-ID: <20130305101437.GD4881@pd.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+	Jiri Slaby <jslaby@suse.cz>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+	Bjorn Helgaas <bhelgaas@google.com>,
+	Konstantin Khlebnikov <khlebnikov@openvz.org>, x86@kernel.org,
+	lkml <linux-kernel@vger.kernel.org>,
+	e1000-devel@lists.sourceforge.net,
+	Bruce Allan <bruce.w.allan@intel.com>
+References: <20130214143905.GC5700@pd.tnic>
+ <CAErSpo6Mi31O1YA5PKnRjQMinB284Ag6PY8LuZpD0NwuZ6QZuw@mail.gmail.com>
+ <20130214191234.GH5700@pd.tnic>
+ <511DF7B4.8060504@openvz.org>
+ <20130215091641.GA14387@pd.tnic>
+ <20130304215056.GG22274@pd.tnic>
+ <CAErSpo7Fj3zOp0S9kFrZBCe5u9r6kJUNyx+parGfoq52gWD3XQ@mail.gmail.com>
+ <5135BDF9.3080102@suse.cz>
+ <20130305095821.GC4881@pd.tnic>
+ <1362477768.8626.14.camel@jtkirshe-mobl>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
+In-Reply-To: <1362477768.8626.14.camel@jtkirshe-mobl>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Fangxiaozhi (Franko)" <fangxiaozhi@huawei.com> writes:
+On Tue, Mar 05, 2013 at 02:02:48AM -0800, Jeff Kirsher wrote:
+> They are in my queue of e1000e patches for net and are being testing
+> currently. I should be able to push them upstream this week.
 
-> ------ commit 200e0d99 and commit cd060956, only put the switch
-> command into kernel, instead of userspace usb_modeswitch utility.
+Right, if you'd like me to run them here too, let me know.
 
-Yes. And that is the problem.  It was agreed years ago that this
-functionality belongs in userspace.  Ref e.g
-https://lkml.org/lkml/2009/12/15/332
-https://lkml.org/lkml/2010/4/19/216
-https://lkml.org/lkml/2012/2/28/569
+Thanks.
 
-Please note the re-occurrence of this discussion, despite the fact that
-Matthew's message from 2009 should be quite clear.
+-- 
+Regards/Gruss,
+    Boris.
 
-> ------ Because in the embedded linux system, Android, or Chrome OS,
-> etc. They don't integrate userspace usb_modeswitch utility for
-> switching.
-
-Why not?  If they can upgrade the kernel, then they most certainly can
-install a userspace utility.
-
-There is no excuse for an embedded system to do this differently.
-Please see e.g. OpenWRT as an example of an embedded system doing this
-correctly.
-
-> ----- In commit 200e0d99, we send the Linux switching command to
-> Huawei devices, so on PC Linux, you can get the largest capacity of
-> Huawei device, including the CDROM feature. So I think this solution
-> can meet the user's requirement in Linux.
-
-No, it does not.  Some users have already configured their system to
-disable switching or to switch using a different message.  The patch
-does not address this at all.
-
-
->> Known regressions caused by this:
->>  - Some of the devices support multiple modes, using different
->>   switching commands.  There are existing configurations taking
->>   advantage of this.
->
-> -------But in this multiple modes, there is only one is for Linux. We
-> don't advice the user to use the other mode not for Linux. It may
-> cause some unexpected problem.
-
-
-Although I do not agree with this, I do not argue that the Linux
-defaults should change.  The point is that this was configurable prior
-to the patch and it is not after.  This is a regression for any user who
-has deliberately chosen to use the Windows mode.
-
-Wrt the Linux vs Windows modes:  We all appreciate the work from Huawei
-trying to support Linux in the best possible way.  But implementing
-special firmware modes for Linux is not necessarily best for Linux. We
-do have some experience with system BIOSes implementing special hooks
-for Linux, and they usually add more problems than they solve.  It is
-very easy for Linux to resemble whatever Windows does when talking to
-hardware, and that is the method that has proven to work best.
-
-Ref for example this comment in drivers/acpi/acpica/utosi.c :
-
-/*
- * Strings supported by the _OSI predefined control method (which is
- * implemented internally within this module.)
- *
- * March 2009: Removed "Linux" as this host no longer wants to respond true
- * for this string. Basically, the only safe OS strings are windows-related
- * and in many or most cases represent the only test path within the
- * BIOS-provided ASL code.
- *
- * The last element of each entry is used to track the newest version of
- * Windows that the BIOS has requested.
- */
-
-
->> 
->>  - There is a real use case for disabling mode switching and
->>   instead mounting the exposed storage device. This becomes
->>   impossible with switching logic inside the usb-storage driver.
->
-> ----In commit 200e0d99, the switching command will ask Huawei device
-> to offer the CDROM(and /or SD) port together. After switching, users
-> also can get the mounting storage device.
-
-Yes, I understand that the firmware does this by default.  But you also
-have (unsupported and undocumented) ways of disabling this.  Some users
-do that.  Some users may also want to mount the device before switching
-for other reasons.
-
-The fact that your firmware lets the user mount the CD after switch does
-not completely prevent some users from wanting to mount it before
-switching.
-
-
->> 
->>  - At least on device fail as a result of the usb-storage switching
->>   command, becoming completely unswitchable. This is possibly a
->>   firmware bug, but still a regression because the device work as
->>   expected using usb_modeswitch defaults.
->
-> ----- If the kernel solution encounters this issue, then it also will
-> occur with usb_modeswitch.
-
-Well, it does not.  Blacklisting usb-storage works around the issue.
-
-The command sent by usb-storage makes the firmware reset once, but it
-appears with the exact same identity as before. This makes usb-storage
-repeat the switch command, which now has no effect.  Then usb_modeswitch
-tries, but is refused.
-
-switches from:
-
-Mar  5 10:23:20 nemi kernel: [46342.029477] USB Mass Storage support registered.
-Mar  5 10:23:57 nemi kernel: [46378.704337] usb 7-1: new high-speed USB device number 34 using ehci-pci
-Mar  5 10:23:57 nemi kernel: [46378.842526] usb 7-1: New USB device found, idVendor=12d1, idProduct=1446
-Mar  5 10:23:57 nemi kernel: [46378.842542] usb 7-1: New USB device strings: Mfr=4, Product=3, SerialNumber=5
-Mar  5 10:23:57 nemi kernel: [46378.842552] usb 7-1: Product: HUAWEI MBIM Device
-Mar  5 10:23:57 nemi kernel: [46378.842560] usb 7-1: Manufacturer: Huawei Technologies
-Mar  5 10:23:57 nemi kernel: [46378.842569] usb 7-1: SerialNumber: ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿ
-
-to:
-
-Mar  5 10:24:01 nemi kernel: [46382.924327] usb 7-1: new high-speed USB device number 35 using ehci-pci
-Mar  5 10:24:01 nemi kernel: [46383.063590] usb 7-1: New USB device found, idVendor=12d1, idProduct=1446
-Mar  5 10:24:01 nemi kernel: [46383.063606] usb 7-1: New USB device strings: Mfr=4, Product=3, SerialNumber=5
-Mar  5 10:24:01 nemi kernel: [46383.063615] usb 7-1: Product: HUAWEI MBIM Device
-Mar  5 10:24:01 nemi kernel: [46383.063624] usb 7-1: Manufacturer: Huawei Technologies
-Mar  5 10:24:01 nemi kernel: [46383.063633] usb 7-1: SerialNumber: ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿ
-
-
-The 3 commands sent (not the difference in the last one from usb_modeswitch):
-
-ffff8802306ef900 2477597193 S Bo:7:034:1 -115 31 = 55534243 00000000 00000000 00001011 06200000 01010001 00000000 000000
-ffff8802306ef900 2477597881 C Bo:7:034:1 0 31 >
-
-ffff8802306ef900 2481816603 S Bo:7:035:1 -115 31 = 55534243 00000000 00000000 00001011 06200000 01010001 00000000 000000
-ffff8802306ef900 2481816802 C Bo:7:035:1 0 31 >
-
-ffff8802306ef900 2482455758 S Bo:7:035:1 -115 31 = 55534243 12345678 00000000 00000011 06200000 01000000 00000000 000000
-ffff8802306ef900 2485457009 C Bo:7:035:1 -2 0
-
-
-
-Changing the command embedded in drivers/usb/storage/initializers.c to
-resemble the default from usb_modeswitch makes the in-kernel switching
-work for this device.  But we do not know the effect on other devices.
-And this kind of workarounds is not something you can easily make any
-user do in the kernel, while it is a simple configuration file or
-command line option in usb_modeswitch.
-
-this diff on top of v3.8.2:
-
-bjorn@nemi:/usr/local/src/git/linux$ git diff
-diff --git a/drivers/usb/storage/initializers.c b/drivers/usb/storage/initializers.c
-index 7ab9046..6869415 100644
---- a/drivers/usb/storage/initializers.c
-+++ b/drivers/usb/storage/initializers.c
-@@ -116,8 +116,8 @@ static int usb_stor_huawei_scsi_init(struct us_data *us)
-        int result = 0;
-        int act_len = 0;
-        struct bulk_cb_wrap *bcbw = (struct bulk_cb_wrap *) us->iobuf;
--       char rewind_cmd[] = {0x11, 0x06, 0x20, 0x00, 0x00, 0x01, 0x01, 0x00,
--                       0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-+       char rewind_cmd[] = {0x11, 0x06, 0x20, 0x00, 0x00, 0x01, 0x00, 0x00,
-+                       0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
- 
-        bcbw->Signature = cpu_to_le32(US_BULK_CB_SIGN);
-        bcbw->Tag = 0;
-
-
-results in:
-
-ffff880221402440 3307649125 S Bo:7:040:1 -115 31 = 55534243 00000000 00000000 00001011 06200000 01000000 00000000 000000
-ffff880221402440 3307649322 C Bo:7:040:1 0 31 >
-
-which switches from:
-
-Mar  5 10:37:47 nemi kernel: [47208.756338] usb 7-1: new high-speed USB device number 40 using ehci-pci
-Mar  5 10:37:47 nemi kernel: [47208.893231] usb 7-1: New USB device found, idVendor=12d1, idProduct=1446
-Mar  5 10:37:47 nemi kernel: [47208.893245] usb 7-1: New USB device strings: Mfr=4, Product=3, SerialNumber=5
-Mar  5 10:37:47 nemi kernel: [47208.893254] usb 7-1: Product: HUAWEI MBIM Device
-Mar  5 10:37:47 nemi kernel: [47208.893263] usb 7-1: Manufacturer: Huawei Technologies
-Mar  5 10:37:47 nemi kernel: [47208.893272] usb 7-1: SerialNumber: ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿ
-
-to:
-
-Mar  5 10:37:51 nemi kernel: [47212.880322] usb 7-1: new high-speed USB device number 41 using ehci-pci
-Mar  5 10:37:51 nemi kernel: [47213.016734] usb 7-1: New USB device found, idVendor=12d1, idProduct=1506
-Mar  5 10:37:51 nemi kernel: [47213.016748] usb 7-1: New USB device strings: Mfr=4, Product=3, SerialNumber=5
-Mar  5 10:37:51 nemi kernel: [47213.016757] usb 7-1: Product: HUAWEI MBIM Device
-Mar  5 10:37:51 nemi kernel: [47213.016766] usb 7-1: Manufacturer: Huawei Technologies
-Mar  5 10:37:51 nemi kernel: [47213.016774] usb 7-1: SerialNumber: ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿ
-Mar  5 10:37:51 nemi kernel: [47213.016816] device: '7-1': device_add
-
-
-As I said, I am fully aware that this might be a firmware issue.  The
-firmware of this device is probably not meant for production, and there
-is a possibility that it is unavailable to the general public.
-
-But the point is still that such issues may occur, and that working
-around them in userspace is a simple configuration matter.  That's one
-important reason to keep this in userspace.
-
-> ------ In our opinions, it is better to switch Huawei device in
-> kernel.
-> ------ usb_modeswitch is a tool for Linux. 
-> ------ We can not guarantee it will be integrated in all the system
-> which integrates linux kernel. But linux kernel itself can.
-
-The device also needs a userspace application to configure, connect and
-monitor it.  Should we put that into the kernel as well? Nope.
-
-These devices will not work without userspace support.  Fix the distros
-instead if they lack proper userspace mode switching support.
-
-
-Bjørn
+Sent from a fat crate under my desk. Formatting is fine.
+--
