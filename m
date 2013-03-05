@@ -1,81 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758018Ab3CERkd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 12:40:33 -0500
-Received: from pegase2.c-s.fr ([93.17.235.10]:55791 "EHLO mailhub2.si.c-s.fr"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1757874Ab3CERka (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 12:40:30 -0500
-Date: Tue, 5 Mar 2013 16:26:50 +0100
-Message-Id: <201303051526.r25FQoCv002950@localhost.localdomain>
-From: Christophe Leroy <christophe.leroy@c-s.fr>
-To: Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@linaro.org>
-CC: linux-kernel@vger.kernel.org, Patrick Vasseur <patrick.vasseur@c-s.fr>
-Subject: [PATCH v2] Adds support for Open Firmware in MAX730x GPIO Driver
+	id S1757223Ab3CERoG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 12:44:06 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:5042 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753298Ab3CERoE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Mar 2013 12:44:04 -0500
+Date: Tue, 5 Mar 2013 18:42:04 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Michel Lespinasse <walken@google.com>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@redhat.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        paulmck@linux.vnet.ibm.com, Rusty Russell <rusty@rustcorp.com.au>,
+        rostedt@goodmis.org, tglx@linutronix.de,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 2/2] lglock: update lockdep annotations to report
+	recursive local locks
+Message-ID: <20130305174204.GB5012@redhat.com>
+References: <1362449845-7492-1-git-send-email-walken@google.com> <1362449845-7492-3-git-send-email-walken@google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1362449845-7492-3-git-send-email-walken@google.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch allows the use of the MAX730x Driver on systems using
-the Open Firmware platform format.
-The bit_per_word can be set in the OF Device tree, so no need to force it as with
-the platform_data.
+On 03/04, Michel Lespinasse wrote:
+>
+> Both issues are easily fixed by indicating to lockdep that lglock's local
+> locks are not recursive. We shouldn't use the rwlock acquire/release
+> functions here, as lglock doesn't share the same semantics. Instead
+> we can base our lockdep annotations on the lock_acquire_shared
+> (for local lglock) and lock_acquire_exclusive (for global lglock)
+> helpers.
 
-Signed-off-by: Patrick Vasseur <patrick.vasseur@c-s.fr>
-Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
+IOW, with this patch lglock looks like rw_semaphore for lockdep...
 
-diff -ur linux-3.7.9/drivers/gpio/gpio-max7301.c linux/drivers/gpio/gpio-max7301.c
---- linux-3.7.9/drivers/gpio/gpio-max7301.c	2013-02-17 19:53:32.000000000 +0100
-+++ linux/drivers/gpio/gpio-max7301.c	2013-02-17 12:57:40.000000000 +0100
-@@ -56,7 +56,8 @@
- 	int ret;
- 
- 	/* bits_per_word cannot be configured in platform data */
--	spi->bits_per_word = 16;
-+	if (spi->dev.platform_data)
-+		spi->bits_per_word = 16;
- 	ret = spi_setup(spi);
- 	if (ret < 0)
- 		return ret;
-diff -ur linux-3.7.9/drivers/gpio/gpio-max730x.c linux/drivers/gpio/gpio-max730x.c
---- linux-3.7.9/drivers/gpio/gpio-max730x.c	2013-02-17 19:53:32.000000000 +0100
-+++ linux/drivers/gpio/gpio-max730x.c	2013-02-22 10:15:46.000000000 +0100
-@@ -163,12 +163,13 @@
- int __devinit __max730x_probe(struct max7301 *ts)
- {
- 	struct device *dev = ts->dev;
-+	struct device_node *np = dev->of_node;
- 	struct max7301_platform_data *pdata;
- 	int i, ret;
- 
- 	pdata = dev->platform_data;
--	if (!pdata || !pdata->base) {
--		dev_err(dev, "incorrect or missing platform data\n");
-+	if ((!pdata || !pdata->base) && !np) {
-+		dev_err(dev, "No platform data nor Device Tree found\n");
- 		return -EINVAL;
- 	}
- 
-@@ -178,7 +179,6 @@
- 	/* Power up the chip and disable IRQ output */
- 	ts->write(dev, 0x04, 0x01);
- 
--	ts->input_pullup_active = pdata->input_pullup_active;
- 	ts->chip.label = dev->driver->name;
- 
- 	ts->chip.direction_input = max7301_direction_input;
-@@ -186,7 +186,12 @@
- 	ts->chip.direction_output = max7301_direction_output;
- 	ts->chip.set = max7301_set;
- 
--	ts->chip.base = pdata->base;
-+	if (pdata) {
-+		ts->input_pullup_active = pdata->input_pullup_active;
-+		ts->chip.base = pdata->base;
-+	} else {
-+		ts->chip.base = -1;
-+	}
- 	ts->chip.ngpio = PIN_NUMBER;
- 	ts->chip.can_sleep = 1;
- 	ts->chip.dev = dev;
+Again, I can't ack this change, but afaics it is fine.
+
+Oleg.
+
