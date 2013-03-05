@@ -1,54 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756661Ab3CEUPS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 15:15:18 -0500
-Received: from sema.semaphore.gr ([78.46.194.137]:53377 "EHLO
-	sema.semaphore.gr" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756105Ab3CEUPM (ORCPT
+	id S1755709Ab3CEURY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 15:17:24 -0500
+Received: from cpsmtpb-ews06.kpnxchange.com ([213.75.39.9]:53508 "EHLO
+	cpsmtpb-ews06.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752748Ab3CEURX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 15:15:12 -0500
-Message-ID: <51365247.5030005@semaphore.gr>
-Date: Tue, 05 Mar 2013 22:15:03 +0200
-From: Stratos Karafotis <stratosk@semaphore.gr>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130219 Thunderbird/17.0.3
-MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>
-CC: "Rafael J. Wysocki" <rjw@sisk.pl>, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH linux-next] cpufreq: conservative: Fix sampling_down_factor
- functionality
-References: <51351CC3.4010301@semaphore.gr> <CAOh2x=m0KLbjGKvLvTH7-yQb4SU5-v=-r4Ba3LSZz=NvfvO6mg@mail.gmail.com> <51358117.9060902@semaphore.gr> <CAKohpokvqe8860J=XO_GXqxpNtrt9XEuUeqCeR=A4PpSaAsHYg@mail.gmail.com>
-In-Reply-To: <CAKohpokvqe8860J=XO_GXqxpNtrt9XEuUeqCeR=A4PpSaAsHYg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Tue, 5 Mar 2013 15:17:23 -0500
+Message-ID: <1362514637.16460.117.camel@x61.thuisdomein>
+Subject: [PATCH v2] ARM: dove: drop "select COMMON_CLK_DOVE"
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Russell King <linux@arm.linux.org.uk>
+Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Jean-Francois Moine <moinejf@free.fr>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Date: Tue, 05 Mar 2013 21:17:17 +0100
+In-Reply-To: <51363A9E.6090507@gmail.com>
+References: <1362476098.16460.65.camel@x61.thuisdomein>
+	 <51363A9E.6090507@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 05 Mar 2013 20:17:17.0143 (UTC) FILETIME=[6EB9D670:01CE19DE]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/05/2013 09:34 AM, Viresh Kumar wrote:
-> On 5 March 2013 13:22, Stratos Karafotis <stratosk@semaphore.gr> wrote:
-> I misread it here when i looked at this mail for the first time. :)
-> I strongly believe that we need a full stop (.) before "Every sampling_rate",
-> otherwise it looks like we check for down_factor while increasing freq :)
+Commit 5b03df9ace680d7cdd34a69dfd85ca5f74159d18 ("ARM: dove: switch to
+DT clock providers") added "select COMMON_CLK_DOVE" to Marvell Dove's
+Kconfig entry. But there's no Kconfig symbol COMMON_CLK_DOVE, which
+makes this select statement a nop. It's probably a leftover of some
+experimental code that never hit mainline. Drop it.
 
-I agree. I will do that.
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+0) v2: Sebastian suggested to drop this select entirely.
 
-> Even now we aren't checking this 80% thing, right? And so in your patch we can
-> actually fix the patch too with the right logic of code.. And
-> documentation too :)
+1) Still untested.
 
-In my opinion the logic was initially correct. It was broken in the same 
-commit that broke also sampling_down_factor.
+ arch/arm/Kconfig | 1 -
+ 1 file changed, 1 deletion(-)
 
-Now we check if load < (cs_tuners.down_threshold - 10) to decrease freq.
-Down threshold is 20, so we actually check the 80% idle.
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index 5b71469..0c990b7 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -556,7 +556,6 @@ config ARCH_IXP4XX
+ config ARCH_DOVE
+ 	bool "Marvell Dove"
+ 	select ARCH_REQUIRE_GPIOLIB
+-	select COMMON_CLK_DOVE
+ 	select CPU_V7
+ 	select GENERIC_CLOCKEVENTS
+ 	select MIGHT_HAVE_PCI
+-- 
+1.7.11.7
 
-I think the subtraction of 10 from down_threshold is wrong. It seems 
-similar with ondemand but there is no logic for this in conservative.
-User can simply select the down_threshold and the load will be compared 
-with user's value. No need to alter user's selection.
-
-I will prepare a patchset for these changes.
-
-Regards,
-Stratos
