@@ -1,92 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932972Ab3CECEK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 21:04:10 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:39365 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932659Ab3CECEJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 21:04:09 -0500
-X-AuditID: cbfee68e-b7fa46d00000627e-ef-513552977f29
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Arnd Bergmann'" <arnd@arndb.de>,
-        "'Greg Kroah-Hartman'" <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, "'Jingoo Han'" <jg1.han@samsung.com>
-References: <004b01ce1945$79486af0$6bd940d0$%han@samsung.com>
-In-reply-to: <004b01ce1945$79486af0$6bd940d0$%han@samsung.com>
-Subject: [PATCH 3/3] misc: ep93xx_pwm: use module_platform_driver_probe()
-Date: Tue, 05 Mar 2013 11:04:07 +0900
-Message-id: <004d01ce1945$b845c0e0$28d142a0$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac4ZRXktbgD8B1v7QgSgtGTX79fL8QAACLYQ
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrPIsWRmVeSWpSXmKPExsVy+t8zA93pQaaBBrunG1tc3jWHzYHR4/Mm
-	uQDGKC6blNSczLLUIn27BK6MV/tXMRVM56g4s30uawNjE3sXIyeHhICJxJ2dP9ggbDGJC/fW
-	A9lcHEICyxgl7nVtgCs6P+skC0RiEaPEv39dzBDObCaJeb8uMYFUsQmoSXz5chisQ0QgQqKl
-	tZmxi5GDg1nAReLoNBGQsJCArUTLnR+MIDangJ3EqQ3TWEFsYQFPiQMHz4HFWQRUJWY1TQMb
-	yQtUv2baanYIW1Dix+R7LCA2s4CWxOZtTawQtrzE5jVvmUFWSQioSzz6qwtxgZHE4U0LoMpF
-	JPa9eMcIcrKEwCJ2ie0rn7FB7BKQ+Db5EAtEr6zEpgPMEP9KShxccYNlAqPELCSbZyHZPAvJ
-	5llIVixgZFnFKJpakFxQnJReZKRXnJhbXJqXrpecn7uJERJZfTsYbx6wPsSYDLR+IrOUaHI+
-	MDLzSuINjY1NzExMTcwtTc1NSRNWEueVvyQTKCSQnliSmp2aWpBaFF9UmpNafIiRiYNTqoEx
-	yTrHeVr22/WXb73dt1j4heq3XOa7T3L9npoubRdP0xAKu1bSsiPBftmJmTlmTkIzf09jFUmY
-	cK5EYL3xuy634hsLCr8vfiNr8pSfUfuM91R9y4hTQQbCB4JSBM2YMvYdOvX90soHtjZ8ag4F
-	F49YGc63vZBWwSf1W0d/bgj7Ky7G1tkX3fmUWIozEg21mIuKEwFlg7nmwgIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuphleLIzCtJLcpLzFFi42I5/e+xgO70INNAgzdndS0u75rD5sDo8XmT
-	XABjVAOjTUZqYkpqkUJqXnJ+SmZeuq2Sd3C8c7ypmYGhrqGlhbmSQl5ibqqtkotPgK5bZg7Q
-	VCWFssScUqBQQGJxsZK+HaYJoSFuuhYwjRG6viFBcD1GBmggYR1jxqv9q5gKpnNUnNk+l7WB
-	sYm9i5GTQ0LAROL8rJMsELaYxIV769m6GLk4hAQWMUr8+9fFDOHMZpKY9+sSE0gVm4CaxJcv
-	h8G6RQQiJFpamxm7GDk4mAVcJI5OEwEJCwnYSrTc+cEIYnMK2Emc2jCNFcQWFvCUOHDwHFic
-	RUBVYlbTNLCRvED1a6atZoewBSV+TL4HdhCzgJbE5m1NrBC2vMTmNW+ZQVZJCKhLPPqrC3GB
-	kcThTQugykUk9r14xziBUWgWkkmzkEyahWTSLCQtCxhZVjGKphYkFxQnpeca6hUn5haX5qXr
-	JefnbmIEx+0zqR2MKxssDjEKcDAq8fAyHDUJFGJNLCuuzD3EKMHBrCTCe5/XNFCINyWxsiq1
-	KD++qDQntfgQYzLQoxOZpUST84EpJa8k3tDYxMzI0sjMwsjE3Jw0YSVxXsZTTwKEBNITS1Kz
-	U1MLUotgtjBxcEo1MNaYb/BQsk5ao3a+7Z/XasWK7n0vDgu8uZ0xqct5SVrXq2rF79I3Hup+
-	5l1edZUvb+t3h8Azwmeysqdzm9/uD6wz2tanctNkpm5f/5fM2/1pjIeWVS6Iclja27J28b7G
-	kLILm2U7HtdXnyy3qDuxoW+1zaGopo+NHKLn41/EsR0xt93990TqfSWW4oxEQy3mouJEAOpu
-	PxcfAwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S932980Ab3CECMA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 21:12:00 -0500
+Received: from mga01.intel.com ([192.55.52.88]:16249 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932732Ab3CECL6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Mar 2013 21:11:58 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,784,1355126400"; 
+   d="scan'208";a="294820293"
+From: "Allan, Bruce W" <bruce.w.allan@intel.com>
+To: =?utf-8?B?TWloYWkgRG9uyJt1?= <mihai.dontu@gmail.com>,
+        Morten Stevens <mstevens@imt-systems.com>
+CC: "e1000-devel@lists.sourceforge.net" 
+	<e1000-devel@lists.sourceforge.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Borislav Petkov <bp@alien8.de>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: RE: [E1000-devel] e1000e 3.9-rc1 suspend failure (was: Re: e1000e:
+ nic does not work properly after cold power on)
+Thread-Topic: [E1000-devel] e1000e 3.9-rc1 suspend failure (was: Re: e1000e:
+ nic does not work properly after cold power on)
+Thread-Index: AQHOGSIdGsLs+X8iJUiQ6k5Fz1vcn5iWq3IA//+u5UA=
+Date: Tue, 5 Mar 2013 02:11:56 +0000
+Message-ID: <804857E1F29AAC47BF68C404FC60A1844D02FD84@ORSMSX102.amr.corp.intel.com>
+References: <20130304124631.2ac730f3@mdontu-l.dsd.ro>
+	<5134E4AB.2010504@imt-systems.com> <20130304214830.GB22306@pd.tnic>
+ <20130305005836.4f84c065@mdontu-l.dsd.ro>
+In-Reply-To: <20130305005836.4f84c065@mdontu-l.dsd.ro>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.138]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r252CIvh004883
 
-This patch uses module_platform_driver_probe() macro which makes
-the code smaller and simpler.
+> -----Original Message-----
+> From: Mihai Don»õu [mailto:mihai.dontu@gmail.com]
+> Sent: Monday, March 04, 2013 2:59 PM
+> To: Morten Stevens
+> Cc: e1000-devel@lists.sourceforge.net; netdev@vger.kernel.org; linux-
+> kernel@vger.kernel.org; Rafael J. Wysocki; Borislav Petkov; Jiri Slaby
+> Subject: Re: [E1000-devel] e1000e 3.9-rc1 suspend failure (was: Re: e1000e:
+> nic does not work properly after cold power on)
+> 
+> On Mon, 4 Mar 2013 22:48:30 +0100 Borislav Petkov wrote:
+> > On Mon, Mar 04, 2013 at 07:15:07PM +0100, Morten Stevens wrote:
+> > > Can you reproduce this with linux 3.9-rc1? 3.9-rc1 has the latest
+> > > upstream driver (e1000e 2.2.14) which contains many bugfixes.
+> >
+> 
+> On my system (ThinkPad T420) I get:
+> 
+> [   10.694743] e1000e: Intel(R) PRO/1000 Network Driver - 2.2.14-k
+> [   10.694746] e1000e: Copyright(c) 1999 - 2013 Intel Corporation.
+> [   10.694852] e1000e 0000:00:19.0: setting latency timer to 64
+> [   10.694911] e1000e 0000:00:19.0: Interrupt Throttling Rate (ints/sec) set to
+> dynamic conservative mode
+> [   10.694949] e1000e 0000:00:19.0: irq 47 for MSI/MSI-X
+> [   10.975086] e1000e 0000:00:19.0 eth0: registered PHC clock
+> [   10.975091] e1000e 0000:00:19.0 eth0: (PCI Express:2.5GT/s:Width x1)
+> 00:21:cc:70:17:a0
+> [   10.975093] e1000e 0000:00:19.0 eth0: Intel(R) PRO/1000 Network
+> Connection
+> [   10.975127] e1000e 0000:00:19.0 eth0: MAC: 10, PHY: 11, PBA No: 1000FF-
+> 0FF
+> [   89.716695] e1000e 0000:00:19.0 eth0: Hardware Error
+> [   90.025403] e1000e 0000:00:19.0 eth0: Timesync Tx Control register not set
+> as expected
+> [   90.349197] e1000e 0000:00:19.0: irq 47 for MSI/MSI-X
+> [   90.449760] e1000e 0000:00:19.0: irq 47 for MSI/MSI-X
+> 
+> The 'hardware error' line caught my attention.
+> 
+> > This e1000e thing gets more b0rked by the minute. This is what happens
+> > when I try to suspend with 3.9-rc1:
+> >
+> > [   83.502908] PM: Syncing filesystems ... done.
+> > [   83.509886] Freezing user space processes ... (elapsed 0.01
+> > seconds) done. [   83.523352] PM: Preallocating image memory... done
+> > (allocated 95652 pages) [   83.675083] PM: Allocated 382608 kbytes in
+> > 0.15 seconds (2550.72 MB/s) [   83.675782] Freezing remaining
+> > freezable tasks ... (elapsed 0.01 seconds) done. [   83.688524]
+> > Suspending console(s) (use no_console_suspend to debug)
+> > [   84.251024] e1000e 0000:00:19.0 eth0: Hardware Error
+> > [   84.458866] ------------[ cut here ]------------ [   84.458871]
+> > WARNING: at kernel/irq/manage.c:1249 __free_irq+0xa3/0x1e0()
+> > [   84.458872] Hardware name: 2320CTO [   84.458872] Trying to free
+> > already-free IRQ 20 [   84.458898] Modules linked in:
+> > cpufreq_powersave cpufreq_userspace cpufreq_conservative
+> > cpufreq_stats uinput loop hid_generic usb hid hid coretemp kvm_intel
+> > arc4 kvm crc32_pclmul iwldvm crc32c_intel ghash_clmulni_intel
+> > mac80211 aesni_intel xts ipv6 aes_x86_64 lr w gf128mul ablk_helper
+> > cryptd iTCO_wdt iTCO_vendor_support iwlwifi sdhci_pci sdhci cfg80211
+> > snd_hda_codec_hdmi snd_hda_codec_realtek mmc_core microcode
+> e1000e
+> > thinkpad_acpi pcspkr lpc_ich i2c_i801 mfd_core nvram snd_hda_intel
+> > rfkill snd_hda_codec battery ac snd_hw dep led_class snd_pcm
+> > snd_page_alloc snd_timer snd acpi_cpufreq soundcore mperf ptp wmi
+> > pps_core xhci_hcd ehci_pci ehci_hcd processo r thermal [   84.458900]
+> > Pid: 3353, comm: kworker/u:35 Tainted: G        W    3.9.0-rc1 #1
+> > [   84.458901] Call Trace: [   84.458905]  [<ffffffff8103ef7f>]
+> > warn_slowpath_common+0x7f/0xc0 [   84.458907]  [<ffffffff8103f076>]
+> > warn_slowpath_fmt+0x46/0x50 [   84.458910]  [<ffffffff81537bfe>] ?
+> > _raw_spin_lock_irqsave+0x4e/0x60 [   84.458911]
+> > [<ffffffff810bc8d5>] ? __free_irq+0x55/0x1e0 [   84.458913]
+> > [<ffffffff810bc923>] __free_irq+0xa3/0x1e0 [   84.458914]
+> > [<ffffffff810bcab4>] free_irq+0x54/0xc0 [   84.458919]
+> > [<ffffffffa017745d>] e1000_free_irq+0x7d/0x90 [e1000e]
+> > [   84.458922]  [<ffffffffa01834af>] __e1000_shutdown+0x8f/0x8a0
+> > [e1000e] [   84.458924]  [<ffffffff813c92a7>] ?
+> > __device_suspend+0xb7/0x200 [   84.458927]  [<ffffffff81073b71>] ?
+> > get_parent_ip+0x11/0x50 [   84.458931]  [<ffffffffa0183d33>]
+> > e1000_suspend+0x23/0x50 [e1000e] [   84.458932]
+> > [<ffffffff813c92a7>] ? __device_suspend+0xb7/0x200 [   84.458933]
+> > [<ffffffff8153c049>] ? sub_preempt_count+0x79/0xd0 [   84.458936]
+> > [<ffffffff812a2ff5>] pci_pm_freeze+0x55/0xc0 [   84.458937]
+> > [<ffffffff812a2fa0>] ? pci_pm_resume_noirq+0xd0/0xd0 [   84.458938]
+> > [<ffffffff813c8b45>] dpm_run_callback.isra.5+0x25/0x50
+> > [   84.458939]  [<ffffffff813c92d3>] __device_suspend+0xe3/0x200
+> > [   84.458941]  [<ffffffff813c940f>] async_suspend+0x1f/0xa0
+> > [   84.458942]  [<ffffffff8106bcfb>] async_run_entry_fn+0x3b/0x140
+> > [   84.458944]  [<ffffffff8105d00d>] process_one_work+0x1ed/0x510
+> > [   84.458946]  [<ffffffff8105cfab>] ? process_one_work+0x18b/0x510
+> > [   84.458948]  [<ffffffff8105e7b5>] worker_thread+0x115/0x390
+> > [   84.458949]  [<ffffffff8105e6a0>] ? manage_workers+0x300/0x300
+> > [   84.458951]  [<ffffffff81064e2a>] kthread+0xea/0xf0
+> > [   84.458953]  [<ffffffff81064d40>] ?
+> > kthread_create_on_node+0x160/0x160 [   84.458954]
+> > [<ffffffff8153ff9c>] ret_from_fork+0x7c/0xb0 [   84.458955]
+> > [<ffffffff81064d40>] ? kthread_create_on_node+0x160/0x160
+> > [   84.458956] ---[ end trace 3114e23ce50d2357 ]--- [   85.082276]
+> > pci_pm_freeze(): e1000_suspend+0x0/0x50 [e1000e] returns -2
+> > [   85.082278] dpm_run_callback(): pci_pm_freeze+0x0/0xc0 returns -2
+> > [   85.082281] PM: Device 0000:00:19.0 failed to freeze async: error
+> > -2
+> >
+> > Let's add more folks to CC.
 
-Signed-off-by: Jingoo Han <jg1.han@samsung.com>
----
- drivers/misc/ep93xx_pwm.c |   13 +------------
- 1 files changed, 1 insertions(+), 12 deletions(-)
+This may be related to some runtime power management issues for which there are a
+number of patches currently in test.
 
-diff --git a/drivers/misc/ep93xx_pwm.c b/drivers/misc/ep93xx_pwm.c
-index 16d7179..96787ec 100644
---- a/drivers/misc/ep93xx_pwm.c
-+++ b/drivers/misc/ep93xx_pwm.c
-@@ -365,18 +365,7 @@ static struct platform_driver ep93xx_pwm_driver = {
- 	.remove		= __exit_p(ep93xx_pwm_remove),
- };
- 
--static int __init ep93xx_pwm_init(void)
--{
--	return platform_driver_probe(&ep93xx_pwm_driver, ep93xx_pwm_probe);
--}
--
--static void __exit ep93xx_pwm_exit(void)
--{
--	platform_driver_unregister(&ep93xx_pwm_driver);
--}
--
--module_init(ep93xx_pwm_init);
--module_exit(ep93xx_pwm_exit);
-+module_platform_driver_probe(ep93xx_pwm_driver, ep93xx_pwm_probe);
- 
- MODULE_AUTHOR("Matthieu Crapet <mcrapet@gmail.com>, "
- 	      "H Hartley Sweeten <hsweeten@visionengravers.com>");
--- 
-1.7.2.5
-
-
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
