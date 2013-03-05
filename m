@@ -1,52 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756149Ab3CEK12 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 05:27:28 -0500
-Received: from mail-pb0-f44.google.com ([209.85.160.44]:33546 "EHLO
-	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752256Ab3CEK10 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 05:27:26 -0500
-Date: Tue, 5 Mar 2013 18:27:45 +0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Serban Constantinescu <serban.constantinescu@arm.com>
-Cc: linux-kernel@vger.kernel.org, kernel-team@android.com, arve@android.com,
-        john.stultz@linaro.org, Dave.Butcher@arm.com
-Subject: Re: [PATCH] staging: android: ashmem: Add support for 32bit ashmem
- calls in a 64bit kernel
-Message-ID: <20130305102745.GA3327@kroah.com>
-References: <20130305083707.GA7513@kroah.com>
- <1362478708-26946-1-git-send-email-serban.constantinescu@arm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1362478708-26946-1-git-send-email-serban.constantinescu@arm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755899Ab3CEK3F (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 05:29:05 -0500
+Received: from mga02.intel.com ([134.134.136.20]:55318 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751655Ab3CEK3D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Mar 2013 05:29:03 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,787,1355126400"; 
+   d="asc'?scan'208";a="271218971"
+Message-ID: <1362479341.8626.18.camel@jtkirshe-mobl>
+Subject: Re: Uhhuh. NMI received for unknown reason 2c on CPU 0.
+From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Reply-To: jeffrey.t.kirsher@intel.com
+To: Borislav Petkov <bp@alien8.de>
+Cc: Jiri Slaby <jslaby@suse.cz>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>, x86@kernel.org,
+        lkml <linux-kernel@vger.kernel.org>, e1000-devel@lists.sourceforge.net,
+        Bruce Allan <bruce.w.allan@intel.com>
+Date: Tue, 05 Mar 2013 02:29:01 -0800
+In-Reply-To: <20130305101437.GD4881@pd.tnic>
+References: <20130214143905.GC5700@pd.tnic>
+	 <CAErSpo6Mi31O1YA5PKnRjQMinB284Ag6PY8LuZpD0NwuZ6QZuw@mail.gmail.com>
+	 <20130214191234.GH5700@pd.tnic> <511DF7B4.8060504@openvz.org>
+	 <20130215091641.GA14387@pd.tnic> <20130304215056.GG22274@pd.tnic>
+	 <CAErSpo7Fj3zOp0S9kFrZBCe5u9r6kJUNyx+parGfoq52gWD3XQ@mail.gmail.com>
+	 <5135BDF9.3080102@suse.cz> <20130305095821.GC4881@pd.tnic>
+	 <1362477768.8626.14.camel@jtkirshe-mobl> <20130305101437.GD4881@pd.tnic>
+Organization: Intel Corporation
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-9ipi4cJUBUF6KiJojLk2"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 05, 2013 at 10:18:27AM +0000, Serban Constantinescu wrote:
-> Android's shared memory subsystem, Ashmem, does not support calls from a
-> 32bit userspace in a 64 bit kernel. This patch adds support for syscalls
-> coming from a 32bit userspace in a 64bit kernel.
-> 
-> The patch has been successfully tested on ARMv8 AEM(64bit
-> platform model) and Versatile Express A9(32bit platform).
-> 
-> Signed-off-by: Serban Constantinescu <serban.constantinescu@arm.com>
-> ---
->  drivers/staging/android/ashmem.c |   22 +++++++++++++++++++++-
->  drivers/staging/android/ashmem.h |    6 ++++++
->  2 files changed, 27 insertions(+), 1 deletion(-)
 
-Ok, what has changed from your previous version that I rejected that is
-going to actually allow this to build?
+--=-9ipi4cJUBUF6KiJojLk2
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Hint, you gotta tell me what version of the patch this is, and what
-changed, otherwise I'll just assume this is a resend of the previous
-patch and go ahead and delete it from my queue.
+On Tue, 2013-03-05 at 11:14 +0100, Borislav Petkov wrote:
+>=20
+> On Tue, Mar 05, 2013 at 02:02:48AM -0800, Jeff Kirsher wrote:
+> > They are in my queue of e1000e patches for net and are being testing
+> > currently. I should be able to push them upstream this week.
+>=20
+> Right, if you'd like me to run them here too, let me know.=20
 
-In fact, I might as well do that, now deleted :)
+Any additional testing is very much appreciated, so feel free to test
+the patches with what hardware you have.
 
-greg k-h
+Thanks!
+
+--=-9ipi4cJUBUF6KiJojLk2
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.13 (GNU/Linux)
+
+iQIcBAABCgAGBQJRNcjtAAoJEOVv75VaS+3ORrgQAJ6BCJfiwWM9a/MWmKzpjPSy
+jEbqc2EUbpklY9CaD6v7fGsY4OraHMDmJJHlGWs9fbFiukfxRfcxf8OW6h6hFzA3
+x9Fbeq5JEx+4F4ZqwzirmRpuMS78dNEz2aPZkpeDdgZ3wRDNawebxYC0jF4ixtnv
+PDpAjZXcmFzCOG5Cxau9gLDmnE9Ck1mb2tgcmCFrinRUdoFSF/Z/oQWnLfNqqcNO
+rPlVOE8P+5UdVDNp7MLLN7Vu6a6Moewr1CaaEDFIGY1+Y1G8EU3+cY4wGonnVxca
+AMejcYztzu5TZFyhliSUcbVVga4gAClKBMCspaHZF4kcNFgfEXrVsj+OElugzAM+
+AzICeDfoyeJU9vftxVWSjhbRNDjSxsWzpktxzfSoifw4De4rlujK/Qj9nDlWLY/w
+fFlc9ot1lHCR6nbitBXwD1LHkA/ATBXMqElwUYsZ82dq4Vfis99v7tPtvr3PcXPx
+9XCHld+DvVSoYPe4HecuGIDjFl29rNgHceL9l1o1Zkk6z5HJwuNXsyGAmSLZio97
+QNs8BkgIPeV9CBu+ZtHWFRwvrWjLhqynd83r9J1RPRWwAgvgS1qnhDbNWN037DV9
+m20mZ1G8xdFTr6far+NRQx4gzAQ80sb9DM4BXeZHJD0Z9w9VAAv84mUs12a/jDj7
+74qEbK+L2pywSrc0IkJi
+=McWq
+-----END PGP SIGNATURE-----
+
+--=-9ipi4cJUBUF6KiJojLk2--
+
