@@ -1,62 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756769Ab3CEWov (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 17:44:51 -0500
-Received: from mail-gh0-f180.google.com ([209.85.160.180]:54788 "EHLO
-	mail-gh0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755052Ab3CEWot (ORCPT
+	id S1756575Ab3CEWom (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 17:44:42 -0500
+Received: from g6t0187.atlanta.hp.com ([15.193.32.64]:22331 "EHLO
+	g6t0187.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755831Ab3CEWoi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 17:44:49 -0500
-Date: Tue, 5 Mar 2013 14:44:44 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Ryan Mallon <rmallon@gmail.com>
-Cc: linux-kernel@vger.kernel.org, laijs@cn.fujitsu.com, axboe@kernel.dk,
-        jmoyer@redhat.com, zab@redhat.com,
-        kbuild test robot <fengguang.wu@intel.com>
-Subject: Re: [PATCH v2 16/31] workqueue: introduce workqueue_attrs
-Message-ID: <20130305224444.GC1227@htj.dyndns.org>
-References: <1362194662-2344-1-git-send-email-tj@kernel.org>
- <1362194662-2344-17-git-send-email-tj@kernel.org>
- <20130304183742.GI30413@htj.dyndns.org>
- <513671CF.5050705@gmail.com>
- <20130305223327.GA1227@htj.dyndns.org>
- <20130305223434.GB1227@htj.dyndns.org>
- <51367470.5040909@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51367470.5040909@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 5 Mar 2013 17:44:38 -0500
+From: Toshi Kani <toshi.kani@hp.com>
+To: rjw@sisk.pl
+Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        yinghai@kernel.org, jiang.liu@huawei.com,
+        isimatu.yasuaki@jp.fujitsu.com, Toshi Kani <toshi.kani@hp.com>
+Subject: [PATCH] ACPI: Update _OST handling for notify
+Date: Tue,  5 Mar 2013 15:33:31 -0700
+Message-Id: <1362522811-29063-1-git-send-email-toshi.kani@hp.com>
+X-Mailer: git-send-email 1.7.11.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+When the kernel calls _OSC with OSC_SB_HOTPLUG_OST_SUPPORT bit
+set at boot-time, the OS is responsible for calling _OST for
+ACPI hotplug events.  However, when hotplug.enabled attribute
+is unset for ACPI scan drivers, their notify handlers are removed
+and _OST is not called for ACPI hotplug events as a result.
 
-On Wed, Mar 06, 2013 at 09:40:48AM +1100, Ryan Mallon wrote:
-> > Ooh, right, and that cpumask_t is going away and you can't statically
-> > allocate cpumask_var_t, so it needs an allocation and error check from
-> > it anyway.
-> 
-> Not sure I follow. I mean drop the pointer, eg:
-> 
-> 	struct workqueue_attr attrs;
-> 
-> Since, at least in this patch, struct worker_pool appears to always
-> alloc the attrs field. You do still of course need the cpumask_t
-> initialisation. Am I missing something?
+This patch keeps the notify handler of ACPI scan drivers,
+acpi_hotplug_notify_cb(), installed regardless of the state of
+hotplug.enabled.  The notify handler then checks if hotplug.enabled
+is set for the associated scan handler.  If unset, the notify
+handler calls _OST with a proper error code.  The patch also
+eliminates ACPI namespace walk when hotplug.enabled is changed
+via sysfs.
 
-So, new usages of cpumask_t is frowned upon and we gotta use
-cpumask_var_t which needs alloc_cpumask_var() which may fail, so we
-have try-to-alloc-and-check-for-failure no matter what.  Now, if we
-want to embed workqueue_attrs, we have to separate out initialization
-of allocated attrs from the actaul allocation.  ie. we'll need
-init_workqueue_attrs() and alloc_workqueue_attrs() and as the former
-may fail too, it doesn't really simplify pool initilaization path.
-So, we end up with more code.  The added code is minor but it also
-doesn't buy anything.
+Signed-off-by: Toshi Kani <toshi.kani@hp.com>
+---
 
-Thanks.
+This patch applies on top of the following patchset.
+https://lkml.org/lkml/2013/3/4/455
 
--- 
-tejun
+---
+ drivers/acpi/scan.c |   87 +++++++++++++++++++++------------------------------
+ 1 file changed, 35 insertions(+), 52 deletions(-)
+
+diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
+index 3f6ec0d..dfdbcfd 100644
+--- a/drivers/acpi/scan.c
++++ b/drivers/acpi/scan.c
+@@ -259,11 +259,43 @@ static void acpi_scan_device_check(void *context)
+ 				   ACPI_NOTIFY_DEVICE_CHECK);
+ }
+ 
+-static void acpi_hotplug_notify_cb(acpi_handle handle, u32 type, void *not_used)
++static void acpi_hotplug_unsupported(acpi_handle handle, u32 type)
++{
++	u32 ost_status;
++
++	switch (type) {
++	case ACPI_NOTIFY_BUS_CHECK:
++		acpi_handle_debug(handle,
++			"ACPI_NOTIFY_BUS_CHECK event: unsupported\n");
++		ost_status = ACPI_OST_SC_INSERT_NOT_SUPPORTED;
++		break;
++	case ACPI_NOTIFY_DEVICE_CHECK:
++		acpi_handle_debug(handle,
++			"ACPI_NOTIFY_DEVICE_CHECK event: unsupported\n");
++		ost_status = ACPI_OST_SC_INSERT_NOT_SUPPORTED;
++		break;
++	case ACPI_NOTIFY_EJECT_REQUEST:
++		acpi_handle_debug(handle,
++			"ACPI_NOTIFY_EJECT_REQUEST event: unsupported\n");
++		ost_status = ACPI_OST_SC_EJECT_NOT_SUPPORTED;
++		break;
++	default:
++		/* non-hotplug event; possibly handled by other handler */
++		return;
++	}
++
++	acpi_evaluate_hotplug_ost(handle, type, ost_status, NULL);
++}
++
++static void acpi_hotplug_notify_cb(acpi_handle handle, u32 type, void *data)
+ {
+ 	acpi_osd_exec_callback callback;
++	struct acpi_scan_handler *handler = data;
+ 	acpi_status status;
+ 
++	if (!handler->hotplug.enabled)
++		return acpi_hotplug_unsupported(handle, type);
++
+ 	switch (type) {
+ 	case ACPI_NOTIFY_BUS_CHECK:
+ 		acpi_handle_debug(handle, "ACPI_NOTIFY_BUS_CHECK event\n");
+@@ -1715,61 +1747,14 @@ static struct acpi_scan_handler *acpi_scan_match_handler(char *idstr,
+ 	return NULL;
+ }
+ 
+-static acpi_status acpi_scan_hotplug_modify(acpi_handle handle,
+-					    u32 lvl_not_used, void *data,
+-					    void **ret_not_used)
+-{
+-	struct acpi_device_pnp pnp = {};
+-	struct acpi_scan_handler *tgt_handler = data, *handler;
+-	struct acpi_hardware_id *hwid;
+-	unsigned long long sta_not_used;
+-	int type;
+-	bool match = false;
+-
+-	if (acpi_bus_type_and_status(handle, &type, &sta_not_used))
+-		return AE_OK;
+-
+-	INIT_LIST_HEAD(&pnp.ids);
+-	acpi_set_pnp_ids(handle, &pnp, type);
+-
+-	if (!pnp.type.hardware_id)
+-		return AE_OK;
+-
+-	list_for_each_entry(hwid, &pnp.ids, list) {
+-		handler = acpi_scan_match_handler(hwid->id, NULL);
+-		if (handler && handler == tgt_handler) {
+-			match = true;
+-			break;
+-		}
+-	}
+-	if (!match)
+-		goto out;
+-
+-	if (handler->hotplug.enabled)
+-		acpi_install_notify_handler(handle, ACPI_SYSTEM_NOTIFY,
+-					    acpi_hotplug_notify_cb, NULL);
+-	else
+-		acpi_remove_notify_handler(handle, ACPI_SYSTEM_NOTIFY,
+-					   acpi_hotplug_notify_cb);
+-
+-out:
+-	acpi_free_pnp_ids(&pnp);
+-	return AE_OK;
+-}
+-
+ void acpi_scan_hotplug_enabled(struct acpi_hotplug_profile *hotplug, bool val)
+ {
+-	struct acpi_scan_handler *handler;
+-
+ 	if (!!hotplug->enabled == !!val)
+ 		return;
+ 
+ 	mutex_lock(&acpi_scan_lock);
+ 
+ 	hotplug->enabled = val;
+-	handler = container_of(hotplug, struct acpi_scan_handler, hotplug);
+-	acpi_walk_namespace(ACPI_TYPE_DEVICE, ACPI_ROOT_OBJECT, ACPI_UINT32_MAX,
+-			    acpi_scan_hotplug_modify, NULL, handler, NULL);
+ 
+ 	mutex_unlock(&acpi_scan_lock);
+ }
+@@ -1793,10 +1778,8 @@ static void acpi_scan_init_hotplug(acpi_handle handle, int type)
+ 	list_for_each_entry(hwid, &pnp.ids, list) {
+ 		handler = acpi_scan_match_handler(hwid->id, NULL);
+ 		if (handler) {
+-			if (handler->hotplug.enabled)
+-				acpi_install_notify_handler(handle,
+-					ACPI_SYSTEM_NOTIFY,
+-					acpi_hotplug_notify_cb, NULL);
++			acpi_install_notify_handler(handle, ACPI_SYSTEM_NOTIFY,
++					acpi_hotplug_notify_cb, handler);
+ 			break;
+ 		}
+ 	}
