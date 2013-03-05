@@ -1,62 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755507Ab3CEXzx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 18:55:53 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:55540 "EHLO hydra.sisk.pl"
+	id S1755434Ab3CEX7D (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 18:59:03 -0500
+Received: from mga02.intel.com ([134.134.136.20]:58257 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753616Ab3CEXzw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 18:55:52 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: Tejun Heo <tj@kernel.org>, Jeff Layton <jlayton@redhat.com>,
-        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Mandeep Singh Baines <msb@chromium.org>,
-        Ming Lei <ming.lei@canonical.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: LOCKDEP: 3.9-rc1: mount.nfs/4272 still has locks held!
-Date: Wed, 06 Mar 2013 01:02:46 +0100
-Message-ID: <5144293.t44nDELk4d@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.9.0-rc1+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <20130305231110.GK15816@fieldses.org>
-References: <CACVXFVMKN6aeCvJcn7dyuonJYJDfYxWeW5KE6gfKRKJKFj2M4A@mail.gmail.com> <20130305174954.GG12795@htj.dyndns.org> <20130305231110.GK15816@fieldses.org>
+	id S1752888Ab3CEX7B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Mar 2013 18:59:01 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,791,1355126400"; 
+   d="scan'208";a="271691703"
+Message-ID: <51368692.4090204@linux.intel.com>
+Date: Tue, 05 Mar 2013 15:58:10 -0800
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130219 Thunderbird/17.0.3
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+CC: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>, bp@alien8.de,
+        linux-kernel@vger.kernel.org, "Yu, Fenghua" <fenghua.yu@intel.com>
+Subject: Re: [3.9-rc1 x86] Bug in ioremap code?
+References: <201302060035.GCJ00057.FLHMOOFtJFSQOV@I-love.SAKURA.ne.jp> <201303050015.GGI39081.LOVFtOFHQOJFSM@I-love.SAKURA.ne.jp> <201303052031.JFG81705.FSOOFQHJMVFOLt@I-love.SAKURA.ne.jp> <201303060041.AIF15342.tJFOHLQFFOMVSO@I-love.SAKURA.ne.jp> <20130305180650.GD4914@pd.tnic> <201303060628.CBG00578.OJtMFFHLQVSFOO@I-love.SAKURA.ne.jp> <51366E6F.1050409@linux.intel.com> <513683DC.3070405@linux.vnet.ibm.com>
+In-Reply-To: <513683DC.3070405@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, March 05, 2013 06:11:10 PM J. Bruce Fields wrote:
-> On Tue, Mar 05, 2013 at 09:49:54AM -0800, Tejun Heo wrote:
-> > On Tue, Mar 05, 2013 at 09:46:48AM -0800, Tejun Heo wrote:
-> > > So, I think this is why implementing freezer as a separate blocking
-> > > mechanism isn't such a good idea.  We're effectively introducing a
-> > > completely new waiting state to a lot of unsuspecting paths which
-> > > generates a lot of risks and eventually extra complexity to work
-> > > around those.  I think we really should update freezer to re-use the
-> > > blocking points we already have - the ones used for signal delivery
-> > > and ptracing.  That way, other code paths don't have to worry about an
-> > > extra stop state and we can confine most complexities to freezer
-> > > proper.
-> > 
-> > Also, consolidating those wait states means that we can solve the
-> > event-to-response latency problem for all three cases - signal, ptrace
-> > and freezer, rather than adding separate backing-out strategy for
-> > freezer.
+Fenghua,
+
+Could you look at this thread and see if you can see what the problem is?
+
+	-hpa
+
+On 03/05/2013 03:46 PM, Dave Hansen wrote:
+> Not sure if it's related by 3.9-rc1 gets in to a reboot loop for me.  I
+> assume it's triple-faulting.  The last line on the console I see is:
 > 
-> Meanwhile, as none of this sounds likely to be done this time
-> around--are we backing out the new lockdep warnings?
+> [    0.085702] SMP alternatives: lockdep: fixing up alternatives
+> [    0.086859] smpboot: Booting Node   0, Processors [    0.086859]
+> smpboot: Booting Node   0, Processors  #1 OK
+>  #1 OK
+> 
+> I bisected it down to the neighborhood of c47f39e.  After that, I get
+> some compile errors:
+> 
+>> arch/x86/built-in.o: In function `generic_load_microcode':
+>> microcode_intel.c:(.text+0x28195): undefined reference to `microcode_sanity_check'
+>> microcode_intel.c:(.text+0x281ab): undefined reference to `get_matching_microcode'
+> 
+> Turning off CONFIG_MICROCODE:
+> 
+> -CONFIG_MICROCODE=y
+> -CONFIG_MICROCODE_INTEL=y
+> -# CONFIG_MICROCODE_AMD is not set
+> -CONFIG_MICROCODE_OLD_INTERFACE=y
+> -CONFIG_MICROCODE_INTEL_LIB=y
+> -CONFIG_MICROCODE_INTEL_EARLY=y
+> -CONFIG_MICROCODE_EARLY=y
+> +# CONFIG_MICROCODE is not set
+> 
+> lets it boot again and fixes those compile errors.  This is with this
+> config:
+> 
+> 	http://i-love.sakura.ne.jp/tmp/config-3.9-rc1
+> 
+> running under a kvm guest:
+> 
+> qemu-system-x86_64 -append 'earlyprintk=ttyS0,115200,keep
+> console=ttyS0,115200 nmi_watchdog=0 root=/dev/sda1 bootmem_debug'
+> -kernel vmlinuz -usbdevice tablet  -vnc :1 -net user -net
+> nic,model=e1000  -hda sarge-amd64-runme-1G.img -m 10240 -smp 2
+> 
 
-I think we should do that.
-
-Thanks,
-Rafael
-
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
