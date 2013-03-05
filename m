@@ -1,121 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758783Ab3CES26 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 13:28:58 -0500
-Received: from mga14.intel.com ([143.182.124.37]:15410 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756385Ab3CES24 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 13:28:56 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,788,1355126400"; 
-   d="scan'208";a="209158268"
-Message-ID: <1362508124.29083.15.camel@intelbox>
-Subject: Re: [Intel-gfx] [git pull] drm merge for 3.9-rc1
-From: Imre Deak <imre.deak@intel.com>
-Reply-To: imre.deak@intel.com
-To: Paulo Zanoni <przanoni@gmail.com>
-Cc: Chris Wilson <chris@chris-wilson.co.uk>,
-        Sedat Dilek <sedat.dilek@gmail.com>, Dave Airlie <airlied@gmail.com>,
-        DRI <dri-devel@lists.freedesktop.org>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-next <linux-next@vger.kernel.org>
-Date: Tue, 05 Mar 2013 20:28:44 +0200
-In-Reply-To: <CA+gsUGQ-cn00=emFkHeWi6akL9TrJ9CV6ikv7C62fhLYMtB=HQ@mail.gmail.com>
-References: <CA+icZUXG7WgRap2-oQGBr_s=QbE0QW6_zChDRqC-eEzrWR3Y5g@mail.gmail.com>
-	 <CA+icZUUP0hLjkTjsAGbhoT1QG55X2062G5KCCDsKkhDyM_SQEg@mail.gmail.com>
-	 <20130228111819.GF11892@cantiga.alporthouse.com>
-	 <CA+gsUGQ-cn00=emFkHeWi6akL9TrJ9CV6ikv7C62fhLYMtB=HQ@mail.gmail.com>
-Organization: Intel
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
+	id S1758843Ab3CESaM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 13:30:12 -0500
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:42760 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758130Ab3CESaJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Mar 2013 13:30:09 -0500
+Message-ID: <51363920.3040906@linux.vnet.ibm.com>
+Date: Tue, 05 Mar 2013 23:57:44 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+MIME-Version: 1.0
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+CC: Lai Jiangshan <eag0628@gmail.com>, Michel Lespinasse <walken@google.com>,
+        linux-doc@vger.kernel.org, peterz@infradead.org, fweisbec@gmail.com,
+        linux-kernel@vger.kernel.org, namhyung@kernel.org, mingo@kernel.org,
+        linux-arch@vger.kernel.org, linux@arm.linux.org.uk,
+        xiaoguangrong@linux.vnet.ibm.com, wangyun@linux.vnet.ibm.com,
+        paulmck@linux.vnet.ibm.com, nikunj@linux.vnet.ibm.com,
+        linux-pm@vger.kernel.org, rusty@rustcorp.com.au, rostedt@goodmis.org,
+        rjw@sisk.pl, vincent.guittot@linaro.org, tglx@linutronix.de,
+        linux-arm-kernel@lists.infradead.org, netdev@vger.kernel.org,
+        oleg@redhat.com, sbw@mit.edu, tj@kernel.org, akpm@linux-foundation.org,
+        linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH v6 04/46] percpu_rwlock: Implement the core design of
+ Per-CPU Reader-Writer Locks
+References: <20130218123714.26245.61816.stgit@srivatsabhat.in.ibm.com> <CANN689F9S7c1M8+cEpz3tsxGF34+NTRBLvxgPUOtbvav5u+RRA@mail.gmail.com> <5122551E.1080703@linux.vnet.ibm.com>	<51226B46.9080707@linux.vnet.ibm.com> <CANN689FSxOz+0Cu7EG_yKD8ZE1OpT4kyT+ybLfXSqaifodJRpw@mail.gmail.com> <51226F91.7000108@linux.vnet.ibm.com> <CACvQF53bdh4_BxF0y1fnTVR+T2OmRc0jmWQYftsvx92-fg-Lug@mail.gmail.com> <512BBAD8.8010006@linux.vnet.ibm.com> <CACvQF51jCxk5jUqmhD=QBBtUsBkQWZzakacrKO4Gsk=w61rNwQ@mail.gmail.com> <512C7A38.8060906@linux.vnet.ibm.com> <CACvQF51RvhM8XNqu3-1OTQ=cZUZ=pAX+_zx0a29+W67N1X+BgQ@mail.gmail.com> <512CC509.1050000@linux.vnet.ibm.com> <CACvQF50UgiqPpDk3HCmV86zKSf6tPjqr0bZowfPEOJs0g0r0MQ@mail.gmail.com> <512D0D67.9010609@linux.vnet.ibm.com> <CACvQF53ph2ixdM-otzetjM5cR+2kcZj6sckOp3TnzzA_x-EZ8w@mail.gmail.com> <512E7879.20109@linux.vnet.ibm.com> <5130EA6B.6030901@cn.fujitsu.com> <513105DD.8010908@linux.vnet.ibm.com> <51361C71.5060502@cn.fujitsu.com>
+In-Reply-To: <51361C71.5060502@cn.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13030518-5490-0000-0000-000003104D27
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-02-28 at 11:31 -0300, Paulo Zanoni wrote:
-> Hi
-> 
-> 2013/2/28 Chris Wilson <chris@chris-wilson.co.uk>:
-> > On Thu, Feb 28, 2013 at 12:06:28AM +0100, Sedat Dilek wrote:
-> >> On Wed, Feb 27, 2013 at 11:36 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
-> >> > Hi,
-> >> >
-> >> > I am seeing this also on Linux-Next.
-> >> >
-> >> > /var/log/kern.log:Feb 27 22:52:35 fambox kernel: [   28.202381]
-> >> > [drm:intel_dp_aux_wait_done] *ERROR* dp aux hw did not signal timeout
-> >> > (has irq: 1)!
-> >> > /var/log/kern.log:Feb 27 22:52:35 fambox kernel: [   28.210588]
-> >> > [drm:intel_dp_aux_wait_done] *ERROR* dp aux hw did not signal timeout
-> >> > (has irq: 1)!
-> >> >
-> >> > /var/log/kern.log.1:Feb 22 07:36:04 fambox kernel: [   27.408280]
-> >> > [drm:intel_dp_aux_wait_done] *ERROR* dp aux hw did not signal timeout
-> >> > (has irq: 1)!
-> >> >
-> >> > This seems to be hard reproducible...
-> >> > Laptop-LCD... Sandybridge Mobile-GT2.
-> >> >
-> >> > Is there a way to force the error?
-> >> >
-> >> > Possible patch see [1].
-> >> >
-> >> > - Sedat -
-> >> >
-> >> > [1] https://patchwork.kernel.org/patch/2192721/
-> >
-> > That was:
-> >
-> > +       if (!done) {
-> > +               status = I915_READ_NOTRACE(ch_ctl);
-> > +               DRM_ERROR("dp aux hw did not signal timeout (has irq:
-> > %i), status=%08x!\n",
-> > +                         has_aux_irq, status);
-> > +       }
-> >
-> > You applied
-> >
-> > +       if (!done) {
-> > +               status = I915_READ_NOTRACE(ch_ctl);
-> > +               DRM_ERROR("dp aux hw did not signal timeout (has irq:
-> > %i), status=%08x!\n",
-> > +                         has_aux_irq, status);
-> > +       {
-> 
-> In addition to this, after the problem happens can you please dump the
-> registers 0x44008 (DEIIR) and 0xC4008 (SDEIIR)? You can do this either
-> by running intel-reg-read (from intel-gpu-tools) or by changing the
-> DRM_ERROR above to also print the result of I915_READ(0x44008) and
-> I915_READ(0xC4008).
-> 
-> If you conclude that the value of 0x44008 is 0x0 while the value of
-> 0xC4008 is not, then this patch should help:
-> https://patchwork.kernel.org/patch/2177841/
+Hi Lai,
 
-I can trigger the bug on an ILK consistently by calling udelay(400) just
-before 'I915_WRITE(SDEIIR, pch_iir);' in ironlake_irq_handler() until
-the first timeout. Afterwards SDEIIR will contain SDE_AUXD and DEIIR
-will be 0 and no more AUXD events will be serviced. With Paolo's patch I
-can't trigger the bug even with the udelay being in place.
+On 03/05/2013 09:55 PM, Lai Jiangshan wrote:
+> Hi, Srivatsa,
+> 
+> I'm sorry again, I delayed your works.
+>
 
---Imre
-
+No, you didn't :-) I have been busy with some internal work lately,
+so I haven't been able to go through the recent discussions and
+review the new code carefully.. I'll get to it as soon as I can.
+ 
+> I have some thinkings about the way how to get this work done.
 > 
-> >
-> > That second '{' is the source of the compile error.
-> > -Chris
-> >
-> > --
-> > Chris Wilson, Intel Open Source Technology Centre
-> > _______________________________________________
-> > Intel-gfx mailing list
-> > Intel-gfx@lists.freedesktop.org
-> > http://lists.freedesktop.org/mailman/listinfo/intel-gfx
+> First step: (2~3 patches)
+> Use preempt_disable() to implement get_online_cpu_atomic(), and add lockdep for it.
 > 
+> Second step:
+> Conversion patches.
 > 
+> We can send the patchset of the above steps at first.
+> {
+> It does not change any behavior of the kernel.
+> and it is annotation(instead of direct preempt_diable() without comments sometimes),
+> so I expected they can be merged very early.
+> }
+> 
+> Third step:
+> After all people confide the conversion patches covered all cases and cpuhotplug site is ready for it,
+> we will implement get_online_cpu_atomic() via locks and remove stop_machine() from cpuhotplug.
+> 
+> Any thought?
 > 
 
+That sounds like a good plan. It might involve slightly more churn
+than just directly changing the locking scheme, but it is safer.
+And the extra churn is anyway limited only to the implementation of
+get/put_online_cpus_atomic().. so that should be fine IMHO.
+
+> 
+> If I have time, I will help you for the patches of the first step.
+> (I was assigned bad job in office-time, I can only do kernel-dev work in night.)
+> 
+> And for step2, I will write a checklist or spatch-script.
+> 
+
+Do look at the conversion already done in this v6 as well. In
+addition to that, we will have to account for the new kernel
+code that went in recently.
+
+I'll get back to working on the above mentioned aspects soon.
+
+Regards,
+Srivatsa S. Bhat
 
