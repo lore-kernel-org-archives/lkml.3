@@ -1,81 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754489Ab3CELgW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 06:36:22 -0500
-Received: from canardo.mork.no ([148.122.252.1]:59103 "EHLO canardo.mork.no"
+	id S1754668Ab3CELhZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 06:37:25 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:42183 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752622Ab3CELgU convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 06:36:20 -0500
-From: =?utf-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
-To: Oliver Neukum <oneukum@suse.de>
-Cc: Josua Dietze <digidietze@draisberghof.de>,
-        Matthew Dharm <mdharm-usb@one-eyed-alien.net>,
-        Ben Hutchings <ben@decadent.org.uk>,
-        "linux-usb\@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Fangxiaozhi \(Franko\)" <fangxiaozhi@huawei.com>, zihan@huawei.com,
-        Lin.Lei@huawei.com, Greg KH <gregkh@linuxfoundation.org>,
-        "Yili \(Neil\)" <neil.yi@huawei.com>,
-        "Wangyuhua \(Roger\, Credit\)" <wangyuhua@huawei.com>,
-        Huqiao <huqiao36@huawei.com>, Felipe Balbi <balbi@ti.com>,
-        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
-        stable <stable@vger.kernel.org>
-Subject: Re: [PATCH] USB: storage: fix Huawei mode switching regression
-Organization: m
-References: <87obezs888.fsf@nemi.mork.no> <87wqtnq8bb.fsf@nemi.mork.no>
-	<5135201F.4030200@draisberghof.de>
-	<4661149.JOvxeICSJy@linux-5eaq.site>
-Date: Tue, 05 Mar 2013 12:35:07 +0100
-In-Reply-To: <4661149.JOvxeICSJy@linux-5eaq.site> (Oliver Neukum's message of
-	"Tue, 05 Mar 2013 09:32:32 +0100")
-Message-ID: <87txoqoz9w.fsf@nemi.mork.no>
-User-Agent: Gnus/5.11002 (No Gnus v0.20) Emacs/23.4 (gnu/linux)
+	id S1752188Ab3CELhY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Mar 2013 06:37:24 -0500
+Date: Tue, 5 Mar 2013 13:36:54 +0200
+From: Felipe Balbi <balbi@ti.com>
+To: Tony Lindgren <tony@atomide.com>
+CC: Felipe Balbi <balbi@ti.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Rob Clark <robdclark@gmail.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
+        <arm@kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: Latest randconfig build errors
+Message-ID: <20130305113654.GC19290@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <20130304095136.GI17833@n2100.arm.linux.org.uk>
+ <20130304184649.GO11806@atomide.com>
+ <20130304185142.GB15203@arwen.pp.htv.fi>
+ <20130304185424.GR11806@atomide.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="FsscpQKzF/jJk6ya"
+Content-Disposition: inline
+In-Reply-To: <20130304185424.GR11806@atomide.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Oliver Neukum <oneukum@suse.de> writes:
-> On Monday 04 March 2013 23:28:47 Josua Dietze wrote:
->> > I guess the real problem will be verifying that all of the entries can
->> > go away. This type of hardware tends to get old very fast, but there is
->> > always someone having a really ancient device.
->> 
->> I will check this and add any missing USB IDs to usb_modeswitch, but I can't shake the feeling that not all Huawei entries in "unusual_devs.h" did actually materialize as devices ...
->> 
->> Anyway, as Bjørn said, putting that initialization into the storage
->> driver takes away quite some possibilities to handle these modems in
->> a flexible way.
->
-> But it adds the ability to handle loss of power in the suspend case
-> cleanly.
+--FsscpQKzF/jJk6ya
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-How is that different?  If the device loses power, then it will appear
-as a new unswitched USB storage device, and go through the switching
-sequence again. And if the device does not lose power but the system
-does, then it will appear as a new, already switched, USB modem device.
+On Mon, Mar 04, 2013 at 10:54:24AM -0800, Tony Lindgren wrote:
+> * Felipe Balbi <balbi@ti.com> [130304 10:56]:
+> > Hi,
+> >=20
+> > On Mon, Mar 04, 2013 at 10:46:50AM -0800, Tony Lindgren wrote:
+> > > > The last three are caused by incorrect use of 'select':
+> > > >=20
+> > > > warning: (MACH_OMAP_ZOOM2 && MACH_OMAP_ZOOM3 && MWAVE) selects SERI=
+AL_8250 which has unmet direct dependencies (TTY && HAS_IOMEM && GENERIC_HA=
+RDIRQS)
+> > > > warning: (USB_MUSB_HDRC) selects TWL4030_USB which has unmet direct=
+ dependencies (USB_SUPPORT && (USB || USB_GADGET) && TWL4030_CORE && REGULA=
+TOR_TWL4030 && USB_MUSB_OMAP2PLUS)
+> > > > warning: (USB_MUSB_HDRC) selects TWL6030_USB which has unmet direct=
+ dependencies (USB_SUPPORT && (USB || USB_GADGET) && TWL4030_CORE && OMAP_U=
+SB2 && USB_MUSB_OMAP2PLUS)
+> > > > warning: (MACH_OMAP_ZOOM2 && MACH_OMAP_ZOOM3) selects SERIAL_8250_C=
+ONSOLE which has unmet direct dependencies (TTY && HAS_IOMEM && GENERIC_HAR=
+DIRQS && SERIAL_8250=3Dy)
+> > > > warning: (MACH_OMAP_ZOOM2 && MACH_OMAP_ZOOM3) selects SERIAL_CORE_C=
+ONSOLE which has unmet direct dependencies (TTY && HAS_IOMEM && GENERIC_HAR=
+DIRQS)
+> > > > warning: (VIDEO_DM6446_CCDC && VIDEO_DM355_CCDC && VIDEO_ISIF && VI=
+DEO_DAVINCI_VPBE_DISPLAY) selects VIDEO_VPSS_SYSTEM which has unmet direct =
+dependencies (MEDIA_SUPPORT && V4L_PLATFORM_DRIVERS && ARCH_DAVINCI)
+> > > > warning: (MACH_OMAP_ZOOM2 && MACH_OMAP_ZOOM3 && MWAVE) selects SERI=
+AL_8250 which has unmet direct dependencies (TTY && HAS_IOMEM && GENERIC_HA=
+RDIRQS)
+> > > > warning: (USB_MUSB_HDRC) selects TWL4030_USB which has unmet direct=
+ dependencies (USB_SUPPORT && (USB || USB_GADGET) && TWL4030_CORE && OMAP_U=
+SB2 && USB_MUSB_OMAP2PLUS)
+> > > > warning: (MACH_OMAP_ZOOM2 && MACH_OMAP_ZOOM3) selects SERIAL_8250_C=
+ONSOLE which has unmet direct dependencies (TTY && HAS_IOMEM && GENERIC_HAR=
+DIRQS && SERIAL_8250=3Dy)
+> > > > warning: (MACH_OMAP_ZOOM2 && MACH_OMAP_ZOOM3) selects SERIAL_CORE_C=
+ONSOLE which has unmet direct dependencies (TTY && HAS_IOMEM && GENERIC_HAR=
+DIRQS)
+> > > > warning: (VIDEO_DM6446_CCDC && VIDEO_DM355_CCDC && VIDEO_ISIF && VI=
+DEO_DAVINCI_VPBE_DISPLAY) selects VIDEO_VPSS_SYSTEM which has unmet direct =
+dependencies (MEDIA_SUPPORT && V4L_PLATFORM_DRIVERS && ARCH_DAVINCI)
+> > > >=20
+> > > > This 'select' madness of driver symbols *HAS* *TO* *STOP*.
+> > >=20
+> > > Felipe, can you take a look at removing the MUSB selects from Kconfig?
+> > > You might be able to just have MUSB depends on TWL if omap.
+> >=20
+> > I don't think we even need depend or select at all for MUSB. I'll look
+> > at it tomorrow.
+>=20
+> OK thanks!
 
-The system behaviour will be exactly the same AFAICS, providing the
-switching command is the same.
+http://marc.info/?l=3Dlinux-usb&m=3D136248269928419&w=3D2
 
-> As long as the switch only makes additional devices appear,
-> doing it in kernel space is the nicer approach.
+--=20
+balbi
 
-You cannot guarantee this.  Huawei may not support it, but there are
-instructions around the net on how to change this.
+--FsscpQKzF/jJk6ya
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-And how do you want this to play together with complex devices having
-multiple configurations, where one of those is mode switching and the
-other is not?  Yes, there are Huawei devices like that.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-The firmware implement a wide variety of different alternative
-configurations. Some users take advantage of that.  Doing the mode
-switching in the kernel removes all but one of these alternatives.  The
-fact that the one Windows uses is among those removed is IMHO bad,
-regardless of whether Huawei support that mode on Linux.
+iQIcBAEBAgAGBQJRNdjWAAoJEIaOsuA1yqREVK0QAIyf3j0exoY3nXjfPr88XCdU
+e400GQgp3nEwgi66loEA1zElE18Chx6UE+8cyQ4kXsXIWrwulCNuPA6KpcX8PpXi
+h0WLpWzHkpP3eKhgFhSFLP9aJMxpV3zS1rXJgpG/ddFG2r9Aio09gw+9c+FzvYya
+/71qsE2+UcGdssXegRHgIYk7jJo51l2ZTpBhBHkF4tqDwYpKSnAwj60GLY/J8YrR
+4ck0B1dYuNmeJLJMUbE+SfNU2gymXjRhWY+8wsOKmi97hVQykiIc3VbLFr8hPj2H
+Sbtj6BN46BmIv1TRLyeJPgSQ83IMX4yRDWybh5iRJ+kj1PrwI/C5qM2kq+PXi5qI
+kpS3zRLkzpDqVTmHeclAPsI1KpdwxQ+GNl0ZRLBBVzSfY86wqLe4cK01R+L3c3v+
+q6/Fm+x/c5osYXQkGqGL6netmNa9nIWimS1wzhwYiY2KL11LHt+fm7dLLjBOw38a
+K04SkVKTIuFtEyRYTcaUOVXXt/uZkUU9EnkcOnPj3SXya0lEjQXF4tETII5tVdFH
+Rdv1WhPPegcIB3dFw+RyMwJeKYxsQArq4FBc5bvooGrDbavbtbeadbzMdY0UKRjP
+KP3GQP9c/ge0yfD2P3GDz1hcYDWjyRo1h0JY06UmZWs3An6JK3isBwIq2jw8KKcw
+if056Iv1DI3wUm+EpQWs
+=sMBn
+-----END PGP SIGNATURE-----
 
-
-Bjørn
+--FsscpQKzF/jJk6ya--
