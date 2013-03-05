@@ -1,54 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757393Ab3CERax (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 12:30:53 -0500
-Received: from cpsmtpb-ews02.kpnxchange.com ([213.75.39.5]:55368 "EHLO
-	cpsmtpb-ews02.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755535Ab3CERaw (ORCPT
+	id S1757280Ab3CERdX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 12:33:23 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:41573 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755862Ab3CERdW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 12:30:52 -0500
-Message-ID: <1362504650.16460.95.camel@x61.thuisdomein>
-Subject: [PATCH] m68k: drop "select EMAC_INC"
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: linux-m68k@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Tue, 05 Mar 2013 18:30:50 +0100
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 05 Mar 2013 17:30:51.0635 (UTC) FILETIME=[2EE63C30:01CE19C7]
-X-RcptDomain: vger.kernel.org
+	Tue, 5 Mar 2013 12:33:22 -0500
+X-IronPort-AV: E=Sophos;i="4.84,788,1355126400"; 
+   d="scan'208";a="27549352"
+From: David Brown <davidb@codeaurora.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org
+Subject: Re: [PATCH] ARM: Scorpion is a v7 architecture, not v6
+References: <1362439159-29258-1-git-send-email-sboyd@codeaurora.org>
+	<201303050831.37177.arnd@arndb.de>
+Date: Tue, 05 Mar 2013 09:33:21 -0800
+In-Reply-To: <201303050831.37177.arnd@arndb.de> (Arnd Bergmann's message of
+	"Tue, 5 Mar 2013 08:31:36 +0000")
+Message-ID: <8yappzd21lq.fsf@huya.qualcomm.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Somehow this select statement managed to squeeze itself between commit
-0e152d80507b75c00aac60f2ffc586360687cd52 ("m68k: reorganize Kconfig
-options to improve mmu/non-mmu selections") and commit
-95e82747d6e2abc513bfae416e6009968985d05b ("m68k: drop unused Kconfig
-symbols"). Whatever happened, there is no Kconfig symbol named EMAC_INC.
-The select statement for that symbol is a nop. Drop it.
+Arnd Bergmann <arnd@arndb.de> writes:
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-Untested, but it's hard to see what can got wrong here.
+> On Monday 04 March 2013, Stephen Boyd wrote:
+>>  config ARCH_MULTI_V6
+>> -       bool "ARMv6 based platforms (ARM11, Scorpion, ...)"
+>> +       bool "ARMv6 based platforms (ARM11)"
+>>         select ARCH_MULTI_V6_V7
+>>         select CPU_V6
+>
+> Sorry about that, my fault.
+>
+> Was there also an ARMv6 core from Qualcomm, or did you only use ARM11 at
+> the time?
 
- arch/m68k/Kconfig.machine | 1 -
- 1 file changed, 1 deletion(-)
+I believe the v6 core in the Qualcomm chips was an ARM11.
 
-diff --git a/arch/m68k/Kconfig.machine b/arch/m68k/Kconfig.machine
-index 7cdf6b0..7240584 100644
---- a/arch/m68k/Kconfig.machine
-+++ b/arch/m68k/Kconfig.machine
-@@ -310,7 +310,6 @@ config COBRA5282
- config SOM5282EM
- 	bool "EMAC.Inc SOM5282EM board support"
- 	depends on M528x
--	select EMAC_INC
- 	help
- 	  Support for the EMAC.Inc SOM5282EM module.
- 
+David
+
 -- 
-1.7.11.7
-
+sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
