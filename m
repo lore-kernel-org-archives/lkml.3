@@ -1,53 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759121Ab3CEUE5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 15:04:57 -0500
-Received: from mail-qe0-f48.google.com ([209.85.128.48]:52613 "EHLO
-	mail-qe0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756470Ab3CEUDN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 15:03:13 -0500
-From: Tejun Heo <tj@kernel.org>
-To: akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, bfields@fieldses.org,
+	id S1758560Ab3CEUFZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 15:05:25 -0500
+Received: from fieldses.org ([174.143.236.118]:45985 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757617Ab3CEUFV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Mar 2013 15:05:21 -0500
+Date: Tue, 5 Mar 2013 15:05:11 -0500
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
         jackm@dev.mellanox.co.il, ogerlitz@mellanox.com,
         roland@purestorage.com, dan.magenheimer@oracle.com,
         gregkh@linuxfoundation.org, vjaquez@igalia.com, rene.sapiens@ti.com,
-        x0095078@ti.com, omar.ramirez@ti.com, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 4/7] mlx4: remove leftover idr_pre_get() call
-Date: Tue,  5 Mar 2013 12:02:49 -0800
-Message-Id: <1362513772-15174-5-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1362513772-15174-1-git-send-email-tj@kernel.org>
+        x0095078@ti.com, omar.ramirez@ti.com, linux-nfs@vger.kernel.org
+Subject: Re: [PATCH 1/7] nfsd: remove unused get_new_stid()
+Message-ID: <20130305200511.GB15816@fieldses.org>
 References: <1362513772-15174-1-git-send-email-tj@kernel.org>
+ <1362513772-15174-2-git-send-email-tj@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1362513772-15174-2-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-6a9200603d ("IB/mlx4: convert to idr_alloc()") forgot to remove
-idr_pre_get() call in mlx4_ib_cm_paravirt_init().  It's unnecessary
-and idr_pre_get() will soon be deprecated.  Remove it.
+On Tue, Mar 05, 2013 at 12:02:46PM -0800, Tejun Heo wrote:
+> get_new_stid() is no longer used since 3abdb607125 ("nfsd4: simplify
+> idr allocation").  Remove it.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Jack Morgenstein <jackm@dev.mellanox.co.il>
-Cc: Or Gerlitz <ogerlitz@mellanox.com>
-Cc: Roland Dreier <roland@purestorage.com>
----
- drivers/infiniband/hw/mlx4/cm.c | 1 -
- 1 file changed, 1 deletion(-)
+Whoops, thanks for catching that.
 
-diff --git a/drivers/infiniband/hw/mlx4/cm.c b/drivers/infiniband/hw/mlx4/cm.c
-index e0d79b2..add98d0 100644
---- a/drivers/infiniband/hw/mlx4/cm.c
-+++ b/drivers/infiniband/hw/mlx4/cm.c
-@@ -362,7 +362,6 @@ void mlx4_ib_cm_paravirt_init(struct mlx4_ib_dev *dev)
- 	INIT_LIST_HEAD(&dev->sriov.cm_list);
- 	dev->sriov.sl_id_map = RB_ROOT;
- 	idr_init(&dev->sriov.pv_id_table);
--	idr_pre_get(&dev->sriov.pv_id_table, GFP_KERNEL);
- }
- 
- /* slave = -1 ==> all slaves */
--- 
-1.8.1.4
+Acked-by: J. Bruce Fields <bfields@redhat.com>
 
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Cc: "J. Bruce Fields" <bfields@fieldses.org>
+> Cc: linux-nfs@vger.kernel.org
+> ---
+>  fs/nfsd/nfs4state.c | 31 -------------------------------
+>  1 file changed, 31 deletions(-)
+> 
+> diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
+> index 16d39c6..d91d6db 100644
+> --- a/fs/nfsd/nfs4state.c
+> +++ b/fs/nfsd/nfs4state.c
+> @@ -230,37 +230,6 @@ static void nfs4_file_put_access(struct nfs4_file *fp, int oflag)
+>  		__nfs4_file_put_access(fp, oflag);
+>  }
+>  
+> -static inline int get_new_stid(struct nfs4_stid *stid)
+> -{
+> -	static int min_stateid = 0;
+> -	struct idr *stateids = &stid->sc_client->cl_stateids;
+> -	int new_stid;
+> -	int error;
+> -
+> -	error = idr_get_new_above(stateids, stid, min_stateid, &new_stid);
+> -	/*
+> -	 * Note: the necessary preallocation was done in
+> -	 * nfs4_alloc_stateid().  The idr code caps the number of
+> -	 * preallocations that can exist at a time, but the state lock
+> -	 * prevents anyone from using ours before we get here:
+> -	 */
+> -	WARN_ON_ONCE(error);
+> -	/*
+> -	 * It shouldn't be a problem to reuse an opaque stateid value.
+> -	 * I don't think it is for 4.1.  But with 4.0 I worry that, for
+> -	 * example, a stray write retransmission could be accepted by
+> -	 * the server when it should have been rejected.  Therefore,
+> -	 * adopt a trick from the sctp code to attempt to maximize the
+> -	 * amount of time until an id is reused, by ensuring they always
+> -	 * "increase" (mod INT_MAX):
+> -	 */
+> -
+> -	min_stateid = new_stid+1;
+> -	if (min_stateid == INT_MAX)
+> -		min_stateid = 0;
+> -	return new_stid;
+> -}
+> -
+>  static struct nfs4_stid *nfs4_alloc_stid(struct nfs4_client *cl, struct
+>  kmem_cache *slab)
+>  {
+> -- 
+> 1.8.1.4
+> 
