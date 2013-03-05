@@ -1,107 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753805Ab3CELr5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 06:47:57 -0500
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:54257 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752351Ab3CELrz (ORCPT
+	id S1754814Ab3CELw0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 06:52:26 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:35291 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752622Ab3CELwZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 06:47:55 -0500
-X-AuditID: 9c93016f-b7b46ae000000e4b-30-5135db6930f3
-From: Kyungsik Lee <kyungsik.lee@lge.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
-        x86@kernel.org, celinux-dev@lists.celinuxforum.org
-Cc: Nicolas Pitre <nico@fluxnic.net>, David Sterba <dsterba@suse.cz>,
-        Nitin Gupta <nitingupta910@gmail.com>,
-        Joe Millenbach <jmillenbach@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Michal Marek <mmarek@suse.cz>,
-        hyojun.im@lge.com, chan.jeong@lge.com, raphael.andy.lee@gmail.com,
-        Kyungsik Lee <kyungsik.lee@lge.com>
-Subject: [PATCH v3 -next 0/5] Add support for LZ4-compressed kernel
-Date: Tue,  5 Mar 2013 20:47:31 +0900
-Message-Id: <1362484056-9778-1-git-send-email-kyungsik.lee@lge.com>
-X-Mailer: git-send-email 1.8.1.1
-X-Brightmail-Tracker: AAAAAA==
+	Tue, 5 Mar 2013 06:52:25 -0500
+From: Oliver Neukum <oneukum@suse.de>
+To: =?ISO-8859-1?Q?Bj=F8rn?= Mork <bjorn@mork.no>
+Cc: "Fangxiaozhi (Franko)" <fangxiaozhi@huawei.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Xueguiying (Zihan)" <zihan.xue@huawei.com>,
+        "Linlei (Lei Lin)" <lei.lin@huawei.com>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        "Yili (Neil)" <neil.yi@huawei.com>,
+        "Wangyuhua (Roger, Credit)" <wangyuhua@huawei.com>,
+        "Huqiao (C)" <huqiao36@huawei.com>, "balbi@ti.com" <balbi@ti.com>,
+        "mdharm-usb@one-eyed-alien.net" <mdharm-usb@one-eyed-alien.net>,
+        "sebastian@breakpoint.cc" <sebastian@breakpoint.cc>,
+        stable <stable@vger.kernel.org>
+Subject: Re: [PATCH] USB: storage: fix Huawei mode switching regression
+Date: Tue, 05 Mar 2013 12:52:39 +0100
+Message-ID: <21299891.5uLjgmNaTJ@linux-5eaq.site>
+Organization: SUSE
+User-Agent: KMail/4.8.5 (Linux/3.8.0-rc7-12-desktop+; KDE/4.8.5; x86_64; ; )
+In-Reply-To: <8738waqhx2.fsf@nemi.mork.no>
+References: <87obezs888.fsf@nemi.mork.no> <910F9D9E13B84F4C8FA771DC9BDE99F32709833E@szxeml546-mbx.china.huawei.com> <8738waqhx2.fsf@nemi.mork.no>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="iso-8859-1"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tuesday 05 March 2013 11:07:05 Bjørn Mork wrote:
+> "Fangxiaozhi (Franko)" <fangxiaozhi@huawei.com> writes:
+> 
+> > ------ commit 200e0d99 and commit cd060956, only put the switch
+> > command into kernel, instead of userspace usb_modeswitch utility.
+> 
+> Yes. And that is the problem.  It was agreed years ago that this
+> functionality belongs in userspace.  Ref e.g
+> https://lkml.org/lkml/2009/12/15/332
+> https://lkml.org/lkml/2010/4/19/216
+> https://lkml.org/lkml/2012/2/28/569
+> 
+> Please note the re-occurrence of this discussion, despite the fact that
+> Matthew's message from 2009 should be quite clear.
 
-This is the third version. In this version, Some codes are fixed
-and more description and note are added. I would like to thank David Sterba
-for his review.
+Since 2009 the facts have been changing. Basically we are encountering
+two trends
 
-The Last patch[5/5] of the patch set is for making x86 and arm default to
-LZ4-compressed for testing the LZ4 code in the linux-next.
-It was requested by Andrew Morton in the patch set v2.
+1. Power save has become more important
+2. We are seeing devices that are switchable, yet include interfaces other
+    than communication and virtual storage, foremost real storage in the
+    form of a microSD-reader
 
-Currently, A preliminary version of LZ4 de/compression tool is supported.
-However, It is expected that we will have a tool with more features
-once its format is finished.
+Whenever we cut power to a switchable device it reverts to the power-on
+state. That involves not only the communication functionality (which we
+could live with, as it cannot handle loss of power anyway) but also other
+interfaces. In addition we need to deal with resets which may or may not
+make the device revert to power-on
 
-LZ4 compression tool is available at
-http://code.google.com/p/lz4/source/checkout.
+This is a basic problem of the design. If you want reset_resume() for power
+loss to work you need to do it in kernel space for the same reason we restore
+the configuration in kernel space before we rebind the drivers and before
+we thaw user space.
 
-Thanks,
-Kyungsik
+However, this argues not for doing the switch simply in the storage driver
+but to switch in the core.
 
-
-Change log: v2
-- Clean up code
-- Enable unaligned access for ARM v6 and above with
-  CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS
-- Add lz4_decompress() for faster decompression with
-  uncompressed output size
-- Use lz4_decompress() for LZ4-compressed kernel during
-  boot-process
-- Apply -Os to decompress.o to improve decompress
-  performance during boot-up process
-Change log: v3
-- Prevent double evaluation by using an inline function
-- Add LZ4 description and note for uncompressed chunk size issue
-- Fix indentation error
-
-
-Kyungsik Lee (5):
-  decompressor: Add LZ4 decompressor module
-  lib: Add support for LZ4-compressed kernel
-  arm: Add support for LZ4-compressed kernel
-  x86: Add support for LZ4-compressed kernel
-  Kconfig: Make x86 and arm kernels default to the LZ4-compressed
-
- arch/arm/Kconfig                      |   1 +
- arch/arm/boot/compressed/.gitignore   |   1 +
- arch/arm/boot/compressed/Makefile     |   6 +-
- arch/arm/boot/compressed/decompress.c |   4 +
- arch/arm/boot/compressed/piggy.lz4.S  |   6 +
- arch/x86/Kconfig                      |   1 +
- arch/x86/boot/compressed/Makefile     |   5 +-
- arch/x86/boot/compressed/misc.c       |   4 +
- include/linux/decompress/unlz4.h      |  10 ++
- include/linux/lz4.h                   |  51 ++++++
- init/Kconfig                          |  19 +-
- lib/Kconfig                           |   7 +
- lib/Makefile                          |   2 +
- lib/decompress.c                      |   5 +
- lib/decompress_unlz4.c                | 187 +++++++++++++++++++
- lib/lz4/Makefile                      |   1 +
- lib/lz4/lz4_decompress.c              | 326 ++++++++++++++++++++++++++++++++++
- lib/lz4/lz4defs.h                     |  94 ++++++++++
- scripts/Makefile.lib                  |   5 +
- usr/Kconfig                           |   9 +
- 20 files changed, 740 insertions(+), 4 deletions(-)
- create mode 100644 arch/arm/boot/compressed/piggy.lz4.S
- create mode 100644 include/linux/decompress/unlz4.h
- create mode 100644 include/linux/lz4.h
- create mode 100644 lib/decompress_unlz4.c
- create mode 100644 lib/lz4/Makefile
- create mode 100644 lib/lz4/lz4_decompress.c
- create mode 100644 lib/lz4/lz4defs.h
-
--- 
-1.8.1.1
+	Regards
+		Oliver
 
