@@ -1,111 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753536Ab3CEFYa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 00:24:30 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43054 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750974Ab3CEFY3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 00:24:29 -0500
-Message-ID: <1362461065.3768.395.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [ 052/153] idr: idr_for_each_entry() macro
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Philipp Reisner <philipp.reisner@linbit.com>
-Cc: stable@vger.kernel.org, akpm@linux-foundation.org,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Tue, 05 Mar 2013 05:24:25 +0000
-In-Reply-To: <1607973.Qpkavuy2AM@quad>
-References: <20130304033712.754098899@decadent.org.uk>
-	 <1362373013.3768.295.camel@deadeye.wl.decadent.org.uk>
-	 <1607973.Qpkavuy2AM@quad>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-G23B/akFNo20qvCkih3q"
-X-Mailer: Evolution 3.4.4-2 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	id S1754255Ab3CEFob (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 00:44:31 -0500
+Received: from rydia.net ([69.46.88.68]:46939 "EHLO mail.rydia.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751440Ab3CEFoa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Mar 2013 00:44:30 -0500
+Date: Mon, 4 Mar 2013 21:44:34 -0800 (PST)
+From: dormando <dormando@rydia.net>
+X-X-Sender: dormando@localhost6.localdomain6
+To: Eric Dumazet <eric.dumazet@gmail.com>
+cc: Cong Wang <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: BUG: IPv4: Attempt to release TCP socket in state 1
+In-Reply-To: <1362460046.15793.111.camel@edumazet-glaptop>
+Message-ID: <alpine.DEB.2.02.1303042138330.7811@localhost6.localdomain6>
+References: <alpine.DEB.2.02.1303041547080.7811@localhost6.localdomain6>  <51356AC1.4090302@gmail.com> <1362460046.15793.111.camel@edumazet-glaptop>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---=-G23B/akFNo20qvCkih3q
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
 
-On Mon, 2013-03-04 at 22:05 +0100, Philipp Reisner wrote:
-> Sure, here it is:
-> ----------
->=20
-> From: Philipp Reisner <philipp.reisner@linbit.com>
->=20
-> commit 9749f30f1a387070e6e8351f35aeb829eacc3ab6 upstream.
->=20
-> Inspired by the list_for_each_entry() macro
->=20
-> Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-> Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
+On Mon, 4 Mar 2013, Eric Dumazet wrote:
 
-Thanks.
+> On Tue, 2013-03-05 at 11:47 +0800, Cong Wang wrote:
+> > (Cc'ing the right netdev mailing list...)
+> >
+> > On 03/05/2013 08:01 AM, dormando wrote:
+> > > Hi!
+> > >
+> > > I have a (core lockup?) with 3.7.6+ and 3.8.2 which appears to be under
+> > > ixgbe. The machine appears to still be up but network stays in a severely
+> > > hobbled state. Either lagging or not responding to the network at all.
+> > >
+> > > On a new box the hang happens within 8-24 hours of giving it production
+> > > network traffic. On an older machine (6 cores instead of 8, etc) it can
+> > > run for a week or more before hanging.
+> > >
+> > > The hang from 3.7 might be slightly different than 3.8. They seem to be
+> > > mostly the same aside from 3.8 hanging in the GRO path. Don't see anything
+> > > obvious in 3.9-rc1 that would fix it, and haven't tried 3.9-rc1.
+> > >
+> > > I've not yet figured out how to reproduce outside of production (as
+> > > always, sigh). This doesn't seem to happen with 3.6.6, but we have
+> > > different and less frequent kernel panics there.
+> > >
+>
+> Dornando, do you use any kind of special setup, external modules,
+> or netfilter ? (iptables-save output would help)
+>
+> Is it a pristine kernel, or a modified one ?
+>
 
-Ben.
+(Sigh. sorry for the misfire, thanks for fixing cc).
 
-> ---
->  include/linux/idr.h |   11 +++++++++++
->  1 file changed, 11 insertions(+)
->=20
-> diff --git a/include/linux/idr.h b/include/linux/idr.h
-> index 255491c..52a9da2 100644
-> --- a/include/linux/idr.h
-> +++ b/include/linux/idr.h
-> @@ -152,4 +152,15 @@ void ida_simple_remove(struct ida *ida, unsigned int=
- id);
-> =20
->  void __init idr_init_cache(void);
-> =20
-> +/**
-> + * idr_for_each_entry - iterate over an idr's elements of a given type
-> + * @idp:     idr handle
-> + * @entry:   the type * to use as cursor
-> + * @id:      id entry's key
-> + */
-> +#define idr_for_each_entry(idp, entry, id)                             \
-> +       for (id =3D 0, entry =3D (typeof(entry))idr_get_next((idp), &(id)=
-); \
-> +            entry !=3D NULL;                                            =
- \
-> +            ++id, entry =3D (typeof(entry))idr_get_next((idp), &(id)))
-> +
->  #endif /* __IDR_H__ */
->=20
->=20
+No 3rd party modules. There's a tiny patch for controlling initcwnd from
+userspace and another one for the extra_free_kbytes tunable that I brought
+up in another thread. We've had the initcwnd patch in for a long time
+without trouble. The extra_free_kbytes tunable isn't even being used yet,
+so all that's doing is adding a 0 somewhere.
 
---=20
-Ben Hutchings
-Always try to do things in chronological order;
-it's less confusing that way.
+Only two iptables rules loaded: global NOTRACK rules for PREROUTING/OUTPUT
+in raw.
 
---=-G23B/akFNo20qvCkih3q
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIVAwUAUTWBiee/yOyVhhEJAQpYyBAAj0OzAFbv8q7MPDPbmEoh3Mf+SnnKVLsN
-+SThgS5R8mwS9fROckn1nSxYKVpFav1W/B7Mnbhj2oIvr9cluSY6k8sETzPfMpjj
-0GUt9aWjh4y+pOnBvs1FmpBwnD6Cm77xPVqdz9fbWh5E5I+y1DsnEixJytC3MqPY
-R1UOclOevjkTCFmcp+7c3ql4ISCW0W5T6nlWVqg6wTiw0QDhtSc+dcL4t/OMdUPL
-Hv5StlM4ka1LuWsxsLps0LaxxKtVjf2Yuu/JDsNsjb4k4rJZV+0dKzntHvl6ZYmC
-SX22ycb+pxTDwwy8aHLjIwcRCi4l1peyoq0PZ9+nOmcDGE1QrBgvMWNriPJN45iU
-WhS7VLeBvKC67hWATSCJ0oudmIcgEge8TpoXviqTuYbK/GOWwFReFgYzyLBWRVbe
-lkajbxsMqy1wNW5BX3UdgN3KLUNKcB6+WsxwU+53KWWkRCcdE99aC/Za498trNnI
-rBYopagsdrsY86UEILVOuw3weaEpqeLq/H6FqOzwwxH2R5LvLEYVRCd100kM0xO2
-ySCoW1FXNQ5kKPL+ZoiOVNcIYIm+x1uHSDO+5W7SFanY+O6d2smrQAq6+33FBJ/w
-etDgiTwPGScjIwv9/ncA1t42rqCQitMauimtPIz8yAJlGd+Ve4FPqg1Gt3DtIZNH
-N/0yQCzmolU=
-=rhYu
------END PGP SIGNATURE-----
-
---=-G23B/akFNo20qvCkih3q--
+Kernel's as close to pristine as I can make it. We had the 10g patch in
+but I've dropped it.
