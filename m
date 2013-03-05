@@ -1,57 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755798Ab3CEW1l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 17:27:41 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:63510 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755197Ab3CEW1k (ORCPT
+	id S1755688Ab3CEW3u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 17:29:50 -0500
+Received: from mail-ob0-f180.google.com ([209.85.214.180]:42257 "EHLO
+	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754796Ab3CEW3t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 17:27:40 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/9] ARM: omap1: add back missing includes
-Date: Tue, 5 Mar 2013 22:27:33 +0000
-User-Agent: KMail/1.12.2 (Linux/3.8.0-8-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org, arm@kernel.org,
-        Tony Lindgren <tony@atomide.com>, linux-omap@vger.kernel.org
-References: <1362521809-22989-1-git-send-email-arnd@arndb.de> <1362521809-22989-6-git-send-email-arnd@arndb.de>
-In-Reply-To: <1362521809-22989-6-git-send-email-arnd@arndb.de>
+	Tue, 5 Mar 2013 17:29:49 -0500
+Message-ID: <513671CF.5050705@gmail.com>
+Date: Wed, 06 Mar 2013 09:29:35 +1100
+From: Ryan Mallon <rmallon@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+To: Tejun Heo <tj@kernel.org>
+CC: linux-kernel@vger.kernel.org, laijs@cn.fujitsu.com, axboe@kernel.dk,
+        jmoyer@redhat.com, zab@redhat.com,
+        kbuild test robot <fengguang.wu@intel.com>
+Subject: Re: [PATCH v2 16/31] workqueue: introduce workqueue_attrs
+References: <1362194662-2344-1-git-send-email-tj@kernel.org> <1362194662-2344-17-git-send-email-tj@kernel.org> <20130304183742.GI30413@htj.dyndns.org>
+In-Reply-To: <20130304183742.GI30413@htj.dyndns.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201303052227.33430.arnd@arndb.de>
-X-Provags-ID: V02:K0:+rc8/RmTNxExL87dk3j9xp/Aw+itM/En53BhO+RJIMr
- 9u/5DxO/cdzBf4dGqbtjLct42wRMg4TAzXIwOIx9JuRuQqAVVj
- 2N5DMr6f585VMFFaMjj4dYM7JnSs7nU5OOOSdP9wc27+RED9iR
- 8B9CYCSjv6uTrVZi5vM6xJPjuWs2vm1fuhFCF3SxlNwfJYVjqM
- snYEz4uDfu4q2sFLfS8uYIes85ih/A3dSWh+akW1tuJ+u2jCfy
- zvI9fmzMcKRKVtxj+HOF0jJwoqnilZ3YWOd34ODp8v7iygFHbV
- E69KFZmQSjnFSF3+jsnKM6/vy7gJ7gEE7ecpmnJEgCmjej8bDa
- 2mLQ7jPriRCGc5vkUTyw=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 05 March 2013, Arnd Bergmann wrote:
-> The recent reorganization of OMAP header files caused a couple of
-> files that used to be implicitly included now missing from OMAP1.
-> This adds explicit inclusions of mach/irqs.h and mach/hardware.h
-> in all files that need them for an OMAP1 allyesconfig build.
+On 05/03/13 05:37, Tejun Heo wrote:
+> Introduce struct workqueue_attrs which carries worker attributes -
+> currently the nice level and allowed cpumask along with helper
+> routines alloc_workqueue_attrs() and free_workqueue_attrs().
 > 
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> Cc: Tony Lindgren <tony@atomide.com>
-> Cc: linux-omap@vger.kernel.org
-> ---
->  arch/arm/mach-omap1/board-fsample.c  | 1 +
->  arch/arm/mach-omap1/board-h2.c       | 1 +
->  arch/arm/mach-omap1/board-perseus2.c | 1 +
->  arch/arm/mach-omap1/board-sx1.c      | 1 +
->  drivers/video/omap/lcd_ams_delta.c   | 1 +
->  drivers/video/omap/lcd_osk.c         | 1 +
->  6 files changed, 6 insertions(+)
+> Each worker_pool now carries ->attrs describing the attributes of its
+> workers.  All functions dealing with cpumask and nice level of workers
+> are updated to follow worker_pool->attrs instead of determining them
+> from other characteristics of the worker_pool, and init_workqueues()
+> is updated to set worker_pool->attrs appropriately for all standard
+> pools.
+> 
+> Note that create_worker() is updated to always perform set_user_nice()
+> and use set_cpus_allowed_ptr() combined with manual assertion of
+> PF_THREAD_BOUND instead of kthread_bind().  This simplifies handling
+> random attributes without affecting the outcome.
+> 
+> This patch doesn't introduce any behavior changes.
+> 
+> v2: Missing cpumask_var_t definition caused build failure on some
+>     archs.  linux/cpumask.h included.
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Reported-by: kbuild test robot <fengguang.wu@intel.com>
 
-I saw that Tony has already addressed the latter two changes, but
-did not see a fix for the four board files.
+> --- a/kernel/workqueue.c
+> +++ b/kernel/workqueue.c
+> @@ -148,6 +148,8 @@ struct worker_pool {
+>  	struct mutex		assoc_mutex;	/* protect POOL_DISASSOCIATED */
+>  	struct ida		worker_ida;	/* L: for worker IDs */
+>  
+> +	struct workqueue_attrs	*attrs;		/* I: worker attributes */
 
-	Arnd
+If attrs always exists, why not just embed the struct and avoid the
+need to alloc/free it?
+
+~Ryan
+
