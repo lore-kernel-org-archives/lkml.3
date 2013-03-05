@@ -1,64 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756722Ab3CEUWe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 15:22:34 -0500
-Received: from relay1.sgi.com ([192.48.179.29]:56599 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753867Ab3CEUWc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 15:22:32 -0500
-Date: Tue, 5 Mar 2013 14:22:29 -0600
-From: Robin Holt <holt@sgi.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Robin Holt <holt@sgi.com>, "H. Peter Anvin" <hpa@zytor.com>, hpa@sgi.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: Revert commit 5dcd14ecd4 - breaks EFI boot with SLES11
- elilo.efi
-Message-ID: <20130305202229.GW3438@sgi.com>
-References: <512FC697.3090608@zytor.com>
- <20130228210910.GD3438@sgi.com>
- <512FC82B.40909@zytor.com>
- <CAE9FiQU3FBwEiC86N1RC8=aMdN09EbUmRcsWP0yof7bmxBhPew@mail.gmail.com>
- <512FE3AE.4070903@zytor.com>
- <20130305081519.GA19165@sgi.com>
- <9bcd6241-37fd-4ae9-a997-2a5da1eaf997@email.android.com>
- <CAE9FiQV2Wk+yiqR8FnNM_L-p1iQFxDwopRzFWTwm6VCkyrbuoQ@mail.gmail.com>
- <20130305195229.GS3438@sgi.com>
- <CAE9FiQX_+WO4Zr7TGWdjCNo_cdk+aSAmRNzpPUW_NxirnMEBCw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAE9FiQX_+WO4Zr7TGWdjCNo_cdk+aSAmRNzpPUW_NxirnMEBCw@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1757117Ab3CEUWu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 15:22:50 -0500
+Received: from zoneX.GCU-Squad.org ([194.213.125.0]:34452 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753462Ab3CEUWt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Mar 2013 15:22:49 -0500
+Date: Tue, 5 Mar 2013 21:22:38 +0100
+From: Jean Delvare <khali@linux-fr.org>
+To: Peter Tyser <ptyser@xes-inc.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH 1/2 v2] gpio-ich: Check for pin availability at request time
+Message-ID: <20130305212238.5bf8d974@endymion.delvare>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 05, 2013 at 12:14:56PM -0800, Yinghai Lu wrote:
-> On Tue, Mar 5, 2013 at 11:52 AM, Robin Holt <holt@sgi.com> wrote:
-> > That fixed it for me.
-> >
-> > Can you help me understand why sentinel is non-zero?  It looks to me
-> > like 3.14 allocates 16kB plus strlen of the command line, zeros it,
-> > and then proceeds to fill in fields, some differing from what is in the
-> > boot_params structure.  That said, it looks like the sentinel field
-> > should remain 0.  I am still trying to understand, but if this patch
-> > makes it in, I am happy.
-> 
-> sentinel is out of setup_header.
-> it is 0x1ef. setup_header is from 0x1f1.
-> 
-> it will be 0xff from arch/x86/boot/header.S for bzImage.
-> 
->         .section ".header", "a"
->         .globl  sentinel
-> sentinel:       .byte 0xff, 0xff        /* Used to detect broken loaders */
-> 
-> elilo first copy first page, and get 0x1f1 for setup code sector number.
-> then it copies all setup code ( include setup header).
-> 
-> after that sysdeps_create_boot_params will copy first two pages to bp...
-> CopyMem(bp, param_start, 0x2000);
+Stop checking for pin availability in direction and get functions.
+These functions can be called repeatedly, so checking every time is
+bad for performance. Now that requesting GPIO pins is no longer
+optional, checking for availability at pin request time is enough.
 
-Had not gotten that far in my understanding of elilo.  Now I understand.
+Signed-off-by: Jean Delvare <khali@linux-fr.org>
+Cc: Peter Tyser <ptyser@xes-inc.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>
+Cc: Linus Walleij <linus.walleij@linaro.org>
+---
+Changes since v1:
+* Also drop the check from direction functions, as suggested by Peter.
 
-Robin
+ drivers/gpio/gpio-ich.c |   15 +++------------
+ 1 file changed, 3 insertions(+), 12 deletions(-)
+
+--- linux-3.7.orig/drivers/gpio/gpio-ich.c	2013-03-05 08:36:40.940199905 +0100
++++ linux-3.7/drivers/gpio/gpio-ich.c	2013-03-05 20:41:10.407249750 +0100
+@@ -135,9 +135,6 @@ static bool ichx_gpio_check_available(st
+ 
+ static int ichx_gpio_direction_input(struct gpio_chip *gpio, unsigned nr)
+ {
+-	if (!ichx_gpio_check_available(gpio, nr))
+-		return -ENXIO;
+-
+ 	/*
+ 	 * Try setting pin as an input and verify it worked since many pins
+ 	 * are output-only.
+@@ -151,9 +148,6 @@ static int ichx_gpio_direction_input(str
+ static int ichx_gpio_direction_output(struct gpio_chip *gpio, unsigned nr,
+ 					int val)
+ {
+-	if (!ichx_gpio_check_available(gpio, nr))
+-		return -ENXIO;
+-
+ 	/* Set GPIO output value. */
+ 	ichx_write_bit(GPIO_LVL, nr, val, 0);
+ 
+@@ -169,9 +163,6 @@ static int ichx_gpio_direction_output(st
+ 
+ static int ichx_gpio_get(struct gpio_chip *chip, unsigned nr)
+ {
+-	if (!ichx_gpio_check_available(chip, nr))
+-		return -ENXIO;
+-
+ 	return ichx_read_bit(GPIO_LVL, nr);
+ }
+ 
+@@ -180,9 +171,6 @@ static int ich6_gpio_get(struct gpio_chi
+ 	unsigned long flags;
+ 	u32 data;
+ 
+-	if (!ichx_gpio_check_available(chip, nr))
+-		return -ENXIO;
+-
+ 	/*
+ 	 * GPI 0 - 15 need to be read from the power management registers on
+ 	 * a ICH6/3100 bridge.
+@@ -207,6 +195,9 @@ static int ich6_gpio_get(struct gpio_chi
+ 
+ static int ichx_gpio_request(struct gpio_chip *chip, unsigned nr)
+ {
++	if (!ichx_gpio_check_available(chip, nr))
++		return -ENXIO;
++
+ 	/*
+ 	 * Note we assume the BIOS properly set a bridge's USE value.  Some
+ 	 * chips (eg Intel 3100) have bogus USE values though, so first see if
+
+
+-- 
+Jean Delvare
