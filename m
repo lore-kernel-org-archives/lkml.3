@@ -1,66 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756930Ab3CERIA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 12:08:00 -0500
-Received: from smtp.eu.citrix.com ([46.33.159.39]:53113 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756674Ab3CERH7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 12:07:59 -0500
-X-IronPort-AV: E=Sophos;i="4.84,787,1355097600"; 
-   d="scan'208";a="2199087"
-Message-ID: <5136266D.8050707@citrix.com>
-Date: Tue, 5 Mar 2013 18:07:57 +0100
-From: =?ISO-8859-1?Q?Roger_Pau_Monn=E9?= <roger.pau@citrix.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:17.0) Gecko/20130216 Thunderbird/17.0.3
+	id S1756649Ab3CERJl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 12:09:41 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:30846 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752622Ab3CERJk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Mar 2013 12:09:40 -0500
+Date: Tue, 5 Mar 2013 18:06:42 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Michel Lespinasse <walken@google.com>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@redhat.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        paulmck@linux.vnet.ibm.com, Rusty Russell <rusty@rustcorp.com.au>,
+        rostedt@goodmis.org, tglx@linutronix.de,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 1/2] lockdep: introduce lock_acquire_exclusive/shared
+	helper macros
+Message-ID: <20130305170642.GA5012@redhat.com>
+References: <1362449845-7492-1-git-send-email-walken@google.com> <1362449845-7492-2-git-send-email-walken@google.com>
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>
-Subject: Re: [PATCH RFC 12/12] xen-block: implement indirect descriptors
-References: <1362047335-26402-1-git-send-email-roger.pau@citrix.com> <1362047335-26402-13-git-send-email-roger.pau@citrix.com> <20130304204154.GL15386@phenom.dumpdata.com>
-In-Reply-To: <20130304204154.GL15386@phenom.dumpdata.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1362449845-7492-2-git-send-email-walken@google.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/03/13 21:41, Konrad Rzeszutek Wilk wrote:
-> On Thu, Feb 28, 2013 at 11:28:55AM +0100, Roger Pau Monne wrote:
->> Indirect descriptors introduce a new block operation
->> (BLKIF_OP_INDIRECT) that passes grant references instead of segments
->> in the request. This grant references are filled with arrays of
->> blkif_request_segment_aligned, this way we can send more segments in a
->> request.
->>
->> The proposed implementation sets the maximum number of indirect grefs
->> (frames filled with blkif_request_segment_aligned) to 256 in the
->> backend and 64 in the frontend. The value in the frontend has been
->> chosen experimentally, and the backend value has been set to a sane
->> value that allows expanding the maximum number of indirect descriptors
->> in the frontend if needed.
-> 
-> So we are still using a similar format of the form:
-> 
-> <gref, first_sec, last_sect, pad>, etc.
-> 
-> Why not utilize a layout that fits with the bio sg? That way
-> we might not even have to do the bio_alloc call and instead can
-> setup an bio (and bio-list) with the appropiate offsets/list?
-> 
-> Meaning that the format of the indirect descriptors is:
-> 
-> <gref, offset, next_index, pad>
-> 
-> We already know what the first_sec and last_sect are - they
-> are basically: sector_number +  nr_segments * (whatever the sector size is) + offset
+On 03/04, Michel Lespinasse wrote:
+>
+> In lockdep.h, the spinlock/mutex/rwsem/rwlock/lock_map acquire macros
+> have different definitions based on the value of CONFIG_PROVE_LOCKING.
+> We have separate ifdefs for each of these definitions, which seems
+> redundant.
 
-This will of course be suitable for Linux, but what about other OSes, I
-know they support the traditional first_sec, last_sect (because it's
-already implemented), but I don't know how much work will it be for them
-to adopt this. If we have to do such a change I will have to check first
-that other frontend/backend can handle this easily also, I wouldn't like
-to simplify this for Linux by making it more difficult to implement in
-other OSes...
+You know, I should not even try to comment this patch. I never really
+understood this magic, and I forgot everything I knew.
+
+But I like this patch because it makes lockdep.h more readable to me,
+so I hope it is correct ;)
+
+One question,
+
+> +#ifdef CONFIG_PROVE_LOCKING
+> + #define lock_acquire_exclusive(l, s, t, n, i)		lock_acquire(l, s, t, 0, 2, n, i)
+> + #define lock_acquire_shared(l, s, t, n, i)		lock_acquire(l, s, t, 1, 2, n, i)
+> + #define lock_acquire_shared_recursive(l, s, t, n, i)	lock_acquire(l, s, t, 2, 2, n, i)
+>  #else
+> -# define spin_acquire(l, s, t, i)		do { } while (0)
+> -# define spin_release(l, n, i)			do { } while (0)
+> + #define lock_acquire_exclusive(l, s, t, n, i)		lock_acquire(l, s, t, 0, 1, n, i)
+> + #define lock_acquire_shared(l, s, t, n, i)		lock_acquire(l, s, t, 1, 1, n, i)
+> + #define lock_acquire_shared_recursive(l, s, t, n, i)	lock_acquire(l, s, t, 2, 1, n, i)
+>  #endif
+
+Do we really need this ifdef? Can't we pass check == 2 unconditionally?
+
+__lock_acquire() does:
+
+	if (!prove_locking)
+		check = 1;
+
+anyway, and without CONFIG_PROVE_LOCKING prove_locking == 0.
+
+And every time I need to look into lockdep.h these hardcoded constants
+confuse me, and of course it is not possible to remember if this particular
+"1" means "read" or "check". Imho it would be nice to add some symbolic
+names. But this is offtopic.
+
+Oleg.
 
