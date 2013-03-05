@@ -1,50 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752856Ab3CEHDl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 02:03:41 -0500
-Received: from e36.co.us.ibm.com ([32.97.110.154]:38810 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751499Ab3CEHDk (ORCPT
+	id S1752969Ab3CEHEX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 02:04:23 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:58988 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752440Ab3CEHEW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 02:03:40 -0500
-Date: Tue, 5 Mar 2013 12:33:26 +0530
-From: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-To: Anton Arapov <anton@redhat.com>
-Cc: Oleg Nesterov <oleg@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, Josh Stone <jistone@redhat.com>,
-        Frank Eigler <fche@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: Re: [RFC PATCH v4 5/6] uretprobes: invoke return probe handlers
-Message-ID: <20130305070326.GA5684@in.ibm.com>
-Reply-To: ananth@in.ibm.com
-References: <1362407893-32505-1-git-send-email-anton@redhat.com> <1362407893-32505-6-git-send-email-anton@redhat.com>
+	Tue, 5 Mar 2013 02:04:22 -0500
+Date: Tue, 5 Mar 2013 15:03:41 +0800
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Haojian Zhuang <haojian.zhuang@gmail.com>,
+        "Jett.Zhou" <jtzhou@marvell.com>, Liam Girdwood <lgirdwood@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RESEND 1/3] regulator: core: Add enable_is_inverted flag
+ to indicate set enable_mask bits to disable
+Message-ID: <20130305070339.GE9391@opensource.wolfsonmicro.com>
+References: <1362464160.1111.1.camel@phoenix>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="4Epv4kl9IRBfg3rk"
 Content-Disposition: inline
-In-Reply-To: <1362407893-32505-6-git-send-email-anton@redhat.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13030507-7606-0000-0000-0000091615B0
+In-Reply-To: <1362464160.1111.1.camel@phoenix>
+X-Cookie: Beware of Bigfoot!
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 04, 2013 at 03:38:12PM +0100, Anton Arapov wrote:
-> 
-> diff --git a/arch/x86/include/asm/uprobes.h b/arch/x86/include/asm/uprobes.h
-> index c353555..fa9d9de 100644
-> --- a/arch/x86/include/asm/uprobes.h
-> +++ b/arch/x86/include/asm/uprobes.h
-> @@ -56,4 +56,9 @@ extern bool arch_uprobe_xol_was_trapped(struct task_struct *tsk);
->  extern int  arch_uprobe_exception_notify(struct notifier_block *self, unsigned long val, void *data);
->  extern void arch_uprobe_abort_xol(struct arch_uprobe *aup, struct pt_regs *regs);
->  extern unsigned long arch_uretprobe_hijack_return_addr(unsigned long rp_trampoline_vaddr, struct pt_regs *regs);
-> +
-> +static inline unsigned long arch_uretprobe_get_sp(struct pt_regs *regs)
-> +{
-> +	return (unsigned long)regs->sp;
-> +}
 
-You could use GET_USP() here.
+--4Epv4kl9IRBfg3rk
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+On Tue, Mar 05, 2013 at 02:16:00PM +0800, Axel Lin wrote:
+> Add enable_is_inverted flag to indicate set enable_mask bits to disable
+> when using regulator_enable_regmap and friends APIs.
+>=20
+> Signed-off-by: Axel Lin <axel.lin@ingics.com>
+> Reviewed-by: Haojian Zhuang <haojian.zhuang@gmail.com>
+> ---
+> This patch was sent on https://lkml.org/lkml/2013/2/16/14.
+> This resend is against linux-next tree (20130305).
+
+This doesn't apply against v3.9-rc1...  what are the dependencies?
+
+--4Epv4kl9IRBfg3rk
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRNZi2AAoJELSic+t+oim9qmMP/Ra/A/IseMMFEmdvv7Sx/ScR
+0OaERenrXHVkEhxbRGRDtfJPqjFMUxrHhU6YF3t/nyFgCbe19l6OWXKOt7kYTEpo
+O9KU+m3ml0erQ1FKdhugi/dVC9pT5WDEFprJKsxuy1XDlJb0eahHMpYhNJwBnXMR
+C4QD7a7WvkCrT7FOzENL+eUAEC/YgCe9ZRkMCTVFAntNhxaoyuaR7CBvpG20WM7G
+7fjSmHkJ1H5NAIJK71rJdjhCwCIrv3GLhENR9aH0o5eTYX3777uSVETftRPdrS/I
+6QLHrUKePZJWR+Ze/A14HMzlc/BWyMCAxOTvFiKKOJXj4k4VC692nbf0gJpZ4D4z
+SFeNSI5JWSrE417iRE3NGOWBEM8nmzwdpgVJw8zRMkGfNZjIpxZiOXXmDjXsV0Ce
+E8l+zfAf81vRL4q5lXbPgFC3NWaBDCuQ/Du3P0iHNvWwohpK3Mn45pDWffAJznZm
+OvKP7MAvR+Gh4IM8Mvn1kg53N1isW3XxWRKjAaUE8XOb+94QuNVMcCULV0oqt55Z
+5wp3hlo91h21iX1pGXASwsc/oi8S9NOv+h0TJeloNztkGt7zIsqyg245XMpU+BDJ
+OOk6XbfMGTwkKQL5uFtityXh8TVIHiJCUw8T0cBtj+PMBlNiDiGWBE2Qysm/JIX+
+Z7yVAJXPrRut4Yo0Y9jZ
+=vXsT
+-----END PGP SIGNATURE-----
+
+--4Epv4kl9IRBfg3rk--
