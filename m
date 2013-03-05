@@ -1,58 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757931Ab3CETHK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 14:07:10 -0500
-Received: from mail-we0-f181.google.com ([74.125.82.181]:65527 "EHLO
-	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756385Ab3CETHI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 14:07:08 -0500
+	id S1759004Ab3CETHx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 14:07:53 -0500
+Received: from fn.samba.org ([216.83.154.106]:54567 "EHLO mail.samba.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754911Ab3CETHv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Mar 2013 14:07:51 -0500
+Message-ID: <51364285.4040406@samba.org>
+Date: Tue, 05 Mar 2013 14:07:49 -0500
+From: Simo <simo@samba.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130219 Thunderbird/17.0.3
 MIME-Version: 1.0
-In-Reply-To: <878v63mwm3.fsf_-_@xmission.com>
-References: <CAGXu5jK7x+gFKgCN5=ZF+kSc4xSNbGtSERHCoOnCEgiJ1_wNGg@mail.gmail.com>
- <20130303005700.GA32213@austin.hallyn.com> <874ngtxgt5.fsf@xmission.com>
- <CAGXu5j+bwUx6r++ttvYg4yJrUUHxoQ86tQ0JzEBoQQU6KAh9ww@mail.gmail.com>
- <874ngsrvrh.fsf@xmission.com> <CAGXu5jJiO=BmjVbpVJhxHbafn5T_SQbe5g-RLxRbmknNnQMyfQ@mail.gmail.com>
- <87k3pnmwpk.fsf_-_@xmission.com> <878v63mwm3.fsf_-_@xmission.com>
-From: Kay Sievers <kay@vrfy.org>
-Date: Tue, 5 Mar 2013 20:06:45 +0100
-Message-ID: <CAPXgP11AB7=2oeXtxb0so4a8hms7-_UWJDVE=6kndU062tGycQ@mail.gmail.com>
-Subject: Re: [PATCH 2/2] fs: Limit sys_mount to only request filesystem modules.
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Kees Cook <keescook@google.com>, "Serge E. Hallyn" <serge@hallyn.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Brad Spengler <spender@grsecurity.net>,
-        Al Viro <viro@zeniv.linux.org.uk>, PaX Team <pageexec@freemail.hu>,
-        linux-fsdevel@vger.kernel.org,
-        Linux Containers <containers@lists.linux-foundation.org>,
-        Dave Jones <davej@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+To: "J. Bruce Fields" <bfields@fieldses.org>
+CC: Andy Lutomirski <luto@amacapital.net>,
+        Pavel Shilovsky <piastry@etersoft.ru>, linux-kernel@vger.kernel.org,
+        linux-cifs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-nfs@vger.kernel.org, wine-devel@winehq.org
+Subject: Re: [PATCH v3 0/7] Add O_DENY* support for VFS and CIFS/NFS
+References: <1362065133-9490-1-git-send-email-piastry@etersoft.ru> <512FD1D5.3010106@mit.edu> <20130304211923.GI20389@fieldses.org> <5135250A.30604@samba.org> <20130305181306.GA15816@fieldses.org>
+In-Reply-To: <20130305181306.GA15816@fieldses.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 4, 2013 at 8:51 AM, Eric W. Biederman <ebiederm@xmission.com> wrote:
+On 03/05/2013 01:13 PM, J. Bruce Fields wrote:
+> On Mon, Mar 04, 2013 at 05:49:46PM -0500, Simo wrote:
+>> On 03/04/2013 04:19 PM, J. Bruce Fields wrote:
+>>> On Thu, Feb 28, 2013 at 01:53:25PM -0800, Andy Lutomirski wrote:
+>>>> [possible resend -- sorry]
+>>>>
+>>>> On 02/28/2013 07:25 AM, Pavel Shilovsky wrote:
+>>>>> This patchset adds support of O_DENY* flags for Linux fs layer. These flags can be used by any application that needs share reservations to organize a file access. VFS already has some sort of this capability - now it's done through flock/LOCK_MAND mechanis, but that approach is non-atomic. This patchset build new capabilities on top of the existing one but doesn't bring any changes into the flock call semantic.
+>>>>>
+>>>>> These flags can be used by NFS (built-in-kernel) and CIFS (Samba) servers and Wine applications through VFS (for local filesystems) or CIFS/NFS modules. This will help when e.g. Samba and NFS server share the same directory for Windows and Linux users or Wine applications use Samba/NFS share to access the same data from different clients.
+>>>>>
+>>>>> According to the previous discussions the most problematic question is how to prevent situations like DoS attacks where e.g /lib/liba.so file can be open with DENYREAD, or smth like this. That's why one extra flag O_DENYMAND is added. It indicates to underlying layer that an application want to use O_DENY* flags semantic. It allows us not affect native Linux applications (that don't use O_DENYMAND flag) - so, these flags (and the semantic of open syscall that they bring) are used only for those applications that really want it proccessed that way.
+>>>>>
+>>>>> So, we have four new flags:
+>>>>> O_DENYREAD - to prevent other opens with read access,
+>>>>> O_DENYWRITE - to prevent other opens with write access,
+>>>>> O_DENYDELETE - to prevent delete operations (this flag is not implemented in VFS and NFS part and only suitable for CIFS module),
+>>>>> O_DENYMAND - to switch on/off three flags above.
+>>>> O_DENYMAND doesn't deny anything.  Would a name like O_RESPECT_DENY be
+>>>> better?
+>>>>
+>>>> Other than that, this seems like a sensible mechanism.
+>>> I'm a little more worried: these are mandatory locks, and applications
+>>> that use them are used to the locks being enforced correctly.  Are we
+>>> sure that an application that opens a file O_DENYWRITE won't crash if it
+>>> sees the file data change while it holds the open?
+>> The redirector may simply assume it has full control of that part of
+>> the file and not read nor send data until the lock is released too,
+>> so you get conflicting views of the file contents between different
+>> clients if you let a mandatory lock not be mandatory.
+>>
+>>> In general the idea of making a mandatory lock opt-in makes me nervous.
+>>> I'd prefer something like a mount option, so that we know that everyone
+>>> on that one filesystem is playing by the same rules, but we can still
+>>> mount filesystems like / without the option.
+>> +1
+>>
+>>> But I'll admit I'm definitely not an expert on Windows locking and may
+>>> be missing something about how these locks are meant to work.
+>> Mandatory locks really are mandatory in Windows.
+>> That may not be nice to a Unix system but what can you do ?
+> I wonder if we could repurpose the existing -omand mount option?
 >
-> Modify the request_module to prefix the file system type with "fs-"
-> and add aliases to all of the filesystems that can be built as modules
-> to match.
->
-> A common practice is to build all of the kernel code and leave code
-> that is not commonly needed as modules, with the result that many
-> users are exposed to any bug anywhere in the kernel.
->
-> Looking for filesystems with a fs- prefix limits the pool of possible
-> modules that can be loaded by mount to just filesystems trivially
-> making things safer with no real cost.
+> That would be a problem for anyone that wants to allow mandatory fcntl
+> locks without allowing share locks.  I doubt anyone sane actually uses
+> mandatory fcntl locks, but still I suppose it would probably be better
+> to play it safe and use a new mount option.
 
-'-' is a commonly used part of a module name, and does not mix well
-with ramdom user provided names.
+Maybe we should have a -o win_semantics option :-)
 
-We usually use ':' as the prefix separator for modaliases, when
-user-supplied strings are prefixed with the subsystem.
+/me runs
 
-I think it would be nicer to change that, and I'm sure some creative
-guy calls the next filesystem of the month fs-$something :)
-
-Kay
+Simo.
