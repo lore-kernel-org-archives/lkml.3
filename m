@@ -1,79 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932931Ab3CEBfn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 20:35:43 -0500
-Received: from mga02.intel.com ([134.134.136.20]:5388 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932114Ab3CEBfm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 20:35:42 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,784,1355126400"; 
-   d="asc'?scan'208";a="293607590"
-Message-ID: <1362447339.2183.5.camel@jtkirshe-mobl>
-Subject: Re: [PATCH  RESEND 3/3] e1000e: fix accessing to suspended device
-From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Reply-To: jeffrey.t.kirsher@intel.com
-To: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: linux-kernel@vger.kernel.org, e1000-devel@lists.sourceforge.net,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Bruce Allan <bruce.w.allan@intel.com>
-Date: Mon, 04 Mar 2013 17:35:39 -0800
-In-Reply-To: <20130225051911.12689.11167.stgit@zurg>
-References: <20130225051010.12689.28611.stgit@zurg>
-	 <20130225051911.12689.11167.stgit@zurg>
-Organization: Intel Corporation
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-2tFXg4VWXzJr0mkRc+wC"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
+	id S932942Ab3CEBhO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 20:37:14 -0500
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:39198 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932694Ab3CEBhK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Mar 2013 20:37:10 -0500
+MIME-Version: 1.0
+In-Reply-To: <20130303174056.GA30176@redhat.com>
+References: <512CC509.1050000@linux.vnet.ibm.com>
+	<CACvQF50UgiqPpDk3HCmV86zKSf6tPjqr0bZowfPEOJs0g0r0MQ@mail.gmail.com>
+	<512D0D67.9010609@linux.vnet.ibm.com>
+	<CACvQF53ph2ixdM-otzetjM5cR+2kcZj6sckOp3TnzzA_x-EZ8w@mail.gmail.com>
+	<512E7879.20109@linux.vnet.ibm.com>
+	<5130E8E2.50206@cn.fujitsu.com>
+	<20130301182854.GA3631@redhat.com>
+	<CANN689HEW=b5S93J27p+rBX-5m7jkW4FER=eHDCp7OgMaTWLPw@mail.gmail.com>
+	<5131FB4C.7070408@cn.fujitsu.com>
+	<20130302172003.GC29769@redhat.com>
+	<20130303174056.GA30176@redhat.com>
+Date: Mon, 4 Mar 2013 17:37:09 -0800
+Message-ID: <CANN689F6RHCtDAiBGu=n60UKUEE5Ld50gkwS3rNdE2GN2+v3nA@mail.gmail.com>
+Subject: Re: [PATCH V2] lglock: add read-preference local-global rwlock
+From: Michel Lespinasse <walken@google.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Lai Jiangshan <eag0628@gmail.com>, linux-doc@vger.kernel.org,
+        peterz@infradead.org, fweisbec@gmail.com, linux-kernel@vger.kernel.org,
+        namhyung@kernel.org, mingo@kernel.org, linux-arch@vger.kernel.org,
+        linux@arm.linux.org.uk, xiaoguangrong@linux.vnet.ibm.com,
+        wangyun@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com,
+        nikunj@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
+        rusty@rustcorp.com.au, rostedt@goodmis.org, rjw@sisk.pl,
+        vincent.guittot@linaro.org, tglx@linutronix.de,
+        linux-arm-kernel@lists.infradead.org, netdev@vger.kernel.org,
+        sbw@mit.edu, tj@kernel.org, akpm@linux-foundation.org,
+        linuxppc-dev@lists.ozlabs.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, Mar 3, 2013 at 9:40 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+>> However, I still think that FALLBACK_BASE only adds the unnecessary
+>> complications. But even if I am right this is subjective of course, please
+>> feel free to ignore.
 
---=-2tFXg4VWXzJr0mkRc+wC
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Would it help if I sent out that version (without FALLBACK_BASE) as a
+formal proposal ?
 
-On Mon, 2013-02-25 at 09:19 +0400, Konstantin Khlebnikov wrote:
-> This patch fixes some annoying messages like 'Error reading PHY
-> register' and
-> 'Hardware Erorr' and saves several seconds on reboot.
->=20
-> Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
-> Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> Cc: e1000-devel@lists.sourceforge.net
-> Cc: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-> Cc: Bruce Allan <bruce.w.allan@intel.com>
-> ---
->  drivers/net/ethernet/intel/e1000e/ethtool.c |   13 +++++++++++++
->  drivers/net/ethernet/intel/e1000e/netdev.c  |    2 ++
->  2 files changed, 15 insertions(+)=20
+> Hmm. But then I do not understand the lglock annotations. Obviously,
+> rwlock_acquire_read() in lg_local_lock() can't even detect the simplest
+> deadlock, say, lg_local_lock(LOCK) + lg_local_lock(LOCK). Not to mention
+> spin_lock(X) + lg_local_lock(Y) vs lg_local_lock(Y) + spin_lock(X).
+>
+> OK, I understand that it is not easy to make these annotations correct...
 
-I have added this patch as well to my e1000e queue of patches.
+I am going to send out a proposal to fix the existing lglock
+annotations and detect the two cases you noticed. It's actually not
+that hard :)
 
---=-2tFXg4VWXzJr0mkRc+wC
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.13 (GNU/Linux)
-
-iQIcBAABCgAGBQJRNUvrAAoJEOVv75VaS+3OMLgQAI8K0PLZX4Peter4DNGnXQoD
-2VWiuhtq0zbgAZ/v0MnsP+c6nUaSOoNdxdMWhLlkldXJFrI+BLOxC3umha+2zJUU
-CXltHBrJ2iXEpE+Rwv6U3bMuDPN0mBAgiKQcetUqKFroIMPmoAKeU5GMj+0SOlau
-Ll74FiCdwXaB7YVbXmyJwOtSkPlT1TXVikozLzDTGdnkKeARsOv3DYtjqpshkD9c
-nbzrItKExfLp/mme16Eh/hZu+X89tzF/7GBIr9+foE5d1cegTOPeXce7qPXEGAsd
-C4tcUpdNLao+wiyxKVMRzqolbv/mt5jNFnGrjIxFIPXxgOSF647wIGXSIp5OJwvr
-Ye+u4S2AOlDvXJhuPDdDHC8qS3Em+6TxnbjB1SDByi42JBZMNZKS6mFHfQuN8kwC
-1G+KM3lvrgPr+WtgGz2xjic2Opd5+U9Erkhvdr7wvVRK/s0m8uMXV1jMOGH+VDV/
-dZSjwl/9gtLts8ycZ4b5y57KYsZ8o3YK1BTT+rEP8x+8x7PjuP6usWdTx1BWHtMd
-dQiteisO7JybXxFqNFreddISnqIZ4bE6wYIXvUhrl+ORyOcXFerbeAlv2iQ0k7v6
-HIIjAz4U2ffNGWZhU0+1YE/M+qpXJGuK1SHRC3fRrnKz27yVZ5jZnNR88qEu5xRs
-3a4e+UsXCdcs++d18F3M
-=zPEt
------END PGP SIGNATURE-----
-
---=-2tFXg4VWXzJr0mkRc+wC--
-
+-- 
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
