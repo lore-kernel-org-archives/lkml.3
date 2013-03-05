@@ -1,77 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753509Ab3CEX0K (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 18:26:10 -0500
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:51371 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750931Ab3CEX0I (ORCPT
+	id S1753616Ab3CEX2g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 18:28:36 -0500
+Received: from mail-gh0-f170.google.com ([209.85.160.170]:35149 "EHLO
+	mail-gh0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752904Ab3CEX2e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 18:26:08 -0500
-X-Sasl-enc: ZvKEoZKOItpDmfO42pDO7kYAnzmjKRYnLhBSXAbGl5XM 1362525966
-Date: Tue, 5 Mar 2013 20:26:03 -0300
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: Mandeep Singh Baines <msb@chromium.org>
-Cc: Oleg Nesterov <oleg@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-acpi@vger.kernel.org, ibm-acpi@hmh.eng.br,
-        ibm-acpi-devel@lists.sourceforge.net,
-        platform-driver-x86@vger.kernel.org, Aaron Lu <aaron.lu@intel.com>,
-        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] thinkpad-acpi: fix potential suspend blocking issue
-Message-ID: <20130305232603.GA16045@khazad-dum.debian.net>
-References: <201303042055.38040.maciej.rutecki@gmail.com>
- <1362504883-9180-1-git-send-email-msb@chromium.org>
- <20130305174838.GA7276@redhat.com>
- <CACBanvqHRDsOQiMsQMw5_QDt1wFrb8_DRoiASSvqeA6XdFrwZQ@mail.gmail.com>
- <20130305180542.GA12738@redhat.com>
- <CACBanvr7XvXbFjphpRwKHHJKzVuA-s6sF-qkPiizBV3+uqzpJw@mail.gmail.com>
+	Tue, 5 Mar 2013 18:28:34 -0500
+Date: Tue, 5 Mar 2013 15:28:28 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Ryan Mallon <rmallon@gmail.com>
+Cc: linux-kernel@vger.kernel.org, laijs@cn.fujitsu.com, axboe@kernel.dk,
+        jmoyer@redhat.com, zab@redhat.com,
+        kbuild test robot <fengguang.wu@intel.com>
+Subject: Re: [PATCH v2 16/31] workqueue: introduce workqueue_attrs
+Message-ID: <20130305232828.GD1227@htj.dyndns.org>
+References: <1362194662-2344-1-git-send-email-tj@kernel.org>
+ <1362194662-2344-17-git-send-email-tj@kernel.org>
+ <20130304183742.GI30413@htj.dyndns.org>
+ <513671CF.5050705@gmail.com>
+ <20130305223327.GA1227@htj.dyndns.org>
+ <20130305223434.GB1227@htj.dyndns.org>
+ <51367470.5040909@gmail.com>
+ <20130305224444.GC1227@htj.dyndns.org>
+ <51367DB4.9080602@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CACBanvr7XvXbFjphpRwKHHJKzVuA-s6sF-qkPiizBV3+uqzpJw@mail.gmail.com>
-X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
+In-Reply-To: <51367DB4.9080602@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 05 Mar 2013, Mandeep Singh Baines wrote:
-> This mutex seems wrong. Its held the entire time the kthread is
-> running. I think its used to synchronize on the exit of the kthread. A
-> completion would more appropriate in that case.
+On Wed, Mar 06, 2013 at 10:20:20AM +1100, Ryan Mallon wrote:
+> I don't get why you would need to separate init/alloc. Nothing in the
+> patch series appears to have optional attrs (e.g. a case where attrs
 
->From the top of the driver source:
+Because workqueue users would want to use workqueue_attrs to specify
+attributes and thanks to cpumask_var_t we need alloc interface anyway
+and by just allocating the whole thing dynamically we can allow
+workqueue_attrs to grow beyond size which is appropriate to allocate
+on stack.  Plus, its users are less likely to make mistakes with plain
+alloc/free interface than init interface which takes pointer to an
+existing object but may fail, which is rather unusual.
 
-/* Acquired while the poller kthread is running, use to sync start/stop */
-static struct mutex hotkey_thread_mutex;
-
-/*
- * Acquire mutex to write poller control variables as an
- * atomic block.
- *
- * Increment hotkey_config_change when changing them if you
- * want the kthread to forget old state.
- *
- * See HOTKEY_CONFIG_CRITICAL_START/HOTKEY_CONFIG_CRITICAL_END
- */
-static struct mutex hotkey_thread_data_mutex;
-static unsigned int hotkey_config_change;
-
-#define HOTKEY_CONFIG_CRITICAL_START \
-        do { \
-                mutex_lock(&hotkey_thread_data_mutex); \
-                hotkey_config_change++; \
-        } while (0);
-#define HOTKEY_CONFIG_CRITICAL_END \
-        mutex_unlock(&hotkey_thread_data_mutex);
-
-
-This can likely be modernized a lot.  This code is from 2008, I think it
-first shipped in 2.6.25-rc1.
+Whether the struct itself is dynamic or not just doesn't matter and
+it's just easier to have plain alloc/free if there has to be an init
+step which may fail.
 
 -- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+tejun
