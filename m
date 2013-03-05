@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756690Ab3CEOWg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 09:22:36 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:53205 "EHLO
+	id S1756610Ab3CEOWe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 09:22:34 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:53204 "EHLO
 	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754580Ab3CEOWc (ORCPT
+	with ESMTP id S1752677Ab3CEOWb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 09:22:32 -0500
+	Tue, 5 Mar 2013 09:22:31 -0500
 From: Kishon Vijay Abraham I <kishon@ti.com>
 To: <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>, <rob@landley.net>,
         <balbi@ti.com>, <gregkh@linuxfoundation.org>, <kishon@ti.com>,
@@ -15,47 +15,58 @@ To: <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>, <rob@landley.net>,
         <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
         <linux-omap@vger.kernel.org>
-Subject: [PATCH 0/4] usb: added palmas-usb driver and a few misc fixes
-Date: Tue, 5 Mar 2013 19:51:56 +0530
-Message-ID: <1362493320-13913-1-git-send-email-kishon@ti.com>
+Subject: [PATCH 1/4] usb: dwc3: dwc3-omap: set dma_mask for dwc3 inorder for host mode to work
+Date: Tue, 5 Mar 2013 19:51:57 +0530
+Message-ID: <1362493320-13913-2-git-send-email-kishon@ti.com>
 X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1362493320-13913-1-git-send-email-kishon@ti.com>
+References: <1362493320-13913-1-git-send-email-kishon@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added palmas-usb driver which is mainly used as comparator driver to
-detect vbus/id events when a USB cable is connected and passes on the
-event information to omap glue (dwc3-omap.c)
+While creating the child devices, *of_platform_populate* sets only
+coherent_dma_mask but USBHCD sets *uses_dma* (determines whether the
+controller is DMA'able) based on dma_mask. So If we haven't explicitly set
+dma_mask, the HCD thinks the controller is not DMA'able and the
+controller will fail. So explicity set dma_mask for dwc3 after
+*of_platform_populate*.
 
-The other fixes include setting dma_mask for dwc3 device since device
-tree doesn't fill dma_mask, returning EPROBE_DEFER if probe has not yet
-called and replace *_* with *-* in property names in musb glue since
-that is the usual convention followed.
+Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+---
+ drivers/usb/dwc3/dwc3-omap.c |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
-Graeme Gregory (1):
-  USB: Palmas OTG Transceiver Driver
-
-Kishon Vijay Abraham I (3):
-  usb: dwc3: dwc3-omap: set dma_mask for dwc3 inorder for host mode to
-    work
-  usb: dwc3: dwc3-omap: return -EPROBE_DEFER if probe has not yet
-    executed
-  usb: musb: omap2430: replace *_* with *-* in property names
-
- Documentation/devicetree/bindings/usb/omap-usb.txt |   12 +-
- .../devicetree/bindings/usb/twlxxxx-usb.txt        |   15 +
- drivers/usb/dwc3/dwc3-omap.c                       |   17 +-
- drivers/usb/musb/omap2430.c                        |    6 +-
- drivers/usb/otg/Kconfig                            |    6 +
- drivers/usb/otg/Makefile                           |    1 +
- drivers/usb/otg/palmas-usb.c                       |  399 ++++++++++++++++++++
- include/linux/mfd/palmas.h                         |    7 +-
- include/linux/usb/dwc3-omap.h                      |    6 +-
- 9 files changed, 454 insertions(+), 15 deletions(-)
- create mode 100644 drivers/usb/otg/palmas-usb.c
-
+diff --git a/drivers/usb/dwc3/dwc3-omap.c b/drivers/usb/dwc3/dwc3-omap.c
+index 35b9673..19c6e72 100644
+--- a/drivers/usb/dwc3/dwc3-omap.c
++++ b/drivers/usb/dwc3/dwc3-omap.c
+@@ -277,6 +277,14 @@ static void dwc3_omap_disable_irqs(struct dwc3_omap *omap)
+ 	dwc3_omap_writel(omap->base, USBOTGSS_IRQENABLE_SET_0, 0x00);
+ }
+ 
++static u64 dwc3_omap_dma_mask = DMA_BIT_MASK(32);
++
++static int dwc3_omap_set_dmamask(struct device *dev, void *c)
++{
++	dev->dma_mask = &dwc3_omap_dma_mask;
++	return 0;
++}
++
+ static int dwc3_omap_probe(struct platform_device *pdev)
+ {
+ 	struct device_node	*node = pdev->dev.of_node;
+@@ -381,6 +389,8 @@ static int dwc3_omap_probe(struct platform_device *pdev)
+ 		return ret;
+ 	}
+ 
++	device_for_each_child(&pdev->dev, NULL, dwc3_omap_set_dmamask);
++
+ 	return 0;
+ }
+ 
 -- 
 1.7.10.4
 
