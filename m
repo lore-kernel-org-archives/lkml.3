@@ -1,65 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758872Ab3CESeM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 13:34:12 -0500
-Received: from mail-ea0-f169.google.com ([209.85.215.169]:39224 "EHLO
-	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755343Ab3CESeL (ORCPT
+	id S1758940Ab3CESiQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 13:38:16 -0500
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:62301 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756603Ab3CESiO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 13:34:11 -0500
-Message-ID: <51363A9E.6090507@gmail.com>
-Date: Tue, 05 Mar 2013 19:34:06 +0100
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
-MIME-Version: 1.0
-To: Paul Bolle <pebolle@tiscali.nl>
-CC: Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: dove: Fix typo "COMMON_CLK_DOVE"
-References: <1362476098.16460.65.camel@x61.thuisdomein>
-In-Reply-To: <1362476098.16460.65.camel@x61.thuisdomein>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	Tue, 5 Mar 2013 13:38:14 -0500
+From: "Raphael S.Carvalho" <raphael.scarv@gmail.com>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Jarkko Sakkinen <jarkko.sakkinen@intel.com>
+Cc: linux-kernel@vger.kernel.org,
+        "Raphael S.Carvalho" <raphael.scarv@gmail.com>
+Subject: [PATCH 1/1] arch/x86/smpboot.c: Fix GCC Warning (unused variable)!
+Date: Tue,  5 Mar 2013 15:37:05 -0300
+Message-Id: <1362508625-7803-1-git-send-email-raphael.scarv@gmail.com>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/05/2013 10:34 AM, Paul Bolle wrote:
-> Commit 5b03df9ace680d7cdd34a69dfd85ca5f74159d18 ("ARM: dove: switch to
-> DT clock providers") added "select COMMON_CLK_DOVE" to Marvell Dove's
-> Kconfig entry. But there's no Kconfig symbol COMMON_CLK_DOVE, which
-> makes this select statement a nop. Since the Marvell Dove code includes
-> <linux/clk-provider.h>  we can assume that this entry needs to select
-> COMMON_CLK instead.
->
-> Signed-off-by: Paul Bolle<pebolle@tiscali.nl>
-> ---
-> Untested.
->
->   arch/arm/Kconfig | 2 +-
->   1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-> index 5b71469..31acce7 100644
-> --- a/arch/arm/Kconfig
-> +++ b/arch/arm/Kconfig
-> @@ -556,7 +556,7 @@ config ARCH_IXP4XX
->   config ARCH_DOVE
->   	bool "Marvell Dove"
->   	select ARCH_REQUIRE_GPIOLIB
-> -	select COMMON_CLK_DOVE
-> +	select COMMON_CLK
->   	select CPU_V7
->   	select GENERIC_CLOCKEVENTS
->   	select MIGHT_HAVE_PCI
+GCC complained about the unused variable c, thus I'm sending
+this patch in order to calm it down.
+I compiled the file and everything seems be ok!
 
-Paul,
+Signed-off-by: Raphael S.Carvalho <raphael.scarv@gmail.com>
+---
+ arch/x86/kernel/smpboot.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-thanks for the patch but I guess COMMON_CLK_DOVE is a left-over
-from early DT experiments with Dove. It should just be removed
-from arm/Kconfig.
+diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+index a6ceaed..77a5616 100644
+--- a/arch/x86/kernel/smpboot.c
++++ b/arch/x86/kernel/smpboot.c
+@@ -1367,7 +1367,7 @@ static inline void mwait_play_dead(void)
+ 	unsigned int highest_subcstate = 0;
+ 	int i;
+ 	void *mwait_ptr;
+-	struct cpuinfo_x86 *c = __this_cpu_ptr(&cpu_info);
++	__this_cpu_ptr(&cpu_info);
+ 
+ 	if (!this_cpu_has(X86_FEATURE_MWAIT))
+ 		return;
+-- 
+1.7.2.5
 
-Thanks for pointing it out, and it would be great to update
-your patch accordingly.
-
-Sebastian
