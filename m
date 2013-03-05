@@ -1,46 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756566Ab3CEOVT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 09:21:19 -0500
-Received: from exprod6og119.obsmtp.com ([64.18.1.234]:57367 "EHLO
-	exprod6og119.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756504Ab3CEOVQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 09:21:16 -0500
-X-Greylist: delayed 591 seconds by postgrey-1.27 at vger.kernel.org; Tue, 05 Mar 2013 09:21:11 EST
-Message-ID: <5135FF50.4020001@verisign.com>
-Date: Tue, 05 Mar 2013 09:21:04 -0500
-From: David C Niemi <dniemi@verisign.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+	id S1756790Ab3CEOWh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 09:22:37 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:39630 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755155Ab3CEOWc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Mar 2013 09:22:32 -0500
+From: Kishon Vijay Abraham I <kishon@ti.com>
+To: <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>, <rob@landley.net>,
+        <balbi@ti.com>, <gregkh@linuxfoundation.org>, <kishon@ti.com>,
+        <s-guiriec@ti.com>, <gg@slimlogic.co.uk>, <sameo@linux.intel.com>,
+        <broonie@opensource.wolfsonmicro.com>, <ldewangan@nvidia.com>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>
+Subject: [PATCH 4/4] usb: musb: omap2430: replace *_* with *-* in property names
+Date: Tue, 5 Mar 2013 19:52:00 +0530
+Message-ID: <1362493320-13913-5-git-send-email-kishon@ti.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1362493320-13913-1-git-send-email-kishon@ti.com>
+References: <1362493320-13913-1-git-send-email-kishon@ti.com>
 MIME-Version: 1.0
-To: Stratos Karafotis <stratosk@semaphore.gr>
-CC: Viresh Kumar <viresh.kumar@linaro.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH linux-next] cpufreq: conservative: Fix sampling_down_factor
- functionality
-References: <51351CC3.4010301@semaphore.gr> <CAOh2x=m0KLbjGKvLvTH7-yQb4SU5-v=-r4Ba3LSZz=NvfvO6mg@mail.gmail.com> <51358117.9060902@semaphore.gr> <5135FD01.8060306@verisign.com>
-In-Reply-To: <5135FD01.8060306@verisign.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 05 Mar 2013 14:21:03.0725 (UTC) FILETIME=[AB2D11D0:01CE19AC]
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+No functional change. Replace *_* with *-* in property names of otg to
+follow the general convention.
 
-I should clarify -- I wrote the sampling_down_factor in the *ondemand* governor.  I chose the name of the parameter based on the vaguely similar parameter in the conservative governor, but the documentation that was referenced (about it only applying at top speed and the comment about skipping evaluation opportunities when it is active) was written by me in reference to the ondemand governor.  It could be that someone backported some of the ondemand sampling_down_factor's behavior to the conservative governor.
+Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+---
+ Documentation/devicetree/bindings/usb/omap-usb.txt |   12 ++++++------
+ drivers/usb/musb/omap2430.c                        |    6 +++---
+ 2 files changed, 9 insertions(+), 9 deletions(-)
 
-I'd like to ask -- what is the intended use of the conservative governor these days as differentiated from the ondemand governor?  At one time it seemed more oriented towards power savings, but the ondemand governor had picked up most or all of its power-saving features.
-
-DCN
-
-On 03/05/13 09:11, David C Niemi wrote:
-> I am the author of sampling_down_factor.  I only intended it to have an effect if you are already attempting to achieve maximum performance (e.g. at the top available clock speed for the current infrastructure).  This is special because there is no possibility of going any faster so the only speed change you can think about is slowing down, which is typically much less urgent than speeding up.  So I did not see sampling_down_factor as being relevant at intermediate frequencies, though perhaps there could be something interesting but opposite to do at the minimum-power state too.
->
-> In the applications this was originally intended for you were likely to either be idle and trying to save power (but be ready to ramp up quickly), or at max speed, and rarely in between.  sampling_down_factor made a dramatic improvement in performance, to the point there was no longer any reason to use the "performance" governor.
->
-> I suspect the rationale for sampling_down_factor would apply to non-frequency-based governor/driver combos as well, like the p-state driver, though in that case you are not necessarily changing a literal clock speed and you also have additional opportunities like turbo/boost states to consider.  But in some applications, you may not want to use boost states that cannot be sustained when all cores are active, so there is more user/operator intent that must be communicated to the governor.
->
-> DCN
+diff --git a/Documentation/devicetree/bindings/usb/omap-usb.txt b/Documentation/devicetree/bindings/usb/omap-usb.txt
+index 1b9f55f..662f0f1 100644
+--- a/Documentation/devicetree/bindings/usb/omap-usb.txt
++++ b/Documentation/devicetree/bindings/usb/omap-usb.txt
+@@ -8,10 +8,10 @@ OMAP MUSB GLUE
+    and disconnect.
+  - multipoint : Should be "1" indicating the musb controller supports
+    multipoint. This is a MUSB configuration-specific setting.
+- - num_eps : Specifies the number of endpoints. This is also a
++ - num-eps : Specifies the number of endpoints. This is also a
+    MUSB configuration-specific setting. Should be set to "16"
+- - ram_bits : Specifies the ram address size. Should be set to "12"
+- - interface_type : This is a board specific setting to describe the type of
++ - ram-bits : Specifies the ram address size. Should be set to "12"
++ - interface-type : This is a board specific setting to describe the type of
+    interface between the controller and the phy. It should be "0" or "1"
+    specifying ULPI and UTMI respectively.
+  - mode : Should be "3" to represent OTG. "1" signifies HOST and "2"
+@@ -29,14 +29,14 @@ usb_otg_hs: usb_otg_hs@4a0ab000 {
+ 	ti,hwmods = "usb_otg_hs";
+ 	ti,has-mailbox;
+ 	multipoint = <1>;
+-	num_eps = <16>;
+-	ram_bits = <12>;
++	num-eps = <16>;
++	ram-bits = <12>;
+ 	ctrl-module = <&omap_control_usb>;
+ };
+ 
+ Board specific device node entry
+ &usb_otg_hs {
+-	interface_type = <1>;
++	interface-type = <1>;
+ 	mode = <3>;
+ 	power = <50>;
+ };
+diff --git a/drivers/usb/musb/omap2430.c b/drivers/usb/musb/omap2430.c
+index 1762354..dde2802 100644
+--- a/drivers/usb/musb/omap2430.c
++++ b/drivers/usb/musb/omap2430.c
+@@ -522,10 +522,10 @@ static int omap2430_probe(struct platform_device *pdev)
+ 		}
+ 
+ 		of_property_read_u32(np, "mode", (u32 *)&pdata->mode);
+-		of_property_read_u32(np, "interface_type",
++		of_property_read_u32(np, "interface-type",
+ 						(u32 *)&data->interface_type);
+-		of_property_read_u32(np, "num_eps", (u32 *)&config->num_eps);
+-		of_property_read_u32(np, "ram_bits", (u32 *)&config->ram_bits);
++		of_property_read_u32(np, "num-eps", (u32 *)&config->num_eps);
++		of_property_read_u32(np, "ram-bits", (u32 *)&config->ram_bits);
+ 		of_property_read_u32(np, "power", (u32 *)&pdata->power);
+ 		config->multipoint = of_property_read_bool(np, "multipoint");
+ 		pdata->has_mailbox = of_property_read_bool(np,
+-- 
+1.7.10.4
 
