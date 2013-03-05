@@ -1,115 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755006Ab3CEIeA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 03:34:00 -0500
-Received: from mail-qa0-f47.google.com ([209.85.216.47]:57923 "EHLO
-	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753536Ab3CEId6 (ORCPT
+	id S1755159Ab3CEIef (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 03:34:35 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:57956 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754540Ab3CEIee (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 03:33:58 -0500
+	Tue, 5 Mar 2013 03:34:34 -0500
+Date: Tue, 5 Mar 2013 08:34:21 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        Stepan Moskovchenko <stepanm@codeaurora.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ARM: proc: Add Krait proc info
+Message-ID: <20130305083421.GA19391@mudshark.cambridge.arm.com>
+References: <1362439299-29617-1-git-send-email-sboyd@codeaurora.org>
 MIME-Version: 1.0
-In-Reply-To: <513568A0.6020804@huawei.com>
-References: <513568A0.6020804@huawei.com>
-Date: Tue, 5 Mar 2013 09:33:57 +0100
-Message-ID: <CABPqkBTTn6E=FS6WiCWopcScHDVa9F6bu5-pw8Ma7TK2aunkvQ@mail.gmail.com>
-Subject: Re: [PATCH] perf: remove include of cgroup.h from perf_event.h
-From: Stephane Eranian <eranian@google.com>
-To: Li Zefan <lizefan@huawei.com>
-Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Cgroups <cgroups@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Tejun Heo <tj@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1362439299-29617-1-git-send-email-sboyd@codeaurora.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 5, 2013 at 4:38 AM, Li Zefan <lizefan@huawei.com> wrote:
-> Move struct perf_cgroup_info and perf_cgroup to kernel/perf/core.c,
-> and then we can remove include of cgroup.h.
->
-> Signed-off-by: Li Zefan <lizefan@huawei.com>
+Hi Stephen, Stepan,
+
+On Mon, Mar 04, 2013 at 11:21:39PM +0000, Stephen Boyd wrote:
+> From: Stepan Moskovchenko <stepanm@codeaurora.org>
+> 
+> Add processor info for the Qualcomm, Inc. Krait family of
+> processors, to use the generic ARMv7 initialisation
+> procedure but explicitly enable the IDIV hardware
+> capability flag.
+> 
+> Signed-off-by: Stepan Moskovchenko <stepanm@codeaurora.org>
+> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 > ---
->  include/linux/perf_event.h | 18 +-----------------
->  kernel/events/core.c       | 15 +++++++++++++++
->  2 files changed, 16 insertions(+), 17 deletions(-)
->
-> diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-> index e47ee46..8737e1c 100644
-> --- a/include/linux/perf_event.h
-> +++ b/include/linux/perf_event.h
-> @@ -21,7 +21,6 @@
->   */
->
->  #ifdef CONFIG_PERF_EVENTS
-> -# include <linux/cgroup.h>
->  # include <asm/perf_event.h>
->  # include <asm/local64.h>
->  #endif
-> @@ -299,22 +298,7 @@ struct swevent_hlist {
->  #define PERF_ATTACH_GROUP      0x02
->  #define PERF_ATTACH_TASK       0x04
->
-> -#ifdef CONFIG_CGROUP_PERF
-> -/*
-> - * perf_cgroup_info keeps track of time_enabled for a cgroup.
-> - * This is a per-cpu dynamically allocated data structure.
-> - */
-> -struct perf_cgroup_info {
-> -       u64                             time;
-> -       u64                             timestamp;
-> -};
-> -
-> -struct perf_cgroup {
-> -       struct                          cgroup_subsys_state css;
-> -       struct                          perf_cgroup_info *info; /* timing info, one per cpu */
-> -};
-> -#endif
-> -
-> +struct perf_cgroup;
+>  arch/arm/mm/proc-v7.S |   10 ++++++++++
+>  1 file changed, 10 insertions(+)
+> 
+> diff --git a/arch/arm/mm/proc-v7.S b/arch/arm/mm/proc-v7.S
+> index 3a3c015..81adeb3 100644
+> --- a/arch/arm/mm/proc-v7.S
+> +++ b/arch/arm/mm/proc-v7.S
+> @@ -434,6 +434,16 @@ __v7_ca15mp_proc_info:
+>  	.size	__v7_ca15mp_proc_info, . - __v7_ca15mp_proc_info
+>  
+>  	/*
+> +	 * Qualcomm Inc. Krait processors.
+> +	 */
+> +	.type	__krait_proc_info, #object
+> +__krait_proc_info:
+> +	.long	0x510f0400		@ Required ID value
+> +	.long	0xff0ffc00		@ Mask for ID
+> +	__v7_proc __v7_setup, hwcaps = HWCAP_IDIV
 
-The problem is that you have struct perf_cgroup in the struct perf_event
-structure. Today, this field is not referenced outside of kernel/events/core.c
-But it is available outside this file. If someday the field is reference, your
-changes will have to do reverted. So I am wondering what is the point
-of the change right now?
+I was looking at this the other day and wondered whether we could set
+HWCAP_IDIV in __v7_setup, depending on ID_ISAR0[27:24]. I can't immediately
+think why that would be difficult, but similarly there may well be a reason
+why we assign it like this.
 
+Fancy taking a look?
 
->  struct ring_buffer;
->
->  /**
-> diff --git a/kernel/events/core.c b/kernel/events/core.c
-> index b0cd865..5976a2a 100644
-> --- a/kernel/events/core.c
-> +++ b/kernel/events/core.c
-> @@ -37,6 +37,7 @@
->  #include <linux/ftrace_event.h>
->  #include <linux/hw_breakpoint.h>
->  #include <linux/mm_types.h>
-> +#include <linux/cgroup.h>
->
->  #include "internal.h"
->
-> @@ -234,6 +235,20 @@ static void perf_ctx_unlock(struct perf_cpu_context *cpuctx,
->  #ifdef CONFIG_CGROUP_PERF
->
->  /*
-> + * perf_cgroup_info keeps track of time_enabled for a cgroup.
-> + * This is a per-cpu dynamically allocated data structure.
-> + */
-> +struct perf_cgroup_info {
-> +       u64                             time;
-> +       u64                             timestamp;
-> +};
-> +
-> +struct perf_cgroup {
-> +       struct cgroup_subsys_state      css;
-> +       struct perf_cgroup_info         *info;
-> +};
-> +
-> +/*
->   * Must ensure cgroup is pinned (css_get) before calling
->   * this function. In other words, we cannot call this function
->   * if there is no cgroup event for the current CPU context.
-> --
-> 1.8.0.2
->
+Will
