@@ -1,168 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752371Ab3CEGlY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 01:41:24 -0500
-Received: from out02.mta.xmission.com ([166.70.13.232]:55331 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750781Ab3CEGlX convert rfc822-to-8bit (ORCPT
+	id S1752544Ab3CEGrg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 01:47:36 -0500
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:47439 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751036Ab3CEGrf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 01:41:23 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: mtk.manpages@gmail.com
-Cc: Rob Landley <rob@landley.net>, linux-man <linux-man@vger.kernel.org>,
-        Linux Containers <containers@lists.linux-foundation.org>,
-        lkml <linux-kernel@vger.kernel.org>
-References: <CAKgNAki=mUYuu_Ewhe7sjCmo+Dq2Vr+FZCixqNRaadcvAxtpFw@mail.gmail.com>
-	<1362110504.15531.4@driftwood>
-	<CAKgNAkgVKnhRT1Lpq4a_UdBKB+tn6XmWSDF2QJXG0aSLtNH6dg@mail.gmail.com>
-	<87wqtr3zg5.fsf@xmission.com>
-	<CAKgNAkjGD0FdQqpA+rYR=+Yc5uVPB8mE5JjCqy-5WS85cPsvng@mail.gmail.com>
-	<87k3pnhx2k.fsf@xmission.com>
-	<CAKgNAkjYmvjMzC+nYqsjHf4bQn2ZwdE5wawoP2p32ZSo+0dfcQ@mail.gmail.com>
-Date: Mon, 04 Mar 2013 22:41:14 -0800
-In-Reply-To: <CAKgNAkjYmvjMzC+nYqsjHf4bQn2ZwdE5wawoP2p32ZSo+0dfcQ@mail.gmail.com>
-	(Michael Kerrisk's message of "Tue, 5 Mar 2013 06:30:15 +0100")
-Message-ID: <87r4jucprp.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Tue, 5 Mar 2013 01:47:35 -0500
+Message-ID: <513594FF.6040106@linaro.org>
+Date: Tue, 05 Mar 2013 14:47:27 +0800
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-XM-AID: U2FsdGVkX19AaKqc+6S732gkeKYSHcfP0Tvi6qS1qN4=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 TR_Symld_Words too many words that have symbols inside
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -0.0 BAYES_20 BODY: Bayes spam probability is 5 to 20%
-	*      [score: 0.1773]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_XMDrugObfuBody_08 obfuscated drug references
-	*  0.1 XMSolicitRefs_0 Weightloss drug
-X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;mtk.manpages@gmail.com
-X-Spam-Relay-Country: 
-Subject: Re: For review: pid_namespaces(7) man page
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+To: Feng Tang <feng.tang@intel.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, x86@kernel.org,
+        Len Brown <lenb@kernel.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        linux-kernel@vger.kernel.org, gong.chen@linux.intel.com
+Subject: Re: [RFC PATCH v2 4/4] timekeeping: utilize the suspend-nonstop clocksource
+ to count suspended time
+References: <1362450426-4232-1-git-send-email-feng.tang@intel.com> <1362450426-4232-5-git-send-email-feng.tang@intel.com> <51359056.60506@linaro.org> <20130305063830.GB5340@feng-snb>
+In-Reply-To: <20130305063830.GB5340@feng-snb>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com> writes:
-
-> Eric,
+On 03/05/2013 02:38 PM, Feng Tang wrote:
+> On Tue, Mar 05, 2013 at 02:27:34PM +0800, John Stultz wrote:
 >
-> On Mon, Mar 4, 2013 at 6:52 PM, Eric W. Biederman
-> <ebiederm@xmission.com> wrote:
->> "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com> writes:
 >>
->>> On Fri, Mar 1, 2013 at 4:35 PM, Eric W. Biederman
-> <ebiederm@xmission.com> wrote:
->>>> "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com> writes:
->>>>
->>>>> Hi Rob,
->>>>>
->>>>> On Fri, Mar 1, 2013 at 5:01 AM, Rob Landley <rob@landley.net>
-> wrote:
->>>>>> On 02/28/2013 05:24:07 AM, Michael Kerrisk (man-pages) wrote:
-> [...]
->>>>>>> Because the above unshare(2) and setns(2) calls only change the
->>>>>>> PID namespace for created children, the clone(2) calls neces‐
->>>>>>> sarily put the new thread in a different PID namespace from the
->>>>>>> calling thread.
->>>>>>
->>>>>>
->>>>>> Um, no they don't. They fail. That's the point.
->>>>>
->>>>> (Good catch.)
->>>>>
->>>>>> They _would_ put the new
->>>>>> thread in a different PID namespace, which breaks the definition
-> of threads.
->>>>>>
->>>>>> How about:
->>>>>>
->>>>>> The above unshare(2) and setns(2) calls change the PID namespace
-> of
->>>>>> children created by subsequent clone(2) calls, which is
-> incompatible
->>>>>> with CLONE_VM.
->>>>>
->>>>> I decided on:
->>>>>
->>>>> The point here is that unshare(2) and setns(2) change the PID
->>>>> namespace for created children but not for the calling process,
->>>>> while clone(2) CLONE_VM specifies the creation of a new thread
->>>>> in the same process.
->>>>
->>>> Can we make that "for all new tasks created" instead of "created
->>>> children"
->>>>
->>>> Othewise someone might expect CLONE_THREAD would work as you
->>>> CLONE_THREAD creates a thread and not a child...
->>>
->>> The term "task" is kernel-space talk that rarely appears in man
-> pages,
->>> so I am reluctant to use it.
->>
->> With respect to clone and in this case I am not certain we can
-> properly
->> describe what happens without talking about tasks. But it is worth
->> a try.
->>
->>
->>> How about this:
->>>
->>> The point here is that unshare(2) and setns(2) change the PID
->>> namespace for processes subsequently created by the caller, but
->>> not for the calling process, while clone(2) CLONE_VM specifies
->>> the creation of a new thread in the same process.
->>
->> Hmm. How about this.
->>
->> The point here is that unshare(2) and setns(2) change the PID
->> namespace that will be used by in all subsequent calls to clone
->> and fork by the caller, but not for the calling process, and
->> that all threads in a process must share the same PID
->> namespace. Which makes a subsequent clone(2) CLONE_VM
->> specify the creation of a new thread in the a different PID
->> namespace but in the same process which is impossible.
+>> So this might be ok for an initial implementation, as on the
+>> non-stop-tsc hardware, the TSC is the best clocksource available.
+>> One concern long term is that there may be cases where the non-stop
+>> clocksource is not the most performant clocksource on a system. In
+>> that case, we may want to use a non-stop clocksource that is not the
+>> current timekeeping clocksource. So that may require some extra
+>> clocksource core interfaces to access the non-stop clocksource
+>> instead of using the timekeeper's clocksource, also we'll have to be
+>> sure to use something other then cycle_last in that case, since
+>> we'll need to read the nonstop clocksource at suspend, rather then
+>> trusting that forward_now updates cycle_last as is done here.
+> Yeah, I just realized this when Jason mentioned the counter_32k on
+> OMAP.
 >
-> I did a little tidying:
->
-> The point here is that unshare(2) and setns(2) change the
-> PID namespace that will be used in all subsequent calls
-> to clone(2) and fork(2), but do not change the PID names‐
-> pace of the calling process. Because a subsequent
-> clone(2) CLONE_VM would imply the creation of a new
-> thread in a different PID namespace, the operation is not
-> permitted.
->
-> Okay?
+> So for next step, we may add something in timekeeping.c like
+> 	static struct clocksource *suspend_time_cs;
+> read and save its counter righer before entering and after getting
+> out of suspended state. And create a new struct which includes
+> all time suspend related flags, counters, pointers, make it as a
+> member of struct timekeeper. Comments?
+I'd maybe add it to the clocksource code rather then the timekeeper. 
+Have a clocksource_nonstop_clock() accessor which returns a pointer to 
+the highest rated clocksource in the clocksource list that has the 
+nonstop flag (updating the pointer at registration time, rather then 
+scanning the list every time).
 
-That seems reasonable.
+That way if we want, we can later define clocksource_nonstop_clock() as 
+null, and let the complier optimize out the extra complexity in the 
+resume path if the arch doesn't support nonstop clocksource.
 
-CLONE_THREAD might be better to talk about.  The check is CLONE_VM
-because it is easier and CLONE_THREAD implies CLONE_THREAD.
-
-> Having asked that, I realize that I'm still not quite comfortable with
-> this text. I think the problem is really one of terminology. At the
-> start of this passage in the page, there is the sentence:
->
-> Every thread in a process must be in the 
-> same PID namespace.
->
-> Can you define "thread" in this context?
-
-Most definitely a thread group created with CLONE_THREAD.  It is pretty
-ugly in just the old fashioned CLONE_VM case too, but that might be
-legal.
-
-In a few cases I think the implementation overshoots and test for VM
-sharing instead of thread group membership because VM sharing is easier
-to test for, and we already have tests for that.
-
-Eric
-
+thanks
+-john
