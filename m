@@ -1,90 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758806Ab3CESkI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 13:40:08 -0500
-Received: from mail-ve0-f171.google.com ([209.85.128.171]:46389 "EHLO
-	mail-ve0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756331Ab3CESkH (ORCPT
+	id S1758904Ab3CESpP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 13:45:15 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:2449 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753563Ab3CESpN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 13:40:07 -0500
+	Tue, 5 Mar 2013 13:45:13 -0500
+X-IronPort-AV: E=Sophos;i="4.84,788,1355126400"; 
+   d="scan'208";a="27558230"
+Message-ID: <51363D37.1090107@codeaurora.org>
+Date: Tue, 05 Mar 2013 10:45:11 -0800
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
 MIME-Version: 1.0
-In-Reply-To: <CAEtiSauEdKP3Jsi_O6Q=yc9AWkSKDvNrLe0faicQWJGqdKxLwg@mail.gmail.com>
-References: <CAEtiSauEdKP3Jsi_O6Q=yc9AWkSKDvNrLe0faicQWJGqdKxLwg@mail.gmail.com>
-Date: Wed, 6 Mar 2013 00:10:05 +0530
-Message-ID: <CAEtiSatJh-FpoMAWykPBaJgwOy6d6qhhdH-jLGw8ZFkiKRXpMQ@mail.gmail.com>
-Subject: [RFC][RT][PATCH RESEND] mm: Do not use stop_machine() for
- __zone_pcp_udpate() for CONFIG_PREEMPT_RT_FULL
-From: Aaditya Kumar <aaditya.kumar.30@gmail.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-kernel@vger.kernel.org, rostedt@goodmis.org,
-        frank.rowand@am.sony.com, tim.bird@am.sony.com, jamshed.a@ap.sony.com,
-        takuzo.ohara@ap.sony.com, amit.agarwal@ap.sony.com,
-        kan.iibuchi@jp.sony.com
+To: Mark Rutland <mark.rutland@arm.com>
+CC: Paul Mundt <lethal@linux-sh.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 8/8] ARM: smp: Remove local timer API
+References: <1361518039-16663-1-git-send-email-sboyd@codeaurora.org> <1361518039-16663-9-git-send-email-sboyd@codeaurora.org> <20130222111545.GA15020@e106331-lin.cambridge.arm.com> <20130222162458.GA19670@linux-sh.org> <20130225134041.GA22785@e106331-lin.cambridge.arm.com> <5135333E.6030305@codeaurora.org> <20130305110239.GC15661@e106331-lin.cambridge.arm.com>
+In-Reply-To: <20130305110239.GC15661@e106331-lin.cambridge.arm.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The code path of __zone_pcp_update() has following locks, which in
-CONFIG_PREEMPT_RT_FULL=y are rt-mutex.
-  - pa_lock locked by cpu_lock_irqsave()
-  - zone->lock locked by free_pcppages_bulk()
+On 03/05/13 03:02, Mark Rutland wrote:
+>
+>>> +
+>>> +static void dummy_set_mode(enum clock_event_mode mode,
+>>> +			   struct clock_event_device *evt)
+>>> +{
+>>> +	/*
+>>> +	 * Core clockevents code will call this when exchanging timer devices.
+>>> +	 * We don't need to do anything here.
+>>> +	 */
+>>> +}
+>>> +
+>>> +static void __cpuinit dummy_setup(void)
+>>> +{
+>>> +	int cpu = smp_processor_id();
+>>> +	struct clock_event_device *evt = &per_cpu(dummy_evt, cpu);
+>> Can we use __this_cpu_ptr()? I wonder if that makes the code generation
+>> better or worse. I didn't do it in my 8/8 patch because I wanted the
+>> code to be the same before and after to show code movement.
+> I did that originally, but thought as I needed the cpu value for the mask
+> anyway that there wasn't much point. I'm not that good at reading generated
+> assembly, so I can't really say if either's better.
 
-Since __zone_pcp_update() is called from stop_machine(), so with
-CONFIG_PREEMPT_RT_FULL=y
-we get following backtrace when __zone_pcp_update() is called during
-memory hot plugging while
-doing heavy file I/O.
+It looks to be two instructions shorter.
 
-stop_machine() may not be required for calling __zone_pcp_update()
-in case of CONFIG_PREEMPT_RT_FULL=y as acquiring pa_lock in __zone_pcp_update()
-should be sufficient to isolate pcp pages and to setup per cpu pagesets.
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
-
-The backtrace that this patch fixes:
- BUG: scheduling while atomic: migration/0/7/0x00000002
- Modules linked in: v2p
- Backtrace:
- [<800111a0>] (dump_backtrace+0x0/0x10c) from [<802d7b7c>]
-(dump_stack+0x18/0x1c)
-  r6:80c8fc28 r5:80c8f9a0 r4:00000000 r3:60000013
- [<802d7b64>] (dump_stack+0x0/0x1c) from [<8001e81c>] (__schedule_bug+0x64/0x74)
- [<8001e7b8>] (__schedule_bug+0x0/0x74) from [<802d7fa0>]
-(__schedule+0x68/0x604)
-  r4:8051bf00 r3:00000000
- [<802d7f38>] (__schedule+0x0/0x604) from [<802d8a78>] (schedule+0x98/0xbc)
- [<802d89e0>] (schedule+0x0/0xbc) from [<802d9e14>]
-(rt_spin_lock_slowlock+0x168/0x240)
-  r4:805228f4 r3:00000000
- [<802d9cac>] (rt_spin_lock_slowlock+0x0/0x240) from [<802da234>]
-(rt_spin_lock+0x10/0x14)
- [<802da224>] (rt_spin_lock+0x0/0x14) from [<8008694c>]
-(__zone_pcp_update+0x58/0xd8)
- [<800868f4>] (__zone_pcp_update+0x0/0xd8) from [<800603ec>]
-(stop_machine_cpu_stop+0xb0/0x104)
- [<8006033c>] (stop_machine_cpu_stop+0x0/0x104) from [<80060200>]
-(cpu_stopper_thread+0xd4/0x188)
-
-
-Signed-off-by: Aaditya Kumar <aaditya.kumar@ap.sony.com>
-
----
- mm/page_alloc.c |    4         4 +     0 -     0 !
- 1 file changed, 4 insertions(+)
-
-Index: b/mm/page_alloc.c
-===================================================================
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -3868,7 +3868,11 @@ static int __zone_pcp_update(void *data)
-
- void zone_pcp_update(struct zone *zone)
- {
-+#ifndef CONFIG_PREEMPT_RT_FULL
-        stop_machine(__zone_pcp_update, zone, NULL);
-+#else
-+       __zone_pcp_update(zone);
-+#endif
- }
-
- static __meminit void zone_pcp_init(struct zone *zone)
