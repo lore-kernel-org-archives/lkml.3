@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759641Ab3CEFxz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 00:53:55 -0500
+	id S1759613Ab3CEFxw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 00:53:52 -0500
 Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:55270 "EHLO
 	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759615Ab3CEFxw (ORCPT
+	with ESMTP id S1759592Ab3CEFxu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 00:53:52 -0500
-X-AuditID: 9c930197-b7cc2ae000000eb7-14-5135886cd331
+	Tue, 5 Mar 2013 00:53:50 -0500
+X-AuditID: 9c930197-b7cc2ae000000eb7-f8-5135886ad612
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
         Jiri Olsa <jolsa@redhat.com>, Andi Kleen <andi@firstfloor.org>,
         Namhyung Kim <namhyung.kim@lge.com>, Pekka Enberg <penberg@kernel.org>
-Subject: [PATCH 09/12] perf annotate browser: Make browser_disasm_line->percent an array
-Date: Tue,  5 Mar 2013 14:53:29 +0900
-Message-Id: <1362462812-30885-10-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 07/12] perf annotate: Factor out struct source_line_percent
+Date: Tue,  5 Mar 2013 14:53:27 +0900
+Message-Id: <1362462812-30885-8-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1362462812-30885-1-git-send-email-namhyung@kernel.org>
 References: <1362462812-30885-1-git-send-email-namhyung@kernel.org>
@@ -25,64 +25,113 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make percent field of struct browser_disasm_line an array and
-move it to the last.  This is a preparation of event group view
-feature.
+From: Namhyung Kim <namhyung.kim@lge.com>
+
+The source_line_percent struct contains percentage value of the symbol
+histogram.  This is a preparation of event group view change.
 
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/ui/browsers/annotate.c | 14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
+ tools/perf/ui/browsers/annotate.c |  2 +-
+ tools/perf/util/annotate.c        | 14 +++++++-------
+ tools/perf/util/annotate.h        |  8 ++++++--
+ 3 files changed, 14 insertions(+), 10 deletions(-)
 
 diff --git a/tools/perf/ui/browsers/annotate.c b/tools/perf/ui/browsers/annotate.c
-index cfae57f90146..62369f0b6608 100644
+index 67798472384b..cfae57f90146 100644
 --- a/tools/perf/ui/browsers/annotate.c
 +++ b/tools/perf/ui/browsers/annotate.c
-@@ -14,10 +14,10 @@
+@@ -257,7 +257,7 @@ static double disasm_line__calc_percent(struct disasm_line *dl, struct symbol *s
+ 		while (offset < (s64)len &&
+ 		       (next == NULL || offset < next->offset)) {
+ 			if (src_line) {
+-				percent += src_line[offset].percent;
++				percent += src_line[offset].p[0].percent;
+ 			} else
+ 				hits += h->addr[offset];
  
- struct browser_disasm_line {
- 	struct rb_node	rb_node;
--	double		percent;
- 	u32		idx;
- 	int		idx_asm;
- 	int		jump_sources;
-+	double		percent[1];
- };
+diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
+index f080cc40f00b..ebf2596d7e2e 100644
+--- a/tools/perf/util/annotate.c
++++ b/tools/perf/util/annotate.c
+@@ -616,7 +616,7 @@ static double disasm__calc_percent(struct annotation *notes, int evidx,
+ 			if (*path == NULL)
+ 				*path = src_line[offset].path;
  
- static struct annotate_browser_opt {
-@@ -97,9 +97,9 @@ static void annotate_browser__write(struct ui_browser *browser, void *entry, int
- 	int width = browser->width, printed;
- 	char bf[256];
- 
--	if (dl->offset != -1 && bdl->percent != 0.0) {
--		ui_browser__set_percent_color(browser, bdl->percent, current_entry);
--		slsmg_printf("%6.2f ", bdl->percent);
-+	if (dl->offset != -1 && bdl->percent[0] != 0.0) {
-+		ui_browser__set_percent_color(browser, bdl->percent[0], current_entry);
-+		slsmg_printf("%6.2f ", bdl->percent[0]);
+-			percent += src_line[offset++].percent;
++			percent += src_line[offset++].p[0].percent;
+ 		}
  	} else {
- 		ui_browser__set_percent_color(browser, 0, current_entry);
- 		slsmg_write_nstring(" ", 7);
-@@ -283,7 +283,7 @@ static void disasm_rb_tree__insert(struct rb_root *root, struct browser_disasm_l
- 	while (*p != NULL) {
+ 		while (offset < end)
+@@ -929,7 +929,7 @@ static void insert_source_line(struct rb_root *root, struct source_line *src_lin
+ 
+ 		ret = strcmp(iter->path, src_line->path);
+ 		if (ret == 0) {
+-			iter->percent_sum += src_line->percent;
++			iter->p[0].percent_sum += src_line->p[0].percent;
+ 			return;
+ 		}
+ 
+@@ -939,7 +939,7 @@ static void insert_source_line(struct rb_root *root, struct source_line *src_lin
+ 			p = &(*p)->rb_right;
+ 	}
+ 
+-	src_line->percent_sum = src_line->percent;
++	src_line->p[0].percent_sum = src_line->p[0].percent;
+ 
+ 	rb_link_node(&src_line->node, parent, p);
+ 	rb_insert_color(&src_line->node, root);
+@@ -955,7 +955,7 @@ static void __resort_source_line(struct rb_root *root, struct source_line *src_l
  		parent = *p;
- 		l = rb_entry(parent, struct browser_disasm_line, rb_node);
--		if (bdl->percent < l->percent)
-+		if (bdl->percent[0] < l->percent[0])
+ 		iter = rb_entry(parent, struct source_line, node);
+ 
+-		if (src_line->percent_sum > iter->percent_sum)
++		if (src_line->p[0].percent_sum > iter->p[0].percent_sum)
  			p = &(*p)->rb_left;
  		else
  			p = &(*p)->rb_right;
-@@ -345,8 +345,8 @@ static void annotate_browser__calc_percent(struct annotate_browser *browser,
+@@ -1025,8 +1025,8 @@ static int symbol__get_source_line(struct symbol *sym, struct map *map,
+ 		u64 offset;
+ 		FILE *fp;
  
- 	list_for_each_entry(pos, &notes->src->source, node) {
- 		struct browser_disasm_line *bpos = disasm_line__browser(pos);
--		bpos->percent = disasm_line__calc_percent(pos, sym, evsel->idx);
--		if (bpos->percent < 0.01) {
-+		bpos->percent[0] = disasm_line__calc_percent(pos, sym, evsel->idx);
-+		if (bpos->percent[0] < 0.01) {
- 			RB_CLEAR_NODE(&bpos->rb_node);
+-		src_line[i].percent = 100.0 * h->addr[i] / h->sum;
+-		if (src_line[i].percent <= 0.5)
++		src_line[i].p[0].percent = 100.0 * h->addr[i] / h->sum;
++		if (src_line[i].p[0].percent <= 0.5)
  			continue;
- 		}
+ 
+ 		offset = start + i;
+@@ -1073,7 +1073,7 @@ static void print_summary(struct rb_root *root, const char *filename)
+ 		char *path;
+ 
+ 		src_line = rb_entry(node, struct source_line, node);
+-		percent = src_line->percent_sum;
++		percent = src_line->p[0].percent_sum;
+ 		color = get_percent_color(percent);
+ 		path = src_line->path;
+ 
+diff --git a/tools/perf/util/annotate.h b/tools/perf/util/annotate.h
+index 376395475663..bb2e3f998983 100644
+--- a/tools/perf/util/annotate.h
++++ b/tools/perf/util/annotate.h
+@@ -74,11 +74,15 @@ struct sym_hist {
+ 	u64		addr[0];
+ };
+ 
+-struct source_line {
+-	struct rb_node	node;
++struct source_line_percent {
+ 	double		percent;
+ 	double		percent_sum;
++};
++
++struct source_line {
++	struct rb_node	node;
+ 	char		*path;
++	struct source_line_percent p[1];
+ };
+ 
+ /** struct annotated_source - symbols with hits have this attached as in sannotation
 -- 
 1.7.11.7
 
