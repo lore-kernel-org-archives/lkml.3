@@ -1,76 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753403Ab3CEIGd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 03:06:33 -0500
-Received: from zoneX.GCU-Squad.org ([194.213.125.0]:48984 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753290Ab3CEIGc (ORCPT
+	id S1753241Ab3CEIHI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 03:07:08 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:63498 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750974Ab3CEIHH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 03:06:32 -0500
-Date: Tue, 5 Mar 2013 09:06:20 +0100
-From: Jean Delvare <khali@linux-fr.org>
-To: Peter Tyser <ptyser@xes-inc.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 1/2] gpio-ich: Check for pin availability at request time
-Message-ID: <20130305090620.2c9f1ff5@endymion.delvare>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Tue, 5 Mar 2013 03:07:07 -0500
+Message-ID: <5135A77F.2010705@huawei.com>
+Date: Tue, 5 Mar 2013 16:06:23 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
+MIME-Version: 1.0
+To: Ingo Molnar <mingo@kernel.org>
+CC: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH 4/9] sched: Move struct sched_group to kernel/sched/sched.h
+References: <5135A736.8050104@huawei.com>
+In-Reply-To: <5135A736.8050104@huawei.com>
+Content-Type: text/plain; charset="GB2312"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stop checking for pin availability in get functions. These functions
-can be called repeatedly, so checking every time is bad for
-performance.
+Move struct sched_group_power and sched_group and related inline
+functions to kernel/sched/sched.h, as they are used internally only.
 
-Instead, check at pin request time. This only happens once, and we can
-let the caller know of the unavailability much earlier.
-
-Signed-off-by: Jean Delvare <khali@linux-fr.org>
-Cc: Peter Tyser <ptyser@xes-inc.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>
-Cc: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Li Zefan <lizefan@huawei.com>
 ---
- drivers/gpio/gpio-ich.c |    9 +++------
- 1 file changed, 3 insertions(+), 6 deletions(-)
+ include/linux/sched.h | 58 ++-------------------------------------------------
+ kernel/sched/sched.h  | 56 +++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 58 insertions(+), 56 deletions(-)
 
---- linux-3.7.orig/drivers/gpio/gpio-ich.c	2013-03-05 08:36:40.940199905 +0100
-+++ linux-3.7/drivers/gpio/gpio-ich.c	2013-03-05 08:36:51.047437884 +0100
-@@ -169,9 +169,6 @@ static int ichx_gpio_direction_output(st
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index f8826d0..0d64130 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -780,62 +780,6 @@ enum cpu_idle_type {
  
- static int ichx_gpio_get(struct gpio_chip *chip, unsigned nr)
- {
--	if (!ichx_gpio_check_available(chip, nr))
--		return -ENXIO;
+ extern int __weak arch_sd_sibiling_asym_packing(void);
+ 
+-struct sched_group_power {
+-	atomic_t ref;
+-	/*
+-	 * CPU power of this group, SCHED_LOAD_SCALE being max power for a
+-	 * single CPU.
+-	 */
+-	unsigned int power, power_orig;
+-	unsigned long next_update;
+-	/*
+-	 * Number of busy cpus in this group.
+-	 */
+-	atomic_t nr_busy_cpus;
 -
- 	return ichx_read_bit(GPIO_LVL, nr);
- }
- 
-@@ -180,9 +177,6 @@ static int ich6_gpio_get(struct gpio_chi
- 	unsigned long flags;
- 	u32 data;
- 
--	if (!ichx_gpio_check_available(chip, nr))
--		return -ENXIO;
+-	unsigned long cpumask[0]; /* iteration mask */
+-};
 -
- 	/*
- 	 * GPI 0 - 15 need to be read from the power management registers on
- 	 * a ICH6/3100 bridge.
-@@ -207,6 +201,9 @@ static int ich6_gpio_get(struct gpio_chi
+-struct sched_group {
+-	struct sched_group *next;	/* Must be a circular list */
+-	atomic_t ref;
+-
+-	unsigned int group_weight;
+-	struct sched_group_power *sgp;
+-
+-	/*
+-	 * The CPUs this group covers.
+-	 *
+-	 * NOTE: this field is variable length. (Allocated dynamically
+-	 * by attaching extra space to the end of the structure,
+-	 * depending on how many CPUs the kernel has booted up with)
+-	 */
+-	unsigned long cpumask[0];
+-};
+-
+-static inline struct cpumask *sched_group_cpus(struct sched_group *sg)
+-{
+-	return to_cpumask(sg->cpumask);
+-}
+-
+-/*
+- * cpumask masking which cpus in the group are allowed to iterate up the domain
+- * tree.
+- */
+-static inline struct cpumask *sched_group_mask(struct sched_group *sg)
+-{
+-	return to_cpumask(sg->sgp->cpumask);
+-}
+-
+-/**
+- * group_first_cpu - Returns the first cpu in the cpumask of a sched_group.
+- * @group: The group whose first cpu is to be returned.
+- */
+-static inline unsigned int group_first_cpu(struct sched_group *group)
+-{
+-	return cpumask_first(sched_group_cpus(group));
+-}
+-
+ struct sched_domain_attr {
+ 	int relax_domain_level;
+ };
+@@ -846,6 +790,8 @@ struct sched_domain_attr {
  
- static int ichx_gpio_request(struct gpio_chip *chip, unsigned nr)
- {
-+	if (!ichx_gpio_check_available(chip, nr))
-+		return -ENXIO;
+ extern int sched_domain_level_max;
+ 
++struct sched_group;
 +
- 	/*
- 	 * Note we assume the BIOS properly set a bridge's USE value.  Some
- 	 * chips (eg Intel 3100) have bogus USE values though, so first see if
-
-
+ struct sched_domain {
+ 	/* These fields must be setup */
+ 	struct sched_domain *parent;	/* top domain must be null terminated */
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index 709a30c..1a4a2b1 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -572,6 +572,62 @@ static inline struct sched_domain *highest_flag_domain(int cpu, int flag)
+ DECLARE_PER_CPU(struct sched_domain *, sd_llc);
+ DECLARE_PER_CPU(int, sd_llc_id);
+ 
++struct sched_group_power {
++	atomic_t ref;
++	/*
++	 * CPU power of this group, SCHED_LOAD_SCALE being max power for a
++	 * single CPU.
++	 */
++	unsigned int power, power_orig;
++	unsigned long next_update;
++	/*
++	 * Number of busy cpus in this group.
++	 */
++	atomic_t nr_busy_cpus;
++
++	unsigned long cpumask[0]; /* iteration mask */
++};
++
++struct sched_group {
++	struct sched_group *next;	/* Must be a circular list */
++	atomic_t ref;
++
++	unsigned int group_weight;
++	struct sched_group_power *sgp;
++
++	/*
++	 * The CPUs this group covers.
++	 *
++	 * NOTE: this field is variable length. (Allocated dynamically
++	 * by attaching extra space to the end of the structure,
++	 * depending on how many CPUs the kernel has booted up with)
++	 */
++	unsigned long cpumask[0];
++};
++
++static inline struct cpumask *sched_group_cpus(struct sched_group *sg)
++{
++	return to_cpumask(sg->cpumask);
++}
++
++/*
++ * cpumask masking which cpus in the group are allowed to iterate up the domain
++ * tree.
++ */
++static inline struct cpumask *sched_group_mask(struct sched_group *sg)
++{
++	return to_cpumask(sg->sgp->cpumask);
++}
++
++/**
++ * group_first_cpu - Returns the first cpu in the cpumask of a sched_group.
++ * @group: The group whose first cpu is to be returned.
++ */
++static inline unsigned int group_first_cpu(struct sched_group *group)
++{
++	return cpumask_first(sched_group_cpus(group));
++}
++
+ extern int group_balance_cpu(struct sched_group *sg);
+ 
+ #endif /* CONFIG_SMP */
 -- 
-Jean Delvare
+1.8.0.2
