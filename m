@@ -1,54 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758709Ab3CETEP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 14:04:15 -0500
-Received: from mail-lb0-f170.google.com ([209.85.217.170]:58243 "EHLO
-	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755238Ab3CETEN (ORCPT
+	id S1758246Ab3CETE7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 14:04:59 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:43568 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755004Ab3CETE6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 14:04:13 -0500
+	Tue, 5 Mar 2013 14:04:58 -0500
+X-IronPort-AV: E=Sophos;i="4.84,788,1355126400"; 
+   d="scan'208";a="27786757"
+From: David Brown <davidb@codeaurora.org>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>
+Subject: Re: [PATCH 5/8] ARM: MSM: Divorce msm_timer from local timer API
+References: <1361518039-16663-1-git-send-email-sboyd@codeaurora.org>
+	<1361518039-16663-6-git-send-email-sboyd@codeaurora.org>
+Date: Tue, 05 Mar 2013 11:04:57 -0800
+In-Reply-To: <1361518039-16663-6-git-send-email-sboyd@codeaurora.org> (Stephen
+	Boyd's message of "Thu, 21 Feb 2013 23:27:16 -0800")
+Message-ID: <8yad2vd1xd2.fsf@huya.qualcomm.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <1362210046-13651-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-References: <1362210046-13651-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-From: Bryan Wu <cooloney@gmail.com>
-Date: Tue, 5 Mar 2013 11:03:52 -0800
-Message-ID: <CAK5ve-+FTv1OTfJozs_sy7B0Zd6SzzBOU_1En4AMQCw1RZjprw@mail.gmail.com>
-Subject: Re: [PATCH] leds: wm8350: Complain if we fail to reenable DCDC
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Richard Purdie <rpurdie@rpsys.net>, patches@opensource.wolfsonmicro.com,
-        linux-leds@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 1, 2013 at 11:40 PM, Mark Brown
-<broonie@opensource.wolfsonmicro.com> wrote:
-> Provide some trace, though the hardware is most likely non-functional if
-> this happens.
+Stephen Boyd <sboyd@codeaurora.org> writes:
+
+> Separate the msm_timer from the local timer API. This will allow
+> us to remove ARM local timer support in the near future and gets
+> us closer to moving this driver to drivers/clocksource.
 >
-> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> Cc: David Brown <davidb@codeaurora.org>
+> Cc: Daniel Walker <dwalker@fifo99.com>
+> Cc: Bryan Huntsman <bryanh@codeaurora.org>
+> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 > ---
->  drivers/leds/leds-wm8350.c |    6 +++++-
->  1 file changed, 5 insertions(+), 1 deletion(-)
->
-> diff --git a/drivers/leds/leds-wm8350.c b/drivers/leds/leds-wm8350.c
-> index ed15157..86bdab3 100644
-> --- a/drivers/leds/leds-wm8350.c
-> +++ b/drivers/leds/leds-wm8350.c
-> @@ -129,7 +129,11 @@ static void wm8350_led_disable(struct wm8350_led *led)
->         ret = regulator_disable(led->isink);
->         if (ret != 0) {
->                 dev_err(led->cdev.dev, "Failed to disable ISINK: %d\n", ret);
-> -               regulator_enable(led->dcdc);
-> +               ret = regulator_enable(led->dcdc);
-> +               if (ret != 0) {
-looks like we don't need this bracket here.
+>  arch/arm/mach-msm/timer.c | 125 +++++++++++++++++++++++++---------------------
 
-> +                       dev_err(led->cdev.dev, "Failed to reenable DCDC: %d\n",
-> +                               ret);
-> +               }
-ditto.
+Acked-by: David Brown <davidb@codeaurora.org>
 
-Thanks,
--Bryan
+-- 
+sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
