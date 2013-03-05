@@ -1,45 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758988Ab3CEBPb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 20:15:31 -0500
-Received: from ozlabs.org ([203.10.76.45]:49535 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758768Ab3CEBP2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 20:15:28 -0500
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Pawel Moll <pawel.moll@arm.com>, Marc Zyngier <Marc.Zyngier@arm.com>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "virtualization\@lists.linux-foundation.org" 
-	<virtualization@lists.linux-foundation.org>
-Subject: Re: [PATCH] virtio-spec: Define virtio-mmio registers as LE
-In-Reply-To: <1362141432.3052.28.camel@hornet>
-References: <87wqubkalj.fsf@rustcorp.com.au> <1360839247-9131-1-git-send-email-pawel.moll@arm.com> <513085EA.8070007@arm.com> <1362135005.3052.26.camel@hornet> <51308F22.7040303@arm.com> <1362141432.3052.28.camel@hornet>
-User-Agent: Notmuch/0.14 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
-Date: Tue, 05 Mar 2013 11:11:48 +1100
-Message-ID: <87fw0ad7sr.fsf@rustcorp.com.au>
+	id S1759015Ab3CEBQW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 20:16:22 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:34358 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758952Ab3CEBQU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Mar 2013 20:16:20 -0500
+Date: Tue, 5 Mar 2013 09:16:13 +0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Haiyang Zhang <haiyangz@microsoft.com>
+Cc: FlorianSchandinat@gmx.de, linux-fbdev@vger.kernel.org, olaf@aepfle.de,
+        jasowang@redhat.com, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org
+Subject: Re: [PATCH v2] video: Add Hyper-V Synthetic Video Frame Buffer Driver
+Message-ID: <20130305011613.GA21499@kroah.com>
+References: <1362434172-25070-1-git-send-email-haiyangz@microsoft.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1362434172-25070-1-git-send-email-haiyangz@microsoft.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Pawel Moll <pawel.moll@arm.com> writes:
-> On Fri, 2013-03-01 at 11:21 +0000, Marc Zyngier wrote:
->> > Having said that, Rusty was contemplating enforcing LE config space in
->> > the new PCI layout...
->> 
->> I wouldn't complain about that, and would like to see a similar thing on
->> MMIO.
->
-> Wherever PCI goes, MMIO follows :-)
+On Mon, Mar 04, 2013 at 01:56:12PM -0800, Haiyang Zhang wrote:
+> --- a/include/linux/pci_ids.h
+> +++ b/include/linux/pci_ids.h
+> @@ -2951,3 +2951,6 @@
+>  #define PCI_DEVICE_ID_XEN_PLATFORM	0x0001
+>  
+>  #define PCI_VENDOR_ID_OCZ		0x1b85
+> +
+> +#define PCI_VENDOR_ID_MICROSOFT		0x1414
+> +#define PCI_DEVICE_ID_HYPERV_VIDEO	0x5353
 
-Yes, but if you switch from 'guest-endian' to 'little-endian' how will
-you tell?  For PCI, we'd detect it by using the new layout.
+Please see the top of this while for why you shouldn't be adding any
+lines to this file.
 
-I'd rather you specify MMIO as little endian, and we fix the kernel
-config accessors to be endian aware (ie. 8, 16, 32, 64-bit accessors).
-Since noone BE is using MMIO right now, it's safe...
-
-Thanks,
-Rusty.
+greg k-h
