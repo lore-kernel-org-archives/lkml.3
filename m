@@ -1,64 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752587Ab3CEG2X (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 01:28:23 -0500
-Received: from mga03.intel.com ([143.182.124.21]:64470 "EHLO mga03.intel.com"
+	id S1752603Ab3CEGaU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 01:30:20 -0500
+Received: from gate.crashing.org ([63.228.1.57]:34531 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751886Ab3CEG2W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 01:28:22 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,785,1355126400"; 
-   d="scan'208";a="208908974"
-Date: Tue, 5 Mar 2013 14:27:17 +0800
-From: Feng Tang <feng.tang@intel.com>
-To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, John Stultz <john.stultz@linaro.org>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        x86@kernel.org, Len Brown <lenb@kernel.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        linux-kernel@vger.kernel.org, gong.chen@linux.intel.com
-Subject: Re: [RFC PATCH v2 0/4] Add support for S3 non-stop TSC support.
-Message-ID: <20130305062717.GA5340@feng-snb>
-References: <1362450426-4232-1-git-send-email-feng.tang@intel.com>
- <20130305035302.GA5239@feng-snb>
- <20130305043203.GA26678@obsidianresearch.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130305043203.GA26678@obsidianresearch.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751311Ab3CEGaS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Mar 2013 01:30:18 -0500
+Message-ID: <1362465003.21357.55.camel@pasglop>
+Subject: [git pull] Please pull powerpc.git merge branch
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>
+Date: Tue, 05 Mar 2013 17:30:03 +1100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 04, 2013 at 09:32:03PM -0700, Jason Gunthorpe wrote:
-> On Tue, Mar 05, 2013 at 11:53:02AM +0800, Feng Tang wrote:
+Hi Linus !
 
-> > > You may want to also CC the maintainers of all the ARM subsystems that
-> > > use read_persistent_clock and check with them to ensure this new
-> > > interface will let them migrate their implementations as well.
-> > 
-> > Maybe I didn't get it well, my patches didn't change the
-> > read_persistent_clock(), but inject a new way of counting suspended
-> > time. It should have no functional changes to existing platforms.
-> 
-> Right, your patches are fine stand alone.
-> 
-> The ARM case of plat-omap/counter_32k.c would ideally be converted to
-> use your new API though, that is what I ment about involving them.
+Here are a few powerpc bits & fixes for rc1. A couple of str*cpy fixes,
+some fixes in handling the FSCR register on Power8 (controls the
+enabling of processor features), a 32-bit build fix and a couple more
+nits.
 
-I see now. Yes, the counter_32k could be converted to a clocksource
-with SUSPEND_NONSTOP flag set, and no need for it to use the
-read_persistent_clock any more.
+Cheers,
+Ben.
 
-> 
-> I'm not sure about mach-tegra/timer.c though - it seems to be using a
-> counter as well but somehow sharing registers with the RTC?
+The following changes since commit 6dbe51c251a327e012439c4772097a13df43c5b8:
 
-I just searched the 3.9-rc1 code, seems the file has been moved to
-drivers/clocksource/tegra20_timer.c, and its persistent clock seems
-to also be based on a RTC like device.
+  Linux 3.9-rc1 (2013-03-03 15:11:05 -0800)
 
-Thanks,
-Feng
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc.git merge
+
+for you to fetch changes up to 54c9b2253d34e8998e4bff9ac2d7a3ba0b861d52:
+
+  powerpc: Set DSCR bit in FSCR setup (2013-03-05 16:56:30 +1100)
+
+----------------------------------------------------------------
+Akinobu Mita (1):
+      powerpc: Remove unused BITOP_LE_SWIZZLE macro
+
+Chen Gang (2):
+      powerpc/pseries/hvcserver: Fix strncpy buffer limit in location code
+      drivers/tty/hvc: Use strlcpy instead of strncpy
+
+Michael Neuling (4):
+      powerpc: Avoid link stack corruption in MMU on syscall entry path
+      powerpc: Fix setting FSCR for HV=0 and on secondary CPUs
+      powerpc: Add DSCR FSCR register bit definition
+      powerpc: Set DSCR bit in FSCR setup
+
+Tony Breeds (2):
+      powerpc: Fix compile of sha1-powerpc-asm.S on 32-bit
+      powerpc: Wireup the kcmp syscall to sys_ni
+
+ arch/powerpc/crypto/sha1-powerpc-asm.S     |    4 ++--
+ arch/powerpc/include/asm/bitops.h          |    2 --
+ arch/powerpc/include/asm/reg.h             |    3 ++-
+ arch/powerpc/include/asm/systbl.h          |    1 +
+ arch/powerpc/include/asm/unistd.h          |    2 +-
+ arch/powerpc/include/uapi/asm/unistd.h     |    1 +
+ arch/powerpc/kernel/cpu_setup_power.S      |    5 +++--
+ arch/powerpc/kernel/exceptions-64s.S       |    4 ++--
+ arch/powerpc/platforms/pseries/hvcserver.c |    5 +++--
+ drivers/tty/hvc/hvcs.c                     |    9 ++-------
+ 10 files changed, 17 insertions(+), 19 deletions(-)
+
 
