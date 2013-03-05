@@ -1,144 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752440Ab3CEKpd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 05:45:33 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:33285 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750827Ab3CEKpc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 05:45:32 -0500
-From: Thomas Renninger <trenn@suse.de>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Hannes Reinecke <hare@suse.de>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Bjorn Helgaas <bhelgaas@google.com>,
-        Oliver Neukum <oneukum@suse.de>, Yinghai Lu <yinghai@kernel.org>,
-        Frederik Himpe <fhimpe@vub.ac.be>, David Haerdeman <david@hardeman.nu>,
-        sarah.a.sharp@linux.intel.com, balbi@ti.com
-Subject: Re: [PATCH][v3] xhci: correctly enable interrupts
-Date: Tue, 05 Mar 2013 11:45:28 +0100
-Message-ID: <2543963.ytZ3mOsUVV@skinner.arch.suse.de>
-Organization: SUSE Products GmbH
-User-Agent: KMail/4.10 (Linux/3.7.7-1.2-desktop; KDE/4.10.0; x86_64; ; )
-In-Reply-To: <1742014.AbCVskUi8i@skinner.arch.suse.de>
-References: <Pine.LNX.4.44L0.1303041025470.1750-100000@iolanthe.rowland.org> <1742014.AbCVskUi8i@skinner.arch.suse.de>
+	id S1752371Ab3CEKrK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 05:47:10 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:37419 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750729Ab3CEKrJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Mar 2013 05:47:09 -0500
+Date: Tue, 5 Mar 2013 18:47:27 +0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Serban Constantinescu <Serban.Constantinescu@arm.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kernel-team@android.com" <kernel-team@android.com>,
+        "arve@android.com" <arve@android.com>,
+        "john.stultz@linaro.org" <john.stultz@linaro.org>,
+        Dave Butcher <Dave.Butcher@arm.com>
+Subject: Re: [PATCH] staging: android: ashmem: Add support for 32bit ashmem
+ calls in a 64bit kernel
+Message-ID: <20130305104727.GA3654@kroah.com>
+References: <20130305083707.GA7513@kroah.com>
+ <1362478708-26946-1-git-send-email-serban.constantinescu@arm.com>
+ <20130305102745.GA3327@kroah.com>
+ <5135CB38.1030201@arm.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5135CB38.1030201@arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, March 04, 2013 05:14:43 PM Thomas Renninger wrote:
-> From: Hannes Reinecke <hare@suse.de>
+On Tue, Mar 05, 2013 at 10:38:48AM +0000, Serban Constantinescu wrote:
+> On 05/03/13 10:27, Greg KH wrote:
+> >On Tue, Mar 05, 2013 at 10:18:27AM +0000, Serban Constantinescu wrote:
+> >>Android's shared memory subsystem, Ashmem, does not support calls from a
+> >>32bit userspace in a 64 bit kernel. This patch adds support for syscalls
+> >>coming from a 32bit userspace in a 64bit kernel.
+> >>
+> >>The patch has been successfully tested on ARMv8 AEM(64bit
+> >>platform model) and Versatile Express A9(32bit platform).
+> >>
+> >>Signed-off-by: Serban Constantinescu <serban.constantinescu@arm.com>
+> >>---
+> >>  drivers/staging/android/ashmem.c |   22 +++++++++++++++++++++-
+> >>  drivers/staging/android/ashmem.h |    6 ++++++
+> >>  2 files changed, 27 insertions(+), 1 deletion(-)
+> >
+> >Ok, what has changed from your previous version that I rejected that is
+> >going to actually allow this to build?
 > 
-> xhci has its own interrupt enabling routine, which will try to
-> use MSI-X/MSI if present. So the usb core shouldn't try to enable
-> legacy interrupts; on some machines the xhci legacy IRQ setting
-> is invalid.
-> 
-> v3: Be careful to not break XHCI_BROKEN_MSI workaround (by trenn)
-> 
-> Cc: Bjorn Helgaas <bhelgaas@google.com>
-> Cc: Oliver Neukum <oneukum@suse.de>
-> Cc: Thomas Renninger <trenn@suse.de>
-> Cc: Yinghai Lu <yinghai@kernel.org>
-> Cc: Frederik Himpe <fhimpe@vub.ac.be>
-> Cc: David Haerdeman <david@hardeman.nu>
-> Cc: Alan Stern <stern@rowland.harvard.edu>
-> 
-> Reviewed-by: Thomas Renninger <trenn@suse.de>
-> Signed-off-by: Hannes Reinecke <hare@suse.de>
+> I had to add <linux/compat.h> for a successful build on x86_64. The
+> attached hunk is the only change added.
 
-Argh, I should have added:
-CC: stable@kernel.org
+Ok, please say that.  I deal with over 7000 patches a year, there is no
+way I can remember what the difference is between this one, and the
+previous one I rejected.  Especially as I reviewed about 30 patches
+inbetween the time I rejected it and you sent this update.
 
+> >diff --git a/drivers/staging/android/ashmem.c b/drivers/staging/android/ashmem.c
+> >index 72064fc..e96f381 100644
+> >--- a/drivers/staging/android/ashmem.c
+> >+++ b/drivers/staging/android/ashmem.c
+> >@@ -31,6 +31,7 @@
+> > #include <linux/bitops.h>
+> > #include <linux/mutex.h>
+> > #include <linux/shmem_fs.h>
+> >+#include <linux/compat.h>
+> > #include "ashmem.h"
+> >
+> > #define ASHMEM_NAME_PREFIX "dev/ashmem/"
+> 
+> 
+> >
+> >Hint, you gotta tell me what version of the patch this is, and what
+> >changed, otherwise I'll just assume this is a resend of the previous
+> >patch and go ahead and delete it from my queue.
+> 
+> Sorry - same patch as before, the one that had John and Arve's ack,
+> plus the above hunk.
 
-This seem to be a common issue on new machines.
-And having xhci not functional at all there is nasty.
+That is not what I meant, please go read Section 2 of the
+Documentation/SubmittingPatches file for what I need to see here.
 
-The patch is not complex and should fulfill all stable@ criteria.
+thanks,
 
-Is this the official USB mainline subtree?:
-https://git.kernel.org/cgit/linux/kernel/git/balbi/usb.git
-
-Adding Felipe, would be great if this one can get queued for 3.9
-inclusion. Would be nice if:
-CC: stable@kernel.org
-can be added manually, I can also explicitly submit it to stable@
-as soon as it hits Linus' tree.
-
-Thanks,
-
-            Thomas
-
-> 
-> diff --git a/drivers/usb/core/hcd-pci.c b/drivers/usb/core/hcd-pci.c
-> index 622b4a4..2b487d4 100644
-> --- a/drivers/usb/core/hcd-pci.c
-> +++ b/drivers/usb/core/hcd-pci.c
-> @@ -173,6 +173,7 @@ int usb_hcd_pci_probe(struct pci_dev *dev, const struct
-> pci_device_id *id) struct hc_driver	*driver;
->  	struct usb_hcd		*hcd;
->  	int			retval;
-> +	int			hcd_irq = 0;
-> 
->  	if (usb_disabled())
->  		return -ENODEV;
-> @@ -187,15 +188,19 @@ int usb_hcd_pci_probe(struct pci_dev *dev, const
-> struct pci_device_id *id) return -ENODEV;
->  	dev->current_state = PCI_D0;
-> 
-> -	/* The xHCI driver supports MSI and MSI-X,
-> -	 * so don't fail if the BIOS doesn't provide a legacy IRQ.
-> +	/*
-> +	 * The xHCI driver has its own irq management
-> +	 * make sure irq setup is not touched for xhci in generic hcd code
->  	 */
-> -	if (!dev->irq && (driver->flags & HCD_MASK) != HCD_USB3) {
-> -		dev_err(&dev->dev,
-> -			"Found HC with no IRQ.  Check BIOS/PCI %s setup!\n",
-> -			pci_name(dev));
-> -		retval = -ENODEV;
-> -		goto disable_pci;
-> +	if ((driver->flags & HCD_MASK) != HCD_USB3) {
-> +		if (!dev->irq) {
-> +			dev_err(&dev->dev,
-> +			"Found HC with no IRQ. Check BIOS/PCI %s setup!\n",
-> +				pci_name(dev));
-> +			retval = -ENODEV;
-> +			goto disable_pci;
-> +		}
-> +		hcd_irq = dev->irq;
->  	}
-> 
->  	hcd = usb_create_hcd(driver, &dev->dev, pci_name(dev));
-> @@ -245,7 +250,7 @@ int usb_hcd_pci_probe(struct pci_dev *dev, const struct
-> pci_device_id *id)
-> 
->  	pci_set_master(dev);
-> 
-> -	retval = usb_add_hcd(hcd, dev->irq, IRQF_SHARED);
-> +	retval = usb_add_hcd(hcd, hcd_irq, IRQF_SHARED);
->  	if (retval != 0)
->  		goto unmap_registers;
->  	set_hs_companion(dev, hcd);
-> diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
-> index f1f01a8..849470b 100644
-> --- a/drivers/usb/host/xhci.c
-> +++ b/drivers/usb/host/xhci.c
-> @@ -350,7 +350,7 @@ static int xhci_try_enable_msi(struct usb_hcd *hcd)
->  	 * generate interrupts.  Don't even try to enable MSI.
->  	 */
->  	if (xhci->quirks & XHCI_BROKEN_MSI)
-> -		return 0;
-> +		goto legacy_irq;
-> 
->  	/* unregister the legacy interrupt */
->  	if (hcd->irq)
-> @@ -371,6 +371,7 @@ static int xhci_try_enable_msi(struct usb_hcd *hcd)
->  		return -EINVAL;
->  	}
-> 
-> + legacy_irq:
->  	/* fall back to legacy interrupt*/
->  	ret = request_irq(pdev->irq, &usb_hcd_irq, IRQF_SHARED,
->  			hcd->irq_descr, hcd);
+greg k-h
