@@ -1,100 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756647Ab3CEUkY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 15:40:24 -0500
-Received: from www.linutronix.de ([62.245.132.108]:39046 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755276Ab3CEUkW (ORCPT
+	id S1757343Ab3CEUk6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 15:40:58 -0500
+Received: from e39.co.us.ibm.com ([32.97.110.160]:55498 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756219Ab3CEUk4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 15:40:22 -0500
-Date: Tue, 5 Mar 2013 21:40:09 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-cc: john.stultz@linaro.org, viresh.kumar@linaro.org,
-        jacob.jun.pan@linux.intel.com, linux-arm-kernel@lists.infradead.org,
-        santosh.shilimkar@ti.com, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, rickard.andersson@stericsson.com,
-        vincent.guittot@linaro.org, linus.walleij@stericsson.com
-Subject: Re: [PATCH 2/4][V2] time : set broadcast irq affinity
-In-Reply-To: <1362219013-18173-3-git-send-email-daniel.lezcano@linaro.org>
-Message-ID: <alpine.LFD.2.02.1303052135080.22263@ionos>
-References: <1362219013-18173-1-git-send-email-daniel.lezcano@linaro.org> <1362219013-18173-3-git-send-email-daniel.lezcano@linaro.org>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Tue, 5 Mar 2013 15:40:56 -0500
+Message-ID: <1362516018.4392.233.camel@falcor1>
+Subject: Re: IMA: How to manage user space signing policy with others
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Eric Paris <eparis@parisplace.org>,
+        linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        LSM List <linux-security-module@vger.kernel.org>
+Date: Tue, 05 Mar 2013 15:40:18 -0500
+In-Reply-To: <20130305151829.GB4519@redhat.com>
+References: <1362140107.9158.101.camel@falcor1>
+	 <20130301152839.GA3457@redhat.com> <20130301184027.GB3457@redhat.com>
+	 <1362166753.9158.169.camel@falcor1> <20130301213329.GC3457@redhat.com>
+	 <1362346944.18325.1.camel@falcor1> <20130304152919.GA15199@redhat.com>
+	 <1362423581.4392.46.camel@falcor1> <20130304191546.GF15199@redhat.com>
+	 <1362446491.4392.133.camel@falcor1> <20130305151829.GB4519@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13030520-3620-0000-0000-0000017DB324
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2 Mar 2013, Daniel Lezcano wrote:
-> When a cpu goes to a deep idle state where its local timer is shutdown,
-> it notifies the time frame work to use the broadcast timer instead.
-> 
-> Unfortunately, the broadcast device could wake up any CPU, including an
-> idle one which is not concerned by the wake up at all.
-> 
-> This implies, in the worst case, an idle CPU will wake up to send an IPI
-> to another idle cpu.
-> 
-> This patch solves this by setting the irq affinity to the cpu concerned
-> by the nearest timer event, by this way, the CPU which is wake up is
-> guarantee to be the one concerned by the next event and we are safe with
-> unnecessary wakeup for another idle CPU.
-> 
-> As the irq affinity is not supported by all the archs, a flag is needed
-> to specify which clocksource can handle it : CLOCK_EVT_FEAT_DYNIRQ
-> 
-> Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
-> ---
->  include/linux/clockchips.h   |    5 +++++
->  kernel/time/tick-broadcast.c |   40 +++++++++++++++++++++++++++++++++-------
->  2 files changed, 38 insertions(+), 7 deletions(-)
-> 
-> diff --git a/include/linux/clockchips.h b/include/linux/clockchips.h
-> index 6634652..c93e2a6 100644
-> --- a/include/linux/clockchips.h
-> +++ b/include/linux/clockchips.h
-> @@ -55,6 +55,11 @@ enum clock_event_nofitiers {
->  #define CLOCK_EVT_FEAT_C3STOP		0x000008
->  #define CLOCK_EVT_FEAT_DUMMY		0x000010
->  
-> +/*
-> + * Clock event device can set its irq affinity dynamically
-> + */
-> +#define CLOCK_EVT_FEAT_DYNIRQ		0x000020
-> +
->  /**
->   * struct clock_event_device - clock event device descriptor
->   * @event_handler:	Assigned by the framework to be called by the low
-> diff --git a/kernel/time/tick-broadcast.c b/kernel/time/tick-broadcast.c
-> index 6197ac0..9ca8ff5 100644
-> --- a/kernel/time/tick-broadcast.c
-> +++ b/kernel/time/tick-broadcast.c
-> @@ -406,13 +406,37 @@ struct cpumask *tick_get_broadcast_oneshot_mask(void)
->  	return to_cpumask(tick_broadcast_oneshot_mask);
->  }
->  
-> -static int tick_broadcast_set_event(struct clock_event_device *bc,
-> +/*
-> + * Set broadcast interrupt affinity
-> + */
-> +static void tick_broadcast_set_affinity(struct clock_event_device *bc,
-> +					const struct cpumask *cpumask)
-> +{
-> +	if (!(bc->features & CLOCK_EVT_FEAT_DYNIRQ))
-> +		return;
-> +
-> +	if (cpumask_equal(bc->cpumask, cpumask))
-> +		return;
-> +
-> +	bc->cpumask = cpumask;
+On Tue, 2013-03-05 at 10:18 -0500, Vivek Goyal wrote:
 
-This breaks with CONFIG_CPUMASK_OFFSTACK=y. cpumask_copy() is your friend!
+> Can we do following. (Just modifying your proposal little bit).
+> 
+> - Implement a new policy say ima_mem_exec. This policy can vary based on
+>   config options. This will be the default policy. 
 
-Thanks,
+Just to clarify, the default is the existing null policy.  When
+'secureboot' is enabled, ima_mem_exec will be the default policy.
 
-	tglx
+> - ima_mem_exec will be default policy and it can be disabled by passing
+>   a command line option ima_mem_exec_disable.
+> 
+> - If user wants to use ima_apprase_tcb policy, they can pass two command
+>   line option. (ima_mem_exec_disable  and ima_appraise_tcb).
+
+Both aren't really needed.   Nothing changes for existing users, if
+'ima_appraise_tcb' replaces the ima_mem_exec policy. 
+
+> - Similary if user wants to put its own policy using "policy" interface,
+>   they need to boot kernel with command line option "ima_mem_exec_disable".
+
+Not a good idea, as this would be a new requirement for existing users.
+Invert the logic.
+
+> In the end, this is again "either A or B"  mechanism. Both ima_mem_exec
+> and ima_appraise_tcb are not co-existing. Comand line option just enables
+> choosing one over other.
+
+Does this impact 'ima_tcb' or only 'ima_appraise_tcb'?
+
+> The fact that we are able to replace ima_mem_exec policy using command
+> line, binary loader will need a way to query IMA to find what's the
+> current policy. If ima_mem_exec has been replaced, then binary loader
+> will not memlock files and will not raise extra capability to binary. And
+> this will disable kdump functionality on secureboot platforms. (Something
+> which I don't like much).
+
+Ok
+
+thanks,
+
+Mimi
+
