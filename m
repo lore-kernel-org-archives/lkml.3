@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758351Ab3CEVNQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 16:13:16 -0500
-Received: from mail-ia0-f175.google.com ([209.85.210.175]:46687 "EHLO
-	mail-ia0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757880Ab3CEVNE (ORCPT
+	id S1758788Ab3CEVNn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 16:13:43 -0500
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:54170 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756428Ab3CEVND (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 16:13:04 -0500
+	Tue, 5 Mar 2013 16:13:03 -0500
 From: Matt Porter <mporter@ti.com>
 To: Balaji T K <balajitk@ti.com>, Chris Ball <cjb@laptop.org>,
         Grant Likely <grant.likely@secretlab.ca>,
@@ -19,9 +19,9 @@ Cc: Vinod Koul <vinod.koul@intel.com>, Tony Lindgren <tony@atomide.com>,
         Arnd Bergmann <arnd@arndb.de>, Dan Williams <djbw@fb.com>,
         Jon Hunter <jon-hunter@ti.com>,
         Santosh Shilimkar <santosh.shilimkar@ti.com>
-Subject: [PATCH v2 3/3] mmc: omap_hsmmc: add generic DMA request support to the DT binding
-Date: Tue,  5 Mar 2013 16:13:24 -0500
-Message-Id: <1362518004-7083-4-git-send-email-mporter@ti.com>
+Subject: [PATCH v2 2/3] mmc: omap_hsmmc: Skip platform_get_resource_byname() for dt case
+Date: Tue,  5 Mar 2013 16:13:23 -0500
+Message-Id: <1362518004-7083-3-git-send-email-mporter@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1362518004-7083-1-git-send-email-mporter@ti.com>
 References: <1362518004-7083-1-git-send-email-mporter@ti.com>
@@ -29,57 +29,61 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The binding definition is based on the generic DMA request binding.
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
 
-Signed-off-by: Matt Porter <mporter@ti.com>
-Acked-by: Tony Lindgren <tony@atomide.com>
+MMC driver probe will abort for DT case because of failed
+platform_get_resource_byname() lookup. Fix it by skipping resource
+byname lookup for device tree build.
+
+Issue is hidden because hwmod popullates the IO resources which
+helps to succeed platform_get_resource_byname() and probe.
+
+Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
 ---
- .../devicetree/bindings/mmc/ti-omap-hsmmc.txt      |   26 +++++++++++++++++++-
- 1 file changed, 25 insertions(+), 1 deletion(-)
+ drivers/mmc/host/omap_hsmmc.c |   28 +++++++++++++++-------------
+ 1 file changed, 15 insertions(+), 13 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/mmc/ti-omap-hsmmc.txt b/Documentation/devicetree/bindings/mmc/ti-omap-hsmmc.txt
-index ed271fc..8c8908a 100644
---- a/Documentation/devicetree/bindings/mmc/ti-omap-hsmmc.txt
-+++ b/Documentation/devicetree/bindings/mmc/ti-omap-hsmmc.txt
-@@ -20,8 +20,29 @@ ti,dual-volt: boolean, supports dual voltage cards
- ti,non-removable: non-removable slot (like eMMC)
- ti,needs-special-reset: Requires a special softreset sequence
- ti,needs-special-hs-handling: HSMMC IP needs special setting for handling High Speed
-+dmas: List of DMA specifiers with the controller specific format
-+as described in the generic DMA client binding. A tx and rx
-+specifier is required.
-+dma-names: List of DMA request names. These strings correspond
-+1:1 with the DMA specifiers listed in dmas. The string naming is
-+to be "rx" and "tx" for RX and TX DMA requests, respectively.
-+
-+Examples:
-+
-+[hwmod populated DMA resources]
-+
-+	mmc1: mmc@0x4809c000 {
-+		compatible = "ti,omap4-hsmmc";
-+		reg = <0x4809c000 0x400>;
-+		ti,hwmods = "mmc1";
-+		ti,dual-volt;
-+		bus-width = <4>;
-+		vmmc-supply = <&vmmc>; /* phandle to regulator node */
-+		ti,non-removable;
-+	};
-+
-+[generic DMA request binding]
+diff --git a/drivers/mmc/host/omap_hsmmc.c b/drivers/mmc/host/omap_hsmmc.c
+index e79b12d..8ae1225 100644
+--- a/drivers/mmc/host/omap_hsmmc.c
++++ b/drivers/mmc/host/omap_hsmmc.c
+@@ -1896,21 +1896,23 @@ static int omap_hsmmc_probe(struct platform_device *pdev)
  
--Example:
- 	mmc1: mmc@0x4809c000 {
- 		compatible = "ti,omap4-hsmmc";
- 		reg = <0x4809c000 0x400>;
-@@ -30,4 +51,7 @@ Example:
- 		bus-width = <4>;
- 		vmmc-supply = <&vmmc>; /* phandle to regulator node */
- 		ti,non-removable;
-+		dmas = <&edma 24
-+			&edma 25>;
-+		dma-names = "tx", "rx";
- 	};
+ 	omap_hsmmc_conf_bus_power(host);
+ 
+-	res = platform_get_resource_byname(pdev, IORESOURCE_DMA, "tx");
+-	if (!res) {
+-		dev_err(mmc_dev(host->mmc), "cannot get DMA TX channel\n");
+-		ret = -ENXIO;
+-		goto err_irq;
+-	}
+-	tx_req = res->start;
++	if (!pdev->dev.of_node) {
++		res = platform_get_resource_byname(pdev, IORESOURCE_DMA, "tx");
++		if (!res) {
++			dev_err(mmc_dev(host->mmc), "cannot get DMA TX channel\n");
++			ret = -ENXIO;
++			goto err_irq;
++		}
++		tx_req = res->start;
+ 
+-	res = platform_get_resource_byname(pdev, IORESOURCE_DMA, "rx");
+-	if (!res) {
+-		dev_err(mmc_dev(host->mmc), "cannot get DMA RX channel\n");
+-		ret = -ENXIO;
+-		goto err_irq;
++		res = platform_get_resource_byname(pdev, IORESOURCE_DMA, "rx");
++		if (!res) {
++			dev_err(mmc_dev(host->mmc), "cannot get DMA RX channel\n");
++			ret = -ENXIO;
++			goto err_irq;
++		}
++		rx_req = res->start;
+ 	}
+-	rx_req = res->start;
+ 
+ 	dma_cap_zero(mask);
+ 	dma_cap_set(DMA_SLAVE, mask);
 -- 
 1.7.9.5
 
