@@ -1,62 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755208Ab3CEMIK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 07:08:10 -0500
-Received: from mailservice.tudelft.nl ([130.161.131.5]:35976 "EHLO
-	mailservice.tudelft.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754746Ab3CEMIH (ORCPT
+	id S1755358Ab3CEMUX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 07:20:23 -0500
+Received: from cpsmtpb-ews08.kpnxchange.com ([213.75.39.13]:59548 "EHLO
+	cpsmtpb-ews08.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752698Ab3CEMUW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 07:08:07 -0500
-X-Greylist: delayed 1102 seconds by postgrey-1.27 at vger.kernel.org; Tue, 05 Mar 2013 07:08:07 EST
-X-Spam-Flag: NO
-X-Spam-Score: -20.669
-Message-ID: <5135DBD5.1070702@tremplin-utc.net>
-Date: Tue, 05 Mar 2013 12:49:41 +0100
-From: =?ISO-8859-1?Q?=C9ric_Piel?= <eric.piel@tremplin-utc.net>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
-MIME-Version: 1.0
-To: Takashi Iwai <tiwai@suse.de>, Matthew Garrett <matthew.garrett@nebula.com>
-CC: platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] hp_accel: Add a new PnP ID HPQ6007 for new HP laptops
-References: <s5h4ngz56yg.wl%tiwai@suse.de>
-In-Reply-To: <s5h4ngz56yg.wl%tiwai@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+	Tue, 5 Mar 2013 07:20:22 -0500
+Message-ID: <1362486020.16460.73.camel@x61.thuisdomein>
+Subject: [PATCH v2] MIPS: Get rid of CONFIG_CPU_HAS_LLSC again
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Ralf Baechle <ralf@linux-mips.org>
+Cc: Jonas Gorski <jogo@openwrt.org>, linux-mips@linux-mips.org,
+        linux-kernel@vger.kernel.org
+Date: Tue, 05 Mar 2013 13:20:20 +0100
+In-Reply-To: <CAOiHx=nzNVatEp0nyfZKU2p35+1kjrw6VsvZTP+QPJykWF3JAg@mail.gmail.com>
+References: <1362477800.16460.69.camel@x61.thuisdomein>
+	 <CAOiHx=nzNVatEp0nyfZKU2p35+1kjrw6VsvZTP+QPJykWF3JAg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 05 Mar 2013 12:20:20.0508 (UTC) FILETIME=[CDE1DDC0:01CE199B]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26/02/13 18:19, Takashi Iwai wrote:
-> The DriveGuard chips on the new HP laptops are with a new PnP ID
-> "HPQ6007".  It should be compatible with older chips.
->
-> Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Hi,
-Sorry for the delay. The driver is able to detect the actual type of 
-accelerometer behind, so indeed it should work fine.
+Commit f7ade3c168e4f437c11f57be012992bbb0e3075c ("MIPS: Get rid of
+CONFIG_CPU_HAS_LLSC") did what it promised to do. But since then that
+macro and its Kconfig symbol popped up again. Get rid of those again.
 
-Thanks for the patch, here is my:
-Acked-by: Éric Piel <eric.piel@tremplin-utc.net>
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+0) This version fixes an embarrassing dangling "#endif" spotted by
+Jonas. Thanks for that! Still untested.
 
-Matthew, could you pick this patch into your tree?
-Cheers,
-Éric
->
-> ---
->   drivers/platform/x86/hp_accel.c | 1 +
->   1 file changed, 1 insertion(+)
->
-> diff --git a/drivers/platform/x86/hp_accel.c b/drivers/platform/x86/hp_accel.c
-> index e64a7a8..b6c4305 100644
-> --- a/drivers/platform/x86/hp_accel.c
-> +++ b/drivers/platform/x86/hp_accel.c
-> @@ -77,6 +77,7 @@ static inline void delayed_sysfs_set(struct led_classdev *led_cdev,
->   static struct acpi_device_id lis3lv02d_device_ids[] = {
->   	{"HPQ0004", 0}, /* HP Mobile Data Protection System PNP */
->   	{"HPQ6000", 0}, /* HP Mobile Data Protection System PNP */
-> +	{"HPQ6007", 0}, /* HP Mobile Data Protection System PNP */
->   	{"", 0},
->   };
->   MODULE_DEVICE_TABLE(acpi, lis3lv02d_device_ids);
->
+1) The related commits are 1c773ea4dceff889c2f872343609a87ae0cfbf56
+("MIPS: Netlogic: Add XLP makefiles and config") and
+3070033a16edcc21688d5ea8967c89522f833862 ("MIPS: Add core files for MIPS
+SEAD-3 development platform.").
+
+ arch/mips/Kconfig                                        | 1 -
+ arch/mips/include/asm/mach-sead3/cpu-feature-overrides.h | 4 ----
+ 2 files changed, 5 deletions(-)
+
+diff --git a/arch/mips/Kconfig b/arch/mips/Kconfig
+index ae9c716..310f1e6 100644
+--- a/arch/mips/Kconfig
++++ b/arch/mips/Kconfig
+@@ -1493,7 +1493,6 @@ config CPU_XLP
+ 	select CPU_SUPPORTS_32BIT_KERNEL
+ 	select CPU_SUPPORTS_64BIT_KERNEL
+ 	select CPU_SUPPORTS_HIGHMEM
+-	select CPU_HAS_LLSC
+ 	select WEAK_ORDERING
+ 	select WEAK_REORDERING_BEYOND_LLSC
+ 	select CPU_HAS_PREFETCH
+diff --git a/arch/mips/include/asm/mach-sead3/cpu-feature-overrides.h b/arch/mips/include/asm/mach-sead3/cpu-feature-overrides.h
+index d9c8284..b40f37f 100644
+--- a/arch/mips/include/asm/mach-sead3/cpu-feature-overrides.h
++++ b/arch/mips/include/asm/mach-sead3/cpu-feature-overrides.h
+@@ -28,11 +28,7 @@
+ /* #define cpu_has_prefetch	? */
+ #define cpu_has_mcheck		1
+ /* #define cpu_has_ejtag	? */
+-#ifdef CONFIG_CPU_HAS_LLSC
+-#define cpu_has_llsc		1
+-#else
+ #define cpu_has_llsc		0
+-#endif
+ /* #define cpu_has_vtag_icache	? */
+ /* #define cpu_has_dc_aliases	? */
+ /* #define cpu_has_ic_fills_f_dc ? */
+-- 
+1.7.11.7
 
