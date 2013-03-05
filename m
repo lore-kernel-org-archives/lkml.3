@@ -1,83 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759080Ab3CETJa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 14:09:30 -0500
-Received: from mail-qa0-f45.google.com ([209.85.216.45]:44852 "EHLO
-	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755004Ab3CETJ2 (ORCPT
+	id S1758372Ab3CETML (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 14:12:11 -0500
+Received: from mail-ia0-f182.google.com ([209.85.210.182]:49379 "EHLO
+	mail-ia0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756525Ab3CETMJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 14:09:28 -0500
-Date: Tue, 5 Mar 2013 11:09:23 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Jeff Layton <jlayton@redhat.com>
-Cc: "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Mandeep Singh Baines <msb@chromium.org>,
-        Ming Lei <ming.lei@canonical.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: LOCKDEP: 3.9-rc1: mount.nfs/4272 still has locks held!
-Message-ID: <20130305190923.GI12795@htj.dyndns.org>
-References: <CACVXFVMKN6aeCvJcn7dyuonJYJDfYxWeW5KE6gfKRKJKFj2M4A@mail.gmail.com>
- <4FA345DA4F4AE44899BD2B03EEEC2FA9286AD113@sacexcmbx05-prd.hq.netapp.com>
- <20130304092310.1d21100c@tlielax.poochiereds.net>
- <CACBanvrc0orXGZ1v+gKHtVPKWYKGEFx46dwoDCjTU78+nPtZyg@mail.gmail.com>
- <20130304205307.GA13527@redhat.com>
- <4FA345DA4F4AE44899BD2B03EEEC2FA9286AEEB0@sacexcmbx05-prd.hq.netapp.com>
- <20130305082308.6607d4db@tlielax.poochiereds.net>
- <20130305174648.GF12795@htj.dyndns.org>
- <20130305174954.GG12795@htj.dyndns.org>
- <20130305140312.243cb094@tlielax.poochiereds.net>
+	Tue, 5 Mar 2013 14:12:09 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130305140312.243cb094@tlielax.poochiereds.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <9bcd6241-37fd-4ae9-a997-2a5da1eaf997@email.android.com>
+References: <20130228205206.GC3438@sgi.com>
+	<512FC697.3090608@zytor.com>
+	<20130228210910.GD3438@sgi.com>
+	<512FC82B.40909@zytor.com>
+	<CAE9FiQU3FBwEiC86N1RC8=aMdN09EbUmRcsWP0yof7bmxBhPew@mail.gmail.com>
+	<512FE3AE.4070903@zytor.com>
+	<20130305081519.GA19165@sgi.com>
+	<9bcd6241-37fd-4ae9-a997-2a5da1eaf997@email.android.com>
+Date: Tue, 5 Mar 2013 11:12:08 -0800
+X-Google-Sender-Auth: D9T6Q_6hnsSHG_6iyV9V-vqLcYU
+Message-ID: <CAE9FiQV2Wk+yiqR8FnNM_L-p1iQFxDwopRzFWTwm6VCkyrbuoQ@mail.gmail.com>
+Subject: Re: Revert commit 5dcd14ecd4 - breaks EFI boot with SLES11 elilo.efi
+From: Yinghai Lu <yinghai@kernel.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Robin Holt <holt@sgi.com>, hpa@sgi.com, linux-kernel@vger.kernel.org
+Content-Type: multipart/mixed; boundary=14dae93406dff4dd1304d7323f7c
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Jeff.
+--14dae93406dff4dd1304d7323f7c
+Content-Type: text/plain; charset=ISO-8859-1
 
-On Tue, Mar 05, 2013 at 02:03:12PM -0500, Jeff Layton wrote:
-> Sounds intriguing...
-> 
-> I'm not sure what this really means for something like NFS though. How
-> would you envision this working when we have long running syscalls that
-> might sit waiting in the kernel indefinitely?
+On Tue, Mar 5, 2013 at 7:22 AM, H. Peter Anvin <hpa@zytor.com> wrote:
+> Yes, please do the analysis I asked for.
 
-I think it is the same problem as being able to handle SIGKILL in
-responsive manner.  It could be tricky to implement for nfs but it at
-least doesn't have to solve the problem twice.
+it uses first 2 pages in bzImage to bootparams.
 
-> Here's my blue-sky, poorly-thought-out idea...
-> 
-> We could add a signal (e.g. SIGFREEZE) that allows the sleeps in
-> NFS/RPC layer to be interrupted. Those would return back toward
-> userland with a particular type of error (sort of like ERESTARTSYS).
-> 
-> Before returning from the kernel though, we could freeze the process.
-> When it wakes up, then we could go back down and retry the call again
-> (much like an ERESTARTSYS kind of thing).
-> 
-> The tricky part here is that we'd need to distinguish between the case
-> where we caught SIGFREEZE before sending an RPC vs. after. If we sent
-> the call before freezing, then we don't want to resend it again. It
-> might be a non-idempotent operation.
+then update the fields with ===> X
 
-So, yeah, you are thinking pretty much the same as I'm.
+struct boot_params {
+        struct screen_info screen_info;                 /* 0x000 */   ===> X
+        struct apm_bios_info apm_bios_info;             /* 0x040 */   ===> X
+        __u8  _pad2[4];                                 /* 0x054 */
+        __u64  tboot_addr;                              /* 0x058 */
+        struct ist_info ist_info;                       /* 0x060 */
+        __u8  _pad3[16];                                /* 0x070 */
+        __u8  hd0_info[16];     /* obsolete! */         /* 0x080 */   ===> X
+        __u8  hd1_info[16];     /* obsolete! */         /* 0x090 */   ===> X
+        struct sys_desc_table sys_desc_table;           /* 0x0a0 */   ===> X
+        struct olpc_ofw_header olpc_ofw_header;         /* 0x0b0 */
+        __u32 ext_ramdisk_image;                        /* 0x0c0 */
+        __u32 ext_ramdisk_size;                         /* 0x0c4 */
+        __u32 ext_cmd_line_ptr;                         /* 0x0c8 */
+        __u8  _pad4[116];                               /* 0x0cc */
+        struct edid_info edid_info;                     /* 0x140 */
+        struct efi_info efi_info;                       /* 0x1c0 */   ===> X
+        __u32 alt_mem_k;                                /* 0x1e0 */   ===> X
+        __u32 scratch;          /* Scratch field! */    /* 0x1e4 */
+        __u8  e820_entries;                             /* 0x1e8 */  ===> X
+        __u8  eddbuf_entries;                           /* 0x1e9 */
+        __u8  edd_mbr_sig_buf_entries;                  /* 0x1ea */
+        __u8  kbd_status;                               /* 0x1eb */
+        __u8  _pad5[3];                                 /* 0x1ec */
+        /*
+         * The sentinel is set to a nonzero value (0xff) in header.S.
+         *
+         * A bootloader is supposed to only take setup_header and put
+         * it into a clean boot_params buffer. If it turns out that
+         * it is clumsy or too generous with the buffer, it most
+         * probably will pick up the sentinel variable too. The fact
+         * that this variable then is still 0xff will let kernel
+         * know that some variables in boot_params are invalid and
+         * kernel should zero out certain portions of boot_params.
+         */
+        __u8  sentinel;                                 /* 0x1ef */
+        __u8  _pad6[1];                                 /* 0x1f0 */
+        struct setup_header hdr;    /* setup header */  /* 0x1f1 */  ===> X
+        __u8  _pad7[0x290-0x1f1-sizeof(struct setup_header)];
+        __u32 edd_mbr_sig_buffer[EDD_MBR_SIG_MAX];      /* 0x290 */
+        struct e820entry e820_map[E820MAX];             /* 0x2d0 */  ===> X
+        __u8  _pad8[48];                                /* 0xcd0 */
+        struct edd_info eddbuf[EDDMAXNR];               /* 0xd00 */
+        __u8  _pad9[276];                               /* 0xeec */
 
-> Sounds horrific to code up though... :)
+so sentinel will be kept as 0xff, so efi_info get cleared by kernel...
 
-I don't know the details of nfs but those events could essentially be
-signaling that the system is gonna lose power.  I think it would be a
-good idea to solve it.
+Attached patches should avoid the clearing of efi_info when elilo is used.
 
-Thanks.
+Do we need to clear edd and pad2 and pad3 for elilo?
 
--- 
-tejun
+Thanks
+
+Yinghai
+
+--14dae93406dff4dd1304d7323f7c
+Content-Type: application/octet-stream; name="fix_elilo.patch"
+Content-Disposition: attachment; filename="fix_elilo.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hdxflrdf0
+
+LS0tCiBhcmNoL3g4Ni9pbmNsdWRlL2FzbS9ib290cGFyYW1fdXRpbHMuaCB8ICAgIDUgKysrKy0K
+IDEgZmlsZSBjaGFuZ2VkLCA0IGluc2VydGlvbnMoKyksIDEgZGVsZXRpb24oLSkKCkluZGV4OiBs
+aW51eC0yLjYvYXJjaC94ODYvaW5jbHVkZS9hc20vYm9vdHBhcmFtX3V0aWxzLmgKPT09PT09PT09
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PQotLS0gbGludXgtMi42Lm9yaWcvYXJjaC94ODYvaW5jbHVkZS9hc20vYm9vdHBhcmFtX3V0aWxz
+LmgKKysrIGxpbnV4LTIuNi9hcmNoL3g4Ni9pbmNsdWRlL2FzbS9ib290cGFyYW1fdXRpbHMuaApA
+QCAtMjAsOCArMjAsMTEgQEAgc3RhdGljIHZvaWQgc2FuaXRpemVfYm9vdF9wYXJhbXMoc3RydWN0
+CiAJaWYgKGJvb3RfcGFyYW1zLT5zZW50aW5lbCkgewogCQkvKmZpZWxkcyBpbiBib290X3BhcmFt
+cyBhcmUgbm90IHZhbGlkLCBjbGVhciB0aGVtICovCiAJCW1lbXNldCgmYm9vdF9wYXJhbXMtPm9s
+cGNfb2Z3X2hlYWRlciwgMCwKLQkJICAgICAgIChjaGFyICopJmJvb3RfcGFyYW1zLT5hbHRfbWVt
+X2sgLQorCQkgICAgICAgKGNoYXIgKikmYm9vdF9wYXJhbXMtPmVmaV9pbmZvIC0KIAkJCShjaGFy
+ICopJmJvb3RfcGFyYW1zLT5vbHBjX29md19oZWFkZXIpOworCQlpZiAoYm9vdF9wYXJhbXMtPmhk
+ci50eXBlX29mX2xvYWRlciAhPSAweDUwKSAvKiBub3QgZWZsaW8gKi8KKwkJCW1lbXNldCgmYm9v
+dF9wYXJhbXMtPmVmaV9pbmZvLCAwLAorCQkJCQkgc2l6ZW9mKGJvb3RfcGFyYW1zLT5lZmlfaW5m
+bykpOwogCQltZW1zZXQoJmJvb3RfcGFyYW1zLT5rYmRfc3RhdHVzLCAwLAogCQkgICAgICAgKGNo
+YXIgKikmYm9vdF9wYXJhbXMtPmhkciAtCiAJCSAgICAgICAoY2hhciAqKSZib290X3BhcmFtcy0+
+a2JkX3N0YXR1cyk7Cg==
+--14dae93406dff4dd1304d7323f7c--
