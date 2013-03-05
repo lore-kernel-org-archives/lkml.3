@@ -1,48 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755750Ab3CEWW5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 17:22:57 -0500
-Received: from cpsmtpb-ews09.kpnxchange.com ([213.75.39.14]:64480 "EHLO
-	cpsmtpb-ews09.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755116Ab3CEWWz (ORCPT
+	id S1755507Ab3CEW03 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 17:26:29 -0500
+Received: from e39.co.us.ibm.com ([32.97.110.160]:42762 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755104Ab3CEW02 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 17:22:55 -0500
-Message-ID: <1362522169.16460.151.camel@x61.thuisdomein>
-Subject: Re: [PATCH] remoteproc: properly fix missing CONFIG_FW_LOADER
- configurations
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Ohad Ben-Cohen <ohad@wizery.com>, stable <stable@vger.kernel.org>,
-        linux-kernel@vger.kernel.org
-Date: Tue, 05 Mar 2013 23:22:49 +0100
-In-Reply-To: <20130305215408.GD10965@kroah.com>
-References: <1362511248.16460.113.camel@x61.thuisdomein>
-	 <20130305215408.GD10965@kroah.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
+	Tue, 5 Mar 2013 17:26:28 -0500
+Message-ID: <51367104.5050200@linux.vnet.ibm.com>
+Date: Tue, 05 Mar 2013 14:26:12 -0800
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
+CC: bp@alien8.de, hpa@linux.intel.com, linux-kernel@vger.kernel.org
+Subject: Re: [3.9-rc1 x86] Bug in ioremap code?
+References: <201302060035.GCJ00057.FLHMOOFtJFSQOV@I-love.SAKURA.ne.jp> <201303050015.GGI39081.LOVFtOFHQOJFSM@I-love.SAKURA.ne.jp> <201303052031.JFG81705.FSOOFQHJMVFOLt@I-love.SAKURA.ne.jp> <201303060041.AIF15342.tJFOHLQFFOMVSO@I-love.SAKURA.ne.jp> <20130305180650.GD4914@pd.tnic> <201303060628.CBG00578.OJtMFFHLQVSFOO@I-love.SAKURA.ne.jp>
+In-Reply-To: <201303060628.CBG00578.OJtMFFHLQVSFOO@I-love.SAKURA.ne.jp>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 05 Mar 2013 22:22:50.0322 (UTC) FILETIME=[F8D9BB20:01CE19EF]
-X-RcptDomain: vger.kernel.org
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13030522-3620-0000-0000-0000017E2008
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-03-06 at 05:54 +0800, Greg KH wrote:
-> This is not the correct way to submit patches for inclusion in the
-> stable kernel tree.  Please read Documentation/stable_kernel_rules.txt
-> for how to do this properly.
+Just booted a qemu-kvm guest with this .config.  It didn't trip over
+anything, so I'm looking for some more ACPI tables to feed in to it.
 
-0) Actually I just copied the addresses included in commit
-e121aefa7d9f10eee5cf26ed47129237a05d940b upstream without really
-thinking.
+Looking through the code, it looks like this is the __pa() that's
+hitting the BUG_ON():
 
-1) But actually thinking about this: that upstream commit did end up in
-the (longterm) v3.4.y series. And my patch is also relevant for the
-v3.8.y series. Can't this patch, that fixes an obviously bogus commit,
-which was important enough for stable, be itself submitted with
-CC:stable?
+static int __cpa_process_fault(struct cpa_data *cpa, unsigned long
+...
+        if (within(vaddr, PAGE_OFFSET,
+                   PAGE_OFFSET + (max_pfn_mapped << PAGE_SHIFT))) {
+                cpa->numpages = 1;
+                cpa->pfn = __pa(vaddr) >> PAGE_SHIFT;
+                return 0;
+        } else {
 
+The within() check should ensure that we're not doing __pa() on
+vmalloc() addresses.  So, either somebody managed to remap part of the
+kernel identity mapping, or that within() check is failing us somehow.
 
-Paul Bolle
+What kind of hardware is this?
 
