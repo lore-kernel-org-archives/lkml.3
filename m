@@ -1,83 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754849Ab3CEXqg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 18:46:36 -0500
-Received: from mail-ob0-f181.google.com ([209.85.214.181]:58867 "EHLO
-	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752888Ab3CEXqf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 18:46:35 -0500
-Message-ID: <513683D5.1080401@gmail.com>
-Date: Wed, 06 Mar 2013 07:46:29 +0800
-From: Simon Jeons <simon.jeons@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
+	id S1755153Ab3CEXqs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 18:46:48 -0500
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:42356 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754960Ab3CEXqq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Mar 2013 18:46:46 -0500
+Message-ID: <513683DC.3070405@linux.vnet.ibm.com>
+Date: Tue, 05 Mar 2013 15:46:36 -0800
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: Andrew Shewmaker <agshew@gmail.com>
-CC: akpm@linux-foundation.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, alan@lxorguk.ukuu.org.uk,
-        ric.masonn@gmail.com
-Subject: Re: [PATCH v4 001/002] mm: limit growth of 3% hardcoded other user
- reserve
-References: <20130305233811.GA1948@localhost.localdomain>
-In-Reply-To: <20130305233811.GA1948@localhost.localdomain>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: "H. Peter Anvin" <hpa@linux.intel.com>
+CC: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>, bp@alien8.de,
+        linux-kernel@vger.kernel.org
+Subject: Re: [3.9-rc1 x86] Bug in ioremap code?
+References: <201302060035.GCJ00057.FLHMOOFtJFSQOV@I-love.SAKURA.ne.jp> <201303050015.GGI39081.LOVFtOFHQOJFSM@I-love.SAKURA.ne.jp> <201303052031.JFG81705.FSOOFQHJMVFOLt@I-love.SAKURA.ne.jp> <201303060041.AIF15342.tJFOHLQFFOMVSO@I-love.SAKURA.ne.jp> <20130305180650.GD4914@pd.tnic> <201303060628.CBG00578.OJtMFFHLQVSFOO@I-love.SAKURA.ne.jp> <51366E6F.1050409@linux.intel.com>
+In-Reply-To: <51366E6F.1050409@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13030523-7182-0000-0000-000005A82509
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/06/2013 07:38 AM, Andrew Shewmaker wrote:
-> Limit the growth of the memory reserved for other processes
-> to the smaller of 3% or 8MB.
->
-> This affects only OVERCOMMIT_NEVER.
->
-> Signed-off-by: Andrew Shewmaker <agshew@gmail.com>
+Not sure if it's related by 3.9-rc1 gets in to a reboot loop for me.  I
+assume it's triple-faulting.  The last line on the console I see is:
 
-Please add changelog, otherwise it's for other guys to review.
+[    0.085702] SMP alternatives: lockdep: fixing up alternatives
+[    0.086859] smpboot: Booting Node   0, Processors [    0.086859]
+smpboot: Booting Node   0, Processors  #1 OK
+ #1 OK
 
->
-> ---
->
-> Rebased onto v3.8-mmotm-2013-03-01-15-50
->
-> No longer assumes 4kb pages.
-> Code duplicated for nommu.
->
-> diff --git a/mm/mmap.c b/mm/mmap.c
-> index 49dc7d5..4eb2b1a 100644
-> --- a/mm/mmap.c
-> +++ b/mm/mmap.c
-> @@ -184,9 +184,11 @@ int __vm_enough_memory(struct mm_struct *mm, long pages, int cap_sys_admin)
->   	allowed += total_swap_pages;
->   
->   	/* Don't let a single process grow too big:
-> -	   leave 3% of the size of this process for other processes */
-> +	 * leave the smaller of 3% of the size of this process
-> +         * or 8MB for other processes
-> +         */
->   	if (mm)
-> -		allowed -= mm->total_vm / 32;
-> +		allowed -= min(mm->total_vm / 32, 1 << (23 - PAGE_SHIFT));
->   
->   	if (percpu_counter_read_positive(&vm_committed_as) < allowed)
->   		return 0;
-> diff --git a/mm/nommu.c b/mm/nommu.c
-> index f5d57a3..a93d214 100644
-> --- a/mm/nommu.c
-> +++ b/mm/nommu.c
-> @@ -1945,9 +1945,11 @@ int __vm_enough_memory(struct mm_struct *mm, long pages, int cap_sys_admin)
->   	allowed += total_swap_pages;
->   
->   	/* Don't let a single process grow too big:
-> -	   leave 3% of the size of this process for other processes */
-> +	 * leave the smaller of 3% of the size of this process
-> +         * or 8MB for other processes
-> +         */
->   	if (mm)
-> -		allowed -= mm->total_vm / 32;
-> +		allowed -= min(mm->total_vm / 32, 1 << (23 - PAGE_SHIFT));
->   
->   	if (percpu_counter_read_positive(&vm_committed_as) < allowed)
->   		return 0;
+I bisected it down to the neighborhood of c47f39e.  After that, I get
+some compile errors:
+
+> arch/x86/built-in.o: In function `generic_load_microcode':
+> microcode_intel.c:(.text+0x28195): undefined reference to `microcode_sanity_check'
+> microcode_intel.c:(.text+0x281ab): undefined reference to `get_matching_microcode'
+
+Turning off CONFIG_MICROCODE:
+
+-CONFIG_MICROCODE=y
+-CONFIG_MICROCODE_INTEL=y
+-# CONFIG_MICROCODE_AMD is not set
+-CONFIG_MICROCODE_OLD_INTERFACE=y
+-CONFIG_MICROCODE_INTEL_LIB=y
+-CONFIG_MICROCODE_INTEL_EARLY=y
+-CONFIG_MICROCODE_EARLY=y
++# CONFIG_MICROCODE is not set
+
+lets it boot again and fixes those compile errors.  This is with this
+config:
+
+	http://i-love.sakura.ne.jp/tmp/config-3.9-rc1
+
+running under a kvm guest:
+
+qemu-system-x86_64 -append 'earlyprintk=ttyS0,115200,keep
+console=ttyS0,115200 nmi_watchdog=0 root=/dev/sda1 bootmem_debug'
+-kernel vmlinuz -usbdevice tablet  -vnc :1 -net user -net
+nic,model=e1000  -hda sarge-amd64-runme-1G.img -m 10240 -smp 2
 
