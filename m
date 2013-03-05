@@ -1,57 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758039Ab3CESEz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 13:04:55 -0500
-Received: from mail-qe0-f43.google.com ([209.85.128.43]:49111 "EHLO
-	mail-qe0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756191Ab3CESEy (ORCPT
+	id S1758130Ab3CESFj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 13:05:39 -0500
+Received: from spostino.sms.unimo.it ([155.185.44.3]:38111 "EHLO
+	spostino.sms.unimo.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756296Ab3CESFh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 13:04:54 -0500
-Date: Tue, 5 Mar 2013 10:04:46 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] workqueue: fix possible bug which may silence the pool
-Message-ID: <20130305180446.GH12795@htj.dyndns.org>
-References: <1362239729-6753-1-git-send-email-laijs@cn.fujitsu.com>
- <20130304192028.GM30413@htj.dyndns.org>
- <5135479C.4060209@cn.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5135479C.4060209@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 5 Mar 2013 13:05:37 -0500
+From: Paolo valente <paolo.valente@unimore.it>
+To: Jamal Hadi Salim <jhs@mojatatu.com>,
+        "David S. Miller" <davem@davemloft.net>, shemminger@vyatta.com
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, fchecconi@gmail.com,
+        rizzo@iet.unipi.it, Paolo Valente <paolo.valente@unimore.it>
+Subject: [PATCH BUGFIX 0/6] pkt_sched: fix little service anomalies and possible crashes of qfq+
+Date: Tue,  5 Mar 2013 19:04:56 +0100
+Message-Id: <1362506702-4985-1-git-send-email-paolo.valente@unimore.it>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <20130226.173700.882998504986475149.davem@davemloft.net>
+References: <20130226.173700.882998504986475149.davem@davemloft.net>
+UNIMORE-X-SA-Score: -2.9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Lai.
+Il 26/02/2013 23:37, David Miller ha scritto:
+> From: Paolo valente <paolo.valente@unimore.it>
+> Date: Tue, 26 Feb 2013 18:02:46 +0100
+> 
+>> The portions of the code interested by each fix are small and do not
+>> overlap with each other, so I decided to provide just one patch
+>> (I hope that this was the right choice).
+> 
+> Please split this up into 6 patches, each with an appropriately
+> verbose analysis and explanation of each bug being fixed, thanks.
+> 
+> 
 
-On Tue, Mar 05, 2013 at 09:17:16AM +0800, Lai Jiangshan wrote:
-> > But can we please just addd wake_up_worker() in the
-> > for_each_std_worker_pool() loop?  
-> 
-> wake_up_worker() needed be put on the same loop which do set %WORKER_UNBOUND.
-> 
-> mutex_lock(&pool->assoc_mutex);
-> do set %WORKER_UNBOUND for normal_pri pool
-> mutex_unlock(&pool->assoc_mutex);
-> 
-> // no wakeup for normal_pri pool
-> // but all workers of normal_pri pool goto sleep
-> 
-> // try to  do set %WORKER_UNBOUND for high_pri pool
-> mutex_lock(&pool->assoc_mutex);
-> 	waiting forever here due to high_pri pool's manage_workers()
-> 	waiting on allocating memory forever(waiting normal_pri pool
-> 	free memory, but normal_pri pool is silenced)
-> mutex_unlock(&pool->assoc_mutex);
+Split, and inserted a detailed description of both the problem and the fix
+in each patch.
 
-Hmmm.... I see.  Can you please separate it into two patches then?
-One to restructure the loop into one and the other to add wake up,
-and add comment explaining why the loop has to be per-pool?
+Paolo valente (6):
+  pkt_sched: properly cap timestamps in charge_actual_service
+  pkt_sched: fix the update of eligible-group sets
+  pkt_sched: serve activated aggregates immediately if the scheduler is
+    empty
+  pkt_sched: prevent budget from wrapping around after a dequeue
+  pkt_sched: do not allow virtual time to jump if an aggregate is in
+    service
+  pkt_sched: remove a useless invocation of qfq_update_eligible
 
-Thanks.
+ net/sched/sch_qfq.c |   66 +++++++++++++++++++++++++++++++++++----------------
+ 1 file changed, 45 insertions(+), 21 deletions(-)
 
 -- 
-tejun
+1.7.9.5
+
