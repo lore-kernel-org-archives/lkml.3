@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753686Ab3CEIHk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 03:07:40 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:37180 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753314Ab3CEIHi (ORCPT
+	id S1754011Ab3CEIHm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 03:07:42 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:63873 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753384Ab3CEIHl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 03:07:38 -0500
-Message-ID: <5135A79F.8090502@huawei.com>
-Date: Tue, 5 Mar 2013 16:06:55 +0800
+	Tue, 5 Mar 2013 03:07:41 -0500
+Message-ID: <5135A771.4070104@huawei.com>
+Date: Tue, 5 Mar 2013 16:06:09 +0800
 From: Li Zefan <lizefan@huawei.com>
 User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
 MIME-Version: 1.0
 To: Ingo Molnar <mingo@kernel.org>
 CC: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 6/9] sched: Move struct sched_class to kernel/sched/sched.h
+Subject: [PATCH 3/9] sched: Move SCHED_LOAD_SHIFT macros to kernel/sched/sched.h
 References: <5135A736.8050104@huawei.com>
 In-Reply-To: <5135A736.8050104@huawei.com>
 Content-Type: text/plain; charset="GB2312"
@@ -25,149 +25,93 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It's used internally only.
+They are used internally only.
 
 Signed-off-by: Li Zefan <lizefan@huawei.com>
 ---
- include/linux/sched.h | 59 ---------------------------------------------------
- kernel/sched/sched.h  | 55 +++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 55 insertions(+), 59 deletions(-)
+ include/linux/sched.h | 25 -------------------------
+ kernel/sched/sched.h  | 26 +++++++++++++++++++++++++-
+ 2 files changed, 25 insertions(+), 26 deletions(-)
 
 diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 863b505..04b834f 100644
+index e880d7d..f8826d0 100644
 --- a/include/linux/sched.h
 +++ b/include/linux/sched.h
-@@ -917,65 +917,6 @@ struct mempolicy;
- struct pipe_inode_info;
- struct uts_namespace;
- 
--struct rq;
--struct sched_domain;
--
--#define ENQUEUE_WAKEUP		1
--#define ENQUEUE_HEAD		2
--#ifdef CONFIG_SMP
--#define ENQUEUE_WAKING		4	/* sched_class::task_waking was called */
--#else
--#define ENQUEUE_WAKING		0
--#endif
--
--#define DEQUEUE_SLEEP		1
--
--struct sched_class {
--	const struct sched_class *next;
--
--	void (*enqueue_task) (struct rq *rq, struct task_struct *p, int flags);
--	void (*dequeue_task) (struct rq *rq, struct task_struct *p, int flags);
--	void (*yield_task) (struct rq *rq);
--	bool (*yield_to_task) (struct rq *rq, struct task_struct *p, bool preempt);
--
--	void (*check_preempt_curr) (struct rq *rq, struct task_struct *p, int flags);
--
--	struct task_struct * (*pick_next_task) (struct rq *rq);
--	void (*put_prev_task) (struct rq *rq, struct task_struct *p);
--
--#ifdef CONFIG_SMP
--	int  (*select_task_rq)(struct task_struct *p, int sd_flag, int flags);
--	void (*migrate_task_rq)(struct task_struct *p, int next_cpu);
--
--	void (*pre_schedule) (struct rq *this_rq, struct task_struct *task);
--	void (*post_schedule) (struct rq *this_rq);
--	void (*task_waking) (struct task_struct *task);
--	void (*task_woken) (struct rq *this_rq, struct task_struct *task);
--
--	void (*set_cpus_allowed)(struct task_struct *p,
--				 const struct cpumask *newmask);
--
--	void (*rq_online)(struct rq *rq);
--	void (*rq_offline)(struct rq *rq);
--#endif
--
--	void (*set_curr_task) (struct rq *rq);
--	void (*task_tick) (struct rq *rq, struct task_struct *p, int queued);
--	void (*task_fork) (struct task_struct *p);
--
--	void (*switched_from) (struct rq *this_rq, struct task_struct *task);
--	void (*switched_to) (struct rq *this_rq, struct task_struct *task);
--	void (*prio_changed) (struct rq *this_rq, struct task_struct *task,
--			     int oldprio);
--
--	unsigned int (*get_rr_interval) (struct rq *rq,
--					 struct task_struct *task);
--
--#ifdef CONFIG_FAIR_GROUP_SCHED
--	void (*task_move_group) (struct task_struct *p, int on_rq);
--#endif
--};
--
- struct load_weight {
- 	unsigned long weight, inv_weight;
+@@ -756,31 +756,6 @@ enum cpu_idle_type {
  };
+ 
+ /*
+- * Increase resolution of nice-level calculations for 64-bit architectures.
+- * The extra resolution improves shares distribution and load balancing of
+- * low-weight task groups (eg. nice +19 on an autogroup), deeper taskgroup
+- * hierarchies, especially on larger systems. This is not a user-visible change
+- * and does not change the user-interface for setting shares/weights.
+- *
+- * We increase resolution only if we have enough bits to allow this increased
+- * resolution (i.e. BITS_PER_LONG > 32). The costs for increasing resolution
+- * when BITS_PER_LONG <= 32 are pretty high and the returns do not justify the
+- * increased costs.
+- */
+-#if 0 /* BITS_PER_LONG > 32 -- currently broken: it increases power usage under light load  */
+-# define SCHED_LOAD_RESOLUTION	10
+-# define scale_load(w)		((w) << SCHED_LOAD_RESOLUTION)
+-# define scale_load_down(w)	((w) >> SCHED_LOAD_RESOLUTION)
+-#else
+-# define SCHED_LOAD_RESOLUTION	0
+-# define scale_load(w)		(w)
+-# define scale_load_down(w)	(w)
+-#endif
+-
+-#define SCHED_LOAD_SHIFT	(10 + SCHED_LOAD_RESOLUTION)
+-#define SCHED_LOAD_SCALE	(1L << SCHED_LOAD_SHIFT)
+-
+-/*
+  * Increase resolution of cpu_power calculations
+  */
+ #define SCHED_POWER_SHIFT	10
 diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index 4e5c2af..eca526d 100644
+index cc03cfd..709a30c 100644
 --- a/kernel/sched/sched.h
 +++ b/kernel/sched/sched.h
-@@ -951,6 +951,61 @@ enum cpuacct_stat_index {
- 	CPUACCT_STAT_NSTATS,
- };
+@@ -33,6 +33,31 @@ extern __read_mostly int scheduler_running;
+  */
+ #define NS_TO_JIFFIES(TIME)	((unsigned long)(TIME) / (NSEC_PER_SEC / HZ))
  
-+#define ENQUEUE_WAKEUP		1
-+#define ENQUEUE_HEAD		2
-+#ifdef CONFIG_SMP
-+#define ENQUEUE_WAKING		4	/* sched_class::task_waking was called */
++/*
++ * Increase resolution of nice-level calculations for 64-bit architectures.
++ * The extra resolution improves shares distribution and load balancing of
++ * low-weight task groups (eg. nice +19 on an autogroup), deeper taskgroup
++ * hierarchies, especially on larger systems. This is not a user-visible change
++ * and does not change the user-interface for setting shares/weights.
++ *
++ * We increase resolution only if we have enough bits to allow this increased
++ * resolution (i.e. BITS_PER_LONG > 32). The costs for increasing resolution
++ * when BITS_PER_LONG <= 32 are pretty high and the returns do not justify the
++ * increased costs.
++ */
++#if 0 /* BITS_PER_LONG > 32 -- currently broken: it increases power usage under light load  */
++# define SCHED_LOAD_RESOLUTION	10
++# define scale_load(w)		((w) << SCHED_LOAD_RESOLUTION)
++# define scale_load_down(w)	((w) >> SCHED_LOAD_RESOLUTION)
 +#else
-+#define ENQUEUE_WAKING		0
++# define SCHED_LOAD_RESOLUTION	0
++# define scale_load(w)		(w)
++# define scale_load_down(w)	(w)
 +#endif
 +
-+#define DEQUEUE_SLEEP		1
++#define SCHED_LOAD_SHIFT	(10 + SCHED_LOAD_RESOLUTION)
++#define SCHED_LOAD_SCALE	(1L << SCHED_LOAD_SHIFT)
 +
-+struct sched_class {
-+	const struct sched_class *next;
-+
-+	void (*enqueue_task) (struct rq *rq, struct task_struct *p, int flags);
-+	void (*dequeue_task) (struct rq *rq, struct task_struct *p, int flags);
-+	void (*yield_task) (struct rq *rq);
-+	bool (*yield_to_task) (struct rq *rq, struct task_struct *p, bool preempt);
-+
-+	void (*check_preempt_curr) (struct rq *rq, struct task_struct *p, int flags);
-+
-+	struct task_struct * (*pick_next_task) (struct rq *rq);
-+	void (*put_prev_task) (struct rq *rq, struct task_struct *p);
-+
-+#ifdef CONFIG_SMP
-+	int  (*select_task_rq)(struct task_struct *p, int sd_flag, int flags);
-+	void (*migrate_task_rq)(struct task_struct *p, int next_cpu);
-+
-+	void (*pre_schedule) (struct rq *this_rq, struct task_struct *task);
-+	void (*post_schedule) (struct rq *this_rq);
-+	void (*task_waking) (struct task_struct *task);
-+	void (*task_woken) (struct rq *this_rq, struct task_struct *task);
-+
-+	void (*set_cpus_allowed)(struct task_struct *p,
-+				 const struct cpumask *newmask);
-+
-+	void (*rq_online)(struct rq *rq);
-+	void (*rq_offline)(struct rq *rq);
-+#endif
-+
-+	void (*set_curr_task) (struct rq *rq);
-+	void (*task_tick) (struct rq *rq, struct task_struct *p, int queued);
-+	void (*task_fork) (struct task_struct *p);
-+
-+	void (*switched_from) (struct rq *this_rq, struct task_struct *task);
-+	void (*switched_to) (struct rq *this_rq, struct task_struct *task);
-+	void (*prio_changed) (struct rq *this_rq, struct task_struct *task,
-+			     int oldprio);
-+
-+	unsigned int (*get_rr_interval) (struct rq *rq,
-+					 struct task_struct *task);
-+
-+#ifdef CONFIG_FAIR_GROUP_SCHED
-+	void (*task_move_group) (struct task_struct *p, int on_rq);
-+#endif
-+};
+ #define NICE_0_LOAD		SCHED_LOAD_SCALE
+ #define NICE_0_SHIFT		SCHED_LOAD_SHIFT
  
- #define sched_class_highest (&stop_sched_class)
- #define for_each_class(class) \
+@@ -784,7 +809,6 @@ static inline void finish_lock_switch(struct rq *rq, struct task_struct *prev)
+ }
+ #endif /* __ARCH_WANT_UNLOCKED_CTXSW */
+ 
+-
+ static inline void update_load_add(struct load_weight *lw, unsigned long inc)
+ {
+ 	lw->weight += inc;
 -- 
 1.8.0.2
