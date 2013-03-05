@@ -1,84 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756828Ab3CERNi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 12:13:38 -0500
-Received: from webmail.solarflare.com ([12.187.104.25]:44746 "EHLO
-	webmail.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752262Ab3CERNg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 12:13:36 -0500
-Message-ID: <1362503593.2791.36.camel@bwh-desktop.uk.solarflarecom.com>
-Subject: Re: [RFC PATCH 2/5] tcp: add TCP support for low latency receive
- poll.
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: Eliezer Tamir <eliezer.tamir@linux.jf.intel.com>
-CC: <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>,
+	id S1756770Ab3CERPg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 12:15:36 -0500
+Received: from mga14.intel.com ([143.182.124.37]:13223 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752580Ab3CERPf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Mar 2013 12:15:35 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,787,1355126400"; 
+   d="scan'208";a="209126275"
+Message-ID: <5136282E.9080307@linux.intel.com>
+Date: Tue, 05 Mar 2013 19:15:26 +0200
+From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
+MIME-Version: 1.0
+To: Ben Hutchings <bhutchings@solarflare.com>
+CC: Eliezer Tamir <eliezer.tamir@linux.jf.intel.com>,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
         Dave Miller <davem@davemloft.net>,
         Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        <e1000-devel@lists.sourceforge.net>,
+        e1000-devel@lists.sourceforge.net,
         Willem de Bruijn <willemb@google.com>,
         Andi Kleen <andi@firstfloor.org>, HPA <hpa@zytor.com>,
         Eliezer Tamir <eliezer@tamir.org.il>
-Date: Tue, 5 Mar 2013 17:13:13 +0000
-In-Reply-To: <20130227175601.10611.99536.stgit@gitlad.jf.intel.com>
-References: <20130227175549.10611.82188.stgit@gitlad.jf.intel.com>
-	 <20130227175601.10611.99536.stgit@gitlad.jf.intel.com>
-Organization: Solarflare
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Subject: Re: [RFC PATCH 1/5] net: implement support for low latency socket
+ polling
+References: <20130227175549.10611.82188.stgit@gitlad.jf.intel.com>  <20130227175555.10611.42794.stgit@gitlad.jf.intel.com> <1362501781.2791.19.camel@bwh-desktop.uk.solarflarecom.com>
+In-Reply-To: <1362501781.2791.19.camel@bwh-desktop.uk.solarflarecom.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-MIME-Version: 1.0
-X-Originating-IP: [10.17.20.137]
-X-TM-AS-Product-Ver: SMEX-10.0.0.1412-7.000.1014-19688.000
-X-TM-AS-Result: No--13.342000-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-02-27 at 09:56 -0800, Eliezer Tamir wrote:
-> an example of how one could add support for ndo_ll_poll to TCP.
-[...]
-> --- a/net/ipv4/tcp.c
-> +++ b/net/ipv4/tcp.c
-> @@ -279,6 +279,7 @@
->  
->  #include <asm/uaccess.h>
->  #include <asm/ioctls.h>
-> +#include <net/ll_poll.h>
->  
->  int sysctl_tcp_fin_timeout __read_mostly = TCP_FIN_TIMEOUT;
->  
-> @@ -1475,6 +1476,17 @@ int tcp_read_sock(struct sock *sk, read_descriptor_t *desc,
->  
->  	if (sk->sk_state == TCP_LISTEN)
->  		return -ENOTCONN;
-> +
-> +#ifdef CONFIG_INET_LL_TCP_POLL
-> +/* TODO: what do we do if the state changes after sk_poll_ll()? */
+On 05/03/2013 18:43, Ben Hutchings wrote:
+> On Wed, 2013-02-27 at 09:55 -0800, Eliezer Tamir wrote:
+>
+> Should the units really be cycles or, say, microseconds?  I assume that
+> a sysctl setter can do a conversion to cycles so that there's no need to
+> multiply every time the value is used.  (If the CPU doesn't have
+> constant_tsc or equivalent then this conversion doesn't quite work, but
+> then low-latency tunng usually includes disabling frequency scaling.)
 
-Maybe this bit should be a separate function that the callers can use
-(or not) before calling tcp_read_sock().  Then they must take care of
-re-locking and revalidating if it decides to poll.
+We are not very sensitive to this setting, anything on the order of your 
+half round time trip plus a few standard deviations works well.
+We are busy waiting, so setting a higher value does not change the 
+results much.
 
-Ben.
+It does make sense to have this in ms, and it might not matter if the 
+dynamic cycles mess with the value too much.
 
-> +	if (sk_valid_ll(sk) && skb_queue_empty(&sk->sk_receive_queue)
-> +		&& (sk->sk_state == TCP_ESTABLISHED)) {
-> +
-> +		release_sock(sk);
-> +		sk_poll_ll(sk);
-> +		lock_sock(sk);
-> +	}
-> +#endif
->  	while ((skb = tcp_recv_skb(sk, seq, &offset)) != NULL) {
->  		if (offset < skb->len) {
->  			int used;
-[...]
+BTW on my machines enabling frequency scaling improves performance in 
+many cases.
 
--- 
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
+> Also, this should be a per-device (or even per-NAPI-context?) setting.
 
+Again, I would expect this to depend more on your workload than on the 
+NIC, so I would keep this global.
+User knobs should be as simple as possible.
+
+ >>+int sysctl_net_ll_poll __read_mostly = 150000;
+> Nicely tuned for your specific test system, no doubt. :-)
+
+why don't you try this on your NIC and see ;-)
+
+Thanks for the input,
+Eliezer
