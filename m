@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758301Ab3CEPDW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 10:03:22 -0500
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:62554 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757218Ab3CEPDS (ORCPT
+	id S1758372Ab3CEPDb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 10:03:31 -0500
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:56852 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757997Ab3CEPD2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 10:03:18 -0500
+	Tue, 5 Mar 2013 10:03:28 -0500
 From: Jiang Liu <liuj97@gmail.com>
 To: Andrew Morton <akpm@linux-foundation.org>,
         David Rientjes <rientjes@google.com>
@@ -17,10 +17,11 @@ Cc: Jiang Liu <jiang.liu@huawei.com>, Wen Congyang <wency@cn.fujitsu.com>,
         Minchan Kim <minchan@kernel.org>,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
         Michal Hocko <mhocko@suse.cz>, Jianguo Wu <wujianguo@huawei.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: [RFC PATCH v1 29/33] mm: accurately calculate zone->managed_pages for highmem zones
-Date: Tue,  5 Mar 2013 22:55:12 +0800
-Message-Id: <1362495317-32682-30-git-send-email-jiang.liu@huawei.com>
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>
+Subject: [RFC PATCH v1 30/33] mm: use a dedicated lock to protect totalram_pages and zone->managed_pages
+Date: Tue,  5 Mar 2013 22:55:13 +0800
+Message-Id: <1362495317-32682-31-git-send-email-jiang.liu@huawei.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1362495317-32682-1-git-send-email-jiang.liu@huawei.com>
 References: <1362495317-32682-1-git-send-email-jiang.liu@huawei.com>
@@ -28,116 +29,117 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit "mm: introduce new field "managed_pages" to struct zone" assumes
-that all highmem pages will be freed into the buddy system by function
-mem_init(). But that's not true, some architectures may reserve some
-highmem pages during boot. For example ppc may allocate highmem pages
-for giagant HugeTLB pages, and several architectures check PageReserved
-flag when freeing highmem pages into the buddy system.
+Currently lock_memory_hotplug()/unlock_memory_hotplug() are used to
+protect totalram_pages and zone->managed_pages. Other than the memory
+hotplug driver, totalram_pages and zone->managed_pages may be modified
+by Xen balloon, virtio_balloon etc at runtime. For those case, memory
+hotplug lock is a little too heavy, so introduce a dedicated lock to
+protect them.
 
-So using the same way to calculate zone->managed_pages for both normal
-and highmem zones.
+Now the locking rules for totalram_pages and zone->managed_pages have
+been simpilied as:
+1) no locking for read accesses because they are unsigned long.
+2) no locking for write access at boot time in single-threaded context.
+3) serialize write accesses at run time by managed_page_count_lock.
+
+Also adjust zone->managed_pages when dealing with reserved pages.
 
 Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Michel Lespinasse <walken@google.com>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Minchan Kim <minchan@kernel.org>
+Cc: linux-mm@kvack.org (open list:MEMORY MANAGEMENT)
+Cc: linux-kernel@vger.kernel.org (open list)
 ---
- mm/bootmem.c    |   16 ++++------------
- mm/nobootmem.c  |   14 +++-----------
- mm/page_alloc.c |    1 +
- 3 files changed, 8 insertions(+), 23 deletions(-)
+ include/linux/mm.h     |    6 +-----
+ include/linux/mmzone.h |   14 ++++++++++----
+ mm/page_alloc.c        |   19 +++++++++++++++++++
+ 3 files changed, 30 insertions(+), 9 deletions(-)
 
-diff --git a/mm/bootmem.c b/mm/bootmem.c
-index 2b0bcb0..46198d8 100644
---- a/mm/bootmem.c
-+++ b/mm/bootmem.c
-@@ -241,20 +241,12 @@ static unsigned long __init free_all_bootmem_core(bootmem_data_t *bdata)
- 	return count;
- }
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 4d1509b..f9cc7f0 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1299,14 +1299,10 @@ extern void free_initmem(void);
+ #ifdef	CONFIG_HIGHMEM
+ extern void free_highmem_page(struct page *page);
+ #endif
++extern void adjust_managed_page_count(struct page *page, long count);
+ extern unsigned long free_reserved_area(unsigned long start, unsigned long end,
+ 					int poison, char *s);
  
--static void reset_node_lowmem_managed_pages(pg_data_t *pgdat)
-+static inline void reset_node_managed_pages(pg_data_t *pgdat)
+-static inline void adjust_managed_page_count(struct page *page, long count)
+-{
+-	totalram_pages += count;
+-}
+-
+ static inline void __free_reserved_page(struct page *page)
  {
- 	struct zone *z;
- 
--	/*
--	 * In free_area_init_core(), highmem zone's managed_pages is set to
--	 * present_pages, and bootmem allocator doesn't allocate from highmem
--	 * zones. So there's no need to recalculate managed_pages because all
--	 * highmem pages will be managed by the buddy system. Here highmem
--	 * zone also includes highmem movable zone.
--	 */
- 	for (z = pgdat->node_zones; z < pgdat->node_zones + MAX_NR_ZONES; z++)
--		if (!is_highmem(z))
--			z->managed_pages = 0;
-+		z->managed_pages = 0;
- }
- 
- /**
-@@ -266,7 +258,7 @@ static void reset_node_lowmem_managed_pages(pg_data_t *pgdat)
- unsigned long __init free_all_bootmem_node(pg_data_t *pgdat)
- {
- 	register_page_bootmem_info_node(pgdat);
--	reset_node_lowmem_managed_pages(pgdat);
-+	reset_node_managed_pages(pgdat);
- 	return free_all_bootmem_core(pgdat->bdata);
- }
- 
-@@ -282,7 +274,7 @@ unsigned long __init free_all_bootmem(void)
- 	struct pglist_data *pgdat;
- 
- 	for_each_online_pgdat(pgdat)
--		reset_node_lowmem_managed_pages(pgdat);
-+		reset_node_managed_pages(pgdat);
- 
- 	list_for_each_entry(bdata, &bdata_list, list)
- 		total_pages += free_all_bootmem_core(bdata);
-diff --git a/mm/nobootmem.c b/mm/nobootmem.c
-index 5e07d36..960e80a 100644
---- a/mm/nobootmem.c
-+++ b/mm/nobootmem.c
-@@ -137,20 +137,12 @@ unsigned long __init free_low_memory_core_early(int nodeid)
- 	return count;
- }
- 
--static void reset_node_lowmem_managed_pages(pg_data_t *pgdat)
-+static inline void reset_node_managed_pages(pg_data_t *pgdat)
- {
- 	struct zone *z;
- 
--	/*
--	 * In free_area_init_core(), highmem zone's managed_pages is set to
--	 * present_pages, and bootmem allocator doesn't allocate from highmem
--	 * zones. So there's no need to recalculate managed_pages because all
--	 * highmem pages will be managed by the buddy system. Here highmem
--	 * zone also includes highmem movable zone.
--	 */
- 	for (z = pgdat->node_zones; z < pgdat->node_zones + MAX_NR_ZONES; z++)
--		if (!is_highmem(z))
--			z->managed_pages = 0;
-+		z->managed_pages = 0;
- }
- 
- /**
-@@ -163,7 +155,7 @@ unsigned long __init free_all_bootmem(void)
- 	struct pglist_data *pgdat;
- 
- 	for_each_online_pgdat(pgdat)
--		reset_node_lowmem_managed_pages(pgdat);
-+		reset_node_managed_pages(pgdat);
- 
- 	/*
- 	 * We need to use MAX_NUMNODES instead of NODE_DATA(0)->node_id
+ 	ClearPageReserved(page);
+diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+index ede2749..bc58fef 100644
+--- a/include/linux/mmzone.h
++++ b/include/linux/mmzone.h
+@@ -474,10 +474,16 @@ struct zone {
+ 	 * frequently read in proximity to zone->lock.  It's good to
+ 	 * give them a chance of being in the same cacheline.
+ 	 *
+-	 * Write access to present_pages and managed_pages at runtime should
+-	 * be protected by lock_memory_hotplug()/unlock_memory_hotplug().
+-	 * Any reader who can't tolerant drift of present_pages and
+-	 * managed_pages should hold memory hotplug lock to get a stable value.
++	 * Write access to present_pages at runtime should be protected by
++	 * lock_memory_hotplug()/unlock_memory_hotplug().  Any reader who can't
++	 * tolerant drift of present_pages should hold memory hotplug lock to
++	 * get a stable value.
++	 *
++	 * Read access to managed_pages should be safe because it's unsigned
++	 * long. Write access to zone->managed_pages and totalram_pages are
++	 * protected by managed_page_count_lock at runtime. Basically only
++	 * adjust_managed_page_count() should be used instead of directly
++	 * touching zone->managed_pages and totalram_pages.
+ 	 */
+ 	unsigned long		spanned_pages;
+ 	unsigned long		present_pages;
 diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index ad2f619..8106aa5 100644
+index 8106aa5..2692931 100644
 --- a/mm/page_alloc.c
 +++ b/mm/page_alloc.c
-@@ -5137,6 +5137,7 @@ unsigned long free_reserved_area(unsigned long start, unsigned long end,
- void free_highmem_page(struct page *page)
+@@ -99,6 +99,9 @@ nodemask_t node_states[NR_NODE_STATES] __read_mostly = {
+ };
+ EXPORT_SYMBOL(node_states);
+ 
++/* Protect totalram_pages and zone->managed_pages */
++static DEFINE_SPINLOCK(managed_page_count_lock);
++
+ unsigned long totalram_pages __read_mostly;
+ unsigned long totalreserve_pages __read_mostly;
+ /*
+@@ -5113,6 +5116,22 @@ early_param("movablecore", cmdline_parse_movablecore);
+ 
+ #endif /* CONFIG_HAVE_MEMBLOCK_NODE_MAP */
+ 
++void adjust_managed_page_count(struct page *page, long count)
++{
++	bool lock = (system_state != SYSTEM_BOOTING);
++
++	/* No need to acquire the lock during boot */
++	if (lock)
++		spin_lock(&managed_page_count_lock);
++
++	page_zone(page)->managed_pages += count;
++	totalram_pages += count;
++
++	if (lock)
++		spin_unlock(&managed_page_count_lock);
++}
++EXPORT_SYMBOL(adjust_managed_page_count);
++
+ unsigned long free_reserved_area(unsigned long start, unsigned long end,
+ 				 int poison, char *s)
  {
- 	__free_reserved_page(page);
-+	page_zone(page)->managed_pages++;
- 	totalhigh_pages++;
- }
- #endif
 -- 
 1.7.9.5
 
