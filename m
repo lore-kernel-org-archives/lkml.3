@@ -1,138 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753574Ab3CEHFY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 02:05:24 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:44506 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752467Ab3CEHFT (ORCPT
+	id S1754848Ab3CEHJz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 02:09:55 -0500
+Received: from mail-lb0-f169.google.com ([209.85.217.169]:38982 "EHLO
+	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753945Ab3CEHJx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 02:05:19 -0500
-From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-Subject: [PATCH v2 04/20] vmcore: allocate buffer for ELF headers on page-size
- alignment
-To: vgoyal@redhat.com, ebiederm@xmission.com, cpw@sgi.com,
-        kumagai-atsushi@mxc.nes.nec.co.jp, lisa.mitchell@hp.com,
-        heiko.carstens@de.ibm.com, akpm@linux-foundation.org
-Cc: kexec@lists.infradead.org, linux-kernel@vger.kernel.org
-Date: Sat, 02 Mar 2013 17:36:11 +0900
-Message-ID: <20130302083610.31252.18601.stgit@localhost6.localdomain6>
-In-Reply-To: <20130302083447.31252.93914.stgit@localhost6.localdomain6>
-References: <20130302083447.31252.93914.stgit@localhost6.localdomain6>
-User-Agent: StGIT/0.14.3
+	Tue, 5 Mar 2013 02:09:53 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+X-Originating-IP: [114.34.49.216]
+In-Reply-To: <20130305070339.GE9391@opensource.wolfsonmicro.com>
+References: <1362464160.1111.1.camel@phoenix>
+	<20130305070339.GE9391@opensource.wolfsonmicro.com>
+Date: Tue, 5 Mar 2013 15:09:51 +0800
+Message-ID: <CAFRkauDJbEZCn-qdnv_WzQSV=zDfR369YcDX19pbkAu2c4bxfQ@mail.gmail.com>
+Subject: Re: [PATCH RESEND 1/3] regulator: core: Add enable_is_inverted flag
+ to indicate set enable_mask bits to disable
+From: Axel Lin <axel.lin@ingics.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Haojian Zhuang <haojian.zhuang@gmail.com>,
+        "Jett.Zhou" <jtzhou@marvell.com>, Liam Girdwood <lgirdwood@gmail.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Allocate buffer for ELF headers on page-size aligned boudary to
-satisfy mmap() requirement. For this, __get_free_pages() is used
-instead of kmalloc().
+2013/3/5 Mark Brown <broonie@opensource.wolfsonmicro.com>:
+> On Tue, Mar 05, 2013 at 02:16:00PM +0800, Axel Lin wrote:
+>> Add enable_is_inverted flag to indicate set enable_mask bits to disable
+>> when using regulator_enable_regmap and friends APIs.
+>>
+>> Signed-off-by: Axel Lin <axel.lin@ingics.com>
+>> Reviewed-by: Haojian Zhuang <haojian.zhuang@gmail.com>
+>> ---
+>> This patch was sent on https://lkml.org/lkml/2013/2/16/14.
+>> This resend is against linux-next tree (20130305).
+>
+> This doesn't apply against v3.9-rc1...  what are the dependencies?
 
-Also, later patch will decrease actually used buffer size for ELF
-headers, so it's necessary to keep original buffer size and actually
-used buffer size separately. elfcorebuf_sz_orig keeps the original one
-and elfcorebuf_sz the actually used one.
+I think it is because of commit 5838b032fd
+"regulator: core: update kernel documentation for regulator_desc".
 
-Signed-off-by: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
----
+I found the patch (sent on https://lkml.org/lkml/2013/2/16/14 ) does not apply
+to today's linux-next tree. So I re-generate the patchs against linux-next.
 
- fs/proc/vmcore.c |   30 +++++++++++++++++++++---------
- 1 files changed, 21 insertions(+), 9 deletions(-)
+Should I resend the previous version of this patch?
 
-diff --git a/fs/proc/vmcore.c b/fs/proc/vmcore.c
-index b5c9e33..1b02d01 100644
---- a/fs/proc/vmcore.c
-+++ b/fs/proc/vmcore.c
-@@ -31,6 +31,7 @@ static LIST_HEAD(vmcore_list);
- /* Stores the pointer to the buffer containing kernel elf core headers. */
- static char *elfcorebuf;
- static size_t elfcorebuf_sz;
-+static size_t elfcorebuf_sz_orig;
- 
- /* Total size of vmcore file. */
- static u64 vmcore_size;
-@@ -610,26 +611,31 @@ static int __init parse_crash_elf64_headers(void)
- 
- 	/* Read in all elf headers. */
- 	elfcorebuf_sz = ehdr.e_phoff + ehdr.e_phnum * sizeof(Elf64_Phdr);
--	elfcorebuf = kmalloc(elfcorebuf_sz, GFP_KERNEL);
-+	elfcorebuf_sz_orig = elfcorebuf_sz;
-+	elfcorebuf = (void *) __get_free_pages(GFP_KERNEL | __GFP_ZERO,
-+					       get_order(elfcorebuf_sz_orig));
- 	if (!elfcorebuf)
- 		return -ENOMEM;
- 	addr = elfcorehdr_addr;
- 	rc = read_from_oldmem(elfcorebuf, elfcorebuf_sz, &addr, 0);
- 	if (rc < 0) {
--		kfree(elfcorebuf);
-+		free_pages((unsigned long)elfcorebuf,
-+			   get_order(elfcorebuf_sz_orig));
- 		return rc;
- 	}
- 
- 	/* Merge all PT_NOTE headers into one. */
- 	rc = merge_note_headers_elf64(elfcorebuf, &elfcorebuf_sz, &vmcore_list);
- 	if (rc) {
--		kfree(elfcorebuf);
-+		free_pages((unsigned long)elfcorebuf,
-+			   get_order(elfcorebuf_sz_orig));
- 		return rc;
- 	}
- 	rc = process_ptload_program_headers_elf64(elfcorebuf, elfcorebuf_sz,
- 							&vmcore_list);
- 	if (rc) {
--		kfree(elfcorebuf);
-+		free_pages((unsigned long)elfcorebuf,
-+			   get_order(elfcorebuf_sz_orig));
- 		return rc;
- 	}
- 	set_vmcore_list_offsets_elf64(elfcorebuf, &vmcore_list);
-@@ -665,26 +671,31 @@ static int __init parse_crash_elf32_headers(void)
- 
- 	/* Read in all elf headers. */
- 	elfcorebuf_sz = ehdr.e_phoff + ehdr.e_phnum * sizeof(Elf32_Phdr);
--	elfcorebuf = kmalloc(elfcorebuf_sz, GFP_KERNEL);
-+	elfcorebuf_sz_orig = elfcorebuf_sz;
-+	elfcorebuf = (void *) __get_free_pages(GFP_KERNEL | __GFP_ZERO,
-+					       get_order(elfcorebuf_sz));
- 	if (!elfcorebuf)
- 		return -ENOMEM;
- 	addr = elfcorehdr_addr;
- 	rc = read_from_oldmem(elfcorebuf, elfcorebuf_sz, &addr, 0);
- 	if (rc < 0) {
--		kfree(elfcorebuf);
-+		free_pages((unsigned long)elfcorebuf,
-+			   get_order(elfcorebuf_sz_orig));
- 		return rc;
- 	}
- 
- 	/* Merge all PT_NOTE headers into one. */
- 	rc = merge_note_headers_elf32(elfcorebuf, &elfcorebuf_sz, &vmcore_list);
- 	if (rc) {
--		kfree(elfcorebuf);
-+		free_pages((unsigned long)elfcorebuf,
-+			   get_order(elfcorebuf_sz_orig));
- 		return rc;
- 	}
- 	rc = process_ptload_program_headers_elf32(elfcorebuf, elfcorebuf_sz,
- 								&vmcore_list);
- 	if (rc) {
--		kfree(elfcorebuf);
-+		free_pages((unsigned long)elfcorebuf,
-+			   get_order(elfcorebuf_sz_orig));
- 		return rc;
- 	}
- 	set_vmcore_list_offsets_elf32(elfcorebuf, &vmcore_list);
-@@ -766,7 +777,8 @@ void vmcore_cleanup(void)
- 		list_del(&m->list);
- 		kfree(m);
- 	}
--	kfree(elfcorebuf);
-+	free_pages((unsigned long)elfcorebuf,
-+		   get_order(elfcorebuf_sz_orig));
- 	elfcorebuf = NULL;
- }
- EXPORT_SYMBOL_GPL(vmcore_cleanup);
-
+Axel
