@@ -1,115 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756702Ab3CEOB6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 09:01:58 -0500
-Received: from mail-qa0-f41.google.com ([209.85.216.41]:60701 "EHLO
-	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756562Ab3CEOBh (ORCPT
+	id S1756759Ab3CEODB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 09:03:01 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:17550 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756185Ab3CEOC7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 09:01:37 -0500
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Stanislaw Gruszka <sgruszka@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Oleg Nesterov <oleg@redhat.com>
-Subject: [PATCH 2/3] posix_cpu_timers: Consolidate timer list cleanups
-Date: Tue,  5 Mar 2013 15:01:21 +0100
-Message-Id: <1362492082-23019-3-git-send-email-fweisbec@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1362492082-23019-1-git-send-email-fweisbec@gmail.com>
-References: <1362492082-23019-1-git-send-email-fweisbec@gmail.com>
+	Tue, 5 Mar 2013 09:02:59 -0500
+Date: Tue, 5 Mar 2013 09:02:54 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
+        dan.magenheimer@oracle.com
+Subject: Re: [PATCH 11/11] zcache/zbud: Add incremental accessory counters
+Message-ID: <20130305140254.GD2589@phenom.dumpdata.com>
+References: <1362421101-15896-1-git-send-email-konrad.wilk@oracle.com>
+ <1362421101-15896-12-git-send-email-konrad.wilk@oracle.com>
+ <20130305084453.GA861@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130305084453.GA861@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cleaning up the posix cpu timers on task exit shares
-some common code among timer list types, most notably the
-list traversal and expiry time update.
+On Tue, Mar 05, 2013 at 04:44:53PM +0800, Greg KH wrote:
+> On Mon, Mar 04, 2013 at 01:18:21PM -0500, Konrad Rzeszutek Wilk wrote:
+> > that are going to be used for debug fs entries.
+> 
+> what debugfs entries?
+> 
+> > 
+> > Acked-by: Dan Magenheimer <dan.magenheimer@oracle.com>
+> > Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> > ---
+> >  drivers/staging/zcache/zbud.c | 58 +++++++++++++++++++++++++++++--------------
+> >  1 file changed, 39 insertions(+), 19 deletions(-)
+> > 
+> > diff --git a/drivers/staging/zcache/zbud.c b/drivers/staging/zcache/zbud.c
+> > index fdff5c6..0feb856 100644
+> > --- a/drivers/staging/zcache/zbud.c
+> > +++ b/drivers/staging/zcache/zbud.c
+> > @@ -301,6 +301,26 @@ static ssize_t zbud_eph_unbuddied_count;
+> >  static ssize_t zbud_pers_unbuddied_count;
+> >  static ssize_t zbud_eph_zombie_count;
+> >  static ssize_t zbud_pers_zombie_count;
+> > +static inline void inc_zbud_eph_pageframes(void) { zbud_eph_pageframes++; };
+> > +static inline void inc_zbud_pers_pageframes(void) { zbud_pers_pageframes++; };
+> > +static inline void inc_zbud_eph_zpages(void) { zbud_eph_zpages++; };
+> 
+> <snip>
+> 
+> That's just insane, why are you doing this?
 
-Unify this in a common helper.
+To move them out to their own file, such as debug.h. And if the
+user does not want the DebugFS entries for zbud_eph_p* then these:
 
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Stanislaw Gruszka <sgruszka@redhat.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Oleg Nesterov <oleg@redhat.com>
----
- kernel/posix-cpu-timers.c |   48 +++++++++++++++++---------------------------
- 1 files changed, 19 insertions(+), 29 deletions(-)
+inc_zbud_eph_pageframes(void) ..
 
-diff --git a/kernel/posix-cpu-timers.c b/kernel/posix-cpu-timers.c
-index b633291..bb03633 100644
---- a/kernel/posix-cpu-timers.c
-+++ b/kernel/posix-cpu-timers.c
-@@ -382,6 +382,21 @@ static int posix_cpu_timer_del(struct k_itimer *timer)
- 	return ret;
- }
- 
-+static void cleanup_timers_list(struct list_head *head,
-+				unsigned long long curr)
-+{
-+	struct cpu_timer_list *timer, *next;
-+
-+	list_for_each_entry_safe(timer, next, head, entry) {
-+		list_del_init(&timer->entry);
-+		if (timer->expires < curr) {
-+			timer->expires = 0;
-+		} else {
-+			timer->expires -= curr;
-+		}
-+	}
-+}
-+
- /*
-  * Clean out CPU timers still ticking when a thread exited.  The task
-  * pointer is cleared, and the expiry time is replaced with the residual
-@@ -392,37 +407,12 @@ static void cleanup_timers(struct list_head *head,
- 			   cputime_t utime, cputime_t stime,
- 			   unsigned long long sum_exec_runtime)
- {
--	struct cpu_timer_list *timer, *next;
--	cputime_t ptime = utime + stime;
- 
--	list_for_each_entry_safe(timer, next, head, entry) {
--		list_del_init(&timer->entry);
--		if (timer->expires < cputime_to_expires(ptime)) {
--			timer->expires = 0;
--		} else {
--			timer->expires -= cputime_to_expires(ptime);
--		}
--	}
--
--	++head;
--	list_for_each_entry_safe(timer, next, head, entry) {
--		list_del_init(&timer->entry);
--		if (timer->expires < cputime_to_expires(utime)) {
--			timer->expires = 0;
--		} else {
--			timer->expires -= cputime_to_expires(utime);
--		}
--	}
-+	cputime_t ptime = utime + stime;
- 
--	++head;
--	list_for_each_entry_safe(timer, next, head, entry) {
--		list_del_init(&timer->entry);
--		if (timer->expires < sum_exec_runtime) {
--			timer->expires = 0;
--		} else {
--			timer->expires -= sum_exec_runtime;
--		}
--	}
-+	cleanup_timers_list(head, cputime_to_expires(ptime));
-+	cleanup_timers_list(++head, cputime_to_expires(utime));
-+	cleanup_timers_list(++head, sum_exec_runtime);
- }
- 
- /*
--- 
-1.7.5.4
+will now be defined as:
+static inline void inc_zbud_...(void) { };
 
+and essentially are NOPs.
+
+> 
+> As you aren't using this yet, I'm not going to apply this patch, sorry.
+
+OK. Will finish off that part of the cleanup and repost it for the zbud.
+
+> 
+> greg k-h
