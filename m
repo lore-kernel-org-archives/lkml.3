@@ -1,132 +1,258 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752509Ab3CELDO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 06:03:14 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:61370 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750974Ab3CELDL (ORCPT
+	id S1753273Ab3CELEo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 06:04:44 -0500
+Received: from smtp.eu.citrix.com ([46.33.159.39]:51413 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752367Ab3CELEn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 06:03:11 -0500
-Date: Tue, 5 Mar 2013 11:02:39 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Paul Mundt <lethal@linux-sh.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 8/8] ARM: smp: Remove local timer API
-Message-ID: <20130305110239.GC15661@e106331-lin.cambridge.arm.com>
-References: <1361518039-16663-1-git-send-email-sboyd@codeaurora.org>
- <1361518039-16663-9-git-send-email-sboyd@codeaurora.org>
- <20130222111545.GA15020@e106331-lin.cambridge.arm.com>
- <20130222162458.GA19670@linux-sh.org>
- <20130225134041.GA22785@e106331-lin.cambridge.arm.com>
- <5135333E.6030305@codeaurora.org>
+	Tue, 5 Mar 2013 06:04:43 -0500
+X-IronPort-AV: E=Sophos;i="4.84,787,1355097600"; 
+   d="scan'208";a="2181575"
+Message-ID: <5135D149.1010805@citrix.com>
+Date: Tue, 5 Mar 2013 12:04:41 +0100
+From: =?windows-1252?Q?Roger_Pau_Monn=E9?= <roger.pau@citrix.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:17.0) Gecko/20130216 Thunderbird/17.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5135333E.6030305@codeaurora.org>
-Thread-Topic: [PATCH 8/8] ARM: smp: Remove local timer API
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-acceptlanguage: en-GB, en-US
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>
+Subject: Re: [PATCH RFC 04/12] xen-blkfront: pre-allocate pages for requests
+References: <1362047335-26402-1-git-send-email-roger.pau@citrix.com> <1362047335-26402-5-git-send-email-roger.pau@citrix.com> <20130304193904.GI15386@phenom.dumpdata.com>
+In-Reply-To: <20130304193904.GI15386@phenom.dumpdata.com>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 04, 2013 at 11:50:22PM +0000, Stephen Boyd wrote:
-> On 02/25/13 05:40, Mark Rutland wrote:
-> > I've had a quick go at writing a generic timer driver. I've not had a chance to
-> > test it, and there are a couple of things that are up for discussion (e.g. what
-> > should the rating be) but I think we want something very close to this.
-> >
+On 04/03/13 20:39, Konrad Rzeszutek Wilk wrote:
+> On Thu, Feb 28, 2013 at 11:28:47AM +0100, Roger Pau Monne wrote:
+>> This prevents us from having to call alloc_page while we are preparing
+>> the request. Since blkfront was calling alloc_page with a spinlock
+>> held we used GFP_ATOMIC, which can fail if we are requesting a lot of
+>> pages since it is using the emergency memory pools.
+>>
+>> Allocating all the pages at init prevents us from having to call
+>> alloc_page, thus preventing possible failures.
+>>
+>> Signed-off-by: Roger Pau Monné <roger.pau@citrix.com>
+>> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+>> Cc: xen-devel@lists.xen.org
+>> ---
+>>  drivers/block/xen-blkfront.c |  120 +++++++++++++++++++++++++++--------------
+>>  1 files changed, 79 insertions(+), 41 deletions(-)
+>>
+>> diff --git a/drivers/block/xen-blkfront.c b/drivers/block/xen-blkfront.c
+>> index 2e39eaf..5ba6b87 100644
+>> --- a/drivers/block/xen-blkfront.c
+>> +++ b/drivers/block/xen-blkfront.c
+>> @@ -165,6 +165,69 @@ static int add_id_to_freelist(struct blkfront_info *info,
+>>  	return 0;
+>>  }
+>>  
+>> +static int fill_grant_buffer(struct blkfront_info *info, int num)
+>> +{
+>> +	struct page *granted_page;
+>> +	struct grant *gnt_list_entry, *n;
+>> +	int i = 0;
+>> +
+>> +	while(i < num) {
+>> +		gnt_list_entry = kzalloc(sizeof(struct grant), GFP_NOIO);
 > 
-> This looks good to me. I only have some minor comments. What's the plan
-> for merging? Get tglx to take this and provide a stable branch and then
-> base my patches off that and get these patches taken through arm-soc?
+> GFP_NORMAL ?
 
-Great.
+drivers/block/xen-blkfront.c:175: error: ‘GFP_NORMAL’ undeclared (first
+use in this function)
 
-That sounds about right, I don't really know what the best way would be.
-
-> 
-> > diff --git a/drivers/clocksource/dummy_timer.c b/drivers/clocksource/dummy_timer.c
-> > new file mode 100644
-> > index 0000000..bdaba34
-> > --- /dev/null
-> > +++ b/drivers/clocksource/dummy_timer.c
-> > @@ -0,0 +1,67 @@
-> > +/*
-> > + *  linux/drivers/clocksource/dummy_timer.c
-> > + *
-> > + *  Copyright (C) 2013 ARM Ltd.
-> > + *  All Rights Reserved
-> > + *
-> > + * This program is free software; you can redistribute it and/or modify
-> > + * it under the terms of the GNU General Public License version 2 as
-> > + * published by the Free Software Foundation.
-> > + */
-> > +#include <linux/clockchips.h>
-> > +#include <linux/cpu.h>
-> > +#include <linux/init.h>
-> > +#include <linux/percpu.h>
-> > +
-> > +DEFINE_PER_CPU(struct clock_event_device, dummy_evt);
-> 
-> static?
-
-Oops. Added.
-
-> 
-> > +
-> > +static void dummy_set_mode(enum clock_event_mode mode,
-> > +			   struct clock_event_device *evt)
-> > +{
-> > +	/*
-> > +	 * Core clockevents code will call this when exchanging timer devices.
-> > +	 * We don't need to do anything here.
-> > +	 */
-> > +}
-> > +
-> > +static void __cpuinit dummy_setup(void)
-> > +{
-> > +	int cpu = smp_processor_id();
-> > +	struct clock_event_device *evt = &per_cpu(dummy_evt, cpu);
-> 
-> Can we use __this_cpu_ptr()? I wonder if that makes the code generation
-> better or worse. I didn't do it in my 8/8 patch because I wanted the
-> code to be the same before and after to show code movement.
-
-I did that originally, but thought as I needed the cpu value for the mask
-anyway that there wasn't much point. I'm not that good at reading generated
-assembly, so I can't really say if either's better.
+Did you mean GFP_KERNEL? I think GFP_NOIO is more suitable, it can block
+but no IO will be performed.
 
 > 
-> > +
-> > +	evt->name	= "dummy timer";
-> > +	evt->features	= CLOCK_EVT_FEAT_PERIODIC |
-> > +			  CLOCK_EVT_FEAT_ONESHOT |
-> > +			  CLOCK_EVT_FEAT_DUMMY;
-> > +	evt->rating	= 100;
-> > +	evt->set_mode	= dummy_set_mode;
-> > +	evt->cpumask	= cpumask_of(cpu);
-> > +
-> > +	clockevents_register_device(evt);
-> > +}
-> > +
-> > +static int __cpuinit dummy_cpu_notify(struct notifier_block *self,
-> > +				      unsigned long action, void *hcpu)
-> > +{
-> > +	if ((action & ~CPU_TASKS_FROZEN) == CPU_STARTING)
-> > +		dummy_setup();
+>> +		if (!gnt_list_entry)
+>> +			goto out_of_memory;
 > 
-> There are already two dummy_setup() functions. Perhaps we can
-> s/dummy/dummy_broadcast/ throughout this file?
+> Hmm, I guess another patch could be to convert this to a fail-safe
+> mechanism. Meaning if we fail here, we just cap our maximum amount of
+> grants we have up to 'i'.
+> 
+> 
+>> +
+>> +		granted_page = alloc_page(GFP_NOIO);
+> 
+> GFP_NORMAL
+> 
+>> +		if (!granted_page) {
+>> +			kfree(gnt_list_entry);
+>> +			goto out_of_memory;
+>> +		}
+>> +
+>> +		gnt_list_entry->pfn = page_to_pfn(granted_page);
+>> +		gnt_list_entry->gref = GRANT_INVALID_REF;
+>> +		list_add(&gnt_list_entry->node, &info->persistent_gnts);
+>> +		i++;
+>> +	}
+>> +
+>> +	return 0;
+>> +
+>> +out_of_memory:
+>> +	list_for_each_entry_safe(gnt_list_entry, n,
+>> +	                         &info->persistent_gnts, node) {
+>> +		list_del(&gnt_list_entry->node);
+>> +		__free_page(pfn_to_page(gnt_list_entry->pfn));
+>> +		kfree(gnt_list_entry);
+>> +		i--;
+>> +	}
+>> +	BUG_ON(i != 0);
+>> +	return -ENOMEM;
+>> +}
+>> +
+>> +static struct grant *get_grant(grant_ref_t *gref_head,
+>> +                               struct blkfront_info *info)
+>> +{
+>> +	struct grant *gnt_list_entry;
+>> +	unsigned long buffer_mfn;
+>> +
+>> +	BUG_ON(list_empty(&info->persistent_gnts));
+>> +	gnt_list_entry = list_first_entry(&info->persistent_gnts, struct grant,
+>> +	                                  node);
+>> +	list_del(&gnt_list_entry->node);
+>> +
+>> +	if (gnt_list_entry->gref != GRANT_INVALID_REF) {
+>> +		info->persistent_gnts_c--;
+>> +		return gnt_list_entry;
+>> +	}
+>> +
+>> +	/* Assign a gref to this page */
+>> +	gnt_list_entry->gref = gnttab_claim_grant_reference(gref_head);
+>> +	BUG_ON(gnt_list_entry->gref == -ENOSPC);
+>> +	buffer_mfn = pfn_to_mfn(gnt_list_entry->pfn);
+>> +	gnttab_grant_foreign_access_ref(gnt_list_entry->gref,
+>> +	                                info->xbdev->otherend_id,
+>> +	                                buffer_mfn, 0);
+>> +	return gnt_list_entry;
+>> +}
+>> +
+>>  static const char *op_name(int op)
+>>  {
+>>  	static const char *const names[] = {
+>> @@ -306,7 +369,6 @@ static int blkif_queue_request(struct request *req)
+>>  	 */
+>>  	bool new_persistent_gnts;
+>>  	grant_ref_t gref_head;
+>> -	struct page *granted_page;
+>>  	struct grant *gnt_list_entry = NULL;
+>>  	struct scatterlist *sg;
+>>  
+>> @@ -370,42 +432,9 @@ static int blkif_queue_request(struct request *req)
+>>  			fsect = sg->offset >> 9;
+>>  			lsect = fsect + (sg->length >> 9) - 1;
+>>  
+>> -			if (info->persistent_gnts_c) {
+>> -				BUG_ON(list_empty(&info->persistent_gnts));
+>> -				gnt_list_entry = list_first_entry(
+>> -				                      &info->persistent_gnts,
+>> -				                      struct grant, node);
+>> -				list_del(&gnt_list_entry->node);
+>> -
+>> -				ref = gnt_list_entry->gref;
+>> -				buffer_mfn = pfn_to_mfn(gnt_list_entry->pfn);
+>> -				info->persistent_gnts_c--;
+>> -			} else {
+>> -				ref = gnttab_claim_grant_reference(&gref_head);
+>> -				BUG_ON(ref == -ENOSPC);
+>> -
+>> -				gnt_list_entry =
+>> -					kmalloc(sizeof(struct grant),
+>> -							 GFP_ATOMIC);
+>> -				if (!gnt_list_entry)
+>> -					return -ENOMEM;
+>> -
+>> -				granted_page = alloc_page(GFP_ATOMIC);
+>> -				if (!granted_page) {
+>> -					kfree(gnt_list_entry);
+>> -					return -ENOMEM;
+>> -				}
+>> -
+>> -				gnt_list_entry->pfn =
+>> -					page_to_pfn(granted_page);
+>> -				gnt_list_entry->gref = ref;
+>> -
+>> -				buffer_mfn = pfn_to_mfn(page_to_pfn(
+>> -								granted_page));
+>> -				gnttab_grant_foreign_access_ref(ref,
+>> -					info->xbdev->otherend_id,
+>> -					buffer_mfn, 0);
+>> -			}
+>> +			gnt_list_entry = get_grant(&gref_head, info);
+>> +			ref = gnt_list_entry->gref;
+>> +			buffer_mfn = pfn_to_mfn(gnt_list_entry->pfn);
+>>  
+>>  			info->shadow[id].grants_used[i] = gnt_list_entry;
+>>  
+>> @@ -803,17 +832,20 @@ static void blkif_free(struct blkfront_info *info, int suspend)
+>>  		blk_stop_queue(info->rq);
+>>  
+>>  	/* Remove all persistent grants */
+>> -	if (info->persistent_gnts_c) {
+>> +	if (!list_empty(&info->persistent_gnts)) {
+>>  		list_for_each_entry_safe(persistent_gnt, n,
+>>  		                         &info->persistent_gnts, node) {
+>>  			list_del(&persistent_gnt->node);
+>> -			gnttab_end_foreign_access(persistent_gnt->gref, 0, 0UL);
+>> +			if (persistent_gnt->gref != GRANT_INVALID_REF) {
+>> +				gnttab_end_foreign_access(persistent_gnt->gref,
+>> +				                          0, 0UL);
+>> +				info->persistent_gnts_c--;
+>> +			}
+>>  			__free_page(pfn_to_page(persistent_gnt->pfn));
+>>  			kfree(persistent_gnt);
+>> -			info->persistent_gnts_c--;
+>>  		}
+>> -		BUG_ON(info->persistent_gnts_c != 0);
+>>  	}
+>> +	BUG_ON(info->persistent_gnts_c != 0);
+> 
+> So if the guest _never_ sent any I/Os and just attached/detached the device - won't
+> we fail here?.
 
-I've done s/dummy/dummy_timer/ as suggested in your other reply.
+persistent_gnts_c is initialized to 0, so if we don't perform IO it
+should still be 0 at this point. Since we have just cleaned the
+persistent grants lists this should always be 0 at this point.
 
-Thanks,
-Mark.
+>>  
+>>  	/* No more gnttab callback work. */
+>>  	gnttab_cancel_free_callback(&info->callback);
+>> @@ -1088,6 +1120,12 @@ again:
+>>  		goto destroy_blkring;
+>>  	}
+>>  
+>> +	/* Allocate memory for grants */
+>> +	err = fill_grant_buffer(info, BLK_RING_SIZE *
+>> +	                              BLKIF_MAX_SEGMENTS_PER_REQUEST);
+>> +	if (err)
+>> +		goto out;
+> 
+> That looks to be in the wrong function - talk_to_blkback function is
+> to talk to the blkback. Not do initialization type operations.
+
+Yes, I know it's not the best place to place it. It's here mainly
+because that's the only function that gets called by both driver
+initialization and resume.
+
+Last patch moves this to a more sensible place.
+
+> 
+> Also I think this means that on resume - we would try to allocate
+> again the grants?
+
+Yes, grants are cleaned on resume and reallocated.
+
+>> +
+>>  	xenbus_switch_state(dev, XenbusStateInitialised);
+>>  
+>>  	return 0;
+>> -- 
+>> 1.7.7.5 (Apple Git-26)
+>>
+
