@@ -1,90 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755758Ab3CEPgc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 10:36:32 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:6722 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751035Ab3CEPga (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 10:36:30 -0500
-Date: Tue, 5 Mar 2013 10:35:54 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dmitry.kasatkin@intel.com
-Subject: Re: [PATCH 2/6] ima: Return INTEGRITY_FAIL if digital signature
- can't be verified
-Message-ID: <20130305153554.GC4519@redhat.com>
-References: <1360871745-20616-1-git-send-email-vgoyal@redhat.com>
- <1360871745-20616-3-git-send-email-vgoyal@redhat.com>
- <1362404916.4392.25.camel@falcor1>
- <20130304162033.GB15199@redhat.com>
- <1362490253.4392.159.camel@falcor1>
+	id S1756284Ab3CEPj2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 10:39:28 -0500
+Received: from smtp5.epfl.ch ([128.178.224.8]:35519 "HELO smtp5.epfl.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1755230Ab3CEPj0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Mar 2013 10:39:26 -0500
+Message-ID: <513611AA.30304@epfl.ch>
+Date: Tue, 05 Mar 2013 16:39:22 +0100
+From: Florian Vaussard <florian.vaussard@epfl.ch>
+Reply-To: florian.vaussard@epfl.ch
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130219 Thunderbird/17.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1362490253.4392.159.camel@falcor1>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Thierry Reding <thierry.reding@avionic-design.de>
+CC: Bryan Wu <cooloney@gmail.com>, Richard Purdie <rpurdie@rpsys.net>,
+        Peter Ujfalusi <peter.ujfalusi@ti.com>, linux-leds@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Florian Vaussard <florian.vaussard@epfl.ch>
+Subject: Re: [PATCH v3 3/3] leds: leds-pwm: Defer led_pwm_set() if PWM can
+ sleep
+References: <1359381659-24454-1-git-send-email-florian.vaussard@epfl.ch> <1359381659-24454-4-git-send-email-florian.vaussard@epfl.ch> <20130130081728.GC13568@avionic-0098.mockup.avionic-design.de> <512E2F98.6070404@epfl.ch> <51347B06.8090604@epfl.ch> <20130304105806.GA28735@avionic-0098.mockup.avionic-design.de>
+In-Reply-To: <20130304105806.GA28735@avionic-0098.mockup.avionic-design.de>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 05, 2013 at 08:30:53AM -0500, Mimi Zohar wrote:
-> On Mon, 2013-03-04 at 11:20 -0500, Vivek Goyal wrote:
-> > On Mon, Mar 04, 2013 at 08:48:36AM -0500, Mimi Zohar wrote:
-> > > On Thu, 2013-02-14 at 14:55 -0500, Vivek Goyal wrote:
-> > > > Digital signature verification happens using integrity_digsig_verify().
-> > > > Curently we set integrity to FAIL for all error codes except -EOPNOTSUPP.
-> > > > This sounds out of line.
-> > > > 
-> > > > - If appropriate kernel code is not compiled in to verify signature of
-> > > >   a file, then prractically it is a failed signature.
-> > > > 
-> > > > - For so many other possible errors we are setting the status to fail.
-> > > >   For example, -EINVAL, -ENOKEY, -ENOMEM, -EINVAL, -ENOTSUPP etc, it
-> > > >   beats me that why -EOPNOTSUPP is special.
-> > > > 
-> > > > This patch should make the semantics more consistent. That is, if digital
-> > > > signature is present in security.ima, then any error happened during
-> > > > signature processing leads to status INTEGRITY_FAIL.
-> > > > 
-> > > > AFAICS, it should not have any user visible effect on existing
-> > > > application. In some cases we will start returning INTEGRITY_FAIL
-> > > > instead of INTEGRITY_UNKNOWN. And process_measurement() will deny access
-> > > > to file both in case of INTEGRITY_UNKNOWN and INTEGRITY_FAIL.
-> > > > 
-> > > > Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
-> > > 
-> > > A number of patches in this patchset more finely differentiate return
-> > > codes, which is good.  I agree with you totally that there is no good
-> > > reason for -EOPNOTSUPP to be handled differently.  Unfortunately, the
-> > > initramfs is CPIO, which doesn't support xattrs.  With the proposed
-> > > change and 'ima_appraise_tcb' flag enabled, we wouldn't be able to boot.
-> > > I really dislike hard coding policy in the kernel.
-> > 
-> > Hi Mimi,
-> > 
-> > If there are no xattr, then we will not even hit this code. We will
-> > bail out early in vfs_getxattr_alloc().
-> > 
-> > I thought that one of the DON_APPRAISE rules will kick in for initramfs
-> > and files in initramfs will not be appraised and boot will continue.
-> > 
-> > {.action = DONT_APPRAISE,.fsmagic = TMPFS_MAGIC,.flags = IMA_FSMAGIC},
-> > {.action = DONT_APPRAISE,.fsmagic = RAMFS_MAGIC,.flags = IMA_FSMAGIC},
-> > 
-> > Is that not the case here?
-> 
-> Right, thanks for the clarification.  Perhaps we could abbreviate the
-> patch description like:
->  
-> Digital signature verification happens using integrity_digsig_verify().
-> If a digital signature is present in security.ima, then any error, which
-> happens during signature verification, should lead to status
-> INTEGRITY_FAIL.  In the future we might want to differentiate between
-> persistent (eg. -ENOMEM) vs. non-persistent errors, in order to cache
-> failures.  This patch removes the unnecessary -EOPNOTSUPP test.
 
-Sure. I will modify the changelog for future posting.
+On 03/04/2013 11:58 AM, Thierry Reding wrote:
+> On Mon, Mar 04, 2013 at 11:44:22AM +0100, Florian Vaussard wrote:
+>> Hi Bryan, Richard,
+>>
+>>> On 01/30/2013 09:17 AM, Thierry Reding wrote:
+>>>> On Mon, Jan 28, 2013 at 03:00:59PM +0100, Florian Vaussard wrote:
+>>>>> Call to led_pwm_set() can happen inside atomic context, like triggers.
+>>>>> If the PWM call can sleep, defer using a worker.
+>>>>>
+>>>>> Cc: Peter Ujfalusi <peter.ujfalusi@ti.com>
+>>>>> Signed-off-by: Florian Vaussard <florian.vaussard@epfl.ch>
+>>>>> ---
+>>>>>   drivers/leds/leds-pwm.c |   50
+>>>>> +++++++++++++++++++++++++++++++++++++++-------
+>>>>>   1 files changed, 42 insertions(+), 8 deletions(-)
+>>>>
+>>>> Bryan, I assume that you'll be taking this? It doesn't apply cleanly to
+>>>> my tree, probably because of Peter's recent changes that you took
+>>>> through your tree and Florian based his patches on top of that. The
+>>>> conflict resolution should be trivial, though.
+>>>>
+>>>
+>>> It seems that this patch was not taken. Could you pull it, as the other
+>>> part is already in linux-pwm? Or is there any show stopper?
+>>>
+>>
+>> Ping? Who should merge this?
+>
+> I assume Bryan will take it through the LED tree? Patches 1 & 2 went
+> into v3.9-rc1 through the PWM tree.
+>
 
-Thanks
-Vivek
+This was also my assumption, but I never got the feedback from Brian on 
+this patch.
+The crach is still there, and the patch missed the merge window :)
+
+Cheers,
+
+Florian
