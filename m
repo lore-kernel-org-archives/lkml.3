@@ -1,55 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753626Ab3CEV5E (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 16:57:04 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:41929 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752838Ab3CEV5C (ORCPT
+	id S1753671Ab3CEV7n (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 16:59:43 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:62450 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752838Ab3CEV7l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 16:57:02 -0500
-Message-ID: <51366A29.2060808@suse.cz>
-Date: Tue, 05 Mar 2013 22:56:57 +0100
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:19.0) Gecko/20130124 Thunderbird/19.0
+	Tue, 5 Mar 2013 16:59:41 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Ley Foon Tan <lftan@altera.com>
+Subject: Re: [PATCH 1/1] drivers/misc: Add Altera System ID driver
+Date: Tue, 5 Mar 2013 21:59:36 +0000
+User-Agent: KMail/1.12.2 (Linux/3.8.0-8-generic; KDE/4.3.2; x86_64; ; )
+Cc: "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        Rob Landley <rob@landley.net>, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org
+References: <1362366697-2768-1-git-send-email-lftan@altera.com> <201303041255.42142.arnd@arndb.de> <1362481947.2293.11.camel@leyfoon-vm>
+In-Reply-To: <1362481947.2293.11.camel@leyfoon-vm>
 MIME-Version: 1.0
-To: Peter Hurley <peter@hurleysoftware.com>
-CC: jhovold@gmail.com, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        USB list <linux-usb@vger.kernel.org>, linux-serial@vger.kernel.org,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [Fwd: [PATCH v2 0/4] TTY: port hangup and close fixes]
-References: <1362085054.3337.20.camel@thor.lan> <51361724.4050107@suse.cz> <1362503170.18799.33.camel@thor.lan>
-In-Reply-To: <1362503170.18799.33.camel@thor.lan>
-X-Enigmail-Version: 1.6a1pre
-Content-Type: text/plain; charset=UTF-8
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201303052159.36531.arnd@arndb.de>
+X-Provags-ID: V02:K0:LHZiDH24TRdcGyfwRzzcbEnG1UR1vJZ8gUi8OYGnHkU
+ RUZcy+LYFQKpCdSB9vcUwqUI/C+HjapMAfetYM4vkOm0ltuI6r
+ Ah/z6FaeigjWurq5TBu2vOKps1LU9dS8UYYOC3k60cTEHm4ah5
+ MaKTpubaHU5UU6EHnC+ZUc66xX1bP9a+k7CQ4FbE3VmxABzgSh
+ Xv2/eGn90sjIIOhRYcS8/h3NSLxGvaQvzk1eWfgwL20rbJcfyN
+ Yx00z1qrEDUtgDXCSlYVQaMZR9i4VdCB+4gm+OBFU37dnPuusy
+ SvarLco+ovUPK/qfW5mO3XmCxinh5PnbuqDlCb6rDLFsGWSVu6
+ y2sYFl+Kn4Ycy/0Y4yp8=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/05/2013 06:06 PM, Peter Hurley wrote:
->>> @@ -225,15 +232,13 @@ void tty_port_hangup(struct tty_port *port)
->>         spin_lock_irqsave(&port->lock, flags);
->>         port->count = 0;
->>         port->flags &= ~ASYNC_NORMAL_ACTIVE;
->> -       if (port->tty) {
->> +       if (port->tty)
->>                 set_bit(TTY_IO_ERROR, &port->tty->flags);
->> -               tty_kref_put(port->tty);
->> -       }
->> -       port->tty = NULL;
->>         spin_unlock_irqrestore(&port->lock, flags);
->>> +       tty_port_shutdown(port, port->tty);
->>
->> What prevents port->tty to be NULL here already?
+On Tuesday 05 March 2013, Ley Foon Tan wrote:
+> The sysid give the unique system ID and system generation timestamp of
+> the system.
 > 
-> Nothing. That's why it's tested in tty_port_shutdown() above.
+> CASE 1:
+> SOCFPGA SoC + Sysid component in FPGA
+> 
+> CASE 2
+> Nios II soft core CPU + Sysid  (All in FPGA and no SoC is involved)
+> 
+> From example use cases above, Case 2 doesn't involve SoC component. 
+> To support both cases, do you think drivers/base/soc.c is still
+> suitable?
 
-I know :). But the question is rather don't we want to pass the real
-refcounted port->tty (take a snapshot inside the lock) instead?
+Yes, I think so. I would consider the second case still a SoC, because
+you have a single chip that contains the CPU and peripherals. From
+the OS point of view, it does not matter that they are in an FPGA.
 
-thanks,
--- 
-js
-suse labs
+	Arnd
