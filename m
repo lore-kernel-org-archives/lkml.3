@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759460Ab3CEFxo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 00:53:44 -0500
+	id S1759590Ab3CEFxt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 00:53:49 -0500
 Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:55270 "EHLO
 	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759224Ab3CEFxl (ORCPT
+	with ESMTP id S1751692Ab3CEFxr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 00:53:41 -0500
-X-AuditID: 9c930197-b7cc2ae000000eb7-a8-51358862e411
+	Tue, 5 Mar 2013 00:53:47 -0500
+X-AuditID: 9c930197-b7cc2ae000000eb7-e3-51358868eaba
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
         Jiri Olsa <jolsa@redhat.com>, Andi Kleen <andi@firstfloor.org>,
         Namhyung Kim <namhyung.kim@lge.com>, Pekka Enberg <penberg@kernel.org>
-Subject: [PATCH 01/12] perf annotate: Pass evsel instead of evidx on annotation functions
-Date: Tue,  5 Mar 2013 14:53:21 +0900
-Message-Id: <1362462812-30885-2-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 05/12] perf annotate: Add basic support to event group view
+Date: Tue,  5 Mar 2013 14:53:25 +0900
+Message-Id: <1362462812-30885-6-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1362462812-30885-1-git-send-email-namhyung@kernel.org>
 References: <1362462812-30885-1-git-send-email-namhyung@kernel.org>
@@ -27,506 +27,212 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung.kim@lge.com>
 
-Pass evsel instead of evidx.  This is a preparation for supporting
-event group view in annotation and no functional change is intended.
+Add --group option to enable event grouping.  When enabled, all the
+group members information will be shown with the leader so skip
+non-leader events.
+
+It only supports --stdio output currently.  Later patches will extend
+additional features.
+
+ $ perf annotate --group --stdio
+ ...
+  Percent                 |      Source code & Disassembly of libpthread-2.15.so
+ --------------------------------------------------------------------------------
+                          :
+                          :
+                          :
+                          :      Disassembly of section .text:
+                          :
+                          :      000000387dc0aa50 <__pthread_mutex_unlock_usercnt>:
+     8.08    2.40    5.29 :        387dc0aa50:   mov    %rdi,%rdx
+     0.00    0.00    0.00 :        387dc0aa53:   mov    0x10(%rdi),%edi
+     0.00    0.00    0.00 :        387dc0aa56:   mov    %edi,%eax
+     0.00    0.80    0.00 :        387dc0aa58:   and    $0x7f,%eax
+     3.03    2.40    3.53 :        387dc0aa5b:   test   $0x7c,%dil
+     0.00    0.00    0.00 :        387dc0aa5f:   jne    387dc0aaa9 <__pthread_mutex_unlock_use
+     0.00    0.00    0.00 :        387dc0aa61:   test   %eax,%eax
+     0.00    0.00    0.00 :        387dc0aa63:   jne    387dc0aa85 <__pthread_mutex_unlock_use
+     0.00    0.00    0.00 :        387dc0aa65:   and    $0x80,%edi
+     0.00    0.00    0.00 :        387dc0aa6b:   test   %esi,%esi
+     3.03    5.60    7.06 :        387dc0aa6d:   movl   $0x0,0x8(%rdx)
+     0.00    0.00    0.59 :        387dc0aa74:   je     387dc0aa7a <__pthread_mutex_unlock_use
+     0.00    0.00    0.00 :        387dc0aa76:   subl   $0x1,0xc(%rdx)
+     2.02    5.60    1.18 :        387dc0aa7a:   mov    %edi,%esi
+     0.00    0.00    0.00 :        387dc0aa7c:   lock decl (%rdx)
+    83.84   83.20   82.35 :        387dc0aa7f:   jne    387dc0aada <_L_unlock_586>
+     0.00    0.00    0.00 :        387dc0aa81:   nop
+     0.00    0.00    0.00 :        387dc0aa82:   xor    %eax,%eax
+     0.00    0.00    0.00 :        387dc0aa84:   retq
+ ...
 
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/builtin-annotate.c     | 16 +++++++++-------
- tools/perf/builtin-top.c          |  2 +-
- tools/perf/ui/browsers/annotate.c | 30 +++++++++++++++++-------------
- tools/perf/ui/browsers/hists.c    |  2 +-
- tools/perf/ui/gtk/annotate.c      | 10 ++++++----
- tools/perf/util/annotate.c        | 36 +++++++++++++++++++-----------------
- tools/perf/util/annotate.h        | 36 +++++++++++++++++++-----------------
- tools/perf/util/hist.h            |  5 +++--
- 8 files changed, 75 insertions(+), 62 deletions(-)
+ tools/perf/Documentation/perf-annotate.txt |  3 ++
+ tools/perf/builtin-annotate.c              |  7 ++++
+ tools/perf/util/annotate.c                 | 64 +++++++++++++++++++++++++-----
+ 3 files changed, 63 insertions(+), 11 deletions(-)
 
+diff --git a/tools/perf/Documentation/perf-annotate.txt b/tools/perf/Documentation/perf-annotate.txt
+index 5ad07ef417f0..e9cd39a92dc2 100644
+--- a/tools/perf/Documentation/perf-annotate.txt
++++ b/tools/perf/Documentation/perf-annotate.txt
+@@ -93,6 +93,9 @@ OPTIONS
+ --skip-missing::
+ 	Skip symbols that cannot be annotated.
+ 
++--group::
++	Show event group information together
++
+ SEE ALSO
+ --------
+ linkperf:perf-record[1], linkperf:perf-report[1]
 diff --git a/tools/perf/builtin-annotate.c b/tools/perf/builtin-annotate.c
-index 2e6961ea3184..2f015a99481b 100644
+index 2f015a99481b..ae36f3cb5410 100644
 --- a/tools/perf/builtin-annotate.c
 +++ b/tools/perf/builtin-annotate.c
-@@ -109,14 +109,16 @@ static int process_sample_event(struct perf_tool *tool,
- 	return 0;
- }
- 
--static int hist_entry__tty_annotate(struct hist_entry *he, int evidx,
-+static int hist_entry__tty_annotate(struct hist_entry *he,
-+				    struct perf_evsel *evsel,
- 				    struct perf_annotate *ann)
- {
--	return symbol__tty_annotate(he->ms.sym, he->ms.map, evidx,
-+	return symbol__tty_annotate(he->ms.sym, he->ms.map, evsel,
- 				    ann->print_line, ann->full_paths, 0, 0);
- }
- 
--static void hists__find_annotations(struct hists *self, int evidx,
-+static void hists__find_annotations(struct hists *self,
-+				    struct perf_evsel *evsel,
- 				    struct perf_annotate *ann)
- {
- 	struct rb_node *nd = rb_first(&self->entries), *next;
-@@ -142,14 +144,14 @@ find_next:
- 		if (use_browser == 2) {
- 			int ret;
- 
--			ret = hist_entry__gtk_annotate(he, evidx, NULL);
-+			ret = hist_entry__gtk_annotate(he, evsel, NULL);
- 			if (!ret || !ann->skip_missing)
- 				return;
- 
- 			/* skip missing symbols */
- 			nd = rb_next(nd);
- 		} else if (use_browser == 1) {
--			key = hist_entry__tui_annotate(he, evidx, NULL);
-+			key = hist_entry__tui_annotate(he, evsel, NULL);
- 			switch (key) {
- 			case -1:
- 				if (!ann->skip_missing)
-@@ -168,7 +170,7 @@ find_next:
- 			if (next != NULL)
- 				nd = next;
- 		} else {
--			hist_entry__tty_annotate(he, evidx, ann);
-+			hist_entry__tty_annotate(he, evsel, ann);
- 			nd = rb_next(nd);
- 			/*
- 			 * Since we have a hist_entry per IP for the same
-@@ -230,7 +232,7 @@ static int __cmd_annotate(struct perf_annotate *ann)
+@@ -232,6 +232,11 @@ static int __cmd_annotate(struct perf_annotate *ann)
  			total_nr_samples += nr_samples;
  			hists__collapse_resort(hists);
  			hists__output_resort(hists);
--			hists__find_annotations(hists, pos->idx, ann);
-+			hists__find_annotations(hists, pos, ann);
++
++			if (symbol_conf.event_group &&
++			    !perf_evsel__is_group_leader(pos))
++				continue;
++
+ 			hists__find_annotations(hists, pos, ann);
  		}
  	}
- 
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index 72f6eb7b4173..1dcce3229efa 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -231,7 +231,7 @@ static void perf_top__show_details(struct perf_top *top)
- 	printf("Showing %s for %s\n", perf_evsel__name(top->sym_evsel), symbol->name);
- 	printf("  Events  Pcnt (>=%d%%)\n", top->sym_pcnt_filter);
- 
--	more = symbol__annotate_printf(symbol, he->ms.map, top->sym_evsel->idx,
-+	more = symbol__annotate_printf(symbol, he->ms.map, top->sym_evsel,
- 				       0, top->sym_pcnt_filter, top->print_entries, 4);
- 	if (top->zero)
- 		symbol__annotate_zero_histogram(symbol, top->sym_evsel->idx);
-diff --git a/tools/perf/ui/browsers/annotate.c b/tools/perf/ui/browsers/annotate.c
-index 7dca1555c610..67798472384b 100644
---- a/tools/perf/ui/browsers/annotate.c
-+++ b/tools/perf/ui/browsers/annotate.c
-@@ -8,6 +8,7 @@
- #include "../../util/hist.h"
- #include "../../util/sort.h"
- #include "../../util/symbol.h"
-+#include "../../util/evsel.h"
- #include <pthread.h>
- #include <newt.h>
- 
-@@ -331,7 +332,7 @@ static void annotate_browser__set_rb_top(struct annotate_browser *browser,
- }
- 
- static void annotate_browser__calc_percent(struct annotate_browser *browser,
--					   int evidx)
-+					   struct perf_evsel *evsel)
- {
- 	struct map_symbol *ms = browser->b.priv;
- 	struct symbol *sym = ms->sym;
-@@ -344,7 +345,7 @@ static void annotate_browser__calc_percent(struct annotate_browser *browser,
- 
- 	list_for_each_entry(pos, &notes->src->source, node) {
- 		struct browser_disasm_line *bpos = disasm_line__browser(pos);
--		bpos->percent = disasm_line__calc_percent(pos, sym, evidx);
-+		bpos->percent = disasm_line__calc_percent(pos, sym, evsel->idx);
- 		if (bpos->percent < 0.01) {
- 			RB_CLEAR_NODE(&bpos->rb_node);
- 			continue;
-@@ -401,7 +402,8 @@ static void annotate_browser__init_asm_mode(struct annotate_browser *browser)
- 	browser->b.nr_entries = browser->nr_asm_entries;
- }
- 
--static bool annotate_browser__callq(struct annotate_browser *browser, int evidx,
-+static bool annotate_browser__callq(struct annotate_browser *browser,
-+				    struct perf_evsel *evsel,
- 				    struct hist_browser_timer *hbt)
- {
- 	struct map_symbol *ms = browser->b.priv;
-@@ -432,7 +434,7 @@ static bool annotate_browser__callq(struct annotate_browser *browser, int evidx,
- 	}
- 
- 	pthread_mutex_unlock(&notes->lock);
--	symbol__tui_annotate(target, ms->map, evidx, hbt);
-+	symbol__tui_annotate(target, ms->map, evsel, hbt);
- 	ui_browser__show_title(&browser->b, sym->name);
- 	return true;
- }
-@@ -615,7 +617,8 @@ static void annotate_browser__update_addr_width(struct annotate_browser *browser
- 		browser->addr_width += browser->jumps_width + 1;
- }
- 
--static int annotate_browser__run(struct annotate_browser *browser, int evidx,
-+static int annotate_browser__run(struct annotate_browser *browser,
-+				 struct perf_evsel *evsel,
- 				 struct hist_browser_timer *hbt)
- {
- 	struct rb_node *nd = NULL;
-@@ -628,7 +631,7 @@ static int annotate_browser__run(struct annotate_browser *browser, int evidx,
- 	if (ui_browser__show(&browser->b, sym->name, help) < 0)
- 		return -1;
- 
--	annotate_browser__calc_percent(browser, evidx);
-+	annotate_browser__calc_percent(browser, evsel);
- 
- 	if (browser->curr_hot) {
- 		annotate_browser__set_rb_top(browser, browser->curr_hot);
-@@ -641,7 +644,7 @@ static int annotate_browser__run(struct annotate_browser *browser, int evidx,
- 		key = ui_browser__run(&browser->b, delay_secs);
- 
- 		if (delay_secs != 0) {
--			annotate_browser__calc_percent(browser, evidx);
-+			annotate_browser__calc_percent(browser, evsel);
- 			/*
- 			 * Current line focus got out of the list of most active
- 			 * lines, NULL it so that if TAB|UNTAB is pressed, we
-@@ -657,7 +660,7 @@ static int annotate_browser__run(struct annotate_browser *browser, int evidx,
- 				hbt->timer(hbt->arg);
- 
- 			if (delay_secs != 0)
--				symbol__annotate_decay_histogram(sym, evidx);
-+				symbol__annotate_decay_histogram(sym, evsel->idx);
- 			continue;
- 		case K_TAB:
- 			if (nd != NULL) {
-@@ -754,7 +757,7 @@ show_help:
- 					goto show_sup_ins;
- 				goto out;
- 			} else if (!(annotate_browser__jump(browser) ||
--				     annotate_browser__callq(browser, evidx, hbt))) {
-+				     annotate_browser__callq(browser, evsel, hbt))) {
- show_sup_ins:
- 				ui_helpline__puts("Actions are only available for 'callq', 'retq' & jump instructions.");
- 			}
-@@ -776,10 +779,10 @@ out:
- 	return key;
- }
- 
--int hist_entry__tui_annotate(struct hist_entry *he, int evidx,
-+int hist_entry__tui_annotate(struct hist_entry *he, struct perf_evsel *evsel,
- 			     struct hist_browser_timer *hbt)
- {
--	return symbol__tui_annotate(he->ms.sym, he->ms.map, evidx, hbt);
-+	return symbol__tui_annotate(he->ms.sym, he->ms.map, evsel, hbt);
- }
- 
- static void annotate_browser__mark_jump_targets(struct annotate_browser *browser,
-@@ -826,7 +829,8 @@ static inline int width_jumps(int n)
- 	return 1;
- }
- 
--int symbol__tui_annotate(struct symbol *sym, struct map *map, int evidx,
-+int symbol__tui_annotate(struct symbol *sym, struct map *map,
-+			 struct perf_evsel *evsel,
- 			 struct hist_browser_timer *hbt)
- {
- 	struct disasm_line *pos, *n;
-@@ -909,7 +913,7 @@ int symbol__tui_annotate(struct symbol *sym, struct map *map, int evidx,
- 
- 	annotate_browser__update_addr_width(&browser);
- 
--	ret = annotate_browser__run(&browser, evidx, hbt);
-+	ret = annotate_browser__run(&browser, evsel, hbt);
- 	list_for_each_entry_safe(pos, n, &notes->src->source, node) {
- 		list_del(&pos->node);
- 		disasm_line__free(pos);
-diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
-index aa22704047d6..0e125e1543dc 100644
---- a/tools/perf/ui/browsers/hists.c
-+++ b/tools/perf/ui/browsers/hists.c
-@@ -1599,7 +1599,7 @@ do_annotate:
- 			 * Don't let this be freed, say, by hists__decay_entry.
- 			 */
- 			he->used = true;
--			err = hist_entry__tui_annotate(he, evsel->idx, hbt);
-+			err = hist_entry__tui_annotate(he, evsel, hbt);
- 			he->used = false;
- 			/*
- 			 * offer option to annotate the other branch source or target
-diff --git a/tools/perf/ui/gtk/annotate.c b/tools/perf/ui/gtk/annotate.c
-index 7d8dc581a545..6e2fc7e3f093 100644
---- a/tools/perf/ui/gtk/annotate.c
-+++ b/tools/perf/ui/gtk/annotate.c
-@@ -1,6 +1,7 @@
- #include "gtk.h"
- #include "util/debug.h"
- #include "util/annotate.h"
-+#include "util/evsel.h"
- #include "ui/helpline.h"
- 
- 
-@@ -85,7 +86,7 @@ static int perf_gtk__get_line(char *buf, size_t size, struct disasm_line *dl)
- }
- 
- static int perf_gtk__annotate_symbol(GtkWidget *window, struct symbol *sym,
--				struct map *map, int evidx,
-+				struct map *map, struct perf_evsel *evsel,
- 				struct hist_browser_timer *hbt __maybe_unused)
- {
- 	struct disasm_line *pos, *n;
-@@ -121,7 +122,7 @@ static int perf_gtk__annotate_symbol(GtkWidget *window, struct symbol *sym,
- 
- 		gtk_list_store_append(store, &iter);
- 
--		if (perf_gtk__get_percent(s, sizeof(s), sym, pos, evidx))
-+		if (perf_gtk__get_percent(s, sizeof(s), sym, pos, evsel->idx))
- 			gtk_list_store_set(store, &iter, ANN_COL__PERCENT, s, -1);
- 		if (perf_gtk__get_offset(s, sizeof(s), sym, map, pos))
- 			gtk_list_store_set(store, &iter, ANN_COL__OFFSET, s, -1);
-@@ -139,7 +140,8 @@ static int perf_gtk__annotate_symbol(GtkWidget *window, struct symbol *sym,
- 	return 0;
- }
- 
--int symbol__gtk_annotate(struct symbol *sym, struct map *map, int evidx,
-+int symbol__gtk_annotate(struct symbol *sym, struct map *map,
-+			 struct perf_evsel *evsel,
- 			 struct hist_browser_timer *hbt)
- {
- 	GtkWidget *window;
-@@ -206,7 +208,7 @@ int symbol__gtk_annotate(struct symbol *sym, struct map *map, int evidx,
- 	gtk_notebook_append_page(GTK_NOTEBOOK(notebook), scrolled_window,
- 				 tab_label);
- 
--	perf_gtk__annotate_symbol(scrolled_window, sym, map, evidx, hbt);
-+	perf_gtk__annotate_symbol(scrolled_window, sym, map, evsel, hbt);
- 	return 0;
- }
+@@ -314,6 +319,8 @@ int cmd_annotate(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		   "Specify disassembler style (e.g. -M intel for intel syntax)"),
+ 	OPT_STRING(0, "objdump", &objdump_path, "path",
+ 		   "objdump binary to use for disassembly and annotations"),
++	OPT_BOOLEAN(0, "group", &symbol_conf.event_group,
++		    "Show event group information together"),
+ 	OPT_END()
+ 	};
  
 diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
-index d33fe937e6f1..7eac5f0895ee 100644
+index ae71325d3dc7..0955cff5b0ef 100644
 --- a/tools/perf/util/annotate.c
 +++ b/tools/perf/util/annotate.c
-@@ -14,6 +14,7 @@
- #include "symbol.h"
- #include "debug.h"
- #include "annotate.h"
-+#include "evsel.h"
- #include <pthread.h>
- #include <linux/bitops.h>
+@@ -638,7 +638,9 @@ static int disasm_line__print(struct disasm_line *dl, struct symbol *sym, u64 st
  
-@@ -603,7 +604,7 @@ struct disasm_line *disasm__get_next_ip_line(struct list_head *head, struct disa
- }
- 
- static int disasm_line__print(struct disasm_line *dl, struct symbol *sym, u64 start,
--		      int evidx, u64 len, int min_pcnt, int printed,
-+		      struct perf_evsel *evsel, u64 len, int min_pcnt, int printed,
- 		      int max_lines, struct disasm_line *queue)
- {
- 	static const char *prev_line;
-@@ -616,7 +617,7 @@ static int disasm_line__print(struct disasm_line *dl, struct symbol *sym, u64 st
+ 	if (dl->offset != -1) {
+ 		const char *path = NULL;
+-		double percent;
++		double percent, max_percent = 0.0;
++		double *ppercents = &percent;
++		int i, nr_percent = 1;
  		const char *color;
  		struct annotation *notes = symbol__annotation(sym);
- 		struct source_line *src_line = notes->src->lines;
--		struct sym_hist *h = annotation__histogram(notes, evidx);
-+		struct sym_hist *h = annotation__histogram(notes, evsel->idx);
  		s64 offset = dl->offset;
- 		const u64 addr = start + offset;
- 		struct disasm_line *next;
-@@ -648,7 +649,7 @@ static int disasm_line__print(struct disasm_line *dl, struct symbol *sym, u64 st
- 			list_for_each_entry_from(queue, &notes->src->source, node) {
- 				if (queue == dl)
- 					break;
--				disasm_line__print(queue, sym, start, evidx, len,
-+				disasm_line__print(queue, sym, start, evsel, len,
- 						    0, 0, 1, NULL);
+@@ -647,10 +649,27 @@ static int disasm_line__print(struct disasm_line *dl, struct symbol *sym, u64 st
+ 
+ 		next = disasm__get_next_ip_line(&notes->src->source, dl);
+ 
+-		percent = disasm__calc_percent(notes, evsel->idx, offset,
+-					       next ? next->offset : (s64) len,
+-					       &path);
+-		if (percent < min_pcnt)
++		if (symbol_conf.event_group &&
++		    perf_evsel__is_group_leader(evsel) &&
++		    evsel->nr_members > 1) {
++			nr_percent = evsel->nr_members;
++			ppercents = calloc(nr_percent, sizeof(double));
++			if (ppercents == NULL)
++				return -1;
++		}
++
++		for (i = 0; i < nr_percent; i++) {
++			percent = disasm__calc_percent(notes,
++						evsel->idx + i, offset,
++						next ? next->offset : (s64) len,
++						&path);
++
++			ppercents[i] = percent;
++			if (percent > max_percent)
++				max_percent = percent;
++		}
++
++		if (max_percent < min_pcnt)
+ 			return -1;
+ 
+ 		if (max_lines && printed >= max_lines)
+@@ -665,7 +684,7 @@ static int disasm_line__print(struct disasm_line *dl, struct symbol *sym, u64 st
  			}
  		}
-@@ -935,7 +936,8 @@ static void symbol__free_source_line(struct symbol *sym, int len)
  
- /* Get the filename:line for the colored entries */
- static int symbol__get_source_line(struct symbol *sym, struct map *map,
--				   int evidx, struct rb_root *root, int len,
-+				   struct perf_evsel *evsel,
-+				   struct rb_root *root, int len,
- 				   const char *filename)
- {
- 	u64 start;
-@@ -943,7 +945,7 @@ static int symbol__get_source_line(struct symbol *sym, struct map *map,
- 	char cmd[PATH_MAX * 2];
- 	struct source_line *src_line;
- 	struct annotation *notes = symbol__annotation(sym);
--	struct sym_hist *h = annotation__histogram(notes, evidx);
-+	struct sym_hist *h = annotation__histogram(notes, evsel->idx);
- 	struct rb_root tmp_root = RB_ROOT;
+-		color = get_percent_color(percent);
++		color = get_percent_color(max_percent);
  
- 	if (!h->sum)
-@@ -1018,10 +1020,10 @@ static void print_summary(struct rb_root *root, const char *filename)
- 	}
- }
- 
--static void symbol__annotate_hits(struct symbol *sym, int evidx)
-+static void symbol__annotate_hits(struct symbol *sym, struct perf_evsel *evsel)
- {
- 	struct annotation *notes = symbol__annotation(sym);
--	struct sym_hist *h = annotation__histogram(notes, evidx);
-+	struct sym_hist *h = annotation__histogram(notes, evsel->idx);
- 	u64 len = symbol__size(sym), offset;
- 
- 	for (offset = 0; offset < len; ++offset)
-@@ -1031,9 +1033,9 @@ static void symbol__annotate_hits(struct symbol *sym, int evidx)
- 	printf("%*s: %" PRIu64 "\n", BITS_PER_LONG / 2, "h->sum", h->sum);
- }
- 
--int symbol__annotate_printf(struct symbol *sym, struct map *map, int evidx,
--			    bool full_paths, int min_pcnt, int max_lines,
--			    int context)
-+int symbol__annotate_printf(struct symbol *sym, struct map *map,
-+			    struct perf_evsel *evsel, bool full_paths,
-+			    int min_pcnt, int max_lines, int context)
- {
- 	struct dso *dso = map->dso;
- 	char *filename;
-@@ -1060,7 +1062,7 @@ int symbol__annotate_printf(struct symbol *sym, struct map *map, int evidx,
- 	printf("------------------------------------------------\n");
- 
- 	if (verbose)
--		symbol__annotate_hits(sym, evidx);
-+		symbol__annotate_hits(sym, evsel);
- 
- 	list_for_each_entry(pos, &notes->src->source, node) {
- 		if (context && queue == NULL) {
-@@ -1068,7 +1070,7 @@ int symbol__annotate_printf(struct symbol *sym, struct map *map, int evidx,
- 			queue_len = 0;
+ 		/*
+ 		 * Also color the filename and line if needed, with
+@@ -681,20 +700,35 @@ static int disasm_line__print(struct disasm_line *dl, struct symbol *sym, u64 st
+ 			}
  		}
  
--		switch (disasm_line__print(pos, sym, start, evidx, len,
-+		switch (disasm_line__print(pos, sym, start, evsel, len,
- 					    min_pcnt, printed, max_lines,
- 					    queue)) {
- 		case 0:
-@@ -1163,9 +1165,9 @@ size_t disasm__fprintf(struct list_head *head, FILE *fp)
- 	return printed;
- }
+-		color_fprintf(stdout, color, " %7.2f", percent);
++		for (i = 0; i < nr_percent; i++) {
++			percent = ppercents[i];
++			color = get_percent_color(percent);
++			color_fprintf(stdout, color, " %7.2f", percent);
++		}
++
+ 		printf(" :	");
+ 		color_fprintf(stdout, PERF_COLOR_MAGENTA, "  %" PRIx64 ":", addr);
+ 		color_fprintf(stdout, PERF_COLOR_BLUE, "%s\n", dl->line);
++
++		if (ppercents != &percent)
++			free(ppercents);
++
+ 	} else if (max_lines && printed >= max_lines)
+ 		return 1;
+ 	else {
++		int width = 8;
++
+ 		if (queue)
+ 			return -1;
  
--int symbol__tty_annotate(struct symbol *sym, struct map *map, int evidx,
--			 bool print_lines, bool full_paths, int min_pcnt,
--			 int max_lines)
-+int symbol__tty_annotate(struct symbol *sym, struct map *map,
-+			 struct perf_evsel *evsel, bool print_lines,
-+			 bool full_paths, int min_pcnt, int max_lines)
- {
- 	struct dso *dso = map->dso;
- 	const char *filename = dso->long_name;
-@@ -1178,12 +1180,12 @@ int symbol__tty_annotate(struct symbol *sym, struct map *map, int evidx,
- 	len = symbol__size(sym);
- 
- 	if (print_lines) {
--		symbol__get_source_line(sym, map, evidx, &source_line,
-+		symbol__get_source_line(sym, map, evsel, &source_line,
- 					len, filename);
- 		print_summary(&source_line, filename);
++		if (symbol_conf.event_group &&
++		    perf_evsel__is_group_leader(evsel))
++			width *= evsel->nr_members;
++
+ 		if (!*dl->line)
+-			printf("         :\n");
++			printf(" %*s:\n", width, " ");
+ 		else
+-			printf("         :	%s\n", dl->line);
++			printf(" %*s:	%s\n", width, " ", dl->line);
  	}
  
--	symbol__annotate_printf(sym, map, evidx, full_paths,
-+	symbol__annotate_printf(sym, map, evsel, full_paths,
- 				min_pcnt, max_lines, 0);
- 	if (print_lines)
- 		symbol__free_source_line(sym, len);
-diff --git a/tools/perf/util/annotate.h b/tools/perf/util/annotate.h
-index c422440fe611..376395475663 100644
---- a/tools/perf/util/annotate.h
-+++ b/tools/perf/util/annotate.h
-@@ -130,47 +130,49 @@ void symbol__annotate_zero_histograms(struct symbol *sym);
- 
- int symbol__annotate(struct symbol *sym, struct map *map, size_t privsize);
- int symbol__annotate_init(struct map *map __maybe_unused, struct symbol *sym);
--int symbol__annotate_printf(struct symbol *sym, struct map *map, int evidx,
--			    bool full_paths, int min_pcnt, int max_lines,
--			    int context);
-+int symbol__annotate_printf(struct symbol *sym, struct map *map,
-+			    struct perf_evsel *evsel, bool full_paths,
-+			    int min_pcnt, int max_lines, int context);
- void symbol__annotate_zero_histogram(struct symbol *sym, int evidx);
- void symbol__annotate_decay_histogram(struct symbol *sym, int evidx);
- void disasm__purge(struct list_head *head);
- 
--int symbol__tty_annotate(struct symbol *sym, struct map *map, int evidx,
--			 bool print_lines, bool full_paths, int min_pcnt,
--			 int max_lines);
-+int symbol__tty_annotate(struct symbol *sym, struct map *map,
-+			 struct perf_evsel *evsel, bool print_lines,
-+			 bool full_paths, int min_pcnt, int max_lines);
- 
- #ifdef NEWT_SUPPORT
--int symbol__tui_annotate(struct symbol *sym, struct map *map, int evidx,
-+int symbol__tui_annotate(struct symbol *sym, struct map *map,
-+			 struct perf_evsel *evsel,
- 			 struct hist_browser_timer *hbt);
- #else
- static inline int symbol__tui_annotate(struct symbol *sym __maybe_unused,
--				       struct map *map __maybe_unused,
--				       int evidx __maybe_unused,
--				       struct hist_browser_timer *hbt
--				       __maybe_unused)
-+				struct map *map __maybe_unused,
-+				struct perf_evsel *evsel  __maybe_unused,
-+				struct hist_browser_timer *hbt
-+				__maybe_unused)
- {
  	return 0;
- }
- #endif
+@@ -1077,6 +1111,8 @@ int symbol__annotate_printf(struct symbol *sym, struct map *map,
+ 	int printed = 2, queue_len = 0;
+ 	int more = 0;
+ 	u64 len;
++	int width = 8;
++	int namelen;
  
- #ifdef GTK2_SUPPORT
--int symbol__gtk_annotate(struct symbol *sym, struct map *map, int evidx,
-+int symbol__gtk_annotate(struct symbol *sym, struct map *map,
-+			 struct perf_evsel *evsel,
- 			 struct hist_browser_timer *hbt);
+ 	filename = strdup(dso->long_name);
+ 	if (!filename)
+@@ -1088,9 +1124,15 @@ int symbol__annotate_printf(struct symbol *sym, struct map *map,
+ 		d_filename = basename(filename);
  
--static inline int hist_entry__gtk_annotate(struct hist_entry *he, int evidx,
-+static inline int hist_entry__gtk_annotate(struct hist_entry *he,
-+					   struct perf_evsel *evsel,
- 					   struct hist_browser_timer *hbt)
- {
--	return symbol__gtk_annotate(he->ms.sym, he->ms.map, evidx, hbt);
-+	return symbol__gtk_annotate(he->ms.sym, he->ms.map, evsel, hbt);
- }
+ 	len = symbol__size(sym);
++	namelen = strlen(d_filename);
++
++	if (symbol_conf.event_group && perf_evsel__is_group_leader(evsel))
++		width *= evsel->nr_members;
  
- void perf_gtk__show_annotations(void);
- #else
- static inline int hist_entry__gtk_annotate(struct hist_entry *he __maybe_unused,
--					   int evidx __maybe_unused,
--					   struct hist_browser_timer *hbt
--					   __maybe_unused)
-+				struct perf_evsel *evsel __maybe_unused,
-+				struct hist_browser_timer *hbt __maybe_unused)
- {
- 	return 0;
- }
-diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
-index 226a4ae2f936..848331377bdb 100644
---- a/tools/perf/util/hist.h
-+++ b/tools/perf/util/hist.h
-@@ -177,7 +177,7 @@ struct hist_browser_timer {
+-	printf(" Percent |	Source code & Disassembly of %s\n", d_filename);
+-	printf("------------------------------------------------\n");
++	printf(" %-*.*s|	Source code & Disassembly of %s\n",
++	       width, width, "Percent", d_filename);
++	printf("-%-*.*s-------------------------------------\n",
++	       width+namelen, width+namelen, graph_dotted_line);
  
- #ifdef NEWT_SUPPORT
- #include "../ui/keysyms.h"
--int hist_entry__tui_annotate(struct hist_entry *he, int evidx,
-+int hist_entry__tui_annotate(struct hist_entry *he, struct perf_evsel *evsel,
- 			     struct hist_browser_timer *hbt);
- 
- int perf_evlist__tui_browse_hists(struct perf_evlist *evlist, const char *help,
-@@ -196,7 +196,8 @@ int perf_evlist__tui_browse_hists(struct perf_evlist *evlist __maybe_unused,
- 
- static inline int hist_entry__tui_annotate(struct hist_entry *self
- 					   __maybe_unused,
--					   int evidx __maybe_unused,
-+					   struct perf_evsel *evsel
-+					   __maybe_unused,
- 					   struct hist_browser_timer *hbt
- 					   __maybe_unused)
- {
+ 	if (verbose)
+ 		symbol__annotate_hits(sym, evsel);
 -- 
 1.7.11.7
 
