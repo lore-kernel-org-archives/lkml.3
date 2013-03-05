@@ -1,184 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755276Ab3CEXvd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 18:51:33 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:1801 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752888Ab3CEXvc (ORCPT
+	id S1755466Ab3CEXwJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 18:52:09 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:57558 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752888Ab3CEXwH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 18:51:32 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Tue, 05 Mar 2013 15:51:32 -0800
-From: Andrew Chew <achew@nvidia.com>
-To: <thierry.reding@avionic-design.de>, <acourbot@nvidia.com>
-CC: <achew@nvidia.com>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH 1/1 v3] pwm_bl: Add support for backlight enable regulator
-Date: Tue, 5 Mar 2013 15:51:25 -0800
-Message-ID: <1362527485-8611-1-git-send-email-achew@nvidia.com>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 5 Mar 2013 18:52:07 -0500
+Message-ID: <51368522.90700@wwwdotorg.org>
+Date: Tue, 05 Mar 2013 16:52:02 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+CC: linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Mike Turquette <mturquette@linaro.org>,
+        Stephen Warren <swarren@nvidia.com>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>, linux-kernel@vger.kernel.org
+Subject: Re: [REPOST PATCH 0/2] Table lookup for mux clock type
+References: <1361545358-22721-1-git-send-email-pdeschrijver@nvidia.com> <51367625.2090405@wwwdotorg.org>
+In-Reply-To: <51367625.2090405@wwwdotorg.org>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The backlight enable regulator is specified in the device tree node for
-backlight.
+On 03/05/2013 03:48 PM, Stephen Warren wrote:
+> On 02/22/2013 08:02 AM, Peter De Schrijver wrote:
+>> This patchset adds a table lookup feature to the mux clock type. This will
+>> be used by the forthcoming Tegra114 clock implementation. Also instead of
+>> a fixed field width, a mask is used. This is because Tegra114 has some muxes
+>> where the parent selector is spread over several bitfields. The second patch
+>> adapts the tegra periph clock implementation which uses struct clk_mux
+>> directly.
+>>
+>> --
+>>
+>> Mike,
+>>
+>> This patch is a dependency for the Tegra114 CCF implementation. Could you
+>> review it and merge on a topic branch so Stephen can pull it in to verify
+>> the integration?
+> 
+> Peter, does this repost you resolve the issue I pointed out at:
+> http://www.spinics.net/lists/arm-kernel/msg220873.html
 
-Signed-off-by: Andrew Chew <achew@nvidia.com>
----
-Applied all recommendations from Thierry Reding and Alex Courbot, including
-making pwm_bl take an optional regulator instead of a GPIO, which solves
-the platform data issue (platform data will default the regulator to NULL,
-which is the right thing).
+Indeed, I just tested applying patch 1/2 and the build is broken without
+patch 2/2.
 
- .../bindings/video/backlight/pwm-backlight.txt     |    1 +
- drivers/video/backlight/pwm_bl.c                   |   53 +++++++++++++++++---
- include/linux/pwm_backlight.h                      |    1 +
- 3 files changed, 48 insertions(+), 7 deletions(-)
+Can you either rework the patches to maintain bisectability, or squash
+the two together?
 
-diff --git a/Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt b/Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt
-index 1e4fc72..e0bccd30 100644
---- a/Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt
-+++ b/Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt
-@@ -14,6 +14,7 @@ Required properties:
- Optional properties:
-   - pwm-names: a list of names for the PWM devices specified in the
-                "pwms" property (see PWM binding[0])
-+  - en-supply: phandle to the regulator device tree node
- 
- [0]: Documentation/devicetree/bindings/pwm/pwm.txt
- 
-diff --git a/drivers/video/backlight/pwm_bl.c b/drivers/video/backlight/pwm_bl.c
-index 069983c..c4da5e2 100644
---- a/drivers/video/backlight/pwm_bl.c
-+++ b/drivers/video/backlight/pwm_bl.c
-@@ -20,10 +20,13 @@
- #include <linux/pwm.h>
- #include <linux/pwm_backlight.h>
- #include <linux/slab.h>
-+#include <linux/regulator/consumer.h>
- 
- struct pwm_bl_data {
- 	struct pwm_device	*pwm;
- 	struct device		*dev;
-+	struct regulator	*en_supply;
-+	bool			en_supply_enabled;
- 	unsigned int		period;
- 	unsigned int		lth_brightness;
- 	unsigned int		*levels;
-@@ -35,6 +38,34 @@ struct pwm_bl_data {
- 	void			(*exit)(struct device *);
- };
- 
-+static void pwm_backlight_enable(struct backlight_device *bl)
-+{
-+	struct pwm_bl_data *pb = dev_get_drvdata(&bl->dev);
-+
-+	pwm_enable(pb->pwm);
-+
-+	if (pb->en_supply && !pb->en_supply_enabled) {
-+		if (regulator_enable(pb->en_supply) != 0)
-+			dev_warn(&bl->dev, "Failed to enable regulator");
-+		else
-+			pb->en_supply_enabled = true;
-+	}
-+}
-+
-+static void pwm_backlight_disable(struct backlight_device *bl)
-+{
-+	struct pwm_bl_data *pb = dev_get_drvdata(&bl->dev);
-+
-+	if (pb->en_supply && pb->en_supply_enabled) {
-+		if (regulator_disable(pb->en_supply) != 0)
-+			dev_warn(&bl->dev, "Failed to disable regulator");
-+		else
-+			pb->en_supply_enabled = false;
-+	}
-+
-+	pwm_disable(pb->pwm);
-+}
-+
- static int pwm_backlight_update_status(struct backlight_device *bl)
- {
- 	struct pwm_bl_data *pb = dev_get_drvdata(&bl->dev);
-@@ -52,7 +83,7 @@ static int pwm_backlight_update_status(struct backlight_device *bl)
- 
- 	if (brightness == 0) {
- 		pwm_config(pb->pwm, 0, pb->period);
--		pwm_disable(pb->pwm);
-+		pwm_backlight_disable(bl);
- 	} else {
- 		int duty_cycle;
- 
-@@ -66,7 +97,7 @@ static int pwm_backlight_update_status(struct backlight_device *bl)
- 		duty_cycle = pb->lth_brightness +
- 		     (duty_cycle * (pb->period - pb->lth_brightness) / max);
- 		pwm_config(pb->pwm, duty_cycle, pb->period);
--		pwm_enable(pb->pwm);
-+		pwm_backlight_enable(bl);
- 	}
- 
- 	if (pb->notify_after)
-@@ -146,10 +177,17 @@ static int pwm_backlight_parse_dt(struct device *dev,
- 	}
- 
- 	/*
--	 * TODO: Most users of this driver use a number of GPIOs to control
--	 *       backlight power. Support for specifying these needs to be
--	 *       added.
-+	 * If "en-supply" is present, use that regulator to enable the
-+	 * backlight.  If a GPIO is used to enable the backlight, make
-+	 * a fixed regulator with that particular GPIO and use that
-+	 * regulator for "en-supply".
- 	 */
-+	data->en_supply = devm_regulator_get(dev, "en");
-+	if (IS_ERR_OR_NULL(data->en_supply)) {
-+		ret = PTR_ERR(data->en_supply);
-+		data->en_supply = NULL;
-+		return ret;
-+	}
- 
- 	return 0;
- }
-@@ -207,6 +245,7 @@ static int pwm_backlight_probe(struct platform_device *pdev)
- 	} else
- 		max = data->max_brightness;
- 
-+	pb->en_supply = data->en_supply;
- 	pb->notify = data->notify;
- 	pb->notify_after = data->notify_after;
- 	pb->check_fb = data->check_fb;
-@@ -268,7 +307,7 @@ static int pwm_backlight_remove(struct platform_device *pdev)
- 
- 	backlight_device_unregister(bl);
- 	pwm_config(pb->pwm, 0, pb->period);
--	pwm_disable(pb->pwm);
-+	pwm_backlight_disable(bl);
- 	if (pb->exit)
- 		pb->exit(&pdev->dev);
- 	return 0;
-@@ -283,7 +322,7 @@ static int pwm_backlight_suspend(struct device *dev)
- 	if (pb->notify)
- 		pb->notify(pb->dev, 0);
- 	pwm_config(pb->pwm, 0, pb->period);
--	pwm_disable(pb->pwm);
-+	pwm_backlight_disable(bl);
- 	if (pb->notify_after)
- 		pb->notify_after(pb->dev, 0);
- 	return 0;
-diff --git a/include/linux/pwm_backlight.h b/include/linux/pwm_backlight.h
-index 56f4a86..330512b 100644
---- a/include/linux/pwm_backlight.h
-+++ b/include/linux/pwm_backlight.h
-@@ -8,6 +8,7 @@
- 
- struct platform_pwm_backlight_data {
- 	int pwm_id;
-+	struct regulator *en_supply;
- 	unsigned int max_brightness;
- 	unsigned int dft_brightness;
- 	unsigned int lth_brightness;
--- 
-1.7.9.5
+> 
+> To quote:
+> 
+>>>> Just a quick note on patch dependencies here:
+>>>>
+>>>> Patch 1/2 can presumably be taken through the clk tree whenever Mike is
+>>>> OK with it.
+>>>>
+>>>> Patch 2/2 depends on patches in the Tegra tree for 3.9. Since patch 2/2
+>>>> is useful mostly for the Tegra114 clock driver, and I don't imagine that
+>>>> will get posted/merged in time for 3.9, it's probably easiest to just
+>>>> take patch 2/2 for 3.10 along with the Tegra114 clock driver. Also, I
+>>>> imagine there won't be any more clk/Tegra tree dependencies in 3.10, so
+>>>> patch 2/2 and the Tegra114 clk driver patches can likely go through the
+>>>> clk tree itself for 3.10.
+>>>
+>>> No. Because 1/2 changes struct clk_mux and the tegra peripheral clock type 
+>>> uses struct clk_mux directly, 2/2 needs to be applied together with 1/2, even
+>>> if the new functionality is not yet used.
+>>
+>> Oh, then they can't be two separate patches then, or "git bisect" won't
+>> work. I guess it's best to wait for 3.10 for this:-(
 
