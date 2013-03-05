@@ -1,59 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757132Ab3CER2q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 12:28:46 -0500
-Received: from webmail.solarflare.com ([12.187.104.25]:64664 "EHLO
-	webmail.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755839Ab3CER2p (ORCPT
+	id S1757393Ab3CERax (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 12:30:53 -0500
+Received: from cpsmtpb-ews02.kpnxchange.com ([213.75.39.5]:55368 "EHLO
+	cpsmtpb-ews02.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755535Ab3CERaw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 12:28:45 -0500
-Message-ID: <1362504520.2791.46.camel@bwh-desktop.uk.solarflarecom.com>
-Subject: Re: [RFC PATCH 3/5] ixgbe: Add support for ndo_ll_poll
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: Eliezer Tamir <eliezer.tamir@linux.jf.intel.com>
-CC: <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>,
-        Dave Miller <davem@davemloft.net>,
-        Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        <e1000-devel@lists.sourceforge.net>,
-        Willem de Bruijn <willemb@google.com>,
-        Andi Kleen <andi@firstfloor.org>, HPA <hpa@zytor.com>,
-        Eliezer Tamir <eliezer@tamir.org.il>
-Date: Tue, 5 Mar 2013 17:28:40 +0000
-In-Reply-To: <1362504410.2791.44.camel@bwh-desktop.uk.solarflarecom.com>
-References: <20130227175549.10611.82188.stgit@gitlad.jf.intel.com>
-	 <20130227175606.10611.55498.stgit@gitlad.jf.intel.com>
-	 <1362504410.2791.44.camel@bwh-desktop.uk.solarflarecom.com>
-Organization: Solarflare
+	Tue, 5 Mar 2013 12:30:52 -0500
+Message-ID: <1362504650.16460.95.camel@x61.thuisdomein>
+Subject: [PATCH] m68k: drop "select EMAC_INC"
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: linux-m68k@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Tue, 05 Mar 2013 18:30:50 +0100
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-MIME-Version: 1.0
-X-Originating-IP: [10.17.20.137]
-X-TM-AS-Product-Ver: SMEX-10.0.0.1412-7.000.1014-19688.000
-X-TM-AS-Result: No--15.268900-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
+X-OriginalArrivalTime: 05 Mar 2013 17:30:51.0635 (UTC) FILETIME=[2EE63C30:01CE19C7]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-03-05 at 17:26 +0000, Ben Hutchings wrote:
-> On Wed, 2013-02-27 at 09:56 -0800, Eliezer Tamir wrote:
-> > Add the ixgbe driver code implementing ndo_ll_poll.
-> > It should be easy for other drivers to do something similar
-> > in order to enable support for CONFIG_INET_LL_RX_POLL
-> 
-> Yes... in fact I wonder whether the lock and state couldn't be added to
-> napi_struct instead of being driver-specific.
-[...]
+Somehow this select statement managed to squeeze itself between commit
+0e152d80507b75c00aac60f2ffc586360687cd52 ("m68k: reorganize Kconfig
+options to improve mmu/non-mmu selections") and commit
+95e82747d6e2abc513bfae416e6009968985d05b ("m68k: drop unused Kconfig
+symbols"). Whatever happened, there is no Kconfig symbol named EMAC_INC.
+The select statement for that symbol is a nop. Drop it.
 
-That would potentially allow GRO to detect that it's being called in
-low-latency context...
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+Untested, but it's hard to see what can got wrong here.
 
-Ben.
+ arch/m68k/Kconfig.machine | 1 -
+ 1 file changed, 1 deletion(-)
 
+diff --git a/arch/m68k/Kconfig.machine b/arch/m68k/Kconfig.machine
+index 7cdf6b0..7240584 100644
+--- a/arch/m68k/Kconfig.machine
++++ b/arch/m68k/Kconfig.machine
+@@ -310,7 +310,6 @@ config COBRA5282
+ config SOM5282EM
+ 	bool "EMAC.Inc SOM5282EM board support"
+ 	depends on M528x
+-	select EMAC_INC
+ 	help
+ 	  Support for the EMAC.Inc SOM5282EM module.
+ 
 -- 
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
+1.7.11.7
 
