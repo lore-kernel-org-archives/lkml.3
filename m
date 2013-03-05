@@ -1,66 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754012Ab3CEWC2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 17:02:28 -0500
-Received: from www.linutronix.de ([62.245.132.108]:39474 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751099Ab3CEWC1 (ORCPT
+	id S1754662Ab3CEWDM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 17:03:12 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:6811 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753281Ab3CEWDL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 17:02:27 -0500
-Date: Tue, 5 Mar 2013 23:02:09 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: "Raphael S.Carvalho" <raphael.scarv@gmail.com>
-cc: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Jarkko Sakkinen <jarkko.sakkinen@intel.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] arch/x86/smpboot.c: Fix GCC Warning (unused
- variable)!
-In-Reply-To: <1362508625-7803-1-git-send-email-raphael.scarv@gmail.com>
-Message-ID: <alpine.LFD.2.02.1303052257060.22263@ionos>
-References: <1362508625-7803-1-git-send-email-raphael.scarv@gmail.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Tue, 5 Mar 2013 17:03:11 -0500
+X-IronPort-AV: E=Sophos;i="4.84,791,1355126400"; 
+   d="scan'208";a="27806070"
+Message-ID: <51366B9E.7010502@codeaurora.org>
+Date: Tue, 05 Mar 2013 14:03:10 -0800
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: Will Deacon <will.deacon@arm.com>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        Stepan Moskovchenko <stepanm@codeaurora.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ARM: proc: Add Krait proc info
+References: <1362439299-29617-1-git-send-email-sboyd@codeaurora.org> <20130305083421.GA19391@mudshark.cambridge.arm.com>
+In-Reply-To: <20130305083421.GA19391@mudshark.cambridge.arm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 5 Mar 2013, Raphael S.Carvalho wrote:
+On 03/05/13 00:34, Will Deacon wrote:
+> Hi Stephen, Stepan,
+>
+> On Mon, Mar 04, 2013 at 11:21:39PM +0000, Stephen Boyd wrote:
+>> From: Stepan Moskovchenko <stepanm@codeaurora.org>
+>>
+>> Add processor info for the Qualcomm, Inc. Krait family of
+>> processors, to use the generic ARMv7 initialisation
+>> procedure but explicitly enable the IDIV hardware
+>> capability flag.
+>>
+>> Signed-off-by: Stepan Moskovchenko <stepanm@codeaurora.org>
+>> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+>> ---
+>>  arch/arm/mm/proc-v7.S |   10 ++++++++++
+>>  1 file changed, 10 insertions(+)
+>>
+>> diff --git a/arch/arm/mm/proc-v7.S b/arch/arm/mm/proc-v7.S
+>> index 3a3c015..81adeb3 100644
+>> --- a/arch/arm/mm/proc-v7.S
+>> +++ b/arch/arm/mm/proc-v7.S
+>> @@ -434,6 +434,16 @@ __v7_ca15mp_proc_info:
+>>  	.size	__v7_ca15mp_proc_info, . - __v7_ca15mp_proc_info
+>>  
+>>  	/*
+>> +	 * Qualcomm Inc. Krait processors.
+>> +	 */
+>> +	.type	__krait_proc_info, #object
+>> +__krait_proc_info:
+>> +	.long	0x510f0400		@ Required ID value
+>> +	.long	0xff0ffc00		@ Mask for ID
+>> +	__v7_proc __v7_setup, hwcaps = HWCAP_IDIV
+> I was looking at this the other day and wondered whether we could set
+> HWCAP_IDIV in __v7_setup, depending on ID_ISAR0[27:24]. I can't immediately
+> think why that would be difficult, but similarly there may well be a reason
+> why we assign it like this.
+>
+> Fancy taking a look?
 
-> GCC complained about the unused variable c, thus I'm sending
-> this patch in order to calm it down.
-> I compiled the file and everything seems be ok!
+Ok I'll take a look. Should we be masking out HWCAP_IDIVT on
+!CONFIG_ARM_THUMB configurations?
 
-What is your patch solving? How about removing the line completely?
-And how about providing a changelog which makes sense ?
+----8<-----
 
-Thanks,
-
-	tglx
+diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
+index 3f6cbb2..e2c8bbf 100644
+--- a/arch/arm/kernel/setup.c
++++ b/arch/arm/kernel/setup.c
+@@ -484,7 +484,7 @@ static void __init setup_processor(void)
+                 list->elf_name, ENDIANNESS);
+        elf_hwcap = list->elf_hwcap;
+ #ifndef CONFIG_ARM_THUMB
+-       elf_hwcap &= ~HWCAP_THUMB;
++       elf_hwcap &= ~(HWCAP_THUMB | HWCAP_IDIVT);
+ #endif
  
-> Signed-off-by: Raphael S.Carvalho <raphael.scarv@gmail.com>
-> ---
->  arch/x86/kernel/smpboot.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-> index a6ceaed..77a5616 100644
-> --- a/arch/x86/kernel/smpboot.c
-> +++ b/arch/x86/kernel/smpboot.c
-> @@ -1367,7 +1367,7 @@ static inline void mwait_play_dead(void)
->  	unsigned int highest_subcstate = 0;
->  	int i;
->  	void *mwait_ptr;
-> -	struct cpuinfo_x86 *c = __this_cpu_ptr(&cpu_info);
-> +	__this_cpu_ptr(&cpu_info);
->  
->  	if (!this_cpu_has(X86_FEATURE_MWAIT))
->  		return;
-> -- 
-> 1.7.2.5
-> 
-> 
+        feat_v6_fixup();
+
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
+
