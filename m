@@ -1,126 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933036Ab3CEC2l (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 21:28:41 -0500
-Received: from mga02.intel.com ([134.134.136.20]:20408 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932483Ab3CEC20 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 21:28:26 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,784,1355126400"; 
-   d="scan'208";a="293621023"
-From: Feng Tang <feng.tang@intel.com>
-To: Thomas Gleixner <tglx@linutronix.de>, John Stultz <john.stultz@linaro.org>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        x86@kernel.org, Len Brown <lenb@kernel.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        linux-kernel@vger.kernel.org
-Cc: gong.chen@linux.intel.com, Feng Tang <feng.tang@intel.com>
-Subject: [RFC PATCH v2 4/4] timekeeping: utilize the suspend-nonstop clocksource to count suspended time
-Date: Tue,  5 Mar 2013 10:27:06 +0800
-Message-Id: <1362450426-4232-5-git-send-email-feng.tang@intel.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1362450426-4232-1-git-send-email-feng.tang@intel.com>
-References: <1362450426-4232-1-git-send-email-feng.tang@intel.com>
+	id S933048Ab3CEC3K (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 21:29:10 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:13436 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932483Ab3CEC3G (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Mar 2013 21:29:06 -0500
+From: "Fangxiaozhi (Franko)" <fangxiaozhi@huawei.com>
+To: =?utf-8?B?QmrDuHJuIE1vcms=?= <bjorn@mork.no>
+CC: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Xueguiying (Zihan)" <zihan.xue@huawei.com>,
+        "Linlei (Lei Lin)" <lei.lin@huawei.com>,
+        "greg@kroah.com" <greg@kroah.com>, "Yili (Neil)" <neil.yi@huawei.com>,
+        "Wangyuhua (Roger, Credit)" <wangyuhua@huawei.com>,
+        "Huqiao (C)" <huqiao36@huawei.com>, "balbi@ti.com" <balbi@ti.com>,
+        "mdharm-usb@one-eyed-alien.net" <mdharm-usb@one-eyed-alien.net>,
+        "sebastian@breakpoint.cc" <sebastian@breakpoint.cc>
+Subject: RE: v3.8 regression: Huawei mode switching fails (was Re: [PATCH
+ 2/2]linux-usb:optimize to match the Huawei USB storage devices and support
+ new switch command)
+Thread-Topic: v3.8 regression: Huawei mode switching fails (was Re: [PATCH
+ 2/2]linux-usb:optimize to match the Huawei USB storage devices and support
+ new switch command)
+Thread-Index: AQHOGM1yHvGzXjho9E6JnFnGf6g04ZiWXYtQ
+Date: Tue, 5 Mar 2013 02:28:07 +0000
+Message-ID: <910F9D9E13B84F4C8FA771DC9BDE99F327098368@szxeml546-mbx.china.huawei.com>
+References: <fe8c966212fb.12fbfe8c9662@huawei.com>
+ <87obezs888.fsf@nemi.mork.no>
+In-Reply-To: <87obezs888.fsf@nemi.mork.no>
+Accept-Language: zh-CN, en-US
+Content-Language: zh-CN
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.11.34.145]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r252TBJh004960
 
-There are some new processors whose TSC clocksource won't stop during
-suspend. Currently, after system resumes, kernel will use persistent
-clock or RTC to compensate the sleep time, but for those new types of
-clocksources, we could skip the special compensation from external
-sources, and just use current clocksource for time recounting.
+Dear Mork:
 
-This can solve some time drift bugs caused by some not-so-accurate or
-error-prone RTC devices.
+	Thank you very much for your test.
 
-The current way to count suspened time is first try to use the persistent
-clock, and then try the rtc if persistent clock can't be used. This
-patch will change the trying order to:
-	suspend-nonstop clocksource -> persistent clock -> rtc
+> -----Original Message-----
+> From: BjÃ¸rn Mork [mailto:bjorn@mork.no]
+> Sent: Monday, March 04, 2013 7:41 PM
+> To: Fangxiaozhi (Franko)
+> Cc: linux-usb@vger.kernel.org; linux-kernel@vger.kernel.org; Xueguiying
+> (Zihan); Linlei (Lei Lin); greg@kroah.com; Yili (Neil); Wangyuhua (Roger, Credit);
+> Huqiao (C); balbi@ti.com; mdharm-usb@one-eyed-alien.net;
+> sebastian@breakpoint.cc
+> Subject: v3.8 regression: Huawei mode switching fails (was Re: [PATCH
+> 2/2]linux-usb:optimize to match the Huawei USB storage devices and support
+> new switch command)
+> 
+> Hello Franko,
+> 
+> This patch causes a number of regressions for both the Huawei devices I have
+> available for testing. One of them is completely unusable in v3.8 (unable to
+> switch to modem mode) unless the usb-storage driver is disabled.
+------Which device, can you tell me more information?
+------Which model? And what's its firmware version?
+> 
+> I realize that some devices are historically handled by the usb-storage driver,
+> but userspace modeswitching is the rule for new devices AFAIK.
+> I see absolutely no valid argument for adding new devices.  And there is
+> absolutely no excuse for adding devices which have been handled by
+> userspace switching for years!  The patch does not just "optimize"
+> matching.  It adds a large number of devices which were previously handled
+> just fine by usb_modeswitch. This is guaranteed to confuse users with existing
+> configurations, and users looking up any of the existing documentation
+> pointing to usb_modeswitch.
+------Yes. But there is some problems for this:
+	1. As far as I know, usb_modeswitch is now only integrated in the PC Linux. It isn't integrated to other system with linux kernel, such as Android, Chrome OS, etc. On these system, how can we switch the device?
 
-Signed-off-by: Feng Tang <feng.tang@intel.com>
----
- kernel/time/timekeeping.c |   57 ++++++++++++++++++++++++++++++++++++++------
- 1 files changed, 49 insertions(+), 8 deletions(-)
+	2. usb_modeswitch often sends the Windows switching command to switch Huawei device, but not sends Linux switching command. This maybe causes some unexpected problem.
+> 
+> There is no need to repeat the discussion of kernel vs userspace switching.  I
+> will only note that userspace switching:
+>  - has been selected as the rule for new devices,
+>  - allow the user to temporarily disable switching e.g. for mounting and
+>    inspecting the usb-storage exported data,
+>  - allow the user/system to apply device specific switching quirks
+> 
+> 
+> The v3.7->v3.8 regressions I observe are:
+> 
+> 1) Temporarily disabling mode switching and mounting the CD image is now
+>   impossible. Mode switching can only be disabled by blacklisting
+>   usb-storage, which of course prevents usb-storage from working
+> 
+>   Prior to v3.8, modeswitching could easily be disabled by userspace
+>   configuration. The change breaks existing configurations.
+> 
+> 2) Switching to non-default modes is now impossible.  The E392  (initially
+> appearing as 12d1:1505) Windows drivers will use a different  command than
+> the one used by Linux, causing the device to select a  different configuration
+> in Linux and Windows. This forces Linux and  Windows to see the device
+> differently.
+> 
+>  Prior to v3.8, different modeswitching commands could be configured  per
+> device. The change breaks existing configurations.
+> 
+> 3) Switching fails for some devices. The E367 (initially appearing as
+>  12d1:1446) does not switch when it receives the command sent by
+> usb-storage.  But the command disable further switching, preventing
+> userspace switching from working as well.
+> 
+>  Prior to v3.8, the device would switch fine using a default  usb_modeswitch
+> configuration. The change breaks existing  configurations.
+> 
+>  I do note that there is a slight difference between the known working
+> usb_modeswitch command:
+> 
+> 
+> 55534243123456780000000000000011062000000100000000000000000000
+> 
+>  and the command sent by usb-storage:
+> 
+> 	char rewind_cmd[] = {0x11, 0x06, 0x20, 0x00, 0x00, 0x01, 0x01, 0x00,
+> 			0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+> 
+>  I assume the cause of the failure is either this difference or some  timing
+> issue.
+> 
+> Anyway, I believe this patch must be reverted.  It disables currently used, well
+> documented, and extremely useful, userspace funtionaliy for all devices
+> implicitly added by the conversion from device matching to vendor matching.
+> 
+> 
+> 
+> BjÃ¸rn
 
-diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index 9a0bc98..15cc086 100644
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -788,22 +788,63 @@ void timekeeping_inject_sleeptime(struct timespec *delta)
- static void timekeeping_resume(void)
- {
- 	struct timekeeper *tk = &timekeeper;
-+	struct clocksource *clock = tk->clock;
- 	unsigned long flags;
--	struct timespec ts;
-+	struct timespec ts_new, ts_delta;
-+	cycle_t cycle_now, cycle_delta;
-+	s64 nsec;
- 
--	read_persistent_clock(&ts);
-+	ts_delta.tv_sec = 0;
-+	read_persistent_clock(&ts_new);
- 
- 	clockevents_resume();
- 	clocksource_resume();
- 
- 	write_seqlock_irqsave(&tk->lock, flags);
- 
--	if (timespec_compare(&ts, &timekeeping_suspend_time) > 0) {
--		ts = timespec_sub(ts, timekeeping_suspend_time);
--		__timekeeping_inject_sleeptime(tk, &ts);
--	}
--	/* re-base the last cycle value */
--	tk->clock->cycle_last = tk->clock->read(tk->clock);
-+	/*
-+	 * After system resumes, we need to calculate the suspended time and
-+	 * compensate it for the OS time. There are 3 sources that could be
-+	 * used: Nonstop clocksource during suspend, persistent clock and rtc
-+	 * device.
-+	 *
-+	 * One specific platform may have 1 or 2 or all of them, and the
-+	 * preference will be:
-+	 *	suspend-nonstop clocksource > persistent clock > rtc
-+	 * The less preferred source will only be tried if there is no better
-+	 * usable source. The rtc part is handled separately in rtc core code.
-+	 */
-+	cycle_now = clock->read(clock);
-+	if ((clock->flags & CLOCK_SOURCE_SUSPEND_NOTSTOP) &&
-+		cycle_now > clock->cycle_last) {
-+
-+		u64 max_cycles;
-+		u32 mult = clock->mult;
-+		u32 shift = clock->shift;
-+
-+		cycle_delta = (cycle_now - clock->cycle_last) & clock->mask;
-+		/*
-+		 * The system suspended time and the delta cycles may be very
-+		 * long, so we can't call clocksource_cyc2ns() directly with
-+		 * clocksource's default mult and shift to avoid overflow.
-+		 */
-+		max_cycles = 1ULL << (63 - (ilog2(mult) + 1));
-+		while (cycle_delta > max_cycles) {
-+			max_cycles <<= 1;
-+			mult >>= 1;
-+			shift--;
-+		}
-+
-+		nsec = clocksource_cyc2ns(cycle_delta, mult, shift);
-+		ts_delta = ns_to_timespec(nsec);
-+	} else if (timespec_compare(&ts_new, &timekeeping_suspend_time) > 0)
-+		ts_delta = timespec_sub(ts_new, timekeeping_suspend_time);
-+
-+	if (ts_delta.tv_sec >= 1)
-+		__timekeeping_inject_sleeptime(tk, &ts_delta);
-+
-+	/* Re-base the last cycle value */
-+	clock->cycle_last = clock->read(clock);
- 	tk->ntp_error = 0;
- 	timekeeping_suspended = 0;
- 	timekeeping_update(tk, false);
--- 
-1.7.0.4
-
+Best Regards,
+Franko Fang
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
