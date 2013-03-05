@@ -1,90 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758560Ab3CEUFZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 15:05:25 -0500
-Received: from fieldses.org ([174.143.236.118]:45985 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757617Ab3CEUFV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 15:05:21 -0500
-Date: Tue, 5 Mar 2013 15:05:11 -0500
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        jackm@dev.mellanox.co.il, ogerlitz@mellanox.com,
-        roland@purestorage.com, dan.magenheimer@oracle.com,
-        gregkh@linuxfoundation.org, vjaquez@igalia.com, rene.sapiens@ti.com,
-        x0095078@ti.com, omar.ramirez@ti.com, linux-nfs@vger.kernel.org
-Subject: Re: [PATCH 1/7] nfsd: remove unused get_new_stid()
-Message-ID: <20130305200511.GB15816@fieldses.org>
-References: <1362513772-15174-1-git-send-email-tj@kernel.org>
- <1362513772-15174-2-git-send-email-tj@kernel.org>
+	id S1755845Ab3CEUPE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 15:15:04 -0500
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:48460 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754737Ab3CEUPC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Mar 2013 15:15:02 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1362513772-15174-2-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130305195229.GS3438@sgi.com>
+References: <20130228205206.GC3438@sgi.com>
+	<512FC697.3090608@zytor.com>
+	<20130228210910.GD3438@sgi.com>
+	<512FC82B.40909@zytor.com>
+	<CAE9FiQU3FBwEiC86N1RC8=aMdN09EbUmRcsWP0yof7bmxBhPew@mail.gmail.com>
+	<512FE3AE.4070903@zytor.com>
+	<20130305081519.GA19165@sgi.com>
+	<9bcd6241-37fd-4ae9-a997-2a5da1eaf997@email.android.com>
+	<CAE9FiQV2Wk+yiqR8FnNM_L-p1iQFxDwopRzFWTwm6VCkyrbuoQ@mail.gmail.com>
+	<20130305195229.GS3438@sgi.com>
+Date: Tue, 5 Mar 2013 12:14:56 -0800
+X-Google-Sender-Auth: 9IKMZp1GIaL_UsQxqJbyOpdGXFY
+Message-ID: <CAE9FiQX_+WO4Zr7TGWdjCNo_cdk+aSAmRNzpPUW_NxirnMEBCw@mail.gmail.com>
+Subject: Re: Revert commit 5dcd14ecd4 - breaks EFI boot with SLES11 elilo.efi
+From: Yinghai Lu <yinghai@kernel.org>
+To: Robin Holt <holt@sgi.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, hpa@sgi.com,
+        linux-kernel@vger.kernel.org
+Content-Type: multipart/mixed; boundary=14dae9340ea9e0004f04d73320cb
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 05, 2013 at 12:02:46PM -0800, Tejun Heo wrote:
-> get_new_stid() is no longer used since 3abdb607125 ("nfsd4: simplify
-> idr allocation").  Remove it.
+--14dae9340ea9e0004f04d73320cb
+Content-Type: text/plain; charset=ISO-8859-1
 
-Whoops, thanks for catching that.
+On Tue, Mar 5, 2013 at 11:52 AM, Robin Holt <holt@sgi.com> wrote:
+> That fixed it for me.
+>
+> Can you help me understand why sentinel is non-zero?  It looks to me
+> like 3.14 allocates 16kB plus strlen of the command line, zeros it,
+> and then proceeds to fill in fields, some differing from what is in the
+> boot_params structure.  That said, it looks like the sentinel field
+> should remain 0.  I am still trying to understand, but if this patch
+> makes it in, I am happy.
 
-Acked-by: J. Bruce Fields <bfields@redhat.com>
+sentinel is out of setup_header.
+it is 0x1ef. setup_header is from 0x1f1.
 
-> 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Cc: "J. Bruce Fields" <bfields@fieldses.org>
-> Cc: linux-nfs@vger.kernel.org
-> ---
->  fs/nfsd/nfs4state.c | 31 -------------------------------
->  1 file changed, 31 deletions(-)
-> 
-> diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
-> index 16d39c6..d91d6db 100644
-> --- a/fs/nfsd/nfs4state.c
-> +++ b/fs/nfsd/nfs4state.c
-> @@ -230,37 +230,6 @@ static void nfs4_file_put_access(struct nfs4_file *fp, int oflag)
->  		__nfs4_file_put_access(fp, oflag);
->  }
->  
-> -static inline int get_new_stid(struct nfs4_stid *stid)
-> -{
-> -	static int min_stateid = 0;
-> -	struct idr *stateids = &stid->sc_client->cl_stateids;
-> -	int new_stid;
-> -	int error;
-> -
-> -	error = idr_get_new_above(stateids, stid, min_stateid, &new_stid);
-> -	/*
-> -	 * Note: the necessary preallocation was done in
-> -	 * nfs4_alloc_stateid().  The idr code caps the number of
-> -	 * preallocations that can exist at a time, but the state lock
-> -	 * prevents anyone from using ours before we get here:
-> -	 */
-> -	WARN_ON_ONCE(error);
-> -	/*
-> -	 * It shouldn't be a problem to reuse an opaque stateid value.
-> -	 * I don't think it is for 4.1.  But with 4.0 I worry that, for
-> -	 * example, a stray write retransmission could be accepted by
-> -	 * the server when it should have been rejected.  Therefore,
-> -	 * adopt a trick from the sctp code to attempt to maximize the
-> -	 * amount of time until an id is reused, by ensuring they always
-> -	 * "increase" (mod INT_MAX):
-> -	 */
-> -
-> -	min_stateid = new_stid+1;
-> -	if (min_stateid == INT_MAX)
-> -		min_stateid = 0;
-> -	return new_stid;
-> -}
-> -
->  static struct nfs4_stid *nfs4_alloc_stid(struct nfs4_client *cl, struct
->  kmem_cache *slab)
->  {
-> -- 
-> 1.8.1.4
-> 
+it will be 0xff from arch/x86/boot/header.S for bzImage.
+
+        .section ".header", "a"
+        .globl  sentinel
+sentinel:       .byte 0xff, 0xff        /* Used to detect broken loaders */
+
+elilo first copy first page, and get 0x1f1 for setup code sector number.
+then it copies all setup code ( include setup header).
+
+after that sysdeps_create_boot_params will copy first two pages to bp...
+CopyMem(bp, param_start, 0x2000);
+
+in that case, it will keep all fields in boot_params around setup_header as
+with setup code...thus 0x1ef will be 0xff.
+
+elilo need attached fix.
+
+Thanks
+
+Yinghai
+
+--14dae9340ea9e0004f04d73320cb
+Content-Type: application/octet-stream; name="fix_boot_params.patch"
+Content-Disposition: attachment; filename="fix_boot_params.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hdxhuq3l0
+
+LS0tCiBpYTMyL3N5c3RlbS5jICAgfCAgICA5ICsrKysrKysrLQogeDg2XzY0L3N5c3RlbS5jIHwg
+ICAgOSArKysrKysrKy0KIDIgZmlsZXMgY2hhbmdlZCwgMTYgaW5zZXJ0aW9ucygrKSwgMiBkZWxl
+dGlvbnMoLSkKCkluZGV4OiBlbGlsby9pYTMyL3N5c3RlbS5jCj09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KLS0tIGVsaWxv
+Lm9yaWcvaWEzMi9zeXN0ZW0uYworKysgZWxpbG8vaWEzMi9zeXN0ZW0uYwpAQCAtNDg3LDcgKzQ4
+NywxNCBAQCBzeXNkZXBzX2NyZWF0ZV9ib290X3BhcmFtcygKIAkgKiBjYW4gYmUgdXNlZCBieSB0
+aGUgY29tbWFuZCBsaW5lLgogCSAqLwogCWlmIChwYXJhbV9zdGFydCAhPSBOVUxMKSB7Ci0JCUNv
+cHlNZW0oYnAsIHBhcmFtX3N0YXJ0LCAweDIwMDApOworCQl1bnNpZ25lZCBjaGFyICpwID0gcGFy
+YW1fc3RhcnQ7CisJCXVuc2lnbmVkIGxvbmcgc2V0dXBfaGVhZGVyX3NpemUgPSBwWzB4MjAxXSAr
+IDB4MjAyIC0gMHgxZjE7CisKKwkJLyogb25seSBjb3B5IHNldHVwX2hlYWRlciAqLworCQlpZiAo
+c2V0dXBfaGVhZGVyX3NpemUgPiAweDdmKQorCQkJc2V0dXBfaGVhZGVyX3NpemUgPSAweDdmOwor
+CQlDb3B5TWVtKCh1bnNpZ25lZCBjaGFyICopYnAgKyAweDFmMSwgcCArIDB4MWYxLAorCQkJc2V0
+dXBfaGVhZGVyX3NpemUpOwogCQlmcmVlKHBhcmFtX3N0YXJ0KTsKIAkJcGFyYW1fc3RhcnQgPSBO
+VUxMOwogCQlwYXJhbV9zaXplID0gMDsKSW5kZXg6IGVsaWxvL3g4Nl82NC9zeXN0ZW0uYwo9PT09
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09Ci0tLSBlbGlsby5vcmlnL3g4Nl82NC9zeXN0ZW0uYworKysgZWxpbG8veDg2XzY0L3N5
+c3RlbS5jCkBAIC02NDAsNyArNjQwLDE0IEBAIHN5c2RlcHNfY3JlYXRlX2Jvb3RfcGFyYW1zKAog
+CSAqIGNhbiBiZSB1c2VkIGJ5IHRoZSBjb21tYW5kIGxpbmUuCiAJICovCiAJaWYgKHBhcmFtX3N0
+YXJ0ICE9IE5VTEwpIHsKLQkJQ29weU1lbShicCwgcGFyYW1fc3RhcnQsIDB4MjAwMCk7CisJCXVu
+c2lnbmVkIGNoYXIgKnAgPSBwYXJhbV9zdGFydDsKKwkJdW5zaWduZWQgbG9uZyBzZXR1cF9oZWFk
+ZXJfc2l6ZSA9IHBbMHgyMDFdICsgMHgyMDIgLSAweDFmMTsKKworCQkvKiBvbmx5IGNvcHkgc2V0
+dXBfaGVhZGVyICovCisJCWlmIChzZXR1cF9oZWFkZXJfc2l6ZSA+IDB4N2YpCisJCQlzZXR1cF9o
+ZWFkZXJfc2l6ZSA9IDB4N2Y7CisJCUNvcHlNZW0oKHVuc2lnbmVkIGNoYXIgKilicCArIDB4MWYx
+LCBwICsgMHgxZjEsCisJCQlzZXR1cF9oZWFkZXJfc2l6ZSk7CiAJCWZyZWUocGFyYW1fc3RhcnQp
+OwogCQlwYXJhbV9zdGFydCA9IE5VTEw7CiAJCXBhcmFtX3NpemUgPSAwOwo=
+--14dae9340ea9e0004f04d73320cb--
