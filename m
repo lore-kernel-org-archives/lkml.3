@@ -1,65 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755688Ab3CEW3u (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 17:29:50 -0500
-Received: from mail-ob0-f180.google.com ([209.85.214.180]:42257 "EHLO
-	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754796Ab3CEW3t (ORCPT
+	id S1755901Ab3CEWbO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 17:31:14 -0500
+Received: from moutng.kundenserver.de ([212.227.17.9]:63570 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755203Ab3CEWbN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 17:29:49 -0500
-Message-ID: <513671CF.5050705@gmail.com>
-Date: Wed, 06 Mar 2013 09:29:35 +1100
-From: Ryan Mallon <rmallon@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
+	Tue, 5 Mar 2013 17:31:13 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Subject: Re: [PATCH] ARM: SPEAr13xx: Fix typo "ARCH_HAVE_CPUFREQ"
+Date: Tue, 5 Mar 2013 22:31:00 +0000
+User-Agent: KMail/1.12.2 (Linux/3.8.0-8-generic; KDE/4.3.2; x86_64; ; )
+Cc: Paul Bolle <pebolle@tiscali.nl>, Shiraz Hashim <shiraz.hashim@st.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, spear-devel@list.st.com,
+        linux-kernel@vger.kernel.org
+References: <1362474819.16460.63.camel@x61.thuisdomein> <CAOh2x=m5r-yz993==vo-ezJttqN8XyXNqUsOYmv43EULOF_Pbw@mail.gmail.com>
+In-Reply-To: <CAOh2x=m5r-yz993==vo-ezJttqN8XyXNqUsOYmv43EULOF_Pbw@mail.gmail.com>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: linux-kernel@vger.kernel.org, laijs@cn.fujitsu.com, axboe@kernel.dk,
-        jmoyer@redhat.com, zab@redhat.com,
-        kbuild test robot <fengguang.wu@intel.com>
-Subject: Re: [PATCH v2 16/31] workqueue: introduce workqueue_attrs
-References: <1362194662-2344-1-git-send-email-tj@kernel.org> <1362194662-2344-17-git-send-email-tj@kernel.org> <20130304183742.GI30413@htj.dyndns.org>
-In-Reply-To: <20130304183742.GI30413@htj.dyndns.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201303052231.01143.arnd@arndb.de>
+X-Provags-ID: V02:K0:hJEeP7B0wWW6c6KOERZdlBVRSSrbiz3AAMo4mB7Clwf
+ TXJVHM0oX0t1hXXlwKKwNre19rq9T2VV/I9e4owrX8pGOaHmwX
+ VhyLBjhvsq0p5LjMusKLCmhNttqA249HMiu/2g5LkhC6N+Pp7a
+ cxKR3bn7I0dfmf+gIkVuvQhgS/zhh6cqZ4JBiTP9RW3AEu7Ema
+ 0mcFEc5zU8Goery1ZpkwyBgYd/ilzEAcf9pdAf6ejwMtjfZtBe
+ 9FAa8v2aZJ205S0RGBKIfKFrDV9tSTS4M/yJ6ODz3CWy7VEEFK
+ erClG4pMlWNVfdWvwYfnZ8GvKI68zzacQV/ZIluEF1F8m+fLLO
+ Va+4tVBhS0jWxGWTBwDI=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/03/13 05:37, Tejun Heo wrote:
-> Introduce struct workqueue_attrs which carries worker attributes -
-> currently the nice level and allowed cpumask along with helper
-> routines alloc_workqueue_attrs() and free_workqueue_attrs().
+On Tuesday 05 March 2013, Viresh Kumar wrote:
+> On Tue, Mar 5, 2013 at 5:13 PM, Paul Bolle <pebolle@tiscali.nl> wrote:
+> > Do what commit f12a500e4adcc0961803e54b5ed1e74275d399f1
+> > ("ARM: SPEAr13xx: Enable CONFIG_ARCH_HAS_CPUFREQ") wanted to do.
+> >
+> > Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
 > 
-> Each worker_pool now carries ->attrs describing the attributes of its
-> workers.  All functions dealing with cpumask and nice level of workers
-> are updated to follow worker_pool->attrs instead of determining them
-> from other characteristics of the worker_pool, and init_workqueues()
-> is updated to set worker_pool->attrs appropriately for all standard
-> pools.
+> Ahh such stupid mistake.
 > 
-> Note that create_worker() is updated to always perform set_user_nice()
-> and use set_cpus_allowed_ptr() combined with manual assertion of
-> PF_THREAD_BOUND instead of kthread_bind().  This simplifies handling
-> random attributes without affecting the outcome.
-> 
-> This patch doesn't introduce any behavior changes.
-> 
-> v2: Missing cpumask_var_t definition caused build failure on some
->     archs.  linux/cpumask.h included.
-> 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Reported-by: kbuild test robot <fengguang.wu@intel.com>
+> Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
 
-> --- a/kernel/workqueue.c
-> +++ b/kernel/workqueue.c
-> @@ -148,6 +148,8 @@ struct worker_pool {
->  	struct mutex		assoc_mutex;	/* protect POOL_DISASSOCIATED */
->  	struct ida		worker_ida;	/* L: for worker IDs */
->  
-> +	struct workqueue_attrs	*attrs;		/* I: worker attributes */
+Applied in fixes branch, thanks!
 
-If attrs always exists, why not just embed the struct and avoid the
-need to alloc/free it?
-
-~Ryan
-
+	Arnd
