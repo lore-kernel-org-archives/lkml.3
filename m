@@ -1,80 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752604Ab3CEXFD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 18:05:03 -0500
-Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:45931 "EHLO
-	mx0b-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751746Ab3CEXFA convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 18:05:00 -0500
-X-Greylist: delayed 2095 seconds by postgrey-1.27 at vger.kernel.org; Tue, 05 Mar 2013 18:05:00 EST
-From: Dan Williams <djbw@fb.com>
-To: Dave Jiang <dave.jiang@intel.com>
-CC: "vinod.koul@intel.com" <vinod.koul@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ioatdma: allow all channels to have irq coalescing
- support
-Thread-Topic: [PATCH] ioatdma: allow all channels to have irq coalescing
- support
-Thread-Index: AQHOFD03K0VlW9DjjEuhymemoCavZpiXuXiA
-Date: Tue, 5 Mar 2013 22:30:01 +0000
-Message-ID: <84A937D219C2B44EB8EA44831ACA1E49171E519C@PRN-MBX02-3.TheFacebook.com>
-In-Reply-To: <20130226162036.4996.78263.stgit@djiang5-linux2.ch.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [192.168.16.4]
-Content-Type: text/plain; charset="us-ascii"
-Content-ID: <978F2E8FAAA1E5428610FB76CF52EA56@fb.com>
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-Proofpoint-Spam-Reason: safe
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.9.8327,1.0.431,0.0.0000
- definitions=2013-03-05_08:2013-03-05,2013-03-05,1970-01-01 signatures=0
+	id S1752866Ab3CEXGU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 18:06:20 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60620 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751746Ab3CEXGS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Mar 2013 18:06:18 -0500
+Date: Tue, 5 Mar 2013 15:06:16 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Kyungsik Lee <kyungsik.lee@lge.com>
+Cc: Russell King <linux@arm.linux.org.uk>, "H. Peter Anvin" <hpa@zytor.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-kbuild@vger.kernel.org, x86@kernel.org,
+        celinux-dev@lists.celinuxforum.org, Nicolas Pitre <nico@fluxnic.net>,
+        David Sterba <dsterba@suse.cz>, Nitin Gupta <nitingupta910@gmail.com>,
+        Joe Millenbach <jmillenbach@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Michal Marek <mmarek@suse.cz>,
+        hyojun.im@lge.com, chan.jeong@lge.com, raphael.andy.lee@gmail.com
+Subject: Re: [PATCH v3 -next 0/5] Add support for LZ4-compressed kernel
+Message-Id: <20130305150616.cb737f9b217b8c82051b2ccb@linux-foundation.org>
+In-Reply-To: <1362484056-9778-1-git-send-email-kyungsik.lee@lge.com>
+References: <1362484056-9778-1-git-send-email-kyungsik.lee@lge.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue,  5 Mar 2013 20:47:31 +0900 Kyungsik Lee <kyungsik.lee@lge.com> wrote:
 
-
-On 2/26/13 8:20 AM, "Dave Jiang" <dave.jiang@intel.com> wrote:
-
->Looks like only the RAID channels are allowed to have irq coalescing
->support
->in the existing code. Fixing that. The ioat3 cleanup code can handle
->memcpy
->ops anyways
->
->Signed-off-by: Dave Jiang <dave.jiang@intel.com>
->---
-> drivers/dma/ioat/dma_v3.c |   12 +++---------
-> 1 file changed, 3 insertions(+), 9 deletions(-)
->
->diff --git a/drivers/dma/ioat/dma_v3.c b/drivers/dma/ioat/dma_v3.c
->index 47588dc..368a184 100644
->--- a/drivers/dma/ioat/dma_v3.c
->+++ b/drivers/dma/ioat/dma_v3.c
->@@ -1268,15 +1268,9 @@ int __devinit ioat3_dma_probe(struct
->ioatdma_device *device, int dca)
-> 	}
+> This is the third version. In this version, Some codes are fixed
+> and more description and note are added. I would like to thank David Sterba
+> for his review.
 > 
+> The Last patch[5/5] of the patch set is for making x86 and arm default to
+> LZ4-compressed for testing the LZ4 code in the linux-next.
+> It was requested by Andrew Morton in the patch set v2.
 > 
->-	if (is_raid_device) {
->-		dma->device_tx_status = ioat3_tx_status;
->-		device->cleanup_fn = ioat3_cleanup_event;
->-		device->timer_fn = ioat3_timer_event;
->-	} else {
->-		dma->device_tx_status = ioat_dma_tx_status;
->-		device->cleanup_fn = ioat2_cleanup_event;
->-		device->timer_fn = ioat2_timer_event;
->-	}
->+	dma->device_tx_status = ioat3_tx_status;
->+	device->cleanup_fn = ioat3_cleanup_event;
->+	device->timer_fn = ioat3_timer_event;
-> 
-> 	#ifdef CONFIG_ASYNC_TX_DISABLE_PQ_VAL_DMA
-> 	dma_cap_clear(DMA_PQ_VAL, dma->cap_mask);
+> Currently, A preliminary version of LZ4 de/compression tool is supported.
+> However, It is expected that we will have a tool with more features
+> once its format is finished.
 
-Acked-by: Dan Williams <djbw@fb.com>
+What happened to the changelog?  The earlier version at least had some
+rudimentary benchmarking results, but now we don't even have that. 
+
+Someone should prepare the information explaining why we added this to
+Linux, and I'd prefer that person be you rather than me!  Certainly it
+should include performance measurements - both speed and space.  Also
+it should capture our thinking regarding all the other decompressors,
+explaining why we view it as acceptable to add yet another one.
+
+Please, put yourself in the position of someone reading these commits
+in 2017 wondering "why did they merge this".  We should tell them.
 
