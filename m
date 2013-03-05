@@ -1,97 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933127Ab3CEDsS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 22:48:18 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:35597 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932843Ab3CEDsO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 22:48:14 -0500
-X-IronPort-AV: E=Sophos;i="4.84,784,1355097600"; 
-   d="scan'208";a="10565635"
-Message-ID: <1362455124.8941.19.camel@hastur.hellion.org.uk>
-Subject: Re: [PATCH LINUX v5] xen: event channel arrays are xen_ulong_t and
- not unsigned long
-From: Ian Campbell <ian.campbell@citrix.com>
-To: Will Deacon <will.deacon@arm.com>
-CC: Rob Herring <robherring2@gmail.com>,
-        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
-        "Keir (Xen.org)" <keir@xen.org>,
-        "Stefano Stabellini" <Stefano.Stabellini@eu.citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "Tim (Xen.org)" <tim@xen.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jan Beulich <JBeulich@suse.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Nicolas Pitre <nico@fluxnic.net>
-Date: Tue, 5 Mar 2013 03:45:24 +0000
-In-Reply-To: <20130305030436.GA18040@mudshark.cambridge.arm.com>
-References: <1361285327.1051.115.camel@zakaz.uk.xensource.com>
-	 <1361360886-2956-1-git-send-email-ian.campbell@citrix.com>
-	 <51340ACD.70904@gmail.com>
-	 <20130305030436.GA18040@mudshark.cambridge.arm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-2 
+	id S933106Ab3CEDvM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 22:51:12 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:50107 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S932785Ab3CEDvK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Mar 2013 22:51:10 -0500
+X-IronPort-AV: E=Sophos;i="4.84,784,1355068800"; 
+   d="scan'208";a="6812824"
+Message-ID: <51356BD8.4040408@cn.fujitsu.com>
+Date: Tue, 05 Mar 2013 11:51:52 +0800
+From: Gao feng <gaofeng@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
+To: "Eric W. Biederman" <raphael.scarv@gmail.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, Oleg Nesterov <oleg@redhat.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] kernel/pid_namespace.c: Fixing a lack of cleanup
+ (Probable resources leak).
+References: <1362454007-353-1-git-send-email-ebiederm@xmission.com>
+In-Reply-To: <1362454007-353-1-git-send-email-ebiederm@xmission.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/03/05 11:50:03,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/03/05 11:50:04,
+	Serialize complete at 2013/03/05 11:50:04
 Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-15
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-03-05 at 03:04 +0000, Will Deacon wrote:
-> Hi guys,
+On 2013/03/05 11:26, Eric W. Biederman wrote:
+> From: Raphael S.Carvalho <raphael.scarv@gmail.com>
 > 
-> On Mon, Mar 04, 2013 at 02:45:33AM +0000, Rob Herring wrote:
-> > On 02/20/2013 05:48 AM, Ian Campbell wrote:
-> > > On ARM we want these to be the same size on 32- and 64-bit.
-> > > 
-> > > This is an ABI change on ARM. X86 does not change.
-> > > 
-> > > Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
-> > > Cc: Jan Beulich <JBeulich@suse.com>
-> > > Cc: Keir (Xen.org) <keir@xen.org>
-> > > Cc: Tim Deegan <tim@xen.org>
-> > > Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> > > Cc: linux-arm-kernel@lists.infradead.org
-> > > Cc: xen-devel@lists.xen.org
-> > > Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> Starting point: create_pid_namespace()
 > 
-> [...]
+> Suppose create_pid_cachep() was executed sucessfully, thus:
+> pcache was allocated by kmalloc().
+> cachep received a cache created by kmem_cache_create().
+> and pcache->list was added to the list pid_caches_lh.
 > 
-> > I'm seeing some some build failures on randconfig builds with this change:
-> > 
-> > /tmp/ccJaIZOW.s: Assembler messages:
-> > /tmp/ccJaIZOW.s:831: Error: even register required -- `ldrexd r5,r6,[r4]'
-> > 
-> > This is with ubuntu 12.04 cross compiler (gcc version 4.6.3
-> > (Ubuntu/Linaro 4.6.3-1ubuntu5)).
-> > 
-> > This register restriction is on ARM, but not Thumb builds. Comparing
-> > this to atomic64_cmpxchg, I don't see how to fix this. Perhaps Will or
-> > Nico have thoughts.
+> So what would happen if proc_alloc_inum() returns an error?
+> The resources allocated by create_pid_namespace() would be deallocated!
+> How about those resources allocated by create_pid_cachep()?
+> By knowing that, I created this patch in order to fix that!
 > 
-> [...]
-> 
-> > > +	asm volatile("@ xchg_xen_ulong\n"
-> > > +		"1:     ldrexd  %0, %H0, [%3]\n"
-> > > +		"       strexd  %1, %2, %H2, [%3]\n"
-> > > +		"       teq     %1, #0\n"
-> > > +		"       bne     1b"
-> > > +		: "=&r" (oldval), "=&r" (tmp)
-> > > +		: "r" (val), "r" (ptr)
-> > > +		: "memory", "cc");
-> 
-> I also can't immediately see why GCC would allocate oldval to an odd base
-> register. Can you share your .config please?
+> Signed-off-by: Raphael S.Carvalho <raphael.scarv@gmail.com>
+> ---
 
-I fixed something along these lines before v5 of this patch, although I
-must confess I don't recall what it was that I changed (and looking at
-the older versions of the patch isn't giving me any clues). I can't
-reproduce it now though :-(
+Actually I noticed this problem and I think it is not a BUG.
+Since the pid_cache is created for all pid namespace which have the same level.
+Even this pid namespace is failed to create, the pid_cache will not be leaked, Other
+pid namespace which has the same level will use the pid_cache and no need to
+allocate it again. In other words, the pid_cache for every level pid namespace will
+only be created once.
 
-I'm using the 4.6.3 cross compiler from kernel.org:
-ftp://ftp.kernel.org/pub/tools/crosstool/files/bin/x86_64/4.6.3/
-
-Ian.
+I also think this patch add a bug,because there may be other pid namespace's pid_cachep
+points to the same pid_cache which will be free at the by label out_free_cachep.
 
