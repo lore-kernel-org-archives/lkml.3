@@ -1,92 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757786Ab3CERkO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 12:40:14 -0500
-Received: from mailout01.c08.mtsvc.net ([205.186.168.189]:53176 "EHLO
-	mailout01.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755697Ab3CERkM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 12:40:12 -0500
-Message-ID: <1362505193.18799.57.camel@thor.lan>
-Subject: Re: [PATCH v4 00/32] ldisc patchset
-From: Peter Hurley <peter@hurleysoftware.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Sasha Levin <levinsasha928@gmail.com>, Jiri Slaby <jslaby@suse.cz>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
-        Ilya Zykov <ilya@ilyx.ru>, Dave Jones <davej@redhat.com>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Shawn Guo <shawn.guo@linaro.org>
-Date: Tue, 05 Mar 2013 12:39:53 -0500
-In-Reply-To: <1361558250.14402.6.camel@thor.lan>
-References: <1360095638-6624-1-git-send-email-peter@hurleysoftware.com>
-	 <1361390599-15195-1-git-send-email-peter@hurleysoftware.com>
-	 <51261E30.9040907@gmail.com> <1361453910.10685.7.camel@thor.lan>
-	 <1361558250.14402.6.camel@thor.lan>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.3-0pjh1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 125194 peter@hurleysoftware.com
+	id S1758018Ab3CERkd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 12:40:33 -0500
+Received: from pegase2.c-s.fr ([93.17.235.10]:55791 "EHLO mailhub2.si.c-s.fr"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1757874Ab3CERka (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Mar 2013 12:40:30 -0500
+Date: Tue, 5 Mar 2013 16:26:50 +0100
+Message-Id: <201303051526.r25FQoCv002950@localhost.localdomain>
+From: Christophe Leroy <christophe.leroy@c-s.fr>
+To: Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@linaro.org>
+CC: linux-kernel@vger.kernel.org, Patrick Vasseur <patrick.vasseur@c-s.fr>
+Subject: [PATCH v2] Adds support for Open Firmware in MAX730x GPIO Driver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-02-22 at 13:37 -0500, Peter Hurley wrote:
-> On Thu, 2013-02-21 at 08:38 -0500, Peter Hurley wrote:
-> > On Thu, 2013-02-21 at 08:16 -0500, Sasha Levin wrote:
-> > > On 02/20/2013 03:02 PM, Peter Hurley wrote:
-> > > > Sasha and Dave, my trinity testbeds die in other areas right now;
-> > > > I would really appreciate if you would please re-test this series.
-> > > 
-> > > Hi Peter,
-> > > 
-> > > I saw this twice in overnight fuzzing:
-> > > 
-> > > [ 1473.912280] =================================
-> > > [ 1473.913180] [ BUG: bad contention detected! ]
-> > > [ 1473.914071] 3.8.0-next-20130220-sasha-00038-g1ad55df-dirty #8 Tainted: G        W
-> > > [ 1473.915684] ---------------------------------
-> > > [ 1473.916549] kworker/1:1/361 is trying to contend lock (&tty->ldisc_sem) at:
-> > > [ 1473.918031] [<ffffffff81c493df>] tty_ldisc_ref+0x1f/0x60
-> > > [ 1473.919060] but there are no locks held!
-> > 
-> > Ahh, of course. That explains why the rwsem trylock doesn't track lock
-> > stats -- because by the time lock_contended() is called, up_write()
-> > could have just called lockdep_release(), so that it appears as if the
-> > lock has been released when in fact it has not but is about to.
-> > 
-> > I'll just remove the lock contention test from the trylocks.
+This patch allows the use of the MAX730x Driver on systems using
+the Open Firmware platform format.
+The bit_per_word can be set in the OF Device tree, so no need to force it as with
+the platform_data.
 
-Hi Greg,
+Signed-off-by: Patrick Vasseur <patrick.vasseur@c-s.fr>
+Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
 
-I thought I'd recap the various reports so this patchset can move
-forward and you don't feel like you're wasting time reviewing it.
-
-1. The 'BUG: bad contention detected' is fixed by the inline patch I
-replied with.
-
-2. The various hung task reports specifically wrt. pmtx_open() and
-tty_open() actually pre-date this series and have been discovered to be
-due to the ircomm_tty driver sleeping holding the tty_lock(). Dave
-Miller has that patch and may or may not apply it.  [You were cc'd on
-that conversation.]
-
-3. The other hung task reports from Sasha involving hangup are only
-indirectly related to this patchset, in that the task signalling done by
-the session leader is in the wrong order wrt. the ldisc hangup. Sasha
-and I have been running an additional patchset on top of this which
-properly orders the foreground process group signalling and fixes that
-hung task.
-
-I've delayed rebasing this on tty-next (which will now be necessary
-because of the last-minute drop of the "tty is NULL" warning) until
-after this review is complete.
-
-Please let me know if you have concerns I haven't addressed here.
-
-Regards,
-Peter Hurley
-
-
-
+diff -ur linux-3.7.9/drivers/gpio/gpio-max7301.c linux/drivers/gpio/gpio-max7301.c
+--- linux-3.7.9/drivers/gpio/gpio-max7301.c	2013-02-17 19:53:32.000000000 +0100
++++ linux/drivers/gpio/gpio-max7301.c	2013-02-17 12:57:40.000000000 +0100
+@@ -56,7 +56,8 @@
+ 	int ret;
+ 
+ 	/* bits_per_word cannot be configured in platform data */
+-	spi->bits_per_word = 16;
++	if (spi->dev.platform_data)
++		spi->bits_per_word = 16;
+ 	ret = spi_setup(spi);
+ 	if (ret < 0)
+ 		return ret;
+diff -ur linux-3.7.9/drivers/gpio/gpio-max730x.c linux/drivers/gpio/gpio-max730x.c
+--- linux-3.7.9/drivers/gpio/gpio-max730x.c	2013-02-17 19:53:32.000000000 +0100
++++ linux/drivers/gpio/gpio-max730x.c	2013-02-22 10:15:46.000000000 +0100
+@@ -163,12 +163,13 @@
+ int __devinit __max730x_probe(struct max7301 *ts)
+ {
+ 	struct device *dev = ts->dev;
++	struct device_node *np = dev->of_node;
+ 	struct max7301_platform_data *pdata;
+ 	int i, ret;
+ 
+ 	pdata = dev->platform_data;
+-	if (!pdata || !pdata->base) {
+-		dev_err(dev, "incorrect or missing platform data\n");
++	if ((!pdata || !pdata->base) && !np) {
++		dev_err(dev, "No platform data nor Device Tree found\n");
+ 		return -EINVAL;
+ 	}
+ 
+@@ -178,7 +179,6 @@
+ 	/* Power up the chip and disable IRQ output */
+ 	ts->write(dev, 0x04, 0x01);
+ 
+-	ts->input_pullup_active = pdata->input_pullup_active;
+ 	ts->chip.label = dev->driver->name;
+ 
+ 	ts->chip.direction_input = max7301_direction_input;
+@@ -186,7 +186,12 @@
+ 	ts->chip.direction_output = max7301_direction_output;
+ 	ts->chip.set = max7301_set;
+ 
+-	ts->chip.base = pdata->base;
++	if (pdata) {
++		ts->input_pullup_active = pdata->input_pullup_active;
++		ts->chip.base = pdata->base;
++	} else {
++		ts->chip.base = -1;
++	}
+ 	ts->chip.ngpio = PIN_NUMBER;
+ 	ts->chip.can_sleep = 1;
+ 	ts->chip.dev = dev;
