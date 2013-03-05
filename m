@@ -1,68 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758511Ab3CEPDk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 10:03:40 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:42197 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758431Ab3CEPDh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 10:03:37 -0500
-Message-ID: <51360936.7050009@ti.com>
-Date: Tue, 5 Mar 2013 20:33:18 +0530
-From: kishon <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-CC: <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>, <rob@landley.net>,
-        <b-cousson@ti.com>, <tony@atomide.com>, <linux@arm.linux.org.uk>,
-        <balbi@ti.com>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v2 7/8] ARM: dts: omap5: add dwc3 omap dt data
-References: <1362494223-14151-1-git-send-email-kishon@ti.com> <1362494223-14151-8-git-send-email-kishon@ti.com> <51360436.6050409@cogentembedded.com>
-In-Reply-To: <51360436.6050409@cogentembedded.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1758545Ab3CEPDp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 10:03:45 -0500
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:50713 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756910Ab3CEPDm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Mar 2013 10:03:42 -0500
+From: Jiang Liu <liuj97@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>
+Cc: Jiang Liu <jiang.liu@huawei.com>, Wen Congyang <wency@cn.fujitsu.com>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Chris Clayton <chris2553@googlemail.com>,
+        "Rafael J . Wysocki" <rjw@sisk.pl>, Mel Gorman <mgorman@suse.de>,
+        Minchan Kim <minchan@kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>, Jianguo Wu <wujianguo@huawei.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Yinghai Lu <yinghai@kernel.org>,
+        x86@kernel.org, Tang Chen <tangchen@cn.fujitsu.com>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Subject: [RFC PATCH v1 31/33] mm: avoid using __free_pages_bootmem() at runtime
+Date: Tue,  5 Mar 2013 22:55:14 +0800
+Message-Id: <1362495317-32682-32-git-send-email-jiang.liu@huawei.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1362495317-32682-1-git-send-email-jiang.liu@huawei.com>
+References: <1362495317-32682-1-git-send-email-jiang.liu@huawei.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Avoid using __free_pages_bootmem() at runtime, so we could easily
+manage totalram_pages and zone->managed_pages. With this change applied,
+__free_pages_bootmem() is only used by bootmem.c and nobootmem.c at
+boot time, so mark it as __init. And other callers of
+__free_pages_bootmem() have been switched to free_reserved_page(),
+which handles totalram_pages and zone->managed_pages in a common way.
 
-On Tuesday 05 March 2013 08:11 PM, Sergei Shtylyov wrote:
-> Hello.
->
-> On 05-03-2013 18:37, Kishon Vijay Abraham I wrote:
->
->> Add dwc3 omap glue data to the omap5 dt data file. The information about
->> the dt node added here is available @
->> Documentation/devicetree/bindings/usb/omap-usb.txt
->
->> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
->> ---
->>   arch/arm/boot/dts/omap5.dtsi |   11 +++++++++++
->>   1 file changed, 11 insertions(+)
->
->> diff --git a/arch/arm/boot/dts/omap5.dtsi b/arch/arm/boot/dts/omap5.dtsi
->> index bd73257..c4eb2ec 100644
->> --- a/arch/arm/boot/dts/omap5.dtsi
->> +++ b/arch/arm/boot/dts/omap5.dtsi
->> @@ -505,6 +505,17 @@
->>               ti,type = <2>;
->>           };
->>
->> +        omap_dwc3@4a020000 {
->> +            compatible = "ti,dwc3";
->> +            ti,hwmods = "usb_otg_ss";
->> +            reg = <0x4a020000 0x1000>;
->> +            interrupts = <0 93 4>;
->> +            #address-cells = <1>;
->> +            #size-cells = <1>;
->
->    Why the above two props? You don't seem to have the subnodes...
+This patch also fix a bug in free_pagetable() for x86_64, which should
+increase zone->managed_pages instead of zone->present_pages when freeing
+reserved pages.
 
-It's added in the next patch. Ok, Felipe has already pointed out to 
-merge the two patches.
+And free_reserved_page() protects totalram_pages and zone->managed_pages
+with managed_pages_count_lock, so remove the redundant ppb_lock lock in
+put_page_bootmem(). This makes the locking rules much more clear.
 
-Thanks
-Kishon
+Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Yinghai Lu <yinghai@kernel.org>
+Cc: x86@kernel.org
+Cc: Wen Congyang <wency@cn.fujitsu.com>
+Cc: Tang Chen <tangchen@cn.fujitsu.com>
+Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Minchan Kim <minchan@kernel.org>
+Cc: linux-kernel@vger.kernel.org
+Cc: linux-mm@kvack.org
+---
+ arch/x86/mm/init_64.c |   18 ++----------------
+ mm/memory_hotplug.c   |   16 ++--------------
+ mm/page_alloc.c       |    9 +--------
+ 3 files changed, 5 insertions(+), 38 deletions(-)
+
+diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+index 474e28f..17cfe98 100644
+--- a/arch/x86/mm/init_64.c
++++ b/arch/x86/mm/init_64.c
+@@ -711,36 +711,22 @@ EXPORT_SYMBOL_GPL(arch_add_memory);
+ 
+ static void __meminit free_pagetable(struct page *page, int order)
+ {
+-	struct zone *zone;
+-	bool bootmem = false;
+ 	unsigned long magic;
+ 	unsigned int nr_pages = 1 << order;
+ 
+ 	/* bootmem page has reserved flag */
+ 	if (PageReserved(page)) {
+ 		__ClearPageReserved(page);
+-		bootmem = true;
+ 
+ 		magic = (unsigned long)page->lru.next;
+ 		if (magic == SECTION_INFO || magic == MIX_SECTION_INFO) {
+ 			while (nr_pages--)
+ 				put_page_bootmem(page++);
+ 		} else
+-			__free_pages_bootmem(page, order);
++			while (nr_pages--)
++				free_reserved_page(page++);
+ 	} else
+ 		free_pages((unsigned long)page_address(page), order);
+-
+-	/*
+-	 * SECTION_INFO pages and MIX_SECTION_INFO pages
+-	 * are all allocated by bootmem.
+-	 */
+-	if (bootmem) {
+-		zone = page_zone(page);
+-		zone_span_writelock(zone);
+-		zone->present_pages += nr_pages;
+-		zone_span_writeunlock(zone);
+-		totalram_pages += nr_pages;
+-	}
+ }
+ 
+ static void __meminit free_pte_table(pte_t *pte_start, pmd_t *pmd)
+diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+index b81a367b..af9e87f 100644
+--- a/mm/memory_hotplug.c
++++ b/mm/memory_hotplug.c
+@@ -101,12 +101,9 @@ void get_page_bootmem(unsigned long info,  struct page *page,
+ 	atomic_inc(&page->_count);
+ }
+ 
+-/* reference to __meminit __free_pages_bootmem is valid
+- * so use __ref to tell modpost not to generate a warning */
+-void __ref put_page_bootmem(struct page *page)
++void put_page_bootmem(struct page *page)
+ {
+ 	unsigned long type;
+-	static DEFINE_MUTEX(ppb_lock);
+ 
+ 	type = (unsigned long) page->lru.next;
+ 	BUG_ON(type < MEMORY_HOTPLUG_MIN_BOOTMEM_TYPE ||
+@@ -116,17 +113,8 @@ void __ref put_page_bootmem(struct page *page)
+ 		ClearPagePrivate(page);
+ 		set_page_private(page, 0);
+ 		INIT_LIST_HEAD(&page->lru);
+-
+-		/*
+-		 * Please refer to comment for __free_pages_bootmem()
+-		 * for why we serialize here.
+-		 */
+-		mutex_lock(&ppb_lock);
+-		__free_pages_bootmem(page, 0);
+-		mutex_unlock(&ppb_lock);
+-		totalram_pages++;
++		free_reserved_page(page);
+ 	}
+-
+ }
+ 
+ #ifdef CONFIG_HAVE_BOOTMEM_INFO_NODE
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 2692931..d252443 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -741,14 +741,7 @@ static void __free_pages_ok(struct page *page, unsigned int order)
+ 	local_irq_restore(flags);
+ }
+ 
+-/*
+- * Read access to zone->managed_pages is safe because it's unsigned long,
+- * but we still need to serialize writers. Currently all callers of
+- * __free_pages_bootmem() except put_page_bootmem() should only be used
+- * at boot time. So for shorter boot time, we shift the burden to
+- * put_page_bootmem() to serialize writers.
+- */
+-void __meminit __free_pages_bootmem(struct page *page, unsigned int order)
++void __init __free_pages_bootmem(struct page *page, unsigned int order)
+ {
+ 	unsigned int nr_pages = 1 << order;
+ 	unsigned int loop;
+-- 
+1.7.9.5
+
