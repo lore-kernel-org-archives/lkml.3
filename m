@@ -1,57 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751036Ab3CEFHa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 00:07:30 -0500
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:47804 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750742Ab3CEFH2 (ORCPT
+	id S1751913Ab3CEFON (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 00:14:13 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:16681 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750827Ab3CEFOL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 00:07:28 -0500
-Message-ID: <1362460046.15793.111.camel@edumazet-glaptop>
-Subject: Re: BUG: IPv4: Attempt to release TCP socket in state 1
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Cong Wang <xiyou.wangcong@gmail.com>
-Cc: dormando <dormando@rydia.net>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Date: Mon, 04 Mar 2013 21:07:26 -0800
-In-Reply-To: <51356AC1.4090302@gmail.com>
-References: <alpine.DEB.2.02.1303041547080.7811@localhost6.localdomain6>
-	 <51356AC1.4090302@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	Tue, 5 Mar 2013 00:14:11 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Mon, 04 Mar 2013 21:14:11 -0800
+Message-ID: <51357F20.8080008@nvidia.com>
+Date: Tue, 5 Mar 2013 14:14:08 +0900
+From: Alex Courbot <acourbot@nvidia.com>
+Organization: NVIDIA
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
+MIME-Version: 1.0
+To: Andrew Chew <AChew@nvidia.com>
+CC: Thierry Reding <thierry.reding@avionic-design.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/1] pwm_bl: Add support for backlight enable GPIO
+References: <1362433790-22560-1-git-send-email-achew@nvidia.com> <20130304224611.GB17149@avionic-0098.mockup.avionic-design.de> <51355FA4.1090909@nvidia.com> <643E69AA4436674C8F39DCC2C05F7638629BFE1B02@HQMAIL03.nvidia.com> <5135774D.6080708@nvidia.com> <643E69AA4436674C8F39DCC2C05F7638629BFE1B11@HQMAIL03.nvidia.com> <51357B9A.8080004@nvidia.com>
+In-Reply-To: <51357B9A.8080004@nvidia.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-03-05 at 11:47 +0800, Cong Wang wrote:
-> (Cc'ing the right netdev mailing list...)
-> 
-> On 03/05/2013 08:01 AM, dormando wrote:
-> > Hi!
-> >
-> > I have a (core lockup?) with 3.7.6+ and 3.8.2 which appears to be under
-> > ixgbe. The machine appears to still be up but network stays in a severely
-> > hobbled state. Either lagging or not responding to the network at all.
-> >
-> > On a new box the hang happens within 8-24 hours of giving it production
-> > network traffic. On an older machine (6 cores instead of 8, etc) it can
-> > run for a week or more before hanging.
-> >
-> > The hang from 3.7 might be slightly different than 3.8. They seem to be
-> > mostly the same aside from 3.8 hanging in the GRO path. Don't see anything
-> > obvious in 3.9-rc1 that would fix it, and haven't tried 3.9-rc1.
-> >
-> > I've not yet figured out how to reproduce outside of production (as
-> > always, sigh). This doesn't seem to happen with 3.6.6, but we have
-> > different and less frequent kernel panics there.
-> >
+On 03/05/2013 01:59 PM, Alex Courbot wrote:
+> Btw, you also want to check if the enable-gpio property exists first
+> because otherwise probe() will fails if no GPIO is specified).
 
-Dornando, do you use any kind of special setup, external modules, 
-or netfilter ? (iptables-save output would help)
+That's actually not true - I overlooked the fact that probe() checks for 
+the GPIO validity before requesting it. My bad.
 
-Is it a pristine kernel, or a modified one ?
-
+Alex.
 
 
