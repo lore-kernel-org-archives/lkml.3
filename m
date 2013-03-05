@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755676Ab3CELsI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 06:48:08 -0500
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:64529 "EHLO
+	id S1755487Ab3CELsF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 06:48:05 -0500
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:54257 "EHLO
 	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752978Ab3CELsB (ORCPT
+	with ESMTP id S1752561Ab3CELsB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 5 Mar 2013 06:48:01 -0500
-X-AuditID: 9c93016f-b7b46ae000000e4b-73-5135db7085ca
+X-AuditID: 9c93016f-b7b46ae000000e4b-69-5135db6f6fc5
 From: Kyungsik Lee <kyungsik.lee@lge.com>
 To: Andrew Morton <akpm@linux-foundation.org>,
         Russell King <linux@arm.linux.org.uk>,
@@ -20,9 +20,9 @@ Cc: Nicolas Pitre <nico@fluxnic.net>, David Sterba <dsterba@suse.cz>,
         Thomas Gleixner <tglx@linutronix.de>, Michal Marek <mmarek@suse.cz>,
         hyojun.im@lge.com, chan.jeong@lge.com, raphael.andy.lee@gmail.com,
         Kyungsik Lee <kyungsik.lee@lge.com>
-Subject: [PATCH v3 -next 5/5] Kconfig: Make x86 and arm kernels default to the LZ4-compressed
-Date: Tue,  5 Mar 2013 20:47:36 +0900
-Message-Id: <1362484056-9778-6-git-send-email-kyungsik.lee@lge.com>
+Subject: [PATCH v3 -next 4/5] x86: Add support for LZ4-compressed kernel
+Date: Tue,  5 Mar 2013 20:47:35 +0900
+Message-Id: <1362484056-9778-5-git-send-email-kyungsik.lee@lge.com>
 X-Mailer: git-send-email 1.8.1.1
 In-Reply-To: <1362484056-9778-1-git-send-email-kyungsik.lee@lge.com>
 References: <1362484056-9778-1-git-send-email-kyungsik.lee@lge.com>
@@ -31,28 +31,75 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch makes x86 and arm kernels default to the LZ4-compressed
-to test new LZ4 code in the linux-next. This is requested by
-Andrew Morton.
+This patch integrates the LZ4 decompression code to the x86 pre-boot code.
+And it depends on two patchs below
+
+lib: Add support for LZ4-compressed kernel
+decompressor: Add LZ4 decompressor module
 
 Signed-off-by: Kyungsik Lee <kyungsik.lee@lge.com>
 ---
- init/Kconfig | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/Kconfig                  | 1 +
+ arch/x86/boot/compressed/Makefile | 5 ++++-
+ arch/x86/boot/compressed/misc.c   | 4 ++++
+ 3 files changed, 9 insertions(+), 1 deletion(-)
 
-diff --git a/init/Kconfig b/init/Kconfig
-index fc8eb1f..de3cb00 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -138,7 +138,7 @@ config HAVE_KERNEL_LZ4
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 225543b..ab916fd 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -63,6 +63,7 @@ config X86
+ 	select HAVE_KERNEL_LZMA
+ 	select HAVE_KERNEL_XZ
+ 	select HAVE_KERNEL_LZO
++	select HAVE_KERNEL_LZ4
+ 	select HAVE_HW_BREAKPOINT
+ 	select HAVE_MIXED_BREAKPOINTS_REGS
+ 	select PERF_EVENTS
+diff --git a/arch/x86/boot/compressed/Makefile b/arch/x86/boot/compressed/Makefile
+index 8a84501..c275db5 100644
+--- a/arch/x86/boot/compressed/Makefile
++++ b/arch/x86/boot/compressed/Makefile
+@@ -4,7 +4,7 @@
+ # create a compressed vmlinux image from the original vmlinux
+ #
  
- choice
- 	prompt "Kernel compression mode"
--	default KERNEL_GZIP
-+	default KERNEL_LZ4
- 	depends on HAVE_KERNEL_GZIP || HAVE_KERNEL_BZIP2 || HAVE_KERNEL_LZMA || HAVE_KERNEL_XZ || HAVE_KERNEL_LZO || HAVE_KERNEL_LZ4
- 	help
- 	  The linux kernel is a kind of self-extracting executable.
+-targets := vmlinux.lds vmlinux vmlinux.bin vmlinux.bin.gz vmlinux.bin.bz2 vmlinux.bin.lzma vmlinux.bin.xz vmlinux.bin.lzo head_$(BITS).o misc.o string.o cmdline.o early_serial_console.o piggy.o
++targets := vmlinux.lds vmlinux vmlinux.bin vmlinux.bin.gz vmlinux.bin.bz2 vmlinux.bin.lzma vmlinux.bin.xz vmlinux.bin.lzo vmlinux.bin.lz4 head_$(BITS).o misc.o string.o cmdline.o early_serial_console.o piggy.o
+ 
+ KBUILD_CFLAGS := -m$(BITS) -D__KERNEL__ $(LINUX_INCLUDE) -O2
+ KBUILD_CFLAGS += -fno-strict-aliasing -fPIC
+@@ -64,12 +64,15 @@ $(obj)/vmlinux.bin.xz: $(vmlinux.bin.all-y) FORCE
+ 	$(call if_changed,xzkern)
+ $(obj)/vmlinux.bin.lzo: $(vmlinux.bin.all-y) FORCE
+ 	$(call if_changed,lzo)
++$(obj)/vmlinux.bin.lz4: $(vmlinux.bin.all-y) FORCE
++	$(call if_changed,lz4)
+ 
+ suffix-$(CONFIG_KERNEL_GZIP)	:= gz
+ suffix-$(CONFIG_KERNEL_BZIP2)	:= bz2
+ suffix-$(CONFIG_KERNEL_LZMA)	:= lzma
+ suffix-$(CONFIG_KERNEL_XZ)	:= xz
+ suffix-$(CONFIG_KERNEL_LZO) 	:= lzo
++suffix-$(CONFIG_KERNEL_LZ4) 	:= lz4
+ 
+ quiet_cmd_mkpiggy = MKPIGGY $@
+       cmd_mkpiggy = $(obj)/mkpiggy $< > $@ || ( rm -f $@ ; false )
+diff --git a/arch/x86/boot/compressed/misc.c b/arch/x86/boot/compressed/misc.c
+index 88f7ff6..166a0a8 100644
+--- a/arch/x86/boot/compressed/misc.c
++++ b/arch/x86/boot/compressed/misc.c
+@@ -145,6 +145,10 @@ static int lines, cols;
+ #include "../../../../lib/decompress_unlzo.c"
+ #endif
+ 
++#ifdef CONFIG_KERNEL_LZ4
++#include "../../../../lib/decompress_unlz4.c"
++#endif
++
+ static void scroll(void)
+ {
+ 	int i;
 -- 
 1.8.1.1
 
