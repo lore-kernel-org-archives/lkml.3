@@ -1,68 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756186Ab3CERCR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 12:02:17 -0500
-Received: from smtp.eu.citrix.com ([46.33.159.39]:53513 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752580Ab3CERCQ (ORCPT
+	id S1756362Ab3CERGf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 12:06:35 -0500
+Received: from mailout01.c08.mtsvc.net ([205.186.168.189]:48683 "EHLO
+	mailout01.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753708Ab3CERGc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 12:02:16 -0500
-X-IronPort-AV: E=Sophos;i="4.84,787,1355097600"; 
-   d="scan'208";a="2198687"
-Message-ID: <51362516.1000600@citrix.com>
-Date: Tue, 5 Mar 2013 18:02:14 +0100
-From: =?UTF-8?B?Um9nZXIgUGF1IE1vbm7DqQ==?= <roger.pau@citrix.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:17.0) Gecko/20130216 Thunderbird/17.0.3
-MIME-Version: 1.0
-To: Jan Beulich <JBeulich@suse.com>
-CC: "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCH RFC 01/12] xen-blkback: don't store dev_bus_addr
-References: <1362047335-26402-1-git-send-email-roger.pau@citrix.com> <1362047335-26402-2-git-send-email-roger.pau@citrix.com> <512F467602000078000C1E0C@nat28.tlf.novell.com> <5134D78B.4060400@citrix.com> <5135B58202000078000C2FED@nat28.tlf.novell.com>
-In-Reply-To: <5135B58202000078000C2FED@nat28.tlf.novell.com>
+	Tue, 5 Mar 2013 12:06:32 -0500
+Message-ID: <1362503170.18799.33.camel@thor.lan>
+Subject: Re: [Fwd: [PATCH v2 0/4] TTY: port hangup and close fixes]
+From: Peter Hurley <peter@hurleysoftware.com>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: jhovold@gmail.com, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        USB list <linux-usb@vger.kernel.org>, linux-serial@vger.kernel.org,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Tue, 05 Mar 2013 12:06:10 -0500
+In-Reply-To: <51361724.4050107@suse.cz>
+References: <1362085054.3337.20.camel@thor.lan> <51361724.4050107@suse.cz>
 Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
+X-Mailer: Evolution 3.6.3-0pjh1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 125194 peter@hurleysoftware.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/03/13 09:06, Jan Beulich wrote:
->>>> On 04.03.13 at 18:19, Roger Pau Monné<roger.pau@citrix.com> wrote:
->> On 28/02/13 11:58, Jan Beulich wrote:
->>>>>> On 28.02.13 at 11:28, Roger Pau Monne <roger.pau@citrix.com> wrote:
->>> And then the biolist[] array really can be folded into a union
->>> with the remaining seg[] one, as their usage scopes are easily
->>> separable.
->>
->> Could we leave that for a further patch? I would like to avoid messing
->> any more with blkback, as I'm already touching a lot of bits with this
->> patch series.
+On Tue, 2013-03-05 at 17:02 +0100, Jiri Slaby wrote:
+> On 02/28/2013 09:57 PM, Peter Hurley wrote:
+> > Hi Jiri,
+> > 
+> > Just wanted to make sure you saw this series.
 > 
-> Fine by me, but ...
-> 
->>>> @@ -631,7 +629,8 @@ static int xen_blkbk_map(struct blkif_request *req,
->>>>  			if (ret)
->>>>  				continue;
->>>>  
->>>> -			seg[i].buf = persistent_gnts[i]->dev_bus_addr |
->>>> +			seg[i].buf = pfn_to_mfn(page_to_pfn(
->>>> +				persistent_gnts[i]->page)) << PAGE_SHIFT |
->>>
->>> So why do you do this? The only reader masks the field with
->>> ~PAGE_MASK anyway.
->>
->> Yes, I only need to store first_sect.
-> 
-> ... as you're touching this code anyway, and as it'll make the
-> code as well as the patch smaller, could you at least drop this
-> pointless storing of the page address (which otherwise I'd ask
-> you to properly parenthesize anyway)?
-> 
-> And iirc once that's dropped, the storing of first_sect ends up
-> being identical between the if and else bodies, so it could be
-> pulled out (further reducing code size, albeit at the price of a
-> marginally bigger patch).
+> Hi, thanks for letting me know. Johan, care to CC Alan Cox and me (or at
+> least LKML) when you're changing the TTY core next time?
 
-Yes, I've already done that, thanks for the suggestion.
+Alan asked to be dropped.
+
+On Wed, 2013-02-13 at 17:36 +0000, Alan Cox wrote:
+> [ Note that this closing of an uninitialised port seems to be a bug in
+> >   itself, which these patches aim to fix. ]
+> 
+> You don't want to be cc'ing me on these - not my problem any more.
+
+> I have a couple of questions for 2/4:
+> 
+> > Move HUPCL handling to port shutdown so that DTR is dropped also on
+> > hang up (tty_port_close is a noop for hung-up ports).
+> 
+> It makes sense, but I'm not sure -- is this expected, i.e. does this
+> conform to standards and/or BSDs?
+
+This is the existing behavior of the serial core.
+
+uart_hangup() -> uart_shutdown()
+
+static void uart_shutdown(struct tty_struct *tty, struct uart_state *state)
+{
+	struct uart_port *uport = state->uart_port;
+	struct tty_port *port = &state->port;
+
+	/*
+	 * Set the TTY IO error marker
+	 */
+	if (tty)
+		set_bit(TTY_IO_ERROR, &tty->flags);
+
+	if (test_and_clear_bit(ASYNCB_INITIALIZED, &port->flags)) {
+		/*
+		 * Turn off DTR and RTS early.
+		 */
+		if (!tty || (tty->termios.c_cflag & HUPCL))
+====>			uart_clear_mctrl(uport, TIOCM_DTR | TIOCM_RTS);
+
+		uart_port_shutdown(port);
+	}
+
+
+> > @@ -196,13 +196,20 @@ void tty_port_tty_set(struct tty_port *port, struct
+> > tty_struct *tty)
+> >  }
+> >  EXPORT_SYMBOL(tty_port_tty_set);
+> 
+> -static void tty_port_shutdown(struct tty_port *port)
+> +static void tty_port_shutdown(struct tty_port *port, struct tty_struct
+> *tty)
+>  {
+>         mutex_lock(&port->mutex);
+>         if (port->console)
+>                 goto out;
+> 
+>         if (test_and_clear_bit(ASYNCB_INITIALIZED, &port->flags)) {
+> +               /*
+> +                * Drop DTR/RTS if HUPCL is set. This causes any attached
+> +                * modem to hang up the line.
+> +                */
+
+[See my comment below]
+
+====>              if (!tty || tty->termios.c_cflag & HUPCL)
+
+> > +                       tty_port_lower_dtr_rts(port);
+> > +
+> 
+> So you drop the line even thought the user didn't necessarily want to,
+> in case the tty is gone already?
+> 
+> > @@ -225,15 +232,13 @@ void tty_port_hangup(struct tty_port *port)
+>         spin_lock_irqsave(&port->lock, flags);
+>         port->count = 0;
+>         port->flags &= ~ASYNC_NORMAL_ACTIVE;
+> -       if (port->tty) {
+> +       if (port->tty)
+>                 set_bit(TTY_IO_ERROR, &port->tty->flags);
+> -               tty_kref_put(port->tty);
+> -       }
+> -       port->tty = NULL;
+>         spin_unlock_irqrestore(&port->lock, flags);
+> > +       tty_port_shutdown(port, port->tty);
+> 
+> What prevents port->tty to be NULL here already?
+
+Nothing. That's why it's tested in tty_port_shutdown() above.
+
+> > +       tty_port_tty_set(port, NULL);
+> >         wake_up_interruptible(&port->open_wait);
+> >         wake_up_interruptible(&port->delta_msr_wait);
+> > -       tty_port_shutdown(port);
+> 
+> Did you investigate if the order matters here? I don't know, just curious...
+
+I did.
+
+It makes sense to wake blocked opens only _after_ the port has been
+shutdown. This way any blocked opens wake up, discover the port has been
+shutdown and exit their wait loops in xxxxxx_block_til_ready().
+
+Similarly for delta_msr_wait. Although I think the delta_msr_wait loop
+is already unsafe (or at least not robust).
+
+
+> > @@ -452,11 +457,6 @@ int tty_port_close_start(struct tty_port *port,
+>         /* Flush the ldisc buffering */
+>         tty_ldisc_flush(tty);
+> 
+> -       /* Drop DTR/RTS if HUPCL is set. This causes any attached modem to
+> -          hang up the line */
+> -       if (tty->termios.c_cflag & HUPCL)
+> -               tty_port_lower_dtr_rts(port);
+> -
+>         /* Don't call port->drop for the last reference. Callers will want
+>            to drop the last active reference in ->shutdown() or the tty
+> >            shutdown path */
+> 
+> > -------- Forwarded Message --------
+> > From: Johan Hovold <jhovold@gmail.com>
+> > To: Greg KH <gregkh@linuxfoundation.org>
+> > Cc: Alan Stern <stern@rowland.harvard.edu>, linux-usb@vger.kernel.org,
+> > linux-serial@vger.kernel.org, Peter Hurley <peter@hurleysoftware.com>,
+> > Johan Hovold <jhovold@gmail.com>
+> > Subject: [PATCH v2 0/4] TTY: port hangup and close fixes
+> > Date: Tue, 26 Feb 2013 12:14:28 +0100
+> > 
+> > These patches against tty-next fix a few issues with tty-port hangup and
+> > close.
+> > 
+> > The first and third patch are essentially clean ups.
+> > 
+> > The second patch makes sure DTR is dropped also on hangup and that DTR
+> > is only dropped for initialised ports (where is could have been raised
+> > in the first place).
+> > 
+> > The fourth and final patch, make sure no tty callbacks are made from
+> > tty_port_close_start when the port has not been initialised (successfully
+> > opened). This was previously only done for wait_until_sent but there's
+> > no reason to call flush_buffer or to honour port drain delay either.
+> > The latter could cause a failed open to stall for up to two seconds.
+> > 
+> > As a side-effect, these patches also fix an issue in USB-serial where we could
+> > get tty-port callbacks on an uninitialised port after having hung up and
+> > unregistered a device after disconnect.
+> > 
+> > Johan
+> > 
+> > 
+> > v2:
+> >  - reuse tty reference from hangup and close in shutdown. Both call sites
+> >    guarantee tty is either NULL or has a kref.
+> > 
+> > Changes since RFC-series:
+> >  - fix up the two driver relying on tty_port_close_start directly but
+> >    that did not manage DTR themselves
+> > 
+> > 
+> > Johan Hovold (4):
+> >   TTY: clean up port shutdown
+> >   TTY: fix DTR not being dropped on hang up
+> >   TTY: clean up port drain-delay handling
+> >   TTY: fix close of uninitialised ports
+> > 
+> >  drivers/tty/mxser.c    |  4 +++
+> >  drivers/tty/n_gsm.c    |  4 +++
+> >  drivers/tty/tty_port.c | 72 +++++++++++++++++++++++++++++---------------------
+> >  3 files changed, 50 insertions(+), 30 deletions(-)
+> > 
+> 
+> thanks,
+
 
