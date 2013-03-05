@@ -1,45 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755022Ab3CEWLi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 17:11:38 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:37138 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753525Ab3CEWLh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 17:11:37 -0500
-Message-ID: <51366CE6.4090905@zytor.com>
-Date: Tue, 05 Mar 2013 14:08:38 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130219 Thunderbird/17.0.3
+	id S1755229Ab3CEWLy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 17:11:54 -0500
+Received: from mail-ee0-f42.google.com ([74.125.83.42]:44047 "EHLO
+	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755160Ab3CEWLx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Mar 2013 17:11:53 -0500
+Message-ID: <51366DA3.1080500@suse.cz>
+Date: Tue, 05 Mar 2013 23:11:47 +0100
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:19.0) Gecko/20130124 Thunderbird/19.0
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: "Raphael S.Carvalho" <raphael.scarv@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Jarkko Sakkinen <jarkko.sakkinen@intel.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] arch/x86/smpboot.c: Fix GCC Warning (unused variable)!
-References: <1362508625-7803-1-git-send-email-raphael.scarv@gmail.com> <alpine.LFD.2.02.1303052257060.22263@ionos>
-In-Reply-To: <alpine.LFD.2.02.1303052257060.22263@ionos>
-X-Enigmail-Version: 1.5.1
+To: David Miller <davem@davemloft.net>
+CC: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
+Subject: Re: WARNING at tty_buffer.c:428 process_one_work()
+References: <20130305.150338.470704111422696046.davem@davemloft.net> <5136554F.3060006@suse.cz> <20130305.153358.503062411029894196.davem@davemloft.net> <20130305.153450.1686180125402560098.davem@davemloft.net> <513666F6.2000400@suse.cz>
+In-Reply-To: <513666F6.2000400@suse.cz>
+X-Enigmail-Version: 1.6a1pre
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/05/2013 02:02 PM, Thomas Gleixner wrote:
-> 
-> What is your patch solving? How about removing the line completely?
-> And how about providing a changelog which makes sense ?
-> 
-> Thanks,
-> 
-> 	tglx
->  
+On 03/05/2013 10:43 PM, Jiri Slaby wrote:
+> send a fix for this one).
 
-We already have an actually correct patch for this warning; I will apply
-it later.
+Hmm, did it work before actually? Even though the change was
+unintentional and undocumented, it fixed the sysrq handling as far as I
+can tell.
 
-	-hpa
-
-
+-- 
+js
+suse labs
