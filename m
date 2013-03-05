@@ -1,66 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750922Ab3CEFEs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 00:04:48 -0500
-Received: from mail-vb0-f51.google.com ([209.85.212.51]:53734 "EHLO
-	mail-vb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750729Ab3CEFEq (ORCPT
+	id S1751036Ab3CEFHa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 00:07:30 -0500
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:47804 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750742Ab3CEFH2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 00:04:46 -0500
-MIME-Version: 1.0
-In-Reply-To: <51356BD8.4040408@cn.fujitsu.com>
-References: <1362454007-353-1-git-send-email-ebiederm@xmission.com>
-	<51356BD8.4040408@cn.fujitsu.com>
-Date: Tue, 5 Mar 2013 02:04:45 -0300
-Message-ID: <CACz=WeetSxr5hb3BAKn7ks-yrMyCtgZ5HZjE+V14trmnoH+61g@mail.gmail.com>
-Subject: Re: [PATCH 1/1] kernel/pid_namespace.c: Fixing a lack of cleanup
- (Probable resources leak).
-From: Raphael S Carvalho <raphael.scarv@gmail.com>
-To: Gao feng <gaofeng@cn.fujitsu.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Oleg Nesterov <oleg@redhat.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 5 Mar 2013 00:07:28 -0500
+Message-ID: <1362460046.15793.111.camel@edumazet-glaptop>
+Subject: Re: BUG: IPv4: Attempt to release TCP socket in state 1
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Cong Wang <xiyou.wangcong@gmail.com>
+Cc: dormando <dormando@rydia.net>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Date: Mon, 04 Mar 2013 21:07:26 -0800
+In-Reply-To: <51356AC1.4090302@gmail.com>
+References: <alpine.DEB.2.02.1303041547080.7811@localhost6.localdomain6>
+	 <51356AC1.4090302@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 5, 2013 at 12:51 AM, Gao feng <gaofeng@cn.fujitsu.com> wrote:
-> On 2013/03/05 11:26, Eric W. Biederman wrote:
->> From: Raphael S.Carvalho <raphael.scarv@gmail.com>
->>
->> Starting point: create_pid_namespace()
->>
->> Suppose create_pid_cachep() was executed sucessfully, thus:
->> pcache was allocated by kmalloc().
->> cachep received a cache created by kmem_cache_create().
->> and pcache->list was added to the list pid_caches_lh.
->>
->> So what would happen if proc_alloc_inum() returns an error?
->> The resources allocated by create_pid_namespace() would be deallocated!
->> How about those resources allocated by create_pid_cachep()?
->> By knowing that, I created this patch in order to fix that!
->>
->> Signed-off-by: Raphael S.Carvalho <raphael.scarv@gmail.com>
->> ---
->
-> Actually I noticed this problem and I think it is not a BUG.
-> Since the pid_cache is created for all pid namespace which have the same level.
-> Even this pid namespace is failed to create, the pid_cache will not be leaked, Other
-> pid namespace which has the same level will use the pid_cache and no need to
-> allocate it again. In other words, the pid_cache for every level pid namespace will
-> only be created once.
->
-> I also think this patch add a bug,because there may be other pid namespace's pid_cachep
-> points to the same pid_cache which will be free at the by label out_free_cachep.
->
+On Tue, 2013-03-05 at 11:47 +0800, Cong Wang wrote:
+> (Cc'ing the right netdev mailing list...)
+> 
+> On 03/05/2013 08:01 AM, dormando wrote:
+> > Hi!
+> >
+> > I have a (core lockup?) with 3.7.6+ and 3.8.2 which appears to be under
+> > ixgbe. The machine appears to still be up but network stays in a severely
+> > hobbled state. Either lagging or not responding to the network at all.
+> >
+> > On a new box the hang happens within 8-24 hours of giving it production
+> > network traffic. On an older machine (6 cores instead of 8, etc) it can
+> > run for a week or more before hanging.
+> >
+> > The hang from 3.7 might be slightly different than 3.8. They seem to be
+> > mostly the same aside from 3.8 hanging in the GRO path. Don't see anything
+> > obvious in 3.9-rc1 that would fix it, and haven't tried 3.9-rc1.
+> >
+> > I've not yet figured out how to reproduce outside of production (as
+> > always, sigh). This doesn't seem to happen with 3.6.6, but we have
+> > different and less frequent kernel panics there.
+> >
 
-Yeah, I found the snippet of code which searches for the pcache with
-the same level.
- 46        list_for_each_entry(pcache, &pid_caches_lh, list)
- 47                if (pcache->nr_ids == nr_ids)
- 48                        goto out;
+Dornando, do you use any kind of special setup, external modules, 
+or netfilter ? (iptables-save output would help)
 
-Regards,
-Raphael S.Carvalho
+Is it a pristine kernel, or a modified one ?
+
+
+
