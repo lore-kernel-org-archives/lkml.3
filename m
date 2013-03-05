@@ -1,66 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751244Ab3CEFWi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 00:22:38 -0500
-Received: from sema.semaphore.gr ([78.46.194.137]:48638 "EHLO
-	sema.semaphore.gr" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750716Ab3CEFWg (ORCPT
+	id S1752893Ab3CEFXM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 00:23:12 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43044 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750716Ab3CEFXL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 00:22:36 -0500
-Message-ID: <51358117.9060902@semaphore.gr>
-Date: Tue, 05 Mar 2013 07:22:31 +0200
-From: Stratos Karafotis <stratosk@semaphore.gr>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130219 Thunderbird/17.0.3
-MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>
-CC: "Rafael J. Wysocki" <rjw@sisk.pl>, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH linux-next] cpufreq: conservative: Fix sampling_down_factor
- functionality
-References: <51351CC3.4010301@semaphore.gr> <CAOh2x=m0KLbjGKvLvTH7-yQb4SU5-v=-r4Ba3LSZz=NvfvO6mg@mail.gmail.com>
-In-Reply-To: <CAOh2x=m0KLbjGKvLvTH7-yQb4SU5-v=-r4Ba3LSZz=NvfvO6mg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Tue, 5 Mar 2013 00:23:11 -0500
+Message-ID: <1362460980.3768.394.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [PATCH 2/2] dmi_scan: Refactor dmi_scan_machine(),
+ {smbios,dmi}_present()
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, tmhikaru@gmail.com
+Date: Tue, 05 Mar 2013 05:23:00 +0000
+In-Reply-To: <20130304200930.GA27246@roll>
+References: <1361037634.5374.437.camel@deadeye.wl.decadent.org.uk>
+	 <1361037742.5374.441.camel@deadeye.wl.decadent.org.uk>
+	 <20130304200930.GA27246@roll>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-S1tiPWn3Oh9UQwrdlz4m"
+X-Mailer: Evolution 3.4.4-2 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Viresh,
 
-On 03/05/2013 02:23 AM, Viresh Kumar wrote:> Interesting. Because it was removed earlier and no body complained :)
-> 
-> I got following from Documentation:
-> 
-> sampling_down_factor: this parameter controls the rate at which the
-> kernel makes a decision on when to decrease the frequency while running
-> at top speed. When set to 1 (the default) decisions to reevaluate load
-> are made at the same interval regardless of current clock speed. But
-> when set to greater than 1 (e.g. 100) it acts as a multiplier for the
-> scheduling interval for reevaluating load when the CPU is at its top
-> speed due to high load. This improves performance by reducing the overhead
-> of load evaluation and helping the CPU stay at its top speed when truly
-> busy, rather than shifting back and forth in speed. This tunable has no
-> effect on behavior at lower speeds/lower CPU loads.
-> 
-> And i believe we are supposed to check if we are at the top speed or not.
-> Over that i believe the code should be like:
-> 
-> While setting speed to top speed, set the timer to delay * sampling_down_factor,
-> so that we actually don't reevaluate the load. What do you say?
-> 
+--=-S1tiPWn3Oh9UQwrdlz4m
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-I had the same thoughts, but I saw the comments in the code:
+On Mon, 2013-03-04 at 15:09 -0500, tmhikaru@gmail.com wrote:
+> 	Forgive me for bothering you about this again, I know that -stable
+> has a policy of only accepting patches once Linus has accepted them
+> upstream, but I'm curious what's going on here. Is there something I coul=
+d
+> help with to move this along? I haven't seen any discussion about it sinc=
+e
+> Feb 16.
+>=20
+> 	Of course this assumes that I have not missed the patch going in...
+> Tim McGrath
 
-/*
- * Every sampling_rate, we check, if current idle time is less than 20%
- * (default), then we try to increase frequency Every sampling_rate *
- * sampling_down_factor, we check, if current idle time is more than 80%, then
- * we try to decrease frequency
- *
+Andrew, did you see these dmi_scan patches?  Should I repost them?
 
-Also checking the code before the commit 8e677ce83bf41ba9c74e5b6d9ee60b07d4e5ed93 you may see that sampling down factor works in this way.
-So, I decided to keep the original functionality (also down_skip was already there unused).
+Ben.
 
-Regards,
-Stratos
+--=20
+Ben Hutchings
+Always try to do things in chronological order;
+it's less confusing that way.
 
+--=-S1tiPWn3Oh9UQwrdlz4m
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIVAwUAUTWBNOe/yOyVhhEJAQp2Rw/9EaEjviDoGWu7j1ffyZZTPQtqyCmbgR5c
+SewoYw0LJOLpdwY5ycDiCSqKJ3lWoQoEgzy0oRIseqiQo/5AmSVd/dZ8AvJceT8S
+Kemmh2JY1gEruDLt+iiD/b5fEaF942mTSPENTSrJ9NGMnlJcUZo4ES/SYP9fTOUM
+1Bg0oQxp1iRnN4aKulvd4nioL+pUss/4q+ifnheUMiRXji71b5In0H9rzWfwE1ZL
+nI+vG7F2wdZaiqWCvIYBOv7iJH3GL1S4ehRYlGpgF1JAAZXVdAs7OiRJoVxj1QEe
+YLaiCF5UK0Pw3XUP0EGMzHbcl/xHl/OgxgE0h2l4Bqa/rCeNPn/ky61Z4Sp+k0EJ
+DWidnkIyIj6o85NtyQJdhg6xYlVnMV9e5tLtOzp48HQRS8mVg3T3B/oxxEiUQrzg
+Me4t8OlbpW0IXDXqVrUpKhn+T199B/ekYDIfq2u+UmgTmSBbAmO6QlxjlbMZ7k+K
+rem0MtsiqJvo36nOo6cGq3og8TA/5g6GQAioB/8VON3tyZYhMkEhQtg+YujT4YQc
+sUn2uWQZRbkT2ApnoUz0Efi5pDB1qtXt5yS00jb51OCx9ti14ZOI2SBejRq1AFVF
+a05h1/ZcrPhsSqFF2GlyJ9DxmBl0Jdd1Q+KTOgQIB3NoJZNn0Mm34sD4BqsvjD87
+/ims4/9AF98=
+=AyGo
+-----END PGP SIGNATURE-----
+
+--=-S1tiPWn3Oh9UQwrdlz4m--
