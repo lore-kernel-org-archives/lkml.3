@@ -1,85 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932913Ab3CEBVi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Mar 2013 20:21:38 -0500
-Received: from e39.co.us.ibm.com ([32.97.110.160]:59015 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758950Ab3CEBVh (ORCPT
+	id S932924Ab3CEB2P (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Mar 2013 20:28:15 -0500
+Received: from mail-ob0-f170.google.com ([209.85.214.170]:34596 "EHLO
+	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932589Ab3CEB2N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Mar 2013 20:21:37 -0500
-Message-ID: <1362446491.4392.133.camel@falcor1>
-Subject: Re: IMA: How to manage user space signing policy with others
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Eric Paris <eparis@parisplace.org>,
-        linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        LSM List <linux-security-module@vger.kernel.org>
-Date: Mon, 04 Mar 2013 20:21:31 -0500
-In-Reply-To: <20130304191546.GF15199@redhat.com>
-References: <CACLa4pum7kXK+7+8ceVSuQsKDCFebdgGVYRTMKH9GQarqCEgMQ@mail.gmail.com>
-	 <1362102544.9158.35.camel@falcor1> <1362140107.9158.101.camel@falcor1>
-	 <20130301152839.GA3457@redhat.com> <20130301184027.GB3457@redhat.com>
-	 <1362166753.9158.169.camel@falcor1> <20130301213329.GC3457@redhat.com>
-	 <1362346944.18325.1.camel@falcor1> <20130304152919.GA15199@redhat.com>
-	 <1362423581.4392.46.camel@falcor1> <20130304191546.GF15199@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+	Mon, 4 Mar 2013 20:28:13 -0500
+Message-ID: <51354A28.3040607@lwfinger.net>
+Date: Mon, 04 Mar 2013 19:28:08 -0600
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
+MIME-Version: 1.0
+To: shuah.khan@hp.com
+CC: brudley@broadcom.com, arend@broadcom.com, frankyl@broadcom.com,
+        linville@tuxdriver.com, seth.forshee@canonical.com,
+        pieterpg@broadcom.com, linux-wireless@vger.kernel.org,
+        brcm80211-dev-list@broadcom.com, netdev@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, shuahkhan@gmail.com
+Subject: Re: [PATCH] net/wireless/brcm80211: remove PCI_BUS define from defs.h
+ to fix warnings
+References: <1362445374.4591.28.camel@lorien2>
+In-Reply-To: <1362445374.4591.28.camel@lorien2>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13030501-3620-0000-0000-00000178FB70
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-03-04 at 14:15 -0500, Vivek Goyal wrote:
+On 03/04/2013 07:02 PM, Shuah Khan wrote:
+> PCI_BUS defined in defs.h results in warnings from all brcm80211 source files
+> including defs.h. This define is not used in brcm80211. Removing this define
+> fixes the warning.
+>
+> In file included from drivers/net/wireless/brcm80211/brcmfmac/dhd_sdio.c:35:0:
+> drivers/net/wireless/brcm80211/include/defs.h:23:0: warning: "PCI_BUS" redefined [enabled by default]
+> include/uapi/linux/pci.h:36:0: note: this is the location of the previous definition
+>    CC [M]  drivers/net/wireless/b43legacy/dma.o
+>    CC [M]  drivers/net/wireless/brcm80211/brcmfmac/bcmsdh.o
+>    CC [M]  drivers/net/wireless/b43legacy/pio.o
+> In file included from drivers/net/wireless/brcm80211/brcmfmac/bcmsdh.c:29:0:
+> drivers/net/wireless/brcm80211/include/defs.h:23:0: warning: "PCI_BUS" redefined [enabled by default]
+> include/uapi/linux/pci.h:36:0: note: this is the location of the previous definition
+> In file included from drivers/net/wireless/brcm80211/brcmfmac/bcmsdh.c:29:0:
+> drivers/net/wireless/brcm80211/include/defs.h:23:0: warning: "PCI_BUS" redefined [enabled by default]
+> include/uapi/linux/pci.h:36:0: note: this is the location of the previous definition
 
-> I am just brain storming and throwing some ideas and see if soemthing
-> makes sense. I agree that allowing one policy only makes it very
-> restrictive (while simplifying the implementation).
+Strange, I do not see PCI_BUS defined anywhere in the include/ branch in either 
+3.8 or 3.9. In addition, I don't get these warnings. What is different in your 
+system?
 
-Agreed, lets try again ...  I think we are actually getting closer.
+Larry
 
-Without the memory locking or caching issues, would you agree that both
-the builtin 'secureboot' and the 'ima_appraise_tcb' policies meet the
-secure boot needs?   If both policies are acceptable, then we could
-define the builtin 'secureboot' policy as the default policy, which
-could be replaced with the 'ima_appraise_tcb' policy, if specified on
-the boot command line.  This would eliminate any need for merging of
-rules or rule flags.
-
-To address the memory locking and caching issues, we could define a new
-extended attribute type called IMA_XATTR_SECURE_BOOT.
-
-enum evm_ima_xattr_type {
-        IMA_XATTR_DIGEST = 0x01,
-        EVM_XATTR_HMAC,
-        EVM_IMA_XATTR_DIGSIG,
-};
-
-and set a corresponding flag in iint->flags.  The flag could then be the
-bases for setting up any special secureboot requirements, like memory
-locking and no caching. 
-
-diff --git a/security/integrity/ima/ima_appraise.c b/security/integrity/ima/ima_appraise.c
-index ddeadc7..6ec1575 100644
---- a/security/integrity/ima/ima_appraise.c
-+++ b/security/integrity/ima/ima_appraise.c
-@@ -172,6 +172,8 @@ int ima_appraise_measurement(int func, struct integrity_iint_cache *iint,
- 		}
- 		status = INTEGRITY_PASS;
- 		break;
-+	case IMA_XATTR_SECURE_BOOT:
-+		iint->flags |= IMA_SB;
- 	case EVM_IMA_XATTR_DIGSIG:
- 		iint->flags |= IMA_DIGSIG;
- 		rc = integrity_digsig_verify(INTEGRITY_KEYRING_IMA,
-
-As originally intended, the policy defines which files are appraised,
-not how they are appraised.  The extended attribute defines how the file
-is to be appraised.
-
-thanks,
-
-Mimi
+>
+> Signed-off-by: Shuah Khan <shuah.khan@hp.com>
+> ---
+>   drivers/net/wireless/brcm80211/include/defs.h |    1 -
+>   1 file changed, 1 deletion(-)
+>
+> diff --git a/drivers/net/wireless/brcm80211/include/defs.h b/drivers/net/wireless/brcm80211/include/defs.h
+> index fb7cbcf..3608436 100644
+> --- a/drivers/net/wireless/brcm80211/include/defs.h
+> +++ b/drivers/net/wireless/brcm80211/include/defs.h
+> @@ -20,7 +20,6 @@
+>   #include <linux/types.h>
+>
+>   #define	SI_BUS			0
+> -#define	PCI_BUS			1
+>   #define	PCMCIA_BUS		2
+>   #define SDIO_BUS		3
+>   #define JTAG_BUS		4
+>
 
