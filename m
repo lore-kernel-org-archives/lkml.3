@@ -1,58 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758006Ab3CEUnt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 15:43:49 -0500
-Received: from cpsmtpb-ews10.kpnxchange.com ([213.75.39.15]:58525 "EHLO
-	cpsmtpb-ews10.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757538Ab3CEUns (ORCPT
+	id S1757126Ab3CEUrO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 15:47:14 -0500
+Received: from mailout01.c08.mtsvc.net ([205.186.168.189]:45825 "EHLO
+	mailout01.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755190Ab3CEUrM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 15:43:48 -0500
-Message-ID: <1362516222.16460.121.camel@x61.thuisdomein>
-Subject: [PATCH] arm64: Do not select GENERIC_HARDIRQS_NO_DEPRECATED
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Date: Tue, 05 Mar 2013 21:43:42 +0100
+	Tue, 5 Mar 2013 15:47:12 -0500
+Message-ID: <1362516424.18799.81.camel@thor.lan>
+Subject: Re: WARNING at tty_buffer.c:428 process_one_work()
+From: Peter Hurley <peter@hurleysoftware.com>
+To: David Miller <davem@davemloft.net>
+Cc: jslaby@suse.cz, gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
+Date: Tue, 05 Mar 2013 15:47:04 -0500
+In-Reply-To: <20130305.150338.470704111422696046.davem@davemloft.net>
+References: <5135D072.8070101@suse.cz>
+	 <20130305.143940.1976678289652676624.davem@davemloft.net>
+	 <51364B31.1010808@suse.cz>
+	 <20130305.150338.470704111422696046.davem@davemloft.net>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+X-Mailer: Evolution 3.6.3-0pjh1 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 05 Mar 2013 20:43:42.0856 (UTC) FILETIME=[1FE27080:01CE19E2]
-X-RcptDomain: vger.kernel.org
+X-Authenticated-User: 125194 peter@hurleysoftware.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Config option GENERIC_HARDIRQS_NO_DEPRECATED was removed in commit
-78c89825649a9a5ed526c507603196f467d781a5 ("genirq: Remove the now obsolete
-config options and select statements"), but the select was accidentally
-reintroduced in commit 8c2c3df31e3b87cb5348e48776c366ebd1dc5a7a ("arm64:
-Build infrastructure").
+On Tue, 2013-03-05 at 15:03 -0500, David Miller wrote:
+> From: Jiri Slaby <jslaby@suse.cz>
+> Date: Tue, 05 Mar 2013 20:44:49 +0100
+> 
+> > Hi, I must admit I don't understand. I now checked both of them and they
+> > call uart_handle_sysrq_char unconditionally, or?
+> 
+> Nope, in the sunsab.c receive function, we used to handle the SYSRQ
+> stuff before break checking when TTY is NULL, now we don't.
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-0) Untested.
+Hi David,
 
-1) Commit explanation inspired by commit
-2c7d1644406748d7c5da7b9db3c5080296af55bf ("sparc: Do not select
-GENERIC_HARDIRQS_NO_DEPRECATED").
+SysRq is signalled first by a BRK condition, then followed by the input
+character indicating which SysRq function to perform.
 
- arch/arm64/Kconfig | 1 -
- 1 file changed, 1 deletion(-)
+sunsab.c: receive_char() is behaving as you would expect.
 
-diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
-index fd70a68..9b6d19f 100644
---- a/arch/arm64/Kconfig
-+++ b/arch/arm64/Kconfig
-@@ -9,7 +9,6 @@ config ARM64
- 	select CLONE_BACKWARDS
- 	select COMMON_CLK
- 	select GENERIC_CLOCKEVENTS
--	select GENERIC_HARDIRQS_NO_DEPRECATED
- 	select GENERIC_IOMAP
- 	select GENERIC_IRQ_PROBE
- 	select GENERIC_IRQ_SHOW
--- 
-1.7.11.7
+First, a BRK status is indicated so uart_handle_break() records a
+timestamp. If the next input is received within 5 sec. of that
+timestamp, the character received is interpreted as a SysRq function --
+handled by uart_handle_sysrq_char().
+
+Are you observing that SysRq processing is not occurring with this
+driver when only a console exists, or are you hypothesizing that this is
+possible?
+
+Regards,
+Peter Hurley
 
