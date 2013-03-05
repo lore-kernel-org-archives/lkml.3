@@ -1,59 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759249Ab3CEUyw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 15:54:52 -0500
-Received: from mail-ia0-f174.google.com ([209.85.210.174]:37732 "EHLO
-	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757484Ab3CEUw7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 15:52:59 -0500
-From: Matt Porter <mporter@ti.com>
-To: Tony Lindgren <tony@atomide.com>, Sekhar Nori <nsekhar@ti.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Benoit Cousson <b-cousson@ti.com>,
-        Russell King <linux@arm.linux.org.uk>, Rob Landley <rob@landley.net>
-Cc: Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
+	id S1759352Ab3CEUzS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 15:55:18 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:49094 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759287Ab3CEUzN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Mar 2013 15:55:13 -0500
+Message-ID: <51365B66.5010905@redhat.com>
+Date: Tue, 05 Mar 2013 15:53:58 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Waiman Long <Waiman.Long@hp.com>, Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Emmanuel Benisty <benisty.e@gmail.com>,
+        "Vinod, Chegu" <chegu_vinod@hp.com>, "Low, Jason" <jason.low2@hp.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>, aquini@redhat.com,
+        Michel Lespinasse <walken@google.com>, Ingo Molnar <mingo@kernel.org>,
+        Larry Woodman <lwoodman@redhat.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Documentation List <linux-doc@vger.kernel.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Linux SPI Devel List 
-	<spi-devel-general@lists.sourceforge.net>,
-        Arnd Bergmann <arnd@arndb.de>, Rob Herring <rob.herring@calxeda.com>
-Subject: [PATCH v8 4/9] dmaengine: edma: enable build for AM33XX
-Date: Tue,  5 Mar 2013 15:53:10 -0500
-Message-Id: <1362516795-6346-5-git-send-email-mporter@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1362516795-6346-1-git-send-email-mporter@ti.com>
-References: <1362516795-6346-1-git-send-email-mporter@ti.com>
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH v2 0/4] ipc: reduce ipc lock contention
+References: <1362476149.2225.50.camel@buesod1.americas.hpqcorp.net> <513626E9.2040509@redhat.com> <51364AB9.80206@hp.com> <CA+55aFwYOUyG_DQUqVPrQNi_a=AUwS53U-Yi6jbvJTGRxQ_aEQ@mail.gmail.com>
+In-Reply-To: <CA+55aFwYOUyG_DQUqVPrQNi_a=AUwS53U-Yi6jbvJTGRxQ_aEQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enable TI EDMA option on OMAP.
+On 03/05/2013 03:52 PM, Linus Torvalds wrote:
+> On Tue, Mar 5, 2013 at 11:42 AM, Waiman Long <Waiman.Long@hp.com> wrote:
+>>
+>> The recommended kernel.sem value from Oracle is "250 32000 100 128". I have
+>> tried to reduce the maximum semaphores per array (1st value) while
+>> increasing the max number of arrays. That tends to reduce the ipc_lock
+>> contention in kernel, but it is against Oracle's recommendation.
+>
+> Ok, the Oracle recommendations seem to be assuming that we'd be
+> scaling the semaphore locking sanely, which we don't. Since we share
+> one single lock for all semaphores in the whole array, Oracle's
+> recommendation does the wrong thing for our ipc_lock contention.
 
-Signed-off-by: Matt Porter <mporter@ti.com>
----
- drivers/dma/Kconfig |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+> David's patch should make it much easier to do the locking more
+> fine-grained, and it sounds like Rik is actively working on that,
 
-diff --git a/drivers/dma/Kconfig b/drivers/dma/Kconfig
-index 80b6997..3b7ea20 100644
---- a/drivers/dma/Kconfig
-+++ b/drivers/dma/Kconfig
-@@ -222,7 +222,7 @@ config SIRF_DMA
- 
- config TI_EDMA
- 	tristate "TI EDMA support"
--	depends on ARCH_DAVINCI
-+	depends on ARCH_DAVINCI || ARCH_OMAP
- 	select DMA_ENGINE
- 	select DMA_VIRTUAL_CHANNELS
- 	default n
+Indeed.  Though how well my patches will work with Oracle will
+depend a lot on what kind of semctl syscalls they are doing.
+
+Does Oracle typically do one semop per semctl syscall, or does
+it pass in a whole bunch at once?
+
 -- 
-1.7.9.5
-
+All rights reversed
