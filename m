@@ -1,164 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757741Ab3CEUDX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 15:03:23 -0500
-Received: from mail-qa0-f50.google.com ([209.85.216.50]:37111 "EHLO
-	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757274Ab3CEUDU (ORCPT
+	id S1758186Ab3CEUDa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 15:03:30 -0500
+Received: from mail-qe0-f53.google.com ([209.85.128.53]:47350 "EHLO
+	mail-qe0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752875Ab3CEUD1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 15:03:20 -0500
+	Tue, 5 Mar 2013 15:03:27 -0500
 From: Tejun Heo <tj@kernel.org>
 To: akpm@linux-foundation.org
 Cc: linux-kernel@vger.kernel.org, bfields@fieldses.org,
         jackm@dev.mellanox.co.il, ogerlitz@mellanox.com,
         roland@purestorage.com, dan.magenheimer@oracle.com,
         gregkh@linuxfoundation.org, vjaquez@igalia.com, rene.sapiens@ti.com,
-        x0095078@ti.com, omar.ramirez@ti.com, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 6/7] tidspbridge: convert to idr_alloc()
-Date: Tue,  5 Mar 2013 12:02:51 -0800
-Message-Id: <1362513772-15174-7-git-send-email-tj@kernel.org>
+        x0095078@ti.com, omar.ramirez@ti.com, Tejun Heo <tj@kernel.org>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: [PATCH 7/7] idr: deprecate idr_pre_get() and idr_get_new[_above]()
+Date: Tue,  5 Mar 2013 12:02:52 -0800
+Message-Id: <1362513772-15174-8-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1362513772-15174-1-git-send-email-tj@kernel.org>
 References: <1362513772-15174-1-git-send-email-tj@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-idr_get_new*() and friends are about to be deprecated.  Convert to the
-new idr_alloc() interface.
-
-There are some peculiarities and possible bugs in the converted
-functions.  This patch preserves those.
-
-* drv_insert_node_res_element() returns -ENOMEM on alloc failure,
-  -EFAULT if id space is exhausted.  -EFAULT is at best misleading.
-
-* drv_proc_insert_strm_res_element() is even weirder.  It returns
-  -EFAULT if kzalloc() fails, -ENOMEM if idr preloading fails and
-  -EPERM if id space is exhausted.  What's going on here?
-
-* drv_proc_insert_strm_res_element() doesn't free *pstrm_res after
-  failure.
-
-Only compile tested.
+Now that all in-kernel users are converted to ues the new alloc
+interface, mark the old interface deprecated.  We should be able to
+remove these in a few releases.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Víctor Manuel Jáquez Leal <vjaquez@igalia.com>
-Cc: Rene Sapiens <rene.sapiens@ti.com>
-Cc: Armando Uribe <x0095078@ti.com>
-Cc: Omar Ramirez Luna <omar.ramirez@ti.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>
 ---
- drivers/staging/tidspbridge/rmgr/drv.c | 70 +++++++++++++---------------------
- 1 file changed, 26 insertions(+), 44 deletions(-)
+ include/linux/idr.h | 66 ++++++++++++++++++++++++++++++++++++++++-------------
+ lib/idr.c           | 41 ++++-----------------------------
+ 2 files changed, 55 insertions(+), 52 deletions(-)
 
-diff --git a/drivers/staging/tidspbridge/rmgr/drv.c b/drivers/staging/tidspbridge/rmgr/drv.c
-index db1da28..be26917 100644
---- a/drivers/staging/tidspbridge/rmgr/drv.c
-+++ b/drivers/staging/tidspbridge/rmgr/drv.c
-@@ -76,37 +76,28 @@ int drv_insert_node_res_element(void *hnode, void *node_resource,
- 	struct node_res_object **node_res_obj =
- 	    (struct node_res_object **)node_resource;
- 	struct process_context *ctxt = (struct process_context *)process_ctxt;
--	int status = 0;
- 	int retval;
+diff --git a/include/linux/idr.h b/include/linux/idr.h
+index a6f38b5..1fd0bde 100644
+--- a/include/linux/idr.h
++++ b/include/linux/idr.h
+@@ -73,8 +73,6 @@ struct idr {
+  */
  
- 	*node_res_obj = kzalloc(sizeof(struct node_res_object), GFP_KERNEL);
--	if (!*node_res_obj) {
--		status = -ENOMEM;
--		goto func_end;
--	}
-+	if (!*node_res_obj)
-+		return -ENOMEM;
- 
- 	(*node_res_obj)->node = hnode;
--	retval = idr_get_new(ctxt->node_id, *node_res_obj,
--						&(*node_res_obj)->id);
--	if (retval == -EAGAIN) {
--		if (!idr_pre_get(ctxt->node_id, GFP_KERNEL)) {
--			pr_err("%s: OUT OF MEMORY\n", __func__);
--			status = -ENOMEM;
--			goto func_end;
--		}
--
--		retval = idr_get_new(ctxt->node_id, *node_res_obj,
--						&(*node_res_obj)->id);
-+	retval = idr_alloc(ctxt->node_id, *node_res_obj, 0, 0, GFP_KERNEL);
-+	if (retval >= 0) {
-+		(*node_res_obj)->id = retval;
-+		return 0;
- 	}
--	if (retval) {
-+
-+	kfree(*node_res_obj);
-+
-+	if (retval == -ENOSPC) {
- 		pr_err("%s: FAILED, IDR is FULL\n", __func__);
--		status = -EFAULT;
-+		return -EFAULT;
-+	} else {
-+		pr_err("%s: OUT OF MEMORY\n", __func__);
-+		return -ENOMEM;
- 	}
--func_end:
--	if (status)
--		kfree(*node_res_obj);
--
--	return status;
+ void *idr_find_slowpath(struct idr *idp, int id);
+-int idr_pre_get(struct idr *idp, gfp_t gfp_mask);
+-int idr_get_new_above(struct idr *idp, void *ptr, int starting_id, int *id);
+ void idr_preload(gfp_t gfp_mask);
+ int idr_alloc(struct idr *idp, void *ptr, int start, int end, gfp_t gfp_mask);
+ int idr_for_each(struct idr *idp,
+@@ -120,19 +118,6 @@ static inline void *idr_find(struct idr *idr, int id)
  }
  
- /* Release all Node resources and its context
-@@ -201,35 +192,26 @@ int drv_proc_insert_strm_res_element(void *stream_obj,
- 	struct strm_res_object **pstrm_res =
- 	    (struct strm_res_object **)strm_res;
- 	struct process_context *ctxt = (struct process_context *)process_ctxt;
--	int status = 0;
- 	int retval;
- 
- 	*pstrm_res = kzalloc(sizeof(struct strm_res_object), GFP_KERNEL);
--	if (*pstrm_res == NULL) {
--		status = -EFAULT;
--		goto func_end;
--	}
-+	if (*pstrm_res == NULL)
-+		return -EFAULT;
- 
- 	(*pstrm_res)->stream = stream_obj;
--	retval = idr_get_new(ctxt->stream_id, *pstrm_res,
--						&(*pstrm_res)->id);
--	if (retval == -EAGAIN) {
--		if (!idr_pre_get(ctxt->stream_id, GFP_KERNEL)) {
--			pr_err("%s: OUT OF MEMORY\n", __func__);
--			status = -ENOMEM;
--			goto func_end;
--		}
+ /**
+- * idr_get_new - allocate new idr entry
+- * @idp: idr handle
+- * @ptr: pointer you want associated with the id
+- * @id: pointer to the allocated handle
+- *
+- * Simple wrapper around idr_get_new_above() w/ @starting_id of zero.
+- */
+-static inline int idr_get_new(struct idr *idp, void *ptr, int *id)
+-{
+-	return idr_get_new_above(idp, ptr, 0, id);
+-}
 -
--		retval = idr_get_new(ctxt->stream_id, *pstrm_res,
--						&(*pstrm_res)->id);
-+	retval = idr_alloc(ctxt->stream_id, *pstrm_res, 0, 0, GFP_KERNEL);
-+	if (retval >= 0) {
-+		(*pstrm_res)->id = retval;
-+		return 0;
- 	}
--	if (retval) {
+-/**
+  * idr_for_each_entry - iterate over an idr's elements of a given type
+  * @idp:     idr handle
+  * @entry:   the type * to use as cursor
+@@ -143,7 +128,56 @@ static inline int idr_get_new(struct idr *idp, void *ptr, int *id)
+ 	     entry != NULL;                                             \
+ 	     ++id, entry = (typeof(entry))idr_get_next((idp), &(id)))
+ 
+-void __idr_remove_all(struct idr *idp);	/* don't use */
++/*
++ * Don't use the following functions.  These exist only to suppress
++ * deprecated warnings on EXPORT_SYMBOL()s.
++ */
++int __idr_pre_get(struct idr *idp, gfp_t gfp_mask);
++int __idr_get_new_above(struct idr *idp, void *ptr, int starting_id, int *id);
++void __idr_remove_all(struct idr *idp);
 +
-+	if (retval == -ENOSPC) {
- 		pr_err("%s: FAILED, IDR is FULL\n", __func__);
--		status = -EPERM;
-+		return -EPERM;
-+	} else {
-+		pr_err("%s: OUT OF MEMORY\n", __func__);
-+		return -ENOMEM;
++/**
++ * idr_pre_get - reserve resources for idr allocation
++ * @idp:	idr handle
++ * @gfp_mask:	memory allocation flags
++ *
++ * Part of old alloc interface.  This is going away.  Use
++ * idr_preload[_end]() and idr_alloc() instead.
++ */
++static inline int __deprecated idr_pre_get(struct idr *idp, gfp_t gfp_mask)
++{
++	return __idr_pre_get(idp, gfp_mask);
++}
++
++/**
++ * idr_get_new_above - allocate new idr entry above or equal to a start id
++ * @idp: idr handle
++ * @ptr: pointer you want associated with the id
++ * @starting_id: id to start search at
++ * @id: pointer to the allocated handle
++ *
++ * Part of old alloc interface.  This is going away.  Use
++ * idr_preload[_end]() and idr_alloc() instead.
++ */
++static inline int __deprecated idr_get_new_above(struct idr *idp, void *ptr,
++						 int starting_id, int *id)
++{
++	return __idr_get_new_above(idp, ptr, starting_id, id);
++}
++
++/**
++ * idr_get_new - allocate new idr entry
++ * @idp: idr handle
++ * @ptr: pointer you want associated with the id
++ * @id: pointer to the allocated handle
++ *
++ * Part of old alloc interface.  This is going away.  Use
++ * idr_preload[_end]() and idr_alloc() instead.
++ */
++static inline int __deprecated idr_get_new(struct idr *idp, void *ptr, int *id)
++{
++	return __idr_get_new_above(idp, ptr, 0, id);
++}
+ 
+ /**
+  * idr_remove_all - remove all ids from the given idr tree
+diff --git a/lib/idr.c b/lib/idr.c
+index 73f4d53..708106b 100644
+--- a/lib/idr.c
++++ b/lib/idr.c
+@@ -184,20 +184,7 @@ static void idr_mark_full(struct idr_layer **pa, int id)
  	}
--
--func_end:
--	return status;
  }
  
- static int drv_proc_free_strm_res(int id, void *p, void *process_ctxt)
+-/**
+- * idr_pre_get - reserve resources for idr allocation
+- * @idp:	idr handle
+- * @gfp_mask:	memory allocation flags
+- *
+- * This function should be called prior to calling the idr_get_new* functions.
+- * It preallocates enough memory to satisfy the worst possible allocation. The
+- * caller should pass in GFP_KERNEL if possible.  This of course requires that
+- * no spinning locks be held.
+- *
+- * If the system is REALLY out of memory this function returns %0,
+- * otherwise %1.
+- */
+-int idr_pre_get(struct idr *idp, gfp_t gfp_mask)
++int __idr_pre_get(struct idr *idp, gfp_t gfp_mask)
+ {
+ 	while (idp->id_free_cnt < MAX_IDR_FREE) {
+ 		struct idr_layer *new;
+@@ -208,7 +195,7 @@ int idr_pre_get(struct idr *idp, gfp_t gfp_mask)
+ 	}
+ 	return 1;
+ }
+-EXPORT_SYMBOL(idr_pre_get);
++EXPORT_SYMBOL(__idr_pre_get);
+ 
+ /**
+  * sub_alloc - try to allocate an id without growing the tree depth
+@@ -376,25 +363,7 @@ static void idr_fill_slot(struct idr *idr, void *ptr, int id,
+ 	idr_mark_full(pa, id);
+ }
+ 
+-/**
+- * idr_get_new_above - allocate new idr entry above or equal to a start id
+- * @idp: idr handle
+- * @ptr: pointer you want associated with the id
+- * @starting_id: id to start search at
+- * @id: pointer to the allocated handle
+- *
+- * This is the allocate id function.  It should be called with any
+- * required locks.
+- *
+- * If allocation from IDR's private freelist fails, idr_get_new_above() will
+- * return %-EAGAIN.  The caller should retry the idr_pre_get() call to refill
+- * IDR's preallocation and then retry the idr_get_new_above() call.
+- *
+- * If the idr is full idr_get_new_above() will return %-ENOSPC.
+- *
+- * @id returns a value in the range @starting_id ... %0x7fffffff
+- */
+-int idr_get_new_above(struct idr *idp, void *ptr, int starting_id, int *id)
++int __idr_get_new_above(struct idr *idp, void *ptr, int starting_id, int *id)
+ {
+ 	struct idr_layer *pa[MAX_IDR_LEVEL + 1];
+ 	int rv;
+@@ -407,7 +376,7 @@ int idr_get_new_above(struct idr *idp, void *ptr, int starting_id, int *id)
+ 	*id = rv;
+ 	return 0;
+ }
+-EXPORT_SYMBOL(idr_get_new_above);
++EXPORT_SYMBOL(__idr_get_new_above);
+ 
+ /**
+  * idr_preload - preload for idr_alloc()
+@@ -918,7 +887,7 @@ static void free_bitmap(struct ida *ida, struct ida_bitmap *bitmap)
+ int ida_pre_get(struct ida *ida, gfp_t gfp_mask)
+ {
+ 	/* allocate idr_layers */
+-	if (!idr_pre_get(&ida->idr, gfp_mask))
++	if (!__idr_pre_get(&ida->idr, gfp_mask))
+ 		return 0;
+ 
+ 	/* allocate free_bitmap */
 -- 
 1.8.1.4
 
