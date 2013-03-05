@@ -1,57 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753876Ab3CEIJO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 03:09:14 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:57450 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752819Ab3CEIJM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 03:09:12 -0500
-Date: Tue, 5 Mar 2013 08:08:45 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Rob Herring <robherring2@gmail.com>
-Cc: Ian Campbell <ian.campbell@citrix.com>,
+	id S1753608Ab3CEIK2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 03:10:28 -0500
+Received: from nat28.tlf.novell.com ([130.57.49.28]:43150 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751590Ab3CEIK1 convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:1>);
+	Tue, 5 Mar 2013 03:10:27 -0500
+Message-Id: <5135B6B702000078000C2FFF@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.1 
+Date: Tue, 05 Mar 2013 08:11:19 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>
+Cc: <roger.pau@citrix.com>,
         "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
-        "Keir (Xen.org)" <keir@xen.org>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Tim Deegan <tim@xen.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jan Beulich <JBeulich@suse.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Nicolas Pitre <nico@fluxnic.net>
-Subject: Re: [PATCH LINUX v5] xen: event channel arrays are xen_ulong_t and
- not unsigned long
-Message-ID: <20130305080845.GA19097@mudshark.cambridge.arm.com>
-References: <1361285327.1051.115.camel@zakaz.uk.xensource.com>
- <1361360886-2956-1-git-send-email-ian.campbell@citrix.com>
- <51340ACD.70904@gmail.com>
- <20130305030436.GA18040@mudshark.cambridge.arm.com>
- <513596F2.1000701@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH RFC 12/12] xen-block: implement
+ indirect descriptors
+References: <1362047335-26402-1-git-send-email-roger.pau@citrix.com>
+ <1362047335-26402-13-git-send-email-roger.pau@citrix.com>
+ <512F4B4402000078000C1E5B@nat28.tlf.novell.com>
+ <512F46F5.5040105@citrix.com>
+ <512F69A002000078000C2020@nat28.tlf.novell.com>
+ <20130304204427.GM15386@phenom.dumpdata.com>
+In-Reply-To: <20130304204427.GM15386@phenom.dumpdata.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <513596F2.1000701@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 05, 2013 at 06:55:46AM +0000, Rob Herring wrote:
-> > I also can't immediately see why GCC would allocate oldval to an odd base
-> > register. Can you share your .config please?
-> >
-> 
-> Here's a config:
+>>> On 04.03.13 at 21:44, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
+> <nods> 'op' sounds good. With a comment saying it can do all of the 
+> BLKIF_OPS_..
+> except the BLKIF_OP_INDIRECT one. Thought one could in theory chain
+> it that way for fun.
 
-[...]
+In fact I'd like to exclude chaining as well as BLKIF_OP_DISCARD here.
+The former should - if useful for anything - be controlled by a
+separate feature flag, and the latter is plain pointless to indirect.
+And I reckon the same would apply to BLKIF_OP_FLUSH_DISKCACHE
+and BLKIF_OP_RESERVED_1 - i.e. it might be better to state that
+indirection is only permitted for normal I/O (read/write) ops.
 
-Cheers Rob, that was enough to reproduce for me. The problem is likely that
-CONFIG_AEABI=n, so the ABI doesn't actually mandate even base registers for
-64-bit values in registers.
+Jan
 
-Ian -- this would be fixed if you used our atomic64 routines instead of
-inventing your own :)
-
-Will
