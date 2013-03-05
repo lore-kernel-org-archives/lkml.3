@@ -1,63 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757997Ab3CESCj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 13:02:39 -0500
-Received: from smtp1-g21.free.fr ([212.27.42.1]:37923 "EHLO smtp1-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756191Ab3CESCi convert rfc822-to-8bit (ORCPT
+	id S1758039Ab3CESEz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 13:04:55 -0500
+Received: from mail-qe0-f43.google.com ([209.85.128.43]:49111 "EHLO
+	mail-qe0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756191Ab3CESEy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 13:02:38 -0500
-Date: Tue, 5 Mar 2013 19:02:31 +0100
-From: Jean-Francois Moine <moinejf@free.fr>
-To: Jason Cooper <jason@lakedaemon.net>
-Cc: Paul Bolle <pebolle@tiscali.nl>, Russell King <linux@arm.linux.org.uk>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Subject: Re: [PATCH] ARM: dove: Fix typo "COMMON_CLK_DOVE"
-Message-ID: <20130305190232.0b1a5e29@armhf>
-In-Reply-To: <20130305140025.GO23237@titan.lakedaemon.net>
-References: <1362476098.16460.65.camel@x61.thuisdomein>
-	<20130305140025.GO23237@titan.lakedaemon.net>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; arm-unknown-linux-gnueabihf)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Tue, 5 Mar 2013 13:04:54 -0500
+Date: Tue, 5 Mar 2013 10:04:46 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] workqueue: fix possible bug which may silence the pool
+Message-ID: <20130305180446.GH12795@htj.dyndns.org>
+References: <1362239729-6753-1-git-send-email-laijs@cn.fujitsu.com>
+ <20130304192028.GM30413@htj.dyndns.org>
+ <5135479C.4060209@cn.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5135479C.4060209@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 5 Mar 2013 09:00:25 -0500
-Jason Cooper <jason@lakedaemon.net> wrote:
+Hello, Lai.
 
-> On Tue, Mar 05, 2013 at 10:34:58AM +0100, Paul Bolle wrote:
-> > Commit 5b03df9ace680d7cdd34a69dfd85ca5f74159d18 ("ARM: dove: switch to
-> > DT clock providers") added "select COMMON_CLK_DOVE" to Marvell Dove's
-> > Kconfig entry. But there's no Kconfig symbol COMMON_CLK_DOVE, which
-> > makes this select statement a nop. Since the Marvell Dove code includes
-> > <linux/clk-provider.h> we can assume that this entry needs to select
-> > COMMON_CLK instead.
-> > 
-> > Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-> > ---
-> > Untested.
-> > 
-> >  arch/arm/Kconfig | 2 +-
-> >  1 file changed, 1 insertion(+), 1 deletion(-)  
+On Tue, Mar 05, 2013 at 09:17:16AM +0800, Lai Jiangshan wrote:
+> > But can we please just addd wake_up_worker() in the
+> > for_each_std_worker_pool() loop?  
 > 
-> Nice catch, thanks for the patch.  Sebastian, could you test this and
-> report back?
+> wake_up_worker() needed be put on the same loop which do set %WORKER_UNBOUND.
+> 
+> mutex_lock(&pool->assoc_mutex);
+> do set %WORKER_UNBOUND for normal_pri pool
+> mutex_unlock(&pool->assoc_mutex);
+> 
+> // no wakeup for normal_pri pool
+> // but all workers of normal_pri pool goto sleep
+> 
+> // try to  do set %WORKER_UNBOUND for high_pri pool
+> mutex_lock(&pool->assoc_mutex);
+> 	waiting forever here due to high_pri pool's manage_workers()
+> 	waiting on allocating memory forever(waiting normal_pri pool
+> 	free memory, but normal_pri pool is silenced)
+> mutex_unlock(&pool->assoc_mutex);
 
-I also have a Cubox and I generated a kernel 3.9-rc1 for it (not tested
-yet).
+Hmmm.... I see.  Can you please separate it into two patches then?
+One to restructure the loop into one and the other to add wake up,
+and add comment explaining why the loop has to be per-pool?
 
-The .config contains CONFIG_COMMON_CLK=y naturally because MACH_DOVE
-selects PLAT_ORION_LEGACY which selects PLAT_ORION which selects
-COMMON_CLK.
-
-So, "select COMMON_CLK" is not needed in ARCH_DOVE.
-
-BTW, why is there a PLAT_ORION_LEGACY?
+Thanks.
 
 -- 
-Ken ar c'hentañ	|	      ** Breizh ha Linux atav! **
-Jef		|		http://moinejf.free.fr/
+tejun
