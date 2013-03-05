@@ -1,71 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756164Ab3CEKDY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 05:03:24 -0500
-Received: from cpsmtpb-ews10.kpnxchange.com ([213.75.39.15]:60584 "EHLO
-	cpsmtpb-ews10.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755819Ab3CEKDW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 05:03:22 -0500
-Message-ID: <1362477800.16460.69.camel@x61.thuisdomein>
-Subject: [PATCH] MIPS: Get rid of CONFIG_CPU_HAS_LLSC again
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Ralf Baechle <ralf@linux-mips.org>
-Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
-Date: Tue, 05 Mar 2013 11:03:20 +0100
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 05 Mar 2013 10:03:20.0613 (UTC) FILETIME=[AA716D50:01CE1988]
-X-RcptDomain: vger.kernel.org
+	id S1756242Ab3CEKDq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 05:03:46 -0500
+Received: from mga14.intel.com ([143.182.124.37]:42706 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755882Ab3CEKDo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Mar 2013 05:03:44 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,786,1355126400"; 
+   d="scan'208";a="264510453"
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: linux-kernel@vger.kernel.org
+Cc: Eric Miao <eric.y.miao@gmail.com>, Russell King <linux@arm.linux.org.uk>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>
+Subject: [PATCH 2/2] spi/pxa2xx: enable multiblock DMA transfers for LPSS devices
+Date: Tue,  5 Mar 2013 12:05:17 +0200
+Message-Id: <1362477917-24904-2-git-send-email-mika.westerberg@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1362477917-24904-1-git-send-email-mika.westerberg@linux.intel.com>
+References: <1362477917-24904-1-git-send-email-mika.westerberg@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit f7ade3c168e4f437c11f57be012992bbb0e3075c ("MIPS: Get rid of
-CONFIG_CPU_HAS_LLSC") did what it promised to do. But since then that
-macro and its Kconfig symbol popped up again. Get rid of those again.
+Intel LPSS SPI controllers need to have bit 0 (disable_ssp_dma_finish) set
+in SSP_REG in order to properly perform DMA transfers spanning over
+multiple blocks.
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
 ---
-0) Untested.
+ drivers/spi/spi-pxa2xx.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
-1) The related commits are 1c773ea4dceff889c2f872343609a87ae0cfbf56
-("MIPS: Netlogic: Add XLP makefiles and config") and
-3070033a16edcc21688d5ea8967c89522f833862 ("MIPS: Add core files for MIPS
-SEAD-3 development platform.").
-
- arch/mips/Kconfig                                        | 1 -
- arch/mips/include/asm/mach-sead3/cpu-feature-overrides.h | 3 ---
- 2 files changed, 4 deletions(-)
-
-diff --git a/arch/mips/Kconfig b/arch/mips/Kconfig
-index ae9c716..310f1e6 100644
---- a/arch/mips/Kconfig
-+++ b/arch/mips/Kconfig
-@@ -1493,7 +1493,6 @@ config CPU_XLP
- 	select CPU_SUPPORTS_32BIT_KERNEL
- 	select CPU_SUPPORTS_64BIT_KERNEL
- 	select CPU_SUPPORTS_HIGHMEM
--	select CPU_HAS_LLSC
- 	select WEAK_ORDERING
- 	select WEAK_REORDERING_BEYOND_LLSC
- 	select CPU_HAS_PREFETCH
-diff --git a/arch/mips/include/asm/mach-sead3/cpu-feature-overrides.h b/arch/mips/include/asm/mach-sead3/cpu-feature-overrides.h
-index d9c8284..2a945b4 100644
---- a/arch/mips/include/asm/mach-sead3/cpu-feature-overrides.h
-+++ b/arch/mips/include/asm/mach-sead3/cpu-feature-overrides.h
-@@ -28,9 +28,6 @@
- /* #define cpu_has_prefetch	? */
- #define cpu_has_mcheck		1
- /* #define cpu_has_ejtag	? */
--#ifdef CONFIG_CPU_HAS_LLSC
--#define cpu_has_llsc		1
--#else
- #define cpu_has_llsc		0
- #endif
- /* #define cpu_has_vtag_icache	? */
+diff --git a/drivers/spi/spi-pxa2xx.c b/drivers/spi/spi-pxa2xx.c
+index 90b27a3..c6d5b97 100644
+--- a/drivers/spi/spi-pxa2xx.c
++++ b/drivers/spi/spi-pxa2xx.c
+@@ -68,6 +68,7 @@ MODULE_ALIAS("platform:pxa2xx-spi");
+ #define LPSS_TX_HITHRESH_DFLT	224
+ 
+ /* Offset from drv_data->lpss_base */
++#define SSP_REG			0x0c
+ #define SPI_CS_CONTROL		0x18
+ #define SPI_CS_CONTROL_SW_MODE	BIT(0)
+ #define SPI_CS_CONTROL_CS_HIGH	BIT(1)
+@@ -138,6 +139,10 @@ detection_done:
+ 	/* Enable software chip select control */
+ 	value = SPI_CS_CONTROL_SW_MODE | SPI_CS_CONTROL_CS_HIGH;
+ 	__lpss_ssp_write_priv(drv_data, SPI_CS_CONTROL, value);
++
++	/* Enable multiblock DMA transfers */
++	if (drv_data->master_info->enable_dma)
++		__lpss_ssp_write_priv(drv_data, SSP_REG, 1);
+ }
+ 
+ static void lpss_ssp_cs_control(struct driver_data *drv_data, bool enable)
 -- 
-1.7.11.7
+1.7.10.4
 
