@@ -1,216 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752239Ab3CEHhm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 02:37:42 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:63745 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1750781Ab3CEHhl convert rfc822-to-8bit (ORCPT
+	id S1752577Ab3CEHoV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 02:44:21 -0500
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:34292 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750762Ab3CEHoU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 02:37:41 -0500
-X-IronPort-AV: E=Sophos;i="4.84,785,1355068800"; 
-   d="scan'208";a="6815568"
-Message-ID: <5135A054.7010401@cn.fujitsu.com>
-Date: Tue, 05 Mar 2013 15:35:48 +0800
-From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.8) Gecko/20121012 Thunderbird/10.0.8
+	Tue, 5 Mar 2013 02:44:20 -0500
+Message-ID: <5135A248.4010205@linux.vnet.ibm.com>
+Date: Tue, 05 Mar 2013 15:44:08 +0800
+From: Mike Qiu <qiudayu@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
 MIME-Version: 1.0
-To: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-CC: vgoyal@redhat.com, ebiederm@xmission.com, cpw@sgi.com,
-        kumagai-atsushi@mxc.nes.nec.co.jp, lisa.mitchell@hp.com,
-        heiko.carstens@de.ibm.com, akpm@linux-foundation.org,
-        kexec@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 01/20] vmcore: refer to e_phoff member explicitly
-References: <20130302083447.31252.93914.stgit@localhost6.localdomain6> <20130302083554.31252.30615.stgit@localhost6.localdomain6>
-In-Reply-To: <20130302083554.31252.30615.stgit@localhost6.localdomain6>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/03/05 15:36:37,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/03/05 15:36:38
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Paul Mundt <lethal@linux-sh.org>
+CC: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        benh@kernel.crashing.org, tglx@linutronix.de
+Subject: Re: [PATCH 2/3] irq: Add hw continuous IRQs map to virtual continuous
+ IRQs support
+References: <1358235536-32741-1-git-send-email-qiudayu@linux.vnet.ibm.com> <1358235536-32741-3-git-send-email-qiudayu@linux.vnet.ibm.com> <20130305024110.GB14275@linux-sh.org>
+In-Reply-To: <20130305024110.GB14275@linux-sh.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13030507-8256-0000-0000-00000678BD58
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2013年03月02日 16:35, HATAYAMA Daisuke 写道:
-> Code around /proc/vmcore currently assumes program header table is
-> next to ELF header. But future change can break the assumption on
-> kexec-tools and the 1st kernel. To avoid worst case, now refer to
-> e_phoff member that indicates position of program header table in
-> file-offset.
+于 2013/3/5 10:41, Paul Mundt 写道:
+> On Tue, Jan 15, 2013 at 03:38:55PM +0800, Mike Qiu wrote:
+>> Adding a function irq_create_mapping_many() which can associate
+>> multiple MSIs to a continous irq mapping.
+>>
+>> This is needed to enable multiple MSI support for pSeries.
+>>
+>> +int irq_create_mapping_many(struct irq_domain *domain,
+>> +		irq_hw_number_t hwirq_base, int count)
+>> +{
+> Other than the other review comments already made, I think you can
+> simplify this considerably by simply doing what irq_create_strict_mappings() does,
+> and relaxing the irq_base requirements.
+>
+> In any event, as you are creating a new interface, I don't think you want
+> to carry around half of the legacy crap that irq_create_mapping() has to
+> deal with. We made the decision to avoid this with irq_create_strict_mappings()
+> intentionally, too.
+>
+Oh, yes, you are right, I will send out V2 of my patch to make it more 
+comfortable , and hope you can review my patch again
 
-Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Thanks
 
-> 
-> Signed-off-by: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-> ---
-> 
->  fs/proc/vmcore.c |   40 ++++++++++++++++++++--------------------
->  1 files changed, 20 insertions(+), 20 deletions(-)
-> 
-> diff --git a/fs/proc/vmcore.c b/fs/proc/vmcore.c
-> index b870f74..abf4f01 100644
-> --- a/fs/proc/vmcore.c
-> +++ b/fs/proc/vmcore.c
-> @@ -221,8 +221,8 @@ static u64 __init get_vmcore_size_elf64(char *elfptr)
->  	Elf64_Phdr *phdr_ptr;
->  
->  	ehdr_ptr = (Elf64_Ehdr *)elfptr;
-> -	phdr_ptr = (Elf64_Phdr*)(elfptr + sizeof(Elf64_Ehdr));
-> -	size = sizeof(Elf64_Ehdr) + ((ehdr_ptr->e_phnum) * sizeof(Elf64_Phdr));
-> +	phdr_ptr = (Elf64_Phdr*)(elfptr + ehdr_ptr->e_phoff);
-> +	size = ehdr_ptr->e_phoff + ((ehdr_ptr->e_phnum) * sizeof(Elf64_Phdr));
->  	for (i = 0; i < ehdr_ptr->e_phnum; i++) {
->  		size += phdr_ptr->p_memsz;
->  		phdr_ptr++;
-> @@ -238,8 +238,8 @@ static u64 __init get_vmcore_size_elf32(char *elfptr)
->  	Elf32_Phdr *phdr_ptr;
->  
->  	ehdr_ptr = (Elf32_Ehdr *)elfptr;
-> -	phdr_ptr = (Elf32_Phdr*)(elfptr + sizeof(Elf32_Ehdr));
-> -	size = sizeof(Elf32_Ehdr) + ((ehdr_ptr->e_phnum) * sizeof(Elf32_Phdr));
-> +	phdr_ptr = (Elf32_Phdr*)(elfptr + ehdr_ptr->e_phoff);
-> +	size = ehdr_ptr->e_phoff + ((ehdr_ptr->e_phnum) * sizeof(Elf32_Phdr));
->  	for (i = 0; i < ehdr_ptr->e_phnum; i++) {
->  		size += phdr_ptr->p_memsz;
->  		phdr_ptr++;
-> @@ -259,7 +259,7 @@ static int __init merge_note_headers_elf64(char *elfptr, size_t *elfsz,
->  	u64 phdr_sz = 0, note_off;
->  
->  	ehdr_ptr = (Elf64_Ehdr *)elfptr;
-> -	phdr_ptr = (Elf64_Phdr*)(elfptr + sizeof(Elf64_Ehdr));
-> +	phdr_ptr = (Elf64_Phdr*)(elfptr + ehdr_ptr->e_phoff);
->  	for (i = 0; i < ehdr_ptr->e_phnum; i++, phdr_ptr++) {
->  		int j;
->  		void *notes_section;
-> @@ -305,7 +305,7 @@ static int __init merge_note_headers_elf64(char *elfptr, size_t *elfsz,
->  	/* Prepare merged PT_NOTE program header. */
->  	phdr.p_type    = PT_NOTE;
->  	phdr.p_flags   = 0;
-> -	note_off = sizeof(Elf64_Ehdr) +
-> +	note_off = ehdr_ptr->e_phoff +
->  			(ehdr_ptr->e_phnum - nr_ptnote +1) * sizeof(Elf64_Phdr);
->  	phdr.p_offset  = note_off;
->  	phdr.p_vaddr   = phdr.p_paddr = 0;
-> @@ -313,14 +313,14 @@ static int __init merge_note_headers_elf64(char *elfptr, size_t *elfsz,
->  	phdr.p_align   = 0;
->  
->  	/* Add merged PT_NOTE program header*/
-> -	tmp = elfptr + sizeof(Elf64_Ehdr);
-> +	tmp = elfptr + ehdr_ptr->e_phoff;
->  	memcpy(tmp, &phdr, sizeof(phdr));
->  	tmp += sizeof(phdr);
->  
->  	/* Remove unwanted PT_NOTE program headers. */
->  	i = (nr_ptnote - 1) * sizeof(Elf64_Phdr);
->  	*elfsz = *elfsz - i;
-> -	memmove(tmp, tmp+i, ((*elfsz)-sizeof(Elf64_Ehdr)-sizeof(Elf64_Phdr)));
-> +	memmove(tmp, tmp+i, ((*elfsz)-ehdr_ptr->e_phoff-sizeof(Elf64_Phdr)));
->  
->  	/* Modify e_phnum to reflect merged headers. */
->  	ehdr_ptr->e_phnum = ehdr_ptr->e_phnum - nr_ptnote + 1;
-> @@ -340,7 +340,7 @@ static int __init merge_note_headers_elf32(char *elfptr, size_t *elfsz,
->  	u64 phdr_sz = 0, note_off;
->  
->  	ehdr_ptr = (Elf32_Ehdr *)elfptr;
-> -	phdr_ptr = (Elf32_Phdr*)(elfptr + sizeof(Elf32_Ehdr));
-> +	phdr_ptr = (Elf32_Phdr*)(elfptr + ehdr_ptr->e_phoff);
->  	for (i = 0; i < ehdr_ptr->e_phnum; i++, phdr_ptr++) {
->  		int j;
->  		void *notes_section;
-> @@ -386,7 +386,7 @@ static int __init merge_note_headers_elf32(char *elfptr, size_t *elfsz,
->  	/* Prepare merged PT_NOTE program header. */
->  	phdr.p_type    = PT_NOTE;
->  	phdr.p_flags   = 0;
-> -	note_off = sizeof(Elf32_Ehdr) +
-> +	note_off = ehdr_ptr->e_phoff +
->  			(ehdr_ptr->e_phnum - nr_ptnote +1) * sizeof(Elf32_Phdr);
->  	phdr.p_offset  = note_off;
->  	phdr.p_vaddr   = phdr.p_paddr = 0;
-> @@ -394,14 +394,14 @@ static int __init merge_note_headers_elf32(char *elfptr, size_t *elfsz,
->  	phdr.p_align   = 0;
->  
->  	/* Add merged PT_NOTE program header*/
-> -	tmp = elfptr + sizeof(Elf32_Ehdr);
-> +	tmp = elfptr + ehdr_ptr->e_phoff;
->  	memcpy(tmp, &phdr, sizeof(phdr));
->  	tmp += sizeof(phdr);
->  
->  	/* Remove unwanted PT_NOTE program headers. */
->  	i = (nr_ptnote - 1) * sizeof(Elf32_Phdr);
->  	*elfsz = *elfsz - i;
-> -	memmove(tmp, tmp+i, ((*elfsz)-sizeof(Elf32_Ehdr)-sizeof(Elf32_Phdr)));
-> +	memmove(tmp, tmp+i, ((*elfsz)-ehdr_ptr->e_phoff-sizeof(Elf32_Phdr)));
->  
->  	/* Modify e_phnum to reflect merged headers. */
->  	ehdr_ptr->e_phnum = ehdr_ptr->e_phnum - nr_ptnote + 1;
-> @@ -422,10 +422,10 @@ static int __init process_ptload_program_headers_elf64(char *elfptr,
->  	struct vmcore *new;
->  
->  	ehdr_ptr = (Elf64_Ehdr *)elfptr;
-> -	phdr_ptr = (Elf64_Phdr*)(elfptr + sizeof(Elf64_Ehdr)); /* PT_NOTE hdr */
-> +	phdr_ptr = (Elf64_Phdr*)(elfptr + ehdr_ptr->e_phoff); /* PT_NOTE hdr */
->  
->  	/* First program header is PT_NOTE header. */
-> -	vmcore_off = sizeof(Elf64_Ehdr) +
-> +	vmcore_off = ehdr_ptr->e_phoff +
->  			(ehdr_ptr->e_phnum) * sizeof(Elf64_Phdr) +
->  			phdr_ptr->p_memsz; /* Note sections */
->  
-> @@ -459,10 +459,10 @@ static int __init process_ptload_program_headers_elf32(char *elfptr,
->  	struct vmcore *new;
->  
->  	ehdr_ptr = (Elf32_Ehdr *)elfptr;
-> -	phdr_ptr = (Elf32_Phdr*)(elfptr + sizeof(Elf32_Ehdr)); /* PT_NOTE hdr */
-> +	phdr_ptr = (Elf32_Phdr*)(elfptr + ehdr_ptr->e_phoff); /* PT_NOTE hdr */
->  
->  	/* First program header is PT_NOTE header. */
-> -	vmcore_off = sizeof(Elf32_Ehdr) +
-> +	vmcore_off = ehdr_ptr->e_phoff +
->  			(ehdr_ptr->e_phnum) * sizeof(Elf32_Phdr) +
->  			phdr_ptr->p_memsz; /* Note sections */
->  
-> @@ -496,7 +496,7 @@ static void __init set_vmcore_list_offsets_elf64(char *elfptr,
->  	ehdr_ptr = (Elf64_Ehdr *)elfptr;
->  
->  	/* Skip Elf header and program headers. */
-> -	vmcore_off = sizeof(Elf64_Ehdr) +
-> +	vmcore_off = ehdr_ptr->e_phoff +
->  			(ehdr_ptr->e_phnum) * sizeof(Elf64_Phdr);
->  
->  	list_for_each_entry(m, vc_list, list) {
-> @@ -516,7 +516,7 @@ static void __init set_vmcore_list_offsets_elf32(char *elfptr,
->  	ehdr_ptr = (Elf32_Ehdr *)elfptr;
->  
->  	/* Skip Elf header and program headers. */
-> -	vmcore_off = sizeof(Elf32_Ehdr) +
-> +	vmcore_off = ehdr_ptr->e_phoff +
->  			(ehdr_ptr->e_phnum) * sizeof(Elf32_Phdr);
->  
->  	list_for_each_entry(m, vc_list, list) {
-> @@ -553,7 +553,7 @@ static int __init parse_crash_elf64_headers(void)
->  	}
->  
->  	/* Read in all elf headers. */
-> -	elfcorebuf_sz = sizeof(Elf64_Ehdr) + ehdr.e_phnum * sizeof(Elf64_Phdr);
-> +	elfcorebuf_sz = ehdr.e_phoff + ehdr.e_phnum * sizeof(Elf64_Phdr);
->  	elfcorebuf = kmalloc(elfcorebuf_sz, GFP_KERNEL);
->  	if (!elfcorebuf)
->  		return -ENOMEM;
-> @@ -608,7 +608,7 @@ static int __init parse_crash_elf32_headers(void)
->  	}
->  
->  	/* Read in all elf headers. */
-> -	elfcorebuf_sz = sizeof(Elf32_Ehdr) + ehdr.e_phnum * sizeof(Elf32_Phdr);
-> +	elfcorebuf_sz = ehdr.e_phoff + ehdr.e_phnum * sizeof(Elf32_Phdr);
->  	elfcorebuf = kmalloc(elfcorebuf_sz, GFP_KERNEL);
->  	if (!elfcorebuf)
->  		return -ENOMEM;
-> 
-> 
-> _______________________________________________
-> kexec mailing list
-> kexec@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/kexec
-> 
+Mike
 
