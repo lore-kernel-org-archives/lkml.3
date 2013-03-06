@@ -1,73 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754637Ab3CFWTQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 17:19:16 -0500
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:52328 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751354Ab3CFWTO (ORCPT
+	id S1755999Ab3CFWUO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 17:20:14 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48497 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751354Ab3CFWUM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 17:19:14 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAE9FiQX557z1SXTbVoBO1RHRbU=Re=WnPR-F+B=QfhaFVr9D9g@mail.gmail.com>
-References: <CA+55aFx0HcOXKpxmZzM5jcbAaOroxafomX5ggMFV4A=py1qh-Q@mail.gmail.com>
-	<20130306080642.GA535@polaris.bitmath.org>
-	<51370990.5040508@linux.intel.com>
-	<20130306100743.GA407@polaris.bitmath.org>
-	<CAE9FiQXT4O3GOzm_OoFJG=vc=5LpfBkTEbAO_3xjerBGS_Gy=A@mail.gmail.com>
-	<20130306193612.GA513@polaris.bitmath.org>
-	<51379A4F.4020200@linux.intel.com>
-	<20130306195457.GA449@polaris.bitmath.org>
-	<CAE9FiQWK0ZnG9o8WgU-pcTPpir=PUyULQqk-TRVC+sh6UpU8VA@mail.gmail.com>
-	<20130306204500.GA335@polaris.bitmath.org>
-	<5137AE06.8060200@linux.intel.com>
-	<CAE9FiQW6SegoYjoveCVGWS3h-0UOHp5_wuAwnVh14oKLyYQFKA@mail.gmail.com>
-	<5137B9DB.6000605@linux.intel.com>
-	<CAE9FiQX557z1SXTbVoBO1RHRbU=Re=WnPR-F+B=QfhaFVr9D9g@mail.gmail.com>
-Date: Wed, 6 Mar 2013 14:19:14 -0800
-X-Google-Sender-Auth: VKivHA2ydXN6CcegRfThmarGwrY
-Message-ID: <CAE9FiQXFGMHq0s4dRFmsQDyox9+aGqqks-C0ggUtp8pb4MgFgQ@mail.gmail.com>
-Subject: Re: Linux 3.9-rc1
-From: Yinghai Lu <yinghai@kernel.org>
-To: "H. Peter Anvin" <hpa@linux.intel.com>
-Cc: Henrik Rydberg <rydberg@euromail.se>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 6 Mar 2013 17:20:12 -0500
+Date: Wed, 6 Mar 2013 14:20:11 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Hillf Danton <dhillf@gmail.com>
+Cc: Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Michal Hocko <mhocko@suse.cz>, Michel Lespinasse <walken@google.com>
+Subject: Re: [PATCH resend] rmap: recompute pgoff for unmapping huge page
+Message-Id: <20130306142011.c6260e416cef6a906660fa4d@linux-foundation.org>
+In-Reply-To: <CAJd=RBD0UWxpMv7W78fH0U_zBAOozP1owaMePGaUEVitotRfBg@mail.gmail.com>
+References: <CAJd=RBD0UWxpMv7W78fH0U_zBAOozP1owaMePGaUEVitotRfBg@mail.gmail.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 6, 2013 at 2:14 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> On Wed, Mar 6, 2013 at 1:49 PM, H. Peter Anvin <hpa@linux.intel.com> wrote:
->> On 03/06/2013 01:33 PM, Yinghai Lu wrote:
->>> On Wed, Mar 6, 2013 at 12:58 PM, H. Peter Anvin <hpa@linux.intel.com> wrote:
->>>
->>>> Excellent.  Yinghai, can you write up the patch with a proper
->>>> description and I'll put it into x86/urgent.
->>>
->>> I made it more robust: make sure real_end have 8M below it.
->>> Please check attached one.
->>>
->>
->> Sigh.  This is why "keep the page tables together" is fundamentally the
->> wrong strategy.
->>
->> 8M means that we won't even be able to boot on machines with less than
->> 16M or so of RAM... I'm not sure if anyone still cares, but that is a
->> pretty aggressive heuristic.
->
-> Henrik's system has 5M holes, so i picked 8M.
->
-> Current what is minimum ram is required for boot x86 32bit kernel? 8M?
+On Mon, 4 Mar 2013 20:47:31 +0800 Hillf Danton <dhillf@gmail.com> wrote:
 
-just check the code again, it should be ok.
+> [Resend due to error in delivering to linux-kernel@vger.kernel.org,
+> caused probably by the rich format provided by the mail agent by default.]
+> 
+> We have to recompute pgoff if the given page is huge, since result based on
+> HPAGE_SIZE is not approapriate for scanning the vma interval tree, as shown
+> by commit 36e4f20af833(hugetlb: do not use vma_hugecache_offset() for
+> vma_prio_tree_foreach)
+> 
+> Signed-off-by: Hillf Danton <dhillf@gmail.com>
+> ---
+> 
+> --- a/mm/rmap.c	Mon Mar  4 20:00:00 2013
+> +++ b/mm/rmap.c	Mon Mar  4 20:02:16 2013
+> @@ -1513,6 +1513,9 @@ static int try_to_unmap_file(struct page
+>  	unsigned long max_nl_size = 0;
+>  	unsigned int mapcount;
+> 
+> +	if (PageHuge(page))
+> +		pgoff = page->index << compound_order(page);
+> +
+>  	mutex_lock(&mapping->i_mmap_mutex);
+>  	vma_interval_tree_foreach(vma, &mapping->i_mmap, pgoff, pgoff) {
+>  		unsigned long address = vma_address(page, vma);
 
-we can not find the 8M, real_end will set to 8M anyway. as the
-memblock_find_in_range will return
-0.
+How are we getting here for hugepages?  Trying to migrate a hugetlbfs
+page?
 
-then will map [0, 8M] at first, then will map [8M, whatever).
+Can we just do this?
 
-Thanks
+--- a/mm/rmap.c~a
++++ a/mm/rmap.c
+@@ -1505,7 +1505,7 @@ static int try_to_unmap_anon(struct page
+ static int try_to_unmap_file(struct page *page, enum ttu_flags flags)
+ {
+ 	struct address_space *mapping = page->mapping;
+-	pgoff_t pgoff = page->index << (PAGE_CACHE_SHIFT - PAGE_SHIFT);
++	pgoff_t pgoff;
+ 	struct vm_area_struct *vma;
+ 	int ret = SWAP_AGAIN;
+ 	unsigned long cursor;
+@@ -1513,6 +1513,7 @@ static int try_to_unmap_file(struct page
+ 	unsigned long max_nl_size = 0;
+ 	unsigned int mapcount;
+ 
++	pgoff = page->index << compound_order(page);
+ 	mutex_lock(&mapping->i_mmap_mutex);
+ 	vma_interval_tree_foreach(vma, &mapping->i_mmap, pgoff, pgoff) {
+ 		unsigned long address = vma_address(page, vma);
+_
 
-Yinghai
+It's a lot less fuss.
