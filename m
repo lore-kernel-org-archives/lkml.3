@@ -1,63 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755871Ab3CFWBL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 17:01:11 -0500
-Received: from smtprelay-h31.telenor.se ([213.150.131.4]:40598 "EHLO
-	smtprelay-h31.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751354Ab3CFWBK (ORCPT
+	id S1756122Ab3CFWFG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 17:05:06 -0500
+Received: from smtp-outbound-2.vmware.com ([208.91.2.13]:42930 "EHLO
+	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754154Ab3CFWFE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 17:01:10 -0500
-X-SENDER-IP: [85.230.168.206]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AhF1AGq7N1FV5qjOPGdsb2JhbABEh14BhH23WAMBgVwXAwEBAQE4NIIrAQEFOhwjEAgDGAklDwUlChoTiBe8EhWNdoEBB4JfYQOWSoYIjXM
-X-IronPort-AV: E=Sophos;i="4.84,798,1355094000"; 
-   d="scan'208";a="213986977"
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Wed, 6 Mar 2013 23:04:12 +0100
-To: "H. Peter Anvin" <hpa@linux.intel.com>
-Cc: Yinghai Lu <yinghai@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Linux 3.9-rc1
-Message-ID: <20130306220412.GA1064@polaris.bitmath.org>
-References: <20130306100743.GA407@polaris.bitmath.org>
- <CAE9FiQXT4O3GOzm_OoFJG=vc=5LpfBkTEbAO_3xjerBGS_Gy=A@mail.gmail.com>
- <20130306193612.GA513@polaris.bitmath.org>
- <51379A4F.4020200@linux.intel.com>
- <20130306195457.GA449@polaris.bitmath.org>
- <CAE9FiQWK0ZnG9o8WgU-pcTPpir=PUyULQqk-TRVC+sh6UpU8VA@mail.gmail.com>
- <20130306204500.GA335@polaris.bitmath.org>
- <5137AE06.8060200@linux.intel.com>
- <CAE9FiQW6SegoYjoveCVGWS3h-0UOHp5_wuAwnVh14oKLyYQFKA@mail.gmail.com>
- <5137B9DB.6000605@linux.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5137B9DB.6000605@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 6 Mar 2013 17:05:04 -0500
+From: Bhavesh Davda <bhavesh@vmware.com>
+To: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: pv-drivers@vmware.com, Bhavesh Davda <bhavesh@vmware.com>,
+        Shreyas N Bhatewara <sbhatewara@vmware.com>
+Subject: [PATCH net-next] vmxnet3: prevent div-by-zero panic when ring resizing uninitialized dev
+Date: Wed,  6 Mar 2013 14:04:53 -0800
+Message-Id: <1362607493-5634-1-git-send-email-bhavesh@vmware.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1362591984-16587-1-git-send-email-bhavesh@vmware.com>
+References: <1362591984-16587-1-git-send-email-bhavesh@vmware.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 06, 2013 at 01:49:15PM -0800, H. Peter Anvin wrote:
-> On 03/06/2013 01:33 PM, Yinghai Lu wrote:
-> > On Wed, Mar 6, 2013 at 12:58 PM, H. Peter Anvin <hpa@linux.intel.com> wrote:
-> > 
-> >> Excellent.  Yinghai, can you write up the patch with a proper
-> >> description and I'll put it into x86/urgent.
-> > 
-> > I made it more robust: make sure real_end have 8M below it.
-> > Please check attached one.
-> > 
-> 
-> Sigh.  This is why "keep the page tables together" is fundamentally the
-> wrong strategy.
-> 
-> 8M means that we won't even be able to boot on machines with less than
-> 16M or so of RAM... I'm not sure if anyone still cares, but that is a
-> pretty aggressive heuristic.
+Linux is free to call ethtool ops as soon as a netdev exists when probe
+finishes. However, we only allocate vmxnet3 tx/rx queues and initialize the
+rx_buf_per_pkt field in struct vmxnet3_adapter when the interface is
+opened (UP).
 
-Maybe this should be a config option, given the ad-hoc nature of the
-chosen value? Anyway, the patch works.
+Signed-off-by: Bhavesh Davda <bhavesh@vmware.com>
+Signed-off-by: Shreyas N Bhatewara <sbhatewara@vmware.com>
+---
+ drivers/net/vmxnet3/vmxnet3_drv.c     |    1 +
+ drivers/net/vmxnet3/vmxnet3_ethtool.c |    6 ++++++
+ drivers/net/vmxnet3/vmxnet3_int.h     |    4 ++--
+ 3 files changed, 9 insertions(+), 2 deletions(-)
 
-Henrik
+diff --git a/drivers/net/vmxnet3/vmxnet3_drv.c b/drivers/net/vmxnet3/vmxnet3_drv.c
+index 4aad350..eae7a03 100644
+--- a/drivers/net/vmxnet3/vmxnet3_drv.c
++++ b/drivers/net/vmxnet3/vmxnet3_drv.c
+@@ -2958,6 +2958,7 @@ vmxnet3_probe_device(struct pci_dev *pdev,
+ 
+ 	adapter->num_rx_queues = num_rx_queues;
+ 	adapter->num_tx_queues = num_tx_queues;
++	adapter->rx_buf_per_pkt = 1;
+ 
+ 	size = sizeof(struct Vmxnet3_TxQueueDesc) * adapter->num_tx_queues;
+ 	size += sizeof(struct Vmxnet3_RxQueueDesc) * adapter->num_rx_queues;
+diff --git a/drivers/net/vmxnet3/vmxnet3_ethtool.c b/drivers/net/vmxnet3/vmxnet3_ethtool.c
+index a0feb17..63a1243 100644
+--- a/drivers/net/vmxnet3/vmxnet3_ethtool.c
++++ b/drivers/net/vmxnet3/vmxnet3_ethtool.c
+@@ -472,6 +472,12 @@ vmxnet3_set_ringparam(struct net_device *netdev,
+ 						VMXNET3_RX_RING_MAX_SIZE)
+ 		return -EINVAL;
+ 
++	/* if adapter not yet initialized, do nothing */
++	if (adapter->rx_buf_per_pkt == 0) {
++		netdev_err(netdev, "adapter not completely initialized, "
++			   "ring size cannot be changed yet\n");
++		return -EOPNOTSUPP;
++	}
+ 
+ 	/* round it up to a multiple of VMXNET3_RING_SIZE_ALIGN */
+ 	new_tx_ring_size = (param->tx_pending + VMXNET3_RING_SIZE_MASK) &
+diff --git a/drivers/net/vmxnet3/vmxnet3_int.h b/drivers/net/vmxnet3/vmxnet3_int.h
+index 3198384..3541814 100644
+--- a/drivers/net/vmxnet3/vmxnet3_int.h
++++ b/drivers/net/vmxnet3/vmxnet3_int.h
+@@ -70,10 +70,10 @@
+ /*
+  * Version numbers
+  */
+-#define VMXNET3_DRIVER_VERSION_STRING   "1.1.29.0-k"
++#define VMXNET3_DRIVER_VERSION_STRING   "1.1.30.0-k"
+ 
+ /* a 32-bit int, each byte encode a verion number in VMXNET3_DRIVER_VERSION */
+-#define VMXNET3_DRIVER_VERSION_NUM      0x01011D00
++#define VMXNET3_DRIVER_VERSION_NUM      0x01011E00
+ 
+ #if defined(CONFIG_PCI_MSI)
+ 	/* RSS only makes sense if MSI-X is supported. */
+-- 
+1.7.1
+
