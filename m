@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757545Ab3CFXWI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 18:22:08 -0500
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:44878 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757206Ab3CFXWF (ORCPT
+	id S932216Ab3CFXWR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 18:22:17 -0500
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:37866 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932152Ab3CFXWO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 18:22:05 -0500
+	Wed, 6 Mar 2013 18:22:14 -0500
 From: Michel Lespinasse <walken@google.com>
 To: Alex Shi <alex.shi@intel.com>, Ingo Molnar <mingo@kernel.org>,
         David Howells <dhowells@redhat.com>,
@@ -15,9 +15,9 @@ To: Alex Shi <alex.shi@intel.com>, Ingo Molnar <mingo@kernel.org>,
         Yuanhan Liu <yuanhan.liu@linux.intel.com>,
         Rik van Riel <riel@redhat.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
-Subject: [PATCH 05/12] rwsem: simplify rwsem_down_write_failed
-Date: Wed,  6 Mar 2013 15:21:44 -0800
-Message-Id: <1362612111-28673-6-git-send-email-walken@google.com>
+Subject: [PATCH 10/12] rwsem-spinlock: wake all readers when first waiter is a reader
+Date: Wed,  6 Mar 2013 15:21:49 -0800
+Message-Id: <1362612111-28673-11-git-send-email-walken@google.com>
 X-Mailer: git-send-email 1.8.1.3
 In-Reply-To: <1362612111-28673-1-git-send-email-walken@google.com>
 References: <1362612111-28673-1-git-send-email-walken@google.com>
@@ -25,107 +25,72 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When waking writers, we never grant them the lock - instead, they have
-to acquire it themselves when they run, and remove themselves from the
-wait_list when they succeed.
-
-As a result, we can do a few simplifications in rwsem_down_write_failed():
-
-- We don't need to check for !waiter.task since __rwsem_do_wake() doesn't
-  remove writers from the wait_list
-
-- There is no point releaseing the wait_lock before entering the wait loop,
-  as we will need to reacquire it immediately. We can change the loop so
-  that the lock is always held at the start of each loop iteration.
-
-- We don't need to get a reference on the task structure, since the task
-  is responsible for removing itself from the wait_list. There is no risk,
-  like in the rwsem_down_read_failed() case, that a task would wake up and
-  exit (thus destroying its task structure) while __rwsem_do_wake() is
-  still running - wait_lock protects against that.
+When the first queued waiter is a reader, wake all readers instead of
+just those that are at the front of the queue. This should result in
+increased parallelism for workloads that mix readers and writers.
 
 Signed-off-by: Michel Lespinasse <walken@google.com>
 
 ---
- lib/rwsem.c | 33 +++++++++------------------------
- 1 file changed, 9 insertions(+), 24 deletions(-)
+ lib/rwsem-spinlock.c | 39 ++++++++++++++++-----------------------
+ 1 file changed, 16 insertions(+), 23 deletions(-)
 
-diff --git a/lib/rwsem.c b/lib/rwsem.c
-index 66f307e90761..c73bd96dc30c 100644
---- a/lib/rwsem.c
-+++ b/lib/rwsem.c
-@@ -161,16 +161,8 @@ static int try_get_writer_sem(struct rw_semaphore *sem,
+diff --git a/lib/rwsem-spinlock.c b/lib/rwsem-spinlock.c
+index 5f117f37ac0a..d22948eeaeae 100644
+--- a/lib/rwsem-spinlock.c
++++ b/lib/rwsem-spinlock.c
+@@ -70,36 +70,29 @@ __rwsem_do_wake(struct rw_semaphore *sem, int wakewrite)
  
- try_again_write:
- 	oldcount = rwsem_atomic_update(adjustment, sem) - adjustment;
--	if (!(oldcount & RWSEM_ACTIVE_MASK)) {
--		/* No active lock: */
--		struct task_struct *tsk = waiter->task;
--
--		list_del(&waiter->list);
--		smp_mb();
--		put_task_struct(tsk);
--		tsk->state = TASK_RUNNING;
-+	if (!(oldcount & RWSEM_ACTIVE_MASK))
- 		return 1;
+ 	waiter = list_entry(sem->wait_list.next, struct rwsem_waiter, list);
+ 
+-	if (!wakewrite) {
+-		if (waiter->type == RWSEM_WAITING_FOR_WRITE)
+-			goto out;
+-		goto dont_wake_writers;
 -	}
- 	/* some one grabbed the sem already */
- 	if (rwsem_atomic_update(-adjustment, sem) & RWSEM_ACTIVE_MASK)
- 		return 0;
-@@ -220,11 +212,10 @@ struct rw_semaphore __sched *rwsem_down_read_failed(struct rw_semaphore *sem)
- }
- 
- /*
-- * wait for the write lock to be granted
-+ * wait until we successfully acquire the write lock
-  */
- struct rw_semaphore __sched *rwsem_down_write_failed(struct rw_semaphore *sem)
- {
--	enum rwsem_waiter_type type = RWSEM_WAITING_FOR_WRITE;
- 	signed long adjustment = -RWSEM_ACTIVE_WRITE_BIAS;
- 	struct rwsem_waiter waiter;
- 	struct task_struct *tsk = current;
-@@ -232,8 +223,7 @@ struct rw_semaphore __sched *rwsem_down_write_failed(struct rw_semaphore *sem)
- 
- 	/* set up my own style of waitqueue */
- 	waiter.task = tsk;
--	waiter.type = type;
--	get_task_struct(tsk);
-+	waiter.type = RWSEM_WAITING_FOR_WRITE;
- 
- 	raw_spin_lock_irq(&sem->wait_lock);
- 	if (list_empty(&sem->wait_list))
-@@ -255,25 +245,20 @@ struct rw_semaphore __sched *rwsem_down_write_failed(struct rw_semaphore *sem)
- 		 adjustment == -RWSEM_ACTIVE_WRITE_BIAS)
- 		sem = __rwsem_do_wake(sem, RWSEM_WAKE_READ_OWNED);
- 
--	raw_spin_unlock_irq(&sem->wait_lock);
 -
--	/* wait to be given the lock */
-+	/* wait until we successfully acquire the lock */
- 	while (true) {
- 		set_task_state(tsk, TASK_UNINTERRUPTIBLE);
--		if (!waiter.task)
-+
-+		if (try_get_writer_sem(sem, &waiter))
- 			break;
- 
--		raw_spin_lock_irq(&sem->wait_lock);
--		/* Try to get the writer sem, may steal from the head writer: */
--		if (type == RWSEM_WAITING_FOR_WRITE)
--			if (try_get_writer_sem(sem, &waiter)) {
--				raw_spin_unlock_irq(&sem->wait_lock);
--				return sem;
--			}
- 		raw_spin_unlock_irq(&sem->wait_lock);
- 		schedule();
-+		raw_spin_lock_irq(&sem->wait_lock);
+-	/*
+-	 * as we support write lock stealing, we can't set sem->activity
+-	 * to -1 here to indicate we get the lock. Instead, we wake it up
+-	 * to let it go get it again.
+-	 */
+ 	if (waiter->type == RWSEM_WAITING_FOR_WRITE) {
+-		wake_up_process(waiter->task);
++		if (wakewrite)
++			/* Wake up a writer. Note that we do not grant it the
++			 * lock - it will have to acquire it when it runs. */
++			wake_up_process(waiter->task);
+ 		goto out;
  	}
  
-+	list_del(&waiter.list);
-+	raw_spin_unlock_irq(&sem->wait_lock);
- 	tsk->state = TASK_RUNNING;
+-	/* grant an infinite number of read locks to the front of the queue */
+- dont_wake_writers:
++	/* grant read locks to all queued readers. */
+ 	woken = 0;
+-	while (waiter->type == RWSEM_WAITING_FOR_READ) {
++	while (true) {
+ 		struct list_head *next = waiter->list.next;
  
- 	return sem;
+-		list_del(&waiter->list);
+-		tsk = waiter->task;
+-		smp_mb();
+-		waiter->task = NULL;
+-		wake_up_process(tsk);
+-		put_task_struct(tsk);
+-		woken++;
+-		if (list_empty(&sem->wait_list))
++		if (waiter->type != RWSEM_WAITING_FOR_WRITE) {
++			list_del(&waiter->list);
++			tsk = waiter->task;
++			smp_mb();
++			waiter->task = NULL;
++			wake_up_process(tsk);
++			put_task_struct(tsk);
++			woken++;
++		}
++		if (next == &sem->wait_list)
+ 			break;
+ 		waiter = list_entry(next, struct rwsem_waiter, list);
+ 	}
 -- 
 1.8.1.3
