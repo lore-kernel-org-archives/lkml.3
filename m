@@ -1,111 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758168Ab3CFNkx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 08:40:53 -0500
-Received: from mailout01.c08.mtsvc.net ([205.186.168.189]:50330 "EHLO
-	mailout01.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757145Ab3CFNix (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 08:38:53 -0500
-From: Peter Hurley <peter@hurleysoftware.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH 1/7] n_tty: Fix unsafe driver-side signals
-Date: Wed,  6 Mar 2013 08:38:19 -0500
-Message-Id: <1362577105-19757-2-git-send-email-peter@hurleysoftware.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1362577105-19757-1-git-send-email-peter@hurleysoftware.com>
-References: <1362577105-19757-1-git-send-email-peter@hurleysoftware.com>
-X-Authenticated-User: 125194 peter@hurleysoftware.com
+	id S1757617Ab3CFNm5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 08:42:57 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:55865 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756607Ab3CFNmz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Mar 2013 08:42:55 -0500
+Message-ID: <513747C5.6080507@ti.com>
+Date: Wed, 6 Mar 2013 19:12:29 +0530
+From: Balaji T K <balajitk@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+MIME-Version: 1.0
+To: Matt Porter <mporter@ti.com>, Chris Ball <cjb@laptop.org>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Jon Hunter <jon-hunter@ti.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>
+CC: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Vinod Koul <vinod.koul@intel.com>, Tony Lindgren <tony@atomide.com>,
+        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, Dan Williams <djbw@fb.com>
+Subject: Re: [PATCH v2 2/3] mmc: omap_hsmmc: Skip platform_get_resource_byname()
+ for dt case
+References: <1362518004-7083-1-git-send-email-mporter@ti.com> <1362518004-7083-3-git-send-email-mporter@ti.com>
+In-Reply-To: <1362518004-7083-3-git-send-email-mporter@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-An ldisc reference is insufficient guarantee the foreground process
-group is not in the process of being signalled from a hangup.
+On Wednesday 06 March 2013 02:43 AM, Matt Porter wrote:
+> From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+>
+> MMC driver probe will abort for DT case because of failed
+> platform_get_resource_byname() lookup. Fix it by skipping resource
+> byname lookup for device tree build.
+>
+> Issue is hidden because hwmod popullates the IO resources which
+> helps to succeed platform_get_resource_byname() and probe.
+>
 
-1) Reads of tty->pgrp must be locked with ctrl_lock
-2) The group pid must be referenced for the duration of signalling.
-   Because the driver-side is not process-context, a pid reference
-   must be acquired.
+Hi Matt,
+Could you please drop this patch from the current series,
+since this patch causes regression on omap3,4 platform
+which are not yet dma dt adapted.
+It is best to send this patch along with Jon Hunter dma dt series,
+which adds dt dma support and mmc dma data. DMA dt series is needed
+any way before hwmod cleanup can happen.
 
-Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
----
- drivers/tty/n_tty.c | 34 ++++++++++++++--------------------
- 1 file changed, 14 insertions(+), 20 deletions(-)
 
-diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
-index 66ce178..cd9ba3d 100644
---- a/drivers/tty/n_tty.c
-+++ b/drivers/tty/n_tty.c
-@@ -1038,23 +1038,19 @@ static void eraser(unsigned char c, struct tty_struct *tty)
-  *	isig		-	handle the ISIG optio
-  *	@sig: signal
-  *	@tty: terminal
-- *	@flush: force flush
-  *
-- *	Called when a signal is being sent due to terminal input. This
-- *	may caus terminal flushing to take place according to the termios
-- *	settings and character used. Called from the driver receive_buf
-- *	path so serialized.
-+ *	Called when a signal is being sent due to terminal input.
-+ *	Called from the driver receive_buf path so serialized.
-  *
-- *	Locking: ctrl_lock, read_lock (both via flush buffer)
-+ *	Locking: ctrl_lock
-  */
- 
--static inline void isig(int sig, struct tty_struct *tty, int flush)
-+static inline void isig(int sig, struct tty_struct *tty)
- {
--	if (tty->pgrp)
--		kill_pgrp(tty->pgrp, sig, 1);
--	if (flush || !L_NOFLSH(tty)) {
--		n_tty_flush_buffer(tty);
--		tty_driver_flush_buffer(tty);
-+	struct pid *tty_pgrp = tty_get_pgrp(tty);
-+	if (tty_pgrp) {
-+		kill_pgrp(tty_pgrp, sig, 1);
-+		put_pid(tty_pgrp);
- 	}
- }
- 
-@@ -1075,7 +1071,11 @@ static inline void n_tty_receive_break(struct tty_struct *tty)
- 	if (I_IGNBRK(tty))
- 		return;
- 	if (I_BRKINT(tty)) {
--		isig(SIGINT, tty, 1);
-+		isig(SIGINT, tty);
-+		if (!L_NOFLSH(tty)) {
-+			n_tty_flush_buffer(tty);
-+			tty_driver_flush_buffer(tty);
-+		}
- 		return;
- 	}
- 	if (I_PARMRK(tty)) {
-@@ -1242,11 +1242,6 @@ static inline void n_tty_receive_char(struct tty_struct *tty, unsigned char c)
- 		signal = SIGTSTP;
- 		if (c == SUSP_CHAR(tty)) {
- send_signal:
--			/*
--			 * Note that we do not use isig() here because we want
--			 * the order to be:
--			 * 1) flush, 2) echo, 3) signal
--			 */
- 			if (!L_NOFLSH(tty)) {
- 				n_tty_flush_buffer(tty);
- 				tty_driver_flush_buffer(tty);
-@@ -1257,8 +1252,7 @@ send_signal:
- 				echo_char(c, tty);
- 				process_echoes(tty);
- 			}
--			if (tty->pgrp)
--				kill_pgrp(tty->pgrp, signal, 1);
-+			isig(signal, tty);
- 			return;
- 		}
- 	}
--- 
-1.8.1.2
+> Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> ---
+>   drivers/mmc/host/omap_hsmmc.c |   28 +++++++++++++++-------------
+>   1 file changed, 15 insertions(+), 13 deletions(-)
+>
+> diff --git a/drivers/mmc/host/omap_hsmmc.c b/drivers/mmc/host/omap_hsmmc.c
+> index e79b12d..8ae1225 100644
+> --- a/drivers/mmc/host/omap_hsmmc.c
+> +++ b/drivers/mmc/host/omap_hsmmc.c
+> @@ -1896,21 +1896,23 @@ static int omap_hsmmc_probe(struct platform_device *pdev)
+>
+>   	omap_hsmmc_conf_bus_power(host);
+>
+> -	res = platform_get_resource_byname(pdev, IORESOURCE_DMA, "tx");
+> -	if (!res) {
+> -		dev_err(mmc_dev(host->mmc), "cannot get DMA TX channel\n");
+> -		ret = -ENXIO;
+> -		goto err_irq;
+> -	}
+> -	tx_req = res->start;
+> +	if (!pdev->dev.of_node) {
+> +		res = platform_get_resource_byname(pdev, IORESOURCE_DMA, "tx");
+> +		if (!res) {
+> +			dev_err(mmc_dev(host->mmc), "cannot get DMA TX channel\n");
+> +			ret = -ENXIO;
+> +			goto err_irq;
+> +		}
+> +		tx_req = res->start;
+>
+> -	res = platform_get_resource_byname(pdev, IORESOURCE_DMA, "rx");
+> -	if (!res) {
+> -		dev_err(mmc_dev(host->mmc), "cannot get DMA RX channel\n");
+> -		ret = -ENXIO;
+> -		goto err_irq;
+> +		res = platform_get_resource_byname(pdev, IORESOURCE_DMA, "rx");
+> +		if (!res) {
+> +			dev_err(mmc_dev(host->mmc), "cannot get DMA RX channel\n");
+> +			ret = -ENXIO;
+> +			goto err_irq;
+> +		}
+> +		rx_req = res->start;
+>   	}
+> -	rx_req = res->start;
+>
+>   	dma_cap_zero(mask);
+>   	dma_cap_set(DMA_SLAVE, mask);
+>
 
