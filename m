@@ -1,84 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932110Ab3CFXUG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 18:20:06 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:1247 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932065Ab3CFXUB convert rfc822-to-8bit (ORCPT
+	id S1757343Ab3CFXV7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 18:21:59 -0500
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:55268 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756387Ab3CFXV6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 18:20:01 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Wed, 06 Mar 2013 15:20:01 -0800
-From: Andrew Chew <AChew@nvidia.com>
-To: Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Stephen Warren <swarren@nvidia.com>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 6 Mar 2013 15:20:00 -0800
-Subject: RE: [PATCH] clk: tegra: provide dummy cpu car ops
-Thread-Topic: [PATCH] clk: tegra: provide dummy cpu car ops
-Thread-Index: Ac4Kwwor0tKqsWgZTgGiTbxKqNunOwP/WlyA
-Message-ID: <643E69AA4436674C8F39DCC2C05F7638629CA50C97@HQMAIL03.nvidia.com>
-References: <1360853581-9756-1-git-send-email-pdeschrijver@nvidia.com>
-In-Reply-To: <1360853581-9756-1-git-send-email-pdeschrijver@nvidia.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Wed, 6 Mar 2013 18:21:58 -0500
+From: Michel Lespinasse <walken@google.com>
+To: Alex Shi <alex.shi@intel.com>, Ingo Molnar <mingo@kernel.org>,
+        David Howells <dhowells@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Yuanhan Liu <yuanhan.liu@linux.intel.com>,
+        Rik van Riel <riel@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
+Subject: [PATCH 01/12] rwsem: make the waiter type an enumeration rather than a bitmask
+Date: Wed,  6 Mar 2013 15:21:40 -0800
+Message-Id: <1362612111-28673-2-git-send-email-walken@google.com>
+X-Mailer: git-send-email 1.8.1.3
+In-Reply-To: <1362612111-28673-1-git-send-email-walken@google.com>
+References: <1362612111-28673-1-git-send-email-walken@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Subject: [PATCH] clk: tegra: provide dummy cpu car ops
-> 
-> tegra_boot_secondary() relies on some of the car ops. This means having an
-> uninitialized tegra_cpu_car_ops will lead to an early boot panic.
-> Providing a dummy struct avoids this and makes adding Tegra114 clock
-> support in a bisectable way a lot easier.
-> 
-> --
-> 
-> Stephen,
-> 
-> Should this be a separate patch or should I make this part of new release of
-> the Tegra114 clock series?
-> 
-> Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
-> ---
->  drivers/clk/tegra/clk.c |    3 ++-
->  1 files changed, 2 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/clk/tegra/clk.c b/drivers/clk/tegra/clk.c index
-> a603b9a..f6c141f 100644
-> --- a/drivers/clk/tegra/clk.c
-> +++ b/drivers/clk/tegra/clk.c
-> @@ -22,7 +22,8 @@
->  #include "clk.h"
-> 
->  /* Global data of Tegra CPU CAR ops */
-> -struct tegra_cpu_car_ops *tegra_cpu_car_ops;
+We are not planning to add some new waiter flags, so we can convert the
+waiter type into an enumeration.
 
-Sorry for bringing this up so late...
-Shouldn't the above be "struct tegra_cpu_car_ops tegra_cpu_car_ops;"?
+Background: David Howells suggested I do this back when I tried adding
+a new waiter type for unfair readers. However, I believe the cleanup
+applies regardless of that use case.
 
-> +static struct tegra_cpu_car_ops *dummy_car_ops; struct
-> +tegra_cpu_car_ops *tegra_cpu_car_ops = &dummy_car_ops;
-> 
->  void __init tegra_init_dup_clks(struct tegra_clk_duplicate *dup_list,
->  				struct clk *clks[], int clk_max)
-> --
-> 1.7.7.rc0.72.g4b5ea.dirty
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-tegra" in the
-> body of a message to majordomo@vger.kernel.org More majordomo info at
-> http://vger.kernel.org/majordomo-info.html
+Signed-off-by: Michel Lespinasse <walken@google.com>
+
+---
+ lib/rwsem-spinlock.c | 19 +++++++++++--------
+ lib/rwsem.c          | 23 +++++++++++++----------
+ 2 files changed, 24 insertions(+), 18 deletions(-)
+
+diff --git a/lib/rwsem-spinlock.c b/lib/rwsem-spinlock.c
+index 7542afbb22b3..5f117f37ac0a 100644
+--- a/lib/rwsem-spinlock.c
++++ b/lib/rwsem-spinlock.c
+@@ -9,12 +9,15 @@
+ #include <linux/sched.h>
+ #include <linux/export.h>
+ 
++enum rwsem_waiter_type {
++	RWSEM_WAITING_FOR_WRITE,
++	RWSEM_WAITING_FOR_READ
++};
++
+ struct rwsem_waiter {
+ 	struct list_head list;
+ 	struct task_struct *task;
+-	unsigned int flags;
+-#define RWSEM_WAITING_FOR_READ	0x00000001
+-#define RWSEM_WAITING_FOR_WRITE	0x00000002
++	enum rwsem_waiter_type type;
+ };
+ 
+ int rwsem_is_locked(struct rw_semaphore *sem)
+@@ -68,7 +71,7 @@ __rwsem_do_wake(struct rw_semaphore *sem, int wakewrite)
+ 	waiter = list_entry(sem->wait_list.next, struct rwsem_waiter, list);
+ 
+ 	if (!wakewrite) {
+-		if (waiter->flags & RWSEM_WAITING_FOR_WRITE)
++		if (waiter->type == RWSEM_WAITING_FOR_WRITE)
+ 			goto out;
+ 		goto dont_wake_writers;
+ 	}
+@@ -78,7 +81,7 @@ __rwsem_do_wake(struct rw_semaphore *sem, int wakewrite)
+ 	 * to -1 here to indicate we get the lock. Instead, we wake it up
+ 	 * to let it go get it again.
+ 	 */
+-	if (waiter->flags & RWSEM_WAITING_FOR_WRITE) {
++	if (waiter->type == RWSEM_WAITING_FOR_WRITE) {
+ 		wake_up_process(waiter->task);
+ 		goto out;
+ 	}
+@@ -86,7 +89,7 @@ __rwsem_do_wake(struct rw_semaphore *sem, int wakewrite)
+ 	/* grant an infinite number of read locks to the front of the queue */
+  dont_wake_writers:
+ 	woken = 0;
+-	while (waiter->flags & RWSEM_WAITING_FOR_READ) {
++	while (waiter->type == RWSEM_WAITING_FOR_READ) {
+ 		struct list_head *next = waiter->list.next;
+ 
+ 		list_del(&waiter->list);
+@@ -144,7 +147,7 @@ void __sched __down_read(struct rw_semaphore *sem)
+ 
+ 	/* set up my own style of waitqueue */
+ 	waiter.task = tsk;
+-	waiter.flags = RWSEM_WAITING_FOR_READ;
++	waiter.type = RWSEM_WAITING_FOR_READ;
+ 	get_task_struct(tsk);
+ 
+ 	list_add_tail(&waiter.list, &sem->wait_list);
+@@ -201,7 +204,7 @@ void __sched __down_write_nested(struct rw_semaphore *sem, int subclass)
+ 	/* set up my own style of waitqueue */
+ 	tsk = current;
+ 	waiter.task = tsk;
+-	waiter.flags = RWSEM_WAITING_FOR_WRITE;
++	waiter.type = RWSEM_WAITING_FOR_WRITE;
+ 	list_add_tail(&waiter.list, &sem->wait_list);
+ 
+ 	/* wait for someone to release the lock */
+diff --git a/lib/rwsem.c b/lib/rwsem.c
+index ad5e0df16ab4..672eb33218ac 100644
+--- a/lib/rwsem.c
++++ b/lib/rwsem.c
+@@ -30,12 +30,15 @@ void __init_rwsem(struct rw_semaphore *sem, const char *name,
+ 
+ EXPORT_SYMBOL(__init_rwsem);
+ 
++enum rwsem_waiter_type {
++	RWSEM_WAITING_FOR_WRITE,
++	RWSEM_WAITING_FOR_READ
++};
++
+ struct rwsem_waiter {
+ 	struct list_head list;
+ 	struct task_struct *task;
+-	unsigned int flags;
+-#define RWSEM_WAITING_FOR_READ	0x00000001
+-#define RWSEM_WAITING_FOR_WRITE	0x00000002
++	enum rwsem_waiter_type type;
+ };
+ 
+ /* Wake types for __rwsem_do_wake().  Note that RWSEM_WAKE_NO_ACTIVE and
+@@ -65,7 +68,7 @@ __rwsem_do_wake(struct rw_semaphore *sem, int wake_type)
+ 	signed long woken, loop, adjustment;
+ 
+ 	waiter = list_entry(sem->wait_list.next, struct rwsem_waiter, list);
+-	if (!(waiter->flags & RWSEM_WAITING_FOR_WRITE))
++	if (waiter->type != RWSEM_WAITING_FOR_WRITE)
+ 		goto readers_only;
+ 
+ 	if (wake_type == RWSEM_WAKE_READ_OWNED)
+@@ -112,10 +115,10 @@ __rwsem_do_wake(struct rw_semaphore *sem, int wake_type)
+ 		waiter = list_entry(waiter->list.next,
+ 					struct rwsem_waiter, list);
+ 
+-	} while (waiter->flags & RWSEM_WAITING_FOR_READ);
++	} while (waiter->type != RWSEM_WAITING_FOR_WRITE);
+ 
+ 	adjustment = woken * RWSEM_ACTIVE_READ_BIAS;
+-	if (waiter->flags & RWSEM_WAITING_FOR_READ)
++	if (waiter->type != RWSEM_WAITING_FOR_WRITE)
+ 		/* hit end of list above */
+ 		adjustment -= RWSEM_WAITING_BIAS;
+ 
+@@ -148,7 +151,7 @@ static int try_get_writer_sem(struct rw_semaphore *sem,
+ 
+ 	/* only steal when first waiter is writing */
+ 	fwaiter = list_entry(sem->wait_list.next, struct rwsem_waiter, list);
+-	if (!(fwaiter->flags & RWSEM_WAITING_FOR_WRITE))
++	if (fwaiter->type != RWSEM_WAITING_FOR_WRITE)
+ 		return 0;
+ 
+ 	adjustment = RWSEM_ACTIVE_WRITE_BIAS;
+@@ -179,7 +182,7 @@ try_again_write:
+  */
+ static struct rw_semaphore __sched *
+ rwsem_down_failed_common(struct rw_semaphore *sem,
+-			 unsigned int flags, signed long adjustment)
++			 enum rwsem_waiter_type type, signed long adjustment)
+ {
+ 	struct rwsem_waiter waiter;
+ 	struct task_struct *tsk = current;
+@@ -190,7 +193,7 @@ rwsem_down_failed_common(struct rw_semaphore *sem,
+ 	/* set up my own style of waitqueue */
+ 	raw_spin_lock_irq(&sem->wait_lock);
+ 	waiter.task = tsk;
+-	waiter.flags = flags;
++	waiter.type = type;
+ 	get_task_struct(tsk);
+ 
+ 	if (list_empty(&sem->wait_list))
+@@ -221,7 +224,7 @@ rwsem_down_failed_common(struct rw_semaphore *sem,
+ 
+ 		raw_spin_lock_irq(&sem->wait_lock);
+ 		/* Try to get the writer sem, may steal from the head writer: */
+-		if (flags == RWSEM_WAITING_FOR_WRITE)
++		if (type == RWSEM_WAITING_FOR_WRITE)
+ 			if (try_get_writer_sem(sem, &waiter)) {
+ 				raw_spin_unlock_irq(&sem->wait_lock);
+ 				return sem;
+-- 
+1.8.1.3
