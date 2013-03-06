@@ -1,129 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758544Ab3CFOo6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 09:44:58 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:44371 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757218Ab3CFOo4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 09:44:56 -0500
-Date: Wed, 6 Mar 2013 06:43:39 -0800
-From: tip-bot for Li Zefan <tipbot@zytor.com>
-Message-ID: <tip-877c685607925238e302cd3aa38788dca6c1b226@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, hpa@zytor.com,
-        mingo@kernel.org, peterz@infradead.org, tj@kernel.org,
-        tglx@linutronix.de, lizefan@huawei.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, eranian@google.com,
-        linux-kernel@vger.kernel.org, peterz@infradead.org, tj@kernel.org,
-        tglx@linutronix.de, lizefan@huawei.com
-In-Reply-To: <513568A0.6020804@huawei.com>
-References: <513568A0.6020804@huawei.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf:
-  Remove include of cgroup.h from perf_event.h
-Git-Commit-ID: 877c685607925238e302cd3aa38788dca6c1b226
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1758564Ab3CFOud (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 09:50:33 -0500
+Received: from ombos.raceme.org ([212.85.152.43]:41614 "EHLO idril.raceme.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757538Ab3CFOua (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Mar 2013 09:50:30 -0500
+X-Greylist: delayed 470 seconds by postgrey-1.27 at vger.kernel.org; Wed, 06 Mar 2013 09:50:30 EST
+X-Spam-Flag: NO
+X-Spam-Score: -1.748
 MIME-Version: 1.0
+Content-Type: text/plain;
+ charset=UTF-8;
+ format=flowed
 Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 06 Mar 2013 06:43:44 -0800 (PST)
+Date: Wed, 06 Mar 2013 15:42:29 +0100
+From: Vincent Deffontaines <vincent@gryzor.com>
+To: Sean Young <sean@mess.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, <linux-serial@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Alan Cox <alan@linux.intel.com>,
+        <stable@vger.kernel.org>
+Subject: Re: [PATCH] =?UTF-8?Q?tty/=38=32=35=30=5Fpnp=3A=20serial=20port?=
+ =?UTF-8?Q?=20detection=20regression=20since=20v=33=2E=37?=
+In-Reply-To: <20130304132839.GA6965@pequod.mess.org>
+References: <1361550439-23504-1-git-send-email-sean@mess.org>
+ <20130304132839.GA6965@pequod.mess.org>
+Message-ID: <5f8a2a7219eccbf1a848a774635d9ec2@raceme.org>
+User-Agent: Roundcube Webmail/0.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  877c685607925238e302cd3aa38788dca6c1b226
-Gitweb:     http://git.kernel.org/tip/877c685607925238e302cd3aa38788dca6c1b226
-Author:     Li Zefan <lizefan@huawei.com>
-AuthorDate: Tue, 5 Mar 2013 11:38:08 +0800
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 6 Mar 2013 11:32:56 +0100
+Le 2013-03-04 14:28, Sean Young a écrit :
+> Greg,
+>
+> On Fri, Feb 22, 2013 at 04:27:19PM +0000, Sean Young wrote:
+>> The InsydeH2O BIOS (version dated 09/12/2011) has the following in
+>> its pnp resouces for its serial ports:
+>>
+>> $ cat /sys/bus/pnp/devices/00:0b/resources
+>> state = active
+>> io disabled
+>> irq disabled
+>>
+>> We do not check if the resources are disabled, and create a bogus
+>> ttyS* device. Since commit 835d844d1a28e (8250_pnp: do pnp probe
+>> before legacy probe) we get a bogus ttyS0, which prevents the legacy
+>> probe from detecting it.
+>
+> Would you mind accepting this patch please -- it fixes a regression I
+> introduced in 3.7.
 
-perf: Remove include of cgroup.h from perf_event.h
 
-Move struct perf_cgroup_info and perf_cgroup to
-kernel/perf/core.c, and then we can remove include of cgroup.h.
+Hi Sean,
 
-Signed-off-by: Li Zefan <lizefan@huawei.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Tejun Heo <tj@kernel.org>
-Link: http://lkml.kernel.org/r/513568A0.6020804@huawei.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- include/linux/perf_event.h | 18 +-----------------
- kernel/events/core.c       | 15 +++++++++++++++
- 2 files changed, 16 insertions(+), 17 deletions(-)
+Thanks for the patch, and thanks for re-pushing it :)
+This is to inform you that the BIOS update referenced :
+Version: SC24 BIOS V1.01
+Release Date: 01/11/2013
 
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index e47ee46..8737e1c 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -21,7 +21,6 @@
-  */
- 
- #ifdef CONFIG_PERF_EVENTS
--# include <linux/cgroup.h>
- # include <asm/perf_event.h>
- # include <asm/local64.h>
- #endif
-@@ -299,22 +298,7 @@ struct swevent_hlist {
- #define PERF_ATTACH_GROUP	0x02
- #define PERF_ATTACH_TASK	0x04
- 
--#ifdef CONFIG_CGROUP_PERF
--/*
-- * perf_cgroup_info keeps track of time_enabled for a cgroup.
-- * This is a per-cpu dynamically allocated data structure.
-- */
--struct perf_cgroup_info {
--	u64				time;
--	u64				timestamp;
--};
--
--struct perf_cgroup {
--	struct				cgroup_subsys_state css;
--	struct				perf_cgroup_info *info;	/* timing info, one per cpu */
--};
--#endif
--
-+struct perf_cgroup;
- struct ring_buffer;
- 
- /**
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index b0cd865..5976a2a 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -37,6 +37,7 @@
- #include <linux/ftrace_event.h>
- #include <linux/hw_breakpoint.h>
- #include <linux/mm_types.h>
-+#include <linux/cgroup.h>
- 
- #include "internal.h"
- 
-@@ -234,6 +235,20 @@ static void perf_ctx_unlock(struct perf_cpu_context *cpuctx,
- #ifdef CONFIG_CGROUP_PERF
- 
- /*
-+ * perf_cgroup_info keeps track of time_enabled for a cgroup.
-+ * This is a per-cpu dynamically allocated data structure.
-+ */
-+struct perf_cgroup_info {
-+	u64				time;
-+	u64				timestamp;
-+};
-+
-+struct perf_cgroup {
-+	struct cgroup_subsys_state	css;
-+	struct perf_cgroup_info		*info;
-+};
-+
-+/*
-  * Must ensure cgroup is pinned (css_get) before calling
-  * this function. In other words, we cannot call this function
-  * if there is no cgroup event for the current CPU context.
+Seems to fix "my" tty detection problem on 3.7 (tested on a 3.7.6 
+Fedora kernel, with success).
+I don't think the patch will hurt anyway - I believe it still will 
+prevent other users from a regression.
+I also confirm that the patched 3.8.0 detects its ttys fine on a 
+BIOS-updated system.
+
+Regards,
+
+Vincent
+
+
+--
+Stop chasing shadows, just enjoy the ride
+Morcheeba
+
