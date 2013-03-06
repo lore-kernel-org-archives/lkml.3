@@ -1,85 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756122Ab3CFWFG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 17:05:06 -0500
-Received: from smtp-outbound-2.vmware.com ([208.91.2.13]:42930 "EHLO
-	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754154Ab3CFWFE (ORCPT
+	id S1756411Ab3CFWJk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 17:09:40 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:60478 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754335Ab3CFWJj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 17:05:04 -0500
-From: Bhavesh Davda <bhavesh@vmware.com>
-To: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: pv-drivers@vmware.com, Bhavesh Davda <bhavesh@vmware.com>,
-        Shreyas N Bhatewara <sbhatewara@vmware.com>
-Subject: [PATCH net-next] vmxnet3: prevent div-by-zero panic when ring resizing uninitialized dev
-Date: Wed,  6 Mar 2013 14:04:53 -0800
-Message-Id: <1362607493-5634-1-git-send-email-bhavesh@vmware.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1362591984-16587-1-git-send-email-bhavesh@vmware.com>
+	Wed, 6 Mar 2013 17:09:39 -0500
+Date: Wed, 06 Mar 2013 17:09:37 -0500 (EST)
+Message-Id: <20130306.170937.1089663491363176160.davem@davemloft.net>
+To: bhavesh@vmware.com
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        pv-drivers@vmware.com, sbhatewara@vmware.com
+Subject: Re: [PATCH net-next] vmxnet3: prevent div-by-zero panic when ring
+ resizing uninitialized dev
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1362607493-5634-1-git-send-email-bhavesh@vmware.com>
 References: <1362591984-16587-1-git-send-email-bhavesh@vmware.com>
+	<1362607493-5634-1-git-send-email-bhavesh@vmware.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Wed, 06 Mar 2013 14:09:42 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linux is free to call ethtool ops as soon as a netdev exists when probe
-finishes. However, we only allocate vmxnet3 tx/rx queues and initialize the
-rx_buf_per_pkt field in struct vmxnet3_adapter when the interface is
-opened (UP).
+From: Bhavesh Davda <bhavesh@vmware.com>
+Date: Wed,  6 Mar 2013 14:04:53 -0800
 
-Signed-off-by: Bhavesh Davda <bhavesh@vmware.com>
-Signed-off-by: Shreyas N Bhatewara <sbhatewara@vmware.com>
----
- drivers/net/vmxnet3/vmxnet3_drv.c     |    1 +
- drivers/net/vmxnet3/vmxnet3_ethtool.c |    6 ++++++
- drivers/net/vmxnet3/vmxnet3_int.h     |    4 ++--
- 3 files changed, 9 insertions(+), 2 deletions(-)
+> Linux is free to call ethtool ops as soon as a netdev exists when probe
+> finishes. However, we only allocate vmxnet3 tx/rx queues and initialize the
+> rx_buf_per_pkt field in struct vmxnet3_adapter when the interface is
+> opened (UP).
+> 
+> Signed-off-by: Bhavesh Davda <bhavesh@vmware.com>
+> Signed-off-by: Shreyas N Bhatewara <sbhatewara@vmware.com>
 
-diff --git a/drivers/net/vmxnet3/vmxnet3_drv.c b/drivers/net/vmxnet3/vmxnet3_drv.c
-index 4aad350..eae7a03 100644
---- a/drivers/net/vmxnet3/vmxnet3_drv.c
-+++ b/drivers/net/vmxnet3/vmxnet3_drv.c
-@@ -2958,6 +2958,7 @@ vmxnet3_probe_device(struct pci_dev *pdev,
- 
- 	adapter->num_rx_queues = num_rx_queues;
- 	adapter->num_tx_queues = num_tx_queues;
-+	adapter->rx_buf_per_pkt = 1;
- 
- 	size = sizeof(struct Vmxnet3_TxQueueDesc) * adapter->num_tx_queues;
- 	size += sizeof(struct Vmxnet3_RxQueueDesc) * adapter->num_rx_queues;
-diff --git a/drivers/net/vmxnet3/vmxnet3_ethtool.c b/drivers/net/vmxnet3/vmxnet3_ethtool.c
-index a0feb17..63a1243 100644
---- a/drivers/net/vmxnet3/vmxnet3_ethtool.c
-+++ b/drivers/net/vmxnet3/vmxnet3_ethtool.c
-@@ -472,6 +472,12 @@ vmxnet3_set_ringparam(struct net_device *netdev,
- 						VMXNET3_RX_RING_MAX_SIZE)
- 		return -EINVAL;
- 
-+	/* if adapter not yet initialized, do nothing */
-+	if (adapter->rx_buf_per_pkt == 0) {
-+		netdev_err(netdev, "adapter not completely initialized, "
-+			   "ring size cannot be changed yet\n");
-+		return -EOPNOTSUPP;
-+	}
- 
- 	/* round it up to a multiple of VMXNET3_RING_SIZE_ALIGN */
- 	new_tx_ring_size = (param->tx_pending + VMXNET3_RING_SIZE_MASK) &
-diff --git a/drivers/net/vmxnet3/vmxnet3_int.h b/drivers/net/vmxnet3/vmxnet3_int.h
-index 3198384..3541814 100644
---- a/drivers/net/vmxnet3/vmxnet3_int.h
-+++ b/drivers/net/vmxnet3/vmxnet3_int.h
-@@ -70,10 +70,10 @@
- /*
-  * Version numbers
-  */
--#define VMXNET3_DRIVER_VERSION_STRING   "1.1.29.0-k"
-+#define VMXNET3_DRIVER_VERSION_STRING   "1.1.30.0-k"
- 
- /* a 32-bit int, each byte encode a verion number in VMXNET3_DRIVER_VERSION */
--#define VMXNET3_DRIVER_VERSION_NUM      0x01011D00
-+#define VMXNET3_DRIVER_VERSION_NUM      0x01011E00
- 
- #if defined(CONFIG_PCI_MSI)
- 	/* RSS only makes sense if MSI-X is supported. */
--- 
-1.7.1
-
+Maybe this is more appropriate for 'net' rather than 'net-next'?
