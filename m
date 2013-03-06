@@ -1,126 +1,462 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752642Ab3CFQnZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 11:43:25 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:2298 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750780Ab3CFQnV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 11:43:21 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-To: torvalds@linux-foundation.org, sfr@canb.auug.org.au,
-        Joakim.Tjernlund@transmode.se, akpm@linux-foundation.org
-cc: dhowells@redhat.com, linux-arch@vger.kernel.org, arnd@arndb.de,
-        linux-kernel@vger.kernel.org
-Subject: Byteorder conditional compilation problems
-From: David Howells <dhowells@redhat.com>
-Date: Wed, 06 Mar 2013 16:43:09 +0000
-Message-ID: <31680.1362588189@warthog.procyon.org.uk>
+	id S1752732Ab3CFQoY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 11:44:24 -0500
+Received: from mail.free-electrons.com ([94.23.35.102]:54570 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750780Ab3CFQoW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Mar 2013 11:44:22 -0500
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Shawn Guo <shawn.guo@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-fbdev@vger.kernel.org
+Subject: [PATCH 1/2] video: ssd1307fb: Add support for SSD1306 OLED controller
+Date: Wed,  6 Mar 2013 17:44:09 +0100
+Message-Id: <1362588251-1824-2-git-send-email-maxime.ripard@free-electrons.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1362588251-1824-1-git-send-email-maxime.ripard@free-electrons.com>
+References: <1362588251-1824-1-git-send-email-maxime.ripard@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The Solomon SSD1306 OLED controller is very similar to the SSD1307,
+except for the fact that the power is given through an external PWM for
+the 1307, and while the 1306 can generate its own power without any PWM.
 
-Hi Linus,
+Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+---
+ .../devicetree/bindings/video/ssd1307fb.txt        |   10 +-
+ drivers/video/ssd1307fb.c                          |  267 ++++++++++++++------
+ 2 files changed, 203 insertions(+), 74 deletions(-)
 
-Looking at commit 13da9e200fe4740b02cd51e07ab454627e228920, I suspect the
-answer will be no, but can we please revisit the use of __BYTE_ORDER in the
-kernel?
+diff --git a/Documentation/devicetree/bindings/video/ssd1307fb.txt b/Documentation/devicetree/bindings/video/ssd1307fb.txt
+index 3d0060c..7a12542 100644
+--- a/Documentation/devicetree/bindings/video/ssd1307fb.txt
++++ b/Documentation/devicetree/bindings/video/ssd1307fb.txt
+@@ -1,13 +1,17 @@
+ * Solomon SSD1307 Framebuffer Driver
+ 
+ Required properties:
+-  - compatible: Should be "solomon,ssd1307fb-<bus>". The only supported bus for
+-    now is i2c.
++  - compatible: Should be "solomon,<chip>fb-<bus>". The only supported bus for
++    now is i2c, and the supported chips are ssd1306 and ssd1307.
+   - reg: Should contain address of the controller on the I2C bus. Most likely
+          0x3c or 0x3d
+   - pwm: Should contain the pwm to use according to the OF device tree PWM
+-         specification [0]
++         specification [0]. Only required for the ssd1307.
+   - reset-gpios: Should contain the GPIO used to reset the OLED display
++  - solomon,height: Height in pixel of the screen driven by the controller
++  - solomon,width: Width in pixel of the screen driven by the controller
++  - solomon,page-offset: Offset of pages (band of 8 pixels) that the screen is
++    mapped to.
+ 
+ Optional properties:
+   - reset-active-low: Is the reset gpio is active on physical low?
+diff --git a/drivers/video/ssd1307fb.c b/drivers/video/ssd1307fb.c
+index 395cb6a..95f76e2 100644
+--- a/drivers/video/ssd1307fb.c
++++ b/drivers/video/ssd1307fb.c
+@@ -16,24 +16,39 @@
+ #include <linux/pwm.h>
+ #include <linux/delay.h>
+ 
+-#define SSD1307FB_WIDTH			96
+-#define SSD1307FB_HEIGHT		16
+-
+ #define SSD1307FB_DATA			0x40
+ #define SSD1307FB_COMMAND		0x80
+ 
+ #define SSD1307FB_CONTRAST		0x81
++#define	SSD1307FB_CHARGE_PUMP		0x8d
+ #define SSD1307FB_SEG_REMAP_ON		0xa1
+ #define SSD1307FB_DISPLAY_OFF		0xae
++#define SSD1307FB_SET_MULTIPLEX_RATIO	0xa8
+ #define SSD1307FB_DISPLAY_ON		0xaf
+ #define SSD1307FB_START_PAGE_ADDRESS	0xb0
++#define SSD1307FB_SET_DISPLAY_OFFSET	0xd3
++#define	SSD1307FB_SET_CLOCK_FREQ	0xd5
++#define	SSD1307FB_SET_PRECHARGE_PERIOD	0xd9
++#define	SSD1307FB_SET_COM_PINS_CONFIG	0xda
++#define	SSD1307FB_SET_VCOMH		0xdb
++
++struct ssd1307fb_par;
++
++struct ssd1307fb_ops {
++	int (*init)(struct ssd1307fb_par *);
++	int (*remove)(struct ssd1307fb_par *);
++};
+ 
+ struct ssd1307fb_par {
+ 	struct i2c_client *client;
++	u32 height;
+ 	struct fb_info *info;
++	struct ssd1307fb_ops *ops;
++	u32 page_offset;
+ 	struct pwm_device *pwm;
+ 	u32 pwm_period;
+ 	int reset;
++	u32 width;
+ };
+ 
+ static struct fb_fix_screeninfo ssd1307fb_fix = {
+@@ -43,15 +58,10 @@ static struct fb_fix_screeninfo ssd1307fb_fix = {
+ 	.xpanstep	= 0,
+ 	.ypanstep	= 0,
+ 	.ywrapstep	= 0,
+-	.line_length	= SSD1307FB_WIDTH / 8,
+ 	.accel		= FB_ACCEL_NONE,
+ };
+ 
+ static struct fb_var_screeninfo ssd1307fb_var = {
+-	.xres		= SSD1307FB_WIDTH,
+-	.yres		= SSD1307FB_HEIGHT,
+-	.xres_virtual	= SSD1307FB_WIDTH,
+-	.yres_virtual	= SSD1307FB_HEIGHT,
+ 	.bits_per_pixel	= 1,
+ };
+ 
+@@ -134,16 +144,16 @@ static void ssd1307fb_update_display(struct ssd1307fb_par *par)
+ 	 *  (5) A4 B4 C4 D4 E4 F4 G4 H4
+ 	 */
+ 
+-	for (i = 0; i < (SSD1307FB_HEIGHT / 8); i++) {
+-		ssd1307fb_write_cmd(par->client, SSD1307FB_START_PAGE_ADDRESS + (i + 1));
++	for (i = 0; i < (par->height / 8); i++) {
++		ssd1307fb_write_cmd(par->client, SSD1307FB_START_PAGE_ADDRESS + i + par->page_offset);
+ 		ssd1307fb_write_cmd(par->client, 0x00);
+ 		ssd1307fb_write_cmd(par->client, 0x10);
+ 
+-		for (j = 0; j < SSD1307FB_WIDTH; j++) {
++		for (j = 0; j < par->width; j++) {
+ 			u8 buf = 0;
+ 			for (k = 0; k < 8; k++) {
+-				u32 page_length = SSD1307FB_WIDTH * i;
+-				u32 index = page_length + (SSD1307FB_WIDTH * k + j) / 8;
++				u32 page_length = par->width * i;
++				u32 index = page_length + (par->width * k + j) / 8;
+ 				u8 byte = *(vmem + index);
+ 				u8 bit = byte & (1 << (j % 8));
+ 				bit = bit >> (j % 8);
+@@ -227,16 +237,137 @@ static struct fb_deferred_io ssd1307fb_defio = {
+ 	.deferred_io	= ssd1307fb_deferred_io,
+ };
+ 
++static int ssd1307fb_ssd1307_init(struct ssd1307fb_par *par) {
++	int ret;
++
++	par->pwm = pwm_get(&par->client->dev, NULL);
++	if (IS_ERR(par->pwm)) {
++		dev_err(&par->client->dev, "Could not get PWM from device tree!\n");
++		return PTR_ERR(par->pwm);
++	}
++
++	par->pwm_period = pwm_get_period(par->pwm);
++	/* Enable the PWM */
++	pwm_config(par->pwm, par->pwm_period / 2, par->pwm_period);
++	pwm_enable(par->pwm);
++
++	dev_dbg(&par->client->dev, "Using PWM%d with a %dns period.\n", par->pwm->pwm, par->pwm_period);
++
++	/* Map column 127 of the OLED to segment 0 */
++	ret = ssd1307fb_write_cmd(par->client, SSD1307FB_SEG_REMAP_ON);
++	if (ret < 0)
++		return ret;
++
++	/* Turn on the display */
++	ret = ssd1307fb_write_cmd(par->client, SSD1307FB_DISPLAY_ON);
++	if (ret < 0)
++		return ret;
++
++	return 0;
++}
++
++static int ssd1307fb_ssd1307_remove(struct ssd1307fb_par *par) {
++	pwm_disable(par->pwm);
++	pwm_put(par->pwm);
++	return 0;
++}
++
++static struct ssd1307fb_ops ssd1307fb_ssd1307_ops = {
++	.init	= ssd1307fb_ssd1307_init,
++	.remove	= ssd1307fb_ssd1307_remove,
++};
++
++static int ssd1307fb_ssd1306_init(struct ssd1307fb_par *par) {
++	int ret;
++
++	/* Set initial contrast */
++	ret = ssd1307fb_write_cmd(par->client, SSD1307FB_CONTRAST);
++	ret = ret & ssd1307fb_write_cmd(par->client, 0x7f);
++	if (ret < 0)
++		return ret;
++
++	/* Set COM direction */
++	ret = ssd1307fb_write_cmd(par->client, 0xc8);
++	if (ret < 0)
++		return ret;
++
++	/* Set segment re-map */
++	ret = ssd1307fb_write_cmd(par->client, SSD1307FB_SEG_REMAP_ON);
++	if (ret < 0)
++		return ret;
++
++	/* Set multiplex ratio value */
++	ret = ssd1307fb_write_cmd(par->client, SSD1307FB_SET_MULTIPLEX_RATIO);
++	ret = ret & ssd1307fb_write_cmd(par->client, par->height - 1);
++	if (ret < 0)
++		return ret;
++
++	/* set display offset value */
++	ret = ssd1307fb_write_cmd(par->client, SSD1307FB_SET_DISPLAY_OFFSET);
++	ret = ssd1307fb_write_cmd(par->client, 0x20);
++	if (ret < 0)
++		return ret;
++
++	/* Set clock frequency */
++	ret = ssd1307fb_write_cmd(par->client, SSD1307FB_SET_CLOCK_FREQ);
++	ret = ret & ssd1307fb_write_cmd(par->client, 0xf0);
++	if (ret < 0)
++		return ret;
++
++	/* Set precharge period in number of ticks from the internal clock */
++	ret = ssd1307fb_write_cmd(par->client, SSD1307FB_SET_PRECHARGE_PERIOD);
++	ret = ret & ssd1307fb_write_cmd(par->client, 0x22);
++	if (ret < 0)
++		return ret;
++
++	/* Set COM pins configuration */
++	ret = ssd1307fb_write_cmd(par->client, SSD1307FB_SET_COM_PINS_CONFIG);
++	ret = ret & ssd1307fb_write_cmd(par->client, 0x22);
++	if (ret < 0)
++		return ret;
++
++	/* Set VCOMH */
++	ret = ssd1307fb_write_cmd(par->client, SSD1307FB_SET_VCOMH);
++	ret = ret & ssd1307fb_write_cmd(par->client, 0x49);
++	if (ret < 0)
++		return ret;
++
++	/* Turn on the DC-DC Charge Pump */
++	ret = ssd1307fb_write_cmd(par->client, SSD1307FB_CHARGE_PUMP);
++	ret = ret & ssd1307fb_write_cmd(par->client, 0x14);
++	if (ret < 0)
++		return ret;
++
++	/* Turn on the display */
++	ret = ssd1307fb_write_cmd(par->client, SSD1307FB_DISPLAY_ON);
++	if (ret < 0)
++		return ret;
++
++	return 0;
++}
++
++static struct ssd1307fb_ops ssd1307fb_ssd1306_ops = {
++	.init	= ssd1307fb_ssd1306_init,
++};
++
++static const struct of_device_id ssd1307fb_of_match[] = {
++	{ .compatible = "solomon,ssd1306fb-i2c", .data = (void*)&ssd1307fb_ssd1306_ops },
++	{ .compatible = "solomon,ssd1307fb-i2c", .data = (void*)&ssd1307fb_ssd1307_ops },
++	{},
++};
++MODULE_DEVICE_TABLE(of, ssd1307fb_of_match);
++
+ static int ssd1307fb_probe(struct i2c_client *client,
+ 			   const struct i2c_device_id *id)
+ {
+ 	struct fb_info *info;
+-	u32 vmem_size = SSD1307FB_WIDTH * SSD1307FB_HEIGHT / 8;
++	struct device_node *node = client->dev.of_node;
++	u32 vmem_size;
+ 	struct ssd1307fb_par *par;
+ 	u8 *vmem;
+ 	int ret;
+ 
+-	if (!client->dev.of_node) {
++	if (!node) {
+ 		dev_err(&client->dev, "No device tree data found!\n");
+ 		return -EINVAL;
+ 	}
+@@ -247,6 +378,36 @@ static int ssd1307fb_probe(struct i2c_client *client,
+ 		return -ENOMEM;
+ 	}
+ 
++	par = info->par;
++	par->info = info;
++	par->client = client;
++
++	par->ops = (struct ssd1307fb_ops*)of_match_device(ssd1307fb_of_match, &client->dev)->data;
++
++	par->reset = of_get_named_gpio(client->dev.of_node,
++					 "reset-gpios", 0);
++	if (!gpio_is_valid(par->reset)) {
++		ret = -EINVAL;
++		goto fb_alloc_error;
++	}
++
++	if (of_property_read_u32(node, "solomon,width", &par->width))
++		par->width = 96;
++
++	printk("Width\t%u\n", par->width);
++
++	if (of_property_read_u32(node, "solomon,height", &par->height))
++		par->width = 16;
++
++	printk("Height\t%u\n", par->height);
++
++	if (of_property_read_u32(node, "solomon,page-offset", &par->page_offset))
++		par->page_offset = 1;
++
++	printk("Offset\t%u\n", par->page_offset);
++
++	vmem_size = par->width * par->height / 8;
++
+ 	vmem = devm_kzalloc(&client->dev, vmem_size, GFP_KERNEL);
+ 	if (!vmem) {
+ 		dev_err(&client->dev, "Couldn't allocate graphical memory.\n");
+@@ -256,9 +417,15 @@ static int ssd1307fb_probe(struct i2c_client *client,
+ 
+ 	info->fbops = &ssd1307fb_ops;
+ 	info->fix = ssd1307fb_fix;
++	info->fix.line_length = par->width / 8;
+ 	info->fbdefio = &ssd1307fb_defio;
+ 
+ 	info->var = ssd1307fb_var;
++	info->var.xres = par->width;
++	info->var.xres_virtual = par->width;
++	info->var.yres = par->height;
++	info->var.yres_virtual = par->height;
++
+ 	info->var.red.length = 1;
+ 	info->var.red.offset = 0;
+ 	info->var.green.length = 1;
+@@ -272,17 +439,6 @@ static int ssd1307fb_probe(struct i2c_client *client,
+ 
+ 	fb_deferred_io_init(info);
+ 
+-	par = info->par;
+-	par->info = info;
+-	par->client = client;
+-
+-	par->reset = of_get_named_gpio(client->dev.of_node,
+-					 "reset-gpios", 0);
+-	if (!gpio_is_valid(par->reset)) {
+-		ret = -EINVAL;
+-		goto reset_oled_error;
+-	}
+-
+ 	ret = devm_gpio_request_one(&client->dev, par->reset,
+ 				    GPIOF_OUT_INIT_HIGH,
+ 				    "oled-reset");
+@@ -293,23 +449,6 @@ static int ssd1307fb_probe(struct i2c_client *client,
+ 		goto reset_oled_error;
+ 	}
+ 
+-	par->pwm = pwm_get(&client->dev, NULL);
+-	if (IS_ERR(par->pwm)) {
+-		dev_err(&client->dev, "Could not get PWM from device tree!\n");
+-		ret = PTR_ERR(par->pwm);
+-		goto pwm_error;
+-	}
+-
+-	par->pwm_period = pwm_get_period(par->pwm);
+-
+-	dev_dbg(&client->dev, "Using PWM%d with a %dns period.\n", par->pwm->pwm, par->pwm_period);
+-
+-	ret = register_framebuffer(info);
+-	if (ret) {
+-		dev_err(&client->dev, "Couldn't register the framebuffer\n");
+-		goto fbreg_error;
+-	}
+-
+ 	i2c_set_clientdata(client, info);
+ 
+ 	/* Reset the screen */
+@@ -318,34 +457,25 @@ static int ssd1307fb_probe(struct i2c_client *client,
+ 	gpio_set_value(par->reset, 1);
+ 	udelay(4);
+ 
+-	/* Enable the PWM */
+-	pwm_config(par->pwm, par->pwm_period / 2, par->pwm_period);
+-	pwm_enable(par->pwm);
+-
+-	/* Map column 127 of the OLED to segment 0 */
+-	ret = ssd1307fb_write_cmd(client, SSD1307FB_SEG_REMAP_ON);
+-	if (ret < 0) {
+-		dev_err(&client->dev, "Couldn't remap the screen.\n");
+-		goto remap_error;
++	if (par->ops->init) {
++		ret = par->ops->init(par);
++		if (ret)
++			goto reset_oled_error;
+ 	}
+ 
+-	/* Turn on the display */
+-	ret = ssd1307fb_write_cmd(client, SSD1307FB_DISPLAY_ON);
+-	if (ret < 0) {
+-		dev_err(&client->dev, "Couldn't turn the display on.\n");
+-		goto remap_error;
++	ret = register_framebuffer(info);
++	if (ret) {
++		dev_err(&client->dev, "Couldn't register the framebuffer\n");
++		goto panel_init_error;
+ 	}
+ 
+ 	dev_info(&client->dev, "fb%d: %s framebuffer device registered, using %d bytes of video memory\n", info->node, info->fix.id, vmem_size);
+ 
+ 	return 0;
+ 
+-remap_error:
+-	unregister_framebuffer(info);
+-	pwm_disable(par->pwm);
+-fbreg_error:
+-	pwm_put(par->pwm);
+-pwm_error:
++panel_init_error:
++	if (par->ops->remove)
++		par->ops->remove(par);
+ reset_oled_error:
+ 	fb_deferred_io_cleanup(info);
+ fb_alloc_error:
+@@ -359,8 +489,8 @@ static int ssd1307fb_remove(struct i2c_client *client)
+ 	struct ssd1307fb_par *par = info->par;
+ 
+ 	unregister_framebuffer(info);
+-	pwm_disable(par->pwm);
+-	pwm_put(par->pwm);
++	if (par->ops->remove)
++		par->ops->remove(par);
+ 	fb_deferred_io_cleanup(info);
+ 	framebuffer_release(info);
+ 
+@@ -368,17 +498,12 @@ static int ssd1307fb_remove(struct i2c_client *client)
+ }
+ 
+ static const struct i2c_device_id ssd1307fb_i2c_id[] = {
++	{ "ssd1306fb", 0 },
+ 	{ "ssd1307fb", 0 },
+ 	{ }
+ };
+ MODULE_DEVICE_TABLE(i2c, ssd1307fb_i2c_id);
+ 
+-static const struct of_device_id ssd1307fb_of_match[] = {
+-	{ .compatible = "solomon,ssd1307fb-i2c" },
+-	{},
+-};
+-MODULE_DEVICE_TABLE(of, ssd1307fb_of_match);
+-
+ static struct i2c_driver ssd1307fb_driver = {
+ 	.probe = ssd1307fb_probe,
+ 	.remove = ssd1307fb_remove,
+-- 
+1.7.10.4
 
-
-The reason for this is that I've noticed a number of places in the UAPI
-headers where __LITTLE_ENDIAN and __BIG_ENDIAN are assumed to act as in the
-main kernel: they are tested for definedness, which is incorrect in UAPI
-headers unless guarded by __KERNEL__.  In UAPI headers, they _must_ be
-compared to __BYTE_ORDER in !__KERNEL__ conditions and <endian.h> should
-perhaps be #included as well.
-
-The following headers are all incorrect in their usage in this manner:
-
-	include/uapi/linux/aio_abi.h - definition of PADDED()
-	include/uapi/linux/acct.h - definition of ACCT_BYTEORDER
-	include/uapi/linux/raid/md_p.h - order of members in mdp_superblock_s
-	arch/m32r/include/uapi/asm/stat.h - order of members in stat64
-
-The last two are the most worrying as these are visible from userspace.  Both
-cases will likely use the __BIG_ENDIAN version in userspace (depending on
-header inclusion ordering) - and it wouldn't surprise me if there's a nasty
-bug in the RAID API that no one has spotted yet.  M32R will likely have a
-problem too if anyone uses that in LE mode (the default is "no" on that one,
-though).
-
-And then there are:
-
-	arch/arc/include/uapi/asm/byteorder.h - uses CONFIG_CPU_BIG_ENDIAN
-	arch/c6x/include/uapi/asm/byteorder.h - uses _BIG_ENDIAN
-	arch/c6x/include/uapi/asm/ptrace.h - uses _BIG_ENDIAN
-	arch/mips/include/uapi/asm/msgbuf.h - uses CONFIG_CPU_LITTLE_ENDIAN
-
-which all look like they might be wrong.
-
-And finally, there are:
-
-	include/{uapi/,}linux/patchkey.h - macro _PATCHKEY
-	include/{uapi/,}linux/soundcard.h - macro AFMT_S16_NE
-
-which have two separate bits (one UAPI, one KAPI) defining the same macro in
-the same way because the macro is endianness-dependent, but the logic to
-select the variant cannot be shared between UAPI and KAPI.
-
-The following:
-
-	include/uapi/sound/asound.h
-	include/uapi/sound/sfnt_info.h
-
-seem to dodge the problem by using SNDRV_{LITTLE,BIG}_ENDIAN instead - though
-this doesn't seem to be defined in any headers under /usr/include, so I
-presume it is required to be set manually by anyone using those headers.
-
-
-Whilst the following opinion:
-
-	The kernel has never had that crazy "__BYTE_ORDER == __LITTLE_ENDIAN"
-	model.  It's not how we do things, and it isn't how we _should_ do
-	things.  So don't go there.
-
-may be a valid, it is incompatible with userspace.  We cannot change how
-userspace works, but we could change how the kernel works to match it, thus
-reducing the confusion.
-
-
-Looking at commit b3b77c8caef1750ebeea1054e39e358550ea9f55, I think the
-problems with it are simple to resolve:
-
- (1) linux/byteorder/big_endian.h didn't define __LITTLE_ENDIAN and
-     .../little_endian.h didn't define __BIG_ENDIAN.  These should be placed
-     in a common header, and only __BYTE_ORDER defined in the separate
-     headers.
-
- (2) Tests for the definedness of __BIG_ENDIAN and __LITTLE_ENDIAN must be
-     replaced en mass with comparisons against __BYTE_ORDER.
-
-Sadly, (1) and (2) would have to be done in the same commit to avoid problems
-since __BIG_ENDIAN and __LITTLE_ENDIAN must both be defined to for (1):-/
-
-
-Throughout the whole kernel:
-
- - There are 703 instances of "defined(__XXX_ENDIAN)" scattered over 68
-   files.  None of these appear to be in comments.
-
- - There are 6 instances of "def __XXX_ENDIAN[^_]" scattered over 4 files and
-   these are all in comments.
-
- - There are a lot of "__XXX_ENDIAN__" - but these are not a problem.
-   Possibly these should be converted to "__XXX_ENDIAN" and the relevant -D
-   preprocessor flags removed.
-
- - There are a lot of "__XXX_ENDIAN_BITFIELD" - which aren't a problem either.
-
-
-Scripting a change from "defined(__XXX_ENDIAN)" to "(__XXX_ENDIAN==__BYTEORDER)"
-should be easy to script.
-
-David
