@@ -1,63 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755236Ab3CFUoH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 15:44:07 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:47125 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753539Ab3CFUoG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 15:44:06 -0500
-User-Agent: K-9 Mail for Android
-In-Reply-To: <CA+5PVA6pzop79bnixANhqBEBbP9i+01s8Ggida8Ui41aA6gDeQ@mail.gmail.com>
-References: <20130228205206.GC3438@sgi.com> <512FC697.3090608@zytor.com> <20130228210910.GD3438@sgi.com> <512FC82B.40909@zytor.com> <CAE9FiQU3FBwEiC86N1RC8=aMdN09EbUmRcsWP0yof7bmxBhPew@mail.gmail.com> <512FE3AE.4070903@zytor.com> <20130305081519.GA19165@sgi.com> <9bcd6241-37fd-4ae9-a997-2a5da1eaf997@email.android.com> <CAE9FiQV2Wk+yiqR8FnNM_L-p1iQFxDwopRzFWTwm6VCkyrbuoQ@mail.gmail.com> <CA+5PVA4VRa7z10APcEaoebX3vwtbLzDLq1PAHmfaHBDqtZv=jw@mail.gmail.com> <51377C3A.3030301@zytor.com> <CA+5PVA51-FT14p4CRYKbicykugVb=PiaEycdQ57CK2km_OQuRQ@mail.gmail.com> <51377ED7.1060800@zytor.com> <CA+5PVA6pzop79bnixANhqBEBbP9i+01s8Ggida8Ui41aA6gDeQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: Revert commit 5dcd14ecd4 - breaks EFI boot with SLES11 elilo.efi
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Wed, 06 Mar 2013 12:43:39 -0800
-To: Josh Boyer <jwboyer@gmail.com>
-CC: Yinghai Lu <yinghai@kernel.org>, Robin Holt <holt@sgi.com>,
-        linux-kernel@vger.kernel.org, pjones@redhat.com
-Message-ID: <414399ca-2000-4120-88fb-af1d203990eb@email.android.com>
+	id S1755048Ab3CFUqX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 15:46:23 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:33090 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753594Ab3CFUqW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Mar 2013 15:46:22 -0500
+Date: Thu, 7 Mar 2013 07:46:12 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Greg KH <greg@kroah.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the final tree
+ (staging tree related)
+Message-Id: <20130307074612.0ea87b15b03f63c3252d5b6b@canb.auug.org.au>
+In-Reply-To: <20130306200444.GA13744@phenom.dumpdata.com>
+References: <20130306113508.9c868be103b6b140295c548f@canb.auug.org.au>
+	<20130306004341.GA28426@kroah.com>
+	<20130306135654.GA10760@phenom.dumpdata.com>
+	<20130306200444.GA13744@phenom.dumpdata.com>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__7_Mar_2013_07_46_12_+1100_Yry/4fagRuC7avTA"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Yeah.  I'll queue it up today and send to Linus in the next batch.
+--Signature=_Thu__7_Mar_2013_07_46_12_+1100_Yry/4fagRuC7avTA
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Josh Boyer <jwboyer@gmail.com> wrote:
+Hi Konrad,
 
->On Wed, Mar 6, 2013 at 12:37 PM, H. Peter Anvin <hpa@zytor.com> wrote:
->> On 03/06/2013 09:36 AM, Josh Boyer wrote:
->>>
->>> Something like this?
->>>
->>> Index: linux-2.6/arch/x86/include/asm/bootparam_utils.h
->>> ===================================================================
->>> --- linux-2.6.orig/arch/x86/include/asm/bootparam_utils.h
->>> +++ linux-2.6/arch/x86/include/asm/bootparam_utils.h
->>> @@ -20,8 +20,11 @@ static void sanitize_boot_params(struct
->>>       if (boot_params->sentinel) {
->>>               /*fields in boot_params are not valid, clear them */
->>>               memset(&boot_params->olpc_ofw_header, 0,
->>> -                    (char *)&boot_params->alt_mem_k -
->>> +                    (char *)&boot_params->efi_info -
->>>                       (char *)&boot_params->olpc_ofw_header);
->>>               memset(&boot_params->kbd_status, 0,
->>>                      (char *)&boot_params->hdr -
->>>                      (char *)&boot_params->kbd_status);
->>>
->>> I can try that in a bit.
->>>
->>
->> Right.
+On Wed, 6 Mar 2013 15:04:44 -0500 Konrad Rzeszutek Wilk <konrad.wilk@oracle=
+.com> wrote:
 >
->OK.  Doing that on top of 3.9-rc1 results in me having a booting
->machine
->again.  I'd suggest we get that into upstream quick-ish.
->
->josh
+> > diff --git a/drivers/staging/zcache/debug.h b/drivers/staging/zcache/de=
+bug.h
+> > index eef67db..494cea02 100644
+> > --- a/drivers/staging/zcache/debug.h
+> > +++ b/drivers/staging/zcache/debug.h
+> > @@ -1,5 +1,7 @@
+> >  #ifdef CONFIG_ZCACHE_DEBUG
+> > =20
+> > +#include <asm/bug.h>
 
--- 
-Sent from my mobile phone. Please excuse brevity and lack of formatting.
+Why not include <linux/bug.h> ?
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Thu__7_Mar_2013_07_46_12_+1100_Yry/4fagRuC7avTA
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRN6sUAAoJEECxmPOUX5FEh5YQAKZ/7Y0Ad/7msbh1keRvw+4k
+PJFPKF8KPcepeMA2XN554OTxwVfdGQlyfSxKjvriumM3Afs3yD2+M7JTcSE6nHMi
+dd0Ab/v5rDNDOIBRdrS6dDwJ4UKgNTv14XKBYNdzxIIk3FiIwPIoV6gfQRlEmHmf
+Z1nzQOcuRfG2KGiVV4njdbWXNhsSbS0w/KYDaPbtVFZuI2RslwLMxY6ZiD9fiAeZ
+P2VTaQa8NwhjAG02ZFz8tSbpMioaMw0tqnRbrL1xcoYdoBl2d1dDJQ2/cXBUCdrT
+taIRFLRTUNF/JzJLi5WJLZ+VqfuDDW51X8egjj+565VikExYTx4lbvd9HBC1tnT6
+q2it93P1DuKeKZtJmymxQnh1/MbnDCRRaRJFPKCNDipRSdHT/NUpqkk3CUp4yQRb
+sdqpkw5KfmHd0dPYNaAjN0/sjfNZdXThYQHDjemcPbnG5qnmvuqxD3gY6LXqzHa6
+z2dF/kDh4ENeBYCNudrYKW3DasjBjhFajkPekpv+P/j82XDD8ZLW/PvyfiXgUzM+
+DclVGXtmkmsitkwkfXm6guWibVYlRV/NibGF3bt13CC4T8DIvKjcYNp19/x6lU29
++MMiluNX5/1bpYh2iCZrMIP5Q0DnJD9/DOH/y+Py4cROwj4Xio2KyKP5I3HqPo5Q
+DEs9m0FPwCt7WFK9lOS/
+=IUsk
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__7_Mar_2013_07_46_12_+1100_Yry/4fagRuC7avTA--
