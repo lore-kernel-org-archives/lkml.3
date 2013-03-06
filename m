@@ -1,76 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757076Ab3CFNie (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 08:38:34 -0500
-Received: from arkanian.console-pimps.org ([212.110.184.194]:34636 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756816Ab3CFNiJ (ORCPT
+	id S1757830Ab3CFNiy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 08:38:54 -0500
+Received: from mailout01.c08.mtsvc.net ([205.186.168.189]:50318 "EHLO
+	mailout01.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756382Ab3CFNiv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 08:38:09 -0500
-Message-ID: <1362577086.15011.57.camel@mfleming-mobl1.ger.corp.intel.com>
-Subject: Re: [PATCH] efivarfs: fix abnormal GUID in variable name by using
- strcpy to replace null with dash
-From: Matt Fleming <matt@console-pimps.org>
-To: Frederic Crozat <fcrozat@suse.com>
-Cc: joeyli <jlee@suse.com>, linux-efi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Michael Schroeder <mls@suse.com>,
-        Josh Boyer <jwboyer@redhat.com>, Peter Jones <pjones@redhat.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>
-Date: Wed, 06 Mar 2013 13:38:06 +0000
-In-Reply-To: <1362576633.7004.69.camel@par-r81vxc7.par.novell.com>
-References: <1362108018-13117-1-git-send-email-jlee@suse.com>
-	 <1362151068.2842.440.camel@mfleming-mobl1.ger.corp.intel.com>
-	 <1362155493.2842.446.camel@mfleming-mobl1.ger.corp.intel.com>
-	 <1362181299.23932.168.camel@linux-s257.site>
-	 <1362555258.23932.573.camel@linux-s257.site>
-	 <1362568750.15011.24.camel@mfleming-mobl1.ger.corp.intel.com>
-	 <1362571097.7004.66.camel@par-r81vxc7.par.novell.com>
-	 <1362573401.15011.48.camel@mfleming-mobl1.ger.corp.intel.com>
-	 <1362576633.7004.69.camel@par-r81vxc7.par.novell.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	Wed, 6 Mar 2013 08:38:51 -0500
+From: Peter Hurley <peter@hurleysoftware.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Peter Hurley <peter@hurleysoftware.com>
+Subject: [PATCH 0/7] n_tty fixes
+Date: Wed,  6 Mar 2013 08:38:18 -0500
+Message-Id: <1362577105-19757-1-git-send-email-peter@hurleysoftware.com>
+X-Mailer: git-send-email 1.8.1.2
+X-Authenticated-User: 125194 peter@hurleysoftware.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-03-06 at 14:30 +0100, Frederic Crozat wrote:
-> Le mercredi 06 mars 2013 à 12:36 +0000, Matt Fleming a écrit :
-> > On Wed, 2013-03-06 at 12:58 +0100, Frederic Crozat wrote:
-> > > Le mercredi 06 mars 2013 à 11:19 +0000, Matt Fleming a écrit :
-> > > 
-> > > > Also, which machine did you see this behaviour on?
-> > > 
-> > > HP z220 desktop, System BIOS K51 v 1.54
-> > > 
-> > > this issue is only the "Secure Boot" related variables, which make me
-> > > think HP incorrectly created them in their latest firmware (where they
-> > > added Windows 8 support).
-> > 
-> > Are you saying that the behaviour regarding VariableNameSize changes
-> > depending on which variable is returned?
-> >
-> > Mercy.....
->  
-> Well, I only get the error message for some variables (8), not all of
-> them.
-> 
-> It was quite visible on unpatched kernel, with ls
-> -d /sys/firmware/efi/vars. 
-> 
-> ls -d /sys/firmware/efi/vars/*8be4d* | grep -v -- -8be returns
-> /sys/firmware/efi/vars/dbxDefault-pport8be4df61-93ca-11d2-aa0d-00e098032b8c
-> /sys/firmware/efi/vars/KEKDefault-pport8be4df61-93ca-11d2-aa0d-00e098032b8c
-> /sys/firmware/efi/vars/SecureBoot-pport8be4df61-93ca-11d2-aa0d-00e098032b8c
-> /sys/firmware/efi/vars/SetupMode-Information8be4df61-93ca-11d2-aa0d-00e098032b8c
-> /sys/firmware/efi/vars/SignatureSupport-pport8be4df61-93ca-11d2-aa0d-00e098032b8c
-> /sys/firmware/efi/vars/VendorKeys-pport8be4df61-93ca-11d2-aa0d-00e098032b8c
-> 
-> All other variable names were fine.
+This patch series combines a number of fixes for the N_TTY
+line discipline.
 
-Interesting. Thanks.
+These address unsafe use of the foreground process group id:
+  n_tty: Fix unsafe driver-side signals
+  n_tty: Lock access to tty->pgrp for POSIX job control
+
+These continue Jiri's work to separate ldisc from tty:
+  tty: Fix checkpatch errors in tty_ldisc.h
+  n_tty: Encapsulate minimum_to_wake within N_TTY
+
+The rest are self-explanatory:
+  n_tty: Untangle read completion variables
+  n_tty: Fix unsafe update of available buffer space
+  n_tty: Buffer work should not reschedule itself
+
+
+Peter Hurley (7):
+  n_tty: Fix unsafe driver-side signals
+  n_tty: Lock access to tty->pgrp for POSIX job control
+  tty: Fix checkpatch errors in tty_ldisc.h
+  n_tty: Encapsulate minimum_to_wake within N_TTY
+  n_tty: Untangle read completion variables
+  n_tty: Fix unsafe update of available buffer space
+  n_tty: Buffer work should not reschedule itself
+
+ drivers/tty/n_tty.c       | 144 +++++++++++++++++++++++++---------------------
+ drivers/tty/tty_io.c      |  17 +++---
+ include/linux/tty.h       |   1 -
+ include/linux/tty_ldisc.h | 138 +++++++++++++++++++++++---------------------
+ 4 files changed, 161 insertions(+), 139 deletions(-)
 
 -- 
-Matt Fleming, Intel Open Source Technology Center
+1.8.1.2
 
