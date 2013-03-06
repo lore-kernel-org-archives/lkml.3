@@ -1,137 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752951Ab3CFRLv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 12:11:51 -0500
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:58374 "EHLO e8.ny.us.ibm.com"
+	id S1753222Ab3CFROk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 12:14:40 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:45500 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752440Ab3CFRLu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 12:11:50 -0500
-Date: Wed, 6 Mar 2013 09:03:09 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Daniel J Blueman <daniel@numascale-asia.com>
-Cc: "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        Steffen Persvold <sp@numascale.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: False-positive RCU stall warnings on large systems...
-Message-ID: <20130306170309.GN3268@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <5123A984.4000704@numascale-asia.com>
- <20130219181624.GG3093@linux.vnet.ibm.com>
- <5124449D.3060808@numascale-asia.com>
- <20130225163225.GA3302@linux.vnet.ibm.com>
- <5135B4AD.5030609@numascale-asia.com>
+	id S1750788Ab3CFROh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Mar 2013 12:14:37 -0500
+Message-ID: <51377973.3070005@zytor.com>
+Date: Wed, 06 Mar 2013 09:14:27 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130219 Thunderbird/17.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5135B4AD.5030609@numascale-asia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13030617-9360-0000-0000-000011328B84
+To: Peter Jones <pjones@redhat.com>
+CC: Robin Holt <holt@sgi.com>, hpa@sgi.com, Yinghai Lu <yinghai@kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: Revert commit 5dcd14ecd4 - breaks EFI boot with SLES11 elilo.efi
+References: <20130228205206.GC3438@sgi.com> <512FC697.3090608@zytor.com> <20130228210910.GD3438@sgi.com> <512FC82B.40909@zytor.com> <20130306165533.GA25932@fenchurch.internal.datastacks.com>
+In-Reply-To: <20130306165533.GA25932@fenchurch.internal.datastacks.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 05, 2013 at 05:02:37PM +0800, Daniel J Blueman wrote:
-> On 02/26/2013 12:32 AM, Paul E. McKenney wrote:
-> >On Wed, Feb 20, 2013 at 11:35:57AM +0800, Daniel J Blueman wrote:
-> >>On 20/02/2013 02:16, Paul E. McKenney wrote:
-> >>>On Wed, Feb 20, 2013 at 12:34:12AM +0800, Daniel J Blueman wrote:
-> >>>>Hi Paul,
-> >>>>
-> >>>>On some of our larger servers with many hundreds of cores and when
-> >>>>under high duress, we can see scheduler RCU stall warnings [1], so
-> >>>>find we have to increase the hardcoded RCU_STALL_RAT_DELAY up from 2
-> >>>>and RCU_JIFFIES_TILL_FORCE_QS up from 3.
-> >
-> >Disabling RCU_FAST_NO_HZ will likely remove the need to adjust
-> >RCU_JIFFIES_TILL_FORCE_QS.  Changes in my -rcu tree will likely remove the
-> >need to adjust these two in 3.10 or 3.11, depending on how testing goes.
-> >
-> >>>>Is there a more sustainable way to account for this to avoid it
-> >>>>being hard-coded, such as making it and dependent timeouts a
-> >>>>fraction of CONFIG_RCU_CPU_STALL_TIMEOUT?
-> >
-> >Maybe...  But what this means is that your system is so heavily loaded
-> >that the CPU in question is failing to make it to RCU's softirq handler
-> >in two jiffies worth of time.  This is a function of workload rather
-> >than of the number of CPUs.
-> >
-> >>>>On the other hand, perhaps this is just caused by clock jitter (eg
-> >>>>due to distance from a contended clock source)? So increasing these
-> >>>>a bit may just be adequate in general...
-> >>>
-> >>>Hmmm...  What version of the kernel are you running?
-> >>
-> >>The example below occurs with v3.8, but we see the same with
-> >>previous kernels eg v3.5.
-> >
-> >There is always the rcutree.rcu_cpu_stall_timeout parameter that sets
-> >the stall timeout in seconds.  This may be specified at boot time or
-> >via sysfs at runtime.  The default is now 21 seconds.
-> >
-> >>Of course, when using the local TSC, you'd see no jitter relative to
-> >>coherent transactions (eg memory writes), but when the HPET is used
-> >>across a large system, coherent transactions to distant cores are
-> >>just so much faster, as there's massive congestion to the shared
-> >>HPET behind various HT and PCIe bridges. This could be where the
-> >>jitter arises from, if I'm guessing jitter is the problem here.
-> >
-> >Agreed, timing jitter could cause problems.  That said, the code uses
-> >the jiffies counter to compute these timings.  Are you seeing similar
-> >memory contention on the jiffies counter itself?
+On 03/06/2013 08:55 AM, Peter Jones wrote:
 > 
-> The contention we see in general are when cores contend for a
-> spinlock and when there are lots of concurrent HPET reads (Opterons
-> allow only 4 outstanding reads to the IO hub).
-
-Seems to me that the RCU CPU stalls are correctly detecting that your
-platform has a problem, namely excessive contention on your HPET hardware.
-
-> It's probably possible to reproduce rcu_sched stalls on a
-> quad-socket box with 64 cores and the right workload with the TSC
-> disabled.
+> So, the problem here seems to be that there's never been widespread
+> compliance with this paragraph, but this patch assumes there has.  A
+> brief survey concludes:
 > 
-> In 3.9-rc1 with RCU_FAST_NO_HZ disabled, we've seen stalls of 4
-> jiffies [2], but without the "Stall ended" message. This is with a
-> workload which allocates ~256GB of memory over 192 cores.
 
-Right, the "stall ended" messages appear only when one CPU detects
-another's stall.  In your case below, there is a self-detected stall,
-and it does not check.
+No, this patch doesn't assume there is widespread compliance, it is
+trying to address the bits that are not complied with.
 
-So I could add a similar check in the self-detect case, if that is what
-you are getting at.
+> grub 1 on bios - loads the kernel and edits the parameters it cares
+>                  about in place
+> grub 1 on efi - allocates a buffer (fails to clear it) and modifies
+>                 the parameters it cares about, then copies it back
+> grub 2 on bios - clears the buffer, writes what it cares about
 
-							Thanx, Paul
+On BIOS, anything that invokes the 16-bit entry point will be correct,
+because it is the 16-bit code that sets up struct boot_params.
 
-> Thanks,
->   Daniel
+> grub 2 on efi (using efi boot stub) - reads the buffer, modifies fields
+>         it cares about, passes the pointer to the boot stub
+> elilo - allocates a new buffer, copies the kernel structure in to it,
+>         allocates another buffer, clears it, copies the first structure
+> 	in to it, frees the first buffer, modifies fields it cares about
+> 	in the second buffer, clears some other fields in the second
+> 	structure, and passes the pointer in when it calls the old entry
+> 	point
+> 	(It's possible that there's some newer version of elilo than 3.14,
+> 	which I had handy, but I'm not going to do deeper research on a
+> 	project that keeps a link to its CVS repo on the most obvious
+> 	google result, lest I lose the will to live.)
+> syslinux - I'm just going to assume that your code matches the spec.
 > 
-> >>>>--- [1]
-> >>>>
-> >>>>[ 3939.010085] INFO: rcu_sched detected stalls on CPUs/tasks: {}
-> >>>>(detected by 1, t=29662 jiffies, g=3053, c=3052, q=598)
-> >>>>[ 3939.020008] INFO: Stall ended before state dump start
+> So it's certainly worth trying to find a better way to check this, but I
+> don't think this patch is it.  If we're going to enforce it, we have to
+> make sure that a bootloader that's conforming to what was de facto the
+> standard in 0x020b still works.  Otherwise we're just breaking
+> bootloaders for no reason, and that will end poorly.
 > 
-> --- [2]
-> 
-> [10660.110620] INFO: rcu_sched self-detected stall on CPU { 39}
-> (t=4 jiffies g=1169 c=1168 q=8)
-> [10660.110620] Pid: 11747, comm: sp.B Not tainted 3.9.0-rc1-advanced #6
-> [10660.110620] Call Trace:
-> [10660.110620]  <IRQ>  [<ffffffff810b2a42>] ?
-> rcu_check_callbacks+0x2d2/0x5f0
-> [10660.110620]  [<ffffffff8107d94a>] ? run_posix_cpu_timers+0x3a/0x790
-> [10660.110620]  [<ffffffff8106c86f>] ? update_process_times+0x3f/0x80
-> [10660.110620]  [<ffffffff81098280>] ? tick_sched_handle.isra.8+0x30/0x40
-> [10660.110620]  [<ffffffff810983b2>] ? tick_sched_timer+0x42/0x70
-> [10660.110620]  [<ffffffff8107e66a>] ? __run_hrtimer.isra.30+0x4a/0xe0
-> [10660.110620]  [<ffffffff8107ef45>] ? hrtimer_interrupt+0xe5/0x220
-> [10660.110620]  [<ffffffff8104c5a3>] ? smp_apic_timer_interrupt+0x63/0xa0
-> [10660.110620]  [<ffffffff8186e887>] ? apic_timer_interrupt+0x67/0x70
-> -- 
-> Daniel J Blueman
-> Principal Software Engineer, Numascale Asia
-> 
+> I'd suggest we add a field for the bootloader to make a positive
+> declaration of what version it is using, and only check for the sentinel
+> if the field claims it's doing 0x020c or newer.
+
+Except it doesn't quite work.  The problem is that these broken
+bootloaders aren't just a matter of 2.11 vs 2.12, they are implicitly
+assuming that the kernel image itself doesn't happen to contain anything
+harmful in the fields that they don't bother initializing.  This would
+be nice and good, except that the demands for the boot sector space is
+fairly high and it gets very cantankerous to turn that into a minefield.
+
+In fact, your suggestion is exactly equivalent to the sentinel, except
+you want it to be pre-initialized with 0x20b instead of 0xffff.
+
+As such, I don't really know anything better we can do other than:
+
+1. detect the *properly working* case of the structure properly
+   initialized;
+2. doing legacy bootloader-specific clearing based on the bootloader ID
+   if the sentinel triggers -- if you can think of better heuristics
+   then that would be good;
+3. try to get bootloaders switched from case #2 to case #1.
+
+	-hpa
+
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
