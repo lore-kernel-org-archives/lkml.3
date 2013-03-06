@@ -1,107 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757520Ab3CFOaW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 09:30:22 -0500
-Received: from mga01.intel.com ([192.55.52.88]:54653 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756882Ab3CFOaV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 09:30:21 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,795,1355126400"; 
-   d="scan'208";a="300107177"
-Date: Wed, 6 Mar 2013 22:29:14 +0800
-From: Feng Tang <feng.tang@intel.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: John Stultz <john.stultz@linaro.org>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>, x86@kernel.org,
-        Len Brown <lenb@kernel.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        linux-kernel@vger.kernel.org, gong.chen@linux.intel.com
-Subject: Re: [PATCH v3 5/5] timekeeping: utilize the suspend-nonstop
- clocksource to count suspended time
-Message-ID: <20130306142914.GA25790@feng-snb>
-References: <1362554271-22382-1-git-send-email-feng.tang@intel.com>
- <1362554271-22382-6-git-send-email-feng.tang@intel.com>
- <alpine.LFD.2.02.1303061512110.22263@ionos>
+	id S1757774Ab3CFOd4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 09:33:56 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:44206 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756587Ab3CFOdv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Mar 2013 09:33:51 -0500
+Date: Wed, 6 Mar 2013 06:31:43 -0800
+From: tip-bot for Krzysztof Mazur <tipbot@zytor.com>
+Message-ID: <tip-7ae184e4b97158629d657ab5c0eca2ea06d1c5a9@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        krzysiek@podlesie.net, tglx@linutronix.de, bp@suse.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, krzysiek@podlesie.net, bp@suse.de
+In-Reply-To: <1362266082-2227-1-git-send-email-krzysiek@podlesie.net>
+References: <1362266082-2227-1-git-send-email-krzysiek@podlesie.net>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86: Fix 32-bit *_cpu_data initializers
+Git-Commit-ID: 7ae184e4b97158629d657ab5c0eca2ea06d1c5a9
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.02.1303061512110.22263@ionos>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 06 Mar 2013 06:31:50 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 06, 2013 at 03:15:49PM +0100, Thomas Gleixner wrote:
-> On Wed, 6 Mar 2013, Feng Tang wrote:
-> 
-> > There are some new processors whose TSC clocksource won't stop during
-> > suspend. Currently, after system resumes, kernel will use persistent
-> > clock or RTC to compensate the sleep time, but for those new types of
-> > clocksources, we could skip the special compensation from external
-> > sources, and just use current clocksource for time recounting.
-> > 
-> > This can solve some time drift bugs caused by some not-so-accurate or
-> > error-prone RTC devices.
-> > 
-> > The current way to count suspened time is first try to use the persistent
-> > clock, and then try the rtc if persistent clock can't be used. This
-> > patch will change the trying order to:
-> > 	suspend-nonstop clocksource -> persistent clock -> rtc
-> > 
-> > Signed-off-by: Feng Tang <feng.tang@intel.com>
-> > ---
-> >  kernel/time/timekeeping.c |   42 ++++++++++++++++++++++++++++++++++--------
-> >  1 file changed, 34 insertions(+), 8 deletions(-)
-> > -	read_persistent_clock(&ts);
-> > +	ts_delta.tv_sec = 0;
-> > +	read_persistent_clock(&ts_new);
-> >  
-> >  	clockevents_resume();
-> >  	clocksource_resume();
-> >  
-> >  	write_seqlock_irqsave(&tk->lock, flags);
-> >  
-> > -	if (timespec_compare(&ts, &timekeeping_suspend_time) > 0) {
-> > -		ts = timespec_sub(ts, timekeeping_suspend_time);
-> > -		__timekeeping_inject_sleeptime(tk, &ts);
-> > -	}
-> > -	/* re-base the last cycle value */
-> > -	tk->clock->cycle_last = tk->clock->read(tk->clock);
-> > +	/*
-> > +	 * After system resumes, we need to calculate the suspended time and
-> > +	 * compensate it for the OS time. There are 3 sources that could be
-> > +	 * used: Nonstop clocksource during suspend, persistent clock and rtc
-> > +	 * device.
-> > +	 *
-> > +	 * One specific platform may have 1 or 2 or all of them, and the
-> > +	 * preference will be:
-> > +	 *	suspend-nonstop clocksource -> persistent clock -> rtc
-> > +	 * The less preferred source will only be tried if there is no better
-> > +	 * usable source. The rtc part is handled separately in rtc core code.
-> > +	 */
-> > +	cycle_now = clock->read(clock);
-> > +	if ((clock->flags & CLOCK_SOURCE_SUSPEND_NONSTOP) &&
-> > +		cycle_now > clock->cycle_last) {
-> > +
-> > +		cycle_delta = (cycle_now - clock->cycle_last) & clock->mask;
-> > +		nsec = clocksource_cyc2ns(cycle_delta, clock->mult,
-> > +							clock->shift);
-> > +		ts_delta = ns_to_timespec(nsec);
-> > +	} else if (timespec_compare(&ts_new, &timekeeping_suspend_time) > 0)
-> > +		ts_delta = timespec_sub(ts_new, timekeeping_suspend_time);
-> > +
-> > +	if (ts_delta.tv_sec >= 1)
-> > +		__timekeeping_inject_sleeptime(tk, &ts_delta);
-> 
-> If the suspend time measured by the nonstop clocksource is 0.999 sec
-> then we throw it away and then let the RTC code inject inaccurate
-> sleep time? Brilliant design, really.
+Commit-ID:  7ae184e4b97158629d657ab5c0eca2ea06d1c5a9
+Gitweb:     http://git.kernel.org/tip/7ae184e4b97158629d657ab5c0eca2ea06d1c5a9
+Author:     Krzysztof Mazur <krzysiek@podlesie.net>
+AuthorDate: Sun, 3 Mar 2013 00:14:42 +0100
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Wed, 6 Mar 2013 11:17:09 +0100
 
-Emm, I wrote the code with an assumption that the sleep itself and the
-enter/exit processes will be longer than 1 second.
+x86: Fix 32-bit *_cpu_data initializers
 
-I can initialize the ts_delta to (0, 0} and change the check condition
-to 
-	if (ts_delta.tv_sec || ts_delta.tv_nsec)
+The commit 27be457000211a6903968dfce06d5f73f051a217
+('x86 idle: remove 32-bit-only "no-hlt" parameter, hlt_works_ok
+flag') removed the hlt_works_ok flag from struct cpuinfo_x86, but
+boot_cpu_data and new_cpu_data initializers were not changed
+causing setting f00f_bug flag, instead of fdiv_bug.
+
+If CONFIG_X86_F00F_BUG is not set the f00f_bug flag is never
+cleared.
+
+To avoid such problems in future C99-style initialization is now
+used.
+
+Signed-off-by: Krzysztof Mazur <krzysiek@podlesie.net>
+Acked-by: Borislav Petkov <bp@suse.de>
+Cc: len.brown@intel.com
+Link: http://lkml.kernel.org/r/1362266082-2227-1-git-send-email-krzysiek@podlesie.net
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ arch/x86/kernel/setup.c | 10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
+
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index 84d3285..90d8cc9 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -171,9 +171,15 @@ static struct resource bss_resource = {
+ 
+ #ifdef CONFIG_X86_32
+ /* cpu data as detected by the assembly code in head.S */
+-struct cpuinfo_x86 new_cpu_data __cpuinitdata = {0, 0, 0, 0, -1, 1, 0, 0, -1};
++struct cpuinfo_x86 new_cpu_data __cpuinitdata = {
++	.wp_works_ok = -1,
++	.fdiv_bug = -1,
++};
+ /* common cpu data for all cpus */
+-struct cpuinfo_x86 boot_cpu_data __read_mostly = {0, 0, 0, 0, -1, 1, 0, 0, -1};
++struct cpuinfo_x86 boot_cpu_data __read_mostly = {
++	.wp_works_ok = -1,
++	.fdiv_bug = -1,
++};
+ EXPORT_SYMBOL(boot_cpu_data);
+ 
+ unsigned int def_to_bigsmp;
