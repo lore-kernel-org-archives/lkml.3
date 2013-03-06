@@ -1,103 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754981Ab3CFD20 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 22:28:26 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:7514 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751215Ab3CFD2Y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 22:28:24 -0500
-Message-ID: <5136B7C1.6030403@huawei.com>
-Date: Wed, 6 Mar 2013 11:28:01 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
+	id S1755057Ab3CFDcX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 22:32:23 -0500
+Received: from mga01.intel.com ([192.55.52.88]:55441 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751215Ab3CFDcS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Mar 2013 22:32:18 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,791,1355126400"; 
+   d="scan'208";a="295574175"
+Date: Wed, 6 Mar 2013 11:31:14 +0800
+From: Feng Tang <feng.tang@intel.com>
+To: John Stultz <john.stultz@linaro.org>
+Cc: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, x86@kernel.org,
+        Len Brown <lenb@kernel.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        linux-kernel@vger.kernel.org, gong.chen@linux.intel.com
+Subject: Re: [RFC PATCH v2 0/4] Add support for S3 non-stop TSC support.
+Message-ID: <20130306033114.GB12517@feng-snb>
+References: <1362450426-4232-1-git-send-email-feng.tang@intel.com>
+ <20130305035302.GA5239@feng-snb>
+ <20130305043203.GA26678@obsidianresearch.com>
+ <51358E17.8000106@linaro.org>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: "Kirill A. Shutemov" <kirill@shutemov.name>,
-        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>
-Subject: [PATCH] cgroup: make cgrp->event_list_lock irqsafe
-Content-Type: text/plain; charset="GB2312"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51358E17.8000106@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-cgroup_event_wake() is called with hardirq-safe wqh->lock held, so
-the nested cgrp->event_list_lock should also be hardirq-safe.
+On Tue, Mar 05, 2013 at 02:17:59PM +0800, John Stultz wrote:
+> On 03/05/2013 12:32 PM, Jason Gunthorpe wrote:
+> >On Tue, Mar 05, 2013 at 11:53:02AM +0800, Feng Tang wrote:
+> >
+> >>>// Drops some small precision along the way but is simple..
+> >>>static inline u64 cyclecounter_cyc2ns_128(const struct cyclecounter *cc,
+> >>>                                           cycle_t cycles)
+> >>>{
+> >>>     u64 max = U64_MAX/cc->mult;
+> >>>     u64 num = cycles/max;
+> >>>     u64 result = num * ((max * cc->mult) >> cc->shift);
+> >>>     return result + cyclecounter_cyc2ns(cc, cycles - num*cc->mult);
+> >>>}
+> >
+> Probably want to use clocksource instead of cyclecounter, but I
+> think Jason's approach sounds ok. I might suggest that you initially
+> make the function static to the timekeeping code, just so we don't
+> get unexpected users.
 
-Fortunately I don't think the deadlock can happen in real life.
+Thought more about it, can we directly make clocksource_cyc2ns() cover
+the overflow case? Something like:
 
-Lockdep never complained, maybe because it never found wqh->lock was
-held in irq context?
-
-Signed-off-by: Li Zefan <lizefan@huawei.com>
----
- kernel/cgroup.c | 17 +++++++++--------
- 1 file changed, 9 insertions(+), 8 deletions(-)
-
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 7a6c4c7..e72c44e 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -3845,9 +3845,10 @@ static int cgroup_event_wake(wait_queue_t *wait, unsigned mode,
- 	struct cgroup_event *event = container_of(wait,
- 			struct cgroup_event, wait);
- 	struct cgroup *cgrp = event->cgrp;
--	unsigned long flags = (unsigned long)key;
-+	unsigned long poll_flags = (unsigned long)key;
-+	unsigned long flags;
- 
--	if (flags & POLLHUP) {
-+	if (poll_flags & POLLHUP) {
- 		/*
- 		 * If the event has been detached at cgroup removal, we
- 		 * can simply return knowing the other side will cleanup
-@@ -3857,7 +3858,7 @@ static int cgroup_event_wake(wait_queue_t *wait, unsigned mode,
- 		 * side will require wqh->lock via remove_wait_queue(),
- 		 * which we hold.
- 		 */
--		spin_lock(&cgrp->event_list_lock);
-+		spin_lock_irqsave(&cgrp->event_list_lock, flags);
- 		if (!list_empty(&event->list)) {
- 			list_del_init(&event->list);
- 			/*
-@@ -3866,7 +3867,7 @@ static int cgroup_event_wake(wait_queue_t *wait, unsigned mode,
- 			 */
- 			schedule_work(&event->remove);
- 		}
--		spin_unlock(&cgrp->event_list_lock);
-+		spin_unlock_irqrestore(&cgrp->event_list_lock, flags);
- 	}
- 
- 	return 0;
-@@ -3981,9 +3982,9 @@ static int cgroup_write_event_control(struct cgroup *cgrp, struct cftype *cft,
- 	 */
- 	dget(cgrp->dentry);
- 
--	spin_lock(&cgrp->event_list_lock);
-+	spin_lock_irq(&cgrp->event_list_lock);
- 	list_add(&event->list, &cgrp->event_list);
--	spin_unlock(&cgrp->event_list_lock);
-+	spin_unlock_irq(&cgrp->event_list_lock);
- 
- 	fput(cfile);
- 	fput(efile);
-@@ -4406,12 +4407,12 @@ static int cgroup_destroy_locked(struct cgroup *cgrp)
- 	 * Notify userspace about cgroup removing only after rmdir of cgroup
- 	 * directory to avoid race between userspace and kernelspace.
- 	 */
--	spin_lock(&cgrp->event_list_lock);
-+	spin_lock_irq(&cgrp->event_list_lock);
- 	list_for_each_entry_safe(event, tmp, &cgrp->event_list, list) {
- 		list_del_init(&event->list);
- 		schedule_work(&event->remove);
- 	}
--	spin_unlock(&cgrp->event_list_lock);
-+	spin_unlock_irq(&cgrp->event_list_lock);
- 
- 	return 0;
+diff --git a/include/linux/clocksource.h b/include/linux/clocksource.h
+index aa7032c..1ecc872 100644
+--- a/include/linux/clocksource.h
++++ b/include/linux/clocksource.h
+@@ -274,7 +274,16 @@ static inline u32 clocksource_hz2mult(u32 hz, u32 shift_constant)
+  */
+ static inline s64 clocksource_cyc2ns(cycle_t cycles, u32 mult, u32 shift)
+ {
+-	return ((u64) cycles * mult) >> shift;
++	u64 max = ULLONG_MAX / mult;
++	s64 nsec = 0;
++
++	/* The (mult * cycles) may overflow 64 bits, so add a max check */
++	if (cycles > max) {
++		nsec = ((max * mult) >> shift) * (cycles / max);
++		cycles %= max;
++	}
++	nsec += ((u64) cycles * mult) >> shift;
++	return nsec;
  }
--- 
-1.8.0.2
+
+Thanks,
+Feng
+ 
+ 
+
