@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754043Ab3CFQPj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 11:15:39 -0500
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:33407 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753809Ab3CFQP2 (ORCPT
+	id S1753980Ab3CFQPg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 11:15:36 -0500
+Received: from mail-ia0-f172.google.com ([209.85.210.172]:59233 "EHLO
+	mail-ia0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753181Ab3CFQPX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 11:15:28 -0500
+	Wed, 6 Mar 2013 11:15:23 -0500
 From: Matt Porter <mporter@ti.com>
 To: Tony Lindgren <tony@atomide.com>, Sekhar Nori <nsekhar@ti.com>,
         Grant Likely <grant.likely@secretlab.ca>,
@@ -27,9 +27,9 @@ Cc: Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
         Linux SPI Devel List 
 	<spi-devel-general@lists.sourceforge.net>,
         Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH v9 5/9] dmaengine: edma: Add TI EDMA device tree binding
-Date: Wed,  6 Mar 2013 11:15:35 -0500
-Message-Id: <1362586540-10393-6-git-send-email-mporter@ti.com>
+Subject: [PATCH v9 4/9] dmaengine: edma: enable build for AM33XX
+Date: Wed,  6 Mar 2013 11:15:34 -0500
+Message-Id: <1362586540-10393-5-git-send-email-mporter@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1362586540-10393-1-git-send-email-mporter@ti.com>
 References: <1362586540-10393-1-git-send-email-mporter@ti.com>
@@ -37,70 +37,26 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The binding definition is based on the generic DMA controller
-binding.
+Enable TI EDMA option on OMAP.
 
 Signed-off-by: Matt Porter <mporter@ti.com>
 ---
- Documentation/devicetree/bindings/dma/ti-edma.txt |   49 +++++++++++++++++++++
- 1 file changed, 49 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/dma/ti-edma.txt
+ drivers/dma/Kconfig |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/Documentation/devicetree/bindings/dma/ti-edma.txt b/Documentation/devicetree/bindings/dma/ti-edma.txt
-new file mode 100644
-index 0000000..075a60e3
---- /dev/null
-+++ b/Documentation/devicetree/bindings/dma/ti-edma.txt
-@@ -0,0 +1,49 @@
-+TI EDMA
-+
-+Required properties:
-+- compatible : "ti,edma3"
-+- ti,hwmods: Name of the hwmods associated to the EDMA
-+- ti,edma-regions: Number of regions
-+- ti,edma-slots: Number of slots
-+- ti,edma-queue-tc-map: List of transfer control to queue mappings
-+- ti,edma-queue-priority-map: List of queue priority mappings
-+- ti,edma-default-queue: Default queue value
-+
-+Optional properties:
-+- ti,edma-reserved-channels: List of reserved channel regions
-+- ti,edma-reserved-slots: List of reserved slot regions
-+- ti,edma-xbar-event-map: Crossbar event to channel map
-+
-+Example:
-+
-+edma: edma@49000000 {
-+	reg = <0x49000000 0x10000>;
-+	interrupt-parent = <&intc>;
-+	interrupts = <12 13 14>;
-+	compatible = "ti,edma3";
-+	ti,hwmods = "tpcc", "tptc0", "tptc1", "tptc2";
-+	#dma-cells = <1>;
-+	dma-channels = <64>;
-+	ti,edma-regions = <4>;
-+	ti,edma-slots = <256>;
-+	ti,edma-reserved-channels = <0  2
-+				     14 2
-+				     26 6
-+				     48 4
-+				     56 8>;
-+	ti,edma-reserved-slots = <0  2
-+				  14 2
-+				  26 6
-+				  48 4
-+				  56 8
-+				  64 127>;
-+	ti,edma-queue-tc-map = <0 0
-+				1 1
-+				2 2>;
-+	ti,edma-queue-priority-map = <0 0
-+				      1 1
-+				      2 2>;
-+	ti,edma-default-queue = <0>;
-+	ti,edma-xbar-event-map = <1 12
-+				  2 13>;
-+};
+diff --git a/drivers/dma/Kconfig b/drivers/dma/Kconfig
+index 80b6997..3b7ea20 100644
+--- a/drivers/dma/Kconfig
++++ b/drivers/dma/Kconfig
+@@ -222,7 +222,7 @@ config SIRF_DMA
+ 
+ config TI_EDMA
+ 	tristate "TI EDMA support"
+-	depends on ARCH_DAVINCI
++	depends on ARCH_DAVINCI || ARCH_OMAP
+ 	select DMA_ENGINE
+ 	select DMA_VIRTUAL_CHANNELS
+ 	default n
 -- 
 1.7.9.5
 
