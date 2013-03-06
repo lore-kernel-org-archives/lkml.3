@@ -1,120 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753407Ab3CFGzm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 01:55:42 -0500
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:41139 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752364Ab3CFGzj (ORCPT
+	id S1753365Ab3CFG6r (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 01:58:47 -0500
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:55880 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752353Ab3CFG6p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 01:55:39 -0500
-Message-ID: <5136E866.20008@gmail.com>
-Date: Wed, 06 Mar 2013 00:55:34 -0600
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Wed, 6 Mar 2013 01:58:45 -0500
+Message-ID: <5136E91C.3020700@gmail.com>
+Date: Wed, 06 Mar 2013 14:58:36 +0800
+From: Ric Mason <ric.masonn@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
 MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: Grant Likely <grant.likely@secretlab.ca>, Michal Marek <mmarek@suse.cz>,
-        Stephen Warren <swarren@nvidia.com>, linux-kbuild@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Hiroshi Doyu <hdoyu@nvidia.com>,
-        "arm@kernel.org" <arm@kernel.org>
-Subject: Re: [PATCH V2 REPOST] kbuild: create an "include chroot" for DT bindings
-References: <1362506797-21905-1-git-send-email-swarren@wwwdotorg.org>
-In-Reply-To: <1362506797-21905-1-git-send-email-swarren@wwwdotorg.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Hugh Dickins <hughd@google.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        Petr Holasek <pholasek@redhat.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Izik Eidus <izik.eidus@ravellosystems.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH 2/7] ksm: treat unstable nid like in stable tree
+References: <alpine.LNX.2.00.1302210013120.17843@eggly.anvils> <alpine.LNX.2.00.1302210019390.17843@eggly.anvils> <51271A7D.6020305@gmail.com> <alpine.LNX.2.00.1302221250440.6100@eggly.anvils> <51303CAB.3080406@gmail.com> <alpine.LNX.2.00.1303011139270.7398@eggly.anvils> <51315174.4020200@gmail.com> <alpine.LNX.2.00.1303011833490.23290@eggly.anvils> <5136ABEE.8000501@gmail.com> <alpine.LNX.2.00.1303052031320.29433@eggly.anvils>
+In-Reply-To: <alpine.LNX.2.00.1303052031320.29433@eggly.anvils>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/05/2013 12:06 PM, Stephen Warren wrote:
-> From: Stephen Warren <swarren@nvidia.com>
-> 
-> The recent dtc+cpp support allows header files and C pre-processor
-> defines/macros to be used when compiling device tree files. These
-> headers will typically define various constants that are part of the
-> device tree bindings.
-> 
-> The original patch which set up the dtc+cpp include path only considered
-> using those headers from device tree files. However, most are also
-> useful for kernel code which needs to interpret the device tree.
-> 
-> In both the DT files and the kernel, I'd like to include the DT-related
-> headers in the same way, for example, <dt-bindings/gpio/tegra-gpio.h>.
-> That will simplify any text which discusses the DT header locations.
-> 
-> Creating a <dt-bindings/> for kernel source to use is as simple as
-> placing files into include/dt-bindings/.
-> 
-> However, when compiling DT files, the include path should be restricted
-> so that only the dt-bindings path is available; arbitrary kernel headers
-> shouldn't be exposed. For this reason, create a specific include
-> directory for use by dtc+cpp, and symlink dt-bindings from there to the
-> actual location of include/dt-bindings/. For want of a better location,
-> place this "include chroot" into the existing dts/ directory.
-> 
-> arch/*/boot/dts/include/dt-bindings -> ../../../../../include/dt-bindings
-> 
-> Some headers used by device tree files may not be useful to the kernel;
-> they may be used simply to aid in constructing the DT file (e.g. macros
-> to create a node), but not define any information that the kernel needs
-> to share. These may be placed directly into arch/*/boot/dts/ along with
-> the DT files themselves.
-> 
-> Cc: Hiroshi Doyu <hdoyu@nvidia.com>
-> Acked-by: Michal Marek <mmarek@suse.cz>
-> Acked-by: Shawn Guo <shawn.guo@linaro.org>
-> Signed-off-by: Stephen Warren <swarren@nvidia.com>
-> ---
-> Grant, Rob,
-> 
-> This is a pre-requisite for people to convert their *.dts files to use
-> cpp, and hence is likely to be useful for a number of ARM subarch trees.
-> Perhaps this patch can be placed into a standalone topic branch in the
-> DT repo so we can all merge it. Assuming this patch is OK, I would also
-> repost the patches that create common headers defining IRQ, and GPIO
-> flags, which would place files into the new include/dt-bindings
-> directory.
+Hi Hugh,
+On 03/06/2013 01:05 PM, Hugh Dickins wrote:
+> On Wed, 6 Mar 2013, Ric Mason wrote:
+> [ I've deleted the context because that was about the unstable tree,
+>    and here you have moved to asking about a case in the stable tree. ]
+>> For the case of a ksm page is migrated to a different NUMA node and migrate
+>> its stable node to  the right tree and collide with an existing stable node.
+>> get_kpfn_nid(stable_node->kpfn) != NUMA(stable_node->nid) can capture nothing
+> That's not so: as I've pointed out before, ksm_migrate_page() updates
+> stable_node->kpfn for the new page on the new NUMA node; but it cannot
+> (get the right locking to) move the stable_node to its new tree at that time.
+>
+> It's moved out once ksmd notices that it's in the wrong NUMA node tree -
+> perhaps when one its rmap_items reaches the head of cmp_and_merge_page(),
+> or perhaps here in stable_tree_search() when it matches another page
+> coming in to cmp_and_merge_page().
+>
+> You may be concentrating on the case when that "another page" is a ksm
+> page migrated from a different NUMA node; and overlooking the case of
+> when the matching ksm page in this stable tree has itself been migrated.
+>
+>> since stable_node is the node in the right stable tree, nothing happen to it
+>> before this check. Did you intend to check get_kpfn_nid(page_node->kpfn) !=
+>> NUMA(page_node->nid) ?
+> Certainly not: page_node is usually NULL.  But I could have checked
 
-This looks fine to me. As all these will all be arm-soc branches with
-the dependency, it probably makes more sense for Arnd/Olof to apply this
-and create the branch for this single patch.
-
-Acked-by: Rob Herring <rob.herring@calxeda.com>
-
-Rob
-
-> 
-> v2:
-> * Leave arch/*/boot/dts in dtc include path, for any headers that are
->   only included by *.dts and don't need to be shared by the kernel.
-> * Fix pathname in commit description.
-> ---
->  arch/arm/boot/dts/include/dt-bindings |    1 +
->  scripts/Makefile.lib                  |    2 +-
->  2 files changed, 2 insertions(+), 1 deletion(-)
->  create mode 120000 arch/arm/boot/dts/include/dt-bindings
-> 
-> diff --git a/arch/arm/boot/dts/include/dt-bindings b/arch/arm/boot/dts/include/dt-bindings
-> new file mode 120000
-> index 0000000..08c00e4
-> --- /dev/null
-> +++ b/arch/arm/boot/dts/include/dt-bindings
-> @@ -0,0 +1 @@
-> +../../../../../include/dt-bindings
-> \ No newline at end of file
-> diff --git a/scripts/Makefile.lib b/scripts/Makefile.lib
-> index 07125e6..af35521 100644
-> --- a/scripts/Makefile.lib
-> +++ b/scripts/Makefile.lib
-> @@ -158,7 +158,7 @@ ld_flags       = $(LDFLAGS) $(ldflags-y)
->  
->  dtc_cpp_flags  = -Wp,-MD,$(depfile) -nostdinc                            \
->  		 -I$(srctree)/arch/$(SRCARCH)/boot/dts                   \
-> -		 -I$(srctree)/arch/$(SRCARCH)/include/dts                \
-> +		 -I$(srctree)/arch/$(SRCARCH)/boot/dts/include           \
->  		 -undef -D__DTS__
->  
->  # Finds the multi-part object the current object will be linked into
-> 
+Are you sure? list_del(&page_node->list) and DO_NUMA(page_node->nid = 
+nid) will trigger panic now.
+> get_kpfn_nid(stable_node->kpfn) != nid: I was duplicating the test
+> from cmp_and_merge_page(), but here we do have local variable nid.
+>
+> Hugh
 
