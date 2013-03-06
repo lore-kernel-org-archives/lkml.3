@@ -1,56 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754826Ab3CFNCM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 08:02:12 -0500
-Received: from mail.not-your-server.de ([78.46.182.243]:46095 "EHLO
-	mail.not-your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750798Ab3CFNCH (ORCPT
+	id S1755015Ab3CFNF7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 08:05:59 -0500
+Received: from www.linutronix.de ([62.245.132.108]:43078 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753521Ab3CFNF6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 08:02:07 -0500
-From: jlec@gentoo.org
-To: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Justin Lecher <jlec@gentoo.org>
-Subject: [PATCH 2/2] kconfig: optionally use pkg-config to detect ncurses libs
-Date: Wed,  6 Mar 2013 14:02:02 +0100
-Message-Id: <1362574922-4799-3-git-send-email-jlec@gentoo.org>
-X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <1362574922-4799-1-git-send-email-jlec@gentoo.org>
-References: <Use config scripts to detect ncurses libs for, menuconfig/nconfig dialogs>
- <1362574922-4799-1-git-send-email-jlec@gentoo.org>
+	Wed, 6 Mar 2013 08:05:58 -0500
+Date: Wed, 6 Mar 2013 14:05:52 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Simon Horman <horms@verge.net.au>
+cc: Magnus Damm <magnus.damm@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-sh@vger.kernel.org, benh@kernel.crashing.org,
+        grant.likely@secretlab.ca
+Subject: Re: [PATCH] irqchip: Renesas INTC External IRQ pin driver
+In-Reply-To: <20130306114622.GE6684@verge.net.au>
+Message-ID: <alpine.LFD.2.02.1303061405200.22263@ionos>
+References: <20130218142834.28739.39417.sendpatchset@w520> <20130306042304.GA2896@verge.net.au> <alpine.LFD.2.02.1303061058250.22263@ionos> <20130306114622.GE6684@verge.net.au>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Justin Lecher <jlec@gentoo.org>
+On Wed, 6 Mar 2013, Simon Horman wrote:
 
-When building ncurses with --with-termlib several symbols get moved from
-libncurses.so to libtinfo.so. Thus when linking with libncurses.so, one
-additionally needs to link with libtinfo.so.
+> On Wed, Mar 06, 2013 at 11:01:14AM +0100, Thomas Gleixner wrote:
+> > On Wed, 6 Mar 2013, Simon Horman wrote:
+> > > On Mon, Feb 18, 2013 at 11:28:34PM +0900, Magnus Damm wrote:
+> > > > The SoCs using this driver are currently mainly used
+> > > > together with regular platform devices so this driver
+> > > > allows configuration via platform data to support things
+> > > > like static interrupt base address. DT support will
+> > > > be added incrementally in the not so distant future.
+> > > 
+> > > Hi Thomas,
+> > > 
+> > > I'm wondering how you would like to handle merging this driver.
+> > > I can think of three options but I'm sure there are others.
+> > > 
+> > > * You can take the patches (there is a follow-up series) yourself.
+> > > * I can prepare a pull request for you
+> > > * I can prepare a pull request for arm-soc with the shmobile patches that
+> > >   enable the driver on the r8a7779 and sh73a0.
+> > > 
+> > > The last option is possibly the easiest.
+> > 
+> > Correct.
+> > 
+> > > But in that case I'd appreciate an Ack from you on this patch.
+> > 
+> > You want to pick the V2 series, which already has my blessing:
+> > 
+> >     https://lkml.org/lkml/2013/2/26/305
+> > 
+> > For merging it through arm-soc you have my ack now :)
+> 
+> Thanks, I have that.
+> 
+> It seems that V2 adds onto this patch rather than replaces it.
+> So could I also get an Ack for this patch too?
 
-The ncurses pkg-config module will be used to detect the necessary libs for
-linking. If not available the old way of directly specifying libs will be
-used.
+Ah,. right. V2 is an incremental fix for V1. Yes, please add my Ack.
 
-Signed-off-by: Justin Lecher <jlec@gentoo.org>
----
- scripts/kconfig/Makefile | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+Thanks,
 
-diff --git a/scripts/kconfig/Makefile b/scripts/kconfig/Makefile
-index 231b475..e76ae5d 100644
---- a/scripts/kconfig/Makefile
-+++ b/scripts/kconfig/Makefile
-@@ -219,7 +219,9 @@ HOSTCFLAGS_gconf.o	= `pkg-config --cflags gtk+-2.0 gmodule-2.0 libglade-2.0` \
+	tglx
  
- HOSTLOADLIBES_mconf   = $(shell $(CONFIG_SHELL) $(check-lxdialog) -ldflags $(HOSTCC))
- 
--HOSTLOADLIBES_nconf	= -lmenu -lpanel -lncurses
-+HOSTLOADLIBES_nconf	= $(shell \
-+				pkg-config --libs menu panel ncurses 2>/dev/null \
-+				|| echo "-lmenu -lpanel -ncurses"  )
- $(obj)/qconf.o: $(obj)/.tmp_qtcheck
- 
- ifeq ($(qconf-target),1)
--- 
-1.8.1.5
-
