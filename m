@@ -1,95 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753503Ab3CFDlT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 22:41:19 -0500
-Received: from mga11.intel.com ([192.55.52.93]:31733 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751215Ab3CFDlR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 22:41:17 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,791,1355126400"; 
-   d="scan'208";a="299745536"
-From: Youquan Song <youquan.song@intel.com>
-To: Jeff Garzik <jgarzik@pobox.com>, htejun@gmail.com, ming.lei@canonical.com,
-        sshtylyov@mvista.com, lpechacek@suse.cz, linux-ide@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: seth.heasley@intel.com, jlee@suse.com, james.d.ralston@intel.com,
-        stable@vger.kernel.org, Youquan Song <youquan.song@linux.intel.com>,
-        Youquan Song <youquan.song@intel.com>
-Subject: [PATCH v3] ata: Fix DVD not dectected at some Haswell platforms
-Date: Wed,  6 Mar 2013 10:49:05 -0500
-Message-Id: <1362584945-10202-1-git-send-email-youquan.song@intel.com>
-X-Mailer: git-send-email 1.6.4.2
+	id S1753520Ab3CFDrF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 22:47:05 -0500
+Received: from g5t0008.atlanta.hp.com ([15.192.0.45]:34012 "EHLO
+	g5t0008.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750780Ab3CFDrD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Mar 2013 22:47:03 -0500
+Message-ID: <5136BC33.5000608@hp.com>
+Date: Tue, 05 Mar 2013 22:46:59 -0500
+From: Waiman Long <Waiman.Long@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120601 Thunderbird/10.0.5
+MIME-Version: 1.0
+To: Rik van Riel <riel@redhat.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Emmanuel Benisty <benisty.e@gmail.com>,
+        "Vinod, Chegu" <chegu_vinod@hp.com>, "Low, Jason" <jason.low2@hp.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>, aquini@redhat.com,
+        Michel Lespinasse <walken@google.com>, Ingo Molnar <mingo@kernel.org>,
+        Larry Woodman <lwoodman@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH v2 0/4] ipc: reduce ipc lock contention
+References: <1362476149.2225.50.camel@buesod1.americas.hpqcorp.net> <513626E9.2040509@redhat.com> <51364AB9.80206@hp.com> <CA+55aFwYOUyG_DQUqVPrQNi_a=AUwS53U-Yi6jbvJTGRxQ_aEQ@mail.gmail.com> <51365B66.5010905@redhat.com>
+In-Reply-To: <51365B66.5010905@redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is a quirk patch 5e5a4f5d5a08c9c504fe956391ac3dae2c66556d 
-"ata_piix: make DVD Drive recognisable on systems with Intel Sandybridge
- chipsets(v2)" fixing the 4 ports IDE controller 32bit PIO mode. 
+On 03/05/2013 03:53 PM, Rik van Riel wrote:
+> On 03/05/2013 03:52 PM, Linus Torvalds wrote:
+>> On Tue, Mar 5, 2013 at 11:42 AM, Waiman Long <Waiman.Long@hp.com> wrote:
+>>>
+>>> The recommended kernel.sem value from Oracle is "250 32000 100 128". 
+>>> I have
+>>> tried to reduce the maximum semaphores per array (1st value) while
+>>> increasing the max number of arrays. That tends to reduce the ipc_lock
+>>> contention in kernel, but it is against Oracle's recommendation.
+>>
+>> Ok, the Oracle recommendations seem to be assuming that we'd be
+>> scaling the semaphore locking sanely, which we don't. Since we share
+>> one single lock for all semaphores in the whole array, Oracle's
+>> recommendation does the wrong thing for our ipc_lock contention.
+>
+>> David's patch should make it much easier to do the locking more
+>> fine-grained, and it sounds like Rik is actively working on that,
+>
+> Indeed.  Though how well my patches will work with Oracle will
+> depend a lot on what kind of semctl syscalls they are doing.
+>
+> Does Oracle typically do one semop per semctl syscall, or does
+> it pass in a whole bunch at once?
+>
 
-We've hit a problem with DVD not recognized on Haswell Desktop platform which
-includes Lynx Point 2-port SATA controller.
+i had collected a strace log of Oracle instance startup a while ago. In 
+the log, almost all of the semctl() call is to set a single semaphore 
+value in one of the element of the array using SETVAL. Also there are 
+far more semtimedop() than semctl(), about 100:1. Again, all the 
+semtimedop() operations are on a single element of the semaphore array.
 
-This quirk patch disables 32bit PIO on this controller in IDE mode.
+Please note that the behavior of Oracle at startup time may not be 
+indicative of what it will do when running benchmarks like Swingbench. 
+However, I don't think there will be dramatic change in behavior.
 
-v2: Change spelling error in statememnt pointed by Sergei Shtylyov.
-v3: Change comment statememnt and spliting line over 80 characters pointed by
-    Libor Pechacek and also rebase the patch against 3.8-rc7 kernel.
-
-Tested-by: Lee, Chun-Yi <jlee@suse.com>
-Signed-off-by: Youquan Song <youquan.song@intel.com>
-Cc: stable@vger.kernel.org
----
- drivers/ata/ata_piix.c |   14 +++++++++++++-
- 1 files changed, 13 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/ata/ata_piix.c b/drivers/ata/ata_piix.c
-index 174eca6..4aab550 100644
---- a/drivers/ata/ata_piix.c
-+++ b/drivers/ata/ata_piix.c
-@@ -150,6 +150,7 @@ enum piix_controller_ids {
- 	tolapai_sata,
- 	piix_pata_vmw,			/* PIIX4 for VMware, spurious DMA_ERR */
- 	ich8_sata_snb,
-+	ich8_2port_sata_snb,
- };
- 
- struct piix_map_db {
-@@ -304,7 +305,7 @@ static const struct pci_device_id piix_pci_tbl[] = {
- 	/* SATA Controller IDE (Lynx Point) */
- 	{ 0x8086, 0x8c01, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_sata_snb },
- 	/* SATA Controller IDE (Lynx Point) */
--	{ 0x8086, 0x8c08, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
-+	{ 0x8086, 0x8c08, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata_snb },
- 	/* SATA Controller IDE (Lynx Point) */
- 	{ 0x8086, 0x8c09, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
- 	/* SATA Controller IDE (Lynx Point-LP) */
-@@ -422,6 +423,7 @@ static const struct piix_map_db *piix_map_db_table[] = {
- 	[ich8m_apple_sata]	= &ich8m_apple_map_db,
- 	[tolapai_sata]		= &tolapai_map_db,
- 	[ich8_sata_snb]		= &ich8_map_db,
-+	[ich8_2port_sata_snb]	= &ich8_2port_map_db,
- };
- 
- static struct pci_bits piix_enable_bits[] = {
-@@ -1225,6 +1227,16 @@ static struct ata_port_info piix_port_info[] = {
- 		.udma_mask	= ATA_UDMA6,
- 		.port_ops	= &piix_sata_ops,
- 	},
-+
-+	[ich8_2port_sata_snb] =
-+	{
-+		.flags		= PIIX_SATA_FLAGS | PIIX_FLAG_SIDPR
-+					| PIIX_FLAG_PIO16,
-+		.pio_mask	= ATA_PIO4,
-+		.mwdma_mask	= ATA_MWDMA2,
-+		.udma_mask	= ATA_UDMA6,
-+		.port_ops	= &piix_sata_ops,
-+	},
- };
- 
- #define AHCI_PCI_BAR 5
--- 
-1.7.7.4
-
+-Longman
