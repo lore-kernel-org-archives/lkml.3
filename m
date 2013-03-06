@@ -1,146 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753526Ab3CFGhq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 01:37:46 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:37522 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752536Ab3CFGhn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753409Ab3CFGhn (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 6 Mar 2013 01:37:43 -0500
-X-AuditID: cbfee68d-b7f636d0000009be-cf-5136e42a3f1c
-Date: Wed, 06 Mar 2013 06:37:30 +0000 (GMT)
-From: Jingoo Han <jg1.han@samsung.com>
-Subject: Re: [PATCH v3] rtc: add devm_rtc_device_{register,unregister}()
-To: Venu Byravarasu <vbyravarasu@nvidia.com>
-Cc: "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "'Tejun Heo'" <tj@kernel.org>, "'Greg KH'" <greg@kroah.com>,
-        Jingoo Han <jg1.han@samsung.com>,
-        "'Alessandro Zummo'" <a.zummo@towertech.it>,
-        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>
-Reply-to: jg1.han@samsung.com
-MIME-version: 1.0
-X-MTR: 20130306063639922@jg1.han
-Msgkey: 20130306063639922@jg1.han
-X-EPLocale: en_US.euc-kr
-X-Priority: 3
-X-EPWebmail-Msg-Type: personal
-X-EPWebmail-Reply-Demand: 0
-X-EPApproval-Locale: 
-X-EPHeader: ML
-X-EPTrCode: 
-X-EPTrName: 
-X-MLAttribute: 
-X-RootMTR: 20130306063639922@jg1.han
-X-ParentMTR: 
-X-ArchiveUser: EV
-X-CPGSPASS: Y
-Content-type: text/plain; charset=euc-kr
-MIME-version: 1.0
-Message-id: <29641598.418931362551849471.JavaMail.weblogic@epml07>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrCJsWRmVeSWpSXmKPExsVy+t8zA12tJ2aBBssbNC0u75rD5sDo8XmT
-	XABjVAOjTWJRckZmWapCal5yfkpmXrqtUmiIm66FkkJGfnGJrVK0kYGxnpGpiZ6RibmepUGs
-	lZGpkkJeYm6qrVKFLlSvkkJRcgFQbW5lMdCAnFQ9qLhecWpeikNWfinIJXrFibnFpXnpesn5
-	uUoKZYk5pUAjlPQTpjJmfH2/irngkWTF1E8nWBoYOyS7GDk5hASUJCad3MsIYksImEi8n/2f
-	CcIWk7hwbz1bFyMXUM0yRoml8xewwBT9O7WKGSIxn1Hi85zVYAkWARWJVy/es4PYbALqEhN+
-	N4PFhQU8JA6e6wDbICKgJ7Ho5SkWkGZmgaNMEofXHWOFOENW4t7k2cwgNq+AoMTJmU+gtilI
-	nDv6hBEiriixZMsaqFMlJO7c388KYfNKzGh/ClUvJzHt6xpmCFta4vysDYww7yz+/hgqzi9x
-	7PYOoDc5wHqf3A+GGbN78xc2CFtAYuqZg4wQJaoSx48JQ4T5JNYsfAu1SVDi9LVuZpjWho2/
-	wV5nBrpySvdDKFtL4suPfWzovuIVcJI48OUm4wRG5VlIUrOQtM9C0o6sZgEjyypG0dSC5ILi
-	pPQiQ+TY3sQISYS9OxhvH7A+xLifERgnE5mlRJPzgak0ryTe0NjYxMzE1MTc0tTclAJhcyNT
-	A2BSNTCkjrCSOK/cJZlAIYH0xJLU7NTUgtSi+KLSnNTiQ4xMHJxSDYzLpkaq1IcGPDiUmNR9
-	Uuh/UpPE77Ve/1fxtbgHf3ntvPjBNWe/a1928Kf+FbtXsnYWj+YcxzNqigcCmvbNLH4SdvXL
-	j+2POQ/8izmy8FXV8ai+hTtuLf5ZonQ8zU4o7/LkCuu1D06nhj2ftLGg00DgkHOhaKWSuvyz
-	zLaIVXfMbTY7Z5foXpBSYinOSDTUYi4qTgQAMmQc/vcDAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpik+LIzCtJLcpLzFFi42I5/e/2DF2tJ2aBBgt2qVhc3jWHzYHR4/Mm
-	uQDGqAybjNTElNQihdS85PyUzLx0WyXv4HjneFMzA0NdQ0sLcyWFvMTcVFslF58AXbfMHKCh
-	SgpliTmlQKGAxOJiJX07m6L80pJUhYz84hJbpWgjA2M9I1MTPSNjAz1jy1grQwMDI1OgqoSM
-	jK/vVzEXPJKsmPrpBEsDY4dkFyMnh5CAksSkk3sZQWwJAROJf6dWMUPYYhIX7q1n62LkAqqZ
-	zyjxec5qFpAEi4CKxKsX79lBbDYBdYkJv5vB4sICHhIHz3WADRIR0JNY9PIUC0gzs8BRJonD
-	646xQmyTlbg3eTbYBl4BQYmTM5+wQGxTkDh39AkjRFxRYsmWNVAXSUjcub+fFcLmlZjR/hSq
-	Xk5i2tc1UJdKS5yftYER5urF3x9Dxfkljt3ewdTFyAHW++R+MMyY3Zu/sEHYAhJTzxxkhChR
-	lTh+TBgizCexZuFbqE2CEqevdTPDtDZs/A32OjPQlVO6H0LZWhJffuxjQ/cVr4CTxIEvNxkn
-	MMrNQpKahaR9FpJ2ZDULGFlWMYqmFiQXFCelVxjqFSfmFpfmpesl5+duYgSnqGcLdzB+OW99
-	iFGAg1GJh9dCySxQiDWxrLgy9xCjBAezkggv1xmgEG9KYmVValF+fFFpTmrxIcZkYAROZJYS
-	Tc4Hps+8knhDY2MTMxNTcwMLA0tz0oSVxHmPm6sHCgmkJ5akZqemFqQWwWxh4uCUamD04z0r
-	8CF8tcr52QUeaQJPGzObLovl1V6P22AyUef9+YVLrMurj3OLlGh5We46p5BdcyTnJ0fesgN2
-	b23E5/3ZqLHfenqienbCL6+3Nx+H5svc7Y/+4fChy/NB76EkDfH/uq3205m+u7w5qOPyQ6rA
-	oprbqvGdyOrn3RIs6pndtZ9mJc0M/KXEUpyRaKjFXFScCAB79qg3lQMAAA==
-DLP-Filter: Pass
-X-CFilter-Loop: Reflected
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:59265 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750753Ab3CFGhk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Mar 2013 01:37:40 -0500
+X-AuditID: 9c930197-b7cc2ae000000eb7-26-5136e432199c
+Date: Wed, 6 Mar 2013 15:37:38 +0900
+From: Kyungsik Lee <kyungsik.lee@lge.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-kbuild@vger.kernel.org, x86@kernel.org,
+        celinux-dev@lists.celinuxforum.org, Nicolas Pitre <nico@fluxnic.net>,
+        David Sterba <dsterba@suse.cz>, Nitin Gupta <nitingupta910@gmail.com>,
+        Joe Millenbach <jmillenbach@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Michal Marek <mmarek@suse.cz>,
+        hyojun.im@lge.com, chan.jeong@lge.com, raphael.andy.lee@gmail.com
+Subject: Re: [PATCH v3 -next 4/5] x86: Add support for LZ4-compressed kernel
+Message-ID: <20130306063738.GB4979@Corona>
+References: <1362484056-9778-1-git-send-email-kyungsik.lee@lge.com>
+ <1362484056-9778-5-git-send-email-kyungsik.lee@lge.com>
+ <18eb6ca7-6993-40e9-a58d-116e1f6c37f6@email.android.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <18eb6ca7-6993-40e9-a58d-116e1f6c37f6@email.android.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r266bmZc011939
 
-On Wednesday, March 06, 2013 3:19 PM, Venu Byravarasu wrote:
-> On Wednesday, March 06, 2013 11:43 AM, Jingoo Han wrote:
+On Tue, Mar 05, 2013 at 08:13:38AM -0800, H. Peter Anvin wrote:
+> Please add the new magic to Documentation/x86/boot.txt as well.
+
+Ok, I will update it as soon as the patch set is stabilized.
+
+Thanks,
+Kyungsik
+
+> >This patch integrates the LZ4 decompression code to the x86 pre-boot
+> >code.
+> >And it depends on two patchs below
 > >
-> > On Wednesday, March 06, 2013 3:03 PM, Venu Byravarasu wrote:
-> > >
-> > > > --- a/drivers/rtc/class.c
-> > > > +++ b/drivers/rtc/class.c
-> > >
-> > > > +/**
-> > > > + * devm_rtc_device_register - resource managed rtc_device_register()
-> > > > + * @name: the name of the device
-> > > > + * @dev: the device to register
-> > > > + * @ops: the rtc operations structure
-> > > > + * @owner: the module owner
-> > > > + *
-> > > > + * @return a struct rtc on success, or an ERR_PTR on error
-> > > > + *
-> > > > + * Managed rtc_device_register(). The rtc_device returned from this
-> > > > function
-> > > > + * are automatically freed on driver detach. See rtc_device_register()
-> > > > + * for more information.
-> > > > + */
-> > > > +
-> > > > +struct rtc_device *devm_rtc_device_register(const char *name,
-> > > > +					struct device *dev,
-> > >
-> > > As most of devm_* functions use  " struct device *dev" as their first param,
-> > > why not this function also modified to be in sync with them?
+> >lib: Add support for LZ4-compressed kernel
+> >decompressor: Add LZ4 decompressor module
 > >
-> > Yes, but, I want to sync with the form of rtc_device_register().
-> > This function already uses 'struct device *dev' as second argument as below.
+> >Signed-off-by: Kyungsik Lee <kyungsik.lee@lge.com>
+> >---
+> > arch/x86/Kconfig                  | 1 +
+> > arch/x86/boot/compressed/Makefile | 5 ++++-
+> > arch/x86/boot/compressed/misc.c   | 4 ++++
+> > 3 files changed, 9 insertions(+), 1 deletion(-)
 > >
+> >diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+> >index 225543b..ab916fd 100644
+> >--- a/arch/x86/Kconfig
+> >+++ b/arch/x86/Kconfig
+> >@@ -63,6 +63,7 @@ config X86
+> > 	select HAVE_KERNEL_LZMA
+> > 	select HAVE_KERNEL_XZ
+> > 	select HAVE_KERNEL_LZO
+> >+	select HAVE_KERNEL_LZ4
+> > 	select HAVE_HW_BREAKPOINT
+> > 	select HAVE_MIXED_BREAKPOINTS_REGS
+> > 	select PERF_EVENTS
+> >diff --git a/arch/x86/boot/compressed/Makefile
+> >b/arch/x86/boot/compressed/Makefile
+> >index 8a84501..c275db5 100644
+> >--- a/arch/x86/boot/compressed/Makefile
+> >+++ b/arch/x86/boot/compressed/Makefile
+> >@@ -4,7 +4,7 @@
+> > # create a compressed vmlinux image from the original vmlinux
+> > #
+> > 
+> >-targets := vmlinux.lds vmlinux vmlinux.bin vmlinux.bin.gz
+> >vmlinux.bin.bz2 vmlinux.bin.lzma vmlinux.bin.xz vmlinux.bin.lzo
+> >head_$(BITS).o misc.o string.o cmdline.o early_serial_console.o piggy.o
+> >+targets := vmlinux.lds vmlinux vmlinux.bin vmlinux.bin.gz
+> >vmlinux.bin.bz2 vmlinux.bin.lzma vmlinux.bin.xz vmlinux.bin.lzo
+> >vmlinux.bin.lz4 head_$(BITS).o misc.o string.o cmdline.o
+> >early_serial_console.o piggy.o
+> > 
+> > KBUILD_CFLAGS := -m$(BITS) -D__KERNEL__ $(LINUX_INCLUDE) -O2
+> > KBUILD_CFLAGS += -fno-strict-aliasing -fPIC
+> >@@ -64,12 +64,15 @@ $(obj)/vmlinux.bin.xz: $(vmlinux.bin.all-y) FORCE
+> > 	$(call if_changed,xzkern)
+> > $(obj)/vmlinux.bin.lzo: $(vmlinux.bin.all-y) FORCE
+> > 	$(call if_changed,lzo)
+> >+$(obj)/vmlinux.bin.lz4: $(vmlinux.bin.all-y) FORCE
+> >+	$(call if_changed,lz4)
+> > 
+> > suffix-$(CONFIG_KERNEL_GZIP)	:= gz
+> > suffix-$(CONFIG_KERNEL_BZIP2)	:= bz2
+> > suffix-$(CONFIG_KERNEL_LZMA)	:= lzma
+> > suffix-$(CONFIG_KERNEL_XZ)	:= xz
+> > suffix-$(CONFIG_KERNEL_LZO) 	:= lzo
+> >+suffix-$(CONFIG_KERNEL_LZ4) 	:= lz4
+> > 
+> > quiet_cmd_mkpiggy = MKPIGGY $@
+> >       cmd_mkpiggy = $(obj)/mkpiggy $< > $@ || ( rm -f $@ ; false )
+> >diff --git a/arch/x86/boot/compressed/misc.c
+> >b/arch/x86/boot/compressed/misc.c
+> >index 88f7ff6..166a0a8 100644
+> >--- a/arch/x86/boot/compressed/misc.c
+> >+++ b/arch/x86/boot/compressed/misc.c
+> >@@ -145,6 +145,10 @@ static int lines, cols;
+> > #include "../../../../lib/decompress_unlzo.c"
+> > #endif
+> > 
+> >+#ifdef CONFIG_KERNEL_LZ4
+> >+#include "../../../../lib/decompress_unlz4.c"
+> >+#endif
+> >+
+> > static void scroll(void)
+> > {
+> > 	int i;
 > 
-> IMO any kernel driver developer using devm_* API, expects struct device* as first argument.
-> Breaking this policy for one module (RTC here) & making this API special, might not be a good idea.
-> Anyhow, maintainers may add their comments on this.
-
-OK, I see.
-
-I just look at other devm_* API. All devm_* APIs use 'struct device*'
-as first argument.
-
-To prevent the confusion, I will send the patch that uses
-'struct device*' as first argument as below.
-
- struct rtc_device *devm_rtc_device_register(struct device *dev,
-                                         const char *name,
-
-Thanks for your comment
-
-Best regards,
-Jingoo Han
-
-> 
-> Thanks,
-> Venu
-> 
-> >  struct rtc_device *rtc_device_register(const char *name, struct device *dev,
-> >                                          const struct rtc_class_ops *ops,
-> >                                          struct module *owner)
-> >
-> > Best regards,
-> > Jingoo Han
-> >
-> > >
-> > > > +					const struct rtc_class_ops *ops,
-> > > > +					struct module *owner)
-> > > > +{
-> > > > +	struct rtc_device **ptr, *rtc;
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+> -- 
+> Sent from my mobile phone. Please excuse brevity and lack of formatting.
