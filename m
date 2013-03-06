@@ -1,57 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753595Ab3CFRhj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 12:37:39 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:45714 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752642Ab3CFRhh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 12:37:37 -0500
-Message-ID: <51377ED7.1060800@zytor.com>
-Date: Wed, 06 Mar 2013 09:37:27 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130219 Thunderbird/17.0.3
+	id S1753509Ab3CFRhi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 12:37:38 -0500
+Received: from mail-vb0-f47.google.com ([209.85.212.47]:48461 "EHLO
+	mail-vb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752794Ab3CFRhg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Mar 2013 12:37:36 -0500
 MIME-Version: 1.0
-To: Josh Boyer <jwboyer@gmail.com>
-CC: Yinghai Lu <yinghai@kernel.org>, Robin Holt <holt@sgi.com>, hpa@sgi.com,
-        linux-kernel@vger.kernel.org, pjones@redhat.com
-Subject: Re: Revert commit 5dcd14ecd4 - breaks EFI boot with SLES11 elilo.efi
-References: <20130228205206.GC3438@sgi.com> <512FC697.3090608@zytor.com> <20130228210910.GD3438@sgi.com> <512FC82B.40909@zytor.com> <CAE9FiQU3FBwEiC86N1RC8=aMdN09EbUmRcsWP0yof7bmxBhPew@mail.gmail.com> <512FE3AE.4070903@zytor.com> <20130305081519.GA19165@sgi.com> <9bcd6241-37fd-4ae9-a997-2a5da1eaf997@email.android.com> <CAE9FiQV2Wk+yiqR8FnNM_L-p1iQFxDwopRzFWTwm6VCkyrbuoQ@mail.gmail.com> <CA+5PVA4VRa7z10APcEaoebX3vwtbLzDLq1PAHmfaHBDqtZv=jw@mail.gmail.com> <51377C3A.3030301@zytor.com> <CA+5PVA51-FT14p4CRYKbicykugVb=PiaEycdQ57CK2km_OQuRQ@mail.gmail.com>
-In-Reply-To: <CA+5PVA51-FT14p4CRYKbicykugVb=PiaEycdQ57CK2km_OQuRQ@mail.gmail.com>
-X-Enigmail-Version: 1.5.1
+In-Reply-To: <31680.1362588189@warthog.procyon.org.uk>
+References: <31680.1362588189@warthog.procyon.org.uk>
+Date: Wed, 6 Mar 2013 09:37:35 -0800
+X-Google-Sender-Auth: wTaYY6NcD386kQsGmPZKItFPnLo
+Message-ID: <CA+55aFw5aqVCpsSAyy5VFhk4UwgBxKpOikVz-AC3kLJsxe0Ygw@mail.gmail.com>
+Subject: Re: Byteorder conditional compilation problems
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: David Howells <dhowells@redhat.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Joakim.Tjernlund@transmode.se,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/06/2013 09:36 AM, Josh Boyer wrote:
-> 
-> Something like this?
-> 
-> Index: linux-2.6/arch/x86/include/asm/bootparam_utils.h
-> ===================================================================
-> --- linux-2.6.orig/arch/x86/include/asm/bootparam_utils.h
-> +++ linux-2.6/arch/x86/include/asm/bootparam_utils.h
-> @@ -20,8 +20,11 @@ static void sanitize_boot_params(struct
->  	if (boot_params->sentinel) {
->  		/*fields in boot_params are not valid, clear them */
->  		memset(&boot_params->olpc_ofw_header, 0,
-> -		       (char *)&boot_params->alt_mem_k -
-> +		       (char *)&boot_params->efi_info -
->  			(char *)&boot_params->olpc_ofw_header);
->  		memset(&boot_params->kbd_status, 0,
->  		       (char *)&boot_params->hdr -
->  		       (char *)&boot_params->kbd_status);
-> 
-> I can try that in a bit.
-> 
+On Wed, Mar 6, 2013 at 8:43 AM, David Howells <dhowells@redhat.com> wrote:
+>
+> Scripting a change from "defined(__XXX_ENDIAN)" to "(__XXX_ENDIAN==__BYTEORDER)"
+> should be easy to script.
 
-Right.
+How about we just make the rule be that we shouldn't test __xyz_ENDIAN
+at all, and instead always use CONFIG_xyz_ENDIAN, which isn't
+ambiguous. And then have the exporter of the uapi header files just
+sed-script that into __xyz_ENDIAN == __BYTEORDER.
 
-	-hpa
+The whole __xyz_ENDIAN == __BYTE_ORDER syntax is moronic, and the
+standard under BSD seems to be single-underscore "_BYTE_ORDER", while
+glibc uses double underscore __BYTE_ORDER. The whole thing is a
+f*cking mess, and I really don't want to get the idiotic mess into the
+kernel any more than I have to.
 
+In fact, I'd prefer to let it just be. Changing it in the kernel to
+the idiotic and non-standard user mode format is pointless. Just fix
+up the (few) entries in the uapi header files.
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+                  Linus
