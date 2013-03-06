@@ -1,109 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753355Ab3CFHKs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 02:10:48 -0500
-Received: from moutng.kundenserver.de ([212.227.126.187]:54131 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751270Ab3CFHKr (ORCPT
+	id S1753526Ab3CFHNw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 02:13:52 -0500
+Received: from g1t0028.austin.hp.com ([15.216.28.35]:29581 "EHLO
+	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752519Ab3CFHNv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 02:10:47 -0500
-Date: Wed, 6 Mar 2013 08:10:40 +0100
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Alex Courbot <acourbot@nvidia.com>
-Cc: Stephen Warren <swarren@wwwdotorg.org>, Andrew Chew <AChew@nvidia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/1 v3] pwm_bl: Add support for backlight enable regulator
-Message-ID: <20130306071040.GC2436@avionic-0098.mockup.avionic-design.de>
-References: <1362527485-8611-1-git-send-email-achew@nvidia.com>
- <5136A781.2050303@nvidia.com>
- <5136C423.3070400@wwwdotorg.org>
- <5136CC88.6080200@nvidia.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="yLVHuoLXiP9kZBkt"
-Content-Disposition: inline
-In-Reply-To: <5136CC88.6080200@nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:F+mxAZyq93PCsZaY1Rs1wYt+oySqyzBaX32gK4Br9R2
- MXBzeyOSdlNF7yz20HudUFUKzHzp9WP3rBnTkivjdy0mpJAUVg
- HptkMocVmCS97DXHhIBnVxicpvCpaFiAe07dUJ4UDq4eJ8HUn1
- 09liD6Mf6MwDvT11VB3Iit7FHo/Xrdu7SBHRDMdIOqyEpJL38g
- iZp++XTJGMdXjJnowiI2pwxI+mL/WlmJoB0wFBDQC/jPUzHkvo
- Ui1cVcZxr4N0+yo2EFXPu5c3ovPnXkC2k4M2cZLQPm2r/9D+Uw
- fqJ6UBQMWziLwQTT7Rql3Vm4mHKuuLUPZEG8IDheI7ysRuNTng
- A9gBPfpUPsLVyf7RqrLQYhNgA0AZDaOzOMpbtAjEf/fhglT/dQ
- 3f3Nb0TZiCfURObwNwKj999oxVCNAoKVjU=
+	Wed, 6 Mar 2013 02:13:51 -0500
+Message-ID: <1362554012.7242.9.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH v2 0/4] ipc: reduce ipc lock contention
+From: Davidlohr Bueso <davidlohr.bueso@hp.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Rik van Riel <riel@redhat.com>, Emmanuel Benisty <benisty.e@gmail.com>,
+        "Vinod, Chegu" <chegu_vinod@hp.com>, "Low, Jason" <jason.low2@hp.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>, aquini@redhat.com,
+        Michel Lespinasse <walken@google.com>, Ingo Molnar <mingo@kernel.org>,
+        Larry Woodman <lwoodman@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Date: Tue, 05 Mar 2013 23:13:32 -0800
+In-Reply-To: <CA+55aFx5pAsC9Ej2h9mniEU89oD=1mq6iPA+R2MBX-z74J0B5Q@mail.gmail.com>
+References: <1362476149.2225.50.camel@buesod1.americas.hpqcorp.net>
+	 <CA+55aFx5pAsC9Ej2h9mniEU89oD=1mq6iPA+R2MBX-z74J0B5Q@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---yLVHuoLXiP9kZBkt
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-On Wed, Mar 06, 2013 at 01:56:40PM +0900, Alex Courbot wrote:
-> On 03/06/2013 01:20 PM, Stephen Warren wrote:
-> >On 03/05/2013 07:18 PM, Alex Courbot wrote:
-> >>On 03/06/2013 08:51 AM, Andrew Chew wrote:
-> >>>The backlight enable regulator is specified in the device tree node for
-> >>>backlight.
+On Tue, 2013-03-05 at 07:40 -0800, Linus Torvalds wrote:
+> On Tue, Mar 5, 2013 at 1:35 AM, Davidlohr Bueso <davidlohr.bueso@hp.com> wrote:
 > >
-> >>>diff --git a/include/linux/pwm_backlight.h
-> >
-> >>>   struct platform_pwm_backlight_data {
-> >>>       int pwm_id;
-> >>>+    struct regulator *en_supply;
-> >>
-> >>You should not have this here. Platform data is supposed to provide the
-> >>necessary information for the driver to resolve the resource - not the
-> >>resource itself.
-> >...
-> >>There is one catch though: in case you don't want to use a regulator,
-> >>and thus have none defined, regulator_get() will return -EPROBE_DEFER,
-> >>so you cannot distinguish between "no regulator needed" and "supplier
-> >>not ready yet" and your driver will always *require* a regulator. So at
-> >>the end of the day you might still need a "use_enable_regulator" in the
-> >>platform data to explicitly ask for probe() to look for it. This
-> >>variable would also be set by parse_dt() if the "enable-supply" property
-> >>exists.
-> >
-> >A driver that requires a regulator always requires that regulator. If a
-> >particular board doesn't have SW control over the power source, you're
-> >supposed to provide a dummy (fixed) regulator so that the driver doesn't
-> >care about the difference.
->=20
-> That's good to know, thanks. So does this mean that Andrew should
-> make the enable regulator mandatory and update current users to
-> provide a dummy one?
+> > The following set of patches are based on the discussion of holding the
+> > ipc lock unnecessarily, such as for permissions and security checks:
+> 
+> Ok, looks fine from a quick look (but then, so did your previous patch-set ;)
+> 
+> You still open-code the spinlock in at least a few places (I saw
+> sem_getref), but I still don't care deeply.
+> 
+> >> 2) While on an Oracle swingbench DSS (data mining) workload the
+> > improvements are not as exciting as with Rik's benchmark, we can see
+> > some positive numbers. For an 8 socket machine the following are the
+> > percentages of %sys time incurred in the ipc lock:
+> 
+> Ok, I hoped for it being more noticeable. Since that benchmark is less
+> trivial than Rik's, can you do a perf record -fg of it and give a more
+> complete picture of what the kernel footprint is - and in particular
+> who now gets that ipc lock function? Is it purely semtimedop, or what?
+> Look out for inlining - ipc_rcu_getref() looks like it would be
+> inlined, for example.
+> 
+> It would be good to get a "top twenty kernel functions" from the
+> profile, along with some call data on where the lock callers are.. I
+> know that Rik's benchmark *only* had that one call-site, I'm wondering
+> if the swingbench one has slightly more complex behavior...
 
-That would be the right thing to do. I was planning to move all users of
-pwm-backlight to use PWM lookup tables as well at some point (in order
-to get rid of the legacy pwm_request() calls), so maybe we can do both
-in one go.
+For a 400 user workload (the kernel functions remain basically the same
+for any amount of users):
 
-Thierry
+    17.86%           oracle  [kernel.kallsyms]   [k] _raw_spin_lock                             
+     8.46%          swapper  [kernel.kallsyms]   [k] intel_idle                                 
+     5.51%           oracle  [kernel.kallsyms]   [k] try_atomic_semop                           
+     5.05%           oracle  [kernel.kallsyms]   [k] update_sd_lb_stats                         
+     2.81%           oracle  [kernel.kallsyms]   [k] tg_load_down                               
+     2.41%          swapper  [kernel.kallsyms]   [k] update_blocked_averages                    
+     2.38%           oracle  [kernel.kallsyms]   [k] idle_cpu                                   
+     2.37%          swapper  [kernel.kallsyms]   [k] native_write_msr_safe                      
+     2.28%           oracle  [kernel.kallsyms]   [k] update_cfs_rq_blocked_load                 
+     1.84%           oracle  [kernel.kallsyms]   [k] update_blocked_averages                    
+     1.79%           oracle  [kernel.kallsyms]   [k] update_queue                               
+     1.73%          swapper  [kernel.kallsyms]   [k] update_cfs_rq_blocked_load                 
+     1.29%           oracle  [kernel.kallsyms]   [k] native_write_msr_safe                      
+     1.07%             java  [kernel.kallsyms]   [k] update_sd_lb_stats                         
+     0.91%          swapper  [kernel.kallsyms]   [k] poll_idle                                  
+     0.86%           oracle  [kernel.kallsyms]   [k] try_to_wake_up                             
+     0.80%             java  [kernel.kallsyms]   [k] tg_load_down                               
+     0.72%           oracle  [kernel.kallsyms]   [k] load_balance                               
+     0.67%           oracle  [kernel.kallsyms]   [k] __schedule                                 
+     0.67%           oracle  [kernel.kallsyms]   [k] cpumask_next_and                           
 
---yLVHuoLXiP9kZBkt
-Content-Type: application/pgp-signature
+Digging into the _raw_spin_lock call:
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
+ 17.86%           oracle  [kernel.kallsyms]   [k] _raw_spin_lock                            
+                     |
+                     --- _raw_spin_lock
+                        |          
+                        |--49.55%-- sys_semtimedop
+                        |          |          
+                        |          |--77.41%-- system_call
+                        |          |          semtimedop
+                        |          |          skgpwwait
+                        |          |          ksliwat
+                        |          |          kslwaitctx
 
-iQIcBAEBAgAGBQJRNuvwAAoJEN0jrNd/PrOhj1EP/jHq9gEaXOQBD5Vc/MbBabU/
-mlDCBLHtpvs+DhPnSIlHRvbhmdhgpCbtAFDZLBoKURxYp2dVE+/cOMH1sW2WKv+2
-M8mr2xe8OXvjZ1QBpERNuyhS/h0UJvCu3+HbhmOcXzLPDVc6YlYK4SpoIz5Rm+m+
-WWKeTihbyhcsLdCXgxYr0IjRpV4oKrRvmoYumoLoBi85mYp+9cnkBg7U9top0q3D
-Sk0F5WrpixaY39C3i847Odthr86N8foSaxcOsTb20uLRIoDttOq/LrdhQ8SsZ740
-UBhoxrfF18ogZvHfYMRaNhjnTjuBJYkjXz2xn3NdCCV52pcx4vpaQ5XmVALLH2LX
-Hv3721v87E9ja/qvHRJEqanDTgx3IFnArYtA0GilrxC5kTVF0hL0DYToNVYpGtDk
-yC0+UtO0GI5PNLC2i4AtIOahoc3sOZCNX2IJLvXwL+5dXgU7GDtDSjXV8IrWoPqj
-XqBvyAQgn0nDrWAlI93/1N9jDKhm+ibVZk5t1doYpZxd4yUlpvocgiK/33WjbH2F
-orbg8ILvIZ9spNGAw/qvvrFVvv3iKA8lyZTGIxpcwBVFwlv9UdG5r4hRufIoMFTJ
-Tam7oFrwqzRh0SxPOo3eTGpJscE5T4OyI53O1QTb+Xdvh44z9RggnngAGU35Mhr8
-bLgRUBR4OqGEY5mrPh5w
-=Swot
------END PGP SIGNATURE-----
 
---yLVHuoLXiP9kZBkt--
+Thanks,
+Davidlohr
+
+
