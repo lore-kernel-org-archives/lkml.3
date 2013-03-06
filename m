@@ -1,60 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753478Ab3CFCoI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 21:44:08 -0500
-Received: from g4t0015.houston.hp.com ([15.201.24.18]:14700 "EHLO
-	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750827Ab3CFCoB (ORCPT
+	id S1753349Ab3CFCsa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 21:48:30 -0500
+Received: from mail-lb0-f171.google.com ([209.85.217.171]:58721 "EHLO
+	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751176Ab3CFCs3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 21:44:01 -0500
-From: "Li, Zhen-Hua" <zhen-hual@hp.com>
-To: <linux-kernel@vger.kernel.org>, Joerg Roedel <joro@8bytes.org>,
-        Ingo Molnar <mingo@kernel.org>, Donald Dutile <ddutile@redhat.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Hannes Reinecke <hare@suse.de>
-Cc: "Li, Zhen-Hua" <zhen-hual@hp.com>
-Subject: [PATCH 1/1] iommu: add a dma remap fault reason.
-Date: Wed,  6 Mar 2013 10:43:17 +0800
-Message-Id: <1362537797-6034-1-git-send-email-zhen-hual@hp.com>
-X-Mailer: git-send-email 1.7.10.4
+	Tue, 5 Mar 2013 21:48:29 -0500
+MIME-Version: 1.0
+In-Reply-To: <874ngpj3d9.fsf@meteor.durcheinandertal.bofh>
+References: <874ngpj3d9.fsf@meteor.durcheinandertal.bofh>
+Date: Wed, 6 Mar 2013 10:48:25 +0800
+Message-ID: <CAJtEV7Zyq3+YPu9Vvcxcm8nw41-ENjLuRHUzyFFzXQn-wiSf1w@mail.gmail.com>
+Subject: Re: Marvell 88NV9143 in mini-PCIe not working with intel_iommu=on
+From: Andrew Cooks <acooks@gmail.com>
+To: Gaudenz Steinlin <gaudenz@soziologie.ch>
+Cc: jyli@marvell.com,
+        "open list:INTEL IOMMU (VT-d)" <iommu@lists.linux-foundation.org>,
+        open list <linux-kernel@vger.kernel.org>, Shun Fu <fushun@marvell.com>,
+        Alex Williamson <alex.williamson@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The number of dma fault reasons in intel's document are from 1 to 0xD, but in dmar.c I cannot find fault reason 0xD.
+On Tue, Mar 5, 2013 at 11:03 PM, Gaudenz Steinlin <gaudenz@soziologie.ch> wrote:
+>
+> [ Sending this to the MVUMI driver authors and the IOMMU list as I can't
+> tell which part is at fault. ]
+>
+> [ ... ]
+> [    4.342079] dmar: DRHD: handling fault status reg 2
+> [    4.342132] dmar: DMAR:[DMA Read] Request device [02:00.0] fault addr fffff000
+> [    4.342132] DMAR:[fault reason 02] Present bit in context entry is clear
+> [ ... ]
+> [   34.344078] mvumi 0000:02:00.1: no handshake response at state 0x2.
+> [   34.344115] mvumi 0000:02:00.1: isr : global=0x0,status=0x0.
+> [   34.344146] mvumi 0000:02:00.1: handshake failed at state 0x2.
+> [   34.344266] mvumi: probe of 0000:02:00.1 failed with error -22
+>
 
-In this document:
-Intel Virtualization Technology for Directed I/O Architecture Specification
-http://download.intel.com/technology/computing/vptech/Intel(r)_VT_for_Direct_IO.pdf
+Looks like another Marvell DMA source tag issue.
 
-Chapter 4. Support For Device-IOTLBs
+> And the full lspic output for this device:
+>
+> gaudenz@meteor:~$ sudo lspci -vv -nnq -s 02:
+> 02:00.0 Mass storage controller [01ff]: Marvell Technology Group Ltd. Device [1b4b:91f3]
+>         Subsystem: Marvell Technology Group Ltd. Device [1b4b:9143]
+> ...
+>         Capabilities: [140 v1] Virtual Channel
+>                 Caps:   LPEVC=0 RefClk=100ns PATEntryBits=1
+>                 Arb:    Fixed- WRR32- WRR64- WRR128-
+>                 Ctrl:   ArbSelect=Fixed
+>                 Status: InProgress-
+>                 VC0:    Caps:   PATOffset=00 MaxTimeSlots=1 RejSnoopTrans-
+>                         Arb:    Fixed- WRR32- WRR64- WRR128- TWRR128- WRR256-
+>                         Ctrl:   Enable+ ID=0 ArbSelect=Fixed TC/VC=01
+>                         Status: NegoPending- InProgress-
+>
+> 02:00.1 Mass storage controller [0180]: Marvell Technology Group Ltd. Device [1b4b:9143] (rev 10)
+>         Subsystem: Marvell Technology Group Ltd. Device [1b4b:9143]
+> ...
+>         Kernel driver in use: mvumi
+>
+> 02:00.2 Non-Volatile memory controller [0108]: Marvell Technology Group Ltd. Device [1b4b:91e3] (prog-if 01)
+>         Subsystem: Marvell Technology Group Ltd. Device [1b4b:9143]
+>...
 
-Table 6. Unsuccessful Translated Requests
+In this case it seems like a multifunction device with 02:00.1 being
+the only function that the mvumi driver cares about.  So my guess is
+that 02:00.1 is issuing DMA with the incorrect tag of 02:00.0.
 
-There is fault reason for 0xD not listed in kernel:
-    Present context-entry used to process translation request
-    specifies blocking of Translation Requests (Translation Type (T)
-    field value not equal to 01b).
-
-So I think 0xD should be added.
-
-Signed-off-by: Li, Zhen-Hua <zhen-hual@hp.com>
----
- drivers/iommu/dmar.c |    1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/drivers/iommu/dmar.c b/drivers/iommu/dmar.c
-index dc7e478..e5cdaf8 100644
---- a/drivers/iommu/dmar.c
-+++ b/drivers/iommu/dmar.c
-@@ -1083,6 +1083,7 @@ static const char *dma_remap_fault_reasons[] =
- 	"non-zero reserved fields in RTP",
- 	"non-zero reserved fields in CTP",
- 	"non-zero reserved fields in PTE",
-+	"PCE for translation request specifies blocking",
- };
- 
- static const char *irq_remap_fault_reasons[] =
--- 
-1.7.10.4
-
+Perhaps Alex Williamson can tell us about iommu device groups, whether
+it would be possible to group the functions together automatically and
+whether that would solve the problem. It should also be possible to
+adapt the quirk patch I posted recently to handle this, but I'm still
+waiting to hear if that patch has a future.
