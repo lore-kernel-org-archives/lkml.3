@@ -1,86 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758222Ab3CFOJo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 09:09:44 -0500
-Received: from www.linutronix.de ([62.245.132.108]:43405 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758071Ab3CFOJn (ORCPT
+	id S1758164Ab3CFOLM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 09:11:12 -0500
+Received: from mail.free-electrons.com ([94.23.35.102]:53901 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757408Ab3CFOLI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 09:09:43 -0500
-Date: Wed, 6 Mar 2013 15:09:26 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Feng Tang <feng.tang@intel.com>
-cc: John Stultz <john.stultz@linaro.org>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>, x86@kernel.org,
-        Len Brown <lenb@kernel.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        linux-kernel@vger.kernel.org, gong.chen@linux.intel.com
-Subject: Re: [PATCH v3 4/5] clocksource: Enable clocksource_cyc2ns() to cover
- big cycles
-In-Reply-To: <1362554271-22382-5-git-send-email-feng.tang@intel.com>
-Message-ID: <alpine.LFD.2.02.1303061451340.22263@ionos>
-References: <1362554271-22382-1-git-send-email-feng.tang@intel.com> <1362554271-22382-5-git-send-email-feng.tang@intel.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Wed, 6 Mar 2013 09:11:08 -0500
+Message-ID: <51374E79.9050408@free-electrons.com>
+Date: Wed, 06 Mar 2013 15:11:05 +0100
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-usb@vger.kernel.org, Peter Chen <peter.chen@freescale.com>
+Subject: Re: v3.9-rc1: swapper/0 [ INFO: possible circular locking dependency
+ detected ]
+References: <51371B5E.1000508@free-electrons.com> <CAB7JpEHJdKeOhkME-6mMdPY6VyTQwFvM33+gxg4X9ZpQv1=6RQ@mail.gmail.com>
+In-Reply-To: <CAB7JpEHJdKeOhkME-6mMdPY6VyTQwFvM33+gxg4X9ZpQv1=6RQ@mail.gmail.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 6 Mar 2013, Feng Tang wrote:
+Hi Alexander,
 
-> Current clocksource_cyc2ns() has a implicit limit that the (cycles * mult)
-> can not exceed 64 bits limit. Jason Gunthorpe proposed a way to
-> handle this big cycles case, and this patch put the handling into
-> clocksource_cyc2ns() so that it could be used unconditionally.
+Thanks for your reply.
 
-Could be used if it wouldn't break the world and some more.
-
-> Suggested-by: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-> Signed-off-by: Feng Tang <feng.tang@intel.com>
-> ---
->  include/linux/clocksource.h |   11 ++++++++++-
->  1 file changed, 10 insertions(+), 1 deletion(-)
+Le 06/03/2013 14:43, Alexander Shishkin a écrit :
+> On 6 March 2013 12:33, Maxime Ripard 
+> <maxime.ripard@free-electrons.com> wrote:
+>> Just noticed this in 3.9-rc1 on an iMX28 (ARM) board with a config
+>>  based on mxs_defconfig. I'm using the patchset "Add tested id 
+>> switch and vbus connect detect support for Chipidea" from Peter 
+>> Chen in its 10th version [1], rebased on top of 3.9-rc1, but since 
+>> this doesn't modify the locks present in the udc_irq function, I 
+>> think the problem is elsewhere.
 > 
-> diff --git a/include/linux/clocksource.h b/include/linux/clocksource.h
-> index aa7032c..1ecc872 100644
-> --- a/include/linux/clocksource.h
-> +++ b/include/linux/clocksource.h
-> @@ -274,7 +274,16 @@ static inline u32 clocksource_hz2mult(u32 hz, u32 shift_constant)
->   */
->  static inline s64 clocksource_cyc2ns(cycle_t cycles, u32 mult, u32 shift)
->  {
-> -	return ((u64) cycles * mult) >> shift;
-> +	u64 max = ULLONG_MAX / mult;
+> From a quick look at the current chipidea code, I don't see any place
+> where we might try to take cdev->lock under ci->lock. I should have a
+> better look at Peter's patchset to see if it can trigger that.
 
-This breaks everything which does not have a 64/32bit divide
-instruction. And you can't replace it with do_div() as that would
-impose massive overhead on those architectures in the fast path.
+And from a quick git blame on top of Peter patches, it seems like
+udc_irq has been left untouched by his patches.
 
-The max value can be precalculated and stored in the timekeeper
-struct. We really do not want expensive calculations in the fast path.
+> Peter, have you seen anything like that with your code? Is this easy
+>  to trigger (I would assume it is)?
 
-> +	s64 nsec = 0;
-> +
-> +	/* The (mult * cycles) may overflow 64 bits, so add a max check */
-> +	if (cycles > max) {
-> +		nsec = ((max * mult) >> shift) * (cycles / max);
+Quite easy yes, just plug a usb cable in gadget mode.
 
-This breaks everything which does not have a 64/64bit divide instruction.
- 
-> +		cycles %= max;
+> Can you post the contents of "events" debug file in sysfs?
 
-Ditto.
+http://code.bulix.org/64liql-83101
 
-As this is the slow path on resume you can use the 64bit functions
-declared in math64.h. And you want to put the slow path out of line.
 
-There is a world outside of x86!
-
-Thanks,
-
-	tglx
+-- 
+Maxime Ripard, Free Electrons
+Kernel, drivers, real-time and embedded Linux
+development, consulting, training and support.
+http://free-electrons.com
