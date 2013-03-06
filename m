@@ -1,108 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755426Ab3CFIgg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 03:36:36 -0500
-Received: from mga01.intel.com ([192.55.52.88]:42625 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752591Ab3CFIge (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 03:36:34 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,793,1355126400"; 
-   d="scan'208";a="295725478"
-From: Jani Nikula <jani.nikula@linux.intel.com>
-To: Daniel Vetter <daniel.vetter@ffwll.ch>, Benson Leung <bleung@chromium.org>
-Cc: intel-gfx <intel-gfx@lists.freedesktop.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        dri-devel@lists.freedesktop.org, Olof Johansson <olofj@chromium.org>,
-        Yufeng Shen <miletus@chromium.org>
-Subject: Re: v3.9-rc1 instability on Chromebook Pixel with gmbus irq
-In-Reply-To: <CAKMK7uEAzXG91GgmYhyeTLP3-Ahi9O+YD=A42xTLMBvf=20sgA@mail.gmail.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-References: <CANLzEkvN1uGsS9WnN3OTntSXJw+Ut2z2Eqyn7etQwDSyOdxhKg@mail.gmail.com> <CAKMK7uEAzXG91GgmYhyeTLP3-Ahi9O+YD=A42xTLMBvf=20sgA@mail.gmail.com>
-User-Agent: Notmuch/0.15.1+22~g943ed44 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
-Date: Wed, 06 Mar 2013 10:37:03 +0200
-Message-ID: <87y5e0vs9c.fsf@intel.com>
+	id S1755312Ab3CFIhr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 03:37:47 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:1487 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751452Ab3CFIhq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Mar 2013 03:37:46 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Wed, 06 Mar 2013 00:31:45 -0800
+Message-ID: <51370056.3040508@nvidia.com>
+Date: Wed, 6 Mar 2013 17:37:42 +0900
+From: Alex Courbot <acourbot@nvidia.com>
+Organization: NVIDIA
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Thierry Reding <thierry.reding@avionic-design.de>
+CC: Andrew Chew <AChew@nvidia.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/1 v3] pwm_bl: Add support for backlight enable regulator
+References: <1362527485-8611-1-git-send-email-achew@nvidia.com> <5136A781.2050303@nvidia.com> <643E69AA4436674C8F39DCC2C05F7638629BFE1DB7@HQMAIL03.nvidia.com> <5136CBC7.3030803@nvidia.com> <20130306070019.GA2436@avionic-0098.mockup.avionic-design.de>
+In-Reply-To: <20130306070019.GA2436@avionic-0098.mockup.avionic-design.de>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 06 Mar 2013, Daniel Vetter <daniel.vetter@ffwll.ch> wrote:
-> On Wed, Mar 6, 2013 at 3:35 AM, Benson Leung <bleung@chromium.org> wrote:
->> I'm working on touch devices Chromium OS, and I've noticed a
->> regression between 3.8 and 3.9-rc1, which was posted yesterday.
->>
->> The hardware in question is a Chromebook Pixel. For this device, we
->> have i2c input devices: atmel mxt224s touchpad and atmel mxt1664s
->> touchscreen. The touchpad is on bus 1, "i915 gmbus vga" at 1-004b. The
->> touchscreen is on bus 2, "i915 gmbus panel" at 2-004a.
->>
->> I was testing v3.9-rc1 on the Pixel and the touchscreen driver is
->> being returned -110 (-ETIMEDOUT) on an i2c_transfer after several
->> seconds of both touch devices working correctly. At the time of the
->> failure, there are no error messages from GMBUS that I can see, but
->> the bus never recovers. I can keep interacting with the touchscreen or
->> touchpad, and the interrupts trigger reads, but all subsequent reads
->> return -110.
->>
->> I noticed that between 3.8 and 3.9-rc1, your patch series to add gmbus
->> irq support was merged. After bisecting, I found that this commit
->> seems to be causing the timeout problem. Reverting it makes the
->> problem go away, and the bus is stable.
+On 03/06/2013 04:00 PM, Thierry Reding wrote:
+> * PGP Signed by an unknown key
 >
-> Can you please retest with latest drm-intel-fixes merged into -rc1?
-> Paulo's patch fixes a race in handling PCH interrupts (where the gmbus
-> hw is) which matches rather well with your description here.
+> On Wed, Mar 06, 2013 at 01:53:27PM +0900, Alex Courbot wrote:
+>> On 03/06/2013 11:41 AM, Andrew Chew wrote:
+>>>>>    struct pwm_bl_data {
+>>>>>    	struct pwm_device	*pwm;
+>>>>>    	struct device		*dev;
+>>>>> +	struct regulator	*en_supply;
+>>>>> +	bool			en_supply_enabled;
+>>>>
+>>>> Couldn't you use regulator_is_enabled() and get rid of en_supply_enabled?
+>>>> It would also ensure the driver performs correctly no matter what the initial
+>>>> state of the regulator is.
+>>>
+>>> Are you sure this works?  I'm concerned about the (bizarre and unlikely) case
+>>> where this supply is shared with another driver, so I use en_supply_enabled
+>>> to track the state of the supply such that I can ignore that case.
+>>
+>> You're right, consumers can share regulators and the calls to
+>> enable/disable need to be balanced. Also there is no way to check
+>> the intensity of the backlight prior to the change to detect a
+>> transition, so I guess your approach is indeed the most appropriate
+>> here.
+>
+> I think the right thing to do here is just enable the regulator when
+> the pwm-backlight driver needs it. If it is shared with other devices
+> they'll have to do the same and the reference counting should only
+> disable the regulator when there are no users.
+ >
+> Tracking this via platform data won't work because platform data is
+> statically defined at compile time. So if indeed there was another user
+> of the regulator it enable/disable the regulator at any time and your
+> en_supply_enabled would be wrong.
 
-Also, some error paths only print with debug on. Did you try with
-drm.debug=0xe?
+Oh wait. I thought regulator_enable/disable calls needed to be balanced, 
+is that not the case? So every consumer receives a different regulator 
+handle in case of a shared regulator, which becomes disabled if all 
+handles are disabled? In that case yes, we won't have to bother about a 
+status variable here and balancing calls. Sorry for the confusion.
 
-BR,
-Jani.
+Alex.
 
-
->
-> Thanks, Daniel
->
->> commit 2c438c0273b76d6cb158f8bdd0aa3ebf66e48a28
->> Author: Daniel Vetter <daniel.vetter@ffwll.ch>
->> Date:   Sat Dec 1 13:53:46 2012 +0100
->>
->>     drm/i915: use gmbus irq to wait for gmbus idle
->>
->>     GMBUS_ACTIVE has inverted sense and so doesn't fit into the
->>     wait_hw_status helper, hence create a new gmbus_wait_idle functions.
->>     Also, we only care about the idle irq event and nothing else, which
->>     allows us to use the wait_event_timeout helper directly without
->>     jumping through hoops to catch NAKs.
->>
->>     Since gen2/3 don't have gmbus interrupts, handle them separately with
->>     the old wait_for macro.
->>
->>     This shaves another few ms off reading EDID from a hdmi screen on my
->>     testbox here. EDID reading with interrupt driven gmbus is now as fast
->>     as with busy-looping gmbus at 28 ms here (with negligible cpu
->>     overhead).
->>
->>     Reviewed-by: Imre Deak <imre.deak@intel.com>
->>     Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
->>
->>
->> Is there anything I can do to help debug this some more?
->>
->> --
->> Benson Leung
->> Software Engineer, Chrom* OS
->> bleung@chromium.org
->
->
->
-> -- 
-> Daniel Vetter
-> Software Engineer, Intel Corporation
-> +41 (0) 79 365 57 48 - http://blog.ffwll.ch
-> _______________________________________________
-> dri-devel mailing list
-> dri-devel@lists.freedesktop.org
-> http://lists.freedesktop.org/mailman/listinfo/dri-devel
