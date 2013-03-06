@@ -1,45 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757009Ab3CFXJu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 18:09:50 -0500
-Received: from mail-ob0-f179.google.com ([209.85.214.179]:63715 "EHLO
-	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753309Ab3CFXJs (ORCPT
+	id S1756800Ab3CFXKh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 18:10:37 -0500
+Received: from e35.co.us.ibm.com ([32.97.110.153]:40689 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754116Ab3CFXKg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 18:09:48 -0500
-MIME-Version: 1.0
-In-Reply-To: <20130306172517.GT17833@n2100.arm.linux.org.uk>
-References: <f20e3c5e822c4bd28a3b71264d73143cc1f850b0.1362458878.git.viresh.kumar@linaro.org>
-	<20130305105251.GL17833@n2100.arm.linux.org.uk>
-	<CAKohponef2XNN2i8Dn7aBnzcdJeCmuGrmN3HjaBUZvBHkNSLKQ@mail.gmail.com>
-	<20130306172517.GT17833@n2100.arm.linux.org.uk>
-Date: Thu, 7 Mar 2013 07:09:47 +0800
-Message-ID: <CAKohpo=CZFsj5jQ37rSNtb0A7jX3iZcTqShYwXbGCB=PSjJgeA@mail.gmail.com>
-Subject: Re: [PATCH] cpufreq: ARM big LITTLE: Add generic cpufreq driver and
- its DT glue
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: rjw@sisk.pl, Steve.Bannister@arm.com, linux-pm@vger.kernel.org,
-        Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>,
-        Liviu.Dudau@arm.com, linux-kernel@vger.kernel.org,
-        cpufreq@vger.kernel.org, robin.randhawa@arm.com,
-        linux-arm-kernel@lists.infradead.org, mark.hambleton@broadcom.com,
-        linaro-kernel@lists.linaro.org, charles.garcia-tobin@arm.com
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 6 Mar 2013 18:10:36 -0500
+Subject: [PATCH] do not try to sync identity map for non-mapped pages
+To: linux-kernel@vger.kernel.org
+Cc: bp@alien8.de, hpa@linux.intel.com, penguin-kernel@i-love.sakura.ne.jp,
+        Dave Hansen <dave@linux.vnet.ibm.com>
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+Date: Wed, 06 Mar 2013 15:10:09 -0800
+Message-Id: <20130306231009.D782087E@kernel.stglabs.ibm.com>
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13030623-4834-0000-0000-0000046418CE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7 March 2013 01:25, Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
-> On Wed, Mar 06, 2013 at 12:38:36AM +0800, Viresh Kumar wrote:
->> So how does below fix look to you?
->
-> Much better, but I think you want a better device name than just "clusterN".
 
-I will try to find some other name, maybe cpu-cluster (as what you suggested
-initially).
+kernel_map_sync_memtype() is called from a variety of contexts.  The
+pat.c code that calls it seems to ensure that it is not called for
+non-ram areas by checking via pat_pagerange_is_ram().  It is important
+that it only be called on the actual identity map because there *IS*
+no map to sync for highmem pages, or for memory holes.
 
-> Also, please get rid of that "default n" - n is the default default default
-> default default default.... there's no need to specify it. :)
+The ioremap.c uses are not as careful as those from pat.c, and call
+kernel_map_sync_memtype() on PCI space which is in the middle of the
+kernel identity map _range_, but is not actually mapped.
 
-Ok :)
+This patch adds a check to kernel_map_sync_memtype() which probably
+duplicates some of the checks already in pat.c.  But, it is necessary
+for the ioremap.c uses and shouldn't hurt other callers.
+
+I have reproduced this bug and this patch fixes it for me
+
+	https://lkml.org/lkml/2013/2/5/396
+
+Signed-off-by: Dave Hansen <dave@linux.vnet.ibm.com>
+---
+
+ linux-2.6.git-dave/arch/x86/mm/pat.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff -puN arch/x86/mm/pat.c~dont-flush-map-for-non-ram-pages arch/x86/mm/pat.c
+--- linux-2.6.git/arch/x86/mm/pat.c~dont-flush-map-for-non-ram-pages	2013-03-06 15:03:56.403628100 -0800
++++ linux-2.6.git-dave/arch/x86/mm/pat.c	2013-03-06 15:03:56.419628258 -0800
+@@ -563,6 +563,13 @@ int kernel_map_sync_memtype(u64 base, un
+ 	if (base > __pa(high_memory-1))
+ 		return 0;
+ 
++	/*
++	 * some areas in the middle of the kernel identity range
++	 * are not mapped, like the PCI space.
++	 */
++	if (!page_is_ram(base >> PAGE_SHIFT))
++		return 0;
++
+ 	id_sz = (__pa(high_memory-1) <= base + size) ?
+ 				__pa(high_memory) - base :
+ 				size;
+diff -puN arch/x86/mm/ioremap.c~dont-flush-map-for-non-ram-pages arch/x86/mm/ioremap.c
+_
+
