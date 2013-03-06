@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757776Ab3CFXYH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 18:24:07 -0500
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:54234 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757355Ab3CFXWD (ORCPT
+	id S1756726Ab3CFXV5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 18:21:57 -0500
+Received: from mail-da0-f41.google.com ([209.85.210.41]:57054 "EHLO
+	mail-da0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752898Ab3CFXV4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 18:22:03 -0500
+	Wed, 6 Mar 2013 18:21:56 -0500
 From: Michel Lespinasse <walken@google.com>
 To: Alex Shi <alex.shi@intel.com>, Ingo Molnar <mingo@kernel.org>,
         David Howells <dhowells@redhat.com>,
@@ -15,84 +15,101 @@ To: Alex Shi <alex.shi@intel.com>, Ingo Molnar <mingo@kernel.org>,
         Yuanhan Liu <yuanhan.liu@linux.intel.com>,
         Rik van Riel <riel@redhat.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
-Subject: [PATCH 04/12] rwsem: simplify rwsem_down_read_failed
-Date: Wed,  6 Mar 2013 15:21:43 -0800
-Message-Id: <1362612111-28673-5-git-send-email-walken@google.com>
+Subject: [PATCH 00/12] rwsem fast-path write lock stealing
+Date: Wed,  6 Mar 2013 15:21:39 -0800
+Message-Id: <1362612111-28673-1-git-send-email-walken@google.com>
 X-Mailer: git-send-email 1.8.1.3
-In-Reply-To: <1362612111-28673-1-git-send-email-walken@google.com>
-References: <1362612111-28673-1-git-send-email-walken@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When trying to acquire a read lock, the RWSEM_ACTIVE_READ_BIAS adjustment
-doesn't cause other readers to block, so we never have to worry about waking
-them back after canceling this adjustment in rwsem_down_read_failed().
+These patches extend Alex Shi's work (which added write lock stealing
+on the rwsem slow path) in order to provide rwsem write lock stealing
+on the fast path (that is, without taking the rwsem's wait_lock).
 
-We also never want to steal the lock in rwsem_down_read_failed(), so we
-don't have to grab the wait_lock either.
+I initially sent a shorter series shortly before v3.9, however some
+patches were doing too much at once which made them confusing to
+review. I have now split the series at a smaller granularity;
+hope this will help :)
 
-Signed-off-by: Michel Lespinasse <walken@google.com>
+Patches 1-2 are for cleanups:
 
----
- lib/rwsem.c | 22 ++--------------------
- 1 file changed, 2 insertions(+), 20 deletions(-)
+- Patch 1 replaces the waiter type bitmask with an enumeration
+  (as we don't have any other planned uses for the bitmap)
 
-diff --git a/lib/rwsem.c b/lib/rwsem.c
-index fb658af1c12c..66f307e90761 100644
---- a/lib/rwsem.c
-+++ b/lib/rwsem.c
-@@ -182,7 +182,6 @@ try_again_write:
-  */
- struct rw_semaphore __sched *rwsem_down_read_failed(struct rw_semaphore *sem)
- {
--	enum rwsem_waiter_type type = RWSEM_WAITING_FOR_READ;
- 	signed long adjustment = -RWSEM_ACTIVE_READ_BIAS;
- 	struct rwsem_waiter waiter;
- 	struct task_struct *tsk = current;
-@@ -190,7 +189,7 @@ struct rw_semaphore __sched *rwsem_down_read_failed(struct rw_semaphore *sem)
- 
- 	/* set up my own style of waitqueue */
- 	waiter.task = tsk;
--	waiter.type = type;
-+	waiter.type = RWSEM_WAITING_FOR_READ;
- 	get_task_struct(tsk);
- 
- 	raw_spin_lock_irq(&sem->wait_lock);
-@@ -201,17 +200,9 @@ struct rw_semaphore __sched *rwsem_down_read_failed(struct rw_semaphore *sem)
- 	/* we're now waiting on the lock, but no longer actively locking */
- 	count = rwsem_atomic_update(adjustment, sem);
- 
--	/* If there are no active locks, wake the front queued process(es) up.
--	 *
--	 * Alternatively, if we're called from a failed down_write(), there
--	 * were already threads queued before us and there are no active
--	 * writers, the lock must be read owned; so we try to wake any read
--	 * locks that were queued ahead of us. */
-+	/* If there are no active locks, wake the front queued process(es). */
- 	if (count == RWSEM_WAITING_BIAS)
- 		sem = __rwsem_do_wake(sem, RWSEM_WAKE_NO_ACTIVE);
--	else if (count > RWSEM_WAITING_BIAS &&
--		 adjustment == -RWSEM_ACTIVE_WRITE_BIAS)
--		sem = __rwsem_do_wake(sem, RWSEM_WAKE_READ_OWNED);
- 
- 	raw_spin_unlock_irq(&sem->wait_lock);
- 
-@@ -220,15 +211,6 @@ struct rw_semaphore __sched *rwsem_down_read_failed(struct rw_semaphore *sem)
- 		set_task_state(tsk, TASK_UNINTERRUPTIBLE);
- 		if (!waiter.task)
- 			break;
--
--		raw_spin_lock_irq(&sem->wait_lock);
--		/* Try to get the writer sem, may steal from the head writer: */
--		if (type == RWSEM_WAITING_FOR_WRITE)
--			if (try_get_writer_sem(sem, &waiter)) {
--				raw_spin_unlock_irq(&sem->wait_lock);
--				return sem;
--			}
--		raw_spin_unlock_irq(&sem->wait_lock);
- 		schedule();
- 	}
- 
+- Patch 2 shortens critical sections in rwsem_down_failed_common() so
+  they don't cover more than what is absolutely necessary
+
+Patches 3-5 splits rwsem_down_failed_common() into separate functions
+for the read and write sides:
+
+- Patch 3 simply puts two identical copies of rwsem_down_failed_common()
+  into rwsem_down_{read,write}_failed (no code changes, in order to
+  make the review easier)
+
+- Patch 4 does easy simplifications in rwsem_down_read_failed():
+  - We don't need to wake readers queued before us;
+  - We don't need to try to steal the lock, and thus we don't need to
+    acquire the wait_lock after sleeping.
+
+- Patch 5 does easy simplifications in rwsem_down_write_failed():
+  - We don't need to check for !waiter.task since __rwsem_do_wake()
+    doesn't remove writers from the wait_list;
+  - Since the only way to exit the wait loop is by stealing the write lock,
+    the corresponding exit code can be moved after the loop;
+  - There is no point releaseing the wait_lock before entering the
+    wait loop, as we will need to reacquire it immediately;
+  - We don't need to get a reference on the task structure, since the task
+    is responsible for removing itself from the wait_list;
+
+Patches 6-9 apply additional optimizations to rwsem_down_write_failed():
+
+- Patch 6 tries write lock stealing more aggressively in order to avoid
+  extra checks;
+
+- Patch 7 uses cmpxchg to implement the write lock stealing, instead of
+  doing an additive adjustment that might need to be backed out;
+
+- Patch 8 avoids taking the wait_lock if there are already active locks
+  when we wake up;
+
+- Patch 9 avoids the initial trylock if there were already active locks
+  when we entered rwsem_down_write_failed()
+
+Patches 10-11 wake all readers whenever the first waiter is a reader:
+
+- Patch 10 does this in rwsem-spinlock. This is both for symetry with
+  the other rwsem implementation, and because this should result in
+  increased parallelism for workloads that mix readers and writers.
+
+- Patch 11 does this in rwsem. This is partly for increased parallelism,
+  but the main reason is that it gets rid of a case where __rwsem_do_wake
+  assumed that the rwsem lock can't be stolen when it holds the wait_lock
+  and the rwsem count indicates there are queued waiters. This assumption
+  won't be true after patch 12, so we need to fix __rwsem_do_wake and it
+  turns out the easiest fix involves waking all readers.
+
+Patch 12 finally implements rwsem fast path lock stealing for x86 arch.
+
+Michel Lespinasse (12):
+  rwsem: make the waiter type an enumeration rather than a bitmask
+  rwsem: shorter spinlocked section in rwsem_down_failed_common()
+  rwsem: move rwsem_down_failed_common code into rwsem_down_{read,write}_failed
+  rwsem: simplify rwsem_down_read_failed
+  rwsem: simplify rwsem_down_write_failed
+  rwsem: more agressive lock stealing in rwsem_down_write_failed
+  rwsem: use cmpxchg for trying to steal write lock
+  rwsem: avoid taking wait_lock in rwsem_down_write_failed
+  rwsem: skip initial trylock in rwsem_down_write_failed
+  rwsem-spinlock: wake all readers when first waiter is a reader
+  rwsem: wake all readers when first waiter is a reader
+  x86 rwsem: avoid taking slow path when stealing write lock
+
+ arch/x86/include/asm/rwsem.h |  28 +++--
+ include/linux/rwsem.h        |   2 +
+ lib/rwsem-spinlock.c         |  54 ++++-----
+ lib/rwsem.c                  | 272 +++++++++++++++++++------------------------
+ 4 files changed, 166 insertions(+), 190 deletions(-)
+
 -- 
 1.8.1.3
