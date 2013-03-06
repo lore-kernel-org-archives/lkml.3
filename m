@@ -1,74 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753567Ab3CFCgy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 21:36:54 -0500
-Received: from trent.utfs.org ([94.185.90.103]:46449 "EHLO trent.utfs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751759Ab3CFCgx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 21:36:53 -0500
-Date: Tue, 5 Mar 2013 18:36:41 -0800 (PST)
-From: Christian Kujau <lists@nerdbynature.de>
-To: Shaohua Li <shli@kernel.org>, Fengguang Wu <fengguang.wu@intel.com>
-cc: LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
-Subject: INFO: trying to register non-static key.
-Message-ID: <alpine.DEB.2.10.1303051819280.22410@trent.utfs.org>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	id S1753658Ab3CFChn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 21:37:43 -0500
+Received: from mail-da0-f44.google.com ([209.85.210.44]:56394 "EHLO
+	mail-da0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750858Ab3CFChm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Mar 2013 21:37:42 -0500
+Message-ID: <5136ABEE.8000501@gmail.com>
+Date: Wed, 06 Mar 2013 10:37:34 +0800
+From: Ric Mason <ric.masonn@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-AV-Checked: ClamAV using ClamSMTP (127.0.0.1)
+To: Hugh Dickins <hughd@google.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        Petr Holasek <pholasek@redhat.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Izik Eidus <izik.eidus@ravellosystems.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH 2/7] ksm: treat unstable nid like in stable tree
+References: <alpine.LNX.2.00.1302210013120.17843@eggly.anvils> <alpine.LNX.2.00.1302210019390.17843@eggly.anvils> <51271A7D.6020305@gmail.com> <alpine.LNX.2.00.1302221250440.6100@eggly.anvils> <51303CAB.3080406@gmail.com> <alpine.LNX.2.00.1303011139270.7398@eggly.anvils> <51315174.4020200@gmail.com> <alpine.LNX.2.00.1303011833490.23290@eggly.anvils>
+In-Reply-To: <alpine.LNX.2.00.1303011833490.23290@eggly.anvils>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 03/02/2013 10:57 AM, Hugh Dickins wrote:
+> On Sat, 2 Mar 2013, Ric Mason wrote:
+>> On 03/02/2013 04:03 AM, Hugh Dickins wrote:
+>>> On Fri, 1 Mar 2013, Ric Mason wrote:
+>>>> I think the ksm implementation for num awareness  is buggy.
+>>> Sorry, I just don't understand your comments below,
+>>> but will try to answer or question them as best I can.
+>>>
+>>>> For page migratyion stuff, new page is allocated from node *which page is
+>>>> migrated to*.
+>>> Yes, by definition.
+>>>
+>>>> - when meeting a page from the wrong NUMA node in an unstable tree
+>>>>       get_kpfn_nid(page_to_pfn(page)) *==* page_to_nid(tree_page)
+>>> I thought you were writing of the wrong NUMA node case,
+>>> but now you emphasize "*==*", which means the right NUMA node.
+>> Yes, I mean the wrong NUMA node. During page migration, new page has already
+>> been allocated in new node and old page maybe freed.  So tree_page is the
+>> page in new node's unstable tree, page is also new node page, so
+>> get_kpfn_nid(page_to_pfn(page)) *==* page_to_nid(tree_page).
+> I don't understand; but here you seem to be describing a case where two
+> pages from the same NUMA node get merged (after both have been migrated
+> from another NUMA node?), and there's nothing wrong with that,
+> so I won't worry about it further.
 
-after upgrading from 3.8.0-rc7 to 3.9.0-rc1, the following message appears 
-after booting and after dm-crypt (LUKS) partitions are mounted and 
-exported via NFS:
+For the case of a ksm page is migrated to a different NUMA node and 
+migrate its stable node to  the right tree and collide with an existing 
+stable node. get_kpfn_nid(stable_node->kpfn) != NUMA(stable_node->nid) 
+can capture nothing since stable_node is the node in the right stable 
+tree, nothing happen to it before this check. Did you intend to check 
+get_kpfn_nid(page_node->kpfn) != NUMA(page_node->nid) ?
 
--------------------------------
-INFO: trying to register non-static key.
-the code is fine but needs lockdep annotation.
-turning off the locking correctness validator.
-Call Trace:
-[eecc3bd0] [c0008e98] show_stack+0x48/0x15c (unreliable)
-[eecc3c10] [c0071464] __lock_acquire+0x1734/0x18f4
-[eecc3cb0] [c0071a88] lock_acquire+0x50/0x6c
-[eecc3cd0] [c004aee8] flush_work+0x3c/0x26c
-[eecc3d40] [c004d318] __cancel_work_timer+0x98/0xf0
-[eecc3d70] [c04ecebc] xs_destroy+0x1c/0x78
-[eecc3d90] [c04ea2e4] xprt_destroy+0x60/0x74
-[eecc3da0] [c04e95d8] rpc_free_client+0x138/0x158
-[eecc3dc0] [c04e96b8] rpc_shutdown_client+0xc0/0xd4
-[eecc3e10] [c04f9834] rpcb_put_local+0x118/0x148
-[eecc3e30] [c04f39f0] svc_rpcb_cleanup+0x20/0x34
-[eecc3e40] [c017bfcc] nfsd_last_thread+0xf0/0x108
-[eecc3e60] [c04f3608] svc_shutdown_net+0x38/0x4c
-[eecc3e70] [c017c788] nfsd_destroy+0xe8/0x10c
-[eecc3e90] [c017c8a4] nfsd+0xf8/0x11c
-[eecc3eb0] [c0052298] kthread+0xa8/0xac
-[eecc3f40] [c00107d0] ret_from_kernel_thread+0x64/0x6c
--------------------------------
+>
+>>>>      - meeting a page which is ksm page before migration
+>>>>        get_kpfn_nid(stable_node->kpfn) != NUMA(stable_node->nid) can't
+>>>> capture
+>>>> them since stable_node is for tree page in current stable tree. They are
+>>>> always equal.
+>>> When we meet a ksm page in the stable tree before it's migrated to another
+>>> NUMA node, yes, it will be on the right NUMA node (because we were careful
+>>> only to merge pages from the right NUMA node there), and that test will not
+>>> capture them.  It's for capturng a ksm page in the stable tree after it has
+>>> been migrated to another NUMA node.
+>> ksm page migrated to another NUMA node still not freed, why? Who take page
+>> count of it?
+> The old page, the one which used to be a ksm page on the old NUMA node,
+> should be freed very soon: since it was isolated from lru, and its page
+> count checked, I cannot think of anything to hold a reference to it,
+> apart from migration itself - so it just needs to reach putback_lru_page(),
+> and then may rest awhile on __lru_cache_add()'s pagevec before being freed.
+>
+> But I don't see where I said the old page was still not freed.
+>
+>> If not  freed, since new page is allocated in new node, it is
+>> the copy of current ksm page, so current ksm doesn't change,
+>> get_kpfn_nid(stable_node->kpfn) *==* NUMA(stable_node->nid).
+> But ksm_migrate_page() did
+> 		VM_BUG_ON(stable_node->kpfn != page_to_pfn(oldpage));
+> 		stable_node->kpfn = page_to_pfn(newpage);
+> without changing stable_node->nid.
+>
+> Hugh
 
-This has been reported in January[0] and a bad commit has been singled 
-out:
-
-  > commit ec8acf20afb8534ed511f6613dd2226b9e301010
-  > Author: Shaohua Li <shli@kernel.org>
-  > Date:   Fri Feb 22 16:34:38 2013 -0800
-  > 
-  > swap: add per-partition lock for swapfile  
-
-However, git-revert'ing this commit did not help in my case (powerpc32, 
-uni processor). Please find full dmesg & .config here:
-
-  http://nerdbynature.de/bits/3.9.0-rc1/
-
-Thanks,
-Christian.
-
-[0] http://www.spinics.net/lists/linux-mm/msg50068.html
--- 
-BOFH excuse #63:
-
-not properly grounded, please bury computer
