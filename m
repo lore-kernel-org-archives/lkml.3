@@ -1,92 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754096Ab3CFFhO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 00:37:14 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:26466 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752840Ab3CFFhL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 00:37:11 -0500
-X-AuditID: cbfee68d-b7f636d0000009be-83-5136d606282e
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Andrew Morton'" <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, "'Alessandro Zummo'" <a.zummo@towertech.it>,
-        rtc-linux@googlegroups.com, "'Jingoo Han'" <jg1.han@samsung.com>
-References: <004301ce1a2b$3ad77e00$b0867a00$%han@samsung.com>
-In-reply-to: <004301ce1a2b$3ad77e00$b0867a00$%han@samsung.com>
-Subject: [PATCH 30/30] rtc: rtc-wm831x: use devm_rtc_device_register()
-Date: Wed, 06 Mar 2013 14:37:10 +0900
-Message-id: <006001ce1a2c$a5bb1eb0$f1315c10$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac4aKzqYzbgO1ZcaTfGsrpjfTnOAiQAAWEAw
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrHIsWRmVeSWpSXmKPExsVy+t8zfV22a2aBBvNXy1lc3jWHzYHR4/Mm
-	uQDGKC6blNSczLLUIn27BK6Muz9mMBW8Ya/4db+HsYHxMFsXIyeHhICJxOc531kgbDGJC/fW
-	A8W5OIQEljFK7H96iAmm6OvsxcwQiUWMEhdPdbBAOLOZJJq7zoJVsQmoSXz5cpi9i5GDQ0RA
-	X6KtRQOkhlmgl1HiTO9udpAaIQFbiavdq5hBbE4BO4nlj2eBrRYWcJM4c/IJM0gvi4CqxLRp
-	SiAmL1D5vsXOIBW8AoISPybfA6tmFtCSWL/zOBOELS+xec1bsE4JAXWJR391QcIiAkYSrUdf
-	skOUiEjse/GOEeQaCYFl7BIfluwBm8MiICDxbfIhFoheWYlNB5gh3pWUOLjiBssERolZSDbP
-	QrJ5FpLNs5CsWMDIsopRNLUguaA4Kb3IUK84Mbe4NC9dLzk/dxMjJK56dzDePmB9iDEZaP1E
-	ZinR5HxgXOaVxBsaG5uYmZiamFuampuSJqwkzit3SSZQSCA9sSQ1OzW1ILUovqg0J7X4ECMT
-	B6dUAyPH8uXpS9tPsYfPuPJuXY7WdrdJu4v8E7br8F4WjL/wt47hbF1uDa/QyrOuuyLuvJRa
-	n2XVcu+YbvMLC+ef3otS470bN1xZPe9cnE2euvK9BWcvTGl7HX+w8DrH1MgiPqllCb9eXfp5
-	v7XoPHedIxvPLY//7pd3R1e8cPGQ/iehdCX6fp9LroASS3FGoqEWc1FxIgCju2p4wQIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupmleLIzCtJLcpLzFFi42I5/e+xgC7bNbNAg9dXpCwu75rD5sDo8XmT
-	XABjVAOjTUZqYkpqkUJqXnJ+SmZeuq2Sd3C8c7ypmYGhrqGlhbmSQl5ibqqtkotPgK5bZg7Q
-	VCWFssScUqBQQGJxsZK+HaYJoSFuuhYwjRG6viFBcD1GBmggYR1jxt0fM5gK3rBX/Lrfw9jA
-	eJiti5GTQ0LAROLr7MXMELaYxIV764HiXBxCAosYJS6e6mCBcGYzSTR3nWUCqWITUJP48uUw
-	excjB4eIgL5EW4sGSA2zQC+jxJne3ewgNUICthJXu1eBTeUUsJNY/ngWC4gtLOAmcebkE2aQ
-	XhYBVYlp05RATF6g8n2LnUEqeAUEJX5MvgdWzSygJbF+53EmCFteYvOat2CdEgLqEo/+6oKE
-	RQSMJFqPvmSHKBGR2PfiHeMERqFZSCbNQjJpFpJJs5C0LGBkWcUomlqQXFCclJ5rpFecmFtc
-	mpeul5yfu4kRHLXPpHcwrmqwOMQowMGoxMM7QcUsUIg1say4MvcQowQHs5IIL9cZoBBvSmJl
-	VWpRfnxRaU5q8SHGZKA3JzJLiSbnAxNKXkm8obGJmZGlkZmFkYm5OWnCSuK8jKeeBAgJpCeW
-	pGanphakFsFsYeLglGpgdOZTSD9k/IN3/8aVFu1Jb0635M7/Kq1394O+dHuGDPukpamd9hOW
-	hi2QE5dVOO8raMm/u9S+Wvklu/kly4CpVtJhYe21k88+YBYU5OtZM/nupe1apmrvWvSW7brU
-	8eX7z0clW46/X7/0765TahJ3JvIGTmw8Emvdwna11OJtC3vMuglBua98lFiKMxINtZiLihMB
-	AZyxaB4DAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1753465Ab3CFFmJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 00:42:09 -0500
+Received: from ozlabs.org ([203.10.76.45]:34588 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750961Ab3CFFmG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Mar 2013 00:42:06 -0500
+Date: Wed, 6 Mar 2013 16:42:03 +1100
+From: Michael Ellerman <michael@ellerman.id.au>
+To: Mike Qiu <qiudayu@linux.vnet.ibm.com>
+Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de
+Subject: Re: [PATCH 2/3] irq: Add hw continuous IRQs map to virtual
+ continuous IRQs support
+Message-ID: <20130306054203.GA13075@concordia>
+References: <1358235536-32741-1-git-send-email-qiudayu@linux.vnet.ibm.com>
+ <1358235536-32741-3-git-send-email-qiudayu@linux.vnet.ibm.com>
+ <20130305022348.GB7656@concordia>
+ <51359C9D.5030009@linux.vnet.ibm.com>
+ <20130306035443.GB3493@concordia>
+ <5136D582.80101@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <5136D582.80101@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-devm_rtc_device_register() is device managed and makes cleanup
-paths simpler.
+On Wed, Mar 06, 2013 at 01:34:58PM +0800, Mike Qiu wrote:
+> 于 2013/3/6 11:54, Michael Ellerman 写道:
+> >On Tue, Mar 05, 2013 at 03:19:57PM +0800, Mike Qiu wrote:
+> >>于 2013/3/5 10:23, Michael Ellerman 写道:
+> >>>On Tue, Jan 15, 2013 at 03:38:55PM +0800, Mike Qiu wrote:
+> >>>>diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
+> >>>>index 96f3a1d..38648e6 100644
+> >>>>--- a/kernel/irq/irqdomain.c
+> >>>>+++ b/kernel/irq/irqdomain.c
+> >>>>@@ -636,6 +636,67 @@ int irq_create_strict_mappings(struct irq_domain *domain, unsigned int irq_base,
+> >>>>  }
+> >>>>  EXPORT_SYMBOL_GPL(irq_create_strict_mappings);
+> >>>>+/**
+> >>>>+ * irq_create_mapping_many - Map a range of hw IRQs to a range of virtual IRQs
+> >>>>+ * @domain: domain owning the interrupt range
+> >>>>+ * @hwirq_base: beginning of continuous hardware IRQ range
+> >>>>+ * @count: Number of interrupts to map
+> >>>For multiple-MSI the allocated interrupt numbers must be a power-of-2,
+> >>>and must be naturally aligned. I don't /think/ that's a requirement for
+> >>>the virtual numbers, but it's probably best that we do it anyway.
+> >>>
+> >>>So this API needs to specify that it will give you back a power-of-2
+> >>>block that is naturally aligned - otherwise you can't use it for MSI.
+> >>rtas_call will return the numbers of hardware interrupt, and it
+> >>should be power-of-2, as this I think do not need to specify
+> >You're confusing hardware interrupt numbers and virtual interrupt
+> >numbers. My comment is about irq_create_mapping_many(), which returns
+> >virtual interrupt numbers.
+> >
+> >As I said I don't think there is a requirement that the virtual
+> >interrupt numbers are also a power-of-2 naturally aligned block, but we
+> >should allocate them as one anyway, to avoid any issues in future.
 
-Signed-off-by: Jingoo Han <jg1.han@samsung.com>
----
- drivers/rtc/rtc-wm831x.c |    6 +-----
- 1 files changed, 1 insertions(+), 5 deletions(-)
+> But for virtual interrupt numbersit should be a power-of-2 naturally
+> aligned block, because it must be continuous, as the MSI-HOWTO.txt says:
+> 
+>     4.2.2 pci_enable_msi_block
+>     int pci_enable_msi_block(struct pci_dev *dev, int count)
+>     This variation on the above call allows a device driver to request
+>     multiple MSIs.  The MSI specification only allows interrupts to be
+>     allocated in powers of two, up to a maximum of 2^5 (32).
+>     If this function returns 0, it has succeeded in allocating at least
+>     as many interrupts as the driver requested
+>     (it may have allocated more in order to satisfy the power-of-two
+>     requirement). In this case, the function enables MSI on this device
+>     and updates dev->irq to be the lowest of the new interrupts
+>     assigned to it. The other interrupts assigned to the device are in
+>     the range dev->irq to dev->irq + count - 1.
+> 
+> See the last line, that means for the virtual interrupts must be a
+> continuous block.
 
-diff --git a/drivers/rtc/rtc-wm831x.c b/drivers/rtc/rtc-wm831x.c
-index 2f0ac7b..3f863bd 100644
---- a/drivers/rtc/rtc-wm831x.c
-+++ b/drivers/rtc/rtc-wm831x.c
-@@ -436,7 +436,7 @@ static int wm831x_rtc_probe(struct platform_device *pdev)
- 
- 	device_init_wakeup(&pdev->dev, 1);
- 
--	wm831x_rtc->rtc = rtc_device_register("wm831x", &pdev->dev,
-+	wm831x_rtc->rtc = devm_rtc_device_register("wm831x", &pdev->dev,
- 					      &wm831x_rtc_ops, THIS_MODULE);
- 	if (IS_ERR(wm831x_rtc->rtc)) {
- 		ret = PTR_ERR(wm831x_rtc->rtc);
-@@ -462,10 +462,6 @@ err:
- 
- static int wm831x_rtc_remove(struct platform_device *pdev)
- {
--	struct wm831x_rtc *wm831x_rtc = platform_get_drvdata(pdev);
--
--	rtc_device_unregister(wm831x_rtc->rtc);
--
- 	return 0;
- }
- 
--- 
-1.7.2.5
+In practice I think things could work if we didn't, because we are not
+using the mask routines that assume that layout.
 
+But you're right, we must implement the API as it's specified, so the
+virtual interrupt numbers must be a naturally aligned power-of-2.
 
+cheers
