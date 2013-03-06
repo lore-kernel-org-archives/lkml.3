@@ -1,106 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755145Ab3CFIq5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 03:46:57 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:15826 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752855Ab3CFIqv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 03:46:51 -0500
-X-IronPort-AV: E=Sophos;i="4.84,793,1355068800"; 
-   d="scan'208";a="6823284"
-Date: Wed, 6 Mar 2013 16:46:58 +0800
-From: Hu Tao <hutao@cn.fujitsu.com>
-To: Gleb Natapov <gleb@redhat.com>
-Cc: kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>, Blue Swirl <blauwirbel@gmail.com>,
-        Eric Blake <eblake@redhat.com>, Andrew Jones <drjones@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Sasha Levin <levinsasha928@gmail.com>,
-        Luiz Capitulino <lcapitulino@redhat.com>,
-        Anthony Liguori <aliguori@us.ibm.com>,
-        Markus Armbruster <armbru@redhat.com>,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        Stefan Hajnoczi <stefanha@redhat.com>,
-        Juan Quintela <quintela@redhat.com>,
-        Orit Wasserman <owasserm@redhat.com>, Kevin Wolf <kwolf@redhat.com>,
-        Wen Congyang <wency@cn.fujitsu.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>, Alexander Graf <agraf@suse.de>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Peter Maydell <peter.maydell@linaro.org>
-Subject: Re: [PATCH v13 0/8] pv event interface between host and guest
-Message-ID: <20130306084658.GA4719@localhost.localdomain>
-References: <cover.1362051581.git.hutao@cn.fujitsu.com>
- <20130303091738.GB23616@redhat.com>
+	id S1755312Ab3CFIrs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 03:47:48 -0500
+Received: from mail-vc0-f179.google.com ([209.85.220.179]:47481 "EHLO
+	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752855Ab3CFIrp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Mar 2013 03:47:45 -0500
 MIME-Version: 1.0
-In-Reply-To: <20130303091738.GB23616@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/03/06 16:45:46,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/03/06 16:45:47,
-	Serialize complete at 2013/03/06 16:45:47
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
+In-Reply-To: <1362466679-17111-1-git-send-email-m.szyprowski@samsung.com>
+References: <1362466679-17111-1-git-send-email-m.szyprowski@samsung.com>
+Date: Wed, 6 Mar 2013 17:47:44 +0900
+X-Google-Sender-Auth: S3IMoVamAOcyexDs9Sqc8pI8RLE
+Message-ID: <CAEwNFnBQS+Lem9bNWWngTjOgC5OpF8U=rw8e9zfvZdF8a7iONA@mail.gmail.com>
+Subject: Re: [RFC/PATCH 0/5] Contiguous Memory Allocator and get_user_pages()
+From: Minchan Kim <minchan@kernel.org>
+To: Marek Szyprowski <m.szyprowski@samsung.com>
+Cc: linux-mm@kvack.org, linaro-mm-sig@lists.linaro.org,
+        linux-kernel@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 03, 2013 at 11:17:38AM +0200, Gleb Natapov wrote:
-> On Thu, Feb 28, 2013 at 08:13:10PM +0800, Hu Tao wrote:
-> > This series implements a new interface, kvm pv event, to notify host when
-> > some events happen in guest. Right now there is one supported event: guest
-> > panic.
-> > 
-> What other event do you have in mind? Is interface generic enough to
-> accommodate future, yet unknown, events. It allows to pass only one
-> integer specifying even type, what if additional info is needed? My be
+Hello,
 
-guest crash, lockup, or warning.[1] But the first purpose is to do panic
-notification(panic event). Since at the point the guest is panicked, I
-think it's better to keep the interface as simple as possible.
+On Tue, Mar 5, 2013 at 3:57 PM, Marek Szyprowski
+<m.szyprowski@samsung.com> wrote:
+> Hello,
+>
+> Contiguous Memory Allocator is very sensitive about migration failures
+> of the individual pages. A single page, which causes permanent migration
+> failure can break large conitguous allocations and cause the failure of
+> a multimedia device driver.
+>
+> One of the known issues with migration of CMA pages are the problems of
+> migrating the anonymous user pages, for which the others called
+> get_user_pages(). This takes a reference to the given user pages to let
+> kernel to operate directly on the page content. This is usually used for
+> preventing swaping out the page contents and doing direct DMA to/from
+> userspace.
+>
+> To solving this issue requires preventing locking of the pages, which
+> are placed in CMA regions, for a long time. Our idea is to migrate
+> anonymous page content before locking the page in get_user_pages(). This
+> cannot be done automatically, as get_user_pages() interface is used very
+> often for various operations, which usually last for a short period of
+> time (like for example exec syscall). We have added a new flag
+> indicating that the given get_user_space() call will grab pages for a
+> long time, thus it is suitable to use the migration workaround in such
+> cases.
+>
+> The proposed extensions is used by V4L2/VideoBuf2
+> (drivers/media/v4l2-core/videobuf2-dma-contig.c), but that is not the
+> only place which might benefit from it, like any driver which use DMA to
+> userspace with get_user_pages(). This one is provided to demonstrate the
+> use case.
+>
+> I would like to hear some comments on the presented approach. What do
+> you think about it? Is there a chance to get such workaround merged at
+> some point to mainline?
+>
 
-[1] http://wiki.qemu.org/Features/PVCrashDetection
+I discussed similar patch from memory-hotplug guys with Mel.
+Look at http://marc.info/?l=linux-mm&m=136014458829566&w=2
 
-> stop pretending that device is generic and make it do once thing but do
+The conern is that we ends up forcing using FOLL_DURABLE/GUP_NM for
+all drivers and subsystems for making sure CMA/memory-hotplug works
+well.
 
-you mean make the interface just do panic notification?
+You mentioned driver grab a page for a long time should use
+FOLL_DURABLE flag but "for a long time" is very ambiguous. For
+example, there is a driver
 
-> it well? For generic even passing interface (whatever it may be needed
-> for) much more powerful virtio should be used.
-> 
-> On implementation itself I do not understand why is this kvm specific.
-> The only thing that makes it so is that you hook device initialization
-> into guest kvm initialization code, but this is obviously incorrect.
-> What stops QEMU tcg or Xen from reusing the same device for the same
-> purpose except the artificial limitation in a guest.
-> 
-> Reading data from a random ioports is not how you discover platform
-> devices in 21 century (and the data you read from unassigned port is not
-> guarantied to be zero, it may depend on QEMU version), you use ACPI for
-> that and Marcelo already pointed that to you. Having little knowledge of
-> ACPI (we all do) is not a good reason to not doing it. We probably need
-> to reserve QEMU specific ACPI Plug and Play hardware ID to define our own
+get_user_pages()
+some operation.
+put_pages
 
-Do we have to request the ID from some orgnazation?
+You can make sure some operation is really fast always?
+For example, what if it depends on other event which is normally very
+fast but quite slow once a week or try to do dynamic memory allocation
+but memory pressure is severe?
 
-> devices. After that you will be able to create device with _HID(QEMU0001)
+For 100% working well, at last we need to change all GUP user with
+GUP_NM or your FOLL_DURABLE whatever but the concern Mel pointed out
+is it could cause lowmem exhaustion problem.
 
-QMU0001, I think. EISA ID requires it to have only 3 letters for PNP ID.
+At the moment, there is other problem against migratoin, which are not
+related with your patch. ex, zcache, zram, zswap. Their pages couldn't
+be migrated out so I think below Mel's suggestion or some generic
+infrastructure can move pinned page is  more proper way to go.
 
-> in DSDT that supplies address information (ioport to use) and capability
-> supported. Guest uses acpi_get_devices() to discover a platform device by
-> its name (QEMU0001).  Then you put the driver for the platform device
-> into drivers/platform/x86/ and QEMU/kvm/Xen all will be able to use it.
+"To guarantee CMA can migrate pages pinned by drivers I think you need
+migrate-related callsbacks to unpin, barrier the driver until migration
+completes and repin."
 
-Thanks for the information!
+Thanks.
 
-> 
-> On QEMU side of things I cannot comment much on how QOMified the device
-> is (it should be), I hope other reviews will verify it, but I noticed
-> that device is only initialized for PIIX, what about Q35?
-> 
-> --
-> 			Gleb.
+-- 
+Kind regards,
+Minchan Kim
