@@ -1,45 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758574Ab3CFPwi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 10:52:38 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:16268 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751452Ab3CFPwg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 10:52:36 -0500
-Date: Wed, 6 Mar 2013 16:50:39 +0100
-From: Oleg Nesterov <oleg@redhat.com>
+	id S932110Ab3CFPwp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 10:52:45 -0500
+Received: from e39.co.us.ibm.com ([32.97.110.160]:54173 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751452Ab3CFPwk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Mar 2013 10:52:40 -0500
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
 To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Mandeep Singh Baines <msb@chromium.org>, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, ibm-acpi@hmh.eng.br,
-        ibm-acpi-devel@lists.sourceforge.net,
-        platform-driver-x86@vger.kernel.org, Aaron Lu <aaron.lu@intel.com>,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        Tejun Heo <tj@kernel.org>, Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Artem Savkov <artem.savkov@gmail.com>
-Subject: Re: [PATCH] thinkpad-acpi: fix potential suspend blocking issue
-Message-ID: <20130306155039.GB7697@redhat.com>
-References: <201303042055.38040.maciej.rutecki@gmail.com> <1362504883-9180-1-git-send-email-msb@chromium.org> <20130305141817.4e27e83aa66598115e52eb9e@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130305141817.4e27e83aa66598115e52eb9e@linux-foundation.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Larry Woodman <lwoodman@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, Joe Perches <joe@perches.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
+Subject: [PATCHv7 2/8] zsmalloc: add documentation
+Date: Wed,  6 Mar 2013 09:52:17 -0600
+Message-Id: <1362585143-6482-3-git-send-email-sjenning@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.1.5
+In-Reply-To: <1362585143-6482-1-git-send-email-sjenning@linux.vnet.ibm.com>
+References: <1362585143-6482-1-git-send-email-sjenning@linux.vnet.ibm.com>
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13030615-3620-0000-0000-0000018117A5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/05, Andrew Morton wrote:
->
-> Basically the same as
-> http://ozlabs.org/~akpm/mmots/broken-out/drivers-platform-x86-thinkpad_acpic-move-hotkey_thread_mutex-lock-after-set_freezable.patch.
->  I think Artem's patch is a little better.  There doesn't appear to be
-> any locking protocol for tpacpi_lifecycle.
+This patch adds a documentation file for zsmalloc at
+Documentation/vm/zsmalloc.txt
 
-Which seems to have the same problem, hotkey_kthread() still calls
-kthread_freezable_should_stop() under hotkey_thread_mutex.
+Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
+---
+ Documentation/vm/zsmalloc.txt | 68 +++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 68 insertions(+)
+ create mode 100644 Documentation/vm/zsmalloc.txt
 
-IOW, we have two try_to_freeze's here, the patch moves only one of
-them outside of the hotkey_thread_mutex.
-
-Oleg.
+diff --git a/Documentation/vm/zsmalloc.txt b/Documentation/vm/zsmalloc.txt
+new file mode 100644
+index 0000000..85aa617
+--- /dev/null
++++ b/Documentation/vm/zsmalloc.txt
+@@ -0,0 +1,68 @@
++zsmalloc Memory Allocator
++
++Overview
++
++zmalloc a new slab-based memory allocator,
++zsmalloc, for storing compressed pages.  It is designed for
++low fragmentation and high allocation success rate on
++large object, but <= PAGE_SIZE allocations.
++
++zsmalloc differs from the kernel slab allocator in two primary
++ways to achieve these design goals.
++
++zsmalloc never requires high order page allocations to back
++slabs, or "size classes" in zsmalloc terms. Instead it allows
++multiple single-order pages to be stitched together into a
++"zspage" which backs the slab.  This allows for higher allocation
++success rate under memory pressure.
++
++Also, zsmalloc allows objects to span page boundaries within the
++zspage.  This allows for lower fragmentation than could be had
++with the kernel slab allocator for objects between PAGE_SIZE/2
++and PAGE_SIZE.  With the kernel slab allocator, if a page compresses
++to 60% of it original size, the memory savings gained through
++compression is lost in fragmentation because another object of
++the same size can't be stored in the leftover space.
++
++This ability to span pages results in zsmalloc allocations not being
++directly addressable by the user.  The user is given an
++non-dereferencable handle in response to an allocation request.
++That handle must be mapped, using zs_map_object(), which returns
++a pointer to the mapped region that can be used.  The mapping is
++necessary since the object data may reside in two different
++noncontigious pages.
++
++For 32-bit systems, zsmalloc has the added benefit of being
++able to back slabs with HIGHMEM pages, something not possible
++with the kernel slab allocators (SLAB or SLUB).
++
++Usage:
++
++#include <linux/zsmalloc.h>
++
++/* create a new pool */
++struct zs_pool *pool = zs_create_pool("mypool", GFP_KERNEL);
++
++/* allocate a 256 byte object */
++unsigned long handle = zs_malloc(pool, 256);
++
++/*
++ * Map the object to get a dereferenceable pointer in "read-write mode"
++ * (see zsmalloc.h for additional modes)
++ */
++void *ptr = zs_map_object(pool, handle, ZS_MM_RW);
++
++/* do something with ptr */
++
++/*
++ * Unmap the object when done dealing with it. You should try to
++ * minimize the time for which the object is mapped since preemption
++ * is disabled during the mapped period.
++ */
++zs_unmap_object(pool, handle);
++
++/* free the object */
++zs_free(pool, handle);
++
++/* destroy the pool */
++zs_destroy_pool(pool); 
+-- 
+1.8.1.5
 
