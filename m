@@ -1,122 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755014Ab3CFAYX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 19:24:23 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:47691 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752561Ab3CFAYV convert rfc822-to-8bit (ORCPT
+	id S1755397Ab3CFA0Q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 19:26:16 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:38146 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752721Ab3CFA0P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 19:24:21 -0500
-Date: Tue, 5 Mar 2013 21:23:51 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        arm@kernel.org, Timo Kokkonen <timo.t.kokkonen@iki.fi>,
-        Tony Lindgren <tony@atomide.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-media@vger.kernel.org
-Subject: Re: [PATCH 6/9] [media] ir-rx51: fix clock API related build issues
-Message-ID: <20130305212351.4993d8c6@redhat.com>
-In-Reply-To: <1362521809-22989-7-git-send-email-arnd@arndb.de>
-References: <1362521809-22989-1-git-send-email-arnd@arndb.de>
-	<1362521809-22989-7-git-send-email-arnd@arndb.de>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+	Tue, 5 Mar 2013 19:26:15 -0500
+Date: Tue, 5 Mar 2013 16:24:02 -0800
+From: tip-bot for Borislav Petkov <tipbot@zytor.com>
+Message-ID: <tip-576cfb404c9cab728e9462ea713f3422679d5cf7@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        tglx@linutronix.de, hpa@linux.intel.com, bp@suse.de,
+        len.brown@intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, bp@suse.de, hpa@linux.intel.com,
+        len.brown@intel.com
+In-Reply-To: <1362428180-8865-2-git-send-email-bp@alien8.de>
+References: <1362428180-8865-2-git-send-email-bp@alien8.de>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86, smpboot: Remove unused variable
+Git-Commit-ID: 576cfb404c9cab728e9462ea713f3422679d5cf7
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Tue, 05 Mar 2013 16:24:07 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue,  5 Mar 2013 23:16:46 +0100
-Arnd Bergmann <arnd@arndb.de> escreveu:
+Commit-ID:  576cfb404c9cab728e9462ea713f3422679d5cf7
+Gitweb:     http://git.kernel.org/tip/576cfb404c9cab728e9462ea713f3422679d5cf7
+Author:     Borislav Petkov <bp@suse.de>
+AuthorDate: Mon, 4 Mar 2013 21:16:16 +0100
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Tue, 5 Mar 2013 15:26:45 -0800
 
-> OMAP1 no longer provides its own clock interfaces since patch
-> a135eaae52 "ARM: OMAP: remove plat/clock.h". This is great, but
-> we now have to convert the ir-rx51 driver to use the generic
-> interface from linux/clk.h.
-> 
-> The driver also uses the omap_dm_timer_get_fclk() function,
-> which is not exported for OMAP1, so we have to move the
-> definition out of the OMAP2 specific section.
-> 
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
+x86, smpboot: Remove unused variable
 
->From my side:
-Acked-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+The cpuinfo_x86 ptr is unused now. Drop it. Got obsolete by 69fb3676df33
+("x86 idle: remove mwait_idle() and "idle=mwait" cmdline param")
+removing its only user.
 
-> Cc: Timo Kokkonen <timo.t.kokkonen@iki.fi>
-> Cc: Tony Lindgren <tony@atomide.com>
-> Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Cc: linux-media@vger.kernel.org
-> ---
->  arch/arm/plat-omap/dmtimer.c | 16 ++++++++--------
->  drivers/media/rc/ir-rx51.c   |  4 ++--
->  2 files changed, 10 insertions(+), 10 deletions(-)
-> 
-> diff --git a/arch/arm/plat-omap/dmtimer.c b/arch/arm/plat-omap/dmtimer.c
-> index a0daa2f..ea133e5 100644
-> --- a/arch/arm/plat-omap/dmtimer.c
-> +++ b/arch/arm/plat-omap/dmtimer.c
-> @@ -333,6 +333,14 @@ int omap_dm_timer_get_irq(struct omap_dm_timer *timer)
->  }
->  EXPORT_SYMBOL_GPL(omap_dm_timer_get_irq);
->  
-> +struct clk *omap_dm_timer_get_fclk(struct omap_dm_timer *timer)
-> +{
-> +	if (timer)
-> +		return timer->fclk;
-> +	return NULL;
-> +}
-> +EXPORT_SYMBOL_GPL(omap_dm_timer_get_fclk);
-> +
->  #if defined(CONFIG_ARCH_OMAP1)
->  #include <mach/hardware.h>
->  /**
-> @@ -371,14 +379,6 @@ EXPORT_SYMBOL_GPL(omap_dm_timer_modify_idlect_mask);
->  
->  #else
->  
-> -struct clk *omap_dm_timer_get_fclk(struct omap_dm_timer *timer)
-> -{
-> -	if (timer)
-> -		return timer->fclk;
-> -	return NULL;
-> -}
-> -EXPORT_SYMBOL_GPL(omap_dm_timer_get_fclk);
-> -
->  __u32 omap_dm_timer_modify_idlect_mask(__u32 inputmask)
->  {
->  	BUG();
-> diff --git a/drivers/media/rc/ir-rx51.c b/drivers/media/rc/ir-rx51.c
-> index 8ead492..d1364a1 100644
-> --- a/drivers/media/rc/ir-rx51.c
-> +++ b/drivers/media/rc/ir-rx51.c
-> @@ -25,9 +25,9 @@
->  #include <linux/platform_device.h>
->  #include <linux/sched.h>
->  #include <linux/wait.h>
-> +#include <linux/clk.h>
->  
->  #include <plat/dmtimer.h>
-> -#include <plat/clock.h>
->  
->  #include <media/lirc.h>
->  #include <media/lirc_dev.h>
-> @@ -209,7 +209,7 @@ static int lirc_rx51_init_port(struct lirc_rx51 *lirc_rx51)
->  	}
->  
->  	clk_fclk = omap_dm_timer_get_fclk(lirc_rx51->pwm_timer);
-> -	lirc_rx51->fclk_khz = clk_fclk->rate / 1000;
-> +	lirc_rx51->fclk_khz = clk_get_rate(clk_fclk) / 1000;
->  
->  	return 0;
->  
+[ hpa: fixes gcc warning ]
 
+Signed-off-by: Borislav Petkov <bp@suse.de>
+Link: http://lkml.kernel.org/r/1362428180-8865-2-git-send-email-bp@alien8.de
+Cc: Len Brown <len.brown@intel.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/kernel/smpboot.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
--- 
-
-Cheers,
-Mauro
+diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+index a6ceaed..9f190a2 100644
+--- a/arch/x86/kernel/smpboot.c
++++ b/arch/x86/kernel/smpboot.c
+@@ -1365,9 +1365,8 @@ static inline void mwait_play_dead(void)
+ 	unsigned int eax, ebx, ecx, edx;
+ 	unsigned int highest_cstate = 0;
+ 	unsigned int highest_subcstate = 0;
+-	int i;
+ 	void *mwait_ptr;
+-	struct cpuinfo_x86 *c = __this_cpu_ptr(&cpu_info);
++	int i;
+ 
+ 	if (!this_cpu_has(X86_FEATURE_MWAIT))
+ 		return;
