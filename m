@@ -1,90 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758421Ab3CFOjB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 09:39:01 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:44283 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758370Ab3CFOi6 (ORCPT
+	id S1758455Ab3CFOjU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 09:39:20 -0500
+Received: from mail-lb0-f169.google.com ([209.85.217.169]:41722 "EHLO
+	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758371Ab3CFOjR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 09:38:58 -0500
-Date: Wed, 6 Mar 2013 06:37:42 -0800
-From: tip-bot for Li Zefan <tipbot@zytor.com>
-Message-ID: <tip-b13095f07f25464de65f5ce5ea94e16813d67488@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        peterz@infradead.org, tglx@linutronix.de, lizefan@huawei.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, tglx@linutronix.de, lizefan@huawei.com
-In-Reply-To: <5135A78E.7040609@huawei.com>
-References: <5135A78E.7040609@huawei.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched: Move wake flags to kernel/sched/sched.h
-Git-Commit-ID: b13095f07f25464de65f5ce5ea94e16813d67488
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Wed, 6 Mar 2013 09:39:17 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 06 Mar 2013 06:37:47 -0800 (PST)
+In-Reply-To: <20130305163228.GA12795@htj.dyndns.org>
+References: <CALZhoSR0+SzPLHzJafmny=o8PJ2d7MaH9N6_6s0QZ_oCQm43Xg@mail.gmail.com>
+	<20130305163228.GA12795@htj.dyndns.org>
+Date: Wed, 6 Mar 2013 22:39:15 +0800
+Message-ID: <CALZhoSRyjRYVcKpq9cECHWgKkci6V+O_zn2CkiwqnFo57tZDfQ@mail.gmail.com>
+Subject: Re: workqueue panic in 3.4 kernel
+From: Lei Wen <adrian.wenl@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, leiwen@marvell.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  b13095f07f25464de65f5ce5ea94e16813d67488
-Gitweb:     http://git.kernel.org/tip/b13095f07f25464de65f5ce5ea94e16813d67488
-Author:     Li Zefan <lizefan@huawei.com>
-AuthorDate: Tue, 5 Mar 2013 16:06:38 +0800
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 6 Mar 2013 11:24:32 +0100
+Hi Tejun
 
-sched: Move wake flags to kernel/sched/sched.h
+On Wed, Mar 6, 2013 at 12:32 AM, Tejun Heo <tj@kernel.org> wrote:
+> Hello,
+>
+> On Tue, Mar 05, 2013 at 03:31:45PM +0800, Lei Wen wrote:
+>> With checking memory,  we find work->data becomes 0x300, when it try
+>> to call get_work_cwq
+>
+> Why would that become 0x300?  Who's writing to that memory?  Nobody
+> should be.
 
-They are used internally only.
+We find a race condition as below:
+CPU0                                                                  CPU1
+timer interrupt happen
+__run_timers
+   __run_timers::spin_lock_irq(&base->lock)
+   __run_timers::spin_unlock_irq(&base->lock)
 
-Signed-off-by: Li Zefan <lizefan@huawei.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/5135A78E.7040609@huawei.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- include/linux/sched.h | 7 -------
- kernel/sched/sched.h  | 7 +++++++
- 2 files changed, 7 insertions(+), 7 deletions(-)
+   __cancel_work_timer
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 0d64130..863b505 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -920,13 +920,6 @@ struct uts_namespace;
- struct rq;
- struct sched_domain;
- 
--/*
-- * wake flags
-- */
--#define WF_SYNC		0x01		/* waker goes to sleep after wakup */
--#define WF_FORK		0x02		/* child wakeup after fork */
--#define WF_MIGRATED	0x04		/* internal use, task got migrated */
--
- #define ENQUEUE_WAKEUP		1
- #define ENQUEUE_HEAD		2
- #ifdef CONFIG_SMP
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index 1a4a2b1..4e5c2af 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -865,6 +865,13 @@ static inline void finish_lock_switch(struct rq *rq, struct task_struct *prev)
- }
- #endif /* __ARCH_WANT_UNLOCKED_CTXSW */
- 
-+/*
-+ * wake flags
-+ */
-+#define WF_SYNC		0x01		/* waker goes to sleep after wakeup */
-+#define WF_FORK		0x02		/* child wakeup after fork */
-+#define WF_MIGRATED	0x4		/* internal use, task got migrated */
-+
- static inline void update_load_add(struct load_weight *lw, unsigned long inc)
- {
- 	lw->weight += inc;
+   __cancel_work_timer::del_timer
+
+   __cancel_work_timer::wait_on_work
+
+   __cancel_work_timer::clear_work_data
+   __run_timers::call_timer_fn(timer, fn, data);
+         delayed_work_timer_fn::get_work_cwq
+   __run_timers::spin_lock_irq(&base->lock)
+
+It is possible for __cancel_work_timer to be run over cpu1 __BEFORE__
+cpu0 is ready to
+run the timer callback, which is delayed_work_timer_fn in our case.
+
+Although __cancel_work_timer would call wait_on_work to wait the
+already inserted work
+complete, but for the work is not queued yet for its calback is not
+being executed, so
+the result should be wait_on_work directly return, and clear_work_data
+clears work->data.
+Thus when delayed_work_timer_fn is called, it would see work->data as 0x300.
+
+Do you think it is possible for this kind of sequence?
+
+>
+>> in delayed_work_timer_fn. Thus cwq becomes NULL before calls __queue_work.
+>> So it is reasonable kernel get panic when it try to access wq with cwq->wq.
+>>
+>> To fix it, we try to backport below patches:
+>> commit 60c057bca22285efefbba033624763a778f243bf
+>> Author: Lai Jiangshan <laijs@cn.fujitsu.com>
+>> Date:   Wed Feb 6 18:04:53 2013 -0800
+>>
+>>     workqueue: add delayed_work->wq to simplify reentrancy handling
+>>
+>> commit 1265057fa02c7bed3b6d9ddc8a2048065a370364
+>> Author: Tejun Heo <tj@kernel.org>
+>> Date:   Wed Aug 8 09:38:42 2012 -0700
+>>
+>>     workqueue: fix CPU binding of flush_delayed_work[_sync]()
+>
+> Neither should affect the problem you described above.  It *could*
+> make the problem go away just because it would stop using wq->data to
+> record cwq if the corruption was contained to that field but that
+> isn't a proper fix and the underlying problem could easily cause other
+> issues.
+>
+>> And add below change to make sure __cancel_work_timer cannot preempt
+>> between run_timer_softirq and delayed_work_timer_fn.
+>> diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+>> index bf4888c..0e9f77c 100644
+>> --- a/kernel/workqueue.c
+>> +++ b/kernel/workqueue.c
+>> @@ -2627,7 +2627,7 @@ static bool __cancel_work_timer(struct work_struct *work,
+>>                 ret = (timer && likely(del_timer(timer)));
+>>                 if (!ret)
+>>                         ret = try_to_grab_pending(work);
+>> -               wait_on_work(work);
+>> +               flush_work(work);
+>>         } while (unlikely(ret < 0));
+>>
+>>         clear_work_data(work);
+>>
+>> Do you think this fix is enough? And add flush_work directly in
+>> __cancel_work_timer is ok for
+>> the fix?
+>
+> Maybe I'm missing something but it looks like the root cause hasn't
+> been diagnosed and you're piling up band-aids in workqueue code.  You
+> might get away with it but could also be making the problem just more
+> obscure and difficult to debug (reproducible bugs are happy bugs).
+>
+> I'd suggest finding out who owns the delayed_work item and examining
+> why the delayed_work is getting corrupted in the first place.
+>
+> Thanks.
+>
+> --
+> tejun
+
+Thanks,
+Lei
