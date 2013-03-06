@@ -1,50 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758298Ab3CFPAX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 10:00:23 -0500
-Received: from www262.sakura.ne.jp ([202.181.97.72]:63443 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755607Ab3CFPAV (ORCPT
+	id S1758118Ab3CFPKV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 10:10:21 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:46629 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757137Ab3CFPKU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 10:00:21 -0500
-X-Nat-Received: from [202.181.97.72]:52913 [ident-empty]
-	by smtp-proxy.isp with TPROXY id 1362581889.25863
-To: bp@alien8.de, dave@linux.vnet.ibm.com
-Cc: hpa@linux.intel.com, linux-kernel@vger.kernel.org
-Subject: Re: [3.9-rc1 x86] Bug in ioremap code?
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-References: <201303060041.AIF15342.tJFOHLQFFOMVSO@I-love.SAKURA.ne.jp>
-	<20130305180650.GD4914@pd.tnic>
-	<201303060628.CBG00578.OJtMFFHLQVSFOO@I-love.SAKURA.ne.jp>
-	<51367104.5050200@linux.vnet.ibm.com>
-	<20130305224432.GD27022@pd.tnic>
-In-Reply-To: <20130305224432.GD27022@pd.tnic>
-Message-Id: <201303062358.EFG90616.HLtSQFJFOMVOFO@I-love.SAKURA.ne.jp>
-X-Mailer: Winbiff [Version 2.51 PL2]
-X-Accept-Language: ja,en,zh
-Date: Wed, 6 Mar 2013 23:58:08 +0900
+	Wed, 6 Mar 2013 10:10:20 -0500
+Message-ID: <1362582615.3105.45.camel@hornet>
+Subject: Re: [PATCH] virtio-spec: Define virtio-mmio registers as LE
+From: Pawel Moll <pawel.moll@arm.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Marc Zyngier <Marc.Zyngier@arm.com>,
+        "virtualization@lists.linux-foundation.org" 
+	<virtualization@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Michael S. Tsirkin" <mst@redhat.com>
+Date: Wed, 06 Mar 2013 15:10:15 +0000
+In-Reply-To: <87fw0ad7sr.fsf@rustcorp.com.au>
+References: <87wqubkalj.fsf@rustcorp.com.au>
+	 <1360839247-9131-1-git-send-email-pawel.moll@arm.com>
+	 <513085EA.8070007@arm.com> <1362135005.3052.26.camel@hornet>
+	 <51308F22.7040303@arm.com> <1362141432.3052.28.camel@hornet>
+	 <87fw0ad7sr.fsf@rustcorp.com.au>
+X-Mailer: Evolution 3.6.2-0ubuntu0.1
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 06032013 #9672708, status: clean
+X-OriginalArrivalTime: 06 Mar 2013 15:10:15.0714 (UTC) FILETIME=[B51C9820:01CE1A7C]
+X-MC-Unique: 113030615101731401
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Borislav Petkov wrote:
-> Ok, before we continue guessing stuff, Tetsuo, can you please explain
-> how exactly you're triggering this. More specifically, we need .config,
-> hypervisor version, I'm assuming kernel is 3.9-rc1, Linux is guest/host
-> etc, etc.
+On Tue, 2013-03-05 at 00:11 +0000, Rusty Russell wrote:
+> Pawel Moll <pawel.moll@arm.com> writes:
+> > On Fri, 2013-03-01 at 11:21 +0000, Marc Zyngier wrote:
+> >> > Having said that, Rusty was contemplating enforcing LE config space in
+> >> > the new PCI layout...
+> >> 
+> >> I wouldn't complain about that, and would like to see a similar thing on
+> >> MMIO.
+> >
+> > Wherever PCI goes, MMIO follows :-)
+> 
+> Yes, but if you switch from 'guest-endian' to 'little-endian' how will
+> you tell?  For PCI, we'd detect it by using the new layout.
 
-I'm using CentOS 6.3 x86_32 guest running on VMware Workstation 6.5.5 for
-Windows XP x86_32 host and VMware Player 4.0.5 for Windows 7 x86_64 host.
+The version register/value. At some point of time there will be a
+new(ish) MMIO layout anyway to deal with 64-bit addresses, replacing the
+ring page number with two 32-bit hi/lo physical address registers. This
+was discussed not long after the driver got merged...
 
-Kernel version is 3.9-rc1 x86_32. This bug can be triggered only when the
-guest has little RAM such that /proc/meminfo reports that HighTotal == 0.
-Config is at http://I-love.SAKURA.ne.jp/tmp/config-3.9-rc1-acpi .
+> I'd rather you specify MMIO as little endian, and we fix the kernel
+> config accessors to be endian aware (ie. 8, 16, 32, 64-bit accessors).
+> Since noone BE is using MMIO right now, it's safe...
 
-I don't know why but changing kernel config to CONFIG_ACPI=n
-( http://I-love.SAKURA.ne.jp/tmp/config-3.9-rc1-noacpi ) solves this bug.
-Well, should I run bisection on ACPI code?
+That's absolutely fine with me, however I don't see anything I could do
+in the virtio_mmio driver and spec - the virtio_config_ops specifies
+get/set as void * operations and I simply do byte-by-byte copy. Have I
+missed some config/endianess/PCI related discussion?
 
-Regards.
+Paweł
+
+
