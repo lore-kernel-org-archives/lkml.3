@@ -1,117 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756212Ab3CFJsU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 04:48:20 -0500
-Received: from www.linutronix.de ([62.245.132.108]:41942 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752736Ab3CFJsS (ORCPT
+	id S1756345Ab3CFJtZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 04:49:25 -0500
+Received: from mx4-phx2.redhat.com ([209.132.183.25]:55030 "EHLO
+	mx4-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752884Ab3CFJtY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 04:48:18 -0500
-Date: Wed, 6 Mar 2013 10:48:08 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-cc: john.stultz@linaro.org, viresh.kumar@linaro.org,
-        jacob.jun.pan@linux.intel.com, linux-arm-kernel@lists.infradead.org,
-        santosh.shilimkar@ti.com, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, rickard.andersson@stericsson.com,
-        vincent.guittot@linaro.org, linus.walleij@stericsson.com
-Subject: Re: [PATCH 2/4][V2] time : set broadcast irq affinity
-In-Reply-To: <51370C09.5020301@linaro.org>
-Message-ID: <alpine.LFD.2.02.1303061047240.22263@ionos>
-References: <1362219013-18173-1-git-send-email-daniel.lezcano@linaro.org> <1362219013-18173-3-git-send-email-daniel.lezcano@linaro.org> <alpine.LFD.2.02.1303052135080.22263@ionos> <51370C09.5020301@linaro.org>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Wed, 6 Mar 2013 04:49:24 -0500
+Date: Wed, 6 Mar 2013 04:48:17 -0500 (EST)
+From: Paolo Bonzini <pbonzini@redhat.com>
+To: Gleb Natapov <gleb@redhat.com>
+Cc: Hu Tao <hutao@cn.fujitsu.com>, Peter Maydell <peter.maydell@linaro.org>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>,
+        qemu-devel <qemu-devel@nongnu.org>,
+        Markus Armbruster <armbru@redhat.com>,
+        Blue Swirl <blauwirbel@gmail.com>,
+        Orit Wasserman <owasserm@redhat.com>, kvm list <kvm@vger.kernel.org>,
+        Juan Quintela <quintela@redhat.com>, Alexander Graf <agraf@suse.de>,
+        Andrew Jones <drjones@redhat.com>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Stefan Hajnoczi <stefanha@redhat.com>,
+        Luiz Capitulino <lcapitulino@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Kevin Wolf <kwolf@redhat.com>, Anthony Liguori <aliguori@us.ibm.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, linux-kernel@vger.kernel.org
+Message-ID: <1810739463.3115068.1362563297384.JavaMail.root@redhat.com>
+In-Reply-To: <20130306093852.GK11223@redhat.com>
+Subject: Re: [PATCH v13 0/8] pv event interface between host and guest
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [93.34.176.20]
+X-Mailer: Zimbra 7.2.0_GA_2669 (ZimbraWebClient - FF3.0 (Linux)/7.2.0_GA_2669)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 6 Mar 2013, Daniel Lezcano wrote:
-> On 03/05/2013 09:40 PM, Thomas Gleixner wrote:
-> > On Sat, 2 Mar 2013, Daniel Lezcano wrote:
-> >> When a cpu goes to a deep idle state where its local timer is shutdown,
-> >> it notifies the time frame work to use the broadcast timer instead.
-> >>
-> >> Unfortunately, the broadcast device could wake up any CPU, including an
-> >> idle one which is not concerned by the wake up at all.
-> >>
-> >> This implies, in the worst case, an idle CPU will wake up to send an IPI
-> >> to another idle cpu.
-> >>
-> >> This patch solves this by setting the irq affinity to the cpu concerned
-> >> by the nearest timer event, by this way, the CPU which is wake up is
-> >> guarantee to be the one concerned by the next event and we are safe with
-> >> unnecessary wakeup for another idle CPU.
-> >>
-> >> As the irq affinity is not supported by all the archs, a flag is needed
-> >> to specify which clocksource can handle it : CLOCK_EVT_FEAT_DYNIRQ
-> >>
-> >> Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
-> >> ---
-> >>  include/linux/clockchips.h   |    5 +++++
-> >>  kernel/time/tick-broadcast.c |   40 +++++++++++++++++++++++++++++++++-------
-> >>  2 files changed, 38 insertions(+), 7 deletions(-)
-> >>
-> >> diff --git a/include/linux/clockchips.h b/include/linux/clockchips.h
-> >> index 6634652..c93e2a6 100644
-> >> --- a/include/linux/clockchips.h
-> >> +++ b/include/linux/clockchips.h
-> >> @@ -55,6 +55,11 @@ enum clock_event_nofitiers {
-> >>  #define CLOCK_EVT_FEAT_C3STOP		0x000008
-> >>  #define CLOCK_EVT_FEAT_DUMMY		0x000010
-> >>  
-> >> +/*
-> >> + * Clock event device can set its irq affinity dynamically
-> >> + */
-> >> +#define CLOCK_EVT_FEAT_DYNIRQ		0x000020
-> >> +
-> >>  /**
-> >>   * struct clock_event_device - clock event device descriptor
-> >>   * @event_handler:	Assigned by the framework to be called by the low
-> >> diff --git a/kernel/time/tick-broadcast.c b/kernel/time/tick-broadcast.c
-> >> index 6197ac0..9ca8ff5 100644
-> >> --- a/kernel/time/tick-broadcast.c
-> >> +++ b/kernel/time/tick-broadcast.c
-> >> @@ -406,13 +406,37 @@ struct cpumask *tick_get_broadcast_oneshot_mask(void)
-> >>  	return to_cpumask(tick_broadcast_oneshot_mask);
-> >>  }
-> >>  
-> >> -static int tick_broadcast_set_event(struct clock_event_device *bc,
-> >> +/*
-> >> + * Set broadcast interrupt affinity
-> >> + */
-> >> +static void tick_broadcast_set_affinity(struct clock_event_device *bc,
-> >> +					const struct cpumask *cpumask)
-> >> +{
-> >> +	if (!(bc->features & CLOCK_EVT_FEAT_DYNIRQ))
-> >> +		return;
-> >> +
-> >> +	if (cpumask_equal(bc->cpumask, cpumask))
-> >> +		return;
-> >> +
-> >> +	bc->cpumask = cpumask;
+
+> On Wed, Mar 06, 2013 at 10:07:31AM +0100, Paolo Bonzini wrote:
+> > Il 06/03/2013 09:56, Hu Tao ha scritto:
+> > >> > 
+> > >> > Something like this should work (in SeaBIOS's
+> > >> > src/acpi-dsdt-isa.dsl):
+> > >> > 
+> > >> >     Device(PEVT) {
+> > >> >         Name(_HID, EisaId("QEMU0001"))
+> > >> >         OperationRegion(PEOR, SystemIO, 0x505, 0x01)
+> > >> >         Field(PEOR, ByteAcc, NoLock, Preserve) {
+> > >> >             PEPT,   8,
+> > >> >         }
+> > >> > 
+> > >> >         Method(_STA, 0, NotSerialized) {
+> > >> >             Store(PEPT, Local0)
+> > >> >             If (LEqual(Local0, Zero)) {
+> > >> >                 Return (0x00)
+> > >> >             } Else {
+> > >> >                 Return (0x0F)
+> > >> >             }
+> > >> >         }
+> > > IIUC, here _STA reads from ioport 0x505, if the result is 0, then the
+> > > device is not present. Otherwise, the device is present. But as Gleb
+> > > said, ''the data you read from unassigned port is not guarantied to be
+> > > zero, it may depend on QEMU version''. What should I do to tell if the
+> > > device is present or not correctly?
 > > 
-> > This breaks with CONFIG_CPUMASK_OFFSTACK=y. cpumask_copy() is your friend!
+> > The firmware is tied to the QEMU version, so you can rely on
+> > unassigned ports returning zero.
+> > 
+> > Later we can change this to use fw-cfg.
 > 
-> This instruction copies the pointer, not the cpumask content.
-> 
-> bc->cpumask is defined as a const struct cpumask * and is used to copy a
-> cpumask pointer not the content.
-> 
-> The cpumask parameter is a pointer to a global cpumask provided by the
-> cpumask_of macro.
-> 
-> But to be in the safe side, I compiled tested with
-> CONFIG_CPUMASK_OFFSTACK=y without problem.
-> 
-> Did I missed something ?
+> I thought we agreed to do it from the start :)
 
-No, I misinterpreted the patch. Assigning a pointer is safe. 
+Then Hu will need to patch the _STA method.
 
-Thanks,
-
-	tglx
+Paolo
