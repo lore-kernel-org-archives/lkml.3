@@ -1,60 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751102Ab3CFFFu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 00:05:50 -0500
-Received: from mail-ia0-f176.google.com ([209.85.210.176]:52416 "EHLO
-	mail-ia0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750710Ab3CFFFs (ORCPT
+	id S1751399Ab3CFFH5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 00:07:57 -0500
+Received: from relay.parallels.com ([195.214.232.42]:41436 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750788Ab3CFFH4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 00:05:48 -0500
-Date: Tue, 5 Mar 2013 21:05:10 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Ric Mason <ric.masonn@gmail.com>
-cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Petr Holasek <pholasek@redhat.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Izik Eidus <izik.eidus@ravellosystems.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH 2/7] ksm: treat unstable nid like in stable tree
-In-Reply-To: <5136ABEE.8000501@gmail.com>
-Message-ID: <alpine.LNX.2.00.1303052031320.29433@eggly.anvils>
-References: <alpine.LNX.2.00.1302210013120.17843@eggly.anvils> <alpine.LNX.2.00.1302210019390.17843@eggly.anvils> <51271A7D.6020305@gmail.com> <alpine.LNX.2.00.1302221250440.6100@eggly.anvils> <51303CAB.3080406@gmail.com> <alpine.LNX.2.00.1303011139270.7398@eggly.anvils>
- <51315174.4020200@gmail.com> <alpine.LNX.2.00.1303011833490.23290@eggly.anvils> <5136ABEE.8000501@gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Wed, 6 Mar 2013 00:07:56 -0500
+Message-ID: <5136CEEB.5090505@parallels.com>
+Date: Wed, 6 Mar 2013 09:06:51 +0400
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: "J. Bruce Fields" <bfields@fieldses.org>
+CC: <linux-nfs@vger.kernel.org>, <Trond.Myklebust@netapp.com>,
+        <linux-kernel@vger.kernel.org>, <devel@openvz.org>
+Subject: Re: [PATCH] nfsd: check client tracker initialization result
+References: <20130228120959.6764.17787.stgit@localhost.localdomain> <20130305212001.GD15816@fieldses.org>
+In-Reply-To: <20130305212001.GD15816@fieldses.org>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.30.29.37]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 6 Mar 2013, Ric Mason wrote:
-[ I've deleted the context because that was about the unstable tree,
-  and here you have moved to asking about a case in the stable tree. ]
-> 
-> For the case of a ksm page is migrated to a different NUMA node and migrate
-> its stable node to  the right tree and collide with an existing stable node.
-> get_kpfn_nid(stable_node->kpfn) != NUMA(stable_node->nid) can capture nothing
+06.03.2013 01:20, J. Bruce Fields пишет:
+> On Thu, Feb 28, 2013 at 03:09:59PM +0300, Stanislav Kinsbursky wrote:
+>> Function nfsd4_client_tracking_init() can return error.
+>
+> Before, I think that we the nfsd4_client_* functions just became no-ops
+> in this case.  With the result that no client records get written, and
+> so clients are unable to reclaim on the next boot.
+>
+> Which is annoying, but possibly not as annoying as your server
+> completely refusing to start.
+>
+> It's arguably more helpful in the long run to fail immediately when we
+> recognize reboot recovery isn't going to work.  But in practice this may
+> mean people that never knew they had a problem suddenly have servers
+> that don't start at all.
+>
+> So I'm inclined to be more forgiving and leave this as it is.  But maybe
+> something like a warning printk would be appropriate.
+>
 
-That's not so: as I've pointed out before, ksm_migrate_page() updates
-stable_node->kpfn for the new page on the new NUMA node; but it cannot
-(get the right locking to) move the stable_node to its new tree at that time.
+Ok then.
+I'll add the warning anf convert the function to be "void" rather then "int".
+Thanks!
 
-It's moved out once ksmd notices that it's in the wrong NUMA node tree -
-perhaps when one its rmap_items reaches the head of cmp_and_merge_page(),
-or perhaps here in stable_tree_search() when it matches another page
-coming in to cmp_and_merge_page().
+> --b.
+>
+>>
+>> Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+>> ---
+>>   fs/nfsd/nfs4state.c |    9 ++++++++-
+>>   1 files changed, 8 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
+>> index f194f86..fc4b81b 100644
+>> --- a/fs/nfsd/nfs4state.c
+>> +++ b/fs/nfsd/nfs4state.c
+>> @@ -69,6 +69,7 @@ static u64 current_sessionid = 1;
+>>
+>>   /* forward declarations */
+>>   static int check_for_locks(struct nfs4_file *filp, struct nfs4_lockowner *lowner);
+>> +void nfs4_state_shutdown_net(struct net *net);
+>>
+>>   /* Locking: */
+>>
+>> @@ -4942,7 +4943,9 @@ nfs4_state_start_net(struct net *net)
+>>   	ret = nfs4_state_create_net(net);
+>>   	if (ret)
+>>   		return ret;
+>> -	nfsd4_client_tracking_init(net);
+>> +	ret = nfsd4_client_tracking_init(net);
+>> +	if (ret)
+>> +		goto out_tracking;
+>>   	nn->boot_time = get_seconds();
+>>   	locks_start_grace(net, &nn->nfsd4_manager);
+>>   	nn->grace_ended = false;
+>> @@ -4950,6 +4953,10 @@ nfs4_state_start_net(struct net *net)
+>>   	       nn->nfsd4_grace, net);
+>>   	queue_delayed_work(laundry_wq, &nn->laundromat_work, nn->nfsd4_grace * HZ);
+>>   	return 0;
+>> +
+>> +out_tracking:
+>> +	nfs4_state_destroy_net(net);
+>> +	return ret;
+>>   }
+>>
+>>   /* initialization to perform when the nfsd service is started: */
+>>
 
-You may be concentrating on the case when that "another page" is a ksm
-page migrated from a different NUMA node; and overlooking the case of
-when the matching ksm page in this stable tree has itself been migrated.
 
-> since stable_node is the node in the right stable tree, nothing happen to it
-> before this check. Did you intend to check get_kpfn_nid(page_node->kpfn) !=
-> NUMA(page_node->nid) ?
-
-Certainly not: page_node is usually NULL.  But I could have checked
-get_kpfn_nid(stable_node->kpfn) != nid: I was duplicating the test
-from cmp_and_merge_page(), but here we do have local variable nid.
-
-Hugh
+-- 
+Best regards,
+Stanislav Kinsbursky
