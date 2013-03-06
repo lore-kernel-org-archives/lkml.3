@@ -1,72 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757696Ab3CFLui (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 06:50:38 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:49218 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757482Ab3CFLuh convert rfc822-to-8bit (ORCPT
+	id S1757821Ab3CFLyb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 06:54:31 -0500
+Received: from mail-we0-f169.google.com ([74.125.82.169]:55792 "EHLO
+	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757747Ab3CFLy3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 06:50:37 -0500
-Message-ID: <1362570681.5269.98.camel@coredoba.hi.pengutronix.de>
-Subject: Re: RFC: Zynq Clock Controller
-From: Jan =?ISO-8859-1?Q?L=FCbbe?= <jlu@pengutronix.de>
-To: =?ISO-8859-1?Q?S=F6ren?= Brinkmann <soren.brinkmann@xilinx.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>
-Cc: Mike Turquette <mturquette@linaro.org>,
-        Josh Cartwright <josh.cartwright@ni.com>,
-        Michal Simek <michal.simek@xilinx.com>,
-        Peter Crosthwaite <pcrost@xilinx.com>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, git@xilinx.com
-Date: Wed, 06 Mar 2013 12:51:21 +0100
-In-Reply-To: <37032699-343e-485c-80e0-9b23e3706c58@VA3EHSMHS013.ehs.local>
-References: <37032699-343e-485c-80e0-9b23e3706c58@VA3EHSMHS013.ehs.local>
-Organization: Pengutronix
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:219:99ff:fe56:8d7
-X-SA-Exim-Mail-From: jlu@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Wed, 6 Mar 2013 06:54:29 -0500
+Date: Wed, 6 Mar 2013 12:57:00 +0100
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Marek Szyprowski <m.szyprowski@samsung.com>
+Cc: Minchan Kim <minchan@kernel.org>, linux-mm@kvack.org,
+        linaro-mm-sig@lists.linaro.org, linux-kernel@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Subject: Re: [RFC/PATCH 0/5] Contiguous Memory Allocator and get_user_pages()
+Message-ID: <20130306115700.GN9021@phenom.ffwll.local>
+Mail-Followup-To: Marek Szyprowski <m.szyprowski@samsung.com>,
+	Minchan Kim <minchan@kernel.org>, linux-mm@kvack.org,
+	linaro-mm-sig@lists.linaro.org, linux-kernel@vger.kernel.org,
+	Kyungmin Park <kyungmin.park@samsung.com>,
+	Arnd Bergmann <arnd@arndb.de>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Mel Gorman <mel@csn.ul.ie>, Michal Nazarewicz <mina86@mina86.com>,
+	Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+References: <1362466679-17111-1-git-send-email-m.szyprowski@samsung.com>
+ <CAEwNFnBQS+Lem9bNWWngTjOgC5OpF8U=rw8e9zfvZdF8a7iONA@mail.gmail.com>
+ <51371F04.2050507@samsung.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51371F04.2050507@samsung.com>
+X-Operating-System: Linux phenom 3.7.0-rc4+
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sören,
+On Wed, Mar 06, 2013 at 11:48:36AM +0100, Marek Szyprowski wrote:
+> Hello,
+> 
+> On 3/6/2013 9:47 AM, Minchan Kim wrote:
+> >Hello,
+> >
+> >On Tue, Mar 5, 2013 at 3:57 PM, Marek Szyprowski
+> ><m.szyprowski@samsung.com> wrote:
+> >> Hello,
+> >>
+> >> Contiguous Memory Allocator is very sensitive about migration failures
+> >> of the individual pages. A single page, which causes permanent migration
+> >> failure can break large conitguous allocations and cause the failure of
+> >> a multimedia device driver.
+> >>
+> >> One of the known issues with migration of CMA pages are the problems of
+> >> migrating the anonymous user pages, for which the others called
+> >> get_user_pages(). This takes a reference to the given user pages to let
+> >> kernel to operate directly on the page content. This is usually used for
+> >> preventing swaping out the page contents and doing direct DMA to/from
+> >> userspace.
+> >>
+> >> To solving this issue requires preventing locking of the pages, which
+> >> are placed in CMA regions, for a long time. Our idea is to migrate
+> >> anonymous page content before locking the page in get_user_pages(). This
+> >> cannot be done automatically, as get_user_pages() interface is used very
+> >> often for various operations, which usually last for a short period of
+> >> time (like for example exec syscall). We have added a new flag
+> >> indicating that the given get_user_space() call will grab pages for a
+> >> long time, thus it is suitable to use the migration workaround in such
+> >> cases.
+> >>
+> >> The proposed extensions is used by V4L2/VideoBuf2
+> >> (drivers/media/v4l2-core/videobuf2-dma-contig.c), but that is not the
+> >> only place which might benefit from it, like any driver which use DMA to
+> >> userspace with get_user_pages(). This one is provided to demonstrate the
+> >> use case.
+> >>
+> >> I would like to hear some comments on the presented approach. What do
+> >> you think about it? Is there a chance to get such workaround merged at
+> >> some point to mainline?
+> >>
+> >
+> >I discussed similar patch from memory-hotplug guys with Mel.
+> >Look at http://marc.info/?l=linux-mm&m=136014458829566&w=2
+> >
+> >The conern is that we ends up forcing using FOLL_DURABLE/GUP_NM for
+> >all drivers and subsystems for making sure CMA/memory-hotplug works
+> >well.
+> >
+> >You mentioned driver grab a page for a long time should use
+> >FOLL_DURABLE flag but "for a long time" is very ambiguous. For
+> >example, there is a driver
+> >
+> >get_user_pages()
+> >some operation.
+> >put_pages
+> >
+> >You can make sure some operation is really fast always?
+> 
+> Well, in our case (judging from the logs) we observed 2 usage patterns
+> for get_user_pages() calls. One group was lots of short time locks, whose
+> call stacks originated in various kernel places, the second group was
+> device drivers which used get_user_pages() to create a buffer for the
+> DMA. Such buffers were used for the whole lifetime of the session to
+> the given device, what was equivalent to infinity from the migration/CMA
+> point of view. This was however based on the specific use case at out
+> target system, that's why I wanted to start the discussion and find
+> some generic approach.
+> 
+> 
+> >For example, what if it depends on other event which is normally very
+> >fast but quite slow once a week or try to do dynamic memory allocation
+> >but memory pressure is severe?
+> >
+> >For 100% working well, at last we need to change all GUP user with
+> >GUP_NM or your FOLL_DURABLE whatever but the concern Mel pointed out
+> >is it could cause lowmem exhaustion problem.
+> 
+> This way we sooner or later end up without any movable pages at all.
+> I assume that keeping some temporary references on movable/cma pages
+> must be allowed, because otherwise we limit the functionality too much.
+> 
+> >At the moment, there is other problem against migratoin, which are not
+> >related with your patch. ex, zcache, zram, zswap. Their pages couldn't
+> >be migrated out so I think below Mel's suggestion or some generic
+> >infrastructure can move pinned page is  more proper way to go.
+> 
+> zcache/zram/zswap (vsmalloc based code) can be also extended to support
+> migration. It requires some significant amount of work, but it is really
+> doable.
+> 
+> >"To guarantee CMA can migrate pages pinned by drivers I think you need
+> >migrate-related callsbacks to unpin, barrier the driver until migration
+> >completes and repin."
+> 
+> Right, this might improve the migration reliability. Are there any works
+> being done in this direction?
 
-On Tue, 2013-03-05 at 12:04 -0800, Sören Brinkmann wrote:
-> For this reasons, I'd like to propose moving Zynq into the same
-> direction. I.e. adding a clock controller with the following DT
-> description (details may change but the general idea should become
-> clear):
-> 	clkc: clkc {
->                 #clock-cells = <1>;
->                 compatible = "xlnx,ps7-clkc";
->                 ps_clk_frequency = <33333333>;	# board x-tal
->                 # optional props
->                 gem0_emio_clk_freq = <125000000>;
->                 gem1_emio_clk_freq = <50000000>;
->                 can_mio_clk_freq_xx = <1234>; # this is possible 54 times with xx = 00..53
->         };
-
-The clock controller should only contain properties for input frequency
-(which can obviously not be calculated at run-time).
-
-Are the gem*, can* properties inputs? If they are actually outputs, the
-corresponding frequencies should be requested by the clock consumers and
-not hard-coded in DT.
-
-Please keep in mind that DT properties use dashes instead of
-underscores.
-
-Best regards,
-Jan
+See my other mail about how we (ab)use mmu_notifiers in an experimental
+drm/i915 patch. I have no idea whether that's the right approach though.
+But I'd certainly welcome a generic approach here which works for all
+page migration users. And I guess some callback based approach is better
+to handle low memory situations, since at least for drm/i915 userptr
+backed buffer objects we might want to slurp in the entire available
+memory. Or as much as we can get hold off at least. So moving pages to a
+safe area before pinning them might not be feasible.
+-Daniel
 -- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
-
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
