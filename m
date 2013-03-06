@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932138Ab3CFXWM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 18:22:12 -0500
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:52222 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757206Ab3CFXWJ (ORCPT
+	id S932237Ab3CFXWV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 18:22:21 -0500
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:43282 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932210Ab3CFXWS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 18:22:09 -0500
+	Wed, 6 Mar 2013 18:22:18 -0500
 From: Michel Lespinasse <walken@google.com>
 To: Alex Shi <alex.shi@intel.com>, Ingo Molnar <mingo@kernel.org>,
         David Howells <dhowells@redhat.com>,
@@ -15,9 +15,9 @@ To: Alex Shi <alex.shi@intel.com>, Ingo Molnar <mingo@kernel.org>,
         Yuanhan Liu <yuanhan.liu@linux.intel.com>,
         Rik van Riel <riel@redhat.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
-Subject: [PATCH 07/12] rwsem: use cmpxchg for trying to steal write lock
-Date: Wed,  6 Mar 2013 15:21:46 -0800
-Message-Id: <1362612111-28673-8-git-send-email-walken@google.com>
+Subject: [PATCH 12/12] x86 rwsem: avoid taking slow path when stealing write lock
+Date: Wed,  6 Mar 2013 15:21:51 -0800
+Message-Id: <1362612111-28673-13-git-send-email-walken@google.com>
 X-Mailer: git-send-email 1.8.1.3
 In-Reply-To: <1362612111-28673-1-git-send-email-walken@google.com>
 References: <1362612111-28673-1-git-send-email-walken@google.com>
@@ -25,59 +25,71 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Using rwsem_atomic_update to try stealing the write lock forced us to
-undo the adjustment in the failure path. We can have simpler and faster
-code by using cmpxchg instead.
+modify __down_write[_nested] and __down_write_trylock to grab the write
+lock whenever the active count is 0, even if there are queued waiters
+(they must be writers pending wakeup, since the active count is 0).
+
+Note that this is an optimization only; architectures without this
+optimization will still work fine:
+
+- __down_write() would take the slow path which would take the wait_lock
+  and then try stealing the lock (as in the spinlocked rwsem implementation)
+
+- __down_write_trylock() would fail, but callers must be ready to deal
+  with that - since there are some writers pending wakeup, they could
+  have raced with us and obtained the lock before we steal it.
 
 Signed-off-by: Michel Lespinasse <walken@google.com>
 
 ---
- lib/rwsem.c | 26 ++++++--------------------
- 1 file changed, 6 insertions(+), 20 deletions(-)
+ arch/x86/include/asm/rwsem.h | 28 +++++++++++++++++++++-------
+ 1 file changed, 21 insertions(+), 7 deletions(-)
 
-diff --git a/lib/rwsem.c b/lib/rwsem.c
-index 2360bf204098..64c2dc007be2 100644
---- a/lib/rwsem.c
-+++ b/lib/rwsem.c
-@@ -142,25 +142,6 @@ __rwsem_do_wake(struct rw_semaphore *sem, int wake_type)
- 	return sem;
+diff --git a/arch/x86/include/asm/rwsem.h b/arch/x86/include/asm/rwsem.h
+index 2dbe4a721ce5..cad82c9c2fde 100644
+--- a/arch/x86/include/asm/rwsem.h
++++ b/arch/x86/include/asm/rwsem.h
+@@ -105,8 +105,8 @@ static inline void __down_write_nested(struct rw_semaphore *sem, int subclass)
+ 	asm volatile("# beginning down_write\n\t"
+ 		     LOCK_PREFIX "  xadd      %1,(%2)\n\t"
+ 		     /* adds 0xffff0001, returns the old value */
+-		     "  test      %1,%1\n\t"
+-		     /* was the count 0 before? */
++		     "  test " __ASM_SEL(%w1,%k1) "," __ASM_SEL(%w1,%k1) "\n\t"
++		     /* was the active mask 0 before? */
+ 		     "  jz        1f\n"
+ 		     "  call call_rwsem_down_write_failed\n"
+ 		     "1:\n"
+@@ -126,11 +126,25 @@ static inline void __down_write(struct rw_semaphore *sem)
+  */
+ static inline int __down_write_trylock(struct rw_semaphore *sem)
+ {
+-	long ret = cmpxchg(&sem->count, RWSEM_UNLOCKED_VALUE,
+-			   RWSEM_ACTIVE_WRITE_BIAS);
+-	if (ret == RWSEM_UNLOCKED_VALUE)
+-		return 1;
+-	return 0;
++	long result, tmp;
++	asm volatile("# beginning __down_write_trylock\n\t"
++		     "  mov          %0,%1\n\t"
++		     "1:\n\t"
++		     "  test " __ASM_SEL(%w1,%k1) "," __ASM_SEL(%w1,%k1) "\n\t"
++		     /* was the active mask 0 before? */
++		     "  jnz          2f\n\t"
++		     "  mov          %1,%2\n\t"
++		     "  add          %3,%2\n\t"
++		     LOCK_PREFIX "  cmpxchg  %2,%0\n\t"
++		     "  jnz	     1b\n\t"
++		     "2:\n\t"
++		     "  sete         %b1\n\t"
++		     "  movzbl       %b1, %k1\n\t"
++		     "# ending __down_write_trylock\n\t"
++		     : "+m" (sem->count), "=&a" (result), "=&r" (tmp)
++		     : "er" (RWSEM_ACTIVE_WRITE_BIAS)
++		     : "memory", "cc");
++	return result;
  }
  
--/* Try to get write sem, caller holds sem->wait_lock: */
--static int try_get_writer_sem(struct rw_semaphore *sem)
--{
--	long oldcount, adjustment;
--
--	adjustment = RWSEM_ACTIVE_WRITE_BIAS;
--	if (list_is_singular(&sem->wait_list))
--		adjustment -= RWSEM_WAITING_BIAS;
--
--try_again_write:
--	oldcount = rwsem_atomic_update(adjustment, sem) - adjustment;
--	if (!(oldcount & RWSEM_ACTIVE_MASK))
--		return 1;
--	/* some one grabbed the sem already */
--	if (rwsem_atomic_update(-adjustment, sem) & RWSEM_ACTIVE_MASK)
--		return 0;
--	goto try_again_write;
--}
--
  /*
-  * wait for the read lock to be granted
-  */
-@@ -236,7 +217,12 @@ struct rw_semaphore __sched *rwsem_down_write_failed(struct rw_semaphore *sem)
- 	while (true) {
- 		set_task_state(tsk, TASK_UNINTERRUPTIBLE);
- 
--		if (try_get_writer_sem(sem))
-+		/* Try acquiring the write lock. */
-+		count = RWSEM_ACTIVE_WRITE_BIAS;
-+		if (!list_is_singular(&sem->wait_list))
-+			count += RWSEM_WAITING_BIAS;
-+		if (cmpxchg(&sem->count, RWSEM_WAITING_BIAS, count) ==
-+							RWSEM_WAITING_BIAS)
- 			break;
- 
- 		raw_spin_unlock_irq(&sem->wait_lock);
 -- 
 1.8.1.3
