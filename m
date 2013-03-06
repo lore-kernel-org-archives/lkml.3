@@ -1,64 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757180Ab3CFXKt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 18:10:49 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:14522 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754857Ab3CFXKs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 18:10:48 -0500
-Message-ID: <5137CCB2.4050506@redhat.com>
-Date: Wed, 06 Mar 2013 18:09:38 -0500
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1756726Ab3CFXMJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 18:12:09 -0500
+Received: from mail-la0-f51.google.com ([209.85.215.51]:65126 "EHLO
+	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754116Ab3CFXMG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Mar 2013 18:12:06 -0500
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Emmanuel Benisty <benisty.e@gmail.com>,
-        "Vinod, Chegu" <chegu_vinod@hp.com>, "Low, Jason" <jason.low2@hp.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>, aquini@redhat.com,
-        Michel Lespinasse <walken@google.com>, Ingo Molnar <mingo@kernel.org>,
-        Larry Woodman <lwoodman@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>, hhuang@redhat.com
-Subject: Re: [PATCH v2 7/4] ipc: fine grained locking for semtimedop
-References: <1362476149.2225.50.camel@buesod1.americas.hpqcorp.net> <20130306171546.63471bc0@cuia.bos.redhat.com> <CA+55aFyivGLzW3hYKR7y_ATff49EOiBq4Tnyrv+WZRm4ks81vg@mail.gmail.com>
-In-Reply-To: <CA+55aFyivGLzW3hYKR7y_ATff49EOiBq4Tnyrv+WZRm4ks81vg@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20130306085231.GA4805@gmail.com>
+References: <1362546223-20486-1-git-send-email-vlee@twitter.com>
+	<20130306085231.GA4805@gmail.com>
+Date: Wed, 6 Mar 2013 15:12:03 -0800
+Message-ID: <CAKixpbiLtuYW4Tt770EEHxJK03Kq=LKtQzXULb2p5E_zh2Oc4w@mail.gmail.com>
+Subject: Re: [PATCH] perf tools: Fix LIBNUMA build with glibc 2.12 and older.
+From: Vinson Lee <vlee@twitter.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Ingo Molnar <mingo@redhat.com>, Irina Tirdea <irina.tirdea@intel.com>,
+        Paul Mackerras <paulus@samba.org>, Pekka Enberg <penberg@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/06/2013 05:57 PM, Linus Torvalds wrote:
-> On Wed, Mar 6, 2013 at 5:15 PM, Rik van Riel <riel@redhat.com> wrote:
->>
->> If the call is a semop manipulating just one semaphore in
->> an array with multiple semaphores, the read/write lock for
->> the semaphore array is taken in shared (read) mode, and the
->> individual semaphore's lock is taken.
+On Wed, Mar 6, 2013 at 12:52 AM, Ingo Molnar <mingo@kernel.org> wrote:
 >
-> You know, we do something like this already elsewhere, and I think we
-> do it slightly better. See the mm_take_all_locks() logic in mm/mmap.c.
+> * Vinson Lee <vlee@twitter.com> wrote:
+>
+>> The tokens MADV_HUGEPAGE and MADV_NOHUGEPAGE are not available with
+>> glibc 2.12 and older. Define these tokens if they are not already
+>> defined.
+>>
+>> This patch fixes these build errors with older versions of glibc.
+>>
+>>     CC bench/numa.o
+>> bench/numa.c: In function ???alloc_data???:
+>> bench/numa.c:334: error: ???MADV_HUGEPAGE??? undeclared (first use in this function)
+>> bench/numa.c:334: error: (Each undeclared identifier is reported only once
+>> bench/numa.c:334: error: for each function it appears in.)
+>> bench/numa.c:341: error: ???MADV_NOHUGEPAGE??? undeclared (first use in this function)
+>> make: *** [bench/numa.o] Error 1
+>>
+>> Signed-off-by: Vinson Lee <vlee@twitter.com>
+>> Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+>> Cc: Ingo Molnar <mingo@redhat.com>
+>> Cc: Irina Tirdea <irina.tirdea@intel.com>
+>> Cc: Paul Mackerras <paulus@samba.org>
+>> Cc: Pekka Enberg <penberg@kernel.org>
+>> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+>>
+>> ---
+>>  tools/perf/bench/bench.h |    7 +++++++
+>>  1 files changed, 7 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/tools/perf/bench/bench.h b/tools/perf/bench/bench.h
+>> index a5223e6..6263f38 100644
+>> --- a/tools/perf/bench/bench.h
+>> +++ b/tools/perf/bench/bench.h
+>> @@ -1,6 +1,13 @@
+>>  #ifndef BENCH_H
+>>  #define BENCH_H
+>>
+>> +#ifndef MADV_HUGEPAGE
+>> +#define MADV_HUGEPAGE 14
+>> +#endif
+>> +#ifndef MADV_NOHUGEPAGE
+>> +#define MADV_NOHUGEPAGE 15
+>> +#endif
+>
+> Can we ignore Parisc which goes outside the asm-generic values of 14/15 and defines
+> these as 67/68?
+>
+> On Parisc 14 is MADV_16K_PAGES, 15 is unused.
+>
+> Could we include <uapi/asm/mman.h> instead?
+>
+> Thanks,
+>
+>         Ingo
 
-That would work. If we are about to do one of the uncommon operations,or 
-sma->complex_count is set, we need to take the outer lock and all of the
-inner locks.
-
-The only complication would be interactions with the non-semaphore code
-in ipc/util.c, which manipulates the kern_ipc_perm structures, which are
-part of the sem_array structure.
-
-> That said, judging by your numbers, your read-write lock seems to work
-> fine too, even though I'd worry about cacheline ping-pong (but not
-> contention) on the readers. So it doesn't seem optimal, but it sure as
-> hell seems better than what we do now ;)
-
-I can take a stab at implementing the take_all_locks approach tomorrow.
-
-If things turn out to be easier than I fear, I will send an updated
-patch.  If the resulting changes to the rest of ipc/ turn out to be
-too ugly to live, the rwsem performance is likely to be good enough
-for a while, and I'll just send an email without a patch :)
+Including <uapi/asm/mman.h> in bench/numa.c also fixes the LIBNUMA
+build for me only with WERROR=0. It adds many redefined warnings of
+symbols from <sys/mman.h> such as MAP_GROWSDOWN, MAP_DENYWRITE,
+MAP_EXECUTABLE. The header <sys/mman.h> cannot be removed as it is
+needed for mmap.
