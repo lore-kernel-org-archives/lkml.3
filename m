@@ -1,52 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755979Ab3CFH4O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 02:56:14 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:53699 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755759Ab3CFH4J (ORCPT
+	id S1755823Ab3CFHz6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 02:55:58 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:47075 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755676Ab3CFHzx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 02:56:09 -0500
-X-AuditID: cbfee68d-b7f636d0000009be-3f-5136f6989673
+	Wed, 6 Mar 2013 02:55:53 -0500
+X-AuditID: cbfee68e-b7fa46d00000627e-c9-5136f6870cb2
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Andrew Morton'" <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, "'Alessandro Zummo'" <a.zummo@towertech.it>,
         rtc-linux@googlegroups.com, "'Jingoo Han'" <jg1.han@samsung.com>
 References: <007b01ce1a3e$cd9f3260$68dd9720$%han@samsung.com>
 In-reply-to: <007b01ce1a3e$cd9f3260$68dd9720$%han@samsung.com>
-Subject: [PATCH V2 26/30] rtc: rtc-tps65910: use devm_rtc_device_register()
-Date: Wed, 06 Mar 2013 16:56:08 +0900
-Message-id: <009401ce1a40$0f91de10$2eb59a30$%han@samsung.com>
+Subject: [PATCH V2 25/30] rtc: rtc-tps6586x: use devm_rtc_device_register()
+Date: Wed, 06 Mar 2013 16:55:50 +0900
+Message-id: <009301ce1a40$0566b7d0$10342770$%han@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac4aPs2G+X8TED9/S2OjRUc7S5yKjAAAThnQ
+Thread-index: Ac4aPs2G+X8TED9/S2OjRUc7S5yKjAAAS2xw
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrDIsWRmVeSWpSXmKPExsVy+t8zA90Z38wCDR7Ol7S4vGsOmwOjx+dN
-	cgGMUVw2Kak5mWWpRfp2CVwZh48VFDzirDjXOYO5gXEWRxcjJ4eEgInEocaDrBC2mMSFe+vZ
-	uhi5OIQEljFKNLztYocpete+mRkisYhR4sanG0wQzmwmidW/PzCCVLEJqEl8+XIYqIODQ0RA
-	X6KtRQOkhlmgl1HiTO9usLiQgK1EzzwekHJOATuJKRMfgy0QFvCWmPHtOxOIzSKgKvFuxSMw
-	mxeo/ObDN4wQtqDEj8n3WEBsZgEtifU7jzNB2PISm9e8ZQYZLyGgLvHory5IWETASGL1r+fM
-	ECUiEvtevGOEKFnGLjEtDWKTgMS3yYdYIMKyEpsOMEN8KylxcMUNlgmMErOQ7J2FZO8sJHtn
-	IVmwgJFlFaNoakFyQXFSepGhXnFibnFpXrpecn7uJkZITPXuYLx9wPoQYzLQ+onMUqLJ+cCY
-	zCuJNzQ2NjEzMTUxtzQ1NyVNWEmcV+6STKCQQHpiSWp2ampBalF8UWlOavEhRiYOTqkGRju+
-	nEvpKTJykxZUBUfu1xLv3PPsxZH4AgmR5Lw/CtdlVfjiZ0VIb46LaPORWZPX/u3t/Oli/2Rl
-	WqumbCq47D7rTtLxpqk8pQYzo2NOVmin87XG5qglGff96bs+f0WuRnB6htDqXWJvRZfdsc9s
-	1XP026YXs1FA4G2pmlbt3DxZtZfKK7iVWIozEg21mIuKEwFBjbMfvwIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupmleLIzCtJLcpLzFFi42I5/e+xgO6Mb2aBBj8+ilhc3jWHzYHR4/Mm
-	uQDGqAZGm4zUxJTUIoXUvOT8lMy8dFsl7+B453hTMwNDXUNLC3MlhbzE3FRbJRefAF23zByg
-	qUoKZYk5pUChgMTiYiV9O0wTQkPcdC1gGiN0fUOC4HqMDNBAwjrGjMPHCgoecVac65zB3MA4
-	i6OLkZNDQsBE4l37ZmYIW0ziwr31bF2MXBxCAosYJW58usEE4cxmklj9+wMjSBWbgJrEly+H
-	2bsYOThEBPQl2lo0QGqYBXoZJc707gaLCwnYSvTM4wEp5xSwk5gy8TE7iC0s4C0x49t3JhCb
-	RUBV4t2KR2A2L1D5zYdvGCFsQYkfk++xgNjMAloS63ceZ4Kw5SU2r3nLDDJeQkBd4tFfXZCw
-	iICRxOpfz5khSkQk9r14xziBUWgWkkmzkEyahWTSLCQtCxhZVjGKphYkFxQnpeca6RUn5haX
-	5qXrJefnbmIER+0z6R2MqxosDjEKcDAq8fBOUDELFGJNLCuuzD3EKMHBrCTCy3UGKMSbklhZ
-	lVqUH19UmpNafIgxGejRicxSosn5wISSVxJvaGxiZmRpZGZhZGJuTpqwkjgv46knAUIC6Ykl
-	qdmpqQWpRTBbmDg4pRoYrbvrL0///MF5zZ7Jb3csaqsQKjzssvv2N5GTv3pm6dY13Zx+9xHz
-	nZpalpUT+3+VTBXaJSDCFHBwhtrSoqefTERXBF+vFPsnLrT85/JVNeUPP8YyFx7evEyj0177
-	1j39UoXavbk/K8t3eWfr3dqiKf+gxX3VE74J7uu3/Ay4pZ7LYBHoL+O6TomlOCPRUIu5qDgR
-	AKW91H0eAwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrGIsWRmVeSWpSXmKPExsVy+t8zA92Ob2aBBpvFLZZcvMpuMWf9GjaL
+	ywsvsVpc3jWHzWJ/ZwejA6vHnokn2TxOzPjN4tG3ZRWjx/R5P5k8Pm+SC2CN4rJJSc3JLEst
+	0rdL4MpYs3UdY8Etzopj3esYGxg7OLoYOTkkBEwkHp1ayQJhi0lcuLeerYuRi0NIYBmjRNPR
+	rSwwRSf2dLNAJKYzStzc0gTl/GKUOH76HjtIFZuAmsSXL4eBbA4OEQF9ibYWDZAaZoFeRokz
+	vbvB4kICthI983hAyjkF7CSmTHwM1ios4C3xfGIzE4jNIqAqsfDKLbDFvCDlDxewQ9iCEj8m
+	3wOLMwtoSazfeZwJwpaX2LzmLTPIeAkBdYlHf3VBwiICRhKzbv9khigRkdj34h0jyDkSAvfY
+	JZoa90PtEpD4NvkQC0SvrMSmA8wQ/0pKHFxxg2UCo8QsJJtnIdk8C8nmWUhWLGBkWcUomlqQ
+	XFCclF5kpFecmFtcmpeul5yfu4kREqd9OxhvHrA+xJgMtH4is5Rocj4wzvNK4g2NjU3MTExN
+	zC1NzU1JE1YS55W/JBMoJJCeWJKanZpakFoUX1Sak1p8iJGJg1OqgTE/6iiTBzuvo8X15F4p
+	72hVuaLFz8NuB+xqfbn9JGvvp/U3Qxbdf+usb7jUzZ2xo2izWt88Z0tTTafVhmvd1T52vHhU
+	tc2H14LvfkFmduDvi+83zNfrKVA66cX5bvv+I9feLeeU8xSc/01XU/hWxy4BcRGZxEWZKjKJ
+	ue8scxbVr4yQOyD1SImlOCPRUIu5qDgRAG7a00LpAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrCKsWRmVeSWpSXmKPExsVy+t9jQd32b2aBBoevWVgsuXiV3WLO+jVs
+	FpcXXmK1uLxrDpvF/s4ORgdWjz0TT7J5nJjxm8Wjb8sqRo/p834yeXzeJBfAGtXAaJORmpiS
+	WqSQmpecn5KZl26r5B0c7xxvamZgqGtoaWGupJCXmJtqq+TiE6DrlpkDtF1JoSwxpxQoFJBY
+	XKykb4dpQmiIm64FTGOErm9IEFyPkQEaSFjHmLFm6zrGglucFce61zE2MHZwdDFyckgImEic
+	2NPNAmGLSVy4t56ti5GLQ0hgOqPEzS1NLBDOL0aJ46fvsYNUsQmoSXz5chjI5uAQEdCXaGvR
+	AKlhFuhllDjTuxssLiRgK9EzjweknFPATmLKxMdgrcIC3hLPJzYzgdgsAqoSC6/cAlvMC1L+
+	cAE7hC0o8WPyPbA4s4CWxPqdx5kgbHmJzWveMoOMlxBQl3j0VxckLCJgJDHr9k9miBIRiX0v
+	3jFOYBSahWTSLCSTZiGZNAtJywJGllWMoqkFyQXFSem5hnrFibnFpXnpesn5uZsYwWngmdQO
+	xpUNFocYBTgYlXh4LZTMAoVYE8uKK3MPMUpwMCuJ8HKdAQrxpiRWVqUW5ccXleakFh9iTAZ6
+	dCKzlGhyPjBF5ZXEGxqbmBlZGplZGJmYm5MmrCTOy3jqSYCQQHpiSWp2ampBahHMFiYOTqkG
+	xsOOp69Hl4hZ/l55rff7TD8t/0VcEe8z2IyWi7+ddOAh/1Px3zcq1OrcK9Y6nJq3LnTWgyVf
+	ljueZC2889nrjEmpse3aJV6GGye/V/l5itW/XqI65OWkbZ8/Saw9p/9tO6v94dnJMzWMmr/z
+	XK1av22C1r4PIRIKOwTdTe8eMF3bv124sozPu0qJpTgj0VCLuag4EQDEzb4ARwMAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -62,32 +63,32 @@ Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 Changes since v1:
 - used 'struct device *dev' as the first argument
 
- drivers/rtc/rtc-tps65910.c |    6 +-----
- 1 files changed, 1 insertions(+), 5 deletions(-)
+ drivers/rtc/rtc-tps6586x.c |    4 +---
+ 1 files changed, 1 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/rtc/rtc-tps65910.c b/drivers/rtc/rtc-tps65910.c
-index 8bd8115..ef5d199 100644
---- a/drivers/rtc/rtc-tps65910.c
-+++ b/drivers/rtc/rtc-tps65910.c
-@@ -276,7 +276,7 @@ static int tps65910_rtc_probe(struct platform_device *pdev)
- 	tps_rtc->irq = irq;
- 	device_set_wakeup_capable(&pdev->dev, 1);
+diff --git a/drivers/rtc/rtc-tps6586x.c b/drivers/rtc/rtc-tps6586x.c
+index aab4e8c..b6aab9f 100644
+--- a/drivers/rtc/rtc-tps6586x.c
++++ b/drivers/rtc/rtc-tps6586x.c
+@@ -274,7 +274,7 @@ static int tps6586x_rtc_probe(struct platform_device *pdev)
+ 	}
  
--	tps_rtc->rtc = rtc_device_register(pdev->name, &pdev->dev,
-+	tps_rtc->rtc = devm_rtc_device_register(&pdev->dev, pdev->name,
- 		&tps65910_rtc_ops, THIS_MODULE);
- 	if (IS_ERR(tps_rtc->rtc)) {
- 		ret = PTR_ERR(tps_rtc->rtc);
-@@ -295,12 +295,8 @@ static int tps65910_rtc_probe(struct platform_device *pdev)
-  */
- static int tps65910_rtc_remove(struct platform_device *pdev)
+ 	platform_set_drvdata(pdev, rtc);
+-	rtc->rtc = rtc_device_register(dev_name(&pdev->dev), &pdev->dev,
++	rtc->rtc = devm_rtc_device_register(&pdev->dev, dev_name(&pdev->dev),
+ 				       &tps6586x_rtc_ops, THIS_MODULE);
+ 	if (IS_ERR(rtc->rtc)) {
+ 		ret = PTR_ERR(rtc->rtc);
+@@ -306,12 +306,10 @@ fail_rtc_register:
+ 
+ static int tps6586x_rtc_remove(struct platform_device *pdev)
  {
--	/* leave rtc running, but disable irqs */
--	struct tps65910_rtc *tps_rtc = platform_get_drvdata(pdev);
--
- 	tps65910_rtc_alarm_irq_enable(&pdev->dev, 0);
+-	struct tps6586x_rtc *rtc = platform_get_drvdata(pdev);
+ 	struct device *tps_dev = to_tps6586x_dev(&pdev->dev);
  
--	rtc_device_unregister(tps_rtc->rtc);
+ 	tps6586x_update(tps_dev, RTC_CTRL, 0,
+ 		RTC_ENABLE | OSC_SRC_SEL | PRE_BYPASS | CL_SEL_MASK);
+-	rtc_device_unregister(rtc->rtc);
  	return 0;
  }
  
