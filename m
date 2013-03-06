@@ -1,40 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753945Ab3CFSPz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 13:15:55 -0500
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:51580 "EHLO e7.ny.us.ibm.com"
+	id S1754020Ab3CFSSE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 13:18:04 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:13344 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752799Ab3CFSPy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 13:15:54 -0500
-Message-ID: <513787BB.4040504@linux.vnet.ibm.com>
-Date: Wed, 06 Mar 2013 10:15:23 -0800
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1753545Ab3CFSSC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Mar 2013 13:18:02 -0500
+Date: Wed, 6 Mar 2013 19:16:08 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Jeff Layton <jlayton@redhat.com>,
+        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
+        Mandeep Singh Baines <msb@chromium.org>,
+        Ming Lei <ming.lei@canonical.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@redhat.com>, Al Viro <viro@ZenIV.linux.org.uk>
+Subject: Re: LOCKDEP: 3.9-rc1: mount.nfs/4272 still has locks held!
+Message-ID: <20130306181608.GA18687@redhat.com>
+References: <CACBanvrc0orXGZ1v+gKHtVPKWYKGEFx46dwoDCjTU78+nPtZyg@mail.gmail.com> <20130304205307.GA13527@redhat.com> <4FA345DA4F4AE44899BD2B03EEEC2FA9286AEEB0@sacexcmbx05-prd.hq.netapp.com> <20130305082308.6607d4db@tlielax.poochiereds.net> <20130305174648.GF12795@htj.dyndns.org> <20130305174954.GG12795@htj.dyndns.org> <20130305140312.243cb094@tlielax.poochiereds.net> <20130305190923.GI12795@htj.dyndns.org> <20130305183941.19ff39ce@tlielax.poochiereds.net> <20130305234700.GE1227@htj.dyndns.org>
 MIME-Version: 1.0
-To: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
-CC: bp@alien8.de, hpa@linux.intel.com, linux-kernel@vger.kernel.org
-Subject: Re: [3.9-rc1 x86] Bug in ioremap code?
-References: <201303060041.AIF15342.tJFOHLQFFOMVSO@I-love.SAKURA.ne.jp> <20130305180650.GD4914@pd.tnic> <201303060628.CBG00578.OJtMFFHLQVSFOO@I-love.SAKURA.ne.jp> <51367104.5050200@linux.vnet.ibm.com>	<20130305224432.GD27022@pd.tnic> <201303062358.EFG90616.HLtSQFJFOMVOFO@I-love.SAKURA.ne.jp> <5137822F.2030501@linux.vnet.ibm.com>
-In-Reply-To: <5137822F.2030501@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13030618-5806-0000-0000-00002038459F
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130305234700.GE1227@htj.dyndns.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Does anybody know what this business is in __cpa_process_fault()?
+On 03/05, Tejun Heo wrote:
+>
+> Oleg, are you still opposed to the idea of making freezer share trap
+> points with ptrace?
 
->         /*
->          * Ignore the NULL PTE for kernel identity mapping, as it is expected
->          * to have holes.
->          * Also set numpages to '1' indicating that we processed cpa req for
->          * one virtual address page and its pfn. TBD: numpages can be set based
->          * on the initial value and the level returned by lookup_address().
->          */
+My memory can fool me, but iirc I wasn't actually opposed... I guess
+you mean the previous discussion about vfork/ptrace/etc which I forgot
+completely.
 
-If this is expecting the identity mapping to have holes, then the
-BUG_ON() is wrong.  But how would it _get_ holes?
+But I can recall the main problem with your idea (with me): I simply
+wasn't able to understand it ;)
+
+Likewise, I can't really understand the ideas discussed in this thread.
+At least when it come to this particular problem, rpc_wait_bit_killable()
+is not interruptible...
+
+And how SIGFREEZE can help? If we want to interrupt the sleeps in NFS/RPC
+layer we can simply add TASK_WAKEFREEZE (can be used with TASK_KILLABLE)
+and change freeze_task() to do signal_wake_up_state(TASK_WAKEFREEZE).
+
+But if we can do this, then it should be possible so simply make these
+sleeps TASK_INTERRUPTIBLE ? But it seems that we can't just because we
+can't always restart, so I am totally confused.
+
+Oleg.
 
