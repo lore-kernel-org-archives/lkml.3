@@ -1,63 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754685Ab3CFW57 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 17:57:59 -0500
-Received: from mail-vc0-f171.google.com ([209.85.220.171]:61877 "EHLO
-	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751701Ab3CFW56 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 17:57:58 -0500
+	id S1756567Ab3CFXBl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 18:01:41 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:35834 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753309Ab3CFXBk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Mar 2013 18:01:40 -0500
+From: Suman Anna <s-anna@ti.com>
+To: <linux-kernel@vger.kernel.org>
+CC: Suman Anna <s-anna@ti.com>, Tejun Heo <tj@kernel.org>,
+        Ohad Ben-Cohen <ohad@wizery.com>
+Subject: [PATCH] remoteproc: fix the error check for idr_alloc
+Date: Wed, 6 Mar 2013 16:56:48 -0600
+Message-ID: <1362610608-64885-1-git-send-email-s-anna@ti.com>
+X-Mailer: git-send-email 1.8.1.2
 MIME-Version: 1.0
-In-Reply-To: <20130306171546.63471bc0@cuia.bos.redhat.com>
-References: <1362476149.2225.50.camel@buesod1.americas.hpqcorp.net>
-	<20130306171546.63471bc0@cuia.bos.redhat.com>
-Date: Wed, 6 Mar 2013 17:57:56 -0500
-X-Google-Sender-Auth: jHU6YqkBhq8ZWL2Os4dHRikxvW8
-Message-ID: <CA+55aFyivGLzW3hYKR7y_ATff49EOiBq4Tnyrv+WZRm4ks81vg@mail.gmail.com>
-Subject: Re: [PATCH v2 7/4] ipc: fine grained locking for semtimedop
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Rik van Riel <riel@redhat.com>
-Cc: Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Emmanuel Benisty <benisty.e@gmail.com>,
-        "Vinod, Chegu" <chegu_vinod@hp.com>, "Low, Jason" <jason.low2@hp.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>, aquini@redhat.com,
-        Michel Lespinasse <walken@google.com>, Ingo Molnar <mingo@kernel.org>,
-        Larry Woodman <lwoodman@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>, hhuang@redhat.com
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 6, 2013 at 5:15 PM, Rik van Riel <riel@redhat.com> wrote:
->
-> If the call is a semop manipulating just one semaphore in
-> an array with multiple semaphores, the read/write lock for
-> the semaphore array is taken in shared (read) mode, and the
-> individual semaphore's lock is taken.
+The new idr_alloc interface returns the allocated id back
+on success, so fix the error path to check for negative
+values. This was missed out in the newer idr interface
+adoption patch, 15fc611 "remoteproc: convert to idr_alloc()".
 
-You know, we do something like this already elsewhere, and I think we
-do it slightly better. See the mm_take_all_locks() logic in mm/mmap.c.
+Signed-off-by: Suman Anna <s-anna@ti.com>
+Cc: Tejun Heo <tj@kernel.org>
+Cc: Ohad Ben-Cohen <ohad@wizery.com>
+---
+ drivers/remoteproc/remoteproc_core.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-The optimal strategy if you have many items, and the *common* case is
-that you need just one lock, is actually to only take that single lock
-for the common case. No top-level lock at all.
+diff --git a/drivers/remoteproc/remoteproc_core.c b/drivers/remoteproc/remoteproc_core.c
+index 29387df..fb0fb34 100644
+--- a/drivers/remoteproc/remoteproc_core.c
++++ b/drivers/remoteproc/remoteproc_core.c
+@@ -217,7 +217,7 @@ int rproc_alloc_vring(struct rproc_vdev *rvdev, int i)
+ 	 * TODO: support predefined notifyids (via resource table)
+ 	 */
+ 	ret = idr_alloc(&rproc->notifyids, rvring, 0, 0, GFP_KERNEL);
+-	if (ret) {
++	if (ret < 0) {
+ 		dev_err(dev, "idr_alloc failed: %d\n", ret);
+ 		dma_free_coherent(dev->parent, size, va, dma);
+ 		return ret;
+-- 
+1.8.1.2
 
-Then, for the complex (but unlikely) case, you take a *separate*
-top-level lock, and then you take the lower-level locks one by one,
-while testing first if you already hold them (using a separate data
-structure that is protected by the top-level lock).
-
-This way, the common case only needs that single lock that protects
-just that particular data structure.
-
-That said, judging by your numbers, your read-write lock seems to work
-fine too, even though I'd worry about cacheline ping-pong (but not
-contention) on the readers. So it doesn't seem optimal, but it sure as
-hell seems better than what we do now ;)
-
-                Linus
