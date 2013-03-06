@@ -1,131 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758271Ab3CFOPs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 09:15:48 -0500
-Received: from sema.semaphore.gr ([78.46.194.137]:58102 "EHLO
-	sema.semaphore.gr" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756919Ab3CFOPq (ORCPT
+	id S1758309Ab3CFOQG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 09:16:06 -0500
+Received: from www.linutronix.de ([62.245.132.108]:43442 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758015Ab3CFOQD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 09:15:46 -0500
-Message-ID: <51374F8D.9040300@semaphore.gr>
-Date: Wed, 06 Mar 2013 16:15:41 +0200
-From: Stratos Karafotis <stratosk@semaphore.gr>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130219 Thunderbird/17.0.3
+	Wed, 6 Mar 2013 09:16:03 -0500
+Date: Wed, 6 Mar 2013 15:15:49 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Feng Tang <feng.tang@intel.com>
+cc: John Stultz <john.stultz@linaro.org>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>, x86@kernel.org,
+        Len Brown <lenb@kernel.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        linux-kernel@vger.kernel.org, gong.chen@linux.intel.com
+Subject: Re: [PATCH v3 5/5] timekeeping: utilize the suspend-nonstop clocksource
+ to count suspended time
+In-Reply-To: <1362554271-22382-6-git-send-email-feng.tang@intel.com>
+Message-ID: <alpine.LFD.2.02.1303061512110.22263@ionos>
+References: <1362554271-22382-1-git-send-email-feng.tang@intel.com> <1362554271-22382-6-git-send-email-feng.tang@intel.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>
-CC: "Rafael J. Wysocki" <rjw@sisk.pl>, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3 linux-next] cpufreq: conservative: Use an inline function
- to evaluate freq_target
-References: <51366C77.3080309@semaphore.gr> <CAKohpokdG2vd5Cp4Lmcnc5ZrLsa-_4Kcy-DvLjG--6SMVsGZkg@mail.gmail.com>
-In-Reply-To: <CAKohpokdG2vd5Cp4Lmcnc5ZrLsa-_4Kcy-DvLjG--6SMVsGZkg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/06/2013 03:23 PM, Viresh Kumar wrote:
-> Atleast my poor mind can't make out how. To me it looks like broken now.
-> 
-> 
-> When can we enter this "if" block, probably only in case where max freq is
-> less than 100 KHz (And because we have freq unit in KHz in cpufreq, its exact
-> value is less than 100). Lets say its 90.
-> 
-> So, we will get into your "if" block now and would set freq_target to 90 - 5000.
-> 
-> So its broken, isn't it.
-> 
-> Rest is fine.
-> 
+On Wed, 6 Mar 2013, Feng Tang wrote:
 
-Of course your are right. I'm sorry for this confusion.
+> There are some new processors whose TSC clocksource won't stop during
+> suspend. Currently, after system resumes, kernel will use persistent
+> clock or RTC to compensate the sleep time, but for those new types of
+> clocksources, we could skip the special compensation from external
+> sources, and just use current clocksource for time recounting.
+> 
+> This can solve some time drift bugs caused by some not-so-accurate or
+> error-prone RTC devices.
+> 
+> The current way to count suspened time is first try to use the persistent
+> clock, and then try the rtc if persistent clock can't be used. This
+> patch will change the trying order to:
+> 	suspend-nonstop clocksource -> persistent clock -> rtc
+> 
+> Signed-off-by: Feng Tang <feng.tang@intel.com>
+> ---
+>  kernel/time/timekeeping.c |   42 ++++++++++++++++++++++++++++++++++--------
+>  1 file changed, 34 insertions(+), 8 deletions(-)
+> 
+> diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+> index 9a0bc98..bd7c27b 100644
+> --- a/kernel/time/timekeeping.c
+> +++ b/kernel/time/timekeeping.c
+> @@ -788,22 +788,48 @@ void timekeeping_inject_sleeptime(struct timespec *delta)
+>  static void timekeeping_resume(void)
+>  {
+>  	struct timekeeper *tk = &timekeeper;
+> +	struct clocksource *clock = tk->clock;
+>  	unsigned long flags;
+> -	struct timespec ts;
+> +	struct timespec ts_new, ts_delta;
+> +	cycle_t cycle_now, cycle_delta;
+> +	s64 nsec;
+>  
+> -	read_persistent_clock(&ts);
+> +	ts_delta.tv_sec = 0;
+> +	read_persistent_clock(&ts_new);
+>  
+>  	clockevents_resume();
+>  	clocksource_resume();
+>  
+>  	write_seqlock_irqsave(&tk->lock, flags);
+>  
+> -	if (timespec_compare(&ts, &timekeeping_suspend_time) > 0) {
+> -		ts = timespec_sub(ts, timekeeping_suspend_time);
+> -		__timekeeping_inject_sleeptime(tk, &ts);
+> -	}
+> -	/* re-base the last cycle value */
+> -	tk->clock->cycle_last = tk->clock->read(tk->clock);
+> +	/*
+> +	 * After system resumes, we need to calculate the suspended time and
+> +	 * compensate it for the OS time. There are 3 sources that could be
+> +	 * used: Nonstop clocksource during suspend, persistent clock and rtc
+> +	 * device.
+> +	 *
+> +	 * One specific platform may have 1 or 2 or all of them, and the
+> +	 * preference will be:
+> +	 *	suspend-nonstop clocksource -> persistent clock -> rtc
+> +	 * The less preferred source will only be tried if there is no better
+> +	 * usable source. The rtc part is handled separately in rtc core code.
+> +	 */
+> +	cycle_now = clock->read(clock);
+> +	if ((clock->flags & CLOCK_SOURCE_SUSPEND_NONSTOP) &&
+> +		cycle_now > clock->cycle_last) {
+> +
+> +		cycle_delta = (cycle_now - clock->cycle_last) & clock->mask;
+> +		nsec = clocksource_cyc2ns(cycle_delta, clock->mult,
+> +							clock->shift);
+> +		ts_delta = ns_to_timespec(nsec);
+> +	} else if (timespec_compare(&ts_new, &timekeeping_suspend_time) > 0)
+> +		ts_delta = timespec_sub(ts_new, timekeeping_suspend_time);
+> +
+> +	if (ts_delta.tv_sec >= 1)
+> +		__timekeeping_inject_sleeptime(tk, &ts_delta);
 
-Below v2 of this patch.
+If the suspend time measured by the nonstop clocksource is 0.999 sec
+then we throw it away and then let the RTC code inject inaccurate
+sleep time? Brilliant design, really.
 
 Thanks,
-Stratos
 
---------------------------------8<------------------------
-Use an inline function to evaluate freq_target to avoid duplicate code.
-
-Also, define a macro for the default frequency step.
-
-Signed-off-by: Stratos Karafotis <stratosk@semaphore.gr>
----
- drivers/cpufreq/cpufreq_conservative.c | 27 +++++++++++++++------------
- 1 file changed, 15 insertions(+), 12 deletions(-)
-
-diff --git a/drivers/cpufreq/cpufreq_conservative.c b/drivers/cpufreq/cpufreq_conservative.c
-index 08be431..3fb921d 100644
---- a/drivers/cpufreq/cpufreq_conservative.c
-+++ b/drivers/cpufreq/cpufreq_conservative.c
-@@ -28,6 +28,7 @@
- /* Conservative governor macros */
- #define DEF_FREQUENCY_UP_THRESHOLD		(80)
- #define DEF_FREQUENCY_DOWN_THRESHOLD		(20)
-+#define DEF_FREQUENCY_STEP			(5)
- #define DEF_SAMPLING_DOWN_FACTOR		(1)
- #define MAX_SAMPLING_DOWN_FACTOR		(10)
- 
-@@ -39,9 +40,20 @@ static struct cs_dbs_tuners cs_tuners = {
- 	.down_threshold = DEF_FREQUENCY_DOWN_THRESHOLD,
- 	.sampling_down_factor = DEF_SAMPLING_DOWN_FACTOR,
- 	.ignore_nice = 0,
--	.freq_step = 5,
-+	.freq_step = DEF_FREQUENCY_STEP,
- };
- 
-+static inline unsigned int get_freq_target(struct cpufreq_policy *policy)
-+{
-+	unsigned int freq_target = (cs_tuners.freq_step * policy->max) / 100;
-+
-+	/* max freq cannot be less than 100. But who knows... */
-+	if (unlikely(freq_target == 0))
-+		freq_target = DEF_FREQUENCY_STEP;
-+
-+	return freq_target;
-+}
-+
- /*
-  * Every sampling_rate, we check, if current idle time is less than 20%
-  * (default), then we try to increase frequency. Every sampling_rate *
-@@ -55,7 +67,6 @@ static void cs_check_cpu(int cpu, unsigned int load)
- {
- 	struct cs_cpu_dbs_info_s *dbs_info = &per_cpu(cs_cpu_dbs_info, cpu);
- 	struct cpufreq_policy *policy = dbs_info->cdbs.cur_policy;
--	unsigned int freq_target;
- 
- 	/*
- 	 * break out if we 'cannot' reduce the speed as the user might
-@@ -72,13 +83,7 @@ static void cs_check_cpu(int cpu, unsigned int load)
- 		if (dbs_info->requested_freq == policy->max)
- 			return;
- 
--		freq_target = (cs_tuners.freq_step * policy->max) / 100;
--
--		/* max freq cannot be less than 100. But who knows.... */
--		if (unlikely(freq_target == 0))
--			freq_target = 5;
--
--		dbs_info->requested_freq += freq_target;
-+		dbs_info->requested_freq += get_freq_target(policy);
- 		if (dbs_info->requested_freq > policy->max)
- 			dbs_info->requested_freq = policy->max;
- 
-@@ -94,9 +99,7 @@ static void cs_check_cpu(int cpu, unsigned int load)
- 
- 	/* Check for frequency decrease */
- 	if (load < cs_tuners.down_threshold) {
--		freq_target = (cs_tuners.freq_step * policy->max) / 100;
--
--		dbs_info->requested_freq -= freq_target;
-+		dbs_info->requested_freq -= get_freq_target(policy);
- 		if (dbs_info->requested_freq < policy->min)
- 			dbs_info->requested_freq = policy->min;
- 
--- 
-1.8.1.4
-
- 
+	tglx
