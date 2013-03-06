@@ -1,240 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753951Ab3CFHfp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 02:35:45 -0500
-Received: from smtp.nue.novell.com ([195.135.221.5]:51628 "EHLO
-	smtp.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751004Ab3CFHfm (ORCPT
+	id S1754379Ab3CFHgP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 02:36:15 -0500
+Received: from mail-la0-f47.google.com ([209.85.215.47]:51106 "EHLO
+	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752346Ab3CFHgL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 02:35:42 -0500
-Subject: Re: [PATCH] efivarfs: fix abnormal GUID in variable name by using
- strcpy to replace null with dash
-From: joeyli <jlee@suse.com>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Michael Schroeder <mls@suse.com>, Josh Boyer <jwboyer@redhat.com>,
-        Peter Jones <pjones@redhat.com>, Matthew Garrett <mjg59@srcf.ucam.org>,
-        Frederic Crozat <fcrozat@suse.com>
-In-Reply-To: <1362181299.23932.168.camel@linux-s257.site>
-References: <1362108018-13117-1-git-send-email-jlee@suse.com>
-	 <1362151068.2842.440.camel@mfleming-mobl1.ger.corp.intel.com>
-	 <1362155493.2842.446.camel@mfleming-mobl1.ger.corp.intel.com>
-	 <1362181299.23932.168.camel@linux-s257.site>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 06 Mar 2013 15:34:18 +0800
-Message-ID: <1362555258.23932.573.camel@linux-s257.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 8bit
+	Wed, 6 Mar 2013 02:36:11 -0500
+MIME-Version: 1.0
+In-Reply-To: <20130227102829.GA17968@linux-sh.org>
+References: <20130218142834.28739.39417.sendpatchset@w520>
+	<20130227082335.GB30395@linux-sh.org>
+	<CANqRtoSbiPhRbDsZppkJ+F48tEmuCdSfVRo3dTs9cEUxfvLopA@mail.gmail.com>
+	<20130227085216.GC30395@linux-sh.org>
+	<CANqRtoTFgHDKpb52HCRD=11ds_zKgLammcnymF719L9u4v3fvg@mail.gmail.com>
+	<20130227102829.GA17968@linux-sh.org>
+Date: Wed, 6 Mar 2013 16:36:08 +0900
+Message-ID: <CANqRtoSP3iufLO3x2-9AXQiFYhV017bO+MBMTx76P9-xsmBnRA@mail.gmail.com>
+Subject: Re: [PATCH] irqchip: Renesas INTC External IRQ pin driver
+From: Magnus Damm <magnus.damm@gmail.com>
+To: Paul Mundt <lethal@linux-sh.org>
+Cc: linux-kernel@vger.kernel.org, linux-sh@vger.kernel.org,
+        benh@kernel.crashing.org, grant.likely@secretlab.ca,
+        horms@verge.net.au, tglx@linutronix.de
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Matt, 
+On Wed, Feb 27, 2013 at 7:28 PM, Paul Mundt <lethal@linux-sh.org> wrote:
+> On Wed, Feb 27, 2013 at 06:52:51PM +0900, Magnus Damm wrote:
+>> As you know, the INTC code that you are referring to is a full
+>> interrupt controller designed to work directly with CPU cores like SH
+>> and ARM. Newer ARM cores like Cortex-A9 all include the GIC both for
+>> IPI purpose in case of SMP and they also implement SPI functionality
+>> for I/O device interrupts. So the need for vendor-specific interrupt
+>> controller IP is almost down to nothing these days.
+>>
+> Yes, I'm aware of that.
 
-於 六，2013-03-02 於 07:41 +0800，joeyli 提到：
-> 於 五，2013-03-01 於 16:31 +0000，Matt Fleming 提到：
-> > On Fri, 2013-03-01 at 15:17 +0000, Matt Fleming wrote:
-> > > On Fri, 2013-03-01 at 11:20 +0800, Lee, Chun-Yi wrote:
-> > > > From: Michael Schroeder <mls@suse.com>
-> > > > 
-> > > > On HP z220 system (firmware version 1.54), some EFI variables are incorrectly
-> > > > named :
-> > > > 
-> > > > ls -d /sys/firmware/efi/vars/*8be4d* | grep -v -- -8be returns
-> > > > /sys/firmware/efi/vars/dbxDefault-pport8be4df61-93ca-11d2-aa0d-00e098032b8c
-> > > > /sys/firmware/efi/vars/KEKDefault-pport8be4df61-93ca-11d2-aa0d-00e098032b8c
-> > > > /sys/firmware/efi/vars/SecureBoot-pport8be4df61-93ca-11d2-aa0d-00e098032b8c
-> > > > /sys/firmware/efi/vars/SetupMode-Information8be4df61-93ca-11d2-aa0d-00e098032b8c
-> > > > 
-> > > > That causes by the following statement in efivar_create_sysfs_entry function:
-> > > > 
-> > > >  *(short_name + strlen(short_name)) = '-';
-> > > > efi_guid_unparse(vendor_guid, short_name + strlen(short_name));
-> > > > 
-> > > > The trailing \0 is overwritten with '-', but the next char doesn't seem to be a \0
-> > > > as well for HP. So, the second strlen return the point of next '\0', causes there
-> > > > have garbage string attached before GUID.
-> > > > 
-> > > > Tested on On HP z220.
-> > > 
-> > > What's more likely happening here is that GetNextVariable() is broken on
-> > > this HP firmware and variable_name_size is too big for the given
-> > > variable in variable_name. We've seen other reports of similar bugs,
-> > > 
-> > > 	https://bugzilla.kernel.org/show_bug.cgi?id=47631
-> > > 
-> > > 
-> > > Could someone try this patch against Linus' tree?
-> > 
-> > Urgh, and here's a version that isn't utterly, utterly broken...
-> 
-> Thanks for Matt's patch, we will try it!
-> 
-> Joey Lee
+Good!
 
-Frederic confirmed your patch works to him for fix issue on HP machine.
+>> With that in mind I do really doubt that we end up reimplementing
+>> sh_intc. The upcoming designs that I am aware of do not change their
+>> external IRQ pin hardware to force us to update this driver. What
+>> happens after that I'm afraid I can't say. =)
+>>
+> While I don't expect you would end up with a full reimplmentation, my
+> concern is more that it would just be reproducing stuff that's already in
+> place. IOW, perhaps it's less work to put sh_intc on a diet, and tie the
+> core functionality that you need for external IRQ pins in to an irqchip
+> there -- with the core of the old code adapted in to some sort of common
+> base library, rather than coming up with a new lightweight irqchip driver
+> and having to incrementally pile stuff on top of it later.
 
-Tested-by: Frederic Crozat <fcrozat@suse.com>
+I'm afraid that I can't really see how we would want to pile that much
+stuff on top of this driver in the future. Maybe we need to adjust it
+slightly, but that should be fairly easy.
 
-But, I suggest we just use the length with NULL in variable_name but not
-VariableNameSize that was returned by GetNextVariableName.
+>From my point of view it all boils down to this for our ARM SoCs:
+1) The driver is only suitable for older GIC-based designs coming from
+the Renesas side.
+2) GIC-based SoCs like EMEV2 coming from ex-NEC is using different IP
+and different driver.
+3) Older SoCs that do not make use of GIC are using the full blown
+INTC implementation.
 
-My thinking is following...
+>> I mainly wrote this driver to support the r8a7779 SoC which can't be
+>> driven by the existing INTC code base. During development I decided to
+>> try to share the driver between multiple GIC-based SoCs like r8a7779
+>> and sh73a0. The reason behind trying to share this driver between
+>> multiple SoCs is to remove SoC-specific hacks that can't be dealt with
+>> by the existing INTC code.
+>>
+> Ok, fair enough.
+>
+>> I don't really understand why you would want to use a generic table
+>> driven driver when you have the possibility of using a
+>> hardware-specific driver.
+>
+> For the same reason sh_intc was written in the first place, every CPU
+> subtype more or less had a similar set of interrupt controllers with
+> minor deviations. Those deviations were sufficient enough to make the
+> code pretty hairy in places, and what we have now is really more of a
+> subsystem than an irqchip driver.
+>
+> Having to reproduce 90% of the code when you're adding new CPUs at the
+> rate of 2 a month hardly makes an SoC-specific driver realistic,
+> especially as you just end up with identical features being broken in
+> subtly differnt ways on different SoCs. That being said, a lot of that is
+> legacy stuff and a result of no CPU team talking to any other CPU team
+> ever, and it seems like things have improved enough in that regard that
+> perhaps a hardware-specific driver won't be a complete throw-away
+> disaster like it was before. It's a risk either way, I just hope your
+> lightweight solution remains lightweight and consistent long enough that
+> we don't have multiple copies of slightly different drivers doing exactly
+> same thing spiralling out of control and turning in to a maintenance
+> nightmare.
 
-> 
-> > 
-> > ---
-> > 
-> > >From 4b2ef72bca72039717efe4570ec858a86d565b34 Mon Sep 17 00:00:00 2001
-> > From: Matt Fleming <matt.fleming@intel.com>
-> > Date: Fri, 1 Mar 2013 14:49:12 +0000
-> > Subject: [PATCH] efivars: Sanitise string length returned by
-> >  GetNextVariableName()
-> > 
-> > Some buggy firmware implementations return a string length from
-> > GetNextVariableName() that is actually larger than the string in
-> > 'variable_name', as Michael Schroeder writes,
-> > 
-> >   > On HP z220 system (firmware version 1.54), some EFI variables are
-> >   > incorrectly named :
-> >   >
-> >   > ls -d /sys/firmware/efi/vars/*8be4d* | grep -v -- -8be returns
-> >   > /sys/firmware/efi/vars/dbxDefault-pport8be4df61-93ca-11d2-aa0d-00e098032b8c
-> >   > /sys/firmware/efi/vars/KEKDefault-pport8be4df61-93ca-11d2-aa0d-00e098032b8c
-> >   > /sys/firmware/efi/vars/SecureBoot-pport8be4df61-93ca-11d2-aa0d-00e098032b8c
-> >   > /sys/firmware/efi/vars/SetupMode-Information8be4df61-93ca-11d2-aa0d-00e098032b8c
-> > 
-> > Since 'variable_name' is a string, we can validate its size by
-> > searching for the terminating NULL character.
-> > 
-> > Reported-by: Frederic Crozat <fcrozat@suse.com>
-> > Cc: Matthew Garrett <mjg59@srcf.ucam.org>
-> > Cc: Josh Boyer <jwboyer@redhat.com>
-> > Cc: Michael Schroeder <mls@suse.com>
-> > Cc: Lee, Chun-Yi <jlee@suse.com>
-> > Cc: Lingzhu Xiang <lxiang@redhat.com>
-> > Signed-off-by: Matt Fleming <matt.fleming@intel.com>
-> > ---
-> >  drivers/firmware/efivars.c | 30 ++++++++++++++++++++++++++++++
-> >  1 file changed, 30 insertions(+)
-> > 
-> > diff --git a/drivers/firmware/efivars.c b/drivers/firmware/efivars.c
-> > index 7320bf8..ab477b8 100644
-> > --- a/drivers/firmware/efivars.c
-> > +++ b/drivers/firmware/efivars.c
-> > @@ -1895,6 +1895,33 @@ void unregister_efivars(struct efivars *efivars)
-> >  }
-> >  EXPORT_SYMBOL_GPL(unregister_efivars);
-> >  
-> > +/*
-> > + * Sanity check size of a variable name.
-> > + */
-> > +static unsigned long sanity_check_size(efi_char16_t *variable_name,
-> > +				       unsigned long variable_name_size)
-> > +{
-> > +	unsigned long len;
-> > +	efi_char16_t c;
-> > +
-> > +	/*
-> > +	 * The variable name is, by definition, a NULL-terminated
-> > +	 * string, so make absolutely sure that variable_name_size is
-> > +	 * the value we expect it to be. If not, return the real size.
-> > +	 */
-> > +	for (len = 2; len <= variable_name_size; len += sizeof(c)) {
-> > +		c = variable_name[(len / sizeof(c)) - 1];
-> > +		if (!c)
-> > +			break;
-> > +	}
-> > +
+Yes, I agree about the history with zillions of different SoCs, and
+the INTC and PFC design choice.
 
-We just direct return the len here but don't need compare with
-variable_name_size.
+But regarding the external pins in case of GIC-based designs, this
+seems to be something we can reuse as a regular driver.
 
-	return len;
+> If sh_intc doesn't deal with the needs of the new GIC-backed SoCs then
+> that's of course something that has to be addressed regardless (whether
+> that be hacking up sh_intc or adding new hardware-specific irqchips).
 
-> > +
-> > +	if (len != variable_name_size)
-> > +		printk(KERN_WARNING "efivars: bogus variable_name_size: %lu %lu\n", len, variable_name_size);
-> > +
-> > +	return min(len, variable_name_size);
-> > +}
-> > +
+Ignoring things won't work, agreed.
 
-In UEFI 2.3.1 spec:
+>> I suppose you are wondering why no one seems to be working on INTC DT
+>> support at this point. The truth is that we got very little feedback
+>> and development support with interrupts in general last autumn and on
+>> top of that our developers went their own way instead of following
+>> advice.
+>>
+> I assumed it was either being rewritten or had already been merged, so I
+> was simply surprised to hear otherwise. I will dig through the archives a
+> bit later and see about getting caught up.
 
-VariableNameSize		The size of the VariableName buffer
+Sounds good.
 
-Note that if EFI_BUFFER_TOO_SMALL is returned, the VariableName buffer
-was too small for the next variable. When such an error occurs, the
-VariableNameSize is updated to reflect the size of buffer needed. In all
-cases when calling GetNextVariableName() the VariableNameSize must not
-exceed the actual buffer size that was allocated for VariableName.
+Thanks,
 
-
-Per spec, VariableNameSize will updated to 'the size of buffer needed'
-when EFI_BUFFER_TOO_SMALL, but spec doesn't mention VariableNameSize
-will also updated when EFI_SUCCESS. That means 'VariableNameSize = 1024'
-when EFI_SUCCESS is not a bogus value.
-
-> >  int register_efivars(struct efivars *efivars,
-> >  		     const struct efivar_operations *ops,
-> >  		     struct kobject *parent_kobj)
-> > @@ -1941,8 +1968,11 @@ int register_efivars(struct efivars *efivars,
-> >  		status = ops->get_next_variable(&variable_name_size,
-> >  						variable_name,
-> >  						&vendor_guid);
-> > +
-> >  		switch (status) {
-> >  		case EFI_SUCCESS:
-> > +			variable_name_size = sanity_check_size(variable_name,
-> > +							       variable_name_size);
-> >  			efivar_create_sysfs_entry(efivars,
-> >  						  variable_name_size,
-> >  						  variable_name,
-> 
-
-Due to variable_name_size could be 1024, so I suggest direct feed the
-length of variable_name to efivar_create_sysfs_entry since we are need
-to count the length.
-
-This is a simply diff for my think:
-
-
-diff --git a/drivers/firmware/efivars.c b/drivers/firmware/efivars.c
-index 7320bf8..99a4f9f 100644
---- a/drivers/firmware/efivars.c
-+++ b/drivers/firmware/efivars.c
-@@ -1895,6 +1895,21 @@ void unregister_efivars(struct efivars *efivars)
- }
- EXPORT_SYMBOL_GPL(unregister_efivars);
- 
-+static unsigned long variable_name_length(efi_char16_t *variable_name)
-+{
-+	unsigned long len;
-+	efi_char16_t c;
-+
-+	len = 2;
-+	do {
-+		c = variable_name[len / sizeof(c) - 1];
-+		if (c)
-+			len += sizeof(c);
-+	} while (c);
-+
-+	return len;
-+}
-+
- int register_efivars(struct efivars *efivars,
- 		     const struct efivar_operations *ops,
- 		     struct kobject *parent_kobj)
-@@ -1944,7 +1959,7 @@ int register_efivars(struct efivars *efivars,
- 		switch (status) {
- 		case EFI_SUCCESS:
- 			efivar_create_sysfs_entry(efivars,
--						  variable_name_size,
-+						  variable_name_length(variable_name),
- 						  variable_name,
- 						  &vendor_guid);
- 			break;
-
-
+/ magnus
