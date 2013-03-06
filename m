@@ -1,133 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754355Ab3CFTNY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 14:13:24 -0500
-Received: from mail-ee0-f54.google.com ([74.125.83.54]:61298 "EHLO
-	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753808Ab3CFTNX (ORCPT
+	id S1754430Ab3CFTOO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 14:14:14 -0500
+Received: from mail-yh0-f53.google.com ([209.85.213.53]:35656 "EHLO
+	mail-yh0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754256Ab3CFTOM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 14:13:23 -0500
-From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: Tony Lindgren <tony@atomide.com>
-Subject: Re: [PATCH] arm: omap: RX-51: ARM errata 430973 workaround
-Date: Wed, 6 Mar 2013 20:13:15 +0100
-User-Agent: KMail/1.13.7 (Linux/3.5.0-26-generic; KDE/4.10.0; x86_64; ; )
-Cc: Nishanth Menon <nm@ti.com>,
-        =?utf-8?q?=D0=98=D0=B2=D0=B0=D0=B9=D0=BB=D0=BE?=
-	 =?utf-8?q?_=D0=94=D0=B8=D0=BC=D0=B8=D1=82=D1=80=D0=BE=D0=B2?= 
-	<freemangordon@abv.bg>,
-        linux@arm.linux.org.uk, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-References: <517283541.62064.1362124023621.JavaMail.apache@mail81.abv.bg> <201303061509.07905@pali> <20130306175120.GP11806@atomide.com>
-In-Reply-To: <20130306175120.GP11806@atomide.com>
+	Wed, 6 Mar 2013 14:14:12 -0500
+Date: Wed, 6 Mar 2013 11:14:08 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Lei Wen <adrian.wenl@gmail.com>
+Cc: linux-kernel@vger.kernel.org, leiwen@marvell.com
+Subject: Re: workqueue panic in 3.4 kernel
+Message-ID: <20130306191408.GN1227@htj.dyndns.org>
+References: <CALZhoSR0+SzPLHzJafmny=o8PJ2d7MaH9N6_6s0QZ_oCQm43Xg@mail.gmail.com>
+ <20130305163228.GA12795@htj.dyndns.org>
+ <CALZhoSRyjRYVcKpq9cECHWgKkci6V+O_zn2CkiwqnFo57tZDfQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart1568464.I2SDZNDIls";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201303062013.16302@pali>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALZhoSRyjRYVcKpq9cECHWgKkci6V+O_zn2CkiwqnFo57tZDfQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart1568464.I2SDZNDIls
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+Hello, Lei.
 
-On Wednesday 06 March 2013 18:51:21 Tony Lindgren wrote:
-> * Pali Roh=C3=A1r <pali.rohar@gmail.com> [130306 06:13]:
-> > On Monday 04 March 2013 19:58:06 Tony Lindgren wrote:
-> > > * Nishanth Menon <nm@ti.com> [130301 06:42]:
-> > > > On Fri, Mar 1, 2013 at 1:47 AM, =D0=98=D0=B2=D0=B0=D0=B9=D0=BB=D0=
-=BE =D0=94=D0=B8=D0=BC=D0=B8=D1=82=D1=80=D0=BE=D0=B2
-> >=20
-> > <freemangordon@abv.bg> wrote:
-> > > > > They look similar, but they are not equivalent :). The
-> > > > > first major difference is here (code taken from
-> > > > > omap-smc.S)
-> > > > >=20
-> > > > >> ENTRY(omap_smc2)
-> > > > >>=20
-> > > > >>          stmfd   sp!, {r4-r12, lr}
-> > > > >>          mov     r3, r2
-> > > > >>          mov     r2, r1
-> > > > >>          mov     r1, #0x0        @ Process ID
-> > > > >>          mov     r6, #0xff
-> > > > >>          mov     r12, #0x00      @ Secure Service ID
-> > > > >=20
-> > > > > Always zero, while RX51 PPA expects a real value. I
-> > > > > wonder if it is a bug, but anyway I don't see the id
-> > > > > parameter (R0) used.
-> > > > >=20
-> > > > >>          mov     r7, #0
-> > > > >>          mcr     p15, 0, r7, c7, c5, 6
-> > > > >=20
-> > > > > According to ARM TRM, this is "Invalidate entire
-> > > > > branch predictor array"(IIUC). NFC why it is needed
-> > > > > here, but this will not work on RX-51 until IBE bit
-> > > > > in ACR is set.
-> > > > >=20
-> > > > >>          dsb
-> > > > >>          dmb
-> > > > >>          smc     #0
-> > > > >=20
-> > > > > RX-51 needs smc #1 ;)
-> > > > >=20
-> > > > >>          ldmfd   sp!, {r4-r12, pc}
-> > > > >=20
-> > > > > The next major difference is that RX-51 expects
-> > > > > parameter count passed in R3[0] to be the count of
-> > > > > the remaining parameters +1, but
-> > > > > omap_secure_dispatcher (in omap-secure.c) is passing
-> > > > > the exact count of the remaining parameters.
-> > > > >=20
-> > > > > I guess all of the above problems can be
-> > > > > fixed/workarounded, but I wonder does it worth. Not to
-> > > > > say that I don't have BB around to test if the code
-> > > > > still works if I make changes to
-> > > > > omap2-secure.c/omap-smc.S :)
-> > > >=20
-> > > > Yep, that was my point - instead of introducing new
-> > > > functions, extending the existing functions to handle
-> > > > new requirements is better solution, IMHO.
-> > >=20
-> > > I think there have been patches posted for ARM generic SMC
-> > > handling. Might be worth looking at those a bit and see if
-> > > this can be made generic. I think only the SMC call
-> > > numbering is different for various SoCs?
-> > >=20
-> > > Regards,
-> > >=20
-> > > Tony
-> >=20
-> > Hi Tony, where are patches for ARM generic SMC handling?
->=20
-> Sorry don't have the link available, but I recall seeing some
-> patch on linux-arm-kernel within past six months that added a
-> generic smc function.. Or maybe I was dreaming or something.
->=20
-> Regards,
->=20
-> Tony
+On Wed, Mar 06, 2013 at 10:39:15PM +0800, Lei Wen wrote:
+> We find a race condition as below:
+> CPU0                                                                  CPU1
+> timer interrupt happen
+> __run_timers
+>    __run_timers::spin_lock_irq(&base->lock)
+>    __run_timers::spin_unlock_irq(&base->lock)
+> 
+>    __cancel_work_timer
+> 
+>    __cancel_work_timer::del_timer
+> 
+>    __cancel_work_timer::wait_on_work
+> 
+>    __cancel_work_timer::clear_work_data
+>    __run_timers::call_timer_fn(timer, fn, data);
+>          delayed_work_timer_fn::get_work_cwq
+>    __run_timers::spin_lock_irq(&base->lock)
+> 
+> It is possible for __cancel_work_timer to be run over cpu1 __BEFORE__
+> cpu0 is ready to
+> run the timer callback, which is delayed_work_timer_fn in our case.
 
-I am not able to find that patch...
+If del_timer() happens after the timer starts running, del_timer()
+would return NULL and try_to_grab_pending() will be called which will
+return >=0 iff if successfully steals the PENDING bit (ie. it's the
+sole owner of the work item).  If del_timer() happens before the timer
+starts running, the timer function would never run.
 
-=2D-=20
-Pali Roh=C3=A1r
-pali.rohar@gmail.com
+clear_work_data() happens iff the work item is confirmed to be idle.
+At this point, I'm pretty skeptical this is a bug in workqueue itself
+and strongly suggest looking at the crashing workqueue user.
 
---nextPart1568464.I2SDZNDIls
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
+Thanks.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEABECAAYFAlE3lUwACgkQi/DJPQPkQ1KjLwCgoaftjx2LfJtTtjJKvVVYMjFG
-+yEAoKshlFVQE0UmXHQtd01/vFub7No+
-=y8dF
------END PGP SIGNATURE-----
-
---nextPart1568464.I2SDZNDIls--
+-- 
+tejun
