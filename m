@@ -1,50 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753870Ab3CFQSY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 11:18:24 -0500
-Received: from mail-oa0-f44.google.com ([209.85.219.44]:35627 "EHLO
-	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752927Ab3CFQSW (ORCPT
+	id S1753718Ab3CFQUT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 11:20:19 -0500
+Received: from mail-db8lp0189.outbound.messaging.microsoft.com ([213.199.154.189]:31779
+	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752794Ab3CFQUQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 11:18:22 -0500
+	Wed, 6 Mar 2013 11:20:16 -0500
+X-Forefront-Antispam-Report: CIP:157.56.236.101;KIP:(null);UIP:(null);IPV:NLI;H:BY2PRD0510HT003.namprd05.prod.outlook.com;RD:none;EFVD:NLI
+X-SpamScore: -4
+X-BigFish: PS-4(zz98dI9371I936eI1432Izz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ahzz8275bh8275dhz2fh2a8h668h839h93fhd24hd2bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1155h)
+From: Matthew Garrett <matthew.garrett@nebula.com>
+To: Corentin Chary <corentin.chary@gmail.com>
+CC: "platform-driver-x86@vger.kernel.org" 
+	<platform-driver-x86@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "aaron.lu@intel.com" <aaron.lu@intel.com>
+Subject: Re: [GIT] x86 platform driver updates for 3.8
+Thread-Topic: [GIT] x86 platform driver updates for 3.8
+Thread-Index: AQHN7PuozWF7YU5nx0ymzYV9FLPcnpiY7w8AgABD6wA=
+Date: Wed, 6 Mar 2013 16:20:10 +0000
+Message-ID: <1362586810.7780.18.camel@x230>
+References: <20130107171722.GA31427@srcf.ucam.org>
+	 <CA+55aFzL00K+oURqcnSgbAAkD18DJ8-p1G8vd7KE6RD77dLmCQ@mail.gmail.com>
+	 <CAHR064iDAXDL8-vnv+Hp3F6ymezbLgtfPQt5AH-k+7sOd-cGqg@mail.gmail.com>
+In-Reply-To: <CAHR064iDAXDL8-vnv+Hp3F6ymezbLgtfPQt5AH-k+7sOd-cGqg@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.255.84.4]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <F028D9DFE1D5F14D8E1DFD9EF0B76241@namprd05.prod.outlook.com>
 MIME-Version: 1.0
-In-Reply-To: <1362585587.2140.8.camel@localhost>
-References: <1362585587.2140.8.camel@localhost>
-Date: Wed, 6 Mar 2013 11:18:21 -0500
-Message-ID: <CA+5PVA7n13iH3o3KmjOc5RfkSgKQGJdCah9qP+rJGmEDXgMROA@mail.gmail.com>
-Subject: Re: [REGRESSION] 3.9-rc1 kernel usb root hub stops working and cannot reboot
-From: Josh Boyer <jwboyer@gmail.com>
-To: Eric Paris <eparis@redhat.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+X-OriginatorOrg: nebula.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r26GKL8B015608
 
-On Wed, Mar 6, 2013 at 10:59 AM, Eric Paris <eparis@redhat.com> wrote:
-> I've got a Lenovo T530.  Booting a 3.8 based Fedora kernel my machine
-> works just fine.  Booting a 3.9-rc1 based Fedora kernel my USB 2.0 root
-> hub doesn't seem to notice when devices are plugged in.  (The USB 3.0
-> root hub has no such problem)  I'm assuming (maybe stupidly) it is
-> associated with:
->
-> Mar 06 09:52:35 localhost kernel: pci 0000:00:1c.0: can't find IRQ for PCI INT A; please try using pci=biosirq
-> Mar 06 09:52:35 localhost kernel: pci 0000:00:1c.1: can't find IRQ for PCI INT B; please try using pci=biosirq
-> Mar 06 09:52:35 localhost kernel: pci 0000:00:1c.2: can't find IRQ for PCI INT C; please try using pci=biosirq
->
-> (also, funny thing, pci=biosirq is not a valid command line option, glad
-> it told me to try that)
->
-> I also notice that the 3.9 kernels cannot reboot.  The kernel output the
-> machine restart message and then just hangs forever.  Again, this works
-> just fine on the 3.8 kernels.
+On Wed, 2013-03-06 at 12:17 +0000, Corentin Chary wrote:
+> On Mon, Jan 7, 2013 at 5:22 PM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+> > On Mon, Jan 7, 2013 at 9:17 AM, Matthew Garrett
+> > <matthew.garrett@nebula.com> wrote:
+> >>
+> >> A bit delayed (new job fun), but there's nothing terribly exciting in
+> >> here.
+> >
+> > Nonetheless, this does not seem to be appropriate for outside the merge window.
+> 
+> Was this re-sent for 3.9 ? Or will this hit 3.10 instead ?
 
-You're booting via EFI, right?  I'm debugging an identical issue on an
-EFI machine here.  Basically, it looks like the efi_info variable in the
-bootparams thing is cleared so EFI/ACPI is all broken.
+It's merged in 3.9.
 
-There's a suspect commit but I'm still bisecting so I won't be blaming
-anything yet.  If you'd like to follow along in Fedora land, I'm working
-with bug 918408.
-
-josh
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
