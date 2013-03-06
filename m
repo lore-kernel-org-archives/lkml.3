@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752885Ab3CFGs4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 01:48:56 -0500
-Received: from mail-ob0-f176.google.com ([209.85.214.176]:56082 "EHLO
-	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751210Ab3CFGsz (ORCPT
+	id S1753308Ab3CFGtw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 01:49:52 -0500
+Received: from mail-oa0-f53.google.com ([209.85.219.53]:45963 "EHLO
+	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750753Ab3CFGtv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 01:48:55 -0500
+	Wed, 6 Mar 2013 01:49:51 -0500
 MIME-Version: 1.0
-In-Reply-To: <51366C65.7070802@semaphore.gr>
-References: <51366C65.7070802@semaphore.gr>
-Date: Wed, 6 Mar 2013 14:48:54 +0800
-Message-ID: <CAKohpo==-3oqocx-7fbrYx=cFZJ9vgVZ1di3v2T8TZcissbf5w@mail.gmail.com>
-Subject: Re: [PATCH 1/3 linux-next] cpufreq: conservative: Fix
- sampling_down_factor functionality
+In-Reply-To: <51366C70.3020406@semaphore.gr>
+References: <51366C70.3020406@semaphore.gr>
+Date: Wed, 6 Mar 2013 14:49:50 +0800
+Message-ID: <CAKohpo=aofVQGe3KMOqXpb67i627pH3sgBhFqwgxHR3pP3TBqQ@mail.gmail.com>
+Subject: Re: [PATCH 2/3 linux-next] cpufreq: conservative: Fix the logic in
+ frequency decrease checking
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: Stratos Karafotis <stratosk@semaphore.gr>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Rob Landley <rob@landley.net>,
-        linux-doc@vger.kernel.org, cpufreq@vger.kernel.org,
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, cpufreq@vger.kernel.org,
         linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
@@ -25,16 +24,16 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On 6 March 2013 06:06, Stratos Karafotis <stratosk@semaphore.gr> wrote:
-> sampling_down_factor tunable is unused since commit
-> 8e677ce83bf41ba9c74e5b6d9ee60b07d4e5ed93 (4 years ago).
+> When we evaluate the CPU load for frequency decrease we have to compare
+> the load against down_threshold. There is no need to subtract 10 points
+> from down_threshold.
 >
-> This patch restores the original functionality and documents the
-> tunable.
+> Instead, we have to use the default down_threshold or user's selection
+> unmodified.
 >
 > Signed-off-by: Stratos Karafotis <stratosk@semaphore.gr>
 > ---
->  Documentation/cpu-freq/governors.txt   |  6 ++++++
->  drivers/cpufreq/cpufreq_conservative.c | 11 ++++++++---
->  2 files changed, 14 insertions(+), 3 deletions(-)
+>  drivers/cpufreq/cpufreq_conservative.c | 8 ++------
+>  1 file changed, 2 insertions(+), 6 deletions(-)
 
 Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
