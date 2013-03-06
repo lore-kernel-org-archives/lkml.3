@@ -1,92 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756273Ab3CFWVp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 17:21:45 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:46513 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751354Ab3CFWVn (ORCPT
+	id S1756499Ab3CFWWt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 17:22:49 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48505 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753136Ab3CFWWs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 17:21:43 -0500
-Date: Wed, 6 Mar 2013 17:21:34 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Greg KH <greg@kroah.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the final tree (staging
- tree related)
-Message-ID: <20130306222134.GB11269@phenom.dumpdata.com>
-References: <20130306113508.9c868be103b6b140295c548f@canb.auug.org.au>
- <20130306004341.GA28426@kroah.com>
- <20130306135654.GA10760@phenom.dumpdata.com>
- <20130306200444.GA13744@phenom.dumpdata.com>
- <20130306221118.GC1138@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130306221118.GC1138@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Wed, 6 Mar 2013 17:22:48 -0500
+Date: Wed, 6 Mar 2013 14:22:46 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Hillf Danton <dhillf@gmail.com>
+Cc: Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Michal Hocko <mhocko@suse.cz>, Michel Lespinasse <walken@google.com>
+Subject: Re: [PATCH resend] rmap: recompute pgoff for unmapping huge page
+Message-Id: <20130306142246.b333f350f713dbbf3e931d93@linux-foundation.org>
+In-Reply-To: <CAJd=RBD0UWxpMv7W78fH0U_zBAOozP1owaMePGaUEVitotRfBg@mail.gmail.com>
+References: <CAJd=RBD0UWxpMv7W78fH0U_zBAOozP1owaMePGaUEVitotRfBg@mail.gmail.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 07, 2013 at 06:11:19AM +0800, Greg KH wrote:
-> On Wed, Mar 06, 2013 at 03:04:44PM -0500, Konrad Rzeszutek Wilk wrote:
-> > On Wed, Mar 06, 2013 at 08:56:54AM -0500, Konrad Rzeszutek Wilk wrote:
-> > > On Wed, Mar 06, 2013 at 08:43:41AM +0800, Greg KH wrote:
-> > > > On Wed, Mar 06, 2013 at 11:35:08AM +1100, Stephen Rothwell wrote:
-> > > > > Hi all,
-> > > > > 
-> > > > > After merging the final tree, today's linux-next build (powerpc
-> > > > > allyesconfig) failed like this:
-> > > > > 
-> > > > > In file included from drivers/staging/zcache/debug.c:2:0:
-> > > > > drivers/staging/zcache/debug.h: In function 'dec_zcache_obj_count':
-> > > > > drivers/staging/zcache/debug.h:16:2: error: implicit declaration of function 'BUG_ON' [-Werror=implicit-function-declaration]
-> > > > > 
-> > > > > Caused by commit 95bdaee2140e ("zcache: Move debugfs code out of
-> > > > > zcache-main.c file").
-> > > > > 
-> > > > > I applied this patch for today:
-> > > > > 
-> > > > > From 24b03cf426007c4e94c6bed81560e436afcc136c Mon Sep 17 00:00:00 2001
-> > > > > From: Stephen Rothwell <sfr@canb.auug.org.au>
-> > > > > Date: Wed, 6 Mar 2013 11:31:06 +1100
-> > > > > Subject: [PATCH] disable ZCACHE_DEBUG due to build error
-> > > > > 
-> > > > > In file included from drivers/staging/zcache/debug.c:2:0:
-> > > > > drivers/staging/zcache/debug.h: In function 'dec_zcache_obj_count':
-> > > > > drivers/staging/zcache/debug.h:16:2: error: implicit declaration of function 'BUG_ON' [-Werror=implicit-function-declaration]
-> > > > > 
-> > > > > Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
-> > > > > ---
-> > > > >  drivers/staging/zcache/Kconfig | 1 +
-> > > > >  1 file changed, 1 insertion(+)
-> > > > 
-> > > > Ick, sorry about that, I've applied your patch to my tree.
-> > > 
-> > > Wait, there is no BUG_ON on PPC? Or is the definition for it hidden in layers
-> > > of #include files? Would this also solve it:
-> > 
-> > I got the cross-compiler up and the patch below does indeed solve the problem.
-> > Greg, could you apply the patch below please?
-> 
-> What patch?  I don't see a proper Subject:, Signed-off-by: or anything
-> else I can use.
+On Mon, 4 Mar 2013 20:47:31 +0800 Hillf Danton <dhillf@gmail.com> wrote:
 
-Shesshh. And now I owe you a beer .
+> [Resend due to error in delivering to linux-kernel@vger.kernel.org,
+> caused probably by the rich format provided by the mail agent by default.]
 > 
-> > > diff --git a/drivers/staging/zcache/debug.h b/drivers/staging/zcache/debug.h
-> > > index eef67db..494cea02 100644
-> > > --- a/drivers/staging/zcache/debug.h
-> > > +++ b/drivers/staging/zcache/debug.h
-> > > @@ -1,5 +1,7 @@
-> > >  #ifdef CONFIG_ZCACHE_DEBUG
-> > >  
-> > > +#include <asm/bug.h>
+> We have to recompute pgoff if the given page is huge, since result based on
+> HPAGE_SIZE is not approapriate for scanning the vma interval tree, as shown
+> by commit 36e4f20af833(hugetlb: do not use vma_hugecache_offset() for
+> vma_prio_tree_foreach)
 > 
-> Never include an asm .h file, you know better than that :)
+> ...
+>
+> @@ -1513,6 +1513,9 @@ static int try_to_unmap_file(struct page
+>  	unsigned long max_nl_size = 0;
+>  	unsigned int mapcount;
+> 
+> +	if (PageHuge(page))
+> +		pgoff = page->index << compound_order(page);
+> +
+>  	mutex_lock(&mapping->i_mmap_mutex);
+>  	vma_interval_tree_foreach(vma, &mapping->i_mmap, pgoff, pgoff) {
+>  		unsigned long address = vma_address(page, vma);
 
-OK, let me send an official path.
-> 
-> greg k-h
+Also, what does this patch actually do?
+
+I have a canned response nowadays:
+
+When writing a changelog, please describe the end-user-visible effects
+of that bug, so that others can more easily decide which kernel
+version(s) should be fixed, and so that downstream kernel maintainers
+can more easily work out whether this patch will fix a problem which
+they or their customers are observing.
+
