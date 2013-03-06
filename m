@@ -1,66 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754581Ab3CFTfk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 14:35:40 -0500
-Received: from exprod6og116.obsmtp.com ([64.18.1.37]:36648 "EHLO
-	exprod6og116.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752164Ab3CFTfi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 14:35:38 -0500
-Message-ID: <51379A80.2090200@verisign.com>
-Date: Wed, 06 Mar 2013 14:35:28 -0500
-From: David C Niemi <dniemi@verisign.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1754492Ab3CFTmP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 14:42:15 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:34365 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750922Ab3CFTmO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Mar 2013 14:42:14 -0500
+Date: Wed, 6 Mar 2013 20:42:09 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Marcin Slusarz <marcin.slusarz@gmail.com>
+Cc: Stephen Warren <swarren@nvidia.com>, Joe Perches <joe@perches.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Lucas Stach <dev@lynxeye.de>, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, nouveau@lists.freedesktop.org,
+        Maarten Lankhorst <maarten.lankhorst@canonical.com>
+Subject: Re: nouveau lockdep splat
+Message-ID: <20130306194209.GE30673@pd.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Marcin Slusarz <marcin.slusarz@gmail.com>,
+	Stephen Warren <swarren@nvidia.com>, Joe Perches <joe@perches.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Lucas Stach <dev@lynxeye.de>, dri-devel@lists.freedesktop.org,
+	linux-kernel@vger.kernel.org, nouveau@lists.freedesktop.org,
+	Maarten Lankhorst <maarten.lankhorst@canonical.com>
+References: <20130304211608.GD22274@pd.tnic>
+ <1362501052.1933.2.camel@antimon>
+ <20130306000429.GA30189@pd.tnic>
+ <20130306191418.GA3400@joi.lan>
 MIME-Version: 1.0
-To: Stratos Karafotis <stratosk@semaphore.gr>
-CC: "Rafael J. Wysocki" <rjw@sisk.pl>, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: Re: [PATCH 2/3 linux-next] cpufreq: conservative: Fix the logic in
- frequency decrease  checking
-References: <51366C70.3020406@semaphore.gr>
-In-Reply-To: <51366C70.3020406@semaphore.gr>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 06 Mar 2013 19:35:28.0626 (UTC) FILETIME=[C1F24520:01CE1AA1]
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20130306191418.GA3400@joi.lan>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The "10" sounds like an attempt to add some hysteresis to the up/down decisionmaking.  If you take it out, you should make sure you don't get into situations where you're continually switching rapidly between two frequencies.  (In the ondemand governor some care was also taken to avoid the cost of doing a CPU idleness evaluation counting towards the CPU looking busy enough to upshift; I am not familiar enough with Conservative to know whether that is a problem for it too).
+On Wed, Mar 06, 2013 at 08:14:18PM +0100, Marcin Slusarz wrote:
+> On Wed, Mar 06, 2013 at 01:04:29AM +0100, Borislav Petkov wrote:
+> > On Tue, Mar 05, 2013 at 05:30:52PM +0100, Lucas Stach wrote:
+> > > Dropping Tegra ML, it's not the place where Nouveau mails should go.
+> > 
+> > $ ./scripts/get_maintainer.pl -f drivers/gpu/drm/nouveau/nv50_display.c
+> > ...
+> > linux-tegra@vger.kernel.org (open list:TEGRA SUPPORT)
+> > 
+> > Maybe get_maintainer.pl patterns need correction...
+> 
+> That's new feature (introduced in commit eb90d0855b75f8 "get_maintainer: allow
+> keywords to match filenames") of get_maintainer.pl which now can look at file
+> contents...
+> 
+> TEGRA SUPPORT
+> M:	Stephen Warren <swarren@wwwdotorg.org>
+> L:	linux-tegra@vger.kernel.org
+> Q:	http://patchwork.ozlabs.org/project/linux-tegra/list/
+> T:	git git://git.kernel.org/pub/scm/linux/kernel/git/swarren/linux-tegra.git
+> S:	Supported
+> K:	(?i)[^a-z]tegra
+> 
+> Note the last line and this:
+> 
+> $ grep tegra drivers/gpu/drm/nouveau/nv50_display.c
+>         u32 rekey = 56; /* binary driver, and tegra constant */
+>         max_ac_packet -= 18; /* constant from tegra */
+> 
+> Fun.
 
-DCN
+Yeah, and a lot of it, thanks for digging this out. So obviously this
+regex is a bit... unfortunate. Although the idea of grepping the files
+for unique patterns is not bad, I have to admit.
 
-On 03/05/13 17:06, Stratos Karafotis wrote:
-> When we evaluate the CPU load for frequency decrease we have to compare
-> the load against down_threshold. There is no need to subtract 10 points
-> from down_threshold.
->
-> Instead, we have to use the default down_threshold or user's selection
-> unmodified.
->
-> Signed-off-by: Stratos Karafotis <stratosk@semaphore.gr>
-> ---
->  drivers/cpufreq/cpufreq_conservative.c | 8 ++------
->  1 file changed, 2 insertions(+), 6 deletions(-)
->
-> diff --git a/drivers/cpufreq/cpufreq_conservative.c b/drivers/cpufreq/cpufreq_conservative.c
-> index 1e3be56..08be431 100644
-> --- a/drivers/cpufreq/cpufreq_conservative.c
-> +++ b/drivers/cpufreq/cpufreq_conservative.c
-> @@ -92,12 +92,8 @@ static void cs_check_cpu(int cpu, unsigned int load)
->  		return;
->  	dbs_info->down_skip = 0;
->  
-> -	/*
-> -	 * The optimal frequency is the frequency that is the lowest that can
-> -	 * support the current CPU usage without triggering the up policy. To be
-> -	 * safe, we focus 10 points under the threshold.
-> -	 */
-> -	if (load < (cs_tuners.down_threshold - 10)) {
-> +	/* Check for frequency decrease */
-> +	if (load < cs_tuners.down_threshold) {
->  		freq_target = (cs_tuners.freq_step * policy->max) / 100;
->  
->  		dbs_info->requested_freq -= freq_target;
+:-)
 
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
