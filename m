@@ -1,54 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754982Ab3CFHUH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 02:20:07 -0500
-Received: from mga11.intel.com ([192.55.52.93]:37047 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752949Ab3CFHTC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 02:19:02 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,793,1355126400"; 
-   d="scan'208";a="299868709"
-From: Feng Tang <feng.tang@intel.com>
-To: Thomas Gleixner <tglx@linutronix.de>, John Stultz <john.stultz@linaro.org>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>, x86@kernel.org,
-        Len Brown <lenb@kernel.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        linux-kernel@vger.kernel.org
-Cc: gong.chen@linux.intel.com, Feng Tang <feng.tang@intel.com>
-Subject: [PATCH v3 2/5] clocksource: Add new feature flag CLOCK_SOURCE_SUSPEND_NONSTOP
-Date: Wed,  6 Mar 2013 15:17:48 +0800
-Message-Id: <1362554271-22382-3-git-send-email-feng.tang@intel.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1362554271-22382-1-git-send-email-feng.tang@intel.com>
-References: <1362554271-22382-1-git-send-email-feng.tang@intel.com>
+	id S1755111Ab3CFHVI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 02:21:08 -0500
+Received: from mail-qe0-f51.google.com ([209.85.128.51]:37118 "EHLO
+	mail-qe0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751619Ab3CFHVF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Mar 2013 02:21:05 -0500
+MIME-Version: 1.0
+In-Reply-To: <5136ED2F.8080400@huawei.com>
+References: <5136B7C1.6030403@huawei.com>
+	<20130306062224.GJ1227@htj.dyndns.org>
+	<5136E9A4.7000201@huawei.com>
+	<CAOS58YN9K9OrvvdZjUV9dFOP=SpJYgeyPp0Y5yipNE47osqXpQ@mail.gmail.com>
+	<5136ED2F.8080400@huawei.com>
+Date: Tue, 5 Mar 2013 23:21:03 -0800
+X-Google-Sender-Auth: cRDu6xrN4BYbx4fXKA3mjKkWaNc
+Message-ID: <CAOS58YNJd557hGDMGqavp8eq+B9x5WExCcpW+CwZ8dUainjUUw@mail.gmail.com>
+Subject: Re: [PATCH] cgroup: make cgrp->event_list_lock irqsafe
+From: Tejun Heo <tj@kernel.org>
+To: Li Zefan <lizefan@huawei.com>
+Cc: "Kirill A. Shutemov" <kirill@shutemov.name>,
+        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some x86 processors have a TSC clocksource, which continues to run
-even when system is suspended. Also most OMAP platforms have a
-32 KHz timer which has similar capability. Add a feature flag so that
-it could be utilized.
+Hello, Li.
 
-Signed-off-by: Feng Tang <feng.tang@intel.com>
----
- include/linux/clocksource.h |    1 +
- 1 file changed, 1 insertion(+)
+On Tue, Mar 5, 2013 at 11:15 PM, Li Zefan <lizefan@huawei.com> wrote:
+> wqh->lock is used through out fs/eventfd.c. I don't know if currently there's
+> any kernel user using eventfd APIs in an irq handler, but at least that should
+> be allowed.
+>
+> wake_up() is also allowed to be called from irq handler?
 
-diff --git a/include/linux/clocksource.h b/include/linux/clocksource.h
-index 27cfda4..aa7032c 100644
---- a/include/linux/clocksource.h
-+++ b/include/linux/clocksource.h
-@@ -206,6 +206,7 @@ struct clocksource {
- #define CLOCK_SOURCE_WATCHDOG			0x10
- #define CLOCK_SOURCE_VALID_FOR_HRES		0x20
- #define CLOCK_SOURCE_UNSTABLE			0x40
-+#define CLOCK_SOURCE_SUSPEND_NONSTOP		0x80
- 
- /* simplify initialization of mask field */
- #define CLOCKSOURCE_MASK(bits) (cycle_t)((bits) < 64 ? ((1ULL<<(bits))-1) : -1)
+Yeah, well, we don't consider everything which uses wake_up() to be
+irq-safe. I'm not necessarily against making the lock irq-safe but at
+least the commit message is misleading as currently posted. I'd
+suggest looking at eventfd and see whether the wakeup could actually
+happen from irq context. If not, I don't know, I don't think it
+matters either way. It's not like it's a difficult one to detect with
+lockdep.
+
 -- 
-1.7.9.5
-
+tejun
