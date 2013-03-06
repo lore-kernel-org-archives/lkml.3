@@ -1,100 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755910Ab3CFVdo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 16:33:44 -0500
-Received: from mail-ia0-f172.google.com ([209.85.210.172]:52101 "EHLO
-	mail-ia0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755491Ab3CFVdn (ORCPT
+	id S1755842Ab3CFVgo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 16:36:44 -0500
+Received: from mail-qc0-f173.google.com ([209.85.216.173]:33186 "EHLO
+	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751354Ab3CFVgn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 16:33:43 -0500
+	Wed, 6 Mar 2013 16:36:43 -0500
+Date: Wed, 6 Mar 2013 13:36:36 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Oleg Nesterov <oleg@redhat.com>, Jeff Layton <jlayton@redhat.com>,
+        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
+        Mandeep Singh Baines <msb@chromium.org>,
+        Ming Lei <ming.lei@canonical.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: LOCKDEP: 3.9-rc1: mount.nfs/4272 still has locks held!
+Message-ID: <20130306213636.GP1227@htj.dyndns.org>
+References: <20130305174954.GG12795@htj.dyndns.org>
+ <20130305140312.243cb094@tlielax.poochiereds.net>
+ <20130305190923.GI12795@htj.dyndns.org>
+ <20130305183941.19ff39ce@tlielax.poochiereds.net>
+ <20130305234700.GE1227@htj.dyndns.org>
+ <20130306181608.GA18687@redhat.com>
+ <20130306185304.GM1227@htj.dyndns.org>
+ <CA+55aFwDogteVd=vwGHXDSASnga-nZZnKaQz9aO1yBU2CPKSbA@mail.gmail.com>
+ <20130306212452.GO1227@htj.dyndns.org>
+ <CA+55aFy49AWptMcvEzJxg95ikf-dC+-vcCPq-cnaCCwje3tyoQ@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <5137AE06.8060200@linux.intel.com>
-References: <CA+55aFx0HcOXKpxmZzM5jcbAaOroxafomX5ggMFV4A=py1qh-Q@mail.gmail.com>
-	<20130306080642.GA535@polaris.bitmath.org>
-	<51370990.5040508@linux.intel.com>
-	<20130306100743.GA407@polaris.bitmath.org>
-	<CAE9FiQXT4O3GOzm_OoFJG=vc=5LpfBkTEbAO_3xjerBGS_Gy=A@mail.gmail.com>
-	<20130306193612.GA513@polaris.bitmath.org>
-	<51379A4F.4020200@linux.intel.com>
-	<20130306195457.GA449@polaris.bitmath.org>
-	<CAE9FiQWK0ZnG9o8WgU-pcTPpir=PUyULQqk-TRVC+sh6UpU8VA@mail.gmail.com>
-	<20130306204500.GA335@polaris.bitmath.org>
-	<5137AE06.8060200@linux.intel.com>
-Date: Wed, 6 Mar 2013 13:33:42 -0800
-X-Google-Sender-Auth: K8dCULVMk1a4ggNQRYf8Xu8bjaw
-Message-ID: <CAE9FiQW6SegoYjoveCVGWS3h-0UOHp5_wuAwnVh14oKLyYQFKA@mail.gmail.com>
-Subject: Re: Linux 3.9-rc1
-From: Yinghai Lu <yinghai@kernel.org>
-To: "H. Peter Anvin" <hpa@linux.intel.com>,
-        Henrik Rydberg <rydberg@euromail.se>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: multipart/mixed; boundary=14dae9340ea91f765804d748586c
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFy49AWptMcvEzJxg95ikf-dC+-vcCPq-cnaCCwje3tyoQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---14dae9340ea91f765804d748586c
-Content-Type: text/plain; charset=ISO-8859-1
+On Wed, Mar 06, 2013 at 01:31:10PM -0800, Linus Torvalds wrote:
+> So I do agree that we probably have *too* many of the stupid "let's
+> check if we can freeze", and I suspect that the NFS code should get
+> rid of the "freezable_schedule()" that is causing this warning
+> (because I also agree that you should *not* freeze while holding
+> locks, because it really can cause deadlocks), but I do suspect that
+> network filesystems do need to have a few places where they check for
+> freezing on their own... Exactly because freezing isn't *quite* like a
+> signal.
 
-On Wed, Mar 6, 2013 at 12:58 PM, H. Peter Anvin <hpa@linux.intel.com> wrote:
+Well, I don't really know much about nfs so I can't really tell, but
+for most other cases, dealing with freezing like a signal should work
+fine from what I've seen although I can't be sure before actually
+trying.  Trond, Bruce, can you guys please chime in?
 
-> Excellent.  Yinghai, can you write up the patch with a proper
-> description and I'll put it into x86/urgent.
+Thanks.
 
-I made it more robust: make sure real_end have 8M below it.
-Please check attached one.
-
-Thanks
-
-Yinghai
-
---14dae9340ea91f765804d748586c
-Content-Type: application/octet-stream; name="fix_real_end_v2.patch"
-Content-Disposition: attachment; filename="fix_real_end_v2.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hdz04gt80
-
-U3ViamVjdDogW1BBVENIXSB4ODYsIG1tOiBGaXJzdCBtYXBwZWQgYXJlYSBuZWVkIHRvIGJlIDJN
-IGFsaWduZWQgYW5kIGJpZyBlbm91Z2gKCkhlbnJpayByZXBvcnRlZCB0aGF0IGhpcyBNYWNBaXIg
-My4xIHdvdWxkIG5vdCBib290IHdpdGgKCnwgY29tbWl0IDhkNTc0NzBkOGY4NTk2MzVkZWZmZTM5
-MTlkN2Q0ODY3YjQ4OGI4NWEKfCBEYXRlOiAgIEZyaSBOb3YgMTYgMTk6Mzg6NTggMjAxMiAtMDgw
-MAp8CnwgICAgeDg2LCBtbTogc2V0dXAgcGFnZSB0YWJsZSBpbiB0b3AtZG93bgoKSXQgdHVybnMg
-b3V0IHRoYXQgd2UgZG8gbm90IGNhbGN1bGF0ZSB0aGUgcmVhbF9lbmQgcHJvcGVybHk6CldlIHRy
-eSB0byBnZXQgMk0gc2l6ZSB3aXRoIDRLIGFsaWdubWVudCwgYW5kIGxhdGVyIHdpbGwgcm91bmQg
-ZG93bgp0byAyTSwgc28gd2Ugd2lsbCBnZXQgbGVzcyB0aGVuIDJNIGZvciBmaXJzdCBtYXBwaW5n
-LCBpbiBleHRyZW1lCmNhc2UgY291bGQgYmUgb25seSA0SyBvbmx5LiBJbiBIZW5yaWsncyBzeXN0
-ZW0gaXQgaGFzICgxTS0zMkspIGFzCmxhc3QgdXNhYmxlIHJhZ2UgaXMgW21lbSAweDdmOWRiMDAw
-LTB4N2ZlZjhmZmZdLgoKVGhlIHByb2JsZW0gaXMgZXhwb3NlZCB3aGVuIEVGSSBib290aW5nIGhh
-dmUgc2V2ZXJhbCBob2xlcyBhbmQgaXQKd2lsbCBmb3JjZSBtYXBwaW5nIHRvIHVzZSBQVEUgaW5z
-dGVhZCBhcyB3ZSBvbmx5IG1hcCB1c2FibGUgYXJlYXMuCgpUbyBmaXggaXQsIGp1c3QgbWFrZSBp
-dCBiZSAyTSBhbGlnbmVkLgoKQXMgTGludXMgc2FpZCBoaXMgTWFjQWlyIDQuMSBoYXMgMjUxIG1l
-bW1hcCBlbnRyaWVzLCBpdCBjb3VsZCBoYXZlCm1vcmUgaG9sZXMgaW4gbWVtbWFwLiBUbyBtYWtl
-IGl0IG1vcmUgcm9idXN0LCB0cnkgdG8gcHVzaCBkb3duCnJlYWxfZW5kIGEgYml0LCB0byBtYWtl
-IHN1cmUgd2UgaGF2ZSA4TSBjb250aW51b3VzIHVzYWJsZSBhcmVhCmZvciBwYWdlIHRhYmxlcywg
-dGhhdCB3aWxsIGxldCB1cyBza2lwIHRob3NlIFVFRkkgaG9sZXMuCgpSZXBvcnRlZC1ieTogSGVu
-cmlrIFJ5ZGJlcmcgPHJ5ZGJlcmdAZXVyb21haWwuc2U+CkJpc2VjdGVkLWJ5OiBIZW5yaWsgUnlk
-YmVyZyA8cnlkYmVyZ0BldXJvbWFpbC5zZT4KVGVzdGVkLWJ5OiBIZW5yaWsgUnlkYmVyZyA8cnlk
-YmVyZ0BldXJvbWFpbC5zZT4KU2lnbmVkLW9mZi1ieTogWWluZ2hhaSBMdSA8eWluZ2hhaUBrZXJu
-ZWwub3JnPgoKLS0tCiBhcmNoL3g4Ni9tbS9pbml0LmMgfCAgIDE0ICsrKysrKysrKystLS0tCiAx
-IGZpbGUgY2hhbmdlZCwgMTAgaW5zZXJ0aW9ucygrKSwgNCBkZWxldGlvbnMoLSkKCkluZGV4OiBs
-aW51eC0yLjYvYXJjaC94ODYvbW0vaW5pdC5jCj09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KLS0tIGxpbnV4LTIuNi5vcmln
-L2FyY2gveDg2L21tL2luaXQuYworKysgbGludXgtMi42L2FyY2gveDg2L21tL2luaXQuYwpAQCAt
-MzYyLDEwICszNjIsMTYgQEAgdm9pZCBfX2luaXQgaW5pdF9tZW1fbWFwcGluZyh2b2lkKQogCS8q
-IHRoZSBJU0EgcmFuZ2UgaXMgYWx3YXlzIG1hcHBlZCByZWdhcmRsZXNzIG9mIG1lbW9yeSBob2xl
-cyAqLwogCWluaXRfbWVtb3J5X21hcHBpbmcoMCwgSVNBX0VORF9BRERSRVNTKTsKIAotCS8qIHhl
-biBoYXMgYmlnIHJhbmdlIGluIHJlc2VydmVkIG5lYXIgZW5kIG9mIHJhbSwgc2tpcCBpdCBhdCBm
-aXJzdCAqLwotCWFkZHIgPSBtZW1ibG9ja19maW5kX2luX3JhbmdlKElTQV9FTkRfQUREUkVTUywg
-ZW5kLCBQTURfU0laRSwKLQkJCSBQQUdFX1NJWkUpOwotCXJlYWxfZW5kID0gYWRkciArIFBNRF9T
-SVpFOworCS8qCisJICogeGVuIGhhcyBiaWcgcmFuZ2UgaW4gcmVzZXJ2ZWQgbmVhciBlbmQgb2Yg
-cmFtLCBza2lwIGl0IGF0IGZpcnN0LgorCSAqIFVFRkkgYm9vdGluZyBjb3VsZCBoYXZlIGJ1bmNo
-IG9mIGhvbGVzIGluIG1lbW9yeSBtYXAsIHRyeSB0bworCSAqICAgc2tpcCB1c2FibGUgcmFuZ2Ug
-aW4gdGhvc2UgYXJlYSwgc28gY291bGQgaGF2ZSBwYWdlcyBmb3IgcGFnZQorCSAqICAgdGFibGUg
-dG9nZXRoZXIsIGp1c3QgbWFrZSBzdXJlIHVzYWJsZSByYW5nZXMgYmxvdyByZWFsX2VuZCBpcwor
-CSAqICAgOE1pQiBjb250aW51b3VzIGF0IGxlYXN0LgorCSAqLworCWFkZHIgPSBtZW1ibG9ja19m
-aW5kX2luX3JhbmdlKElTQV9FTkRfQUREUkVTUywgZW5kLCBQTURfU0laRTw8MiwKKwkJCSBQTURf
-U0laRSk7CisJcmVhbF9lbmQgPSBhZGRyICsgKFBNRF9TSVpFPDwyKTsKIAogCS8qIHN0ZXBfc2l6
-ZSBuZWVkIHRvIGJlIHNtYWxsIHNvIHBndF9idWYgZnJvbSBCUksgY291bGQgY292ZXIgaXQgKi8K
-IAlzdGVwX3NpemUgPSBQTURfU0laRTsK
---14dae9340ea91f765804d748586c--
+-- 
+tejun
