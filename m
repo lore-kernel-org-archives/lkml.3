@@ -1,117 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757860Ab3CFX4c (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 18:56:32 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:43284 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755128Ab3CFX43 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 18:56:29 -0500
-Date: Wed, 6 Mar 2013 18:55:25 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Cc: Eric Paris <eparis@parisplace.org>,
-        linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        LSM List <linux-security-module@vger.kernel.org>
-Subject: Re: IMA: How to manage user space signing policy with others
-Message-ID: <20130306235525.GB29229@redhat.com>
-References: <20130301213329.GC3457@redhat.com>
- <1362346944.18325.1.camel@falcor1>
- <20130304152919.GA15199@redhat.com>
- <1362423581.4392.46.camel@falcor1>
- <20130304191546.GF15199@redhat.com>
- <1362446491.4392.133.camel@falcor1>
- <20130305151829.GB4519@redhat.com>
- <1362516018.4392.233.camel@falcor1>
- <20130305215300.GE4519@redhat.com>
- <1362584551.4392.291.camel@falcor1>
+	id S1757658Ab3CFX7J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 18:59:09 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:4392 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753109Ab3CFX7H convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Mar 2013 18:59:07 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Wed, 06 Mar 2013 15:53:02 -0800
+From: Andrew Chew <AChew@nvidia.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: Peter De Schrijver <pdeschrijver@nvidia.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Stephen Warren <swarren@nvidia.com>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Wed, 6 Mar 2013 15:59:04 -0800
+Subject: RE: [PATCH] clk: tegra: provide dummy cpu car ops
+Thread-Topic: [PATCH] clk: tegra: provide dummy cpu car ops
+Thread-Index: Ac4axFZxm+IkklxiTO+OvwnPnOtSmAAAVRYA
+Message-ID: <643E69AA4436674C8F39DCC2C05F7638629CA50CC0@HQMAIL03.nvidia.com>
+References: <1360853581-9756-1-git-send-email-pdeschrijver@nvidia.com>
+ <643E69AA4436674C8F39DCC2C05F7638629CA50C97@HQMAIL03.nvidia.com>
+ <5137D47D.6030105@wwwdotorg.org>
+In-Reply-To: <5137D47D.6030105@wwwdotorg.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1362584551.4392.291.camel@falcor1>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 06, 2013 at 10:42:31AM -0500, Mimi Zohar wrote:
-
-[..]
-> > Mimi, so you like this idea better than the other idea of keeping two 
-> > policy chains and running more restrictive rule while resolving flag
-> > conflicts between two rules?
-> > 
-> > I have written some patches to maintain two rule chains and running
-> > more restrictive rule. I can change it though.
+> From: linux-tegra-owner@vger.kernel.org [mailto:linux-tegra-
+> owner@vger.kernel.org] On Behalf Of Stephen Warren
+> Sent: Wednesday, March 06, 2013 3:43 PM
+> To: Andrew Chew
+> Cc: Peter De Schrijver; linux-tegra@vger.kernel.org; linux-arm-
+> kernel@lists.infradead.org; Stephen Warren; Prashant Gaikwad; Mike
+> Turquette; linux-kernel@vger.kernel.org
+> Subject: Re: [PATCH] clk: tegra: provide dummy cpu car ops
 > 
-> Both options overload the file signature with additional meaning to
-> indicate these files need 'special' handling (eg. memory locking).
-
-I think memory locking is not part of integrity as such. If user space
-is partially signed, then we need to lock files into memory. But if
-whole of the user space is signed, we might get away without locking
-everything in memory.
-
-So I think we should not build the notion of memory locking into IMA.
-Caller knows whether to lock things into memory or not. IMA should
-just facilitate integrity verification (before locking and after
-locking) and it is left to the caller to decide when is the right
-time to do verification.
-
->  If
-> we merge rules, then all files with a signature would be processed with
-> this special handling; in the other case, the special handling is
-> limited to a particular policy.
+> On 03/06/2013 04:20 PM, Andrew Chew wrote:
+> >> Subject: [PATCH] clk: tegra: provide dummy cpu car ops
+> >>
+> >> tegra_boot_secondary() relies on some of the car ops. This means
+> >> having an uninitialized tegra_cpu_car_ops will lead to an early boot panic.
+> >> Providing a dummy struct avoids this and makes adding Tegra114 clock
+> >> support in a bisectable way a lot easier.
+> >>
+> >> --
+> >>
+> >> Stephen,
+> >>
+> >> Should this be a separate patch or should I make this part of new
+> >> release of the Tegra114 clock series?
 > 
-> The basic premise, that all files with a valid signature need this
-> special handling, is flawed.  If some other mechanism would be used to
-> identify these files requiring 'special' handling, then merging of
-> policy rules would be a non-issue.  We wouldn't even need to merge
-> rules.
-
-I am not sure what does "special handling" mean here, but then we are
-hardcoding things in file's extended attributes. 
-
-In this case kernel needs to decide how to handle file. (possibly based
-on a config option). Again going back to memlock example, IMA or file
-attribute should not dictate whether file should be memlocked or not.
-Whether file's appraisal result should be cached or not. Whether
-"measurement" of cache results should be cached or not. This is much
-worse hardcoding to me. 
-
-IMHO, IMA can provide simple callable functions (like verify_signature())
-which does not assume too much and let caller figure out the thigs
-around it. This is much more simple.
-
+> I'm not sure if I answered this. Peter, I intend to apply this patch to a branch
+> right before the CCF, so there's no explicit need to include it in the series,
+> although if you do, that's fine.
 > 
-> My preference would be to define some other mechanism to identify these
-> files. (Agreed, using the 'security.ima' xattr, is a kludge.)
-
-IMO, it should not a file's attribtue. Caller knows how to handle it.
-IMA should just verify the integrity. Caller can choose to lock or not
-lock the file in memory depending on its needs and environment it is
-operating in. And I don't think this kind of information should be
-file specific.
-
->  With EVM
-> protection of LSM labels, you might consider defining a policy based on
-> LSM labels.  Otherwise, consider defining and using a different extended
-> attribute, or any other file metadata, for this purpose.  Once some
-> method for identifying these files, other than file signature, is
-> defined, we could then add a new policy option (eg. memlock) or even
-> action primitive (eg. appraise_memlock).
+> >> diff --git a/drivers/clk/tegra/clk.c b/drivers/clk/tegra/clk.c index
 > 
-> As the 'special' handling probably doesn't scale very well, we're better
-> off not requiring it for all signed files.  Hopefully, the affects of
-> not having this special privilege, will be limited to only what has been
-> discussed (eg. kdump).  Even this decision, will require more than my
-> agreement.
+> >>  /* Global data of Tegra CPU CAR ops */ -struct tegra_cpu_car_ops
+> >> *tegra_cpu_car_ops;
+> >
+> > Sorry for bringing this up so late...
+> > Shouldn't the above be "struct tegra_cpu_car_ops tegra_cpu_car_ops;"?
+> >
+> >> +static struct tegra_cpu_car_ops *dummy_car_ops; struct
+> >> +tegra_cpu_car_ops *tegra_cpu_car_ops = &dummy_car_ops;
+> 
+> No, the value is used as a pointer in include/linux/clk/tegra.h, e.g.:
+> 
+> tegra_cpu_car_ops->wait_for_reset(cpu);
 
-IMHO, defining directly callable IMA hooks is much simpler, and much
-more maintainable and much more scalable. Atleast we should discuss it
-again why it it is not right thing to do. Why it is right thing to
-do for security/keys or security/crypto to export callable functions
-and then let the caller decide what to do with it. But it is not right for
-security/integrity/* or security/integrity/ima*. I just don't get it.
+Yeah, I get that tegra_cpu_car_ops is a pointer to an ops table.  It seems
+to me that what's happening above is that tegra_cpu_car_ops is getting
+assigned a pointer to a pointer that's supposed to point to an instance of
+struct tegra_cpu_car_ops (but it really points to NULL as far as I can tell).
+In any case, dummy_car_ops never actually gets instantiated.
 
-Thanks
-Vivek
+I assume the intention is for dummy_car_ops to be an instance of
+struct tegra_cpu_car_ops, but with all of its members zero'd.
