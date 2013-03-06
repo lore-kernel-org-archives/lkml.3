@@ -1,107 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753839Ab3CFRvb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 12:51:31 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:48382 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753222Ab3CFRva (ORCPT
+	id S1754033Ab3CFRvh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 12:51:37 -0500
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:52423 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753775Ab3CFRve (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 12:51:30 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18Yy6LWYlKgaT4FCPk+Llej
-Date: Wed, 6 Mar 2013 09:51:21 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Pali =?utf-8?B?Um9ow6Fy?= <pali.rohar@gmail.com>
-Cc: Nishanth Menon <nm@ti.com>,
-        =?utf-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= 
-	<freemangordon@abv.bg>,
-        linux@arm.linux.org.uk, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] arm: omap: RX-51: ARM errata 430973 workaround
-Message-ID: <20130306175120.GP11806@atomide.com>
-References: <517283541.62064.1362124023621.JavaMail.apache@mail81.abv.bg>
- <CAGo_u6omQdSzpfthHNAU1UvgSvkgq3ZC6g1Ha9oi0nc9QJ71nA@mail.gmail.com>
- <20130304185806.GS11806@atomide.com>
- <201303061509.07905@pali>
+	Wed, 6 Mar 2013 12:51:34 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201303061509.07905@pali>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20130306100743.GA407@polaris.bitmath.org>
+References: <CA+55aFx0HcOXKpxmZzM5jcbAaOroxafomX5ggMFV4A=py1qh-Q@mail.gmail.com>
+	<20130306080642.GA535@polaris.bitmath.org>
+	<51370990.5040508@linux.intel.com>
+	<20130306100743.GA407@polaris.bitmath.org>
+Date: Wed, 6 Mar 2013 09:51:34 -0800
+X-Google-Sender-Auth: f2GQ2K3nJtblwgVhOk_BYvx-RXo
+Message-ID: <CAE9FiQXT4O3GOzm_OoFJG=vc=5LpfBkTEbAO_3xjerBGS_Gy=A@mail.gmail.com>
+Subject: Re: Linux 3.9-rc1
+From: Yinghai Lu <yinghai@kernel.org>
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Pali Rohár <pali.rohar@gmail.com> [130306 06:13]:
-> On Monday 04 March 2013 19:58:06 Tony Lindgren wrote:
-> > * Nishanth Menon <nm@ti.com> [130301 06:42]:
-> > > On Fri, Mar 1, 2013 at 1:47 AM, Ивайло Димитров 
-> <freemangordon@abv.bg> wrote:
-> > > > They look similar, but they are not equivalent :). The
-> > > > first major difference is here (code taken from
-> > > > omap-smc.S)
-> > > > 
-> > > >> ENTRY(omap_smc2)
-> > > >> 
-> > > >>          stmfd   sp!, {r4-r12, lr}
-> > > >>          mov     r3, r2
-> > > >>          mov     r2, r1
-> > > >>          mov     r1, #0x0        @ Process ID
-> > > >>          mov     r6, #0xff
-> > > >>          mov     r12, #0x00      @ Secure Service ID
-> > > > 
-> > > > Always zero, while RX51 PPA expects a real value. I wonder
-> > > > if it is a bug, but anyway I don't see the id parameter
-> > > > (R0) used.
-> > > > 
-> > > >>          mov     r7, #0
-> > > >>          mcr     p15, 0, r7, c7, c5, 6
-> > > > 
-> > > > According to ARM TRM, this is "Invalidate entire branch
-> > > > predictor array"(IIUC). NFC why it is needed here, but
-> > > > this will not work on RX-51 until IBE bit in ACR is set.
-> > > > 
-> > > >>          dsb
-> > > >>          dmb
-> > > >>          smc     #0
-> > > > 
-> > > > RX-51 needs smc #1 ;)
-> > > > 
-> > > >>          ldmfd   sp!, {r4-r12, pc}
-> > > > 
-> > > > The next major difference is that RX-51 expects parameter
-> > > > count passed in R3[0] to be the count of the remaining
-> > > > parameters +1, but omap_secure_dispatcher (in
-> > > > omap-secure.c) is passing the exact count of the
-> > > > remaining parameters.
-> > > > 
-> > > > I guess all of the above problems can be
-> > > > fixed/workarounded, but I wonder does it worth. Not to
-> > > > say that I don't have BB around to test if the code still
-> > > > works if I make changes to omap2-secure.c/omap-smc.S :)
-> > > 
-> > > Yep, that was my point - instead of introducing new
-> > > functions, extending the existing functions to handle new
-> > > requirements is better solution, IMHO.
-> > 
-> > I think there have been patches posted for ARM generic SMC
-> > handling. Might be worth looking at those a bit and see if
-> > this can be made generic. I think only the SMC call numbering
-> > is different for various SoCs?
-> > 
-> > Regards,
-> > 
-> > Tony
-> 
-> Hi Tony, where are patches for ARM generic SMC handling?
+On Wed, Mar 6, 2013 at 2:07 AM, Henrik Rydberg <rydberg@euromail.se> wrote:
+>> Can you get a boot log with "debug memblock=debug" from the last
+>> successful commit point?  Are you booting EFI or BootCamp?
+>
+> Attached the dmesg log, booting from f763ad1 which is on top of
+> 3.7-rc6. I am booting with EFI_STUB, straight into the kernel.
+> The command line and modules are built in.
 
-Sorry don't have the link available, but I recall seeing some patch
-on linux-arm-kernel within past six months that added a generic
-smc function.. Or maybe I was dreaming or something.
+will check that EFI_STUB path.
 
-Regards,
+Can you check bootloader like grub.efi ?
 
-Tony
+
+> [    0.000000] Initializing cgroup subsys cpu
+> [    0.000000] Linux version 3.7.0-rc6+ (rydberg@polaris) (gcc version 4.7.2 (GCC) ) #1 SMP PREEMPT Wed Mar 6 10:52:49 CET 2013
+> [    0.000000] Command line:
+> [    0.000000] e820: BIOS-provided physical RAM map:
+> [    0.000000] BIOS-e820: [mem 0x0000000000000000-0x000000000008efff] usable
+> [    0.000000] BIOS-e820: [mem 0x000000000008f000-0x000000000008ffff] ACPI NVS
+> [    0.000000] BIOS-e820: [mem 0x0000000000090000-0x000000000009ffff] usable
+> [    0.000000] BIOS-e820: [mem 0x0000000000100000-0x000000006effffff] usable
+> [    0.000000] BIOS-e820: [mem 0x000000006f000000-0x000000007effffff] reserved
+> [    0.000000] BIOS-e820: [mem 0x000000007f000000-0x000000007f718fff] usable
+> [    0.000000] BIOS-e820: [mem 0x000000007f719000-0x000000007f938fff] ACPI NVS
+> [    0.000000] BIOS-e820: [mem 0x000000007f939000-0x000000007f953fff] usable
+> [    0.000000] BIOS-e820: [mem 0x000000007f954000-0x000000007f96afff] ACPI data
+> [    0.000000] BIOS-e820: [mem 0x000000007f96b000-0x000000007f96efff] usable
+> [    0.000000] BIOS-e820: [mem 0x000000007f96f000-0x000000007f99afff] reserved
+> [    0.000000] BIOS-e820: [mem 0x000000007f99b000-0x000000007f9b1fff] usable
+> [    0.000000] BIOS-e820: [mem 0x000000007f9b2000-0x000000007f9dafff] reserved
+> [    0.000000] BIOS-e820: [mem 0x000000007f9db000-0x000000007fef8fff] usable
+> [    0.000000] BIOS-e820: [mem 0x000000007fef9000-0x000000007fefffff] reserved
+> [    0.000000] BIOS-e820: [mem 0x0000000093200000-0x0000000093200fff] reserved
+> [    0.000000] BIOS-e820: [mem 0x00000000ffc00000-0x00000000ffffffff] reserved
+> [    0.000000] NX (Execute Disable) protection: active
+> [    0.000000] efi: EFI v1.10 by Apple
+> [    0.000000] efi:  ACPI=0x7f96a000  ACPI 2.0=0x7f96a014  SMBIOS=0x7f71a000
+> [    0.000000] efi: mem00: type=7, attr=0xf, range=[0x0000000000000000-0x000000000008f000) (0MB)
+> [    0.000000] efi: mem01: type=10, attr=0xf, range=[0x000000000008f000-0x0000000000090000) (0MB)
+> [    0.000000] efi: mem02: type=2, attr=0xf, range=[0x0000000000090000-0x0000000000096000) (0MB)
+> [    0.000000] efi: mem03: type=7, attr=0xf, range=[0x0000000000096000-0x00000000000a0000) (0MB)
+> [    0.000000] efi: mem04: type=7, attr=0xf, range=[0x0000000000100000-0x0000000001000000) (15MB)
+> [    0.000000] efi: mem05: type=2, attr=0xf, range=[0x0000000001000000-0x0000000001db0000) (13MB)
+> [    0.000000] efi: mem06: type=7, attr=0xf, range=[0x0000000001db0000-0x000000006d0d6000) (1715MB)
+> [    0.000000] efi: mem07: type=1, attr=0xf, range=[0x000000006d0d6000-0x000000006d546000) (4MB)
+> [    0.000000] efi: mem08: type=7, attr=0xf, range=[0x000000006d546000-0x000000006d9b6000) (4MB)
+> [    0.000000] efi: mem09: type=4, attr=0xf, range=[0x000000006d9b6000-0x000000006e615000) (12MB)
+> [    0.000000] efi: mem10: type=7, attr=0xf, range=[0x000000006e615000-0x000000006e616000) (0MB)
+> [    0.000000] efi: mem11: type=4, attr=0xf, range=[0x000000006e616000-0x000000006e7ac000) (1MB)
+> [    0.000000] efi: mem12: type=7, attr=0xf, range=[0x000000006e7ac000-0x000000006ea6e000) (2MB)
+> [    0.000000] efi: mem13: type=2, attr=0xf, range=[0x000000006ea6e000-0x000000006ea6f000) (0MB)
+> [    0.000000] efi: mem14: type=4, attr=0xf, range=[0x000000006ea6f000-0x000000006f000000) (5MB)
+> [    0.000000] efi: mem15: type=4, attr=0xf, range=[0x000000007f000000-0x000000007f6af000) (6MB)
+> [    0.000000] efi: mem16: type=7, attr=0xf, range=[0x000000007f6af000-0x000000007f719000) (0MB)
+> [    0.000000] efi: mem17: type=10, attr=0xf, range=[0x000000007f719000-0x000000007f939000) (2MB)
+> [    0.000000] efi: mem18: type=7, attr=0xf, range=[0x000000007f939000-0x000000007f954000) (0MB)
+> [    0.000000] efi: mem19: type=9, attr=0xf, range=[0x000000007f954000-0x000000007f96b000) (0MB)
+> [    0.000000] efi: mem20: type=7, attr=0xf, range=[0x000000007f96b000-0x000000007f96f000) (0MB)
+> [    0.000000] efi: mem21: type=6, attr=0x800000000000000f, range=[0x000000007f96f000-0x000000007f99b000) (0MB)
+> [    0.000000] efi: mem22: type=7, attr=0xf, range=[0x000000007f99b000-0x000000007f9b2000) (0MB)
+> [    0.000000] efi: mem23: type=5, attr=0x800000000000000f, range=[0x000000007f9b2000-0x000000007f9db000) (0MB)
+> [    0.000000] efi: mem24: type=7, attr=0xf, range=[0x000000007f9db000-0x000000007fc2c000) (2MB)
+> [    0.000000] efi: mem25: type=3, attr=0xf, range=[0x000000007fc2c000-0x000000007fd5f000) (1MB)
+> [    0.000000] efi: mem26: type=7, attr=0xf, range=[0x000000007fd5f000-0x000000007fef9000) (1MB)
+> [    0.000000] efi: mem27: type=0, attr=0xf, range=[0x000000007fef9000-0x000000007feff000) (0MB)
+> [    0.000000] efi: mem28: type=6, attr=0x800000000000000f, range=[0x000000007feff000-0x000000007ff00000) (0MB)
+> [    0.000000] efi: mem29: type=0, attr=0x8000000000000000, range=[0x000000006f000000-0x000000007f000000) (256MB)
+> [    0.000000] efi: mem30: type=11, attr=0x8000000000000000, range=[0x0000000093200000-0x0000000093201000) (0MB)
+> [    0.000000] efi: mem31: type=11, attr=0x8000000000000000, range=[0x00000000ffc00000-0x00000000ffc80000) (0MB)
+> [    0.000000] efi: mem32: type=11, attr=0x8000000000000000, range=[0x00000000ffc80000-0x00000000ffca8000) (0MB)
+> [    0.000000] efi: mem33: type=11, attr=0x8000000000000000, range=[0x00000000ffca8000-0x00000000ffcca000) (0MB)
+> [    0.000000] efi: mem34: type=11, attr=0x8000000000000000, range=[0x00000000ffcca000-0x00000000ffffc000) (3MB)
+> [    0.000000] efi: mem35: type=11, attr=0x8000000000000000, range=[0x00000000ffffc000-0x0000000100000000) (0MB)
+> [    0.000000] DMI 2.4 present.
+> [    0.000000] DMI: Apple Inc. MacBookAir3,1/Mac-942452F5819B1C1B, BIOS    MBA31.88Z.0061.B00.1009101530 09/10/10
+> [    0.000000] e820: update [mem 0x00000000-0x0000ffff] usable ==> reserved
+> [    0.000000] e820: remove [mem 0x000a0000-0x000fffff] usable
+> [    0.000000] No AGP bridge found
+> [    0.000000] e820: last_pfn = 0x7fef9 max_arch_pfn = 0x400000000
+> [    0.000000] MTRR default type: write-back
+> [    0.000000] MTRR fixed ranges enabled:
+> [    0.000000]   00000-9FFFF write-back
+> [    0.000000]   A0000-FFFFF uncachable
+> [    0.000000] MTRR variable ranges enabled:
+> [    0.000000]   0 base 080000000 mask F80000000 uncachable
+> [    0.000000]   1 base 07FF00000 mask FFFF00000 uncachable
+> [    0.000000]   2 disabled
+> [    0.000000]   3 disabled
+> [    0.000000]   4 disabled
+> [    0.000000]   5 disabled
+> [    0.000000]   6 disabled
+> [    0.000000]   7 disabled
+> [    0.000000] x86 PAT enabled: cpu 0, old 0x7040600070406, new 0x7010600070106
+> [    0.000000] memblock_reserve: [0x000000029fa000-0x000000029fa219] setup_arch+0x62b/0x7e9
+> [    0.000000] MEMBLOCK configuration:
+> [    0.000000]  memory size = 0x6fbfc000 reserved size = 0xa5b8d9
+> [    0.000000]  memory.cnt  = 0x8
+> [    0.000000]  memory[0x0]     [0x00000000010000-0x0000000008efff], 0x7f000 bytes
+> [    0.000000]  memory[0x1]     [0x00000000090000-0x0000000009ffff], 0x10000 bytes
+> [    0.000000]  memory[0x2]     [0x00000000100000-0x0000006effffff], 0x6ef00000 bytes
+> [    0.000000]  memory[0x3]     [0x0000007f000000-0x0000007f718fff], 0x719000 bytes
+> [    0.000000]  memory[0x4]     [0x0000007f939000-0x0000007f953fff], 0x1b000 bytes
+> [    0.000000]  memory[0x5]     [0x0000007f96b000-0x0000007f96efff], 0x4000 bytes
+> [    0.000000]  memory[0x6]     [0x0000007f99b000-0x0000007f9b1fff], 0x17000 bytes
+> [    0.000000]  memory[0x7]     [0x0000007f9db000-0x0000007fef8fff], 0x51e000 bytes
+> [    0.000000]  reserved.cnt  = 0x3
+> [    0.000000]  reserved[0x0]   [0x00000000095000-0x000000000956bf], 0x6c0 bytes
+> [    0.000000]  reserved[0x1]   [0x0000000009f000-0x000000000fffff], 0x61000 bytes
+> [    0.000000]  reserved[0x2]   [0x00000002000000-0x000000029fa218], 0x9fa219 bytes
+> [    0.000000] memblock_reserve: [0x0000006d9b6000-0x0000006e615000] efi_reserve_boot_services+0xb4/0xd0
+> [    0.000000] memblock_reserve: [0x0000006e616000-0x0000006e7ac000] efi_reserve_boot_services+0xb4/0xd0
+> [    0.000000] memblock_reserve: [0x0000006ea6f000-0x0000006f000000] efi_reserve_boot_services+0xb4/0xd0
+> [    0.000000] memblock_reserve: [0x0000007f000000-0x0000007f6af000] efi_reserve_boot_services+0xb4/0xd0
+> [    0.000000] memblock_reserve: [0x0000007fc2c000-0x0000007fd5f000] efi_reserve_boot_services+0xb4/0xd0
+> [    0.000000] initial memory mapped: [mem 0x00000000-0x1fffffff]
+> [    0.000000] memblock_reserve: [0x00000000099000-0x0000000009f000] setup_real_mode+0x62/0x17b
+> [    0.000000] Base memory trampoline at [ffff880000099000] 99000 size 24576
+> [    0.000000]  [mem 0x00000000-0x000fffff] page 4k
+> [    0.000000]  [mem 0x00100000-0x001fffff] page 4k
+> [    0.000000]  [mem 0x00200000-0x6effffff] page 2M
+> [    0.000000]  [mem 0x7f000000-0x7f5fffff] page 2M
+> [    0.000000]  [mem 0x7f600000-0x7f718fff] page 4k
+> [    0.000000]  [mem 0x7f939000-0x7f953fff] page 4k
+> [    0.000000]  [mem 0x7f96b000-0x7f96efff] page 4k
+> [    0.000000]  [mem 0x7f99b000-0x7f9b1fff] page 4k
+> [    0.000000]  [mem 0x7f9db000-0x7f9fffff] page 4k
+> [    0.000000]  [mem 0x7fa00000-0x7fdfffff] page 2M
+> [    0.000000]  [mem 0x7fe00000-0x7fef8fff] page 4k
+> [    0.000000] kernel direct mapping tables up to 0x7fef8fff @ [mem 0x7fee3000-0x7fef8fff] prealloc
+> [    0.000000] init_memory_mapping: [mem 0x00000000-0x000fffff]
+> [    0.000000]  [mem 0x00000000-0x000fffff] page 4k
+> [    0.000000] init_memory_mapping: [mem 0x00100000-0x6effffff]
+> [    0.000000]  [mem 0x00100000-0x001fffff] page 4k
+> [    0.000000]  [mem 0x00200000-0x6effffff] page 2M
+> [    0.000000] init_memory_mapping: [mem 0x7f000000-0x7f718fff]
+> [    0.000000]  [mem 0x7f000000-0x7f5fffff] page 2M
+> [    0.000000]  [mem 0x7f600000-0x7f718fff] page 4k
+> [    0.000000] init_memory_mapping: [mem 0x7f939000-0x7f953fff]
+> [    0.000000]  [mem 0x7f939000-0x7f953fff] page 4k
+> [    0.000000] init_memory_mapping: [mem 0x7f96b000-0x7f96efff]
+> [    0.000000]  [mem 0x7f96b000-0x7f96efff] page 4k
+> [    0.000000] init_memory_mapping: [mem 0x7f99b000-0x7f9b1fff]
+> [    0.000000]  [mem 0x7f99b000-0x7f9b1fff] page 4k
+> [    0.000000] init_memory_mapping: [mem 0x7f9db000-0x7fef8fff]
+> [    0.000000]  [mem 0x7f9db000-0x7f9fffff] page 4k
+> [    0.000000]  [mem 0x7fa00000-0x7fdfffff] page 2M
+> [    0.000000]  [mem 0x7fe00000-0x7fef8fff] page 4k
+> [    0.000000] kernel direct mapping tables up to 0x7fef8fff @ [mem 0x7fee3000-0x7fee7fff] final
+> [    0.000000] memblock_reserve: [0x0000007fee3000-0x0000007fee8000] init_mem_mapping+0x296/0x2b0
+
+The code should handle this memory layout without problem.
+
+Thanks
+
+Yinghai
