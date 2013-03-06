@@ -1,71 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755616Ab3CFAGa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 19:06:30 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:55575 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752888Ab3CFAG3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 19:06:29 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Jeff Kirsher <jeffrey.t.kirsher@intel.com>, Jiri Slaby <jslaby@suse.cz>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>, x86@kernel.org,
-        lkml <linux-kernel@vger.kernel.org>, e1000-devel@lists.sourceforge.net,
-        Bruce Allan <bruce.w.allan@intel.com>
-Subject: Re: Uhhuh. NMI received for unknown reason 2c on CPU 0.
-Date: Wed, 06 Mar 2013 01:13:23 +0100
-Message-ID: <1372053.VT5YxPEdsx@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.9.0-rc1+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <20130305112737.GE4881@pd.tnic>
-References: <20130214191234.GH5700@pd.tnic> <1362479341.8626.18.camel@jtkirshe-mobl> <20130305112737.GE4881@pd.tnic>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1755773Ab3CFAJe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 19:09:34 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:50972 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753575Ab3CFAJd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Mar 2013 19:09:33 -0500
+Date: Wed, 06 Mar 2013 09:07:53 +0900 (JST)
+Message-Id: <20130306.090753.332720289.d.hatayama@jp.fujitsu.com>
+To: vgoyal@redhat.com, ebiederm@xmission.com, cpw@sgi.com,
+        kumagai-atsushi@mxc.nes.nec.co.jp, lisa.mitchell@hp.com,
+        heiko.carstens@de.ibm.com, akpm@linux-foundation.org
+Cc: kexec@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 03/20] vmcore, sysfs: export ELF note segment size
+ instead of vmcoreinfo data size
+From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+In-Reply-To: <20130302083605.31252.26646.stgit@localhost6.localdomain6>
+References: <20130302083447.31252.93914.stgit@localhost6.localdomain6>
+	<20130302083605.31252.26646.stgit@localhost6.localdomain6>
+X-Mailer: Mew version 6.3 on Emacs 24.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, March 05, 2013 12:27:37 PM Borislav Petkov wrote:
-> On Tue, Mar 05, 2013 at 02:29:01AM -0800, Jeff Kirsher wrote:
-> > On Tue, 2013-03-05 at 11:14 +0100, Borislav Petkov wrote:
-> > > 
-> > > On Tue, Mar 05, 2013 at 02:02:48AM -0800, Jeff Kirsher wrote:
-> > > > They are in my queue of e1000e patches for net and are being testing
-> > > > currently. I should be able to push them upstream this week.
-> > > 
-> > > Right, if you'd like me to run them here too, let me know. 
-> > 
-> > Any additional testing is very much appreciated, so feel free to test
-> > the patches with what hardware you have.
-> 
-> Yep, it looks good, machine suspends ok again. I'll watch it in the next
-> couple of days.
-> 
-> The only problem that remains is this:
-> 
-> [  103.137024] xhci_hcd 0000:00:14.0: power state changed by ACPI to D3cold
-> [  103.161032] ehci-pci 0000:00:1d.0: power state changed by ACPI to D3cold
-> [  103.462328] e1000e: eth0 NIC Link is Up 100 Mbps Full Duplex, Flow Control: Rx/Tx
-> [  103.462342] e1000e 0000:00:19.0 eth0: 10/100 speed: disabling TSO
-> [  108.472847] Uhhuh. NMI received for unknown reason 3c on CPU 0.	<---
-> [  108.472850] Do you have a strange power saving mode enabled?
-> [  108.472851] Dazed and confused, but trying to continue
-> 
-> AFAIR, Rafael said it had something to do with the suspend kernel not
-> picking up settings done to the main kernel on time. Or something to
-> that effect, my memory is hazy.
+From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+Subject: [PATCH v2 03/20] vmcore, sysfs: export ELF note segment size instead of vmcoreinfo data size
+Date: Sat, 2 Mar 2013 17:36:05 +0900
 
-I suspected that during resume from hibernation the boot kernel (the one that
-loaded the image) did something to hardware and the restored kernel didn't
-handle that change properly.  It is hard do say what piece of hardware that
-was, however (it might or might not be the NIC, it may be pure coincidence
-that the NMI messages appear in the log at this point).
+> p_memsz member of program header entry with PT_NOTE type needs to have
+> size of the corresponding ELF note segment. Currently, vmcoreinfo
+> exports data part only. If vmcoreinfo reachs vmcoreinfo_max_size, then
+> in merge_note_headers_elf{32,64}, empty ELF note header cannot be
+> found or buffer overrun can happen.
 
-Thanks,
-Rafael
+Sorry, I noticed this "buffer overrun can happen" was completely
+wrong. In merge_note_headers_elf{32,64}, the size is being checked to
+avoid buffer overrun.
 
+                int j;
+                void *notes_section;
+                struct vmcore *new;
+                u64 offset, max_sz, sz, real_sz = 0;
+...
+                for (j = 0; j < max_sz; j += sz) {
+                        if (nhdr_ptr->n_namesz == 0)
+                                break;
+                        sz = sizeof(Elf32_Nhdr) +
+                                ((nhdr_ptr->n_namesz + 3) & ~3) +
+                                ((nhdr_ptr->n_descsz + 3) & ~3);
+                        real_sz += sz;
+                        nhdr_ptr = (Elf32_Nhdr*)((char*)nhdr_ptr + sz);
+                }
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+But later patch changes teminator of ELF note segments from the null
+not header to NT_VMCORE_PAD note type. It's important to export a
+whole buffer for ELF note segments, not data part only. This patch
+description doesn't explain this, and I'll add this explanation in the
+next version.
+
+Also, here j has int type but the other variables compared with the j
+have u64 type. This is strange, and in fact verbose because for the
+purpose of the j, real_sz seems exact. I'll replace the for statement
+by while statement in additional clean-up patch as:
+
+  while (real_sz < max_sz) {
+    ..
+  }
+
+Thanks.
+HATAYAMA, Daisuke
+
