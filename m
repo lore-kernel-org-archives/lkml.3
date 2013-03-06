@@ -1,64 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755809Ab3CFVbN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 16:31:13 -0500
-Received: from mail-ve0-f174.google.com ([209.85.128.174]:45519 "EHLO
-	mail-ve0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754580Ab3CFVbK (ORCPT
+	id S1755871Ab3CFVdQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 16:33:16 -0500
+Received: from www.linutronix.de ([62.245.132.108]:45540 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755773Ab3CFVdP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 16:31:10 -0500
+	Wed, 6 Mar 2013 16:33:15 -0500
+Date: Wed, 6 Mar 2013 22:33:08 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Feng Tang <feng.tang@intel.com>
+cc: John Stultz <john.stultz@linaro.org>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>, x86@kernel.org,
+        Len Brown <lenb@kernel.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        linux-kernel@vger.kernel.org, gong.chen@linux.intel.com
+Subject: Re: [PATCH v3 5/5] timekeeping: utilize the suspend-nonstop clocksource
+ to count suspended time
+In-Reply-To: <20130306142914.GA25790@feng-snb>
+Message-ID: <alpine.LFD.2.02.1303062231000.22263@ionos>
+References: <1362554271-22382-1-git-send-email-feng.tang@intel.com> <1362554271-22382-6-git-send-email-feng.tang@intel.com> <alpine.LFD.2.02.1303061512110.22263@ionos> <20130306142914.GA25790@feng-snb>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <20130306212452.GO1227@htj.dyndns.org>
-References: <20130305082308.6607d4db@tlielax.poochiereds.net>
-	<20130305174648.GF12795@htj.dyndns.org>
-	<20130305174954.GG12795@htj.dyndns.org>
-	<20130305140312.243cb094@tlielax.poochiereds.net>
-	<20130305190923.GI12795@htj.dyndns.org>
-	<20130305183941.19ff39ce@tlielax.poochiereds.net>
-	<20130305234700.GE1227@htj.dyndns.org>
-	<20130306181608.GA18687@redhat.com>
-	<20130306185304.GM1227@htj.dyndns.org>
-	<CA+55aFwDogteVd=vwGHXDSASnga-nZZnKaQz9aO1yBU2CPKSbA@mail.gmail.com>
-	<20130306212452.GO1227@htj.dyndns.org>
-Date: Wed, 6 Mar 2013 13:31:10 -0800
-X-Google-Sender-Auth: LtjwJUR_FjBLwYmshWqPo0S_-EI
-Message-ID: <CA+55aFy49AWptMcvEzJxg95ikf-dC+-vcCPq-cnaCCwje3tyoQ@mail.gmail.com>
-Subject: Re: LOCKDEP: 3.9-rc1: mount.nfs/4272 still has locks held!
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: Oleg Nesterov <oleg@redhat.com>, Jeff Layton <jlayton@redhat.com>,
-        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
-        Mandeep Singh Baines <msb@chromium.org>,
-        Ming Lei <ming.lei@canonical.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 6, 2013 at 1:24 PM, Tejun Heo <tj@kernel.org> wrote:
->
-> With syscall paths out of the way, the surface is reduced a lot.
+On Wed, 6 Mar 2013, Feng Tang wrote:
+> On Wed, Mar 06, 2013 at 03:15:49PM +0100, Thomas Gleixner wrote:
+> > If the suspend time measured by the nonstop clocksource is 0.999 sec
+> > then we throw it away and then let the RTC code inject inaccurate
+> > sleep time? Brilliant design, really.
+> 
+> Emm, I wrote the code with an assumption that the sleep itself and the
+> enter/exit processes will be longer than 1 second.
+> 
+> I can initialize the ts_delta to (0, 0} and change the check condition
+> to 
+> 	if (ts_delta.tv_sec || ts_delta.tv_nsec)
+> 
 
-So the issue is syscalls that don't react to signals, and that can
-potentially wait a long time.
+To be honest, I hate this abuse of ts_delta as a condition. Use a
+separate condition variable to make clear what the hell that code is
+doing. This is not a fast path and I really prefer understandable code
+over magic microoptimizations for no value.
 
-Like NFS with a network hickup. Which is not at all unlikely. Think
-wireless network, somebody trying to get on a network share, things
-not working, and closing the damn lid because you give up.
+Thanks,
 
-So I do agree that we probably have *too* many of the stupid "let's
-check if we can freeze", and I suspect that the NFS code should get
-rid of the "freezable_schedule()" that is causing this warning
-(because I also agree that you should *not* freeze while holding
-locks, because it really can cause deadlocks), but I do suspect that
-network filesystems do need to have a few places where they check for
-freezing on their own... Exactly because freezing isn't *quite* like a
-signal.
-
-                 Linus
+	tglx
