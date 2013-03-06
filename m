@@ -1,56 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754195Ab3CFS2r (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 13:28:47 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:34843 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753567Ab3CFS2p (ORCPT
+	id S1754186Ab3CFShd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 13:37:33 -0500
+Received: from mx12.netapp.com ([216.240.18.77]:15891 "EHLO mx12.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753845Ab3CFShb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 13:28:45 -0500
-From: Stephen Warren <swarren@wwwdotorg.org>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Michal Marek <mmarek@suse.cz>,
-        Shawn Guo <shawn.guo@linaro.org>, linux-kbuild@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org,
-        Stephen Warren <swarren@nvidia.com>
-Subject: [PATCH V2 1/6] ARM: tegra: device tree whitespace cleanup
-Date: Wed,  6 Mar 2013 11:28:32 -0700
-Message-Id: <1362594517-22099-1-git-send-email-swarren@wwwdotorg.org>
-X-Mailer: git-send-email 1.7.10.4
-X-NVConfidentiality: public
+	Wed, 6 Mar 2013 13:37:31 -0500
+X-IronPort-AV: E=Sophos;i="4.84,795,1355126400"; 
+   d="scan'208";a="28552004"
+From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+To: Jeff Layton <jlayton@redhat.com>
+CC: Mandeep Singh Baines <msb@chromium.org>, Ingo Molnar <mingo@kernel.org>,
+        Tejun Heo <tj@kernel.org>, "J. Bruce Fields" <bfields@fieldses.org>,
+        "Oleg Nesterov" <oleg@redhat.com>, Ming Lei <ming.lei@canonical.com>,
+        "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: LOCKDEP: 3.9-rc1: mount.nfs/4272 still has locks held!
+Thread-Topic: LOCKDEP: 3.9-rc1: mount.nfs/4272 still has locks held!
+Thread-Index: AQHOGOA9OOKbapJ+RE+tLJb3WRyEW5iWGYKAgAACcQCAAFy3AIAAED2AgAAVFoCAAP+FAIAASasAgAAA3gCAAFnDAIAAHiEAgAABtYCAAAMmgIAAIBQAgABkCQCAADGIgIAAQPaAgAAoVACAAAPlAA==
+Date: Wed, 6 Mar 2013 18:37:16 +0000
+Message-ID: <4FA345DA4F4AE44899BD2B03EEEC2FA9286B3C74@sacexcmbx05-prd.hq.netapp.com>
+References: <20130304205307.GA13527@redhat.com>
+	 <4FA345DA4F4AE44899BD2B03EEEC2FA9286AEEB0@sacexcmbx05-prd.hq.netapp.com>
+	 <20130305082308.6607d4db@tlielax.poochiereds.net>
+	 <20130305174648.GF12795@htj.dyndns.org>
+	 <20130305174954.GG12795@htj.dyndns.org>
+	 <20130305231110.GK15816@fieldses.org>
+	 <CACBanvo+JDCFVRQeTQwnwRRxr8bdqxdsgeEr8fqgJhGQJEEQ-Q@mail.gmail.com>
+	 <20130306010507.GL15816@fieldses.org>
+	 <20130306011623.GG1227@htj.dyndns.org>
+	 <CACBanvqVpi45TVNGXgXXO0BCSRuPEDsiNuHj0OBsvgr2UXZfsg@mail.gmail.com>
+	 <20130306090914.GA6030@gmail.com>
+	 <20130306070631.0f326014@tlielax.poochiereds.net>
+	 <CACBanvo77MrvcWgVJqFjjj-7wL6BHxaoQcQ5YRfjeCtjaOeqAw@mail.gmail.com>
+	 <20130306132322.52f47d7b@tlielax.poochiereds.net>
+In-Reply-To: <20130306132322.52f47d7b@tlielax.poochiereds.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.104.60.118]
+Content-Type: text/plain; charset=US-ASCII
+Content-ID: <E49F21E09BCB10458ED488531402CA96@tahoe.netapp.com>
+Content-Transfer-Encoding: 7BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Warren <swarren@nvidia.com>
+On Wed, 2013-03-06 at 13:23 -0500, Jeff Layton wrote:
+> On Wed, 6 Mar 2013 07:59:01 -0800
+> Mandeep Singh Baines <msb@chromium.org> wrote:
+> > In general, holding a lock and freezing can cause a deadlock if:
+> > 
+> > 1) you froze via the cgroup_freezer subsystem and a task in another
+> > cgroup tried to acquire the same lock
+> > 2) the lock was needed later is suspend/hibernate. For example, if the
+> > lock was needed in dpm_suspend by one of the device callbacks. For
+> > hibernate, you also need to worry about any locks that need to be
+> > acquired in order to write to the swap device.
+> > 3) another freezing task blocked on this lock and held other locks
+> > needed later in suspend. If that task were skipped by the freezer, you
+> > would deadlock
+> > 
+> > You will block/prevent suspend if:
+> > 
+> > 4) another freezing task blocked on this lock and was unable to freeze
+> > 
+> > I think 1) and 4) can happen for the NFS/RPC case. Case 1) requires
+> > cgroup freezer. Case 4) while not causing a deadlock could prevent
+> > your laptop/phone from sleeping and end up burning all your battery.
+> > If suspend is initiated via lid close you won't even know about the
+> > failure.
+> > 
+> 
+> We're aware of #4. That was the intent of adding try_to_freeze() into
+> this codepath in the first place. It's not a great solution for obvious
+> reasons, but we don't have another at the moment.
+> 
+> For #1 I'm not sure what to do. I'm that familiar with cgroups or how
+> the freezer works.
+> 
+> The bottom line is that we have a choice -- we can either rip out this
+> new lockdep warning, or rip out the code that causes it to fire.
+> 
+> If we rip out the warning we may miss some legit cases where we might
+> possibly have hit a deadlock.
+> 
+> If we rip out the code that causes it to fire, then we exacerbate the
+> #4 problem above. That will effectively make it so that you can't
+> suspend the host whenever NFS is doing anything moderately active.
 
-Remove white-space from empty line; triggers checkpatch.
+#4 is probably the only case where we might want to freeze.
 
-Signed-off-by: Stephen Warren <swarren@nvidia.com>
----
-Patches 3 and later in his series depends on the kbuild-related series I
-just posted to rework the dtc+cpp logic. I hope to apply them to the Tegra
-tree after merging the previous series from the arm-soc topic branch.
-Patches 1 and 2 are just cleanup that the others depend on.
+Unless we're in a situation where the network is going down, we can
+usually always make progress with completing the RPC call and finishing
+the system call. So in the case of cgroup_freezer, we only care if the
+freezing cgroup also owns the network device (or net namespace) that NFS
+is using to talk to the server.
 
- arch/arm/boot/dts/tegra20.dtsi |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+As I said, the alternative is to notify NFS that the device is going
+down, and to give it a chance to quiesce itself before that happens.
+This is also the only way to ensure that processes which own locks on
+the server (e.g. posix file locks) have a chance to release them before
+being suspended.
 
-diff --git a/arch/arm/boot/dts/tegra20.dtsi b/arch/arm/boot/dts/tegra20.dtsi
-index 48d00a0..ab9402a 100644
---- a/arch/arm/boot/dts/tegra20.dtsi
-+++ b/arch/arm/boot/dts/tegra20.dtsi
-@@ -208,7 +208,7 @@
- 		compatible = "nvidia,tegra20-das";
- 		reg = <0x70000c00 0x80>;
- 	};
--	
-+
- 	tegra_ac97: ac97 {
- 		compatible = "nvidia,tegra20-ac97";
- 		reg = <0x70002000 0x200>;
+
 -- 
-1.7.10.4
+Trond Myklebust
+Linux NFS client maintainer
 
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
