@@ -1,68 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755898Ab3CFVkX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 16:40:23 -0500
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:41869 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752551Ab3CFVkW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 16:40:22 -0500
-Date: Wed, 6 Mar 2013 13:40:16 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Oleg Nesterov <oleg@redhat.com>, Jeff Layton <jlayton@redhat.com>,
-        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
-        Mandeep Singh Baines <msb@chromium.org>,
-        Ming Lei <ming.lei@canonical.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: LOCKDEP: 3.9-rc1: mount.nfs/4272 still has locks held!
-Message-ID: <20130306214016.GQ1227@htj.dyndns.org>
-References: <20130305140312.243cb094@tlielax.poochiereds.net>
- <20130305190923.GI12795@htj.dyndns.org>
- <20130305183941.19ff39ce@tlielax.poochiereds.net>
- <20130305234700.GE1227@htj.dyndns.org>
- <20130306181608.GA18687@redhat.com>
- <20130306185304.GM1227@htj.dyndns.org>
- <CA+55aFwDogteVd=vwGHXDSASnga-nZZnKaQz9aO1yBU2CPKSbA@mail.gmail.com>
- <20130306212452.GO1227@htj.dyndns.org>
- <CA+55aFy49AWptMcvEzJxg95ikf-dC+-vcCPq-cnaCCwje3tyoQ@mail.gmail.com>
- <20130306213636.GP1227@htj.dyndns.org>
+	id S1755999Ab3CFVox (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 16:44:53 -0500
+Received: from ring0.de ([91.143.88.219]:44136 "EHLO smtp.ring0.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752551Ab3CFVov (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Mar 2013 16:44:51 -0500
+X-Spam-Report: * -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
+	*      [score: 0.0000]
+Date: Wed, 6 Mar 2013 22:44:41 +0100
+From: Sebastian Reichel <sre@ring0.de>
+To: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
+Cc: Aaro Koskinen <aaro.koskinen@iki.fi>, Tony Lindgren <tony@atomide.com>,
+        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        sakari.ailus@retiisi.org.uk, sakari.ailus@iki.fi
+Subject: Re: [PATCH v2] ADP1653 board code for Nokia RX-51
+Message-ID: <20130306214440.GA11874@earth.universe>
+Mail-Followup-To: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
+	Aaro Koskinen <aaro.koskinen@iki.fi>,
+	Tony Lindgren <tony@atomide.com>, linux-omap@vger.kernel.org,
+	linux-kernel@vger.kernel.org, sakari.ailus@retiisi.org.uk,
+	sakari.ailus@iki.fi
+References: <201302171616.50152@pali>
+ <20130217190303.GC2317@blackmetal.musicnaut.iki.fi>
+ <201303062112.06417@pali>
+ <201303062120.17303@pali>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature"; boundary="C7zPtVaVf+AK4Oqc"
 Content-Disposition: inline
-In-Reply-To: <20130306213636.GP1227@htj.dyndns.org>
+In-Reply-To: <201303062120.17303@pali>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 06, 2013 at 01:36:36PM -0800, Tejun Heo wrote:
-> On Wed, Mar 06, 2013 at 01:31:10PM -0800, Linus Torvalds wrote:
-> > So I do agree that we probably have *too* many of the stupid "let's
-> > check if we can freeze", and I suspect that the NFS code should get
-> > rid of the "freezable_schedule()" that is causing this warning
-> > (because I also agree that you should *not* freeze while holding
-> > locks, because it really can cause deadlocks), but I do suspect that
-> > network filesystems do need to have a few places where they check for
-> > freezing on their own... Exactly because freezing isn't *quite* like a
-> > signal.
-> 
-> Well, I don't really know much about nfs so I can't really tell, but
-> for most other cases, dealing with freezing like a signal should work
-> fine from what I've seen although I can't be sure before actually
-> trying.  Trond, Bruce, can you guys please chime in?
 
-So, I think the question here would be, in nfs, how many of the
-current freezer check points would be difficult to conver to signal
-handling model after excluding the ones which are performed while
-holding some locks which we need to get rid of anyway?
+--C7zPtVaVf+AK4Oqc
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thanks.
+On Wed, Mar 06, 2013 at 09:20:16PM +0100, Pali Roh=E1r wrote:
+> On Wednesday 06 March 2013 21:12:06 Pali Roh=E1r wrote:
+> > On Sunday 17 February 2013 20:03:03 Aaro Koskinen wrote:
+> > > On Sun, Feb 17, 2013 at 04:16:49PM +0100, Pali Roh=E1r wrote:
+> > > > +/*
+> > > > + * arch/arm/mach-omap2/board-rx51-camera.c
+> > > > + *
+> > > > + * Copyright (C) 2008 Nokia Corporation
+> > > > + *
+> > > > + * Contact: Sakari Ailus <sakari.ailus@nokia.com>
+> > > > + *          Tuukka Toivonen <tuukka.o.toivonen@nokia.com>
+> > >=20
+> > > You should put these people to CC... Just to see if the
+> > > addresses are still valid (which I doubt).
+> >=20
+> > Ok, trying :-)
+> >=20
+>=20
+> I got "Delivery Status Notification (Failure)" for both addresses.
 
--- 
-tejun
+Sakari Ailus hosts some code on github [0], which has the following
+email address: sakari.ailus+gitorious@retiisi.org.uk
+
+I added it to this mail's CC.
+
+[0] https://gitorious.org/~sailus
+
+-- Sebastian
+
+--C7zPtVaVf+AK4Oqc
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRN7jIAAoJENju1/PIO/qaxVsP/0JOBKZ0vMVkFzhmLUTvo3/M
+0O83NYJhPbpa0rIJheesIi+kbXoyEiSKPhW7EhqGzEgqV417670nANhO5Tn22Qk+
+8xGxPZqJA1VwJ9fq6XbGcMKJMD6NKeGHl7ePO9xqeHVKYKdRfRuXmUiu1qSLkOZF
+gHXOli9WghjXjlygpPFyDrSFsD8CtAh5wNIkgFCDoe/3ig/5On9h45XSku+PoWJG
++H/oaCGC4mqxv7bX1mR8gTDbERTTNIID9bo3NU2EnBgPRH0YRWvE7TuFJcnQaHxe
+RpHynXb3nxRWaSOKGcTmTOJibFULApDIoCQXO4lHoFjND8FloUE4N7w7JVC+GiVG
+rTLN70+cA1P/cgfT3cpwGtyS5ucllVl2op2H8gsTLI1Cj502ioJdsQzjXlBtCLQz
+/3scdYC/GpQq0dxfzNPWHkOAlIVZykwUiiQtlZ0mauMZ3n/uXZm/bsSo21zGbK1x
+31ZTNU0EFrBTtuQbCf4bdoMcVCIgSCiWqiS7JFNXVH3RJSqoTcJfhIFNxWxBIFuO
+eALAzUZNcawAathCw8prP85ALaKBRApqgZaocpsOIws7RA8BDrdx4xDrP6glfuRi
+vqqQNM8gSyw9QX2Kn0EFuBFKNOw5wG7sKgjiXMM+38avozd+25hVW+bOCkF1t3Aa
+SKnwoyicu+bSE7oHfzI6
+=wZS1
+-----END PGP SIGNATURE-----
+
+--C7zPtVaVf+AK4Oqc--
