@@ -1,46 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758143Ab3CFNng (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 08:43:36 -0500
-Received: from mail-ee0-f45.google.com ([74.125.83.45]:45782 "EHLO
-	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756783Ab3CFNne (ORCPT
+	id S1757062Ab3CFNte (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 08:49:34 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41569 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753484Ab3CFNtc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 08:43:34 -0500
+	Wed, 6 Mar 2013 08:49:32 -0500
+Message-ID: <51374968.4070805@canonical.com>
+Date: Wed, 06 Mar 2013 14:49:28 +0100
+From: David Henningsson <david.henningsson@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
 MIME-Version: 1.0
-In-Reply-To: <51371B5E.1000508@free-electrons.com>
-References: <51371B5E.1000508@free-electrons.com>
-Date: Wed, 6 Mar 2013 15:43:32 +0200
-X-Google-Sender-Auth: j-hXa6n0xSvQ2aQowASHqyfgXOI
-Message-ID: <CAB7JpEHJdKeOhkME-6mMdPY6VyTQwFvM33+gxg4X9ZpQv1=6RQ@mail.gmail.com>
-Subject: Re: v3.9-rc1: swapper/0 [ INFO: possible circular locking dependency
- detected ]
-From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-usb@vger.kernel.org, Peter Chen <peter.chen@freescale.com>
-Content-Type: text/plain; charset=UTF-8
+To: Christine Spang <christine.spang@oracle.com>
+CC: Takashi Iwai <tiwai@suse.de>, Sasha Levin <sasha.levin@oracle.com>,
+        alsa-devel@alsa-project.org, Jamie Iles <jamie.iles@oracle.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [alsa-devel] [PATCH] Make snd_BUG_ON() always evaluate and return
+ the conditional expression.
+References: <1362434579-7733-1-git-send-email-christine.spang@oracle.com> <s5h8v62gqt0.wl%tiwai@suse.de> <51365862.9050401@oracle.com>
+In-Reply-To: <51365862.9050401@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6 March 2013 12:33, Maxime Ripard <maxime.ripard@free-electrons.com> wrote:
-> Hi,
->
-> Just noticed this in 3.9-rc1 on an iMX28 (ARM) board with a config
-> based on mxs_defconfig. I'm using the patchset "Add tested id switch
-> and vbus connect detect support for Chipidea" from Peter Chen in its
-> 10th version [1], rebased on top of 3.9-rc1, but since this doesn't
-> modify the locks present in the udc_irq function, I think the problem
-> is elsewhere.
+2013-03-05 21:41, Christine Spang skrev:
+> On 03/05/2013 04:05 AM, Takashi Iwai wrote:
+>> At Mon,  4 Mar 2013 17:02:59 -0500,
+>> Christine Spang wrote:
+>>> Having snd_BUG_ON() only evaluate its conditional when CONFIG_SND_DEBUG
+>>> is set leads to frequent bugs, since other similar macros in the kernel
+>>> have different behavior. Let's make snd_BUG_ON() act like those macros
+>>> so it will stop being accidentally misused.
+>>>
+>>> Signed-off-by: Christine Spang <christine.spang@oracle.com>
+>> Sounds reasonable.  The dependency on CONFIG_SND_DEBUG was for
+>> allowing more optimization, but since we use this for more places than
+>> expected, this change would be safer indeed.
+>>
+>> If no one has objection, I'll apply it for 3.10 kernel.
 
->From a quick look at the current chipidea code, I don't see any place
-where we might try to take cdev->lock under ci->lock. I should have a
-better look at Peter's patchset to see if it can trigger that. Peter,
-have you seen anything like that with your code?
-Is this easy to trigger (I would assume it is)? Can you post the
-contents of "events" debug file in sysfs?
+If snd_BUG_ON now works like WARN_ON rather than BUG_ON (at least it 
+does with this change, if I understand things right), maybe we should 
+rename it to snd_WARN_ON for consistency?
 
-Thanks,
---
-Alex
+
+-- 
+David Henningsson, Canonical Ltd.
+https://launchpad.net/~diwic
+
