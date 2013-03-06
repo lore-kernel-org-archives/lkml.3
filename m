@@ -1,112 +1,283 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754978Ab3CFHtH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 02:49:07 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:57253 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751369Ab3CFHtD (ORCPT
+	id S1755234Ab3CFHt3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 02:49:29 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:43004 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755027Ab3CFHtZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 02:49:03 -0500
-X-AuditID: cbfee68f-b7f6a6d000004969-02-5136f4edf57d
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Andrew Morton'" <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, "'Alessandro Zummo'" <a.zummo@towertech.it>,
-        rtc-linux@googlegroups.com, "'Jingoo Han'" <jg1.han@samsung.com>
-References: <007b01ce1a3e$cd9f3260$68dd9720$%han@samsung.com>
-In-reply-to: <007b01ce1a3e$cd9f3260$68dd9720$%han@samsung.com>
-Subject: [PATCH V2 05/30] rtc: rtc-davinci: use devm_rtc_device_register()
-Date: Wed, 06 Mar 2013 16:49:01 +0900
-Message-id: <007f01ce1a3f$11466150$33d323f0$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac4aPs2G+X8TED9/S2OjRUc7S5yKjAAADU8g
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrGIsWRmVeSWpSXmKPExsVy+t8zY923X8wCDT5c0bNYcvEqu8Wc9WvY
-	LC4vvMRqcXnXHDaL/Z0djA6sHnsmnmTzODHjN4tH35ZVjB7T5/1k8vi8SS6ANYrLJiU1J7Ms
-	tUjfLoEr486FdywFp3kqri2TaGBcz9XFyMkhIWAi8XBWPyOELSZx4d56ti5GLg4hgWWMEjce
-	N7HBFH3Ze4cJIjGdUWLByWesEM4vRokTS6azg1SxCahJfPlyGMjm4BAR0Jdoa9EAqWEW6GWU
-	ONO7GywuJGAr0TOPB6ScU8BOYsrEx2CtwgJeEgt+bmcGsVkEVCXWnf0FdhEvUPnH2d/ZIWxB
-	iR+T77GA2MwCWhLrdx5ngrDlJTavecsMMl5CQF3i0V9dkLCIgJHEskvzoEpEJPa9eMcIco6E
-	wD12iZOzu1khdglIfJt8iAWiV1Zi0wFmiH8lJQ6uuMEygVFiFpLNs5BsnoVk8ywkKxYwsqxi
-	FE0tSC4oTkovMtYrTswtLs1L10vOz93ECInT/h2Mdw9YH2JMBlo/kVlKNDkfGOd5JfGGxsYm
-	ZiamJuaWpuampAkrifPKX5IJFBJITyxJzU5NLUgtii8qzUktPsTIxMEp1cC4umzmEc1tm/bY
-	Z7dZGYtU8Zpsuu9hM6vgeNTK+31vFv72371kimvrzr+fc8/+vuKawnlYqUmvrsOVqeQx26zA
-	uHqWyp6DJQujLyRtr/7F9eaYbaIx58eN4i7zS3WdBLOtNQNitQ3sWxb+vqwVu3zyjOaWY3Ln
-	p0re+d13dFmZv/3lwBNVx/4psRRnJBpqMRcVJwIAgOs5N+kCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrMKsWRmVeSWpSXmKPExsVy+t9jQd23X8wCDTZM0LJYcvEqu8Wc9WvY
-	LC4vvMRqcXnXHDaL/Z0djA6sHnsmnmTzODHjN4tH35ZVjB7T5/1k8vi8SS6ANaqB0SYjNTEl
-	tUghNS85PyUzL91WyTs43jne1MzAUNfQ0sJcSSEvMTfVVsnFJ0DXLTMHaLuSQlliTilQKCCx
-	uFhJ3w7ThNAQN10LmMYIXd+QILgeIwM0kLCOMePOhXcsBad5Kq4tk2hgXM/VxcjJISFgIvFl
-	7x0mCFtM4sK99WxdjFwcQgLTGSUWnHzGCuH8YpQ4sWQ6O0gVm4CaxJcvh4FsDg4RAX2JthYN
-	kBpmgV5GiTO9u8HiQgK2Ej3zeEDKOQXsJKZMfAzWKizgJbHg53ZmEJtFQFVi3dlfjCA2L1D5
-	x9nf2SFsQYkfk++xgNjMAloS63ceZ4Kw5SU2r3nLDDJeQkBd4tFfXZCwiICRxLJL86BKRCT2
-	vXjHOIFRaBaSSbOQTJqFZNIsJC0LGFlWMYqmFiQXFCel5xrpFSfmFpfmpesl5+duYgQngWfS
-	OxhXNVgcYhTgYFTi4Z2gYhYoxJpYVlyZe4hRgoNZSYSX6wxQiDclsbIqtSg/vqg0J7X4EGMy
-	0KMTmaVEk/OBCSqvJN7Q2MTMyNLIzMLIxNycNGElcV7GU08ChATSE0tSs1NTC1KLYLYwcXBK
-	NTAy6jx57bNIv7NveVxAwU2GILMmozXTHs8X3n/b/Vtf+5EzclfD1rTozS7pyEzW/OT+QuL/
-	rLDqy4zsdpMbV6zfc8JEPrORTfPRhPl73v2IMfdalDSPR7s0u43fkUu1sEOop8KMnUVWznHN
-	txdzfE3kcz6v/yDVenH99v7d+w8/FjurvnKd3EYlluKMREMt5qLiRADAphv/RgMAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Wed, 6 Mar 2013 02:49:25 -0500
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <5136F4D2.8080205@jp.fujitsu.com>
+Date: Wed, 6 Mar 2013 16:48:34 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
+MIME-Version: 1.0
+To: Lin Feng <linfeng@cn.fujitsu.com>
+CC: <akpm@linux-foundation.org>, <mgorman@suse.de>, <bcrl@kvack.org>,
+        <viro@zeniv.linux.org.uk>, <khlebnikov@openvz.org>,
+        <walken@google.com>, <kamezawa.hiroyu@jp.fujitsu.com>,
+        <minchan@kernel.org>, <riel@redhat.com>, <rientjes@google.com>,
+        <wency@cn.fujitsu.com>, <laijs@cn.fujitsu.com>,
+        <tangchen@cn.fujitsu.com>, <guz.fnst@cn.fujitsu.com>,
+        <jiang.liu@huawei.com>, <zab@redhat.com>, <jmoyer@redhat.com>,
+        <linux-mm@kvack.org>, <linux-aio@kvack.org>,
+        <linux-fsdevel@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <m.szyprowski@samsung.com>
+Subject: Re: [PATCH V3 1/2] mm: hotplug: implement non-movable version of
+ get_user_pages() called get_user_pages_non_movable()
+References: <1361444504-31888-1-git-send-email-linfeng@cn.fujitsu.com> <1361444504-31888-2-git-send-email-linfeng@cn.fujitsu.com> <512C7C13.9050602@cn.fujitsu.com>
+In-Reply-To: <512C7C13.9050602@cn.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-devm_rtc_device_register() is device managed and makes cleanup
-paths simpler.
+Hi Lin,
 
-Signed-off-by: Jingoo Han <jg1.han@samsung.com>
----
-Changes since v1:
-- used 'struct device *dev' as the first argument
+IMHO, current implementation depends on luck. So even if system has
+many non movable memory, get_user_pages_non_movable() may not allocate
+non movable memory.
 
- drivers/rtc/rtc-davinci.c |    8 ++------
- 1 files changed, 2 insertions(+), 6 deletions(-)
+At following thread, Marek Szyprowski implemented similar feature which
+allocates non movable memory by "get_user_pages()".
 
-diff --git a/drivers/rtc/rtc-davinci.c b/drivers/rtc/rtc-davinci.c
-index db877e0..4e8d2a7 100644
---- a/drivers/rtc/rtc-davinci.c
-+++ b/drivers/rtc/rtc-davinci.c
-@@ -523,7 +523,7 @@ static int __init davinci_rtc_probe(struct platform_device *pdev)
- 
- 	platform_set_drvdata(pdev, davinci_rtc);
- 
--	davinci_rtc->rtc = rtc_device_register(pdev->name, &pdev->dev,
-+	davinci_rtc->rtc = devm_rtc_device_register(&pdev->dev, pdev->name,
- 				    &davinci_rtc_ops, THIS_MODULE);
- 	if (IS_ERR(davinci_rtc->rtc)) {
- 		ret = PTR_ERR(davinci_rtc->rtc);
-@@ -543,7 +543,7 @@ static int __init davinci_rtc_probe(struct platform_device *pdev)
- 			  0, "davinci_rtc", davinci_rtc);
- 	if (ret < 0) {
- 		dev_err(dev, "unable to register davinci RTC interrupt\n");
--		goto fail2;
-+		goto fail1;
- 	}
- 
- 	/* Enable interrupts */
-@@ -557,8 +557,6 @@ static int __init davinci_rtc_probe(struct platform_device *pdev)
- 
- 	return 0;
- 
--fail2:
--	rtc_device_unregister(davinci_rtc->rtc);
- fail1:
- 	platform_set_drvdata(pdev, NULL);
- 	return ret;
-@@ -572,8 +570,6 @@ static int __exit davinci_rtc_remove(struct platform_device *pdev)
- 
- 	rtcif_write(davinci_rtc, 0, PRTCIF_INTEN);
- 
--	rtc_device_unregister(davinci_rtc->rtc);
--
- 	platform_set_drvdata(pdev, NULL);
- 
- 	return 0;
--- 
-1.7.2.5
+https://lkml.org/lkml/2013/3/5/44
 
+I think Marek's way is better.
+
+Thanks,
+Yasuaki Ishimatsu
+
+2013/02/26 18:10, Lin Feng wrote:
+> Hi Andrew, Mel and other guys,
+>
+> How about this V3 patch, any comments?
+>
+> thanks,
+> linfeng
+>
+> On 02/21/2013 07:01 PM, Lin Feng wrote:
+>> get_user_pages() always tries to allocate pages from movable zone, which is not
+>>   reliable to memory hotremove framework in some case.
+>>
+>> This patch introduces a new library function called get_user_pages_non_movable()
+>>   to pin pages only from zone non-movable in memory.
+>> It's a wrapper of get_user_pages() but it makes sure that all pages come from
+>> non-movable zone via additional page migration. But if migration fails it
+>> will at least keep the base functionality of get_user_pages().
+>>
+>> Cc: Andrew Morton <akpm@linux-foundation.org>
+>> Cc: Mel Gorman <mgorman@suse.de>
+>> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+>> Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+>> Cc: Jeff Moyer <jmoyer@redhat.com>
+>> Cc: Minchan Kim <minchan@kernel.org>
+>> Cc: Zach Brown <zab@redhat.com>
+>> Reviewed-by: Tang Chen <tangchen@cn.fujitsu.com>
+>> Reviewed-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
+>> Signed-off-by: Lin Feng <linfeng@cn.fujitsu.com>
+>> ---
+>>   include/linux/mm.h     |   14 ++++++
+>>   include/linux/mmzone.h |    4 ++
+>>   mm/memory.c            |  103 ++++++++++++++++++++++++++++++++++++++++++++++++
+>>   mm/page_isolation.c    |    8 ++++
+>>   4 files changed, 129 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/include/linux/mm.h b/include/linux/mm.h
+>> index 5625c1c..737dc39 100644
+>> --- a/include/linux/mm.h
+>> +++ b/include/linux/mm.h
+>> @@ -1025,6 +1025,20 @@ long get_user_pages(struct task_struct *tsk, struct mm_struct *mm,
+>>   		    struct vm_area_struct **vmas);
+>>   int get_user_pages_fast(unsigned long start, int nr_pages, int write,
+>>   			struct page **pages);
+>> +#ifdef CONFIG_MEMORY_HOTREMOVE
+>> +int get_user_pages_non_movable(struct task_struct *tsk, struct mm_struct *mm,
+>> +		unsigned long start, int nr_pages, int write, int force,
+>> +		struct page **pages, struct vm_area_struct **vmas);
+>> +#else
+>> +static inline
+>> +int get_user_pages_non_movable(struct task_struct *tsk, struct mm_struct *mm,
+>> +		unsigned long start, int nr_pages, int write, int force,
+>> +		struct page **pages, struct vm_area_struct **vmas)
+>> +{
+>> +	return get_user_pages(tsk, mm, start, nr_pages, write, force, pages,
+>> +				vmas);
+>> +}
+>> +#endif
+>>   struct kvec;
+>>   int get_kernel_pages(const struct kvec *iov, int nr_pages, int write,
+>>   			struct page **pages);
+>> diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+>> index ab20a60..c31007e 100644
+>> --- a/include/linux/mmzone.h
+>> +++ b/include/linux/mmzone.h
+>> @@ -851,6 +851,10 @@ static inline int is_normal_idx(enum zone_type idx)
+>>   	return (idx == ZONE_NORMAL);
+>>   }
+>>
+>> +static inline int zone_is_movable(struct zone *zone)
+>> +{
+>> +	return zone_idx(zone) == ZONE_MOVABLE;
+>> +}
+>>   /**
+>>    * is_highmem - helper function to quickly check if a struct zone is a
+>>    *              highmem zone or not.  This is an attempt to keep references
+>> diff --git a/mm/memory.c b/mm/memory.c
+>> index 16ca5d0..83db7dd 100644
+>> --- a/mm/memory.c
+>> +++ b/mm/memory.c
+>> @@ -58,6 +58,8 @@
+>>   #include <linux/elf.h>
+>>   #include <linux/gfp.h>
+>>   #include <linux/migrate.h>
+>> +#include <linux/page-isolation.h>
+>> +#include <linux/mm_inline.h>
+>>   #include <linux/string.h>
+>>
+>>   #include <asm/io.h>
+>> @@ -2014,6 +2016,107 @@ long get_user_pages(struct task_struct *tsk, struct mm_struct *mm,
+>>   }
+>>   EXPORT_SYMBOL(get_user_pages);
+>>
+>> +#ifdef CONFIG_MEMORY_HOTREMOVE
+>> +/**
+>> + * It's a wrapper of get_user_pages() but it makes sure that all pages come from
+>> + * non-movable zone via additional page migration. It's designed for memory
+>> + * hotremove framework.
+>> + *
+>> + * Currently get_user_pages() always tries to allocate pages from movable zone,
+>> + * in some case users of get_user_pages() is easy to pin user pages for a long
+>> + * time(for now we found that pages pinned as aio ring pages is such case),
+>> + * which is fatal for memory hotremove framework.
+>> + *
+>> + * This function first calls get_user_pages() to get the candidate pages, and
+>> + * then check to ensure all pages are from non movable zone. Otherwise migrate
+>> + * them to non movable zone, then retry. It will at most retry once. If
+>> + * migration fails, it will keep the base functionality of get_user_pages()
+>> + * and issue WARN message for memory hot-remove people.
+>> + *
+>> + * Fixme: now we don't support non movable version of GUP for hugepage.
+>> + */
+>> +int get_user_pages_non_movable(struct task_struct *tsk, struct mm_struct *mm,
+>> +		unsigned long start, int nr_pages, int write, int force,
+>> +		struct page **pages, struct vm_area_struct **vmas)
+>> +{
+>> +	int ret, i, tried = 0;
+>> +	bool isolate_err, migrate_prepped;
+>> +	LIST_HEAD(pagelist);
+>> +
+>> +retry:
+>> +	BUG_ON(tried == 2);
+>> +	ret = get_user_pages(tsk, mm, start, nr_pages, write, force, pages,
+>> +				vmas);
+>> +	/* No ZONE_MOVABLE populated, all pages are from non movable zone */
+>> +	if (movable_zone == ZONE_MOVABLE || ret <= 0)
+>> +		return ret;
+>> +
+>> +	isolate_err = false;
+>> +	migrate_prepped = false;
+>> +
+>> +	for (i = 0; i < ret; i++) {
+>> +		if (zone_is_movable(page_zone(pages[i]))) {
+>> +			/* Fixme: improve for hugepage non movable support */
+>> +			if (PageHuge(pages[i])) {
+>> +				WARN_ONCE(1, "Non movable GUP for hugepages "
+>> +					"haven't been implemented yet, it may "
+>> +					"lead to memory hot-remove failure.\n");
+>> +				continue;
+>> +			}
+>> +
+>> +			/* Hugepage or THP's head page has covered tail pages */
+>> +			if (PageTail(pages[i]) && (page_count(pages[i]) == 1))
+>> +				continue;
+>> +
+>> +			if (!migrate_prepped) {
+>> +				BUG_ON(migrate_prep());
+>> +				migrate_prepped = true;
+>> +			}
+>> +
+>> +			/* Fixme: isolate_lru_page() takes the LRU lock every
+>> +			 * time, batching the lock could avoid potential lock
+>> +			 * contention problems. -Mel Gorman
+>> +			 */
+>> +			if (!isolate_lru_page(pages[i])) {
+>> +				inc_zone_page_state(pages[i], NR_ISOLATED_ANON +
+>> +						 page_is_file_cache(pages[i]));
+>> +				list_add(&pages[i]->lru, &pagelist);
+>> +			} else {
+>> +				isolate_err = true;
+>> +				break;
+>> +			}
+>> +		}
+>> +	}
+>> +
+>> +	/* All pages are non movable, we are done :) */
+>> +	if (i == ret && list_empty(&pagelist))
+>> +		return ret;
+>> +
+>> +	/* Undo the effects of former get_user_pages(), ready for another try */
+>> +	release_pages(pages, ret, 1);
+>> +
+>> +	if (!isolate_err) {
+>> +		ret = migrate_pages(&pagelist, alloc_migrate_target, 1,
+>> +					MIGRATE_SYNC, MR_SYSCALL);
+>> +		/* Steal pages from non-movable zone successfully? */
+>> +		if (!ret) {
+>> +			tried++;
+>> +			goto retry;
+>> +		}
+>> +	}
+>> +
+>> +	putback_lru_pages(&pagelist);
+>> +	/* Migration failed, in order to keep at least the base functionality of
+>> +	 * get_user_pages(), we pin pages again but give WARN info to remind
+>> +	 * memory hot-remove people, which is a trade-off.
+>> +	 */
+>> +	WARN_ONCE(1, "Non movable zone migration failed, "
+>> +		"it may lead to memroy hot-remove failure.\n");
+>> +	return get_user_pages(tsk, mm, start, nr_pages, write, force, pages,
+>> +				vmas);
+>> +}
+>> +EXPORT_SYMBOL(get_user_pages_non_movable);
+>> +#endif
+>>   /**
+>>    * get_dump_page() - pin user page in memory while writing it to core dump
+>>    * @addr: user address
+>> diff --git a/mm/page_isolation.c b/mm/page_isolation.c
+>> index 383bdbb..7823ea5 100644
+>> --- a/mm/page_isolation.c
+>> +++ b/mm/page_isolation.c
+>> @@ -247,6 +247,9 @@ int test_pages_isolated(unsigned long start_pfn, unsigned long end_pfn,
+>>   	return ret ? 0 : -EBUSY;
+>>   }
+>>
+>> +/**
+>> + * @private: 0 means page can be alloced from movable zone, otherwise forbidden
+>> + */
+>>   struct page *alloc_migrate_target(struct page *page, unsigned long private,
+>>   				  int **resultp)
+>>   {
+>> @@ -254,6 +257,11 @@ struct page *alloc_migrate_target(struct page *page, unsigned long private,
+>>
+>>   	if (PageHighMem(page))
+>>   		gfp_mask |= __GFP_HIGHMEM;
+>> +#if defined(CONFIG_MEMORY_HOTREMOVE) && defined(CONFIG_HIGHMEM)
+>> +	BUILD_BUG_ON(1);
+>> +#endif
+>> +	if (unlikely(private != 0))
+>> +		gfp_mask &= ~__GFP_HIGHMEM;
+>>
+>>   	return alloc_page(gfp_mask);
+>>   }
+>>
+>
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+>
 
