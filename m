@@ -1,66 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755013Ab3CFUmA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 15:42:00 -0500
-Received: from smtprelay-b21.telenor.se ([195.54.99.212]:38223 "EHLO
-	smtprelay-b21.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752551Ab3CFUl7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 15:41:59 -0500
-X-SENDER-IP: [85.230.168.206]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AhF1AIipN1FV5qjOPGdsb2JhbABEh14BhH23WAMBgVwXAwEBAQE4NIIsAQU6HBMBDxAIAyElDwUlChoTiBe8KhWNdoEBB4JfYQOWSoYIjXM
-X-IronPort-AV: E=Sophos;i="4.84,798,1355094000"; 
-   d="scan'208";a="291552628"
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Wed, 6 Mar 2013 21:45:00 +0100
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Linux 3.9-rc1
-Message-ID: <20130306204500.GA335@polaris.bitmath.org>
-References: <CA+55aFx0HcOXKpxmZzM5jcbAaOroxafomX5ggMFV4A=py1qh-Q@mail.gmail.com>
- <20130306080642.GA535@polaris.bitmath.org>
- <51370990.5040508@linux.intel.com>
- <20130306100743.GA407@polaris.bitmath.org>
- <CAE9FiQXT4O3GOzm_OoFJG=vc=5LpfBkTEbAO_3xjerBGS_Gy=A@mail.gmail.com>
- <20130306193612.GA513@polaris.bitmath.org>
- <51379A4F.4020200@linux.intel.com>
- <20130306195457.GA449@polaris.bitmath.org>
- <CAE9FiQWK0ZnG9o8WgU-pcTPpir=PUyULQqk-TRVC+sh6UpU8VA@mail.gmail.com>
+	id S1755236Ab3CFUoH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 15:44:07 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:47125 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753539Ab3CFUoG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Mar 2013 15:44:06 -0500
+User-Agent: K-9 Mail for Android
+In-Reply-To: <CA+5PVA6pzop79bnixANhqBEBbP9i+01s8Ggida8Ui41aA6gDeQ@mail.gmail.com>
+References: <20130228205206.GC3438@sgi.com> <512FC697.3090608@zytor.com> <20130228210910.GD3438@sgi.com> <512FC82B.40909@zytor.com> <CAE9FiQU3FBwEiC86N1RC8=aMdN09EbUmRcsWP0yof7bmxBhPew@mail.gmail.com> <512FE3AE.4070903@zytor.com> <20130305081519.GA19165@sgi.com> <9bcd6241-37fd-4ae9-a997-2a5da1eaf997@email.android.com> <CAE9FiQV2Wk+yiqR8FnNM_L-p1iQFxDwopRzFWTwm6VCkyrbuoQ@mail.gmail.com> <CA+5PVA4VRa7z10APcEaoebX3vwtbLzDLq1PAHmfaHBDqtZv=jw@mail.gmail.com> <51377C3A.3030301@zytor.com> <CA+5PVA51-FT14p4CRYKbicykugVb=PiaEycdQ57CK2km_OQuRQ@mail.gmail.com> <51377ED7.1060800@zytor.com> <CA+5PVA6pzop79bnixANhqBEBbP9i+01s8Ggida8Ui41aA6gDeQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAE9FiQWK0ZnG9o8WgU-pcTPpir=PUyULQqk-TRVC+sh6UpU8VA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: Revert commit 5dcd14ecd4 - breaks EFI boot with SLES11 elilo.efi
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Wed, 06 Mar 2013 12:43:39 -0800
+To: Josh Boyer <jwboyer@gmail.com>
+CC: Yinghai Lu <yinghai@kernel.org>, Robin Holt <holt@sgi.com>,
+        linux-kernel@vger.kernel.org, pjones@redhat.com
+Message-ID: <414399ca-2000-4120-88fb-af1d203990eb@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >> >> Can you check bootloader like grub.efi ?
-> >> >
-> >> > I checked, same story. I tried without EFI_STUB, no joy. I ran with
-> >> > and without nouveau, just in case. Without the patch, everything
-> >> > works. With the patch, nothing works, and no output at all.
-> >> >
-> >> > With a bit of luck, I could maybe get the first lines of output using
-> >> > grub.efi, but frankly I cannot remember if that ever worked on this
-> >> > machine.
-> 
-> Found one bug about real_end calculating, it should be PMD_SIZE align.
-> Otherwise in extreme case we could have less then 2M for the first step.
-> In your case is about only (1M - 32k) for first step.
-> 
-> Please try attached patch.
+Yeah.  I'll queue it up today and send to Linus in the next batch.
 
-Bingo. Excellent, thank you Yinghai. I verified that it also boots on
-top of Linus' tree, so you may add
+Josh Boyer <jwboyer@gmail.com> wrote:
 
-    Tested-by: Henrik Rydberg <rydberg@euromail.se>
+>On Wed, Mar 6, 2013 at 12:37 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+>> On 03/06/2013 09:36 AM, Josh Boyer wrote:
+>>>
+>>> Something like this?
+>>>
+>>> Index: linux-2.6/arch/x86/include/asm/bootparam_utils.h
+>>> ===================================================================
+>>> --- linux-2.6.orig/arch/x86/include/asm/bootparam_utils.h
+>>> +++ linux-2.6/arch/x86/include/asm/bootparam_utils.h
+>>> @@ -20,8 +20,11 @@ static void sanitize_boot_params(struct
+>>>       if (boot_params->sentinel) {
+>>>               /*fields in boot_params are not valid, clear them */
+>>>               memset(&boot_params->olpc_ofw_header, 0,
+>>> -                    (char *)&boot_params->alt_mem_k -
+>>> +                    (char *)&boot_params->efi_info -
+>>>                       (char *)&boot_params->olpc_ofw_header);
+>>>               memset(&boot_params->kbd_status, 0,
+>>>                      (char *)&boot_params->hdr -
+>>>                      (char *)&boot_params->kbd_status);
+>>>
+>>> I can try that in a bit.
+>>>
+>>
+>> Right.
+>
+>OK.  Doing that on top of 3.9-rc1 results in me having a booting
+>machine
+>again.  I'd suggest we get that into upstream quick-ish.
+>
+>josh
 
-to the final result.
-
-Cheers,
-Henrik
+-- 
+Sent from my mobile phone. Please excuse brevity and lack of formatting.
