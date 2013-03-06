@@ -1,73 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755875Ab3CFJHo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 04:07:44 -0500
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:64870 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751004Ab3CFJHi (ORCPT
+	id S1756080Ab3CFJJX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 04:09:23 -0500
+Received: from mail-ee0-f42.google.com ([74.125.83.42]:45219 "EHLO
+	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753927Ab3CFJJT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 04:07:38 -0500
-Message-ID: <51370753.90806@redhat.com>
-Date: Wed, 06 Mar 2013 10:07:31 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130219 Thunderbird/17.0.3
+	Wed, 6 Mar 2013 04:09:19 -0500
+Date: Wed, 6 Mar 2013 10:09:14 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Mandeep Singh Baines <msb@chromium.org>
+Cc: Tejun Heo <tj@kernel.org>, "J. Bruce Fields" <bfields@fieldses.org>,
+        Jeff Layton <jlayton@redhat.com>,
+        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
+        Oleg Nesterov <oleg@redhat.com>, Ming Lei <ming.lei@canonical.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: LOCKDEP: 3.9-rc1: mount.nfs/4272 still has locks held!
+Message-ID: <20130306090914.GA6030@gmail.com>
+References: <20130304205307.GA13527@redhat.com>
+ <4FA345DA4F4AE44899BD2B03EEEC2FA9286AEEB0@sacexcmbx05-prd.hq.netapp.com>
+ <20130305082308.6607d4db@tlielax.poochiereds.net>
+ <20130305174648.GF12795@htj.dyndns.org>
+ <20130305174954.GG12795@htj.dyndns.org>
+ <20130305231110.GK15816@fieldses.org>
+ <CACBanvo+JDCFVRQeTQwnwRRxr8bdqxdsgeEr8fqgJhGQJEEQ-Q@mail.gmail.com>
+ <20130306010507.GL15816@fieldses.org>
+ <20130306011623.GG1227@htj.dyndns.org>
+ <CACBanvqVpi45TVNGXgXXO0BCSRuPEDsiNuHj0OBsvgr2UXZfsg@mail.gmail.com>
 MIME-Version: 1.0
-To: Hu Tao <hutao@cn.fujitsu.com>
-CC: Peter Maydell <peter.maydell@linaro.org>, Gleb Natapov <gleb@redhat.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>,
-        qemu-devel <qemu-devel@nongnu.org>,
-        Markus Armbruster <armbru@redhat.com>,
-        Blue Swirl <blauwirbel@gmail.com>,
-        Orit Wasserman <owasserm@redhat.com>, kvm list <kvm@vger.kernel.org>,
-        Juan Quintela <quintela@redhat.com>, Alexander Graf <agraf@suse.de>,
-        Andrew Jones <drjones@redhat.com>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Sasha Levin <levinsasha928@gmail.com>,
-        Stefan Hajnoczi <stefanha@redhat.com>,
-        Luiz Capitulino <lcapitulino@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Kevin Wolf <kwolf@redhat.com>, Anthony Liguori <aliguori@us.ibm.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v13 0/8] pv event interface between host and guest
-References: <cover.1362051581.git.hutao@cn.fujitsu.com> <20130303091738.GB23616@redhat.com> <513471F1.5020702@redhat.com> <20130306085628.GB4719@localhost.localdomain>
-In-Reply-To: <20130306085628.GB4719@localhost.localdomain>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACBanvqVpi45TVNGXgXXO0BCSRuPEDsiNuHj0OBsvgr2UXZfsg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 06/03/2013 09:56, Hu Tao ha scritto:
->> > 
->> > Something like this should work (in SeaBIOS's src/acpi-dsdt-isa.dsl):
->> > 
->> >     Device(PEVT) {
->> >         Name(_HID, EisaId("QEMU0001"))
->> >         OperationRegion(PEOR, SystemIO, 0x505, 0x01)
->> >         Field(PEOR, ByteAcc, NoLock, Preserve) {
->> >             PEPT,   8,
->> >         }
->> > 
->> >         Method(_STA, 0, NotSerialized) {
->> >             Store(PEPT, Local0)
->> >             If (LEqual(Local0, Zero)) {
->> >                 Return (0x00)
->> >             } Else {
->> >                 Return (0x0F)
->> >             }
->> >         }
-> IIUC, here _STA reads from ioport 0x505, if the result is 0, then the
-> device is not present. Otherwise, the device is present. But as Gleb
-> said, ''the data you read from unassigned port is not guarantied to be
-> zero, it may depend on QEMU version''. What should I do to tell if the
-> device is present or not correctly?
 
-The firmware is tied to the QEMU version, so you can rely on unassigned
-ports returning zero.
+* Mandeep Singh Baines <msb@chromium.org> wrote:
 
-Later we can change this to use fw-cfg.
+> On Tue, Mar 5, 2013 at 5:16 PM, Tejun Heo <tj@kernel.org> wrote:
+> > On Tue, Mar 05, 2013 at 08:05:07PM -0500, J. Bruce Fields wrote:
+> >> If it's really just a 2-line patch to try_to_freeze(), could it just be
+> >> carried out-of-tree by people that are specifically working on tracking
+> >> down these problems?
+> >>
+> >> But I don't have strong feelings about it--as long as it doesn't result
+> >> in the same known issues getting reported again and again....
+> >
+> > Agreed, I don't think a Kconfig option is justified for this.  If this
+> > is really important, annotate broken paths so that it doesn't trigger
+> > spuriously; otherwise, please just remove it.
+> >
+> 
+> Fair enough. Let's revert then. I'll rework to use a lockdep annotation.
+> 
+> Maybe, add a new lockdep API:
+> 
+> lockdep_set_held_during_freeze(lock);
+> 
+> Then when we do the check, ignore any locks that set this bit.
+> 
+> Ingo, does this seem like a reasonable design to you?
 
-Paolo
+Am I reading the discussion correctly that the new warnings show REAL potential 
+deadlock scenarios, which can hit real users and can lock their box up in entirely 
+real usage scenarios?
 
+If yes then guys we _really_ don't want to use lockdep annotation to _HIDE_ bugs.
+We typically use them to teach lockdep about things it does not know about.
+
+How about fixing the deadlocks instead?
+
+Thanks,
+
+	Ingo
