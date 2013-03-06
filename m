@@ -1,66 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753041Ab3CFA7D (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 19:59:03 -0500
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:43041 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750858Ab3CFA7B (ORCPT
+	id S1754643Ab3CFA76 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 19:59:58 -0500
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:36605 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750755Ab3CFA75 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 19:59:01 -0500
+	Tue, 5 Mar 2013 19:59:57 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18N7TtsSdyVkt9/Pc4juUMu
+Date: Tue, 5 Mar 2013 16:59:52 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        arm@kernel.org, linux-omap@vger.kernel.org
+Subject: Re: [PATCH 5/9] ARM: omap1: add back missing includes
+Message-ID: <20130306005951.GH11806@atomide.com>
+References: <1362521809-22989-1-git-send-email-arnd@arndb.de>
+ <1362521809-22989-6-git-send-email-arnd@arndb.de>
+ <201303052227.33430.arnd@arndb.de>
 MIME-Version: 1.0
-In-Reply-To: <20130305231110.GK15816@fieldses.org>
-References: <CACVXFVMKN6aeCvJcn7dyuonJYJDfYxWeW5KE6gfKRKJKFj2M4A@mail.gmail.com>
-	<4FA345DA4F4AE44899BD2B03EEEC2FA9286AD113@sacexcmbx05-prd.hq.netapp.com>
-	<20130304092310.1d21100c@tlielax.poochiereds.net>
-	<CACBanvrc0orXGZ1v+gKHtVPKWYKGEFx46dwoDCjTU78+nPtZyg@mail.gmail.com>
-	<20130304205307.GA13527@redhat.com>
-	<4FA345DA4F4AE44899BD2B03EEEC2FA9286AEEB0@sacexcmbx05-prd.hq.netapp.com>
-	<20130305082308.6607d4db@tlielax.poochiereds.net>
-	<20130305174648.GF12795@htj.dyndns.org>
-	<20130305174954.GG12795@htj.dyndns.org>
-	<20130305231110.GK15816@fieldses.org>
-Date: Tue, 5 Mar 2013 16:59:00 -0800
-X-Google-Sender-Auth: hqxPIRp9K6ho3I1uEjXGO0f7t6k
-Message-ID: <CACBanvo+JDCFVRQeTQwnwRRxr8bdqxdsgeEr8fqgJhGQJEEQ-Q@mail.gmail.com>
-Subject: Re: LOCKDEP: 3.9-rc1: mount.nfs/4272 still has locks held!
-From: Mandeep Singh Baines <msb@chromium.org>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: Tejun Heo <tj@kernel.org>, Jeff Layton <jlayton@redhat.com>,
-        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
-        Oleg Nesterov <oleg@redhat.com>, Ming Lei <ming.lei@canonical.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201303052227.33430.arnd@arndb.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 5, 2013 at 3:11 PM, J. Bruce Fields <bfields@fieldses.org> wrote:
-> On Tue, Mar 05, 2013 at 09:49:54AM -0800, Tejun Heo wrote:
->> On Tue, Mar 05, 2013 at 09:46:48AM -0800, Tejun Heo wrote:
->> > So, I think this is why implementing freezer as a separate blocking
->> > mechanism isn't such a good idea.  We're effectively introducing a
->> > completely new waiting state to a lot of unsuspecting paths which
->> > generates a lot of risks and eventually extra complexity to work
->> > around those.  I think we really should update freezer to re-use the
->> > blocking points we already have - the ones used for signal delivery
->> > and ptracing.  That way, other code paths don't have to worry about an
->> > extra stop state and we can confine most complexities to freezer
->> > proper.
->>
->> Also, consolidating those wait states means that we can solve the
->> event-to-response latency problem for all three cases - signal, ptrace
->> and freezer, rather than adding separate backing-out strategy for
->> freezer.
->
-> Meanwhile, as none of this sounds likely to be done this time
-> around--are we backing out the new lockdep warnings?
->
-> --b.
+* Arnd Bergmann <arnd@arndb.de> [130305 14:31]:
+> On Tuesday 05 March 2013, Arnd Bergmann wrote:
+> > The recent reorganization of OMAP header files caused a couple of
+> > files that used to be implicitly included now missing from OMAP1.
+> > This adds explicit inclusions of mach/irqs.h and mach/hardware.h
+> > in all files that need them for an OMAP1 allyesconfig build.
+> > 
+> > Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> > Cc: Tony Lindgren <tony@atomide.com>
+> > Cc: linux-omap@vger.kernel.org
+> > ---
+> >  arch/arm/mach-omap1/board-fsample.c  | 1 +
+> >  arch/arm/mach-omap1/board-h2.c       | 1 +
+> >  arch/arm/mach-omap1/board-perseus2.c | 1 +
+> >  arch/arm/mach-omap1/board-sx1.c      | 1 +
+> >  drivers/video/omap/lcd_ams_delta.c   | 1 +
+> >  drivers/video/omap/lcd_osk.c         | 1 +
+> >  6 files changed, 6 insertions(+)
+> 
+> I saw that Tony has already addressed the latter two changes, but
+> did not see a fix for the four board files.
 
-What if we hide it behind a Kconfig? Its finding real bugs.
+Hmm I wonder why I have not seen the board-*.c related ones?
 
-http://lkml.org/lkml/2013/3/5/583
+Anyways thanks for fixing those:
+
+Acked-by: Tony Lindgren <tony@atomide.com>
