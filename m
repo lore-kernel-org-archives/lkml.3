@@ -1,66 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755795Ab3CFVjX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 16:39:23 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48087 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751354Ab3CFVjW (ORCPT
+	id S1755898Ab3CFVkX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 16:40:23 -0500
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:41869 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752551Ab3CFVkW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 16:39:22 -0500
-Date: Wed, 6 Mar 2013 13:39:21 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: Re: [PATCH] sysrq: allow user trigger sysrq by upper-case character
- key
-Message-Id: <20130306133921.62b9cc38beca2145269c0182@linux-foundation.org>
-In-Reply-To: <5136C106.40308@huawei.com>
-References: <5136C106.40308@huawei.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 6 Mar 2013 16:40:22 -0500
+Date: Wed, 6 Mar 2013 13:40:16 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Oleg Nesterov <oleg@redhat.com>, Jeff Layton <jlayton@redhat.com>,
+        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
+        Mandeep Singh Baines <msb@chromium.org>,
+        Ming Lei <ming.lei@canonical.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: LOCKDEP: 3.9-rc1: mount.nfs/4272 still has locks held!
+Message-ID: <20130306214016.GQ1227@htj.dyndns.org>
+References: <20130305140312.243cb094@tlielax.poochiereds.net>
+ <20130305190923.GI12795@htj.dyndns.org>
+ <20130305183941.19ff39ce@tlielax.poochiereds.net>
+ <20130305234700.GE1227@htj.dyndns.org>
+ <20130306181608.GA18687@redhat.com>
+ <20130306185304.GM1227@htj.dyndns.org>
+ <CA+55aFwDogteVd=vwGHXDSASnga-nZZnKaQz9aO1yBU2CPKSbA@mail.gmail.com>
+ <20130306212452.GO1227@htj.dyndns.org>
+ <CA+55aFy49AWptMcvEzJxg95ikf-dC+-vcCPq-cnaCCwje3tyoQ@mail.gmail.com>
+ <20130306213636.GP1227@htj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130306213636.GP1227@htj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 6 Mar 2013 12:07:34 +0800 "zhangwei(Jovi)" <jovi.zhangwei@huawei.com> wrote:
+On Wed, Mar 06, 2013 at 01:36:36PM -0800, Tejun Heo wrote:
+> On Wed, Mar 06, 2013 at 01:31:10PM -0800, Linus Torvalds wrote:
+> > So I do agree that we probably have *too* many of the stupid "let's
+> > check if we can freeze", and I suspect that the NFS code should get
+> > rid of the "freezable_schedule()" that is causing this warning
+> > (because I also agree that you should *not* freeze while holding
+> > locks, because it really can cause deadlocks), but I do suspect that
+> > network filesystems do need to have a few places where they check for
+> > freezing on their own... Exactly because freezing isn't *quite* like a
+> > signal.
+> 
+> Well, I don't really know much about nfs so I can't really tell, but
+> for most other cases, dealing with freezing like a signal should work
+> fine from what I've seen although I can't be sure before actually
+> trying.  Trond, Bruce, can you guys please chime in?
 
-> See the help text output of /proc/sysrq-trigger:
-> 
->    SysRq : HELP : loglevel(0-9) reBoot Crash terminate-all-tasks(E)
->    memory-full-oom-kill(F) kill-all-tasks(I) ...
-> 
-> Most command is referenced by responding upper-case character,
-> this would hint user can trigger sysrq by upper-case character key,
-> but that's wrong, sysrq only accept lower-case character currently.
-> 
-> It's reasonable to let user trigger sysrq by upper-case character key.
-> 
-> Signed-off-by: zhnagwei(Jovi) <jovi.zhangwei@huawei.com>
-> ---
->  drivers/tty/sysrq.c |    2 ++
->  1 file changed, 2 insertions(+)
-> 
-> diff --git a/drivers/tty/sysrq.c b/drivers/tty/sysrq.c
-> index 3687f0c..a88908e 100644
-> --- a/drivers/tty/sysrq.c
-> +++ b/drivers/tty/sysrq.c
-> @@ -471,6 +471,8 @@ static int sysrq_key_table_key2index(int key)
->  		retval = key - '0';
->  	else if ((key >= 'a') && (key <= 'z'))
->  		retval = key + 10 - 'a';
-> +	else if ((key >= 'A') && (key <= 'Z'))
-> +		retval = key + 10 - 'A';
->  	else
->  		retval = -1;
->  	return retval;
+So, I think the question here would be, in nfs, how many of the
+current freezer check points would be difficult to conver to signal
+handling model after excluding the ones which are performed while
+holding some locks which we need to get rid of anyway?
 
-Then fix the help message ;)
+Thanks.
 
-We're already using 19 of the 26 letters and this change would rule out
-future use of the 26 upper-case letters.
-
-I doubt if anyone is hurting from the inconsistent help message, really.
+-- 
+tejun
