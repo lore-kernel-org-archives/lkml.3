@@ -1,65 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757508Ab3CFLq2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 06:46:28 -0500
-Received: from kirsty.vergenet.net ([202.4.237.240]:56761 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757394Ab3CFLq0 (ORCPT
+	id S1757617Ab3CFLrJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 06:47:09 -0500
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:34609 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757550Ab3CFLrG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 06:46:26 -0500
-Date: Wed, 6 Mar 2013 20:46:22 +0900
-From: Simon Horman <horms@verge.net.au>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Magnus Damm <magnus.damm@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-sh@vger.kernel.org, benh@kernel.crashing.org,
-        grant.likely@secretlab.ca
-Subject: Re: [PATCH] irqchip: Renesas INTC External IRQ pin driver
-Message-ID: <20130306114622.GE6684@verge.net.au>
-References: <20130218142834.28739.39417.sendpatchset@w520>
- <20130306042304.GA2896@verge.net.au>
- <alpine.LFD.2.02.1303061058250.22263@ionos>
+	Wed, 6 Mar 2013 06:47:06 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.02.1303061058250.22263@ionos>
-Organisation: Horms Solutions Ltd.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130218204858.GB98867@redhat.com>
+References: <1361016849-5181-1-git-send-email-anish198519851985@gmail.com>
+	<20130218204858.GB98867@redhat.com>
+Date: Wed, 6 Mar 2013 17:17:04 +0530
+Message-ID: <CAK7N6vqjvVprjxUiqtkxvF6kJ5SV0tUvOggxCOdEC9eSqYLcuA@mail.gmail.com>
+Subject: Re: [PATCH] [Watchdog][Trivial] Added comments to explain
+ watchdog_disabled variable
+From: anish singh <anish198519851985@gmail.com>
+To: Don Zickus <dzickus@redhat.com>
+Cc: akpm@linux-foundation.org, mingo@kernel.org, chuansheng.liu@intel.com,
+        paulmck@linux.vnet.ibm.com, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 06, 2013 at 11:01:14AM +0100, Thomas Gleixner wrote:
-> On Wed, 6 Mar 2013, Simon Horman wrote:
-> > On Mon, Feb 18, 2013 at 11:28:34PM +0900, Magnus Damm wrote:
-> > > The SoCs using this driver are currently mainly used
-> > > together with regular platform devices so this driver
-> > > allows configuration via platform data to support things
-> > > like static interrupt base address. DT support will
-> > > be added incrementally in the not so distant future.
-> > 
-> > Hi Thomas,
-> > 
-> > I'm wondering how you would like to handle merging this driver.
-> > I can think of three options but I'm sure there are others.
-> > 
-> > * You can take the patches (there is a follow-up series) yourself.
-> > * I can prepare a pull request for you
-> > * I can prepare a pull request for arm-soc with the shmobile patches that
-> >   enable the driver on the r8a7779 and sh73a0.
-> > 
-> > The last option is possibly the easiest.
-> 
-> Correct.
-> 
-> > But in that case I'd appreciate an Ack from you on this patch.
-> 
-> You want to pick the V2 series, which already has my blessing:
-> 
->     https://lkml.org/lkml/2013/2/26/305
-> 
-> For merging it through arm-soc you have my ack now :)
-
-Thanks, I have that.
-
-It seems that V2 adds onto this patch rather than replaces it.
-So could I also get an Ack for this patch too?
+On Tue, Feb 19, 2013 at 2:18 AM, Don Zickus <dzickus@redhat.com> wrote:
+> On Sat, Feb 16, 2013 at 05:44:09PM +0530, anish kumar wrote:
+>> From: anish kumar <anish198519851985@gmail.com>
+>>
+>> This watchdog_disabled flag is bit of cryptic.Howerver it's usefullnes is multifold.
+>> Uses are:
+>> 1. Check if smpboot_register_percpu_thread function passed.
+>> 2. Makes sure that user enables and disables the watchdog in sequence
+>>    i.e. enable watchdog->disable watchdog->enable watchdog
+>>    Unlike enable watchdog->enable watchdog which is wrong.
+>>
+>> Signed-off-by: anish kumar <anish198519851985@gmail.com>
+>> ---
+>>  kernel/watchdog.c |    5 +++++
+>>  1 files changed, 5 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/kernel/watchdog.c b/kernel/watchdog.c
+>> index 75a2ab3..8a20ebe 100644
+>> --- a/kernel/watchdog.c
+>> +++ b/kernel/watchdog.c
+>> @@ -518,6 +518,11 @@ int proc_dowatchdog(struct ctl_table *table, int write,
+>>               return ret;
+>>
+>>       set_sample_period();
+>> +     /*
+>> +      * Watchdog threads shouldn't be enabled if they are
+>> +      * disabled.'watchdog_disabled' variable check in
+>
+> Missing a 'The'  ^^^
+>
+> Other than that,
+>
+> Acked-by: Don Zickus <dzickus@redhat.com>
+Is this patch picked up?
