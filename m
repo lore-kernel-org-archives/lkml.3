@@ -1,63 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752371Ab3CFBji (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 20:39:38 -0500
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:58001 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750767Ab3CFBjg (ORCPT
+	id S1752604Ab3CFBkj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 20:40:39 -0500
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:38880 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750767Ab3CFBkg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 20:39:36 -0500
-X-Sasl-enc: k80+Vmtarz306qUxdQ8zt9TGetMqF26xAR1onSpKpiaE 1362533975
-Date: Wed, 6 Mar 2013 09:40:01 +0800
-From: "greg@kroah.com" <greg@kroah.com>
-To: =?iso-8859-1?Q?Bj=F8rn?= Mork <bjorn@mork.no>
-Cc: "Fangxiaozhi (Franko)" <fangxiaozhi@huawei.com>,
-        Oliver Neukum <oneukum@suse.de>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Xueguiying (Zihan)" <zihan.xue@huawei.com>,
-        "Linlei (Lei Lin)" <lei.lin@huawei.com>,
-        "Yili (Neil)" <neil.yi@huawei.com>,
-        "Wangyuhua (Roger, Credit)" <wangyuhua@huawei.com>,
-        "Huqiao (C)" <huqiao36@huawei.com>, "balbi@ti.com" <balbi@ti.com>,
-        "mdharm-usb@one-eyed-alien.net" <mdharm-usb@one-eyed-alien.net>,
-        "sebastian@breakpoint.cc" <sebastian@breakpoint.cc>
-Subject: Re: v3.8 regression: Huawei mode switching fails (was Re: [PATCH
- 2/2]linux-usb:optimize to match the Huawei USB storage devices and support
- new switch command)
-Message-ID: <20130306014001.GD8260@kroah.com>
-References: <fe8c966212fb.12fbfe8c9662@huawei.com>
- <87obezs888.fsf@nemi.mork.no>
- <910F9D9E13B84F4C8FA771DC9BDE99F327098368@szxeml546-mbx.china.huawei.com>
- <3774811.9hgnDZEBaM@linux-5eaq.site>
- <910F9D9E13B84F4C8FA771DC9BDE99F32709994F@szxeml546-mbx.china.huawei.com>
- <87lia2ox16.fsf@nemi.mork.no>
+	Tue, 5 Mar 2013 20:40:36 -0500
+Date: Wed, 6 Mar 2013 09:40:28 +0800
+From: Fabio Baltieri <fabio.baltieri@linaro.org>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org
+Subject: Re: [PATCH 3/5] usb: musb: ux500: add otg notifier support
+Message-ID: <20130306014028.GA11205@balto.lan>
+References: <1362047934-22337-1-git-send-email-fabio.baltieri@linaro.org>
+ <1362047934-22337-4-git-send-email-fabio.baltieri@linaro.org>
+ <20130304143810.GJ3397@arwen.pp.htv.fi>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <87lia2ox16.fsf@nemi.mork.no>
+In-Reply-To: <20130304143810.GJ3397@arwen.pp.htv.fi>
+X-Operating-System: Linux balto 3.8.0-09633-g2a7d2b9 x86_64 GNU/Linux
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 05, 2013 at 01:23:33PM +0100, Bjørn Mork wrote:
-> As you are well aware of, we parse descriptors as needed on Linux and
-> can just as easy support the Windows look'n'feel if required.  There is
-> absolutely no need to create special Linux descriptors to adapt to
-> existing drivers.  We'll rather fix the drivers than using a mode which
-> isn't tested by the Windows users.
+Hello Felipe,
 
-I totally agree with this, and this is the way the rest of Linux works.
-There should not be any difference in the hardware descriptors between
-operating systems.
+On Mon, Mar 04, 2013 at 04:38:10PM +0200, Felipe Balbi wrote:
+> On Thu, Feb 28, 2013 at 11:38:52AM +0100, Fabio Baltieri wrote:
+> > Add transceiver notifier event handling to the ux500 driver to set vbus
+> > on specific transceiver events.
+> > 
+> > Acked-by: Linus Walleij <linus.walleij@linaro.org>
+> > Signed-off-by: Fabio Baltieri <fabio.baltieri@linaro.org>
+> > ---
+> >  drivers/usb/musb/ux500.c | 41 +++++++++++++++++++++++++++++++++++++++++
+> >  1 file changed, 41 insertions(+)
+> > 
+> > diff --git a/drivers/usb/musb/ux500.c b/drivers/usb/musb/ux500.c
+> > index 5b742ba..b20326bb 100644
+> > --- a/drivers/usb/musb/ux500.c
+> > +++ b/drivers/usb/musb/ux500.c
+> > @@ -98,6 +98,36 @@ static void ux500_musb_set_vbus(struct musb *musb, int is_on)
+> >  		musb_readb(musb->mregs, MUSB_DEVCTL));
+> >  }
+> >  
+> > +static int musb_otg_notifications(struct notifier_block *nb,
+> > +		unsigned long event, void *unused)
+> > +{
+> > +	struct musb *musb = container_of(nb, struct musb, nb);
+> > +
+> > +	dev_dbg(musb->controller, "musb_otg_notifications %ld %s\n",
+> > +			event, otg_state_string(musb->xceiv->state));
+> > +
+> > +	switch (event) {
+> > +	case USB_EVENT_ID:
+> > +		dev_dbg(musb->controller, "ID GND\n");
+> > +		ux500_musb_set_vbus(musb, 1);
+> > +		break;
+> > +	case USB_EVENT_VBUS:
+> > +		dev_dbg(musb->controller, "VBUS Connect\n");
+> 
+> are you sure this is correct ? you're not doing anything in case of
+> vbus event. Shouldn't you make sure your vbus is off ?
 
-If Linux isn't working properly for some hardware, we will fix it, do
-not work around Linux issues (perceived or real) in hardware.
+The implementation I'm taking as reference for this patches does not do
+anything on VBUS event and as I can see from commmit history, it has
+been based on the omap2430 one, that in turns used to just run phy_init
+- and that's not implemented.  But...
 
-Bjørn, thanks for catching this kernel change, I'll revert it and push
-the changes to the stable kernel releases.  It was my fault to not
-notice this bug, my apologies.
+> What if your user uses a non-standard cable which has id-pin grounded
+> on both sides ?
 
-greg k-h
+A cable with two micro/mini connectors with grounded IDs?  Did you ever
+encountered such a thing?  I guess a ux500_musb_set_vbus(musb, 0) would
+not hurt in that case.
+
+Fabio
+
+-- 
+Fabio Baltieri
