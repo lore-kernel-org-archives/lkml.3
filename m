@@ -1,66 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755227Ab3CFVAG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 16:00:06 -0500
-Received: from mail-vc0-f178.google.com ([209.85.220.178]:35207 "EHLO
-	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753288Ab3CFVAE (ORCPT
+	id S1755327Ab3CFVFF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 16:05:05 -0500
+Received: from smtprelay-b31.telenor.se ([213.150.131.20]:41500 "EHLO
+	smtprelay-b31.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752551Ab3CFVFD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 16:00:04 -0500
-MIME-Version: 1.0
-In-Reply-To: <20130306185304.GM1227@htj.dyndns.org>
-References: <20130304205307.GA13527@redhat.com>
-	<4FA345DA4F4AE44899BD2B03EEEC2FA9286AEEB0@sacexcmbx05-prd.hq.netapp.com>
-	<20130305082308.6607d4db@tlielax.poochiereds.net>
-	<20130305174648.GF12795@htj.dyndns.org>
-	<20130305174954.GG12795@htj.dyndns.org>
-	<20130305140312.243cb094@tlielax.poochiereds.net>
-	<20130305190923.GI12795@htj.dyndns.org>
-	<20130305183941.19ff39ce@tlielax.poochiereds.net>
-	<20130305234700.GE1227@htj.dyndns.org>
-	<20130306181608.GA18687@redhat.com>
-	<20130306185304.GM1227@htj.dyndns.org>
-Date: Wed, 6 Mar 2013 13:00:02 -0800
-X-Google-Sender-Auth: R63k8RBhSYfwx1SzmibKgNoWH5Q
-Message-ID: <CA+55aFwDogteVd=vwGHXDSASnga-nZZnKaQz9aO1yBU2CPKSbA@mail.gmail.com>
-Subject: Re: LOCKDEP: 3.9-rc1: mount.nfs/4272 still has locks held!
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: Oleg Nesterov <oleg@redhat.com>, Jeff Layton <jlayton@redhat.com>,
-        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
-        Mandeep Singh Baines <msb@chromium.org>,
-        Ming Lei <ming.lei@canonical.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>,
+	Wed, 6 Mar 2013 16:05:03 -0500
+X-SENDER-IP: [85.230.168.206]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AttrACWvN1FV5qjOPGdsb2JhbABEjFy3WAMBgVwXAwEBAQE4NIIrAQEFOhwTAQ8QCAMUBAklDwUlChoTiBe8HhWNK0uBAQeCX2EDlkqGCI1z
+X-IronPort-AV: E=Sophos;i="4.84,798,1355094000"; 
+   d="scan'208";a="508680461"
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Wed, 6 Mar 2013 22:07:41 +0100
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>
-Content-Type: text/plain; charset=UTF-8
+        Yinghai Lu <yinghai@kernel.org>
+Subject: Re: Linux 3.9-rc1
+Message-ID: <20130306210741.GA366@polaris.bitmath.org>
+References: <CA+55aFx0HcOXKpxmZzM5jcbAaOroxafomX5ggMFV4A=py1qh-Q@mail.gmail.com>
+ <20130306080642.GA535@polaris.bitmath.org>
+ <CA+55aFxkDRoNEEw+8RwrSCsRUCUcRbEE57hzFQ8dPUXT2CWMog@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFxkDRoNEEw+8RwrSCsRUCUcRbEE57hzFQ8dPUXT2CWMog@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 6, 2013 at 10:53 AM, Tejun Heo <tj@kernel.org> wrote:
-> Hello, Oleg.
->
-> On Wed, Mar 06, 2013 at 07:16:08PM +0100, Oleg Nesterov wrote:
->> And how SIGFREEZE can help? If we want to interrupt the sleeps in NFS/RPC
->> layer we can simply add TASK_WAKEFREEZE (can be used with TASK_KILLABLE)
->> and change freeze_task() to do signal_wake_up_state(TASK_WAKEFREEZE).
->
-> Oh yeah, we don't need another signal.  We just need sigpending state
-> and a wakeup.  I wasn't really going into details.  The important
-> point is that for code paths outside signal/ptrace, freezing could
-> look and behave about the same as signal delivery.
+On Wed, Mar 06, 2013 at 08:08:34AM -0800, Linus Torvalds wrote:
+> On Wed, Mar 6, 2013 at 12:06 AM, Henrik Rydberg <rydberg@euromail.se> wrote:
+> >
+> > Or not. ;-) This commit breaks boot on my MacBookAir3,1:
+> >
+> > commit 8d57470d8f859635deffe3919d7d4867b488b85a
+> > Author: Yinghai Lu <yinghai@kernel.org>
+> > Date:   Fri Nov 16 19:38:58 2012 -0800
+> >
+> >     x86, mm: setup page table in top-down
+> 
+> Argh. The whole page table setup crud is scarily fragile.
+> 
+> > Being a 64-bit apple-EFI machine, it probably runs through an obscure
+> > path in this patch. I wish I had more vital information, but I get the
+> > white screen of death, so not much to go on so far.
+> 
+> I actually test on my MBA (also EFI boot), but it's a slightly newer
+> 4,1 version, and the memory map looks very different (I've got 251
+> memory regions reported by efi, ugh).
+> 
+> So Apple EFI does work at least in some cases, just not yours. Let's
+> hope Yinghai can figure this one out..
 
-Don't we already do that? The whole "try_to_freeze()" in
-get_signal_to_deliver() is about exactly this. See
-fake_signal_wake_up().
+And so he did, thanks! FWIW, I also hit the ACPI problem. I have not
+seen it often enough to register anything.
 
-You still have kernel threads (that don't do signals) to worry about,
-so it doesn't make things go away. And you still have issues with
-latency of disk wait, which is, I think, the reason for that
-"freezable_schedule()" in the NFS code to begin with.
-
-               Linus
+Cheers,
+Henrik
