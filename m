@@ -1,71 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753855Ab3CFRol (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 12:44:41 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:32405 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750949Ab3CFRok (ORCPT
+	id S1753917Ab3CFRqk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 12:46:40 -0500
+Received: from smtp-outbound-1.vmware.com ([208.91.2.12]:49653 "EHLO
+	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750949Ab3CFRqj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 12:44:40 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18ouS1ltv7cAn0pKQVdX90K
-Date: Wed, 6 Mar 2013 09:44:36 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        arm@kernel.org, linux-omap@vger.kernel.org
-Subject: Re: [PATCH 5/9] ARM: omap1: add back missing includes
-Message-ID: <20130306174435.GO11806@atomide.com>
-References: <1362521809-22989-1-git-send-email-arnd@arndb.de>
- <201303052227.33430.arnd@arndb.de>
- <20130306005951.GH11806@atomide.com>
- <201303061123.30789.arnd@arndb.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201303061123.30789.arnd@arndb.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 6 Mar 2013 12:46:39 -0500
+From: Bhavesh Davda <bhavesh@vmware.com>
+To: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: pv-drivers@vmware.com, Bhavesh Davda <bhavesh@vmware.com>,
+        Shreyas N Bhatewara <sbhatewara@vmware.com>
+Subject: [PATCH net-next] vmxnet3: prevent div-by-zero panic when ring resizing uninitialized dev
+Date: Wed,  6 Mar 2013 09:46:24 -0800
+Message-Id: <1362591984-16587-1-git-send-email-bhavesh@vmware.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Arnd Bergmann <arnd@arndb.de> [130306 03:27]:
-> On Wednesday 06 March 2013, Tony Lindgren wrote:
-> > * Arnd Bergmann <arnd@arndb.de> [130305 14:31]:
-> > > On Tuesday 05 March 2013, Arnd Bergmann wrote:
-> > > > The recent reorganization of OMAP header files caused a couple of
-> > > > files that used to be implicitly included now missing from OMAP1.
-> > > > This adds explicit inclusions of mach/irqs.h and mach/hardware.h
-> > > > in all files that need them for an OMAP1 allyesconfig build.
-> > > > 
-> > > > Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> > > > Cc: Tony Lindgren <tony@atomide.com>
-> > > > Cc: linux-omap@vger.kernel.org
-> > > > ---
-> > > >  arch/arm/mach-omap1/board-fsample.c  | 1 +
-> > > >  arch/arm/mach-omap1/board-h2.c       | 1 +
-> > > >  arch/arm/mach-omap1/board-perseus2.c | 1 +
-> > > >  arch/arm/mach-omap1/board-sx1.c      | 1 +
-> > > >  drivers/video/omap/lcd_ams_delta.c   | 1 +
-> > > >  drivers/video/omap/lcd_osk.c         | 1 +
-> > > >  6 files changed, 6 insertions(+)
-> > > 
-> > > I saw that Tony has already addressed the latter two changes, but
-> > > did not see a fix for the four board files.
-> > 
-> > Hmm I wonder why I have not seen the board-*.c related ones?
-> > 
-> > Anyways thanks for fixing those:
-> > 
-> > Acked-by: Tony Lindgren <tony@atomide.com>
-> 
-> Actually I cannot reproduce them myself now, I think I'll just drop
-> the patch for now, but will remember your Ack if the problem comes
-> back. The patch would be needed if we decide to use SPARSE_IRQ on
-> OMAP1.
+Linux is free to call ethtool ops as soon as a netdev exists when probe
+finishes. However, we only allocate vmxnet3 tx/rx queues and initialize the
+rx_buf_per_pkt field in struct vmxnet3_adapter when the interface is
+opened (UP).
 
-OK sounds good to me.
+Signed-off-by: Bhavesh Davda <bhavesh@vmware.com>
+Signed-off-by: Shreyas N Bhatewara <sbhatewara@vmware.com>
+---
+ drivers/net/vmxnet3/vmxnet3_drv.c     |    3 ++-
+ drivers/net/vmxnet3/vmxnet3_ethtool.c |    6 ++++++
+ drivers/net/vmxnet3/vmxnet3_int.h     |    4 ++--
+ 3 files changed, 10 insertions(+), 3 deletions(-)
 
-Tony
+diff --git a/drivers/net/vmxnet3/vmxnet3_drv.c b/drivers/net/vmxnet3/vmxnet3_drv.c
+index 4aad350..bfc5898 100644
+--- a/drivers/net/vmxnet3/vmxnet3_drv.c
++++ b/drivers/net/vmxnet3/vmxnet3_drv.c
+@@ -2922,7 +2922,7 @@ vmxnet3_probe_device(struct pci_dev *pdev,
+ 				    (int)num_online_cpus());
+ 	else
+ #endif
+-		num_rx_queues = 1;
++	num_rx_queues = 1;
+ 	num_rx_queues = rounddown_pow_of_two(num_rx_queues);
+ 
+ 	if (enable_mq)
+@@ -2958,6 +2958,7 @@ vmxnet3_probe_device(struct pci_dev *pdev,
+ 
+ 	adapter->num_rx_queues = num_rx_queues;
+ 	adapter->num_tx_queues = num_tx_queues;
++	adapter->rx_buf_per_pkt = 1;
+ 
+ 	size = sizeof(struct Vmxnet3_TxQueueDesc) * adapter->num_tx_queues;
+ 	size += sizeof(struct Vmxnet3_RxQueueDesc) * adapter->num_rx_queues;
+diff --git a/drivers/net/vmxnet3/vmxnet3_ethtool.c b/drivers/net/vmxnet3/vmxnet3_ethtool.c
+index a0feb17..0a4fc9e 100644
+--- a/drivers/net/vmxnet3/vmxnet3_ethtool.c
++++ b/drivers/net/vmxnet3/vmxnet3_ethtool.c
+@@ -472,6 +472,12 @@ vmxnet3_set_ringparam(struct net_device *netdev,
+ 						VMXNET3_RX_RING_MAX_SIZE)
+ 		return -EINVAL;
+ 
++	/* if adapter not yet initialized, do nothing */
++	if (adapter->rx_buf_per_pkt == 0) {
++		netdev_info(netdev,
++				"adapter not completely initialized, ring size cannot be changed yet\n");
++		return -EOPNOTSUPP;
++	}
+ 
+ 	/* round it up to a multiple of VMXNET3_RING_SIZE_ALIGN */
+ 	new_tx_ring_size = (param->tx_pending + VMXNET3_RING_SIZE_MASK) &
+diff --git a/drivers/net/vmxnet3/vmxnet3_int.h b/drivers/net/vmxnet3/vmxnet3_int.h
+index 3198384..3541814 100644
+--- a/drivers/net/vmxnet3/vmxnet3_int.h
++++ b/drivers/net/vmxnet3/vmxnet3_int.h
+@@ -70,10 +70,10 @@
+ /*
+  * Version numbers
+  */
+-#define VMXNET3_DRIVER_VERSION_STRING   "1.1.29.0-k"
++#define VMXNET3_DRIVER_VERSION_STRING   "1.1.30.0-k"
+ 
+ /* a 32-bit int, each byte encode a verion number in VMXNET3_DRIVER_VERSION */
+-#define VMXNET3_DRIVER_VERSION_NUM      0x01011D00
++#define VMXNET3_DRIVER_VERSION_NUM      0x01011E00
+ 
+ #if defined(CONFIG_PCI_MSI)
+ 	/* RSS only makes sense if MSI-X is supported. */
+-- 
+1.7.1
+
