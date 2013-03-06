@@ -1,72 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753520Ab3CFDrF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 22:47:05 -0500
-Received: from g5t0008.atlanta.hp.com ([15.192.0.45]:34012 "EHLO
-	g5t0008.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750780Ab3CFDrD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 22:47:03 -0500
-Message-ID: <5136BC33.5000608@hp.com>
-Date: Tue, 05 Mar 2013 22:46:59 -0500
-From: Waiman Long <Waiman.Long@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120601 Thunderbird/10.0.5
-MIME-Version: 1.0
-To: Rik van Riel <riel@redhat.com>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Emmanuel Benisty <benisty.e@gmail.com>,
-        "Vinod, Chegu" <chegu_vinod@hp.com>, "Low, Jason" <jason.low2@hp.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>, aquini@redhat.com,
-        Michel Lespinasse <walken@google.com>, Ingo Molnar <mingo@kernel.org>,
-        Larry Woodman <lwoodman@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH v2 0/4] ipc: reduce ipc lock contention
-References: <1362476149.2225.50.camel@buesod1.americas.hpqcorp.net> <513626E9.2040509@redhat.com> <51364AB9.80206@hp.com> <CA+55aFwYOUyG_DQUqVPrQNi_a=AUwS53U-Yi6jbvJTGRxQ_aEQ@mail.gmail.com> <51365B66.5010905@redhat.com>
-In-Reply-To: <51365B66.5010905@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	id S1754991Ab3CFDr2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 22:47:28 -0500
+Received: from mga14.intel.com ([143.182.124.37]:20783 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750780Ab3CFDrY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Mar 2013 22:47:24 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,791,1355126400"; 
+   d="scan'208";a="265014250"
+Message-ID: <1362541640.2441.3.camel@rzhang1-mobl4>
+Subject: Re: [PATCH] acerhdf: Fix fan activation with new thermal governor
+From: Zhang Rui <rui.zhang@intel.com>
+To: Andreas Mohr <andi@lisas.de>
+Cc: Borislav Petkov <bp@alien8.de>, Peter Feuerer <peter@piie.net>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Durgadoss R <durgadoss.r@intel.com>,
+        Alexander Lam <azl@andrew.cmu.edu>
+Date: Wed, 06 Mar 2013 11:47:20 +0800
+In-Reply-To: <20130305215946.GA16796@rhlx01.hs-esslingen.de>
+References: <20130222111521.GA25473@pd.tnic>
+	 <1361647210-12983-1-git-send-email-bp@alien8.de>
+	 <20130224112851.GA19609@pd.tnic> <cone.1361706175.908398.1806.1000@galar>
+	 <20130224143452.GE19609@pd.tnic> <1361762514.2303.21.camel@rzhang1-mobl4>
+	 <20130225102526.GB12067@pd.tnic> <20130225121608.GC12067@pd.tnic>
+	 <20130304133410.GC22274@pd.tnic>
+	 <20130305215946.GA16796@rhlx01.hs-esslingen.de>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/05/2013 03:53 PM, Rik van Riel wrote:
-> On 03/05/2013 03:52 PM, Linus Torvalds wrote:
->> On Tue, Mar 5, 2013 at 11:42 AM, Waiman Long <Waiman.Long@hp.com> wrote:
->>>
->>> The recommended kernel.sem value from Oracle is "250 32000 100 128". 
->>> I have
->>> tried to reduce the maximum semaphores per array (1st value) while
->>> increasing the max number of arrays. That tends to reduce the ipc_lock
->>> contention in kernel, but it is against Oracle's recommendation.
->>
->> Ok, the Oracle recommendations seem to be assuming that we'd be
->> scaling the semaphore locking sanely, which we don't. Since we share
->> one single lock for all semaphores in the whole array, Oracle's
->> recommendation does the wrong thing for our ipc_lock contention.
->
->> David's patch should make it much easier to do the locking more
->> fine-grained, and it sounds like Rik is actively working on that,
->
-> Indeed.  Though how well my patches will work with Oracle will
-> depend a lot on what kind of semctl syscalls they are doing.
->
-> Does Oracle typically do one semop per semctl syscall, or does
-> it pass in a whole bunch at once?
->
+On Tue, 2013-03-05 at 22:59 +0100, Andreas Mohr wrote:
+> Hi,
+> 
+> On Mon, Mar 04, 2013 at 02:34:10PM +0100, Borislav Petkov wrote:
+> > On Mon, Feb 25, 2013 at 01:16:08PM +0100, Borislav Petkov wrote:
+> > > Ok, doing a short test here proves successful. I'll run it the next days
+> > > too to make sure - it would be nice if people could confirm my test
+> > > results, though.
+> > > 
+> > > Tested-by: Borislav Petkov <bp@suse.de>
+> > 
+> > Pjooiiing!
+> > 
+> > Andreas, Peter, can you guys give http://lkml.org/lkml/2012/12/30/47 a run?
+> 
+> I'm now running 3.8 proper with only that patch plus my local
+> beautification-only (really shouldn't matter)
+> acerhdf updates (now properly split ;),
+> and so far fan behaviour seems fine, over various usage conditions.
+> Haven't really stressed it mischievously yet, though. Will do more testing.
+> 
+> So this now does not have any of the Schmitt trigger equivalent (?)
+> governor changes that were nicely discussed in this activity -
+> So what do we want to have committed, and what do we not,
 
-i had collected a strace log of Oracle instance startup a while ago. In 
-the log, almost all of the semctl() call is to set a single semaphore 
-value in one of the element of the array using SETVAL. Also there are 
-far more semtimedop() than semctl(), about 100:1. Again, all the 
-semtimedop() operations are on a single element of the semaphore array.
+the problem should have been fixed in 3.9-rc1 by
+commit b8bb6cb999858043489c1ddef08eed2127559169
+Author: Zhang Rui <rui.zhang@intel.com>
+Date:   Thu Nov 22 15:45:02 2012 +0800
 
-Please note that the behavior of Oracle at startup time may not be 
-indicative of what it will do when running benchmarks like Swingbench. 
-However, I don't think there will be dramatic change in behavior.
+    step_wise: Unify the code for both throttle and dethrottle
 
--Longman
+    Signed-off-by: Zhang Rui <rui.zhang@intel.com>
+
+I'll send Alexander' patch for 3.8 stable.
+
+thanks,
+rui
+> and most importantly, does it all work fatally precisely correctly? ;)
+> (remember, this is thermal layer, not particularly a place for sloppiness)
+> 
+> Thanks,
+> 
+> Andreas Mohr
+
+
