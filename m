@@ -1,57 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757370Ab3CFXTo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 18:19:44 -0500
-Received: from mga14.intel.com ([143.182.124.37]:40671 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754784Ab3CFXTb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756933Ab3CFXTb (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 6 Mar 2013 18:19:31 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,798,1355126400"; 
-   d="scan'208";a="210035712"
-From: Andi Kleen <andi@firstfloor.org>
-To: acme@redhat.com
-Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 1/2] perf, tools: Define MADV_*HUGEPAGE for old kernels
-Date: Wed,  6 Mar 2013 15:19:16 -0800
-Message-Id: <1362611957-4358-1-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.7.7.6
+Received: from e34.co.us.ibm.com ([32.97.110.152]:33601 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753098Ab3CFXTa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Mar 2013 18:19:30 -0500
+Message-ID: <5137CE7E.8050403@linux.vnet.ibm.com>
+Date: Wed, 06 Mar 2013 15:17:18 -0800
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
+CC: bp@alien8.de, hpa@linux.intel.com, linux-kernel@vger.kernel.org
+Subject: Re: [3.9-rc1 x86] Bug in ioremap code?
+References: <201303060041.AIF15342.tJFOHLQFFOMVSO@I-love.SAKURA.ne.jp> <20130305180650.GD4914@pd.tnic> <201303060628.CBG00578.OJtMFFHLQVSFOO@I-love.SAKURA.ne.jp> <51367104.5050200@linux.vnet.ibm.com>	<20130305224432.GD27022@pd.tnic> <201303062358.EFG90616.HLtSQFJFOMVOFO@I-love.SAKURA.ne.jp> <5137822F.2030501@linux.vnet.ibm.com> <513787BB.4040504@linux.vnet.ibm.com>
+In-Reply-To: <513787BB.4040504@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13030623-2876-0000-0000-000006122CC2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+On 03/06/2013 10:15 AM, Dave Hansen wrote:
+> Does anybody know what this business is in __cpa_process_fault()?
+> 
+>>         /*
+>>          * Ignore the NULL PTE for kernel identity mapping, as it is expected
+>>          * to have holes.
+>>          * Also set numpages to '1' indicating that we processed cpa req for
+>>          * one virtual address page and its pfn. TBD: numpages can be set based
+>>          * on the initial value and the level returned by lookup_address().
+>>          */
+> 
+> If this is expecting the identity mapping to have holes, then the
+> BUG_ON() is wrong.  But how would it _get_ holes?
 
-Avoids this on RHEL6:
+The holes in question were part of the PCI space.  The ioremap code was
+trying to keep the kernel identity map in sync with the mappings that it
+had made.  But, in the process, it called __pa() on a virtual address
+that was part of one of those holes.  I'm not _quite_ sure what the
+fallout is from trying to sync a nonexistent map, but it surely wasn't
+an intended or good thing to be doing.
 
-bench/numa.c: In function ‘alloc_data’:
-bench/numa.c:334: error: ‘MADV_HUGEPAGE’ undeclared (first use in this function)
-bench/numa.c:334: error: (Each undeclared identifier is reported only once
-bench/numa.c:334: error: for each function it appears in.)
-bench/numa.c:341: error: ‘MADV_NOHUGEPAGE’ undeclared (first use in this function)
-
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- tools/perf/bench/numa.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
-
-diff --git a/tools/perf/bench/numa.c b/tools/perf/bench/numa.c
-index 30d1c32..8f30ce1 100644
---- a/tools/perf/bench/numa.c
-+++ b/tools/perf/bench/numa.c
-@@ -30,6 +30,9 @@
- #include <numa.h>
- #include <numaif.h>
- 
-+#define MADV_HUGEPAGE   14              /* Worth backing with hugepages */
-+#define MADV_NOHUGEPAGE 15              /* Not worth backing with hugepages */
-+
- /*
-  * Regular printout to the terminal, supressed if -q is specified:
-  */
--- 
-1.7.7.6
+A patch to fix it should be on the way.  Tetsuo, can you apply it and
+see if it helps you?
 
