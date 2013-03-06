@@ -1,62 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754644Ab3CFTv6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 14:51:58 -0500
-Received: from smtprelay-h31.telenor.se ([213.150.131.4]:58372 "EHLO
-	smtprelay-h31.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754417Ab3CFTv5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 14:51:57 -0500
-X-SENDER-IP: [85.230.168.206]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Ah9WAA6eN1FV5qjOPGdsb2JhbABEh1wBvGUDAYFZFwMBAQEBODSCKgEBBAE6HCMQCAMhJQ8FJQoaiCAKCLw0BBWNdoEBB4JfYQOWSoYIjXI
-X-IronPort-AV: E=Sophos;i="4.84,797,1355094000"; 
-   d="scan'208";a="287624945"
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Wed, 6 Mar 2013 20:54:57 +0100
-To: "H. Peter Anvin" <hpa@linux.intel.com>
-Cc: Yinghai Lu <yinghai@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Linux 3.9-rc1
-Message-ID: <20130306195457.GA449@polaris.bitmath.org>
-References: <CA+55aFx0HcOXKpxmZzM5jcbAaOroxafomX5ggMFV4A=py1qh-Q@mail.gmail.com>
- <20130306080642.GA535@polaris.bitmath.org>
- <51370990.5040508@linux.intel.com>
- <20130306100743.GA407@polaris.bitmath.org>
- <CAE9FiQXT4O3GOzm_OoFJG=vc=5LpfBkTEbAO_3xjerBGS_Gy=A@mail.gmail.com>
- <20130306193612.GA513@polaris.bitmath.org>
- <51379A4F.4020200@linux.intel.com>
+	id S1754670Ab3CFTxt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 14:53:49 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:48070 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752852Ab3CFTxr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Mar 2013 14:53:47 -0500
+Date: Wed, 6 Mar 2013 20:53:42 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Marcin Slusarz <marcin.slusarz@gmail.com>,
+        Stephen Warren <swarren@nvidia.com>, Joe Perches <joe@perches.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Lucas Stach <dev@lynxeye.de>, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, nouveau@lists.freedesktop.org,
+        Maarten Lankhorst <maarten.lankhorst@canonical.com>
+Subject: Re: nouveau lockdep splat
+Message-ID: <20130306195342.GF30673@pd.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Stephen Warren <swarren@wwwdotorg.org>,
+	Marcin Slusarz <marcin.slusarz@gmail.com>,
+	Stephen Warren <swarren@nvidia.com>, Joe Perches <joe@perches.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Lucas Stach <dev@lynxeye.de>, dri-devel@lists.freedesktop.org,
+	linux-kernel@vger.kernel.org, nouveau@lists.freedesktop.org,
+	Maarten Lankhorst <maarten.lankhorst@canonical.com>
+References: <20130304211608.GD22274@pd.tnic>
+ <1362501052.1933.2.camel@antimon>
+ <20130306000429.GA30189@pd.tnic>
+ <20130306191418.GA3400@joi.lan>
+ <513799A5.3010609@wwwdotorg.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <51379A4F.4020200@linux.intel.com>
+In-Reply-To: <513799A5.3010609@wwwdotorg.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >> Can you check bootloader like grub.efi ?
-> > 
-> > I checked, same story. I tried without EFI_STUB, no joy. I ran with
-> > and without nouveau, just in case. Without the patch, everything
-> > works. With the patch, nothing works, and no output at all.
-> > 
-> > With a bit of luck, I could maybe get the first lines of output using
-> > grub.efi, but frankly I cannot remember if that ever worked on this
-> > machine.
-> > 
+On Wed, Mar 06, 2013 at 12:31:49PM -0700, Stephen Warren wrote:
+> get_maintainer.pl could always look at file contents IIRC. The change
+> was that I added keyword "tegra" to the Tegra section that now matches
+> this file's contents.
 > 
-> A simpler one is efilinux:
+> ./scripts/get_maintainer.pl -f drivers/gpu/drm/nouveau
 > 
-> https://github.com/mfleming/efilinux
+> ... might be a better invocation, although perhaps I should add an
+> explicit exclusion for "nouveau" to the Tegra section in MAINTAINERS.
 
-Sadly, that one does not seem to boot at all on this machine (picked
-it up in arch linux, so obvisouly it works for someone).
+No, you should add a pattern which matches only tegra. If there's no
+such pattern, you should simply drop the "K:" thing.
 
-I have started applying portions of the patch to see what
-happens. Adding early_alloc_pgt_buf() in setup_arch() seems to work,
-which limits the problem to the actual init function.
+-- 
+Regards/Gruss,
+    Boris.
 
-Henrik
+Sent from a fat crate under my desk. Formatting is fine.
+--
