@@ -1,73 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755655Ab3CFV3g (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 16:29:36 -0500
-Received: from www.linutronix.de ([62.245.132.108]:45519 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753936Ab3CFV3f (ORCPT
+	id S1755809Ab3CFVbN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 16:31:13 -0500
+Received: from mail-ve0-f174.google.com ([209.85.128.174]:45519 "EHLO
+	mail-ve0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754580Ab3CFVbK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 16:29:35 -0500
-Date: Wed, 6 Mar 2013 22:29:21 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: "H. Peter Anvin" <hpa@linux.intel.com>
-cc: Feng Tang <feng.tang@intel.com>, John Stultz <john.stultz@linaro.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>, x86@kernel.org,
-        Len Brown <lenb@kernel.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        linux-kernel@vger.kernel.org, gong.chen@linux.intel.com
-Subject: Re: [PATCH v3 4/5] clocksource: Enable clocksource_cyc2ns() to cover
- big cycles
-In-Reply-To: <5137B30D.8060509@linux.intel.com>
-Message-ID: <alpine.LFD.2.02.1303062225460.22263@ionos>
-References: <1362554271-22382-1-git-send-email-feng.tang@intel.com> <1362554271-22382-5-git-send-email-feng.tang@intel.com> <alpine.LFD.2.02.1303061451340.22263@ionos> <5137AF96.6050003@linux.intel.com> <alpine.LFD.2.02.1303062215190.22263@ionos>
- <5137B30D.8060509@linux.intel.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Wed, 6 Mar 2013 16:31:10 -0500
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-1921361005-1362605362=:22263"
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+In-Reply-To: <20130306212452.GO1227@htj.dyndns.org>
+References: <20130305082308.6607d4db@tlielax.poochiereds.net>
+	<20130305174648.GF12795@htj.dyndns.org>
+	<20130305174954.GG12795@htj.dyndns.org>
+	<20130305140312.243cb094@tlielax.poochiereds.net>
+	<20130305190923.GI12795@htj.dyndns.org>
+	<20130305183941.19ff39ce@tlielax.poochiereds.net>
+	<20130305234700.GE1227@htj.dyndns.org>
+	<20130306181608.GA18687@redhat.com>
+	<20130306185304.GM1227@htj.dyndns.org>
+	<CA+55aFwDogteVd=vwGHXDSASnga-nZZnKaQz9aO1yBU2CPKSbA@mail.gmail.com>
+	<20130306212452.GO1227@htj.dyndns.org>
+Date: Wed, 6 Mar 2013 13:31:10 -0800
+X-Google-Sender-Auth: LtjwJUR_FjBLwYmshWqPo0S_-EI
+Message-ID: <CA+55aFy49AWptMcvEzJxg95ikf-dC+-vcCPq-cnaCCwje3tyoQ@mail.gmail.com>
+Subject: Re: LOCKDEP: 3.9-rc1: mount.nfs/4272 still has locks held!
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: Oleg Nesterov <oleg@redhat.com>, Jeff Layton <jlayton@redhat.com>,
+        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
+        Mandeep Singh Baines <msb@chromium.org>,
+        Ming Lei <ming.lei@canonical.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On Wed, Mar 6, 2013 at 1:24 PM, Tejun Heo <tj@kernel.org> wrote:
+>
+> With syscall paths out of the way, the surface is reduced a lot.
 
---8323328-1921361005-1362605362=:22263
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+So the issue is syscalls that don't react to signals, and that can
+potentially wait a long time.
 
-On Wed, 6 Mar 2013, H. Peter Anvin wrote:
-> On 03/06/2013 01:15 PM, Thomas Gleixner wrote:
-> > On Wed, 6 Mar 2013, H. Peter Anvin wrote:
-> > 
-> >> On 03/06/2013 06:09 AM, Thomas Gleixner wrote:
-> >>>
-> >>> This breaks everything which does not have a 64/32bit divide
-> >>> instruction. And you can't replace it with do_div() as that would
-> >>> impose massive overhead on those architectures in the fast path.
-> >>>
-> >>
-> >> Could we do the same kind of scaling-by-multiplication that we do in
-> >> kernel/time.c for this?
-> > 
-> > Not sure what you are referring to. kernel/time.c contains a lot of stuff :)
-> > 
-> 
-> This stuff, specifically the third clause (which incidentally could be
-> extended to the fourth clause without much trouble... I have
-> experimented with it already.)
-> 
-> It uses a N*N->2N multiply and a shift to do overflowless scaling; it is
-> ±1 LSB in the upper half of the value range with can be remedied with an
-> additional 2N add.
+Like NFS with a network hickup. Which is not at all unlikely. Think
+wireless network, somebody trying to get on a network share, things
+not working, and closing the damn lid because you give up.
 
-That's compile time. We need this at runtime and we do not want to
-reduce the accuracy. That's precision timekeeping not jiffies :)
+So I do agree that we probably have *too* many of the stupid "let's
+check if we can freeze", and I suspect that the NFS code should get
+rid of the "freezable_schedule()" that is causing this warning
+(because I also agree that you should *not* freeze while holding
+locks, because it really can cause deadlocks), but I do suspect that
+network filesystems do need to have a few places where they check for
+freezing on their own... Exactly because freezing isn't *quite* like a
+signal.
 
-Thanks,
-
-	tglx
---8323328-1921361005-1362605362=:22263--
+                 Linus
