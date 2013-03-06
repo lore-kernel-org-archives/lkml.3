@@ -1,60 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932097Ab3CFXqG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 18:46:06 -0500
-Received: from mail-oa0-f52.google.com ([209.85.219.52]:65083 "EHLO
-	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753384Ab3CFXqE (ORCPT
+	id S1757520Ab3CFXs2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 18:48:28 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:26116 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753384Ab3CFXs0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 18:46:04 -0500
-MIME-Version: 1.0
-In-Reply-To: <510A5F0E.6010100@googlemail.com>
-References: <51016937.1020202@googlemail.com> <510189B1.606@fold.natur.cuni.cz>
- <5104427D.2050002@googlemail.com> <510494D6.1010000@gmail.com>
- <51050D43.2050703@googlemail.com> <51051B1B.3080105@gmail.com>
- <51052DB2.4090702@googlemail.com> <51053917.6060400@fold.natur.cuni.cz>
- <5105491E.9050907@googlemail.com> <510558CE.9000600@fold.natur.cuni.cz>
- <5105AFDB.9000200@googlemail.com> <5105E51D.2020606@huawei.com>
- <51064F1A.1020909@googlemail.com> <51065FA6.4070208@googlemail.com>
- <51066B46.10409@fold.natur.cuni.cz> <5106CD6C.4070009@googlemail.com>
- <5106E770.9070602@fold.natur.cuni.cz> <510A5F0E.6010100@googlemail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Wed, 6 Mar 2013 16:45:43 -0700
-Message-ID: <CAErSpo4x8pb7J8MnokXiFTE=01-TffCk6CKC0VS7CEf3X1bSBw@mail.gmail.com>
-Subject: Re: 3.8.0-rc4+ - Oops on removing WinTV-HVR-1400 expresscard TV Tuner
-To: Chris Clayton <chris2553@googlemail.com>
-Cc: Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>,
-        Yijing Wang <wangyijing@huawei.com>,
-        Yijing Wang <wangyijing0307@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-pci@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 6 Mar 2013 18:48:26 -0500
+X-AuditID: cbfee691-b7faa6d000005ae9-43-5137d5c96ac5
+From: Kukjin Kim <kgene.kim@samsung.com>
+To: "'Arnd Bergmann'" <arnd@arndb.de>, linux-kernel@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, arm@kernel.org,
+        "'Sylwester Nawrocki'" <s.nawrocki@samsung.com>,
+        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
+        "'Mauro Carvalho Chehab'" <mchehab@redhat.com>
+References: <1362521809-22989-1-git-send-email-arnd@arndb.de>
+ <1362521809-22989-8-git-send-email-arnd@arndb.de>
+In-reply-to: <1362521809-22989-8-git-send-email-arnd@arndb.de>
+Subject: RE: [PATCH 7/9] [media] s5p-fimc: fix s5pv210 build
+Date: Thu, 07 Mar 2013 08:48:25 +0900
+Message-id: <013101ce1ac5$17e9f090$47bdd1b0$%kim@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac4Z7yUPGF/F45zeSQiKVnIWECPHNgAN9X7g
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrLIsWRmVeSWpSXmKPExsVy+t8zfd2TV80DDVoPK1lc3jWHzYHR4/Mm
+	uQDGKC6blNSczLLUIn27BK6MhTO7WAsmcle0/QloYOzn7GLk5JAQMJFY1fuLEcIWk7hwbz1b
+	FyMXh5DAMkaJp89XscEUXbiymgUisYhR4tylKUwQzjwmiZZrr1lBqtgENCQOv3/GDmKLCDhK
+	LHz+lBWkiFngBKPE549HmUASQgKFEncmrQcr4hSwk3hyYSHQbg4OYQEbiW2LuUDCLAKqErfX
+	LGAGCfMK2Eq8PwMW5hUQlPgx+R4LiM0soCWxfudxJghbXmLzmrdg5RIC6hKP/uqCmCICRhLv
+	9olDVIhI7HvxjhHkGAmBVewSG273MUNsEpD4NvkQC0SrrMSmA8wQ70pKHFxxg2UCo8QsJItn
+	IVk8C8niWUhWLGBkWcUomlqQXFCclF5kqlecmFtcmpeul5yfu4kRElUTdzDeP2B9iDEZaP1E
+	ZinR5HxgVOaVxBsaG5uYmZiamFuampuSJqwkzit/SSZQSCA9sSQ1OzW1ILUovqg0J7X4ECMT
+	B6dUA6PZr5PLYw79+lGqvTn5xI59hvK3bbfvck93283Jp+ZrKevA6vHn4V8bzU9LTX5qb/CK
+	/fI2TFf+t2XZEw6r/6U1Ub4HRd/yXuy48nweu9kGpk08GheWhUsk5DnyXrtgc6Wl9nZD3dHC
+	iXe3f3zQX/iveFLyy6cNLTOmcHT5m9XybjVdr17NLKHEUpyRaKjFXFScCAD2hJiewAIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupileLIzCtJLcpLzFFi42I5/e+xgO7Jq+aBBudny1pc3jWHzYHR4/Mm
+	uQDGqAZGm4zUxJTUIoXUvOT8lMy8dFsl7+B453hTMwNDXUNLC3MlhbzE3FRbJRefAF23zByg
+	qUoKZYk5pUChgMTiYiV9O0wTQkPcdC1gGiN0fUOC4HqMDNBAwjrGjIUzu1gLJnJXtP0JaGDs
+	5+xi5OSQEDCRuHBlNQuELSZx4d56ti5GLg4hgUWMEucuTWGCcOYxSbRce80KUsUmoCFx+P0z
+	dhBbRMBRYuHzp6wgRcwCJxglPn88ygSSEBIolLgzaT1YEaeAncSTCwsZuxg5OIQFbCS2LeYC
+	CbMIqErcXrOAGSTMK2Ar8f4MWJhXQFDix+R7YAcxC2hJrN95nAnClpfYvOYtWLmEgLrEo7+6
+	IKaIgJHEu33iEBUiEvtevGOcwCg0C8mgWUgGzUIyaBaSlgWMLKsYRVMLkguKk9JzDfWKE3OL
+	S/PS9ZLzczcxgmP2mdQOxpUNFocYBTgYlXh4OfLNA4VYE8uKK3MPMUpwMCuJ8N5dAhTiTUms
+	rEotyo8vKs1JLT7EmAz05kRmKdHkfGA6ySuJNzQ2MTOyNDKzMDIxNydNWEmcl/HUkwAhgfTE
+	ktTs1NSC1CKYLUwcnFINjHq3bl9jW/Go+9G1bcW6ST/O7/t8+bWQ0ab5M+umP8uTvH99y+MO
+	v5O2Li+tH4s+t/ONaWWdK2Rt6/mCdfGkQN4ZGsd8OG/8Lr+wp7ngld+UuxyScmqNouLrr89Z
+	Yhuj3Tt1BQ9HQdTuNTfzWKxu6uY0Xp6cEWTAyrmwwqtSsP1fntWyNa+3MyqxFGckGmoxFxUn
+	AgAntsLVHQMAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 31, 2013 at 5:09 AM, Chris Clayton <chris2553@googlemail.com> wrote:
+Arnd Bergmann wrote:
+> 
+> 56bc911 "[media] s5p-fimc: Redefine platform data structure for fimc-is"
+> changed the bus_type member of struct fimc_source_info treewide, but
+> got one instance wrong in mach-s5pv210, which was evidently not
+> even build tested.
+> 
+> This adds the missing change to get s5pv210_defconfig to build again.
+> Applies on the Mauro's media tree.
+> 
+I'm fine if this can be fixed soon.
 
-> My usb3 expresscard device has arrived and I get an oops with that too, if I
-> remove it without unloading the driver first. I guess it shouldn't be a
-> surprise that the driver isn't expecting the device to disappear.
->
-> As I mentioned, I have some trouble with the WinTV-HVR-1400 card, which
-> sometimes pops out again, if I push it into the slot too hard (but I'm
-> geeting better at that with practice). So what I've done (with the usb3 card
-> too) to avoid the oopsen is blacklist the driver in
-> /etc/modprobe.d/blacklist.conf and then load them when I'm sure the card is
-> properly inserted. Not exactly hotplug, but at least I don't have to reboot
-> because of an oops- and it's not something I'm doing several times an hour.
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>
+> Cc: Kyungmin Park <kyungmin.park@samsung.com>
+> Cc: Kukjin Kim <kgene.kim@samsung.com>
 
-Hi Chris,
+Acked-by: Kukjin Kim <kgene.kim@samsung.com>
 
-What's the current state of this?  It sounds to me like it still
-doesn't work out of the box.  Having to blacklist the driver and load
-it manually is a completely unacceptable user experience.  If you have
-to manually choose acpiphp over pciehp, that is also unacceptable.
+> Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
+> ---
+>  arch/arm/mach-s5pv210/mach-goni.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/arch/arm/mach-s5pv210/mach-goni.c b/arch/arm/mach-
+> s5pv210/mach-goni.c
+> index 3a38f7b..e373de4 100644
+> --- a/arch/arm/mach-s5pv210/mach-goni.c
+> +++ b/arch/arm/mach-s5pv210/mach-goni.c
+> @@ -845,7 +845,7 @@ static struct fimc_source_info goni_camera_sensors[]
+> = {
+>  		.mux_id		= 0,
+>  		.flags		= V4L2_MBUS_PCLK_SAMPLE_FALLING |
+>  				  V4L2_MBUS_VSYNC_ACTIVE_LOW,
+> -		.bus_type	= FIMC_BUS_TYPE_ITU_601,
+> +		.fimc_bus_type	= FIMC_BUS_TYPE_ITU_601,
+>  		.board_info	= &noon010pc30_board_info,
+>  		.i2c_bus_num	= 0,
+>  		.clk_frequency	= 16000000UL,
+> --
+> 1.8.1.2
 
-So if you're still limping along with hacky workarounds like this, I'd
-like to pursue this more and see if we can't figure out a better
-solution.
-
-Bjorn
