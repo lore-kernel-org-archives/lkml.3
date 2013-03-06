@@ -1,59 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753420Ab3CFR0f (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 12:26:35 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:45625 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752653Ab3CFR0d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 12:26:33 -0500
-Message-ID: <51377C3A.3030301@zytor.com>
-Date: Wed, 06 Mar 2013 09:26:18 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130219 Thunderbird/17.0.3
+	id S1753397Ab3CFR14 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 12:27:56 -0500
+Received: from co9ehsobe002.messaging.microsoft.com ([207.46.163.25]:32960
+	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752866Ab3CFR1z convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Mar 2013 12:27:55 -0500
+X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
+X-SpamScore: -7
+X-BigFish: VPS-7(zz98dIc89bh936eI1432I1519Mzz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ahzzz2fh95h668h839h93fhd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah906i1155h)
+Date: Wed, 6 Mar 2013 09:27:46 -0800
+From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
+To: Jan =?utf-8?B?TMO8YmJl?= <jlu@pengutronix.de>
+CC: Sascha Hauer <s.hauer@pengutronix.de>,
+        Mike Turquette <mturquette@linaro.org>,
+        Josh Cartwright <josh.cartwright@ni.com>,
+        Michal Simek <michal.simek@xilinx.com>,
+        Peter Crosthwaite <pcrost@xilinx.com>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <git@xilinx.com>
+Subject: Re: RFC: Zynq Clock Controller
+References: <37032699-343e-485c-80e0-9b23e3706c58@VA3EHSMHS013.ehs.local>
+ <1362570681.5269.98.camel@coredoba.hi.pengutronix.de>
 MIME-Version: 1.0
-To: Josh Boyer <jwboyer@gmail.com>
-CC: Yinghai Lu <yinghai@kernel.org>, Robin Holt <holt@sgi.com>, hpa@sgi.com,
-        linux-kernel@vger.kernel.org, pjones@redhat.com
-Subject: Re: Revert commit 5dcd14ecd4 - breaks EFI boot with SLES11 elilo.efi
-References: <20130228205206.GC3438@sgi.com> <512FC697.3090608@zytor.com> <20130228210910.GD3438@sgi.com> <512FC82B.40909@zytor.com> <CAE9FiQU3FBwEiC86N1RC8=aMdN09EbUmRcsWP0yof7bmxBhPew@mail.gmail.com> <512FE3AE.4070903@zytor.com> <20130305081519.GA19165@sgi.com> <9bcd6241-37fd-4ae9-a997-2a5da1eaf997@email.android.com> <CAE9FiQV2Wk+yiqR8FnNM_L-p1iQFxDwopRzFWTwm6VCkyrbuoQ@mail.gmail.com> <CA+5PVA4VRa7z10APcEaoebX3vwtbLzDLq1PAHmfaHBDqtZv=jw@mail.gmail.com>
-In-Reply-To: <CA+5PVA4VRa7z10APcEaoebX3vwtbLzDLq1PAHmfaHBDqtZv=jw@mail.gmail.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="utf-8"
+Content-Disposition: inline
+In-Reply-To: <1362570681.5269.98.camel@coredoba.hi.pengutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginalArrivalTime: 06 Mar 2013 17:27:47.0962 (UTC) FILETIME=[EBD5B5A0:01CE1A8F]
+X-RCIS-Action: ALLOW
+Message-ID: <f288874c-d0ae-4581-8d0f-2b9abe4d3117@CO9EHSMHS002.ehs.local>
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: xilinx.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/06/2013 08:53 AM, Josh Boyer wrote:
+Hi Jan,
+ 
+what a small world. Good to hear from you.
+
+On Wed, Mar 06, 2013 at 12:51:21PM +0100, Jan Lübbe wrote:
+> Hi Sören,
 > 
-> I don't think this is limited to elilo.  I have a UEFI machine booting
-> with grub2 that also fails to boot because of this patch.  I was in the
-> middle of bisecting when I found this thread and if I revert 5dcd14ecd4
-> the machine boots again.  Put that commit back in and it doesn't.  We've
-> had three other reports in Fedora of similar cases.
+> On Tue, 2013-03-05 at 12:04 -0800, Sören Brinkmann wrote:
+> > For this reasons, I'd like to propose moving Zynq into the same
+> > direction. I.e. adding a clock controller with the following DT
+> > description (details may change but the general idea should become
+> > clear):
+> > 	clkc: clkc {
+> >                 #clock-cells = <1>;
+> >                 compatible = "xlnx,ps7-clkc";
+> >                 ps_clk_frequency = <33333333>;	# board x-tal
+> >                 # optional props
+> >                 gem0_emio_clk_freq = <125000000>;
+> >                 gem1_emio_clk_freq = <50000000>;
+> >                 can_mio_clk_freq_xx = <1234>; # this is possible 54 times with xx = 00..53
+> >         };
 > 
-> I discussed this with Peter Jones this morning.  He was looking into what
-> grub2 does for boot_params and it seems to be read-modify-write instead
-> of clearing the whole thing.  (CC'd Peter now.)
+> The clock controller should only contain properties for input frequency
+> (which can obviously not be calculated at run-time).
 > 
-> The patch for elilo probably works, but if grub2 is hitting this then I'm
-> curious if most bootloaders will.  I'll finish my bisect just to be extra
-> sure, but something probably needs to be done in a more generic fashion
-> here.
+> Are the gem*, can* properties inputs? If they are actually outputs, the
+> corresponding frequencies should be requested by the clock consumers and
+> not hard-coded in DT.
+They are inputs. GEM and CAN have the option to be clocked through (E)MIO pins, i.e. some external clock input which cannot be derived from ps_clk like all other clocks. I plan to register a fixed rate, root clock for each of those properties, if present.
+
 > 
+> Please keep in mind that DT properties use dashes instead of
+> underscores.
+Okay, I'll make that substitution.
 
-Come to think about it...
+	Sören
 
-The EFI field actually has a magic, unless just about all the rest of
-them, so clearing it is probabilistically redundant; in other words we
-almost certainly should exclude it from the clearing, unconditionally.
-
-Does the "elilo" patch made unconditional work for you?
-
-	-hpa
-
-
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
 
