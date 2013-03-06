@@ -1,89 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757266Ab3CFXci (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 18:32:38 -0500
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:36745 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753128Ab3CFXcg (ORCPT
+	id S1754864Ab3CFXgy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 18:36:54 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:33377 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753128Ab3CFXgw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 18:32:36 -0500
-X-Sasl-enc: HkSGVsZ/vESeRwlYr1TKTxLpxk530up+TBXOJ/HvaawO 1362612755
-Date: Wed, 6 Mar 2013 20:32:32 -0300
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Mandeep Singh Baines <msb@chromium.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-acpi@vger.kernel.org, ibm-acpi@hmh.eng.br,
-        ibm-acpi-devel@lists.sourceforge.net,
-        platform-driver-x86@vger.kernel.org, Aaron Lu <aaron.lu@intel.com>,
-        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] thinkpad-acpi: fix potential suspend blocking issue
-Message-ID: <20130306233232.GA12645@khazad-dum.debian.net>
-References: <201303042055.38040.maciej.rutecki@gmail.com>
- <1362504883-9180-1-git-send-email-msb@chromium.org>
- <20130305174838.GA7276@redhat.com>
- <CACBanvqHRDsOQiMsQMw5_QDt1wFrb8_DRoiASSvqeA6XdFrwZQ@mail.gmail.com>
- <20130305180542.GA12738@redhat.com>
- <CACBanvr7XvXbFjphpRwKHHJKzVuA-s6sF-qkPiizBV3+uqzpJw@mail.gmail.com>
- <20130305232603.GA16045@khazad-dum.debian.net>
- <20130306154420.GA7697@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130306154420.GA7697@redhat.com>
-X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 6 Mar 2013 18:36:52 -0500
+From: Stephen Warren <swarren@wwwdotorg.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Joe Perches <joe@perches.com>, linux-kernel@vger.kernel.org,
+        Marcin Slusarz <marcin.slusarz@gmail.com>,
+        Lucas Stach <dev@lynxeye.de>, Borislav Petkov <bp@alien8.de>,
+        dri-devel@lists.freedesktop.org, nouveau@lists.freedesktop.org,
+        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+        linux-tegra@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
+Subject: [PATCH 1/2] get_maintainer: create filename-only regex match type
+Date: Wed,  6 Mar 2013 16:36:44 -0700
+Message-Id: <1362613005-31439-1-git-send-email-swarren@wwwdotorg.org>
+X-Mailer: git-send-email 1.7.10.4
+X-NVConfidentiality: public
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 06 Mar 2013, Oleg Nesterov wrote:
-> On 03/05, Henrique de Moraes Holschuh wrote:
-> > On Tue, 05 Mar 2013, Mandeep Singh Baines wrote:
-> > > This mutex seems wrong. Its held the entire time the kthread is
-> > > running. I think its used to synchronize on the exit of the kthread. A
-> > > completion would more appropriate in that case.
-> >
-> > From the top of the driver source:
-> >
-> > /* Acquired while the poller kthread is running, use to sync start/stop */
-> > static struct mutex hotkey_thread_mutex;
-> 
-> I simply can't understand what this "sync start/stop" means...
-> 
-> Ignoring hotkey_kthread(), the only user is
-> 
-> 	static void hotkey_poll_stop_sync(void)
-> 	{
-> 		if (tpacpi_hotkey_task) {
-> 			kthread_stop(tpacpi_hotkey_task);
-> 			tpacpi_hotkey_task = NULL;
-> 			mutex_lock(&hotkey_thread_mutex);
-> 			/* at this point, the thread did exit */
-> 			mutex_unlock(&hotkey_thread_mutex);
-> 		}
-> 	}
-> 
-> And I simply do not understand the comment. This thread has already exited
-> when kthread_stop() returns (OK, it can be running do_exit() paths but this
-> doesn't matter). So this mutex_lock() buys nothing afaics.
+From: Stephen Warren <swarren@nvidia.com>
 
-It was added due to an oops, waaaaay back then.  If it is not needed
-anymore, and there is zero chance of the kthread still being active when
-hotkey_poll_stop_sync() ends, hotkey_thread_mutex can be simply removed.
+Create a new N: entry type in MAINTAINERS which performs a regex match
+against filenames; either those extracted from patch +++ or --- lines,
+or those specified on the command-line using the -f option.
 
-Note that hotkey_thread_data_mutex is still required.
+This provides the same benefits as using a K: regex option to match a
+set of filenames (see commit eb90d08 "get_maintainer: allow keywords to
+match filenames"), but without the disadvantage that "random" file
+content, such as comments,  will ever match the regex.
 
-> As for serializing with hotkey_poll_setup/etc, looks like this code relies
-> on hotkey_mutex.
-> 
-> So I think hotkey_thread_mutex can be simply removed?
+Suggested-by: Joe Perches <joe@perches.com>
+Signed-off-by: Stephen Warren <swarren@nvidia.com>
+---
+ MAINTAINERS               |    3 +++
+ scripts/get_maintainer.pl |    2 +-
+ 2 files changed, 4 insertions(+), 1 deletion(-)
 
-Looks like it, if the current semanthics of ktread_stop() are syncronous.
-
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 9561658..1671842 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -90,6 +90,9 @@ Descriptions of section entries:
+ 	   F:	drivers/net/*	all files in drivers/net, but not below
+ 	   F:	*/net/*		all files in "any top level directory"/net
+ 	   One pattern per line.  Multiple F: lines acceptable.
++	N: Files and directories with regex patterns.
++	   K:	[^a-z]tegra	all files whose patch contains the word tegra
++	   One pattern per line.  Multiple N: lines acceptable.
+ 	X: Files and directories that are NOT maintained, same rules as F:
+ 	   Files exclusions are tested before file matches.
+ 	   Can be useful for excluding a specific subdirectory, for instance:
+diff --git a/scripts/get_maintainer.pl b/scripts/get_maintainer.pl
+index ce4cc83..27dc5cb 100755
+--- a/scripts/get_maintainer.pl
++++ b/scripts/get_maintainer.pl
+@@ -611,7 +611,7 @@ sub get_maintainers {
+ 				    $hash{$tvi} = $value_pd;
+ 				}
+ 			    }
+-			} elsif ($type eq 'K') {
++			} elsif ($type eq 'K' || $type eq 'N') {
+ 			    if ($file =~ m/$value/x) {
+ 				$hash{$tvi} = 0;
+ 			    }
 -- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+1.7.10.4
+
