@@ -1,94 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751399Ab3CFGEe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 01:04:34 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:10171 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750710Ab3CFGE2 convert rfc822-to-8bit (ORCPT
+	id S1752364Ab3CFGKV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 01:10:21 -0500
+Received: from outbound-mail01.westnet.com.au ([203.10.1.242]:3869 "EHLO
+	outbound-mail01.westnet.com.au" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752353Ab3CFGKS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 01:04:28 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Tue, 05 Mar 2013 22:04:13 -0800
-From: Venu Byravarasu <vbyravarasu@nvidia.com>
-To: Jingoo Han <jg1.han@samsung.com>,
-        "'Andrew Morton'" <akpm@linux-foundation.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "'Tejun Heo'" <tj@kernel.org>, "'Greg KH'" <greg@kroah.com>,
-        "'Alessandro Zummo'" <a.zummo@towertech.it>,
-        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>
-Date: Wed, 6 Mar 2013 11:33:11 +0530
-Subject: RE: [PATCH v3] rtc: add devm_rtc_device_{register,unregister}()
-Thread-Topic: [PATCH v3] rtc: add devm_rtc_device_{register,unregister}()
-Thread-Index: Ac4Tw5Tl8LnUauaRRFO4J+k+4bUCfQGbCziw
-Message-ID: <D958900912E20642BCBC71664EFECE3E6E4F721A54@BGMAIL02.nvidia.com>
-References: <009001ce13c3$9504bff0$bf0e3fd0$%han@samsung.com>
-In-Reply-To: <009001ce13c3$9504bff0$bf0e3fd0$%han@samsung.com>
-Accept-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
+	Wed, 6 Mar 2013 01:10:18 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApQBAGHcNlGVhxBY/2dsb2JhbAANN4hsvCKCCoMeAQEBAwEjFUABBQsLDgoCAgUWCwICCQMCAQIBRQYNAQUCAQGHfAEMqAVxklaBI4wngUMHgi2BEwOgLookgVc
+X-IronPort-AV: E=Sophos;i="4.84,793,1355068800"; 
+   d="scan'208";a="317997502"
+Message-ID: <5136DDBF.8090000@westnet.com.au>
+Date: Wed, 06 Mar 2013 16:10:07 +1000
+From: Greg Ungerer <gregungerer@westnet.com.au>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
 MIME-Version: 1.0
-Content-Language: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+To: Paul Bolle <pebolle@tiscali.nl>
+CC: Geert Uytterhoeven <geert@linux-m68k.org>, linux-m68k@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] m68k: drop "select EMAC_INC"
+References: <1362504650.16460.95.camel@x61.thuisdomein>
+In-Reply-To: <1362504650.16460.95.camel@x61.thuisdomein>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-
-> owner@vger.kernel.org] On Behalf Of Jingoo Han
-> Sent: Tuesday, February 26, 2013 7:20 AM
-> To: 'Andrew Morton'
-> Cc: linux-kernel@vger.kernel.org; 'Tejun Heo'; 'Greg KH'; 'Alessandro
-> Zummo'; rtc-linux@googlegroups.com; 'Jingoo Han'
-> Subject: [PATCH v3] rtc: add devm_rtc_device_{register,unregister}()
-> 
-> These functios allows the driver core to automatically clean up
-> any allocation made by rtc drivers. Thus, it simplifies the error
-> paths.
-> 
-> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
-> ---
-> Changes since v2:
-> - Removed unnecessary WARN_ON() of devm_rtc_device_match()
-> 
-> Changes since v1:
-> - Simplified 'if' statements using WARN_ON()
-> - Added a description of the return value of devm_rtc_device_register()
-> 
->  drivers/rtc/class.c |   70
-> +++++++++++++++++++++++++++++++++++++++++++++++++++
->  include/linux/rtc.h |    6 ++++
->  2 files changed, 76 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/rtc/class.c b/drivers/rtc/class.c
-> index 9b742d3..b72b40b 100644
-> --- a/drivers/rtc/class.c
-> +++ b/drivers/rtc/class.c
+Hi Paul,
 
-> +/**
-> + * devm_rtc_device_register - resource managed rtc_device_register()
-> + * @name: the name of the device
-> + * @dev: the device to register
-> + * @ops: the rtc operations structure
-> + * @owner: the module owner
-> + *
-> + * @return a struct rtc on success, or an ERR_PTR on error
-> + *
-> + * Managed rtc_device_register(). The rtc_device returned from this
-> function
-> + * are automatically freed on driver detach. See rtc_device_register()
-> + * for more information.
-> + */
-> +
-> +struct rtc_device *devm_rtc_device_register(const char *name,
-> +					struct device *dev,
+On 06/03/13 03:30, Paul Bolle wrote:
+> Somehow this select statement managed to squeeze itself between commit
+> 0e152d80507b75c00aac60f2ffc586360687cd52 ("m68k: reorganize Kconfig
+> options to improve mmu/non-mmu selections") and commit
+> 95e82747d6e2abc513bfae416e6009968985d05b ("m68k: drop unused Kconfig
+> symbols"). Whatever happened, there is no Kconfig symbol named EMAC_INC.
+> The select statement for that symbol is a nop. Drop it.
+>
+> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
 
-As most of devm_* functions use  " struct device *dev" as their first param,
-why not this function also modified to be in sync with them?
+Thanks, I'll add that to the m68knommu git tree, since it is a non-mmu
+target.
 
-> +					const struct rtc_class_ops *ops,
-> +					struct module *owner)
-> +{
-> +	struct rtc_device **ptr, *rtc;
+Regards
+Greg
+
+
+> Untested, but it's hard to see what can got wrong here.
+>
+>   arch/m68k/Kconfig.machine | 1 -
+>   1 file changed, 1 deletion(-)
+>
+> diff --git a/arch/m68k/Kconfig.machine b/arch/m68k/Kconfig.machine
+> index 7cdf6b0..7240584 100644
+> --- a/arch/m68k/Kconfig.machine
+> +++ b/arch/m68k/Kconfig.machine
+> @@ -310,7 +310,6 @@ config COBRA5282
+>   config SOM5282EM
+>   	bool "EMAC.Inc SOM5282EM board support"
+>   	depends on M528x
+> -	select EMAC_INC
+>   	help
+>   	  Support for the EMAC.Inc SOM5282EM module.
+>
+>
+
