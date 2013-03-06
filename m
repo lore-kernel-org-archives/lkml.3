@@ -1,39 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758222Ab3CFNjb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 08:39:31 -0500
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:45970 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757975Ab3CFNjO (ORCPT
+	id S1758122Ab3CFNjL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 08:39:11 -0500
+Received: from mailout01.c08.mtsvc.net ([205.186.168.189]:50371 "EHLO
+	mailout01.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757939Ab3CFNjC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 08:39:14 -0500
-MIME-Version: 1.0
-In-Reply-To: <009001ce1a3f$e3d015d0$ab704170$%han@samsung.com>
-References: <007b01ce1a3e$cd9f3260$68dd9720$%han@samsung.com>
-	<009001ce1a3f$e3d015d0$ab704170$%han@samsung.com>
-Date: Wed, 6 Mar 2013 21:39:12 +0800
-X-Google-Sender-Auth: qY01Kx3vnSPqM9kZhzGioPTGHwQ
-Message-ID: <CAOh2x=meurvO1dQMgQ=v0Rr5ET9REkew6rtJkGQNSGackdBhgg@mail.gmail.com>
-Subject: Re: [PATCH V2 22/30] rtc: rtc-spear: use devm_rtc_device_register()
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Jingoo Han <jg1.han@samsung.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 6 Mar 2013 08:39:02 -0500
+From: Peter Hurley <peter@hurleysoftware.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Peter Hurley <peter@hurleysoftware.com>
+Subject: [PATCH 5/7] n_tty: Untangle read completion variables
+Date: Wed,  6 Mar 2013 08:38:23 -0500
+Message-Id: <1362577105-19757-6-git-send-email-peter@hurleysoftware.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1362577105-19757-1-git-send-email-peter@hurleysoftware.com>
+References: <1362577105-19757-1-git-send-email-peter@hurleysoftware.com>
+X-Authenticated-User: 125194 peter@hurleysoftware.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 6, 2013 at 3:54 PM, Jingoo Han <jg1.han@samsung.com> wrote:
-> devm_rtc_device_register() is device managed and makes cleanup
-> paths simpler.
->
-> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
-> ---
-> Changes since v1:
-> - used 'struct device *dev' as the first argument
->
->  drivers/rtc/rtc-spear.c |    5 ++---
->  1 files changed, 2 insertions(+), 3 deletions(-)
 
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+---
+ drivers/tty/n_tty.c | 8 ++------
+ 1 file changed, 2 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
+index 3fd657b..b2f621f 100644
+--- a/drivers/tty/n_tty.c
++++ b/drivers/tty/n_tty.c
+@@ -1814,20 +1814,16 @@ do_it_again:
+ 	minimum = time = 0;
+ 	timeout = MAX_SCHEDULE_TIMEOUT;
+ 	if (!ldata->icanon) {
+-		time = (HZ / 10) * TIME_CHAR(tty);
+ 		minimum = MIN_CHAR(tty);
+ 		if (minimum) {
++			time = (HZ / 10) * TIME_CHAR(tty);
+ 			if (time)
+ 				ldata->minimum_to_wake = 1;
+ 			else if (!waitqueue_active(&tty->read_wait) ||
+ 				 (ldata->minimum_to_wake > minimum))
+ 				ldata->minimum_to_wake = minimum;
+ 		} else {
+-			timeout = 0;
+-			if (time) {
+-				timeout = time;
+-				time = 0;
+-			}
++			timeout = (HZ / 10) * TIME_CHAR(tty);
+ 			ldata->minimum_to_wake = minimum = 1;
+ 		}
+ 	}
+-- 
+1.8.1.2
+
