@@ -1,102 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755835Ab3CFBK0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 20:10:26 -0500
-Received: from mx2.netapp.com ([216.240.18.37]:50577 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755692Ab3CFBKW convert rfc822-to-8bit (ORCPT
+	id S1755999Ab3CFBKv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 20:10:51 -0500
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:55488 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755082Ab3CFBKu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 20:10:22 -0500
-X-IronPort-AV: E=Sophos;i="4.84,791,1355126400"; 
-   d="scan'208";a="13411893"
-From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-To: Jeff Layton <jlayton@redhat.com>
-CC: Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-        "Mandeep Singh Baines" <msb@chromium.org>,
-        Ming Lei <ming.lei@canonical.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: LOCKDEP: 3.9-rc1: mount.nfs/4272 still has locks held!
-Thread-Topic: LOCKDEP: 3.9-rc1: mount.nfs/4272 still has locks held!
-Thread-Index: AQHOGOA9OOKbapJ+RE+tLJb3WRyEW5iWGYKAgAACcQCAAFy3AIAAED2AgAAVFoCAAP+FAIAASasAgAAA3gCAABR7AIAAZoIA
-Date: Wed, 6 Mar 2013 01:10:07 +0000
-Message-ID: <4FA345DA4F4AE44899BD2B03EEEC2FA9286B1246@sacexcmbx05-prd.hq.netapp.com>
-References: <CACVXFVMKN6aeCvJcn7dyuonJYJDfYxWeW5KE6gfKRKJKFj2M4A@mail.gmail.com>
-	 <4FA345DA4F4AE44899BD2B03EEEC2FA9286AD113@sacexcmbx05-prd.hq.netapp.com>
-	 <20130304092310.1d21100c@tlielax.poochiereds.net>
-	 <CACBanvrc0orXGZ1v+gKHtVPKWYKGEFx46dwoDCjTU78+nPtZyg@mail.gmail.com>
-	 <20130304205307.GA13527@redhat.com>
-	 <4FA345DA4F4AE44899BD2B03EEEC2FA9286AEEB0@sacexcmbx05-prd.hq.netapp.com>
-	 <20130305082308.6607d4db@tlielax.poochiereds.net>
-	 <20130305174648.GF12795@htj.dyndns.org>
-	 <20130305174954.GG12795@htj.dyndns.org>
-	 <20130305140312.243cb094@tlielax.poochiereds.net>
-In-Reply-To: <20130305140312.243cb094@tlielax.poochiereds.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.104.60.118]
-Content-Type: text/plain; charset=US-ASCII
-Content-ID: <E6B5A8B998934E43B06A96DCFB1B9951@tahoe.netapp.com>
-Content-Transfer-Encoding: 7BIT
+	Tue, 5 Mar 2013 20:10:50 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+GC6ZMhinjtfUrNoX3OyCl
+Date: Tue, 5 Mar 2013 17:10:47 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        arm@kernel.org, Joerg Roedel <joro@8bytes.org>,
+        iommu@lists.linux-foundation.org, Ohad Ben-Cohen <ohad@wizery.com>,
+        Omar Ramirez Luna <omar.luna@linaro.org>
+Subject: Re: [PATCH 8/9] iommu: OMAP: build only on OMAP2+
+Message-ID: <20130306011046.GK11806@atomide.com>
+References: <1362521809-22989-1-git-send-email-arnd@arndb.de>
+ <1362521809-22989-9-git-send-email-arnd@arndb.de>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1362521809-22989-9-git-send-email-arnd@arndb.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-03-05 at 14:03 -0500, Jeff Layton wrote:
-> On Tue, 5 Mar 2013 09:49:54 -0800
-> Tejun Heo <tj@kernel.org> wrote:
+* Arnd Bergmann <arnd@arndb.de> [130305 14:21]:
+> The OMAP IOMMU driver intentionally fails to build on OMAP1
+> platforms, so we should not allow enabling it there.
 > 
-> > On Tue, Mar 05, 2013 at 09:46:48AM -0800, Tejun Heo wrote:
-> > > So, I think this is why implementing freezer as a separate blocking
-> > > mechanism isn't such a good idea.  We're effectively introducing a
-> > > completely new waiting state to a lot of unsuspecting paths which
-> > > generates a lot of risks and eventually extra complexity to work
-> > > around those.  I think we really should update freezer to re-use the
-> > > blocking points we already have - the ones used for signal delivery
-> > > and ptracing.  That way, other code paths don't have to worry about an
-> > > extra stop state and we can confine most complexities to freezer
-> > > proper.
-> > 
-> > Also, consolidating those wait states means that we can solve the
-> > event-to-response latency problem for all three cases - signal, ptrace
-> > and freezer, rather than adding separate backing-out strategy for
-> > freezer.
-> > 
-> 
-> Sounds intriguing...
-> 
-> I'm not sure what this really means for something like NFS though. How
-> would you envision this working when we have long running syscalls that
-> might sit waiting in the kernel indefinitely?
-> 
-> Here's my blue-sky, poorly-thought-out idea...
-> 
-> We could add a signal (e.g. SIGFREEZE) that allows the sleeps in
-> NFS/RPC layer to be interrupted. Those would return back toward
-> userland with a particular type of error (sort of like ERESTARTSYS).
-> 
-> Before returning from the kernel though, we could freeze the process.
-> When it wakes up, then we could go back down and retry the call again
-> (much like an ERESTARTSYS kind of thing).
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Cc: Joerg Roedel <joro@8bytes.org>
+> Cc: iommu@lists.linux-foundation.org
+> Cc: Ohad Ben-Cohen <ohad@wizery.com>
+> Cc: Tony Lindgren <tony@atomide.com>
+> Cc: Omar Ramirez Luna <omar.luna@linaro.org>
 
-Two (three?) show stopper words for you: "non-idempotent operations".
+Makes sense, I doubt that anybody will work on omap1 version
+at this point:
 
-Not all RPC calls can just be interrupted and restarted. Something like
-an exclusive file create, unlink, file locking attempt, etc may give
-rise to different results when replayed in the above scenario.
-Interrupting an RPC call is not equivalent to cancelling its effects...
+Acked-by: Tony Lindgren <tony@atomide.com>
 
--- 
-Trond Myklebust
-Linux NFS client maintainer
-
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
+> ---
+>  drivers/iommu/Kconfig | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/iommu/Kconfig b/drivers/iommu/Kconfig
+> index 5c514d07..c332fb9 100644
+> --- a/drivers/iommu/Kconfig
+> +++ b/drivers/iommu/Kconfig
+> @@ -130,7 +130,7 @@ config IRQ_REMAP
+>  # OMAP IOMMU support
+>  config OMAP_IOMMU
+>  	bool "OMAP IOMMU Support"
+> -	depends on ARCH_OMAP
+> +	depends on ARCH_OMAP2PLUS
+>  	select IOMMU_API
+>  
+>  config OMAP_IOVMM
+> -- 
+> 1.8.1.2
+> 
