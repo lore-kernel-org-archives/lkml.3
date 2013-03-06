@@ -1,125 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753521Ab3CFMfR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 07:35:17 -0500
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:38654 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751493Ab3CFMfM (ORCPT
+	id S1753939Ab3CFMgr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 07:36:47 -0500
+Received: from arkanian.console-pimps.org ([212.110.184.194]:35105 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752816Ab3CFMgo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 07:35:12 -0500
-Message-ID: <513737F9.2080805@linaro.org>
-Date: Wed, 06 Mar 2013 13:35:05 +0100
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: john.stultz@linaro.org, viresh.kumar@linaro.org,
-        jacob.jun.pan@linux.intel.com, linux-arm-kernel@lists.infradead.org,
-        santosh.shilimkar@ti.com, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, rickard.andersson@stericsson.com,
-        vincent.guittot@linaro.org, linus.walleij@stericsson.com
-Subject: Re: [PATCH 2/4][V2] time : set broadcast irq affinity
-References: <1362219013-18173-1-git-send-email-daniel.lezcano@linaro.org> <1362219013-18173-3-git-send-email-daniel.lezcano@linaro.org> <alpine.LFD.2.02.1303052135080.22263@ionos> <51370C09.5020301@linaro.org> <alpine.LFD.2.02.1303061047240.22263@ionos>
-In-Reply-To: <alpine.LFD.2.02.1303061047240.22263@ionos>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 6 Mar 2013 07:36:44 -0500
+Message-ID: <1362573401.15011.48.camel@mfleming-mobl1.ger.corp.intel.com>
+Subject: Re: [PATCH] efivarfs: fix abnormal GUID in variable name by using
+ strcpy to replace null with dash
+From: Matt Fleming <matt@console-pimps.org>
+To: Frederic Crozat <fcrozat@suse.com>
+Cc: joeyli <jlee@suse.com>, linux-efi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Michael Schroeder <mls@suse.com>,
+        Josh Boyer <jwboyer@redhat.com>, Peter Jones <pjones@redhat.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>
+Date: Wed, 06 Mar 2013 12:36:41 +0000
+In-Reply-To: <1362571097.7004.66.camel@par-r81vxc7.par.novell.com>
+References: <1362108018-13117-1-git-send-email-jlee@suse.com>
+	 <1362151068.2842.440.camel@mfleming-mobl1.ger.corp.intel.com>
+	 <1362155493.2842.446.camel@mfleming-mobl1.ger.corp.intel.com>
+	 <1362181299.23932.168.camel@linux-s257.site>
+	 <1362555258.23932.573.camel@linux-s257.site>
+	 <1362568750.15011.24.camel@mfleming-mobl1.ger.corp.intel.com>
+	 <1362571097.7004.66.camel@par-r81vxc7.par.novell.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/06/2013 10:48 AM, Thomas Gleixner wrote:
-> On Wed, 6 Mar 2013, Daniel Lezcano wrote:
->> On 03/05/2013 09:40 PM, Thomas Gleixner wrote:
->>> On Sat, 2 Mar 2013, Daniel Lezcano wrote:
->>>> When a cpu goes to a deep idle state where its local timer is shutdown,
->>>> it notifies the time frame work to use the broadcast timer instead.
->>>>
->>>> Unfortunately, the broadcast device could wake up any CPU, including an
->>>> idle one which is not concerned by the wake up at all.
->>>>
->>>> This implies, in the worst case, an idle CPU will wake up to send an IPI
->>>> to another idle cpu.
->>>>
->>>> This patch solves this by setting the irq affinity to the cpu concerned
->>>> by the nearest timer event, by this way, the CPU which is wake up is
->>>> guarantee to be the one concerned by the next event and we are safe with
->>>> unnecessary wakeup for another idle CPU.
->>>>
->>>> As the irq affinity is not supported by all the archs, a flag is needed
->>>> to specify which clocksource can handle it : CLOCK_EVT_FEAT_DYNIRQ
->>>>
->>>> Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
->>>> ---
->>>>  include/linux/clockchips.h   |    5 +++++
->>>>  kernel/time/tick-broadcast.c |   40 +++++++++++++++++++++++++++++++++-------
->>>>  2 files changed, 38 insertions(+), 7 deletions(-)
->>>>
->>>> diff --git a/include/linux/clockchips.h b/include/linux/clockchips.h
->>>> index 6634652..c93e2a6 100644
->>>> --- a/include/linux/clockchips.h
->>>> +++ b/include/linux/clockchips.h
->>>> @@ -55,6 +55,11 @@ enum clock_event_nofitiers {
->>>>  #define CLOCK_EVT_FEAT_C3STOP		0x000008
->>>>  #define CLOCK_EVT_FEAT_DUMMY		0x000010
->>>>  
->>>> +/*
->>>> + * Clock event device can set its irq affinity dynamically
->>>> + */
->>>> +#define CLOCK_EVT_FEAT_DYNIRQ		0x000020
->>>> +
->>>>  /**
->>>>   * struct clock_event_device - clock event device descriptor
->>>>   * @event_handler:	Assigned by the framework to be called by the low
->>>> diff --git a/kernel/time/tick-broadcast.c b/kernel/time/tick-broadcast.c
->>>> index 6197ac0..9ca8ff5 100644
->>>> --- a/kernel/time/tick-broadcast.c
->>>> +++ b/kernel/time/tick-broadcast.c
->>>> @@ -406,13 +406,37 @@ struct cpumask *tick_get_broadcast_oneshot_mask(void)
->>>>  	return to_cpumask(tick_broadcast_oneshot_mask);
->>>>  }
->>>>  
->>>> -static int tick_broadcast_set_event(struct clock_event_device *bc,
->>>> +/*
->>>> + * Set broadcast interrupt affinity
->>>> + */
->>>> +static void tick_broadcast_set_affinity(struct clock_event_device *bc,
->>>> +					const struct cpumask *cpumask)
->>>> +{
->>>> +	if (!(bc->features & CLOCK_EVT_FEAT_DYNIRQ))
->>>> +		return;
->>>> +
->>>> +	if (cpumask_equal(bc->cpumask, cpumask))
->>>> +		return;
->>>> +
->>>> +	bc->cpumask = cpumask;
->>>
->>> This breaks with CONFIG_CPUMASK_OFFSTACK=y. cpumask_copy() is your friend!
->>
->> This instruction copies the pointer, not the cpumask content.
->>
->> bc->cpumask is defined as a const struct cpumask * and is used to copy a
->> cpumask pointer not the content.
->>
->> The cpumask parameter is a pointer to a global cpumask provided by the
->> cpumask_of macro.
->>
->> But to be in the safe side, I compiled tested with
->> CONFIG_CPUMASK_OFFSTACK=y without problem.
->>
->> Did I missed something ?
+On Wed, 2013-03-06 at 12:58 +0100, Frederic Crozat wrote:
+> Le mercredi 06 mars 2013 à 11:19 +0000, Matt Fleming a écrit :
 > 
-> No, I misinterpreted the patch. Assigning a pointer is safe. 
+> > Also, which machine did you see this behaviour on?
+> 
+> HP z220 desktop, System BIOS K51 v 1.54
+> 
+> this issue is only the "Secure Boot" related variables, which make me
+> think HP incorrectly created them in their latest firmware (where they
+> added Windows 8 support).
 
-Ok, thanks anyway for reviewing the patch.
+Are you saying that the behaviour regarding VariableNameSize changes
+depending on which variable is returned?
 
-Do you think it is acceptable for upstreaming ?
+Mercy.....
 
-  -- Daniel
+Thanks for the info.
 
- <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
+-- 
+Matt Fleming, Intel Open Source Technology Center
 
