@@ -1,125 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758348Ab3CFOiu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 09:38:50 -0500
-Received: from mga01.intel.com ([192.55.52.88]:18715 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757274Ab3CFOit (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 09:38:49 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,795,1355126400"; 
-   d="scan'208";a="300113128"
-Date: Wed, 6 Mar 2013 22:37:42 +0800
-From: Feng Tang <feng.tang@intel.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: John Stultz <john.stultz@linaro.org>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>, x86@kernel.org,
-        Len Brown <lenb@kernel.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        linux-kernel@vger.kernel.org, gong.chen@linux.intel.com
-Subject: Re: [PATCH v3 4/5] clocksource: Enable clocksource_cyc2ns() to cover
- big cycles
-Message-ID: <20130306143742.GB25790@feng-snb>
-References: <1362554271-22382-1-git-send-email-feng.tang@intel.com>
- <1362554271-22382-5-git-send-email-feng.tang@intel.com>
- <alpine.LFD.2.02.1303061451340.22263@ionos>
+	id S1758421Ab3CFOjB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 09:39:01 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:44283 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758370Ab3CFOi6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Mar 2013 09:38:58 -0500
+Date: Wed, 6 Mar 2013 06:37:42 -0800
+From: tip-bot for Li Zefan <tipbot@zytor.com>
+Message-ID: <tip-b13095f07f25464de65f5ce5ea94e16813d67488@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        peterz@infradead.org, tglx@linutronix.de, lizefan@huawei.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        peterz@infradead.org, tglx@linutronix.de, lizefan@huawei.com
+In-Reply-To: <5135A78E.7040609@huawei.com>
+References: <5135A78E.7040609@huawei.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/core] sched: Move wake flags to kernel/sched/sched.h
+Git-Commit-ID: b13095f07f25464de65f5ce5ea94e16813d67488
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.02.1303061451340.22263@ionos>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 06 Mar 2013 06:37:47 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Thomas,
+Commit-ID:  b13095f07f25464de65f5ce5ea94e16813d67488
+Gitweb:     http://git.kernel.org/tip/b13095f07f25464de65f5ce5ea94e16813d67488
+Author:     Li Zefan <lizefan@huawei.com>
+AuthorDate: Tue, 5 Mar 2013 16:06:38 +0800
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Wed, 6 Mar 2013 11:24:32 +0100
 
-Thanks for the reviews.
+sched: Move wake flags to kernel/sched/sched.h
 
-On Wed, Mar 06, 2013 at 03:09:26PM +0100, Thomas Gleixner wrote:
-> On Wed, 6 Mar 2013, Feng Tang wrote:
-> 
-> > Current clocksource_cyc2ns() has a implicit limit that the (cycles * mult)
-> > can not exceed 64 bits limit. Jason Gunthorpe proposed a way to
-> > handle this big cycles case, and this patch put the handling into
-> > clocksource_cyc2ns() so that it could be used unconditionally.
-> 
-> Could be used if it wouldn't break the world and some more.
+They are used internally only.
 
-Exactly.
+Signed-off-by: Li Zefan <lizefan@huawei.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/5135A78E.7040609@huawei.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ include/linux/sched.h | 7 -------
+ kernel/sched/sched.h  | 7 +++++++
+ 2 files changed, 7 insertions(+), 7 deletions(-)
 
-One excuse I can think of is usually the clocksource_cyc2ns() will be called
-for cycles less than 600 seconds, based on which the "mult" and "shift" are
-calculated for a clocksource.
-
-> 
-> > Suggested-by: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-> > Signed-off-by: Feng Tang <feng.tang@intel.com>
-> > ---
-> >  include/linux/clocksource.h |   11 ++++++++++-
-> >  1 file changed, 10 insertions(+), 1 deletion(-)
-> > 
-> > diff --git a/include/linux/clocksource.h b/include/linux/clocksource.h
-> > index aa7032c..1ecc872 100644
-> > --- a/include/linux/clocksource.h
-> > +++ b/include/linux/clocksource.h
-> > @@ -274,7 +274,16 @@ static inline u32 clocksource_hz2mult(u32 hz, u32 shift_constant)
-> >   */
-> >  static inline s64 clocksource_cyc2ns(cycle_t cycles, u32 mult, u32 shift)
-> >  {
-> > -	return ((u64) cycles * mult) >> shift;
-> > +	u64 max = ULLONG_MAX / mult;
-> 
-> This breaks everything which does not have a 64/32bit divide
-> instruction. And you can't replace it with do_div() as that would
-> impose massive overhead on those architectures in the fast path.
-
-I thought about this once. And in my v2 patch, I used some code like
-
-+		/*
-+		 * The system suspended time and the delta cycles may be very
-+		 * long, so we can't call clocksource_cyc2ns() directly with
-+		 * clocksource's default mult and shift to avoid overflow.
-+		 */
-+		max_cycles = 1ULL << (63 - (ilog2(mult) + 1));
-+		while (cycle_delta > max_cycles) {
-+			max_cycles <<= 1;
-+			mult >>= 1;
-+			shift--;
-+		}
-+
-
-trying to avoid expensieve maths. But as Jason pointed, there is some accuracy
-lost. 
-
-> 
-> The max value can be precalculated and stored in the timekeeper
-> struct. We really do not want expensive calculations in the fast path.
-
-Yeah, just like the max_idle_ns.
-
-> > +	s64 nsec = 0;
-> > +
-> > +	/* The (mult * cycles) may overflow 64 bits, so add a max check */
-> > +	if (cycles > max) {
-> > +		nsec = ((max * mult) >> shift) * (cycles / max);
-> 
-> This breaks everything which does not have a 64/64bit divide instruction.
->  
-> > +		cycles %= max;
-> 
-> Ditto.
-> 
-> As this is the slow path on resume you can use the 64bit functions
-> declared in math64.h. And you want to put the slow path out of line.
-
-So should I leave the clocksource_cyl2ns() untouched and only add these
-do_div() 64 bit operation inside the timekeeping_resume() slow path?
-
-Thanks,
-Feng
-
-
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 0d64130..863b505 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -920,13 +920,6 @@ struct uts_namespace;
+ struct rq;
+ struct sched_domain;
  
-
+-/*
+- * wake flags
+- */
+-#define WF_SYNC		0x01		/* waker goes to sleep after wakup */
+-#define WF_FORK		0x02		/* child wakeup after fork */
+-#define WF_MIGRATED	0x04		/* internal use, task got migrated */
+-
+ #define ENQUEUE_WAKEUP		1
+ #define ENQUEUE_HEAD		2
+ #ifdef CONFIG_SMP
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index 1a4a2b1..4e5c2af 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -865,6 +865,13 @@ static inline void finish_lock_switch(struct rq *rq, struct task_struct *prev)
+ }
+ #endif /* __ARCH_WANT_UNLOCKED_CTXSW */
+ 
++/*
++ * wake flags
++ */
++#define WF_SYNC		0x01		/* waker goes to sleep after wakeup */
++#define WF_FORK		0x02		/* child wakeup after fork */
++#define WF_MIGRATED	0x4		/* internal use, task got migrated */
++
+ static inline void update_load_add(struct load_weight *lw, unsigned long inc)
+ {
+ 	lw->weight += inc;
