@@ -1,156 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753883Ab3CFHAx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 02:00:53 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:10457 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753308Ab3CFHAv convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 02:00:51 -0500
-X-IronPort-AV: E=Sophos;i="4.84,793,1355068800"; 
-   d="scan'208";a="6822382"
-Message-ID: <5136E8EE.6080301@cn.fujitsu.com>
-Date: Wed, 06 Mar 2013 14:57:50 +0800
-From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.8) Gecko/20121012 Thunderbird/10.0.8
+	id S1753944Ab3CFHBF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 02:01:05 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:42282 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753171Ab3CFHBB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Mar 2013 02:01:01 -0500
+Date: Wed, 6 Mar 2013 08:00:57 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Zhang Rui <rui.zhang@intel.com>
+Cc: Andreas Mohr <andi@lisas.de>, Peter Feuerer <peter@piie.net>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Durgadoss R <durgadoss.r@intel.com>,
+        Alexander Lam <azl@andrew.cmu.edu>
+Subject: Re: [PATCH] acerhdf: Fix fan activation with new thermal governor
+Message-ID: <20130306070057.GA30673@pd.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Zhang Rui <rui.zhang@intel.com>, Andreas Mohr <andi@lisas.de>,
+	Peter Feuerer <peter@piie.net>, LKML <linux-kernel@vger.kernel.org>,
+	Durgadoss R <durgadoss.r@intel.com>,
+	Alexander Lam <azl@andrew.cmu.edu>
+References: <1361647210-12983-1-git-send-email-bp@alien8.de>
+ <20130224112851.GA19609@pd.tnic>
+ <cone.1361706175.908398.1806.1000@galar>
+ <20130224143452.GE19609@pd.tnic>
+ <1361762514.2303.21.camel@rzhang1-mobl4>
+ <20130225102526.GB12067@pd.tnic>
+ <20130225121608.GC12067@pd.tnic>
+ <20130304133410.GC22274@pd.tnic>
+ <20130305215946.GA16796@rhlx01.hs-esslingen.de>
+ <1362541640.2441.3.camel@rzhang1-mobl4>
 MIME-Version: 1.0
-To: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-CC: vgoyal@redhat.com, ebiederm@xmission.com, cpw@sgi.com,
-        kumagai-atsushi@mxc.nes.nec.co.jp, lisa.mitchell@hp.com,
-        heiko.carstens@de.ibm.com, akpm@linux-foundation.org,
-        kexec@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 04/20] vmcore: allocate buffer for ELF headers on page-size
- alignment
-References: <20130302083447.31252.93914.stgit@localhost6.localdomain6> <20130302083610.31252.18601.stgit@localhost6.localdomain6>
-In-Reply-To: <20130302083610.31252.18601.stgit@localhost6.localdomain6>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/03/06 14:58:11,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/03/06 14:58:20
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1362541640.2441.3.camel@rzhang1-mobl4>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2013年03月02日 16:36, HATAYAMA Daisuke 写道:
-> Allocate buffer for ELF headers on page-size aligned boudary to
-> satisfy mmap() requirement. For this, __get_free_pages() is used
-> instead of kmalloc().
+On Wed, Mar 06, 2013 at 11:47:20AM +0800, Zhang Rui wrote:
+> > So this now does not have any of the Schmitt trigger equivalent (?)
+> > governor changes that were nicely discussed in this activity -
+> > So what do we want to have committed, and what do we not,
 > 
-> Also, later patch will decrease actually used buffer size for ELF
-> headers, so it's necessary to keep original buffer size and actually
-> used buffer size separately. elfcorebuf_sz_orig keeps the original one
-> and elfcorebuf_sz the actually used one.
+> the problem should have been fixed in 3.9-rc1 by
+> commit b8bb6cb999858043489c1ddef08eed2127559169
+> Author: Zhang Rui <rui.zhang@intel.com>
+> Date:   Thu Nov 22 15:45:02 2012 +0800
 > 
-> Signed-off-by: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-> ---
+>     step_wise: Unify the code for both throttle and dethrottle
 > 
->  fs/proc/vmcore.c |   30 +++++++++++++++++++++---------
->  1 files changed, 21 insertions(+), 9 deletions(-)
+>     Signed-off-by: Zhang Rui <rui.zhang@intel.com>
 > 
-> diff --git a/fs/proc/vmcore.c b/fs/proc/vmcore.c
-> index b5c9e33..1b02d01 100644
-> --- a/fs/proc/vmcore.c
-> +++ b/fs/proc/vmcore.c
-> @@ -31,6 +31,7 @@ static LIST_HEAD(vmcore_list);
->  /* Stores the pointer to the buffer containing kernel elf core headers. */
->  static char *elfcorebuf;
->  static size_t elfcorebuf_sz;
-> +static size_t elfcorebuf_sz_orig;
->  
->  /* Total size of vmcore file. */
->  static u64 vmcore_size;
-> @@ -610,26 +611,31 @@ static int __init parse_crash_elf64_headers(void)
->  
->  	/* Read in all elf headers. */
->  	elfcorebuf_sz = ehdr.e_phoff + ehdr.e_phnum * sizeof(Elf64_Phdr);
-> -	elfcorebuf = kmalloc(elfcorebuf_sz, GFP_KERNEL);
-> +	elfcorebuf_sz_orig = elfcorebuf_sz;
-> +	elfcorebuf = (void *) __get_free_pages(GFP_KERNEL | __GFP_ZERO,
-> +					       get_order(elfcorebuf_sz_orig));
->  	if (!elfcorebuf)
->  		return -ENOMEM;
->  	addr = elfcorehdr_addr;
->  	rc = read_from_oldmem(elfcorebuf, elfcorebuf_sz, &addr, 0);
->  	if (rc < 0) {
-> -		kfree(elfcorebuf);
-> +		free_pages((unsigned long)elfcorebuf,
-> +			   get_order(elfcorebuf_sz_orig));
->  		return rc;
->  	}
->  
->  	/* Merge all PT_NOTE headers into one. */
->  	rc = merge_note_headers_elf64(elfcorebuf, &elfcorebuf_sz, &vmcore_list);
->  	if (rc) {
-> -		kfree(elfcorebuf);
-> +		free_pages((unsigned long)elfcorebuf,
-> +			   get_order(elfcorebuf_sz_orig));
->  		return rc;
->  	}
->  	rc = process_ptload_program_headers_elf64(elfcorebuf, elfcorebuf_sz,
->  							&vmcore_list);
->  	if (rc) {
-> -		kfree(elfcorebuf);
-> +		free_pages((unsigned long)elfcorebuf,
-> +			   get_order(elfcorebuf_sz_orig));
->  		return rc;
->  	}
->  	set_vmcore_list_offsets_elf64(elfcorebuf, &vmcore_list);
-> @@ -665,26 +671,31 @@ static int __init parse_crash_elf32_headers(void)
->  
->  	/* Read in all elf headers. */
->  	elfcorebuf_sz = ehdr.e_phoff + ehdr.e_phnum * sizeof(Elf32_Phdr);
-> -	elfcorebuf = kmalloc(elfcorebuf_sz, GFP_KERNEL);
-> +	elfcorebuf_sz_orig = elfcorebuf_sz;
-> +	elfcorebuf = (void *) __get_free_pages(GFP_KERNEL | __GFP_ZERO,
-> +					       get_order(elfcorebuf_sz));
+> I'll send Alexander' patch for 3.8 stable.
 
-Why not elfcorebuf_sz_orig here?
+Hold on, do I understand it correctly that this is yet another patch
+that "fixes" it? If so, maybe we should test 3.9-rc1 which contains the
+said patch above? Yes, no?
 
->  	if (!elfcorebuf)
->  		return -ENOMEM;
->  	addr = elfcorehdr_addr;
->  	rc = read_from_oldmem(elfcorebuf, elfcorebuf_sz, &addr, 0);
->  	if (rc < 0) {
-> -		kfree(elfcorebuf);
-> +		free_pages((unsigned long)elfcorebuf,
-> +			   get_order(elfcorebuf_sz_orig));
->  		return rc;
->  	}
->  
->  	/* Merge all PT_NOTE headers into one. */
->  	rc = merge_note_headers_elf32(elfcorebuf, &elfcorebuf_sz, &vmcore_list);
->  	if (rc) {
-> -		kfree(elfcorebuf);
-> +		free_pages((unsigned long)elfcorebuf,
-> +			   get_order(elfcorebuf_sz_orig));
->  		return rc;
->  	}
->  	rc = process_ptload_program_headers_elf32(elfcorebuf, elfcorebuf_sz,
->  								&vmcore_list);
->  	if (rc) {
-> -		kfree(elfcorebuf);
-> +		free_pages((unsigned long)elfcorebuf,
-> +			   get_order(elfcorebuf_sz_orig));
->  		return rc;
->  	}
->  	set_vmcore_list_offsets_elf32(elfcorebuf, &vmcore_list);
-> @@ -766,7 +777,8 @@ void vmcore_cleanup(void)
->  		list_del(&m->list);
->  		kfree(m);
->  	}
-> -	kfree(elfcorebuf);
-> +	free_pages((unsigned long)elfcorebuf,
-> +		   get_order(elfcorebuf_sz_orig));
->  	elfcorebuf = NULL;
->  }
->  EXPORT_SYMBOL_GPL(vmcore_cleanup);
-> 
-> 
-> _______________________________________________
-> kexec mailing list
-> kexec@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/kexec
-> 
+Also, I don't see Alexander's patch applied anywhere so if it isn't
+upstream, you can't send it to stable.
 
+Please clarify,
+
+Thanks.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
