@@ -1,100 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753442Ab3CFRcO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 12:32:14 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:43611 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751449Ab3CFRcN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 12:32:13 -0500
-Date: Wed, 6 Mar 2013 12:32:07 -0500
-From: Peter Jones <pjones@redhat.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Robin Holt <holt@sgi.com>, hpa@sgi.com, Yinghai Lu <yinghai@kernel.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: Revert commit 5dcd14ecd4 - breaks EFI boot with SLES11 elilo.efi
-Message-ID: <20130306173207.GB25932@fenchurch.internal.datastacks.com>
-References: <20130228205206.GC3438@sgi.com>
- <512FC697.3090608@zytor.com>
- <20130228210910.GD3438@sgi.com>
- <512FC82B.40909@zytor.com>
- <20130306165533.GA25932@fenchurch.internal.datastacks.com>
- <51377973.3070005@zytor.com>
+	id S1753377Ab3CFRgf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 12:36:35 -0500
+Received: from mail-oa0-f50.google.com ([209.85.219.50]:59633 "EHLO
+	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752213Ab3CFRge (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Mar 2013 12:36:34 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <51377973.3070005@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <51377C3A.3030301@zytor.com>
+References: <20130228205206.GC3438@sgi.com>
+	<512FC697.3090608@zytor.com>
+	<20130228210910.GD3438@sgi.com>
+	<512FC82B.40909@zytor.com>
+	<CAE9FiQU3FBwEiC86N1RC8=aMdN09EbUmRcsWP0yof7bmxBhPew@mail.gmail.com>
+	<512FE3AE.4070903@zytor.com>
+	<20130305081519.GA19165@sgi.com>
+	<9bcd6241-37fd-4ae9-a997-2a5da1eaf997@email.android.com>
+	<CAE9FiQV2Wk+yiqR8FnNM_L-p1iQFxDwopRzFWTwm6VCkyrbuoQ@mail.gmail.com>
+	<CA+5PVA4VRa7z10APcEaoebX3vwtbLzDLq1PAHmfaHBDqtZv=jw@mail.gmail.com>
+	<51377C3A.3030301@zytor.com>
+Date: Wed, 6 Mar 2013 12:36:34 -0500
+Message-ID: <CA+5PVA51-FT14p4CRYKbicykugVb=PiaEycdQ57CK2km_OQuRQ@mail.gmail.com>
+Subject: Re: Revert commit 5dcd14ecd4 - breaks EFI boot with SLES11 elilo.efi
+From: Josh Boyer <jwboyer@gmail.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Yinghai Lu <yinghai@kernel.org>, Robin Holt <holt@sgi.com>, hpa@sgi.com,
+        linux-kernel@vger.kernel.org, pjones@redhat.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 06, 2013 at 09:14:27AM -0800, H. Peter Anvin wrote:
-> On 03/06/2013 08:55 AM, Peter Jones wrote:
-> > 
-> > So, the problem here seems to be that there's never been widespread
-> > compliance with this paragraph, but this patch assumes there has.  A
-> > brief survey concludes:
-> 
-> No, this patch doesn't assume there is widespread compliance, it is
-> trying to address the bits that are not complied with.
+On Wed, Mar 6, 2013 at 12:26 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 03/06/2013 08:53 AM, Josh Boyer wrote:
+>>
+>> I don't think this is limited to elilo.  I have a UEFI machine booting
+>> with grub2 that also fails to boot because of this patch.  I was in the
+>> middle of bisecting when I found this thread and if I revert 5dcd14ecd4
+>> the machine boots again.  Put that commit back in and it doesn't.  We've
+>> had three other reports in Fedora of similar cases.
+>>
+>> I discussed this with Peter Jones this morning.  He was looking into what
+>> grub2 does for boot_params and it seems to be read-modify-write instead
+>> of clearing the whole thing.  (CC'd Peter now.)
+>>
+>> The patch for elilo probably works, but if grub2 is hitting this then I'm
+>> curious if most bootloaders will.  I'll finish my bisect just to be extra
+>> sure, but something probably needs to be done in a more generic fashion
+>> here.
+>>
+>
+> Come to think about it...
+>
+> The EFI field actually has a magic, unless just about all the rest of
+> them, so clearing it is probabilistically redundant; in other words we
+> almost certainly should exclude it from the clearing, unconditionally.
+>
+> Does the "elilo" patch made unconditional work for you?
 
-Right, but that's basically every x86_64 UEFI machine ever deployed.
+Something like this?
 
-[lots trimmed]
-> > So it's certainly worth trying to find a better way to check this, but I
-> > don't think this patch is it.  If we're going to enforce it, we have to
-> > make sure that a bootloader that's conforming to what was de facto the
-> > standard in 0x020b still works.  Otherwise we're just breaking
-> > bootloaders for no reason, and that will end poorly.
-> > 
-> > I'd suggest we add a field for the bootloader to make a positive
-> > declaration of what version it is using, and only check for the sentinel
-> > if the field claims it's doing 0x020c or newer.
-> 
-> Except it doesn't quite work.  The problem is that these broken
-> bootloaders aren't just a matter of 2.11 vs 2.12, they are implicitly
-> assuming that the kernel image itself doesn't happen to contain anything
-> harmful in the fields that they don't bother initializing.  This would
-> be nice and good, except that the demands for the boot sector space is
-> fairly high and it gets very cantankerous to turn that into a minefield.
+Index: linux-2.6/arch/x86/include/asm/bootparam_utils.h
+===================================================================
+--- linux-2.6.orig/arch/x86/include/asm/bootparam_utils.h
++++ linux-2.6/arch/x86/include/asm/bootparam_utils.h
+@@ -20,8 +20,11 @@ static void sanitize_boot_params(struct
+ 	if (boot_params->sentinel) {
+ 		/*fields in boot_params are not valid, clear them */
+ 		memset(&boot_params->olpc_ofw_header, 0,
+-		       (char *)&boot_params->alt_mem_k -
++		       (char *)&boot_params->efi_info -
+ 			(char *)&boot_params->olpc_ofw_header);
+ 		memset(&boot_params->kbd_status, 0,
+ 		       (char *)&boot_params->hdr -
+ 		       (char *)&boot_params->kbd_status);
 
-If your only objection is real estate, we can find a way to be clever
-about what we do that uses already existing space.  For instance, write
-back the version number that's supported in the version field, but
-byte-swapped, so we can tell it changed (we don't anticipate ever
-supporting protocol 0x20b from a kernel that advertises 0xb02, right?)
+I can try that in a bit.
 
-Just one example - we don't have to do this the exact way I said; we
-just need a positive assertion from the bootloader to start doing
-enforcement.  Versions would be nice, but they're not strictly required.
-
-> In fact, your suggestion is exactly equivalent to the sentinel, except
-> you want it to be pre-initialized with 0x20b instead of 0xffff.
-
-No, I want the bootloader to communicate that it understands the boot
-protocol revision is 0x020c, so we can /safely/ enter a world where
-we're forbidding booting from an older bootloader.
-
-> As such, I don't really know anything better we can do other than:
-> 
-> 1. detect the *properly working* case of the structure properly
->    initialized
-
-Which is easy, but it doesn't seem to be anything anybody has ever
-shipped on UEFI machines.
-
-> 2. doing legacy bootloader-specific clearing based on the bootloader ID
->    if the sentinel triggers -- if you can think of better heuristics
->    then that would be good;
-
-This heuristic is "all UEFI bootloaders anybody uses".  You can list
-them individually, but it's the same as reverting the patch, just with
-more code.
-
-> 3. try to get bootloaders switched from case #2 to case #1.
-
-And I'm for that, but I think we should delay enforcement until they've
-got a way to express that.
-
--- 
-        Peter
+josh
