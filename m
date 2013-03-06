@@ -1,49 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752851Ab3CFB5f (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 20:57:35 -0500
-Received: from mail-lb0-f169.google.com ([209.85.217.169]:58827 "EHLO
-	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751759Ab3CFB53 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 20:57:29 -0500
+	id S1750767Ab3CFB6c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 20:58:32 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:20857 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752616Ab3CFB6a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Mar 2013 20:58:30 -0500
+Date: Tue, 5 Mar 2013 22:35:17 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Michael Wolf <mjw@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, riel@redhat.com, gleb@redhat.com,
+        kvm@vger.kernel.org, peterz@infradead.org, glommer@parallels.com,
+        mingo@redhat.com, anthony@codemonkey.ws
+Subject: Re: [PATCH 4/4] Add a timer to allow the separation of consigned
+ from steal time.
+Message-ID: <20130306013517.GA11481@amt.cnet>
+References: <20130205214818.4615.12937.stgit@lambeau>
+ <20130205214941.4615.29852.stgit@lambeau>
+ <20130218235718.GB6166@amt.cnet>
+ <1362514677.6267.12.camel@lambeau>
 MIME-Version: 1.0
-In-Reply-To: <20130304101142.GJ17833@n2100.arm.linux.org.uk>
-References: <1362386358-3556-1-git-send-email-acooks@gmail.com>
-	<20130304101142.GJ17833@n2100.arm.linux.org.uk>
-Date: Wed, 6 Mar 2013 09:57:27 +0800
-Message-ID: <CAJtEV7bGjdJdCsKZ05+FbzoNDeMd2YUh=B=qc=ev_Z2ESg7vPQ@mail.gmail.com>
-Subject: Re: [PATCH] check for allocation failure in ioat_dma_self_test
-From: Andrew Cooks <acooks@gmail.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Dan Williams <djbw@fb.com>, Vinod Koul <vinod.koul@intel.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Jassi Brar <jassisinghbrar@gmail.com>,
-        open list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1362514677.6267.12.camel@lambeau>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 4, 2013 at 6:11 PM, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
-> On Mon, Mar 04, 2013 at 04:39:16PM +0800, Andrew Cooks wrote:
->> diff --git a/drivers/dma/ioat/dma.c b/drivers/dma/ioat/dma.c
->> index 1879a59..1f706c4 100644
->> --- a/drivers/dma/ioat/dma.c
->> +++ b/drivers/dma/ioat/dma.c
->> @@ -832,7 +832,18 @@ int ioat_dma_self_test(struct ioatdma_device *device)
->>       }
->>
->>       dma_src = dma_map_single(dev, src, IOAT_TEST_SIZE, DMA_TO_DEVICE);
->> +     err = dma_mapping_error(dev, dma_src);
->> +     if (err) {
->> +             dev_err(dev, "dma mapping failed: -%d\n", err);
->> +             goto free_resources;
->> +     }
->
-> NAK.  Please take the time to check what the functions you're using return
-> rather than assuming what they return.
+On Tue, Mar 05, 2013 at 02:17:57PM -0600, Michael Wolf wrote:
+> Sorry for the delay in the response.  I did not see your question.
+> 
+> On Mon, 2013-02-18 at 20:57 -0300, Marcelo Tosatti wrote:
+> > On Tue, Feb 05, 2013 at 03:49:41PM -0600, Michael Wolf wrote:
+> > > Add a helper routine to scheduler/core.c to allow the kvm module
+> > > to retrieve the cpu hardlimit settings.  The values will be used
+> > > to set up a timer that is used to separate the consigned from the
+> > > steal time.
+> > 
+> > 1) Can you please describe, in english, the mechanics of subtracting cpu
+> > hardlimit values from steal time reported via run_delay supposed to
+> > work?
+> > 
+> > "The period and the quota used to separate the consigned time 
+> > (expected steal) from the steal time are taken
+> > from the cfs bandwidth control settings. Any other steal time
+> > accruing during that period will show as the traditional steal time."
+> > 
+> > There is no "expected steal time" over a fixed period of real time.
+> There is expected steal time in the sense that the administrator of the
+> system sets up guests on the host so that there will be cpu
+> overcommitment. 
 
-I see. The same mistake occurs in a few other drivers. I'll rework and
-resend this and if all goes well I'll clean up the others.
+I refer to 
+
++	/* split the delta into steal and consigned */
++	if (vcpu->arch.current_consigned < vcpu->arch.consigned_quota) {
++               vcpu->arch.current_consigned += delta;
++               if (vcpu->arch.current_consigned > vcpu->arch.consigned_quota) {
++                       steal_delta = vcpu->arch.current_consigned
++                                               - vcpu->arch.consigned_quota;
++                       consigned_delta = delta - steal_delta;
++               } else {
+
+You can't expect there to be any amount of stolen time over a fixed
+period of time.
+
+>  The end user who is using the guest does not know this,
+> they only know they have been guaranteed a certain level of performance.
+> So if steal time shows up the end user typically thinks they are not
+> getting their guaranteed performance. So this patchset is meant to allow
+> top to show 100% utilization and ONLY show steal time if it is over the
+> level of steal time that the host administrator setup.  So take a simple
+> example of a host with 1 cpu and two guest on it.  If each guest is
+> fully utilized a user will see 50% utilization and 50% steal in either
+> of the guests.  In this case the amount of steal time that the host 
+> administrator would expect to see is 50%.  As long as the steal in the
+> guest does not exceed 50% the guest is running as expected.  If for some
+> reason the steal increases to 60%, now something is wrong and the steal
+> time needs to be reported and the end user will make inquiries?
+
+This is the purpose of stolen time: to report the amount of time guest 
+vcpu was runnable, but not running (IOW: starved).
+
+> > 2) From the description of patch 1: "In the case of where you have
+> > a system that is running in a capped or overcommitted environment 
+> > the user may see steal time being reported in accounting tools 
+> > such as top or vmstat." 
+> > 
+> > This is outdated, right? Because overcommitted environment is exactly
+> > what steal time should report.
+> 
+> I hope I'm not missing your point here.  But again this comes down to
+> the point of view.  The end user is guaranteed a capability/level of
+> performance that may not be a whole cpu.  So only show steal time if the
+> amount of steal time exceeds what the host admin expected when the guest
+> was set up.
+
+The real values must be reported. If the host system becomes suddenly
+loaded beyond what the host can provide to the guest, should the system
+report an incorrect value, to avoid users from complaining? Sounds
+incorrect.
+
