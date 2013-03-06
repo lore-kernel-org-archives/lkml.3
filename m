@@ -1,51 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758608Ab3CFQIj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 11:08:39 -0500
-Received: from mail-vb0-f50.google.com ([209.85.212.50]:46353 "EHLO
-	mail-vb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752256Ab3CFQIf (ORCPT
+	id S1752993Ab3CFQLM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 11:11:12 -0500
+Received: from www.linutronix.de ([62.245.132.108]:44045 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752256Ab3CFQLI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 11:08:35 -0500
+	Wed, 6 Mar 2013 11:11:08 -0500
+Date: Wed, 6 Mar 2013 17:10:53 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Feng Tang <feng.tang@intel.com>
+cc: John Stultz <john.stultz@linaro.org>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>, x86@kernel.org,
+        Len Brown <lenb@kernel.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        linux-kernel@vger.kernel.org, gong.chen@linux.intel.com
+Subject: Re: [PATCH v3 4/5] clocksource: Enable clocksource_cyc2ns() to cover
+ big cycles
+In-Reply-To: <20130306143742.GB25790@feng-snb>
+Message-ID: <alpine.LFD.2.02.1303061701130.22263@ionos>
+References: <1362554271-22382-1-git-send-email-feng.tang@intel.com> <1362554271-22382-5-git-send-email-feng.tang@intel.com> <alpine.LFD.2.02.1303061451340.22263@ionos> <20130306143742.GB25790@feng-snb>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <20130306080642.GA535@polaris.bitmath.org>
-References: <CA+55aFx0HcOXKpxmZzM5jcbAaOroxafomX5ggMFV4A=py1qh-Q@mail.gmail.com>
-	<20130306080642.GA535@polaris.bitmath.org>
-Date: Wed, 6 Mar 2013 08:08:34 -0800
-X-Google-Sender-Auth: MTMR_cD3L2WdOvST4UV52yvynNI
-Message-ID: <CA+55aFxkDRoNEEw+8RwrSCsRUCUcRbEE57hzFQ8dPUXT2CWMog@mail.gmail.com>
-Subject: Re: Linux 3.9-rc1
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Yinghai Lu <yinghai@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 6, 2013 at 12:06 AM, Henrik Rydberg <rydberg@euromail.se> wrote:
->
-> Or not. ;-) This commit breaks boot on my MacBookAir3,1:
->
-> commit 8d57470d8f859635deffe3919d7d4867b488b85a
-> Author: Yinghai Lu <yinghai@kernel.org>
-> Date:   Fri Nov 16 19:38:58 2012 -0800
->
->     x86, mm: setup page table in top-down
+On Wed, 6 Mar 2013, Feng Tang wrote:
+> Hi Thomas,
+> 
+> Thanks for the reviews.
+> 
+> On Wed, Mar 06, 2013 at 03:09:26PM +0100, Thomas Gleixner wrote:
+> > On Wed, 6 Mar 2013, Feng Tang wrote:
+> > 
+> > > Current clocksource_cyc2ns() has a implicit limit that the (cycles * mult)
+> > > can not exceed 64 bits limit. Jason Gunthorpe proposed a way to
+> > > handle this big cycles case, and this patch put the handling into
+> > > clocksource_cyc2ns() so that it could be used unconditionally.
+> > 
+> > Could be used if it wouldn't break the world and some more.
+> 
+> Exactly.
+> 
+> One excuse I can think of is usually the clocksource_cyc2ns() will be called
+> for cycles less than 600 seconds, based on which the "mult" and "shift" are
+> calculated for a clocksource.
 
-Argh. The whole page table setup crud is scarily fragile.
+That's not an excuse for making even the build fail on ARM and other
+32bit archs.
+ 
+> > >  static inline s64 clocksource_cyc2ns(cycle_t cycles, u32 mult, u32 shift)
+> > >  {
+> > > -	return ((u64) cycles * mult) >> shift;
+> > > +	u64 max = ULLONG_MAX / mult;
+> > 
+> > This breaks everything which does not have a 64/32bit divide
+> > instruction. And you can't replace it with do_div() as that would
+> > impose massive overhead on those architectures in the fast path.
+> 
+> I thought about this once. And in my v2 patch, I used some code like
+> 
+> +		/*
+> +		 * The system suspended time and the delta cycles may be very
+> +		 * long, so we can't call clocksource_cyc2ns() directly with
+> +		 * clocksource's default mult and shift to avoid overflow.
+> +		 */
+> +		max_cycles = 1ULL << (63 - (ilog2(mult) + 1));
+> +		while (cycle_delta > max_cycles) {
+> +			max_cycles <<= 1;
+> +			mult >>= 1;
+> +			shift--;
+> +		}
+> +
+> 
+> trying to avoid expensieve maths. But as Jason pointed, there is some accuracy
+> lost. 
 
-> Being a 64-bit apple-EFI machine, it probably runs through an obscure
-> path in this patch. I wish I had more vital information, but I get the
-> white screen of death, so not much to go on so far.
+Right, but if you precalculate the max_fast_cycles value you can avoid
+at least the division in the fast path and then do
 
-I actually test on my MBA (also EFI boot), but it's a slightly newer
-4,1 version, and the memory map looks very different (I've got 251
-memory regions reported by efi, ugh).
+   if (cycles > max_fast_cycles)
+      return clocksource_cyc2ns_slow();
+   return ((u64) cycles * mult) >> shift;	      
 
-So Apple EFI does work at least in some cases, just not yours. Let's
-hope Yinghai can figure this one out..
+clocksource_cyc2ns_slow() should be out of line and there you can do
+all the slow 64 bit operations. That keeps the fast path sane and we
+don't need extra magic for the large cycle values.
 
-                 Linus
+Thanks,
+
+	tglx
+
