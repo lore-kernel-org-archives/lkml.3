@@ -1,102 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757617Ab3CFNm5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 08:42:57 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:55865 "EHLO comal.ext.ti.com"
+	id S1758078Ab3CFNnO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 08:43:14 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:12174 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756607Ab3CFNmz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 08:42:55 -0500
-Message-ID: <513747C5.6080507@ti.com>
-Date: Wed, 6 Mar 2013 19:12:29 +0530
-From: Balaji T K <balajitk@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
-MIME-Version: 1.0
-To: Matt Porter <mporter@ti.com>, Chris Ball <cjb@laptop.org>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Jon Hunter <jon-hunter@ti.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>
-CC: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Vinod Koul <vinod.koul@intel.com>, Tony Lindgren <tony@atomide.com>,
-        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, Dan Williams <djbw@fb.com>
-Subject: Re: [PATCH v2 2/3] mmc: omap_hsmmc: Skip platform_get_resource_byname()
- for dt case
-References: <1362518004-7083-1-git-send-email-mporter@ti.com> <1362518004-7083-3-git-send-email-mporter@ti.com>
-In-Reply-To: <1362518004-7083-3-git-send-email-mporter@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+	id S1757860Ab3CFNnL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Mar 2013 08:43:11 -0500
+Date: Wed, 6 Mar 2013 08:40:04 -0500
+From: Jeff Layton <jlayton@redhat.com>
+To: Steve French <smfrench@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-cifs@vger.kernel.org
+Subject: Re: [PATCH] cifs: remove the sockopt= mount option
+Message-ID: <20130306084004.05acd57c@tlielax.poochiereds.net>
+In-Reply-To: <CAH2r5muojf9w9QxkPK5vCQs5Av_wxm+twJ044+Mf8Q_9D=b63Q@mail.gmail.com>
+References: <1361446379-7970-1-git-send-email-jlayton@redhat.com>
+	<CAH2r5muojf9w9QxkPK5vCQs5Av_wxm+twJ044+Mf8Q_9D=b63Q@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 06 March 2013 02:43 AM, Matt Porter wrote:
-> From: Santosh Shilimkar <santosh.shilimkar@ti.com>
->
-> MMC driver probe will abort for DT case because of failed
-> platform_get_resource_byname() lookup. Fix it by skipping resource
-> byname lookup for device tree build.
->
-> Issue is hidden because hwmod popullates the IO resources which
-> helps to succeed platform_get_resource_byname() and probe.
->
+On Mon, 4 Mar 2013 16:08:30 -0600
+Steve French <smfrench@gmail.com> wrote:
 
-Hi Matt,
-Could you please drop this patch from the current series,
-since this patch causes regression on omap3,4 platform
-which are not yet dma dt adapted.
-It is best to send this patch along with Jon Hunter dma dt series,
-which adds dt dma support and mmc dma data. DMA dt series is needed
-any way before hwmod cleanup can happen.
+> Resending patch to a slightly broader list for last minute check if
+> anyone objects.  Although setting this particular socket option
+> (TCP_NODELAY) may not be as useful when corking/uncorking explicitly,
+> I want to doublecheck before removing them because there has been some
+> utility to the server allowing override of various sockopt options.
+> Samba server has long supported at least the following set of settable
+> socket options (although I don't know if the defaults are frequently
+> overridden now, by setting sockopts in smb.conf as used to be common
+> for the server).
+> 
+> SO_KEEPALIVE
+> SO_REUSEADDR
+> SO_BROADCAST
+> TCP_NODELAY
+> IPTOS_LOWDELAY
+> IPTOS_THROUGHPUT
+> SO_SNDBUF *
+> SO_RCVBUF *
+> SO_SNDLOWAT *
+> SO_RCVLOWAT *
+> 
+> * takes an integer argument rather than a boolean on/off
+> 
+> Any objections to removing the ability to set socket options
+> explicitly for the cifs network file system client?
+> 
 
+A couple of points...
 
-> Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-> ---
->   drivers/mmc/host/omap_hsmmc.c |   28 +++++++++++++++-------------
->   1 file changed, 15 insertions(+), 13 deletions(-)
->
-> diff --git a/drivers/mmc/host/omap_hsmmc.c b/drivers/mmc/host/omap_hsmmc.c
-> index e79b12d..8ae1225 100644
-> --- a/drivers/mmc/host/omap_hsmmc.c
-> +++ b/drivers/mmc/host/omap_hsmmc.c
-> @@ -1896,21 +1896,23 @@ static int omap_hsmmc_probe(struct platform_device *pdev)
->
->   	omap_hsmmc_conf_bus_power(host);
->
-> -	res = platform_get_resource_byname(pdev, IORESOURCE_DMA, "tx");
-> -	if (!res) {
-> -		dev_err(mmc_dev(host->mmc), "cannot get DMA TX channel\n");
-> -		ret = -ENXIO;
-> -		goto err_irq;
-> -	}
-> -	tx_req = res->start;
-> +	if (!pdev->dev.of_node) {
-> +		res = platform_get_resource_byname(pdev, IORESOURCE_DMA, "tx");
-> +		if (!res) {
-> +			dev_err(mmc_dev(host->mmc), "cannot get DMA TX channel\n");
-> +			ret = -ENXIO;
-> +			goto err_irq;
-> +		}
-> +		tx_req = res->start;
->
-> -	res = platform_get_resource_byname(pdev, IORESOURCE_DMA, "rx");
-> -	if (!res) {
-> -		dev_err(mmc_dev(host->mmc), "cannot get DMA RX channel\n");
-> -		ret = -ENXIO;
-> -		goto err_irq;
-> +		res = platform_get_resource_byname(pdev, IORESOURCE_DMA, "rx");
-> +		if (!res) {
-> +			dev_err(mmc_dev(host->mmc), "cannot get DMA RX channel\n");
-> +			ret = -ENXIO;
-> +			goto err_irq;
-> +		}
-> +		rx_req = res->start;
->   	}
-> -	rx_req = res->start;
->
->   	dma_cap_zero(mask);
->   	dma_cap_set(DMA_SLAVE, mask);
->
+The sockopt= option was never documented in the mount.cifs manpage and
+the only value it ever accepted was TCP_NODELAY. Now that we're
+explicitly corking the socket, TCP_NODELAY has no effect. I don't think
+there's any value in leaving in a "placeholder" socket= option.
 
+-- 
+Jeff Layton <jlayton@redhat.com>
