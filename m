@@ -1,60 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754670Ab3CFTxt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 14:53:49 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:48070 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752852Ab3CFTxr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 14:53:47 -0500
-Date: Wed, 6 Mar 2013 20:53:42 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Marcin Slusarz <marcin.slusarz@gmail.com>,
-        Stephen Warren <swarren@nvidia.com>, Joe Perches <joe@perches.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Lucas Stach <dev@lynxeye.de>, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, nouveau@lists.freedesktop.org,
-        Maarten Lankhorst <maarten.lankhorst@canonical.com>
-Subject: Re: nouveau lockdep splat
-Message-ID: <20130306195342.GF30673@pd.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Stephen Warren <swarren@wwwdotorg.org>,
-	Marcin Slusarz <marcin.slusarz@gmail.com>,
-	Stephen Warren <swarren@nvidia.com>, Joe Perches <joe@perches.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Lucas Stach <dev@lynxeye.de>, dri-devel@lists.freedesktop.org,
-	linux-kernel@vger.kernel.org, nouveau@lists.freedesktop.org,
-	Maarten Lankhorst <maarten.lankhorst@canonical.com>
-References: <20130304211608.GD22274@pd.tnic>
- <1362501052.1933.2.camel@antimon>
- <20130306000429.GA30189@pd.tnic>
- <20130306191418.GA3400@joi.lan>
- <513799A5.3010609@wwwdotorg.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <513799A5.3010609@wwwdotorg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754688Ab3CFTzl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 14:55:41 -0500
+Received: from mail-ia0-f175.google.com ([209.85.210.175]:42800 "EHLO
+	mail-ia0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754551Ab3CFTzj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Mar 2013 14:55:39 -0500
+From: Matt Porter <mporter@ti.com>
+To: Vinod Koul <vinod.koul@intel.com>, Chris Ball <cjb@laptop.org>
+Cc: Dan Williams <djbw@fb.com>, Sekhar Nori <nsekhar@ti.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>
+Subject: [PATCH v4 0/3] dmaengine: add slave sg transfer limits api
+Date: Wed,  6 Mar 2013 14:56:04 -0500
+Message-Id: <1362599767-11292-1-git-send-email-mporter@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 06, 2013 at 12:31:49PM -0700, Stephen Warren wrote:
-> get_maintainer.pl could always look at file contents IIRC. The change
-> was that I added keyword "tegra" to the Tegra section that now matches
-> this file's contents.
-> 
-> ./scripts/get_maintainer.pl -f drivers/gpu/drm/nouveau
-> 
-> ... might be a better invocation, although perhaps I should add an
-> explicit exclusion for "nouveau" to the Tegra section in MAINTAINERS.
+Changes since v3:
+	- Change api name to dma_get_slave_sg_limits() to avoid
+	  confusion with h/w caps which are static.
 
-No, you should add a pattern which matches only tegra. If there's no
-such pattern, you should simply drop the "K:" thing.
+Changes since v2:
+	- Change to a separate slave sg specific api. Drop the
+	  generic per-channel capabilities api that is not used.
+
+Changes since v1:
+	- Use the existing dma_transaction_type enums instead of
+	  adding the mostly duplicated dmaengine_apis enums
+
+This series adds a new dmaengine api, dma_get_slave_sg_limits(), which
+may be used by a client driver to get slave SG transfer limits for a
+particular channel. At this time, these include the max number of
+segments and max length of a segment that a channel can handle for a
+SG transfer.
+
+Along with the API implementation, this series implements the backend
+device_slave_sg_limits() in the EDMA DMA Engine driver and converts the
+davinci_mmc driver to use dma_get_slave_sg_limits() to replace hardcoded
+limits.
+
+This is tested on the AM1808-EVM.
+
+Matt Porter (3):
+  dmaengine: add dma_get_slave_sg_limits()
+  dma: edma: add device_slave_sg_limits() support
+  mmc: davinci: get SG segment limits with dma_get_slave_sg_limits()
+
+ drivers/dma/edma.c                        |   17 +++++++++++++
+ drivers/mmc/host/davinci_mmc.c            |   37 ++++++++-------------------
+ include/linux/dmaengine.h                 |   39 +++++++++++++++++++++++++++++
+ include/linux/platform_data/mmc-davinci.h |    3 ---
+ 4 files changed, 66 insertions(+), 30 deletions(-)
 
 -- 
-Regards/Gruss,
-    Boris.
+1.7.9.5
 
-Sent from a fat crate under my desk. Formatting is fine.
---
