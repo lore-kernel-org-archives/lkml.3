@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755802Ab3CFI41 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 03:56:27 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:22191 "EHLO song.cn.fujitsu.com"
+	id S1755650Ab3CFJDV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 04:03:21 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:4725 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752062Ab3CFI4Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 03:56:24 -0500
+	id S1750816Ab3CFJDM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Mar 2013 04:03:12 -0500
 X-IronPort-AV: E=Sophos;i="4.84,793,1355068800"; 
-   d="scan'208";a="6823343"
-Date: Wed, 6 Mar 2013 16:56:28 +0800
+   d="scan'208";a="6823401"
+Date: Wed, 6 Mar 2013 17:03:18 +0800
 From: Hu Tao <hutao@cn.fujitsu.com>
 To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: Gleb Natapov <gleb@redhat.com>, kvm list <kvm@vger.kernel.org>,
-        qemu-devel <qemu-devel@nongnu.org>,
+Cc: kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "Daniel P. Berrange" <berrange@redhat.com>,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>, Blue Swirl <blauwirbel@gmail.com>,
-        Eric Blake <eblake@redhat.com>, Andrew Jones <drjones@redhat.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>, Gleb Natapov <gleb@redhat.com>,
+        Blue Swirl <blauwirbel@gmail.com>, Eric Blake <eblake@redhat.com>,
+        Andrew Jones <drjones@redhat.com>,
         Marcelo Tosatti <mtosatti@redhat.com>,
         Sasha Levin <levinsasha928@gmail.com>,
         Luiz Capitulino <lcapitulino@redhat.com>,
@@ -30,130 +30,47 @@ Cc: Gleb Natapov <gleb@redhat.com>, kvm list <kvm@vger.kernel.org>,
         "Michael S. Tsirkin" <mst@redhat.com>, Alexander Graf <agraf@suse.de>,
         Alex Williamson <alex.williamson@redhat.com>,
         Peter Maydell <peter.maydell@linaro.org>
-Subject: Re: [PATCH v13 0/8] pv event interface between host and guest
-Message-ID: <20130306085628.GB4719@localhost.localdomain>
+Subject: Re: [PATCH v13 4/8] add a new runstate: RUN_STATE_GUEST_PANICKED
+Message-ID: <20130306090318.GC4719@localhost.localdomain>
 References: <cover.1362051581.git.hutao@cn.fujitsu.com>
- <20130303091738.GB23616@redhat.com>
- <513471F1.5020702@redhat.com>
+ <ab47cb1ef5a962848b2390d5b602b36aca1f149a.1362051582.git.hutao@cn.fujitsu.com>
+ <51346BFF.5000704@redhat.com>
+ <20130305031701.GN16362@localhost.localdomain>
+ <5135AC2A.8010008@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <513471F1.5020702@redhat.com>
+In-Reply-To: <5135AC2A.8010008@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/03/06 16:55:16,
+ 2013/03/06 17:02:07,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/03/06 16:55:17,
-	Serialize complete at 2013/03/06 16:55:17
+ 2013/03/06 17:02:07,
+	Serialize complete at 2013/03/06 17:02:07
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Mon, Mar 04, 2013 at 11:05:37AM +0100, Paolo Bonzini wrote:
-> Il 03/03/2013 10:17, Gleb Natapov ha scritto:
-> > On Thu, Feb 28, 2013 at 08:13:10PM +0800, Hu Tao wrote:
-> >> This series implements a new interface, kvm pv event, to notify host when
-> >> some events happen in guest. Right now there is one supported event: guest
-> >> panic.
-> >>
-> > What other event do you have in mind? Is interface generic enough to
-> > accommodate future, yet unknown, events. It allows to pass only one
-> > integer specifying even type, what if additional info is needed? My be
-> > stop pretending that device is generic and make it do once thing but do
-> > it well? For generic even passing interface (whatever it may be needed
-> > for) much more powerful virtio should be used.
+On Tue, Mar 05, 2013 at 09:26:18AM +0100, Paolo Bonzini wrote:
+> Il 05/03/2013 04:17, Hu Tao ha scritto:
+> > Will 
 > > 
-> > On implementation itself I do not understand why is this kvm specific.
-> > The only thing that makes it so is that you hook device initialization
-> > into guest kvm initialization code, but this is obviously incorrect.
-> > What stops QEMU tcg or Xen from reusing the same device for the same
-> > purpose except the artificial limitation in a guest.
+> >          if (runstate_check(RUN_STATE_INTERNAL_ERROR) ||
+> >              runstate_check(RUN_STATE_SHUTDOWN) ||
+> >              runstate_check(RUN_STATE_GUEST_PANICKED)) {
+> >              runstate_set(RUN_STATE_PAUSED);
+> >          }
+> > 
+> > be OK? Or I must be misunderstanding you.
+> > 
 > 
-> Agreed.
+> Please move
 > 
-> > Reading data from a random ioports is not how you discover platform
-> > devices in 21 century (and the data you read from unassigned port is not
-> > guarantied to be zero, it may depend on QEMU version), you use ACPI for
-> > that and Marcelo already pointed that to you. Having little knowledge of
-> > ACPI (we all do) is not a good reason to not doing it. We probably need
-> > to reserve QEMU specific ACPI Plug and Play hardware ID to define our own
-> > devices. After that you will be able to create device with _HID(QEMU0001)
-> > in DSDT that supplies address information (ioport to use) and capability
-> > supported.
+>        return (runstate_check(RUN_STATE_INTERNAL_ERROR) ||
+>                runstate_check(RUN_STATE_SHUTDOWN) ||
+>                runstate_check(RUN_STATE_GUEST_PANICKED));
 > 
-> Please also document this HID in a new file in the QEMU docs/ directory.
-> 
-> > Guest uses acpi_get_devices() to discover a platform device by
-> > its name (QEMU0001).  Then you put the driver for the platform device
-> > into drivers/platform/x86/ and QEMU/kvm/Xen all will be able to use it.
-> 
-> Just to clarify it for Hu Tao, the read from a random ioport is how the
-> ACPI code will detect presence of the device.
-> 
-> Something like this should work (in SeaBIOS's src/acpi-dsdt-isa.dsl):
-> 
->     Device(PEVT) {
->         Name(_HID, EisaId("QEMU0001"))
->         OperationRegion(PEOR, SystemIO, 0x505, 0x01)
->         Field(PEOR, ByteAcc, NoLock, Preserve) {
->             PEPT,   8,
->         }
-> 
->         Method(_STA, 0, NotSerialized) {
->             Store(PEPT, Local0)
->             If (LEqual(Local0, Zero)) {
->                 Return (0x00)
->             } Else {
->                 Return (0x0F)
->             }
->         }
+> to a separate function (runstate_needs_reset for example), so that you
+> can reuse it in the two or three places that need it.
 
-IIUC, here _STA reads from ioport 0x505, if the result is 0, then the
-device is not present. Otherwise, the device is present. But as Gleb
-said, ''the data you read from unassigned port is not guarantied to be
-zero, it may depend on QEMU version''. What should I do to tell if the
-device is present or not correctly?
-
-> 
->         Name(_CRS, ResourceTemplate() {
->             IO(Decode16, 0x505, 0x505, 0x01, 0x01)
->         })
->     }
-> 
-> Please test this with a QEMU option like "-M pc-1.4".  The device should
-> _not_ be detected if you're doing it right.
-
-because there is no corresponding device driver?
-
-> 
-> > On QEMU side of things I cannot comment much on how QOMified the device
-> > is (it should be),
-> 
-> Please make the device target-independent.  It can be used on non-x86
-> architectures that have I/O ports.  You should make the port
-> configurable using a property (DEFINE_PROPERTY_INT16 or something like
-> that), with a default of 0x505.
-
-OK.
-
-> 
-> All the panicked_action is not necessary in my opinion.  We have it for
-> watchdogs, but that's really a legacy thing.  Let libvirt do it, and
-> always make the guest panic perform the PANICKED_PAUSE action.
-
-OK.
-
-> 
-> If you do it properly, a lot (really a lot) of code will go away.
-
-Thanks!
-
-> 
-> > I hope other reviews will verify it, but I noticed
-> > that device is only initialized for PIIX, what about Q35?
-> 
-> Yup.
-> 
-> Paolo
+See it now. Thanks!
