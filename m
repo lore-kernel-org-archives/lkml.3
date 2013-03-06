@@ -1,98 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757239Ab3CFLES (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 06:04:18 -0500
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:38307 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756903Ab3CFLER (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 06:04:17 -0500
-Message-ID: <513722AA.2030001@gmail.com>
-Date: Wed, 06 Mar 2013 19:04:10 +0800
-From: Ric Mason <ric.masonn@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
+	id S1757282Ab3CFLFJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 06:05:09 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:38011 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754031Ab3CFLFG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Mar 2013 06:05:06 -0500
+X-IronPort-AV: E=Sophos;i="4.84,794,1355097600"; 
+   d="scan'208";a="11459606"
+Message-ID: <513722DF.6010204@citrix.com>
+Date: Wed, 6 Mar 2013 11:05:03 +0000
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120428 Iceowl/1.0b1 Icedove/3.0.11
 MIME-Version: 1.0
-To: Li Haifeng <omycle@gmail.com>
-CC: Hugh Dickins <hughd@google.com>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: Should a swapped out page be deleted from swap cache?
-References: <CAFNq8R4UYvygk8+X+NZgyGjgU5vBsEv1UM6MiUxah6iW8=0HrQ@mail.gmail.com> <alpine.LNX.2.00.1302180939200.2246@eggly.anvils> <512338A6.1030602@gmail.com> <alpine.LNX.2.00.1302191050330.2248@eggly.anvils> <51241B66.7080004@gmail.com> <CAFNq8R5ni4jKRsHJLyGiNPcj4epz8q5zva_0XEJrL1-uVZHb9w@mail.gmail.com>
-In-Reply-To: <CAFNq8R5ni4jKRsHJLyGiNPcj4epz8q5zva_0XEJrL1-uVZHb9w@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Daniel Kiper <daniel.kiper@oracle.com>
+CC: "carsten@schiers.de" <carsten@schiers.de>,
+        "darren.s.shepherd@gmail.com" <darren.s.shepherd@gmail.com>,
+        "james-xen@dingwall.me.uk" <james-xen@dingwall.me.uk>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
+Subject: Re: [PATCH 1/1] xen/balloon: Enforce various limits on target
+References: <1362431691-5167-1-git-send-email-daniel.kiper@oracle.com>
+In-Reply-To: <1362431691-5167-1-git-send-email-daniel.kiper@oracle.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.76]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/06/2013 01:34 PM, Li Haifeng wrote:
-> 2013/2/20 Ric Mason <ric.masonn@gmail.com>:
->> Hi Hugh,
->>
->>
->> On 02/20/2013 02:56 AM, Hugh Dickins wrote:
->>> On Tue, 19 Feb 2013, Ric Mason wrote:
->>>> There is a call of try_to_free_swap in function swap_writepage, if
->>>> swap_writepage is call from shrink_page_list path, PageSwapCache(page) ==
->>>> trure, PageWriteback(page) maybe false, page_swapcount(page) == 0, then
->>>> will
->>>> delete the page from swap cache and free swap slot, where I miss?
->>> That's correct.  PageWriteback is sure to be false there.  page_swapcount
->>> usually won't be 0 there, but sometimes it will be, and in that case we
->>> do want to delete from swap cache and free the swap slot.
->>
->> 1) If PageSwapCache(page)  == true, PageWriteback(page) == false,
->> page_swapcount(page) == 0  in swap_writepage(shrink_page_list path), then
->> will delete the page from swap cache and free swap slot, in function
->> swap_writepage:
->>
->> if (try_to_free_swap(page)) {
->>      unlock_page(page);
->>      goto out;
->> }
->> writeback will not execute, that's wrong. Where I miss?
-> when the page is deleted from swap cache and corresponding swap slot
-> is free, the page is set dirty. The dirty page won't be reclaimed. It
-> is not wrong.
+On 04/03/13 21:14, Daniel Kiper wrote:
+> This patch enforces on target limit statically defined in Linux Kernel
+> source and limit defined by hypervisor or host.
+> 
+> Particularly this patch fixes bug which led to flood
+> of dom0 kernel log with messages similar to:
+> 
+> System RAM resource [mem 0x1b8000000-0x1bfffffff] cannot be added
+> xen_balloon: reserve_additional_memory: add_memory() failed: -17
 
-I don't think so. For dirty pages, there are two steps: 1)writeback 
-2)reclaim. Since PageSwapCache(page) == true && PageWriteback(page) == 
-false && page_swapcount(page) == 0 in swap_writeback(), 
-try_to_free_swap() will return true and writeback will be skip. Then how 
-can step one be executed?
+I think this helps in some cases, but because
+reserve_additional_memory() places the hotplugged memory after max_pfn
+without checking if there is anything already there, there are still
+ways it can repeatedly fail.
 
->
-> corresponding path lists as below.
-> when swap_writepage() is called by pageout() in shrink_page_list().
-> pageout() will return PAGE_SUCCESS. For PAGE_SUCCESS, when
-> PageDirty(page) is true, this reclaiming page will be keeped in the
-> inactive LRU list.
-> shrink_page_list()
-> {
-> ...
->   904                         switch (pageout(page, mapping, sc)) {
->   905                         case PAGE_KEEP:
->   906                                 nr_congested++;
->   907                                 goto keep_locked;
->   908                         case PAGE_ACTIVATE:
->   909                                 goto activate_locked;
->   910                         case PAGE_SUCCESS:
->   911                                 if (PageWriteback(page))
->   912                                         goto keep_lumpy;
->   913                                 if (PageDirty(page))
->   914                                         goto keep;
-> ...}
->
->> 2) In the function pageout, page will be set PG_Reclaim flag, since this
->> flag is set, end_swap_bio_write->end_page_writeback:
->> if (TestClearPageReclaim(page))
->>       rotate_reclaimable_page(page);
->> it means that page will be add to the tail of lru list, page is clean
->> anonymous page this time and will be reclaim to buddy system soon, correct?
-> correct
->> If is correct, what is the meaning of rotate here?
-> Rotating here is to add the page to the tail of inactive LRU list. So
-> this page will be reclaimed ASAP while reclaiming.
->
->>> Hugh
->>
+e.g.,
 
+1. If dom0 has had its maximum reservation limited initially (with the
+dom0_mem option) /and/ the max reservation and target is subsequently
+raised then the balloon driver will attempt to hotplug memory that
+overlaps with E820_UNUSABLE regions in the e820 map and the hotplug will
+fail.
+
+2. If a domU has passed-through PCI devices max_pfn is before the PCI
+memory window then the balloon driver will attempt to hotplug memory
+over the PCI device BARs.
+
+I think reserve_additional_memory() should check the current resource
+map and the e820 map to find a large enough unused region.  This can be
+done as an additional patch at a later date.
+
+> It does not allow balloon driver to execute infinite
+> loops when target exceeds limits in other cases too.
+
+This sentence confuses me.
+
+> Signed-off-by: Daniel Kiper <daniel.kiper@oracle.com>
+> ---
+>  drivers/xen/balloon.c |   47 ++++++++++++++++++++++++++++++++++++++++++++++-
+>  1 file changed, 46 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/xen/balloon.c b/drivers/xen/balloon.c
+> index a56776d..07da753 100644
+> --- a/drivers/xen/balloon.c
+> +++ b/drivers/xen/balloon.c
+> @@ -65,6 +65,7 @@
+>  #include <xen/balloon.h>
+>  #include <xen/features.h>
+>  #include <xen/page.h>
+> +#include <xen/xenbus.h>
+>  
+>  /*
+>   * balloon_process() state:
+> @@ -490,11 +491,55 @@ static void balloon_process(struct work_struct *work)
+>  	mutex_unlock(&balloon_mutex);
+>  }
+>  
+> -/* Resets the Xen limit, sets new target, and kicks off processing. */
+> +/* Enforce limits, set new target and kick off processing. */
+>  void balloon_set_new_target(unsigned long target)
+>  {
+> +	domid_t domid = DOMID_SELF;
+> +	int rc;
+> +	unsigned long long host_limit;
+> +
+> +	/* Enforce statically defined limit. */
+> +	target = min(target, MAX_DOMAIN_PAGES);
+> +
+> +	if (xen_initial_domain()) {
+> +		rc = HYPERVISOR_memory_op(XENMEM_maximum_reservation, &domid);
+> +
+> +		/* Limit is not enforced by hypervisor. */
+> +		if (rc == -EPERM)
+> +			goto no_host_limit;
+> +
+> +		if (rc <= 0) {
+> +			pr_info("xen_balloon: %s: Initial domain target limit "
+> +				"could not be established: %i\n", __func__, rc);
+> +			goto no_host_limit;
+> +		}
+> +
+> +		host_limit = rc;
+
+I think you should use this method for both dom0 and domUs.  No need to
+check static-max from xenstore.
+
+> +	} else {
+> +		rc = xenbus_scanf(XBT_NIL, "memory", "static-max",
+> +							"%llu", &host_limit);
+> +
+> +		if (rc != 1) {
+> +			pr_info("xen_balloon: %s: Guest domain target limit "
+> +				"could not be established: %i\n", __func__, rc);
+> +			goto no_host_limit;
+> +		}
+> +
+> +		/*
+> +		 * The given memory target limit value is in KiB, so it needs
+> +		 * converting to pages. PAGE_SHIFT converts bytes to pages,
+> +		 * hence PAGE_SHIFT - 10.
+> +		 */
+> +		host_limit >>= (PAGE_SHIFT - 10);
+> +	}
+> +
+> +	/* Enforce hypervisor/host defined limit. */
+> +	target = min(target, (unsigned long)host_limit);
+
+With the change above, you can change host_limit to unsigned long and
+avoid the cast.
+
+David
