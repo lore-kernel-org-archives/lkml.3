@@ -1,167 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752815Ab3CFQsU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 11:48:20 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:21339 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751778Ab3CFQsS (ORCPT
+	id S1752904Ab3CFQxH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 11:53:07 -0500
+Received: from mail-la0-f53.google.com ([209.85.215.53]:48540 "EHLO
+	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751027Ab3CFQxE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 11:48:18 -0500
-Date: Wed, 6 Mar 2013 17:47:44 +0100
-From: Daniel Kiper <daniel.kiper@oracle.com>
-To: David Vrabel <david.vrabel@citrix.com>
-Cc: "carsten@schiers.de" <carsten@schiers.de>,
-        "darren.s.shepherd@gmail.com" <darren.s.shepherd@gmail.com>,
-        "james-xen@dingwall.me.uk" <james-xen@dingwall.me.uk>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
-Subject: Re: [PATCH 1/1] xen/balloon: Enforce various limits on target
-Message-ID: <20130306164744.GB11217@debian70-amd64.local.net-space.pl>
-References: <1362431691-5167-1-git-send-email-daniel.kiper@oracle.com>
- <513722DF.6010204@citrix.com>
+	Wed, 6 Mar 2013 11:53:04 -0500
+Date: Wed, 6 Mar 2013 17:52:11 +0100
+From: Johan Hovold <jhovold@gmail.com>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: jhovold@gmail.com, Peter Hurley <peter@hurleysoftware.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        USB list <linux-usb@vger.kernel.org>, linux-serial@vger.kernel.org,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [Fwd: [PATCH v2 0/4] TTY: port hangup and close fixes]
+Message-ID: <20130306165211.GA23635@localhost>
+References: <1362085054.3337.20.camel@thor.lan>
+ <51361724.4050107@suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <513722DF.6010204@citrix.com>
+In-Reply-To: <51361724.4050107@suse.cz>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 06, 2013 at 11:05:03AM +0000, David Vrabel wrote:
-> On 04/03/13 21:14, Daniel Kiper wrote:
-> > This patch enforces on target limit statically defined in Linux Kernel
-> > source and limit defined by hypervisor or host.
-> >
-> > Particularly this patch fixes bug which led to flood
-> > of dom0 kernel log with messages similar to:
-> >
-> > System RAM resource [mem 0x1b8000000-0x1bfffffff] cannot be added
-> > xen_balloon: reserve_additional_memory: add_memory() failed: -17
->
-> I think this helps in some cases, but because
-> reserve_additional_memory() places the hotplugged memory after max_pfn
-> without checking if there is anything already there, there are still
-> ways it can repeatedly fail.
->
-> e.g.,
->
-> 1. If dom0 has had its maximum reservation limited initially (with the
-> dom0_mem option) /and/ the max reservation and target is subsequently
-> raised then the balloon driver will attempt to hotplug memory that
-> overlaps with E820_UNUSABLE regions in the e820 map and the hotplug will
-> fail.
->
-> 2. If a domU has passed-through PCI devices max_pfn is before the PCI
-> memory window then the balloon driver will attempt to hotplug memory
-> over the PCI device BARs.
+Hi Jiri,
 
-You are right. During work on this patch I discovered that but decided
-to enforce limits because it is more generic. Please look below why.
-However, I stated that it should be fixed too. I added it to my todo list.
-It requires a bit more work because I think new algorithm should cover
-many different cases. Probably add_memory() (it requires changes in
-mm/memory_hotplug.c) should be modified to look for range having
-sufficient size and not conflicting with others.
+On Tue, Mar 05, 2013 at 05:02:44PM +0100, Jiri Slaby wrote:
+> On 02/28/2013 09:57 PM, Peter Hurley wrote:
+> > Hi Jiri,
+> > 
+> > Just wanted to make sure you saw this series.
+> 
+> Hi, thanks for letting me know. Johan, care to CC Alan Cox and me (or at
+> least LKML) when you're changing the TTY core next time?
 
-> I think reserve_additional_memory() should check the current resource
-> map and the e820 map to find a large enough unused region.  This can be
-> done as an additional patch at a later date.
+Sorry about that. Thought it was a bit odd I didn't hear anything from
+you actually. ;) Everything was posted to linux-serial (and Alan
+initially), but I'll remember to CC you in the future as well.
+
+> I have a couple of questions for 2/4:
 >
-> > It does not allow balloon driver to execute infinite
-> > loops when target exceeds limits in other cases too.
->
-> This sentence confuses me.
+> > Move HUPCL handling to port shutdown so that DTR is dropped also on
+> > hang up (tty_port_close is a noop for hung-up ports).
+> 
+> It makes sense, but I'm not sure -- is this expected, i.e. does this
+> conform to standards and/or BSDs?
 
-For example:
-  - boot guest domain with memory = 2048 and maxmem = 2048,
-  - xl mem-set 1024,
-  - xl mem-max 1536,
-  - echo 2097152 > /sys/devices/system/xen_memory/xen_memory0/target_kb,
-  - ...and balloon driver without this patch attempts to increase
-    reservation until limit is not set to at least 2048...
+As Peter also mentioned, this is how serial_core (and another seven tty
+drivers) work today.
 
-That is why this patch is more generic.
+There are currently seven drivers (counting usb-serial as one) that
+manipulate DTR at open/close but do not drop DTR on hangup, and five of
+those (including usb-serial) don't do it because they use the tty_port
+implementation.
 
-> > Signed-off-by: Daniel Kiper <daniel.kiper@oracle.com>
-> > ---
-> >  drivers/xen/balloon.c |   47 ++++++++++++++++++++++++++++++++++++++++++++++-
-> >  1 file changed, 46 insertions(+), 1 deletion(-)
-> >
-> > diff --git a/drivers/xen/balloon.c b/drivers/xen/balloon.c
-> > index a56776d..07da753 100644
-> > --- a/drivers/xen/balloon.c
-> > +++ b/drivers/xen/balloon.c
-> > @@ -65,6 +65,7 @@
-> >  #include <xen/balloon.h>
-> >  #include <xen/features.h>
-> >  #include <xen/page.h>
-> > +#include <xen/xenbus.h>
-> >
-> >  /*
-> >   * balloon_process() state:
-> > @@ -490,11 +491,55 @@ static void balloon_process(struct work_struct *work)
-> >  	mutex_unlock(&balloon_mutex);
+> > @@ -196,13 +196,20 @@ void tty_port_tty_set(struct tty_port *port, struct
+> > tty_struct *tty)
 > >  }
-> >
-> > -/* Resets the Xen limit, sets new target, and kicks off processing. */
-> > +/* Enforce limits, set new target and kick off processing. */
-> >  void balloon_set_new_target(unsigned long target)
-> >  {
-> > +	domid_t domid = DOMID_SELF;
-> > +	int rc;
-> > +	unsigned long long host_limit;
+> >  EXPORT_SYMBOL(tty_port_tty_set);
+> 
+> -static void tty_port_shutdown(struct tty_port *port)
+> +static void tty_port_shutdown(struct tty_port *port, struct tty_struct
+> *tty)
+>  {
+>         mutex_lock(&port->mutex);
+>         if (port->console)
+>                 goto out;
+> 
+>         if (test_and_clear_bit(ASYNCB_INITIALIZED, &port->flags)) {
+> +               /*
+> +                * Drop DTR/RTS if HUPCL is set. This causes any attached
+> +                * modem to hang up the line.
+> +                */
+> +               if (!tty || tty->termios.c_cflag & HUPCL)
+> > +                       tty_port_lower_dtr_rts(port);
 > > +
-> > +	/* Enforce statically defined limit. */
-> > +	target = min(target, MAX_DOMAIN_PAGES);
-> > +
-> > +	if (xen_initial_domain()) {
-> > +		rc = HYPERVISOR_memory_op(XENMEM_maximum_reservation, &domid);
-> > +
-> > +		/* Limit is not enforced by hypervisor. */
-> > +		if (rc == -EPERM)
-> > +			goto no_host_limit;
-> > +
-> > +		if (rc <= 0) {
-> > +			pr_info("xen_balloon: %s: Initial domain target limit "
-> > +				"could not be established: %i\n", __func__, rc);
-> > +			goto no_host_limit;
-> > +		}
-> > +
-> > +		host_limit = rc;
->
-> I think you should use this method for both dom0 and domUs.  No need to
-> check static-max from xenstore.
+> 
+> So you drop the line even thought the user didn't necessarily want to,
+> in case the tty is gone already?
 
-Sadly XENMEM_maximum_reservation for domU returns value which is set by xl mem-set
-not by xl mem-max :-(((... That is why I get this value from xenstore.
+You have a point in that it might be better to do it the other way round
+and not touch DTR unless we know for sure it was requested. [ But see my
+answer to you next question as well. ]
 
-> > +	} else {
-> > +		rc = xenbus_scanf(XBT_NIL, "memory", "static-max",
-> > +							"%llu", &host_limit);
-> > +
-> > +		if (rc != 1) {
-> > +			pr_info("xen_balloon: %s: Guest domain target limit "
-> > +				"could not be established: %i\n", __func__, rc);
-> > +			goto no_host_limit;
-> > +		}
-> > +
-> > +		/*
-> > +		 * The given memory target limit value is in KiB, so it needs
-> > +		 * converting to pages. PAGE_SHIFT converts bytes to pages,
-> > +		 * hence PAGE_SHIFT - 10.
-> > +		 */
-> > +		host_limit >>= (PAGE_SHIFT - 10);
-> > +	}
-> > +
-> > +	/* Enforce hypervisor/host defined limit. */
-> > +	target = min(target, (unsigned long)host_limit);
->
-> With the change above, you can change host_limit to unsigned long and
-> avoid the cast.
+Several drivers (including serial_core) had a similar construct in their
+shutdown() but tty is never NULL when called from hangup in those cases.
 
-It is not possible. Please look above why...
+> > @@ -225,15 +232,13 @@ void tty_port_hangup(struct tty_port *port)
+>         spin_lock_irqsave(&port->lock, flags);
+>         port->count = 0;
+>         port->flags &= ~ASYNC_NORMAL_ACTIVE;
+> -       if (port->tty) {
+> +       if (port->tty)
+>                 set_bit(TTY_IO_ERROR, &port->tty->flags);
+> -               tty_kref_put(port->tty);
+> -       }
+> -       port->tty = NULL;
+>         spin_unlock_irqrestore(&port->lock, flags);
+> > +       tty_port_shutdown(port, port->tty);
+> 
+> What prevents port->tty to be NULL here already?
 
-Daniel
+Nothing, I'll get a new reference within the port lock section as you
+just suggested elsewhere in this thread.
+
+But this should never be the case when using both tty_port_close and
+tty_port_hangup, as then port->tty will only be NULL if the port has
+already been shut down, right?
+
+> > +       tty_port_tty_set(port, NULL);
+> >         wake_up_interruptible(&port->open_wait);
+> >         wake_up_interruptible(&port->delta_msr_wait);
+> > -       tty_port_shutdown(port);
+> 
+> Did you investigate if the order matters here? I don't know, just curious...
+
+Yes, I did. First, the order should not matter for blocked opens as they
+will exit their wait loops based on tty_hung_up_p(filp) either way.
+
+As for delta_msr_wait the changed order is actually preferred as it
+allows the waiting process to return based on ASYNC_INITIALIZED. This is
+also the order used by serial_core. Note however that the current
+serial_core TIOCMIWAIT is broken in that it doesn't return on hangups at
+all.
+
+Perhaps I should separate this to a patch of its own, and send a fix
+for serial_core TIOCMIWAIT as well.
+
+Thanks,
+Johan
+
+> > @@ -452,11 +457,6 @@ int tty_port_close_start(struct tty_port *port,
+>         /* Flush the ldisc buffering */
+>         tty_ldisc_flush(tty);
+> 
+> -       /* Drop DTR/RTS if HUPCL is set. This causes any attached modem to
+> -          hang up the line */
+> -       if (tty->termios.c_cflag & HUPCL)
+> -               tty_port_lower_dtr_rts(port);
+> -
+>         /* Don't call port->drop for the last reference. Callers will want
+>            to drop the last active reference in ->shutdown() or the tty
+> >            shutdown path */
