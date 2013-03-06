@@ -1,186 +1,318 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756982Ab3CFWuC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 17:50:02 -0500
-Received: from e34.co.us.ibm.com ([32.97.110.152]:37824 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754553Ab3CFWt6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 17:49:58 -0500
-Message-ID: <1362610081.4392.364.camel@falcor1>
-Subject: Re: IMA: How to manage user space signing policy with others
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Eric Paris <eparis@parisplace.org>,
-        linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        LSM List <linux-security-module@vger.kernel.org>
-Date: Wed, 06 Mar 2013 17:48:01 -0500
-In-Reply-To: <20130306155452.GB18337@redhat.com>
-References: <20130301184027.GB3457@redhat.com>
-	 <1362166753.9158.169.camel@falcor1> <20130301213329.GC3457@redhat.com>
-	 <1362346944.18325.1.camel@falcor1> <20130304152919.GA15199@redhat.com>
-	 <1362423581.4392.46.camel@falcor1> <20130304191546.GF15199@redhat.com>
-	 <1362446491.4392.133.camel@falcor1> <20130305151829.GB4519@redhat.com>
-	 <1362516018.4392.233.camel@falcor1> <20130306155452.GB18337@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13030622-2876-0000-0000-00000611E262
+	id S1757020Ab3CFWwN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 17:52:13 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:60250 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754581Ab3CFWwL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Mar 2013 17:52:11 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        "Kristen C. Accardi" <kristen.c.accardi@intel.com>,
+        Len Brown <lenb@kernel.org>
+Subject: [Update][PATCH 2/2] ACPI / LPSS: Add support for exposing LTR registers to user space
+Date: Wed, 06 Mar 2013 23:59:07 +0100
+Message-ID: <1692006.SGTZ3bcltu@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.9.0-rc1+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <6910166.A6hvu2UJQ6@vostro.rjw.lan>
+References: <1878438.IOSu0hheXQ@vostro.rjw.lan> <6910166.A6hvu2UJQ6@vostro.rjw.lan>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-03-06 at 10:54 -0500, Vivek Goyal wrote:
-> On Tue, Mar 05, 2013 at 03:40:18PM -0500, Mimi Zohar wrote:
-> 
-> [..]
-> > > The fact that we are able to replace ima_mem_exec policy using command
-> > > line, binary loader will need a way to query IMA to find what's the
-> > > current policy. If ima_mem_exec has been replaced, then binary loader
-> > > will not memlock files and will not raise extra capability to binary. And
-> > > this will disable kdump functionality on secureboot platforms. (Something
-> > > which I don't like much).
-> > 
-> > Ok
-> 
-> Hi Mimi,
-> 
-> Again, throwing out another idea and see if it has any merit. 
-> 
-> I think there are quite a few issues with trying to use IMA only with
-> the help of policy interface. Different subsystems might have different
-> needs and we don't have a way to support multiple policies. How about
-> if we extend IMA to also provide callable function interface and
-> subsystems can directly call into IMA for integrity verification.
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Subject: ACPI / LPSS: Add support for exposing LTR registers to user space
 
-The original IMA design included such an interface, but it was rejected.
-The conclusion was that LSMs would enforce access control and defer  
-file integrity enforcement to IMA.  IMA policies could be written in
-terms of LSM labels.  As that decision was made a very long time ago,
-and a lot has changed since, perhaps we should to revisit this decision.
+Devices on the Intel Lynxpoint Low Power Subsystem (LPSS) have
+registers providing access to LTR (Latency Tolerance Reporting)
+functionality that allows software to monitor and possibly influence
+the aggressiveness of the platform's active-state power management.
 
-> Following are some of the problems I am facing with trying to
-> scale policy based interface.
-> 
-> - Being able to support only one policy at a time creates conflict
->   between various users of IMA subsystem. Creating a policy which
->   meets the needs of all subsystem is not practical. And retaining
->   on policy only serves select use case and disable rest of the
->   use cases. What we want is to be able to serve multiple use cases
->   at the same time.
+For each LPSS device, there are two modes of operation related to LTR,
+the auto mode and the software mode.  In the auto mode the LTR is
+set up by the platform firmware and managed by hardware.  Software
+can only read the LTR register values to monitor the platform's
+behavior.  In the software mode it is possible to use LTR to control
+the extent to which the platform will use its built-in power
+management features.
 
-Our posts must have crossed again.  I already addressed this issue in
-the post https://lkml.org/lkml/2013/3/6/340.
-  
-Your design overloads the existence of a file signature with additional
-meaning to indicate these files not only need to be appraised, but also
-need 'special' handling.  I don't think you can use this example to
-claim that only one policy can be supported at a time.
+This changeset adds support for reading the LPSS devices' LTR
+registers and exposing their values to user space for monitoring and
+diagnostics purposes.  It re-uses the MMIO mappings created to access
+the LPSS devices' clock registers for reading the values of the LTR
+registers and exposes them to user space through sysfs device
+attributes.  Namely, a new atrribute group, lpss_ltr, is created for
+each LPSS device.  It contains three new attributes: ltr_mode,
+auto_ltr, sw_ltr.  The value of the ltr_mode attribute reflects the
+LTR mode being used at the moment (software vs auto) and the other
+two contain the actual register values (raw) whose meaning depends
+on the LTR mode.  All of these attributes are read-only.
 
->   For example, in above case, very soon I might want to also create
->   a mechanism to verify signature of bzImage loaded by kexec. 
+Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+---
 
-Absolutely no problem there.  Defining a new bzImage hook will allow
-measuring, hash audit logging, and integrity appraisal of the bzImage.
+This update changes the ABI doc to follow the code more closely.
 
-> Say,
->   mmap() system call is extended to verify signature of mapped file,
->   or a new system call is created. 
+Thanks,
+Rafael
 
-The mmap hook already exists.  Just as the new kernel module hook was
-recently added, other hooks can be defined just as easily.  With the
-definition of a new hook, all integrity subystem uses get the benefit.
+---
+ Documentation/ABI/testing/sysfs-devices-lpss_ltr |   44 +++++++
+ drivers/acpi/acpi_lpss.c                         |  139 ++++++++++++++++++++++-
+ 2 files changed, 178 insertions(+), 5 deletions(-)
 
-> In that case there will be another
->   set of rules and cramming them into mem_exec policy will be odd.
-
-The mm_exec policy is odd.  It mixes identifying a file for appraising
-and setting up additional system requirements.
-
-> - Because policy can be replaced easily, some of the functionality
->   will automatically be disabled. (because associated policy is not
->   there any more). And this can be very unintutive.
-
-Limiting the additional functionality to a single policy, is wrong. A
-new policy option (eg. memlock) or even action primitive (eg.
-appraise_memlock) should be defined, allowing any policy to achieve the
-same results.
-
->   For example, even if we do put new rules in mem_exec policy, this
->   policy can easily be replaced. And kernel loses the capability to
->   verify signatures of mmaped files.
-
-The capability of verifying the integrity of an mmaped file has nothing
-to do with the mem_exec policy, but with the mmap hook.
-
->  It will be kind of big surprise
->   where a system call feature disappears because somebody wrote a very
->   simple policy through "policy" interface. If nothing else, it is
->   unintutive to me.
-
-> - One more issue with "policy" based interface is that rules get
->   evaluated for every security hook. So though I might want to only
->   appraise files on exec() but on every security hook (file open, mmap etc),
->   IMA will go through the rule list and see if some rule matches. This can
->   add to performance overhead.
-
-The policies that I'm aware of, have been minimal in size (eg. one
-policy doesn't measure anything, but appraises everything). Dmitry has
-made a number of performance improvements and has suggested others,
-which were rejected for lack of userspace impact.  Please feel free to
-post performance improvement patches, indicating userspace impact.
-
-> - There are other optimization opportunities. For example, in case of
->   exec() verification, initially I just want to find out if file being
->   executed has digital signatures or not. But bprm_check() will go ahead
->   and appraise the file. The appraisal which matters to us is the one
->   which happens in post_load(). So there is double appraisal for every
->   executable.
-
-Nothing is stopping you from changing the policy from appraising at
-bprm_check() to post_load().
-
-> - In an attempt to meet new requirements, we are quickly eating all
->   the flag space and very few bits are left and further scaling can
->   become very difficult.np
-> 
-> I am beginning to get the feeling that probably using "policy" based
-> interface is not the best to cater to wide variety of needs. What
-> if we can provide a set of functions which can be directly called
-> by various subsystem. That way we will make reuse of IMA code and
-> at the same time not worry about clash with other policies.  Policy
-> based interface will continue to work as it.
-> 
-> New set of callable functions will primarily be for appraise purposes.
-> These will retrieive security.ima (and security.evm if EVM is configured),
-> do integrity verification and return the result to caller. There will
-> be no caching of results involved.
-
-> This should simplify things. It should reduce policy contentions. On
-> every hook we don't have to go through all the policy rules. Internal
-> of IMA subsystems remain less complicated etc.
-> 
-> There will be no need for extensions like appraise_type = optional. Caller
-> of IMA function will decide whether to allow access or not based on 
-> return result. Whether access is optional or not will depend on caller.
-> IMA will just provide integrity result and will not mandate whether to
-> allow access or not.
-> 
-> By default interface will not cache results. So there is no need to
-> worry about providing cache_result=no extensions.
-> 
-> Mimi, what do you think. Does it make any sense?
-
-This sounds like your original patches, with a minor difference -
-calling the exported IMA functions, instead of calling the crypto
-directly.  Although it resolves the code duplication, the same issues
-that were discussed back then, apply here.  Policy should not be
-hard-coded into the kernel.  Hooks should be defined and accessible for
-all uses (eg. measurement, audit hash logging, integrity appraisal) and
-any new uses going into the future.
-
-Mimi
+Index: linux-pm/Documentation/ABI/testing/sysfs-devices-lpss_ltr
+===================================================================
+--- /dev/null
++++ linux-pm/Documentation/ABI/testing/sysfs-devices-lpss_ltr
+@@ -0,0 +1,44 @@
++What:		/sys/devices/.../lpss_ltr/
++Date:		March 2013
++Contact:	Rafael J. Wysocki <rafael.j.wysocki@intel.com>
++Description:
++		The /sys/devices/.../lpss_ltr/ directory is only present for
++		devices included into the Intel Lynxpoint Low Power Subsystem
++		(LPSS).  If present, it contains attributes containing the LTR
++		mode and the values of LTR registers of the device.
++
++What:		/sys/devices/.../lpss_ltr/ltr_mode
++Date:		March 2013
++Contact:	Rafael J. Wysocki <rafael.j.wysocki@intel.com>
++Description:
++		The /sys/devices/.../lpss_ltr/ltr_mode attribute contains an
++		integer number (0 or 1) indicating whether or not the devices'
++		LTR functionality is working in the software mode (1).
++
++		This attribute is read-only.  If the device's runtime PM status
++		is not "active", attempts to read from this attribute cause
++		-EAGAIN to be returned.
++
++What:		/sys/devices/.../lpss_ltr/auto_ltr
++Date:		March 2013
++Contact:	Rafael J. Wysocki <rafael.j.wysocki@intel.com>
++Description:
++		The /sys/devices/.../lpss_ltr/auto_ltr attribute contains the
++		current value of the device's AUTO_LTR register (raw)
++		represented as an 8-digit hexadecimal number.
++
++		This attribute is read-only.  If the device's runtime PM status
++		is not "active", attempts to read from this attribute cause
++		-EAGAIN to be returned.
++
++What:		/sys/devices/.../lpss_ltr/sw_ltr
++Date:		March 2013
++Contact:	Rafael J. Wysocki <rafael.j.wysocki@intel.com>
++Description:
++		The /sys/devices/.../lpss_ltr/auto_ltr attribute contains the
++		current value of the device's SW_LTR register (raw) represented
++		as an 8-digit hexadecimal number.
++
++		This attribute is read-only.  If the device's runtime PM status
++		is not "active", attempts to read from this attribute cause
++		-EAGAIN to be returned.
+Index: linux-pm/drivers/acpi/acpi_lpss.c
+===================================================================
+--- linux-pm.orig/drivers/acpi/acpi_lpss.c
++++ linux-pm/drivers/acpi/acpi_lpss.c
+@@ -18,17 +18,26 @@
+ #include <linux/io.h>
+ #include <linux/platform_device.h>
+ #include <linux/platform_data/clk-lpss.h>
++#include <linux/pm_runtime.h>
+ 
+ #include "internal.h"
+ 
+ ACPI_MODULE_NAME("acpi_lpss");
+ 
+-#define LPSS_CLK_OFFSET 0x800
+ #define LPSS_CLK_SIZE	0x04
++#define LPSS_LTR_SIZE	0x18
++
++/* Offsets relative to LPSS_PRIVATE_OFFSET */
++#define LPSS_GENERAL			0x08
++#define LPSS_GENERAL_LTR_MODE_SW	BIT(2)
++#define LPSS_SW_LTR			0x10
++#define LPSS_AUTO_LTR			0x14
+ 
+ struct lpss_device_desc {
+ 	bool clk_required;
+ 	const char *clk_parent;
++	bool ltr_required;
++	unsigned int prv_offset;
+ };
+ 
+ struct lpss_private_data {
+@@ -41,6 +50,13 @@ struct lpss_private_data {
+ static struct lpss_device_desc lpt_dev_desc = {
+ 	.clk_required = true,
+ 	.clk_parent = "lpss_clk",
++	.prv_offset = 0x800,
++	.ltr_required = true,
++};
++
++static struct lpss_device_desc lpt_sdio_dev_desc = {
++	.prv_offset = 0x1000,
++	.ltr_required = true,
+ };
+ 
+ static const struct acpi_device_id acpi_lpss_device_ids[] = {
+@@ -51,7 +67,7 @@ static const struct acpi_device_id acpi_
+ 	{ "INT33C3", (unsigned long)&lpt_dev_desc },
+ 	{ "INT33C4", (unsigned long)&lpt_dev_desc },
+ 	{ "INT33C5", (unsigned long)&lpt_dev_desc },
+-	{ "INT33C6", },
++	{ "INT33C6", (unsigned long)&lpt_sdio_dev_desc },
+ 	{ "INT33C7", },
+ 
+ 	{ }
+@@ -80,12 +96,12 @@ static int register_device_clock(struct
+ 		lpt_register_clock_device();
+ 
+ 	if (!dev_desc->clk_parent || !pdata->mmio_base
+-	    || pdata->mmio_size < LPSS_CLK_OFFSET + LPSS_CLK_SIZE)
++	    || pdata->mmio_size < dev_desc->prv_offset + LPSS_CLK_SIZE)
+ 		return -ENODATA;
+ 
+ 	pdata->clk = clk_register_gate(NULL, dev_name(&adev->dev),
+ 				       dev_desc->clk_parent, 0,
+-				       pdata->mmio_base + LPSS_CLK_OFFSET,
++				       pdata->mmio_base + dev_desc->prv_offset,
+ 				       0, 0, NULL);
+ 	if (IS_ERR(pdata->clk))
+ 		return PTR_ERR(pdata->clk);
+@@ -151,6 +167,117 @@ static int acpi_lpss_create_device(struc
+ 	return ret;
+ }
+ 
++static int lpss_reg_read(struct device *dev, unsigned int reg, u32 *val)
++{
++	struct acpi_device *adev;
++	struct lpss_private_data *pdata;
++	unsigned long flags;
++	int ret;
++
++	ret = acpi_bus_get_device(ACPI_HANDLE(dev), &adev);
++	if (WARN_ON(ret))
++		return ret;
++
++	spin_lock_irqsave(&dev->power.lock, flags);
++	if (pm_runtime_suspended(dev)) {
++		ret = -EAGAIN;
++		goto out;
++	}
++	pdata = acpi_driver_data(adev);
++	if (WARN_ON(!pdata || !pdata->mmio_base)) {
++		ret = -ENODEV;
++		goto out;
++	}
++	*val = readl(pdata->mmio_base + pdata->dev_desc->prv_offset + reg);
++
++ out:
++	spin_unlock_irqrestore(&dev->power.lock, flags);
++	return ret;
++}
++
++static ssize_t lpss_ltr_show(struct device *dev, struct device_attribute *attr,
++			     char *buf)
++{
++	u32 ltr_value = 0;
++	unsigned int reg;
++	int ret;
++
++	reg = strcmp(attr->attr.name, "auto_ltr") ? LPSS_SW_LTR : LPSS_AUTO_LTR;
++	ret = lpss_reg_read(dev, reg, &ltr_value);
++	if (ret)
++		return ret;
++
++	return snprintf(buf, PAGE_SIZE, "%08x\n", ltr_value);
++}
++
++static ssize_t lpss_ltr_mode_show(struct device *dev,
++				  struct device_attribute *attr, char *buf)
++{
++	u32 ltr_mode = 0;
++	char *outstr;
++	int ret;
++
++	ret = lpss_reg_read(dev, LPSS_GENERAL, &ltr_mode);
++	if (ret)
++		return ret;
++
++	outstr = (ltr_mode & LPSS_GENERAL_LTR_MODE_SW) ? "sw" : "auto";
++	return sprintf(buf, "%s\n", outstr);
++}
++
++static DEVICE_ATTR(auto_ltr, S_IRUSR, lpss_ltr_show, NULL);
++static DEVICE_ATTR(sw_ltr, S_IRUSR, lpss_ltr_show, NULL);
++static DEVICE_ATTR(ltr_mode, S_IRUSR, lpss_ltr_mode_show, NULL);
++
++static struct attribute *lpss_attrs[] = {
++	&dev_attr_auto_ltr.attr,
++	&dev_attr_sw_ltr.attr,
++	&dev_attr_ltr_mode.attr,
++	NULL,
++};
++
++static struct attribute_group lpss_attr_group = {
++	.attrs = lpss_attrs,
++	.name = "lpss_ltr",
++};
++
++static int acpi_lpss_platform_notify(struct notifier_block *nb,
++				     unsigned long action, void *data)
++{
++	struct platform_device *pdev = to_platform_device(data);
++	struct lpss_private_data *pdata;
++	struct acpi_device *adev;
++	const struct acpi_device_id *id;
++	int ret = 0;
++
++	id = acpi_match_device(acpi_lpss_device_ids, &pdev->dev);
++	if (!id || !id->driver_data)
++		return 0;
++
++	if (acpi_bus_get_device(ACPI_HANDLE(&pdev->dev), &adev))
++		return 0;
++
++	pdata = acpi_driver_data(adev);
++	if (!pdata || !pdata->mmio_base || !pdata->dev_desc->ltr_required)
++		return 0;
++
++	if (pdata->mmio_size < pdata->dev_desc->prv_offset + LPSS_LTR_SIZE) {
++		dev_err(&pdev->dev, "MMIO size insufficient to access LTR\n");
++		return 0;
++	}
++
++	if (action == BUS_NOTIFY_ADD_DEVICE)
++		ret = sysfs_create_group(&pdev->dev.kobj, &lpss_attr_group);
++	else if (action == BUS_NOTIFY_DEL_DEVICE)
++		sysfs_remove_group(&pdev->dev.kobj, &lpss_attr_group);
++
++	return ret;
++}
++
++static struct notifier_block acpi_lpss_nb = {
++	.notifier_call = acpi_lpss_platform_notify,
++};
++
+ static struct acpi_scan_handler lpss_handler = {
+ 	.ids = acpi_lpss_device_ids,
+ 	.attach = acpi_lpss_create_device,
+@@ -158,6 +285,8 @@ static struct acpi_scan_handler lpss_han
+ 
+ void __init acpi_lpss_init(void)
+ {
+-	if (!lpt_clk_init())
++	if (!lpt_clk_init()) {
++		bus_register_notifier(&platform_bus_type, &acpi_lpss_nb);
+ 		acpi_scan_add_handler(&lpss_handler);
++	}
+ }
 
