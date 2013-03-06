@@ -1,123 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756385Ab3CFJnG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 04:43:06 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:43756 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755004Ab3CFJnB convert rfc822-to-8bit (ORCPT
+	id S1756212Ab3CFJsU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 04:48:20 -0500
+Received: from www.linutronix.de ([62.245.132.108]:41942 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752736Ab3CFJsS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 04:43:01 -0500
-Date: Wed, 6 Mar 2013 09:42:56 +0000
-From: Andrew Murray <andrew.murray@arm.com>
-To: Rob Herring <robherring2@gmail.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Liviu Dudau <Liviu.Dudau@arm.com>, jg1.han@samsung.com
-Subject: Re: [RFC PATCH RESEND v2] of/pci: Provide support for parsing PCI
- DT ranges property
-Message-ID: <20130306094255.GA9814@arm.com>
-References: <1362140616-19346-1-git-send-email-Andrew.Murray@arm.com>
- <5130C59E.8020702@gmail.com>
+	Wed, 6 Mar 2013 04:48:18 -0500
+Date: Wed, 6 Mar 2013 10:48:08 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+cc: john.stultz@linaro.org, viresh.kumar@linaro.org,
+        jacob.jun.pan@linux.intel.com, linux-arm-kernel@lists.infradead.org,
+        santosh.shilimkar@ti.com, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, rickard.andersson@stericsson.com,
+        vincent.guittot@linaro.org, linus.walleij@stericsson.com
+Subject: Re: [PATCH 2/4][V2] time : set broadcast irq affinity
+In-Reply-To: <51370C09.5020301@linaro.org>
+Message-ID: <alpine.LFD.2.02.1303061047240.22263@ionos>
+References: <1362219013-18173-1-git-send-email-daniel.lezcano@linaro.org> <1362219013-18173-3-git-send-email-daniel.lezcano@linaro.org> <alpine.LFD.2.02.1303052135080.22263@ionos> <51370C09.5020301@linaro.org>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <5130C59E.8020702@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 06 Mar 2013 09:42:57.0358 (UTC) FILETIME=[FBBD46E0:01CE1A4E]
-X-MC-Unique: 113030609425901501
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 01, 2013 at 03:13:34PM +0000, Rob Herring wrote:
-> On 03/01/2013 06:23 AM, Andrew Murray wrote:
-> > This patch factors out common implementations patterns to reduce overall kernel
-> > code and provide a means for host bridge drivers to directly obtain struct
-> > resources from the DT's ranges property without relying on architecture specific
-> > DT handling. This will make it easier to write archiecture independent host bridge
-> > drivers and mitigate against further duplication of DT parsing code.
+On Wed, 6 Mar 2013, Daniel Lezcano wrote:
+> On 03/05/2013 09:40 PM, Thomas Gleixner wrote:
+> > On Sat, 2 Mar 2013, Daniel Lezcano wrote:
+> >> When a cpu goes to a deep idle state where its local timer is shutdown,
+> >> it notifies the time frame work to use the broadcast timer instead.
+> >>
+> >> Unfortunately, the broadcast device could wake up any CPU, including an
+> >> idle one which is not concerned by the wake up at all.
+> >>
+> >> This implies, in the worst case, an idle CPU will wake up to send an IPI
+> >> to another idle cpu.
+> >>
+> >> This patch solves this by setting the irq affinity to the cpu concerned
+> >> by the nearest timer event, by this way, the CPU which is wake up is
+> >> guarantee to be the one concerned by the next event and we are safe with
+> >> unnecessary wakeup for another idle CPU.
+> >>
+> >> As the irq affinity is not supported by all the archs, a flag is needed
+> >> to specify which clocksource can handle it : CLOCK_EVT_FEAT_DYNIRQ
+> >>
+> >> Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+> >> ---
+> >>  include/linux/clockchips.h   |    5 +++++
+> >>  kernel/time/tick-broadcast.c |   40 +++++++++++++++++++++++++++++++++-------
+> >>  2 files changed, 38 insertions(+), 7 deletions(-)
+> >>
+> >> diff --git a/include/linux/clockchips.h b/include/linux/clockchips.h
+> >> index 6634652..c93e2a6 100644
+> >> --- a/include/linux/clockchips.h
+> >> +++ b/include/linux/clockchips.h
+> >> @@ -55,6 +55,11 @@ enum clock_event_nofitiers {
+> >>  #define CLOCK_EVT_FEAT_C3STOP		0x000008
+> >>  #define CLOCK_EVT_FEAT_DUMMY		0x000010
+> >>  
+> >> +/*
+> >> + * Clock event device can set its irq affinity dynamically
+> >> + */
+> >> +#define CLOCK_EVT_FEAT_DYNIRQ		0x000020
+> >> +
+> >>  /**
+> >>   * struct clock_event_device - clock event device descriptor
+> >>   * @event_handler:	Assigned by the framework to be called by the low
+> >> diff --git a/kernel/time/tick-broadcast.c b/kernel/time/tick-broadcast.c
+> >> index 6197ac0..9ca8ff5 100644
+> >> --- a/kernel/time/tick-broadcast.c
+> >> +++ b/kernel/time/tick-broadcast.c
+> >> @@ -406,13 +406,37 @@ struct cpumask *tick_get_broadcast_oneshot_mask(void)
+> >>  	return to_cpumask(tick_broadcast_oneshot_mask);
+> >>  }
+> >>  
+> >> -static int tick_broadcast_set_event(struct clock_event_device *bc,
+> >> +/*
+> >> + * Set broadcast interrupt affinity
+> >> + */
+> >> +static void tick_broadcast_set_affinity(struct clock_event_device *bc,
+> >> +					const struct cpumask *cpumask)
+> >> +{
+> >> +	if (!(bc->features & CLOCK_EVT_FEAT_DYNIRQ))
+> >> +		return;
+> >> +
+> >> +	if (cpumask_equal(bc->cpumask, cpumask))
+> >> +		return;
+> >> +
+> >> +	bc->cpumask = cpumask;
 > > 
-> > This patch can be used in the following way:
-> > 
-> > 	struct of_pci_range_iter iter;
-> > 	for_each_of_pci_range(&iter, np) {
-> > 
-> > 		//directly access properties of the address range, e.g.:
-> > 		//iter.pci_space, iter.pci_addr, iter.cpu_addr, iter.size or
-> > 		//iter.flags
-> > 
-> > 		//alternatively obtain a struct resource, e.g.:
-> > 		//struct resource res;
-> > 		//range_iter_fill_resource(iter, np, res);
-> > 	}
-> > 
-> > Additionally the implementation takes care of adjacent ranges and merges them
-> > into a single range (as was the case with powerpc and microblaze).
-> > 
-> > The modifications to microblaze, mips and powerpc have not been tested.
-> > 
-> > v2:
-> >   This follows on from suggestions made by Grant Likely
-> >   (marc.info/?l=linux-kernel&m=136079602806328)
-> > 
-> > Signed-off-by: Andrew Murray <Andrew.Murray@arm.com>
-> > Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
-> > ---
-> >  arch/microblaze/pci/pci-common.c |  100 +++++++++++--------------------------
-> >  arch/mips/pci/pci.c              |   44 ++++-------------
-> >  arch/powerpc/kernel/pci-common.c |   93 ++++++++++-------------------------
-> >  drivers/of/address.c             |   54 ++++++++++++++++++++
-> >  include/linux/of_address.h       |   30 +++++++++++
-> >  5 files changed, 151 insertions(+), 170 deletions(-)
+> > This breaks with CONFIG_CPUMASK_OFFSTACK=y. cpumask_copy() is your friend!
 > 
-> The thing is that this still leaves pci_process_bridge_OF_ranges
-> basically identical for microblaze and powerpc which is really what
-> needs to be moved out to common code. Obviously, struct pci_controller
-> vs. struct pci_sys_data on ARM is an issue, but they all have
-> fundamentally the same data.
-Yes it does. To make things worse struct pci_controller is duplicated and
-pretty much identical between microblaze and powerpc. There is good scope
-for getting rid of lots of code here :).
+> This instruction copies the pointer, not the cpumask content.
+> 
+> bc->cpumask is defined as a const struct cpumask * and is used to copy a
+> cpumask pointer not the content.
+> 
+> The cpumask parameter is a pointer to a global cpumask provided by the
+> cpumask_of macro.
+> 
+> But to be in the safe side, I compiled tested with
+> CONFIG_CPUMASK_OFFSTACK=y without problem.
+> 
+> Did I missed something ?
 
-> 
-> All these common fields should be in a common PCI controller struct.
-> Perhaps introducing this with just what you need would work. Depending
-> how invasive moving those fields to a new struct is, you could have a
-> wrapper that just copies/translates the fields to the arch specific struct.
-Yes I see how this would be a good approach. Though my concern would be how
-quirks are handled - if microblaze has the same quirks as powerpc then you'll
-see the same duplicated code between those two architectures. Or you'd see
-the architecture code pick apart the common pci controller struct... I'll
-investigate and see what can be done.
+No, I misinterpreted the patch. Assigning a pointer is safe. 
 
-A lack of an accepted way to parse DT ranges on ARM is blocking Thierry,
-Thomas and Jingoo from upstreaming their drivers - do you think there is some
-middle ground or temporary solution for these drivers?
+Thanks,
 
-> 
-> There's also things like ioremap of the i/o range. ARM uses a fixed
-> virtual address, so we need to do something different. Just returning
-> the i/o cpu_addr and moving the ioremap out of this function would solve
-> that.
-Yes I've noticed this wasn't quite right. I'm not quite sure how this fits
-in with the DT. I guess the DT ranges would contain 0 for the PCI address
-and a physical address which represents the host bridges I/O range. You
-would then use these two addresses as inputs to pci_ioremap_io - and then
-set the start address of the struct resource to 0 and pass to
-pci_add_resource_offset with io_offset set to 0 - does this seem correct for
-ARM?
-
-Andrew Murray
-> 
-> Rob
-> 
-> 
-
+	tglx
