@@ -1,94 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752451Ab3CFGTP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 01:19:15 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:13400 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750788Ab3CFGTO convert rfc822-to-8bit (ORCPT
+	id S1752821Ab3CFGTi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 01:19:38 -0500
+Received: from relay.parallels.com ([195.214.232.42]:52294 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752575Ab3CFGTh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 01:19:14 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Tue, 05 Mar 2013 22:12:40 -0800
-From: Venu Byravarasu <vbyravarasu@nvidia.com>
-To: "jg1.han@samsung.com" <jg1.han@samsung.com>
-CC: "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "'Tejun Heo'" <tj@kernel.org>, "'Greg KH'" <greg@kroah.com>,
-        "'Alessandro Zummo'" <a.zummo@towertech.it>,
-        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>
-Date: Wed, 6 Mar 2013 11:48:33 +0530
-Subject: RE: [PATCH v3] rtc: add devm_rtc_device_{register,unregister}()
-Thread-Topic: [PATCH v3] rtc: add devm_rtc_device_{register,unregister}()
-Thread-Index: Ac4aMaaTVvxe8MZBTaW0W/+zFuhrCgAABSdA
-Message-ID: <D958900912E20642BCBC71664EFECE3E6E4F721A62@BGMAIL02.nvidia.com>
-References: <12429277.417351362550362880.JavaMail.weblogic@epml07>
-In-Reply-To: <12429277.417351362550362880.JavaMail.weblogic@epml07>
-Accept-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
+	Wed, 6 Mar 2013 01:19:37 -0500
+Message-ID: <5136DFBE.3090505@parallels.com>
+Date: Wed, 6 Mar 2013 10:18:38 +0400
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
 MIME-Version: 1.0
-Content-Language: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+To: "J. Bruce Fields" <bfields@fieldses.org>
+CC: <linux-nfs@vger.kernel.org>, <Trond.Myklebust@netapp.com>,
+        <linux-kernel@vger.kernel.org>, <devel@openvz.org>
+Subject: Re: [Devel] [PATCH] nfsd: check client tracker initialization result
+References: <20130228120959.6764.17787.stgit@localhost.localdomain> <20130305212001.GD15816@fieldses.org> <5136CEEB.5090505@parallels.com>
+In-Reply-To: <5136CEEB.5090505@parallels.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.30.29.37]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Jingoo Han [mailto:jg1.han@samsung.com]
-> Sent: Wednesday, March 06, 2013 11:43 AM
-> To: Venu Byravarasu
-> Cc: 'Andrew Morton'; linux-kernel@vger.kernel.org; 'Tejun Heo'; 'Greg KH';
-> 'Alessandro Zummo'; rtc-linux@googlegroups.com; Jingoo Han
-> Subject: Re: [PATCH v3] rtc: add devm_rtc_device_{register,unregister}()
-> 
-> On Wednesday, March 06, 2013 3:03 PM, Venu Byravarasu wrote:
-> >
-> > > --- a/drivers/rtc/class.c
-> > > +++ b/drivers/rtc/class.c
-> >
-> > > +/**
-> > > + * devm_rtc_device_register - resource managed rtc_device_register()
-> > > + * @name: the name of the device
-> > > + * @dev: the device to register
-> > > + * @ops: the rtc operations structure
-> > > + * @owner: the module owner
-> > > + *
-> > > + * @return a struct rtc on success, or an ERR_PTR on error
-> > > + *
-> > > + * Managed rtc_device_register(). The rtc_device returned from this
-> > > function
-> > > + * are automatically freed on driver detach. See rtc_device_register()
-> > > + * for more information.
-> > > + */
-> > > +
-> > > +struct rtc_device *devm_rtc_device_register(const char *name,
-> > > +					struct device *dev,
-> >
-> > As most of devm_* functions use  " struct device *dev" as their first param,
-> > why not this function also modified to be in sync with them?
-> 
-> Yes, but, I want to sync with the form of rtc_device_register().
-> This function already uses 'struct device *dev' as second argument as below.
-> 
+06.03.2013 09:06, Stanislav Kinsbursky пишет:
+> 06.03.2013 01:20, J. Bruce Fields пишет:
+>> On Thu, Feb 28, 2013 at 03:09:59PM +0300, Stanislav Kinsbursky wrote:
+>>> Function nfsd4_client_tracking_init() can return error.
+>>
+>> Before, I think that we the nfsd4_client_* functions just became no-ops
+>> in this case.  With the result that no client records get written, and
+>> so clients are unable to reclaim on the next boot.
+>>
+>> Which is annoying, but possibly not as annoying as your server
+>> completely refusing to start.
+>>
+>> It's arguably more helpful in the long run to fail immediately when we
+>> recognize reboot recovery isn't going to work.  But in practice this may
+>> mean people that never knew they had a problem suddenly have servers
+>> that don't start at all.
+>>
+>> So I'm inclined to be more forgiving and leave this as it is.  But maybe
+>> something like a warning printk would be appropriate.
+>>
+>
+> Ok then.
+> I'll add the warning anf convert the function to be "void" rather then "int".
+> Thanks!
+>
 
-IMO any kernel driver developer using devm_* API, expects struct device* as first argument.
-Breaking this policy for one module (RTC here) & making this API special, might not be a good idea.
-Anyhow, maintainers may add their comments on this.
+We already have a warning.
+So, probably all we need is just to change a prototype to make it less confusing.
+Is it ok?
 
-Thanks,
-Venu
-
->  struct rtc_device *rtc_device_register(const char *name, struct device *dev,
->                                          const struct rtc_class_ops *ops,
->                                          struct module *owner)
-> 
-> Best regards,
-> Jingoo Han
-> 
-> >
-> > > +					const struct rtc_class_ops *ops,
-> > > +					struct module *owner)
-> > > +{
-> > > +	struct rtc_device **ptr, *rtc;
+-- 
+Best regards,
+Stanislav Kinsbursky
