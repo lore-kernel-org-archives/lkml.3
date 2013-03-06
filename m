@@ -1,76 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755650Ab3CFJDV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 04:03:21 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:4725 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1750816Ab3CFJDM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 04:03:12 -0500
-X-IronPort-AV: E=Sophos;i="4.84,793,1355068800"; 
-   d="scan'208";a="6823401"
-Date: Wed, 6 Mar 2013 17:03:18 +0800
-From: Hu Tao <hutao@cn.fujitsu.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>, Gleb Natapov <gleb@redhat.com>,
-        Blue Swirl <blauwirbel@gmail.com>, Eric Blake <eblake@redhat.com>,
-        Andrew Jones <drjones@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Sasha Levin <levinsasha928@gmail.com>,
-        Luiz Capitulino <lcapitulino@redhat.com>,
-        Anthony Liguori <aliguori@us.ibm.com>,
-        Markus Armbruster <armbru@redhat.com>,
-        Stefan Hajnoczi <stefanha@redhat.com>,
-        Juan Quintela <quintela@redhat.com>,
-        Orit Wasserman <owasserm@redhat.com>, Kevin Wolf <kwolf@redhat.com>,
-        Wen Congyang <wency@cn.fujitsu.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>, Alexander Graf <agraf@suse.de>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Peter Maydell <peter.maydell@linaro.org>
-Subject: Re: [PATCH v13 4/8] add a new runstate: RUN_STATE_GUEST_PANICKED
-Message-ID: <20130306090318.GC4719@localhost.localdomain>
-References: <cover.1362051581.git.hutao@cn.fujitsu.com>
- <ab47cb1ef5a962848b2390d5b602b36aca1f149a.1362051582.git.hutao@cn.fujitsu.com>
- <51346BFF.5000704@redhat.com>
- <20130305031701.GN16362@localhost.localdomain>
- <5135AC2A.8010008@redhat.com>
+	id S1755838Ab3CFJFr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 04:05:47 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:41818 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753403Ab3CFJFi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Mar 2013 04:05:38 -0500
+Date: Wed, 6 Mar 2013 01:03:23 -0800
+From: "tip-bot for Li, Zhen-Hua" <tipbot@zytor.com>
+Message-ID: <tip-4ecccd9edd5eb4dd185486e6e593c671484691bc@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        joro@8bytes.org, ddutile@redhat.com, zhen-hual@hp.com, hare@suse.de,
+        suresh.b.siddha@intel.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        joro@8bytes.org, ddutile@redhat.com, zhen-hual@hp.com, hare@suse.de,
+        suresh.b.siddha@intel.com, tglx@linutronix.de
+In-Reply-To: <1362537797-6034-1-git-send-email-zhen-hual@hp.com>
+References: <1362537797-6034-1-git-send-email-zhen-hual@hp.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] iommu, x86: Add DMA remap fault reason
+Git-Commit-ID: 4ecccd9edd5eb4dd185486e6e593c671484691bc
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-In-Reply-To: <5135AC2A.8010008@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/03/06 17:02:07,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/03/06 17:02:07,
-	Serialize complete at 2013/03/06 17:02:07
-Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 06 Mar 2013 01:03:29 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 05, 2013 at 09:26:18AM +0100, Paolo Bonzini wrote:
-> Il 05/03/2013 04:17, Hu Tao ha scritto:
-> > Will 
-> > 
-> >          if (runstate_check(RUN_STATE_INTERNAL_ERROR) ||
-> >              runstate_check(RUN_STATE_SHUTDOWN) ||
-> >              runstate_check(RUN_STATE_GUEST_PANICKED)) {
-> >              runstate_set(RUN_STATE_PAUSED);
-> >          }
-> > 
-> > be OK? Or I must be misunderstanding you.
-> > 
-> 
-> Please move
-> 
->        return (runstate_check(RUN_STATE_INTERNAL_ERROR) ||
->                runstate_check(RUN_STATE_SHUTDOWN) ||
->                runstate_check(RUN_STATE_GUEST_PANICKED));
-> 
-> to a separate function (runstate_needs_reset for example), so that you
-> can reuse it in the two or three places that need it.
+Commit-ID:  4ecccd9edd5eb4dd185486e6e593c671484691bc
+Gitweb:     http://git.kernel.org/tip/4ecccd9edd5eb4dd185486e6e593c671484691bc
+Author:     Li, Zhen-Hua <zhen-hual@hp.com>
+AuthorDate: Wed, 6 Mar 2013 10:43:17 +0800
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Wed, 6 Mar 2013 09:41:51 +0100
 
-See it now. Thanks!
+iommu, x86: Add DMA remap fault reason
+
+The number of DMA fault reasons in intel's document are from 1
+to 0xD, but in dmar.c fault reason 0xD is not printed out.
+
+In this document:
+
+ "Intel Virtualization Technology for Directed I/O Architecture Specification"
+ http://download.intel.com/technology/computing/vptech/Intel(r)_VT_for_Direct_IO.pdf
+
+Chapter 4. Support For Device-IOTLBs
+
+Table 6. Unsuccessful Translated Requests
+
+There is fault reason for 0xD not listed in kernel:
+
+    Present context-entry used to process translation request
+    specifies blocking of Translation Requests (Translation Type (T)
+    field value not equal to 01b).
+
+This patch adds reason 0xD as well.
+
+Signed-off-by: Li, Zhen-Hua <zhen-hual@hp.com>
+Cc: Joerg Roedel <joro@8bytes.org>
+Cc: Donald Dutile <ddutile@redhat.com>
+Cc: Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: Hannes Reinecke <hare@suse.de>
+Link: http://lkml.kernel.org/r/1362537797-6034-1-git-send-email-zhen-hual@hp.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ drivers/iommu/dmar.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/iommu/dmar.c b/drivers/iommu/dmar.c
+index dc7e478..e5cdaf8 100644
+--- a/drivers/iommu/dmar.c
++++ b/drivers/iommu/dmar.c
+@@ -1083,6 +1083,7 @@ static const char *dma_remap_fault_reasons[] =
+ 	"non-zero reserved fields in RTP",
+ 	"non-zero reserved fields in CTP",
+ 	"non-zero reserved fields in PTE",
++	"PCE for translation request specifies blocking",
+ };
+ 
+ static const char *irq_remap_fault_reasons[] =
