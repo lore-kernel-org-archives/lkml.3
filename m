@@ -1,55 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755871Ab3CFVdQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 16:33:16 -0500
-Received: from www.linutronix.de ([62.245.132.108]:45540 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755773Ab3CFVdP (ORCPT
+	id S1755910Ab3CFVdo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 16:33:44 -0500
+Received: from mail-ia0-f172.google.com ([209.85.210.172]:52101 "EHLO
+	mail-ia0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755491Ab3CFVdn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 16:33:15 -0500
-Date: Wed, 6 Mar 2013 22:33:08 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Feng Tang <feng.tang@intel.com>
-cc: John Stultz <john.stultz@linaro.org>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>, x86@kernel.org,
-        Len Brown <lenb@kernel.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        linux-kernel@vger.kernel.org, gong.chen@linux.intel.com
-Subject: Re: [PATCH v3 5/5] timekeeping: utilize the suspend-nonstop clocksource
- to count suspended time
-In-Reply-To: <20130306142914.GA25790@feng-snb>
-Message-ID: <alpine.LFD.2.02.1303062231000.22263@ionos>
-References: <1362554271-22382-1-git-send-email-feng.tang@intel.com> <1362554271-22382-6-git-send-email-feng.tang@intel.com> <alpine.LFD.2.02.1303061512110.22263@ionos> <20130306142914.GA25790@feng-snb>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Wed, 6 Mar 2013 16:33:43 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+In-Reply-To: <5137AE06.8060200@linux.intel.com>
+References: <CA+55aFx0HcOXKpxmZzM5jcbAaOroxafomX5ggMFV4A=py1qh-Q@mail.gmail.com>
+	<20130306080642.GA535@polaris.bitmath.org>
+	<51370990.5040508@linux.intel.com>
+	<20130306100743.GA407@polaris.bitmath.org>
+	<CAE9FiQXT4O3GOzm_OoFJG=vc=5LpfBkTEbAO_3xjerBGS_Gy=A@mail.gmail.com>
+	<20130306193612.GA513@polaris.bitmath.org>
+	<51379A4F.4020200@linux.intel.com>
+	<20130306195457.GA449@polaris.bitmath.org>
+	<CAE9FiQWK0ZnG9o8WgU-pcTPpir=PUyULQqk-TRVC+sh6UpU8VA@mail.gmail.com>
+	<20130306204500.GA335@polaris.bitmath.org>
+	<5137AE06.8060200@linux.intel.com>
+Date: Wed, 6 Mar 2013 13:33:42 -0800
+X-Google-Sender-Auth: K8dCULVMk1a4ggNQRYf8Xu8bjaw
+Message-ID: <CAE9FiQW6SegoYjoveCVGWS3h-0UOHp5_wuAwnVh14oKLyYQFKA@mail.gmail.com>
+Subject: Re: Linux 3.9-rc1
+From: Yinghai Lu <yinghai@kernel.org>
+To: "H. Peter Anvin" <hpa@linux.intel.com>,
+        Henrik Rydberg <rydberg@euromail.se>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: multipart/mixed; boundary=14dae9340ea91f765804d748586c
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 6 Mar 2013, Feng Tang wrote:
-> On Wed, Mar 06, 2013 at 03:15:49PM +0100, Thomas Gleixner wrote:
-> > If the suspend time measured by the nonstop clocksource is 0.999 sec
-> > then we throw it away and then let the RTC code inject inaccurate
-> > sleep time? Brilliant design, really.
-> 
-> Emm, I wrote the code with an assumption that the sleep itself and the
-> enter/exit processes will be longer than 1 second.
-> 
-> I can initialize the ts_delta to (0, 0} and change the check condition
-> to 
-> 	if (ts_delta.tv_sec || ts_delta.tv_nsec)
-> 
+--14dae9340ea91f765804d748586c
+Content-Type: text/plain; charset=ISO-8859-1
 
-To be honest, I hate this abuse of ts_delta as a condition. Use a
-separate condition variable to make clear what the hell that code is
-doing. This is not a fast path and I really prefer understandable code
-over magic microoptimizations for no value.
+On Wed, Mar 6, 2013 at 12:58 PM, H. Peter Anvin <hpa@linux.intel.com> wrote:
 
-Thanks,
+> Excellent.  Yinghai, can you write up the patch with a proper
+> description and I'll put it into x86/urgent.
 
-	tglx
+I made it more robust: make sure real_end have 8M below it.
+Please check attached one.
+
+Thanks
+
+Yinghai
+
+--14dae9340ea91f765804d748586c
+Content-Type: application/octet-stream; name="fix_real_end_v2.patch"
+Content-Disposition: attachment; filename="fix_real_end_v2.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hdz04gt80
+
+U3ViamVjdDogW1BBVENIXSB4ODYsIG1tOiBGaXJzdCBtYXBwZWQgYXJlYSBuZWVkIHRvIGJlIDJN
+IGFsaWduZWQgYW5kIGJpZyBlbm91Z2gKCkhlbnJpayByZXBvcnRlZCB0aGF0IGhpcyBNYWNBaXIg
+My4xIHdvdWxkIG5vdCBib290IHdpdGgKCnwgY29tbWl0IDhkNTc0NzBkOGY4NTk2MzVkZWZmZTM5
+MTlkN2Q0ODY3YjQ4OGI4NWEKfCBEYXRlOiAgIEZyaSBOb3YgMTYgMTk6Mzg6NTggMjAxMiAtMDgw
+MAp8CnwgICAgeDg2LCBtbTogc2V0dXAgcGFnZSB0YWJsZSBpbiB0b3AtZG93bgoKSXQgdHVybnMg
+b3V0IHRoYXQgd2UgZG8gbm90IGNhbGN1bGF0ZSB0aGUgcmVhbF9lbmQgcHJvcGVybHk6CldlIHRy
+eSB0byBnZXQgMk0gc2l6ZSB3aXRoIDRLIGFsaWdubWVudCwgYW5kIGxhdGVyIHdpbGwgcm91bmQg
+ZG93bgp0byAyTSwgc28gd2Ugd2lsbCBnZXQgbGVzcyB0aGVuIDJNIGZvciBmaXJzdCBtYXBwaW5n
+LCBpbiBleHRyZW1lCmNhc2UgY291bGQgYmUgb25seSA0SyBvbmx5LiBJbiBIZW5yaWsncyBzeXN0
+ZW0gaXQgaGFzICgxTS0zMkspIGFzCmxhc3QgdXNhYmxlIHJhZ2UgaXMgW21lbSAweDdmOWRiMDAw
+LTB4N2ZlZjhmZmZdLgoKVGhlIHByb2JsZW0gaXMgZXhwb3NlZCB3aGVuIEVGSSBib290aW5nIGhh
+dmUgc2V2ZXJhbCBob2xlcyBhbmQgaXQKd2lsbCBmb3JjZSBtYXBwaW5nIHRvIHVzZSBQVEUgaW5z
+dGVhZCBhcyB3ZSBvbmx5IG1hcCB1c2FibGUgYXJlYXMuCgpUbyBmaXggaXQsIGp1c3QgbWFrZSBp
+dCBiZSAyTSBhbGlnbmVkLgoKQXMgTGludXMgc2FpZCBoaXMgTWFjQWlyIDQuMSBoYXMgMjUxIG1l
+bW1hcCBlbnRyaWVzLCBpdCBjb3VsZCBoYXZlCm1vcmUgaG9sZXMgaW4gbWVtbWFwLiBUbyBtYWtl
+IGl0IG1vcmUgcm9idXN0LCB0cnkgdG8gcHVzaCBkb3duCnJlYWxfZW5kIGEgYml0LCB0byBtYWtl
+IHN1cmUgd2UgaGF2ZSA4TSBjb250aW51b3VzIHVzYWJsZSBhcmVhCmZvciBwYWdlIHRhYmxlcywg
+dGhhdCB3aWxsIGxldCB1cyBza2lwIHRob3NlIFVFRkkgaG9sZXMuCgpSZXBvcnRlZC1ieTogSGVu
+cmlrIFJ5ZGJlcmcgPHJ5ZGJlcmdAZXVyb21haWwuc2U+CkJpc2VjdGVkLWJ5OiBIZW5yaWsgUnlk
+YmVyZyA8cnlkYmVyZ0BldXJvbWFpbC5zZT4KVGVzdGVkLWJ5OiBIZW5yaWsgUnlkYmVyZyA8cnlk
+YmVyZ0BldXJvbWFpbC5zZT4KU2lnbmVkLW9mZi1ieTogWWluZ2hhaSBMdSA8eWluZ2hhaUBrZXJu
+ZWwub3JnPgoKLS0tCiBhcmNoL3g4Ni9tbS9pbml0LmMgfCAgIDE0ICsrKysrKysrKystLS0tCiAx
+IGZpbGUgY2hhbmdlZCwgMTAgaW5zZXJ0aW9ucygrKSwgNCBkZWxldGlvbnMoLSkKCkluZGV4OiBs
+aW51eC0yLjYvYXJjaC94ODYvbW0vaW5pdC5jCj09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KLS0tIGxpbnV4LTIuNi5vcmln
+L2FyY2gveDg2L21tL2luaXQuYworKysgbGludXgtMi42L2FyY2gveDg2L21tL2luaXQuYwpAQCAt
+MzYyLDEwICszNjIsMTYgQEAgdm9pZCBfX2luaXQgaW5pdF9tZW1fbWFwcGluZyh2b2lkKQogCS8q
+IHRoZSBJU0EgcmFuZ2UgaXMgYWx3YXlzIG1hcHBlZCByZWdhcmRsZXNzIG9mIG1lbW9yeSBob2xl
+cyAqLwogCWluaXRfbWVtb3J5X21hcHBpbmcoMCwgSVNBX0VORF9BRERSRVNTKTsKIAotCS8qIHhl
+biBoYXMgYmlnIHJhbmdlIGluIHJlc2VydmVkIG5lYXIgZW5kIG9mIHJhbSwgc2tpcCBpdCBhdCBm
+aXJzdCAqLwotCWFkZHIgPSBtZW1ibG9ja19maW5kX2luX3JhbmdlKElTQV9FTkRfQUREUkVTUywg
+ZW5kLCBQTURfU0laRSwKLQkJCSBQQUdFX1NJWkUpOwotCXJlYWxfZW5kID0gYWRkciArIFBNRF9T
+SVpFOworCS8qCisJICogeGVuIGhhcyBiaWcgcmFuZ2UgaW4gcmVzZXJ2ZWQgbmVhciBlbmQgb2Yg
+cmFtLCBza2lwIGl0IGF0IGZpcnN0LgorCSAqIFVFRkkgYm9vdGluZyBjb3VsZCBoYXZlIGJ1bmNo
+IG9mIGhvbGVzIGluIG1lbW9yeSBtYXAsIHRyeSB0bworCSAqICAgc2tpcCB1c2FibGUgcmFuZ2Ug
+aW4gdGhvc2UgYXJlYSwgc28gY291bGQgaGF2ZSBwYWdlcyBmb3IgcGFnZQorCSAqICAgdGFibGUg
+dG9nZXRoZXIsIGp1c3QgbWFrZSBzdXJlIHVzYWJsZSByYW5nZXMgYmxvdyByZWFsX2VuZCBpcwor
+CSAqICAgOE1pQiBjb250aW51b3VzIGF0IGxlYXN0LgorCSAqLworCWFkZHIgPSBtZW1ibG9ja19m
+aW5kX2luX3JhbmdlKElTQV9FTkRfQUREUkVTUywgZW5kLCBQTURfU0laRTw8MiwKKwkJCSBQTURf
+U0laRSk7CisJcmVhbF9lbmQgPSBhZGRyICsgKFBNRF9TSVpFPDwyKTsKIAogCS8qIHN0ZXBfc2l6
+ZSBuZWVkIHRvIGJlIHNtYWxsIHNvIHBndF9idWYgZnJvbSBCUksgY291bGQgY292ZXIgaXQgKi8K
+IAlzdGVwX3NpemUgPSBQTURfU0laRTsK
+--14dae9340ea91f765804d748586c--
