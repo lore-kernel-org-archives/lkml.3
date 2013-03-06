@@ -1,61 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752830Ab3CFGRy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 01:17:54 -0500
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:48409 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755199Ab3CFGRw (ORCPT
+	id S1752451Ab3CFGTP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 01:19:15 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:13400 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750788Ab3CFGTO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 01:17:52 -0500
-From: Magnus Damm <magnus.damm@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-sh@vger.kernel.org, benh@kernel.crashing.org,
-        grant.likely@secretlab.ca, horms@verge.net.au,
-        Magnus Damm <magnus.damm@gmail.com>, tglx@linutronix.de
-Date: Wed, 06 Mar 2013 15:23:39 +0900
-Message-Id: <20130306062339.5262.30625.sendpatchset@w520>
-Subject: [PATCH] irqchip: irqc: Add DT support
+	Wed, 6 Mar 2013 01:19:14 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Tue, 05 Mar 2013 22:12:40 -0800
+From: Venu Byravarasu <vbyravarasu@nvidia.com>
+To: "jg1.han@samsung.com" <jg1.han@samsung.com>
+CC: "'Andrew Morton'" <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "'Tejun Heo'" <tj@kernel.org>, "'Greg KH'" <greg@kroah.com>,
+        "'Alessandro Zummo'" <a.zummo@towertech.it>,
+        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>
+Date: Wed, 6 Mar 2013 11:48:33 +0530
+Subject: RE: [PATCH v3] rtc: add devm_rtc_device_{register,unregister}()
+Thread-Topic: [PATCH v3] rtc: add devm_rtc_device_{register,unregister}()
+Thread-Index: Ac4aMaaTVvxe8MZBTaW0W/+zFuhrCgAABSdA
+Message-ID: <D958900912E20642BCBC71664EFECE3E6E4F721A62@BGMAIL02.nvidia.com>
+References: <12429277.417351362550362880.JavaMail.weblogic@epml07>
+In-Reply-To: <12429277.417351362550362880.JavaMail.weblogic@epml07>
+Accept-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+MIME-Version: 1.0
+Content-Language: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Magnus Damm <damm@opensource.se>
+> -----Original Message-----
+> From: Jingoo Han [mailto:jg1.han@samsung.com]
+> Sent: Wednesday, March 06, 2013 11:43 AM
+> To: Venu Byravarasu
+> Cc: 'Andrew Morton'; linux-kernel@vger.kernel.org; 'Tejun Heo'; 'Greg KH';
+> 'Alessandro Zummo'; rtc-linux@googlegroups.com; Jingoo Han
+> Subject: Re: [PATCH v3] rtc: add devm_rtc_device_{register,unregister}()
+> 
+> On Wednesday, March 06, 2013 3:03 PM, Venu Byravarasu wrote:
+> >
+> > > --- a/drivers/rtc/class.c
+> > > +++ b/drivers/rtc/class.c
+> >
+> > > +/**
+> > > + * devm_rtc_device_register - resource managed rtc_device_register()
+> > > + * @name: the name of the device
+> > > + * @dev: the device to register
+> > > + * @ops: the rtc operations structure
+> > > + * @owner: the module owner
+> > > + *
+> > > + * @return a struct rtc on success, or an ERR_PTR on error
+> > > + *
+> > > + * Managed rtc_device_register(). The rtc_device returned from this
+> > > function
+> > > + * are automatically freed on driver detach. See rtc_device_register()
+> > > + * for more information.
+> > > + */
+> > > +
+> > > +struct rtc_device *devm_rtc_device_register(const char *name,
+> > > +					struct device *dev,
+> >
+> > As most of devm_* functions use  " struct device *dev" as their first param,
+> > why not this function also modified to be in sync with them?
+> 
+> Yes, but, I want to sync with the form of rtc_device_register().
+> This function already uses 'struct device *dev' as second argument as below.
+> 
 
-Add DT support to the IRQC External IRQ Pin driver.
+IMO any kernel driver developer using devm_* API, expects struct device* as first argument.
+Breaking this policy for one module (RTC here) & making this API special, might not be a good idea.
+Anyhow, maintainers may add their comments on this.
 
-Signed-off-by: Magnus Damm <damm@opensource.se>
----
+Thanks,
+Venu
 
- drivers/irqchip/irq-renesas-irqc.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
-
---- 0001/drivers/irqchip/irq-renesas-irqc.c
-+++ work/drivers/irqchip/irq-renesas-irqc.c	2013-03-06 15:01:42.000000000 +0900
-@@ -145,6 +145,7 @@ static int irqc_irq_domain_map(struct ir
- 
- static struct irq_domain_ops irqc_irq_domain_ops = {
- 	.map	= irqc_irq_domain_map,
-+	.xlate  = irq_domain_xlate_twocell,
- };
- 
- static int irqc_probe(struct platform_device *pdev)
-@@ -273,11 +274,19 @@ static int irqc_remove(struct platform_d
- 	return 0;
- }
- 
-+static const struct of_device_id irqc_dt_ids[] = {
-+	{ .compatible = "renesas,irqc", },
-+	{},
-+};
-+MODULE_DEVICE_TABLE(of, irqc_dt_ids);
-+
- static struct platform_driver irqc_device_driver = {
- 	.probe		= irqc_probe,
- 	.remove		= irqc_remove,
- 	.driver		= {
- 		.name	= "renesas_irqc",
-+		.of_match_table	= irqc_dt_ids,
-+		.owner	= THIS_MODULE,
- 	}
- };
- 
+>  struct rtc_device *rtc_device_register(const char *name, struct device *dev,
+>                                          const struct rtc_class_ops *ops,
+>                                          struct module *owner)
+> 
+> Best regards,
+> Jingoo Han
+> 
+> >
+> > > +					const struct rtc_class_ops *ops,
+> > > +					struct module *owner)
+> > > +{
+> > > +	struct rtc_device **ptr, *rtc;
