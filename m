@@ -1,95 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754049Ab3CFHDG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 02:03:06 -0500
-Received: from e28smtp03.in.ibm.com ([122.248.162.3]:40310 "EHLO
-	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753806Ab3CFHDE (ORCPT
+	id S1753939Ab3CFHG5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 02:06:57 -0500
+Received: from moutng.kundenserver.de ([212.227.126.171]:61339 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753069Ab3CFHGz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 02:03:04 -0500
-Message-ID: <5136EA12.7040703@linux.vnet.ibm.com>
-Date: Wed, 06 Mar 2013 15:02:42 +0800
-From: Mike Qiu <qiudayu@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
+	Wed, 6 Mar 2013 02:06:55 -0500
+Date: Wed, 6 Mar 2013 08:06:32 +0100
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: David Airlie <airlied@linux.ie>, Stephen Warren <swarren@wwwdotorg.org>,
+        dri-devel@lists.freedesktop.org, linux-tegra@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drm/tegra: drop "select DRM_HDMI"
+Message-ID: <20130306070632.GB2436@avionic-0098.mockup.avionic-design.de>
+References: <1362517656.16460.125.camel@x61.thuisdomein>
 MIME-Version: 1.0
-To: Michael Ellerman <michael@ellerman.id.au>
-CC: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de
-Subject: Re: [PATCH 2/3] irq: Add hw continuous IRQs map to virtual continuous
- IRQs support
-References: <1358235536-32741-1-git-send-email-qiudayu@linux.vnet.ibm.com> <1358235536-32741-3-git-send-email-qiudayu@linux.vnet.ibm.com> <20130305022348.GB7656@concordia> <51359C9D.5030009@linux.vnet.ibm.com> <20130306035443.GB3493@concordia> <5136D582.80101@linux.vnet.ibm.com> <20130306054203.GA13075@concordia>
-In-Reply-To: <20130306054203.GA13075@concordia>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13030607-3864-0000-0000-0000071CD2E0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="6sX45UoQRIJXqkqR"
+Content-Disposition: inline
+In-Reply-To: <1362517656.16460.125.camel@x61.thuisdomein>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:yZUbss8dGX/+B+WhA8jU0zsJVjZjD+rrLgFN/uU3M8w
+ HqksCpWnT9uH6el5vztG8T7ffz3WNdu5CAS+c5w2dTsNoIOi9f
+ IxImldhm0lquksX/LQemF+nLWzFjv2+/QSAN+RqIazovi1IVA2
+ aSvWsXuda5+2AfFSl8611x5vrd2ot529h3LulybsOXrpNnl4a8
+ 53/SyUhtl7p4Dk5Ppy3vjoqdgzUciVfFWt8WdQzfD7kO3vSi0l
+ 9bG1LGw7rY4KZzl8XSuVIa7tOukrA9edjnVATRnd5R6NAaDgOU
+ JTTvTIuFYyVwxsoScs8QFEMMV7QoyL3j3U6AA5rM7KK79pXm42
+ AAvqPpl0nO1J9M1rYoiiKzJ/gTanZRkDbZqqb7CfmmTFIxCkaX
+ EqPvmM0Sda9e1cuV5qBR+2S5OmPl31kBwFmCNHB4h8d70HU0rN
+ wM1Tx
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2013/3/6 13:42, Michael Ellerman 写道:
-> On Wed, Mar 06, 2013 at 01:34:58PM +0800, Mike Qiu wrote:
->> 于 2013/3/6 11:54, Michael Ellerman 写道:
->>> On Tue, Mar 05, 2013 at 03:19:57PM +0800, Mike Qiu wrote:
->>>> 于 2013/3/5 10:23, Michael Ellerman 写道:
->>>>> On Tue, Jan 15, 2013 at 03:38:55PM +0800, Mike Qiu wrote:
->>>>>> diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
->>>>>> index 96f3a1d..38648e6 100644
->>>>>> --- a/kernel/irq/irqdomain.c
->>>>>> +++ b/kernel/irq/irqdomain.c
->>>>>> @@ -636,6 +636,67 @@ int irq_create_strict_mappings(struct irq_domain *domain, unsigned int irq_base,
->>>>>>   }
->>>>>>   EXPORT_SYMBOL_GPL(irq_create_strict_mappings);
->>>>>> +/**
->>>>>> + * irq_create_mapping_many - Map a range of hw IRQs to a range of virtual IRQs
->>>>>> + * @domain: domain owning the interrupt range
->>>>>> + * @hwirq_base: beginning of continuous hardware IRQ range
->>>>>> + * @count: Number of interrupts to map
->>>>> For multiple-MSI the allocated interrupt numbers must be a power-of-2,
->>>>> and must be naturally aligned. I don't /think/ that's a requirement for
->>>>> the virtual numbers, but it's probably best that we do it anyway.
->>>>>
->>>>> So this API needs to specify that it will give you back a power-of-2
->>>>> block that is naturally aligned - otherwise you can't use it for MSI.
->>>> rtas_call will return the numbers of hardware interrupt, and it
->>>> should be power-of-2, as this I think do not need to specify
->>> You're confusing hardware interrupt numbers and virtual interrupt
->>> numbers. My comment is about irq_create_mapping_many(), which returns
->>> virtual interrupt numbers.
->>>
->>> As I said I don't think there is a requirement that the virtual
->>> interrupt numbers are also a power-of-2 naturally aligned block, but we
->>> should allocate them as one anyway, to avoid any issues in future.
->> But for virtual interrupt numbersit should be a power-of-2 naturally
->> aligned block, because it must be continuous, as the MSI-HOWTO.txt says:
->>
->>      4.2.2 pci_enable_msi_block
->>      int pci_enable_msi_block(struct pci_dev *dev, int count)
->>      This variation on the above call allows a device driver to request
->>      multiple MSIs.  The MSI specification only allows interrupts to be
->>      allocated in powers of two, up to a maximum of 2^5 (32).
->>      If this function returns 0, it has succeeded in allocating at least
->>      as many interrupts as the driver requested
->>      (it may have allocated more in order to satisfy the power-of-two
->>      requirement). In this case, the function enables MSI on this device
->>      and updates dev->irq to be the lowest of the new interrupts
->>      assigned to it. The other interrupts assigned to the device are in
->>      the range dev->irq to dev->irq + count - 1.
->>
->> See the last line, that means for the virtual interrupts must be a
->> continuous block.
-> In practice I think things could work if we didn't, because we are not
-> using the mask routines that assume that layout.
->
-> But you're right, we must implement the API as it's specified, so the
-> virtual interrupt numbers must be a naturally aligned power-of-2.
-Yes, also your opinion is also right, just becasue the API requires
-a naturally aligned power-of-2 interrupt numbers, so we need to
-implement it like this.
 
-cheers
->
-> cheers
->
+--6sX45UoQRIJXqkqR
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+On Tue, Mar 05, 2013 at 10:07:36PM +0100, Paul Bolle wrote:
+> Commit ac24c2204a76e5b42aa103bf963ae0eda1b827f3 ("drm/tegra: Use generic
+> HDMI infoframe helpers") added "select DRM_HDMI" to the DRM_TEGRA
+> Kconfig entry. But there is no Kconfig symbol named DRM_HDMI. The select
+> statement for that symbol is a nop. Drop it.
+>=20
+> What was needed to use HDMI functionality was to select HDMI (which this
+> entry already did through depending on DRM) and to include linux/hdmi.h
+> (which this commit also did).
+>=20
+> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+> ---
+> Untested.=20
+>=20
+>  drivers/gpu/drm/tegra/Kconfig | 1 -
+>  1 file changed, 1 deletion(-)
+>=20
+> diff --git a/drivers/gpu/drm/tegra/Kconfig b/drivers/gpu/drm/tegra/Kconfig
+> index c92955d..be1daf7 100644
+> --- a/drivers/gpu/drm/tegra/Kconfig
+> +++ b/drivers/gpu/drm/tegra/Kconfig
+> @@ -4,7 +4,6 @@ config DRM_TEGRA
+>  	select DRM_KMS_HELPER
+>  	select DRM_GEM_CMA_HELPER
+>  	select DRM_KMS_CMA_HELPER
+> -	select DRM_HDMI
+>  	select FB_CFB_FILLRECT
+>  	select FB_CFB_COPYAREA
+>  	select FB_CFB_IMAGEBLIT
+
+Good catch! I think what happened here is that the DRM HDMI helpers used
+to be in a separate file and DRM_HDMI enabled that file to be built. The
+helpers were moved into drm_edid.c at some point, though, and the symbol
+was dropped and I forgot to remove it from the Tegra DRM Kconfig.
+
+Acked-by: <thierry.reding@avionic-design.de>
+
+--6sX45UoQRIJXqkqR
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRNur4AAoJEN0jrNd/PrOhrS0P/j5xa1RlegD3dNcQuRXp2czQ
+rXFSblwkzlAn55j+N0JOoF3UwAgO9XKPbW0MvkCebLrJ3yCawKTodm8a/yHjZzIi
+ndMEe6FDJY09MpyMA3AW6EfD3Dh6H/VK1BS1sJCSC92txQY0wD0tPKVvq0pQOqiK
+aX1ao9AZTVHk/EUlvUaMmWHpgqdqAS7hosatk2h23W0bJpmQyZg2E0F4iYbGHi8n
+Ro6Cwa5UGNOr0MFVvOvzg2sEOUuGEKpPycvM77Z8n3C9sn/fRszqVClRyWPczbjP
+JusPAOBNIRBHFRhQjilOyZFlqUv/SBIJt1yRBt1bY34UDhTlFFmnP1p3nhhmAahv
+DdZTre5zTePqzxaBc6yahQhaFDHEnN05qqa6wHunxvqg5F0dr9YDB70xOAcW0Tqj
+G8qSKdIdcmQMMeotHmgkfdYUXc0S7z3qC540zBXfJ+8KO1uFgTZIequ5WiuJW0Xw
+IK1I93jSWpXy/Vl6+D+908macUsj7VJcaEKqbu71WBh0/YE3cCml+yCz3nBi7MxK
+E9c9XqOIST7kpYr/ZLzXrR6TA0EJPOo6qp4qJuXHWHkvJILclKNXAZ/hp8FADDel
+GTdErSBgDLIvMnBKT3v7fBXghuD2fw1ls0BkglguJSX0KFxYIlJ7HLgyJPdeLW6U
+HdSFCkEd7gErX4d1iQ63
+=8ZUu
+-----END PGP SIGNATURE-----
+
+--6sX45UoQRIJXqkqR--
