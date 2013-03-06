@@ -1,163 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758118Ab3CFP3r (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 10:29:47 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:21947 "EHLO mx1.redhat.com"
+	id S1758440Ab3CFPi1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 10:38:27 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:57908 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757061Ab3CFP3q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 10:29:46 -0500
-Subject: Re: [PATCH -v2] gfs2: fix bitmap declaration
-From: Steven Whitehouse <swhiteho@redhat.com>
-To: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        cluster-devel@redhat.com, Christine Caulfield <ccaulfie@redhat.com>,
-        David Teigland <teigland@redhat.com>
-In-Reply-To: <1362576597-18501-1-git-send-email-akinobu.mita@gmail.com>
-References: <1362576597-18501-1-git-send-email-akinobu.mita@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Red Hat UK Ltd
-Date: Wed, 06 Mar 2013 15:27:59 +0000
-Message-ID: <1362583679.2707.21.camel@menhir>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1757653Ab3CFPi0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Mar 2013 10:38:26 -0500
+Date: Wed, 6 Mar 2013 16:37:52 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [PATCHv2] perf: Fix vmalloc ring buffer free function
+Message-ID: <20130306153752.GA19141@krava.redhat.com>
+References: <1362155689-13719-1-git-send-email-jolsa@redhat.com>
+ <CAFTL4hyBN=pBao_AnrXsAj06t534hyO=3mpc=1_yM0feO0=gRw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAFTL4hyBN=pBao_AnrXsAj06t534hyO=3mpc=1_yM0feO0=gRw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-This doesn't apply over the patch which Dave just sent. Can you redo
-this against the current GFS2 -nmw tree if it is still required? Thanks,
-
-Steve.
-
-On Wed, 2013-03-06 at 22:29 +0900, Akinobu Mita wrote:
-> The bitmap accessed by bitops like set_bit_le and clear_bit_le must
-> be aligned to the size of an "unsigned long".  But there are bitmaps
-> that are declared as char array.
+On Wed, Mar 06, 2013 at 04:20:15PM +0100, Frederic Weisbecker wrote:
+> 2013/3/1 Jiri Olsa <jolsa@redhat.com>:
+> > If we allocate perf ring buffer with the size of single page,
+> > we will get memory corruption when releasing it. It's caused
+> > by rb_free_work function (CONFIG_PERF_USE_VMALLOC option).
+> >
+> > For single page sized ring buffer the page_order is -1 (because
+> > nr_pages is 0). This needs to be recognized in the rb_free_work
+> > function to release proper amount of pages.
+> >
+> > Introducing page_nr function (CONFIG_PERF_USE_VMALLOC only)
+> > that returns number of allocated pages. Using it in rb_free_work
+> > and perf_mmap_to_page functions.
+> >
+> > Also setting rb->nr_pages to 0 in case we have only user page
+> > allocated, which will fail perf_output_begin function and
+> > prevents sample storage.
+> >
+> > v2 changes:
+> >  - fixed the perf_output_begin handling of single page buffer
+> >
+> > Reported-by: Jan Stancek <jstancek@redhat.com>
+> > Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+> > Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+> > Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> > Cc: Ingo Molnar <mingo@elte.hu>
+> > Cc: Namhyung Kim <namhyung@kernel.org>
+> > Cc: Paul Mackerras <paulus@samba.org>
+> > Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> > Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+> > ---
+> >  kernel/events/ring_buffer.c | 40 +++++++++++++++++++++++++++++++++-------
+> >  1 file changed, 33 insertions(+), 7 deletions(-)
+> >
+> > diff --git a/kernel/events/ring_buffer.c b/kernel/events/ring_buffer.c
+> > index 23cb34f..a802151 100644
+> > --- a/kernel/events/ring_buffer.c
+> > +++ b/kernel/events/ring_buffer.c
+> > @@ -154,7 +154,8 @@ int perf_output_begin(struct perf_output_handle *handle,
+> >         if (head - local_read(&rb->wakeup) > rb->watermark)
+> >                 local_add(rb->watermark, &rb->wakeup);
+> >
+> > -       handle->page = offset >> (PAGE_SHIFT + page_order(rb));
+> > +       /* page is allways 0 for CONFIG_PERF_USE_VMALLOC option */
+> > +       handle->page = offset >> PAGE_SHIFT;
+> >         handle->page &= rb->nr_pages - 1;
+> >         handle->size = offset & ((PAGE_SIZE << page_order(rb)) - 1);
+> >         handle->addr = rb->data_pages[handle->page];
+> > @@ -312,11 +313,21 @@ void rb_free(struct ring_buffer *rb)
+> >  }
+> >
+> >  #else
+> > +/*
+> > + * Returns the total number of pages allocated
+> > + * by ring buffer including the user page.
+> > + */
+> > +static int page_nr(struct ring_buffer *rb)
+> > +{
+> > +       return page_order(rb) == -1 ?
+> > +               1 :                        /* no data, just user page */
+> > +               1 + (1 << page_order(rb)); /* user page + data pages */
+> > +}
 > 
-> This converts these bitmaps to properly declared ones.  And this also
-> changes the unit of the local macro JID_BITMAP_OFFSET from bytes to bits
-> in order to reduce the conversion of the unit.
+> Could be simply rb->nr_page + 1 ?
 > 
-> Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-> Cc: Steven Whitehouse <swhiteho@redhat.com>
-> Cc: cluster-devel@redhat.com
-> Cc: Christine Caulfield <ccaulfie@redhat.com>
-> Cc: David Teigland <teigland@redhat.com>
-> ---
-> * Change from v1
-> - fix wrong offsets caused by the change of type of the 'lvb_bits'
->   (detected by kbuild test)
-> 
->  fs/gfs2/lock_dlm.c | 34 ++++++++++++++++++----------------
->  1 file changed, 18 insertions(+), 16 deletions(-)
-> 
-> diff --git a/fs/gfs2/lock_dlm.c b/fs/gfs2/lock_dlm.c
-> index 9802de0..4180269 100644
-> --- a/fs/gfs2/lock_dlm.c
-> +++ b/fs/gfs2/lock_dlm.c
-> @@ -461,10 +461,11 @@ static void gdlm_cancel(struct gfs2_glock *gl)
->   * that jid N needs recovery.
->   */
->  
-> -#define JID_BITMAP_OFFSET 8 /* 4 byte generation number + 4 byte unused */
-> +/* 4 byte generation number + 4 byte unused */
-> +#define JID_BITMAP_OFFSET (8 * BITS_PER_BYTE)
->  
->  static void control_lvb_read(struct lm_lockstruct *ls, uint32_t *lvb_gen,
-> -			     char *lvb_bits)
-> +			     void *lvb_bits)
->  {
->  	uint32_t gen;
->  	memcpy(lvb_bits, ls->ls_control_lvb, GDLM_LVB_SIZE);
-> @@ -473,7 +474,7 @@ static void control_lvb_read(struct lm_lockstruct *ls, uint32_t *lvb_gen,
->  }
->  
->  static void control_lvb_write(struct lm_lockstruct *ls, uint32_t lvb_gen,
-> -			      char *lvb_bits)
-> +			      void *lvb_bits)
->  {
->  	uint32_t gen;
->  	memcpy(ls->ls_control_lvb, lvb_bits, GDLM_LVB_SIZE);
-> @@ -481,13 +482,14 @@ static void control_lvb_write(struct lm_lockstruct *ls, uint32_t lvb_gen,
->  	memcpy(ls->ls_control_lvb, &gen, sizeof(uint32_t));
->  }
->  
-> -static int all_jid_bits_clear(char *lvb)
-> +static int all_jid_bits_clear(void *lvb)
->  {
-> -	int i;
-> -	for (i = JID_BITMAP_OFFSET; i < GDLM_LVB_SIZE; i++) {
-> -		if (lvb[i])
-> -			return 0;
-> -	}
-> +	unsigned long next_bit = find_next_bit_le(lvb,
-> +			GDLM_LVB_SIZE * BITS_PER_BYTE, JID_BITMAP_OFFSET);
-> +
-> +	if (next_bit < GDLM_LVB_SIZE * BITS_PER_BYTE)
-> +		return 0;
-> +
->  	return 1;
->  }
->  
-> @@ -580,7 +582,7 @@ static void gfs2_control_func(struct work_struct *work)
->  {
->  	struct gfs2_sbd *sdp = container_of(work, struct gfs2_sbd, sd_control_work.work);
->  	struct lm_lockstruct *ls = &sdp->sd_lockstruct;
-> -	char lvb_bits[GDLM_LVB_SIZE];
-> +	DECLARE_BITMAP(lvb_bits, GDLM_LVB_SIZE * BITS_PER_BYTE);
->  	uint32_t block_gen, start_gen, lvb_gen, flags;
->  	int recover_set = 0;
->  	int write_lvb = 0;
-> @@ -664,10 +666,10 @@ static void gfs2_control_func(struct work_struct *work)
->  
->  			ls->ls_recover_result[i] = 0;
->  
-> -			if (!test_bit_le(i, lvb_bits + JID_BITMAP_OFFSET))
-> +			if (!test_bit_le(JID_BITMAP_OFFSET + i, lvb_bits))
->  				continue;
->  
-> -			__clear_bit_le(i, lvb_bits + JID_BITMAP_OFFSET);
-> +			__clear_bit_le(JID_BITMAP_OFFSET + i, lvb_bits);
->  			write_lvb = 1;
->  		}
->  	}
-> @@ -691,7 +693,7 @@ static void gfs2_control_func(struct work_struct *work)
->  				continue;
->  			if (ls->ls_recover_submit[i] < start_gen) {
->  				ls->ls_recover_submit[i] = 0;
-> -				__set_bit_le(i, lvb_bits + JID_BITMAP_OFFSET);
-> +				__set_bit_le(JID_BITMAP_OFFSET + i, lvb_bits);
->  			}
->  		}
->  		/* even if there are no bits to set, we need to write the
-> @@ -725,7 +727,7 @@ static void gfs2_control_func(struct work_struct *work)
->  	 */
->  
->  	for (i = 0; i < recover_size; i++) {
-> -		if (test_bit_le(i, lvb_bits + JID_BITMAP_OFFSET)) {
-> +		if (test_bit_le(JID_BITMAP_OFFSET + i, lvb_bits)) {
->  			fs_info(sdp, "recover generation %u jid %d\n",
->  				start_gen, i);
->  			gfs2_recover_set(sdp, i);
-> @@ -758,7 +760,7 @@ static void gfs2_control_func(struct work_struct *work)
->  static int control_mount(struct gfs2_sbd *sdp)
->  {
->  	struct lm_lockstruct *ls = &sdp->sd_lockstruct;
-> -	char lvb_bits[GDLM_LVB_SIZE];
-> +	DECLARE_BITMAP(lvb_bits, GDLM_LVB_SIZE * BITS_PER_BYTE);
->  	uint32_t start_gen, block_gen, mount_gen, lvb_gen;
->  	int mounted_mode;
->  	int retries = 0;
-> @@ -949,7 +951,7 @@ static int dlm_recovery_wait(void *word)
->  static int control_first_done(struct gfs2_sbd *sdp)
->  {
->  	struct lm_lockstruct *ls = &sdp->sd_lockstruct;
-> -	char lvb_bits[GDLM_LVB_SIZE];
-> +	DECLARE_BITMAP(lvb_bits, GDLM_LVB_SIZE * BITS_PER_BYTE);
->  	uint32_t start_gen, block_gen;
->  	int error;
->  
+> Patch looks good in any case. Thanks.
 
+nope, because CONFIG_PERF_USE_VMALLOC rb uses only 1st slot 
+of rg->data_pages[], so rb->nr_page is either 0 or 1
 
+the actuall number of pages is counted via rb->page_order
+(which is -1 for case with no data pages)
+
+thanks,
+jirka
