@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753839Ab3CFQQX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 11:16:23 -0500
-Received: from mail-ia0-f179.google.com ([209.85.210.179]:59301 "EHLO
-	mail-ia0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753866Ab3CFQPc (ORCPT
+	id S1754107Ab3CFQQr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 11:16:47 -0500
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:54322 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753449Ab3CFQP3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 11:15:32 -0500
+	Wed, 6 Mar 2013 11:15:29 -0500
 From: Matt Porter <mporter@ti.com>
 To: Tony Lindgren <tony@atomide.com>, Sekhar Nori <nsekhar@ti.com>,
         Grant Likely <grant.likely@secretlab.ca>,
@@ -27,9 +27,9 @@ Cc: Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
         Linux SPI Devel List 
 	<spi-devel-general@lists.sourceforge.net>,
         Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH v9 9/9] ARM: dts: add AM33XX SPI DMA support
-Date: Wed,  6 Mar 2013 11:15:39 -0500
-Message-Id: <1362586540-10393-10-git-send-email-mporter@ti.com>
+Subject: [PATCH v9 7/9] spi: omap2-mcspi: convert to dma_request_slave_channel_compat()
+Date: Wed,  6 Mar 2013 11:15:37 -0500
+Message-Id: <1362586540-10393-8-git-send-email-mporter@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1362586540-10393-1-git-send-email-mporter@ti.com>
 References: <1362586540-10393-1-git-send-email-mporter@ti.com>
@@ -37,41 +37,88 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adds DMA resources to the AM33XX SPI nodes.
+Convert dmaengine channel requests to use
+dma_request_slave_channel_compat(). This supports the DT case of
+platforms requiring channel selection from either the OMAP DMA or
+the EDMA engine. AM33xx only boots from DT and is the only user
+implementing EDMA so in the !DT case we can default to the OMAP DMA
+filter.
 
 Signed-off-by: Matt Porter <mporter@ti.com>
+Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 ---
- arch/arm/boot/dts/am33xx.dtsi |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+ drivers/spi/spi-omap2-mcspi.c |   27 ++++++++++++++++++++-------
+ 1 file changed, 20 insertions(+), 7 deletions(-)
 
-diff --git a/arch/arm/boot/dts/am33xx.dtsi b/arch/arm/boot/dts/am33xx.dtsi
-index cbea5ab..c3c781a 100644
---- a/arch/arm/boot/dts/am33xx.dtsi
-+++ b/arch/arm/boot/dts/am33xx.dtsi
-@@ -327,6 +327,11 @@
- 			interrupt = <65>;
- 			ti,spi-num-cs = <2>;
- 			ti,hwmods = "spi0";
-+			dmas = <&edma 16
-+				&edma 17
-+				&edma 18
-+				&edma 19>;
-+			dma-names = "tx0", "rx0", "tx1", "rx1";
- 			status = "disabled";
- 		};
+diff --git a/drivers/spi/spi-omap2-mcspi.c b/drivers/spi/spi-omap2-mcspi.c
+index 893c3d7..38d0915 100644
+--- a/drivers/spi/spi-omap2-mcspi.c
++++ b/drivers/spi/spi-omap2-mcspi.c
+@@ -102,6 +102,9 @@ struct omap2_mcspi_dma {
  
-@@ -338,6 +343,11 @@
- 			interrupt = <125>;
- 			ti,spi-num-cs = <2>;
- 			ti,hwmods = "spi1";
-+			dmas = <&edma 42
-+				&edma 43
-+				&edma 44
-+				&edma 45>;
-+			dma-names = "tx0", "rx0", "tx1", "rx1";
- 			status = "disabled";
- 		};
+ 	struct completion dma_tx_completion;
+ 	struct completion dma_rx_completion;
++
++	char dma_rx_ch_name[14];
++	char dma_tx_ch_name[14];
+ };
  
+ /* use PIO for small transfers, avoiding DMA setup/teardown overhead and
+@@ -822,14 +825,23 @@ static int omap2_mcspi_request_dma(struct spi_device *spi)
+ 	dma_cap_zero(mask);
+ 	dma_cap_set(DMA_SLAVE, mask);
+ 	sig = mcspi_dma->dma_rx_sync_dev;
+-	mcspi_dma->dma_rx = dma_request_channel(mask, omap_dma_filter_fn, &sig);
++
++	mcspi_dma->dma_rx =
++		dma_request_slave_channel_compat(mask, omap_dma_filter_fn,
++						 &sig, &master->dev,
++						 mcspi_dma->dma_rx_ch_name);
++
+ 	if (!mcspi_dma->dma_rx) {
+ 		dev_err(&spi->dev, "no RX DMA engine channel for McSPI\n");
+ 		return -EAGAIN;
+ 	}
+ 
+ 	sig = mcspi_dma->dma_tx_sync_dev;
+-	mcspi_dma->dma_tx = dma_request_channel(mask, omap_dma_filter_fn, &sig);
++	mcspi_dma->dma_tx =
++		dma_request_slave_channel_compat(mask, omap_dma_filter_fn,
++						 &sig, &master->dev,
++						 mcspi_dma->dma_tx_ch_name);
++
+ 	if (!mcspi_dma->dma_tx) {
+ 		dev_err(&spi->dev, "no TX DMA engine channel for McSPI\n");
+ 		dma_release_channel(mcspi_dma->dma_rx);
+@@ -1240,12 +1252,13 @@ static int omap2_mcspi_probe(struct platform_device *pdev)
+ 		goto free_master;
+ 
+ 	for (i = 0; i < master->num_chipselect; i++) {
+-		char dma_ch_name[14];
++		char *dma_rx_ch_name = mcspi->dma_channels[i].dma_rx_ch_name;
++		char *dma_tx_ch_name = mcspi->dma_channels[i].dma_tx_ch_name;
+ 		struct resource *dma_res;
+ 
+-		sprintf(dma_ch_name, "rx%d", i);
++		sprintf(dma_rx_ch_name, "rx%d", i);
+ 		dma_res = platform_get_resource_byname(pdev, IORESOURCE_DMA,
+-				dma_ch_name);
++				dma_rx_ch_name);
+ 		if (!dma_res) {
+ 			dev_dbg(&pdev->dev, "cannot get DMA RX channel\n");
+ 			status = -ENODEV;
+@@ -1253,9 +1266,9 @@ static int omap2_mcspi_probe(struct platform_device *pdev)
+ 		}
+ 
+ 		mcspi->dma_channels[i].dma_rx_sync_dev = dma_res->start;
+-		sprintf(dma_ch_name, "tx%d", i);
++		sprintf(dma_tx_ch_name, "tx%d", i);
+ 		dma_res = platform_get_resource_byname(pdev, IORESOURCE_DMA,
+-				dma_ch_name);
++				dma_tx_ch_name);
+ 		if (!dma_res) {
+ 			dev_dbg(&pdev->dev, "cannot get DMA TX channel\n");
+ 			status = -ENODEV;
 -- 
 1.7.9.5
 
