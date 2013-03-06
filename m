@@ -1,62 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756239Ab3CFJRT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 04:17:19 -0500
-Received: from smtp.eu.citrix.com ([46.33.159.39]:37412 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756138Ab3CFJRN (ORCPT
+	id S1756342Ab3CFJR3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 04:17:29 -0500
+Received: from cpsmtpb-ews01.kpnxchange.com ([213.75.39.4]:61495 "EHLO
+	cpsmtpb-ews01.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756017Ab3CFJRX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 04:17:13 -0500
-X-IronPort-AV: E=Sophos;i="4.84,793,1355097600"; 
-   d="scan'208";a="2224049"
-Message-ID: <51370992.5090200@citrix.com>
-Date: Wed, 6 Mar 2013 10:17:06 +0100
-From: =?UTF-8?B?Um9nZXIgUGF1IE1vbm7DqQ==?= <roger.pau@citrix.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:17.0) Gecko/20130216 Thunderbird/17.0.3
-MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>
-Subject: Re: [PATCH RFC 04/12] xen-blkfront: pre-allocate pages for requests
-References: <1362047335-26402-1-git-send-email-roger.pau@citrix.com> <1362047335-26402-5-git-send-email-roger.pau@citrix.com> <20130304193904.GI15386@phenom.dumpdata.com> <5135D149.1010805@citrix.com> <20130305141858.GG2589@phenom.dumpdata.com> <51361D89.2060604@citrix.com> <20130305215358.GA18408@phenom.dumpdata.com>
-In-Reply-To: <20130305215358.GA18408@phenom.dumpdata.com>
+	Wed, 6 Mar 2013 04:17:23 -0500
+Message-ID: <1362561441.16460.164.camel@x61.thuisdomein>
+Subject: [PATCH] [RESEND] score: Kconfig: drop nine selects and one entry
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Chen Liqin <liqin.chen@sunplusct.com>, Lennox Wu <lennox.wu@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Date: Wed, 06 Mar 2013 10:17:21 +0100
+In-Reply-To: <1321136297.20271.15.camel@x61.thuisdomein>
+References: <1321136297.20271.15.camel@x61.thuisdomein>
 Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 06 Mar 2013 09:17:22.0209 (UTC) FILETIME=[68B82110:01CE1A4B]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/03/13 22:53, Konrad Rzeszutek Wilk wrote:
->>>>>>  
->>>>>>  	/* No more gnttab callback work. */
->>>>>>  	gnttab_cancel_free_callback(&info->callback);
->>>>>> @@ -1088,6 +1120,12 @@ again:
->>>>>>  		goto destroy_blkring;
->>>>>>  	}
->>>>>>  
->>>>>> +	/* Allocate memory for grants */
->>>>>> +	err = fill_grant_buffer(info, BLK_RING_SIZE *
->>>>>> +	                              BLKIF_MAX_SEGMENTS_PER_REQUEST);
->>>>>> +	if (err)
->>>>>> +		goto out;
->>>>>
->>>>> That looks to be in the wrong function - talk_to_blkback function is
->>>>> to talk to the blkback. Not do initialization type operations.
->>>>
->>>> Yes, I know it's not the best place to place it. It's here mainly
->>>> because that's the only function that gets called by both driver
->>>> initialization and resume.
->>>>
->>>> Last patch moves this to a more sensible place.
->>>
->>> Lets make it part of this patch from the start. We still have two
->>> months of time before the next merge window opens - so we have
->>> time to make it nice and clean.
->>
->> I'm moving this to blkfront_setup_indirect in a later patch (because
->> this function doesn't yet exist at this point), but I can put it in a
->> more suitable place in this patch.
->>
+The config entries in the "System type" choice each use the same three
+select statements. The Kconfig symbol SYS_SUPPORTS_32BIT_KERNEL is only
+used by mips. The Kconfig symbol CPU_SCORE7 is used once, in an (almost)
+empty Kconfig entry, and there are no uses of CONFIG_CPU_SCORE7. (This
+means that the CPU_SCORE7 entry can also be dropped.) And
+GENERIC_HAS_IOMAP is a typo. It should have been GENERIC_IOMAP. But
+there's an entry for GENERIC_IOMAP that defaults to y, so no one
+noticed.
 
-I will place it in setup_blkring, which is the place where we also init
-the sg array and it's called by both init and resume paths.
+So all selects from the config entries in this choice can be dropped.
+And so can the CPU_SCORE7 config entry.
+
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+0) This patch was first sent over a year ago. Now I have reapplied it on
+top of v3.9-rc1, which required a trivial adaption to context changes.
+
+1) Still git grep tested only.
+
+2) Please note that ARCH_SCORE7, MACH_SPCT6600, and SCORE_SIM still
+aren't used anywhere else. There are also no uses of CONFIG_ARCH_SCORE7,
+CONFIG_MACH_SPCT6600, and CONFIG_SCORE_SIM macros. Perhaps the entire
+"System type" choice can be dropped.
+
+ arch/score/Kconfig | 13 +------------
+ 1 file changed, 1 insertion(+), 12 deletions(-)
+
+diff --git a/arch/score/Kconfig b/arch/score/Kconfig
+index e569aa1..382b996 100644
+--- a/arch/score/Kconfig
++++ b/arch/score/Kconfig
+@@ -22,28 +22,17 @@ choice
+ 
+ config ARCH_SCORE7
+ 	bool "SCORE7 processor"
+-	select SYS_SUPPORTS_32BIT_KERNEL
+-	select CPU_SCORE7
+-	select GENERIC_HAS_IOMAP
+ 
+ config MACH_SPCT6600
+ 	bool "SPCT6600 series based machines"
+-	select SYS_SUPPORTS_32BIT_KERNEL
+-	select CPU_SCORE7
+-	select GENERIC_HAS_IOMAP
+ 
+ config SCORE_SIM
+ 	bool "Score simulator"
+-	select SYS_SUPPORTS_32BIT_KERNEL
+-	select CPU_SCORE7
+-	select GENERIC_HAS_IOMAP
++
+ endchoice
+ 
+ endmenu
+ 
+-config CPU_SCORE7
+-	bool
+-
+ config NO_DMA
+ 	bool
+ 	default y
+-- 
+1.7.11.7
+
