@@ -1,53 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754756Ab3CFUfg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 15:35:36 -0500
-Received: from smtp.outflux.net ([198.145.64.163]:54341 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753265Ab3CFUff (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 15:35:35 -0500
-Date: Wed, 6 Mar 2013 12:35:31 -0800
-From: Kees Cook <keescook@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH] final removal of CONFIG_EXPERIMENTAL
-Message-ID: <20130306203531.GA22371@www.outflux.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-HELO: www.outflux.net
+	id S1754942Ab3CFUhK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 15:37:10 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:59232 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753028Ab3CFUhI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Mar 2013 15:37:08 -0500
+Date: Wed, 06 Mar 2013 15:37:06 -0500 (EST)
+Message-Id: <20130306.153706.615872126857441632.davem@davemloft.net>
+To: linville@tuxdriver.com
+Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: pull request: wireless 2013-03-06
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20130306192912.GA17452@tuxdriver.com>
+References: <20130306192912.GA17452@tuxdriver.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Wed, 06 Mar 2013 12:37:12 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove "config EXPERIMENTAL" itself, now that every "depends on" it has
-been removed from the tree.
+From: "John W. Linville" <linville@tuxdriver.com>
+Date: Wed, 6 Mar 2013 14:29:14 -0500
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- init/Kconfig |    4 ----
- 1 file changed, 4 deletions(-)
+> As Johannes says, it is a bit large.  But I hope it is still early
+> enough in the cycle to make that worthwhile.
 
-diff --git a/init/Kconfig b/init/Kconfig
-index 22616cd..5341d72 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -28,10 +28,6 @@ config BUILDTIME_EXTABLE_SORT
- 
- menu "General setup"
- 
--config EXPERIMENTAL
--	bool
--	default y
--
- config BROKEN
- 	bool
- 
--- 
-1.7.9.5
+It's quite sizable, but I guess better during -rc1 than -rc6 or -rc7
+:-)
 
-
--- 
-Kees Cook
-Chrome OS Security
+Pulled, thanks John.
