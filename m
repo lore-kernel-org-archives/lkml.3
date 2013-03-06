@@ -1,78 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758564Ab3CFOud (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 09:50:33 -0500
-Received: from ombos.raceme.org ([212.85.152.43]:41614 "EHLO idril.raceme.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757538Ab3CFOua (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 09:50:30 -0500
-X-Greylist: delayed 470 seconds by postgrey-1.27 at vger.kernel.org; Wed, 06 Mar 2013 09:50:30 EST
-X-Spam-Flag: NO
-X-Spam-Score: -1.748
-MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8;
- format=flowed
-Content-Transfer-Encoding: 8bit
-Date: Wed, 06 Mar 2013 15:42:29 +0100
-From: Vincent Deffontaines <vincent@gryzor.com>
-To: Sean Young <sean@mess.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, <linux-serial@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Alan Cox <alan@linux.intel.com>,
-        <stable@vger.kernel.org>
-Subject: Re: [PATCH] =?UTF-8?Q?tty/=38=32=35=30=5Fpnp=3A=20serial=20port?=
- =?UTF-8?Q?=20detection=20regression=20since=20v=33=2E=37?=
-In-Reply-To: <20130304132839.GA6965@pequod.mess.org>
-References: <1361550439-23504-1-git-send-email-sean@mess.org>
- <20130304132839.GA6965@pequod.mess.org>
-Message-ID: <5f8a2a7219eccbf1a848a774635d9ec2@raceme.org>
-User-Agent: Roundcube Webmail/0.7.1
+	id S1758298Ab3CFPAX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 10:00:23 -0500
+Received: from www262.sakura.ne.jp ([202.181.97.72]:63443 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755607Ab3CFPAV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Mar 2013 10:00:21 -0500
+X-Nat-Received: from [202.181.97.72]:52913 [ident-empty]
+	by smtp-proxy.isp with TPROXY id 1362581889.25863
+To: bp@alien8.de, dave@linux.vnet.ibm.com
+Cc: hpa@linux.intel.com, linux-kernel@vger.kernel.org
+Subject: Re: [3.9-rc1 x86] Bug in ioremap code?
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+References: <201303060041.AIF15342.tJFOHLQFFOMVSO@I-love.SAKURA.ne.jp>
+	<20130305180650.GD4914@pd.tnic>
+	<201303060628.CBG00578.OJtMFFHLQVSFOO@I-love.SAKURA.ne.jp>
+	<51367104.5050200@linux.vnet.ibm.com>
+	<20130305224432.GD27022@pd.tnic>
+In-Reply-To: <20130305224432.GD27022@pd.tnic>
+Message-Id: <201303062358.EFG90616.HLtSQFJFOMVOFO@I-love.SAKURA.ne.jp>
+X-Mailer: Winbiff [Version 2.51 PL2]
+X-Accept-Language: ja,en,zh
+Date: Wed, 6 Mar 2013 23:58:08 +0900
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 06032013 #9672708, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 2013-03-04 14:28, Sean Young a écrit :
-> Greg,
->
-> On Fri, Feb 22, 2013 at 04:27:19PM +0000, Sean Young wrote:
->> The InsydeH2O BIOS (version dated 09/12/2011) has the following in
->> its pnp resouces for its serial ports:
->>
->> $ cat /sys/bus/pnp/devices/00:0b/resources
->> state = active
->> io disabled
->> irq disabled
->>
->> We do not check if the resources are disabled, and create a bogus
->> ttyS* device. Since commit 835d844d1a28e (8250_pnp: do pnp probe
->> before legacy probe) we get a bogus ttyS0, which prevents the legacy
->> probe from detecting it.
->
-> Would you mind accepting this patch please -- it fixes a regression I
-> introduced in 3.7.
+Borislav Petkov wrote:
+> Ok, before we continue guessing stuff, Tetsuo, can you please explain
+> how exactly you're triggering this. More specifically, we need .config,
+> hypervisor version, I'm assuming kernel is 3.9-rc1, Linux is guest/host
+> etc, etc.
 
+I'm using CentOS 6.3 x86_32 guest running on VMware Workstation 6.5.5 for
+Windows XP x86_32 host and VMware Player 4.0.5 for Windows 7 x86_64 host.
 
-Hi Sean,
+Kernel version is 3.9-rc1 x86_32. This bug can be triggered only when the
+guest has little RAM such that /proc/meminfo reports that HighTotal == 0.
+Config is at http://I-love.SAKURA.ne.jp/tmp/config-3.9-rc1-acpi .
 
-Thanks for the patch, and thanks for re-pushing it :)
-This is to inform you that the BIOS update referenced :
-Version: SC24 BIOS V1.01
-Release Date: 01/11/2013
+I don't know why but changing kernel config to CONFIG_ACPI=n
+( http://I-love.SAKURA.ne.jp/tmp/config-3.9-rc1-noacpi ) solves this bug.
+Well, should I run bisection on ACPI code?
 
-Seems to fix "my" tty detection problem on 3.7 (tested on a 3.7.6 
-Fedora kernel, with success).
-I don't think the patch will hurt anyway - I believe it still will 
-prevent other users from a regression.
-I also confirm that the patched 3.8.0 detects its ttys fine on a 
-BIOS-updated system.
-
-Regards,
-
-Vincent
-
-
---
-Stop chasing shadows, just enjoy the ride
-Morcheeba
-
+Regards.
