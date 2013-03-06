@@ -1,116 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751425Ab3CFFTd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 00:19:33 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:16680 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750753Ab3CFFTc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 00:19:32 -0500
-From: Jason Wang <jasowang@redhat.com>
-To: davem@davemloft.net, maxk@qti.qualcomm.com, rob@landley.net,
-        linux-doc@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: mst@redhat.com, hkchu@google.com, Jason Wang <jasowang@redhat.com>
-Subject: [V2 PATCH] net: docs: document multiqueue tuntap API
-Date: Wed,  6 Mar 2013 13:10:26 +0800
-Message-Id: <1362546626-29119-1-git-send-email-jasowang@redhat.com>
+	id S1752451Ab3CFFUl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 00:20:41 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:44215 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750753Ab3CFFUj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Mar 2013 00:20:39 -0500
+X-IronPort-AV: E=Sophos;i="4.84,793,1355126400"; 
+   d="scan'208";a="27628045"
+Message-ID: <5136D220.5090904@codeaurora.org>
+Date: Tue, 05 Mar 2013 21:20:32 -0800
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
+MIME-Version: 1.0
+To: Will Deacon <will.deacon@arm.com>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        Stepan Moskovchenko <stepanm@codeaurora.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ARM: proc: Add Krait proc info
+References: <1362439299-29617-1-git-send-email-sboyd@codeaurora.org> <20130305083421.GA19391@mudshark.cambridge.arm.com> <51366B9E.7010502@codeaurora.org>
+In-Reply-To: <51366B9E.7010502@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Jason Wang <jasowang@redhat.com>
----
- Documentation/networking/tuntap.txt |   77 +++++++++++++++++++++++++++++++++++
- 1 files changed, 77 insertions(+), 0 deletions(-)
+On 03/05/13 14:03, Stephen Boyd wrote:
+> On 03/05/13 00:34, Will Deacon wrote:
+>> Hi Stephen, Stepan,
+>>
+>> On Mon, Mar 04, 2013 at 11:21:39PM +0000, Stephen Boyd wrote:
+>>> From: Stepan Moskovchenko <stepanm@codeaurora.org>
+>>>
+>>> Add processor info for the Qualcomm, Inc. Krait family of
+>>> processors, to use the generic ARMv7 initialisation
+>>> procedure but explicitly enable the IDIV hardware
+>>> capability flag.
+>>>
+>>> Signed-off-by: Stepan Moskovchenko <stepanm@codeaurora.org>
+>>> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+>>> ---
+>>>  arch/arm/mm/proc-v7.S |   10 ++++++++++
+>>>  1 file changed, 10 insertions(+)
+>>>
+>>> diff --git a/arch/arm/mm/proc-v7.S b/arch/arm/mm/proc-v7.S
+>>> index 3a3c015..81adeb3 100644
+>>> --- a/arch/arm/mm/proc-v7.S
+>>> +++ b/arch/arm/mm/proc-v7.S
+>>> @@ -434,6 +434,16 @@ __v7_ca15mp_proc_info:
+>>>  	.size	__v7_ca15mp_proc_info, . - __v7_ca15mp_proc_info
+>>>  
+>>>  	/*
+>>> +	 * Qualcomm Inc. Krait processors.
+>>> +	 */
+>>> +	.type	__krait_proc_info, #object
+>>> +__krait_proc_info:
+>>> +	.long	0x510f0400		@ Required ID value
+>>> +	.long	0xff0ffc00		@ Mask for ID
+>>> +	__v7_proc __v7_setup, hwcaps = HWCAP_IDIV
+>> I was looking at this the other day and wondered whether we could set
+>> HWCAP_IDIV in __v7_setup, depending on ID_ISAR0[27:24]. I can't immediately
+>> think why that would be difficult, but similarly there may well be a reason
+>> why we assign it like this.
+>>
+>> Fancy taking a look?
+> Ok I'll take a look. 
 
-diff --git a/Documentation/networking/tuntap.txt b/Documentation/networking/tuntap.txt
-index c0aab98..949d5dc 100644
---- a/Documentation/networking/tuntap.txt
-+++ b/Documentation/networking/tuntap.txt
-@@ -105,6 +105,83 @@ Copyright (C) 1999-2000 Maxim Krasnyansky <max_mk@yahoo.com>
-      Proto [2 bytes]
-      Raw protocol(IP, IPv6, etc) frame.
- 
-+  3.3 Multiqueue tuntap interface:
-+
-+  From version 3.8, Linux supports multiqueue tuntap which can uses multiple
-+  file descriptors (queues) to parallelize packets sending or receiving. The
-+  device allocation is the same as before, and if user wants to create multiple
-+  queues, TUNSETIFF with the same device name must be called many times with
-+  IFF_MULTI_QUEUE flag.
-+
-+  char *dev should be the name of the device, queues is the number of queues to
-+  be created, fds is used to store and return the file descriptors (queues)
-+  created to the caller. Each file descriptor were served as the interface of a
-+  queue which could be accessed by userspace.
-+
-+  #include <linux/if.h>
-+  #include <linux/if_tun.h>
-+
-+  int tun_alloc_mq(char *dev, int queues, int *fds)
-+  {
-+      struct ifreq ifr;
-+      int fd, err, i;
-+
-+      if (!dev)
-+          return -1;
-+
-+      memset(&ifr, 0, sizeof(ifr));
-+      /* Flags: IFF_TUN   - TUN device (no Ethernet headers)
-+       *        IFF_TAP   - TAP device
-+       *
-+       *        IFF_NO_PI - Do not provide packet information
-+       *        IFF_MULTI_QUEUE - Create a queue of multiqueue device
-+       */
-+      ifr.ifr_flags = IFF_TAP | IFF_NO_PI | IFF_MULTI_QUEUE;
-+      strcpy(ifr.ifr_name, dev);
-+
-+      for (i = 0; i < queues; i++) {
-+          if ((fd = open("/dev/net/tun", O_RDWR)) < 0)
-+             goto err;
-+          err = ioctl(fd, TUNSETIFF, (void *)&ifr);
-+          if (err) {
-+             close(fd);
-+             goto err;
-+          }
-+          fds[i] = fd;
-+      }
-+
-+      return 0;
-+  err:
-+      for (--i; i >= 0; i--)
-+          close(fds[i]);
-+      return err;
-+  }
-+
-+  A new ioctl(TUNSETQUEUE) were introduced to enable or disable a queue. When
-+  calling it with IFF_DETACH_QUEUE flag, the queue were disabled. And when
-+  calling it with IFF_ATTACH_QUEUE flag, the queue were enabled. The queue were
-+  enabled by default after it was created through TUNSETIFF.
-+
-+  fd is the file descriptor (queue) that we want to enable or disable, when
-+  enable is true we enable it, otherwise we disable it
-+
-+  #include <linux/if.h>
-+  #include <linux/if_tun.h>
-+
-+  int tun_set_queue(int fd, int enable)
-+  {
-+      struct ifreq ifr;
-+
-+      memset(&ifr, 0, sizeof(ifr));
-+
-+      if (enable)
-+         ifr.ifr_flags = IFF_ATTACH_QUEUE;
-+      else
-+         ifr.ifr_flags = IFF_DETACH_QUEUE;
-+
-+      return ioctl(fd, TUNSETQUEUE, (void *)&ifr);
-+  }
-+
- Universal TUN/TAP device driver Frequently Asked Question.
-    
- 1. What platforms are supported by TUN/TAP driver ?
+Hmm. I wonder if we did it this way because between version B and C of
+DDI0406 the definition of those bits changed.
+
+In DDI0406B we have
+
+    0 - no support
+    1 - support
+
+and in DDI0406C we have
+
+    0 - no support
+    1 - support in Thumb
+    2 - support in Thumb and ARM
+
 -- 
-1.7.1
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
