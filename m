@@ -1,51 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755042Ab3CFExb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 23:53:31 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:7481 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751768Ab3CFExa (ORCPT
+	id S1755171Ab3CFEyH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 23:54:07 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:60811 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753106Ab3CFEyD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 23:53:30 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Tue, 05 Mar 2013 20:47:31 -0800
-Message-ID: <5136CBC7.3030803@nvidia.com>
-Date: Wed, 6 Mar 2013 13:53:27 +0900
-From: Alex Courbot <acourbot@nvidia.com>
-Organization: NVIDIA
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
-MIME-Version: 1.0
-To: Andrew Chew <AChew@nvidia.com>
-CC: "thierry.reding@avionic-design.de" <thierry.reding@avionic-design.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/1 v3] pwm_bl: Add support for backlight enable regulator
-References: <1362527485-8611-1-git-send-email-achew@nvidia.com> <5136A781.2050303@nvidia.com> <643E69AA4436674C8F39DCC2C05F7638629BFE1DB7@HQMAIL03.nvidia.com>
-In-Reply-To: <643E69AA4436674C8F39DCC2C05F7638629BFE1DB7@HQMAIL03.nvidia.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+	Tue, 5 Mar 2013 23:54:03 -0500
+Date: Tue, 05 Mar 2013 23:54:01 -0500 (EST)
+Message-Id: <20130305.235401.548455441771005291.davem@davemloft.net>
+To: jasowang@redhat.com
+Cc: maxk@qti.qualcomm.com, rob@landley.net, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org, mst@redhat.com,
+        hkchu@google.com
+Subject: Re: [PATCH] net: docs: document multiqueue tuntap API
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1362539123-24863-1-git-send-email-jasowang@redhat.com>
+References: <1362539123-24863-1-git-send-email-jasowang@redhat.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Tue, 05 Mar 2013 20:54:07 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/06/2013 11:41 AM, Andrew Chew wrote:
->>>    struct pwm_bl_data {
->>>    	struct pwm_device	*pwm;
->>>    	struct device		*dev;
->>> +	struct regulator	*en_supply;
->>> +	bool			en_supply_enabled;
->>
->> Couldn't you use regulator_is_enabled() and get rid of en_supply_enabled?
->> It would also ensure the driver performs correctly no matter what the initial
->> state of the regulator is.
->
-> Are you sure this works?  I'm concerned about the (bizarre and unlikely) case
-> where this supply is shared with another driver, so I use en_supply_enabled
-> to track the state of the supply such that I can ignore that case.
+From: Jason Wang <jasowang@redhat.com>
+Date: Wed,  6 Mar 2013 11:05:23 +0800
 
-You're right, consumers can share regulators and the calls to 
-enable/disable need to be balanced. Also there is no way to check the 
-intensity of the backlight prior to the change to detect a transition, 
-so I guess your approach is indeed the most appropriate here.
+> Signed-off-by: Jason Wang <jasowang@redhat.com>
 
-Alex.
+Please fix these warnings emitted by GIT:
 
+Applying: net: docs: document multiqueue tuntap API
+/home/davem/src/GIT/net/.git/rebase-apply/patch:31: space before tab in indent.
+  	struct ifreq ifr;
+/home/davem/src/GIT/net/.git/rebase-apply/patch:32: space before tab in indent.
+  	int fd, err, i;
+/home/davem/src/GIT/net/.git/rebase-apply/patch:34: space before tab in indent.
+  	if (!dev)
+/home/davem/src/GIT/net/.git/rebase-apply/patch:35: space before tab in indent.
+  		return -1;
+/home/davem/src/GIT/net/.git/rebase-apply/patch:37: space before tab in indent.
+  	memset(&ifr, 0, sizeof(ifr));
+warning: squelched 29 whitespace errors
+warning: 34 lines add whitespace errors.
