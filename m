@@ -1,126 +1,241 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752501Ab3CFCS0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 21:18:26 -0500
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:56382 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751099Ab3CFCSR (ORCPT
+	id S1753094Ab3CFCSs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 21:18:48 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:16628 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751354Ab3CFCSp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 21:18:17 -0500
-From: Andrew Cooks <acooks@gmail.com>
-To: acooks@gmail.com
-Cc: Dan Williams <djbw@fb.com> (maintainer:ASYNCHRONOUS TRAN... 
-	,commit_signer:2/10=20%),
-        Vinod Koul <vinod.koul@intel.com> (supporter:DMA GENERIC OFFLO... 
-	,commit_signer:6/10=60%),
-        Russell King <rmk+kernel@arm.linux.org.uk> (commit_signer:6/10=60%),
-        Linus Walleij <linus.walleij@linaro.org> (commit_signer:6/10=60%),
-        Jassi Brar <jassisinghbrar@gmail.com> (commit_signer:6/10=60%),
-        linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH][v2] check for dma mapping error in ioat_dma_self_test
-Date: Wed,  6 Mar 2013 10:17:22 +0800
-Message-Id: <1362536245-4708-1-git-send-email-acooks@gmail.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <CAJtEV7bGjdJdCsKZ05+FbzoNDeMd2YUh=B=qc=ev_Z2ESg7vPQ@mail.gmail.com>
-References: <CAJtEV7bGjdJdCsKZ05+FbzoNDeMd2YUh=B=qc=ev_Z2ESg7vPQ@mail.gmail.com>
+	Tue, 5 Mar 2013 21:18:45 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Tue, 05 Mar 2013 18:18:44 -0800
+Message-ID: <5136A781.2050303@nvidia.com>
+Date: Wed, 6 Mar 2013 11:18:41 +0900
+From: Alex Courbot <acourbot@nvidia.com>
+Organization: NVIDIA
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
+MIME-Version: 1.0
+To: Andrew Chew <achew@nvidia.com>
+CC: "thierry.reding@avionic-design.de" <thierry.reding@avionic-design.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/1 v3] pwm_bl: Add support for backlight enable regulator
+References: <1362527485-8611-1-git-send-email-achew@nvidia.com>
+In-Reply-To: <1362527485-8611-1-git-send-email-achew@nvidia.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes a warning in ioat_dma_self_test when DMA_API_DEBUG is enabled. The warning is:
+On 03/06/2013 08:51 AM, Andrew Chew wrote:
+> The backlight enable regulator is specified in the device tree node for
+> backlight.
+>
+> Signed-off-by: Andrew Chew <achew@nvidia.com>
+> ---
+> Applied all recommendations from Thierry Reding and Alex Courbot, including
+> making pwm_bl take an optional regulator instead of a GPIO, which solves
+> the platform data issue (platform data will default the regulator to NULL,
+> which is the right thing).
+>
+>   .../bindings/video/backlight/pwm-backlight.txt     |    1 +
+>   drivers/video/backlight/pwm_bl.c                   |   53 +++++++++++++++++---
+>   include/linux/pwm_backlight.h                      |    1 +
+>   3 files changed, 48 insertions(+), 7 deletions(-)
+>
+> diff --git a/Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt b/Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt
+> index 1e4fc72..e0bccd30 100644
+> --- a/Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt
+> +++ b/Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt
+> @@ -14,6 +14,7 @@ Required properties:
+>   Optional properties:
+>     - pwm-names: a list of names for the PWM devices specified in the
+>                  "pwms" property (see PWM binding[0])
+> +  - en-supply: phandle to the regulator device tree node
 
-[    1.581984] ioatdma: Intel(R) QuickData Technology Driver 4.00
-[    1.582095] bus: 'pci': add driver ioatdma
-[    1.582102] bus: 'pci': driver_probe_device: matched device 0000:00:04.0 with driver ioatdma
-[    1.582104] bus: 'pci': really_probe: probing driver ioatdma with device 0000:00:04.0
-[    1.582175] ioatdma 0000:00:04.0: can't derive routing for PCI INT A
-[    1.582281] ioatdma 0000:00:04.0: PCI INT A: no GSI
-[    1.582552] ioatdma 0000:00:04.0: irq 52 for MSI/MSI-X
-[    1.582631] Set context mapping for 00:04.0
-[    1.582920] ------------[ cut here ]------------
-[    1.583027] WARNING: at lib/dma-debug.c:933 check_unmap+0x645/0x6f1()
-[    1.583132] Hardware name: To be filled by O.E.M.
-[    1.583236] ioatdma 0000:00:04.0: DMA-API: device driver failed to check map error[device address=0x00000000ffff9800] [size=2000 bytes] [mapped as single]Modules linked in:
-[    1.583240] Pid: 1, comm: swapper/0 Not tainted 3.9.0-rc1-dirty #248
-[    1.583241] Call Trace:
-[    1.583244]  [<ffffffff8103d98e>] warn_slowpath_common+0x85/0x9f
-[    1.583246]  [<ffffffff8103da4b>] warn_slowpath_fmt+0x46/0x48
-[    1.583248]  [<ffffffff81257a7b>] check_unmap+0x645/0x6f1
-[    1.583251]  [<ffffffff81505e10>] ? _raw_spin_unlock_irqrestore+0x3f/0x55
-[    1.583253]  [<ffffffff81257d07>] debug_dma_unmap_page+0x59/0x5b
-[    1.583256]  [<ffffffff812ea925>] dma_unmap_single_attrs.clone.2+0x6a/0x73
-[    1.583258]  [<ffffffff812eb3b7>] ioat_dma_self_test+0x228/0x29d
-[    1.583260]  [<ffffffff8150449a>] ? __wait_for_common+0xe7/0x15a
-[    1.583263]  [<ffffffff812ef74d>] ioat3_dma_self_test+0x16/0x29
-[    1.583264]  [<ffffffff812e9be9>] ioat_probe+0xbc/0xea
-[    1.583266]  [<ffffffff812ed1fb>] ioat3_dma_probe+0x1d3/0x275
-[    1.583268]  [<ffffffff812e9135>] ioat_pci_probe+0x14d/0x178
-[    1.583271]  [<ffffffff812650a7>] local_pci_probe+0x3e/0x66
-[    1.583273]  [<ffffffff81265179>] __pci_device_probe+0xaa/0xc3
-[    1.583275]  [<ffffffff8131fce7>] ? get_device+0x19/0x1f
-[    1.583277]  [<ffffffff81265c06>] pci_device_probe+0x35/0x50
-[    1.583280]  [<ffffffff81323960>] really_probe+0xda/0x29c
-[    1.583282]  [<ffffffff8132e2dd>] ? pm_runtime_barrier+0x70/0x99
-[    1.583284]  [<ffffffff81323b96>] driver_probe_device+0x74/0x8d
-[    1.583286]  [<ffffffff81323c10>] __driver_attach+0x61/0x85
-[    1.583288]  [<ffffffff81323baf>] ? driver_probe_device+0x8d/0x8d
-[    1.583289]  [<ffffffff81323baf>] ? driver_probe_device+0x8d/0x8d
-[    1.583291]  [<ffffffff81321f3a>] bus_for_each_dev+0x58/0x96
-[    1.583293]  [<ffffffff813236d5>] driver_attach+0x1e/0x20
-[    1.583295]  [<ffffffff813230ba>] bus_add_driver+0xed/0x223
-[    1.583298]  [<ffffffff81ce06b9>] ? dma_bus_init+0x19/0x19
-[    1.583300]  [<ffffffff813241f0>] driver_register+0x8f/0x108
-[    1.583301]  [<ffffffff81ce06b9>] ? dma_bus_init+0x19/0x19
-[    1.583303]  [<ffffffff81265d10>] __pci_register_driver+0x64/0x68
-[    1.583305]  [<ffffffff81ce0721>] ioat_init_module+0x68/0x80
-[    1.583307]  [<ffffffff81cdf92e>] ? setup_erst_disable+0x12/0x12
-[    1.583310]  [<ffffffff81000237>] do_one_initcall+0x7f/0x133
-[    1.583312]  [<ffffffff81cb27a6>] do_basic_setup+0x9c/0xba
-[    1.583314]  [<ffffffff81cb28f0>] ? kernel_init_freeable+0x12c/0x12c
-[    1.583316]  [<ffffffff81cb2877>] kernel_init_freeable+0xb3/0x12c
-[    1.583318]  [<ffffffff814f7324>] ? rest_init+0xd8/0xd8
-[    1.583320]  [<ffffffff814f7332>] kernel_init+0xe/0xdb
-[    1.583322]  [<ffffffff8150d4dc>] ret_from_fork+0x7c/0xb0
-[    1.583324]  [<ffffffff814f7324>] ? rest_init+0xd8/0xd8
-[    1.583340] ---[ end trace a5a9423f147d46b4 ]---
-[    1.583443] Mapped at:
-[    1.583545]  [<ffffffff81258192>] debug_dma_map_page+0x4c/0xec
-[    1.583547]  [<ffffffff812ea8a8>] dma_map_single_attrs.clone.1+0xe3/0xf6
-[    1.583549]  [<ffffffff812eb260>] ioat_dma_self_test+0xd1/0x29d
-[    1.583550]  [<ffffffff812ef74d>] ioat3_dma_self_test+0x16/0x29
-[    1.583552]  [<ffffffff812e9be9>] ioat_probe+0xbc/0xea
+You may want to specify what this regulator does - namely, that is 
+enables the BL. May I also suggest to rename it to "enable-supply" since 
+the other properties do not use abbreviations.
 
-Applies to 3.9-rc1
+>   [0]: Documentation/devicetree/bindings/pwm/pwm.txt
+>
+> diff --git a/drivers/video/backlight/pwm_bl.c b/drivers/video/backlight/pwm_bl.c
+> index 069983c..c4da5e2 100644
+> --- a/drivers/video/backlight/pwm_bl.c
+> +++ b/drivers/video/backlight/pwm_bl.c
+> @@ -20,10 +20,13 @@
+>   #include <linux/pwm.h>
+>   #include <linux/pwm_backlight.h>
+>   #include <linux/slab.h>
+> +#include <linux/regulator/consumer.h>
+>
+>   struct pwm_bl_data {
+>   	struct pwm_device	*pwm;
+>   	struct device		*dev;
+> +	struct regulator	*en_supply;
+> +	bool			en_supply_enabled;
 
+Couldn't you use regulator_is_enabled() and get rid of 
+en_supply_enabled? It would also ensure the driver performs correctly no 
+matter what the initial state of the regulator is.
 
-Signed-off-by: Andrew Cooks <acooks@gmail.com>
----
- drivers/dma/ioat/dma.c |   11 +++++++++++
- 1 files changed, 11 insertions(+), 0 deletions(-)
+>   	unsigned int		period;
+>   	unsigned int		lth_brightness;
+>   	unsigned int		*levels;
+> @@ -35,6 +38,34 @@ struct pwm_bl_data {
+>   	void			(*exit)(struct device *);
+>   };
+>
+> +static void pwm_backlight_enable(struct backlight_device *bl)
+> +{
+> +	struct pwm_bl_data *pb = dev_get_drvdata(&bl->dev);
+> +
+> +	pwm_enable(pb->pwm);
+> +
+> +	if (pb->en_supply && !pb->en_supply_enabled) {
+> +		if (regulator_enable(pb->en_supply) != 0)
+> +			dev_warn(&bl->dev, "Failed to enable regulator");
+> +		else
+> +			pb->en_supply_enabled = true;
+> +	}
+> +}
+> +
+> +static void pwm_backlight_disable(struct backlight_device *bl)
+> +{
+> +	struct pwm_bl_data *pb = dev_get_drvdata(&bl->dev);
+> +
+> +	if (pb->en_supply && pb->en_supply_enabled) {
+> +		if (regulator_disable(pb->en_supply) != 0)
+> +			dev_warn(&bl->dev, "Failed to disable regulator");
+> +		else
+> +			pb->en_supply_enabled = false;
+> +	}
+> +
+> +	pwm_disable(pb->pwm);
+> +}
+> +
+>   static int pwm_backlight_update_status(struct backlight_device *bl)
+>   {
+>   	struct pwm_bl_data *pb = dev_get_drvdata(&bl->dev);
+> @@ -52,7 +83,7 @@ static int pwm_backlight_update_status(struct backlight_device *bl)
+>
+>   	if (brightness == 0) {
+>   		pwm_config(pb->pwm, 0, pb->period);
+> -		pwm_disable(pb->pwm);
+> +		pwm_backlight_disable(bl);
+>   	} else {
+>   		int duty_cycle;
+>
+> @@ -66,7 +97,7 @@ static int pwm_backlight_update_status(struct backlight_device *bl)
+>   		duty_cycle = pb->lth_brightness +
+>   		     (duty_cycle * (pb->period - pb->lth_brightness) / max);
+>   		pwm_config(pb->pwm, duty_cycle, pb->period);
+> -		pwm_enable(pb->pwm);
+> +		pwm_backlight_enable(bl);
+>   	}
+>
+>   	if (pb->notify_after)
+> @@ -146,10 +177,17 @@ static int pwm_backlight_parse_dt(struct device *dev,
+>   	}
+>
+>   	/*
+> -	 * TODO: Most users of this driver use a number of GPIOs to control
+> -	 *       backlight power. Support for specifying these needs to be
+> -	 *       added.
+> +	 * If "en-supply" is present, use that regulator to enable the
+> +	 * backlight.  If a GPIO is used to enable the backlight, make
+> +	 * a fixed regulator with that particular GPIO and use that
+> +	 * regulator for "en-supply".
+>   	 */
+> +	data->en_supply = devm_regulator_get(dev, "en");
+> +	if (IS_ERR_OR_NULL(data->en_supply)) {
 
-diff --git a/drivers/dma/ioat/dma.c b/drivers/dma/ioat/dma.c
-index 1879a59..5431ba8 100644
---- a/drivers/dma/ioat/dma.c
-+++ b/drivers/dma/ioat/dma.c
-@@ -832,7 +832,18 @@ int ioat_dma_self_test(struct ioatdma_device *device)
- 	}
- 
- 	dma_src = dma_map_single(dev, src, IOAT_TEST_SIZE, DMA_TO_DEVICE);
-+	if (dma_mapping_error(dev, dma_src)) {
-+		dev_err(dev, "dma mapping failed.\n");
-+		goto free_resources;
-+	}
-+
- 	dma_dest = dma_map_single(dev, dest, IOAT_TEST_SIZE, DMA_FROM_DEVICE);
-+	if (dma_mapping_error(dev, dma_dest)) {
-+		dev_err(dev, "dma mapping failed.\n");
-+		dma_unmap_single(dev, dma_src, IOAT_TEST_SIZE, DMA_TO_DEVICE);
-+		goto free_resources;
-+	}
-+
- 	flags = DMA_COMPL_SKIP_SRC_UNMAP | DMA_COMPL_SKIP_DEST_UNMAP |
- 		DMA_PREP_INTERRUPT;
- 	tx = device->common.device_prep_dma_memcpy(dma_chan, dma_dest, dma_src,
--- 
-1.7.1
+devm_regulator_get() is performed at the wrong place, but I will come 
+back to this later. As a sidenote though: you should use IS_ERR here. 
+regulator_get() will never return NULL - also using IS_ERR_OR_NULL is 
+strongly discouraged and it will probably disappear soon anyway:
+
+https://patchwork.kernel.org/patch/1953211/
+
+> +		ret = PTR_ERR(data->en_supply);
+
+... and this is the reason why you should use IS_ERR: because in the 
+(impossible anyway) error case where regulator_get() returns NULL, you 
+will return 0 (success).
+
+> +		data->en_supply = NULL;
+> +		return ret;
+> +	}
+>
+>   	return 0;
+>   }
+> @@ -207,6 +245,7 @@ static int pwm_backlight_probe(struct platform_device *pdev)
+>   	} else
+>   		max = data->max_brightness;
+>
+> +	pb->en_supply = data->en_supply;
+>   	pb->notify = data->notify;
+>   	pb->notify_after = data->notify_after;
+>   	pb->check_fb = data->check_fb;
+> @@ -268,7 +307,7 @@ static int pwm_backlight_remove(struct platform_device *pdev)
+>
+>   	backlight_device_unregister(bl);
+>   	pwm_config(pb->pwm, 0, pb->period);
+> -	pwm_disable(pb->pwm);
+> +	pwm_backlight_disable(bl);
+>   	if (pb->exit)
+>   		pb->exit(&pdev->dev);
+>   	return 0;
+> @@ -283,7 +322,7 @@ static int pwm_backlight_suspend(struct device *dev)
+>   	if (pb->notify)
+>   		pb->notify(pb->dev, 0);
+>   	pwm_config(pb->pwm, 0, pb->period);
+> -	pwm_disable(pb->pwm);
+> +	pwm_backlight_disable(bl);
+>   	if (pb->notify_after)
+>   		pb->notify_after(pb->dev, 0);
+>   	return 0;
+> diff --git a/include/linux/pwm_backlight.h b/include/linux/pwm_backlight.h
+> index 56f4a86..330512b 100644
+> --- a/include/linux/pwm_backlight.h
+> +++ b/include/linux/pwm_backlight.h
+> @@ -8,6 +8,7 @@
+>
+>   struct platform_pwm_backlight_data {
+>   	int pwm_id;
+> +	struct regulator *en_supply;
+
+You should not have this here. Platform data is supposed to provide the 
+necessary information for the driver to resolve the resource - not the 
+resource itself.
+
+Instead machines that rely on platform data will associate the right 
+regulator to the backlight device in their board code, through an 
+instance of the regulator_consumer_supply structure (see 
+include/linux/regulator/machine.h), and submit it to the regulator 
+framework. Thus it is enough for you to just perform a call to 
+devm_regulator_get() in the probe function, and the regulator framework 
+will resolve the right regulator through the device tree or the provided 
+platform data. I.e. you don't have to worry about whether you are using 
+the DT or platform data here.
+
+There is one catch though: in case you don't want to use a regulator, 
+and thus have none defined, regulator_get() will return -EPROBE_DEFER, 
+so you cannot distinguish between "no regulator needed" and "supplier 
+not ready yet" and your driver will always *require* a regulator. So at 
+the end of the day you might still need a "use_enable_regulator" in the 
+platform data to explicitly ask for probe() to look for it. This 
+variable would also be set by parse_dt() if the "enable-supply" property 
+exists.
+
+But this somehow kills the purpose of using a regulator here, since part 
+of the motivation was to avoid this boolean variable. Maybe Thierry has 
+a better idea.
+
+I like the general idea of this patch however - with this and a couple 
+of always-on regulators we should be able to enable the panels of some 
+Tegra boards until the CDF gets merged. It won't be optimal from a power 
+point of view, but at least we will finally see something. :)
+
+Alex.
 
