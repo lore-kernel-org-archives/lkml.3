@@ -1,73 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756501Ab3CFNao (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 08:30:44 -0500
-Received: from smtp.nue.novell.com ([195.135.221.5]:33332 "EHLO
-	smtp.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755649Ab3CFNan (ORCPT
+	id S1756685Ab3CFNbQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 08:31:16 -0500
+Received: from mail-oa0-f42.google.com ([209.85.219.42]:63569 "EHLO
+	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756025Ab3CFNbN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 08:30:43 -0500
-Message-ID: <1362576633.7004.69.camel@par-r81vxc7.par.novell.com>
-Subject: Re: [PATCH] efivarfs: fix abnormal GUID in variable name by using
- strcpy to replace null with dash
-From: Frederic Crozat <fcrozat@suse.com>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: joeyli <jlee@suse.com>, linux-efi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Michael Schroeder <mls@suse.com>,
-        Josh Boyer <jwboyer@redhat.com>, Peter Jones <pjones@redhat.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>
-Date: Wed, 06 Mar 2013 14:30:33 +0100
-In-Reply-To: <1362573401.15011.48.camel@mfleming-mobl1.ger.corp.intel.com>
-References: <1362108018-13117-1-git-send-email-jlee@suse.com>
-	 <1362151068.2842.440.camel@mfleming-mobl1.ger.corp.intel.com>
-	 <1362155493.2842.446.camel@mfleming-mobl1.ger.corp.intel.com>
-	 <1362181299.23932.168.camel@linux-s257.site>
-	 <1362555258.23932.573.camel@linux-s257.site>
-	 <1362568750.15011.24.camel@mfleming-mobl1.ger.corp.intel.com>
-	 <1362571097.7004.66.camel@par-r81vxc7.par.novell.com>
-	 <1362573401.15011.48.camel@mfleming-mobl1.ger.corp.intel.com>
-Organization: SUSE
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	Wed, 6 Mar 2013 08:31:13 -0500
+MIME-Version: 1.0
+In-Reply-To: <51366C77.3080309@semaphore.gr>
+References: <51366C77.3080309@semaphore.gr>
+Date: Wed, 6 Mar 2013 21:31:13 +0800
+Message-ID: <CAKohponFw+nvzQAj58-gpxu8rUudm9gG+OQ8nK=Qi9BONcpAZw@mail.gmail.com>
+Subject: Re: [PATCH 3/3 linux-next] cpufreq: conservative: Use an inline
+ function to evaluate freq_target
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Stratos Karafotis <stratosk@semaphore.gr>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mercredi 06 mars 2013 à 12:36 +0000, Matt Fleming a écrit :
-> On Wed, 2013-03-06 at 12:58 +0100, Frederic Crozat wrote:
-> > Le mercredi 06 mars 2013 à 11:19 +0000, Matt Fleming a écrit :
-> > 
-> > > Also, which machine did you see this behaviour on?
-> > 
-> > HP z220 desktop, System BIOS K51 v 1.54
-> > 
-> > this issue is only the "Secure Boot" related variables, which make me
-> > think HP incorrectly created them in their latest firmware (where they
-> > added Windows 8 support).
-> 
-> Are you saying that the behaviour regarding VariableNameSize changes
-> depending on which variable is returned?
+On 6 March 2013 06:06, Stratos Karafotis <stratosk@semaphore.gr> wrote:
+> Use an inline function to evaluate freq_target to avoid duplicate code.
 >
-> Mercy.....
- 
-Well, I only get the error message for some variables (8), not all of
-them.
+> Also, define a macro for the default frequency step and fix the
+> calculation of freq_target when the max freq is less that 100.
 
-It was quite visible on unpatched kernel, with ls
--d /sys/firmware/efi/vars. 
-
-ls -d /sys/firmware/efi/vars/*8be4d* | grep -v -- -8be returns
-/sys/firmware/efi/vars/dbxDefault-pport8be4df61-93ca-11d2-aa0d-00e098032b8c
-/sys/firmware/efi/vars/KEKDefault-pport8be4df61-93ca-11d2-aa0d-00e098032b8c
-/sys/firmware/efi/vars/SecureBoot-pport8be4df61-93ca-11d2-aa0d-00e098032b8c
-/sys/firmware/efi/vars/SetupMode-Information8be4df61-93ca-11d2-aa0d-00e098032b8c
-/sys/firmware/efi/vars/SignatureSupport-pport8be4df61-93ca-11d2-aa0d-00e098032b8c
-/sys/firmware/efi/vars/VendorKeys-pport8be4df61-93ca-11d2-aa0d-00e098032b8c
-
-All other variable names were fine.
--- 
-Frederic Crozat <fcrozat@suse.com>
-SUSE
-
+s/that/than :)
