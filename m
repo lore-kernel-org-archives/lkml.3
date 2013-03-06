@@ -1,199 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752993Ab3CFRRX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 12:17:23 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:7124 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750788Ab3CFRRW (ORCPT
+	id S1753408Ab3CFRRn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 12:17:43 -0500
+Received: from e36.co.us.ibm.com ([32.97.110.154]:41094 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753301Ab3CFRRj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 12:17:22 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Wed, 06 Mar 2013 09:17:22 -0800
-From: Andrew Chew <achew@nvidia.com>
-To: <thierry.reding@avionic-design.de>, <acourbot@nvidia.com>
-CC: <achew@nvidia.com>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH 1/1 v4] pwm_bl: Add support for backlight enable regulator
-Date: Wed, 6 Mar 2013 09:17:18 -0800
-Message-ID: <1362590238-27692-1-git-send-email-achew@nvidia.com>
-X-Mailer: git-send-email 1.7.9.5
+	Wed, 6 Mar 2013 12:17:39 -0500
+Date: Wed, 6 Mar 2013 09:16:48 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>,
+        linux-rt-users@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: Threaded irqs + 100% CPU RT task = RCU stall
+Message-ID: <20130306171648.GO3268@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20130306154917.GA15249@windriver.com>
+ <alpine.LFD.2.02.1303061651360.22263@ionos>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.02.1303061651360.22263@ionos>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13030617-7606-0000-0000-0000091E4BCF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The backlight enable regulator is specified in the device tree node for
-backlight.
+On Wed, Mar 06, 2013 at 04:58:54PM +0100, Thomas Gleixner wrote:
+> On Wed, 6 Mar 2013, Paul Gortmaker wrote:
+> > So, I guess the question is, whether we want to try and make the system
+> > fail in a more meaningful way -- kind of like the rt throttling message
+> > does - as it lets users know they've hit the wall?  Something watching
+> 
+> That Joe Doe should have noticed the throttler message, which came
+> before the stall, shouldn't he?
+> 
+> > for kstat_incr_softirqs traffic perhaps?  Or other options?
+> 
+> The rcu stall detector could use the softirq counter and if it did not
+> change in the stall period print: "Caused by softirq starvation" or
+> something like that.
 
-Signed-off-by: Andrew Chew <achew@nvidia.com>
----
-Changed the name of the property from en-supply to enable-supply.
+The idea is to (at grace-period start) take a snapshot of the CPU's
+value of kstat.softirqs[RCU_SOFTIRQ], then check it at stall time, right?
 
-Made enable-supply a mandatory property.  Changed the example in the
-bindings documentation accordingly.
+Or do I have the wrong softirq counter?
 
-Moved devm_regulator_get() to the probe function.  Regulator is now
-requested unconditionally.
-
-Changed IS_ERR_OR_NULL to IS_ERR per Alex's recommendation.
-
-
- .../bindings/video/backlight/pwm-backlight.txt     |   14 ++++++
- drivers/video/backlight/pwm_bl.c                   |   52 ++++++++++++++++----
- 2 files changed, 56 insertions(+), 10 deletions(-)
-
-diff --git a/Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt b/Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt
-index 1e4fc72..7e2e089 100644
---- a/Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt
-+++ b/Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt
-@@ -10,6 +10,11 @@ Required properties:
-       last value in the array represents a 100% duty cycle (brightest).
-   - default-brightness-level: the default brightness level (index into the
-       array defined by the "brightness-levels" property)
-+  - enable-supply: A phandle to the regulator device tree node. This
-+      regulator will be turned on and off as the pwm is enabled and disabled.
-+      Many backlights are enabled via a GPIO. In this case, we instantiate
-+      a fixed regulator and give that to enable-supply. If a regulator
-+      is not needed, then provide a dummy fixed regulator.
- 
- Optional properties:
-   - pwm-names: a list of names for the PWM devices specified in the
-@@ -19,10 +24,19 @@ Optional properties:
- 
- Example:
- 
-+	bl_en: fixed-regulator {
-+                compatible = "regulator-fixed";
-+                regulator-name = "bl-en-supply";
-+                regulator-boot-on;
-+                gpio = <&some_gpio>;
-+                enable-active-high;
-+	};
-+
- 	backlight {
- 		compatible = "pwm-backlight";
- 		pwms = <&pwm 0 5000000>;
- 
- 		brightness-levels = <0 4 8 16 32 64 128 255>;
- 		default-brightness-level = <6>;
-+		enable-supply = <&bl_en>;
- 	};
-diff --git a/drivers/video/backlight/pwm_bl.c b/drivers/video/backlight/pwm_bl.c
-index 069983c..ff98cdd 100644
---- a/drivers/video/backlight/pwm_bl.c
-+++ b/drivers/video/backlight/pwm_bl.c
-@@ -20,10 +20,13 @@
- #include <linux/pwm.h>
- #include <linux/pwm_backlight.h>
- #include <linux/slab.h>
-+#include <linux/regulator/consumer.h>
- 
- struct pwm_bl_data {
- 	struct pwm_device	*pwm;
- 	struct device		*dev;
-+	struct regulator	*en_supply;
-+	bool			en_supply_enabled;
- 	unsigned int		period;
- 	unsigned int		lth_brightness;
- 	unsigned int		*levels;
-@@ -35,6 +38,34 @@ struct pwm_bl_data {
- 	void			(*exit)(struct device *);
- };
- 
-+static void pwm_backlight_enable(struct backlight_device *bl)
-+{
-+	struct pwm_bl_data *pb = dev_get_drvdata(&bl->dev);
-+
-+	pwm_enable(pb->pwm);
-+
-+	if (pb->en_supply && !pb->en_supply_enabled) {
-+		if (regulator_enable(pb->en_supply) != 0)
-+			dev_warn(&bl->dev, "Failed to enable regulator");
-+		else
-+			pb->en_supply_enabled = true;
-+	}
-+}
-+
-+static void pwm_backlight_disable(struct backlight_device *bl)
-+{
-+	struct pwm_bl_data *pb = dev_get_drvdata(&bl->dev);
-+
-+	if (pb->en_supply && pb->en_supply_enabled) {
-+		if (regulator_disable(pb->en_supply) != 0)
-+			dev_warn(&bl->dev, "Failed to disable regulator");
-+		else
-+			pb->en_supply_enabled = false;
-+	}
-+
-+	pwm_disable(pb->pwm);
-+}
-+
- static int pwm_backlight_update_status(struct backlight_device *bl)
- {
- 	struct pwm_bl_data *pb = dev_get_drvdata(&bl->dev);
-@@ -52,7 +83,7 @@ static int pwm_backlight_update_status(struct backlight_device *bl)
- 
- 	if (brightness == 0) {
- 		pwm_config(pb->pwm, 0, pb->period);
--		pwm_disable(pb->pwm);
-+		pwm_backlight_disable(bl);
- 	} else {
- 		int duty_cycle;
- 
-@@ -66,7 +97,7 @@ static int pwm_backlight_update_status(struct backlight_device *bl)
- 		duty_cycle = pb->lth_brightness +
- 		     (duty_cycle * (pb->period - pb->lth_brightness) / max);
- 		pwm_config(pb->pwm, duty_cycle, pb->period);
--		pwm_enable(pb->pwm);
-+		pwm_backlight_enable(bl);
- 	}
- 
- 	if (pb->notify_after)
-@@ -145,12 +176,6 @@ static int pwm_backlight_parse_dt(struct device *dev,
- 		data->max_brightness--;
- 	}
- 
--	/*
--	 * TODO: Most users of this driver use a number of GPIOs to control
--	 *       backlight power. Support for specifying these needs to be
--	 *       added.
--	 */
--
- 	return 0;
- }
- 
-@@ -213,6 +238,13 @@ static int pwm_backlight_probe(struct platform_device *pdev)
- 	pb->exit = data->exit;
- 	pb->dev = &pdev->dev;
- 
-+	pb->en_supply = devm_regulator_get(&pdev->dev, "enable");
-+	if (IS_ERR(pb->en_supply)) {
-+		ret = PTR_ERR(pb->en_supply);
-+		pb->en_supply = NULL;
-+		goto err_alloc;
-+	}
-+
- 	pb->pwm = devm_pwm_get(&pdev->dev, NULL);
- 	if (IS_ERR(pb->pwm)) {
- 		dev_err(&pdev->dev, "unable to request PWM, trying legacy API\n");
-@@ -268,7 +300,7 @@ static int pwm_backlight_remove(struct platform_device *pdev)
- 
- 	backlight_device_unregister(bl);
- 	pwm_config(pb->pwm, 0, pb->period);
--	pwm_disable(pb->pwm);
-+	pwm_backlight_disable(bl);
- 	if (pb->exit)
- 		pb->exit(&pdev->dev);
- 	return 0;
-@@ -283,7 +315,7 @@ static int pwm_backlight_suspend(struct device *dev)
- 	if (pb->notify)
- 		pb->notify(pb->dev, 0);
- 	pwm_config(pb->pwm, 0, pb->period);
--	pwm_disable(pb->pwm);
-+	pwm_backlight_disable(bl);
- 	if (pb->notify_after)
- 		pb->notify_after(pb->dev, 0);
- 	return 0;
--- 
-1.7.9.5
+							Thanx, Paul
 
