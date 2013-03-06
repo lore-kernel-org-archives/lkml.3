@@ -1,64 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752292Ab3CFBeD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 20:34:03 -0500
-Received: from mail-yh0-f52.google.com ([209.85.213.52]:46394 "EHLO
-	mail-yh0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750731Ab3CFBd7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 20:33:59 -0500
-Date: Tue, 5 Mar 2013 17:28:00 -0800
-From: Tejun Heo <tj@kernel.org>
-To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-Cc: Jeff Layton <jlayton@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-        Mandeep Singh Baines <msb@chromium.org>,
-        Ming Lei <ming.lei@canonical.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: LOCKDEP: 3.9-rc1: mount.nfs/4272 still has locks held!
-Message-ID: <20130306012800.GH1227@htj.dyndns.org>
-References: <20130304092310.1d21100c@tlielax.poochiereds.net>
- <CACBanvrc0orXGZ1v+gKHtVPKWYKGEFx46dwoDCjTU78+nPtZyg@mail.gmail.com>
- <20130304205307.GA13527@redhat.com>
- <4FA345DA4F4AE44899BD2B03EEEC2FA9286AEEB0@sacexcmbx05-prd.hq.netapp.com>
- <20130305082308.6607d4db@tlielax.poochiereds.net>
- <20130305174648.GF12795@htj.dyndns.org>
- <20130305174954.GG12795@htj.dyndns.org>
- <20130305140312.243cb094@tlielax.poochiereds.net>
- <4FA345DA4F4AE44899BD2B03EEEC2FA9286B1246@sacexcmbx05-prd.hq.netapp.com>
- <20130306011423.GF1227@htj.dyndns.org>
+	id S1752164Ab3CFBfD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 20:35:03 -0500
+Received: from mga11.intel.com ([192.55.52.93]:30791 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750767Ab3CFBfB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Mar 2013 20:35:01 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,791,1355126400"; 
+   d="scan'208";a="295481714"
+Message-ID: <51369D44.6030907@linux.intel.com>
+Date: Tue, 05 Mar 2013 17:35:00 -0800
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130219 Thunderbird/17.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130306011423.GF1227@htj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Yu, Fenghua" <fenghua.yu@intel.com>
+CC: Dave Hansen <dave@linux.vnet.ibm.com>,
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        "bp@alien8.de" <bp@alien8.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [3.9-rc1 x86] Bug in ioremap code?
+References: <201302060035.GCJ00057.FLHMOOFtJFSQOV@I-love.SAKURA.ne.jp> <201303050015.GGI39081.LOVFtOFHQOJFSM@I-love.SAKURA.ne.jp> <201303052031.JFG81705.FSOOFQHJMVFOLt@I-love.SAKURA.ne.jp> <201303060041.AIF15342.tJFOHLQFFOMVSO@I-love.SAKURA.ne.jp> <20130305180650.GD4914@pd.tnic> <201303060628.CBG00578.OJtMFFHLQVSFOO@I-love.SAKURA.ne.jp> <51366E6F.1050409@linux.intel.com> <513683DC.3070405@linux.vnet.ibm.com> <51368692.4090204@linux.intel.com> <3E5A0FA7E9CA944F9D5414FEC6C71220528C08AE@ORSMSX105.amr.corp.intel.com>
+In-Reply-To: <3E5A0FA7E9CA944F9D5414FEC6C71220528C08AE@ORSMSX105.amr.corp.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 05, 2013 at 05:14:23PM -0800, Tejun Heo wrote:
-> Then, the operation simply isn't freezable while in progress and
-> should be on the receiving end of failed-to-freeze error message and
-> users who depend on suspend/hibernation working properly should be
-> advised away from using nfs.
+On 03/05/2013 05:12 PM, Yu, Fenghua wrote:
 > 
-> It doesn't really changes anything.  The current code is buggy.  We're
-> just not enforcing the rules strictly and people aren't hitting the
-> bug often enough.
+> Before setting page in 32-bit kernel boot, we load microcode. To access global variables in linear addr,  we use __pa_symbol(). There is no problem in native. Is this a problem in 32-bit guest kernel boot?
+> 
 
-Just one more thing.  Also, not being able to do retries without
-side-effect doesn't mean it can't do retries at all.  There are
-syscalls which need to do things differently on re-entry (forgot which
-one but there are several).  They record the necessary state in the
-restart block and resume from where they left off on re-entry.  It
-sure is hairy but is doable and we already have supporting
-infrastructure.  Not sure whether that would be worthwhile tho.
+Or is this tripping up the new debugging code?
 
-Thanks.
+	-hpa
 
--- 
-tejun
