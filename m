@@ -1,49 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756031Ab3CFVtS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 16:49:18 -0500
-Received: from mga14.intel.com ([143.182.124.37]:9507 "EHLO mga14.intel.com"
+	id S1755789Ab3CFVuL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 16:50:11 -0500
+Received: from mga02.intel.com ([134.134.136.20]:34723 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752847Ab3CFVtR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 16:49:17 -0500
+	id S1752611Ab3CFVuJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Mar 2013 16:50:09 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,798,1355126400"; 
-   d="scan'208";a="209981487"
-Message-ID: <5137B9DB.6000605@linux.intel.com>
-Date: Wed, 06 Mar 2013 13:49:15 -0800
-From: "H. Peter Anvin" <hpa@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130219 Thunderbird/17.0.3
-MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Henrik Rydberg <rydberg@euromail.se>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Linux 3.9-rc1
-References: <CA+55aFx0HcOXKpxmZzM5jcbAaOroxafomX5ggMFV4A=py1qh-Q@mail.gmail.com> <20130306080642.GA535@polaris.bitmath.org> <51370990.5040508@linux.intel.com> <20130306100743.GA407@polaris.bitmath.org> <CAE9FiQXT4O3GOzm_OoFJG=vc=5LpfBkTEbAO_3xjerBGS_Gy=A@mail.gmail.com> <20130306193612.GA513@polaris.bitmath.org> <51379A4F.4020200@linux.intel.com> <20130306195457.GA449@polaris.bitmath.org> <CAE9FiQWK0ZnG9o8WgU-pcTPpir=PUyULQqk-TRVC+sh6UpU8VA@mail.gmail.com> <20130306204500.GA335@polaris.bitmath.org> <5137AE06.8060200@linux.intel.com> <CAE9FiQW6SegoYjoveCVGWS3h-0UOHp5_wuAwnVh14oKLyYQFKA@mail.gmail.com>
-In-Reply-To: <CAE9FiQW6SegoYjoveCVGWS3h-0UOHp5_wuAwnVh14oKLyYQFKA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+   d="scan'208";a="272530326"
+From: Darren Hart <dvhart@linux.intel.com>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Cc: Darren Hart <dvhart@linux.intel.com>, <stable@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH] gpio-sch: Allow for more than 8 lines in the resume well
+Date: Wed,  6 Mar 2013 13:49:36 -0800
+Message-Id: <dabdda74b7aabe3edece1c5edb9aed1c24093695.1362606482.git.dvhart@linux.intel.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/06/2013 01:33 PM, Yinghai Lu wrote:
-> On Wed, Mar 6, 2013 at 12:58 PM, H. Peter Anvin <hpa@linux.intel.com> wrote:
-> 
->> Excellent.  Yinghai, can you write up the patch with a proper
->> description and I'll put it into x86/urgent.
-> 
-> I made it more robust: make sure real_end have 8M below it.
-> Please check attached one.
-> 
+The E6xx (TunnelCreek) CPUs have 9 GPIO lines in the resume well. Update
+the resume functions to allow for more than 8 GPIO lines, using the core
+functions as a template.
 
-Sigh.  This is why "keep the page tables together" is fundamentally the
-wrong strategy.
+Cc: <stable@vger.kernel.org> # 3.4.x
+Cc: <stable@vger.kernel.org> # 3.8.x
+Cc: Grant Likely <grant.likely@secretlab.ca>
+Cc: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Darren Hart <dvhart@linux.intel.com>
+---
+ drivers/gpio/gpio-sch.c | 37 +++++++++++++++++++++++++++----------
+ 1 file changed, 27 insertions(+), 10 deletions(-)
 
-8M means that we won't even be able to boot on machines with less than
-16M or so of RAM... I'm not sure if anyone still cares, but that is a
-pretty aggressive heuristic.
-
-	-hpa
-
+diff --git a/drivers/gpio/gpio-sch.c b/drivers/gpio/gpio-sch.c
+index edae963..7e7b52b 100644
+--- a/drivers/gpio/gpio-sch.c
++++ b/drivers/gpio/gpio-sch.c
+@@ -125,13 +125,17 @@ static int sch_gpio_resume_direction_in(struct gpio_chip *gc,
+ 					unsigned gpio_num)
+ {
+ 	u8 curr_dirs;
++	unsigned short offset, bit;
+ 
+ 	spin_lock(&gpio_lock);
+ 
+-	curr_dirs = inb(gpio_ba + RGIO);
++	offset = RGIO + gpio_num / 8;
++	bit = gpio_num % 8;
++
++	curr_dirs = inb(gpio_ba + offset);
+ 
+-	if (!(curr_dirs & (1 << gpio_num)))
+-		outb(curr_dirs | (1 << gpio_num) , gpio_ba + RGIO);
++	if (!(curr_dirs & (1 << bit)))
++		outb(curr_dirs | (1 << bit), gpio_ba + offset);
+ 
+ 	spin_unlock(&gpio_lock);
+ 	return 0;
+@@ -139,22 +143,31 @@ static int sch_gpio_resume_direction_in(struct gpio_chip *gc,
+ 
+ static int sch_gpio_resume_get(struct gpio_chip *gc, unsigned gpio_num)
+ {
+-	return !!(inb(gpio_ba + RGLV) & (1 << gpio_num));
++	unsigned short offset, bit;
++
++	offset = RGLV + gpio_num / 8;
++	bit = gpio_num % 8;
++
++	return !!(inb(gpio_ba + offset) & (1 << bit));
+ }
+ 
+ static void sch_gpio_resume_set(struct gpio_chip *gc,
+ 				unsigned gpio_num, int val)
+ {
+ 	u8 curr_vals;
++	unsigned short offset, bit;
+ 
+ 	spin_lock(&gpio_lock);
+ 
+-	curr_vals = inb(gpio_ba + RGLV);
++	offset = RGLV + gpio_num / 8;
++	bit = gpio_num % 8;
++
++	curr_vals = inb(gpio_ba + offset);
+ 
+ 	if (val)
+-		outb(curr_vals | (1 << gpio_num), gpio_ba + RGLV);
++		outb(curr_vals | (1 << bit), gpio_ba + offset);
+ 	else
+-		outb((curr_vals & ~(1 << gpio_num)), gpio_ba + RGLV);
++		outb((curr_vals & ~(1 << bit)), gpio_ba + offset);
+ 
+ 	spin_unlock(&gpio_lock);
+ }
+@@ -163,14 +176,18 @@ static int sch_gpio_resume_direction_out(struct gpio_chip *gc,
+ 					unsigned gpio_num, int val)
+ {
+ 	u8 curr_dirs;
++	unsigned short offset, bit;
+ 
+ 	sch_gpio_resume_set(gc, gpio_num, val);
+ 
++	offset = RGIO + gpio_num / 8;
++	bit = gpio_num % 8;
++
+ 	spin_lock(&gpio_lock);
+ 
+-	curr_dirs = inb(gpio_ba + RGIO);
+-	if (curr_dirs & (1 << gpio_num))
+-		outb(curr_dirs & ~(1 << gpio_num), gpio_ba + RGIO);
++	curr_dirs = inb(gpio_ba + offset);
++	if (curr_dirs & (1 << bit))
++		outb(curr_dirs & ~(1 << bit), gpio_ba + offset);
+ 
+ 	spin_unlock(&gpio_lock);
+ 	return 0;
+-- 
+1.8.1.2
 
