@@ -1,178 +1,255 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757588Ab3CFLSp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 06:18:45 -0500
-Received: from www.linutronix.de ([62.245.132.108]:42509 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757402Ab3CFLSh (ORCPT
+	id S1757715Ab3CFLTX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 06:19:23 -0500
+Received: from arkanian.console-pimps.org ([212.110.184.194]:43718 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754142Ab3CFLTS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 06:18:37 -0500
-Message-Id: <20130306111537.492045206@linutronix.de>
-User-Agent: quilt/0.48-1
-Date: Wed, 06 Mar 2013 11:18:35 -0000
-From: Thomas Gleixner <tglx@linutronix.de>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: LAK <linux-arm-kernel@lists.infradead.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Arjan van de Veen <arjan@infradead.org>,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Jason Liu <liu.h.jason@gmail.com>
-Subject: [patch 4/7] tick: Handle broadcast wakeup of multiple cpus
-References: <20130306111351.883117670@linutronix.de>
-Content-Disposition: inline; filename=tick-broadcast-handle-mass-wakeup.patch
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Wed, 6 Mar 2013 06:19:18 -0500
+Message-ID: <1362568750.15011.24.camel@mfleming-mobl1.ger.corp.intel.com>
+Subject: Re: [PATCH] efivarfs: fix abnormal GUID in variable name by using
+ strcpy to replace null with dash
+From: Matt Fleming <matt@console-pimps.org>
+To: joeyli <jlee@suse.com>
+Cc: linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Michael Schroeder <mls@suse.com>, Josh Boyer <jwboyer@redhat.com>,
+        Peter Jones <pjones@redhat.com>, Matthew Garrett <mjg59@srcf.ucam.org>,
+        Frederic Crozat <fcrozat@suse.com>
+Date: Wed, 06 Mar 2013 11:19:10 +0000
+In-Reply-To: <1362555258.23932.573.camel@linux-s257.site>
+References: <1362108018-13117-1-git-send-email-jlee@suse.com>
+	 <1362151068.2842.440.camel@mfleming-mobl1.ger.corp.intel.com>
+	 <1362155493.2842.446.camel@mfleming-mobl1.ger.corp.intel.com>
+	 <1362181299.23932.168.camel@linux-s257.site>
+	 <1362555258.23932.573.camel@linux-s257.site>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some brilliant hardware implementations wake multiple cores when the
-broadcast timer fires. This leads to the following interesting
-problem:
+On Wed, 2013-03-06 at 15:34 +0800, joeyli wrote:
+> Hi Matt, 
+> 
+> 於 六，2013-03-02 於 07:41 +0800，joeyli 提到：
+> > 於 五，2013-03-01 於 16:31 +0000，Matt Fleming 提到：
+> > > On Fri, 2013-03-01 at 15:17 +0000, Matt Fleming wrote:
+> > > > On Fri, 2013-03-01 at 11:20 +0800, Lee, Chun-Yi wrote:
+> > > > > From: Michael Schroeder <mls@suse.com>
+> > > > > 
+> > > > > On HP z220 system (firmware version 1.54), some EFI variables are incorrectly
+> > > > > named :
+> > > > > 
+> > > > > ls -d /sys/firmware/efi/vars/*8be4d* | grep -v -- -8be returns
+> > > > > /sys/firmware/efi/vars/dbxDefault-pport8be4df61-93ca-11d2-aa0d-00e098032b8c
+> > > > > /sys/firmware/efi/vars/KEKDefault-pport8be4df61-93ca-11d2-aa0d-00e098032b8c
+> > > > > /sys/firmware/efi/vars/SecureBoot-pport8be4df61-93ca-11d2-aa0d-00e098032b8c
+> > > > > /sys/firmware/efi/vars/SetupMode-Information8be4df61-93ca-11d2-aa0d-00e098032b8c
+> > > > > 
+> > > > > That causes by the following statement in efivar_create_sysfs_entry function:
+> > > > > 
+> > > > >  *(short_name + strlen(short_name)) = '-';
+> > > > > efi_guid_unparse(vendor_guid, short_name + strlen(short_name));
+> > > > > 
+> > > > > The trailing \0 is overwritten with '-', but the next char doesn't seem to be a \0
+> > > > > as well for HP. So, the second strlen return the point of next '\0', causes there
+> > > > > have garbage string attached before GUID.
+> > > > > 
+> > > > > Tested on On HP z220.
+> > > > 
+> > > > What's more likely happening here is that GetNextVariable() is broken on
+> > > > this HP firmware and variable_name_size is too big for the given
+> > > > variable in variable_name. We've seen other reports of similar bugs,
+> > > > 
+> > > > 	https://bugzilla.kernel.org/show_bug.cgi?id=47631
+> > > > 
+> > > > 
+> > > > Could someone try this patch against Linus' tree?
+> > > 
+> > > Urgh, and here's a version that isn't utterly, utterly broken...
+> > 
+> > Thanks for Matt's patch, we will try it!
+> > 
+> > Joey Lee
+> 
+> Frederic confirmed your patch works to him for fix issue on HP machine.
+> 
+> Tested-by: Frederic Crozat <fcrozat@suse.com>
+> 
+> But, I suggest we just use the length with NULL in variable_name but not
+> VariableNameSize that was returned by GetNextVariableName.
+> 
+> My thinking is following...
+> 
+> > 
+> > > 
+> > > ---
+> > > 
+> > > >From 4b2ef72bca72039717efe4570ec858a86d565b34 Mon Sep 17 00:00:00 2001
+> > > From: Matt Fleming <matt.fleming@intel.com>
+> > > Date: Fri, 1 Mar 2013 14:49:12 +0000
+> > > Subject: [PATCH] efivars: Sanitise string length returned by
+> > >  GetNextVariableName()
+> > > 
+> > > Some buggy firmware implementations return a string length from
+> > > GetNextVariableName() that is actually larger than the string in
+> > > 'variable_name', as Michael Schroeder writes,
+> > > 
+> > >   > On HP z220 system (firmware version 1.54), some EFI variables are
+> > >   > incorrectly named :
+> > >   >
+> > >   > ls -d /sys/firmware/efi/vars/*8be4d* | grep -v -- -8be returns
+> > >   > /sys/firmware/efi/vars/dbxDefault-pport8be4df61-93ca-11d2-aa0d-00e098032b8c
+> > >   > /sys/firmware/efi/vars/KEKDefault-pport8be4df61-93ca-11d2-aa0d-00e098032b8c
+> > >   > /sys/firmware/efi/vars/SecureBoot-pport8be4df61-93ca-11d2-aa0d-00e098032b8c
+> > >   > /sys/firmware/efi/vars/SetupMode-Information8be4df61-93ca-11d2-aa0d-00e098032b8c
+> > > 
+> > > Since 'variable_name' is a string, we can validate its size by
+> > > searching for the terminating NULL character.
+> > > 
+> > > Reported-by: Frederic Crozat <fcrozat@suse.com>
+> > > Cc: Matthew Garrett <mjg59@srcf.ucam.org>
+> > > Cc: Josh Boyer <jwboyer@redhat.com>
+> > > Cc: Michael Schroeder <mls@suse.com>
+> > > Cc: Lee, Chun-Yi <jlee@suse.com>
+> > > Cc: Lingzhu Xiang <lxiang@redhat.com>
+> > > Signed-off-by: Matt Fleming <matt.fleming@intel.com>
+> > > ---
+> > >  drivers/firmware/efivars.c | 30 ++++++++++++++++++++++++++++++
+> > >  1 file changed, 30 insertions(+)
+> > > 
+> > > diff --git a/drivers/firmware/efivars.c b/drivers/firmware/efivars.c
+> > > index 7320bf8..ab477b8 100644
+> > > --- a/drivers/firmware/efivars.c
+> > > +++ b/drivers/firmware/efivars.c
+> > > @@ -1895,6 +1895,33 @@ void unregister_efivars(struct efivars *efivars)
+> > >  }
+> > >  EXPORT_SYMBOL_GPL(unregister_efivars);
+> > >  
+> > > +/*
+> > > + * Sanity check size of a variable name.
+> > > + */
+> > > +static unsigned long sanity_check_size(efi_char16_t *variable_name,
+> > > +				       unsigned long variable_name_size)
+> > > +{
+> > > +	unsigned long len;
+> > > +	efi_char16_t c;
+> > > +
+> > > +	/*
+> > > +	 * The variable name is, by definition, a NULL-terminated
+> > > +	 * string, so make absolutely sure that variable_name_size is
+> > > +	 * the value we expect it to be. If not, return the real size.
+> > > +	 */
+> > > +	for (len = 2; len <= variable_name_size; len += sizeof(c)) {
+> > > +		c = variable_name[(len / sizeof(c)) - 1];
+> > > +		if (!c)
+> > > +			break;
+> > > +	}
+> > > +
+> 
+> We just direct return the len here but don't need compare with
+> variable_name_size.
+> 
+> 	return len;
+> 
+> > > +
+> > > +	if (len != variable_name_size)
+> > > +		printk(KERN_WARNING "efivars: bogus variable_name_size: %lu %lu\n", len, variable_name_size);
+> > > +
+> > > +	return min(len, variable_name_size);
+> > > +}
+> > > +
+> 
+> In UEFI 2.3.1 spec:
+> 
+> VariableNameSize		The size of the VariableName buffer
+> 
+> Note that if EFI_BUFFER_TOO_SMALL is returned, the VariableName buffer
+> was too small for the next variable. When such an error occurs, the
+> VariableNameSize is updated to reflect the size of buffer needed. In all
+> cases when calling GetNextVariableName() the VariableNameSize must not
+> exceed the actual buffer size that was allocated for VariableName.
+> 
+> 
+> Per spec, VariableNameSize will updated to 'the size of buffer needed'
+> when EFI_BUFFER_TOO_SMALL, but spec doesn't mention VariableNameSize
+> will also updated when EFI_SUCCESS. That means 'VariableNameSize = 1024'
+> when EFI_SUCCESS is not a bogus value.
+> 
+> > >  int register_efivars(struct efivars *efivars,
+> > >  		     const struct efivar_operations *ops,
+> > >  		     struct kobject *parent_kobj)
+> > > @@ -1941,8 +1968,11 @@ int register_efivars(struct efivars *efivars,
+> > >  		status = ops->get_next_variable(&variable_name_size,
+> > >  						variable_name,
+> > >  						&vendor_guid);
+> > > +
+> > >  		switch (status) {
+> > >  		case EFI_SUCCESS:
+> > > +			variable_name_size = sanity_check_size(variable_name,
+> > > +							       variable_name_size);
+> > >  			efivar_create_sysfs_entry(efivars,
+> > >  						  variable_name_size,
+> > >  						  variable_name,
+> > 
+> 
+> Due to variable_name_size could be 1024, so I suggest direct feed the
+> length of variable_name to efivar_create_sysfs_entry since we are need
+> to count the length.
+> 
+> This is a simply diff for my think:
+> 
+> 
+> diff --git a/drivers/firmware/efivars.c b/drivers/firmware/efivars.c
+> index 7320bf8..99a4f9f 100644
+> --- a/drivers/firmware/efivars.c
+> +++ b/drivers/firmware/efivars.c
+> @@ -1895,6 +1895,21 @@ void unregister_efivars(struct efivars *efivars)
+>  }
+>  EXPORT_SYMBOL_GPL(unregister_efivars);
+>  
+> +static unsigned long variable_name_length(efi_char16_t *variable_name)
+> +{
+> +	unsigned long len;
+> +	efi_char16_t c;
+> +
+> +	len = 2;
+> +	do {
+> +		c = variable_name[len / sizeof(c) - 1];
+> +		if (c)
+> +			len += sizeof(c);
+> +	} while (c);
+> +
+> +	return len;
+> +}
+> +
+>  int register_efivars(struct efivars *efivars,
+>  		     const struct efivar_operations *ops,
+>  		     struct kobject *parent_kobj)
+> @@ -1944,7 +1959,7 @@ int register_efivars(struct efivars *efivars,
+>  		switch (status) {
+>  		case EFI_SUCCESS:
+>  			efivar_create_sysfs_entry(efivars,
+> -						  variable_name_size,
+> +						  variable_name_length(variable_name),
+>  						  variable_name,
+>  						  &vendor_guid);
+>  			break;
+> 
 
-CPU0				CPU1
-wakeup from idle		wakeup from idle
+Hmm.. the reason I didn't implement the patch this way is because I do
+think it's important to make sure we don't go out of bounds looking for
+the terminating NULL, i.e. you need a 'len < variable_name_size' check
+somewhere.
 
-leave broadcast mode		leave broadcast mode
- restart per cpu timer		 restart per cpu timer
- 	     	 		go back to idle
-handle broadcast
- (empty mask)			
-				enter broadcast mode
-				programm broadcast device
-enter broadcast mode
-programm broadcast device
+Care to update and resend your patch, ensuring we don't inspect more
+than variable_name_size characters?
 
-So what happens is that due to the forced reprogramming of the cpu
-local timer, we need to set a event in the future. Now if we manage to
-go back to idle before the timer fires, we switch off the timer and
-arm the broadcast device with an already expired time (covered by
-forced mode). So in the worst case we repeat the above ping pong
-forever.
-					
-Unfortunately we have no information about what caused the wakeup, but
-we can check current time against the expiry time of the local cpu. If
-the local event is already in the past, we know that the broadcast
-timer is about to fire and send an IPI. So we mark ourself as an IPI
-target even if we left broadcast mode and avoid the reprogramming of
-the local cpu timer.
+Also, which machine did you see this behaviour on?
 
-This still leaves the possibility that a CPU which is not handling the
-broadcast interrupt is going to reach idle again before the IPI
-arrives. This can't be solved in the core code and will be handled in
-follow up patches.
-
-Reported-by: Jason Liu <liu.h.jason@gmail.com>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- kernel/time/tick-broadcast.c |   59 ++++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 58 insertions(+), 1 deletion(-)
-
-Index: tip/kernel/time/tick-broadcast.c
-===================================================================
---- tip.orig/kernel/time/tick-broadcast.c
-+++ tip/kernel/time/tick-broadcast.c
-@@ -393,6 +393,7 @@ int tick_resume_broadcast(void)
- 
- static cpumask_var_t tick_broadcast_oneshot_mask;
- static cpumask_var_t tick_broadcast_pending_mask;
-+static cpumask_var_t tick_broadcast_force_mask;
- 
- /*
-  * Exposed for debugging: see timer_list.c
-@@ -462,6 +463,10 @@ again:
- 		}
- 	}
- 
-+	/* Take care of enforced broadcast requests */
-+	cpumask_or(tmpmask, tmpmask, tick_broadcast_force_mask);
-+	cpumask_clear(tick_broadcast_force_mask);
-+
- 	/*
- 	 * Wakeup the cpus which have an expired event.
- 	 */
-@@ -497,6 +502,7 @@ void tick_broadcast_oneshot_control(unsi
- 	struct clock_event_device *bc, *dev;
- 	struct tick_device *td;
- 	unsigned long flags;
-+	ktime_t now;
- 	int cpu;
- 
- 	/*
-@@ -524,7 +530,16 @@ void tick_broadcast_oneshot_control(unsi
- 		WARN_ON_ONCE(cpumask_test_cpu(cpu, tick_broadcast_pending_mask));
- 		if (!cpumask_test_and_set_cpu(cpu, tick_broadcast_oneshot_mask)) {
- 			clockevents_set_mode(dev, CLOCK_EVT_MODE_SHUTDOWN);
--			if (dev->next_event.tv64 < bc->next_event.tv64)
-+			/*
-+			 * We only reprogram the broadcast timer if we
-+			 * did not mark ourself in the force mask and
-+			 * if the cpu local event is earlier than the
-+			 * broadcast event. If the current CPU is in
-+			 * the force mask, then we are going to be
-+			 * woken by the IPI right away.
-+			 */
-+			if (!cpumask_test_cpu(cpu, tick_broadcast_force_mask) &&
-+			    dev->next_event.tv64 < bc->next_event.tv64)
- 				tick_broadcast_set_event(dev->next_event, 1);
- 		}
- 	} else {
-@@ -545,6 +560,47 @@ void tick_broadcast_oneshot_control(unsi
- 				       tick_broadcast_pending_mask))
- 				goto out;
- 
-+			/*
-+			 * If the pending bit is not set, then we are
-+			 * either the CPU handling the broadcast
-+			 * interrupt or we got woken by something else.
-+			 *
-+			 * We are not longer in the broadcast mask, so
-+			 * if the cpu local expiry time is already
-+			 * reached, we would reprogram the cpu local
-+			 * timer with an already expired event.
-+			 *
-+			 * This can lead to a ping-pong when we return
-+			 * to idle and therefor rearm the broadcast
-+			 * timer before the cpu local timer was able
-+			 * to fire. This happens because the forced
-+			 * reprogramming makes sure that the event
-+			 * will happen in the future and depending on
-+			 * the min_delta setting this might be far
-+			 * enough out that the ping-pong starts.
-+			 *
-+			 * If the cpu local next_event has expired
-+			 * then we know that the broadcast timer
-+			 * next_event has expired as well and
-+			 * broadcast is about to be handled. So we
-+			 * avoid reprogramming and enforce that the
-+			 * broadcast handler, which did not run yet,
-+			 * will invoke the cpu local handler.
-+			 *
-+			 * We cannot call the handler directly from
-+			 * here, because we might be in a NOHZ phase
-+			 * and we did not go through the irq_enter()
-+			 * nohz fixups.
-+			 */
-+			now = ktime_get();
-+			if (dev->next_event.tv64 <= now.tv64) {
-+				cpumask_set_cpu(cpu, tick_broadcast_force_mask);
-+				goto out;
-+			}
-+			/*
-+			 * We got woken by something else. Reprogram
-+			 * the cpu local timer device.
-+			 */
- 			tick_program_event(dev->next_event, 1);
- 		}
- 	}
-@@ -686,5 +742,6 @@ void tick_broadcast_init(void)
- #ifdef CONFIG_TICK_ONESHOT
- 	alloc_cpumask_var(&tick_broadcast_oneshot_mask, GFP_NOWAIT);
- 	alloc_cpumask_var(&tick_broadcast_pending_mask, GFP_NOWAIT);
-+	alloc_cpumask_var(&tick_broadcast_force_mask, GFP_NOWAIT);
- #endif
- }
-
+-- 
+Matt Fleming, Intel Open Source Technology Center
 
