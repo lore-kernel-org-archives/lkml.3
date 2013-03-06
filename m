@@ -1,126 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756424Ab3CFJ1r (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 04:27:47 -0500
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:63814 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752353Ab3CFJ1o (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 04:27:44 -0500
-Message-ID: <51370C09.5020301@linaro.org>
-Date: Wed, 06 Mar 2013 10:27:37 +0100
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	id S1756543Ab3CFJ2l (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 04:28:41 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:65387 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752846Ab3CFJ2h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Mar 2013 04:28:37 -0500
+X-IronPort-AV: E=Sophos;i="4.84,794,1355068800"; 
+   d="scan'208";a="6823567"
+Message-ID: <51370CC7.8050406@cn.fujitsu.com>
+Date: Wed, 06 Mar 2013 17:30:47 +0800
+From: Lin Feng <linfeng@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: john.stultz@linaro.org, viresh.kumar@linaro.org,
-        jacob.jun.pan@linux.intel.com, linux-arm-kernel@lists.infradead.org,
-        santosh.shilimkar@ti.com, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, rickard.andersson@stericsson.com,
-        vincent.guittot@linaro.org, linus.walleij@stericsson.com
-Subject: Re: [PATCH 2/4][V2] time : set broadcast irq affinity
-References: <1362219013-18173-1-git-send-email-daniel.lezcano@linaro.org> <1362219013-18173-3-git-send-email-daniel.lezcano@linaro.org> <alpine.LFD.2.02.1303052135080.22263@ionos>
-In-Reply-To: <alpine.LFD.2.02.1303052135080.22263@ionos>
+To: Marek Szyprowski <m.szyprowski@samsung.com>
+CC: linux-mm@kvack.org, linaro-mm-sig@lists.linaro.org,
+        linux-kernel@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Minchan Kim <minchan@kernel.org>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Subject: Re: [RFC/PATCH 3/5] mm: get_user_pages: use NON-MOVABLE pages when
+ FOLL_DURABLE flag is set
+References: <1362466679-17111-1-git-send-email-m.szyprowski@samsung.com> <1362466679-17111-4-git-send-email-m.szyprowski@samsung.com>
+In-Reply-To: <1362466679-17111-4-git-send-email-m.szyprowski@samsung.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/03/06 17:27:07,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/03/06 17:27:08,
+	Serialize complete at 2013/03/06 17:27:08
+Content-Transfer-Encoding: 7bit
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/05/2013 09:40 PM, Thomas Gleixner wrote:
-> On Sat, 2 Mar 2013, Daniel Lezcano wrote:
->> When a cpu goes to a deep idle state where its local timer is shutdown,
->> it notifies the time frame work to use the broadcast timer instead.
->>
->> Unfortunately, the broadcast device could wake up any CPU, including an
->> idle one which is not concerned by the wake up at all.
->>
->> This implies, in the worst case, an idle CPU will wake up to send an IPI
->> to another idle cpu.
->>
->> This patch solves this by setting the irq affinity to the cpu concerned
->> by the nearest timer event, by this way, the CPU which is wake up is
->> guarantee to be the one concerned by the next event and we are safe with
->> unnecessary wakeup for another idle CPU.
->>
->> As the irq affinity is not supported by all the archs, a flag is needed
->> to specify which clocksource can handle it : CLOCK_EVT_FEAT_DYNIRQ
->>
->> Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
->> ---
->>  include/linux/clockchips.h   |    5 +++++
->>  kernel/time/tick-broadcast.c |   40 +++++++++++++++++++++++++++++++++-------
->>  2 files changed, 38 insertions(+), 7 deletions(-)
->>
->> diff --git a/include/linux/clockchips.h b/include/linux/clockchips.h
->> index 6634652..c93e2a6 100644
->> --- a/include/linux/clockchips.h
->> +++ b/include/linux/clockchips.h
->> @@ -55,6 +55,11 @@ enum clock_event_nofitiers {
->>  #define CLOCK_EVT_FEAT_C3STOP		0x000008
->>  #define CLOCK_EVT_FEAT_DUMMY		0x000010
->>  
->> +/*
->> + * Clock event device can set its irq affinity dynamically
->> + */
->> +#define CLOCK_EVT_FEAT_DYNIRQ		0x000020
->> +
->>  /**
->>   * struct clock_event_device - clock event device descriptor
->>   * @event_handler:	Assigned by the framework to be called by the low
->> diff --git a/kernel/time/tick-broadcast.c b/kernel/time/tick-broadcast.c
->> index 6197ac0..9ca8ff5 100644
->> --- a/kernel/time/tick-broadcast.c
->> +++ b/kernel/time/tick-broadcast.c
->> @@ -406,13 +406,37 @@ struct cpumask *tick_get_broadcast_oneshot_mask(void)
->>  	return to_cpumask(tick_broadcast_oneshot_mask);
->>  }
->>  
->> -static int tick_broadcast_set_event(struct clock_event_device *bc,
->> +/*
->> + * Set broadcast interrupt affinity
->> + */
->> +static void tick_broadcast_set_affinity(struct clock_event_device *bc,
->> +					const struct cpumask *cpumask)
->> +{
->> +	if (!(bc->features & CLOCK_EVT_FEAT_DYNIRQ))
->> +		return;
->> +
->> +	if (cpumask_equal(bc->cpumask, cpumask))
->> +		return;
->> +
->> +	bc->cpumask = cpumask;
-> 
-> This breaks with CONFIG_CPUMASK_OFFSTACK=y. cpumask_copy() is your friend!
+Hi Marek,
 
-This instruction copies the pointer, not the cpumask content.
+On 03/05/2013 02:57 PM, Marek Szyprowski wrote:
+> @@ -2495,7 +2498,7 @@ static inline void cow_user_page(struct page *dst, struct page *src, unsigned lo
+>   */
+>  static int do_wp_page(struct mm_struct *mm, struct vm_area_struct *vma,
+>  		unsigned long address, pte_t *page_table, pmd_t *pmd,
+> -		spinlock_t *ptl, pte_t orig_pte)
+> +		spinlock_t *ptl, pte_t orig_pte, unsigned int flags)
+>  	__releases(ptl)
+>  {
+>  	struct page *old_page, *new_page = NULL;
+> @@ -2505,6 +2508,10 @@ static int do_wp_page(struct mm_struct *mm, struct vm_area_struct *vma,
+>  	struct page *dirty_page = NULL;
+>  	unsigned long mmun_start = 0;	/* For mmu_notifiers */
+>  	unsigned long mmun_end = 0;	/* For mmu_notifiers */
+> +	gfp_t gfp = GFP_HIGHUSER_MOVABLE;
+> +
+> +	if (IS_ENABLED(CONFIG_CMA) && (flags & FAULT_FLAG_NO_CMA))
+> +		gfp &= ~__GFP_MOVABLE;
 
-bc->cpumask is defined as a const struct cpumask * and is used to copy a
-cpumask pointer not the content.
+Here just simply strip the __GFP_MOVABLE flag, IIUC it will break the page migrate policy.  
+Because " But GFP_MOVABLE is not only a zone specifier but also an allocation policy.".
 
-The cpumask parameter is a pointer to a global cpumask provided by the
-cpumask_of macro.
-
-But to be in the safe side, I compiled tested with
-CONFIG_CPUMASK_OFFSTACK=y without problem.
-
-Did I missed something ?
-
-Thanks
-  -- Daniel
-
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-
-
--- 
- <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
-
+Another problem is that you add a new flag to instruct the page allocation, 
+do we have to also handle the hugepage or THP as Mel ever mentioned?
+ 
+thanks,
+linfeng
