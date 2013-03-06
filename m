@@ -1,48 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757447Ab3CFLQ7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 06:16:59 -0500
-Received: from mga02.intel.com ([134.134.136.20]:26873 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753951Ab3CFLQ6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 06:16:58 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,794,1355126400"; 
-   d="scan'208";a="272093318"
-Message-ID: <513725A8.8090904@linux.intel.com>
-Date: Wed, 06 Mar 2013 03:16:56 -0800
-From: "H. Peter Anvin" <hpa@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130219 Thunderbird/17.0.3
-MIME-Version: 1.0
-To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-CC: Dave Hansen <dave@linux.vnet.ibm.com>, Borislav Petkov <bp@alien8.de>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [3.9-rc1 x86] Bug in ioremap code?
-References: <201302060035.GCJ00057.FLHMOOFtJFSQOV@I-love.SAKURA.ne.jp> <201303050015.GGI39081.LOVFtOFHQOJFSM@I-love.SAKURA.ne.jp> <201303052031.JFG81705.FSOOFQHJMVFOLt@I-love.SAKURA.ne.jp> <201303060041.AIF15342.tJFOHLQFFOMVSO@I-love.SAKURA.ne.jp> <20130305180650.GD4914@pd.tnic> <201303060628.CBG00578.OJtMFFHLQVSFOO@I-love.SAKURA.ne.jp> <51367104.5050200@linux.vnet.ibm.com> <20130305224432.GD27022@pd.tnic> <51368C45.40303@linux.vnet.ibm.com> <201303061016.r26AGkVV038627@www262.sakura.ne.jp>
-In-Reply-To: <201303061016.r26AGkVV038627@www262.sakura.ne.jp>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+	id S1757501Ab3CFLSj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 06:18:39 -0500
+Received: from www.linutronix.de ([62.245.132.108]:42494 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757210Ab3CFLSf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Mar 2013 06:18:35 -0500
+Message-Id: <20130306111537.304379448@linutronix.de>
+User-Agent: quilt/0.48-1
+Date: Wed, 06 Mar 2013 11:18:33 -0000
+From: Thomas Gleixner <tglx@linutronix.de>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: LAK <linux-arm-kernel@lists.infradead.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Arjan van de Veen <arjan@infradead.org>,
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Jason Liu <liu.h.jason@gmail.com>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: [patch 1/7] tick: Call tick_init late
+References: <20130306111351.883117670@linutronix.de>
+Content-Disposition: inline; filename=tick-call-init-late.patch
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/06/2013 02:16 AM, Tetsuo Handa wrote:
-> 
-> But I found that this bug occurs only when the system has little RAM.
-> 
-> With 892MB RAM where /proc/meminfo would show HighTotal > 0,
-> this bug does not occur.
-> 
->     HighTotal:          4040 kB
->     LowTotal:         873960 kB
-> 
-> With 888MB RAM where /proc/meminfo would show HighTotal == 0,
-> this bug occurs.
-> 
+To convert the clockevents code to cpumask_var_t we need to move the
+init call after the allocator setup. 
 
-OK, this makes sense.  I guess we have a bug in the case where we do not
-exhaust lowmem.
+Clockevents are earliest registered from time_init() as they need
+interrupts being set up, so this is safe.
 
-	-hpa
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+---
+ init/main.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+Index: tip/init/main.c
+===================================================================
+--- tip.orig/init/main.c
++++ tip/init/main.c
+@@ -494,7 +494,6 @@ asmlinkage void __init start_kernel(void
+  * Interrupts are still disabled. Do necessary setups, then
+  * enable them
+  */
+-	tick_init();
+ 	boot_cpu_init();
+ 	page_address_init();
+ 	printk(KERN_NOTICE "%s", linux_banner);
+@@ -551,6 +550,7 @@ asmlinkage void __init start_kernel(void
+ 	/* init some links before init_ISA_irqs() */
+ 	early_irq_init();
+ 	init_IRQ();
++	tick_init();
+ 	init_timers();
+ 	hrtimers_init();
+ 	softirq_init();
 
 
