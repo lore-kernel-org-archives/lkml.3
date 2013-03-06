@@ -1,46 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755245Ab3CFUkz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 15:40:55 -0500
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:49016 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754999Ab3CFUkx (ORCPT
+	id S1755013Ab3CFUmA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 15:42:00 -0500
+Received: from smtprelay-b21.telenor.se ([195.54.99.212]:38223 "EHLO
+	smtprelay-b21.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752551Ab3CFUl7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 15:40:53 -0500
-MIME-Version: 1.0
-In-Reply-To: <0000013d40918dba-4b124e7a-e591-4e75-b568-e1ff9a8d9f03-000000@email.amazonses.com>
-References: <alpine.LFD.2.02.1303041234550.3981@tux.localdomain>
-	<CA+55aFxV=xs9a8H1YbFSjNzMeebixFaA4hShdHwfRKndFU8FUA@mail.gmail.com>
-	<0000013d40918dba-4b124e7a-e591-4e75-b568-e1ff9a8d9f03-000000@email.amazonses.com>
-Date: Wed, 6 Mar 2013 22:40:52 +0200
-X-Google-Sender-Auth: vgz4p69Lgo0_3e1lOtG87GTcN4U
-Message-ID: <CAOJsxLFVKXPTuDgjB5nsjWqMe2rib5OdeE1sqBT_pgOqzGb5_Q@mail.gmail.com>
-Subject: Re: [GIT PULL] SLAB changes for v3.9-rc1
-From: Pekka Enberg <penberg@kernel.org>
-To: Christoph Lameter <cl@linux.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
+	Wed, 6 Mar 2013 15:41:59 -0500
+X-SENDER-IP: [85.230.168.206]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AhF1AIipN1FV5qjOPGdsb2JhbABEh14BhH23WAMBgVwXAwEBAQE4NIIsAQU6HBMBDxAIAyElDwUlChoTiBe8KhWNdoEBB4JfYQOWSoYIjXM
+X-IronPort-AV: E=Sophos;i="4.84,798,1355094000"; 
+   d="scan'208";a="291552628"
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Wed, 6 Mar 2013 21:45:00 +0100
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Subject: Re: Linux 3.9-rc1
+Message-ID: <20130306204500.GA335@polaris.bitmath.org>
+References: <CA+55aFx0HcOXKpxmZzM5jcbAaOroxafomX5ggMFV4A=py1qh-Q@mail.gmail.com>
+ <20130306080642.GA535@polaris.bitmath.org>
+ <51370990.5040508@linux.intel.com>
+ <20130306100743.GA407@polaris.bitmath.org>
+ <CAE9FiQXT4O3GOzm_OoFJG=vc=5LpfBkTEbAO_3xjerBGS_Gy=A@mail.gmail.com>
+ <20130306193612.GA513@polaris.bitmath.org>
+ <51379A4F.4020200@linux.intel.com>
+ <20130306195457.GA449@polaris.bitmath.org>
+ <CAE9FiQWK0ZnG9o8WgU-pcTPpir=PUyULQqk-TRVC+sh6UpU8VA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAE9FiQWK0ZnG9o8WgU-pcTPpir=PUyULQqk-TRVC+sh6UpU8VA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Christoph,
+> >> >> Can you check bootloader like grub.efi ?
+> >> >
+> >> > I checked, same story. I tried without EFI_STUB, no joy. I ran with
+> >> > and without nouveau, just in case. Without the patch, everything
+> >> > works. With the patch, nothing works, and no output at all.
+> >> >
+> >> > With a bit of luck, I could maybe get the first lines of output using
+> >> > grub.efi, but frankly I cannot remember if that ever worked on this
+> >> > machine.
+> 
+> Found one bug about real_end calculating, it should be PMD_SIZE align.
+> Otherwise in extreme case we could have less then 2M for the first step.
+> In your case is about only (1M - 32k) for first step.
+> 
+> Please try attached patch.
 
-On Wed, Mar 6, 2013 at 6:38 PM, Christoph Lameter <cl@linux.com> wrote:
-> Well this stuff was already ready for 3.8 and missed that merge period as
-> well. There are a couple of bug fixes included as well. It is the basis
-> for more common code between allocators. Most of it is renaming things so
-> that fields have a common name which enables more code sharing.
+Bingo. Excellent, thank you Yinghai. I verified that it also boots on
+top of Linus' tree, so you may add
 
-It was me who missed the merge window - sorry about that. But is there
-really any real need to push this through at such late stage? People
-will work on "slab/next" branch anyway so what's the rush?
+    Tested-by: Henrik Rydberg <rydberg@euromail.se>
 
-We had quite a lot of changes due to slab memcg and I'd rather keep
-things calm for this release cycle. It usually takes a few cycles for
-people to start noticing problems and it doesn't really help if
-there's code churn going on all the time.
+to the final result.
 
-                        Pekka
+Cheers,
+Henrik
