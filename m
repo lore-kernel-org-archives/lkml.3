@@ -1,64 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758164Ab3CFOLM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 09:11:12 -0500
-Received: from mail.free-electrons.com ([94.23.35.102]:53901 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757408Ab3CFOLI (ORCPT
+	id S1758246Ab3CFOLT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 09:11:19 -0500
+Received: from mail-ee0-f42.google.com ([74.125.83.42]:53927 "EHLO
+	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757408Ab3CFOLO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 09:11:08 -0500
-Message-ID: <51374E79.9050408@free-electrons.com>
-Date: Wed, 06 Mar 2013 15:11:05 +0100
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Wed, 6 Mar 2013 09:11:14 -0500
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: Omar Ramirez Luna <omar.ramirez@copitl.com>
+Subject: Re: [PATCH] tidspbridge: Fix compilation
+Date: Wed, 6 Mar 2013 15:11:09 +0100
+User-Agent: KMail/1.13.7 (Linux/3.5.0-26-generic; KDE/4.10.0; x86_64; ; )
+Cc: "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        Tony Lindgren <tony@atomide.com>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org,
+        Joni Lapilainen <joni.lapilainen@gmail.com>
+References: <1362073866-8462-1-git-send-email-pali.rohar@gmail.com> <CAJ6Av5O9n99t01-+dprqOkC7Nyp8vpBQANWbgZqWiemUy8Q0tQ@mail.gmail.com>
+In-Reply-To: <CAJ6Av5O9n99t01-+dprqOkC7Nyp8vpBQANWbgZqWiemUy8Q0tQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Alexander Shishkin <alexander.shishkin@linux.intel.com>
-CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-usb@vger.kernel.org, Peter Chen <peter.chen@freescale.com>
-Subject: Re: v3.9-rc1: swapper/0 [ INFO: possible circular locking dependency
- detected ]
-References: <51371B5E.1000508@free-electrons.com> <CAB7JpEHJdKeOhkME-6mMdPY6VyTQwFvM33+gxg4X9ZpQv1=6RQ@mail.gmail.com>
-In-Reply-To: <CAB7JpEHJdKeOhkME-6mMdPY6VyTQwFvM33+gxg4X9ZpQv1=6RQ@mail.gmail.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: multipart/signed;
+  boundary="nextPart1538494.DLqxx7UVVA";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201303061511.09943@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alexander,
+--nextPart1538494.DLqxx7UVVA
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-Thanks for your reply.
+On Monday 04 March 2013 10:14:31 Omar Ramirez Luna wrote:
+> Hi,
+>=20
+> On Thu, Feb 28, 2013 at 11:51 AM, Pali Roh=C3=A1r=20
+<pali.rohar@gmail.com> wrote:
+> > Fix includes and use
+> > clk_prepare_enable/clk_disable_unprepare
+> >=20
+> > Signed-off-by: Pali Roh=C3=A1r <pali.rohar@gmail.com>
+> > Signed-off-by: Joni Lapilainen <joni.lapilainen@gmail.com>
+> > ---
+> >=20
+> >  drivers/staging/tidspbridge/core/dsp-clock.c  |   16
+> >  ++++++++--------
+> >  drivers/staging/tidspbridge/core/tiomap3430.c |    2 ++
+> >  drivers/staging/tidspbridge/core/tiomap_io.c  |    2 ++
+> >  drivers/staging/tidspbridge/core/wdt.c        |    8
+> >  ++++---- 4 files changed, 16 insertions(+), 12
+> >  deletions(-)
+>=20
+> AFAIK, this has been taken care in the past by:
+>=20
+> e16a922a staging: tidspbridge: use prepare/unprepare on dsp
+> clocks fe025085 staging: tidspbridge: Fix build breakage due
+> to splitting CM functions
+>=20
+> Would you mind pointing the target for your patches? Perhaps
+> stable?
+>=20
+> Cheers,
+>=20
+> Omar
 
-Le 06/03/2013 14:43, Alexander Shishkin a écrit :
-> On 6 March 2013 12:33, Maxime Ripard 
-> <maxime.ripard@free-electrons.com> wrote:
->> Just noticed this in 3.9-rc1 on an iMX28 (ARM) board with a config
->>  based on mxs_defconfig. I'm using the patchset "Add tested id 
->> switch and vbus connect detect support for Chipidea" from Peter 
->> Chen in its 10th version [1], rebased on top of 3.9-rc1, but since 
->> this doesn't modify the locks present in the udc_irq function, I 
->> think the problem is elsewhere.
-> 
-> From a quick look at the current chipidea code, I don't see any place
-> where we might try to take cdev->lock under ci->lock. I should have a
-> better look at Peter's patchset to see if it can trigger that.
+I was not able to compile tidspbridge on 3.8-rc3. But now with=20
+3.8 it is fixed. So drop this patch.
 
-And from a quick git blame on top of Peter patches, it seems like
-udc_irq has been left untouched by his patches.
+=2D-=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
 
-> Peter, have you seen anything like that with your code? Is this easy
->  to trigger (I would assume it is)?
+--nextPart1538494.DLqxx7UVVA
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
 
-Quite easy yes, just plug a usb cable in gadget mode.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-> Can you post the contents of "events" debug file in sysfs?
+iEYEABECAAYFAlE3Tn0ACgkQi/DJPQPkQ1LTOQCfefR+b2EFD3uCjKMKKU2NVBCx
+h8kAoKk92lQqaF2vR5EOKQedaYC03v7D
+=gKms
+-----END PGP SIGNATURE-----
 
-http://code.bulix.org/64liql-83101
-
-
--- 
-Maxime Ripard, Free Electrons
-Kernel, drivers, real-time and embedded Linux
-development, consulting, training and support.
-http://free-electrons.com
+--nextPart1538494.DLqxx7UVVA--
