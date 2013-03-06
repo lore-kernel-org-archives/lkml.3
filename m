@@ -1,167 +1,255 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757762Ab3CFXwh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 18:52:37 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49181 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754990Ab3CFXwf (ORCPT
+	id S1757728Ab3CFXyg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 18:54:36 -0500
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:50944 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753384Ab3CFXyf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 18:52:35 -0500
-Date: Wed, 6 Mar 2013 15:52:33 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: linux-next: build failure after merge of the final tree (akpm
- tree related)
-Message-Id: <20130306155233.3598a39ef5a99c4daf4fbc81@linux-foundation.org>
-In-Reply-To: <20130304141051.a630590df1007f2d349a2d8a@canb.auug.org.au>
-References: <20130304141051.a630590df1007f2d349a2d8a@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 6 Mar 2013 18:54:35 -0500
+Date: Wed, 6 Mar 2013 18:54:31 -0500
+From: Andrew Shewmaker <agshew@gmail.com>
+To: akpm@linux-foundation.org
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, alan@lxorguk.ukuu.org.uk,
+        simon.jeons@gmail.com, ric.masonn@gmail.com
+Subject: [PATCH v5 2/2] mm: replace hardcoded 3% with admin_reserve_pages knob
+Message-ID: <20130306235431.GB1421@localhost.localdomain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 4 Mar 2013 14:10:51 +1100 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+Add an admin_reserve_pages knob to allow admins to change the
+hardcoded memory reserve to something other than 3%, which
+may be multiple gigabytes on large memory systems.
 
-> Hi all,
-> 
-> After merging the final tree, today's linux-next build (sparc64 defconfig)
-> failed like this:
-> 
-> arch/sparc/built-in.o: In function `setup_arch':
-> (.init.text+0xc38): undefined reference to `early_console'
-> arch/sparc/built-in.o: In function `setup_arch':
-> (.init.text+0xc44): undefined reference to `early_console'
-> 
-> Caused by commit 16ac99bd7acd ("early_printk: consolidate random copies
-> of identical code").  This build does not have CONFIG_EARLY_PRINTK defined.
+This affects OVERCOMMIT_GUESS and OVERCOMMIT_NEVER.
 
-Yes, it looks like some ifdeffing is needed in
-arch/sparc/kernel/setup_32.c and in arch/sparc/kernel/setup_64.c.  And
-I suspect arch/powerpc/kernel/udbg.c will break with
-CONFIG_EARLY_PRINTK=n.
+admin_reserve_pages is initialized to min(3% free pages, 8MB)
 
-> I have reverted that commit for today.
+Signed-off-by: Andrew Shewmaker <agshew@gmail.com>
 
-I had a shot at fixing it all but I'm not very confident in the result,
-so I guess I'll drop it as well.
+---
 
-diff -puN arch/powerpc/kernel/udbg.c~early_printk-consolidate-random-copies-of-identical-code-fix arch/powerpc/kernel/udbg.c
---- a/arch/powerpc/kernel/udbg.c~early_printk-consolidate-random-copies-of-identical-code-fix
-+++ a/arch/powerpc/kernel/udbg.c
-@@ -162,9 +162,10 @@ static struct console udbg_console = {
-  */
- void __init register_early_udbg_console(void)
- {
-+#ifdef CONFIG_EARLY_PRINTK
- 	if (early_console)
- 		return;
--
-+#endif
- 	if (!udbg_putc)
- 		return;
+v5:
+ * Custom sysctl handler was unnecessary
+   now using proc_doulongvec_minmax()
+
+v4:
+ * Rebased onto v3.8-mmotm-2013-03-01-15-50
+ * No longer assumes 4kb pages
+ * Code duplicated for nommu
+
+v3:
+ * New patch summary because it wasn't unique
+   New is "mm: replace hardcoded 3% with admin_reserve_pages knob"
+   Old was "mm: tuning hardcoded reserve memory"
+ * Limits growth to min(3% process size, k)
+   as Alan Cox suggested. I chose k=2000 pages to allow
+   recovery with sshd or login, bash, and top or kill
+
+v2:
+ * Based onto v3.8-mmotm-2013-02-19-17-20
+ * Simple tunable added that initialized to 1000 pages
+
+v1:
+ * I asked for comments concerning this idea when submitting v1
+   of the patch to remove the user reserve
+---
+ Documentation/sysctl/vm.txt | 15 +++++++++++++++
+ kernel/sysctl.c             |  8 ++++++++
+ mm/mmap.c                   | 30 ++++++++++++++++++++++++++----
+ mm/nommu.c                  | 30 ++++++++++++++++++++++++++----
+ 4 files changed, 75 insertions(+), 8 deletions(-)
+
+diff --git a/Documentation/sysctl/vm.txt b/Documentation/sysctl/vm.txt
+index 40c2a49..60b9aba 100644
+--- a/Documentation/sysctl/vm.txt
++++ b/Documentation/sysctl/vm.txt
+@@ -18,6 +18,7 @@ files can be found in mm/swap.c.
  
-diff -puN arch/sparc/kernel/setup_32.c~early_printk-consolidate-random-copies-of-identical-code-fix arch/sparc/kernel/setup_32.c
---- a/arch/sparc/kernel/setup_32.c~early_printk-consolidate-random-copies-of-identical-code-fix
-+++ a/arch/sparc/kernel/setup_32.c
-@@ -108,6 +108,7 @@ unsigned long cmdline_memory_size __init
- /* which CPU booted us (0xff = not set) */
- unsigned char boot_cpu_id = 0xff; /* 0xff will make it into DATA section... */
+ Currently, these files are in /proc/sys/vm:
  
-+#ifdef CONFIG_EARLY_PRINTK
- static void
- prom_console_write(struct console *con, const char *s, unsigned n)
- {
-@@ -120,6 +121,7 @@ static struct console prom_early_console
- 	.flags =	CON_PRINTBUFFER | CON_BOOT,
- 	.index =	-1,
- };
-+#endif
++- admin_reserve_pages
+ - block_dump
+ - compact_memory
+ - dirty_background_bytes
+@@ -59,6 +60,20 @@ Currently, these files are in /proc/sys/vm:
  
- /* 
-  * Process kernel command line switches that are specific to the
-@@ -138,7 +140,9 @@ static void __init process_switch(char c
- 		prom_halt();
- 		break;
- 	case 'p':
-+#ifdef CONFIG_EARLY_PRINTK
- 		prom_early_console.flags &= ~CON_BOOT;
-+#endif
- 		break;
- 	default:
- 		printk("Unknown boot switch (-%c)\n", c);
-@@ -309,8 +313,10 @@ void __init setup_arch(char **cmdline_p)
+ ==============================================================
  
- 	boot_flags_init(*cmdline_p);
- 
-+#ifdef CONFIG_EARLY_PRINTK
- 	early_console = &prom_early_console;
- 	register_console(&prom_early_console);
-+#endif
- 
- 	printk("ARCH: ");
- 	switch(sparc_cpu_model) {
-diff -puN arch/sparc/kernel/setup_64.c~early_printk-consolidate-random-copies-of-identical-code-fix arch/sparc/kernel/setup_64.c
---- a/arch/sparc/kernel/setup_64.c~early_printk-consolidate-random-copies-of-identical-code-fix
-+++ a/arch/sparc/kernel/setup_64.c
-@@ -75,21 +75,23 @@ struct screen_info screen_info = {
- 	16                      /* orig-video-points */
- };
- 
-+/* Exported for mm/init.c:paging_init. */
-+unsigned long cmdline_memory_size = 0;
++admin_reserve_pages
 +
-+#ifdef CONFIG_EARLY_PRINTK
- static void
- prom_console_write(struct console *con, const char *s, unsigned n)
- {
- 	prom_write(s, n);
- }
++The number of free pages in the system that should be reserved for users
++with the capability cap_sys_admin. The default value is the smaller of 3%
++of free pages or 8MB (2048 pages). That should provide enough for the 
++admin to log in and kill a process if necessary.
++
++Systems running with overcommit disabled should consider increasing this
++to account for the full Virtual Memory Size of programs used to recover.
++
++Changing this takes effect whenever an application requests memory.
++
++==============================================================
++
+ block_dump
  
--/* Exported for mm/init.c:paging_init. */
--unsigned long cmdline_memory_size = 0;
--
- static struct console prom_early_console = {
- 	.name =		"earlyprom",
- 	.write =	prom_console_write,
- 	.flags =	CON_PRINTBUFFER | CON_BOOT | CON_ANYTIME,
- 	.index =	-1,
+ block_dump enables block I/O debugging when set to a nonzero value. More
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index dbb7b93..9c5aae6 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -98,6 +98,7 @@
+ extern int sysctl_overcommit_memory;
+ extern int sysctl_overcommit_ratio;
+ extern unsigned long sysctl_user_reserve_pages;
++extern unsigned long sysctl_admin_reserve_pages;
+ extern int max_threads;
+ extern int suid_dumpable;
+ #ifdef CONFIG_COREDUMP
+@@ -1438,6 +1439,13 @@ static struct ctl_table vm_table[] = {
+ 		.mode		= 0644,
+ 		.proc_handler	= proc_doulongvec_minmax,
+ 	},
++	{
++		.procname	= "admin_reserve_pages",
++		.data		= &sysctl_admin_reserve_pages,
++		.maxlen		= sizeof(sysctl_admin_reserve_pages),
++		.mode		= 0644,
++		.proc_handler	= proc_doulongvec_minmax,
++	},
+ 	{ }
  };
-+#endif
  
- /* 
-  * Process kernel command line switches that are specific to the
-@@ -106,7 +108,9 @@ static void __init process_switch(char c
- 		prom_halt();
- 		break;
- 	case 'p':
-+#ifdef CONFIG_EARLY_PRINTK
- 		prom_early_console.flags &= ~CON_BOOT;
-+#endif
- 		break;
- 	case 'P':
- 		/* Force UltraSPARC-III P-Cache on. */
-@@ -551,11 +555,17 @@ static void __init init_sparc64_elf_hwca
- 		pause_patch();
- }
+diff --git a/mm/mmap.c b/mm/mmap.c
+index aeaf83f..78743ab 100644
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -86,6 +86,7 @@ int sysctl_overcommit_memory __read_mostly = OVERCOMMIT_GUESS;  /* heuristic ove
+ int sysctl_overcommit_ratio __read_mostly = 50;	/* default is 50% */
+ int sysctl_max_map_count __read_mostly = DEFAULT_MAX_MAP_COUNT;
+ unsigned long sysctl_user_reserve_pages __read_mostly = 1UL << (27 - PAGE_SHIFT); /* 128MB */
++unsigned long sysctl_admin_reserve_pages __read_mostly = 1UL << (23 - PAGE_SHIFT); /* 8MB */
+ /*
+  * Make sure vm_committed_as in one cacheline and not cacheline shared with
+  * other variables. It can be updated by several CPUs frequently.
+@@ -165,10 +166,10 @@ int __vm_enough_memory(struct mm_struct *mm, long pages, int cap_sys_admin)
+ 			free -= totalreserve_pages;
  
-+#ifdef CONFIG_EARLY_PRINTK
- static inline void register_prom_console(void)
- {
- 	early_console = &prom_early_console;
- 	register_console(&prom_early_console);
+ 		/*
+-		 * Leave the last 3% for root
++		 * Reserve some for root
+ 		 */
+ 		if (!cap_sys_admin)
+-			free -= free / 32;
++			free -= sysctl_admin_reserve_pages;
+ 
+ 		if (free > pages)
+ 			return 0;
+@@ -179,10 +180,10 @@ int __vm_enough_memory(struct mm_struct *mm, long pages, int cap_sys_admin)
+ 	allowed = (totalram_pages - hugetlb_total_pages())
+ 	       	* sysctl_overcommit_ratio / 100;
+ 	/*
+-	 * Leave the last 3% for root
++	 * Reserve some for root
+ 	 */
+ 	if (!cap_sys_admin)
+-		allowed -= allowed / 32;
++		allowed -= sysctl_admin_reserve_pages;
+ 	allowed += total_swap_pages;
+ 
+ 	/*
+@@ -3090,3 +3091,24 @@ int __meminit init_user_reserve(void)
+ 	return 0;
  }
-+#else
-+static inline void register_prom_console(void)
+ module_init(init_user_reserve)
++
++/*
++ * Initialise sysctl_admin_reserve_pages.
++ *
++ * The purpose of sysctl_admin_reserve_pages is to allow the sys admin
++ * to log in and kill a memory hogging process.
++ *
++ * Systems with more than 256MB will reserve 8MB, enough to recover
++ * with sshd, bash, and top. Smaller systems will only reserve 3% of
++ * free pages by default.
++ */
++int __meminit init_admin_reserve(void)
 +{
++	unsigned long free;
++
++	free = global_page_state(NR_FREE_PAGES);
++
++	sysctl_admin_reserve_pages = min(free / 32, 1UL << (23 - PAGE_SHIFT));
++	return 0;
 +}
-+#endif
++module_init(init_admin_reserve)
+diff --git a/mm/nommu.c b/mm/nommu.c
+index 0137ab2..70282a1 100644
+--- a/mm/nommu.c
++++ b/mm/nommu.c
+@@ -65,6 +65,7 @@ int sysctl_overcommit_ratio = 50; /* default is 50% */
+ int sysctl_max_map_count = DEFAULT_MAX_MAP_COUNT;
+ int sysctl_nr_trim_pages = CONFIG_NOMMU_INITIAL_TRIM_EXCESS;
+ unsigned long sysctl_user_reserve_pages __read_mostly = 1UL << (27 - PAGE_SHIFT); /* 128MB */
++unsigned long sysctl_admin_reserve_pages __read_mostly = 1UL << (23 - PAGE_SHIFT); /* 8MB */
+ int heap_stack_gap = 0;
  
- void __init setup_arch(char **cmdline_p)
- {
-_
+ atomic_long_t mmap_pages_allocated;
+@@ -1927,10 +1928,10 @@ int __vm_enough_memory(struct mm_struct *mm, long pages, int cap_sys_admin)
+ 			free -= totalreserve_pages;
+ 
+ 		/*
+-		 * Leave the last 3% for root
++		 * Reserve some for root
+ 		 */
+ 		if (!cap_sys_admin)
+-			free -= free / 32;
++			free -= sysctl_admin_reserve_pages;
+ 
+ 		if (free > pages)
+ 			return 0;
+@@ -1940,10 +1941,10 @@ int __vm_enough_memory(struct mm_struct *mm, long pages, int cap_sys_admin)
+ 
+ 	allowed = totalram_pages * sysctl_overcommit_ratio / 100;
+ 	/*
+-	 * Leave the last 3% for root
++	 * Reserve some 3% for root
+ 	 */
+ 	if (!cap_sys_admin)
+-		allowed -= allowed / 32;
++		allowed -= sysctl_admin_reserve_pages;
+ 	allowed += total_swap_pages;
+ 
+ 	/* Don't let a single process grow too big:
+@@ -2133,3 +2134,24 @@ int __meminit init_user_reserve(void)
+ 	return 0;
+ }
+ module_init(init_user_reserve)
++
++/*
++ * Initialise sysctl_admin_reserve_pages.
++ *
++ * The purpose of sysctl_admin_reserve_pages is to allow the sys admin
++ * to log in and kill a memory hogging process.
++ *
++ * Systems with more than 256MB will reserve 8MB, enough to recover
++ * with sshd, bash, and top. Smaller systems will only reserve 3% of
++ * free pages by default.
++ */
++int __meminit init_admin_reserve(void)
++{
++	unsigned long free;
++
++	free = global_page_state(NR_FREE_PAGES);
++
++	sysctl_admin_reserve_pages = min(free / 32, 1UL << (23 - PAGE_SHIFT));
++	return 0;
++}
++module_init(init_admin_reserve)
+-- 
+1.8.0.1
 
