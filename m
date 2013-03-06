@@ -1,81 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757567Ab3CFL1T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 06:27:19 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:21837 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1757359Ab3CFL1P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 06:27:15 -0500
-X-IronPort-AV: E=Sophos;i="4.84,795,1355068800"; 
-   d="scan'208";a="6824350"
-Message-ID: <513728AD.6020307@cn.fujitsu.com>
-Date: Wed, 06 Mar 2013 19:29:49 +0800
-From: Lin Feng <linfeng@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1757508Ab3CFLq2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 06:46:28 -0500
+Received: from kirsty.vergenet.net ([202.4.237.240]:56761 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757394Ab3CFLq0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Mar 2013 06:46:26 -0500
+Date: Wed, 6 Mar 2013 20:46:22 +0900
+From: Simon Horman <horms@verge.net.au>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Magnus Damm <magnus.damm@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-sh@vger.kernel.org, benh@kernel.crashing.org,
+        grant.likely@secretlab.ca
+Subject: Re: [PATCH] irqchip: Renesas INTC External IRQ pin driver
+Message-ID: <20130306114622.GE6684@verge.net.au>
+References: <20130218142834.28739.39417.sendpatchset@w520>
+ <20130306042304.GA2896@verge.net.au>
+ <alpine.LFD.2.02.1303061058250.22263@ionos>
 MIME-Version: 1.0
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-CC: akpm@linux-foundation.org, mgorman@suse.de, bcrl@kvack.org,
-        viro@zeniv.linux.org.uk, khlebnikov@openvz.org, walken@google.com,
-        kamezawa.hiroyu@jp.fujitsu.com, minchan@kernel.org, riel@redhat.com,
-        rientjes@google.com, wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
-        tangchen@cn.fujitsu.com, guz.fnst@cn.fujitsu.com, jiang.liu@huawei.com,
-        zab@redhat.com, jmoyer@redhat.com, linux-mm@kvack.org,
-        linux-aio@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, m.szyprowski@samsung.com
-Subject: Re: [PATCH V3 1/2] mm: hotplug: implement non-movable version of
- get_user_pages() called get_user_pages_non_movable()
-References: <1361444504-31888-1-git-send-email-linfeng@cn.fujitsu.com> <1361444504-31888-2-git-send-email-linfeng@cn.fujitsu.com> <512C7C13.9050602@cn.fujitsu.com> <5136F4D2.8080205@jp.fujitsu.com>
-In-Reply-To: <5136F4D2.8080205@jp.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/03/06 19:26:09,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/03/06 19:26:10,
-	Serialize complete at 2013/03/06 19:26:10
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.02.1303061058250.22263@ionos>
+Organisation: Horms Solutions Ltd.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Yasuaki,
-
-On 03/06/2013 03:48 PM, Yasuaki Ishimatsu wrote:
-> Hi Lin,
+On Wed, Mar 06, 2013 at 11:01:14AM +0100, Thomas Gleixner wrote:
+> On Wed, 6 Mar 2013, Simon Horman wrote:
+> > On Mon, Feb 18, 2013 at 11:28:34PM +0900, Magnus Damm wrote:
+> > > The SoCs using this driver are currently mainly used
+> > > together with regular platform devices so this driver
+> > > allows configuration via platform data to support things
+> > > like static interrupt base address. DT support will
+> > > be added incrementally in the not so distant future.
+> > 
+> > Hi Thomas,
+> > 
+> > I'm wondering how you would like to handle merging this driver.
+> > I can think of three options but I'm sure there are others.
+> > 
+> > * You can take the patches (there is a follow-up series) yourself.
+> > * I can prepare a pull request for you
+> > * I can prepare a pull request for arm-soc with the shmobile patches that
+> >   enable the driver on the r8a7779 and sh73a0.
+> > 
+> > The last option is possibly the easiest.
 > 
-> IMHO, current implementation depends on luck. So even if system has
-> many non movable memory, get_user_pages_non_movable() may not allocate
-> non movable memory.
-
-Sorry, I'm not quite understand here, since the to be pinned pages are
-never pinned before, the migration successful probability is quite high,
-not just depends on luck.
-
+> Correct.
 > 
-> At following thread, Marek Szyprowski implemented similar feature which
-> allocates non movable memory by "get_user_pages()".
+> > But in that case I'd appreciate an Ack from you on this patch.
 > 
-> https://lkml.org/lkml/2013/3/5/44
+> You want to pick the V2 series, which already has my blessing:
 > 
-> I think Marek's way is better.
+>     https://lkml.org/lkml/2013/2/26/305
+> 
+> For merging it through arm-soc you have my ack now :)
 
-I think the two versions of get_user_pages() are not that great and one
-I can see is that Marek's patchset adding new flag to instruct the page
-allocation while I'm not sure if that approach is proper since it touches
-the core page allocation codes.
+Thanks, I have that.
 
-Besides in Marek's version we also have to patch every place if we want to 
-get around migration failure caused by GUP long pinned pages unless
-we want GUP fall into getting all pages from non movable zones.
-
-As Mel suggested before adding a migrate callback for such pages may be 
-another approach, but we also have to distinguish the long-time pin
-and short-time pin while which is not expectable beforehand. 
-
-So what we can do to improve is to migrate the pinned pages by GUP just
-the time we perform the migration caused by memory hotplug or cma people
-so that nobody cases if the page is long-time pinned or not :)
-
-But is that feasible to migrate a being pinned page ? 
-  
-thanks,
-linfeng
+It seems that V2 adds onto this patch rather than replaces it.
+So could I also get an Ack for this patch too?
