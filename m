@@ -1,92 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753658Ab3CFChn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 21:37:43 -0500
-Received: from mail-da0-f44.google.com ([209.85.210.44]:56394 "EHLO
-	mail-da0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750858Ab3CFChm (ORCPT
+	id S1753544Ab3CFClv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 21:41:51 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:50361 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752723Ab3CFClu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 21:37:42 -0500
-Message-ID: <5136ABEE.8000501@gmail.com>
-Date: Wed, 06 Mar 2013 10:37:34 +0800
-From: Ric Mason <ric.masonn@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
+	Tue, 5 Mar 2013 21:41:50 -0500
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <5136ACCB.8080702@jp.fujitsu.com>
+Date: Wed, 6 Mar 2013 11:41:15 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
 MIME-Version: 1.0
-To: Hugh Dickins <hughd@google.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Petr Holasek <pholasek@redhat.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Izik Eidus <izik.eidus@ravellosystems.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH 2/7] ksm: treat unstable nid like in stable tree
-References: <alpine.LNX.2.00.1302210013120.17843@eggly.anvils> <alpine.LNX.2.00.1302210019390.17843@eggly.anvils> <51271A7D.6020305@gmail.com> <alpine.LNX.2.00.1302221250440.6100@eggly.anvils> <51303CAB.3080406@gmail.com> <alpine.LNX.2.00.1303011139270.7398@eggly.anvils> <51315174.4020200@gmail.com> <alpine.LNX.2.00.1303011833490.23290@eggly.anvils>
-In-Reply-To: <alpine.LNX.2.00.1303011833490.23290@eggly.anvils>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Marek Szyprowski <m.szyprowski@samsung.com>
+CC: <linux-mm@kvack.org>, <linaro-mm-sig@lists.linaro.org>,
+        <linux-kernel@vger.kernel.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Minchan Kim <minchan@kernel.org>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Subject: Re: [RFC/PATCH 4/5] mm: get_user_pages: migrate out CMA pages when
+ FOLL_DURABLE flag is set
+References: <1362466679-17111-1-git-send-email-m.szyprowski@samsung.com> <1362466679-17111-5-git-send-email-m.szyprowski@samsung.com>
+In-Reply-To: <1362466679-17111-5-git-send-email-m.szyprowski@samsung.com>
+Content-Type: text/plain; charset="ISO-2022-JP"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/02/2013 10:57 AM, Hugh Dickins wrote:
-> On Sat, 2 Mar 2013, Ric Mason wrote:
->> On 03/02/2013 04:03 AM, Hugh Dickins wrote:
->>> On Fri, 1 Mar 2013, Ric Mason wrote:
->>>> I think the ksm implementation for num awareness  is buggy.
->>> Sorry, I just don't understand your comments below,
->>> but will try to answer or question them as best I can.
->>>
->>>> For page migratyion stuff, new page is allocated from node *which page is
->>>> migrated to*.
->>> Yes, by definition.
->>>
->>>> - when meeting a page from the wrong NUMA node in an unstable tree
->>>>       get_kpfn_nid(page_to_pfn(page)) *==* page_to_nid(tree_page)
->>> I thought you were writing of the wrong NUMA node case,
->>> but now you emphasize "*==*", which means the right NUMA node.
->> Yes, I mean the wrong NUMA node. During page migration, new page has already
->> been allocated in new node and old page maybe freed.  So tree_page is the
->> page in new node's unstable tree, page is also new node page, so
->> get_kpfn_nid(page_to_pfn(page)) *==* page_to_nid(tree_page).
-> I don't understand; but here you seem to be describing a case where two
-> pages from the same NUMA node get merged (after both have been migrated
-> from another NUMA node?), and there's nothing wrong with that,
-> so I won't worry about it further.
+2013/03/05 15:57, Marek Szyprowski wrote:
+> When __get_user_pages() is called with FOLL_DURABLE flag, ensure that no
+> page in CMA pageblocks gets locked. This workarounds the permanent
+> migration failures caused by locking the pages by get_user_pages() call for
+> a long period of time.
+> 
+> Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> ---
+>   mm/internal.h |   12 ++++++++++++
+>   mm/memory.c   |   43 +++++++++++++++++++++++++++++++++++++++++++
+>   2 files changed, 55 insertions(+)
+> 
+> diff --git a/mm/internal.h b/mm/internal.h
+> index 8562de0..a290d04 100644
+> --- a/mm/internal.h
+> +++ b/mm/internal.h
+> @@ -105,6 +105,18 @@ extern void prep_compound_page(struct page *page, unsigned long order);
+>   extern bool is_free_buddy_page(struct page *page);
+>   #endif
+>   
+> +#ifdef CONFIG_CMA
+> +static inline int is_cma_page(struct page *page)
+> +{
+> +	unsigned mt = get_pageblock_migratetype(page);
+> +	if (mt == MIGRATE_ISOLATE || mt == MIGRATE_CMA)
+> +		return true;
+> +	return false;
+> +}
+> +#else
+> +#define is_cma_page(page) 0
+> +#endif
+> +
+>   #if defined CONFIG_COMPACTION || defined CONFIG_CMA
+>   
+>   /*
+> diff --git a/mm/memory.c b/mm/memory.c
+> index 2b9c2dd..f81b273 100644
+> --- a/mm/memory.c
+> +++ b/mm/memory.c
+> @@ -1650,6 +1650,45 @@ static inline int stack_guard_page(struct vm_area_struct *vma, unsigned long add
+>   }
+>   
+>   /**
+> + * replace_cma_page() - migrate page out of CMA page blocks
+> + * @page:	source page to be migrated
+> + *
+> + * Returns either the old page (if migration was not possible) or the pointer
+> + * to the newly allocated page (with additional reference taken).
+> + *
+> + * get_user_pages() might take a reference to a page for a long period of time,
+> + * what prevent such page from migration. This is fatal to the preffered usage
+> + * pattern of CMA pageblocks. This function replaces the given user page with
+> + * a new one allocated from NON-MOVABLE pageblock, so locking CMA page can be
+> + * avoided.
+> + */
+> +static inline struct page *migrate_replace_cma_page(struct page *page)
+> +{
+> +	struct page *newpage = alloc_page(GFP_HIGHUSER);
+> +
+> +	if (!newpage)
+> +		goto out;
+> +
+> +	/*
+> +	 * Take additional reference to the new page to ensure it won't get
+> +	 * freed after migration procedure end.
+> +	 */
+> +	get_page_foll(newpage);
+> +
+> +	if (migrate_replace_page(page, newpage) == 0)
+> +		return newpage;
+> +
+> +	put_page(newpage);
+> +	__free_page(newpage);
+> +out:
+> +	/*
+> +	 * Migration errors in case of get_user_pages() might not
+> +	 * be fatal to CMA itself, so better don't fail here.
+> +	 */
+> +	return page;
+> +}
+> +
+> +/**
+>    * __get_user_pages() - pin user pages in memory
+>    * @tsk:	task_struct of target task
+>    * @mm:		mm_struct of target mm
+> @@ -1884,6 +1923,10 @@ long __get_user_pages(struct task_struct *tsk, struct mm_struct *mm,
+>   			}
+>   			if (IS_ERR(page))
+>   				return i ? i : PTR_ERR(page);
 
-For the case of a ksm page is migrated to a different NUMA node and 
-migrate its stable node to  the right tree and collide with an existing 
-stable node. get_kpfn_nid(stable_node->kpfn) != NUMA(stable_node->nid) 
-can capture nothing since stable_node is the node in the right stable 
-tree, nothing happen to it before this check. Did you intend to check 
-get_kpfn_nid(page_node->kpfn) != NUMA(page_node->nid) ?
+> +
+> +			if ((gup_flags & FOLL_DURABLE) && is_cma_page(page))
+> +				page = migrate_replace_cma_page(page);
+> +
 
->
->>>>      - meeting a page which is ksm page before migration
->>>>        get_kpfn_nid(stable_node->kpfn) != NUMA(stable_node->nid) can't
->>>> capture
->>>> them since stable_node is for tree page in current stable tree. They are
->>>> always equal.
->>> When we meet a ksm page in the stable tree before it's migrated to another
->>> NUMA node, yes, it will be on the right NUMA node (because we were careful
->>> only to merge pages from the right NUMA node there), and that test will not
->>> capture them.  It's for capturng a ksm page in the stable tree after it has
->>> been migrated to another NUMA node.
->> ksm page migrated to another NUMA node still not freed, why? Who take page
->> count of it?
-> The old page, the one which used to be a ksm page on the old NUMA node,
-> should be freed very soon: since it was isolated from lru, and its page
-> count checked, I cannot think of anything to hold a reference to it,
-> apart from migration itself - so it just needs to reach putback_lru_page(),
-> and then may rest awhile on __lru_cache_add()'s pagevec before being freed.
->
-> But I don't see where I said the old page was still not freed.
->
->> If not  freed, since new page is allocated in new node, it is
->> the copy of current ksm page, so current ksm doesn't change,
->> get_kpfn_nid(stable_node->kpfn) *==* NUMA(stable_node->nid).
-> But ksm_migrate_page() did
-> 		VM_BUG_ON(stable_node->kpfn != page_to_pfn(oldpage));
-> 		stable_node->kpfn = page_to_pfn(newpage);
-> without changing stable_node->nid.
->
-> Hugh
+I might be misreading. 
+If FOLL_DURABLE is set, this page is always allocated as non movable.
+Is it right? If so, when does this situation occur?
+
+Thanks,
+Yasuaki Ishimatsu
+
+>   			if (pages) {
+>   				pages[i] = page;
+>   
+> 
+
 
