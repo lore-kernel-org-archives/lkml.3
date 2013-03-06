@@ -1,104 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753337Ab3CFHlN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 02:41:13 -0500
-Received: from smtp.nue.novell.com ([195.135.221.5]:51273 "EHLO
-	smtp.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751004Ab3CFHlM (ORCPT
+	id S1754490Ab3CFHmA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 02:42:00 -0500
+Received: from mail-ia0-f174.google.com ([209.85.210.174]:34254 "EHLO
+	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752451Ab3CFHl6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 02:41:12 -0500
-Subject: Re: [PATCH] efivarfs: fix abnormal GUID in variable name by using
- strcpy to replace null with dash
-From: joeyli <jlee@suse.com>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Michael Schroeder <mls@suse.com>, Josh Boyer <jwboyer@redhat.com>,
-        Peter Jones <pjones@redhat.com>, Matthew Garrett <mjg59@srcf.ucam.org>,
-        Frederic Crozat <fcrozat@suse.com>
-In-Reply-To: <1362555258.23932.573.camel@linux-s257.site>
-References: <1362108018-13117-1-git-send-email-jlee@suse.com>
-	 <1362151068.2842.440.camel@mfleming-mobl1.ger.corp.intel.com>
-	 <1362155493.2842.446.camel@mfleming-mobl1.ger.corp.intel.com>
-	 <1362181299.23932.168.camel@linux-s257.site>
-	 <1362555258.23932.573.camel@linux-s257.site>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 06 Mar 2013 15:39:49 +0800
-Message-ID: <1362555589.23932.582.camel@linux-s257.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 8bit
+	Wed, 6 Mar 2013 02:41:58 -0500
+From: Benson Leung <bleung@chromium.org>
+To: olofj@chromium.org, miletus@chromium.org, dmitry.torokhov@gmail.com,
+        matthew.garrett@nebula.com, rydberg@euromail.se, djkurtz@chromium.org,
+        jy0922.shim@samsung.com, wfp5p@virginia.edu,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        platform-driver-x86@vger.kernel.org
+Cc: bleung@chromium.org
+Subject: [PATCH v2 0/2] Add platform data and touchpad functionality for Pixel
+Date: Tue,  5 Mar 2013 23:41:45 -0800
+Message-Id: <1362555707-24654-1-git-send-email-bleung@chromium.org>
+X-Mailer: git-send-email 1.8.1.3
+In-Reply-To: <1362187254-9227-1-git-send-email-bleung@chromium.org>
+References: <1362187254-9227-1-git-send-email-bleung@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-於 三，2013-03-06 於 15:34 +0800，joeyli 提到：
-> Hi Matt, 
-> 
-> 於 六，2013-03-02 於 07:41 +0800，joeyli 提到：
-> > 於 五，2013-03-01 於 16:31 +0000，Matt Fleming 提到：
-> > > On Fri, 2013-03-01 at 15:17 +0000, Matt Fleming wrote:
-> > > > On Fri, 2013-03-01 at 11:20 +0800, Lee, Chun-Yi wrote:
-> > > > > From: Michael Schroeder <mls@suse.com>
-> > > > > 
-> > > > > On HP z220 system (firmware version 1.54), some EFI variables
-> are incorrectly
-> > > > > named :
-> > > > > 
-> > > > > ls -d /sys/firmware/efi/vars/*8be4d* | grep -v -- -8be returns
-> > > >
-> > /sys/firmware/efi/vars/dbxDefault-pport8be4df61-93ca-11d2-aa0d-00e098032b8c
-> > > >
-> > /sys/firmware/efi/vars/KEKDefault-pport8be4df61-93ca-11d2-aa0d-00e098032b8c
-> > > >
-> > /sys/firmware/efi/vars/SecureBoot-pport8be4df61-93ca-11d2-aa0d-00e098032b8c
-> > > >
-> > /sys/firmware/efi/vars/SetupMode-Information8be4df61-93ca-11d2-aa0d-00e098032b8c
-> > > > > 
-> > > > > That causes by the following statement in
-> efivar_create_sysfs_entry function:
-> > > > > 
-> > > > >  *(short_name + strlen(short_name)) = '-';
-> > > > > efi_guid_unparse(vendor_guid, short_name +
-> strlen(short_name));
-> > > > > 
-> > > > > The trailing \0 is overwritten with '-', but the next char
-> doesn't seem to be a \0
-> > > > > as well for HP. So, the second strlen return the point of next
-> '\0', causes there
-> > > > > have garbage string attached before GUID.
-> > > > > 
-> > > > > Tested on On HP z220.
-> > > > 
-> > > > What's more likely happening here is that GetNextVariable() is
-> broken on
-> > > > this HP firmware and variable_name_size is too big for the given
-> > > > variable in variable_name. We've seen other reports of similar
-> bugs,
-> > > > 
-> > > >   https://bugzilla.kernel.org/show_bug.cgi?id=47631
-> > > > 
-> > > > 
-> > > > Could someone try this patch against Linus' tree?
-> > > 
-> > > Urgh, and here's a version that isn't utterly, utterly broken...
-> > 
-> > Thanks for Matt's patch, we will try it!
-> > 
-> > Joey Lee
-> 
-> Frederic confirmed your patch works to him for fix issue on HP
-> machine.
-> 
-> Tested-by: Frederic Crozat <fcrozat@suse.com>
+Add support for an "atmel_mxt_tp" variant in the atmel_mxt_ts.c driver.
+Then, add platform data for the 224s trackpad and the 1664s touchscreen
+in chromeos_laptop so that the existing version of the driver will
+probe these devices correctly.
 
-Sorry forgot paste variable_name_size from log:
+v2 : Minor bugfix in patch 1. Cleanup client_id from commit message.
+     Make sure chromeos_laptop patch applies cleanly to v3.9-rc1
 
-efivars: bogus variable_name_size: 34 1024
-efivars: bogus variable_name_size: 22 1024
-
-The GetNextVariable() always return variable_name_size is 1024.
-
-
-Thanks a lot!
-Joey Lee
-
+[PATCH v2 1/2] Input: atmel_mxt_ts - add device id for touchpad variant
+[PATCH v2 2/2] Platform: x86: chromeos_laptop : Add basic platform data
