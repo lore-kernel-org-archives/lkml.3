@@ -1,85 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754005Ab3CFRxT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 12:53:19 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:52677 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753474Ab3CFRxS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 12:53:18 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/9FLhNt2dbkQXISgcZQDm8
-Date: Wed, 6 Mar 2013 09:53:13 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Anil Kumar <anilk4.v@gmail.com>
-Cc: "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux@arm.linux.org.uk, b-cousson@ti.com,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Thomas Weber <thomas@tomweber.eu>
-Subject: Re: [PATCH V4] ARM: dts: add minimal DT support for DevKit8000.
-Message-ID: <20130306175313.GQ11806@atomide.com>
-References: <F3DBB1B3EF102E4994C89758CFCA32412CC4E9@DBDE01.ent.ti.com>
- <CABYxbz5GyxYaHANgdpwBNaaR6tnu=6LJuUNSvL7DEzU=4CPHcA@mail.gmail.com>
- <F3DBB1B3EF102E4994C89758CFCA32412CC74F@DBDE01.ent.ti.com>
- <CABYxbz62JrMB95p5i9iu2G=B4ETXLrYbLsyFEFR5F+WVD6YNnQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CABYxbz62JrMB95p5i9iu2G=B4ETXLrYbLsyFEFR5F+WVD6YNnQ@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753331Ab3CFSAm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 13:00:42 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:11115 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752653Ab3CFSAl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Mar 2013 13:00:41 -0500
+From: Peter Jones <pjones@redhat.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: linux-kernel@vger.kernel.org, Peter Jones <pjones@redhat.com>
+Subject: [PATCH] Be explicit about what the x86 0x020c boot parameter version requires.
+Date: Wed,  6 Mar 2013 13:00:23 -0500
+Message-Id: <1362592823-28967-1-git-send-email-pjones@redhat.com>
+In-Reply-To: <51377C3A.3030301@zytor.com>
+References: <51377C3A.3030301@zytor.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Anil Kumar <anilk4.v@gmail.com> [130305 18:40]:
-> Hi Tony,
-> 
-> >> From: linux-arm-kernel [mailto:linux-arm-kernel-
-> >> bounces@lists.infradead.org] On Behalf Of Anil Kumar
-> >> Sent: Wednesday, February 27, 2013 8:03 AM
-> >> To: devicetree-discuss@lists.ozlabs.org; linux-omap@vger.kernel.org;
-> >> linux-kernel@vger.kernel.org; linux-arm-kernel@lists.infradead.org
-> >> Cc: linux@arm.linux.org.uk; Cousson, Benoit; Tony Lindgren; Grant
-> >> Likely; Anil Kumar; thomas@tomweber.eu
-> >> Subject: Re: FW: [PATCH V4] ARM: dts: add minimal DT support for
-> >> DevKit8000.
-> >>
-> >> Hi,
-> >> >
-> >> > DevKit8000 is a beagle board clone from Timll, sold by
-> >> > armkits.com. The DevKit8000 has RS232 serial port, LCD, DVI-D,
-> >> > S-Video, Ethernet, SD/MMC, keyboard, camera, SPI, I2C, USB and
-> >> > JTAG interface.
-> >> >
-> >> > This patch adds the basic DT support for devkit8000. At this time,
-> >> Information
-> >> > of twl4030 (PMIC), MMC1, I2C1 and leds are added.
-> >> >
-> >> > Signed-off-by: Anil Kumar <anilk4.v@gmail.com>
-> >> > Tested-by: Thomas Weber <thomas@tomweber.eu>
-> >>
-> >> Gentle Ping. As there are no review comments on this patch,
-> >> Could you please pull this patch ?
-> 
-> Gentle Ping.
-> 
-> This patch also got Reviewed-by: Manish Badarkhe <badarkhe.manish@gmail.com>
-> and as patch "ARM: dts: omap3-devkit8000: Enable audio support"  has already got
-> "Acked-by: Peter Ujfalusi <peter.ujfalusi@ti.com>" but it is on the
-> top of this patch.
-> So, Could you please pull this patch in one of your omap branch? or
-> you want me to
-> do rebase this patch on top of v3.9-rc1 ?
+This should help avoid making the incorrect change in non-compliant
+bootloaders.
 
-Let's wait for Benoit to queue it as he has a bunch of .dts changes already
-applied. Too bad we missed v3.9 merge window for those, but hopefully
-we can get them queued early for v3.10.
+Signed-off-by: Peter Jones <pjones@redhat.com>
+---
+ Documentation/x86/boot.txt             | 5 +++--
+ arch/x86/include/asm/bootparam_utils.h | 7 +++++++
+ 2 files changed, 10 insertions(+), 2 deletions(-)
 
-Regards,
+diff --git a/Documentation/x86/boot.txt b/Documentation/x86/boot.txt
+index 3840b6f..72702db 100644
+--- a/Documentation/x86/boot.txt
++++ b/Documentation/x86/boot.txt
+@@ -1110,7 +1110,8 @@ firmware, 'table' is the EFI system table - these are the first two
+ arguments of the "handoff state" as described in section 2.3 of the
+ UEFI specification. 'bp' is the boot loader-allocated boot params.
+ 
+-The boot loader *must* fill out the following fields in bp,
++The boot loader *must* zero the entirity of bp, and then fill out the
++following fields:
+ 
+     o hdr.code32_start
+     o hdr.cmd_line_ptr
+@@ -1118,4 +1119,4 @@ The boot loader *must* fill out the following fields in bp,
+     o hdr.ramdisk_image (if applicable)
+     o hdr.ramdisk_size  (if applicable)
+ 
+-All other fields should be zero.
++All other fields should remain zero.
+diff --git a/arch/x86/include/asm/bootparam_utils.h b/arch/x86/include/asm/bootparam_utils.h
+index 5b5e9cb..b4e8aa8 100644
+--- a/arch/x86/include/asm/bootparam_utils.h
++++ b/arch/x86/include/asm/bootparam_utils.h
+@@ -17,6 +17,13 @@
+  */
+ static void sanitize_boot_params(struct boot_params *boot_params)
+ {
++	/* Note: do not simply clear this field.  The purpose of this field is
++	 * to guarantee compliance with the x86 boot spec located in
++	 * Documentation/x86/boot.txt .  That spec says that the *whole*
++	 * structure should be cleared.  If you're having an issue because
++	 * the sentinel is set, you need to change the whole structure to be
++	 * cleared, not this (or any other) indidivual field.
++	 */
+ 	if (boot_params->sentinel) {
+ 		/*fields in boot_params are not valid, clear them */
+ 		memset(&boot_params->olpc_ofw_header, 0,
+-- 
+1.8.1.4
 
-Tony
