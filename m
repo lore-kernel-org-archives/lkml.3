@@ -1,86 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756473Ab3CFWKv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 17:10:51 -0500
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:41700 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753350Ab3CFWKt (ORCPT
+	id S1756433Ab3CFWOM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 17:14:12 -0500
+Received: from mail-ia0-f171.google.com ([209.85.210.171]:51670 "EHLO
+	mail-ia0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753809Ab3CFWOK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 17:10:49 -0500
-X-Sasl-enc: 6gyVE8Pdwd0ibmSOcsnZ4/G3RRyaAbsyBbwOPrz5UzH5 1362607848
-Date: Thu, 7 Mar 2013 06:11:19 +0800
-From: Greg KH <greg@kroah.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the final tree (staging
- tree related)
-Message-ID: <20130306221118.GC1138@kroah.com>
-References: <20130306113508.9c868be103b6b140295c548f@canb.auug.org.au>
- <20130306004341.GA28426@kroah.com>
- <20130306135654.GA10760@phenom.dumpdata.com>
- <20130306200444.GA13744@phenom.dumpdata.com>
+	Wed, 6 Mar 2013 17:14:10 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130306200444.GA13744@phenom.dumpdata.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <5137B9DB.6000605@linux.intel.com>
+References: <CA+55aFx0HcOXKpxmZzM5jcbAaOroxafomX5ggMFV4A=py1qh-Q@mail.gmail.com>
+	<20130306080642.GA535@polaris.bitmath.org>
+	<51370990.5040508@linux.intel.com>
+	<20130306100743.GA407@polaris.bitmath.org>
+	<CAE9FiQXT4O3GOzm_OoFJG=vc=5LpfBkTEbAO_3xjerBGS_Gy=A@mail.gmail.com>
+	<20130306193612.GA513@polaris.bitmath.org>
+	<51379A4F.4020200@linux.intel.com>
+	<20130306195457.GA449@polaris.bitmath.org>
+	<CAE9FiQWK0ZnG9o8WgU-pcTPpir=PUyULQqk-TRVC+sh6UpU8VA@mail.gmail.com>
+	<20130306204500.GA335@polaris.bitmath.org>
+	<5137AE06.8060200@linux.intel.com>
+	<CAE9FiQW6SegoYjoveCVGWS3h-0UOHp5_wuAwnVh14oKLyYQFKA@mail.gmail.com>
+	<5137B9DB.6000605@linux.intel.com>
+Date: Wed, 6 Mar 2013 14:14:09 -0800
+X-Google-Sender-Auth: FsmZc9YkDmuOZTfBC0zbPbA-mvA
+Message-ID: <CAE9FiQX557z1SXTbVoBO1RHRbU=Re=WnPR-F+B=QfhaFVr9D9g@mail.gmail.com>
+Subject: Re: Linux 3.9-rc1
+From: Yinghai Lu <yinghai@kernel.org>
+To: "H. Peter Anvin" <hpa@linux.intel.com>
+Cc: Henrik Rydberg <rydberg@euromail.se>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 06, 2013 at 03:04:44PM -0500, Konrad Rzeszutek Wilk wrote:
-> On Wed, Mar 06, 2013 at 08:56:54AM -0500, Konrad Rzeszutek Wilk wrote:
-> > On Wed, Mar 06, 2013 at 08:43:41AM +0800, Greg KH wrote:
-> > > On Wed, Mar 06, 2013 at 11:35:08AM +1100, Stephen Rothwell wrote:
-> > > > Hi all,
-> > > > 
-> > > > After merging the final tree, today's linux-next build (powerpc
-> > > > allyesconfig) failed like this:
-> > > > 
-> > > > In file included from drivers/staging/zcache/debug.c:2:0:
-> > > > drivers/staging/zcache/debug.h: In function 'dec_zcache_obj_count':
-> > > > drivers/staging/zcache/debug.h:16:2: error: implicit declaration of function 'BUG_ON' [-Werror=implicit-function-declaration]
-> > > > 
-> > > > Caused by commit 95bdaee2140e ("zcache: Move debugfs code out of
-> > > > zcache-main.c file").
-> > > > 
-> > > > I applied this patch for today:
-> > > > 
-> > > > From 24b03cf426007c4e94c6bed81560e436afcc136c Mon Sep 17 00:00:00 2001
-> > > > From: Stephen Rothwell <sfr@canb.auug.org.au>
-> > > > Date: Wed, 6 Mar 2013 11:31:06 +1100
-> > > > Subject: [PATCH] disable ZCACHE_DEBUG due to build error
-> > > > 
-> > > > In file included from drivers/staging/zcache/debug.c:2:0:
-> > > > drivers/staging/zcache/debug.h: In function 'dec_zcache_obj_count':
-> > > > drivers/staging/zcache/debug.h:16:2: error: implicit declaration of function 'BUG_ON' [-Werror=implicit-function-declaration]
-> > > > 
-> > > > Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
-> > > > ---
-> > > >  drivers/staging/zcache/Kconfig | 1 +
-> > > >  1 file changed, 1 insertion(+)
-> > > 
-> > > Ick, sorry about that, I've applied your patch to my tree.
-> > 
-> > Wait, there is no BUG_ON on PPC? Or is the definition for it hidden in layers
-> > of #include files? Would this also solve it:
-> 
-> I got the cross-compiler up and the patch below does indeed solve the problem.
-> Greg, could you apply the patch below please?
+On Wed, Mar 6, 2013 at 1:49 PM, H. Peter Anvin <hpa@linux.intel.com> wrote:
+> On 03/06/2013 01:33 PM, Yinghai Lu wrote:
+>> On Wed, Mar 6, 2013 at 12:58 PM, H. Peter Anvin <hpa@linux.intel.com> wrote:
+>>
+>>> Excellent.  Yinghai, can you write up the patch with a proper
+>>> description and I'll put it into x86/urgent.
+>>
+>> I made it more robust: make sure real_end have 8M below it.
+>> Please check attached one.
+>>
+>
+> Sigh.  This is why "keep the page tables together" is fundamentally the
+> wrong strategy.
+>
+> 8M means that we won't even be able to boot on machines with less than
+> 16M or so of RAM... I'm not sure if anyone still cares, but that is a
+> pretty aggressive heuristic.
 
-What patch?  I don't see a proper Subject:, Signed-off-by: or anything
-else I can use.
+Henrik's system has 5M holes, so i picked 8M.
 
-> > diff --git a/drivers/staging/zcache/debug.h b/drivers/staging/zcache/debug.h
-> > index eef67db..494cea02 100644
-> > --- a/drivers/staging/zcache/debug.h
-> > +++ b/drivers/staging/zcache/debug.h
-> > @@ -1,5 +1,7 @@
-> >  #ifdef CONFIG_ZCACHE_DEBUG
-> >  
-> > +#include <asm/bug.h>
+Current what is minimum ram is required for boot x86 32bit kernel? 8M?
 
-Never include an asm .h file, you know better than that :)
+Thanks
 
-greg k-h
+Yinghai
