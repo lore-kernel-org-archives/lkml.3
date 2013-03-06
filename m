@@ -1,79 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755048Ab3CFUqX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 15:46:23 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:33090 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753594Ab3CFUqW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 15:46:22 -0500
-Date: Thu, 7 Mar 2013 07:46:12 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Greg KH <greg@kroah.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the final tree
- (staging tree related)
-Message-Id: <20130307074612.0ea87b15b03f63c3252d5b6b@canb.auug.org.au>
-In-Reply-To: <20130306200444.GA13744@phenom.dumpdata.com>
-References: <20130306113508.9c868be103b6b140295c548f@canb.auug.org.au>
-	<20130306004341.GA28426@kroah.com>
-	<20130306135654.GA10760@phenom.dumpdata.com>
-	<20130306200444.GA13744@phenom.dumpdata.com>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__7_Mar_2013_07_46_12_+1100_Yry/4fagRuC7avTA"
+	id S1755302Ab3CFUri (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 15:47:38 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:55937 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753554Ab3CFUrg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Mar 2013 15:47:36 -0500
+Subject: [RFC][PATCH 0/4] UAPI: Fix up endianness conditionals
+To: torvalds@linux-foundation.org
+From: David Howells <dhowells@redhat.com>
+Cc: linux-arch@vger.kernel.org, sfr@canb.auug.org.au,
+        Joakim.Tjernlund@transmode.se, arnd@arndb.de,
+        linux-kernel@vger.kernel.org, akpm@linux-foundation.org
+Date: Wed, 06 Mar 2013 20:47:25 +0000
+Message-ID: <20130306204724.31327.43118.stgit@warthog.procyon.org.uk>
+User-Agent: StGit/0.16
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__7_Mar_2013_07_46_12_+1100_Yry/4fagRuC7avTA
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-Hi Konrad,
+Here are four patches to fix some of the problems with endianness-related
+preprocessor conditionals I have found in the UAPI header files.
 
-On Wed, 6 Mar 2013 15:04:44 -0500 Konrad Rzeszutek Wilk <konrad.wilk@oracle=
-.com> wrote:
->
-> > diff --git a/drivers/staging/zcache/debug.h b/drivers/staging/zcache/de=
-bug.h
-> > index eef67db..494cea02 100644
-> > --- a/drivers/staging/zcache/debug.h
-> > +++ b/drivers/staging/zcache/debug.h
-> > @@ -1,5 +1,7 @@
-> >  #ifdef CONFIG_ZCACHE_DEBUG
-> > =20
-> > +#include <asm/bug.h>
+The problem is that the way that preprocessor conditionals are used to
+determine endianness when building for Linux userspace (as defined by the
+predominant use of glibc) is not compatible with the way that the kernel build
+does things.  The problem revolves around how __BIG_ENDIAN and __LITTLE_ENDIAN
+are defined in each environment.
 
-Why not include <linux/bug.h> ?
+When building for Linux userspace, __BIG_ENDIAN and __LITTLE_ENDIAN are always
+defined - so the kernel's preferred:
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+	if defined(__xxx_ENDIAN)
 
---Signature=_Thu__7_Mar_2013_07_46_12_+1100_Yry/4fagRuC7avTA
-Content-Type: application/pgp-signature
+is always true in userspace builds, no matter which endianness your check
+employs - whereas only one is defined in the kernel builds - meaning
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+	#if __BYTE_ORDER == __xxx_ENDIAN
 
-iQIcBAEBCAAGBQJRN6sUAAoJEECxmPOUX5FEh5YQAKZ/7Y0Ad/7msbh1keRvw+4k
-PJFPKF8KPcepeMA2XN554OTxwVfdGQlyfSxKjvriumM3Afs3yD2+M7JTcSE6nHMi
-dd0Ab/v5rDNDOIBRdrS6dDwJ4UKgNTv14XKBYNdzxIIk3FiIwPIoV6gfQRlEmHmf
-Z1nzQOcuRfG2KGiVV4njdbWXNhsSbS0w/KYDaPbtVFZuI2RslwLMxY6ZiD9fiAeZ
-P2VTaQa8NwhjAG02ZFz8tSbpMioaMw0tqnRbrL1xcoYdoBl2d1dDJQ2/cXBUCdrT
-taIRFLRTUNF/JzJLi5WJLZ+VqfuDDW51X8egjj+565VikExYTx4lbvd9HBC1tnT6
-q2it93P1DuKeKZtJmymxQnh1/MbnDCRRaRJFPKCNDipRSdHT/NUpqkk3CUp4yQRb
-sdqpkw5KfmHd0dPYNaAjN0/sjfNZdXThYQHDjemcPbnG5qnmvuqxD3gY6LXqzHa6
-z2dF/kDh4ENeBYCNudrYKW3DasjBjhFajkPekpv+P/j82XDD8ZLW/PvyfiXgUzM+
-DclVGXtmkmsitkwkfXm6guWibVYlRV/NibGF3bt13CC4T8DIvKjcYNp19/x6lU29
-+MMiluNX5/1bpYh2iCZrMIP5Q0DnJD9/DOH/y+Py4cROwj4Xio2KyKP5I3HqPo5Q
-DEs9m0FPwCt7WFK9lOS/
-=IUsk
------END PGP SIGNATURE-----
+gives a warning with -Wundef if you select the undefined endianness for your
+check.
 
---Signature=_Thu__7_Mar_2013_07_46_12_+1100_Yry/4fagRuC7avTA--
+
+Unfortunately, the UAPI header files _must_ employ the userspace variant of
+these conditionals outside of __KERNEL__-conditionalised regions as these
+conditionals get exposed to userspace and userspace _cannot_ be changed.
+
+These can be fixed in the UAPI headers by changing:
+
+	#if defined(__BIG_ENDIAN)
+	#define foo 1234
+	#elif defined(__LITTLE_ENDIAN)
+	#define foo 4321
+	#else
+	#error endianness unspecified
+	#endif
+
+to:
+
+	#if defined(__BYTE_ORDER) ? __BYTE_ORDER == __BIG_ENDIAN : defined(__BIG_ENDIAN)
+	#define foo 1234
+	#elif defined(__BYTE_ORDER) ? __BYTE_ORDER == __LITTLE_ENDIAN : defined(__LITTLE_ENDIAN)
+	#define foo 4321
+	#else
+	#error endianness unspecified
+	#endif
+
+as it appears gcc's cpp doesn't complain about macros that aren't evaluated.
+
+[!!!] NOTE [!!!]  These patches may adversely change the userspace API.  Since
+the userspace API appears to be wrong under some circumstances due to incorrect
+conditionals, it may be necessary to make an alternate fix whereby the we
+select the first variant unconditionally in all cases as we would otherwise be
+changing the actual userspace API.
+
+David
+---
+David Howells (4):
+      UAPI: Fix endianness conditionals in linux/aio_abi.h
+      UAPI: Fix endianness conditionals in linux/acct.h
+      UAPI: Fix endianness conditionals in linux/raid/md_p.h
+      UAPI: Fix endianness conditionals in M32R's asm/stat.h
+
+
+ arch/m32r/include/uapi/asm/stat.h |    4 ++--
+ include/uapi/linux/acct.h         |    6 ++++--
+ include/uapi/linux/aio_abi.h      |    4 ++--
+ include/uapi/linux/raid/md_p.h    |    6 ++++--
+ 4 files changed, 12 insertions(+), 8 deletions(-)
+
