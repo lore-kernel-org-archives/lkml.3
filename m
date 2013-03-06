@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754864Ab3CFXgy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 18:36:54 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:33377 "EHLO
+	id S1757482Ab3CFXhF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 18:37:05 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:49520 "EHLO
 	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753128Ab3CFXgw (ORCPT
+	with ESMTP id S1754787Ab3CFXgx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 18:36:52 -0500
+	Wed, 6 Mar 2013 18:36:53 -0500
 From: Stephen Warren <swarren@wwwdotorg.org>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Joe Perches <joe@perches.com>, linux-kernel@vger.kernel.org,
@@ -15,10 +15,12 @@ Cc: Joe Perches <joe@perches.com>, linux-kernel@vger.kernel.org,
         dri-devel@lists.freedesktop.org, nouveau@lists.freedesktop.org,
         Maarten Lankhorst <maarten.lankhorst@canonical.com>,
         linux-tegra@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
-Subject: [PATCH 1/2] get_maintainer: create filename-only regex match type
-Date: Wed,  6 Mar 2013 16:36:44 -0700
-Message-Id: <1362613005-31439-1-git-send-email-swarren@wwwdotorg.org>
+Subject: [PATCH 2/2] MAINTAINERS: tegra: match related files using N: not K:
+Date: Wed,  6 Mar 2013 16:36:45 -0700
+Message-Id: <1362613005-31439-2-git-send-email-swarren@wwwdotorg.org>
 X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1362613005-31439-1-git-send-email-swarren@wwwdotorg.org>
+References: <1362613005-31439-1-git-send-email-swarren@wwwdotorg.org>
 X-NVConfidentiality: public
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,49 +28,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Stephen Warren <swarren@nvidia.com>
 
-Create a new N: entry type in MAINTAINERS which performs a regex match
-against filenames; either those extracted from patch +++ or --- lines,
-or those specified on the command-line using the -f option.
+This causes the regex to be applied to filenames only, and not patch or
+file content (such as comments). This should prevent e.g.
+drivers/gpu/drm/nouveau/nv50_display.c from matching this entry.
 
-This provides the same benefits as using a K: regex option to match a
-set of filenames (see commit eb90d08 "get_maintainer: allow keywords to
-match filenames"), but without the disadvantage that "random" file
-content, such as comments,  will ever match the regex.
-
-Suggested-by: Joe Perches <joe@perches.com>
+Reported-by: Marcin Slusarz <marcin.slusarz@gmail.com>
 Signed-off-by: Stephen Warren <swarren@nvidia.com>
 ---
- MAINTAINERS               |    3 +++
- scripts/get_maintainer.pl |    2 +-
- 2 files changed, 4 insertions(+), 1 deletion(-)
+ MAINTAINERS |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/MAINTAINERS b/MAINTAINERS
-index 9561658..1671842 100644
+index 1671842..8b986e2 100644
 --- a/MAINTAINERS
 +++ b/MAINTAINERS
-@@ -90,6 +90,9 @@ Descriptions of section entries:
- 	   F:	drivers/net/*	all files in drivers/net, but not below
- 	   F:	*/net/*		all files in "any top level directory"/net
- 	   One pattern per line.  Multiple F: lines acceptable.
-+	N: Files and directories with regex patterns.
-+	   K:	[^a-z]tegra	all files whose patch contains the word tegra
-+	   One pattern per line.  Multiple N: lines acceptable.
- 	X: Files and directories that are NOT maintained, same rules as F:
- 	   Files exclusions are tested before file matches.
- 	   Can be useful for excluding a specific subdirectory, for instance:
-diff --git a/scripts/get_maintainer.pl b/scripts/get_maintainer.pl
-index ce4cc83..27dc5cb 100755
---- a/scripts/get_maintainer.pl
-+++ b/scripts/get_maintainer.pl
-@@ -611,7 +611,7 @@ sub get_maintainers {
- 				    $hash{$tvi} = $value_pd;
- 				}
- 			    }
--			} elsif ($type eq 'K') {
-+			} elsif ($type eq 'K' || $type eq 'N') {
- 			    if ($file =~ m/$value/x) {
- 				$hash{$tvi} = 0;
- 			    }
+@@ -7851,7 +7851,7 @@ L:	linux-tegra@vger.kernel.org
+ Q:	http://patchwork.ozlabs.org/project/linux-tegra/list/
+ T:	git git://git.kernel.org/pub/scm/linux/kernel/git/swarren/linux-tegra.git
+ S:	Supported
+-K:	(?i)[^a-z]tegra
++N:	[^a-z]tegra
+ 
+ TEHUTI ETHERNET DRIVER
+ M:	Andy Gospodarek <andy@greyhouse.net>
 -- 
 1.7.10.4
 
