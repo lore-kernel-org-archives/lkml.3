@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758633Ab3CFQHM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 11:07:12 -0500
-Received: from mail-qa0-f43.google.com ([209.85.216.43]:36935 "EHLO
-	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750696Ab3CFQHI (ORCPT
+	id S1758691Ab3CFQHe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 11:07:34 -0500
+Received: from mail-qa0-f45.google.com ([209.85.216.45]:47639 "EHLO
+	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750887Ab3CFQH3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 11:07:08 -0500
+	Wed, 6 Mar 2013 11:07:29 -0500
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
@@ -14,9 +14,9 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Steven Rostedt <rostedt@goodmis.org>,
         Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 1/2] math64: New div64_u64_rem helper
-Date: Wed,  6 Mar 2013 17:06:54 +0100
-Message-Id: <1362586015-27951-2-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 2/2] sched: Lower chances of cputime scaling overflow
+Date: Wed,  6 Mar 2013 17:06:55 +0100
+Message-Id: <1362586015-27951-3-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1362586015-27951-1-git-send-email-fweisbec@gmail.com>
 References: <1362586015-27951-1-git-send-email-fweisbec@gmail.com>
@@ -24,11 +24,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Provide an extended version of div64_u64() that
-also returns the remainder of the division.
+Some users have reported that after running a process with
+hundreds of threads on intensive CPU-bound loads, the cputime
+of the group started to freeze after a few days.
 
-We are going to need this to refine the cputime
-scaling code.
+This is due to how we scale the tick-based cputime against
+the scheduler precise execution time value.
+
+We add the values of all threads in the group and we multiply
+that against the sum of the scheduler exec runtime of the whole
+group.
+
+This easily overflows after a few days/weeks of execution.
+
+A proposed solution to solve this was to compute that multiplication
+on stime instead of utime:
+   62188451f0d63add7ad0cd2a1ae269d600c1663d
+   ("cputime: Avoid multiplication overflow on utime scaling")
+
+The rationale behind that was that it's easy for a thread to
+spend most of its time in userspace under intensive CPU-bound workload
+but it's much harder to do CPU-bound intensive long run in the kernel.
+
+This postulate got defeated when a user recently reported he was still
+seeing cputime freezes after the above patch. The workload that
+triggers this issue relates to intensive networking workloads where
+most of the cputime is consumed in the kernel.
+
+To reduce much more the opportunities for multiplication overflow,
+lets reduce the multiplication factors to the remainders of the division
+between sched exec runtime and cputime. Assuming the difference between
+these shouldn't ever be that large, it could work on many situations.
+
+This gets the same results as in the upstream scaling code except for
+a small difference: the upstream code always rounds the results to
+the nearest integer not greater to what would be the precise result.
+The new code rounds to the nearest integer either greater or not
+greater. In practice this difference probably shouldn't matter but
+it's worth mentioning.
+
+If this solution appears not to be enough in the end, we'll
+need to partly revert back to the behaviour prior to commit
+     0cf55e1ec08bb5a22e068309e2d8ba1180ab4239
+     ("sched, cputime: Introduce thread_group_times()")
+
+Back then, the scaling was done on exit() time before adding the cputime
+of an exiting thread to the signal struct. And then we'll need to
+scale one-by-one the live threads cputime in thread_group_cputime(). The
+drawback may be a slightly slower code on exit time.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Stanislaw Gruszka <sgruszka@redhat.com>
@@ -37,103 +80,62 @@ Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>
 ---
- include/linux/math64.h |   19 ++++++++++++++++++-
- lib/div64.c            |   19 +++++++++++++------
- 2 files changed, 31 insertions(+), 7 deletions(-)
+ kernel/sched/cputime.c |   31 +++++++++++++++++++------------
+ 1 files changed, 19 insertions(+), 12 deletions(-)
 
-diff --git a/include/linux/math64.h b/include/linux/math64.h
-index b8ba855..931a619 100644
---- a/include/linux/math64.h
-+++ b/include/linux/math64.h
-@@ -30,6 +30,15 @@ static inline s64 div_s64_rem(s64 dividend, s32 divisor, s32 *remainder)
- }
+diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
+index ed12cbb..7272b87 100644
+--- a/kernel/sched/cputime.c
++++ b/kernel/sched/cputime.c
+@@ -521,18 +521,21 @@ EXPORT_SYMBOL_GPL(vtime_account_irq_enter);
  
- /**
-+ * div64_u64_rem - unsigned 64bit divide with 64bit divisor
-+ */
-+static inline u64 div64_u64_rem(u64 dividend, u64 divisor, u64 *remainder)
-+{
-+	*remainder = dividend % divisor;
-+	return dividend / divisor;
-+}
-+
-+/**
-  * div64_u64 - unsigned 64bit divide with 64bit divisor
-  */
- static inline u64 div64_u64(u64 dividend, u64 divisor)
-@@ -61,8 +70,16 @@ static inline u64 div_u64_rem(u64 dividend, u32 divisor, u32 *remainder)
- extern s64 div_s64_rem(s64 dividend, s32 divisor, s32 *remainder);
- #endif
+ #else /* !CONFIG_VIRT_CPU_ACCOUNTING */
  
-+#ifndef div64_u64_rem
-+extern u64 div64_u64_rem(u64 dividend, u64 divisor, u64 *remainder);
-+#endif
-+
- #ifndef div64_u64
--extern u64 div64_u64(u64 dividend, u64 divisor);
-+static inline u64 div64_u64(u64 dividend, u64 divisor)
-+{
-+	u64 remainder;
-+	return div64_u64_rem(dividend, divisor, &remainder);
-+}
- #endif
- 
- #ifndef div64_s64
-diff --git a/lib/div64.c b/lib/div64.c
-index a163b6c..3af5728 100644
---- a/lib/div64.c
-+++ b/lib/div64.c
-@@ -79,9 +79,10 @@ EXPORT_SYMBOL(div_s64_rem);
- #endif
- 
- /**
-- * div64_u64 - unsigned 64bit divide with 64bit divisor
-+ * div64_u64_rem - unsigned 64bit divide with 64bit divisor and 64bit remainder
-  * @dividend:	64bit dividend
-  * @divisor:	64bit divisor
-+ * @remainder:  64bit remainder
-  *
-  * This implementation is a modified version of the algorithm proposed
-  * by the book 'Hacker's Delight'.  The original source and full proof
-@@ -89,27 +90,33 @@ EXPORT_SYMBOL(div_s64_rem);
-  *
-  * 'http://www.hackersdelight.org/HDcode/newCode/divDouble.c.txt'
-  */
--#ifndef div64_u64
--u64 div64_u64(u64 dividend, u64 divisor)
-+#ifndef div64_u64_rem
-+u64 div64_u64_rem(u64 dividend, u64 divisor, u64 *remainder)
+-static cputime_t scale_stime(cputime_t stime, cputime_t rtime, cputime_t total)
++static cputime_t scale_stime(u64 stime, u64 rtime, u64 total)
  {
- 	u32 high = divisor >> 32;
- 	u64 quot;
+-	u64 temp = (__force u64) rtime;
++	u64 rem, res, scaled;
  
- 	if (high == 0) {
--		quot = div_u64(dividend, divisor);
-+		u32 rem32;
-+		quot = div_u64_rem(dividend, divisor, &rem32);
-+		*remainder = rem32;
- 	} else {
- 		int n = 1 + fls(high);
- 		quot = div_u64(dividend >> n, divisor >> n);
+-	temp *= (__force u64) stime;
+-
+-	if (sizeof(cputime_t) == 4)
+-		temp = div_u64(temp, (__force u32) total);
+-	else
+-		temp = div64_u64(temp, (__force u64) total);
++	if (rtime >= total) {
++		res = div64_u64_rem(rtime, total, &rem);
++		scaled = stime * res;
++		scaled += div64_u64(stime * rem, total);
++	} else {
++		res = div64_u64_rem(total, rtime, &rem);
++		scaled = div64_u64(stime, res);
++		scaled -= div64_u64(scaled * rem, total);
++	}
  
- 		if (quot != 0)
- 			quot--;
--		if ((dividend - quot * divisor) >= divisor)
-+
-+		*remainder = dividend - quot * divisor;
-+		if (*remainder >= divisor) {
- 			quot++;
-+			*remainder -= divisor;
-+		}
- 	}
- 
- 	return quot;
+-	return (__force cputime_t) temp;
++	return (__force cputime_t) scaled;
  }
--EXPORT_SYMBOL(div64_u64);
-+EXPORT_SYMBOL(div64_u64_rem);
- #endif
  
- /**
+ /*
+@@ -560,10 +563,14 @@ static void cputime_adjust(struct task_cputime *curr,
+ 	 */
+ 	rtime = nsecs_to_cputime(curr->sum_exec_runtime);
+ 
+-	if (total)
+-		stime = scale_stime(stime, rtime, total);
+-	else
++	if (!rtime) {
++		stime = 0;
++	} else if (!total) {
+ 		stime = rtime;
++	} else {
++		stime = scale_stime((__force u64)stime,
++				    (__force u64)rtime, (__force u64)total);
++	}
+ 
+ 	/*
+ 	 * If the tick based count grows faster than the scheduler one,
 -- 
 1.7.5.4
 
