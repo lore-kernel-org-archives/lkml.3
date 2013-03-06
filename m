@@ -1,54 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758230Ab3CFOgI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 09:36:08 -0500
-Received: from mail-qa0-f54.google.com ([209.85.216.54]:45254 "EHLO
-	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754978Ab3CFOgF (ORCPT
+	id S1758286Ab3CFOgc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 09:36:32 -0500
+Received: from mail.free-electrons.com ([94.23.35.102]:53983 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754978Ab3CFOg3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 09:36:05 -0500
+	Wed, 6 Mar 2013 09:36:29 -0500
+Message-ID: <5137546B.2090801@free-electrons.com>
+Date: Wed, 06 Mar 2013 15:36:27 +0100
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Date: Wed, 6 Mar 2013 20:05:58 +0530
-Message-ID: <CABC96KznmDJHp5gfx1YsfX9hdXGFA3buaY31P2dDy1jJQgga7w@mail.gmail.com>
-Subject: Re: Linux 3.0+ Disk performance problem - wrong pdflush behaviour
-From: Harshana Ranmuthu <hranmuthu@gmail.com>
-To: linux-kernel@vger.kernel.org
+To: hpa@zytor.com
+CC: linux-kernel@vger.kernel.org
+Subject: 3.9-rc1: hz.bc compilation breakage
+X-Enigmail-Version: 1.4.6
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->   I don't know how to fix the issue without reverting the patch. Sorry.
+Hi,
 
-with reference to post URL
-http://marc.info/?l=linux-fsdevel&m=134997043820759&w=2
+I'm compiling the kernel for an iMX28(ARM) board, and since 3.9-rc1, I
+get the following error at compilation time:
 
-I was going through this post, as we are also having problems with the
-same commit. In our case, we are appending to a file rather than
-updating.
+make[3]: *** No rule to make target
+`/home/max/Work/2012/crystalfontz/rewrite/linux-dt/include/config/hz.h',
+needed by `kernel/hz.bc'.  Stop.
 
-Let me explain the issue as I understand and the solution I think
-which can fix the issue.
+I'm doing a clean out-of-tree build, with the following configuration
+file: http://code.bulix.org/m4y7se-83102?raw
 
-If a write() writes to a page (for the second time) which is being
-flushed (because the page was dirty from the fist write), data written
-to disk may have part from the first write and  rest from the second
-write. Although, after the second write, page will have the correct
-data, but disk will have corrupted data, ie, part from first write and
-rest from the second write. After flush(), dirty flag on the page will
-be cleared. If there has been a third write on the same page (this
-time assuming a clean write), then accurate data will be written to
-disk on the next flush. If there's no third write, then file on disk
-will remain to have corrupted data. If we can make sure, after the
-second write(), page remains dirty (because flush and write() happened
-at the same time), then even there's no third write, that page will be
-flushed again with accurate data, correcting the corruption on the
-disk.
-In summery, solution is to make sure the conflicting (write and flush
-happen at the same time) pages kept dirty after the flush. This will
-make sure these pages will be flushed again even there's no subsequent
-write()s to them.
+Reverting commit 1b66e0fd ("kernel: Replace timeconst.pl with a bc
+script") make the compilation go on as usual.
 
-I don't know how easy / difficult this change is. Hope you'll consider this.
+Thanks,
+Maxime
 
-Harshana
+-- 
+Maxime Ripard, Free Electrons
+Kernel, drivers, real-time and embedded Linux
+development, consulting, training and support.
+http://free-electrons.com
