@@ -1,79 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755317Ab3CFE4N (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 23:56:13 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:39177 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752509Ab3CFE4K (ORCPT
+	id S1755373Ab3CFE4t (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 23:56:49 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:7705 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752622Ab3CFE4s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 23:56:10 -0500
-Date: Wed, 6 Mar 2013 12:55:37 +0800
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Bryan Wu <cooloney@gmail.com>
-Cc: Richard Purdie <rpurdie@rpsys.net>, patches@opensource.wolfsonmicro.com,
-        linux-leds@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] leds: wm8350: Complain if we fail to reenable DCDC
-Message-ID: <20130306045534.GE4896@opensource.wolfsonmicro.com>
-References: <1362210046-13651-1-git-send-email-broonie@opensource.wolfsonmicro.com>
- <CAK5ve-+FTv1OTfJozs_sy7B0Zd6SzzBOU_1En4AMQCw1RZjprw@mail.gmail.com>
+	Tue, 5 Mar 2013 23:56:48 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Tue, 05 Mar 2013 20:56:43 -0800
+Message-ID: <5136CC88.6080200@nvidia.com>
+Date: Wed, 6 Mar 2013 13:56:40 +0900
+From: Alex Courbot <acourbot@nvidia.com>
+Organization: NVIDIA
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="gDGSpKKIBgtShtf+"
-Content-Disposition: inline
-In-Reply-To: <CAK5ve-+FTv1OTfJozs_sy7B0Zd6SzzBOU_1En4AMQCw1RZjprw@mail.gmail.com>
-X-Cookie: Your domestic life may be harmonious.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: Andrew Chew <AChew@nvidia.com>,
+        "thierry.reding@avionic-design.de" <thierry.reding@avionic-design.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/1 v3] pwm_bl: Add support for backlight enable regulator
+References: <1362527485-8611-1-git-send-email-achew@nvidia.com> <5136A781.2050303@nvidia.com> <5136C423.3070400@wwwdotorg.org>
+In-Reply-To: <5136C423.3070400@wwwdotorg.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 03/06/2013 01:20 PM, Stephen Warren wrote:
+> On 03/05/2013 07:18 PM, Alex Courbot wrote:
+>> On 03/06/2013 08:51 AM, Andrew Chew wrote:
+>>> The backlight enable regulator is specified in the device tree node for
+>>> backlight.
+>
+>>> diff --git a/include/linux/pwm_backlight.h
+>
+>>>    struct platform_pwm_backlight_data {
+>>>        int pwm_id;
+>>> +    struct regulator *en_supply;
+>>
+>> You should not have this here. Platform data is supposed to provide the
+>> necessary information for the driver to resolve the resource - not the
+>> resource itself.
+> ...
+>> There is one catch though: in case you don't want to use a regulator,
+>> and thus have none defined, regulator_get() will return -EPROBE_DEFER,
+>> so you cannot distinguish between "no regulator needed" and "supplier
+>> not ready yet" and your driver will always *require* a regulator. So at
+>> the end of the day you might still need a "use_enable_regulator" in the
+>> platform data to explicitly ask for probe() to look for it. This
+>> variable would also be set by parse_dt() if the "enable-supply" property
+>> exists.
+>
+> A driver that requires a regulator always requires that regulator. If a
+> particular board doesn't have SW control over the power source, you're
+> supposed to provide a dummy (fixed) regulator so that the driver doesn't
+> care about the difference.
 
---gDGSpKKIBgtShtf+
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+That's good to know, thanks. So does this mean that Andrew should make 
+the enable regulator mandatory and update current users to provide a 
+dummy one?
 
-On Tue, Mar 05, 2013 at 11:03:52AM -0800, Bryan Wu wrote:
-> On Fri, Mar 1, 2013 at 11:40 PM, Mark Brown
+Alex.
 
-> >         if (ret !=3D 0) {
-> >                 dev_err(led->cdev.dev, "Failed to disable ISINK: %d\n",=
- ret);
-> > -               regulator_enable(led->dcdc);
-> > +               ret =3D regulator_enable(led->dcdc);
-> > +               if (ret !=3D 0) {
-> looks like we don't need this bracket here.
->=20
-> > +                       dev_err(led->cdev.dev, "Failed to reenable DCDC=
-: %d\n",
-> > +                               ret);
-> > +               }
-> ditto.
-
-It's not required but since it's inside a small but multi-line block
-there's the whole thing about including braces at all levels for
-clarity.
-
---gDGSpKKIBgtShtf+
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRNsw/AAoJELSic+t+oim9kqkP/2RV129xBbhAam1Rq+jRyYAP
-2vRmzrDNHWEutOWGp641k4s9pgFj4suOTxdtqeTvzEO2rqrqusBU4uGSzbeMkP6t
-htRtCamKp0DTagcABz77c99ZyX1idrsLwg6VKeb+oE9mgci0jHE4u64CwYY1rRhQ
-Kord2i4KiWLtjgzFr+H+43ggzO2gKAlbvCPsPCqmdA64CTZSwg3CJbyl7Nq/k5GJ
-HYnspOf9jM7Z2aKlrfMEz5U4zrdkgk3PelWYZ8VpXdiBWpd2x6G4WstxwgpaWgV8
-NBp8ZdZOclZCIp3zhYwYH3cebUMFwzkHLCneF1Lj1ZOKH1zYnxew6iurpv+FaZbq
-GUClICNmK4xY5ZChpfgJIQKrBa1jB27OAQXPE2ODwlAFqv1n4lDc5UkrUQYQiLqj
-YeXUuyUBPgGvl3eEEntgTAtgYMsrjP6ibzB3LO7TEuJWFiARwOMZEVhjbTomcgsp
-qIoZwTrzEVCV1JBW9C854HnsgIfsZ8cOdZs1ewGlIGMOihnbkFzLKu2EPZHdEl7j
-p7OCIkjRUvyAfmNF5v7RWbmg9BuIKIZs0EUTes6KBTtMpFeEGN2QMsG6zmhdS1Se
-PP8PRRJyDyYvk6vEesRYHqLytNBC54H65JvsPfzAaS/5l4k84Sj98aVWE0kg6Nup
-1VQeT++NKaunL8//Gf1L
-=707E
------END PGP SIGNATURE-----
-
---gDGSpKKIBgtShtf+--
