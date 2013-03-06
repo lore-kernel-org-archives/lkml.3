@@ -1,74 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755434Ab3CEX7D (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 18:59:03 -0500
-Received: from mga02.intel.com ([134.134.136.20]:58257 "EHLO mga02.intel.com"
+	id S1755570Ab3CFAEd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 19:04:33 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:49651 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752888Ab3CEX7B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 18:59:01 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,791,1355126400"; 
-   d="scan'208";a="271691703"
-Message-ID: <51368692.4090204@linux.intel.com>
-Date: Tue, 05 Mar 2013 15:58:10 -0800
-From: "H. Peter Anvin" <hpa@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130219 Thunderbird/17.0.3
+	id S1754918Ab3CFAEb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Mar 2013 19:04:31 -0500
+Date: Wed, 6 Mar 2013 01:04:29 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Lucas Stach <dev@lynxeye.de>
+Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        nouveau@lists.freedesktop.org,
+        Maarten Lankhorst <maarten.lankhorst@canonical.com>
+Subject: Re: nouveau lockdep splat
+Message-ID: <20130306000429.GA30189@pd.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Lucas Stach <dev@lynxeye.de>, dri-devel@lists.freedesktop.org,
+	linux-kernel@vger.kernel.org, nouveau@lists.freedesktop.org,
+	Maarten Lankhorst <maarten.lankhorst@canonical.com>
+References: <20130304211608.GD22274@pd.tnic>
+ <1362501052.1933.2.camel@antimon>
 MIME-Version: 1.0
-To: Dave Hansen <dave@linux.vnet.ibm.com>
-CC: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>, bp@alien8.de,
-        linux-kernel@vger.kernel.org, "Yu, Fenghua" <fenghua.yu@intel.com>
-Subject: Re: [3.9-rc1 x86] Bug in ioremap code?
-References: <201302060035.GCJ00057.FLHMOOFtJFSQOV@I-love.SAKURA.ne.jp> <201303050015.GGI39081.LOVFtOFHQOJFSM@I-love.SAKURA.ne.jp> <201303052031.JFG81705.FSOOFQHJMVFOLt@I-love.SAKURA.ne.jp> <201303060041.AIF15342.tJFOHLQFFOMVSO@I-love.SAKURA.ne.jp> <20130305180650.GD4914@pd.tnic> <201303060628.CBG00578.OJtMFFHLQVSFOO@I-love.SAKURA.ne.jp> <51366E6F.1050409@linux.intel.com> <513683DC.3070405@linux.vnet.ibm.com>
-In-Reply-To: <513683DC.3070405@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1362501052.1933.2.camel@antimon>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fenghua,
+On Tue, Mar 05, 2013 at 05:30:52PM +0100, Lucas Stach wrote:
+> Dropping Tegra ML, it's not the place where Nouveau mails should go.
 
-Could you look at this thread and see if you can see what the problem is?
+$ ./scripts/get_maintainer.pl -f drivers/gpu/drm/nouveau/nv50_display.c
+...
+linux-tegra@vger.kernel.org (open list:TEGRA SUPPORT)
 
-	-hpa
+Maybe get_maintainer.pl patterns need correction...
 
-On 03/05/2013 03:46 PM, Dave Hansen wrote:
-> Not sure if it's related by 3.9-rc1 gets in to a reboot loop for me.  I
-> assume it's triple-faulting.  The last line on the console I see is:
-> 
-> [    0.085702] SMP alternatives: lockdep: fixing up alternatives
-> [    0.086859] smpboot: Booting Node   0, Processors [    0.086859]
-> smpboot: Booting Node   0, Processors  #1 OK
->  #1 OK
-> 
-> I bisected it down to the neighborhood of c47f39e.  After that, I get
-> some compile errors:
-> 
->> arch/x86/built-in.o: In function `generic_load_microcode':
->> microcode_intel.c:(.text+0x28195): undefined reference to `microcode_sanity_check'
->> microcode_intel.c:(.text+0x281ab): undefined reference to `get_matching_microcode'
-> 
-> Turning off CONFIG_MICROCODE:
-> 
-> -CONFIG_MICROCODE=y
-> -CONFIG_MICROCODE_INTEL=y
-> -# CONFIG_MICROCODE_AMD is not set
-> -CONFIG_MICROCODE_OLD_INTERFACE=y
-> -CONFIG_MICROCODE_INTEL_LIB=y
-> -CONFIG_MICROCODE_INTEL_EARLY=y
-> -CONFIG_MICROCODE_EARLY=y
-> +# CONFIG_MICROCODE is not set
-> 
-> lets it boot again and fixes those compile errors.  This is with this
-> config:
-> 
-> 	http://i-love.sakura.ne.jp/tmp/config-3.9-rc1
-> 
-> running under a kvm guest:
-> 
-> qemu-system-x86_64 -append 'earlyprintk=ttyS0,115200,keep
-> console=ttyS0,115200 nmi_watchdog=0 root=/dev/sda1 bootmem_debug'
-> -kernel vmlinuz -usbdevice tablet  -vnc :1 -net user -net
-> nic,model=e1000  -hda sarge-amd64-runme-1G.img -m 10240 -smp 2
-> 
+Thanks.
 
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
