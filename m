@@ -1,92 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753917Ab3CFRqk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 12:46:40 -0500
-Received: from smtp-outbound-1.vmware.com ([208.91.2.12]:49653 "EHLO
-	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750949Ab3CFRqj (ORCPT
+	id S1753882Ab3CFRuC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 12:50:02 -0500
+Received: from g6t0187.atlanta.hp.com ([15.193.32.64]:47685 "EHLO
+	g6t0187.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753222Ab3CFRuA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 12:46:39 -0500
-From: Bhavesh Davda <bhavesh@vmware.com>
-To: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: pv-drivers@vmware.com, Bhavesh Davda <bhavesh@vmware.com>,
-        Shreyas N Bhatewara <sbhatewara@vmware.com>
-Subject: [PATCH net-next] vmxnet3: prevent div-by-zero panic when ring resizing uninitialized dev
-Date: Wed,  6 Mar 2013 09:46:24 -0800
-Message-Id: <1362591984-16587-1-git-send-email-bhavesh@vmware.com>
-X-Mailer: git-send-email 1.7.1
+	Wed, 6 Mar 2013 12:50:00 -0500
+Message-ID: <1362591539.12845.124.camel@misato.fc.hp.com>
+Subject: Re: [PATCH 2/2] ia64: iosapic: fix kexec oops when iosapic was
+ removed
+From: Toshi Kani <toshi.kani@hp.com>
+To: Hanjun Guo <guohanjun@huawei.com>
+Cc: Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
+        linux-ia64@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jiang Liu <jiang.liu@huawei.com>, Jianguo Wu <wujianguo@huawei.com>
+Date: Wed, 06 Mar 2013 10:38:59 -0700
+In-Reply-To: <1362368824-29640-1-git-send-email-guohanjun@huawei.com>
+References: <1362368824-29640-1-git-send-email-guohanjun@huawei.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linux is free to call ethtool ops as soon as a netdev exists when probe
-finishes. However, we only allocate vmxnet3 tx/rx queues and initialize the
-rx_buf_per_pkt field in struct vmxnet3_adapter when the interface is
-opened (UP).
+On Mon, 2013-03-04 at 11:47 +0800, Hanjun Guo wrote:
+> Ioapic hotplug was supported in IA64 code, but will lead to kexec oops
+> when iosapic was removed. here is the code logic:
+> 
+> iosapic_remove
+>   iosapic_free
+>     memset(&iosapic_lists[index], 0, sizeof(iosapic_lists[0]))
+>       iosapic_lists[index].addr was set to 0;
+> 
+> and then kexec a new kernel
+> kexec_disable_iosapic
+>   iosapic_write(rte->iosapic,..)
+>     __iosapic_write(iosapic->addr, reg, val);
+>       addr was set to 0 when iosapic_remove, and oops happened
+> 
+ :
+> 
+> With Tony and Toshi's advice, the patch removes the "rte" from rte_list
+> when the iosapic was removed.
+> 
+> Signed-off-by: Hanjun Guo <guohanjun@huawei.com>
+> Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
+> ---
+>  arch/ia64/kernel/iosapic.c |   32 +++++++++++++++++++++++++++++++-
+>  1 files changed, 31 insertions(+), 1 deletions(-)
+> 
+> diff --git a/arch/ia64/kernel/iosapic.c b/arch/ia64/kernel/iosapic.c
+> index a6e2f75..bc4a0f8 100644
+> --- a/arch/ia64/kernel/iosapic.c
+> +++ b/arch/ia64/kernel/iosapic.c
+> @@ -1010,6 +1010,26 @@ iosapic_check_gsi_range (unsigned int gsi_base, unsigned int ver)
+>  	return 0;
+>  }
+>  
+> +static int
+> +delete_rte_from_list(unsigned int irq, unsigned int gsi)
 
-Signed-off-by: Bhavesh Davda <bhavesh@vmware.com>
-Signed-off-by: Shreyas N Bhatewara <sbhatewara@vmware.com>
----
- drivers/net/vmxnet3/vmxnet3_drv.c     |    3 ++-
- drivers/net/vmxnet3/vmxnet3_ethtool.c |    6 ++++++
- drivers/net/vmxnet3/vmxnet3_int.h     |    4 ++--
- 3 files changed, 10 insertions(+), 3 deletions(-)
+I'd prefer to have "iosapic" prefix to the func name, something like
+iosapic_delete_rte(), but this is just my preference.  Other than that,
+the change looks good to me.
 
-diff --git a/drivers/net/vmxnet3/vmxnet3_drv.c b/drivers/net/vmxnet3/vmxnet3_drv.c
-index 4aad350..bfc5898 100644
---- a/drivers/net/vmxnet3/vmxnet3_drv.c
-+++ b/drivers/net/vmxnet3/vmxnet3_drv.c
-@@ -2922,7 +2922,7 @@ vmxnet3_probe_device(struct pci_dev *pdev,
- 				    (int)num_online_cpus());
- 	else
- #endif
--		num_rx_queues = 1;
-+	num_rx_queues = 1;
- 	num_rx_queues = rounddown_pow_of_two(num_rx_queues);
- 
- 	if (enable_mq)
-@@ -2958,6 +2958,7 @@ vmxnet3_probe_device(struct pci_dev *pdev,
- 
- 	adapter->num_rx_queues = num_rx_queues;
- 	adapter->num_tx_queues = num_tx_queues;
-+	adapter->rx_buf_per_pkt = 1;
- 
- 	size = sizeof(struct Vmxnet3_TxQueueDesc) * adapter->num_tx_queues;
- 	size += sizeof(struct Vmxnet3_RxQueueDesc) * adapter->num_rx_queues;
-diff --git a/drivers/net/vmxnet3/vmxnet3_ethtool.c b/drivers/net/vmxnet3/vmxnet3_ethtool.c
-index a0feb17..0a4fc9e 100644
---- a/drivers/net/vmxnet3/vmxnet3_ethtool.c
-+++ b/drivers/net/vmxnet3/vmxnet3_ethtool.c
-@@ -472,6 +472,12 @@ vmxnet3_set_ringparam(struct net_device *netdev,
- 						VMXNET3_RX_RING_MAX_SIZE)
- 		return -EINVAL;
- 
-+	/* if adapter not yet initialized, do nothing */
-+	if (adapter->rx_buf_per_pkt == 0) {
-+		netdev_info(netdev,
-+				"adapter not completely initialized, ring size cannot be changed yet\n");
-+		return -EOPNOTSUPP;
-+	}
- 
- 	/* round it up to a multiple of VMXNET3_RING_SIZE_ALIGN */
- 	new_tx_ring_size = (param->tx_pending + VMXNET3_RING_SIZE_MASK) &
-diff --git a/drivers/net/vmxnet3/vmxnet3_int.h b/drivers/net/vmxnet3/vmxnet3_int.h
-index 3198384..3541814 100644
---- a/drivers/net/vmxnet3/vmxnet3_int.h
-+++ b/drivers/net/vmxnet3/vmxnet3_int.h
-@@ -70,10 +70,10 @@
- /*
-  * Version numbers
-  */
--#define VMXNET3_DRIVER_VERSION_STRING   "1.1.29.0-k"
-+#define VMXNET3_DRIVER_VERSION_STRING   "1.1.30.0-k"
- 
- /* a 32-bit int, each byte encode a verion number in VMXNET3_DRIVER_VERSION */
--#define VMXNET3_DRIVER_VERSION_NUM      0x01011D00
-+#define VMXNET3_DRIVER_VERSION_NUM      0x01011E00
- 
- #if defined(CONFIG_PCI_MSI)
- 	/* RSS only makes sense if MSI-X is supported. */
--- 
-1.7.1
+Acked-by: Toshi Kani <toshi.kani@hp.com>
+
+Thanks,
+-Toshi
+
+
 
