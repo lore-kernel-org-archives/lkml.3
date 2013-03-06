@@ -1,34 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754864Ab3CFT4b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 14:56:31 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:58716 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754578Ab3CFT42 (ORCPT
+	id S1754720Ab3CFT5v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 14:57:51 -0500
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:53809 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754642Ab3CFT5t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 14:56:28 -0500
-Date: Wed, 06 Mar 2013 14:56:25 -0500 (EST)
-Message-Id: <20130306.145625.520028393160549568.davem@davemloft.net>
-To: jasowang@redhat.com
-Cc: maxk@qti.qualcomm.com, rob@landley.net, linux-doc@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org, mst@redhat.com,
-        hkchu@google.com
-Subject: Re: [V2 PATCH] net: docs: document multiqueue tuntap API
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1362546626-29119-1-git-send-email-jasowang@redhat.com>
-References: <1362546626-29119-1-git-send-email-jasowang@redhat.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Wed, 06 Mar 2013 11:56:31 -0800 (PST)
+	Wed, 6 Mar 2013 14:57:49 -0500
+Date: Wed, 6 Mar 2013 14:58:19 -0500
+From: Matt Porter <mporter@ti.com>
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: Dan Williams <djbw@fb.com>, Chris Ball <cjb@laptop.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>
+Subject: Re: [PATCH v3 1/3] dmaengine: add dma_get_slave_sg_caps()
+Message-ID: <20130306195819.GN6209@beef>
+References: <1360007224-21735-1-git-send-email-mporter@ti.com>
+ <1360007224-21735-2-git-send-email-mporter@ti.com>
+ <8b3455d3f1aa42818e917d47fd993ea1@DFLE72.ent.ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <8b3455d3f1aa42818e917d47fd993ea1@DFLE72.ent.ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jason Wang <jasowang@redhat.com>
-Date: Wed,  6 Mar 2013 13:10:26 +0800
+On Tue, Feb 12, 2013 at 05:08:44PM +0000, Vinod Koul wrote:
+> On Mon, Feb 04, 2013 at 02:47:02PM -0500, Matt Porter wrote:
+> > Add a dmaengine API to retrieve slave SG transfer capabilities.
+> > 
+> > The API is optionally implemented by dmaengine drivers and when
+> > unimplemented will return a NULL pointer. A client driver using
+> > this API provides the required dma channel, address width, and
+> > burst size of the transfer. dma_get_slave_sg_caps() returns an
+> > SG caps structure with the maximum number and size of SG segments
+> > that the given channel can handle.
+> Okay this sounds much better :-)
+> 
+> few points though:
+> - you added API for caps, but is actually calculating for given configuration
+>   the max allowed range. IMHO that is not caps, perhaps renaming to get_max_sg
+>   /some_better_name would be more apt.
 
-> Signed-off-by: Jason Wang <jasowang@redhat.com>
+I went with get_slave_sg_limits(), seemed pretty descriptive. Just
+posted v4 with that change.
 
-Applied, thanks Jason.
+> - Still I like the idea of caps, but it should give H/W support capablity. If
+>   you want to add that, pls develop on same line...
+
+Ok, seems like a good separate submission.
+ 
+-Matt
