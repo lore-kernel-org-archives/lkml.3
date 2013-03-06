@@ -1,17 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753526Ab3CFHNw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 02:13:52 -0500
-Received: from g1t0028.austin.hp.com ([15.216.28.35]:29581 "EHLO
+	id S1753337Ab3CFHOf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 02:14:35 -0500
+Received: from g1t0028.austin.hp.com ([15.216.28.35]:29899 "EHLO
 	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752519Ab3CFHNv (ORCPT
+	with ESMTP id S1751386Ab3CFHOe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 02:13:51 -0500
-Message-ID: <1362554012.7242.9.camel@buesod1.americas.hpqcorp.net>
+	Wed, 6 Mar 2013 02:14:34 -0500
+Message-ID: <1362554072.7242.10.camel@buesod1.americas.hpqcorp.net>
 Subject: Re: [PATCH v2 0/4] ipc: reduce ipc lock contention
 From: Davidlohr Bueso <davidlohr.bueso@hp.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Rik van Riel <riel@redhat.com>, Emmanuel Benisty <benisty.e@gmail.com>,
+To: Rik van Riel <riel@redhat.com>
+Cc: Waiman Long <Waiman.Long@hp.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Emmanuel Benisty <benisty.e@gmail.com>,
         "Vinod, Chegu" <chegu_vinod@hp.com>, "Low, Jason" <jason.low2@hp.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         "H. Peter Anvin" <hpa@zytor.com>,
@@ -21,10 +23,13 @@ Cc: Rik van Riel <riel@redhat.com>, Emmanuel Benisty <benisty.e@gmail.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Steven Rostedt <rostedt@goodmis.org>,
         Thomas Gleixner <tglx@linutronix.de>
-Date: Tue, 05 Mar 2013 23:13:32 -0800
-In-Reply-To: <CA+55aFx5pAsC9Ej2h9mniEU89oD=1mq6iPA+R2MBX-z74J0B5Q@mail.gmail.com>
+Date: Tue, 05 Mar 2013 23:14:32 -0800
+In-Reply-To: <5136BDC1.70804@redhat.com>
 References: <1362476149.2225.50.camel@buesod1.americas.hpqcorp.net>
-	 <CA+55aFx5pAsC9Ej2h9mniEU89oD=1mq6iPA+R2MBX-z74J0B5Q@mail.gmail.com>
+	 <513626E9.2040509@redhat.com> <51364AB9.80206@hp.com>
+	 <CA+55aFwYOUyG_DQUqVPrQNi_a=AUwS53U-Yi6jbvJTGRxQ_aEQ@mail.gmail.com>
+	 <51365B66.5010905@redhat.com> <5136BC33.5000608@hp.com>
+	 <5136BDC1.70804@redhat.com>
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
 Mime-Version: 1.0
@@ -33,72 +38,27 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-03-05 at 07:40 -0800, Linus Torvalds wrote:
-> On Tue, Mar 5, 2013 at 1:35 AM, Davidlohr Bueso <davidlohr.bueso@hp.com> wrote:
+On Tue, 2013-03-05 at 22:53 -0500, Rik van Riel wrote:
+> On 03/05/2013 10:46 PM, Waiman Long wrote:
+> > On 03/05/2013 03:53 PM, Rik van Riel wrote:
+> 
+> >> Indeed.  Though how well my patches will work with Oracle will
+> >> depend a lot on what kind of semctl syscalls they are doing.
+> >>
+> >> Does Oracle typically do one semop per semctl syscall, or does
+> >> it pass in a whole bunch at once?
 > >
-> > The following set of patches are based on the discussion of holding the
-> > ipc lock unnecessarily, such as for permissions and security checks:
+> > i had collected a strace log of Oracle instance startup a while ago. In
+> > the log, almost all of the semctl() call is to set a single semaphore
+> > value in one of the element of the array using SETVAL. Also there are
+> > far more semtimedop() than semctl(), about 100:1. Again, all the
+> > semtimedop() operations are on a single element of the semaphore array.
 > 
-> Ok, looks fine from a quick look (but then, so did your previous patch-set ;)
-> 
-> You still open-code the spinlock in at least a few places (I saw
-> sem_getref), but I still don't care deeply.
-> 
-> >> 2) While on an Oracle swingbench DSS (data mining) workload the
-> > improvements are not as exciting as with Rik's benchmark, we can see
-> > some positive numbers. For an 8 socket machine the following are the
-> > percentages of %sys time incurred in the ipc lock:
-> 
-> Ok, I hoped for it being more noticeable. Since that benchmark is less
-> trivial than Rik's, can you do a perf record -fg of it and give a more
-> complete picture of what the kernel footprint is - and in particular
-> who now gets that ipc lock function? Is it purely semtimedop, or what?
-> Look out for inlining - ipc_rcu_getref() looks like it would be
-> inlined, for example.
-> 
-> It would be good to get a "top twenty kernel functions" from the
-> profile, along with some call data on where the lock callers are.. I
-> know that Rik's benchmark *only* had that one call-site, I'm wondering
-> if the swingbench one has slightly more complex behavior...
+> That is good to hear. Just what I was hoping when I started
+> working on my patches. You should expect them tomorrow or
+> Thursday.
 
-For a 400 user workload (the kernel functions remain basically the same
-for any amount of users):
-
-    17.86%           oracle  [kernel.kallsyms]   [k] _raw_spin_lock                             
-     8.46%          swapper  [kernel.kallsyms]   [k] intel_idle                                 
-     5.51%           oracle  [kernel.kallsyms]   [k] try_atomic_semop                           
-     5.05%           oracle  [kernel.kallsyms]   [k] update_sd_lb_stats                         
-     2.81%           oracle  [kernel.kallsyms]   [k] tg_load_down                               
-     2.41%          swapper  [kernel.kallsyms]   [k] update_blocked_averages                    
-     2.38%           oracle  [kernel.kallsyms]   [k] idle_cpu                                   
-     2.37%          swapper  [kernel.kallsyms]   [k] native_write_msr_safe                      
-     2.28%           oracle  [kernel.kallsyms]   [k] update_cfs_rq_blocked_load                 
-     1.84%           oracle  [kernel.kallsyms]   [k] update_blocked_averages                    
-     1.79%           oracle  [kernel.kallsyms]   [k] update_queue                               
-     1.73%          swapper  [kernel.kallsyms]   [k] update_cfs_rq_blocked_load                 
-     1.29%           oracle  [kernel.kallsyms]   [k] native_write_msr_safe                      
-     1.07%             java  [kernel.kallsyms]   [k] update_sd_lb_stats                         
-     0.91%          swapper  [kernel.kallsyms]   [k] poll_idle                                  
-     0.86%           oracle  [kernel.kallsyms]   [k] try_to_wake_up                             
-     0.80%             java  [kernel.kallsyms]   [k] tg_load_down                               
-     0.72%           oracle  [kernel.kallsyms]   [k] load_balance                               
-     0.67%           oracle  [kernel.kallsyms]   [k] __schedule                                 
-     0.67%           oracle  [kernel.kallsyms]   [k] cpumask_next_and                           
-
-Digging into the _raw_spin_lock call:
-
- 17.86%           oracle  [kernel.kallsyms]   [k] _raw_spin_lock                            
-                     |
-                     --- _raw_spin_lock
-                        |          
-                        |--49.55%-- sys_semtimedop
-                        |          |          
-                        |          |--77.41%-- system_call
-                        |          |          semtimedop
-                        |          |          skgpwwait
-                        |          |          ksliwat
-                        |          |          kslwaitctx
-
+Great, looking forward.
 
 Thanks,
 Davidlohr
