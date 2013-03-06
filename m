@@ -1,88 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755838Ab3CFJFr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 04:05:47 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:41818 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753403Ab3CFJFi (ORCPT
+	id S1755875Ab3CFJHo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 04:07:44 -0500
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:64870 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751004Ab3CFJHi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 04:05:38 -0500
-Date: Wed, 6 Mar 2013 01:03:23 -0800
-From: "tip-bot for Li, Zhen-Hua" <tipbot@zytor.com>
-Message-ID: <tip-4ecccd9edd5eb4dd185486e6e593c671484691bc@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        joro@8bytes.org, ddutile@redhat.com, zhen-hual@hp.com, hare@suse.de,
-        suresh.b.siddha@intel.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        joro@8bytes.org, ddutile@redhat.com, zhen-hual@hp.com, hare@suse.de,
-        suresh.b.siddha@intel.com, tglx@linutronix.de
-In-Reply-To: <1362537797-6034-1-git-send-email-zhen-hual@hp.com>
-References: <1362537797-6034-1-git-send-email-zhen-hual@hp.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] iommu, x86: Add DMA remap fault reason
-Git-Commit-ID: 4ecccd9edd5eb4dd185486e6e593c671484691bc
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Wed, 6 Mar 2013 04:07:38 -0500
+Message-ID: <51370753.90806@redhat.com>
+Date: Wed, 06 Mar 2013 10:07:31 +0100
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130219 Thunderbird/17.0.3
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+To: Hu Tao <hutao@cn.fujitsu.com>
+CC: Peter Maydell <peter.maydell@linaro.org>, Gleb Natapov <gleb@redhat.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>,
+        qemu-devel <qemu-devel@nongnu.org>,
+        Markus Armbruster <armbru@redhat.com>,
+        Blue Swirl <blauwirbel@gmail.com>,
+        Orit Wasserman <owasserm@redhat.com>, kvm list <kvm@vger.kernel.org>,
+        Juan Quintela <quintela@redhat.com>, Alexander Graf <agraf@suse.de>,
+        Andrew Jones <drjones@redhat.com>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Stefan Hajnoczi <stefanha@redhat.com>,
+        Luiz Capitulino <lcapitulino@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Kevin Wolf <kwolf@redhat.com>, Anthony Liguori <aliguori@us.ibm.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v13 0/8] pv event interface between host and guest
+References: <cover.1362051581.git.hutao@cn.fujitsu.com> <20130303091738.GB23616@redhat.com> <513471F1.5020702@redhat.com> <20130306085628.GB4719@localhost.localdomain>
+In-Reply-To: <20130306085628.GB4719@localhost.localdomain>
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 06 Mar 2013 01:03:29 -0800 (PST)
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  4ecccd9edd5eb4dd185486e6e593c671484691bc
-Gitweb:     http://git.kernel.org/tip/4ecccd9edd5eb4dd185486e6e593c671484691bc
-Author:     Li, Zhen-Hua <zhen-hual@hp.com>
-AuthorDate: Wed, 6 Mar 2013 10:43:17 +0800
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 6 Mar 2013 09:41:51 +0100
+Il 06/03/2013 09:56, Hu Tao ha scritto:
+>> > 
+>> > Something like this should work (in SeaBIOS's src/acpi-dsdt-isa.dsl):
+>> > 
+>> >     Device(PEVT) {
+>> >         Name(_HID, EisaId("QEMU0001"))
+>> >         OperationRegion(PEOR, SystemIO, 0x505, 0x01)
+>> >         Field(PEOR, ByteAcc, NoLock, Preserve) {
+>> >             PEPT,   8,
+>> >         }
+>> > 
+>> >         Method(_STA, 0, NotSerialized) {
+>> >             Store(PEPT, Local0)
+>> >             If (LEqual(Local0, Zero)) {
+>> >                 Return (0x00)
+>> >             } Else {
+>> >                 Return (0x0F)
+>> >             }
+>> >         }
+> IIUC, here _STA reads from ioport 0x505, if the result is 0, then the
+> device is not present. Otherwise, the device is present. But as Gleb
+> said, ''the data you read from unassigned port is not guarantied to be
+> zero, it may depend on QEMU version''. What should I do to tell if the
+> device is present or not correctly?
 
-iommu, x86: Add DMA remap fault reason
+The firmware is tied to the QEMU version, so you can rely on unassigned
+ports returning zero.
 
-The number of DMA fault reasons in intel's document are from 1
-to 0xD, but in dmar.c fault reason 0xD is not printed out.
+Later we can change this to use fw-cfg.
 
-In this document:
+Paolo
 
- "Intel Virtualization Technology for Directed I/O Architecture Specification"
- http://download.intel.com/technology/computing/vptech/Intel(r)_VT_for_Direct_IO.pdf
-
-Chapter 4. Support For Device-IOTLBs
-
-Table 6. Unsuccessful Translated Requests
-
-There is fault reason for 0xD not listed in kernel:
-
-    Present context-entry used to process translation request
-    specifies blocking of Translation Requests (Translation Type (T)
-    field value not equal to 01b).
-
-This patch adds reason 0xD as well.
-
-Signed-off-by: Li, Zhen-Hua <zhen-hual@hp.com>
-Cc: Joerg Roedel <joro@8bytes.org>
-Cc: Donald Dutile <ddutile@redhat.com>
-Cc: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: Hannes Reinecke <hare@suse.de>
-Link: http://lkml.kernel.org/r/1362537797-6034-1-git-send-email-zhen-hual@hp.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- drivers/iommu/dmar.c | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/drivers/iommu/dmar.c b/drivers/iommu/dmar.c
-index dc7e478..e5cdaf8 100644
---- a/drivers/iommu/dmar.c
-+++ b/drivers/iommu/dmar.c
-@@ -1083,6 +1083,7 @@ static const char *dma_remap_fault_reasons[] =
- 	"non-zero reserved fields in RTP",
- 	"non-zero reserved fields in CTP",
- 	"non-zero reserved fields in PTE",
-+	"PCE for translation request specifies blocking",
- };
- 
- static const char *irq_remap_fault_reasons[] =
