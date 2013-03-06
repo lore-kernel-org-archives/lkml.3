@@ -1,49 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757106Ab3CFWyz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 17:54:55 -0500
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:40620 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756769Ab3CFWyx (ORCPT
+	id S1754685Ab3CFW57 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 17:57:59 -0500
+Received: from mail-vc0-f171.google.com ([209.85.220.171]:61877 "EHLO
+	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751701Ab3CFW56 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 17:54:53 -0500
+	Wed, 6 Mar 2013 17:57:58 -0500
 MIME-Version: 1.0
-In-Reply-To: <5137C7BE.9090506@linux.intel.com>
-References: <20130306100743.GA407@polaris.bitmath.org>
-	<CAE9FiQXT4O3GOzm_OoFJG=vc=5LpfBkTEbAO_3xjerBGS_Gy=A@mail.gmail.com>
-	<20130306193612.GA513@polaris.bitmath.org>
-	<51379A4F.4020200@linux.intel.com>
-	<20130306195457.GA449@polaris.bitmath.org>
-	<CAE9FiQWK0ZnG9o8WgU-pcTPpir=PUyULQqk-TRVC+sh6UpU8VA@mail.gmail.com>
-	<20130306204500.GA335@polaris.bitmath.org>
-	<5137AE06.8060200@linux.intel.com>
-	<CAE9FiQW6SegoYjoveCVGWS3h-0UOHp5_wuAwnVh14oKLyYQFKA@mail.gmail.com>
-	<5137B9DB.6000605@linux.intel.com>
-	<20130306220412.GA1064@polaris.bitmath.org>
-	<5137C2C7.3020302@linux.intel.com>
-	<CAE9FiQX4nQ7_1kg5RL_vh56rmcSHXUi1ExrZX7CwED4NGMnHfg@mail.gmail.com>
-	<5137C7BE.9090506@linux.intel.com>
-Date: Wed, 6 Mar 2013 14:54:53 -0800
-X-Google-Sender-Auth: kcf8_bqQrHIlZ53l0LGAnj8NPjk
-Message-ID: <CAE9FiQUECh=RNpuxAGRef+StDxVncs6iRrvX13CrCThB72_s0w@mail.gmail.com>
-Subject: Re: Linux 3.9-rc1
-From: Yinghai Lu <yinghai@kernel.org>
-To: "H. Peter Anvin" <hpa@linux.intel.com>
-Cc: Henrik Rydberg <rydberg@euromail.se>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <20130306171546.63471bc0@cuia.bos.redhat.com>
+References: <1362476149.2225.50.camel@buesod1.americas.hpqcorp.net>
+	<20130306171546.63471bc0@cuia.bos.redhat.com>
+Date: Wed, 6 Mar 2013 17:57:56 -0500
+X-Google-Sender-Auth: jHU6YqkBhq8ZWL2Os4dHRikxvW8
+Message-ID: <CA+55aFyivGLzW3hYKR7y_ATff49EOiBq4Tnyrv+WZRm4ks81vg@mail.gmail.com>
+Subject: Re: [PATCH v2 7/4] ipc: fine grained locking for semtimedop
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Rik van Riel <riel@redhat.com>
+Cc: Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Emmanuel Benisty <benisty.e@gmail.com>,
+        "Vinod, Chegu" <chegu_vinod@hp.com>, "Low, Jason" <jason.low2@hp.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>, aquini@redhat.com,
+        Michel Lespinasse <walken@google.com>, Ingo Molnar <mingo@kernel.org>,
+        Larry Woodman <lwoodman@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>, hhuang@redhat.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 6, 2013 at 2:48 PM, H. Peter Anvin <hpa@linux.intel.com> wrote:
-> On 03/06/2013 02:44 PM, Yinghai Lu wrote:
->>
->> ok, let's stay with 2M.
->>
+On Wed, Mar 6, 2013 at 5:15 PM, Rik van Riel <riel@redhat.com> wrote:
 >
-> I still want an explanation of the logic here.  What is the purpose of
-> this?  Keeping the kernel page tables in large page mappable space?
+> If the call is a semop manipulating just one semaphore in
+> an array with multiple semaphores, the read/write lock for
+> the semaphore array is taken in shared (read) mode, and the
+> individual semaphore's lock is taken.
 
-yes.
+You know, we do something like this already elsewhere, and I think we
+do it slightly better. See the mm_take_all_locks() logic in mm/mmap.c.
+
+The optimal strategy if you have many items, and the *common* case is
+that you need just one lock, is actually to only take that single lock
+for the common case. No top-level lock at all.
+
+Then, for the complex (but unlikely) case, you take a *separate*
+top-level lock, and then you take the lower-level locks one by one,
+while testing first if you already hold them (using a separate data
+structure that is protected by the top-level lock).
+
+This way, the common case only needs that single lock that protects
+just that particular data structure.
+
+That said, judging by your numbers, your read-write lock seems to work
+fine too, even though I'd worry about cacheline ping-pong (but not
+contention) on the readers. So it doesn't seem optimal, but it sure as
+hell seems better than what we do now ;)
+
+                Linus
