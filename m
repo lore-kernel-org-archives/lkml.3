@@ -1,92 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758348Ab3CFPUW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 10:20:22 -0500
-Received: from mail-la0-f52.google.com ([209.85.215.52]:54478 "EHLO
-	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757481Ab3CFPUS (ORCPT
+	id S1758469Ab3CFPYp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 10:24:45 -0500
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:59212 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757862Ab3CFPYn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 10:20:18 -0500
+	Wed, 6 Mar 2013 10:24:43 -0500
 MIME-Version: 1.0
-In-Reply-To: <1362155689-13719-1-git-send-email-jolsa@redhat.com>
-References: <1362155689-13719-1-git-send-email-jolsa@redhat.com>
-Date: Wed, 6 Mar 2013 16:20:15 +0100
-Message-ID: <CAFTL4hyBN=pBao_AnrXsAj06t534hyO=3mpc=1_yM0feO0=gRw@mail.gmail.com>
-Subject: Re: [PATCHv2] perf: Fix vmalloc ring buffer free function
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <20130306084004.05acd57c@tlielax.poochiereds.net>
+References: <1361446379-7970-1-git-send-email-jlayton@redhat.com>
+	<CAH2r5muojf9w9QxkPK5vCQs5Av_wxm+twJ044+Mf8Q_9D=b63Q@mail.gmail.com>
+	<20130306084004.05acd57c@tlielax.poochiereds.net>
+Date: Wed, 6 Mar 2013 10:24:41 -0500
+Message-ID: <CAFB9KM0hHYj0NMdy=ppkq80VGUfJjqSXhAh3a2sD5772G3__ng@mail.gmail.com>
+Subject: Re: [PATCH] cifs: remove the sockopt= mount option
+From: Scott Lovenberg <scott.lovenberg@gmail.com>
+To: Jeff Layton <jlayton@redhat.com>
+Cc: Steve French <smfrench@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-cifs@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/3/1 Jiri Olsa <jolsa@redhat.com>:
-> If we allocate perf ring buffer with the size of single page,
-> we will get memory corruption when releasing it. It's caused
-> by rb_free_work function (CONFIG_PERF_USE_VMALLOC option).
+On Wed, Mar 6, 2013 at 8:40 AM, Jeff Layton <jlayton@redhat.com> wrote:
+> On Mon, 4 Mar 2013 16:08:30 -0600
+> Steve French <smfrench@gmail.com> wrote:
 >
-> For single page sized ring buffer the page_order is -1 (because
-> nr_pages is 0). This needs to be recognized in the rb_free_work
-> function to release proper amount of pages.
+>> Resending patch to a slightly broader list for last minute check if
+>> anyone objects.  Although setting this particular socket option
+>> (TCP_NODELAY) may not be as useful when corking/uncorking explicitly,
+>> I want to doublecheck before removing them because there has been some
+>> utility to the server allowing override of various sockopt options.
+>> Samba server has long supported at least the following set of settable
+>> socket options (although I don't know if the defaults are frequently
+>> overridden now, by setting sockopts in smb.conf as used to be common
+>> for the server).
+>>
+>> SO_KEEPALIVE
+>> SO_REUSEADDR
+>> SO_BROADCAST
+>> TCP_NODELAY
+>> IPTOS_LOWDELAY
+>> IPTOS_THROUGHPUT
+>> SO_SNDBUF *
+>> SO_RCVBUF *
+>> SO_SNDLOWAT *
+>> SO_RCVLOWAT *
+>>
+>> * takes an integer argument rather than a boolean on/off
+>>
+>> Any objections to removing the ability to set socket options
+>> explicitly for the cifs network file system client?
+>>
 >
-> Introducing page_nr function (CONFIG_PERF_USE_VMALLOC only)
-> that returns number of allocated pages. Using it in rb_free_work
-> and perf_mmap_to_page functions.
+> A couple of points...
 >
-> Also setting rb->nr_pages to 0 in case we have only user page
-> allocated, which will fail perf_output_begin function and
-> prevents sample storage.
+> The sockopt= option was never documented in the mount.cifs manpage and
+> the only value it ever accepted was TCP_NODELAY. Now that we're
+> explicitly corking the socket, TCP_NODELAY has no effect. I don't think
+> there's any value in leaving in a "placeholder" socket= option.
 >
-> v2 changes:
->  - fixed the perf_output_begin handling of single page buffer
->
-> Reported-by: Jan Stancek <jstancek@redhat.com>
-> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-> Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Ingo Molnar <mingo@elte.hu>
-> Cc: Namhyung Kim <namhyung@kernel.org>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-> ---
->  kernel/events/ring_buffer.c | 40 +++++++++++++++++++++++++++++++++-------
->  1 file changed, 33 insertions(+), 7 deletions(-)
->
-> diff --git a/kernel/events/ring_buffer.c b/kernel/events/ring_buffer.c
-> index 23cb34f..a802151 100644
-> --- a/kernel/events/ring_buffer.c
-> +++ b/kernel/events/ring_buffer.c
-> @@ -154,7 +154,8 @@ int perf_output_begin(struct perf_output_handle *handle,
->         if (head - local_read(&rb->wakeup) > rb->watermark)
->                 local_add(rb->watermark, &rb->wakeup);
->
-> -       handle->page = offset >> (PAGE_SHIFT + page_order(rb));
-> +       /* page is allways 0 for CONFIG_PERF_USE_VMALLOC option */
-> +       handle->page = offset >> PAGE_SHIFT;
->         handle->page &= rb->nr_pages - 1;
->         handle->size = offset & ((PAGE_SIZE << page_order(rb)) - 1);
->         handle->addr = rb->data_pages[handle->page];
-> @@ -312,11 +313,21 @@ void rb_free(struct ring_buffer *rb)
->  }
->
->  #else
-> +/*
-> + * Returns the total number of pages allocated
-> + * by ring buffer including the user page.
-> + */
-> +static int page_nr(struct ring_buffer *rb)
-> +{
-> +       return page_order(rb) == -1 ?
-> +               1 :                        /* no data, just user page */
-> +               1 + (1 << page_order(rb)); /* user page + data pages */
-> +}
 
-Could be simply rb->nr_page + 1 ?
+After doing some research, I agree.  I've been updating the socket
+options section of the Samba smb.conf man page and the performance
+section of the Samba HOWTO.  The more research I do the more convinced
+that there is almost no reason to set most socket options on a modern
+Linux kernel or in Samba (server or client side).
 
-Patch looks good in any case. Thanks.
+One thing pointed out to me in another thread is that the smbd server
+sets TCP_NODELAY by default.  AIUI this was because the TCP_NODELAY
+option used to almost double the speed of SMB in some cases due to the
+way Microsoft's old TCP/IP stack sent ACKs.
+
+This is all to say that I think the "sockopt" option can go altogether
+since it's unlikely that any socket options will be needed in the
+future and the only one that was supported is now useless.
+-- 
+Peace and Blessings,
+-Scott.
