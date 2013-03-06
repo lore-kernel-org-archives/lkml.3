@@ -1,16 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754318Ab3CFSpd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 13:45:33 -0500
-Received: from mail-gg0-f169.google.com ([209.85.161.169]:56121 "EHLO
-	mail-gg0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752794Ab3CFSpc (ORCPT
+	id S1754183Ab3CFSxM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 13:53:12 -0500
+Received: from mail-yh0-f50.google.com ([209.85.213.50]:53543 "EHLO
+	mail-yh0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752501Ab3CFSxL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 13:45:32 -0500
-Date: Wed, 6 Mar 2013 10:45:26 -0800
+	Wed, 6 Mar 2013 13:53:11 -0500
+X-Greylist: delayed 63401 seconds by postgrey-1.27 at vger.kernel.org; Wed, 06 Mar 2013 13:53:10 EST
+Date: Wed, 6 Mar 2013 10:53:04 -0800
 From: Tejun Heo <tj@kernel.org>
-To: Jeff Layton <jlayton@redhat.com>
-Cc: Oleg Nesterov <oleg@redhat.com>,
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Jeff Layton <jlayton@redhat.com>,
         "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
         Mandeep Singh Baines <msb@chromium.org>,
         Ming Lei <ming.lei@canonical.com>,
@@ -21,7 +22,7 @@ Cc: Oleg Nesterov <oleg@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Ingo Molnar <mingo@redhat.com>, Al Viro <viro@ZenIV.linux.org.uk>
 Subject: Re: LOCKDEP: 3.9-rc1: mount.nfs/4272 still has locks held!
-Message-ID: <20130306184526.GL1227@htj.dyndns.org>
+Message-ID: <20130306185304.GM1227@htj.dyndns.org>
 References: <20130304205307.GA13527@redhat.com>
  <4FA345DA4F4AE44899BD2B03EEEC2FA9286AEEB0@sacexcmbx05-prd.hq.netapp.com>
  <20130305082308.6607d4db@tlielax.poochiereds.net>
@@ -30,29 +31,44 @@ References: <20130304205307.GA13527@redhat.com>
  <20130305140312.243cb094@tlielax.poochiereds.net>
  <20130305190923.GI12795@htj.dyndns.org>
  <20130305183941.19ff39ce@tlielax.poochiereds.net>
- <20130306181735.GB18687@redhat.com>
- <20130306134004.16252a21@tlielax.poochiereds.net>
+ <20130305234700.GE1227@htj.dyndns.org>
+ <20130306181608.GA18687@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130306134004.16252a21@tlielax.poochiereds.net>
+In-Reply-To: <20130306181608.GA18687@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Hello, Oleg.
 
-On Wed, Mar 06, 2013 at 01:40:04PM -0500, Jeff Layton wrote:
-> Though when I said that, it was before Tejun mentioned hooking this up
-> to ptrace. I'll confess that I don't fully understand what he's
-> proposing either though...
+On Wed, Mar 06, 2013 at 07:16:08PM +0100, Oleg Nesterov wrote:
+> And how SIGFREEZE can help? If we want to interrupt the sleeps in NFS/RPC
+> layer we can simply add TASK_WAKEFREEZE (can be used with TASK_KILLABLE)
+> and change freeze_task() to do signal_wake_up_state(TASK_WAKEFREEZE).
 
-Oh, they're all just pretty closely related.  All signal and ptrace
-traps run off get_signal_to_deliver().  It is still a bit hairy but in
-much better shape after cleanups which accompanied PTRACE_SEIZE and I
-don't really think it'll be too difficult to extend it so that
-freezing is implemented as a type of jobctl trap.
+Oh yeah, we don't need another signal.  We just need sigpending state
+and a wakeup.  I wasn't really going into details.  The important
+point is that for code paths outside signal/ptrace, freezing could
+look and behave about the same as signal delivery.
+
+> But if we can do this, then it should be possible so simply make these
+> sleeps TASK_INTERRUPTIBLE ? But it seems that we can't just because we
+> can't always restart, so I am totally confused.
+
+Of course, switching to another freezing mechanism doesn't make issues
+like this go away in itself, but it would at least allow handling such
+issues in easier to grasp way rather than dealing with this giant
+pseudo lock and allows code paths outside jobctl to simply deal with
+one issue - signal delivery, rather than having to deal with freezing
+separately.  Also, while not completely identical, frozen state would
+at least be an extension of jobctl trap and it would be possible to
+allow things like killing frozen tasks or even ptracing them in
+well-defined manner for cgroup_freezer use cases.  As it currently
+stands, there is no well-defined abstraction for frozen state which we
+can expose in any way, which sucks.
 
 Thanks.
 
