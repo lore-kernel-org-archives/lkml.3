@@ -1,99 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753463Ab3CFHAS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 02:00:18 -0500
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:34771 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752575Ab3CFHAP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 02:00:15 -0500
-Date: Tue, 5 Mar 2013 21:48:26 -0800
-From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-To: Michael Ellerman <michael@ellerman.id.au>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>, Andi Kleen <ak@linux.intel.com>,
-        robert.richter@amd.com, Anton Blanchard <anton@au1.ibm.com>,
-        linux-kernel@vger.kernel.org, Stephane Eranian <eranian@google.com>,
-        linuxppc-dev@ozlabs.org,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Jiri Olsa <jolsa@redhat.com>, benh@kernel.crashing.org
-Subject: Re: [PATCH 5/6][v4]: perf: Create a sysfs entry for Power event
- format
-Message-ID: <20130306054826.GA14627@us.ibm.com>
-References: <20130123062201.GA13720@us.ibm.com>
- <20130123062613.GF13720@us.ibm.com>
- <20130226052646.GB21553@concordia>
- <20130226200343.GA21543@us.ibm.com>
- <20130227011725.GA5819@concordia>
+	id S1753560Ab3CFHA0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 02:00:26 -0500
+Received: from moutng.kundenserver.de ([212.227.17.9]:50337 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752364Ab3CFHAX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Mar 2013 02:00:23 -0500
+Date: Wed, 6 Mar 2013 08:00:19 +0100
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Alex Courbot <acourbot@nvidia.com>
+Cc: Andrew Chew <AChew@nvidia.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/1 v3] pwm_bl: Add support for backlight enable regulator
+Message-ID: <20130306070019.GA2436@avionic-0098.mockup.avionic-design.de>
+References: <1362527485-8611-1-git-send-email-achew@nvidia.com>
+ <5136A781.2050303@nvidia.com>
+ <643E69AA4436674C8F39DCC2C05F7638629BFE1DB7@HQMAIL03.nvidia.com>
+ <5136CBC7.3030803@nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="lrZ03NoBR/3+SXJZ"
 Content-Disposition: inline
-In-Reply-To: <20130227011725.GA5819@concordia>
-X-Operating-System: Linux 2.0.32 on an i486
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13030605-7182-0000-0000-000005A94F45
+In-Reply-To: <5136CBC7.3030803@nvidia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:4m0gcu1E42aybQJEPRu4TaqPgfUmRxC94ChvcpJq2gB
+ IVuuC6pC/Jnx8rnr40IFuSjaINvuMoJJVFy04HHAbKRZ878RSi
+ bcWbjQ+XouZuW6+Y2AeJVYKPkzNPH6zI4qZL6wLMy3X+PiuPxb
+ 4KVQjfcpYLzh+7eKiG4T4eisgck2/Z5MxFgA/uwkM57lAw9hMZ
+ rfVrNwuufWppCXX43k5Bx1Hn2UkIisfiO+gNNrzVA8ZlTRT9+w
+ /pOoQDuJrwE+l/m9FJNfs1we7CvRLEZEfv1NgmlZC3qYOIgbt/
+ hwy0Mru8DFg30WOgSVTdemEhfAM18lh3EzFe21EVzd73A1qb2/
+ IypskxtctV4SEorzTbCXRQEPJjH8GTy06dQUwTVjTUrw4YqItO
+ n3DPXyjv3EQB0VvJ67pUQDfAzk/n4V0j38=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Michael Ellerman [michael@ellerman.id.au] wrote:
-| I suspect Arnaldo was either waiting for an ACK from Ben, or was
-| expecting Ben to take it?
 
-Arnaldo, here is an updated patch. If it is acked by Paul Mackerras,
-Michael Ellerman or Ben, will you add it to your tree so the whole
-patchset comes from one place ?
+--lrZ03NoBR/3+SXJZ
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Sukadev
+On Wed, Mar 06, 2013 at 01:53:27PM +0900, Alex Courbot wrote:
+> On 03/06/2013 11:41 AM, Andrew Chew wrote:
+> >>>   struct pwm_bl_data {
+> >>>   	struct pwm_device	*pwm;
+> >>>   	struct device		*dev;
+> >>>+	struct regulator	*en_supply;
+> >>>+	bool			en_supply_enabled;
+> >>
+> >>Couldn't you use regulator_is_enabled() and get rid of en_supply_enable=
+d?
+> >>It would also ensure the driver performs correctly no matter what the i=
+nitial
+> >>state of the regulator is.
+> >
+> >Are you sure this works?  I'm concerned about the (bizarre and unlikely)=
+ case
+> >where this supply is shared with another driver, so I use en_supply_enab=
+led
+> >to track the state of the supply such that I can ignore that case.
+>=20
+> You're right, consumers can share regulators and the calls to
+> enable/disable need to be balanced. Also there is no way to check
+> the intensity of the backlight prior to the change to detect a
+> transition, so I guess your approach is indeed the most appropriate
+> here.
 
----
->From 50c7a46f14083c0ed10d66b7aed66ba76e798550 Mon Sep 17 00:00:00 2001
-From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-Date: Tue, 5 Mar 2013 21:20:56 -0800
-Subject: [PATCH] [PATCH 5/6][v4]: perf Create a sysfs format entry for Power7 events
+I think the right thing to do here is just enable the regulator when
+the pwm-backlight driver needs it. If it is shared with other devices
+they'll have to do the same and the reference counting should only
+disable the regulator when there are no users.
 
-Create a sysfs entry, '/sys/bus/event_source/devices/cpu/format/event'
-which describes the format of the POWER7 PMU events.
+Tracking this via platform data won't work because platform data is
+statically defined at compile time. So if indeed there was another user
+of the regulator it enable/disable the regulator at any time and your
+en_supply_enabled would be wrong.
 
-This code is based on corresponding code in x86.
+Thierry
 
-Changelog[v4]:  [Michael Ellerman, Paul Mckerras] The event format is different
-		for other POWER cpus. So move the code to POWER7-specific,
-		power7-pmu.c Also, the POWER7 format uses bits 0-19 not 0-20.
+--lrZ03NoBR/3+SXJZ
+Content-Type: application/pgp-signature
 
-Changelog[v2]: [Jiri Osla] Use PMU_FORMAT_ATTR rather than duplicating code.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
 
-Signed-off-by: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
----
- arch/powerpc/perf/power7-pmu.c |   13 +++++++++++++
- 1 files changed, 13 insertions(+), 0 deletions(-)
+iQIcBAEBAgAGBQJRNumDAAoJEN0jrNd/PrOhw6kP/0Ef22LpeaeFP7sRUFi8GJS4
+VSMORjXtySJJY7ChBVLe4SvdlAJ5NAUbDbkuhACus/DoOKHIG582/V1SCnFBaJPi
+Kk1gJ9mlmOdkb0jS0IficU4n+E19X30gxo4c8OKb0k20dbiMZcbdtffjpiXYHO+Z
+a3uqjH5rVtsjtkJ8k+5vv4Dg5G549qh5nurna2mqvBQnwVjdeDZ7O6jLE0V1Osxs
+lz17e6AKN7YlYaxeB2M4qDPIHLM5uxbBWx7c1IMOGSfgZqC+Tv4LP3JEX9T5xFHK
+pANzyNf1gFd4fNbxuUXJ0dngcWJh4XGVIlr8htb70rNCSd3uPYO3jEfgwnGTuTww
+rYl2Lh8fG6eff0msIR6bPNnik1YjdijkJ2jum5GFabwt5JqGxE/gYq0YVtRZZzas
+TV/KNN+H13Zs7JE7J7IDlIBB9urr5VYr2MrlSA8LHnQKmQzYzDHAPwOjle9VFb21
+HxUUr2/7P2zGRsZiquBw8iViy07+o4Ghkqsw0K1AUxuzwNCkfivNxGFWSIy1MBva
+tn1e8nYnSAm5pl6wXecD80O8qWGLQKAEj5ZxszvmyAAhy3ILmd3ScKeBC3B6zp8I
+S97pN4l2bG8n99ansbYielqmpmMNFFWl1YVNkEJFjBkKlhC9l6J1ubVpoDpilW2N
+7PPVTgwT4ENykG/xzf5f
+=6dxa
+-----END PGP SIGNATURE-----
 
-diff --git a/arch/powerpc/perf/power7-pmu.c b/arch/powerpc/perf/power7-pmu.c
-index b554879..3c475d6 100644
---- a/arch/powerpc/perf/power7-pmu.c
-+++ b/arch/powerpc/perf/power7-pmu.c
-@@ -420,7 +420,20 @@ static struct attribute_group power7_pmu_events_group = {
- 	.attrs = power7_events_attr,
- };
- 
-+PMU_FORMAT_ATTR(event, "config:0-19");
-+
-+static struct attribute *power7_pmu_format_attr[] = {
-+	&format_attr_event.attr,
-+	NULL,
-+};
-+
-+struct attribute_group power7_pmu_format_group = {
-+	.name = "format",
-+	.attrs = power7_pmu_format_attr,
-+};
-+
- static const struct attribute_group *power7_pmu_attr_groups[] = {
-+	&power7_pmu_format_group,
- 	&power7_pmu_events_group,
- 	NULL,
- };
--- 
-1.7.1
-
+--lrZ03NoBR/3+SXJZ--
