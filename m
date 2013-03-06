@@ -1,45 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757065Ab3CFKeN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 05:34:13 -0500
-Received: from mail-ee0-f49.google.com ([74.125.83.49]:53301 "EHLO
-	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754166Ab3CFKeK (ORCPT
+	id S1756990Ab3CFKgf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 05:36:35 -0500
+Received: from mail-ee0-f50.google.com ([74.125.83.50]:41782 "EHLO
+	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754166Ab3CFKgc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 05:34:10 -0500
-Date: Wed, 6 Mar 2013 11:34:06 +0100
+	Wed, 6 Mar 2013 05:36:32 -0500
+Date: Wed, 6 Mar 2013 11:36:27 +0100
 From: Ingo Molnar <mingo@kernel.org>
-To: Ming Lei <ming.lei@canonical.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: lockdep: access percpu variable too early
-Message-ID: <20130306103406.GB16827@gmail.com>
-References: <CACVXFVNzN721wGm96SroK6cm4E08gs+tJtELsHvxVTCXZtX95g@mail.gmail.com>
- <20130306102057.GB6587@gmail.com>
- <CACVXFVMN8=6aLf2NGaLCiLjH+yy7wSmWyRG0w09--0au1vGnLg@mail.gmail.com>
+To: "Mansoor, Illyas" <illyas.mansoor@intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux PM <linux-pm@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, X86 <x86@kernel.org>,
+        Len Brown <lenb@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        Tejun Heo <tj@kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        "Rudramuni, Vishwesh M" <vishwesh.m.rudramuni@intel.com>,
+        "richard@nod.at" <richard@nod.at>,
+        "josh@joshtriplett.org" <josh@joshtriplett.org>,
+        "Kumar P, Mahesh" <mahesh.kumar.p@intel.com>,
+        "Sil, Dyut K" <dyut.k.sil@intel.com>,
+        Arjan van de Ven <arjan@infradead.org>
+Subject: Re: [PATCH] x86: fix idle notifier not being called in CONFIG_X86_32
+Message-ID: <20130306103627.GC16827@gmail.com>
+References: <1362375673-29287-1-git-send-email-illyas.mansoor@intel.com>
+ <20130306101818.GA6587@gmail.com>
+ <810586B7581CC8469141DADEBC37191224F77316@BGSMSX102.gar.corp.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CACVXFVMN8=6aLf2NGaLCiLjH+yy7wSmWyRG0w09--0au1vGnLg@mail.gmail.com>
+In-Reply-To: <810586B7581CC8469141DADEBC37191224F77316@BGSMSX102.gar.corp.intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Ming Lei <ming.lei@canonical.com> wrote:
+* Mansoor, Illyas <illyas.mansoor@intel.com> wrote:
 
-> On Wed, Mar 6, 2013 at 6:20 PM, Ingo Molnar <mingo@kernel.org> wrote:
-> >
-> > What's the practical effect of it? Do we copy the value from the boot CPU and 
-> > thus the secondary CPUs start with slightly increased stats?
+> > * Illyas Mansoor <illyas.mansoor@intel.com> wrote:
+> > 
+> > > Idle notifier not registered if CONFIG_X86_32 is defined, those
+> > > callbacks are empty for X86_32 platform.
+> > >
+> > > ifdef CONFIG_X86_64
+> > >  void enter_idle(void);
+> > >  void exit_idle(void);
+> > > else
+> > > static inline void enter_idle(void) { } static inline void
+> > > exit_idle(void) { } static inline void __exit_idle(void) { } endif
+> > >
+> > > Make this work on X86_32 platforms by
+> > > removing the restriction for X86_64
+> > 
+> > What will they be used for?
 > 
-> Yes, it is the major effect.
-> 
-> Also the arch dependent __my_cpu_offset might be initialized a bit late.
+> It's being used by interactive governor, and since the idle notifications are not 
+> received It breaks the governor functionality on X86_32
 
-I suspect we could try to fix it - post-initializing it after percpu setup sounds 
-like a viable option, if it does not get too ugly.
+But we never allowed idle notifiers on 32-bit and wanted to phase them out even on 
+x86-64 as well.
+
+There's ongoing work to improve power saving in the scheduler - see Alex Shi's 
+patchset on lkml: I think the two pieces of code should cooperate within the 
+scheduler instead of going in two directions, duplicating effort and getting in each 
+other's way ...
 
 Thanks,
 
