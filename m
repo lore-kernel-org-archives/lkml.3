@@ -1,90 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756411Ab3CFWYa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 17:24:30 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:61603 "EHLO mx1.redhat.com"
+	id S1756185Ab3CFW1l (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 17:27:41 -0500
+Received: from mga02.intel.com ([134.134.136.20]:54105 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753136Ab3CFWY3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 17:24:29 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
- Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
- Kingdom.
- Registered in England and Wales under Company Registration No. 3798903
-Subject: [PATCH] KEYS: Fix race with concurrent install_user_keyrings()
-To: torvalds@linux-foundation.org
-From: David Howells <dhowells@redhat.com>
-Cc: keyrings@linux-nfs.org, pmatouse@redhat.com, security@kernel.org,
-        linux-kernel@vger.kernel.org, mguzik@redhat.com, jmorris@namei.org,
-        ben@decadent.org.uk
-Date: Wed, 06 Mar 2013 22:24:12 +0000
-Message-ID: <20130306222412.1255.81929.stgit@warthog.procyon.org.uk>
-User-Agent: StGit/0.16
+	id S1753136Ab3CFW1k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Mar 2013 17:27:40 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,798,1355126400"; 
+   d="scan'208";a="272553709"
+Message-ID: <5137C2C7.3020302@linux.intel.com>
+Date: Wed, 06 Mar 2013 14:27:19 -0800
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130219 Thunderbird/17.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Henrik Rydberg <rydberg@euromail.se>
+CC: Yinghai Lu <yinghai@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Linux 3.9-rc1
+References: <20130306100743.GA407@polaris.bitmath.org> <CAE9FiQXT4O3GOzm_OoFJG=vc=5LpfBkTEbAO_3xjerBGS_Gy=A@mail.gmail.com> <20130306193612.GA513@polaris.bitmath.org> <51379A4F.4020200@linux.intel.com> <20130306195457.GA449@polaris.bitmath.org> <CAE9FiQWK0ZnG9o8WgU-pcTPpir=PUyULQqk-TRVC+sh6UpU8VA@mail.gmail.com> <20130306204500.GA335@polaris.bitmath.org> <5137AE06.8060200@linux.intel.com> <CAE9FiQW6SegoYjoveCVGWS3h-0UOHp5_wuAwnVh14oKLyYQFKA@mail.gmail.com> <5137B9DB.6000605@linux.intel.com> <20130306220412.GA1064@polaris.bitmath.org>
+In-Reply-To: <20130306220412.GA1064@polaris.bitmath.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This fixes CVE-2013-1792.
+On 03/06/2013 02:04 PM, Henrik Rydberg wrote:
+>>
+>> Sigh.  This is why "keep the page tables together" is fundamentally the
+>> wrong strategy.
+>>
+>> 8M means that we won't even be able to boot on machines with less than
+>> 16M or so of RAM... I'm not sure if anyone still cares, but that is a
+>> pretty aggressive heuristic.
+> 
+> Maybe this should be a config option, given the ad-hoc nature of the
+> chosen value? Anyway, the patch works.
+> 
 
-There is a race in install_user_keyrings() that can cause a NULL pointer
-dereference when called concurrently for the same user if the uid and
-uid-session keyrings are not yet created.  It might be possible for an
-unprivileged user to trigger this by calling keyctl() from userspace in
-parallel immediately after logging in.
+Can we make a sensible argument for what the value *needs* to be?  2M at
+least makes a modicum of sense.  Either way, it's clear we still have
+plenty of cleaning up to do...
 
-Assume that we have two threads both executing lookup_user_key(), both looking
-for KEY_SPEC_USER_SESSION_KEYRING.
+	-hpa
 
-	THREAD A			THREAD B
-	===============================	===============================
-					==>call install_user_keyrings();
-	if (!cred->user->session_keyring)
-	==>call install_user_keyrings()
-					...
-					user->uid_keyring = uid_keyring;
-	if (user->uid_keyring)
-		return 0;
-	<==
-	key = cred->user->session_keyring [== NULL]
-					user->session_keyring = session_keyring;
-	atomic_inc(&key->usage); [oops]
-
-At the point thread A dereferences cred->user->session_keyring, thread B hasn't
-updated user->session_keyring yet, but thread A assumes it is populated because
-install_user_keyrings() returned ok.
-
-The race window is really small but can be exploited if, for example, thread B
-is interrupted or preempted after initializing uid_keyring, but before doing
-setting session_keyring.
-
-This couldn't be reproduced on a stock kernel.  However, after placing
-systemtap probe on 'user->session_keyring = session_keyring;' that introduced
-some delay, the kernel could be crashed reliably.
-
-Fix this by checking both pointers before deciding whether to return.
-Alternatively, the test could be done away with entirely as it is checked
-inside the mutex - but since the mutex is global, that may not be the best way.
-
-Reported-by: Mateusz Guzik <mguzik@redhat.com>
-Signed-off-by: David Howells <dhowells@redhat.com>
----
-
- security/keys/process_keys.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/security/keys/process_keys.c b/security/keys/process_keys.c
-index 58dfe08..c5ec083 100644
---- a/security/keys/process_keys.c
-+++ b/security/keys/process_keys.c
-@@ -57,7 +57,7 @@ int install_user_keyrings(void)
- 
- 	kenter("%p{%u}", user, uid);
- 
--	if (user->uid_keyring) {
-+	if (user->uid_keyring && user->session_keyring) {
- 		kleave(" = 0 [exist]");
- 		return 0;
- 	}
 
