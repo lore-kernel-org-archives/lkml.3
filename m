@@ -1,43 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754866Ab3CFBBM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 20:01:12 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:38709 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751087Ab3CFBBK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 20:01:10 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+am2UzmHTyzcibB5YApof6
-Date: Tue, 5 Mar 2013 17:01:07 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        arm@kernel.org, Bill Pemberton <wfp5p@virginia.edu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH 3/9] mfd: remove __exit_p annotation for
- twl4030_madc_remove
-Message-ID: <20130306010107.GI11806@atomide.com>
-References: <1362521809-22989-1-git-send-email-arnd@arndb.de>
- <1362521809-22989-4-git-send-email-arnd@arndb.de>
+	id S1755305Ab3CFBFS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 20:05:18 -0500
+Received: from fieldses.org ([174.143.236.118]:33885 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752175Ab3CFBFQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Mar 2013 20:05:16 -0500
+Date: Tue, 5 Mar 2013 20:05:07 -0500
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Mandeep Singh Baines <msb@chromium.org>
+Cc: Tejun Heo <tj@kernel.org>, Jeff Layton <jlayton@redhat.com>,
+        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
+        Oleg Nesterov <oleg@redhat.com>, Ming Lei <ming.lei@canonical.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: LOCKDEP: 3.9-rc1: mount.nfs/4272 still has locks held!
+Message-ID: <20130306010507.GL15816@fieldses.org>
+References: <4FA345DA4F4AE44899BD2B03EEEC2FA9286AD113@sacexcmbx05-prd.hq.netapp.com>
+ <20130304092310.1d21100c@tlielax.poochiereds.net>
+ <CACBanvrc0orXGZ1v+gKHtVPKWYKGEFx46dwoDCjTU78+nPtZyg@mail.gmail.com>
+ <20130304205307.GA13527@redhat.com>
+ <4FA345DA4F4AE44899BD2B03EEEC2FA9286AEEB0@sacexcmbx05-prd.hq.netapp.com>
+ <20130305082308.6607d4db@tlielax.poochiereds.net>
+ <20130305174648.GF12795@htj.dyndns.org>
+ <20130305174954.GG12795@htj.dyndns.org>
+ <20130305231110.GK15816@fieldses.org>
+ <CACBanvo+JDCFVRQeTQwnwRRxr8bdqxdsgeEr8fqgJhGQJEEQ-Q@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1362521809-22989-4-git-send-email-arnd@arndb.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CACBanvo+JDCFVRQeTQwnwRRxr8bdqxdsgeEr8fqgJhGQJEEQ-Q@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Arnd Bergmann <arnd@arndb.de> [130305 14:23]:
-> 4740f73fe5 "mfd: remove use of __devexit" removed the __devexit annotation
-> on the twl4030_madc_remove function, but left an __exit_p() present on the
-> pointer to this function. Using __exit_p was as wrong with the devexit in
-> place as it is now, but now we get a gcc warning about an unused function.
+On Tue, Mar 05, 2013 at 04:59:00PM -0800, Mandeep Singh Baines wrote:
+> On Tue, Mar 5, 2013 at 3:11 PM, J. Bruce Fields <bfields@fieldses.org> wrote:
+> > On Tue, Mar 05, 2013 at 09:49:54AM -0800, Tejun Heo wrote:
+> >> On Tue, Mar 05, 2013 at 09:46:48AM -0800, Tejun Heo wrote:
+> >> > So, I think this is why implementing freezer as a separate blocking
+> >> > mechanism isn't such a good idea.  We're effectively introducing a
+> >> > completely new waiting state to a lot of unsuspecting paths which
+> >> > generates a lot of risks and eventually extra complexity to work
+> >> > around those.  I think we really should update freezer to re-use the
+> >> > blocking points we already have - the ones used for signal delivery
+> >> > and ptracing.  That way, other code paths don't have to worry about an
+> >> > extra stop state and we can confine most complexities to freezer
+> >> > proper.
+> >>
+> >> Also, consolidating those wait states means that we can solve the
+> >> event-to-response latency problem for all three cases - signal, ptrace
+> >> and freezer, rather than adding separate backing-out strategy for
+> >> freezer.
+> >
+> > Meanwhile, as none of this sounds likely to be done this time
+> > around--are we backing out the new lockdep warnings?
+> >
+> > --b.
 > 
-> In order for the twl4030_madc_remove to work correctly in built-in code, we
-> have to remove the __exit_p.
+> What if we hide it behind a Kconfig? Its finding real bugs.
+> 
+> http://lkml.org/lkml/2013/3/5/583
 
-Acked-by: Tony Lindgren <tony@atomide.com>
+If it's really just a 2-line patch to try_to_freeze(), could it just be
+carried out-of-tree by people that are specifically working on tracking
+down these problems?
+
+But I don't have strong feelings about it--as long as it doesn't result
+in the same known issues getting reported again and again....
+
+--b.
