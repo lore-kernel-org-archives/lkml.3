@@ -1,150 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752904Ab3CFQxH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 11:53:07 -0500
-Received: from mail-la0-f53.google.com ([209.85.215.53]:48540 "EHLO
-	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751027Ab3CFQxE (ORCPT
+	id S1752991Ab3CFQxw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 11:53:52 -0500
+Received: from mail-ob0-f175.google.com ([209.85.214.175]:60672 "EHLO
+	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751027Ab3CFQxv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 11:53:04 -0500
-Date: Wed, 6 Mar 2013 17:52:11 +0100
-From: Johan Hovold <jhovold@gmail.com>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: jhovold@gmail.com, Peter Hurley <peter@hurleysoftware.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        USB list <linux-usb@vger.kernel.org>, linux-serial@vger.kernel.org,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [Fwd: [PATCH v2 0/4] TTY: port hangup and close fixes]
-Message-ID: <20130306165211.GA23635@localhost>
-References: <1362085054.3337.20.camel@thor.lan>
- <51361724.4050107@suse.cz>
+	Wed, 6 Mar 2013 11:53:51 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51361724.4050107@suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAE9FiQV2Wk+yiqR8FnNM_L-p1iQFxDwopRzFWTwm6VCkyrbuoQ@mail.gmail.com>
+References: <20130228205206.GC3438@sgi.com>
+	<512FC697.3090608@zytor.com>
+	<20130228210910.GD3438@sgi.com>
+	<512FC82B.40909@zytor.com>
+	<CAE9FiQU3FBwEiC86N1RC8=aMdN09EbUmRcsWP0yof7bmxBhPew@mail.gmail.com>
+	<512FE3AE.4070903@zytor.com>
+	<20130305081519.GA19165@sgi.com>
+	<9bcd6241-37fd-4ae9-a997-2a5da1eaf997@email.android.com>
+	<CAE9FiQV2Wk+yiqR8FnNM_L-p1iQFxDwopRzFWTwm6VCkyrbuoQ@mail.gmail.com>
+Date: Wed, 6 Mar 2013 11:53:50 -0500
+Message-ID: <CA+5PVA4VRa7z10APcEaoebX3vwtbLzDLq1PAHmfaHBDqtZv=jw@mail.gmail.com>
+Subject: Re: Revert commit 5dcd14ecd4 - breaks EFI boot with SLES11 elilo.efi
+From: Josh Boyer <jwboyer@gmail.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Robin Holt <holt@sgi.com>, hpa@sgi.com,
+        linux-kernel@vger.kernel.org, pjones@redhat.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jiri,
-
-On Tue, Mar 05, 2013 at 05:02:44PM +0100, Jiri Slaby wrote:
-> On 02/28/2013 09:57 PM, Peter Hurley wrote:
-> > Hi Jiri,
-> > 
-> > Just wanted to make sure you saw this series.
-> 
-> Hi, thanks for letting me know. Johan, care to CC Alan Cox and me (or at
-> least LKML) when you're changing the TTY core next time?
-
-Sorry about that. Thought it was a bit odd I didn't hear anything from
-you actually. ;) Everything was posted to linux-serial (and Alan
-initially), but I'll remember to CC you in the future as well.
-
-> I have a couple of questions for 2/4:
+On Tue, Mar 5, 2013 at 2:12 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+> On Tue, Mar 5, 2013 at 7:22 AM, H. Peter Anvin <hpa@zytor.com> wrote:
+>> Yes, please do the analysis I asked for.
 >
-> > Move HUPCL handling to port shutdown so that DTR is dropped also on
-> > hang up (tty_port_close is a noop for hung-up ports).
-> 
-> It makes sense, but I'm not sure -- is this expected, i.e. does this
-> conform to standards and/or BSDs?
+> it uses first 2 pages in bzImage to bootparams.
+>
+> then update the fields with ===> X
+>
+> struct boot_params {
+>         struct screen_info screen_info;                 /* 0x000 */   ===> X
+>         struct apm_bios_info apm_bios_info;             /* 0x040 */   ===> X
+>         __u8  _pad2[4];                                 /* 0x054 */
+>         __u64  tboot_addr;                              /* 0x058 */
+>         struct ist_info ist_info;                       /* 0x060 */
+>         __u8  _pad3[16];                                /* 0x070 */
+>         __u8  hd0_info[16];     /* obsolete! */         /* 0x080 */   ===> X
+>         __u8  hd1_info[16];     /* obsolete! */         /* 0x090 */   ===> X
+>         struct sys_desc_table sys_desc_table;           /* 0x0a0 */   ===> X
+>         struct olpc_ofw_header olpc_ofw_header;         /* 0x0b0 */
+>         __u32 ext_ramdisk_image;                        /* 0x0c0 */
+>         __u32 ext_ramdisk_size;                         /* 0x0c4 */
+>         __u32 ext_cmd_line_ptr;                         /* 0x0c8 */
+>         __u8  _pad4[116];                               /* 0x0cc */
+>         struct edid_info edid_info;                     /* 0x140 */
+>         struct efi_info efi_info;                       /* 0x1c0 */   ===> X
+>         __u32 alt_mem_k;                                /* 0x1e0 */   ===> X
+>         __u32 scratch;          /* Scratch field! */    /* 0x1e4 */
+>         __u8  e820_entries;                             /* 0x1e8 */  ===> X
+>         __u8  eddbuf_entries;                           /* 0x1e9 */
+>         __u8  edd_mbr_sig_buf_entries;                  /* 0x1ea */
+>         __u8  kbd_status;                               /* 0x1eb */
+>         __u8  _pad5[3];                                 /* 0x1ec */
+>         /*
+>          * The sentinel is set to a nonzero value (0xff) in header.S.
+>          *
+>          * A bootloader is supposed to only take setup_header and put
+>          * it into a clean boot_params buffer. If it turns out that
+>          * it is clumsy or too generous with the buffer, it most
+>          * probably will pick up the sentinel variable too. The fact
+>          * that this variable then is still 0xff will let kernel
+>          * know that some variables in boot_params are invalid and
+>          * kernel should zero out certain portions of boot_params.
+>          */
+>         __u8  sentinel;                                 /* 0x1ef */
+>         __u8  _pad6[1];                                 /* 0x1f0 */
+>         struct setup_header hdr;    /* setup header */  /* 0x1f1 */  ===> X
+>         __u8  _pad7[0x290-0x1f1-sizeof(struct setup_header)];
+>         __u32 edd_mbr_sig_buffer[EDD_MBR_SIG_MAX];      /* 0x290 */
+>         struct e820entry e820_map[E820MAX];             /* 0x2d0 */  ===> X
+>         __u8  _pad8[48];                                /* 0xcd0 */
+>         struct edd_info eddbuf[EDDMAXNR];               /* 0xd00 */
+>         __u8  _pad9[276];                               /* 0xeec */
+>
+> so sentinel will be kept as 0xff, so efi_info get cleared by kernel...
+>
+> Attached patches should avoid the clearing of efi_info when elilo is used.
+>
+> Do we need to clear edd and pad2 and pad3 for elilo?
 
-As Peter also mentioned, this is how serial_core (and another seven tty
-drivers) work today.
+I don't think this is limited to elilo.  I have a UEFI machine booting
+with grub2 that also fails to boot because of this patch.  I was in the
+middle of bisecting when I found this thread and if I revert 5dcd14ecd4
+the machine boots again.  Put that commit back in and it doesn't.  We've
+had three other reports in Fedora of similar cases.
 
-There are currently seven drivers (counting usb-serial as one) that
-manipulate DTR at open/close but do not drop DTR on hangup, and five of
-those (including usb-serial) don't do it because they use the tty_port
-implementation.
+I discussed this with Peter Jones this morning.  He was looking into what
+grub2 does for boot_params and it seems to be read-modify-write instead
+of clearing the whole thing.  (CC'd Peter now.)
 
-> > @@ -196,13 +196,20 @@ void tty_port_tty_set(struct tty_port *port, struct
-> > tty_struct *tty)
-> >  }
-> >  EXPORT_SYMBOL(tty_port_tty_set);
-> 
-> -static void tty_port_shutdown(struct tty_port *port)
-> +static void tty_port_shutdown(struct tty_port *port, struct tty_struct
-> *tty)
->  {
->         mutex_lock(&port->mutex);
->         if (port->console)
->                 goto out;
-> 
->         if (test_and_clear_bit(ASYNCB_INITIALIZED, &port->flags)) {
-> +               /*
-> +                * Drop DTR/RTS if HUPCL is set. This causes any attached
-> +                * modem to hang up the line.
-> +                */
-> +               if (!tty || tty->termios.c_cflag & HUPCL)
-> > +                       tty_port_lower_dtr_rts(port);
-> > +
-> 
-> So you drop the line even thought the user didn't necessarily want to,
-> in case the tty is gone already?
+The patch for elilo probably works, but if grub2 is hitting this then I'm
+curious if most bootloaders will.  I'll finish my bisect just to be extra
+sure, but something probably needs to be done in a more generic fashion
+here.
 
-You have a point in that it might be better to do it the other way round
-and not touch DTR unless we know for sure it was requested. [ But see my
-answer to you next question as well. ]
-
-Several drivers (including serial_core) had a similar construct in their
-shutdown() but tty is never NULL when called from hangup in those cases.
-
-> > @@ -225,15 +232,13 @@ void tty_port_hangup(struct tty_port *port)
->         spin_lock_irqsave(&port->lock, flags);
->         port->count = 0;
->         port->flags &= ~ASYNC_NORMAL_ACTIVE;
-> -       if (port->tty) {
-> +       if (port->tty)
->                 set_bit(TTY_IO_ERROR, &port->tty->flags);
-> -               tty_kref_put(port->tty);
-> -       }
-> -       port->tty = NULL;
->         spin_unlock_irqrestore(&port->lock, flags);
-> > +       tty_port_shutdown(port, port->tty);
-> 
-> What prevents port->tty to be NULL here already?
-
-Nothing, I'll get a new reference within the port lock section as you
-just suggested elsewhere in this thread.
-
-But this should never be the case when using both tty_port_close and
-tty_port_hangup, as then port->tty will only be NULL if the port has
-already been shut down, right?
-
-> > +       tty_port_tty_set(port, NULL);
-> >         wake_up_interruptible(&port->open_wait);
-> >         wake_up_interruptible(&port->delta_msr_wait);
-> > -       tty_port_shutdown(port);
-> 
-> Did you investigate if the order matters here? I don't know, just curious...
-
-Yes, I did. First, the order should not matter for blocked opens as they
-will exit their wait loops based on tty_hung_up_p(filp) either way.
-
-As for delta_msr_wait the changed order is actually preferred as it
-allows the waiting process to return based on ASYNC_INITIALIZED. This is
-also the order used by serial_core. Note however that the current
-serial_core TIOCMIWAIT is broken in that it doesn't return on hangups at
-all.
-
-Perhaps I should separate this to a patch of its own, and send a fix
-for serial_core TIOCMIWAIT as well.
-
-Thanks,
-Johan
-
-> > @@ -452,11 +457,6 @@ int tty_port_close_start(struct tty_port *port,
->         /* Flush the ldisc buffering */
->         tty_ldisc_flush(tty);
-> 
-> -       /* Drop DTR/RTS if HUPCL is set. This causes any attached modem to
-> -          hang up the line */
-> -       if (tty->termios.c_cflag & HUPCL)
-> -               tty_port_lower_dtr_rts(port);
-> -
->         /* Don't call port->drop for the last reference. Callers will want
->            to drop the last active reference in ->shutdown() or the tty
-> >            shutdown path */
+josh
