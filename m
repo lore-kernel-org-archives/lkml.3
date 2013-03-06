@@ -1,84 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751974Ab3CFQ1m (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 11:27:42 -0500
-Received: from mga11.intel.com ([192.55.52.93]:8607 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751087Ab3CFQ1k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 11:27:40 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,795,1355126400"; 
-   d="scan'208";a="300174602"
-Date: Thu, 7 Mar 2013 00:26:33 +0800
-From: Feng Tang <feng.tang@intel.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: John Stultz <john.stultz@linaro.org>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>, x86@kernel.org,
-        Len Brown <lenb@kernel.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        linux-kernel@vger.kernel.org, gong.chen@linux.intel.com
-Subject: Re: [PATCH v3 4/5] clocksource: Enable clocksource_cyc2ns() to cover
- big cycles
-Message-ID: <20130306162633.GC25790@feng-snb>
-References: <1362554271-22382-1-git-send-email-feng.tang@intel.com>
- <1362554271-22382-5-git-send-email-feng.tang@intel.com>
- <alpine.LFD.2.02.1303061451340.22263@ionos>
- <20130306143742.GB25790@feng-snb>
- <alpine.LFD.2.02.1303061701130.22263@ionos>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.02.1303061701130.22263@ionos>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751778Ab3CFQ2o (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 11:28:44 -0500
+Received: from e39.co.us.ibm.com ([32.97.110.160]:33950 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750827Ab3CFQ2l (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Mar 2013 11:28:41 -0500
+Message-ID: <1362587233.6373.4.camel@lambeau>
+Subject: Re: [PATCH 0/4] Alter steal-time reporting in the guest
+From: Michael Wolf <mjw@linux.vnet.ibm.com>
+Reply-To: mjw@linux.vnet.ibm.com
+To: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
+        riel@redhat.com, gleb@redhat.com, kvm@vger.kernel.org,
+        peterz@infradead.org, glommer@parallels.com, mingo@redhat.com,
+        anthony@codemonkey.ws
+Date: Wed, 06 Mar 2013 10:27:13 -0600
+In-Reply-To: <20130306014151.GB11481@amt.cnet>
+References: <20130205214818.4615.12937.stgit@lambeau>
+	 <CAFTL4hyYO7s2u-dRLExA1=TxD00O1XyPe9qFwnODrWi_p92Jqg@mail.gmail.com>
+	 <20130219011104.GA5785@amt.cnet> <1362514928.6267.16.camel@lambeau>
+	 <20130306014151.GB11481@amt.cnet>
+Organization: IBM-LTC
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13030616-3620-0000-0000-000001816300
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 06, 2013 at 05:10:53PM +0100, Thomas Gleixner wrote:
-> On Wed, 6 Mar 2013, Feng Tang wrote:
-> > Hi Thomas,
+On Tue, 2013-03-05 at 22:41 -0300, Marcelo Tosatti wrote:
+> On Tue, Mar 05, 2013 at 02:22:08PM -0600, Michael Wolf wrote:
+> > Sorry for the delay in the response.  I did not see the email
+> > right away.
 > > 
-> > Thanks for the reviews.
-> > 
-> > On Wed, Mar 06, 2013 at 03:09:26PM +0100, Thomas Gleixner wrote:
-> > > On Wed, 6 Mar 2013, Feng Tang wrote:
+> > On Mon, 2013-02-18 at 22:11 -0300, Marcelo Tosatti wrote:
+> > > On Mon, Feb 18, 2013 at 05:43:47PM +0100, Frederic Weisbecker wrote:
+> > > > 2013/2/5 Michael Wolf <mjw@linux.vnet.ibm.com>:
+> > > > > In the case of where you have a system that is running in a
+> > > > > capped or overcommitted environment the user may see steal time
+> > > > > being reported in accounting tools such as top or vmstat.  This can
+> > > > > cause confusion for the end user.
+> > > > 
+> > > > Sorry, I'm no expert in this area. But I don't really understand what
+> > > > is confusing for the end user here.
 > > > 
-> > > > Current clocksource_cyc2ns() has a implicit limit that the (cycles * mult)
-> > > > can not exceed 64 bits limit. Jason Gunthorpe proposed a way to
-> > > > handle this big cycles case, and this patch put the handling into
-> > > > clocksource_cyc2ns() so that it could be used unconditionally.
-> > > 
-> > > Could be used if it wouldn't break the world and some more.
+> > > I suppose that what is wanted is to subtract stolen time due to 'known
+> > > reasons' from steal time reporting. 'Known reasons' being, for example,
+> > > hard caps. So a vcpu executing instructions with no halt, but limited to
+> > > 80% of available bandwidth, would not have 20% of stolen time reported.
 > > 
-> > Exactly.
+> > Yes exactly and the end user many times did not set up the guest and is
+> > not aware of the capping.  The end user is only aware of the performance
+> > level that they were told they would get with the guest.  
+> > > But yes, a description of the scenario that is being dealt with, with
+> > > details, is important.
 > > 
-> > One excuse I can think of is usually the clocksource_cyc2ns() will be called
-> > for cycles less than 600 seconds, based on which the "mult" and "shift" are
-> > calculated for a clocksource.
+> > I will add more detail to the description next time I submit the
+> > patches.  How about something like,"In a cloud environment the user of a
+> > kvm guest is not aware of the underlying hardware or how many other
+> > guests are running on it.  The end user is only aware of a level of
+> > performance that they should see."   or does that just muddy the picture
+> > more??
 > 
-> That's not an excuse for making even the build fail on ARM and other
-> 32bit archs.
-
-That's a huge mistake I made in my patch, and I didn't meant to excuse for it :)
-
-> > 
-> > trying to avoid expensieve maths. But as Jason pointed, there is some accuracy
-> > lost. 
+> So the feature aims for is to report stolen time relative to hard
+> capping. That is: stolen time should be counted as time stolen from
+> the guest _beyond_ hard capping. Yes?
+Yes, that is the goal.
 > 
-> Right, but if you precalculate the max_fast_cycles value you can avoid
-> at least the division in the fast path and then do
+> Probably don't need to report new data to the guest for that.
+Not sure I understand what you are saying here. Do you mean that I don't
+need to report the expected steal from the guest?  If I don't do that
+then I'm not reporting all of the time and changing /proc/stat in a
+bigger way than adding another catagory.  Also I thought I would need to
+provide the consigned time and the steal time for debugging purposes.
+Maybe I'm missing your point.....
 > 
->    if (cycles > max_fast_cycles)
->       return clocksource_cyc2ns_slow();
->    return ((u64) cycles * mult) >> shift;	      
+> --
+> To unsubscribe from this list: send the line "unsubscribe kvm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 > 
-> clocksource_cyc2ns_slow() should be out of line and there you can do
-> all the slow 64 bit operations. That keeps the fast path sane and we
-> don't need extra magic for the large cycle values.
 
-Yeah! This should well cover all possilbe cycles and solve the fast/slow
-problem. Thanks. Will try to make a new patch.
-
-- Feng
 
