@@ -1,65 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752795Ab3CFGhI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 01:37:08 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:30305 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752736Ab3CFGhC (ORCPT
+	id S1753526Ab3CFGhq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 01:37:46 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:37522 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752536Ab3CFGhn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 01:37:02 -0500
-X-AuditID: cbfee690-b7f6b6d000004563-ff-5136e40c2987
+	Wed, 6 Mar 2013 01:37:43 -0500
+X-AuditID: cbfee68d-b7f636d0000009be-cf-5136e42a3f1c
+Date: Wed, 06 Mar 2013 06:37:30 +0000 (GMT)
 From: Jingoo Han <jg1.han@samsung.com>
-To: "'Venu Byravarasu'" <vbyravarasu@nvidia.com>
-Cc: "'Andrew Morton'" <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, "'Tejun Heo'" <tj@kernel.org>,
-        "'Greg KH'" <greg@kroah.com>,
-        "'Alessandro Zummo'" <a.zummo@towertech.it>,
-        rtc-linux@googlegroups.com
-References: <12429277.417351362550362880.JavaMail.weblogic@epml07>
- <D958900912E20642BCBC71664EFECE3E6E4F721A62@BGMAIL02.nvidia.com>
-In-reply-to: <D958900912E20642BCBC71664EFECE3E6E4F721A62@BGMAIL02.nvidia.com>
 Subject: Re: [PATCH v3] rtc: add devm_rtc_device_{register,unregister}()
-Date: Wed, 06 Mar 2013 15:36:59 +0900
-Message-id: <006701ce1a35$016024b0$04206e10$%han@samsung.com>
+To: Venu Byravarasu <vbyravarasu@nvidia.com>
+Cc: "'Andrew Morton'" <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "'Tejun Heo'" <tj@kernel.org>, "'Greg KH'" <greg@kroah.com>,
+        Jingoo Han <jg1.han@samsung.com>,
+        "'Alessandro Zummo'" <a.zummo@towertech.it>,
+        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>
+Reply-to: jg1.han@samsung.com
 MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac4aMaaTVvxe8MZBTaW0W/+zFuhrCgAABSdAAACHAdA=
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrFIsWRmVeSWpSXmKPExsVy+t8zY12eJ2aBBrdm8lksuXiV3WLO+jVs
-	FucWzGC0uLxrDpvF/s4ORotfy48yWjw6NJHZgd1jz8STbB6bVnWyebx9GOBxYsZvFo/e5nds
-	HtPn/WTy+LxJLoA9issmJTUnsyy1SN8ugSvjxqtnjAUvhCr2X5zO2MB4lreLkZNDQsBE4l33
-	fnYIW0ziwr31bF2MXBxCAssYJfbPvcbSxcgBVvRvKw9EfDqjxJHDr5khnF+MEi/nvAPrZhNQ
-	k/jy5TA7SIOIgJ7E+eZKkBpmgYtANX0NrCA1QgKtjBKH+lxBbE4BX4ljDYeZQWxhAQ+Jg+c6
-	GEFsFgFViT2zb4PZvAK2EgcbvzND2IISPybfYwGxmQW0JNbvPM4EYctLbF7zlhniUHWJR391
-	QcIiAlYSt0/tZoQoEZHY9+IdI8g9EgKNHBLLb/6G2iUg8W3yIagnZSU2HWCGBISkxMEVN1gm
-	MErMQrJ5FpLNs5BsnoVkxQJGllWMoqkFyQXFSelFJnrFibnFpXnpesn5uZsYIfE8YQfjvQPW
-	hxiTgdZPZJYSTc4HpoO8knhDY2MTMxNTE3NLU3NT0oSVxHnlL8kECgmkJ5akZqemFqQWxReV
-	5qQWH2Jk4uCUamCstfrTd0PMi6tqdaKfdkZnZrLqE4309uw8m/ma/7k5yyP2JGlUrpL8JXB7
-	ir7+dsYpN8Kl83s7jmfwlMzk5ulvaEh16HhybvfJCv4vn6df+Vgevfq/777D/9qnL7hyW0pQ
-	6sUrf9uDmdeXFeS9UjjZdaet6ZZOb5/vws9/WMOFzxZmJn9xWKrEUpyRaKjFXFScCAAV0/vG
-	/QIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrOKsWRmVeSWpSXmKPExsVy+t9jQV2eJ2aBBjNOcVgsuXiV3WLO+jVs
-	FucWzGC0uLxrDpvF/s4ORotfy48yWjw6NJHZgd1jz8STbB6bVnWyebx9GOBxYsZvFo/e5nds
-	HtPn/WTy+LxJLoA9qoHRJiM1MSW1SCE1Lzk/JTMv3VbJOzjeOd7UzMBQ19DSwlxJIS8xN9VW
-	ycUnQNctMwfoICWFssScUqBQQGJxsZK+HaYJoSFuuhYwjRG6viFBcD1GBmggYR1jxo1XzxgL
-	XghV7L84nbGB8SxvFyMHh4SAicS/rTxdjJxAppjEhXvr2boYuTiEBKYzShw5/JoZwvnFKPFy
-	zjt2kCo2ATWJL18Os4M0iwjoSZxvrgSpYRa4CFTT18AKUiMk0MoocajPFcTmFPCVONZwmBnE
-	FhbwkDh4roMRxGYRUJXYM/s2mM0rYCtxsPE7M4QtKPFj8j0WEJtZQEti/c7jTBC2vMTmNW+Z
-	IY5Wl3j0VxckLCJgJXH71G5GiBIRiX0v3jFOYBSahWTSLCSTZiGZNAtJywJGllWMoqkFyQXF
-	Sem5RnrFibnFpXnpesn5uZsYwcnimfQOxlUNFocYBTgYlXh4J6iYBQqxJpYVV+YeYpTgYFYS
-	4eU6AxTiTUmsrEotyo8vKs1JLT7EmAz06ERmKdHkfGAiyyuJNzQ2MTOyNDKzMDIxNydNWEmc
-	l/HUkwAhgfTEktTs1NSC1CKYLUwcnFINjFOsb15d6BvqOL84qPpSWbLEwpvTJ4qV/7L3rCw8
-	dP47jwWf5tz5atGn3m9iFva9K/AnxX12lPpFt1vmD6f9Oa2i1CfEev/GtO6KG/ZJa6cIm/k/
-	PLbKMmiKzt0rRXZCxfP+MLiJK6/gVJ6R6fp4+ZXdwQW1ze8mPRUV1Ln+Oe77m5sXa1POaCqx
-	FGckGmoxFxUnAgBDir1JWgMAAA==
+X-MTR: 20130306063639922@jg1.han
+Msgkey: 20130306063639922@jg1.han
+X-EPLocale: en_US.euc-kr
+X-Priority: 3
+X-EPWebmail-Msg-Type: personal
+X-EPWebmail-Reply-Demand: 0
+X-EPApproval-Locale: 
+X-EPHeader: ML
+X-EPTrCode: 
+X-EPTrName: 
+X-MLAttribute: 
+X-RootMTR: 20130306063639922@jg1.han
+X-ParentMTR: 
+X-ArchiveUser: EV
+X-CPGSPASS: Y
+Content-type: text/plain; charset=euc-kr
+MIME-version: 1.0
+Message-id: <29641598.418931362551849471.JavaMail.weblogic@epml07>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrCJsWRmVeSWpSXmKPExsVy+t8zA12tJ2aBBssbNC0u75rD5sDo8XmT
+	XABjVAOjTWJRckZmWapCal5yfkpmXrqtUmiIm66FkkJGfnGJrVK0kYGxnpGpiZ6RibmepUGs
+	lZGpkkJeYm6qrVKFLlSvkkJRcgFQbW5lMdCAnFQ9qLhecWpeikNWfinIJXrFibnFpXnpesn5
+	uUoKZYk5pUAjlPQTpjJmfH2/irngkWTF1E8nWBoYOyS7GDk5hASUJCad3MsIYksImEi8n/2f
+	CcIWk7hwbz1bFyMXUM0yRoml8xewwBT9O7WKGSIxn1Hi85zVYAkWARWJVy/es4PYbALqEhN+
+	N4PFhQU8JA6e6wDbICKgJ7Ho5SkWkGZmgaNMEofXHWOFOENW4t7k2cwgNq+AoMTJmU+gtilI
+	nDv6hBEiriixZMsaqFMlJO7c388KYfNKzGh/ClUvJzHt6xpmCFta4vysDYww7yz+/hgqzi9x
+	7PYOoDc5wHqf3A+GGbN78xc2CFtAYuqZg4wQJaoSx48JQ4T5JNYsfAu1SVDi9LVuZpjWho2/
+	wV5nBrpySvdDKFtL4suPfWzovuIVcJI48OUm4wRG5VlIUrOQtM9C0o6sZgEjyypG0dSC5ILi
+	pPQiQ+TY3sQISYS9OxhvH7A+xLifERgnE5mlRJPzgak0ryTe0NjYxMzE1MTc0tTclAJhcyNT
+	A2BSNTCkjrCSOK/cJZlAIYH0xJLU7NTUgtSi+KLSnNTiQ4xMHJxSDYzLpkaq1IcGPDiUmNR9
+	Uuh/UpPE77Ve/1fxtbgHf3ntvPjBNWe/a1928Kf+FbtXsnYWj+YcxzNqigcCmvbNLH4SdvXL
+	j+2POQ/8izmy8FXV8ai+hTtuLf5ZonQ8zU4o7/LkCuu1D06nhj2ftLGg00DgkHOhaKWSuvyz
+	zLaIVXfMbTY7Z5foXpBSYinOSDTUYi4qTgQAMmQc/vcDAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpik+LIzCtJLcpLzFFi42I5/e/2DF2tJ2aBBgt2qVhc3jWHzYHR4/Mm
+	uQDGqAybjNTElNQihdS85PyUzLx0WyXv4HjneFMzA0NdQ0sLcyWFvMTcVFslF58AXbfMHKCh
+	SgpliTmlQKGAxOJiJX07m6L80pJUhYz84hJbpWgjA2M9I1MTPSNjAz1jy1grQwMDI1OgqoSM
+	jK/vVzEXPJKsmPrpBEsDY4dkFyMnh5CAksSkk3sZQWwJAROJf6dWMUPYYhIX7q1n62LkAqqZ
+	zyjxec5qFpAEi4CKxKsX79lBbDYBdYkJv5vB4sICHhIHz3WADRIR0JNY9PIUC0gzs8BRJonD
+	646xQmyTlbg3eTbYBl4BQYmTM5+wQGxTkDh39AkjRFxRYsmWNVAXSUjcub+fFcLmlZjR/hSq
+	Xk5i2tc1UJdKS5yftYER5urF3x9Dxfkljt3ewdTFyAHW++R+MMyY3Zu/sEHYAhJTzxxkhChR
+	lTh+TBgizCexZuFbqE2CEqevdTPDtDZs/A32OjPQlVO6H0LZWhJffuxjQ/cVr4CTxIEvNxkn
+	MMrNQpKahaR9FpJ2ZDULGFlWMYqmFiQXFCelVxjqFSfmFpfmpesl5+duYgSnqGcLdzB+OW99
+	iFGAg1GJh9dCySxQiDWxrLgy9xCjBAezkggv1xmgEG9KYmVValF+fFFpTmrxIcZkYAROZJYS
+	Tc4Hps+8knhDY2MTMxNTcwMLA0tz0oSVxHmPm6sHCgmkJ5akZqemFqQWwWxh4uCUamD04z0r
+	8CF8tcr52QUeaQJPGzObLovl1V6P22AyUef9+YVLrMurj3OLlGh5We46p5BdcyTnJ0fesgN2
+	b23E5/3ZqLHfenqienbCL6+3Nx+H5svc7Y/+4fChy/NB76EkDfH/uq3205m+u7w5qOPyQ6rA
+	oprbqvGdyOrn3RIs6pndtZ9mJc0M/KXEUpyRaKjFXFScCAB79qg3lQMAAA==
 DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r266bmZc011939
 
 On Wednesday, March 06, 2013 3:19 PM, Venu Byravarasu wrote:
 > On Wednesday, March 06, 2013 11:43 AM, Jingoo Han wrote:
@@ -130,4 +143,4 @@ Jingoo Han
 > > > > +					struct module *owner)
 > > > > +{
 > > > > +	struct rtc_device **ptr, *rtc;
-
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
