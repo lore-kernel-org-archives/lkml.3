@@ -1,110 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753171Ab3CFRIn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 12:08:43 -0500
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:51644 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751742Ab3CFRIm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 12:08:42 -0500
-Date: Tue, 5 Mar 2013 19:37:27 -0500
-From: Andrew Shewmaker <agshew@gmail.com>
-To: Simon Jeons <simon.jeons@gmail.com>
-Cc: akpm@linux-foundation.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, alan@lxorguk.ukuu.org.uk,
-        ric.masonn@gmail.com
-Subject: Re: [PATCH v4 001/002] mm: limit growth of 3% hardcoded other user
- reserve
-Message-ID: <20130306003727.GA2072@localhost.localdomain>
-References: <20130305233811.GA1948@localhost.localdomain>
- <513683D5.1080401@gmail.com>
+	id S1752951Ab3CFRLv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 12:11:51 -0500
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:58374 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752440Ab3CFRLu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Mar 2013 12:11:50 -0500
+Date: Wed, 6 Mar 2013 09:03:09 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Daniel J Blueman <daniel@numascale-asia.com>
+Cc: "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        Steffen Persvold <sp@numascale.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: False-positive RCU stall warnings on large systems...
+Message-ID: <20130306170309.GN3268@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <5123A984.4000704@numascale-asia.com>
+ <20130219181624.GG3093@linux.vnet.ibm.com>
+ <5124449D.3060808@numascale-asia.com>
+ <20130225163225.GA3302@linux.vnet.ibm.com>
+ <5135B4AD.5030609@numascale-asia.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <513683D5.1080401@gmail.com>
+In-Reply-To: <5135B4AD.5030609@numascale-asia.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13030617-9360-0000-0000-000011328B84
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 06, 2013 at 07:46:29AM +0800, Simon Jeons wrote:
-> On 03/06/2013 07:38 AM, Andrew Shewmaker wrote:
-> >Limit the growth of the memory reserved for other processes
-> >to the smaller of 3% or 8MB.
+On Tue, Mar 05, 2013 at 05:02:37PM +0800, Daniel J Blueman wrote:
+> On 02/26/2013 12:32 AM, Paul E. McKenney wrote:
+> >On Wed, Feb 20, 2013 at 11:35:57AM +0800, Daniel J Blueman wrote:
+> >>On 20/02/2013 02:16, Paul E. McKenney wrote:
+> >>>On Wed, Feb 20, 2013 at 12:34:12AM +0800, Daniel J Blueman wrote:
+> >>>>Hi Paul,
+> >>>>
+> >>>>On some of our larger servers with many hundreds of cores and when
+> >>>>under high duress, we can see scheduler RCU stall warnings [1], so
+> >>>>find we have to increase the hardcoded RCU_STALL_RAT_DELAY up from 2
+> >>>>and RCU_JIFFIES_TILL_FORCE_QS up from 3.
 > >
-> >This affects only OVERCOMMIT_NEVER.
+> >Disabling RCU_FAST_NO_HZ will likely remove the need to adjust
+> >RCU_JIFFIES_TILL_FORCE_QS.  Changes in my -rcu tree will likely remove the
+> >need to adjust these two in 3.10 or 3.11, depending on how testing goes.
 > >
-> >Signed-off-by: Andrew Shewmaker <agshew@gmail.com>
+> >>>>Is there a more sustainable way to account for this to avoid it
+> >>>>being hard-coded, such as making it and dependent timeouts a
+> >>>>fraction of CONFIG_RCU_CPU_STALL_TIMEOUT?
+> >
+> >Maybe...  But what this means is that your system is so heavily loaded
+> >that the CPU in question is failing to make it to RCU's softirq handler
+> >in two jiffies worth of time.  This is a function of workload rather
+> >than of the number of CPUs.
+> >
+> >>>>On the other hand, perhaps this is just caused by clock jitter (eg
+> >>>>due to distance from a contended clock source)? So increasing these
+> >>>>a bit may just be adequate in general...
+> >>>
+> >>>Hmmm...  What version of the kernel are you running?
+> >>
+> >>The example below occurs with v3.8, but we see the same with
+> >>previous kernels eg v3.5.
+> >
+> >There is always the rcutree.rcu_cpu_stall_timeout parameter that sets
+> >the stall timeout in seconds.  This may be specified at boot time or
+> >via sysfs at runtime.  The default is now 21 seconds.
+> >
+> >>Of course, when using the local TSC, you'd see no jitter relative to
+> >>coherent transactions (eg memory writes), but when the HPET is used
+> >>across a large system, coherent transactions to distant cores are
+> >>just so much faster, as there's massive congestion to the shared
+> >>HPET behind various HT and PCIe bridges. This could be where the
+> >>jitter arises from, if I'm guessing jitter is the problem here.
+> >
+> >Agreed, timing jitter could cause problems.  That said, the code uses
+> >the jiffies counter to compute these timings.  Are you seeing similar
+> >memory contention on the jiffies counter itself?
 > 
-> Please add changelog, otherwise it's for other guys to review.
+> The contention we see in general are when cores contend for a
+> spinlock and when there are lots of concurrent HPET reads (Opterons
+> allow only 4 outstanding reads to the IO hub).
+
+Seems to me that the RCU CPU stalls are correctly detecting that your
+platform has a problem, namely excessive contention on your HPET hardware.
+
+> It's probably possible to reproduce rcu_sched stalls on a
+> quad-socket box with 64 cores and the right workload with the TSC
+> disabled.
+> 
+> In 3.9-rc1 with RCU_FAST_NO_HZ disabled, we've seen stalls of 4
+> jiffies [2], but without the "Stall ended" message. This is with a
+> workload which allocates ~256GB of memory over 192 cores.
+
+Right, the "stall ended" messages appear only when one CPU detects
+another's stall.  In your case below, there is a self-detected stall,
+and it does not check.
+
+So I could add a similar check in the self-detect case, if that is what
+you are getting at.
+
+							Thanx, Paul
+
+> Thanks,
+>   Daniel
+> 
+> >>>>--- [1]
+> >>>>
+> >>>>[ 3939.010085] INFO: rcu_sched detected stalls on CPUs/tasks: {}
+> >>>>(detected by 1, t=29662 jiffies, g=3053, c=3052, q=598)
+> >>>>[ 3939.020008] INFO: Stall ended before state dump start
+> 
+> --- [2]
+> 
+> [10660.110620] INFO: rcu_sched self-detected stall on CPU { 39}
+> (t=4 jiffies g=1169 c=1168 q=8)
+> [10660.110620] Pid: 11747, comm: sp.B Not tainted 3.9.0-rc1-advanced #6
+> [10660.110620] Call Trace:
+> [10660.110620]  <IRQ>  [<ffffffff810b2a42>] ?
+> rcu_check_callbacks+0x2d2/0x5f0
+> [10660.110620]  [<ffffffff8107d94a>] ? run_posix_cpu_timers+0x3a/0x790
+> [10660.110620]  [<ffffffff8106c86f>] ? update_process_times+0x3f/0x80
+> [10660.110620]  [<ffffffff81098280>] ? tick_sched_handle.isra.8+0x30/0x40
+> [10660.110620]  [<ffffffff810983b2>] ? tick_sched_timer+0x42/0x70
+> [10660.110620]  [<ffffffff8107e66a>] ? __run_hrtimer.isra.30+0x4a/0xe0
+> [10660.110620]  [<ffffffff8107ef45>] ? hrtimer_interrupt+0xe5/0x220
+> [10660.110620]  [<ffffffff8104c5a3>] ? smp_apic_timer_interrupt+0x63/0xa0
+> [10660.110620]  [<ffffffff8186e887>] ? apic_timer_interrupt+0x67/0x70
+> -- 
+> Daniel J Blueman
+> Principal Software Engineer, Numascale Asia
 > 
 
-Sorry, I'll be sure to include one in the future. And it 
-looks like I do need a v5 ... I think this needs to 
-be tunable like the admin reserve. The default certainly 
-needs to be higher since this reserve is only for 
-OVERCOMMIT_NEVER mode and 8MB is too little to allow
-the user to recover. I was thinking of OVERCOMMIT_GUESS 
-mode when I chose it.
-
-v4:
- * Rebased onto v3.8-mmotm-2013-03-01-15-50
- * No longer assumes 4kb pages
- * Code duplicated for nommu
-
-v3:
- * New patch summary because it wasn't unique
-   New is "mm: limit growth of 3% hardcoded other user reserve"
-   Old was "mm: tuning hardcoded reserve memory"
- * Limits growth to min(3% process size, some constant k)
-   as Alan Cox suggested. I chose k=2000 pages (8MB) to allow
-   recovery with sshd or login, bash, and top or kill
-
-v2:
- * Rebased onto v3.8-mmotm-2013-02-19-17-20
-
-v1:
- * Based on 3.8
- * Remove hardcoded 3% other user reserve in OVERCOMMIT_NEVER mode
-
-> >
-> >---
-> >
-> >Rebased onto v3.8-mmotm-2013-03-01-15-50
-> >
-> >No longer assumes 4kb pages.
-> >Code duplicated for nommu.
-> >
-> >diff --git a/mm/mmap.c b/mm/mmap.c
-> >index 49dc7d5..4eb2b1a 100644
-> >--- a/mm/mmap.c
-> >+++ b/mm/mmap.c
-> >@@ -184,9 +184,11 @@ int __vm_enough_memory(struct mm_struct *mm, long pages, int cap_sys_admin)
-> >  	allowed += total_swap_pages;
-> >  	/* Don't let a single process grow too big:
-> >-	   leave 3% of the size of this process for other processes */
-> >+	 * leave the smaller of 3% of the size of this process
-> >+         * or 8MB for other processes
-> >+         */
-> >  	if (mm)
-> >-		allowed -= mm->total_vm / 32;
-> >+		allowed -= min(mm->total_vm / 32, 1 << (23 - PAGE_SHIFT));
-> >  	if (percpu_counter_read_positive(&vm_committed_as) < allowed)
-> >  		return 0;
-> >diff --git a/mm/nommu.c b/mm/nommu.c
-> >index f5d57a3..a93d214 100644
-> >--- a/mm/nommu.c
-> >+++ b/mm/nommu.c
-> >@@ -1945,9 +1945,11 @@ int __vm_enough_memory(struct mm_struct *mm, long pages, int cap_sys_admin)
-> >  	allowed += total_swap_pages;
-> >  	/* Don't let a single process grow too big:
-> >-	   leave 3% of the size of this process for other processes */
-> >+	 * leave the smaller of 3% of the size of this process
-> >+         * or 8MB for other processes
-> >+         */
-> >  	if (mm)
-> >-		allowed -= mm->total_vm / 32;
-> >+		allowed -= min(mm->total_vm / 32, 1 << (23 - PAGE_SHIFT));
-> >  	if (percpu_counter_read_positive(&vm_committed_as) < allowed)
-> >  		return 0;
-> 
