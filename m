@@ -1,78 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756675Ab3CFJju (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 04:39:50 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:60965 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756011Ab3CFJjr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 04:39:47 -0500
-Date: Wed, 6 Mar 2013 11:38:53 +0200
-From: Gleb Natapov <gleb@redhat.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: Hu Tao <hutao@cn.fujitsu.com>, Peter Maydell <peter.maydell@linaro.org>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>,
-        qemu-devel <qemu-devel@nongnu.org>,
-        Markus Armbruster <armbru@redhat.com>,
-        Blue Swirl <blauwirbel@gmail.com>,
-        Orit Wasserman <owasserm@redhat.com>, kvm list <kvm@vger.kernel.org>,
-        Juan Quintela <quintela@redhat.com>, Alexander Graf <agraf@suse.de>,
-        Andrew Jones <drjones@redhat.com>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Sasha Levin <levinsasha928@gmail.com>,
-        Stefan Hajnoczi <stefanha@redhat.com>,
-        Luiz Capitulino <lcapitulino@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Kevin Wolf <kwolf@redhat.com>, Anthony Liguori <aliguori@us.ibm.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v13 0/8] pv event interface between host and guest
-Message-ID: <20130306093852.GK11223@redhat.com>
-References: <cover.1362051581.git.hutao@cn.fujitsu.com>
- <20130303091738.GB23616@redhat.com>
- <513471F1.5020702@redhat.com>
- <20130306085628.GB4719@localhost.localdomain>
- <51370753.90806@redhat.com>
+	id S1756385Ab3CFJnG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 04:43:06 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:43756 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755004Ab3CFJnB convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Mar 2013 04:43:01 -0500
+Date: Wed, 6 Mar 2013 09:42:56 +0000
+From: Andrew Murray <andrew.murray@arm.com>
+To: Rob Herring <robherring2@gmail.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Liviu Dudau <Liviu.Dudau@arm.com>, jg1.han@samsung.com
+Subject: Re: [RFC PATCH RESEND v2] of/pci: Provide support for parsing PCI
+ DT ranges property
+Message-ID: <20130306094255.GA9814@arm.com>
+References: <1362140616-19346-1-git-send-email-Andrew.Murray@arm.com>
+ <5130C59E.8020702@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <5130C59E.8020702@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 06 Mar 2013 09:42:57.0358 (UTC) FILETIME=[FBBD46E0:01CE1A4E]
+X-MC-Unique: 113030609425901501
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <51370753.90806@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 06, 2013 at 10:07:31AM +0100, Paolo Bonzini wrote:
-> Il 06/03/2013 09:56, Hu Tao ha scritto:
-> >> > 
-> >> > Something like this should work (in SeaBIOS's src/acpi-dsdt-isa.dsl):
-> >> > 
-> >> >     Device(PEVT) {
-> >> >         Name(_HID, EisaId("QEMU0001"))
-> >> >         OperationRegion(PEOR, SystemIO, 0x505, 0x01)
-> >> >         Field(PEOR, ByteAcc, NoLock, Preserve) {
-> >> >             PEPT,   8,
-> >> >         }
-> >> > 
-> >> >         Method(_STA, 0, NotSerialized) {
-> >> >             Store(PEPT, Local0)
-> >> >             If (LEqual(Local0, Zero)) {
-> >> >                 Return (0x00)
-> >> >             } Else {
-> >> >                 Return (0x0F)
-> >> >             }
-> >> >         }
-> > IIUC, here _STA reads from ioport 0x505, if the result is 0, then the
-> > device is not present. Otherwise, the device is present. But as Gleb
-> > said, ''the data you read from unassigned port is not guarantied to be
-> > zero, it may depend on QEMU version''. What should I do to tell if the
-> > device is present or not correctly?
+On Fri, Mar 01, 2013 at 03:13:34PM +0000, Rob Herring wrote:
+> On 03/01/2013 06:23 AM, Andrew Murray wrote:
+> > This patch factors out common implementations patterns to reduce overall kernel
+> > code and provide a means for host bridge drivers to directly obtain struct
+> > resources from the DT's ranges property without relying on architecture specific
+> > DT handling. This will make it easier to write archiecture independent host bridge
+> > drivers and mitigate against further duplication of DT parsing code.
+> > 
+> > This patch can be used in the following way:
+> > 
+> > 	struct of_pci_range_iter iter;
+> > 	for_each_of_pci_range(&iter, np) {
+> > 
+> > 		//directly access properties of the address range, e.g.:
+> > 		//iter.pci_space, iter.pci_addr, iter.cpu_addr, iter.size or
+> > 		//iter.flags
+> > 
+> > 		//alternatively obtain a struct resource, e.g.:
+> > 		//struct resource res;
+> > 		//range_iter_fill_resource(iter, np, res);
+> > 	}
+> > 
+> > Additionally the implementation takes care of adjacent ranges and merges them
+> > into a single range (as was the case with powerpc and microblaze).
+> > 
+> > The modifications to microblaze, mips and powerpc have not been tested.
+> > 
+> > v2:
+> >   This follows on from suggestions made by Grant Likely
+> >   (marc.info/?l=linux-kernel&m=136079602806328)
+> > 
+> > Signed-off-by: Andrew Murray <Andrew.Murray@arm.com>
+> > Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
+> > ---
+> >  arch/microblaze/pci/pci-common.c |  100 +++++++++++--------------------------
+> >  arch/mips/pci/pci.c              |   44 ++++-------------
+> >  arch/powerpc/kernel/pci-common.c |   93 ++++++++++-------------------------
+> >  drivers/of/address.c             |   54 ++++++++++++++++++++
+> >  include/linux/of_address.h       |   30 +++++++++++
+> >  5 files changed, 151 insertions(+), 170 deletions(-)
 > 
-> The firmware is tied to the QEMU version, so you can rely on unassigned
-> ports returning zero.
-> 
-> Later we can change this to use fw-cfg.
-> 
-I thought we agreed to do it from the start :)
+> The thing is that this still leaves pci_process_bridge_OF_ranges
+> basically identical for microblaze and powerpc which is really what
+> needs to be moved out to common code. Obviously, struct pci_controller
+> vs. struct pci_sys_data on ARM is an issue, but they all have
+> fundamentally the same data.
+Yes it does. To make things worse struct pci_controller is duplicated and
+pretty much identical between microblaze and powerpc. There is good scope
+for getting rid of lots of code here :).
 
---
-			Gleb.
+> 
+> All these common fields should be in a common PCI controller struct.
+> Perhaps introducing this with just what you need would work. Depending
+> how invasive moving those fields to a new struct is, you could have a
+> wrapper that just copies/translates the fields to the arch specific struct.
+Yes I see how this would be a good approach. Though my concern would be how
+quirks are handled - if microblaze has the same quirks as powerpc then you'll
+see the same duplicated code between those two architectures. Or you'd see
+the architecture code pick apart the common pci controller struct... I'll
+investigate and see what can be done.
+
+A lack of an accepted way to parse DT ranges on ARM is blocking Thierry,
+Thomas and Jingoo from upstreaming their drivers - do you think there is some
+middle ground or temporary solution for these drivers?
+
+> 
+> There's also things like ioremap of the i/o range. ARM uses a fixed
+> virtual address, so we need to do something different. Just returning
+> the i/o cpu_addr and moving the ioremap out of this function would solve
+> that.
+Yes I've noticed this wasn't quite right. I'm not quite sure how this fits
+in with the DT. I guess the DT ranges would contain 0 for the PCI address
+and a physical address which represents the host bridges I/O range. You
+would then use these two addresses as inputs to pci_ioremap_io - and then
+set the start address of the struct resource to 0 and pass to
+pci_add_resource_offset with io_offset set to 0 - does this seem correct for
+ARM?
+
+Andrew Murray
+> 
+> Rob
+> 
+> 
+
