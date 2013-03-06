@@ -1,123 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755456Ab3CFIGP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 03:06:15 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:55549 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753164Ab3CFIGN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 03:06:13 -0500
-Date: Wed, 6 Mar 2013 10:05:47 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Felipe Balbi <balbi@ti.com>, Arnd Bergmann <arnd@arndb.de>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <arm@kernel.org>, Linux USB Mailing List <linux-usb@vger.kernel.org>
-Subject: Re: [PATCH 4/9] usb: gadget: fix omap_udc build errors
-Message-ID: <20130306080546.GC28587@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <1362521809-22989-1-git-send-email-arnd@arndb.de>
- <1362521809-22989-5-git-send-email-arnd@arndb.de>
- <20130305222224.GA26278@arwen.pp.htv.fi>
- <20130306004425.GA28448@kroah.com>
+	id S1755335Ab3CFINK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 03:13:10 -0500
+Received: from mx0.parallels.com ([199.115.104.20]:43429 "EHLO
+	mx0.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754466Ab3CFINI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Mar 2013 03:13:08 -0500
+Message-ID: <5136FAB4.4020305@parallels.com>
+Date: Wed, 6 Mar 2013 12:13:40 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130219 Thunderbird/17.0.3
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="bKyqfOwhbdpXa4YI"
-Content-Disposition: inline
-In-Reply-To: <20130306004425.GA28448@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Marcelo Tosatti <mtosatti@redhat.com>
+CC: Michael Wolf <mjw@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        <linux-kernel@vger.kernel.org>, <riel@redhat.com>, <gleb@redhat.com>,
+        <kvm@vger.kernel.org>, <peterz@infradead.org>, <mingo@redhat.com>,
+        <anthony@codemonkey.ws>
+Subject: Re: [PATCH 0/4] Alter steal-time reporting in the guest
+References: <20130205214818.4615.12937.stgit@lambeau> <CAFTL4hyYO7s2u-dRLExA1=TxD00O1XyPe9qFwnODrWi_p92Jqg@mail.gmail.com> <20130219011104.GA5785@amt.cnet> <1362514928.6267.16.camel@lambeau> <20130306014151.GB11481@amt.cnet>
+In-Reply-To: <20130306014151.GB11481@amt.cnet>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---bKyqfOwhbdpXa4YI
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 03/06/2013 05:41 AM, Marcelo Tosatti wrote:
+> On Tue, Mar 05, 2013 at 02:22:08PM -0600, Michael Wolf wrote:
+>> Sorry for the delay in the response.  I did not see the email
+>> right away.
+>>
+>> On Mon, 2013-02-18 at 22:11 -0300, Marcelo Tosatti wrote:
+>>> On Mon, Feb 18, 2013 at 05:43:47PM +0100, Frederic Weisbecker wrote:
+>>>> 2013/2/5 Michael Wolf <mjw@linux.vnet.ibm.com>:
+>>>>> In the case of where you have a system that is running in a
+>>>>> capped or overcommitted environment the user may see steal time
+>>>>> being reported in accounting tools such as top or vmstat.  This can
+>>>>> cause confusion for the end user.
+>>>>
+>>>> Sorry, I'm no expert in this area. But I don't really understand what
+>>>> is confusing for the end user here.
+>>>
+>>> I suppose that what is wanted is to subtract stolen time due to 'known
+>>> reasons' from steal time reporting. 'Known reasons' being, for example,
+>>> hard caps. So a vcpu executing instructions with no halt, but limited to
+>>> 80% of available bandwidth, would not have 20% of stolen time reported.
+>>
+>> Yes exactly and the end user many times did not set up the guest and is
+>> not aware of the capping.  The end user is only aware of the performance
+>> level that they were told they would get with the guest.  
+>>> But yes, a description of the scenario that is being dealt with, with
+>>> details, is important.
+>>
+>> I will add more detail to the description next time I submit the
+>> patches.  How about something like,"In a cloud environment the user of a
+>> kvm guest is not aware of the underlying hardware or how many other
+>> guests are running on it.  The end user is only aware of a level of
+>> performance that they should see."   or does that just muddy the picture
+>> more??
+> 
+> So the feature aims for is to report stolen time relative to hard
+> capping. That is: stolen time should be counted as time stolen from
+> the guest _beyond_ hard capping. Yes?
+> 
+> Probably don't need to report new data to the guest for that.
+> 
+If we take into account that 1 second always have one second, I believe
+that you can just subtract the consigned time from the steal time the
+host passes to the guest.
 
-Hi,
+During each second, the numbers won't sum up to 100. The delta to 100 is
+the consigned time, if anyone cares.
 
-On Wed, Mar 06, 2013 at 08:44:25AM +0800, Greg Kroah-Hartman wrote:
-> On Wed, Mar 06, 2013 at 12:22:24AM +0200, Felipe Balbi wrote:
-> > Hi,
-> >=20
-> > On Tue, Mar 05, 2013 at 11:16:44PM +0100, Arnd Bergmann wrote:
-> > > 1bf0cf6040 "usb: gadget: omap_udc: convert to udc_start/udc_stop"
-> > > made some trivial changes but was missing a ';' character.
-> > >=20
-> > > 8c4cc00552 "ARM: OMAP1: DMA: Moving OMAP1 DMA channel definitions
-> > > to mach-omap1" added a definition for OMAP_DMA_USB_W2FC_TX0 to
-> > > the driver while making the header file it was defined in
-> > > unavailable for drivers, but this driver actually needs
-> > > OMAP_DMA_USB_W2FC_RX0 as well.
-> > >=20
-> > > Both changes appear trivial, so let's add the missing semicolon
-> > > and the macro definition.
-> > >=20
-> > > Cc: Felipe Balbi <balbi@ti.com>
-> > > Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> > > Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> > > ---
-> > >  drivers/usb/gadget/omap_udc.c | 3 ++-
-> > >  1 file changed, 2 insertions(+), 1 deletion(-)
-> > >=20
-> > > diff --git a/drivers/usb/gadget/omap_udc.c b/drivers/usb/gadget/omap_=
-udc.c
-> > > index 06be85c..f844565 100644
-> > > --- a/drivers/usb/gadget/omap_udc.c
-> > > +++ b/drivers/usb/gadget/omap_udc.c
-> > > @@ -62,6 +62,7 @@
-> > >  #define	DRIVER_VERSION	"4 October 2004"
-> > > =20
-> > >  #define OMAP_DMA_USB_W2FC_TX0		29
-> > > +#define OMAP_DMA_USB_W2FC_RX0		26
-> > > =20
-> > >  /*
-> > >   * The OMAP UDC needs _very_ early endpoint setup:  before enabling =
-the
-> > > @@ -1310,7 +1311,7 @@ static int omap_pullup(struct usb_gadget *gadge=
-t, int is_on)
-> > >  }
-> > > =20
-> > >  static int omap_udc_start(struct usb_gadget *g,
-> > > -		struct usb_gadget_driver *driver)
-> > > +		struct usb_gadget_driver *driver);
-> >=20
-> > good catch, thanks. I'll queue it for v3.6-rc3. Make sure to Cc
-> > linux-usb for anything under drivers/usb/ though
->=20
-> I think you mean 3.9 :)
+Adopting this would simplify this a lot. All you need to do, really, is
+to get your calculation right from the bandwidth given by the cpu
+controller. Subtract it in the host, and voila.
 
-right
 
-> I can take this patch right now, if you ack it.
-
-ok thanks:
-
-Acked-by: Felipe Balbi <balbi@ti.com>
-
---=20
-balbi
-
---bKyqfOwhbdpXa4YI
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRNvjaAAoJEIaOsuA1yqREO+AP/iZfByovSbx6DuudppkJaoLM
-oCra/TzDjS276YMOjlHd5iLnc80aLqg5f7bezzwt6VEmz91Yd8pZRVOm6/eNRzHM
-/I4ilPz9eoPI7MbacOU2/SDjVLKpKiAhJ5EcfrMKWC1O9hJkXoCtWN5NMGePAAVo
-7L39VI7VkJ5NDoOTZu+dmTH0RHTlWkAwV1eYgutfiP0nzhsVEkA1mRSlnWDag6pC
-+hzIcsp5+j87MwpO6+u7lcDF2odvUsG74ksspzq8PZUJW+0efSmIbOQnRfn9ryGF
-bQTj6otiKL+NaJTzZB0/mh/RK+MO+0ku3Q5v0mjLuOB6Y0VLk6baezfkl329q9vI
-UFtrmv5CXiu/tfhGSPASBNTl3qVIoNQ/Rm4/H3EHd2jpal+dKpxNgr1fWh4vTgs8
-+8LuFfOtgCv1k+SjY1MgXu2CkIBqMnKO0EO6MRGzWH5RYgrO5DUb8b5SuXcpw81u
-2R/jBA6bHFu1i6doH3F3Vrt+09yjGzWjgOmslaWNsbqgbPqWteSJGPoozsI4CTHG
-o7dfjlyrwMPbNLRKxbbyHHpjIRSnBozpTHkwP2WG3MQ+DDwpztRru88Qk5YnVGGN
-YIwSV9XjZryCBtY9dVCG85b+3xzj2I0MRS41RkeTirQ4OY1EQndhdzZRPQj9Bl2D
-NNVWXHvAVhFjeKn0Xysg
-=+2MV
------END PGP SIGNATURE-----
-
---bKyqfOwhbdpXa4YI--
