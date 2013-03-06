@@ -1,45 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756674Ab3CFW2u (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 17:28:50 -0500
-Received: from mga02.intel.com ([134.134.136.20]:65381 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753136Ab3CFW2t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 17:28:49 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,798,1355126400"; 
-   d="scan'208";a="272554009"
-Message-ID: <5137C320.6020400@linux.intel.com>
-Date: Wed, 06 Mar 2013 14:28:48 -0800
-From: "H. Peter Anvin" <hpa@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130219 Thunderbird/17.0.3
+	id S1754637Ab3CFWcm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 17:32:42 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:40138 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751253Ab3CFWcl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Mar 2013 17:32:41 -0500
+Message-ID: <5137C404.9060902@wwwdotorg.org>
+Date: Wed, 06 Mar 2013 15:32:36 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Henrik Rydberg <rydberg@euromail.se>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Linux 3.9-rc1
-References: <CA+55aFx0HcOXKpxmZzM5jcbAaOroxafomX5ggMFV4A=py1qh-Q@mail.gmail.com> <20130306080642.GA535@polaris.bitmath.org> <51370990.5040508@linux.intel.com> <20130306100743.GA407@polaris.bitmath.org> <CAE9FiQXT4O3GOzm_OoFJG=vc=5LpfBkTEbAO_3xjerBGS_Gy=A@mail.gmail.com> <20130306193612.GA513@polaris.bitmath.org> <51379A4F.4020200@linux.intel.com> <20130306195457.GA449@polaris.bitmath.org> <CAE9FiQWK0ZnG9o8WgU-pcTPpir=PUyULQqk-TRVC+sh6UpU8VA@mail.gmail.com> <20130306204500.GA335@polaris.bitmath.org> <5137AE06.8060200@linux.intel.com> <CAE9FiQW6SegoYjoveCVGWS3h-0UOHp5_wuAwnVh14oKLyYQFKA@mail.gmail.com> <5137B9DB.6000605@linux.intel.com> <CAE9FiQX557z1SXTbVoBO1RHRbU=Re=WnPR-F+B=QfhaFVr9D9g@mail.gmail.com>
-In-Reply-To: <CAE9FiQX557z1SXTbVoBO1RHRbU=Re=WnPR-F+B=QfhaFVr9D9g@mail.gmail.com>
+To: Pavel Machek <pavel@denx.de>
+CC: kernel list <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, linux@arm.linux.org.uk,
+        arnd@arndb.de, olof@lixom.net, linux-arm-kernel@lists.infradead.org,
+        grant.likely@secretlab.ca, rob.herring@calxeda.com,
+        torvalds@linux-foundation.org
+Subject: Re: 3.9-rc1 regression in arm dtb build
+References: <20130306193332.GA6022@amd.pavel.ucw.cz>
+In-Reply-To: <20130306193332.GA6022@amd.pavel.ucw.cz>
+X-Enigmail-Version: 1.4.6
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/06/2013 02:14 PM, Yinghai Lu wrote:
+On 03/06/2013 12:33 PM, Pavel Machek wrote:
+> Hi!
 > 
-> Henrik's system has 5M holes, so i picked 8M.
+> Commit
 > 
+> commit 499cd8298628eeabf0eb5eb6525d4faa0eec80d8
+> Author: Grant Likely <grant.likely@secretlab.ca>
+> Date:   Tue Nov 27 16:29:11 2012 -0700
+> 
+>     The current rules have the .dtb files build in a different
+>     directory
+>     from the .dts files. The only reason for this is that it was what
+>     PowerPC has done historically. This patch changes ARM to use the
+> generic dtb rule which builds .dtb files in the same directory as the
+> source .dts.
+> 
+> --
+> 
+> Moves dtb files from arch/arm/boot/ to arch/arm/boot/dtb. That causes
+> several problems:
+> 
+> 1) it is inconsistent with 3.8, making switching between 3.9-rc1 and
+> 3.8 tricky
 
-Wait... this number is related to the amount of holes?  That really
-doesn't make any sense.
+It's pretty easy to locate the DTB by automatically looking in
+arch/*/boot/dts first, then if the file doesn't exist there, looking in
+arch/*/boot instead as a legacy fallback.
 
-Seriously... what is the logic behind this parameter?
+> 2) what is worse, it is very easy to do stuff like
+> 
+>    make socfpga_cyclone5.dtb
+> 
+>    and you end up with success, but stale file in arch/arm/boot, where
+>    your scripts expect it.
+> 
+>    (There are some attempts to rm stale files in Makefiles; they don't
+>    work in above case).
 
-> Current what is minimum ram is required for boot x86 32bit kernel? 8M?
+I guess moving the rm into cmd_dtc rather than the "dtbs" rule would
+solve that.
 
-I have heard of a 6M boot, I believe.
+> 3) it is now incosistent between powerpc and arm.
 
+True. PPC's DTB-handling is a little more complex than most, so wasn't
+converted along with this patch. It'd be nice to finish the conversion
+and make PPC pick up this change too.
 
+> 4) device tree _binary_ files are now output in device tree _source_
+> directory
+
+Isn't that true for almost all object files? One of the motivators for
+the move was that binaries were being built in a different directory to
+the source, which is quite odd.
+
+> (Sorry for noticing this earlier).
+> 
+> I believe the commit should be simply reverted. Reasons to move dtbs
+> around are not good enough.
+> 									Pavel
+> 
 
