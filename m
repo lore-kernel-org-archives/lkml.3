@@ -1,58 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752678Ab3CFGV6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 01:21:58 -0500
-Received: from mail-ob0-f175.google.com ([209.85.214.175]:49322 "EHLO
-	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750871Ab3CFGVy (ORCPT
+	id S1753263Ab3CFGWb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 01:22:31 -0500
+Received: from mail-gg0-f182.google.com ([209.85.161.182]:39344 "EHLO
+	mail-gg0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752736Ab3CFGW3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 01:21:54 -0500
+	Wed, 6 Mar 2013 01:22:29 -0500
+X-Greylist: delayed 17662 seconds by postgrey-1.27 at vger.kernel.org; Wed, 06 Mar 2013 01:22:29 EST
+Date: Tue, 5 Mar 2013 22:22:24 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Li Zefan <lizefan@huawei.com>
+Cc: "Kirill A. Shutemov" <kirill@shutemov.name>,
+        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>
+Subject: Re: [PATCH] cgroup: make cgrp->event_list_lock irqsafe
+Message-ID: <20130306062224.GJ1227@htj.dyndns.org>
+References: <5136B7C1.6030403@huawei.com>
 MIME-Version: 1.0
-In-Reply-To: <CADGdYn7RXks+Xvv__NeKu8o9ZsaEp15F6zDMtL158tFcKkxxEw@mail.gmail.com>
-References: <1362216854-6633-1-git-send-email-amit.daniel@samsung.com>
-	<CAKohpomHoDSNVyc21VVif8BrDKyZ=fSeCnWCZjDHL+64Bo+dgg@mail.gmail.com>
-	<CADGdYn7RXks+Xvv__NeKu8o9ZsaEp15F6zDMtL158tFcKkxxEw@mail.gmail.com>
-Date: Wed, 6 Mar 2013 14:21:53 +0800
-Message-ID: <CAKohpon6w6i0X4wJRE-FG8bfYMk2aMVCa6pOgbBwWPHy=Dttwg@mail.gmail.com>
-Subject: Re: [PATCH V2 1/4] cpufreq: exynos: Adding cpufreq driver for exynos5440
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: amit kachhap <amit.kachhap@gmail.com>
-Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, kgene.kim@samsung.com,
-        Thomas Abraham <thomas.abraham@linaro.org>, cpufreq@vger.kernel.org,
-        Inderpal Singh <inderpal.singh@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5136B7C1.6030403@huawei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6 March 2013 13:35, amit kachhap <amit.kachhap@gmail.com> wrote:
-> On Tue, Mar 5, 2013 at 6:48 AM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+Hello, Li.
 
->>> +static void exynos_cpufreq_work(struct work_struct *work)
->>> +{
->>> +       unsigned int cur_pstate, index;
->>> +       struct cpufreq_policy *policy = cpufreq_cpu_get(0); /* boot CPU */
->>> +       struct cpufreq_frequency_table *freq_table = dvfs_info->freq_table;
->>> +
->>> +       if (policy == NULL)
->>> +               goto skip_work;
->>
->> How can that be true? And if it can be, you will miss POSTCHANGE notifications
->> too.
-> This skip of POSTCHANGE notifications is needed in one case where
-> bootup frequency does not match with any elements of cpufreq table and
-> hence I simply assign the highest frequency. Also cpufreq driver is
-> not registered at this point.
+On Wed, Mar 06, 2013 at 11:28:01AM +0800, Li Zefan wrote:
+> cgroup_event_wake() is called with hardirq-safe wqh->lock held, so
+> the nested cgrp->event_list_lock should also be hardirq-safe.
+> 
+> Fortunately I don't think the deadlock can happen in real life.
+> 
+> Lockdep never complained, maybe because it never found wqh->lock was
+> held in irq context?
 
-I will keep a variable for that then, otherwise its misleading... So keep a
-variable like cpufreq_enabled for it and set it to 1 as soon as this first
-interrupt is gone... keep it in unlikely() too.
+Why should wqh->lock be hard-irq-safe?  Is it actually grabbed from
+irq context?  Locks which are grabbed with irq disabled aren't
+necessarily irq context locks as that doesn't lead to deadlocks.  They
+need to be actually grabbed from irq context.
 
->>> +       dvfs_info = kzalloc(sizeof(struct exynos_dvfs_data), GFP_KERNEL);
->>
->> sizeof(*dvfs_info) ??
-> Isn't both same?
+Thanks.
 
-You need to read Documentation/CodingStyle.
+-- 
+tejun
