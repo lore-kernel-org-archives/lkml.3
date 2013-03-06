@@ -1,117 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753033Ab3CFGWa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 01:22:30 -0500
-Received: from mta-out.inet.fi ([195.156.147.13]:58899 "EHLO jenni1.inet.fi"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751326Ab3CFGW2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 01:22:28 -0500
-Date: Wed, 6 Mar 2013 08:22:18 +0200
-From: Timo Kokkonen <timo.t.kokkonen@iki.fi>
-To: Tony Lindgren <tony@atomide.com>
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        arm@kernel.org, Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-media@vger.kernel.org
-Subject: Re: [PATCH 6/9] [media] ir-rx51: fix clock API related build issues
-Message-ID: <20130306062218.GA1638@itanic.dhcp.inet.fi>
-References: <1362521809-22989-1-git-send-email-arnd@arndb.de>
- <1362521809-22989-7-git-send-email-arnd@arndb.de>
- <20130305212351.4993d8c6@redhat.com>
- <20130306010952.GJ11806@atomide.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130306010952.GJ11806@atomide.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757120Ab3CFG2g (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 01:28:36 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:35932 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758621Ab3CFG2a (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Mar 2013 01:28:30 -0500
+X-AuditID: cbfee68d-b7f636d0000009be-d9-5136e20c91a4
+Date: Wed, 06 Mar 2013 06:28:13 +0000 (GMT)
+From: Jingoo Han <jg1.han@samsung.com>
+Subject: Re: Re: [PATCH 05/32] lib: devres: don't enclose pcim_*() functions in
+ CONFIG_HAS_IOPORT
+To: Arnd Bergmann <arnd@arndb.de>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Cc: Lior Amsalem <alior@marvell.com>, Andrew Lunn <andrew@lunn.ch>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Tawfik Bayouk <tawfik@marvell.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Eran Ben-Avi <benavi@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
+        Maen Suleiman <maen@marvell.com>, Shadi Ammouri <shadi@marvell.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Yinghai Lu <yinghai@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Jingoo Han <jg1.han@samsung.com>
+Reply-to: jg1.han@samsung.com
+MIME-version: 1.0
+X-MTR: 20130306062714220@jg1.han
+Msgkey: 20130306062714220@jg1.han
+X-EPLocale: en_US.euc-kr
+X-Priority: 3
+X-EPWebmail-Msg-Type: personal
+X-EPWebmail-Reply-Demand: 0
+X-EPApproval-Locale: 
+X-EPHeader: ML
+X-EPTrCode: 
+X-EPTrName: 
+X-MLAttribute: 
+X-RootMTR: 20130306062714220@jg1.han
+X-ParentMTR: 
+X-ArchiveUser: EV
+X-CPGSPASS: Y
+Content-type: text/plain; charset=euc-kr
+MIME-version: 1.0
+Message-id: <17540873.418471362551288113.JavaMail.weblogic@epml07>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrMJsWRmVeSWpSXmKPExsVy+t8zY12eR2aBBmuWyFlc3jWHzYHR4/Mm
+	uQDGqAZGm8Si5IzMslSF1Lzk/JTMvHRbpdAQN10LJYWM/OISW6VoIwNjPSNTEz0jE3M9S4NY
+	KyNTJYW8xNxUW6UKXaheJYWi5AKg2tzKYqABOal6UHG94tS8FIes/FKQS/SKE3OLS/PS9ZLz
+	c5UUyhJzSoFGKOknTGXMOHv3OnPBM96KPatbGBsYt/B2MXJyCAkoSUw6uZexi5GDQ0LAROLq
+	6xSQsISAmMSFe+vZuhi5gEqWMUrMvzuLHSJhIrFr4iVmiMR8RollfcdZQBIsAioSE66+ZQWx
+	2QTUJSb8bgaLCwskSqxc2wcWFxGIl3hw/TMTSDOzwAN2iUVTPzBCXCErcW/ybGYQm1dAUOLk
+	zCcsEBcpSPQtyoEIK0pcWPWZFeIICYk79/dD2bwSM9qfskDYchLTvq5hhrClJc7P2sAI883i
+	74+h4vwSx27vYIIYzyvx5H4wzJjdm7+wQdgCElPPHIRqVZVYeH8f1Co+iTUL30KtEpQ4fa2b
+	Gaa3YeNvcPgwA505pfshlK0l8eXHPjZUX4HYThL9p3exTWBUnoUkNQtJ+ywk7chqFjCyrGIU
+	TS1ILihOSi8yRI7sTYyQNNi7g/H2AetDjPsZgXEykVlKNDkfmEjzSuINjY1NzExMTcwtTc1N
+	KRA2NzI1AKZUA0PqCCuJ88pdkgkUEkhPLEnNTk0tSC2KLyrNSS0+xMjEwSnVwLj/9detoXfl
+	68QWR794KnHJcloPmwffBHuTPWwTV7yY2h33pthF78xKi6nn0v0rmf3+zm60TFi7fjfj0Q3a
+	b3msklIZzuw7eHtGi1jmnfBN4WviTx6fs3qqie8MqdPTMlct+ZTQ8mPJSdOu81Z1XH/tLgj+
+	uxI3qzC4pGKjUGT0NL4Q3unByWVKLMUZiYZazEXFiQAvpC5E9gMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpik+LIzCtJLcpLzFFi42I5/e/2dF2eR2aBBvd+SFhc3jWHzYHR4/Mm
+	uQDGqAybjNTElNQihdS85PyUzLx0WyXv4HjneFMzA0NdQ0sLcyWFvMTcVFslF58AXbfMHKCh
+	SgpliTmlQKGAxOJiJX07m6L80pJUhYz84hJbpWgjA2M9I1MTPSNjAz1jy1grQwMDI1OgqoSM
+	jLN3rzMXPOOt2LO6hbGBcQtvFyMnh5CAksSkk3sZQWwJAROJXRMvMUPYYhIX7q1n62LkAqqZ
+	zyixrO84C0iCRUBFYsLVt6wgNpuAusSE381gcWGBRImVa/vA4iIC8RIPrn9mAmlmFnjALrFo
+	6gdGiG2yEvcmzwbbwCsgKHFy5hOgZg6gbQoSfYtyIMKKEhdWfWaFOEJC4s79/VA2r8SM9qcs
+	ELacxLSva6AOlZY4P2sDI8zRi78/horzSxy7vYMJYjyvxJP7wTBjdm/+wgZhC0hMPXMQqlVV
+	YuH9fVCr+CTWLHwLtUpQ4vS1bmaY3oaNv9lBbGagM6d0P4SytSS+/NjHhuorENtJov/0LrYJ
+	jHKzkKRmIWmfhaQdWc0CRpZVjKKpBckFxUnpFUZ6xYm5xaV56XrJ+bmbGMEp6tmiHYz/zlsf
+	YhTgYFTi4Z2gYhYoxJpYVlyZe4hRgoNZSYSX6wxQiDclsbIqtSg/vqg0J7X4EGMyMAInMkuJ
+	JucD02deSbyhsbGJmYmpuYGFgaU5acJK4rxbrNUDhQTSE0tSs1NTC1KLYLYwcXBKNTDKVxr/
+	fM2x5YOL2GH38tN7p63/Vy7JtTz2RZJn4lHbziTxkO8n04ozj1ofXZzbK5Gfc+bwRy2ljgvH
+	g63v7Th/o08zzbR7c3dxzuJLAW9tktZ2+0wSenbZnSF7Xc/6u/U62pYdIaIXUr1mVT5Z2rR4
+	2SS9/Ld39B5ObvXN0829s7bNQvdMNo8SS3FGoqEWc1FxIgBi2vEMlQMAAA==
+DLP-Filter: Pass
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r266SiYP011860
 
-On 03.05 2013 17:09:53, Tony Lindgren wrote:
-> * Mauro Carvalho Chehab <mchehab@redhat.com> [130305 16:28]:
-> > Em Tue,  5 Mar 2013 23:16:46 +0100
-> > Arnd Bergmann <arnd@arndb.de> escreveu:
-> > 
-> > > OMAP1 no longer provides its own clock interfaces since patch
-> > > a135eaae52 "ARM: OMAP: remove plat/clock.h". This is great, but
-> > > we now have to convert the ir-rx51 driver to use the generic
-> > > interface from linux/clk.h.
-> > > 
-> > > The driver also uses the omap_dm_timer_get_fclk() function,
-> > > which is not exported for OMAP1, so we have to move the
-> > > definition out of the OMAP2 specific section.
-> > > 
-> > > Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> > > Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
-> > 
-> > From my side:
-> > Acked-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+On Tuesday, March 05, 2013 5:30 AM, Arnd Bergmann wrote:
 > 
-> There's just one issue, this driver most likely only needed on
-> rx51 board.. So I suggest we just mark the driver depends on
-> ARCH_OMAP2PLUS and let's drop this patch.
+> On Monday 04 March 2013, Thomas Petazzoni wrote:
+> > FWIW, a patch that is doing what I was initially proposing has been
+> > merged for 3.9, and it doesn't contain the
+> > IS_ENABLED(CONFIG_HAS_IOPORT) test you were proposing (and which I
+> > think was correct). See:
+> >
+> > commit 9ed8a30f3471347c1b763bd062fa78ae80f18eae
+> > Author: Jingoo Han <jg1.han@samsung.com>
+> > Date:   Wed Feb 27 17:02:42 2013 -0800
+> >
 > 
-> This driver is already disabled for ARCH_MULTIPLATFORM
-> as we need to move dmtimer.c to drivers and have some minimal
-> include/linux/timer-omap.h for it.
->  
+> Sigh.
+> 
+> I'll take it as an additional incentive to finally clean up the logic behind
+> CONFIG_HAS_IOPORT by introducing a CONFIG_HAS_IOPORT_MAP symbol to replace it.
+> 
+> Thanks for the heads up.
 
-I've also had this cunning plan that if or when the PWM subsystem
-starts supporting the PWM output in OMAP3, I could convert this driver
-to generate the IR carrier wave through the PWM subsystem and then use
-HR timers to generate the pulses. I think that's much better approach
-than trying to depend on interfaces that are not easily
-available. Should be possible, but I haven't proven yet that it will
-work :)
 
-Unfortunately I haven't got into executing on that plan yet. In
-addition to the challenge of scheduling some of my free time for doing
-this, my RX51 device is not enumerating the USB with the latest kernel
-and I haven't figured out that yet. And because of that, I haven't
-been able to get my user space running over nfsroot setup I've been
-using..
+Hi Thomas Petazzoni
+Sorry, I did not know that you submitted the patch.
+Like you, I am developing PCIe Host driver.
+Also, I experienced the annoying build error related to
+CONFIG_HAS_IOPORT.
 
--Timo
+Hi Arnd Bergmann,
+I have just read the mailing thread.
+If you resolve this situation properly, it will be very helpful.
+Thank you.
 
-> > > --- a/arch/arm/plat-omap/dmtimer.c
-> > > +++ b/arch/arm/plat-omap/dmtimer.c
-> > > @@ -333,6 +333,14 @@ int omap_dm_timer_get_irq(struct omap_dm_timer *timer)
-> > >  }
-> > >  EXPORT_SYMBOL_GPL(omap_dm_timer_get_irq);
-> > >  
-> > > +struct clk *omap_dm_timer_get_fclk(struct omap_dm_timer *timer)
-> > > +{
-> > > +	if (timer)
-> > > +		return timer->fclk;
-> > > +	return NULL;
-> > > +}
-> > > +EXPORT_SYMBOL_GPL(omap_dm_timer_get_fclk);
-> > > +
-> > >  #if defined(CONFIG_ARCH_OMAP1)
-> > >  #include <mach/hardware.h>
-> > >  /**
-> > > @@ -371,14 +379,6 @@ EXPORT_SYMBOL_GPL(omap_dm_timer_modify_idlect_mask);
-> > >  
-> > >  #else
-> > >  
-> > > -struct clk *omap_dm_timer_get_fclk(struct omap_dm_timer *timer)
-> > > -{
-> > > -	if (timer)
-> > > -		return timer->fclk;
-> > > -	return NULL;
-> > > -}
-> > > -EXPORT_SYMBOL_GPL(omap_dm_timer_get_fclk);
-> > > -
-> > >  __u32 omap_dm_timer_modify_idlect_mask(__u32 inputmask)
-> > >  {
-> > >  	BUG();
+Best regards,
+Jingoo Han
+
 > 
-> Then omap_dm_timer_get_fclk() won't work on omap1 as there's no
-> separate functional clock. We probably should not even export
-> this function eventually when things are fixed up.
-> 
-> Regards,
-> 
-> Tony
+> 	Arnd
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
