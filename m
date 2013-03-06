@@ -1,94 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753222Ab3CFROk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 12:14:40 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:45500 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750788Ab3CFROh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 12:14:37 -0500
-Message-ID: <51377973.3070005@zytor.com>
-Date: Wed, 06 Mar 2013 09:14:27 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130219 Thunderbird/17.0.3
+	id S1752993Ab3CFRRX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 12:17:23 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:7124 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750788Ab3CFRRW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Mar 2013 12:17:22 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Wed, 06 Mar 2013 09:17:22 -0800
+From: Andrew Chew <achew@nvidia.com>
+To: <thierry.reding@avionic-design.de>, <acourbot@nvidia.com>
+CC: <achew@nvidia.com>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH 1/1 v4] pwm_bl: Add support for backlight enable regulator
+Date: Wed, 6 Mar 2013 09:17:18 -0800
+Message-ID: <1362590238-27692-1-git-send-email-achew@nvidia.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-To: Peter Jones <pjones@redhat.com>
-CC: Robin Holt <holt@sgi.com>, hpa@sgi.com, Yinghai Lu <yinghai@kernel.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: Revert commit 5dcd14ecd4 - breaks EFI boot with SLES11 elilo.efi
-References: <20130228205206.GC3438@sgi.com> <512FC697.3090608@zytor.com> <20130228210910.GD3438@sgi.com> <512FC82B.40909@zytor.com> <20130306165533.GA25932@fenchurch.internal.datastacks.com>
-In-Reply-To: <20130306165533.GA25932@fenchurch.internal.datastacks.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/06/2013 08:55 AM, Peter Jones wrote:
-> 
-> So, the problem here seems to be that there's never been widespread
-> compliance with this paragraph, but this patch assumes there has.  A
-> brief survey concludes:
-> 
+The backlight enable regulator is specified in the device tree node for
+backlight.
 
-No, this patch doesn't assume there is widespread compliance, it is
-trying to address the bits that are not complied with.
+Signed-off-by: Andrew Chew <achew@nvidia.com>
+---
+Changed the name of the property from en-supply to enable-supply.
 
-> grub 1 on bios - loads the kernel and edits the parameters it cares
->                  about in place
-> grub 1 on efi - allocates a buffer (fails to clear it) and modifies
->                 the parameters it cares about, then copies it back
-> grub 2 on bios - clears the buffer, writes what it cares about
+Made enable-supply a mandatory property.  Changed the example in the
+bindings documentation accordingly.
 
-On BIOS, anything that invokes the 16-bit entry point will be correct,
-because it is the 16-bit code that sets up struct boot_params.
+Moved devm_regulator_get() to the probe function.  Regulator is now
+requested unconditionally.
 
-> grub 2 on efi (using efi boot stub) - reads the buffer, modifies fields
->         it cares about, passes the pointer to the boot stub
-> elilo - allocates a new buffer, copies the kernel structure in to it,
->         allocates another buffer, clears it, copies the first structure
-> 	in to it, frees the first buffer, modifies fields it cares about
-> 	in the second buffer, clears some other fields in the second
-> 	structure, and passes the pointer in when it calls the old entry
-> 	point
-> 	(It's possible that there's some newer version of elilo than 3.14,
-> 	which I had handy, but I'm not going to do deeper research on a
-> 	project that keeps a link to its CVS repo on the most obvious
-> 	google result, lest I lose the will to live.)
-> syslinux - I'm just going to assume that your code matches the spec.
-> 
-> So it's certainly worth trying to find a better way to check this, but I
-> don't think this patch is it.  If we're going to enforce it, we have to
-> make sure that a bootloader that's conforming to what was de facto the
-> standard in 0x020b still works.  Otherwise we're just breaking
-> bootloaders for no reason, and that will end poorly.
-> 
-> I'd suggest we add a field for the bootloader to make a positive
-> declaration of what version it is using, and only check for the sentinel
-> if the field claims it's doing 0x020c or newer.
+Changed IS_ERR_OR_NULL to IS_ERR per Alex's recommendation.
 
-Except it doesn't quite work.  The problem is that these broken
-bootloaders aren't just a matter of 2.11 vs 2.12, they are implicitly
-assuming that the kernel image itself doesn't happen to contain anything
-harmful in the fields that they don't bother initializing.  This would
-be nice and good, except that the demands for the boot sector space is
-fairly high and it gets very cantankerous to turn that into a minefield.
 
-In fact, your suggestion is exactly equivalent to the sentinel, except
-you want it to be pre-initialized with 0x20b instead of 0xffff.
+ .../bindings/video/backlight/pwm-backlight.txt     |   14 ++++++
+ drivers/video/backlight/pwm_bl.c                   |   52 ++++++++++++++++----
+ 2 files changed, 56 insertions(+), 10 deletions(-)
 
-As such, I don't really know anything better we can do other than:
-
-1. detect the *properly working* case of the structure properly
-   initialized;
-2. doing legacy bootloader-specific clearing based on the bootloader ID
-   if the sentinel triggers -- if you can think of better heuristics
-   then that would be good;
-3. try to get bootloaders switched from case #2 to case #1.
-
-	-hpa
-
+diff --git a/Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt b/Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt
+index 1e4fc72..7e2e089 100644
+--- a/Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt
++++ b/Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt
+@@ -10,6 +10,11 @@ Required properties:
+       last value in the array represents a 100% duty cycle (brightest).
+   - default-brightness-level: the default brightness level (index into the
+       array defined by the "brightness-levels" property)
++  - enable-supply: A phandle to the regulator device tree node. This
++      regulator will be turned on and off as the pwm is enabled and disabled.
++      Many backlights are enabled via a GPIO. In this case, we instantiate
++      a fixed regulator and give that to enable-supply. If a regulator
++      is not needed, then provide a dummy fixed regulator.
+ 
+ Optional properties:
+   - pwm-names: a list of names for the PWM devices specified in the
+@@ -19,10 +24,19 @@ Optional properties:
+ 
+ Example:
+ 
++	bl_en: fixed-regulator {
++                compatible = "regulator-fixed";
++                regulator-name = "bl-en-supply";
++                regulator-boot-on;
++                gpio = <&some_gpio>;
++                enable-active-high;
++	};
++
+ 	backlight {
+ 		compatible = "pwm-backlight";
+ 		pwms = <&pwm 0 5000000>;
+ 
+ 		brightness-levels = <0 4 8 16 32 64 128 255>;
+ 		default-brightness-level = <6>;
++		enable-supply = <&bl_en>;
+ 	};
+diff --git a/drivers/video/backlight/pwm_bl.c b/drivers/video/backlight/pwm_bl.c
+index 069983c..ff98cdd 100644
+--- a/drivers/video/backlight/pwm_bl.c
++++ b/drivers/video/backlight/pwm_bl.c
+@@ -20,10 +20,13 @@
+ #include <linux/pwm.h>
+ #include <linux/pwm_backlight.h>
+ #include <linux/slab.h>
++#include <linux/regulator/consumer.h>
+ 
+ struct pwm_bl_data {
+ 	struct pwm_device	*pwm;
+ 	struct device		*dev;
++	struct regulator	*en_supply;
++	bool			en_supply_enabled;
+ 	unsigned int		period;
+ 	unsigned int		lth_brightness;
+ 	unsigned int		*levels;
+@@ -35,6 +38,34 @@ struct pwm_bl_data {
+ 	void			(*exit)(struct device *);
+ };
+ 
++static void pwm_backlight_enable(struct backlight_device *bl)
++{
++	struct pwm_bl_data *pb = dev_get_drvdata(&bl->dev);
++
++	pwm_enable(pb->pwm);
++
++	if (pb->en_supply && !pb->en_supply_enabled) {
++		if (regulator_enable(pb->en_supply) != 0)
++			dev_warn(&bl->dev, "Failed to enable regulator");
++		else
++			pb->en_supply_enabled = true;
++	}
++}
++
++static void pwm_backlight_disable(struct backlight_device *bl)
++{
++	struct pwm_bl_data *pb = dev_get_drvdata(&bl->dev);
++
++	if (pb->en_supply && pb->en_supply_enabled) {
++		if (regulator_disable(pb->en_supply) != 0)
++			dev_warn(&bl->dev, "Failed to disable regulator");
++		else
++			pb->en_supply_enabled = false;
++	}
++
++	pwm_disable(pb->pwm);
++}
++
+ static int pwm_backlight_update_status(struct backlight_device *bl)
+ {
+ 	struct pwm_bl_data *pb = dev_get_drvdata(&bl->dev);
+@@ -52,7 +83,7 @@ static int pwm_backlight_update_status(struct backlight_device *bl)
+ 
+ 	if (brightness == 0) {
+ 		pwm_config(pb->pwm, 0, pb->period);
+-		pwm_disable(pb->pwm);
++		pwm_backlight_disable(bl);
+ 	} else {
+ 		int duty_cycle;
+ 
+@@ -66,7 +97,7 @@ static int pwm_backlight_update_status(struct backlight_device *bl)
+ 		duty_cycle = pb->lth_brightness +
+ 		     (duty_cycle * (pb->period - pb->lth_brightness) / max);
+ 		pwm_config(pb->pwm, duty_cycle, pb->period);
+-		pwm_enable(pb->pwm);
++		pwm_backlight_enable(bl);
+ 	}
+ 
+ 	if (pb->notify_after)
+@@ -145,12 +176,6 @@ static int pwm_backlight_parse_dt(struct device *dev,
+ 		data->max_brightness--;
+ 	}
+ 
+-	/*
+-	 * TODO: Most users of this driver use a number of GPIOs to control
+-	 *       backlight power. Support for specifying these needs to be
+-	 *       added.
+-	 */
+-
+ 	return 0;
+ }
+ 
+@@ -213,6 +238,13 @@ static int pwm_backlight_probe(struct platform_device *pdev)
+ 	pb->exit = data->exit;
+ 	pb->dev = &pdev->dev;
+ 
++	pb->en_supply = devm_regulator_get(&pdev->dev, "enable");
++	if (IS_ERR(pb->en_supply)) {
++		ret = PTR_ERR(pb->en_supply);
++		pb->en_supply = NULL;
++		goto err_alloc;
++	}
++
+ 	pb->pwm = devm_pwm_get(&pdev->dev, NULL);
+ 	if (IS_ERR(pb->pwm)) {
+ 		dev_err(&pdev->dev, "unable to request PWM, trying legacy API\n");
+@@ -268,7 +300,7 @@ static int pwm_backlight_remove(struct platform_device *pdev)
+ 
+ 	backlight_device_unregister(bl);
+ 	pwm_config(pb->pwm, 0, pb->period);
+-	pwm_disable(pb->pwm);
++	pwm_backlight_disable(bl);
+ 	if (pb->exit)
+ 		pb->exit(&pdev->dev);
+ 	return 0;
+@@ -283,7 +315,7 @@ static int pwm_backlight_suspend(struct device *dev)
+ 	if (pb->notify)
+ 		pb->notify(pb->dev, 0);
+ 	pwm_config(pb->pwm, 0, pb->period);
+-	pwm_disable(pb->pwm);
++	pwm_backlight_disable(bl);
+ 	if (pb->notify_after)
+ 		pb->notify_after(pb->dev, 0);
+ 	return 0;
 -- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+1.7.9.5
 
