@@ -1,102 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755570Ab3CFAfV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 19:35:21 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:33703 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754642Ab3CFAfT (ORCPT
+	id S1755540Ab3CFAjp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 19:39:45 -0500
+Received: from mga11.intel.com ([192.55.52.93]:44789 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754642Ab3CFAjn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 19:35:19 -0500
-Date: Wed, 6 Mar 2013 11:35:08 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: linux-next: build failure after merge of the final tree (staging
- tree related)
-Message-Id: <20130306113508.9c868be103b6b140295c548f@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__6_Mar_2013_11_35_08_+1100_Sdlnboqs7UrxdvPv"
+	Tue, 5 Mar 2013 19:39:43 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,791,1355126400"; 
+   d="scan'208";a="295445867"
+From: "Yu, Fenghua" <fenghua.yu@intel.com>
+To: "H. Peter Anvin" <hpa@linux.intel.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>
+CC: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        "bp@alien8.de" <bp@alien8.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [3.9-rc1 x86] Bug in ioremap code?
+Thread-Topic: [3.9-rc1 x86] Bug in ioremap code?
+Thread-Index: AQHOGf1OIHQkEDynbE+CmdhsV+IBtZiX0Ohw
+Date: Wed, 6 Mar 2013 00:39:20 +0000
+Message-ID: <3E5A0FA7E9CA944F9D5414FEC6C71220528C0896@ORSMSX105.amr.corp.intel.com>
+References: <201302060035.GCJ00057.FLHMOOFtJFSQOV@I-love.SAKURA.ne.jp>
+ <201303050015.GGI39081.LOVFtOFHQOJFSM@I-love.SAKURA.ne.jp>
+ <201303052031.JFG81705.FSOOFQHJMVFOLt@I-love.SAKURA.ne.jp>
+ <201303060041.AIF15342.tJFOHLQFFOMVSO@I-love.SAKURA.ne.jp>
+ <20130305180650.GD4914@pd.tnic>
+ <201303060628.CBG00578.OJtMFFHLQVSFOO@I-love.SAKURA.ne.jp>
+ <51366E6F.1050409@linux.intel.com> <513683DC.3070405@linux.vnet.ibm.com>
+ <51368692.4090204@linux.intel.com>
+In-Reply-To: <51368692.4090204@linux.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.139]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__6_Mar_2013_11_35_08_+1100_Sdlnboqs7UrxdvPv
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> -----Original Message-----
+> From: H. Peter Anvin [mailto:hpa@linux.intel.com]
+> Sent: Tuesday, March 05, 2013 3:58 PM
+> To: Dave Hansen
+> Cc: Tetsuo Handa; bp@alien8.de; linux-kernel@vger.kernel.org; Yu,
+> Fenghua
+> Subject: Re: [3.9-rc1 x86] Bug in ioremap code?
+> 
+> Fenghua,
+> 
+> Could you look at this thread and see if you can see what the problem
+> is?
+> 
+> 	-hpa
+> 
+> On 03/05/2013 03:46 PM, Dave Hansen wrote:
+> > Not sure if it's related by 3.9-rc1 gets in to a reboot loop for me.
+> I
+> > assume it's triple-faulting.  The last line on the console I see is:
+> >
+> > [    0.085702] SMP alternatives: lockdep: fixing up alternatives
+> > [    0.086859] smpboot: Booting Node   0, Processors [    0.086859]
+> > smpboot: Booting Node   0, Processors  #1 OK
+> >  #1 OK
+> >
+> > I bisected it down to the neighborhood of c47f39e.  After that, I get
+> > some compile errors:
+> >
+> >> arch/x86/built-in.o: In function `generic_load_microcode':
+> >> microcode_intel.c:(.text+0x28195): undefined reference to
+> `microcode_sanity_check'
+> >> microcode_intel.c:(.text+0x281ab): undefined reference to
+> `get_matching_microcode'
 
-Hi all,
+The bisect warnings are because the early load microcode patchset doesn't separate patches right for bisect.
 
-After merging the final tree, today's linux-next build (powerpc
-allyesconfig) failed like this:
+> >
+> > Turning off CONFIG_MICROCODE:
 
-In file included from drivers/staging/zcache/debug.c:2:0:
-drivers/staging/zcache/debug.h: In function 'dec_zcache_obj_count':
-drivers/staging/zcache/debug.h:16:2: error: implicit declaration of functio=
-n 'BUG_ON' [-Werror=3Dimplicit-function-declaration]
+Turning off CONFIG_MICROCODE should not compile the microcode code including early loading microcode code. With this configuration, microcode code should not be in debugging scope.
 
-Caused by commit 95bdaee2140e ("zcache: Move debugfs code out of
-zcache-main.c file").
+> >
+> > -CONFIG_MICROCODE=y
+> > -CONFIG_MICROCODE_INTEL=y
+> > -# CONFIG_MICROCODE_AMD is not set
+> > -CONFIG_MICROCODE_OLD_INTERFACE=y
+> > -CONFIG_MICROCODE_INTEL_LIB=y
+> > -CONFIG_MICROCODE_INTEL_EARLY=y
+> > -CONFIG_MICROCODE_EARLY=y
+> > +# CONFIG_MICROCODE is not set
+> >
+> > lets it boot again and fixes those compile errors.  This is with this
+> > config:
+> >
+> > 	http://i-love.sakura.ne.jp/tmp/config-3.9-rc1
+> >
+> > running under a kvm guest:
+> >
+> > qemu-system-x86_64 -append 'earlyprintk=ttyS0,115200,keep
+> > console=ttyS0,115200 nmi_watchdog=0 root=/dev/sda1 bootmem_debug'
+> > -kernel vmlinuz -usbdevice tablet  -vnc :1 -net user -net
+> > nic,model=e1000  -hda sarge-amd64-runme-1G.img -m 10240 -smp 2
+> >
 
-I applied this patch for today:
 
-=46rom 24b03cf426007c4e94c6bed81560e436afcc136c Mon Sep 17 00:00:00 2001
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Wed, 6 Mar 2013 11:31:06 +1100
-Subject: [PATCH] disable ZCACHE_DEBUG due to build error
-
-In file included from drivers/staging/zcache/debug.c:2:0:
-drivers/staging/zcache/debug.h: In function 'dec_zcache_obj_count':
-drivers/staging/zcache/debug.h:16:2: error: implicit declaration of functio=
-n 'BUG_ON' [-Werror=3Dimplicit-function-declaration]
-
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- drivers/staging/zcache/Kconfig | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/drivers/staging/zcache/Kconfig b/drivers/staging/zcache/Kconfig
-index 2da6cc4..ad47b4b 100644
---- a/drivers/staging/zcache/Kconfig
-+++ b/drivers/staging/zcache/Kconfig
-@@ -13,6 +13,7 @@ config ZCACHE
- config ZCACHE_DEBUG
- 	bool "Enable debug statistics"
- 	depends on DEBUG_FS && ZCACHE
-+	depends on BROKEN
- 	default n
- 	help
- 	  This is used to provide an debugfs directory with counters of
---=20
-1.8.1
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Wed__6_Mar_2013_11_35_08_+1100_Sdlnboqs7UrxdvPv
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRNo88AAoJEECxmPOUX5FE32QP/Rz9w3FXwtFa1q4CN147zGTk
-dyuiFbmjhwSXQHRPjht8pV7IV16dLyQRSM1ljYMxz12uhb8pbznrTqFarLkm44HY
-+dNINrHNiDfr5YMm/nYtn4TFyFJYd2UyJcbmh8kHWqmz/ExOo1DEAXTfUCp8ZSBb
-QnsE6tFqvawdpJendXVI9EiqVycPnepJQNuHTh29ffmg5KsjNWrWOjJTsr9VzHM+
-3xqv05tVFbTKVxfFg6NHbZDA8QjdZCFWGi5nelwTY+2OqWCj3YBOTfgl/DGaW5wq
-4bLIHNA2u2Khz5oESgosy2qirqdbc33qxtSbN1zrHVHiibFFV+tsJOHkex2CqlbJ
-sXuxt1R3gEJR6KwRAuX1ydVBCwB8WCutkEwDXIxk/XctNvqWv2FqzGeXCp3B938y
-60Y9cmkZVVjNqvKcm1eTz3dbwo3z+4Y4fD6wWpGktMyDM6j2xlN/Nd/m7CS60RX0
-7gWTsCB8EQEzHpD+ZtlkzSvOcen2i4A/99QkxRalyJPHkdxJ6IsqREENDvcq9ZOx
-qmmqK0d7Be0uW2Ke8IaOEGANFH2iUJbl9GjDtUxDGYFcpINKr6Jg+g7UXKlDKY0H
-U/tTmZ21uLwmPuYN4XHxV15yM0or/gIqB+s1IGhncES94OmReKPN5J0f2tzSIysn
-oPV9SVUzcQxT6rBHEPwy
-=xm7T
------END PGP SIGNATURE-----
-
---Signature=_Wed__6_Mar_2013_11_35_08_+1100_Sdlnboqs7UrxdvPv--
