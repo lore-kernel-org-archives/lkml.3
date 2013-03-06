@@ -1,56 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754830Ab3CFUS4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 15:18:56 -0500
-Received: from mail-la0-f49.google.com ([209.85.215.49]:58935 "EHLO
-	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752809Ab3CFUSy (ORCPT
+	id S1754875Ab3CFUUY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 15:20:24 -0500
+Received: from mail-ee0-f50.google.com ([74.125.83.50]:63054 "EHLO
+	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752304Ab3CFUUX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 15:18:54 -0500
-Date: Thu, 7 Mar 2013 00:18:49 +0400
-From: Artem Savkov <artem.savkov@gmail.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Mandeep Singh Baines <msb@chromium.org>, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, ibm-acpi@hmh.eng.br,
-        ibm-acpi-devel@lists.sourceforge.net,
-        platform-driver-x86@vger.kernel.org, Aaron Lu <aaron.lu@intel.com>,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        Tejun Heo <tj@kernel.org>, Maciej Rutecki <maciej.rutecki@gmail.com>
-Subject: Re: [PATCH] thinkpad-acpi: fix potential suspend blocking issue
-Message-ID: <20130306201849.GA4897@thinkpad.lan>
-References: <201303042055.38040.maciej.rutecki@gmail.com>
- <1362504883-9180-1-git-send-email-msb@chromium.org>
- <20130305141817.4e27e83aa66598115e52eb9e@linux-foundation.org>
- <20130306155039.GB7697@redhat.com>
+	Wed, 6 Mar 2013 15:20:23 -0500
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: Aaro Koskinen <aaro.koskinen@iki.fi>
+Subject: Re: [PATCH v2] ADP1653 board code for Nokia RX-51
+Date: Wed, 6 Mar 2013 21:20:16 +0100
+User-Agent: KMail/1.13.7 (Linux/3.5.0-26-generic; KDE/4.10.0; x86_64; ; )
+Cc: Tony Lindgren <tony@atomide.com>, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+References: <201302171616.50152@pali> <20130217190303.GC2317@blackmetal.musicnaut.iki.fi> <201303062112.06417@pali>
+In-Reply-To: <201303062112.06417@pali>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20130306155039.GB7697@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: multipart/signed;
+  boundary="nextPart1573876.B71MXTo5pQ";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201303062120.17303@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 06, 2013 at 04:50:39PM +0100, Oleg Nesterov wrote:
-> On 03/05, Andrew Morton wrote:
-> >
-> > Basically the same as
-> > http://ozlabs.org/~akpm/mmots/broken-out/drivers-platform-x86-thinkpad_acpic-move-hotkey_thread_mutex-lock-after-set_freezable.patch.
-> >  I think Artem's patch is a little better.  There doesn't appear to be
-> > any locking protocol for tpacpi_lifecycle.
-> 
-> Which seems to have the same problem, hotkey_kthread() still calls
-> kthread_freezable_should_stop() under hotkey_thread_mutex.
-> 
-> IOW, we have two try_to_freeze's here, the patch moves only one of
-> them outside of the hotkey_thread_mutex.
+--nextPart1573876.B71MXTo5pQ
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-It's hard for me to judge but this lock does indeed look like it has
-been used to block until the thread exits. I'm trying out the "remove
-hotkey_thread_mutex completely" approach and everything looks fine so
-far.
+On Wednesday 06 March 2013 21:12:06 Pali Roh=C3=A1r wrote:
+> On Sunday 17 February 2013 20:03:03 Aaro Koskinen wrote:
+> > Hi,
+> >=20
+> > On Sun, Feb 17, 2013 at 04:16:49PM +0100, Pali Roh=C3=A1r wrote:
+> > > +/*
+> > > + * arch/arm/mach-omap2/board-rx51-camera.c
+> > > + *
+> > > + * Copyright (C) 2008 Nokia Corporation
+> > > + *
+> > > + * Contact: Sakari Ailus <sakari.ailus@nokia.com>
+> > > + *          Tuukka Toivonen <tuukka.o.toivonen@nokia.com>
+> >=20
+> > You should put these people to CC... Just to see if the
+> > addresses are still valid (which I doubt).
+>=20
+> Ok, trying :-)
+>=20
 
--- 
-Regards,
-Artem
+I got "Delivery Status Notification (Failure)" for both addresses.
+
+=2D-=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
+
+--nextPart1573876.B71MXTo5pQ
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEABECAAYFAlE3pQEACgkQi/DJPQPkQ1LjyQCeL2e5q3UDIUrY7mIti5D67Ao2
+U4gAn3xeOaTSywGXosuz0X78vKhjldAr
+=Mojb
+-----END PGP SIGNATURE-----
+
+--nextPart1573876.B71MXTo5pQ--
