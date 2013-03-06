@@ -1,82 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754991Ab3CFDr2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Mar 2013 22:47:28 -0500
-Received: from mga14.intel.com ([143.182.124.37]:20783 "EHLO mga14.intel.com"
+	id S1753686Ab3CFDyG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Mar 2013 22:54:06 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:39761 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750780Ab3CFDrY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Mar 2013 22:47:24 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,791,1355126400"; 
-   d="scan'208";a="265014250"
-Message-ID: <1362541640.2441.3.camel@rzhang1-mobl4>
-Subject: Re: [PATCH] acerhdf: Fix fan activation with new thermal governor
-From: Zhang Rui <rui.zhang@intel.com>
-To: Andreas Mohr <andi@lisas.de>
-Cc: Borislav Petkov <bp@alien8.de>, Peter Feuerer <peter@piie.net>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Durgadoss R <durgadoss.r@intel.com>,
-        Alexander Lam <azl@andrew.cmu.edu>
-Date: Wed, 06 Mar 2013 11:47:20 +0800
-In-Reply-To: <20130305215946.GA16796@rhlx01.hs-esslingen.de>
-References: <20130222111521.GA25473@pd.tnic>
-	 <1361647210-12983-1-git-send-email-bp@alien8.de>
-	 <20130224112851.GA19609@pd.tnic> <cone.1361706175.908398.1806.1000@galar>
-	 <20130224143452.GE19609@pd.tnic> <1361762514.2303.21.camel@rzhang1-mobl4>
-	 <20130225102526.GB12067@pd.tnic> <20130225121608.GC12067@pd.tnic>
-	 <20130304133410.GC22274@pd.tnic>
-	 <20130305215946.GA16796@rhlx01.hs-esslingen.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	id S1750780Ab3CFDyC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Mar 2013 22:54:02 -0500
+Message-ID: <5136BDC1.70804@redhat.com>
+Date: Tue, 05 Mar 2013 22:53:37 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Waiman Long <Waiman.Long@hp.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Emmanuel Benisty <benisty.e@gmail.com>,
+        "Vinod, Chegu" <chegu_vinod@hp.com>, "Low, Jason" <jason.low2@hp.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>, aquini@redhat.com,
+        Michel Lespinasse <walken@google.com>, Ingo Molnar <mingo@kernel.org>,
+        Larry Woodman <lwoodman@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH v2 0/4] ipc: reduce ipc lock contention
+References: <1362476149.2225.50.camel@buesod1.americas.hpqcorp.net> <513626E9.2040509@redhat.com> <51364AB9.80206@hp.com> <CA+55aFwYOUyG_DQUqVPrQNi_a=AUwS53U-Yi6jbvJTGRxQ_aEQ@mail.gmail.com> <51365B66.5010905@redhat.com> <5136BC33.5000608@hp.com>
+In-Reply-To: <5136BC33.5000608@hp.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-03-05 at 22:59 +0100, Andreas Mohr wrote:
-> Hi,
-> 
-> On Mon, Mar 04, 2013 at 02:34:10PM +0100, Borislav Petkov wrote:
-> > On Mon, Feb 25, 2013 at 01:16:08PM +0100, Borislav Petkov wrote:
-> > > Ok, doing a short test here proves successful. I'll run it the next days
-> > > too to make sure - it would be nice if people could confirm my test
-> > > results, though.
-> > > 
-> > > Tested-by: Borislav Petkov <bp@suse.de>
-> > 
-> > Pjooiiing!
-> > 
-> > Andreas, Peter, can you guys give http://lkml.org/lkml/2012/12/30/47 a run?
-> 
-> I'm now running 3.8 proper with only that patch plus my local
-> beautification-only (really shouldn't matter)
-> acerhdf updates (now properly split ;),
-> and so far fan behaviour seems fine, over various usage conditions.
-> Haven't really stressed it mischievously yet, though. Will do more testing.
-> 
-> So this now does not have any of the Schmitt trigger equivalent (?)
-> governor changes that were nicely discussed in this activity -
-> So what do we want to have committed, and what do we not,
+On 03/05/2013 10:46 PM, Waiman Long wrote:
+> On 03/05/2013 03:53 PM, Rik van Riel wrote:
 
-the problem should have been fixed in 3.9-rc1 by
-commit b8bb6cb999858043489c1ddef08eed2127559169
-Author: Zhang Rui <rui.zhang@intel.com>
-Date:   Thu Nov 22 15:45:02 2012 +0800
+>> Indeed.  Though how well my patches will work with Oracle will
+>> depend a lot on what kind of semctl syscalls they are doing.
+>>
+>> Does Oracle typically do one semop per semctl syscall, or does
+>> it pass in a whole bunch at once?
+>
+> i had collected a strace log of Oracle instance startup a while ago. In
+> the log, almost all of the semctl() call is to set a single semaphore
+> value in one of the element of the array using SETVAL. Also there are
+> far more semtimedop() than semctl(), about 100:1. Again, all the
+> semtimedop() operations are on a single element of the semaphore array.
 
-    step_wise: Unify the code for both throttle and dethrottle
+That is good to hear. Just what I was hoping when I started
+working on my patches. You should expect them tomorrow or
+Thursday.
 
-    Signed-off-by: Zhang Rui <rui.zhang@intel.com>
-
-I'll send Alexander' patch for 3.8 stable.
-
-thanks,
-rui
-> and most importantly, does it all work fatally precisely correctly? ;)
-> (remember, this is thermal layer, not particularly a place for sloppiness)
-> 
-> Thanks,
-> 
-> Andreas Mohr
-
-
+-- 
+All rights reversed
