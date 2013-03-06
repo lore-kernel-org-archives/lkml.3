@@ -1,94 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756334Ab3CFNVj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 08:21:39 -0500
-Received: from mailout01.c08.mtsvc.net ([205.186.168.189]:48797 "EHLO
-	mailout01.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755866Ab3CFNVZ (ORCPT
+	id S1755923Ab3CFNX1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 08:23:27 -0500
+Received: from mail-ob0-f176.google.com ([209.85.214.176]:61666 "EHLO
+	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755120Ab3CFNX0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 08:21:25 -0500
-From: Peter Hurley <peter@hurleysoftware.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org,
-        Vincent Pillet <vincentx.pillet@intel.com>,
-        Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH 3/3] n_tty: Fix stuck throttled driver
-Date: Wed,  6 Mar 2013 08:20:53 -0500
-Message-Id: <1362576053-1295-3-git-send-email-peter@hurleysoftware.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1362576053-1295-1-git-send-email-peter@hurleysoftware.com>
-References: <1362576053-1295-1-git-send-email-peter@hurleysoftware.com>
-X-Authenticated-User: 125194 peter@hurleysoftware.com
+	Wed, 6 Mar 2013 08:23:26 -0500
+MIME-Version: 1.0
+In-Reply-To: <51366C77.3080309@semaphore.gr>
+References: <51366C77.3080309@semaphore.gr>
+Date: Wed, 6 Mar 2013 21:23:24 +0800
+Message-ID: <CAKohpokdG2vd5Cp4Lmcnc5ZrLsa-_4Kcy-DvLjG--6SMVsGZkg@mail.gmail.com>
+Subject: Re: [PATCH 3/3 linux-next] cpufreq: conservative: Use an inline
+ function to evaluate freq_target
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Stratos Karafotis <stratosk@semaphore.gr>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As noted in the following comment:
+On 6 March 2013 06:06, Stratos Karafotis <stratosk@semaphore.gr> wrote:
+> Use an inline function to evaluate freq_target to avoid duplicate code.
+>
+> Also, define a macro for the default frequency step and fix the
+> calculation of freq_target when the max freq is less that 100.
 
-  /* FIXME: there is a tiny race here if the receive room check runs
-     before the other work executes and empties the buffer (upping
-     the receiving room and unthrottling. We then throttle and get
-     stuck. This has been observed and traced down by Vincent Pillet/
-     We need to address this when we sort out out the rx path locking */
+Atleast my poor mind can't make out how. To me it looks like broken now.
 
-Use new safe throttle/unthrottle functions to re-evaluate conditions
-if interrupted by the complement flow control function.
+> Signed-off-by: Stratos Karafotis <stratosk@semaphore.gr>
+> ---
+>  drivers/cpufreq/cpufreq_conservative.c | 27 +++++++++++++++------------
+>  1 file changed, 15 insertions(+), 12 deletions(-)
+>
+> diff --git a/drivers/cpufreq/cpufreq_conservative.c b/drivers/cpufreq/cpufreq_conservative.c
+> index 08be431..029de49 100644
+> --- a/drivers/cpufreq/cpufreq_conservative.c
+> +++ b/drivers/cpufreq/cpufreq_conservative.c
+> @@ -28,6 +28,7 @@
+>  /* Conservative governor macros */
+>  #define DEF_FREQUENCY_UP_THRESHOLD             (80)
+>  #define DEF_FREQUENCY_DOWN_THRESHOLD           (20)
+> +#define DEF_FREQUENCY_STEP                     (5)
+>  #define DEF_SAMPLING_DOWN_FACTOR               (1)
+>  #define MAX_SAMPLING_DOWN_FACTOR               (10)
+>
+> @@ -39,9 +40,20 @@ static struct cs_dbs_tuners cs_tuners = {
+>         .down_threshold = DEF_FREQUENCY_DOWN_THRESHOLD,
+>         .sampling_down_factor = DEF_SAMPLING_DOWN_FACTOR,
+>         .ignore_nice = 0,
+> -       .freq_step = 5,
+> +       .freq_step = DEF_FREQUENCY_STEP,
+>  };
+>
+> +static inline unsigned int get_freq_target(struct cpufreq_policy *policy)
+> +{
+> +       unsigned int freq_target = (cs_tuners.freq_step * policy->max) / 100;
+> +
+> +       /* max freq cannot be less than 100. But who knows... */
+> +       if (unlikely(freq_target == 0))
+> +               freq_target = DEF_FREQUENCY_STEP * 1000; /* frequency in KHz */
 
-Reported-by: Vincent Pillet <vincentx.pillet@intel.com>
-Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
----
- drivers/tty/n_tty.c | 28 +++++++++++++++++-----------
- 1 file changed, 17 insertions(+), 11 deletions(-)
+When can we enter this "if" block, probably only in case where max freq is
+less than 100 KHz (And because we have freq unit in KHz in cpufreq, its exact
+value is less than 100). Lets say its 90.
 
-diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
-index 8f9f665..96d11ec 100644
---- a/drivers/tty/n_tty.c
-+++ b/drivers/tty/n_tty.c
-@@ -1474,14 +1474,14 @@ static void n_tty_receive_buf(struct tty_struct *tty, const unsigned char *cp,
- 	 * mode.  We don't want to throttle the driver if we're in
- 	 * canonical mode and don't have a newline yet!
- 	 */
--	if (tty->receive_room < TTY_THRESHOLD_THROTTLE)
--		tty_throttle(tty);
--
--        /* FIXME: there is a tiny race here if the receive room check runs
--           before the other work executes and empties the buffer (upping
--           the receiving room and unthrottling. We then throttle and get
--           stuck. This has been observed and traced down by Vincent Pillet/
--           We need to address this when we sort out out the rx path locking */
-+	while (1) {
-+		tty_set_flow_change(tty, TTY_THROTTLE_SAFE);
-+		if (tty->receive_room >= TTY_THRESHOLD_THROTTLE)
-+			break;
-+		if (!tty_throttle_safe(tty))
-+			break;
-+	}
-+	__tty_set_flow_change(tty, 0);
- }
- 
- int is_ignored(int sig)
-@@ -1954,11 +1954,17 @@ do_it_again:
- 		 * longer than TTY_THRESHOLD_UNTHROTTLE in canonical mode,
- 		 * we won't get any more characters.
- 		 */
--		if (n_tty_chars_in_buffer(tty) <= TTY_THRESHOLD_UNTHROTTLE) {
-+		while (1) {
-+			tty_set_flow_change(tty, TTY_UNTHROTTLE_SAFE);
-+			if (n_tty_chars_in_buffer(tty) > TTY_THRESHOLD_UNTHROTTLE)
-+				break;
-+			if (!tty->count)
-+				break;
- 			n_tty_set_room(tty);
--			if (tty->count)
--				tty_unthrottle(tty);
-+			if (!tty_unthrottle_safe(tty))
-+				break;
- 		}
-+		__tty_set_flow_change(tty, 0);
- 
- 		if (b - buf >= minimum)
- 			break;
--- 
-1.8.1.2
+So, we will get into your "if" block now and would set freq_target to 90 - 5000.
 
+So its broken, isn't it.
+
+Rest is fine.
