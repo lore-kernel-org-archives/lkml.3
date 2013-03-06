@@ -1,62 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753365Ab3CFG6r (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 01:58:47 -0500
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:55880 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752353Ab3CFG6p (ORCPT
+	id S1753423Ab3CFG73 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 01:59:29 -0500
+Received: from mail-la0-f50.google.com ([209.85.215.50]:44172 "EHLO
+	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752353Ab3CFG7Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 01:58:45 -0500
-Message-ID: <5136E91C.3020700@gmail.com>
-Date: Wed, 06 Mar 2013 14:58:36 +0800
-From: Ric Mason <ric.masonn@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
+	Wed, 6 Mar 2013 01:59:25 -0500
 MIME-Version: 1.0
-To: Hugh Dickins <hughd@google.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Petr Holasek <pholasek@redhat.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Izik Eidus <izik.eidus@ravellosystems.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH 2/7] ksm: treat unstable nid like in stable tree
-References: <alpine.LNX.2.00.1302210013120.17843@eggly.anvils> <alpine.LNX.2.00.1302210019390.17843@eggly.anvils> <51271A7D.6020305@gmail.com> <alpine.LNX.2.00.1302221250440.6100@eggly.anvils> <51303CAB.3080406@gmail.com> <alpine.LNX.2.00.1303011139270.7398@eggly.anvils> <51315174.4020200@gmail.com> <alpine.LNX.2.00.1303011833490.23290@eggly.anvils> <5136ABEE.8000501@gmail.com> <alpine.LNX.2.00.1303052031320.29433@eggly.anvils>
-In-Reply-To: <alpine.LNX.2.00.1303052031320.29433@eggly.anvils>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1362542675.22132.86.camel@bling.home>
+References: <1354533387-4110-1-git-send-email-acooks@gmail.com>
+	<1355914703-28576-1-git-send-email-acooks@gmail.com>
+	<1362126373-32318-1-git-send-email-acooks@gmail.com>
+	<1362542675.22132.86.camel@bling.home>
+Date: Wed, 6 Mar 2013 14:59:23 +0800
+Message-ID: <CAJtEV7b4eyvWe36ttxR3mDVqNoQQM3BZ-LVn0BTxZCbPSY_o6w@mail.gmail.com>
+Subject: Re: [PATCH] Quirk to support Marvell 88SE91xx SATA controllers with
+ Intel IOMMU.
+From: Andrew Cooks <acooks@gmail.com>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: Joerg Roedel <joro@8bytes.org>, YingChu <xjtuychu@hotmail.com>,
+        Chu Ying <gm.ychu@gmail.com>,
+        "bhelgaas@google.com" <bhelgaas@google.com>,
+        Justin Piszcz <jpiszcz@lucidpixels.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        "open list:INTEL IOMMU (VT-d)" <iommu@lists.linux-foundation.org>,
+        open list <linux-kernel@vger.kernel.org>,
+        "open list:PCI SUBSYSTEM" <linux-pci@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Hugh,
-On 03/06/2013 01:05 PM, Hugh Dickins wrote:
-> On Wed, 6 Mar 2013, Ric Mason wrote:
-> [ I've deleted the context because that was about the unstable tree,
->    and here you have moved to asking about a case in the stable tree. ]
->> For the case of a ksm page is migrated to a different NUMA node and migrate
->> its stable node to  the right tree and collide with an existing stable node.
->> get_kpfn_nid(stable_node->kpfn) != NUMA(stable_node->nid) can capture nothing
-> That's not so: as I've pointed out before, ksm_migrate_page() updates
-> stable_node->kpfn for the new page on the new NUMA node; but it cannot
-> (get the right locking to) move the stable_node to its new tree at that time.
+On Wed, Mar 6, 2013 at 12:04 PM, Alex Williamson
+<alex.williamson@redhat.com> wrote:
+> On Fri, 2013-03-01 at 16:26 +0800, Andrew Cooks wrote:
 >
-> It's moved out once ksmd notices that it's in the wrong NUMA node tree -
-> perhaps when one its rmap_items reaches the head of cmp_and_merge_page(),
-> or perhaps here in stable_tree_search() when it matches another page
-> coming in to cmp_and_merge_page().
+>> +
+>> +     for (fn = 1; fn < 8; fn++) {
 >
-> You may be concentrating on the case when that "another page" is a ksm
-> page migrated from a different NUMA node; and overlooking the case of
-> when the matching ksm page in this stable tree has itself been migrated.
+> Wouldn't you want to do 0 to 7, then add:
 >
->> since stable_node is the node in the right stable tree, nothing happen to it
->> before this check. Did you intend to check get_kpfn_nid(page_node->kpfn) !=
->> NUMA(page_node->nid) ?
-> Certainly not: page_node is usually NULL.  But I could have checked
+> if (fn == PCI_FUNC(pdev->devfn))
+>         continue;
+>
+> You could also get more creative with the loop using shifts and exit
+> when the remaining map is 0.
 
-Are you sure? list_del(&page_node->list) and DO_NUMA(page_node->nid = 
-nid) will trigger panic now.
-> get_kpfn_nid(stable_node->kpfn) != nid: I was duplicating the test
-> from cmp_and_merge_page(), but here we do have local variable nid.
->
-> Hugh
+Thanks, I'll use a shift instead.
 
+Up to now I've assumed that function 0 will always be the real device
+and that function 1-7 may be ghost functions, but as we saw in the
+case of the Marvell 88NV9143 in the Super Talent CoreStore MV 64GB
+mini-PCIe SSD, that assumption is probably wrong.
+
+To handle the case where the real device is function 1 and function 0
+needs to be mapped as a ghost function, would it be acceptable to
+iterate over 0 to 7 and let domain_context_mapping_one take care of
+preventing duplicates, or should I duplicate the
+device_to_context_entry and context_present function calls?
+
+>
+>> +             if (fn_map & (1 << fn)) {
+>> +                     err = domain_context_mapping_one(domain,
+>> +                                     pci_domain_nr(pdev->bus),
+>> +                                     pdev->bus->number,
+>> +                                     PCI_DEVFN(PCI_SLOT(pdev->devfn), fn),
+>> +                                     translation);
+>> +                     if (err)
+>> +                             return err;
+>
+> I'd be worried that there's missing cleanup here, what if you were
+> mapping multiple ghost functions and the 2nd one failed, leaving one
+> attached?
+
+I don't understand the failure cases sufficiently, but I understand
+that it's better to have all mappings succeed or fail together. Will
+fix it.
+
+>> +/* Table of multiple (ghost) source functions. This is similar to the
+>> + * translated sources above, but with the following differences:
+>> + * 1. the device may use multiple functions as DMA sources,
+>> + * 2. these functions cannot be assumed to be actual devices,
+>> + * 3. the specific ghost function for a request can not be exactly predicted.
+>> + * The bitmap only contains the additional quirk functions.
+>> + */
+>> +static const struct pci_dev_dma_multi_func_sources {
+>> +     u16 vendor;
+>> +     u16 device;
+>> +     u8 func_map;    /* bit map. lsb is fn 0. */
+>> +} pci_dev_dma_multi_func_sources[] = {
+>> +     { PCI_VENDOR_ID_MARVELL_2, 0x9123, (1<<0)|(1<<1)},
+>> +     { PCI_VENDOR_ID_MARVELL_2, 0x9125, (1<<0)|(1<<1)},
+>> +     { PCI_VENDOR_ID_MARVELL_2, 0x9128, (1<<0)|(1<<1)},
+>> +     { PCI_VENDOR_ID_MARVELL_2, 0x9130, (1<<0)|(1<<1)},
+>> +     { PCI_VENDOR_ID_MARVELL_2, 0x9172, (1<<0)|(1<<1)},
+>
+> Links to bug reports in the comments might be useful for future
+> workarounds.  I'm also not sure what you mean in the 3rd bullet, the
+> non-ghost function of some of these is sometimes 0, sometimes 1?  And
+> the ghost function is the other?
+
+The ghost function is the one that doesn't correspond to an actual
+device, but the actual device could be either 0 or 1 and it could use
+both 0 and 1 for different requests, with no obvious way to tell when
+it will use 0 and when it will use 1. I'll reword the bullet.
+
+> Skipping fn 0 above, I assume all
+> cases are fn 0 exists and fn 1 is the ghost function, right?  If so,
+> then we probably only want bit 1 set.  I'm afraid to ask whether there
+> are configurations of this vendor/device that have a fn 1.
+
+See comment about Marvell 88NV9143 above.
+
+Thanks for reviewing!
+
+a.
