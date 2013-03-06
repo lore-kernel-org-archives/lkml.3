@@ -1,71 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755421Ab3CFJPL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 04:15:11 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:43062 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751004Ab3CFJPB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 04:15:01 -0500
-Date: Wed, 06 Mar 2013 18:14:57 +0900 (JST)
-Message-Id: <20130306.181457.101447189.d.hatayama@jp.fujitsu.com>
-To: zhangyanfei@cn.fujitsu.com
-Cc: vgoyal@redhat.com, ebiederm@xmission.com, cpw@sgi.com,
-        kumagai-atsushi@mxc.nes.nec.co.jp, lisa.mitchell@hp.com,
-        heiko.carstens@de.ibm.com, akpm@linux-foundation.org,
-        kexec@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 04/20] vmcore: allocate buffer for ELF headers on
- page-size alignment
-From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-In-Reply-To: <5136E8EE.6080301@cn.fujitsu.com>
-References: <20130302083447.31252.93914.stgit@localhost6.localdomain6>
-	<20130302083610.31252.18601.stgit@localhost6.localdomain6>
-	<5136E8EE.6080301@cn.fujitsu.com>
-X-Mailer: Mew version 6.3 on Emacs 24.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=iso-2022-jp
+	id S1756099Ab3CFJRJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 04:17:09 -0500
+Received: from mga14.intel.com ([143.182.124.37]:34475 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754789Ab3CFJRG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Mar 2013 04:17:06 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,793,1355126400"; 
+   d="scan'208";a="209590888"
+Message-ID: <51370990.5040508@linux.intel.com>
+Date: Wed, 06 Mar 2013 01:17:04 -0800
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130219 Thunderbird/17.0.3
+MIME-Version: 1.0
+To: Henrik Rydberg <rydberg@euromail.se>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Yinghai Lu <yinghai@kernel.org>
+Subject: Re: Linux 3.9-rc1
+References: <CA+55aFx0HcOXKpxmZzM5jcbAaOroxafomX5ggMFV4A=py1qh-Q@mail.gmail.com> <20130306080642.GA535@polaris.bitmath.org>
+In-Reply-To: <20130306080642.GA535@polaris.bitmath.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Subject: Re: [PATCH v2 04/20] vmcore: allocate buffer for ELF headers on page-size alignment
-Date: Wed, 6 Mar 2013 14:57:50 +0800
-
-> 于 2013年03月02日 16:36, HATAYAMA Daisuke 写道:
->> Allocate buffer for ELF headers on page-size aligned boudary to
->> satisfy mmap() requirement. For this, __get_free_pages() is used
->> instead of kmalloc().
->> 
->> Also, later patch will decrease actually used buffer size for ELF
->> headers, so it's necessary to keep original buffer size and actually
->> used buffer size separately. elfcorebuf_sz_orig keeps the original one
->> and elfcorebuf_sz the actually used one.
->> 
->> Signed-off-by: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
->> ---
->> 
->>  fs/proc/vmcore.c |   30 +++++++++++++++++++++---------
->>  1 files changed, 21 insertions(+), 9 deletions(-)
->> 
-
-....
-
->> @@ -665,26 +671,31 @@ static int __init parse_crash_elf32_headers(void)
->>  
->>  	/* Read in all elf headers. */
->>  	elfcorebuf_sz = ehdr.e_phoff + ehdr.e_phnum * sizeof(Elf32_Phdr);
->> -	elfcorebuf = kmalloc(elfcorebuf_sz, GFP_KERNEL);
->> +	elfcorebuf_sz_orig = elfcorebuf_sz;
->> +	elfcorebuf = (void *) __get_free_pages(GFP_KERNEL | __GFP_ZERO,
->> +					       get_order(elfcorebuf_sz));
+On 03/06/2013 12:06 AM, Henrik Rydberg wrote:
+> Hi Linus, Peter,
 > 
-> Why not elfcorebuf_sz_orig here?
+>> I don't know if it's just me, but this merge window had more "Uhhuh"
+>> moments than I'm used to. I stopped merging a couple of times, because
+>> we had bugs that looked really scary, but thankfully each time people
+>> were on them like paparazzi on Justin Bieber. Special thanks to Peter,
+>> Ted and Rafael (and the people who reported the bugs too!) for being
+>> so responsive. It could have been so much worse.
+> 
+> Or not. ;-) This commit breaks boot on my MacBookAir3,1:
+> 
+> commit 8d57470d8f859635deffe3919d7d4867b488b85a
+> Author: Yinghai Lu <yinghai@kernel.org>
+> Date:   Fri Nov 16 19:38:58 2012 -0800
+> 
+>     x86, mm: setup page table in top-down
+>     
+>     Get pgt_buf early from BRK, and use it to map PMD_SIZE from top at first.
+>     Then use mapped pages to map more ranges below, and keep looping until
+>     all pages get mapped.
+> 
+> Being a 64-bit apple-EFI machine, it probably runs through an obscure
+> path in this patch. I wish I had more vital information, but I get the
+> white screen of death, so not much to go on so far.
 > 
 
-Thanks. I'll fix this.
+Adding Yinghai.
 
-Thanks.
-HATAYAMA, Daisuke
+Can you get a boot log with "debug memblock=debug" from the last
+successful commit point?  Are you booting EFI or BootCamp?
+
+	-hpa
+
 
