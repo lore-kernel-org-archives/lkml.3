@@ -1,42 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759709Ab3CGSsD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 13:48:03 -0500
-Received: from relay2.sgi.com ([192.48.179.30]:58748 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755969Ab3CGSsB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 13:48:01 -0500
-Date: Thu, 7 Mar 2013 12:48:00 -0600
-From: Ben Myers <bpm@sgi.com>
-To: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        Alex Elder <elder@kernel.org>, xfs@oss.sgi.com
-Subject: Re: [PATCH -v3 12/23] xfs: rename random32() to prandom_u32()
-Message-ID: <20130307184800.GW30652@sgi.com>
-References: <1362401911-14074-1-git-send-email-akinobu.mita@gmail.com>
- <1362401911-14074-13-git-send-email-akinobu.mita@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1362401911-14074-13-git-send-email-akinobu.mita@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S933225Ab3CGSuK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 13:50:10 -0500
+Received: from mail-qa0-f52.google.com ([209.85.216.52]:43416 "EHLO
+	mail-qa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755963Ab3CGSuJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Mar 2013 13:50:09 -0500
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Li Zhong <zhong@linux.vnet.ibm.com>, Kevin Hilman <khilman@linaro.org>,
+        Mats Liljegren <mats.liljegren@enea.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [GIT PULL] context tracking updates for 3.10
+Date: Thu,  7 Mar 2013 19:50:01 +0100
+Message-Id: <1362682201-612-1-git-send-email-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Akinobu,
+Ingo,
 
-On Mon, Mar 04, 2013 at 09:58:20PM +0900, Akinobu Mita wrote:
-> Use more preferable function name which implies using a pseudo-random
-> number generator.
-> 
-> Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-> Acked-by: <bpm@sgi.com>
-> Cc: Ben Myers <bpm@sgi.com>
-> Cc: Alex Elder <elder@kernel.org>
-> Cc: xfs@oss.sgi.com
+Please pull the latest context tracking and cputime updates that can be found at:
 
-Applied this to git://oss.sgi.com/xfs/xfs.git, master branch.
+git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
+	sched/cputime
 
-Thanks!
--Ben
+HEAD is 8b43876643a737bb74a0e1e557f634eb2453948b (in case you still get the
+cache of the previous branch there).
+
+Thanks.
+
+---
+Changes include:
+
+* Generalize exception handling
+
+* Fix race in context tracking state restore on return from exception
+and irq exit kernel preemption
+
+* Fix cputime scaling in full dynticks accounting dynamic off-case
+
+* Fix default Kconfig value
+
+---
+Frederic Weisbecker (5):
+  context_tracking: Move exception handling to generic code
+  context_tracking: Restore correct previous context state on exception
+    exit
+  context_tracking: Restore preempted context state after
+    preempt_schedule_irq()
+  cputime: Dynamically scale cputime for full dynticks accounting
+  context_tracking: Enable probes by default for selftesting
+
+ arch/x86/include/asm/context_tracking.h |   21 ----
+ arch/x86/kernel/kvm.c                   |    8 +-
+ arch/x86/kernel/traps.c                 |   68 +++++++++-----
+ arch/x86/mm/fault.c                     |    8 +-
+ include/linux/context_tracking.h        |   24 +++++-
+ include/linux/sched.h                   |    4 +-
+ init/Kconfig                            |    1 +
+ kernel/fork.c                           |    2 +-
+ kernel/sched/core.c                     |    6 +-
+ kernel/sched/cputime.c                  |  154 ++++++++++++++++---------------
+ 10 files changed, 163 insertions(+), 133 deletions(-)
+
+-- 
+1.7.5.4
+
