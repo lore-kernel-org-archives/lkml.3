@@ -1,53 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932481Ab3CGJRn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 04:17:43 -0500
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:57164 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755286Ab3CGJRl (ORCPT
+	id S932379Ab3CGJXB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 04:23:01 -0500
+Received: from e28smtp03.in.ibm.com ([122.248.162.3]:55165 "EHLO
+	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755394Ab3CGJW7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 04:17:41 -0500
+	Thu, 7 Mar 2013 04:22:59 -0500
+Message-ID: <51385BA5.7020706@linux.vnet.ibm.com>
+Date: Thu, 07 Mar 2013 14:49:33 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
 MIME-Version: 1.0
-In-Reply-To: <CACRpkdZamOCWHWMcFYRqQDKJARZOCEP_eSNPNaxSgHfAn2wmEw@mail.gmail.com>
-References: <1361318824-22287-1-git-send-email-maxin.john@gmail.com>
-	<CACRpkdZamOCWHWMcFYRqQDKJARZOCEP_eSNPNaxSgHfAn2wmEw@mail.gmail.com>
-Date: Thu, 7 Mar 2013 10:17:40 +0100
-Message-ID: <CAMhs6YwC+Lx0Vt=w2MoQV08on+rB1zidGCsNHRqcst8KBrb2XQ@mail.gmail.com>
-Subject: Re: [PATCH] dma: Remove erroneous __exit and __exit_p() references
-From: "Maxin B. John" <maxin.john@gmail.com>
-To: vinod.koul@intel.com
-Cc: gregkh@linuxfoundation.org, djbw@fb.com, nicolas.ferre@atmel.com,
-        linus.walleij@linaro.org, rmk+kernel@arm.linux.org.uk,
-        jassisinghbrar@gmail.com, lars@metafoo.de, grant.likely@secretlab.ca,
-        linux-kernel@vger.kernel.org, rob.herring@calxeda.com,
-        linux-arm-kernel@lists.infradead.org,
-        devicetree-discuss@lists.ozlabs.org,
-        "Maxin B. John" <maxin.john@enea.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Chegu Vinod <chegu_vinod@hp.com>, Gleb Natapov <gleb@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>
+CC: Peter Zijlstra <peterz@infradead.org>, Avi Kivity <avi.kivity@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Srikar <srikar@linux.vnet.ibm.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        KVM <kvm@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Jiannan Ouyang <ouyang@cs.pitt.edu>,
+        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
+        Andrew Jones <drjones@redhat.com>
+Subject: Re: [PATCH RFC 1/2] kvm: Record the preemption status of vcpus using
+ preempt notifiers
+References: <20130304180146.31281.33540.sendpatchset@codeblue.in.ibm.com> <20130304180206.31281.67229.sendpatchset@codeblue.in.ibm.com> <51360D0D.5020609@hp.com>
+In-Reply-To: <51360D0D.5020609@hp.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13030709-3864-0000-0000-00000722EC92
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Fri, Feb 22, 2013 at 7:29 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
-> On Wed, Feb 20, 2013 at 1:07 AM,  <maxin.john@gmail.com> wrote:
->
->> From: "Maxin B. John" <maxin.john@enea.com>
+On 03/05/2013 08:49 PM, Chegu Vinod wrote:
+> On 3/4/2013 10:02 AM, Raghavendra K T wrote:
+>> From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
 >>
->> Removing the annotation with __exit and referencing with __exit_p()
->> present in dma driver module remove hooks.
+>> Note that we mark as preempted only when vcpu's task state was
+>> Running during preemption.
 >>
->> Part of the __devexit and __devexit_p() purge.
+>> Thanks Jiannan, Avi for preemption notifier ideas. Thanks Gleb, PeterZ
+>> for their precious suggestions. Thanks Srikar for an idea on avoiding
+>> rcu lock while checking task state that improved overcommit numbers.
 >>
->> Signed-off-by: Maxin B. John <maxin.john@enea.com>
->
-> Acked-by: Linus Walleij <linus.walleij@linaro.org>
+>> Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+>> ---
+>>   include/linux/kvm_host.h |    1 +
+>>   virt/kvm/kvm_main.c      |    5 +++++
+>>   2 files changed, 6 insertions(+)
+>>
+>> diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
+>> index cad77fe..0b31e1c 100644
+>> --- a/include/linux/kvm_host.h
+>> +++ b/include/linux/kvm_host.h
+>> @@ -252,6 +252,7 @@ struct kvm_vcpu {
+>>           bool dy_eligible;
+>>       } spin_loop;
+>>   #endif
+>> +    bool preempted;
+>>       struct kvm_vcpu_arch arch;
+>>   };
+>> diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+>> index adc68fe..83a804c 100644
+>> --- a/virt/kvm/kvm_main.c
+>> +++ b/virt/kvm/kvm_main.c
+>> @@ -244,6 +244,7 @@ int kvm_vcpu_init(struct kvm_vcpu *vcpu, struct
+>> kvm *kvm, unsigned id)
+>>       kvm_vcpu_set_in_spin_loop(vcpu, false);
+>>       kvm_vcpu_set_dy_eligible(vcpu, false);
+>> +    vcpu->preempted = false;
+>>       r = kvm_arch_vcpu_init(vcpu);
+>>       if (r < 0)
+>> @@ -2902,6 +2903,8 @@ struct kvm_vcpu *preempt_notifier_to_vcpu(struct
+>> preempt_notifier *pn)
+>>   static void kvm_sched_in(struct preempt_notifier *pn, int cpu)
+>>   {
+>>       struct kvm_vcpu *vcpu = preempt_notifier_to_vcpu(pn);
+>> +    if (vcpu->preempted)
+>> +        vcpu->preempted = false;
+>>       kvm_arch_vcpu_load(vcpu, cpu);
+>>   }
+>> @@ -2911,6 +2914,8 @@ static void kvm_sched_out(struct
+>> preempt_notifier *pn,
+>>   {
+>>       struct kvm_vcpu *vcpu = preempt_notifier_to_vcpu(pn);
+>> +    if (current->state == TASK_RUNNING)
+>> +        vcpu->preempted = true;
+>>       kvm_arch_vcpu_put(vcpu);
+>>   }
+>>
+>> .
+>>
+> Reviewed-by: Chegu Vinod <chegu_vinod@hp.com>
 
-Gentle ping...
+Thank you Vinod.
 
-> Yours,
-> Linus Walleij
+Gleb, Marcelo,
+  any comment, concern on the patches?
 
-Regards,
-Maxin
+
