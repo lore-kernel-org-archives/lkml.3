@@ -1,112 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758699Ab3CGCX1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 21:23:27 -0500
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:55906 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754404Ab3CGCX0 (ORCPT
+	id S1755995Ab3CGC3K (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 21:29:10 -0500
+Received: from co9ehsobe004.messaging.microsoft.com ([207.46.163.27]:28214
+	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754114Ab3CGC3I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 21:23:26 -0500
-From: Wei Yang <weiyang@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org, joe@perches.com
-Cc: shangw@linux.vnet.ibm.com, linuxram@us.ibm.com,
-        Wei Yang <weiyang@linux.vnet.ibm.com>
-Subject: [PATCH 1/2] driver core: remove device_add_attrs() in drivers/base/bus.c
-Date: Thu,  7 Mar 2013 10:22:45 +0800
-Message-Id: <1362622966-20003-2-git-send-email-weiyang@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1362622966-20003-1-git-send-email-weiyang@linux.vnet.ibm.com>
-References: <1362622966-20003-1-git-send-email-weiyang@linux.vnet.ibm.com>
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13030702-4790-0000-0000-00000739BD31
+	Wed, 6 Mar 2013 21:29:08 -0500
+X-Forefront-Antispam-Report: CIP:66.35.236.232;KIP:(null);UIP:(null);IPV:NLI;H:SJ-ITEXEDGE02.altera.priv.altera.com;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ahzz8275bhz2fh2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h14ddh1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1155h)
+From: Ley Foon Tan <lftan@altera.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, Rob Landley <rob@landley.net>
+CC: <linux-kernel@vger.kernel.org>, <linux-serial@vger.kernel.org>,
+        Ley Foon Tan <lftan@altera.com>
+Subject: [PATCH] tty/serial: Add support for Altera serial port
+Date: Thu, 7 Mar 2013 10:28:37 +0800
+Message-ID: <1362623317-2988-1-git-send-email-lftan@altera.com>
+X-Mailer: git-send-email 1.7.9.5
+MIME-Version: 1.0
+Content-Type: text/plain
+X-OriginatorOrg: altera.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Originally, we have two functions named device_add_attrs() in
-drivers/base/bus.c and drivers/base/core.c. This will cause some confusion
-when reading the code.
+Add support for Altera 8250/16550 compatible serial port.
 
-And the one in drivers/base/bus.c do the same action as device_add_attributes()
-in drivers/base/core.c. That would be better to reuse this code.
-
-This patch just do some cleanup. Remove the device_add_attrs() in
-drivers/base/bus.c and call device_add_attributes() directly.
-
-Signed-off-by: Wei Yang <weiyang@linux.vnet.ibm.com>
-Reviewed-by: Gavin Shan <shangw@linux.vnet.ibm.com>
+Signed-off-by: Ley Foon Tan <lftan@altera.com>
 ---
- drivers/base/bus.c     |   21 +--------------------
- drivers/base/core.c    |    2 +-
- include/linux/device.h |    2 ++
- 3 files changed, 4 insertions(+), 21 deletions(-)
+ .../devicetree/bindings/tty/serial/of-serial.txt   |    3 ++
+ drivers/tty/serial/8250/8250.c                     |   23 +++++++++++++++++++-
+ drivers/tty/serial/of_serial.c                     |    6 +++++
+ include/uapi/linux/serial_core.h                   |    5 +++-
+ 4 files changed, 35 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/base/bus.c b/drivers/base/bus.c
-index 24eb078..79c2a48 100644
---- a/drivers/base/bus.c
-+++ b/drivers/base/bus.c
-@@ -452,25 +452,6 @@ int bus_for_each_drv(struct bus_type *bus, struct device_driver *start,
- }
- EXPORT_SYMBOL_GPL(bus_for_each_drv);
- 
--static int device_add_attrs(struct bus_type *bus, struct device *dev)
--{
--	int error = 0;
--	int i;
--
--	if (!bus->dev_attrs)
--		return 0;
--
--	for (i = 0; attr_name(bus->dev_attrs[i]); i++) {
--		error = device_create_file(dev, &bus->dev_attrs[i]);
--		if (error) {
--			while (--i >= 0)
--				device_remove_file(dev, &bus->dev_attrs[i]);
--			break;
--		}
+diff --git a/Documentation/devicetree/bindings/tty/serial/of-serial.txt b/Documentation/devicetree/bindings/tty/serial/of-serial.txt
+index 1e1145c..8f01cb1 100644
+--- a/Documentation/devicetree/bindings/tty/serial/of-serial.txt
++++ b/Documentation/devicetree/bindings/tty/serial/of-serial.txt
+@@ -11,6 +11,9 @@ Required properties:
+ 	- "nvidia,tegra20-uart"
+ 	- "nxp,lpc3220-uart"
+ 	- "ibm,qpace-nwp-serial"
++	- "altr,16550-FIFO32"
++	- "altr,16550-FIFO64"
++	- "altr,16550-FIFO128"
+ 	- "serial" if the port type is unknown.
+ - reg : offset and length of the register set for the device.
+ - interrupts : should contain uart interrupt.
+diff --git a/drivers/tty/serial/8250/8250.c b/drivers/tty/serial/8250/8250.c
+index 0efc815..661096d 100644
+--- a/drivers/tty/serial/8250/8250.c
++++ b/drivers/tty/serial/8250/8250.c
+@@ -301,7 +301,28 @@ static const struct serial8250_config uart_config[] = {
+ 	},
+ 	[PORT_8250_CIR] = {
+ 		.name		= "CIR port"
 -	}
--	return error;
--}
--
- static void device_remove_attrs(struct bus_type *bus, struct device *dev)
- {
- 	int i;
-@@ -496,7 +477,7 @@ int bus_add_device(struct device *dev)
++	},
++	[PORT_ALTR_16550_F32] = {
++		.name		= "Altera 16550 FIFO32",
++		.fifo_size	= 32,
++		.tx_loadsz	= 32,
++		.fcr		= UART_FCR_ENABLE_FIFO | UART_FCR_R_TRIG_10,
++		.flags		= UART_CAP_FIFO | UART_CAP_AFE,
++	},
++	[PORT_ALTR_16550_F64] = {
++		.name		= "Altera 16550 FIFO64",
++		.fifo_size	= 64,
++		.tx_loadsz	= 64,
++		.fcr		= UART_FCR_ENABLE_FIFO | UART_FCR_R_TRIG_10,
++		.flags		= UART_CAP_FIFO | UART_CAP_AFE,
++	},
++	[PORT_ALTR_16550_F128] = {
++		.name		= "Altera 16550 FIFO128",
++		.fifo_size	= 128,
++		.tx_loadsz	= 128,
++		.fcr		= UART_FCR_ENABLE_FIFO | UART_FCR_R_TRIG_10,
++		.flags		= UART_CAP_FIFO | UART_CAP_AFE,
++	},
+ };
  
- 	if (bus) {
- 		pr_debug("bus: '%s': add device %s\n", bus->name, dev_name(dev));
--		error = device_add_attrs(bus, dev);
-+		error = device_add_attributes(dev, bus->dev_attrs);
- 		if (error)
- 			goto out_put;
- 		error = sysfs_create_link(&bus->p->devices_kset->kobj,
-diff --git a/drivers/base/core.c b/drivers/base/core.c
-index a235085..369ae4e 100644
---- a/drivers/base/core.c
-+++ b/drivers/base/core.c
-@@ -397,7 +397,7 @@ static ssize_t store_uevent(struct device *dev, struct device_attribute *attr,
- static struct device_attribute uevent_attr =
- 	__ATTR(uevent, S_IRUGO | S_IWUSR, show_uevent, store_uevent);
+ /* Uart divisor latch read */
+diff --git a/drivers/tty/serial/of_serial.c b/drivers/tty/serial/of_serial.c
+index d587460..b025d54 100644
+--- a/drivers/tty/serial/of_serial.c
++++ b/drivers/tty/serial/of_serial.c
+@@ -241,6 +241,12 @@ static struct of_device_id of_platform_serial_table[] = {
+ 	{ .compatible = "ns16850",  .data = (void *)PORT_16850, },
+ 	{ .compatible = "nvidia,tegra20-uart", .data = (void *)PORT_TEGRA, },
+ 	{ .compatible = "nxp,lpc3220-uart", .data = (void *)PORT_LPC3220, },
++	{ .compatible = "altr,16550-FIFO32",
++		.data = (void *)PORT_ALTR_16550_F32, },
++	{ .compatible = "altr,16550-FIFO64",
++		.data = (void *)PORT_ALTR_16550_F64, },
++	{ .compatible = "altr,16550-FIFO128",
++		.data = (void *)PORT_ALTR_16550_F128, },
+ #ifdef CONFIG_SERIAL_OF_PLATFORM_NWPSERIAL
+ 	{ .compatible = "ibm,qpace-nwp-serial",
+ 		.data = (void *)PORT_NWPSERIAL, },
+diff --git a/include/uapi/linux/serial_core.h b/include/uapi/linux/serial_core.h
+index b6a23a4..74c2bf7 100644
+--- a/include/uapi/linux/serial_core.h
++++ b/include/uapi/linux/serial_core.h
+@@ -51,7 +51,10 @@
+ #define PORT_8250_CIR	23	/* CIR infrared port, has its own driver */
+ #define PORT_XR17V35X	24	/* Exar XR17V35x UARTs */
+ #define PORT_BRCM_TRUMANAGE	25
+-#define PORT_MAX_8250	25	/* max port ID */
++#define PORT_ALTR_16550_F32 26	/* Altera 16550 UART with 32 FIFOs */
++#define PORT_ALTR_16550_F64 27	/* Altera 16550 UART with 64 FIFOs */
++#define PORT_ALTR_16550_F128 28 /* Altera 16550 UART with 128 FIFOs */
++#define PORT_MAX_8250	28	/* max port ID */
  
--static int device_add_attributes(struct device *dev,
-+int device_add_attributes(struct device *dev,
- 				 struct device_attribute *attrs)
- {
- 	int error = 0;
-diff --git a/include/linux/device.h b/include/linux/device.h
-index 43dcda9..9cfe8e6 100644
---- a/include/linux/device.h
-+++ b/include/linux/device.h
-@@ -518,6 +518,8 @@ ssize_t device_store_bool(struct device *dev, struct device_attribute *attr,
- 	struct device_attribute dev_attr_##_name =		\
- 		__ATTR_IGNORE_LOCKDEP(_name, _mode, _show, _store)
- 
-+extern int device_add_attributes(struct device *dev,
-+				 struct device_attribute *attrs);
- extern int device_create_file(struct device *device,
- 			      const struct device_attribute *entry);
- extern void device_remove_file(struct device *dev,
+ /*
+  * ARM specific type numbers.  These are not currently guaranteed
 -- 
-1.7.5.4
+1.7.7.4
+
 
