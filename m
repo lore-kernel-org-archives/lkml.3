@@ -1,82 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933071Ab3CGPzn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 10:55:43 -0500
-Received: from mail-vc0-f177.google.com ([209.85.220.177]:60585 "EHLO
-	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753478Ab3CGPzl (ORCPT
+	id S1759312Ab3CGP7d (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 10:59:33 -0500
+Received: from mx12.netapp.com ([216.240.18.77]:55264 "EHLO mx12.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752209Ab3CGP7b convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 10:55:41 -0500
-MIME-Version: 1.0
-In-Reply-To: <20130307064140.71c0936b@tlielax.poochiereds.net>
-References: <20130305174954.GG12795@htj.dyndns.org>
-	<20130305140312.243cb094@tlielax.poochiereds.net>
-	<20130305190923.GI12795@htj.dyndns.org>
-	<20130305183941.19ff39ce@tlielax.poochiereds.net>
-	<20130305234700.GE1227@htj.dyndns.org>
-	<20130306181608.GA18687@redhat.com>
-	<20130306185304.GM1227@htj.dyndns.org>
-	<CA+55aFwDogteVd=vwGHXDSASnga-nZZnKaQz9aO1yBU2CPKSbA@mail.gmail.com>
-	<20130306212452.GO1227@htj.dyndns.org>
-	<CA+55aFy49AWptMcvEzJxg95ikf-dC+-vcCPq-cnaCCwje3tyoQ@mail.gmail.com>
-	<20130306213636.GP1227@htj.dyndns.org>
-	<20130307064140.71c0936b@tlielax.poochiereds.net>
-Date: Thu, 7 Mar 2013 07:55:39 -0800
-X-Google-Sender-Auth: XyThzC6Piw1QcQpxypdkMaC_rNs
-Message-ID: <CA+55aFxe1_x8wvVYciiX8tuee+VsmXGKqEbONQdFM4s4W2iuPg@mail.gmail.com>
-Subject: Re: LOCKDEP: 3.9-rc1: mount.nfs/4272 still has locks held!
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Jeff Layton <jlayton@redhat.com>
-Cc: Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
+	Thu, 7 Mar 2013 10:59:31 -0500
+X-IronPort-AV: E=Sophos;i="4.84,803,1355126400"; 
+   d="scan'208";a="28881226"
+From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Jeff Layton <jlayton@redhat.com>, Tejun Heo <tj@kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>,
         Mandeep Singh Baines <msb@chromium.org>,
         Ming Lei <ming.lei@canonical.com>,
         "J. Bruce Fields" <bfields@fieldses.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>,
         "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
         "Rafael J. Wysocki" <rjw@sisk.pl>,
         Andrew Morton <akpm@linux-foundation.org>,
         Ingo Molnar <mingo@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>
-Content-Type: text/plain; charset=UTF-8
+Subject: Re: LOCKDEP: 3.9-rc1: mount.nfs/4272 still has locks held!
+Thread-Topic: LOCKDEP: 3.9-rc1: mount.nfs/4272 still has locks held!
+Thread-Index: AQHOGOA9OOKbapJ+RE+tLJb3WRyEW5iWGYKAgAACcQCAAFy3AIAAED2AgAAVFoCAAP+FAIAASasAgAAA3gCAABR7AIAAAbqAgABLhYCAAAIMAIABNeMAgAAKUgCAACN5AIAABvAAgAABwwCAAAGFAIAA7BsAgABG94CAAAERAA==
+Date: Thu, 7 Mar 2013 15:59:27 +0000
+Message-ID: <4FA345DA4F4AE44899BD2B03EEEC2FA9286B511E@sacexcmbx05-prd.hq.netapp.com>
+References: <20130305174954.GG12795@htj.dyndns.org>
+	 <20130305140312.243cb094@tlielax.poochiereds.net>
+	 <20130305190923.GI12795@htj.dyndns.org>
+	 <20130305183941.19ff39ce@tlielax.poochiereds.net>
+	 <20130305234700.GE1227@htj.dyndns.org> <20130306181608.GA18687@redhat.com>
+	 <20130306185304.GM1227@htj.dyndns.org>
+	 <CA+55aFwDogteVd=vwGHXDSASnga-nZZnKaQz9aO1yBU2CPKSbA@mail.gmail.com>
+	 <20130306212452.GO1227@htj.dyndns.org>
+	 <CA+55aFy49AWptMcvEzJxg95ikf-dC+-vcCPq-cnaCCwje3tyoQ@mail.gmail.com>
+	 <20130306213636.GP1227@htj.dyndns.org>
+	 <20130307064140.71c0936b@tlielax.poochiereds.net>
+	 <CA+55aFxe1_x8wvVYciiX8tuee+VsmXGKqEbONQdFM4s4W2iuPg@mail.gmail.com>
+In-Reply-To: <CA+55aFxe1_x8wvVYciiX8tuee+VsmXGKqEbONQdFM4s4W2iuPg@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.104.60.115]
+Content-Type: text/plain; charset=US-ASCII
+Content-ID: <1427A650FDCCF34B9DC24EE15795B1DA@tahoe.netapp.com>
+Content-Transfer-Encoding: 7BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 7, 2013 at 3:41 AM, Jeff Layton <jlayton@redhat.com> wrote:
->
-> I think Trond may be on the right track. We probably need some
-> mechanism to quiesce the filesystem ahead of any sort of freezer
-> event.
+On Thu, 2013-03-07 at 07:55 -0800, Linus Torvalds wrote:
+> On Thu, Mar 7, 2013 at 3:41 AM, Jeff Layton <jlayton@redhat.com> wrote:
+> >
+> > I think Trond may be on the right track. We probably need some
+> > mechanism to quiesce the filesystem ahead of any sort of freezer
+> > event.
+> 
+> No, guys. That cannot work. It's a completely moronic idea. Let me
+> count the way:
+> 
+>  (a) it's just another form of saying "lock". But since other things
+> are (by definition) going on when it happens, it will just cause
+> deadlocks.
+> 
+>  (b) the freeze event might not even be system-global. So *some*
+> processes (a cgroup) might freeze, others would not. You can't shut
+> off the filesystem just because some processes migth freeze.
 
-No, guys. That cannot work. It's a completely moronic idea. Let me
-count the way:
+That's the whole bloody problem in a nutshell.
 
- (a) it's just another form of saying "lock". But since other things
-are (by definition) going on when it happens, it will just cause
-deadlocks.
+We only want to freeze the filesystem when the network goes down, and in
+that case we want time to clean up first. That's why it needs to be
+initiated by something like NetworkManager _before_ the network is shut
+down.
 
- (b) the freeze event might not even be system-global. So *some*
-processes (a cgroup) might freeze, others would not. You can't shut
-off the filesystem just because some processes migth freeze.
+>  (c) it just moves the same issue somewhere else. If you have some
+> operation that must be done under the lock, then such an operation
+> must be completed before you've quiesced the filesystem, which is your
+> whole point of that "quiesce" event. BUT THAT'S THE EXACT SAME ISSUE
+> AS NOT ALLOWING THE FREEZE TO HAPPEN DURING THAT TIME.
+> 
+> In other words, that suggestion not only introduces new problems (a),
+> it's fundamentally broken anyway (b) *AND* it doesn't even solve
+> anything, it just moves it around.
+> 
+> The solution is damn simple: if you're in some kind of "atomic
+> region", then you cannot freeze. Seriously. SO DON'T CALL
+> "freezable_schedule()", FOR CHRISSAKE! You clearly aren't freezable!
+> 
+> Which is exactly what the new lockdep warning was all about. Don't try
+> to move the problem around, when it's quite clear where the problem
+> is. If you need to do something uninterruptible, you do not say "oh,
+> I'm freezable". Because freezing is by definition an interruption.
+> Seriously, it's that simple.
 
- (c) it just moves the same issue somewhere else. If you have some
-operation that must be done under the lock, then such an operation
-must be completed before you've quiesced the filesystem, which is your
-whole point of that "quiesce" event. BUT THAT'S THE EXACT SAME ISSUE
-AS NOT ALLOWING THE FREEZE TO HAPPEN DURING THAT TIME.
+It _shouldn't_ be an interruption unless the filesystem can't make
+progress.
 
-In other words, that suggestion not only introduces new problems (a),
-it's fundamentally broken anyway (b) *AND* it doesn't even solve
-anything, it just moves it around.
+-- 
+Trond Myklebust
+Linux NFS client maintainer
 
-The solution is damn simple: if you're in some kind of "atomic
-region", then you cannot freeze. Seriously. SO DON'T CALL
-"freezable_schedule()", FOR CHRISSAKE! You clearly aren't freezable!
-
-Which is exactly what the new lockdep warning was all about. Don't try
-to move the problem around, when it's quite clear where the problem
-is. If you need to do something uninterruptible, you do not say "oh,
-I'm freezable". Because freezing is by definition an interruption.
-Seriously, it's that simple.
-
-                Linus
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
