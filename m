@@ -1,96 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933480Ab3CGV0U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 16:26:20 -0500
-Received: from www.linutronix.de ([62.245.132.108]:51081 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933421Ab3CGV0R (ORCPT
+	id S933473Ab3CGV1R (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 16:27:17 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:46334 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932815Ab3CGV1P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 16:26:17 -0500
-Date: Thu, 7 Mar 2013 22:25:48 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Mike Frysinger <vapier@gentoo.org>, Ingo Molnar <mingo@kernel.org>,
-        Randy Dunlap <rdunlap@infradead.org>, linux-kernel@vger.kernel.org,
-        Russell King <linux@arm.linux.org.uk>, Michal Simek <monstr@monstr.eu>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mundt <lethal@linux-sh.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Richard Weinberger <richard@nod.at>
-Subject: Re: [PATCH v2] early_printk: consolidate random copies of identical
- code
-In-Reply-To: <5138F68A.6070203@windriver.com>
-Message-ID: <alpine.LFD.2.02.1303072224290.22263@ionos>
-References: <1362683754-706-1-git-send-email-paul.gortmaker@windriver.com> <20130307112536.82288f41924a38a441cdf345@linux-foundation.org> <5138F68A.6070203@windriver.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Thu, 7 Mar 2013 16:27:15 -0500
+Date: Thu, 07 Mar 2013 16:27:11 -0500 (EST)
+Message-Id: <20130307.162711.443071164490068668.davem@davemloft.net>
+To: martinbj2008@gmail.com
+Cc: steffen.klassert@secunet.com, herbert@gondor.hengli.com.au,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        junwei.zhang@6wind.com
+Subject: Re: [PATCH] fix a typo in afkey
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1362638927-5617-1-git-send-email-martinbj2008@gmail.com>
+References: <1362638927-5617-1-git-send-email-martinbj2008@gmail.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Thu, 07 Mar 2013 13:27:19 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 7 Mar 2013, Paul Gortmaker wrote:
-> On 13-03-07 02:25 PM, Andrew Morton wrote:
-> > On Thu, 7 Mar 2013 14:15:54 -0500 Paul Gortmaker <paul.gortmaker@windriver.com> wrote:
-> > 
-> >> [v2: essentially unchanged since v1, so I've left the acked/reviewed
-> >>  tags.  There was a compile fail[1] for a randconfig with EARLY_PRINTK=y
-> >>  and PRINTK=n, because the early_console struct and early_printk calls
-> >>  were nested within an #ifdef CONFIG_PRINTK -- moving that whole block
-> >>  exactly as-is to be outside the #ifdef CONFIG_PRINTK fixes the randconfig
-> >>  and still works for everyday sane configs too.]
-> >>  [1] http://marc.info/?l=linux-next&m=136219350914998&w=2   
-> > 
-> > You did this:
-> > 
-> 
-> [...]
-> 
-> > _
-> > 
-> > Problem is, that won't fix the various compilation problems we've had. 
-> > See yesterday's lkml thread "linux-next: build failure after merge of
-> > the final tree (akpm tree related)"
-> 
-> Unless I'm missing something, the easy fix for that is to just
-> unconditionally have an early_console, i.e. this one line change
-> on top of the v2 patch:
-> 
-> diff --git a/kernel/printk.c b/kernel/printk.c
-> index 7664e49..86799bf 100644
-> --- a/kernel/printk.c
-> +++ b/kernel/printk.c
-> @@ -120,6 +120,7 @@ struct console_cmdline
->  static struct console_cmdline console_cmdline[MAX_CMDLINECONSOLES];
->  static int selected_console = -1;
->  static int preferred_console = -1;
-> +struct console *early_console;
->  int console_set_on_cmdline;
->  EXPORT_SYMBOL(console_set_on_cmdline);
->  
-> @@ -1718,7 +1719,6 @@ static size_t cont_print_text(char *text, size_t size) { return 0; }
->  #endif /* CONFIG_PRINTK */
->  
->  #ifdef CONFIG_EARLY_PRINTK
-> -struct console *early_console;
->  
->  void early_vprintk(const char *fmt, va_list ap)
->  {
-> 
-> 
-> Then you don't have to spray any of those ifdefs into the sparc code.
+From: Martin Zhang <martinbj2008@gmail.com>
+Date: Thu,  7 Mar 2013 14:48:47 +0800
 
-Yeah, that's what I thought as well. The extra pointer is not going to
-create massive bloat :)
+> From: Junwei Zhang <junwei.zhang@6wind.com>
+> 
+> Signed-off-by: Martin Zhang <martinbj2008@gmail.com>
 
-Btw, we should put that into the read_mostly section while at it.
-
-Thanks,
-
-	tglx
+Applied, thanks.
