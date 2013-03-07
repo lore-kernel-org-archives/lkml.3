@@ -1,63 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932368Ab3CGLDR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 06:03:17 -0500
-Received: from mga11.intel.com ([192.55.52.93]:22826 "EHLO mga11.intel.com"
+	id S932615Ab3CGLD1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 06:03:27 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:40749 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753033Ab3CGLDR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 06:03:17 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,800,1355126400"; 
-   d="scan'208";a="296686153"
-Date: Thu, 7 Mar 2013 16:08:01 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: "Maxin B. John" <maxin.john@gmail.com>
-Cc: gregkh@linuxfoundation.org, djbw@fb.com, nicolas.ferre@atmel.com,
-        linus.walleij@linaro.org, rmk+kernel@arm.linux.org.uk,
-        jassisinghbrar@gmail.com, lars@metafoo.de, grant.likely@secretlab.ca,
-        linux-kernel@vger.kernel.org, rob.herring@calxeda.com,
-        linux-arm-kernel@lists.infradead.org,
-        devicetree-discuss@lists.ozlabs.org,
-        "Maxin B. John" <maxin.john@enea.com>
-Subject: Re: [PATCH] dma: Remove erroneous __exit and __exit_p() references
-Message-ID: <20130307103801.GH13370@intel.com>
-References: <1361318824-22287-1-git-send-email-maxin.john@gmail.com>
- <CACRpkdZamOCWHWMcFYRqQDKJARZOCEP_eSNPNaxSgHfAn2wmEw@mail.gmail.com>
- <CAMhs6YwC+Lx0Vt=w2MoQV08on+rB1zidGCsNHRqcst8KBrb2XQ@mail.gmail.com>
- <20130307094735.GG13370@intel.com>
+	id S932383Ab3CGLDZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Mar 2013 06:03:25 -0500
+Date: Thu, 7 Mar 2013 12:03:21 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Tero Keski-Valkama <tero.keski-valkama@neter.fi>
+Cc: Peter Feuerer <peter@piie.net>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] x86: Added support for Acer Aspire 5755G fan control.
+Message-ID: <20130307110321.GC5239@pd.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Tero Keski-Valkama <tero.keski-valkama@neter.fi>,
+	Peter Feuerer <peter@piie.net>, linux-kernel@vger.kernel.org
+References: <1348433304-28320-1-git-send-email-tero.keski-valkama@neter.fi>
+ <CABGkUujMCRazGy1+69SWBsS15B97rNEXWNsR4gG8D+5WyeF2jg@mail.gmail.com>
+ <20120925090151.GB1247@liondog.tnic>
+ <CABGkUugOvWCSfXvLW33jmntGYAAiPP9fStXbdRAozx3bEoKBOA@mail.gmail.com>
+ <20120925222417.GA31780@liondog.tnic>
+ <cone.1348928745.324944.828.1000@blau>
+ <CABGkUug3XZYeDXY+o8-x4mjZ_seDd7GOrJzMSofhaXZV6Ogf=A@mail.gmail.com>
+ <20130307103531.GB5239@pd.tnic>
+ <CABGkUuhn4PC4KLwLJ_jWPrQxSFZhvVKFrMp8MtqKusOLA6hYRQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20130307094735.GG13370@intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CABGkUuhn4PC4KLwLJ_jWPrQxSFZhvVKFrMp8MtqKusOLA6hYRQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 07, 2013 at 03:17:35PM +0530, Vinod Koul wrote:
-> On Thu, Mar 07, 2013 at 10:17:40AM +0100, Maxin B. John wrote:
-> > Hi,
-> > 
-> > On Fri, Feb 22, 2013 at 7:29 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
-> > > On Wed, Feb 20, 2013 at 1:07 AM,  <maxin.john@gmail.com> wrote:
-> > >
-> > >> From: "Maxin B. John" <maxin.john@enea.com>
-> > >>
-> > >> Removing the annotation with __exit and referencing with __exit_p()
-> > >> present in dma driver module remove hooks.
-> > >>
-> > >> Part of the __devexit and __devexit_p() purge.
-> > >>
-> > >> Signed-off-by: Maxin B. John <maxin.john@enea.com>
-> > >
-> > > Acked-by: Linus Walleij <linus.walleij@linaro.org>
-> > 
-> > Gentle ping...
-> ???
-> 
-> Its already in my -next
-Sorry, I have confused with your other patch, applying now...
+On Thu, Mar 07, 2013 at 12:50:27PM +0200, Tero Keski-Valkama wrote:
+> Yes, I will check that issue, but what about the patch? Is it going
+> into the kernel any time soon?
 
-> 
-> --
-> ~Vinod
+Please regenerate it against the latest kernel 3.9-rc1 and make sure to
+test it properly with this kernel and to see whether the interactions
+with the new thermal code are ok on your box.
+
+Thanks.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
