@@ -1,205 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758018Ab3CGAEM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 19:04:12 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:15517 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754981Ab3CGAEJ (ORCPT
+	id S1758233Ab3CGAEk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 19:04:40 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:34251 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758080Ab3CGAEh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 19:04:09 -0500
-X-IronPort-AV: E=Sophos;i="4.84,798,1355126400"; 
-   d="scan'208";a="27967220"
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        Russell King <linux@arm.linux.org.uk>
-Subject: [PATCH 03/10] ARM: smp_twd: Divorce smp_twd from local timer API
-Date: Wed,  6 Mar 2013 16:03:59 -0800
-Message-Id: <1362614646-24113-4-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.8.2.rc2.4.g7799588
-In-Reply-To: <1362614646-24113-1-git-send-email-sboyd@codeaurora.org>
-References: <1362614646-24113-1-git-send-email-sboyd@codeaurora.org>
+	Wed, 6 Mar 2013 19:04:37 -0500
+Message-ID: <5137D991.7080808@wwwdotorg.org>
+Date: Wed, 06 Mar 2013 17:04:33 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Andrew Chew <AChew@nvidia.com>
+CC: Peter De Schrijver <pdeschrijver@nvidia.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Stephen Warren <swarren@nvidia.com>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] clk: tegra: provide dummy cpu car ops
+References: <1360853581-9756-1-git-send-email-pdeschrijver@nvidia.com> <643E69AA4436674C8F39DCC2C05F7638629CA50C97@HQMAIL03.nvidia.com> <5137D47D.6030105@wwwdotorg.org> <643E69AA4436674C8F39DCC2C05F7638629CA50CC0@HQMAIL03.nvidia.com>
+In-Reply-To: <643E69AA4436674C8F39DCC2C05F7638629CA50CC0@HQMAIL03.nvidia.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Separate the smp_twd timers from the local timer API. This will
-allow us to remove ARM local timer support in the near future and
-gets us closer to moving this driver to drivers/clocksource.
+On 03/06/2013 04:59 PM, Andrew Chew wrote:
+>> From: linux-tegra-owner@vger.kernel.org [mailto:linux-tegra-
+>> owner@vger.kernel.org] On Behalf Of Stephen Warren
+>> Sent: Wednesday, March 06, 2013 3:43 PM
+>> To: Andrew Chew
+>> Cc: Peter De Schrijver; linux-tegra@vger.kernel.org; linux-arm-
+>> kernel@lists.infradead.org; Stephen Warren; Prashant Gaikwad; Mike
+>> Turquette; linux-kernel@vger.kernel.org
+>> Subject: Re: [PATCH] clk: tegra: provide dummy cpu car ops
+>>
+>> On 03/06/2013 04:20 PM, Andrew Chew wrote:
+>>>> Subject: [PATCH] clk: tegra: provide dummy cpu car ops
+>>>>
+>>>> tegra_boot_secondary() relies on some of the car ops. This means
+>>>> having an uninitialized tegra_cpu_car_ops will lead to an early boot panic.
+>>>> Providing a dummy struct avoids this and makes adding Tegra114 clock
+>>>> support in a bisectable way a lot easier.
+>>>>
+>>>> --
+>>>>
+>>>> Stephen,
+>>>>
+>>>> Should this be a separate patch or should I make this part of new
+>>>> release of the Tegra114 clock series?
+>>
+>> I'm not sure if I answered this. Peter, I intend to apply this patch to a branch
+>> right before the CCF, so there's no explicit need to include it in the series,
+>> although if you do, that's fine.
+>>
+>>>> diff --git a/drivers/clk/tegra/clk.c b/drivers/clk/tegra/clk.c index
+>>
+>>>>  /* Global data of Tegra CPU CAR ops */ -struct tegra_cpu_car_ops
+>>>> *tegra_cpu_car_ops;
+>>>
+>>> Sorry for bringing this up so late...
+>>> Shouldn't the above be "struct tegra_cpu_car_ops tegra_cpu_car_ops;"?
+>>>
+>>>> +static struct tegra_cpu_car_ops *dummy_car_ops; struct
+>>>> +tegra_cpu_car_ops *tegra_cpu_car_ops = &dummy_car_ops;
+>>
+>> No, the value is used as a pointer in include/linux/clk/tegra.h, e.g.:
+>>
+>> tegra_cpu_car_ops->wait_for_reset(cpu);
+> 
+> Yeah, I get that tegra_cpu_car_ops is a pointer to an ops table.  It seems
+> to me that what's happening above is that tegra_cpu_car_ops is getting
+> assigned a pointer to a pointer that's supposed to point to an instance of
+> struct tegra_cpu_car_ops (but it really points to NULL as far as I can tell).
+> In any case, dummy_car_ops never actually gets instantiated.
+> 
+> I assume the intention is for dummy_car_ops to be an instance of
+> struct tegra_cpu_car_ops, but with all of its members zero'd.
 
-Cc: Russell King <linux@arm.linux.org.uk>
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
- arch/arm/Kconfig          |  2 +-
- arch/arm/kernel/smp_twd.c | 48 +++++++++++++++++++++++++++++++----------------
- 2 files changed, 33 insertions(+), 17 deletions(-)
+Oh right, I guess your comment was about the line after where you wrote
+it rather than the line before.
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index 5b71469..5ad2ccf 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -1527,6 +1527,7 @@ config SMP
- 	depends on HAVE_SMP
- 	depends on MMU
- 	select HAVE_ARM_SCU if !ARCH_MSM_SCORPIONMP
-+	select HAVE_ARM_TWD if (!ARCH_MSM_SCORPIONMP && !EXYNOS4_MCT)
- 	select USE_GENERIC_SMP_HELPERS
- 	help
- 	  This enables support for systems with more than one CPU. If you have
-@@ -1650,7 +1651,6 @@ config LOCAL_TIMERS
- 	bool "Use local timer interrupts"
- 	depends on SMP
- 	default y
--	select HAVE_ARM_TWD if (!ARCH_MSM_SCORPIONMP && !EXYNOS4_MCT)
- 	help
- 	  Enable support for local timers on SMP platforms, rather then the
- 	  legacy IPI broadcast method.  Local timers allows the system
-diff --git a/arch/arm/kernel/smp_twd.c b/arch/arm/kernel/smp_twd.c
-index c092115..2439843 100644
---- a/arch/arm/kernel/smp_twd.c
-+++ b/arch/arm/kernel/smp_twd.c
-@@ -11,6 +11,7 @@
- #include <linux/init.h>
- #include <linux/kernel.h>
- #include <linux/clk.h>
-+#include <linux/cpu.h>
- #include <linux/delay.h>
- #include <linux/device.h>
- #include <linux/err.h>
-@@ -23,7 +24,6 @@
- #include <linux/of_address.h>
- 
- #include <asm/smp_twd.h>
--#include <asm/localtimer.h>
- 
- /* set up by the platform code */
- static void __iomem *twd_base;
-@@ -32,7 +32,7 @@ static struct clk *twd_clk;
- static unsigned long twd_timer_rate;
- static DEFINE_PER_CPU(bool, percpu_setup_called);
- 
--static struct clock_event_device __percpu **twd_evt;
-+static struct clock_event_device __percpu *twd_evt;
- static int twd_ppi;
- 
- static void twd_set_mode(enum clock_event_mode mode,
-@@ -105,7 +105,7 @@ static void twd_update_frequency(void *new_rate)
- {
- 	twd_timer_rate = *((unsigned long *) new_rate);
- 
--	clockevents_update_freq(*__this_cpu_ptr(twd_evt), twd_timer_rate);
-+	clockevents_update_freq(__this_cpu_ptr(twd_evt), twd_timer_rate);
- }
- 
- static int twd_rate_change(struct notifier_block *nb,
-@@ -131,7 +131,7 @@ static struct notifier_block twd_clk_nb = {
- 
- static int twd_clk_init(void)
- {
--	if (twd_evt && *__this_cpu_ptr(twd_evt) && !IS_ERR(twd_clk))
-+	if (twd_evt && __this_cpu_ptr(twd_evt) && !IS_ERR(twd_clk))
- 		return clk_notifier_register(twd_clk, &twd_clk_nb);
- 
- 	return 0;
-@@ -150,7 +150,7 @@ static void twd_update_frequency(void *data)
- {
- 	twd_timer_rate = clk_get_rate(twd_clk);
- 
--	clockevents_update_freq(*__this_cpu_ptr(twd_evt), twd_timer_rate);
-+	clockevents_update_freq(__this_cpu_ptr(twd_evt), twd_timer_rate);
- }
- 
- static int twd_cpufreq_transition(struct notifier_block *nb,
-@@ -176,7 +176,7 @@ static struct notifier_block twd_cpufreq_nb = {
- 
- static int twd_cpufreq_init(void)
- {
--	if (twd_evt && *__this_cpu_ptr(twd_evt) && !IS_ERR(twd_clk))
-+	if (twd_evt && __this_cpu_ptr(twd_evt) && !IS_ERR(twd_clk))
- 		return cpufreq_register_notifier(&twd_cpufreq_nb,
- 			CPUFREQ_TRANSITION_NOTIFIER);
- 
-@@ -266,7 +266,6 @@ static void twd_get_clock(struct device_node *np)
-  */
- static int __cpuinit twd_timer_setup(struct clock_event_device *clk)
- {
--	struct clock_event_device **this_cpu_clk;
- 	int cpu = smp_processor_id();
- 
- 	/*
-@@ -275,7 +274,7 @@ static int __cpuinit twd_timer_setup(struct clock_event_device *clk)
- 	 */
- 	if (per_cpu(percpu_setup_called, cpu)) {
- 		__raw_writel(0, twd_base + TWD_TIMER_CONTROL);
--		clockevents_register_device(*__this_cpu_ptr(twd_evt));
-+		clockevents_register_device(__this_cpu_ptr(twd_evt));
- 		enable_percpu_irq(clk->irq, 0);
- 		return 0;
- 	}
-@@ -296,9 +295,7 @@ static int __cpuinit twd_timer_setup(struct clock_event_device *clk)
- 	clk->set_mode = twd_set_mode;
- 	clk->set_next_event = twd_set_next_event;
- 	clk->irq = twd_ppi;
--
--	this_cpu_clk = __this_cpu_ptr(twd_evt);
--	*this_cpu_clk = clk;
-+	clk->cpumask = cpumask_of(cpu);
- 
- 	clockevents_config_and_register(clk, twd_timer_rate,
- 					0xf, 0xffffffff);
-@@ -307,16 +304,32 @@ static int __cpuinit twd_timer_setup(struct clock_event_device *clk)
- 	return 0;
- }
- 
--static struct local_timer_ops twd_lt_ops __cpuinitdata = {
--	.setup	= twd_timer_setup,
--	.stop	= twd_timer_stop,
-+static int __cpuinit twd_timer_cpu_notify(struct notifier_block *self,
-+					   unsigned long action, void *hcpu)
-+{
-+	struct clock_event_device *evt = this_cpu_ptr(twd_evt);
-+
-+	switch (action & ~CPU_TASKS_FROZEN) {
-+	case CPU_STARTING:
-+		twd_timer_setup(evt);
-+		break;
-+	case CPU_DYING:
-+		twd_timer_stop(evt);
-+		break;
-+	}
-+
-+	return NOTIFY_OK;
-+}
-+
-+static struct notifier_block twd_timer_cpu_nb __cpuinitdata = {
-+	.notifier_call = twd_timer_cpu_notify,
- };
- 
- static int __init twd_local_timer_common_register(struct device_node *np)
- {
- 	int err;
- 
--	twd_evt = alloc_percpu(struct clock_event_device *);
-+	twd_evt = alloc_percpu(struct clock_event_device);
- 	if (!twd_evt) {
- 		err = -ENOMEM;
- 		goto out_free;
-@@ -328,10 +341,13 @@ static int __init twd_local_timer_common_register(struct device_node *np)
- 		goto out_free;
- 	}
- 
--	err = local_timer_register(&twd_lt_ops);
-+	err = register_cpu_notifier(&twd_timer_cpu_nb);
- 	if (err)
- 		goto out_irq;
- 
-+	/* Immediately configure the timer on the boot CPU */
-+	twd_timer_setup(this_cpu_ptr(twd_evt));
-+
- 	twd_get_clock(np);
- 
- 	return 0;
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+So, you mean:
 
+static struct tegra_cpu_car_ops *dummy_car_ops;
+struct tegra_cpu_car_ops *tegra_cpu_car_ops = &dummy_car_ops;
+
+should be instead:
+
+static struct tegra_cpu_car_ops dummy_car_ops;
+struct tegra_cpu_car_ops *tegra_cpu_car_ops = &dummy_car_ops;
+
+Yes, you're right.
