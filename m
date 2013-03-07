@@ -1,41 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758009Ab3CGQ5d (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 11:57:33 -0500
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:42323 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752765Ab3CGQ5c (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 11:57:32 -0500
-Message-ID: <1362675448.15793.216.camel@edumazet-glaptop>
-Subject: Re: BUG: soft lockup on all kernels after 2.6.3x
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Alexey Vlasov <renton@renton.name>
-Cc: linux-kernel@vger.kernel.org
-Date: Thu, 07 Mar 2013 08:57:28 -0800
-In-Reply-To: <20130307163743.GC6115@beaver>
-References: <20130209141029.GA13493@beaver>
-	 <1360422473.6696.28.camel@edumazet-glaptop> <20130307125424.GI13493@beaver>
-	 <1362673223.15793.215.camel@edumazet-glaptop>
-	 <20130307163743.GC6115@beaver>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1759010Ab3CGQ6S (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 11:58:18 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:26667 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754377Ab3CGQ6R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Mar 2013 11:58:17 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <1362669973-26984-1-git-send-email-acking@vmware.com>
+References: <1362669973-26984-1-git-send-email-acking@vmware.com>
+To: Andy King <acking@vmware.com>
+Cc: dhowells@redhat.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, gregkh@linuxfoundation.org,
+        davem@davemloft.net, pv-drivers@vmware.com
+Subject: Re: [PATCH] VSOCK: Split vm_sockets.h into kernel/uapi
+Date: Thu, 07 Mar 2013 16:58:10 +0000
+Message-ID: <26621.1362675490@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-03-07 at 20:37 +0400, Alexey Vlasov wrote:
-> On Thu, Mar 07, 2013 at 08:20:23AM -0800, Eric Dumazet wrote:
-> >
-> > What are gr_xxxx symbols ?
+Andy King <acking@vmware.com> wrote:
+
+> Split the vSockets header into kernel and UAPI parts.  The former gets the bits
+> that used to be in __KERNEL__ guards, while the latter gets everything that is
+> user-visible.  Tested by compiling vsock (+transport) and a simple user-mode
+> vSockets application.
 > 
-> This is grsecurity patches ;)
->  
+> Reported-by: David Howells <dhowells@redhat.com>
+> Acked-by: Dmitry Torokhov <dtor@vmware.com>
+> Signed-off-by: Andy King <acking@vmware.com>
 
-Well, remove all alien patches and try to reproduce the bug with a
-pristine linux kernel.
-
-
-
+Acked-by: David Howells <dhowells@redhat.com>
