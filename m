@@ -1,61 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933464Ab3CGV0K (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 16:26:10 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:55765 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933421Ab3CGV0I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 16:26:08 -0500
-Date: Thu, 7 Mar 2013 18:25:52 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Michael Wolf <mjw@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
-        riel@redhat.com, gleb@redhat.com, kvm@vger.kernel.org,
-        peterz@infradead.org, glommer@parallels.com, mingo@redhat.com,
-        anthony@codemonkey.ws
-Subject: Re: [PATCH 0/4] Alter steal-time reporting in the guest
-Message-ID: <20130307212552.GB22196@amt.cnet>
-References: <20130205214818.4615.12937.stgit@lambeau>
- <CAFTL4hyYO7s2u-dRLExA1=TxD00O1XyPe9qFwnODrWi_p92Jqg@mail.gmail.com>
- <20130219011104.GA5785@amt.cnet>
- <1362514928.6267.16.camel@lambeau>
- <20130306014151.GB11481@amt.cnet>
- <1362587233.6373.4.camel@lambeau>
- <20130307023026.GA30310@amt.cnet>
- <1362690909.31276.27.camel@lambeau>
+	id S933480Ab3CGV0U (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 16:26:20 -0500
+Received: from www.linutronix.de ([62.245.132.108]:51081 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933421Ab3CGV0R (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Mar 2013 16:26:17 -0500
+Date: Thu, 7 Mar 2013 22:25:48 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Mike Frysinger <vapier@gentoo.org>, Ingo Molnar <mingo@kernel.org>,
+        Randy Dunlap <rdunlap@infradead.org>, linux-kernel@vger.kernel.org,
+        Russell King <linux@arm.linux.org.uk>, Michal Simek <monstr@monstr.eu>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mundt <lethal@linux-sh.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Richard Weinberger <richard@nod.at>
+Subject: Re: [PATCH v2] early_printk: consolidate random copies of identical
+ code
+In-Reply-To: <5138F68A.6070203@windriver.com>
+Message-ID: <alpine.LFD.2.02.1303072224290.22263@ionos>
+References: <1362683754-706-1-git-send-email-paul.gortmaker@windriver.com> <20130307112536.82288f41924a38a441cdf345@linux-foundation.org> <5138F68A.6070203@windriver.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1362690909.31276.27.camel@lambeau>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 07, 2013 at 03:15:09PM -0600, Michael Wolf wrote:
+On Thu, 7 Mar 2013, Paul Gortmaker wrote:
+> On 13-03-07 02:25 PM, Andrew Morton wrote:
+> > On Thu, 7 Mar 2013 14:15:54 -0500 Paul Gortmaker <paul.gortmaker@windriver.com> wrote:
 > > 
-> > Makes sense?
+> >> [v2: essentially unchanged since v1, so I've left the acked/reviewed
+> >>  tags.  There was a compile fail[1] for a randconfig with EARLY_PRINTK=y
+> >>  and PRINTK=n, because the early_console struct and early_printk calls
+> >>  were nested within an #ifdef CONFIG_PRINTK -- moving that whole block
+> >>  exactly as-is to be outside the #ifdef CONFIG_PRINTK fixes the randconfig
+> >>  and still works for everyday sane configs too.]
+> >>  [1] http://marc.info/?l=linux-next&m=136219350914998&w=2   
 > > 
-> > Not sure what the concrete way to report stolen time relative to hard
-> > capping is (probably easier inside the scheduler, where run_delay is
-> > calculated).
+> > You did this:
 > > 
-> > Reporting the hard capping to the guest is a good idea (which saves the
-> > user from having to measure it themselves), but better done separately
-> > via new field.
 > 
-> didnt respond to this in the previous response.  I'm not sure I'm
-> following you here.  I thought this is what I was doing by having a
-> consigned (expected steal) field add to the /proc/stat output.  Are you
-> looking for something else or a better naming convention?
+> [...]
+> 
+> > _
+> > 
+> > Problem is, that won't fix the various compilation problems we've had. 
+> > See yesterday's lkml thread "linux-next: build failure after merge of
+> > the final tree (akpm tree related)"
+> 
+> Unless I'm missing something, the easy fix for that is to just
+> unconditionally have an early_console, i.e. this one line change
+> on top of the v2 patch:
+> 
+> diff --git a/kernel/printk.c b/kernel/printk.c
+> index 7664e49..86799bf 100644
+> --- a/kernel/printk.c
+> +++ b/kernel/printk.c
+> @@ -120,6 +120,7 @@ struct console_cmdline
+>  static struct console_cmdline console_cmdline[MAX_CMDLINECONSOLES];
+>  static int selected_console = -1;
+>  static int preferred_console = -1;
+> +struct console *early_console;
+>  int console_set_on_cmdline;
+>  EXPORT_SYMBOL(console_set_on_cmdline);
+>  
+> @@ -1718,7 +1719,6 @@ static size_t cont_print_text(char *text, size_t size) { return 0; }
+>  #endif /* CONFIG_PRINTK */
+>  
+>  #ifdef CONFIG_EARLY_PRINTK
+> -struct console *early_console;
+>  
+>  void early_vprintk(const char *fmt, va_list ap)
+>  {
+> 
+> 
+> Then you don't have to spray any of those ifdefs into the sparc code.
 
-Expected steal is not a good measure to use (because as mentioned in the
-previous email there is no expected steal over a fixed period of time).
+Yeah, that's what I thought as well. The extra pointer is not going to
+create massive bloat :)
 
-It is fine to report 'maximum percentage of underlying physical CPU'
-(what percentage of the physical CPU time guest VM is allowed to make
-use of).
+Btw, we should put that into the read_mostly section while at it.
 
-And then steal time is relative to maximum percentage of underlying
-physical CPU time allowed.
+Thanks,
 
+	tglx
