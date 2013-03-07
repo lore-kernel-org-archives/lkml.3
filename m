@@ -1,193 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932896Ab3CGNgx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 08:36:53 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:33296 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759041Ab3CGNfp (ORCPT
+	id S932851Ab3CGNgw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 08:36:52 -0500
+Received: from mail-la0-f45.google.com ([209.85.215.45]:63519 "EHLO
+	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932739Ab3CGNgs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 08:35:45 -0500
-From: Kishon Vijay Abraham I <kishon@ti.com>
-To: <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>, <rob@landley.net>,
-        <b-cousson@ti.com>, <tony@atomide.com>, <linux@arm.linux.org.uk>,
-        <balbi@ti.com>, <kishon@ti.com>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: [PATCH v3 3/7] ARM: dts: omap: Add usb_otg and glue data
-Date: Thu, 7 Mar 2013 19:05:16 +0530
-Message-ID: <1362663320-23799-4-git-send-email-kishon@ti.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1362663320-23799-1-git-send-email-kishon@ti.com>
-References: <1362663320-23799-1-git-send-email-kishon@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Thu, 7 Mar 2013 08:36:48 -0500
+From: Andrey Pavlenko <andrey.a.pavlenko@gmail.com>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>,
+        "Igor M. Liplianin" <liplianin@me.by>, linux-media@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org,
+        Andrey Pavlenko <andrey.a.pavlenko@gmail.com>
+Subject: [PATCH 1/1] [dvb-usb] GOTVIEW SatelliteHD card support.
+Date: Thu,  7 Mar 2013 17:36:22 +0400
+Message-Id: <1362663382-8094-1-git-send-email-andrey.a.pavlenko@gmail.com>
+X-Mailer: git-send-email 1.8.1.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add usb otg data node in omap4/omap3 device tree file. Also update
-the node with board specific setting in omapx-<board>.dts file.
-The dt data specifies among others the interface type (ULPI or UTMI), mode
-which is mostly OTG, power that specifies the amount of power this can supply
-when in host mode.
-The information about usb otg node is available @
-Documentation/devicetree/bindings/usb/omap-usb.txt
+Added support for the GOTVIEW SatelliteHD card which is based on
+Montage M88DS3000 and works very well with this driver.
 
-Acked-by: Felipe Balbi <balbi@ti.com>
-Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+Signed-off-by: Andrey Pavlenko <andrey.a.pavlenko@gmail.com>
 ---
- Documentation/devicetree/bindings/usb/omap-usb.txt |    1 +
- arch/arm/boot/dts/omap3-beagle-xm.dts              |    6 ++++++
- arch/arm/boot/dts/omap3-evm.dts                    |    6 ++++++
- arch/arm/boot/dts/omap3-overo.dtsi                 |    6 ++++++
- arch/arm/boot/dts/omap3.dtsi                       |   12 ++++++++++++
- arch/arm/boot/dts/omap4-panda.dts                  |    6 ++++++
- arch/arm/boot/dts/omap4-sdp.dts                    |    6 ++++++
- arch/arm/boot/dts/omap4.dtsi                       |   13 +++++++++++++
- arch/arm/boot/dts/twl4030.dtsi                     |    2 +-
- 9 files changed, 57 insertions(+), 1 deletion(-)
+ drivers/media/usb/dvb-usb/dw2102.c | 12 +++++++++++-
+ 1 file changed, 11 insertions(+), 1 deletion(-)
 
-diff --git a/Documentation/devicetree/bindings/usb/omap-usb.txt b/Documentation/devicetree/bindings/usb/omap-usb.txt
-index 1ef0ce7..abce256 100644
---- a/Documentation/devicetree/bindings/usb/omap-usb.txt
-+++ b/Documentation/devicetree/bindings/usb/omap-usb.txt
-@@ -18,6 +18,7 @@ OMAP MUSB GLUE
-    represents PERIPHERAL.
-  - power : Should be "50". This signifies the controller can supply upto
-    100mA when operating in host mode.
-+ - usb-phy : the phandle for the PHY device
+diff --git a/drivers/media/usb/dvb-usb/dw2102.c b/drivers/media/usb/dvb-usb/dw2102.c
+index 9578a67..4132130 100644
+--- a/drivers/media/usb/dvb-usb/dw2102.c
++++ b/drivers/media/usb/dvb-usb/dw2102.c
+@@ -79,6 +79,10 @@
+ #define USB_PID_TEVII_S632 0xd632
+ #endif
  
- Optional properties:
-  - ctrl-module : phandle of the control module this glue uses to write to
-diff --git a/arch/arm/boot/dts/omap3-beagle-xm.dts b/arch/arm/boot/dts/omap3-beagle-xm.dts
-index 3705a81..5f8226a 100644
---- a/arch/arm/boot/dts/omap3-beagle-xm.dts
-+++ b/arch/arm/boot/dts/omap3-beagle-xm.dts
-@@ -107,3 +107,9 @@
- 	 */
- 	ti,pulldowns = <0x03a1c4>;
- };
++#ifndef USB_PID_GOTVIEW_SAT_HD
++#define USB_PID_GOTVIEW_SAT_HD 0x5456
++#endif
 +
-+&usb_otg_hs {
-+	interface-type = <0>;
-+	mode = <3>;
-+	power = <50>;
-+};
-diff --git a/arch/arm/boot/dts/omap3-evm.dts b/arch/arm/boot/dts/omap3-evm.dts
-index e8ba1c2..6e6f80d 100644
---- a/arch/arm/boot/dts/omap3-evm.dts
-+++ b/arch/arm/boot/dts/omap3-evm.dts
-@@ -59,3 +59,9 @@
- &twl_gpio {
- 	ti,use-leds;
- };
-+
-+&usb_otg_hs {
-+	interface-type = <0>;
-+	mode = <3>;
-+	power = <50>;
-+};
-diff --git a/arch/arm/boot/dts/omap3-overo.dtsi b/arch/arm/boot/dts/omap3-overo.dtsi
-index 89808ce..e3979b1 100644
---- a/arch/arm/boot/dts/omap3-overo.dtsi
-+++ b/arch/arm/boot/dts/omap3-overo.dtsi
-@@ -55,3 +55,9 @@
- &twl_gpio {
- 	ti,use-leds;
- };
-+
-+&usb_otg_hs {
-+	interface-type = <0>;
-+	mode = <3>;
-+	power = <50>;
-+};
-diff --git a/arch/arm/boot/dts/omap3.dtsi b/arch/arm/boot/dts/omap3.dtsi
-index 1acc261..1e21565 100644
---- a/arch/arm/boot/dts/omap3.dtsi
-+++ b/arch/arm/boot/dts/omap3.dtsi
-@@ -397,5 +397,17 @@
- 			ti,timer-alwon;
- 			ti,timer-secure;
- 		};
-+
-+		usb_otg_hs: usb_otg_hs@480ab000 {
-+			compatible = "ti,omap3-musb";
-+			reg = <0x480ab000 0x1000>;
-+			interrupts = <0 92 0x4>, <0 93 0x4>;
-+			interrupt-names = "mc", "dma";
-+			ti,hwmods = "usb_otg_hs";
-+			usb-phy = <&usb2_phy>;
-+			multipoint = <1>;
-+			num-eps = <16>;
-+			ram-bits = <12>;
-+		};
- 	};
- };
-diff --git a/arch/arm/boot/dts/omap4-panda.dts b/arch/arm/boot/dts/omap4-panda.dts
-index 4122efe..6531f75 100644
---- a/arch/arm/boot/dts/omap4-panda.dts
-+++ b/arch/arm/boot/dts/omap4-panda.dts
-@@ -206,3 +206,9 @@
- &twl_usb_comparator {
- 	usb-supply = <&vusb>;
- };
-+
-+&usb_otg_hs {
-+	interface-type = <1>;
-+	mode = <3>;
-+	power = <50>;
-+};
-diff --git a/arch/arm/boot/dts/omap4-sdp.dts b/arch/arm/boot/dts/omap4-sdp.dts
-index 43e5258..f3adbf51 100644
---- a/arch/arm/boot/dts/omap4-sdp.dts
-+++ b/arch/arm/boot/dts/omap4-sdp.dts
-@@ -428,3 +428,9 @@
- &twl_usb_comparator {
- 	usb-supply = <&vusb>;
- };
-+
-+&usb_otg_hs {
-+	interface-type = <1>;
-+	mode = <3>;
-+	power = <50>;
-+};
-diff --git a/arch/arm/boot/dts/omap4.dtsi b/arch/arm/boot/dts/omap4.dtsi
-index c829d7e..06d044e 100644
---- a/arch/arm/boot/dts/omap4.dtsi
-+++ b/arch/arm/boot/dts/omap4.dtsi
-@@ -542,5 +542,18 @@
- 			reg-names = "control_dev_conf", "otghs_control";
- 			ti,type = <1>;
- 		};
-+
-+		usb_otg_hs: usb_otg_hs@4a0ab000 {
-+			compatible = "ti,omap4-musb";
-+			reg = <0x4a0ab000 0x7ff>;
-+			interrupts = <0 92 0x4>, <0 93 0x4>;
-+			interrupt-names = "mc", "dma";
-+			ti,hwmods = "usb_otg_hs";
-+			usb-phy = <&usb2_phy>;
-+			multipoint = <1>;
-+			num-eps = <16>;
-+			ram-bits = <12>;
-+			ti,has-mailbox;
-+		};
- 	};
- };
-diff --git a/arch/arm/boot/dts/twl4030.dtsi b/arch/arm/boot/dts/twl4030.dtsi
-index ed0bc95..398d2c3 100644
---- a/arch/arm/boot/dts/twl4030.dtsi
-+++ b/arch/arm/boot/dts/twl4030.dtsi
-@@ -67,7 +67,7 @@
- 		#interrupt-cells = <1>;
- 	};
+ #define DW210X_READ_MSG 0
+ #define DW210X_WRITE_MSG 1
  
--	twl4030-usb {
-+	usb2_phy: twl4030-usb {
- 		compatible = "ti,twl4030-usb";
- 		interrupts = <10>, <4>;
- 		usb1v5-supply = <&vusb1v5>;
+@@ -1548,6 +1552,7 @@ enum dw2102_table_entry {
+ 	X3M_SPC1400HD,
+ 	TEVII_S421,
+ 	TEVII_S632,
++	GOTVIEW_SAT_HD,
+ };
+ 
+ static struct usb_device_id dw2102_table[] = {
+@@ -1568,6 +1573,7 @@ static struct usb_device_id dw2102_table[] = {
+ 	[X3M_SPC1400HD] = {USB_DEVICE(0x1f4d, 0x3100)},
+ 	[TEVII_S421] = {USB_DEVICE(0x9022, USB_PID_TEVII_S421)},
+ 	[TEVII_S632] = {USB_DEVICE(0x9022, USB_PID_TEVII_S632)},
++	[GOTVIEW_SAT_HD] = {USB_DEVICE(0x1FE1, USB_PID_GOTVIEW_SAT_HD)},
+ 	{ }
+ };
+ 
+@@ -1968,7 +1974,7 @@ static struct dvb_usb_device_properties su3000_properties = {
+ 		}},
+ 		}
+ 	},
+-	.num_device_descs = 3,
++	.num_device_descs = 4,
+ 	.devices = {
+ 		{ "SU3000HD DVB-S USB2.0",
+ 			{ &dw2102_table[GENIATECH_SU3000], NULL },
+@@ -1982,6 +1988,10 @@ static struct dvb_usb_device_properties su3000_properties = {
+ 			{ &dw2102_table[X3M_SPC1400HD], NULL },
+ 			{ NULL },
+ 		},
++		{ "GOTVIEW Satellite HD",
++			{ &dw2102_table[GOTVIEW_SAT_HD], NULL },
++			{ NULL },
++		},
+ 	}
+ };
+ 
 -- 
-1.7.10.4
+1.8.1.5
 
