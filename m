@@ -1,84 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753454Ab3CGJrE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 04:47:04 -0500
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:40495 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751049Ab3CGJrC (ORCPT
+	id S1751184Ab3CGJrZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 04:47:25 -0500
+Received: from mail.not-your-server.de ([78.46.182.243]:48584 "EHLO
+	mail.not-your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754314Ab3CGJrW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 04:47:02 -0500
-Message-ID: <51386207.5040808@linux.vnet.ibm.com>
-Date: Thu, 07 Mar 2013 17:46:47 +0800
-From: Michael Wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	Thu, 7 Mar 2013 04:47:22 -0500
+Message-ID: <51386223.3020901@gentoo.org>
+Date: Thu, 07 Mar 2013 10:47:15 +0100
+From: justin <jlec@gentoo.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130224 Thunderbird/17.0.3
 MIME-Version: 1.0
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
-        Alex Shi <alex.shi@intel.com>, Paul Turner <pjt@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        Ram Pai <linuxram@us.ibm.com>
-Subject: Re: [PATCH] sched: wakeup buddy
-References: <5136EB06.2050905@linux.vnet.ibm.com> <1362645372.2606.11.camel@laptop>
-In-Reply-To: <1362645372.2606.11.camel@laptop>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13030709-7014-0000-0000-000002AF494E
+To: "Yann E. MORIN" <yann.morin.1998@free.fr>
+CC: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: Final versions of ncurses libs detection patches
+References: <Use config scripts to detect ncurses libs for, menuconfig/nconfig dialogs> <1362574922-4799-1-git-send-email-jlec@gentoo.org> <201303062223.24541.yann.morin.1998@free.fr>
+In-Reply-To: <201303062223.24541.yann.morin.1998@free.fr>
+X-Enigmail-Version: 1.5.1
+Content-Type: multipart/signed; micalg=pgp-sha512;
+ protocol="application/pgp-signature";
+ boundary="----enig2CKCXLSEHGOJELXQNGUVF"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+------enig2CKCXLSEHGOJELXQNGUVF
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: quoted-printable
 
-Hi, Peter
+On 06/03/13 22:23, Yann E. MORIN wrote:
+> On Ubuntu Quantal, ncurses is indeed compiled with tinfo as a separate
+> lib, but these two patches are not needed, because libncurses has prope=
+r
+> (NEEDED) on libtinfo:
+>=20
+>   $ readelf -d /lib/x86_64-linux-gnu/libncurses.so.5.9 |grep tinfo
+>   0x0000000000000001 (NEEDED)             Shared library: [libtinfo.so.=
+5]
 
-Thanks for your reply.
+Hi Yann,
 
-On 03/07/2013 04:36 PM, Peter Zijlstra wrote:
-> On Wed, 2013-03-06 at 15:06 +0800, Michael Wang wrote:
-> 
->> wake_affine() stuff is trying to bind related tasks closely, but it doesn't
->> work well according to the test on 'perf bench sched pipe' (thanks to Peter).
-> 
-> so sched-pipe is a poor benchmark for this.. 
-> 
-> Ideally we'd write a new benchmark that has some actual data footprint
-> and we'd measure the cost of tasks being apart on the various cache
-> metrics and see what affine wakeup does for it.
+Same here
 
-I think sched-pipe is still somewhat capable, the problem is that the
-select_idle_sibling() doesn't take care the wakeup related case, it
-doesn't contain the logical to locate an idle cpu closely.
+$ scanelf -n /lib//libncurses.so.5.9
+ TYPE   NEEDED FILE
+ET_DYN libc.so.6,libdl.so.2,libtinfo.so.5 /lib//libncurses.so.5.9
 
-So even we detect the relationship successfully, select_idle_sibling()
-can only help to make sure the target cpu won't be outside of the
-current package, it's a package level bind, not mc or smp level.
 
-> 
-> Before doing something like what you're proposing, I'd have a hard look
-> at WF_SYNC, it is possible we should disable/fix select_idle_sibling
-> for sync wakeups.
+But why it works on ubuntu and debian is that
 
-The patch is supposed to stop using wake_affine() blindly, not improve
-the wake_affine() stuff itself, the whole stuff still works, but since
-we rely on select_idle_sibling() to make the choice, the benefit is not
-so significant, especially on my one node box...
+/lib/lib/x86_64-linux-gnu/libncurses.so.5.9
 
-> 
-> The idea behind sync wakeups is that we try and detect the case where
-> we wakeup up one task only to go to sleep ourselves and try and avoid
-> the regular ping-pong this would otherwise create on account of the
-> waking task still being alive and so the current cpu isn't actually
-> idle yet but we know its going to be idle soon.
+is a ld script with following content
 
-Are you suggesting that we should separate the process of wakeup related
-case, not just pass current cpu to select_idle_sibling()?
+INPUT(libncurses.so.9 -ltinfo)
 
-Regards,
-Michael Wang
+It instructs the linker at link time to add additionally -ltinfo.
 
-> 
-> 
-> 
+On Gentoo, the base-system maintainers refuse to do this (I would agree
+if you call it a bug on our side), but I am not allowed to touch those
+packages.
 
+Luckily ncurses provides the config scripts and the pkg-config modules
+to do sane linking. This should be done if possible regardless the
+situation on a single distributions.
+
+>=20
+> If I just configure ncurses with:
+>   $ ./configure --with-termlib --with-shared --without-normal && make
+>   $ readelf -d lib/libncurses.so.5.9 |grep tinfo
+>   0x0000000000000001 (NEEDED)             Shared library: [libtinfo.so.=
+5]
+>=20
+> I wonder how you configured your ncurses.
+
+=2E/configure --prefix=3D/usr --build=3Dx86_64-pc-linux-gnu
+--host=3Dx86_64-pc-linux-gnu --mandir=3D/usr/share/man
+--infodir=3D/usr/share/info --datadir=3D/usr/share --sysconfdir=3D/etc
+--localstatedir=3D/var/lib --libdir=3D/usr/lib64
+--with-terminfo-dirs=3D/etc/terminfo:/usr/share/terminfo --with-shared
+--without-hashed-db --without-ada --with-cxx --with-cxx-binding
+--without-debug --without-profile --with-gpm --disable-termcap
+--enable-symlinks --with-rcs-ids --with-manpage-format=3Dnormal
+--enable-const --enable-colorfgbg --enable-echo --enable-pc-files
+--enable-warnings --without-assertions --disable-leaks
+--without-expanded --with-macros --without-trace --with-termlib
+--with-chtype=3Dlong --with-mmask-t=3Dlong --disable-ext-colors
+--disable-ext-mouse --without-pthread --without-reentrant
+
+>=20
+> Thanks for staying around during the iterations.
+
+No problem, this is how it works. Thanks for your suggestions,
+
+Justin
+
+
+
+------enig2CKCXLSEHGOJELXQNGUVF
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iEYEAREKAAYFAlE4YiQACgkQgAnW8HDreRabTQCeMEKmuZPgLO712KEuyZBgsedg
+mvoAnR2QmfqnRnysiREtCEaGsU6YHeNa
+=SnNw
+-----END PGP SIGNATURE-----
+
+------enig2CKCXLSEHGOJELXQNGUVF--
