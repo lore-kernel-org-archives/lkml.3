@@ -1,50 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932263Ab3CGOAU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 09:00:20 -0500
-Received: from www.linutronix.de ([62.245.132.108]:49047 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755040Ab3CGOAS (ORCPT
+	id S932346Ab3CGOB1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 09:01:27 -0500
+Received: from seldrel01.sonyericsson.com ([212.209.106.2]:13048 "EHLO
+	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755696Ab3CGOB0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 09:00:18 -0500
-Date: Thu, 7 Mar 2013 15:00:08 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Stephen Boyd <sboyd@codeaurora.org>
-cc: linux-arm-kernel@lists.infradead.org, Mark Rutland <mark.rutland@arm.com>,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        John Stultz <john.stultz@linaro.org>
-Subject: Re: [PATCH 01/10] clocksource: add generic dummy timer driver
-In-Reply-To: <1362614646-24113-2-git-send-email-sboyd@codeaurora.org>
-Message-ID: <alpine.LFD.2.02.1303071457300.22263@ionos>
-References: <1362614646-24113-1-git-send-email-sboyd@codeaurora.org> <1362614646-24113-2-git-send-email-sboyd@codeaurora.org>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Thu, 7 Mar 2013 09:01:26 -0500
+From: <oskar.andero@sonymobile.com>
+To: <linux-kernel@vger.kernel.org>, <linux-input@vger.kernel.org>
+CC: <dmitry.torokhov@gmail.com>,
+        Aleksej Makarov <aleksej.makarov@sonymobile.com>,
+        Oskar Andero <oskar.andero@sonymobile.com>
+Subject: [PATCH] input: don't call input_dev_release_keys() in resume
+Date: Thu, 7 Mar 2013 15:01:22 +0100
+Message-ID: <1362664882-16194-1-git-send-email-oskar.andero@sonymobile.com>
+X-Mailer: git-send-email 1.7.8.6
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 6 Mar 2013, Stephen Boyd wrote:
+From: Aleksej Makarov <aleksej.makarov@sonymobile.com>
 
-> +static int __init dummy_timer_register(void)
-> +{
-> +	int err = register_cpu_notifier(&dummy_timer_cpu_nb);
-> +	if (err)
-> +		return err;
-> +
-> +	/* We won't get a call on the boot CPU, so register immediately */
-> +	dummy_timer_setup();
-> +
-> +	return 0;
-> +}
-> +device_initcall(dummy_timer_register);
+When waking up the platform by pressing a specific key, sending a
+release on that key makes it impossible to react on the event in
+user-space.
 
-Are you sure that you want that to be installed unconditionally? What
-about multi-platform kernels?
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Reviewed-by: Radovan Lekanovic <radovan.lekanovic@sonymobile.com>
+Signed-off-by: Aleksej Makarov <aleksej.makarov@sonymobile.com>
+Signed-off-by: Oskar Andero <oskar.andero@sonymobile.com>
+---
+ drivers/input/input.c |    5 ++++-
+ 1 files changed, 4 insertions(+), 1 deletions(-)
 
-Thanks,
+diff --git a/drivers/input/input.c b/drivers/input/input.c
+index c044699..61ce19f 100644
+--- a/drivers/input/input.c
++++ b/drivers/input/input.c
+@@ -1690,7 +1690,10 @@ static int input_dev_resume(struct device *dev)
+ {
+ 	struct input_dev *input_dev = to_input_dev(dev);
+ 
+-	input_reset_device(input_dev);
++	mutex_lock(&input_dev->mutex);
++	if (input_dev->users)
++		input_dev_toggle(input_dev, true);
++	mutex_unlock(&input_dev->mutex);
+ 
+ 	return 0;
+ }
+-- 
+1.7.8.6
 
-	tglx
