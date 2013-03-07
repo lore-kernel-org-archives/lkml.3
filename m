@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757898Ab3CGMMx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 07:12:53 -0500
-Received: from mail.pripojeni.net ([178.22.112.14]:49724 "EHLO
+	id S932636Ab3CGMMy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 07:12:54 -0500
+Received: from mail.pripojeni.net ([178.22.112.14]:49739 "EHLO
 	smtp.pripojeni.net" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1751271Ab3CGMMt (ORCPT
+	with ESMTP id S1751254Ab3CGMMt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 7 Mar 2013 07:12:49 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: gregkh@linuxfoundation.org
 Cc: peter@hurleysoftware.com, jirislaby@gmail.com,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 02/16] TTY: synclink, remove superfluous check
-Date: Thu,  7 Mar 2013 13:12:26 +0100
-Message-Id: <1362658360-26629-2-git-send-email-jslaby@suse.cz>
+Subject: [PATCH 13/16] crisv10: remove unused members
+Date: Thu,  7 Mar 2013 13:12:37 +0100
+Message-Id: <1362658360-26629-13-git-send-email-jslaby@suse.cz>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1362658360-26629-1-git-send-email-jslaby@suse.cz>
 References: <1362658360-26629-1-git-send-email-jslaby@suse.cz>
@@ -21,28 +21,42 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-info is obtained by container_of. It can never be NULL. So do not test
-that.
+Well, all those are unused. They were perhaps copied from generic
+serial structure ages ago. Remove them for good.
 
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/tty/synclink.c | 3 ---
- 1 file changed, 3 deletions(-)
+ drivers/tty/serial/crisv10.h | 6 ------
+ 1 file changed, 6 deletions(-)
 
-diff --git a/drivers/tty/synclink.c b/drivers/tty/synclink.c
-index 8983276..72d6071 100644
---- a/drivers/tty/synclink.c
-+++ b/drivers/tty/synclink.c
-@@ -1058,9 +1058,6 @@ static void mgsl_bh_handler(struct work_struct *work)
- 		container_of(work, struct mgsl_struct, task);
- 	int action;
+diff --git a/drivers/tty/serial/crisv10.h b/drivers/tty/serial/crisv10.h
+index 7146ed2..59f70c4 100644
+--- a/drivers/tty/serial/crisv10.h
++++ b/drivers/tty/serial/crisv10.h
+@@ -86,15 +86,10 @@ struct e100_serial {
  
--	if (!info)
--		return;
--		
- 	if ( debug_level >= DEBUG_LEVEL_BH )
- 		printk( "%s(%d):mgsl_bh_handler(%s) entry\n",
- 			__FILE__,__LINE__,info->device_name);
+ 	volatile int		tr_running; /* 1 if output is running */
+ 
+-	struct tty_struct	*tty;
+-	int			read_status_mask;
+-	int			ignore_status_mask;
+ 	int			x_char;	/* xon/xoff character */
+ 	int			close_delay;
+ 	unsigned short		closing_wait;
+-	unsigned short		closing_wait2;
+ 	unsigned long		event;
+-	unsigned long		last_active;
+ 	int			line;
+ 	int			type;  /* PORT_ETRAX */
+ 	int			count;	    /* # of fd on device */
+@@ -108,7 +103,6 @@ struct e100_serial {
+ 	struct work_struct	work;
+ 	struct async_icount	icount;   /* error-statistics etc.*/
+ 	struct ktermios		normal_termios;
+-	struct ktermios		callout_termios;
+ 	wait_queue_head_t	open_wait;
+ 	wait_queue_head_t	close_wait;
+ 
 -- 
 1.8.1.4
 
