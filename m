@@ -1,114 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751798Ab3CGGQI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 01:16:08 -0500
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:32853 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751049Ab3CGGQF (ORCPT
+	id S1752126Ab3CGGV6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 01:21:58 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:11507 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751049Ab3CGGV5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 01:16:05 -0500
-Message-ID: <5138309A.2060804@linux.vnet.ibm.com>
-Date: Thu, 07 Mar 2013 14:15:54 +0800
-From: Michael Wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	Thu, 7 Mar 2013 01:21:57 -0500
+Message-ID: <513831E9.80304@huawei.com>
+Date: Thu, 7 Mar 2013 14:21:29 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
 MIME-Version: 1.0
-To: Sasha Levin <sasha.levin@oracle.com>
-CC: Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>,
+To: Michael Wang <wangyun@linux.vnet.ibm.com>
+CC: Sasha Levin <sasha.levin@oracle.com>, Tejun Heo <tj@kernel.org>,
         Dave Jones <davej@redhat.com>, Cgroups <cgroups@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Subject: Re: cgroup: INFO: suspicious RCU usage. in cgroup_name
-References: <5137687E.50701@oracle.com>
-In-Reply-To: <5137687E.50701@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1
+References: <5137687E.50701@oracle.com> <5138309A.2060804@linux.vnet.ibm.com>
+In-Reply-To: <5138309A.2060804@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13030706-8256-0000-0000-00000681CE2D
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/07/2013 12:02 AM, Sasha Levin wrote:
-> Hi all,
+On 2013/3/7 14:15, Michael Wang wrote:
+> On 03/07/2013 12:02 AM, Sasha Levin wrote:
+>> Hi all,
+>>
+>> While fuzzing with trinity inside a KVM tools guest running latest -next kernel
+>> I've stumbled on the following:
+>>
+>> [  450.180599] ===============================
+>> [  450.181392] [ INFO: suspicious RCU usage. ]
+>> [  450.182101] 3.9.0-rc1-next-20130305-sasha-00048-g35e9ec5-dirty #1032 Tainted: G        W
+>> [  450.183482] -------------------------------
+>> [  450.184343] include/linux/cgroup.h:429 suspicious rcu_dereference_check() usage!
+>> [  450.185575]
+>> [  450.185575] other info that might help us debug this:
+>> [  450.185575]
+>> [  450.186961]
+>> [  450.186961] rcu_scheduler_active = 1, debug_locks = 1
+>> [  450.188001] 4 locks held by kworker/u:0/6:
+>> [  450.188646]  #0:  (khelper){.+.+.+}, at: [<ffffffff8112ba98>] process_one_work+0x238/0x570
+>> [  450.190186]  #1:  ((&sub_info->work)){+.+.+.}, at: [<ffffffff8112ba98>] process_one_work+0x238/0x570
+>> [  450.191824]  #2:  (&(&p->alloc_lock)->rlock){+.+.-.}, at: [<ffffffff812036d3>] dump_header+0x43/0xe0
 > 
-> While fuzzing with trinity inside a KVM tools guest running latest -next kernel
-> I've stumbled on the following:
+> Hi, Sasha
 > 
-> [  450.180599] ===============================
-> [  450.181392] [ INFO: suspicious RCU usage. ]
-> [  450.182101] 3.9.0-rc1-next-20130305-sasha-00048-g35e9ec5-dirty #1032 Tainted: G        W
-> [  450.183482] -------------------------------
-> [  450.184343] include/linux/cgroup.h:429 suspicious rcu_dereference_check() usage!
-> [  450.185575]
-> [  450.185575] other info that might help us debug this:
-> [  450.185575]
-> [  450.186961]
-> [  450.186961] rcu_scheduler_active = 1, debug_locks = 1
-> [  450.188001] 4 locks held by kworker/u:0/6:
-> [  450.188646]  #0:  (khelper){.+.+.+}, at: [<ffffffff8112ba98>] process_one_work+0x238/0x570
-> [  450.190186]  #1:  ((&sub_info->work)){+.+.+.}, at: [<ffffffff8112ba98>] process_one_work+0x238/0x570
-> [  450.191824]  #2:  (&(&p->alloc_lock)->rlock){+.+.-.}, at: [<ffffffff812036d3>] dump_header+0x43/0xe0
-
-Hi, Sasha
-
-I suppose this is the warn context:
-
-cpuset_print_task_mems_allowed() -> task_cs() -> task_subsys_state()
-
-and this is the definition of task_subsys_state():
-
-#define task_subsys_state_check(task, subsys_id, __c)                   \
-        rcu_dereference_check(task->cgroups->subsys[subsys_id],         \
-                              lockdep_is_held(&task->alloc_lock) ||     \
-                              cgroup_lock_is_held() || (__c))
-
-the condition "lockdep_is_held(&task->alloc_lock)" should match (#2
-lock), the warn doesn't make sense to me...
-
-Regards,
-Michael Wang
-
-
-> [  450.193366]  #3:  (cpuset_buffer_lock){+.+...}, at: [<ffffffff811a06d0>] cpuset_print_task_mems_allowed+0x60/0x150
-> [  450.195281]
-> [  450.195281] stack backtrace:
-> [  450.195987] Pid: 6, comm: kworker/u:0 Tainted: G        W    3.9.0-rc1-next-20130305-sasha-00048-g35e9ec5-dirty #1032
-> [  450.197678] Call Trace:
-> [  450.198086]  [<ffffffff811793b3>] lockdep_rcu_suspicious+0x113/0x130
-> [  450.199077]  [<ffffffff811a0757>] cpuset_print_task_mems_allowed+0xe7/0x150
-> [  450.200263]  [<ffffffff8120370c>] dump_header+0x7c/0xe0
-> [  450.201135]  [<ffffffff81203972>] oom_kill_process+0x82/0x370
-> [  450.202048]  [<ffffffff812040cb>] out_of_memory+0x1ab/0x200
-> [  450.202921]  [<ffffffff83d44e00>] ? _raw_write_unlock_irq+0x50/0x80
-> [  450.204068]  [<ffffffff8120ad1f>] __alloc_pages_slowpath+0x5bf/0x700
-> [  450.205075]  [<ffffffff8120b135>] __alloc_pages_nodemask+0x2d5/0x400
-> [  450.206067]  [<ffffffff811047c8>] dup_task_struct+0x68/0x1c0
-> [  450.206975]  [<ffffffff81105b19>] copy_process+0xe9/0xfd0
-> [  450.207798]  [<ffffffff8114dd25>] ? sched_clock_local+0x25/0x90
-> [  450.208679]  [<ffffffff81127c50>] ? call_helper+0x20/0x20
-> [  450.209496]  [<ffffffff81106e6b>] do_fork+0xbb/0x280
-> [  450.210384]  [<ffffffff811070b1>] kernel_thread+0x21/0x30
-> [  450.211323]  [<ffffffff81127a93>] __call_usermodehelper+0x33/0xa0
-> [  450.212260]  [<ffffffff8112bbc8>] process_one_work+0x368/0x570
-> [  450.213201]  [<ffffffff8112ba98>] ? process_one_work+0x238/0x570
-> [  450.214248]  [<ffffffff8112d735>] worker_thread+0x1f5/0x340
-> [  450.215159]  [<ffffffff8112d540>] ? manage_workers+0x160/0x160
-> [  450.216078]  [<ffffffff81135ec2>] kthread+0xe2/0xf0
-> [  450.216901]  [<ffffffff8117e34a>] ? __lock_release+0x1da/0x1f0
-> [  450.217824]  [<ffffffff81135de0>] ? __init_kthread_worker+0x70/0x70
-> [  450.218791]  [<ffffffff83d4ddbc>] ret_from_fork+0x7c/0xb0
-> [  450.219627]  [<ffffffff81135de0>] ? __init_kthread_worker+0x70/0x70
-> [  450.220780] kworker/u:0 cpuset=/ mems_allowed=0
+> I suppose this is the warn context:
 > 
-> The offending commit looks like "cgroup: fix cgroup_path() vs rename() race".
+> cpuset_print_task_mems_allowed() -> task_cs() -> task_subsys_state()
 > 
+> and this is the definition of task_subsys_state():
 > 
-> Thanks,
-> Sasha
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> #define task_subsys_state_check(task, subsys_id, __c)                   \
+>         rcu_dereference_check(task->cgroups->subsys[subsys_id],         \
+>                               lockdep_is_held(&task->alloc_lock) ||     \
+>                               cgroup_lock_is_held() || (__c))
 > 
+> the condition "lockdep_is_held(&task->alloc_lock)" should match (#2
+> lock), the warn doesn't make sense to me...
+> 
+
+nope..note this is 3.9-rc1-next, not 3.9-rc1.
+
+The warning is from this:
+
+/* Caller should hold rcu_read_lock() */
+static inline const char *cgroup_name(const struct cgroup *cgrp)
+{
+        return rcu_dereference(cgrp->name)->name;
+}
+
+I've cooked up a patch. Will send out today.
 
