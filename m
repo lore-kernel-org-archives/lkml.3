@@ -1,102 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932722Ab3CGSmu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 13:42:50 -0500
-Received: from mail-oa0-f52.google.com ([209.85.219.52]:33843 "EHLO
-	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756288Ab3CGSmr (ORCPT
+	id S1759701Ab3CGSm6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 13:42:58 -0500
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:56619 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759509Ab3CGSmy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 13:42:47 -0500
+	Thu, 7 Mar 2013 13:42:54 -0500
+Date: Fri, 8 Mar 2013 00:12:41 +0530
+From: Afzal Mohammed <afzal.mohd.ma@gmail.com>
+To: Daniel Mack <zonque@gmail.com>
+Cc: Fabio Estevam <festevam@gmail.com>, Russell King <linux@arm.linux.org.uk>,
+        Mike Turquette <mturquette@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: Question about fixed-clock
+Message-ID: <20130307184240.GA3327@afzal-ThinkPad-R50e>
 MIME-Version: 1.0
-In-Reply-To: <20130307175359.GB15631@redhat.com>
-References: <201303042055.38040.maciej.rutecki@gmail.com>
-	<1362504883-9180-1-git-send-email-msb@chromium.org>
-	<20130305174838.GA7276@redhat.com>
-	<CACBanvqHRDsOQiMsQMw5_QDt1wFrb8_DRoiASSvqeA6XdFrwZQ@mail.gmail.com>
-	<20130305180542.GA12738@redhat.com>
-	<CACBanvr7XvXbFjphpRwKHHJKzVuA-s6sF-qkPiizBV3+uqzpJw@mail.gmail.com>
-	<20130305232603.GA16045@khazad-dum.debian.net>
-	<20130306154420.GA7697@redhat.com>
-	<20130306233232.GA12645@khazad-dum.debian.net>
-	<20130307175305.GA15631@redhat.com>
-	<20130307175359.GB15631@redhat.com>
-Date: Thu, 7 Mar 2013 10:42:46 -0800
-X-Google-Sender-Auth: nST2HrRSL2ELCMN_RLhOaCy6yQM
-Message-ID: <CACBanvqP0jx_d-LtV5+fRD7M698M_b6j0Sv=v0uoTBpjEusQCw@mail.gmail.com>
-Subject: Re: [PATCH 1/1] thinkpad-acpi: kill hotkey_thread_mutex
-From: Mandeep Singh Baines <msb@chromium.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-acpi@vger.kernel.org, ibm-acpi@hmh.eng.br,
-        ibm-acpi-devel@lists.sourceforge.net,
-        platform-driver-x86@vger.kernel.org, Aaron Lu <aaron.lu@intel.com>,
-        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Artem Savkov <artem.savkov@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130219033931.GA2479@afzal-ThinkPad-R50e>
+ <51234B8E.2000504@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 7, 2013 at 9:53 AM, Oleg Nesterov <oleg@redhat.com> wrote:
-> hotkey_kthread() does try_to_freeze() under hotkey_thread_mutex.
->
-> We can simply kill this mutex, hotkey_poll_stop_sync() does not need
-> to serialize with hotkey_kthread(). When kthread_stop() returns the
-> thread is already dead, it called do_exit()->complete_vfork_done().
->
-> Reported-by: Artem Savkov <artem.savkov@gmail.com>
-> Reported-by: Maciej Rutecki <maciej.rutecki@gmail.com>
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
->
+Hi Daniel,
 
-Reviewed-by: Mandeep Singh Baines <msb@chromium.org>
+On Tue, Feb 19, 2013 at 09:09:31AM +0530, Afzal Mohammed wrote:
 
-> --- x/drivers/platform/x86/thinkpad_acpi.c
-> +++ x/drivers/platform/x86/thinkpad_acpi.c
-> @@ -1965,9 +1965,6 @@ struct tp_nvram_state {
->  /* kthread for the hotkey poller */
->  static struct task_struct *tpacpi_hotkey_task;
->
-> -/* Acquired while the poller kthread is running, use to sync start/stop */
-> -static struct mutex hotkey_thread_mutex;
-> -
->  /*
->   * Acquire mutex to write poller control variables as an
->   * atomic block.
-> @@ -2463,8 +2460,6 @@ static int hotkey_kthread(void *data)
->         unsigned int poll_freq;
->         bool was_frozen;
->
-> -       mutex_lock(&hotkey_thread_mutex);
-> -
->         if (tpacpi_lifecycle == TPACPI_LIFE_EXITING)
->                 goto exit;
->
-> @@ -2524,7 +2519,6 @@ static int hotkey_kthread(void *data)
->         }
->
->  exit:
-> -       mutex_unlock(&hotkey_thread_mutex);
->         return 0;
->  }
->
-> @@ -2534,9 +2528,6 @@ static void hotkey_poll_stop_sync(void)
->         if (tpacpi_hotkey_task) {
->                 kthread_stop(tpacpi_hotkey_task);
->                 tpacpi_hotkey_task = NULL;
-> -               mutex_lock(&hotkey_thread_mutex);
-> -               /* at this point, the thread did exit */
-> -               mutex_unlock(&hotkey_thread_mutex);
->         }
->  }
->
-> @@ -3235,7 +3226,6 @@ static int __init hotkey_init(struct ibm
->         mutex_init(&hotkey_mutex);
->
->  #ifdef CONFIG_THINKPAD_ACPI_HOTKEY_POLL
-> -       mutex_init(&hotkey_thread_mutex);
->         mutex_init(&hotkey_thread_data_mutex);
->  #endif
->
->
+> Hope invoking of_clk_init before clock generator driver helps
+
+Mails coming from this id are in my personal capacity.
+
+On Tue, Feb 19, 2013 at 10:53:18AM +0100, Daniel Mack wrote:
+> On 19.02.2013 02:33, Fabio Estevam wrote:
+
+> > Have you registered it with clk_register_fixed_rate() ?
+
+> Hmm no, I didn't do anything else than adding it to the DT in the first
+> place, hoping that a driver will pick it up and add the clock for me.
+> But it turns out that of_clk_init() is not called at all on my platform.
+> 
+> I'm doing this now from omap_generic_init() and it works. If that's an
+> appropriate place to call it, I can provide a patch.
+
+Initially didn't realize that it was for an am335x based one.
+
+I feel that for a platform having it's clock tree in DT, of_clk_init
+would take care of it, but if clock tree data is not in DT, clock
+tree would have to be extended in a non-DT way.
+
+Regards
+Afzal
