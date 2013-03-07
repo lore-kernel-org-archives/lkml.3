@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758218Ab3CGMOC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 07:14:02 -0500
-Received: from mail.pripojeni.net ([178.22.112.14]:49746 "EHLO
+	id S1757889Ab3CGMOA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 07:14:00 -0500
+Received: from mail.pripojeni.net ([178.22.112.14]:49747 "EHLO
 	smtp.pripojeni.net" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1757355Ab3CGMMt (ORCPT
+	with ESMTP id S1757374Ab3CGMMt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 7 Mar 2013 07:12:49 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: gregkh@linuxfoundation.org
 Cc: peter@hurleysoftware.com, jirislaby@gmail.com,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 12/16] crisv10: use flags from tty_port
-Date: Thu,  7 Mar 2013 13:12:36 +0100
-Message-Id: <1362658360-26629-12-git-send-email-jslaby@suse.cz>
+Subject: [PATCH 10/16] TTY: cleanup tty->hw_stopped uses
+Date: Thu,  7 Mar 2013 13:12:34 +0100
+Message-Id: <1362658360-26629-10-git-send-email-jslaby@suse.cz>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1362658360-26629-1-git-send-email-jslaby@suse.cz>
 References: <1362658360-26629-1-git-send-email-jslaby@suse.cz>
@@ -21,296 +21,272 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-First, remove STD_FLAGS as the value, or its subvalues
-(ASYNC_BOOT_AUTOCONF | ASYNC_SKIP_TEST) is not tested anywhere --
-there is no point to initialize flags to that. Second, use flags
-member from tty_port when we have it now. So that we do not waste
-space.
+tty->hw_stopped is set only by drivers to remember HW state. If it is
+never set to 1 in a particular driver, there is no need to check it in
+the driver at all. Remove such checks.
 
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/tty/serial/crisv10.c | 64 ++++++++++++++++++++------------------------
- drivers/tty/serial/crisv10.h |  2 --
- 2 files changed, 29 insertions(+), 37 deletions(-)
+ arch/ia64/hp/sim/simserial.c     | 16 +++-------------
+ drivers/isdn/i4l/isdn_tty.c      |  3 ---
+ drivers/net/caif/caif_serial.c   |  1 -
+ drivers/tty/rocket.c             | 19 ++++++++-----------
+ drivers/tty/serial/68328serial.c |  9 +++------
+ drivers/tty/serial/arc_uart.c    |  2 +-
+ drivers/tty/serial/crisv10.c     | 12 ++----------
+ 7 files changed, 17 insertions(+), 45 deletions(-)
 
+diff --git a/arch/ia64/hp/sim/simserial.c b/arch/ia64/hp/sim/simserial.c
+index da2f319..e70cade 100644
+--- a/arch/ia64/hp/sim/simserial.c
++++ b/arch/ia64/hp/sim/simserial.c
+@@ -142,8 +142,7 @@ static void transmit_chars(struct tty_struct *tty, struct serial_state *info,
+ 		goto out;
+ 	}
+ 
+-	if (info->xmit.head == info->xmit.tail || tty->stopped ||
+-			tty->hw_stopped) {
++	if (info->xmit.head == info->xmit.tail || tty->stopped) {
+ #ifdef SIMSERIAL_DEBUG
+ 		printk("transmit_chars: head=%d, tail=%d, stopped=%d\n",
+ 		       info->xmit.head, info->xmit.tail, tty->stopped);
+@@ -181,7 +180,7 @@ static void rs_flush_chars(struct tty_struct *tty)
+ 	struct serial_state *info = tty->driver_data;
+ 
+ 	if (info->xmit.head == info->xmit.tail || tty->stopped ||
+-			tty->hw_stopped || !info->xmit.buf)
++			!info->xmit.buf)
+ 		return;
+ 
+ 	transmit_chars(tty, info, NULL);
+@@ -217,7 +216,7 @@ static int rs_write(struct tty_struct * tty,
+ 	 * Hey, we transmit directly from here in our case
+ 	 */
+ 	if (CIRC_CNT(info->xmit.head, info->xmit.tail, SERIAL_XMIT_SIZE) &&
+-			!tty->stopped && !tty->hw_stopped)
++			!tty->stopped)
+ 		transmit_chars(tty, info, NULL);
+ 
+ 	return ret;
+@@ -325,14 +324,6 @@ static int rs_ioctl(struct tty_struct *tty, unsigned int cmd, unsigned long arg)
+ 
+ #define RELEVANT_IFLAG(iflag) (iflag & (IGNBRK|BRKINT|IGNPAR|PARMRK|INPCK))
+ 
+-static void rs_set_termios(struct tty_struct *tty, struct ktermios *old_termios)
+-{
+-	/* Handle turning off CRTSCTS */
+-	if ((old_termios->c_cflag & CRTSCTS) &&
+-	    !(tty->termios.c_cflag & CRTSCTS)) {
+-		tty->hw_stopped = 0;
+-	}
+-}
+ /*
+  * This routine will shutdown a serial port; interrupts are disabled, and
+  * DTR is dropped if the hangup on close termio flag is on.
+@@ -481,7 +472,6 @@ static const struct tty_operations hp_ops = {
+ 	.throttle = rs_throttle,
+ 	.unthrottle = rs_unthrottle,
+ 	.send_xchar = rs_send_xchar,
+-	.set_termios = rs_set_termios,
+ 	.hangup = rs_hangup,
+ 	.proc_fops = &rs_proc_fops,
+ };
+diff --git a/drivers/isdn/i4l/isdn_tty.c b/drivers/isdn/i4l/isdn_tty.c
+index d8a7d83..2210766 100644
+--- a/drivers/isdn/i4l/isdn_tty.c
++++ b/drivers/isdn/i4l/isdn_tty.c
+@@ -1470,9 +1470,6 @@ isdn_tty_set_termios(struct tty_struct *tty, struct ktermios *old_termios)
+ 		    tty->termios.c_ospeed == old_termios->c_ospeed)
+ 			return;
+ 		isdn_tty_change_speed(info);
+-		if ((old_termios->c_cflag & CRTSCTS) &&
+-		    !(tty->termios.c_cflag & CRTSCTS))
+-			tty->hw_stopped = 0;
+ 	}
+ }
+ 
+diff --git a/drivers/net/caif/caif_serial.c b/drivers/net/caif/caif_serial.c
+index 666891a..d1bf0ff 100644
+--- a/drivers/net/caif/caif_serial.c
++++ b/drivers/net/caif/caif_serial.c
+@@ -88,7 +88,6 @@ static inline void update_tty_status(struct ser_device *ser)
+ {
+ 	ser->tty_status =
+ 		ser->tty->stopped << 5 |
+-		ser->tty->hw_stopped << 4 |
+ 		ser->tty->flow_stopped << 3 |
+ 		ser->tty->packet << 2 |
+ 		ser->tty->port->low_latency << 1 |
+diff --git a/drivers/tty/rocket.c b/drivers/tty/rocket.c
+index bbffd7a..f5abc28 100644
+--- a/drivers/tty/rocket.c
++++ b/drivers/tty/rocket.c
+@@ -449,7 +449,7 @@ static void rp_do_transmit(struct r_port *info)
+ 
+ 	/*  Loop sending data to FIFO until done or FIFO full */
+ 	while (1) {
+-		if (tty->stopped || tty->hw_stopped)
++		if (tty->stopped)
+ 			break;
+ 		c = min(info->xmit_fifo_room, info->xmit_cnt);
+ 		c = min(c, XMIT_BUF_SIZE - info->xmit_tail);
+@@ -1106,15 +1106,12 @@ static void rp_set_termios(struct tty_struct *tty,
+ 
+ 	/* Handle transition away from B0 status */
+ 	if (!(old_termios->c_cflag & CBAUD) && (tty->termios.c_cflag & CBAUD)) {
+-		if (!tty->hw_stopped || !(tty->termios.c_cflag & CRTSCTS))
+-			sSetRTS(cp);
++		sSetRTS(cp);
+ 		sSetDTR(cp);
+ 	}
+ 
+-	if ((old_termios->c_cflag & CRTSCTS) && !(tty->termios.c_cflag & CRTSCTS)) {
+-		tty->hw_stopped = 0;
++	if ((old_termios->c_cflag & CRTSCTS) && !(tty->termios.c_cflag & CRTSCTS))
+ 		rp_start(tty);
+-	}
+ }
+ 
+ static int rp_break(struct tty_struct *tty, int break_state)
+@@ -1570,10 +1567,10 @@ static int rp_put_char(struct tty_struct *tty, unsigned char ch)
+ 	spin_lock_irqsave(&info->slock, flags);
+ 	cp = &info->channel;
+ 
+-	if (!tty->stopped && !tty->hw_stopped && info->xmit_fifo_room == 0)
++	if (!tty->stopped && info->xmit_fifo_room == 0)
+ 		info->xmit_fifo_room = TXFIFO_SIZE - sGetTxCnt(cp);
+ 
+-	if (tty->stopped || tty->hw_stopped || info->xmit_fifo_room == 0 || info->xmit_cnt != 0) {
++	if (tty->stopped || info->xmit_fifo_room == 0 || info->xmit_cnt != 0) {
+ 		info->xmit_buf[info->xmit_head++] = ch;
+ 		info->xmit_head &= XMIT_BUF_SIZE - 1;
+ 		info->xmit_cnt++;
+@@ -1614,14 +1611,14 @@ static int rp_write(struct tty_struct *tty,
+ #endif
+ 	cp = &info->channel;
+ 
+-	if (!tty->stopped && !tty->hw_stopped && info->xmit_fifo_room < count)
++	if (!tty->stopped && info->xmit_fifo_room < count)
+ 		info->xmit_fifo_room = TXFIFO_SIZE - sGetTxCnt(cp);
+ 
+         /*
+ 	 *  If the write queue for the port is empty, and there is FIFO space, stuff bytes 
+ 	 *  into FIFO.  Use the write queue for temp storage.
+          */
+-	if (!tty->stopped && !tty->hw_stopped && info->xmit_cnt == 0 && info->xmit_fifo_room > 0) {
++	if (!tty->stopped && info->xmit_cnt == 0 && info->xmit_fifo_room > 0) {
+ 		c = min(count, info->xmit_fifo_room);
+ 		b = buf;
+ 
+@@ -1669,7 +1666,7 @@ static int rp_write(struct tty_struct *tty,
+ 		retval += c;
+ 	}
+ 
+-	if ((retval > 0) && !tty->stopped && !tty->hw_stopped)
++	if ((retval > 0) && !tty->stopped)
+ 		set_bit((info->aiop * 8) + info->chan, (void *) &xmit_flags[info->board]);
+ 	
+ end:
+diff --git a/drivers/tty/serial/68328serial.c b/drivers/tty/serial/68328serial.c
+index 4939947..ef2e08e 100644
+--- a/drivers/tty/serial/68328serial.c
++++ b/drivers/tty/serial/68328serial.c
+@@ -630,8 +630,7 @@ static void rs_flush_chars(struct tty_struct *tty)
+ 	/* Enable transmitter */
+ 	local_irq_save(flags);
+ 
+-	if (info->xmit_cnt <= 0 || tty->stopped || tty->hw_stopped ||
+-			!info->xmit_buf) {
++	if (info->xmit_cnt <= 0 || tty->stopped || !info->xmit_buf) {
+ 		local_irq_restore(flags);
+ 		return;
+ 	}
+@@ -697,7 +696,7 @@ static int rs_write(struct tty_struct * tty,
+ 		total += c;
+ 	}
+ 
+-	if (info->xmit_cnt && !tty->stopped && !tty->hw_stopped) {
++	if (info->xmit_cnt && !tty->stopped) {
+ 		/* Enable transmitter */
+ 		local_irq_disable();		
+ #ifndef USE_INTS
+@@ -978,10 +977,8 @@ static void rs_set_termios(struct tty_struct *tty, struct ktermios *old_termios)
+ 	change_speed(info, tty);
+ 
+ 	if ((old_termios->c_cflag & CRTSCTS) &&
+-	    !(tty->termios.c_cflag & CRTSCTS)) {
+-		tty->hw_stopped = 0;
++	    !(tty->termios.c_cflag & CRTSCTS))
+ 		rs_start(tty);
+-	}
+ 	
+ }
+ 
+diff --git a/drivers/tty/serial/arc_uart.c b/drivers/tty/serial/arc_uart.c
+index d97e194..cbf1d15 100644
+--- a/drivers/tty/serial/arc_uart.c
++++ b/drivers/tty/serial/arc_uart.c
+@@ -162,7 +162,7 @@ static unsigned int arc_serial_tx_empty(struct uart_port *port)
+ /*
+  * Driver internal routine, used by both tty(serial core) as well as tx-isr
+  *  -Called under spinlock in either cases
+- *  -also tty->stopped / tty->hw_stopped has already been checked
++ *  -also tty->stopped has already been checked
+  *     = by uart_start( ) before calling us
+  *     = tx_ist checks that too before calling
+  */
 diff --git a/drivers/tty/serial/crisv10.c b/drivers/tty/serial/crisv10.c
-index 1ace22c..ec2dcc7 100644
+index 5f37c31..50f56f3 100644
 --- a/drivers/tty/serial/crisv10.c
 +++ b/drivers/tty/serial/crisv10.c
-@@ -169,7 +169,6 @@ static int get_lsr_info(struct e100_serial *info, unsigned int *value);
- 
- 
- #define DEF_BAUD 115200   /* 115.2 kbit/s */
--#define STD_FLAGS (ASYNC_BOOT_AUTOCONF | ASYNC_SKIP_TEST)
- #define DEF_RX 0x20  /* or SERIAL_CTRL_W >> 8 */
- /* Default value of tx_ctrl register: has txd(bit 7)=1 (idle) as default */
- #define DEF_TX 0x80  /* or SERIAL_CTRL_B */
-@@ -246,7 +245,6 @@ static struct e100_serial rs_table[] = {
- 	  .ifirstadr   = R_DMA_CH7_FIRST,
- 	  .icmdadr     = R_DMA_CH7_CMD,
- 	  .idescradr   = R_DMA_CH7_DESCR,
--	  .flags       = STD_FLAGS,
- 	  .rx_ctrl     = DEF_RX,
- 	  .tx_ctrl     = DEF_TX,
- 	  .iseteop     = 2,
-@@ -300,7 +298,6 @@ static struct e100_serial rs_table[] = {
- 	  .ifirstadr   = R_DMA_CH9_FIRST,
- 	  .icmdadr     = R_DMA_CH9_CMD,
- 	  .idescradr   = R_DMA_CH9_DESCR,
--	  .flags       = STD_FLAGS,
- 	  .rx_ctrl     = DEF_RX,
- 	  .tx_ctrl     = DEF_TX,
- 	  .iseteop     = 3,
-@@ -356,7 +353,6 @@ static struct e100_serial rs_table[] = {
- 	  .ifirstadr   = R_DMA_CH3_FIRST,
- 	  .icmdadr     = R_DMA_CH3_CMD,
- 	  .idescradr   = R_DMA_CH3_DESCR,
--	  .flags       = STD_FLAGS,
- 	  .rx_ctrl     = DEF_RX,
- 	  .tx_ctrl     = DEF_TX,
- 	  .iseteop     = 0,
-@@ -410,7 +406,6 @@ static struct e100_serial rs_table[] = {
- 	  .ifirstadr   = R_DMA_CH5_FIRST,
- 	  .icmdadr     = R_DMA_CH5_CMD,
- 	  .idescradr   = R_DMA_CH5_DESCR,
--	  .flags       = STD_FLAGS,
- 	  .rx_ctrl     = DEF_RX,
- 	  .tx_ctrl     = DEF_TX,
- 	  .iseteop     = 1,
-@@ -2719,7 +2714,7 @@ startup(struct e100_serial * info)
- 
- 	/* if it was already initialized, skip this */
- 
--	if (info->flags & ASYNC_INITIALIZED) {
-+	if (info->port.flags & ASYNC_INITIALIZED) {
- 		local_irq_restore(flags);
- 		free_page(xmit_page);
- 		return 0;
-@@ -2844,7 +2839,7 @@ startup(struct e100_serial * info)
- 
- #endif /* CONFIG_SVINTO_SIM */
- 
--	info->flags |= ASYNC_INITIALIZED;
-+	info->port.flags |= ASYNC_INITIALIZED;
- 
- 	local_irq_restore(flags);
- 	return 0;
-@@ -2889,7 +2884,7 @@ shutdown(struct e100_serial * info)
- 
- #endif /* CONFIG_SVINTO_SIM */
- 
--	if (!(info->flags & ASYNC_INITIALIZED))
-+	if (!(info->port.flags & ASYNC_INITIALIZED))
+@@ -2534,8 +2534,7 @@ static void handle_ser_tx_interrupt(struct e100_serial *info)
+ 	}
+ 	/* Normal char-by-char interrupt */
+ 	if (info->xmit.head == info->xmit.tail
+-	    || info->port.tty->stopped
+-	    || info->port.tty->hw_stopped) {
++	    || info->port.tty->stopped) {
+ 		DFLOW(DEBUG_LOG(info->line, "tx_int: stopped %i\n",
+ 				info->port.tty->stopped));
+ 		e100_disable_serial_tx_ready_irq(info);
+@@ -3098,7 +3097,6 @@ rs_flush_chars(struct tty_struct *tty)
+ 	if (info->tr_running ||
+ 	    info->xmit.head == info->xmit.tail ||
+ 	    tty->stopped ||
+-	    tty->hw_stopped ||
+ 	    !info->xmit.buf)
  		return;
  
- #ifdef SERIAL_DEBUG_OPEN
-@@ -2920,7 +2915,7 @@ shutdown(struct e100_serial * info)
- 	if (info->port.tty)
- 		set_bit(TTY_IO_ERROR, &info->port.tty->flags);
+@@ -3176,7 +3174,6 @@ static int rs_raw_write(struct tty_struct *tty,
  
--	info->flags &= ~ASYNC_INITIALIZED;
-+	info->port.flags &= ~ASYNC_INITIALIZED;
- 	local_irq_restore(flags);
+ 	if (info->xmit.head != info->xmit.tail &&
+ 	    !tty->stopped &&
+-	    !tty->hw_stopped &&
+ 	    !info->tr_running) {
+ 		start_transmit(info);
+ 	}
+@@ -3733,10 +3730,8 @@ rs_set_termios(struct tty_struct *tty, struct ktermios *old_termios)
+ 
+ 	/* Handle turning off CRTSCTS */
+ 	if ((old_termios->c_cflag & CRTSCTS) &&
+-	    !(tty->termios.c_cflag & CRTSCTS)) {
+-		tty->hw_stopped = 0;
++	    !(tty->termios.c_cflag & CRTSCTS))
+ 		rs_start(tty);
+-	}
+ 
  }
  
-@@ -2945,7 +2940,7 @@ change_speed(struct e100_serial *info)
- 	/* possibly, the tx/rx should be disabled first to do this safely */
- 
- 	/* change baud-rate and write it to the hardware */
--	if ((info->flags & ASYNC_SPD_MASK) == ASYNC_SPD_CUST) {
-+	if ((info->port.flags & ASYNC_SPD_MASK) == ASYNC_SPD_CUST) {
- 		/* Special baudrate */
- 		u32 mask = 0xFF << (info->line*8); /* Each port has 8 bits */
- 		unsigned long alt_source =
-@@ -3395,7 +3390,7 @@ get_serial_info(struct e100_serial * info,
- 	tmp.line = info->line;
- 	tmp.port = (int)info->ioport;
- 	tmp.irq = info->irq;
--	tmp.flags = info->flags;
-+	tmp.flags = info->port.flags;
- 	tmp.baud_base = info->baud_base;
- 	tmp.close_delay = info->close_delay;
- 	tmp.closing_wait = info->closing_wait;
-@@ -3422,9 +3417,9 @@ set_serial_info(struct e100_serial *info,
- 		if ((new_serial.type != info->type) ||
- 		    (new_serial.close_delay != info->close_delay) ||
- 		    ((new_serial.flags & ~ASYNC_USR_MASK) !=
--		     (info->flags & ~ASYNC_USR_MASK)))
-+		     (info->port.flags & ~ASYNC_USR_MASK)))
- 			return -EPERM;
--		info->flags = ((info->flags & ~ASYNC_USR_MASK) |
-+		info->port.flags = ((info->port.flags & ~ASYNC_USR_MASK) |
- 			       (new_serial.flags & ASYNC_USR_MASK));
- 		goto check_and_exit;
- 	}
-@@ -3438,16 +3433,16 @@ set_serial_info(struct e100_serial *info,
- 	 */
- 
- 	info->baud_base = new_serial.baud_base;
--	info->flags = ((info->flags & ~ASYNC_FLAGS) |
-+	info->port.flags = ((info->port.flags & ~ASYNC_FLAGS) |
- 		       (new_serial.flags & ASYNC_FLAGS));
- 	info->custom_divisor = new_serial.custom_divisor;
- 	info->type = new_serial.type;
- 	info->close_delay = new_serial.close_delay;
- 	info->closing_wait = new_serial.closing_wait;
--	info->port.low_latency = (info->flags & ASYNC_LOW_LATENCY) ? 1 : 0;
-+	info->port.low_latency = (info->port.flags & ASYNC_LOW_LATENCY) ? 1 : 0;
- 
-  check_and_exit:
--	if (info->flags & ASYNC_INITIALIZED) {
-+	if (info->port.flags & ASYNC_INITIALIZED) {
- 		change_speed(info);
- 	} else
- 		retval = startup(info);
-@@ -3787,12 +3782,12 @@ rs_close(struct tty_struct *tty, struct file * filp)
- 		local_irq_restore(flags);
- 		return;
- 	}
--	info->flags |= ASYNC_CLOSING;
-+	info->port.flags |= ASYNC_CLOSING;
- 	/*
- 	 * Save the termios structure, since this port may have
- 	 * separate termios for callout and dialin.
- 	 */
--	if (info->flags & ASYNC_NORMAL_ACTIVE)
-+	if (info->port.flags & ASYNC_NORMAL_ACTIVE)
- 		info->normal_termios = tty->termios;
- 	/*
- 	 * Now we wait for the transmit buffer to clear; and we notify
-@@ -3813,7 +3808,7 @@ rs_close(struct tty_struct *tty, struct file * filp)
- 	e100_disable_rx(info);
- 	e100_disable_rx_irq(info);
- 
--	if (info->flags & ASYNC_INITIALIZED) {
-+	if (info->port.flags & ASYNC_INITIALIZED) {
- 		/*
- 		 * Before we drop DTR, make sure the UART transmitter
- 		 * has completely drained; this is especially
-@@ -3834,7 +3829,7 @@ rs_close(struct tty_struct *tty, struct file * filp)
- 			schedule_timeout_interruptible(info->close_delay);
- 		wake_up_interruptible(&info->open_wait);
- 	}
--	info->flags &= ~(ASYNC_NORMAL_ACTIVE|ASYNC_CLOSING);
-+	info->port.flags &= ~(ASYNC_NORMAL_ACTIVE|ASYNC_CLOSING);
- 	wake_up_interruptible(&info->close_wait);
- 	local_irq_restore(flags);
- 
-@@ -3929,7 +3924,7 @@ rs_hangup(struct tty_struct *tty)
- 	shutdown(info);
- 	info->event = 0;
- 	info->count = 0;
--	info->flags &= ~ASYNC_NORMAL_ACTIVE;
-+	info->port.flags &= ~ASYNC_NORMAL_ACTIVE;
- 	info->port.tty = NULL;
- 	wake_up_interruptible(&info->open_wait);
- }
-@@ -3953,11 +3948,11 @@ block_til_ready(struct tty_struct *tty, struct file * filp,
- 	 * until it's done, and then try again.
- 	 */
- 	if (tty_hung_up_p(filp) ||
--	    (info->flags & ASYNC_CLOSING)) {
-+	    (info->port.flags & ASYNC_CLOSING)) {
- 		wait_event_interruptible_tty(tty, info->close_wait,
--			!(info->flags & ASYNC_CLOSING));
-+			!(info->port.flags & ASYNC_CLOSING));
- #ifdef SERIAL_DO_RESTART
--		if (info->flags & ASYNC_HUP_NOTIFY)
-+		if (info->port.flags & ASYNC_HUP_NOTIFY)
- 			return -EAGAIN;
- 		else
- 			return -ERESTARTSYS;
-@@ -3972,7 +3967,7 @@ block_til_ready(struct tty_struct *tty, struct file * filp,
- 	 */
- 	if ((filp->f_flags & O_NONBLOCK) ||
- 	    (tty->flags & (1 << TTY_IO_ERROR))) {
--		info->flags |= ASYNC_NORMAL_ACTIVE;
-+		info->port.flags |= ASYNC_NORMAL_ACTIVE;
- 		return 0;
+@@ -4256,9 +4251,6 @@ static void seq_line_info(struct seq_file *m, struct e100_serial *info)
+ 		if (info->port.tty->stopped)
+ 			seq_printf(m, " stopped:%i",
+ 				   (int)info->port.tty->stopped);
+-		if (info->port.tty->hw_stopped)
+-			seq_printf(m, " hw_stopped:%i",
+-				   (int)info->port.tty->hw_stopped);
  	}
  
-@@ -4008,9 +4003,9 @@ block_til_ready(struct tty_struct *tty, struct file * filp,
- 		local_irq_restore(flags);
- 		set_current_state(TASK_INTERRUPTIBLE);
- 		if (tty_hung_up_p(filp) ||
--		    !(info->flags & ASYNC_INITIALIZED)) {
-+		    !(info->port.flags & ASYNC_INITIALIZED)) {
- #ifdef SERIAL_DO_RESTART
--			if (info->flags & ASYNC_HUP_NOTIFY)
-+			if (info->port.flags & ASYNC_HUP_NOTIFY)
- 				retval = -EAGAIN;
- 			else
- 				retval = -ERESTARTSYS;
-@@ -4019,7 +4014,7 @@ block_til_ready(struct tty_struct *tty, struct file * filp,
- #endif
- 			break;
- 		}
--		if (!(info->flags & ASYNC_CLOSING) && do_clocal)
-+		if (!(info->port.flags & ASYNC_CLOSING) && do_clocal)
- 			/* && (do_clocal || DCD_IS_ASSERTED) */
- 			break;
- 		if (signal_pending(current)) {
-@@ -4045,7 +4040,7 @@ block_til_ready(struct tty_struct *tty, struct file * filp,
- #endif
- 	if (retval)
- 		return retval;
--	info->flags |= ASYNC_NORMAL_ACTIVE;
-+	info->port.flags |= ASYNC_NORMAL_ACTIVE;
- 	return 0;
- }
- 
-@@ -4086,17 +4081,17 @@ rs_open(struct tty_struct *tty, struct file * filp)
- 	tty->driver_data = info;
- 	info->port.tty = tty;
- 
--	info->port.low_latency = !!(info->flags & ASYNC_LOW_LATENCY);
-+	info->port.low_latency = !!(info->port.flags & ASYNC_LOW_LATENCY);
- 
- 	/*
- 	 * If the port is in the middle of closing, bail out now
- 	 */
- 	if (tty_hung_up_p(filp) ||
--	    (info->flags & ASYNC_CLOSING)) {
-+	    (info->port.flags & ASYNC_CLOSING)) {
- 		wait_event_interruptible_tty(tty, info->close_wait,
--			!(info->flags & ASYNC_CLOSING));
-+			!(info->port.flags & ASYNC_CLOSING));
- #ifdef SERIAL_DO_RESTART
--		return ((info->flags & ASYNC_HUP_NOTIFY) ?
-+		return ((info->port.flags & ASYNC_HUP_NOTIFY) ?
- 			-EAGAIN : -ERESTARTSYS);
- #else
- 		return -EAGAIN;
-@@ -4196,7 +4191,7 @@ rs_open(struct tty_struct *tty, struct file * filp)
- 		return retval;
- 	}
- 
--	if ((info->count == 1) && (info->flags & ASYNC_SPLIT_TERMIOS)) {
-+	if ((info->count == 1) && (info->port.flags & ASYNC_SPLIT_TERMIOS)) {
- 		tty->termios = info->normal_termios;
- 		change_speed(info);
- 	}
-@@ -4445,7 +4440,6 @@ static int __init rs_init(void)
- 		info->forced_eop = 0;
- 		info->baud_base = DEF_BAUD_BASE;
- 		info->custom_divisor = 0;
--		info->flags = 0;
- 		info->close_delay = 5*HZ/10;
- 		info->closing_wait = 30*HZ;
- 		info->x_char = 0;
-diff --git a/drivers/tty/serial/crisv10.h b/drivers/tty/serial/crisv10.h
-index ea0beb4..7146ed2 100644
---- a/drivers/tty/serial/crisv10.h
-+++ b/drivers/tty/serial/crisv10.h
-@@ -53,8 +53,6 @@ struct e100_serial {
- 	volatile u8 *icmdadr;		/* adr to R_DMA_CHx_CMD */
- 	volatile u32 *idescradr;	/* adr to R_DMA_CHx_DESCR */
- 
--	int flags;	/* defined in tty.h */
--
- 	u8 rx_ctrl;	/* shadow for R_SERIALx_REC_CTRL */
- 	u8 tx_ctrl;	/* shadow for R_SERIALx_TR_CTRL */
- 	u8 iseteop;	/* bit number for R_SET_EOP for the input dma */
+ 	{
 -- 
 1.8.1.4
 
