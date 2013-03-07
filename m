@@ -1,59 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933473Ab3CGWRn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 17:17:43 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:60677 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758979Ab3CGWRm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 17:17:42 -0500
-Message-ID: <513911F9.8050308@zytor.com>
-Date: Thu, 07 Mar 2013 14:17:29 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
+	id S933413Ab3CGWSW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 17:18:22 -0500
+Received: from mail.candelatech.com ([208.74.158.172]:47505 "EHLO
+	ns3.lanforge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759843Ab3CGWSV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Mar 2013 17:18:21 -0500
+Message-ID: <51391225.1020403@candelatech.com>
+Date: Thu, 07 Mar 2013 14:18:13 -0800
+From: Ben Greear <greearb@candelatech.com>
+Organization: Candela Technologies
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130219 Thunderbird/17.0.3
 MIME-Version: 1.0
-To: Matt Fleming <matt.fleming@intel.com>
-CC: Seth Forshee <seth.forshee@canonical.com>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org
-Subject: Re: [PATCH] efivars: Allow disabling use as a pstore backend
-References: <1362678017-2862-1-git-send-email-seth.forshee@canonical.com>  <5138FAD9.7050504@zytor.com> <20130307205915.GF24233@thinkpad-t410> <1362694529.15011.211.camel@mfleming-mobl1.ger.corp.intel.com>
-In-Reply-To: <1362694529.15011.211.camel@mfleming-mobl1.ger.corp.intel.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=UTF-8
+To: Mateusz Guzik <mguzik@redhat.com>
+CC: linux-cifs@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Jeff Layton <jlayton@redhat.com>
+Subject: Re: 3.7.10+:  BUG Dentry still in use [unmount of cifs cifs]
+References: <51363F80.8070609@candelatech.com> <20130307191914.GA1652@mguzik.brq.redhat.com>
+In-Reply-To: <20130307191914.GA1652@mguzik.brq.redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/07/2013 02:15 PM, Matt Fleming wrote:
->>>
->>> What about a command line option?
+On 03/07/2013 11:19 AM, Mateusz Guzik wrote:
+> On Tue, Mar 05, 2013 at 10:54:56AM -0800, Ben Greear wrote:
+>> In doing some CIFS testing (utilizing it's feature to bind to local
+>> address..but not sure that matters), we saw this error when trying
+>> to un-mount.
 >>
->> That could be done. I'm assuming you want this instead of a config
->> option, defaulted to on?
+>> Our kernel is patched (nfs, some networking related patches), but there
+>> are no out-of-kernel patches to CIFS, so I don't *think* this is anything
+>> we could have caused.
 >>
->> How would you feel about a config option for the default value of the
->> command line option? I intend to default this to off in Ubuntu for a
->> while as a colleague's machine was recently bricked on two different
->> occasions after the kernel oopsed. The config option would simplify
->> things a bit for us, though we could always carry a patch changing the
->> default value.
-> 
-> Not sure why a command line option would be a more natural solution to
-> this problem? The original patch looked fine to me. All other pstore
-> backends are guarded by Kconfig options.
-> 
-> Though I could see an argument for a kernel parameter to turn off the
-> EFI pstore backend code, even if it's compiled into the kernel. But that
-> would be better as an additional patch.
-> 
+>> This problem appears to be easily reproducible, so we will be happy
+>> to test patches if anyone has any suggestions.
+>>
+>> BUG: Dentry ffff8800c07e43c0{i=45762,n=cifs2-01.7.lf-data} still in use (1) [unmount of cifs cifs]
+>
+> We encountered similar panic, but it was related to writes. In our case
+> the problem was that some cifsInodeInfo holding dentry references were
+> still around (in slow-work queue) during superblock destruction in unmount.
+>
+> I reproduced the problem on 3.8 kernel (sorry, no 3.7 handy) with reads
+> as well, which should match your scenario.
+>
+> I attached a patch that deals with this problem by grabbing refcounts to
+> cifs superblock on cifsInodeInfo creation. This delays sb destruction
+> until all cifsInodeInfos are gone. I didn't test it on 3.7.10 kernel but
+> it should work fine.
 
-That way it can be enabled if needed, without the user having to build
-their own kernel.
+The 3.7.10 patch applied cleanly and appears to fix our problem.
 
-	-hpa
+Thanks so much for the patch!
+
+Ben
 
 -- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+Ben Greear <greearb@candelatech.com>
+Candela Technologies Inc  http://www.candelatech.com
 
