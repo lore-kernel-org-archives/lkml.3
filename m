@@ -1,100 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758233Ab3CGAEk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 19:04:40 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:34251 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758080Ab3CGAEh (ORCPT
+	id S932121Ab3CGAEL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 19:04:11 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:36435 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754850Ab3CGAEI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 19:04:37 -0500
-Message-ID: <5137D991.7080808@wwwdotorg.org>
-Date: Wed, 06 Mar 2013 17:04:33 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Andrew Chew <AChew@nvidia.com>
-CC: Peter De Schrijver <pdeschrijver@nvidia.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Stephen Warren <swarren@nvidia.com>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] clk: tegra: provide dummy cpu car ops
-References: <1360853581-9756-1-git-send-email-pdeschrijver@nvidia.com> <643E69AA4436674C8F39DCC2C05F7638629CA50C97@HQMAIL03.nvidia.com> <5137D47D.6030105@wwwdotorg.org> <643E69AA4436674C8F39DCC2C05F7638629CA50CC0@HQMAIL03.nvidia.com>
-In-Reply-To: <643E69AA4436674C8F39DCC2C05F7638629CA50CC0@HQMAIL03.nvidia.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Wed, 6 Mar 2013 19:04:08 -0500
+X-IronPort-AV: E=Sophos;i="4.84,798,1355126400"; 
+   d="scan'208";a="27738006"
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        Mark Rutland <mark.rutland@arm.com>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Kukjin Kim <kgene.kim@samsung.com>, Barry Song <baohua.song@csr.com>,
+        Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Tony Lindgren <tony@atomide.com>, John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCHv2 0/10] Remove ARM local timer API
+Date: Wed,  6 Mar 2013 16:03:56 -0800
+Message-Id: <1362614646-24113-1-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.8.2.rc2.4.g7799588
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/06/2013 04:59 PM, Andrew Chew wrote:
->> From: linux-tegra-owner@vger.kernel.org [mailto:linux-tegra-
->> owner@vger.kernel.org] On Behalf Of Stephen Warren
->> Sent: Wednesday, March 06, 2013 3:43 PM
->> To: Andrew Chew
->> Cc: Peter De Schrijver; linux-tegra@vger.kernel.org; linux-arm-
->> kernel@lists.infradead.org; Stephen Warren; Prashant Gaikwad; Mike
->> Turquette; linux-kernel@vger.kernel.org
->> Subject: Re: [PATCH] clk: tegra: provide dummy cpu car ops
->>
->> On 03/06/2013 04:20 PM, Andrew Chew wrote:
->>>> Subject: [PATCH] clk: tegra: provide dummy cpu car ops
->>>>
->>>> tegra_boot_secondary() relies on some of the car ops. This means
->>>> having an uninitialized tegra_cpu_car_ops will lead to an early boot panic.
->>>> Providing a dummy struct avoids this and makes adding Tegra114 clock
->>>> support in a bisectable way a lot easier.
->>>>
->>>> --
->>>>
->>>> Stephen,
->>>>
->>>> Should this be a separate patch or should I make this part of new
->>>> release of the Tegra114 clock series?
->>
->> I'm not sure if I answered this. Peter, I intend to apply this patch to a branch
->> right before the CCF, so there's no explicit need to include it in the series,
->> although if you do, that's fine.
->>
->>>> diff --git a/drivers/clk/tegra/clk.c b/drivers/clk/tegra/clk.c index
->>
->>>>  /* Global data of Tegra CPU CAR ops */ -struct tegra_cpu_car_ops
->>>> *tegra_cpu_car_ops;
->>>
->>> Sorry for bringing this up so late...
->>> Shouldn't the above be "struct tegra_cpu_car_ops tegra_cpu_car_ops;"?
->>>
->>>> +static struct tegra_cpu_car_ops *dummy_car_ops; struct
->>>> +tegra_cpu_car_ops *tegra_cpu_car_ops = &dummy_car_ops;
->>
->> No, the value is used as a pointer in include/linux/clk/tegra.h, e.g.:
->>
->> tegra_cpu_car_ops->wait_for_reset(cpu);
-> 
-> Yeah, I get that tegra_cpu_car_ops is a pointer to an ops table.  It seems
-> to me that what's happening above is that tegra_cpu_car_ops is getting
-> assigned a pointer to a pointer that's supposed to point to an instance of
-> struct tegra_cpu_car_ops (but it really points to NULL as far as I can tell).
-> In any case, dummy_car_ops never actually gets instantiated.
-> 
-> I assume the intention is for dummy_car_ops to be an instance of
-> struct tegra_cpu_car_ops, but with all of its members zero'd.
+In light of Mark Rutland's recent work on divorcing the ARM architected
+timers from the ARM local timer API and introducing a generic arch hook for
+broadcast it seems that we should remove the local timer API entirely.
+Doing so will reduce the architecture dependencies of our timer drivers,
+reduce code in ARM core, and simplify timer drivers because they no longer
+go through an architecture layer that is essentially a hotplug notifier.
 
-Oh right, I guess your comment was about the line after where you wrote
-it rather than the line before.
+Previous attempts have been made[1] unsuccessfully. I'm hoping this can
+be accepted now so that we can clean up the timer drivers that are
+used in both UP and SMP situations. Right now these drivers have to ignore
+the timer setup callback on the boot CPU to avoid registering clockevents
+twice. This is not very symmetric and causes convuluted code that does
+the same thing in two places.
 
-So, you mean:
+Patches based on v3.9-rc1. Mostly compile tested as I don't
+have access to the hardware.
 
-static struct tegra_cpu_car_ops *dummy_car_ops;
-struct tegra_cpu_car_ops *tegra_cpu_car_ops = &dummy_car_ops;
+[1] http://article.gmane.org/gmane.linux.ports.arm.kernel/145705
 
-should be instead:
+Note: A hotplug notifier is used by both x86 for the apb_timer (see 
+apbt_cpuhp_notify) and by metag (see arch_timer_cpu_notify in
+metag_generic.c) so this is not new.
 
-static struct tegra_cpu_car_ops dummy_car_ops;
-struct tegra_cpu_car_ops *tegra_cpu_car_ops = &dummy_car_ops;
+Changes since v1:
+ * Picked up Mark's generic dummy timer driver
+ * Split out omap changes into new patch
 
-Yes, you're right.
+Mark Rutland (1):
+  clocksource: add generic dummy timer driver
+
+Stephen Boyd (9):
+  ARM: smp: Remove duplicate dummy timer implementation
+  ARM: smp_twd: Divorce smp_twd from local timer API
+  ARM: OMAP2+: Divorce from local timer API
+  ARM: EXYNOS4: Divorce mct from local timer API
+  ARM: PRIMA2: Divorce timer-marco from local timer API
+  ARM: msm: Divorce msm_timer from local timer API
+  clocksource: time-armada-370-xp: Fix sparse warning
+  clocksource: time-armada-370-xp: Divorce from local timer API
+  ARM: smp: Remove local timer API
+
+ arch/arm/Kconfig                         |  12 +--
+ arch/arm/include/asm/localtimer.h        |  34 ---------
+ arch/arm/kernel/smp.c                    |  87 ---------------------
+ arch/arm/kernel/smp_twd.c                |  48 ++++++++----
+ arch/arm/mach-exynos/mct.c               |  53 +++++++++----
+ arch/arm/mach-msm/timer.c                | 125 +++++++++++++++++--------------
+ arch/arm/mach-omap2/Kconfig              |   1 -
+ arch/arm/mach-omap2/timer.c              |   7 --
+ arch/arm/mach-prima2/timer-marco.c       |  98 ++++++++++++------------
+ drivers/clocksource/Makefile             |   1 +
+ drivers/clocksource/dummy_timer.c        |  67 +++++++++++++++++
+ drivers/clocksource/time-armada-370-xp.c |  88 ++++++++++------------
+ include/linux/time-armada-370-xp.h       |   4 +-
+ 13 files changed, 298 insertions(+), 327 deletions(-)
+ delete mode 100644 arch/arm/include/asm/localtimer.h
+ create mode 100644 drivers/clocksource/dummy_timer.c
+
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
+
