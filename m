@@ -1,54 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759950Ab3CGWPx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 17:15:53 -0500
-Received: from mail.free-electrons.com ([94.23.35.102]:33234 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759041Ab3CGWPu (ORCPT
+	id S1759870Ab3CGWQG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 17:16:06 -0500
+Received: from cpsmtpb-ews03.kpnxchange.com ([213.75.39.6]:49237 "EHLO
+	cpsmtpb-ews03.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759224Ab3CGWQB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 17:15:50 -0500
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: linux-arm-kernel@lists.infradead.org
-Cc: kevin@allwinnertech.com, sunny@allwinnertech.com, shuge@allwinnertech.com,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
-Subject: [PATCH 4/6] ARM: sunxi: dt: Add uart3 dt node
-Date: Thu,  7 Mar 2013 23:14:18 +0100
-Message-Id: <1362694460-1919-5-git-send-email-maxime.ripard@free-electrons.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1362694460-1919-1-git-send-email-maxime.ripard@free-electrons.com>
-References: <1362694460-1919-1-git-send-email-maxime.ripard@free-electrons.com>
+	Thu, 7 Mar 2013 17:16:01 -0500
+Message-ID: <1362694559.5994.31.camel@x61.thuisdomein>
+Subject: [PATCH] powerpc/wsp: drop "select PPC_WSP_COPRO"
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>
+Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Date: Thu, 07 Mar 2013 23:15:59 +0100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 07 Mar 2013 22:15:59.0940 (UTC) FILETIME=[5911E840:01CE1B81]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Both A10 and A13 Allwinner SoCs have a Synopsys APB uart3 device
-available, so add it to the sunxi.dtsi file
+There is no Kconfig symbol PPC_WSP_COPRO. The select statement for it is
+a nop. Drop it.
 
-Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
 ---
- arch/arm/boot/dts/sunxi.dtsi |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+A short treatise on the uneventful life of PPC_WSP_COPRO in the mainline
+kernel tree
 
-diff --git a/arch/arm/boot/dts/sunxi.dtsi b/arch/arm/boot/dts/sunxi.dtsi
-index 4f78ef7..324da45 100644
---- a/arch/arm/boot/dts/sunxi.dtsi
-+++ b/arch/arm/boot/dts/sunxi.dtsi
-@@ -68,5 +68,15 @@
- 			clocks = <&osc>;
- 			status = "disabled";
- 		};
-+
-+		uart3: uart@01c28c00 {
-+			compatible = "snps,dw-apb-uart";
-+			reg = <0x01c28c00 0x400>;
-+			interrupts = <4>;
-+			reg-shift = <2>;
-+			reg-io-width = <4>;
-+			clocks = <&osc>;
-+			status = "disabled";
-+		};
- 	};
- };
+Release v3.0 included commit 76b4eda866c4936af8d696f040abea56bf688e16
+("powerpc: Add A2 cpu support"). It added some code wrapped in an
+"#ifdef CONFIG_PPC_WSP_COPRO" and "#endif" pair. It did not add a
+Kconfig symbol PPC_WSP_COPRO. Neither did it add a preprocessor #define
+for CONFIG_PPC_WSP_COPRO. There haS actually never been such a symbol or
+such a macro in the mainline tree.
+
+Release v3.3 included commit fac26ad4f9cb794c9d1032f55f40a31cb55be09a
+("powerpc/book3e: Add ICSWX/ACOP support to Book3e cores like A2"). It
+basically renamed CONFIG_PPC_WSP_COPRO to CONFIG_PPC_ICSWX. It did not
+elaborate why it did that. But at least PPC_ICSWX was a valid Kconfig
+symbol.
+
+Release v3.3 also included commit
+cc35b6766878e31accc95c3fdae945bdadc73a46 ("powerpc/book3e: Add Chroma as
+a new WSP/PowerEN platform."). That commit added a Kconfig select
+statement for PPC_WSP_COPRO. It is not clear why it did that. Current
+opinion is that it served no purpose and that the kernel tree would be
+better of without that statement.
+
+ arch/powerpc/platforms/wsp/Kconfig | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/arch/powerpc/platforms/wsp/Kconfig b/arch/powerpc/platforms/wsp/Kconfig
+index 79d2225..56203a4 100644
+--- a/arch/powerpc/platforms/wsp/Kconfig
++++ b/arch/powerpc/platforms/wsp/Kconfig
+@@ -9,7 +9,6 @@ config PPC_WSP
+ 	select PCI
+ 	select PPC_IO_WORKAROUNDS if PCI
+ 	select PPC_INDIRECT_PIO if PCI
+-	select PPC_WSP_COPRO
+ 	default n
+ 
+ menu "WSP platform selection"
 -- 
-1.7.10.4
+1.7.11.7
 
