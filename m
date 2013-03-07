@@ -1,49 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759676Ab3CGTH3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 14:07:29 -0500
-Received: from mail-ee0-f49.google.com ([74.125.83.49]:44732 "EHLO
-	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750843Ab3CGTH1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 14:07:27 -0500
-Message-ID: <5138E56B.6090308@suse.cz>
-Date: Thu, 07 Mar 2013 20:07:23 +0100
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:19.0) Gecko/20130124 Thunderbird/19.0
+	id S933256Ab3CGTKq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 14:10:46 -0500
+Received: from www.sr71.net ([198.145.64.142]:39333 "EHLO blackbird.sr71.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933178Ab3CGTKp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Mar 2013 14:10:45 -0500
+X-Greylist: delayed 619 seconds by postgrey-1.27 at vger.kernel.org; Thu, 07 Mar 2013 14:10:45 EST
+Message-ID: <5138E3C7.9080205@sr71.net>
+Date: Thu, 07 Mar 2013 11:00:23 -0800
+From: Dave Hansen <dave@sr71.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: Josh Boyer <jwboyer@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: 8250.nr_uarts broken in 3.7
-References: <20130307185642.GF13719@hansolo.jdub.homelinux.org>
-In-Reply-To: <20130307185642.GF13719@hansolo.jdub.homelinux.org>
-X-Enigmail-Version: 1.6a1pre
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Larry Woodman <lwoodman@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Joe Perches <joe@perches.com>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
+Subject: Re: [PATCHv7 4/8] zswap: add to mm/
+References: <1362585143-6482-1-git-send-email-sjenning@linux.vnet.ibm.com> <1362585143-6482-5-git-send-email-sjenning@linux.vnet.ibm.com>
+In-Reply-To: <1362585143-6482-5-git-send-email-sjenning@linux.vnet.ibm.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/07/2013 07:56 PM, Josh Boyer wrote:
-> commit 835d844d1a28efba81d5aca7385e24c29d3a6db2
-> Author: Sean Young <sean@mess.org>
-> Date:   Fri Sep 7 19:06:23 2012 +0100
-> 
->     8250_pnp: do pnp probe before legacy probe
-> 
-> but that is simply moving code around.
+On 03/06/2013 07:52 AM, Seth Jennings wrote:
+> +static int __zswap_cpu_notifier(unsigned long action, unsigned long cpu)
+> +{
+> +	struct crypto_comp *tfm;
+> +	u8 *dst;
+> +
+> +	switch (action) {
+> +	case CPU_UP_PREPARE:
+> +		tfm = crypto_alloc_comp(zswap_compressor, 0, 0);
+> +		if (IS_ERR(tfm)) {
+> +			pr_err("can't allocate compressor transform\n");
+> +			return NOTIFY_BAD;
+> +		}
+> +		*per_cpu_ptr(zswap_comp_pcpu_tfms, cpu) = tfm;
+> +		dst = (u8 *)__get_free_pages(GFP_KERNEL, 1);
 
-Hi, not quite. Does it still happen when you revert that one on the top
-of 3.[789]*?
+Are there some alignment requirements for 'dst'?  If not, why not use
+kmalloc()?  I think kmalloc() should always be used where possible since
+slab debugging is so useful compared to what we can do with raw
+buddy-allocated pages.
 
-> I ran the same test on a 3.9-rc1 kernel and it isn't being picked up
-> there either.  Before I go off and do a bisect to track this down, has
-> anyone else seen or heard of this no longer working?
+Where does the order-1 requirement come from by the way?
 
-I haven't heard of that yet.
+...
+> +**********************************/
+> +/* attempts to compress and store an single page */
+> +static int zswap_frontswap_store(unsigned type, pgoff_t offset,
+> +				struct page *page)
+> +{
+...
+> +	/* store */
+> +	handle = zs_malloc(tree->pool, dlen,
+> +		__GFP_NORETRY | __GFP_HIGHMEM | __GFP_NOMEMALLOC |
+> +			__GFP_NOWARN);
+> +	if (!handle) {
+> +		zswap_reject_zsmalloc_fail++;
+> +		ret = -ENOMEM;
+> +		goto putcpu;
+> +	}
+> +
 
-thanks,
--- 
-js
-suse labs
+I think there needs to at least be some strong comments in here about
+why you're doing this kind of allocation.  From some IRC discussion, it
+seems like you found some pathological case where zswap wasn't helping
+make reclaim progress and ended up draining the reserve pools and you
+did this to avoid draining the reserve pools.
+
+I think the lack of progress doing reclaim is really the root cause you
+should be going after here instead of just working around the symptom.
+
+> +/* NOTE: this is called in atomic context from swapon and must not sleep */
+> +static void zswap_frontswap_init(unsigned type)
+> +{
+> +	struct zswap_tree *tree;
+> +
+> +	tree = kzalloc(sizeof(struct zswap_tree), GFP_NOWAIT);
+> +	if (!tree)
+> +		goto err;
+> +	tree->pool = zs_create_pool(GFP_NOWAIT, &zswap_zs_ops);
+> +	if (!tree->pool)
+> +		goto freetree;
+> +	tree->rbroot = RB_ROOT;
+> +	spin_lock_init(&tree->lock);
+> +	zswap_trees[type] = tree;
+> +	return;
+> +
+> +freetree:
+> +	kfree(tree);
+> +err:
+> +	pr_err("alloc failed, zswap disabled for swap type %d\n", type);
+> +}
+
+How large are these allocations?  Why are you doing GFP_NOWAIT instead
+of GFP_ATOMIC?  This seems like the kind of thing that you'd _want_ to
+be able to dip in to the reserves for.
+
