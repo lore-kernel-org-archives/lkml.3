@@ -1,55 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755955Ab3CGKF6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 05:05:58 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:46471 "EHLO arroyo.ext.ti.com"
+	id S1755943Ab3CGKJy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 05:09:54 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:53613 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752314Ab3CGKF5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 05:05:57 -0500
-Message-ID: <5138666E.6090201@ti.com>
-Date: Thu, 7 Mar 2013 15:35:34 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
+	id S1752531Ab3CGKJw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Mar 2013 05:09:52 -0500
+Date: Thu, 7 Mar 2013 11:09:50 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+Cc: Randy Dunlap <rdunlap@infradead.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
+Subject: Re: linux-next: Tree for Mar 6 (hid)
+In-Reply-To: <CAN+gG=H4_1nUhhsUe031Q1QrnVna+F7hmAepe6kbNm=8z_gOjw@mail.gmail.com>
+Message-ID: <alpine.LNX.2.00.1303071108150.28677@pobox.suse.cz>
+References: <20130306115052.2b1969acb7b7a0fa35975984@canb.auug.org.au> <51379849.6040903@infradead.org> <CAN+gG=H4_1nUhhsUe031Q1QrnVna+F7hmAepe6kbNm=8z_gOjw@mail.gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: David Brown <davidb@codeaurora.org>, <linux-arm-msm@vger.kernel.org>,
-        Kenneth Heitke <kheitke@codeaurora.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 1/6] platform-drivers: msm: add single-wire serial bus
- interface (SSBI) driver
-References: <1362616187-21089-1-git-send-email-davidb@codeaurora.org> <1362616187-21089-2-git-send-email-davidb@codeaurora.org> <20130307013008.GA2910@kroah.com> <8yawqtjvl8y.fsf@huya.qualcomm.com> <20130307060117.GA31687@kroah.com>
-In-Reply-To: <20130307060117.GA31687@kroah.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3/7/2013 11:31 AM, Greg Kroah-Hartman wrote:
-> On Wed, Mar 06, 2013 at 09:20:45PM -0800, David Brown wrote:
->> Greg Kroah-Hartman <gregkh@linuxfoundation.org> writes:
->>
->>> On Wed, Mar 06, 2013 at 04:29:42PM -0800, David Brown wrote:
->>>> +menu "Qualcomm MSM SSBI bus support"
->>>> +	depends on ARCH_MSM
->>>
->>> Why?
->>
->> In the sense that ARCH_MSM are the only devices that ever were, or ever
->> will be made with this device.  It doesn't strictly depend on it, but do
->> we want to clutter the config for everything else.
+On Thu, 7 Mar 2013, Benjamin Tissoires wrote:
+
+> > on i386 and x86_64:
+> >
 > 
-> It's not "clutter".  You want me to build this on other platforms, to
-> catch api and other types of build breakages.  This is the way for
-> almost all Linux drivers.
+> Sorry, it looks like my patches went not very smoothly.
+> 
+> > ERROR: "usb_control_msg" [drivers/hid/hid-multitouch.ko] undefined!
+> 
+> I've submitted a new patch removing this direct call. Maybe we should
+> change the Kconfig while these patches are not applied. Jiri?
 
-Not having a depends on helps build coverage, but I have seen
-objections to showing up irrelevant configurations to users (of x86 for
-example). See one here from Linus for OMAP_OCP2SCP
+Benjamin,
 
-http://lkml.indiana.edu/hypermail/linux/kernel/1210.0/00785.html
+which patch is that? The only hid-multitouch I still have in my queue is 
+the hybrid finger/pen devices support, and I don't think it's fixing this 
+problem.
 
-If this case is different, I am not sure why.
+Then I have one for logitech-dj which I still need to review, but I don't 
+see anything else ... ?
 
 Thanks,
-Sekhar
+
+-- 
+Jiri Kosina
+SUSE Labs
