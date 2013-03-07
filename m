@@ -1,65 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933112Ab3CGSb6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 13:31:58 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:39318 "EHLO mx1.redhat.com"
+	id S1759667Ab3CGSeA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 13:34:00 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:60318 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932152Ab3CGSb5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 13:31:57 -0500
-Message-ID: <5138DCE9.1010204@redhat.com>
-Date: Thu, 07 Mar 2013 13:31:05 -0500
-From: Don Dutile <ddutile@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120601 Thunderbird/10.0.5
+	id S1755542Ab3CGSd7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Mar 2013 13:33:59 -0500
+Date: Thu, 7 Mar 2013 19:32:14 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Li Zefan <lizefan@huawei.com>, cgroups@vger.kernel.org
+Subject: Re: lockdep trace from prepare_bprm_creds
+Message-ID: <20130307183213.GA18022@redhat.com>
+References: <20130306223657.GA7392@redhat.com> <20130307172545.GA10353@redhat.com> <20130307180139.GD29601@htj.dyndns.org> <20130307182140.GF29601@htj.dyndns.org>
 MIME-Version: 1.0
-To: "Li, Zhen-Hua" <zhen-hual@hp.com>, iommu@lists.linux-foundation.org
-CC: linux-kernel@vger.kernel.org, Joerg Roedel <joro@8bytes.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Hannes Reinecke <hare@suse.de>
-Subject: Re: [PATCH 1/1] iommu: add a dma remap fault reason.
-References: <1362537797-6034-1-git-send-email-zhen-hual@hp.com>
-In-Reply-To: <1362537797-6034-1-git-send-email-zhen-hual@hp.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130307182140.GF29601@htj.dyndns.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-cc-ing the upstream iommu-list
+On 03/07, Tejun Heo wrote:
+>
+> On Thu, Mar 07, 2013 at 10:01:39AM -0800, Tejun Heo wrote:
+> >
+> > Another possibility is moving cgroup_lock outside threadgroup_lock(),
+> > which was impossible before because of cgroup_lock abuses in specific
+> > controller implementations but most of that have been updated and we
+> > should now be pretty close to being able to make cgroup_lock outer to
+> > most other locks.  Appending a completely untested patch below.
+>
+> This probably doesn't help as the dependency involves i_mutex.
 
-On 03/05/2013 09:43 PM, Li, Zhen-Hua wrote:
-> The number of dma fault reasons in intel's document are from 1 to 0xD, but in dmar.c I cannot find fault reason 0xD.
->
-> In this document:
-> Intel Virtualization Technology for Directed I/O Architecture Specification
-> http://download.intel.com/technology/computing/vptech/Intel(r)_VT_for_Direct_IO.pdf
->
-> Chapter 4. Support For Device-IOTLBs
->
-> Table 6. Unsuccessful Translated Requests
->
-> There is fault reason for 0xD not listed in kernel:
->      Present context-entry used to process translation request
->      specifies blocking of Translation Requests (Translation Type (T)
->      field value not equal to 01b).
->
-> So I think 0xD should be added.
->
-> Signed-off-by: Li, Zhen-Hua<zhen-hual@hp.com>
-> ---
->   drivers/iommu/dmar.c |    1 +
->   1 file changed, 1 insertion(+)
->
-> diff --git a/drivers/iommu/dmar.c b/drivers/iommu/dmar.c
-> index dc7e478..e5cdaf8 100644
-> --- a/drivers/iommu/dmar.c
-> +++ b/drivers/iommu/dmar.c
-> @@ -1083,6 +1083,7 @@ static const char *dma_remap_fault_reasons[] =
->   	"non-zero reserved fields in RTP",
->   	"non-zero reserved fields in CTP",
->   	"non-zero reserved fields in PTE",
-> +	"PCE for translation request specifies blocking",
->   };
->
->   static const char *irq_remap_fault_reasons[] =
+Confused... why?
+
+Oleg.
 
