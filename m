@@ -1,188 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751325Ab3CGF3w (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 00:29:52 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:39327 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750800Ab3CGF3t convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 00:29:49 -0500
-From: "Hiremath, Vaibhav" <hvaibhav@ti.com>
-To: "Porter, Matt" <mporter@ti.com>,
-        "Krishnamoorthy, Balaji T" <balajitk@ti.com>,
-        Chris Ball <cjb@laptop.org>, "Cousson, Benoit" <b-cousson@ti.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>
-CC: Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>
-Subject: RE: [PATCH 2/2] ARM: dts: add AM33XX MMC support
-Thread-Topic: [PATCH 2/2] ARM: dts: add AM33XX MMC support
-Thread-Index: AQHOGuqV346jkMSBUUmpAvXZrfaGX5iZsVbQ
-Date: Thu, 7 Mar 2013 05:29:24 +0000
-Message-ID: <79CD15C6BA57404B839C016229A409A83EC20028@DBDE01.ent.ti.com>
-References: <1362629799-22485-1-git-send-email-mporter@ti.com>
- <1362629799-22485-3-git-send-email-mporter@ti.com>
-In-Reply-To: <1362629799-22485-3-git-send-email-mporter@ti.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.170.142]
-Content-Type: text/plain; charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
+	id S1751279Ab3CGFeA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 00:34:00 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:10109 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750800Ab3CGFd7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Mar 2013 00:33:59 -0500
+Date: Thu, 7 Mar 2013 00:33:53 -0500
+From: Dave Jones <davej@redhat.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Cc: Greg Kroah-Hartman <greg@kroah.com>
+Subject: sysfs_dir_cache slab corruption
+Message-ID: <20130307053353.GA24287@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	Greg Kroah-Hartman <greg@kroah.com>
+References: <20130307052854.GA23745@redhat.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130307052854.GA23745@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: linux-omap-owner@vger.kernel.org [mailto:linux-omap-
-> owner@vger.kernel.org] On Behalf Of Porter, Matt
-> Sent: Thursday, March 07, 2013 9:47 AM
-> To: Krishnamoorthy, Balaji T; Chris Ball; Cousson, Benoit; Tony
-> Lindgren; Russell King
-> Cc: Devicetree Discuss; Linux ARM Kernel List; Linux OMAP List; Linux
-> Kernel Mailing List; Linux MMC List
-> Subject: [PATCH 2/2] ARM: dts: add AM33XX MMC support
-> 
-> Adds AM33XX MMC support for am335x-bone, am335x-evm, and
-> am335x-evmsk.
-> 
-> Signed-off-by: Matt Porter <mporter@ti.com>
-> Acked-by: Tony Lindgren <tony@atomide.com>
-> ---
->  arch/arm/boot/dts/am335x-bone.dts  |    7 +++++++
->  arch/arm/boot/dts/am335x-evm.dts   |    7 +++++++
->  arch/arm/boot/dts/am335x-evmsk.dts |    7 +++++++
->  arch/arm/boot/dts/am33xx.dtsi      |   28 ++++++++++++++++++++++++++++
->  4 files changed, 49 insertions(+)
-> 
-> diff --git a/arch/arm/boot/dts/am335x-bone.dts
-> b/arch/arm/boot/dts/am335x-bone.dts
-> index 11b240c..a154ce0 100644
-> --- a/arch/arm/boot/dts/am335x-bone.dts
-> +++ b/arch/arm/boot/dts/am335x-bone.dts
-> @@ -120,6 +120,8 @@
->  		};
-> 
->  		ldo3_reg: regulator@5 {
-> +			regulator-min-microvolt = <1800000>;
-> +			regulator-max-microvolt = <3300000>;
->  			regulator-always-on;
->  		};
-> 
-> @@ -136,3 +138,8 @@
->  &cpsw_emac1 {
->  	phy_id = <&davinci_mdio>, <1>;
->  };
-> +
-> +&mmc1 {
-> +	status = "okay";
-> +	vmmc-supply = <&ldo3_reg>;
-> +};
-> diff --git a/arch/arm/boot/dts/am335x-evm.dts
-> b/arch/arm/boot/dts/am335x-evm.dts
-> index d649644..2907da6 100644
-> --- a/arch/arm/boot/dts/am335x-evm.dts
-> +++ b/arch/arm/boot/dts/am335x-evm.dts
-> @@ -232,6 +232,8 @@
->  		};
-> 
->  		vmmc_reg: regulator@12 {
-> +			regulator-min-microvolt = <1800000>;
-> +			regulator-max-microvolt = <3300000>;
->  			regulator-always-on;
->  		};
->  	};
-> @@ -244,3 +246,8 @@
->  &cpsw_emac1 {
->  	phy_id = <&davinci_mdio>, <1>;
->  };
-> +
-> +&mmc1 {
-> +	status = "okay";
-> +	vmmc-supply = <&vmmc_reg>;
-> +};
-> diff --git a/arch/arm/boot/dts/am335x-evmsk.dts
-> b/arch/arm/boot/dts/am335x-evmsk.dts
-> index f5a6162..f050c46 100644
-> --- a/arch/arm/boot/dts/am335x-evmsk.dts
-> +++ b/arch/arm/boot/dts/am335x-evmsk.dts
-> @@ -244,7 +244,14 @@
->  		};
-> 
->  		vmmc_reg: regulator@12 {
-> +			regulator-min-microvolt = <1800000>;
-> +			regulator-max-microvolt = <3300000>;
->  			regulator-always-on;
->  		};
->  	};
->  };
-> +
-> +&mmc1 {
-> +	status = "okay";
-> +	vmmc-supply = <&vmmc_reg>;
-> +};
-> diff --git a/arch/arm/boot/dts/am33xx.dtsi
-> b/arch/arm/boot/dts/am33xx.dtsi
-> index c3c781a..e029eea 100644
-> --- a/arch/arm/boot/dts/am33xx.dtsi
-> +++ b/arch/arm/boot/dts/am33xx.dtsi
-> @@ -234,6 +234,34 @@
->  			status = "disabled";
->  		};
-> 
-> +		mmc1: mmc@48060000 {
-> +			compatible = "ti,omap3-hsmmc";
-> +			ti,hwmods = "mmc1";
-> +			ti,dual-volt;
-> +			ti,needs-special-reset;
-> +			dmas = <&edma 24
-> +				&edma 25>;
-> +			dma-names = "tx", "rx";
-> +			status = "disabled";
-> +		};
-> +
-> +		mmc2: mmc@481d8000 {
-> +			compatible = "ti,omap3-hsmmc";
-> +			ti,hwmods = "mmc2";
-> +			ti,needs-special-reset;
-> +			dmas = <&edma 2
-> +				&edma 3>;
-> +			dma-names = "tx", "rx";
-> +			status = "disabled";
-> +		};
-> +
-> +		mmc3: mmc@47810000 {
-> +			compatible = "ti,omap3-hsmmc";
-> +			ti,hwmods = "mmc3";
-> +			ti,needs-special-reset;
-> +			status = "disabled";
-> +		};
-Any specific reason why you did not add edma entry here as well?
+And even more sysfs fallout (From a clean boot)..
 
-Also, I wonder why "interrupt" property is not coming here, I understand
-That hwmod is filling the gap here; but I would still recommend you to complete
-The DT node, as we only support DT boot.
+=============================================================================
+BUG sysfs_dir_cache (Not tainted): Poison overwritten
+-----------------------------------------------------------------------------
 
-I will test the whole patch series today and update you.
+Disabling lock debugging due to kernel taint
+INFO: 0xffff8801239a85b8-0xffff8801239a85b8. First byte 0x69 instead of 0x6b
+INFO: Allocated in sysfs_new_dirent+0x59/0x130 age=493166 cpu=3 pid=301
+	__slab_alloc+0x4ed/0x584
+	kmem_cache_alloc+0x2c0/0x330
+	sysfs_new_dirent+0x59/0x130
+	sysfs_add_file_mode+0x6b/0x110
+	sysfs_add_file+0x12/0x20
+	sysfs_create_file+0x26/0x30
+	load_module+0x1360/0x28d0
+	sys_init_module+0xd7/0x120
+	system_call_fastpath+0x16/0x1b
+INFO: Freed in release_sysfs_dirent+0x81/0x100 age=10736 cpu=3 pid=8692
+	__slab_free+0x3c/0x3de
+	kmem_cache_free+0x362/0x380
+	release_sysfs_dirent+0x81/0x100
+	sysfs_dir_pos+0x46/0xf0
+	sysfs_readdir+0x9a/0x2b0
+	vfs_readdir+0xb8/0xf0
+	sys_getdents64+0x8f/0x110
+	system_call_fastpath+0x16/0x1b
+INFO: Slab 0xffffea00048e6a00 objects=16 used=16 fp=0x          (null) flags=0x5000000000004080
+INFO: Object 0xffff8801239a85b8 @offset=1464 fp=0x          (null)
 
-Thanks,
-Vaibhav
+Bytes b4 ffff8801239a85a8: 00 00 00 00 00 00 00 00 5a 5a 5a 5a 5a 5a 5a 5a  ........ZZZZZZZZ
+Object ffff8801239a85b8: 69 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  ikkkkkkkkkkkkkkk
+Object ffff8801239a85c8: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
+Object ffff8801239a85d8: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
+Object ffff8801239a85e8: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
+Object ffff8801239a85f8: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
+Object ffff8801239a8608: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
+Object ffff8801239a8618: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
+Object ffff8801239a8628: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
+Object ffff8801239a8638: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
+Object ffff8801239a8648: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b a5  kkkkkkkkkkkkkkk.
+Redzone ffff8801239a8658: bb bb bb bb bb bb bb bb                          ........
+Padding ffff8801239a8798: 5a 5a 5a 5a 5a 5a 5a 5a                          ZZZZZZZZ
+Pid: 15728, comm: modprobe Tainted: G    B        3.9.0-rc1+ #69
+Call Trace:
+ [<ffffffff8118e81d>] ? print_section+0x3d/0x40
+ [<ffffffff8118f98e>] print_trailer+0xfe/0x160
+ [<ffffffff8118fb2f>] check_bytes_and_report+0xef/0x130
+ [<ffffffff81190126>] check_object+0x1c6/0x240
+ [<ffffffff81190989>] ? check_slab+0x89/0x130
+ [<ffffffff81235159>] ? sysfs_new_dirent+0x59/0x130
+ [<ffffffff816bb755>] alloc_debug_processing+0x67/0x109
+ [<ffffffff816bc2ee>] __slab_alloc+0x4ed/0x584
+ [<ffffffff81235159>] ? sysfs_new_dirent+0x59/0x130
+ [<ffffffff811926f0>] kmem_cache_alloc+0x2c0/0x330
+ [<ffffffff81235159>] ? sysfs_new_dirent+0x59/0x130
+ [<ffffffff81235159>] sysfs_new_dirent+0x59/0x130
+ [<ffffffff812343eb>] sysfs_add_file_mode+0x6b/0x110
+ [<ffffffff81237620>] internal_create_group+0xd0/0x210
+ [<ffffffff81237793>] sysfs_create_group+0x13/0x20
+ [<ffffffff810c71f1>] load_module+0x22d1/0x28d0
+ [<ffffffff81355570>] ? ddebug_proc_open+0xc0/0xc0
+ [<ffffffff810b24ae>] ? put_lock_stats.isra.23+0xe/0x40
+ [<ffffffff810c78c7>] sys_init_module+0xd7/0x120
+ [<ffffffff816cd942>] system_call_fastpath+0x16/0x1b
+FIX sysfs_dir_cache: Restoring 0xffff8801239a85b8-0xffff8801239a85b8=0x6b
 
 
-> +
->  		wdt2: wdt@44e35000 {
->  			compatible = "ti,omap3-wdt";
->  			ti,hwmods = "wd_timer2";
-> --
-> 1.7.9.5
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-omap"
-> in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
