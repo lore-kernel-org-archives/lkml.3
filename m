@@ -1,47 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758435Ab3CGAvk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 19:51:40 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:55733 "EHLO
+	id S1757658Ab3CGA43 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 19:56:29 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:55748 "EHLO
 	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753805Ab3CGAvj (ORCPT
+	with ESMTP id S1753805Ab3CGA42 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 19:51:39 -0500
-Date: Thu, 7 Mar 2013 00:51:19 +0000
+	Wed, 6 Mar 2013 19:56:28 -0500
+Date: Thu, 7 Mar 2013 00:52:06 +0000
 From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: rjw@sisk.pl, Steve.Bannister@arm.com, linux-pm@vger.kernel.org,
-        Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>,
-        Liviu.Dudau@arm.com, linux-kernel@vger.kernel.org,
-        cpufreq@vger.kernel.org, robin.randhawa@arm.com,
-        linux-arm-kernel@lists.infradead.org, mark.hambleton@broadcom.com,
-        linaro-kernel@lists.linaro.org, charles.garcia-tobin@arm.com
-Subject: Re: [PATCH] cpufreq: ARM big LITTLE: Add generic cpufreq driver
-	and its DT glue
-Message-ID: <20130307005119.GY17833@n2100.arm.linux.org.uk>
-References: <f20e3c5e822c4bd28a3b71264d73143cc1f850b0.1362458878.git.viresh.kumar@linaro.org> <20130305105251.GL17833@n2100.arm.linux.org.uk> <CAKohpo=cBkHZnSa8ZsM=k7RRN+RZDXFUWDM82EXXBSQcM-8Vhw@mail.gmail.com>
+To: Kukjin Kim <kgene.kim@samsung.com>
+Cc: "'Paul Bolle'" <pebolle@tiscali.nl>, "'Ben Dooks'" <ben-linux@fluff.org>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: S3C24XX: drop "select MACH_N35"
+Message-ID: <20130307005206.GZ17833@n2100.arm.linux.org.uk>
+References: <1362609234.28137.2.camel@x61.thuisdomein> <013a01ce1ac7$11b287d0$35179770$%kim@samsung.com> <1362615081.28137.5.camel@x61.thuisdomein> <014601ce1acd$bc63d480$352b7d80$%kim@samsung.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAKohpo=cBkHZnSa8ZsM=k7RRN+RZDXFUWDM82EXXBSQcM-8Vhw@mail.gmail.com>
+In-Reply-To: <014601ce1acd$bc63d480$352b7d80$%kim@samsung.com>
 User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 07, 2013 at 08:32:37AM +0800, Viresh Kumar wrote:
-> On 5 March 2013 18:52, Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
-> > On Tue, Mar 05, 2013 at 12:52:41PM +0800, Viresh Kumar wrote:
-> >> +     clk[cluster] = clk_get(NULL, name);
-> >> +     if (!IS_ERR_OR_NULL(clk[cluster])) {
-> >
-> > NAK.  Two reasons.
-> >
-> > 1. IS_ERR_OR_NULL.  You know about this, it's been on the list several
-> >    times.
+On Thu, Mar 07, 2013 at 09:50:17AM +0900, Kukjin Kim wrote:
+> Paul Bolle wrote:
+> > 
+> > On Thu, 2013-03-07 at 09:02 +0900, Kukjin Kim wrote:
+> > 
+> > > BTW, so the machine type can be removed at arch/arm/tools/mach-types as
+> > well.
+> > 
+> > Well, that file has a big comment on top, containing the line:
+> >     Please do not send patches to this file; it is automatically
+> > generated!
+> > 
+> > So I didn't dare to touch it.
+> > 
+> Yeah, I know.
 > 
-> Hey, i had a second thought about this one and i have some other opinion
-> here. This is a cpufreq driver and we need clock support for sure here, we
-> can't work without it. And so here is the latest fixup:
+> It will be handled by Russell King :-)
 
-NAK.  You just don't understand.
+And deleting entries from it is pointless if they've ever been in the
+kernel.
