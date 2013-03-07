@@ -1,73 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932755Ab3CGLuM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 06:50:12 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:56719 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932455Ab3CGLuK (ORCPT
+	id S1757231Ab3CGLyi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 06:54:38 -0500
+Received: from co9ehsobe004.messaging.microsoft.com ([207.46.163.27]:19016
+	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750843Ab3CGLyh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 06:50:10 -0500
-Date: Thu, 7 Mar 2013 11:49:50 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: rjw@sisk.pl, Steve.Bannister@arm.com, linux-pm@vger.kernel.org,
-        Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>,
-        Liviu.Dudau@arm.com, linux-kernel@vger.kernel.org,
-        cpufreq@vger.kernel.org, robin.randhawa@arm.com,
-        linux-arm-kernel@lists.infradead.org, mark.hambleton@broadcom.com,
-        linaro-kernel@lists.linaro.org, charles.garcia-tobin@arm.com
-Subject: Re: [PATCH] cpufreq: ARM big LITTLE: Add generic cpufreq driver
-	and its DT glue
-Message-ID: <20130307114950.GF17833@n2100.arm.linux.org.uk>
-References: <f20e3c5e822c4bd28a3b71264d73143cc1f850b0.1362458878.git.viresh.kumar@linaro.org> <20130305105251.GL17833@n2100.arm.linux.org.uk> <CAKohpo=cBkHZnSa8ZsM=k7RRN+RZDXFUWDM82EXXBSQcM-8Vhw@mail.gmail.com> <20130307005119.GY17833@n2100.arm.linux.org.uk> <CAKohpok7aD-J-undUisxaOotbXWimPo46jqOH4ok04kg_hMWHA@mail.gmail.com>
+	Thu, 7 Mar 2013 06:54:37 -0500
+X-Forefront-Antispam-Report: CIP:59.163.77.45;KIP:(null);UIP:(null);IPV:NLI;H:KCHJEXHC01.kpit.com;RD:59.163.77.45.static.vsnl.net.in;EFVD:NLI
+X-SpamScore: 5
+X-BigFish: VPS5(z1346pz98dI936eI1432I1453Izz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ahzzz2dh2a8h668h839h93fhd24hd2bhf0ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1b0ahbe9i1155h)
+Subject: Re: virtual irq isssue - regmap_irq
+From: Ashish Jangam <ashish.jangam@kpitcummins.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: <linux-kernel@vger.kernel.org>, David Dajun Chen <dchen@diasemi.com>
+In-Reply-To: <20130307071349.GF22554@opensource.wolfsonmicro.com>
+References: <1362639472.484.22.camel@dhruva>
+	 <20130307071349.GF22554@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 7 Mar 2013 17:22:35 +0530
+Message-ID: <1362657155.1796.4.camel@dhruva>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKohpok7aD-J-undUisxaOotbXWimPo46jqOH4ok04kg_hMWHA@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.10.38.47]
+X-OriginatorOrg: kpitcummins.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 07, 2013 at 10:03:28AM +0800, Viresh Kumar wrote:
-> On 7 March 2013 08:51, Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
-> > On Thu, Mar 07, 2013 at 08:32:37AM +0800, Viresh Kumar wrote:
-> >> On 5 March 2013 18:52, Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
-> >> > On Tue, Mar 05, 2013 at 12:52:41PM +0800, Viresh Kumar wrote:
-> >> >> +     clk[cluster] = clk_get(NULL, name);
-> >> >> +     if (!IS_ERR_OR_NULL(clk[cluster])) {
-> >> >
-> >> > NAK.  Two reasons.
-> >> >
-> >> > 1. IS_ERR_OR_NULL.  You know about this, it's been on the list several
-> >> >    times.
-> >>
-> >> Hey, i had a second thought about this one and i have some other opinion
-> >> here. This is a cpufreq driver and we need clock support for sure here, we
-> >> can't work without it. And so here is the latest fixup:
-> >
-> > NAK.  You just don't understand.
+On Thu, 2013-03-07 at 15:13 +0800, Mark Brown wrote:
+> On Thu, Mar 07, 2013 at 12:27:52PM +0530, Ashish Jangam wrote:
 > 
-> Poor me!!
+> > In regmap_irq if irq_base is unknown then regmap creates virq starting from 0
+> > and it seems that in kernel 3.8 virq 0 usage is not permitted, since during irq
+> > registration kernel throws a message "error: irq_desc already associated".
 > 
-> I still remember the huge discussions we had during "clk: Add non
-> CONFIG_HAVE_CLK routines" patchset.
+> > I'm not sure if this requires fix in regmap_irq or kernel, can you please
+> > comment on this?
 > 
-> For others: https://lkml.org/lkml/2012/4/24/389
-> 
-> Back to the discussion, I understand that clk_get() just returns a cookie and
-> NULL is not an error and so it shouldn't be treated specially. And that's what
-> we do with most of our drivers as all other clk routines (clk_get[set]_rate())
-> have safe guards against the NULL clk, and they wouldn't complain.
-> 
-> The special case we have in a cpufreq driver is, we can't work with
-> zero returned
-> from clk_get_rate()... That will make cpufreq driver work badly.
+> This is a bug in your platform which will affect anything using a linear
+> domain.  The platform isn't setting up its interrupts correctly so that
+> the core knows that those interrupts are reserved, ideally the platform
+> would just use domains for everything but at least irq_alloc_decs()
+> needs to know what is going on.
+Thanks I got this, however in this case should regmap handle such
+condition where domain is unknown?
+By the way, I was testing on smdkv6410 where Dialog device is not a
+component of the board.
 
-So how is this different from any other clock which may also return zero
-from its clk_get_rate() ?
 
-If that's the condition you want to check for, call clk_get_rate() after
-a successful clk_get*() and check for the condition.  Don't go treating
-the cookie somehow specially.  You're *assuming* a behaviour that is
-inappropriate for the side of the interface you're working with.
