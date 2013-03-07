@@ -1,92 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933533Ab3CGWBR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 17:01:17 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:60562 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759748Ab3CGWBO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 17:01:14 -0500
-Date: Thu, 7 Mar 2013 13:59:37 -0800
-From: tip-bot for Dave Hansen <tipbot@zytor.com>
-Message-ID: <tip-60f583d56aa515b896a9d94f860f52640c1e8a75@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        dave@linux.vnet.ibm.com, tglx@linutronix.de, dave@sr71.net,
-        penguin-kernel@i-love.sakura.ne.jp
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        dave@linux.vnet.ibm.com, tglx@linutronix.de, dave@sr71.net,
-        penguin-kernel@i-love.sakura.ne.jp
-In-Reply-To: <20130307163151.D9B58C4E@kernel.stglabs.ibm.com>
-References: <20130307163151.D9B58C4E@kernel.stglabs.ibm.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86:
-  Do not try to sync identity map for non-mapped pages
-Git-Commit-ID: 60f583d56aa515b896a9d94f860f52640c1e8a75
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1759896Ab3CGWDu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 17:03:50 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:34996 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754356Ab3CGWDt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Mar 2013 17:03:49 -0500
+Date: Thu, 7 Mar 2013 17:03:33 -0500
+From: Dave Jones <davej@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, David Miller <davem@davemloft.net>
+Subject: Re: ipc/testmsg GPF.
+Message-ID: <20130307220333.GA31039@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	Al Viro <viro@zeniv.linux.org.uk>,
+	David Miller <davem@davemloft.net>
+References: <CA+55aFwDYocNRjSCJk1PYw0MFy7dpKf1yMMEiePP--=ewQcX6A@mail.gmail.com>
+ <20130307213819.GB19543@redhat.com>
+ <CA+55aFx424SX6S1zFegVaMZ_BkeZctDKCN6eYCLFfaJDKRVG9g@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 07 Mar 2013 13:59:44 -0800 (PST)
+In-Reply-To: <CA+55aFx424SX6S1zFegVaMZ_BkeZctDKCN6eYCLFfaJDKRVG9g@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  60f583d56aa515b896a9d94f860f52640c1e8a75
-Gitweb:     http://git.kernel.org/tip/60f583d56aa515b896a9d94f860f52640c1e8a75
-Author:     Dave Hansen <dave@sr71.net>
-AuthorDate: Thu, 7 Mar 2013 08:31:51 -0800
-Committer:  H. Peter Anvin <hpa@zytor.com>
-CommitDate: Thu, 7 Mar 2013 13:23:28 -0800
+On Thu, Mar 07, 2013 at 01:45:27PM -0800, Linus Torvalds wrote:
+ > Adding Davem to the list, since this looks like networking.
+ > 
+ > That said, I'm also starting to wonder if you're just triggering odd
+ > bugs because of some use-after-free corruption of random kernel data
+ > structures?
 
-x86: Do not try to sync identity map for non-mapped pages
+Plausible. The sheer volume of crashes I've started seeing in the last 24 hours
+since adding those small features to trinity are making me really suspicious.
+If I had this volume of crashes reported to me by a Fedora user, I'd be
+suspecting their hardware ;)
 
-kernel_map_sync_memtype() is called from a variety of contexts.  The
-pat.c code that calls it seems to ensure that it is not called for
-non-ram areas by checking via pat_pagerange_is_ram().  It is important
-that it only be called on the actual identity map because there *IS*
-no map to sync for highmem pages, or for memory holes.
+Tangentally related: We have a *ton* of weird bug reports against Fedora
+that have been open for a while that look like random memory corruption
+(linked list corruption, 'bad page table' scribbles etc).
+I'd *love* to think that the bugs I'm now seeing are related, on the off-chance
+we can finally get some resolution on those.
 
-The ioremap.c uses are not as careful as those from pat.c, and call
-kernel_map_sync_memtype() on PCI space which is in the middle of the
-kernel identity map _range_, but is not actually mapped.
+ > I seem to have a dim memory of you usually doing your
+ > trinity runs with more debugging options, but based on just the oops
+ > message you don't have DEBUG_PAGEALLOC enabled, for example. Maybe
+ > that and SLUB debugging might turn up the culprit more quickly..
 
-This patch adds a check to kernel_map_sync_memtype() which probably
-duplicates some of the checks already in pat.c.  But, it is necessary
-for the ioremap.c uses and shouldn't hurt other callers.
+My kernel-hacker hive-mind implant is working. Just started a rebuild with that enabled.
+Had slub debug already.
 
-I have reproduced this bug and this patch fixes it for me and the
-original bug reporter:
+ > [ Just checked - yes, you often do have DEBUG_PAGEALLOC in your oops
+ > reports, but not this time. list debugging too? ]
 
-	https://lkml.org/lkml/2013/2/5/396
+Yep.
 
-Signed-off-by: Dave Hansen <dave@linux.vnet.ibm.com>
-Link: http://lkml.kernel.org/r/20130307163151.D9B58C4E@kernel.stglabs.ibm.com
-Signed-off-by: Dave Hansen <dave@sr71.net>
-Tested-by: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
----
- arch/x86/mm/pat.c | 7 +++++++
- 1 file changed, 7 insertions(+)
+	Dave
 
-diff --git a/arch/x86/mm/pat.c b/arch/x86/mm/pat.c
-index 2610bd9..6574388 100644
---- a/arch/x86/mm/pat.c
-+++ b/arch/x86/mm/pat.c
-@@ -563,6 +563,13 @@ int kernel_map_sync_memtype(u64 base, unsigned long size, unsigned long flags)
- 	if (base > __pa(high_memory-1))
- 		return 0;
- 
-+	/*
-+	 * some areas in the middle of the kernel identity range
-+	 * are not mapped, like the PCI space.
-+	 */
-+	if (!page_is_ram(base >> PAGE_SHIFT))
-+		return 0;
-+
- 	id_sz = (__pa(high_memory-1) <= base + size) ?
- 				__pa(high_memory) - base :
- 				size;
