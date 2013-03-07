@@ -1,77 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757786Ab3CGMzd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 07:55:33 -0500
-Received: from mail-ee0-f53.google.com ([74.125.83.53]:53391 "EHLO
-	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751279Ab3CGMzc (ORCPT
+	id S932752Ab3CGMzv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 07:55:51 -0500
+Received: from dkim2.fusionio.com ([66.114.96.54]:43302 "EHLO
+	dkim2.fusionio.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758323Ab3CGMzt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 07:55:32 -0500
+	Thu, 7 Mar 2013 07:55:49 -0500
+X-ASG-Debug-ID: 1362660947-0421b5549403120001-xx1T2L
+X-Barracuda-Envelope-From: clmason@fusionio.com
+Date: Thu, 7 Mar 2013 07:55:46 -0500
+From: Chris Mason <chris.mason@fusionio.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Rik van Riel <riel@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Waiman Long <Waiman.Long@hp.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Emmanuel Benisty <benisty.e@gmail.com>,
+        "Vinod, Chegu" <chegu_vinod@hp.com>, "Low, Jason" <jason.low2@hp.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "aquini@redhat.com" <aquini@redhat.com>,
+        Michel Lespinasse <walken@google.com>, Ingo Molnar <mingo@kernel.org>,
+        Larry Woodman <lwoodman@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Chris Mason <clmason@fusionio.com>, <dave.kleikamp@oracle.com>
+Subject: Re: [PATCH v2 0/4] ipc: reduce ipc lock contention
+Message-ID: <20130307125546.GD13323@shiny.masoncoding.com>
+X-ASG-Orig-Subj: Re: [PATCH v2 0/4] ipc: reduce ipc lock contention
+Mail-Followup-To: Chris Mason <chris.mason@fusionio.com>,
+	Peter Zijlstra <a.p.zijlstra@chello.nl>,
+	Rik van Riel <riel@redhat.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Waiman Long <Waiman.Long@hp.com>,
+	Davidlohr Bueso <davidlohr.bueso@hp.com>,
+	Emmanuel Benisty <benisty.e@gmail.com>,
+	"Vinod, Chegu" <chegu_vinod@hp.com>,
+	"Low, Jason" <jason.low2@hp.com>, "H. Peter Anvin" <hpa@zytor.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	"aquini@redhat.com" <aquini@redhat.com>,
+	Michel Lespinasse <walken@google.com>,
+	Ingo Molnar <mingo@kernel.org>, Larry Woodman <lwoodman@redhat.com>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	Steven Rostedt <rostedt@goodmis.org>,
+	Thomas Gleixner <tglx@linutronix.de>,
+	Chris Mason <clmason@fusionio.com>, dave.kleikamp@oracle.com
+References: <1362476149.2225.50.camel@buesod1.americas.hpqcorp.net>
+ <513626E9.2040509@redhat.com>
+ <51364AB9.80206@hp.com>
+ <CA+55aFwYOUyG_DQUqVPrQNi_a=AUwS53U-Yi6jbvJTGRxQ_aEQ@mail.gmail.com>
+ <51365B66.5010905@redhat.com>
+ <1362645933.2606.14.camel@laptop>
 MIME-Version: 1.0
-In-Reply-To: <1362393975-22533-1-git-send-email-claudiu.ghioc@gmail.com>
-References: <1362393975-22533-1-git-send-email-claudiu.ghioc@gmail.com>
-Date: Thu, 7 Mar 2013 14:55:25 +0200
-Message-ID: <CAEnQRZAiiJqHcEHoS+=ZMAHdQwu9yYc28or1Di7h4R7PRn6iEg@mail.gmail.com>
-Subject: Re: [PATCH] hugetlb: fix sparse warning for hugetlb_register_node
-From: Daniel Baluta <daniel.baluta@gmail.com>
-To: Claudiu Ghioc <claudiughioc@gmail.com>, trivial@kernel.org,
-        jkosina@suse.cz
-Cc: akpm@linux-foundation.org, mhocko@suse.cz, aneesh.kumar@linux.vnet.ibm.com,
-        dhillf@gmail.com, kamezawa.hiroyu@jp.fujitsu.com, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Claudiu Ghioc <claudiu.ghioc@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1362645933.2606.14.camel@laptop>
+User-Agent: Mutt/1.5.21 (2011-07-01)
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1362660947
+X-Barracuda-Encrypted: AES128-SHA
+X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.124512
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 4, 2013 at 12:46 PM, Claudiu Ghioc <claudiughioc@gmail.com> wrote:
-> Removed the following sparse warnings:
-> *  mm/hugetlb.c:1764:6: warning: symbol
->     'hugetlb_unregister_node' was not declared.
->     Should it be static?
-> *   mm/hugetlb.c:1808:6: warning: symbol
->     'hugetlb_register_node' was not declared.
->     Should it be static?
->
-> Signed-off-by: Claudiu Ghioc <claudiu.ghioc@gmail.com>
-> ---
->  mm/hugetlb.c |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
->
-> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-> index 0a0be33..c65a8a5 100644
-> --- a/mm/hugetlb.c
-> +++ b/mm/hugetlb.c
-> @@ -1761,7 +1761,7 @@ static struct hstate *kobj_to_node_hstate(struct kobject *kobj, int *nidp)
->   * Unregister hstate attributes from a single node device.
->   * No-op if no hstate attributes attached.
->   */
-> -void hugetlb_unregister_node(struct node *node)
-> +static void hugetlb_unregister_node(struct node *node)
->  {
->         struct hstate *h;
->         struct node_hstate *nhs = &node_hstates[node->dev.id];
-> @@ -1805,7 +1805,7 @@ static void hugetlb_unregister_all_nodes(void)
->   * Register hstate attributes for a single node device.
->   * No-op if attributes already registered.
->   */
-> -void hugetlb_register_node(struct node *node)
-> +static void hugetlb_register_node(struct node *node)
->  {
->         struct hstate *h;
->         struct node_hstate *nhs = &node_hstates[node->dev.id];
-> --
-> 1.7.9.5
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+On Thu, Mar 07, 2013 at 01:45:33AM -0700, Peter Zijlstra wrote:
+> On Tue, 2013-03-05 at 15:53 -0500, Rik van Riel wrote:
+> 
+> > Indeed.  Though how well my patches will work with Oracle will
+> > depend a lot on what kind of semctl syscalls they are doing.
+> > 
+> > Does Oracle typically do one semop per semctl syscall, or does
+> > it pass in a whole bunch at once?
+> 
+> https://oss.oracle.com/~mason/sembench.c
+> 
+> I think Chris wrote that to match a particular pattern of semaphore
+> operations the database engine in question does. I haven't checked to
+> see if it triggers the case in point though.
+> 
+> Also, Chris since left Oracle but maybe he knows who to poke.
+> 
 
-Hi Jiri,
+Dave Kleikamp (cc'd) took over my patches and did the most recent
+benchmarking.  Ported against 3.0:
 
-Can you pick this up via trivial tree?
+https://oss.oracle.com/git/?p=linux-uek-2.6.39.git;a=commit;h=c7fa322dd72b08450a440ef800124705a1fa148c
 
-thanks,
-Daniel.
+The current versions are still in the 2.6.32 oracle kernel, but it looks
+like they reverted this 3.0 commit.  I think with Manfred's upstream
+work my more complex approach wasn't required anymore, but hopefully
+Dave can fill in details.
+
+Here is some of the original discussion around the patch:
+
+https://lkml.org/lkml/2010/4/12/257
+
+In terms of how oracle uses IPC, the part that shows up in profiles is
+using semtimedop for bulk wakeups.  They can configure things to use
+either a bunch of small arrays or a huge single array (and anything in
+between). 
+
+There is one IPC semaphore per process and they use this to wait for
+some event (like a log commit).  When the event comes in, everyone
+waiting is woken in bulk via a semtimedop call.
+
+So, single proc waking many waiters at once.
+
+-chris
+
