@@ -1,62 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932413Ab3CGET4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 23:19:56 -0500
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:65105 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754643Ab3CGETy (ORCPT
+	id S932405Ab3CGE25 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 23:28:57 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:50067 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754146Ab3CGE24 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 23:19:54 -0500
-X-AuditID: 9c930197-b7cc2ae000000eb7-c9-513815694aed
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Stephane Eranian <eranian@google.com>,
-        Namhyung Kim <namhyung.kim@lge.com>, Jiri Olsa <jolsa@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH 1/2] perf: Reset detached siblings' group_flags
-Date: Thu,  7 Mar 2013 13:19:49 +0900
-Message-Id: <1362629990-10053-1-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.7.11.7
-X-Brightmail-Tracker: AAAAAA==
+	Wed, 6 Mar 2013 23:28:56 -0500
+Date: Wed, 6 Mar 2013 20:26:56 -0800
+From: tip-bot for Krzysztof Mazur <tipbot@zytor.com>
+Message-ID: <tip-015221fefbc93689dd47508a66326556adf2abcd@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        krzysiek@podlesie.net, tglx@linutronix.de, bp@suse.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, krzysiek@podlesie.net, bp@suse.de
+In-Reply-To: <1362266082-2227-1-git-send-email-krzysiek@podlesie.net>
+References: <1362266082-2227-1-git-send-email-krzysiek@podlesie.net>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86: Fix 32-bit *_cpu_data initializers
+Git-Commit-ID: 015221fefbc93689dd47508a66326556adf2abcd
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 06 Mar 2013 20:27:02 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+Commit-ID:  015221fefbc93689dd47508a66326556adf2abcd
+Gitweb:     http://git.kernel.org/tip/015221fefbc93689dd47508a66326556adf2abcd
+Author:     Krzysztof Mazur <krzysiek@podlesie.net>
+AuthorDate: Sun, 3 Mar 2013 00:14:42 +0100
+Committer:  H. Peter Anvin <hpa@zytor.com>
+CommitDate: Wed, 6 Mar 2013 20:15:50 -0800
 
-Currently if a group_leader event is deleted, the sibling events are
-upgraded to singleton events of a same group list.  At this time, the
-siblings inherit the leader's group_flags.
+x86: Fix 32-bit *_cpu_data initializers
 
-However, if the group has mixed hw/sw events the leader's group_flag
-does not contain PERF_GROUP_SOFTWARE so sibling sw events will miss
-the flag also.  Fix it.
+The commit 27be457000211a6903968dfce06d5f73f051a217
+('x86 idle: remove 32-bit-only "no-hlt" parameter, hlt_works_ok
+flag') removed the hlt_works_ok flag from struct cpuinfo_x86, but
+boot_cpu_data and new_cpu_data initializers were not changed
+causing setting f00f_bug flag, instead of fdiv_bug.
 
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+If CONFIG_X86_F00F_BUG is not set the f00f_bug flag is never
+cleared.
+
+To avoid such problems in future C99-style initialization is now
+used.
+
+Signed-off-by: Krzysztof Mazur <krzysiek@podlesie.net>
+Acked-by: Borislav Petkov <bp@suse.de>
+Cc: len.brown@intel.com
+Link: http://lkml.kernel.org/r/1362266082-2227-1-git-send-email-krzysiek@podlesie.net
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
 ---
- kernel/events/core.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ arch/x86/kernel/setup.c | 10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 5c75791d7269..007dfe846d4d 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -1107,8 +1107,9 @@ static void perf_group_detach(struct perf_event *event)
- 			list_move_tail(&sibling->group_entry, list);
- 		sibling->group_leader = sibling;
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index 84d3285..90d8cc9 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -171,9 +171,15 @@ static struct resource bss_resource = {
  
--		/* Inherit group flags from the previous leader */
--		sibling->group_flags = event->group_flags;
-+		/* Reset group flags for each siblings */
-+		sibling->group_flags = is_software_event(sibling) ?
-+						PERF_GROUP_SOFTWARE : 0;
- 	}
+ #ifdef CONFIG_X86_32
+ /* cpu data as detected by the assembly code in head.S */
+-struct cpuinfo_x86 new_cpu_data __cpuinitdata = {0, 0, 0, 0, -1, 1, 0, 0, -1};
++struct cpuinfo_x86 new_cpu_data __cpuinitdata = {
++	.wp_works_ok = -1,
++	.fdiv_bug = -1,
++};
+ /* common cpu data for all cpus */
+-struct cpuinfo_x86 boot_cpu_data __read_mostly = {0, 0, 0, 0, -1, 1, 0, 0, -1};
++struct cpuinfo_x86 boot_cpu_data __read_mostly = {
++	.wp_works_ok = -1,
++	.fdiv_bug = -1,
++};
+ EXPORT_SYMBOL(boot_cpu_data);
  
- out:
--- 
-1.7.11.7
-
+ unsigned int def_to_bigsmp;
