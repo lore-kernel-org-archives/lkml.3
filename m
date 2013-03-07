@@ -1,62 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755870Ab3CGKcm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 05:32:42 -0500
-Received: from dcvr.yhbt.net ([64.71.152.64]:45744 "EHLO dcvr.yhbt.net"
+	id S1756048Ab3CGKdP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 05:33:15 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:54475 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752847Ab3CGKcl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 05:32:41 -0500
-Date: Thu, 7 Mar 2013 10:32:40 +0000
-From: Eric Wong <normalperson@yhbt.net>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Davide Libenzi <davidel@xmailserver.org>,
-        Al Viro <viro@ZenIV.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] epoll: trim epitem by one cache line on x86_64
-Message-ID: <20130307103240.GA24132@dcvr.yhbt.net>
-References: <20130304112941.GA16284@dcvr.yhbt.net>
- <20130306143741.d5e56f13c94d2d6b2c1ea449@linux-foundation.org>
+	id S1752909Ab3CGKdN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Mar 2013 05:33:13 -0500
+Date: Thu, 7 Mar 2013 11:33:12 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+Cc: Randy Dunlap <rdunlap@infradead.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
+Subject: Re: linux-next: Tree for Mar 6 (hid)
+In-Reply-To: <CAN+gG=HhatpiPWUJ72Pr45odtcM6AJ5broNVrQ_=dF5AU6TEig@mail.gmail.com>
+Message-ID: <alpine.LNX.2.00.1303071130520.28677@pobox.suse.cz>
+References: <20130306115052.2b1969acb7b7a0fa35975984@canb.auug.org.au> <51379849.6040903@infradead.org> <CAN+gG=H4_1nUhhsUe031Q1QrnVna+F7hmAepe6kbNm=8z_gOjw@mail.gmail.com> <alpine.LNX.2.00.1303071108150.28677@pobox.suse.cz>
+ <CAN+gG=HhatpiPWUJ72Pr45odtcM6AJ5broNVrQ_=dF5AU6TEig@mail.gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130306143741.d5e56f13c94d2d6b2c1ea449@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrew Morton <akpm@linux-foundation.org> wrote:
-> It's going to be hard to maintain this - someone will change something
-> sometime and break it.  I suppose we could add a runtime check if we
-> cared enough.  Adding a big fat comment to struct epitem might help.
+On Thu, 7 Mar 2013, Benjamin Tissoires wrote:
 
-Thanks for looking at this patch.  I'll send a patch with a comment
-about keeping epitem size in check.  Also, would adding (with comments):
+> You should have at least one other patch for hid-mt:
+> https://patchwork.kernel.org/patch/2193641/
 
-	BUILD_BUG_ON(sizeof(struct epitem) > 128);
+Ah, right, that one is in my queue as well, sorry for not mentioning it in 
+my previous post.
 
-...be too heavy-handed?  I used that in my testing.  I'll check for:
-sizeof(void *) <= 8 too; in case 128-bit machines appear...
+That doesn't remove the direct call either though.
 
-> I don't see much additional room to be saved.  We could probably remove
-> epitem.nwait, but that wouldn't actually save anything because nwait
-> nestles with ffd.fd.
-
-If we remove nwait, we can move epoll_event up and have event.events
-tucked in there.  I have more and more depending on epoll, so I'll be
-around to comment on future epoll changes as they come up.
-
-> I tested your patch on powerpc and it reduced sizeof(epitem) from 136
-> to 128 for that arch as well, so I suggest we run with
+> And I sent as a RFC the patch I was talking about:
+> https://patchwork.kernel.org/patch/2193801/
+> https://patchwork.kernel.org/patch/2193821/
 > 
-> --- a/fs/eventpoll.c~epoll-trim-epitem-by-one-cache-line-on-x86_64-fix
-> +++ a/fs/eventpoll.c
-> @@ -105,7 +105,7 @@
->  struct epoll_filefd {
->  	struct file *file;
->  	int fd;
-> -} EPOLL_PACKED;
-> +} __packed;
+> These two RFCs have been reviewed by David Herrmann, so maybe we can
+> include them in their current form as no one else complained about it
+> ( maybe you will :) ).
 
-Thanks for testing on ppc.  Looks good to me.  For what it's worth:
-Acked-by: Eric Wong <normalperson@yhbt.net>
+For some reason these two vanished between the cracks of my mailbox. 
+Thanks for pointing those out, I will process them today and either apply 
+it, or fix it for -next by adding a config dependency.
+
+-- 
+Jiri Kosina
+SUSE Labs
