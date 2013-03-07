@@ -1,77 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933468Ab3CGVlR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 16:41:17 -0500
-Received: from www.linutronix.de ([62.245.132.108]:51175 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753177Ab3CGVlQ (ORCPT
+	id S1759879Ab3CGVlq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 16:41:46 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:64934 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758626Ab3CGVlp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 16:41:16 -0500
-Date: Thu, 7 Mar 2013 22:41:06 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Mike Frysinger <vapier@gentoo.org>, Ingo Molnar <mingo@kernel.org>,
-        Randy Dunlap <rdunlap@infradead.org>, linux-kernel@vger.kernel.org,
-        Russell King <linux@arm.linux.org.uk>, Michal Simek <monstr@monstr.eu>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mundt <lethal@linux-sh.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Richard Weinberger <richard@nod.at>
-Subject: Re: [PATCH v2] early_printk: consolidate random copies of identical
- code
-In-Reply-To: <20130307133542.8bdb23612990fa25c5cc9112@linux-foundation.org>
-Message-ID: <alpine.LFD.2.02.1303072240050.22263@ionos>
-References: <1362683754-706-1-git-send-email-paul.gortmaker@windriver.com> <20130307112536.82288f41924a38a441cdf345@linux-foundation.org> <5138EF7F.1050003@windriver.com> <20130307133542.8bdb23612990fa25c5cc9112@linux-foundation.org>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Thu, 7 Mar 2013 16:41:45 -0500
+X-IronPort-AV: E=Sophos;i="4.84,804,1355126400"; 
+   d="scan'208";a="27871325"
+Message-ID: <51390998.3090303@codeaurora.org>
+Date: Thu, 07 Mar 2013 13:41:44 -0800
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: linux-arm-kernel@lists.infradead.org, Mark Rutland <mark.rutland@arm.com>,
+        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        John Stultz <john.stultz@linaro.org>
+Subject: Re: [PATCH 01/10] clocksource: add generic dummy timer driver
+References: <1362614646-24113-1-git-send-email-sboyd@codeaurora.org> <1362614646-24113-2-git-send-email-sboyd@codeaurora.org> <alpine.LFD.2.02.1303071457300.22263@ionos>
+In-Reply-To: <alpine.LFD.2.02.1303071457300.22263@ionos>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 7 Mar 2013, Andrew Morton wrote:
-> On Thu, 7 Mar 2013 14:50:23 -0500 Paul Gortmaker <paul.gortmaker@windriver.com> wrote:
-> 
-> > This brings up a recurring question.  I was tempted to just go make
-> > CONFIG_EARLY_PRINTK depend on CONFIG_PRINTK, but lately I've faced
-> > pushback when trying to "fix" things like seeing ARM OMAP USB options
-> > for an x86 build[1], and GOLDFISH virt drivers being offered even
-> > when the end user already said no to GOLDFISH[2].
-> > 
-> > Do we want to use dependencies to reflect the real world layout of
-> > platforms/systems, or do we want to go the minimal dependency
-> > approach, where we are building sparc specific drivers on mips just
-> > because we can?
-> > 
-> > I think the former is better from a user specific point of view, as
-> > the maze of Kconfig is better as a tree topology with branches that
-> > have clear dependencies that exclude them, versus it being a flat
-> > monolithic space where anything can select anything.
-> > 
-> > Arguments I've heard for the latter seem to be developer centric
-> > (i.e forcing wider build coverage on the population as a whole, etc)
-> 
-> For me personally, I really really want good compilation coverage.  It
-> drives me bats when I merge a patch but have to jump through a series
-> of hoops (such as not having the appropriate cross-compiler!) to be
-> able to build the thing.
-> 
-> otoh, offering useless stuff to non-kernel-developers has downsides
-> with no balancing benefit, and we really should optimise things for
-> our users because there are so many more of them than there are of us.
-> 
-> I wish we could do both :(   CONFIG_AKPM?
+On 03/07/13 06:00, Thomas Gleixner wrote:
+> On Wed, 6 Mar 2013, Stephen Boyd wrote:
+>
+>> +static int __init dummy_timer_register(void)
+>> +{
+>> +	int err = register_cpu_notifier(&dummy_timer_cpu_nb);
+>> +	if (err)
+>> +		return err;
+>> +
+>> +	/* We won't get a call on the boot CPU, so register immediately */
+>> +	dummy_timer_setup();
+>> +
+>> +	return 0;
+>> +}
+>> +device_initcall(dummy_timer_register);
+> Are you sure that you want that to be installed unconditionally? What
+> about multi-platform kernels?
+>
 
-Sure go ahead, and while at it could you please implement
-CONFIG_DO_WHAT_I_MEAN as well ?
+A dummy timer is already installed unconditionally on devices with an
+arm architected timer, so if this is breaking something then those
+devices have been broken in the 3.9 merge window. I suppose we may need
+to make the rating even lower if there is somebody using a clockevent
+with a rating below 100. My grep of the tree shows 125 as the lowest,
+but perhaps we want to set the rating to 1 to be safe?
 
-Thanks,
-
-	tglx
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
