@@ -1,66 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758826Ab3CGDRr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 22:17:47 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:38274 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752713Ab3CGDRo (ORCPT
+	id S1756500Ab3CGDWt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 22:22:49 -0500
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:48817 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752713Ab3CGDWr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 22:17:44 -0500
-Date: Thu, 7 Mar 2013 03:17:07 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Ian Campbell <ian.campbell@citrix.com>
-Cc: Rob Herring <robherring2@gmail.com>,
-        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
-        "Keir (Xen.org)" <keir@xen.org>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "Tim (Xen.org)" <tim@xen.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jan Beulich <JBeulich@suse.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Nicolas Pitre <nico@fluxnic.net>
-Subject: Re: [PATCH LINUX v5] xen: event channel arrays are xen_ulong_t and
- not unsigned long
-Message-ID: <20130307031707.GA25137@mudshark.cambridge.arm.com>
-References: <1361285327.1051.115.camel@zakaz.uk.xensource.com>
- <1361360886-2956-1-git-send-email-ian.campbell@citrix.com>
- <51340ACD.70904@gmail.com>
- <20130305030436.GA18040@mudshark.cambridge.arm.com>
- <513596F2.1000701@gmail.com>
- <20130305080845.GA19097@mudshark.cambridge.arm.com>
- <1362475797.8941.67.camel@hastur.hellion.org.uk>
+	Wed, 6 Mar 2013 22:22:47 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1362475797.8941.67.camel@hastur.hellion.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <014101ce1ac8$5a4e8600$0eeb9200$%kim@samsung.com>
+References: <1362568712-13586-1-git-send-email-thomas.abraham@linaro.org>
+	<014101ce1ac8$5a4e8600$0eeb9200$%kim@samsung.com>
+Date: Thu, 7 Mar 2013 08:52:46 +0530
+Message-ID: <CAJuYYwS9+ZV43QaweUmqh_qFffT1fytM7G9WVbVWdi=hFjvpaw@mail.gmail.com>
+Subject: Re: [PATCH v2 0/3] pinctrl: exynos: add support for Samsung's Exynos5250
+From: Thomas Abraham <thomas.abraham@linaro.org>
+To: Kukjin Kim <kgene.kim@samsung.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linus.walleij@linaro.org,
+        t.figa@samsung.com, patches@linaro.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ian,
+On 7 March 2013 05:41, Kukjin Kim <kgene.kim@samsung.com> wrote:
+> Thomas Abraham wrote:
+>>
+>> Changes since v1:
+>> - Change the compatible string from "samsung,pinctrl-exynos5250" to
+>>   "samsung,exynos5250-pinctrl".
+>> - Rebased to v3.9-rc1
+>>
+>
+> Thomas, this stuff is already in my tree for v3.10, and above changes
+> included in there. Do you want to replace with this patches?
 
-On Tue, Mar 05, 2013 at 09:29:57AM +0000, Ian Campbell wrote:
-> On Tue, 2013-03-05 at 08:08 +0000, Will Deacon wrote:
-> > Cheers Rob, that was enough to reproduce for me. The problem is likely that
-> > CONFIG_AEABI=n, so the ABI doesn't actually mandate even base registers for
-> > 64-bit values in registers.
-> 
-> Me too.
-> 
-> > Ian -- this would be fixed if you used our atomic64 routines instead of
-> > inventing your own :)
-> 
-> I looked and couldn't see an existing 64 bit xchg, was I looking in the
-> wrong place? Ah, wait, I see atomic64_xchg now. But that needs an
-> atomic64_t while I have a xen_ulong_t (which == 64 bits on ARM). This is
-> a kernel<->hypervisor ABI so I can't just change it to an atomic64_t. I
-> suppose I could cast (see below, untested) but that seems rather icky.
+Dear Mr. Kim,
 
-You can play some container_of tricks, like we do in cmpxchg64 to get this
-right. Alternatively, we could look at an xchg8 implementation which some
-other architectures have (although they seem to be 64-bit machines).
+The v2 version includes one fix for the compatilble string. It changes
+the compatible string from "samsung,pinctrl-exynos5250" to
+"samsung,exynos5250-pinctrl". So could you pick this v2 series instead
+of the series which you have already merged.
 
-Will
+Thanks,
+Thomas.
+
+>
+> - Kukjin
+>
+>> This patch series add pinctrl driver support for Samsung's Exynos5250 SoC.
+>> The first patch adds the required Exynos5250 SoC specific data which is
+>> used by the Samsung pinctrl driver to setup the pinctrl/pinmux/eint
+>> controllers. The second and third patches skips the wakeup interrupt and
+>> gpiolib registration if the pinctrl support is enabled for Exynos5250.
+>>
+>> Thomas Abraham (3):
+>>   pinctrl: exynos: add exynos5250 SoC specific data
+>>   gpio: samsung: skip gpiolib registration if pinctrl support is enabled
+>> for exynos5250
+>>   arm: exynos: skip wakeup interrupt registration for exynos5250 if
+>> pinctrl is enabled
+>>
+>>  arch/arm/mach-exynos/common.c     |    1 +
+>>  drivers/gpio/gpio-samsung.c       |    1 +
+>>  drivers/pinctrl/pinctrl-exynos.c  |  108
+>> +++++++++++++++++++++++++++++++++++++
+>>  drivers/pinctrl/pinctrl-samsung.c |    2 +
+>>  drivers/pinctrl/pinctrl-samsung.h |    1 +
+>>  5 files changed, 113 insertions(+), 0 deletions(-)
+>
