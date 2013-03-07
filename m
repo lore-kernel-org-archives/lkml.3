@@ -1,73 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752784Ab3CGGtc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 01:49:32 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:36163 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751258Ab3CGGta (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 01:49:30 -0500
-From: Martin Zhang <martinbj2008@gmail.com>
-To: <steffen.klassert@secunet.com>, <herbert@gondor.hengli.com.au>,
-        <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Junwei Zhang <junwei.zhang@6wind.com>,
-        Martin Zhang <martinbj2008@gmail.com>
-Subject: [PATCH] fix a typo in afkey
-Date: Thu,  7 Mar 2013 14:48:47 +0800
-Message-Id: <1362638927-5617-1-git-send-email-martinbj2008@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S1752897Ab3CGGv5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 01:51:57 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:36338 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751549Ab3CGGv4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Mar 2013 01:51:56 -0500
+Message-ID: <513838F2.60101@ti.com>
+Date: Thu, 7 Mar 2013 07:51:30 +0100
+From: Benoit Cousson <b-cousson@ti.com>
+Organization: Texas Instruments
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
+MIME-Version: 1.0
+To: Tony Lindgren <tony@atomide.com>
+CC: Anil Kumar <anilk4.v@gmail.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux@arm.linux.org.uk>, Grant Likely <grant.likely@secretlab.ca>,
+        Thomas Weber <thomas@tomweber.eu>
+Subject: Re: [PATCH V4] ARM: dts: add minimal DT support for DevKit8000.
+References: <F3DBB1B3EF102E4994C89758CFCA32412CC4E9@DBDE01.ent.ti.com> <CABYxbz5GyxYaHANgdpwBNaaR6tnu=6LJuUNSvL7DEzU=4CPHcA@mail.gmail.com> <F3DBB1B3EF102E4994C89758CFCA32412CC74F@DBDE01.ent.ti.com> <CABYxbz62JrMB95p5i9iu2G=B4ETXLrYbLsyFEFR5F+WVD6YNnQ@mail.gmail.com> <20130306175313.GQ11806@atomide.com>
+In-Reply-To: <20130306175313.GQ11806@atomide.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Junwei Zhang <junwei.zhang@6wind.com>
+Hi,
 
-Signed-off-by: Martin Zhang <martinbj2008@gmail.com>
----
- net/key/af_key.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+On 03/06/2013 06:53 PM, Tony Lindgren wrote:
+> * Anil Kumar <anilk4.v@gmail.com> [130305 18:40]:
+>> Hi Tony,
+>>
+>>>> From: linux-arm-kernel [mailto:linux-arm-kernel-
+>>>> bounces@lists.infradead.org] On Behalf Of Anil Kumar
+>>>> Sent: Wednesday, February 27, 2013 8:03 AM
+>>>> To: devicetree-discuss@lists.ozlabs.org; linux-omap@vger.kernel.org;
+>>>> linux-kernel@vger.kernel.org; linux-arm-kernel@lists.infradead.org
+>>>> Cc: linux@arm.linux.org.uk; Cousson, Benoit; Tony Lindgren; Grant
+>>>> Likely; Anil Kumar; thomas@tomweber.eu
+>>>> Subject: Re: FW: [PATCH V4] ARM: dts: add minimal DT support for
+>>>> DevKit8000.
+>>>>
+>>>> Hi,
+>>>>>
+>>>>> DevKit8000 is a beagle board clone from Timll, sold by
+>>>>> armkits.com. The DevKit8000 has RS232 serial port, LCD, DVI-D,
+>>>>> S-Video, Ethernet, SD/MMC, keyboard, camera, SPI, I2C, USB and
+>>>>> JTAG interface.
+>>>>>
+>>>>> This patch adds the basic DT support for devkit8000. At this time,
+>>>> Information
+>>>>> of twl4030 (PMIC), MMC1, I2C1 and leds are added.
+>>>>>
+>>>>> Signed-off-by: Anil Kumar <anilk4.v@gmail.com>
+>>>>> Tested-by: Thomas Weber <thomas@tomweber.eu>
+>>>>
+>>>> Gentle Ping. As there are no review comments on this patch,
+>>>> Could you please pull this patch ?
+>>
+>> Gentle Ping.
+>>
+>> This patch also got Reviewed-by: Manish Badarkhe <badarkhe.manish@gmail.com>
+>> and as patch "ARM: dts: omap3-devkit8000: Enable audio support"  has already got
+>> "Acked-by: Peter Ujfalusi <peter.ujfalusi@ti.com>" but it is on the
+>> top of this patch.
+>> So, Could you please pull this patch in one of your omap branch? or
+>> you want me to
+>> do rebase this patch on top of v3.9-rc1 ?
+> 
+> Let's wait for Benoit to queue it as he has a bunch of .dts changes already
+> applied. Too bad we missed v3.9 merge window for those, but hopefully
+> we can get them queued early for v3.10.
 
-diff --git a/net/key/af_key.c b/net/key/af_key.c
-index 556fdaf..8555f33 100644
---- a/net/key/af_key.c
-+++ b/net/key/af_key.c
-@@ -2201,7 +2201,7 @@ static int pfkey_spdadd(struct sock *sk, struct sk_buff *skb, const struct sadb_
- 		      XFRM_POLICY_BLOCK : XFRM_POLICY_ALLOW);
- 	xp->priority = pol->sadb_x_policy_priority;
- 
--	sa = ext_hdrs[SADB_EXT_ADDRESS_SRC-1],
-+	sa = ext_hdrs[SADB_EXT_ADDRESS_SRC-1];
- 	xp->family = pfkey_sadb_addr2xfrm_addr(sa, &xp->selector.saddr);
- 	if (!xp->family) {
- 		err = -EINVAL;
-@@ -2214,7 +2214,7 @@ static int pfkey_spdadd(struct sock *sk, struct sk_buff *skb, const struct sadb_
- 	if (xp->selector.sport)
- 		xp->selector.sport_mask = htons(0xffff);
- 
--	sa = ext_hdrs[SADB_EXT_ADDRESS_DST-1],
-+	sa = ext_hdrs[SADB_EXT_ADDRESS_DST-1];
- 	pfkey_sadb_addr2xfrm_addr(sa, &xp->selector.daddr);
- 	xp->selector.prefixlen_d = sa->sadb_address_prefixlen;
- 
-@@ -2315,7 +2315,7 @@ static int pfkey_spddelete(struct sock *sk, struct sk_buff *skb, const struct sa
- 
- 	memset(&sel, 0, sizeof(sel));
- 
--	sa = ext_hdrs[SADB_EXT_ADDRESS_SRC-1],
-+	sa = ext_hdrs[SADB_EXT_ADDRESS_SRC-1];
- 	sel.family = pfkey_sadb_addr2xfrm_addr(sa, &sel.saddr);
- 	sel.prefixlen_s = sa->sadb_address_prefixlen;
- 	sel.proto = pfkey_proto_to_xfrm(sa->sadb_address_proto);
-@@ -2323,7 +2323,7 @@ static int pfkey_spddelete(struct sock *sk, struct sk_buff *skb, const struct sa
- 	if (sel.sport)
- 		sel.sport_mask = htons(0xffff);
- 
--	sa = ext_hdrs[SADB_EXT_ADDRESS_DST-1],
-+	sa = ext_hdrs[SADB_EXT_ADDRESS_DST-1];
- 	pfkey_sadb_addr2xfrm_addr(sa, &sel.daddr);
- 	sel.prefixlen_d = sa->sadb_address_prefixlen;
- 	sel.proto = pfkey_proto_to_xfrm(sa->sadb_address_proto);
--- 
-1.7.10.4
+Yep, sorry for having missed 3.9, I was a little bit sick at the wrong
+moment :-(
+
+I'm starting queuing the pending patches, and should have enough to push
+to you just after Linaro Connect.
+
+Regards,
+Benoit
 
