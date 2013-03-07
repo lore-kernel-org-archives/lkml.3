@@ -1,46 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758653Ab3CGNfU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 08:35:20 -0500
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:47564 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754065Ab3CGNfS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 08:35:18 -0500
-Message-ID: <1362663307.13839.1.camel@phoenix>
-Subject: [PATCH] dmaengine: mmp_pdma: Remove duplicate code to set DMA_SLAVE
- capability
-From: Axel Lin <axel.lin@ingics.com>
-To: Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>
-Cc: Zhangfei Gao <zhangfei.gao@marvell.com>, linux-kernel@vger.kernel.org
-Date: Thu, 07 Mar 2013 21:35:07 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1759261Ab3CGNfu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 08:35:50 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:53431 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758723Ab3CGNfm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Mar 2013 08:35:42 -0500
+From: Kishon Vijay Abraham I <kishon@ti.com>
+To: <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>, <rob@landley.net>,
+        <b-cousson@ti.com>, <tony@atomide.com>, <linux@arm.linux.org.uk>,
+        <balbi@ti.com>, <kishon@ti.com>, <devicetree-discuss@lists.ozlabs.org>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: [PATCH v3 5/7] ARM: dts: omap5: Add ocp2scp data
+Date: Thu, 7 Mar 2013 19:05:18 +0530
+Message-ID: <1362663320-23799-6-git-send-email-kishon@ti.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1362663320-23799-1-git-send-email-kishon@ti.com>
+References: <1362663320-23799-1-git-send-email-kishon@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
+Add ocp2scp data node in omap5 device tree file. The information for
+the node added here can be found @
+Documentation/devicetree/bindings/bus/omap-ocp2scp.txt
+
+Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
 ---
- drivers/dma/mmp_pdma.c |    1 -
- 1 file changed, 1 deletion(-)
+ arch/arm/boot/dts/omap5.dtsi |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-diff --git a/drivers/dma/mmp_pdma.c b/drivers/dma/mmp_pdma.c
-index c26699f..3d0f51b 100644
---- a/drivers/dma/mmp_pdma.c
-+++ b/drivers/dma/mmp_pdma.c
-@@ -825,7 +825,6 @@ static int mmp_pdma_probe(struct platform_device *op)
- 
- 	dma_cap_set(DMA_SLAVE, pdev->device.cap_mask);
- 	dma_cap_set(DMA_MEMCPY, pdev->device.cap_mask);
--	dma_cap_set(DMA_SLAVE, pdev->device.cap_mask);
- 	pdev->device.dev = &op->dev;
- 	pdev->device.device_alloc_chan_resources = mmp_pdma_alloc_chan_resources;
- 	pdev->device.device_free_chan_resources = mmp_pdma_free_chan_resources;
+diff --git a/arch/arm/boot/dts/omap5.dtsi b/arch/arm/boot/dts/omap5.dtsi
+index c937500..230b779 100644
+--- a/arch/arm/boot/dts/omap5.dtsi
++++ b/arch/arm/boot/dts/omap5.dtsi
+@@ -504,5 +504,13 @@
+ 			reg-names = "control_dev_conf", "phy_power_usb";
+ 			ti,type = <2>;
+ 		};
++
++		ocp2scp {
++			compatible = "ti,omap-ocp2scp";
++			#address-cells = <1>;
++			#size-cells = <1>;
++			ranges;
++			ti,hwmods = "ocp2scp1";
++		};
+ 	};
+ };
 -- 
-1.7.9.5
-
-
+1.7.10.4
 
