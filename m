@@ -1,78 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932346Ab3CGJez (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 04:34:55 -0500
-Received: from smtp-out-223.synserver.de ([212.40.185.223]:1053 "EHLO
-	smtp-out-220.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755226Ab3CGJew (ORCPT
+	id S1755544Ab3CGJgV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 04:36:21 -0500
+Received: from mail-qe0-f45.google.com ([209.85.128.45]:43299 "EHLO
+	mail-qe0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754905Ab3CGJgS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 04:34:52 -0500
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 17103
-Message-ID: <51385FA3.8080105@metafoo.de>
-Date: Thu, 07 Mar 2013 10:36:35 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
+	Thu, 7 Mar 2013 04:36:18 -0500
+Date: Thu, 7 Mar 2013 17:36:15 +0800 (HKT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+cc: Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH] ARM: mm: disable kmap_high_get() for SMP
+In-Reply-To: <20130307081258.GA14839@lge.com>
+Message-ID: <alpine.LFD.2.03.1303071721540.28820@syhkavp.arg>
+References: <1362372667-953-1-git-send-email-iamjoonsoo.kim@lge.com> <alpine.LFD.2.03.1303051642110.28820@syhkavp.arg> <20130307081258.GA14839@lge.com>
+User-Agent: Alpine 2.03 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-To: =?UTF-8?B?U8O2cmVuIEJyaW5rbWFubg==?= <soren.brinkmann@xilinx.com>
-CC: =?UTF-8?B?SmFuIEzDvGJiZQ==?= <jlu@pengutronix.de>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Mike Turquette <mturquette@linaro.org>,
-        Josh Cartwright <josh.cartwright@ni.com>,
-        Michal Simek <michal.simek@xilinx.com>,
-        Peter Crosthwaite <pcrost@xilinx.com>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, git@xilinx.com
-Subject: Re: RFC: Zynq Clock Controller
-References: <37032699-343e-485c-80e0-9b23e3706c58@VA3EHSMHS013.ehs.local> <1362570681.5269.98.camel@coredoba.hi.pengutronix.de> <f288874c-d0ae-4581-8d0f-2b9abe4d3117@CO9EHSMHS002.ehs.local>
-In-Reply-To: <f288874c-d0ae-4581-8d0f-2b9abe4d3117@CO9EHSMHS002.ehs.local>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/06/2013 06:27 PM, Sören Brinkmann wrote:
-> Hi Jan,
->  
-> what a small world. Good to hear from you.
+On Thu, 7 Mar 2013, Joonsoo Kim wrote:
+
+> Hello, Nicolas.
 > 
-> On Wed, Mar 06, 2013 at 12:51:21PM +0100, Jan Lübbe wrote:
->> Hi Sören,
->>
->> On Tue, 2013-03-05 at 12:04 -0800, Sören Brinkmann wrote:
->>> For this reasons, I'd like to propose moving Zynq into the same
->>> direction. I.e. adding a clock controller with the following DT
->>> description (details may change but the general idea should become
->>> clear):
->>> 	clkc: clkc {
->>>                 #clock-cells = <1>;
->>>                 compatible = "xlnx,ps7-clkc";
->>>                 ps_clk_frequency = <33333333>;	# board x-tal
->>>                 # optional props
->>>                 gem0_emio_clk_freq = <125000000>;
->>>                 gem1_emio_clk_freq = <50000000>;
->>>                 can_mio_clk_freq_xx = <1234>; # this is possible 54 times with xx = 00..53
->>>         };
+> On Tue, Mar 05, 2013 at 05:36:12PM +0800, Nicolas Pitre wrote:
+> > On Mon, 4 Mar 2013, Joonsoo Kim wrote:
+> > 
+> > > With SMP and enabling kmap_high_get(), it makes users of kmap_atomic()
+> > > sequential ordered, because kmap_high_get() use global kmap_lock().
+> > > It is not welcome situation, so turn off this optimization for SMP.
+> > 
+> > I'm not sure I understand the problem.
+> > 
+> > The lock taken by kmap_high_get() is released right away before that 
+> > function returns and therefore this is not actually serializing 
+> > anything.
+> 
+> Yes, you understand what I want to say correctly.
+> Sorry for bad explanation.
+> 
+> Following is reasons why I send this patch with RFC tag.
+> 
+> If we have more cpus, performance degration is possible although
+> it is very short time to holding the lock in kmap_high_get().
+> 
+> And kmap has maximum 512 entries(512 * 4K = 2M) and some mobile devices 
+> has 2G memory(highmem 1G>), so probability for finding matched entry
+> is approximately < 1/512. This probability can be more decreasing
+> for device which have more memory. So I think that waste time to find
+> matched entry is more than saved time.
+> 
+> Above is my humble opinion, so please let me know what I am missing.
 
-I definitely prefer the way it is right now in upstream, where we have one
-dt node per clock. It is more descriptive and also more extensible. And you
-also don't have to remember the clock index, and can use the phandle
-directly instead.
+Please look at the kmap_high_get() code again.  It performs no 
+searching at all.  What it does is:
 
->>
->> The clock controller should only contain properties for input frequency
->> (which can obviously not be calculated at run-time).
->>
->> Are the gem*, can* properties inputs? If they are actually outputs, the
->> corresponding frequencies should be requested by the clock consumers and
->> not hard-coded in DT.
-> They are inputs. GEM and CAN have the option to be clocked through (E)MIO pins, i.e. some external clock input which cannot be derived from ps_clk like all other clocks. I plan to register a fixed rate, root clock for each of those properties, if present.
+- lock the kmap array against concurrent changes
 
-If it is a static external input clock use a "fixed-clock" dt node to
-describe it. This also has the advantage that is is also possible to use a
-non-static clock.
+- if the given page is not highmem, unlock and return NULL
 
-- Lars
+- otherwise increment that page reference count, unlock, and return the 
+  mapped address for that page.
+
+There is almost zero cost to this function, independently of the number 
+of kmap entries, whereas it does save much bigger costs elsewhere when 
+it is successful.
+
+
+Nicolas
