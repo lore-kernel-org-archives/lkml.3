@@ -1,65 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759043Ab3CGNjP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 08:39:15 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:53432 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758728Ab3CGNfn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 08:35:43 -0500
-From: Kishon Vijay Abraham I <kishon@ti.com>
-To: <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>, <rob@landley.net>,
-        <b-cousson@ti.com>, <tony@atomide.com>, <linux@arm.linux.org.uk>,
-        <balbi@ti.com>, <kishon@ti.com>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: [PATCH v3 0/7] ARM: dts: omap: Add dts data for USB
-Date: Thu, 7 Mar 2013 19:05:13 +0530
-Message-ID: <1362663320-23799-1-git-send-email-kishon@ti.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S1758843Ab3CGNly (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 08:41:54 -0500
+Received: from momout1-smtp.messagingengine.com ([66.111.4.229]:44057 "EHLO
+	momout1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753586Ab3CGNlx convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Mar 2013 08:41:53 -0500
+X-Greylist: delayed 534 seconds by postgrey-1.27 at vger.kernel.org; Thu, 07 Mar 2013 08:41:53 EST
+Message-Id: <1362663176.11919.140661201212753.170BABA0@webmail.messagingengine.com>
+X-Sasl-Enc: Jfw2nICISRfVF5VVWS5b1BlBYRAqr4S1gu6aChA9p748 1362663176
+From: =?UTF-8?Q?K=C3=A9vin=20THIERRY?= <kevinthierry@myopera.com>
+To: linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: MessagingEngine.com Webmail Interface - ajax-a334e93d
+Subject: Unable to activate WiFi p2p / WiFi Direct
+Date: Thu, 07 Mar 2013 13:32:56 +0000
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Benoit,
+Hi,
+I've been unable to activate the p2p feature on my WiFi dongle (which
+otherwise works fine). 
+iwpriv command returns "wlan1 no private ioctls."
+I'm running Ubuntu 12.04 with kernel 3.5.0-25 and the WiFi dongle is a
+Netgear model wna1000m (driver rtl8192cu).
+I've also tried with kernel 3.8.2 with the same result.
+Thanks,
 
-Here are the dt data patches to get usb device functional in OMAP platforms.
-
-All the patches deal with modifying arch/arm/boot except one which modifies
-Documentation/../usb/omap-usb.txt
-
-Changes from v2:
-* squashed the dt data for dwc3-omap with dwc3 core into a single patch.
-
-Changes from v1:
-Patch *ARM: dts: omap: Add usb_otg and glue data* has some properties with
-names that has "_". It's replaced with a "-" here.
-
-This patch is developed on Linux 3.9-rc1.
-
-Kishon Vijay Abraham I (7):
-  ARM: dts: omap: Add omap control usb data
-  ARM: dts: omap: Add omap-usb2 dt data
-  ARM: dts: omap: Add usb_otg and glue data
-  ARM: dts: omap5: Add omap control usb data
-  ARM: dts: omap5: Add ocp2scp data
-  ARM: dts: omap5: Add omap-usb3 and omap-usb2 dt data
-  ARM: dts: omap5: add dwc3 omap and dwc3 core dt data
-
- Documentation/devicetree/bindings/usb/omap-usb.txt |    1 +
- arch/arm/boot/dts/omap3-beagle-xm.dts              |    6 +++
- arch/arm/boot/dts/omap3-evm.dts                    |    6 +++
- arch/arm/boot/dts/omap3-overo.dtsi                 |    6 +++
- arch/arm/boot/dts/omap3.dtsi                       |   12 +++++
- arch/arm/boot/dts/omap4-panda.dts                  |    6 +++
- arch/arm/boot/dts/omap4-sdp.dts                    |    6 +++
- arch/arm/boot/dts/omap4.dtsi                       |   26 +++++++++++
- arch/arm/boot/dts/omap5.dtsi                       |   48 ++++++++++++++++++++
- arch/arm/boot/dts/twl4030.dtsi                     |    2 +-
- 10 files changed, 118 insertions(+), 1 deletion(-)
-
--- 
-1.7.10.4
-
+Kévin THIERRY
