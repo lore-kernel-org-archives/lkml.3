@@ -1,106 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759336Ab3CGRQR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 12:16:17 -0500
-Received: from mx12.netapp.com ([216.240.18.77]:13615 "EHLO mx12.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754358Ab3CGRQP convert rfc822-to-8bit (ORCPT
+	id S933044Ab3CGRSX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 12:18:23 -0500
+Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:17862 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755022Ab3CGRSV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 12:16:15 -0500
-X-IronPort-AV: E=Sophos;i="4.84,803,1355126400"; 
-   d="scan'208";a="28904975"
-From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Jeff Layton <jlayton@redhat.com>, Tejun Heo <tj@kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Mandeep Singh Baines <msb@chromium.org>,
-        Ming Lei <ming.lei@canonical.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: LOCKDEP: 3.9-rc1: mount.nfs/4272 still has locks held!
-Thread-Topic: LOCKDEP: 3.9-rc1: mount.nfs/4272 still has locks held!
-Thread-Index: AQHOGOA9OOKbapJ+RE+tLJb3WRyEW5iWGYKAgAACcQCAAFy3AIAAED2AgAAVFoCAAP+FAIAASasAgAAA3gCAABR7AIAAAbqAgABLhYCAAAIMAIABNeMAgAAKUgCAACN5AIAABvAAgAABwwCAAAGFAIAA7BsAgABG94CAAAERAIAABy4AgAAFngCAAAUngIAAA4GA
-Date: Thu, 7 Mar 2013 17:16:12 +0000
-Message-ID: <4FA345DA4F4AE44899BD2B03EEEC2FA9286B5452@sacexcmbx05-prd.hq.netapp.com>
-References: <20130305174954.GG12795@htj.dyndns.org>
-	 <20130305140312.243cb094@tlielax.poochiereds.net>
-	 <20130305190923.GI12795@htj.dyndns.org>
-	 <20130305183941.19ff39ce@tlielax.poochiereds.net>
-	 <20130305234700.GE1227@htj.dyndns.org> <20130306181608.GA18687@redhat.com>
-	 <20130306185304.GM1227@htj.dyndns.org>
-	 <CA+55aFwDogteVd=vwGHXDSASnga-nZZnKaQz9aO1yBU2CPKSbA@mail.gmail.com>
-	 <20130306212452.GO1227@htj.dyndns.org>
-	 <CA+55aFy49AWptMcvEzJxg95ikf-dC+-vcCPq-cnaCCwje3tyoQ@mail.gmail.com>
-	 <20130306213636.GP1227@htj.dyndns.org>
-	 <20130307064140.71c0936b@tlielax.poochiereds.net>
-	 <CA+55aFxe1_x8wvVYciiX8tuee+VsmXGKqEbONQdFM4s4W2iuPg@mail.gmail.com>
-	 <4FA345DA4F4AE44899BD2B03EEEC2FA9286B511E@sacexcmbx05-prd.hq.netapp.com>
-	 <CA+55aFySyBP8q5AvPrt-s_ZPdgamfoX-dERw4EJ21EcsDLBjYA@mail.gmail.com>
-	 <4FA345DA4F4AE44899BD2B03EEEC2FA9286B52F1@sacexcmbx05-prd.hq.netapp.com>
-	 <CA+55aFwB4Pjki8zg9idwbQbE-TOtTdD5o8d_r1=NY3veVqmPHg@mail.gmail.com>
-In-Reply-To: <CA+55aFwB4Pjki8zg9idwbQbE-TOtTdD5o8d_r1=NY3veVqmPHg@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.104.60.115]
-Content-Type: text/plain; charset=US-ASCII
-Content-ID: <A33E3231C956FB43A995E2051E41BBE1@tahoe.netapp.com>
-Content-Transfer-Encoding: 7BIT
+	Thu, 7 Mar 2013 12:18:21 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19OBJnR0yxj9STeWjOGbjMf
+Date: Thu, 7 Mar 2013 08:10:41 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Benoit Cousson <b-cousson@ti.com>
+Cc: Anil Kumar <anilk4.v@gmail.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux@arm.linux.org.uk, Grant Likely <grant.likely@secretlab.ca>,
+        Thomas Weber <thomas@tomweber.eu>
+Subject: Re: [PATCH V4] ARM: dts: add minimal DT support for DevKit8000.
+Message-ID: <20130307161041.GV11806@atomide.com>
+References: <F3DBB1B3EF102E4994C89758CFCA32412CC4E9@DBDE01.ent.ti.com>
+ <CABYxbz5GyxYaHANgdpwBNaaR6tnu=6LJuUNSvL7DEzU=4CPHcA@mail.gmail.com>
+ <F3DBB1B3EF102E4994C89758CFCA32412CC74F@DBDE01.ent.ti.com>
+ <CABYxbz62JrMB95p5i9iu2G=B4ETXLrYbLsyFEFR5F+WVD6YNnQ@mail.gmail.com>
+ <20130306175313.GQ11806@atomide.com>
+ <513838F2.60101@ti.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <513838F2.60101@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-03-07 at 09:03 -0800, Linus Torvalds wrote:
-> On Thu, Mar 7, 2013 at 8:45 AM, Myklebust, Trond
-> <Trond.Myklebust@netapp.com> wrote:
-> >
-> > The problem there is that we get into the whole 'hard' vs 'soft' mount
-> > problem. We're supposed to guarantee data integrity for 'hard' mounts,
-> > so no funny business is allowed. OTOH, 'soft' mounts time out and return
-> > EIO to the application anyway, and so shouldn't be a problem.
-> >
-> > Perhaps we could add a '-oslushy' mount option :-) that guarantees data
-> > integrity for all situations _except_ ENETDOWN/ENETUNREACH?
+* Benoit Cousson <b-cousson@ti.com> [130306 22:55]:
 > 
-> I do think we are probably over-analyzing this. It's not like people
-> who want freezing to work usually use flaky NFS. There's really two
-> main groups:
-> 
->  - the "freezer as a snapshot mechanism" that might use NFS because
-> they are in a server environment.
-> 
->  - the "freeezer for suspend/resume on a laptop"
-> 
-> The first one does use NFS, and cares about it, and probably would
-> prefer the freeze event to take longer and finish for all ongoing IO
-> operations. End result: just ditch the "freezable_schedule()"
-> entirely.
-> 
-> The second one is unlikely to really use NFS anyway. End result:
-> ditching the freezable_schedule() is probably perfectly fine, even if
-> it would cause suspend failures if the network is being troublesome.
-> 
-> So for now, why not just replace freezable_schedule() with plain
-> schedule() in the NFS code, and ignore it until somebody actually
-> complains about it, and then aim to try to do something more targeted
-> for that particular complaint?
+> Yep, sorry for having missed 3.9, I was a little bit sick at the wrong
+> moment :-(
 
-We _have_ had complaints about the laptop suspension problem; that was
-why Jeff introduced freezable_schedule() in the first place. We've never
-had complaints about any problems involvinf cgroup_freeze. This is why
-our focus tends to be on the former, and why I'm more worried about
-laptop suspend regressions for any short term fixes.
+Well that just proves the .dts files can be merged totally independent
+of the rest of the patches ;)
 
--- 
-Trond Myklebust
-Linux NFS client maintainer
+> I'm starting queuing the pending patches, and should have enough to push
+> to you just after Linaro Connect.
 
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
+OK sounds good.
+
+Regards,
+
+Tony
