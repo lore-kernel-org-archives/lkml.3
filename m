@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932766Ab3CGO3K (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 09:29:10 -0500
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:39262 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758747Ab3CGO3G (ORCPT
+	id S932821Ab3CGO3i (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 09:29:38 -0500
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:45147 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755185Ab3CGO3h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 09:29:06 -0500
+	Thu, 7 Mar 2013 09:29:37 -0500
 From: yxlraid@gmail.com
 To: bhelgaas@google.com
 Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
         Xiangliang Yu <yuxiangl@marvell.com>
-Subject: [PATCH 1/2] PCI: define macro for marvell vendor ID
-Date: Thu,  7 Mar 2013 22:28:43 +0800
-Message-Id: <1362666523-9961-1-git-send-email-yxlraid@gmail.com>
+Subject: [PATCH 2/2] PCI: fix system hang issue of Marvell SATA host controller
+Date: Thu,  7 Mar 2013 22:29:16 +0800
+Message-Id: <1362666556-10036-1-git-send-email-yxlraid@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -21,23 +21,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Xiangliang Yu <yuxiangl@marvell.com>
 
-Define PCI_VENDOR_MARVELL_ID_EXT macro for 0x1b4b vendor ID
+Fix system hang issue: if first accessed resource file of BAR0 ~
+BAR4, system will hang after executing lspci command
 ---
- include/linux/pci_ids.h |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ drivers/pci/quirks.c |   15 +++++++++++++++
+ 1 files changed, 15 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/pci_ids.h b/include/linux/pci_ids.h
-index f11c1c2..a80f9e6 100644
---- a/include/linux/pci_ids.h
-+++ b/include/linux/pci_ids.h
-@@ -1604,6 +1604,7 @@
- #define PCI_SUBDEVICE_ID_KEYSPAN_SX2	0x5334
+diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
+index 0369fb6..d49f8dc 100644
+--- a/drivers/pci/quirks.c
++++ b/drivers/pci/quirks.c
+@@ -44,6 +44,21 @@ static void quirk_mmio_always_on(struct pci_dev *dev)
+ DECLARE_PCI_FIXUP_CLASS_EARLY(PCI_ANY_ID, PCI_ANY_ID,
+ 				PCI_CLASS_BRIDGE_HOST, 8, quirk_mmio_always_on);
  
- #define PCI_VENDOR_ID_MARVELL		0x11ab
-+#define PCI_VENDOR_ID_MARVELL_EXT	0x1b4b
- #define PCI_DEVICE_ID_MARVELL_GT64111	0x4146
- #define PCI_DEVICE_ID_MARVELL_GT64260	0x6430
- #define PCI_DEVICE_ID_MARVELL_MV64360	0x6460
++/* The BAR0 ~ BAR4 of Marvell 9125 device can't be accessed
++*  by IO resource file, and need to skip the files
++*/
++static void quirk_marvell_mask_bar(struct pci_dev *dev)
++{
++	int i;
++
++	for (i = 0; i < 5; i++)
++		if (dev->resource[i].start)
++			dev->resource[i].start =
++				dev->resource[i].end = 0;
++}
++DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_MARVELL_EXT, 0x9125,
++				quirk_marvell_mask_bar);
++
+ /* The Mellanox Tavor device gives false positive parity errors
+  * Mark this device with a broken_parity_status, to allow
+  * PCI scanning code to "skip" this now blacklisted device.
 -- 
 1.7.5.4
 
