@@ -1,57 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759701Ab3CGSm6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 13:42:58 -0500
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:56619 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759509Ab3CGSmy (ORCPT
+	id S1759706Ab3CGSpW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 13:45:22 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:54679 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755969Ab3CGSpU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 13:42:54 -0500
-Date: Fri, 8 Mar 2013 00:12:41 +0530
-From: Afzal Mohammed <afzal.mohd.ma@gmail.com>
-To: Daniel Mack <zonque@gmail.com>
-Cc: Fabio Estevam <festevam@gmail.com>, Russell King <linux@arm.linux.org.uk>,
-        Mike Turquette <mturquette@linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: Question about fixed-clock
-Message-ID: <20130307184240.GA3327@afzal-ThinkPad-R50e>
+	Thu, 7 Mar 2013 13:45:20 -0500
+X-IronPort-AV: E=Sophos;i="4.84,803,1355126400"; 
+   d="scan'208";a="28081192"
+From: David Brown <davidb@codeaurora.org>
+To: Sekhar Nori <nsekhar@ti.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-arm-msm@vger.kernel.org>,
+        Kenneth Heitke <kheitke@codeaurora.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 1/6] platform-drivers: msm: add single-wire serial bus interface (SSBI) driver
+References: <1362616187-21089-1-git-send-email-davidb@codeaurora.org>
+	<1362616187-21089-2-git-send-email-davidb@codeaurora.org>
+	<20130307013008.GA2910@kroah.com> <8yawqtjvl8y.fsf@huya.qualcomm.com>
+	<20130307060117.GA31687@kroah.com> <5138666E.6090201@ti.com>
+Date: Thu, 07 Mar 2013 10:45:19 -0800
+In-Reply-To: <5138666E.6090201@ti.com> (Sekhar Nori's message of "Thu, 7 Mar
+	2013 15:35:34 +0530")
+Message-ID: <8yak3pjuk00.fsf@huya.qualcomm.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130219033931.GA2479@afzal-ThinkPad-R50e>
- <51234B8E.2000504@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Daniel,
+Sekhar Nori <nsekhar@ti.com> writes:
 
-On Tue, Feb 19, 2013 at 09:09:31AM +0530, Afzal Mohammed wrote:
+> On 3/7/2013 11:31 AM, Greg Kroah-Hartman wrote:
+>> On Wed, Mar 06, 2013 at 09:20:45PM -0800, David Brown wrote:
+>>> Greg Kroah-Hartman <gregkh@linuxfoundation.org> writes:
+>>>
+>>>> On Wed, Mar 06, 2013 at 04:29:42PM -0800, David Brown wrote:
+>>>>> +menu "Qualcomm MSM SSBI bus support"
+>>>>> +	depends on ARCH_MSM
+>>>>
+>>>> Why?
+>>>
+>>> In the sense that ARCH_MSM are the only devices that ever were, or ever
+>>> will be made with this device.  It doesn't strictly depend on it, but do
+>>> we want to clutter the config for everything else.
+>> 
+>> It's not "clutter".  You want me to build this on other platforms, to
+>> catch api and other types of build breakages.  This is the way for
+>> almost all Linux drivers.
+>
+> Not having a depends on helps build coverage, but I have seen
+> objections to showing up irrelevant configurations to users (of x86 for
+> example). See one here from Linus for OMAP_OCP2SCP
+>
+> http://lkml.indiana.edu/hypermail/linux/kernel/1210.0/00785.html
+>
+> If this case is different, I am not sure why.
 
-> Hope invoking of_clk_init before clock generator driver helps
+This was, in fact, the reason I put the dependency there.  I found it a
+little annoying being asked about a bunch of OMAP devices when building
+the x86 kernel.  At least they weren't cancer curing options (default
+y).
 
-Mails coming from this id are in my personal capacity.
+David
 
-On Tue, Feb 19, 2013 at 10:53:18AM +0100, Daniel Mack wrote:
-> On 19.02.2013 02:33, Fabio Estevam wrote:
-
-> > Have you registered it with clk_register_fixed_rate() ?
-
-> Hmm no, I didn't do anything else than adding it to the DT in the first
-> place, hoping that a driver will pick it up and add the clock for me.
-> But it turns out that of_clk_init() is not called at all on my platform.
-> 
-> I'm doing this now from omap_generic_init() and it works. If that's an
-> appropriate place to call it, I can provide a patch.
-
-Initially didn't realize that it was for an am335x based one.
-
-I feel that for a platform having it's clock tree in DT, of_clk_init
-would take care of it, but if clock tree data is not in DT, clock
-tree would have to be extended in a non-DT way.
-
-Regards
-Afzal
+-- 
+sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
