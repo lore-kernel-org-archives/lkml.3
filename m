@@ -1,64 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933320Ab3CGThW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 14:37:22 -0500
-Received: from mail-ea0-f170.google.com ([209.85.215.170]:42702 "EHLO
-	mail-ea0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932724Ab3CGThU (ORCPT
+	id S933347Ab3CGTi0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 14:38:26 -0500
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:61975 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932724Ab3CGTiZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 14:37:20 -0500
-Message-ID: <5138EC6C.6030906@suse.cz>
-Date: Thu, 07 Mar 2013 20:37:16 +0100
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:19.0) Gecko/20130124 Thunderbird/19.0
+	Thu, 7 Mar 2013 14:38:25 -0500
+Date: Thu, 7 Mar 2013 11:38:20 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Li Zefan <lizefan@huawei.com>, cgroups@vger.kernel.org
+Subject: Re: lockdep trace from prepare_bprm_creds
+Message-ID: <20130307193820.GB3209@htj.dyndns.org>
+References: <20130306223657.GA7392@redhat.com>
+ <20130307172545.GA10353@redhat.com>
+ <20130307180139.GD29601@htj.dyndns.org>
+ <20130307180332.GE29601@htj.dyndns.org>
+ <20130307191242.GA18265@redhat.com>
 MIME-Version: 1.0
-To: Hillf Danton <dhillf@gmail.com>
-CC: Daniel J Blueman <daniel@numascale-asia.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Steffen Persvold <sp@numascale.com>
-Subject: Re: kswapd craziness round 2
-References: <5121C7AF.2090803@numascale-asia.com> <CAJd=RBArPT8YowhLuE8YVGNfH7G-xXTOjSyDgdV2RsatL-9m+Q@mail.gmail.com> <51254AD2.7000906@suse.cz> <CAJd=RBCiYof5rRVK+62OFMw+5F=5rS=qxRYF+OHpuRz895bn4w@mail.gmail.com> <512F8D8B.3070307@suse.cz> <CAJd=RBD=eT=xdEy+v3GBZ47gd47eB+fpF-3VtfpLAU7aEkZGgA@mail.gmail.com>
-In-Reply-To: <CAJd=RBD=eT=xdEy+v3GBZ47gd47eB+fpF-3VtfpLAU7aEkZGgA@mail.gmail.com>
-X-Enigmail-Version: 1.6a1pre
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130307191242.GA18265@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/01/2013 03:02 PM, Hillf Danton wrote:
-> On Fri, Mar 1, 2013 at 1:02 AM, Jiri Slaby <jslaby@suse.cz> wrote:
->>
->> Ok, no difference, kswap is still crazy. I'm attaching the output of
->> "grep -vw '0' /proc/vmstat" if you see something there.
->>
-> Thanks to you for test and data.
-> 
-> Lets try to restore the deleted nap, then.
+Hello,
 
-Oh, it seems to be nice now:
-root       579  0.0  0.0      0     0 ?        S    Mar04   0:13 [kswapd0]
+On Thu, Mar 07, 2013 at 08:12:42PM +0100, Oleg Nesterov wrote:
+> Well yes, I agree. I think that perfomance-wise threadgroup_change_begin()
+> in de_thread() is fine, and perhaps it is even more clean because we are
+> going to do the thread-group change. The scope of cred_guard_mutex is huge,
+> it doesn't look very nice in threadgroup_lock().
+> 
+> But we should avoid the cgroup-specific hooks as much as possible, so I
+> like your patch more.
+
+I don't really mind how it's done but while my approach seems to limit
+itself to cgroup proper, threadgroup locking is actually more invasive
+by meddling with cred_mutex.  As you said, yours is the cleaner and
+probably more permanent one here.
+
+> > +	if (threadgroup && !thread_group_leader(tsk)) {
+> > +		/*
+> > +		 * a race with de_thread from another thread's exec() may
+> > +		 * strip us of our leadership, if this happens, there is no
+> > +		 * choice but to throw this task away and try again; this
+> > +		 * is "double-double-toil-and-trouble-check locking".
+> > +		 */
+> > +		threadgroup_unlock(tsk);
+> > +		put_task_struct(tsk);
+> > +		goto retry_find_task;
+> > +	}
+> >
+> > +	ret = -ENODEV;
+> > +	if (cgroup_lock_live_group(cgrp)) {
+> > +		if (threadgroup)
+> > +			ret = cgroup_attach_proc(cgrp, tsk);
+> 
+> Offtopic, but with or without this change I do not understand the
+> thread_group_leader/retry_find_task logic.
+> 
+> Why do we actually need to restart? We do not really care if it is leader
+> or not, we only need to ensure we can safely use while_each_thread() to
+> find all !PF_EXITING threads.
+
+If my memory serves me right (which BTW often fails), it's cgroup API
+thing.  cgroup wants to guarantee to the controllers that if multiple
+tasks are migrated together, they always constitute a threadgroup and
+the first one is the leader.  ISTR a controller callback which depends
+on the first one being the leader.
 
 Thanks.
 
-> Hillf
-> --- a/mm/vmscan.c	Thu Feb 21 20:01:02 2013
-> +++ b/mm/vmscan.c	Fri Mar  1 21:55:40 2013
-> @@ -2817,6 +2817,10 @@ loop_again:
->  		 */
->  		if (sc.nr_reclaimed >= SWAP_CLUSTER_MAX)
->  			break;
-> +
-> +		if (sc.priority < DEF_PRIORITY - 2)
-> +			congestion_wait(BLK_RW_ASYNC, HZ/10);
-> +
->  	} while (--sc.priority >= 0);
-> 
->  out:
-> --
-> 
-
-
 -- 
-js
-suse labs
+tejun
