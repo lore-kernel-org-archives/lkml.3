@@ -1,76 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759453Ab3CGQaw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 11:30:52 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:56864 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752029Ab3CGQav (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 11:30:51 -0500
-Date: Thu, 7 Mar 2013 08:29:32 -0800
-From: tip-bot for Thomas Gleixner <tipbot@zytor.com>
-Message-ID: <tip-ad2b13536ace08dfcca4cf86b75a5d06efe06373@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        rusty@rustcorp.com.au, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        rusty@rustcorp.com.au, tglx@linutronix.de
-In-Reply-To: <20130306111537.304379448@linutronix.de>
-References: <20130306111537.304379448@linutronix.de>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:timers/core] tick: Call tick_init late
-Git-Commit-ID: ad2b13536ace08dfcca4cf86b75a5d06efe06373
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 07 Mar 2013 08:29:38 -0800 (PST)
+	id S1759575Ab3CGQcE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 11:32:04 -0500
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:33305 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755893Ab3CGQcB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Mar 2013 11:32:01 -0500
+Subject: [PATCH] do not try to sync identity map for non-mapped pages
+To: linux-kernel@vger.kernel.org
+Cc: bp@alien8.de, hpa@linux.intel.com, penguin-kernel@i-love.sakura.ne.jp,
+        x86@kernel.org, akpm@linux-foundation.org, suresh.b.siddha@intel.com,
+        khlebnikov@openvz.org, bhelgaas@google.com,
+        Dave Hansen <dave@sr71.net>
+From: Dave Hansen <dave@sr71.net>
+Date: Thu, 07 Mar 2013 08:31:51 -0800
+Message-Id: <20130307163151.D9B58C4E@kernel.stglabs.ibm.com>
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13030716-7182-0000-0000-000005AF3D1E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  ad2b13536ace08dfcca4cf86b75a5d06efe06373
-Gitweb:     http://git.kernel.org/tip/ad2b13536ace08dfcca4cf86b75a5d06efe06373
-Author:     Thomas Gleixner <tglx@linutronix.de>
-AuthorDate: Tue, 5 Mar 2013 15:14:05 +0100
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Thu, 7 Mar 2013 16:13:25 +0100
 
-tick: Call tick_init late
+The original bug reporter says this fixes it for him, so I'm
+broadening the cc list a bit.  I assume this should just get
+sucked in to the x86 tree.
 
-To convert the clockevents code to cpumask_var_t we need to move the
-init call after the allocator setup. 
+The double-signed-off-by from my is because my IBM email is
+going away very shortly.
 
-Clockevents are earliest registered from time_init() as they need
-interrupts being set up, so this is safe.
+--
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Link: http://lkml.kernel.org/r/20130306111537.304379448@linutronix.de
-Cc: Rusty Russell <rusty@rustcorp.com.au>
+kernel_map_sync_memtype() is called from a variety of contexts.  The
+pat.c code that calls it seems to ensure that it is not called for
+non-ram areas by checking via pat_pagerange_is_ram().  It is important
+that it only be called on the actual identity map because there *IS*
+no map to sync for highmem pages, or for memory holes.
+
+The ioremap.c uses are not as careful as those from pat.c, and call
+kernel_map_sync_memtype() on PCI space which is in the middle of the
+kernel identity map _range_, but is not actually mapped.
+
+This patch adds a check to kernel_map_sync_memtype() which probably
+duplicates some of the checks already in pat.c.  But, it is necessary
+for the ioremap.c uses and shouldn't hurt other callers.
+
+I have reproduced this bug and this patch fixes it for me and the
+original bug reporter:
+
+	https://lkml.org/lkml/2013/2/5/396
+
+Signed-off-by: Dave Hansen <dave@linux.vnet.ibm.com>
+Signed-off-by: Dave Hansen <dave@sr71.net>
+Tested-by: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
 ---
- init/main.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/init/main.c b/init/main.c
-index 63534a1..b3e0614 100644
---- a/init/main.c
-+++ b/init/main.c
-@@ -494,7 +494,6 @@ asmlinkage void __init start_kernel(void)
-  * Interrupts are still disabled. Do necessary setups, then
-  * enable them
-  */
--	tick_init();
- 	boot_cpu_init();
- 	page_address_init();
- 	printk(KERN_NOTICE "%s", linux_banner);
-@@ -551,6 +550,7 @@ asmlinkage void __init start_kernel(void)
- 	/* init some links before init_ISA_irqs() */
- 	early_irq_init();
- 	init_IRQ();
-+	tick_init();
- 	init_timers();
- 	hrtimers_init();
- 	softirq_init();
+ linux-2.6.git-dave/arch/x86/mm/pat.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff -puN arch/x86/mm/pat.c~dont-flush-map-for-non-ram-pages arch/x86/mm/pat.c
+--- linux-2.6.git/arch/x86/mm/pat.c~dont-flush-map-for-non-ram-pages	2013-03-07 08:14:10.065558743 -0800
++++ linux-2.6.git-dave/arch/x86/mm/pat.c	2013-03-07 08:14:10.069558781 -0800
+@@ -563,6 +563,13 @@ int kernel_map_sync_memtype(u64 base, un
+ 	if (base > __pa(high_memory-1))
+ 		return 0;
+ 
++	/*
++	 * some areas in the middle of the kernel identity range
++	 * are not mapped, like the PCI space.
++	 */
++	if (!page_is_ram(base >> PAGE_SHIFT))
++		return 0;
++
+ 	id_sz = (__pa(high_memory-1) <= base + size) ?
+ 				__pa(high_memory) - base :
+ 				size;
+_
+
