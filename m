@@ -1,184 +1,336 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759544Ab3CGQeV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 11:34:21 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:56915 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752029Ab3CGQeT (ORCPT
+	id S1759594Ab3CGQfN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 11:35:13 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:7752 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753852Ab3CGQfJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 11:34:19 -0500
-Date: Thu, 7 Mar 2013 08:33:07 -0800
-From: tip-bot for Daniel Lezcano <tipbot@zytor.com>
-Message-ID: <tip-d2348fb6fdc6d671ad45b62db237f76c8c115603@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        tglx@linutronix.de, daniel.lezcano@linaro.org
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, daniel.lezcano@linaro.org
-In-Reply-To: <1362219013-18173-3-git-send-email-daniel.lezcano@linaro.org>
-References: <1362219013-18173-3-git-send-email-daniel.lezcano@linaro.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:timers/core] tick: Dynamically set broadcast irq affinity
-Git-Commit-ID: d2348fb6fdc6d671ad45b62db237f76c8c115603
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Thu, 7 Mar 2013 11:35:09 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Thu, 07 Mar 2013 08:28:58 -0800
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: <broonie@opensource.wolfsonmicro.com>, <gregkh@linuxfoundation.org>
+CC: <linux-kernel@vger.kernel.org>, <swarren@nvidia.com>,
+        Laxman Dewangan <ldewangan@nvidia.com>
+Subject: [PATCH V2 RESEND 1/2] regmap: irq: Add support for interrupt type
+Date: Thu, 7 Mar 2013 22:03:17 +0530
+Message-ID: <1362673997-6762-2-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
+In-Reply-To: <1362673997-6762-1-git-send-email-ldewangan@nvidia.com>
+References: <1362673997-6762-1-git-send-email-ldewangan@nvidia.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 07 Mar 2013 08:33:14 -0800 (PST)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  d2348fb6fdc6d671ad45b62db237f76c8c115603
-Gitweb:     http://git.kernel.org/tip/d2348fb6fdc6d671ad45b62db237f76c8c115603
-Author:     Daniel Lezcano <daniel.lezcano@linaro.org>
-AuthorDate: Sat, 2 Mar 2013 11:10:11 +0100
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Thu, 7 Mar 2013 16:13:26 +0100
+Add support of setting the irq_type of the interrupt which
+is registered through regmap irq framework.
 
-tick: Dynamically set broadcast irq affinity
+The client who register the interrupt can pass the supported
+irq type through irq chip data along with the type mask and
+type value of each type which is supported. Client also need
+to provide the type base register address and number of type
+register to write into the device.
 
-When a cpu goes to a deep idle state where its local timer is
-shutdown, it notifies the time frame work to use the broadcast timer
-instead.  Unfortunately, the broadcast device could wake up any CPU,
-including an idle one which is not concerned by the wake up at all. So
-in the worst case an idle CPU will wake up to send an IPI to the CPU
-whose timer expired.
-
-Provide an opt-in feature CLOCK_EVT_FEAT_DYNIRQ which tells the core
-that is should set the interrupt affinity of the broadcast interrupt
-to the cpu which has the earliest expiry time. This avoids unnecessary
-spurious wakeups and IPIs.
-
-[ tglx: Adopted to cpumask rework, silenced an uninitialized warning,
-  massaged changelog ]
-
-Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
-Cc: viresh.kumar@linaro.org
-Cc: jacob.jun.pan@linux.intel.com
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: santosh.shilimkar@ti.com
-Cc: linaro-kernel@lists.linaro.org
-Cc: patches@linaro.org
-Cc: rickard.andersson@stericsson.com
-Cc: vincent.guittot@linaro.org
-Cc: linus.walleij@stericsson.com
-Cc: john.stultz@linaro.org
-Link: http://lkml.kernel.org/r/1362219013-18173-3-git-send-email-daniel.lezcano@linaro.org
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
 ---
- include/linux/clockchips.h   |  5 +++++
- kernel/time/tick-broadcast.c | 39 +++++++++++++++++++++++++++++++--------
- 2 files changed, 36 insertions(+), 8 deletions(-)
+Changes from V1:
+- Make the irq type value in place of bit wise allocation as suggested in
+  patch V1.
+- Also added the suboffset register for type so that type
+  configuration can be acoomodated in multiple register.
+- Rewrite the description.
 
-diff --git a/include/linux/clockchips.h b/include/linux/clockchips.h
-index 6634652..494d33e 100644
---- a/include/linux/clockchips.h
-+++ b/include/linux/clockchips.h
-@@ -55,6 +55,11 @@ enum clock_event_nofitiers {
- #define CLOCK_EVT_FEAT_C3STOP		0x000008
- #define CLOCK_EVT_FEAT_DUMMY		0x000010
+- Resending in case of it it is missed.
+
+ drivers/base/regmap/regmap-irq.c |  126 ++++++++++++++++++++++++++++++++++++++
+ include/linux/regmap.h           |   40 ++++++++++++
+ 2 files changed, 166 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/base/regmap/regmap-irq.c b/drivers/base/regmap/regmap-irq.c
+index 4706c63..8ca32bc 100644
+--- a/drivers/base/regmap/regmap-irq.c
++++ b/drivers/base/regmap/regmap-irq.c
+@@ -39,8 +39,11 @@ struct regmap_irq_chip_data {
+ 	unsigned int *mask_buf;
+ 	unsigned int *mask_buf_def;
+ 	unsigned int *wake_buf;
++	unsigned int *type_buf;
++	unsigned int *type_buf_def;
  
-+/*
-+ * Core shall set the interrupt affinity dynamically in broadcast mode
-+ */
-+#define CLOCK_EVT_FEAT_DYNIRQ		0x000020
+ 	unsigned int irq_reg_stride;
++	unsigned int type_reg_stride;
+ };
+ 
+ static inline const
+@@ -107,6 +110,24 @@ static void regmap_irq_sync_unlock(struct irq_data *data)
+ 		}
+ 	}
+ 
++	for (i = 0; i < d->chip->num_type_reg; i++) {
++		int j;
++		for (j = 0; j < d->chip->num_type_sub_reg; ++j) {
++			int k = i * d->chip->num_type_sub_reg + j;
 +
- /**
-  * struct clock_event_device - clock event device descriptor
-  * @event_handler:	Assigned by the framework to be called by the low
-diff --git a/kernel/time/tick-broadcast.c b/kernel/time/tick-broadcast.c
-index 70dd98c..380910d 100644
---- a/kernel/time/tick-broadcast.c
-+++ b/kernel/time/tick-broadcast.c
-@@ -401,13 +401,34 @@ struct cpumask *tick_get_broadcast_oneshot_mask(void)
- 	return tick_broadcast_oneshot_mask;
++			if (!d->type_buf_def[k])
++				continue;
++
++			reg = d->chip->type_base +
++				(i * map->reg_stride * d->type_reg_stride)  + j;
++			ret = regmap_update_bits(d->map, reg,
++				d->type_buf_def[k], d->type_buf[k]);
++			if (ret != 0)
++				dev_err(d->map->dev,
++					"Failed to sync type in %x\n", reg);
++		}
++	}
++
+ 	if (d->chip->runtime_pm)
+ 		pm_runtime_put(map->dev);
+ 
+@@ -141,6 +162,56 @@ static void regmap_irq_disable(struct irq_data *data)
+ 	d->mask_buf[irq_data->reg_offset / map->reg_stride] |= irq_data->mask;
  }
  
--static int tick_broadcast_set_event(struct clock_event_device *bc,
-+/*
-+ * Set broadcast interrupt affinity
-+ */
-+static void tick_broadcast_set_affinity(struct clock_event_device *bc,
-+					const struct cpumask *cpumask)
++static int regmap_irq_set_type(struct irq_data *data, unsigned int type)
 +{
-+	if (!(bc->features & CLOCK_EVT_FEAT_DYNIRQ))
-+		return;
++	struct regmap_irq_chip_data *d = irq_data_get_irq_chip_data(data);
++	struct regmap *map = d->map;
++	const struct regmap_irq *irq_data = irq_to_regmap_irq(d, data->hwirq);
++	int reg;
 +
-+	if (cpumask_equal(bc->cpumask, cpumask))
-+		return;
++	if (!irq_data->type_supported_flags)
++		return 0;
 +
-+	bc->cpumask = cpumask;
-+	irq_set_affinity(bc->irq, bc->cpumask);
++	type &= irq_data->type_supported_flags;
++	reg = (irq_data->type_reg_offset / map->reg_stride) *
++			d->chip->num_type_sub_reg +
++			irq_data->type_reg_sub_offset;
++	d->type_buf[reg] &= ~irq_data->type_mask;
++
++	switch (type) {
++	case IRQ_TYPE_EDGE_FALLING:
++		d->type_buf[reg] |=
++			irq_data->type_value[REGMAP_IRQ_TYPE_FALLING];
++		break;
++
++	case IRQ_TYPE_EDGE_RISING:
++		d->type_buf[reg] |=
++			irq_data->type_value[REGMAP_IRQ_TYPE_RISING];
++		break;
++
++	case IRQ_TYPE_EDGE_BOTH:
++		d->type_buf[reg] |=
++			irq_data->type_value[REGMAP_IRQ_TYPE_BOTH];
++		break;
++
++	case IRQ_TYPE_LEVEL_HIGH:
++		d->type_buf[reg] |=
++			irq_data->type_value[REGMAP_IRQ_TYPE_LEVEL_HIGH];
++		break;
++
++	case IRQ_TYPE_LEVEL_LOW:
++		d->type_buf[reg] |=
++			irq_data->type_value[REGMAP_IRQ_TYPE_LEVEL_LOW];
++		break;
++
++	default:
++		d->type_buf[reg] |=
++			irq_data->type_value[REGMAP_IRQ_TYPE_NONE];
++		break;
++	}
++	return 0;
 +}
 +
-+static int tick_broadcast_set_event(struct clock_event_device *bc, int cpu,
- 				    ktime_t expires, int force)
+ static int regmap_irq_set_wake(struct irq_data *data, unsigned int on)
  {
-+	int ret;
+ 	struct regmap_irq_chip_data *d = irq_data_get_irq_chip_data(data);
+@@ -167,6 +238,7 @@ static const struct irq_chip regmap_irq_chip = {
+ 	.irq_bus_sync_unlock	= regmap_irq_sync_unlock,
+ 	.irq_disable		= regmap_irq_disable,
+ 	.irq_enable		= regmap_irq_enable,
++	.irq_set_type		= regmap_irq_set_type,
+ 	.irq_set_wake		= regmap_irq_set_wake,
+ };
+ 
+@@ -375,6 +447,20 @@ int regmap_add_irq_chip(struct regmap *map, int irq, int irq_flags,
+ 			goto err_alloc;
+ 	}
+ 
++	if (chip->num_type_reg) {
++		d->type_buf_def = kzalloc(sizeof(unsigned int) *
++					chip->num_type_reg *
++					chip->num_type_sub_reg, GFP_KERNEL);
++		if (!d->type_buf_def)
++			goto err_alloc;
 +
- 	if (bc->mode != CLOCK_EVT_MODE_ONESHOT)
- 		clockevents_set_mode(bc, CLOCK_EVT_MODE_ONESHOT);
++		d->type_buf = kzalloc(sizeof(unsigned int) *
++				chip->num_type_reg * chip->num_type_sub_reg,
++				GFP_KERNEL);
++		if (!d->type_buf)
++			goto err_alloc;
++	}
++
+ 	d->irq_chip = regmap_irq_chip;
+ 	d->irq_chip.name = chip->name;
+ 	d->irq = irq;
+@@ -387,6 +473,8 @@ int regmap_add_irq_chip(struct regmap *map, int irq, int irq_flags,
+ 	else
+ 		d->irq_reg_stride = 1;
  
--	return clockevents_program_event(bc, expires, force);
-+	ret = clockevents_program_event(bc, expires, force);
-+	if (!ret)
-+		tick_broadcast_set_affinity(bc, cpumask_of(cpu));
-+	return ret;
- }
- 
- int tick_resume_broadcast_oneshot(struct clock_event_device *bc)
-@@ -436,7 +457,7 @@ static void tick_handle_oneshot_broadcast(struct clock_event_device *dev)
- {
- 	struct tick_device *td;
- 	ktime_t now, next_event;
--	int cpu;
-+	int cpu, next_cpu = 0;
- 
- 	raw_spin_lock(&tick_broadcast_lock);
- again:
-@@ -447,10 +468,12 @@ again:
- 	/* Find all expired events */
- 	for_each_cpu(cpu, tick_broadcast_oneshot_mask) {
- 		td = &per_cpu(tick_cpu_device, cpu);
--		if (td->evtdev->next_event.tv64 <= now.tv64)
-+		if (td->evtdev->next_event.tv64 <= now.tv64) {
- 			cpumask_set_cpu(cpu, tmpmask);
--		else if (td->evtdev->next_event.tv64 < next_event.tv64)
-+		} else if (td->evtdev->next_event.tv64 < next_event.tv64) {
- 			next_event.tv64 = td->evtdev->next_event.tv64;
-+			next_cpu = cpu;
-+		}
- 	}
- 
- 	/*
-@@ -473,7 +496,7 @@ again:
- 		 * Rearm the broadcast device. If event expired,
- 		 * repeat the above
- 		 */
--		if (tick_broadcast_set_event(dev, next_event, 0))
-+		if (tick_broadcast_set_event(dev, next_cpu, next_event, 0))
- 			goto again;
- 	}
- 	raw_spin_unlock(&tick_broadcast_lock);
-@@ -515,7 +538,7 @@ void tick_broadcast_oneshot_control(unsigned long reason)
- 		if (!cpumask_test_and_set_cpu(cpu, tick_broadcast_oneshot_mask)) {
- 			clockevents_set_mode(dev, CLOCK_EVT_MODE_SHUTDOWN);
- 			if (dev->next_event.tv64 < bc->next_event.tv64)
--				tick_broadcast_set_event(bc, dev->next_event, 1);
-+				tick_broadcast_set_event(bc, cpu, dev->next_event, 1);
++	d->type_reg_stride = chip->type_reg_stride ? : 1;
++
+ 	if (!map->use_single_rw && map->reg_stride == 1 &&
+ 	    d->irq_reg_stride == 1) {
+ 		d->status_reg_buf = kmalloc(map->format.val_bytes *
+@@ -442,6 +530,40 @@ int regmap_add_irq_chip(struct regmap *map, int irq, int irq_flags,
  		}
- 	} else {
- 		if (cpumask_test_and_clear_cpu(cpu, tick_broadcast_oneshot_mask)) {
-@@ -581,7 +604,7 @@ void tick_broadcast_setup_oneshot(struct clock_event_device *bc)
- 			clockevents_set_mode(bc, CLOCK_EVT_MODE_ONESHOT);
- 			tick_broadcast_init_next_event(tmpmask,
- 						       tick_next_period);
--			tick_broadcast_set_event(bc, tick_next_period, 1);
-+			tick_broadcast_set_event(bc, cpu, tick_next_period, 1);
- 		} else
- 			bc->next_event.tv64 = KTIME_MAX;
- 	} else {
+ 	}
+ 
++	if (chip->num_type_reg) {
++		for (i = 0; i < chip->num_irqs; i++) {
++			int tv = chip->irqs[i].type_value[REGMAP_IRQ_TYPE_NONE];
++
++			reg = (chip->irqs[i].type_reg_offset /
++				map->reg_stride) * chip->num_type_sub_reg +
++					chip->irqs[i].type_reg_sub_offset;
++			d->type_buf_def[reg] |= chip->irqs[i].type_mask;
++			d->type_buf[reg] |= (tv & chip->irqs[i].type_mask);
++		}
++
++		for (i = 0; i < chip->num_type_reg; ++i) {
++			int j;
++			for (j = 0; j < chip->num_type_sub_reg; ++j) {
++				int k = i * chip->num_type_sub_reg + j;
++
++				if (!d->type_buf_def[k])
++					continue;
++
++				reg = chip->type_base + (i * map->reg_stride *
++						d->type_reg_stride) + j;
++
++				ret = regmap_update_bits(map, reg,
++					d->type_buf_def[k], d->type_buf[k]);
++				if (ret != 0) {
++					dev_err(map->dev,
++					"Failed to set type in 0x%x: %x\n",
++					reg, ret);
++					goto err_alloc;
++				}
++			}
++		}
++	}
++
+ 	if (irq_base)
+ 		d->domain = irq_domain_add_legacy(map->dev->of_node,
+ 						  chip->num_irqs, irq_base, 0,
+@@ -468,6 +590,8 @@ int regmap_add_irq_chip(struct regmap *map, int irq, int irq_flags,
+ err_domain:
+ 	/* Should really dispose of the domain but... */
+ err_alloc:
++	kfree(d->type_buf);
++	kfree(d->type_buf_def);
+ 	kfree(d->wake_buf);
+ 	kfree(d->mask_buf_def);
+ 	kfree(d->mask_buf);
+@@ -491,6 +615,8 @@ void regmap_del_irq_chip(int irq, struct regmap_irq_chip_data *d)
+ 
+ 	free_irq(irq, d);
+ 	/* We should unmap the domain but... */
++	kfree(d->type_buf);
++	kfree(d->type_buf_def);
+ 	kfree(d->wake_buf);
+ 	kfree(d->mask_buf_def);
+ 	kfree(d->mask_buf);
+diff --git a/include/linux/regmap.h b/include/linux/regmap.h
+index e34f9f1..c07fcb8 100644
+--- a/include/linux/regmap.h
++++ b/include/linux/regmap.h
+@@ -376,14 +376,42 @@ bool regmap_reg_in_ranges(unsigned int reg,
+ 			  unsigned int nranges);
+ 
+ /**
++ * The Regmap IRQ type Index
++ * REGMAP_IRQ_TYPE_NONE is used for setting inital value for clearing type.
++ */
++enum {
++	REGMAP_IRQ_TYPE_NONE,
++	REGMAP_IRQ_TYPE_RISING,
++	REGMAP_IRQ_TYPE_FALLING,
++	REGMAP_IRQ_TYPE_BOTH,
++	REGMAP_IRQ_TYPE_LEVEL_HIGH,
++	REGMAP_IRQ_TYPE_LEVEL_LOW,
++
++	/* Last entry to get maximum index */
++	REGMAP_IRQ_TYPE_NR,
++};
++
++/**
+  * Description of an IRQ for the generic regmap irq_chip.
+  *
+  * @reg_offset: Offset of the status/mask register within the bank
+  * @mask:       Mask used to flag/control the register.
++ * @type_reg_offset: Offset register for the irq type setting.
++ * @type_reg_sub_offset: Suboffset for type register if type mask are
++ *              accomodated in the multiple register.
++ * @type_supported_flags: Supported interrupt type as per interrupt.h.
++ *             All supported flags are ORed.
++ * type_mask: Type mask for getting related register bits.
++ * @type_value: The type value in array form to set value for a given flag.
+  */
+ struct regmap_irq {
+ 	unsigned int reg_offset;
+ 	unsigned int mask;
++	unsigned int type_reg_offset;
++	unsigned int type_reg_sub_offset;
++	unsigned int type_supported_flags;
++	unsigned int type_mask;
++	unsigned int type_value[REGMAP_IRQ_TYPE_NR];
+ };
+ 
+ /**
+@@ -397,6 +425,7 @@ struct regmap_irq {
+  * @mask_base:   Base mask register address.
+  * @ack_base:    Base ack address.  If zero then the chip is clear on read.
+  * @wake_base:   Base address for wake enables.  If zero unsupported.
++ * @type_base:   Base address for irq type.  If zero unsupported.
+  * @irq_reg_stride:  Stride to use for chips where registers are not contiguous.
+  * @runtime_pm:  Hold a runtime PM lock on the device when accessing it.
+  *
+@@ -404,6 +433,12 @@ struct regmap_irq {
+  * @irqs:        Descriptors for individual IRQs.  Interrupt numbers are
+  *               assigned based on the index in the array of the interrupt.
+  * @num_irqs:    Number of descriptors.
++ * @num_type_reg:    Number of type registers.
++ * @num_type_sub_reg: Number of sub register for type. It may be possible that
++ *               type configuration register for given set on interrupt from one
++ *               register are having multiple register for type configuration.
++ * @type_reg_stride: Stride to use for chips where type registers are not
++ *			contiguous.
+  */
+ struct regmap_irq_chip {
+ 	const char *name;
+@@ -412,6 +447,7 @@ struct regmap_irq_chip {
+ 	unsigned int mask_base;
+ 	unsigned int ack_base;
+ 	unsigned int wake_base;
++	unsigned int type_base;
+ 	unsigned int irq_reg_stride;
+ 	unsigned int mask_invert;
+ 	unsigned int wake_invert;
+@@ -421,6 +457,10 @@ struct regmap_irq_chip {
+ 
+ 	const struct regmap_irq *irqs;
+ 	int num_irqs;
++
++	int num_type_reg;
++	int num_type_sub_reg;
++	unsigned int type_reg_stride;
+ };
+ 
+ struct regmap_irq_chip_data;
+-- 
+1.7.1.1
+
