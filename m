@@ -1,29 +1,42 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755264Ab3CDElJ (ORCPT <rfc822;list-kernel77@spinics.net>);
-	Sun, 3 Mar 2013 23:41:09 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:51767 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754845Ab3CDElI convert rfc822-to-8bit (ORCPT
+	id S1755668Ab3CGJdn (ORCPT <rfc822;list-kernel77@spinics.net>);
+	Thu, 7 Mar 2013 04:33:43 -0500
+Received: from outrelay02.libero.it ([212.52.84.102]:43777 "EHLO
+	outrelay02.libero.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754244Ab3CGJdl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Mar 2013 23:41:08 -0500
-X-IronPort-AV: E=Sophos;i="4.84,778,1355068800"; 
-   d="scan'208";a="6804985"
-Message-ID: <513425AD.1070605@cn.fujitsu.com>
-Date: Mon, 04 Mar 2013 12:40:13 +0800
-From: Han Cheng <hanc.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.8) Gecko/20121012 Thunderbird/10.0.8
+	Thu, 7 Mar 2013 04:33:41 -0500
+X-CTCH-Spam: Unknown
+X-CTCH-RefID: str=0001.0A0C0206.51385EA2.0002,ss=1,re=0.000,fgs=0
+X-libjamoibt: 1587
+Message-ID: <28124080.19775331362648737910.JavaMail.defaultUser@defaultHost>
+Date: Thu, 7 Mar 2013 10:32:17 +0100 (CET)
+From: "bnhfbrade@libero.it" <bnhfbrade@libero.it>
+Reply-To: "bnhfbrade@libero.it" <bnhfbrade@libero.it>
+Subject: Hello
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: TEST
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/03/04 12:40:05,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/03/04 12:40:05
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain;charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-SenderIP: 188.78.234.83
+X-libjamv: WNQpTYi5fgM=
+X-libjamsun: i4EW/Rdz+UL4bt2JWYYw3LTkxXS05HIW
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry， just a test...
+Hello 
+  
+My names is Gomez  Javier of CANALES & ASOCIADOS ABOGADOS SPAIN. I sent you a 
+business proposal letter long time ago,but  you have not respond to me, I am 
+using this
+medium to remind you again because I am really running out of time. Please I 
+would appreciate if you could
+confirm to me if you received the proposal letter please let me know through 
+this Emails below: 
 
+For further clarification reach me on this Private Email: gomezjavier113@yahoo.
+es or  javiergomez681@gmail.com
+
+Best Regards, 
+Gomez  Javier. (Esq)
