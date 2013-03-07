@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932536Ab3CGJBH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 04:01:07 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:23764 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755422Ab3CGJBF (ORCPT
+	id S932545Ab3CGJBZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 04:01:25 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:61255 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755533Ab3CGJAl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 04:01:05 -0500
-Message-ID: <51385734.10206@huawei.com>
-Date: Thu, 7 Mar 2013 17:00:36 +0800
+	Thu, 7 Mar 2013 04:00:41 -0500
+Message-ID: <51385730.7020606@huawei.com>
+Date: Thu, 7 Mar 2013 17:00:32 +0800
 From: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
 User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
 To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Josh Boyer <jwboyer@linux.vnet.ibm.com>,
-        Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
-Subject: [PATCH 7/8] ethernet/emac/sysrq: fix inconstistent help message of
- sysrq key
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 6/8] spare/sysrq: fix inconstistent help message of sysrq
+ key
 Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 X-Originating-IP: [10.66.58.241]
@@ -37,26 +36,34 @@ inconsistent with the real lower-case character registed key.
 This inconsistent help message will also lead more confused when
 26 upper-case letters put into use in future.
 
-This patch ethernet emac sysrq key: "emac(c)"
+This patch fix spare sysrq key: "global-regs(y)"
 
 Signed-off-by: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
-Cc: Josh Boyer <jwboyer@linux.vnet.ibm.com>
-Cc: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
+Cc: David S. Miller <davem@davemloft.net>
 ---
- drivers/net/ethernet/ibm/emac/debug.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/sparc/kernel/process_64.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/ethernet/ibm/emac/debug.c b/drivers/net/ethernet/ibm/emac/debug.c
-index b16b482..a559f32 100644
---- a/drivers/net/ethernet/ibm/emac/debug.c
-+++ b/drivers/net/ethernet/ibm/emac/debug.c
-@@ -245,7 +245,7 @@ static void emac_sysrq_handler(int key)
+diff --git a/arch/sparc/kernel/process_64.c b/arch/sparc/kernel/process_64.c
+index cdb80b2..a0705ba 100644
+--- a/arch/sparc/kernel/process_64.c
++++ b/arch/sparc/kernel/process_64.c
+@@ -315,7 +315,7 @@ static void sysrq_handle_globreg(int key)
 
- static struct sysrq_key_op emac_sysrq_op = {
- 	.handler = emac_sysrq_handler,
--	.help_msg = "emaC",
-+	.help_msg = "emac(c)",
- 	.action_msg = "Show EMAC(s) status",
+ static struct sysrq_key_op sparc_globalreg_op = {
+ 	.handler	= sysrq_handle_globreg,
+-	.help_msg	= "global-regs(Y)",
++	.help_msg	= "global-regs(y)",
+ 	.action_msg	= "Show Global CPU Regs",
+ };
+
+@@ -385,7 +385,7 @@ static void sysrq_handle_globpmu(int key)
+
+ static struct sysrq_key_op sparc_globalpmu_op = {
+ 	.handler	= sysrq_handle_globpmu,
+-	.help_msg	= "global-pmu(X)",
++	.help_msg	= "global-pmu(x)",
+ 	.action_msg	= "Show Global PMU Regs",
  };
 
 -- 
