@@ -1,99 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756567Ab3CGWrp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 17:47:45 -0500
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:59459 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751733Ab3CGWro convert rfc822-to-8bit (ORCPT
+	id S1755998Ab3CGWu6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 17:50:58 -0500
+Received: from mail-ve0-f176.google.com ([209.85.128.176]:59731 "EHLO
+	mail-ve0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751599Ab3CGWu4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 17:47:44 -0500
-Date: Thu, 07 Mar 2013 16:47:38 -0600
-From: Rob Landley <rob@landley.net>
-Subject: Re: [PATCH v2] early_printk: consolidate random copies of identical
- code
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Mike Frysinger <vapier@gentoo.org>, Ingo Molnar <mingo@kernel.org>,
-        Randy Dunlap <rdunlap@infradead.org>, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Russell King <linux@arm.linux.org.uk>, Michal Simek <monstr@monstr.eu>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mundt <lethal@linux-sh.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Richard Weinberger <richard@nod.at>
-In-Reply-To: <20130307133542.8bdb23612990fa25c5cc9112@linux-foundation.org>
-	(from akpm@linux-foundation.org on Thu Mar  7 15:35:42 2013)
-X-Mailer: Balsa 2.4.11
-Message-Id: <1362696458.6812.9@driftwood>
+	Thu, 7 Mar 2013 17:50:56 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <20130307221800.GA572@redhat.com>
+References: <20130307021645.GA10173@redhat.com>
+	<20130307153052.GA18246@redhat.com>
+	<CA+55aFyVZeDswi=M65ULQkGCvJq5vsASLqGCtufH3TcS--MC1Q@mail.gmail.com>
+	<20130307193501.GA2802@redhat.com>
+	<CA+55aFwDYocNRjSCJk1PYw0MFy7dpKf1yMMEiePP--=ewQcX6A@mail.gmail.com>
+	<20130307221800.GA572@redhat.com>
+Date: Thu, 7 Mar 2013 14:50:55 -0800
+X-Google-Sender-Auth: S-GY4XiCe86sDHTadEMuchW6_SA
+Message-ID: <CA+55aFwObv7--izbae5YdXX3AhoHfV0YwbSLQoonTf-=e4PzqQ@mail.gmail.com>
+Subject: Re: BUG_ON(nd->inode->i_op->follow_link);
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Dave Jones <davej@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/07/2013 03:35:42 PM, Andrew Morton wrote:
-> On Thu, 7 Mar 2013 14:50:23 -0500 Paul Gortmaker  
-> <paul.gortmaker@windriver.com> wrote:
-> 
-> > This brings up a recurring question.  I was tempted to just go make
-> > CONFIG_EARLY_PRINTK depend on CONFIG_PRINTK, but lately I've faced
-> > pushback when trying to "fix" things like seeing ARM OMAP USB  
-> options
-> > for an x86 build[1], and GOLDFISH virt drivers being offered even
-> > when the end user already said no to GOLDFISH[2].
-> >
-> > Do we want to use dependencies to reflect the real world layout of
-> > platforms/systems, or do we want to go the minimal dependency
-> > approach, where we are building sparc specific drivers on mips just
-> > because we can?
-> >
-> > I think the former is better from a user specific point of view, as
-> > the maze of Kconfig is better as a tree topology with branches that
-> > have clear dependencies that exclude them, versus it being a flat
-> > monolithic space where anything can select anything.
-> >
-> > Arguments I've heard for the latter seem to be developer centric
-> > (i.e forcing wider build coverage on the population as a whole, etc)
-> 
-> For me personally, I really really want good compilation coverage.  It
-> drives me bats when I merge a patch but have to jump through a series
-> of hoops (such as not having the appropriate cross-compiler!) to be
-> able to build the thing.
+On Thu, Mar 7, 2013 at 2:18 PM, Dave Jones <davej@redhat.com> wrote:
+>
+> Ok, that didn't enlightenment me so much..
 
-This doesn't solve everything, but:
+Ooh, I'm good.
 
-http://landley.net/aboriginal/bin
+> [  304.559707] WARNING: at fs/namei.c:696 nd_jump_link+0x85/0xa0()
+> [  304.692736]  [<ffffffff811c1795>] nd_jump_link+0x85/0xa0
+> [  304.693541]  [<ffffffff81224aec>] proc_pid_follow_link+0x6c/0x70
+> [  304.694445]  [<ffffffff811be661>] path_lookupat+0x2d1/0x740
+> [  304.695270]  [<ffffffff811beb04>] filename_lookup+0x34/0xc0
+> [  304.696112]  [<ffffffff811c193e>] user_path_at_empty+0x8e/0x110
+> [  304.697007]  [<ffffffff811c19d1>] user_path_at+0x11/0x20
+> [  304.697800]  [<ffffffff811d944f>] sys_setxattr+0x3f/0xe0
+> [  304.698609]  [<ffffffff816cdbc2>] system_call_fastpath+0x16/0x1b
+> [  304.722423] ---[ end trace 469ba8f58f5994e6 ]---
+> [  304.723132] old=fd new=1:9
+>
+> thoughts ?
 
-cross-compiler-*.tar.bz2 is statically linked cross compilers for a lot  
-of different architectures. Add the "bin" subdirectory to your path and  
-CROSS_COMPILE=prefix- where prefix is whatever the * was (and the  
-trailing - is important).
+Yes, I can reproduce this, and I know what's going on. I don't have a
+patch, though, and I think it's in Al's court on what we should do.
+Al?
 
-system-image-*.tar.bz2 is bootable system images with native  
-development tools (./run-emulator.sh and ./dev-environment.sh are  
-wrapper scripts to boot qemu with all the right arguments), for the  
-same set of architectures. (There are a couple I have cross compilers  
-for but insufficient board support in qemu as of yet. Working on it.  
-I'm also working on adding more targets, but it's multitasked with  
-several other projects...)
+Anyway, so the "old=fd" thing implies that it's one of the symlinks in
+/proc/xyz/fd/, so that's something. It could have been the
+cwd/exe/mmap ones. But that was kind of the expectation to begin with.
 
-Note that if you have distccd installed on the host and the cross  
-compiler is in your $PATH, ./dev-environment.sh should hook up distcc  
-to the cross compiler through qemu's emulated network.
+The "new=1:9" is the path that the file descriptor contained, and
+since you're playing games with /proc, /sys and /dev, *and* since you
+hit the "it shouldn't be a symlink" test, I'm *guessing* that it might
+be something like
 
-So at least _build_ coverage and basic "it booted to a shell prompt"  
-smoke test coverage are reasonably straightforward. (I have automated  
-build control images that build linux from scratch under the result,  
-hence wanting distcc to make it slightly less slow.)
+    /sys/dev/char/1:9
 
-Driver testing for strange hardware continues to require strange  
-hardware, though.
+which is a symlink to ../../devices/virtual/mem/urandom/.
 
-(If you're curious, http://landley.net/aboriginal/about.html goes on  
-about it.)
+And here is how you reproduce this:
 
-Rob
+Do:
+
+  int main(int argc, char **argv)
+  {
+    int fd = open(argv[1], O_PATH | O_NOFOLLOW);
+    struct stat st;
+    fstat(fd, &st);
+    sleep(100);
+  }
+
+and then run
+
+   ./a.out /sys/dev/char/1:9 &
+
+which will look up that symlink using O_NOFOLLOW. Take note of the
+<pid>, and then do
+
+   ls -l /proc/<pid>/fd/3/
+
+and you get the oops, because when it follows that pseudo-symlink for
+fd3, it will hit that symlink we just looked up. And trigger the
+BUG_ON() you see.
+
+Al, I think the BUG_ON() is simply bogus. Should we just remove it? Or
+is there some conceptual reason why we can't handle a symlink there?
+
+              Linus
