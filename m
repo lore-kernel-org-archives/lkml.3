@@ -1,49 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759385Ab3CGQId (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 11:08:33 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:47872 "EHLO mx1.redhat.com"
+	id S1759324Ab3CGQLP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 11:11:15 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:8066 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753057Ab3CGQIc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 11:08:32 -0500
-Subject: Re: [PATCH -v2] gfs2: fix bitmap declaration
-From: Steven Whitehouse <swhiteho@redhat.com>
-To: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, cluster-devel@redhat.com,
-        Christine Caulfield <ccaulfie@redhat.com>,
-        David Teigland <teigland@redhat.com>
-In-Reply-To: <CAC5umyjw3xzdExvf3TA6i3iH=ortPeJivetUpEyCP5Mzmn6wEg@mail.gmail.com>
-References: <1362576597-18501-1-git-send-email-akinobu.mita@gmail.com>
-	 <1362583679.2707.21.camel@menhir>
-	 <CAC5umyjw3xzdExvf3TA6i3iH=ortPeJivetUpEyCP5Mzmn6wEg@mail.gmail.com>
+	id S1751049Ab3CGQLN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Mar 2013 11:11:13 -0500
+Subject: 2013 Linux Plumbers PCI Microconference proposal call for
+ participaton
+From: Myron Stowe <mstowe@redhat.com>
+To: linux-pci <linux-pci@vger.kernel.org>
+Cc: linux-acpi <linux-acpi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
 Content-Type: text/plain; charset="UTF-8"
-Organization: Red Hat UK Ltd
-Date: Thu, 07 Mar 2013 16:06:39 +0000
-Message-ID: <1362672399.2528.32.camel@menhir>
+Date: Thu, 07 Mar 2013 09:11:01 -0700
+Message-ID: <1362672661.2276.3.camel@zim.stowe>
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+All:
 
-On Thu, 2013-03-07 at 23:38 +0900, Akinobu Mita wrote:
-> 2013/3/7 Steven Whitehouse <swhiteho@redhat.com>:
-> > Hi,
-> >
-> > This doesn't apply over the patch which Dave just sent. Can you redo
-> > this against the current GFS2 -nmw tree if it is still required? Thanks,
-> 
-> I checked Dave's patch.  It fixes the same issue that I was trying to fix.
-> So this -v2 patch is not needed anymore.
-> 
-> But the cleanup patch in v1 ([PATCH 2/2] gfs2: use memchr_inv) is still
-> applicable. So I'll resend it soon.
+Bjorn and I would like to chair a PCI subsystem focused microconference
+as part of this year's Linux Plumbers conference but first we need to
+find out if there is enough interest and material that needs covered
+( http://wiki.linuxplumbersconf.org/2013:topics ).
 
-Ok, thanks. I've pushed the memchr_inv patch into the -nmw git tree,
+Please respond to this invitation by submitting presentation or
+discussion proposals that you would be willing to cover for
+consideration (just respond to this mail on the linux-pci list).  You
+should also feel free to submit ideas as proposals for others to cover.
 
-Steve.
+If approved by the program committee we will give precedence to
+proposals that bring up current issues that need attention, help, or
+resolution.  We would like for the majority of the microconference to be
+"working session discussions" in which a current issue in the PCI
+subsystem's space that needs solving is introduced and then opened up
+for live discussion by attendees - much like what took place last year.
 
+As a possible aid towards promoting topics for submissions we have
+listed a few candidates that seem to meet the criteria in the
+microconference proposals wiki located at
+http://wiki.linuxplumbersconf.org/2013:pci_subsystem
+
+
+Please feel free to forward this invitation on to any others, or
+relevant lists, that seem appropriate.
+
+Thanks,
+Bjorn Helgaas and Myron Stowe 
 
