@@ -1,63 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932421Ab3CGInh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 03:43:37 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:50688 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932120Ab3CGIng (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 03:43:36 -0500
-Date: Thu, 7 Mar 2013 09:43:30 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-Cc: ibm-acpi-devel@lists.sourceforge.net, lkml <linux-kernel@vger.kernel.org>
-Subject: Re: x230: unhandled HKEY event 0x6050
-Message-ID: <20130307084330.GA5239@pd.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-	ibm-acpi-devel@lists.sourceforge.net,
-	lkml <linux-kernel@vger.kernel.org>
-References: <20130304213804.GE22274@pd.tnic>
- <20130307003016.GA21655@khazad-dum.debian.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20130307003016.GA21655@khazad-dum.debian.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932436Ab3CGIpl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 03:45:41 -0500
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:46242
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932120Ab3CGIpk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Mar 2013 03:45:40 -0500
+Message-ID: <1362645933.2606.14.camel@laptop>
+Subject: Re: [PATCH v2 0/4] ipc: reduce ipc lock contention
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Rik van Riel <riel@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Waiman Long <Waiman.Long@hp.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Emmanuel Benisty <benisty.e@gmail.com>,
+        "Vinod, Chegu" <chegu_vinod@hp.com>, "Low, Jason" <jason.low2@hp.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>, aquini@redhat.com,
+        Michel Lespinasse <walken@google.com>, Ingo Molnar <mingo@kernel.org>,
+        Larry Woodman <lwoodman@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>, chris.mason@fusionio.com
+Date: Thu, 07 Mar 2013 09:45:33 +0100
+In-Reply-To: <51365B66.5010905@redhat.com>
+References: <1362476149.2225.50.camel@buesod1.americas.hpqcorp.net>
+	 <513626E9.2040509@redhat.com> <51364AB9.80206@hp.com>
+	 <CA+55aFwYOUyG_DQUqVPrQNi_a=AUwS53U-Yi6jbvJTGRxQ_aEQ@mail.gmail.com>
+	 <51365B66.5010905@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 06, 2013 at 09:30:16PM -0300, Henrique de Moraes Holschuh wrote:
-> On Mon, 04 Mar 2013, Borislav Petkov wrote:
-> > I get this in dmesg with 3.9-rc1:
-> > 
-> > [   12.951434] thinkpad_acpi: unhandled HKEY event 0x6050
-> > [   12.951438] thinkpad_acpi: please report the conditions when this event happened to ibm-acpi-devel@lists.sourceforge.net
-> > [   13.516752] thinkpad_acpi: unknown possible thermal alarm or keyboard event received
-> > 
-> > when pressing Fn+F8/F9, i.e. the display backlight keys. I'm loading
-> > thinkpad_acpi with brightness_enable=1 and booting the kernel with
-> > "acpi_backlight=vendor" so that the backlight intensity gets controlled
-> > by thinkpad_acpi. But the last maybe shouldn't complain about it, no?
+On Tue, 2013-03-05 at 15:53 -0500, Rik van Riel wrote:
+
+> Indeed.  Though how well my patches will work with Oracle will
+> depend a lot on what kind of semctl syscalls they are doing.
 > 
-> It shouldn't even work right on a x230, that box should be doing standard
-> ACPI backlight control...
+> Does Oracle typically do one semop per semctl syscall, or does
+> it pass in a whole bunch at once?
 
-The standard ACPI crap doesn't work - if I don't boot with
-acpi_backlight=vendor I get a blinding max level backlight which cannot
-be modified by pressing the keys.
+https://oss.oracle.com/~mason/sembench.c
 
-The thing is, with "acpi_backlight=vendor" and thinkpad_acpi loaded
-with "brightness_enable=1" the backlight actually gets modified nicely
-so thinkpad_acpi supports it after all. Maybe the simplest fix is for
-thinkpad_acpi to shut up about this button when brightness_enable is set
-and maybe when the model is x230?
+I think Chris wrote that to match a particular pattern of semaphore
+operations the database engine in question does. I haven't checked to
+see if it triggers the case in point though.
 
-Hmm.
+Also, Chris since left Oracle but maybe he knows who to poke.
 
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
