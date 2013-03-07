@@ -1,44 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759591Ab3CGRYt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 12:24:49 -0500
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:44746 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755022Ab3CGRYs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 12:24:48 -0500
-X-Sasl-enc: 5C+EE/Hr0ieJMFnkASAyzwTa4dOUcxCVNEL7fOb3Gza4 1362677087
-Date: Fri, 8 Mar 2013 01:25:20 +0800
-From: Greg KH <greg@kroah.com>
-To: oskar.andero@sonymobile.com
-Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-        radovan.lekanovic@sonymobile.com,
-        Peter Enderborg <peter.enderborg@sonymobile.com>, arve@android.com,
-        rientjes@google.com, akpm@linux-foundation.org,
-        paulmck@linux.vnet.ibm.com
-Subject: Re: [PATCH] lowmemorykiller: Use ktimer instead of jiffies
-Message-ID: <20130307172520.GA484@kroah.com>
-References: <1362652359-23779-1-git-send-email-oskar.andero@sonymobile.com>
+	id S1759557Ab3CGR1d (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 12:27:33 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:16186 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753057Ab3CGR1b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Mar 2013 12:27:31 -0500
+Date: Thu, 7 Mar 2013 18:25:45 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>, Li Zefan <lizefan@huawei.com>,
+        Tejun Heo <tj@kernel.org>, cgroups@vger.kernel.org
+Subject: Re: lockdep trace from prepare_bprm_creds
+Message-ID: <20130307172545.GA10353@redhat.com>
+References: <20130306223657.GA7392@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1362652359-23779-1-git-send-email-oskar.andero@sonymobile.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130306223657.GA7392@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 07, 2013 at 11:32:39AM +0100, oskar.andero@sonymobile.com wrote:
-> From: Peter Enderborg <peter.enderborg@sonymobile.com>
-> 
-> Reviewed-by: Radovan Lekanovic <radovan.lekanovic@sonymobile.com>
-> Signed-off-by: Peter Enderborg <peter.enderborg@sonymobile.com>
-> Signed-off-by: Oskar Andero <oskar.andero@sonymobile.com>
-> ---
+On 03/06, Dave Jones wrote:
+>
+> Looks like this happens when my fuzzer tries to look up garbage in /sys/fs/cgroup/freezer/
+>
+> trinity -c execve -V /sys/fs/cgroup/freezer/
+>
+> will reproduce it very quickly.
+>
+> This isn't a new trace. I've seen it in the past from iknowthis also.
+>
+> 	Dave
+>
+>
+> [  943.971541] ======================================================
+> [  943.972451] [ INFO: possible circular locking dependency detected ]
+> [  943.973370] 3.9.0-rc1+ #69 Not tainted
+> [  943.973927] -------------------------------------------------------
+> [  943.974838] trinity-child0/1301 is trying to acquire lock:
+> [  943.975650] blocked:  (&sb->s_type->i_mutex_key#9){+.+.+.}, instance: ffff880127ea1680, at: [<ffffffff811c03fc>] do_last+0x35c/0xe30
+> [  943.977522]
+> but task is already holding lock:
+> [  943.978371] held:     (&sig->cred_guard_mutex){+.+.+.}, instance: ffff880123937578, at: [<ffffffff811b8866>] prepare_bprm_creds+0x36/0x80
+> [  943.980260]
+> which lock already depends on the new lock.
+>
+> [  943.981434]
+> the existing dependency chain (in reverse order) is:
+> [  943.982499]
+> -> #2 (&sig->cred_guard_mutex){+.+.+.}:
+> [  943.983280]        [<ffffffff810b7b82>] lock_acquire+0x92/0x1d0
+> [  943.984196]        [<ffffffff816c1923>] mutex_lock_nested+0x73/0x3b0
+> [  943.985173]        [<ffffffff810d45f2>] attach_task_by_pid+0x122/0x8d0
+> [  943.986151]        [<ffffffff810d4dd3>] cgroup_tasks_write+0x13/0x20
+> [  943.987127]        [<ffffffff810d0f10>] cgroup_file_write+0x130/0x2f0
+> [  943.988118]        [<ffffffff811b119f>] vfs_write+0xaf/0x180
+> [  943.988985]        [<ffffffff811b14e5>] sys_write+0x55/0xa0
+> [  943.989853]        [<ffffffff816cd942>] system_call_fastpath+0x16/0x1b
+> [  943.990853]
+> -> #1 (cgroup_mutex){+.+.+.}:
+> [  943.991616]        [<ffffffff810b7b82>] lock_acquire+0x92/0x1d0
+> [  943.992527]        [<ffffffff816c1923>] mutex_lock_nested+0x73/0x3b0
+> [  943.993492]        [<ffffffff810d33a7>] cgroup_mount+0x2e7/0x520
+> [  943.994423]        [<ffffffff811b5123>] mount_fs+0x43/0x1b0
+> [  943.995275]        [<ffffffff811d3051>] vfs_kern_mount+0x61/0x100
+> [  943.996220]        [<ffffffff811d5821>] do_mount+0x211/0xa00
+> [  943.997103]        [<ffffffff811d609e>] sys_mount+0x8e/0xe0
+> [  943.997965]        [<ffffffff816cd942>] system_call_fastpath+0x16/0x1b
+> [  943.998972]
+> -> #0 (&sb->s_type->i_mutex_key#9){+.+.+.}:
+> [  943.999886]        [<ffffffff810b7406>] __lock_acquire+0x1b86/0x1c80
+> [  944.000864]        [<ffffffff810b7b82>] lock_acquire+0x92/0x1d0
+> [  944.001771]        [<ffffffff816c1923>] mutex_lock_nested+0x73/0x3b0
+> [  944.002750]        [<ffffffff811c03fc>] do_last+0x35c/0xe30
+> [  944.003620]        [<ffffffff811c0f8a>] path_openat+0xba/0x4f0
+> [  944.004517]        [<ffffffff811c1691>] do_filp_open+0x41/0xa0
+> [  944.005427]        [<ffffffff811b74d3>] open_exec+0x53/0x130
+> [  944.006296]        [<ffffffff811b8c3d>] do_execve_common.isra.26+0x31d/0x710
+> [  944.007373]        [<ffffffff811b9048>] do_execve+0x18/0x20
+> [  944.008222]        [<ffffffff811b933d>] sys_execve+0x3d/0x60
+> [  944.009093]        [<ffffffff816cdf39>] stub_execve+0x69/0xa0
+> [  944.009983]
+> other info that might help us debug this:
+>
+> [  944.011126] Chain exists of:
+>   &sb->s_type->i_mutex_key#9 --> cgroup_mutex --> &sig->cred_guard_mutex
+>
+> [  944.012745]  Possible unsafe locking scenario:
+>
+> [  944.013617]        CPU0                    CPU1
+> [  944.014280]        ----                    ----
+> [  944.014942]   lock(&sig->cred_guard_mutex);
+> [  944.021332]                                lock(cgroup_mutex);
+> [  944.028094]                                lock(&sig->cred_guard_mutex);
+> [  944.035007]   lock(&sb->s_type->i_mutex_key#9);
+> [  944.041602]
 
-No changelog entry saying why you want this change?  You need to explain
-this, otherwise I'll assume it's not needed at all, and just drop it...
+And cgroup_mount() does i_mutex -> cgroup_mutex...
 
-thanks,
+Add cc's. I do not think we can move open_exec() outside of cred_guard_mutex.
+We can change do_execve_common(), but binfmt->load_binary() does open() too.
 
-greg k-h
+And it is not easy to avoid ->cred_guard_mutex in threadgroup_lock(), we can't
+change de_thread() to do threadgroup_change_begin/end...
+
+Or perhaps we can? It doesn't need to sleep under ->group_rwsem, we only
+need it around ->group_leader changing. Otherwise cgroup_attach_proc()
+can rely on do_exit()->threadgroup_change_begin() ?
+
+But perhaps someone can suggest another fix in cgroup.c.
+
+Oleg.
+
+--- x/fs/exec.c
++++ x/fs/exec.c
+@@ -898,11 +898,13 @@ static int de_thread(struct task_struct 
+ 
+ 		sig->notify_count = -1;	/* for exit_notify() */
+ 		for (;;) {
++			threadgroup_change_begin();
+ 			write_lock_irq(&tasklist_lock);
+ 			if (likely(leader->exit_state))
+ 				break;
+ 			__set_current_state(TASK_KILLABLE);
+ 			write_unlock_irq(&tasklist_lock);
++			threadgroup_change_end();
+ 			schedule();
+ 			if (unlikely(__fatal_signal_pending(tsk)))
+ 				goto killed;
+@@ -960,6 +962,7 @@ static int de_thread(struct task_struct 
+ 		if (unlikely(leader->ptrace))
+ 			__wake_up_parent(leader, leader->parent);
+ 		write_unlock_irq(&tasklist_lock);
++		threadgroup_change_end();
+ 
+ 		release_task(leader);
+ 	}
+
