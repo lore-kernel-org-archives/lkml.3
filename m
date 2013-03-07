@@ -1,95 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753586Ab3CGWlb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 17:41:31 -0500
-Received: from g6t0184.atlanta.hp.com ([15.193.32.61]:41261 "EHLO
-	g6t0184.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750908Ab3CGWla (ORCPT
+	id S1756567Ab3CGWrp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 17:47:45 -0500
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:59459 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751733Ab3CGWro convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 17:41:30 -0500
-Message-ID: <1362695426.12845.144.camel@misato.fc.hp.com>
-Subject: Re: ACPI undocking on 3.8-rc5 no longer works with Lenovo T61
-From: Toshi Kani <toshi.kani@hp.com>
-To: Zdenek Kabelac <zkabelac@redhat.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, hmh@hmh.eng.br, joe@perches.com,
-        isimatu.yasuaki@jp.fujitsu.com, rafael.j.wysocki@intel.com
-Date: Thu, 07 Mar 2013 15:30:26 -0700
-In-Reply-To: <51390B2B.6070500@redhat.com>
-References: <5107A899.9080109@redhat.com> <51390B2B.6070500@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 7 Mar 2013 17:47:44 -0500
+Date: Thu, 07 Mar 2013 16:47:38 -0600
+From: Rob Landley <rob@landley.net>
+Subject: Re: [PATCH v2] early_printk: consolidate random copies of identical
+ code
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Mike Frysinger <vapier@gentoo.org>, Ingo Molnar <mingo@kernel.org>,
+        Randy Dunlap <rdunlap@infradead.org>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Russell King <linux@arm.linux.org.uk>, Michal Simek <monstr@monstr.eu>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mundt <lethal@linux-sh.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Richard Weinberger <richard@nod.at>
+In-Reply-To: <20130307133542.8bdb23612990fa25c5cc9112@linux-foundation.org>
+	(from akpm@linux-foundation.org on Thu Mar  7 15:35:42 2013)
+X-Mailer: Balsa 2.4.11
+Message-Id: <1362696458.6812.9@driftwood>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-03-07 at 22:48 +0100, Zdenek Kabelac wrote:
-> Dne 29.1.2013 11:46, Zdenek Kabelac napsal(a):
-> > Hi
-> >
-> > No exactly sure which patch did it - but when I'm now checking 3.8-rc5 kernel,
-> > I cannot use anymore this 'undock' command:
-> >
-> > echo 1 >/sys/devices/platform/dock.0/undock
-> >
-> > which works ok with 3.7 kernel - to properly undock my T61 before suspend.
-> >
-> >
-> > Dmesg shows this:
-> >
-> > [ 2657.087414] ACPI: \_SB_.PCI0.LPC_.EC__.BAT1: undocking
-> > [ 2658.613494] ata4.00: exception Emask 0x0 SAct 0x0 SErr 0x0 action 0x6 frozen
-> > [ 2658.613508] ata4.00: ST_FIRST: !(DRQ|ERR|DF)
-> > [ 2658.613522] sr 3:0:0:0: CDB:
-> > [ 2658.613530] Get event status notification: 4a 01 00 00 10 00 00 00 08 00
-> > [ 2658.613583] ata4.00: cmd a0/00:00:00:08:00/00:00:00:00:00/a0 tag 0 pio
-> > 16392 in
-> >           res 00/00:00:00:00:00/00:00:00:00:00/00 Emask 0x2 (HSM violation)
-> > [ 2658.613670] ata4: soft resetting link
-> > [ 2658.766888] ata4.00: NODEV after polling detection
-> > [ 2658.766900] ata4.00: revalidation failed (errno=-2)
-> >
-> >
-> > Here is boot log attached, my HW is Lenovo T61, C2D
-> >
+On 03/07/2013 03:35:42 PM, Andrew Morton wrote:
+> On Thu, 7 Mar 2013 14:50:23 -0500 Paul Gortmaker  
+> <paul.gortmaker@windriver.com> wrote:
 > 
+> > This brings up a recurring question.  I was tempted to just go make
+> > CONFIG_EARLY_PRINTK depend on CONFIG_PRINTK, but lately I've faced
+> > pushback when trying to "fix" things like seeing ARM OMAP USB  
+> options
+> > for an x86 build[1], and GOLDFISH virt drivers being offered even
+> > when the end user already said no to GOLDFISH[2].
+> >
+> > Do we want to use dependencies to reflect the real world layout of
+> > platforms/systems, or do we want to go the minimal dependency
+> > approach, where we are building sparc specific drivers on mips just
+> > because we can?
+> >
+> > I think the former is better from a user specific point of view, as
+> > the maze of Kconfig is better as a tree topology with branches that
+> > have clear dependencies that exclude them, versus it being a flat
+> > monolithic space where anything can select anything.
+> >
+> > Arguments I've heard for the latter seem to be developer centric
+> > (i.e forcing wider build coverage on the population as a whole, etc)
 > 
-> I've run 'bisect'  and found out commit which has broken  'undock' support on
-> my Lenovo:
-> 
-> commit 8ab0ab2570cfc48303e545944f53690a6983a898
-> Author: Toshi Kani <toshi.kani@hp.com>
-> Date:   Tue Oct 23 01:30:26 2012 +0200
-> 
->      ACPI: dock: Remove redundant ACPI NS walk
-> 
->      Combined two ACPI namespace walks, which look for dock stations
->      and then bays separately, into a single walk.
-> 
->      Signed-off-by: Toshi Kani <toshi.kani@hp.com>
->      Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
->      Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> 
-> 
-> After doin plain revert of this commit undock 'support' is back -
-> I've tested this with 3.9-rc1  (though on this kernel it seems wifi is
-> again horribly broken for now)
-> 
-> Any idea about proper fix here ?
+> For me personally, I really really want good compilation coverage.  It
+> drives me bats when I merge a patch but have to jump through a series
+> of hoops (such as not having the appropriate cross-compiler!) to be
+> able to build the thing.
 
-Sorry for the trouble.  I suspect that your Lenovo has both doc station
-and battery bay.  Since the above patch combined HW scans for doc
-station and battery bay into a single scan, it may have changed
-instance# of the sysfs "dock.%d" files on your Lenovo.  You can verify
-the type by doing:
+This doesn't solve everything, but:
 
-  cat /sys/devices/platform/dock*/type
+http://landley.net/aboriginal/bin
 
-dock.0 on your Lenovo likely shows as "battery_bay", which I think you
-cannot undock regardless of this patch.  Can you try to undock the one
-with "dock_station"?
+cross-compiler-*.tar.bz2 is statically linked cross compilers for a lot  
+of different architectures. Add the "bin" subdirectory to your path and  
+CROSS_COMPILE=prefix- where prefix is whatever the * was (and the  
+trailing - is important).
 
-Thanks,
--Toshi
+system-image-*.tar.bz2 is bootable system images with native  
+development tools (./run-emulator.sh and ./dev-environment.sh are  
+wrapper scripts to boot qemu with all the right arguments), for the  
+same set of architectures. (There are a couple I have cross compilers  
+for but insufficient board support in qemu as of yet. Working on it.  
+I'm also working on adding more targets, but it's multitasked with  
+several other projects...)
 
+Note that if you have distccd installed on the host and the cross  
+compiler is in your $PATH, ./dev-environment.sh should hook up distcc  
+to the cross compiler through qemu's emulated network.
+
+So at least _build_ coverage and basic "it booted to a shell prompt"  
+smoke test coverage are reasonably straightforward. (I have automated  
+build control images that build linux from scratch under the result,  
+hence wanting distcc to make it slightly less slow.)
+
+Driver testing for strange hardware continues to require strange  
+hardware, though.
+
+(If you're curious, http://landley.net/aboriginal/about.html goes on  
+about it.)
+
+Rob
