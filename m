@@ -1,51 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758403Ab3CGAaS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 19:30:18 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:5316 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758252Ab3CGA3z (ORCPT
+	id S1758450Ab3CGAaX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 19:30:23 -0500
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:33671 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757607Ab3CGAaU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 19:29:55 -0500
-X-IronPort-AV: E=Sophos;i="4.84,798,1355126400"; 
-   d="scan'208";a="27740514"
-From: David Brown <davidb@codeaurora.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: David Brown <davidb@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 4/6] ssbi: Use regular init level
-Date: Wed,  6 Mar 2013 16:29:45 -0800
-Message-Id: <1362616187-21089-5-git-send-email-davidb@codeaurora.org>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1362616187-21089-1-git-send-email-davidb@codeaurora.org>
-References: <1362616187-21089-1-git-send-email-davidb@codeaurora.org>
+	Wed, 6 Mar 2013 19:30:20 -0500
+X-Sasl-enc: MwUfBTodgVSixzLD6BIe4thuREhEtBnWq4BWGybM7JOL 1362616219
+Date: Wed, 6 Mar 2013 21:30:16 -0300
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Borislav Petkov <bp@alien8.de>, ibm-acpi-devel@lists.sourceforge.net,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: x230: unhandled HKEY event 0x6050
+Message-ID: <20130307003016.GA21655@khazad-dum.debian.net>
+References: <20130304213804.GE22274@pd.tnic>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130304213804.GE22274@pd.tnic>
+X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With device tree, and deferred probe, it is no longer necessary to
-make sure that the ssbi bus driver is initialized very early.  Restore
-to a regular module_init().
+On Mon, 04 Mar 2013, Borislav Petkov wrote:
+> I get this in dmesg with 3.9-rc1:
+> 
+> [   12.951434] thinkpad_acpi: unhandled HKEY event 0x6050
+> [   12.951438] thinkpad_acpi: please report the conditions when this event happened to ibm-acpi-devel@lists.sourceforge.net
+> [   13.516752] thinkpad_acpi: unknown possible thermal alarm or keyboard event received
+> 
+> when pressing Fn+F8/F9, i.e. the display backlight keys. I'm loading
+> thinkpad_acpi with brightness_enable=1 and booting the kernel with
+> "acpi_backlight=vendor" so that the backlight intensity gets controlled
+> by thinkpad_acpi. But the last maybe shouldn't complain about it, no?
 
-Signed-off-by: David Brown <davidb@codeaurora.org>
----
- drivers/ssbi/ssbi.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+It shouldn't even work right on a x230, that box should be doing standard
+ACPI backlight control...
 
-diff --git a/drivers/ssbi/ssbi.c b/drivers/ssbi/ssbi.c
-index 4d503da..4c02421 100644
---- a/drivers/ssbi/ssbi.c
-+++ b/drivers/ssbi/ssbi.c
-@@ -366,7 +366,7 @@ static int __init msm_ssbi_init(void)
- {
- 	return platform_driver_register(&msm_ssbi_driver);
- }
--postcore_initcall(msm_ssbi_init);
-+module_init(msm_ssbi_init);
- 
- static void __exit msm_ssbi_exit(void)
- {
 -- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
-
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
