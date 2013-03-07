@@ -1,79 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933232Ab3CGSVs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 13:21:48 -0500
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:35832 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932333Ab3CGSVr (ORCPT
+	id S933238Ab3CGSWF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 13:22:05 -0500
+Received: from out02.mta.xmission.com ([166.70.13.232]:41192 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756243Ab3CGSWC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 13:21:47 -0500
-Date: Thu, 7 Mar 2013 10:21:40 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Li Zefan <lizefan@huawei.com>, cgroups@vger.kernel.org
-Subject: Re: lockdep trace from prepare_bprm_creds
-Message-ID: <20130307182140.GF29601@htj.dyndns.org>
-References: <20130306223657.GA7392@redhat.com>
- <20130307172545.GA10353@redhat.com>
- <20130307180139.GD29601@htj.dyndns.org>
+	Thu, 7 Mar 2013 13:22:02 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Li Zefan <lizefan@huawei.com>, CAI Qian <caiqian@redhat.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Containers <containers@lists.linux-foundation.org>
+References: <611667212.10748821.1362649031475.JavaMail.root@redhat.com>
+	<513860E8.4080807@huawei.com> <876213wmwt.fsf@xmission.com>
+	<5138D001.8000409@oracle.com>
+	<1362678371.15793.218.camel@edumazet-glaptop>
+	<5138D377.6040406@oracle.com> <87boavrspd.fsf@xmission.com>
+	<5138D8F2.5020900@oracle.com>
+Date: Thu, 07 Mar 2013 10:21:01 -0800
+In-Reply-To: <5138D8F2.5020900@oracle.com> (Sasha Levin's message of "Thu, 07
+	Mar 2013 13:14:10 -0500")
+Message-ID: <87r4jrqdf6.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130307180139.GD29601@htj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX19midKrlMTztaN/3gJnVkk15WxtlEB1V1Q=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa02 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_XMDrugObfuBody_12 obfuscated drug references
+X-Spam-DCC: XMission; sa02 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Sasha Levin <sasha.levin@oracle.com>
+X-Spam-Relay-Country: 
+Subject: Re: 3.9-rc1 NULL pointer crash at find_pid_ns
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 07, 2013 at 10:01:39AM -0800, Tejun Heo wrote:
-> Hello, Oleg.
-> 
-> On Thu, Mar 07, 2013 at 06:25:45PM +0100, Oleg Nesterov wrote:
-> > > [  944.011126] Chain exists of:
-> > >   &sb->s_type->i_mutex_key#9 --> cgroup_mutex --> &sig->cred_guard_mutex
-> > >
-> > > [  944.012745]  Possible unsafe locking scenario:
-> > >
-> > > [  944.013617]        CPU0                    CPU1
-> > > [  944.014280]        ----                    ----
-> > > [  944.014942]   lock(&sig->cred_guard_mutex);
-> > > [  944.021332]                                lock(cgroup_mutex);
-> > > [  944.028094]                                lock(&sig->cred_guard_mutex);
-> > > [  944.035007]   lock(&sb->s_type->i_mutex_key#9);
-> > > [  944.041602]
-> > 
-> > And cgroup_mount() does i_mutex -> cgroup_mutex...
-> 
-> Hmmm...
-> 
-> > Add cc's. I do not think we can move open_exec() outside of cred_guard_mutex.
-> > We can change do_execve_common(), but binfmt->load_binary() does open() too.
-> > 
-> > And it is not easy to avoid ->cred_guard_mutex in threadgroup_lock(), we can't
-> > change de_thread() to do threadgroup_change_begin/end...
-> > 
-> > Or perhaps we can? It doesn't need to sleep under ->group_rwsem, we only
-> > need it around ->group_leader changing. Otherwise cgroup_attach_proc()
-> > can rely on do_exit()->threadgroup_change_begin() ?
-> 
-> Using cred_guard_mutex was mostly to avoid adding another locking in
-> de_thread() path as it already had one.  We can add group_rwsem
-> locking deeper inside and avoid this problem.
-> 
-> > But perhaps someone can suggest another fix in cgroup.c.
-> 
-> Another possibility is moving cgroup_lock outside threadgroup_lock(),
-> which was impossible before because of cgroup_lock abuses in specific
-> controller implementations but most of that have been updated and we
-> should now be pretty close to being able to make cgroup_lock outer to
-> most other locks.  Appending a completely untested patch below.
+Sasha Levin <sasha.levin@oracle.com> writes:
 
-This probably doesn't help as the dependency involves i_mutex.  I
-think Oleg's proposed patch should work.
+> On 03/07/2013 01:05 PM, ebiederm@xmission.com wrote:
+>> Sasha Levin <sasha.levin@oracle.com> writes:
+>> 
+>>> On 03/07/2013 12:46 PM, Eric Dumazet wrote:
+>>>> On Thu, 2013-03-07 at 12:36 -0500, Sasha Levin wrote:
+>>>>
+>>>>> Looks like the hlist change is probably the issue, though it specifically
+>>>>> uses:
+>>>>>
+>>>>> 	#define hlist_entry_safe(ptr, type, member) \
+>>>>>         	(ptr) ? hlist_entry(ptr, type, member) : NULL
+>>>>>
+>>>>> I'm still looking at the code in question and it's assembly, but I can't
+>>>>> figure out what's going wrong. I was also trying to see what's so special
+>>>>> about this loop in find_pid_ns as opposed to the rest of the kernel code
+>>>>> that uses hlist_for_each_entry_rcu() but couldn't find out why.
+>>>>>
+>>>>> Is it somehow possible that if we rcu_dereference_raw() the same thing twice
+>>>>> inside the same rcu_read_lock() section we'll get different results? That's
+>>>>> really the only reason for this crash that comes to mind at the moment, very
+>>>>> unlikely - but that's all I have right now.
+>>>>>
+>>>>
+>>>> Yep
+>>>>
+>>>> #define hlist_entry_safe(ptr, type, member) \
+>>>> 	(ptr) ? hlist_entry(ptr, type, member) : NULL
+>>>>
+>>>> Is not safe, as ptr can be evaluated twice, and thats not good at all...
+>>>
+>>> ptr is being evaluated twice, but in this case this is an
+>>> rcu_dereference_raw() value within the same rcu_read_lock() section.
+>>>
+>>> Is it still problematic?
+>> 
+>> Definitely.
+>> 
+>> Head in this instance the expression: &pid_hash[pid_hashfn(nr, ns)]
+>> 
+>> And the crash clearly shows that when hilst_entry is being evaluated the
+>> HEAD is NULL.
+>
+> Okay, I'm even more confused now.
+>
+> The expression in question is:
+>
+> 	hlist_entry_safe(rcu_dereference_bh(hlist_first_rcu(head)))
+>
+> You're saying that "rcu_dereference_bh(hlist_first_rcu(head))" can change between
+> the two evaluations we do. That would mean that 'head' has changed in between, right?
+>
+> In that case, the list itself has changed - which means that RCU has changed the
+> list underneath us.
+>
+> hlist_first_rcu() doesn't have any side-effects, it doesn't modify the list whatsoever,
+> so the only thing that can change is 'head'. Why is it allowed to change if the list
+> is protected by RCU?
 
-Thanks.
+The pointer to the first element of the list goes to NULL.
 
--- 
-tejun
+With RCU pointers can change and the guranateee that is made is that if
+you follow a stale pointer the storage pointed to by the stale pointer
+does not become invalid until you exit the rcu critical section.
+
+Eric
