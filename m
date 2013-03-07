@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932928Ab3CGNUk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 08:20:40 -0500
-Received: from slimlogic.co.uk ([89.16.172.20]:60828 "EHLO slimlogic.co.uk"
+	id S1758735Ab3CGNVN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 08:21:13 -0500
+Received: from slimlogic.co.uk ([89.16.172.20]:60798 "EHLO slimlogic.co.uk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932742Ab3CGNSZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 08:18:25 -0500
+	id S932632Ab3CGNSX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Mar 2013 08:18:23 -0500
 From: Ian Lartey <ian@slimlogic.co.uk>
 To: linux-kernel@vger.kernel.org
 Cc: linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
@@ -17,9 +17,9 @@ Cc: linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         wim@iguana.be, lgirdwood@gmail.com, gg@slimlogic.co.uk,
         j-keerthy@ti.com, ldewangan@nvidia.com, t-kristo@ti.com,
         Ian Lartey <ian@slimlogic.co.uk>
-Subject: [PATCH v8 05/12] watchdog: add Palmas Watchdog support
-Date: Thu,  7 Mar 2013 13:17:49 +0000
-Message-Id: <1362662276-20792-5-git-send-email-ian@slimlogic.co.uk>
+Subject: [PATCH v8 03/12] mfd: palmas add variant and OTP detection
+Date: Thu,  7 Mar 2013 13:17:47 +0000
+Message-Id: <1362662276-20792-3-git-send-email-ian@slimlogic.co.uk>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1362662276-20792-1-git-send-email-ian@slimlogic.co.uk>
 References: <1362662276-20792-1-git-send-email-ian@slimlogic.co.uk>
@@ -29,192 +29,304 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Graeme Gregory <gg@slimlogic.co.uk>
 
-Add support for the Palmas watchdog timer which has a timeout configurable
-from 1s to 128s.
+Read the chip varient and the OTP information from the chip and display
+this on probe to aid in debugging of issues.
+
+Older palmas chips do not have the USB_ID programmed and will therefore
+return 0x0000 for this field.
+
+palmas register read/write/update API is now used
+
+palmas_read_product_id_and_revs used by palmas_i2c_probe to get
+the device id, design and software revisions
+
+id field of pamas struct renamed to device_id
+
+Updated the DT parsing to agree with the bindings document, just some minor
+value name changes.
 
 Signed-off-by: Graeme Gregory <gg@slimlogic.co.uk>
 Signed-off-by: Ian Lartey <ian@slimlogic.co.uk>
 ---
- drivers/watchdog/palmas_wdt.c |  170 +++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 170 insertions(+), 0 deletions(-)
- create mode 100644 drivers/watchdog/palmas_wdt.c
+ drivers/mfd/palmas.c       |  103 ++++++++++++++++++++++++++++++++++----------
+ include/linux/mfd/palmas.h |   35 ++++++++++++++-
+ 2 files changed, 114 insertions(+), 24 deletions(-)
 
-diff --git a/drivers/watchdog/palmas_wdt.c b/drivers/watchdog/palmas_wdt.c
-new file mode 100644
-index 0000000..5bdd78a
---- /dev/null
-+++ b/drivers/watchdog/palmas_wdt.c
-@@ -0,0 +1,170 @@
-+/*
-+ * Driver for Watchdog part of Palmas PMIC Chips
-+ *
+diff --git a/drivers/mfd/palmas.c b/drivers/mfd/palmas.c
+index bbdbc50..9d1adfe 100644
+--- a/drivers/mfd/palmas.c
++++ b/drivers/mfd/palmas.c
+@@ -1,9 +1,10 @@
+ /*
+  * TI Palmas MFD Driver
+  *
+- * Copyright 2011-2012 Texas Instruments Inc.
 + * Copyright 2011-2013 Texas Instruments Inc.
-+ *
-+ * Author: Graeme Gregory <gg@slimlogic.co.uk>
+  *
+  * Author: Graeme Gregory <gg@slimlogic.co.uk>
 + * Author: Ian Lartey <ian@slimlogic.co.uk>
-+ *
-+ * Based on twl4030_wdt.c
-+ *
-+ * Author: Timo Kokkonen <timo.t.kokkonen at nokia.com>
-+ *
-+ *  This program is free software; you can redistribute it and/or modify it
-+ *  under  the terms of the GNU General  Public License as published by the
-+ *  Free Software Foundation;  either version 2 of the License, or (at your
-+ *  option) any later version.
-+ *
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/types.h>
-+#include <linux/slab.h>
-+#include <linux/kernel.h>
-+#include <linux/fs.h>
-+#include <linux/watchdog.h>
-+#include <linux/platform_device.h>
-+#include <linux/watchdog.h>
-+#include <linux/mfd/palmas.h>
-+
-+struct palmas_wdt {
-+	struct palmas *palmas;
-+	struct watchdog_device wdt;
-+	struct device *dev;
-+
-+	int timer_margin;
-+};
-+
-+
-+static int nowayout = WATCHDOG_NOWAYOUT;
-+module_param(nowayout, int, 0);
-+MODULE_PARM_DESC(nowayout, "Watchdog cannot be stopped once started "
-+	"(default=" __MODULE_STRING(WATCHDOG_NOWAYOUT) ")");
-+
-+static int palmas_wdt_write(struct palmas *palmas, unsigned int data)
+  *
+  *  This program is free software; you can redistribute it and/or modify it
+  *  under  the terms of the GNU General  Public License as published by the
+@@ -257,26 +258,76 @@ static struct regmap_irq_chip palmas_irq_chip = {
+ 			PALMAS_INT1_MASK),
+ };
+ 
++static int palmas_read_product_id_and_revs(struct palmas *palmas)
 +{
-+	unsigned int addr;
++	int ret;
++	unsigned int reg;
 +
-+	addr = PALMAS_BASE_TO_REG(PALMAS_PMU_CONTROL_BASE, PALMAS_WATCHDOG);
-+
-+	return palmas_write(palmas, PALMAS_PMU_CONTROL_BASE, addr, addr);
-+}
-+
-+static int palmas_wdt_enable(struct watchdog_device *wdt)
-+{
-+	struct palmas_wdt *driver_data = watchdog_get_drvdata(wdt);
-+	struct palmas *palmas = driver_data->palmas;
-+
-+	return palmas_wdt_write(palmas, driver_data->timer_margin |
-+				PALMAS_WATCHDOG_ENABLE);
-+}
-+
-+static int palmas_wdt_disable(struct watchdog_device *wdt)
-+{
-+	struct palmas_wdt *driver_data = watchdog_get_drvdata(wdt);
-+	struct palmas *palmas = driver_data->palmas;
-+
-+	return palmas_wdt_write(palmas, driver_data->timer_margin);
-+}
-+
-+static int palmas_wdt_set_timeout(struct watchdog_device *wdt, unsigned timeout)
-+{
-+	struct palmas_wdt *driver_data = watchdog_get_drvdata(wdt);
-+
-+	if (timeout < 1 || timeout > 128) {
-+		dev_warn(driver_data->dev,
-+			"Timeout can only be in the range [1-128] seconds");
-+		return -EINVAL;
++	/* Read variant info from the device */
++	ret = palmas_read(palmas, PALMAS_ID_BASE, PALMAS_PRODUCT_ID_LSB, &reg);
++	if (ret < 0) {
++		dev_err(palmas->dev, "Unable to read ID err: %d\n", ret);
++		return ret;
 +	}
-+	driver_data->timer_margin = fls(timeout) - 1;
++
++	palmas->product_id = reg;
++
++	ret = palmas_read(palmas, PALMAS_ID_BASE, PALMAS_PRODUCT_ID_MSB, &reg);
++	if (ret < 0) {
++		dev_err(palmas->dev, "Unable to read ID err: %d\n", ret);
++		return ret;
++	}
++
++	palmas->product_id |= reg << 8;
++
++	dev_info(palmas->dev, "Product ID %x\n", palmas->product_id);
++
++	ret = palmas_read(palmas, PALMAS_DESIGNREV_BASE,
++				PALMAS_DESIGNREV, &reg);
++	if (ret < 0) {
++		dev_err(palmas->dev, "Unable to read DESIGNREV err: %d\n", ret);
++		return ret;
++	}
++
++	palmas->designrev = reg & PALMAS_DESIGNREV_DESIGNREV_MASK;
++
++	dev_info(palmas->dev, "Product Design Rev %x\n", palmas->designrev);
++
++	ret = palmas_read(palmas, PALMAS_PMU_CONTROL_BASE, PALMAS_SW_REVISION,
++			&reg);
++	if (ret < 0) {
++		dev_err(palmas->dev, "Unable to read SW_REVISION err: %d\n",
++				ret);
++		return ret;
++	}
++
++	palmas->sw_revision = reg;
++
++	dev_info(palmas->dev, "Product SW Rev %x\n", palmas->sw_revision);
++
 +	return 0;
 +}
 +
-+static const struct watchdog_info palmas_wdt_info = {
-+	.options = WDIOF_SETTIMEOUT | WDIOF_KEEPALIVEPING | WDIOF_MAGICCLOSE,
-+	.identity = "Palmas Watchdog",
-+	.firmware_version = 0,
-+};
-+
-+static const struct watchdog_ops palmas_wdt_ops = {
-+	.owner = THIS_MODULE,
-+	.start = palmas_wdt_enable,
-+	.stop = palmas_wdt_disable,
-+	.ping = palmas_wdt_enable,
-+	.set_timeout = palmas_wdt_set_timeout,
-+};
-+
-+static int palmas_wdt_probe(struct platform_device *pdev)
-+{
-+	struct palmas *palmas = dev_get_drvdata(pdev->dev.parent);
-+	struct palmas_wdt *driver_data;
-+	struct watchdog_device *palmas_wdt;
-+	int ret = 0;
-+
-+	driver_data = devm_kzalloc(&pdev->dev, sizeof(*driver_data),
-+				   GFP_KERNEL);
-+	if (!driver_data) {
-+		dev_err(&pdev->dev, "Unable to alloacate watchdog device\n");
-+		ret = -ENOMEM;
+ static void palmas_dt_to_pdata(struct device_node *node,
+ 		struct palmas_platform_data *pdata)
+ {
+ 	int ret;
+ 	u32 prop;
+ 
+-	ret = of_property_read_u32(node, "ti,mux_pad1", &prop);
++	ret = of_property_read_u32(node, "ti,mux-pad1", &prop);
+ 	if (!ret) {
+ 		pdata->mux_from_pdata = 1;
+ 		pdata->pad1 = prop;
+ 	}
+ 
+-	ret = of_property_read_u32(node, "ti,mux_pad2", &prop);
++	ret = of_property_read_u32(node, "ti,mux-pad2", &prop);
+ 	if (!ret) {
+ 		pdata->mux_from_pdata = 1;
+ 		pdata->pad2 = prop;
+ 	}
+ 
+ 	/* The default for this register is all masked */
+-	ret = of_property_read_u32(node, "ti,power_ctrl", &prop);
++	ret = of_property_read_u32(node, "ti,power-ctrl", &prop);
+ 	if (!ret)
+ 		pdata->power_ctrl = prop;
+ 	else
+@@ -292,7 +343,7 @@ static int palmas_i2c_probe(struct i2c_client *i2c,
+ 	struct palmas_platform_data *pdata;
+ 	struct device_node *node = i2c->dev.of_node;
+ 	int ret = 0, i;
+-	unsigned int reg, addr;
++	unsigned int reg;
+ 	int slave;
+ 	struct mfd_cell *children;
+ 
+@@ -316,7 +367,7 @@ static int palmas_i2c_probe(struct i2c_client *i2c,
+ 
+ 	i2c_set_clientdata(i2c, palmas);
+ 	palmas->dev = &i2c->dev;
+-	palmas->id = id->driver_data;
++	palmas->product_id = id->driver_data;
+ 	palmas->irq = i2c->irq;
+ 
+ 	for (i = 0; i < PALMAS_NUM_CLIENTS; i++) {
+@@ -344,12 +395,16 @@ static int palmas_i2c_probe(struct i2c_client *i2c,
+ 		}
+ 	}
+ 
++	/* Read variant info from the device */
++	ret = palmas_read_product_id_and_revs(palmas);
++	if (ret < 0)
 +		goto err;
-+	}
 +
-+	driver_data->palmas = palmas;
+ 	/* Change IRQ into clear on read mode for efficiency */
+ 	slave = PALMAS_BASE_TO_SLAVE(PALMAS_INTERRUPT_BASE);
+-	addr = PALMAS_BASE_TO_REG(PALMAS_INTERRUPT_BASE, PALMAS_INT_CTRL);
+ 	reg = PALMAS_INT_CTRL_INT_CLEAR;
+ 
+-	regmap_write(palmas->regmap[slave], addr, reg);
++	ret = palmas_write(palmas, PALMAS_INTERRUPT_BASE, PALMAS_INT_CTRL, reg);
+ 
+ 	ret = regmap_add_irq_chip(palmas->regmap[slave], palmas->irq,
+ 			IRQF_ONESHOT | IRQF_TRIGGER_LOW, 0, &palmas_irq_chip,
+@@ -357,17 +412,15 @@ static int palmas_i2c_probe(struct i2c_client *i2c,
+ 	if (ret < 0)
+ 		goto err;
+ 
+-	slave = PALMAS_BASE_TO_SLAVE(PALMAS_PU_PD_OD_BASE);
+-	addr = PALMAS_BASE_TO_REG(PALMAS_PU_PD_OD_BASE,
+-			PALMAS_PRIMARY_SECONDARY_PAD1);
+-
+ 	if (pdata->mux_from_pdata) {
+ 		reg = pdata->pad1;
+-		ret = regmap_write(palmas->regmap[slave], addr, reg);
++		ret = palmas_write(palmas, PALMAS_PU_PD_OD_BASE,
++				PALMAS_PRIMARY_SECONDARY_PAD1, reg);
+ 		if (ret)
+ 			goto err_irq;
+ 	} else {
+-		ret = regmap_read(palmas->regmap[slave], addr, &reg);
++		ret = palmas_read(palmas, PALMAS_PU_PD_OD_BASE,
++				PALMAS_PRIMARY_SECONDARY_PAD1, &reg);
+ 		if (ret)
+ 			goto err_irq;
+ 	}
+@@ -393,16 +446,15 @@ static int palmas_i2c_probe(struct i2c_client *i2c,
+ 	if (!(reg & PALMAS_PRIMARY_SECONDARY_PAD1_GPIO_3))
+ 		palmas->gpio_muxed |= PALMAS_GPIO_3_MUXED;
+ 
+-	addr = PALMAS_BASE_TO_REG(PALMAS_PU_PD_OD_BASE,
+-			PALMAS_PRIMARY_SECONDARY_PAD2);
+-
+ 	if (pdata->mux_from_pdata) {
+ 		reg = pdata->pad2;
+-		ret = regmap_write(palmas->regmap[slave], addr, reg);
++		ret = palmas_write(palmas, PALMAS_PU_PD_OD_BASE,
++				PALMAS_PRIMARY_SECONDARY_PAD2, reg);
+ 		if (ret)
+ 			goto err_irq;
+ 	} else {
+-		ret = regmap_read(palmas->regmap[slave], addr, &reg);
++		ret = palmas_read(palmas, PALMAS_PU_PD_OD_BASE,
++				PALMAS_PRIMARY_SECONDARY_PAD2, &reg);
+ 		if (ret)
+ 			goto err_irq;
+ 	}
+@@ -422,10 +474,8 @@ static int palmas_i2c_probe(struct i2c_client *i2c,
+ 
+ 	reg = pdata->power_ctrl;
+ 
+-	slave = PALMAS_BASE_TO_SLAVE(PALMAS_PMU_CONTROL_BASE);
+-	addr = PALMAS_BASE_TO_REG(PALMAS_PMU_CONTROL_BASE, PALMAS_POWER_CTRL);
+-
+-	ret = regmap_write(palmas->regmap[slave], addr, reg);
++	ret = palmas_write(palmas, PALMAS_PU_PD_OD_BASE,
++			PALMAS_PRIMARY_SECONDARY_PAD2, reg);
+ 	if (ret)
+ 		goto err_irq;
+ 
+@@ -504,6 +554,13 @@ MODULE_DEVICE_TABLE(i2c, palmas_i2c_id);
+ 
+ static struct of_device_id of_palmas_match_tbl[] = {
+ 	{ .compatible = "ti,palmas", },
++	{ .compatible = "ti,palmas-charger", },
++	{ .compatible = "ti,twl6035", },
++	{ .compatible = "ti,twl6036", },
++	{ .compatible = "ti,twl6037", },
++	{ .compatible = "ti,tps65913", },
++	{ .compatible = "ti,tps65914", },
++	{ .compatible = "ti,tps80036", },
+ 	{ /* end */ }
+ };
+ 
+diff --git a/include/linux/mfd/palmas.h b/include/linux/mfd/palmas.h
+index f66ef32..0427165 100644
+--- a/include/linux/mfd/palmas.h
++++ b/include/linux/mfd/palmas.h
+@@ -44,7 +44,9 @@ struct palmas {
+ 	struct regmap *regmap[PALMAS_NUM_CLIENTS];
+ 
+ 	/* Stored chip id */
+-	int id;
++	int product_id;
++	int designrev;
++	int sw_revision;
+ 
+ 	/* IRQ Data */
+ 	int irq;
+@@ -437,11 +439,13 @@ enum usb_irq_events {
+ #define PALMAS_PU_PD_OD_BASE					0x1F4
+ #define PALMAS_LED_BASE						0x200
+ #define PALMAS_INTERRUPT_BASE					0x210
++#define PALMAS_ID_BASE						0x24F
+ #define PALMAS_USB_OTG_BASE					0x250
+ #define PALMAS_VIBRATOR_BASE					0x270
+ #define PALMAS_GPIO_BASE					0x280
+ #define PALMAS_USB_BASE						0x290
+ #define PALMAS_GPADC_BASE					0x2C0
++#define PALMAS_DESIGNREV_BASE					0x357
+ #define PALMAS_TRIM_GPADC_BASE					0x3CD
+ 
+ /* Registers for function RTC */
+@@ -2159,6 +2163,28 @@ enum usb_irq_events {
+ #define PALMAS_INT_CTRL_INT_CLEAR				0x01
+ #define PALMAS_INT_CTRL_INT_CLEAR_SHIFT				0
+ 
++/* Registers for function ID */
++#define PALMAS_VENDOR_ID_LSB					0x0
++#define PALMAS_VENDOR_ID_MSB					0x1
++#define PALMAS_PRODUCT_ID_LSB					0x2
++#define PALMAS_PRODUCT_ID_MSB					0x3
 +
-+	palmas_wdt = &driver_data->wdt;
++/* Bit definitions for VENDOR_ID_LSB */
++#define PALMAS_VENDOR_ID_LSB_VENDOR_ID_MASK			0xff
++#define PALMAS_VENDOR_ID_LSB_VENDOR_ID_SHIFT			0
 +
-+	palmas_wdt->info = &palmas_wdt_info;
-+	palmas_wdt->ops = &palmas_wdt_ops;
-+	watchdog_set_nowayout(palmas_wdt, nowayout);
-+	watchdog_set_drvdata(palmas_wdt, driver_data);
++/* Bit definitions for VENDOR_ID_MSB */
++#define PALMAS_VENDOR_ID_MSB_VENDOR_ID_MASK			0xff
++#define PALMAS_VENDOR_ID_MSB_VENDOR_ID_SHIFT			0
 +
-+	ret = watchdog_register_device(&driver_data->wdt);
-+	if (ret) {
-+		platform_set_drvdata(pdev, NULL);
-+		goto err;
-+	}
++/* Bit definitions for PRODUCT_ID_LSB */
++#define PALMAS_PRODUCT_ID_LSB_PRODUCT_ID_MASK			0xff
++#define PALMAS_PRODUCT_ID_LSB_PRODUCT_ID_SHIFT			0
 +
-+	dev_set_drvdata(&pdev->dev, driver_data);
++/* Bit definitions for PRODUCT_ID_MSB */
++#define PALMAS_PRODUCT_ID_MSB_PRODUCT_ID_MASK			0xff
++#define PALMAS_PRODUCT_ID_MSB_PRODUCT_ID_SHIFT			0
 +
-+	return 0;
-+err:
-+	return ret;
-+}
+ /* Registers for function USB_OTG */
+ #define PALMAS_USB_WAKEUP					0x3
+ #define PALMAS_USB_VBUS_CTRL_SET				0x4
+@@ -2781,6 +2807,13 @@ enum usb_irq_events {
+ #define PALMAS_GPADC_SMPS_VSEL_MONITORING_SMPS_VSEL_MONITORING_MASK	0x7f
+ #define PALMAS_GPADC_SMPS_VSEL_MONITORING_SMPS_VSEL_MONITORING_SHIFT	0
+ 
++/* Registers for function DESIGNREV */
++#define PALMAS_DESIGNREV					0x0
 +
-+static int palmas_wdt_remove(struct platform_device *pdev)
-+{
-+	struct palmas_wdt *driver_data = dev_get_drvdata(&pdev->dev);
++/* Bit definitions for DESIGNREV */
++#define PALMAS_DESIGNREV_DESIGNREV_MASK				0x0f
++#define PALMAS_DESIGNREV_DESIGNREV_SHIFT			0
 +
-+	watchdog_unregister_device(&driver_data->wdt);
-+
-+	return 0;
-+}
-+
-+static struct of_device_id of_palmas_match_tbl[] = {
-+	{ .compatible = "ti,palmas-wdt", },
-+	{ .compatible = "ti,palmas-charger-wdt", },
-+	{ .compatible = "ti,twl6035-wdt", },
-+	{ .compatible = "ti,twl6036-wdt", },
-+	{ .compatible = "ti,twl6037-wdt", },
-+	{ .compatible = "ti,tps65913-wdt", },
-+	{ .compatible = "ti,tps65914-wdt", },
-+	{ .compatible = "ti,tps80036-wdt", },
-+	{ /* end */ }
-+};
-+
-+static struct platform_driver palmas_wdt_driver = {
-+	.probe = palmas_wdt_probe,
-+	.remove = palmas_wdt_remove,
-+	.driver = {
-+		.owner = THIS_MODULE,
-+		.of_match_table = of_palmas_match_tbl,
-+		.name = "palmas-wdt",
-+	},
-+};
-+
-+module_platform_driver(palmas_wdt_driver);
-+
-+MODULE_AUTHOR("Graeme Gregory <gg@slimlogic.co.uk>");
-+MODULE_LICENSE("GPL");
-+MODULE_ALIAS("platform:palmas-wdt");
-+MODULE_DEVICE_TABLE(of, of_palmas_match_tbl);
+ /* Registers for function GPADC */
+ #define PALMAS_GPADC_TRIM1					0x0
+ #define PALMAS_GPADC_TRIM2					0x1
 -- 
 1.7.0.4
 
