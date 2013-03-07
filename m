@@ -1,110 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755993Ab3CGKLa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 05:11:30 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:13496 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754255Ab3CGKL3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 05:11:29 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Thu, 07 Mar 2013 02:11:28 -0800
-Message-ID: <513867CD.4030201@nvidia.com>
-Date: Thu, 7 Mar 2013 19:11:25 +0900
-From: Alex Courbot <acourbot@nvidia.com>
-Organization: NVIDIA
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
+	id S1755989Ab3CGKMe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 05:12:34 -0500
+Received: from mga11.intel.com ([192.55.52.93]:41072 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754213Ab3CGKMd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Mar 2013 05:12:33 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,800,1355126400"; 
+   d="scan'208";a="296657083"
+Date: Thu, 7 Mar 2013 15:17:35 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: "Maxin B. John" <maxin.john@gmail.com>
+Cc: gregkh@linuxfoundation.org, djbw@fb.com, nicolas.ferre@atmel.com,
+        linus.walleij@linaro.org, rmk+kernel@arm.linux.org.uk,
+        jassisinghbrar@gmail.com, lars@metafoo.de, grant.likely@secretlab.ca,
+        linux-kernel@vger.kernel.org, rob.herring@calxeda.com,
+        linux-arm-kernel@lists.infradead.org,
+        devicetree-discuss@lists.ozlabs.org,
+        "Maxin B. John" <maxin.john@enea.com>
+Subject: Re: [PATCH] dma: Remove erroneous __exit and __exit_p() references
+Message-ID: <20130307094735.GG13370@intel.com>
+References: <1361318824-22287-1-git-send-email-maxin.john@gmail.com>
+ <CACRpkdZamOCWHWMcFYRqQDKJARZOCEP_eSNPNaxSgHfAn2wmEw@mail.gmail.com>
+ <CAMhs6YwC+Lx0Vt=w2MoQV08on+rB1zidGCsNHRqcst8KBrb2XQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Thierry Reding <thierry.reding@avionic-design.de>
-CC: Andrew Chew <AChew@nvidia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/1 v4] pwm_bl: Add support for backlight enable regulator
-References: <1362590238-27692-1-git-send-email-achew@nvidia.com> <20130307071102.GB3451@avionic-0098.mockup.avionic-design.de>
-In-Reply-To: <20130307071102.GB3451@avionic-0098.mockup.avionic-design.de>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAMhs6YwC+Lx0Vt=w2MoQV08on+rB1zidGCsNHRqcst8KBrb2XQ@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/07/2013 04:11 PM, Thierry Reding wrote:
->> +	bool			en_supply_enabled;
->
-> This boolean can be dropped. As discussed in a previous thread, the
-> pwm-backlight driver shouldn't need to know about any other uses of the
-> regulator.
+On Thu, Mar 07, 2013 at 10:17:40AM +0100, Maxin B. John wrote:
+> Hi,
+> 
+> On Fri, Feb 22, 2013 at 7:29 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
+> > On Wed, Feb 20, 2013 at 1:07 AM,  <maxin.john@gmail.com> wrote:
+> >
+> >> From: "Maxin B. John" <maxin.john@enea.com>
+> >>
+> >> Removing the annotation with __exit and referencing with __exit_p()
+> >> present in dma driver module remove hooks.
+> >>
+> >> Part of the __devexit and __devexit_p() purge.
+> >>
+> >> Signed-off-by: Maxin B. John <maxin.john@enea.com>
+> >
+> > Acked-by: Linus Walleij <linus.walleij@linaro.org>
+> 
+> Gentle ping...
+???
 
-Sorry for being obstinate - but I'm still not convinced we can get rid 
-of it. I checked the regulator code, and as you mentioned in the 
-previous version, calls to regulator_enable() and regulator_disable() 
-*must* be balanced in this driver.
+Its already in my -next
 
-Without this variable we would call regulator_enable() every time 
-pwm_backlight_enable() is called (and same thing when disabling). Now 
-imagine the driver is asked to set the following intensities: 5, 12, 
-then 0. You would have two calls to regulator_enable() but only one to 
-regulator_disable(), which would result in the enable GPIO remaining 
-active even though it would be shut down. Or I missed something obvious.
-
-The regulator must be enabled/disabled on transitions from/to 0, and 
-AFAICT there is no way for this driver to detect them.
-
->> +static void pwm_backlight_enable(struct backlight_device *bl)
->> +{
->> +	struct pwm_bl_data *pb = dev_get_drvdata(&bl->dev);
->> +
->> +	pwm_enable(pb->pwm);
->> +
->> +	if (pb->en_supply && !pb->en_supply_enabled) {
->> +		if (regulator_enable(pb->en_supply) != 0)
->> +			dev_warn(&bl->dev, "Failed to enable regulator");
->> +		else
->> +			pb->en_supply_enabled = true;
->> +	}
->> +}
->> +
->> +static void pwm_backlight_disable(struct backlight_device *bl)
->> +{
->> +	struct pwm_bl_data *pb = dev_get_drvdata(&bl->dev);
->> +
->> +	if (pb->en_supply && pb->en_supply_enabled) {
->> +		if (regulator_disable(pb->en_supply) != 0)
->> +			dev_warn(&bl->dev, "Failed to disable regulator");
->> +		else
->> +			pb->en_supply_enabled = false;
->> +	}
->> +
->> +	pwm_disable(pb->pwm);
->> +}
->
-> Alex already brought this up: shouldn't the sequences be reversed. That
-> is, when enabling the backlight, turn on the regulator first, then
-> enable the PWM. When disabling, disable the PWM first, then turn off the
-> regulator?
-
-Actually the current sequence seems to make sense - the PWM is always 
-active when the enable GPIO is switched. If we do the contrary, we might 
-have a short time where the backlight is enabled without receiving 
-anything from the PWM. Don't think that would be serious, but the 
-current behavior is similar to e.g. panels which we enable only after a 
-signal is available.
-
->> @@ -213,6 +238,13 @@ static int pwm_backlight_probe(struct platform_device *pdev)
->>   	pb->exit = data->exit;
->>   	pb->dev = &pdev->dev;
->>
->> +	pb->en_supply = devm_regulator_get(&pdev->dev, "enable");
->> +	if (IS_ERR(pb->en_supply)) {
->> +		ret = PTR_ERR(pb->en_supply);
->> +		pb->en_supply = NULL;
->> +		goto err_alloc;
->> +	}
->
-> This effectively makes the regulator mandatory, so the board files that
-> use pwm-backlight need to be updated or otherwise will break.
-
-Yes. Btw, should such changes go into the same patch? This seems 
-difficult to split without breaking things at some point.
-
-Alex.
-
+--
+~Vinod
