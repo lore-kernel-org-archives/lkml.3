@@ -1,107 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932379Ab3CGJXB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 04:23:01 -0500
-Received: from e28smtp03.in.ibm.com ([122.248.162.3]:55165 "EHLO
-	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755394Ab3CGJW7 (ORCPT
+	id S1755554Ab3CGJZj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 04:25:39 -0500
+Received: from bolligen.cirrax.com ([217.197.128.7]:53032 "EHLO
+	mail.cirrax.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755282Ab3CGJZh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 04:22:59 -0500
-Message-ID: <51385BA5.7020706@linux.vnet.ibm.com>
-Date: Thu, 07 Mar 2013 14:49:33 +0530
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Organization: IBM
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
+	Thu, 7 Mar 2013 04:25:37 -0500
+From: Gaudenz Steinlin <gaudenz@soziologie.ch>
+To: Andrew Cooks <acooks@gmail.com>
+Cc: jyli@marvell.com,
+        "open list\:INTEL IOMMU \(VT-d\)" <iommu@lists.linux-foundation.org>,
+        open list <linux-kernel@vger.kernel.org>, Shun Fu <fushun@marvell.com>,
+        Alex Williamson <alex.williamson@redhat.com>
+Subject: Re: Marvell 88NV9143 in mini-PCIe not working with intel_iommu=on
+In-Reply-To: <CAJtEV7Zyq3+YPu9Vvcxcm8nw41-ENjLuRHUzyFFzXQn-wiSf1w@mail.gmail.com>
+References: <874ngpj3d9.fsf@meteor.durcheinandertal.bofh> <CAJtEV7Zyq3+YPu9Vvcxcm8nw41-ENjLuRHUzyFFzXQn-wiSf1w@mail.gmail.com>
+User-Agent: Notmuch/0.15.1 (http://notmuchmail.org) Emacs/23.4.1 (x86_64-pc-linux-gnu)
+Date: Thu, 07 Mar 2013 10:25:22 +0100
+Message-ID: <87zjyfy325.fsf@meteor.durcheinandertal.bofh>
 MIME-Version: 1.0
-To: Chegu Vinod <chegu_vinod@hp.com>, Gleb Natapov <gleb@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>
-CC: Peter Zijlstra <peterz@infradead.org>, Avi Kivity <avi.kivity@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Srikar <srikar@linux.vnet.ibm.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        KVM <kvm@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Jiannan Ouyang <ouyang@cs.pitt.edu>,
-        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
-        Andrew Jones <drjones@redhat.com>
-Subject: Re: [PATCH RFC 1/2] kvm: Record the preemption status of vcpus using
- preempt notifiers
-References: <20130304180146.31281.33540.sendpatchset@codeblue.in.ibm.com> <20130304180206.31281.67229.sendpatchset@codeblue.in.ibm.com> <51360D0D.5020609@hp.com>
-In-Reply-To: <51360D0D.5020609@hp.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13030709-3864-0000-0000-00000722EC92
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/05/2013 08:49 PM, Chegu Vinod wrote:
-> On 3/4/2013 10:02 AM, Raghavendra K T wrote:
->> From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
->>
->> Note that we mark as preempted only when vcpu's task state was
->> Running during preemption.
->>
->> Thanks Jiannan, Avi for preemption notifier ideas. Thanks Gleb, PeterZ
->> for their precious suggestions. Thanks Srikar for an idea on avoiding
->> rcu lock while checking task state that improved overcommit numbers.
->>
->> Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
->> ---
->>   include/linux/kvm_host.h |    1 +
->>   virt/kvm/kvm_main.c      |    5 +++++
->>   2 files changed, 6 insertions(+)
->>
->> diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
->> index cad77fe..0b31e1c 100644
->> --- a/include/linux/kvm_host.h
->> +++ b/include/linux/kvm_host.h
->> @@ -252,6 +252,7 @@ struct kvm_vcpu {
->>           bool dy_eligible;
->>       } spin_loop;
->>   #endif
->> +    bool preempted;
->>       struct kvm_vcpu_arch arch;
->>   };
->> diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
->> index adc68fe..83a804c 100644
->> --- a/virt/kvm/kvm_main.c
->> +++ b/virt/kvm/kvm_main.c
->> @@ -244,6 +244,7 @@ int kvm_vcpu_init(struct kvm_vcpu *vcpu, struct
->> kvm *kvm, unsigned id)
->>       kvm_vcpu_set_in_spin_loop(vcpu, false);
->>       kvm_vcpu_set_dy_eligible(vcpu, false);
->> +    vcpu->preempted = false;
->>       r = kvm_arch_vcpu_init(vcpu);
->>       if (r < 0)
->> @@ -2902,6 +2903,8 @@ struct kvm_vcpu *preempt_notifier_to_vcpu(struct
->> preempt_notifier *pn)
->>   static void kvm_sched_in(struct preempt_notifier *pn, int cpu)
->>   {
->>       struct kvm_vcpu *vcpu = preempt_notifier_to_vcpu(pn);
->> +    if (vcpu->preempted)
->> +        vcpu->preempted = false;
->>       kvm_arch_vcpu_load(vcpu, cpu);
->>   }
->> @@ -2911,6 +2914,8 @@ static void kvm_sched_out(struct
->> preempt_notifier *pn,
->>   {
->>       struct kvm_vcpu *vcpu = preempt_notifier_to_vcpu(pn);
->> +    if (current->state == TASK_RUNNING)
->> +        vcpu->preempted = true;
->>       kvm_arch_vcpu_put(vcpu);
->>   }
->>
->> .
->>
-> Reviewed-by: Chegu Vinod <chegu_vinod@hp.com>
 
-Thank you Vinod.
+Hi Andrew
 
-Gleb, Marcelo,
-  any comment, concern on the patches?
+Andrew Cooks <acooks@gmail.com> writes:
 
+> On Tue, Mar 5, 2013 at 11:03 PM, Gaudenz Steinlin <gaudenz@soziologie.ch> wrote:
+>>
+>> [ Sending this to the MVUMI driver authors and the IOMMU list as I can't
+>> tell which part is at fault. ]
+>>
+>> [ ... ]
+>> [    4.342079] dmar: DRHD: handling fault status reg 2
+>> [    4.342132] dmar: DMAR:[DMA Read] Request device [02:00.0] fault addr fffff000
+>> [    4.342132] DMAR:[fault reason 02] Present bit in context entry is clear
+>> [ ... ]
+>> [   34.344078] mvumi 0000:02:00.1: no handshake response at state 0x2.
+>> [   34.344115] mvumi 0000:02:00.1: isr : global=0x0,status=0x0.
+>> [   34.344146] mvumi 0000:02:00.1: handshake failed at state 0x2.
+>> [   34.344266] mvumi: probe of 0000:02:00.1 failed with error -22
+>>
+>
+> Looks like another Marvell DMA source tag issue.
 
+You are probably right with this. See below.
+
+>
+>> And the full lspic output for this device:
+>>
+>> gaudenz@meteor:~$ sudo lspci -vv -nnq -s 02:
+>> 02:00.0 Mass storage controller [01ff]: Marvell Technology Group Ltd. Device [1b4b:91f3]
+>>         Subsystem: Marvell Technology Group Ltd. Device [1b4b:9143]
+>> ...
+>>         Capabilities: [140 v1] Virtual Channel
+>>                 Caps:   LPEVC=0 RefClk=100ns PATEntryBits=1
+>>                 Arb:    Fixed- WRR32- WRR64- WRR128-
+>>                 Ctrl:   ArbSelect=Fixed
+>>                 Status: InProgress-
+>>                 VC0:    Caps:   PATOffset=00 MaxTimeSlots=1 RejSnoopTrans-
+>>                         Arb:    Fixed- WRR32- WRR64- WRR128- TWRR128- WRR256-
+>>                         Ctrl:   Enable+ ID=0 ArbSelect=Fixed TC/VC=01
+>>                         Status: NegoPending- InProgress-
+>>
+>> 02:00.1 Mass storage controller [0180]: Marvell Technology Group Ltd. Device [1b4b:9143] (rev 10)
+>>         Subsystem: Marvell Technology Group Ltd. Device [1b4b:9143]
+>> ...
+>>         Kernel driver in use: mvumi
+>>
+>> 02:00.2 Non-Volatile memory controller [0108]: Marvell Technology Group Ltd. Device [1b4b:91e3] (prog-if 01)
+>>         Subsystem: Marvell Technology Group Ltd. Device [1b4b:9143]
+>>...
+>
+> In this case it seems like a multifunction device with 02:00.1 being
+> the only function that the mvumi driver cares about.  So my guess is
+> that 02:00.1 is issuing DMA with the incorrect tag of 02:00.0.
+>
+> Perhaps Alex Williamson can tell us about iommu device groups, whether
+> it would be possible to group the functions together automatically and
+> whether that would solve the problem. It should also be possible to
+> adapt the quirk patch I posted recently to handle this, but I'm still
+> waiting to hear if that patch has a future.
+
+I adapted your quirk patch to my device and it works. As I'm very new to
+this I don't know if my modifications are right or if there is a better
+way to do this. Diff on top of the latest version of the quirk you
+posted to the iommu list:
+
+diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
+index 13323f2..0ba462a 100644
+--- a/drivers/iommu/intel-iommu.c
++++ b/drivers/iommu/intel-iommu.c
+@@ -1684,7 +1684,7 @@ static int map_ghost_dma_fn(struct dmar_domain *domain,
+ 
+        fn_map = pci_get_dma_source_map(pdev);
+ 
+-       for (fn = 1; fn < 8; fn++) {
++       for (fn = 0; fn < 8; fn++) {
+                if (fn_map & (1 << fn)) {
+                        err = domain_context_mapping_one(domain,
+                                        pci_domain_nr(pdev->bus),
+diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
+index d311100..21b664b 100644
+--- a/drivers/pci/quirks.c
++++ b/drivers/pci/quirks.c
+@@ -3314,6 +3314,7 @@ static const struct pci_dev_dma_multi_func_sources {
+        { PCI_VENDOR_ID_MARVELL_2, 0x9128, (1<<0)|(1<<1)},
+        { PCI_VENDOR_ID_MARVELL_2, 0x9130, (1<<0)|(1<<1)},
+        { PCI_VENDOR_ID_MARVELL_2, 0x9172, (1<<0)|(1<<1)},
++       { PCI_VENDOR_ID_MARVELL_2, 0x9143, (1<<0)},
+        { 0 }
+ };
+
+Gaudenz
+
+-- 
+Ever tried. Ever failed. No matter.
+Try again. Fail again. Fail better.
+~ Samuel Beckett ~
