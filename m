@@ -1,80 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752126Ab3CGGV6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 01:21:58 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:11507 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751049Ab3CGGV5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 01:21:57 -0500
-Message-ID: <513831E9.80304@huawei.com>
-Date: Thu, 7 Mar 2013 14:21:29 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
+	id S1752571Ab3CGGZI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 01:25:08 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:55526 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750811Ab3CGGZD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Mar 2013 01:25:03 -0500
+From: "Vishwanathrao Badarkhe, Manish" <manishv.b@ti.com>
+To: <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <davinci-linux-open-source@linux.davincidsp.com>
+CC: <broonie@opensource.wolfsonmicro.com>, <nsekhar@ti.com>,
+        <linux@arm.linux.org.uk>, <rob.herring@calxeda.com>,
+        <grant.likely@secretlab.ca>, <manishv.b@ti.com>
+Subject: [RESEND 0/2] davinci: Add device tree data for tps6507x.
+Date: Thu, 7 Mar 2013 11:56:19 +0530
+Message-ID: <1362637581-12673-1-git-send-email-manishv.b@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-To: Michael Wang <wangyun@linux.vnet.ibm.com>
-CC: Sasha Levin <sasha.levin@oracle.com>, Tejun Heo <tj@kernel.org>,
-        Dave Jones <davej@redhat.com>, Cgroups <cgroups@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: cgroup: INFO: suspicious RCU usage. in cgroup_name
-References: <5137687E.50701@oracle.com> <5138309A.2060804@linux.vnet.ibm.com>
-In-Reply-To: <5138309A.2060804@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/3/7 14:15, Michael Wang wrote:
-> On 03/07/2013 12:02 AM, Sasha Levin wrote:
->> Hi all,
->>
->> While fuzzing with trinity inside a KVM tools guest running latest -next kernel
->> I've stumbled on the following:
->>
->> [  450.180599] ===============================
->> [  450.181392] [ INFO: suspicious RCU usage. ]
->> [  450.182101] 3.9.0-rc1-next-20130305-sasha-00048-g35e9ec5-dirty #1032 Tainted: G        W
->> [  450.183482] -------------------------------
->> [  450.184343] include/linux/cgroup.h:429 suspicious rcu_dereference_check() usage!
->> [  450.185575]
->> [  450.185575] other info that might help us debug this:
->> [  450.185575]
->> [  450.186961]
->> [  450.186961] rcu_scheduler_active = 1, debug_locks = 1
->> [  450.188001] 4 locks held by kworker/u:0/6:
->> [  450.188646]  #0:  (khelper){.+.+.+}, at: [<ffffffff8112ba98>] process_one_work+0x238/0x570
->> [  450.190186]  #1:  ((&sub_info->work)){+.+.+.}, at: [<ffffffff8112ba98>] process_one_work+0x238/0x570
->> [  450.191824]  #2:  (&(&p->alloc_lock)->rlock){+.+.-.}, at: [<ffffffff812036d3>] dump_header+0x43/0xe0
-> 
-> Hi, Sasha
-> 
-> I suppose this is the warn context:
-> 
-> cpuset_print_task_mems_allowed() -> task_cs() -> task_subsys_state()
-> 
-> and this is the definition of task_subsys_state():
-> 
-> #define task_subsys_state_check(task, subsys_id, __c)                   \
->         rcu_dereference_check(task->cgroups->subsys[subsys_id],         \
->                               lockdep_is_held(&task->alloc_lock) ||     \
->                               cgroup_lock_is_held() || (__c))
-> 
-> the condition "lockdep_is_held(&task->alloc_lock)" should match (#2
-> lock), the warn doesn't make sense to me...
-> 
+Add device tree data for regulator via tps6507x mfd device 
+in da850-evm.
+Applies on top of v3.9-rc1 of linus tree.
 
-nope..note this is 3.9-rc1-next, not 3.9-rc1.
+Tested on da850-evm device.
 
-The warning is from this:
+Test procedure followed as below:
+Once device boots up, issue command as:
 
-/* Caller should hold rcu_read_lock() */
-static inline const char *cgroup_name(const struct cgroup *cgrp)
-{
-        return rcu_dereference(cgrp->name)->name;
-}
+$for reg in /sys/class/regulator/*; do echo $reg `cat $reg/name`
+ `cat $reg/state` `cat $reg/microvolts`; done
 
-I've cooked up a patch. Will send out today.
+This command will print all available regulators with its name,
+status (enabled/disabled) and voltages(in microvolts) like as below:
+/sys/class/regulator/regulator.1 VDCDC1_3.3V enabled 3300000
+/sys/class/regulator/regulator.2 VDCDC2_3.3V enabled 3300000
+/sys/class/regulator/regulator.3 VDCDC3_1.2V enabled 1200000
+/sys/class/regulator/regulator.4 LDO1_1.8V enabled 1800000
+/sys/class/regulator/regulator.5 LDO2_1.2V enabled 1200000
+
+Note: Some of patches in this series are already accepted and 
+residing in v3.9-rc1 kernel. These patches are as follows:
+
+1. mfd: tps6507x: add device-tree support.
+2. regulator: tps6507x: add device tree support. 
+3. ARM: davinci: da850: add DT node for I2C0. 
+
+Vishwanathrao Badarkhe, Manish (2):
+  ARM: regulator: add tps6507x device tree data
+  ARM: davinci: da850: add tps6507x regulator DT data
+
+ arch/arm/boot/dts/da850-evm.dts |   63 +++++++++++++++++++++++++++++++++++++++
+ arch/arm/boot/dts/tps6507x.dtsi |   47 +++++++++++++++++++++++++++++
+ 2 files changed, 110 insertions(+), 0 deletions(-)
+ create mode 100644 arch/arm/boot/dts/tps6507x.dtsi
+
+-- 
+1.7.4.1
 
