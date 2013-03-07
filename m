@@ -1,54 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932387Ab3CGDls (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 22:41:48 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:49793 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754489Ab3CGDlr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 22:41:47 -0500
-Message-ID: <51380C65.50202@zytor.com>
-Date: Wed, 06 Mar 2013 19:41:25 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130219 Thunderbird/17.0.3
+	id S932367Ab3CGDou (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 22:44:50 -0500
+Received: from mail-ie0-f181.google.com ([209.85.223.181]:40666 "EHLO
+	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756742Ab3CGDot (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Mar 2013 22:44:49 -0500
 MIME-Version: 1.0
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-CC: linux-kernel@vger.kernel.org, linux-kbuild <linux-kbuild@vger.kernel.org>
-Subject: Re: 3.9-rc1: hz.bc compilation breakage
-References: <5137546B.2090801@free-electrons.com>
-In-Reply-To: <5137546B.2090801@free-electrons.com>
-X-Enigmail-Version: 1.5.1
+In-Reply-To: <51346D7C.5080307@gaisler.com>
+References: <1360653873-25368-1-git-send-email-andreas@gaisler.com>
+	<CACRpkdaYQSrzm_Yj3ZH9YZLC_zPJN06X-9ZM9jd7=X0OB1shXQ@mail.gmail.com>
+	<51346D7C.5080307@gaisler.com>
+Date: Thu, 7 Mar 2013 04:44:48 +0100
+Message-ID: <CACRpkdaC9DsNj56_q33Z5N3_90Ffdq9qZeOxrFdrVSoL4wrTbQ@mail.gmail.com>
+Subject: Re: [PATCH v3] gpio: Add device driver for GRGPIO cores and support
+ custom accessors with gpio-generic
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Andreas Larsson <andreas@gaisler.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        software@gaisler.com
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/06/2013 06:36 AM, Maxime Ripard wrote:
-> Hi,
-> 
-> I'm compiling the kernel for an iMX28(ARM) board, and since 3.9-rc1, I
-> get the following error at compilation time:
-> 
-> make[3]: *** No rule to make target
-> `/home/max/Work/2012/crystalfontz/rewrite/linux-dt/include/config/hz.h',
-> needed by `kernel/hz.bc'.  Stop.
-> 
-> I'm doing a clean out-of-tree build, with the following configuration
-> file: http://code.bulix.org/m4y7se-83102?raw
-> 
-> Reverting commit 1b66e0fd ("kernel: Replace timeconst.pl with a bc
-> script") make the compilation go on as usual.
-> 
+On Mon, Mar 4, 2013 at 10:46 AM, Andreas Larsson <andreas@gaisler.com> wrote:
+> [Me]
+>>> +struct grgpio_priv {
+>>> +       struct bgpio_chip bgc;
+>>> +       struct grgpio_regs __iomem *regs;
+>>> +
+>>> +       u32 imask;      /* irq mask shadow register */
+>>> +       s32 *irqmap;    /* maps offset to irq or -1 if no irq */
+>>
+>>
+>> irqmap? Argh what is this... I think you want to use irqdomain
+>> for this instead. (Documentation/IRQ-domain.txt)
+>
+>
+> Yeah, that comment is not clear. An entry in the irqmap array (for a gpio
+> line) can be either -1 indicating no irq for that line or an index into the
+> array of irq:s for the of device. Thus it is simply either -1 or a valid
+> second argument to irq_of_parse_and_map.
 
-That file should have been created by "make *config", and I just
-verified that it does indeed do so.  That file is a sentinel for
-configuration changes; the entire build system depends on it.
+So just make the mapping function in the irqdomain handle that?
 
-I am not sure what you mean with "clean out-of-tree", however.
+Maybe I'm talking weird, I'm not really familiar with
+irq_of_parse_and_map().
 
-kbuild people: is there anything wrong with how this dependency is
-specified?
+> Given that this is generally running on SPARC, it seems irqdomain is not an
+> option (IRQ_DOMAIN is not selected by SPARC).
 
-	-hpa
+That has nothing to do with this. This driver can just select IRQ_DOMAIN
+in *it's* Kconfig entry.
 
+Using irqdomain for a certain irq_chip does not at all mandate that the
+entire system has to use irqdomain for everything, and two wrongs does
+not make one right.
 
+> Given this, is just a better formulated comment OK with you in this case?
+
+No...
+
+Yours,
+Linus Walleij
