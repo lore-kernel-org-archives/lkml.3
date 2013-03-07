@@ -1,67 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751433Ab3CGGCE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 01:02:04 -0500
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:49075 "EHLO
+	id S1751519Ab3CGGC7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 01:02:59 -0500
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:52271 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750811Ab3CGGCC (ORCPT
+	by vger.kernel.org with ESMTP id S1750811Ab3CGGC6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 01:02:02 -0500
-X-Sasl-enc: +6iD/WldGhTJeGzNWLw2kmrE4XzVuduX5S8lXlLoT9B/ 1362636118
-Date: Thu, 7 Mar 2013 14:02:30 +0800
+	Thu, 7 Mar 2013 01:02:58 -0500
+X-Sasl-enc: 1Yjv1EDrPx+w/pup2K5+FCAhRXyY3/d4ZUX53SlUh4Ih 1362636177
+Date: Thu, 7 Mar 2013 14:03:28 +0800
 From: Greg Kroah-Hartman <greg@kroah.com>
 To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: use after free in sysfs_find_dirent
-Message-ID: <20130307060230.GA31738@kroah.com>
+Subject: Re: sysfs_dir_cache slab corruption
+Message-ID: <20130307060328.GB31738@kroah.com>
 References: <20130307052854.GA23745@redhat.com>
+ <20130307053353.GA24287@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130307052854.GA23745@redhat.com>
+In-Reply-To: <20130307053353.GA24287@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 07, 2013 at 12:28:54AM -0500, Dave Jones wrote:
-> general protection fault: 0000 [#1] PREEMPT SMP 
-> Modules linked in: vmw_vsock_vmci_transport vmw_vmci vsock bnep fuse rfcomm hidp l2tp_ppp l2tp_core 8021q garp mrp dlci pppoe pppox ppp_generic slhc scsi_transport_iscsi rose caif_socket caif can_raw bridge af_key can_bcm llc2 stp can netrom phonet af_rxrpc nfnetlink ipt_ULOG x25 rds irda crc_ccitt ax25 ipx p8023 p8022 decnet atm appletalk psnap llc nfc lockd sunrpc ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 xt_conntrack nf_conntrack ip6table_filter ip6_tables snd_hda_codec_realtek snd_hda_intel snd_hda_codec snd_pcm btusb snd_page_alloc bluetooth snd_timer snd microcode rfkill usb_debug serio_raw pcspkr edac_core soundcore vhost_net tun r8169 macvtap macvlan mii kvm_amd kvm
-> CPU 0 
-> Pid: 23476, comm: trinity-child1 Not tainted 3.9.0-rc1+ #69 Gigabyte Technology Co., Ltd. GA-MA78GM-S2H/GA-MA78GM-S2H
-> RIP: 0010:[<ffffffff812356b7>]  [<ffffffff812356b7>] sysfs_find_dirent+0x47/0xf0
-> RSP: 0018:ffff88000585bd68  EFLAGS: 00010202
-> RAX: 0000000094be55f6 RBX: 6b6b6b6b6b6b6b6b RCX: 000000006b6b6b6b
-> RDX: 0000000000000000 RSI: 0000000000000000 RDI: 0000000000000000
-> RBP: ffff88000585bd88 R08: 0000000000000000 R09: 0000000000000000
-> R10: 0000000000000000 R11: 0000000000000000 R12: 000000000029c161
-> R13: ffff8800a8918288 R14: 0000000000000000 R15: 0000000000000009
-> FS:  00007fa12651e740(0000) GS:ffff88012ae00000(0000) knlGS:0000000000000000
-> CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-> CR2: 0000000000000010 CR3: 000000001a128000 CR4: 00000000000007f0
-> DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> Process trinity-child1 (pid: 23476, threadinfo ffff88000585a000, task ffff8800cd454920)
-> Stack:
->  ffff880128edc1e8 ffff8800a8918250 fffffffffffffffe ffff88012265f430
->  ffff88000585bdb8 ffffffff812357cd ffff8800a8918250 ffff8801226514d0
->  ffff88000585bf38 0000000000000000 ffff88000585bde8 ffffffff811bb30d
+On Thu, Mar 07, 2013 at 12:33:53AM -0500, Dave Jones wrote:
+> And even more sysfs fallout (From a clean boot)..
+> 
+> =============================================================================
+> BUG sysfs_dir_cache (Not tainted): Poison overwritten
+> -----------------------------------------------------------------------------
+> 
+> Disabling lock debugging due to kernel taint
+> INFO: 0xffff8801239a85b8-0xffff8801239a85b8. First byte 0x69 instead of 0x6b
+> INFO: Allocated in sysfs_new_dirent+0x59/0x130 age=493166 cpu=3 pid=301
+> 	__slab_alloc+0x4ed/0x584
+> 	kmem_cache_alloc+0x2c0/0x330
+> 	sysfs_new_dirent+0x59/0x130
+> 	sysfs_add_file_mode+0x6b/0x110
+> 	sysfs_add_file+0x12/0x20
+> 	sysfs_create_file+0x26/0x30
+> 	load_module+0x1360/0x28d0
+> 	sys_init_module+0xd7/0x120
+> 	system_call_fastpath+0x16/0x1b
+> INFO: Freed in release_sysfs_dirent+0x81/0x100 age=10736 cpu=3 pid=8692
+> 	__slab_free+0x3c/0x3de
+> 	kmem_cache_free+0x362/0x380
+> 	release_sysfs_dirent+0x81/0x100
+> 	sysfs_dir_pos+0x46/0xf0
+> 	sysfs_readdir+0x9a/0x2b0
+> 	vfs_readdir+0xb8/0xf0
+> 	sys_getdents64+0x8f/0x110
+> 	system_call_fastpath+0x16/0x1b
+> INFO: Slab 0xffffea00048e6a00 objects=16 used=16 fp=0x          (null) flags=0x5000000000004080
+> INFO: Object 0xffff8801239a85b8 @offset=1464 fp=0x          (null)
+> 
+> Bytes b4 ffff8801239a85a8: 00 00 00 00 00 00 00 00 5a 5a 5a 5a 5a 5a 5a 5a  ........ZZZZZZZZ
+> Object ffff8801239a85b8: 69 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  ikkkkkkkkkkkkkkk
+> Object ffff8801239a85c8: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
+> Object ffff8801239a85d8: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
+> Object ffff8801239a85e8: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
+> Object ffff8801239a85f8: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
+> Object ffff8801239a8608: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
+> Object ffff8801239a8618: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
+> Object ffff8801239a8628: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
+> Object ffff8801239a8638: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
+> Object ffff8801239a8648: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b a5  kkkkkkkkkkkkkkk.
+> Redzone ffff8801239a8658: bb bb bb bb bb bb bb bb                          ........
+> Padding ffff8801239a8798: 5a 5a 5a 5a 5a 5a 5a 5a                          ZZZZZZZZ
+> Pid: 15728, comm: modprobe Tainted: G    B        3.9.0-rc1+ #69
 > Call Trace:
->  [<ffffffff812357cd>] sysfs_lookup+0x6d/0xe0
->  [<ffffffff811bb30d>] lookup_real+0x1d/0x60
->  [<ffffffff811bb528>] __lookup_hash+0x38/0x50
->  [<ffffffff811bb559>] lookup_hash+0x19/0x20
->  [<ffffffff811be993>] kern_path_create+0x93/0x170
->  [<ffffffff811bce46>] ? getname_flags.part.32+0x86/0x150
->  [<ffffffff811beaba>] user_path_create+0x4a/0x70
->  [<ffffffff811c1a09>] sys_mkdirat+0x39/0xe0
+>  [<ffffffff8118e81d>] ? print_section+0x3d/0x40
+>  [<ffffffff8118f98e>] print_trailer+0xfe/0x160
+>  [<ffffffff8118fb2f>] check_bytes_and_report+0xef/0x130
+>  [<ffffffff81190126>] check_object+0x1c6/0x240
+>  [<ffffffff81190989>] ? check_slab+0x89/0x130
+>  [<ffffffff81235159>] ? sysfs_new_dirent+0x59/0x130
+>  [<ffffffff816bb755>] alloc_debug_processing+0x67/0x109
+>  [<ffffffff816bc2ee>] __slab_alloc+0x4ed/0x584
+>  [<ffffffff81235159>] ? sysfs_new_dirent+0x59/0x130
+>  [<ffffffff811926f0>] kmem_cache_alloc+0x2c0/0x330
+>  [<ffffffff81235159>] ? sysfs_new_dirent+0x59/0x130
+>  [<ffffffff81235159>] sysfs_new_dirent+0x59/0x130
+>  [<ffffffff812343eb>] sysfs_add_file_mode+0x6b/0x110
+>  [<ffffffff81237620>] internal_create_group+0xd0/0x210
+>  [<ffffffff81237793>] sysfs_create_group+0x13/0x20
+>  [<ffffffff810c71f1>] load_module+0x22d1/0x28d0
+>  [<ffffffff81355570>] ? ddebug_proc_open+0xc0/0xc0
+>  [<ffffffff810b24ae>] ? put_lock_stats.isra.23+0xe/0x40
+>  [<ffffffff810c78c7>] sys_init_module+0xd7/0x120
 >  [<ffffffff816cd942>] system_call_fastpath+0x16/0x1b
-> Code: 00 48 8b 9f 88 00 00 00 f6 c4 0f 0f 95 c0 48 85 f6 0f 95 c2 38 d0 75 79 4c 89 ee 4c 89 f7 e8 91 ef ff ff 41 89 c4 48 85 db 74 1d <8b> 4b 28 41 39 cc 74 21 44 89 e0 29 c8 83 f8 00 7c 2c 74 45 48 
-> RIP  [<ffffffff812356b7>] sysfs_find_dirent+0x47/0xf0
->  RSP <ffff88000585bd68>
-> ---[ end trace 4ba97703eaafbb8b ]---
+> FIX sysfs_dir_cache: Restoring 0xffff8801239a85b8-0xffff8801239a85b8=0x6b
+> 
 
-Any hint as to what was happening here when this crashed?
-
-thanks,
+Hm, a module was being loaded.  Odd, I haven't seen this before, I'm
+guessing that 3.8 doesn't show this, right?
 
 greg k-h
