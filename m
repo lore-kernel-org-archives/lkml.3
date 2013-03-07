@@ -1,117 +1,231 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932297Ab3CGIUA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 03:20:00 -0500
-Received: from mail.allwinnertech.com ([221.4.213.95]:42666 "EHLO
-	mail.allwinnertech.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754088Ab3CGIT6 convert rfc822-to-8bit (ORCPT
+	id S1754828Ab3CGIUh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 03:20:37 -0500
+Received: from mail-da0-f43.google.com ([209.85.210.43]:45832 "EHLO
+	mail-da0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754620Ab3CGIUf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 03:19:58 -0500
-Message-ID: <51384D84.8090803@allwinnertech.com>
-Date: Thu, 7 Mar 2013 16:19:16 +0800
-From: Shuge <shuge@allwinnertech.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+	Thu, 7 Mar 2013 03:20:35 -0500
 MIME-Version: 1.0
-To: <linux-fsdevel@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-ext4@vger.kernel.org>, <linux-mm@vger.kernel.org>
-Subject: [jbd2 or mm BUG]:   crash while flush JBD2's the pages, that owned
- Slab flag.
-Content-Type: text/plain; charset="UTF-8"; format=flowed
+Reply-To: mtk.manpages@gmail.com
+In-Reply-To: <87boax4axy.fsf@xmission.com>
+References: <CAKgNAki=mUYuu_Ewhe7sjCmo+Dq2Vr+FZCixqNRaadcvAxtpFw@mail.gmail.com>
+ <1362110504.15531.4@driftwood> <CAKgNAkgVKnhRT1Lpq4a_UdBKB+tn6XmWSDF2QJXG0aSLtNH6dg@mail.gmail.com>
+ <87wqtr3zg5.fsf@xmission.com> <CAKgNAkjGD0FdQqpA+rYR=+Yc5uVPB8mE5JjCqy-5WS85cPsvng@mail.gmail.com>
+ <87k3pnhx2k.fsf@xmission.com> <CAKgNAkjYmvjMzC+nYqsjHf4bQn2ZwdE5wawoP2p32ZSo+0dfcQ@mail.gmail.com>
+ <87r4jucprp.fsf@xmission.com> <CAKgNAkgqE7owqsmD+9-9fZtzMQ76H53a+Aat0CH670jNTUfbFA@mail.gmail.com>
+ <87boax4axy.fsf@xmission.com>
+From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Date: Thu, 7 Mar 2013 09:20:13 +0100
+Message-ID: <CAKgNAkgRs7kg5PsMrBDNO8_z=5L5zM7DmLgU8pNwT_ck4Hmvhw@mail.gmail.com>
+Subject: Re: For review: pid_namespaces(7) man page
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Rob Landley <rob@landley.net>, linux-man <linux-man@vger.kernel.org>,
+        Linux Containers <containers@lists.linux-foundation.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
-X-Originating-IP: [172.16.10.188]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Mar 6, 2013 at 1:40 AM, Eric W. Biederman <ebiederm@xmission.com> wrote:
+> "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com> writes:
+>
+>> On Tue, Mar 5, 2013 at 7:41 AM, Eric W. Biederman <ebiederm@xmission.com> wrote:
+>>> "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com> writes:
+>>>
+>>>> Eric,
+>>>>
+>>>> On Mon, Mar 4, 2013 at 6:52 PM, Eric W. Biederman
+>>>> <ebiederm@xmission.com> wrote:
+>>>>> "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com> writes:
+>>>>>
+>>>>>> On Fri, Mar 1, 2013 at 4:35 PM, Eric W. Biederman
+>>>> <ebiederm@xmission.com> wrote:
+>>>>>>> "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com> writes:
+>>>>>>>
+>>>>>>>> Hi Rob,
+>>>>>>>>
+>>>>>>>> On Fri, Mar 1, 2013 at 5:01 AM, Rob Landley <rob@landley.net>
+>>>> wrote:
+>>>>>>>>> On 02/28/2013 05:24:07 AM, Michael Kerrisk (man-pages) wrote:
+>>>> [...]
+>>>>>>>>>> Because the above unshare(2) and setns(2) calls only change the
+>>>>>>>>>> PID namespace for created children, the clone(2) calls neces‐
+>>>>>>>>>> sarily put the new thread in a different PID namespace from the
+>>>>>>>>>> calling thread.
+>>>>>>>>>
+>>>>>>>>>
+>>>>>>>>> Um, no they don't. They fail. That's the point.
+>>>>>>>>
+>>>>>>>> (Good catch.)
+>>>>>>>>
+>>>>>>>>> They _would_ put the new
+>>>>>>>>> thread in a different PID namespace, which breaks the definition
+>>>> of threads.
+>>>>>>>>>
+>>>>>>>>> How about:
+>>>>>>>>>
+>>>>>>>>> The above unshare(2) and setns(2) calls change the PID namespace
+>>>> of
+>>>>>>>>> children created by subsequent clone(2) calls, which is
+>>>> incompatible
+>>>>>>>>> with CLONE_VM.
+>>>>>>>>
+>>>>>>>> I decided on:
+>>>>>>>>
+>>>>>>>> The point here is that unshare(2) and setns(2) change the PID
+>>>>>>>> namespace for created children but not for the calling process,
+>>>>>>>> while clone(2) CLONE_VM specifies the creation of a new thread
+>>>>>>>> in the same process.
+>>>>>>>
+>>>>>>> Can we make that "for all new tasks created" instead of "created
+>>>>>>> children"
+>>>>>>>
+>>>>>>> Othewise someone might expect CLONE_THREAD would work as you
+>>>>>>> CLONE_THREAD creates a thread and not a child...
+>>>>>>
+>>>>>> The term "task" is kernel-space talk that rarely appears in man
+>>>> pages,
+>>>>>> so I am reluctant to use it.
+>>>>>
+>>>>> With respect to clone and in this case I am not certain we can
+>>>> properly
+>>>>> describe what happens without talking about tasks. But it is worth
+>>>>> a try.
+>>>>>
+>>>>>
+>>>>>> How about this:
+>>>>>>
+>>>>>> The point here is that unshare(2) and setns(2) change the PID
+>>>>>> namespace for processes subsequently created by the caller, but
+>>>>>> not for the calling process, while clone(2) CLONE_VM specifies
+>>>>>> the creation of a new thread in the same process.
+>>>>>
+>>>>> Hmm. How about this.
+>>>>>
+>>>>> The point here is that unshare(2) and setns(2) change the PID
+>>>>> namespace that will be used by in all subsequent calls to clone
+>>>>> and fork by the caller, but not for the calling process, and
+>>>>> that all threads in a process must share the same PID
+>>>>> namespace. Which makes a subsequent clone(2) CLONE_VM
+>>>>> specify the creation of a new thread in the a different PID
+>>>>> namespace but in the same process which is impossible.
+>>>>
+>>>> I did a little tidying:
+>>>>
+>>>> The point here is that unshare(2) and setns(2) change the
+>>>> PID namespace that will be used in all subsequent calls
+>>>> to clone(2) and fork(2), but do not change the PID names‐
+>>>> pace of the calling process. Because a subsequent
+>>>> clone(2) CLONE_VM would imply the creation of a new
+>>>> thread in a different PID namespace, the operation is not
+>>>> permitted.
+>>>>
+>>>> Okay?
+>>>
+>>> That seems reasonable.
+>>>
+>>> CLONE_THREAD might be better to talk about.  The check is CLONE_VM
+>>> because it is easier and CLONE_THREAD implies CLONE_THREAD.
+>>>
+>>>> Having asked that, I realize that I'm still not quite comfortable with
+>>>> this text. I think the problem is really one of terminology. At the
+>>>> start of this passage in the page, there is the sentence:
+>>>>
+>>>> Every thread in a process must be in the
+>>>> same PID namespace.
+>>>>
+>>>> Can you define "thread" in this context?
+>>>
+>>> Most definitely a thread group created with CLONE_THREAD.  It is pretty
+>>> ugly in just the old fashioned CLONE_VM case too, but that might be
+>>> legal.
+>>>
+>>> In a few cases I think the implementation overshoots and test for VM
+>>> sharing instead of thread group membership because VM sharing is easier
+>>> to test for, and we already have tests for that.
+>>
+>> So, in summary, the point is that CLONE_VM is being used as a proxy
+>> for CLONE_THREAD because the former is easier to test for, and
+>> CLONE_THREAD requires CLONE_VM, right?
+>
+> I am totally lost about what we are problem we are trying to resolve in
+> the text at this point.  So I am taking this opportunity to review
+> what is actually happening and hopefully give a clear and useful
+> explanation.
+
+The problem is that the existing text talks about multithreaded
+processes needing to be in the same PID namespace and then jumps to
+talking about restrictions with CLONE_VM (not CLONE_THREAD). The
+reader may not realize know that CLONE_VM is a near synonym for
+"multithreaded process".
+
+However, the text you provide here is wonderful detail:
+
+> The clone flags have some dependencies.
+> CLONE_SIGHAND requires CLONE_VM.
+> CLONE_THREAD requires CLONE_SIGHAND.
+>
+> Ultimately there are cases in here that are too strange to think about,
+> and that no one cares (except so far to document what is going on).  The
+> fundamental goal of these checks it to just not allow the cases that
+> are too strange to think about.
+>
+> From a technical point of view CLONE_THREAD requires being in the same
+> PID namespace so you can send signals to other threads in your process,
+> and you need to see in proc all of the threads of your process.
+>
+> From a technical point of view CLONE_SIGHAND requries being in the same
+> PID namespace because we need to know how to encode the PID of the
+> sending process at the time a signal is enqueued in the destination
+> queue.  A signal queue shared by processes in multiple PID namespaces
+> will defeat that.
+>
+> From a technical point of view CLONE_VM requires all of the threads to
+> be in a PID namespace, because from the point of view of coredump code
+> if two processes share the same address space they are threads and will
+> be core dumped together.  When a coredump is written the pid of each
+> thread is written into the coredump.  Writing the pids could not
+> meaningfully succeed if some of the pids were in a parent PID namespace.
+>
+> Therefore there is a technical requirement for each of CLONE_THREAD,
+> CLONE_SIGHAND, CLONE_VM to share a PID namespace.
+>
+> In the code in the kernel testing only for CLONE_VM is a shorthand for
+> testing for any of CLONE_THREAD, CLONE_SIGHAND, or CLONE_VM.
+
+I will incorporate most of the above into the page.
+
+> On the flip side the addition by unshare(CLONE_NEWPID) of
+> unshare(CLONE_THREAD) actually appears to be bogus
+
+I agree that it seems strange.
+
+Cheers,
+
+Michael
+
+> because we do not
+> change the pid namespace of the process calling unshare (only it's
+> children), and we already allow that case with setns.  I need to think
+> about that case a little more but I am going to queue up a patch for
+> 3.10 to make unshare(CLONE_NEWPID) and setns(CLONE_NEWPID) consistent.
+> Probably by removing the check in unshare(CLONE_NEWPID).
+>
+> I need to think about a bit about what happens from the threaded parents
+> perspective when different threads can create children in different PID
+> namespaces. Does it introduce weird hard to support cases into the code?
+> Or will it just work without requiring anything special and I can allow
+> it.
+>
+> Eric
 
 
-Hi all,
 
-When I debug the file system, I get a problem as follows:
-
-Arch: arm (4 processors)
-Kernel version: 3.3.0
-
-   The "b_frozen_data" which is defined as a member of "struct
-journal_head" (linux/fs/jbd2/transaction.c Line 785),
-it's memory is allocated by "jbd2_alloc". When the memory size is
-larger than a PAGE SIZE, the memory is got by "
-__get_free_pages", otherwise, is got by "kmem_cache_alloc". The
-memory will be used by the "__blk_queue_bounce"(linux/mm/bounce.c).
-
-In this function, the program flow is:
-__blk_queue_bounce() -> flush_dcache_page() -> page_mapping() ->
-VM_BUG_ON(PageSlab(page))
-If the memory is got by "kmem_cache_alloc", it will trigger on a bug.
-
-Kernel panic:
-[   34.683049] ------------[ cut here ]------------
-[   34.687686] kernel BUG at include/linux/mm.h:791!
-[   34.692388] Internal error: Oops - BUG: 0 [#1] PREEMPT SMP
-[   34.697869] Modules linked in: screen_print(O) nand(O)
-[   34.703049] CPU: 1    Tainted: G           O  (3.3.0 #6)
-[   34.708370] PC is at flush_dcache_page+0x34/0xb0
-[   34.712992] LR is at blk_queue_bounce+0x16c/0x300
-[   34.717697] pc : [<c001677c>]    lr : [<c00bf0b0>]    psr: 20000013
-[   34.717703] sp : ee7a7d48  ip : ee7a7d60  fp : ee7a7d5c
-[   34.729176] r10: ee228804  r9 : ee228804  r8 : eea979c8
-[   34.734397] r7 : 00000000  r6 : ee228890  r5 : d5333840  r4 : 00000000
-[   34.740920] r3 : 00000001  r2 : fffffff5  r1 : 00000011  r0 : d5333840
-[   34.747446] Flags: nzCv  IRQs on  FIQs on  Mon  SVC_32  ISA ARM
-Segment kernel
-[   34.754749] Control: 10c53c7d  Table: 6e05806a  DAC: 00000015
-......
-[   35.726529] Backtrace:
-[   35.729000] [<c0016748>] (flush_dcache_page+0x0/0xb0) from
-[<c00bf0b0>] (blk_queue_bounce+0x16c/0x300)
-[   35.738297]  r5:ee7a7dac r4:ee2287c0
-[   35.741905] [<c00bef44>] (blk_queue_bounce+0x0/0x300) from
-[<c01fcc58>] (blk_queue_bio+0x28/0x2c0)
-[   35.750862] [<c01fcc30>] (blk_queue_bio+0x0/0x2c0) from [<c01fb1b8>]
-(generic_make_request+0x94/0xcc)
-[   35.760078] [<c01fb124>] (generic_make_request+0x0/0xcc) from
-[<c01fb2f0>] (submit_bio+0x100/0x124)
-[   35.769114]  r6:00000002 r5:eecb8f08 r4:ee228840
-[   35.773774] [<c01fb1f0>] (submit_bio+0x0/0x124) from [<c00e8e68>]
-(submit_bh+0x130/0x150)
-[   35.781942]  r8:00000009 r7:d60f6c5c r6:00000211 r5:eecb8f08 r4:ee228840
-[   35.788713] [<c00e8d38>] (submit_bh+0x0/0x150) from [<c014b024>]
-(jbd2_journal_commit_transaction+0x7d0/0x11cc)
-[   35.798790]  r6:ef253380 r5:eecb8f08 r4:eeac5800 r3:00000001
-[   35.804505] [<c014a854>] (jbd2_journal_commit_transaction+0x0/0x11cc)
-from [<c014e2a8>] (kjournald2+0xb4/0x248)
-[   35.814591] [<c014e1f4>] (kjournald2+0x0/0x248) from [<c006aa90>]
-(kthread+0x94/0xa0)
-[   35.822422] [<c006a9fc>] (kthread+0x0/0xa0) from [<c005472c>]
-(do_exit+0x0/0x6a4)
-[   35.829897]  r6:c005472c r5:c006a9fc r4:eea9bce0
-[   35.834556] Code: e5904004 e7e033d3 e3530000 0a000000 (e7f001f2)
-[   35.840733] ---[ end trace c2a29bf063d3670f ]---
-
-So, I modify the mm/bounce.c. Details are as follows:
-
-diff --git a/mm/bounce.c b/mm/bounce.c
-index 4e9ae72..e3f6b53 100644
---- a/mm/bounce.c
-+++ b/mm/bounce.c
-@@ -214,7 +214,8 @@ static void __blk_queue_bounce(struct request_queue
-*q, struct bio **bio_orig,
-                  if (rw == WRITE) {
-                          char *vto, *vfrom;
-
--                       flush_dcache_page(from->bv_page);
-+                       if (!PageSlab(from->bv_page))
-+ flush_dcache_page(from->bv_page);
-                          vto = page_address(to->bv_page) + to->bv_offset;
-                          vfrom = kmap(from->bv_page) + from->bv_offset;
-                          memcpy(vto, vfrom, to->bv_len);
-
-Who can give some suggestions to me.
-
-Thanks
-
-Shuge
-
-
-
-NOTICE: This e-mail and any included attachments are intended only for the sole use of named and intended recipient (s) only. If you are the named and intended recipient, please note that the information contained in this email and its embedded files are confidential and privileged. If you are neither the intended nor named recipient, you are hereby notified that any unauthorized review, use, disclosure, dissemination, distribution, or copying of this communication, or any of its contents, is strictly prohibited. Please reply to the sender and destroy the original message and all your records of this message (whether electronic or otherwise). Furthermore, you should not disclose to any other person, use, copy or disseminate the contents of this e-mail and/or the documents accompanying it.
+-- 
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Author of "The Linux Programming Interface"; http://man7.org/tlpi/
