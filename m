@@ -1,109 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758636Ab3CGBPE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 20:15:04 -0500
-Received: from mail-la0-f53.google.com ([209.85.215.53]:45681 "EHLO
-	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758526Ab3CGBPC (ORCPT
+	id S1758688Ab3CGBPd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 20:15:33 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44467 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753509Ab3CGBPb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 20:15:02 -0500
+	Wed, 6 Mar 2013 20:15:31 -0500
+Date: Wed, 6 Mar 2013 17:15:25 -0800
+From: Tyler Hicks <tyhicks@canonical.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        ecryptfs@vger.kernel.org
+Subject: [GIT PULL] eCryptfs fixes for 3.9-rc2
+Message-ID: <20130307011512.GA31643@boyd>
 MIME-Version: 1.0
-In-Reply-To: <20130306191408.GN1227@htj.dyndns.org>
-References: <CALZhoSR0+SzPLHzJafmny=o8PJ2d7MaH9N6_6s0QZ_oCQm43Xg@mail.gmail.com>
-	<20130305163228.GA12795@htj.dyndns.org>
-	<CALZhoSRyjRYVcKpq9cECHWgKkci6V+O_zn2CkiwqnFo57tZDfQ@mail.gmail.com>
-	<20130306191408.GN1227@htj.dyndns.org>
-Date: Thu, 7 Mar 2013 09:15:00 +0800
-Message-ID: <CALZhoSTPBNjhUP4R=vX0Ot7eAA8POTAy8K5Cd3KRe_y8PzjfFA@mail.gmail.com>
-Subject: Re: workqueue panic in 3.4 kernel
-From: Lei Wen <adrian.wenl@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, leiwen@marvell.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha512;
+	protocol="application/pgp-signature"; boundary="6TrnltStXW4iwmi0"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tejun,
 
-On Thu, Mar 7, 2013 at 3:14 AM, Tejun Heo <tj@kernel.org> wrote:
-> Hello, Lei.
->
-> On Wed, Mar 06, 2013 at 10:39:15PM +0800, Lei Wen wrote:
->> We find a race condition as below:
->> CPU0                                                                  CPU1
->> timer interrupt happen
->> __run_timers
->>    __run_timers::spin_lock_irq(&base->lock)
->>    __run_timers::spin_unlock_irq(&base->lock)
->>
->>    __cancel_work_timer
->>
->>    __cancel_work_timer::del_timer
->>
->>    __cancel_work_timer::wait_on_work
->>
->>    __cancel_work_timer::clear_work_data
->>    __run_timers::call_timer_fn(timer, fn, data);
->>          delayed_work_timer_fn::get_work_cwq
->>    __run_timers::spin_lock_irq(&base->lock)
->>
->> It is possible for __cancel_work_timer to be run over cpu1 __BEFORE__
->> cpu0 is ready to
->> run the timer callback, which is delayed_work_timer_fn in our case.
->
-> If del_timer() happens after the timer starts running, del_timer()
-> would return NULL and try_to_grab_pending() will be called which will
-> return >=0 iff if successfully steals the PENDING bit (ie. it's the
-> sole owner of the work item).  If del_timer() happens before the timer
-> starts running, the timer function would never run.
+--6TrnltStXW4iwmi0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-If del_timer() happen before __run_timers() is called, while timer irq
-already happen,
-would it return 1 for the timer is still not detached in __run_timers()?
-If it is possible, then we would call try_to_grab_pending(), so that
-work->data would
-be cleared in this way.
+Hi Linus,
 
->
-> clear_work_data() happens iff the work item is confirmed to be idle.
-> At this point, I'm pretty skeptical this is a bug in workqueue itself
-> and strongly suggest looking at the crashing workqueue user.
+The following changes since commit dfdebc24837ed0a1d6ad73b108a10d3c88d1b6e8:
 
-Also I am not very familiar with workqueue mechanism, how many place
-in kernel would
-clear the work->data beside the clear_work_data()?
+  Merge tag 'for-linus-v3.8-rc4' of git://oss.sgi.com/xfs/xfs (2013-01-16 16:19:54 -0800)
 
->From the memory, I cannot find any hint for work structure being destroyed.
-So the only possible seems to me is the work->data be set by someone on purpose.
+are available in the git repository at:
 
-crash> struct delayed_work 0xbf03d544 -x
-struct delayed_work {
-  work = {
-    data = {
-      counter = 0x300
-    },
-    entry = {
-      next = 0xbf03d548,
-      prev = 0xbf03d548
-    },
-    func = 0xbf014b00
-  },
-  timer = {
-    entry = {
-      next = 0x0,
-      prev = 0x200200
-    },
-    expires = 0x12b638b,
-    base = 0xc0844e01,
-    function = 0xc014c7a0 <delayed_work_timer_fn>,
-    data = 0xbf03d544,
-    slack = 0xffffffff,
-    start_pid = 0xffffffff,
-    start_site = 0x0,
-    start_comm = "\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000"
-  }
-}
 
-Thanks,
-Lei
+  git://git.kernel.org/pub/scm/linux/kernel/git/tyhicks/ecryptfs.git tags/ecryptfs-3.9-rc2-fixes
+
+for you to fetch changes up to 290502bee239062499297916bb7d21d205e99d62:
+
+  eCryptfs: allow userspace messaging to be disabled (2013-03-03 23:59:59 -0800)
+
+----------------------------------------------------------------
+Minor code cleanups and new Kconfig option to disable /dev/ecryptfs
+
+The code cleanups fix up W=1 compiler warnings and some unnecessary checks. The
+new Kconfig option, defaulting to N, allows the rarely used eCryptfs kernel to
+userspace communication channel to be compiled out. This may be the first step
+in it being eventually removed.
+
+----------------------------------------------------------------
+Dan Carpenter (1):
+      eCryptfs: remove unneeded checks in virt_to_scatterlist()
+
+Kees Cook (1):
+      eCryptfs: allow userspace messaging to be disabled
+
+Simon Que (1):
+      eCryptfs: initialize payload_len in keystore.c
+
+Tim Gardner (2):
+      eCryptfs: decrypt_pki_encrypted_session_key(): remove kfree() redundant null check
+      ecryptfs: ecryptfs_msg_ctx_alloc_to_free(): remove kfree() redundant null check
+
+Tyler Hicks (3):
+      eCryptfs: Fix -Wunused-but-set-variable warnings
+      eCryptfs: Fix -Wmissing-prototypes warnings
+      eCryptfs: Fix redundant error check on ecryptfs_find_daemon_by_euid()
+
+ fs/ecryptfs/Kconfig           |  8 ++++++++
+ fs/ecryptfs/Makefile          |  7 +++++--
+ fs/ecryptfs/crypto.c          |  9 +++------
+ fs/ecryptfs/dentry.c          |  2 --
+ fs/ecryptfs/ecryptfs_kernel.h | 40 ++++++++++++++++++++++++++++++++++++++--
+ fs/ecryptfs/file.c            |  2 --
+ fs/ecryptfs/inode.c           |  8 ++++----
+ fs/ecryptfs/keystore.c        |  9 ++++-----
+ fs/ecryptfs/messaging.c       |  5 ++---
+ include/linux/ecryptfs.h      | 12 ++----------
+ 10 files changed, 66 insertions(+), 36 deletions(-)
+
+--6TrnltStXW4iwmi0
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCgAGBQJRN+ogAAoJENaSAD2qAscKKw8P/j6pruD+23xSPAaGWe2iSY74
+HnXEknqtxFoOyY+9g4kmrjHxZh8wjOSGuZXV/HJyaFq+6bEIFYmXD/+NybTDDSeM
+jZ9luTjF4QOeV+hj89SWv8fuEt/435ceTdxs7VD6TlkU6Hn9Cg52yJFL/fTvElOi
+1N2jCWPIA2MhtH7JS3NxRELlcCHb14NXKSDKnVtXxBR3qW6KEnwS6XiNnxwMhtjY
+b7TA1VTDZe4zOJcHIp11h3FM6KIbGHqXrkkH1QD9FxW22GyJik4sQa2IsOAQ6vgz
+1IZVao/4qIqR4yhKXJE2BzSoYMtCwEDTLm5SPIegrMXqW0q+qqnXO18+LqsBd3hW
+EYZzbLBJ2vi+I7w4oR3H1L6xhTAHzShduO1lyLxOXPeENU39xoNMXzL0s7A15oU0
+LcvXtoLCBano6bNhbvFgXqC+i5tBYpByq7iYvYlCBjoOyFcsbLTgIZLyMu2KEvRM
+7mDdLL74Rx5lYdZmboO8S9HHdkXEMuxP0C2+y12meuPQXJRnyjWbICGe42NLKPa7
+et3qnqCPGO2O/Pfx3SSVH8/B6dEaY9Bq6ZUOTZMTd0+ovclll14Sr6ipWVqjI2wC
+kwBI0ST3o5plv/HSrMa9WBpnytnO5PceTGLbSVHpl2ViHtbtEftXHbqZRIZF7BEm
+6l+1M5gzUkoSLTUgk1YD
+=sWpn
+-----END PGP SIGNATURE-----
+
+--6TrnltStXW4iwmi0--
