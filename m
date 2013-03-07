@@ -1,72 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757476Ab3CGMHO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 07:07:14 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:34746 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751154Ab3CGMHN (ORCPT
+	id S1757646Ab3CGMHc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 07:07:32 -0500
+Received: from mail-lb0-f169.google.com ([209.85.217.169]:57429 "EHLO
+	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751104Ab3CGMHb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 07:07:13 -0500
-X-IronPort-AV: E=Sophos;i="4.84,800,1355097600"; 
-   d="scan'208";a="11166410"
-Message-ID: <513882ED.8040208@citrix.com>
-Date: Thu, 7 Mar 2013 12:07:09 +0000
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120428 Iceowl/1.0b1 Icedove/3.0.11
+	Thu, 7 Mar 2013 07:07:31 -0500
 MIME-Version: 1.0
-To: Daniel Kiper <daniel.kiper@oracle.com>
-CC: "carsten@schiers.de" <carsten@schiers.de>,
-        "darren.s.shepherd@gmail.com" <darren.s.shepherd@gmail.com>,
-        "james-xen@dingwall.me.uk" <james-xen@dingwall.me.uk>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
-Subject: Re: [PATCH 1/1] xen/balloon: Enforce various limits on target
-References: <1362431691-5167-1-git-send-email-daniel.kiper@oracle.com> <513722DF.6010204@citrix.com> <20130306164744.GB11217@debian70-amd64.local.net-space.pl> <5137825C.4030805@citrix.com> <20130307112854.GC11217@debian70-amd64.local.net-space.pl>
-In-Reply-To: <20130307112854.GC11217@debian70-amd64.local.net-space.pl>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.76]
+In-Reply-To: <CAGN68GqERhAFbwyBNazDLo4AL_skD6xudwJ=s4t2Y-7c7a1_Gg@mail.gmail.com>
+References: <CAGN68GqERhAFbwyBNazDLo4AL_skD6xudwJ=s4t2Y-7c7a1_Gg@mail.gmail.com>
+Date: Thu, 7 Mar 2013 13:07:29 +0100
+Message-ID: <CACTFLAN_A1k8bA4GWopztCe0sQ6uAE8=iSn2EA2sgaAFi=8-7A@mail.gmail.com>
+Subject: Re: Patches
+From: Daniel Mack <zonque@gmail.com>
+To: Miles Rout <miles.rout@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/03/13 11:28, Daniel Kiper wrote:
-> On Wed, Mar 06, 2013 at 05:52:28PM +0000, David Vrabel wrote:
->
->> If you set the target above d->max_pages you won't be able to populate them.
->>
->> So, using the maximum_reservation call seems like the right thing to me.
-> 
-> Please look above. If you use this value you would not
-> be able to increase reservation.
+Hi Miles,
 
-I don't think I'm understanding the use case you're talking about.
+On Thu, Mar 7, 2013 at 11:02 AM, Miles Rout <miles.rout@gmail.com> wrote:
+> I'm probably stepping on some toes here, but is it really necessary to
+> post raw patches to this list? They do rather clog up one's inbox.
 
-Do you mean we should allow a target <= d->tot_pages even if this is
-above d->max_pages?  I agree with this.
+It depends what your patches are for. If you're working on a specific
+subsystem, it might also suffice sending the patches to the appropriate
+mailing list for that subsystem.
 
-Something like this:
+Just make sure to always Cc: the maintainers of the bits you're patching,
+and check the file MAINTAINERS in your Linux tree. Also read up
+Documentation/SubmittingPatches for general information.
 
-void balloon_set_new_target(unsigned long target)
-{
-	domid_t domid = DOMID_SELF;
-	int rc;
-	unsigned long host_limit;
+> What's wrong with git?
 
-	target = min(target, MAX_DOMAIN_PAGES);
+Nothing's wrong with git. It's just that sending patches to a mailing list makes
+it easier for people to comment on them.
 
-	/* Prevent target from attempting the expand the reservation
-	   above the max enforced by the hypervisor. */
-	rc = HYPERVISOR_memory_op(XENMEM_maximum_reservation, &domid);
-	if (rc > 0) {
-		host_limit = rc;
-		target = min(target,
-			max(host_limit, balloon_stats.current_pages));
-	}
 
-	balloon_stats.target_pages = target;
-	schedule_delayed_work(&balloon_worker, 0);
-}
-
-David
+Daniel
