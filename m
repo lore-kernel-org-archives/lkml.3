@@ -1,68 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933311Ab3CGUsT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 15:48:19 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:36603 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751200Ab3CGUsS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 15:48:18 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
-        Jeff Layton <jlayton@redhat.com>, Tejun Heo <tj@kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Mandeep Singh Baines <msb@chromium.org>,
-        Ming Lei <ming.lei@canonical.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: LOCKDEP: 3.9-rc1: mount.nfs/4272 still has locks held!
-Date: Thu, 07 Mar 2013 21:55:13 +0100
-Message-ID: <1666707.98SRJWcGQW@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.9.0-rc1+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <CA+55aFySyBP8q5AvPrt-s_ZPdgamfoX-dERw4EJ21EcsDLBjYA@mail.gmail.com>
-References: <20130305174954.GG12795@htj.dyndns.org> <4FA345DA4F4AE44899BD2B03EEEC2FA9286B511E@sacexcmbx05-prd.hq.netapp.com> <CA+55aFySyBP8q5AvPrt-s_ZPdgamfoX-dERw4EJ21EcsDLBjYA@mail.gmail.com>
+	id S1759336Ab3CGUu7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 15:50:59 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:56782 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751292Ab3CGUu6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Mar 2013 15:50:58 -0500
+Message-ID: <5138FDAE.8060202@wwwdotorg.org>
+Date: Thu, 07 Mar 2013 13:50:54 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Pavel Machek <pavel@ucw.cz>, grant.likely@secretlab.ca
+CC: kernel list <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, linux@arm.linux.org.uk,
+        arnd@arndb.de, olof@lixom.net, linux-arm-kernel@lists.infradead.org,
+        rob.herring@calxeda.com, torvalds@linux-foundation.org
+Subject: Re: 3.9-rc1 regression in arm dtb build
+References: <20130306193332.GA6022@amd.pavel.ucw.cz> <5137C404.9060902@wwwdotorg.org> <20130307144506.GB7344@amd.pavel.ucw.cz>
+In-Reply-To: <20130307144506.GB7344@amd.pavel.ucw.cz>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, March 07, 2013 08:25:10 AM Linus Torvalds wrote:
-> On Thu, Mar 7, 2013 at 7:59 AM, Myklebust, Trond
-> <Trond.Myklebust@netapp.com> wrote:
-> >
-> > It _shouldn't_ be an interruption unless the filesystem can't make
-> > progress.
+On 03/07/2013 07:45 AM, Pavel Machek wrote:
+> Hi!
+>>> commit 499cd8298628eeabf0eb5eb6525d4faa0eec80d8
+>>> Author: Grant Likely <grant.likely@secretlab.ca>
+>>> Date:   Tue Nov 27 16:29:11 2012 -0700
+> ...
+>>> 1) it is inconsistent with 3.8, making switching between 3.9-rc1 and
+>>> 3.8 tricky
+>>
+>> It's pretty easy to locate the DTB by automatically looking in
+>> arch/*/boot/dts first, then if the file doesn't exist there, looking in
+>> arch/*/boot instead as a legacy fallback.
 > 
-> So how can we tell? Calling "freezable_schedule()" if you're not ready
-> to be frozen is not good. And nobody but the NFS code can know.
-> 
-> You might want to introduce some counter that counts number of
-> outstanding non-interruptible events, and only call the "freezable"
-> version if that counter is zero.
-> 
-> A better alternative might be to *never* call the freezable version.
-> Because those freezable_*() things are really quite disgusting, and
-> are wrong - they don't actually freeze the process, they say "I don't
-> care if you freeze me while I sleep", and you might actually wake up
-> *while* the system is being frozen. I think the whole concept is
-> broken. Rafaei - comments?
+> Unfortunately, that does not work. See 2) below. Stale files even
+> survive "make clean".
 
-Well, the only comment I have is that the source of these functions was
-commit d310310c (Freezer / sunrpc / NFS: don't allow TASK_KILLABLE sleeps to
-block the freezer) and they were added because people were complaining that
-they couldn't suspend while their NFS servers were not responding, IIRC.
+Oh right. I guess it works fine when having built 3.7 and then building
+3.8, since you'd look in the new location first and only fall back to
+the old location if missing. However, if you then switch back to 3.7 to
+test something, I guess that doesn't work so well.
 
-I agree that they are not really nice.
+I tend to always build the dtbs target, so I wasn't affected by this.
+And, often run "git clean -f -d -x" too.
 
-Thanks,
-Rafael
-
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Grant, what's your call on this issue; should I/you look into ways to
+clean the files better, or do you want to revert this?
