@@ -1,51 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755546Ab3CGJct (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 04:32:49 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:56496 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754114Ab3CGJcs (ORCPT
+	id S932346Ab3CGJez (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 04:34:55 -0500
+Received: from smtp-out-223.synserver.de ([212.40.185.223]:1053 "EHLO
+	smtp-out-220.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755226Ab3CGJew (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 04:32:48 -0500
-Date: Thu, 7 Mar 2013 09:32:02 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Kukjin Kim <kgene.kim@samsung.com>
-Cc: "'Paul Bolle'" <pebolle@tiscali.nl>, "'Ben Dooks'" <ben-linux@fluff.org>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: S3C24XX: drop "select MACH_N35"
-Message-ID: <20130307093202.GC17833@n2100.arm.linux.org.uk>
-References: <1362609234.28137.2.camel@x61.thuisdomein> <013a01ce1ac7$11b287d0$35179770$%kim@samsung.com> <1362615081.28137.5.camel@x61.thuisdomein> <014601ce1acd$bc63d480$352b7d80$%kim@samsung.com> <20130307005206.GZ17833@n2100.arm.linux.org.uk> <015001ce1ad1$185e66d0$491b3470$%kim@samsung.com>
+	Thu, 7 Mar 2013 04:34:52 -0500
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 17103
+Message-ID: <51385FA3.8080105@metafoo.de>
+Date: Thu, 07 Mar 2013 10:36:35 +0100
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <015001ce1ad1$185e66d0$491b3470$%kim@samsung.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: =?UTF-8?B?U8O2cmVuIEJyaW5rbWFubg==?= <soren.brinkmann@xilinx.com>
+CC: =?UTF-8?B?SmFuIEzDvGJiZQ==?= <jlu@pengutronix.de>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Mike Turquette <mturquette@linaro.org>,
+        Josh Cartwright <josh.cartwright@ni.com>,
+        Michal Simek <michal.simek@xilinx.com>,
+        Peter Crosthwaite <pcrost@xilinx.com>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, git@xilinx.com
+Subject: Re: RFC: Zynq Clock Controller
+References: <37032699-343e-485c-80e0-9b23e3706c58@VA3EHSMHS013.ehs.local> <1362570681.5269.98.camel@coredoba.hi.pengutronix.de> <f288874c-d0ae-4581-8d0f-2b9abe4d3117@CO9EHSMHS002.ehs.local>
+In-Reply-To: <f288874c-d0ae-4581-8d0f-2b9abe4d3117@CO9EHSMHS002.ehs.local>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 07, 2013 at 10:14:19AM +0900, Kukjin Kim wrote:
-> Russell King - ARM Linux wrote:
-> > And deleting entries from it is pointless if they've ever been in the
-> > kernel.
+On 03/06/2013 06:27 PM, Sören Brinkmann wrote:
+> Hi Jan,
+>  
+> what a small world. Good to hear from you.
 > 
-> OK, I see and agree.
+> On Wed, Mar 06, 2013 at 12:51:21PM +0100, Jan Lübbe wrote:
+>> Hi Sören,
+>>
+>> On Tue, 2013-03-05 at 12:04 -0800, Sören Brinkmann wrote:
+>>> For this reasons, I'd like to propose moving Zynq into the same
+>>> direction. I.e. adding a clock controller with the following DT
+>>> description (details may change but the general idea should become
+>>> clear):
+>>> 	clkc: clkc {
+>>>                 #clock-cells = <1>;
+>>>                 compatible = "xlnx,ps7-clkc";
+>>>                 ps_clk_frequency = <33333333>;	# board x-tal
+>>>                 # optional props
+>>>                 gem0_emio_clk_freq = <125000000>;
+>>>                 gem1_emio_clk_freq = <50000000>;
+>>>                 can_mio_clk_freq_xx = <1234>; # this is possible 54 times with xx = 00..53
+>>>         };
 
-The issue is that the database system "locks" an entry into the file as
-soon as support is merged into mainline for the platform.  The reason
-for this is that as soon as the support gets merged into a kernel verison,
-that symbol is then referenced.
+I definitely prefer the way it is right now in upstream, where we have one
+dt node per clock. It is more descriptive and also more extensible. And you
+also don't have to remember the clock index, and can use the phandle
+directly instead.
 
-If anyone goes to the website to download a new copy of the file, it then
-must continue to contain that symbol because they may be using the file
-with any kernel version - maybe a version of the kernel with your platform
-support in - and maybe they're using something that references the
-generated ID/macros from your entry.
+>>
+>> The clock controller should only contain properties for input frequency
+>> (which can obviously not be calculated at run-time).
+>>
+>> Are the gem*, can* properties inputs? If they are actually outputs, the
+>> corresponding frequencies should be requested by the clock consumers and
+>> not hard-coded in DT.
+> They are inputs. GEM and CAN have the option to be clocked through (E)MIO pins, i.e. some external clock input which cannot be derived from ps_clk like all other clocks. I plan to register a fixed rate, root clock for each of those properties, if present.
 
-Updates to the file in the mainline kernel are merely re-downloads of the
-file from the website and committed.
+If it is a static external input clock use a "fixed-clock" dt node to
+describe it. This also has the advantage that is is also possible to use a
+non-static clock.
 
-So, deleting entries once used in mainline is extremely problematical.  If
-someone commits such a patch, my next update from the website/database to
-the file will put it back.  Hence the problem.
+- Lars
