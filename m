@@ -1,56 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753598Ab3CGHVf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 02:21:35 -0500
-Received: from mail-lb0-f179.google.com ([209.85.217.179]:60682 "EHLO
-	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753052Ab3CGHVe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 02:21:34 -0500
-Subject: [PATCH linux-next] procfs: fix rcu-lock/unlock in proc_reg_open() and
- proc_reg_release()
-To: linux-kernel@vger.kernel.org
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Nathan Zimmer <nzimmer@sgi.com>
-Date: Thu, 07 Mar 2013 11:21:29 +0400
-Message-ID: <20130307072129.17719.81530.stgit@zurg>
-User-Agent: StGit/0.15
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	id S1753533Ab3CGHdl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 02:33:41 -0500
+Received: from mga02.intel.com ([134.134.136.20]:34677 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752222Ab3CGHdk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Mar 2013 02:33:40 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,800,1355126400"; 
+   d="scan'208";a="295523508"
+Subject: [PATCH] intel_idle: set the state_tables array into __initdata to
+ save mem
+From: Chuansheng Liu <chuansheng.liu@intel.com>
+To: lenb@kernel.org, len.brown@intel.com
+Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        chuansheng.liu@intel.com
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 08 Mar 2013 00:42:09 +0800
+Message-ID: <1362674529.31506.17.camel@cliu38-desktop-build>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-fix for a21813be23329e2788164eab532e79cb0e513cfc (linux-next)
-"procfs: improve scaling in proc"
 
-Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: Nathan Zimmer <nzimmer@sgi.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
+Currently, in intel_idle.c, there are 5 state_tables array, every
+array size is sizeof(struct cpuidle_state) * CPUIDLE_STATE_MAX.
+
+But after intel_idle_probe(), just only one array is useful.
+
+Here we can just define one static state_table, and initialize it
+in intel_idle_probe(), and set other data state_tables as __initdata.
+
+It can save about 3K, which also benefits mobile devices.
+
+Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
 ---
- fs/proc/inode.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/idle/intel_idle.c |   19 ++++++++++++-------
+ 1 files changed, 12 insertions(+), 7 deletions(-)
 
-diff --git a/fs/proc/inode.c b/fs/proc/inode.c
-index 6cccc4d..073846c 100644
---- a/fs/proc/inode.c
-+++ b/fs/proc/inode.c
-@@ -352,7 +352,7 @@ static int proc_reg_open(struct inode *inode, struct file *file)
- 	atomic_inc(&pde->pde_users);
- 	open = fops->open;
- 	release = fops->release;
--	rcu_read_lock();
-+	rcu_read_unlock();
+diff --git a/drivers/idle/intel_idle.c b/drivers/idle/intel_idle.c
+index 5d66750..0642bfe 100644
+--- a/drivers/idle/intel_idle.c
++++ b/drivers/idle/intel_idle.c
+@@ -99,7 +99,7 @@ static int intel_idle(struct cpuidle_device *dev,
+ 			struct cpuidle_driver *drv, int index);
+ static int intel_idle_cpu_init(int cpu);
  
- 	if (open)
- 		rv = open(inode, file);
-@@ -400,6 +400,7 @@ static int proc_reg_release(struct inode *inode, struct file *file)
- 	rcu_read_lock();
- 	fops = rcu_dereference(pde->proc_fops);
- 	if (!fops) {
-+		rcu_read_unlock();
- 		/*
- 		 * Can't simply exit, __fput() will think that everything is OK,
- 		 * and move on to freeing struct file. remove_proc_entry() will
+-static struct cpuidle_state *cpuidle_state_table;
++static struct cpuidle_state cpuidle_state_table[CPUIDLE_STATE_MAX];
+ 
+ /*
+  * Set this flag for states where the HW flushes the TLB for us
+@@ -124,7 +124,7 @@ static struct cpuidle_state *cpuidle_state_table;
+  * which is also the index into the MWAIT hint array.
+  * Thus C0 is a dummy.
+  */
+-static struct cpuidle_state nehalem_cstates[CPUIDLE_STATE_MAX] = {
++static struct cpuidle_state nehalem_cstates[CPUIDLE_STATE_MAX] __initdata = {
+ 	{
+ 		.name = "C1-NHM",
+ 		.desc = "MWAIT 0x00",
+@@ -157,7 +157,7 @@ static struct cpuidle_state nehalem_cstates[CPUIDLE_STATE_MAX] = {
+ 		.enter = NULL }
+ };
+ 
+-static struct cpuidle_state snb_cstates[CPUIDLE_STATE_MAX] = {
++static struct cpuidle_state snb_cstates[CPUIDLE_STATE_MAX] __initdata = {
+ 	{
+ 		.name = "C1-SNB",
+ 		.desc = "MWAIT 0x00",
+@@ -197,7 +197,7 @@ static struct cpuidle_state snb_cstates[CPUIDLE_STATE_MAX] = {
+ 		.enter = NULL }
+ };
+ 
+-static struct cpuidle_state ivb_cstates[CPUIDLE_STATE_MAX] = {
++static struct cpuidle_state ivb_cstates[CPUIDLE_STATE_MAX] __initdata = {
+ 	{
+ 		.name = "C1-IVB",
+ 		.desc = "MWAIT 0x00",
+@@ -237,7 +237,7 @@ static struct cpuidle_state ivb_cstates[CPUIDLE_STATE_MAX] = {
+ 		.enter = NULL }
+ };
+ 
+-static struct cpuidle_state hsw_cstates[CPUIDLE_STATE_MAX] = {
++static struct cpuidle_state hsw_cstates[CPUIDLE_STATE_MAX] __initdata = {
+ 	{
+ 		.name = "C1-HSW",
+ 		.desc = "MWAIT 0x00",
+@@ -277,7 +277,7 @@ static struct cpuidle_state hsw_cstates[CPUIDLE_STATE_MAX] = {
+ 		.enter = NULL }
+ };
+ 
+-static struct cpuidle_state atom_cstates[CPUIDLE_STATE_MAX] = {
++static struct cpuidle_state atom_cstates[CPUIDLE_STATE_MAX] __initdata = {
+ 	{
+ 		.name = "C1E-ATM",
+ 		.desc = "MWAIT 0x00",
+@@ -504,7 +504,12 @@ static int intel_idle_probe(void)
+ 	pr_debug(PREFIX "MWAIT substates: 0x%x\n", mwait_substates);
+ 
+ 	icpu = (const struct idle_cpu *)id->driver_data;
+-	cpuidle_state_table = icpu->state_table;
++	/* Copy the icpu->state_table into cpuidle_state_table,
++	 * The pointing array by icpu->state_table is with __initdata,
++	 * which will be freed after kernel init ending.
++	 */
++	memcpy(cpuidle_state_table, icpu->state_table,
++			sizeof(cpuidle_state_table));
+ 
+ 	if (boot_cpu_has(X86_FEATURE_ARAT))	/* Always Reliable APIC Timer */
+ 		lapic_timer_reliable_states = LAPIC_TIMER_ALWAYS_RELIABLE;
+-- 
+1.7.0.4
+
+
 
