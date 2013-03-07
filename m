@@ -1,118 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932717Ab3CGLmH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 06:42:07 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:23293 "EHLO mx1.redhat.com"
+	id S932713Ab3CGLp6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 06:45:58 -0500
+Received: from multi.imgtec.com ([194.200.65.239]:27822 "EHLO multi.imgtec.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932455Ab3CGLmF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 06:42:05 -0500
-Date: Thu, 7 Mar 2013 06:41:40 -0500
-From: Jeff Layton <jlayton@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
-        Mandeep Singh Baines <msb@chromium.org>,
-        Ming Lei <ming.lei@canonical.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: LOCKDEP: 3.9-rc1: mount.nfs/4272 still has locks held!
-Message-ID: <20130307064140.71c0936b@tlielax.poochiereds.net>
-In-Reply-To: <20130306213636.GP1227@htj.dyndns.org>
-References: <20130305174954.GG12795@htj.dyndns.org>
-	<20130305140312.243cb094@tlielax.poochiereds.net>
-	<20130305190923.GI12795@htj.dyndns.org>
-	<20130305183941.19ff39ce@tlielax.poochiereds.net>
-	<20130305234700.GE1227@htj.dyndns.org>
-	<20130306181608.GA18687@redhat.com>
-	<20130306185304.GM1227@htj.dyndns.org>
-	<CA+55aFwDogteVd=vwGHXDSASnga-nZZnKaQz9aO1yBU2CPKSbA@mail.gmail.com>
-	<20130306212452.GO1227@htj.dyndns.org>
-	<CA+55aFy49AWptMcvEzJxg95ikf-dC+-vcCPq-cnaCCwje3tyoQ@mail.gmail.com>
-	<20130306213636.GP1227@htj.dyndns.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756704Ab3CGLp4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Mar 2013 06:45:56 -0500
+From: James Hogan <james.hogan@imgtec.com>
+To: Al Viro <viro@zeniv.linux.org.uk>
+CC: Michal Marek <mmarek@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        Guenter Roeck <linux@roeck-us.net>, Jean Delvare <khali@linux-fr.org>,
+        Rusty Russell <rusty@rustcorp.com.au>, <linux-kbuild@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Mike Frysinger <vapier@gentoo.org>,
+        <uclinux-dist-devel@blackfin.uclinux.org>,
+        <linux-next@vger.kernel.org>, James Hogan <james.hogan@imgtec.com>
+Subject: [RFC -next] linux/linkage.h: fix symbol prefix handling
+Date: Thu, 7 Mar 2013 11:44:02 +0000
+Message-ID: <1362656642-2693-1-git-send-email-james.hogan@imgtec.com>
+X-Mailer: git-send-email 1.8.1.2
+MIME-Version: 1.0
+Content-Type: text/plain
+X-SEF-Processed: 7_3_0_01181__2013_03_07_11_45_47
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 6 Mar 2013 13:36:36 -0800
-Tejun Heo <tj@kernel.org> wrote:
+The commit "consolidate cond_syscall and SYSCALL_ALIAS declarations"
+broke the build on blackfin and metag due to the following code:
 
-> On Wed, Mar 06, 2013 at 01:31:10PM -0800, Linus Torvalds wrote:
-> > So I do agree that we probably have *too* many of the stupid "let's
-> > check if we can freeze", and I suspect that the NFS code should get
-> > rid of the "freezable_schedule()" that is causing this warning
-> > (because I also agree that you should *not* freeze while holding
-> > locks, because it really can cause deadlocks), but I do suspect that
-> > network filesystems do need to have a few places where they check for
-> > freezing on their own... Exactly because freezing isn't *quite* like a
-> > signal.
-> 
-> Well, I don't really know much about nfs so I can't really tell, but
-> for most other cases, dealing with freezing like a signal should work
-> fine from what I've seen although I can't be sure before actually
-> trying.  Trond, Bruce, can you guys please chime in?
-> 
-> Thanks.
-> 
+  #ifndef SYMBOL_NAME
+  #ifdef CONFIG_SYMBOL_PREFIX
+  #define SYMBOL_NAME(x) CONFIG_SYMBOL_PREFIX ## x
+  #else
+  #define SYMBOL_NAME(x) x
+  #endif
+  #endif
+  #define __SYMBOL_NAME(x) __stringify(SYMBOL_NAME(x))
 
-(hopefully this isn't tl;dr)
+__stringify literally stringifies CONFIG_SYMBOL_PREFIX ##x, so you get
+lines like this in the assembly output:
 
-It's not quite that simple...
+  .weak CONFIG_SYMBOL_PREFIXsys_quotactl
+  .set
+  CONFIG_SYMBOL_PREFIXsys_quotactl,CONFIG_SYMBOL_PREFIXsys_ni_syscall
 
-The problem (as Trond already mentioned) is non-idempotent operations.
-You can't just restart certain operations from scratch once you reach a
-certain point. Here's an example:
+This is fixed by defining SYMBOL_PREFIX from the command line for c
+files in addition to assembly for architectures that set
+CONFIG_SYMBOL_PREFIX (scripts/Makefile.lib), and defining __SYMBOL_NAME
+as:
 
-Suppose I call unlink("somefile"); on an NFS mount. We take all of the
-VFS locks, go down into the NFS layer. That marshals up the UNLINK
-call, sends it off to the server, and waits for the reply. While we're
-waiting, a freeze event comes in and we start returning from the
-kernel with our new -EFREEZE return code that works sort of like
--ERESTARTSYS. Meanwhile, the server is processing the UNLINK call and
-removes the file. A little while later we wake up the machine and it
-goes to try and pick up where it left off.
+  #define __SYMBOL_NAME(x) __stringify(SYMBOL_PREFIX) #x
 
-What do we do now?
+We first have to ensure SYMBOL_PREFIX is defined (which avoids polluting
+the command lines for architectures that don't use symbol prefixes).
+Also the definition of SYMBOL_PREFIX in <linux/kernel.h> is removed as
+it conflicts, isn't used anywhere, and is defined as a string so differs
+from the assembly definition.
 
-Suppose we pretend we never sent the call in the first place, marshal
-up a new RPC and send it again. This is problematic -- the server will
-probably send back the equivalent of ENOENT. How do we know whether the
-file never existed in the first place, or whether the server processed
-the original call and removed the file then?
+Signed-off-by: James Hogan <james.hogan@imgtec.com>
+---
+This is just one possible way of fixing it. It felt the cleanest out of
+the ways I tried, but feel free to suggest something better!
 
-Do we instead try and keep track of whether the RPC has been sent and
-just wait for the reply on the original call? That's tricky too -- it
-means adding an extra codepath to check for these sorts of restarts in
-a bunch of different ops vectors into the filesystem. We also have to
-somehow keep track of this state too (I guess by hanging something off
-the task_struct).
+ include/linux/kernel.h  |  7 -------
+ include/linux/linkage.h | 12 +++++-------
+ scripts/Makefile.lib    |  1 +
+ 3 files changed, 6 insertions(+), 14 deletions(-)
 
-Note too that the above is the simple case. We're dropping the parent's
-i_mutex during the freeze. Suppose when we restart the call that the
-parent directory has changed in such a way that the original lookup we
-did to do the original RPC is no longer valid?
-
-I think Trond may be on the right track. We probably need some
-mechanism to quiesce the filesystem ahead of any sort of freezer
-event. That quiesce could simply wait on any in flight RPCs to come
-back, and not allow any new ones to go out. On syscalls where the RPC
-didn't go out, we'd just return -EFREEZE or whatever and let the upper
-layers restart the call after waking back up. Writeback would be
-tricky, but that can be handled too.
-
-The catch here is that it's quite possible that when we need to quiesce
-that we've lost communications with the server. We don't want to hold
-up the freezer at that point so the wait for replies has to be bounded
-in time somehow. If that times out, we probably just have to return all
-calls with our new -EFREEZE return and hope for the best when the
-machine wakes back up.
-
+diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+index 80d3687..e13e992 100644
+--- a/include/linux/kernel.h
++++ b/include/linux/kernel.h
+@@ -723,13 +723,6 @@ static inline void ftrace_dump(enum ftrace_dump_mode oops_dump_mode) { }
+ /* Trap pasters of __FUNCTION__ at compile-time */
+ #define __FUNCTION__ (__func__)
+ 
+-/* This helps us to avoid #ifdef CONFIG_SYMBOL_PREFIX */
+-#ifdef CONFIG_SYMBOL_PREFIX
+-#define SYMBOL_PREFIX CONFIG_SYMBOL_PREFIX
+-#else
+-#define SYMBOL_PREFIX ""
+-#endif
+-
+ /* Rebuild everything on CONFIG_FTRACE_MCOUNT_RECORD */
+ #ifdef CONFIG_FTRACE_MCOUNT_RECORD
+ # define REBUILD_DUE_TO_FTRACE_MCOUNT_RECORD
+diff --git a/include/linux/linkage.h b/include/linux/linkage.h
+index 829d66c..acb869b 100644
+--- a/include/linux/linkage.h
++++ b/include/linux/linkage.h
+@@ -15,14 +15,12 @@
+ #define asmlinkage CPP_ASMLINKAGE
+ #endif
+ 
+-#ifndef SYMBOL_NAME
+-#ifdef CONFIG_SYMBOL_PREFIX
+-#define SYMBOL_NAME(x) CONFIG_SYMBOL_PREFIX ## x
+-#else
+-#define SYMBOL_NAME(x) x
+-#endif
++/* This helps us to avoid #ifdef SYMBOL_PREFIX */
++#ifndef SYMBOL_PREFIX
++#define SYMBOL_PREFIX
+ #endif
+-#define __SYMBOL_NAME(x) __stringify(SYMBOL_NAME(x))
++
++#define __SYMBOL_NAME(x) __stringify(SYMBOL_PREFIX) #x
+ 
+ #ifndef cond_syscall
+ #define cond_syscall(x) asm(".weak\t" __SYMBOL_NAME(x) \
+diff --git a/scripts/Makefile.lib b/scripts/Makefile.lib
+index 07125e6..f1cce6a 100644
+--- a/scripts/Makefile.lib
++++ b/scripts/Makefile.lib
+@@ -123,6 +123,7 @@ ifdef CONFIG_SYMBOL_PREFIX
+ _sym_flags = -DSYMBOL_PREFIX=$(patsubst "%",%,$(CONFIG_SYMBOL_PREFIX))
+ _cpp_flags += $(_sym_flags)
+ _a_flags += $(_sym_flags)
++_c_flags += $(_sym_flags)
+ endif
+ 
+ 
 -- 
-Jeff Layton <jlayton@redhat.com>
+1.8.1.2
+
+
