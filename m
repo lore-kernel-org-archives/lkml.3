@@ -1,85 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755422Ab3CGJO2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 04:14:28 -0500
-Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:39321 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754404Ab3CGJOZ convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 04:14:25 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -3
-X-BigFish: VS-3(zz98dI9371I542I1432Izz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ahzzz2dh2a8h668h839h8e2h8e3h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1ad9h1b0ahbe9i1155h)
-From: Sethi Varun-B16395 <B16395@freescale.com>
-To: Joerg Roedel <joro@8bytes.org>
-CC: Stuart Yoder <b08248@gmail.com>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Wood Scott-B07421 <B07421@freescale.com>,
-        Yoder Stuart-B08248 <B08248@freescale.com>,
-        Kumar Gala <galak@kernel.crashing.org>
-Subject: RE: [PATCH 2/6] powerpc/fsl_pci: Store the platform device
- information corresponding to the pci controller.
-Thread-Topic: [PATCH 2/6] powerpc/fsl_pci: Store the platform device
- information corresponding to the pci controller.
-Thread-Index: AQHODdfJlEhE0nyIf0aqdKEpYTrUTpiLT0kAgABlsACAAd5YgIAAAghwgAHkLgCACpAcsA==
-Date: Thu, 7 Mar 2013 09:14:21 +0000
-Message-ID: <C5ECD7A89D1DC44195F34B25E172658D3E74C7@039-SN2MPN1-013.039d.mgd.msft.net>
-References: <1361191939-21260-1-git-send-email-Varun.Sethi@freescale.com>
- <1361191939-21260-3-git-send-email-Varun.Sethi@freescale.com>
- <CALRxmdDc9TuxH7HgAF3_iLgatoaOUML6fUt8SU+sxHyz6ZVjfw@mail.gmail.com>
- <C5ECD7A89D1DC44195F34B25E172658D3BD338@039-SN2MPN1-013.039d.mgd.msft.net>
- <20130227104505.GE26252@8bytes.org>
- <C5ECD7A89D1DC44195F34B25E172658D3C24A9@039-SN2MPN1-013.039d.mgd.msft.net>
- <D109CC7C-09D2-41E6-82BF-376692C390CA@kernel.crashing.org>
-In-Reply-To: <D109CC7C-09D2-41E6-82BF-376692C390CA@kernel.crashing.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.232.133.65]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S932294Ab3CGJOi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 04:14:38 -0500
+Received: from eu1sys200aog113.obsmtp.com ([207.126.144.135]:39330 "EHLO
+	eu1sys200aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754404Ab3CGJOc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Mar 2013 04:14:32 -0500
+Message-ID: <513854BE.5000700@st.com>
+Date: Thu, 07 Mar 2013 09:50:06 +0100
+From: Giuseppe CAVALLARO <peppe.cavallaro@st.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+To: Byungho An <bh74.an@samsung.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, davem@davemloft.net,
+        jeffrey.t.kirsher@intel.com, kgene.kim@samsung.com, cpgs@samsung.com
+Subject: Re: [PATCH net-next 1/3] net: stmmac: add gmac autoneg set for SGMII,
+ TBI, and RTBI
+References: <00c001cdf369$9b25bdf0$d17139d0$@samsung.com> <50F6568D.3060703@st.com> <01e201cdf5a3$1f3e1890$5dba49b0$@samsung.com> <50FFB094.5000100@st.com> <013e01cdfb47$8f5d2b30$ae178190$@samsung.com> <51277004.20702@st.com> <022601ce1a20$ff6b2290$fe4167b0$%an@samsung.com>
+In-Reply-To: <022601ce1a20$ff6b2290$fe4167b0$%an@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Joerg,
-I have to post the next version of my patchset, should I base it on top of 3.9-rc1?
-By when would you move the iommu git tree to 3.9-rc1?
+On 3/6/2013 5:13 AM, Byungho An wrote:
+> Hello Peppe,
+>> If you agree, you could also re-send *all* to the mailing list to
+>> be finally reviewed.
+>>
+>
+> Anyway, in my opinion, you can take them in your tree for now with my
+> tested-by if you want. Of course, I'll implement additional patches as you
+> requested on top of them for remained stuff such as SGMII, TBI, ethtool and
+> so on.
+> I think those should be separated for each purpose and we can add and modify
+> after those two patches.
 
-Regards
-Varun
+Ok Byungho, I'm preparing a new update for the stmmac that will also 
+include the initial support for SGMII and RGMII. Thx to have tested it!
 
-> -----Original Message-----
-> From: Kumar Gala [mailto:galak@kernel.crashing.org]
-> Sent: Thursday, February 28, 2013 9:15 PM
-> To: Sethi Varun-B16395
-> Cc: Joerg Roedel; Stuart Yoder; iommu@lists.linux-foundation.org;
-> linuxppc-dev@lists.ozlabs.org; linux-kernel@vger.kernel.org; Wood Scott-
-> B07421; Yoder Stuart-B08248
-> Subject: Re: [PATCH 2/6] powerpc/fsl_pci: Store the platform device
-> information corresponding to the pci controller.
-> 
-> 
-> On Feb 27, 2013, at 4:56 AM, Sethi Varun-B16395 wrote:
-> 
-> > This patch is present in the "next branch" of linux ppc tree maintained
-> by Kumar Gala.
-> > Following is the commit id:
-> > 52c5affc545053d37c0b05224bbf70f5336caa20
-> >
-> > I am not sure if this would be part of 3.9-rc1.
-> >
-> > Regards
-> > varun
-> 
-> This is now in Linus's tree so will be in 3.9-rc1
-> 
-> - k
-> 
+Obviously on top of these patches, feel free to add further code.
+TBI and RTBI are not supported yet.
 
 
+P.S. in this update I've also added the ethtool missing stuff ;-)
+
+Peppe
