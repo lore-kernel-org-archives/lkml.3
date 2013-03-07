@@ -1,53 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751385Ab3CGGlg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 01:41:36 -0500
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:42739 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751084Ab3CGGle (ORCPT
+	id S1751798Ab3CGGmW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 01:42:22 -0500
+Received: from mail-la0-f53.google.com ([209.85.215.53]:59908 "EHLO
+	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751084Ab3CGGmV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 01:41:34 -0500
-Message-ID: <51383699.7060805@gmail.com>
-Date: Thu, 07 Mar 2013 14:41:29 +0800
-From: Will Huck <will.huckk@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
+	Thu, 7 Mar 2013 01:42:21 -0500
 MIME-Version: 1.0
-To: Hugh Dickins <hughd@google.com>
-CC: Greg Thelen <gthelen@google.com>, akpm@linux-foundation.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] tmpfs: fix mempolicy object leaks
-References: <1361344302-26565-1-git-send-email-gthelen@google.com> <1361344302-26565-2-git-send-email-gthelen@google.com> <alpine.LNX.2.00.1302201221270.1152@eggly.anvils> <5133E178.90405@gmail.com> <alpine.LNX.2.00.1303051101350.27525@eggly.anvils>
-In-Reply-To: <alpine.LNX.2.00.1303051101350.27525@eggly.anvils>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1362586540-10393-4-git-send-email-mporter@ti.com>
+References: <1362586540-10393-1-git-send-email-mporter@ti.com>
+	<1362586540-10393-4-git-send-email-mporter@ti.com>
+Date: Thu, 7 Mar 2013 08:42:18 +0200
+Message-ID: <CAHp75Ve40sM-d9Gr3k6mgOOTkM_G+cYSPcftqqsuAi-MzEb9dg@mail.gmail.com>
+Subject: Re: [PATCH v9 3/9] ARM: edma: add AM33XX support to the private EDMA API
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: Matt Porter <mporter@ti.com>
+Cc: Tony Lindgren <tony@atomide.com>, Sekhar Nori <nsekhar@ti.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Vinod Koul <vinod.koul@intel.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Benoit Cousson <b-cousson@ti.com>,
+        Russell King <linux@arm.linux.org.uk>, Rob Landley <rob@landley.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Documentation List <linux-doc@vger.kernel.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Linux SPI Devel List 
+	<spi-devel-general@lists.sourceforge.net>,
+        Arnd Bergmann <arnd@arndb.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Hugh,
-On 03/06/2013 03:40 AM, Hugh Dickins wrote:
-> On Mon, 4 Mar 2013, Will Huck wrote:
->> Could you explain me why shmem has more relationship with mempolicy? It seems
->> that there are many codes in shmem handle mempolicy, but other components in
->> mm subsystem just have little.
-> NUMA mempolicy is mostly handled in mm/mempolicy.c, which services the
-> mbind, migrate_pages, set_mempolicy, get_mempolicy system calls: which
-> govern how process memory is distributed across NUMA nodes.
->
-> mm/shmem.c is affected because it was also found useful to specify
-> mempolicy on the shared memory objects which may back process memory:
-> that includes SysV SHM and POSIX shared memory and tmpfs.  mm/hugetlb.c
-> contains some mempolicy handling for hugetlbfs; fs/ramfs is kept minimal,
-> so nothing in there.
->
-> Those are the memory-based filesystems, where NUMA mempolicy is most
-> natural.  The regular filesystems could support shared mempolicy too,
-> but that would raise more awkward design questions.
+On Wed, Mar 6, 2013 at 6:15 PM, Matt Porter <mporter@ti.com> wrote:
+> Adds support for parsing the TI EDMA DT data into the
+> required EDMA private API platform data. Enables runtime
+> PM support to initialize the EDMA hwmod. Adds AM33XX EDMA
+> crossbar event mux support. Enables build on OMAP.
 
-I found that if mbind several processes to one node and almost exhaust 
-memory, processes will just stuck and no processes make progress or be 
-killed. Is it normal?
+> --- a/arch/arm/common/edma.c
+> +++ b/arch/arm/common/edma.c
 
->
-> Hugh
+> +static int edma_xbar_event_map(struct device *dev,
+> +                              struct device_node *node,
+> +                              struct edma_soc_info *pdata, int len)
+> +{
+> +       int ret = 0;
+> +       int i;
+> +       struct resource res;
+> +       void *xbar;
+> +       const s16 (*xbar_chans)[2];
+> +       u32 shift, offset, mux;
+> +
+> +       xbar_chans = devm_kzalloc(dev,
+> +                                 len/sizeof(s16) + 2*sizeof(s16),
+> +                                 GFP_KERNEL);
+> +       if (!xbar_chans)
+> +               return -ENOMEM;
+> +
+> +       ret = of_address_to_resource(node, 1, &res);
+> +       if (ret)
+> +               return -EIO;
+> +
+> +       xbar = devm_ioremap(dev, res.start, resource_size(&res));
+> +       if (!xbar)
+> +               return -ENOMEM;
+> +
+> +       ret = edma_of_read_u32_to_s16_array(node,
+> +                                           "ti,edma-xbar-event-map",
+> +                                           (s16 *)xbar_chans,
+> +                                           len/sizeof(u32));
+> +       if (ret)
+> +               return -EIO;
+> +
+> +       for (i = 0; xbar_chans[i][0] != -1; i++) {
+> +               shift = (xbar_chans[i][1] % 4) * 8;
 
+Looks like shift = (xbar_chans[i][1] & 0x03) << 3;
+
+> +               offset = xbar_chans[i][1] >> 2;
+> +               offset <<= 2;
+
+Is it offset = xbar_chans[i][1] & 0xfffc; ?
+
+> +               mux = readl((void *)((u32)xbar + offset));
+> +               mux &= ~(0xff << shift);
+> +               mux |= xbar_chans[i][0] << shift;
+> +               writel(mux, (void *)((u32)xbar + offset));
+> +       }
+
+
+-- 
+With Best Regards,
+Andy Shevchenko
