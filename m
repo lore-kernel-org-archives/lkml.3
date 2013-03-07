@@ -1,67 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932699Ab3CGLhB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 06:37:01 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:56696 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932455Ab3CGLg7 (ORCPT
+	id S932704Ab3CGLjQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 06:39:16 -0500
+Received: from arkanian.console-pimps.org ([212.110.184.194]:43028 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932358Ab3CGLjO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 06:36:59 -0500
-Date: Thu, 7 Mar 2013 11:36:53 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 4/8] ARM/etm/sysrq: fix inconstistent help message of
-	sysrq key
-Message-ID: <20130307113653.GE17833@n2100.arm.linux.org.uk>
-References: <51385727.3080206@huawei.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51385727.3080206@huawei.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Thu, 7 Mar 2013 06:39:14 -0500
+Message-ID: <1362656348.15011.166.camel@mfleming-mobl1.ger.corp.intel.com>
+Subject: Re: [PATCH] efivarfs: fix abnormal GUID in variable name by using
+ strcpy to replace null with dash
+From: Matt Fleming <matt@console-pimps.org>
+To: joeyli <jlee@suse.com>
+Cc: linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Michael Schroeder <mls@suse.com>, Josh Boyer <jwboyer@redhat.com>,
+        Peter Jones <pjones@redhat.com>, Matthew Garrett <mjg59@srcf.ucam.org>,
+        Frederic Crozat <fcrozat@suse.com>
+Date: Thu, 07 Mar 2013 11:39:08 +0000
+In-Reply-To: <1362652440.28562.26.camel@linux-s257.site>
+References: <1362108018-13117-1-git-send-email-jlee@suse.com>
+	 <1362151068.2842.440.camel@mfleming-mobl1.ger.corp.intel.com>
+	 <1362155493.2842.446.camel@mfleming-mobl1.ger.corp.intel.com>
+	 <1362181299.23932.168.camel@linux-s257.site>
+	 <1362555258.23932.573.camel@linux-s257.site>
+	 <1362568750.15011.24.camel@mfleming-mobl1.ger.corp.intel.com>
+	 <1362652440.28562.26.camel@linux-s257.site>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 07, 2013 at 05:00:23PM +0800, zhangwei(Jovi) wrote:
-> Currently help message of /proc/sysrq-trigger highlight its
-> upper-case characters, like below:
-> 
->       SysRq : HELP : loglevel(0-9) reBoot Crash terminate-all-tasks(E)
->       memory-full-oom-kill(F) kill-all-tasks(I) ...
-> 
-> this would confuse user trigger sysrq by upper-case character, which is
-> inconsistent with the real lower-case character registed key.
-> 
-> This inconsistent help message will also lead more confused when
-> 26 upper-case letters put into use in future.
-> 
-> This patch fix arm etm sysrq key: "etm buffer dump(v)"
+On Thu, 2013-03-07 at 18:34 +0800, joeyli wrote:
+> The VariableNameSize is not reliable when EFI_SUCCESS is returned
+> because UEFI 2.3.1 spec only mention VariableNameSize should updated
+> when EFI_BUFFER_TOO_SMALL is returned. And, the 1024 bytes of buffer is
+> from old UEFI spec. There doesn't have any size condition of variable
+> data or variable name in 2.3.1 spec.
 
-Umm, actually this is wrong.  sysrq doesn't deal with case.
+The spec may only mention what happens in the EFI_BUFFER_TOO_SMALL case,
+but for EFI_SUCCESS, any behaviour other than leaving VariableNameSize
+alone or updating it with the required size of the buffer is just
+completely insane.
 
-static int sysrq_key_table_key2index(int key)
-{
-        int retval;
+> I modified the patch to grab VariableNameSize when EFI_BUFFER_TOO_SMALL,
+> the behavior like what we do in efivarfs_file_read().
 
-        if ((key >= '0') && (key <= '9'))
-                retval = key - '0';
-        else if ((key >= 'a') && (key <= 'z'))
-                retval = key + 10 - 'a';
-        else
-                retval = -1;
-        return retval;
-}
+Thanks, this does seem like the most robust solution.
 
-It actually accepts no upper case characters (because they can't be
-typed on a PC keyboard with the simple code that is sysrq.)  The sysrq
-key combinations there are Alt+Sysrq+key.
+> This patch works on a normal UEFI machine, we will test it on HP z220. I
+> will send out it formally after test success.
 
-All sysrq help messages give the key in parens with a capital letter.
-However, there's one change you should make to this anyway - there
-should be no spaces in the help message - instead, the spaces should
-be the "-" character.  Space is used to separate each sysrq key help
-message.
+Has anyone tried contacting HP to tell them their firmware is doing
+bizarre things?
 
-Thanks.
+[...]
+
+> @@ -1722,17 +1723,35 @@ int register_efivars(struct efivars *efivars,
+>  	 */
+>  
+>  	do {
+> -		variable_name_size = 1024;
+> +		variable_name_size = 0;
+>  
+>  		status = ops->get_next_variable(&variable_name_size,
+>  						variable_name,
+>  						&vendor_guid);
+>  		switch (status) {
+> -		case EFI_SUCCESS:
+> -			efivar_create_sysfs_entry(efivars,
+> -						  variable_name_size,
+> -						  variable_name,
+> -						  &vendor_guid);
+> +		case EFI_BUFFER_TOO_SMALL:
+> +			if (variable_name_size < 2) {
+> +				/* set variable_name_size to buffer size when it's too small */
+
+This hunk would be better written like,
+
+			if (variable_name_size < sizeof(efi_char16_t) * 2) {
+				/* Bogus size - expect at least one char + NULL */
+				variable_name_size = variable_name_buff_size;
+			}
+
+A variable name containing only '\0' is bogus. We need at least one
+unicode character + '\0' for a valid variable name.
+
+> +				variable_name_size = variable_name_buff_size;
+> +			} else if (variable_name_size > variable_name_buff_size) {
+> +				/* re-allocate more buffer when size doesn't enough */
+
+This comment is redundant. Just delete it.
+
+> +				kfree(variable_name);
+> +				variable_name = kzalloc(variable_name_size, GFP_KERNEL);
+> +				if (!variable_name) {
+> +					printk(KERN_ERR "efivars: Memory allocation failed.\n");
+> +					return -ENOMEM;
+> +				}
+> +				variable_name_buff_size = variable_name_size;
+> +			}
+> +			status = ops->get_next_variable(&variable_name_size,
+> +							variable_name,
+> +							&vendor_guid);
+> +			variable_name_size = utf16_strsize(variable_name, variable_name_buff_size)+2;
+
+Please document what this +2 represents and why we need it. Better yet,
+use sizeof(efi_char16_t), and still document why it's needed, e.g. "Add
+terminating NULL".
+
+> +			if (status == EFI_SUCCESS)
+> +				efivar_create_sysfs_entry(efivars,
+> +							  variable_name_size,
+> +							  variable_name,
+> +							  &vendor_guid);
+>  			break;
+>  		case EFI_NOT_FOUND:
+>  			break;
+
+
+-- 
+Matt Fleming, Intel Open Source Technology Center
+
