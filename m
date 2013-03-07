@@ -1,81 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933347Ab3CGTi0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 14:38:26 -0500
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:61975 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932724Ab3CGTiZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 14:38:25 -0500
-Date: Thu, 7 Mar 2013 11:38:20 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Li Zefan <lizefan@huawei.com>, cgroups@vger.kernel.org
-Subject: Re: lockdep trace from prepare_bprm_creds
-Message-ID: <20130307193820.GB3209@htj.dyndns.org>
-References: <20130306223657.GA7392@redhat.com>
- <20130307172545.GA10353@redhat.com>
- <20130307180139.GD29601@htj.dyndns.org>
- <20130307180332.GE29601@htj.dyndns.org>
- <20130307191242.GA18265@redhat.com>
+	id S933361Ab3CGTir (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 14:38:47 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:22529 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932724Ab3CGTiq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Mar 2013 14:38:46 -0500
+Date: Thu, 7 Mar 2013 20:37:01 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Lucas De Marchi <lucas.demarchi@profusion.mobi>
+Cc: linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>,
+        James Morris <james.l.morris@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] usermodehelper: Fix -ENOMEM return logic
+Message-ID: <20130307193701.GA20385@redhat.com>
+References: <1361802350-9299-1-git-send-email-lucas.demarchi@profusion.mobi> <20130225160642.GA31806@redhat.com> <CAMOw1v7S07YOLQaKBBSHkCqhf1JSB1ZabMeMUJagb4E8841opQ@mail.gmail.com> <20130225180802.GA6160@redhat.com> <CAMOw1v40=2zdyXuL1USzvHwNH+34uk+7P5Vxaa1fBJNZiHc++g@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20130307191242.GA18265@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAMOw1v40=2zdyXuL1USzvHwNH+34uk+7P5Vxaa1fBJNZiHc++g@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Hi Lucas,
 
-On Thu, Mar 07, 2013 at 08:12:42PM +0100, Oleg Nesterov wrote:
-> Well yes, I agree. I think that perfomance-wise threadgroup_change_begin()
-> in de_thread() is fine, and perhaps it is even more clean because we are
-> going to do the thread-group change. The scope of cred_guard_mutex is huge,
-> it doesn't look very nice in threadgroup_lock().
-> 
-> But we should avoid the cgroup-specific hooks as much as possible, so I
-> like your patch more.
-
-I don't really mind how it's done but while my approach seems to limit
-itself to cgroup proper, threadgroup locking is actually more invasive
-by meddling with cred_mutex.  As you said, yours is the cleaner and
-probably more permanent one here.
-
-> > +	if (threadgroup && !thread_group_leader(tsk)) {
-> > +		/*
-> > +		 * a race with de_thread from another thread's exec() may
-> > +		 * strip us of our leadership, if this happens, there is no
-> > +		 * choice but to throw this task away and try again; this
-> > +		 * is "double-double-toil-and-trouble-check locking".
-> > +		 */
-> > +		threadgroup_unlock(tsk);
-> > +		put_task_struct(tsk);
-> > +		goto retry_find_task;
-> > +	}
+On 03/06, Lucas De Marchi wrote:
+>
+> On Mon, Feb 25, 2013 at 3:08 PM, Oleg Nesterov <oleg@redhat.com> wrote:
 > >
-> > +	ret = -ENODEV;
-> > +	if (cgroup_lock_live_group(cgrp)) {
-> > +		if (threadgroup)
-> > +			ret = cgroup_attach_proc(cgrp, tsk);
+> > So, I hope you will send v2. I'd suggest to split the fixes. 1/3
+> > should create/export the new helpers, and 2-3 fix should call_modprobe()
+> > and call_usermodehelper_keys(). But this is up to you, I won't insist.
+>
+> I was implementing this today, but looking into call_modprobe(), it is
+> never called with UMH_NO_WAIT.
+
+wait == T means UMH_WAIT_PROC, so we can't simply rely on CLONE_VFORK.
+But probably we can rely on sys_wait4.
+
+However,
+
+> @@ -98,12 +93,13 @@ static int call_modprobe(char *module_name, int wait)
+>  	argv[3] = module_name;	/* check free_modprobe_argv() */
+>  	argv[4] = NULL;
 > 
-> Offtopic, but with or without this change I do not understand the
-> thread_group_leader/retry_find_task logic.
-> 
-> Why do we actually need to restart? We do not really care if it is leader
-> or not, we only need to ensure we can safely use while_each_thread() to
-> find all !PF_EXITING threads.
+> -	return call_usermodehelper_fns(modprobe_path, argv, envp,
+> -		wait | UMH_KILLABLE, NULL, free_modprobe_argv, NULL);
+> +	ret = call_usermodehelper(modprobe_path, argv, envp,
+> +				  wait | UMH_KILLABLE);
+> +	kfree(module_name);
 
-If my memory serves me right (which BTW often fails), it's cgroup API
-thing.  cgroup wants to guarantee to the controllers that if multiple
-tasks are migrated together, they always constitute a threadgroup and
-the first one is the leader.  ISTR a controller callback which depends
-on the first one being the leader.
+Please note UMH_KILLABLE. call_usermodehelper() can be interrupted
+and even UMH_WAIT_EXEC case is not safe. If call_modprobe() is killed
+we can return while the workqueue thread still tries to clone/exec/etc.
 
-Thanks.
+Oleg.
 
--- 
-tejun
