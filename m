@@ -1,138 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933494Ab3CGV4h (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 16:56:37 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:55578 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932822Ab3CGV4g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 16:56:36 -0500
-Date: Thu, 7 Mar 2013 16:56:21 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
-Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>, Eric Paris <eparis@parisplace.org>,
-        linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        LSM List <linux-security-module@vger.kernel.org>
-Subject: Re: IMA: How to manage user space signing policy with others
-Message-ID: <20130307215620.GA2159@redhat.com>
-References: <20130305151829.GB4519@redhat.com>
- <1362516018.4392.233.camel@falcor1>
- <20130305215300.GE4519@redhat.com>
- <1362584551.4392.291.camel@falcor1>
- <20130306235525.GB29229@redhat.com>
- <1362620348.4392.408.camel@falcor1>
- <20130307143643.GA2790@redhat.com>
- <1362670833.4392.438.camel@falcor1>
- <20130307155343.GD2790@redhat.com>
- <CALLzPKYTmD2AUm1k7JEzXupRjOUPgkQ0LRpuT7b5P1yNpLQOxg@mail.gmail.com>
+	id S1759904Ab3CGV5N (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 16:57:13 -0500
+Received: from moutng.kundenserver.de ([212.227.17.10]:60973 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759246Ab3CGV5L (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Mar 2013 16:57:11 -0500
+Date: Thu, 7 Mar 2013 22:56:54 +0100 (CET)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+X-X-Sender: lyakh@axis700.grange
+To: Viresh Kumar <viresh.kumar@linaro.org>
+cc: rjw@sisk.pl, Steve.Bannister@arm.com, linux@arm.linux.org.uk,
+        linux-pm@vger.kernel.org,
+        Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>,
+        devicetree-discuss@lists.ozlabs.org, Liviu.Dudau@arm.com,
+        linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org,
+        robin.randhawa@arm.com, linux-arm-kernel@lists.infradead.org,
+        mark.hambleton@broadcom.com, linaro-kernel@lists.linaro.org,
+        charles.garcia-tobin@arm.com
+Subject: Re: [PATCH V2] cpufreq: ARM big LITTLE: Add generic cpufreq driver
+ and its DT glue
+In-Reply-To: <6cba8f153cfd4b0d3075a34a6dfe287bdec2eb06.1362676407.git.viresh.kumar@linaro.org>
+Message-ID: <Pine.LNX.4.64.1303072248560.20470@axis700.grange>
+References: <6cba8f153cfd4b0d3075a34a6dfe287bdec2eb06.1362676407.git.viresh.kumar@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALLzPKYTmD2AUm1k7JEzXupRjOUPgkQ0LRpuT7b5P1yNpLQOxg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Provags-ID: V02:K0:ahLa0K2jBpAvAjjnX8qAfXNdu9/QvJggGli/WBm0vyO
+ cp8+of/nJeEOjXl+cX6GDnXGroJNBWkRkVZm3GPhkZXD0qqR1Q
+ UpP8qDwryxL8MwnRj52wheMDQPfvYDxdt7yfqsePSiyiXXIkMh
+ DBGRqWyQeLYhs6tFH/JPW4ysPD9TuZT51ZuZtWiqJgw2puYklj
+ RyMYVi2yoGbcMzz+Wv0gL+YW2e8U2GvXHDUYmLeddaAuIwxmNQ
+ ULL0UFkNtv3ZLD/TBl5NplGVRjPM63H7t4xGGCoOFL+coM5S7Y
+ 8Wt7HvsFFlDxg1ISGV7Th1TwJGfmtBAqHTmZRru4eN2kDEsDiP
+ r/OV4uSbvy1NWyfVPELL0FZzTdlKVdOMba9KT2Zb4KS66i1CZl
+ k7daGjqmmH6wA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 07, 2013 at 07:53:50PM +0200, Kasatkin, Dmitry wrote:
+Hi Viresh
 
-[..]
+On Fri, 8 Mar 2013, Viresh Kumar wrote:
 
-Hi Dmitry,
-
-> Sorry if missed something from this lengthy thread and I repeat something.
+> big LITTLE is ARM's new Architecture focussing power/performance needs of modern
+> world. More information about big LITTLE can be found here:
 > 
-> I have not noticed what functions you propose to export.
-
-Actually I have not come up with functions yet. I have yet to write
-the code. But I was thinking something along the lines of
-verify_signature().
-
+> http://www.arm.com/products/processors/technologies/biglittleprocessing.php
+> http://lwn.net/Articles/481055/
 > 
-> But for your use case you need to know if file was signed and
-> signature was fine, right?
+> In order to keep cpufreq support for all big LITTLE platforms simple/generic,
+> this patch tries to add a generic cpufreq driver layer for all big LITTLE
+> platforms.
 
-Right.
+I like generic drivers :) cpufreq-cpu0 is yet another such generic 
+(cpufreq) driver. Now, comparing the functionality of the two:
 
-> So you want to export a function which returns, for example
-> "iint->flags & IMA_DIGSIG".
+[snip]
 
-Not sure about that but I think you are referring to your patch
-of also exporting the iint->DIGSIG by setting a security flag
-LSM_UNSAFE_DIGSIG in bprm->unsafe. That helps but then more
-issues start cropping up. I will explain issues in detail below.
+> +/* Set clock frequency */
+> +static int bL_cpufreq_set_target(struct cpufreq_policy *policy,
+> +		unsigned int target_freq, unsigned int relation)
+> +{
+> +	struct cpufreq_freqs freqs;
+> +	u32 cpu = policy->cpu, freq_tab_idx, cur_cluster;
+> +	int ret = 0;
+> +
+> +	cur_cluster = cpu_to_cluster(policy->cpu);
+> +
+> +	freqs.old = bL_cpufreq_get(policy->cpu);
+> +
+> +	/* Determine valid target frequency using freq_table */
+> +	cpufreq_frequency_table_target(policy, freq_table[cur_cluster],
+> +			target_freq, relation, &freq_tab_idx);
+> +	freqs.new = freq_table[cur_cluster][freq_tab_idx].frequency;
+> +
+> +	freqs.cpu = policy->cpu;
+> +
+> +	pr_debug("%s: cpu: %d, cluster: %d, oldfreq: %d, target freq: %d, new freq: %d\n",
+> +			__func__, cpu, cur_cluster, freqs.old, target_freq,
+> +			freqs.new);
+> +
+> +	if (freqs.old == freqs.new)
+> +		return 0;
+> +
+> +	for_each_cpu(freqs.cpu, policy->cpus)
+> +		cpufreq_notify_transition(&freqs, CPUFREQ_PRECHANGE);
+> +
+> +	ret = clk_set_rate(clk[cur_cluster], freqs.new * 1000);
 
-> If it was no xattr or no signature, then this flag will not be set.
-
-- if iint->DIGSIG is not set then it could mean few things.
-	- There is no xattr or digital signature
-	- Or there is signature but ima is disabled or there is no
-	  appraise rule configured.
-
-Now second point can create confusion. It means that a signed file will
-be treated as unsigned and any functionality dependent on file being
-signed will fail. I think it is uintutive. 
-
-If there is no xattr or signature, IMA hook can return failure if appraise
-policy is configured. I can't ignore the return code of security hook. So
-I need a separate function just to tell me whether file is signed or
-not. 
-
-> If signature verification failed, then hook returns EPERM anyway.
-
-There are few issues here.
-
-- iint->DIGSIG will be set only if ima is enabled and some appraise
-  rule/policy has been enabled. Otherwise it will not be set. It might
-  not be too huge a issue because it just means that a signed file will
-  be treated unsigned and any functionality dependent on file being
-  signed will fail. I think it is uintutive. 
-
-- iint->DIGSIG could be set even if file is not signed. How?
-	- Assume system has booted with ima_appraise_tcb policy.
-	- A binary executes. bprm_check() is called and it will
-	  set iint->DIGSIG.
-	- root does a direct write to disk blocks where file signature
-	  are stored.
-	- File executes again. This time iint->DIGSIG is set but there
-	  are no signature on the file.
-
-- File could have invalid signature still iint->DIGSIG could be set and
-  security hook will return success. 
-	- Assume system has booted with ima_appraise_tcb policy.
-	- A binary executes. bprm_check() is called and it will
-	  set iint->DIGSIG.
-	- User goes ahead and replaces appraise policy with some
-	  other policy so no appraisal rule will match for same file.
-	- User does a direct write to disk on file blocks.
-	- File executes again. This time iint->DIGSIG is set, and
- 	  IMA hook will return success (as there is no matching appraise
-	  rule) and making caller believe file is validly signed.
-
-If we don't cache iint->DIGSIG, I think couple of above issues could be
-solved. But then we also need to make sure digest of file and appraisal
-results not cached either. Caching of everything is in general a issue
-with IMA usage in my scenario. I am not sure why IMA did not address the
-issue of somebody writing directly to disk bypassing file system.
-
-If we figure a way out to disable caching of everything, then we also
-need to figure out a way to export iint->DIGSIG to callers. Current
-security hooks don't allow returning anything other than success/fail
-status, that means we probably need to create a new function. Seeting
-it in bprm->unsafe alone is not sufficient as I might have to do file
-verification in non executable file code also.
-
-In summary, we can still solve the problem we can do few things.
-
-- Provide a reliable way to disable caching of iint->DIGSIG, digest
-  and appraisal results.
-
-- Provide functions to access iint->DIGSIG after every file execution.
-
-- Create a separate callable IMA function which tells whether file is
-  signed or not.
-
-- Provide a way to caller to ensure whether caching is disabled or not
-  in IMA. So that caller can interpret what does result mean.
+we see, that this driver "only" switches CPU clock frequencies. Whereas 
+the cpufreq-cpu0 driver also manipulates a regulator (if available) 
+directly. I understand, power-saving is also an important consideration 
+for big.LITTLE systems. So, I presume, you plan to implement voltage 
+switching in cpufreq notifiers? Now, my question is: is this (notifier) 
+actually the preferred method and the cpufreq-cpu0 driver is doing it 
+"wrongly?"
 
 Thanks
-Vivek
+Guennadi
+---
+Guennadi Liakhovetski, Ph.D.
+Freelance Open-Source Software Developer
+http://www.open-technology.de/
