@@ -1,126 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932704Ab3CGLjQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 06:39:16 -0500
-Received: from arkanian.console-pimps.org ([212.110.184.194]:43028 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932358Ab3CGLjO (ORCPT
+	id S932709Ab3CGLlD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 06:41:03 -0500
+Received: from cpsmtpb-ews05.kpnxchange.com ([213.75.39.8]:56611 "EHLO
+	cpsmtpb-ews05.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932292Ab3CGLlB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 06:39:14 -0500
-Message-ID: <1362656348.15011.166.camel@mfleming-mobl1.ger.corp.intel.com>
-Subject: Re: [PATCH] efivarfs: fix abnormal GUID in variable name by using
- strcpy to replace null with dash
-From: Matt Fleming <matt@console-pimps.org>
-To: joeyli <jlee@suse.com>
-Cc: linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Michael Schroeder <mls@suse.com>, Josh Boyer <jwboyer@redhat.com>,
-        Peter Jones <pjones@redhat.com>, Matthew Garrett <mjg59@srcf.ucam.org>,
-        Frederic Crozat <fcrozat@suse.com>
-Date: Thu, 07 Mar 2013 11:39:08 +0000
-In-Reply-To: <1362652440.28562.26.camel@linux-s257.site>
-References: <1362108018-13117-1-git-send-email-jlee@suse.com>
-	 <1362151068.2842.440.camel@mfleming-mobl1.ger.corp.intel.com>
-	 <1362155493.2842.446.camel@mfleming-mobl1.ger.corp.intel.com>
-	 <1362181299.23932.168.camel@linux-s257.site>
-	 <1362555258.23932.573.camel@linux-s257.site>
-	 <1362568750.15011.24.camel@mfleming-mobl1.ger.corp.intel.com>
-	 <1362652440.28562.26.camel@linux-s257.site>
+	Thu, 7 Mar 2013 06:41:01 -0500
+Message-ID: <1362656455.5994.13.camel@x61.thuisdomein>
+Subject: Re: [PATCH] ARM: EXYNOS: change HAVE_SAMSUNG_KEYPAD to
+ KEYBOARD_SAMSUNG
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Kukjin Kim <kgene.kim@samsung.com>
+Cc: "'Russell King'" <linux@arm.linux.org.uk>,
+        "'Thomas Abraham'" <thomas.abraham@linaro.org>,
+        "'Grant Likely'" <grant.likely@secretlab.ca>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Thu, 07 Mar 2013 12:40:55 +0100
+In-Reply-To: <014b01ce1acf$63ada580$2b08f080$%kim@samsung.com>
+References: <1362566365.16460.173.camel@x61.thuisdomein>
+	 <014b01ce1acf$63ada580$2b08f080$%kim@samsung.com>
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 07 Mar 2013 11:40:55.0842 (UTC) FILETIME=[A141F820:01CE1B28]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-03-07 at 18:34 +0800, joeyli wrote:
-> The VariableNameSize is not reliable when EFI_SUCCESS is returned
-> because UEFI 2.3.1 spec only mention VariableNameSize should updated
-> when EFI_BUFFER_TOO_SMALL is returned. And, the 1024 bytes of buffer is
-> from old UEFI spec. There doesn't have any size condition of variable
-> data or variable name in 2.3.1 spec.
+On Thu, 2013-03-07 at 10:02 +0900, Kukjin Kim wrote:
+> BTW, just to use only 8~12 digits of commit ID, "Commit 6b5ab4f4" is
+> enough instead of full commit ID.
 
-The spec may only mention what happens in the EFI_BUFFER_TOO_SMALL case,
-but for EFI_SUCCESS, any behaviour other than leaving VariableNameSize
-alone or updating it with the required size of the buffer is just
-completely insane.
+I used to do that but now I actually prefer to use 40 hex character
+strings.
 
-> I modified the patch to grab VariableNameSize when EFI_BUFFER_TOO_SMALL,
-> the behavior like what we do in efivarfs_file_read().
-
-Thanks, this does seem like the most robust solution.
-
-> This patch works on a normal UEFI machine, we will test it on HP z220. I
-> will send out it formally after test success.
-
-Has anyone tried contacting HP to tell them their firmware is doing
-bizarre things?
-
-[...]
-
-> @@ -1722,17 +1723,35 @@ int register_efivars(struct efivars *efivars,
->  	 */
->  
->  	do {
-> -		variable_name_size = 1024;
-> +		variable_name_size = 0;
->  
->  		status = ops->get_next_variable(&variable_name_size,
->  						variable_name,
->  						&vendor_guid);
->  		switch (status) {
-> -		case EFI_SUCCESS:
-> -			efivar_create_sysfs_entry(efivars,
-> -						  variable_name_size,
-> -						  variable_name,
-> -						  &vendor_guid);
-> +		case EFI_BUFFER_TOO_SMALL:
-> +			if (variable_name_size < 2) {
-> +				/* set variable_name_size to buffer size when it's too small */
-
-This hunk would be better written like,
-
-			if (variable_name_size < sizeof(efi_char16_t) * 2) {
-				/* Bogus size - expect at least one char + NULL */
-				variable_name_size = variable_name_buff_size;
-			}
-
-A variable name containing only '\0' is bogus. We need at least one
-unicode character + '\0' for a valid variable name.
-
-> +				variable_name_size = variable_name_buff_size;
-> +			} else if (variable_name_size > variable_name_buff_size) {
-> +				/* re-allocate more buffer when size doesn't enough */
-
-This comment is redundant. Just delete it.
-
-> +				kfree(variable_name);
-> +				variable_name = kzalloc(variable_name_size, GFP_KERNEL);
-> +				if (!variable_name) {
-> +					printk(KERN_ERR "efivars: Memory allocation failed.\n");
-> +					return -ENOMEM;
-> +				}
-> +				variable_name_buff_size = variable_name_size;
-> +			}
-> +			status = ops->get_next_variable(&variable_name_size,
-> +							variable_name,
-> +							&vendor_guid);
-> +			variable_name_size = utf16_strsize(variable_name, variable_name_buff_size)+2;
-
-Please document what this +2 represents and why we need it. Better yet,
-use sizeof(efi_char16_t), and still document why it's needed, e.g. "Add
-terminating NULL".
-
-> +			if (status == EFI_SUCCESS)
-> +				efivar_create_sysfs_entry(efivars,
-> +							  variable_name_size,
-> +							  variable_name,
-> +							  &vendor_guid);
->  			break;
->  		case EFI_NOT_FOUND:
->  			break;
+Sure, they're ugly, but so are strings of 10, or 12 hex characters. But
+they're easier to use (I can just copy/paste them from the output of,
+say, "git log"), I do not have to worry about uniqueness, ever (some
+commits now already need at least 8 characters), and some git web
+interfaces automagically linkify 40 character hex strings in commit
+explanations (which is quite nice).
 
 
--- 
-Matt Fleming, Intel Open Source Technology Center
+Paul Bolle
 
