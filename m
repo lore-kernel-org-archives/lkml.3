@@ -1,77 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758930Ab3CGNWQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 08:22:16 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:53822 "EHLO arroyo.ext.ti.com"
+	id S1759093Ab3CGNXi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 08:23:38 -0500
+Received: from slimlogic.co.uk ([89.16.172.20]:42312 "EHLO slimlogic.co.uk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756463Ab3CGNWM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 08:22:12 -0500
-From: Kishon Vijay Abraham I <kishon@ti.com>
-To: <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>, <rob@landley.net>,
-        <balbi@ti.com>, <gregkh@linuxfoundation.org>, <kishon@ti.com>,
-        <s-guiriec@ti.com>, <gg@slimlogic.co.uk>, <sameo@linux.intel.com>,
-        <broonie@opensource.wolfsonmicro.com>, <ldewangan@nvidia.com>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <ruchika@ti.com>
-Subject: [PATCH v2 1/4] usb: dwc3: set dma_mask for dwc3_omap device
-Date: Thu, 7 Mar 2013 18:51:43 +0530
-Message-ID: <1362662506-14823-2-git-send-email-kishon@ti.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1362662506-14823-1-git-send-email-kishon@ti.com>
-References: <1362662506-14823-1-git-send-email-kishon@ti.com>
+	id S1753481Ab3CGNXf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Mar 2013 08:23:35 -0500
+Message-ID: <513894E3.1070206@slimlogic.co.uk>
+Date: Thu, 07 Mar 2013 13:23:47 +0000
+From: Ian Lartey <ian@slimlogic.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Ian Lartey <ian@slimlogic.co.uk>
+CC: linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-leds@vger.kernel.org,
+        linux-watchdog@vger.kernel.org, swarren@wwwdotorg.org,
+        grant.likely@secretlab.ca, broonie@opensource.wolfsonmicro.com,
+        rob.herring@calxeda.com, rob@landley.net, mturquette@linaro.org,
+        linus.walleij@linaro.org, cooloney@gmail.com, rpurdie@rpsys.net,
+        sameo@linux.intel.com, wim@iguana.be, lgirdwood@gmail.com,
+        gg@slimlogic.co.uk, j-keerthy@ti.com, ldewangan@nvidia.com,
+        t-kristo@ti.com
+Subject: [PATCH v8 0/12] Palmas Updates
+References: <1362662276-20792-1-git-send-email-ian@slimlogic.co.uk>
+In-Reply-To: <1362662276-20792-1-git-send-email-ian@slimlogic.co.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-*dma_mask* is not set for devices created from dt data. So filled dma_mask
-for dwc3_omap device here. And dwc3 core will copy the dma_mask from its
-parent.
+This patchset adds to the support for the Palmas iseries of PMIC chips.
 
-Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
----
- drivers/usb/dwc3/core.c      |    4 ++++
- drivers/usb/dwc3/dwc3-omap.c |    3 +++
- 2 files changed, 7 insertions(+)
+Some of the patches have previously been submitted individually.
+The DT bindings doc has been added first due to comments that it was 
+missing.
 
-diff --git a/drivers/usb/dwc3/core.c b/drivers/usb/dwc3/core.c
-index 66c0572..c845e70 100644
---- a/drivers/usb/dwc3/core.c
-+++ b/drivers/usb/dwc3/core.c
-@@ -454,6 +454,10 @@ static int dwc3_probe(struct platform_device *pdev)
- 	dwc->regs_size	= resource_size(res);
- 	dwc->dev	= dev;
- 
-+	dev->dma_mask	= dev->parent->dma_mask;
-+	dev->dma_parms	= dev->parent->dma_parms;
-+	dma_set_coherent_mask(dev, dev->parent->coherent_dma_mask);
-+
- 	if (!strncmp("super", maximum_speed, 5))
- 		dwc->maximum_speed = DWC3_DCFG_SUPERSPEED;
- 	else if (!strncmp("high", maximum_speed, 4))
-diff --git a/drivers/usb/dwc3/dwc3-omap.c b/drivers/usb/dwc3/dwc3-omap.c
-index 35b9673..546f1fd 100644
---- a/drivers/usb/dwc3/dwc3-omap.c
-+++ b/drivers/usb/dwc3/dwc3-omap.c
-@@ -277,6 +277,8 @@ static void dwc3_omap_disable_irqs(struct dwc3_omap *omap)
- 	dwc3_omap_writel(omap->base, USBOTGSS_IRQENABLE_SET_0, 0x00);
- }
- 
-+static u64 dwc3_omap_dma_mask = DMA_BIT_MASK(32);
-+
- static int dwc3_omap_probe(struct platform_device *pdev)
- {
- 	struct device_node	*node = pdev->dev.of_node;
-@@ -330,6 +332,7 @@ static int dwc3_omap_probe(struct platform_device *pdev)
- 	omap->dev	= dev;
- 	omap->irq	= irq;
- 	omap->base	= base;
-+	dev->dma_mask	= &dwc3_omap_dma_mask;
- 
- 	/*
- 	 * REVISIT if we ever have two instances of the wrapper, we will be
--- 
-1.7.10.4
+Patches based on linux-next-20130306
 
+mfd: DT bindings for the palmas family MFD
+mfd: palmas: is_palmas_charger needed by multiple driv
+mfd: palmas add variant and OTP detection
+regulator: palmas correct dt parsing
+watchdog: add Palmas Watchdog support
+watchdog: Kconfig for Palmas watchdog
+gpio: palmas: add in GPIO support for palmas charger
+gpio: palmas: Enable DT support for palmas gpio
+leds: Add support for Palmas LEDs
+leds: Kconfig for Palmas LEDs
+clk: add a clock driver for palmas
+clk: Kconfig for Palmas clock driver
+
+  .../devicetree/bindings/clock/palmas-clk.txt       |   25 +
+  .../devicetree/bindings/gpio/gpio-palmas.txt       |   21 +
+  .../devicetree/bindings/input/palmas-pwrbutton.txt |   22 +
+  .../devicetree/bindings/leds/leds-palmas.txt       |   35 ++
+  Documentation/devicetree/bindings/mfd/palmas.txt   |   70 +++
+  .../devicetree/bindings/regulator/palmas-pmic.txt  |  168 ++++++
+  .../devicetree/bindings/rtc/palmas-rtc.txt         |   22 +
+  .../devicetree/bindings/watchdog/palmas-wdt.txt    |   22 +
+  drivers/clk/Kconfig                                |    8 +
+  drivers/clk/Makefile                               |    1 +
+  drivers/clk/clk-palmas.c                           |  268 ++++++++++
+  drivers/gpio/gpio-palmas.c                         |   90 +++-
+  drivers/leds/Kconfig                               |    9 +
+  drivers/leds/Makefile                              |    1 +
+  drivers/leds/leds-palmas.c                         |  560 
+++++++++++++++++++++
+  drivers/mfd/palmas.c                               |  103 +++-
+  drivers/regulator/palmas-regulator.c               |   36 +-
+  drivers/watchdog/Kconfig                           |    8 +
+  drivers/watchdog/Makefile                          |    1 +
+  drivers/watchdog/palmas_wdt.c                      |  170 ++++++
+  include/linux/mfd/palmas.h                         |  119 ++++-
+  21 files changed, 1703 insertions(+), 56 deletions(-)
+  create mode 100644 Documentation/devicetree/bindings/clock/palmas-clk.txt
+  create mode 100644 Documentation/devicetree/bindings/gpio/gpio-palmas.txt
+  create mode 100644 
+Documentation/devicetree/bindings/input/palmas-pwrbutton.txt
+  create mode 100644 Documentation/devicetree/bindings/leds/leds-palmas.txt
+  create mode 100644 Documentation/devicetree/bindings/mfd/palmas.txt
+  create mode 100644 
+Documentation/devicetree/bindings/regulator/palmas-pmic.txt
+  create mode 100644 Documentation/devicetree/bindings/rtc/palmas-rtc.txt
+  create mode 100644 
+Documentation/devicetree/bindings/watchdog/palmas-wdt.txt
+  create mode 100644 drivers/clk/clk-palmas.c
+  create mode 100644 drivers/leds/leds-palmas.c
+  create mode 100644 drivers/watchdog/palmas_wdt.c
