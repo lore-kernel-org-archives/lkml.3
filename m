@@ -1,67 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933505Ab3CGVgI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 16:36:08 -0500
-Received: from mail-qa0-f42.google.com ([209.85.216.42]:52900 "EHLO
-	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933432Ab3CGVgG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 16:36:06 -0500
+	id S1759872Ab3CGVhH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 16:37:07 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:7637 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752764Ab3CGVhE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Mar 2013 16:37:04 -0500
+Message-ID: <51390850.4080400@redhat.com>
+Date: Thu, 07 Mar 2013 16:36:16 -0500
+From: Don Dutile <ddutile@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120601 Thunderbird/10.0.5
 MIME-Version: 1.0
-In-Reply-To: <20130307200722.GA22072@redhat.com>
-References: <1361802350-9299-1-git-send-email-lucas.demarchi@profusion.mobi>
- <20130225160642.GA31806@redhat.com> <CAMOw1v7S07YOLQaKBBSHkCqhf1JSB1ZabMeMUJagb4E8841opQ@mail.gmail.com>
- <20130225180802.GA6160@redhat.com> <CAMOw1v40=2zdyXuL1USzvHwNH+34uk+7P5Vxaa1fBJNZiHc++g@mail.gmail.com>
- <20130307193701.GA20385@redhat.com> <CAMOw1v6HkAPUpebno7tj0wD4=+C_tRgSLmrUwPVdKUqjy4vyYg@mail.gmail.com>
- <20130307200722.GA22072@redhat.com>
-From: Lucas De Marchi <lucas.demarchi@profusion.mobi>
-Date: Thu, 7 Mar 2013 18:35:44 -0300
-Message-ID: <CAMOw1v5sAAP1QD9XcidKGpp6Duz=PXf_LC0C8vve7PPSBzez3g@mail.gmail.com>
-Subject: Re: [PATCH] usermodehelper: Fix -ENOMEM return logic
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>,
-        James Morris <james.l.morris@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: "Li, Zhen-Hua" <zhen-hual@hp.com>, iommu@lists.linux-foundation.org
+CC: Hannes Reinecke <hare@suse.de>, Suresh Siddha <suresh.b.siddha@intel.com>,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH 1/1] iommu: add a dma remap fault reason.
+References: <1362537797-6034-1-git-send-email-zhen-hual@hp.com> <5138DCE9.1010204@redhat.com>
+In-Reply-To: <5138DCE9.1010204@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 7, 2013 at 5:07 PM, Oleg Nesterov <oleg@redhat.com> wrote:
-> On 03/07, Lucas De Marchi wrote:
+On 03/07/2013 01:31 PM, Don Dutile wrote:
+> cc-ing the upstream iommu-list
+>
+> On 03/05/2013 09:43 PM, Li, Zhen-Hua wrote:
+>> The number of dma fault reasons in intel's document are from 1 to 0xD, but in dmar.c I cannot find fault reason 0xD.
 >>
->> On Thu, Mar 7, 2013 at 4:37 PM, Oleg Nesterov <oleg@redhat.com> wrote:
->> >
->> >> @@ -98,12 +93,13 @@ static int call_modprobe(char *module_name, int wait)
->> >>       argv[3] = module_name;  /* check free_modprobe_argv() */
->> >>       argv[4] = NULL;
->> >>
->> >> -     return call_usermodehelper_fns(modprobe_path, argv, envp,
->> >> -             wait | UMH_KILLABLE, NULL, free_modprobe_argv, NULL);
->> >> +     ret = call_usermodehelper(modprobe_path, argv, envp,
->> >> +                               wait | UMH_KILLABLE);
->> >> +     kfree(module_name);
->> >
->> > Please note UMH_KILLABLE. call_usermodehelper() can be interrupted
->> > and even UMH_WAIT_EXEC case is not safe. If call_modprobe() is killed
->> > we can return while the workqueue thread still tries to clone/exec/etc.
+>> In this document:
+>> Intel Virtualization Technology for Directed I/O Architecture Specification
+>> http://download.intel.com/technology/computing/vptech/Intel(r)_VT_for_Direct_IO.pdf
 >>
->> Even if it's killed, we would just free the resource we allocated
->> before.
+>> Chapter 4. Support For Device-IOTLBs
+>>
+>> Table 6. Unsuccessful Translated Requests
+>>
+>> There is fault reason for 0xD not listed in kernel:
+>> Present context-entry used to process translation request
+>> specifies blocking of Translation Requests (Translation Type (T)
+>> field value not equal to 01b).
+>>
+>> So I think 0xD should be added.
+>>
+>> Signed-off-by: Li, Zhen-Hua<zhen-hual@hp.com>
+>> ---
+>> drivers/iommu/dmar.c | 1 +
+>> 1 file changed, 1 insertion(+)
+>>
+>> diff --git a/drivers/iommu/dmar.c b/drivers/iommu/dmar.c
+>> index dc7e478..e5cdaf8 100644
+>> --- a/drivers/iommu/dmar.c
+>> +++ b/drivers/iommu/dmar.c
+>> @@ -1083,6 +1083,7 @@ static const char *dma_remap_fault_reasons[] =
+>> "non-zero reserved fields in RTP",
+>> "non-zero reserved fields in CTP",
+>> "non-zero reserved fields in PTE",
+>> + "PCE for translation request specifies blocking",
+>> };
+>>
+>> static const char *irq_remap_fault_reasons[] =
 >
-> Yes, and after that ____call_usermodehelper() can do
-> do_execve(module_name) ?
->
->> It would not be safe if we allocated in the init function and
->> freed in the cleanup.
->
-> But we do? We free this memory in cleanup ? And I was allocated by us.
->
-> sub_info itself can't go away (if you meant this), but
-> sub_info->path/argv/envp can.
 
-Oh... you are right - the UMH_KILLABLE is the problem here. Dunno what
-I was thinking :-/. I will fix my pending the patches.
+Yes, the multiple tables, some short, some long, duplicating error codes,
+and in this case, putting it out of order, helped this case!
 
-thanks
-Lucas De Marchi
+btw -- Suresh not at intel any longer (email bounces)
+
+So, patch looks good to me. Although, I don't know of any code that
+actually sets a translation to 'block translation'.... but
+for completeness, rest of code does range checking & sizing such
+that it's doing the right thing.
+The only other thing I can surmize from the dmar.c file is if one
+of these faults occurred, an 'unknown error' would have been outputted.
+
+cheers.. Don
+> _______________________________________________
+> iommu mailing list
+> iommu@lists.linux-foundation.org
+> https://lists.linuxfoundation.org/mailman/listinfo/iommu
+
