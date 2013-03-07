@@ -1,113 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759635Ab3CGRxx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 12:53:53 -0500
-Received: from mail-vc0-f178.google.com ([209.85.220.178]:60455 "EHLO
-	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754269Ab3CGRxv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 12:53:51 -0500
+	id S1759653Ab3CGRzV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 12:55:21 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:42941 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756093Ab3CGRzT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Mar 2013 12:55:19 -0500
+Date: Thu, 7 Mar 2013 18:53:05 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+Cc: Mandeep Singh Baines <msb@chromium.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-acpi@vger.kernel.org, ibm-acpi@hmh.eng.br,
+        ibm-acpi-devel@lists.sourceforge.net,
+        platform-driver-x86@vger.kernel.org, Aaron Lu <aaron.lu@intel.com>,
+        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH 0/1] thinkpad-acpi: kill hotkey_thread_mutex
+Message-ID: <20130307175305.GA15631@redhat.com>
+References: <201303042055.38040.maciej.rutecki@gmail.com> <1362504883-9180-1-git-send-email-msb@chromium.org> <20130305174838.GA7276@redhat.com> <CACBanvqHRDsOQiMsQMw5_QDt1wFrb8_DRoiASSvqeA6XdFrwZQ@mail.gmail.com> <20130305180542.GA12738@redhat.com> <CACBanvr7XvXbFjphpRwKHHJKzVuA-s6sF-qkPiizBV3+uqzpJw@mail.gmail.com> <20130305232603.GA16045@khazad-dum.debian.net> <20130306154420.GA7697@redhat.com> <20130306233232.GA12645@khazad-dum.debian.net>
 MIME-Version: 1.0
-In-Reply-To: <20130307155343.GD2790@redhat.com>
-References: <20130304191546.GF15199@redhat.com>
-	<1362446491.4392.133.camel@falcor1>
-	<20130305151829.GB4519@redhat.com>
-	<1362516018.4392.233.camel@falcor1>
-	<20130305215300.GE4519@redhat.com>
-	<1362584551.4392.291.camel@falcor1>
-	<20130306235525.GB29229@redhat.com>
-	<1362620348.4392.408.camel@falcor1>
-	<20130307143643.GA2790@redhat.com>
-	<1362670833.4392.438.camel@falcor1>
-	<20130307155343.GD2790@redhat.com>
-Date: Thu, 7 Mar 2013 19:53:50 +0200
-Message-ID: <CALLzPKYTmD2AUm1k7JEzXupRjOUPgkQ0LRpuT7b5P1yNpLQOxg@mail.gmail.com>
-Subject: Re: IMA: How to manage user space signing policy with others
-From: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>, Eric Paris <eparis@parisplace.org>,
-        linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        LSM List <linux-security-module@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130306233232.GA12645@khazad-dum.debian.net>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 7, 2013 at 5:53 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
-> On Thu, Mar 07, 2013 at 10:40:33AM -0500, Mimi Zohar wrote:
->> On Thu, 2013-03-07 at 09:36 -0500, Vivek Goyal wrote:
->> > On Wed, Mar 06, 2013 at 08:39:08PM -0500, Mimi Zohar wrote:
->> > > On Wed, 2013-03-06 at 18:55 -0500, Vivek Goyal wrote:
->> > > > On Wed, Mar 06, 2013 at 10:42:31AM -0500, Mimi Zohar wrote:
->> >
->> > > Adding an IMA call to directly appraise the integrity of a file, rather
->> > > than adding a hook, prevents other integrity users from being able to
->> > > define a rule at that point.
->> >
->> > We already have security hooks in exec() code and mmap(). And current
->> > integrity callers are happy with it.
->>
->> Exposing integrity calls, resolves the problem of code duplication, but
->> does not address Rusty's third issue of improving the integrity
->> subsystem.
+On 03/06, Henrique de Moraes Holschuh wrote:
 >
-> I thought rusty wanted me to reuse existing integrity code so that there
-> is no code duplication. And improve things as needed int the process
-> so meet new requirements.
+> On Wed, 06 Mar 2013, Oleg Nesterov wrote:
+> >
+> > 	static void hotkey_poll_stop_sync(void)
+> > 	{
+> > 		if (tpacpi_hotkey_task) {
+> > 			kthread_stop(tpacpi_hotkey_task);
+> > 			tpacpi_hotkey_task = NULL;
+> > 			mutex_lock(&hotkey_thread_mutex);
+> > 			/* at this point, the thread did exit */
+> > 			mutex_unlock(&hotkey_thread_mutex);
+> > 		}
+> > 	}
+> >
+> > And I simply do not understand the comment. This thread has already exited
+> > when kthread_stop() returns (OK, it can be running do_exit() paths but this
+> > doesn't matter). So this mutex_lock() buys nothing afaics.
 >
-> And exposing functions calls will just do that. Improve IMA so that
-> more people can reuse the same code without breaking existing users.
->
-> Other improvements will be to improve "cpio" to support xattr and
-> figure a way out to chain into secureboot root of trust and load
-> only trusted keys.
->
-> So yes, I am improving IMA subsystem. Only thing I am arguing against
-> that I don't think trying to enahnce policy based interface is right
-> thing to do here in the light of new requirements. It just makes IMA too
-> complicated and it is not worth it.
->
->>  You have no idea if the existing integrity users are happy
->> with the status quo.
->
-> If nobody is speaking then I have to assume something. If they are happy,
-> great, exposing new functions are not going to break any of their
-> functionality. If they are not happy then there is more reason to believe
-> that trying to enahance policy based interface is a bad thing. It is not
-> working.
->
->>  It's there and they're using it.  They could want
->> additional hooks or better located hooks.  Each of your complaints about
->> the integrity subsystem could be addressed and would improve the
->> subsystem.
->
-> If they want better located hooks, they are more than welcome to put
-> it. Exposing some of the functions does not prevent it. They want
-> to improve IMA subsystem, sure, why not. Exposing some fucntions
-> does not prevent it.
->
+> It was added due to an oops, waaaaay back then.  If it is not needed
+> anymore, and there is zero chance of the kthread still being active when
+> hotkey_poll_stop_sync() ends, hotkey_thread_mutex can be simply removed.
 
-Hello,
+Well, there could be another bug. Say, hotkey_poll_stop_sync() can block
+on hotkey_thread_mutex if another thread was started. But at first glance
+this can't happen (hotkey_mutex), and even _if_ it can this needs another
+fix.
 
-Sorry if missed something from this lengthy thread and I repeat something.
+> Looks like it, if the current semanthics of ktread_stop() are syncronous.
 
-I have not noticed what functions you propose to export.
+IIRC, it always was... But at least currently it is certainly syncronous.
+kthread_stop(t) does wait_for_completion(t->vfork_done), complete(vfork_done)
+can't happen unless this task calls do_exit().
 
-But for your use case you need to know if file was signed and
-signature was fine, right?
-So you want to export a function which returns, for example
-"iint->flags & IMA_DIGSIG".
-If it was no xattr or no signature, then this flag will not be set.
-If signature verification failed, then hook returns EPERM anyway.
+Hmm. I just noticed that the recent changes in kthread_stop() are not correct...
+But this is offtopic and doesn't affect thinkpad_acpi.c, I'll write another
+email later.
 
-Is it what you want?
+So, what do you think about (UNTESTED) 1/1 ?
 
-- Dmitry
+Oleg.
 
-> Thanks
-> Vivek
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
