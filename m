@@ -1,64 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753397Ab3CGJph (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 04:45:37 -0500
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:49374 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751184Ab3CGJpf (ORCPT
+	id S1753454Ab3CGJrE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 04:47:04 -0500
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:40495 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751049Ab3CGJrC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 04:45:35 -0500
-Message-ID: <1362649361.14735.5.camel@beeld>
-Subject: [PATCH] nsproxy: Fix ->nsproxy counting problem in copy_namespace.
-From: Rakib Mullick <rakib.mullick@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Date: Thu, 07 Mar 2013 15:42:41 +0600
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.1 (3.4.1-2.fc17) 
+	Thu, 7 Mar 2013 04:47:02 -0500
+Message-ID: <51386207.5040808@linux.vnet.ibm.com>
+Date: Thu, 07 Mar 2013 17:46:47 +0800
+From: Michael Wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+MIME-Version: 1.0
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
+        Alex Shi <alex.shi@intel.com>, Paul Turner <pjt@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        Ram Pai <linuxram@us.ibm.com>
+Subject: Re: [PATCH] sched: wakeup buddy
+References: <5136EB06.2050905@linux.vnet.ibm.com> <1362645372.2606.11.camel@laptop>
+In-Reply-To: <1362645372.2606.11.camel@laptop>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13030709-7014-0000-0000-000002AF494E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From cd41495e25cf2641ffe9e01a40d3d221a46b08be Mon Sep 17 00:00:00 2001
-From: Rakib Mullick <rakib.mullick@gmail.com>
-Date: Thu, 7 Mar 2013 14:52:20 +0600
-Subject: [PATCH] nsproxy: Fix ->nsproxy counting problem in copy_namespace.
 
-In copy_namespace(), get_nsproxy() (which increments nsproxy->count) is called before checking namespace related flags.
-Therefore, task's nsproxy->count could have improper value, which could lead to calling free_nsproxy unnecessarily. Also,
-incrementing nsproxy->count is an atomic operation (which is expensive than normal increment operation), so before
-doing it - it's better we make sure namespace related flags are set.
+Hi, Peter
 
-Signed-off-by: Rakib Mullick <rakib.mullick@gmail.com>
----
- kernel/nsproxy.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+Thanks for your reply.
 
-diff --git a/kernel/nsproxy.c b/kernel/nsproxy.c
-index afc0456..de36209 100644
---- a/kernel/nsproxy.c
-+++ b/kernel/nsproxy.c
-@@ -130,12 +130,12 @@ int copy_namespaces(unsigned long flags, struct task_struct *tsk)
- 	if (!old_ns)
- 		return 0;
- 
--	get_nsproxy(old_ns);
--
- 	if (!(flags & (CLONE_NEWNS | CLONE_NEWUTS | CLONE_NEWIPC |
- 				CLONE_NEWPID | CLONE_NEWNET)))
- 		return 0;
- 
-+	get_nsproxy(old_ns);
-+
- 	if (!ns_capable(user_ns, CAP_SYS_ADMIN)) {
- 		err = -EPERM;
- 		goto out;
--- 
-1.7.11.7
+On 03/07/2013 04:36 PM, Peter Zijlstra wrote:
+> On Wed, 2013-03-06 at 15:06 +0800, Michael Wang wrote:
+> 
+>> wake_affine() stuff is trying to bind related tasks closely, but it doesn't
+>> work well according to the test on 'perf bench sched pipe' (thanks to Peter).
+> 
+> so sched-pipe is a poor benchmark for this.. 
+> 
+> Ideally we'd write a new benchmark that has some actual data footprint
+> and we'd measure the cost of tasks being apart on the various cache
+> metrics and see what affine wakeup does for it.
 
+I think sched-pipe is still somewhat capable, the problem is that the
+select_idle_sibling() doesn't take care the wakeup related case, it
+doesn't contain the logical to locate an idle cpu closely.
 
+So even we detect the relationship successfully, select_idle_sibling()
+can only help to make sure the target cpu won't be outside of the
+current package, it's a package level bind, not mc or smp level.
+
+> 
+> Before doing something like what you're proposing, I'd have a hard look
+> at WF_SYNC, it is possible we should disable/fix select_idle_sibling
+> for sync wakeups.
+
+The patch is supposed to stop using wake_affine() blindly, not improve
+the wake_affine() stuff itself, the whole stuff still works, but since
+we rely on select_idle_sibling() to make the choice, the benefit is not
+so significant, especially on my one node box...
+
+> 
+> The idea behind sync wakeups is that we try and detect the case where
+> we wakeup up one task only to go to sleep ourselves and try and avoid
+> the regular ping-pong this would otherwise create on account of the
+> waking task still being alive and so the current cpu isn't actually
+> idle yet but we know its going to be idle soon.
+
+Are you suggesting that we should separate the process of wakeup related
+case, not just pass current cpu to select_idle_sibling()?
+
+Regards,
+Michael Wang
+
+> 
+> 
+> 
 
