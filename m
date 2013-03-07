@@ -1,100 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932358Ab3CGQpX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 11:45:23 -0500
-Received: from mx2.netapp.com ([216.240.18.37]:6471 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755155Ab3CGQpV convert rfc822-to-8bit (ORCPT
+	id S1759605Ab3CGQwb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 11:52:31 -0500
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:48348
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752209Ab3CGQwa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 11:45:21 -0500
-X-IronPort-AV: E=Sophos;i="4.84,803,1355126400"; 
-   d="scan'208";a="13755847"
-From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Jeff Layton <jlayton@redhat.com>, Tejun Heo <tj@kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Mandeep Singh Baines <msb@chromium.org>,
-        Ming Lei <ming.lei@canonical.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
+	Thu, 7 Mar 2013 11:52:30 -0500
+Message-ID: <1362675134.10972.21.camel@laptop>
+Subject: Re: [PATCH] sched: wakeup buddy
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Michael Wang <wangyun@linux.vnet.ibm.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
+        Alex Shi <alex.shi@intel.com>, Paul Turner <pjt@google.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: LOCKDEP: 3.9-rc1: mount.nfs/4272 still has locks held!
-Thread-Topic: LOCKDEP: 3.9-rc1: mount.nfs/4272 still has locks held!
-Thread-Index: AQHOGOA9OOKbapJ+RE+tLJb3WRyEW5iWGYKAgAACcQCAAFy3AIAAED2AgAAVFoCAAP+FAIAASasAgAAA3gCAABR7AIAAAbqAgABLhYCAAAIMAIABNeMAgAAKUgCAACN5AIAABvAAgAABwwCAAAGFAIAA7BsAgABG94CAAAERAIAABy4AgAAFngA=
-Date: Thu, 7 Mar 2013 16:45:17 +0000
-Message-ID: <4FA345DA4F4AE44899BD2B03EEEC2FA9286B52F1@sacexcmbx05-prd.hq.netapp.com>
-References: <20130305174954.GG12795@htj.dyndns.org>
-	 <20130305140312.243cb094@tlielax.poochiereds.net>
-	 <20130305190923.GI12795@htj.dyndns.org>
-	 <20130305183941.19ff39ce@tlielax.poochiereds.net>
-	 <20130305234700.GE1227@htj.dyndns.org> <20130306181608.GA18687@redhat.com>
-	 <20130306185304.GM1227@htj.dyndns.org>
-	 <CA+55aFwDogteVd=vwGHXDSASnga-nZZnKaQz9aO1yBU2CPKSbA@mail.gmail.com>
-	 <20130306212452.GO1227@htj.dyndns.org>
-	 <CA+55aFy49AWptMcvEzJxg95ikf-dC+-vcCPq-cnaCCwje3tyoQ@mail.gmail.com>
-	 <20130306213636.GP1227@htj.dyndns.org>
-	 <20130307064140.71c0936b@tlielax.poochiereds.net>
-	 <CA+55aFxe1_x8wvVYciiX8tuee+VsmXGKqEbONQdFM4s4W2iuPg@mail.gmail.com>
-	 <4FA345DA4F4AE44899BD2B03EEEC2FA9286B511E@sacexcmbx05-prd.hq.netapp.com>
-	 <CA+55aFySyBP8q5AvPrt-s_ZPdgamfoX-dERw4EJ21EcsDLBjYA@mail.gmail.com>
-In-Reply-To: <CA+55aFySyBP8q5AvPrt-s_ZPdgamfoX-dERw4EJ21EcsDLBjYA@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.104.60.115]
-Content-Type: text/plain; charset=US-ASCII
-Content-ID: <B9FA5D0AA0C5084E95FEBB19DEF3AE47@tahoe.netapp.com>
-Content-Transfer-Encoding: 7BIT
-MIME-Version: 1.0
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        Ram Pai <linuxram@us.ibm.com>
+Date: Thu, 07 Mar 2013 17:52:14 +0100
+In-Reply-To: <51386207.5040808@linux.vnet.ibm.com>
+References: <5136EB06.2050905@linux.vnet.ibm.com>
+	 <1362645372.2606.11.camel@laptop> <51386207.5040808@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-03-07 at 08:25 -0800, Linus Torvalds wrote:
-> On Thu, Mar 7, 2013 at 7:59 AM, Myklebust, Trond
-> <Trond.Myklebust@netapp.com> wrote:
-> >
-> > It _shouldn't_ be an interruption unless the filesystem can't make
-> > progress.
-> 
-> So how can we tell? Calling "freezable_schedule()" if you're not ready
-> to be frozen is not good. And nobody but the NFS code can know.
-> 
-> You might want to introduce some counter that counts number of
-> outstanding non-interruptible events, and only call the "freezable"
-> version if that counter is zero.
-> 
-> A better alternative might be to *never* call the freezable version.
-> Because those freezable_*() things are really quite disgusting, and
-> are wrong - they don't actually freeze the process, they say "I don't
-> care if you freeze me while I sleep", and you might actually wake up
-> *while* the system is being frozen. I think the whole concept is
-> broken. Rafaei - comments? The function really is crap, regardless of
-> any unrelated NFS problems.
-> 
-> So what NFS could do instead is actually check the "do I need to
-> freeze" flag, and if you need to freeze you consider it an abort - and
-> do *not* try to continue. Just freeze, and then act as if the machine
-> got rebooted as far as NFS was concerned. That should work anyway, no?
-> 
-> That does sound a lot more complex, though.
+On Thu, 2013-03-07 at 17:46 +0800, Michael Wang wrote:
 
-The problem there is that we get into the whole 'hard' vs 'soft' mount
-problem. We're supposed to guarantee data integrity for 'hard' mounts,
-so no funny business is allowed. OTOH, 'soft' mounts time out and return
-EIO to the application anyway, and so shouldn't be a problem.
+> On 03/07/2013 04:36 PM, Peter Zijlstra wrote:
+> > On Wed, 2013-03-06 at 15:06 +0800, Michael Wang wrote:
+> > 
+> >> wake_affine() stuff is trying to bind related tasks closely, but it doesn't
+> >> work well according to the test on 'perf bench sched pipe' (thanks to Peter).
+> > 
+> > so sched-pipe is a poor benchmark for this.. 
+> > 
+> > Ideally we'd write a new benchmark that has some actual data footprint
+> > and we'd measure the cost of tasks being apart on the various cache
+> > metrics and see what affine wakeup does for it.
+> 
+> I think sched-pipe is still somewhat capable, 
 
-Perhaps we could add a '-oslushy' mount option :-) that guarantees data
-integrity for all situations _except_ ENETDOWN/ENETUNREACH?
+Yeah, its not entirely crap for this, but its not ideal either. The
+very big difference you see between it running on a single cpu and on
+say two threads of a single core is mostly due to preemption
+'artifacts' though. Not because of cache.
 
--- 
-Trond Myklebust
-Linux NFS client maintainer
+So we have 2 tasks -- lets call then A and B -- involved in a single
+word ping-pong. So we're both doing write(); read(); loops. Now what
+happens on a single cpu is that A's write()->wakeup() of B makes B
+preempt A before A hits read() and blocks. This in turn ensures that
+B's write()->wakeup() of A finds an already running A and doesn't
+actually need to do the full (and expensive) wakeup thing (and vice
+versa).
 
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
+So by constantly preempting one another they avoid the expensive bit of
+going to sleep and waking up again.
+
+wake_affine() OTOH still has a (supposed) benefit if it gets the tasks
+running 'closer' (in a cache hierarchy sense) since then the data
+sharing is less expensive.
+
+> the problem is that the
+> select_idle_sibling() doesn't take care the wakeup related case, it
+> doesn't contain the logical to locate an idle cpu closely.
+
+I'm not entirely sure if I understand what you mean, do you mean to say
+its idea of 'closely' is not quite correct? If so, I tend to agree, see
+further down.
+
+> So even we detect the relationship successfully, select_idle_sibling()
+> can only help to make sure the target cpu won't be outside of the
+> current package, it's a package level bind, not mc or smp level.
+
+That is the entire point of select_idle_sibling(), selecting a cpu
+'near' the target cpu that is currently idle.
+
+Not too long ago we had a bit of a discussion on the unholy mess that
+is select_idle_sibling() and if it actually does the right thing.
+Arguably it doesn't for machines that have an effective L2 cache. The 
+issue is that the arch<->sched interface only knows about
+last-level-cache (L3 on anything modern) and SMT.
+
+Expanding the topology description in a way that makes sense (and
+doesn't make it a bigger mess) is somewhere on the todo-list.
+
+> > Before doing something like what you're proposing, I'd have a hard look
+> > at WF_SYNC, it is possible we should disable/fix select_idle_sibling
+> > for sync wakeups.
+> 
+> The patch is supposed to stop using wake_affine() blindly, not improve
+> the wake_affine() stuff itself, the whole stuff still works, but since
+> we rely on select_idle_sibling() to make the choice, the benefit is not
+> so significant, especially on my one node box...
+
+OK, I'll have to go read the actual patch for that, I'll get back to
+you on that :-)
+
+> > The idea behind sync wakeups is that we try and detect the case where
+> > we wakeup up one task only to go to sleep ourselves and try and avoid
+> > the regular ping-pong this would otherwise create on account of the
+> > waking task still being alive and so the current cpu isn't actually
+> > idle yet but we know its going to be idle soon.
+> 
+> Are you suggesting that we should separate the process of wakeup related
+> case, not just pass current cpu to select_idle_sibling()?
+
+Depends a bit on what you're trying to fix, so far I'm just trying to
+write down what I remember about stuff and reacting to half-read
+changelogs ;-)
+
