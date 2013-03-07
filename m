@@ -1,52 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933004Ab3CGPJr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 10:09:47 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47800 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755200Ab3CGPJp (ORCPT
+	id S933014Ab3CGPMQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 10:12:16 -0500
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:34072 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758777Ab3CGPMO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 10:09:45 -0500
-Date: Thu, 7 Mar 2013 09:09:41 -0600
-From: Seth Forshee <seth.forshee@canonical.com>
-To: Matt Fleming <matt.fleming@intel.com>
-Cc: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org,
-        stable@vger.kernel.org, "H. Peter Anvin" <hpa@linux.intel.com>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: Problem mounting efivarfs in 3.9
-Message-ID: <20130307150941.GB24233@thinkpad-t410>
-Mail-Followup-To: Matt Fleming <matt.fleming@intel.com>,
-	linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org,
-	stable@vger.kernel.org, "H. Peter Anvin" <hpa@linux.intel.com>,
-	Ingo Molnar <mingo@kernel.org>
-References: <20130307145601.GA24233@thinkpad-t410>
- <1362668558.15011.203.camel@mfleming-mobl1.ger.corp.intel.com>
+	Thu, 7 Mar 2013 10:12:14 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1362668558.15011.203.camel@mfleming-mobl1.ger.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <alpine.LNX.2.00.1303071600480.28677@pobox.suse.cz>
+References: <1362499740-32459-1-git-send-email-benjamin.tissoires@redhat.com>
+	<alpine.LNX.2.00.1303071600480.28677@pobox.suse.cz>
+Date: Thu, 7 Mar 2013 16:12:12 +0100
+Message-ID: <CAN+gG=HBocC6oR6qyyu1xyYaOp8eBakSh2G-5pdr6zxjXQYqxA@mail.gmail.com>
+Subject: Re: [PATCH] HID: logitech-dj: do not directly call
+ hid_output_raw_report() during probe
+From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        Nestor Lopez Casado <nlopezcasad@logitech.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Bob Bowles <bobjohnbowles@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 07, 2013 at 03:02:38PM +0000, Matt Fleming wrote:
-> On Thu, 2013-03-07 at 08:56 -0600, Seth Forshee wrote:
-> > Hi Matt,
-> > 
-> > I found myself unable to mount efivarfs on one of my machines in 3.9.
-> > This is due to your patch to be more aggressive about validating
-> > filenames. This machine had some crash dumps from pstore, which start
-> > with "dump-type". However now efivars expects the guid to follow the
-> > first '-' character, despite the fact that the efivars pstore code is
-> > creating the file names starting with dump-type. Since these names fail
-> > the validation the mount fails.
-> 
-> A patch to allow pstore names is in the pull request I sent to Peter and
-> Ingo yesterday,
-> 
-> 	http://marc.info/?l=linux-kernel&m=136258373231608&w=2
+On Thu, Mar 7, 2013 at 4:07 PM, Jiri Kosina <jkosina@suse.cz> wrote:
+> On Tue, 5 Mar 2013, Benjamin Tissoires wrote:
+>
+>> hid_output_raw_report() makes a direct call to usb_control_msg(). However,
+>> some USB3 boards have shown that the usb device is not ready during the
+>> .probe(). This blocks the entire usb device, and the paired mice, keyboards
+>> are not functional. The dmesg output is the following:
+>>
+>> [   11.912287] logitech-djreceiver 0003:046D:C52B.0003: hiddev0,hidraw0: USB HID v1.11 Device [Logitech USB Receiver] on usb-0000:00:14.0-2/input2
+>> [   11.912537] logitech-djreceiver 0003:046D:C52B.0003: logi_dj_probe:logi_dj_recv_query_paired_devices error:-32
+>> [   11.912636] logitech-djreceiver: probe of 0003:046D:C52B.0003 failed with error -32
+>>
+>> Relying on the scheduled call to .hid_hw_request() fixes the problem.
+>>
+>> related bugs:
+>> https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1072082
+>> https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1039143
+>> https://bugzilla.redhat.com/show_bug.cgi?id=840391
+>> https://bugzilla.kernel.org/show_bug.cgi?id=49781
+>>
+>> Reported-and-tested-by: Bob Bowles <bobjohnbowles@gmail.com>
+>> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+>> ---
+>>
+>> Hi guys,
+>>
+>> this bug has taken too long to be solved. I managed to figure out the root cause
+>> recently thanks to the work of Jelle Foks in lp#1039143.
+>>
+>> Jiri, I based this fix on top of your for-3.10/logitech branch.
+>> It *will* failed to build when you will merge it with the branch
+>> for-3.10/hid-driver-transport-cleanups. This is due to the use of
+>> usbhid_submit_report() instead of hid_hw_request(). The
+>>
+>> However, I prefer do it that way so that I can send it to "stable" to fix all
+>> the current releases since 3.2 (I guess only the LTS v3.4 will pick it and the
+>> current 3.8, but distros can then cherry-pick it easily).
+>
+> Benjamin, Bob,
+>
+> excellent work, thanks for figuring it out.
+>
+> Given the nature of the bug, I'd prefer to push it to Linus for 3.9 still,
+> and have it backported to -stable as well.
+>
+> Once it's in Linus' tree, I will handle the fallout in
+> for-3.10/hid-driver-transport-cleanups and fix the build.
+>
+> Ok?
 
-Great. Thanks!
+That seems perfect to me.
 
-Seth
+>
+> Now queued for 3.9.
+>
+
+Thanks. And thanks also for applying the other patches Jiri.
+
+Cheers,
+Benjamin
