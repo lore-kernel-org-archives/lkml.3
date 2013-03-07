@@ -1,43 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759133Ab3CGO4I (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 09:56:08 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47712 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754451Ab3CGO4G (ORCPT
+	id S932920Ab3CGO5G (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 09:57:06 -0500
+Received: from mail-lb0-f181.google.com ([209.85.217.181]:65065 "EHLO
+	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754289Ab3CGO5D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 09:56:06 -0500
-Date: Thu, 7 Mar 2013 08:56:01 -0600
-From: Seth Forshee <seth.forshee@canonical.com>
-To: Matt Fleming <matt.fleming@intel.com>
-Cc: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org,
-        stable@vger.kernel.org
-Subject: Problem mounting efivarfs in 3.9
-Message-ID: <20130307145601.GA24233@thinkpad-t410>
-Mail-Followup-To: Matt Fleming <matt.fleming@intel.com>,
-	linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org,
-	stable@vger.kernel.org
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 7 Mar 2013 09:57:03 -0500
+From: Johan Hovold <jhovold@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Jiri Slaby <jslaby@suse.cz>, Peter Hurley <peter@hurleysoftware.com>,
+        Alan Stern <stern@rowland.harvard.edu>, linux-usb@vger.kernel.org,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Johan Hovold <jhovold@gmail.com>
+Subject: [PATCH v3 2/6] TTY: wake up processes last at hangup
+Date: Thu,  7 Mar 2013 15:55:49 +0100
+Message-Id: <1362668153-10972-3-git-send-email-jhovold@gmail.com>
+X-Mailer: git-send-email 1.8.1.1
+In-Reply-To: <1362668153-10972-1-git-send-email-jhovold@gmail.com>
+References: <51361724.4050107@suse.cz>
+ <1362668153-10972-1-git-send-email-jhovold@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Matt,
+Move wake up of processes on blocked-open and modem-status wait queues
+to after port shutdown at hangup.
 
-I found myself unable to mount efivarfs on one of my machines in 3.9.
-This is due to your patch to be more aggressive about validating
-filenames. This machine had some crash dumps from pstore, which start
-with "dump-type". However now efivars expects the guid to follow the
-first '-' character, despite the fact that the efivars pstore code is
-creating the file names starting with dump-type. Since these names fail
-the validation the mount fails.
+This way the woken up processes can use the ASYNC_INITIALIZED flag to
+detect port shutdown.
 
-These changes are now in some of the stable releases as well (3.8.x at
-minumum).
+Note that this is the order currently used by serial-core.
 
-Thanks,
-Seth
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+---
+ drivers/tty/tty_port.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/tty/tty_port.c b/drivers/tty/tty_port.c
+index 57a061e..3de5918 100644
+--- a/drivers/tty/tty_port.c
++++ b/drivers/tty/tty_port.c
+@@ -231,9 +231,9 @@ void tty_port_hangup(struct tty_port *port)
+ 	}
+ 	port->tty = NULL;
+ 	spin_unlock_irqrestore(&port->lock, flags);
++	tty_port_shutdown(port);
+ 	wake_up_interruptible(&port->open_wait);
+ 	wake_up_interruptible(&port->delta_msr_wait);
+-	tty_port_shutdown(port);
+ }
+ EXPORT_SYMBOL(tty_port_hangup);
+ 
+-- 
+1.8.1.1
 
