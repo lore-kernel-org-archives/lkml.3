@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932766Ab3CGMNc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 07:13:32 -0500
-Received: from mail.pripojeni.net ([178.22.112.14]:49748 "EHLO
+	id S1758050Ab3CGMNa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 07:13:30 -0500
+Received: from mail.pripojeni.net ([178.22.112.14]:49749 "EHLO
 	smtp.pripojeni.net" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1757385Ab3CGMMu (ORCPT
+	with ESMTP id S1757460Ab3CGMMu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 7 Mar 2013 07:12:50 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: gregkh@linuxfoundation.org
 Cc: peter@hurleysoftware.com, jirislaby@gmail.com,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 05/16] TTY: add tty_port_tty_wakeup helper
-Date: Thu,  7 Mar 2013 13:12:29 +0100
-Message-Id: <1362658360-26629-5-git-send-email-jslaby@suse.cz>
+Subject: [PATCH 06/16] TTY: add tty_port_tty_hangup helper
+Date: Thu,  7 Mar 2013 13:12:30 +0100
+Message-Id: <1362658360-26629-6-git-send-email-jslaby@suse.cz>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1362658360-26629-1-git-send-email-jslaby@suse.cz>
 References: <1362658360-26629-1-git-send-email-jslaby@suse.cz>
@@ -22,699 +22,540 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 It allows for cleaning up on a considerable amount of places. They did
-port_get, wakeup, kref_put. Now the only thing needed is to call
-tty_port_tty_wakeup which does exactly that.
-
-One exception is ifx6x60 where tty_wakeup was open-coded. We now call
-tty_wakeup properly there.
+port_get, hangup, kref_put. Now the only thing needed is to call
+tty_port_tty_hangup which does exactly that. And they can also decide
+whether to consider CLOCAL or completely ignore that.
 
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- arch/um/drivers/line.c                  |  8 +-------
- drivers/isdn/capi/capi.c                |  7 +------
- drivers/isdn/gigaset/interface.c        |  6 +-----
- drivers/net/usb/hso.c                   | 13 ++-----------
- drivers/s390/char/sclp_tty.c            |  9 ++-------
- drivers/s390/char/sclp_vt220.c          |  8 +-------
- drivers/staging/fwserial/fwserial.c     | 10 ++--------
- drivers/staging/serqt_usb2/serqt_usb2.c |  7 +------
- drivers/tty/ehv_bytechan.c              |  6 +-----
- drivers/tty/hvc/hvsi.c                  |  7 +------
- drivers/tty/nozomi.c                    |  6 +-----
- drivers/tty/serial/ifx6x60.c            | 33 ++-------------------------------
- drivers/tty/tty_port.c                  | 16 ++++++++++++++++
- drivers/usb/class/cdc-acm.c             |  7 +------
- drivers/usb/serial/digi_acceleport.c    | 17 +++--------------
- drivers/usb/serial/io_edgeport.c        | 28 +++++-----------------------
- drivers/usb/serial/keyspan_pda.c        |  6 ++----
- drivers/usb/serial/mos7720.c            |  8 ++------
- drivers/usb/serial/mos7840.c            |  7 ++-----
- drivers/usb/serial/ti_usb_3410_5052.c   |  7 ++-----
- drivers/usb/serial/usb-serial.c         | 10 +---------
- include/linux/tty.h                     |  1 +
- 22 files changed, 51 insertions(+), 176 deletions(-)
+ arch/um/drivers/chan_kern.c         |  6 +-----
+ drivers/mmc/card/sdio_uart.c        | 13 ++---------
+ drivers/net/usb/hso.c               |  7 +-----
+ drivers/tty/cyclades.c              | 10 ++-------
+ drivers/tty/moxa.c                  | 19 ++++++----------
+ drivers/tty/n_gsm.c                 |  6 +-----
+ drivers/tty/nozomi.c                |  9 +++-----
+ drivers/tty/rocket.c                |  7 +-----
+ drivers/tty/serial/ifx6x60.c        | 21 ++----------------
+ drivers/tty/tty_port.c              | 17 +++++++++++++++
+ drivers/usb/class/cdc-acm.c         | 24 ++++++---------------
+ drivers/usb/serial/keyspan.c        | 43 +++++++++----------------------------
+ drivers/usb/serial/option.c         |  9 ++------
+ drivers/usb/serial/sierra.c         |  8 ++-----
+ include/linux/tty.h                 |  1 +
+ net/irda/ircomm/ircomm_tty_attach.c |  6 +-----
+ 16 files changed, 58 insertions(+), 148 deletions(-)
 
-diff --git a/arch/um/drivers/line.c b/arch/um/drivers/line.c
-index f1b3857..cc206ed 100644
---- a/arch/um/drivers/line.c
-+++ b/arch/um/drivers/line.c
-@@ -248,7 +248,6 @@ static irqreturn_t line_write_interrupt(int irq, void *data)
+diff --git a/arch/um/drivers/chan_kern.c b/arch/um/drivers/chan_kern.c
+index 15c553c..bf42825 100644
+--- a/arch/um/drivers/chan_kern.c
++++ b/arch/um/drivers/chan_kern.c
+@@ -568,11 +568,7 @@ void chan_interrupt(struct line *line, int irq)
+ 		reactivate_fd(chan->fd, irq);
+ 	if (err == -EIO) {
+ 		if (chan->primary) {
+-			struct tty_struct *tty = tty_port_tty_get(&line->port);
+-			if (tty != NULL) {
+-				tty_hangup(tty);
+-				tty_kref_put(tty);
+-			}
++			tty_port_tty_hangup(&line->port, false);
+ 			if (line->chan_out != chan)
+ 				close_one_chan(line->chan_out, 1);
+ 		}
+diff --git a/drivers/mmc/card/sdio_uart.c b/drivers/mmc/card/sdio_uart.c
+index c931dfe..f093cea 100644
+--- a/drivers/mmc/card/sdio_uart.c
++++ b/drivers/mmc/card/sdio_uart.c
+@@ -134,7 +134,6 @@ static void sdio_uart_port_put(struct sdio_uart_port *port)
+ static void sdio_uart_port_remove(struct sdio_uart_port *port)
  {
- 	struct chan *chan = data;
- 	struct line *line = chan->line;
+ 	struct sdio_func *func;
 -	struct tty_struct *tty;
- 	int err;
  
- 	/*
-@@ -267,12 +266,7 @@ static irqreturn_t line_write_interrupt(int irq, void *data)
- 	}
- 	spin_unlock(&line->lock);
+ 	BUG_ON(sdio_uart_table[port->index] != port);
  
--	tty = tty_port_tty_get(&line->port);
--	if (tty == NULL)
--		return IRQ_NONE;
--
--	tty_wakeup(tty);
--	tty_kref_put(tty);
-+	tty_port_tty_wakeup(&line->port);
- 
- 	return IRQ_HANDLED;
- }
-diff --git a/drivers/isdn/capi/capi.c b/drivers/isdn/capi/capi.c
-index 89562a8..ac6f72b 100644
---- a/drivers/isdn/capi/capi.c
-+++ b/drivers/isdn/capi/capi.c
-@@ -569,7 +569,6 @@ static void capi_recv_message(struct capi20_appl *ap, struct sk_buff *skb)
- {
- 	struct capidev *cdev = ap->private;
- #ifdef CONFIG_ISDN_CAPI_MIDDLEWARE
--	struct tty_struct *tty;
- 	struct capiminor *mp;
- 	u16 datahandle;
- 	struct capincci *np;
-@@ -627,11 +626,7 @@ static void capi_recv_message(struct capi20_appl *ap, struct sk_buff *skb)
- 			 CAPIMSG_U16(skb->data, CAPIMSG_BASELEN + 4 + 2));
- 		kfree_skb(skb);
- 		capiminor_del_ack(mp, datahandle);
--		tty = tty_port_tty_get(&mp->port);
--		if (tty) {
--			tty_wakeup(tty);
--			tty_kref_put(tty);
--		}
-+		tty_port_tty_wakeup(&mp->port);
- 		handle_minor_send(mp);
- 
- 	} else {
-diff --git a/drivers/isdn/gigaset/interface.c b/drivers/isdn/gigaset/interface.c
-index e2b5396..600c79b 100644
---- a/drivers/isdn/gigaset/interface.c
-+++ b/drivers/isdn/gigaset/interface.c
-@@ -487,12 +487,8 @@ static const struct tty_operations if_ops = {
- static void if_wake(unsigned long data)
- {
- 	struct cardstate *cs = (struct cardstate *)data;
--	struct tty_struct *tty = tty_port_tty_get(&cs->port);
- 
+@@ -155,12 +154,8 @@ static void sdio_uart_port_remove(struct sdio_uart_port *port)
+ 	sdio_claim_host(func);
+ 	port->func = NULL;
+ 	mutex_unlock(&port->func_lock);
+-	tty = tty_port_tty_get(&port->port);
+ 	/* tty_hangup is async so is this safe as is ?? */
 -	if (tty) {
--		tty_wakeup(tty);
+-		tty_hangup(tty);
 -		tty_kref_put(tty);
 -	}
-+	tty_port_tty_wakeup(&cs->port);
- }
- 
- /*** interface to common ***/
++	tty_port_tty_hangup(&port->port, false);
+ 	mutex_unlock(&port->port.mutex);
+ 	sdio_release_irq(func);
+ 	sdio_disable_func(func);
+@@ -492,11 +487,7 @@ static void sdio_uart_check_modem_status(struct sdio_uart_port *port)
+ 			wake_up_interruptible(&port->port.open_wait);
+ 		else {
+ 			/* DCD drop - hang up if tty attached */
+-			tty = tty_port_tty_get(&port->port);
+-			if (tty) {
+-				tty_hangup(tty);
+-				tty_kref_put(tty);
+-			}
++			tty_port_tty_hangup(&port->port, false);
+ 		}
+ 	}
+ 	if (status & UART_MSR_DCTS) {
 diff --git a/drivers/net/usb/hso.c b/drivers/net/usb/hso.c
-index e2dd324..a7714b4 100644
+index a7714b4..cba1d46 100644
 --- a/drivers/net/usb/hso.c
 +++ b/drivers/net/usb/hso.c
-@@ -1925,7 +1925,6 @@ static void hso_std_serial_write_bulk_callback(struct urb *urb)
+@@ -3124,18 +3124,13 @@ static void hso_serial_ref_free(struct kref *ref)
+ static void hso_free_interface(struct usb_interface *interface)
  {
- 	struct hso_serial *serial = urb->context;
- 	int status = urb->status;
+ 	struct hso_serial *hso_dev;
 -	struct tty_struct *tty;
+ 	int i;
  
- 	/* sanity check */
- 	if (!serial) {
-@@ -1941,11 +1940,7 @@ static void hso_std_serial_write_bulk_callback(struct urb *urb)
- 		return;
- 	}
- 	hso_put_activity(serial->parent);
--	tty = tty_port_tty_get(&serial->port);
--	if (tty) {
--		tty_wakeup(tty);
--		tty_kref_put(tty);
--	}
-+	tty_port_tty_wakeup(&serial->port);
- 	hso_kick_transmit(serial);
+ 	for (i = 0; i < HSO_SERIAL_TTY_MINORS; i++) {
+ 		if (serial_table[i] &&
+ 		    (serial_table[i]->interface == interface)) {
+ 			hso_dev = dev2ser(serial_table[i]);
+-			tty = tty_port_tty_get(&hso_dev->port);
+-			if (tty) {
+-				tty_hangup(tty);
+-				tty_kref_put(tty);
+-			}
++			tty_port_tty_hangup(&hso_dev->port, false);
+ 			mutex_lock(&hso_dev->parent->mutex);
+ 			hso_dev->parent->usb_gone = 1;
+ 			mutex_unlock(&hso_dev->parent->mutex);
+diff --git a/drivers/tty/cyclades.c b/drivers/tty/cyclades.c
+index 345bd0e..33f83fe 100644
+--- a/drivers/tty/cyclades.c
++++ b/drivers/tty/cyclades.c
+@@ -1124,14 +1124,8 @@ static void cyz_handle_cmd(struct cyclades_card *cinfo)
+ 					readl(&info->u.cyz.ch_ctrl->rs_status);
+ 				if (dcd & C_RS_DCD)
+ 					wake_up_interruptible(&info->port.open_wait);
+-				else {
+-					struct tty_struct *tty;
+-					tty = tty_port_tty_get(&info->port);
+-					if (tty) {
+-						tty_hangup(tty);
+-						tty_kref_put(tty);
+-					}
+-				}
++				else
++					tty_port_tty_hangup(&info->port, false);
+ 			}
+ 			break;
+ 		case C_CM_MCTS:
+diff --git a/drivers/tty/moxa.c b/drivers/tty/moxa.c
+index adeac25..1deaca4 100644
+--- a/drivers/tty/moxa.c
++++ b/drivers/tty/moxa.c
+@@ -913,16 +913,12 @@ static void moxa_board_deinit(struct moxa_board_conf *brd)
  
- 	D1(" ");
-@@ -2008,12 +2003,8 @@ static void ctrl_callback(struct urb *urb)
- 		put_rxbuf_data_and_resubmit_ctrl_urb(serial);
- 		spin_unlock(&serial->serial_lock);
- 	} else {
--		struct tty_struct *tty = tty_port_tty_get(&serial->port);
- 		hso_put_activity(serial->parent);
--		if (tty) {
--			tty_wakeup(tty);
--			tty_kref_put(tty);
+ 	/* pci hot-un-plug support */
+ 	for (a = 0; a < brd->numPorts; a++)
+-		if (brd->ports[a].port.flags & ASYNC_INITIALIZED) {
+-			struct tty_struct *tty = tty_port_tty_get(
+-						&brd->ports[a].port);
+-			if (tty) {
+-				tty_hangup(tty);
+-				tty_kref_put(tty);
+-			}
 -		}
-+		tty_port_tty_wakeup(&serial->port);
- 		/* response to a write command */
- 		hso_kick_transmit(serial);
- 	}
-diff --git a/drivers/s390/char/sclp_tty.c b/drivers/s390/char/sclp_tty.c
-index 14b4cb8..7ed7a59 100644
---- a/drivers/s390/char/sclp_tty.c
-+++ b/drivers/s390/char/sclp_tty.c
-@@ -107,7 +107,6 @@ sclp_tty_write_room (struct tty_struct *tty)
- static void
- sclp_ttybuf_callback(struct sclp_buffer *buffer, int rc)
- {
--	struct tty_struct *tty;
- 	unsigned long flags;
- 	void *page;
- 
-@@ -125,12 +124,8 @@ sclp_ttybuf_callback(struct sclp_buffer *buffer, int rc)
- 					    struct sclp_buffer, list);
- 		spin_unlock_irqrestore(&sclp_tty_lock, flags);
- 	} while (buffer && sclp_emit_buffer(buffer, sclp_ttybuf_callback));
--	/* check if the tty needs a wake up call */
--	tty = tty_port_tty_get(&sclp_port);
--	if (tty != NULL) {
--		tty_wakeup(tty);
--		tty_kref_put(tty);
--	}
++		if (brd->ports[a].port.flags & ASYNC_INITIALIZED)
++			tty_port_tty_hangup(&brd->ports[a].port, false);
 +
-+	tty_port_tty_wakeup(&sclp_port);
- }
+ 	for (a = 0; a < MAX_PORTS_PER_BOARD; a++)
+ 		tty_port_destroy(&brd->ports[a].port);
++
+ 	while (1) {
+ 		opened = 0;
+ 		for (a = 0; a < brd->numPorts; a++)
+@@ -1365,7 +1361,6 @@ static void moxa_hangup(struct tty_struct *tty)
  
- static inline void
-diff --git a/drivers/s390/char/sclp_vt220.c b/drivers/s390/char/sclp_vt220.c
-index 6c92f62..5aaaa2e 100644
---- a/drivers/s390/char/sclp_vt220.c
-+++ b/drivers/s390/char/sclp_vt220.c
-@@ -114,7 +114,6 @@ static struct sclp_register sclp_vt220_register = {
- static void
- sclp_vt220_process_queue(struct sclp_vt220_request *request)
+ static void moxa_new_dcdstate(struct moxa_port *p, u8 dcd)
  {
 -	struct tty_struct *tty;
  	unsigned long flags;
- 	void *page;
+ 	dcd = !!dcd;
  
-@@ -139,12 +138,7 @@ sclp_vt220_process_queue(struct sclp_vt220_request *request)
- 	} while (__sclp_vt220_emit(request));
- 	if (request == NULL && sclp_vt220_flush_later)
- 		sclp_vt220_emit_current();
--	/* Check if the tty needs a wake up call */
--	tty = tty_port_tty_get(&sclp_vt220_port);
--	if (tty) {
--		tty_wakeup(tty);
+@@ -1373,10 +1368,8 @@ static void moxa_new_dcdstate(struct moxa_port *p, u8 dcd)
+ 	if (dcd != p->DCDState) {
+         	p->DCDState = dcd;
+         	spin_unlock_irqrestore(&p->port.lock, flags);
+-		tty = tty_port_tty_get(&p->port);
+-		if (tty && !C_CLOCAL(tty) && !dcd)
+-			tty_hangup(tty);
 -		tty_kref_put(tty);
--	}
-+	tty_port_tty_wakeup(&sclp_vt220_port);
- }
- 
- #define SCLP_BUFFER_MAX_RETRY		1
-diff --git a/drivers/staging/fwserial/fwserial.c b/drivers/staging/fwserial/fwserial.c
-index 5a6fb44..5c64e3a 100644
---- a/drivers/staging/fwserial/fwserial.c
-+++ b/drivers/staging/fwserial/fwserial.c
-@@ -744,7 +744,6 @@ static void fwtty_tx_complete(struct fw_card *card, int rcode,
- 			      struct fwtty_transaction *txn)
- {
- 	struct fwtty_port *port = txn->port;
--	struct tty_struct *tty;
- 	int len;
- 
- 	fwtty_dbg(port, "rcode: %d", rcode);
-@@ -769,13 +768,8 @@ static void fwtty_tx_complete(struct fw_card *card, int rcode,
- 		port->stats.dropped += txn->dma_pended.len;
++		if (!dcd)
++			tty_port_tty_hangup(&p->port, true);
  	}
- 
--	if (len < WAKEUP_CHARS) {
--		tty = tty_port_tty_get(&port->port);
+ 	else
+ 		spin_unlock_irqrestore(&p->port.lock, flags);
+diff --git a/drivers/tty/n_gsm.c b/drivers/tty/n_gsm.c
+index 4a43ef5d7..74d9a02 100644
+--- a/drivers/tty/n_gsm.c
++++ b/drivers/tty/n_gsm.c
+@@ -1418,11 +1418,7 @@ static void gsm_dlci_close(struct gsm_dlci *dlci)
+ 		pr_debug("DLCI %d goes closed.\n", dlci->addr);
+ 	dlci->state = DLCI_CLOSED;
+ 	if (dlci->addr != 0) {
+-		struct tty_struct  *tty = tty_port_tty_get(&dlci->port);
 -		if (tty) {
--			tty_wakeup(tty);
+-			tty_hangup(tty);
 -			tty_kref_put(tty);
 -		}
--	}
-+	if (len < WAKEUP_CHARS)
-+		tty_port_tty_wakeup(&port->port);
- }
- 
- static int fwtty_tx(struct fwtty_port *port, bool drain)
-diff --git a/drivers/staging/serqt_usb2/serqt_usb2.c b/drivers/staging/serqt_usb2/serqt_usb2.c
-index b1bb1a6..8a6e5ea 100644
---- a/drivers/staging/serqt_usb2/serqt_usb2.c
-+++ b/drivers/staging/serqt_usb2/serqt_usb2.c
-@@ -264,7 +264,6 @@ static void ProcessRxChar(struct usb_serial_port *port, unsigned char data)
- 
- static void qt_write_bulk_callback(struct urb *urb)
- {
--	struct tty_struct *tty;
- 	int status;
- 	struct quatech_port *quatech_port;
- 
-@@ -278,11 +277,7 @@ static void qt_write_bulk_callback(struct urb *urb)
- 
- 	quatech_port = urb->context;
- 
--	tty = tty_port_tty_get(&quatech_port->port->port);
--
--	if (tty)
--		tty_wakeup(tty);
--	tty_kref_put(tty);
-+	tty_port_tty_wakeup(&quatech_port->port->port);
- }
- 
- static void qt_interrupt_callback(struct urb *urb)
-diff --git a/drivers/tty/ehv_bytechan.c b/drivers/tty/ehv_bytechan.c
-index ed92622..6d0c27c 100644
---- a/drivers/tty/ehv_bytechan.c
-+++ b/drivers/tty/ehv_bytechan.c
-@@ -472,13 +472,9 @@ static void ehv_bc_tx_dequeue(struct ehv_bc_data *bc)
- static irqreturn_t ehv_bc_tty_tx_isr(int irq, void *data)
- {
- 	struct ehv_bc_data *bc = data;
--	struct tty_struct *ttys = tty_port_tty_get(&bc->port);
- 
- 	ehv_bc_tx_dequeue(bc);
--	if (ttys) {
--		tty_wakeup(ttys);
--		tty_kref_put(ttys);
--	}
-+	tty_port_tty_wakeup(&bc->port);
- 
- 	return IRQ_HANDLED;
- }
-diff --git a/drivers/tty/hvc/hvsi.c b/drivers/tty/hvc/hvsi.c
-index ef95a15..4190199 100644
---- a/drivers/tty/hvc/hvsi.c
-+++ b/drivers/tty/hvc/hvsi.c
-@@ -861,7 +861,6 @@ static void hvsi_write_worker(struct work_struct *work)
- {
- 	struct hvsi_struct *hp =
- 		container_of(work, struct hvsi_struct, writer.work);
--	struct tty_struct *tty;
- 	unsigned long flags;
- #ifdef DEBUG
- 	static long start_j = 0;
-@@ -895,11 +894,7 @@ static void hvsi_write_worker(struct work_struct *work)
- 		start_j = 0;
- #endif /* DEBUG */
- 		wake_up_all(&hp->emptyq);
--		tty = tty_port_tty_get(&hp->port);
--		if (tty) {
--			tty_wakeup(tty);
--			tty_kref_put(tty);
--		}
-+		tty_port_tty_wakeup(&hp->port);
- 	}
- 
- out:
++		tty_port_tty_hangup(&dlci->port, false);
+ 		kfifo_reset(dlci->fifo);
+ 	} else
+ 		dlci->gsm->dead = 1;
 diff --git a/drivers/tty/nozomi.c b/drivers/tty/nozomi.c
-index 2dff197..2e5bbdc 100644
+index 2e5bbdc..d6080c3 100644
 --- a/drivers/tty/nozomi.c
 +++ b/drivers/tty/nozomi.c
-@@ -791,7 +791,6 @@ static int send_data(enum port_type index, struct nozomi *dc)
- 	const u8 toggle = port->toggle_ul;
- 	void __iomem *addr = port->ul_addr[toggle];
- 	const u32 ul_size = port->ul_size[toggle];
--	struct tty_struct *tty = tty_port_tty_get(&port->port);
+@@ -1501,12 +1501,9 @@ static void tty_exit(struct nozomi *dc)
  
- 	/* Get data from tty and place in buf for now */
- 	size = kfifo_out(&port->fifo_ul, dc->send_buf,
-@@ -799,7 +798,6 @@ static int send_data(enum port_type index, struct nozomi *dc)
+ 	DBG1(" ");
  
- 	if (size == 0) {
- 		DBG4("No more data to send, disable link:");
+-	for (i = 0; i < MAX_PORT; ++i) {
+-		struct tty_struct *tty = tty_port_tty_get(&dc->port[i].port);
+-		if (tty && list_empty(&tty->hangup_work.entry))
+-			tty_hangup(tty);
 -		tty_kref_put(tty);
- 		return 0;
- 	}
- 
-@@ -809,10 +807,8 @@ static int send_data(enum port_type index, struct nozomi *dc)
- 	write_mem32(addr, (u32 *) &size, 4);
- 	write_mem32(addr + 4, (u32 *) dc->send_buf, size);
- 
--	if (tty)
--		tty_wakeup(tty);
-+	tty_port_tty_wakeup(&port->port);
- 
--	tty_kref_put(tty);
- 	return 1;
- }
- 
+-	}
++	for (i = 0; i < MAX_PORT; ++i)
++		tty_port_tty_hangup(&dc->port[i].port, false);
++
+ 	/* Racy below - surely should wait for scheduled work to be done or
+ 	   complete off a hangup method ? */
+ 	while (dc->open_ttys)
+diff --git a/drivers/tty/rocket.c b/drivers/tty/rocket.c
+index 1d27003..bbffd7a 100644
+--- a/drivers/tty/rocket.c
++++ b/drivers/tty/rocket.c
+@@ -521,15 +521,10 @@ static void rp_handle_port(struct r_port *info)
+ 		       (ChanStatus & CD_ACT) ? "on" : "off");
+ #endif
+ 		if (!(ChanStatus & CD_ACT) && info->cd_status) {
+-			struct tty_struct *tty;
+ #ifdef ROCKET_DEBUG_HANGUP
+ 			printk(KERN_INFO "CD drop, calling hangup.\n");
+ #endif
+-			tty = tty_port_tty_get(&info->port);
+-			if (tty) {
+-				tty_hangup(tty);
+-				tty_kref_put(tty);
+-			}
++			tty_port_tty_hangup(&info->port, false);
+ 		}
+ 		info->cd_status = (ChanStatus & CD_ACT) ? 1 : 0;
+ 		wake_up_interruptible(&info->port.open_wait);
 diff --git a/drivers/tty/serial/ifx6x60.c b/drivers/tty/serial/ifx6x60.c
-index 68d7ce9..d723d41 100644
+index d723d41..2c77fed 100644
 --- a/drivers/tty/serial/ifx6x60.c
 +++ b/drivers/tty/serial/ifx6x60.c
-@@ -443,25 +443,6 @@ static void ifx_spi_setup_spi_header(unsigned char *txbuffer, int tx_count,
+@@ -270,23 +270,6 @@ static void mrdy_assert(struct ifx_spi_device *ifx_dev)
  }
  
  /**
-- *	ifx_spi_wakeup_serial	-	SPI space made
-- *	@port_data: our SPI device
+- *	ifx_spi_hangup		-	hang up an IFX device
+- *	@ifx_dev: our SPI device
 - *
-- *	We have emptied the FIFO enough that we want to get more data
-- *	queued into it. Poke the line discipline via tty_wakeup so that
-- *	it will feed us more bits
+- *	Hang up the tty attached to the IFX device if one is currently
+- *	open. If not take no action
 - */
--static void ifx_spi_wakeup_serial(struct ifx_spi_device *ifx_dev)
+-static void ifx_spi_ttyhangup(struct ifx_spi_device *ifx_dev)
 -{
--	struct tty_struct *tty;
--
--	tty = tty_port_tty_get(&ifx_dev->tty_port);
--	if (!tty)
--		return;
--	tty_wakeup(tty);
--	tty_kref_put(tty);
+-	struct tty_port *pport = &ifx_dev->tty_port;
+-	struct tty_struct *tty = tty_port_tty_get(pport);
+-	if (tty) {
+-		tty_hangup(tty);
+-		tty_kref_put(tty);
+-	}
 -}
 -
 -/**
-  *	ifx_spi_prepare_tx_buffer	-	prepare transmit frame
-  *	@ifx_dev: our SPI device
+  *	ifx_spi_timeout		-	SPI timeout
+  *	@arg: our SPI device
   *
-@@ -506,7 +487,7 @@ static int ifx_spi_prepare_tx_buffer(struct ifx_spi_device *ifx_dev)
- 			tx_count += temp_count;
- 			if (temp_count == queue_length)
- 				/* poke port to get more data */
--				ifx_spi_wakeup_serial(ifx_dev);
-+				tty_port_tty_wakeup(&ifx_dev->tty_port);
- 			else /* more data in port, use next SPI message */
- 				ifx_dev->spi_more = 1;
- 		}
-@@ -683,8 +664,6 @@ static void ifx_spi_insert_flip_string(struct ifx_spi_device *ifx_dev,
- static void ifx_spi_complete(void *ctx)
- {
- 	struct ifx_spi_device *ifx_dev = ctx;
--	struct tty_struct *tty;
--	struct tty_ldisc *ldisc = NULL;
- 	int length;
- 	int actual_length;
- 	unsigned char more;
-@@ -762,15 +741,7 @@ complete_exit:
- 			 */
- 			ifx_spi_power_state_clear(ifx_dev,
- 						  IFX_SPI_POWER_DATA_PENDING);
--			tty = tty_port_tty_get(&ifx_dev->tty_port);
--			if (tty) {
--				ldisc = tty_ldisc_ref(tty);
--				if (ldisc) {
--					ldisc->ops->write_wakeup(tty);
--					tty_ldisc_deref(ldisc);
--				}
--				tty_kref_put(tty);
--			}
-+			tty_port_tty_wakeup(&ifx_dev->tty_port);
- 		}
- 	}
+@@ -298,7 +281,7 @@ static void ifx_spi_timeout(unsigned long arg)
+ 	struct ifx_spi_device *ifx_dev = (struct ifx_spi_device *)arg;
+ 
+ 	dev_warn(&ifx_dev->spi_dev->dev, "*** SPI Timeout ***");
+-	ifx_spi_ttyhangup(ifx_dev);
++	tty_port_tty_hangup(&ifx_dev->tty_port, false);
+ 	mrdy_set_low(ifx_dev);
+ 	clear_bit(IFX_SPI_STATE_TIMER_PENDING, &ifx_dev->flags);
  }
+@@ -933,7 +916,7 @@ static irqreturn_t ifx_spi_reset_interrupt(int irq, void *dev)
+ 		set_bit(MR_INPROGRESS, &ifx_dev->mdm_reset_state);
+ 		if (!solreset) {
+ 			/* unsolicited reset  */
+-			ifx_spi_ttyhangup(ifx_dev);
++			tty_port_tty_hangup(&ifx_dev->tty_port, false);
+ 		}
+ 	} else {
+ 		/* exited reset */
 diff --git a/drivers/tty/tty_port.c b/drivers/tty/tty_port.c
-index b7ff59d..8bb757c 100644
+index 8bb757c..7f38eea 100644
 --- a/drivers/tty/tty_port.c
 +++ b/drivers/tty/tty_port.c
-@@ -233,6 +233,22 @@ void tty_port_hangup(struct tty_port *port)
+@@ -233,6 +233,23 @@ void tty_port_hangup(struct tty_port *port)
  EXPORT_SYMBOL(tty_port_hangup);
  
  /**
-+ * tty_port_tty_wakeup - helper to wake up a tty
++ * tty_port_tty_hangup - helper to hang up a tty
 + *
 + * @port: tty port
++ * @check_clocal: hang only ttys with CLOCAL unset?
 + */
-+void tty_port_tty_wakeup(struct tty_port *port)
++void tty_port_tty_hangup(struct tty_port *port, bool check_clocal)
 +{
 +	struct tty_struct *tty = tty_port_tty_get(port);
 +
-+	if (tty) {
-+		tty_wakeup(tty);
++	if (tty && (!check_clocal || !C_CLOCAL(tty))) {
++		tty_hangup(tty);
 +		tty_kref_put(tty);
 +	}
 +}
-+EXPORT_SYMBOL_GPL(tty_port_tty_wakeup);
++EXPORT_SYMBOL_GPL(tty_port_tty_hangup);
 +
 +/**
-  *	tty_port_carrier_raised	-	carrier raised check
-  *	@port: tty port
+  * tty_port_tty_wakeup - helper to wake up a tty
   *
+  * @port: tty port
 diff --git a/drivers/usb/class/cdc-acm.c b/drivers/usb/class/cdc-acm.c
-index 8ac25ad..755766e 100644
+index 755766e..27a1874 100644
 --- a/drivers/usb/class/cdc-acm.c
 +++ b/drivers/usb/class/cdc-acm.c
-@@ -475,15 +475,10 @@ static void acm_write_bulk(struct urb *urb)
- static void acm_softint(struct work_struct *work)
+@@ -292,7 +292,6 @@ static void acm_ctrl_irq(struct urb *urb)
  {
- 	struct acm *acm = container_of(work, struct acm, work);
+ 	struct acm *acm = urb->context;
+ 	struct usb_cdc_notification *dr = urb->transfer_buffer;
+-	struct tty_struct *tty;
+ 	unsigned char *data;
+ 	int newctrl;
+ 	int retval;
+@@ -327,17 +326,12 @@ static void acm_ctrl_irq(struct urb *urb)
+ 		break;
+ 
+ 	case USB_CDC_NOTIFY_SERIAL_STATE:
+-		tty = tty_port_tty_get(&acm->port);
+ 		newctrl = get_unaligned_le16(data);
+ 
+-		if (tty) {
+-			if (!acm->clocal &&
+-				(acm->ctrlin & ~newctrl & ACM_CTRL_DCD)) {
+-				dev_dbg(&acm->control->dev,
+-					"%s - calling hangup\n", __func__);
+-				tty_hangup(tty);
+-			}
+-			tty_kref_put(tty);
++		if (!acm->clocal && (acm->ctrlin & ~newctrl & ACM_CTRL_DCD)) {
++			dev_dbg(&acm->control->dev, "%s - calling hangup\n",
++					__func__);
++			tty_port_tty_hangup(&acm->port, false);
+ 		}
+ 
+ 		acm->ctrlin = newctrl;
+@@ -1498,15 +1492,9 @@ err_out:
+ static int acm_reset_resume(struct usb_interface *intf)
+ {
+ 	struct acm *acm = usb_get_intfdata(intf);
 -	struct tty_struct *tty;
  
- 	dev_vdbg(&acm->data->dev, "%s\n", __func__);
+-	if (test_bit(ASYNCB_INITIALIZED, &acm->port.flags)) {
+-		tty = tty_port_tty_get(&acm->port);
+-		if (tty) {
+-			tty_hangup(tty);
+-			tty_kref_put(tty);
+-		}
+-	}
++	if (test_bit(ASYNCB_INITIALIZED, &acm->port.flags))
++		tty_port_tty_hangup(&acm->port, false);
  
--	tty = tty_port_tty_get(&acm->port);
--	if (!tty)
--		return;
--	tty_wakeup(tty);
--	tty_kref_put(tty);
-+	tty_port_tty_wakeup(&acm->port);
+ 	return acm_resume(intf);
  }
+diff --git a/drivers/usb/serial/keyspan.c b/drivers/usb/serial/keyspan.c
+index 1fd1935..b011478 100644
+--- a/drivers/usb/serial/keyspan.c
++++ b/drivers/usb/serial/keyspan.c
+@@ -378,7 +378,6 @@ static void	usa26_instat_callback(struct urb *urb)
+ 	struct usb_serial			*serial;
+ 	struct usb_serial_port			*port;
+ 	struct keyspan_port_private	 	*p_priv;
+-	struct tty_struct			*tty;
+ 	int old_dcd_state, err;
+ 	int status = urb->status;
  
- /*
-diff --git a/drivers/usb/serial/digi_acceleport.c b/drivers/usb/serial/digi_acceleport.c
-index ebe45fa..3119158 100644
---- a/drivers/usb/serial/digi_acceleport.c
-+++ b/drivers/usb/serial/digi_acceleport.c
-@@ -210,7 +210,6 @@ struct digi_port {
+@@ -421,12 +420,8 @@ static void	usa26_instat_callback(struct urb *urb)
+ 	p_priv->dcd_state = ((msg->gpia_dcd) ? 1 : 0);
+ 	p_priv->ri_state = ((msg->ri) ? 1 : 0);
  
- /* Local Function Declarations */
- 
--static void digi_wakeup_write(struct usb_serial_port *port);
- static void digi_wakeup_write_lock(struct work_struct *work);
- static int digi_write_oob_command(struct usb_serial_port *port,
- 	unsigned char *buf, int count, int interruptible);
-@@ -374,20 +373,10 @@ static void digi_wakeup_write_lock(struct work_struct *work)
- 	unsigned long flags;
- 
- 	spin_lock_irqsave(&priv->dp_port_lock, flags);
--	digi_wakeup_write(port);
-+	tty_port_tty_wakeup(&port->port);
- 	spin_unlock_irqrestore(&priv->dp_port_lock, flags);
- }
- 
--static void digi_wakeup_write(struct usb_serial_port *port)
--{
--	struct tty_struct *tty = tty_port_tty_get(&port->port);
--	if (tty) {
--		tty_wakeup(tty);
+-	if (old_dcd_state != p_priv->dcd_state) {
+-		tty = tty_port_tty_get(&port->port);
+-		if (tty && !C_CLOCAL(tty))
+-			tty_hangup(tty);
 -		tty_kref_put(tty);
 -	}
--}
--
--
- /*
-  *  Digi Write OOB Command
-  *
-@@ -1044,7 +1033,7 @@ static void digi_write_bulk_callback(struct urb *urb)
- 		}
- 	}
- 	/* wake up processes sleeping on writes immediately */
--	digi_wakeup_write(port);
-+	tty_port_tty_wakeup(&port->port);
- 	/* also queue up a wakeup at scheduler time, in case we */
- 	/* lost the race in write_chan(). */
- 	schedule_work(&priv->dp_wakeup_work);
-@@ -1522,7 +1511,7 @@ static int digi_read_oob_callback(struct urb *urb)
- 				/* port must be open to use tty struct */
- 				if (rts) {
- 					tty->hw_stopped = 0;
--					digi_wakeup_write(port);
-+					tty_port_tty_wakeup(&port->port);
- 				}
- 			} else {
- 				priv->dp_modem_signals &= ~TIOCM_CTS;
-diff --git a/drivers/usb/serial/io_edgeport.c b/drivers/usb/serial/io_edgeport.c
-index b00e5cb..44e5208 100644
---- a/drivers/usb/serial/io_edgeport.c
-+++ b/drivers/usb/serial/io_edgeport.c
-@@ -565,7 +565,6 @@ static void edge_interrupt_callback(struct urb *urb)
- 	struct device *dev;
- 	struct edgeport_port *edge_port;
- 	struct usb_serial_port *port;
--	struct tty_struct *tty;
- 	unsigned char *data = urb->transfer_buffer;
- 	int length = urb->actual_length;
- 	int bytes_avail;
-@@ -644,12 +643,7 @@ static void edge_interrupt_callback(struct urb *urb)
++	if (old_dcd_state != p_priv->dcd_state)
++		tty_port_tty_hangup(&port->port, true);
  
- 					/* tell the tty driver that something
- 					   has changed */
--					tty = tty_port_tty_get(
--						&edge_port->port->port);
--					if (tty) {
--						tty_wakeup(tty);
--						tty_kref_put(tty);
--					}
-+					tty_port_tty_wakeup(&edge_port->port->port);
- 					/* Since we have more credit, check
- 					   if more data can be sent */
- 					send_more_port_data(edge_serial,
-@@ -738,7 +732,6 @@ static void edge_bulk_in_callback(struct urb *urb)
- static void edge_bulk_out_data_callback(struct urb *urb)
- {
- 	struct edgeport_port *edge_port = urb->context;
--	struct tty_struct *tty;
+ 	/* Resubmit urb so we continue receiving */
+ 	err = usb_submit_urb(urb, GFP_ATOMIC);
+@@ -510,7 +505,6 @@ static void	usa28_instat_callback(struct urb *urb)
+ 	struct usb_serial			*serial;
+ 	struct usb_serial_port			*port;
+ 	struct keyspan_port_private	 	*p_priv;
+-	struct tty_struct			*tty;
+ 	int old_dcd_state;
  	int status = urb->status;
  
- 	if (status) {
-@@ -747,14 +740,8 @@ static void edge_bulk_out_data_callback(struct urb *urb)
- 			__func__, status);
- 	}
+@@ -551,12 +545,8 @@ static void	usa28_instat_callback(struct urb *urb)
+ 	p_priv->dcd_state = ((msg->dcd) ? 1 : 0);
+ 	p_priv->ri_state = ((msg->ri) ? 1 : 0);
  
--	tty = tty_port_tty_get(&edge_port->port->port);
--
--	if (tty && edge_port->open) {
--		/* let the tty driver wakeup if it has a special
--		   write_wakeup function */
--		tty_wakeup(tty);
+-	if (old_dcd_state != p_priv->dcd_state && old_dcd_state) {
+-		tty = tty_port_tty_get(&port->port);
+-		if (tty && !C_CLOCAL(tty))
+-			tty_hangup(tty);
+-		tty_kref_put(tty);
 -	}
--	tty_kref_put(tty);
-+	if (edge_port->open)
-+		tty_port_tty_wakeup(&edge_port->port->port);
++	if (old_dcd_state != p_priv->dcd_state && old_dcd_state)
++		tty_port_tty_hangup(&port->port, true);
  
- 	/* Release the Write URB */
- 	edge_port->write_in_progress = false;
-@@ -773,7 +760,6 @@ static void edge_bulk_out_data_callback(struct urb *urb)
- static void edge_bulk_out_cmd_callback(struct urb *urb)
- {
- 	struct edgeport_port *edge_port = urb->context;
--	struct tty_struct *tty;
+ 		/* Resubmit urb so we continue receiving */
+ 	err = usb_submit_urb(urb, GFP_ATOMIC);
+@@ -642,12 +632,8 @@ static void	usa49_instat_callback(struct urb *urb)
+ 	p_priv->dcd_state = ((msg->dcd) ? 1 : 0);
+ 	p_priv->ri_state = ((msg->ri) ? 1 : 0);
+ 
+-	if (old_dcd_state != p_priv->dcd_state && old_dcd_state) {
+-		struct tty_struct *tty = tty_port_tty_get(&port->port);
+-		if (tty && !C_CLOCAL(tty))
+-			tty_hangup(tty);
+-		tty_kref_put(tty);
+-	}
++	if (old_dcd_state != p_priv->dcd_state && old_dcd_state)
++		tty_port_tty_hangup(&port->port, true);
+ 
+ 	/* Resubmit urb so we continue receiving */
+ 	err = usb_submit_urb(urb, GFP_ATOMIC);
+@@ -851,7 +837,6 @@ static void	usa90_instat_callback(struct urb *urb)
+ 	struct usb_serial			*serial;
+ 	struct usb_serial_port			*port;
+ 	struct keyspan_port_private	 	*p_priv;
+-	struct tty_struct			*tty;
+ 	int old_dcd_state, err;
  	int status = urb->status;
  
- 	atomic_dec(&CmdUrbs);
-@@ -794,13 +780,9 @@ static void edge_bulk_out_cmd_callback(struct urb *urb)
- 		return;
- 	}
+@@ -880,12 +865,8 @@ static void	usa90_instat_callback(struct urb *urb)
+ 	p_priv->dcd_state = ((msg->dcd) ? 1 : 0);
+ 	p_priv->ri_state = ((msg->ri) ? 1 : 0);
  
--	/* Get pointer to tty */
--	tty = tty_port_tty_get(&edge_port->port->port);
--
- 	/* tell the tty driver that something has changed */
--	if (tty && edge_port->open)
--		tty_wakeup(tty);
--	tty_kref_put(tty);
-+	if (edge_port->open)
-+		tty_port_tty_wakeup(&edge_port->port->port);
+-	if (old_dcd_state != p_priv->dcd_state && old_dcd_state) {
+-		tty = tty_port_tty_get(&port->port);
+-		if (tty && !C_CLOCAL(tty))
+-			tty_hangup(tty);
+-		tty_kref_put(tty);
+-	}
++	if (old_dcd_state != p_priv->dcd_state && old_dcd_state)
++		tty_port_tty_hangup(&port->port, true);
  
- 	/* we have completed the command */
- 	edge_port->commandPending = false;
-diff --git a/drivers/usb/serial/keyspan_pda.c b/drivers/usb/serial/keyspan_pda.c
-index 3b17d5d..2230223 100644
---- a/drivers/usb/serial/keyspan_pda.c
-+++ b/drivers/usb/serial/keyspan_pda.c
-@@ -104,10 +104,8 @@ static void keyspan_pda_wakeup_write(struct work_struct *work)
- 	struct keyspan_pda_private *priv =
- 		container_of(work, struct keyspan_pda_private, wakeup_work);
- 	struct usb_serial_port *port = priv->port;
--	struct tty_struct *tty = tty_port_tty_get(&port->port);
--	if (tty)
--		tty_wakeup(tty);
--	tty_kref_put(tty);
-+
-+	tty_port_tty_wakeup(&port->port);
- }
+ 	/* Resubmit urb so we continue receiving */
+ 	err = usb_submit_urb(urb, GFP_ATOMIC);
+@@ -953,12 +934,8 @@ static void	usa67_instat_callback(struct urb *urb)
+ 	p_priv->cts_state = ((msg->hskia_cts) ? 1 : 0);
+ 	p_priv->dcd_state = ((msg->gpia_dcd) ? 1 : 0);
  
- static void keyspan_pda_request_unthrottle(struct work_struct *work)
-diff --git a/drivers/usb/serial/mos7720.c b/drivers/usb/serial/mos7720.c
-index e0ebec3..e956eae 100644
---- a/drivers/usb/serial/mos7720.c
-+++ b/drivers/usb/serial/mos7720.c
-@@ -932,7 +932,6 @@ static void mos7720_bulk_in_callback(struct urb *urb)
- static void mos7720_bulk_out_data_callback(struct urb *urb)
- {
- 	struct moschip_port *mos7720_port;
--	struct tty_struct *tty;
- 	int status = urb->status;
+-	if (old_dcd_state != p_priv->dcd_state && old_dcd_state) {
+-		struct tty_struct *tty = tty_port_tty_get(&port->port);
+-		if (tty && !C_CLOCAL(tty))
+-			tty_hangup(tty);
+-		tty_kref_put(tty);
+-	}
++	if (old_dcd_state != p_priv->dcd_state && old_dcd_state)
++		tty_port_tty_hangup(&port->port, true);
  
- 	if (status) {
-@@ -946,11 +945,8 @@ static void mos7720_bulk_out_data_callback(struct urb *urb)
- 		return ;
- 	}
+ 	/* Resubmit urb so we continue receiving */
+ 	err = usb_submit_urb(urb, GFP_ATOMIC);
+diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
+index f7d339d..602d1f3 100644
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -1532,13 +1532,8 @@ static void option_instat_callback(struct urb *urb)
+ 			portdata->dsr_state = ((signals & 0x02) ? 1 : 0);
+ 			portdata->ri_state = ((signals & 0x08) ? 1 : 0);
  
--	tty = tty_port_tty_get(&mos7720_port->port->port);
--
--	if (tty && mos7720_port->open)
--		tty_wakeup(tty);
--	tty_kref_put(tty);
-+	if (mos7720_port->open)
-+		tty_port_tty_wakeup(&mos7720_port->port->port);
- }
+-			if (old_dcd_state && !portdata->dcd_state) {
+-				struct tty_struct *tty =
+-						tty_port_tty_get(&port->port);
+-				if (tty && !C_CLOCAL(tty))
+-					tty_hangup(tty);
+-				tty_kref_put(tty);
+-			}
++			if (old_dcd_state && !portdata->dcd_state)
++				tty_port_tty_hangup(&port->port, true);
+ 		} else {
+ 			dev_dbg(dev, "%s: type %x req %x\n", __func__,
+ 				req_pkt->bRequestType, req_pkt->bRequest);
+diff --git a/drivers/usb/serial/sierra.c b/drivers/usb/serial/sierra.c
+index c13f6e7..d66148a 100644
+--- a/drivers/usb/serial/sierra.c
++++ b/drivers/usb/serial/sierra.c
+@@ -628,7 +628,6 @@ static void sierra_instat_callback(struct urb *urb)
+ 			unsigned char signals = *((unsigned char *)
+ 					urb->transfer_buffer +
+ 					sizeof(struct usb_ctrlrequest));
+-			struct tty_struct *tty;
  
- /*
-diff --git a/drivers/usb/serial/mos7840.c b/drivers/usb/serial/mos7840.c
-index 809fb32..08284d2 100644
---- a/drivers/usb/serial/mos7840.c
-+++ b/drivers/usb/serial/mos7840.c
-@@ -814,7 +814,6 @@ static void mos7840_bulk_out_data_callback(struct urb *urb)
- {
- 	struct moschip_port *mos7840_port;
- 	struct usb_serial_port *port;
--	struct tty_struct *tty;
- 	int status = urb->status;
- 	int i;
+ 			dev_dbg(&port->dev, "%s: signal x%x\n", __func__,
+ 				signals);
+@@ -639,11 +638,8 @@ static void sierra_instat_callback(struct urb *urb)
+ 			portdata->dsr_state = ((signals & 0x02) ? 1 : 0);
+ 			portdata->ri_state = ((signals & 0x08) ? 1 : 0);
  
-@@ -837,10 +836,8 @@ static void mos7840_bulk_out_data_callback(struct urb *urb)
- 	if (mos7840_port_paranoia_check(port, __func__))
- 		return;
- 
--	tty = tty_port_tty_get(&port->port);
--	if (tty && mos7840_port->open)
--		tty_wakeup(tty);
--	tty_kref_put(tty);
-+	if (mos7840_port->open)
-+		tty_port_tty_wakeup(&port->port);
- 
- }
- 
-diff --git a/drivers/usb/serial/ti_usb_3410_5052.c b/drivers/usb/serial/ti_usb_3410_5052.c
-index 39cb9b8..437f2d5 100644
---- a/drivers/usb/serial/ti_usb_3410_5052.c
-+++ b/drivers/usb/serial/ti_usb_3410_5052.c
-@@ -1227,7 +1227,6 @@ static void ti_send(struct ti_port *tport)
- {
- 	int count, result;
- 	struct usb_serial_port *port = tport->tp_port;
--	struct tty_struct *tty = tty_port_tty_get(&port->port);	/* FIXME */
- 	unsigned long flags;
- 
- 	spin_lock_irqsave(&tport->tp_lock, flags);
-@@ -1268,14 +1267,12 @@ static void ti_send(struct ti_port *tport)
- 	}
- 
- 	/* more room in the buffer for new writes, wakeup */
--	if (tty)
--		tty_wakeup(tty);
--	tty_kref_put(tty);
-+	tty_port_tty_wakeup(&port->port);
-+
- 	wake_up_interruptible(&tport->tp_write_wait);
- 	return;
- unlock:
- 	spin_unlock_irqrestore(&tport->tp_lock, flags);
--	tty_kref_put(tty);
- 	return;
- }
- 
-diff --git a/drivers/usb/serial/usb-serial.c b/drivers/usb/serial/usb-serial.c
-index a19ed74..2df8484 100644
---- a/drivers/usb/serial/usb-serial.c
-+++ b/drivers/usb/serial/usb-serial.c
-@@ -541,16 +541,8 @@ static void usb_serial_port_work(struct work_struct *work)
- {
- 	struct usb_serial_port *port =
- 		container_of(work, struct usb_serial_port, work);
--	struct tty_struct *tty;
- 
--	tty = tty_port_tty_get(&port->port);
--	if (!tty)
--		return;
--
--	dev_dbg(tty->dev, "%s - port %d\n", __func__, port->number);
--
--	tty_wakeup(tty);
--	tty_kref_put(tty);
-+	tty_port_tty_wakeup(&port->port);
- }
- 
- static void kill_traffic(struct usb_serial_port *port)
+-			tty = tty_port_tty_get(&port->port);
+-			if (tty && !C_CLOCAL(tty) &&
+-					old_dcd_state && !portdata->dcd_state)
+-				tty_hangup(tty);
+-			tty_kref_put(tty);
++			if (old_dcd_state && !portdata->dcd_state)
++				tty_port_tty_hangup(&port->port, true);
+ 		} else {
+ 			dev_dbg(&port->dev, "%s: type %x req %x\n",
+ 				__func__, req_pkt->bRequestType,
 diff --git a/include/linux/tty.h b/include/linux/tty.h
-index 4c6a079..fc056d4 100644
+index fc056d4..d9b96ff 100644
 --- a/include/linux/tty.h
 +++ b/include/linux/tty.h
 @@ -516,6 +516,7 @@ extern int tty_port_carrier_raised(struct tty_port *port);
  extern void tty_port_raise_dtr_rts(struct tty_port *port);
  extern void tty_port_lower_dtr_rts(struct tty_port *port);
  extern void tty_port_hangup(struct tty_port *port);
-+extern void tty_port_tty_wakeup(struct tty_port *port);
++extern void tty_port_tty_hangup(struct tty_port *port, bool check_clocal);
+ extern void tty_port_tty_wakeup(struct tty_port *port);
  extern int tty_port_block_til_ready(struct tty_port *port,
  				struct tty_struct *tty, struct file *filp);
- extern int tty_port_close_start(struct tty_port *port,
+diff --git a/net/irda/ircomm/ircomm_tty_attach.c b/net/irda/ircomm/ircomm_tty_attach.c
+index edab393..a2a508f 100644
+--- a/net/irda/ircomm/ircomm_tty_attach.c
++++ b/net/irda/ircomm/ircomm_tty_attach.c
+@@ -997,12 +997,8 @@ static int ircomm_tty_state_ready(struct ircomm_tty_cb *self,
+ 			self->settings.dce = IRCOMM_DELTA_CD;
+ 			ircomm_tty_check_modem_status(self);
+ 		} else {
+-			struct tty_struct *tty = tty_port_tty_get(&self->port);
+ 			IRDA_DEBUG(0, "%s(), hanging up!\n", __func__ );
+-			if (tty) {
+-				tty_hangup(tty);
+-				tty_kref_put(tty);
+-			}
++			tty_port_tty_hangup(&self->port, false);
+ 		}
+ 		break;
+ 	default:
 -- 
 1.8.1.4
 
