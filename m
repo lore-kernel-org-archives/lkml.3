@@ -1,164 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933398Ab3CGVy6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 16:54:58 -0500
-Received: from out01.mta.xmission.com ([166.70.13.231]:48356 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758626Ab3CGVy4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 16:54:56 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Jingbai Ma <jingbai.ma@hp.com>, mingo@redhat.com,
-        kumagai-atsushi@mxc.nes.nec.co.jp, hpa@zytor.com, yinghai@kernel.org,
-        kexec@lists.infradead.org, linux-kernel@vger.kernel.org
-References: <20130307145808.29098.41592.stgit@k.asiapacific.hpqcorp.net>
-	<20130307152108.GC2790@redhat.com>
-Date: Thu, 07 Mar 2013 13:54:45 -0800
-In-Reply-To: <20130307152108.GC2790@redhat.com> (Vivek Goyal's message of
-	"Thu, 7 Mar 2013 10:21:08 -0500")
-Message-ID: <87k3piri3e.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S933494Ab3CGV4h (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 16:56:37 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:55578 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932822Ab3CGV4g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Mar 2013 16:56:36 -0500
+Date: Thu, 7 Mar 2013 16:56:21 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
+Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>, Eric Paris <eparis@parisplace.org>,
+        linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        LSM List <linux-security-module@vger.kernel.org>
+Subject: Re: IMA: How to manage user space signing policy with others
+Message-ID: <20130307215620.GA2159@redhat.com>
+References: <20130305151829.GB4519@redhat.com>
+ <1362516018.4392.233.camel@falcor1>
+ <20130305215300.GE4519@redhat.com>
+ <1362584551.4392.291.camel@falcor1>
+ <20130306235525.GB29229@redhat.com>
+ <1362620348.4392.408.camel@falcor1>
+ <20130307143643.GA2790@redhat.com>
+ <1362670833.4392.438.camel@falcor1>
+ <20130307155343.GD2790@redhat.com>
+ <CALLzPKYTmD2AUm1k7JEzXupRjOUPgkQ0LRpuT7b5P1yNpLQOxg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1+MF1TRPJ14mWIOpUQF9qeR5DNOmYvHkiU=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  0.1 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa03 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_XMDrugObfuBody_14 obfuscated drug references
-X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Vivek Goyal <vgoyal@redhat.com>
-X-Spam-Relay-Country: 
-Subject: Re: [RFC PATCH 0/5] crash dump bitmap: scan memory pages in kernel to speedup kernel dump process
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALLzPKYTmD2AUm1k7JEzXupRjOUPgkQ0LRpuT7b5P1yNpLQOxg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vivek Goyal <vgoyal@redhat.com> writes:
+On Thu, Mar 07, 2013 at 07:53:50PM +0200, Kasatkin, Dmitry wrote:
 
-> On Thu, Mar 07, 2013 at 10:58:18PM +0800, Jingbai Ma wrote:
->> This patch intend to speedup the memory pages scanning process in
->> selective dump mode.
->> 
->> Test result (On HP ProLiant DL980 G7 with 1TB RAM, makedumpfile
->> v1.5.3):
->> 
->> 						Total scan Time
->> Original kernel
->> 	+ makedumpfile v1.5.3 cyclic mode	1958.05 seconds
->> Original kernel
->> 	+ makedumpfile v1.5.3 non-cyclic mode	1151.50 seconds
->> Patched kernel
->> 	+ patched makedumpfile v1.5.3		17.50 seconds
->> 
->> Traditionally, to reduce the size of dump file, dumper scans all memory
->> pages to exclude the unnecessary memory pages after capture kernel
->> booted, and scan it in userspace code (makedumpfile).
->
-> I think this is not a good idea. It has several issues.
+[..]
 
-Actually it does not appear to be doing any work in the first kernel.
+Hi Dmitry,
 
-> - First of all it is doing more stuff in first kernel. And that runs
->   contrary to kdump design where we want to do stuff in second kernel.
->   After a kernel crash, you can't trust running kernel's data structures.
->   So to improve reliability just do minial stuff in crashed kernel and
->   get out quickly.
->
-> - Secondly, it moves filetering policy in kernel. I think keeping it
->   in user space gives us the extra flexibility.
+> Sorry if missed something from this lengthy thread and I repeat something.
+> 
+> I have not noticed what functions you propose to export.
 
-Agreed.
+Actually I have not come up with functions yet. I have yet to write
+the code. But I was thinking something along the lines of
+verify_signature().
 
->> It introduces several problems:
->> 
->> 1. Requires more memory to store memory bitmap on systems with large
->> amount of memory installed. And in capture kernel there is only a few
->> free memory available, it will cause an out of memory error and fail.
->> (Non-cyclic mode)
->
-> makedumpfile requires 2bits per 4K page. That is 64MB per TB. In your
-> patches also you are reserving 1bit per page and that is 32MB per TB
-> in first kernel.
->
-> So memory is anyway being reserved, just that makedumpfile seems to be
-> needing this extra bit. Not sure if that can be optimized or not.
->
-> First of all 64MB per TB should not be a huge deal. And makedumpfile
-> also has this cyclic mode where you process a map, discard it and then
-> move on to next section. So memory usage remains constant at the expense
-> of processing time.
->
-> Looks like now hpa and yinghai have done the work to be able to load
-> kdump kernel above 4GB. I am assuming this also removes the restriction
-> that we can only reserve 512MB or 896MB in second kernel. If that's
-> the case, then I don't see why people can't get away with reserving
-> 64MB per TB.
->
->> 
->> 2. Scans all memory pages in makedumpfile is a very slow process. On
->> system with 1TB or more memory installed, the scanning process is very
->> long. Typically on 1TB idle system, it takes about 19 minutes. On system
->> with 4TB or more memory installed, it even doesn't work. To address the
->> out of memory issue on system with big memory (4TB or more memory
->> installed),  makedumpfile v1.5.1 introduces a new cyclic mode. It only
->> scans a piece of memory pages each time, and do it cyclically to scan
->> all memory pages. But it runs more slowly, on 1TB system, takes about 33
->> minutes.
->
-> One of the reasons it is slow because we don't support mmpa() interface.
-> That means for every read, we map 4K page, flush TLB, read it, unmap it
-> and flush TLB again. This is lot of processing overhead per 4K page.
->
-> Hatayama is now working on making mmap() interface and allow user space
-> to bigger chunks of memory in one so. So that in one mmap() call we can
-> map a bigger range instead of just 4K. And his numbers show that it
-> has helped a lot.
->
-> So instead of trying to move filtering logic in kernel, I think it
-> might be better if we try to optimize things in makedumpfile or second
-> kernel.
+> 
+> But for your use case you need to know if file was signed and
+> signature was fine, right?
 
-Yes.  I think optimizing the intermediate forms we have is better, as
-that should also increase the speed of writing the dumps not just the
-speed of calculating what to dump.
+Right.
 
->> 3. Scans memory pages code in makedumpfile is very complicated, without
->> kernel memory management related data structure, makedumpfile has to
->> build up its own data structure, and will not able to use some macros
->> that only be available in kernel (e.g. page_to_pfn), and has to use some
->> slow lookup algorithm instead.
->> 
->> This patch introduces a new way to scan memory pages. It reserves a
->> piece of memory (1 bit for each page, 32MB per TB memory on x86 systems)
->> in the first kernel. During the kernel crash process, it scans all
->> memory pages, clear the bit for all excluded memory pages in the
->> reserved memory.
->
-> I think this is not a good idea. It has several issues.
->
-> - First of all it is doing more stuff in first kernel. And that runs
->   contrary to kdump design where we want to do stuff in second kernel.
->   After a kernel crash, you can't trust running kernel's data structures.
->   So to improve reliability just do minial stuff in crashed kernel and
->   get out quickly.
->
-> - Secondly, it moves filetering policy in kernel. I think keeping it
->   in user space gives us the extra flexibility.
+> So you want to export a function which returns, for example
+> "iint->flags & IMA_DIGSIG".
 
-And it also runs into the deep problem of do the two kernels match.
+Not sure about that but I think you are referring to your patch
+of also exporting the iint->DIGSIG by setting a security flag
+LSM_UNSAFE_DIGSIG in bprm->unsafe. That helps but then more
+issues start cropping up. I will explain issues in detail below.
 
-If the kernels don't match using the second kernels macros for the first
-kernels data structures is a recipe for major disaster.
+> If it was no xattr or no signature, then this flag will not be set.
 
-Eric
+- if iint->DIGSIG is not set then it could mean few things.
+	- There is no xattr or digital signature
+	- Or there is signature but ima is disabled or there is no
+	  appraise rule configured.
+
+Now second point can create confusion. It means that a signed file will
+be treated as unsigned and any functionality dependent on file being
+signed will fail. I think it is uintutive. 
+
+If there is no xattr or signature, IMA hook can return failure if appraise
+policy is configured. I can't ignore the return code of security hook. So
+I need a separate function just to tell me whether file is signed or
+not. 
+
+> If signature verification failed, then hook returns EPERM anyway.
+
+There are few issues here.
+
+- iint->DIGSIG will be set only if ima is enabled and some appraise
+  rule/policy has been enabled. Otherwise it will not be set. It might
+  not be too huge a issue because it just means that a signed file will
+  be treated unsigned and any functionality dependent on file being
+  signed will fail. I think it is uintutive. 
+
+- iint->DIGSIG could be set even if file is not signed. How?
+	- Assume system has booted with ima_appraise_tcb policy.
+	- A binary executes. bprm_check() is called and it will
+	  set iint->DIGSIG.
+	- root does a direct write to disk blocks where file signature
+	  are stored.
+	- File executes again. This time iint->DIGSIG is set but there
+	  are no signature on the file.
+
+- File could have invalid signature still iint->DIGSIG could be set and
+  security hook will return success. 
+	- Assume system has booted with ima_appraise_tcb policy.
+	- A binary executes. bprm_check() is called and it will
+	  set iint->DIGSIG.
+	- User goes ahead and replaces appraise policy with some
+	  other policy so no appraisal rule will match for same file.
+	- User does a direct write to disk on file blocks.
+	- File executes again. This time iint->DIGSIG is set, and
+ 	  IMA hook will return success (as there is no matching appraise
+	  rule) and making caller believe file is validly signed.
+
+If we don't cache iint->DIGSIG, I think couple of above issues could be
+solved. But then we also need to make sure digest of file and appraisal
+results not cached either. Caching of everything is in general a issue
+with IMA usage in my scenario. I am not sure why IMA did not address the
+issue of somebody writing directly to disk bypassing file system.
+
+If we figure a way out to disable caching of everything, then we also
+need to figure out a way to export iint->DIGSIG to callers. Current
+security hooks don't allow returning anything other than success/fail
+status, that means we probably need to create a new function. Seeting
+it in bprm->unsafe alone is not sufficient as I might have to do file
+verification in non executable file code also.
+
+In summary, we can still solve the problem we can do few things.
+
+- Provide a reliable way to disable caching of iint->DIGSIG, digest
+  and appraisal results.
+
+- Provide functions to access iint->DIGSIG after every file execution.
+
+- Create a separate callable IMA function which tells whether file is
+  signed or not.
+
+- Provide a way to caller to ensure whether caching is disabled or not
+  in IMA. So that caller can interpret what does result mean.
+
+Thanks
+Vivek
