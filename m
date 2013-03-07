@@ -1,60 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759724Ab3CGSub (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 13:50:31 -0500
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:55495 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755963Ab3CGSu3 (ORCPT
+	id S933250Ab3CGSus (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 13:50:48 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:9804 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932724Ab3CGSuq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 13:50:29 -0500
-Date: Thu, 7 Mar 2013 10:49:48 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Shaohua Li <shli@kernel.org>
-cc: CAI Qian <caiqian@redhat.com>, linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Rik van Riel <riel@redhat.com>, Sasha Levin <sasha.levin@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: change of behavior for madvise in 3.9-rc1
-In-Reply-To: <20130307043938.GA4393@kernel.org>
-Message-ID: <alpine.LNX.2.00.1303071042390.6087@eggly.anvils>
-References: <1543700056.10481632.1362628775559.JavaMail.root@redhat.com> <1648837228.10483479.1362629104045.JavaMail.root@redhat.com> <20130307043938.GA4393@kernel.org>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Thu, 7 Mar 2013 13:50:46 -0500
+X-IronPort-AV: E=Sophos;i="4.84,803,1355126400"; 
+   d="scan'208";a="27851860"
+From: David Brown <davidb@codeaurora.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Kenneth Heitke <kheitke@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/6] platform-drivers: msm: add single-wire serial bus interface (SSBI) driver
+References: <1362616187-21089-1-git-send-email-davidb@codeaurora.org>
+	<1362616187-21089-2-git-send-email-davidb@codeaurora.org>
+	<20130307013008.GA2910@kroah.com> <8yawqtjvl8y.fsf@huya.qualcomm.com>
+	<20130307060117.GA31687@kroah.com>
+Date: Thu, 07 Mar 2013 10:50:40 -0800
+In-Reply-To: <20130307060117.GA31687@kroah.com> (Greg Kroah-Hartman's message
+	of "Thu, 7 Mar 2013 14:01:17 +0800")
+Message-ID: <8yafw07ujr3.fsf@huya.qualcomm.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 7 Mar 2013, Shaohua Li wrote:
-> On Wed, Mar 06, 2013 at 11:05:04PM -0500, CAI Qian wrote:
-> > Bisecting indicated that this commit,
-> > 1998cc048901109a29924380b8e91bc049b32951
-> > mm: make madvise(MADV_WILLNEED) support swap file prefetch
-> > 
-> > Caused an LTP test failure,
-> > http://goo.gl/1FVPy
-> > 
-> > madvise02    1  TPASS  :  failed as expected: TEST_ERRNO=EINVAL(22): Invalid argument
-> > madvise02    2  TPASS  :  failed as expected: TEST_ERRNO=EINVAL(22): Invalid argument
-> > madvise02    3  TPASS  :  failed as expected: TEST_ERRNO=EINVAL(22): Invalid argument
-> > madvise02    4  TPASS  :  failed as expected: TEST_ERRNO=ENOMEM(12): Cannot allocate memory
-> > madvise02    5  TFAIL  :  madvise succeeded unexpectedly
-> > 
-> > While it passed without the above commit
-> > madvise02    1  TPASS  :  failed as expected: TEST_ERRNO=EINVAL(22): Invalid argument
-> > madvise02    2  TPASS  :  failed as expected: TEST_ERRNO=EINVAL(22): Invalid argument
-> > madvise02    3  TPASS  :  failed as expected: TEST_ERRNO=EINVAL(22): Invalid argument
-> > madvise02    4  TPASS  :  failed as expected: TEST_ERRNO=ENOMEM(12): Cannot allocate memory
-> > madvise02    5  TPASS  :  failed as expected: TEST_ERRNO=EBADF(9): Bad file descriptor
-> 
-> I thought this is expected behavior. madvise(MADV_WILLNEED) to anonymous memory
-> doesn't return -EBADF now, as now we support swap prefretch.
+Greg Kroah-Hartman <gregkh@linuxfoundation.org> writes:
 
-I agree with Shaohua: although the kernel strives for back-compatibility
-with userspace, I don't think that goes so far as to tell an arbitrary LTP
-test that it has failed, once the kernel has been enhanced to support new
-functionality.  We could never add or extend system calls if that were so.
+>> Without this device, the PMIC drivers won't work, regulators can't be
+>> turned on, and most of the other devices won't work.  I can try if it
+>> can still be made a module, and it might be good at exercising the
+>> deferred probe mechanism.
+>
+> If the PMIC drivers are dependant on the symbols in this module, there
+> should not be any problems, right?
 
-Hugh
+The PMIC drivers directly will be, but the users of gpios/irqs and
+regulators coming from the PMIC will only depend on the generic APIs for
+this.  In theory, the deferred probe should handle this, and it might
+be useful for testing.
+
+I can allow it to be a module, although I don't picture that really
+being a useful configuration.
+
+David
+
+-- 
+sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
