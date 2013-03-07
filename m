@@ -1,62 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753500Ab3CGHUb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 02:20:31 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:53281 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751268Ab3CGHUa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 02:20:30 -0500
-X-IronPort-AV: E=Sophos;i="4.84,800,1355097600"; 
-   d="scan'208";a="11707275"
-Message-ID: <1362640662.8941.141.camel@hastur.hellion.org.uk>
-Subject: Re: [PATCH LINUX v5] xen: event channel arrays are xen_ulong_t and
- not unsigned long
-From: Ian Campbell <ian.campbell@citrix.com>
-To: Will Deacon <will.deacon@arm.com>
-CC: Rob Herring <robherring2@gmail.com>,
-        "xen-devel@listsxen.org" <xen-devel@lists.xen.org>,
-        "Keir (Xen.org)" <keir@xen.org>,
-        "Stefano Stabellini" <Stefano.Stabellini@eu.citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "Tim (Xen.org)" <tim@xen.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jan Beulich <JBeulich@suse.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Nicolas Pitre <nico@fluxnic.net>
-Date: Thu, 7 Mar 2013 07:17:42 +0000
-In-Reply-To: <20130307031707.GA25137@mudshark.cambridge.arm.com>
-References: <1361285327.1051.115.camel@zakaz.uk.xensource.com>
-	 <1361360886-2956-1-git-send-email-ian.campbell@citrix.com>
-	 <51340ACD.70904@gmail.com>
-	 <20130305030436.GA18040@mudshark.cambridge.arm.com>
-	 <513596F2.1000701@gmail.com>
-	 <20130305080845.GA19097@mudshark.cambridge.arm.com>
-	 <1362475797.8941.67.camel@hastur.hellion.org.uk>
-	 <20130307031707.GA25137@mudshark.cambridge.arm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-2 
+	id S1753598Ab3CGHVf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 02:21:35 -0500
+Received: from mail-lb0-f179.google.com ([209.85.217.179]:60682 "EHLO
+	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753052Ab3CGHVe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Mar 2013 02:21:34 -0500
+Subject: [PATCH linux-next] procfs: fix rcu-lock/unlock in proc_reg_open() and
+ proc_reg_release()
+To: linux-kernel@vger.kernel.org
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Nathan Zimmer <nzimmer@sgi.com>
+Date: Thu, 07 Mar 2013 11:21:29 +0400
+Message-ID: <20130307072129.17719.81530.stgit@zurg>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-03-07 at 03:17 +0000, Will Deacon wrote:
-> > I looked and couldn't see an existing 64 bit xchg, was I looking in the
-> > wrong place? Ah, wait, I see atomic64_xchg now. But that needs an
-> > atomic64_t while I have a xen_ulong_t (which == 64 bits on ARM). This is
-> > a kernel<->hypervisor ABI so I can't just change it to an atomic64_t. I
-> > suppose I could cast (see below, untested) but that seems rather icky.
-> 
-> You can play some container_of tricks, like we do in cmpxchg64 to get this
-> right. Alternatively, we could look at an xchg8 implementation which some
-> other architectures have (although they seem to be 64-bit machines).
+fix for a21813be23329e2788164eab532e79cb0e513cfc (linux-next)
+"procfs: improve scaling in proc"
 
-I went with the container of trick + appropriate Kconfig depends and
-sent a patch out a couple of seconds ago.
+Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: Nathan Zimmer <nzimmer@sgi.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+---
+ fs/proc/inode.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-Thanks for your help/advice!
-
-Ian.
+diff --git a/fs/proc/inode.c b/fs/proc/inode.c
+index 6cccc4d..073846c 100644
+--- a/fs/proc/inode.c
++++ b/fs/proc/inode.c
+@@ -352,7 +352,7 @@ static int proc_reg_open(struct inode *inode, struct file *file)
+ 	atomic_inc(&pde->pde_users);
+ 	open = fops->open;
+ 	release = fops->release;
+-	rcu_read_lock();
++	rcu_read_unlock();
+ 
+ 	if (open)
+ 		rv = open(inode, file);
+@@ -400,6 +400,7 @@ static int proc_reg_release(struct inode *inode, struct file *file)
+ 	rcu_read_lock();
+ 	fops = rcu_dereference(pde->proc_fops);
+ 	if (!fops) {
++		rcu_read_unlock();
+ 		/*
+ 		 * Can't simply exit, __fput() will think that everything is OK,
+ 		 * and move on to freeing struct file. remove_proc_entry() will
 
