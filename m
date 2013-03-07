@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932610Ab3CGOGc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 09:06:32 -0500
-Received: from g6t0187.atlanta.hp.com ([15.193.32.64]:22272 "EHLO
-	g6t0187.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755955Ab3CGOG3 (ORCPT
+	id S932713Ab3CGOGk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 09:06:40 -0500
+Received: from g1t0026.austin.hp.com ([15.216.28.33]:27351 "EHLO
+	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753674Ab3CGOGj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 09:06:29 -0500
-Subject: [RFC PATCH 3/5] crash dump bitmap: scan memory pages in kernel
- crash process
+	Thu, 7 Mar 2013 09:06:39 -0500
+Subject: [RFC PATCH 4/5] crash dump bitmap: add a proc interface for crash
+ dump bitmap
 To: linux-kernel@vger.kernel.org
 From: Jingbai Ma <jingbai.ma@hp.com>
-Date: Thu, 07 Mar 2013 22:06:23 +0800
-Message-ID: <20130307140622.28557.34463.stgit@k.asiapacific.hpqcorp.net>
+Date: Thu, 07 Mar 2013 22:06:35 +0800
+Message-ID: <20130307140634.28557.69504.stgit@k.asiapacific.hpqcorp.net>
 In-Reply-To: <20130307140546.28557.92853.stgit@k.asiapacific.hpqcorp.net>
 References: <20130307140546.28557.92853.stgit@k.asiapacific.hpqcorp.net>
 User-Agent: StGit/0.16
@@ -23,223 +23,253 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the kernel crash process, call generate_crash_dump_bitmap() to scans
-all memory pages, clear the bit for all excluded memory pages in the
-reserved memory.
+Add a procfs driver for selecting exclude pages in userspace.
+/proc/crash_dump_bitmap/
 
 Signed-off-by: Jingbai Ma <jingbai.ma@hp.com>
 ---
- kernel/crash_dump_bitmap.c |  156 ++++++++++++++++++++++++++++++++++++++++++++
- kernel/kexec.c             |    5 +
- 2 files changed, 161 insertions(+), 0 deletions(-)
+ fs/proc/Makefile            |    1 
+ fs/proc/crash_dump_bitmap.c |  221 +++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 222 insertions(+), 0 deletions(-)
+ create mode 100644 fs/proc/crash_dump_bitmap.c
 
-diff --git a/kernel/crash_dump_bitmap.c b/kernel/crash_dump_bitmap.c
-index e743cdd..eed13ca 100644
---- a/kernel/crash_dump_bitmap.c
-+++ b/kernel/crash_dump_bitmap.c
-@@ -23,6 +23,8 @@
- 
- #ifdef CONFIG_CRASH_DUMP_BITMAP
- 
-+#define virt_to_pfn(kaddr) (__pa(kaddr) >> PAGE_SHIFT)
+diff --git a/fs/proc/Makefile b/fs/proc/Makefile
+index 712f24d..2dfcff1 100644
+--- a/fs/proc/Makefile
++++ b/fs/proc/Makefile
+@@ -27,6 +27,7 @@ proc-$(CONFIG_PROC_SYSCTL)	+= proc_sysctl.o
+ proc-$(CONFIG_NET)		+= proc_net.o
+ proc-$(CONFIG_PROC_KCORE)	+= kcore.o
+ proc-$(CONFIG_PROC_VMCORE)	+= vmcore.o
++proc-$(CONFIG_CRASH_DUMP_BITMAP)	+= crash_dump_bitmap.o
+ proc-$(CONFIG_PROC_DEVICETREE)	+= proc_devtree.o
+ proc-$(CONFIG_PRINTK)	+= kmsg.o
+ proc-$(CONFIG_PROC_PAGE_MONITOR)	+= page.o
+diff --git a/fs/proc/crash_dump_bitmap.c b/fs/proc/crash_dump_bitmap.c
+new file mode 100644
+index 0000000..77ecaae
+--- /dev/null
++++ b/fs/proc/crash_dump_bitmap.c
+@@ -0,0 +1,221 @@
++/*
++ *    fs/proc/crash_dump_bitmap.c
++ *    Interface for controlling the crash dump bitmap from user space.
++ *
++ *    (C) Copyright 2013 Hewlett-Packard Development Company, L.P.
++ *    Author: Jingbai Ma <jingbai.ma@hp.com>
++ *
++ *    This program is free software; you can redistribute it and/or modify
++ *    it under the terms of version 2 of the GNU General Public License as
++ *    published by the Free Software Foundation.
++ *
++ *    This program is distributed in the hope that it will be useful,
++ *    but WITHOUT ANY WARRANTY; without even the implied warranty of
++ *    MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE. See the GNU
++ *    General Public License for more details.
++ */
 +
- phys_addr_t crash_dump_bitmap_mem;
- EXPORT_SYMBOL(crash_dump_bitmap_mem);
- 
-@@ -35,6 +37,7 @@ EXPORT_SYMBOL(crash_dump_bitmap_ctrl);
- struct crash_dump_bitmap_info crash_dump_bitmap_info;
- EXPORT_SYMBOL(crash_dump_bitmap_info);
- 
++#include <linux/module.h>
++#include <linux/kernel.h>
++#include <linux/proc_fs.h>
++#include <linux/seq_file.h>
++#include <linux/jiffies.h>
++#include <linux/crash_dump.h>
++#include <linux/crash_dump_bitmap.h>
 +
- /* Location of the reserved area for the crash_dump_bitmap */
- struct resource crash_dump_bitmap_res = {
- 	.name  = "Crash dump bitmap",
-@@ -42,4 +45,157 @@ struct resource crash_dump_bitmap_res = {
- 	.end   = 0,
- 	.flags = IORESOURCE_BUSY | IORESOURCE_MEM
- };
++#ifdef CONFIG_CRASH_DUMP_BITMAP
 +
-+inline void set_crash_dump_bitmap(unsigned long pfn, int val)
++MODULE_LICENSE("GPL");
++MODULE_AUTHOR("Jingbai Ma <jingbai.ma@hp.com>");
++MODULE_DESCRIPTION("Crash dump bitmap support driver");
++
++static const char *proc_dir_name = "crash_dump_bitmap";
++static const char *proc_page_status_name = "page_status";
++static const char *proc_dump_level_name = "dump_level";
++
++static struct proc_dir_entry *proc_dir, *proc_page_status, *proc_dump_level;
++
++static unsigned int get_dump_level(void)
 +{
-+	phys_addr_t paddr = crash_dump_bitmap_info.bitmap + (pfn >> 3);
-+	unsigned char *vaddr;
-+	unsigned char bit = (pfn & 7);
++	unsigned int dump_level;
 +
-+	if (unlikely(paddr > (crash_dump_bitmap_mem
-+		+ crash_dump_bitmap_mem_size))) {
-+		pr_err(
-+		"crash_dump_bitmap: pfn exceed limit. pfn=%ld, addr=0x%llX\n",
-+		pfn, paddr);
-+		return;
-+	}
++	dump_level = crash_dump_bitmap_ctrl.exclude_zero_pages
++		? CRASH_DUMP_LEVEL_EXCLUDE_ZERO_PAGES : 0;
++	dump_level |= crash_dump_bitmap_ctrl.exclude_cache_pages
++		? CRASH_DUMP_LEVEL_EXCLUDE_CACHE_PAGES : 0;
++	dump_level |= crash_dump_bitmap_ctrl.exclude_cache_private_pages
++		? CRASH_DUMP_LEVEL_EXCLUDE_CACHE_PRIVATE_PAGES : 0;
++	dump_level |= crash_dump_bitmap_ctrl.exclude_user_pages
++		? CRASH_DUMP_LEVEL_EXCLUDE_USER_PAGES : 0;
++	dump_level |= crash_dump_bitmap_ctrl.exclude_free_pages
++		? CRASH_DUMP_LEVEL_EXCLUDE_FREE_PAGES : 0;
 +
-+	vaddr = (unsigned char *)__va(paddr);
-+
-+	if (val)
-+		*vaddr |= (1U << bit);
-+	else
-+		*vaddr &= (~(1U << bit));
++	return dump_level;
 +}
 +
-+void generate_crash_dump_bitmap(void)
++static void set_dump_level(unsigned int dump_level)
 +{
-+	pg_data_t *pgdat;
-+	struct zone *zone;
-+	unsigned long flags;
-+	int order, t;
-+	struct list_head *curr;
-+	unsigned long zone_free_pages;
-+	phys_addr_t addr;
++	crash_dump_bitmap_ctrl.exclude_zero_pages =
++		(dump_level & CRASH_DUMP_LEVEL_EXCLUDE_ZERO_PAGES) ? 1 : 0;
++	crash_dump_bitmap_ctrl.exclude_cache_pages =
++		(dump_level & CRASH_DUMP_LEVEL_EXCLUDE_CACHE_PAGES) ? 1 : 0;
++	crash_dump_bitmap_ctrl.exclude_cache_private_pages =
++		(dump_level & CRASH_DUMP_LEVEL_EXCLUDE_CACHE_PRIVATE_PAGES)
++		 ? 1 : 0;
++	crash_dump_bitmap_ctrl.exclude_user_pages =
++		(dump_level & CRASH_DUMP_LEVEL_EXCLUDE_USER_PAGES) ? 1 : 0;
++	crash_dump_bitmap_ctrl.exclude_free_pages =
++		(dump_level & CRASH_DUMP_LEVEL_EXCLUDE_FREE_PAGES) ? 1 : 0;
++}
++
++static int proc_page_status_show(struct seq_file *m, void *v)
++{
++	u64 start, duration;
 +
 +	if (!crash_dump_bitmap_mem) {
-+		pr_info("crash_dump_bitmap: no crash_dump_bitmap memory.\n");
-+		return;
++		seq_printf(m,
++			"crash_dump_bitmap: crash_dump_bitmap_mem not found!\n");
++
++		return -EINVAL;
 +	}
 +
-+	pr_info(
-+	"Excluding pages: bitmap=%d, cache=%d, private=%d, user=%d, free=%d\n",
-+		crash_dump_bitmap_ctrl.exclude_crash_dump_bitmap_pages,
-+		crash_dump_bitmap_ctrl.exclude_cache_pages,
-+		crash_dump_bitmap_ctrl.exclude_cache_private_pages,
-+		crash_dump_bitmap_ctrl.exclude_user_pages,
++	seq_printf(m, "Exclude page flag status:\n");
++	seq_printf(m, "    exclude_dump_bitmap_pages=%d\n",
++		crash_dump_bitmap_ctrl.exclude_crash_dump_bitmap_pages);
++	seq_printf(m, "    exclude_zero_pages=%d\n",
++		crash_dump_bitmap_ctrl.exclude_zero_pages);
++	seq_printf(m, "    exclude_cache_pages=%d\n",
++		crash_dump_bitmap_ctrl.exclude_cache_pages);
++	seq_printf(m, "    exclude_cache_private_pages=%d\n",
++		crash_dump_bitmap_ctrl.exclude_cache_private_pages);
++	seq_printf(m, "    exclude_user_pages=%d\n",
++		crash_dump_bitmap_ctrl.exclude_user_pages);
++	seq_printf(m, "    exclude_free_pages=%d\n",
 +		crash_dump_bitmap_ctrl.exclude_free_pages);
 +
-+	crash_dump_bitmap_info.free_pages = 0;
-+	crash_dump_bitmap_info.cache_pages = 0;
-+	crash_dump_bitmap_info.cache_private_pages = 0;
-+	crash_dump_bitmap_info.user_pages = 0;
-+	crash_dump_bitmap_info.hwpoison_pages = 0;
++	seq_printf(m, "Scanning all memory pages:\n");
++	start = get_jiffies_64();
++	generate_crash_dump_bitmap();
++	duration = get_jiffies_64() - start;
++	seq_printf(m, "    Done. Duration=%dms\n", jiffies_to_msecs(duration));
 +
-+	/* Set all bits on bitmap */
-+	memset(__va(crash_dump_bitmap_info.bitmap), 0xff,
-+		crash_dump_bitmap_info.bitmap_size);
-+
-+	/* Exclude all crash_dump_bitmap pages */
-+	if (crash_dump_bitmap_ctrl.exclude_crash_dump_bitmap_pages) {
-+		for (addr = crash_dump_bitmap_mem; addr <
-+			crash_dump_bitmap_mem + crash_dump_bitmap_mem_size;
-+			addr += PAGE_SIZE)
-+				set_crash_dump_bitmap(
-+					virt_to_pfn(__va(addr)), 0);
-+	}
-+
-+	/* Exclude unnecessary pages */
-+	for_each_online_pgdat(pgdat) {
-+		unsigned long i;
-+		unsigned long flags;
-+
-+		pgdat_resize_lock(pgdat, &flags);
-+		for (i = 0; i < pgdat->node_spanned_pages; i++) {
-+			struct page *page;
-+			unsigned long pfn = pgdat->node_start_pfn + i;
-+
-+			if (!pfn_valid(pfn))
-+				continue;
-+
-+			page = pfn_to_page(pfn);
-+
-+			/* Exclude the cache pages without the private page */
-+			if (crash_dump_bitmap_ctrl.exclude_cache_pages
-+				&& (PageLRU(page) || PageSwapCache(page))
-+				&& !page_has_private(page) && !PageAnon(page)) {
-+					set_crash_dump_bitmap(pfn, 0);
-+					crash_dump_bitmap_info.cache_pages++;
-+			}
-+			/* Exclude the cache pages with private page */
-+			else if (
-+			crash_dump_bitmap_ctrl.exclude_cache_private_pages
-+				&& (PageLRU(page) || PageSwapCache(page))
-+				&& !PageAnon(page)) {
-+					set_crash_dump_bitmap(pfn, 0);
-+				crash_dump_bitmap_info.cache_private_pages++;
-+			}
-+			/* Exclude the pages used by user process */
-+			else if (crash_dump_bitmap_ctrl.exclude_user_pages
-+					&& PageAnon(page)) {
-+					set_crash_dump_bitmap(pfn, 0);
-+					crash_dump_bitmap_info.user_pages++;
-+			}
-+#ifdef CONFIG_MEMORY_FAILURE
-+			/* Exclude the hwpoison pages */
-+			else if (PageHWPoison(page)) {
-+					set_crash_dump_bitmap(pfn, 0);
-+					crash_dump_bitmap_info.hwpoison_pages++;
-+			}
-+#endif
-+		}
-+		pgdat_resize_unlock(pgdat, &flags);
-+	}
-+
-+	/* Exclude the free pages managed by a buddy system */
-+	if (crash_dump_bitmap_ctrl.exclude_free_pages) {
-+		for_each_populated_zone(zone) {
-+			if (!zone->spanned_pages)
-+				continue;
-+
-+			spin_lock_irqsave(&zone->lock, flags);
-+
-+			zone_free_pages = 0;
-+			for_each_migratetype_order(order, t) {
-+				list_for_each(
-+				curr, &zone->free_area[order].free_list[t]) {
-+					unsigned long i;
-+					struct page *page = list_entry(curr,
-+						struct page, lru);
-+					for (i = 0; i < (1 << order); i++) {
-+						set_crash_dump_bitmap(
-+						page_to_pfn(page + i), 0);
-+						zone_free_pages++;
-+					crash_dump_bitmap_info.free_pages++;
-+					}
-+				}
-+			}
-+			spin_unlock_irqrestore(&zone->lock, flags);
-+		}
-+	}
-+
-+	pr_info("crash_dump_bitmap: excluded pages: cache=%ld, private=%ld\n",
-+		crash_dump_bitmap_info.cache_pages,
++	seq_printf(m, "Excluded memory page status:\n");
++	seq_printf(m, "    cache_pages=%ld\n",
++		crash_dump_bitmap_info.cache_pages);
++	seq_printf(m, "    cache_private_pages=%ld\n",
 +		crash_dump_bitmap_info.cache_private_pages);
-+	pr_info("crash_dump_bitmap: excluded pages: user=%ld, free=%ld\n",
-+		crash_dump_bitmap_info.user_pages,
++	seq_printf(m, "    user_pages=%ld\n",
++		crash_dump_bitmap_info.user_pages);
++	seq_printf(m, "    free_pages=%ld\n",
 +		crash_dump_bitmap_info.free_pages);
-+	pr_info("crash_dump_bitmap: excluded pages: hwpoison=%ld\n",
++	seq_printf(m, "    hwpoison_pages=%ld\n",
 +		crash_dump_bitmap_info.hwpoison_pages);
++
++	return 0;
 +}
-+EXPORT_SYMBOL(generate_crash_dump_bitmap);
-+#else
-+void generate_crash_dump_bitmap(void)
++
++static int proc_page_status_open(struct inode *inode, struct file *file)
 +{
++	return single_open(file, proc_page_status_show, NULL);
 +}
- #endif /* CONFIG_CRASH_DUMP_BITMAP */
-diff --git a/kernel/kexec.c b/kernel/kexec.c
-index bddd3d7..ce00f0f 100644
---- a/kernel/kexec.c
-+++ b/kernel/kexec.c
-@@ -32,6 +32,7 @@
- #include <linux/vmalloc.h>
- #include <linux/swap.h>
- #include <linux/syscore_ops.h>
-+#include <linux/crash_dump_bitmap.h>
- 
- #include <asm/page.h>
- #include <asm/uaccess.h>
-@@ -1097,6 +1098,7 @@ void crash_kexec(struct pt_regs *regs)
- 			crash_setup_regs(&fixed_regs, regs);
- 			crash_save_vmcoreinfo();
- 			machine_crash_shutdown(&fixed_regs);
-+			generate_crash_dump_bitmap();
- 			machine_kexec(kexec_crash_image);
- 		}
- 		mutex_unlock(&kexec_mutex);
-@@ -1495,6 +1497,9 @@ static int __init crash_save_vmcoreinfo_init(void)
- 	VMCOREINFO_SYMBOL(mem_map);
- 	VMCOREINFO_SYMBOL(contig_page_data);
- #endif
-+#ifdef CONFIG_CRASH_DUMP_BITMAP
-+	VMCOREINFO_SYMBOL(crash_dump_bitmap_info);
-+#endif
- #ifdef CONFIG_SPARSEMEM
- 	VMCOREINFO_SYMBOL(mem_section);
- 	VMCOREINFO_LENGTH(mem_section, NR_SECTION_ROOTS);
++
++static const struct file_operations proc_page_status_fops = {
++	.open		= proc_page_status_open,
++	.read		= seq_read,
++	.llseek		= seq_lseek,
++	.release	= single_release,
++};
++
++static int proc_dump_level_show(struct seq_file *m, void *v)
++{
++	if (!crash_dump_bitmap_mem) {
++		seq_printf(m,
++			"crash_dump_bitmap: crash_dump_bitmap_mem not found!\n");
++
++		return -EINVAL;
++	}
++
++	seq_printf(m, "%d\n", get_dump_level());
++
++	return 0;
++}
++
++static ssize_t proc_dump_level_write(struct file *file,
++	const char __user *buffer, size_t count, loff_t *ppos)
++{
++	int ret;
++	unsigned int dump_level;
++
++	ret = kstrtouint_from_user(buffer, count, 10, &dump_level);
++	if (ret)
++		return -EFAULT;
++
++	set_dump_level(dump_level);
++
++	pr_info("crash_dump_bitmap: new dump_level=%d\n", dump_level);
++
++	return count;
++}
++
++static int proc_dump_level_open(struct inode *inode, struct file *file)
++{
++	return single_open(file, proc_dump_level_show, NULL);
++}
++
++static const struct file_operations proc_dump_level_fops = {
++	.open		= proc_dump_level_open,
++	.read		= seq_read,
++	.write		= proc_dump_level_write,
++	.llseek		= seq_lseek,
++	.release	= single_release,
++};
++
++int __init init_proc_crash_dump_bitmap(void)
++{
++	if (is_kdump_kernel() || (crash_dump_bitmap_mem == 0)
++		|| (crash_dump_bitmap_mem_size == 0))
++		return 0;
++
++	proc_dir = proc_mkdir(proc_dir_name, NULL);
++	if (proc_dir == NULL) {
++		pr_err("crash_dump_bitmap: proc_mkdir failed!\n");
++		return -EINVAL;
++	}
++
++	proc_page_status = proc_create(proc_page_status_name, 0444,
++		proc_dir, &proc_page_status_fops);
++	if (proc_page_status == NULL) {
++		pr_err("crash_dump_bitmap: create procfs %s failed!\n",
++			proc_page_status_name);
++		remove_proc_entry(proc_dir_name, NULL);
++		return -EINVAL;
++	}
++
++	proc_dump_level = proc_create(proc_dump_level_name, 0644,
++		proc_dir, &proc_dump_level_fops);
++	if (proc_dump_level == NULL) {
++		pr_err("crash_dump_bitmap: create procfs %s failed!\n",
++			proc_dump_level_name);
++		remove_proc_entry(proc_page_status_name, proc_dir);
++		remove_proc_entry(proc_dir_name, NULL);
++		return -EINVAL;
++	}
++
++	pr_info("crash_dump_bitmap: procfs driver initialized successfully!\n");
++
++	return 0;
++}
++
++void __exit cleanup_proc_crash_dump_bitmap(void)
++{
++	remove_proc_entry(proc_dump_level_name, proc_dir);
++	remove_proc_entry(proc_page_status_name, proc_dir);
++	remove_proc_entry(proc_dir_name, NULL);
++
++	pr_info("crash_dump_bitmap: procfs driver unloaded!\n");
++}
++
++module_init(init_proc_crash_dump_bitmap);
++module_exit(cleanup_proc_crash_dump_bitmap);
++
++#endif /* CONFIG_CRASH_DUMP_BITMAP */
 
