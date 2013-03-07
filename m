@@ -1,49 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932580Ab3CGKhe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 05:37:34 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:56486 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1756001Ab3CGKgA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 05:36:00 -0500
-X-IronPort-AV: E=Sophos;i="4.84,801,1355068800"; 
-   d="scan'208";a="6831339"
-From: Tang Chen <tangchen@cn.fujitsu.com>
-To: lenb@kernel.org, rjw@sisk.pl, robert.moore@intel.com, lv.zheng@intel.com,
-        ming.m.lin@intel.com, mpm@selenic.com, herbert@gondor.hengli.com.au,
-        rob@landley.net
-Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org, trivial@kernel.org
-Subject: [RESEND PATCH 0/6] Fix some coding style and comment problems.
-Date: Thu, 7 Mar 2013 18:38:11 +0800
-Message-Id: <1362652697-30284-1-git-send-email-tangchen@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.10.1
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/03/07 18:34:45,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/03/07 18:34:51,
-	Serialize complete at 2013/03/07 18:34:51
+	id S1756095Ab3CGKm0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 05:42:26 -0500
+Received: from mail.free-electrons.com ([94.23.35.102]:58592 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754367Ab3CGKmZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Mar 2013 05:42:25 -0500
+Message-ID: <51386F0D.8060105@free-electrons.com>
+Date: Thu, 07 Mar 2013 11:42:21 +0100
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: linux-kernel@vger.kernel.org, linux-kbuild <linux-kbuild@vger.kernel.org>
+Subject: Re: 3.9-rc1: hz.bc compilation breakage
+References: <5137546B.2090801@free-electrons.com> <51380C65.50202@zytor.com>
+In-Reply-To: <51380C65.50202@zytor.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix some coding style and comment problems I saw when I was reading the code.
+Hi,
 
-Tang Chen (6):
-  acpi: Remove the leading space of "unlock" label in
-    acpi_memory_device_notify().
-  acpi: Add missing parameter comment for acpi_get_table_with_size().
-  acpi: Remove the leading spaces of "finish_override" label in
-    acpi_tb_table_override().
-  acpi: Remove the leading spaces of "unmap_and_exit" label in
-    acpi_tb_install_table().
-  acpi: Add the missing parameter comment for acpi_initialize_tables().
-  doc: Fix a wrong comment in Documentation/hw_random.txt
+Le 07/03/2013 04:41, H. Peter Anvin a écrit :
+> On 03/06/2013 06:36 AM, Maxime Ripard wrote:
+>> I'm compiling the kernel for an iMX28(ARM) board, and since 3.9-rc1, I
+>> get the following error at compilation time:
+>>
+>> make[3]: *** No rule to make target
+>> `/home/max/Work/2012/crystalfontz/rewrite/linux-dt/include/config/hz.h',
+>> needed by `kernel/hz.bc'.  Stop.
+>>
+>> I'm doing a clean out-of-tree build, with the following configuration
+>> file: http://code.bulix.org/m4y7se-83102?raw
+>>
+>> Reverting commit 1b66e0fd ("kernel: Replace timeconst.pl with a bc
+>> script") make the compilation go on as usual.
+>>
+> 
+> That file should have been created by "make *config", and I just
+> verified that it does indeed do so.  That file is a sentinel for
+> configuration changes; the entire build system depends on it.
 
- Documentation/hw_random.txt    |    2 +-
- drivers/acpi/acpi_memhotplug.c |    2 +-
- drivers/acpi/acpica/tbinstal.c |    2 +-
- drivers/acpi/acpica/tbutils.c  |    2 +-
- drivers/acpi/acpica/tbxface.c  |    6 +++---
- 5 files changed, 7 insertions(+), 7 deletions(-)
+I triggered this issue when switching to 3.9-rc1, and oldconfig runs at
+that time, and now, running menuconfig doesn't generates it either.
 
+> I am not sure what you mean with "clean out-of-tree", however.
+
+make O=$(pwd) -C /path/to/linux/source some_configs
+make
+
+Thanks,
+Maxime
+
+-- 
+Maxime Ripard, Free Electrons
+Kernel, drivers, real-time and embedded Linux
+development, consulting, training and support.
+http://free-electrons.com
