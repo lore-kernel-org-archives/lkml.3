@@ -1,59 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755989Ab3CGKMe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 05:12:34 -0500
-Received: from mga11.intel.com ([192.55.52.93]:41072 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754213Ab3CGKMd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 05:12:33 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,800,1355126400"; 
-   d="scan'208";a="296657083"
-Date: Thu, 7 Mar 2013 15:17:35 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: "Maxin B. John" <maxin.john@gmail.com>
-Cc: gregkh@linuxfoundation.org, djbw@fb.com, nicolas.ferre@atmel.com,
-        linus.walleij@linaro.org, rmk+kernel@arm.linux.org.uk,
-        jassisinghbrar@gmail.com, lars@metafoo.de, grant.likely@secretlab.ca,
-        linux-kernel@vger.kernel.org, rob.herring@calxeda.com,
-        linux-arm-kernel@lists.infradead.org,
-        devicetree-discuss@lists.ozlabs.org,
-        "Maxin B. John" <maxin.john@enea.com>
-Subject: Re: [PATCH] dma: Remove erroneous __exit and __exit_p() references
-Message-ID: <20130307094735.GG13370@intel.com>
-References: <1361318824-22287-1-git-send-email-maxin.john@gmail.com>
- <CACRpkdZamOCWHWMcFYRqQDKJARZOCEP_eSNPNaxSgHfAn2wmEw@mail.gmail.com>
- <CAMhs6YwC+Lx0Vt=w2MoQV08on+rB1zidGCsNHRqcst8KBrb2XQ@mail.gmail.com>
+	id S932528Ab3CGKMn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 05:12:43 -0500
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:43648 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932093Ab3CGKMk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Mar 2013 05:12:40 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAMhs6YwC+Lx0Vt=w2MoQV08on+rB1zidGCsNHRqcst8KBrb2XQ@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4147bb5a7cf547c19c6a5a6b459a957d@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
+References: <20130228083437.GA28143@lnx-rg> <78fd1c1df13b449887de6e0b3505a988@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
+ <CACQ1gAgyYp+Dxmk-0C3zfKK+CkEwQX51NvWjzkV7=8GC3CD=Qg@mail.gmail.com> <4147bb5a7cf547c19c6a5a6b459a957d@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
+From: Richard Genoud <richard.genoud@gmail.com>
+Date: Thu, 7 Mar 2013 11:12:19 +0100
+Message-ID: <CACQ1gAi1NNwJ_QDp7ipjwdYCskENGN=N-j+TFD5aHX8DHnoBQA@mail.gmail.com>
+Subject: Re: hv_netvsc: WARNING in softirq.c
+To: Haiyang Zhang <haiyangz@microsoft.com>
+Cc: KY Srinivasan <kys@microsoft.com>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 07, 2013 at 10:17:40AM +0100, Maxin B. John wrote:
-> Hi,
-> 
-> On Fri, Feb 22, 2013 at 7:29 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
-> > On Wed, Feb 20, 2013 at 1:07 AM,  <maxin.john@gmail.com> wrote:
-> >
-> >> From: "Maxin B. John" <maxin.john@enea.com>
-> >>
-> >> Removing the annotation with __exit and referencing with __exit_p()
-> >> present in dma driver module remove hooks.
-> >>
-> >> Part of the __devexit and __devexit_p() purge.
-> >>
-> >> Signed-off-by: Maxin B. John <maxin.john@enea.com>
-> >
-> > Acked-by: Linus Walleij <linus.walleij@linaro.org>
-> 
-> Gentle ping...
-???
+2013/3/6 Haiyang Zhang <haiyangz@microsoft.com>:
+> I have found a simple way to reproduce this kind of warning:
+> 1) reboot the VM (because this warning can be displayed only once.)
+> 2) login to the host and open the VM [Settings]
+> 3) Temporarily change the Network adapter's option [Virtual Switch] to "Not connected".
+> 4) run dmesg, you should see the warning.
+>
+> The reason for the warning is -- netif_tx_disable() is called when the NIC
+> is disconnected. And it's called within irq context. netif_tx_disable()
+> calls local_bh_enable() which displays warning if in irq.
+>
+> The fix is to remove the unnecessary netif_tx_disable() in the netvsc_linkstatus_callback().
+> I attached a patch. Would you like to test it on your side as well?
+>
+> Thanks,
+> - Haiyang
+>
+Thanks for your reply.
+I'll be able to test your patch in 2 or 3 weeks I guess (I haven't got
+any access to the hyperV machine, the admin-sys is on holiday, and
+it's a production server... So I don't want to mess with it right now
+:) )
 
-Its already in my -next
-
---
-~Vinod
+Regards,
+Richard.
