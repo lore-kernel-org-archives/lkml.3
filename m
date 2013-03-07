@@ -1,84 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759439Ab3CGQWe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 11:22:34 -0500
-Received: from mail-qe0-f42.google.com ([209.85.128.42]:47944 "EHLO
-	mail-qe0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750751Ab3CGQWd (ORCPT
+	id S1759497Ab3CGQZN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 11:25:13 -0500
+Received: from mail-vc0-f182.google.com ([209.85.220.182]:51952 "EHLO
+	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755076Ab3CGQZL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 11:22:33 -0500
+	Thu, 7 Mar 2013 11:25:11 -0500
 MIME-Version: 1.0
-In-Reply-To: <1360846649-6411-1-git-send-email-eranian@google.com>
-References: <1360846649-6411-1-git-send-email-eranian@google.com>
-Date: Thu, 7 Mar 2013 17:22:28 +0100
-Message-ID: <CABPqkBRKmp+TAPvnTmw3tsqvonPcdJXPK06RM0AfuUd4mSBCVw@mail.gmail.com>
-Subject: Re: [PATCH v2 0/3] perf stat: add per-core count aggregation
-From: Stephane Eranian <eranian@google.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung.kim@lge.com>
+In-Reply-To: <4FA345DA4F4AE44899BD2B03EEEC2FA9286B511E@sacexcmbx05-prd.hq.netapp.com>
+References: <20130305174954.GG12795@htj.dyndns.org>
+	<20130305140312.243cb094@tlielax.poochiereds.net>
+	<20130305190923.GI12795@htj.dyndns.org>
+	<20130305183941.19ff39ce@tlielax.poochiereds.net>
+	<20130305234700.GE1227@htj.dyndns.org>
+	<20130306181608.GA18687@redhat.com>
+	<20130306185304.GM1227@htj.dyndns.org>
+	<CA+55aFwDogteVd=vwGHXDSASnga-nZZnKaQz9aO1yBU2CPKSbA@mail.gmail.com>
+	<20130306212452.GO1227@htj.dyndns.org>
+	<CA+55aFy49AWptMcvEzJxg95ikf-dC+-vcCPq-cnaCCwje3tyoQ@mail.gmail.com>
+	<20130306213636.GP1227@htj.dyndns.org>
+	<20130307064140.71c0936b@tlielax.poochiereds.net>
+	<CA+55aFxe1_x8wvVYciiX8tuee+VsmXGKqEbONQdFM4s4W2iuPg@mail.gmail.com>
+	<4FA345DA4F4AE44899BD2B03EEEC2FA9286B511E@sacexcmbx05-prd.hq.netapp.com>
+Date: Thu, 7 Mar 2013 08:25:10 -0800
+X-Google-Sender-Auth: 2_xJ5cLXbcNvAEp-QfR6larWSvE
+Message-ID: <CA+55aFySyBP8q5AvPrt-s_ZPdgamfoX-dERw4EJ21EcsDLBjYA@mail.gmail.com>
+Subject: Re: LOCKDEP: 3.9-rc1: mount.nfs/4272 still has locks held!
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+Cc: Jeff Layton <jlayton@redhat.com>, Tejun Heo <tj@kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Mandeep Singh Baines <msb@chromium.org>,
+        Ming Lei <ming.lei@canonical.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnaldo,
+On Thu, Mar 7, 2013 at 7:59 AM, Myklebust, Trond
+<Trond.Myklebust@netapp.com> wrote:
+>
+> It _shouldn't_ be an interruption unless the filesystem can't make
+> progress.
 
-Any comments on this series?
+So how can we tell? Calling "freezable_schedule()" if you're not ready
+to be frozen is not good. And nobody but the NFS code can know.
 
+You might want to introduce some counter that counts number of
+outstanding non-interruptible events, and only call the "freezable"
+version if that counter is zero.
 
-On Thu, Feb 14, 2013 at 1:57 PM, Stephane Eranian <eranian@google.com> wrote:
-> This patch series contains improvement to the aggregation support
-> in perf stat.
->
-> First, the aggregation code is refactored and a aggr_mode enum
-> is defined. There is also an important bug fix for the existing
-> per-socket aggregation.
->
-> Second, the option --aggr-socket is renamed --per-socket.
->
-> Third, the patch adds a new --per-core option to perf stat.
-> It aggregates counts per physical core and becomes useful on
-> systems with hyper-threading. The cores are presented per
-> socket: S0-C1, means socket 0 core 1. Note that the core number
-> represents its physical core id. As such, numbers may not always
-> be contiguous. All of this is based on topology information available
-> in sysfs.
->
-> Per-core aggregation can be combined with interval printing:
->
->  # perf stat -a --per-core -I 1000 -e cycles sleep 100
->  #           time core         cpus             counts events
->       1.000101160 S0-C0           2      6,051,254,899 cycles
->       1.000101160 S0-C1           2      6,379,230,776 cycles
->       1.000101160 S0-C2           2      6,480,268,471 cycles
->       1.000101160 S0-C3           2      6,110,514,321 cycles
->       2.000663750 S0-C0           2      6,572,533,016 cycles
->       2.000663750 S0-C1           2      6,378,623,674 cycles
->       2.000663750 S0-C2           2      6,264,127,589 cycles
->       2.000663750 S0-C3           2      6,305,346,613 cycles
->
-> For instance here on this SNB machine, we can see that the load
-> is evenly balanced across all 4 physical core (HT is on).
->
-> In v2, we print events across all cores or socket and we renamed
-> --aggr-socket to --per-socket and renamed --aggr-core to --per-core
->
-> Signed-off-by: Stephane Eranian <eranian@google.com>
->
-> Stephane Eranian (3):
->   perf stat: refactor aggregation code
->   perf stat: rename --aggr-socket to --per-socket
->   perf stat: add per-core aggregation
->
->  tools/perf/Documentation/perf-stat.txt |   10 +-
->  tools/perf/builtin-stat.c              |  237 ++++++++++++++++++++------------
->  tools/perf/util/cpumap.c               |   86 ++++++++++--
->  tools/perf/util/cpumap.h               |   12 ++
->  4 files changed, 241 insertions(+), 104 deletions(-)
->
-> --
-> 1.7.9.5
->
+A better alternative might be to *never* call the freezable version.
+Because those freezable_*() things are really quite disgusting, and
+are wrong - they don't actually freeze the process, they say "I don't
+care if you freeze me while I sleep", and you might actually wake up
+*while* the system is being frozen. I think the whole concept is
+broken. Rafaei - comments? The function really is crap, regardless of
+any unrelated NFS problems.
+
+So what NFS could do instead is actually check the "do I need to
+freeze" flag, and if you need to freeze you consider it an abort - and
+do *not* try to continue. Just freeze, and then act as if the machine
+got rebooted as far as NFS was concerned. That should work anyway, no?
+
+That does sound a lot more complex, though.
+
+                 Linus
