@@ -1,72 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758366Ab3CGAlk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 19:41:40 -0500
-Received: from rydia.net ([69.46.88.68]:43226 "EHLO mail.rydia.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754803Ab3CGAlj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 19:41:39 -0500
-Date: Wed, 6 Mar 2013 16:41:37 -0800 (PST)
-From: dormando <dormando@rydia.net>
-X-X-Sender: dormando@dflat
-To: Eric Dumazet <eric.dumazet@gmail.com>
-cc: Cong Wang <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: BUG: IPv4: Attempt to release TCP socket in state 1
-In-Reply-To: <1362494795.15793.113.camel@edumazet-glaptop>
-Message-ID: <alpine.DEB.2.02.1303061631290.6723@dflat>
-References: <alpine.DEB.2.02.1303041547080.7811@localhost6.localdomain6>   <51356AC1.4090302@gmail.com> <1362460046.15793.111.camel@edumazet-glaptop>  <alpine.DEB.2.02.1303042138330.7811@localhost6.localdomain6>
- <1362494795.15793.113.camel@edumazet-glaptop>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1758191Ab3CGAtt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 19:49:49 -0500
+Received: from mail-vc0-f170.google.com ([209.85.220.170]:59777 "EHLO
+	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753867Ab3CGAtr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Mar 2013 19:49:47 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <CAKohpo=cBkHZnSa8ZsM=k7RRN+RZDXFUWDM82EXXBSQcM-8Vhw@mail.gmail.com>
+References: <f20e3c5e822c4bd28a3b71264d73143cc1f850b0.1362458878.git.viresh.kumar@linaro.org>
+	<20130305105251.GL17833@n2100.arm.linux.org.uk>
+	<CAKohpo=cBkHZnSa8ZsM=k7RRN+RZDXFUWDM82EXXBSQcM-8Vhw@mail.gmail.com>
+Date: Wed, 6 Mar 2013 16:49:46 -0800
+Message-ID: <CAHLZz11PR6E7-yhrxwRi=HWo9tWByH5FUArDqfXQh6N0C_x0tQ@mail.gmail.com>
+Subject: Re: [PATCH] cpufreq: ARM big LITTLE: Add generic cpufreq driver and
+ its DT glue
+From: Harvey Harrison <harvey.harrison@gmail.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>, rjw@sisk.pl,
+        Steve.Bannister@arm.com, linux-pm@vger.kernel.org,
+        Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>,
+        Liviu.Dudau@arm.com, linux-kernel@vger.kernel.org,
+        cpufreq@vger.kernel.org, robin.randhawa@arm.com,
+        linux-arm-kernel@lists.infradead.org, mark.hambleton@broadcom.com,
+        linaro-kernel@lists.linaro.org, charles.garcia-tobin@arm.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Mon, 2013-03-04 at 21:44 -0800, dormando wrote:
->
-> > No 3rd party modules. There's a tiny patch for controlling initcwnd from
-> > userspace and another one for the extra_free_kbytes tunable that I brought
-> > up in another thread. We've had the initcwnd patch in for a long time
-> > without trouble. The extra_free_kbytes tunable isn't even being used yet,
-> > so all that's doing is adding a 0 somewhere.
-> >
-> > Only two iptables rules loaded: global NOTRACK rules for PREROUTING/OUTPUT
-> > in raw.
-> >
-> > Kernel's as close to pristine as I can make it. We had the 10g patch in
-> > but I've dropped it.
-> > --
->
-> Hmm, I spent time on this bug report but found nothing.
->
-> Please post as much information as you can on your setup.
->
-> I see you use macvlan, bridge, so maybe there is a configuration issue
-> (and a kernel bug of course)
+On Wed, Mar 6, 2013 at 4:32 PM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
 
-Ok... bridge module is loaded but nothing seems to be using it. No
-bond/tunnels/anything enabled. I couldn't quickly figure out what was
-causing it to load.
+>         clk[cluster] = clk_get_sys(name, NULL);
+> -       if (!IS_ERR(clk[cluster])) {
+> +       if (!IS_ERR_OR_NULL(clk[cluster])) {
+>                 pr_debug("%s: clk: %p & freq table: %p, cluster: %d\n",
+>                                 __func__, clk[cluster], freq_table[cluster],
+>                                 cluster);
 
-We removed the need for macvlan, started machines with a fresh boot, and
-they still crashed without it, after a few hours.
 
-Unfortunately I just saw a machine crash in the same way on 3.6.6 and
-3.6.9. I'm working on getting a completely pristine 3.6.6 and 3.6.9
-tested. Our patches are minor but there were a few, so I'm backing it all
-out just to be sure.
+You seem pretty attached to IS_ERR_OR_NULL here.
 
-Is there anything in particular which is most interesting? I can post lots
-and lots and lots of information. Sadly bridge/macvlan weren't part of the
-problem. .config, sysctls are easiest I guess? When this "hang" happens
-the machine is still up somewhat, but we lose access to it. Syslog is
-still writing entries to disk occasionally, so it's possible we could set
-something up to dump more information.
-
-It takes a day or two to cycle this, so it might take a while to get
-information and test crashes.
-
-thanks,
--Dormando
+Harvey
