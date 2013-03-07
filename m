@@ -1,161 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932266Ab3CGII4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 03:08:56 -0500
-Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:54414
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754451Ab3CGIIy (ORCPT
+	id S1754743Ab3CGIMw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 03:12:52 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:42490 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752138Ab3CGIMv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 03:08:54 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -3
-X-BigFish: VS-3(zz98dI1432I4015Izz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ahzz17326ah8275bh8275dh1954cbhz2dh2a8h668h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1155h)
-Date: Thu, 7 Mar 2013 16:08:44 +0800
-From: Peter Chen <peter.chen@freescale.com>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-usb@vger.kernel.org>
-Subject: Re: v3.9-rc1: swapper/0  [ INFO: possible circular locking
- dependency detected ]
-Message-ID: <20130307080843.GG20470@nchen-desktop>
-References: <51371B5E.1000508@free-electrons.com>
+	Thu, 7 Mar 2013 03:12:51 -0500
+X-AuditID: 9c930179-b7c78ae000000e4b-2b-51384bff942c
+Date: Thu, 7 Mar 2013 17:12:58 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Nicolas Pitre <nicolas.pitre@linaro.org>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH] ARM: mm: disable kmap_high_get() for SMP
+Message-ID: <20130307081258.GA14839@lge.com>
+References: <1362372667-953-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <alpine.LFD.2.03.1303051642110.28820@syhkavp.arg>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <51371B5E.1000508@free-electrons.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginatorOrg: freescale.com
+In-Reply-To: <alpine.LFD.2.03.1303051642110.28820@syhkavp.arg>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 06, 2013 at 11:33:02AM +0100, Maxime Ripard wrote:
-> Hi,
-> 
-> Just noticed this in 3.9-rc1 on an iMX28 (ARM) board with a config
-> based on mxs_defconfig. I'm using the patchset "Add tested id switch
-> and vbus connect detect support for Chipidea" from Peter Chen in its
-> 10th version [1], rebased on top of 3.9-rc1, but since this doesn't
-> modify the locks present in the udc_irq function, I think the problem
-> is elsewhere.
-> 
-> Please let me know if you have any questions,
-> Thanks,
-> Maxime
-> 
-> [1] http://lists.infradead.org/pipermail/linux-arm-kernel/2013-February/151837.html
-> 
-> 
-> [    1.893905] ======================================================
-> [    1.900097] [ INFO: possible circular locking dependency detected ]
-> [    1.906381] 3.9.0-rc1-00024-g39231ac #475 Not tainted
-> [    1.911441] -------------------------------------------------------
-> [    1.917716] swapper/0 is trying to acquire lock:
-> [    1.922341]  (&(&ci->lock)->rlock){-.....}, at: [<c02580fc>] ep_enable+0x20/0x25c
-> [    1.929935] 
-> [    1.929935] but task is already holding lock:
-> [    1.935782]  (&(&cdev->lock)->rlock){-.....}, at: [<c025e46c>] composite_setup+0x384/0xee8
-> [    1.944124] 
-> [    1.944124] which lock already depends on the new lock.
-> [    1.944124] 
-> [    1.952319] 
-> [    1.952319] the existing dependency chain (in reverse order) is:
-> [    1.959813] 
-> -> #1 (&(&cdev->lock)->rlock){-.....}:
-> [    1.964829]        [<c005adb0>] lock_acquire+0x98/0x104
-> [    1.970106]        [<c0375c28>] _raw_spin_lock_irqsave+0x3c/0x50
-> [    1.976152]        [<c025d960>] composite_disconnect+0x1c/0x5c
-> [    1.982016]        [<c02591c0>] udc_irq+0x6d8/0xbe8
-> [    1.986930]        [<c02571fc>] ci_irq+0x9c/0x108
-> [    1.991667]        [<c0067214>] handle_irq_event_percpu+0x5c/0x268
-> [    1.997896]        [<c006745c>] handle_irq_event+0x3c/0x5c
-> [    2.003417]        [<c00696c0>] handle_level_irq+0x8c/0xe8
-> [    2.008933]        [<c0066af4>] generic_handle_irq+0x20/0x30
-> [    2.014627]        [<c000fb8c>] handle_IRQ+0x30/0x84
-> [    2.019633]        [<c00086f0>] icoll_handle_irq+0x30/0x44
-> [    2.025148]        [<c000e8e4>] __irq_svc+0x44/0x54
-> [    2.030058]        [<c000fd58>] cpu_idle+0x60/0xec
-> [    2.034884]        [<c04e970c>] start_kernel+0x260/0x2a0
-> [    2.040237]        [<40008040>] 0x40008040
-> [    2.044364] 
-> -> #0 (&(&ci->lock)->rlock){-.....}:
-> [    2.049210]        [<c005a284>] __lock_acquire+0x14e8/0x1b18
-> [    2.054906]        [<c005adb0>] lock_acquire+0x98/0x104
-> [    2.060164]        [<c0375c28>] _raw_spin_lock_irqsave+0x3c/0x50
-> [    2.066202]        [<c02580fc>] ep_enable+0x20/0x25c
-> [    2.071207]        [<c02629d0>] gether_connect+0x34/0x1c0
-> [    2.076643]        [<c0262db0>] eem_set_alt+0x70/0xcc
-> [    2.081723]        [<c025eb54>] composite_setup+0xa6c/0xee8
-> [    2.087325]        [<c0259244>] udc_irq+0x75c/0xbe8
-> [    2.092237]        [<c02571fc>] ci_irq+0x9c/0x108
-> [    2.096973]        [<c0067214>] handle_irq_event_percpu+0x5c/0x268
-> [    2.103194]        [<c006745c>] handle_irq_event+0x3c/0x5c
-> [    2.108717]        [<c00696c0>] handle_level_irq+0x8c/0xe8
-> [    2.114234]        [<c0066af4>] generic_handle_irq+0x20/0x30
-> [    2.119926]        [<c000fb8c>] handle_IRQ+0x30/0x84
-> [    2.124929]        [<c00086f0>] icoll_handle_irq+0x30/0x44
-> [    2.130445]        [<c000e8e4>] __irq_svc+0x44/0x54
-> [    2.135353]        [<c000fd58>] cpu_idle+0x60/0xec
-> [    2.140176]        [<c04e970c>] start_kernel+0x260/0x2a0
-> [    2.145521]        [<40008040>] 0x40008040
-> [    2.149645] 
-> [    2.149645] other info that might help us debug this:
-> [    2.149645] 
-> [    2.157667]  Possible unsafe locking scenario:
-> [    2.157667] 
-> [    2.163598]        CPU0                    CPU1
-> [    2.168134]        ----                    ----
-> [    2.172667]   lock(&(&cdev->lock)->rlock);
-> [    2.176790]                                lock(&(&ci->lock)->rlock);
-> [    2.183255]                                lock(&(&cdev->lock)->rlock);
-> [    2.189893]   lock(&(&ci->lock)->rlock);
+Hello, Nicolas.
 
-The precondition of above is the chipidea interrupt can be re-entered.
-But as far as I know, the same interrupt can't be re-entered at current
-system.
-
-
-> [    2.193842] 
-> [    2.193842]  *** DEADLOCK ***
-> [    2.193842] 
-> [    2.199782] 1 lock held by swapper/0:
-> [    2.203451]  #0:  (&(&cdev->lock)->rlock){-.....}, at: [<c025e46c>] composite_setup+0x384/0xee8
-> [    2.212231] 
-> [    2.212231] stack backtrace:
-> [    2.216663] [<c0014120>] (unwind_backtrace+0x0/0xf0) from [<c0370078>] (print_circular_bug+0x25c/0x2a8)
-> [    2.226112] [<c0370078>] (print_circular_bug+0x25c/0x2a8) from [<c005a284>] (__lock_acquire+0x14e8/0x1b18)
-> [    2.235813] [<c005a284>] (__lock_acquire+0x14e8/0x1b18) from [<c005adb0>] (lock_acquire+0x98/0x104)
-> [    2.244904] [<c005adb0>] (lock_acquire+0x98/0x104) from [<c0375c28>] (_raw_spin_lock_irqsave+0x3c/0x50)
-> [    2.254347] [<c0375c28>] (_raw_spin_lock_irqsave+0x3c/0x50) from [<c02580fc>] (ep_enable+0x20/0x25c)
-> [    2.263527] [<c02580fc>] (ep_enable+0x20/0x25c) from [<c02629d0>] (gether_connect+0x34/0x1c0)
-> [    2.272094] [<c02629d0>] (gether_connect+0x34/0x1c0) from [<c0262db0>] (eem_set_alt+0x70/0xcc)
-> [    2.280744] [<c0262db0>] (eem_set_alt+0x70/0xcc) from [<c025eb54>] (composite_setup+0xa6c/0xee8)
-> [    2.289572] [<c025eb54>] (composite_setup+0xa6c/0xee8) from [<c0259244>] (udc_irq+0x75c/0xbe8)
-> [    2.298226] [<c0259244>] (udc_irq+0x75c/0xbe8) from [<c02571fc>] (ci_irq+0x9c/0x108)
-> [    2.306026] [<c02571fc>] (ci_irq+0x9c/0x108) from [<c0067214>] (handle_irq_event_percpu+0x5c/0x268)
-> [    2.315119] [<c0067214>] (handle_irq_event_percpu+0x5c/0x268) from [<c006745c>] (handle_irq_event+0x3c/0x5c)
-> [    2.324986] [<c006745c>] (handle_irq_event+0x3c/0x5c) from [<c00696c0>] (handle_level_irq+0x8c/0xe8)
-> [    2.334159] [<c00696c0>] (handle_level_irq+0x8c/0xe8) from [<c0066af4>] (generic_handle_irq+0x20/0x30)
-> [    2.343516] [<c0066af4>] (generic_handle_irq+0x20/0x30) from [<c000fb8c>] (handle_IRQ+0x30/0x84)
-> [    2.352342] [<c000fb8c>] (handle_IRQ+0x30/0x84) from [<c00086f0>] (icoll_handle_irq+0x30/0x44)
-> [    2.360991] [<c00086f0>] (icoll_handle_irq+0x30/0x44) from [<c000e8e4>] (__irq_svc+0x44/0x54)
-> [    2.369531] Exception stack(0xc050df68 to 0xc050dfb0)
-> [    2.374612] df60:                   00000001 00000001 00000000 20000013 c050c000 c05476e8
-> [    2.382819] df80: c050c000 c050c000 c05476e8 41069265 40504270 00000000 600000d3 c050dfb0
-> [    2.391015] dfa0: c005b708 c000fd58 20000013 ffffffff
-> [    2.396110] [<c000e8e4>] (__irq_svc+0x44/0x54) from [<c000fd58>] (cpu_idle+0x60/0xec)
-> [    2.403990] [<c000fd58>] (cpu_idle+0x60/0xec) from [<c04e970c>] (start_kernel+0x260/0x2a0)
-> [    2.412291] [<c04e970c>] (start_kernel+0x260/0x2a0) from [<40008040>] (0x40008040)
+On Tue, Mar 05, 2013 at 05:36:12PM +0800, Nicolas Pitre wrote:
+> On Mon, 4 Mar 2013, Joonsoo Kim wrote:
 > 
-> -- 
-> Maxime Ripard, Free Electrons
-> Kernel, drivers, real-time and embedded Linux
-> development, consulting, training and support.
-> http://free-electrons.com
+> > With SMP and enabling kmap_high_get(), it makes users of kmap_atomic()
+> > sequential ordered, because kmap_high_get() use global kmap_lock().
+> > It is not welcome situation, so turn off this optimization for SMP.
 > 
+> I'm not sure I understand the problem.
+> 
+> The lock taken by kmap_high_get() is released right away before that 
+> function returns and therefore this is not actually serializing 
+> anything.
 
--- 
+Yes, you understand what I want to say correctly.
+Sorry for bad explanation.
 
-Best Regards,
-Peter Chen
+Following is reasons why I send this patch with RFC tag.
 
+If we have more cpus, performance degration is possible although
+it is very short time to holding the lock in kmap_high_get().
+
+And kmap has maximum 512 entries(512 * 4K = 2M) and some mobile devices 
+has 2G memory(highmem 1G>), so probability for finding matched entry
+is approximately < 1/512. This probability can be more decreasing
+for device which have more memory. So I think that waste time to find
+matched entry is more than saved time.
+
+Above is my humble opinion, so please let me know what I am missing.
+
+Thanks.
+
+> 
+> 
+> Nicolas
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
