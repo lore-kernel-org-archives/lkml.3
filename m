@@ -1,148 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755394Ab3CGBgs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 20:36:48 -0500
-Received: from g4t0016.houston.hp.com ([15.201.24.19]:36117 "EHLO
-	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751132Ab3CGBgr (ORCPT
+	id S1755552Ab3CGBjQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 20:39:16 -0500
+Received: from e39.co.us.ibm.com ([32.97.110.160]:45265 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751132Ab3CGBjN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 20:36:47 -0500
-Message-ID: <1362620201.2360.7.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCH v2 7/4] ipc: fine grained locking for semtimedop
-From: Davidlohr Bueso <davidlohr.bueso@hp.com>
-To: Rik van Riel <riel@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Emmanuel Benisty <benisty.e@gmail.com>,
-        "Vinod, Chegu" <chegu_vinod@hp.com>, "Low, Jason" <jason.low2@hp.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>, aquini@redhat.com,
-        Michel Lespinasse <walken@google.com>, Ingo Molnar <mingo@kernel.org>,
-        Larry Woodman <lwoodman@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>, hhuang@redhat.com
-Date: Wed, 06 Mar 2013 17:36:41 -0800
-In-Reply-To: <20130306171546.63471bc0@cuia.bos.redhat.com>
-References: <1362476149.2225.50.camel@buesod1.americas.hpqcorp.net>
-	 <20130306171546.63471bc0@cuia.bos.redhat.com>
+	Wed, 6 Mar 2013 20:39:13 -0500
+Message-ID: <1362620348.4392.408.camel@falcor1>
+Subject: Re: IMA: How to manage user space signing policy with others
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Eric Paris <eparis@parisplace.org>,
+        linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        LSM List <linux-security-module@vger.kernel.org>
+Date: Wed, 06 Mar 2013 20:39:08 -0500
+In-Reply-To: <20130306235525.GB29229@redhat.com>
+References: <20130301213329.GC3457@redhat.com>
+	 <1362346944.18325.1.camel@falcor1> <20130304152919.GA15199@redhat.com>
+	 <1362423581.4392.46.camel@falcor1> <20130304191546.GF15199@redhat.com>
+	 <1362446491.4392.133.camel@falcor1> <20130305151829.GB4519@redhat.com>
+	 <1362516018.4392.233.camel@falcor1> <20130305215300.GE4519@redhat.com>
+	 <1362584551.4392.291.camel@falcor1> <20130306235525.GB29229@redhat.com>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13030701-3620-0000-0000-000001840042
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-03-06 at 17:15 -0500, Rik van Riel wrote:
-> Introduce finer grained locking for semtimedop, to handle the
-> common case of a program wanting to manipulate one semaphore
-> from an array with multiple semaphores.
+On Wed, 2013-03-06 at 18:55 -0500, Vivek Goyal wrote:
+> On Wed, Mar 06, 2013 at 10:42:31AM -0500, Mimi Zohar wrote:
 > 
-> Each semaphore array has a read/write lock. If something
-> complex is going on (manipulation of the array, of multiple
-> semaphores in one syscall, etc), the lock is taken in exclusive
-> mode.
+> [..]
+> > > Mimi, so you like this idea better than the other idea of keeping two 
+> > > policy chains and running more restrictive rule while resolving flag
+> > > conflicts between two rules?
+> > > 
+> > > I have written some patches to maintain two rule chains and running
+> > > more restrictive rule. I can change it though.
+> > 
+> > Both options overload the file signature with additional meaning to
+> > indicate these files need 'special' handling (eg. memory locking).
 > 
-> If the call is a semop manipulating just one semaphore in
-> an array with multiple semaphores, the read/write lock for
-> the semaphore array is taken in shared (read) mode, and the
-> individual semaphore's lock is taken.
+> I think memory locking is not part of integrity as such. If user space
+> is partially signed, then we need to lock files into memory. But if
+> whole of the user space is signed, we might get away without locking
+> everything in memory.
 > 
-> On a 24 CPU system, performance numbers with the semop-multi
-> test with N threads and N semaphores, look like this:
+> So I think we should not build the notion of memory locking into IMA.
+> Caller knows whether to lock things into memory or not. IMA should
+> just facilitate integrity verification (before locking and after
+> locking) and it is left to the caller to decide when is the right
+> time to do verification.
+
+Great!  So define a hook, in the appropriate place, and IMA will
+appraise the file based on policy.
+
+> >  If
+> > we merge rules, then all files with a signature would be processed with
+> > this special handling; in the other case, the special handling is
+> > limited to a particular policy.
+> > 
+> > The basic premise, that all files with a valid signature need this
+> > special handling, is flawed.  If some other mechanism would be used to
+> > identify these files requiring 'special' handling, then merging of
+> > policy rules would be a non-issue.  We wouldn't even need to merge
+> > rules.
 > 
-> 	vanilla		Davidlohr's	Davidlohr's +
-> threads			patches		rwlock patches
-> 10	610652		726325		1783589
-> 20	341570		365699		1520453
-> 30	288102		307037		1498167
-> 40	290714		305955		1612665
-> 50	288620		312890		1733453
-> 60	289987		306043		1649360
-> 70	291298		306347		1723167
-> 80	290948		305662		1729545
-> 90	290996		306680		1736021
-> 100	292243		306700		1773700
+> I am not sure what does "special handling" mean here, but then we are
+> hardcoding things in file's extended attributes. 
+> 
+> In this case kernel needs to decide how to handle file. (possibly based
+> on a config option). Again going back to memlock example, IMA or file
+> attribute should not dictate whether file should be memlocked or not.
+> Whether file's appraisal result should be cached or not. Whether
+> "measurement" of cache results should be cached or not. This is much
+> worse hardcoding to me. 
+> 
+> IMHO, IMA can provide simple callable functions (like verify_signature())
+> which does not assume too much and let caller figure out the thigs
+> around it. This is much more simple.
+> 
+> > 
+> > My preference would be to define some other mechanism to identify these
+> > files. (Agreed, using the 'security.ima' xattr, is a kludge.)
+> 
+> IMO, it should not a file's attribtue. Caller knows how to handle it.
+> IMA should just verify the integrity. Caller can choose to lock or not
+> lock the file in memory depending on its needs and environment it is
+> operating in. And I don't think this kind of information should be
+> file specific.
+> 
+> >  With EVM
+> > protection of LSM labels, you might consider defining a policy based on
+> > LSM labels.  Otherwise, consider defining and using a different extended
+> > attribute, or any other file metadata, for this purpose.  Once some
+> > method for identifying these files, other than file signature, is
+> > defined, we could then add a new policy option (eg. memlock) or even
+> > action primitive (eg. appraise_memlock).
+> > 
+> > As the 'special' handling probably doesn't scale very well, we're better
+> > off not requiring it for all signed files.  Hopefully, the affects of
+> > not having this special privilege, will be limited to only what has been
+> > discussed (eg. kdump).  Even this decision, will require more than my
+> > agreement.
+> 
+> IMHO, defining directly callable IMA hooks is much simpler, and much
+> more maintainable and much more scalable. Atleast we should discuss it
+> again why it it is not right thing to do. Why it is right thing to
+> do for security/keys or security/crypto to export callable functions
+> and then let the caller decide what to do with it. But it is not right for
+> security/integrity/* or security/integrity/ima*. I just don't get it.
 
-Lovely numbers :) 
+The purpose of both /crypto and /keys is to provide a callable service
+to other parts of the kernel (and expose an interface to userspace).
+The original purpose of IMA was to provide a hardware rooted trusted
+list of runtime measurements.  With the upstreaming of IMA-appraisal
+patches, IMA now enforces file integrity as well.
 
-On my laptop:
-cpus 4, threads: 256, semaphores: 128, test duration: 30 secs
-total operations: 281430894, ops/sec 9381029
+Adding an IMA call to directly appraise the integrity of a file, rather
+than adding a hook, prevents other integrity users from being able to
+define a rule at that point.  I don't have a problem with exposing an
+integrity interface, assuming there is a real need.
 
-+  20.87%            a.out  [kernel.kallsyms]   [k] sys_semtimedop
-+   8.31%            a.out  [kernel.kallsyms]   [k] ipc_has_perm.isra.21
-+   6.88%            a.out  [kernel.kallsyms]   [k] _raw_read_lock
-+   6.78%            a.out  [kernel.kallsyms]   [k] avc_has_perm_flags
-+   5.26%            a.out  [kernel.kallsyms]   [k] ipcperms
-+   4.91%            a.out  [kernel.kallsyms]   [k] ipc_obtain_object_check
-+   4.69%            a.out  [kernel.kallsyms]   [k] __audit_syscall_exit
-+   4.21%            a.out  [kernel.kallsyms]   [k] copy_user_enhanced_fast_string
-+   3.61%            a.out  [kernel.kallsyms]   [k] _raw_spin_lock
-+   3.55%            a.out  [kernel.kallsyms]   [k] system_call
-+   3.35%            a.out  [kernel.kallsyms]   [k] do_smart_update
-+   2.77%            a.out  [kernel.kallsyms]   [k] __audit_syscall_entry
-
-But my 8 socket 160 CPU box sure isn't happy. I'm getting all sorts of
-issues (sometimes it will boot, sometimes it wont). When it does, linux
-will hang as soon as I start my benchmarking:
-
-BUG: soft lockup - CPU#77 stuck for 23s! [oracle:129877]
-Modules linked in: fuse autofs4 sunrpc pcc_cpufreq ipv6 dm_mirror dm_region_hash dm_log dm_mod uinput iTCO_wdt iTCO_vendor_support sg freq_table mperf coretemp kvm_intel kvm crc32c_intel ghash_clmulni_intel microcode pcspkr lpc_ich mfd_core hpilo hpwdt i7core_edac edac_core netxen_nic ext4 mbcache jbd2 sd_mod crc_t10dif aesni_intel ablk_helper cryptd lrw aes_x86_64 xts gf128mul hpsa radeon ttm drm_kms_helper drm i2c_algo_bit i2c_core
-CPU 77 
-Pid: 129877, comm: oracle Tainted: G      D W    3.9.0-rc1+ #20 HP ProLiant DL980 G7
-RIP: 0010:[<ffffffff812777fa>]  [<ffffffff812777fa>] __read_lock_failed+0xa/0x20
-RSP: 0018:ffff8b87b8cf9ca8  EFLAGS: 00000297
-RAX: ffffc900293c1020 RBX: 000000010007a021 RCX: 000000000000d3a5
-RDX: 0000000000000001 RSI: ffff8b87b8cf9d58 RDI: ffffc900293c1020
-RBP: ffff8b87b8cf9ca8 R08: 0000000000000000 R09: 0000000000000000
-R10: 0000000000000000 R11: 0000000000000000 R12: ffff8b87b8cf9c68
-R13: ffff8b87b8cf9c68 R14: 0000000000000286 R15: ffff8b87caf10100
-FS:  00007f7a689b2700(0000) GS:ffff8987ff9c0000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-CR2: 00007fc49426d000 CR3: 00000187cf08f000 CR4: 00000000000007e0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Process oracle (pid: 129877, threadinfo ffff8b87b8cf8000, task ffff8b87caf10100)
-Stack:
- ffff8b87b8cf9cb8 ffffffff8155f374 ffff8b87b8cf9ce8 ffffffff81205245
- 0000000000000001 0000000000090002 00007fff82d3aa08 0000000000000000
- ffff8b87b8cf9f78 ffffffff812069e1 0000000000cbc000 ffff8b87b8cf9f38
-Call Trace:
- [<ffffffff8155f374>] _raw_read_lock+0x14/0x20
- [<ffffffff81205245>] sem_lock+0x85/0xa0
- [<ffffffff812069e1>] sys_semtimedop+0x521/0x7c0
- [<ffffffff81089e2c>] ? task_sched_runtime+0x4c/0x90
- [<ffffffff8101c1b3>] ? native_sched_clock+0x13/0x80
- [<ffffffff8101b7b9>] ? sched_clock+0x9/0x10
- [<ffffffff8108f9ed>] ? sched_clock_cpu+0xcd/0x110
- [<ffffffff8108914b>] ? update_rq_clock+0x2b/0x50
- [<ffffffff81089e2c>] ? task_sched_runtime+0x4c/0x90
- [<ffffffff8108fe48>] ? thread_group_cputime+0x88/0xc0
- [<ffffffff8108fd1d>] ? cputime_adjust+0x3d/0x90
- [<ffffffff8108fece>] ? thread_group_cputime_adjusted+0x4e/0x60
- [<ffffffff81568119>] system_call_fastpath+0x16/0x1b
-Code: 90 55 48 89 e5 f0 ff 07 f3 90 83 3f 01 75 f9 f0 ff 0f 75 f1 5d c3 66 66 2e 0f 1f 84 00 00 00 00 00 55 48 89 e5 f0 48 ff 07 f3 90 <48> 83 3f 01 78 f8 f0 48 ff 0f 78 ee 5d c3 90 90 90 90 90 90 90 
-
-
-> +static inline void sem_unlock(struct sem_array *sma, struct sembuf *sops,
-> +			      int nsops)
-> +{
-> +	if (nsops == 1 && sma->sem_nsems > 1 && !sma->complex_count) {
-> +		struct sem *sem = sma->sem_base + sops->sem_num;
-> +		spin_unlock(&sem->lock);
-> +		read_unlock(&sma->sem_perm.lock);
-> +	} else
-> +		write_unlock(&sma->sem_perm.lock);
-> +}
-
-I believe (haven't tested it yet) the issue could be in sem_unlock() as
-we aren't unlocking the RCU read section - before it was just a trivial
-ipc_unlock call. 
-
-The rest looks good but will look more thoroughly tonight.
-
-Thanks,
-Davidlohr
+Mimi
 
