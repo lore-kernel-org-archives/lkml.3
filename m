@@ -1,56 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758786Ab3CGDMB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 22:12:01 -0500
-Received: from ozlabs.org ([203.10.76.45]:48142 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751757Ab3CGDL7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 22:11:59 -0500
-Date: Thu, 7 Mar 2013 14:11:24 +1100
-From: Paul Mackerras <paulus@samba.org>
-To: Marcelo Tosatti <mtosatti@redhat.com>
-Cc: Michael Wolf <mjw@linux.vnet.ibm.com>,
-        Glauber Costa <glommer@parallels.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
-        riel@redhat.com, gleb@redhat.com, kvm@vger.kernel.org,
-        peterz@infradead.org, mingo@redhat.com, anthony@codemonkey.ws
-Subject: Re: [PATCH 0/4] Alter steal-time reporting in the guest
-Message-ID: <20130307031124.GB2385@drongo>
-References: <20130205214818.4615.12937.stgit@lambeau>
- <CAFTL4hyYO7s2u-dRLExA1=TxD00O1XyPe9qFwnODrWi_p92Jqg@mail.gmail.com>
- <20130219011104.GA5785@amt.cnet>
- <1362514928.6267.16.camel@lambeau>
- <20130306014151.GB11481@amt.cnet>
- <5136FAB4.4020305@parallels.com>
- <1362587352.6373.6.camel@lambeau>
- <20130307005216.GA29895@amt.cnet>
+	id S1758795Ab3CGDRh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 22:17:37 -0500
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:38321 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752713Ab3CGDRf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Mar 2013 22:17:35 -0500
+Date: Thu, 7 Mar 2013 11:18:00 +0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: "Fangxiaozhi (Franko)" <fangxiaozhi@huawei.com>
+Cc: Dan Williams <dcbw@redhat.com>, "Linlei (Lei Lin)" <lei.lin@huawei.com>,
+        =?iso-8859-1?Q?Bj=F8rn?= Mork <bjorn@mork.no>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Xueguiying (Zihan)" <zihan.xue@huawei.com>,
+        "Yili (Neil)" <neil.yi@huawei.com>, Wangyuhua <yuhua.wang@huawei.com>,
+        "Huqiao (C)" <huqiao36@huawei.com>, "balbi@ti.com" <balbi@ti.com>,
+        "mdharm-usb@one-eyed-alien.net" <mdharm-usb@one-eyed-alien.net>,
+        "sebastian@breakpoint.cc" <sebastian@breakpoint.cc>,
+        stable <stable@vger.kernel.org>
+Subject: Re: =?utf-8?B?562U5aSN?= =?utf-8?Q?=3A?= [PATCH] USB: storage: fix
+ Huawei mode switching regression
+Message-ID: <20130307031800.GA4135@kroah.com>
+References: <87obezs888.fsf@nemi.mork.no>
+ <1362403161-23501-1-git-send-email-bjorn@mork.no>
+ <910F9D9E13B84F4C8FA771DC9BDE99F32709833E@szxeml546-mbx.china.huawei.com>
+ <8738waqhx2.fsf@nemi.mork.no>
+ <43F99538ECE41341993F359D4AA4FB5F4B3783F2@szxeml560-mbs.china.huawei.com>
+ <20130306014424.GA8408@kroah.com>
+ <1362584750.21968.1.camel@dcbw.foobar.com>
+ <910F9D9E13B84F4C8FA771DC9BDE99F32709E060@szxeml546-mbx.china.huawei.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20130307005216.GA29895@amt.cnet>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <910F9D9E13B84F4C8FA771DC9BDE99F32709E060@szxeml546-mbx.china.huawei.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 06, 2013 at 09:52:16PM -0300, Marcelo Tosatti wrote:
-> On Wed, Mar 06, 2013 at 10:29:12AM -0600, Michael Wolf wrote:
-> > I looked at doing that once but was told that I was changing the
-> > interface in an unacceptable way, because now I was not reporting all of
-> > the elapsed time.  I agree it would make things simpler.
-> 
-> Pointer to that claim, please?
+On Thu, Mar 07, 2013 at 02:54:38AM +0000, Fangxiaozhi (Franko) wrote:
+> Dear All：
+> As far as I know, except switching in kernel, there isn't any mode switch solution on Android now.
+> Do you have any good ideas for the mode switch on Android system?
 
-Back in about 2004 or 2005 or so I was looking at changing how user
-and system times were calculated (in the context of trying to find a
-better way to report resources used by a thread in an SMT processor).
-I found that utilities such as top expected the deltas in the
-/proc/stat numbers to add up to elapsed time, and would report strange
-and inconsistent results if that wasn't the case.  Unfortunately at
-this distance I don't recall the exact details.  I don't know whether
-the expectation that the deltas in the /proc/stat numbers over a
-period of time add up to the elapsed real time is documented anywhere,
-but I wouldn't be at all surprised if some programs depend on it, so
-it's better to maintain that property.
+Please discuss this with the Android developers, there's nothing that us
+(the kernel community) can do about the Android userspace code, sorry.
 
-Paul.
+Please work with Google to solve this properly there.
+
+good luck,
+
+greg k-h
