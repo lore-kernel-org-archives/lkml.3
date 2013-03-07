@@ -1,66 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759820Ab3CGU7a (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 15:59:30 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:49563 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755459Ab3CGU72 (ORCPT
+	id S933398Ab3CGVHZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 16:07:25 -0500
+Received: from mail-qa0-f44.google.com ([209.85.216.44]:65030 "EHLO
+	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756847Ab3CGVHX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 15:59:28 -0500
-Date: Thu, 7 Mar 2013 14:59:15 -0600
-From: Seth Forshee <seth.forshee@canonical.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Matt Fleming <matt.fleming@intel.com>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org
-Subject: Re: [PATCH] efivars: Allow disabling use as a pstore backend
-Message-ID: <20130307205915.GF24233@thinkpad-t410>
-Mail-Followup-To: "H. Peter Anvin" <hpa@zytor.com>,
-	Matt Fleming <matt.fleming@intel.com>,
-	Matthew Garrett <matthew.garrett@nebula.com>,
-	linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org
-References: <1362678017-2862-1-git-send-email-seth.forshee@canonical.com>
- <5138FAD9.7050504@zytor.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5138FAD9.7050504@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 7 Mar 2013 16:07:23 -0500
+From: Jean-Francois Dagenais <jeff.dagenais@gmail.com>
+To: zbr@ioremap.net, linux-kernel@vger.kernel.org
+Cc: olivier@okprods.com, Jean-Francois Dagenais <jeff.dagenais@gmail.com>
+Subject: [PATCH 2/2] w1: ds2408: use ARRAY_SIZE instead of hard-coded number
+Date: Thu,  7 Mar 2013 16:07:04 -0500
+Message-Id: <1362690424-324-2-git-send-email-jeff.dagenais@gmail.com>
+X-Mailer: git-send-email 1.8.1.1
+In-Reply-To: <1362690424-324-1-git-send-email-jeff.dagenais@gmail.com>
+References: <47BBCF14-C7BC-4C35-826A-52A50EFB8B4B@sonatest.com>
+ <1362690424-324-1-git-send-email-jeff.dagenais@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 07, 2013 at 12:38:49PM -0800, H. Peter Anvin wrote:
-> On 03/07/2013 09:40 AM, Seth Forshee wrote:
-> > We know that with some firmware implementations writing too much data to
-> > UEFI variables can lead to bricking machines. Recent changes attempt to
-> > address this issue, but for some it may still be prudent to avoid
-> > writing large amounts of data until the solution has been proven on a
-> > wide variety of hardware.
-> > 
-> > Crash dumps or other data from pstore can potentially be a large data
-> > source. Add a new option, CONFIG_EFI_VARS_PSTORE, which can be set to N
-> > to avoid using efivars as a backend to pstore.
-> 
-> What about a command line option?
 
-That could be done. I'm assuming you want this instead of a config
-option, defaulted to on?
+Signed-off-by: Jean-Francois Dagenais <jeff.dagenais@gmail.com>
+---
+ drivers/w1/slaves/w1_ds2408.c | 7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
 
-How would you feel about a config option for the default value of the
-command line option? I intend to default this to off in Ubuntu for a
-while as a colleague's machine was recently bricked on two different
-occasions after the kernel oopsed. The config option would simplify
-things a bit for us, though we could always carry a patch changing the
-default value.
-
-> > -#ifdef CONFIG_PSTORE
-> > +#if defined(CONFIG_PSTORE) && defined(CONFIG_EFI_VARS_PSTORE)
-> 
-> Redundant.
-
-Yes, good point.
-
-Thanks,
-Seth
+diff --git a/drivers/w1/slaves/w1_ds2408.c b/drivers/w1/slaves/w1_ds2408.c
+index 25a5168..e45eca1 100644
+--- a/drivers/w1/slaves/w1_ds2408.c
++++ b/drivers/w1/slaves/w1_ds2408.c
+@@ -303,8 +303,7 @@ error:
+ 
+ 
+ 
+-#define NB_SYSFS_BIN_FILES 6
+-static struct bin_attribute w1_f29_sysfs_bin_files[NB_SYSFS_BIN_FILES] = {
++static struct bin_attribute w1_f29_sysfs_bin_files[] = {
+ 	{
+ 		.attr =	{
+ 			.name = "state",
+@@ -363,7 +362,7 @@ static int w1_f29_add_slave(struct w1_slave *sl)
+ 	int err = 0;
+ 	int i;
+ 
+-	for (i = 0; i < NB_SYSFS_BIN_FILES && !err; ++i)
++	for (i = 0; i < ARRAY_SIZE(w1_f29_sysfs_bin_files) && !err; ++i)
+ 		err = sysfs_create_bin_file(
+ 			&sl->dev.kobj,
+ 			&(w1_f29_sysfs_bin_files[i]));
+@@ -377,7 +376,7 @@ static int w1_f29_add_slave(struct w1_slave *sl)
+ static void w1_f29_remove_slave(struct w1_slave *sl)
+ {
+ 	int i;
+-	for (i = NB_SYSFS_BIN_FILES - 1; i >= 0; --i)
++	for (i = ARRAY_SIZE(w1_f29_sysfs_bin_files) - 1; i >= 0; --i)
+ 		sysfs_remove_bin_file(&sl->dev.kobj,
+ 			&(w1_f29_sysfs_bin_files[i]));
+ }
+-- 
+1.8.1.1
 
