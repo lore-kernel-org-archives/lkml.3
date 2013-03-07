@@ -1,69 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754769Ab3CGINg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 03:13:36 -0500
-Received: from mail-lb0-f181.google.com ([209.85.217.181]:54700 "EHLO
-	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752138Ab3CGINe (ORCPT
+	id S932297Ab3CGIUA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 03:20:00 -0500
+Received: from mail.allwinnertech.com ([221.4.213.95]:42666 "EHLO
+	mail.allwinnertech.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754088Ab3CGIT6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 03:13:34 -0500
+	Thu, 7 Mar 2013 03:19:58 -0500
+Message-ID: <51384D84.8090803@allwinnertech.com>
+Date: Thu, 7 Mar 2013 16:19:16 +0800
+From: Shuge <shuge@allwinnertech.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
-In-Reply-To: <51379849.6040903@infradead.org>
-References: <20130306115052.2b1969acb7b7a0fa35975984@canb.auug.org.au>
-	<51379849.6040903@infradead.org>
-Date: Thu, 7 Mar 2013 09:13:32 +0100
-Message-ID: <CAN+gG=H4_1nUhhsUe031Q1QrnVna+F7hmAepe6kbNm=8z_gOjw@mail.gmail.com>
-Subject: Re: linux-next: Tree for Mar 6 (hid)
-From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Jiri Kosina <jkosina@suse.cz>,
-        linux-input@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: <linux-fsdevel@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-ext4@vger.kernel.org>, <linux-mm@vger.kernel.org>
+Subject: [jbd2 or mm BUG]:   crash while flush JBD2's the pages, that owned
+ Slab flag.
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8BIT
+X-Originating-IP: [172.16.10.188]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Randy,
 
-On Wed, Mar 6, 2013 at 8:26 PM, Randy Dunlap <rdunlap@infradead.org> wrote:
-> On 03/05/13 16:50, Stephen Rothwell wrote:
->> Hi all,
->>
->> Changes since 20130305:
->>
->
-> on i386 and x86_64:
->
 
-Sorry, it looks like my patches went not very smoothly.
+Hi all,
 
-> ERROR: "usb_control_msg" [drivers/hid/hid-multitouch.ko] undefined!
+When I debug the file system, I get a problem as follows:
 
-I've submitted a new patch removing this direct call. Maybe we should
-change the Kconfig while these patches are not applied. Jiri?
+Arch: arm (4 processors)
+Kernel version: 3.3.0
 
-> ERROR: "usb_ifnum_to_if" [drivers/hid/hid-holtek-kbd.ko] undefined!
+   The "b_frozen_data" which is defined as a member of "struct
+journal_head" (linux/fs/jbd2/transaction.c Line 785),
+it's memory is allocated by "jbd2_alloc". When the memory size is
+larger than a PAGE SIZE, the memory is got by "
+__get_free_pages", otherwise, is got by "kmem_cache_alloc". The
+memory will be used by the "__blk_queue_bounce"(linux/mm/bounce.c).
 
-oops, I'll have to double check this one.
+In this function, the program flow is:
+__blk_queue_bounce() -> flush_dcache_page() -> page_mapping() ->
+VM_BUG_ON(PageSlab(page))
+If the memory is got by "kmem_cache_alloc", it will trigger on a bug.
 
->
-> when CONFIG_USB_SUPPORT is not enabled.
->
-> Should these drivers depend on USB_HID?
+Kernel panic:
+[   34.683049] ------------[ cut here ]------------
+[   34.687686] kernel BUG at include/linux/mm.h:791!
+[   34.692388] Internal error: Oops - BUG: 0 [#1] PREEMPT SMP
+[   34.697869] Modules linked in: screen_print(O) nand(O)
+[   34.703049] CPU: 1    Tainted: G           O  (3.3.0 #6)
+[   34.708370] PC is at flush_dcache_page+0x34/0xb0
+[   34.712992] LR is at blk_queue_bounce+0x16c/0x300
+[   34.717697] pc : [<c001677c>]    lr : [<c00bf0b0>]    psr: 20000013
+[   34.717703] sp : ee7a7d48  ip : ee7a7d60  fp : ee7a7d5c
+[   34.729176] r10: ee228804  r9 : ee228804  r8 : eea979c8
+[   34.734397] r7 : 00000000  r6 : ee228890  r5 : d5333840  r4 : 00000000
+[   34.740920] r3 : 00000001  r2 : fffffff5  r1 : 00000011  r0 : d5333840
+[   34.747446] Flags: nzCv  IRQs on  FIQs on  Mon  SVC_32  ISA ARM
+Segment kernel
+[   34.754749] Control: 10c53c7d  Table: 6e05806a  DAC: 00000015
+......
+[   35.726529] Backtrace:
+[   35.729000] [<c0016748>] (flush_dcache_page+0x0/0xb0) from
+[<c00bf0b0>] (blk_queue_bounce+0x16c/0x300)
+[   35.738297]  r5:ee7a7dac r4:ee2287c0
+[   35.741905] [<c00bef44>] (blk_queue_bounce+0x0/0x300) from
+[<c01fcc58>] (blk_queue_bio+0x28/0x2c0)
+[   35.750862] [<c01fcc30>] (blk_queue_bio+0x0/0x2c0) from [<c01fb1b8>]
+(generic_make_request+0x94/0xcc)
+[   35.760078] [<c01fb124>] (generic_make_request+0x0/0xcc) from
+[<c01fb2f0>] (submit_bio+0x100/0x124)
+[   35.769114]  r6:00000002 r5:eecb8f08 r4:ee228840
+[   35.773774] [<c01fb1f0>] (submit_bio+0x0/0x124) from [<c00e8e68>]
+(submit_bh+0x130/0x150)
+[   35.781942]  r8:00000009 r7:d60f6c5c r6:00000211 r5:eecb8f08 r4:ee228840
+[   35.788713] [<c00e8d38>] (submit_bh+0x0/0x150) from [<c014b024>]
+(jbd2_journal_commit_transaction+0x7d0/0x11cc)
+[   35.798790]  r6:ef253380 r5:eecb8f08 r4:eeac5800 r3:00000001
+[   35.804505] [<c014a854>] (jbd2_journal_commit_transaction+0x0/0x11cc)
+from [<c014e2a8>] (kjournald2+0xb4/0x248)
+[   35.814591] [<c014e1f4>] (kjournald2+0x0/0x248) from [<c006aa90>]
+(kthread+0x94/0xa0)
+[   35.822422] [<c006a9fc>] (kthread+0x0/0xa0) from [<c005472c>]
+(do_exit+0x0/0x6a4)
+[   35.829897]  r6:c005472c r5:c006a9fc r4:eea9bce0
+[   35.834556] Code: e5904004 e7e033d3 e3530000 0a000000 (e7f001f2)
+[   35.840733] ---[ end trace c2a29bf063d3670f ]---
 
-The goal of the patch series that breaks this was to make the hid
-drivers independent of their transport layers, thus most of them
-should not depend on usbhid anymore.
+So, I modify the mm/bounce.c. Details are as follows:
 
-Cheers,
-Benjamin
+diff --git a/mm/bounce.c b/mm/bounce.c
+index 4e9ae72..e3f6b53 100644
+--- a/mm/bounce.c
++++ b/mm/bounce.c
+@@ -214,7 +214,8 @@ static void __blk_queue_bounce(struct request_queue
+*q, struct bio **bio_orig,
+                  if (rw == WRITE) {
+                          char *vto, *vfrom;
 
->
->
-> --
-> ~Randy
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-input" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+-                       flush_dcache_page(from->bv_page);
++                       if (!PageSlab(from->bv_page))
++ flush_dcache_page(from->bv_page);
+                          vto = page_address(to->bv_page) + to->bv_offset;
+                          vfrom = kmap(from->bv_page) + from->bv_offset;
+                          memcpy(vto, vfrom, to->bv_len);
+
+Who can give some suggestions to me.
+
+Thanks
+
+Shuge
+
+
+
+NOTICE: This e-mail and any included attachments are intended only for the sole use of named and intended recipient (s) only. If you are the named and intended recipient, please note that the information contained in this email and its embedded files are confidential and privileged. If you are neither the intended nor named recipient, you are hereby notified that any unauthorized review, use, disclosure, dissemination, distribution, or copying of this communication, or any of its contents, is strictly prohibited. Please reply to the sender and destroy the original message and all your records of this message (whether electronic or otherwise). Furthermore, you should not disclose to any other person, use, copy or disseminate the contents of this e-mail and/or the documents accompanying it.
