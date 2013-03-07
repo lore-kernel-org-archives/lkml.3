@@ -1,34 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759877Ab3CGVnV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 16:43:21 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37574 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754827Ab3CGVnU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 16:43:20 -0500
-Date: Thu, 7 Mar 2013 13:43:18 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Mike Frysinger <vapier@gentoo.org>, Ingo Molnar <mingo@kernel.org>,
-        Randy Dunlap <rdunlap@infradead.org>, linux-kernel@vger.kernel.org,
-        Russell King <linux@arm.linux.org.uk>, Michal Simek <monstr@monstr.eu>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mundt <lethal@linux-sh.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Richard Weinberger <richard@nod.at>
-Subject: Re: [PATCH v2] early_printk: consolidate random copies of identical
- code
-Message-Id: <20130307134318.c158500d46c7f4a1a47cf2e7@linux-foundation.org>
-In-Reply-To: <alpine.LFD.2.02.1303072224290.22263@ionos>
-References: <1362683754-706-1-git-send-email-paul.gortmaker@windriver.com>
-	<20130307112536.82288f41924a38a441cdf345@linux-foundation.org>
-	<5138F68A.6070203@windriver.com>
-	<alpine.LFD.2.02.1303072224290.22263@ionos>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+	id S933422Ab3CGVnZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 16:43:25 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:41322 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754827Ab3CGVnW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Mar 2013 16:43:22 -0500
+Date: Thu, 7 Mar 2013 16:43:03 -0500
+From: Jeff Layton <jlayton@redhat.com>
+To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Mandeep Singh Baines <msb@chromium.org>,
+        Ming Lei <ming.lei@canonical.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: LOCKDEP: 3.9-rc1: mount.nfs/4272 still has locks held!
+Message-ID: <20130307164303.74edf4dd@tlielax.poochiereds.net>
+In-Reply-To: <4FA345DA4F4AE44899BD2B03EEEC2FA9286B5452@sacexcmbx05-prd.hq.netapp.com>
+References: <20130305174954.GG12795@htj.dyndns.org>
+	<20130305190923.GI12795@htj.dyndns.org>
+	<20130305183941.19ff39ce@tlielax.poochiereds.net>
+	<20130305234700.GE1227@htj.dyndns.org>
+	<20130306181608.GA18687@redhat.com>
+	<20130306185304.GM1227@htj.dyndns.org>
+	<CA+55aFwDogteVd=vwGHXDSASnga-nZZnKaQz9aO1yBU2CPKSbA@mail.gmail.com>
+	<20130306212452.GO1227@htj.dyndns.org>
+	<CA+55aFy49AWptMcvEzJxg95ikf-dC+-vcCPq-cnaCCwje3tyoQ@mail.gmail.com>
+	<20130306213636.GP1227@htj.dyndns.org>
+	<20130307064140.71c0936b@tlielax.poochiereds.net>
+	<CA+55aFxe1_x8wvVYciiX8tuee+VsmXGKqEbONQdFM4s4W2iuPg@mail.gmail.com>
+	<4FA345DA4F4AE44899BD2B03EEEC2FA9286B511E@sacexcmbx05-prd.hq.netapp.com>
+	<CA+55aFySyBP8q5AvPrt-s_ZPdgamfoX-dERw4EJ21EcsDLBjYA@mail.gmail.com>
+	<4FA345DA4F4AE44899BD2B03EEEC2FA9286B52F1@sacexcmbx05-prd.hq.netapp.com>
+	<CA+55aFwB4Pjki8zg9idwbQbE-TOtTdD5o8d_r1=NY3veVqmPHg@mail.gmail.com>
+	<4FA345DA4F4AE44899BD2B03EEEC2FA9286B5452@sacexcmbx05-prd.hq.netapp.com>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
@@ -36,35 +46,63 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 7 Mar 2013 22:25:48 +0100 (CET) Thomas Gleixner <tglx@linutronix.de> wrote:
+On Thu, 7 Mar 2013 17:16:12 +0000
+"Myklebust, Trond" <Trond.Myklebust@netapp.com> wrote:
 
-> > diff --git a/kernel/printk.c b/kernel/printk.c
-> > index 7664e49..86799bf 100644
-> > --- a/kernel/printk.c
-> > +++ b/kernel/printk.c
-> > @@ -120,6 +120,7 @@ struct console_cmdline
-> >  static struct console_cmdline console_cmdline[MAX_CMDLINECONSOLES];
-> >  static int selected_console = -1;
-> >  static int preferred_console = -1;
-> > +struct console *early_console;
-> >  int console_set_on_cmdline;
-> >  EXPORT_SYMBOL(console_set_on_cmdline);
-> >  
-> > @@ -1718,7 +1719,6 @@ static size_t cont_print_text(char *text, size_t size) { return 0; }
-> >  #endif /* CONFIG_PRINTK */
-> >  
-> >  #ifdef CONFIG_EARLY_PRINTK
-> > -struct console *early_console;
-> >  
-> >  void early_vprintk(const char *fmt, va_list ap)
-> >  {
+> On Thu, 2013-03-07 at 09:03 -0800, Linus Torvalds wrote:
+> > On Thu, Mar 7, 2013 at 8:45 AM, Myklebust, Trond
+> > <Trond.Myklebust@netapp.com> wrote:
+> > >
+> > > The problem there is that we get into the whole 'hard' vs 'soft' mount
+> > > problem. We're supposed to guarantee data integrity for 'hard' mounts,
+> > > so no funny business is allowed. OTOH, 'soft' mounts time out and return
+> > > EIO to the application anyway, and so shouldn't be a problem.
+> > >
+> > > Perhaps we could add a '-oslushy' mount option :-) that guarantees data
+> > > integrity for all situations _except_ ENETDOWN/ENETUNREACH?
 > > 
+> > I do think we are probably over-analyzing this. It's not like people
+> > who want freezing to work usually use flaky NFS. There's really two
+> > main groups:
 > > 
-> > Then you don't have to spray any of those ifdefs into the sparc code.
+> >  - the "freezer as a snapshot mechanism" that might use NFS because
+> > they are in a server environment.
+> > 
+> >  - the "freeezer for suspend/resume on a laptop"
+> > 
+> > The first one does use NFS, and cares about it, and probably would
+> > prefer the freeze event to take longer and finish for all ongoing IO
+> > operations. End result: just ditch the "freezable_schedule()"
+> > entirely.
+> > 
+> > The second one is unlikely to really use NFS anyway. End result:
+> > ditching the freezable_schedule() is probably perfectly fine, even if
+> > it would cause suspend failures if the network is being troublesome.
+> > 
+> > So for now, why not just replace freezable_schedule() with plain
+> > schedule() in the NFS code, and ignore it until somebody actually
+> > complains about it, and then aim to try to do something more targeted
+> > for that particular complaint?
 > 
-> Yeah, that's what I thought as well. The extra pointer is not going to
-> create massive bloat :)
+> We _have_ had complaints about the laptop suspension problem; that was
+> why Jeff introduced freezable_schedule() in the first place. We've never
+> had complaints about any problems involvinf cgroup_freeze. This is why
+> our focus tends to be on the former, and why I'm more worried about
+> laptop suspend regressions for any short term fixes.
+> 
 
-It's a bit hacky though.  If CONFIG_EARLY_PRINTK=n then that code just
-shouldn't exist.  If we let it persist then maybe it's doing other
-wrong stuff as well.
+Right. I don't know of anyone using the cgroup_freeze stuff. OTOH, I've
+seen *many* reports of people who complained because their machine
+didn't suspend because of a busy NFS mount.
+
+In fact, the problem is still not fully "solved" with the
+freezable_schedule stuff we have so far anyway. Even after this
+(admittedly crappy) solution went in, we still had reports of machines
+that failed to suspend because other tasks were stuck in
+wait_on_page_writeback() for NFS pages.
+
+So, in principle I think we need to abandon the current approach. The
+question is what should replace it.
+
+-- 
+Jeff Layton <jlayton@redhat.com>
