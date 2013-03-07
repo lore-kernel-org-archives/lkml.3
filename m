@@ -1,129 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758633Ab3CGPWo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 10:22:44 -0500
-Received: from mail-la0-f46.google.com ([209.85.215.46]:60353 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754942Ab3CGPWm (ORCPT
+	id S1759000Ab3CGPZN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 10:25:13 -0500
+Received: from mail-qa0-f41.google.com ([209.85.216.41]:44189 "EHLO
+	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754289Ab3CGPZL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 10:22:42 -0500
+	Thu, 7 Mar 2013 10:25:11 -0500
+Date: Thu, 7 Mar 2013 07:25:04 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Jeff Layton <jlayton@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
+        Mandeep Singh Baines <msb@chromium.org>,
+        Ming Lei <ming.lei@canonical.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: LOCKDEP: 3.9-rc1: mount.nfs/4272 still has locks held!
+Message-ID: <20130307152504.GA29601@htj.dyndns.org>
+References: <20130305190923.GI12795@htj.dyndns.org>
+ <20130305183941.19ff39ce@tlielax.poochiereds.net>
+ <20130305234700.GE1227@htj.dyndns.org>
+ <20130306181608.GA18687@redhat.com>
+ <20130306185304.GM1227@htj.dyndns.org>
+ <CA+55aFwDogteVd=vwGHXDSASnga-nZZnKaQz9aO1yBU2CPKSbA@mail.gmail.com>
+ <20130306212452.GO1227@htj.dyndns.org>
+ <CA+55aFy49AWptMcvEzJxg95ikf-dC+-vcCPq-cnaCCwje3tyoQ@mail.gmail.com>
+ <20130306213636.GP1227@htj.dyndns.org>
+ <20130307064140.71c0936b@tlielax.poochiereds.net>
 MIME-Version: 1.0
-In-Reply-To: <CALZhoSTPBNjhUP4R=vX0Ot7eAA8POTAy8K5Cd3KRe_y8PzjfFA@mail.gmail.com>
-References: <CALZhoSR0+SzPLHzJafmny=o8PJ2d7MaH9N6_6s0QZ_oCQm43Xg@mail.gmail.com>
-	<20130305163228.GA12795@htj.dyndns.org>
-	<CALZhoSRyjRYVcKpq9cECHWgKkci6V+O_zn2CkiwqnFo57tZDfQ@mail.gmail.com>
-	<20130306191408.GN1227@htj.dyndns.org>
-	<CALZhoSTPBNjhUP4R=vX0Ot7eAA8POTAy8K5Cd3KRe_y8PzjfFA@mail.gmail.com>
-Date: Thu, 7 Mar 2013 23:22:40 +0800
-Message-ID: <CALZhoSRJ+HV93tDJo-57M-SdXi8Z6qW_bRV9FzSfGWuz8j-t8Q@mail.gmail.com>
-Subject: Re: workqueue panic in 3.4 kernel
-From: Lei Wen <adrian.wenl@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, leiwen@marvell.com, wwang27@marvell.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130307064140.71c0936b@tlielax.poochiereds.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tejun,
+Hello, Jeff.
 
-On Thu, Mar 7, 2013 at 9:15 AM, Lei Wen <adrian.wenl@gmail.com> wrote:
-> Hi Tejun,
->
-> On Thu, Mar 7, 2013 at 3:14 AM, Tejun Heo <tj@kernel.org> wrote:
->> Hello, Lei.
->>
->> On Wed, Mar 06, 2013 at 10:39:15PM +0800, Lei Wen wrote:
->>> We find a race condition as below:
->>> CPU0                                                                  CPU1
->>> timer interrupt happen
->>> __run_timers
->>>    __run_timers::spin_lock_irq(&base->lock)
->>>    __run_timers::spin_unlock_irq(&base->lock)
->>>
->>>    __cancel_work_timer
->>>
->>>    __cancel_work_timer::del_timer
->>>
->>>    __cancel_work_timer::wait_on_work
->>>
->>>    __cancel_work_timer::clear_work_data
->>>    __run_timers::call_timer_fn(timer, fn, data);
->>>          delayed_work_timer_fn::get_work_cwq
->>>    __run_timers::spin_lock_irq(&base->lock)
->>>
->>> It is possible for __cancel_work_timer to be run over cpu1 __BEFORE__
->>> cpu0 is ready to
->>> run the timer callback, which is delayed_work_timer_fn in our case.
->>
->> If del_timer() happens after the timer starts running, del_timer()
->> would return NULL and try_to_grab_pending() will be called which will
->> return >=0 iff if successfully steals the PENDING bit (ie. it's the
->> sole owner of the work item).  If del_timer() happens before the timer
->> starts running, the timer function would never run.
->
-> If del_timer() happen before __run_timers() is called, while timer irq
-> already happen,
-> would it return 1 for the timer is still not detached in __run_timers()?
-> If it is possible, then we would call try_to_grab_pending(), so that
-> work->data would
-> be cleared in this way.
->
->>
->> clear_work_data() happens iff the work item is confirmed to be idle.
->> At this point, I'm pretty skeptical this is a bug in workqueue itself
->> and strongly suggest looking at the crashing workqueue user.
->
-> Also I am not very familiar with workqueue mechanism, how many place
-> in kernel would
-> clear the work->data beside the clear_work_data()?
->
-> From the memory, I cannot find any hint for work structure being destroyed.
-> So the only possible seems to me is the work->data be set by someone on purpose.
->
-> crash> struct delayed_work 0xbf03d544 -x
-> struct delayed_work {
->   work = {
->     data = {
->       counter = 0x300
->     },
->     entry = {
->       next = 0xbf03d548,
->       prev = 0xbf03d548
->     },
->     func = 0xbf014b00
->   },
->   timer = {
->     entry = {
->       next = 0x0,
->       prev = 0x200200
->     },
->     expires = 0x12b638b,
->     base = 0xc0844e01,
->     function = 0xc014c7a0 <delayed_work_timer_fn>,
->     data = 0xbf03d544,
->     slack = 0xffffffff,
->     start_pid = 0xffffffff,
->     start_site = 0x0,
->     start_comm = "\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000"
->   }
-> }
+On Thu, Mar 07, 2013 at 06:41:40AM -0500, Jeff Layton wrote:
+> Suppose I call unlink("somefile"); on an NFS mount. We take all of the
+> VFS locks, go down into the NFS layer. That marshals up the UNLINK
+> call, sends it off to the server, and waits for the reply. While we're
+> waiting, a freeze event comes in and we start returning from the
+> kernel with our new -EFREEZE return code that works sort of like
+> -ERESTARTSYS. Meanwhile, the server is processing the UNLINK call and
+> removes the file. A little while later we wake up the machine and it
+> goes to try and pick up where it left off.
 
-I captured a trace log, which shows my previous suspicion is true:
-__cancel_work_timer is called before delayed_work_timer_fn, so that
-work->data is cleared.
+But you can't freeze regardless of the freezing mechanism in such
+cases, right?  The current code which allows freezing while such
+operations are in progress is broken as it can lead to freezer
+deadlocks.  They should go away no matter how we implement freezer, so
+the question is not whether we can move all the existing freezing
+points to signal mechanism but that, after removing the deadlock-prone
+ones, how many would be difficult to convert.  I'm fully speculating
+but my suspicion is not too many if you remove (or update somehow) the
+ones which are being done with some locks held.
 
-And when __cancel_work_timer is called, the timer is still pending,
-so del_timer would return 1, thus no try_to_grab_pending would be called.
+> The catch here is that it's quite possible that when we need to quiesce
+> that we've lost communications with the server. We don't want to hold
+> up the freezer at that point so the wait for replies has to be bounded
+> in time somehow. If that times out, we probably just have to return all
+> calls with our new -EFREEZE return and hope for the best when the
+> machine wakes back up.
 
-But it is very strange that in __run_timers, it still get the same timer.
-Then its callback, delayed_work_timer_fn, would be called, which cause
-the issue.
+Sure, a separate prep step may be helpful but assuming a user
+nfs-mounting stuff on a laptop, I'm not sure how reliable that can be
+made.  People move around with laptops, wifi can be iffy and the lid
+can be shut at any moment.  I don't think it's possible for nfs to be
+laptop friendly while staying completely correct.  Designing such a
+network filesystem probably is possible with transactions and whatnot
+but AFAIU nfs isn't designed that way.  If such use case is something
+nfs wants to support, I think it just should make do with some
+middleground - ie. just implement a mount switch which says "retry
+operations across network / power problems" and explain the
+implications.
 
-The detach_timer in __cancel_work_timer should already move the timer
-from all list, am I right?
-Could it happen for the timer_list be queued twice, like queue over two cpu?
-If not, how could it happen?
+Thanks.
 
-Thanks,
-Lei
+-- 
+tejun
