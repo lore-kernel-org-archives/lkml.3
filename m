@@ -1,70 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932367Ab3CGDou (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 22:44:50 -0500
-Received: from mail-ie0-f181.google.com ([209.85.223.181]:40666 "EHLO
-	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756742Ab3CGDot (ORCPT
+	id S1758843Ab3CGDpl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 22:45:41 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:38597 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753033Ab3CGDpk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 22:44:49 -0500
+	Wed, 6 Mar 2013 22:45:40 -0500
+Date: Thu, 7 Mar 2013 03:44:55 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: Ming Lei <tom.leiming@gmail.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Tejun Heo <tj@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Nicolas Pitre <nico@linaro.org>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: Re: [RFC PATCH] ARM: keep __my_cpu_offset consistent with generic one
+Message-ID: <20130307034454.GE25137@mudshark.cambridge.arm.com>
+References: <1362624468-5451-1-git-send-email-tom.leiming@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <51346D7C.5080307@gaisler.com>
-References: <1360653873-25368-1-git-send-email-andreas@gaisler.com>
-	<CACRpkdaYQSrzm_Yj3ZH9YZLC_zPJN06X-9ZM9jd7=X0OB1shXQ@mail.gmail.com>
-	<51346D7C.5080307@gaisler.com>
-Date: Thu, 7 Mar 2013 04:44:48 +0100
-Message-ID: <CACRpkdaC9DsNj56_q33Z5N3_90Ffdq9qZeOxrFdrVSoL4wrTbQ@mail.gmail.com>
-Subject: Re: [PATCH v3] gpio: Add device driver for GRGPIO cores and support
- custom accessors with gpio-generic
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Andreas Larsson <andreas@gaisler.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        software@gaisler.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1362624468-5451-1-git-send-email-tom.leiming@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 4, 2013 at 10:46 AM, Andreas Larsson <andreas@gaisler.com> wrote:
-> [Me]
->>> +struct grgpio_priv {
->>> +       struct bgpio_chip bgc;
->>> +       struct grgpio_regs __iomem *regs;
->>> +
->>> +       u32 imask;      /* irq mask shadow register */
->>> +       s32 *irqmap;    /* maps offset to irq or -1 if no irq */
->>
->>
->> irqmap? Argh what is this... I think you want to use irqdomain
->> for this instead. (Documentation/IRQ-domain.txt)
->
->
-> Yeah, that comment is not clear. An entry in the irqmap array (for a gpio
-> line) can be either -1 indicating no irq for that line or an index into the
-> array of irq:s for the of device. Thus it is simply either -1 or a valid
-> second argument to irq_of_parse_and_map.
+Hello,
 
-So just make the mapping function in the irqdomain handle that?
+On Thu, Mar 07, 2013 at 02:47:48AM +0000, Ming Lei wrote:
+> Commit 14318efb(ARM: 7587/1: implement optimized percpu variable access)
+> introduces arm's __my_cpu_offset to optimize percpu vaiable access,
+> which really works well on hackbench test, but may cause __my_cpu_offset
+> to return garbage value before it is initialized in cpu_init() called
+> by setup_arch, so accessing a percpu variable before setup_arch may cause
+> kernel hang. But the generic__my_cpu_offset always returns zero before
+> percpu area is brought up.
+> 
+> So the patch tries to clear __my_cpu_offset on boot CPU early
+> to avoid boot hang.
+> 
+> At least now percpu variable is accessed by lockdep before
+> setup_arch(), and enabling CONFIG_LOCK_STAT or CONFIG_DEBUG_LOCKDEP
+> can trigger kernel hang.
 
-Maybe I'm talking weird, I'm not really familiar with
-irq_of_parse_and_map().
+For the record, can you include a backtrace or something please? The
+description makes it sounds like a caller bug, so it would be good to
+document a valid user of per-cpu before cpu_init().
 
-> Given that this is generally running on SPARC, it seems irqdomain is not an
-> option (IRQ_DOMAIN is not selected by SPARC).
-
-That has nothing to do with this. This driver can just select IRQ_DOMAIN
-in *it's* Kconfig entry.
-
-Using irqdomain for a certain irq_chip does not at all mandate that the
-entire system has to use irqdomain for everything, and two wrongs does
-not make one right.
-
-> Given this, is just a better formulated comment OK with you in this case?
-
-No...
-
-Yours,
-Linus Walleij
+Will
