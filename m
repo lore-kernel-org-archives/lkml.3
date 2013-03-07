@@ -1,53 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754944Ab3CGIg2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 03:36:28 -0500
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:46220
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754855Ab3CGIg1 (ORCPT
+	id S932387Ab3CGIh4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 03:37:56 -0500
+Received: from mail-la0-f51.google.com ([209.85.215.51]:63524 "EHLO
+	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932120Ab3CGIhz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 03:36:27 -0500
-Message-ID: <1362645372.2606.11.camel@laptop>
-Subject: Re: [PATCH] sched: wakeup buddy
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Michael Wang <wangyun@linux.vnet.ibm.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
-        Alex Shi <alex.shi@intel.com>, Paul Turner <pjt@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        Ram Pai <linuxram@us.ibm.com>
-Date: Thu, 07 Mar 2013 09:36:12 +0100
-In-Reply-To: <5136EB06.2050905@linux.vnet.ibm.com>
-References: <5136EB06.2050905@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 7 Mar 2013 03:37:55 -0500
+MIME-Version: 1.0
+In-Reply-To: <20130307061143.GD13370@intel.com>
+References: <1362388174-3435-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	<1362388174-3435-7-git-send-email-andriy.shevchenko@linux.intel.com>
+	<20130305092649.GD28136@intel.com>
+	<1362479804.28241.114.camel@smile>
+	<20130305103525.GB13370@intel.com>
+	<CAHp75Vc6KmPQYjSx5m+gEBCe4g2tRgEPKyg4hZx9ytk99pB7Qw@mail.gmail.com>
+	<20130307061143.GD13370@intel.com>
+Date: Thu, 7 Mar 2013 10:37:53 +0200
+Message-ID: <CAHp75VeOqadXJiYH5U0Wn2bqgpBF8Jp=J5aFO1ti5ZxoZ26GVg@mail.gmail.com>
+Subject: Re: [PATCH 06/10] dmatest: run test via debugfs
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-03-06 at 15:06 +0800, Michael Wang wrote:
+Oh, missed Cc list in the middle. Return it back and thus leave a full
+message below.
 
-> wake_affine() stuff is trying to bind related tasks closely, but it doesn't
-> work well according to the test on 'perf bench sched pipe' (thanks to Peter).
+On Thu, Mar 7, 2013 at 8:11 AM, Vinod Koul <vinod.koul@intel.com> wrote:
+> On Wed, Mar 06, 2013 at 05:53:20PM +0200, Andy Shevchenko wrote:
+>> >> > How do you terminate a test? Esp if you have started bunch of concurent tests
+>> >> > and want to terminate one of them...
+>> >>
+>> >> There is only one test in progress is possible.
+>> > Wasnt the idea to run concurrent tests, or I read wrongly...
+>>
+>> No, the idea was to run different tests sequentially from userspace
+>> withou loading/unloading
+>> module each time and with storage support for the results that could
+>> be parsed automatically.
+>>
+>> Running concurrent tests is a good feature to be in TODO list.
+> I dont think anything in code prevents you from doing so. Only issue woud
+> triggering bunch of tests together and killing them
+>
+> What we could build on this is
+> - configuringa  test but running later (so that we configure bunch of tests and
+>   then start them later, when ready)
+> - killing a specific task
 
-so sched-pipe is a poor benchmark for this.. 
+As it's not our main goal, I prefer leave in TODO this for now.
+debugfs approach opens
+a wide directions to get nice QA tool for DMA drivers.
 
-Ideally we'd write a new benchmark that has some actual data footprint
-and we'd measure the cost of tasks being apart on the various cache
-metrics and see what affine wakeup does for it.
+> Both of these would need some 'cookie' for tests or some otehr scheme to
+> identify a test
 
-Before doing something like what you're proposing, I'd have a hard look
-at WF_SYNC, it is possible we should disable/fix select_idle_sibling
-for sync wakeups.
+True. It could be just a idr mapping like integer # <-> test case parameters.
+I think most important feature is to add  the timestamps to the results.
 
-The idea behind sync wakeups is that we try and detect the case where
-we wakeup up one task only to go to sleep ourselves and try and avoid
-the regular ping-pong this would otherwise create on account of the
-waking task still being alive and so the current cpu isn't actually
-idle yet but we know its going to be idle soon.
-
-
-
+-- 
+With Best Regards,
+Andy Shevchenko
