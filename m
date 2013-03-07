@@ -1,52 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759223Ab3CGPhx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 10:37:53 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:57165 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752729Ab3CGPhw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 10:37:52 -0500
-Date: Thu, 7 Mar 2013 15:37:36 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Sylwester Nawrocki <s.nawrocki@samsung.com>
-Cc: Amit Daniel Kachhap <amit.daniel@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>, linux-pm@vger.kernel.org,
-        Viresh Kumar <viresh.kumar@linaro.org>, linux-kernel@vger.kernel.org,
-        cpufreq@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        linux-samsung-soc@vger.kernel.org,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Inderpal Singh <inderpal.singh@linaro.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH V3 1/4] cpufreq: exynos: Adding cpufreq driver for
-	exynos5440
-Message-ID: <20130307153736.GC4977@n2100.arm.linux.org.uk>
-References: <1362629627-10012-1-git-send-email-amit.daniel@samsung.com> <5138B200.7060906@samsung.com>
+	id S932436Ab3CGPkq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 10:40:46 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:20662 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752765Ab3CGPkp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Mar 2013 10:40:45 -0500
+Date: Thu, 7 Mar 2013 10:40:33 -0500
+From: Don Zickus <dzickus@redhat.com>
+To: anish singh <anish198519851985@gmail.com>
+Cc: akpm@linux-foundation.org, mingo@kernel.org, chuansheng.liu@intel.com,
+        paulmck@linux.vnet.ibm.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] [Watchdog][Trivial] Added comments to explain
+ watchdog_disabled variable
+Message-ID: <20130307154033.GU119376@redhat.com>
+References: <1361016849-5181-1-git-send-email-anish198519851985@gmail.com>
+ <20130218204858.GB98867@redhat.com>
+ <CAK7N6vqjvVprjxUiqtkxvF6kJ5SV0tUvOggxCOdEC9eSqYLcuA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5138B200.7060906@samsung.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <CAK7N6vqjvVprjxUiqtkxvF6kJ5SV0tUvOggxCOdEC9eSqYLcuA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 07, 2013 at 04:28:00PM +0100, Sylwester Nawrocki wrote:
-> On 03/07/2013 05:13 AM, Amit Daniel Kachhap wrote:
-> > +	dvfs_info->cpu_clk = devm_clk_get(dvfs_info->dev, "armclk");
-> > +	if (IS_ERR_OR_NULL(dvfs_info->cpu_clk)) {
-> 
-> devm_clk_get() return value needs to be checked with IS_ERR(),
-> not IS_ERR_OR_NULL().
-> 
-> > +		pr_err("Failed to get cpu clock\n");
-> > +		ret = PTR_ERR(dvfs_info->cpu_clk);
-> > +		goto err_free_table;
+On Wed, Mar 06, 2013 at 05:17:04PM +0530, anish singh wrote:
+> On Tue, Feb 19, 2013 at 2:18 AM, Don Zickus <dzickus@redhat.com> wrote:
+> > On Sat, Feb 16, 2013 at 05:44:09PM +0530, anish kumar wrote:
+> >> From: anish kumar <anish198519851985@gmail.com>
+> >>
+> >> This watchdog_disabled flag is bit of cryptic.Howerver it's usefullnes is multifold.
+> >> Uses are:
+> >> 1. Check if smpboot_register_percpu_thread function passed.
+> >> 2. Makes sure that user enables and disables the watchdog in sequence
+> >>    i.e. enable watchdog->disable watchdog->enable watchdog
+> >>    Unlike enable watchdog->enable watchdog which is wrong.
+> >>
+> >> Signed-off-by: anish kumar <anish198519851985@gmail.com>
+> >> ---
+> >>  kernel/watchdog.c |    5 +++++
+> >>  1 files changed, 5 insertions(+), 0 deletions(-)
+> >>
+> >> diff --git a/kernel/watchdog.c b/kernel/watchdog.c
+> >> index 75a2ab3..8a20ebe 100644
+> >> --- a/kernel/watchdog.c
+> >> +++ b/kernel/watchdog.c
+> >> @@ -518,6 +518,11 @@ int proc_dowatchdog(struct ctl_table *table, int write,
+> >>               return ret;
+> >>
+> >>       set_sample_period();
+> >> +     /*
+> >> +      * Watchdog threads shouldn't be enabled if they are
+> >> +      * disabled.'watchdog_disabled' variable check in
+> >
+> > Missing a 'The'  ^^^
+> >
+> > Other than that,
+> >
+> > Acked-by: Don Zickus <dzickus@redhat.com>
+> Is this patch picked up?
 
-Amit, to illustrate why this is wrong, consider this:
-1. Set cpu_clk to NULL.
-2. Realise IS_ERR_OR_NULL(NULL) is true.
-3. What is the value of PTR_ERR(NULL) ?
-4. What effect does that have when you jump to err_free_table ?
-5. What value is returned from this function in that case ?
-6. What does that return value mean to the driver core ?
+Andrew,
+
+Do you want me to respin the patch with that change? Or how should I move
+this patch forward?
+
+Cheers,
+Don
