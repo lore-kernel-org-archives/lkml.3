@@ -1,36 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932208Ab3CGIHF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 03:07:05 -0500
-Received: from mail2.gnudd.com ([213.203.150.91]:39146 "EHLO mail.gnudd.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754428Ab3CGIHB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 03:07:01 -0500
-Date: Thu, 7 Mar 2013 09:06:33 +0100
-From: Alessandro Rubini <rubini@unipv.it>
-To: cesarb@cesarb.net
-Cc: akpm@linux-foundation.org, srinidhi.kasagar@stericsson.com,
-        linus.walleij@linaro.org, linux-kernel@vger.kernel.org,
-        STEricsson_nomadik_linux@list.st.com,
-        linux-arm-kernel@lists.infradead.org, joe@perches.com
-Subject: Re: [PATCH 02/14] MAINTAINERS: remove arch/arm/plat-nomadik/
-Message-ID: <20130307080632.GA32365@mail.gnudd.com>
+	id S932152Ab3CGIIe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 03:08:34 -0500
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:61567 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754451Ab3CGIIc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Mar 2013 03:08:32 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Organization: GnuDD, Device Drivers, Embedded Systems, Courses
-In-Reply-To: <1362275632-20242-3-git-send-email-cesarb@cesarb.net>
-References: <1362275632-20242-3-git-send-email-cesarb@cesarb.net>
-  <1362275632-20242-1-git-send-email-cesarb@cesarb.net>
+In-Reply-To: <1362568712-13586-2-git-send-email-thomas.abraham@linaro.org>
+References: <1362568712-13586-1-git-send-email-thomas.abraham@linaro.org>
+	<1362568712-13586-2-git-send-email-thomas.abraham@linaro.org>
+Date: Thu, 7 Mar 2013 09:08:31 +0100
+Message-ID: <CACRpkdZ37FutKzwSSF7w425Nh=jPUU-FXf48HPs3oUXO9sJ0oA@mail.gmail.com>
+Subject: Re: [PATCH v2 1/3] pinctrl: exynos: add exynos5250 SoC specific data
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Thomas Abraham <thomas.abraham@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, kgene.kim@samsung.com,
+        t.figa@samsung.com, patches@linaro.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> In fact, the ARM/Ux500 ARM ARCHITECTURE block has patterns for files
-> named "nomadik" too. The patterns in this pair of MAINTAINER blocks
-> really need a review from the respective maintainters.
+On Wed, Mar 6, 2013 at 12:18 PM, Thomas Abraham
+<thomas.abraham@linaro.org> wrote:
 
-Thanks!
+> Add Samsung Exynos5250 SoC specific data to enable pinctrl support for
+> all platforms based on Exynos5250.
+>
+> Signed-off-by: Thomas Abraham <thomas.abraham@linaro.org>
+> Reviewed-by: Tomasz Figa <t.figa@samsung.com>
+> Acked-by: Linus Walleij <linus.walleij@linaro.org>
 
-Acked-by: Alessandro Rubini <rubini@unipv.it>
+So shall I merge these three patches to the pinctrl tree or not?
 
+Yours,
+Linus Walleij
