@@ -1,92 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757737Ab3CGMRg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 07:17:36 -0500
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:33598 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751226Ab3CGMRe convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 07:17:34 -0500
+	id S932795Ab3CGMRq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 07:17:46 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:59206 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932470Ab3CGMRo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Mar 2013 07:17:44 -0500
+Date: Thu, 7 Mar 2013 13:17:39 +0100
+From: Jan Kara <jack@suse.cz>
+To: Shuge <shuge@allwinnertech.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-ext4@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [jbd2 or mm BUG]:   crash while flush JBD2's the pages, that
+ owned Slab flag.
+Message-ID: <20130307121739.GC6723@quack.suse.cz>
+References: <51384D84.8090803@allwinnertech.com>
 MIME-Version: 1.0
-In-Reply-To: <1362301836.13011.8.camel@mattotaupa>
-References: <1362289680-3527-1-git-send-email-mc74hc00@gmail.com>
-	<1362301836.13011.8.camel@mattotaupa>
-Date: Thu, 7 Mar 2013 21:17:32 +0900
-Message-ID: <CAHh0gOgCr2Hnj4JvK1DBXQ58Lb3o5D_beptfVDTXzbRFf676Fw@mail.gmail.com>
-Subject: Re: [PATCH v2] sp5100_tco: Set the AcpiMmioSel bitmask value to 1
- instead of 2
-From: Tanaka Takahisa <mc74hc00@gmail.com>
-To: Paul Menzel <paulepanter@users.sourceforge.net>
-Cc: linux-watchdog@vger.kernel.org, Wim Van Sebroeck <wim@iguana.be>,
-        Arkadiusz Miskiewicz <arekm@maven.pl>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jonathan Nieder <jrnieder@gmail.com>, linux-kernel@vger.kernel.org,
-        Florian Mickler <florian@mickler.org>,
-        Joseph Salisbury <joseph.salisbury@canonical.com>,
-        Joseph Salisbury <josephtsalisbury@gmail.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51384D84.8090803@allwinnertech.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paul,
+  Hi,
 
-2013/3/3 Paul Menzel <paulepanter@users.sourceforge.net>:
-> From: Takahisa Tanaka <mc74hc00@gmail.com>
-> Date: Sun, 3 Mar 2013 14:48:00 +0900
->
-> The AcpiMmioSel bit is bit 1 in the AcpiMmioEn register, but the current
-> sp5100_tco driver is using bit 2.
->
-> See 2.3.3 Power Management (PM) Registers page 150 of the
-> AMD SB800-Series Southbridges Register Reference Guide [1].
->
->         AcpiMmioEn - RW – 8/16/32 bits - [PM_Reg: 24h]
->         Field Name        Bits  Default  Description
->         AcpiMMioDecodeEn  0     0b       Set to 1 to enable AcpiMMio space.
->         AcpiMMIoSel       1     0b       Set AcpiMMio registers to be memory-mapped or IO-mapped space.
->                                          0: Memory-mapped space
->                                          1: I/O-mapped space
->
-> The sp5100_tco driver expects zero as a value of AcpiMmioSel (bit 1).
->
-> Fortunately, no problems were caused by this typo, because the default
-> value of the undocumented misused bit 2 seems to be zero.
->
-> However, the sp5100_tco driver should use the correct bitmask value.
->
-> [1] http://support.amd.com/us/Embedded_TechDocs/45482.pdf
->
-> Signed-off-by: Takahisa Tanaka <mc74hc00@gmail.com>
-> CC: stable@vger.kernel.org
-> Signed-off-by: Paul Menzel <paulepanter@users.sourceforge.net>
-> ---
-> v2: Hopefully improved the commit message.
->
->  drivers/watchdog/sp5100_tco.h |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/drivers/watchdog/sp5100_tco.h b/drivers/watchdog/sp5100_tco.h
-> index 71594a0..2b28c00 100644
-> --- a/drivers/watchdog/sp5100_tco.h
-> +++ b/drivers/watchdog/sp5100_tco.h
-> @@ -57,7 +57,7 @@
->  #define SB800_PM_WATCHDOG_DISABLE      (1 << 2)
->  #define SB800_PM_WATCHDOG_SECOND_RES   (3 << 0)
->  #define SB800_ACPI_MMIO_DECODE_EN      (1 << 0)
-> -#define SB800_ACPI_MMIO_SEL            (1 << 2)
-> +#define SB800_ACPI_MMIO_SEL            (1 << 1)
->
->
->  #define SB800_PM_WDT_MMIO_OFFSET       0xB00
-> --
-> 1.7.10.4
+  I've fixed linux-mm mailing list address...
 
-I'm sorry for late reply.
-Thank you for improving the commit log.
+On Thu 07-03-13 16:19:16, Shuge wrote:
+> When I debug the file system, I get a problem as follows:
+> 
+> Arch: arm (4 processors)
+> Kernel version: 3.3.0
+> 
+>   The "b_frozen_data" which is defined as a member of "struct
+> journal_head" (linux/fs/jbd2/transaction.c Line 785),
+> it's memory is allocated by "jbd2_alloc". When the memory size is
+> larger than a PAGE SIZE, the memory is got by "
+> __get_free_pages", otherwise, is got by "kmem_cache_alloc". The
+> memory will be used by the "__blk_queue_bounce"(linux/mm/bounce.c).
+> 
+> In this function, the program flow is:
+> __blk_queue_bounce() -> flush_dcache_page() -> page_mapping() ->
+> VM_BUG_ON(PageSlab(page))
+> If the memory is got by "kmem_cache_alloc", it will trigger on a bug.
+> 
+> Kernel panic:
+> [   34.683049] ------------[ cut here ]------------
+> [   34.687686] kernel BUG at include/linux/mm.h:791!
+> [   34.692388] Internal error: Oops - BUG: 0 [#1] PREEMPT SMP
+> [   34.697869] Modules linked in: screen_print(O) nand(O)
+> [   34.703049] CPU: 1    Tainted: G           O  (3.3.0 #6)
+> [   34.708370] PC is at flush_dcache_page+0x34/0xb0
+> [   34.712992] LR is at blk_queue_bounce+0x16c/0x300
+> [   34.717697] pc : [<c001677c>]    lr : [<c00bf0b0>]    psr: 20000013
+> [   34.717703] sp : ee7a7d48  ip : ee7a7d60  fp : ee7a7d5c
+> [   34.729176] r10: ee228804  r9 : ee228804  r8 : eea979c8
+> [   34.734397] r7 : 00000000  r6 : ee228890  r5 : d5333840  r4 : 00000000
+> [   34.740920] r3 : 00000001  r2 : fffffff5  r1 : 00000011  r0 : d5333840
+> [   34.747446] Flags: nzCv  IRQs on  FIQs on  Mon  SVC_32  ISA ARM
+> Segment kernel
+> [   34.754749] Control: 10c53c7d  Table: 6e05806a  DAC: 00000015
+> ......
+> [   35.726529] Backtrace:
+> [   35.729000] [<c0016748>] (flush_dcache_page+0x0/0xb0) from
+> [<c00bf0b0>] (blk_queue_bounce+0x16c/0x300)
+> [   35.738297]  r5:ee7a7dac r4:ee2287c0
+> [   35.741905] [<c00bef44>] (blk_queue_bounce+0x0/0x300) from
+> [<c01fcc58>] (blk_queue_bio+0x28/0x2c0)
+> [   35.750862] [<c01fcc30>] (blk_queue_bio+0x0/0x2c0) from [<c01fb1b8>]
+> (generic_make_request+0x94/0xcc)
+> [   35.760078] [<c01fb124>] (generic_make_request+0x0/0xcc) from
+> [<c01fb2f0>] (submit_bio+0x100/0x124)
+> [   35.769114]  r6:00000002 r5:eecb8f08 r4:ee228840
+> [   35.773774] [<c01fb1f0>] (submit_bio+0x0/0x124) from [<c00e8e68>]
+> (submit_bh+0x130/0x150)
+> [   35.781942]  r8:00000009 r7:d60f6c5c r6:00000211 r5:eecb8f08 r4:ee228840
+> [   35.788713] [<c00e8d38>] (submit_bh+0x0/0x150) from [<c014b024>]
+> (jbd2_journal_commit_transaction+0x7d0/0x11cc)
+> [   35.798790]  r6:ef253380 r5:eecb8f08 r4:eeac5800 r3:00000001
+> [   35.804505] [<c014a854>] (jbd2_journal_commit_transaction+0x0/0x11cc)
+> from [<c014e2a8>] (kjournald2+0xb4/0x248)
+> [   35.814591] [<c014e1f4>] (kjournald2+0x0/0x248) from [<c006aa90>]
+> (kthread+0x94/0xa0)
+> [   35.822422] [<c006a9fc>] (kthread+0x0/0xa0) from [<c005472c>]
+> (do_exit+0x0/0x6a4)
+> [   35.829897]  r6:c005472c r5:c006a9fc r4:eea9bce0
+> [   35.834556] Code: e5904004 e7e033d3 e3530000 0a000000 (e7f001f2)
+> [   35.840733] ---[ end trace c2a29bf063d3670f ]---
+> 
+> So, I modify the mm/bounce.c. Details are as follows:
+> 
+> diff --git a/mm/bounce.c b/mm/bounce.c
+> index 4e9ae72..e3f6b53 100644
+> --- a/mm/bounce.c
+> +++ b/mm/bounce.c
+> @@ -214,7 +214,8 @@ static void __blk_queue_bounce(struct request_queue
+> *q, struct bio **bio_orig,
+>                  if (rw == WRITE) {
+>                          char *vto, *vfrom;
+> 
+> -                       flush_dcache_page(from->bv_page);
+> +                       if (!PageSlab(from->bv_page))
+> + flush_dcache_page(from->bv_page);
+>                          vto = page_address(to->bv_page) + to->bv_offset;
+>                          vfrom = kmap(from->bv_page) + from->bv_offset;
+>                          memcpy(vto, vfrom, to->bv_len);
+> 
+> Who can give some suggestions to me.
+  This looks sensible to me since userspace won't ever see the contents of
+b_frozen_data and generally slab allocation cannot be visible from
+userspace. But I'll leave the final word to mm people.
 
+  BTW, if you want to get your patch accepted, please read
+Documentation/SubmittingPatches and follow the guidelines there.
 
-Regards,
-Takahisa
+Thanks for reporting this!
+
+								Honza 
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
