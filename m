@@ -1,59 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757438Ab3CGL6N (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 06:58:13 -0500
-Received: from zoidberg.rfc1149.net ([88.190.27.159]:39394 "EHLO
-	zoidberg.rfc1149.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750757Ab3CGL6L (ORCPT
+	id S1757446Ab3CGMDN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 07:03:13 -0500
+Received: from mail-ea0-f182.google.com ([209.85.215.182]:61663 "EHLO
+	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751008Ab3CGMDK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 06:58:11 -0500
-From: Samuel Tardieu <sam@rfc1149.net>
-To: Oliver Neukum <oliver@neukum.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org (open list:USB ACM DRIVER),
-        linux-kernel@vger.kernel.org (open list)
-Cc: Samuel Tardieu <sam@rfc1149.net>
-Subject: [PATCH v2] USB: cdc-acm: Remove obsolete predefined speeds array
-Date: Thu,  7 Mar 2013 12:57:58 +0100
-Message-Id: <1362657478-29602-1-git-send-email-sam@rfc1149.net>
-X-Mailer: git-send-email 1.8.1.5
-Organisation: RFC1149 (see http://www.rfc1149.net/)
+	Thu, 7 Mar 2013 07:03:10 -0500
+Message-ID: <513881FA.5090601@gmail.com>
+Date: Thu, 07 Mar 2013 13:03:06 +0100
+From: Maarten Lankhorst <m.b.lankhorst@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
+MIME-Version: 1.0
+To: Mandeep Singh Baines <msb@chromium.org>
+CC: linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        Tejun Heo <tj@kernel.org>, Jeff Layton <jlayton@redhat.com>,
+        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
+        Oleg Nesterov <oleg@redhat.com>, Ming Lei <ming.lei@canonical.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH] lockdep: make lock held while freezing check optional
+References: <20130305231110.GK15816@fieldses.org> <1362529819-19076-1-git-send-email-msb@chromium.org>
+In-Reply-To: <1362529819-19076-1-git-send-email-msb@chromium.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Modern speed handling has been introduced in 2009 by commit
-9b80fee149a875a6292b2556ab2c64dc7ab7d6f5 (cdc_acm: Fix to use modern
-speed interfaces) and the acm_tty_speed array has been unused since.
-
-Signed-off-by: Samuel Tardieu <sam@rfc1149.net>
-Acked-by: Oliver Neukum <oliver@neukum.org>
----
- drivers/usb/class/cdc-acm.c | 8 --------
- 1 file changed, 8 deletions(-)
-
-Here is a new one (code unchanged) with an updated commit message as per
-Sergei request.
-
-diff --git a/drivers/usb/class/cdc-acm.c b/drivers/usb/class/cdc-acm.c
-index 8ac25ad..d003c8c 100644
---- a/drivers/usb/class/cdc-acm.c
-+++ b/drivers/usb/class/cdc-acm.c
-@@ -840,14 +840,6 @@ static int acm_tty_ioctl(struct tty_struct *tty,
- 	return rv;
- }
- 
--static const __u32 acm_tty_speed[] = {
--	0, 50, 75, 110, 134, 150, 200, 300, 600,
--	1200, 1800, 2400, 4800, 9600, 19200, 38400,
--	57600, 115200, 230400, 460800, 500000, 576000,
--	921600, 1000000, 1152000, 1500000, 2000000,
--	2500000, 3000000, 3500000, 4000000
--};
--
- static void acm_tty_set_termios(struct tty_struct *tty,
- 						struct ktermios *termios_old)
- {
--- 
-1.8.1.5
+Op 06-03-13 01:30, Mandeep Singh Baines schreef:
+> This check is turning up a lot of code paths which need to be
+> fixed so while those paths are fixed, let's make this check
+> optional so that folks can still use lockdep.
+I think the config option should be inverted, and make it more clear that
+you're not just not reporting some real bugs by disabling a check that should be on by default.
+> CC: Tejun Heo <tj@kernel.org>
+> CC: Jeff Layton <jlayton@redhat.com>
+> CC: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+> CC: Oleg Nesterov <oleg@redhat.com>
+> CC: Ming Lei <ming.lei@canonical.com>
+> CC: "Rafael J. Wysocki" <rjw@sisk.pl>
+> CC: Andrew Morton <akpm@linux-foundation.org>
+> CC: Ingo Molnar <mingo@redhat.com>
+> ---
+>  include/linux/freezer.h |  2 ++
+>  lib/Kconfig.debug       | 12 ++++++++++++
+>  2 files changed, 14 insertions(+)
+>
+> diff --git a/include/linux/freezer.h b/include/linux/freezer.h
+> index 043a5cf..03bdc54 100644
+> --- a/include/linux/freezer.h
+> +++ b/include/linux/freezer.h
+> @@ -49,8 +49,10 @@ extern void thaw_kernel_threads(void);
+>  
+>  static inline bool try_to_freeze(void)
+>  {
+> +#ifdef CONFIG_DEBUG_LOCK_HELD_FREEZING
+>  	if (!(current->flags & PF_NOFREEZE))
+>  		debug_check_no_locks_held();
+> +#endif
+>  	might_sleep();
+>  	if (likely(!freezing(current)))
+>  		return false;
+> diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+> index 28be08c..bddda5f 100644
+> --- a/lib/Kconfig.debug
+> +++ b/lib/Kconfig.debug
+> @@ -547,6 +547,18 @@ config DEBUG_MUTEXES
+>  	 This feature allows mutex semantics violations to be detected and
+>  	 reported.
+>  
+> +config DEBUG_LOCK_HELD_FREEZING
+> +	bool "Lock debugging: detect when locks are held during freeze"
+> +	depends on DEBUG_KERNEL && TRACE_IRQFLAGS_SUPPORT && STACKTRACE_SUPPORT && LOCKDEP_SUPPORT
+> +	select DEBUG_SPINLOCK
+> +	select DEBUG_MUTEXES
+> +	select LOCKDEP
+> +	help
+> +	 This feature will check whether any lock is incorrectly held
+> +	 while freezing. If a task freezes with a lock held it will
+> +	 block any other task that is waiting on that lock from freezing.
+> +	 In the case of cgroup_freezer, this can cause a deadlock.
+> +
+>  config DEBUG_LOCK_ALLOC
+>  	bool "Lock debugging: detect incorrect freeing of live locks"
+>  	depends on DEBUG_KERNEL && TRACE_IRQFLAGS_SUPPORT && STACKTRACE_SUPPORT && LOCKDEP_SUPPORT
 
