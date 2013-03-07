@@ -1,113 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933256Ab3CGTKq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 14:10:46 -0500
-Received: from www.sr71.net ([198.145.64.142]:39333 "EHLO blackbird.sr71.net"
+	id S933288Ab3CGTLc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 14:11:32 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:44349 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933178Ab3CGTKp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 14:10:45 -0500
-X-Greylist: delayed 619 seconds by postgrey-1.27 at vger.kernel.org; Thu, 07 Mar 2013 14:10:45 EST
-Message-ID: <5138E3C7.9080205@sr71.net>
-Date: Thu, 07 Mar 2013 11:00:23 -0800
-From: Dave Hansen <dave@sr71.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S932724Ab3CGTLa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Mar 2013 14:11:30 -0500
+Date: Thu, 7 Mar 2013 16:10:59 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Avi Kivity <avi.kivity@gmail.com>,
+        Gleb Natapov <gleb@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Rik van Riel <riel@redhat.com>, Srikar <srikar@linux.vnet.ibm.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        KVM <kvm@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Jiannan Ouyang <ouyang@cs.pitt.edu>, Chegu Vinod <chegu_vinod@hp.com>,
+        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
+        Andrew Jones <drjones@redhat.com>
+Subject: Re: [PATCH RFC 0/2] kvm: Better yield_to candidate using preemption
+ notifiers
+Message-ID: <20130307191059.GC15854@amt.cnet>
+References: <20130304180146.31281.33540.sendpatchset@codeblue.in.ibm.com>
 MIME-Version: 1.0
-To: Seth Jennings <sjenning@linux.vnet.ibm.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
-        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Larry Woodman <lwoodman@redhat.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Joe Perches <joe@perches.com>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Cody P Schafer <cody@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Subject: Re: [PATCHv7 4/8] zswap: add to mm/
-References: <1362585143-6482-1-git-send-email-sjenning@linux.vnet.ibm.com> <1362585143-6482-5-git-send-email-sjenning@linux.vnet.ibm.com>
-In-Reply-To: <1362585143-6482-5-git-send-email-sjenning@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130304180146.31281.33540.sendpatchset@codeblue.in.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/06/2013 07:52 AM, Seth Jennings wrote:
-> +static int __zswap_cpu_notifier(unsigned long action, unsigned long cpu)
-> +{
-> +	struct crypto_comp *tfm;
-> +	u8 *dst;
-> +
-> +	switch (action) {
-> +	case CPU_UP_PREPARE:
-> +		tfm = crypto_alloc_comp(zswap_compressor, 0, 0);
-> +		if (IS_ERR(tfm)) {
-> +			pr_err("can't allocate compressor transform\n");
-> +			return NOTIFY_BAD;
-> +		}
-> +		*per_cpu_ptr(zswap_comp_pcpu_tfms, cpu) = tfm;
-> +		dst = (u8 *)__get_free_pages(GFP_KERNEL, 1);
+On Mon, Mar 04, 2013 at 11:31:46PM +0530, Raghavendra K T wrote:
+>  This patch series further filters better vcpu candidate to yield to
+> in PLE handler. The main idea is to record the preempted vcpus using
+> preempt notifiers and iterate only those preempted vcpus in the
+> handler. Note that the vcpus which were in spinloop during pause loop
+> exit are already filtered.
+> 
+> Thanks Jiannan, Avi for bringing the idea and Gleb, PeterZ for
+> precious suggestions during the discussion. 
+> Thanks Srikar for suggesting to avoid rcu lock while checking task state
+> that has improved overcommit cases.
+> 
+> There are basically two approches for the implementation.
+> 
+> Method 1: Uses per vcpu preempt flag (this series).
+> 
+> Method 2: We keep a bitmap of preempted vcpus. using this we can easily
+> iterate over preempted vcpus.
+> 
+> Note that method 2 needs an extra index variable to identify/map bitmap to
+> vcpu and it also needs static vcpu allocation.
+> 
+> I am also posting Method 2 approach for reference in case it interests.
+> 
+> Result: decent improvement for kernbench and ebizzy.
+> 
+> base = 3.8.0 + undercommit patches 
+> patched = base + preempt patches
+> 
+> Tested on 32 core (no HT) mx3850 machine with 32 vcpu guest 8GB RAM
+> 
+> --+-----------+-----------+-----------+------------+-----------+
+>                kernbench (exec time in sec lower is beter) 
+> --+-----------+-----------+-----------+------------+-----------+
+>       base       stdev       patched       stdev      %improve 
+> --+-----------+-----------+-----------+------------+-----------+
+> 1x    47.0383     4.6977     44.2584     1.2899	    5.90986
+> 2x    96.0071     7.1873     91.2605     7.3567	    4.94401
+> 3x   164.0157    10.3613    156.6750    11.4267	    4.47561
+> 4x   212.5768    23.7326    204.4800    13.2908	    3.80888
+> --+-----------+-----------+-----------+------------+-----------+
+> no ple kernbench 1x result for reference: 46.056133
+> 
+> --+-----------+-----------+-----------+------------+-----------+
+>                ebizzy (record/sec higher is better)
+> --+-----------+-----------+-----------+------------+-----------+
+>       base       stdev       patched       stdev      %improve 
+> --+-----------+-----------+-----------+------------+-----------+
+> 1x  5609.2000    56.9343    6263.7000    64.7097     11.66833
+> 2x  2071.9000   108.4829    2653.5000   181.8395     28.07085
+> 3x  1557.4167   109.7141    1993.5000   166.3176     28.00043
+> 4x  1254.7500    91.2997    1765.5000   237.5410     40.70532
+> --+-----------+-----------+-----------+------------+-----------+
+> no ple ebizzy 1x result for reference : 7394.9 rec/sec
+> 
+> Please let me know if you have any suggestions and comments.
+> 
+> Raghavendra K T (2):
+>    kvm: Record the preemption status of vcpus using preempt notifiers
+>    kvm: Iterate over only vcpus that are preempted
 
-Are there some alignment requirements for 'dst'?  If not, why not use
-kmalloc()?  I think kmalloc() should always be used where possible since
-slab debugging is so useful compared to what we can do with raw
-buddy-allocated pages.
-
-Where does the order-1 requirement come from by the way?
-
-...
-> +**********************************/
-> +/* attempts to compress and store an single page */
-> +static int zswap_frontswap_store(unsigned type, pgoff_t offset,
-> +				struct page *page)
-> +{
-...
-> +	/* store */
-> +	handle = zs_malloc(tree->pool, dlen,
-> +		__GFP_NORETRY | __GFP_HIGHMEM | __GFP_NOMEMALLOC |
-> +			__GFP_NOWARN);
-> +	if (!handle) {
-> +		zswap_reject_zsmalloc_fail++;
-> +		ret = -ENOMEM;
-> +		goto putcpu;
-> +	}
-> +
-
-I think there needs to at least be some strong comments in here about
-why you're doing this kind of allocation.  From some IRC discussion, it
-seems like you found some pathological case where zswap wasn't helping
-make reclaim progress and ended up draining the reserve pools and you
-did this to avoid draining the reserve pools.
-
-I think the lack of progress doing reclaim is really the root cause you
-should be going after here instead of just working around the symptom.
-
-> +/* NOTE: this is called in atomic context from swapon and must not sleep */
-> +static void zswap_frontswap_init(unsigned type)
-> +{
-> +	struct zswap_tree *tree;
-> +
-> +	tree = kzalloc(sizeof(struct zswap_tree), GFP_NOWAIT);
-> +	if (!tree)
-> +		goto err;
-> +	tree->pool = zs_create_pool(GFP_NOWAIT, &zswap_zs_ops);
-> +	if (!tree->pool)
-> +		goto freetree;
-> +	tree->rbroot = RB_ROOT;
-> +	spin_lock_init(&tree->lock);
-> +	zswap_trees[type] = tree;
-> +	return;
-> +
-> +freetree:
-> +	kfree(tree);
-> +err:
-> +	pr_err("alloc failed, zswap disabled for swap type %d\n", type);
-> +}
-
-How large are these allocations?  Why are you doing GFP_NOWAIT instead
-of GFP_ATOMIC?  This seems like the kind of thing that you'd _want_ to
-be able to dip in to the reserves for.
+Reviewed-by: Marcelo Tosatti <mtosatti@redhat.com>
 
