@@ -1,52 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757231Ab3CGLyi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 06:54:38 -0500
-Received: from co9ehsobe004.messaging.microsoft.com ([207.46.163.27]:19016
-	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750843Ab3CGLyh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 06:54:37 -0500
-X-Forefront-Antispam-Report: CIP:59.163.77.45;KIP:(null);UIP:(null);IPV:NLI;H:KCHJEXHC01.kpit.com;RD:59.163.77.45.static.vsnl.net.in;EFVD:NLI
-X-SpamScore: 5
-X-BigFish: VPS5(z1346pz98dI936eI1432I1453Izz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ahzzz2dh2a8h668h839h93fhd24hd2bhf0ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1b0ahbe9i1155h)
-Subject: Re: virtual irq isssue - regmap_irq
-From: Ashish Jangam <ashish.jangam@kpitcummins.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: <linux-kernel@vger.kernel.org>, David Dajun Chen <dchen@diasemi.com>
-In-Reply-To: <20130307071349.GF22554@opensource.wolfsonmicro.com>
-References: <1362639472.484.22.camel@dhruva>
-	 <20130307071349.GF22554@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 7 Mar 2013 17:22:35 +0530
-Message-ID: <1362657155.1796.4.camel@dhruva>
+	id S1757421Ab3CGL4M (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 06:56:12 -0500
+Received: from multi.imgtec.com ([194.200.65.239]:37938 "EHLO multi.imgtec.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751064Ab3CGL4L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Mar 2013 06:56:11 -0500
+Message-ID: <51388042.5060309@imgtec.com>
+Date: Thu, 7 Mar 2013 11:55:46 +0000
+From: James Hogan <james.hogan@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+To: Paul Mundt <lethal@linux-sh.org>
+CC: <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] metag: Inhibit NUMA balancing.
+References: <20130304011231.GA26475@linux-sh.org>
+In-Reply-To: <20130304011231.GA26475@linux-sh.org>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.10.38.47]
-X-OriginatorOrg: kpitcummins.com
+X-Originating-IP: [192.168.154.65]
+X-SEF-Processed: 7_3_0_01181__2013_03_07_11_56_08
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-03-07 at 15:13 +0800, Mark Brown wrote:
-> On Thu, Mar 07, 2013 at 12:27:52PM +0530, Ashish Jangam wrote:
+On 04/03/13 01:12, Paul Mundt wrote:
+> The metag NUMA implementation follows the SH model, using different nodes for
+> memories with different latencies. As such, we ensure that automated balancing
+> between nodes is inhibited, by way of the new ARCH_WANT_VARIABLE_LOCALITY.
 > 
-> > In regmap_irq if irq_base is unknown then regmap creates virq starting from 0
-> > and it seems that in kernel 3.8 virq 0 usage is not permitted, since during irq
-> > registration kernel throws a message "error: irq_desc already associated".
-> 
-> > I'm not sure if this requires fix in regmap_irq or kernel, can you please
-> > comment on this?
-> 
-> This is a bug in your platform which will affect anything using a linear
-> domain.  The platform isn't setting up its interrupts correctly so that
-> the core knows that those interrupts are reserved, ideally the platform
-> would just use domains for everything but at least irq_alloc_decs()
-> needs to know what is going on.
-Thanks I got this, however in this case should regmap handle such
-condition where domain is unknown?
-By the way, I was testing on smdkv6410 where Dialog device is not a
-component of the board.
+> Signed-off-by: Paul Mundt <lethal@linux-sh.org>
 
+Thanks Paul, Applied.
+
+Cheers
+James
 
