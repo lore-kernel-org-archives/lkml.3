@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752571Ab3CGGZI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 01:25:08 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:55526 "EHLO comal.ext.ti.com"
+	id S1752392Ab3CGGZG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 01:25:06 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:55524 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750811Ab3CGGZD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1750796Ab3CGGZD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 7 Mar 2013 01:25:03 -0500
 From: "Vishwanathrao Badarkhe, Manish" <manishv.b@ti.com>
 To: <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
@@ -13,52 +13,88 @@ To: <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
 CC: <broonie@opensource.wolfsonmicro.com>, <nsekhar@ti.com>,
         <linux@arm.linux.org.uk>, <rob.herring@calxeda.com>,
         <grant.likely@secretlab.ca>, <manishv.b@ti.com>
-Subject: [RESEND 0/2] davinci: Add device tree data for tps6507x.
-Date: Thu, 7 Mar 2013 11:56:19 +0530
-Message-ID: <1362637581-12673-1-git-send-email-manishv.b@ti.com>
+Subject: [RESEND 1/2] ARM: regulator: add tps6507x device tree data
+Date: Thu, 7 Mar 2013 11:56:20 +0530
+Message-ID: <1362637581-12673-2-git-send-email-manishv.b@ti.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1362637581-12673-1-git-send-email-manishv.b@ti.com>
+References: <1362637581-12673-1-git-send-email-manishv.b@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add device tree data for regulator via tps6507x mfd device 
-in da850-evm.
-Applies on top of v3.9-rc1 of linus tree.
+Add device tree data for tps6507x regulator by adding
+all tps6507x regulator nodes. Regulators are initialized
+based on compatible name provided in tps6507x DT file.
 
-Tested on da850-evm device.
+All tps6507x PMIC regulator device tree nodes are placed
+in a separate device tree include file (tps6507x.dtsi).
+tps6507x.dtsi file is created using datasheet
+http://www.ti.com/lit/ds/symlink/tps65070.pdf
 
-Test procedure followed as below:
-Once device boots up, issue command as:
+Tested on da850-evm.
 
-$for reg in /sys/class/regulator/*; do echo $reg `cat $reg/name`
- `cat $reg/state` `cat $reg/microvolts`; done
+Signed-off-by: Vishwanathrao Badarkhe, Manish <manishv.b@ti.com>
+---
+:000000 100644 0000000... 4c326e5... A	arch/arm/boot/dts/tps6507x.dtsi
+ arch/arm/boot/dts/tps6507x.dtsi |   47 +++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 47 insertions(+), 0 deletions(-)
 
-This command will print all available regulators with its name,
-status (enabled/disabled) and voltages(in microvolts) like as below:
-/sys/class/regulator/regulator.1 VDCDC1_3.3V enabled 3300000
-/sys/class/regulator/regulator.2 VDCDC2_3.3V enabled 3300000
-/sys/class/regulator/regulator.3 VDCDC3_1.2V enabled 1200000
-/sys/class/regulator/regulator.4 LDO1_1.8V enabled 1800000
-/sys/class/regulator/regulator.5 LDO2_1.2V enabled 1200000
-
-Note: Some of patches in this series are already accepted and 
-residing in v3.9-rc1 kernel. These patches are as follows:
-
-1. mfd: tps6507x: add device-tree support.
-2. regulator: tps6507x: add device tree support. 
-3. ARM: davinci: da850: add DT node for I2C0. 
-
-Vishwanathrao Badarkhe, Manish (2):
-  ARM: regulator: add tps6507x device tree data
-  ARM: davinci: da850: add tps6507x regulator DT data
-
- arch/arm/boot/dts/da850-evm.dts |   63 +++++++++++++++++++++++++++++++++++++++
- arch/arm/boot/dts/tps6507x.dtsi |   47 +++++++++++++++++++++++++++++
- 2 files changed, 110 insertions(+), 0 deletions(-)
- create mode 100644 arch/arm/boot/dts/tps6507x.dtsi
-
+diff --git a/arch/arm/boot/dts/tps6507x.dtsi b/arch/arm/boot/dts/tps6507x.dtsi
+new file mode 100644
+index 0000000..4c326e5
+--- /dev/null
++++ b/arch/arm/boot/dts/tps6507x.dtsi
+@@ -0,0 +1,47 @@
++/*
++ * Copyright (C) 2013 Texas Instruments Incorporated - http://www.ti.com/
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++/*
++ * Integrated Power Management Chip
++ * http://www.ti.com/lit/ds/symlink/tps65070.pdf
++ */
++
++&tps {
++	compatible = "ti,tps6507x";
++
++	regulators {
++		#address-cells = <1>;
++		#size-cells = <0>;
++
++		vdcdc1_reg: regulator@0 {
++			reg = <0>;
++			regulator-compatible = "VDCDC1";
++		};
++
++		vdcdc2_reg: regulator@1 {
++			reg = <1>;
++			regulator-compatible = "VDCDC2";
++		};
++
++		vdcdc3_reg: regulator@2 {
++			reg = <2>;
++			regulator-compatible = "VDCDC3";
++		};
++
++		ldo1_reg: regulator@3 {
++			reg = <3>;
++			regulator-compatible = "LDO1";
++		};
++
++		ldo2_reg: regulator@4 {
++			reg = <4>;
++			regulator-compatible = "LDO2";
++		};
++
++	};
++};
 -- 
 1.7.4.1
 
