@@ -1,48 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755243Ab3CGIqp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 03:46:45 -0500
-Received: from mga02.intel.com ([134.134.136.20]:30932 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754794Ab3CGIqo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 03:46:44 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,800,1355126400"; 
-   d="scan'208";a="295574046"
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: linux-kernel@vger.kernel.org
-Cc: Peter Tyser <ptyser@xes-inc.com>, Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>
-Subject: [PATCH] gpio/gpio-ich: make ichx_gpio_check_available() return a pure boolean value
-Date: Thu,  7 Mar 2013 10:48:19 +0200
-Message-Id: <1362646099-3506-1-git-send-email-mika.westerberg@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S1755302Ab3CGI6H (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 03:58:07 -0500
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:35966 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754255Ab3CGI6F (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Mar 2013 03:58:05 -0500
+From: Fabio Baltieri <fabio.baltieri@linaro.org>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org, Fabio Baltieri <fabio.baltieri@linaro.org>
+Subject: [PATCH 3/5] usb: musb: ux500: add otg notifier support
+Date: Thu,  7 Mar 2013 16:57:40 +0800
+Message-Id: <1362646660-22688-1-git-send-email-fabio.baltieri@linaro.org>
+X-Mailer: git-send-email 1.8.1.3
+In-Reply-To: <20130306085446.GI28587@arwen.pp.htv.fi>
+References: <20130306085446.GI28587@arwen.pp.htv.fi>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is more readable for humans to use double-bang (!!) to convert the value
-to pure boolean before it is returned.
+Add transceiver notifier event handling to the ux500 driver to set vbus
+on specific transceiver events.
 
-Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Fabio Baltieri <fabio.baltieri@linaro.org>
 ---
- drivers/gpio/gpio-ich.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/musb/ux500.c | 42 ++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 42 insertions(+)
 
-diff --git a/drivers/gpio/gpio-ich.c b/drivers/gpio/gpio-ich.c
-index f9dbd50..22ea0be 100644
---- a/drivers/gpio/gpio-ich.c
-+++ b/drivers/gpio/gpio-ich.c
-@@ -130,7 +130,7 @@ static int ichx_read_bit(int reg, unsigned nr)
- 
- static bool ichx_gpio_check_available(struct gpio_chip *gpio, unsigned nr)
- {
--	return ichx_priv.use_gpio & (1 << (nr / 32));
-+	return !!(ichx_priv.use_gpio & (1 << (nr / 32)));
+diff --git a/drivers/usb/musb/ux500.c b/drivers/usb/musb/ux500.c
+index 5b742ba..55f24c6 100644
+--- a/drivers/usb/musb/ux500.c
++++ b/drivers/usb/musb/ux500.c
+@@ -98,6 +98,37 @@ static void ux500_musb_set_vbus(struct musb *musb, int is_on)
+ 		musb_readb(musb->mregs, MUSB_DEVCTL));
  }
  
- static int ichx_gpio_direction_input(struct gpio_chip *gpio, unsigned nr)
++static int musb_otg_notifications(struct notifier_block *nb,
++		unsigned long event, void *unused)
++{
++	struct musb *musb = container_of(nb, struct musb, nb);
++
++	dev_dbg(musb->controller, "musb_otg_notifications %ld %s\n",
++			event, otg_state_string(musb->xceiv->state));
++
++	switch (event) {
++	case USB_EVENT_ID:
++		dev_dbg(musb->controller, "ID GND\n");
++		ux500_musb_set_vbus(musb, 1);
++		break;
++	case USB_EVENT_VBUS:
++		dev_dbg(musb->controller, "VBUS Connect\n");
++		ux500_musb_set_vbus(musb, 0);
++		break;
++	case USB_EVENT_NONE:
++		dev_dbg(musb->controller, "VBUS Disconnect\n");
++		if (is_host_active(musb))
++			ux500_musb_set_vbus(musb, 0);
++		else
++			musb->xceiv->state = OTG_STATE_B_IDLE;
++		break;
++	default:
++		dev_dbg(musb->controller, "ID float\n");
++		return NOTIFY_DONE;
++	}
++	return NOTIFY_OK;
++}
++
+ static irqreturn_t ux500_musb_interrupt(int irq, void *__hci)
+ {
+ 	unsigned long   flags;
+@@ -120,12 +151,21 @@ static irqreturn_t ux500_musb_interrupt(int irq, void *__hci)
+ 
+ static int ux500_musb_init(struct musb *musb)
+ {
++	int status;
++
+ 	musb->xceiv = usb_get_phy(USB_PHY_TYPE_USB2);
+ 	if (IS_ERR_OR_NULL(musb->xceiv)) {
+ 		pr_err("HS USB OTG: no transceiver configured\n");
+ 		return -EPROBE_DEFER;
+ 	}
+ 
++	musb->nb.notifier_call = musb_otg_notifications;
++	status = usb_register_notifier(musb->xceiv, &musb->nb);
++	if (status < 0) {
++		dev_dbg(musb->controller, "notification register failed\n");
++		return status;
++	}
++
+ 	musb->isr = ux500_musb_interrupt;
+ 
+ 	return 0;
+@@ -133,6 +173,8 @@ static int ux500_musb_init(struct musb *musb)
+ 
+ static int ux500_musb_exit(struct musb *musb)
+ {
++	usb_unregister_notifier(musb->xceiv, &musb->nb);
++
+ 	usb_put_phy(musb->xceiv);
+ 
+ 	return 0;
 -- 
-1.7.10.4
+1.8.1.3
 
