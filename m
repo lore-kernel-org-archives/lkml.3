@@ -1,72 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759870Ab3CGWQG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 17:16:06 -0500
-Received: from cpsmtpb-ews03.kpnxchange.com ([213.75.39.6]:49237 "EHLO
-	cpsmtpb-ews03.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759224Ab3CGWQB (ORCPT
+	id S933556Ab3CGWQK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 17:16:10 -0500
+Received: from mail.free-electrons.com ([94.23.35.102]:33243 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759224Ab3CGWQI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 17:16:01 -0500
-Message-ID: <1362694559.5994.31.camel@x61.thuisdomein>
-Subject: [PATCH] powerpc/wsp: drop "select PPC_WSP_COPRO"
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>
-Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Date: Thu, 07 Mar 2013 23:15:59 +0100
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 07 Mar 2013 22:15:59.0940 (UTC) FILETIME=[5911E840:01CE1B81]
-X-RcptDomain: vger.kernel.org
+	Thu, 7 Mar 2013 17:16:08 -0500
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: kevin@allwinnertech.com, sunny@allwinnertech.com, shuge@allwinnertech.com,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
+Subject: [PATCH 6/6] ARM: sunxi: hackberry: Add UART muxing
+Date: Thu,  7 Mar 2013 23:14:20 +0100
+Message-Id: <1362694460-1919-7-git-send-email-maxime.ripard@free-electrons.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1362694460-1919-1-git-send-email-maxime.ripard@free-electrons.com>
+References: <1362694460-1919-1-git-send-email-maxime.ripard@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is no Kconfig symbol PPC_WSP_COPRO. The select statement for it is
-a nop. Drop it.
+We previously relied on the bootloader to do the muxing of the UART for
+the Hackberry. Don't rely on it anymore and use pinctrl.
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 ---
-A short treatise on the uneventful life of PPC_WSP_COPRO in the mainline
-kernel tree
+ arch/arm/boot/dts/sun4i-a10-hackberry.dts |    2 ++
+ 1 file changed, 2 insertions(+)
 
-Release v3.0 included commit 76b4eda866c4936af8d696f040abea56bf688e16
-("powerpc: Add A2 cpu support"). It added some code wrapped in an
-"#ifdef CONFIG_PPC_WSP_COPRO" and "#endif" pair. It did not add a
-Kconfig symbol PPC_WSP_COPRO. Neither did it add a preprocessor #define
-for CONFIG_PPC_WSP_COPRO. There haS actually never been such a symbol or
-such a macro in the mainline tree.
-
-Release v3.3 included commit fac26ad4f9cb794c9d1032f55f40a31cb55be09a
-("powerpc/book3e: Add ICSWX/ACOP support to Book3e cores like A2"). It
-basically renamed CONFIG_PPC_WSP_COPRO to CONFIG_PPC_ICSWX. It did not
-elaborate why it did that. But at least PPC_ICSWX was a valid Kconfig
-symbol.
-
-Release v3.3 also included commit
-cc35b6766878e31accc95c3fdae945bdadc73a46 ("powerpc/book3e: Add Chroma as
-a new WSP/PowerEN platform."). That commit added a Kconfig select
-statement for PPC_WSP_COPRO. It is not clear why it did that. Current
-opinion is that it served no purpose and that the kernel tree would be
-better of without that statement.
-
- arch/powerpc/platforms/wsp/Kconfig | 1 -
- 1 file changed, 1 deletion(-)
-
-diff --git a/arch/powerpc/platforms/wsp/Kconfig b/arch/powerpc/platforms/wsp/Kconfig
-index 79d2225..56203a4 100644
---- a/arch/powerpc/platforms/wsp/Kconfig
-+++ b/arch/powerpc/platforms/wsp/Kconfig
-@@ -9,7 +9,6 @@ config PPC_WSP
- 	select PCI
- 	select PPC_IO_WORKAROUNDS if PCI
- 	select PPC_INDIRECT_PIO if PCI
--	select PPC_WSP_COPRO
- 	default n
+diff --git a/arch/arm/boot/dts/sun4i-a10-hackberry.dts b/arch/arm/boot/dts/sun4i-a10-hackberry.dts
+index f84549a..97703fe 100644
+--- a/arch/arm/boot/dts/sun4i-a10-hackberry.dts
++++ b/arch/arm/boot/dts/sun4i-a10-hackberry.dts
+@@ -24,6 +24,8 @@
  
- menu "WSP platform selection"
+ 	soc {
+ 		uart0: uart@01c28000 {
++			pinctrl-names = "default";
++			pinctrl-0 = <&uart0_pins_a>;
+ 			status = "okay";
+ 		};
+ 	};
 -- 
-1.7.11.7
+1.7.10.4
 
