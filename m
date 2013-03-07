@@ -1,41 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759218Ab3CGQHe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 11:07:34 -0500
-Received: from www.linutronix.de ([62.245.132.108]:49866 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751049Ab3CGQHd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 11:07:33 -0500
-Date: Thu, 7 Mar 2013 17:07:25 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Tejun Heo <tj@kernel.org>
-cc: Lei Wen <adrian.wenl@gmail.com>, linux-kernel@vger.kernel.org,
-        leiwen@marvell.com, wwang27@marvell.com
-Subject: Re: workqueue panic in 3.4 kernel
-In-Reply-To: <20130307154907.GB29601@htj.dyndns.org>
-Message-ID: <alpine.LFD.2.02.1303071705310.22263@ionos>
-References: <CALZhoSR0+SzPLHzJafmny=o8PJ2d7MaH9N6_6s0QZ_oCQm43Xg@mail.gmail.com> <20130305163228.GA12795@htj.dyndns.org> <CALZhoSRyjRYVcKpq9cECHWgKkci6V+O_zn2CkiwqnFo57tZDfQ@mail.gmail.com> <20130306191408.GN1227@htj.dyndns.org>
- <CALZhoSTPBNjhUP4R=vX0Ot7eAA8POTAy8K5Cd3KRe_y8PzjfFA@mail.gmail.com> <CALZhoSRJ+HV93tDJo-57M-SdXi8Z6qW_bRV9FzSfGWuz8j-t8Q@mail.gmail.com> <20130307154907.GB29601@htj.dyndns.org>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	id S1759385Ab3CGQId (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 11:08:33 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:47872 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753057Ab3CGQIc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Mar 2013 11:08:32 -0500
+Subject: Re: [PATCH -v2] gfs2: fix bitmap declaration
+From: Steven Whitehouse <swhiteho@redhat.com>
+To: Akinobu Mita <akinobu.mita@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, cluster-devel@redhat.com,
+        Christine Caulfield <ccaulfie@redhat.com>,
+        David Teigland <teigland@redhat.com>
+In-Reply-To: <CAC5umyjw3xzdExvf3TA6i3iH=ortPeJivetUpEyCP5Mzmn6wEg@mail.gmail.com>
+References: <1362576597-18501-1-git-send-email-akinobu.mita@gmail.com>
+	 <1362583679.2707.21.camel@menhir>
+	 <CAC5umyjw3xzdExvf3TA6i3iH=ortPeJivetUpEyCP5Mzmn6wEg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Red Hat UK Ltd
+Date: Thu, 07 Mar 2013 16:06:39 +0000
+Message-ID: <1362672399.2528.32.camel@menhir>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 7 Mar 2013, Tejun Heo wrote:
-> I can't see how something like that would happen and still find it
-> quite unlikely this would be a generic problem in either timer or
-> workqueue given how widely those are used and your case is the only
-> similar case that came up till now (and 3.4 is a long time ago).
-> Thomas, any ideas?
+Hi,
 
-debugobjects might give a hint.
+On Thu, 2013-03-07 at 23:38 +0900, Akinobu Mita wrote:
+> 2013/3/7 Steven Whitehouse <swhiteho@redhat.com>:
+> > Hi,
+> >
+> > This doesn't apply over the patch which Dave just sent. Can you redo
+> > this against the current GFS2 -nmw tree if it is still required? Thanks,
+> 
+> I checked Dave's patch.  It fixes the same issue that I was trying to fix.
+> So this -v2 patch is not needed anymore.
+> 
+> But the cleanup patch in v1 ([PATCH 2/2] gfs2: use memchr_inv) is still
+> applicable. So I'll resend it soon.
 
-Thanks,
+Ok, thanks. I've pushed the memchr_inv patch into the -nmw git tree,
 
-	tglx
+Steve.
+
+
