@@ -1,67 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933216Ab3CGSOd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 13:14:33 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:26244 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932541Ab3CGSOc (ORCPT
+	id S933204Ab3CGSRd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 13:17:33 -0500
+Received: from e35.co.us.ibm.com ([32.97.110.153]:54848 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932541Ab3CGSRc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 13:14:32 -0500
-Message-ID: <5138D8F2.5020900@oracle.com>
-Date: Thu, 07 Mar 2013 13:14:10 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130227 Thunderbird/17.0.3
-MIME-Version: 1.0
-To: ebiederm@xmission.com
-CC: Eric Dumazet <eric.dumazet@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Li Zefan <lizefan@huawei.com>, CAI Qian <caiqian@redhat.com>,
+	Thu, 7 Mar 2013 13:17:32 -0500
+Date: Thu, 7 Mar 2013 10:15:49 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Sasha Levin <sasha.levin@oracle.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>, Li Zefan <lizefan@huawei.com>,
+        CAI Qian <caiqian@redhat.com>,
         linux-kernel <linux-kernel@vger.kernel.org>,
         Containers <containers@lists.linux-foundation.org>
 Subject: Re: 3.9-rc1 NULL pointer crash at find_pid_ns
-References: <611667212.10748821.1362649031475.JavaMail.root@redhat.com> <513860E8.4080807@huawei.com> <876213wmwt.fsf@xmission.com> <5138D001.8000409@oracle.com> <1362678371.15793.218.camel@edumazet-glaptop> <5138D377.6040406@oracle.com> <87boavrspd.fsf@xmission.com>
+Message-ID: <20130307181549.GW3268@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <611667212.10748821.1362649031475.JavaMail.root@redhat.com>
+ <513860E8.4080807@huawei.com>
+ <876213wmwt.fsf@xmission.com>
+ <5138D001.8000409@oracle.com>
+ <1362678371.15793.218.camel@edumazet-glaptop>
+ <5138D377.6040406@oracle.com>
+ <87boavrspd.fsf@xmission.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 In-Reply-To: <87boavrspd.fsf@xmission.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13030718-4834-0000-0000-0000047125C8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/07/2013 01:05 PM, ebiederm@xmission.com wrote:
+On Thu, Mar 07, 2013 at 10:05:34AM -0800, Eric W. Biederman wrote:
 > Sasha Levin <sasha.levin@oracle.com> writes:
 > 
->> On 03/07/2013 12:46 PM, Eric Dumazet wrote:
->>> On Thu, 2013-03-07 at 12:36 -0500, Sasha Levin wrote:
->>>
->>>> Looks like the hlist change is probably the issue, though it specifically
->>>> uses:
->>>>
->>>> 	#define hlist_entry_safe(ptr, type, member) \
->>>>         	(ptr) ? hlist_entry(ptr, type, member) : NULL
->>>>
->>>> I'm still looking at the code in question and it's assembly, but I can't
->>>> figure out what's going wrong. I was also trying to see what's so special
->>>> about this loop in find_pid_ns as opposed to the rest of the kernel code
->>>> that uses hlist_for_each_entry_rcu() but couldn't find out why.
->>>>
->>>> Is it somehow possible that if we rcu_dereference_raw() the same thing twice
->>>> inside the same rcu_read_lock() section we'll get different results? That's
->>>> really the only reason for this crash that comes to mind at the moment, very
->>>> unlikely - but that's all I have right now.
->>>>
->>>
->>> Yep
->>>
->>> #define hlist_entry_safe(ptr, type, member) \
->>> 	(ptr) ? hlist_entry(ptr, type, member) : NULL
->>>
->>> Is not safe, as ptr can be evaluated twice, and thats not good at all...
->>
->> ptr is being evaluated twice, but in this case this is an
->> rcu_dereference_raw() value within the same rcu_read_lock() section.
->>
->> Is it still problematic?
+> > On 03/07/2013 12:46 PM, Eric Dumazet wrote:
+> >> On Thu, 2013-03-07 at 12:36 -0500, Sasha Levin wrote:
+> >> 
+> >>> Looks like the hlist change is probably the issue, though it specifically
+> >>> uses:
+> >>>
+> >>> 	#define hlist_entry_safe(ptr, type, member) \
+> >>>         	(ptr) ? hlist_entry(ptr, type, member) : NULL
+> >>>
+> >>> I'm still looking at the code in question and it's assembly, but I can't
+> >>> figure out what's going wrong. I was also trying to see what's so special
+> >>> about this loop in find_pid_ns as opposed to the rest of the kernel code
+> >>> that uses hlist_for_each_entry_rcu() but couldn't find out why.
+> >>>
+> >>> Is it somehow possible that if we rcu_dereference_raw() the same thing twice
+> >>> inside the same rcu_read_lock() section we'll get different results? That's
+> >>> really the only reason for this crash that comes to mind at the moment, very
+> >>> unlikely - but that's all I have right now.
+> >>>
+> >> 
+> >> Yep
+> >> 
+> >> #define hlist_entry_safe(ptr, type, member) \
+> >> 	(ptr) ? hlist_entry(ptr, type, member) : NULL
+> >> 
+> >> Is not safe, as ptr can be evaluated twice, and thats not good at all...
+> >
+> > ptr is being evaluated twice, but in this case this is an
+> > rcu_dereference_raw() value within the same rcu_read_lock() section.
+> >
+> > Is it still problematic?
 > 
 > Definitely.
 > 
@@ -69,23 +78,18 @@ On 03/07/2013 01:05 PM, ebiederm@xmission.com wrote:
 > 
 > And the crash clearly shows that when hilst_entry is being evaluated the
 > HEAD is NULL.
+> 
+> Perhaps this shows up in proc because the hash chains are short and
+> frequently NULL?
 
-Okay, I'm even more confused now.
+So it should be possible to do something like the following:
 
-The expression in question is:
+#define hlist_entry_safe(ptr, type, member) \
+	({ typeof(ptr) ____ptr = ACCESS_ONCE(ptr); \
+	   ____ptr ? hlist_entry(____ptr, type, member) : NULL; \
+	})
 
-	hlist_entry_safe(rcu_dereference_bh(hlist_first_rcu(head)))
+Does that help?
 
-You're saying that "rcu_dereference_bh(hlist_first_rcu(head))" can change between
-the two evaluations we do. That would mean that 'head' has changed in between, right?
+							Thanx, Paul
 
-In that case, the list itself has changed - which means that RCU has changed the
-list underneath us.
-
-hlist_first_rcu() doesn't have any side-effects, it doesn't modify the list whatsoever,
-so the only thing that can change is 'head'. Why is it allowed to change if the list
-is protected by RCU?
-
-
-Thanks,
-Sasha
