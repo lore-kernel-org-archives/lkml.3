@@ -1,70 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754743Ab3CGIMw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 03:12:52 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:42490 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752138Ab3CGIMv (ORCPT
+	id S1754769Ab3CGINg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 03:13:36 -0500
+Received: from mail-lb0-f181.google.com ([209.85.217.181]:54700 "EHLO
+	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752138Ab3CGINe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 03:12:51 -0500
-X-AuditID: 9c930179-b7c78ae000000e4b-2b-51384bff942c
-Date: Thu, 7 Mar 2013 17:12:58 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Nicolas Pitre <nicolas.pitre@linaro.org>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH] ARM: mm: disable kmap_high_get() for SMP
-Message-ID: <20130307081258.GA14839@lge.com>
-References: <1362372667-953-1-git-send-email-iamjoonsoo.kim@lge.com>
- <alpine.LFD.2.03.1303051642110.28820@syhkavp.arg>
+	Thu, 7 Mar 2013 03:13:34 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.03.1303051642110.28820@syhkavp.arg>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+In-Reply-To: <51379849.6040903@infradead.org>
+References: <20130306115052.2b1969acb7b7a0fa35975984@canb.auug.org.au>
+	<51379849.6040903@infradead.org>
+Date: Thu, 7 Mar 2013 09:13:32 +0100
+Message-ID: <CAN+gG=H4_1nUhhsUe031Q1QrnVna+F7hmAepe6kbNm=8z_gOjw@mail.gmail.com>
+Subject: Re: linux-next: Tree for Mar 6 (hid)
+From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+To: Randy Dunlap <rdunlap@infradead.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Jiri Kosina <jkosina@suse.cz>,
+        linux-input@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Nicolas.
+Hi Randy,
 
-On Tue, Mar 05, 2013 at 05:36:12PM +0800, Nicolas Pitre wrote:
-> On Mon, 4 Mar 2013, Joonsoo Kim wrote:
-> 
-> > With SMP and enabling kmap_high_get(), it makes users of kmap_atomic()
-> > sequential ordered, because kmap_high_get() use global kmap_lock().
-> > It is not welcome situation, so turn off this optimization for SMP.
-> 
-> I'm not sure I understand the problem.
-> 
-> The lock taken by kmap_high_get() is released right away before that 
-> function returns and therefore this is not actually serializing 
-> anything.
+On Wed, Mar 6, 2013 at 8:26 PM, Randy Dunlap <rdunlap@infradead.org> wrote:
+> On 03/05/13 16:50, Stephen Rothwell wrote:
+>> Hi all,
+>>
+>> Changes since 20130305:
+>>
+>
+> on i386 and x86_64:
+>
 
-Yes, you understand what I want to say correctly.
-Sorry for bad explanation.
+Sorry, it looks like my patches went not very smoothly.
 
-Following is reasons why I send this patch with RFC tag.
+> ERROR: "usb_control_msg" [drivers/hid/hid-multitouch.ko] undefined!
 
-If we have more cpus, performance degration is possible although
-it is very short time to holding the lock in kmap_high_get().
+I've submitted a new patch removing this direct call. Maybe we should
+change the Kconfig while these patches are not applied. Jiri?
 
-And kmap has maximum 512 entries(512 * 4K = 2M) and some mobile devices 
-has 2G memory(highmem 1G>), so probability for finding matched entry
-is approximately < 1/512. This probability can be more decreasing
-for device which have more memory. So I think that waste time to find
-matched entry is more than saved time.
+> ERROR: "usb_ifnum_to_if" [drivers/hid/hid-holtek-kbd.ko] undefined!
 
-Above is my humble opinion, so please let me know what I am missing.
+oops, I'll have to double check this one.
 
-Thanks.
+>
+> when CONFIG_USB_SUPPORT is not enabled.
+>
+> Should these drivers depend on USB_HID?
 
-> 
-> 
-> Nicolas
+The goal of the patch series that breaks this was to make the hid
+drivers independent of their transport layers, thus most of them
+should not depend on usbhid anymore.
+
+Cheers,
+Benjamin
+
+>
+>
 > --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> ~Randy
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-input" in
 > the body of a message to majordomo@vger.kernel.org
 > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
