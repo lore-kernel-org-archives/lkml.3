@@ -1,47 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759748Ab3CGUjM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 15:39:12 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:59942 "EHLO mail.zytor.com"
+	id S933311Ab3CGUsT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 15:48:19 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:36603 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751200Ab3CGUjL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 15:39:11 -0500
-Message-ID: <5138FAD9.7050504@zytor.com>
-Date: Thu, 07 Mar 2013 12:38:49 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130219 Thunderbird/17.0.3
+	id S1751200Ab3CGUsS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Mar 2013 15:48:18 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
+        Jeff Layton <jlayton@redhat.com>, Tejun Heo <tj@kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Mandeep Singh Baines <msb@chromium.org>,
+        Ming Lei <ming.lei@canonical.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: LOCKDEP: 3.9-rc1: mount.nfs/4272 still has locks held!
+Date: Thu, 07 Mar 2013 21:55:13 +0100
+Message-ID: <1666707.98SRJWcGQW@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.9.0-rc1+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <CA+55aFySyBP8q5AvPrt-s_ZPdgamfoX-dERw4EJ21EcsDLBjYA@mail.gmail.com>
+References: <20130305174954.GG12795@htj.dyndns.org> <4FA345DA4F4AE44899BD2B03EEEC2FA9286B511E@sacexcmbx05-prd.hq.netapp.com> <CA+55aFySyBP8q5AvPrt-s_ZPdgamfoX-dERw4EJ21EcsDLBjYA@mail.gmail.com>
 MIME-Version: 1.0
-To: Seth Forshee <seth.forshee@canonical.com>
-CC: Matt Fleming <matt.fleming@intel.com>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org
-Subject: Re: [PATCH] efivars: Allow disabling use as a pstore backend
-References: <1362678017-2862-1-git-send-email-seth.forshee@canonical.com>
-In-Reply-To: <1362678017-2862-1-git-send-email-seth.forshee@canonical.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/07/2013 09:40 AM, Seth Forshee wrote:
-> We know that with some firmware implementations writing too much data to
-> UEFI variables can lead to bricking machines. Recent changes attempt to
-> address this issue, but for some it may still be prudent to avoid
-> writing large amounts of data until the solution has been proven on a
-> wide variety of hardware.
+On Thursday, March 07, 2013 08:25:10 AM Linus Torvalds wrote:
+> On Thu, Mar 7, 2013 at 7:59 AM, Myklebust, Trond
+> <Trond.Myklebust@netapp.com> wrote:
+> >
+> > It _shouldn't_ be an interruption unless the filesystem can't make
+> > progress.
 > 
-> Crash dumps or other data from pstore can potentially be a large data
-> source. Add a new option, CONFIG_EFI_VARS_PSTORE, which can be set to N
-> to avoid using efivars as a backend to pstore.
+> So how can we tell? Calling "freezable_schedule()" if you're not ready
+> to be frozen is not good. And nobody but the NFS code can know.
+> 
+> You might want to introduce some counter that counts number of
+> outstanding non-interruptible events, and only call the "freezable"
+> version if that counter is zero.
+> 
+> A better alternative might be to *never* call the freezable version.
+> Because those freezable_*() things are really quite disgusting, and
+> are wrong - they don't actually freeze the process, they say "I don't
+> care if you freeze me while I sleep", and you might actually wake up
+> *while* the system is being frozen. I think the whole concept is
+> broken. Rafaei - comments?
 
-What about a command line option?
+Well, the only comment I have is that the source of these functions was
+commit d310310c (Freezer / sunrpc / NFS: don't allow TASK_KILLABLE sleeps to
+block the freezer) and they were added because people were complaining that
+they couldn't suspend while their NFS servers were not responding, IIRC.
 
-> -#ifdef CONFIG_PSTORE
-> +#if defined(CONFIG_PSTORE) && defined(CONFIG_EFI_VARS_PSTORE)
+I agree that they are not really nice.
 
-Redundant.
+Thanks,
+Rafael
 
-	-hpa
 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
