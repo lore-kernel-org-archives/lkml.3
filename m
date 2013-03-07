@@ -1,87 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754295Ab3CGWeb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 17:34:31 -0500
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:34010 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751519Ab3CGWea (ORCPT
+	id S1759923Ab3CGWeg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 17:34:36 -0500
+Received: from www.linutronix.de ([62.245.132.108]:51469 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751925Ab3CGWec (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 17:34:30 -0500
-Message-ID: <1362695656.31276.37.camel@lambeau>
-Subject: Re: [PATCH 0/4] Alter steal-time reporting in the guest
-From: Michael Wolf <mjw@linux.vnet.ibm.com>
-Reply-To: mjw@linux.vnet.ibm.com
-To: Marcelo Tosatti <mtosatti@redhat.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
-        riel@redhat.com, gleb@redhat.com, kvm@vger.kernel.org,
-        peterz@infradead.org, glommer@parallels.com, mingo@redhat.com,
-        anthony@codemonkey.ws
-Date: Thu, 07 Mar 2013 16:34:16 -0600
-In-Reply-To: <20130307212552.GB22196@amt.cnet>
-References: <20130205214818.4615.12937.stgit@lambeau>
-	 <CAFTL4hyYO7s2u-dRLExA1=TxD00O1XyPe9qFwnODrWi_p92Jqg@mail.gmail.com>
-	 <20130219011104.GA5785@amt.cnet> <1362514928.6267.16.camel@lambeau>
-	 <20130306014151.GB11481@amt.cnet> <1362587233.6373.4.camel@lambeau>
-	 <20130307023026.GA30310@amt.cnet> <1362690909.31276.27.camel@lambeau>
-	 <20130307212552.GB22196@amt.cnet>
-Organization: IBM-LTC
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13030722-5816-0000-0000-000006FC74D9
+	Thu, 7 Mar 2013 17:34:32 -0500
+Date: Thu, 7 Mar 2013 23:34:18 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Mike Frysinger <vapier@gentoo.org>, Ingo Molnar <mingo@kernel.org>,
+        Randy Dunlap <rdunlap@infradead.org>, linux-kernel@vger.kernel.org,
+        Russell King <linux@arm.linux.org.uk>, Michal Simek <monstr@monstr.eu>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mundt <lethal@linux-sh.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Richard Weinberger <richard@nod.at>
+Subject: Re: [PATCH v2] early_printk: consolidate random copies of identical
+ code
+In-Reply-To: <20130307134318.c158500d46c7f4a1a47cf2e7@linux-foundation.org>
+Message-ID: <alpine.LFD.2.02.1303072330520.22263@ionos>
+References: <1362683754-706-1-git-send-email-paul.gortmaker@windriver.com> <20130307112536.82288f41924a38a441cdf345@linux-foundation.org> <5138F68A.6070203@windriver.com> <alpine.LFD.2.02.1303072224290.22263@ionos>
+ <20130307134318.c158500d46c7f4a1a47cf2e7@linux-foundation.org>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-03-07 at 18:25 -0300, Marcelo Tosatti wrote:
-> On Thu, Mar 07, 2013 at 03:15:09PM -0600, Michael Wolf wrote:
+On Thu, 7 Mar 2013, Andrew Morton wrote:
+
+> On Thu, 7 Mar 2013 22:25:48 +0100 (CET) Thomas Gleixner <tglx@linutronix.de> wrote:
+> 
+> > > diff --git a/kernel/printk.c b/kernel/printk.c
+> > > index 7664e49..86799bf 100644
+> > > --- a/kernel/printk.c
+> > > +++ b/kernel/printk.c
+> > > @@ -120,6 +120,7 @@ struct console_cmdline
+> > >  static struct console_cmdline console_cmdline[MAX_CMDLINECONSOLES];
+> > >  static int selected_console = -1;
+> > >  static int preferred_console = -1;
+> > > +struct console *early_console;
+> > >  int console_set_on_cmdline;
+> > >  EXPORT_SYMBOL(console_set_on_cmdline);
+> > >  
+> > > @@ -1718,7 +1719,6 @@ static size_t cont_print_text(char *text, size_t size) { return 0; }
+> > >  #endif /* CONFIG_PRINTK */
+> > >  
+> > >  #ifdef CONFIG_EARLY_PRINTK
+> > > -struct console *early_console;
+> > >  
+> > >  void early_vprintk(const char *fmt, va_list ap)
+> > >  {
 > > > 
-> > > Makes sense?
 > > > 
-> > > Not sure what the concrete way to report stolen time relative to hard
-> > > capping is (probably easier inside the scheduler, where run_delay is
-> > > calculated).
-> > > 
-> > > Reporting the hard capping to the guest is a good idea (which saves the
-> > > user from having to measure it themselves), but better done separately
-> > > via new field.
+> > > Then you don't have to spray any of those ifdefs into the sparc code.
 > > 
-> > didnt respond to this in the previous response.  I'm not sure I'm
-> > following you here.  I thought this is what I was doing by having a
-> > consigned (expected steal) field add to the /proc/stat output.  Are you
-> > looking for something else or a better naming convention?
+> > Yeah, that's what I thought as well. The extra pointer is not going to
+> > create massive bloat :)
 > 
-> Expected steal is not a good measure to use (because as mentioned in the
-> previous email there is no expected steal over a fixed period of time).
-> 
-> It is fine to report 'maximum percentage of underlying physical CPU'
-> (what percentage of the physical CPU time guest VM is allowed to make
-> use of).
-> 
-> And then steal time is relative to maximum percentage of underlying
-> physical CPU time allowed.
-> 
+> It's a bit hacky though.  If CONFIG_EARLY_PRINTK=n then that code just
+> shouldn't exist.  If we let it persist then maybe it's doing other
+> wrong stuff as well.
 
-So last August I had sent out an RFC set of patches to do this.  That
-patchset was meant to handle the general overcommit case as well as the
-capping case by having qemu pass a percentage to the host that would
-then be passed onto the guest and used to adjust the steal time.
-Here is the link to the discussion
-http://lkml.indiana.edu/hypermail/linux/kernel/1208.3/01458.html
+Agreed.
 
-As you will see there Avi didn't like the idea of a percentage down in
-the guest, among other reasons he was concerned about migration.  Also
-in the email thread you will see that Anthony Liguori was opposed to the
-idea of just changing the steal time, he wanted it split out.
+Looking again it turns out that sparc does not fall into the early
+console category. While it uses the early_printk naming convention it
+does not use the early_vprintk stuff which I consolidated out of the
+other architectures. So the sparc part of the patch simply wants to be
+reverted.
+ 
+Thanks,
 
-What Glauber has suggested and I am working on implementing is taking
-out the timer and adding a last read field in the host.  So in the host
-I can determine the total time that has passed and compute a percentage
-and apply that percentage to the steal time while the info is still on
-the host.  Then pass the steal and consigned time to the guest.
-
-Does that address your concerns?
-
+	tglx
