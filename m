@@ -1,154 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933139Ab3CGO7o (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 09:59:44 -0500
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:56408 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758777Ab3CGO7l (ORCPT
+	id S933178Ab3CGPAJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 10:00:09 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:37685 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759217Ab3CGPAE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 09:59:41 -0500
+	Thu, 7 Mar 2013 10:00:04 -0500
+From: "Hiremath, Vaibhav" <hvaibhav@ti.com>
+To: "Hiremath, Vaibhav" <hvaibhav@ti.com>, "Porter, Matt" <mporter@ti.com>
+CC: Linux OMAP List <linux-omap@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "Krishnamoorthy, Balaji T" <balajitk@ti.com>,
+        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Chris Ball <cjb@laptop.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
+Subject: RE: [PATCH 2/2] ARM: dts: add AM33XX MMC support
+Thread-Topic: [PATCH 2/2] ARM: dts: add AM33XX MMC support
+Thread-Index: AQHOGuqV346jkMSBUUmpAvXZrfaGX5iaRamDgAABDLD//6x8AIAAXPnAgAAB1xA=
+Date: Thu, 7 Mar 2013 14:59:42 +0000
+Message-ID: <79CD15C6BA57404B839C016229A409A83EC20CCA@DBDE01.ent.ti.com>
+References: <1362629799-22485-1-git-send-email-mporter@ti.com>
+ <1362629799-22485-3-git-send-email-mporter@ti.com>
+ <41fde401c8e646689123d7c6d3a2dffc@DLEE71.ent.ti.com>
+ <20130307141235.GQ6209@beef>
+ <79CD15C6BA57404B839C016229A409A83EC20C57@DBDE01.ent.ti.com>
+ <20130307144656.GR6209@beef> 
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.170.142]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-In-Reply-To: <513862DA.20704@linux.vnet.ibm.com>
-References: <513063B4.8070604@tlinx.org> <1362155087.15793.54.camel@edumazet-glaptop>
- <51317FCF.1070400@tlinx.org> <51318C5B.60001@tlinx.org> <51382AFE.5080302@linux.vnet.ibm.com>
- <51383C47.7050009@tlinx.org> <513849F8.3090302@linux.vnet.ibm.com>
- <513854E6.9010709@tlinx.org> <513862DA.20704@linux.vnet.ibm.com>
-From: Veaceslav Falico <darkmag@gmail.com>
-Date: Thu, 7 Mar 2013 15:59:18 +0100
-X-Google-Sender-Auth: ysGZX9OvhOkGZ7EebUSctNuKYAc
-Message-ID: <CAE3RKNnrDDh1Y_4+NAKuG3-A9qaC-mPXr7e9vefrNHHUUTE=SA@mail.gmail.com>
-Subject: Re: upgrade to 3.8.1 : BUG Scheduling while atomic in bonding driver:
-To: Michael Wang <wangyun@linux.vnet.ibm.com>
-Cc: Linda Walsh <lkml@tlinx.org>, Eric Dumazet <eric.dumazet@gmail.com>,
-        Linux-Kernel <linux-kernel@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>, Jay Vosburgh <fubar@us.ibm.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Cong Wang <xiyou.wangcong@gmail.com>,
-        Andy Gospodarek <andy@greyhouse.net>
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r27F0EY5022316
 
-On Thu, Mar 7, 2013 at 10:50 AM, Michael Wang
-<wangyun@linux.vnet.ibm.com> wrote:
-> On 03/07/2013 04:50 PM, Linda Walsh wrote:
->>
->> I am *not* seeing the bug in 3.8.2 with the 2nd patch applied (in
->> addition to the first)...
->
-> So that means bond lock is the reason, nice, but this is really not a
-> good fix if we just unlock it...
 
-You're right, we can't unlock bond->lock while in bond_for_each_slave(),
-however I think we don't even need that bond_update_speed_duplex() in
-bond_miimon_commit() - cause the speed/duplex on interface state change
-were already updated via NETDEV_UP/CHANGE event in
-bond_slave_netdev_event() - and if not, it's not our fault, but the
-driver's that he didn't call the notifiers.
+> -----Original Message-----
+> From: Hiremath, Vaibhav
+> Sent: Thursday, March 07, 2013 8:24 PM
+> To: Porter, Matt
+> Cc: Linux OMAP List; Russell King; Krishnamoorthy, Balaji T; Devicetree
+> Discuss; Linux MMC List; Linux Kernel Mailing List; Chris Ball; Linux
+> ARM Kernel List
+> Subject: RE: [PATCH 2/2] ARM: dts: add AM33XX MMC support
+> 
+> > -----Original Message-----
+> > From: Matt Porter [mailto:ohiomdp@gmail.com] On Behalf Of Porter,
+> Matt
+> > Sent: Thursday, March 07, 2013 8:17 PM
+> > To: Hiremath, Vaibhav
+> > Cc: Linux OMAP List; Russell King; Krishnamoorthy, Balaji T;
+> Devicetree
+> > Discuss; Linux MMC List; Linux Kernel Mailing List; Chris Ball; Linux
+> > ARM Kernel List
+> > Subject: Re: [PATCH 2/2] ARM: dts: add AM33XX MMC support
+> >
+> > On Thu, Mar 07, 2013 at 02:39:55PM +0000, Vaibhav Hiremath wrote:
+> > >
+> > > > -----Original Message-----
+> > > > From: Matt Porter [mailto:ohiomdp@gmail.com] On Behalf Of Porter,
+> > Matt
+> > > > Sent: Thursday, March 07, 2013 7:43 PM
+> > > > To: Hiremath, Vaibhav
+> > > > Cc: Krishnamoorthy, Balaji T; Chris Ball; Cousson, Benoit; Tony
+> > > > Lindgren; Russell King; Devicetree Discuss; Linux ARM Kernel
+> List;
+> > > > Linux OMAP List; Linux Kernel Mailing List; Linux MMC List
+> > > > Subject: Re: [PATCH 2/2] ARM: dts: add AM33XX MMC support
+> > > >
+> > > > On Thu, Mar 07, 2013 at 05:29:24AM +0000, Vaibhav Hiremath wrote:
+> > > > > > -----Original Message-----
+> > > > > > From: linux-omap-owner@vger.kernel.org [mailto:linux-omap-
+> > > > > > owner@vger.kernel.org] On Behalf Of Porter, Matt
+> > > > > > Sent: Thursday, March 07, 2013 9:47 AM
+> > > > > > To: Krishnamoorthy, Balaji T; Chris Ball; Cousson, Benoit;
+> Tony
+> > > > > > Lindgren; Russell King
+> > > > > > Cc: Devicetree Discuss; Linux ARM Kernel List; Linux OMAP
+> List;
+> > > > Linux
+> > > > > > Kernel Mailing List; Linux MMC List
+> > > > > > Subject: [PATCH 2/2] ARM: dts: add AM33XX MMC support
+> > > > > >
+<snip>
+> 
+> I believe you meant "CONFIG_TI_EDMA" right?
+> 
+> Yes, I just enabled it and the result is still same.
+> 
+> 
+> 
+> [root@arago /]# dmesg | grep -ir mmc
+> [    0.506844] vmmc: 1800 <--> 3300 mV at 3300 mV
+> [    0.506970] vmmc: supplied by vbat
+> [root@arago /]#
+> [root@arago /]#
+> [root@arago /]# dmesg | grep -ir dma
+> [    0.217063] DMA: preallocated 256 KiB pool for atomic coherent
+> allocations
+> [    0.236321] platform 49000000.edma: alias fck already exists
+> [    0.236360] platform 49000000.edma: alias fck already exists
+> [    0.236381] platform 49000000.edma: alias fck already exists
+> [    0.370705] edma-dma-engine edma-dma-engine.0: TI EDMA DMA engine
+> driver
+> [    0.445156] omap-dma-engine omap-dma-engine: OMAP DMA engine driver
+> [root@arago /]#
+> [root@arago /]#
+> 
+> 
+I have applied below patches from your recent post
 
-So, maybe something like this would work (any feedback welcome, it's
-definitely not the first time we hit the wall with sleeping in
-bond_update_speed_duplex):
 
-Subject: [PATCH] bonding: don't call update_speed_duplex() under spinlocks
-
-bond_update_speed_duplex() might sleep while calling underlying slave's
-routines. Move it out of atomic context in bond_enslave() and remove it
-from bond_miimon_commit() - it was introduced by commit 546add79, however
-when the slave interfaces go up/change state it's their responsability to
-fire NETDEV_UP/NETDEV_CHANGE events so that bonding can properly update
-their speed.
-
----
- drivers/net/bonding/bond_main.c |    6 ++----
- 1 files changed, 2 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
-index 7bd068a..c63a33c 100644
---- a/drivers/net/bonding/bond_main.c
-+++ b/drivers/net/bonding/bond_main.c
-@@ -1746,6 +1746,8 @@ int bond_enslave(struct net_device *bond_dev,
-struct net_device *slave_dev)
-
- 	bond_compute_features(bond);
-
-+	bond_update_speed_duplex(new_slave);
-+
- 	read_lock(&bond->lock);
-
- 	new_slave->last_arp_rx = jiffies -
-@@ -1798,8 +1800,6 @@ int bond_enslave(struct net_device *bond_dev,
-struct net_device *slave_dev)
- 		new_slave->link == BOND_LINK_DOWN ? "DOWN" :
- 			(new_slave->link == BOND_LINK_UP ? "UP" : "BACK"));
-
--	bond_update_speed_duplex(new_slave);
--
- 	if (USES_PRIMARY(bond->params.mode) && bond->params.primary[0]) {
- 		/* if there is a primary slave, remember it */
- 		if (strcmp(bond->params.primary, new_slave->dev->name) == 0) {
-@@ -2373,8 +2373,6 @@ static void bond_miimon_commit(struct bonding *bond)
- 				bond_set_backup_slave(slave);
- 			}
-
--			bond_update_speed_duplex(slave);
--
- 			pr_info("%s: link status definitely up for interface %s, %u Mbps
-%s duplex.\n",
- 				bond->dev->name, slave->dev->name,
- 				slave->speed, slave->duplex ? "full" : "half");
--- 
-1.7.1
-
->
-> The better way is to move the cycle wait logical out of the
-> bond_update_speed_duplex() IMO, I think we need the folk who work on
-> this driver to make the decision ;-)
->
-> Regards,
-> Michael Wang
->
->>
->>
->> Michael Wang wrote:
->>>
->>>
->>> And both bond_enslave() and bond_mii_monitor() are using bond_update_speed_duplex()
->>> with preempt disabled.
->>>
->>> Along with the changes in bond_enslave(), I think you also need this (untested):
->>>
->>> diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
->>> index 11d01d6..9af143a 100644
->>> --- a/drivers/net/bonding/bond_main.c
->>> +++ b/drivers/net/bonding/bond_main.c
->>> @@ -2373,7 +2373,9 @@ static void bond_miimon_commit(struct bonding *bond)
->>>                                 bond_set_backup_slave(slave);
->>>                         }
->>>
->>> +                       read_unlock(&bond->lock);
->>>                         bond_update_speed_duplex(slave);
->>> +                       read_lock(&bond->lock);
->>>
->>>                         pr_info("%s: link status definitely up for interface %s, %u Mbps %s duplex.\n",
->>>                                 bond->dev->name, slave->dev->name,
->>>
->>>
->>> Regards,
->>> Michael Wang
->>>
->>>
->>>
->>
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+[2/2] ARM: dts: add AM33XX MMC support 	
+[1/2] mmc: omap_hsmmc: set max_segs based on dma engine limits 	
+[v4,3/3] mmc: davinci: get SG segment limits with dma_get_slave_sg_limits()
+[v4,2/3] dma: edma: add device_slave_sg_limits() support 
+[v4,1/3] dmaengine: add dma_get_slave_sg_limits()
+[v9,9/9] ARM: dts: add AM33XX SPI DMA support
+[v9,8/9] spi: omap2-mcspi: add generic DMA request support to the DT binding
+[v9,7/9] spi: omap2-mcspi: convert to dma_request_slave_channel_compat() 
+[v9,6/9] ARM: dts: add AM33XX EDMA support 
+[v9,5/9] dmaengine: edma: Add TI EDMA device tree binding
+[v9,4/9] dmaengine: edma: enable build for AM33XX
+[v9,3/9] ARM: edma: add AM33XX support to the private EDMA API
+[v9,2/9] ARM: edma: remove unused transfer controller handlers
+[v9,1/9] ARM: davinci: move private EDMA API to arm/common
+[v3,2/2] mmc: omap_hsmmc: add generic DMA request support to the DT binding
+[v3,1/2] mmc: omap_hsmmc: convert to dma_request_slave_channel_compat()
 
 
 
--- 
-Best regards,
-Veaceslav Falico
+Am I missing anything here?
+
+Thanks,
+Vaibhav
+
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
