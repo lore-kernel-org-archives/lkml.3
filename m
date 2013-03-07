@@ -1,57 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758747Ab3CGCfr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 21:35:47 -0500
-Received: from mail-ia0-f170.google.com ([209.85.210.170]:52998 "EHLO
-	mail-ia0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755881Ab3CGCfq (ORCPT
+	id S1758750Ab3CGCk5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 21:40:57 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42670 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752551Ab3CGCk4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 21:35:46 -0500
+	Wed, 6 Mar 2013 21:40:56 -0500
+Date: Thu, 7 Mar 2013 10:40:28 +0800
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: [GIT PULL] regmap update for v3.9
+Message-ID: <20130307024026.GD22554@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-In-Reply-To: <1362275632-20242-3-git-send-email-cesarb@cesarb.net>
-References: <1362275632-20242-1-git-send-email-cesarb@cesarb.net>
-	<1362275632-20242-3-git-send-email-cesarb@cesarb.net>
-Date: Thu, 7 Mar 2013 03:35:45 +0100
-Message-ID: <CACRpkdZ4he9BFCJ3ta59ZUsNZ=F88o8iR_y5B5Rk=EgrfZVZsg@mail.gmail.com>
-Subject: Re: [PATCH 02/14] MAINTAINERS: remove arch/arm/plat-nomadik/
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Cesar Eduardo Barros <cesarb@cesarb.net>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        Joe Perches <joe@perches.com>, Alessandro Rubini <rubini@unipv.it>,
-        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
-        STEricsson <STEricsson_nomadik_linux@list.st.com>,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="rz+pwK2yUstbofK6"
+Content-Disposition: inline
+X-Cookie: Excellent day to have a rotten day.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 3, 2013 at 2:53 AM, Cesar Eduardo Barros <cesarb@cesarb.net> wrote:
 
-> The files within that directory were moved to other places over the
-> course of several commits. I only added the ones moved in the patch
-> series which finally removed the directory; untangling the rest will
-> take more work, since some seem to be shared with ux500.
->
-> In fact, the ARM/Ux500 ARM ARCHITECTURE block has patterns for files
-> named "nomadik" too. The patterns in this pair of MAINTAINER blocks
-> really need a review from the respective maintainters.
->
-> Cc: Alessandro Rubini <rubini@unipv.it>
-> Cc: Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
-> Cc: Linus Walleij <linus.walleij@linaro.org>
-> Cc: STEricsson <STEricsson_nomadik_linux@list.st.com>
-> Cc: linux-arm-kernel@lists.infradead.org
-> Signed-off-by: Cesar Eduardo Barros <cesarb@cesarb.net>
+--rz+pwK2yUstbofK6
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Thanks for doing this Cesar!
+The following changes since commit a2b37efc4e2aa76a5be29bbde8a2cd1c9c9066bc:
 
-Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
+  Merge remote-tracking branch 'regmap/topic/no-bus' into regmap-next (2013-02-14 17:11:09 +0000)
 
-The reason some drivers are named "Nomadik" is that that
-platform was the first using that IP block, but in some cases
-like drivers/i2c/busses/i2c-nomadik.c the original platform has
-not yet been migrated to it.
+are available in the git repository at:
 
-Yours,
-Linus Walleij
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/broonie/regmap.git tags/regmap-v3.9-rc1
+
+for you to fetch changes up to 283189d3be56aa6db6f192bb255df68493cd79ac:
+
+  regmap: irq: call pm_runtime_put in pm_runtime_get_sync failed case (2013-03-01 14:54:16 +0800)
+
+----------------------------------------------------------------
+regmap: PM fix for v3.9
+
+A simple fix to stop us leaking a runtime PM reference in the case where
+we fail to enable a device.
+
+----------------------------------------------------------------
+Li Fei (1):
+      regmap: irq: call pm_runtime_put in pm_runtime_get_sync failed case
+
+ drivers/base/regmap/regmap-irq.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+--rz+pwK2yUstbofK6
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRN/4KAAoJELSic+t+oim9IVUP/0HLECkkHcsc8qUXdDxfjtFY
+jgrW0D1xYeqqis3wjP4dC5BCQvS1UhAydGvJlT0eoG7/pTcF2m0njo1YTOCJvsb+
+w16TtVripP29a9UE21sfQ15ZJvD5b0v5ru5A4D3lockAO7rY/gqjQ3UGGio049jX
+6tP5o3FhwMBpubm8mar9rhiHZU6SlrL8TsfTebFAq83v0lokoXEkceNevIRB8KkG
+0AMeXbiiTuQXYMnMaInaWmfMrgieTFsev64s3NJM10Pc9e3/KUU/x9XWlEVQ0BMW
+M8g7KlQsnHbNsX1CvUyCJUdhgKIcQiwQ6jlLVxAAP2vnRWv2dpXvlMmTbud+4xx8
+Qkrd+1lv67+eqHbMUiOXjLFdvQfGkoNXxIUgcvYtULZKIUD/bvsiM9EFAGVXr/cx
+CFQgRy/Y89U2Z2DI44Ghlphz6LyNWDClASjihofw9s6sDa2qPFqU1Hg2EAiRY370
+G3W+PhlQixD9qaNpnFx4A3S0quO0DjguYoq800yJtvh7tNOa1HuZpwzLu4jInrFK
+R4E3DAiu5R0yZGI6lOaAlVYl3FFm0l9MIFOoA7HkfMzjx9C89tXOBui4pmpwEZe1
+D0YJZyUM+WQi5f4WEwcG4R6aREL7GgACzuFRMruiUzWhrdTSiBQvqA6I2PtenE4+
+ouHcCYeO7A3InuCFsRjL
+=RRic
+-----END PGP SIGNATURE-----
+
+--rz+pwK2yUstbofK6--
