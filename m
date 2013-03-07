@@ -1,111 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758563Ab3CGAul (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 19:50:41 -0500
-Received: from mail.active-venture.com ([67.228.131.205]:55561 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755425Ab3CGAuk (ORCPT
+	id S1758435Ab3CGAvk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 19:51:40 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:55733 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753805Ab3CGAvj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 19:50:40 -0500
-X-Originating-IP: 108.223.40.66
-Date: Wed, 6 Mar 2013 16:50:38 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-To: torvalds@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
-Subject: [GIT PULL] hwmon patches for 3.9-rc2
-Message-ID: <20130307005038.GA29640@roeck-us.net>
+	Wed, 6 Mar 2013 19:51:39 -0500
+Date: Thu, 7 Mar 2013 00:51:19 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: rjw@sisk.pl, Steve.Bannister@arm.com, linux-pm@vger.kernel.org,
+        Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>,
+        Liviu.Dudau@arm.com, linux-kernel@vger.kernel.org,
+        cpufreq@vger.kernel.org, robin.randhawa@arm.com,
+        linux-arm-kernel@lists.infradead.org, mark.hambleton@broadcom.com,
+        linaro-kernel@lists.linaro.org, charles.garcia-tobin@arm.com
+Subject: Re: [PATCH] cpufreq: ARM big LITTLE: Add generic cpufreq driver
+	and its DT glue
+Message-ID: <20130307005119.GY17833@n2100.arm.linux.org.uk>
+References: <f20e3c5e822c4bd28a3b71264d73143cc1f850b0.1362458878.git.viresh.kumar@linaro.org> <20130305105251.GL17833@n2100.arm.linux.org.uk> <CAKohpo=cBkHZnSa8ZsM=k7RRN+RZDXFUWDM82EXXBSQcM-8Vhw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="C7zPtVaVf+AK4Oqc"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAKohpo=cBkHZnSa8ZsM=k7RRN+RZDXFUWDM82EXXBSQcM-8Vhw@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Mar 07, 2013 at 08:32:37AM +0800, Viresh Kumar wrote:
+> On 5 March 2013 18:52, Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
+> > On Tue, Mar 05, 2013 at 12:52:41PM +0800, Viresh Kumar wrote:
+> >> +     clk[cluster] = clk_get(NULL, name);
+> >> +     if (!IS_ERR_OR_NULL(clk[cluster])) {
+> >
+> > NAK.  Two reasons.
+> >
+> > 1. IS_ERR_OR_NULL.  You know about this, it's been on the list several
+> >    times.
+> 
+> Hey, i had a second thought about this one and i have some other opinion
+> here. This is a cpufreq driver and we need clock support for sure here, we
+> can't work without it. And so here is the latest fixup:
 
---C7zPtVaVf+AK4Oqc
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-
-Hi Linus,
-
-Please pull hwmon fixes for Linux 3.9-rc2 from signed tag:
-
-    git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git hwmon-for-linus
-
-Thanks,
-Guenter
-------
-
-The following changes since commit 6dbe51c251a327e012439c4772097a13df43c5b8:
-
-  Linux 3.9-rc1 (2013-03-03 15:11:05 -0800)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git tags/hwmon-for-linus
-
-for you to fetch changes up to 3e78080f81481aa8340374d5a37ae033c1cf4272:
-
-  hwmon: (sht15) Check return value of regulator_enable() (2013-03-03 21:45:48 -0800)
-
-----------------------------------------------------------------
-Bug fixes for sht15 and ltc2978 driver plus some documentation updates
-
-----------------------------------------------------------------
-Guenter Roeck (4):
-      hwmon: Update my e-mail address in driver documentation
-      hwmon: (pmbus/ltc2978) Update datasheet links
-      hwmon: (pmbus/ltc2978) Fix peak attribute handling
-      hwmon: (pmbus/ltc2978) Use detected chip ID to select supported functionality
-
-Jean Delvare (1):
-      hwmon: (adt7410) Document ADT7420 support
-
-Mark Brown (1):
-      hwmon: (sht15) Check return value of regulator_enable()
-
- Documentation/hwmon/adm1275     |    2 +-
- Documentation/hwmon/adt7410     |   11 ++++++++++-
- Documentation/hwmon/jc42        |    2 +-
- Documentation/hwmon/lineage-pem |    2 +-
- Documentation/hwmon/lm25066     |    2 +-
- Documentation/hwmon/ltc2978     |    6 +++---
- Documentation/hwmon/ltc4261     |    2 +-
- Documentation/hwmon/max16064    |    2 +-
- Documentation/hwmon/max16065    |    2 +-
- Documentation/hwmon/max34440    |    2 +-
- Documentation/hwmon/max8688     |    2 +-
- Documentation/hwmon/pmbus       |    2 +-
- Documentation/hwmon/smm665      |    2 +-
- Documentation/hwmon/ucd9000     |    2 +-
- Documentation/hwmon/ucd9200     |    2 +-
- Documentation/hwmon/zl6100      |    2 +-
- drivers/hwmon/pmbus/ltc2978.c   |   30 ++++++++++++++++--------------
- drivers/hwmon/sht15.c           |    8 +++++++-
- 18 files changed, 50 insertions(+), 33 deletions(-)
-
---C7zPtVaVf+AK4Oqc
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRN+ReAAoJEMsfJm/On5mBmK4P/0TZIXWK16kNKM6tMN/3ON8N
-mgFLV92jI8lTwXDKflNZvvX3zisdFFkLG/lod5CwSs7LyCn1y1OSBm1dYQl0GQ/P
-Tot9XgQCmet+1H2GHNPrHaZ4kSE03DqNygIyZTyQ9V2iAjPLnC+Nm/sFI1el/xhE
-ouLr8X7d+xN5DL3G7PTQH8+EquE+NoCYt2HadZ4xNUEdSp3Zc/60HQavvTfv+ERh
-Q0kkWzw8PYTBUGIy3AMZICsTcuoq9XjWFr962zSRzYIy8pGRWmACbyeRO3Q3ksda
-W0CcWUQAggGmVhg/lRWRibma+D//AcKQFvS3ouwFzd8obtaVpe7Z7Il6RxOhyFKZ
-lya5gj63mmbQop7GxuoAz19oyPfaRgL8NfbWP2DpjYfQ/Iv0RroPNHg2LacmQX5Y
-OlOppf17ScpbAx/ghaceJt8mm92v4hcjEUtvRoQB9NHV4LucK1+9pfBGG3ouFxis
-UwOkYrjFLFw5qWfZlzBYsPI1idTrqb9ETEVlanpI2mes6itI7zsjqNJq5CYhv8vT
-QyOxsx3STm103rZc4AuP5MpMYI1ksr8aBtOJmPjNjxPtxh/jnJNZdMk1OZwwyilJ
-+7rx+gCXsfHthxJBRhb0Ki+3WdPb8VUE6D2RMHRENUh0SJ0QGs6h04hQQpR1H2ZO
-5m3e9MyRV5M9kp8+5bns
-=nYJJ
------END PGP SIGNATURE-----
-
---C7zPtVaVf+AK4Oqc--
+NAK.  You just don't understand.
