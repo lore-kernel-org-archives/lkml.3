@@ -1,190 +1,241 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755517Ab3CGNxs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 08:53:48 -0500
-Received: from www.linutronix.de ([62.245.132.108]:48997 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751736Ab3CGNxr (ORCPT
+	id S1755800Ab3CGN5O (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 08:57:14 -0500
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:44713 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753914Ab3CGN5M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 08:53:47 -0500
-Date: Thu, 7 Mar 2013 14:53:45 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: LKML <linux-kernel@vger.kernel.org>
-cc: Till Straumann <strauman@slac.stanford.edu>
-Subject: [PATCH] genirq: Sanitize spurious interrupt detection of threaded
- irqs
-Message-ID: <alpine.LFD.2.02.1303071450130.22263@ionos>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Thu, 7 Mar 2013 08:57:12 -0500
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: hirofumi@mail.parknet.co.jp, akpm@linux-foundation.org
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        abartlet@samba.org, Namjae Jeon <linkinjeon@gmail.com>,
+        Namjae Jeon <namjae.jeon@samsung.com>,
+        Ravishankar N <ravi.n1@samsung.com>
+Subject: [PATCH v3] fat: editions to support fat_fallocate
+Date: Thu,  7 Mar 2013 22:56:57 +0900
+Message-Id: <1362664617-3825-1-git-send-email-linkinjeon@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Till reported that he spurious interrupt detection of threaded
-interrupts is broken in two ways:
+From: Namjae Jeon <namjae.jeon@samsung.com>
 
-- note_interrupt() is called for each action thread of a shared
-  interrupt line. That's wrong as we are only interested whether none
-  of the device drivers felt responsible for the interrupt, but by
-  calling multiple times for a single interrupt line we account
-  IRQ_NONE even if one of the drivers felt responsible.
+Implement preallocation via the fallocate syscall on VFAT partitions.
 
-- note_interrupt() when called from the thread handler is not
-  serialized. That leaves the members of irq_desc which are used for
-  the spurious detection unprotected.
+Change Log:
+v3: Release preallocated blocks at file release.
 
-To solve this we need to defer the spurious detection of a threaded
-interrupt to the next hardware interrupt context where we have
-implicit serialization.
+With FALLOC_FL_KEEP_SIZE, there is no way to distinguish if the mismatch
+between i_size and no. of clusters allocated is a consequence of
+fallocate or just plain corruption. When a non fallocate aware (old)
+linux fat driver tries to write to such a file, it throws an error.
+Also, fsck detects this as inconsistency and truncates the prealloc'd blocks.
 
-If note_interrupt is called with action_ret == IRQ_WAKE_THREAD, we
-check whether the previous interrupt requested a deferred check. If
-not, we request a deferred check for the next hardware interrupt and
-return. 
+To avoid this, as suggested by OGAWA, remove changes that make fallocate
+persistent across mounts and restrict lifetime of blocks from
+fallocate(2) to file release.
 
-If set, we check whether one of the interrupt threads signaled
-success. Depending on this information we feed the result into the
-spurious detector.
+v2: On an area preallocated with FALLOC_FL_KEEP_SIZE, when a seek was
+done to an offset beyond i_size, the old (garbage) data was exposed as
+we did not zero out the area at allocation time. Added
+fat_zero_falloc_area() to fix this.
 
-If one primary handler of a shared interrupt returns IRQ_HANDLED we
-disable the deferred check of irq threads on the same line, as we have
-found at least one device driver who cared.
+v1: Reworked an earlier patch of the same name
+(https://lkml.org/lkml/2007/12/22/130) to fix some bugs:
+i)Preallocated space was not persistent and was lost on remount. Fixed
+it.
+ii)Did not zero out allocated clusters when FALLOC_FL_KEEP_SIZE was set,
+thereby speeding up preallocation time.
 
-Reported-by: Till Straumann <strauman@slac.stanford.edu>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
+Signed-off-by: Ravishankar N <ravi.n1@samsung.com>
 ---
- include/linux/irqdesc.h |    4 +++
- kernel/irq/internals.h  |    4 +++
- kernel/irq/manage.c     |    4 +--
- kernel/irq/spurious.c   |   57 ++++++++++++++++++++++++++++++++++++++++++++----
- 4 files changed, 63 insertions(+), 6 deletions(-)
+ fs/fat/file.c  |   81 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ fs/fat/inode.c |   47 ++++++++++++++++++++++++++++++++
+ 2 files changed, 128 insertions(+)
 
-Index: linux-2.6/include/linux/irqdesc.h
-===================================================================
---- linux-2.6.orig/include/linux/irqdesc.h
-+++ linux-2.6/include/linux/irqdesc.h
-@@ -27,6 +27,8 @@ struct irq_desc;
-  * @irq_count:		stats field to detect stalled irqs
-  * @last_unhandled:	aging timer for unhandled count
-  * @irqs_unhandled:	stats field for spurious unhandled interrupts
-+ * @threads_handled:	stats field for deferred spurious detection of threaded handlers
-+ * @threads_handled_last: comparator field for deferred spurious detection of theraded handlers
-  * @lock:		locking for SMP
-  * @affinity_hint:	hint to user space for preferred irq affinity
-  * @affinity_notify:	context for notification of affinity changes
-@@ -52,6 +54,8 @@ struct irq_desc {
- 	unsigned int		irq_count;	/* For detecting broken IRQs */
- 	unsigned long		last_unhandled;	/* Aging timer for unhandled count */
- 	unsigned int		irqs_unhandled;
-+	atomic_t		threads_handled;
-+	int			threads_handled_last;
- 	raw_spinlock_t		lock;
- 	struct cpumask		*percpu_enabled;
- #ifdef CONFIG_SMP
-Index: linux-2.6/kernel/irq/internals.h
-===================================================================
---- linux-2.6.orig/kernel/irq/internals.h
-+++ linux-2.6/kernel/irq/internals.h
-@@ -55,6 +55,10 @@ enum {
- 	IRQS_SUSPENDED		= 0x00000800,
+diff --git a/fs/fat/file.c b/fs/fat/file.c
+index b0b632e..76df547 100644
+--- a/fs/fat/file.c
++++ b/fs/fat/file.c
+@@ -17,8 +17,11 @@
+ #include <linux/blkdev.h>
+ #include <linux/fsnotify.h>
+ #include <linux/security.h>
++#include <linux/falloc.h>
+ #include "fat.h"
+ 
++static long fat_fallocate(struct file *file, int mode,
++				loff_t offset, loff_t len);
+ static int fat_ioctl_get_attributes(struct inode *inode, u32 __user *user_attr)
+ {
+ 	u32 attr;
+@@ -140,6 +143,12 @@ static long fat_generic_compat_ioctl(struct file *filp, unsigned int cmd,
+ 
+ static int fat_file_release(struct inode *inode, struct file *filp)
+ {
++	struct super_block *sb = inode->i_sb;
++	loff_t mmu_private_ideal = (inode->i_size + (sb->s_blocksize-1)) &
++				    ~(sb->s_blocksize-1);
++	if (mmu_private_ideal < MSDOS_I(inode)->mmu_private &&
++	    filp->f_dentry->d_count == 1)
++		fat_truncate_blocks(inode, inode->i_size);
+ 	if ((filp->f_mode & FMODE_WRITE) &&
+ 	     MSDOS_SB(inode->i_sb)->options.flush) {
+ 		fat_flush_inodes(inode->i_sb, inode, NULL);
+@@ -174,6 +183,7 @@ const struct file_operations fat_file_operations = {
+ #endif
+ 	.fsync		= fat_file_fsync,
+ 	.splice_read	= generic_file_splice_read,
++	.fallocate      = fat_fallocate,
  };
  
-+/* Bits for spurious detection of threaded handlers */
-+#define SPURIOUS_MASK		0x7fffffff
-+#define SPURIOUS_DEFERRED	0x80000000
+ static int fat_cont_expand(struct inode *inode, loff_t size)
+@@ -211,7 +221,78 @@ static int fat_cont_expand(struct inode *inode, loff_t size)
+ out:
+ 	return err;
+ }
++/*
++ * preallocate space for a file. This implements fat's fallocate file
++ * operation, which gets called from sys_fallocate system call. User
++ * space requests len bytes at offset.If FALLOC_FL_KEEP_SIZE is set
++ * we just allocate clusters without zeroing them out.Otherwise we
++ * allocate and zero out clusters via an expanding truncate.
++ */
++static long fat_fallocate(struct file *file, int mode,
++				loff_t offset, loff_t len)
++{
++	int err = 0;
++	struct inode *inode = file->f_mapping->host;
++	int cluster, nr_cluster, fclus, dclus, free_bytes, nr_bytes;
++	struct super_block *sb = inode->i_sb;
++	struct msdos_sb_info *sbi = MSDOS_SB(sb);
 +
- #include "debug.h"
- #include "settings.h"
- 
-Index: linux-2.6/kernel/irq/manage.c
-===================================================================
---- linux-2.6.orig/kernel/irq/manage.c
-+++ linux-2.6/kernel/irq/manage.c
-@@ -867,8 +867,8 @@ static int irq_thread(void *data)
- 		irq_thread_check_affinity(desc, action);
- 
- 		action_ret = handler_fn(desc, action);
--		if (!noirqdebug)
--			note_interrupt(action->irq, desc, action_ret);
-+		if (!noirqdebug && action_ret == IRQ_HANDLED)
-+			atomic_inc(&desc->threads_handled);
- 
- 		wake_threads_waitq(desc);
- 	}
-Index: linux-2.6/kernel/irq/spurious.c
-===================================================================
---- linux-2.6.orig/kernel/irq/spurious.c
-+++ linux-2.6/kernel/irq/spurious.c
-@@ -271,15 +271,64 @@ void note_interrupt(unsigned int irq, st
- 	if (desc->istate & IRQS_POLL_INPROGRESS)
- 		return;
- 
--	/* we get here again via the threaded handler */
--	if (action_ret == IRQ_WAKE_THREAD)
--		return;
--
- 	if (bad_action_ret(action_ret)) {
- 		report_bad_irq(irq, desc, action_ret);
- 		return;
- 	}
- 
-+	/*
-+	 * We cannot call note_interrupt from the threaded handler. So
-+	 * the threaded handlers store whether they sucessfully
-+	 * handled an interrupt. Here is the right place to take care
-+	 * of this.
-+	 */
-+	if (action_ret & IRQ_WAKE_THREAD) {
-+		/*
-+		 * There is a thread woken. Check whether one of the
-+		 * shared primary handlers returned IRQ_HANDLED. If
-+		 * not we defer the spurious detection to the next
-+		 * interrupt.
-+		 */
-+		if (action_ret == IRQ_WAKE_THREAD) {
-+			int handled;
++	/* No support for hole punch or other fallocate flags. */
++	if (mode & ~FALLOC_FL_KEEP_SIZE)
++		return -EOPNOTSUPP;
 +
-+			/*
-+			 * We use bit 31 of thread_handled_last to
-+			 * note the deferred spurious detection
-+			 * active. No locking necessary as
-+			 * thread_handled_last is only accessed here
-+			 * and we have the guarantee that hard
-+			 * interrupts are not reentrant.
-+			 */
-+			if (!(desc->threads_handled_last & SPURIOUS_DEFERRED)) {
-+				desc->threads_handled_last |= SPURIOUS_DEFERRED;
-+				return;
++	if ((offset + len) <= MSDOS_I(inode)->mmu_private) {
++		fat_msg(sb, KERN_ERR,
++			"fat_fallocate():Blocks already allocated");
++		return -EINVAL;
++	}
+ 
++	if ((mode & FALLOC_FL_KEEP_SIZE)) {
++		/* First compute the number of clusters to be allocated */
++		if (inode->i_size > 0) {
++			err = fat_get_cluster(inode, FAT_ENT_EOF,
++					      &fclus, &dclus);
++			if (err < 0) {
++				fat_msg(sb, KERN_ERR,
++					"fat_fallocate():fat_get_cluster() error");
++				return err;
 +			}
-+			/*
-+			 * Check whether one of the threaded handlers
-+			 * returned IRQ_HANDLED since the last
-+			 * interrupt happened. Or the spurious
-+			 * deferred flag for ease of comparison and
-+			 * preservation in the writeback.
-+			 */
-+			handled = atomic_read(&desc->threads_handled);
-+			handled |= SPURIOUS_DEFERRED;
-+			if (handled != desc->threads_handled_last) {
-+				action_ret = IRQ_HANDLED;
-+				desc->threads_handled_last = handled;
-+			} else {
-+				action_ret = IRQ_NONE;
++			free_bytes = ((fclus+1) << sbi->cluster_bits)-
++				     (inode->i_size);
++			nr_bytes = (offset + len - inode->i_size) - free_bytes;
++		} else
++			nr_bytes = (offset + len - inode->i_size);
++		nr_cluster = (nr_bytes + (sbi->cluster_size - 1)) >>
++			     sbi->cluster_bits;
++		mutex_lock(&inode->i_mutex);
++		/* Start the allocation.We are not zeroing out the clusters */
++		while (nr_cluster-- > 0) {
++			err = fat_alloc_clusters(inode, &cluster, 1);
++			if (err) {
++				fat_msg(sb, KERN_ERR,
++					"fat_fallocate():fat_alloc_clusters() error");
++				goto error;
 +			}
-+		} else {
-+			/*
-+			 * One of the primary handlers returned
-+			 * IRQ_HANDLED. So we don't care about the
-+			 * threaded handlers on the same line.
-+			 */
-+			desc->threads_handled_last &= ~SPURIOUS_DEFERRED;
++			err = fat_chain_add(inode, cluster, 1);
++			if (err) {
++				fat_free_clusters(inode, cluster);
++				goto error;
++			}
++			MSDOS_I(inode)->mmu_private += sbi->cluster_size;
++		}
++	} else {
++		mutex_lock(&inode->i_mutex);
++		/* This is just an expanding truncate */
++		err = fat_cont_expand(inode, (offset + len));
++		if (err) {
++			fat_msg(sb, KERN_ERR,
++				"fat_fallocate():fat_cont_expand() error");
 +		}
 +	}
++error:
++	mutex_unlock(&inode->i_mutex);
++	return err;
++}
+ /* Free all clusters after the skip'th cluster. */
+ static int fat_free(struct inode *inode, int skip)
+ {
+diff --git a/fs/fat/inode.c b/fs/fat/inode.c
+index dfce656..ddf2969 100644
+--- a/fs/fat/inode.c
++++ b/fs/fat/inode.c
+@@ -152,11 +152,58 @@ static void fat_write_failed(struct address_space *mapping, loff_t to)
+ 	}
+ }
+ 
++static int fat_zero_falloc_area(struct file *file,
++				struct address_space *mapping, loff_t pos)
++{
++	struct page *page;
++	struct inode *inode = mapping->host;
++	loff_t curpos = inode->i_size;
++	size_t count = pos-curpos;
++	int err;
++	do {
++		unsigned offset, bytes;
++		void *fsdata;
 +
- 	if (unlikely(action_ret == IRQ_NONE)) {
- 		/*
- 		 * If we are seeing only the odd spurious IRQ caused by
++		offset = (curpos & (PAGE_CACHE_SIZE - 1));
++		bytes = PAGE_CACHE_SIZE - offset;
++		if (bytes > count)
++			bytes = count;
++
++		err = pagecache_write_begin(NULL, mapping, curpos, bytes,
++					AOP_FLAG_UNINTERRUPTIBLE,
++					&page, &fsdata);
++		if (err)
++			break;
++
++		zero_user(page, offset, bytes);
++
++		err = pagecache_write_end(NULL, mapping, curpos, bytes, bytes,
++					page, fsdata);
++		WARN_ON(err <= 0);
++		curpos += bytes;
++		count -= bytes;
++		err = 0;
++	} while (count);
++
++	return -err;
++}
++
+ static int fat_write_begin(struct file *file, struct address_space *mapping,
+ 			loff_t pos, unsigned len, unsigned flags,
+ 			struct page **pagep, void **fsdata)
+ {
+ 	int err;
++	struct inode *inode = mapping->host;
++	struct super_block *sb = inode->i_sb;
++	loff_t mmu_private_actual = MSDOS_I(inode)->mmu_private;
++	loff_t mmu_private_ideal = (inode->i_size + (sb->s_blocksize-1)) &
++					 ~(sb->s_blocksize-1);
++
++	if ((mmu_private_actual > mmu_private_ideal) && (pos > inode->i_size)) {
++		err = fat_zero_falloc_area(file, mapping, pos);
++		if (err)
++			fat_msg(sb, KERN_ERR, "error zeroing fallocated area");
++	}
+ 
+ 	*pagep = NULL;
+ 	err = cont_write_begin(file, mapping, pos, len, flags,
+-- 
+1.7.9.5
+
