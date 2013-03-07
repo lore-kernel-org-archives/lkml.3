@@ -1,41 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759917Ab3CGWJA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 17:09:00 -0500
-Received: from mail-ye0-f169.google.com ([209.85.213.169]:54008 "EHLO
-	mail-ye0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758733Ab3CGWI6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 17:08:58 -0500
-From: Steve Conklin <sconklin@canonical.com>
-To: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] usb: serial: Add Rigblaster Advantage to device table
-Date: Thu,  7 Mar 2013 16:01:19 -0600
-Message-Id: <1362693679-30458-1-git-send-email-sconklin@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1759889Ab3CGWOC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 17:14:02 -0500
+Received: from mga03.intel.com ([143.182.124.21]:44661 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759041Ab3CGWOA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Mar 2013 17:14:00 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,804,1355126400"; 
+   d="scan'208";a="266335264"
+Message-ID: <51391114.9040608@linux.intel.com>
+Date: Thu, 07 Mar 2013 14:13:40 -0800
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130219 Thunderbird/17.0.3
+MIME-Version: 1.0
+To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+CC: dave@sr71.net, linux-kernel@vger.kernel.org, bp@alien8.de, x86@kernel.org,
+        akpm@linux-foundation.org, suresh.b.siddha@intel.com,
+        khlebnikov@openvz.org, bhelgaas@google.com
+Subject: Re: [PATCH] do not try to sync identity map for non-mapped pages
+References: <20130307163151.D9B58C4E@kernel.stglabs.ibm.com> <201303080705.CFJ06290.FHMFVtOSJFLOQO@I-love.SAKURA.ne.jp>
+In-Reply-To: <201303080705.CFJ06290.FHMFVtOSJFLOQO@I-love.SAKURA.ne.jp>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Rigblaster Advantage is an amateur radio interface sold by West Mountain Radio. It contains a cp210x serial interface but the device ID is not in the driver.
+On 03/07/2013 02:05 PM, Tetsuo Handa wrote:
+> 
+> Excuse me, but I didn't realize that the link is wrong.
+> 
+> https://lkml.org/lkml/2013/2/5/396 is a bug in CONFIG_MICROCODE_INTEL_EARLY=y
+> && CONFIG_64BIT=n && CONFIG_DEBUG_VIRTUAL=y where patches are not available.
+> 
+> https://lkml.org/lkml/2013/3/5/314 is a bug in CONFIG_ACPI=y &&
+> CONFIG_DEBUG_VIRTUAL=y where your patch fixes.
+> 
+> Please use https://lkml.org/lkml/2013/3/5/314 rather than
+> https://lkml.org/lkml/2013/2/5/396 in your patch.
+> 
 
-Signed-off-by: Steve Conklin <sconklin@canonical.com>
----
- drivers/usb/serial/cp210x.c |    1 +
- 1 file changed, 1 insertion(+)
+*Grump* I of course already committed it and other things on top.
 
-diff --git a/drivers/usb/serial/cp210x.c b/drivers/usb/serial/cp210x.c
-index edc0f0d..78721ba 100644
---- a/drivers/usb/serial/cp210x.c
-+++ b/drivers/usb/serial/cp210x.c
-@@ -85,6 +85,7 @@ static const struct usb_device_id id_table[] = {
- 	{ USB_DEVICE(0x10C4, 0x813F) }, /* Tams Master Easy Control */
- 	{ USB_DEVICE(0x10C4, 0x814A) }, /* West Mountain Radio RIGblaster P&P */
- 	{ USB_DEVICE(0x10C4, 0x814B) }, /* West Mountain Radio RIGtalk */
-+	{ USB_DEVICE(0x2405, 0x0003) }, /* West Mountain Radio RIGblaster Advantage */
- 	{ USB_DEVICE(0x10C4, 0x8156) }, /* B&G H3000 link cable */
- 	{ USB_DEVICE(0x10C4, 0x815E) }, /* Helicomm IP-Link 1220-DVM */
- 	{ USB_DEVICE(0x10C4, 0x815F) }, /* Timewave HamLinkUSB */
--- 
-1.7.9.5
+We shouldn't really use lkml.org links anyway since if that site
+disappears those numbers are meaningless; rather, using Message-IDs
+(e.g. as embedded in lkml.kernel.org links) is better...
+
+	-hpa
+
 
