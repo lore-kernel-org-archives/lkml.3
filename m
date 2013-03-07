@@ -1,92 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933424Ab3CGWBD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 17:01:03 -0500
-Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:61917 "EHLO
-	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932833Ab3CGWBB (ORCPT
+	id S933533Ab3CGWBR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 17:01:17 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:60562 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759748Ab3CGWBO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 17:01:01 -0500
-Message-ID: <51390E92.2080806@metafoo.de>
-Date: Thu, 07 Mar 2013 23:02:58 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Icedove/3.0.11
+	Thu, 7 Mar 2013 17:01:14 -0500
+Date: Thu, 7 Mar 2013 13:59:37 -0800
+From: tip-bot for Dave Hansen <tipbot@zytor.com>
+Message-ID: <tip-60f583d56aa515b896a9d94f860f52640c1e8a75@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        dave@linux.vnet.ibm.com, tglx@linutronix.de, dave@sr71.net,
+        penguin-kernel@i-love.sakura.ne.jp
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        dave@linux.vnet.ibm.com, tglx@linutronix.de, dave@sr71.net,
+        penguin-kernel@i-love.sakura.ne.jp
+In-Reply-To: <20130307163151.D9B58C4E@kernel.stglabs.ibm.com>
+References: <20130307163151.D9B58C4E@kernel.stglabs.ibm.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86:
+  Do not try to sync identity map for non-mapped pages
+Git-Commit-ID: 60f583d56aa515b896a9d94f860f52640c1e8a75
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: =?UTF-8?B?U8O2cmVuIEJyaW5rbWFubg==?= <soren.brinkmann@xilinx.com>
-CC: =?UTF-8?B?SmFuIEzDvGJiZQ==?= <jlu@pengutronix.de>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Mike Turquette <mturquette@linaro.org>,
-        Josh Cartwright <josh.cartwright@ni.com>,
-        Michal Simek <michal.simek@xilinx.com>,
-        Peter Crosthwaite <pcrost@xilinx.com>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, git@xilinx.com
-Subject: Re: RFC: Zynq Clock Controller
-References: <37032699-343e-485c-80e0-9b23e3706c58@VA3EHSMHS013.ehs.local> <1362570681.5269.98.camel@coredoba.hi.pengutronix.de> <f288874c-d0ae-4581-8d0f-2b9abe4d3117@CO9EHSMHS002.ehs.local> <51385FA3.8080105@metafoo.de> <2a91857c-473f-4f92-b2b1-e7ac4679b72a@AM1EHSMHS007.ehs.local>
-In-Reply-To: <2a91857c-473f-4f92-b2b1-e7ac4679b72a@AM1EHSMHS007.ehs.local>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 07 Mar 2013 13:59:44 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/07/2013 08:11 PM, Sören Brinkmann wrote:
-> On Thu, Mar 07, 2013 at 10:36:35AM +0100, Lars-Peter Clausen wrote:
->> On 03/06/2013 06:27 PM, Sören Brinkmann wrote:
->>> Hi Jan,
->>>  
->>> what a small world. Good to hear from you.
->>>
->>> On Wed, Mar 06, 2013 at 12:51:21PM +0100, Jan Lübbe wrote:
->>>> Hi Sören,
->>>>
->>>> On Tue, 2013-03-05 at 12:04 -0800, Sören Brinkmann wrote:
->>>>> For this reasons, I'd like to propose moving Zynq into the same
->>>>> direction. I.e. adding a clock controller with the following DT
->>>>> description (details may change but the general idea should become
->>>>> clear):
->>>>> 	clkc: clkc {
->>>>>                 #clock-cells = <1>;
->>>>>                 compatible = "xlnx,ps7-clkc";
->>>>>                 ps_clk_frequency = <33333333>;	# board x-tal
->>>>>                 # optional props
->>>>>                 gem0_emio_clk_freq = <125000000>;
->>>>>                 gem1_emio_clk_freq = <50000000>;
->>>>>                 can_mio_clk_freq_xx = <1234>; # this is possible 54 times with xx = 00..53
->>>>>         };
->>
->> I definitely prefer the way it is right now in upstream, where we have one
->> dt node per clock. It is more descriptive and also more extensible. And you
->> also don't have to remember the clock index, and can use the phandle
->> directly instead.
-> The problems I see with that are:
->  - with the clock controller we can model the clock tree as we need without changing the DT all the time
+Commit-ID:  60f583d56aa515b896a9d94f860f52640c1e8a75
+Gitweb:     http://git.kernel.org/tip/60f583d56aa515b896a9d94f860f52640c1e8a75
+Author:     Dave Hansen <dave@sr71.net>
+AuthorDate: Thu, 7 Mar 2013 08:31:51 -0800
+Committer:  H. Peter Anvin <hpa@zytor.com>
+CommitDate: Thu, 7 Mar 2013 13:23:28 -0800
 
-When do we need to change the clock tree? The clock tree is pretty much fixed
-in hardware. And the DT describes the hardware, so I don't so a problem there.
+x86: Do not try to sync identity map for non-mapped pages
 
->  - w/o a clock controller there is no block which has knowledge of the whole clock tree (unless we parse the DT), and could conduct reparent operations and similar
+kernel_map_sync_memtype() is called from a variety of contexts.  The
+pat.c code that calls it seems to ensure that it is not called for
+non-ram areas by checking via pat_pagerange_is_ram().  It is important
+that it only be called on the actual identity map because there *IS*
+no map to sync for highmem pages, or for memory holes.
 
-The clk framework builds a representation of the clock tree. Each clock should
-be able to handle re-parenting on it's own, without knowing about the other
-clocks in the tree, the parent is selected by a field in the clocks register.
-It doesn't even have to know who the parents are, the clk framework will take
-care of all of this and just say, ok, switch your input clock to X, where X is
-a simple integer number The clk framework will also take care of re-calculating
-all the updates frequencies after re-parenting.
+The ioremap.c uses are not as careful as those from pat.c, and call
+kernel_map_sync_memtype() on PCI space which is in the middle of the
+kernel identity map _range_, but is not actually mapped.
 
->  - once the clock controller is properly defined the clock connection should be contained in a dtsi which never changes. So, regarding remembering outputs, I don't see a problem. I rather see issues with having a pile of clocks described in the DT. I have currently 44 outputs proposed, and to model the whole tree a lot of more clocks are used (I started modeling everything with the clock primitives and removed custom clock implementations, except for the PLLs). Having all those in the DT does not really help, IMHO.
+This patch adds a check to kernel_map_sync_memtype() which probably
+duplicates some of the checks already in pat.c.  But, it is necessary
+for the ioremap.c uses and shouldn't hurt other callers.
 
-Well, except if you want to use external clocks for ethernet or CAN. Also you
-don't need to change the dtsi either if you have a separate node for each clock.
+I have reproduced this bug and this patch fixes it for me and the
+original bug reporter:
 
-To avoid misunderstandings let me clarify that I don't want to have one node
-per clock, but rather one node per clock block (or whatever they are called).
-The combination of input select + divider + output gate. E.g. the UART clock
-block with it's 3 inputs and two outputs.
+	https://lkml.org/lkml/2013/2/5/396
 
-Also the APER clocks should probably be one node with 24 outputs.
+Signed-off-by: Dave Hansen <dave@linux.vnet.ibm.com>
+Link: http://lkml.kernel.org/r/20130307163151.D9B58C4E@kernel.stglabs.ibm.com
+Signed-off-by: Dave Hansen <dave@sr71.net>
+Tested-by: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+---
+ arch/x86/mm/pat.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
 
-- Lars
+diff --git a/arch/x86/mm/pat.c b/arch/x86/mm/pat.c
+index 2610bd9..6574388 100644
+--- a/arch/x86/mm/pat.c
++++ b/arch/x86/mm/pat.c
+@@ -563,6 +563,13 @@ int kernel_map_sync_memtype(u64 base, unsigned long size, unsigned long flags)
+ 	if (base > __pa(high_memory-1))
+ 		return 0;
+ 
++	/*
++	 * some areas in the middle of the kernel identity range
++	 * are not mapped, like the PCI space.
++	 */
++	if (!page_is_ram(base >> PAGE_SHIFT))
++		return 0;
++
+ 	id_sz = (__pa(high_memory-1) <= base + size) ?
+ 				__pa(high_memory) - base :
+ 				size;
