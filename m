@@ -1,37 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759010Ab3CGDcG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 22:32:06 -0500
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:58255 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758924Ab3CGDcC (ORCPT
+	id S1758903Ab3CGDdS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 22:33:18 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.242]:53391 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754389Ab3CGDdR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 22:32:02 -0500
+	Wed, 6 Mar 2013 22:33:17 -0500
+From: Wenyou Yang <wenyou.yang@atmel.com>
+To: <linux-arm-kernel@lists.infradead.org>
+CC: <grant.likely@secretlab.ca>, <nicolas.ferre@atmel.com>,
+        <plagnioj@jcrosoft.com>, <richard.genoud@gmail.com>,
+        <JM.Lin@atmel.com>, <wenyou.yang@atmel.com>,
+        <spi-devel-general@lists.sourceforge.net>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH v6 06/16] spi/spi-atmel: status information passed through controller data
+Date: Thu, 7 Mar 2013 11:29:55 +0800
+Message-ID: <1362626995-6814-1-git-send-email-wenyou.yang@atmel.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1362626715-6549-1-git-send-email-wenyou.yang@atmel.com>
+References: <1362626715-6549-1-git-send-email-wenyou.yang@atmel.com>
 MIME-Version: 1.0
-In-Reply-To: <013e01ce18ae$2fd509b0$8f7f1d10$%han@samsung.com>
-References: <013a01ce18ad$e45caa10$ad15fe30$%han@samsung.com>
-	<013e01ce18ae$2fd509b0$8f7f1d10$%han@samsung.com>
-Date: Thu, 7 Mar 2013 04:32:01 +0100
-Message-ID: <CACRpkdYRLNKUQJgguJ=vLBHFMncUrkeitOfQS8bSiZow_o+mUQ@mail.gmail.com>
-Subject: Re: [rtc-linux] [PATCH 05/24] rtc: rtc-coh901331: use module_platform_driver_probe()
-From: Linus Walleij <linus.walleij@linaro.org>
-To: rtc-linux@googlegroups.com
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Jingoo Han <jg1.han@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 4, 2013 at 8:59 AM, Jingoo Han <jg1.han@samsung.com> wrote:
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
 
-> This patch uses module_platform_driver_probe() macro which makes
-> the code smaller and simpler.
->
-> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+The status of transfer is stored in controller data structure
+so that it can be used not only by atmel_spi_msg_done() function.
+This will be useful for upcoming dmaengine enabled driver.
 
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: spi-devel-general@lists.sourceforge.net
+Cc: linux-kernel@vger.kernel.org
+[wenyou.yang@atmel.com: submit the patch]
+Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
+---
+ drivers/spi/spi-atmel.c |   13 ++++++++-----
+ 1 file changed, 8 insertions(+), 5 deletions(-)
 
-Yours,
-Linus Walleij
+diff --git a/drivers/spi/spi-atmel.c b/drivers/spi/spi-atmel.c
+index 2f61a80..5c91408 100644
+--- a/drivers/spi/spi-atmel.c
++++ b/drivers/spi/spi-atmel.c
+@@ -209,6 +209,7 @@ struct atmel_spi {
+ 	unsigned long		current_remaining_bytes;
+ 	struct spi_transfer	*next_transfer;
+ 	unsigned long		next_remaining_bytes;
++	int			done_status;
+ 
+ 	void			*buffer;
+ 	dma_addr_t		buffer_dma;
+@@ -554,15 +555,15 @@ static void atmel_spi_dma_unmap_xfer(struct spi_master *master,
+ 
+ static void
+ atmel_spi_msg_done(struct spi_master *master, struct atmel_spi *as,
+-		struct spi_message *msg, int status, int stay)
++		struct spi_message *msg, int stay)
+ {
+-	if (!stay || status < 0)
++	if (!stay || as->done_status < 0)
+ 		cs_deactivate(as, msg->spi);
+ 	else
+ 		as->stay = msg->spi;
+ 
+ 	list_del(&msg->queue);
+-	msg->status = status;
++	msg->status = as->done_status;
+ 
+ 	dev_dbg(master->dev.parent,
+ 		"xfer complete: %u bytes transferred\n",
+@@ -574,6 +575,7 @@ atmel_spi_msg_done(struct spi_master *master, struct atmel_spi *as,
+ 
+ 	as->current_transfer = NULL;
+ 	as->next_transfer = NULL;
++	as->done_status = 0;
+ 
+ 	/* continue if needed */
+ 	if (list_empty(&as->queue) || as->stopping)
+@@ -651,7 +653,8 @@ atmel_spi_interrupt(int irq, void *dev_id)
+ 		/* Clear any overrun happening while cleaning up */
+ 		spi_readl(as, SR);
+ 
+-		atmel_spi_msg_done(master, as, msg, -EIO, 0);
++		as->done_status = -EIO;
++		atmel_spi_msg_done(master, as, msg, 0);
+ 	} else if (pending & (SPI_BIT(RXBUFF) | SPI_BIT(ENDRX))) {
+ 		ret = IRQ_HANDLED;
+ 
+@@ -669,7 +672,7 @@ atmel_spi_interrupt(int irq, void *dev_id)
+ 
+ 			if (atmel_spi_xfer_is_last(msg, xfer)) {
+ 				/* report completed message */
+-				atmel_spi_msg_done(master, as, msg, 0,
++				atmel_spi_msg_done(master, as, msg,
+ 						xfer->cs_change);
+ 			} else {
+ 				if (xfer->cs_change) {
+-- 
+1.7.9.5
+
