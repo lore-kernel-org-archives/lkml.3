@@ -1,52 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932263Ab3CGPdV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 10:33:21 -0500
-Received: from smtp-outbound-2.vmware.com ([208.91.2.13]:33883 "EHLO
-	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752366Ab3CGPdU (ORCPT
+	id S1759223Ab3CGPhx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 10:37:53 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:57165 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752729Ab3CGPhw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 10:33:20 -0500
-From: Andy King <acking@vmware.com>
-To: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org
-Cc: gregkh@linuxfoundation.org, pv-drivers@vmware.com,
-        Andy King <acking@vmware.com>
-Subject: [PATCH] VMCI: Fix process-to-process DRGAMs.
-Date: Thu,  7 Mar 2013 07:29:08 -0800
-Message-Id: <1362670148-27238-1-git-send-email-acking@vmware.com>
-X-Mailer: git-send-email 1.7.4.1
+	Thu, 7 Mar 2013 10:37:52 -0500
+Date: Thu, 7 Mar 2013 15:37:36 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Sylwester Nawrocki <s.nawrocki@samsung.com>
+Cc: Amit Daniel Kachhap <amit.daniel@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>, linux-pm@vger.kernel.org,
+        Viresh Kumar <viresh.kumar@linaro.org>, linux-kernel@vger.kernel.org,
+        cpufreq@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        linux-samsung-soc@vger.kernel.org,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Inderpal Singh <inderpal.singh@linaro.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH V3 1/4] cpufreq: exynos: Adding cpufreq driver for
+	exynos5440
+Message-ID: <20130307153736.GC4977@n2100.arm.linux.org.uk>
+References: <1362629627-10012-1-git-send-email-amit.daniel@samsung.com> <5138B200.7060906@samsung.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5138B200.7060906@samsung.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When sending between processes, we always schedule a work item.  Our work info
-struct has the message embedded in the middle, which means that we end up
-overwriting subsequent fields when we copy the (variable-length) message into
-it.  Move it to the end of the struct.
+On Thu, Mar 07, 2013 at 04:28:00PM +0100, Sylwester Nawrocki wrote:
+> On 03/07/2013 05:13 AM, Amit Daniel Kachhap wrote:
+> > +	dvfs_info->cpu_clk = devm_clk_get(dvfs_info->dev, "armclk");
+> > +	if (IS_ERR_OR_NULL(dvfs_info->cpu_clk)) {
+> 
+> devm_clk_get() return value needs to be checked with IS_ERR(),
+> not IS_ERR_OR_NULL().
+> 
+> > +		pr_err("Failed to get cpu clock\n");
+> > +		ret = PTR_ERR(dvfs_info->cpu_clk);
+> > +		goto err_free_table;
 
-Acked-by: Dmitry Torokhov <dtor@vmware.com>
-Signed-off-by: Andy King <acking@vmware.com>
----
- drivers/misc/vmw_vmci/vmci_datagram.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/misc/vmw_vmci/vmci_datagram.c b/drivers/misc/vmw_vmci/vmci_datagram.c
-index ed5c433..f3cdd90 100644
---- a/drivers/misc/vmw_vmci/vmci_datagram.c
-+++ b/drivers/misc/vmw_vmci/vmci_datagram.c
-@@ -42,9 +42,11 @@ struct datagram_entry {
- 
- struct delayed_datagram_info {
- 	struct datagram_entry *entry;
--	struct vmci_datagram msg;
- 	struct work_struct work;
- 	bool in_dg_host_queue;
-+	/* msg and msg_payload must be together. */
-+	struct vmci_datagram msg;
-+	u8 msg_payload[];
- };
- 
- /* Number of in-flight host->host datagrams */
--- 
-1.7.4.1
-
+Amit, to illustrate why this is wrong, consider this:
+1. Set cpu_clk to NULL.
+2. Realise IS_ERR_OR_NULL(NULL) is true.
+3. What is the value of PTR_ERR(NULL) ?
+4. What effect does that have when you jump to err_free_table ?
+5. What value is returned from this function in that case ?
+6. What does that return value mean to the driver core ?
