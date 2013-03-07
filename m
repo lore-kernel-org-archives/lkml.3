@@ -1,38 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932863Ab3CGOie (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 09:38:34 -0500
-Received: from mail-ob0-f169.google.com ([209.85.214.169]:55062 "EHLO
-	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754294Ab3CGOid (ORCPT
+	id S1758804Ab3CGOj1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 09:39:27 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:45853 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754294Ab3CGOj0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 09:38:33 -0500
+	Thu, 7 Mar 2013 09:39:26 -0500
+Date: Thu, 7 Mar 2013 15:39:24 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Cc: kernel list <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, linux@arm.linux.org.uk,
+        arnd@arndb.de, olof@lixom.net, linux-arm-kernel@lists.infradead.org,
+        grant.likely@secretlab.ca, rob.herring@calxeda.com,
+        torvalds@linux-foundation.org
+Subject: Re: 3.9-rc1 regression in arm dtb build
+Message-ID: <20130307143924.GA7344@amd.pavel.ucw.cz>
+References: <20130306193332.GA6022@amd.pavel.ucw.cz>
+ <20130306204557.3ff80000@skate>
 MIME-Version: 1.0
-In-Reply-To: <1362583679.2707.21.camel@menhir>
-References: <1362576597-18501-1-git-send-email-akinobu.mita@gmail.com>
-	<1362583679.2707.21.camel@menhir>
-Date: Thu, 7 Mar 2013 23:38:33 +0900
-Message-ID: <CAC5umyjw3xzdExvf3TA6i3iH=ortPeJivetUpEyCP5Mzmn6wEg@mail.gmail.com>
-Subject: Re: [PATCH -v2] gfs2: fix bitmap declaration
-From: Akinobu Mita <akinobu.mita@gmail.com>
-To: Steven Whitehouse <swhiteho@redhat.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, cluster-devel@redhat.com,
-        Christine Caulfield <ccaulfie@redhat.com>,
-        David Teigland <teigland@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130306204557.3ff80000@skate>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/3/7 Steven Whitehouse <swhiteho@redhat.com>:
-> Hi,
->
-> This doesn't apply over the patch which Dave just sent. Can you redo
-> this against the current GFS2 -nmw tree if it is still required? Thanks,
+On Wed 2013-03-06 20:45:57, Thomas Petazzoni wrote:
+> Dear Pavel Machek,
+> 
+> On Wed, 6 Mar 2013 20:33:32 +0100, Pavel Machek wrote:
+> 
+> > Moves dtb files from arch/arm/boot/ to arch/arm/boot/dtb. That causes
+> > several problems:
+> > 
+> > 1) it is inconsistent with 3.8, making switching between 3.9-rc1 and
+> > 3.8 tricky
+> 
+> The commit you're pointing to was part of 3.8, and so the dtb move to
+> arch/arm/boot/dts/ is already here since quite a bit of time. At least,
+> it's not something you introduced in 3.9-rc1.
 
-I checked Dave's patch.  It fixes the same issue that I was trying to fix.
-So this -v2 patch is not needed anymore.
-
-But the cleanup patch in v1 ([PATCH 2/2] gfs2: use memchr_inv) is still
-applicable. So I'll resend it soon.
+Aha, so I guess it changed between 3.7 and 3.8... Anyway, perhaps it
+is best to revert it now and treat it as a bug than having everyone
+learn that 3.7- has it one way and 3.8+ different?
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
