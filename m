@@ -1,39 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758341Ab3CGQoU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 11:44:20 -0500
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:53937 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750751Ab3CGQoT (ORCPT
+	id S932358Ab3CGQpX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 11:45:23 -0500
+Received: from mx2.netapp.com ([216.240.18.37]:6471 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755155Ab3CGQpV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 11:44:19 -0500
+	Thu, 7 Mar 2013 11:45:21 -0500
+X-IronPort-AV: E=Sophos;i="4.84,803,1355126400"; 
+   d="scan'208";a="13755847"
+From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Jeff Layton <jlayton@redhat.com>, Tejun Heo <tj@kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Mandeep Singh Baines <msb@chromium.org>,
+        Ming Lei <ming.lei@canonical.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: LOCKDEP: 3.9-rc1: mount.nfs/4272 still has locks held!
+Thread-Topic: LOCKDEP: 3.9-rc1: mount.nfs/4272 still has locks held!
+Thread-Index: AQHOGOA9OOKbapJ+RE+tLJb3WRyEW5iWGYKAgAACcQCAAFy3AIAAED2AgAAVFoCAAP+FAIAASasAgAAA3gCAABR7AIAAAbqAgABLhYCAAAIMAIABNeMAgAAKUgCAACN5AIAABvAAgAABwwCAAAGFAIAA7BsAgABG94CAAAERAIAABy4AgAAFngA=
+Date: Thu, 7 Mar 2013 16:45:17 +0000
+Message-ID: <4FA345DA4F4AE44899BD2B03EEEC2FA9286B52F1@sacexcmbx05-prd.hq.netapp.com>
+References: <20130305174954.GG12795@htj.dyndns.org>
+	 <20130305140312.243cb094@tlielax.poochiereds.net>
+	 <20130305190923.GI12795@htj.dyndns.org>
+	 <20130305183941.19ff39ce@tlielax.poochiereds.net>
+	 <20130305234700.GE1227@htj.dyndns.org> <20130306181608.GA18687@redhat.com>
+	 <20130306185304.GM1227@htj.dyndns.org>
+	 <CA+55aFwDogteVd=vwGHXDSASnga-nZZnKaQz9aO1yBU2CPKSbA@mail.gmail.com>
+	 <20130306212452.GO1227@htj.dyndns.org>
+	 <CA+55aFy49AWptMcvEzJxg95ikf-dC+-vcCPq-cnaCCwje3tyoQ@mail.gmail.com>
+	 <20130306213636.GP1227@htj.dyndns.org>
+	 <20130307064140.71c0936b@tlielax.poochiereds.net>
+	 <CA+55aFxe1_x8wvVYciiX8tuee+VsmXGKqEbONQdFM4s4W2iuPg@mail.gmail.com>
+	 <4FA345DA4F4AE44899BD2B03EEEC2FA9286B511E@sacexcmbx05-prd.hq.netapp.com>
+	 <CA+55aFySyBP8q5AvPrt-s_ZPdgamfoX-dERw4EJ21EcsDLBjYA@mail.gmail.com>
+In-Reply-To: <CA+55aFySyBP8q5AvPrt-s_ZPdgamfoX-dERw4EJ21EcsDLBjYA@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.104.60.115]
+Content-Type: text/plain; charset=US-ASCII
+Content-ID: <B9FA5D0AA0C5084E95FEBB19DEF3AE47@tahoe.netapp.com>
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-In-Reply-To: <20130307163743.GC6115@beaver>
-References: <20130209141029.GA13493@beaver>
-	<1360422473.6696.28.camel@edumazet-glaptop>
-	<20130307125424.GI13493@beaver>
-	<1362673223.15793.215.camel@edumazet-glaptop>
-	<20130307163743.GC6115@beaver>
-Date: Thu, 7 Mar 2013 17:44:15 +0100
-Message-ID: <CAFLxGvyTA_mGFRb--GTPWvyQ3SDHXrXQksHFNQmjdb-xeVW_Wg@mail.gmail.com>
-Subject: Re: BUG: soft lockup on all kernels after 2.6.3x
-From: richard -rw- weinberger <richard.weinberger@gmail.com>
-To: Alexey Vlasov <renton@renton.name>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 7, 2013 at 5:37 PM, Alexey Vlasov <renton@renton.name> wrote:
-> On Thu, Mar 07, 2013 at 08:20:23AM -0800, Eric Dumazet wrote:
->>
->> What are gr_xxxx symbols ?
->
-> This is grsecurity patches ;)
+On Thu, 2013-03-07 at 08:25 -0800, Linus Torvalds wrote:
+> On Thu, Mar 7, 2013 at 7:59 AM, Myklebust, Trond
+> <Trond.Myklebust@netapp.com> wrote:
+> >
+> > It _shouldn't_ be an interruption unless the filesystem can't make
+> > progress.
+> 
+> So how can we tell? Calling "freezable_schedule()" if you're not ready
+> to be frozen is not good. And nobody but the NFS code can know.
+> 
+> You might want to introduce some counter that counts number of
+> outstanding non-interruptible events, and only call the "freezable"
+> version if that counter is zero.
+> 
+> A better alternative might be to *never* call the freezable version.
+> Because those freezable_*() things are really quite disgusting, and
+> are wrong - they don't actually freeze the process, they say "I don't
+> care if you freeze me while I sleep", and you might actually wake up
+> *while* the system is being frozen. I think the whole concept is
+> broken. Rafaei - comments? The function really is crap, regardless of
+> any unrelated NFS problems.
+> 
+> So what NFS could do instead is actually check the "do I need to
+> freeze" flag, and if you need to freeze you consider it an abort - and
+> do *not* try to continue. Just freeze, and then act as if the machine
+> got rebooted as far as NFS was concerned. That should work anyway, no?
+> 
+> That does sound a lot more complex, though.
 
-Please reproduce without grsec...
+The problem there is that we get into the whole 'hard' vs 'soft' mount
+problem. We're supposed to guarantee data integrity for 'hard' mounts,
+so no funny business is allowed. OTOH, 'soft' mounts time out and return
+EIO to the application anyway, and so shouldn't be a problem.
+
+Perhaps we could add a '-oslushy' mount option :-) that guarantees data
+integrity for all situations _except_ ENETDOWN/ENETUNREACH?
 
 -- 
-Thanks,
-//richard
+Trond Myklebust
+Linux NFS client maintainer
+
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
