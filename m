@@ -1,82 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759287Ab3CGPHn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 10:07:43 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:40395 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752543Ab3CGPHm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 10:07:42 -0500
-Date: Thu, 7 Mar 2013 16:07:40 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Cc: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        Nestor Lopez Casado <nlopezcasad@logitech.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Bob Bowles <bobjohnbowles@gmail.com>
-Subject: Re: [PATCH] HID: logitech-dj: do not directly call hid_output_raw_report()
- during probe
-In-Reply-To: <1362499740-32459-1-git-send-email-benjamin.tissoires@redhat.com>
-Message-ID: <alpine.LNX.2.00.1303071600480.28677@pobox.suse.cz>
-References: <1362499740-32459-1-git-send-email-benjamin.tissoires@redhat.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S932913Ab3CGPJV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 10:09:21 -0500
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:49316 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759025Ab3CGPJU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Mar 2013 10:09:20 -0500
+Message-ID: <1362668955.15011.204.camel@mfleming-mobl1.ger.corp.intel.com>
+Subject: Re: [PATCH] efivarfs: loosen restriction on valid names
+From: Matt Fleming <matt.fleming@intel.com>
+To: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>, linux-efi@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Seth Forshee <seth.forshee@canonical.com>
+Date: Thu, 07 Mar 2013 15:09:15 +0000
+In-Reply-To: <5138ACFE.30701@canonical.com>
+References: <5138ACFE.30701@canonical.com>
+Organization: Intel Corporation (UK) Ltd. - Registered No. 1134945 - Pipers
+ Way, Swindon SN3 1RJ
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 5 Mar 2013, Benjamin Tissoires wrote:
-
-> hid_output_raw_report() makes a direct call to usb_control_msg(). However,
-> some USB3 boards have shown that the usb device is not ready during the
-> .probe(). This blocks the entire usb device, and the paired mice, keyboards
-> are not functional. The dmesg output is the following:
+On Thu, 2013-03-07 at 16:06 +0100, Maarten Lankhorst wrote:
+> Commit da27a2438 (efivarfs: guid part of filenames are case-insensitive) fails to boot,
+> because the kernel creates files in the form of dump-type-x-y-z-GUID. Since the kernel already
+> created files in this form, these type of files obviously exist, so the right course of action
+> is to relax the restriction in efivarfs_valid_name.
 > 
-> [   11.912287] logitech-djreceiver 0003:046D:C52B.0003: hiddev0,hidraw0: USB HID v1.11 Device [Logitech USB Receiver] on usb-0000:00:14.0-2/input2
-> [   11.912537] logitech-djreceiver 0003:046D:C52B.0003: logi_dj_probe:logi_dj_recv_query_paired_devices error:-32
-> [   11.912636] logitech-djreceiver: probe of 0003:046D:C52B.0003 failed with error -32
-> 
-> Relying on the scheduled call to .hid_hw_request() fixes the problem.
-> 
-> related bugs:
-> https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1072082
-> https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1039143
-> https://bugzilla.redhat.com/show_bug.cgi?id=840391
-> https://bugzilla.kernel.org/show_bug.cgi?id=49781
-> 
-> Reported-and-tested-by: Bob Bowles <bobjohnbowles@gmail.com>
-> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-> ---
-> 
-> Hi guys,
-> 
-> this bug has taken too long to be solved. I managed to figure out the root cause
-> recently thanks to the work of Jelle Foks in lp#1039143.
-> 
-> Jiri, I based this fix on top of your for-3.10/logitech branch.
-> It *will* failed to build when you will merge it with the branch
-> for-3.10/hid-driver-transport-cleanups. This is due to the use of
-> usbhid_submit_report() instead of hid_hw_request(). The 
-> 
-> However, I prefer do it that way so that I can send it to "stable" to fix all
-> the current releases since 3.2 (I guess only the LTS v3.4 will pick it and the
-> current 3.8, but distros can then cherry-pick it easily).
+> Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+> Cc: stable@vger.kernel.org [3.8]
 
-Benjamin, Bob,
+http://marc.info/?l=linux-kernel&m=136266857528382&w=2
 
-excellent work, thanks for figuring it out.
 
-Given the nature of the bug, I'd prefer to push it to Linus for 3.9 still, 
-and have it backported to -stable as well.
-
-Once it's in Linus' tree, I will handle the fallout in 
-for-3.10/hid-driver-transport-cleanups and fix the build.
-
-Ok?
-
-Now queued for 3.9.
-
--- 
-Jiri Kosina
-SUSE Labs
