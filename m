@@ -1,75 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754578Ab3CGWcM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 17:32:12 -0500
-Received: from mail-bk0-f51.google.com ([209.85.214.51]:42842 "EHLO
-	mail-bk0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752611Ab3CGWcL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 17:32:11 -0500
-Message-ID: <5139155F.5050407@gmail.com>
-Date: Thu, 07 Mar 2013 23:31:59 +0100
-From: Daniel Mack <zonque@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130219 Thunderbird/17.0.3
-MIME-Version: 1.0
-To: Afzal Mohammed <afzal.mohd.ma@gmail.com>
-CC: Fabio Estevam <festevam@gmail.com>, Russell King <linux@arm.linux.org.uk>,
-        Mike Turquette <mturquette@linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Rob Herring <robherring2@gmail.com>
-Subject: Re: Question about fixed-clock
-References: <20130307184240.GA3327@afzal-ThinkPad-R50e>
-In-Reply-To: <20130307184240.GA3327@afzal-ThinkPad-R50e>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1759154Ab3CGWcy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 17:32:54 -0500
+Received: from ozlabs.org ([203.10.76.45]:46083 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752244Ab3CGWcx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Mar 2013 17:32:53 -0500
+From: Michael Neuling <mikey@neuling.org>
+To: Philippe De Muyter <phdm@macqel.be>
+cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
+Subject: Re: 3.9-rc1 powerpc ptrace.c: 'brk.len' is used uninitialized
+In-reply-to: <20130307095907.GA16489@frolo.macqel>
+References: <20130306060058.GA3106@frolo.macqel> <21084.1362607788@ale.ozlabs.ibm.com> <20130306223645.GA15484@frolo.macqel> <31862.1362611670@ale.ozlabs.ibm.com> <20130307095907.GA16489@frolo.macqel>
+Comments: In-reply-to Philippe De Muyter <phdm@macqel.be>
+   message dated "Thu, 07 Mar 2013 10:59:07 +0100."
+X-Mailer: MH-E 8.2; nmh 1.5; GNU Emacs 23.4.1
+Date: Fri, 08 Mar 2013 09:32:51 +1100
+Message-ID: <22285.1362695571@ale.ozlabs.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Afzal,
+Philippe De Muyter <phdm@macqel.be> wrote:
 
-thanks for looking into this.
+> Hello Mikey,
+> 
+> On Thu, Mar 07, 2013 at 10:14:30AM +1100, Michael Neuling wrote:
+> > Philippe De Muyter <phdm@macqel.be> wrote:
+> > 
+> > > On Thu, Mar 07, 2013 at 09:09:48AM +1100, Michael Neuling wrote:
+> > > > > bisect tells me that since your commit 9422de3e953d0e60eb95f5430a9dd803eec1c6d7 
+> > > > > "powerpc: Hardware breakpoints rewrite to handle non DABR breakpoint registers",
+> > > > > compiling linux fails with :
+> > > > > 
+> > > > >   cc1: warnings being treated as errors
+> > > > >   arch/powerpc/kernel/ptrace.c: In function 'arch_ptrace':
+> > > > >   arch/powerpc/kernel/ptrace.c:1450: warning: 'brk.len' is used uninitialized in this function
+> > > > >   arch/powerpc/kernel/ptrace.c:1352: note: 'brk.len' was declared here
+> > > > > 
+> > > > > could you look at that ?
+> > > > 
+> > > > Sure. 
+> > > 
+> > > I use gcc-4.2.2, and my .config follows.
+> > 
+> > I'm a bit lost.  
+> > 
+> > I don't have 4.2.2 (which is ancient BTW) and I can't hit this on
+> > 4.3,4.5 or 4.6 with your config.  It compiles fine.
+> > 
+> > Also:
+> > 
+> > >   arch/powerpc/kernel/ptrace.c:1450: warning: 'brk.len' is used uninitialized in this function
+> > >   arch/powerpc/kernel/ptrace.c:1352: note: 'brk.len' was declared here
+> > 
+> > These line numbers make no sense at all WRT v3.9-rc1.  brk.len is neither
+> > declared or used in those lines:
+> 
+> those were the line numbers just after your commit
+> 
+> In 3.9-rc1 they are :
+> 
+> cc1: warnings being treated as errors
+> arch/powerpc/kernel/ptrace.c: In function 'arch_ptrace':
+> arch/powerpc/kernel/ptrace.c:1479: warning: 'brk.len' is used uninitialized in this function
+> arch/powerpc/kernel/ptrace.c:1381: note: 'brk.len' was declared here
+> 
+> 		if (child->thread.hw_brk.address)
+> 			return -ENOSPC;
+> 
+> 1479:		child->thread.hw_brk = brk;
+> 
+> 		return 1;
+> 	#endif /* !CONFIG_PPC_ADV_DEBUG_DVCS */
 
-On 07.03.2013 19:42, Afzal Mohammed wrote:
-> On Tue, Feb 19, 2013 at 09:09:31AM +0530, Afzal Mohammed wrote:
-> 
->> Hope invoking of_clk_init before clock generator driver helps
-> 
-> Mails coming from this id are in my personal capacity.
-> 
-> On Tue, Feb 19, 2013 at 10:53:18AM +0100, Daniel Mack wrote:
->> On 19.02.2013 02:33, Fabio Estevam wrote:
-> 
->>> Have you registered it with clk_register_fixed_rate() ?
-> 
->> Hmm no, I didn't do anything else than adding it to the DT in the first
->> place, hoping that a driver will pick it up and add the clock for me.
->> But it turns out that of_clk_init() is not called at all on my platform.
->>
->> I'm doing this now from omap_generic_init() and it works. If that's an
->> appropriate place to call it, I can provide a patch.
-> 
-> Initially didn't realize that it was for an am335x based one.
-> 
-> I feel that for a platform having it's clock tree in DT, of_clk_init
-> would take care of it, but if clock tree data is not in DT, clock
-> tree would have to be extended in a non-DT way.
-
-Hmm, I don't follow. So for generic OMAP board in general which does
-*not* have its SoC clocks in DT, the question is who's in charge of
-registering out-of-SoC fixed clocks that are defined in DT.
-
-Note that the clock I'm dealing with here is _outside_ of the SoC, and I
-just need to have it in DT, so it can feed another clock chip's input pin.
-
-Grep'ing through arch/arm, it seems that the imx arch does the same
-thing my patch does, but I could also imagine that it should be done
-somewhere from the DT core. I copied Grant, Rob and Mark for more comments.
-
+Got it.  I still can't replicate the issue here, so can you check if the
+below works for you?
 
 Thanks,
-Daniel
+Mikey
 
+diff --git a/arch/powerpc/kernel/ptrace.c b/arch/powerpc/kernel/ptrace.c
+index 245c1b6..3b5f9dc 100644
+--- a/arch/powerpc/kernel/ptrace.c
++++ b/arch/powerpc/kernel/ptrace.c
+@@ -1428,6 +1428,7 @@ static long ppc_set_hwdebug(struct task_struct *child,
+ 
+ 	brk.address = bp_info->addr & ~7UL;
+ 	brk.type = HW_BRK_TYPE_TRANSLATE;
++	brk.len = len;
+ 	if (bp_info->trigger_type & PPC_BREAKPOINT_TRIGGER_READ)
+ 		brk.type |= HW_BRK_TYPE_READ;
+ 	if (bp_info->trigger_type & PPC_BREAKPOINT_TRIGGER_WRITE)
