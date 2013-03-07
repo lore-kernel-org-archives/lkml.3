@@ -1,83 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932578Ab3CGRDq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 12:03:46 -0500
-Received: from mail-ve0-f175.google.com ([209.85.128.175]:55502 "EHLO
-	mail-ve0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758823Ab3CGRDo (ORCPT
+	id S932788Ab3CGREx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 12:04:53 -0500
+Received: from mail-ob0-f181.google.com ([209.85.214.181]:40197 "EHLO
+	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756089Ab3CGREv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 12:03:44 -0500
+	Thu, 7 Mar 2013 12:04:51 -0500
 MIME-Version: 1.0
-In-Reply-To: <4FA345DA4F4AE44899BD2B03EEEC2FA9286B52F1@sacexcmbx05-prd.hq.netapp.com>
-References: <20130305174954.GG12795@htj.dyndns.org>
-	<20130305140312.243cb094@tlielax.poochiereds.net>
-	<20130305190923.GI12795@htj.dyndns.org>
-	<20130305183941.19ff39ce@tlielax.poochiereds.net>
-	<20130305234700.GE1227@htj.dyndns.org>
-	<20130306181608.GA18687@redhat.com>
-	<20130306185304.GM1227@htj.dyndns.org>
-	<CA+55aFwDogteVd=vwGHXDSASnga-nZZnKaQz9aO1yBU2CPKSbA@mail.gmail.com>
-	<20130306212452.GO1227@htj.dyndns.org>
-	<CA+55aFy49AWptMcvEzJxg95ikf-dC+-vcCPq-cnaCCwje3tyoQ@mail.gmail.com>
-	<20130306213636.GP1227@htj.dyndns.org>
-	<20130307064140.71c0936b@tlielax.poochiereds.net>
-	<CA+55aFxe1_x8wvVYciiX8tuee+VsmXGKqEbONQdFM4s4W2iuPg@mail.gmail.com>
-	<4FA345DA4F4AE44899BD2B03EEEC2FA9286B511E@sacexcmbx05-prd.hq.netapp.com>
-	<CA+55aFySyBP8q5AvPrt-s_ZPdgamfoX-dERw4EJ21EcsDLBjYA@mail.gmail.com>
-	<4FA345DA4F4AE44899BD2B03EEEC2FA9286B52F1@sacexcmbx05-prd.hq.netapp.com>
-Date: Thu, 7 Mar 2013 09:03:43 -0800
-X-Google-Sender-Auth: piY1CodBTfJxopmENPQIA6j7IRs
-Message-ID: <CA+55aFwB4Pjki8zg9idwbQbE-TOtTdD5o8d_r1=NY3veVqmPHg@mail.gmail.com>
-Subject: Re: LOCKDEP: 3.9-rc1: mount.nfs/4272 still has locks held!
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-Cc: Jeff Layton <jlayton@redhat.com>, Tejun Heo <tj@kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Mandeep Singh Baines <msb@chromium.org>,
-        Ming Lei <ming.lei@canonical.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <20130307114950.GF17833@n2100.arm.linux.org.uk>
+References: <f20e3c5e822c4bd28a3b71264d73143cc1f850b0.1362458878.git.viresh.kumar@linaro.org>
+	<20130305105251.GL17833@n2100.arm.linux.org.uk>
+	<CAKohpo=cBkHZnSa8ZsM=k7RRN+RZDXFUWDM82EXXBSQcM-8Vhw@mail.gmail.com>
+	<20130307005119.GY17833@n2100.arm.linux.org.uk>
+	<CAKohpok7aD-J-undUisxaOotbXWimPo46jqOH4ok04kg_hMWHA@mail.gmail.com>
+	<20130307114950.GF17833@n2100.arm.linux.org.uk>
+Date: Fri, 8 Mar 2013 01:04:51 +0800
+Message-ID: <CAKohpomp_DFi3GAJeTUiQowyEvfXcmTeuf9+O0qcXsXtbFkTDg@mail.gmail.com>
+Subject: Re: [PATCH] cpufreq: ARM big LITTLE: Add generic cpufreq driver and
+ its DT glue
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: rjw@sisk.pl, Steve.Bannister@arm.com, linux-pm@vger.kernel.org,
+        Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>,
+        Liviu.Dudau@arm.com, linux-kernel@vger.kernel.org,
+        cpufreq@vger.kernel.org, robin.randhawa@arm.com,
+        linux-arm-kernel@lists.infradead.org, mark.hambleton@broadcom.com,
+        linaro-kernel@lists.linaro.org, charles.garcia-tobin@arm.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 7, 2013 at 8:45 AM, Myklebust, Trond
-<Trond.Myklebust@netapp.com> wrote:
+On 7 March 2013 19:49, Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
+> So how is this different from any other clock which may also return zero
+> from its clk_get_rate() ?
 >
-> The problem there is that we get into the whole 'hard' vs 'soft' mount
-> problem. We're supposed to guarantee data integrity for 'hard' mounts,
-> so no funny business is allowed. OTOH, 'soft' mounts time out and return
-> EIO to the application anyway, and so shouldn't be a problem.
->
-> Perhaps we could add a '-oslushy' mount option :-) that guarantees data
-> integrity for all situations _except_ ENETDOWN/ENETUNREACH?
+> If that's the condition you want to check for, call clk_get_rate() after
+> a successful clk_get*() and check for the condition.  Don't go treating
+> the cookie somehow specially.  You're *assuming* a behaviour that is
+> inappropriate for the side of the interface you're working with.
 
-I do think we are probably over-analyzing this. It's not like people
-who want freezing to work usually use flaky NFS. There's really two
-main groups:
+Okay. I will replace the earlier fixup with following:
 
- - the "freezer as a snapshot mechanism" that might use NFS because
-they are in a server environment.
+diff --git a/drivers/cpufreq/Kconfig.arm b/drivers/cpufreq/Kconfig.arm
+index fdf54a9..87b7e48 100644
+--- a/drivers/cpufreq/Kconfig.arm
++++ b/drivers/cpufreq/Kconfig.arm
+@@ -9,8 +9,7 @@ config ARM_BIG_LITTLE_CPUFREQ
+ config ARM_DT_BL_CPUFREQ
+        tristate "Generic ARM big LITTLE CPUfreq driver probed via DT"
+        select ARM_BIG_LITTLE_CPUFREQ
+-       depends on OF
+-       default n
++       depends on OF && HAVE_CLK
+        help
+          This enables the Generic CPUfreq driver for ARM big.LITTLE platform.
+          This gets frequency tables from DT.
+diff --git a/drivers/cpufreq/arm_big_little.c b/drivers/cpufreq/arm_big_little.c
+index 2486b9a..a41fd89 100644
+--- a/drivers/cpufreq/arm_big_little.c
++++ b/drivers/cpufreq/arm_big_little.c
+@@ -147,7 +147,7 @@ static void put_cluster_clk_and_freq_table(u32 cluster)
 
- - the "freeezer for suspend/resume on a laptop"
+ static int get_cluster_clk_and_freq_table(u32 cluster)
+ {
+-       char name[9] = "cluster";
++       char name[9] = "cpu-cluster";
+        int count;
 
-The first one does use NFS, and cares about it, and probably would
-prefer the freeze event to take longer and finish for all ongoing IO
-operations. End result: just ditch the "freezable_schedule()"
-entirely.
+        if (atomic_inc_return(&cluster_usage[cluster]) != 1)
 
-The second one is unlikely to really use NFS anyway. End result:
-ditching the freezable_schedule() is probably perfectly fine, even if
-it would cause suspend failures if the network is being troublesome.
 
-So for now, why not just replace freezable_schedule() with plain
-schedule() in the NFS code, and ignore it until somebody actually
-complains about it, and then aim to try to do something more targeted
-for that particular complaint?
-
-                 Linus
+For more clarity i will resend this patch now will all updates.
