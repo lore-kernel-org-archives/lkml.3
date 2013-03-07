@@ -1,151 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933191Ab3CGPwL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 10:52:11 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:10044 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754154Ab3CGPvm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 10:51:42 -0500
-X-Authority-Analysis: v=2.0 cv=adbjbGUt c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=5F4bDbGb4DAA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=UuzHrLScM88A:10 a=20KFwNOVAAAA:8 a=3nbZYyFuAAAA:8 a=HsiUkt9cFOICQau9JCQA:9 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=EvKJbDF4Ut8A:10 a=jeBq3FmKZ4MA:10 a=2MPnpATkE56Zip89:21 a=xhVnXdrTU_g9-5ow:21 a=WSZqgEkYlkhjIBMEnE8A:9 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-Id: <20130307155140.957920663@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Thu, 07 Mar 2013 10:34:43 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Hiraku Toyooka <hiraku.toyooka.gu@hitachi.com>
-Subject: [PATCH 1/2] tracing: Add help of snapshot feature when snapshot is empty
-References: <20130307153442.755353831@goodmis.org>
-Content-Disposition: inline; filename=0001-tracing-Add-help-of-snapshot-feature-when-snapshot-i.patch
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
+	id S933125Ab3CGPyJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 10:54:09 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:47132 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753478Ab3CGPyH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Mar 2013 10:54:07 -0500
+Date: Thu, 7 Mar 2013 10:53:43 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: Eric Paris <eparis@parisplace.org>,
+        linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        LSM List <linux-security-module@vger.kernel.org>
+Subject: Re: IMA: How to manage user space signing policy with others
+Message-ID: <20130307155343.GD2790@redhat.com>
+References: <20130304191546.GF15199@redhat.com>
+ <1362446491.4392.133.camel@falcor1>
+ <20130305151829.GB4519@redhat.com>
+ <1362516018.4392.233.camel@falcor1>
+ <20130305215300.GE4519@redhat.com>
+ <1362584551.4392.291.camel@falcor1>
+ <20130306235525.GB29229@redhat.com>
+ <1362620348.4392.408.camel@falcor1>
+ <20130307143643.GA2790@redhat.com>
+ <1362670833.4392.438.camel@falcor1>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1362670833.4392.438.camel@falcor1>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---00GvhwF7k39YY
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+On Thu, Mar 07, 2013 at 10:40:33AM -0500, Mimi Zohar wrote:
+> On Thu, 2013-03-07 at 09:36 -0500, Vivek Goyal wrote:
+> > On Wed, Mar 06, 2013 at 08:39:08PM -0500, Mimi Zohar wrote:
+> > > On Wed, 2013-03-06 at 18:55 -0500, Vivek Goyal wrote:
+> > > > On Wed, Mar 06, 2013 at 10:42:31AM -0500, Mimi Zohar wrote:
+> >  
+> > > Adding an IMA call to directly appraise the integrity of a file, rather
+> > > than adding a hook, prevents other integrity users from being able to
+> > > define a rule at that point.
+> > 
+> > We already have security hooks in exec() code and mmap(). And current
+> > integrity callers are happy with it.
+> 
+> Exposing integrity calls, resolves the problem of code duplication, but
+> does not address Rusty's third issue of improving the integrity
+> subsystem.
 
-From: "Steven Rostedt (Red Hat)" <srostedt@redhat.com>
+I thought rusty wanted me to reuse existing integrity code so that there
+is no code duplication. And improve things as needed int the process
+so meet new requirements.
 
-When cat'ing the snapshot file, instead of showing an empty trace
-header like the trace file does, show how to use the snapshot
-feature.
+And exposing functions calls will just do that. Improve IMA so that
+more people can reuse the same code without breaking existing users.
 
-Also, this is a good place to show if the snapshot has been allocated
-or not. Users may want to "pre allocate" the snapshot to have a fast
-"swap" of the current buffer. Otherwise, a swap would be slow and might
-fail as it would need to allocate the snapshot buffer, and that might
-fail under tight memory constraints.
+Other improvements will be to improve "cpio" to support xattr and
+figure a way out to chain into secureboot root of trust and load
+only trusted keys.
 
-Here's what it looked like before:
+So yes, I am improving IMA subsystem. Only thing I am arguing against
+that I don't think trying to enahnce policy based interface is right
+thing to do here in the light of new requirements. It just makes IMA too
+complicated and it is not worth it.
 
- # tracer: nop
- #
- # entries-in-buffer/entries-written: 0/0   #P:4
- #
- #                              _-----=3D> irqs-off
- #                             / _----=3D> need-resched
- #                            | / _---=3D> hardirq/softirq
- #                            || / _--=3D> preempt-depth
- #                            ||| /     delay
- #           TASK-PID   CPU#  ||||    TIMESTAMP  FUNCTION
- #              | |       |   ||||       |         |
+>  You have no idea if the existing integrity users are happy
+> with the status quo.
 
-Here's what it looks like now:
+If nobody is speaking then I have to assume something. If they are happy,
+great, exposing new functions are not going to break any of their
+functionality. If they are not happy then there is more reason to believe
+that trying to enahance policy based interface is a bad thing. It is not
+working.
 
- # tracer: nop
- #
- #
- # * Snapshot is freed *
- #
- # Snapshot commands:
- # echo 0 > snapshot : Clears and frees snapshot buffer
- # echo 1 > snapshot : Allocates snapshot buffer, if not already allocated.
- #                      Takes a snapshot of the main buffer.
- # echo 2 > snapshot : Clears snapshot buffer (but does not allocate)
- #                      (Doesn't have to be '2' works with any number that
- #                       is not a '0' or '1')
+>  It's there and they're using it.  They could want
+> additional hooks or better located hooks.  Each of your complaints about
+> the integrity subsystem could be addressed and would improve the
+> subsystem.
 
-Acked-by: Hiraku Toyooka <hiraku.toyooka.gu@hitachi.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- kernel/trace/trace.c |   25 ++++++++++++++++++++++++-
- 1 file changed, 24 insertions(+), 1 deletion(-)
+If they want better located hooks, they are more than welcome to put
+it. Exposing some of the functions does not prevent it. They want
+to improve IMA subsystem, sure, why not. Exposing some fucntions
+does not prevent it.
 
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index c2e2c23..9e3120b 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -2400,6 +2400,27 @@ static void test_ftrace_alive(struct seq_file *m)
- 	seq_printf(m, "#          MAY BE MISSING FUNCTION EVENTS\n");
- }
-=20
-+#ifdef CONFIG_TRACER_MAX_TRACE
-+static void print_snapshot_help(struct seq_file *m, struct trace_iterator =
-*iter)
-+{
-+	if (iter->trace->allocated_snapshot)
-+		seq_printf(m, "#\n# * Snapshot is allocated *\n#\n");
-+	else
-+		seq_printf(m, "#\n# * Snapshot is freed *\n#\n");
-+
-+	seq_printf(m, "# Snapshot commands:\n");
-+	seq_printf(m, "# echo 0 > snapshot : Clears and frees snapshot buffer\n");
-+	seq_printf(m, "# echo 1 > snapshot : Allocates snapshot buffer, if not al=
-ready allocated.\n");
-+	seq_printf(m, "#                      Takes a snapshot of the main buffer=
-.\n");
-+	seq_printf(m, "# echo 2 > snapshot : Clears snapshot buffer (but does not=
- allocate)\n");
-+	seq_printf(m, "#                      (Doesn't have to be '2' works with =
-any number that\n");
-+	seq_printf(m, "#                       is not a '0' or '1')\n");
-+}
-+#else
-+/* Should never be called */
-+static inline void print_snapshot_help(struct seq_file *m, struct trace_it=
-erator *iter) { }
-+#endif
-+
- static int s_show(struct seq_file *m, void *v)
- {
- 	struct trace_iterator *iter =3D v;
-@@ -2411,7 +2432,9 @@ static int s_show(struct seq_file *m, void *v)
- 			seq_puts(m, "#\n");
- 			test_ftrace_alive(m);
- 		}
--		if (iter->trace && iter->trace->print_header)
-+		if (iter->snapshot && trace_empty(iter))
-+			print_snapshot_help(m, iter);
-+		else if (iter->trace && iter->trace->print_header)
- 			iter->trace->print_header(m);
- 		else
- 			trace_default_header(m);
---=20
-1.7.10.4
-
-
-
---00GvhwF7k39YY
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQEcBAABAgAGBQJROLeNAAoJEOdOSU1xswtMF94H/iZzeNzbKw9LdU4F4ouWpDb7
-Y7n7yJ/yxAP80S+95zsPe2NQ6ESEWPYdc/0MLXPAQaISEoyHv78aER2a6N0JTchS
-tN7Ar+5z8gc+d8Q0S8rv82Wb457Y8ZjET0CARLmyhfW0TuV8frZ8PuOte6K5uaW0
-9B+QxZ7fMf6tAMZp2B38CQmheP+glGRKwfZtaMI/Wsyb4jfNwM+Xe036f2S2m8pQ
-2vzY0LEXl7e3CsiBOdhVgbzwn5TJrCaN4R1CYli0GZGjZUXE+1Iv46GlR5WzrXc7
-lLVv8Um4Xxuz6JgcAc6ski7RLY8kp84g1sh4HQTwXUoDMHV0Oh1EPiu0/i0LA8g=
-=9R5B
------END PGP SIGNATURE-----
-
---00GvhwF7k39YY--
+Thanks
+Vivek
