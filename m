@@ -1,53 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758267Ab3CGAkO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 19:40:14 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:34086 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753372Ab3CGAkM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 19:40:12 -0500
-Message-ID: <1362616810.2093.40.camel@joe-AO722>
-Subject: Re: [PATCH V2 3/3] get_maintainer: prevent keywords from matching
- filenames
-From: Joe Perches <joe@perches.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        Marcin Slusarz <marcin.slusarz@gmail.com>,
-        Lucas Stach <dev@lynxeye.de>, Borislav Petkov <bp@alien8.de>,
-        dri-devel@lists.freedesktop.org, nouveau@lists.freedesktop.org,
-        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
-        linux-tegra@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
-Date: Wed, 06 Mar 2013 16:40:10 -0800
-In-Reply-To: <5137E09E.1060006@wwwdotorg.org>
-References: <1362616141-13947-1-git-send-email-swarren@wwwdotorg.org>
-	 <1362616141-13947-3-git-send-email-swarren@wwwdotorg.org>
-	 <1362616252.2093.37.camel@joe-AO722> <5137E09E.1060006@wwwdotorg.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1758366Ab3CGAlk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 19:41:40 -0500
+Received: from rydia.net ([69.46.88.68]:43226 "EHLO mail.rydia.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754803Ab3CGAlj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Mar 2013 19:41:39 -0500
+Date: Wed, 6 Mar 2013 16:41:37 -0800 (PST)
+From: dormando <dormando@rydia.net>
+X-X-Sender: dormando@dflat
+To: Eric Dumazet <eric.dumazet@gmail.com>
+cc: Cong Wang <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: BUG: IPv4: Attempt to release TCP socket in state 1
+In-Reply-To: <1362494795.15793.113.camel@edumazet-glaptop>
+Message-ID: <alpine.DEB.2.02.1303061631290.6723@dflat>
+References: <alpine.DEB.2.02.1303041547080.7811@localhost6.localdomain6>   <51356AC1.4090302@gmail.com> <1362460046.15793.111.camel@edumazet-glaptop>  <alpine.DEB.2.02.1303042138330.7811@localhost6.localdomain6>
+ <1362494795.15793.113.camel@edumazet-glaptop>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-03-06 at 17:34 -0700, Stephen Warren wrote:
-> On 03/06/2013 05:30 PM, Joe Perches wrote:
-> > On Wed, 2013-03-06 at 17:29 -0700, Stephen Warren wrote:
-> >> From: Stephen Warren <swarren@nvidia.com>
-> >>
-> >> This reverts most of eb90d08 "get_maintainer: allow keywords to match
-> >> filenames"; all except the parts that are required to implement the new
-> >> N: entry type.
-> > 
-> > Just combine patches 1 and 3 into a single patch.
-> 
-> That would break bisectability; using MAINTAINERS after applying a
-> squashed 1+3 but without patch 2 applied would not operate as desired.
+> On Mon, 2013-03-04 at 21:44 -0800, dormando wrote:
+>
+> > No 3rd party modules. There's a tiny patch for controlling initcwnd from
+> > userspace and another one for the extra_free_kbytes tunable that I brought
+> > up in another thread. We've had the initcwnd patch in for a long time
+> > without trouble. The extra_free_kbytes tunable isn't even being used yet,
+> > so all that's doing is adding a 0 somewhere.
+> >
+> > Only two iptables rules loaded: global NOTRACK rules for PREROUTING/OUTPUT
+> > in raw.
+> >
+> > Kernel's as close to pristine as I can make it. We had the 10g patch in
+> > but I've dropped it.
+> > --
+>
+> Hmm, I spent time on this bug report but found nothing.
+>
+> Please post as much information as you can on your setup.
+>
+> I see you use macvlan, bridge, so maybe there is a configuration issue
+> (and a kernel bug of course)
 
-<smile>
+Ok... bridge module is loaded but nothing seems to be using it. No
+bond/tunnels/anything enabled. I couldn't quickly figure out what was
+causing it to load.
 
-Which is why I showed the whole thing in a single patch.
-No worries if it's simply to increase the patch count...
+We removed the need for macvlan, started machines with a fresh boot, and
+they still crashed without it, after a few hours.
 
-cheers, Joe
+Unfortunately I just saw a machine crash in the same way on 3.6.6 and
+3.6.9. I'm working on getting a completely pristine 3.6.6 and 3.6.9
+tested. Our patches are minor but there were a few, so I'm backing it all
+out just to be sure.
 
+Is there anything in particular which is most interesting? I can post lots
+and lots and lots of information. Sadly bridge/macvlan weren't part of the
+problem. .config, sysctls are easiest I guess? When this "hang" happens
+the machine is still up somewhat, but we lose access to it. Syslog is
+still writing entries to disk occasionally, so it's possible we could set
+something up to dump more information.
+
+It takes a day or two to cycle this, so it might take a while to get
+information and test crashes.
+
+thanks,
+-Dormando
