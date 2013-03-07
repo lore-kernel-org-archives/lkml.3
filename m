@@ -1,72 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755433Ab3CGAVh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 19:21:37 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49352 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754735Ab3CGAVg (ORCPT
+	id S1757520Ab3CGA3K (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 19:29:10 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:32986 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754636Ab3CGA3J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 19:21:36 -0500
-Date: Wed, 6 Mar 2013 16:21:33 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Fredrik Gustafsson <iveqy@iveqy.com>
-Cc: apw@canonical.com, linux-kernel@vger.kernel.org,
-        Joe Perches <joe@perches.com>
-Subject: Re: [PATCH] Prevent use of unitialized variable
-Message-Id: <20130306162133.c2b3027c5cf75582d4f84869@linux-foundation.org>
-In-Reply-To: <1362354169-13369-1-git-send-email-iveqy@iveqy.com>
-References: <1362354169-13369-1-git-send-email-iveqy@iveqy.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 6 Mar 2013 19:29:09 -0500
+From: Stephen Warren <swarren@wwwdotorg.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Joe Perches <joe@perches.com>, linux-kernel@vger.kernel.org,
+        Marcin Slusarz <marcin.slusarz@gmail.com>,
+        Lucas Stach <dev@lynxeye.de>, Borislav Petkov <bp@alien8.de>,
+        dri-devel@lists.freedesktop.org, nouveau@lists.freedesktop.org,
+        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+        linux-tegra@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
+Subject: [PATCH V2 1/3] get_maintainer: create filename-only regex match type
+Date: Wed,  6 Mar 2013 17:28:59 -0700
+Message-Id: <1362616141-13947-1-git-send-email-swarren@wwwdotorg.org>
+X-Mailer: git-send-email 1.7.10.4
+X-NVConfidentiality: public
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon,  4 Mar 2013 00:42:49 +0100 Fredrik Gustafsson <iveqy@iveqy.com> wrote:
+From: Stephen Warren <swarren@nvidia.com>
 
-> Run checkpatch.pl -f kernel/fork.c in commit
-> ecf02a607bd801e742d7bb35c6e40f7ca15edf03
-> and checkpatch.pl will try to use an uninitialized variable.
-> This patch fixes that.
-> 
+Create a new N: entry type in MAINTAINERS which performs a regex match
+against filenames; either those extracted from patch +++ or --- lines,
+or those specified on the command-line using the -f option.
 
-This isn't a good description of the problem you're seeing. 
-ecf02a607bd801e7 is a merge commit and I see no perl problems running
-"perl scripts/checkpatch.pl -f kernel/fork.c" with my setup, so it's
-pretty mysterious.
+This provides the same benefits as using a K: regex option to match a
+set of filenames (see commit eb90d08 "get_maintainer: allow keywords to
+match filenames"), but without the disadvantage that "random" file
+content, such as comments,  will ever match the regex.
 
-It is best to quote the full error output when fixing errors.
+Suggested-by: Joe Perches <joe@perches.com>
+Signed-off-by: Stephen Warren <swarren@nvidia.com>
+---
+v2: Corrected typo in MAINTAINERS documentation
+---
+ MAINTAINERS               |    3 +++
+ scripts/get_maintainer.pl |    2 +-
+ 2 files changed, 4 insertions(+), 1 deletion(-)
 
-That things work OK for me isn't surprising, as these things are quite
-dependent upon the perl version.
-
-> --- a/scripts/checkpatch.pl
-> +++ b/scripts/checkpatch.pl
-> @@ -3363,14 +3363,17 @@ sub process {
->  
->  			my $ms_addr = $2;
->  			my $ms_val = $7;
-> -			my $ms_size = $12;
-> -
-> -			if ($ms_size =~ /^(0x|)0$/i) {
-> -				ERROR("MEMSET",
-> -				      "memset to 0's uses 0 as the 2nd argument, not the 3rd\n" . "$here\n$stat\n");
-> -			} elsif ($ms_size =~ /^(0x|)1$/i) {
-> -				WARN("MEMSET",
-> -				     "single byte memset is suspicious. Swapped 2nd/3rd argument?\n" . "$here\n$stat\n");
-> +
-> +			if (defined $12) {
-> +				my $ms_size = $12;
-> +
-> +				if ($ms_size =~ /^(0x|)0$/i) {
-> +					ERROR("MEMSET",
-> +						  "memset to 0's uses 0 as the 2nd argument, not the 3rd\n" . "$here\n$stat\n");
-> +				} elsif ($ms_size =~ /^(0x|)1$/i) {
-> +					WARN("MEMSET",
-> +						 "single byte memset is suspicious. Swapped 2nd/3rd argument?\n" . "$here\n$stat\n");
-> +				}
->  			}
->  		}
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 9561658..c9b1e37 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -90,6 +90,9 @@ Descriptions of section entries:
+ 	   F:	drivers/net/*	all files in drivers/net, but not below
+ 	   F:	*/net/*		all files in "any top level directory"/net
+ 	   One pattern per line.  Multiple F: lines acceptable.
++	N: Files and directories with regex patterns.
++	   N:	[^a-z]tegra	all files whose patch contains the word tegra
++	   One pattern per line.  Multiple N: lines acceptable.
+ 	X: Files and directories that are NOT maintained, same rules as F:
+ 	   Files exclusions are tested before file matches.
+ 	   Can be useful for excluding a specific subdirectory, for instance:
+diff --git a/scripts/get_maintainer.pl b/scripts/get_maintainer.pl
+index ce4cc83..27dc5cb 100755
+--- a/scripts/get_maintainer.pl
++++ b/scripts/get_maintainer.pl
+@@ -611,7 +611,7 @@ sub get_maintainers {
+ 				    $hash{$tvi} = $value_pd;
+ 				}
+ 			    }
+-			} elsif ($type eq 'K') {
++			} elsif ($type eq 'K' || $type eq 'N') {
+ 			    if ($file =~ m/$value/x) {
+ 				$hash{$tvi} = 0;
+ 			    }
+-- 
+1.7.10.4
 
