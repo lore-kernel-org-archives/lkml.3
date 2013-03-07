@@ -1,68 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759864Ab3CGVfp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 16:35:45 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37426 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752764Ab3CGVfo (ORCPT
+	id S933505Ab3CGVgI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 16:36:08 -0500
+Received: from mail-qa0-f42.google.com ([209.85.216.42]:52900 "EHLO
+	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933432Ab3CGVgG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 16:35:44 -0500
-Date: Thu, 7 Mar 2013 13:35:42 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Mike Frysinger <vapier@gentoo.org>, Ingo Molnar <mingo@kernel.org>,
-        Randy Dunlap <rdunlap@infradead.org>, <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Russell King <linux@arm.linux.org.uk>, Michal Simek <monstr@monstr.eu>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mundt <lethal@linux-sh.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Richard Weinberger <richard@nod.at>
-Subject: Re: [PATCH v2] early_printk: consolidate random copies of identical
- code
-Message-Id: <20130307133542.8bdb23612990fa25c5cc9112@linux-foundation.org>
-In-Reply-To: <5138EF7F.1050003@windriver.com>
-References: <1362683754-706-1-git-send-email-paul.gortmaker@windriver.com>
-	<20130307112536.82288f41924a38a441cdf345@linux-foundation.org>
-	<5138EF7F.1050003@windriver.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 7 Mar 2013 16:36:06 -0500
+MIME-Version: 1.0
+In-Reply-To: <20130307200722.GA22072@redhat.com>
+References: <1361802350-9299-1-git-send-email-lucas.demarchi@profusion.mobi>
+ <20130225160642.GA31806@redhat.com> <CAMOw1v7S07YOLQaKBBSHkCqhf1JSB1ZabMeMUJagb4E8841opQ@mail.gmail.com>
+ <20130225180802.GA6160@redhat.com> <CAMOw1v40=2zdyXuL1USzvHwNH+34uk+7P5Vxaa1fBJNZiHc++g@mail.gmail.com>
+ <20130307193701.GA20385@redhat.com> <CAMOw1v6HkAPUpebno7tj0wD4=+C_tRgSLmrUwPVdKUqjy4vyYg@mail.gmail.com>
+ <20130307200722.GA22072@redhat.com>
+From: Lucas De Marchi <lucas.demarchi@profusion.mobi>
+Date: Thu, 7 Mar 2013 18:35:44 -0300
+Message-ID: <CAMOw1v5sAAP1QD9XcidKGpp6Duz=PXf_LC0C8vve7PPSBzez3g@mail.gmail.com>
+Subject: Re: [PATCH] usermodehelper: Fix -ENOMEM return logic
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>,
+        James Morris <james.l.morris@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 7 Mar 2013 14:50:23 -0500 Paul Gortmaker <paul.gortmaker@windriver.com> wrote:
+On Thu, Mar 7, 2013 at 5:07 PM, Oleg Nesterov <oleg@redhat.com> wrote:
+> On 03/07, Lucas De Marchi wrote:
+>>
+>> On Thu, Mar 7, 2013 at 4:37 PM, Oleg Nesterov <oleg@redhat.com> wrote:
+>> >
+>> >> @@ -98,12 +93,13 @@ static int call_modprobe(char *module_name, int wait)
+>> >>       argv[3] = module_name;  /* check free_modprobe_argv() */
+>> >>       argv[4] = NULL;
+>> >>
+>> >> -     return call_usermodehelper_fns(modprobe_path, argv, envp,
+>> >> -             wait | UMH_KILLABLE, NULL, free_modprobe_argv, NULL);
+>> >> +     ret = call_usermodehelper(modprobe_path, argv, envp,
+>> >> +                               wait | UMH_KILLABLE);
+>> >> +     kfree(module_name);
+>> >
+>> > Please note UMH_KILLABLE. call_usermodehelper() can be interrupted
+>> > and even UMH_WAIT_EXEC case is not safe. If call_modprobe() is killed
+>> > we can return while the workqueue thread still tries to clone/exec/etc.
+>>
+>> Even if it's killed, we would just free the resource we allocated
+>> before.
+>
+> Yes, and after that ____call_usermodehelper() can do
+> do_execve(module_name) ?
+>
+>> It would not be safe if we allocated in the init function and
+>> freed in the cleanup.
+>
+> But we do? We free this memory in cleanup ? And I was allocated by us.
+>
+> sub_info itself can't go away (if you meant this), but
+> sub_info->path/argv/envp can.
 
-> This brings up a recurring question.  I was tempted to just go make
-> CONFIG_EARLY_PRINTK depend on CONFIG_PRINTK, but lately I've faced
-> pushback when trying to "fix" things like seeing ARM OMAP USB options
-> for an x86 build[1], and GOLDFISH virt drivers being offered even
-> when the end user already said no to GOLDFISH[2].
-> 
-> Do we want to use dependencies to reflect the real world layout of
-> platforms/systems, or do we want to go the minimal dependency
-> approach, where we are building sparc specific drivers on mips just
-> because we can?
-> 
-> I think the former is better from a user specific point of view, as
-> the maze of Kconfig is better as a tree topology with branches that
-> have clear dependencies that exclude them, versus it being a flat
-> monolithic space where anything can select anything.
-> 
-> Arguments I've heard for the latter seem to be developer centric
-> (i.e forcing wider build coverage on the population as a whole, etc)
+Oh... you are right - the UMH_KILLABLE is the problem here. Dunno what
+I was thinking :-/. I will fix my pending the patches.
 
-For me personally, I really really want good compilation coverage.  It
-drives me bats when I merge a patch but have to jump through a series
-of hoops (such as not having the appropriate cross-compiler!) to be
-able to build the thing.
-
-otoh, offering useless stuff to non-kernel-developers has downsides
-with no balancing benefit, and we really should optimise things for
-our users because there are so many more of them than there are of us.
-
-I wish we could do both :(   CONFIG_AKPM?
+thanks
+Lucas De Marchi
