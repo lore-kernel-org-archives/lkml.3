@@ -1,95 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759968Ab3CGWQF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 17:16:05 -0500
-Received: from mail.free-electrons.com ([94.23.35.102]:33238 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759041Ab3CGWQB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 17:16:01 -0500
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: linux-arm-kernel@lists.infradead.org
-Cc: kevin@allwinnertech.com, sunny@allwinnertech.com, shuge@allwinnertech.com,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
-Subject: [PATCH 5/6] ARM: sunxi: dt: Add A10 UARTs to the dtsi.
-Date: Thu,  7 Mar 2013 23:14:19 +0100
-Message-Id: <1362694460-1919-6-git-send-email-maxime.ripard@free-electrons.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1362694460-1919-1-git-send-email-maxime.ripard@free-electrons.com>
-References: <1362694460-1919-1-git-send-email-maxime.ripard@free-electrons.com>
+	id S933473Ab3CGWRn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 17:17:43 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:60677 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758979Ab3CGWRm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Mar 2013 17:17:42 -0500
+Message-ID: <513911F9.8050308@zytor.com>
+Date: Thu, 07 Mar 2013 14:17:29 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130219 Thunderbird/17.0.3
+MIME-Version: 1.0
+To: Matt Fleming <matt.fleming@intel.com>
+CC: Seth Forshee <seth.forshee@canonical.com>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org
+Subject: Re: [PATCH] efivars: Allow disabling use as a pstore backend
+References: <1362678017-2862-1-git-send-email-seth.forshee@canonical.com>  <5138FAD9.7050504@zytor.com> <20130307205915.GF24233@thinkpad-t410> <1362694529.15011.211.camel@mfleming-mobl1.ger.corp.intel.com>
+In-Reply-To: <1362694529.15011.211.camel@mfleming-mobl1.ger.corp.intel.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Allwinner A10 SoC has 8 available UARTs, which is 6 more than on the
-A13, so add the missing UARTs to the sun4i-a10 dtsi.
+On 03/07/2013 02:15 PM, Matt Fleming wrote:
+>>>
+>>> What about a command line option?
+>>
+>> That could be done. I'm assuming you want this instead of a config
+>> option, defaulted to on?
+>>
+>> How would you feel about a config option for the default value of the
+>> command line option? I intend to default this to off in Ubuntu for a
+>> while as a colleague's machine was recently bricked on two different
+>> occasions after the kernel oopsed. The config option would simplify
+>> things a bit for us, though we could always carry a patch changing the
+>> default value.
+> 
+> Not sure why a command line option would be a more natural solution to
+> this problem? The original patch looked fine to me. All other pstore
+> backends are guarded by Kconfig options.
+> 
+> Though I could see an argument for a kernel parameter to turn off the
+> EFI pstore backend code, even if it's compiled into the kernel. But that
+> would be better as an additional patch.
+> 
 
-Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
----
- arch/arm/boot/dts/sun4i-a10.dtsi |   51 ++++++++++++++++++++++++++++++++++++++
- 1 file changed, 51 insertions(+)
+That way it can be enabled if needed, without the user having to build
+their own kernel.
 
-diff --git a/arch/arm/boot/dts/sun4i-a10.dtsi b/arch/arm/boot/dts/sun4i-a10.dtsi
-index 703e7cb..0142ca0 100644
---- a/arch/arm/boot/dts/sun4i-a10.dtsi
-+++ b/arch/arm/boot/dts/sun4i-a10.dtsi
-@@ -57,5 +57,56 @@
- 			clocks = <&osc>;
- 			status = "disabled";
- 		};
-+
-+		uart2: uart@01c28800 {
-+			compatible = "snps,dw-apb-uart";
-+			reg = <0x01c28800 0x400>;
-+			interrupts = <3>;
-+			reg-shift = <2>;
-+			reg-io-width = <4>;
-+			clocks = <&osc>;
-+			status = "disabled";
-+		};
-+
-+
-+		uart4: uart@01c29000 {
-+			compatible = "snps,dw-apb-uart";
-+			reg = <0x01c29000 0x400>;
-+			interrupts = <17>;
-+			reg-shift = <2>;
-+			reg-io-width = <4>;
-+			clocks = <&osc>;
-+			status = "disabled";
-+		};
-+
-+		uart5: uart@01c29400 {
-+			compatible = "snps,dw-apb-uart";
-+			reg = <0x01c29400 0x400>;
-+			interrupts = <18>;
-+			reg-shift = <2>;
-+			reg-io-width = <4>;
-+			clocks = <&osc>;
-+			status = "disabled";
-+		};
-+
-+		uart6: uart@01c29800 {
-+			compatible = "snps,dw-apb-uart";
-+			reg = <0x01c29800 0x400>;
-+			interrupts = <19>;
-+			reg-shift = <2>;
-+			reg-io-width = <4>;
-+			clocks = <&osc>;
-+			status = "disabled";
-+		};
-+
-+		uart7: uart@01c29c00 {
-+			compatible = "snps,dw-apb-uart";
-+			reg = <0x01c29c00 0x400>;
-+			interrupts = <20>;
-+			reg-shift = <2>;
-+			reg-io-width = <4>;
-+			clocks = <&osc>;
-+			status = "disabled";
-+		};
- 	};
- };
+	-hpa
+
 -- 
-1.7.10.4
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
