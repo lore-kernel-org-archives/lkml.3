@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932405Ab3CGE25 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 23:28:57 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:50067 "EHLO
+	id S1759133Ab3CGE3Z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 23:29:25 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:50071 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754146Ab3CGE24 (ORCPT
+	with ESMTP id S1754718Ab3CGE3W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 23:28:56 -0500
-Date: Wed, 6 Mar 2013 20:26:56 -0800
-From: tip-bot for Krzysztof Mazur <tipbot@zytor.com>
-Message-ID: <tip-015221fefbc93689dd47508a66326556adf2abcd@git.kernel.org>
+	Wed, 6 Mar 2013 23:29:22 -0500
+Date: Wed, 6 Mar 2013 20:28:07 -0800
+From: tip-bot for Yinghai Lu <tipbot@zytor.com>
+Message-ID: <tip-98e7a989979b185f49e86ddaed2ad6890299d9f0@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        krzysiek@podlesie.net, tglx@linutronix.de, bp@suse.de
+        yinghai@kernel.org, tglx@linutronix.de, rydberg@euromail.se
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, krzysiek@podlesie.net, bp@suse.de
-In-Reply-To: <1362266082-2227-1-git-send-email-krzysiek@podlesie.net>
-References: <1362266082-2227-1-git-send-email-krzysiek@podlesie.net>
+        yinghai@kernel.org, tglx@linutronix.de, rydberg@euromail.se
+In-Reply-To: <CAE9FiQX4nQ7_1kg5RL_vh56rmcSHXUi1ExrZX7CwED4NGMnHfg@mail.gmail.com>
+References: <CAE9FiQX4nQ7_1kg5RL_vh56rmcSHXUi1ExrZX7CwED4NGMnHfg@mail.gmail.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86: Fix 32-bit *_cpu_data initializers
-Git-Commit-ID: 015221fefbc93689dd47508a66326556adf2abcd
+Subject: [tip:x86/urgent] x86, mm:
+  Make sure to find a 2M free block for the first mapped area
+Git-Commit-ID: 98e7a989979b185f49e86ddaed2ad6890299d9f0
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -27,61 +28,62 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 06 Mar 2013 20:27:02 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 06 Mar 2013 20:28:14 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  015221fefbc93689dd47508a66326556adf2abcd
-Gitweb:     http://git.kernel.org/tip/015221fefbc93689dd47508a66326556adf2abcd
-Author:     Krzysztof Mazur <krzysiek@podlesie.net>
-AuthorDate: Sun, 3 Mar 2013 00:14:42 +0100
+Commit-ID:  98e7a989979b185f49e86ddaed2ad6890299d9f0
+Gitweb:     http://git.kernel.org/tip/98e7a989979b185f49e86ddaed2ad6890299d9f0
+Author:     Yinghai Lu <yinghai@kernel.org>
+AuthorDate: Wed, 6 Mar 2013 20:18:21 -0800
 Committer:  H. Peter Anvin <hpa@zytor.com>
-CommitDate: Wed, 6 Mar 2013 20:15:50 -0800
+CommitDate: Wed, 6 Mar 2013 20:18:32 -0800
 
-x86: Fix 32-bit *_cpu_data initializers
+x86, mm: Make sure to find a 2M free block for the first mapped area
 
-The commit 27be457000211a6903968dfce06d5f73f051a217
-('x86 idle: remove 32-bit-only "no-hlt" parameter, hlt_works_ok
-flag') removed the hlt_works_ok flag from struct cpuinfo_x86, but
-boot_cpu_data and new_cpu_data initializers were not changed
-causing setting f00f_bug flag, instead of fdiv_bug.
+Henrik reported that his MacAir 3.1 would not boot with
 
-If CONFIG_X86_F00F_BUG is not set the f00f_bug flag is never
-cleared.
+| commit 8d57470d8f859635deffe3919d7d4867b488b85a
+| Date:   Fri Nov 16 19:38:58 2012 -0800
+|
+|    x86, mm: setup page table in top-down
 
-To avoid such problems in future C99-style initialization is now
-used.
+It turns out that we do not calculate the real_end properly:
+We try to get 2M size with 4K alignment, and later will round down
+to 2M, so we will get less then 2M for first mapping, in extreme
+case could be only 4K only. In Henrik's system it has (1M-32K) as
+last usable rage is [mem 0x7f9db000-0x7fef8fff].
 
-Signed-off-by: Krzysztof Mazur <krzysiek@podlesie.net>
-Acked-by: Borislav Petkov <bp@suse.de>
-Cc: len.brown@intel.com
-Link: http://lkml.kernel.org/r/1362266082-2227-1-git-send-email-krzysiek@podlesie.net
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+The problem is exposed when EFI booting have several holes and it
+will force mapping to use PTE instead as we only map usable areas.
+
+To fix it, just make it be 2M aligned, so we can be guaranteed to be
+able to use large pages to map it.
+
+Reported-by: Henrik Rydberg <rydberg@euromail.se>
+Bisected-by: Henrik Rydberg <rydberg@euromail.se>
+Tested-by: Henrik Rydberg <rydberg@euromail.se>
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Link: http://lkml.kernel.org/r/CAE9FiQX4nQ7_1kg5RL_vh56rmcSHXUi1ExrZX7CwED4NGMnHfg@mail.gmail.com
 Signed-off-by: H. Peter Anvin <hpa@zytor.com>
 ---
- arch/x86/kernel/setup.c | 10 ++++++++--
- 1 file changed, 8 insertions(+), 2 deletions(-)
+ arch/x86/mm/init.c | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index 84d3285..90d8cc9 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -171,9 +171,15 @@ static struct resource bss_resource = {
+diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
+index 4903a03..59b7fc4 100644
+--- a/arch/x86/mm/init.c
++++ b/arch/x86/mm/init.c
+@@ -410,9 +410,8 @@ void __init init_mem_mapping(void)
+ 	/* the ISA range is always mapped regardless of memory holes */
+ 	init_memory_mapping(0, ISA_END_ADDRESS);
  
- #ifdef CONFIG_X86_32
- /* cpu data as detected by the assembly code in head.S */
--struct cpuinfo_x86 new_cpu_data __cpuinitdata = {0, 0, 0, 0, -1, 1, 0, 0, -1};
-+struct cpuinfo_x86 new_cpu_data __cpuinitdata = {
-+	.wp_works_ok = -1,
-+	.fdiv_bug = -1,
-+};
- /* common cpu data for all cpus */
--struct cpuinfo_x86 boot_cpu_data __read_mostly = {0, 0, 0, 0, -1, 1, 0, 0, -1};
-+struct cpuinfo_x86 boot_cpu_data __read_mostly = {
-+	.wp_works_ok = -1,
-+	.fdiv_bug = -1,
-+};
- EXPORT_SYMBOL(boot_cpu_data);
+-	/* xen has big range in reserved near end of ram, skip it at first */
+-	addr = memblock_find_in_range(ISA_END_ADDRESS, end, PMD_SIZE,
+-			 PAGE_SIZE);
++	/* xen has big range in reserved near end of ram, skip it at first.*/
++	addr = memblock_find_in_range(ISA_END_ADDRESS, end, PMD_SIZE, PMD_SIZE);
+ 	real_end = addr + PMD_SIZE;
  
- unsigned int def_to_bigsmp;
+ 	/* step_size need to be small so pgt_buf from BRK could cover it */
