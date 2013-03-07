@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758166Ab3CGMws (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 07:52:48 -0500
-Received: from mga03.intel.com ([143.182.124.21]:60456 "EHLO mga03.intel.com"
+	id S1758418Ab3CGMxK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 07:53:10 -0500
+Received: from mga03.intel.com ([143.182.124.21]:58304 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754030Ab3CGMwr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 07:52:47 -0500
+	id S1751279Ab3CGMxI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Mar 2013 07:53:08 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,802,1355126400"; 
-   d="scan'208";a="266021602"
-Date: Thu, 7 Mar 2013 17:57:59 +0530
+   d="scan'208";a="210424734"
+Date: Thu, 7 Mar 2013 17:58:30 +0530
 From: Vinod Koul <vinod.koul@intel.com>
 To: Dave Jiang <dave.jiang@intel.com>
 Cc: djbw@fb.com, linux-kernel@vger.kernel.org
 Subject: Re: [PATCH] ioatdma: make debug output more readable
-Message-ID: <20130307122759.GI13370@intel.com>
+Message-ID: <20130307122830.GJ13370@intel.com>
 References: <20130304175954.9792.19327.stgit@djiang5-linux2.ch.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -30,8 +30,7 @@ On Mon, Mar 04, 2013 at 10:59:54AM -0700, Dave Jiang wrote:
 > the dump out of the NEXT field.
 > 
 > Signed-off-by: Dave Jiang <dave.jiang@intel.com>
-Applied thanks
-
+Applied Thanks
 > ---
 >  drivers/dma/ioat/dma.h    |    2 +-
 >  drivers/dma/ioat/dma_v3.c |    3 ++-
