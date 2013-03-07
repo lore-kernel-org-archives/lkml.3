@@ -1,203 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933404Ab3CGVQP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 16:16:15 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:15228 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751787Ab3CGVQN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 16:16:13 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Thu, 07 Mar 2013 13:10:05 -0800
-From: Andrew Chew <achew@nvidia.com>
-To: <thierry.reding@avionic-design.de>, <acourbot@nvidia.com>
-CC: <achew@nvidia.com>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH 1/1 v5] pwm_bl: Add support for backlight enable regulator
-Date: Thu, 7 Mar 2013 13:16:08 -0800
-Message-ID: <1362690968-24854-1-git-send-email-achew@nvidia.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S933443Ab3CGVWT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 16:22:19 -0500
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:52462 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932815Ab3CGVWR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Mar 2013 16:22:17 -0500
+Message-ID: <513904F2.50607@linux.vnet.ibm.com>
+Date: Thu, 07 Mar 2013 15:21:54 -0600
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Dave Hansen <dave@sr71.net>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Larry Woodman <lwoodman@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Joe Perches <joe@perches.com>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
+Subject: Re: [PATCHv7 4/8] zswap: add to mm/
+References: <1362585143-6482-1-git-send-email-sjenning@linux.vnet.ibm.com> <1362585143-6482-5-git-send-email-sjenning@linux.vnet.ibm.com> <5138E3C7.9080205@sr71.net>
+In-Reply-To: <5138E3C7.9080205@sr71.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13030721-9360-0000-0000-0000113A0802
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The backlight enable regulator is specified in the device tree node for
-backlight.
+On 03/07/2013 01:00 PM, Dave Hansen wrote:
+> On 03/06/2013 07:52 AM, Seth Jennings wrote:
+>> +static int __zswap_cpu_notifier(unsigned long action, unsigned long cpu)
+>> +{
+>> +	struct crypto_comp *tfm;
+>> +	u8 *dst;
+>> +
+>> +	switch (action) {
+>> +	case CPU_UP_PREPARE:
+>> +		tfm = crypto_alloc_comp(zswap_compressor, 0, 0);
+>> +		if (IS_ERR(tfm)) {
+>> +			pr_err("can't allocate compressor transform\n");
+>> +			return NOTIFY_BAD;
+>> +		}
+>> +		*per_cpu_ptr(zswap_comp_pcpu_tfms, cpu) = tfm;
+>> +		dst = (u8 *)__get_free_pages(GFP_KERNEL, 1);
+> 
+> Are there some alignment requirements for 'dst'?  If not, why not use
+> kmalloc()?  I think kmalloc() should always be used where possible since
+> slab debugging is so useful compared to what we can do with raw
+> buddy-allocated pages.
 
-Signed-off-by: Andrew Chew <achew@nvidia.com>
----
-Renamed en_supply to enable_supply to match the corresponding device tree
-property.
+Sounds good to me.
 
-Removed unnecessary check for pb->enable_supply validity.  This supply
-is mandatory, and probe will fail if it is not provided.
+> 
+> Where does the order-1 requirement come from by the way?
 
-Renamed the tracking bool from en_supply_enabled to enabled so that it's
-more generic.  Encapsulated pwm_enable() and pwm_disable() calls into the 
-enabled check so that we never unnecessarily turn on or off the pwm if
-it's already been turned on or off.
+Unsafe LZO compression
+(http://article.gmane.org/gmane.linux.kernel.mm/95460)
 
- .../bindings/video/backlight/pwm-backlight.txt     |   14 +++++
- drivers/video/backlight/pwm_bl.c                   |   56 ++++++++++++++++----
- 2 files changed, 60 insertions(+), 10 deletions(-)
+Forgot to put in the comment for v7.
 
-diff --git a/Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt b/Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt
-index 1e4fc72..7e2e089 100644
---- a/Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt
-+++ b/Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt
-@@ -10,6 +10,11 @@ Required properties:
-       last value in the array represents a 100% duty cycle (brightest).
-   - default-brightness-level: the default brightness level (index into the
-       array defined by the "brightness-levels" property)
-+  - enable-supply: A phandle to the regulator device tree node. This
-+      regulator will be turned on and off as the pwm is enabled and disabled.
-+      Many backlights are enabled via a GPIO. In this case, we instantiate
-+      a fixed regulator and give that to enable-supply. If a regulator
-+      is not needed, then provide a dummy fixed regulator.
- 
- Optional properties:
-   - pwm-names: a list of names for the PWM devices specified in the
-@@ -19,10 +24,19 @@ Optional properties:
- 
- Example:
- 
-+	bl_en: fixed-regulator {
-+                compatible = "regulator-fixed";
-+                regulator-name = "bl-en-supply";
-+                regulator-boot-on;
-+                gpio = <&some_gpio>;
-+                enable-active-high;
-+	};
-+
- 	backlight {
- 		compatible = "pwm-backlight";
- 		pwms = <&pwm 0 5000000>;
- 
- 		brightness-levels = <0 4 8 16 32 64 128 255>;
- 		default-brightness-level = <6>;
-+		enable-supply = <&bl_en>;
- 	};
-diff --git a/drivers/video/backlight/pwm_bl.c b/drivers/video/backlight/pwm_bl.c
-index 069983c..c517d4a 100644
---- a/drivers/video/backlight/pwm_bl.c
-+++ b/drivers/video/backlight/pwm_bl.c
-@@ -20,10 +20,13 @@
- #include <linux/pwm.h>
- #include <linux/pwm_backlight.h>
- #include <linux/slab.h>
-+#include <linux/regulator/consumer.h>
- 
- struct pwm_bl_data {
- 	struct pwm_device	*pwm;
- 	struct device		*dev;
-+	bool			enabled;
-+	struct regulator	*enable_supply;
- 	unsigned int		period;
- 	unsigned int		lth_brightness;
- 	unsigned int		*levels;
-@@ -35,6 +38,38 @@ struct pwm_bl_data {
- 	void			(*exit)(struct device *);
- };
- 
-+static void pwm_backlight_enable(struct backlight_device *bl)
-+{
-+	struct pwm_bl_data *pb = dev_get_drvdata(&bl->dev);
-+
-+	/* Bail if we are already enabled. */
-+	if (pb->enabled)
-+		return;
-+
-+	pwm_enable(pb->pwm);
-+
-+	if (regulator_enable(pb->enable_supply) != 0)
-+		dev_warn(&bl->dev, "Failed to enable regulator");
-+
-+	pb->enabled = true;
-+}
-+
-+static void pwm_backlight_disable(struct backlight_device *bl)
-+{
-+	struct pwm_bl_data *pb = dev_get_drvdata(&bl->dev);
-+
-+	/* Bail if we are already disabled. */
-+	if (!pb->enabled)
-+		return;
-+
-+	if (regulator_disable(pb->enable_supply) != 0)
-+		dev_warn(&bl->dev, "Failed to disable regulator");
-+
-+	pwm_disable(pb->pwm);
-+
-+	pb->enabled = false;
-+}
-+
- static int pwm_backlight_update_status(struct backlight_device *bl)
- {
- 	struct pwm_bl_data *pb = dev_get_drvdata(&bl->dev);
-@@ -52,7 +87,7 @@ static int pwm_backlight_update_status(struct backlight_device *bl)
- 
- 	if (brightness == 0) {
- 		pwm_config(pb->pwm, 0, pb->period);
--		pwm_disable(pb->pwm);
-+		pwm_backlight_disable(bl);
- 	} else {
- 		int duty_cycle;
- 
-@@ -66,7 +101,7 @@ static int pwm_backlight_update_status(struct backlight_device *bl)
- 		duty_cycle = pb->lth_brightness +
- 		     (duty_cycle * (pb->period - pb->lth_brightness) / max);
- 		pwm_config(pb->pwm, duty_cycle, pb->period);
--		pwm_enable(pb->pwm);
-+		pwm_backlight_enable(bl);
- 	}
- 
- 	if (pb->notify_after)
-@@ -145,12 +180,6 @@ static int pwm_backlight_parse_dt(struct device *dev,
- 		data->max_brightness--;
- 	}
- 
--	/*
--	 * TODO: Most users of this driver use a number of GPIOs to control
--	 *       backlight power. Support for specifying these needs to be
--	 *       added.
--	 */
--
- 	return 0;
- }
- 
-@@ -213,6 +242,13 @@ static int pwm_backlight_probe(struct platform_device *pdev)
- 	pb->exit = data->exit;
- 	pb->dev = &pdev->dev;
- 
-+	pb->enable_supply = devm_regulator_get(&pdev->dev, "enable");
-+	if (IS_ERR(pb->enable_supply)) {
-+		ret = PTR_ERR(pb->enable_supply);
-+		pb->enable_supply = NULL;
-+		goto err_alloc;
-+	}
-+
- 	pb->pwm = devm_pwm_get(&pdev->dev, NULL);
- 	if (IS_ERR(pb->pwm)) {
- 		dev_err(&pdev->dev, "unable to request PWM, trying legacy API\n");
-@@ -268,7 +304,7 @@ static int pwm_backlight_remove(struct platform_device *pdev)
- 
- 	backlight_device_unregister(bl);
- 	pwm_config(pb->pwm, 0, pb->period);
--	pwm_disable(pb->pwm);
-+	pwm_backlight_disable(bl);
- 	if (pb->exit)
- 		pb->exit(&pdev->dev);
- 	return 0;
-@@ -283,7 +319,7 @@ static int pwm_backlight_suspend(struct device *dev)
- 	if (pb->notify)
- 		pb->notify(pb->dev, 0);
- 	pwm_config(pb->pwm, 0, pb->period);
--	pwm_disable(pb->pwm);
-+	pwm_backlight_disable(bl);
- 	if (pb->notify_after)
- 		pb->notify_after(pb->dev, 0);
- 	return 0;
--- 
-1.7.9.5
+> 
+> ...
+>> +**********************************/
+>> +/* attempts to compress and store an single page */
+>> +static int zswap_frontswap_store(unsigned type, pgoff_t offset,
+>> +				struct page *page)
+>> +{
+> ...
+>> +	/* store */
+>> +	handle = zs_malloc(tree->pool, dlen,
+>> +		__GFP_NORETRY | __GFP_HIGHMEM | __GFP_NOMEMALLOC |
+>> +			__GFP_NOWARN);
+>> +	if (!handle) {
+>> +		zswap_reject_zsmalloc_fail++;
+>> +		ret = -ENOMEM;
+>> +		goto putcpu;
+>> +	}
+>> +
+> 
+> I think there needs to at least be some strong comments in here about
+> why you're doing this kind of allocation.  From some IRC discussion, it
+> seems like you found some pathological case where zswap wasn't helping
+> make reclaim progress and ended up draining the reserve pools and you
+> did this to avoid draining the reserve pools.
+
+I'm currently doing some tests with fewer zsmalloc class sizes and
+removing __GFP_NOMEMALLOC to see the effect.
+
+> 
+> I think the lack of progress doing reclaim is really the root cause you
+> should be going after here instead of just working around the symptom.
+> 
+>> +/* NOTE: this is called in atomic context from swapon and must not sleep */
+>> +static void zswap_frontswap_init(unsigned type)
+>> +{
+>> +	struct zswap_tree *tree;
+>> +
+>> +	tree = kzalloc(sizeof(struct zswap_tree), GFP_NOWAIT);
+>> +	if (!tree)
+>> +		goto err;
+>> +	tree->pool = zs_create_pool(GFP_NOWAIT, &zswap_zs_ops);
+>> +	if (!tree->pool)
+>> +		goto freetree;
+>> +	tree->rbroot = RB_ROOT;
+>> +	spin_lock_init(&tree->lock);
+>> +	zswap_trees[type] = tree;
+>> +	return;
+>> +
+>> +freetree:
+>> +	kfree(tree);
+>> +err:
+>> +	pr_err("alloc failed, zswap disabled for swap type %d\n", type);
+>> +}
+> 
+> How large are these allocations?  Why are you doing GFP_NOWAIT instead
+> of GFP_ATOMIC?  This seems like the kind of thing that you'd _want_ to
+> be able to dip in to the reserves for.
+
+Not large. Would almost never make a difference, but you're right;
+should use GFP_ATOMIC.
+
+Thanks,
+Seth
 
