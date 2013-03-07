@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932884Ab3CGNWV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 08:22:21 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:53823 "EHLO arroyo.ext.ti.com"
+	id S932834Ab3CGNWU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 08:22:20 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:53825 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758746Ab3CGNWM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1758727Ab3CGNWM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 7 Mar 2013 08:22:12 -0500
 From: Kishon Vijay Abraham I <kishon@ti.com>
 To: <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>, <rob@landley.net>,
@@ -14,81 +14,57 @@ To: <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>, <rob@landley.net>,
         <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
         <linux-omap@vger.kernel.org>, <ruchika@ti.com>
-Subject: [PATCH v2 4/4] usb: musb: omap2430: replace *_* with *-* in property names
-Date: Thu, 7 Mar 2013 18:51:46 +0530
-Message-ID: <1362662506-14823-5-git-send-email-kishon@ti.com>
+Subject: [PATCH v2 0/4] usb: added palmas-usb driver and a few misc fixes
+Date: Thu, 7 Mar 2013 18:51:42 +0530
+Message-ID: <1362662506-14823-1-git-send-email-kishon@ti.com>
 X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1362662506-14823-1-git-send-email-kishon@ti.com>
-References: <1362662506-14823-1-git-send-email-kishon@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No functional change. Replace *_* with *-* in property names of otg to
-follow the general convention.
+Added palmas-usb driver which is mainly used as comparator driver to
+detect vbus/id events when a USB cable is connected and passes on the
+event information to omap glue (dwc3-omap.c)
 
-Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
----
- Documentation/devicetree/bindings/usb/omap-usb.txt |   12 ++++++------
- drivers/usb/musb/omap2430.c                        |    6 +++---
- 2 files changed, 9 insertions(+), 9 deletions(-)
+The other fixes include setting dma_mask for dwc3 device since device
+tree doesn't fill dma_mask, returning EPROBE_DEFER if probe has not yet
+called and replace *_* with *-* in property names in musb glue since
+that is the usual convention followed.
 
-diff --git a/Documentation/devicetree/bindings/usb/omap-usb.txt b/Documentation/devicetree/bindings/usb/omap-usb.txt
-index 1b9f55f..662f0f1 100644
---- a/Documentation/devicetree/bindings/usb/omap-usb.txt
-+++ b/Documentation/devicetree/bindings/usb/omap-usb.txt
-@@ -8,10 +8,10 @@ OMAP MUSB GLUE
-    and disconnect.
-  - multipoint : Should be "1" indicating the musb controller supports
-    multipoint. This is a MUSB configuration-specific setting.
-- - num_eps : Specifies the number of endpoints. This is also a
-+ - num-eps : Specifies the number of endpoints. This is also a
-    MUSB configuration-specific setting. Should be set to "16"
-- - ram_bits : Specifies the ram address size. Should be set to "12"
-- - interface_type : This is a board specific setting to describe the type of
-+ - ram-bits : Specifies the ram address size. Should be set to "12"
-+ - interface-type : This is a board specific setting to describe the type of
-    interface between the controller and the phy. It should be "0" or "1"
-    specifying ULPI and UTMI respectively.
-  - mode : Should be "3" to represent OTG. "1" signifies HOST and "2"
-@@ -29,14 +29,14 @@ usb_otg_hs: usb_otg_hs@4a0ab000 {
- 	ti,hwmods = "usb_otg_hs";
- 	ti,has-mailbox;
- 	multipoint = <1>;
--	num_eps = <16>;
--	ram_bits = <12>;
-+	num-eps = <16>;
-+	ram-bits = <12>;
- 	ctrl-module = <&omap_control_usb>;
- };
- 
- Board specific device node entry
- &usb_otg_hs {
--	interface_type = <1>;
-+	interface-type = <1>;
- 	mode = <3>;
- 	power = <50>;
- };
-diff --git a/drivers/usb/musb/omap2430.c b/drivers/usb/musb/omap2430.c
-index 1762354..dde2802 100644
---- a/drivers/usb/musb/omap2430.c
-+++ b/drivers/usb/musb/omap2430.c
-@@ -522,10 +522,10 @@ static int omap2430_probe(struct platform_device *pdev)
- 		}
- 
- 		of_property_read_u32(np, "mode", (u32 *)&pdata->mode);
--		of_property_read_u32(np, "interface_type",
-+		of_property_read_u32(np, "interface-type",
- 						(u32 *)&data->interface_type);
--		of_property_read_u32(np, "num_eps", (u32 *)&config->num_eps);
--		of_property_read_u32(np, "ram_bits", (u32 *)&config->ram_bits);
-+		of_property_read_u32(np, "num-eps", (u32 *)&config->num_eps);
-+		of_property_read_u32(np, "ram-bits", (u32 *)&config->ram_bits);
- 		of_property_read_u32(np, "power", (u32 *)&pdata->power);
- 		config->multipoint = of_property_read_bool(np, "multipoint");
- 		pdata->has_mailbox = of_property_read_bool(np,
+Developed this patches on
+git://git.kernel.org/pub/scm/linux/kernel/git/balbi/usb.git testing
+
+Changes from v1:
+* set the dma_mask for dwc3_omap (instead of setting dma_mask for dwc3
+core from dwc3-omap.c)
+* return '0' from dwc3_omap_mailbox on success (instead of hacky IRQ_HANDLED)
+It is now handled using mailboxstat member in palmas_usb.
+* Made compatible in palmas-usb to include *ti,twl6035-usb*
+
+Graeme Gregory (1):
+  USB: Palmas OTG Transceiver Driver
+
+Kishon Vijay Abraham I (3):
+  usb: dwc3: set dma_mask for dwc3_omap device
+  usb: dwc3: dwc3-omap: return -EPROBE_DEFER if probe has not yet
+    executed
+  usb: musb: omap2430: replace *_* with *-* in property names
+
+ Documentation/devicetree/bindings/usb/omap-usb.txt |   12 +-
+ .../devicetree/bindings/usb/twlxxxx-usb.txt        |   15 +
+ drivers/usb/dwc3/core.c                            |    4 +
+ drivers/usb/dwc3/dwc3-omap.c                       |   10 +-
+ drivers/usb/musb/omap2430.c                        |    6 +-
+ drivers/usb/otg/Kconfig                            |    6 +
+ drivers/usb/otg/Makefile                           |    1 +
+ drivers/usb/otg/palmas-usb.c                       |  396 ++++++++++++++++++++
+ include/linux/mfd/palmas.h                         |    7 +-
+ include/linux/usb/dwc3-omap.h                      |    6 +-
+ 10 files changed, 448 insertions(+), 15 deletions(-)
+ create mode 100644 drivers/usb/otg/palmas-usb.c
+
 -- 
 1.7.10.4
 
