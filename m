@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932371Ab3CGDey (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Mar 2013 22:34:54 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.243]:26606 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932263Ab3CGDex (ORCPT
+	id S1758953Ab3CGDfu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Mar 2013 22:35:50 -0500
+Received: from nasmtp01.atmel.com ([192.199.1.246]:56852 "EHLO
+	DVREDG02.corp.atmel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754592Ab3CGDft (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Mar 2013 22:34:53 -0500
+	Wed, 6 Mar 2013 22:35:49 -0500
 From: Wenyou Yang <wenyou.yang@atmel.com>
 To: <linux-arm-kernel@lists.infradead.org>
 CC: <grant.likely@secretlab.ca>, <nicolas.ferre@atmel.com>,
@@ -14,9 +14,9 @@ CC: <grant.likely@secretlab.ca>, <nicolas.ferre@atmel.com>,
         <JM.Lin@atmel.com>, <wenyou.yang@atmel.com>,
         <spi-devel-general@lists.sourceforge.net>,
         <linux-kernel@vger.kernel.org>
-Subject: [PATCH v6 09/16] spi/spi-atmel: fix spi-atmel driver to adapt to slave_config changes
-Date: Thu, 7 Mar 2013 11:32:16 +0800
-Message-ID: <1362627136-8123-1-git-send-email-wenyou.yang@atmel.com>
+Subject: [PATCH v6 10/16] spi/spi-atmel: correct 16 bits transfers using PIO
+Date: Thu, 7 Mar 2013 11:32:49 +0800
+Message-ID: <1362627169-8164-1-git-send-email-wenyou.yang@atmel.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1362626715-6549-1-git-send-email-wenyou.yang@atmel.com>
 References: <1362626715-6549-1-git-send-email-wenyou.yang@atmel.com>
@@ -28,138 +28,99 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Richard Genoud <richard.genoud@gmail.com>
 
-This is the following of the patch e2b35f3dbfc080f15b72834d08f04f0269dbe9be
-
 Signed-off-by: Richard Genoud <richard.genoud@gmail.com>
-[wenyou.yang@atmel.com: BUG: dmaengine mode when enable both spi0 and spi1, spi0 doesn't work]
-[wenyou.yang@atmel.com: submit the patch]
-Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
 Cc: spi-devel-general@lists.sourceforge.net
 Cc: linux-kernel@vger.kernel.org
+[wenyou.yang@atmel.com: submit the patch]
+Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
 ---
- drivers/spi/spi-atmel.c |   61 +++++++++++++++++++++++++++++++++++++++--------
- 1 file changed, 51 insertions(+), 10 deletions(-)
+ drivers/spi/spi-atmel.c |   46 +++++++++++++++++++++++++++++++++++++---------
+ 1 file changed, 37 insertions(+), 9 deletions(-)
 
 diff --git a/drivers/spi/spi-atmel.c b/drivers/spi/spi-atmel.c
-index f6ef86b..40fd8786 100644
+index 40fd8786..d287889 100644
 --- a/drivers/spi/spi-atmel.c
 +++ b/drivers/spi/spi-atmel.c
-@@ -387,6 +387,37 @@ static inline int atmel_spi_xfer_can_be_chained(struct spi_transfer *xfer)
- 	return xfer->delay_usecs == 0 && !xfer->cs_change;
- }
- 
-+static int atmel_spi_dma_slave_config(struct atmel_spi *as,
-+				struct dma_slave_config *slave_config)
-+{
-+	int err = 0;
-+
-+	slave_config->dst_addr_width = DMA_SLAVE_BUSWIDTH_1_BYTE;
-+	slave_config->src_addr_width = DMA_SLAVE_BUSWIDTH_1_BYTE;
-+
-+	slave_config->dst_addr = (dma_addr_t)as->phybase + SPI_TDR;
-+	slave_config->src_addr = (dma_addr_t)as->phybase + SPI_RDR;
-+	slave_config->src_maxburst = 1;
-+	slave_config->dst_maxburst = 1;
-+	slave_config->device_fc = false;
-+
-+	slave_config->direction = DMA_MEM_TO_DEV;
-+	if (dmaengine_slave_config(as->dma.chan_tx, slave_config)) {
-+		dev_err(&as->pdev->dev,
-+			"failed to configure tx dma channel\n");
-+		err = -EINVAL;
-+	}
-+
-+	slave_config->direction = DMA_DEV_TO_MEM;
-+	if (dmaengine_slave_config(as->dma.chan_rx, slave_config)) {
-+		dev_err(&as->pdev->dev,
-+			"failed to configure rx dma channel\n");
-+		err = -EINVAL;
-+	}
-+
-+	return err;
-+}
-+
- static bool filter(struct dma_chan *chan, void *slave)
- {
- 	struct	at_dma_slave *sl = slave;
-@@ -402,14 +433,12 @@ static bool filter(struct dma_chan *chan, void *slave)
- static int atmel_spi_configure_dma(struct atmel_spi *as)
- {
- 	struct at_dma_slave *sdata = &as->dma.dma_slave;
-+	struct dma_slave_config	slave_config;
-+	int err;
- 
- 	if (sdata && sdata->dma_dev) {
- 		dma_cap_mask_t mask;
- 
--		/* setup DMA addresses */
--		sdata->rx_reg = (dma_addr_t)as->phybase + SPI_RDR;
--		sdata->tx_reg = (dma_addr_t)as->phybase + SPI_TDR;
--
- 		/* Try to grab two DMA channels */
- 		dma_cap_zero(mask);
- 		dma_cap_set(DMA_SLAVE, mask);
-@@ -419,21 +448,27 @@ static int atmel_spi_configure_dma(struct atmel_spi *as)
- 				dma_request_channel(mask, filter, sdata);
- 	}
- 	if (!as->dma.chan_rx || !as->dma.chan_tx) {
--		if (as->dma.chan_rx)
--			dma_release_channel(as->dma.chan_rx);
--		if (as->dma.chan_tx)
--			dma_release_channel(as->dma.chan_tx);
- 		dev_err(&as->pdev->dev,
- 			"DMA channel not available, unable to use SPI\n");
--		return -EBUSY;
-+		err = -EBUSY;
-+		goto error;
+@@ -520,13 +520,17 @@ static void atmel_spi_next_xfer_pio(struct spi_master *master,
  	}
  
-+	err = atmel_spi_dma_slave_config(as, &slave_config);
-+	if (err)
-+		goto error;
-+
- 	dev_info(&as->pdev->dev,
- 			"Using %s (tx) and %s (rx) for DMA transfers\n",
- 			dma_chan_name(as->dma.chan_tx),
- 			dma_chan_name(as->dma.chan_rx));
+ 	if (xfer->tx_buf)
+-		spi_writel(as, TDR, *(u8 *)(xfer->tx_buf));
++		if (xfer->bits_per_word > 8)
++			spi_writel(as, TDR, *(u16 *)(xfer->tx_buf));
++		else
++			spi_writel(as, TDR, *(u8 *)(xfer->tx_buf));
+ 	else
+ 		spi_writel(as, TDR, 0);
+ 
+ 	dev_dbg(master->dev.parent,
+-		"  start pio xfer %p: len %u tx %p rx %p\n",
+-		xfer, xfer->len, xfer->tx_buf, xfer->rx_buf);
++		"  start pio xfer %p: len %u tx %p rx %p bitpw %d\n",
++		xfer, xfer->len, xfer->tx_buf, xfer->rx_buf,
++		xfer->bits_per_word);
+ 
+ 	/* Enable relevant interrupts */
+ 	spi_writel(as, IER, SPI_BIT(RDRF) | SPI_BIT(OVRES));
+@@ -945,21 +949,39 @@ atmel_spi_pump_pio_data(struct atmel_spi *as, struct spi_transfer *xfer)
+ {
+ 	u8		*txp;
+ 	u8		*rxp;
++	u16		*txp16;
++	u16		*rxp16;
+ 	unsigned long	xfer_pos = xfer->len - as->current_remaining_bytes;
+ 
+ 	if (xfer->rx_buf) {
+-		rxp = ((u8 *)xfer->rx_buf) + xfer_pos;
+-		*rxp = spi_readl(as, RDR);
++		if (xfer->bits_per_word > 8) {
++			rxp16 = (u16 *)(((u8 *)xfer->rx_buf) + xfer_pos);
++			*rxp16 = spi_readl(as, RDR);
++		} else {
++			rxp = ((u8 *)xfer->rx_buf) + xfer_pos;
++			*rxp = spi_readl(as, RDR);
++		}
+ 	} else {
+ 		spi_readl(as, RDR);
+ 	}
 -
- 	return 0;
-+error:
-+	if (as->dma.chan_rx)
-+		dma_release_channel(as->dma.chan_rx);
-+	if (as->dma.chan_tx)
-+		dma_release_channel(as->dma.chan_tx);
-+	return err;
- }
+-	as->current_remaining_bytes--;
++	if (xfer->bits_per_word > 8) {
++		as->current_remaining_bytes -= 2;
++		if (as->current_remaining_bytes < 0)
++			as->current_remaining_bytes = 0;
++	} else {
++		as->current_remaining_bytes--;
++	}
  
- static void atmel_spi_stop_dma(struct atmel_spi *as)
-@@ -510,6 +545,7 @@ static int atmel_spi_next_xfer_dma_submit(struct spi_master *master,
- 	struct dma_chan		*txchan = as->dma.chan_tx;
- 	struct dma_async_tx_descriptor *rxdesc;
- 	struct dma_async_tx_descriptor *txdesc;
-+	struct dma_slave_config	slave_config;
- 	dma_cookie_t		cookie;
- 	u32	len = *plen;
+ 	if (as->current_remaining_bytes) {
+ 		if (xfer->tx_buf) {
+-			txp = ((u8 *)xfer->tx_buf) + xfer_pos + 1;
+-			spi_writel(as, TDR, *txp);
++			if (xfer->bits_per_word > 8) {
++				txp16 = (u16 *)(((u8 *)xfer->tx_buf)
++							+ xfer_pos + 2);
++				spi_writel(as, TDR, *txp16);
++			} else {
++				txp = ((u8 *)xfer->tx_buf) + xfer_pos + 1;
++				spi_writel(as, TDR, *txp);
++			}
+ 		} else {
+ 			spi_writel(as, TDR, 0);
+ 		}
+@@ -1372,6 +1394,12 @@ static int atmel_spi_transfer(struct spi_device *spi, struct spi_message *msg)
+ 				return -ENOPROTOOPT;
+ 			}
+ 		}
++		if (xfer->bits_per_word > 8) {
++			if (xfer->len % 2) {
++				dev_dbg(&spi->dev, "buffer len should be 16 bits aligned\n");
++				return -EINVAL;
++			}
++		}
  
-@@ -548,6 +584,10 @@ static int atmel_spi_next_xfer_dma_submit(struct spi_master *master,
- 
- 	*plen = len;
- 
-+	if (atmel_spi_dma_slave_config(as, &slave_config))
-+		goto err_exit;
-+
-+
- 	/* Send both scatterlists */
- 	rxdesc = rxchan->device->device_prep_slave_sg(rxchan,
- 					&as->dma.sgrx,
-@@ -596,6 +636,7 @@ static int atmel_spi_next_xfer_dma_submit(struct spi_master *master,
- err_dma:
- 	spi_writel(as, IDR, SPI_BIT(OVRES));
- 	atmel_spi_stop_dma(as);
-+err_exit:
- 	atmel_spi_lock(as);
- 	return -ENOMEM;
- }
+ 		if (xfer->speed_hz < spi->max_speed_hz) {
+ 			dev_dbg(&spi->dev,
 -- 
 1.7.9.5
 
