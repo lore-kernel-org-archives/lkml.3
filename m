@@ -1,123 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754898Ab3CHTvB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 14:51:01 -0500
-Received: from longford.logfs.org ([213.229.74.203]:58636 "EHLO
-	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751438Ab3CHTvA (ORCPT
+	id S1756010Ab3CHTvH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 14:51:07 -0500
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:24706 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755033Ab3CHTvD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 14:51:00 -0500
-Date: Fri, 8 Mar 2013 13:26:49 -0500
-From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: pipe_release oops.
-Message-ID: <20130308182648.GA25175@logfs.org>
-References: <CA+55aFwDYocNRjSCJk1PYw0MFy7dpKf1yMMEiePP--=ewQcX6A@mail.gmail.com>
- <20130307213819.GB19543@redhat.com>
- <CA+55aFx424SX6S1zFegVaMZ_BkeZctDKCN6eYCLFfaJDKRVG9g@mail.gmail.com>
- <20130307220333.GA31039@redhat.com>
- <20130307223610.GA2494@redhat.com>
- <CA+55aFzdPaFQROzFhz-v1Qn=3aDP=4uGTiOJxR26cR91uJHxyg@mail.gmail.com>
- <20130308145306.GA24085@redhat.com>
- <CA+55aFzwOnRnp2B09fKjt8hd9tOCv44H482z1QpCnYc2mywnpA@mail.gmail.com>
+	Fri, 8 Mar 2013 14:51:03 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19syW6kh48R2Fx/vcLN6Kfq
+Date: Fri, 8 Mar 2013 11:50:58 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 04/10] ARM: OMAP2+: Divorce from local timer API
+Message-ID: <20130308195058.GH11806@atomide.com>
+References: <1362614646-24113-1-git-send-email-sboyd@codeaurora.org>
+ <1362614646-24113-5-git-send-email-sboyd@codeaurora.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CA+55aFzwOnRnp2B09fKjt8hd9tOCv44H482z1QpCnYc2mywnpA@mail.gmail.com>
+In-Reply-To: <1362614646-24113-5-git-send-email-sboyd@codeaurora.org>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 8 March 2013 10:30:01 -0800, Linus Torvalds wrote:
+* Stephen Boyd <sboyd@codeaurora.org> [130306 16:22]:
+> Now that the TWD doesn't rely on the local timer API, OMAP can
+> stop selecting it in Kconfig and relying on the config option to
+> decide if it should call smp_twd functions.
 > 
-> Hmm. So I've been trying to figure this out, and I really don't see
-> it. Every single pipe open routine *should* make sure that the inode
-> has an inode->i_pipe field. So if the open() has succeeded and you
-> have a valid file descriptor, the inode->i_pipe thing should be there.
+> Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
 
-Ok, here is a wild idea that is very likely wrong.  But some
-background first.  I've had problems with process exit times and one
-of the culprits turned out to be exit_files() where one device driver
-went awol for several seconds.  Fixing the device driver is hard, I
-didn't see a good reason not to call exit_files() earlier and
-exit_mm() was the other big offender, so the idea was to run both in
-parallel and I applied the patch below.
+Acked-by: Tony Lindgren <tony@atomide.com>
 
-As a result I've gotten a bunch of NULL pointer dereferences that only
-happen in virtual machines, never on real hardware.  For example
-  [<ffffffff81164bf8>] alloc_fd+0x38/0x130
-  [<ffffffff8114857e>] do_sys_open+0xee/0x1f0
-  [<ffffffff811486a1>] sys_open+0x21/0x30
-  [<ffffffff815bea29>] system_call_fastpath+0x16/0x1b
-
-Now I can easily see how current->files being NULL will result in such
-backtraces.  I can also see how my patch moves the NULLing of
-current->files a bit back in time.  But I could never figure out how
-my patch could have introduced a race that didn't exist before.
-
-So the wild idea is that we have always had a very unlikely race with
-current->files being NULL and trinity happens to hit it somehow.
-
-Jörn
-
---
-One of my most productive days was throwing away 1000 lines of code.
--- Ken Thompson.
-
-
-diff --git a/kernel/exit.c b/kernel/exit.c
-index f65345f9..5886799 100644
---- a/kernel/exit.c
-+++ b/kernel/exit.c
-@@ -4,6 +4,7 @@
-  *  Copyright (C) 1991, 1992  Linus Torvalds
-  */
- 
-+#include <linux/async.h>
- #include <linux/mm.h>
- #include <linux/slab.h>
- #include <linux/interrupt.h>
-@@ -559,6 +560,11 @@ void exit_files(struct task_struct *tsk)
- 	}
- }
- 
-+static void exit_files_async(void *data, async_cookie_t cookie)
-+{
-+	exit_files(data);
-+}
-+
- #ifdef CONFIG_MM_OWNER
- /*
-  * A task is exiting.   If it owned this mm, find a new owner for the mm.
-@@ -905,6 +911,7 @@ static inline void check_stack_usage(void) {}
- void do_exit(long code)
- {
- 	struct task_struct *tsk = current;
-+	async_cookie_t files_cookie;
- 	int group_dead;
- 
- 	profile_task_exit(tsk);
-@@ -982,6 +989,7 @@ void do_exit(long code)
- 	tsk->exit_code = code;
- 	taskstats_exit(tsk, group_dead);
- 
-+	files_cookie = async_schedule(exit_files_async, tsk);
- 	exit_mm(tsk);
- 
- 	if (group_dead)
-@@ -990,7 +998,7 @@ void do_exit(long code)
- 
- 	exit_sem(tsk);
- 	exit_shm(tsk);
--	exit_files(tsk);
-+	async_synchronize_cookie(files_cookie);
- 	exit_fs(tsk);
- 	exit_task_work(tsk);
- 	check_stack_usage();
--- 
-1.7.10.4
-
+> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> ---
+>  arch/arm/mach-omap2/Kconfig | 1 -
+>  arch/arm/mach-omap2/timer.c | 7 -------
+>  2 files changed, 8 deletions(-)
+> 
+> diff --git a/arch/arm/mach-omap2/Kconfig b/arch/arm/mach-omap2/Kconfig
+> index 49ac3df..6e1f871 100644
+> --- a/arch/arm/mach-omap2/Kconfig
+> +++ b/arch/arm/mach-omap2/Kconfig
+> @@ -88,7 +88,6 @@ config ARCH_OMAP4
+>  	select CACHE_L2X0
+>  	select CPU_V7
+>  	select HAVE_SMP
+> -	select LOCAL_TIMERS if SMP
+>  	select OMAP_INTERCONNECT
+>  	select PL310_ERRATA_588369
+>  	select PL310_ERRATA_727915
+> diff --git a/arch/arm/mach-omap2/timer.c b/arch/arm/mach-omap2/timer.c
+> index 2bdd4cf..c00a8f8 100644
+> --- a/arch/arm/mach-omap2/timer.c
+> +++ b/arch/arm/mach-omap2/timer.c
+> @@ -587,7 +587,6 @@ OMAP_SYS_GP_TIMER_INIT(3_am33xx, 1, OMAP4_MPU_SOURCE, "ti,timer-alwon",
+>  #ifdef CONFIG_ARCH_OMAP4
+>  OMAP_SYS_32K_TIMER_INIT(4, 1, OMAP4_32K_SOURCE, "ti,timer-alwon",
+>  			2, OMAP4_MPU_SOURCE);
+> -#ifdef CONFIG_LOCAL_TIMERS
+>  static DEFINE_TWD_LOCAL_TIMER(twd_local_timer, OMAP44XX_LOCAL_TWD_BASE, 29);
+>  void __init omap4_local_timer_init(void)
+>  {
+> @@ -606,12 +605,6 @@ void __init omap4_local_timer_init(void)
+>  			pr_err("twd_local_timer_register failed %d\n", err);
+>  	}
+>  }
+> -#else /* CONFIG_LOCAL_TIMERS */
+> -void __init omap4_local_timer_init(void)
+> -{
+> -	omap4_sync32k_timer_init();
+> -}
+> -#endif /* CONFIG_LOCAL_TIMERS */
+>  #endif /* CONFIG_ARCH_OMAP4 */
+>  
+>  #ifdef CONFIG_SOC_OMAP5
+> -- 
+> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+> hosted by The Linux Foundation
+> 
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
