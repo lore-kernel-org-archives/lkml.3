@@ -1,49 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754460Ab3CHHTs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 02:19:48 -0500
-Received: from mail-qe0-f47.google.com ([209.85.128.47]:56734 "EHLO
-	mail-qe0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752389Ab3CHHTr (ORCPT
+	id S933855Ab3CHHUm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 02:20:42 -0500
+Received: from www.linutronix.de ([62.245.132.108]:52971 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752389Ab3CHHUl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 02:19:47 -0500
+	Fri, 8 Mar 2013 02:20:41 -0500
+Date: Fri, 8 Mar 2013 08:20:33 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+cc: john.stultz@linaro.org, viresh.kumar@linaro.org,
+        jacob.jun.pan@linux.intel.com,
+        LAK <linux-arm-kernel@lists.infradead.org>, santosh.shilimkar@ti.com,
+        linux-pm@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        linaro-kernel@lists.linaro.org, patches@linaro.org,
+        rickard.andersson@stericsson.com, vincent.guittot@linaro.org,
+        linus.walleij@stericsson.com, Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH 2/4][V2] time : set broadcast irq affinity
+In-Reply-To: <51396B39.3090504@linaro.org>
+Message-ID: <alpine.LFD.2.02.1303080817230.22263@ionos>
+References: <1362219013-18173-1-git-send-email-daniel.lezcano@linaro.org> <1362219013-18173-3-git-send-email-daniel.lezcano@linaro.org> <alpine.LFD.2.02.1303052135080.22263@ionos> <51370C09.5020301@linaro.org> <alpine.LFD.2.02.1303061047240.22263@ionos>
+ <51396B39.3090504@linaro.org>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <CAE9FiQVO0aDrUKE_EV+A+aksqeukn6JMQqbfbKyw8JMV=DpaVw@mail.gmail.com>
-References: <1362718720-27048-1-git-send-email-yinghai@kernel.org>
-	<1362718720-27048-12-git-send-email-yinghai@kernel.org>
-	<20130308064640.GL14556@mtj.dyndns.org>
-	<CAE9FiQVO0aDrUKE_EV+A+aksqeukn6JMQqbfbKyw8JMV=DpaVw@mail.gmail.com>
-Date: Thu, 7 Mar 2013 23:19:46 -0800
-X-Google-Sender-Auth: iPtAywkE0Ropok4Yl5pZU3lNjg4
-Message-ID: <CAOS58YP4DrSXMPRCeNakac1hp5=1e3OkBCDF8u4vLwksj9+Kdw@mail.gmail.com>
-Subject: Re: [PATCH 11/14] x86, acpi, numa: split SLIT handling out
-From: Tejun Heo <tj@kernel.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Renninger <trenn@suse.de>, Tang Chen <tangchen@cn.fujitsu.com>,
-        linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        linux-acpi@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 7, 2013 at 11:18 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> ia64 like to call in this seqence
-> acpi_numa_init()
-> parse srat
-> parse slit
-> then
-> acpi_numa_arch_fixup()
->
-> in this arch_fixup, it will try to fill dummy distance_matrix.
->
-> so would to keep acpi_numa_init ...
+On Fri, 8 Mar 2013, Daniel Lezcano wrote:
+> On 03/06/2013 10:48 AM, Thomas Gleixner wrote:
+> I was wondering if it would be possible to take the 3/4 and 4/4
+> otherwise the flag dependency will prevent to send those to the
+> maintainer's tree until they gain visibility on it.
 
-Can't it just call acpi_numa_init_srat() and then init_slit()?  What
-am I missing?
+I can take them with the ack of arm soc folks.
 
--- 
-tejun
+Thanks,
+
+	tglx
