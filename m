@@ -1,115 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760194Ab3CHCKS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 21:10:18 -0500
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:63398 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752241Ab3CHCKR (ORCPT
+	id S1760202Ab3CHCP7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 21:15:59 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:44683 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751029Ab3CHCP6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 21:10:17 -0500
-Date: Thu, 7 Mar 2013 18:10:13 -0800
-From: Michel Lespinasse <walken@google.com>
-To: Paul Turner <pjt@google.com>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org
-Subject: [PATCH] sched: make sched_group_{get,set}_rt_{runtime,period}
- functions static
-Message-ID: <20130308021013.GA11284@google.com>
+	Thu, 7 Mar 2013 21:15:58 -0500
+Date: Fri, 8 Mar 2013 10:15:29 +0800
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Daniel Mack <zonque@gmail.com>
+Cc: Afzal Mohammed <afzal.mohd.ma@gmail.com>,
+        Fabio Estevam <festevam@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Mike Turquette <mturquette@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <robherring2@gmail.com>
+Subject: Re: Question about fixed-clock
+Message-ID: <20130308021527.GA28481@opensource.wolfsonmicro.com>
+References: <20130307184240.GA3327@afzal-ThinkPad-R50e>
+ <5139155F.5050407@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="jI8keyz6grp/JLjh"
 Content-Disposition: inline
+In-Reply-To: <5139155F.5050407@gmail.com>
+X-Cookie: You may be recognized soon.  Hide.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just a tiny cleanup I did while I was looking through scheduler code
-doing a tasklist_lock change. Please consider applying if you find it
-appropriate.
 
-------------------------------8<-----------------------------------------
-sched: make sched_group_{get,set}_rt_{runtime,period} functions static
+--jI8keyz6grp/JLjh
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-These functions, as well as sched_rt_can_attach(), used to be public so
-that kernel/user.c could use them; however this use has now disappeared
-so that these functions can be made static again.
+On Thu, Mar 07, 2013 at 11:31:59PM +0100, Daniel Mack wrote:
+> On 07.03.2013 19:42, Afzal Mohammed wrote:
 
-Signed-off-by: Michel Lespinasse <walken@google.com>
+> > I feel that for a platform having it's clock tree in DT, of_clk_init
+> > would take care of it, but if clock tree data is not in DT, clock
+> > tree would have to be extended in a non-DT way.
 
----
- include/linux/sched.h |  9 ---------
- kernel/sched/core.c   | 11 ++++++-----
- 2 files changed, 6 insertions(+), 14 deletions(-)
+> Hmm, I don't follow. So for generic OMAP board in general which does
+> *not* have its SoC clocks in DT, the question is who's in charge of
+> registering out-of-SoC fixed clocks that are defined in DT.
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index d35d2b6ddbfb..ac8dbca5ea15 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -2694,15 +2694,6 @@ extern void sched_move_task(struct task_struct *tsk);
- extern int sched_group_set_shares(struct task_group *tg, unsigned long shares);
- extern unsigned long sched_group_shares(struct task_group *tg);
- #endif
--#ifdef CONFIG_RT_GROUP_SCHED
--extern int sched_group_set_rt_runtime(struct task_group *tg,
--				      long rt_runtime_us);
--extern long sched_group_rt_runtime(struct task_group *tg);
--extern int sched_group_set_rt_period(struct task_group *tg,
--				      long rt_period_us);
--extern long sched_group_rt_period(struct task_group *tg);
--extern int sched_rt_can_attach(struct task_group *tg, struct task_struct *tsk);
--#endif
- #endif /* CONFIG_CGROUP_SCHED */
- 
- extern int task_can_switch_user(struct user_struct *up,
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 7f12624a393c..4c0b8c333034 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -7455,7 +7455,8 @@ unlock:
- 	return err;
- }
- 
--int sched_group_set_rt_runtime(struct task_group *tg, long rt_runtime_us)
-+static int
-+sched_group_set_rt_runtime(struct task_group *tg, long rt_runtime_us)
- {
- 	u64 rt_runtime, rt_period;
- 
-@@ -7467,7 +7468,7 @@ int sched_group_set_rt_runtime(struct task_group *tg, long rt_runtime_us)
- 	return tg_set_rt_bandwidth(tg, rt_period, rt_runtime);
- }
- 
--long sched_group_rt_runtime(struct task_group *tg)
-+static long sched_group_rt_runtime(struct task_group *tg)
- {
- 	u64 rt_runtime_us;
- 
-@@ -7479,7 +7480,7 @@ long sched_group_rt_runtime(struct task_group *tg)
- 	return rt_runtime_us;
- }
- 
--int sched_group_set_rt_period(struct task_group *tg, long rt_period_us)
-+static int sched_group_set_rt_period(struct task_group *tg, long rt_period_us)
- {
- 	u64 rt_runtime, rt_period;
- 
-@@ -7492,7 +7493,7 @@ int sched_group_set_rt_period(struct task_group *tg, long rt_period_us)
- 	return tg_set_rt_bandwidth(tg, rt_period, rt_runtime);
- }
- 
--long sched_group_rt_period(struct task_group *tg)
-+static long sched_group_rt_period(struct task_group *tg)
- {
- 	u64 rt_period_us;
- 
-@@ -7527,7 +7528,7 @@ static int sched_rt_global_constraints(void)
- 	return ret;
- }
- 
--int sched_rt_can_attach(struct task_group *tg, struct task_struct *tsk)
-+static int sched_rt_can_attach(struct task_group *tg, struct task_struct *tsk)
- {
- 	/* Don't accept realtime tasks when there is no way for them to run */
- 	if (rt_task(tsk) && tg->rt_bandwidth.rt_runtime == 0)
--- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
+> Note that the clock I'm dealing with here is _outside_ of the SoC, and I
+> just need to have it in DT, so it can feed another clock chip's input pin.
+
+> Grep'ing through arch/arm, it seems that the imx arch does the same
+> thing my patch does, but I could also imagine that it should be done
+> somewhere from the DT core. I copied Grant, Rob and Mark for more comments.
+
+Wouldn't this just be set up by the DT in the same way that other
+off-SoC hardware is?
+
+--jI8keyz6grp/JLjh
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJROUm0AAoJELSic+t+oim9ED8QAJbU6CNQ+zIqJSchXAFRRLHQ
+7jszfHoAlzhzRW8YtSPlCEodyU7/NPCK09+J5PEypwPX/FAUl2Tju/RCQPtHycVK
+vXHIZC6uYmMlgPT9cQmXVouL0FWuv/fGj18kRAiLx+BZdqqPRObJ9SH9271n5NKc
+GOHLsYS0TKvitF0EBnt3SbOvnEOlr6P0bcISwT2BaPn4wvs5/qGI26vN/F/dyzGn
+znecHtv6ZAMfg2Ho0thMtEM2WbpENRSxwTo2ESXGqc49+bnMd9q68qccTXHY1p6L
+zJEm2R1jvDAkCYvAr9i+AwTs6ctArPYEny07Wi2wpCh33rTp9IAeY+KRkh5hV6f9
+HT3z5K0foMTgzMkoFBel3a+1AcgBhx3uZ7H3jVdQcslc8io0PALGGS/XwOlh0f7h
+XlciJjTtoCYx2n1EdmTVRtt2BE6LvSWNLZSbKoygR8kGWrfygrSBNXUuDG00A/9k
+2TTnTs34w9ckeCausg8sOYiv26jL2Cs+EbEjad+3g++dbv9BjdoSFVO24KcJA48g
+SXqxZV3gOanvOBdBX7az+dgm8YybsJ7c/7m11/CHZLp44QBkoqMrEDRVmexSOiu0
+ELOQ/rcKHdoVdXlzMq9Z4H3cpSn7M6EGmGJVeW/t+vIDkZ+e6sJlFvGaBnfIDbtU
+szAxJ0of9iCtv7Ci6zgj
+=wvfu
+-----END PGP SIGNATURE-----
+
+--jI8keyz6grp/JLjh--
