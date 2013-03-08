@@ -1,46 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933843Ab3CHXv5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 18:51:57 -0500
-Received: from mga02.intel.com ([134.134.136.20]:50380 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756564Ab3CHXvT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 18:51:19 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,810,1355126400"; 
-   d="scan'208";a="274510210"
-From: Andi Kleen <andi@firstfloor.org>
-To: a.p.zijlstra@chello.nl
-Cc: mingo@kernel.org, linux-kernel@vger.kernel.org
-Subject: Basic perf PMU support for Haswell v9
-Date: Fri,  8 Mar 2013 15:49:28 -0800
-Message-Id: <1362786573-18455-1-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.7.7.6
+	id S1759980Ab3CHXyM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 18:54:12 -0500
+Received: from [140.211.169.12] ([140.211.169.12]:51429 "EHLO
+	mail.linuxfoundation.org" rhost-flags-FAIL-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1754610Ab3CHXyL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Mar 2013 18:54:11 -0500
+Date: Fri, 8 Mar 2013 15:54:10 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Eric Wong <normalperson@yhbt.net>
+Cc: Davide Libenzi <davidel@xmailserver.org>,
+        Al Viro <viro@ZenIV.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] epoll: trim epitem by one cache line on x86_64
+Message-Id: <20130308155410.3c63f24ee28e6532006cb0d4@linux-foundation.org>
+In-Reply-To: <20130307103240.GA24132@dcvr.yhbt.net>
+References: <20130304112941.GA16284@dcvr.yhbt.net>
+	<20130306143741.d5e56f13c94d2d6b2c1ea449@linux-foundation.org>
+	<20130307103240.GA24132@dcvr.yhbt.net>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is based on v7 of the full Haswell PMU support,
-rebased, reviewer-optimized and stripped down to the bare bones
+On Thu, 7 Mar 2013 10:32:40 +0000 Eric Wong <normalperson@yhbt.net> wrote:
 
-Most interesting new features are not in this patchkit
-(full version is git://git.kernel.org/pub/scm/linux/kernel/git/ak/linux-misc.git hsw/pmu5)
+> Andrew Morton <akpm@linux-foundation.org> wrote:
+> > It's going to be hard to maintain this - someone will change something
+> > sometime and break it.  I suppose we could add a runtime check if we
+> > cared enough.  Adding a big fat comment to struct epitem might help.
+> 
+> Thanks for looking at this patch.  I'll send a patch with a comment
+> about keeping epitem size in check.  Also, would adding (with comments):
+> 
+> 	BUILD_BUG_ON(sizeof(struct epitem) > 128);
+> 
+> ...be too heavy-handed?  I used that in my testing.  I'll check for:
+> sizeof(void *) <= 8 too; in case 128-bit machines appear...
 
-Contains support for:
-- Basic Haswell PMU and PEBS support
-- Late unmasking of the PMI
-- Basic LBRv4 support
+I guess such a check might avoid accidents in the future.  If it
+becomes a problem, we can always delete it.
 
-v2: Addressed Stephane's feedback. See individual patches for details.
-v3: now even more bite-sized. Qualifier constraints merged earlier.
-v4: Rename some variables, add some comments and other minor changes.
-Add some Reviewed/Tested-bys.
-v5: Address some minor review feedback. Port to latest perf/core
-v6: Add just some variable names, add comments, edit descriptions, some
-more testing, rebased to latest perf/core
-v7: Expand comment
-v8: Rename structure field.
-v9: No wide counters, but add basic LBRs. Add some more 
-constraints. Rebase to 3.9rc1
-
--Andi
