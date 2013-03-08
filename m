@@ -1,146 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933813Ab3CHW5A (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 17:57:00 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:36065 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753571Ab3CHWwt (ORCPT
+	id S933806Ab3CHW5Z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 17:57:25 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:30424 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759676Ab3CHWws (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 17:52:49 -0500
+	Fri, 8 Mar 2013 17:52:48 -0500
 From: Dave Kleikamp <dave.kleikamp@oracle.com>
 To: Zach Brown <zab@zabbo.net>
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         Dave Kleikamp <dave.kleikamp@oracle.com>,
-        "Theodore Ts'o" <tytso@mit.edu>,
-        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org
-Subject: [PATCH V7 -next 22/33] ext4: add support for read_iter and write_iter
-Date: Fri,  8 Mar 2013 16:52:17 -0600
-Message-Id: <1362783148-22736-23-git-send-email-dave.kleikamp@oracle.com>
+        Chris Mason <chris.mason@fusionio.com>, linux-btrfs@vger.kernel.org
+Subject: [PATCH V7 -next 25/33] btrfs: add support for read_iter and write_iter
+Date: Fri,  8 Mar 2013 16:52:20 -0600
+Message-Id: <1362783148-22736-26-git-send-email-dave.kleikamp@oracle.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1362783148-22736-1-git-send-email-dave.kleikamp@oracle.com>
 References: <1362783148-22736-1-git-send-email-dave.kleikamp@oracle.com>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-use the generic_file_read_iter(), create ext4_file_write_iter() based on
-ext4_file_write(), and make ext4_file_write() a wrapper around
-ext4_file_write_iter().
+btrfs can use generic_file_read_iter(). Base btrfs_file_write_iter()
+on btrfs_file_aio_write(), then have the latter call the former.
 
 Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
 Cc: Zach Brown <zab@zabbo.net>
-Cc: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Andreas Dilger <adilger.kernel@dilger.ca>
-Cc: linux-ext4@vger.kernel.org
+Cc: Chris Mason <chris.mason@fusionio.com>
+Cc: linux-btrfs@vger.kernel.org
 ---
- fs/ext4/file.c | 34 +++++++++++++++++-----------------
- 1 file changed, 17 insertions(+), 17 deletions(-)
+ fs/btrfs/file.c | 42 ++++++++++++++----------------------------
+ 1 file changed, 14 insertions(+), 28 deletions(-)
 
-diff --git a/fs/ext4/file.c b/fs/ext4/file.c
-index 4959e29..2b565ce 100644
---- a/fs/ext4/file.c
-+++ b/fs/ext4/file.c
-@@ -74,12 +74,11 @@ void ext4_unwritten_wait(struct inode *inode)
-  * or one thread will zero the other's data, causing corruption.
-  */
- static int
--ext4_unaligned_aio(struct inode *inode, const struct iovec *iov,
--		   unsigned long nr_segs, loff_t pos)
-+ext4_unaligned_aio(struct inode *inode, struct iov_iter *iter, loff_t pos)
- {
- 	struct super_block *sb = inode->i_sb;
- 	int blockmask = sb->s_blocksize - 1;
--	size_t count = iov_length(iov, nr_segs);
-+	size_t count = iov_iter_count(iter);
- 	loff_t final_size = pos + count;
+diff --git a/fs/btrfs/file.c b/fs/btrfs/file.c
+index b400e5d..1e8e734 100644
+--- a/fs/btrfs/file.c
++++ b/fs/btrfs/file.c
+@@ -457,7 +457,7 @@ static noinline int btrfs_copy_from_user(loff_t pos, int num_pages,
+ 		write_bytes -= copied;
+ 		total_copied += copied;
  
- 	if (pos >= inode->i_size)
-@@ -92,8 +91,8 @@ ext4_unaligned_aio(struct inode *inode, const struct iovec *iov,
+-		/* Return to btrfs_file_aio_write to fault page */
++		/* Return to btrfs_file_write_iter to fault page */
+ 		if (unlikely(copied == 0))
+ 			break;
+ 
+@@ -1445,27 +1445,23 @@ static noinline ssize_t __btrfs_buffered_write(struct file *file,
  }
  
- static ssize_t
--ext4_file_dio_write(struct kiocb *iocb, const struct iovec *iov,
--		    unsigned long nr_segs, loff_t pos)
-+ext4_file_dio_write(struct kiocb *iocb, struct iov_iter *iter,
-+		    loff_t pos)
+ static ssize_t __btrfs_direct_write(struct kiocb *iocb,
+-				    const struct iovec *iov,
+-				    unsigned long nr_segs, loff_t pos,
+-				    loff_t *ppos, size_t count, size_t ocount)
++				     struct iov_iter *iter, loff_t pos,
++				    loff_t *ppos, size_t count)
  {
  	struct file *file = iocb->ki_filp;
- 	struct inode *inode = file->f_mapping->host;
-@@ -101,11 +100,11 @@ ext4_file_dio_write(struct kiocb *iocb, const struct iovec *iov,
- 	int unaligned_aio = 0;
- 	ssize_t ret;
- 	int overwrite = 0;
--	size_t length = iov_length(iov, nr_segs);
-+	size_t length = iov_iter_count(iter);
+-	struct iov_iter i;
+ 	ssize_t written;
+ 	ssize_t written_buffered;
+ 	loff_t endbyte;
+ 	int err;
  
- 	if (ext4_test_inode_flag(inode, EXT4_INODE_EXTENTS) &&
- 	    !is_sync_kiocb(iocb))
--		unaligned_aio = ext4_unaligned_aio(inode, iov, nr_segs, pos);
-+		unaligned_aio = ext4_unaligned_aio(inode, iter, pos);
+-	written = generic_file_direct_write(iocb, iov, &nr_segs, pos, ppos,
+-					    count, ocount);
++	written = generic_file_direct_write_iter(iocb, iter, pos, ppos, count);
  
- 	/* Unaligned direct AIO must be serialized; see comment above */
- 	if (unaligned_aio) {
-@@ -146,7 +145,7 @@ ext4_file_dio_write(struct kiocb *iocb, const struct iovec *iov,
- 			overwrite = 1;
- 	}
+ 	if (written < 0 || written == count)
+ 		return written;
  
--	ret = __generic_file_aio_write(iocb, iov, nr_segs, &iocb->ki_pos);
-+	ret = __generic_file_write_iter(iocb, iter, &iocb->ki_pos);
- 	mutex_unlock(&inode->i_mutex);
- 
- 	if (ret > 0 || ret == -EIOCBQUEUED) {
-@@ -165,8 +164,7 @@ ext4_file_dio_write(struct kiocb *iocb, const struct iovec *iov,
+ 	pos += written;
+ 	count -= written;
+-	iov_iter_init(&i, iov, nr_segs, count, written);
+-	written_buffered = __btrfs_buffered_write(file, &i, pos);
++	written_buffered = __btrfs_buffered_write(file, iter, pos);
+ 	if (written_buffered < 0) {
+ 		err = written_buffered;
+ 		goto out;
+@@ -1500,9 +1496,8 @@ static void update_time_for_write(struct inode *inode)
+ 		inode_inc_iversion(inode);
  }
  
- static ssize_t
--ext4_file_write(struct kiocb *iocb, const struct iovec *iov,
--		unsigned long nr_segs, loff_t pos)
-+ext4_file_write_iter(struct kiocb *iocb, struct iov_iter *iter, loff_t pos)
+-static ssize_t btrfs_file_aio_write(struct kiocb *iocb,
+-				    const struct iovec *iov,
+-				    unsigned long nr_segs, loff_t pos)
++static ssize_t btrfs_file_write_iter(struct kiocb *iocb,
++				     struct iov_iter *iter, loff_t pos)
  {
- 	struct inode *inode = file_inode(iocb->ki_filp);
- 	ssize_t ret;
-@@ -178,22 +176,24 @@ ext4_file_write(struct kiocb *iocb, const struct iovec *iov,
+ 	struct file *file = iocb->ki_filp;
+ 	struct inode *inode = file_inode(file);
+@@ -1511,7 +1506,7 @@ static ssize_t btrfs_file_aio_write(struct kiocb *iocb,
+ 	u64 start_pos;
+ 	ssize_t num_written = 0;
+ 	ssize_t err = 0;
+-	size_t count, ocount;
++	size_t count;
+ 	bool sync = (file->f_flags & O_DSYNC) || IS_SYNC(file->f_mapping->host);
  
- 	if (!(ext4_test_inode_flag(inode, EXT4_INODE_EXTENTS))) {
- 		struct ext4_sb_info *sbi = EXT4_SB(inode->i_sb);
--		size_t length = iov_length(iov, nr_segs);
-+		size_t length = iov_iter_count(iter);
+ 	if (!sb_start_file_write(file))
+@@ -1519,12 +1514,7 @@ static ssize_t btrfs_file_aio_write(struct kiocb *iocb,
  
- 		if ((pos > sbi->s_bitmap_maxbytes ||
- 		    (pos == sbi->s_bitmap_maxbytes && length > 0)))
- 			return -EFBIG;
+ 	mutex_lock(&inode->i_mutex);
  
- 		if (pos + length > sbi->s_bitmap_maxbytes) {
--			nr_segs = iov_shorten((struct iovec *)iov, nr_segs,
--					      sbi->s_bitmap_maxbytes - pos);
-+			ret = iov_iter_shorten(iter,
-+					       sbi->s_bitmap_maxbytes - pos);
-+			if (ret)
-+				return ret;
- 		}
+-	err = generic_segment_checks(iov, &nr_segs, &ocount, VERIFY_READ);
+-	if (err) {
+-		mutex_unlock(&inode->i_mutex);
+-		goto out;
+-	}
+-	count = ocount;
++	count = iov_iter_count(iter);
+ 
+ 	current->backing_dev_info = inode->i_mapping->backing_dev_info;
+ 	err = generic_write_checks(file, &pos, &count, S_ISBLK(inode->i_mode));
+@@ -1577,14 +1567,10 @@ static ssize_t btrfs_file_aio_write(struct kiocb *iocb,
+ 		atomic_inc(&BTRFS_I(inode)->sync_writers);
+ 
+ 	if (unlikely(file->f_flags & O_DIRECT)) {
+-		num_written = __btrfs_direct_write(iocb, iov, nr_segs,
+-						   pos, ppos, count, ocount);
++		num_written = __btrfs_direct_write(iocb, iter, pos, ppos,
++						   count);
+ 	} else {
+-		struct iov_iter i;
+-
+-		iov_iter_init(&i, iov, nr_segs, count, num_written);
+-
+-		num_written = __btrfs_buffered_write(file, &i, pos);
++		num_written = __btrfs_buffered_write(file, iter, pos);
+ 		if (num_written > 0)
+ 			*ppos = pos + num_written;
  	}
- 
- 	if (unlikely(iocb->ki_filp->f_flags & O_DIRECT))
--		ret = ext4_file_dio_write(iocb, iov, nr_segs, pos);
-+		ret = ext4_file_dio_write(iocb, iter, pos);
- 	else
--		ret = generic_file_aio_write(iocb, iov, nr_segs, pos);
-+		ret = generic_file_write_iter(iocb, iter, pos);
- 
- 	return ret;
- }
-@@ -627,8 +627,8 @@ const struct file_operations ext4_file_operations = {
- 	.llseek		= ext4_llseek,
+@@ -2441,9 +2427,9 @@ const struct file_operations btrfs_file_operations = {
+ 	.llseek		= btrfs_file_llseek,
  	.read		= do_sync_read,
  	.write		= do_sync_write,
--	.aio_read	= generic_file_aio_read,
--	.aio_write	= ext4_file_write,
+-	.aio_read       = generic_file_aio_read,
+ 	.splice_read	= generic_file_splice_read,
+-	.aio_write	= btrfs_file_aio_write,
 +	.read_iter	= generic_file_read_iter,
-+	.write_iter	= ext4_file_write_iter,
- 	.unlocked_ioctl = ext4_ioctl,
- #ifdef CONFIG_COMPAT
- 	.compat_ioctl	= ext4_compat_ioctl,
++	.write_iter	= btrfs_file_write_iter,
+ 	.mmap		= btrfs_file_mmap,
+ 	.open		= generic_file_open,
+ 	.release	= btrfs_release_file,
 -- 
 1.8.1.5
 
