@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760004Ab3CHSBP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 13:01:15 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:61435 "EHLO mx1.redhat.com"
+	id S934524Ab3CHSBT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 13:01:19 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:16545 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759889Ab3CHSBL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 13:01:11 -0500
-Date: Fri, 8 Mar 2013 18:59:18 +0100
+	id S1759889Ab3CHSBQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Mar 2013 13:01:16 -0500
+Date: Fri, 8 Mar 2013 18:59:20 +0100
 From: Oleg Nesterov <oleg@redhat.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Mandeep Singh Baines <msb@chromium.org>, Neil Horman <nhorman@redhat.com>,
         "Rafael J. Wysocki" <rjw@sisk.pl>, Tejun Heo <tj@kernel.org>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 2/3] coredump: factor out the setting of PF_DUMPCORE
-Message-ID: <20130308175918.GA26329@redhat.com>
+Subject: [PATCH 3/3] coredump: change wait_for_dump_helpers() to use
+	wait_event_interruptible()
+Message-ID: <20130308175920.GA26332@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -23,81 +24,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cleanup. Every linux_binfmt->core_dump() sets PF_DUMPCORE,
-move this into zap_threads() called by do_coredump().
+wait_for_dump_helpers() calls wake_up/kill_fasync from inside the
+wait_event-like loop. This is not needed and in fact this is not
+strictly correct, we can/should do this only once after we change
+pipe->writers. We could even check if it becomes zero.
+
+Change this code to use use wait_event_interruptible(), this can
+also help to make this wait freezable.
+
+With this patch we check pipe->readers without pipe_lock(), this
+is fine. Once we see pipe->readers == 1 we know that the handler
+decremented the counter, this is all we need.
 
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 ---
- arch/x86/ia32/ia32_aout.c |    1 -
- fs/binfmt_aout.c          |    1 -
- fs/binfmt_elf.c           |    3 +--
- fs/binfmt_elf_fdpic.c     |    2 --
- fs/coredump.c             |    1 +
- 5 files changed, 2 insertions(+), 6 deletions(-)
+ fs/coredump.c |   15 +++++++++------
+ 1 files changed, 9 insertions(+), 6 deletions(-)
 
-diff --git a/arch/x86/ia32/ia32_aout.c b/arch/x86/ia32/ia32_aout.c
-index a703af1..24b787c 100644
---- a/arch/x86/ia32/ia32_aout.c
-+++ b/arch/x86/ia32/ia32_aout.c
-@@ -162,7 +162,6 @@ static int aout_core_dump(long signr, struct pt_regs *regs, struct file *file,
- 	fs = get_fs();
- 	set_fs(KERNEL_DS);
- 	has_dumped = 1;
--	current->flags |= PF_DUMPCORE;
- 	strncpy(dump.u_comm, current->comm, sizeof(current->comm));
- 	dump.u_ar0 = offsetof(struct user32, regs);
- 	dump.signal = signr;
-diff --git a/fs/binfmt_aout.c b/fs/binfmt_aout.c
-index 6043567..f70aea2 100644
---- a/fs/binfmt_aout.c
-+++ b/fs/binfmt_aout.c
-@@ -62,7 +62,6 @@ static int aout_core_dump(struct coredump_params *cprm)
- 	fs = get_fs();
- 	set_fs(KERNEL_DS);
- 	has_dumped = 1;
--	current->flags |= PF_DUMPCORE;
-        	strncpy(dump.u_comm, current->comm, sizeof(dump.u_comm));
- 	dump.u_ar0 = offsetof(struct user, regs);
- 	dump.signal = cprm->siginfo->si_signo;
-diff --git a/fs/binfmt_elf.c b/fs/binfmt_elf.c
-index 0c42cdb..1f52be1 100644
---- a/fs/binfmt_elf.c
-+++ b/fs/binfmt_elf.c
-@@ -2082,8 +2082,7 @@ static int elf_core_dump(struct coredump_params *cprm)
- 		goto cleanup;
- 
- 	has_dumped = 1;
--	current->flags |= PF_DUMPCORE;
--  
-+
- 	fs = get_fs();
- 	set_fs(KERNEL_DS);
- 
-diff --git a/fs/binfmt_elf_fdpic.c b/fs/binfmt_elf_fdpic.c
-index dc84732..8f2c03d 100644
---- a/fs/binfmt_elf_fdpic.c
-+++ b/fs/binfmt_elf_fdpic.c
-@@ -1684,8 +1684,6 @@ static int elf_fdpic_core_dump(struct coredump_params *cprm)
- 	fill_elf_fdpic_header(elf, e_phnum);
- 
- 	has_dumped = 1;
--	current->flags |= PF_DUMPCORE;
--
- 	/*
- 	 * Set up the notes in similar form to SVR4 core dumps made
- 	 * with info from their /proc.
 diff --git a/fs/coredump.c b/fs/coredump.c
-index 66f65f0..477f393 100644
+index 477f393..667413c 100644
 --- a/fs/coredump.c
 +++ b/fs/coredump.c
-@@ -299,6 +299,7 @@ static int zap_threads(struct task_struct *tsk, struct mm_struct *mm,
- 	if (unlikely(nr < 0))
- 		return nr;
+@@ -439,17 +439,20 @@ static void wait_for_dump_helpers(struct file *file)
+ 	pipe_lock(pipe);
+ 	pipe->readers++;
+ 	pipe->writers--;
++	wake_up_interruptible_sync(&pipe->wait);
++	kill_fasync(&pipe->fasync_readers, SIGIO, POLL_IN);
++	pipe_unlock(pipe);
  
-+	tsk->flags = PF_DUMPCORE;
- 	if (atomic_read(&mm->mm_users) == nr + 1)
- 		goto done;
- 	/*
+-	while ((pipe->readers > 1) && (!signal_pending(current))) {
+-		wake_up_interruptible_sync(&pipe->wait);
+-		kill_fasync(&pipe->fasync_readers, SIGIO, POLL_IN);
+-		pipe_wait(pipe);
+-	}
++	/*
++	 * We actually want wait_event_freezable() but then we need
++	 * to clear TIF_SIGPENDING and improve dump_interrupted().
++	 */
++	wait_event_interruptible(pipe->wait, pipe->readers == 1);
+ 
++	pipe_lock(pipe);
+ 	pipe->readers--;
+ 	pipe->writers++;
+ 	pipe_unlock(pipe);
+-
+ }
+ 
+ /*
 -- 
 1.5.5.1
 
