@@ -1,80 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757262Ab3CHXov (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 18:44:51 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:36053 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751859Ab3CHXou (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 18:44:50 -0500
-Date: Fri, 8 Mar 2013 18:44:04 -0500
-From: Josh Boyer <jwboyer@redhat.com>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: 8250.nr_uarts broken in 3.7
-Message-ID: <20130308234404.GP13719@hansolo.jdub.homelinux.org>
-References: <20130307231242.GC4280@kroah.com>
- <20130308010140.GJ13719@hansolo.jdub.homelinux.org>
- <20130308013923.GA12474@kroah.com>
- <20130308212722.GL13719@hansolo.jdub.homelinux.org>
- <513A6A65.9050706@suse.cz>
- <20130308224950.GM13719@hansolo.jdub.homelinux.org>
- <513A6D1F.5000202@suse.cz>
- <513A6FD4.7000506@suse.cz>
- <513A70CF.9010800@suse.cz>
- <20130308232809.GO13719@hansolo.jdub.homelinux.org>
+	id S1758115Ab3CHXpj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 18:45:39 -0500
+Received: from mail-vb0-f41.google.com ([209.85.212.41]:49308 "EHLO
+	mail-vb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751859Ab3CHXpi convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Mar 2013 18:45:38 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130308232809.GO13719@hansolo.jdub.homelinux.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130308233041.GA32587@redhat.com>
+References: <20130308150408.GA25399@redhat.com>
+	<CA+55aFxAfWHdSH+45qgids1ByBxzieZnz_ujRXYGY-at1mg5eg@mail.gmail.com>
+	<20130308191804.GA9774@redhat.com>
+	<20130308192042.GA10305@redhat.com>
+	<20130308193652.GA11692@redhat.com>
+	<CA+55aFyE12rZ3DZUtTkonPjbcQiZNdAmys7w5zf7_Xry2z=-2A@mail.gmail.com>
+	<20130308210432.GA21500@redhat.com>
+	<CA+55aFyNAA3u2k_38iqRPN0EqtP=qXu1wu_vnXnAgQmp6NwGJA@mail.gmail.com>
+	<20130308230734.GA28317@redhat.com>
+	<CA+55aFxKgZyqbn1M0sAL0CoLxmKSzAALYBTPLYVM7OpG_M_B=A@mail.gmail.com>
+	<20130308233041.GA32587@redhat.com>
+Date: Fri, 8 Mar 2013 15:45:37 -0800
+X-Google-Sender-Auth: 1wjI-LCPO1gQmTMqIS4bwSpogyc
+Message-ID: <CA+55aFxBvyLcWJB0JMNcaCXHtgvPLt3cFQqJeRFcb=6rkZFtvA@mail.gmail.com>
+Subject: Re: BUG_ON(nd->inode != parent->d_inode);
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Dave Jones <davej@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 08, 2013 at 06:28:09PM -0500, Josh Boyer wrote:
-> On Sat, Mar 09, 2013 at 12:14:23AM +0100, Jiri Slaby wrote:
-> > On 03/09/2013 12:10 AM, Jiri Slaby wrote:
-> > > On 03/08/2013 11:58 PM, Jiri Slaby wrote:
-> > >> On 03/08/2013 11:49 PM, Josh Boyer wrote:
-> > >>> On Fri, Mar 08, 2013 at 11:47:01PM +0100, Jiri Slaby wrote:
-> > >>>> Yeah, I agree this is ugly. Just re-definining MODULE_PARAM_PREFIX at
-> > >>>> the end of the file should do the trick (followed by
-> > >>>> "module_param(nr_uarts, uint, 0644)").
-> > >>>
-> > >>> For some reason, I thought I had tried that.  Maybe I didn't.  I'll look
-> > >>> into it again.
-> > >>
-> > >> I see. Because we would re-define some global variables. What if we put
-> > >> module_param into a function?
-> > > 
-> > > Something like this?
-> > > #ifdef MODULE
-> 
-> I don't think you want this surrounded in #ifdef MODULE, do you?  That
-> won't let people building the driver into the kernel continue to use
-> 8250.<whatever> on the kernel command line.
-> 
-> > > static void __unused splat(void) {
-> > 
-> > I meant __used. It should make no difference though.
-> > 
-> > > #       undef MODULE_PARAM_PREFIX
-> > > #       define MODULE_PARAM_PREFIX "8250."
-> > >         module_param_cb(nr_uarts, &param_ops_uint, &nr_uarts, 0644);
-> > >         ...
-> > > }
-> > > #endif
-> > > 
-> > > Not nice, but should work. The other way is to have those in a separate
-> > > file linked to 8250 (to avoid re-definition errors).
-> 
-> Ew.  I'll try the function first.
+On Fri, Mar 8, 2013 at 3:30 PM, Dave Jones <davej@redhat.com> wrote:
+> [  100.729401] nd->last.name = (\xffffffd2.W._.N.".\xfffffffe.\xffffff80.^N.?.\xffffffe4.E.8.g.\xffffffd2.N.\xffffffb6.^G.\xfffffff1.\xffffffcc.U.\xffffffda.^_.h.^M.1.\xffffffc5.\xffffff82.%.B.\xffffffe0.\xffffffad.^U.8.^L.c.Z.^K.\xffffffe4.h.J.\xffffffc8.\xffffffad.\xffffff83./.\xffffff80.\xffffffd1.\xffffffe5.\xffffff87.\xffffffc3.\xffffffb2.\xffffffdc.\xffffff9d.\xffffffd1.E.\xffffffab.^B.
 
-OK, the function (without the surrounding ifdef) seems to be working OK.
-I'll do a bit more testing and send out a v2 in a bit.
+You're printing out a 'char' with %02x, aren't you? And then the sign
+extensions gives you six extra 'f' character every time the char is
+negative.
 
-Thanks for the tip.  It's still not pretty, but at least I don't feel
-ashamed about it.
+If using %02x, make sure you use 'unsigned char', or "& 255".
 
-josh
+Depending on just what is going on, the "nd->last.name" thing really
+is probably a valid string. Strictly speaking it's not necessarily
+NUL-terminated, though, and should be printed out to a maximum of
+"nd->last.len" characters (but the whole path will be NUL-terminated,
+so it's all ok, you just might print out more than one component)
+
+               Linus
