@@ -1,48 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757668Ab3CHU7G (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 15:59:06 -0500
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:57751 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754610Ab3CHU7E (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 15:59:04 -0500
-Date: Fri, 8 Mar 2013 12:59:40 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Alexey Khoroshilov <khoroshilov@ispras.ru>
-Cc: Hans de Goede <hdegoede@redhat.com>,
-        Alan Stern <stern@rowland.harvard.edu>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, ldv-project@linuxtesting.org
-Subject: Re: [PATCH] usb/core/devio.c: Don't use GFP_KERNEL while we cannot
- reset a storage device
-Message-ID: <20130308205940.GA15806@kroah.com>
-References: <1362761447-24643-1-git-send-email-khoroshilov@ispras.ru>
+	id S1757621Ab3CHVAs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 16:00:48 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:41615 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755096Ab3CHVAq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Mar 2013 16:00:46 -0500
+Date: Fri, 8 Mar 2013 22:00:44 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Randy Dunlap <rdunlap@infradead.org>
+Cc: Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] HID: holtek: Holtek devices depends on USB_HID
+In-Reply-To: <513A4FA2.6070309@infradead.org>
+Message-ID: <alpine.LNX.2.00.1303082159140.19460@pobox.suse.cz>
+References: <1362649709-9608-1-git-send-email-benjamin.tissoires@redhat.com> <513A4FA2.6070309@infradead.org>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1362761447-24643-1-git-send-email-khoroshilov@ispras.ru>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 09, 2013 at 12:50:47AM +0800, Alexey Khoroshilov wrote:
-> As it was described by Oliver Neukum in commit acbe2fe
-> "USB: Don't use GFP_KERNEL while we cannot reset a storage device":
+On Fri, 8 Mar 2013, Randy Dunlap wrote:
+
+> > In the HID drivers tranport cleanup series, I removed the dependency
+> > between hid-holtek and usbhid. This was wrong as hid-holtek.c relies
+> > extensively on usb calls.
+> > 
+> > This fixes compilation error when CONFIG_USB_SUPPORT is not enabled.
+> > 
+> > Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 > 
->   Memory allocations with GFP_KERNEL can cause IO to a storage device
->   which can fail resulting in a need to reset the device. Therefore
->   GFP_KERNEL cannot be safely used between usb_lock_device()
->   and usb_unlock_device(). Replace by GFP_NOIO.
+> Acked-by: Randy Dunlap <rdunlap@infradead.org>
 > 
-> The patch fixes the same issue in usb/core/devio.c.
+> 
+> but hid-multitouch build still fails (on 3.9-rc1) when USB_SUPPORT is not enabled:
 
-But that's for userspace drivers, why does it matter here for them?
+Are you sure about 3.9-rc1? It has USB_HID dependency for HID_MUTLTIOUCH, 
+hence that shouldn't be a problem.
 
-> All the allocations fixed are under usb_lock_device() from usbdev_do_ioctl().
+There used to be a problem in linux-next, but that should be fixed by 
+4ba25d3f87 ("HID: multitouch: remove last usb dependency"), which I have 
+pushed out yesterday.
 
-I really don't want to have usbfs using GFP_NOIO as it is known for
-allocating a lot of memory already.  Given that no one has ever reported
-a problem like this, I don't think it deserves to change, sorry.
-
-greg k-h
+-- 
+Jiri Kosina
+SUSE Labs
