@@ -1,109 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934169Ab3CHN4I (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 08:56:08 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:9913 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756973Ab3CHNy5 (ORCPT
+	id S1757923Ab3CHOBk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 09:01:40 -0500
+Received: from mail-ee0-f45.google.com ([74.125.83.45]:59270 "EHLO
+	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755416Ab3CHOBj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 08:54:57 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Fri, 08 Mar 2013 05:54:53 -0800
-From: Laxman Dewangan <ldewangan@nvidia.com>
-To: <swarren@wwwdotorg.org>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-tegra@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <pdeschrijver@nvidia.com>,
-        Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH 2/5] ARM: DT: tegra114: Add i2c controller DT entry
-Date: Fri, 8 Mar 2013 19:22:59 +0530
-Message-ID: <1362750782-15174-3-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
-In-Reply-To: <1362750782-15174-1-git-send-email-ldewangan@nvidia.com>
-References: <1362750782-15174-1-git-send-email-ldewangan@nvidia.com>
+	Fri, 8 Mar 2013 09:01:39 -0500
+Date: Fri, 8 Mar 2013 15:01:34 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
+        Jeff Layton <jlayton@redhat.com>, Tejun Heo <tj@kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Mandeep Singh Baines <msb@chromium.org>,
+        Ming Lei <ming.lei@canonical.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: LOCKDEP: 3.9-rc1: mount.nfs/4272 still has locks held!
+Message-ID: <20130308140134.GA28413@gmail.com>
+References: <CA+55aFwDogteVd=vwGHXDSASnga-nZZnKaQz9aO1yBU2CPKSbA@mail.gmail.com>
+ <20130306212452.GO1227@htj.dyndns.org>
+ <CA+55aFy49AWptMcvEzJxg95ikf-dC+-vcCPq-cnaCCwje3tyoQ@mail.gmail.com>
+ <20130306213636.GP1227@htj.dyndns.org>
+ <20130307064140.71c0936b@tlielax.poochiereds.net>
+ <CA+55aFxe1_x8wvVYciiX8tuee+VsmXGKqEbONQdFM4s4W2iuPg@mail.gmail.com>
+ <4FA345DA4F4AE44899BD2B03EEEC2FA9286B511E@sacexcmbx05-prd.hq.netapp.com>
+ <CA+55aFySyBP8q5AvPrt-s_ZPdgamfoX-dERw4EJ21EcsDLBjYA@mail.gmail.com>
+ <4FA345DA4F4AE44899BD2B03EEEC2FA9286B52F1@sacexcmbx05-prd.hq.netapp.com>
+ <CA+55aFwB4Pjki8zg9idwbQbE-TOtTdD5o8d_r1=NY3veVqmPHg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFwB4Pjki8zg9idwbQbE-TOtTdD5o8d_r1=NY3veVqmPHg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-NVIDIA's Tegra114 has 5 i2c controllers. These controllers have
-additional feature/configurations to make it functional over
-Tegra30's i2c controller driver.
 
-Add DT entry for i2c controllers and make it compatible with
-"nvidia,tegra114-i2c".
+* Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
----
- arch/arm/boot/dts/tegra114.dtsi |   55 +++++++++++++++++++++++++++++++++++++++
- 1 files changed, 55 insertions(+), 0 deletions(-)
+>  - the "freeezer for suspend/resume on a laptop"
+> 
+> [...]
+> 
+> The second one is unlikely to really use NFS anyway. [...]
 
-diff --git a/arch/arm/boot/dts/tegra114.dtsi b/arch/arm/boot/dts/tegra114.dtsi
-index b73b8a6..14afbc8 100644
---- a/arch/arm/boot/dts/tegra114.dtsi
-+++ b/arch/arm/boot/dts/tegra114.dtsi
-@@ -135,6 +135,61 @@
- 		clocks = <&tegra_car 65>;
- 	};
- 
-+	i2c@7000c000 {
-+		compatible = "nvidia,tegra114-i2c";
-+		reg = <0x7000c000 0x100>;
-+		interrupts = <0 38 0x04>;
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+		status = "disabled";
-+		clocks = <&tegra_car 12>;
-+		clock-names = "div-clk";
-+	};
-+
-+	i2c@7000c400 {
-+		compatible = "nvidia,tegra114-i2c";
-+		reg = <0x7000c400 0x100>;
-+		interrupts = <0 84 0x04>;
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+		status = "disabled";
-+		clocks = <&tegra_car 54>;
-+		clock-names = "div-clk";
-+	};
-+
-+	i2c@7000c500 {
-+		compatible = "nvidia,tegra114-i2c";
-+		reg = <0x7000c500 0x100>;
-+		interrupts = <0 92 0x04>;
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+		status = "disabled";
-+		clocks = <&tegra_car 67>;
-+		clock-names = "div-clk";
-+	};
-+
-+	i2c@7000c700 {
-+		compatible = "nvidia,tegra114-i2c";
-+		reg = <0x7000c700 0x100>;
-+		interrupts = <0 120 0x04>;
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+		status = "disabled";
-+		clocks = <&tegra_car 103>;
-+		clock-names = "div-clk";
-+	};
-+
-+	i2c@7000d000 {
-+		compatible = "nvidia,tegra114-i2c";
-+		reg = <0x7000d000 0x100>;
-+		interrupts = <0 53 0x04>;
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+		status = "disabled";
-+		clocks = <&tegra_car 47>;
-+		clock-names = "div-clk";
-+	};
-+
- 	sdhci@78000000 {
- 		compatible = "nvidia,tegra114-sdhci", "nvidia,tegra30-sdhci";
- 		reg = <0x78000000 0x200>;
--- 
-1.7.1.1
+<me raises a hand>
 
+Incidentally I use NFS to a file server on my laptop, over wifi, and I close the lid 
+for the night. It's NFS mounted soft.
+
+If it was mounted hard I wouldn't expect the lid close event to result in a 
+successful suspend if wifi went down - but with soft I would be pretty sad in the 
+morning if batteries drained if I closed the lid after there's a power outage which 
+took down both wifi and the laptop power supply.
+
+Closing the lid while on battery is a pretty strong command from the user.
+
+Arguably this is a special case on several levels as on desktop distros it's not at 
+all easy mount NFS shares (all point & click automation goes to Samba shares), just 
+wanted to mention it.
+
+Thanks,
+
+	Ingo
