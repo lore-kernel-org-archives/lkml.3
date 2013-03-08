@@ -1,88 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754733Ab3CHHac (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 02:30:32 -0500
-Received: from e23smtp01.au.ibm.com ([202.81.31.143]:43702 "EHLO
-	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753964Ab3CHHaa (ORCPT
+	id S1754328Ab3CHHde (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 02:33:34 -0500
+Received: from mail-oa0-f47.google.com ([209.85.219.47]:36089 "EHLO
+	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751342Ab3CHHdd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 02:30:30 -0500
-Message-ID: <5139938A.1040504@linux.vnet.ibm.com>
-Date: Fri, 08 Mar 2013 15:30:18 +0800
-From: Michael Wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	Fri, 8 Mar 2013 02:33:33 -0500
 MIME-Version: 1.0
-To: Mike Galbraith <efault@gmx.de>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Namhyung Kim <namhyung@kernel.org>, Alex Shi <alex.shi@intel.com>,
-        Paul Turner <pjt@google.com>,
+In-Reply-To: <CAOS58YP4DrSXMPRCeNakac1hp5=1e3OkBCDF8u4vLwksj9+Kdw@mail.gmail.com>
+References: <1362718720-27048-1-git-send-email-yinghai@kernel.org>
+	<1362718720-27048-12-git-send-email-yinghai@kernel.org>
+	<20130308064640.GL14556@mtj.dyndns.org>
+	<CAE9FiQVO0aDrUKE_EV+A+aksqeukn6JMQqbfbKyw8JMV=DpaVw@mail.gmail.com>
+	<CAOS58YP4DrSXMPRCeNakac1hp5=1e3OkBCDF8u4vLwksj9+Kdw@mail.gmail.com>
+Date: Thu, 7 Mar 2013 23:33:32 -0800
+X-Google-Sender-Auth: nkX01lJoo_Dyb_M3xHyU5OonMFo
+Message-ID: <CAE9FiQXsNnvQ8CyrF65=bU_OYPkUCuULD0mJ3cKfnm2-0Lv4sA@mail.gmail.com>
+Subject: Re: [PATCH 11/14] x86, acpi, numa: split SLIT handling out
+From: Yinghai Lu <yinghai@kernel.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        Ram Pai <linuxram@us.ibm.com>
-Subject: Re: [PATCH] sched: wakeup buddy
-References: <5136EB06.2050905@linux.vnet.ibm.com> <1362645372.2606.11.camel@laptop> <1362649419.4652.12.camel@marge.simpson.net> <51394EE3.1020706@linux.vnet.ibm.com> <1362725051.31859.40.camel@marge.simpson.net>
-In-Reply-To: <1362725051.31859.40.camel@marge.simpson.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13030807-1618-0000-0000-000003782371
+        Thomas Renninger <trenn@suse.de>, Tang Chen <tangchen@cn.fujitsu.com>,
+        linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        linux-acpi@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/08/2013 02:44 PM, Mike Galbraith wrote:
-> On Fri, 2013-03-08 at 10:37 +0800, Michael Wang wrote: 
->> On 03/07/2013 05:43 PM, Mike Galbraith wrote:
->>> On Thu, 2013-03-07 at 09:36 +0100, Peter Zijlstra wrote: 
->>>> On Wed, 2013-03-06 at 15:06 +0800, Michael Wang wrote:
->>>>
->>>>> wake_affine() stuff is trying to bind related tasks closely, but it doesn't
->>>>> work well according to the test on 'perf bench sched pipe' (thanks to Peter).
->>>>
->>>> so sched-pipe is a poor benchmark for this.. 
->>>>
->>>> Ideally we'd write a new benchmark that has some actual data footprint
->>>> and we'd measure the cost of tasks being apart on the various cache
->>>> metrics and see what affine wakeup does for it.
->>>>
->>>> Before doing something like what you're proposing, I'd have a hard look
->>>> at WF_SYNC, it is possible we should disable/fix select_idle_sibling
->>>> for sync wakeups.
->>>
->>> If nobody beats me to it, I'm going to try tracking shortest round trip
->>> to idle, and use a multiple of that to shut select_idle_sibling() down.
->>> If avg_idle approaches round trip time, there's no win to be had, we're
->>> just wasting cycles.
+On Thu, Mar 7, 2013 at 11:19 PM, Tejun Heo <tj@kernel.org> wrote:
+> On Thu, Mar 7, 2013 at 11:18 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+>> ia64 like to call in this seqence
+>> acpi_numa_init()
+>> parse srat
+>> parse slit
+>> then
+>> acpi_numa_arch_fixup()
 >>
->> That's great if we have it, I'm a little doubt whether it is possible to
->> find a better way to replace the select_idle_sibling() (look at the way
->> it locates idle cpu...) in some cases, but I'm looking forward it ;-)
-> 
-> I'm not going to replace it, only stop it from wasting cycles when
-> there's very likely nothing to gain.  Save task wakeup time, if delta
-> rq->clock - p->last_wakeup < N*shortest_idle or some such very cheap
-> metric.  Wake ultra switchers L2 affine if allowed, only go hunting for
-> an idle L3 if the thing is on another package.  
-> 
-> In general, I think things would work better if we'd just rate limit how
-> frequently we can wakeup migrate each individual task.  
+>> in this arch_fixup, it will try to fill dummy distance_matrix.
+>>
+>> so would to keep acpi_numa_init ...
+>
+> Can't it just call acpi_numa_init_srat() and then init_slit()?  What
+> am I missing?
 
-Isn't the wakeup buddy already limit the rate? and by turning the knob,
-we could change the rate on our demand.
+Yes, but need to break acpi_numa_init calling
+in arch/ia64/kernel/setup.c
 
-We want
-> jabbering tasks to share L3, but we don't really want to trash L2 at an
-> awesome rate.
+with
+acpi_numa_init_srat()
+acpi_numa_init_slit()
+acpi_numa_arch_fixup()
 
-I don't get it..., it's a task which has 'sleep' for some time, unless
-there is no task running on prev_cpu when it's sleeping, otherwise
-whatever the new cpu is, we will trash L2, isn't it?
+current code is
+acpi_numa_init calling arch_numa_arch_fixup()
 
-Regards,
-Michael Wang
+Thanks
 
-> 
-> -Mike
-> 
-
+Yinghai
