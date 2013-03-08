@@ -1,88 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934292Ab3CHP3D (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 10:29:03 -0500
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:63919 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758816Ab3CHP3B (ORCPT
+	id S934312Ab3CHP3f (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 10:29:35 -0500
+Received: from mail.active-venture.com ([67.228.131.205]:65532 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934274Ab3CHP3e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 10:29:01 -0500
-Message-ID: <513A03B7.7000004@linaro.org>
-Date: Fri, 08 Mar 2013 16:28:55 +0100
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
+	Fri, 8 Mar 2013 10:29:34 -0500
+X-Originating-IP: 108.223.40.66
+Date: Fri, 8 Mar 2013 07:29:34 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mike Frysinger <vapier@gentoo.org>, Ingo Molnar <mingo@kernel.org>,
+        Randy Dunlap <rdunlap@infradead.org>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Russell King <linux@arm.linux.org.uk>
+Subject: Re: [PATCH v2] early_printk: consolidate random copies of identical
+ code
+Message-ID: <20130308152934.GA18274@roeck-us.net>
+References: <1362683754-706-1-git-send-email-paul.gortmaker@windriver.com>
+ <20130307112536.82288f41924a38a441cdf345@linux-foundation.org>
+ <5138EF7F.1050003@windriver.com>
+ <20130307133542.8bdb23612990fa25c5cc9112@linux-foundation.org>
+ <20130308011042.GE9161@home.goodmis.org>
 MIME-Version: 1.0
-To: john.stultz@linaro.org, tglx@linutronix.de,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: viresh.kumar@linaro.org, jacob.jun.pan@linux.intel.com,
-        linux-arm-kernel@lists.infradead.org, santosh.shilimkar@ti.com,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linaro-kernel@lists.linaro.org, patches@linaro.org,
-        rickard.andersson@stericsson.com, vincent.guittot@linaro.org,
-        linus.walleij@stericsson.com
-Subject: Re: [PATCH 4/4][V2] ARM: timer-sp: Set dynamic irq affinity
-References: <1362219013-18173-1-git-send-email-daniel.lezcano@linaro.org> <1362219013-18173-5-git-send-email-daniel.lezcano@linaro.org>
-In-Reply-To: <1362219013-18173-5-git-send-email-daniel.lezcano@linaro.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130308011042.GE9161@home.goodmis.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/02/2013 11:10 AM, Daniel Lezcano wrote:
-> From: Viresh Kumar <viresh.kumar@linaro.org>
+On Thu, Mar 07, 2013 at 08:10:43PM -0500, Steven Rostedt wrote:
+> On Thu, Mar 07, 2013 at 07:49:35PM -0500, Paul Gortmaker wrote:
+> > 
+> > Within an hour, Fengguang's robots[1] found the branch, were compiling
+> > it for fringe architectures, and running sparse on it, and sending me the
+> > sparse regressions.  I'd listened to Fengguang's presentation while at
+> > KS in San Diego, but I had no idea it was this proactive, until it did
+> > autobot testing on my branch.
 > 
-> When a cpu goes to a deep idle state where its local timer is shutdown, it
-> notifies the time frame work to use the broadcast timer instead.
+> And people wonder why I wanted to give Fengguang a round of applauds
+> there. I guess I was one of the first people to get his testing, as it
+> found a lot of little things for me that my own tests missed.
 > 
-> Unfortunately, the broadcast device could wake up any CPU, including an idle one
-> which is not concerned by the wake up at all.
+> > 
+> > I have most of the prebuilt toolchains[2], and two line wrappers to set
+> > the ARCH/CROSS_COMPILE, but as it stands, it seems I really don't
+> > need those any more.  I can sanity test on a common arch and then
+> > simply push to kernel.org to trigger build sanity across all arch.  I'll
+> > probably still continue to use the toolchain prebuilts to test locally
+> > though, just for the peace of mind.  But knowing FW bots are doing
+> > testing before it goes into linux-next or anywhere else is really nice.
+> > 
 > 
-> This implies, in the worst case, an idle CPU will wake up to send an IPI to
-> another idle cpu.
+> I should stress that there's a sample ktest.pl file for everyone:
 > 
-> This patch fixes this for ARM platforms using timer-sp, by setting
-> CLOCK_EVT_FEAT_DYNIRQ feature.
+>  tools/testing/ktest/examples/crosstests.conf
 > 
-> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-> Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
-> ---
-
-Hi Russell,
-
-I asked Thomas if he could take this patch in its tree but it falls
-under your umbrella. Thomas agreed to take it if you ack this patch.
-
-Is this patch acceptable for you ?
-
-Thanks in advance
-  -- Daniel
-
-
->  arch/arm/common/timer-sp.c |    3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
+> Just download the cross compilers from:
 > 
-> diff --git a/arch/arm/common/timer-sp.c b/arch/arm/common/timer-sp.c
-> index 9d2d3ba..ae3c0f9 100644
-> --- a/arch/arm/common/timer-sp.c
-> +++ b/arch/arm/common/timer-sp.c
-> @@ -158,7 +158,8 @@ static int sp804_set_next_event(unsigned long next,
->  }
->  
->  static struct clock_event_device sp804_clockevent = {
-> -	.features       = CLOCK_EVT_FEAT_PERIODIC | CLOCK_EVT_FEAT_ONESHOT,
-> +	.features       = CLOCK_EVT_FEAT_PERIODIC | CLOCK_EVT_FEAT_ONESHOT |
-> +		CLOCK_EVT_FEAT_DYNIRQ,
->  	.set_mode	= sp804_set_mode,
->  	.set_next_event	= sp804_set_next_event,
->  	.rating		= 300,
+>  (assuming you're running on an x86_64 box)
 > 
+>   https://www.kernel.org/pub/tools/crosstool/files/bin/x86_64/4.6.3/
+> 
+Have you tried that link recently ?
 
+I get:
 
--- 
- <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+Forbidden
 
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
+You don't have permission to access /pub/tools/crosstool/files/bin/x86_64/4.6.3/
+on this server.
 
+Guenter
