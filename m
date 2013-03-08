@@ -1,87 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757669Ab3CHNa1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 08:30:27 -0500
-Received: from mail-bk0-f43.google.com ([209.85.214.43]:51761 "EHLO
-	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752689Ab3CHNa0 (ORCPT
+	id S933875Ab3CHNbF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 08:31:05 -0500
+Received: from mail-bk0-f47.google.com ([209.85.214.47]:59357 "EHLO
+	mail-bk0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757682Ab3CHNbD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 08:30:26 -0500
-Message-ID: <5139E7F3.5010906@gmail.com>
-Date: Fri, 08 Mar 2013 14:30:27 +0100
-From: Daniel Mack <zonque@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130219 Thunderbird/17.0.3
+	Fri, 8 Mar 2013 08:31:03 -0500
+Date: Fri, 8 Mar 2013 14:30:59 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Michel Lespinasse <walken@google.com>
+Cc: Paul Turner <pjt@google.com>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] sched: make sched_group_{get,set}_rt_{runtime,period}
+ functions static
+Message-ID: <20130308133059.GA27992@gmail.com>
+References: <20130308021013.GA11284@google.com>
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Afzal Mohammed <afzal.mohd.ma@gmail.com>,
-        Fabio Estevam <festevam@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Mike Turquette <mturquette@linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <robherring2@gmail.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Fabio Estevam <festevam@gmail.com>
-Subject: Re: Question about fixed-clock
-References: <20130307184240.GA3327@afzal-ThinkPad-R50e> <5139155F.5050407@gmail.com> <20130308021527.GA28481@opensource.wolfsonmicro.com>
-In-Reply-To: <20130308021527.GA28481@opensource.wolfsonmicro.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130308021013.GA11284@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08.03.2013 03:15, Mark Brown wrote:
-> On Thu, Mar 07, 2013 at 11:31:59PM +0100, Daniel Mack wrote:
->> On 07.03.2013 19:42, Afzal Mohammed wrote:
+
+* Michel Lespinasse <walken@google.com> wrote:
+
+> Just a tiny cleanup I did while I was looking through scheduler code
+> doing a tasklist_lock change. Please consider applying if you find it
+> appropriate.
 > 
->>> I feel that for a platform having it's clock tree in DT, of_clk_init
->>> would take care of it, but if clock tree data is not in DT, clock
->>> tree would have to be extended in a non-DT way.
+> ------------------------------8<-----------------------------------------
+> sched: make sched_group_{get,set}_rt_{runtime,period} functions static
 > 
->> Hmm, I don't follow. So for generic OMAP board in general which does
->> *not* have its SoC clocks in DT, the question is who's in charge of
->> registering out-of-SoC fixed clocks that are defined in DT.
+> These functions, as well as sched_rt_can_attach(), used to be public so
+> that kernel/user.c could use them; however this use has now disappeared
+> so that these functions can be made static again.
 > 
->> Note that the clock I'm dealing with here is _outside_ of the SoC, and I
->> just need to have it in DT, so it can feed another clock chip's input pin.
+> Signed-off-by: Michel Lespinasse <walken@google.com>
 > 
->> Grep'ing through arch/arm, it seems that the imx arch does the same
->> thing my patch does, but I could also imagine that it should be done
->> somewhere from the DT core. I copied Grant, Rob and Mark for more comments.
+> ---
+>  include/linux/sched.h |  9 ---------
+>  kernel/sched/core.c   | 11 ++++++-----
+>  2 files changed, 6 insertions(+), 14 deletions(-)
 > 
-> Wouldn't this just be set up by the DT in the same way that other
-> off-SoC hardware is?
+> diff --git a/include/linux/sched.h b/include/linux/sched.h
+> index d35d2b6ddbfb..ac8dbca5ea15 100644
+> --- a/include/linux/sched.h
+> +++ b/include/linux/sched.h
+> @@ -2694,15 +2694,6 @@ extern void sched_move_task(struct task_struct *tsk);
+>  extern int sched_group_set_shares(struct task_group *tg, unsigned long shares);
+>  extern unsigned long sched_group_shares(struct task_group *tg);
+>  #endif
+> -#ifdef CONFIG_RT_GROUP_SCHED
+> -extern int sched_group_set_rt_runtime(struct task_group *tg,
+> -				      long rt_runtime_us);
+> -extern long sched_group_rt_runtime(struct task_group *tg);
+> -extern int sched_group_set_rt_period(struct task_group *tg,
+> -				      long rt_period_us);
+> -extern long sched_group_rt_period(struct task_group *tg);
+> -extern int sched_rt_can_attach(struct task_group *tg, struct task_struct *tsk);
+> -#endif
+>  #endif /* CONFIG_CGROUP_SCHED */
 
-Well,  I thought so too. To repeat, in my DT, I have:
+Makes sense - but Li Zefan has beaten you to it by a few days:
 
-	ref25: ref25M {
-		compatible = "fixed-clock";
-		#clock-cells = <0>;
-		clock-frequency = <25000000>;
-	};
+  25cc7da7e633 sched: Move group scheduling functions out of include/linux/sched.h
 
-to represent an osciallator on the board. I need to specify it here so I
-can pass a reference to another chip:
+Which can be found in the latest scheduler development tree, queued up for v3.10:
 
-	si5351a: clock-generator@60 {
-		compatible = "silabs,si5351a";
-		clocks = <&ref25>;
-	};
+  git git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git master    # or sched/core
 
-I would have expected that "fixed-clock" is matched by a driver lurking
-around for DT boards, just like what the "fixed-regulator" driver does
-for instance. But the clock device isn't initialized unless board code
-explicitly calls of_clk_init() with a table mentioning "fixed-clock", as
-in my patch.
+Thanks,
 
-I don't know the clock framework well enough, but it seems that either
-all DT boards are supposed to do the same in their generic bits (which
-sounds like a lot of code duplication), or the fixed-clock driver should
-behave like any other driver wrt its probing from DT. I'm open to
-suggestions :)
-
-
-Daniel
+	Ingo
 
