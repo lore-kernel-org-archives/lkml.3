@@ -1,189 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933245Ab3CHV4b (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 16:56:31 -0500
-Received: from mga02.intel.com ([134.134.136.20]:55575 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752940Ab3CHV4a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 16:56:30 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,810,1355126400"; 
-   d="scan'208";a="274433422"
-From: Andi Kleen <andi@firstfloor.org>
-To: acme@redhat.com
-Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
-        fweisbec@gmail.com
-Subject: [PATCH] perf, tools: Support callchain sorting based on addresses
-Date: Fri,  8 Mar 2013 13:55:55 -0800
-Message-Id: <1362779755-7289-1-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.7.7.6
+	id S1757475Ab3CHWBu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 17:01:50 -0500
+Received: from mail-ee0-f43.google.com ([74.125.83.43]:58226 "EHLO
+	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752670Ab3CHWBs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Mar 2013 17:01:48 -0500
+Message-ID: <513A5FC7.8040409@suse.cz>
+Date: Fri, 08 Mar 2013 23:01:43 +0100
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:19.0) Gecko/20130124 Thunderbird/19.0
+MIME-Version: 1.0
+To: stable <stable@vger.kernel.org>
+CC: LKML <linux-kernel@vger.kernel.org>, Tony Jones <tonyj@suse.de>,
+        Andrew Vagin <avagin@openvz.org>, Steven Rostedt <rostedt@goodmis.org>
+Subject: [stable revert request] ... of doubled commit
+X-Enigmail-Version: 1.6a1pre
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+Hi,
 
-With programs with very large functions it can be useful to distinguish
-the callgraph nodes on more than just function names. So for example if
-you have multiple calls to the same function, it ends up being
-separate nodes in the chain.
+Tony Jones found that the following commit:
+  perf: Fix parsing of __print_flags() in TP_printk()
+is applied to 3.0 twice.
 
-This patch adds a new key field to the callgraph options, that
-allows comparing nodes on functions (as today, default) and addresses.
+Once as:
+commit 248f3235861683bb1ffc7316b56bf783b162666f
+Author: Steven Rostedt <srostedt@redhat.com>
+Date:   Fri Nov 4 16:32:25 2011 -0400
 
-Longer term it would be nice to also handle src lines, but that
-would need more changes and address is a reasonable proxy for
-it today.
+    perf: Fix parsing of __print_flags() in TP_printk()
 
-I right now reference the global params, as there was no
-simple way to register a params pointer.
+    commit d06c27b22aa66e48e32f03f9387328a9af9b0625 upstream.
 
-Cc: fweisbec@gmail.com
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- tools/perf/Documentation/perf-report.txt |    8 ++++++--
- tools/perf/builtin-report.c              |   19 +++++++++++++++----
- tools/perf/util/callchain.c              |    7 +++++--
- tools/perf/util/callchain.h              |    6 ++++++
- tools/perf/util/hist.c                   |    3 ++-
- 5 files changed, 34 insertions(+), 9 deletions(-)
+===== and =====
+The second one is this:
+commit 2431496fbdd142ccc83138d94f3f510a36ce9270
+Author: Steven Rostedt <srostedt@redhat.com>
+Date:   Fri Nov 4 16:32:25 2011 -0400
 
-diff --git a/tools/perf/Documentation/perf-report.txt b/tools/perf/Documentation/perf-report.txt
-index 02284a0..3cb6303 100644
---- a/tools/perf/Documentation/perf-report.txt
-+++ b/tools/perf/Documentation/perf-report.txt
-@@ -115,7 +115,7 @@ OPTIONS
- --dump-raw-trace::
-         Dump raw trace in ASCII.
- 
---g [type,min[,limit],order]::
-+-g [type,min[,limit],order[,key]]::
- --call-graph::
-         Display call chains using type, min percent threshold, optional print
- 	limit and order.
-@@ -129,7 +129,11 @@ OPTIONS
- 	- callee: callee based call graph.
- 	- caller: inverted caller based call graph.
- 
--	Default: fractal,0.5,callee.
-+	key can be:
-+	- function: compare on functions
-+	- address: compare on individual code addresses
-+
-+	Default: fractal,0.5,callee,function.
- 
- -G::
- --inverted::
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index 96b5a7f..6310e17 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -568,12 +568,23 @@ parse_callchain_opt(const struct option *opt, const char *arg, int unset)
- 	}
- 
- 	/* get the call chain order */
--	if (!strcmp(tok2, "caller"))
-+	if (!strncmp(tok2, "caller", strlen("caller")))
- 		callchain_param.order = ORDER_CALLER;
--	else if (!strcmp(tok2, "callee"))
-+	else if (!strncmp(tok2, "callee", strlen("callee")))
- 		callchain_param.order = ORDER_CALLEE;
- 	else
- 		return -1;
-+
-+	/* Get the sort key */
-+	tok2 = strtok(NULL, ",");
-+	if (!tok2)
-+		goto setup;
-+	if (!strncmp(tok2, "function", strlen("function")))
-+		callchain_param.key = CCKEY_FUNCTION;
-+	else if (!strncmp(tok2, "address", strlen("address")))
-+		callchain_param.key = CCKEY_ADDRESS;
-+	else
-+		return -1;
- setup:
- 	if (callchain_register_param(&callchain_param) < 0) {
- 		fprintf(stderr, "Can't register callchain params\n");
-@@ -653,8 +664,8 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
- 	OPT_BOOLEAN('x', "exclude-other", &symbol_conf.exclude_other,
- 		    "Only display entries with parent-match"),
- 	OPT_CALLBACK_DEFAULT('g', "call-graph", &report, "output_type,min_percent[,print_limit],call_order",
--		     "Display callchains using output_type (graph, flat, fractal, or none) , min percent threshold, optional print limit and callchain order. "
--		     "Default: fractal,0.5,callee", &parse_callchain_opt, callchain_default_opt),
-+		     "Display callchains using output_type (graph, flat, fractal, or none) , min percent threshold, optional print limit, callchain order, key (function or address). "
-+		     "Default: fractal,0.5,callee,function", &parse_callchain_opt, callchain_default_opt),
- 	OPT_BOOLEAN('G', "inverted", &report.inverted_callchain,
- 		    "alias for inverted call graph"),
- 	OPT_STRING('d', "dsos", &symbol_conf.dso_list_str, "dso[,dso...]",
-diff --git a/tools/perf/util/callchain.c b/tools/perf/util/callchain.c
-index 42b6a63..4fee33b 100644
---- a/tools/perf/util/callchain.c
-+++ b/tools/perf/util/callchain.c
-@@ -15,6 +15,7 @@
- #include <errno.h>
- #include <math.h>
- 
-+#include "hist.h"
- #include "util.h"
- #include "callchain.h"
- 
-@@ -327,7 +328,8 @@ append_chain(struct callchain_node *root,
- 	/*
- 	 * Lookup in the current node
- 	 * If we have a symbol, then compare the start to match
--	 * anywhere inside a function.
-+	 * anywhere inside a function, unless function
-+	 * mode is disabled.
- 	 */
- 	list_for_each_entry(cnode, &root->val, list) {
- 		struct callchain_cursor_node *node;
-@@ -339,7 +341,8 @@ append_chain(struct callchain_node *root,
- 
- 		sym = node->sym;
- 
--		if (cnode->ms.sym && sym) {
-+		if (cnode->ms.sym && sym &&
-+		    callchain_param.key == CCKEY_FUNCTION) {
- 			if (cnode->ms.sym->start != sym->start)
- 				break;
- 		} else if (cnode->ip != node->ip)
-diff --git a/tools/perf/util/callchain.h b/tools/perf/util/callchain.h
-index 3ee9f67..812d5a0 100644
---- a/tools/perf/util/callchain.h
-+++ b/tools/perf/util/callchain.h
-@@ -41,12 +41,18 @@ struct callchain_param;
- typedef void (*sort_chain_func_t)(struct rb_root *, struct callchain_root *,
- 				 u64, struct callchain_param *);
- 
-+enum chain_key {
-+	CCKEY_FUNCTION,
-+	CCKEY_ADDRESS
-+};
-+
- struct callchain_param {
- 	enum chain_mode 	mode;
- 	u32			print_limit;
- 	double			min_percent;
- 	sort_chain_func_t	sort;
- 	enum chain_order	order;
-+	enum chain_key		key;
- };
- 
- struct callchain_list {
-diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index f855941..e9f165a 100644
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -24,7 +24,8 @@ enum hist_filter {
- struct callchain_param	callchain_param = {
- 	.mode	= CHAIN_GRAPH_REL,
- 	.min_percent = 0.5,
--	.order  = ORDER_CALLEE
-+	.order  = ORDER_CALLEE,
-+	.key	= CCKEY_FUNCTION
- };
- 
- u16 hists__col_len(struct hists *hists, enum hist_column col)
+    perf: Fix parsing of __print_flags() in TP_printk()
+
+    commit 49908a1b25d448d68fd26faca260e1850201575f upstream.
+
+=====
+
+The latter is not an upstream commit, it is from pm-fixes, hence the
+difference in commit SHAs.
+
+2431496fbdd142ccc83138d94f3f510a36ce9270 needs to be reverted as it is
+applied to a wrong function.
+
+thanks,
 -- 
-1.7.7.6
-
+js
+suse labs
