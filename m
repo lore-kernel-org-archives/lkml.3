@@ -1,73 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760139Ab3CHBC2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 20:02:28 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:28789 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760097Ab3CHBC1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 20:02:27 -0500
-Date: Thu, 7 Mar 2013 20:01:40 -0500
-From: Josh Boyer <jwboyer@redhat.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: 8250.nr_uarts broken in 3.7
-Message-ID: <20130308010140.GJ13719@hansolo.jdub.homelinux.org>
-References: <20130307185642.GF13719@hansolo.jdub.homelinux.org>
- <5138E56B.6090308@suse.cz>
- <20130307191005.GH13719@hansolo.jdub.homelinux.org>
- <20130307211426.GI13719@hansolo.jdub.homelinux.org>
- <20130307231242.GC4280@kroah.com>
+	id S1760101Ab3CHBG1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 20:06:27 -0500
+Received: from nasmtp01.atmel.com ([192.199.1.245]:40119 "EHLO
+	DVREDG01.corp.atmel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752543Ab3CHBGZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Mar 2013 20:06:25 -0500
+From: "Yang, Wenyou" <Wenyou.Yang@atmel.com>
+To: Joachim Eastwood <manabian@gmail.com>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "Ferre, Nicolas" <Nicolas.FERRE@atmel.com>,
+        "plagnioj@jcrosoft.com" <plagnioj@jcrosoft.com>,
+        "richard.genoud@gmail.com" <richard.genoud@gmail.com>,
+        "Lin, JM" <JM.Lin@atmel.com>,
+        "spi-devel-general@lists.sourceforge.net" 
+	<spi-devel-general@lists.sourceforge.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH v6 01/16] spi/spi-atmel: fix probing failure after
+ xfer->speed_hz set
+Thread-Topic: [PATCH v6 01/16] spi/spi-atmel: fix probing failure after
+ xfer->speed_hz set
+Thread-Index: AQHOGuP8IM96tyzK7E6aJ9clb/yCNJiZo0mAgAFXq6A=
+Date: Fri, 8 Mar 2013 01:06:11 +0000
+Message-ID: <B256D81BAE5131468A838E5D7A2436414971BE26@penmbx02>
+References: <1362626715-6549-1-git-send-email-wenyou.yang@atmel.com>
+	<1362626815-6628-1-git-send-email-wenyou.yang@atmel.com>
+ <CAGhQ9VwW18LXY5Jn0FUFCaAzKxP1W3QADG=JBp9JbgaAwo=F2Q@mail.gmail.com>
+In-Reply-To: <CAGhQ9VwW18LXY5Jn0FUFCaAzKxP1W3QADG=JBp9JbgaAwo=F2Q@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.168.5.13]
+Content-Type: text/plain; charset="gb2312"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130307231242.GC4280@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r2816RRU025470
 
-On Fri, Mar 08, 2013 at 07:12:42AM +0800, Greg Kroah-Hartman wrote:
-> On Thu, Mar 07, 2013 at 04:14:27PM -0500, Josh Boyer wrote:
-> > On Thu, Mar 07, 2013 at 02:10:05PM -0500, Josh Boyer wrote:
-> > > On Thu, Mar 07, 2013 at 08:07:23PM +0100, Jiri Slaby wrote:
-> > > > On 03/07/2013 07:56 PM, Josh Boyer wrote:
-> > > > > commit 835d844d1a28efba81d5aca7385e24c29d3a6db2
-> > > > > Author: Sean Young <sean@mess.org>
-> > > > > Date:   Fri Sep 7 19:06:23 2012 +0100
-> > > > > 
-> > > > >     8250_pnp: do pnp probe before legacy probe
-> > > > > 
-> > > > > but that is simply moving code around.
-> > > > 
-> > > > Hi, not quite. Does it still happen when you revert that one on the top
-> > > > of 3.[789]*?
-> > > 
-> > > That was going to be my first attempt.  I'll let you know how it goes.
-> > 
-> > Yes, reverting just 835d844d1 on top of 3.7.0 fixes it.  I also see why
-> > now.  That commit changed the module name from 8250 to 8250_core in the
-> > makefile, so clearly 8250.nr_uarts = 16 isn't going to get parsed.
-> > Adding 8250_core.nr_uarts = 16 seems to work fine.  This wasn't
-> > immediately obvious because the whole thing is built-in and not a
-> > module.  Thankfully, looking in /sys/modules/ still works and that
-> > showed up pretty clearly.
-> > 
-> > So I guess this isn't really a break in functionality as much as it's a
-> > driver rename.  Not sure if it's worth fixing in some form or not.
+Hi Joachim,
+
+> -----Original Message-----
+> From: Joachim Eastwood [mailto:manabian@gmail.com]
+> Sent: 2013Äê3ÔÂ7ÈÕ 20:31
+> To: Yang, Wenyou
+> Cc: linux-arm-kernel@lists.infradead.org; grant.likely@secretlab.ca; Ferre,
+> Nicolas; plagnioj@jcrosoft.com; richard.genoud@gmail.com; Lin, JM;
+> spi-devel-general@lists.sourceforge.net; linux-kernel@vger.kernel.org
+> Subject: Re: [PATCH v6 01/16] spi/spi-atmel: fix probing failure after
+> xfer->speed_hz set
 > 
-> Yes it needs to be fixed, we shouldn't break userspace stuff like that.
-> Patches gladly accepted.
+> On 7 March 2013 04:26, Wenyou Yang <wenyou.yang@atmel.com> wrote:
+> > commit: 059b8ffeee5b427949872bb6ed5db5ae0788054e
+> > cause the atmel spi probing failure.
+> >
+> > Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
+> > Cc: spi-devel-general@lists.sourceforge.net
+> > Cc: linux-kernel@vger.kernel.org
+> > ---
+> >  drivers/spi/spi-atmel.c |    6 +++---
+> >  1 file changed, 3 insertions(+), 3 deletions(-)
+> >
+> > diff --git a/drivers/spi/spi-atmel.c b/drivers/spi/spi-atmel.c
+> > index 656d137..1eca815 100644
+> > --- a/drivers/spi/spi-atmel.c
+> > +++ b/drivers/spi/spi-atmel.c
+> > @@ -846,9 +846,9 @@ static int atmel_spi_transfer(struct spi_device *spi,
+> struct spi_message *msg)
+> >                         }
+> >                 }
+> >
+> > -               /* FIXME implement these protocol options!! */
+> > -               if (xfer->speed_hz) {
+> > -                       dev_dbg(&spi->dev, "no protocol options
+> yet\n");
+> > +               if (xfer->speed_hz < spi->max_speed_hz) {
+> > +                       dev_dbg(&spi->dev,
+> > +                               "speed in transfer less than bus
+> speed\n");
+> >                         return -ENOPROTOOPT;
+> >                 }
+> 
+> I sent a similar patch to spi-devl a while ago, which Grant said he applied.
+> https://patchwork.kernel.org/patch/2165301/
+> 
+> Can't find the patch in any upstream git tree so I guess Grant hasn't
+> pushed it yet.
 
-OK... well I don't think renaming it back to 8250 is going to actually
-work.  It's already been renamed for 2 releases now, and a renaming
-isn't appropriate for 3.8.y.
+Sorry, I didn't notice your patch before.
+Furthermore, I made this patch based on your and Grant,s email.
 
-I don't remember exactly, but I don't think simply adding a modalias to
-8250 will work either.
+I will drop this patch.
 
-So basically, the only way to fix this that I can see is to create a
-new, additional module parameter or something similar that parses
-"8250.nr_uarts".  Is that what you had in mind?
+> 
+> regards
+> Joachim Eastwood
 
-josh
+Best Regards,
+Wenyou Yang
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
