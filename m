@@ -1,73 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933796Ab3CHH0f (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 02:26:35 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:5466 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753522Ab3CHH0e (ORCPT
+	id S933870Ab3CHH1P (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 02:27:15 -0500
+Received: from mail-ob0-f178.google.com ([209.85.214.178]:42026 "EHLO
+	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932607Ab3CHH1O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 02:26:34 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Thu, 07 Mar 2013 23:26:30 -0800
-Message-ID: <51399243.6050007@nvidia.com>
-Date: Fri, 8 Mar 2013 12:54:51 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+	Fri, 8 Mar 2013 02:27:14 -0500
 MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: "john.stultz@linaro.org" <john.stultz@linaro.org>,
-        "toddpoynor@google.com" <toddpoynor@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] alarmtimer: add error prints when suspend failed
-References: <1362684457-32570-1-git-send-email-ldewangan@nvidia.com> <20130307231640.GE4280@kroah.com>
-In-Reply-To: <20130307231640.GE4280@kroah.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <51399154.5030500@redhat.com>
+References: <51397D1D.5030602@redhat.com>
+	<1750036321.11235774.1362722613994.JavaMail.root@redhat.com>
+	<CAE9FiQUtDcwJkPMPfjur8LQ+u0Hc2J7sbxC=xkcemqRQ1_Gd8g@mail.gmail.com>
+	<CAE9FiQU7ccdWCL=t=Zn1w33GHpHk56=JXTcotn-Huq9Wiqu7wg@mail.gmail.com>
+	<51399154.5030500@redhat.com>
+Date: Thu, 7 Mar 2013 23:27:12 -0800
+X-Google-Sender-Auth: 32hrMCB61GhrU0IsXOMHe3DtQd4
+Message-ID: <CAE9FiQVPaG5P7mG9HoFzCkaxF62hkU5hEtq_FhdT7n+38aNs9A@mail.gmail.com>
+Subject: Re: 3.9-rc1: crash kernel panic - not syncing: Can not allocate
+ SWIOTLB buffer earlier and can't now provide you with the DMA bounce buffer
+From: Yinghai Lu <yinghai@kernel.org>
+To: WANG Chao <chaowang@redhat.com>
+Cc: CAI Qian <caiqian@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        kexec <kexec@lists.infradead.org>, Dave Young <dyoung@redhat.com>,
+        Vivek Goyal <vgoyal@redhat.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 08 March 2013 04:46 AM, Greg KH wrote:
-> On Fri, Mar 08, 2013 at 12:57:37AM +0530, Laxman Dewangan wrote:
->> The alramtimer suspend failed when nearest alarm wakeup time is
->> less than 2 sec or rtc timer can not start.
+On Thu, Mar 7, 2013 at 11:20 PM, WANG Chao <chaowang@redhat.com> wrote:
 >>
->> In suspend/resume stress testing, we found that sometimes alramtimer
->> failed to suspend and hence it cancel the suspend ops. Add error prints
->> in suspend failure to provide more info when failure occurs to help
->> debugging.
->>
->> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
->> ---
->>   kernel/time/alarmtimer.c |    6 +++++-
->>   1 files changed, 5 insertions(+), 1 deletions(-)
->>
->> diff --git a/kernel/time/alarmtimer.c b/kernel/time/alarmtimer.c
->> index f11d83b..eed5646 100644
->> --- a/kernel/time/alarmtimer.c
->> +++ b/kernel/time/alarmtimer.c
->> @@ -249,6 +249,8 @@ static int alarmtimer_suspend(struct device *dev)
->>   
->>   	if (ktime_to_ns(min) < 2 * NSEC_PER_SEC) {
->>   		__pm_wakeup_event(ws, 2 * MSEC_PER_SEC);
->> +		dev_err(dev,
->> +			"Nearest alarm wakeup time < 2sec, avoiding suspend\n");
-> What can userspace now do with this information?  How often is this now
-> going to spam the syslog and cause confusion?
+>> looks like your system DO have DMAR table, please enable dmar
+>> remapping in your kernel config.
+>
+> I've already got following config:
+> CONFIG_DMAR_TABLE=y
+> CONFIG_INTEL_IOMMU=y
+> CONFIG_IRQ_REMAP=y
+>
+> but I don't have intel_iommu=on in kernel cmdline. IIRC, iommu will prevent
+> 2nd kernel from booting ...
 
+Did you put intel_iommu=on on first and second cpu both?
 
-When we executed the stress on suspend/resume for system stability, 
-occasionally we get such error (3/4 times in 1000 cycle):
-[ 235.508010] dpm_run_callback(): platform_pm_suspend+0x0/0x64 returns -16
-[ 235.514999] PM: Device alarmtimer failed to suspend: error -16
-[ 235.520958] PM: Some devices failed to suspend
+Thanks
 
-
-After tracing back the failure case, we found that possible reason could 
-be above one.
-In this case, if any function returns error then always better to print 
-the error so that it is easy to findout the cause of the error and analyse.
-
-It should not generate spam as this does happen on some cases.
-
-
+Yinghai
