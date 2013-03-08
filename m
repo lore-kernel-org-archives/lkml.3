@@ -1,72 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934395Ab3CHQTV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 11:19:21 -0500
-Received: from out01.mta.xmission.com ([166.70.13.231]:60324 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933136Ab3CHQTS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 11:19:18 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Jingbai Ma <jingbai.ma@hp.com>, mingo@redhat.com,
-        kumagai-atsushi@mxc.nes.nec.co.jp, hpa@zytor.com, yinghai@kernel.org,
-        kexec@lists.infradead.org, linux-kernel@vger.kernel.org
+	id S964792Ab3CHQT1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 11:19:27 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:28605 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759799Ab3CHQT0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Mar 2013 11:19:26 -0500
+Date: Fri, 8 Mar 2013 11:19:12 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Jingbai Ma <jingbai.ma@hp.com>
+Cc: mingo@redhat.com, kumagai-atsushi@mxc.nes.nec.co.jp, ebiederm@xmission.com,
+        hpa@zytor.com, yinghai@kernel.org, kexec@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        "Mitchell, Lisa (MCLinux in Fort Collins)" <lisa.mitchell@hp.com>
+Subject: Re: [RFC PATCH 0/5] crash dump bitmap: scan memory pages in kernel
+ to speedup kernel dump process
+Message-ID: <20130308161912.GD8219@redhat.com>
 References: <20130307145808.29098.41592.stgit@k.asiapacific.hpqcorp.net>
-	<20130307152108.GC2790@redhat.com> <87k3piri3e.fsf@xmission.com>
-	<20130308155216.GB8219@redhat.com>
-Date: Fri, 08 Mar 2013 08:19:09 -0800
-In-Reply-To: <20130308155216.GB8219@redhat.com> (Vivek Goyal's message of
-	"Fri, 8 Mar 2013 10:52:16 -0500")
-Message-ID: <87boatooea.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+ <20130307152108.GC2790@redhat.com>
+ <5139B827.3050500@hp.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX19IdrvOLBnYXd0bX8ByJs6wBQBxu7vflmg=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  0.1 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_XMDrugObfuBody_08 obfuscated drug references
-X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Vivek Goyal <vgoyal@redhat.com>
-X-Spam-Relay-Country: 
-Subject: Re: [RFC PATCH 0/5] crash dump bitmap: scan memory pages in kernel to speedup kernel dump process
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5139B827.3050500@hp.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vivek Goyal <vgoyal@redhat.com> writes:
+On Fri, Mar 08, 2013 at 06:06:31PM +0800, Jingbai Ma wrote:
 
-> On Thu, Mar 07, 2013 at 01:54:45PM -0800, Eric W. Biederman wrote:
->> Vivek Goyal <vgoyal@redhat.com> writes:
->> > I think this is not a good idea. It has several issues.
->> 
->> Actually it does not appear to be doing any work in the first kernel.
->
-> Looks like patch3 in series is doing that.
->
->                         machine_crash_shutdown(&fixed_regs);
-> +                       generate_crash_dump_bitmap();
->                         machine_kexec(kexec_crash_image);
->
-> So this bitmap seems to be being set just before transitioning into
-> second kernel.
->
-> I am sure you would not like this extra code in this path. :-)
+[..]
+> >- First of all it is doing more stuff in first kernel. And that runs
+> >   contrary to kdump design where we want to do stuff in second kernel.
+> >   After a kernel crash, you can't trust running kernel's data structures.
+> >   So to improve reliability just do minial stuff in crashed kernel and
+> >   get out quickly.
+> 
+> I agreed with you, the first kernel should do as less as possible.
+> Intuitively, filter memory pages in the first kernel will harm the
+> reliability of kernel dump, but let's think it thoroughly:
+> 
+> 1. It only relies on the memory management data structure that
+> makedumpfile also relies on, so no any reliability degradation at
+> this point.
 
-Ouch!  I had totally missed that.  No that is not at all acceptable.
+Its not same. If there is something wrong with memory management
+data structures, you can panic() again and self lock yourself and
+never even transition to the second kernel.
 
-I was blind that day.  The only call I saw was in patch 4 that put
-the call generated the bitmap in the new proc file.
+With makedumpfile, if something is wrong, either we will save wrong
+bits or get segmentation fault. But one can still try to be careful
+or save whole dump and try to get specific pieces out.
 
-Eric
+So it it is not apples to apples comparison.
+
+[..]
+> >Looks like now hpa and yinghai have done the work to be able to load
+> >kdump kernel above 4GB. I am assuming this also removes the restriction
+> >that we can only reserve 512MB or 896MB in second kernel. If that's
+> >the case, then I don't see why people can't get away with reserving
+> >64MB per TB.
+> 
+> That's true. With kernel 3.9-rc1 with kexec-tools 2.0.4, capture
+> kernel will have enough memory to run. And makedumpfile could be
+> always run at non-cyclic mode, but we still concern about the kernel
+> dump performance on systems with huge memory (above 4TB).
+
+I would think that lets first try to make mmap() on /proc/vmcore work and
+optimize makefumpfile to make use of it and then see if performance is
+acceptable or not on large machines. And then take it from there.
+
+Thanks
+Vivek
