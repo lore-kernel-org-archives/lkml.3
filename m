@@ -1,73 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933984Ab3CHJp3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 04:45:29 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:58126 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933454Ab3CHJp0 (ORCPT
+	id S933996Ab3CHJqN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 04:46:13 -0500
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:44055 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933454Ab3CHJqL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 04:45:26 -0500
-Date: Fri, 8 Mar 2013 17:44:46 +0800
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Ian Lartey <ian@slimlogic.co.uk>
-Cc: linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-leds@vger.kernel.org,
-        linux-watchdog@vger.kernel.org, swarren@wwwdotorg.org,
-        grant.likely@secretlab.ca, rob.herring@calxeda.com, rob@landley.net,
-        mturquette@linaro.org, linus.walleij@linaro.org, cooloney@gmail.com,
-        rpurdie@rpsys.net, sameo@linux.intel.com, wim@iguana.be,
-        lgirdwood@gmail.com, gg@slimlogic.co.uk, j-keerthy@ti.com,
-        ldewangan@nvidia.com, t-kristo@ti.com
-Subject: Re: [PATCH v8 04/12] regulator: palmas correct dt parsing
-Message-ID: <20130308094443.GD28481@opensource.wolfsonmicro.com>
-References: <1362662276-20792-1-git-send-email-ian@slimlogic.co.uk>
- <1362662276-20792-4-git-send-email-ian@slimlogic.co.uk>
+	Fri, 8 Mar 2013 04:46:11 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="wLAMOaPNJ0fu1fTG"
-Content-Disposition: inline
-In-Reply-To: <1362662276-20792-4-git-send-email-ian@slimlogic.co.uk>
-X-Cookie: You may be recognized soon.  Hide.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <510FF4C8.7000706@ti.com>
+References: <1359380879-26306-1-git-send-email-prabhakar.lad@ti.com>
+ <1359380879-26306-5-git-send-email-prabhakar.lad@ti.com> <510E51FF.8090005@ti.com>
+ <CA+V-a8uT-iF_TdWQwvnc1PfcQ9z3WBuZ2MYS1X_u3wO0_p=T0w@mail.gmail.com> <510FF4C8.7000706@ti.com>
+From: Prabhakar Lad <prabhakar.csengg@gmail.com>
+Date: Fri, 8 Mar 2013 15:15:49 +0530
+Message-ID: <CA+V-a8tSjF0Zz53_v=d-hUdKK4ihK_aLceOYnmQFhhKLOx3y1g@mail.gmail.com>
+Subject: Re: [PATCH v2 4/6] ARM: davinci: da850: add DT node for eth0.
+To: Sekhar Nori <nsekhar@ti.com>
+Cc: linux-arm-kernel@lists.infradead.org,
+        davinci-linux-open-source@linux.davincidsp.com,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, Heiko Schocher <hs@denx.de>,
+        "Lad, Prabhakar" <prabhakar.lad@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Sekhar,
 
---wLAMOaPNJ0fu1fTG
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, Feb 4, 2013 at 11:20 PM, Sekhar Nori <nsekhar@ti.com> wrote:
+> On 2/4/2013 10:37 AM, Prabhakar Lad wrote:
+>> Sekhar ,
+>>
+>> On Sun, Feb 3, 2013 at 5:33 PM, Sekhar Nori <nsekhar@ti.com> wrote:
+>>> On 1/28/2013 7:17 PM, Prabhakar Lad wrote:
+>>>> From: Lad, Prabhakar <prabhakar.lad@ti.com>
+>>>>
+>>>> Add eth0 device tree node information and pinmux for mii to da850 by
+>>>> providing interrupt details and local mac address of eth0.
+>>>>
+>>>> Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
+>>>> Cc: linux-arm-kernel@lists.infradead.org
+>>>> Cc: linux-kernel@vger.kernel.org
+>>>> Cc: davinci-linux-open-source@linux.davincidsp.com
+>>>> Cc: netdev@vger.kernel.org
+>>>> Cc: devicetree-discuss@lists.ozlabs.org
+>>>> Cc: Sekhar Nori <nsekhar@ti.com>
+>>>> Cc: Heiko Schocher <hs@denx.de>
+>>>> ---
+>>>>  arch/arm/boot/dts/da850-evm.dts |    5 +++++
+>>>>  arch/arm/boot/dts/da850.dtsi    |   35 +++++++++++++++++++++++++++++++++++
+>>>>  2 files changed, 40 insertions(+), 0 deletions(-)
+>>>>
+>>>> diff --git a/arch/arm/boot/dts/da850-evm.dts b/arch/arm/boot/dts/da850-evm.dts
+>>>> index a319491..19aa2b3 100644
+>>>> --- a/arch/arm/boot/dts/da850-evm.dts
+>>>> +++ b/arch/arm/boot/dts/da850-evm.dts
+>>>> @@ -30,6 +30,11 @@
+>>>>               mdio: davinci_mdio@1e24000 {
+>>>>                       status = "okay";
+>>>>               };
+>>>> +             eth0: emac@1e20000 {
+>>>> +                     status = "okay";
+>>>> +                     pinctrl-names = "default";
+>>>> +                     pinctrl-0 = <&mii_pins>;
+>>>> +             };
+>>>>       };
+>>>>       nand_cs3@62000000 {
+>>>>               status = "okay";
+>>>> diff --git a/arch/arm/boot/dts/da850.dtsi b/arch/arm/boot/dts/da850.dtsi
+>>>> index ba28f2d..76905f3 100644
+>>>> --- a/arch/arm/boot/dts/da850.dtsi
+>>>> +++ b/arch/arm/boot/dts/da850.dtsi
+>>>> @@ -56,6 +56,26 @@
+>>>>                                       0x30 0x01100000  0x0ff00000
+>>>>                               >;
+>>>>                       };
+>>>> +                     mii_pins: pinmux_mii_pins {
+>>>> +                             pinctrl-single,bits = <
+>>>> +                                     /*
+>>>> +                                      * MII_TXEN, MII_TXCLK, MII_COL
+>>>> +                                      * MII_TXD_3, MII_TXD_2, MII_TXD_1
+>>>> +                                      * MII_TXD_0
+>>>> +                                      */
+>>>> +                                     0x8 0x88888880 0xfffffff0
+>>>> +                                     /*
+>>>> +                                      * MII_RXER, MII_CRS, MII_RXCLK
+>>>> +                                      * MII_RXDV, MII_RXD_3, MII_RXD_2
+>>>> +                                      * MII_RXD_1, MII_RXD_0
+>>>> +                                      */
+>>>> +                                     0xc 0x88888888 0xffffffff
+>>>> +                                     /* MDIO_CLK, MDIO_D */
+>>>
+>>> You call this mii_pins, but include mdio pins in there as well. Can you
+>>> separate them out? Then some board which uses rmii can simply reuse the
+>>> entry.
+>>>
+>> Ok makes sense.
+>>
+>>>> +                                     0x10 0x00222288 0x00ffffff
+>>>> +                                     /* GPIO2_6 */
+>>>> +                                     0x18 0x00000080 0x000000f0
+>>>
+>>> This is SoC specific pin list. Such board specific pins should not make
+>>> it here.
+>>>
+>> Ok, so this should be set up using GPIO API's ?
+>
+> Yes, the pins ultimately will be controlled by gpiolib APIs, but the
+> pins should be defined under the eth node in .dts
+>
+You mean '0x18 0x00000080 0x000000f0'  still needs to defined in eth0 node ?
+Can you elaborate and give some pointers.
 
-On Thu, Mar 07, 2013 at 01:17:48PM +0000, Ian Lartey wrote:
-> From: Graeme Gregory <gg@slimlogic.co.uk>
->=20
-> Fix the DT parsing to agree with the bindings document. Some small changes
-> to the value names and also fix the handling of boolean values. They were
-> previously using prop =3D 1/0, now just use of_property_read_bool calls.
+Regards,
+--Prabhakar
 
-Applied, thanks.
-
---wLAMOaPNJ0fu1fTG
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRObClAAoJELSic+t+oim9yp4P/2u+oc0znK+IyLsewOE83Iap
-VP5ijx7aXMWbYMdYKu3d6AWx9wZDxTEpp7XMK716ot5/Dgngu2Pq53ubxyQIvO0U
-Z+AXJHH2z9q4RKjk0ov+rlhPK+LjjQY/zztrGTQul4pvhWW45GDnR3fQ2aCDRyMP
-TZ0OViwlHGqVSkaZq0+v4aQFqkLr5jvbALe52+C7dQ6JwOAJk0Pq+LxwsrpbCmMT
-9/fxsMfbSaoROUzQwLTG6L35eMLFYWaBT8ZKq8QugNiOwVCz2lKYsAKyZo4qi+R+
-Zxo76aCFp6J3zzoUdWofe6IcaPiHBhBlRoBmRL5V+bV3V6HsbTwwI7NOdX0AVWLC
-g/BqEspivOusSiAyq3S7Rs/U+MZiWoGkLQ+WAejsYNTnSPlPXHwvRsc7tdDuy5k+
-ptLun5sXwG7rh8tV4DMTFSQ2f8S2ZrNVD2HCfZItJxhHHWVAk5USshJgrANNd+8y
-nMqSzZWhHT7AIF+1Bjpq5GlFtMGMwbSEdwhm74DeSqX71TkZFaWtBUinbGo1eNWb
-6ZIsigrFGJS0XTvTxjuPWjRvERL2XzwO0b+Zl1O8n5L7zgQmYYagU2rCUAM+nrB9
-YFg60AG81tZHz8FABlJspxlSbl13d9pY3KhEKYagJ+CXUnANpD68kt0q9OE/2e6B
-cGhJKaf3soS1JyAVFydM
-=WT8H
------END PGP SIGNATURE-----
-
---wLAMOaPNJ0fu1fTG--
+> Thanks,
+> Sekhar
