@@ -1,46 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759896Ab3CHBNI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 20:13:08 -0500
-Received: from li9-11.members.linode.com ([67.18.176.11]:51896 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752804Ab3CHBNH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 20:13:07 -0500
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [GIT PULL] random updates for 3.9
-cc: linux-kernel@vger.kernel.org
-Date: Thu, 07 Mar 2013 20:13:04 -0500
-Message-ID: <nsxvc92d78f.fsf@closure.thunk.org>
+	id S1759958Ab3CHBOG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 20:14:06 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:14517 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754498Ab3CHBOD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Mar 2013 20:14:03 -0500
+X-IronPort-AV: E=Sophos;i="4.84,806,1355126400"; 
+   d="scan'208";a="27895420"
+Message-ID: <51393B59.3070200@codeaurora.org>
+Date: Thu, 07 Mar 2013 17:14:01 -0800
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@mit.edu
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+To: Tony Lindgren <tony@atomide.com>
+CC: linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 03/10] ARM: smp_twd: Divorce smp_twd from local timer
+ API
+References: <1362614646-24113-1-git-send-email-sboyd@codeaurora.org> <1362614646-24113-4-git-send-email-sboyd@codeaurora.org> <20130308004011.GD11806@atomide.com>
+In-Reply-To: <20130308004011.GD11806@atomide.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 03/07/13 16:40, Tony Lindgren wrote:
+> Hi,
+>
+> * Stephen Boyd <sboyd@codeaurora.org> [130306 17:53]:
+>> Separate the smp_twd timers from the local timer API. This will
+>> allow us to remove ARM local timer support in the near future and
+>> gets us closer to moving this driver to drivers/clocksource.
+> Looks like applying this patch makes omap4 to stop booting for
+> some reason.
+>
+>
 
-The following changes since commit 19f949f52599ba7c3f67a5897ac6be14bfcb1200:
+Hm... Perhaps you need the clock?
 
-  Linux 3.8 (2013-02-18 15:58:34 -0800)
+diff --git a/arch/arm/kernel/smp_twd.c b/arch/arm/kernel/smp_twd.c
+index 2439843..081de6f 100644
+--- a/arch/arm/kernel/smp_twd.c
++++ b/arch/arm/kernel/smp_twd.c
+@@ -345,11 +345,11 @@ static int __init twd_local_timer_common_register(struct device_node *np)
+        if (err)
+                goto out_irq;
+ 
++       twd_get_clock(np);
++
+        /* Immediately configure the timer on the boot CPU */
+        twd_timer_setup(this_cpu_ptr(twd_evt));
+ 
+-       twd_get_clock(np);
+-
+        return 0;
+ 
+ out_irq:
 
-are available in the git repository at:
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/tytso/random.git tags/random_for_linus
-
-for you to fetch changes up to b980955236922ae6106774511c5c05003d3ad225:
-
-  random: fix locking dependency with the tasklist_lock (2013-03-04 12:05:15 -0500)
-
-----------------------------------------------------------------
-Fix a circular locking dependency in random's collection of cputime
-used by a thread when it exits.
-
-----------------------------------------------------------------
-Theodore Ts'o (1):
-      random: fix locking dependency with the tasklist_lock
-
- drivers/char/random.c | 12 ++++++++----
- 1 file changed, 8 insertions(+), 4 deletions(-)
