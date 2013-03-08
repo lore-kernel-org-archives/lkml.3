@@ -1,97 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753147Ab3CHU3y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 15:29:54 -0500
-Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:25977 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751264Ab3CHU3w (ORCPT
+	id S1753996Ab3CHUft (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 15:35:49 -0500
+Received: from oproxy12-pub.bluehost.com ([50.87.16.10]:44670 "HELO
+	oproxy12-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752193Ab3CHUfs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 15:29:52 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+UqE3SoANCqJer7L8tsV+G
-Date: Fri, 8 Mar 2013 12:29:47 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 03/10] ARM: smp_twd: Divorce smp_twd from local timer
- API
-Message-ID: <20130308202947.GK11806@atomide.com>
-References: <1362614646-24113-1-git-send-email-sboyd@codeaurora.org>
- <1362614646-24113-4-git-send-email-sboyd@codeaurora.org>
- <20130308004011.GD11806@atomide.com>
- <51393B59.3070200@codeaurora.org>
- <20130308180730.GE11806@atomide.com>
- <513A2B20.30805@codeaurora.org>
- <20130308194802.GG11806@atomide.com>
- <513A40EF.8050403@codeaurora.org>
- <20130308200811.GJ11806@atomide.com>
- <513A4774.3040605@codeaurora.org>
+	Fri, 8 Mar 2013 15:35:48 -0500
+Message-ID: <513A4BC4.1040701@xenotime.net>
+Date: Fri, 08 Mar 2013 12:36:20 -0800
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <513A4774.3040605@codeaurora.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Guenter Roeck <linux@roeck-us.net>
+CC: linux-kernel@vger.kernel.org, Andy King <acking@vmware.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dmitry Torokhov <dtor@vmware.com>
+Subject: Re: [PATCH] misc/vmw_vmci: Add dependency on CONFIG_NET
+References: <1361994101-15781-1-git-send-email-linux@roeck-us.net>
+In-Reply-To: <1361994101-15781-1-git-send-email-linux@roeck-us.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Stephen Boyd <sboyd@codeaurora.org> [130308 12:22]:
-> On 03/08/13 12:08, Tony Lindgren wrote:
-> > * Stephen Boyd <sboyd@codeaurora.org> [130308 11:54]:
-> >> On 03/08/13 11:48, Tony Lindgren wrote:
-> >>> * Stephen Boyd <sboyd@codeaurora.org> [130308 10:21]:
-> >>>> diff --git a/arch/arm/kernel/smp_twd.c b/arch/arm/kernel/smp_twd.c
-> >>>> index 081de6f..4ea3e9d 100644
-> >>>> --- a/arch/arm/kernel/smp_twd.c
-> >>>> +++ b/arch/arm/kernel/smp_twd.c
-> >>>> @@ -227,7 +227,7 @@ static void __cpuinit twd_calibrate_rate(void)
-> >>>>  
-> >>>>  static irqreturn_t twd_handler(int irq, void *dev_id)
-> >>>>  {
-> >>>> -       struct clock_event_device *evt = *(struct clock_event_device **)dev_id;
-> >>>> +       struct clock_event_device *evt = dev_id;
-> >>>>  
-> >>>>         if (twd_timer_ack()) {
-> >>>>                 evt->event_handler(evt);
-> >>>>
-> >>> Yup thanks that fixes it, both fixes are needed. So for this patch + the
-> >>> two fixes please feel free to add:
-> >>>
-> >>> Acked-by: Tony Lindgren <tony@atomide.com>
-> >> Great. Thanks for testing.
-> > Hmm noticed one more thing: vexpress no longer boots in qemu for
-> > me after applying this. Sorry did not get any debug_ll output, but
-> > maybe you can take a look at it. I tested with omap2plus_defconfig +
-> > linaro-qemu:
-> >
-> > $ qemu-system-arm -machine vexpress-a9 -m 1024 -curses -net nic -net \
-> > user -serial stdio -append console=ttyAMA0,115200n8 rw \
-> > root=/dev/mmcblk0p2 rootwait physmap.enabled=0 -kernel zImage \
-> > -initrd initrd.img -sd rootfs.img
-> >
-> >
+On 02/27/13 11:41, Guenter Roeck wrote:
+> Building the vmw_vmci driver with CONFIG_NET undefined results in:
 > 
-> I wonder if you're hitting something similar to this issue on versatile
-> boards [1]. Can you try that patch? Otherwise I will try to get qemu
-> running (something I've never done, do you have instructions?).
+> drivers/built-in.o: In function `__qp_memcpy_from_queue.isra.13':
+> vmci_queue_pair.c:(.text+0x1671a8): undefined reference to `memcpy_toiovec'
+> drivers/built-in.o: In function `__qp_memcpy_to_queue.isra.14':
+> vmci_queue_pair.c:(.text+0x167341): undefined reference to `memcpy_fromiovec'
+> make[1]: [vmlinux] Error 1 (ignored)
+> 
+> since memcpy_toiovec and memcpy_fromiovec are defined in the networking code.
+> Add the missing dependency.
+> 
+> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 
-Applying that does not seem to help, but you might want to get vexpress
-running anyways for some multiplatform sanity checks.
+Acked-by: Randy Dunlap <rdunlap@infradead.org>
 
-I just built and installed qemu-linaro from their git, then ran the
-command above. Looks like stock qemu does not work for vexpress for some
-reason. You can probably use a dummy initrd and rootfs to debug this
-though :)
+Thanks.
 
-More info on qemu-linaro at:
+> ---
+>  drivers/misc/vmw_vmci/Kconfig |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/misc/vmw_vmci/Kconfig b/drivers/misc/vmw_vmci/Kconfig
+> index 39c2eca..ea98f7e 100644
+> --- a/drivers/misc/vmw_vmci/Kconfig
+> +++ b/drivers/misc/vmw_vmci/Kconfig
+> @@ -4,7 +4,7 @@
+>  
+>  config VMWARE_VMCI
+>  	tristate "VMware VMCI Driver"
+> -	depends on X86 && PCI
+> +	depends on X86 && PCI && NET
+>  	help
+>  	  This is VMware's Virtual Machine Communication Interface.  It enables
+>  	  high-speed communication between host and guest in a virtual
+> 
 
-https://launchpad.net/qemu-linaro
 
-Regards,
-
-Tony
- 
-> [1] http://article.gmane.org/gmane.linux.ports.arm.kernel/221539
+-- 
+~Randy
