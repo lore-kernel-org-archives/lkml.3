@@ -1,49 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760120Ab3CHAyx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 19:54:53 -0500
-Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:1798 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760077Ab3CHAyv (ORCPT
+	id S1760125Ab3CHA4a (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 19:56:30 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39255 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760097Ab3CHA43 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 19:54:51 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VS-2(zz98dI1432Izz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ahzz8275bhz2dh2a8h668h839h944hd24he5bhf0ah1220h1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1155h)
-Date: Thu, 7 Mar 2013 18:51:27 -0600
-From: Kim Phillips <kim.phillips@freescale.com>
-To: Paul Bolle <pebolle@tiscali.nl>
-CC: Herbert Xu <herbert@gondor.hengli.com.au>,
+	Thu, 7 Mar 2013 19:56:29 -0500
+Date: Thu, 7 Mar 2013 16:56:42 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Mike Frysinger <vapier@gentoo.org>, Ingo Molnar <mingo@kernel.org>,
+        Randy Dunlap <rdunlap@infradead.org>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Russell King <linux@arm.linux.org.uk>, Michal Simek <monstr@monstr.eu>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mundt <lethal@linux-sh.org>,
         "David S. Miller" <davem@davemloft.net>,
-        <linux-crypto@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] crypto: caam - fix typo "CRYPTO_AHASH"
-Message-ID: <20130307185127.a525f832276be2b30153aedf@freescale.com>
-In-Reply-To: <1362490396.16460.87.camel@x61.thuisdomein>
-References: <1362490396.16460.87.camel@x61.thuisdomein>
-Organization: Freescale Semiconductor, Inc.
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.13; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Richard Weinberger <richard@nod.at>
+Subject: Re: [PATCH v2] early_printk: consolidate random copies of identical
+ code
+Message-Id: <20130307165642.00153a01.akpm@linux-foundation.org>
+In-Reply-To: <CAP=VYLpeqVOC2ZpCdnPDuLrRjwdpbHn3XQoSwAUaYFRdwQPfaQ@mail.gmail.com>
+References: <1362683754-706-1-git-send-email-paul.gortmaker@windriver.com>
+	<20130307112536.82288f41924a38a441cdf345@linux-foundation.org>
+	<5138EF7F.1050003@windriver.com>
+	<20130307133542.8bdb23612990fa25c5cc9112@linux-foundation.org>
+	<CAP=VYLpeqVOC2ZpCdnPDuLrRjwdpbHn3XQoSwAUaYFRdwQPfaQ@mail.gmail.com>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 5 Mar 2013 14:33:16 +0100
-Paul Bolle <pebolle@tiscali.nl> wrote:
+On Thu, 7 Mar 2013 19:49:35 -0500 Paul Gortmaker <paul.gortmaker@windriver.com> wrote:
 
-> The Kconfig entry for CAAM's hash algorithm implementations has always
-> selected CRYPTO_AHASH. But there's no corresponding Kconfig symbol.
+> > otoh, offering useless stuff to non-kernel-developers has downsides
+> > with no balancing benefit, and we really should optimise things for
+> > our users because there are so many more of them than there are of us.
 > 
-> It seems it was intended to select CRYPTO_HASH, like other crypto
-> drivers do. That would apparently (indirectly) select CRYPTO_HASH2,
-> which would enable the ahash functionality this driver uses.
-> 
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-> ---
+> Glad to hear that, and I agree totally.  I hope the above three lines
+> will persuade people to merge practical/sane dependency lines that
+> have the end users in mind, instead of focusing on ease of local testing.
 
-Reviewed-by: Kim Phillips <kim.phillips@freescale.com>
-
-Kim
+It is possible to just ignore the Kconfig system and type "make
+drivers/foo/bar.o".  Sometimes this actually works.
 
