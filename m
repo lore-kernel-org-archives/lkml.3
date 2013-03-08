@@ -1,50 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933886Ab3CHHaY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 02:30:24 -0500
-Received: from mail.windriver.com ([147.11.1.11]:55627 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752389Ab3CHHaW (ORCPT
+	id S1754733Ab3CHHac (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 02:30:32 -0500
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:43702 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753964Ab3CHHaa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 02:30:22 -0500
-From: Xufeng Zhang <xufeng.zhang@windriver.com>
-To: <vyasevich@gmail.com>, <nhorman@tuxdriver.com>, <davem@davemloft.net>
-CC: <linux-sctp@vger.kernel.org>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH] sctp: don't break the loop while meeting the active_path so as to find the matched transport
-Date: Fri, 8 Mar 2013 15:39:37 +0800
-Message-ID: <1362728377-11025-1-git-send-email-xufeng.zhang@windriver.com>
-X-Mailer: git-send-email 1.7.0.2
+	Fri, 8 Mar 2013 02:30:30 -0500
+Message-ID: <5139938A.1040504@linux.vnet.ibm.com>
+Date: Fri, 08 Mar 2013 15:30:18 +0800
+From: Michael Wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Mike Galbraith <efault@gmx.de>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Namhyung Kim <namhyung@kernel.org>, Alex Shi <alex.shi@intel.com>,
+        Paul Turner <pjt@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        Ram Pai <linuxram@us.ibm.com>
+Subject: Re: [PATCH] sched: wakeup buddy
+References: <5136EB06.2050905@linux.vnet.ibm.com> <1362645372.2606.11.camel@laptop> <1362649419.4652.12.camel@marge.simpson.net> <51394EE3.1020706@linux.vnet.ibm.com> <1362725051.31859.40.camel@marge.simpson.net>
+In-Reply-To: <1362725051.31859.40.camel@marge.simpson.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13030807-1618-0000-0000-000003782371
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-sctp_assoc_lookup_tsn() function searchs which transport a certain TSN
-was sent on, if not found in the active_path transport, then go search
-all the other transports in the peer's transport_addr_list, however, we
-should continue to the next entry rather than break the loop when meet
-the active_path transport.
+On 03/08/2013 02:44 PM, Mike Galbraith wrote:
+> On Fri, 2013-03-08 at 10:37 +0800, Michael Wang wrote: 
+>> On 03/07/2013 05:43 PM, Mike Galbraith wrote:
+>>> On Thu, 2013-03-07 at 09:36 +0100, Peter Zijlstra wrote: 
+>>>> On Wed, 2013-03-06 at 15:06 +0800, Michael Wang wrote:
+>>>>
+>>>>> wake_affine() stuff is trying to bind related tasks closely, but it doesn't
+>>>>> work well according to the test on 'perf bench sched pipe' (thanks to Peter).
+>>>>
+>>>> so sched-pipe is a poor benchmark for this.. 
+>>>>
+>>>> Ideally we'd write a new benchmark that has some actual data footprint
+>>>> and we'd measure the cost of tasks being apart on the various cache
+>>>> metrics and see what affine wakeup does for it.
+>>>>
+>>>> Before doing something like what you're proposing, I'd have a hard look
+>>>> at WF_SYNC, it is possible we should disable/fix select_idle_sibling
+>>>> for sync wakeups.
+>>>
+>>> If nobody beats me to it, I'm going to try tracking shortest round trip
+>>> to idle, and use a multiple of that to shut select_idle_sibling() down.
+>>> If avg_idle approaches round trip time, there's no win to be had, we're
+>>> just wasting cycles.
+>>
+>> That's great if we have it, I'm a little doubt whether it is possible to
+>> find a better way to replace the select_idle_sibling() (look at the way
+>> it locates idle cpu...) in some cases, but I'm looking forward it ;-)
+> 
+> I'm not going to replace it, only stop it from wasting cycles when
+> there's very likely nothing to gain.  Save task wakeup time, if delta
+> rq->clock - p->last_wakeup < N*shortest_idle or some such very cheap
+> metric.  Wake ultra switchers L2 affine if allowed, only go hunting for
+> an idle L3 if the thing is on another package.  
+> 
+> In general, I think things would work better if we'd just rate limit how
+> frequently we can wakeup migrate each individual task.  
 
-Signed-off-by: Xufeng Zhang <xufeng.zhang@windriver.com>
----
- net/sctp/associola.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Isn't the wakeup buddy already limit the rate? and by turning the knob,
+we could change the rate on our demand.
 
-diff --git a/net/sctp/associola.c b/net/sctp/associola.c
-index 43cd0dd..d2709e2 100644
---- a/net/sctp/associola.c
-+++ b/net/sctp/associola.c
-@@ -1079,7 +1079,7 @@ struct sctp_transport *sctp_assoc_lookup_tsn(struct sctp_association *asoc,
- 			transports) {
- 
- 		if (transport == active)
--			break;
-+			continue;
- 		list_for_each_entry(chunk, &transport->transmitted,
- 				transmitted_list) {
- 			if (key == chunk->subh.data_hdr->tsn) {
--- 
-1.7.0.2
+We want
+> jabbering tasks to share L3, but we don't really want to trash L2 at an
+> awesome rate.
+
+I don't get it..., it's a task which has 'sleep' for some time, unless
+there is no task running on prev_cpu when it's sleeping, otherwise
+whatever the new cpu is, we will trash L2, isn't it?
+
+Regards,
+Michael Wang
+
+> 
+> -Mike
+> 
 
