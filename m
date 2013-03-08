@@ -1,103 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756188Ab3CHJAQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 04:00:16 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:55555 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753451Ab3CHJAN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 04:00:13 -0500
-X-IronPort-AV: E=Sophos;i="4.84,807,1355068800"; 
-   d="scan'208";a="6836782"
-Message-ID: <5139A494.2050500@cn.fujitsu.com>
-Date: Fri, 08 Mar 2013 16:43:00 +0800
-From: Tang Chen <tangchen@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: "Zheng, Lv" <lv.zheng@intel.com>
-CC: "lenb@kernel.org" <lenb@kernel.org>, "rjw@sisk.pl" <rjw@sisk.pl>,
-        "Moore, Robert" <robert.moore@intel.com>,
-        "ming.m.lin@intel.com" <ming.m.lin@intel.com>,
-        "mpm@selenic.com" <mpm@selenic.com>,
-        "herbert@gondor.apana.org.au" <herbert@gondor.hengli.com.au>,
-        "rob@landley.net" <rob@landley.net>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "trivial@kernel.org" <trivial@kernel.org>
-Subject: Re: [RESEND PATCH 3/6] acpi: Remove the leading spaces of "finish_override"
- label in acpi_tb_table_override().
-References: <1362652697-30284-1-git-send-email-tangchen@cn.fujitsu.com> <1362652697-30284-4-git-send-email-tangchen@cn.fujitsu.com> <1AE640813FDE7649BE1B193DEA596E88C197C2@SHSMSX101.ccr.corp.intel.com>
-In-Reply-To: <1AE640813FDE7649BE1B193DEA596E88C197C2@SHSMSX101.ccr.corp.intel.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/03/08 16:39:25,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/03/08 16:39:28,
-	Serialize complete at 2013/03/08 16:39:28
+	id S1756338Ab3CHJA1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 04:00:27 -0500
+Received: from vsp-authed02.binero.net ([195.74.38.226]:61890 "HELO
+	vsp-authed-01-02.binero.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1756236Ab3CHJAY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Mar 2013 04:00:24 -0500
+Subject: Re: [PATCH v3] gpio: Add device driver for GRGPIO cores and
+ support custom accessors with gpio-generic
+From: Andreas Larsson <andreas@gaisler.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        software@gaisler.com
+In-Reply-To: <CACRpkdaC9DsNj56_q33Z5N3_90Ffdq9qZeOxrFdrVSoL4wrTbQ@mail.gmail.com>
+References: <1360653873-25368-1-git-send-email-andreas@gaisler.com>
+	 <CACRpkdaYQSrzm_Yj3ZH9YZLC_zPJN06X-9ZM9jd7=X0OB1shXQ@mail.gmail.com>
+	 <51346D7C.5080307@gaisler.com>
+	 <CACRpkdaC9DsNj56_q33Z5N3_90Ffdq9qZeOxrFdrVSoL4wrTbQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 08 Mar 2013 10:00:17 +0100
+Message-ID: <1362733217.26956.2.camel@andreas>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/08/2013 04:28 PM, Zheng, Lv wrote:
-> Please do not try to fix ACPICA indentation problems in Linux side.
-> This will introduce source code divergences between ACPICA and Linux, which will add difficulties to ACPICA release work.
-> Please find real issues in ACPICA release scripts at:
->
-> https://github.com/acpica/acpica/tree/master/generate/linux
+On Thu, 2013-03-07 at 04:44 +0100, Linus Walleij wrote:
+> On Mon, Mar 4, 2013 at 10:46 AM, Andreas Larsson <andreas@gaisler.com> wrote:
+> > [Me]
+> >>> +struct grgpio_priv {
+> >>> +       struct bgpio_chip bgc;
+> >>> +       struct grgpio_regs __iomem *regs;
+> >>> +
+> >>> +       u32 imask;      /* irq mask shadow register */
+> >>> +       s32 *irqmap;    /* maps offset to irq or -1 if no irq */
+> >>
+> >>
+> >> irqmap? Argh what is this... I think you want to use irqdomain
+> >> for this instead. (Documentation/IRQ-domain.txt)
+> >
+> >
+> > Yeah, that comment is not clear. An entry in the irqmap array (for a gpio
+> > line) can be either -1 indicating no irq for that line or an index into the
+> > array of irq:s for the of device. Thus it is simply either -1 or a valid
+> > second argument to irq_of_parse_and_map.
+> 
+> So just make the mapping function in the irqdomain handle that?
+> 
+> Maybe I'm talking weird, I'm not really familiar with
+> irq_of_parse_and_map().
+> 
+> > Given that this is generally running on SPARC, it seems irqdomain is not an
+> > option (IRQ_DOMAIN is not selected by SPARC).
+> 
+> That has nothing to do with this. This driver can just select IRQ_DOMAIN
+> in *it's* Kconfig entry.
 
-Hi Lv,
+Oh, excellent! I'll look into an irqdomain solution then.
 
-Thanks for telling me this. :)
+Thanks for the feedback!
 
-One more thing, if I want to fix something in acpica, such as this patch 
-set,
-who and which mail list should I send patches to ?
+Cheers,
+Andreas Larsson
 
-Thanks. :)
 
->
-> Thanks
-> -Lv
->
->> -----Original Message-----
->> From: Tang Chen [mailto:tangchen@cn.fujitsu.com]
->> Sent: Thursday, March 07, 2013 6:38 PM
->> To: lenb@kernel.org; rjw@sisk.pl; Moore, Robert; Zheng, Lv;
->> ming.m.lin@intel.com; mpm@selenic.com; herbert@gondor.apana.org.au;
->> rob@landley.net
->> Cc: linux-acpi@vger.kernel.org; linux-kernel@vger.kernel.org;
->> linux-doc@vger.kernel.org; trivial@kernel.org
->> Subject: [RESEND PATCH 3/6] acpi: Remove the leading spaces of
->> "finish_override" label in acpi_tb_table_override().
->>
->> There is 7 leading spaces in front of "finish_override" label in
->> acpi_tb_table_override(). Remove them.
->>
->> Signed-off-by: Tang Chen<tangchen@cn.fujitsu.com>
->> ---
->>   drivers/acpi/acpica/tbinstal.c |    2 +-
->>   1 files changed, 1 insertions(+), 1 deletions(-)
->>
->> diff --git a/drivers/acpi/acpica/tbinstal.c b/drivers/acpi/acpica/tbinstal.c index
->> e57cd38..b1e098d 100644
->> --- a/drivers/acpi/acpica/tbinstal.c
->> +++ b/drivers/acpi/acpica/tbinstal.c
->> @@ -313,7 +313,7 @@ struct acpi_table_header
->> *acpi_tb_table_override(struct acpi_table_header
->>
->>   	return (NULL);		/* There was no override */
->>
->> -      finish_override:
->> +finish_override:
->>
->>   	ACPI_INFO((AE_INFO,
->>   		   "%4.4s %p %s table override, new table: %p",
->> --
->> 1.7.1
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
