@@ -1,125 +1,255 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934154Ab3CHPEN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 10:04:13 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:17062 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757836Ab3CHPEM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 10:04:12 -0500
-Date: Fri, 8 Mar 2013 10:04:08 -0500
-From: Dave Jones <davej@redhat.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: BUG_ON(nd->inode != parent->d_inode);
-Message-ID: <20130308150408.GA25399@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	Al Viro <viro@ZenIV.linux.org.uk>,
-	Linus Torvalds <torvalds@linux-foundation.org>
-References: <20130307021645.GA10173@redhat.com>
+	id S934265Ab3CHPFn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 10:05:43 -0500
+Received: from mail.alumni.tu-berlin.de ([130.149.4.13]:33597 "EHLO
+	mailbox.alumni.tu-berlin.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932795Ab3CHPFl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Mar 2013 10:05:41 -0500
+X-Greylist: delayed 1114 seconds by postgrey-1.27 at vger.kernel.org; Fri, 08 Mar 2013 10:05:41 EST
+X-tubIT-Incoming-IP: 80.218.149.249
+Message-ID: <5139F9E8.8090402@slac.stanford.edu>
+Date: Fri, 08 Mar 2013 15:47:04 +0100
+From: Till Straumann <strauman@slac.stanford.edu>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130307021645.GA10173@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] genirq: Sanitize spurious interrupt detection of threaded
+ irqs
+References: <alpine.LFD.2.02.1303071450130.22263@ionos>
+In-Reply-To: <alpine.LFD.2.02.1303071450130.22263@ionos>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 06, 2013 at 09:16:45PM -0500, Dave Jones wrote:
+Thomas.
 
- > kernel BUG at fs/namei.c:1441!
- > invalid opcode: 0000 [#1] PREEMPT SMP 
- > Modules linked in: bnep vmw_vsock_vmci_transport vmw_vmci vsock fuse l2tp_ppp l2tp_core hidp 8021q garp mrp llc2 netrom phonet bridge dlci stp caif_socket caif af_key pppoe pppox ppp_generic slhc af_rxrpc ipt_ULOG can_bcm can_raw nfnetlink scsi_transport_iscsi rfcomm rose can x25 decnet ipx p8023 p8022 nfc ax25 appletalk psnap llc irda atm rds crc_ccitt lockd sunrpc ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 xt_conntrack nf_conntrack ip6table_filter ip6_tables snd_hda_codec_realtek snd_hda_intel snd_hda_codec btusb snd_pcm microcode bluetooth pcspkr serio_raw edac_core snd_page_alloc rfkill snd_timer usb_debug snd soundcore r8169 mii vhost_net tun macvtap macvlan kvm_amd kvm
- > CPU 2 
- > Pid: 8737, comm: trinity-child0 Not tainted 3.9.0-rc1+ #69 Gigabyte Technology Co., Ltd. GA-MA78GM-S2H/GA-MA78GM-S2H
- > RIP: 0010:[<ffffffff816bc622>]  [<ffffffff816bc622>] lookup_slow+0x25/0xab
- > RSP: 0018:ffff8800ad2cbc98  EFLAGS: 00010293
- > RAX: 0000000000000001 RBX: ffff8800ad2cbde8 RCX: 0000000000000000
- > RDX: 00000000000018ac RSI: ffff8800ad2cbd18 RDI: ffff88010b080040
- > RBP: ffff8800ad2cbcc8 R08: 0000000000000001 R09: 0000000000000000
- > R10: 0000000000000001 R11: 0000000000000000 R12: 0000000000000011
- > R13: ffff8800cebf9bc0 R14: ffff8800ad2cbde8 R15: ffff8800cfb13178
- > FS:  00007f98b7830740(0000) GS:ffff88012b200000(0000) knlGS:0000000000000000
- > CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
- > CR2: 0000000000000008 CR3: 00000000baffd000 CR4: 00000000000007e0
- > DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
- > DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
- > Process trinity-child0 (pid: 8737, threadinfo ffff8800ad2ca000, task ffff880104ea4920)
- > Stack:
- >  0000000000000092 0000000000000000 0000000000000001 0000000000000011
- >  0000000000000000 ffff8800ad2cbde8 ffff8800ad2cbd68 ffffffff811be75e
- >  ffff880104ea5040 0000000000000002 ffff8800ad2cbd08 ffffffff8100a196
- > Call Trace:
- >  [<ffffffff811be75e>] path_lookupat+0x71e/0x740
- >  [<ffffffff8100a196>] ? native_sched_clock+0x26/0x90
- >  [<ffffffff810b2118>] ? trace_hardirqs_off_caller+0x28/0xc0
- >  [<ffffffff811be7b4>] filename_lookup+0x34/0xc0
- >  [<ffffffff811be8f2>] do_path_lookup+0x32/0x40
- >  [<ffffffff811beb7a>] kern_path+0x2a/0x50
- >  [<ffffffff811648f3>] ? might_fault+0x53/0xb0
- >  [<ffffffffa0001000>] ? ftrace_raw_event_kvm_age_page+0x70/0xd0 [kvm]
- >  [<ffffffff8116493c>] ? might_fault+0x9c/0xb0
- >  [<ffffffff811648f3>] ? might_fault+0x53/0xb0
- >  [<ffffffffa0001000>] ? ftrace_raw_event_kvm_age_page+0x70/0xd0 [kvm]
- >  [<ffffffff811d569d>] do_mount+0x8d/0xa00
- >  [<ffffffff811591ab>] ? memdup_user+0x4b/0x90
- >  [<ffffffff81159243>] ? strndup_user+0x53/0x70
- >  [<ffffffffa0001000>] ? ftrace_raw_event_kvm_age_page+0x70/0xd0 [kvm]
- >  [<ffffffff811d609e>] sys_mount+0x8e/0xe0
- >  [<ffffffffa0001000>] ? ftrace_raw_event_kvm_age_page+0x70/0xd0 [kvm]
- >  [<ffffffff816cd942>] system_call_fastpath+0x16/0x1b
- >  [<ffffffffa0001000>] ? ftrace_raw_event_kvm_age_page+0x70/0xd0 [kvm]
- > Code: 55 48 89 e5 0f 0b 66 66 66 66 90 55 48 89 e5 41 56 41 55 41 54 53 48 89 fb 48 83 ec 10 4c 8b 6f 08 48 8b 7f 30 49 3b 7d 30 74 02 <0f> 0b 48 81 c7 e8 00 00 00 49 89 f4 31 f6 e8 7b 52 00 00 8b 53 
- > RIP  [<ffffffff816bc622>] lookup_slow+0x25/0xab
- >  RSP <ffff8800ad2cbc98>
- 
-Managed to trigger this one from a different path..
+Thanks for your quick reply. I had a look at the patch and I have a few 
+comments.
 
-kernel BUG at fs/namei.c:1439!
-invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-Modules linked in: atm x25 af_key lockd sunrpc ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 xt_conntrack nf_conntrack ip6table_filter ip6_tables snd_hda_codec_realtek btusb snd_hda_intel bluetooth snd_hda_codec snd_pcm microcode rfkill usb_debug snd_page_alloc serio_raw snd_timer pcspkr snd edac_core soundcore r8169 mii vhost_net tun macvtap macvlan kvm_amd kvm radeon backlight drm_kms_helper ttm
-CPU 1 
-Pid: 3025, comm: trinity-child1 Not tainted 3.9.0-rc1+ #77 Gigabyte Technology Co., Ltd. GA-MA78GM-S2H/GA-MA78GM-S2H
-RIP: 0010:[<ffffffff816bfe24>]  [<ffffffff816bfe24>] lookup_slow+0x25/0xab
-RSP: 0018:ffff88010316dd18  EFLAGS: 00010202
-RAX: 0000000000000001 RBX: ffff88010316de48 RCX: 0000000000000000
-RDX: 0000000000001078 RSI: ffff88010316dd98 RDI: ffff8801053026f8
-RBP: ffff88010316dd48 R08: 0000000000000001 R09: 0000000000000000
-R10: 0000000000000001 R11: 0000000000000000 R12: 0000000000000010
-R13: ffff880104e95720 R14: ffff88010316de48 R15: 0000000001412d30
-FS:  00007f80b9bb9740(0000) GS:ffff88012a800000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-CR2: 0000003e29e93880 CR3: 0000000108c39000 CR4: 00000000000007e0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Process trinity-child1 (pid: 3025, threadinfo ffff88010316c000, task ffff8801048b2490)
-Stack:
- ffff8801048b2bb0 0000000000000000 0000000000000001 0000000000000010
- 0000000000000000 ffff88010316de48 ffff88010316dde8 ffffffff811c973e
- ffff88010316dd88 00000000000000d0 00000000000000d0 ffff8801224a2300
-Call Trace:
- [<ffffffff811c973e>] path_lookupat+0x71e/0x740
- [<ffffffff8119dbb1>] ? kmem_cache_alloc+0x111/0x330
- [<ffffffff811c7dd0>] ? getname_flags.part.33+0x30/0x150
- [<ffffffff810b32df>] ? lock_release_holdtime.part.24+0x8f/0x130
- [<ffffffff811c9794>] filename_lookup+0x34/0xc0
- [<ffffffff811cc58e>] user_path_at_empty+0x8e/0x110
- [<ffffffff810b2868>] ? trace_hardirqs_off_caller+0x28/0xc0
- [<ffffffff811cc621>] user_path_at+0x11/0x20
- [<ffffffff811e4347>] sys_lgetxattr+0x37/0xa0
- [<ffffffff8134b6ce>] ? trace_hardirqs_on_thunk+0x3a/0x3f
- [<ffffffff816d11c2>] system_call_fastpath+0x16/0x1b
-Code: 55 48 89 e5 0f 0b 66 66 66 66 90 55 48 89 e5 41 56 41 55 41 54 53 48 89 fb 48 83 ec 10 4c 8b 6f 08 48 8b 7f 30 49 3b 7d 30 74 02 <0f> 0b 48 81 c7 e8 00 00 00 49 89 f4 31 f6 e8 d9 52 00 00 8b 53 
-RIP  [<ffffffff816bfe24>] lookup_slow+0x25/0xab
- RSP <ffff88010316dd18>
+1) I'm not sure adding the SPURIOUS_DEFERRED flag into 
+threads_handled_last is OK
+     - what happens if the atomic_t counter can hold more than 31 bits? 
+In this case,
+     when thread handlers increment the counter there is interference 
+with the flag.
+     If this is not harmful then it is at least ugly.
 
-What can I dump here that might give us more clues ?
+     I'm not as familiar with the code as you are but wouldn't it be 
+simpler to always
+     defer spurious detection thus avoiding to have to keep track of the 
+state (deferral
+     active/inactive)? I.e., if any primary handler returns IRQ_HANDLED then
+     we simply increment the counter. note_interrupt() could then always 
+compare the
+     previous count to the current count and if they are equal conclude 
+that the interrupt
+     was not handled:
 
-The only clue I have on this one so far is that it's something in /proc.
-(I have to run trinity with -V /proc right now, because of all those
- weird sysfs corruption bugs until someone gets a handle on those).
+     handle_irq_event_percpu()
+     {
+     ...
+       if (!noirqdebug)
+         note_interrupt(irq, desc, retval);
 
-	Dave
+       if ( (retval & IRQ_HANDLED) )
+         atomic_inc(&desc->threads_handled);
+     }
+
+     and in 'note_interrupt()'
+
+       handled = atomic_read(&desc->threads_handled);
+       if ( desc->threads_handled_last == handled ) {
+         action_ret = IRQ_NONE;
+       } else {
+         action_ret = IRQ_HANDLED;
+         desc->threads_handled_last = handled;
+       }
+
+    Either way - I'm not sure what deferral does to the part of the 
+algorithm
+    in note_interrupt() which deals with misrouted interrupts since the
+    'action_ret' that goes into try_misrouted_irq() is delayed by one 
+interrupt
+    cycle.
+
+
+2) note_interrupt is also called from irq/chip.c:handle_nested_irq() and 
+I believe
+    this routine would also need to increment the 'threads_handled' 
+counter rather
+    than calling note_interrupt.
+
+Cheers
+- Till
+
+On 03/07/2013 02:53 PM, Thomas Gleixner wrote:
+> Till reported that he spurious interrupt detection of threaded
+> interrupts is broken in two ways:
+>
+> - note_interrupt() is called for each action thread of a shared
+>    interrupt line. That's wrong as we are only interested whether none
+>    of the device drivers felt responsible for the interrupt, but by
+>    calling multiple times for a single interrupt line we account
+>    IRQ_NONE even if one of the drivers felt responsible.
+>
+> - note_interrupt() when called from the thread handler is not
+>    serialized. That leaves the members of irq_desc which are used for
+>    the spurious detection unprotected.
+>
+> To solve this we need to defer the spurious detection of a threaded
+> interrupt to the next hardware interrupt context where we have
+> implicit serialization.
+>
+> If note_interrupt is called with action_ret == IRQ_WAKE_THREAD, we
+> check whether the previous interrupt requested a deferred check. If
+> not, we request a deferred check for the next hardware interrupt and
+> return.
+>
+> If set, we check whether one of the interrupt threads signaled
+> success. Depending on this information we feed the result into the
+> spurious detector.
+>
+> If one primary handler of a shared interrupt returns IRQ_HANDLED we
+> disable the deferred check of irq threads on the same line, as we have
+> found at least one device driver who cared.
+>
+> Reported-by: Till Straumann <strauman@slac.stanford.edu>
+> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> ---
+>   include/linux/irqdesc.h |    4 +++
+>   kernel/irq/internals.h  |    4 +++
+>   kernel/irq/manage.c     |    4 +--
+>   kernel/irq/spurious.c   |   57 ++++++++++++++++++++++++++++++++++++++++++++----
+>   4 files changed, 63 insertions(+), 6 deletions(-)
+>
+> Index: linux-2.6/include/linux/irqdesc.h
+> ===================================================================
+> --- linux-2.6.orig/include/linux/irqdesc.h
+> +++ linux-2.6/include/linux/irqdesc.h
+> @@ -27,6 +27,8 @@ struct irq_desc;
+>    * @irq_count:		stats field to detect stalled irqs
+>    * @last_unhandled:	aging timer for unhandled count
+>    * @irqs_unhandled:	stats field for spurious unhandled interrupts
+> + * @threads_handled:	stats field for deferred spurious detection of threaded handlers
+> + * @threads_handled_last: comparator field for deferred spurious detection of theraded handlers
+>    * @lock:		locking for SMP
+>    * @affinity_hint:	hint to user space for preferred irq affinity
+>    * @affinity_notify:	context for notification of affinity changes
+> @@ -52,6 +54,8 @@ struct irq_desc {
+>   	unsigned int		irq_count;	/* For detecting broken IRQs */
+>   	unsigned long		last_unhandled;	/* Aging timer for unhandled count */
+>   	unsigned int		irqs_unhandled;
+> +	atomic_t		threads_handled;
+> +	int			threads_handled_last;
+>   	raw_spinlock_t		lock;
+>   	struct cpumask		*percpu_enabled;
+>   #ifdef CONFIG_SMP
+> Index: linux-2.6/kernel/irq/internals.h
+> ===================================================================
+> --- linux-2.6.orig/kernel/irq/internals.h
+> +++ linux-2.6/kernel/irq/internals.h
+> @@ -55,6 +55,10 @@ enum {
+>   	IRQS_SUSPENDED		= 0x00000800,
+>   };
+>   
+> +/* Bits for spurious detection of threaded handlers */
+> +#define SPURIOUS_MASK		0x7fffffff
+> +#define SPURIOUS_DEFERRED	0x80000000
+> +
+>   #include "debug.h"
+>   #include "settings.h"
+>   
+> Index: linux-2.6/kernel/irq/manage.c
+> ===================================================================
+> --- linux-2.6.orig/kernel/irq/manage.c
+> +++ linux-2.6/kernel/irq/manage.c
+> @@ -867,8 +867,8 @@ static int irq_thread(void *data)
+>   		irq_thread_check_affinity(desc, action);
+>   
+>   		action_ret = handler_fn(desc, action);
+> -		if (!noirqdebug)
+> -			note_interrupt(action->irq, desc, action_ret);
+> +		if (!noirqdebug && action_ret == IRQ_HANDLED)
+> +			atomic_inc(&desc->threads_handled);
+>   
+>   		wake_threads_waitq(desc);
+>   	}
+> Index: linux-2.6/kernel/irq/spurious.c
+> ===================================================================
+> --- linux-2.6.orig/kernel/irq/spurious.c
+> +++ linux-2.6/kernel/irq/spurious.c
+> @@ -271,15 +271,64 @@ void note_interrupt(unsigned int irq, st
+>   	if (desc->istate & IRQS_POLL_INPROGRESS)
+>   		return;
+>   
+> -	/* we get here again via the threaded handler */
+> -	if (action_ret == IRQ_WAKE_THREAD)
+> -		return;
+> -
+>   	if (bad_action_ret(action_ret)) {
+>   		report_bad_irq(irq, desc, action_ret);
+>   		return;
+>   	}
+>   
+> +	/*
+> +	 * We cannot call note_interrupt from the threaded handler. So
+> +	 * the threaded handlers store whether they sucessfully
+> +	 * handled an interrupt. Here is the right place to take care
+> +	 * of this.
+> +	 */
+> +	if (action_ret & IRQ_WAKE_THREAD) {
+> +		/*
+> +		 * There is a thread woken. Check whether one of the
+> +		 * shared primary handlers returned IRQ_HANDLED. If
+> +		 * not we defer the spurious detection to the next
+> +		 * interrupt.
+> +		 */
+> +		if (action_ret == IRQ_WAKE_THREAD) {
+> +			int handled;
+> +
+> +			/*
+> +			 * We use bit 31 of thread_handled_last to
+> +			 * note the deferred spurious detection
+> +			 * active. No locking necessary as
+> +			 * thread_handled_last is only accessed here
+> +			 * and we have the guarantee that hard
+> +			 * interrupts are not reentrant.
+> +			 */
+> +			if (!(desc->threads_handled_last & SPURIOUS_DEFERRED)) {
+> +				desc->threads_handled_last |= SPURIOUS_DEFERRED;
+> +				return;
+> +			}
+> +			/*
+> +			 * Check whether one of the threaded handlers
+> +			 * returned IRQ_HANDLED since the last
+> +			 * interrupt happened. Or the spurious
+> +			 * deferred flag for ease of comparison and
+> +			 * preservation in the writeback.
+> +			 */
+> +			handled = atomic_read(&desc->threads_handled);
+> +			handled |= SPURIOUS_DEFERRED;
+> +			if (handled != desc->threads_handled_last) {
+> +				action_ret = IRQ_HANDLED;
+> +				desc->threads_handled_last = handled;
+> +			} else {
+> +				action_ret = IRQ_NONE;
+> +			}
+> +		} else {
+> +			/*
+> +			 * One of the primary handlers returned
+> +			 * IRQ_HANDLED. So we don't care about the
+> +			 * threaded handlers on the same line.
+> +			 */
+> +			desc->threads_handled_last &= ~SPURIOUS_DEFERRED;
+> +		}
+> +	}
+> +
+>   	if (unlikely(action_ret == IRQ_NONE)) {
+>   		/*
+>   		 * If we are seeing only the odd spurious IRQ caused by
 
