@@ -1,55 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933960Ab3CHJkq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 04:40:46 -0500
-Received: from zill.ext.symas.net ([69.43.206.106]:51894 "EHLO
-	zill.ext.symas.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933383Ab3CHJko (ORCPT
+	id S1756393Ab3CHJn6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 04:43:58 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.242]:47648 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752760Ab3CHJnz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 04:40:44 -0500
-Message-ID: <5139B214.3040303@symas.com>
-Date: Fri, 08 Mar 2013 01:40:36 -0800
-From: Howard Chu <hyc@symas.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:22.0) Gecko/20100101 Firefox/22.0 SeaMonkey/2.19a1
+	Fri, 8 Mar 2013 04:43:55 -0500
+From: "Yang, Wenyou" <Wenyou.Yang@atmel.com>
+To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "richard.genoud@gmail.com" <richard.genoud@gmail.com>,
+        "Lin, JM" <JM.Lin@atmel.com>,
+        "Ferre, Nicolas" <Nicolas.FERRE@atmel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "spi-devel-general@lists.sourceforge.net" 
+	<spi-devel-general@lists.sourceforge.net>,
+        "plagnioj@jcrosoft.com" <plagnioj@jcrosoft.com>
+Subject: RE: [PATCH v6 01/16] spi/spi-atmel: fix probing failure after
+ xfer->speed_hz set
+Thread-Topic: [PATCH v6 01/16] spi/spi-atmel: fix probing failure after
+ xfer->speed_hz set
+Thread-Index: AQHOGuP8IM96tyzK7E6aJ9clb/yCNJiZn7aAgAHkkTA=
+Date: Fri, 8 Mar 2013 09:43:49 +0000
+Message-ID: <B256D81BAE5131468A838E5D7A24364149720050@penmbx02>
+References: <1362626715-6549-1-git-send-email-wenyou.yang@atmel.com>
+ <1362626815-6628-1-git-send-email-wenyou.yang@atmel.com>
+ <51388575.4050506@cogentembedded.com>
+In-Reply-To: <51388575.4050506@cogentembedded.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.168.5.13]
+Content-Type: text/plain; charset="gb2312"
 MIME-Version: 1.0
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-CC: Johannes Weiner <hannes@cmpxchg.org>, Jan Kara <jack@suse.cz>,
-        linux-kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
-Subject: Re: mmap vs fs cache
-References: <5136320E.8030109@symas.com> <20130307154312.GG6723@quack.suse.cz> <20130308020854.GC23767@cmpxchg.org> <5139975F.9070509@symas.com> <20130308084246.GA4411@shutemov.name>
-In-Reply-To: <20130308084246.GA4411@shutemov.name>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r289i18Q027764
 
-Kirill A. Shutemov wrote:
-> On Thu, Mar 07, 2013 at 11:46:39PM -0800, Howard Chu wrote:
->> You're misreading the information then. slapd is doing no caching of
->> its own, its RSS and SHR memory size are both the same. All it is
->> using is the mmap, nothing else. The RSS == SHR == FS cache, up to
->> 16GB. RSS is always == SHR, but above 16GB they grow more slowly
->> than the FS cache.
->
-> It only means, that some pages got unmapped from your process. It can
-> happned, for instance, due page migration. There's nothing worry about: it
-> will be mapped back on next page fault to the page and it's only minor
-> page fault since the page is in pagecache anyway.
+Hi, Serqei,
 
-Unfortunately there *is* something to worry about. As I said already - when 
-the test spans 30GB, the FS cache fills up the rest of RAM and the test is 
-doing a lot of real I/O even though it shouldn't need to. Please, read the 
-entire original post before replying.
+> -----Original Message-----
+> From: Sergei Shtylyov [mailto:sergei.shtylyov@cogentembedded.com]
+> Sent: 2013Äê3ÔÂ7ÈÕ 20:18
+> To: Yang, Wenyou
+> Cc: linux-arm-kernel@lists.infradead.org; richard.genoud@gmail.com; Lin, JM;
+> Ferre, Nicolas; linux-kernel@vger.kernel.org; grant.likely@secretlab.ca;
+> spi-devel-general@lists.sourceforge.net; plagnioj@jcrosoft.com
+> Subject: Re: [PATCH v6 01/16] spi/spi-atmel: fix probing failure after
+> xfer->speed_hz set
+> 
+> Hello.
+> 
+> On 07-03-2013 7:26, Wenyou Yang wrote:
+> 
+> > commit: 059b8ffeee5b427949872bb6ed5db5ae0788054e
+> 
+>     Please also specify the summary line of that commit in parens (or however
+> you like).
+Thanks for your suggestion.
 
-There is no way that a process that is accessing only 30GB of a mmap should be 
-able to fill up 32GB of RAM. There's nothing else running on the machine, I've 
-killed or suspended everything else in userland besides a couple shells 
-running top and vmstat. When I manually drop_caches repeatedly, then 
-eventually slapd RSS/SHR grows to 30GB and the physical I/O stops.
+> 
+> > cause the atmel spi probing failure.
+> 
+> > Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
+> > Cc: spi-devel-general@lists.sourceforge.net
+> > Cc: linux-kernel@vger.kernel.org
+> 
+> WBR, Sergei
 
--- 
-   -- Howard Chu
-   CTO, Symas Corp.           http://www.symas.com
-   Director, Highland Sun     http://highlandsun.com/hyc/
-   Chief Architect, OpenLDAP  http://www.openldap.org/project/
+Best Regards,
+Wenyou Yang
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
