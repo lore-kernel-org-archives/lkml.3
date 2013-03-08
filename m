@@ -1,46 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934247Ab3CHOsq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 09:48:46 -0500
-Received: from exprod7og106.obsmtp.com ([64.18.2.165]:37862 "EHLO
-	exprod7og106.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757848Ab3CHOsp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 09:48:45 -0500
-Message-ID: <5139FA13.8090305@genband.com>
-Date: Fri, 08 Mar 2013 08:47:47 -0600
-From: Chris Friesen <chris.friesen@genband.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.16
+	id S934218Ab3CHOxP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 09:53:15 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:23484 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933058Ab3CHOxN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Mar 2013 09:53:13 -0500
+Date: Fri, 8 Mar 2013 09:53:07 -0500
+From: Dave Jones <davej@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: pipe_release oops.
+Message-ID: <20130308145306.GA24085@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	Al Viro <viro@zeniv.linux.org.uk>
+References: <CA+55aFwDYocNRjSCJk1PYw0MFy7dpKf1yMMEiePP--=ewQcX6A@mail.gmail.com>
+ <20130307213819.GB19543@redhat.com>
+ <CA+55aFx424SX6S1zFegVaMZ_BkeZctDKCN6eYCLFfaJDKRVG9g@mail.gmail.com>
+ <20130307220333.GA31039@redhat.com>
+ <20130307223610.GA2494@redhat.com>
+ <CA+55aFzdPaFQROzFhz-v1Qn=3aDP=4uGTiOJxR26cR91uJHxyg@mail.gmail.com>
 MIME-Version: 1.0
-To: Howard Chu <hyc@symas.com>
-CC: "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Johannes Weiner <hannes@cmpxchg.org>, Jan Kara <jack@suse.cz>,
-        linux-kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
-Subject: Re: mmap vs fs cache
-References: <5136320E.8030109@symas.com> <20130307154312.GG6723@quack.suse.cz> <20130308020854.GC23767@cmpxchg.org> <5139975F.9070509@symas.com> <20130308084246.GA4411@shutemov.name> <5139B214.3040303@symas.com>
-In-Reply-To: <5139B214.3040303@symas.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 08 Mar 2013 14:47:48.0507 (UTC) FILETIME=[E6F09EB0:01CE1C0B]
-X-TM-AS-Product-Ver: SMEX-8.0.0.4160-6.500.1024-19698.004
-X-TM-AS-Result: No--7.989000-8.000000-31
-X-TM-AS-User-Approved-Sender: No
-X-TM-AS-User-Blocked-Sender: No
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFzdPaFQROzFhz-v1Qn=3aDP=4uGTiOJxR26cR91uJHxyg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/08/2013 03:40 AM, Howard Chu wrote:
+On Thu, Mar 07, 2013 at 04:21:13PM -0800, Linus Torvalds wrote:
+ > On Thu, Mar 7, 2013 at 2:36 PM, Dave Jones <davej@redhat.com> wrote:
+ > >
+ > > The hits keep on coming..
+ > >
+ > > [  255.609172] BUG: unable to handle kernel NULL pointer dereference at 0000000000000064
+ > > [  255.610393] IP: [<ffffffff811bad62>] pipe_release+0x42/0xd0
+ > 
+ > Ok, I think this is the same issue as your fasync thing.
+ > 
+ > So add a "if (pipe) { }" in pipe_release() too.
 
-> There is no way that a process that is accessing only 30GB of a mmap
-> should be able to fill up 32GB of RAM. There's nothing else running on
-> the machine, I've killed or suspended everything else in userland
-> besides a couple shells running top and vmstat. When I manually
-> drop_caches repeatedly, then eventually slapd RSS/SHR grows to 30GB and
-> the physical I/O stops.
+Yeah, that does the trick.
+I changed your other diff a little to use a goto, which reduces a level of indentation..
 
-Is it possible that the kernel is doing some sort of automatic 
-readahead, but it ends up reading pages corresponding to data that isn't 
-ever queried and so doesn't get mapped by the application?
+Signed-off-by: Dave Jones <davej@redhat.com>
 
-Chris
+diff --git a/fs/pipe.c b/fs/pipe.c
+index 64a494c..49ba9cc 100644
+--- a/fs/pipe.c
++++ b/fs/pipe.c
+@@ -740,6 +740,9 @@ pipe_release(struct inode *inode, int decr, int decw)
+ 
+ 	mutex_lock(&inode->i_mutex);
+ 	pipe = inode->i_pipe;
++	if (!pipe)
++		goto out_unlock;
++
+ 	pipe->readers -= decr;
+ 	pipe->writers -= decw;
+ 
+@@ -750,6 +753,8 @@ pipe_release(struct inode *inode, int decr, int decw)
+ 		kill_fasync(&pipe->fasync_readers, SIGIO, POLL_IN);
+ 		kill_fasync(&pipe->fasync_writers, SIGIO, POLL_OUT);
+ 	}
++
++out_unlock:
+ 	mutex_unlock(&inode->i_mutex);
+ 
+ 	return 0;
+@@ -759,10 +764,11 @@ static int
+ pipe_read_fasync(int fd, struct file *filp, int on)
+ {
+ 	struct inode *inode = file_inode(filp);
+-	int retval;
++	int retval = 0;
+ 
+ 	mutex_lock(&inode->i_mutex);
+-	retval = fasync_helper(fd, filp, on, &inode->i_pipe->fasync_readers);
++	if (inode->i_pipe)
++		retval = fasync_helper(fd, filp, on, &inode->i_pipe->fasync_readers);
+ 	mutex_unlock(&inode->i_mutex);
+ 
+ 	return retval;
+@@ -773,10 +779,11 @@ static int
+ pipe_write_fasync(int fd, struct file *filp, int on)
+ {
+ 	struct inode *inode = file_inode(filp);
+-	int retval;
++	int retval = 0;
+ 
+ 	mutex_lock(&inode->i_mutex);
+-	retval = fasync_helper(fd, filp, on, &inode->i_pipe->fasync_writers);
++	if (inode->i_pipe)
++		retval = fasync_helper(fd, filp, on, &inode->i_pipe->fasync_writers);
+ 	mutex_unlock(&inode->i_mutex);
+ 
+ 	return retval;
+@@ -787,16 +794,22 @@ static int
+ pipe_rdwr_fasync(int fd, struct file *filp, int on)
+ {
+ 	struct inode *inode = file_inode(filp);
+-	struct pipe_inode_info *pipe = inode->i_pipe;
+-	int retval;
++	struct pipe_inode_info *pipe;
++	int retval = 0;
+ 
+ 	mutex_lock(&inode->i_mutex);
++	pipe = inode->i_pipe;
++	if (!pipe)
++		goto out_unlock;
++
+ 	retval = fasync_helper(fd, filp, on, &pipe->fasync_readers);
+ 	if (retval >= 0) {
+ 		retval = fasync_helper(fd, filp, on, &pipe->fasync_writers);
+ 		if (retval < 0) /* this can happen only if on == T */
+ 			fasync_helper(-1, filp, 0, &pipe->fasync_readers);
+ 	}
++
++out_unlock:
+ 	mutex_unlock(&inode->i_mutex);
+ 	return retval;
+ }
