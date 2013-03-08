@@ -1,63 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758573Ab3CHO0o (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 09:26:44 -0500
-Received: from [216.32.180.14] ([216.32.180.14]:22717 "EHLO
-	va3outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1757680Ab3CHO0n (ORCPT
+	id S934129Ab3CHO1k (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 09:27:40 -0500
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:37809 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932413Ab3CHO1j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 09:26:43 -0500
-X-Forefront-Antispam-Report: CIP:59.163.77.45;KIP:(null);UIP:(null);IPV:NLI;H:KCHJEXHC01.kpit.com;RD:59.163.77.45.static.vsnl.net.in;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VPS-2(zz98dI936eI1432Izz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ahzz8275bhz2dh2a8h668h839h93fhd24hd2bhf0ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1b0ahbe9i1155h)
-Subject: Re: [patch v1 1/5] mfd: da9055 change irq state to default
-From: Ashish Jangam <ashish.jangam@kpitcummins.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Samuel Ortiz <sameo@linux.intel.com>, Axel Lin <axel.lin@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        <linux-kernel@vger.kernel.org>, David Dajun Chen <dchen@diasemi.com>
-In-Reply-To: <1362136337.19678.3.camel@dhruva>
-References: <1358486377.14373.7.camel@dhruva>
-	 <1362136337.19678.3.camel@dhruva>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 8 Mar 2013 19:52:26 +0530
-Message-ID: <1362752546.27932.1.camel@dhruva>
+	Fri, 8 Mar 2013 09:27:39 -0500
+Date: Fri, 8 Mar 2013 09:27:20 -0500
+From: Neil Horman <nhorman@tuxdriver.com>
+To: Xufeng Zhang <xufeng.zhang@windriver.com>
+Cc: vyasevich@gmail.com, davem@davemloft.net, linux-sctp@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] sctp: don't break the loop while meeting the active_path
+ so as to find the matched transport
+Message-ID: <20130308142720.GA9873@hmsreliant.think-freely.org>
+References: <1362728377-11025-1-git-send-email-xufeng.zhang@windriver.com>
 MIME-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.10.38.47]
-X-OriginatorOrg: kpitcummins.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1362728377-11025-1-git-send-email-xufeng.zhang@windriver.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-03-01 at 16:43 +0530, Ashish Jangam wrote:
-> On Fri, 2013-01-18 at 10:49 +0530, Ashish Jangam wrote:
-> > This patch changes the irq state from high to the now default low
-> > state.
-> > 
-> > This patch is tested on smdk6410 board.
-> > 
-> > Signed-off-by: Ashish Jangam <ashish.jangam@kpitcummins.com>
-> > ---
-> >  drivers/mfd/da9055-core.c |    2 +-
-> >  1 files changed, 1 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/drivers/mfd/da9055-core.c b/drivers/mfd/da9055-core.c
-> > index f56a1a9..49cb23d 100644
-> > --- a/drivers/mfd/da9055-core.c
-> > +++ b/drivers/mfd/da9055-core.c
-> > @@ -391,7 +391,7 @@ int da9055_device_init(struct da9055 *da9055)
-> >  		da9055->irq_base = pdata->irq_base;
-> >  
-> >  	ret = regmap_add_irq_chip(da9055->regmap, da9055->chip_irq,
-> > -				  IRQF_TRIGGER_HIGH | IRQF_ONESHOT,
-> > +				  IRQF_TRIGGER_LOW | IRQF_ONESHOT,
-> >  				  da9055->irq_base, &da9055_regmap_irq_chip,
-> >  				  &da9055->irq_data);
-> >  	if (ret < 0)
-> Can you let me know if this patch looks good to get merged?
-Any update? Sorry to ping, just need to close this small change till
-earlier. 
+On Fri, Mar 08, 2013 at 03:39:37PM +0800, Xufeng Zhang wrote:
+> sctp_assoc_lookup_tsn() function searchs which transport a certain TSN
+> was sent on, if not found in the active_path transport, then go search
+> all the other transports in the peer's transport_addr_list, however, we
+> should continue to the next entry rather than break the loop when meet
+> the active_path transport.
+> 
+> Signed-off-by: Xufeng Zhang <xufeng.zhang@windriver.com>
+> ---
+>  net/sctp/associola.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/net/sctp/associola.c b/net/sctp/associola.c
+> index 43cd0dd..d2709e2 100644
+> --- a/net/sctp/associola.c
+> +++ b/net/sctp/associola.c
+> @@ -1079,7 +1079,7 @@ struct sctp_transport *sctp_assoc_lookup_tsn(struct sctp_association *asoc,
+>  			transports) {
+>  
+>  		if (transport == active)
+> -			break;
+> +			continue;
+>  		list_for_each_entry(chunk, &transport->transmitted,
+>  				transmitted_list) {
+>  			if (key == chunk->subh.data_hdr->tsn) {
+> -- 
+> 1.7.0.2
+> 
+> 
 
+This works, but what might be better would be if we did a move to front
+heuristic in sctp_assoc_set_primary.  E.g. when we set the active_path, move the
+requisite transport to the front of the transport_addr_list.  If we did that,
+then we could just do one for loop in sctp_assoc_lookup_tsn and wind up
+implicitly check the active path first without having to check it seprately and
+skip it in the second for loop.  
+
+Neil
 
