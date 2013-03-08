@@ -1,61 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760031Ab3CHSvH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 13:51:07 -0500
-Received: from mail-ee0-f54.google.com ([74.125.83.54]:44834 "EHLO
-	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751082Ab3CHSvF (ORCPT
+	id S1760119Ab3CHS7N (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 13:59:13 -0500
+Received: from mail-vc0-f176.google.com ([209.85.220.176]:49603 "EHLO
+	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751783Ab3CHS7M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 13:51:05 -0500
+	Fri, 8 Mar 2013 13:59:12 -0500
 MIME-Version: 1.0
-In-Reply-To: <20130308150408.GA25399@redhat.com>
-References: <20130307021645.GA10173@redhat.com>
-	<20130308150408.GA25399@redhat.com>
-Date: Fri, 8 Mar 2013 10:51:03 -0800
-X-Google-Sender-Auth: qSVFUpOAv9t0RjQBahZ5U6tpA_E
-Message-ID: <CA+55aFxAfWHdSH+45qgids1ByBxzieZnz_ujRXYGY-at1mg5eg@mail.gmail.com>
-Subject: Re: BUG_ON(nd->inode != parent->d_inode);
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <s5h6211lrx3.wl%tiwai@suse.de>
+References: <CA+ydwtpxXb2SSpyG9vn7mvvRU6Z+1BhOe5qi+QXf-6+E_iZ3kg@mail.gmail.com>
+	<s5h6211lrx3.wl%tiwai@suse.de>
+Date: Fri, 8 Mar 2013 20:59:11 +0200
+Message-ID: <CA+ydwtriiYSkT5fN_VOw4kHodoadgC80dDg4K3iydjaT5c5jAA@mail.gmail.com>
+Subject: Re: snd_seq_timer_open() NULL pointer dereference
+From: Tommi Rantala <tt.rantala@gmail.com>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Jaroslav Kysela <perex@perex.cz>, alsa-devel@alsa-project.org,
+        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 8, 2013 at 7:04 AM, Dave Jones <davej@redhat.com> wrote:
+2013/3/8 Takashi Iwai <tiwai@suse.de>:
+> At Thu, 7 Mar 2013 21:59:32 +0200,
+> Tommi Rantala wrote:
+>>
+>> Hello,
+>>
+>> I'm hitting this while fuzzing the kernel with Trinity:
 >
-> Managed to trigger this one from a different path..
+> The patch below fixes a clear bug in the code path.
+> Could you check whether it'll fit?
 >
-> kernel BUG at fs/namei.c:1439!
-> Call Trace:
->  [<ffffffff811c973e>] path_lookupat+0x71e/0x740
->  [<ffffffff811c9794>] filename_lookup+0x34/0xc0
->  [<ffffffff811cc58e>] user_path_at_empty+0x8e/0x110
->  [<ffffffff811cc621>] user_path_at+0x11/0x20
->  [<ffffffff811e4347>] sys_lgetxattr+0x37/0xa0
->  [<ffffffff816d11c2>] system_call_fastpath+0x16/0x1b
 >
-> What can I dump here that might give us more clues ?
+> thanks,
+>
+> Takashi
+>
+> ---
+> From: Takashi Iwai <tiwai@suse.de>
+> Subject: [PATCH] ALSA: seq: Fix missing error handling in snd_seq_timer_open()
+>
+> snd_seq_timer_open() didn't catch the whole error path but let through
+> if the timer id is a slave.  This may lead to Oops by accessing the
+> uninitialized pointer.
+>
+> Signed-off-by: Takashi Iwai <tiwai@suse.de>
 
-I think we should do the same thing and print out dentry names to give
-us clues about where in /proc the problem happens.
+Confirmed, this fixes the bug. Thanks!
 
-And it doesn't really have to be proc - because of the symlinks in
-/proc, we could easily get to /sys through processes like udev etc..
+Reported-and-tested-by: Tommi Rantala <tt.rantala@gmail.com>
 
-So how about just replaving that BUG_ON() with a
-
-    if (WARN_ON(nd->inode != parent->d_inode)) {
-        printk("%s -> %s (%s)\n", parent->d_name.name,
-path->dentry->d_name.name, nd->last.name);
-        return -EINVAL;
-    }
-
-or something like that.
-
-Hopefully that gives some clue about whare it happens, and some idea
-about what migth be going on..
-
-          Linus
+> ---
+>  sound/core/seq/seq_timer.c | 8 ++++----
+>  1 file changed, 4 insertions(+), 4 deletions(-)
+>
+> diff --git a/sound/core/seq/seq_timer.c b/sound/core/seq/seq_timer.c
+> index 160b1bd..24d44b2 100644
+> --- a/sound/core/seq/seq_timer.c
+> +++ b/sound/core/seq/seq_timer.c
+> @@ -290,10 +290,10 @@ int snd_seq_timer_open(struct snd_seq_queue *q)
+>                         tid.device = SNDRV_TIMER_GLOBAL_SYSTEM;
+>                         err = snd_timer_open(&t, str, &tid, q->queue);
+>                 }
+> -               if (err < 0) {
+> -                       snd_printk(KERN_ERR "seq fatal error: cannot create timer (%i)\n", err);
+> -                       return err;
+> -               }
+> +       }
+> +       if (err < 0) {
+> +               snd_printk(KERN_ERR "seq fatal error: cannot create timer (%i)\n", err);
+> +               return err;
+>         }
+>         t->callback = snd_seq_timer_interrupt;
+>         t->callback_data = q;
+> --
+> 1.8.1.4
+>
