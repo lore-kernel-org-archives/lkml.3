@@ -1,43 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933004Ab3CHG2d (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 01:28:33 -0500
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:52293 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751180Ab3CHG2c (ORCPT
+	id S1753190Ab3CHGcl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 01:32:41 -0500
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:46767 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750869Ab3CHGck (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 01:28:32 -0500
-Date: Thu, 7 Mar 2013 22:28:27 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Renninger <trenn@suse.de>, Tang Chen <tangchen@cn.fujitsu.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 09/14] x86, mm, numa: set memblock nid later
-Message-ID: <20130308062827.GJ14556@mtj.dyndns.org>
-References: <1362718720-27048-1-git-send-email-yinghai@kernel.org>
- <1362718720-27048-10-git-send-email-yinghai@kernel.org>
+	Fri, 8 Mar 2013 01:32:40 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1362718720-27048-10-git-send-email-yinghai@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1750036321.11235774.1362722613994.JavaMail.root@redhat.com>
+References: <51397D1D.5030602@redhat.com>
+	<1750036321.11235774.1362722613994.JavaMail.root@redhat.com>
+Date: Thu, 7 Mar 2013 22:32:39 -0800
+X-Google-Sender-Auth: azaNiPE7aASsxNGUSOIhWIi5xOw
+Message-ID: <CAE9FiQUtDcwJkPMPfjur8LQ+u0Hc2J7sbxC=xkcemqRQ1_Gd8g@mail.gmail.com>
+Subject: Re: 3.9-rc1: crash kernel panic - not syncing: Can not allocate
+ SWIOTLB buffer earlier and can't now provide you with the DMA bounce buffer
+From: Yinghai Lu <yinghai@kernel.org>
+To: CAI Qian <caiqian@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, kexec <kexec@lists.infradead.org>,
+        Dave Young <dyoung@redhat.com>, Vivek Goyal <vgoyal@redhat.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        WANG Chao <chaowang@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 07, 2013 at 08:58:35PM -0800, Yinghai Lu wrote:
-> Only set memblock nid one time.
+On Thu, Mar 7, 2013 at 10:03 PM, CAI Qian <caiqian@redhat.com> wrote:
+> CC'ing kexec ML. Also mentioned that 3.8 has no such issue.
+>
+> This message looks suspicious and out of range while 3.8 reservation
+> looks within the range.
+>
+> [    0.000000] Reserving 128MB of memory at 5216MB for crashkernel
+> (System RAM: 3977MB)
+>
+> Wondering if anything to do with memblock again...
 
-Would be awesome if the description explains why we're doing this and
-why we're allowed to do this now.
+that is intended...
 
-> Also rename numa_register_memblks to numa_check_memblks()
-> after move set memblock nid out.
+> ----- Original Message -----
+>> From: "WANG Chao" <chaowang@redhat.com>
+>> To: "LKML" vger.kernel.org>
+>> Cc: "CAI Qian" <caiqian@redhat.com>
+>> Sent: Friday, March 8, 2013 1:54:37 PM
+>> Subject: 3.9-rc1: crash kernel panic - not syncing: Can not allocate SWIOTLB buffer earlier and can't now provide you
+>> with the DMA bounce buffer
+>>
+>> Hi, All
+>>
+>> On 3.9-rc1, I load crash kernel with latest kexec-tools(up to
+>> 28d413a), but
+>> 2nd kernel panic at early time:
+>> [    2.948076] Kernel panic - not syncing: Can not allocate SWIOTLB
+>> buffer earlier and can't now provide you with the DMA bounce buffer
+>> [    2.959958] Pid: 53, comm: khubd Not tainted 3.9.0-rc1+ #1
 
-Ah... so, it's getting renamed here.
+You need to add crashkernel_low=64M in first kernel.
 
--- 
-tejun
+As your system does not support DMA remapping.
+
+Thanks
+
+Yinghai
