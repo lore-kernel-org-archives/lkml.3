@@ -1,54 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933231Ab3CHGEG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 01:04:06 -0500
-Received: from e39.co.us.ibm.com ([32.97.110.160]:60566 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932158Ab3CHGEE (ORCPT
+	id S1752763Ab3CHGET (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 01:04:19 -0500
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:44268 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750744Ab3CHGEQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 01:04:04 -0500
-Date: Fri, 8 Mar 2013 11:33:41 +0530
-From: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: oskar.andero@sonymobile.com, linux-kernel@vger.kernel.org,
-        davem@davemloft.net, anil.s.keshavamurthy@intel.com,
-        radovan.lekanovic@sonymobile.com,
-        =?utf-8?B?77+9IDxiam9ybi5kYXZpZHNzb25Ac29ueW1vYmlsZS5jb20+?=@thinktux.in.ibm.com
-Subject: Re: [PATCH] Kprobes blacklist: Conditionally add x86-specific
-	symbols
-Message-ID: <20130308060341.GB4029@in.ibm.com>
-Reply-To: ananth@in.ibm.com
-References: <1362653070-24035-1-git-send-email-oskar.andero@sonymobile.com> <513967BD.9010602@hitachi.com>
+	Fri, 8 Mar 2013 01:04:16 -0500
+Date: Thu, 7 Mar 2013 22:04:10 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Renninger <trenn@suse.de>, Tang Chen <tangchen@cn.fujitsu.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 06/14] x86, mm, numa: Move successful path handling code
+ later
+Message-ID: <20130308060410.GH14556@mtj.dyndns.org>
+References: <1362718720-27048-1-git-send-email-yinghai@kernel.org>
+ <1362718720-27048-7-git-send-email-yinghai@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <513967BD.9010602@hitachi.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13030806-3620-0000-0000-0000018A04A1
+In-Reply-To: <1362718720-27048-7-git-send-email-yinghai@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 08, 2013 at 01:23:25PM +0900, Masami Hiramatsu wrote:
-> (2013/03/07 19:44), oskar.andero@sonymobile.com wrote:
-> > From: Bjorn Davidsson <bjorn.davidsson@sonymobile.com>
-> > 
-> > The kprobes blacklist contains x86-specific symbols.
-> > Looking for these in kallsyms takes unnecessary time
-> > during startup on non-X86 platform.
-> > Added #ifdef CONFIG_X86 around them.
-> 
-> Right. however, it might be better break that into
-> common and arch-specific lists, because there may be
-> other arch-specific non-probe-able functions on each
-> architecture...
+>  static int __init numa_register_memblks(struct numa_meminfo *mi)
 
-Agreed. CONFIG_<arch> in kernel/* is not the right thing to do IMO.
+After this patch, the above name is a bit misleading, I think.
 
-You are moving the blacklist initialization to later in the next patch,
-so how much overhead will it then be?
+> +out:
 
-Ananth
+Maybe register: would fit better?
 
+> +	/* Finally register nodes. */
+> +	for_each_node_mask(nid, node_possible_map) {
+> +		u64 start = PFN_PHYS(max_pfn);
+
+Thanks.
+
+-- 
+tejun
