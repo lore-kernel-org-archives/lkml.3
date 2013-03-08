@@ -1,90 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933861Ab3CHDIH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 22:08:07 -0500
-Received: from na3sys009aog138.obsmtp.com ([74.125.149.19]:60886 "EHLO
-	na3sys009aog138.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759999Ab3CHDIC convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 22:08:02 -0500
-From: Xiangliang Yu <yuxiangl@marvell.com>
-To: Bjorn Helgaas <bhelgaas@google.com>, yxlraid <yxlraid@gmail.com>
-CC: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Thu, 7 Mar 2013 19:07:50 -0800
-Subject: RE: [PATCH 2/2] PCI: fix system hang issue of Marvell SATA host
- controller
-Thread-Topic: [PATCH 2/2] PCI: fix system hang issue of Marvell SATA host
- controller
-Thread-Index: Ac4bUOtpyYWe9mcMR2GExBFYRAGnIQAUwSOg
-Message-ID: <F766E4F80769BD478052FB6533FA745D25F436856A@SC-VEXCH4.marvell.com>
-References: <1362666556-10036-1-git-send-email-yxlraid@gmail.com>
- <CAErSpo7feQK7pXD=moA_hf=Y-j82oZZKwfDNzfo2Ea7i9VPxtA@mail.gmail.com>
-In-Reply-To: <CAErSpo7feQK7pXD=moA_hf=Y-j82oZZKwfDNzfo2Ea7i9VPxtA@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S933829Ab3CHDHw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 22:07:52 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:3964 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759999Ab3CHDGy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Mar 2013 22:06:54 -0500
+X-Authority-Analysis: v=2.0 cv=UN5f7Vjy c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=qfL2yWBuHN4A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=NNw_V_daimkA:10 a=20KFwNOVAAAA:8 a=3nbZYyFuAAAA:8 a=68l2MZAu6OqOvJS6VcsA:9 a=jEp0ucaQiEUA:10 a=EvKJbDF4Ut8A:10 a=jeBq3FmKZ4MA:10 a=CT1-3ZQZSF5mfwKV:21 a=DSLUHRffn4ET0wL8:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-Id: <20130308030652.941443285@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Thu, 07 Mar 2013 22:00:05 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        David Sharp <dhsharp@google.com>,
+        Vaibhav Nagarnaik <vnagarnaik@google.com>, hcochran@lexmark.com,
+        Hiraku Toyooka <hiraku.toyooka.gu@hitachi.com>
+Subject: [for-next][PATCH 07/17] tracing: Add snapshot in the per_cpu trace directories
+References: <20130308025958.501479677@goodmis.org>
+Content-Disposition: inline; filename=0007-tracing-Add-snapshot-in-the-per_cpu-trace-directorie.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Bjorn
+From: "Steven Rostedt (Red Hat)" <srostedt@redhat.com>
 
-> > Fix system hang issue: if first accessed resource file of BAR0 ~
-> > BAR4, system will hang after executing lspci command
-> 
-> This needs more explanation.  We've already read the BARs by the time
-> header quirks are run, so apparently it's not just the mere act of
-> accessing a BAR that causes a hang.
-> 
-> We need to know exactly what's going on here.  For example, do BARs
-> 0-4 exist?  Does the device decode accesses to the regions described
-> by the BARs?  The PCI core has to know what resources the device uses,
-> so if the device decodes accesses, we can't just throw away the
-> start/end information.
-The BARs 0-4 is exist and the PCI device is enable IO space, but user access the regions file by udevadm command with info parameter, the system will hang.
-Like this: udevadmin info --attribut-walk --path=/sys/device/pci-device/000:*.
-Because the device is just AHCI host controller, don't need the BAR0 ~ 4 region file. 
-Is my explanation ok for the patch?
+Add the snapshot file into the per_cpu tracing directories to allow
+them to be read for an individual cpu. This also allows to clear
+an individual cpu from the snapshot buffer.
+
+If the kernel allows it (CONFIG_RING_BUFFER_ALLOW_SWAP is set), then
+echoing in '1' into one of the per_cpu snapshot files will do an
+individual cpu buffer swap instead of the entire file.
+
+Cc: Hiraku Toyooka <hiraku.toyooka.gu@hitachi.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/trace/trace.c |   66 ++++++++++++++++++++++++++++++++++++++++++--------
+ 1 file changed, 56 insertions(+), 10 deletions(-)
+
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index cd15864..96cd165 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -2435,6 +2435,31 @@ static void test_ftrace_alive(struct seq_file *m)
+ }
+ 
+ #ifdef CONFIG_TRACER_MAX_TRACE
++static void show_snapshot_main_help(struct seq_file *m)
++{
++	seq_printf(m, "# echo 0 > snapshot : Clears and frees snapshot buffer\n");
++	seq_printf(m, "# echo 1 > snapshot : Allocates snapshot buffer, if not already allocated.\n");
++	seq_printf(m, "#                      Takes a snapshot of the main buffer.\n");
++	seq_printf(m, "# echo 2 > snapshot : Clears snapshot buffer (but does not allocate)\n");
++	seq_printf(m, "#                      (Doesn't have to be '2' works with any number that\n");
++	seq_printf(m, "#                       is not a '0' or '1')\n");
++}
++
++static void show_snapshot_percpu_help(struct seq_file *m)
++{
++	seq_printf(m, "# echo 0 > snapshot : Invalid for per_cpu snapshot file.\n");
++#ifdef CONFIG_RING_BUFFER_ALLOW_SWAP
++	seq_printf(m, "# echo 1 > snapshot : Allocates snapshot buffer, if not already allocated.\n");
++	seq_printf(m, "#                      Takes a snapshot of the main buffer for this cpu.\n");
++#else
++	seq_printf(m, "# echo 1 > snapshot : Not supported with this kernel.\n");
++	seq_printf(m, "#                     Must use main snapshot file to allocate.\n");
++#endif
++	seq_printf(m, "# echo 2 > snapshot : Clears this cpu's snapshot buffer (but does not allocate)\n");
++	seq_printf(m, "#                      (Doesn't have to be '2' works with any number that\n");
++	seq_printf(m, "#                       is not a '0' or '1')\n");
++}
++
+ static void print_snapshot_help(struct seq_file *m, struct trace_iterator *iter)
+ {
+ 	if (iter->trace->allocated_snapshot)
+@@ -2443,12 +2468,10 @@ static void print_snapshot_help(struct seq_file *m, struct trace_iterator *iter)
+ 		seq_printf(m, "#\n# * Snapshot is freed *\n#\n");
+ 
+ 	seq_printf(m, "# Snapshot commands:\n");
+-	seq_printf(m, "# echo 0 > snapshot : Clears and frees snapshot buffer\n");
+-	seq_printf(m, "# echo 1 > snapshot : Allocates snapshot buffer, if not already allocated.\n");
+-	seq_printf(m, "#                      Takes a snapshot of the main buffer.\n");
+-	seq_printf(m, "# echo 2 > snapshot : Clears snapshot buffer (but does not allocate)\n");
+-	seq_printf(m, "#                      (Doesn't have to be '2' works with any number that\n");
+-	seq_printf(m, "#                       is not a '0' or '1')\n");
++	if (iter->cpu_file == RING_BUFFER_ALL_CPUS)
++		show_snapshot_main_help(m);
++	else
++		show_snapshot_percpu_help(m);
+ }
+ #else
+ /* Should never be called */
+@@ -4178,6 +4201,7 @@ static int tracing_snapshot_open(struct inode *inode, struct file *file)
+ 		}
+ 		iter->tr = tc->tr;
+ 		iter->trace_buffer = &tc->tr->max_buffer;
++		iter->cpu_file = tc->cpu;
+ 		m->private = iter;
+ 		file->private_data = m;
+ 	}
+@@ -4212,6 +4236,10 @@ tracing_snapshot_write(struct file *filp, const char __user *ubuf, size_t cnt,
+ 
+ 	switch (val) {
+ 	case 0:
++		if (iter->cpu_file != RING_BUFFER_ALL_CPUS) {
++			ret = -EINVAL;
++			break;
++		}
+ 		if (tr->current_trace->allocated_snapshot) {
+ 			/* free spare buffer */
+ 			ring_buffer_resize(tr->max_buffer.buffer, 1,
+@@ -4222,6 +4250,13 @@ tracing_snapshot_write(struct file *filp, const char __user *ubuf, size_t cnt,
+ 		}
+ 		break;
+ 	case 1:
++/* Only allow per-cpu swap if the ring buffer supports it */
++#ifndef CONFIG_RING_BUFFER_ALLOW_SWAP
++		if (iter->cpu_file != RING_BUFFER_ALL_CPUS) {
++			ret = -EINVAL;
++			break;
++		}
++#endif
+ 		if (!tr->current_trace->allocated_snapshot) {
+ 			/* allocate spare buffer */
+ 			ret = resize_buffer_duplicate_size(&tr->max_buffer,
+@@ -4230,15 +4265,21 @@ tracing_snapshot_write(struct file *filp, const char __user *ubuf, size_t cnt,
+ 				break;
+ 			tr->current_trace->allocated_snapshot = true;
+ 		}
+-
+ 		local_irq_disable();
+ 		/* Now, we're going to swap */
+-		update_max_tr(&global_trace, current, smp_processor_id());
++		if (iter->cpu_file == RING_BUFFER_ALL_CPUS)
++			update_max_tr(&global_trace, current, smp_processor_id());
++		else
++			update_max_tr_single(&global_trace, current, iter->cpu_file);
+ 		local_irq_enable();
+ 		break;
+ 	default:
+-		if (tr->current_trace->allocated_snapshot)
+-			tracing_reset_online_cpus(&tr->max_buffer);
++		if (tr->current_trace->allocated_snapshot) {
++			if (iter->cpu_file == RING_BUFFER_ALL_CPUS)
++				tracing_reset_online_cpus(&tr->max_buffer);
++			else
++				tracing_reset(&tr->max_buffer, iter->cpu_file);
++		}
+ 		break;
+ 	}
+ 
+@@ -4806,6 +4847,11 @@ tracing_init_debugfs_percpu(struct trace_array *tr, long cpu)
+ 
+ 	trace_create_file("buffer_size_kb", 0444, d_cpu,
+ 			(void *)&data->trace_cpu, &tracing_entries_fops);
++
++#ifdef CONFIG_TRACER_SNAPSHOT
++	trace_create_file("snapshot", 0644, d_cpu,
++			  (void *)&data->trace_cpu, &snapshot_fops);
++#endif
+ }
+ 
+ #ifdef CONFIG_FTRACE_SELFTEST
+-- 
+1.7.10.4
 
 
-> 
-> > ---
-> >  drivers/pci/quirks.c |   15 +++++++++++++++
-> >  1 files changed, 15 insertions(+), 0 deletions(-)
-> >
-> > diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
-> > index 0369fb6..d49f8dc 100644
-> > --- a/drivers/pci/quirks.c
-> > +++ b/drivers/pci/quirks.c
-> > @@ -44,6 +44,21 @@ static void quirk_mmio_always_on(struct pci_dev *dev)
-> >  DECLARE_PCI_FIXUP_CLASS_EARLY(PCI_ANY_ID, PCI_ANY_ID,
-> >                                 PCI_CLASS_BRIDGE_HOST, 8,
-> quirk_mmio_always_on);
-> >
-> > +/* The BAR0 ~ BAR4 of Marvell 9125 device can't be accessed
-> > +*  by IO resource file, and need to skip the files
-> > +*/
-> > +static void quirk_marvell_mask_bar(struct pci_dev *dev)
-> > +{
-> > +       int i;
-> > +
-> > +       for (i = 0; i < 5; i++)
-> > +               if (dev->resource[i].start)
-> > +                       dev->resource[i].start =
-> > +                               dev->resource[i].end = 0;
-> > +}
-> > +DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_MARVELL_EXT, 0x9125,
-> > +                               quirk_marvell_mask_bar);
-> > +
-> >  /* The Mellanox Tavor device gives false positive parity errors
-> >   * Mark this device with a broken_parity_status, to allow
-> >   * PCI scanning code to "skip" this now blacklisted device.
-> > --
-> > 1.7.5.4
-> >
