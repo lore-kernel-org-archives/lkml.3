@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933868Ab3CHW6J (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 17:58:09 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:30407 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758159Ab3CHWwq (ORCPT
+	id S933947Ab3CHXA7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 18:00:59 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:36029 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757654Ab3CHWwq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 8 Mar 2013 17:52:46 -0500
 From: Dave Kleikamp <dave.kleikamp@oracle.com>
 To: Zach Brown <zab@zabbo.net>
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Dave Kleikamp <dave.kleikamp@oracle.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>
-Subject: [PATCH V7 -next 19/33] fs: use read_iter and write_iter rather than aio_read and aio_write
-Date: Fri,  8 Mar 2013 16:52:14 -0600
-Message-Id: <1362783148-22736-20-git-send-email-dave.kleikamp@oracle.com>
+        Dave Kleikamp <dave.kleikamp@oracle.com>
+Subject: [PATCH V7 -next 06/33] iov_iter: hide iovec details behind ops function pointers
+Date: Fri,  8 Mar 2013 16:52:01 -0600
+Message-Id: <1362783148-22736-7-git-send-email-dave.kleikamp@oracle.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1362783148-22736-1-git-send-email-dave.kleikamp@oracle.com>
 References: <1362783148-22736-1-git-send-email-dave.kleikamp@oracle.com>
@@ -23,254 +22,385 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-File systems implementing read_iter & write_iter should not be required
-to keep aio_read and aio_write as well. The vfs should always call
-read/write_iter if they exist. This will make it easier to remove the
-aio_read/write operation in the future.
+From: Zach Brown <zab@zabbo.net>
+
+This moves the current iov_iter functions behind an ops struct of
+function pointers.  The current iov_iter functions all work with memory
+which is specified by iovec arrays of user space pointers.
+
+This patch is part of a series that lets us specify memory with bio_vec
+arrays of page pointers.  By moving to an iov_iter operation struct we
+can add that support in later patches in this series by adding another
+set of function pointers.
+
+I only came to this after having initialy tried to teach the current
+iov_iter functions about bio_vecs by introducing conditional branches
+that dealt with bio_vecs in all the functions.  It wasn't pretty.  This
+approach seems to be the lesser evil.
 
 Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
 Cc: Zach Brown <zab@zabbo.net>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>
-Cc: linux-fsdevel@vger.kernel.org
 ---
- fs/aio.c           |  6 ++++--
- fs/bad_inode.c     | 14 +++++++++++++
- fs/compat.c        |  6 ++++--
- fs/read_write.c    | 58 +++++++++++++++++++++++++++++++++++++++++++++++++-----
- fs/read_write.h    |  4 ++++
- include/linux/fs.h |  6 ++++--
- 6 files changed, 83 insertions(+), 11 deletions(-)
+ fs/cifs/file.c     |  4 +--
+ fs/fuse/file.c     |  5 ++--
+ fs/iov-iter.c      | 86 +++++++++++++++++++++++++++++-------------------------
+ include/linux/fs.h | 77 ++++++++++++++++++++++++++++++++++++++----------
+ 4 files changed, 114 insertions(+), 58 deletions(-)
 
-diff --git a/fs/aio.c b/fs/aio.c
-index 51d3afa..0d52d07 100644
---- a/fs/aio.c
-+++ b/fs/aio.c
-@@ -42,6 +42,8 @@
- #include <asm/kmap_types.h>
- #include <asm/uaccess.h>
- 
-+#include "read_write.h"
-+
- #define AIO_RING_MAGIC			0xa10a10a1
- #define AIO_RING_COMPAT_FEATURES	1
- #define AIO_RING_INCOMPAT_FEATURES	0
-@@ -1204,14 +1206,14 @@ static ssize_t aio_run_iocb(struct kiocb *req, bool compat)
- 	case IOCB_CMD_PREADV:
- 		mode	= FMODE_READ;
- 		rw	= READ;
--		rw_op	= file->f_op->aio_read;
-+		rw_op	= do_aio_read;
- 		goto rw_common;
- 
- 	case IOCB_CMD_PWRITE:
- 	case IOCB_CMD_PWRITEV:
- 		mode	= FMODE_WRITE;
- 		rw	= WRITE;
--		rw_op	= file->f_op->aio_write;
-+		rw_op	= do_aio_write;
- 		goto rw_common;
- rw_common:
- 		if (unlikely(!(file->f_mode & mode)))
-diff --git a/fs/bad_inode.c b/fs/bad_inode.c
-index 922ad46..988c04a 100644
---- a/fs/bad_inode.c
-+++ b/fs/bad_inode.c
-@@ -39,12 +39,24 @@ static ssize_t bad_file_aio_read(struct kiocb *iocb, const struct iovec *iov,
- 	return -EIO;
+diff --git a/fs/cifs/file.c b/fs/cifs/file.c
+index 517f464..1bce053 100644
+--- a/fs/cifs/file.c
++++ b/fs/cifs/file.c
+@@ -2715,8 +2715,8 @@ cifs_readdata_to_iov(struct cifs_readdata *rdata, const struct iovec *iov,
+ 		/* go while there's data to be copied and no errors */
+ 		if (copy && !rc) {
+ 			pdata = kmap(page);
+-			rc = memcpy_toiovecend(ii.iov, pdata, ii.iov_offset,
+-						(int)copy);
++			rc = memcpy_toiovecend(iov_iter_iovec(&ii), pdata,
++					       ii.iov_offset, (int)copy);
+ 			kunmap(page);
+ 			if (!rc) {
+ 				*copied += copy;
+diff --git a/fs/fuse/file.c b/fs/fuse/file.c
+index 6d5f1ed..a359fe0 100644
+--- a/fs/fuse/file.c
++++ b/fs/fuse/file.c
+@@ -1059,9 +1059,10 @@ static inline void fuse_page_descs_length_init(struct fuse_req *req,
+ 			req->page_descs[i].offset;
  }
  
-+static ssize_t bad_file_read_iter(struct kiocb *iocb, struct iov_iter *iter,
-+			loff_t pos)
-+{
-+	return -EIO;
-+}
-+
- static ssize_t bad_file_aio_write(struct kiocb *iocb, const struct iovec *iov,
- 			unsigned long nr_segs, loff_t pos)
+-static inline unsigned long fuse_get_user_addr(const struct iov_iter *ii)
++static inline unsigned long fuse_get_user_addr(struct iov_iter *ii)
  {
- 	return -EIO;
+-	return (unsigned long)ii->iov->iov_base + ii->iov_offset;
++	struct iovec *iov = iov_iter_iovec(ii);
++	return (unsigned long)iov->iov_base + ii->iov_offset;
  }
  
-+static ssize_t bad_file_write_iter(struct kiocb *iocb, struct iov_iter *iter,
-+			loff_t pos)
-+{
-+	return -EIO;
-+}
-+
- static int bad_file_readdir(struct file *filp, void *dirent, filldir_t filldir)
+ static inline size_t fuse_get_frag_size(const struct iov_iter *ii,
+diff --git a/fs/iov-iter.c b/fs/iov-iter.c
+index 6cecab4..6cb6be0 100644
+--- a/fs/iov-iter.c
++++ b/fs/iov-iter.c
+@@ -36,9 +36,10 @@ static size_t __iovec_copy_to_user(char *vaddr, const struct iovec *iov,
+  * were sucessfully copied.  If a fault is encountered then return the number of
+  * bytes which were copied.
+  */
+-size_t iov_iter_copy_to_user_atomic(struct page *page,
++static size_t ii_iovec_copy_to_user_atomic(struct page *page,
+ 		struct iov_iter *i, unsigned long offset, size_t bytes)
  {
- 	return -EIO;
-@@ -151,7 +163,9 @@ static const struct file_operations bad_file_ops =
- 	.read		= bad_file_read,
- 	.write		= bad_file_write,
- 	.aio_read	= bad_file_aio_read,
-+	.read_iter	= bad_file_read_iter,
- 	.aio_write	= bad_file_aio_write,
-+	.write_iter	= bad_file_write_iter,
- 	.readdir	= bad_file_readdir,
- 	.poll		= bad_file_poll,
- 	.unlocked_ioctl	= bad_file_unlocked_ioctl,
-diff --git a/fs/compat.c b/fs/compat.c
-index b8a1f27..80daf28 100644
---- a/fs/compat.c
-+++ b/fs/compat.c
-@@ -1098,10 +1098,12 @@ static ssize_t compat_do_readv_writev(int type, struct file *file,
- 	fnv = NULL;
- 	if (type == READ) {
- 		fn = file->f_op->read;
--		fnv = file->f_op->aio_read;
-+		if (file->f_op->aio_read || file->f_op->read_iter)
-+			fnv = do_aio_read;
++	struct iovec *iov = (struct iovec *)i->data;
+ 	char *kaddr;
+ 	size_t copied;
+ 
+@@ -46,55 +47,52 @@ size_t iov_iter_copy_to_user_atomic(struct page *page,
+ 	kaddr = kmap_atomic(page);
+ 	if (likely(i->nr_segs == 1)) {
+ 		int left;
+-		char __user *buf = i->iov->iov_base + i->iov_offset;
++		char __user *buf = iov->iov_base + i->iov_offset;
+ 		left = __copy_to_user_inatomic(buf, kaddr + offset, bytes);
+ 		copied = bytes - left;
  	} else {
- 		fn = (io_fn_t)file->f_op->write;
--		fnv = file->f_op->aio_write;
-+		if (file->f_op->aio_write || file->f_op->write_iter)
-+			fnv = do_aio_write;
+-		copied = __iovec_copy_to_user(kaddr + offset, i->iov,
++		copied = __iovec_copy_to_user(kaddr + offset, iov,
+ 					      i->iov_offset, bytes, 1);
  	}
+ 	kunmap_atomic(kaddr);
  
- 	if (fnv)
-diff --git a/fs/read_write.c b/fs/read_write.c
-index 9d645fe..77b4b0a 100644
---- a/fs/read_write.c
-+++ b/fs/read_write.c
-@@ -25,7 +25,7 @@
- const struct file_operations generic_ro_fops = {
- 	.llseek		= generic_file_llseek,
- 	.read		= do_sync_read,
--	.aio_read	= generic_file_aio_read,
-+	.read_iter	= generic_file_read_iter,
- 	.mmap		= generic_file_readonly_mmap,
- 	.splice_read	= generic_file_splice_read,
- };
-@@ -326,6 +326,29 @@ int rw_verify_area(int read_write, struct file *file, loff_t *ppos, size_t count
- 	return count > MAX_RW_COUNT ? MAX_RW_COUNT : count;
+ 	return copied;
  }
+-EXPORT_SYMBOL(iov_iter_copy_to_user_atomic);
  
-+ssize_t do_aio_read(struct kiocb *kiocb, const struct iovec *iov,
-+		    unsigned long nr_segs, loff_t pos)
-+{
-+	struct file *file = kiocb->ki_filp;
-+
-+	if (file->f_op->read_iter) {
-+		size_t count;
-+		struct iov_iter iter;
-+		int ret;
-+
-+		count = 0;
-+		ret = generic_segment_checks(iov, &nr_segs, &count,
-+					     VERIFY_WRITE);
-+		if (ret)
-+			return ret;
-+
-+		iov_iter_init(&iter, iov, nr_segs, count, 0);
-+		return file->f_op->read_iter(kiocb, &iter, pos);
+ /*
+  * This has the same sideeffects and return value as
+- * iov_iter_copy_to_user_atomic().
++ * ii_iovec_copy_to_user_atomic().
+  * The difference is that it attempts to resolve faults.
+  * Page must not be locked.
+  */
+-size_t __iov_iter_copy_to_user(struct page *page,
+-		struct iov_iter *i, unsigned long offset, size_t bytes)
++static size_t ii_iovec_copy_to_user(struct page *page,
++		struct iov_iter *i, unsigned long offset, size_t bytes,
++		int check_access)
+ {
++	struct iovec *iov = (struct iovec *)i->data;
+ 	char *kaddr;
+ 	size_t copied;
+ 
++	if (check_access) {
++		might_sleep();
++		if (generic_segment_checks(iov, &i->nr_segs, &bytes,
++					   VERIFY_WRITE))
++			return 0;
 +	}
 +
-+	return file->f_op->aio_read(kiocb, iov, nr_segs, pos);
-+}
-+
- ssize_t do_sync_read(struct file *filp, char __user *buf, size_t len, loff_t *ppos)
- {
- 	struct iovec iov = { .iov_base = buf, .iov_len = len };
-@@ -337,7 +360,7 @@ ssize_t do_sync_read(struct file *filp, char __user *buf, size_t len, loff_t *pp
- 	kiocb.ki_left = len;
- 	kiocb.ki_nbytes = len;
- 
--	ret = filp->f_op->aio_read(&kiocb, &iov, 1, kiocb.ki_pos);
-+	ret = do_aio_read(&kiocb, &iov, 1, kiocb.ki_pos);
- 	if (-EIOCBQUEUED == ret)
- 		ret = wait_on_sync_kiocb(&kiocb);
- 	*ppos = kiocb.ki_pos;
-@@ -376,6 +399,29 @@ ssize_t vfs_read(struct file *file, char __user *buf, size_t count, loff_t *pos)
- 
- EXPORT_SYMBOL(vfs_read);
- 
-+ssize_t do_aio_write(struct kiocb *kiocb, const struct iovec *iov,
-+		     unsigned long nr_segs, loff_t pos)
-+{
-+	struct file *file = kiocb->ki_filp;
-+
-+	if (file->f_op->write_iter) {
-+		size_t count;
-+		struct iov_iter iter;
-+		int ret;
-+
-+		count = 0;
-+		ret = generic_segment_checks(iov, &nr_segs, &count,
-+					     VERIFY_READ);
-+		if (ret)
-+			return ret;
-+
-+		iov_iter_init(&iter, iov, nr_segs, count, 0);
-+		return file->f_op->write_iter(kiocb, &iter, pos);
-+	}
-+
-+	return file->f_op->aio_write(kiocb, iov, nr_segs, pos);
-+}
-+
- ssize_t do_sync_write(struct file *filp, const char __user *buf, size_t len, loff_t *ppos)
- {
- 	struct iovec iov = { .iov_base = (void __user *)buf, .iov_len = len };
-@@ -387,7 +433,7 @@ ssize_t do_sync_write(struct file *filp, const char __user *buf, size_t len, lof
- 	kiocb.ki_left = len;
- 	kiocb.ki_nbytes = len;
- 
--	ret = filp->f_op->aio_write(&kiocb, &iov, 1, kiocb.ki_pos);
-+	ret = do_aio_write(&kiocb, &iov, 1, kiocb.ki_pos);
- 	if (-EIOCBQUEUED == ret)
- 		ret = wait_on_sync_kiocb(&kiocb);
- 	*ppos = kiocb.ki_pos;
-@@ -684,10 +730,12 @@ static ssize_t do_readv_writev(int type, struct file *file,
- 	fnv = NULL;
- 	if (type == READ) {
- 		fn = file->f_op->read;
--		fnv = file->f_op->aio_read;
-+		if (file->f_op->aio_read || file->f_op->read_iter)
-+			fnv = do_aio_read;
+ 	kaddr = kmap(page);
+ 	if (likely(i->nr_segs == 1)) {
+ 		int left;
+-		char __user *buf = i->iov->iov_base + i->iov_offset;
++		char __user *buf = iov->iov_base + i->iov_offset;
+ 		left = copy_to_user(buf, kaddr + offset, bytes);
+ 		copied = bytes - left;
  	} else {
- 		fn = (io_fn_t)file->f_op->write;
--		fnv = file->f_op->aio_write;
-+		if (file->f_op->aio_write || file->f_op->write_iter)
-+			fnv = do_aio_write;
+-		copied = __iovec_copy_to_user(kaddr + offset, i->iov,
++		copied = __iovec_copy_to_user(kaddr + offset, iov,
+ 					      i->iov_offset, bytes, 0);
  	}
+ 	kunmap(page);
+ 	return copied;
+ }
+-EXPORT_SYMBOL(__iov_iter_copy_to_user);
+-
+-size_t iov_iter_copy_to_user(struct page *page,
+-		struct iov_iter *i, unsigned long offset, size_t bytes)
+-{
+-	might_sleep();
+-	if (generic_segment_checks(i->iov, &i->nr_segs, &bytes, VERIFY_WRITE))
+-		return 0;
+-	return __iov_iter_copy_to_user(page, i, offset, bytes);
+-}
+-EXPORT_SYMBOL(iov_iter_copy_to_user);
  
- 	if (fnv)
-diff --git a/fs/read_write.h b/fs/read_write.h
-index d07b954..7501d80 100644
---- a/fs/read_write.h
-+++ b/fs/read_write.h
-@@ -8,6 +8,10 @@ typedef ssize_t (*io_fn_t)(struct file *, char __user *, size_t, loff_t *);
- typedef ssize_t (*iov_fn_t)(struct kiocb *, const struct iovec *,
- 		unsigned long, loff_t);
+ static size_t __iovec_copy_from_user(char *vaddr, const struct iovec *iov,
+ 				     size_t base, size_t bytes, int atomic)
+@@ -126,9 +124,10 @@ static size_t __iovec_copy_from_user(char *vaddr, const struct iovec *iov,
+  * were successfully copied.  If a fault is encountered then return the number
+  * of bytes which were copied.
+  */
+-size_t iov_iter_copy_from_user_atomic(struct page *page,
++static size_t ii_iovec_copy_from_user_atomic(struct page *page,
+ 		struct iov_iter *i, unsigned long offset, size_t bytes)
+ {
++	struct iovec *iov = (struct iovec *)i->data;
+ 	char *kaddr;
+ 	size_t copied;
  
-+ssize_t do_aio_read(struct kiocb *kiocb, const struct iovec *iov,
-+		unsigned long nr_segs, loff_t pos);
-+ssize_t do_aio_write(struct kiocb *kiocb, const struct iovec *iov,
-+		unsigned long nr_segs, loff_t pos);
- ssize_t do_sync_readv_writev(struct file *filp, const struct iovec *iov,
- 		unsigned long nr_segs, size_t len, loff_t *ppos, iov_fn_t fn);
- ssize_t do_loop_readv_writev(struct file *filp, struct iovec *iov,
+@@ -136,11 +135,11 @@ size_t iov_iter_copy_from_user_atomic(struct page *page,
+ 	kaddr = kmap_atomic(page);
+ 	if (likely(i->nr_segs == 1)) {
+ 		int left;
+-		char __user *buf = i->iov->iov_base + i->iov_offset;
++		char __user *buf = iov->iov_base + i->iov_offset;
+ 		left = __copy_from_user_inatomic(kaddr + offset, buf, bytes);
+ 		copied = bytes - left;
+ 	} else {
+-		copied = __iovec_copy_from_user(kaddr + offset, i->iov,
++		copied = __iovec_copy_from_user(kaddr + offset, iov,
+ 						i->iov_offset, bytes, 1);
+ 	}
+ 	kunmap_atomic(kaddr);
+@@ -151,32 +150,32 @@ EXPORT_SYMBOL(iov_iter_copy_from_user_atomic);
+ 
+ /*
+  * This has the same sideeffects and return value as
+- * iov_iter_copy_from_user_atomic().
++ * ii_iovec_copy_from_user_atomic().
+  * The difference is that it attempts to resolve faults.
+  * Page must not be locked.
+  */
+-size_t iov_iter_copy_from_user(struct page *page,
++static size_t ii_iovec_copy_from_user(struct page *page,
+ 		struct iov_iter *i, unsigned long offset, size_t bytes)
+ {
++	struct iovec *iov = (struct iovec *)i->data;
+ 	char *kaddr;
+ 	size_t copied;
+ 
+ 	kaddr = kmap(page);
+ 	if (likely(i->nr_segs == 1)) {
+ 		int left;
+-		char __user *buf = i->iov->iov_base + i->iov_offset;
++		char __user *buf = iov->iov_base + i->iov_offset;
+ 		left = __copy_from_user(kaddr + offset, buf, bytes);
+ 		copied = bytes - left;
+ 	} else {
+-		copied = __iovec_copy_from_user(kaddr + offset, i->iov,
++		copied = __iovec_copy_from_user(kaddr + offset, iov,
+ 						i->iov_offset, bytes, 0);
+ 	}
+ 	kunmap(page);
+ 	return copied;
+ }
+-EXPORT_SYMBOL(iov_iter_copy_from_user);
+ 
+-void iov_iter_advance(struct iov_iter *i, size_t bytes)
++static void ii_iovec_advance(struct iov_iter *i, size_t bytes)
+ {
+ 	BUG_ON(i->count < bytes);
+ 
+@@ -184,7 +183,7 @@ void iov_iter_advance(struct iov_iter *i, size_t bytes)
+ 		i->iov_offset += bytes;
+ 		i->count -= bytes;
+ 	} else {
+-		const struct iovec *iov = i->iov;
++		struct iovec *iov = (struct iovec *)i->data;
+ 		size_t base = i->iov_offset;
+ 		unsigned long nr_segs = i->nr_segs;
+ 
+@@ -206,12 +205,11 @@ void iov_iter_advance(struct iov_iter *i, size_t bytes)
+ 				base = 0;
+ 			}
+ 		}
+-		i->iov = iov;
++		i->data = (unsigned long)iov;
+ 		i->iov_offset = base;
+ 		i->nr_segs = nr_segs;
+ 	}
+ }
+-EXPORT_SYMBOL(iov_iter_advance);
+ 
+ /*
+  * Fault in the first iovec of the given iov_iter, to a maximum length
+@@ -222,23 +220,33 @@ EXPORT_SYMBOL(iov_iter_advance);
+  * would be possible (callers must not rely on the fact that _only_ the
+  * first iovec will be faulted with the current implementation).
+  */
+-int iov_iter_fault_in_readable(struct iov_iter *i, size_t bytes)
++static int ii_iovec_fault_in_readable(struct iov_iter *i, size_t bytes)
+ {
+-	char __user *buf = i->iov->iov_base + i->iov_offset;
+-	bytes = min(bytes, i->iov->iov_len - i->iov_offset);
++	struct iovec *iov = (struct iovec *)i->data;
++	char __user *buf = iov->iov_base + i->iov_offset;
++	bytes = min(bytes, iov->iov_len - i->iov_offset);
+ 	return fault_in_pages_readable(buf, bytes);
+ }
+-EXPORT_SYMBOL(iov_iter_fault_in_readable);
+ 
+ /*
+  * Return the count of just the current iov_iter segment.
+  */
+-size_t iov_iter_single_seg_count(const struct iov_iter *i)
++static size_t ii_iovec_single_seg_count(const struct iov_iter *i)
+ {
+-	const struct iovec *iov = i->iov;
++	const struct iovec *iov = (struct iovec *)i->data;
+ 	if (i->nr_segs == 1)
+ 		return i->count;
+ 	else
+ 		return min(i->count, iov->iov_len - i->iov_offset);
+ }
+-EXPORT_SYMBOL(iov_iter_single_seg_count);
++
++struct iov_iter_ops ii_iovec_ops = {
++	.ii_copy_to_user_atomic = ii_iovec_copy_to_user_atomic,
++	.ii_copy_to_user = ii_iovec_copy_to_user,
++	.ii_copy_from_user_atomic = ii_iovec_copy_from_user_atomic,
++	.ii_copy_from_user = ii_iovec_copy_from_user,
++	.ii_advance = ii_iovec_advance,
++	.ii_fault_in_readable = ii_iovec_fault_in_readable,
++	.ii_single_seg_count = ii_iovec_single_seg_count,
++};
++EXPORT_SYMBOL(ii_iovec_ops);
 diff --git a/include/linux/fs.h b/include/linux/fs.h
-index e0fd242..5efb5f7 100644
+index 3e60370..b1dff8a 100644
 --- a/include/linux/fs.h
 +++ b/include/linux/fs.h
-@@ -1653,12 +1653,14 @@ struct file_operations {
+@@ -289,31 +289,73 @@ struct address_space;
+ struct writeback_control;
  
- static inline int file_readable(struct file *filp)
+ struct iov_iter {
+-	const struct iovec *iov;
++	struct iov_iter_ops *ops;
++	unsigned long data;
+ 	unsigned long nr_segs;
+ 	size_t iov_offset;
+ 	size_t count;
+ };
+ 
+-size_t __iov_iter_copy_to_user_atomic(struct page *page,
+-		struct iov_iter *i, unsigned long offset, size_t bytes);
+-size_t __iov_iter_copy_to_user(struct page *page,
+-		struct iov_iter *i, unsigned long offset, size_t bytes);
+-size_t iov_iter_copy_to_user(struct page *page,
+-		struct iov_iter *i, unsigned long offset, size_t bytes);
+-size_t iov_iter_copy_from_user_atomic(struct page *page,
+-		struct iov_iter *i, unsigned long offset, size_t bytes);
+-size_t iov_iter_copy_from_user(struct page *page,
+-		struct iov_iter *i, unsigned long offset, size_t bytes);
+-void iov_iter_advance(struct iov_iter *i, size_t bytes);
+-int iov_iter_fault_in_readable(struct iov_iter *i, size_t bytes);
+-size_t iov_iter_single_seg_count(const struct iov_iter *i);
++struct iov_iter_ops {
++	size_t (*ii_copy_to_user_atomic)(struct page *, struct iov_iter *,
++					 unsigned long, size_t);
++	size_t (*ii_copy_to_user)(struct page *, struct iov_iter *,
++				  unsigned long, size_t, int);
++	size_t (*ii_copy_from_user_atomic)(struct page *, struct iov_iter *,
++					   unsigned long, size_t);
++	size_t (*ii_copy_from_user)(struct page *, struct iov_iter *,
++					  unsigned long, size_t);
++	void (*ii_advance)(struct iov_iter *, size_t);
++	int (*ii_fault_in_readable)(struct iov_iter *, size_t);
++	size_t (*ii_single_seg_count)(const struct iov_iter *);
++};
++
++static inline size_t iov_iter_copy_to_user_atomic(struct page *page,
++		struct iov_iter *i, unsigned long offset, size_t bytes)
++{
++	return i->ops->ii_copy_to_user_atomic(page, i, offset, bytes);
++}
++static inline size_t __iov_iter_copy_to_user(struct page *page,
++		struct iov_iter *i, unsigned long offset, size_t bytes)
++{
++	return i->ops->ii_copy_to_user(page, i, offset, bytes, 0);
++}
++static inline size_t iov_iter_copy_to_user(struct page *page,
++		struct iov_iter *i, unsigned long offset, size_t bytes)
++{
++	return i->ops->ii_copy_to_user(page, i, offset, bytes, 1);
++}
++static inline size_t iov_iter_copy_from_user_atomic(struct page *page,
++		struct iov_iter *i, unsigned long offset, size_t bytes)
++{
++	return i->ops->ii_copy_from_user_atomic(page, i, offset, bytes);
++}
++static inline size_t iov_iter_copy_from_user(struct page *page,
++		struct iov_iter *i, unsigned long offset, size_t bytes)
++{
++	return i->ops->ii_copy_from_user(page, i, offset, bytes);
++}
++static inline void iov_iter_advance(struct iov_iter *i, size_t bytes)
++{
++	return i->ops->ii_advance(i, bytes);
++}
++static inline int iov_iter_fault_in_readable(struct iov_iter *i, size_t bytes)
++{
++	return i->ops->ii_fault_in_readable(i, bytes);
++}
++static inline size_t iov_iter_single_seg_count(const struct iov_iter *i)
++{
++	return i->ops->ii_single_seg_count(i);
++}
++
++extern struct iov_iter_ops ii_iovec_ops;
+ 
+ static inline void iov_iter_init(struct iov_iter *i,
+ 			const struct iovec *iov, unsigned long nr_segs,
+ 			size_t count, size_t written)
  {
--	return filp && (filp->f_op->read || filp->f_op->aio_read);
-+	return filp && (filp->f_op->read || filp->f_op->aio_read ||
-+			filp->f_op->read_iter);
+-	i->iov = iov;
++	i->ops = &ii_iovec_ops;
++	i->data = (unsigned long)iov;
+ 	i->nr_segs = nr_segs;
+ 	i->iov_offset = 0;
+ 	i->count = count + written;
+@@ -321,6 +363,11 @@ static inline void iov_iter_init(struct iov_iter *i,
+ 	iov_iter_advance(i, written);
  }
  
- static inline int file_writable(struct file *filp)
++static inline struct iovec *iov_iter_iovec(struct iov_iter *i)
++{
++	return (struct iovec *)i->data;
++}
++
+ static inline size_t iov_iter_count(struct iov_iter *i)
  {
--	return filp && (filp->f_op->write || filp->f_op->aio_write);
-+	return filp && (filp->f_op->write || filp->f_op->aio_write ||
-+			filp->f_op->write_iter);
- }
- 
- struct inode_operations {
+ 	return i->count;
 -- 
 1.8.1.5
 
