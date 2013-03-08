@@ -1,124 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751997Ab3CHTl0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 14:41:26 -0500
-Received: from www.linutronix.de ([62.245.132.108]:56290 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750851Ab3CHTlZ (ORCPT
+	id S1751859Ab3CHToq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 14:44:46 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:25898 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750851Ab3CHToo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 14:41:25 -0500
-Date: Fri, 8 Mar 2013 20:41:22 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Till Straumann <strauman@slac.stanford.edu>
-cc: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] genirq: Sanitize spurious interrupt detection of threaded
- irqs
-In-Reply-To: <513A1D88.5060606@slac.stanford.edu>
-Message-ID: <alpine.LFD.2.02.1303082032390.22263@ionos>
-References: <alpine.LFD.2.02.1303071450130.22263@ionos> <5139F9E8.8090402@slac.stanford.edu> <alpine.LFD.2.02.1303081704230.22263@ionos> <513A1D88.5060606@slac.stanford.edu>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Fri, 8 Mar 2013 14:44:44 -0500
+Date: Fri, 8 Mar 2013 14:43:57 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com
+Subject: Re: [PATCH v2 15/26] xen, irq: call irq_realloc_desc_at() at first
+Message-ID: <20130308194357.GA6622@phenom.dumpdata.com>
+References: <1360351703-20571-1-git-send-email-yinghai@kernel.org>
+ <1360351703-20571-16-git-send-email-yinghai@kernel.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1360351703-20571-16-git-send-email-yinghai@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 8 Mar 2013, Till Straumann wrote:
-> On 03/08/2013 05:12 PM, Thomas Gleixner wrote:
-> > On Fri, 8 Mar 2013, Till Straumann wrote:
-> >   
-> > > 1) I'm not sure adding the SPURIOUS_DEFERRED flag into
-> > >     threads_handled_last is OK - what happens if the atomic_t counter
-> > >     can hold more than 31 bits? In this case, when thread handlers
-> > >     increment the counter there is interference with the flag.  If
-> > >     this is not harmful then it is at least ugly.
-> > atomic_t is going to stay 32 bit otherwise we'll have more horrible
-> > problems than that one.
-> I know. But this means that when the counter overflows 31 bits (2^31 - 1)
-> then it spills into the SPURIOUS_DEFERRED flag, right?
+On Fri, Feb 08, 2013 at 11:28:12AM -0800, Yinghai Lu wrote:
+> We will pre-reserve irq for all gsi at first for x86, so we have to
+> use realloc with it.
 
-Gah, yes. /me should stop doing overoptimizations :)
- 
-> > > 2) note_interrupt is also called from irq/chip.c:handle_nested_irq() and I
-> > > believe
-> > >     this routine would also need to increment the 'threads_handled'
-> > > counter
-> > > rather
-> > >     than calling note_interrupt.
-> > That's a different issue. The nested_irq handler is for interrupts
-> > which are demultiplexed by a primary threaded handler. That interrupt
-> > is never handled in hard interrupt context. It's always called from
-> > the context of the demultiplxing thread.
-> So you are saying that there 'handle_nested_irq()' can never be executed
-> from more than one thread for a single interrupt?
+Where are the GSI's pre-allocated?
+
 > 
-> I find, however, that e.g., the gpio-sx150x.c driver calls
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> Cc: xen-devel@lists.xensource.com
+> ---
+>  drivers/xen/events.c |    8 ++++++--
+>  1 file changed, 6 insertions(+), 2 deletions(-)
 > 
-> request_threaded_irq() with IRQF_SHARED set and it's thread_fn does call
-> handle_nested_irq(). It would thus be possible that multiple drivers
-> could share an interrupt and each driver would call handle_nested_irq()
-> which in-turn executes note_interrupt(). This would again raise the
-> issues we already discussed (note_interrupt() not serialized and thinking
-> that an interrupt was not handled because it was handled by a different
-> thread).
+> diff --git a/drivers/xen/events.c b/drivers/xen/events.c
+> index 0be4df3..dda38db 100644
+> --- a/drivers/xen/events.c
+> +++ b/drivers/xen/events.c
+> @@ -482,8 +482,12 @@ static int __must_check xen_allocate_irq_gsi(unsigned gsi)
+>  	/* Legacy IRQ descriptors are already allocated by the arch. */
+>  	if (gsi < NR_IRQS_LEGACY)
+>  		irq = gsi;
+> -	else
+> -		irq = irq_alloc_desc_at(gsi, -1);
+> +	else {
+> +		/* for x86, irq already get reserved for gsi */
+> +		irq = irq_realloc_desc_at(gsi, -1);
+> +		if (irq < 0)
+> +			irq = irq_alloc_desc_at(gsi, -1);
+> +	}
+>  
+>  	xen_irq_init(irq);
+>  
+> -- 
+> 1.7.10.4
 > 
-> Probably I'm missing something regarding the use of nested interrupts
-> - I would really appreciate if you could help me understand why
-> it should be OK for handle_nested_irq() to call note_interrupt().
-
-The thing about nested irqs is:
-
-main irq is threaded (requested by the driver for stuff like i2c)
-
-The handler of this irq reads a pending irq register in the chip and
-then invokes handle_nested_irq() for each of the pending bits.
-
-Those interrupts cannot be shared even if the driver request them as
-shared:
-
-        irqd_set(&desc->irq_data, IRQD_IRQ_INPROGRESS);
-        raw_spin_unlock_irq(&desc->lock);
-
-        action_ret = action->thread_fn(action->irq, action->dev_id);
-        if (!noirqdebug)
-                note_interrupt(irq, desc, action_ret);
-
-        raw_spin_lock_irq(&desc->lock);
-        irqd_clear(&desc->irq_data, IRQD_IRQ_INPROGRESS);
-
-So there is no loop over action->next. And even if that code would
-loop over action next, then it still would be serialized
-
-main irq is raised
-
-     -> wake thread
-
-thread runs
-
-       read pending reg()
-
-       for each pending bit {
-
-       	   handle_nested_irq();
-		action = desc->action;
-
-		while (action) {
-		      action->thread_fn()
-		      action = action->next)
-		}
-		note_interrupt();
-       }
-
-thread done
-
-Hope that helps. Thanks,
-
-     tglx
-
-      
-
-
-
