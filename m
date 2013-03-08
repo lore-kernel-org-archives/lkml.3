@@ -1,64 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933314Ab3CHGmS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 01:42:18 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:32809 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750880Ab3CHGmQ (ORCPT
+	id S1753656Ab3CHGmd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 01:42:33 -0500
+Received: from mail-oa0-f43.google.com ([209.85.219.43]:61005 "EHLO
+	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751546Ab3CHGmb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 01:42:16 -0500
-Date: Fri, 8 Mar 2013 06:41:39 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        Stepan Moskovchenko <stepanm@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ARM: proc: Add Krait proc info
-Message-ID: <20130308064139.GA31156@mudshark.cambridge.arm.com>
-References: <1362439299-29617-1-git-send-email-sboyd@codeaurora.org>
- <20130305083421.GA19391@mudshark.cambridge.arm.com>
- <51366B9E.7010502@codeaurora.org>
- <5136D220.5090904@codeaurora.org>
+	Fri, 8 Mar 2013 01:42:31 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5136D220.5090904@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <5138EC6C.6030906@suse.cz>
+References: <5121C7AF.2090803@numascale-asia.com>
+	<CAJd=RBArPT8YowhLuE8YVGNfH7G-xXTOjSyDgdV2RsatL-9m+Q@mail.gmail.com>
+	<51254AD2.7000906@suse.cz>
+	<CAJd=RBCiYof5rRVK+62OFMw+5F=5rS=qxRYF+OHpuRz895bn4w@mail.gmail.com>
+	<512F8D8B.3070307@suse.cz>
+	<CAJd=RBD=eT=xdEy+v3GBZ47gd47eB+fpF-3VtfpLAU7aEkZGgA@mail.gmail.com>
+	<5138EC6C.6030906@suse.cz>
+Date: Fri, 8 Mar 2013 14:42:31 +0800
+Message-ID: <CAJd=RBC6JzXzPn9OV8UsbEjX152RcbKpuGGy+OBGM6E43gourQ@mail.gmail.com>
+Subject: Re: kswapd craziness round 2
+From: Hillf Danton <dhillf@gmail.com>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: Daniel J Blueman <daniel@numascale-asia.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Steffen Persvold <sp@numascale.com>, mm <linux-mm@kvack.org>,
+        Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 06, 2013 at 05:20:32AM +0000, Stephen Boyd wrote:
-> On 03/05/13 14:03, Stephen Boyd wrote:
-> > On 03/05/13 00:34, Will Deacon wrote:
-> >> I was looking at this the other day and wondered whether we could set
-> >> HWCAP_IDIV in __v7_setup, depending on ID_ISAR0[27:24]. I can't immediately
-> >> think why that would be difficult, but similarly there may well be a reason
-> >> why we assign it like this.
-> >>
-> >> Fancy taking a look?
-> > Ok I'll take a look. 
-> 
-> Hmm. I wonder if we did it this way because between version B and C of
-> DDI0406 the definition of those bits changed.
-> 
-> In DDI0406B we have
-> 
->     0 - no support
->     1 - support
-> 
-> and in DDI0406C we have
-> 
->     0 - no support
->     1 - support in Thumb
->     2 - support in Thumb and ARM
+On Fri, Mar 8, 2013 at 3:37 AM, Jiri Slaby <jslaby@suse.cz> wrote:
+> On 03/01/2013 03:02 PM, Hillf Danton wrote:
+>> On Fri, Mar 1, 2013 at 1:02 AM, Jiri Slaby <jslaby@suse.cz> wrote:
+>>>
+>>> Ok, no difference, kswap is still crazy. I'm attaching the output of
+>>> "grep -vw '0' /proc/vmstat" if you see something there.
+>>>
+>> Thanks to you for test and data.
+>>
+>> Lets try to restore the deleted nap, then.
+>
+> Oh, it seems to be nice now:
+> root       579  0.0  0.0      0     0 ?        S    Mar04   0:13 [kswapd0]
+>
+Double thanks.
 
-Well spotted, although I think this a documentation error. I've checked both
-A7 and A15 and they both advertise '2' (although r0p0 TRM for A7 also gets
-this wrong, the CPU does the right thing).
+But Mel does not like it, probably.
+Lets try nap in another way.
 
-What about the Qualcomm CPUs?
+Hillf
 
-Will
+--- a/mm/vmscan.c	Thu Feb 21 20:01:02 2013
++++ b/mm/vmscan.c	Fri Mar  8 14:36:10 2013
+@@ -2793,6 +2793,10 @@ loop_again:
+ 				 * speculatively avoid congestion waits
+ 				 */
+ 				zone_clear_flag(zone, ZONE_CONGESTED);
++
++			else if (sc.priority > 2 &&
++				 sc.priority < DEF_PRIORITY - 2)
++				wait_iff_congested(zone, BLK_RW_ASYNC, HZ/10);
+ 		}
+
+ 		/*
+--
+
+>>
+>> --- a/mm/vmscan.c     Thu Feb 21 20:01:02 2013
+>> +++ b/mm/vmscan.c     Fri Mar  1 21:55:40 2013
+>> @@ -2817,6 +2817,10 @@ loop_again:
+>>                */
+>>               if (sc.nr_reclaimed >= SWAP_CLUSTER_MAX)
+>>                       break;
+>> +
+>> +             if (sc.priority < DEF_PRIORITY - 2)
+>> +                     congestion_wait(BLK_RW_ASYNC, HZ/10);
+>> +
+>>       } while (--sc.priority >= 0);
+>>
+>>  out:
+>> --
+>>
+>
+>
+> --
+> js
+> suse labs
