@@ -1,62 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757475Ab3CHWBu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 17:01:50 -0500
-Received: from mail-ee0-f43.google.com ([74.125.83.43]:58226 "EHLO
-	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752670Ab3CHWBs (ORCPT
+	id S932704Ab3CHWGy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 17:06:54 -0500
+Received: from g4t0016.houston.hp.com ([15.201.24.19]:40969 "EHLO
+	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753631Ab3CHWGx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 17:01:48 -0500
-Message-ID: <513A5FC7.8040409@suse.cz>
-Date: Fri, 08 Mar 2013 23:01:43 +0100
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:19.0) Gecko/20130124 Thunderbird/19.0
-MIME-Version: 1.0
-To: stable <stable@vger.kernel.org>
-CC: LKML <linux-kernel@vger.kernel.org>, Tony Jones <tonyj@suse.de>,
-        Andrew Vagin <avagin@openvz.org>, Steven Rostedt <rostedt@goodmis.org>
-Subject: [stable revert request] ... of doubled commit
-X-Enigmail-Version: 1.6a1pre
-Content-Type: text/plain; charset=ISO-8859-2
+	Fri, 8 Mar 2013 17:06:53 -0500
+Message-ID: <1362779749.12845.171.camel@misato.fc.hp.com>
+Subject: Re: [PATCH 2/2] mm: remove_memory: Fix end_pfn setting
+From: Toshi Kani <toshi.kani@hp.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        isimatu.yasuaki@jp.fujitsu.com, wency@cn.fujitsu.com,
+        tangchen@cn.fujitsu.com
+Date: Fri, 08 Mar 2013 14:55:49 -0700
+In-Reply-To: <20130308133106.ec4f9810b69b105b8f70d82a@linux-foundation.org>
+References: <1362757301-18550-1-git-send-email-toshi.kani@hp.com>
+	 <1362757301-18550-2-git-send-email-toshi.kani@hp.com>
+	 <20130308133106.ec4f9810b69b105b8f70d82a@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, 2013-03-08 at 13:31 -0800, Andrew Morton wrote:
+> On Fri,  8 Mar 2013 08:41:41 -0700 Toshi Kani <toshi.kani@hp.com> wrote:
+> 
+> > remove_memory() calls walk_memory_range() with [start_pfn, end_pfn),
+> > where end_pfn is exclusive in this range.  Therefore, end_pfn needs
+> > to be set to the next page of the end address.
+> > 
+> > ...
+> >
+> > --- a/mm/memory_hotplug.c
+> > +++ b/mm/memory_hotplug.c
+> > @@ -1801,7 +1801,7 @@ int __ref remove_memory(int nid, u64 start, u64 size)
+> >  	int retry = 1;
+> >  
+> >  	start_pfn = PFN_DOWN(start);
+> > -	end_pfn = start_pfn + PFN_DOWN(size);
+> > +	end_pfn = PFN_UP(start + size - 1);
+> >  
+> >  	/*
+> >  	 * When CONFIG_MEMCG is on, one memory block may be used by other
+> 
+> That looks right, although these rounding/boundary things are always
+> hard.  I wonder if `start' and `size' are ever not multiples of
+> PAGE_SIZE..
+> 
+> How did you discover this?  Code inspection, or some runtime
+> malfunction?  Please always include this info when fixing bugs.
 
-Tony Jones found that the following commit:
-  perf: Fix parsing of __print_flags() in TP_printk()
-is applied to 3.0 twice.
+It was found in code inspection.  For ACPI memory hot-delete, both start
+and size values are obtained from ACPI, and should always be
+page-aligned.  So, this issue is not exposed at this point.  That said,
+it should handle the boundary condition correctly since it might be
+called from other path in future.  Yes, I will include such info when
+fixing bugs.
 
-Once as:
-commit 248f3235861683bb1ffc7316b56bf783b162666f
-Author: Steven Rostedt <srostedt@redhat.com>
-Date:   Fri Nov 4 16:32:25 2011 -0400
+Thanks,
+-Toshi
 
-    perf: Fix parsing of __print_flags() in TP_printk()
 
-    commit d06c27b22aa66e48e32f03f9387328a9af9b0625 upstream.
-
-===== and =====
-The second one is this:
-commit 2431496fbdd142ccc83138d94f3f510a36ce9270
-Author: Steven Rostedt <srostedt@redhat.com>
-Date:   Fri Nov 4 16:32:25 2011 -0400
-
-    perf: Fix parsing of __print_flags() in TP_printk()
-
-    commit 49908a1b25d448d68fd26faca260e1850201575f upstream.
-
-=====
-
-The latter is not an upstream commit, it is from pm-fixes, hence the
-difference in commit SHAs.
-
-2431496fbdd142ccc83138d94f3f510a36ce9270 needs to be reverted as it is
-applied to a wrong function.
-
-thanks,
--- 
-js
-suse labs
