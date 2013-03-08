@@ -1,89 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760065Ab3CHBlK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 20:41:10 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:24834 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752249Ab3CHBlI (ORCPT
+	id S1760151Ab3CHBqw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 20:46:52 -0500
+Received: from mail-yh0-f42.google.com ([209.85.213.42]:34029 "EHLO
+	mail-yh0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754041Ab3CHBqu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 20:41:08 -0500
-Message-ID: <51394174.9050300@huawei.com>
-Date: Fri, 8 Mar 2013 09:40:04 +0800
-From: Hanjun Guo <guohanjun@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+	Thu, 7 Mar 2013 20:46:50 -0500
+Date: Fri, 8 Mar 2013 09:39:23 +0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Josh Boyer <jwboyer@redhat.com>
+Cc: Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: 8250.nr_uarts broken in 3.7
+Message-ID: <20130308013923.GA12474@kroah.com>
+References: <20130307185642.GF13719@hansolo.jdub.homelinux.org>
+ <5138E56B.6090308@suse.cz>
+ <20130307191005.GH13719@hansolo.jdub.homelinux.org>
+ <20130307211426.GI13719@hansolo.jdub.homelinux.org>
+ <20130307231242.GC4280@kroah.com>
+ <20130308010140.GJ13719@hansolo.jdub.homelinux.org>
 MIME-Version: 1.0
-To: Toshi Kani <toshi.kani@hp.com>
-CC: Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
-        <linux-ia64@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Jiang Liu <jiang.liu@huawei.com>, Jianguo Wu <wujianguo@huawei.com>
-Subject: Re: [PATCH 2/2] ia64: iosapic: fix kexec oops when iosapic was removed
-References: <1362368824-29640-1-git-send-email-guohanjun@huawei.com> <1362591539.12845.124.camel@misato.fc.hp.com>
-In-Reply-To: <1362591539.12845.124.camel@misato.fc.hp.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.124]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130308010140.GJ13719@hansolo.jdub.homelinux.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/3/7 1:38, Toshi Kani wrote:
-> On Mon, 2013-03-04 at 11:47 +0800, Hanjun Guo wrote:
->> Ioapic hotplug was supported in IA64 code, but will lead to kexec oops
->> when iosapic was removed. here is the code logic:
->>
->> iosapic_remove
->>   iosapic_free
->>     memset(&iosapic_lists[index], 0, sizeof(iosapic_lists[0]))
->>       iosapic_lists[index].addr was set to 0;
->>
->> and then kexec a new kernel
->> kexec_disable_iosapic
->>   iosapic_write(rte->iosapic,..)
->>     __iosapic_write(iosapic->addr, reg, val);
->>       addr was set to 0 when iosapic_remove, and oops happened
->>
->  :
->>
->> With Tony and Toshi's advice, the patch removes the "rte" from rte_list
->> when the iosapic was removed.
->>
->> Signed-off-by: Hanjun Guo <guohanjun@huawei.com>
->> Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
->> ---
->>  arch/ia64/kernel/iosapic.c |   32 +++++++++++++++++++++++++++++++-
->>  1 files changed, 31 insertions(+), 1 deletions(-)
->>
->> diff --git a/arch/ia64/kernel/iosapic.c b/arch/ia64/kernel/iosapic.c
->> index a6e2f75..bc4a0f8 100644
->> --- a/arch/ia64/kernel/iosapic.c
->> +++ b/arch/ia64/kernel/iosapic.c
->> @@ -1010,6 +1010,26 @@ iosapic_check_gsi_range (unsigned int gsi_base, unsigned int ver)
->>  	return 0;
->>  }
->>  
->> +static int
->> +delete_rte_from_list(unsigned int irq, unsigned int gsi)
+On Thu, Mar 07, 2013 at 08:01:40PM -0500, Josh Boyer wrote:
+> On Fri, Mar 08, 2013 at 07:12:42AM +0800, Greg Kroah-Hartman wrote:
+> > On Thu, Mar 07, 2013 at 04:14:27PM -0500, Josh Boyer wrote:
+> > > On Thu, Mar 07, 2013 at 02:10:05PM -0500, Josh Boyer wrote:
+> > > > On Thu, Mar 07, 2013 at 08:07:23PM +0100, Jiri Slaby wrote:
+> > > > > On 03/07/2013 07:56 PM, Josh Boyer wrote:
+> > > > > > commit 835d844d1a28efba81d5aca7385e24c29d3a6db2
+> > > > > > Author: Sean Young <sean@mess.org>
+> > > > > > Date:   Fri Sep 7 19:06:23 2012 +0100
+> > > > > > 
+> > > > > >     8250_pnp: do pnp probe before legacy probe
+> > > > > > 
+> > > > > > but that is simply moving code around.
+> > > > > 
+> > > > > Hi, not quite. Does it still happen when you revert that one on the top
+> > > > > of 3.[789]*?
+> > > > 
+> > > > That was going to be my first attempt.  I'll let you know how it goes.
+> > > 
+> > > Yes, reverting just 835d844d1 on top of 3.7.0 fixes it.  I also see why
+> > > now.  That commit changed the module name from 8250 to 8250_core in the
+> > > makefile, so clearly 8250.nr_uarts = 16 isn't going to get parsed.
+> > > Adding 8250_core.nr_uarts = 16 seems to work fine.  This wasn't
+> > > immediately obvious because the whole thing is built-in and not a
+> > > module.  Thankfully, looking in /sys/modules/ still works and that
+> > > showed up pretty clearly.
+> > > 
+> > > So I guess this isn't really a break in functionality as much as it's a
+> > > driver rename.  Not sure if it's worth fixing in some form or not.
+> > 
+> > Yes it needs to be fixed, we shouldn't break userspace stuff like that.
+> > Patches gladly accepted.
 > 
-> I'd prefer to have "iosapic" prefix to the func name, something like
-> iosapic_delete_rte(), but this is just my preference.  Other than that,
+> OK... well I don't think renaming it back to 8250 is going to actually
+> work.  It's already been renamed for 2 releases now, and a renaming
+> isn't appropriate for 3.8.y.
+> 
+> I don't remember exactly, but I don't think simply adding a modalias to
+> 8250 will work either.
+> 
+> So basically, the only way to fix this that I can see is to create a
+> new, additional module parameter or something similar that parses
+> "8250.nr_uarts".  Is that what you had in mind?
 
-Good idea. I will send another version and add your Acked-by.
+I think that's the only way we can properly solve this, so yes, that
+would be good.
 
-Thanks
-Hanjun Guo
+thanks,
 
-> the change looks good to me.
-> 
-> Acked-by: Toshi Kani <toshi.kani@hp.com>
-> 
-> Thanks,
-> -Toshi
-> 
-> 
-> 
-> 
-> .
-> 
-
-
+greg k-h
