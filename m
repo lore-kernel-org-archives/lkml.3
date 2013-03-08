@@ -1,146 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757856Ab3CHNgo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 08:36:44 -0500
-Received: from mail-wg0-f53.google.com ([74.125.82.53]:43788 "EHLO
-	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757659Ab3CHNgm (ORCPT
+	id S934091Ab3CHNn7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 08:43:59 -0500
+Received: from lennier.cc.vt.edu ([198.82.162.213]:58585 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932887Ab3CHNn6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 08:36:42 -0500
-MIME-Version: 1.0
-In-Reply-To: <CA+V-a8uE6jymk5Z14ydCmuoCAkcLM-ZJKpwp2-0CRXWQtXvTSA@mail.gmail.com>
-References: <1359380879-26306-1-git-send-email-prabhakar.lad@ti.com>
- <1359380879-26306-7-git-send-email-prabhakar.lad@ti.com> <510E5BCF.9080006@ti.com>
- <CA+V-a8uE6jymk5Z14ydCmuoCAkcLM-ZJKpwp2-0CRXWQtXvTSA@mail.gmail.com>
-From: Prabhakar Lad <prabhakar.csengg@gmail.com>
-Date: Fri, 8 Mar 2013 18:58:33 +0530
-Message-ID: <CA+V-a8uUFRRKrGRyq3wDs8ks_GzaGZGrTz+SoW9b2VQ8pb+DxA@mail.gmail.com>
-Subject: Re: [PATCH v2 6/6] ARM: davinci: da850: configure system
- configuration chip(CFGCHIP3) for emac
-To: Sekhar Nori <nsekhar@ti.com>
-Cc: linux-arm-kernel@lists.infradead.org,
-        davinci-linux-open-source@linux.davincidsp.com,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, Heiko Schocher <hs@denx.de>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 8 Mar 2013 08:43:58 -0500
+X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.4-dev
+To: Li Zefan <lizefan@huawei.com>
+Cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org
+Subject: Re: next-20130306 - BUG: unable to handle kernel paging reques in avc_has_perm_noaudit
+In-Reply-To: Your message of "Fri, 08 Mar 2013 11:15:47 +0800."
+             <513957E3.8000406@huawei.com>
+From: Valdis.Kletnieks@vt.edu
+References: <3077.1362687651@turing-police.cc.vt.edu>
+            <513957E3.8000406@huawei.com>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1362750226_9938P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Fri, 08 Mar 2013 08:43:46 -0500
+Message-ID: <44447.1362750226@turing-police.cc.vt.edu>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Junkmail-Status: score=10/50, host=steiner.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A020204.5139EB15.01D8,ss=1,re=0.000,fgs=0,
+	ip=0.0.0.0,
+	so=2011-07-25 19:15:43,
+	dmn=2011-05-27 18:58:46,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sekhar,
+--==_Exmh_1362750226_9938P
+Content-Type: text/plain; charset=us-ascii
 
-On Mon, Feb 4, 2013 at 10:33 AM, Prabhakar Lad
-<prabhakar.csengg@gmail.com> wrote:
-> Sekhar ,
->
-> On Sun, Feb 3, 2013 at 6:15 PM, Sekhar Nori <nsekhar@ti.com> wrote:
->> On 1/28/2013 7:17 PM, Prabhakar Lad wrote:
->>> From: Lad, Prabhakar <prabhakar.lad@ti.com>
->>>
->>> The system configuration chip CFGCHIP3, controls the emac module.
->>> This patch appropriately configures this register for emac and
->>> sets DA850_MII_MDIO_CLKEN_PIN GPIO pin appropriately.
->>>
->>> Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
->>> Cc: linux-arm-kernel@lists.infradead.org
->>> Cc: linux-kernel@vger.kernel.org
->>> Cc: davinci-linux-open-source@linux.davincidsp.com
->>> Cc: netdev@vger.kernel.org
->>> Cc: devicetree-discuss@lists.ozlabs.org
->>> Cc: Sekhar Nori <nsekhar@ti.com>
->>> Cc: Heiko Schocher <hs@denx.de>
->>> ---
->>>  arch/arm/mach-davinci/da8xx-dt.c |   28 ++++++++++++++++++++++++++++
->>>  1 files changed, 28 insertions(+), 0 deletions(-)
->>>
->>> diff --git a/arch/arm/mach-davinci/da8xx-dt.c b/arch/arm/mach-davinci/da8xx-dt.c
->>> index e533a0a..4a096e3 100644
->>> --- a/arch/arm/mach-davinci/da8xx-dt.c
->>> +++ b/arch/arm/mach-davinci/da8xx-dt.c
->>> @@ -8,6 +8,7 @@
->>>   * published by the Free Software Foundation.
->>>   */
->>>  #include <linux/io.h>
->>> +#include <linux/gpio.h>
->>>  #include <linux/of_irq.h>
->>>  #include <linux/of_platform.h>
->>>  #include <linux/irqdomain.h>
->>> @@ -39,6 +40,32 @@ static void __init da8xx_init_irq(void)
->>>
->>>  #ifdef CONFIG_ARCH_DAVINCI_DA850
->>>
->>> +static void __init da8xx_config_emac(void)
->>> +{
->>> +#define DA850_MII_MDIO_CLKEN_PIN     GPIO_TO_PIN(2, 6)
->>> +#define DA850_EMAC_MODE_SELECT               BIT(8)
->>> +     void __iomem *cfg_chip3_base;
->>> +     int ret;
->>> +     u32 val;
->>> +
->>> +     cfg_chip3_base = DA8XX_SYSCFG0_VIRT(DA8XX_CFGCHIP3_REG);
->>> +
->>> +     val = __raw_readl(cfg_chip3_base);
->>> +     val &= ~DA850_EMAC_MODE_SELECT;
->>> +     /* configure the CFGCHIP3 register for MII */
->>> +     __raw_writel(val, cfg_chip3_base);
->>
->> Use readl/writel instead.
->>
-> Ok.
->
->>> +     pr_info("EMAC: MII PHY configured\n");
->>> +
->>> +     ret = gpio_request(DA850_MII_MDIO_CLKEN_PIN, "mdio_clk_en");
->>> +     if (ret) {
->>> +             pr_warn("Cannot open GPIO %d\n",
->>> +                                     DA850_MII_MDIO_CLKEN_PIN);
->>> +             return;
->>> +     }
->>> +     /* Enable/Disable MII MDIO clock */
->>> +     gpio_direction_output(DA850_MII_MDIO_CLKEN_PIN, 0);
->>> +}
->>> +
->>>  struct of_dev_auxdata da8xx_auxdata[] __initdata = {
->>>       OF_DEV_AUXDATA("ti,davinci_mdio", 0x01e24000, "davinci_mdio.0", NULL),
->>>       OF_DEV_AUXDATA("ti,davinci-dm6467-emac", 0x01e20000, "davinci_emac.1",
->>> @@ -52,6 +79,7 @@ static void __init da850_init_machine(void)
->>>                            da8xx_auxdata, NULL);
->>>
->>>       da8xx_uart_clk_enable();
->>> +     da8xx_config_emac();
->>
->> There are couple of issues with this implementation.
->>
->> 1) da8xx_config_emac() is specific to DA850 EVM, but masquerades as
->>    generic for da8xx. Looks like you need two functions, one for soc
->>    specific configuration and one board specific.
-> Ok.
->
->> 2) da8xx_config_emac() goes through all the time, whether the
->>    particular board has emac module or not. Shouldn't
->>    da8xx_config_emac() check if emac is actually enabled in the passed
->>    dtb and only the do the configuration?
->
-> Ok. Can you give some pointers how we can access the dtb in board files.
->
-Any pointers on this could be helpful.
+On Fri, 08 Mar 2013 11:15:47 +0800, Li Zefan said:
 
-Regards,
---Prabhakar
+> I don't think so. The commit changes cgroup_rename(), but the above stack doesn't
+> sugguest it was renaming a cgroup directory.
 
->> 3) The function assumes mii is used always, you can use the rmii_en dt
->>    property to check if rmii/mii is enabled and configure the soc/board
->>    accordingly.
->
-> Ok.
->
->> 4) If the same function can work both for da850 and da830, then it can
->>    be implemented outside of CONFIG_ARCH_DAVINCI_DA850.
->>
-> Ok.
->
-> Regards,
-> --Prabhakar
->
->> Thanks,
->> Sekhar
+
+OK.. I'll go bisect it then.
+
+
+--==_Exmh_1362750226_9938P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.13 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iQIVAwUBUTnrEgdmEQWDXROgAQL0zRAAg2tqZ09NArskycH+fOduOjL2hkXiRgZd
+IJDwO//nvoSfpAJp5yTQEmXP3NlnnUmuVpwZ7R5aBCHtpdgcnA3tvE+15QT0oCSo
+0JCfK0AisO624L3DgRJsXCQKT6Wd9DqeSbTHXpbeVCQaK6UV2FXH+74ehUXyPFCe
+BZTmyyX/H8GVGVR1nYfPixyClZ0esbB+AhGA1STr3t2ygE1m5dr45AQW+xv5gtN2
+FgbcID2GYrOgKO9FWCMVoMSrGyGPSmbzl84qKs/D34u5DefyWZpIsnqc/LdgJfoC
+u1Z8UP10bz7edk+cmxocMt3tHDgOXuCQHH7HDX3O5GUbme+hlQoaPTFCSU00ezaU
+7YGmCoAf2qK4V5QnSIaa0MpbnmeV7UFmL6ZX/KkePDI0Ppok3nlED5zHjm57VLII
+1WCkgUo1qHKsUnZls48NAigOUylfteJKFkFmRrVfFqO0fAZiCR6a7Hbza4h4qB39
+b1tZv40L5TRTmNcUPBPNUmCaxQaPVkxxuti7zIdptzjUAhLq175Uoj648Y7imCrf
+FtNToAe5or32A1VtdvK1pUYd/2MCgi3gAp2EcykhWHdBByqDqyRcABuu5tjWeMRC
+fAdlMdSEUUZGQ2zQnCGcuorSbmyNx+D3RJ7oseNaYmGz8f8aHDX1SjdZs6pbSZlk
+4YjvKGIzL4k=
+=6Liv
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1362750226_9938P--
+
