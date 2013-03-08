@@ -1,54 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760029Ab3CHW6V (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 17:58:21 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:36039 "EHLO
+	id S934081Ab3CHW6Z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 17:58:25 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:36034 "EHLO
 	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758057Ab3CHWwq (ORCPT
+	with ESMTP id S1757750Ab3CHWwq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 8 Mar 2013 17:52:46 -0500
 From: Dave Kleikamp <dave.kleikamp@oracle.com>
 To: Zach Brown <zab@zabbo.net>
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         Dave Kleikamp <dave.kleikamp@oracle.com>
-Subject: [PATCH V7 -next 16/33] bio: add bvec_length(), like iov_length()
-Date: Fri,  8 Mar 2013 16:52:11 -0600
-Message-Id: <1362783148-22736-17-git-send-email-dave.kleikamp@oracle.com>
+Subject: [PATCH V7 -next 10/33] iov_iter: let callers extract iovecs and bio_vecs
+Date: Fri,  8 Mar 2013 16:52:05 -0600
+Message-Id: <1362783148-22736-11-git-send-email-dave.kleikamp@oracle.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1362783148-22736-1-git-send-email-dave.kleikamp@oracle.com>
 References: <1362783148-22736-1-git-send-email-dave.kleikamp@oracle.com>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Zach Brown <zab@zabbo.net>
 
+direct IO treats memory from user iovecs and memory from arrays of
+kernel pages very differently.  User memory is pinned and worked with in
+batches while kernel pages are always pinned and don't require
+additional processing.
+
+Rather than try and provide an abstraction that includes these
+different behaviours we let direct IO extract the memory structs and
+hand them to the existing code.
+
 Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
 Cc: Zach Brown <zab@zabbo.net>
 ---
- include/linux/bio.h | 8 ++++++++
- 1 file changed, 8 insertions(+)
+ include/linux/fs.h | 17 +++++++++++++++++
+ 1 file changed, 17 insertions(+)
 
-diff --git a/include/linux/bio.h b/include/linux/bio.h
-index 5f5491767..d670bee 100644
---- a/include/linux/bio.h
-+++ b/include/linux/bio.h
-@@ -311,6 +311,14 @@ extern struct bio_vec *bvec_alloc_bs(gfp_t, int, unsigned long *, struct bio_set
- extern void bvec_free_bs(struct bio_set *, struct bio_vec *, unsigned int);
- extern unsigned int bvec_nr_vecs(unsigned short idx);
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index bd15cdb..53a1016 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -370,6 +370,17 @@ static inline void iov_iter_init_bvec(struct iov_iter *i,
  
-+static inline ssize_t bvec_length(const struct bio_vec *bvec, unsigned long nr)
+ 	iov_iter_advance(i, written);
+ }
++
++static inline int iov_iter_has_bvec(struct iov_iter *i)
 +{
-+	ssize_t bytes = 0;
-+	while (nr--)
-+		bytes += (bvec++)->bv_len;
-+	return bytes;
++	return i->ops == &ii_bvec_ops;
 +}
 +
- #ifdef CONFIG_BLK_CGROUP
- int bio_associate_current(struct bio *bio);
- void bio_disassociate_task(struct bio *bio);
++static inline struct bio_vec *iov_iter_bvec(struct iov_iter *i)
++{
++	BUG_ON(!iov_iter_has_bvec(i));
++	return (struct bio_vec *)i->data;
++}
+ #endif
+ 
+ extern struct iov_iter_ops ii_iovec_ops;
+@@ -387,8 +398,14 @@ static inline void iov_iter_init(struct iov_iter *i,
+ 	iov_iter_advance(i, written);
+ }
+ 
++static inline int iov_iter_has_iovec(struct iov_iter *i)
++{
++	return i->ops == &ii_iovec_ops;
++}
++
+ static inline struct iovec *iov_iter_iovec(struct iov_iter *i)
+ {
++	BUG_ON(!iov_iter_has_iovec(i));
+ 	return (struct iovec *)i->data;
+ }
+ 
 -- 
 1.8.1.5
 
