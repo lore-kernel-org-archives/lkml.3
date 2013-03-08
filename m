@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933596Ab3CHXtu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 18:49:50 -0500
-Received: from mga14.intel.com ([143.182.124.37]:39920 "EHLO mga14.intel.com"
+	id S1759994Ab3CHXvU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 18:51:20 -0500
+Received: from mga02.intel.com ([134.134.136.20]:50380 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933201Ab3CHXts (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 18:49:48 -0500
+	id S1754610Ab3CHXvT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Mar 2013 18:51:19 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,810,1355126400"; 
-   d="scan'208";a="211468375"
+   d="scan'208";a="274510211"
 From: Andi Kleen <andi@firstfloor.org>
 To: a.p.zijlstra@chello.nl
 Cc: mingo@kernel.org, linux-kernel@vger.kernel.org,
         Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 3/5] perf, x86: Basic Haswell PEBS support v4
-Date: Fri,  8 Mar 2013 15:49:31 -0800
-Message-Id: <1362786573-18455-4-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 4/5] perf, x86: Move NMI clearing to end of PMI handler after the counter registers are reset
+Date: Fri,  8 Mar 2013 15:49:32 -0800
+Message-Id: <1362786573-18455-5-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1362786573-18455-1-git-send-email-andi@firstfloor.org>
 References: <1362786573-18455-1-git-send-email-andi@firstfloor.org>
@@ -25,98 +25,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-Add basic PEBS support for Haswell.
-The constraints are similar to SandyBridge with a few new events.
+This avoids some problems with spurious PMIs on Haswell.
+Haswell seems to behave more like P4 in this regard. Do
+the same thing as the P4 perf handler by unmasking
+the NMI only at the end. Shouldn't make any difference
+for earlier family 6 cores.
 
-v2: Readd missing pebs_aliases
-v3: Readd missing hunk. Fix some constraints.
-v4: Fix typo in PEBS event table (Stephane Eranian)
-Reviewed-by: Stephane Eranian <eranian@google.com>
+Tested on Haswell, IvyBridge, Westmere, Saltwell (Atom)
+
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- arch/x86/kernel/cpu/perf_event.h          |    2 ++
- arch/x86/kernel/cpu/perf_event_intel.c    |    6 ++++--
- arch/x86/kernel/cpu/perf_event_intel_ds.c |   29 +++++++++++++++++++++++++++++
- 3 files changed, 35 insertions(+), 2 deletions(-)
+ arch/x86/kernel/cpu/perf_event_intel.c |   16 ++++++----------
+ 1 files changed, 6 insertions(+), 10 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
-index a356350..4f6b97d 100644
---- a/arch/x86/kernel/cpu/perf_event.h
-+++ b/arch/x86/kernel/cpu/perf_event.h
-@@ -591,6 +591,8 @@ extern struct event_constraint intel_snb_pebs_event_constraints[];
- 
- extern struct event_constraint intel_ivb_pebs_event_constraints[];
- 
-+extern struct event_constraint intel_hsw_pebs_event_constraints[];
-+
- struct event_constraint *intel_pebs_constraints(struct perf_event *event);
- 
- void intel_pmu_pebs_enable(struct perf_event *event);
 diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index 10f3c6c..ca3b611 100644
+index ca3b611..6f22479 100644
 --- a/arch/x86/kernel/cpu/perf_event_intel.c
 +++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -854,7 +854,8 @@ static inline bool intel_pmu_needs_lbr_smpl(struct perf_event *event)
- 		return true;
+@@ -1149,16 +1149,6 @@ static int intel_pmu_handle_irq(struct pt_regs *regs)
  
- 	/* implicit branch sampling to correct PEBS skid */
--	if (x86_pmu.intel_cap.pebs_trap && event->attr.precise_ip > 1)
-+	if (x86_pmu.intel_cap.pebs_trap && event->attr.precise_ip > 1 &&
-+	    x86_pmu.intel_cap.pebs_format < 2)
- 		return true;
+ 	cpuc = &__get_cpu_var(cpu_hw_events);
  
- 	return false;
-@@ -2200,8 +2201,9 @@ __init int intel_pmu_init(void)
- 		intel_pmu_lbr_init_snb();
- 
- 		x86_pmu.event_constraints = intel_hsw_event_constraints;
+-	/*
+-	 * Some chipsets need to unmask the LVTPC in a particular spot
+-	 * inside the nmi handler.  As a result, the unmasking was pushed
+-	 * into all the nmi handlers.
+-	 *
+-	 * This handler doesn't seem to have any issues with the unmasking
+-	 * so it was left at the top.
+-	 */
+-	apic_write(APIC_LVTPC, APIC_DM_NMI);
 -
-+		x86_pmu.pebs_constraints = intel_hsw_pebs_event_constraints;
- 		x86_pmu.extra_regs = intel_snb_extra_regs;
-+		x86_pmu.pebs_aliases = intel_pebs_aliases_snb;
- 		/* all extra regs are per-cpu when HT is on */
- 		x86_pmu.er_flags |= ERF_HAS_RSP_1;
- 		x86_pmu.er_flags |= ERF_NO_HT_SHARING;
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-index 783b728..d1bc10e 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-@@ -437,6 +437,35 @@ struct event_constraint intel_ivb_pebs_event_constraints[] = {
-         EVENT_CONSTRAINT_END
- };
+ 	intel_pmu_disable_all();
+ 	handled = intel_pmu_drain_bts_buffer();
+ 	status = intel_pmu_get_status();
+@@ -1218,6 +1208,12 @@ again:
  
-+struct event_constraint intel_hsw_pebs_event_constraints[] = {
-+	INTEL_UEVENT_CONSTRAINT(0x01c0, 0x2), /* INST_RETIRED.PRECDIST */
-+	INTEL_UEVENT_CONSTRAINT(0x01c2, 0xf), /* UOPS_RETIRED.ALL */
-+	INTEL_UEVENT_CONSTRAINT(0x02c2, 0xf), /* UOPS_RETIRED.RETIRE_SLOTS */
-+	INTEL_EVENT_CONSTRAINT(0xc4, 0xf),    /* BR_INST_RETIRED.* */
-+	INTEL_UEVENT_CONSTRAINT(0x01c5, 0xf), /* BR_MISP_RETIRED.CONDITIONAL */
-+	INTEL_UEVENT_CONSTRAINT(0x04c5, 0xf), /* BR_MISP_RETIRED.ALL_BRANCHES */
-+	INTEL_UEVENT_CONSTRAINT(0x20c5, 0xf), /* BR_MISP_RETIRED.NEAR_TAKEN */
-+	INTEL_EVENT_CONSTRAINT(0xcd, 0x8),    /* MEM_TRANS_RETIRED.* */
-+	INTEL_UEVENT_CONSTRAINT(0x11d0, 0xf), /* MEM_UOPS_RETIRED.STLB_MISS_LOADS */
-+	INTEL_UEVENT_CONSTRAINT(0x12d0, 0xf), /* MEM_UOPS_RETIRED.STLB_MISS_STORES */
-+	INTEL_UEVENT_CONSTRAINT(0x21d0, 0xf), /* MEM_UOPS_RETIRED.LOCK_LOADS */
-+	INTEL_UEVENT_CONSTRAINT(0x41d0, 0xf), /* MEM_UOPS_RETIRED.SPLIT_LOADS */
-+	INTEL_UEVENT_CONSTRAINT(0x42d0, 0xf), /* MEM_UOPS_RETIRED.SPLIT_STORES */
-+	INTEL_UEVENT_CONSTRAINT(0x81d0, 0xf), /* MEM_UOPS_RETIRED.ALL_LOADS */
-+	INTEL_UEVENT_CONSTRAINT(0x82d0, 0xf), /* MEM_UOPS_RETIRED.ALL_STORES */
-+	INTEL_UEVENT_CONSTRAINT(0x01d1, 0xf), /* MEM_LOAD_UOPS_RETIRED.L1_HIT */
-+	INTEL_UEVENT_CONSTRAINT(0x02d1, 0xf), /* MEM_LOAD_UOPS_RETIRED.L2_HIT */
-+	INTEL_UEVENT_CONSTRAINT(0x04d1, 0xf), /* MEM_LOAD_UOPS_RETIRED.L3_HIT */
-+	INTEL_UEVENT_CONSTRAINT(0x40d1, 0xf), /* MEM_LOAD_UOPS_RETIRED.HIT_LFB */
-+	INTEL_UEVENT_CONSTRAINT(0x01d2, 0xf), /* MEM_LOAD_UOPS_LLC_HIT_RETIRED.XSNP_MISS */
-+	INTEL_UEVENT_CONSTRAINT(0x02d2, 0xf), /* MEM_LOAD_UOPS_LLC_HIT_RETIRED.XSNP_HIT */
-+	INTEL_UEVENT_CONSTRAINT(0x01d3, 0xf), /* MEM_LOAD_UOPS_LLC_MISS_RETIRED.LOCAL_DRAM */
-+	INTEL_UEVENT_CONSTRAINT(0x04c8, 0xf), /* HLE_RETIRED.Abort */
-+	INTEL_UEVENT_CONSTRAINT(0x04c9, 0xf), /* RTM_RETIRED.Abort */
-+
-+	EVENT_CONSTRAINT_END
-+};
-+
- struct event_constraint *intel_pebs_constraints(struct perf_event *event)
- {
- 	struct event_constraint *c;
+ done:
+ 	intel_pmu_enable_all(0);
++	/*
++	 * Only unmask the NMI after the overflow counters
++	 * have been reset. This avoids spurious NMIs on
++	 * Haswell CPUs.
++	 */
++	apic_write(APIC_LVTPC, APIC_DM_NMI);
+ 	return handled;
+ }
+ 
 -- 
 1.7.7.6
 
