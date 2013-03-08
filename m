@@ -1,56 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933454Ab3CHLA6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 06:00:58 -0500
-Received: from cpsmtpb-ews01.kpnxchange.com ([213.75.39.4]:59575 "EHLO
-	cpsmtpb-ews01.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752664Ab3CHLA5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 06:00:57 -0500
-Message-ID: <1362740454.5994.51.camel@x61.thuisdomein>
-Subject: [PATCH] RSA: drop "select MPILIB_EXTRA"
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Herbert Xu <herbert@gondor.hengli.com.au>,
-        "David S. Miller" <davem@davemloft.net>
-Cc: linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Fri, 08 Mar 2013 12:00:54 +0100
+	id S1756338Ab3CHLSJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 06:18:09 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:56598 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752302Ab3CHLSH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Mar 2013 06:18:07 -0500
+Message-ID: <5139C8DC.3010307@ti.com>
+Date: Fri, 8 Mar 2013 16:47:48 +0530
+From: Sekhar Nori <nsekhar@ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
+MIME-Version: 1.0
+To: Prabhakar lad <prabhakar.csengg@gmail.com>
+CC: LMML <linux-media@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: Re: [PATCH] davinci: vpbe: fix module build
+References: <1362738130-24543-1-git-send-email-prabhakar.lad@ti.com>
+In-Reply-To: <1362738130-24543-1-git-send-email-prabhakar.lad@ti.com>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 08 Mar 2013 11:00:54.0925 (UTC) FILETIME=[349CDBD0:01CE1BEC]
-X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Support for RSA public key cryptography was added in v3.7. It added a
-select for MPILIB_EXTRA. But that Kconfig symbol was already removed in
-v3.6, with commit  9e235dcaf4f63d88a7e9ce5735ba5c2eb2719603 ("Revert
-"crypto: GnuPG based MPI lib - additional sources (part 4)""). No one
-noticed because all the mpi functionality that was needed was,
-apparently, already provided by (indirectly) selecting MPILIB. Anyhow,
-this select can be dropped.
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-Tested with "git grep".
+On 3/8/2013 3:52 PM, Prabhakar lad wrote:
+> From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+> 
+> add a null entry in platform_device_id {}.
+> 
+> This patch fixes following error:
+> drivers/media/platform/davinci/vpbe_venc: struct platform_device_id is 24 bytes.  The last of 3 is:
+> 0x64 0x6d 0x33 0x35 0x35 0x2c 0x76 0x70 0x62 0x65 0x2d 0x76 0x65 0x6e 0x63 0x00 0x00 0x00 0x00 0x00 0x03 0x00 0x00 0x00
+> FATAL: drivers/media/platform/davinci/vpbe_venc: struct platform_device_id is not terminated with a NULL entry!
+> make[1]: *** [__modpost] Error 1
+> 
+> Reported-by: Sekhar Nori <nsekhar@ti.com>
+> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
 
- crypto/asymmetric_keys/Kconfig | 1 -
- 1 file changed, 1 deletion(-)
+This fixed the issue for me. Thanks!
 
-diff --git a/crypto/asymmetric_keys/Kconfig b/crypto/asymmetric_keys/Kconfig
-index 6d2c2ea..cce8d3c 100644
---- a/crypto/asymmetric_keys/Kconfig
-+++ b/crypto/asymmetric_keys/Kconfig
-@@ -21,7 +21,6 @@ config ASYMMETRIC_PUBLIC_KEY_SUBTYPE
- config PUBLIC_KEY_ALGO_RSA
- 	tristate "RSA public-key algorithm"
- 	depends on ASYMMETRIC_PUBLIC_KEY_SUBTYPE
--	select MPILIB_EXTRA
- 	help
- 	  This option enables support for the RSA algorithm (PKCS#1, RFC3447).
- 
--- 
-1.7.11.7
+Tested-by: Sekhar Nori <nsekhar@ti.com>
 
+~Sekhar
