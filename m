@@ -1,102 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933850Ab3CHDHy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 22:07:54 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:8706 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759571Ab3CHDGy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 22:06:54 -0500
-X-Authority-Analysis: v=2.0 cv=H5hZMpki c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=zd8wKc_Hs3wA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=5mOzXG88NXgA:10 a=k2IuSe-cshqN-ecKrO8A:9 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-Id: <20130308025958.501479677@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Thu, 07 Mar 2013 21:59:58 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        David Sharp <dhsharp@google.com>,
-        Vaibhav Nagarnaik <vnagarnaik@google.com>, hcochran@lexmark.com,
-        Hiraku Toyooka <hiraku.toyooka.gu@hitachi.com>
-Subject: [for-next][PATCH 00/17] tracing: multi-buffers with snapshots, per_cpu and some debugging tools
+	id S933861Ab3CHDIH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 22:08:07 -0500
+Received: from na3sys009aog138.obsmtp.com ([74.125.149.19]:60886 "EHLO
+	na3sys009aog138.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759999Ab3CHDIC convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Mar 2013 22:08:02 -0500
+From: Xiangliang Yu <yuxiangl@marvell.com>
+To: Bjorn Helgaas <bhelgaas@google.com>, yxlraid <yxlraid@gmail.com>
+CC: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 7 Mar 2013 19:07:50 -0800
+Subject: RE: [PATCH 2/2] PCI: fix system hang issue of Marvell SATA host
+ controller
+Thread-Topic: [PATCH 2/2] PCI: fix system hang issue of Marvell SATA host
+ controller
+Thread-Index: Ac4bUOtpyYWe9mcMR2GExBFYRAGnIQAUwSOg
+Message-ID: <F766E4F80769BD478052FB6533FA745D25F436856A@SC-VEXCH4.marvell.com>
+References: <1362666556-10036-1-git-send-email-yxlraid@gmail.com>
+ <CAErSpo7feQK7pXD=moA_hf=Y-j82oZZKwfDNzfo2Ea7i9VPxtA@mail.gmail.com>
+In-Reply-To: <CAErSpo7feQK7pXD=moA_hf=Y-j82oZZKwfDNzfo2Ea7i9VPxtA@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi, Bjorn
 
-Here's more updates for linux-next.
+> > Fix system hang issue: if first accessed resource file of BAR0 ~
+> > BAR4, system will hang after executing lspci command
+> 
+> This needs more explanation.  We've already read the BARs by the time
+> header quirks are run, so apparently it's not just the mere act of
+> accessing a BAR that causes a hang.
+> 
+> We need to know exactly what's going on here.  For example, do BARs
+> 0-4 exist?  Does the device decode accesses to the regions described
+> by the BARs?  The PCI core has to know what resources the device uses,
+> so if the device decodes accesses, we can't just throw away the
+> start/end information.
+The BARs 0-4 is exist and the PCI device is enable IO space, but user access the regions file by udevadm command with info parameter, the system will hang.
+Like this: udevadmin info --attribut-walk --path=/sys/device/pci-device/000:*.
+Because the device is just AHCI host controller, don't need the BAR0 ~ 4 region file. 
+Is my explanation ok for the patch?
 
-I rebased the series on top of my last pull request of
- tip/perf/urgent.
 
-Here I made the multi-buffers work with the snapshots, as well as
-added per-cpu directory for the snapshots.
-
-I added a snapshot_raw to allow tools to pull in the binary data
-of the snapshot so that it can be analyzed better.
-
-I removed the max_tr and added two trace buffers into the trace_array.
-This actually makes things much simpler, and I really should have
-designed ftrace to do this from day one. It makes things so much easier.
-
-I added an internal tracing tool called tracing_snapshot() and
-tracing_snapshot_alloc(). This will allow a developer to place in
-the kernel a way to say "snapshot" here, and let the tracing
-continue in case there's a better place to take a snapshot.
-
-Note, tracing_snapshot() will fail if the snapshot buffer was never
-allocated, but tracing_snapshot_alloc() needs to be called from
-a context that can sleep (or early boot up). When debugging, it's
-best to through in a tracing_snapshot_alloc() early on so that
-it will be ready to use. Hmm, I should also add a kernel command
-line parameter to allocate it on boot up. Darn, I thought I was
-done for 3.10. That will need to be next :-/
-
-Enjoy,
-
--- Steve
-
-Steven Rostedt (Red Hat) (17):
-      ring-buffer: Init waitqueue for blocked readers
-      tracing: Add comment for trace event flag IGNORE_ENABLE
-      tracing: Only clear trace buffer on module unload if event was traced
-      tracing: Clear all trace buffers when unloaded module event was used
-      tracing: Enable snapshot when any latency tracer is enabled
-      tracing: Consolidate max_tr into main trace_array structure
-      tracing: Add snapshot in the per_cpu trace directories
-      tracing: Add config option to allow snapshot to swap per cpu
-      tracing: Add snapshot_raw to extract the raw data from snapshot
-      tracing: Have trace_array keep track if snapshot buffer is allocated
-      tracing: Consolidate buffer allocation code
-      tracing: Add snapshot feature to instances
-      tracing: Add per_cpu directory into tracing instances
-      tracing: Prevent deleting instances when they are being read
-      tracing: Add internal tracing_snapshot() functions
-      ring-buffer: Do not use schedule_work_on() for current CPU
-      tracing: Move the tracing selftest code into its own function
-
-----
- include/linux/ftrace_event.h         |    8 +
- include/linux/kernel.h               |    4 +
- kernel/trace/Kconfig                 |   26 +
- kernel/trace/blktrace.c              |    4 +-
- kernel/trace/ring_buffer.c           |   35 +-
- kernel/trace/trace.c                 |  997 ++++++++++++++++++++++------------
- kernel/trace/trace.h                 |   40 +-
- kernel/trace/trace_events.c          |   20 +-
- kernel/trace/trace_functions.c       |    8 +-
- kernel/trace/trace_functions_graph.c |   12 +-
- kernel/trace/trace_irqsoff.c         |   10 +-
- kernel/trace/trace_kdb.c             |    8 +-
- kernel/trace/trace_mmiotrace.c       |   12 +-
- kernel/trace/trace_output.c          |    2 +-
- kernel/trace/trace_sched_switch.c    |    8 +-
- kernel/trace/trace_sched_wakeup.c    |   16 +-
- kernel/trace/trace_selftest.c        |   42 +-
- kernel/trace/trace_syscalls.c        |    4 +-
- 18 files changed, 824 insertions(+), 432 deletions(-)
+> 
+> > ---
+> >  drivers/pci/quirks.c |   15 +++++++++++++++
+> >  1 files changed, 15 insertions(+), 0 deletions(-)
+> >
+> > diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
+> > index 0369fb6..d49f8dc 100644
+> > --- a/drivers/pci/quirks.c
+> > +++ b/drivers/pci/quirks.c
+> > @@ -44,6 +44,21 @@ static void quirk_mmio_always_on(struct pci_dev *dev)
+> >  DECLARE_PCI_FIXUP_CLASS_EARLY(PCI_ANY_ID, PCI_ANY_ID,
+> >                                 PCI_CLASS_BRIDGE_HOST, 8,
+> quirk_mmio_always_on);
+> >
+> > +/* The BAR0 ~ BAR4 of Marvell 9125 device can't be accessed
+> > +*  by IO resource file, and need to skip the files
+> > +*/
+> > +static void quirk_marvell_mask_bar(struct pci_dev *dev)
+> > +{
+> > +       int i;
+> > +
+> > +       for (i = 0; i < 5; i++)
+> > +               if (dev->resource[i].start)
+> > +                       dev->resource[i].start =
+> > +                               dev->resource[i].end = 0;
+> > +}
+> > +DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_MARVELL_EXT, 0x9125,
+> > +                               quirk_marvell_mask_bar);
+> > +
+> >  /* The Mellanox Tavor device gives false positive parity errors
+> >   * Mark this device with a broken_parity_status, to allow
+> >   * PCI scanning code to "skip" this now blacklisted device.
+> > --
+> > 1.7.5.4
+> >
