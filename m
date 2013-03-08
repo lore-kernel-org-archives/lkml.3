@@ -1,78 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933924Ab3CHIXD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 03:23:03 -0500
-Received: from smtp4.mundo-r.com ([212.51.32.151]:62314 "EHLO
-	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932878Ab3CHIWq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 03:22:46 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Av8EAEufOVFbdWOb/2dsb2JhbABDxE2BWBZ0giwBBSdSEFFXBhOIF7sljwwHg0ADlkuJZocLgwo
-X-IPAS-Result: Av8EAEufOVFbdWOb/2dsb2JhbABDxE2BWBZ0giwBBSdSEFFXBhOIF7sljwwHg0ADlkuJZocLgwo
-X-IronPort-AV: E=Sophos;i="4.84,806,1355094000"; 
-   d="scan'208";a="9268302"
-From: Samuel Iglesias Gonsalvez <siglesias@igalia.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: industrypack-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        Jens Taprogge <jens.taprogge@taprogge.org>,
-        Samuel Iglesias Gonsalvez <siglesias@igalia.com>
-Subject: [PATCH 2/3] ipack: add ipack_get_device() ipack_put_device()
-Date: Fri,  8 Mar 2013 09:21:46 +0100
-Message-Id: <1362730907-10047-2-git-send-email-siglesias@igalia.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1362730907-10047-1-git-send-email-siglesias@igalia.com>
-References: <512DCB33.6030500@igalia.com>
- <1362730907-10047-1-git-send-email-siglesias@igalia.com>
+	id S933905Ab3CHI0W (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 03:26:22 -0500
+Received: from mout.gmx.net ([212.227.15.15]:62773 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753451Ab3CHI0W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Mar 2013 03:26:22 -0500
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1+9+m9YexG92jYx7KIDrlXEBEk5oOGju+A9z6TEoW
+	/v5uLx2QcEzZrH
+Message-ID: <1362731173.31859.81.camel@marge.simpson.net>
+Subject: Re: [PATCH] sched: wakeup buddy
+From: Mike Galbraith <efault@gmx.de>
+To: Michael Wang <wangyun@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Namhyung Kim <namhyung@kernel.org>, Alex Shi <alex.shi@intel.com>,
+        Paul Turner <pjt@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        Ram Pai <linuxram@us.ibm.com>
+Date: Fri, 08 Mar 2013 09:26:13 +0100
+In-Reply-To: <5139938A.1040504@linux.vnet.ibm.com>
+References: <5136EB06.2050905@linux.vnet.ibm.com>
+	 <1362645372.2606.11.camel@laptop>
+	 <1362649419.4652.12.camel@marge.simpson.net>
+	 <51394EE3.1020706@linux.vnet.ibm.com>
+	 <1362725051.31859.40.camel@marge.simpson.net>
+	 <5139938A.1040504@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Prepare everything for later use.
+On Fri, 2013-03-08 at 15:30 +0800, Michael Wang wrote: 
+> On 03/08/2013 02:44 PM, Mike Galbraith wrote:
 
-Signed-off-by: Samuel Iglesias Gonsalvez <siglesias@igalia.com>
----
- drivers/ipack/ipack.c |   12 ++++++++++++
- include/linux/ipack.h |    3 +++
- 2 files changed, 15 insertions(+)
+> > In general, I think things would work better if we'd just rate limit how
+> > frequently we can wakeup migrate each individual task.  
+> 
+> Isn't the wakeup buddy already limit the rate? and by turning the knob,
+> we could change the rate on our demand.
 
-diff --git a/drivers/ipack/ipack.c b/drivers/ipack/ipack.c
-index 599d4ff..bdac7f6 100644
---- a/drivers/ipack/ipack.c
-+++ b/drivers/ipack/ipack.c
-@@ -462,6 +462,18 @@ void ipack_device_unregister(struct ipack_device *dev)
- }
- EXPORT_SYMBOL_GPL(ipack_device_unregister);
- 
-+void ipack_get_device(struct ipack_device *dev)
-+{
-+	get_device(&dev->dev);
-+}
-+EXPORT_SYMBOL_GPL(ipack_get_device);
-+
-+void ipack_put_device(struct ipack_device *dev)
-+{
-+	put_device(&dev->dev);
-+}
-+EXPORT_SYMBOL_GPL(ipack_put_device);
-+
- static int __init ipack_init(void)
- {
- 	ida_init(&ipack_ida);
-diff --git a/include/linux/ipack.h b/include/linux/ipack.h
-index fea12cb..def91fd 100644
---- a/include/linux/ipack.h
-+++ b/include/linux/ipack.h
-@@ -221,6 +221,9 @@ void ipack_driver_unregister(struct ipack_driver *edrv);
- int ipack_device_register(struct ipack_device *dev);
- void ipack_device_unregister(struct ipack_device *dev);
- 
-+void ipack_get_device(struct ipack_device *dev);
-+void ipack_put_device(struct ipack_device *dev);
-+
- /**
-  * DEFINE_IPACK_DEVICE_TABLE - macro used to describe a IndustryPack table
-  * @_table: device table name
--- 
-1.7.10.4
+I was referring to the existing kernel, not as altered. 
+
+> We want
+> > jabbering tasks to share L3, but we don't really want to trash L2 at an
+> > awesome rate.
+> 
+> I don't get it..., it's a task which has 'sleep' for some time, unless
+> there is no task running on prev_cpu when it's sleeping, otherwise
+> whatever the new cpu is, we will trash L2, isn't it?
+
+I'm thinking if you wake it to it's old home after a microscopic sleep,
+it has a good chance of evicting the current resident, rescuing its L2.
+If tasks which do microscopic sleep can't move around at a high rate,
+they'll poke holes in fewer preempt victims.  If they're _really_ fast
+switchers, always wake affine.  They can't hurt much, they don't do much
+other than schedule off.
+
+-Mike
 
