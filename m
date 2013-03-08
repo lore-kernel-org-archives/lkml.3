@@ -1,84 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759784Ab3CHXZV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 18:25:21 -0500
-Received: from smtp.infotech.no ([82.134.31.41]:51925 "EHLO smtp.infotech.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754510Ab3CHXZU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 18:25:20 -0500
-Message-ID: <513A734C.80807@interlog.com>
-Date: Fri, 08 Mar 2013 18:25:00 -0500
-From: Douglas Gilbert <dgilbert@interlog.com>
-Reply-To: dgilbert@interlog.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
+	id S1759667Ab3CHX2E (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 18:28:04 -0500
+Received: from mail-vb0-f54.google.com ([209.85.212.54]:59420 "EHLO
+	mail-vb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754510Ab3CHX2D (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Mar 2013 18:28:03 -0500
 MIME-Version: 1.0
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-CC: Dan Carpenter <dan.carpenter@oracle.com>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [patch] [SCSI] scsi_transport_sas: check for allocation failure
-References: <20130308120215.GB18712@longonot.mountain>  <513A2678.5000803@interlog.com> <1362783019.2370.45.camel@dabdike.int.hansenpartnership.com>
-In-Reply-To: <1362783019.2370.45.camel@dabdike.int.hansenpartnership.com>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CA+55aFxKgZyqbn1M0sAL0CoLxmKSzAALYBTPLYVM7OpG_M_B=A@mail.gmail.com>
+References: <20130307021645.GA10173@redhat.com>
+	<20130308150408.GA25399@redhat.com>
+	<CA+55aFxAfWHdSH+45qgids1ByBxzieZnz_ujRXYGY-at1mg5eg@mail.gmail.com>
+	<20130308191804.GA9774@redhat.com>
+	<20130308192042.GA10305@redhat.com>
+	<20130308193652.GA11692@redhat.com>
+	<CA+55aFyE12rZ3DZUtTkonPjbcQiZNdAmys7w5zf7_Xry2z=-2A@mail.gmail.com>
+	<20130308210432.GA21500@redhat.com>
+	<CA+55aFyNAA3u2k_38iqRPN0EqtP=qXu1wu_vnXnAgQmp6NwGJA@mail.gmail.com>
+	<20130308230734.GA28317@redhat.com>
+	<CA+55aFxKgZyqbn1M0sAL0CoLxmKSzAALYBTPLYVM7OpG_M_B=A@mail.gmail.com>
+Date: Fri, 8 Mar 2013 15:28:01 -0800
+X-Google-Sender-Auth: 3JT-p_2HEgaeGUG8cHjJnxEgDW4
+Message-ID: <CA+55aFw=v3uBZUfzUePThL_=+qteoTqg20_ZumaDkCvX90AzkQ@mail.gmail.com>
+Subject: Re: BUG_ON(nd->inode != parent->d_inode);
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13-03-08 05:50 PM, James Bottomley wrote:
-> On Fri, 2013-03-08 at 12:57 -0500, Douglas Gilbert wrote:
->> On 13-03-08 07:02 AM, Dan Carpenter wrote:
->>> Static checkers complain that this allocation isn't checked.  We
->>> should return zero if the allocation fails.
->>>
->>> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
->>>
->>> diff --git a/drivers/scsi/scsi_transport_sas.c b/drivers/scsi/scsi_transport_sas.c
->>> index 1b68142..a022997 100644
->>> --- a/drivers/scsi/scsi_transport_sas.c
->>> +++ b/drivers/scsi/scsi_transport_sas.c
->>> @@ -379,9 +379,12 @@ sas_tlr_supported(struct scsi_device *sdev)
->>>    {
->>>    	const int vpd_len = 32;
->>>    	struct sas_end_device *rdev = sas_sdev_to_rdev(sdev);
->>> -	char *buffer = kzalloc(vpd_len, GFP_KERNEL);
->>> +	char *buffer;
->>>    	int ret = 0;
->>>
->>> +	buffer = kzalloc(vpd_len, GFP_KERNEL);
->>> +	if (!buffer)
->>> +		goto out;
->>>    	if (scsi_get_vpd_page(sdev, 0x90, buffer, vpd_len))
->>>    		goto out;
->>>
->>
->> For 32 bytes, why not use the stack?
->
-> Because the buffer is a DMA target.  You can't DMA to stack because of
-> padding and cacheline issues.
+Oh, btw, I'm assuming you're testing current git like you usually do.
 
-And I went to the definition of scsi_get_vpd_page()
-to see if that was called out in the header comments.
-Guess what ... and those same header comments talked
-about freeing a returned pointer. It needs to be
-cleaned up, IMO.
+If so, just to humor me, can you try plain 3.8 (or 3.8.2 or whatever
+the current stable kernel is). Because while the oopses may be due to
+your extensions to trinity, let's make sure. Maybe something bad
+happened in the merge window, and we're just wasting time trying to
+figure it out, when it could be just bisected...
 
-Doug Gilbert
+The pipe and symlink BUG_ON() bugs you've found are likely real and
+old, so keep the patches for those around, but let's just verify that
+the BUG_ON(nd->inode != parent->d_inode);" is old too.
 
-/**
-  * scsi_get_vpd_page - Get Vital Product Data from a SCSI device
-  * @sdev: The device to ask
-  * @page: Which Vital Product Data to return
-  * @buf: where to store the VPD
-  * @buf_len: number of bytes in the VPD buffer area
-  *
-  * SCSI devices may optionally supply Vital Product Data.  Each 'page'
-  * of VPD is defined in the appropriate SCSI document (eg SPC, SBC).
-  * If the device supports this VPD page, this routine returns a pointer
-  * to a buffer containing the data from that page.  The caller is
-  * responsible for calling kfree() on this pointer when it is no longer
-  * needed.  If we cannot retrieve the VPD page this routine returns %NULL.
-  */
-int scsi_get_vpd_page(struct scsi_device *sdev, u8 page, unsigned char *buf,
-                       int buf_len)
+I suspect it's a real and old bug, and that you'll be able to recreate
+it with the stable kernels too, but just to make sure..
 
-
+                Linus
