@@ -1,46 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754139Ab3CHHME (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 02:12:04 -0500
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:64589 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753824Ab3CHHMB (ORCPT
+	id S1753642Ab3CHHNR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 02:13:17 -0500
+Received: from mail-oa0-f54.google.com ([209.85.219.54]:44084 "EHLO
+	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753811Ab3CHHNQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 02:12:01 -0500
+	Fri, 8 Mar 2013 02:13:16 -0500
 MIME-Version: 1.0
-In-Reply-To: <513894E3.1070206@slimlogic.co.uk>
-References: <1362662276-20792-1-git-send-email-ian@slimlogic.co.uk>
-	<513894E3.1070206@slimlogic.co.uk>
-Date: Fri, 8 Mar 2013 08:12:00 +0100
-Message-ID: <CACRpkdYHhh=ANiHvgxXiAQ_4LLiBBe0AfJ-60Wy6aEi7Cv0HOg@mail.gmail.com>
-Subject: Re: [PATCH v8 0/12] Palmas Updates
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Ian Lartey <ian@slimlogic.co.uk>
-Cc: linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-leds@vger.kernel.org,
-        linux-watchdog@vger.kernel.org, swarren@wwwdotorg.org,
-        grant.likely@secretlab.ca, broonie@opensource.wolfsonmicro.com,
-        rob.herring@calxeda.com, rob@landley.net, mturquette@linaro.org,
-        cooloney@gmail.com, rpurdie@rpsys.net, sameo@linux.intel.com,
-        wim@iguana.be, lgirdwood@gmail.com, gg@slimlogic.co.uk,
-        j-keerthy@ti.com, ldewangan@nvidia.com, t-kristo@ti.com
+In-Reply-To: <20130308064227.GK14556@mtj.dyndns.org>
+References: <1362718720-27048-1-git-send-email-yinghai@kernel.org>
+	<1362718720-27048-11-git-send-email-yinghai@kernel.org>
+	<20130308064227.GK14556@mtj.dyndns.org>
+Date: Thu, 7 Mar 2013 23:13:16 -0800
+X-Google-Sender-Auth: g-kvOwh8ni7NyXltLFFeFH72zsg
+Message-ID: <CAE9FiQVaoT8ymVWakx2UTPEneGJCVjqH-KFdspmbomjH5=MtNA@mail.gmail.com>
+Subject: Re: [PATCH 10/14] x86, mm, numa: Move emulation handling down.
+From: Yinghai Lu <yinghai@kernel.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Renninger <trenn@suse.de>, Tang Chen <tangchen@cn.fujitsu.com>,
+        linux-kernel@vger.kernel.org, David Rientjes <rientjes@google.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 7, 2013 at 2:23 PM, Ian Lartey <ian@slimlogic.co.uk> wrote:
-
-> This patchset adds to the support for the Palmas iseries of PMIC chips.
+On Thu, Mar 7, 2013 at 10:42 PM, Tejun Heo <tj@kernel.org> wrote:
+> On Thu, Mar 07, 2013 at 08:58:36PM -0800, Yinghai Lu wrote:
+>> -static int __init numa_check_memblks(struct numa_meminfo *mi)
+>> +
+>> +int __init numa_check_memblks(struct numa_meminfo *mi)
+>>  {
+>> +     nodemask_t tmp_node_map;
+>>       unsigned long pfn_align;
+>>
+>>       /* Account for nodes with cpus and no memory */
+>> -     node_possible_map = numa_nodes_parsed;
+>> -     numa_nodemask_from_meminfo(&node_possible_map, mi);
+>> -     if (WARN_ON(nodes_empty(node_possible_map)))
+>> +     tmp_node_map = numa_nodes_parsed;
+>> +     numa_nodemask_from_meminfo(&tmp_node_map, mi);
+>> +     if (WARN_ON(nodes_empty(tmp_node_map)))
+>>               return -EINVAL;
+>>
+>>       if (!numa_meminfo_cover_memory(mi))
+>> @@ -562,6 +564,7 @@ static int __init numa_check_memblks(struct numa_meminfo *mi)
+>>               return -EINVAL;
+>>       }
+>>
+>> +     node_possible_map = tmp_node_map;
 >
-> Some of the patches have previously been submitted individually.
-> The DT bindings doc has been added first due to comments that it was
-> missing.
+> Hmmm.... it's kinda nasty to have a side effect like the above for a
+> function named numa_check_memblks().  Maybe we can move this to the
+> caller or name the function to make it clear that some global state is
+> being updated?
 
-Can the patches to the individual subsystems be applied individually
-(like can we apply the two GPIO patches to the GPIO tree) or are
-the deps such that the whole shebang needs to go in at once and you're
-just harvesting ACKs to take it all into MFD or similar?
+ok, will split it out for node_possibe_map updating.
 
-Yours,
-Linus Walleij
+>
+>> @@ -608,8 +611,6 @@ static int __init numa_init(int (*init_func)(void))
+>>       if (ret < 0)
+>>               return ret;
+>>
+>> -     numa_emulation(&numa_meminfo, numa_distance_cnt);
+>> -
+>>       ret = numa_check_memblks(&numa_meminfo);
+>>       if (ret < 0)
+>>               return ret;
+>> @@ -669,6 +670,8 @@ void __init x86_numa_init(void)
+>>       numa_init(dummy_numa_init);
+>>
+>>  out:
+>> +     numa_emulation(&numa_meminfo, numa_distance_cnt);
+>> +
+>>       for (i = 0; i < mi->nr_blks; i++) {
+>>               struct numa_memblk *mb = &mi->blk[i];
+>>               memblock_set_node(mb->start, mb->end - mb->start, mb->nid);
+>> diff --git a/arch/x86/mm/numa_emulation.c b/arch/x86/mm/numa_emulation.c
+>> index dbbbb47..5a0433d 100644
+>> --- a/arch/x86/mm/numa_emulation.c
+>> +++ b/arch/x86/mm/numa_emulation.c
+>> @@ -348,7 +348,7 @@ void __init numa_emulation(struct numa_meminfo *numa_meminfo, int numa_dist_cnt)
+>>       if (ret < 0)
+>>               goto no_emu;
+>>
+>> -     if (numa_cleanup_meminfo(&ei) < 0) {
+>> +     if (numa_cleanup_meminfo(&ei) < 0 || numa_check_memblks(&ei) < 0) {
+>>               pr_warning("NUMA: Warning: constructed meminfo invalid, disabling emulation\n");
+>>               goto no_emu;
+>>       }
+>
+> Given that acpi is the only mechanism which matters in any modern NUMA
+> machines, I think the re-ordering should be fine.
+
+Good.
