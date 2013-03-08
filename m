@@ -1,40 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934093Ab3CHNRa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 08:17:30 -0500
-Received: from mga11.intel.com ([192.55.52.93]:52597 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934076Ab3CHNR3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 08:17:29 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,807,1355126400"; 
-   d="scan'208";a="297716735"
-Message-ID: <1362748695.5101.1.camel@sauron.fi.intel.com>
-Subject: Re: [PATCH] mtd: maps: Remove redundant NULL check before kfree
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Syam Sidhardhan <syamsidhardh@gmail.com>
-Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
-        dwmw2@infradead.org
-Date: Fri, 08 Mar 2013 15:18:15 +0200
-In-Reply-To: <1361908016-3110-1-git-send-email-s.syam@samsung.com>
-References: <1361908016-3110-1-git-send-email-s.syam@samsung.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.3 (3.6.3-2.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S934111Ab3CHNRk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 08:17:40 -0500
+Received: from seldrel01.sonyericsson.com ([212.209.106.2]:3151 "EHLO
+	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932987Ab3CHNRi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Mar 2013 08:17:38 -0500
+From: <oskar.andero@sonymobile.com>
+Date: Fri, 8 Mar 2013 14:17:35 +0100
+To: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+CC: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "anil.s.keshavamurthy@intel.com" <anil.s.keshavamurthy@intel.com>,
+        "Lekanovic, Radovan" <Radovan.Lekanovic@sonymobile.com>,
+        "??? <bjorn.davidsson@sonymobile.com>@thinktux.in.ibm.com" 
+	<=?utf-8?B?77+9IDxiam9ybi5kYXZpZHNzb25Ac29ueW1vYmlsZS5jb20+?=@thinktux.in.ibm.com>
+Subject: Re: [PATCH] Kprobes blacklist: Conditionally add x86-specific symbols
+Message-ID: <20130308131735.GJ26148@caracas.corpusers.net>
+References: <1362653070-24035-1-git-send-email-oskar.andero@sonymobile.com>
+ <513967BD.9010602@hitachi.com>
+ <20130308060341.GB4029@in.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20130308060341.GB4029@in.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-02-27 at 01:16 +0530, Syam Sidhardhan wrote:
-> kfree on NULL pointer is a no-op.
+On 07:03 Fri 08 Mar     , Ananth N Mavinakayanahalli wrote:
+> On Fri, Mar 08, 2013 at 01:23:25PM +0900, Masami Hiramatsu wrote:
+> > (2013/03/07 19:44), oskar.andero@sonymobile.com wrote:
+> > > From: Bjorn Davidsson <bjorn.davidsson@sonymobile.com>
+> > > 
+> > > The kprobes blacklist contains x86-specific symbols.
+> > > Looking for these in kallsyms takes unnecessary time
+> > > during startup on non-X86 platform.
+> > > Added #ifdef CONFIG_X86 around them.
+> > 
+> > Right. however, it might be better break that into
+> > common and arch-specific lists, because there may be
+> > other arch-specific non-probe-able functions on each
+> > architecture...
 > 
-> Signed-off-by: Syam Sidhardhan <s.syam@samsung.com>
+> Agreed. CONFIG_<arch> in kernel/* is not the right thing to do IMO.
+> 
+> You are moving the blacklist initialization to later in the next patch,
+> so how much overhead will it then be?
 
-Pushed to l2-mtd.git, thanks!
+Well, it's not crucial for the boot time, but it is still a small
+optimization.
 
--- 
-Best Regards,
-Artem Bityutskiy
-
+-Oskar
