@@ -1,39 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933816Ab3CHHJY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 02:09:24 -0500
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:50819 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933292Ab3CHHJX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 02:09:23 -0500
+	id S933846Ab3CHHJa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 02:09:30 -0500
+Received: from rydia.net ([69.46.88.68]:54291 "EHLO mail.rydia.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933292Ab3CHHJ2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Mar 2013 02:09:28 -0500
+Date: Thu, 7 Mar 2013 23:09:26 -0800 (PST)
+From: dormando <dormando@rydia.net>
+X-X-Sender: dormando@dflat
+To: Eric Dumazet <eric.dumazet@gmail.com>
+cc: Cong Wang <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: BUG: IPv4: Attempt to release TCP socket in state 1
+In-Reply-To: <1362663990.15793.208.camel@edumazet-glaptop>
+Message-ID: <alpine.DEB.2.02.1303072307580.11964@dflat>
+References: <alpine.DEB.2.02.1303041547080.7811@localhost6.localdomain6>    <51356AC1.4090302@gmail.com>  <1362460046.15793.111.camel@edumazet-glaptop>   <alpine.DEB.2.02.1303042138330.7811@localhost6.localdomain6>  <1362494795.15793.113.camel@edumazet-glaptop>
+  <alpine.DEB.2.02.1303061631290.6723@dflat> <1362663990.15793.208.camel@edumazet-glaptop>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <021201ce1b24$3e46e810$bad4b830$%kim@samsung.com>
-References: <1362568712-13586-1-git-send-email-thomas.abraham@linaro.org>
-	<1362568712-13586-2-git-send-email-thomas.abraham@linaro.org>
-	<CACRpkdZ37FutKzwSSF7w425Nh=jPUU-FXf48HPs3oUXO9sJ0oA@mail.gmail.com>
-	<021201ce1b24$3e46e810$bad4b830$%kim@samsung.com>
-Date: Fri, 8 Mar 2013 08:09:22 +0100
-Message-ID: <CACRpkdbFZyissz1ZHjSHL29LoC-LVNNm1MoydVk9AMMD5vfGRw@mail.gmail.com>
-Subject: Re: [PATCH v2 1/3] pinctrl: exynos: add exynos5250 SoC specific data
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Kukjin Kim <kgene.kim@samsung.com>
-Cc: Thomas Abraham <thomas.abraham@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, t.figa@samsung.com,
-        patches@linaro.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 7, 2013 at 12:09 PM, Kukjin Kim <kgene.kim@samsung.com> wrote:
-> [Me]
->> So shall I merge these three patches to the pinctrl tree or not?
->>
-> Hi Linus, this series is already in Samsung tree with your ack.
+> On Wed, 2013-03-06 at 16:41 -0800, dormando wrote:
+>
+> > Ok... bridge module is loaded but nothing seems to be using it. No
+> > bond/tunnels/anything enabled. I couldn't quickly figure out what was
+> > causing it to load.
+> >
+> > We removed the need for macvlan, started machines with a fresh boot, and
+> > they still crashed without it, after a few hours.
+> >
+> > Unfortunately I just saw a machine crash in the same way on 3.6.6 and
+> > 3.6.9. I'm working on getting a completely pristine 3.6.6 and 3.6.9
+> > tested. Our patches are minor but there were a few, so I'm backing it all
+> > out just to be sure.
+> >
+> > Is there anything in particular which is most interesting? I can post lots
+> > and lots and lots of information. Sadly bridge/macvlan weren't part of the
+> > problem. .config, sysctls are easiest I guess? When this "hang" happens
+> > the machine is still up somewhat, but we lose access to it. Syslog is
+> > still writing entries to disk occasionally, so it's possible we could set
+> > something up to dump more information.
+> >
+> > It takes a day or two to cycle this, so it might take a while to get
+> > information and test crashes.
+>
+> Thanks !
+>
+> Please add a stack trace, it might help :
+>
+> diff --git a/net/ipv4/af_inet.c b/net/ipv4/af_inet.c
+> index 68f6a94..1d4d97e 100644
+> --- a/net/ipv4/af_inet.c
+> +++ b/net/ipv4/af_inet.c
+> @@ -141,8 +141,9 @@ void inet_sock_destruct(struct sock *sk)
+>  	sk_mem_reclaim(sk);
+>
+>  	if (sk->sk_type == SOCK_STREAM && sk->sk_state != TCP_CLOSE) {
+> -		pr_err("Attempt to release TCP socket in state %d %p\n",
+> -		       sk->sk_state, sk);
+> +		pr_err("Attempt to release TCP socket family %d in state %d %p\n",
+> +		       sk->sk_family, sk->sk_state, sk);
+> +		WARN_ON_ONCE(1);
+>  		return;
+>  	}
+>  	if (!sock_flag(sk, SOCK_DEAD)) {
 
-OK good, thanks!
+Ok. I have a pristine 3.6.6 up and testing now... It definitely looks like
+we've been having this crash for quite a while, but much more rarely.
+Recent changes in traffic have made it worse. I'll try your patch soon.
 
-Yours,
-Linus Walleij
+It'll take a few days to reproduce. I'll be back (ho ho ho). Please ping
+with any ideas you folks might have in the meantime :(
