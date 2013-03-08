@@ -1,75 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964792Ab3CHQT1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 11:19:27 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:28605 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759799Ab3CHQT0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 11:19:26 -0500
-Date: Fri, 8 Mar 2013 11:19:12 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Jingbai Ma <jingbai.ma@hp.com>
-Cc: mingo@redhat.com, kumagai-atsushi@mxc.nes.nec.co.jp, ebiederm@xmission.com,
-        hpa@zytor.com, yinghai@kernel.org, kexec@lists.infradead.org,
-        linux-kernel@vger.kernel.org,
-        "Mitchell, Lisa (MCLinux in Fort Collins)" <lisa.mitchell@hp.com>
-Subject: Re: [RFC PATCH 0/5] crash dump bitmap: scan memory pages in kernel
- to speedup kernel dump process
-Message-ID: <20130308161912.GD8219@redhat.com>
-References: <20130307145808.29098.41592.stgit@k.asiapacific.hpqcorp.net>
- <20130307152108.GC2790@redhat.com>
- <5139B827.3050500@hp.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5139B827.3050500@hp.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S934383Ab3CHQWF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 11:22:05 -0500
+Received: from mail.active-venture.com ([67.228.131.205]:64197 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933517Ab3CHQWD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Mar 2013 11:22:03 -0500
+X-Virus-Scan: Scanned by ClamAV 0.97.2 (no viruses);
+  Fri, 08 Mar 2013 10:22:02 -0600
+X-Originating-IP: 108.223.40.66
+From: Guenter Roeck <linux@roeck-us.net>
+To: lm-sensors@lm-sensors.org
+Cc: linux-kernel@vger.kernel.org, Jean Delvare <khali@linux-fr.org>,
+        Guenter Roeck <linux@roeck-us.net>
+Subject: [PATCH] MAINTAINERS: Add maintainer for MAX6697, INA209, and INA2XX drivers
+Date: Fri,  8 Mar 2013 08:22:02 -0800
+Message-Id: <1362759722-8252-1-git-send-email-linux@roeck-us.net>
+X-Mailer: git-send-email 1.7.9.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 08, 2013 at 06:06:31PM +0800, Jingbai Ma wrote:
+I actively maintain those drivers and have hardware available
+to test changes, so add me as explicit maintainer.
 
-[..]
-> >- First of all it is doing more stuff in first kernel. And that runs
-> >   contrary to kdump design where we want to do stuff in second kernel.
-> >   After a kernel crash, you can't trust running kernel's data structures.
-> >   So to improve reliability just do minial stuff in crashed kernel and
-> >   get out quickly.
-> 
-> I agreed with you, the first kernel should do as less as possible.
-> Intuitively, filter memory pages in the first kernel will harm the
-> reliability of kernel dump, but let's think it thoroughly:
-> 
-> 1. It only relies on the memory management data structure that
-> makedumpfile also relies on, so no any reliability degradation at
-> this point.
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+---
+ MAINTAINERS |   25 +++++++++++++++++++++++++
+ 1 file changed, 25 insertions(+)
 
-Its not same. If there is something wrong with memory management
-data structures, you can panic() again and self lock yourself and
-never even transition to the second kernel.
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 9561658..1a5aca7 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -4005,6 +4005,22 @@ M:	Stanislaw Gruszka <stf_xl@wp.pl>
+ S:	Maintained
+ F:	drivers/usb/atm/ueagle-atm.c
+ 
++INA209 HARDWARE MONITOR DRIVER
++M:	Guenter Roeck <linux@roeck-us.net>
++L:	lm-sensors@lm-sensors.org
++S:	Maintained
++F:	Documentation/hwmon/ina209
++F:	Documentation/devicetree/bindings/i2c/ina209.txt
++F:	drivers/hwmon/ina209.c
++
++INA2XX HARDWARE MONITOR DRIVER
++M:	Guenter Roeck <linux@roeck-us.net>
++L:	lm-sensors@lm-sensors.org
++S:	Maintained
++F:	Documentation/hwmon/ina2xx
++F:	drivers/hwmon/ina2xx.c
++F:	include/linux/platform_data/ina2xx.h
++
+ INDUSTRY PACK SUBSYSTEM (IPACK)
+ M:	Samuel Iglesias Gonsalvez <siglesias@igalia.com>
+ M:	Jens Taprogge <jens.taprogge@taprogge.org>
+@@ -5098,6 +5114,15 @@ S:	Maintained
+ F:	Documentation/hwmon/max6650
+ F:	drivers/hwmon/max6650.c
+ 
++MAX6697 HARDWARE MONITOR DRIVER
++M:	Guenter Roeck <linux@roeck-us.net>
++L:	lm-sensors@lm-sensors.org
++S:	Maintained
++F:	Documentation/hwmon/max6697
++F:	Documentation/devicetree/bindings/i2c/max6697.txt
++F:	drivers/hwmon/max6697.c
++F:	include/linux/platform_data/max6697.h
++
+ MAXIRADIO FM RADIO RECEIVER DRIVER
+ M:	Hans Verkuil <hverkuil@xs4all.nl>
+ L:	linux-media@vger.kernel.org
+-- 
+1.7.9.7
 
-With makedumpfile, if something is wrong, either we will save wrong
-bits or get segmentation fault. But one can still try to be careful
-or save whole dump and try to get specific pieces out.
-
-So it it is not apples to apples comparison.
-
-[..]
-> >Looks like now hpa and yinghai have done the work to be able to load
-> >kdump kernel above 4GB. I am assuming this also removes the restriction
-> >that we can only reserve 512MB or 896MB in second kernel. If that's
-> >the case, then I don't see why people can't get away with reserving
-> >64MB per TB.
-> 
-> That's true. With kernel 3.9-rc1 with kexec-tools 2.0.4, capture
-> kernel will have enough memory to run. And makedumpfile could be
-> always run at non-cyclic mode, but we still concern about the kernel
-> dump performance on systems with huge memory (above 4TB).
-
-I would think that lets first try to make mmap() on /proc/vmcore work and
-optimize makefumpfile to make use of it and then see if performance is
-acceptable or not on large machines. And then take it from there.
-
-Thanks
-Vivek
