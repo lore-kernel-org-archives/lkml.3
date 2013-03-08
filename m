@@ -1,369 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759805Ab3CHWwv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 17:52:51 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:36011 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752670Ab3CHWwp (ORCPT
+	id S933454Ab3CHWw4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 17:52:56 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:30450 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759786Ab3CHWwv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 17:52:45 -0500
+	Fri, 8 Mar 2013 17:52:51 -0500
 From: Dave Kleikamp <dave.kleikamp@oracle.com>
 To: Zach Brown <zab@zabbo.net>
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Dave Kleikamp <dave.kleikamp@oracle.com>
-Subject: [PATCH V7 -next 01/33] iov_iter: move into its own file
-Date: Fri,  8 Mar 2013 16:51:56 -0600
-Message-Id: <1362783148-22736-2-git-send-email-dave.kleikamp@oracle.com>
+        Dave Kleikamp <dave.kleikamp@oracle.com>,
+        Steven Whitehouse <swhiteho@redhat.com>, cluster-devel@redhat.com
+Subject: [PATCH V7 -next 28/33] gfs2: Convert aio_read/write ops to read/write_iter
+Date: Fri,  8 Mar 2013 16:52:23 -0600
+Message-Id: <1362783148-22736-29-git-send-email-dave.kleikamp@oracle.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1362783148-22736-1-git-send-email-dave.kleikamp@oracle.com>
 References: <1362783148-22736-1-git-send-email-dave.kleikamp@oracle.com>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zach Brown <zab@zabbo.net>
-
-This moves the iov_iter functions in to their own file.  We're going to
-be working on them in upcoming patches.  They become sufficiently large,
-and remain self-contained, to justify seperating them from the rest of
-the huge mm/filemap.c.
-
 Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
-Acked-by: Jeff Moyer <jmoyer@redhat.com>
-Cc: Zach Brown <zab@zabbo.net>
+Cc: Steven Whitehouse <swhiteho@redhat.com>
+Cc: cluster-devel@redhat.com
 ---
- fs/Makefile   |   2 +-
- fs/iov-iter.c | 151 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- mm/filemap.c  | 144 -------------------------------------------------------
- 3 files changed, 152 insertions(+), 145 deletions(-)
- create mode 100644 fs/iov-iter.c
+ fs/gfs2/file.c | 21 ++++++++++-----------
+ 1 file changed, 10 insertions(+), 11 deletions(-)
 
-diff --git a/fs/Makefile b/fs/Makefile
-index 9d53192..cecc8b9 100644
---- a/fs/Makefile
-+++ b/fs/Makefile
-@@ -11,7 +11,7 @@ obj-y :=	open.o read_write.o file_table.o super.o \
- 		attr.o bad_inode.o file.o filesystems.o namespace.o \
- 		seq_file.o xattr.o libfs.o fs-writeback.o \
- 		pnode.o drop_caches.o splice.o sync.o utimes.o \
--		stack.o fs_struct.o statfs.o
-+		stack.o fs_struct.o statfs.o iov-iter.o
- 
- ifeq ($(CONFIG_BLOCK),y)
- obj-y +=	buffer.o bio.o block_dev.o direct-io.o mpage.o ioprio.o
-diff --git a/fs/iov-iter.c b/fs/iov-iter.c
-new file mode 100644
-index 0000000..52c23d9
---- /dev/null
-+++ b/fs/iov-iter.c
-@@ -0,0 +1,151 @@
-+#include <linux/module.h>
-+#include <linux/fs.h>
-+#include <linux/uaccess.h>
-+#include <linux/uio.h>
-+#include <linux/hardirq.h>
-+#include <linux/highmem.h>
-+#include <linux/pagemap.h>
-+
-+static size_t __iovec_copy_from_user_inatomic(char *vaddr,
-+			const struct iovec *iov, size_t base, size_t bytes)
-+{
-+	size_t copied = 0, left = 0;
-+
-+	while (bytes) {
-+		char __user *buf = iov->iov_base + base;
-+		int copy = min(bytes, iov->iov_len - base);
-+
-+		base = 0;
-+		left = __copy_from_user_inatomic(vaddr, buf, copy);
-+		copied += copy;
-+		bytes -= copy;
-+		vaddr += copy;
-+		iov++;
-+
-+		if (unlikely(left))
-+			break;
-+	}
-+	return copied - left;
-+}
-+
-+/*
-+ * Copy as much as we can into the page and return the number of bytes which
-+ * were successfully copied.  If a fault is encountered then return the number
-+ * of bytes which were copied.
-+ */
-+size_t iov_iter_copy_from_user_atomic(struct page *page,
-+		struct iov_iter *i, unsigned long offset, size_t bytes)
-+{
-+	char *kaddr;
-+	size_t copied;
-+
-+	BUG_ON(!in_atomic());
-+	kaddr = kmap_atomic(page);
-+	if (likely(i->nr_segs == 1)) {
-+		int left;
-+		char __user *buf = i->iov->iov_base + i->iov_offset;
-+		left = __copy_from_user_inatomic(kaddr + offset, buf, bytes);
-+		copied = bytes - left;
-+	} else {
-+		copied = __iovec_copy_from_user_inatomic(kaddr + offset,
-+						i->iov, i->iov_offset, bytes);
-+	}
-+	kunmap_atomic(kaddr);
-+
-+	return copied;
-+}
-+EXPORT_SYMBOL(iov_iter_copy_from_user_atomic);
-+
-+/*
-+ * This has the same sideeffects and return value as
-+ * iov_iter_copy_from_user_atomic().
-+ * The difference is that it attempts to resolve faults.
-+ * Page must not be locked.
-+ */
-+size_t iov_iter_copy_from_user(struct page *page,
-+		struct iov_iter *i, unsigned long offset, size_t bytes)
-+{
-+	char *kaddr;
-+	size_t copied;
-+
-+	kaddr = kmap(page);
-+	if (likely(i->nr_segs == 1)) {
-+		int left;
-+		char __user *buf = i->iov->iov_base + i->iov_offset;
-+		left = __copy_from_user(kaddr + offset, buf, bytes);
-+		copied = bytes - left;
-+	} else {
-+		copied = __iovec_copy_from_user_inatomic(kaddr + offset,
-+						i->iov, i->iov_offset, bytes);
-+	}
-+	kunmap(page);
-+	return copied;
-+}
-+EXPORT_SYMBOL(iov_iter_copy_from_user);
-+
-+void iov_iter_advance(struct iov_iter *i, size_t bytes)
-+{
-+	BUG_ON(i->count < bytes);
-+
-+	if (likely(i->nr_segs == 1)) {
-+		i->iov_offset += bytes;
-+		i->count -= bytes;
-+	} else {
-+		const struct iovec *iov = i->iov;
-+		size_t base = i->iov_offset;
-+		unsigned long nr_segs = i->nr_segs;
-+
-+		/*
-+		 * The !iov->iov_len check ensures we skip over unlikely
-+		 * zero-length segments (without overruning the iovec).
-+		 */
-+		while (bytes || unlikely(i->count && !iov->iov_len)) {
-+			int copy;
-+
-+			copy = min(bytes, iov->iov_len - base);
-+			BUG_ON(!i->count || i->count < copy);
-+			i->count -= copy;
-+			bytes -= copy;
-+			base += copy;
-+			if (iov->iov_len == base) {
-+				iov++;
-+				nr_segs--;
-+				base = 0;
-+			}
-+		}
-+		i->iov = iov;
-+		i->iov_offset = base;
-+		i->nr_segs = nr_segs;
-+	}
-+}
-+EXPORT_SYMBOL(iov_iter_advance);
-+
-+/*
-+ * Fault in the first iovec of the given iov_iter, to a maximum length
-+ * of bytes. Returns 0 on success, or non-zero if the memory could not be
-+ * accessed (ie. because it is an invalid address).
-+ *
-+ * writev-intensive code may want this to prefault several iovecs -- that
-+ * would be possible (callers must not rely on the fact that _only_ the
-+ * first iovec will be faulted with the current implementation).
-+ */
-+int iov_iter_fault_in_readable(struct iov_iter *i, size_t bytes)
-+{
-+	char __user *buf = i->iov->iov_base + i->iov_offset;
-+	bytes = min(bytes, i->iov->iov_len - i->iov_offset);
-+	return fault_in_pages_readable(buf, bytes);
-+}
-+EXPORT_SYMBOL(iov_iter_fault_in_readable);
-+
-+/*
-+ * Return the count of just the current iov_iter segment.
-+ */
-+size_t iov_iter_single_seg_count(const struct iov_iter *i)
-+{
-+	const struct iovec *iov = i->iov;
-+	if (i->nr_segs == 1)
-+		return i->count;
-+	else
-+		return min(i->count, iov->iov_len - i->iov_offset);
-+}
-+EXPORT_SYMBOL(iov_iter_single_seg_count);
-diff --git a/mm/filemap.c b/mm/filemap.c
-index 4284b0f..0798e25 100644
---- a/mm/filemap.c
-+++ b/mm/filemap.c
-@@ -1928,150 +1928,6 @@ struct page *read_cache_page(struct address_space *mapping,
+diff --git a/fs/gfs2/file.c b/fs/gfs2/file.c
+index 1b78c78..5f15ffe 100644
+--- a/fs/gfs2/file.c
++++ b/fs/gfs2/file.c
+@@ -656,10 +656,9 @@ static int gfs2_fsync(struct file *file, loff_t start, loff_t end,
  }
- EXPORT_SYMBOL(read_cache_page);
  
--static size_t __iovec_copy_from_user_inatomic(char *vaddr,
--			const struct iovec *iov, size_t base, size_t bytes)
--{
--	size_t copied = 0, left = 0;
--
--	while (bytes) {
--		char __user *buf = iov->iov_base + base;
--		int copy = min(bytes, iov->iov_len - base);
--
--		base = 0;
--		left = __copy_from_user_inatomic(vaddr, buf, copy);
--		copied += copy;
--		bytes -= copy;
--		vaddr += copy;
--		iov++;
--
--		if (unlikely(left))
--			break;
--	}
--	return copied - left;
--}
--
--/*
-- * Copy as much as we can into the page and return the number of bytes which
-- * were successfully copied.  If a fault is encountered then return the number of
-- * bytes which were copied.
-- */
--size_t iov_iter_copy_from_user_atomic(struct page *page,
--		struct iov_iter *i, unsigned long offset, size_t bytes)
--{
--	char *kaddr;
--	size_t copied;
--
--	BUG_ON(!in_atomic());
--	kaddr = kmap_atomic(page);
--	if (likely(i->nr_segs == 1)) {
--		int left;
--		char __user *buf = i->iov->iov_base + i->iov_offset;
--		left = __copy_from_user_inatomic(kaddr + offset, buf, bytes);
--		copied = bytes - left;
--	} else {
--		copied = __iovec_copy_from_user_inatomic(kaddr + offset,
--						i->iov, i->iov_offset, bytes);
--	}
--	kunmap_atomic(kaddr);
--
--	return copied;
--}
--EXPORT_SYMBOL(iov_iter_copy_from_user_atomic);
--
--/*
-- * This has the same sideeffects and return value as
-- * iov_iter_copy_from_user_atomic().
-- * The difference is that it attempts to resolve faults.
-- * Page must not be locked.
-- */
--size_t iov_iter_copy_from_user(struct page *page,
--		struct iov_iter *i, unsigned long offset, size_t bytes)
--{
--	char *kaddr;
--	size_t copied;
--
--	kaddr = kmap(page);
--	if (likely(i->nr_segs == 1)) {
--		int left;
--		char __user *buf = i->iov->iov_base + i->iov_offset;
--		left = __copy_from_user(kaddr + offset, buf, bytes);
--		copied = bytes - left;
--	} else {
--		copied = __iovec_copy_from_user_inatomic(kaddr + offset,
--						i->iov, i->iov_offset, bytes);
--	}
--	kunmap(page);
--	return copied;
--}
--EXPORT_SYMBOL(iov_iter_copy_from_user);
--
--void iov_iter_advance(struct iov_iter *i, size_t bytes)
--{
--	BUG_ON(i->count < bytes);
--
--	if (likely(i->nr_segs == 1)) {
--		i->iov_offset += bytes;
--		i->count -= bytes;
--	} else {
--		const struct iovec *iov = i->iov;
--		size_t base = i->iov_offset;
--		unsigned long nr_segs = i->nr_segs;
--
--		/*
--		 * The !iov->iov_len check ensures we skip over unlikely
--		 * zero-length segments (without overruning the iovec).
--		 */
--		while (bytes || unlikely(i->count && !iov->iov_len)) {
--			int copy;
--
--			copy = min(bytes, iov->iov_len - base);
--			BUG_ON(!i->count || i->count < copy);
--			i->count -= copy;
--			bytes -= copy;
--			base += copy;
--			if (iov->iov_len == base) {
--				iov++;
--				nr_segs--;
--				base = 0;
--			}
--		}
--		i->iov = iov;
--		i->iov_offset = base;
--		i->nr_segs = nr_segs;
--	}
--}
--EXPORT_SYMBOL(iov_iter_advance);
--
--/*
-- * Fault in the first iovec of the given iov_iter, to a maximum length
-- * of bytes. Returns 0 on success, or non-zero if the memory could not be
-- * accessed (ie. because it is an invalid address).
-- *
-- * writev-intensive code may want this to prefault several iovecs -- that
-- * would be possible (callers must not rely on the fact that _only_ the
-- * first iovec will be faulted with the current implementation).
-- */
--int iov_iter_fault_in_readable(struct iov_iter *i, size_t bytes)
--{
--	char __user *buf = i->iov->iov_base + i->iov_offset;
--	bytes = min(bytes, i->iov->iov_len - i->iov_offset);
--	return fault_in_pages_readable(buf, bytes);
--}
--EXPORT_SYMBOL(iov_iter_fault_in_readable);
--
--/*
-- * Return the count of just the current iov_iter segment.
-- */
--size_t iov_iter_single_seg_count(const struct iov_iter *i)
--{
--	const struct iovec *iov = i->iov;
--	if (i->nr_segs == 1)
--		return i->count;
--	else
--		return min(i->count, iov->iov_len - i->iov_offset);
--}
--EXPORT_SYMBOL(iov_iter_single_seg_count);
--
- /*
-  * Performs necessary checks before doing a write
+ /**
+- * gfs2_file_aio_write - Perform a write to a file
++ * gfs2_file_write_iter - Perform a write to a file
+  * @iocb: The io context
+- * @iov: The data to write
+- * @nr_segs: Number of @iov segments
++ * @iter: The data to write
+  * @pos: The file position
   *
+  * We have to do a lock/unlock here to refresh the inode size for
+@@ -669,11 +668,11 @@ static int gfs2_fsync(struct file *file, loff_t start, loff_t end,
+  *
+  */
+ 
+-static ssize_t gfs2_file_aio_write(struct kiocb *iocb, const struct iovec *iov,
+-				   unsigned long nr_segs, loff_t pos)
++static ssize_t gfs2_file_write_iter(struct kiocb *iocb, struct iov_iter *iter,
++				    loff_t pos)
+ {
+ 	struct file *file = iocb->ki_filp;
+-	size_t writesize = iov_length(iov, nr_segs);
++	size_t writesize = iov_iter_count(iter);
+ 	struct gfs2_inode *ip = GFS2_I(file_inode(file));
+ 	int ret;
+ 
+@@ -692,7 +691,7 @@ static ssize_t gfs2_file_aio_write(struct kiocb *iocb, const struct iovec *iov,
+ 		gfs2_glock_dq_uninit(&gh);
+ 	}
+ 
+-	return generic_file_aio_write(iocb, iov, nr_segs, pos);
++	return generic_file_write_iter(iocb, iter, pos);
+ }
+ 
+ static int fallocate_chunk(struct inode *inode, loff_t offset, loff_t len,
+@@ -1021,9 +1020,9 @@ static int gfs2_flock(struct file *file, int cmd, struct file_lock *fl)
+ const struct file_operations gfs2_file_fops = {
+ 	.llseek		= gfs2_llseek,
+ 	.read		= do_sync_read,
+-	.aio_read	= generic_file_aio_read,
++	.read_iter	= generic_file_read_iter,
+ 	.write		= do_sync_write,
+-	.aio_write	= gfs2_file_aio_write,
++	.write_iter	= gfs2_file_write_iter,
+ 	.unlocked_ioctl	= gfs2_ioctl,
+ 	.mmap		= gfs2_mmap,
+ 	.open		= gfs2_open,
+@@ -1053,9 +1052,9 @@ const struct file_operations gfs2_dir_fops = {
+ const struct file_operations gfs2_file_fops_nolock = {
+ 	.llseek		= gfs2_llseek,
+ 	.read		= do_sync_read,
+-	.aio_read	= generic_file_aio_read,
++	.read_iter	= generic_file_read_iter,
+ 	.write		= do_sync_write,
+-	.aio_write	= gfs2_file_aio_write,
++	.write_iter	= gfs2_file_write_iter,
+ 	.unlocked_ioctl	= gfs2_ioctl,
+ 	.mmap		= gfs2_mmap,
+ 	.open		= gfs2_open,
 -- 
 1.8.1.5
 
