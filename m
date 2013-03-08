@@ -1,43 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753976Ab3CHKY2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 05:24:28 -0500
-Received: from smtp2.macqel.be ([194.78.208.39]:18225 "EHLO smtp2.macqel.be"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752505Ab3CHKY0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 05:24:26 -0500
-Date: Fri, 8 Mar 2013 11:24:22 +0100
-From: Philippe De Muyter <phdm@macqel.be>
-To: Michael Neuling <mikey@neuling.org>
-Cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
-Subject: Re: 3.9-rc1 powerpc ptrace.c: 'brk.len' is used uninitialized
-Message-ID: <20130308102422.GA25184@frolo.macqel>
-References: <20130306060058.GA3106@frolo.macqel> <21084.1362607788@ale.ozlabs.ibm.com> <20130306223645.GA15484@frolo.macqel> <31862.1362611670@ale.ozlabs.ibm.com> <20130307095907.GA16489@frolo.macqel> <22285.1362695571@ale.ozlabs.ibm.com> <11606.1362697414@ale.ozlabs.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <11606.1362697414@ale.ozlabs.ibm.com>
-User-Agent: Mutt/1.5.16 (2007-06-09)
+	id S1754627Ab3CHK37 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 05:29:59 -0500
+Received: from cpsmtpb-ews03.kpnxchange.com ([213.75.39.6]:61280 "EHLO
+	cpsmtpb-ews03.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752330Ab3CHK36 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Mar 2013 05:29:58 -0500
+Message-ID: <1362738596.5994.48.camel@x61.thuisdomein>
+Subject: [PATCH] ARM: OMAP: drop "select MACH_NOKIA_RM696"
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Tony Lindgren <tony@atomide.com>, Russell King <linux@arm.linux.org.uk>
+Cc: linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Fri, 08 Mar 2013 11:29:56 +0100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 08 Mar 2013 10:29:56.0991 (UTC) FILETIME=[E132A0F0:01CE1BE7]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 08, 2013 at 10:03:34AM +1100, Michael Neuling wrote:
-> Michael Neuling <mikey@neuling.org> wrote:
-> 
-> diff --git a/arch/powerpc/kernel/ptrace.c b/arch/powerpc/kernel/ptrace.c
-> index 245c1b6..8564515 100644
-> --- a/arch/powerpc/kernel/ptrace.c
-> +++ b/arch/powerpc/kernel/ptrace.c
-> @@ -1428,6 +1428,7 @@ static long ppc_set_hwdebug(struct task_struct *child,
->  
->  	brk.address = bp_info->addr & ~7UL;
->  	brk.type = HW_BRK_TYPE_TRANSLATE;
-> +	brk.len = 0;
->  	if (bp_info->trigger_type & PPC_BREAKPOINT_TRIGGER_READ)
->  		brk.type |= HW_BRK_TYPE_READ;
->  	if (bp_info->trigger_type & PPC_BREAKPOINT_TRIGGER_WRITE)
+When support was added for Nokia N9 (RM-696), with commit
+63fc5f3bb3d0ca9ab4767a801b518aa6335f87ad ("ARM: OMAP: add minimal
+support for Nokia RM-696"), a select statement for MACH_NOKIA_RM696 was
+added to the tree. But there's no Kconfig symbol with that name. That
+symbol would be superfluous, since support for that machine piggybacks
+on MACH_NOKIA_RM680. So drop that select.
 
-That's ok.  Thanks
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+0) Tested with "git grep".
 
-Philippe
+1) Some searching on the web didn't return a "config MACH_NOKIA_RM696".
+So apparently there's not even a development tree that uses this symbol.
+
+ arch/arm/mach-omap2/Kconfig | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/arch/arm/mach-omap2/Kconfig b/arch/arm/mach-omap2/Kconfig
+index 49ac3df..5cafa77 100644
+--- a/arch/arm/mach-omap2/Kconfig
++++ b/arch/arm/mach-omap2/Kconfig
+@@ -296,7 +296,6 @@ config MACH_NOKIA_RM680
+ 	bool "Nokia N950 (RM-680) / N9 (RM-696) phones"
+ 	depends on ARCH_OMAP3
+ 	default y
+-	select MACH_NOKIA_RM696
+ 	select OMAP_PACKAGE_CBB
+ 
+ config MACH_NOKIA_RX51
+-- 
+1.7.11.7
+
