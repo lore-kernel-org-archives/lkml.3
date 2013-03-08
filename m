@@ -1,36 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934532Ab3CHRrg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 12:47:36 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:58555 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933577Ab3CHRrf (ORCPT
+	id S934547Ab3CHRry (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 12:47:54 -0500
+Received: from mail-ia0-f178.google.com ([209.85.210.178]:55296 "EHLO
+	mail-ia0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933577Ab3CHRrw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 12:47:35 -0500
-Message-ID: <513A2433.2080002@wwwdotorg.org>
-Date: Fri, 08 Mar 2013 10:47:31 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Fri, 8 Mar 2013 12:47:52 -0500
+Date: Fri, 8 Mar 2013 09:48:24 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: syamsidhardh@gmail.com, linux-kernel@vger.kernel.org, jslaby@suse.cz,
+        Syam Sidhardhan <s.syam@samsung.com>
+Subject: Re: [PATCH v1] tty: ipwireless: Remove redundant NULL check before
+ kfree
+Message-ID: <20130308174824.GB13276@kroah.com>
+References: <1362601044-6228-1-git-send-email-s.syam@samsung.com>
+ <alpine.LRH.2.00.1303081425410.7777@twin.jikos.cz>
 MIME-Version: 1.0
-To: Laxman Dewangan <ldewangan@nvidia.com>
-CC: linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: DT: tegra20/tegra30: Correct clock id for UARTB
-References: <1362751245-32432-1-git-send-email-ldewangan@nvidia.com>
-In-Reply-To: <1362751245-32432-1-git-send-email-ldewangan@nvidia.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LRH.2.00.1303081425410.7777@twin.jikos.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/08/2013 07:00 AM, Laxman Dewangan wrote:
-> UARTB clock bit in CAR register is 7. Correcting this
-> in DTS file.
+On Fri, Mar 08, 2013 at 02:26:43PM +0100, Jiri Kosina wrote:
+> On Thu, 7 Mar 2013, syamsidhardh@gmail.com wrote:
+> 
+> > From: Syam Sidhardhan <s.syam@samsung.com>
+> > 
+> > kfree on NULL pointer is a no-op.
+> > 
+> > Signed-off-by: Syam Sidhardhan <s.syam@samsung.com>
+> 
+> With my ipwireless maintainer hat on:
+> 
+> 	Acked-by: Jiri Kosina <jkosina@suse.cz>
+> 
+> Greg, could you please take it through tty tree?
 
-The register bit is 7, but the clock ID in the Tegra CAR DT binding is
-96 for UART2 or 97 for VFIR. This was due to there being 1 clock bit and
-2 separate IP block reset bits, or the other way around, so we highlight
-the issue by assigning different clock IDs. See the comment before the
-list of clock IDs in the binding document.
+Ok, will do.
+
+thanks,
+
+greg k-h
