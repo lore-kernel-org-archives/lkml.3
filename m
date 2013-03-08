@@ -1,100 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760288Ab3CHE7s (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 23:59:48 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:43472 "EHLO
+	id S1751788Ab3CHFBp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 00:01:45 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:43485 "EHLO
 	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752172Ab3CHE7q (ORCPT
+	with ESMTP id S1760194Ab3CHE7r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 23:59:46 -0500
+	Thu, 7 Mar 2013 23:59:47 -0500
 From: Yinghai Lu <yinghai@kernel.org>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Thomas Renninger <trenn@suse.de>, Tang Chen <tangchen@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 00/14] x86, ACPI, numa: Parse numa info early
-Date: Thu,  7 Mar 2013 20:58:26 -0800
-Message-Id: <1362718720-27048-1-git-send-email-yinghai@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        David Airlie <airlied@linux.ie>, Jacob Shin <jacob.shin@amd.com>,
+        linux-acpi@vger.kernel.org, dri-devel@lists.freedesktop.org
+Subject: [PATCH 01/14] x86, ACPI, mm: Kill max_low_pfn_mapped
+Date: Thu,  7 Mar 2013 20:58:27 -0800
+Message-Id: <1362718720-27048-2-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.10.4
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+In-Reply-To: <1362718720-27048-1-git-send-email-yinghai@kernel.org>
+References: <1362718720-27048-1-git-send-email-yinghai@kernel.org>
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-One commit that tried to parse SRAT early get reverted before v3.9-rc1.
+Now we have arch_pfn_mapped array, and max_low_pfn_mapped should not
+be used anymore.
 
-| commit e8d1955258091e4c92d5a975ebd7fd8a98f5d30f
-| Author: Tang Chen <tangchen@cn.fujitsu.com>
-| Date:   Fri Feb 22 16:33:44 2013 -0800
-|
-|    acpi, memory-hotplug: parse SRAT before memblock is ready
+Only user is ACPI_OVERRIDE, and it should not use that, as later
+accessing is using early_remap. Change to try to 4G below and
+then 4G above.
 
-It broke several several things, like acpi override and fall back path etc.
+Other user is in drm/i915, but it is commented out.
 
-This patchset is clean implementation that will parse numa info early.
-1. keep the acpi table initrd override working by split finding with copying.
-   finding is done at head_32.S and head64.c stage, that mimics microcode updating.
-   copying is just after memblock is setup.
-2. keep fallback path working. numaq and ACPI and amd_nmua and dummy.
-   seperate initmem_init to two stages. early_initmem_init will only extract
-   numa info early into numa_meminfo.
-3. keep other old code flow untouched like relocate_initrd and initmem_init.
-4. last patch will try to put page table on local node, so that memory
-   hotplug will be happy.
+Should use arch_pfn_mapped or just 1<<(32-PAGE_SHIFT) instead.
 
-In short, early_initmem_init will parse numa info early and call
-init_mem_mapping to set page table for every nodes's mem.
-
-could be found at:
-        git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git for-x86-mm
-
-and it is based on today's Linus tree that merges x86_urgent.
-
-Tested on x86 32bit non-numa/numa, 64bit non-numa/numa configurations.
-
-Thanks
-
-Yinghai
-
-Yinghai Lu (14):
-  x86, ACPI, mm: Kill max_low_pfn_mapped
-  x86, ACPI: Split find/copy from acpi_initrd_override
-  x86, ACPI: store override acpi tables phys addr
-  x86, ACPI: make acpi override finding work with 32bit flat mode
-  x86, ACPI: Find acpi tables in initrd early at head_32.S/head64.c
-  x86, mm, numa: Move successful path handling code later
-  x86, mm, numa: call numa_meminfo_cover_memory() early
-  x86, mm, numa: use numa_meminfo to check node_map_pfn alignment
-  x86, mm, numa: set memblock nid later
-  x86, mm, numa: Move emulation handling down.
-  x86, acpi, numa: split SLIT handling out
-  x86, mm, numa: Add early_initmem_init() stub
-  x86, mm: Parse numa info early
-  x86, mm: Put pagetable on local node ram
-
- arch/x86/include/asm/acpi.h            |    3 +-
- arch/x86/include/asm/page_types.h      |    2 +-
- arch/x86/include/asm/pgtable.h         |    2 +-
- arch/x86/include/asm/setup.h           |    2 +
- arch/x86/kernel/head64.c               |    2 +
- arch/x86/kernel/head_32.S              |    4 +
- arch/x86/kernel/setup.c                |   56 +++++---
- arch/x86/mm/init.c                     |   87 ++++++------
- arch/x86/mm/init_32.c                  |   11 ++
- arch/x86/mm/init_64.c                  |   12 ++
- arch/x86/mm/numa.c                     |  236 +++++++++++++++++++++++++-------
- arch/x86/mm/numa_emulation.c           |    2 +-
- arch/x86/mm/numa_internal.h            |    2 +
- arch/x86/mm/srat.c                     |    8 +-
- drivers/acpi/numa.c                    |   22 ++-
- drivers/acpi/osl.c                     |  122 +++++++++++------
+Suggested-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Cc: Thomas Renninger <trenn@suse.de>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: David Airlie <airlied@linux.ie>
+Cc: Jacob Shin <jacob.shin@amd.com>
+Cc: linux-acpi@vger.kernel.org
+Cc: dri-devel@lists.freedesktop.org
+---
+ arch/x86/include/asm/page_types.h      |    1 -
+ arch/x86/kernel/setup.c                |    4 +---
+ arch/x86/mm/init.c                     |    4 ----
+ drivers/acpi/osl.c                     |    9 ++++++---
  drivers/gpu/drm/i915/i915_gem_stolen.c |    2 +-
- include/linux/acpi.h                   |   18 +--
- include/linux/mm.h                     |    3 -
- mm/page_alloc.c                        |   52 +------
- 20 files changed, 425 insertions(+), 223 deletions(-)
+ 5 files changed, 8 insertions(+), 12 deletions(-)
 
+diff --git a/arch/x86/include/asm/page_types.h b/arch/x86/include/asm/page_types.h
+index 54c9787..b012b82 100644
+--- a/arch/x86/include/asm/page_types.h
++++ b/arch/x86/include/asm/page_types.h
+@@ -43,7 +43,6 @@
+ 
+ extern int devmem_is_allowed(unsigned long pagenr);
+ 
+-extern unsigned long max_low_pfn_mapped;
+ extern unsigned long max_pfn_mapped;
+ 
+ static inline phys_addr_t get_max_mapped(void)
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index 90d8cc9..4dcaae7 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -113,13 +113,11 @@
+ #include <asm/prom.h>
+ 
+ /*
+- * max_low_pfn_mapped: highest direct mapped pfn under 4GB
+- * max_pfn_mapped:     highest direct mapped pfn over 4GB
++ * max_pfn_mapped:     highest direct mapped pfn
+  *
+  * The direct mapping only covers E820_RAM regions, so the ranges and gaps are
+  * represented by pfn_mapped
+  */
+-unsigned long max_low_pfn_mapped;
+ unsigned long max_pfn_mapped;
+ 
+ #ifdef CONFIG_DMI
+diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
+index 59b7fc4..abcc241 100644
+--- a/arch/x86/mm/init.c
++++ b/arch/x86/mm/init.c
+@@ -313,10 +313,6 @@ static void add_pfn_range_mapped(unsigned long start_pfn, unsigned long end_pfn)
+ 	nr_pfn_mapped = clean_sort_range(pfn_mapped, E820_X_MAX);
+ 
+ 	max_pfn_mapped = max(max_pfn_mapped, end_pfn);
+-
+-	if (start_pfn < (1UL<<(32-PAGE_SHIFT)))
+-		max_low_pfn_mapped = max(max_low_pfn_mapped,
+-					 min(end_pfn, 1UL<<(32-PAGE_SHIFT)));
+ }
+ 
+ bool pfn_range_is_mapped(unsigned long start_pfn, unsigned long end_pfn)
+diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
+index 586e7e9..c9e36d7 100644
+--- a/drivers/acpi/osl.c
++++ b/drivers/acpi/osl.c
+@@ -624,9 +624,12 @@ void __init acpi_initrd_override(void *data, size_t size)
+ 	if (table_nr == 0)
+ 		return;
+ 
+-	acpi_tables_addr =
+-		memblock_find_in_range(0, max_low_pfn_mapped << PAGE_SHIFT,
+-				       all_tables_size, PAGE_SIZE);
++	/* under 4G at first, then above 4G */
++	acpi_tables_addr = memblock_find_in_range(0, 1ULL<<32,
++					all_tables_size, PAGE_SIZE);
++	if (!acpi_tables_addr)
++		acpi_tables_addr = memblock_find_in_range(1ULL<<32, -1ULL,
++					all_tables_size, PAGE_SIZE);
+ 	if (!acpi_tables_addr) {
+ 		WARN_ON(1);
+ 		return;
+diff --git a/drivers/gpu/drm/i915/i915_gem_stolen.c b/drivers/gpu/drm/i915/i915_gem_stolen.c
+index 69d97cb..7f9380b 100644
+--- a/drivers/gpu/drm/i915/i915_gem_stolen.c
++++ b/drivers/gpu/drm/i915/i915_gem_stolen.c
+@@ -81,7 +81,7 @@ static unsigned long i915_stolen_to_physical(struct drm_device *dev)
+ 		base -= dev_priv->mm.gtt->stolen_size;
+ 	} else {
+ 		/* Stolen is immediately above Top of Memory */
+-		base = max_low_pfn_mapped << PAGE_SHIFT;
++		base = __REMOVED_CRAZY__ << PAGE_SHIFT;
+ #endif
+ 	}
+ 
 -- 
 1.7.10.4
 
