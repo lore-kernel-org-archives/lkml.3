@@ -1,69 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933201Ab3CHGgO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 01:36:14 -0500
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:33743 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750757Ab3CHGgN (ORCPT
+	id S1753261Ab3CHGiu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 01:38:50 -0500
+Received: from smtp.nue.novell.com ([195.135.221.5]:46189 "EHLO
+	smtp.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750988Ab3CHGit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 01:36:13 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAE9FiQUtDcwJkPMPfjur8LQ+u0Hc2J7sbxC=xkcemqRQ1_Gd8g@mail.gmail.com>
-References: <51397D1D.5030602@redhat.com>
-	<1750036321.11235774.1362722613994.JavaMail.root@redhat.com>
-	<CAE9FiQUtDcwJkPMPfjur8LQ+u0Hc2J7sbxC=xkcemqRQ1_Gd8g@mail.gmail.com>
-Date: Thu, 7 Mar 2013 22:36:12 -0800
-X-Google-Sender-Auth: T_3ZPuyoPZW9I9R7x3RihlvXfEQ
-Message-ID: <CAE9FiQU7ccdWCL=t=Zn1w33GHpHk56=JXTcotn-Huq9Wiqu7wg@mail.gmail.com>
-Subject: Re: 3.9-rc1: crash kernel panic - not syncing: Can not allocate
- SWIOTLB buffer earlier and can't now provide you with the DMA bounce buffer
-From: Yinghai Lu <yinghai@kernel.org>
-To: CAI Qian <caiqian@redhat.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, kexec <kexec@lists.infradead.org>,
-        Dave Young <dyoung@redhat.com>, Vivek Goyal <vgoyal@redhat.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        WANG Chao <chaowang@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 8 Mar 2013 01:38:49 -0500
+Subject: Re: [PATCH] efivarfs: fix abnormal GUID in variable name by using
+ strcpy to replace null with dash
+From: joeyli <jlee@suse.com>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Michael Schroeder <mls@suse.com>, Josh Boyer <jwboyer@redhat.com>,
+        Peter Jones <pjones@redhat.com>, Matthew Garrett <mjg59@srcf.ucam.org>,
+        Frederic Crozat <fcrozat@suse.com>
+In-Reply-To: <1362656348.15011.166.camel@mfleming-mobl1.ger.corp.intel.com>
+References: <1362108018-13117-1-git-send-email-jlee@suse.com>
+	 <1362151068.2842.440.camel@mfleming-mobl1.ger.corp.intel.com>
+	 <1362155493.2842.446.camel@mfleming-mobl1.ger.corp.intel.com>
+	 <1362181299.23932.168.camel@linux-s257.site>
+	 <1362555258.23932.573.camel@linux-s257.site>
+	 <1362568750.15011.24.camel@mfleming-mobl1.ger.corp.intel.com>
+	 <1362652440.28562.26.camel@linux-s257.site>
+	 <1362656348.15011.166.camel@mfleming-mobl1.ger.corp.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 08 Mar 2013 14:37:12 +0800
+Message-ID: <1362724632.28562.368.camel@linux-s257.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 7, 2013 at 10:32 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> On Thu, Mar 7, 2013 at 10:03 PM, CAI Qian <caiqian@redhat.com> wrote:
->> CC'ing kexec ML. Also mentioned that 3.8 has no such issue.
->>
->> This message looks suspicious and out of range while 3.8 reservation
->> looks within the range.
->>
->> [    0.000000] Reserving 128MB of memory at 5216MB for crashkernel
->> (System RAM: 3977MB)
->>
->> Wondering if anything to do with memblock again...
->
-> that is intended...
->
->> ----- Original Message -----
->>> From: "WANG Chao" <chaowang@redhat.com>
->>> To: "LKML" vger.kernel.org>
->>> Cc: "CAI Qian" <caiqian@redhat.com>
->>> Sent: Friday, March 8, 2013 1:54:37 PM
->>> Subject: 3.9-rc1: crash kernel panic - not syncing: Can not allocate SWIOTLB buffer earlier and can't now provide you
->>> with the DMA bounce buffer
->>>
->>> Hi, All
->>>
->>> On 3.9-rc1, I load crash kernel with latest kexec-tools(up to
->>> 28d413a), but
->>> 2nd kernel panic at early time:
->>> [    2.948076] Kernel panic - not syncing: Can not allocate SWIOTLB
->>> buffer earlier and can't now provide you with the DMA bounce buffer
->>> [    2.959958] Pid: 53, comm: khubd Not tainted 3.9.0-rc1+ #1
->
-> You need to add crashkernel_low=64M in first kernel.
->
-> As your system does not support DMA remapping.
+於 四，2013-03-07 於 11:39 +0000，Matt Fleming 提到：
+> > This patch works on a normal UEFI machine, we will test it on HP
+> z220. I
+> > will send out it formally after test success.
+> 
+> Has anyone tried contacting HP to tell them their firmware is doing
+> bizarre things?
 
-looks like your system DO have DMAR table, please enable dmar
-remapping in your kernel config.
+We will try to contact with HP workstation department.
+Another good chance is in UEFI Plugfest Taipei at next next week, I will
+discuss with HP engineer for this issue.
 
-Yinghai
+
+Thanks a lot!
+Joey Lee
+
+
+
