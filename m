@@ -1,67 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756372Ab3CHUOS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 15:14:18 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:40668 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754216Ab3CHUOO (ORCPT
+	id S1754985Ab3CHUQF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 15:16:05 -0500
+Received: from mail-ia0-f169.google.com ([209.85.210.169]:48534 "EHLO
+	mail-ia0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752469Ab3CHUQD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 15:14:14 -0500
-Date: Fri, 8 Mar 2013 15:13:31 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
-        Joerg Roedel <joro@8bytes.org>
-Subject: Re: [PATCH v2 10/26] x86, irq: Convert irq_2_pin list to generic list
-Message-ID: <20130308201331.GA21755@phenom.dumpdata.com>
-References: <1360351703-20571-1-git-send-email-yinghai@kernel.org>
- <1360351703-20571-11-git-send-email-yinghai@kernel.org>
- <20130308195055.GD6622@phenom.dumpdata.com>
- <CAE9FiQXZAdndUMEH-yBOvvx2jSMC3tQqs73LmdaY_ni+W=nFHw@mail.gmail.com>
+	Fri, 8 Mar 2013 15:16:03 -0500
+Date: Fri, 8 Mar 2013 12:16:39 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        oskar.andero@sonymobile.com, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org, Felipe Balbi <balbi@ti.com>,
+        Truls Bengtsson <truls.bengtsson@sonymobile.com>,
+        Radovan Lekanovic <radovan.lekanovic@sonymobile.com>
+Subject: Re: [RFC PATCH 1/1] usb: f_rndis: Avoid to use ERROR macro if cdev
+ can be null
+Message-ID: <20130308201639.GB14787@kroah.com>
+References: <1362747220-2204-1-git-send-email-oskar.andero@sonymobile.com>
+ <1362747220-2204-2-git-send-email-oskar.andero@sonymobile.com>
+ <513A426A.9060903@cogentembedded.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAE9FiQXZAdndUMEH-yBOvvx2jSMC3tQqs73LmdaY_ni+W=nFHw@mail.gmail.com>
+In-Reply-To: <513A426A.9060903@cogentembedded.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 08, 2013 at 12:00:43PM -0800, Yinghai Lu wrote:
-> On Fri, Mar 8, 2013 at 11:50 AM, Konrad Rzeszutek Wilk
-> <konrad.wilk@oracle.com> wrote:
-> > On Fri, Feb 08, 2013 at 11:28:07AM -0800, Yinghai Lu wrote:
-> >> Now irq_2_pin list is own grown list.
-> >
-> > I think you meant to say 'has its own list'. Not sure how
-> > its growing?
-> >
-> >> We can use generic list to replace it so we could generic helper
-> >> functions to operate it.
-> >
-> > You need to put the verb a bit earlier. Perhaps:
-> >
-> > ".. generic list to replace so that we can operate using
-> > generic helper functions."
+On Fri, Mar 08, 2013 at 11:56:26PM +0400, Sergei Shtylyov wrote:
+> Hello.
 > 
-> missed use before generic helper.
-
-That would work as well.
-
+> On 08-03-2013 16:53, oskar.andero@sonymobile.com wrote:
 > 
-> >
-> >>
-> >> Also make free_irq_cfg() free irq_2_pin list to support coming ioapic
-> >> hotplug.
-> >
-> > If you have them ready - could you say the titles of the patches here?
+> >From: Truls Bengtsson <truls.bengtsson@sonymobile.com>
 > 
-> list them all ?
+> >The udc_irq service runs the isr_tr_complete_handler which in turn
+> >"nukes" the endpoints, including a call to rndis_response_complete,
+> >if appropriate. If the rndis_msg_parser fails here, an error will
+> >be printed using a dev_err call (through the ERROR() macro).
+> 
+> >However, if the usb cable was just disconnected the device (cdev)
+> >might not be available and will be null. Since the dev_err macro will
+> >dereference the cdev pointer we get a null pointer exception.
+> 
+> >Reviewed-by: Radovan Lekanovic <radovan.lekanovic@sonymobile.com>
+> >Signed-off-by: Truls Bengtsson <truls.bengtsson@sonymobile.com>
+> >Signed-off-by: Oskar Andero <oskar.andero@sonymobile.com>
+> >---
+> >  drivers/usb/gadget/f_rndis.c |    4 ++--
+> >  1 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> >diff --git a/drivers/usb/gadget/f_rndis.c b/drivers/usb/gadget/f_rndis.c
+> >index 71beeb8..41b5ebd 100644
+> >--- a/drivers/usb/gadget/f_rndis.c
+> >+++ b/drivers/usb/gadget/f_rndis.c
+> >@@ -6,6 +6,7 @@
+> >   * Copyright (C) 2008 Nokia Corporation
+> >   * Copyright (C) 2009 Samsung Electronics
+> >   *                    Author: Michal Nazarewicz (mina86@mina86.com)
+> >+ * Copyright (C) 2013 Sony Mobile Communications AB.
+> 
+>    Your change seems too insignificant to add a copyright.
 
-No that would not work. Perhaps the first one that introduces the code
-that uses irq_2_pin ?
+You are right, it legally is.  Truls, please consult your company's
+lawyers if you have questions about this, you can not assert copyright
+over a file for a 2 line change, that's not allowed at all in any
+jurisdiction I know of.
+
+Because of that, I can not accept this change, sorry.
+
+greg k-h
