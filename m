@@ -1,94 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934061Ab3CHMyx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 07:54:53 -0500
-Received: from mail-la0-f46.google.com ([209.85.215.46]:48130 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932120Ab3CHMyF (ORCPT
+	id S1757469Ab3CHNAC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 08:00:02 -0500
+Received: from mail-ee0-f51.google.com ([74.125.83.51]:49917 "EHLO
+	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757108Ab3CHNAA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 07:54:05 -0500
-From: Johan Hovold <jhovold@gmail.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        rtc-linux@googlegroups.com, Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH 0/3] ARM: at91: fix hanged boot
-Date: Fri,  8 Mar 2013 13:51:40 +0100
-Message-Id: <1362747103-21445-1-git-send-email-jhovold@gmail.com>
-X-Mailer: git-send-email 1.8.1.1
+	Fri, 8 Mar 2013 08:00:00 -0500
+From: Valentin Ilie <valentin.ilie@gmail.com>
+To: linux@arm.linux.org.uk
+Cc: linux-kernel@vger.kernel.org, Valentin Ilie <valentin.ilie@gmail.com>
+Subject: [PATCH] amba: bus: Fix checkpatch warnings
+Date: Fri,  8 Mar 2013 14:59:46 +0200
+Message-Id: <1362747586-27384-1-git-send-email-valentin.ilie@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These patches fix a few severe issues affecting most AT91 SOCs where
-boot can hang after a non-general reset, and where the only way to get
-the system booting again is to do a general reset -- something which
-could require physically removing any backup battery.
+Fixed the following checkpatch warnings:
+- ERROR: space required after that ','.
+- WARNING: EXPORT_SYMBOL(foo); should immediately follow its function/variable
 
-The problems stem from the fact that the RTC and RTT-peripherals are
-powered by backup power (VDDBU) and are not reset on wake-up, user,
-watchdog or software reset. Consequently, RTC and RTT-alarms and their
-interrupts may be enabled at boot, leading to a system lock-up when an
-interrupt arrives on the shared system-interrupt line before the
-appropriate handler (e.g. RTC-driver) has been installed.
+Signed-off-by: Valentin Ilie <valentin.ilie@gmail.com>
+---
+ drivers/amba/bus.c |   21 +++++++++------------
+ 1 file changed, 9 insertions(+), 12 deletions(-)
 
-The easiest way to trigger this is to simply wake up from an RTC-alarm
-on at91sam9g45. The RTC-driver currently does not disable interrupts at
-shutdown so even after a clean shut-down the system will always hang
-after waking up.
-
-The first patch fixes this very general case of RTC-wake up after a
-clean shutdown in the RTC-driver and is marked for stable as it is
-perfectly straight-forward. [ Note that the other, RTT-based, AT91
-RTC-driver already disables its interrupts at shutdown. ]
-
-The more general problem can be triggered, for example, by doing a
-user-reset while updating the RTC-time or if an RTC or RTT-alarm goes
-off after a non-clean shutdown.
-
-To fix this I propose that arch-code should mask the relevant interrupts
-at early boot, and this is what the third patch does. To access the
-RTC-registers I choose to revert a recent patch that moved the register
-definitions to drivers/rtc.
-
-Arguably, the interrupts could also be disabled in bootloaders, but I
-strongly suggest fixing it in the kernel once and for all. By adding a
-new, mandatory AT91 SOC-initialiser (rather extending init) it will not
-be overlooked when adding new SOCs either.
-
-The patches have been tested on at91sam9263 and at91sam9g45, and
-compile-tested for the other SOCs.
-
-Johan
-
-
-Johan Hovold (3):
-  ARM: at91/rtc: fix boot after RTC wake-up
-  Revert "arm: at91: move at91rm9200 rtc header in drivers/rtc"
-  ARM: at91: fix hanged boot
-
- arch/arm/mach-at91/at91rm9200.c               |  9 ++++
- arch/arm/mach-at91/at91sam9260.c              |  6 +++
- arch/arm/mach-at91/at91sam9261.c              |  6 +++
- arch/arm/mach-at91/at91sam9263.c              |  7 +++
- arch/arm/mach-at91/at91sam9g45.c              |  7 +++
- arch/arm/mach-at91/at91sam9n12.c              |  6 +++
- arch/arm/mach-at91/at91sam9rl.c               |  7 +++
- arch/arm/mach-at91/at91sam9x5.c               |  6 +++
- arch/arm/mach-at91/generic.h                  |  2 +
- arch/arm/mach-at91/include/mach/at91_rtc.h    | 75 +++++++++++++++++++++++++++
- arch/arm/mach-at91/include/mach/at91sam9n12.h |  5 ++
- arch/arm/mach-at91/include/mach/at91sam9x5.h  |  5 ++
- arch/arm/mach-at91/setup.c                    | 31 +++++++++++
- arch/arm/mach-at91/soc.h                      |  1 +
- drivers/rtc/rtc-at91rm9200.c                  | 11 +++-
- drivers/rtc/rtc-at91rm9200.h                  | 75 ---------------------------
- 16 files changed, 183 insertions(+), 76 deletions(-)
- create mode 100644 arch/arm/mach-at91/include/mach/at91_rtc.h
- delete mode 100644 drivers/rtc/rtc-at91rm9200.h
-
+diff --git a/drivers/amba/bus.c b/drivers/amba/bus.c
+index cdbad3a..d214ba7 100644
+--- a/drivers/amba/bus.c
++++ b/drivers/amba/bus.c
+@@ -58,7 +58,7 @@ static int amba_uevent(struct device *dev, struct kobj_uevent_env *env)
+ 	return retval;
+ }
+ 
+-#define amba_attr_func(name,fmt,arg...)					\
++#define amba_attr_func(name, fmt, arg...)				\
+ static ssize_t name##_show(struct device *_dev,				\
+ 			   struct device_attribute *attr, char *buf)	\
+ {									\
+@@ -66,8 +66,8 @@ static ssize_t name##_show(struct device *_dev,				\
+ 	return sprintf(buf, fmt, arg);					\
+ }
+ 
+-#define amba_attr(name,fmt,arg...)	\
+-amba_attr_func(name,fmt,arg)		\
++#define amba_attr(name, fmt, arg...)	\
++amba_attr_func(name, fmt, arg)		\
+ static DEVICE_ATTR(name, S_IRUGO, name##_show, NULL)
+ 
+ amba_attr_func(id, "%08x\n", dev->periphid);
+@@ -428,6 +428,7 @@ int amba_driver_register(struct amba_driver *drv)
+ 
+ 	return driver_register(&drv->drv);
+ }
++EXPORT_SYMBOL(amba_driver_register);
+ 
+ /**
+  *	amba_driver_unregister - remove an AMBA device driver
+@@ -441,7 +442,7 @@ void amba_driver_unregister(struct amba_driver *drv)
+ {
+ 	driver_unregister(&drv->drv);
+ }
+-
++EXPORT_SYMBOL(amba_driver_unregister);
+ 
+ static void amba_device_release(struct device *dev)
+ {
+@@ -668,6 +669,7 @@ int amba_device_register(struct amba_device *dev, struct resource *parent)
+ 
+ 	return amba_device_add(dev, parent);
+ }
++EXPORT_SYMBOL(amba_device_register);
+ 
+ /**
+  *	amba_device_put - put an AMBA device
+@@ -694,7 +696,7 @@ void amba_device_unregister(struct amba_device *dev)
+ {
+ 	device_unregister(&dev->dev);
+ }
+-
++EXPORT_SYMBOL(amba_device_unregister);
+ 
+ struct find_data {
+ 	struct amba_device *dev;
+@@ -754,6 +756,7 @@ amba_find_device(const char *busid, struct device *parent, unsigned int id,
+ 
+ 	return data.dev;
+ }
++EXPORT_SYMBOL(amba_find_device);
+ 
+ /**
+  *	amba_request_regions - request all mem regions associated with device
+@@ -775,6 +778,7 @@ int amba_request_regions(struct amba_device *dev, const char *name)
+ 
+ 	return ret;
+ }
++EXPORT_SYMBOL(amba_request_regions);
+ 
+ /**
+  *	amba_release_regions - release mem regions associated with device
+@@ -789,11 +793,4 @@ void amba_release_regions(struct amba_device *dev)
+ 	size = resource_size(&dev->res);
+ 	release_mem_region(dev->res.start, size);
+ }
+-
+-EXPORT_SYMBOL(amba_driver_register);
+-EXPORT_SYMBOL(amba_driver_unregister);
+-EXPORT_SYMBOL(amba_device_register);
+-EXPORT_SYMBOL(amba_device_unregister);
+-EXPORT_SYMBOL(amba_find_device);
+-EXPORT_SYMBOL(amba_request_regions);
+ EXPORT_SYMBOL(amba_release_regions);
 -- 
-1.8.1.1
+1.7.10.4
 
