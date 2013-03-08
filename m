@@ -1,57 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934316Ab3CHQEA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 11:04:00 -0500
-Received: from www.linutronix.de ([62.245.132.108]:55175 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759692Ab3CHQD6 (ORCPT
+	id S1759829Ab3CHQME (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 11:12:04 -0500
+Received: from filtteri2.pp.htv.fi ([213.243.153.185]:34370 "EHLO
+	filtteri2.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759692Ab3CHQMC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 11:03:58 -0500
-Date: Fri, 8 Mar 2013 17:03:49 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-cc: john.stultz@linaro.org, linus.walleij@stericsson.com,
-        viresh.kumar@linaro.org, jacob.jun.pan@linux.intel.com,
-        linux-arm-kernel@lists.infradead.org, santosh.shilimkar@ti.com,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linaro-kernel@lists.linaro.org, patches@linaro.org,
-        rickard.andersson@stericsson.com, vincent.guittot@linaro.org
-Subject: Re: [PATCH 3/4][V2] ARM: nomadik: add dynamic irq flag to the
- timer
-In-Reply-To: <513A0109.9060801@linaro.org>
-Message-ID: <alpine.LFD.2.02.1303081703160.22263@ionos>
-References: <1362219013-18173-1-git-send-email-daniel.lezcano@linaro.org> <513A0109.9060801@linaro.org>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Fri, 8 Mar 2013 11:12:02 -0500
+Date: Fri, 8 Mar 2013 18:11:59 +0200
+From: Aaro Koskinen <aaro.koskinen@iki.fi>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Tony Lindgren <tony@atomide.com>, Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: OMAP: drop "select MACH_NOKIA_RM696"
+Message-ID: <20130308161159.GE14552@blackmetal.musicnaut.iki.fi>
+References: <1362738596.5994.48.camel@x61.thuisdomein>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1362738596.5994.48.camel@x61.thuisdomein>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 8 Mar 2013, Daniel Lezcano wrote:
+On Fri, Mar 08, 2013 at 11:29:56AM +0100, Paul Bolle wrote:
+> When support was added for Nokia N9 (RM-696), with commit
+> 63fc5f3bb3d0ca9ab4767a801b518aa6335f87ad ("ARM: OMAP: add minimal
+> support for Nokia RM-696"), a select statement for MACH_NOKIA_RM696 was
+> added to the tree. But there's no Kconfig symbol with that name. That
+> symbol would be superfluous, since support for that machine piggybacks
+> on MACH_NOKIA_RM680. So drop that select.
 
-> > Add the dynamic irq affinity feature to the timer clock device.
-> > 
-> > Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
-> > Reviewed-by: Vincent Guittot <vincent.guittot@linaro.org>
-> > Acked-by: Rickard Andersson <rickard.andersson@stericsson.com>
-> > ---
-> 
-> Hi Linus,
-> 
-> AFAIU, you are ok with this patch, Rickard acked it and Vincent reviewed it.
-> 
-> Thomas agreed to merge it into its tree as I requested because we will
-> need to wait for your tree to gain visibility to this new flag before
-> submitting this patch, which can take awhile.
-> 
-> Could you please ack it if it is ok for you ?
+This is needed because of arch/arm/tools/mach-types. See
+include/generated/mach-types.h.
 
-I can provide a for-arm tree to pull as well. Either way fine with me.
+If you have just CONFIG_MACH_NOKIA_RM680 and run the kernel on RM-696,
+then machine_is_nokia_rm696() will return false. If I rememeber correctly,
+this broke at least early printk / uncompressor output at the time.
 
-Thanks,
+I guess people may still want to use machine_is_... macros e.g. for
+debugging.
 
-	tglx
+> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+> ---
+> 0) Tested with "git grep".
+
+git grep won't search generated source files.
+
+> 1) Some searching on the web didn't return a "config MACH_NOKIA_RM696".
+> So apparently there's not even a development tree that uses this symbol.
+
+You can see machine_is_nokia_rm696() used in the public kernel source
+for Nokia N9 product. :-)
+
+A.
