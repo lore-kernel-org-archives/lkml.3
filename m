@@ -1,120 +1,272 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760379Ab3CHEhW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 23:37:22 -0500
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:45384 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759647Ab3CHEhU (ORCPT
+	id S1760409Ab3CHEh1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 23:37:27 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:60550 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759647Ab3CHEhX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 23:37:20 -0500
+	Thu, 7 Mar 2013 23:37:23 -0500
 From: Michel Lespinasse <walken@google.com>
 To: Oleg Nesterov <oleg@redhat.com>, David Howells <dhowells@redhat.com>,
         Thomas Gleixner <tglx@linutronix.de>
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
         linux-kernel@vger.kernel.org
-Subject: [RFC PATCH 0/5] tasklist_lock fairness issues
-Date: Thu,  7 Mar 2013 20:37:12 -0800
-Message-Id: <1362717437-1729-1-git-send-email-walken@google.com>
+Subject: [RFC PATCH 2/5] kernel: use tasklist_read_lock_any() when locking tasklist in irq context
+Date: Thu,  7 Mar 2013 20:37:14 -0800
+Message-Id: <1362717437-1729-3-git-send-email-walken@google.com>
 X-Mailer: git-send-email 1.8.1.3
+In-Reply-To: <1362717437-1729-1-git-send-email-walken@google.com>
+References: <1362717437-1729-1-git-send-email-walken@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'd like to gather comments on these patches, which apply over v3.9-rc1.
+The following locations may acquire tasklist_lock in either process or
+irq/softirq contexts:
 
-I have been looking at rwlock_t fairness issues, and in particular at
-tasklist_lock as this is the one rwlock_t user that seems to be making
-it difficult to switch rwlock_t to a fair lock. This is because the
-tasklist_lock read side is taken both in process and irq contexts,
-and we don't want to have to disable irqs when tasklist_lock is taken
-in process context, so we need a rwlock_t that supports a recursive
-read side.
+- send_sigio(): may be called in any context from kill_fasync()
+  (examples: process context from pipe_read(), softirq context from
+   n_tty_receive_buf(), hardirq context from rtc_interrupt())
 
-Patches 1-3 convert the existing tasklist_lock users to use helper
-functions.  For the tasklist_lock read side, we have different helpers
-for call sites that are known to run only in process context, vs call
-sites that may run in any context.
+- send_sigurg(): may be called from process or softirq context
+  (network receive is typically processed in softirq, but packets can be
+   queued up while sockets are being locked and the backlog processed from
+   process context as the socket gets unlocked)
 
-- Patch 1 introduces the tasklist_lock helper functions;
+- kill_pgrp(): called in process context from job_control(), pty_resize()
+  or in softirq context through n_tty_receive_buf()
+  or even in hardirq context from arch/um/drivers/line.c winch_interrupt()
 
-- Patch 2 identifies all tasklist_lock call sites that may run in
-  (soft or hard) irq context and converts them to use the
-  tasklist_read_[un]lock_any helper functions;
+- posix_cpu_timer_schedule(): called through cpu_timer_fire(),
+  in process context (from posix_cpu_timer_set()) or
+  in hardirq context (from run_posix_cpu_timers())
 
-- Patch 3 converts the remaining call sites (known to run only in
-  process context) to use the tasklist_{read,write}_[un]lock helpers.
+- sysrq debugging features: handle_sysrq() runs in multiple contexts and
+  calls into send_sig_all(), debug_show_all_locks(), normalize_rt_tasks(),
+  print_rq().
 
-Together, these 3 patches provide some kind of documentation about which
-tasklist users may run in irq contexts, and are thus currently making it
-difficult to do a straight conversion of rwlock_t to a fair rw spinlock.
+- arch/blackfin/kernel/trace.c decode_address(): another debugging feature,
+  may be called from any contexts.
 
-Patch 4 introduces a generic implementation of a fair (ticket based)
-rw spinlock. I did not try optimizing it; it would be possible to do
-better using arch specific code. Seems too early for it though :)
+Annotate such locations with tasklist_read_{lock,unlock}_any().
 
-Patch 5 makes tasklist_lock fair when acquired from process context.
-This is done using a double locking scheme; there is a fair rwlock
-that is used when tasklist_lock is acquired from process context and
-an unfair rwlock_t that is used when tasklist_lock read side is acquired
-from irq context. When tasklist_lock is acquired for write both locks
-are taken. Clearly, such double locking is suboptimal; one would hope
-that the irq context read side users could be eliminated over time.
-Converting the process context users to a fair rwlock also has the
-additional benefit that it lets lockdep verify that we are not trying
-to do recursive acquires of the tasklist_lock read side in process context.
-(I haven't been able to break this check so far).
+Signed-off-by: Michel Lespinasse <walken@google.com>
 
-Does this look like a reasonable approach to get traction on the
-tasklist_lock issues ?
+---
+ arch/blackfin/kernel/trace.c | 4 ++--
+ drivers/tty/sysrq.c          | 4 ++--
+ fs/fcntl.c                   | 8 ++++----
+ kernel/lockdep.c             | 6 +++---
+ kernel/posix-cpu-timers.c    | 6 +++---
+ kernel/sched/core.c          | 5 ++---
+ kernel/sched/debug.c         | 5 ++---
+ kernel/signal.c              | 4 ++--
+ 8 files changed, 20 insertions(+), 22 deletions(-)
 
-Michel Lespinasse (5):
-  kernel: add tasklist_{read,write}_lock{,_any} helper functions
-  kernel: use tasklist_read_lock_any() when locking tasklist in irq context
-  kernel: use tasklist_{read,write}_lock() to lock tasklist in process context
-  kernel: add ticket based fair rwlock
-  kernel: make tasklist_lock fair for process context call sites
-
- arch/blackfin/kernel/trace.c     |  4 +--
- arch/frv/mm/mmu-context.c        |  4 +--
- arch/ia64/kernel/mca.c           | 13 ++++----
- arch/ia64/kernel/perfmon.c       |  8 ++---
- arch/ia64/kernel/ptrace.c        |  8 ++---
- arch/metag/kernel/smp.c          |  4 +--
- arch/mips/kernel/mips-mt-fpaff.c |  4 +--
- arch/sh/mm/asids-debugfs.c       |  4 +--
- arch/um/kernel/reboot.c          |  4 +--
- drivers/tty/sysrq.c              |  4 +--
- drivers/tty/tty_io.c             | 20 +++++------
- fs/exec.c                        | 14 ++++----
- fs/fcntl.c                       |  8 ++---
- fs/fs_struct.c                   |  4 +--
- fs/proc/array.c                  |  4 +--
- fs/proc/base.c                   |  4 +--
- include/linux/fair_rwlock.h      | 72 ++++++++++++++++++++++++++++++++++++++++
- include/linux/lockdep.h          | 15 +++++++++
- include/linux/sched.h            | 46 ++++++++++++++++++++++++-
- kernel/cgroup.c                  |  4 +--
- kernel/cpu.c                     |  4 +--
- kernel/exit.c                    | 42 +++++++++++------------
- kernel/fork.c                    | 14 +++++---
- kernel/lockdep.c                 |  6 ++--
- kernel/pid_namespace.c           |  8 ++---
- kernel/posix-cpu-timers.c        | 32 +++++++++---------
- kernel/power/process.c           | 16 ++++-----
- kernel/ptrace.c                  | 20 +++++------
- kernel/sched/core.c              | 13 ++++----
- kernel/sched/debug.c             |  5 ++-
- kernel/signal.c                  | 26 +++++++--------
- kernel/sys.c                     | 22 ++++++------
- kernel/trace/ftrace.c            |  5 ++-
- kernel/tracepoint.c              | 10 +++---
- mm/kmemleak.c                    |  4 +--
- mm/memory-failure.c              |  8 ++---
- mm/oom_kill.c                    |  4 +--
- security/keys/keyctl.c           |  4 +--
- security/selinux/hooks.c         |  4 +--
- 39 files changed, 312 insertions(+), 183 deletions(-)
- create mode 100644 include/linux/fair_rwlock.h
-
+diff --git a/arch/blackfin/kernel/trace.c b/arch/blackfin/kernel/trace.c
+index f7f7a18abca9..40a748e7019c 100644
+--- a/arch/blackfin/kernel/trace.c
++++ b/arch/blackfin/kernel/trace.c
+@@ -113,7 +113,7 @@ void decode_address(char *buf, unsigned long address)
+ 	 * mappings of all our processes and see if we can't be a whee
+ 	 * bit more specific
+ 	 */
+-	read_lock(&tasklist_lock);
++	tasklist_read_lock_any();
+ 	for_each_process(p) {
+ 		struct task_struct *t;
+ 
+@@ -186,7 +186,7 @@ __continue:
+ 	sprintf(buf, "/* kernel dynamic memory */");
+ 
+ done:
+-	read_unlock(&tasklist_lock);
++	tasklist_read_unlock_any();
+ }
+ 
+ #define EXPAND_LEN ((1 << CONFIG_DEBUG_BFIN_HWTRACE_EXPAND_LEN) * 256 - 1)
+diff --git a/drivers/tty/sysrq.c b/drivers/tty/sysrq.c
+index 3687f0cad642..36b84f89bccb 100644
+--- a/drivers/tty/sysrq.c
++++ b/drivers/tty/sysrq.c
+@@ -322,7 +322,7 @@ static void send_sig_all(int sig)
+ {
+ 	struct task_struct *p;
+ 
+-	read_lock(&tasklist_lock);
++	tasklist_read_lock_any();
+ 	for_each_process(p) {
+ 		if (p->flags & PF_KTHREAD)
+ 			continue;
+@@ -331,7 +331,7 @@ static void send_sig_all(int sig)
+ 
+ 		do_send_sig_info(sig, SEND_SIG_FORCED, p, true);
+ 	}
+-	read_unlock(&tasklist_lock);
++	tasklist_read_unlock_any();
+ }
+ 
+ static void sysrq_handle_term(int key)
+diff --git a/fs/fcntl.c b/fs/fcntl.c
+index 6599222536eb..b254a86d7330 100644
+--- a/fs/fcntl.c
++++ b/fs/fcntl.c
+@@ -496,11 +496,11 @@ void send_sigio(struct fown_struct *fown, int fd, int band)
+ 	if (!pid)
+ 		goto out_unlock_fown;
+ 	
+-	read_lock(&tasklist_lock);
++	tasklist_read_lock_any();
+ 	do_each_pid_task(pid, type, p) {
+ 		send_sigio_to_task(p, fown, fd, band, group);
+ 	} while_each_pid_task(pid, type, p);
+-	read_unlock(&tasklist_lock);
++	tasklist_read_unlock_any();
+  out_unlock_fown:
+ 	read_unlock(&fown->lock);
+ }
+@@ -534,11 +534,11 @@ int send_sigurg(struct fown_struct *fown)
+ 
+ 	ret = 1;
+ 	
+-	read_lock(&tasklist_lock);
++	tasklist_read_lock_any();
+ 	do_each_pid_task(pid, type, p) {
+ 		send_sigurg_to_task(p, fown, group);
+ 	} while_each_pid_task(pid, type, p);
+-	read_unlock(&tasklist_lock);
++	tasklist_read_unlock_any();
+  out_unlock_fown:
+ 	read_unlock(&fown->lock);
+ 	return ret;
+diff --git a/kernel/lockdep.c b/kernel/lockdep.c
+index 259db207b5d9..2b2004d05bb7 100644
+--- a/kernel/lockdep.c
++++ b/kernel/lockdep.c
+@@ -4132,7 +4132,7 @@ void debug_show_all_locks(void)
+ 	 * tasklist_lock-holding task deadlocks or crashes.
+ 	 */
+ retry:
+-	if (!read_trylock(&tasklist_lock)) {
++	if (!tasklist_read_trylock_any()) {
+ 		if (count == 10)
+ 			printk("hm, tasklist_lock locked, retrying... ");
+ 		if (count) {
+@@ -4159,7 +4159,7 @@ retry:
+ 		if (p->lockdep_depth)
+ 			lockdep_print_held_locks(p);
+ 		if (!unlock)
+-			if (read_trylock(&tasklist_lock))
++			if (tasklist_read_trylock_any())
+ 				unlock = 1;
+ 	} while_each_thread(g, p);
+ 
+@@ -4167,7 +4167,7 @@ retry:
+ 	printk("=============================================\n\n");
+ 
+ 	if (unlock)
+-		read_unlock(&tasklist_lock);
++		tasklist_read_unlock_any();
+ }
+ EXPORT_SYMBOL_GPL(debug_show_all_locks);
+ 
+diff --git a/kernel/posix-cpu-timers.c b/kernel/posix-cpu-timers.c
+index 8fd709c9bb58..2f1caac51a7e 100644
+--- a/kernel/posix-cpu-timers.c
++++ b/kernel/posix-cpu-timers.c
+@@ -1159,10 +1159,10 @@ void posix_cpu_timer_schedule(struct k_itimer *timer)
+ 			clear_dead_task(timer, now);
+ 			goto out;
+ 		}
+-		read_lock(&tasklist_lock); /* arm_timer needs it.  */
++		tasklist_read_lock_any();	/* arm_timer needs it.  */
+ 		spin_lock(&p->sighand->siglock);
+ 	} else {
+-		read_lock(&tasklist_lock);
++		tasklist_read_lock_any();
+ 		if (unlikely(p->sighand == NULL)) {
+ 			/*
+ 			 * The process has been reaped.
+@@ -1195,7 +1195,7 @@ void posix_cpu_timer_schedule(struct k_itimer *timer)
+ 	spin_unlock(&p->sighand->siglock);
+ 
+ out_unlock:
+-	read_unlock(&tasklist_lock);
++	tasklist_read_unlock_any();
+ 
+ out:
+ 	timer->it_overrun_last = timer->it_overrun;
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 4c0b8c333034..8d87d7ae80a5 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -7106,10 +7106,9 @@ static void normalize_task(struct rq *rq, struct task_struct *p)
+ void normalize_rt_tasks(void)
+ {
+ 	struct task_struct *g, *p;
+-	unsigned long flags;
+ 	struct rq *rq;
+ 
+-	read_lock_irqsave(&tasklist_lock, flags);
++	tasklist_read_lock_any();
+ 	do_each_thread(g, p) {
+ 		/*
+ 		 * Only normalize user tasks:
+@@ -7143,7 +7142,7 @@ void normalize_rt_tasks(void)
+ 		raw_spin_unlock(&p->pi_lock);
+ 	} while_each_thread(g, p);
+ 
+-	read_unlock_irqrestore(&tasklist_lock, flags);
++	tasklist_read_unlock_any();
+ }
+ 
+ #endif /* CONFIG_MAGIC_SYSRQ */
+diff --git a/kernel/sched/debug.c b/kernel/sched/debug.c
+index 75024a673520..a98d6b94ad55 100644
+--- a/kernel/sched/debug.c
++++ b/kernel/sched/debug.c
+@@ -147,7 +147,6 @@ print_task(struct seq_file *m, struct rq *rq, struct task_struct *p)
+ static void print_rq(struct seq_file *m, struct rq *rq, int rq_cpu)
+ {
+ 	struct task_struct *g, *p;
+-	unsigned long flags;
+ 
+ 	SEQ_printf(m,
+ 	"\nrunnable tasks:\n"
+@@ -156,7 +155,7 @@ static void print_rq(struct seq_file *m, struct rq *rq, int rq_cpu)
+ 	"------------------------------------------------------"
+ 	"----------------------------------------------------\n");
+ 
+-	read_lock_irqsave(&tasklist_lock, flags);
++	tasklist_read_lock_any();
+ 
+ 	do_each_thread(g, p) {
+ 		if (!p->on_rq || task_cpu(p) != rq_cpu)
+@@ -165,7 +164,7 @@ static void print_rq(struct seq_file *m, struct rq *rq, int rq_cpu)
+ 		print_task(m, rq, p);
+ 	} while_each_thread(g, p);
+ 
+-	read_unlock_irqrestore(&tasklist_lock, flags);
++	tasklist_read_unlock_any();
+ }
+ 
+ void print_cfs_rq(struct seq_file *m, int cpu, struct cfs_rq *cfs_rq)
+diff --git a/kernel/signal.c b/kernel/signal.c
+index 2ec870a4c3c4..9d2b7a4b2a0b 100644
+--- a/kernel/signal.c
++++ b/kernel/signal.c
+@@ -1517,9 +1517,9 @@ int kill_pgrp(struct pid *pid, int sig, int priv)
+ {
+ 	int ret;
+ 
+-	read_lock(&tasklist_lock);
++	tasklist_read_lock_any();
+ 	ret = __kill_pgrp_info(sig, __si_special(priv), pid);
+-	read_unlock(&tasklist_lock);
++	tasklist_read_unlock_any();
+ 
+ 	return ret;
+ }
 -- 
 1.8.1.3
