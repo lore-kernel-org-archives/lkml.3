@@ -1,98 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753849Ab3CHGmf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 01:42:35 -0500
-Received: from mail-pb0-f44.google.com ([209.85.160.44]:57340 "EHLO
-	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751546Ab3CHGmd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 01:42:33 -0500
-Date: Thu, 7 Mar 2013 22:42:27 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
+	id S1753741Ab3CHGoY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 01:44:24 -0500
+Received: from mout.gmx.net ([212.227.17.20]:53962 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750880Ab3CHGoX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Mar 2013 01:44:23 -0500
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX19TlZ0oKIdTnSe5L0OWCcxFNkEDSM3xKiswSb8SKn
+	aWpAKrOLCNZq2J
+Message-ID: <1362725051.31859.40.camel@marge.simpson.net>
+Subject: Re: [PATCH] sched: wakeup buddy
+From: Mike Galbraith <efault@gmx.de>
+To: Michael Wang <wangyun@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Namhyung Kim <namhyung@kernel.org>, Alex Shi <alex.shi@intel.com>,
+        Paul Turner <pjt@google.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Renninger <trenn@suse.de>, Tang Chen <tangchen@cn.fujitsu.com>,
-        linux-kernel@vger.kernel.org, David Rientjes <rientjes@google.com>
-Subject: Re: [PATCH 10/14] x86, mm, numa: Move emulation handling down.
-Message-ID: <20130308064227.GK14556@mtj.dyndns.org>
-References: <1362718720-27048-1-git-send-email-yinghai@kernel.org>
- <1362718720-27048-11-git-send-email-yinghai@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1362718720-27048-11-git-send-email-yinghai@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        Ram Pai <linuxram@us.ibm.com>
+Date: Fri, 08 Mar 2013 07:44:11 +0100
+In-Reply-To: <51394EE3.1020706@linux.vnet.ibm.com>
+References: <5136EB06.2050905@linux.vnet.ibm.com>
+	 <1362645372.2606.11.camel@laptop>
+	 <1362649419.4652.12.camel@marge.simpson.net>
+	 <51394EE3.1020706@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 07, 2013 at 08:58:36PM -0800, Yinghai Lu wrote:
-> -static int __init numa_check_memblks(struct numa_meminfo *mi)
-> +
-> +int __init numa_check_memblks(struct numa_meminfo *mi)
->  {
-> +	nodemask_t tmp_node_map;
->  	unsigned long pfn_align;
->  
->  	/* Account for nodes with cpus and no memory */
-> -	node_possible_map = numa_nodes_parsed;
-> -	numa_nodemask_from_meminfo(&node_possible_map, mi);
-> -	if (WARN_ON(nodes_empty(node_possible_map)))
-> +	tmp_node_map = numa_nodes_parsed;
-> +	numa_nodemask_from_meminfo(&tmp_node_map, mi);
-> +	if (WARN_ON(nodes_empty(tmp_node_map)))
->  		return -EINVAL;
->  
->  	if (!numa_meminfo_cover_memory(mi))
-> @@ -562,6 +564,7 @@ static int __init numa_check_memblks(struct numa_meminfo *mi)
->  		return -EINVAL;
->  	}
->  
-> +	node_possible_map = tmp_node_map;
+On Fri, 2013-03-08 at 10:37 +0800, Michael Wang wrote: 
+> On 03/07/2013 05:43 PM, Mike Galbraith wrote:
+> > On Thu, 2013-03-07 at 09:36 +0100, Peter Zijlstra wrote: 
+> >> On Wed, 2013-03-06 at 15:06 +0800, Michael Wang wrote:
+> >>
+> >>> wake_affine() stuff is trying to bind related tasks closely, but it doesn't
+> >>> work well according to the test on 'perf bench sched pipe' (thanks to Peter).
+> >>
+> >> so sched-pipe is a poor benchmark for this.. 
+> >>
+> >> Ideally we'd write a new benchmark that has some actual data footprint
+> >> and we'd measure the cost of tasks being apart on the various cache
+> >> metrics and see what affine wakeup does for it.
+> >>
+> >> Before doing something like what you're proposing, I'd have a hard look
+> >> at WF_SYNC, it is possible we should disable/fix select_idle_sibling
+> >> for sync wakeups.
+> > 
+> > If nobody beats me to it, I'm going to try tracking shortest round trip
+> > to idle, and use a multiple of that to shut select_idle_sibling() down.
+> > If avg_idle approaches round trip time, there's no win to be had, we're
+> > just wasting cycles.
+> 
+> That's great if we have it, I'm a little doubt whether it is possible to
+> find a better way to replace the select_idle_sibling() (look at the way
+> it locates idle cpu...) in some cases, but I'm looking forward it ;-)
 
-Hmmm.... it's kinda nasty to have a side effect like the above for a
-function named numa_check_memblks().  Maybe we can move this to the
-caller or name the function to make it clear that some global state is
-being updated?
+I'm not going to replace it, only stop it from wasting cycles when
+there's very likely nothing to gain.  Save task wakeup time, if delta
+rq->clock - p->last_wakeup < N*shortest_idle or some such very cheap
+metric.  Wake ultra switchers L2 affine if allowed, only go hunting for
+an idle L3 if the thing is on another package.  
 
-> @@ -608,8 +611,6 @@ static int __init numa_init(int (*init_func)(void))
->  	if (ret < 0)
->  		return ret;
->  
-> -	numa_emulation(&numa_meminfo, numa_distance_cnt);
-> -
->  	ret = numa_check_memblks(&numa_meminfo);
->  	if (ret < 0)
->  		return ret;
-> @@ -669,6 +670,8 @@ void __init x86_numa_init(void)
->  	numa_init(dummy_numa_init);
->  
->  out:
-> +	numa_emulation(&numa_meminfo, numa_distance_cnt);
-> +
->  	for (i = 0; i < mi->nr_blks; i++) {
->  		struct numa_memblk *mb = &mi->blk[i];
->  		memblock_set_node(mb->start, mb->end - mb->start, mb->nid);
-> diff --git a/arch/x86/mm/numa_emulation.c b/arch/x86/mm/numa_emulation.c
-> index dbbbb47..5a0433d 100644
-> --- a/arch/x86/mm/numa_emulation.c
-> +++ b/arch/x86/mm/numa_emulation.c
-> @@ -348,7 +348,7 @@ void __init numa_emulation(struct numa_meminfo *numa_meminfo, int numa_dist_cnt)
->  	if (ret < 0)
->  		goto no_emu;
->  
-> -	if (numa_cleanup_meminfo(&ei) < 0) {
-> +	if (numa_cleanup_meminfo(&ei) < 0 || numa_check_memblks(&ei) < 0) {
->  		pr_warning("NUMA: Warning: constructed meminfo invalid, disabling emulation\n");
->  		goto no_emu;
->  	}
+In general, I think things would work better if we'd just rate limit how
+frequently we can wakeup migrate each individual task.  We want
+jabbering tasks to share L3, but we don't really want to trash L2 at an
+awesome rate.
 
-Given that acpi is the only mechanism which matters in any modern NUMA
-machines, I think the re-ordering should be fine.
+-Mike
 
-Thanks.
-
--- 
-tejun
