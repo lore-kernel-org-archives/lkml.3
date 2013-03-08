@@ -1,79 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933875Ab3CHNbF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 08:31:05 -0500
-Received: from mail-bk0-f47.google.com ([209.85.214.47]:59357 "EHLO
-	mail-bk0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757682Ab3CHNbD (ORCPT
+	id S934081Ab3CHNdA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 08:33:00 -0500
+Received: from g4t0016.houston.hp.com ([15.201.24.19]:34088 "EHLO
+	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752689Ab3CHNc6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 08:31:03 -0500
-Date: Fri, 8 Mar 2013 14:30:59 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Michel Lespinasse <walken@google.com>
-Cc: Paul Turner <pjt@google.com>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] sched: make sched_group_{get,set}_rt_{runtime,period}
- functions static
-Message-ID: <20130308133059.GA27992@gmail.com>
-References: <20130308021013.GA11284@google.com>
+	Fri, 8 Mar 2013 08:32:58 -0500
+From: "Ma, Jingbai (Kingboard)" <kingboard.ma@hp.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Vivek Goyal <vgoyal@redhat.com>, "mingo@redhat.com" <mingo@redhat.com>,
+        "kumagai-atsushi@mxc.nes.nec.co.jp" 
+	<kumagai-atsushi@mxc.nes.nec.co.jp>,
+        "ebiederm@xmission.com" <ebiederm@xmission.com>,
+        "yinghai@kernel.org" <yinghai@kernel.org>,
+        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Mitchell, Lisa (MCLinux in Fort Collins)" <lisa.mitchell@hp.com>
+Subject: Re: [RFC PATCH 0/5] crash dump bitmap: scan memory pages in kernel
+ to speedup kernel dump process
+Thread-Topic: [RFC PATCH 0/5] crash dump bitmap: scan memory pages in kernel
+ to speedup kernel dump process
+Thread-Index: AQHOG0RBYIn9YC/DLUqIK7z+kk7MipiaWEAAgAE6bYCAAAeQgIAAt+mA
+Date: Fri, 8 Mar 2013 13:31:51 +0000
+Message-ID: <CD6006EB.36EC%kingboard.ma@hp.com>
+In-Reply-To: <5139BE7F.5020905@zytor.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+user-agent: Microsoft-MacOutlook/14.3.1.130117
+x-originating-ip: [15.201.58.29]
+Content-Type: text/plain; charset="us-ascii"
+Content-ID: <FA1383B8AC63C845BC9B29552C0C764C@Compaq.com>
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130308021013.GA11284@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 3/8/13 6:33 PM, "H. Peter Anvin" <hpa@zytor.com> wrote:
 
-* Michel Lespinasse <walken@google.com> wrote:
 
-> Just a tiny cleanup I did while I was looking through scheduler code
-> doing a tasklist_lock change. Please consider applying if you find it
-> appropriate.
-> 
-> ------------------------------8<-----------------------------------------
-> sched: make sched_group_{get,set}_rt_{runtime,period} functions static
-> 
-> These functions, as well as sched_rt_can_attach(), used to be public so
-> that kernel/user.c could use them; however this use has now disappeared
-> so that these functions can be made static again.
-> 
-> Signed-off-by: Michel Lespinasse <walken@google.com>
-> 
-> ---
->  include/linux/sched.h |  9 ---------
->  kernel/sched/core.c   | 11 ++++++-----
->  2 files changed, 6 insertions(+), 14 deletions(-)
-> 
-> diff --git a/include/linux/sched.h b/include/linux/sched.h
-> index d35d2b6ddbfb..ac8dbca5ea15 100644
-> --- a/include/linux/sched.h
-> +++ b/include/linux/sched.h
-> @@ -2694,15 +2694,6 @@ extern void sched_move_task(struct task_struct *tsk);
->  extern int sched_group_set_shares(struct task_group *tg, unsigned long shares);
->  extern unsigned long sched_group_shares(struct task_group *tg);
->  #endif
-> -#ifdef CONFIG_RT_GROUP_SCHED
-> -extern int sched_group_set_rt_runtime(struct task_group *tg,
-> -				      long rt_runtime_us);
-> -extern long sched_group_rt_runtime(struct task_group *tg);
-> -extern int sched_group_set_rt_period(struct task_group *tg,
-> -				      long rt_period_us);
-> -extern long sched_group_rt_period(struct task_group *tg);
-> -extern int sched_rt_can_attach(struct task_group *tg, struct task_struct *tsk);
-> -#endif
->  #endif /* CONFIG_CGROUP_SCHED */
+>On 03/08/2013 02:06 AM, Jingbai Ma wrote:
+>> 
+>> Kernel do have some abilities that user space haven't. It's possible to
+>> map whole memory space of the first kernel into user space on the second
+>> kernel. But the user space code has to re-implement some parts of the
+>> kernel memory management system again. And worse, it's architecture
+>> dependent, more architectures supported, more codes have to be
+>> implemented. All implementation in user space must be sync to kernel
+>> implementation. It's may called "flexibility", but it's painful to
+>> maintain the codes.
+>> 
+>
+>What?  You are basically talking about /dev/mem... there is nothing
+>particularly magic about it at all.
 
-Makes sense - but Li Zefan has beaten you to it by a few days:
+What we are talking about is filtering memory pages (AKA memory pages
+classification)
+The makedumpfile (or any other dumper in user space) has to know the
+exactly
+memory layout of the memory management data structures, it not only
+architecture dependent, but also may varies in different kernel release.
+At this point, /dev/mem doesn't give any help.
+So IMHO, I would like to do it in kernel, rather than So keep tracking
+changes in user space code.
 
-  25cc7da7e633 sched: Move group scheduling functions out of include/linux/sched.h
-
-Which can be found in the latest scheduler development tree, queued up for v3.10:
-
-  git git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git master    # or sched/core
-
-Thanks,
-
-	Ingo
+>
+>	-hpa
+>
+>-- 
+>H. Peter Anvin, Intel Open Source Technology Center
+>I work for Intel.  I don't speak on their behalf.
+>
 
