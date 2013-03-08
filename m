@@ -1,107 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964786Ab3CHSRI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 13:17:08 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:17707 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932552Ab3CHSRG (ORCPT
+	id S1759980Ab3CHSYz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 13:24:55 -0500
+Received: from mail-ia0-f169.google.com ([209.85.210.169]:42537 "EHLO
+	mail-ia0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759575Ab3CHSYx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 13:17:06 -0500
-X-IronPort-AV: E=Sophos;i="4.84,809,1355126400"; 
-   d="scan'208";a="28226191"
-Message-ID: <513A2B20.30805@codeaurora.org>
-Date: Fri, 08 Mar 2013 10:17:04 -0800
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
+	Fri, 8 Mar 2013 13:24:53 -0500
 MIME-Version: 1.0
-To: Tony Lindgren <tony@atomide.com>
-CC: linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 03/10] ARM: smp_twd: Divorce smp_twd from local timer
- API
-References: <1362614646-24113-1-git-send-email-sboyd@codeaurora.org> <1362614646-24113-4-git-send-email-sboyd@codeaurora.org> <20130308004011.GD11806@atomide.com> <51393B59.3070200@codeaurora.org> <20130308180730.GE11806@atomide.com>
-In-Reply-To: <20130308180730.GE11806@atomide.com>
+In-Reply-To: <5139D5A0.6000600@redhat.com>
+References: <51397D1D.5030602@redhat.com>
+	<1750036321.11235774.1362722613994.JavaMail.root@redhat.com>
+	<CAE9FiQUtDcwJkPMPfjur8LQ+u0Hc2J7sbxC=xkcemqRQ1_Gd8g@mail.gmail.com>
+	<CAE9FiQU7ccdWCL=t=Zn1w33GHpHk56=JXTcotn-Huq9Wiqu7wg@mail.gmail.com>
+	<51399154.5030500@redhat.com>
+	<CAE9FiQVPaG5P7mG9HoFzCkaxF62hkU5hEtq_FhdT7n+38aNs9A@mail.gmail.com>
+	<51399442.1080609@redhat.com>
+	<CAE9FiQWCfnOjOuWKihv1GamgHb4KLrrPEiBTspQMqK7_fBDunw@mail.gmail.com>
+	<5139D5A0.6000600@redhat.com>
+Date: Fri, 8 Mar 2013 10:24:52 -0800
+X-Google-Sender-Auth: gOeXQeUI23AEkXp4w56M9_pIRFg
+Message-ID: <CAE9FiQU7RP8zTsm9QMnANf8-a9=QRY9Y6sFdEev7+YWd87NDAw@mail.gmail.com>
+Subject: Re: 3.9-rc1: crash kernel panic - not syncing: Can not allocate
+ SWIOTLB buffer earlier and can't now provide you with the DMA bounce buffer
+From: Yinghai Lu <yinghai@kernel.org>
+To: WANG Chao <chaowang@redhat.com>
+Cc: CAI Qian <caiqian@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        kexec <kexec@lists.infradead.org>, Dave Young <dyoung@redhat.com>,
+        Vivek Goyal <vgoyal@redhat.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Takao Indoh <indou.takao@jp.fujitsu.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/08/13 10:07, Tony Lindgren wrote:
+On Fri, Mar 8, 2013 at 4:12 AM, WANG Chao <chaowang@redhat.com> wrote:
+
+>> what is 00:02.0 in your system?
+> This IOMMU issue is related to https://lkml.org/lkml/2012/11/26/814. We can
+> discuss this IOMMU issue in that thread.
+> Anyway 00:02.0 is a video card, the box is Ivy Bridge.
+> # lspci -s 00:02.0 -v
+> 00:02.0 VGA compatible controller: Intel Corporation 3rd Gen Core processor
+> Graphics Controller (rev 09) (prog-if 00 [VGA controller])
+>         Subsystem: Intel Corporation Device 2211
+>         Flags: bus master, fast devsel, latency 0, IRQ 44
+>         Memory at afc00000 (64-bit, non-prefetchable) [size=4M]
+>         Memory at c0000000 (64-bit, prefetchable) [size=256M]
+>         I/O ports at 6000 [size=64]
+>         Expansion ROM at <unassigned> [disabled]
+>         Capabilities: [90] MSI: Enable+ Count=1/1 Maskable- 64bit-
+>         Capabilities: [d0] Power Management version 2
+>         Capabilities: [a4] PCI Advanced Features
+>         Kernel driver in use: i915
+
+disable drm for i915 will make your iommu work with dump?
+
 >
-> Adding that produces the following:
 >
-> ...
-> OMAP clockevent source: GPTIMER1 at 32768 Hz
-> sched_clock: 32 bits at 32kHz, resolution 30517ns, wraps every 131071999ms
-> OMAP clocksource: 32k_counter at 32768 Hz
-> Console: colour dummy device 80x30
-> Lock dependency validator: Copyright (c) 2006 Red Hat, Inc., Ingo Molnar
-> Unable to handle kernel NULL pointer dereference at virtual address 0000001d
-> pgd = c0004000
-> [0000001d] *pgd=00000000
-> Internal error: Oops: 5 [#1] SMP ARM
-> Modules linked in:
-> CPU: 0    Not tainted  (3.9.0-rc1-12182-g90ac757-dirty #42)
-> PC is at 0xe7d7f0a0
-> LR is at twd_handler+0x34/0x40
-> pc : [<e7d7f0a0>]    lr : [<c001a650>]    psr: 200001d3
-> sp : c0791ea0  ip : c0790000  fp : 00000004
-> r10: ed806780  r9 : c0805840  r8 : 00e0c000
-> r7 : c07919c0  r6 : ed801900  r5 : 0000001d  r4 : 00000001
-> r3 : fa240600  r2 : fa24060c  r1 : c0090d28  r0 : c0090d28
-> Flags: nzCv  IRQs off  FIQs off  Mode SVC_32  ISA ARM  Segment kernel
-> Control: 10c53c7d  Table: 8000404a  DAC: 00000017
-> Process swapper/0 (pid: 0, stack limit = 0xc0790240)
-> Stack: (0xc0791ea0 to 0xc0792000)
-> 1ea0: c07997a8 c00ac80c 0000001d c078e248 c0790000 00000000 c07997a8 00000000
-> 1ec0: c0790000 c00a9e2c 0000001d c00152a8 fa24010c c0791f00 c0799904 fa240110
-> 1ee0: c082b260 c000868c 200001d3 c004901c 20000153 ffffffff c0791f34 c052db64
-> 1f00: 00000001 00000001 c079bc90 00000000 00000000 00000000 00000048 00000048
-> 1f20: c082b260 00000000 c0790000 00000004 00000000 c0791f48 60000153 c004901c
-> 1f40: 20000153 ffffffff 00000000 00000000 00000000 00000000 c082b260 00000048
-> 1f60: 00000000 00000000 00000000 60000153 c033e2ec c0791fac c08292bc c0829240
-> 1f80: c076f678 ffffffff 411fc092 c07988c0 00000000 c0529c88 c068460c c0791fac
-> 1fa0: c082924c c07515b4 c068460c c080bb1c 00000011 c0829258 bfffffff c0736884
-> 1fc0: ffffffff ffffffff c0736474 00000000 00000000 c076f678 00000000 10c53c7d
-> 1fe0: c0798934 c076fa7c c079d16c 8000406a 00000000 80008074 00000000 00000000
-> [<c001a650>] (twd_handler+0x34/0x40) from [<c00ac80c>] (handle_percpu_devid_irq+0xb8/0x128)
-> [<c00ac80c>] (handle_percpu_devid_irq+0xb8/0x128) from [<c00a9e2c>] (generic_handle_irq+0x30/0x3c)
-> [<c00a9e2c>] (generic_handle_irq+0x30/0x3c) from [<c00152a8>] (handle_IRQ+0x48/0xa8)
-> [<c00152a8>] (handle_IRQ+0x48/0xa8) from [<c000868c>] (gic_handle_irq+0x30/0x6c)
-> [<c000868c>] (gic_handle_irq+0x30/0x6c) from [<c052db64>] (__irq_svc+0x44/0x5c)
-> Exception stack(0xc0791f00 to 0xc0791f48)
-> 1f00: 00000001 00000001 c079bc90 00000000 00000000 00000000 00000048 00000048
-> 1f20: c082b260 00000000 c0790000 00000004 00000000 c0791f48 60000153 c004901c
-> 1f40: 20000153 ffffffff
-> [<c052db64>] (__irq_svc+0x44/0x5c) from [<c004901c>] (vprintk_emit+0x1f8/0x544)
-> [<c004901c>] (vprintk_emit+0x1f8/0x544) from [<c0529c88>] (printk+0x30/0x40)
-> [<c0529c88>] (printk+0x30/0x40) from [<c07515b4>] (lockdep_info+0x10/0xb4)
-> [<c07515b4>] (lockdep_info+0x10/0xb4) from [<c0736884>] (start_kernel+0x1dc/0x328)
-> [<c0736884>] (start_kernel+0x1dc/0x328) from [<80008074>] (0x80008074)
-> Code: 57555555 55755154 557d5554 55d55655 (54555575) 
->
+> Is it expected to intel_iommu=on or crashkernel_low to make 2nd kernel boot in
+> 3.9? Back in 3.8, it works just fine w/ only crashkernel param.
 
-Ah. Two bugs :-(
+Yes, I really do not want to set crashkernel low range like 72M
+automatically for all.
+that would have the system with proper iommu support lose 72M under 4G
+in first kernel.
+And can not play allocate and return tricks, as first kernel have no
+idea if iommu will work
+on second kernel even iommu is working on first kernel.
 
-----8<-----
+Better to fix iommu support at first.
 
-diff --git a/arch/arm/kernel/smp_twd.c b/arch/arm/kernel/smp_twd.c
-index 081de6f..4ea3e9d 100644
---- a/arch/arm/kernel/smp_twd.c
-+++ b/arch/arm/kernel/smp_twd.c
-@@ -227,7 +227,7 @@ static void __cpuinit twd_calibrate_rate(void)
- 
- static irqreturn_t twd_handler(int irq, void *dev_id)
- {
--       struct clock_event_device *evt = *(struct clock_event_device **)dev_id;
-+       struct clock_event_device *evt = dev_id;
- 
-        if (twd_timer_ack()) {
-                evt->event_handler(evt);
+For old system that does not have DMAR or kernel does not have IOMMU
+support enabled, or
+user does not pass intel_iommu=on.
+We could set crashkernel low range to 72M automatically.
 
+Thanks
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
-
+Yinghai
