@@ -1,60 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755916Ab3CHUGU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 15:06:20 -0500
-Received: from nm12.access.bullet.mail.mud.yahoo.com ([66.94.237.213]:47120
-	"EHLO nm12.access.bullet.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751264Ab3CHUGT (ORCPT
+	id S1754347Ab3CHUH7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 15:07:59 -0500
+Received: from www.linutronix.de ([62.245.132.108]:56412 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751136Ab3CHUH6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 15:06:19 -0500
-X-Yahoo-Newman-Id: 208053.44871.bm@smtp101.rog.mail.bf1.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: NdPLGKMVM1k_6tLG1E3f0dV0DdxYNd694CeqjUwlfIjXEem
- 5f.bhtPMPEskTpOdVKXLSbQKEZ3PFS6_QaxQoIwKWyuZ12iiNu2u5KKpuvBQ
- 9hdGxmXCM1dWdx43Ubsh6XXFNZWjr_91Q8t9IRZklXjOCtcVXHMAFKECQ6Hi
- BGq0KTr4Mct6nS9jgo5ptw5bfE4RS4.q2q_66T6aY3XNouc.HUUcWPXUlKq8
- nLUhp8VfKYuAPMA_pzaD9F8r.s2e.d7_2KOf88yrKmIAyv.nOvbwijjKun3I
- A.kHdcuChyekHwPIt47X46S7qrs.TeiD_DORc2Y9VfZwlCsOzjpF.yW6k_aJ
- jQbmmwDs6F2JPrWLq1Yn.rZQQml6MofR8skclggAA1iEwidg2jwxdt8G9dZt
- JxJHAFx09n8heYhBZxTYznLnsfov6gghiJYP7fvsReD8ahMrkSuUjPm.hv11
- Rx.tW9Zz0IKU0Cb2jzccRS9.cnE7Z1AU-
-X-Yahoo-SMTP: rZzhDImswBA_40COIyZI42.8nAz5YXic.zo1v550XQVtX7k-
-From: Shawn Starr <shawn.starr@rogers.com>
-To: linux-kernel@vger.kernel.org
-Subject: [Linux 3.8/3.9-rc1][alsa][hda] Problem with automute on HDA CX20561 (Hermosa) - Persistent even after power off
-Date: Fri, 08 Mar 2013 15:06:12 -0500
-Message-ID: <2760279.2HbRmcDmlJ@segfault.sh0n.net>
-Organization: sh0n.net
-User-Agent: KMail/4.9.5 (Linux/3.8.0-2.fc19.x86_64; KDE/4.9.5; x86_64; ; )
+	Fri, 8 Mar 2013 15:07:58 -0500
+Date: Fri, 8 Mar 2013 21:07:43 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Yinghai Lu <yinghai@kernel.org>
+cc: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Bjorn Helgaas <bhelgaas@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
+        Joerg Roedel <joro@8bytes.org>
+Subject: Re: [PATCH v2 02/26] x86, irq: Modify irq chip once for irq
+ remapping
+In-Reply-To: <1360351703-20571-3-git-send-email-yinghai@kernel.org>
+Message-ID: <alpine.LFD.2.02.1303082104580.22263@ionos>
+References: <1360351703-20571-1-git-send-email-yinghai@kernel.org> <1360351703-20571-3-git-send-email-yinghai@kernel.org>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello folks,
+On Fri, 8 Feb 2013, Yinghai Lu wrote:
 
-All of a sudden, it worked fine in Linux kernel 3.8, I believe after booting Linux kernel 3.9 (which has ALSA HDA changes). I can no longer hear audio from speakers on laptop. If I plug in headphones audio works.
+> Now after irq remapping is enabled, irq_chip fields are modified during
+> every irq setup.
+> 
+> Only need to change them one during we enable irq mapping.
 
-[ 18.434846] hda_codec: CX20561 (Hermosa): BIOS auto-probing.
-[ 18.434932] ALSA sound/pci/hda/hda_auto_parser.c:306 autoconfig: line_outs=1 (0x1a/0x0/0x0/0x0/0x0) type:speaker
-[ 18.434934] ALSA sound/pci/hda/hda_auto_parser.c:310 speaker_outs=0 (0x0/0x0/0x0/0x0/0x0)
-[ 18.434936] ALSA sound/pci/hda/hda_auto_parser.c:314 hp_outs=2 (0x19/0x16/0x0/0x0/0x0)
-[ 18.434937] ALSA sound/pci/hda/hda_auto_parser.c:315 mono: mono_out=0x0
-[ 18.434939] ALSA sound/pci/hda/hda_auto_parser.c:318 dig-out=0x1c/0x0
-[ 18.434940] ALSA sound/pci/hda/hda_auto_parser.c:319 inputs:
-[ 18.434942] ALSA sound/pci/hda/hda_auto_parser.c:323 Mic=0x18
-[ 18.434944] ALSA sound/pci/hda/hda_auto_parser.c:323 Internal Mic=0x1d
-[ 18.434945] ALSA sound/pci/hda/hda_auto_parser.c:323 Dock Mic=0x17
-[ 18.435835] ALSA sound/pci/hda/patch_conexant.c:4587 hda_codec: Enable sync_write for stable communication
-[ 18.443473] input: HDA Intel Dock Mic as /devices/pci0000:00/0000:00:1b.0/sound/card0/input9
-[ 18.443563] input: HDA Intel Mic as /devices/pci0000:00/0000:00:1b.0/sound/card0/input10
-[ 18.443614] input: HDA Intel Headphone as /devices/pci0000:00/0000:00:1b.0/sound/card0/input11
-[ 18.443674] input: HDA Intel Dock Headphone as /devices/pci0000:00/0000:00:1b.0/sound/card0/input12
+Can you please start to write sensible changelogs? I'm really sick of
+your sloppyness.
 
-I did a hard power off, even booted into a Windows OS to see the windows kernel driver might reset the autio ports and it didn't fix this even, did the kernel driver reprogram the hardware badly somewhere? How can I fix this?
+> Also change irq_remap_modify_chip_defaults() to __init.
 
-Thanks,
-Shawn
+Why can you do that ?
+  
+> We don't need to use #ifdef in irq_remap_modify_chips(), as
+> IRQ_REMAP only support x86_64 AND X86_IO_APIC AND PCI_MSI,
+> also HPET_TIMER is set when x86_64 is set.
 
+You should not describe what the patch is doing, you are again missing
+to describe why the patch is doing this. 
+
+Sigh. 
+
+      tglx
