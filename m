@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751491Ab3CHFA6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 00:00:58 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:43495 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752172Ab3CHE7t (ORCPT
+	id S1751400Ab3CHFA5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 00:00:57 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:51039 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760311Ab3CHE7t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 7 Mar 2013 23:59:49 -0500
 From: Yinghai Lu <yinghai@kernel.org>
@@ -13,86 +13,94 @@ To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         Andrew Morton <akpm@linux-foundation.org>,
         Thomas Renninger <trenn@suse.de>, Tang Chen <tangchen@cn.fujitsu.com>
 Cc: linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
-        Pekka Enberg <penberg@kernel.org>, Jacob Shin <jacob.shin@amd.com>
-Subject: [PATCH 13/14] x86, mm: Parse numa info early
-Date: Thu,  7 Mar 2013 20:58:39 -0800
-Message-Id: <1362718720-27048-14-git-send-email-yinghai@kernel.org>
+        Tejun Heo <tj@kernel.org>
+Subject: [PATCH 07/14] x86, mm, numa: call numa_meminfo_cover_memory() early
+Date: Thu,  7 Mar 2013 20:58:33 -0800
+Message-Id: <1362718720-27048-8-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1362718720-27048-1-git-send-email-yinghai@kernel.org>
 References: <1362718720-27048-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Parse numa info at first and store info into numa_meminfo.
+We do not need to use nid in memblock to find out absent pages.
 
-call early_initmem_init before init_memory_mapping(), will
-have numa info ready at first, and will still keep numaq, acpi_numa,
-amd_numa, dummy fall back sequence.
+So could move that numa_meminfo_cover_memory() early before set
+memblock nid.
 
-SLIT and numa emulation handling are still left in initmem_init().
+Also could make __absent_pages_in_range() to static and use
+absent_pages_in_range() directly.
+
+Later will only set memblock nid one time on successful path.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Cc: Pekka Enberg <penberg@kernel.org>
-Cc: Jacob Shin <jacob.shin@amd.com>
+Cc: Tejun Heo <tj@kernel.org>
 ---
- arch/x86/kernel/setup.c |   24 ++++++++++--------------
- 1 file changed, 10 insertions(+), 14 deletions(-)
+ arch/x86/mm/numa.c |    7 ++++---
+ include/linux/mm.h |    2 --
+ mm/page_alloc.c    |    2 +-
+ 3 files changed, 5 insertions(+), 6 deletions(-)
 
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index c4f1c63..29a6b94 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -1096,13 +1096,21 @@ void __init setup_arch(char **cmdline_p)
- 	trim_platform_memory_ranges();
- 	trim_low_memory_range();
+diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
+index 24c20f0..6df5028 100644
+--- a/arch/x86/mm/numa.c
++++ b/arch/x86/mm/numa.c
+@@ -460,7 +460,7 @@ static bool __init numa_meminfo_cover_memory(const struct numa_meminfo *mi)
+ 		u64 s = mi->blk[i].start >> PAGE_SHIFT;
+ 		u64 e = mi->blk[i].end >> PAGE_SHIFT;
+ 		numaram += e - s;
+-		numaram -= __absent_pages_in_range(mi->blk[i].nid, s, e);
++		numaram -= absent_pages_in_range(s, e);
+ 		if ((s64)numaram < 0)
+ 			numaram = 0;
+ 	}
+@@ -488,6 +488,9 @@ static int __init numa_register_memblks(struct numa_meminfo *mi)
+ 	if (WARN_ON(nodes_empty(node_possible_map)))
+ 		return -EINVAL;
  
-+	/*
-+	 * Parse the ACPI tables for possible boot-time SMP configuration.
-+	 */
-+	acpi_initrd_override_copy();
-+	acpi_boot_table_init();
-+	early_acpi_boot_init();
-+	early_initmem_init();
- 	init_mem_mapping();
--
-+	memblock.current_limit = get_max_mapped();
- 	early_trap_pf_init();
- 
-+	reserve_initrd();
++	if (!numa_meminfo_cover_memory(mi))
++		return -EINVAL;
 +
- 	setup_real_mode();
+ 	for (i = 0; i < mi->nr_blks; i++) {
+ 		struct numa_memblk *mb = &mi->blk[i];
+ 		memblock_set_node(mb->start, mb->end - mb->start, mb->nid);
+@@ -506,8 +509,6 @@ static int __init numa_register_memblks(struct numa_meminfo *mi)
+ 		return -EINVAL;
+ 	}
+ #endif
+-	if (!numa_meminfo_cover_memory(mi))
+-		return -EINVAL;
  
--	memblock.current_limit = get_max_mapped();
- 	dma_contiguous_reserve(0);
- 
- 	/*
-@@ -1116,24 +1124,12 @@ void __init setup_arch(char **cmdline_p)
- 	/* Allocate bigger log buffer */
- 	setup_log_buf(1);
- 
--	reserve_initrd();
--
--	acpi_initrd_override_copy();
--
- 	reserve_crashkernel();
- 
- 	vsmp_init();
- 
- 	io_delay_init();
- 
--	/*
--	 * Parse the ACPI tables for possible boot-time SMP configuration.
--	 */
--	acpi_boot_table_init();
--
--	early_acpi_boot_init();
--
--	early_initmem_init();
- 	initmem_init();
- 	memblock_find_dma_reserve();
- 
+ 	return 0;
+ }
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 7acc9dc..2ae2050 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1324,8 +1324,6 @@ extern void free_initmem(void);
+  */
+ extern void free_area_init_nodes(unsigned long *max_zone_pfn);
+ unsigned long node_map_pfn_alignment(void);
+-unsigned long __absent_pages_in_range(int nid, unsigned long start_pfn,
+-						unsigned long end_pfn);
+ extern unsigned long absent_pages_in_range(unsigned long start_pfn,
+ 						unsigned long end_pfn);
+ extern void get_pfn_range_for_nid(unsigned int nid,
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 8fcced7..580d919 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -4356,7 +4356,7 @@ static unsigned long __meminit zone_spanned_pages_in_node(int nid,
+  * Return the number of holes in a range on a node. If nid is MAX_NUMNODES,
+  * then all holes in the requested range will be accounted for.
+  */
+-unsigned long __meminit __absent_pages_in_range(int nid,
++static unsigned long __meminit __absent_pages_in_range(int nid,
+ 				unsigned long range_start_pfn,
+ 				unsigned long range_end_pfn)
+ {
 -- 
 1.7.10.4
 
