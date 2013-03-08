@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933724Ab3CHWxd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 17:53:33 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:36287 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933431Ab3CHWxa (ORCPT
+	id S933597Ab3CHWyO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 17:54:14 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:30468 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759957Ab3CHWwz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 17:53:30 -0500
+	Fri, 8 Mar 2013 17:52:55 -0500
 From: Dave Kleikamp <dave.kleikamp@oracle.com>
 To: Zach Brown <zab@zabbo.net>
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Dave Kleikamp <dave.kleikamp@oracle.com>, Jan Kara <jack@suse.cz>
-Subject: [PATCH V7 -next 29/33] udf: convert file ops from aio_read/write to read/write_iter
-Date: Fri,  8 Mar 2013 16:52:24 -0600
-Message-Id: <1362783148-22736-30-git-send-email-dave.kleikamp@oracle.com>
+        Dave Kleikamp <dave.kleikamp@oracle.com>,
+        fuse-devel@lists.sourceforge.net
+Subject: [PATCH V7 -next 05/33] fuse: convert fuse to use iov_iter_copy_[to|from]_user
+Date: Fri,  8 Mar 2013 16:52:00 -0600
+Message-Id: <1362783148-22736-6-git-send-email-dave.kleikamp@oracle.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1362783148-22736-1-git-send-email-dave.kleikamp@oracle.com>
 References: <1362783148-22736-1-git-send-email-dave.kleikamp@oracle.com>
@@ -22,51 +23,59 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
-Cc: Jan Kara <jack@suse.cz>
----
- fs/udf/file.c | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+A future patch hides the internals of struct iov_iter, so fuse should
+be using the supported interface.
 
-diff --git a/fs/udf/file.c b/fs/udf/file.c
-index 339df8b..e392d60 100644
---- a/fs/udf/file.c
-+++ b/fs/udf/file.c
-@@ -133,8 +133,8 @@ const struct address_space_operations udf_adinicb_aops = {
- 	.direct_IO	= udf_adinicb_direct_IO,
- };
+Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
+Acked-by: Miklos Szeredi <mszeredi@suse.cz>
+Cc: fuse-devel@lists.sourceforge.net
+---
+ fs/fuse/file.c | 29 ++++++++---------------------
+ 1 file changed, 8 insertions(+), 21 deletions(-)
+
+diff --git a/fs/fuse/file.c b/fs/fuse/file.c
+index f2ae8fd..6d5f1ed 100644
+--- a/fs/fuse/file.c
++++ b/fs/fuse/file.c
+@@ -1733,30 +1733,17 @@ static int fuse_ioctl_copy_user(struct page **pages, struct iovec *iov,
+ 	while (iov_iter_count(&ii)) {
+ 		struct page *page = pages[page_idx++];
+ 		size_t todo = min_t(size_t, PAGE_SIZE, iov_iter_count(&ii));
+-		void *kaddr;
++		size_t left;
  
--static ssize_t udf_file_aio_write(struct kiocb *iocb, const struct iovec *iov,
--				  unsigned long nr_segs, loff_t ppos)
-+static ssize_t udf_file_write_iter(struct kiocb *iocb, struct iov_iter *iter,
-+				   loff_t ppos)
- {
- 	ssize_t retval;
- 	struct file *file = iocb->ki_filp;
-@@ -168,7 +168,7 @@ static ssize_t udf_file_aio_write(struct kiocb *iocb, const struct iovec *iov,
- 	} else
- 		up_write(&iinfo->i_data_sem);
+-		kaddr = kmap(page);
+-
+-		while (todo) {
+-			char __user *uaddr = ii.iov->iov_base + ii.iov_offset;
+-			size_t iov_len = ii.iov->iov_len - ii.iov_offset;
+-			size_t copy = min(todo, iov_len);
+-			size_t left;
+-
+-			if (!to_user)
+-				left = copy_from_user(kaddr, uaddr, copy);
+-			else
+-				left = copy_to_user(uaddr, kaddr, copy);
+-
+-			if (unlikely(left))
+-				return -EFAULT;
++		if (!to_user)
++			left = iov_iter_copy_from_user(page, &ii, 0, todo);
++		else
++			left = iov_iter_copy_to_user(page, &ii, 0, todo);
  
--	retval = generic_file_aio_write(iocb, iov, nr_segs, ppos);
-+	retval = generic_file_write_iter(iocb, iter, ppos);
- 	if (retval > 0)
- 		mark_inode_dirty(inode);
+-			iov_iter_advance(&ii, copy);
+-			todo -= copy;
+-			kaddr += copy;
+-		}
++		if (unlikely(left))
++			return -EFAULT;
  
-@@ -242,12 +242,12 @@ static int udf_release_file(struct inode *inode, struct file *filp)
+-		kunmap(page);
++		iov_iter_advance(&ii, todo);
+ 	}
  
- const struct file_operations udf_file_operations = {
- 	.read			= do_sync_read,
--	.aio_read		= generic_file_aio_read,
-+	.read_iter		= generic_file_read_iter,
- 	.unlocked_ioctl		= udf_ioctl,
- 	.open			= generic_file_open,
- 	.mmap			= generic_file_mmap,
- 	.write			= do_sync_write,
--	.aio_write		= udf_file_aio_write,
-+	.write_iter		= udf_file_write_iter,
- 	.release		= udf_release_file,
- 	.fsync			= generic_file_fsync,
- 	.splice_read		= generic_file_splice_read,
+ 	return 0;
 -- 
 1.8.1.5
 
