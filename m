@@ -1,74 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754985Ab3CHUQF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 15:16:05 -0500
-Received: from mail-ia0-f169.google.com ([209.85.210.169]:48534 "EHLO
-	mail-ia0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752469Ab3CHUQD (ORCPT
+	id S1757272Ab3CHUR6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 15:17:58 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:12088 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756338Ab3CHUR5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 15:16:03 -0500
-Date: Fri, 8 Mar 2013 12:16:39 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        oskar.andero@sonymobile.com, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org, Felipe Balbi <balbi@ti.com>,
-        Truls Bengtsson <truls.bengtsson@sonymobile.com>,
-        Radovan Lekanovic <radovan.lekanovic@sonymobile.com>
-Subject: Re: [RFC PATCH 1/1] usb: f_rndis: Avoid to use ERROR macro if cdev
- can be null
-Message-ID: <20130308201639.GB14787@kroah.com>
-References: <1362747220-2204-1-git-send-email-oskar.andero@sonymobile.com>
- <1362747220-2204-2-git-send-email-oskar.andero@sonymobile.com>
- <513A426A.9060903@cogentembedded.com>
+	Fri, 8 Mar 2013 15:17:57 -0500
+X-IronPort-AV: E=Sophos;i="4.84,809,1355126400"; 
+   d="scan'208";a="28006230"
+Message-ID: <513A4774.3040605@codeaurora.org>
+Date: Fri, 08 Mar 2013 12:17:56 -0800
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <513A426A.9060903@cogentembedded.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Tony Lindgren <tony@atomide.com>
+CC: linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 03/10] ARM: smp_twd: Divorce smp_twd from local timer
+ API
+References: <1362614646-24113-1-git-send-email-sboyd@codeaurora.org> <1362614646-24113-4-git-send-email-sboyd@codeaurora.org> <20130308004011.GD11806@atomide.com> <51393B59.3070200@codeaurora.org> <20130308180730.GE11806@atomide.com> <513A2B20.30805@codeaurora.org> <20130308194802.GG11806@atomide.com> <513A40EF.8050403@codeaurora.org> <20130308200811.GJ11806@atomide.com>
+In-Reply-To: <20130308200811.GJ11806@atomide.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 08, 2013 at 11:56:26PM +0400, Sergei Shtylyov wrote:
-> Hello.
-> 
-> On 08-03-2013 16:53, oskar.andero@sonymobile.com wrote:
-> 
-> >From: Truls Bengtsson <truls.bengtsson@sonymobile.com>
-> 
-> >The udc_irq service runs the isr_tr_complete_handler which in turn
-> >"nukes" the endpoints, including a call to rndis_response_complete,
-> >if appropriate. If the rndis_msg_parser fails here, an error will
-> >be printed using a dev_err call (through the ERROR() macro).
-> 
-> >However, if the usb cable was just disconnected the device (cdev)
-> >might not be available and will be null. Since the dev_err macro will
-> >dereference the cdev pointer we get a null pointer exception.
-> 
-> >Reviewed-by: Radovan Lekanovic <radovan.lekanovic@sonymobile.com>
-> >Signed-off-by: Truls Bengtsson <truls.bengtsson@sonymobile.com>
-> >Signed-off-by: Oskar Andero <oskar.andero@sonymobile.com>
-> >---
-> >  drivers/usb/gadget/f_rndis.c |    4 ++--
-> >  1 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> >diff --git a/drivers/usb/gadget/f_rndis.c b/drivers/usb/gadget/f_rndis.c
-> >index 71beeb8..41b5ebd 100644
-> >--- a/drivers/usb/gadget/f_rndis.c
-> >+++ b/drivers/usb/gadget/f_rndis.c
-> >@@ -6,6 +6,7 @@
-> >   * Copyright (C) 2008 Nokia Corporation
-> >   * Copyright (C) 2009 Samsung Electronics
-> >   *                    Author: Michal Nazarewicz (mina86@mina86.com)
-> >+ * Copyright (C) 2013 Sony Mobile Communications AB.
-> 
->    Your change seems too insignificant to add a copyright.
+On 03/08/13 12:08, Tony Lindgren wrote:
+> * Stephen Boyd <sboyd@codeaurora.org> [130308 11:54]:
+>> On 03/08/13 11:48, Tony Lindgren wrote:
+>>> * Stephen Boyd <sboyd@codeaurora.org> [130308 10:21]:
+>>>> diff --git a/arch/arm/kernel/smp_twd.c b/arch/arm/kernel/smp_twd.c
+>>>> index 081de6f..4ea3e9d 100644
+>>>> --- a/arch/arm/kernel/smp_twd.c
+>>>> +++ b/arch/arm/kernel/smp_twd.c
+>>>> @@ -227,7 +227,7 @@ static void __cpuinit twd_calibrate_rate(void)
+>>>>  
+>>>>  static irqreturn_t twd_handler(int irq, void *dev_id)
+>>>>  {
+>>>> -       struct clock_event_device *evt = *(struct clock_event_device **)dev_id;
+>>>> +       struct clock_event_device *evt = dev_id;
+>>>>  
+>>>>         if (twd_timer_ack()) {
+>>>>                 evt->event_handler(evt);
+>>>>
+>>> Yup thanks that fixes it, both fixes are needed. So for this patch + the
+>>> two fixes please feel free to add:
+>>>
+>>> Acked-by: Tony Lindgren <tony@atomide.com>
+>> Great. Thanks for testing.
+> Hmm noticed one more thing: vexpress no longer boots in qemu for
+> me after applying this. Sorry did not get any debug_ll output, but
+> maybe you can take a look at it. I tested with omap2plus_defconfig +
+> linaro-qemu:
+>
+> $ qemu-system-arm -machine vexpress-a9 -m 1024 -curses -net nic -net \
+> user -serial stdio -append console=ttyAMA0,115200n8 rw \
+> root=/dev/mmcblk0p2 rootwait physmap.enabled=0 -kernel zImage \
+> -initrd initrd.img -sd rootfs.img
+>
+>
 
-You are right, it legally is.  Truls, please consult your company's
-lawyers if you have questions about this, you can not assert copyright
-over a file for a 2 line change, that's not allowed at all in any
-jurisdiction I know of.
+I wonder if you're hitting something similar to this issue on versatile
+boards [1]. Can you try that patch? Otherwise I will try to get qemu
+running (something I've never done, do you have instructions?).
 
-Because of that, I can not accept this change, sorry.
+[1] http://article.gmane.org/gmane.linux.ports.arm.kernel/221539
 
-greg k-h
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
+
