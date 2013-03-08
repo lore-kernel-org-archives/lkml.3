@@ -1,56 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760079Ab3CHSmb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 13:42:31 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:51993 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759575Ab3CHSma (ORCPT
+	id S1760095Ab3CHSnI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 13:43:08 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:30126 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759575Ab3CHSnF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 13:42:30 -0500
-Message-ID: <513A3113.10909@wwwdotorg.org>
-Date: Fri, 08 Mar 2013 11:42:27 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Fri, 8 Mar 2013 13:43:05 -0500
+Date: Fri, 8 Mar 2013 13:43:01 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Zoltan Kiss <zoltan.kiss@citrix.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] xen-blkback: Change statistics counter types to
+ unsigned
+Message-ID: <20130308184301.GA31104@phenom.dumpdata.com>
+References: <1362506372-19079-1-git-send-email-zoltan.kiss@citrix.com>
 MIME-Version: 1.0
-To: Laxman Dewangan <ldewangan@nvidia.com>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>
-Subject: Re: [PATCH 4/5] ARM: DT: tegra114: add KBC controller DT entry
-References: <1362750782-15174-1-git-send-email-ldewangan@nvidia.com> <1362750782-15174-5-git-send-email-ldewangan@nvidia.com> <513A2810.1070903@wwwdotorg.org> <513A2A6D.7080604@nvidia.com>
-In-Reply-To: <513A2A6D.7080604@nvidia.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1362506372-19079-1-git-send-email-zoltan.kiss@citrix.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/08/2013 11:14 AM, Laxman Dewangan wrote:
-> On Friday 08 March 2013 11:34 PM, Stephen Warren wrote:
->> On 03/08/2013 06:53 AM, Laxman Dewangan wrote:
->>> NVIDIA's Tegra114 SoCs have the matrix keyboard controller which
->>> supports 11x8 type of matrix. The number of rows and columns
->>> are configurable.
->> Earlier Tegra versions supported up to a 16x8 matrix. This feeds into
->> the following defines in the driver:
->>
->> #define KBC_MAX_GPIO    24
->> #define KBC_MAX_ROW     16
->> #define KBC_MAX_COL     8
->> #define KBC_MAX_KEY     (KBC_MAX_ROW * KBC_MAX_COL)
->>
->> Given Tegra114 supports /fewer/ pins and rows than earlier chips, I
->> think that makes the HW technically incompatible, since GPIO IDs 19..23
->> are invalid in this HW but valid earlier.
->>
->> Now in practice I suppose that with a correct DT keyboard map for a
->> Tegra114 device, those extra invalid GPIOs would never be referenced, so
->> this is a little nit-picky, but I still feel we should fix this.
-> 
-> Where do we fix this? In binding document?
+On Tue, Mar 05, 2013 at 05:59:32PM +0000, Zoltan Kiss wrote:
+> These values shouldn't be negative, but after an overflow their value
+> can turn into negative, if they are signed. xentop can show bogus
+> values in this case.
 
-In the driver and .dtsi files; the rest of my message was describing how
-to fix this.
+I get this during compilation:
+
+/home/konrad/linux/drivers/block/xen-blkback/xenbus.c: In function ‘show_oo_req’:
+/home/konrad/linux/drivers/block/xen-blkback/xenbus.c:233: warning: format ‘%d’ expects type ‘int’, but argument 3 has type ‘long long unsigned int’
+/home/konrad/linux/drivers/block/xen-blkback/xenbus.c: In function ‘show_rd_req’:
+/home/konrad/linux/drivers/block/xen-blkback/xenbus.c:234: warning: format ‘%d’ expects type ‘int’, but argument 3 has type ‘long long unsigned int’
+/home/konrad/linux/drivers/block/xen-blkback/xenbus.c: In function ‘show_wr_req’:
+/home/konrad/linux/drivers/block/xen-blkback/xenbus.c:235: warning: format ‘%d’ expects type ‘int’, but argument 3 has type ‘long long unsigned int’
+/home/konrad/linux/drivers/block/xen-blkback/xenbus.c: In function ‘show_f_req’:
+/home/konrad/linux/drivers/block/xen-blkback/xenbus.c:236: warning: format ‘%d’ expects type ‘int’, but argument 3 has type ‘long long unsigned int’
+/home/konrad/linux/drivers/block/xen-blkback/xenbus.c: In function ‘show_ds_req’:
+/home/konrad/linux/drivers/block/xen-blkback/xenbus.c:237: warning: format ‘%d’ expects type ‘int’, but argument 3 has type ‘long long unsigned int’
+/home/konrad/linux/drivers/block/xen-blkback/xenbus.c: In function ‘show_rd_sect’:
+/home/konrad/linux/drivers/block/xen-blkback/xenbus.c:238: warning: format ‘%d’ expects type ‘int’, but argument 3 has type ‘long long unsigned int’
+/home/konrad/linux/drivers/block/xen-blkback/xenbus.c: In function ‘show_wr_sect’:
+/home/konrad/linux/drivers/block/xen-blkback/xenbus.c:239: warning: format ‘%d’ expects type ‘int’, but argument 3 has type ‘long long unsigned int’
+  CC      block/bsg-lib.o
+  CC      mm/dmapool.o
+  CC      kernel/debug/debug_core.o
+  CC      mm/hugetlb.o
+  CC      mm/mempolicy.o
+  CC      drivers/acpi/sleep.o
+/home/konrad/linux/drivers/block/xen-blkback/blkback.c: In function ‘print_stats’:
+/home/konrad/linux/drivers/block/xen-blkback/blkback.c:384: warning: format ‘%3d’ expects type ‘int’, but argument 3 has type ‘long long unsigned int’
+/home/konrad/linux/drivers/block/xen-blkback/blkback.c:384: warning: format ‘%4d’ expects type ‘int’, but argument 4 has type ‘long long unsigned int’
+/home/konrad/linux/drivers/block/xen-blkback/blkback.c:384: warning: format ‘%4d’ expects type ‘int’, but argument 5 has type ‘lo
+
+Could you fix it up please as one big patch if possible?
+
+> 
+> Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
+> Reported-by: Ichiro Ogino <ichiro.ogino@citrix.co.jp>
+> ---
+>  drivers/block/xen-blkback/common.h |   14 +++++++-------
+>  1 files changed, 7 insertions(+), 7 deletions(-)
+> 
+> diff --git a/drivers/block/xen-blkback/common.h b/drivers/block/xen-blkback/common.h
+> index 6072390..72d09ac 100644
+> --- a/drivers/block/xen-blkback/common.h
+> +++ b/drivers/block/xen-blkback/common.h
+> @@ -208,13 +208,13 @@ struct xen_blkif {
+>  
+>  	/* statistics */
+>  	unsigned long		st_print;
+> -	int			st_rd_req;
+> -	int			st_wr_req;
+> -	int			st_oo_req;
+> -	int			st_f_req;
+> -	int			st_ds_req;
+> -	int			st_rd_sect;
+> -	int			st_wr_sect;
+> +	unsigned long long			st_rd_req;
+> +	unsigned long long			st_wr_req;
+> +	unsigned long long			st_oo_req;
+> +	unsigned long long			st_f_req;
+> +	unsigned long long			st_ds_req;
+> +	unsigned long long			st_rd_sect;
+> +	unsigned long long			st_wr_sect;
+>  
+>  	wait_queue_head_t	waiting_to_free;
+>  };
+> -- 
+> 1.7.0.4
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
