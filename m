@@ -1,91 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756564Ab3CHUFF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 15:05:05 -0500
-Received: from zill.ext.symas.net ([69.43.206.106]:53429 "EHLO
-	zill.ext.symas.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751136Ab3CHUFE (ORCPT
+	id S1755916Ab3CHUGU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 15:06:20 -0500
+Received: from nm12.access.bullet.mail.mud.yahoo.com ([66.94.237.213]:47120
+	"EHLO nm12.access.bullet.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751264Ab3CHUGT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 15:05:04 -0500
-Message-ID: <513A445E.9070806@symas.com>
-Date: Fri, 08 Mar 2013 12:04:46 -0800
-From: Howard Chu <hyc@symas.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:22.0) Gecko/20100101 Firefox/22.0 SeaMonkey/2.19a1
+	Fri, 8 Mar 2013 15:06:19 -0500
+X-Yahoo-Newman-Id: 208053.44871.bm@smtp101.rog.mail.bf1.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: NdPLGKMVM1k_6tLG1E3f0dV0DdxYNd694CeqjUwlfIjXEem
+ 5f.bhtPMPEskTpOdVKXLSbQKEZ3PFS6_QaxQoIwKWyuZ12iiNu2u5KKpuvBQ
+ 9hdGxmXCM1dWdx43Ubsh6XXFNZWjr_91Q8t9IRZklXjOCtcVXHMAFKECQ6Hi
+ BGq0KTr4Mct6nS9jgo5ptw5bfE4RS4.q2q_66T6aY3XNouc.HUUcWPXUlKq8
+ nLUhp8VfKYuAPMA_pzaD9F8r.s2e.d7_2KOf88yrKmIAyv.nOvbwijjKun3I
+ A.kHdcuChyekHwPIt47X46S7qrs.TeiD_DORc2Y9VfZwlCsOzjpF.yW6k_aJ
+ jQbmmwDs6F2JPrWLq1Yn.rZQQml6MofR8skclggAA1iEwidg2jwxdt8G9dZt
+ JxJHAFx09n8heYhBZxTYznLnsfov6gghiJYP7fvsReD8ahMrkSuUjPm.hv11
+ Rx.tW9Zz0IKU0Cb2jzccRS9.cnE7Z1AU-
+X-Yahoo-SMTP: rZzhDImswBA_40COIyZI42.8nAz5YXic.zo1v550XQVtX7k-
+From: Shawn Starr <shawn.starr@rogers.com>
+To: linux-kernel@vger.kernel.org
+Subject: [Linux 3.8/3.9-rc1][alsa][hda] Problem with automute on HDA CX20561 (Hermosa) - Persistent even after power off
+Date: Fri, 08 Mar 2013 15:06:12 -0500
+Message-ID: <2760279.2HbRmcDmlJ@segfault.sh0n.net>
+Organization: sh0n.net
+User-Agent: KMail/4.9.5 (Linux/3.8.0-2.fc19.x86_64; KDE/4.9.5; x86_64; ; )
 MIME-Version: 1.0
-To: Johannes Weiner <hannes@cmpxchg.org>
-CC: Chris Friesen <chris.friesen@genband.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mel@csn.ul.ie>, Rik van Riel <riel@redhat.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
-Subject: Re: mmap vs fs cache
-References: <5136320E.8030109@symas.com> <20130307154312.GG6723@quack.suse.cz> <20130308020854.GC23767@cmpxchg.org> <5139975F.9070509@symas.com> <20130308084246.GA4411@shutemov.name> <5139B214.3040303@symas.com> <5139FA13.8090305@genband.com> <5139FD27.1030208@symas.com> <20130308161643.GE23767@cmpxchg.org>
-In-Reply-To: <20130308161643.GE23767@cmpxchg.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Johannes Weiner wrote:
-> On Fri, Mar 08, 2013 at 07:00:55AM -0800, Howard Chu wrote:
->> Chris Friesen wrote:
->>> On 03/08/2013 03:40 AM, Howard Chu wrote:
->>>
->>>> There is no way that a process that is accessing only 30GB of a mmap
->>>> should be able to fill up 32GB of RAM. There's nothing else running on
->>>> the machine, I've killed or suspended everything else in userland
->>>> besides a couple shells running top and vmstat. When I manually
->>>> drop_caches repeatedly, then eventually slapd RSS/SHR grows to 30GB and
->>>> the physical I/O stops.
->>>
->>> Is it possible that the kernel is doing some sort of automatic
->>> readahead, but it ends up reading pages corresponding to data that isn't
->>> ever queried and so doesn't get mapped by the application?
->>
->> Yes, that's what I was thinking. I added a
->> posix_madvise(..POSIX_MADV_RANDOM) but that had no effect on the
->> test.
->>
->> First obvious conclusion - kswapd is being too aggressive. When free
->> memory hits the low watermark, the reclaim shrinks slapd down from
->> 25GB to 18-19GB, while the page cache still contains ~7GB of
->> unmapped pages. Ideally I'd like a tuning knob so I can say to keep
->> no more than 2GB of unmapped pages in the cache. (And the desired
->> effect of that would be to allow user processes to grow to 30GB
->> total, in this case.)
->
-> We should find out where the unmapped page cache is coming from if you
-> are only accessing mapped file cache and disabled readahead.
->
-> How do you arrive at this number of unmapped page cache?
+Hello folks,
 
-This number is pretty obvious. When slapd has grown to 25GB, the page cache 
-has grown to 32GB (less about 200MB, the minfree). So: 7GB unmapped in the cache.
+All of a sudden, it worked fine in Linux kernel 3.8, I believe after booting Linux kernel 3.9 (which has ALSA HDA changes). I can no longer hear audio from speakers on laptop. If I plug in headphones audio works.
 
-> What could happen is that previously used and activated pages do not
-> get evicted anymore since there is a constant supply of younger
-> reclaimable cache that is actually thrashing.  Whenever you drop the
-> caches, you get rid of those stale active pages and allow the
-> previously thrashing cache to get activated.  However, that would
-> require that there is already a significant amount of active file
-> pages before your workload starts (check the nr_active_file number in
-> /proc/vmstat before launching slapd, try sync; echo 3 >drop_caches
-> before launching to eliminate this option) OR that the set of pages
-> accessed during your workload changes and the combined set of pages
-> accessed by your workload is bigger than available memory -- which you
-> claimed would not happen because you only access the 30GB file area on
-> that system.
+[ 18.434846] hda_codec: CX20561 (Hermosa): BIOS auto-probing.
+[ 18.434932] ALSA sound/pci/hda/hda_auto_parser.c:306 autoconfig: line_outs=1 (0x1a/0x0/0x0/0x0/0x0) type:speaker
+[ 18.434934] ALSA sound/pci/hda/hda_auto_parser.c:310 speaker_outs=0 (0x0/0x0/0x0/0x0/0x0)
+[ 18.434936] ALSA sound/pci/hda/hda_auto_parser.c:314 hp_outs=2 (0x19/0x16/0x0/0x0/0x0)
+[ 18.434937] ALSA sound/pci/hda/hda_auto_parser.c:315 mono: mono_out=0x0
+[ 18.434939] ALSA sound/pci/hda/hda_auto_parser.c:318 dig-out=0x1c/0x0
+[ 18.434940] ALSA sound/pci/hda/hda_auto_parser.c:319 inputs:
+[ 18.434942] ALSA sound/pci/hda/hda_auto_parser.c:323 Mic=0x18
+[ 18.434944] ALSA sound/pci/hda/hda_auto_parser.c:323 Internal Mic=0x1d
+[ 18.434945] ALSA sound/pci/hda/hda_auto_parser.c:323 Dock Mic=0x17
+[ 18.435835] ALSA sound/pci/hda/patch_conexant.c:4587 hda_codec: Enable sync_write for stable communication
+[ 18.443473] input: HDA Intel Dock Mic as /devices/pci0000:00/0000:00:1b.0/sound/card0/input9
+[ 18.443563] input: HDA Intel Mic as /devices/pci0000:00/0000:00:1b.0/sound/card0/input10
+[ 18.443614] input: HDA Intel Headphone as /devices/pci0000:00/0000:00:1b.0/sound/card0/input11
+[ 18.443674] input: HDA Intel Dock Headphone as /devices/pci0000:00/0000:00:1b.0/sound/card0/input12
 
-There are no other active pages before the test begins. There's nothing else 
-running. caches have been dropped completely at the beginning.
+I did a hard power off, even booted into a Windows OS to see the windows kernel driver might reset the autio ports and it didn't fix this even, did the kernel driver reprogram the hardware badly somewhere? How can I fix this?
 
-The test clearly is accessing only 30GB of data. Once slapd reaches this 
-process size, the test can be stopped and restarted any number of times, run 
-for any number of hours continuously, and memory use on the system is 
-unchanged, and no pageins occur.
+Thanks,
+Shawn
 
--- 
-   -- Howard Chu
-   CTO, Symas Corp.           http://www.symas.com
-   Director, Highland Sun     http://highlandsun.com/hyc/
-   Chief Architect, OpenLDAP  http://www.openldap.org/project/
