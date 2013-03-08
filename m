@@ -1,72 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933201Ab3CHKW1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 05:22:27 -0500
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:50716 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750869Ab3CHKWZ (ORCPT
+	id S933454Ab3CHKWi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 05:22:38 -0500
+Received: from cmexedge1.ext.emulex.com ([138.239.224.99]:28450 "EHLO
+	CMEXEDGE1.ext.emulex.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752172Ab3CHKW0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 05:22:25 -0500
-From: Prabhakar lad <prabhakar.csengg@gmail.com>
-To: LMML <linux-media@vger.kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Sekhar Nori <nsekhar@ti.com>,
-        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-Subject: [PATCH] davinci: vpbe: fix module build
-Date: Fri,  8 Mar 2013 15:52:10 +0530
-Message-Id: <1362738130-24543-1-git-send-email-prabhakar.lad@ti.com>
-X-Mailer: git-send-email 1.7.4.1
+	Fri, 8 Mar 2013 05:22:26 -0500
+From: "Perla, Sathya" <Sathya.Perla@Emulex.Com>
+To: CAI Qian <caiqian@redhat.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+CC: Ivan Vecera <ivecera@redhat.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: RE: be2net failed to initialize regression
+Thread-Topic: be2net failed to initialize regression
+Thread-Index: AQHOG9w0zWEciruSLEiAyLWgoqK/JpiblY7g
+Date: Fri, 8 Mar 2013 10:22:24 +0000
+Message-ID: <CF9D1877D81D214CB0CA0669EFAE020C0F259965@CMEXMB1.ad.emulex.com>
+References: <1306201826.11289096.1362733530172.JavaMail.root@redhat.com>
+In-Reply-To: <1306201826.11289096.1362733530172.JavaMail.root@redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [138.239.140.182]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r28AMcYi027999
 
-From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+> -----Original Message-----
+> From: netdev-owner@vger.kernel.org [mailto:netdev-owner@vger.kernel.org]
+> On Behalf Of CAI Qian
+> 
+> Emulex CNA card failed to initialize using 3.8 and the latest upstream kernel,
+> 
+> [   87.479859] be2net 0000:04:00.0: POST timeout; stage=0xc911
+> [   87.515978] be2net 0000:04:00.0: Emulex OneConnect initialization failed
+> [   87.557130] be2net: probe of 0000:04:00.0 failed with error -1
+> 
+> lspci output,
+> 
+> 04:00.0 Ethernet controller: Emulex Corporation OneConnect 10Gb NIC (rev 02)
+> 04:00.1 Ethernet controller: Emulex Corporation OneConnect 10Gb NIC (rev 02)
+> 
+> 04:00.1 Ethernet controller: Emulex Corporation OneConnect 10Gb NIC (rev 02)
+>         Subsystem: Hewlett-Packard Company NC551i Dual Port FlexFabric 10Gb
+> Adapter
+> 
+> Confirmed no such problem using 3.7 kernel. Reproduced every time and still
+> bisecting. Just want to give an early head-up to see if anyone saw sometime
+> obvious.
 
-add a null entry in platform_device_id {}.
+Could you give me the FW version (ethtool -i) of the adapter (after be2net successfully
+probes in a 3.7 kernel.)
 
-This patch fixes following error:
-drivers/media/platform/davinci/vpbe_venc: struct platform_device_id is 24 bytes.  The last of 3 is:
-0x64 0x6d 0x33 0x35 0x35 0x2c 0x76 0x70 0x62 0x65 0x2d 0x76 0x65 0x6e 0x63 0x00 0x00 0x00 0x00 0x00 0x03 0x00 0x00 0x00
-FATAL: drivers/media/platform/davinci/vpbe_venc: struct platform_device_id is not terminated with a NULL entry!
-make[1]: *** [__modpost] Error 1
+If the FW version is as old as 2.x, then the culprit commit that broke compatibility with old FW versions
+on some (BE2) chips I is:
+commit 1bc8e7e4f36c0c19dd7dea29e7c248b7c6ef3a15
+be2net: fix access to SEMAPHORE reg
 
-Reported-by: Sekhar Nori <nsekhar@ti.com>
-Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
----
- drivers/media/platform/davinci/vpbe_osd.c  |    3 +++
- drivers/media/platform/davinci/vpbe_venc.c |    3 +++
- 2 files changed, 6 insertions(+), 0 deletions(-)
+The fix for this is (still on David's net tree I guess):
+commit c5b3ad4c67989c778e4753be4f91dc7193a04d21
+be2net: use CSR-BAR SEMAPHORE reg for BE2/BE3
 
-diff --git a/drivers/media/platform/davinci/vpbe_osd.c b/drivers/media/platform/davinci/vpbe_osd.c
-index 12ad17c..396a51c 100644
---- a/drivers/media/platform/davinci/vpbe_osd.c
-+++ b/drivers/media/platform/davinci/vpbe_osd.c
-@@ -52,6 +52,9 @@ static struct platform_device_id vpbe_osd_devtype[] = {
- 		.name = DM355_VPBE_OSD_SUBDEV_NAME,
- 		.driver_data = VPBE_VERSION_3,
- 	},
-+	{
-+		/* sentinel */
-+	}
- };
- 
- MODULE_DEVICE_TABLE(platform, vpbe_osd_devtype);
-diff --git a/drivers/media/platform/davinci/vpbe_venc.c b/drivers/media/platform/davinci/vpbe_venc.c
-index bdbebd5..34c704b 100644
---- a/drivers/media/platform/davinci/vpbe_venc.c
-+++ b/drivers/media/platform/davinci/vpbe_venc.c
-@@ -51,6 +51,9 @@ static struct platform_device_id vpbe_venc_devtype[] = {
- 		.name = DM355_VPBE_VENC_SUBDEV_NAME,
- 		.driver_data = VPBE_VERSION_3,
- 	},
-+	{
-+		/* sentinel */
-+	}
- };
- 
- MODULE_DEVICE_TABLE(platform, vpbe_venc_devtype);
--- 
-1.7.4.1
+Dave, can these 2 commits be queued for stable too:
+commit1: c5b3ad4c67989c778e4753be4f91dc7193a04d21
+commit2: 1bc8e7e4f36c0c19dd7dea29e7c248b7c6ef3a15
 
+thanks,
+-Sathya
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
