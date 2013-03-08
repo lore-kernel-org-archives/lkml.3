@@ -1,53 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934078Ab3CHKJd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 05:09:33 -0500
-Received: from mail-la0-f43.google.com ([209.85.215.43]:53592 "EHLO
-	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934020Ab3CHKJb (ORCPT
+	id S934063Ab3CHKJc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 05:09:32 -0500
+Received: from mail-lb0-f179.google.com ([209.85.217.179]:61589 "EHLO
+	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934019Ab3CHKJa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 05:09:31 -0500
+	Fri, 8 Mar 2013 05:09:30 -0500
 From: Johan Hovold <jhovold@gmail.com>
 To: Evgeniy Polyakov <zbr@ioremap.net>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-kernel@vger.kernel.org, Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH 2/2] w1-gpio: fix unused variable warning
-Date: Fri,  8 Mar 2013 11:08:00 +0100
-Message-Id: <1362737280-13714-2-git-send-email-jhovold@gmail.com>
+Subject: [PATCH 1/2] w1-gpio: remove erroneous __exit and __exit_p()
+Date: Fri,  8 Mar 2013 11:07:59 +0100
+Message-Id: <1362737280-13714-1-git-send-email-jhovold@gmail.com>
 X-Mailer: git-send-email 1.8.1.1
-In-Reply-To: <1362737280-13714-1-git-send-email-jhovold@gmail.com>
-References: <1362737280-13714-1-git-send-email-jhovold@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 8a1861d997 ("w1-gpio: Simplify & get rid of defines") removed the
-compile guards from the device-tree id table, thereby generating a
-warning when building without device-tree support.
+Commit 8a1861d997 ("w1-gpio: Simplify & get rid of defines") changed
+(apparently unknowingly) the driver to a hotpluggable platform-device
+driver but did not not update the section markers for probe and remove
+(to __devinit/exit, which have since been removed). A later commit fixed
+the section mismatch for probe, but left remove marked with __exit.
 
 Signed-off-by: Johan Hovold <jhovold@gmail.com>
 ---
- drivers/w1/masters/w1-gpio.c | 2 ++
- 1 file changed, 2 insertions(+)
+ drivers/w1/masters/w1-gpio.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/w1/masters/w1-gpio.c b/drivers/w1/masters/w1-gpio.c
-index 012817a..46d9701 100644
+index d39dfa4..012817a 100644
 --- a/drivers/w1/masters/w1-gpio.c
 +++ b/drivers/w1/masters/w1-gpio.c
-@@ -47,11 +47,13 @@ static u8 w1_gpio_read_bit(void *data)
- 	return gpio_get_value(pdata->pin) ? 1 : 0;
+@@ -158,7 +158,7 @@ static int w1_gpio_probe(struct platform_device *pdev)
+ 	return err;
  }
  
-+#if defined(CONFIG_OF)
- static struct of_device_id w1_gpio_dt_ids[] = {
- 	{ .compatible = "w1-gpio" },
- 	{}
- };
- MODULE_DEVICE_TABLE(of, w1_gpio_dt_ids);
-+#endif
- 
- static int w1_gpio_probe_dt(struct platform_device *pdev)
+-static int __exit w1_gpio_remove(struct platform_device *pdev)
++static int w1_gpio_remove(struct platform_device *pdev)
  {
+ 	struct w1_bus_master *master = platform_get_drvdata(pdev);
+ 	struct w1_gpio_platform_data *pdata = pdev->dev.platform_data;
+@@ -210,7 +210,7 @@ static struct platform_driver w1_gpio_driver = {
+ 		.of_match_table = of_match_ptr(w1_gpio_dt_ids),
+ 	},
+ 	.probe = w1_gpio_probe,
+-	.remove	= __exit_p(w1_gpio_remove),
++	.remove	= w1_gpio_remove,
+ 	.suspend = w1_gpio_suspend,
+ 	.resume = w1_gpio_resume,
+ };
 -- 
 1.8.1.1
 
