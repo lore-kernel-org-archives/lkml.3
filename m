@@ -1,133 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934260Ab3CHRyP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 12:54:15 -0500
-Received: from mail-db8lp0187.outbound.messaging.microsoft.com ([213.199.154.187]:20370
-	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756917Ab3CHRyN convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 12:54:13 -0500
-X-Greylist: delayed 904 seconds by postgrey-1.27 at vger.kernel.org; Fri, 08 Mar 2013 12:54:13 EST
-X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
-X-SpamScore: -7
-X-BigFish: VPS-7(zzbb2dI98dI9371Ic89bh936eI1102I1432I168aJzz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ahzzz2fh95h668h839h93fhd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah906i1155h)
-Date: Fri, 8 Mar 2013 09:38:59 -0800
-From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
-To: Lars-Peter Clausen <lars@metafoo.de>
-CC: Jan =?utf-8?B?TMO8YmJl?= <jlu@pengutronix.de>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Mike Turquette <mturquette@linaro.org>,
-        Josh Cartwright <josh.cartwright@ni.com>,
-        Michal Simek <michal.simek@xilinx.com>,
-        Peter Crosthwaite <pcrost@xilinx.com>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <git@xilinx.com>
-Subject: Re: RFC: Zynq Clock Controller
-References: <37032699-343e-485c-80e0-9b23e3706c58@VA3EHSMHS013.ehs.local>
- <1362570681.5269.98.camel@coredoba.hi.pengutronix.de>
- <f288874c-d0ae-4581-8d0f-2b9abe4d3117@CO9EHSMHS002.ehs.local>
- <51385FA3.8080105@metafoo.de>
- <2a91857c-473f-4f92-b2b1-e7ac4679b72a@AM1EHSMHS007.ehs.local>
- <51390E92.2080806@metafoo.de>
- <a6c711bf-7722-4eb0-bb72-0e5c00e4ba9d@CO9EHSMHS016.ehs.local>
- <51398F54.5080802@metafoo.de>
+	id S964789Ab3CHRyt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 12:54:49 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:39776 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933621Ab3CHRyr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Mar 2013 12:54:47 -0500
+Message-ID: <513A25E4.8040504@wwwdotorg.org>
+Date: Fri, 08 Mar 2013 10:54:44 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Disposition: inline
-In-Reply-To: <51398F54.5080802@metafoo.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginalArrivalTime: 08 Mar 2013 17:39:00.0911 (UTC) FILETIME=[D1C513F0:01CE1C23]
-X-RCIS-Action: ALLOW
-Message-ID: <ad0abbdf-b783-4c43-aa40-534f726fbfb7@DB8EHSMHS013.ehs.local>
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: xilinx.com
+To: Laxman Dewangan <ldewangan@nvidia.com>
+CC: linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org,
+        linux-kernel@vger.kernel.org, pdeschrijver@nvidia.com
+Subject: Re: [PATCH 3/5] ARM: DT: tegra114:add aliases and DMA requestor for
+ serial controller
+References: <1362750782-15174-1-git-send-email-ldewangan@nvidia.com> <1362750782-15174-4-git-send-email-ldewangan@nvidia.com>
+In-Reply-To: <1362750782-15174-4-git-send-email-ldewangan@nvidia.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 08, 2013 at 08:12:20AM +0100, Lars-Peter Clausen wrote:
-> On 03/08/2013 12:25 AM, Sören Brinkmann wrote:
-> > On Thu, Mar 07, 2013 at 11:02:58PM +0100, Lars-Peter Clausen wrote:
-> >> On 03/07/2013 08:11 PM, Sören Brinkmann wrote:
-> >>> On Thu, Mar 07, 2013 at 10:36:35AM +0100, Lars-Peter Clausen wrote:
-> >>>> On 03/06/2013 06:27 PM, Sören Brinkmann wrote:
-> >>>>> Hi Jan,
-> >>>>>  
-> >>>>> what a small world. Good to hear from you.
-> >>>>>
-> >>>>> On Wed, Mar 06, 2013 at 12:51:21PM +0100, Jan Lübbe wrote:
-> >>>>>> Hi Sören,
-> >>>>>>
-> >>>>>> On Tue, 2013-03-05 at 12:04 -0800, Sören Brinkmann wrote:
-> >>>>>>> For this reasons, I'd like to propose moving Zynq into the same
-> >>>>>>> direction. I.e. adding a clock controller with the following DT
-> >>>>>>> description (details may change but the general idea should become
-> >>>>>>> clear):
-> >>>>>>> 	clkc: clkc {
-> >>>>>>>                 #clock-cells = <1>;
-> >>>>>>>                 compatible = "xlnx,ps7-clkc";
-> >>>>>>>                 ps_clk_frequency = <33333333>;	# board x-tal
-> >>>>>>>                 # optional props
-> >>>>>>>                 gem0_emio_clk_freq = <125000000>;
-> >>>>>>>                 gem1_emio_clk_freq = <50000000>;
-> >>>>>>>                 can_mio_clk_freq_xx = <1234>; # this is possible 54 times with xx = 00..53
-> >>>>>>>         };
-> >>>>
-> >>>> I definitely prefer the way it is right now in upstream, where we have one
-> >>>> dt node per clock. It is more descriptive and also more extensible. And you
-> >>>> also don't have to remember the clock index, and can use the phandle
-> >>>> directly instead.
-> >>> The problems I see with that are:
-> >>>  - with the clock controller we can model the clock tree as we need without changing the DT all the time
-> >>
-> >> When do we need to change the clock tree? The clock tree is pretty much fixed
-> >> in hardware. And the DT describes the hardware, so I don't so a problem there.
-> >>
-> >>>  - w/o a clock controller there is no block which has knowledge of the whole clock tree (unless we parse the DT), and could conduct reparent operations and similar
-> >>
-> >> The clk framework builds a representation of the clock tree. Each clock should
-> >> be able to handle re-parenting on it's own, without knowing about the other
-> >> clocks in the tree, the parent is selected by a field in the clocks register.
-> >> It doesn't even have to know who the parents are, the clk framework will take
-> >> care of all of this and just say, ok, switch your input clock to X, where X is
-> >> a simple integer number The clk framework will also take care of re-calculating
-> >> all the updates frequencies after re-parenting.
-> > Nope, clk_set_parent() takes two 'struct *clk' as argument. So, you have to have those of the clock to change and all its parents. A device driver for example, which gets a clock through clk_get() does not have that information and should not, since it should not have to be aware of the SOC's clock hierarchy, IMHO.
-> > 
+On 03/08/2013 06:53 AM, Laxman Dewangan wrote:
+> Add APB DMA requestor and serial aliases for serial controller.
+> There will be two serial driver i.e. 8250 based simple serial driver
+> and APB DMA based serial driver for higher baudrate and performace.
 > 
-> Yes, you global clk_set_parent() method takes two clk structs. But the clock
-> framework takes care of all the magic of mapping that second clk struct to a
-> integer number, based on the clks parent list. So your set_parent callback in
-> your clk_ops takes as parameters your clk and the index of the parent.
-Right, but who/what in your scheme is supposed to call the high level API function requiring knowledge about all those 'struct *clk' and their hierarchy? This is where I think a big block has the advantage since it has a holistic view on the clock tree.
-
+> The simple serial driver get enabled with compatible nvidia,tegra20-uart
+> and APB DMA based driver will get enabled with compatible
+> nvidia,tegra30-hsuart.
 > 
-> >>
-> >>>  - once the clock controller is properly defined the clock connection should be contained in a dtsi which never changes. So, regarding remembering outputs, I don't see a problem. I rather see issues with having a pile of clocks described in the DT. I have currently 44 outputs proposed, and to model the whole tree a lot of more clocks are used (I started modeling everything with the clock primitives and removed custom clock implementations, except for the PLLs). Having all those in the DT does not really help, IMHO.
-> >>
-> >> Well, except if you want to use external clocks for ethernet or CAN. Also you
-> >> don't need to change the dtsi either if you have a separate node for each clock.
-> >>
-> >> To avoid misunderstandings let me clarify that I don't want to have one node
-> >> per clock, but rather one node per clock block (or whatever they are called).
-> >> The combination of input select + divider + output gate. E.g. the UART clock
-> >> block with it's 3 inputs and two outputs.
-> >>
-> >> Also the APER clocks should probably be one node with 24 outputs.
-> > Okay, so instead of having one block encapsulating all clocks, you want it on a finer granularity. I don't see huge differences why that should be advantageous? It would just mean to create several blocks with their custom DT bindings instead of a single one. Just the abstraction level would be a little different.
-> 
-> The DT is supposed to describe the hardware, not the software. These are the
-> basic blocks. The are independent of each other and mostly orthogonal. It's the
-> same IP block instantiated a couple of times next to each other (sometimes with
-> slightly different parameters). They just happen to have their register mapped
-> in the same IO region. The SLCR is just a container which contains all these
-> blocks. Very much the same way the whole SoC is a container which contains the
-> different peripheral blocks, etc. By you rationale we could argue, why do we
-> need a dt node for each peripheral and not just simply one ZYNQ node?
-I see us ending up here with custom clock blocks for each and every peripheral. They all look similar on first look but have all their slight differences. So, it's either different implementations or having a lot of DT properties to make a single implementation work for all the variations. That's why I prefer the single controller solution.
-The DT description will always be an abstraction. You prefer grouping clocks for functional units, whereas I put them all into the same drawer labeled 'clocks'.
+> Also Fix the clock id for the UARTB.
 
-	Sören
+If you feel like saying "also", that should probably be a separate patch!
 
+In this case, if the UARTB clock ID actually should be changed, then the
+fix should be rolled into Peter's Tegra114 clock series, since it adds
+the property you're changing here, and his series hasn't yet been applied.
 
+But, as I mentioned in my previous email, I don't believe the UARTB
+clock ID change is correct.
+
+> diff --git a/arch/arm/boot/dts/tegra114.dtsi b/arch/arm/boot/dts/tegra114.dtsi
+
+> +	/*
+> +	 * There are two serial driver i.e. 8250 based simple serial
+> +	 * driver and APB DMA based serial driver for higher baudrate
+> +	 * and performace. To enable the 8250 based driver, the compatible
+> +	 * is "nvidia,tegra30-uart", "nvidia,tegra20-uart" and to enable
+> +	 * the APB DMA based serial driver, the comptible is
+> +	 * "nvidia,tegra30-hsuart", "nvidia,tegra20-hsuart".
+> +	 */
+
+Any references to Tegra30 there should be changed to Tegra114 I think.
