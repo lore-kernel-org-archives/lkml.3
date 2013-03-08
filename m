@@ -1,60 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964789Ab3CHRyt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 12:54:49 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:39776 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933621Ab3CHRyr (ORCPT
+	id S964821Ab3CHRzL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 12:55:11 -0500
+Received: from netrider.rowland.org ([192.131.102.5]:38404 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S933621Ab3CHRzJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 12:54:47 -0500
-Message-ID: <513A25E4.8040504@wwwdotorg.org>
-Date: Fri, 08 Mar 2013 10:54:44 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Fri, 8 Mar 2013 12:55:09 -0500
+Date: Fri, 8 Mar 2013 12:55:08 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: Alexey Khoroshilov <khoroshilov@ispras.ru>,
+        Oliver Neukum <oliver@neukum.org>
+cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Hans de Goede <hdegoede@redhat.com>,
+        USB list <linux-usb@vger.kernel.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        <ldv-project@linuxtesting.org>
+Subject: Re: [PATCH] usb/core/devio.c: Don't use GFP_KERNEL while we cannot
+ reset a storage device
+In-Reply-To: <1362761447-24643-1-git-send-email-khoroshilov@ispras.ru>
+Message-ID: <Pine.LNX.4.44L0.1303081248090.17427-100000@netrider.rowland.org>
 MIME-Version: 1.0
-To: Laxman Dewangan <ldewangan@nvidia.com>
-CC: linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org, pdeschrijver@nvidia.com
-Subject: Re: [PATCH 3/5] ARM: DT: tegra114:add aliases and DMA requestor for
- serial controller
-References: <1362750782-15174-1-git-send-email-ldewangan@nvidia.com> <1362750782-15174-4-git-send-email-ldewangan@nvidia.com>
-In-Reply-To: <1362750782-15174-4-git-send-email-ldewangan@nvidia.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/08/2013 06:53 AM, Laxman Dewangan wrote:
-> Add APB DMA requestor and serial aliases for serial controller.
-> There will be two serial driver i.e. 8250 based simple serial driver
-> and APB DMA based serial driver for higher baudrate and performace.
+On Sat, 9 Mar 2013, Alexey Khoroshilov wrote:
+
+> As it was described by Oliver Neukum in commit acbe2fe
+> "USB: Don't use GFP_KERNEL while we cannot reset a storage device":
 > 
-> The simple serial driver get enabled with compatible nvidia,tegra20-uart
-> and APB DMA based driver will get enabled with compatible
-> nvidia,tegra30-hsuart.
+>   Memory allocations with GFP_KERNEL can cause IO to a storage device
+>   which can fail resulting in a need to reset the device. Therefore
+>   GFP_KERNEL cannot be safely used between usb_lock_device()
+>   and usb_unlock_device(). Replace by GFP_NOIO.
 > 
-> Also Fix the clock id for the UARTB.
+> The patch fixes the same issue in usb/core/devio.c.
+> All the allocations fixed are under usb_lock_device() from usbdev_do_ioctl().
+> 
+> Found by Linux Driver Verification project (linuxtesting.org).
 
-If you feel like saying "also", that should probably be a separate patch!
+I don't know if this is a good idea.  People can and do submit 
+transfers requiring a lot of buffer space.  Switching to GFP_NOIO 
+will make those allocations a lot more likely to fail.
 
-In this case, if the UARTB clock ID actually should be changed, then the
-fix should be rolled into Peter's Tegra114 clock series, since it adds
-the property you're changing here, and his series hasn't yet been applied.
+Oliver, what do you think?
 
-But, as I mentioned in my previous email, I don't believe the UARTB
-clock ID change is correct.
+Alan Stern
 
-> diff --git a/arch/arm/boot/dts/tegra114.dtsi b/arch/arm/boot/dts/tegra114.dtsi
-
-> +	/*
-> +	 * There are two serial driver i.e. 8250 based simple serial
-> +	 * driver and APB DMA based serial driver for higher baudrate
-> +	 * and performace. To enable the 8250 based driver, the compatible
-> +	 * is "nvidia,tegra30-uart", "nvidia,tegra20-uart" and to enable
-> +	 * the APB DMA based serial driver, the comptible is
-> +	 * "nvidia,tegra30-hsuart", "nvidia,tegra20-hsuart".
-> +	 */
-
-Any references to Tegra30 there should be changed to Tegra114 I think.
