@@ -1,47 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964810Ab3CHRUg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 12:20:36 -0500
-Received: from cpsmtpb-ews10.kpnxchange.com ([213.75.39.15]:54079 "EHLO
-	cpsmtpb-ews10.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933860Ab3CHRUe (ORCPT
+	id S934496Ab3CHRZ5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 12:25:57 -0500
+Received: from mail-ia0-f181.google.com ([209.85.210.181]:50883 "EHLO
+	mail-ia0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756146Ab3CHRZ4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 12:20:34 -0500
-Message-ID: <1362763232.5994.75.camel@x61.thuisdomein>
-Subject: Re: [PATCH] ARM: OMAP: drop "select MACH_NOKIA_RM696"
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Tony Lindgren <tony@atomide.com>
-Cc: Aaro Koskinen <aaro.koskinen@iki.fi>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Fri, 08 Mar 2013 18:20:32 +0100
-In-Reply-To: <20130308163507.GC26093@atomide.com>
-References: <1362738596.5994.48.camel@x61.thuisdomein>
-	 <20130308161159.GE14552@blackmetal.musicnaut.iki.fi>
-	 <20130308163507.GC26093@atomide.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 08 Mar 2013 17:20:32.0788 (UTC) FILETIME=[3D46ED40:01CE1C21]
-X-RcptDomain: vger.kernel.org
+	Fri, 8 Mar 2013 12:25:56 -0500
+MIME-Version: 1.0
+In-Reply-To: <51399F34.2030500@cn.fujitsu.com>
+References: <1362718720-27048-1-git-send-email-yinghai@kernel.org>
+	<1362718720-27048-15-git-send-email-yinghai@kernel.org>
+	<51399F34.2030500@cn.fujitsu.com>
+Date: Fri, 8 Mar 2013 09:25:55 -0800
+X-Google-Sender-Auth: Oza00ux_sTFgYHtY4oShVSiySVs
+Message-ID: <CAE9FiQV5bsHdYGk6p3fBzNyFk8ffswdKqCreidh7+z1Cn3+++g@mail.gmail.com>
+Subject: Re: [PATCH 14/14] x86, mm: Put pagetable on local node ram
+From: Yinghai Lu <yinghai@kernel.org>
+To: Tang Chen <tangchen@cn.fujitsu.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Renninger <trenn@suse.de>, linux-kernel@vger.kernel.org,
+        Tejun Heo <tj@kernel.org>, Pekka Enberg <penberg@kernel.org>,
+        Jacob Shin <jacob.shin@amd.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-03-08 at 08:35 -0800, Tony Lindgren wrote:
-> I think the righ fix is to just add
-> 
-> config MACH_NOKIA_RM680
-> 	bool
+On Fri, Mar 8, 2013 at 12:20 AM, Tang Chen <tangchen@cn.fujitsu.com> wrote:
+> Hi Yinghai,
+>
+> On 03/08/2013 12:58 PM, Yinghai Lu wrote:
+> ......
+>
+>>         /* xen has big range in reserved near end of ram, skip it at
+>> first.*/
+>> -       addr = memblock_find_in_range(ISA_END_ADDRESS, end, PMD_SIZE,
+>> PMD_SIZE);
+>> +       addr = memblock_find_in_range(begin, end, PMD_SIZE, PMD_SIZE);
+>
+>
+> Found that the latest code here is:
+>
+>  414         addr = memblock_find_in_range(ISA_END_ADDRESS, end, PMD_SIZE,
+>  415                          PAGE_SIZE);
+>                              ^^^^^^^^^^^^
+>
+> The "align" is PAGE_SIZE, not PMD_SIZE. Not sure if it is a problem. :)
+>
 
-I guess you meant MACH_NOKIA_RM696.
+Yes, it is PMD_SIZE.
 
-> to the mach-omap2/Kconfig like we have for n8x0 also.
+https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=98e7a989979b185f49e86ddaed2ad6890299d9f0
 
-Should I draft a patch?
+Thanks
 
-
-Paul Bolle
-
+Yinghai
