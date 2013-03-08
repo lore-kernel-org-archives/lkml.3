@@ -1,49 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933752Ab3CHHFO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 02:05:14 -0500
-Received: from mail-oa0-f52.google.com ([209.85.219.52]:33397 "EHLO
-	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753398Ab3CHHFN (ORCPT
+	id S933760Ab3CHHGT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 02:06:19 -0500
+Received: from rtits2.realtek.com ([60.250.210.242]:35463 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753223Ab3CHHGS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 02:05:13 -0500
+	Fri, 8 Mar 2013 02:06:18 -0500
+X-SpamFilter-By: BOX Solutions SpamTrap 5.19 with qID r2875vsj024833, This message is released by code: ctlocs8528
+From: <wei_wang@realsil.com.cn>
+To: <cjb@laptop.org>, <sameo@linux.intel.com>
+CC: <devel@linuxdriverproject.org>, <linux-kernel@vger.kernel.org>,
+        <linux-mmc@vger.kernel.org>, <gregkh@linuxfoundation.org>,
+        <rogerable@realtek.com>, Wei WANG <wei_wang@realsil.com.cn>
+Subject: [PATCH] mmc/host:rtsx: Don't execute power up sequence repeatedly
+Date: Fri, 8 Mar 2013 15:05:57 +0800
+Message-ID: <1362726357-7629-1-git-send-email-wei_wang@realsil.com.cn>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-In-Reply-To: <20130308062602.GI14556@mtj.dyndns.org>
-References: <1362718720-27048-1-git-send-email-yinghai@kernel.org>
-	<1362718720-27048-9-git-send-email-yinghai@kernel.org>
-	<20130308062602.GI14556@mtj.dyndns.org>
-Date: Thu, 7 Mar 2013 23:05:12 -0800
-X-Google-Sender-Auth: SYIdqqBTb_uzZeO_zfX5ySM76JA
-Message-ID: <CAE9FiQXGH69V2sy_KXsBFHWK4gBo213iaBtOExWvPmmYVVs_3g@mail.gmail.com>
-Subject: Re: [PATCH 08/14] x86, mm, numa: use numa_meminfo to check
- node_map_pfn alignment
-From: Yinghai Lu <yinghai@kernel.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Renninger <trenn@suse.de>, Tang Chen <tangchen@cn.fujitsu.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
+X-Originating-IP: [172.29.41.8]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 7, 2013 at 10:26 PM, Tejun Heo <tj@kernel.org> wrote:
-> On Thu, Mar 07, 2013 at 08:58:34PM -0800, Yinghai Lu wrote:
->> We could use numa_meminfo directly instead of memblock nid.
->>
->> So we could move down set memblock nid down and only do it one time
->> for successful path
->>
->> Move node_map_pfn_alignment() to arch/x86/mm as no other user for it.
->
-> Please don't move and update in the same patch.  It makes it difficult
-> to review what's really changing.
+From: Wei WANG <wei_wang@realsil.com.cn>
 
-ok, will make it two patches, one for moving and one for changing to
-numa_meminfo.
+For some Realtek's card reader, power up sequence can only be executed
+when power has been turned off fully.
+So rtsx host should not start power up sequence again when set_ios been
+called if the power has been turned on.
 
-Thanks
+Signed-off-by: Wei WANG <wei_wang@realsil.com.cn>
+---
+ drivers/mmc/host/rtsx_pci_sdmmc.c |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
-Yinghai
+diff --git a/drivers/mmc/host/rtsx_pci_sdmmc.c b/drivers/mmc/host/rtsx_pci_sdmmc.c
+index f981f7d..ad13f42 100644
+--- a/drivers/mmc/host/rtsx_pci_sdmmc.c
++++ b/drivers/mmc/host/rtsx_pci_sdmmc.c
+@@ -57,6 +57,9 @@ struct realtek_pci_sdmmc {
+ 	bool			eject;
+ 	bool			initial_mode;
+ 	bool			ddr_mode;
++	int			power_state;
++#define SDMMC_POWER_ON		1
++#define SDMMC_POWER_OFF		0
+ };
+ 
+ static inline struct device *sdmmc_dev(struct realtek_pci_sdmmc *host)
+@@ -765,6 +768,9 @@ static int sd_power_on(struct realtek_pci_sdmmc *host)
+ 	struct rtsx_pcr *pcr = host->pcr;
+ 	int err;
+ 
++	if (host->power_state == SDMMC_POWER_ON)
++		return 0;
++
+ 	rtsx_pci_init_cmd(pcr);
+ 	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, CARD_SELECT, 0x07, SD_MOD_SEL);
+ 	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, CARD_SHARE_MODE,
+@@ -787,6 +793,7 @@ static int sd_power_on(struct realtek_pci_sdmmc *host)
+ 	if (err < 0)
+ 		return err;
+ 
++	host->power_state = SDMMC_POWER_ON;
+ 	return 0;
+ }
+ 
+@@ -795,6 +802,8 @@ static int sd_power_off(struct realtek_pci_sdmmc *host)
+ 	struct rtsx_pcr *pcr = host->pcr;
+ 	int err;
+ 
++	host->power_state = SDMMC_POWER_OFF;
++
+ 	rtsx_pci_init_cmd(pcr);
+ 
+ 	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, CARD_CLK_EN, SD_CLK_EN, 0);
+@@ -1260,6 +1269,7 @@ static int rtsx_pci_sdmmc_drv_probe(struct platform_device *pdev)
+ 	host->pcr = pcr;
+ 	host->mmc = mmc;
+ 	host->pdev = pdev;
++	host->power_state = SDMMC_POWER_OFF;
+ 	platform_set_drvdata(pdev, host);
+ 	pcr->slots[RTSX_SD_CARD].p_dev = pdev;
+ 	pcr->slots[RTSX_SD_CARD].card_event = rtsx_pci_sdmmc_card_event;
+-- 
+1.7.9.5
+
