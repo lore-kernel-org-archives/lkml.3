@@ -1,51 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933432Ab3CHKeP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 05:34:15 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:37592 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752764Ab3CHKeM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 05:34:12 -0500
-Message-ID: <5139BE7F.5020905@zytor.com>
-Date: Fri, 08 Mar 2013 02:33:35 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130219 Thunderbird/17.0.3
+	id S1756158Ab3CHKl2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 05:41:28 -0500
+Received: from co9ehsobe005.messaging.microsoft.com ([207.46.163.28]:13094
+	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752016Ab3CHKl0 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Mar 2013 05:41:26 -0500
+X-Forefront-Antispam-Report: CIP:66.35.236.232;KIP:(null);UIP:(null);IPV:NLI;H:SJ-ITEXEDGE02.altera.priv.altera.com;RD:none;EFVD:NLI
+X-SpamScore: -3
+X-BigFish: VS-3(zz98dI936eI1432Izz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ahzzz2fh2a8h668h839h93fhd24hd2bhf0ah107ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1155h)
+Message-ID: <1362739279.2201.3.camel@leyfoon-vm>
+Subject: Re: [PATCH 1/1] drivers/misc: Add Altera System ID driver
+From: Ley Foon Tan <lftan@altera.com>
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Rob Landley <rob@landley.net>, <linux-kernel@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>
+Date: Fri, 8 Mar 2013 18:41:19 +0800
+In-Reply-To: <201303052159.36531.arnd@arndb.de>
+References: <1362366697-2768-1-git-send-email-lftan@altera.com>
+	 <201303041255.42142.arnd@arndb.de> <1362481947.2293.11.camel@leyfoon-vm>
+	 <201303052159.36531.arnd@arndb.de>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 MIME-Version: 1.0
-To: Jingbai Ma <jingbai.ma@hp.com>
-CC: Vivek Goyal <vgoyal@redhat.com>, mingo@redhat.com,
-        kumagai-atsushi@mxc.nes.nec.co.jp, ebiederm@xmission.com,
-        yinghai@kernel.org, kexec@lists.infradead.org,
-        linux-kernel@vger.kernel.org,
-        "Mitchell, Lisa (MCLinux in Fort Collins)" <lisa.mitchell@hp.com>
-Subject: Re: [RFC PATCH 0/5] crash dump bitmap: scan memory pages in kernel
- to speedup kernel dump process
-References: <20130307145808.29098.41592.stgit@k.asiapacific.hpqcorp.net> <20130307152108.GC2790@redhat.com> <5139B827.3050500@hp.com>
-In-Reply-To: <5139B827.3050500@hp.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: altera.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/08/2013 02:06 AM, Jingbai Ma wrote:
+On Tue, 2013-03-05 at 21:59 +0000, Arnd Bergmann wrote:
+> On Tuesday 05 March 2013, Ley Foon Tan wrote:
+> > The sysid give the unique system ID and system generation timestamp of
+> > the system.
+> > 
+> > CASE 1:
+> > SOCFPGA SoC + Sysid component in FPGA
+> > 
+> > CASE 2
+> > Nios II soft core CPU + Sysid  (All in FPGA and no SoC is involved)
+> > 
+> > From example use cases above, Case 2 doesn't involve SoC component. 
+> > To support both cases, do you think drivers/base/soc.c is still
+> > suitable?
 > 
-> Kernel do have some abilities that user space haven't. It's possible to
-> map whole memory space of the first kernel into user space on the second
-> kernel. But the user space code has to re-implement some parts of the
-> kernel memory management system again. And worse, it's architecture
-> dependent, more architectures supported, more codes have to be
-> implemented. All implementation in user space must be sync to kernel
-> implementation. It's may called "flexibility", but it's painful to
-> maintain the codes.
+> Yes, I think so. I would consider the second case still a SoC, because
+> you have a single chip that contains the CPU and peripherals. From
+> the OS point of view, it does not matter that they are in an FPGA.
 > 
+> 	Arnd
 
-What?  You are basically talking about /dev/mem... there is nothing
-particularly magic about it at all.
+Thanks for your input. I will go with your suggestion.
 
-	-hpa
+LFTan
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
 
