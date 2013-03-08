@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753996Ab3CHTx6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 14:53:58 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:30430 "EHLO
+	id S932716Ab3CHTyW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 14:54:22 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:30630 "EHLO
 	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751136Ab3CHTx5 (ORCPT
+	with ESMTP id S1752146Ab3CHTyU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 14:53:57 -0500
-Date: Fri, 8 Mar 2013 14:53:24 -0500
+	Fri, 8 Mar 2013 14:54:20 -0500
+Date: Fri, 8 Mar 2013 14:53:42 -0500
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: Yinghai Lu <yinghai@kernel.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
@@ -15,157 +15,141 @@ Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "Rafael J. Wysocki" <rjw@sisk.pl>, linux-pci@vger.kernel.org,
         linux-kernel@vger.kernel.org, Joerg Roedel <joro@8bytes.org>,
         Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-Subject: Re: [PATCH v2 12/26] x86, irq: Add realloc_irq_and_cfg_at()
-Message-ID: <20130308195324.GE6622@phenom.dumpdata.com>
+Subject: Re: [PATCH v2 13/26] x86, irq: Move down arch_early_irq_init()
+Message-ID: <20130308195342.GF6622@phenom.dumpdata.com>
 References: <1360351703-20571-1-git-send-email-yinghai@kernel.org>
- <1360351703-20571-13-git-send-email-yinghai@kernel.org>
+ <1360351703-20571-14-git-send-email-yinghai@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1360351703-20571-13-git-send-email-yinghai@kernel.org>
+In-Reply-To: <1360351703-20571-14-git-send-email-yinghai@kernel.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 08, 2013 at 11:28:09AM -0800, Yinghai Lu wrote:
-> For ioapic hotplug support, we need to reserve irq range for hot
-> added ioapic controller. After that we need to allocate those
-> pre-reserved one.
+On Fri, Feb 08, 2013 at 11:28:10AM -0800, Yinghai Lu wrote:
+> Change position only.
 > 
-> Add realloc_irq_and_cfg_at() to really allocate irq_desc and cfg
-
-Put a period at 'cfg'.
-> as pre-reserved only hold bit in allocate_irqs bit maps.
-
-And then start the new sentence here saying 'Pre-reserved (XX function
-name) only holds bits in .."
-
+> Prepare to update arch_early_irq_init(), it needs call some static functions.
+                                                   ^^-> to
 > 
 > Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 > Cc: Joerg Roedel <joro@8bytes.org>
 > Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 > Cc: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
 > ---
->  arch/x86/kernel/apic/io_apic.c |   32 +++++++++++++++++++++++++++++++-
->  include/linux/irq.h            |    5 +++++
->  kernel/irq/irqdesc.c           |   26 ++++++++++++++++++++++++++
->  3 files changed, 62 insertions(+), 1 deletion(-)
+>  arch/x86/kernel/apic/io_apic.c |   89 ++++++++++++++++++++--------------------
+>  1 file changed, 44 insertions(+), 45 deletions(-)
 > 
 > diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-> index d2b4988..72a1351 100644
+> index 72a1351..deda981 100644
 > --- a/arch/x86/kernel/apic/io_apic.c
 > +++ b/arch/x86/kernel/apic/io_apic.c
-> @@ -301,6 +301,36 @@ static void free_irq_at(unsigned int at, struct irq_cfg *cfg)
->  	irq_free_desc(at);
+> @@ -185,51 +185,6 @@ static struct irq_pin_list *alloc_irq_pin_list(int node)
+>  	return kzalloc_node(sizeof(struct irq_pin_list), GFP_KERNEL, node);
 >  }
 >  
-> +static struct irq_cfg *realloc_irq_and_cfg_at(unsigned int at, int node)
-> +{
-> +	struct irq_desc *desc = irq_to_desc(at);
-> +	struct irq_cfg *cfg;
-> +	int res;
-> +
-> +	if (desc) {
-> +		if (irq_desc_get_irq_data(desc)->node == node)
-> +			return alloc_irq_and_cfg_at(at, node);
-> +
-> +		cfg = irq_desc_get_chip_data(desc);
-> +		if (cfg) {
-> +			/* shared irq */
-> +			if (!list_empty(&cfg->irq_2_pin))
-> +				return cfg;
-> +			free_irq_cfg(at, cfg);
-> +		}
-> +	}
-> +
-> +	res = irq_realloc_desc_at(at, node);
-> +	if (res >= 0) {
-> +		cfg = alloc_irq_cfg(at, node);
-> +		if (cfg) {
-> +			irq_set_chip_data(at, cfg);
-> +			return cfg;
-> +		}
-> +	}
-> +
-> +	return alloc_irq_and_cfg_at(at, node);
-> +}
+> -
+> -/* irq_cfg is indexed by the sum of all RTEs in all I/O APICs. */
+> -static struct irq_cfg irq_cfgx[NR_IRQS_LEGACY];
+> -
+> -int __init arch_early_irq_init(void)
+> -{
+> -	struct irq_cfg *cfg;
+> -	int count, node, i;
+> -
+> -	if (!legacy_pic->nr_legacy_irqs)
+> -		io_apic_irqs = ~0UL;
+> -
+> -	for (i = 0; i < nr_ioapics; i++) {
+> -		ioapics[i].saved_registers =
+> -			kzalloc(sizeof(struct IO_APIC_route_entry) *
+> -				ioapics[i].nr_registers, GFP_KERNEL);
+> -		if (!ioapics[i].saved_registers)
+> -			pr_err("IOAPIC %d: suspend/resume impossible!\n", i);
+> -	}
+> -
+> -	cfg = irq_cfgx;
+> -	count = ARRAY_SIZE(irq_cfgx);
+> -	node = cpu_to_node(0);
+> -
+> -	/* Make sure the legacy interrupts are marked in the bitmap */
+> -	irq_reserve_irqs(0, legacy_pic->nr_legacy_irqs);
+> -
+> -	for (i = 0; i < count; i++) {
+> -		INIT_LIST_HEAD(&cfg[i].irq_2_pin);
+> -		irq_set_chip_data(i, &cfg[i]);
+> -		zalloc_cpumask_var_node(&cfg[i].domain, GFP_KERNEL, node);
+> -		zalloc_cpumask_var_node(&cfg[i].old_domain, GFP_KERNEL, node);
+> -		/*
+> -		 * For legacy IRQ's, start with assigning irq0 to irq15 to
+> -		 * IRQ0_VECTOR to IRQ15_VECTOR for all cpu's.
+> -		 */
+> -		if (i < legacy_pic->nr_legacy_irqs) {
+> -			cfg[i].vector = IRQ0_VECTOR + i;
+> -			cpumask_setall(cfg[i].domain);
+> -		}
+> -	}
+> -
+> -	return 0;
+> -}
+> -
+>  static struct irq_cfg *irq_cfg(unsigned int irq)
+>  {
+>  	return irq_get_chip_data(irq);
+> @@ -332,6 +287,50 @@ static struct irq_cfg *realloc_irq_and_cfg_at(unsigned int at, int node)
+>  	return alloc_irq_and_cfg_at(at, node);
+>  }
 >  
+> +/* irq_cfg is indexed by the sum of all RTEs in all I/O APICs. */
+> +static struct irq_cfg irq_cfgx[NR_IRQS_LEGACY];
+> +
+> +int __init arch_early_irq_init(void)
+> +{
+> +	struct irq_cfg *cfg;
+> +	int count, node, i;
+> +
+> +	if (!legacy_pic->nr_legacy_irqs)
+> +		io_apic_irqs = ~0UL;
+> +
+> +	for (i = 0; i < nr_ioapics; i++) {
+> +		ioapics[i].saved_registers =
+> +			kzalloc(sizeof(struct IO_APIC_route_entry) *
+> +				ioapics[i].nr_registers, GFP_KERNEL);
+> +		if (!ioapics[i].saved_registers)
+> +			pr_err("IOAPIC %d: suspend/resume impossible!\n", i);
+> +	}
+> +
+> +	cfg = irq_cfgx;
+> +	count = ARRAY_SIZE(irq_cfgx);
+> +	node = cpu_to_node(0);
+> +
+> +	/* Make sure the legacy interrupts are marked in the bitmap */
+> +	irq_reserve_irqs(0, legacy_pic->nr_legacy_irqs);
+> +
+> +	for (i = 0; i < count; i++) {
+> +		INIT_LIST_HEAD(&cfg[i].irq_2_pin);
+> +		irq_set_chip_data(i, &cfg[i]);
+> +		zalloc_cpumask_var_node(&cfg[i].domain, GFP_KERNEL, node);
+> +		zalloc_cpumask_var_node(&cfg[i].old_domain, GFP_KERNEL, node);
+> +		/*
+> +		 * For legacy IRQ's, start with assigning irq0 to irq15 to
+> +		 * IRQ0_VECTOR to IRQ15_VECTOR for all cpu's.
+> +		 */
+> +		if (i < legacy_pic->nr_legacy_irqs) {
+> +			cfg[i].vector = IRQ0_VECTOR + i;
+> +			cpumask_setall(cfg[i].domain);
+> +		}
+> +	}
+> +
+> +	return 0;
+> +}
+> +
 >  struct io_apic {
 >  	unsigned int index;
-> @@ -3355,7 +3385,7 @@ int arch_setup_ht_irq(unsigned int irq, struct pci_dev *dev)
->  static int
->  io_apic_setup_irq_pin(unsigned int irq, int node, struct io_apic_irq_attr *attr)
->  {
-> -	struct irq_cfg *cfg = alloc_irq_and_cfg_at(irq, node);
-> +	struct irq_cfg *cfg = realloc_irq_and_cfg_at(irq, node);
->  	int ret;
->  
->  	if (!cfg)
-> diff --git a/include/linux/irq.h b/include/linux/irq.h
-> index 4e0fcbb..9c6c047 100644
-> --- a/include/linux/irq.h
-> +++ b/include/linux/irq.h
-> @@ -602,6 +602,11 @@ void irq_free_descs(unsigned int irq, unsigned int cnt);
->  int irq_reserve_irqs(unsigned int from, unsigned int cnt);
->  int __irq_reserve_irqs(int irq, unsigned int from, unsigned int cnt);
->  
-> +int __irq_realloc_desc(int at, int node, struct module *owner);
-> +/* use macros to avoid needing export.h for THIS_MODULE */
-> +#define irq_realloc_desc_at(at, node)	\
-> +	__irq_realloc_desc(at, node, THIS_MODULE)
-> +
->  static inline void irq_free_desc(unsigned int irq)
->  {
->  	irq_free_descs(irq, 1);
-> diff --git a/kernel/irq/irqdesc.c b/kernel/irq/irqdesc.c
-> index 3b9fb92..b48f65b 100644
-> --- a/kernel/irq/irqdesc.c
-> +++ b/kernel/irq/irqdesc.c
-> @@ -99,6 +99,11 @@ EXPORT_SYMBOL_GPL(nr_irqs);
->  static DEFINE_MUTEX(sparse_irq_lock);
->  static DECLARE_BITMAP(allocated_irqs, IRQ_BITMAP_BITS);
->  
-> +static bool __irq_is_reserved(int irq)
-> +{
-> +	return !!test_bit(irq, allocated_irqs);
-> +}
-> +
->  #ifdef CONFIG_SPARSE_IRQ
->  
->  static RADIX_TREE(irq_desc_tree, GFP_KERNEL);
-> @@ -410,6 +415,27 @@ __irq_alloc_descs(int irq, unsigned int from, unsigned int cnt, int node,
->  EXPORT_SYMBOL_GPL(__irq_alloc_descs);
->  
->  /**
-> + * irq_realloc_desc - allocate irq descriptor for irq that is already reserved
-
-Which begs the question - why was it not allocated when it was reserved?
-
-> + * @irq:	Allocate for specific irq number if irq >= 0
-> + * @node:	Preferred node on which the irq descriptor should be allocated
-> + * @owner:	Owning module (can be NULL)
-> + *
-> + * Returns the irq number or error code
-> + */
-> +int __ref
-> +__irq_realloc_desc(int irq, int node, struct module *owner)
-> +{
-> +	if (!__irq_is_reserved(irq))
-> +		return -EINVAL;
-> +
-> +	if (irq_to_desc(irq))
-> +		free_desc(irq);
-> +
-> +	return alloc_descs(irq, 1, node, owner);
-> +}
-> +EXPORT_SYMBOL_GPL(__irq_realloc_desc);
-> +
-> +/**
->   * irq_reserve_irqs - mark irqs allocated
->   * @from:	mark from irq number
->   * @cnt:	number of irqs to mark
+>  	unsigned int unused[3];
 > -- 
 > 1.7.10.4
 > 
