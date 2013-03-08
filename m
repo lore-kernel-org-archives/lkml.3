@@ -1,56 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755848Ab3CHIRk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 03:17:40 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:41107 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754610Ab3CHIRi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 03:17:38 -0500
-X-IronPort-AV: E=Sophos;i="4.84,807,1355068800"; 
-   d="scan'208";a="6836548"
-Message-ID: <51399F34.2030500@cn.fujitsu.com>
-Date: Fri, 08 Mar 2013 16:20:04 +0800
-From: Tang Chen <tangchen@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Renninger <trenn@suse.de>, linux-kernel@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, Pekka Enberg <penberg@kernel.org>,
-        Jacob Shin <jacob.shin@amd.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: Re: [PATCH 14/14] x86, mm: Put pagetable on local node ram
-References: <1362718720-27048-1-git-send-email-yinghai@kernel.org> <1362718720-27048-15-git-send-email-yinghai@kernel.org>
-In-Reply-To: <1362718720-27048-15-git-send-email-yinghai@kernel.org>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/03/08 16:16:30,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/03/08 16:16:31,
-	Serialize complete at 2013/03/08 16:16:31
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S933394Ab3CHIWq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 03:22:46 -0500
+Received: from smtp4.mundo-r.com ([212.51.32.151]:62279 "EHLO
+	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754610Ab3CHIWp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Mar 2013 03:22:45 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AhEFAEufOVFbdWOb/2dsb2JhbABDh1u8coFYFnSCLAEFJ1IQUVcGE4gXuyWPDAeDQAOWS5Bxgwo
+X-IPAS-Result: AhEFAEufOVFbdWOb/2dsb2JhbABDh1u8coFYFnSCLAEFJ1IQUVcGE4gXuyWPDAeDQAOWS5Bxgwo
+X-IronPort-AV: E=Sophos;i="4.84,806,1355094000"; 
+   d="scan'208";a="9268288"
+From: Samuel Iglesias Gonsalvez <siglesias@igalia.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: industrypack-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        Jens Taprogge <jens.taprogge@taprogge.org>,
+        Samuel Iglesias Gonsalvez <siglesias@igalia.com>
+Subject: [PATCH 1/3] ipack: avoid double free on device->id
+Date: Fri,  8 Mar 2013 09:21:45 +0100
+Message-Id: <1362730907-10047-1-git-send-email-siglesias@igalia.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <512DCB33.6030500@igalia.com>
+References: <512DCB33.6030500@igalia.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Yinghai,
+Signed-off-by: Samuel Iglesias Gonsalvez <siglesias@igalia.com>
+---
+ drivers/ipack/ipack.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-On 03/08/2013 12:58 PM, Yinghai Lu wrote:
-......
->   	/* xen has big range in reserved near end of ram, skip it at first.*/
-> -	addr = memblock_find_in_range(ISA_END_ADDRESS, end, PMD_SIZE, PMD_SIZE);
-> +	addr = memblock_find_in_range(begin, end, PMD_SIZE, PMD_SIZE);
-
-Found that the latest code here is:
-
-  414         addr = memblock_find_in_range(ISA_END_ADDRESS, end, PMD_SIZE,
-  415                          PAGE_SIZE);
-                              ^^^^^^^^^^^^
-
-The "align" is PAGE_SIZE, not PMD_SIZE. Not sure if it is a problem. :)
-
-Thanks. :)
-
+diff --git a/drivers/ipack/ipack.c b/drivers/ipack/ipack.c
+index 7ec6b20..599d4ff 100644
+--- a/drivers/ipack/ipack.c
++++ b/drivers/ipack/ipack.c
+@@ -24,6 +24,7 @@ static void ipack_device_release(struct device *dev)
+ {
+ 	struct ipack_device *device = to_ipack_dev(dev);
+ 	kfree(device->id);
++	device->id = NULL;
+ 	device->release(device);
+ }
+ 
+-- 
+1.7.10.4
 
