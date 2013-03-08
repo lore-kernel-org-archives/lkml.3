@@ -1,415 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934399Ab3CHQYF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 11:24:05 -0500
-Received: from 6.mo5.mail-out.ovh.net ([178.32.119.138]:49575 "EHLO
-	mo5.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S933136Ab3CHQYE (ORCPT
+	id S934410Ab3CHQY6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 11:24:58 -0500
+Received: from zoneX.GCU-Squad.org ([194.213.125.0]:12941 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933136Ab3CHQY5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 11:24:04 -0500
-X-Greylist: delayed 600 seconds by postgrey-1.27 at vger.kernel.org; Fri, 08 Mar 2013 11:24:03 EST
-Date: Fri, 8 Mar 2013 17:02:58 +0100
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: Johan Hovold <jhovold@gmail.com>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        rtc-linux@googlegroups.com
-X-Ovh-Mailout: 178.32.228.5 (mo5.mail-out.ovh.net)
-Subject: Re: [rtc-linux] [PATCH 3/3] ARM: at91: fix hanged boot
-Message-ID: <20130308160258.GD4590@game.jcrosoft.org>
-References: <1362747103-21445-1-git-send-email-jhovold@gmail.com>
- <1362747103-21445-4-git-send-email-jhovold@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1362747103-21445-4-git-send-email-jhovold@gmail.com>
-X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
-X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Ovh-Tracer-Id: 915356624727288654
-X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -51
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiuddrfedtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenogfuuhhsphgvtghtffhomhgrihhnucdlgeelmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -51
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiuddrfedtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenogfuuhhsphgvtghtffhomhgrihhnucdlgeelmd
+	Fri, 8 Mar 2013 11:24:57 -0500
+Date: Fri, 8 Mar 2013 17:24:44 +0100
+From: Jean Delvare <khali@linux-fr.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] MAINTAINERS: Add maintainer for MAX6697, INA209, and
+ INA2XX drivers
+Message-ID: <20130308172444.5df9b8d8@endymion.delvare>
+In-Reply-To: <1362759722-8252-1-git-send-email-linux@roeck-us.net>
+References: <1362759722-8252-1-git-send-email-linux@roeck-us.net>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13:51 Fri 08 Mar     , Johan Hovold wrote:
-> Make sure the RTC and RTT-interrupts are masked at boot by adding a new
-> SOC-initialiser and helpers functions.
+On Fri,  8 Mar 2013 08:22:02 -0800, Guenter Roeck wrote:
+> I actively maintain those drivers and have hardware available
+> to test changes, so add me as explicit maintainer.
 > 
-> This fixes hanged boot on all AT91 SOCs but RM9200, for example, after a
-> reset during an RTC-update or if an RTC or RTT-alarm goes off after a
-> non-clean shutdown.
-> 
-> The RTC and RTT-peripherals are powered by backup power (VDDBU) (on all
-> AT91 SOCs but RM9200) and are not reset on wake-up, user, watchdog or
-> software reset. This means that their interrupts may be enabled during
-> early boot if, for example, they where not disabled during a previous
-> shutdown (e.g. due to a buggy driver or a non-clean shutdown such as a
-> user reset). Furthermore, an RTC or RTT-alarm may also be active.
-> 
-> The RTC and RTT-interrupts use the shared system-interrupt line, and if
-> an interrupt occurs before a handler (e.g. RTC-driver) has been
-> installed this leads to the system interrupt being disabled and prevents
-> the system from booting.
-> 
-> Note that when boot hangs due to an early RTC or RTT-interrupt, the only
-> way to get the system to start again is to remove the backup power (e.g.
-> battery) or to disable the interrupt manually from the bootloader. In
-> particular, a user reset is not sufficient.
-> 
-> Tested on at91sam9263 and at91sam9g45.
-> 
-> Signed-off-by: Johan Hovold <jhovold@gmail.com>
+> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 > ---
->  arch/arm/mach-at91/at91rm9200.c               |  9 ++++++++
->  arch/arm/mach-at91/at91sam9260.c              |  6 ++++++
->  arch/arm/mach-at91/at91sam9261.c              |  6 ++++++
->  arch/arm/mach-at91/at91sam9263.c              |  7 ++++++
->  arch/arm/mach-at91/at91sam9g45.c              |  7 ++++++
->  arch/arm/mach-at91/at91sam9n12.c              |  6 ++++++
->  arch/arm/mach-at91/at91sam9rl.c               |  7 ++++++
->  arch/arm/mach-at91/at91sam9x5.c               |  6 ++++++
->  arch/arm/mach-at91/generic.h                  |  2 ++
->  arch/arm/mach-at91/include/mach/at91sam9n12.h |  5 +++++
->  arch/arm/mach-at91/include/mach/at91sam9x5.h  |  5 +++++
-nack for DT probe te address via DT
->  arch/arm/mach-at91/setup.c                    | 31 +++++++++++++++++++++++++++
->  arch/arm/mach-at91/soc.h                      |  1 +
->  13 files changed, 98 insertions(+)
+>  MAINTAINERS |   25 +++++++++++++++++++++++++
+>  1 file changed, 25 insertions(+)
+> 
+> diff --git a/MAINTAINERS b/MAINTAINERS
+> index 9561658..1a5aca7 100644
+> --- a/MAINTAINERS
+> +++ b/MAINTAINERS
+> @@ -4005,6 +4005,22 @@ M:	Stanislaw Gruszka <stf_xl@wp.pl>
+>  S:	Maintained
+>  F:	drivers/usb/atm/ueagle-atm.c
+>  
+> +INA209 HARDWARE MONITOR DRIVER
+> +M:	Guenter Roeck <linux@roeck-us.net>
+> +L:	lm-sensors@lm-sensors.org
+> +S:	Maintained
+> +F:	Documentation/hwmon/ina209
+> +F:	Documentation/devicetree/bindings/i2c/ina209.txt
+> +F:	drivers/hwmon/ina209.c
+> +
+> +INA2XX HARDWARE MONITOR DRIVER
+> +M:	Guenter Roeck <linux@roeck-us.net>
+> +L:	lm-sensors@lm-sensors.org
+> +S:	Maintained
+> +F:	Documentation/hwmon/ina2xx
+> +F:	drivers/hwmon/ina2xx.c
+> +F:	include/linux/platform_data/ina2xx.h
+> +
+>  INDUSTRY PACK SUBSYSTEM (IPACK)
+>  M:	Samuel Iglesias Gonsalvez <siglesias@igalia.com>
+>  M:	Jens Taprogge <jens.taprogge@taprogge.org>
+> @@ -5098,6 +5114,15 @@ S:	Maintained
+>  F:	Documentation/hwmon/max6650
+>  F:	drivers/hwmon/max6650.c
+>  
+> +MAX6697 HARDWARE MONITOR DRIVER
+> +M:	Guenter Roeck <linux@roeck-us.net>
+> +L:	lm-sensors@lm-sensors.org
+> +S:	Maintained
+> +F:	Documentation/hwmon/max6697
+> +F:	Documentation/devicetree/bindings/i2c/max6697.txt
+> +F:	drivers/hwmon/max6697.c
+> +F:	include/linux/platform_data/max6697.h
+> +
+>  MAXIRADIO FM RADIO RECEIVER DRIVER
+>  M:	Hans Verkuil <hverkuil@xs4all.nl>
+>  L:	linux-media@vger.kernel.org
 
-at boot time we can disable all the irq as we need none of them
-> 
-> diff --git a/arch/arm/mach-at91/at91rm9200.c b/arch/arm/mach-at91/at91rm9200.c
-> index 7aeb473..4651ebb 100644
-> --- a/arch/arm/mach-at91/at91rm9200.c
-> +++ b/arch/arm/mach-at91/at91rm9200.c
-> @@ -325,6 +325,14 @@ static void __init at91rm9200_ioremap_registers(void)
->  	at91_ioremap_ramc(0, AT91RM9200_BASE_MC, 256);
->  }
->  
-> +static void __init at91rm9200_sysirq_mask(void)
-> +{
-> +	/*
-> +	 * No need to mask any system interrupts as the RM9200 has no backup
-> +	 * power and resets all system peripherals at every reset.
-> +	 */
-> +}
-no need drop it
-> +
->  static void __init at91rm9200_initialize(void)
->  {
->  	arm_pm_idle = at91rm9200_idle;
-> @@ -387,5 +395,6 @@ AT91_SOC_START(rm9200)
->  	.default_irq_priority = at91rm9200_default_irq_priority,
->  	.ioremap_registers = at91rm9200_ioremap_registers,
->  	.register_clocks = at91rm9200_register_clocks,
-> +	.sysirq_mask = at91rm9200_sysirq_mask,
->  	.init = at91rm9200_initialize,
->  AT91_SOC_END
-> diff --git a/arch/arm/mach-at91/at91sam9260.c b/arch/arm/mach-at91/at91sam9260.c
-> index b67cd53..c47a0db 100644
-> --- a/arch/arm/mach-at91/at91sam9260.c
-> +++ b/arch/arm/mach-at91/at91sam9260.c
-> @@ -342,6 +342,11 @@ static void __init at91sam9260_ioremap_registers(void)
->  	at91_ioremap_matrix(AT91SAM9260_BASE_MATRIX);
->  }
->  
-> +static void __init at91sam9260_sysirq_mask(void)
-> +{
-> +	at91_sysirq_mask_rtt(AT91SAM9260_BASE_RTT);
-> +}
-> +
->  static void __init at91sam9260_initialize(void)
->  {
->  	arm_pm_idle = at91sam9_idle;
-> @@ -400,5 +405,6 @@ AT91_SOC_START(sam9260)
->  	.default_irq_priority = at91sam9260_default_irq_priority,
->  	.ioremap_registers = at91sam9260_ioremap_registers,
->  	.register_clocks = at91sam9260_register_clocks,
-> +	.sysirq_mask = at91sam9260_sysirq_mask,
->  	.init = at91sam9260_initialize,
->  AT91_SOC_END
-> diff --git a/arch/arm/mach-at91/at91sam9261.c b/arch/arm/mach-at91/at91sam9261.c
-> index 0204f4c..396e4cb 100644
-> --- a/arch/arm/mach-at91/at91sam9261.c
-> +++ b/arch/arm/mach-at91/at91sam9261.c
-> @@ -286,6 +286,11 @@ static void __init at91sam9261_ioremap_registers(void)
->  	at91_ioremap_matrix(AT91SAM9261_BASE_MATRIX);
->  }
->  
-> +static void __init at91sam9261_sysirq_mask(void)
-> +{
-> +	at91_sysirq_mask_rtt(AT91SAM9261_BASE_RTT);
-> +}
-> +
->  static void __init at91sam9261_initialize(void)
->  {
->  	arm_pm_idle = at91sam9_idle;
-> @@ -344,5 +349,6 @@ AT91_SOC_START(sam9261)
->  	.default_irq_priority = at91sam9261_default_irq_priority,
->  	.ioremap_registers = at91sam9261_ioremap_registers,
->  	.register_clocks = at91sam9261_register_clocks,
-> +	.sysirq_mask = at91sam9261_sysirq_mask,
->  	.init = at91sam9261_initialize,
->  AT91_SOC_END
-> diff --git a/arch/arm/mach-at91/at91sam9263.c b/arch/arm/mach-at91/at91sam9263.c
-> index c0cbb81..a0166a3 100644
-> --- a/arch/arm/mach-at91/at91sam9263.c
-> +++ b/arch/arm/mach-at91/at91sam9263.c
-> @@ -325,6 +325,12 @@ static void __init at91sam9263_ioremap_registers(void)
->  	at91_ioremap_matrix(AT91SAM9263_BASE_MATRIX);
->  }
->  
-> +static void __init at91sam9263_sysirq_mask(void)
-> +{
-> +	at91_sysirq_mask_rtt(AT91SAM9263_BASE_RTT0);
-> +	at91_sysirq_mask_rtt(AT91SAM9263_BASE_RTT1);
-> +}
-> +
->  static void __init at91sam9263_initialize(void)
->  {
->  	arm_pm_idle = at91sam9_idle;
-> @@ -382,5 +388,6 @@ AT91_SOC_START(sam9263)
->  	.default_irq_priority = at91sam9263_default_irq_priority,
->  	.ioremap_registers = at91sam9263_ioremap_registers,
->  	.register_clocks = at91sam9263_register_clocks,
-> +	.sysirq_mask = at91sam9263_sysirq_mask,
->  	.init = at91sam9263_initialize,
->  AT91_SOC_END
-> diff --git a/arch/arm/mach-at91/at91sam9g45.c b/arch/arm/mach-at91/at91sam9g45.c
-> index b4968aa..3d5498e 100644
-> --- a/arch/arm/mach-at91/at91sam9g45.c
-> +++ b/arch/arm/mach-at91/at91sam9g45.c
-> @@ -370,6 +370,12 @@ static void __init at91sam9g45_ioremap_registers(void)
->  	at91_ioremap_matrix(AT91SAM9G45_BASE_MATRIX);
->  }
->  
-> +static void __init at91sam9g45_sysirq_mask(void)
-> +{
-> +	at91_sysirq_mask_rtc(AT91SAM9G45_BASE_RTC);
-> +	at91_sysirq_mask_rtt(AT91SAM9G45_BASE_RTT);
-> +}
-> +
->  static void __init at91sam9g45_initialize(void)
->  {
->  	arm_pm_idle = at91sam9_idle;
-> @@ -427,5 +433,6 @@ AT91_SOC_START(sam9g45)
->  	.default_irq_priority = at91sam9g45_default_irq_priority,
->  	.ioremap_registers = at91sam9g45_ioremap_registers,
->  	.register_clocks = at91sam9g45_register_clocks,
-> +	.sysirq_mask = at91sam9g45_sysirq_mask,
->  	.init = at91sam9g45_initialize,
->  AT91_SOC_END
-> diff --git a/arch/arm/mach-at91/at91sam9n12.c b/arch/arm/mach-at91/at91sam9n12.c
-> index 5dfc8fd..e2ddb89 100644
-> --- a/arch/arm/mach-at91/at91sam9n12.c
-> +++ b/arch/arm/mach-at91/at91sam9n12.c
-> @@ -221,6 +221,11 @@ static void __init at91sam9n12_map_io(void)
->  	at91_init_sram(0, AT91SAM9N12_SRAM_BASE, AT91SAM9N12_SRAM_SIZE);
->  }
->  
-> +static void __init at91sam9n12_sysirq_mask(void)
-> +{
-> +	at91_sysirq_mask_rtc(AT91SAM9N12_BASE_RTC);
-> +}
-> +
->  void __init at91sam9n12_initialize(void)
->  {
->  	at91_extern_irq = (1 << AT91SAM9N12_ID_IRQ0);
-> @@ -229,5 +234,6 @@ void __init at91sam9n12_initialize(void)
->  AT91_SOC_START(sam9n12)
->  	.map_io = at91sam9n12_map_io,
->  	.register_clocks = at91sam9n12_register_clocks,
-> +	.sysirq_mask = at91sam9n12_sysirq_mask,
->  	.init = at91sam9n12_initialize,
->  AT91_SOC_END
-> diff --git a/arch/arm/mach-at91/at91sam9rl.c b/arch/arm/mach-at91/at91sam9rl.c
-> index 3de3e04..bde999f 100644
-> --- a/arch/arm/mach-at91/at91sam9rl.c
-> +++ b/arch/arm/mach-at91/at91sam9rl.c
-> @@ -289,6 +289,12 @@ static void __init at91sam9rl_ioremap_registers(void)
->  	at91_ioremap_matrix(AT91SAM9RL_BASE_MATRIX);
->  }
->  
-> +static void __init at91sam9rl_sysirq_mask(void)
-> +{
-> +	at91_sysirq_mask_rtc(AT91SAM9RL_BASE_RTC);
-> +	at91_sysirq_mask_rtt(AT91SAM9RL_BASE_RTT);
-> +}
-> +
->  static void __init at91sam9rl_initialize(void)
->  {
->  	arm_pm_idle = at91sam9_idle;
-> @@ -346,5 +352,6 @@ AT91_SOC_START(sam9rl)
->  	.default_irq_priority = at91sam9rl_default_irq_priority,
->  	.ioremap_registers = at91sam9rl_ioremap_registers,
->  	.register_clocks = at91sam9rl_register_clocks,
-> +	.sysirq_mask = at91sam9rl_sysirq_mask,
->  	.init = at91sam9rl_initialize,
->  AT91_SOC_END
-> diff --git a/arch/arm/mach-at91/at91sam9x5.c b/arch/arm/mach-at91/at91sam9x5.c
-> index 44a9a62..20a214f 100644
-> --- a/arch/arm/mach-at91/at91sam9x5.c
-> +++ b/arch/arm/mach-at91/at91sam9x5.c
-> @@ -316,6 +316,11 @@ static void __init at91sam9x5_map_io(void)
->  	at91_init_sram(0, AT91SAM9X5_SRAM_BASE, AT91SAM9X5_SRAM_SIZE);
->  }
->  
-> +static void __init at91sam9x5_sysirq_mask(void)
-> +{
-> +	at91_sysirq_mask_rtc(AT91SAM9X5_BASE_RTC);
-> +}
-> +
->  /* --------------------------------------------------------------------
->   *  Interrupt initialization
->   * -------------------------------------------------------------------- */
-> @@ -323,4 +328,5 @@ static void __init at91sam9x5_map_io(void)
->  AT91_SOC_START(sam9x5)
->  	.map_io = at91sam9x5_map_io,
->  	.register_clocks = at91sam9x5_register_clocks,
-> +	.sysirq_mask = at91sam9x5_sysirq_mask,
->  AT91_SOC_END
-> diff --git a/arch/arm/mach-at91/generic.h b/arch/arm/mach-at91/generic.h
-> index fc593d6..90a854d 100644
-> --- a/arch/arm/mach-at91/generic.h
-> +++ b/arch/arm/mach-at91/generic.h
-> @@ -33,6 +33,8 @@ extern int  __init at91_aic_of_init(struct device_node *node,
->  				    struct device_node *parent);
->  extern int  __init at91_aic5_of_init(struct device_node *node,
->  				    struct device_node *parent);
-> +extern void __init at91_sysirq_mask_rtc(u32 rtc_base);
-> +extern void __init at91_sysirq_mask_rtt(u32 rtt_base);
->  
->  
->   /* Timer */
-> diff --git a/arch/arm/mach-at91/include/mach/at91sam9n12.h b/arch/arm/mach-at91/include/mach/at91sam9n12.h
-> index d374b87..0151bcf 100644
-> --- a/arch/arm/mach-at91/include/mach/at91sam9n12.h
-> +++ b/arch/arm/mach-at91/include/mach/at91sam9n12.h
-> @@ -49,6 +49,11 @@
->  #define AT91SAM9N12_BASE_USART3	0xf8028000
->  
->  /*
-> + * System Peripherals
-> + */
-> +#define AT91SAM9N12_BASE_RTC	0xfffffeb0
-> +
-> +/*
->   * Internal Memory.
->   */
->  #define AT91SAM9N12_SRAM_BASE	0x00300000	/* Internal SRAM base address */
-> diff --git a/arch/arm/mach-at91/include/mach/at91sam9x5.h b/arch/arm/mach-at91/include/mach/at91sam9x5.h
-> index c75ee19..2fc76c4 100644
-> --- a/arch/arm/mach-at91/include/mach/at91sam9x5.h
-> +++ b/arch/arm/mach-at91/include/mach/at91sam9x5.h
-> @@ -55,6 +55,11 @@
->  #define AT91SAM9X5_BASE_USART2	0xf8024000
->  
->  /*
-> + * System Peripherals
-> + */
-> +#define AT91SAM9X5_BASE_RTC	0xfffffeb0
-> +
-> +/*
->   * Internal Memory.
->   */
->  #define AT91SAM9X5_SRAM_BASE	0x00300000	/* Internal SRAM base address */
-> diff --git a/arch/arm/mach-at91/setup.c b/arch/arm/mach-at91/setup.c
-> index 4b67847..ac05453 100644
-> --- a/arch/arm/mach-at91/setup.c
-> +++ b/arch/arm/mach-at91/setup.c
-> @@ -19,6 +19,8 @@
->  #include <mach/cpu.h>
->  #include <mach/at91_dbgu.h>
->  #include <mach/at91_pmc.h>
-> +#include <mach/at91_rtc.h>
-> +#include <mach/at91_rtt.h>
->  
->  #include "at91_shdwc.h"
->  #include "soc.h"
-> @@ -311,6 +313,31 @@ void __init at91_ioremap_matrix(u32 base_addr)
->  		panic("Impossible to ioremap at91_matrix_base\n");
->  }
->  
-> +void __init at91_sysirq_mask_rtc(u32 rtc_base)
-> +{
-> +	void *base = AT91_IO_P2V(rtc_base);
-> +	u32 mask;
-> +
-> +	mask = __raw_readl(base + AT91_RTC_IMR);
-> +	if (mask) {
-> +		pr_info("AT91: Disabling rtc irq\n");
-> +		__raw_writel(mask, base + AT91_RTC_IDR);
-> +	}
-> +}
-> +
-> +void __init at91_sysirq_mask_rtt(u32 rtt_base)
-> +{
-> +	void *base = AT91_IO_P2V(rtt_base);
-> +	u32 mr;
-> +
-> +	mr = __raw_readl(base + AT91_RTT_MR);
-> +	if (mr & (AT91_RTT_ALMIEN | AT91_RTT_RTTINCIEN)) {
-> +		pr_info("AT91: Disabling rtt irq\n");
-> +		mr &= ~(AT91_RTT_ALMIEN | AT91_RTT_RTTINCIEN);
-> +		__raw_writel(mr, base + AT91_RTT_MR);
-> +	}
-> +}
-> +
->  #if defined(CONFIG_OF)
->  static struct of_device_id rstc_ids[] = {
->  	{ .compatible = "atmel,at91sam9260-rstc", .data = at91sam9_alt_restart },
-> @@ -467,6 +494,8 @@ void __init at91_dt_initialize(void)
->  
->  	if (at91_boot_soc.init)
->  		at91_boot_soc.init();
-> +
-> +	at91_boot_soc.sysirq_mask();
->  }
->  #endif
->  
-> @@ -482,5 +511,7 @@ void __init at91_initialize(unsigned long main_clock)
->  
->  	at91_boot_soc.init();
->  
-> +	at91_boot_soc.sysirq_mask();
-> +
->  	pinctrl_provide_dummies();
->  }
-> diff --git a/arch/arm/mach-at91/soc.h b/arch/arm/mach-at91/soc.h
-> index 9c6d3d4..134f4c4 100644
-> --- a/arch/arm/mach-at91/soc.h
-> +++ b/arch/arm/mach-at91/soc.h
-> @@ -10,6 +10,7 @@ struct at91_init_soc {
->  	void (*map_io)(void);
->  	void (*ioremap_registers)(void);
->  	void (*register_clocks)(void);
-> +	void (*sysirq_mask)(void);
->  	void (*init)(void);
->  };
->  
-> -- 
-> 1.8.1.1
-> 
-> -- 
-> -- 
-> You received this message because you are subscribed to "rtc-linux".
-> Membership options at http://groups.google.com/group/rtc-linux .
-> Please read http://groups.google.com/group/rtc-linux/web/checklist
-> before submitting a driver.
-> --- 
-> You received this message because you are subscribed to the Google Groups "rtc-linux" group.
-> To unsubscribe from this group and stop receiving emails from it, send an email to rtc-linux+unsubscribe@googlegroups.com.
-> For more options, visit https://groups.google.com/groups/opt_out.
-> 
-> 
+Acked-by: Jean Delvare <khali@linux-fr.org>
+
+And thanks for volunteering to maintain these drivers.
+
+-- 
+Jean Delvare
