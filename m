@@ -1,48 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933513Ab3CHMDs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 07:03:48 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:41919 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756987Ab3CHMDr (ORCPT
+	id S933695Ab3CHMGU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 07:06:20 -0500
+Received: from cpsmtpb-ews07.kpnxchange.com ([213.75.39.10]:50317 "EHLO
+	cpsmtpb-ews07.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756681Ab3CHMGT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 07:03:47 -0500
-Date: Fri, 8 Mar 2013 15:02:15 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: "James E.J. Bottomley" <JBottomley@parallels.com>
-Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: [patch] [SCSI] scsi_transport_sas: check for allocation failure
-Message-ID: <20130308120215.GB18712@longonot.mountain>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Fri, 8 Mar 2013 07:06:19 -0500
+Message-ID: <1362744373.5994.57.camel@x61.thuisdomein>
+Subject: [PATCH] blackfin: bf537: fix typo "CONFIG_SND_SOC_ADV80X_MODULE"
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Mike Frysinger <vapier@gentoo.org>
+Cc: uclinux-dist-devel@blackfin.uclinux.org, linux-kernel@vger.kernel.org
+Date: Fri, 08 Mar 2013 13:06:13 +0100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 08 Mar 2013 12:06:14.0391 (UTC) FILETIME=[54CBE870:01CE1BF5]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Static checkers complain that this allocation isn't checked.  We
-should return zero if the allocation fails.
+There's a (rather subtle) typo in "CONFIG_SND_SOC_ADV80X_MODULE". Fix it
+once and for all by using IS_ENABLED(), which is designed to avoid
+issues like this.
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+0) Untested! And this needs build- and runtime testing, especially for
+the MODULE case!
 
-diff --git a/drivers/scsi/scsi_transport_sas.c b/drivers/scsi/scsi_transport_sas.c
-index 1b68142..a022997 100644
---- a/drivers/scsi/scsi_transport_sas.c
-+++ b/drivers/scsi/scsi_transport_sas.c
-@@ -379,9 +379,12 @@ sas_tlr_supported(struct scsi_device *sdev)
- {
- 	const int vpd_len = 32;
- 	struct sas_end_device *rdev = sas_sdev_to_rdev(sdev);
--	char *buffer = kzalloc(vpd_len, GFP_KERNEL);
-+	char *buffer;
- 	int ret = 0;
+1) There are many lines that might be converted to IS_ENABLED() in this
+file. I'm not sure if and how that should be done.
+
+ arch/blackfin/mach-bf537/boards/stamp.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/blackfin/mach-bf537/boards/stamp.c b/arch/blackfin/mach-bf537/boards/stamp.c
+index 95114ed..1872d15 100644
+--- a/arch/blackfin/mach-bf537/boards/stamp.c
++++ b/arch/blackfin/mach-bf537/boards/stamp.c
+@@ -985,7 +985,7 @@ static struct spi_board_info bfin_spi_board_info[] __initdata = {
+ 	},
+ #endif
  
-+	buffer = kzalloc(vpd_len, GFP_KERNEL);
-+	if (!buffer)
-+		goto out;
- 	if (scsi_get_vpd_page(sdev, 0x90, buffer, vpd_len))
- 		goto out;
- 
+-#if defined(CONFIG_SND_SOC_ADAV80X) || defined(CONFIG_SND_SOC_ADV80X_MODULE)
++#if IS_ENABLED(CONFIG_SND_SOC_ADAV80X)
+ 	{
+ 		.modalias = "adav801",
+ 		.max_speed_hz = 3125000,     /* max spi clock (SCK) speed in HZ */
+-- 
+1.7.11.7
+
