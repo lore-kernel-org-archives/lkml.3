@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751710Ab3CHFBn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 00:01:43 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:51020 "EHLO
+	id S1751642Ab3CHFBm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 00:01:42 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:51023 "EHLO
 	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760185Ab3CHE7r (ORCPT
+	with ESMTP id S1760197Ab3CHE7r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 7 Mar 2013 23:59:47 -0500
 From: Yinghai Lu <yinghai@kernel.org>
@@ -13,11 +13,10 @@ To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         Andrew Morton <akpm@linux-foundation.org>,
         Thomas Renninger <trenn@suse.de>, Tang Chen <tangchen@cn.fujitsu.com>
 Cc: linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
-        Pekka Enberg <penberg@kernel.org>, Jacob Shin <jacob.shin@amd.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-acpi@vger.kernel.org
-Subject: [PATCH 02/14] x86, ACPI: Split find/copy from acpi_initrd_override
-Date: Thu,  7 Mar 2013 20:58:28 -0800
-Message-Id: <1362718720-27048-3-git-send-email-yinghai@kernel.org>
+        Tejun Heo <tj@kernel.org>
+Subject: [PATCH 08/14] x86, mm, numa: use numa_meminfo to check node_map_pfn alignment
+Date: Thu,  7 Mar 2013 20:58:34 -0800
+Message-Id: <1362718720-27048-9-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1362718720-27048-1-git-send-email-yinghai@kernel.org>
 References: <1362718720-27048-1-git-send-email-yinghai@kernel.org>
@@ -26,157 +25,200 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To parse srat early, we will need to move acpi table probing early.
-and to keep acpi_initrd_table_override working, we need to move it
-ahead.
+We could use numa_meminfo directly instead of memblock nid.
 
-But current that is called after init_mem_mapping and relocate_initrd().
+So we could move down set memblock nid down and only do it one time
+for successful path
 
-Copying need to be after memblock is ready, because it need to allocate
-some buffer for acpi tables.
+Move node_map_pfn_alignment() to arch/x86/mm as no other user for it.
 
-Finding will be moved into head_32.S and head64.c, just like microcode
-early scanning.
-
-So split them at first.
-
-Also move down functions declaration to avoid #ifdef in setup.c
-
-Signed-off-by: Yinghai <yinghai@kernel.org>
-Cc: Thomas Renninger <trenn@suse.de>
-Cc: Pekka Enberg <penberg@kernel.org>
-Cc: Jacob Shin <jacob.shin@amd.com>
-Cc: Rafael J. Wysocki <rjw@sisk.pl>
-Cc: linux-acpi@vger.kernel.org
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Cc: Tejun Heo <tj@kernel.org>
 ---
- arch/x86/kernel/setup.c |    6 +++---
- drivers/acpi/osl.c      |   32 +++++++++++++++++++-------------
- include/linux/acpi.h    |   16 ++++++++--------
- 3 files changed, 30 insertions(+), 24 deletions(-)
+ arch/x86/mm/numa.c |   76 +++++++++++++++++++++++++++++++++++++++++++++-------
+ include/linux/mm.h |    1 -
+ mm/page_alloc.c    |   50 ----------------------------------
+ 3 files changed, 67 insertions(+), 60 deletions(-)
 
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index 4dcaae7..e2913e9 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -1092,9 +1092,9 @@ void __init setup_arch(char **cmdline_p)
- 
- 	reserve_initrd();
- 
--#if defined(CONFIG_ACPI) && defined(CONFIG_BLK_DEV_INITRD)
--	acpi_initrd_override((void *)initrd_start, initrd_end - initrd_start);
--#endif
-+	acpi_initrd_override_find((void *)initrd_start,
-+					initrd_end - initrd_start);
-+	acpi_initrd_override_copy();
- 
- 	reserve_crashkernel();
- 
-diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
-index c9e36d7..b9d2ff0 100644
---- a/drivers/acpi/osl.c
-+++ b/drivers/acpi/osl.c
-@@ -539,6 +539,7 @@ acpi_os_predefined_override(const struct acpi_predefined_names *init_val,
- 
- static u64 acpi_tables_addr;
- static int all_tables_size;
-+static int table_nr;
- 
- /* Copied from acpica/tbutils.c:acpi_tb_checksum() */
- u8 __init acpi_table_checksum(u8 *buffer, u32 length)
-@@ -569,18 +570,16 @@ static const char * const table_sigs[] = {
- 
- #define ACPI_HEADER_SIZE sizeof(struct acpi_table_header)
- 
--/* Must not increase 10 or needs code modification below */
--#define ACPI_OVERRIDE_TABLES 10
-+#define ACPI_OVERRIDE_TABLES 64
-+static struct cpio_data __initdata early_initrd_files[ACPI_OVERRIDE_TABLES];
- 
--void __init acpi_initrd_override(void *data, size_t size)
-+void __init acpi_initrd_override_find(void *data, size_t size)
- {
--	int sig, no, table_nr = 0, total_offset = 0;
-+	int sig, no;
- 	long offset = 0;
- 	struct acpi_table_header *table;
- 	char cpio_path[32] = "kernel/firmware/acpi/";
- 	struct cpio_data file;
--	struct cpio_data early_initrd_files[ACPI_OVERRIDE_TABLES];
--	char *p;
- 
- 	if (data == NULL || size == 0)
- 		return;
-@@ -621,7 +620,14 @@ void __init acpi_initrd_override(void *data, size_t size)
- 		early_initrd_files[table_nr].size = file.size;
- 		table_nr++;
- 	}
--	if (table_nr == 0)
-+}
-+
-+void __init acpi_initrd_override_copy(void)
-+{
-+	int no, total_offset = 0;
-+	char *p;
-+
-+	if (!table_nr)
- 		return;
- 
- 	/* under 4G at first, then above 4G */
-@@ -647,14 +653,14 @@ void __init acpi_initrd_override(void *data, size_t size)
- 	memblock_reserve(acpi_tables_addr, acpi_tables_addr + all_tables_size);
- 	arch_reserve_mem_area(acpi_tables_addr, all_tables_size);
- 
--	p = early_ioremap(acpi_tables_addr, all_tables_size);
--
- 	for (no = 0; no < table_nr; no++) {
--		memcpy(p + total_offset, early_initrd_files[no].data,
--		       early_initrd_files[no].size);
--		total_offset += early_initrd_files[no].size;
-+		size_t size = early_initrd_files[no].size;
-+
-+		p = early_ioremap(acpi_tables_addr + total_offset, size);
-+		memcpy(p, early_initrd_files[no].data, size);
-+		early_iounmap(p, size);
-+		total_offset += size;
- 	}
--	early_iounmap(p, all_tables_size);
+diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
+index 6df5028..b8cc248 100644
+--- a/arch/x86/mm/numa.c
++++ b/arch/x86/mm/numa.c
+@@ -477,9 +477,69 @@ static bool __init numa_meminfo_cover_memory(const struct numa_meminfo *mi)
+ 	return true;
  }
- #endif /* CONFIG_ACPI_INITRD_TABLE_OVERRIDE */
  
-diff --git a/include/linux/acpi.h b/include/linux/acpi.h
-index bcbdd74..1654a241 100644
---- a/include/linux/acpi.h
-+++ b/include/linux/acpi.h
-@@ -79,14 +79,6 @@ typedef int (*acpi_tbl_table_handler)(struct acpi_table_header *table);
- typedef int (*acpi_tbl_entry_handler)(struct acpi_subtable_header *header,
- 				      const unsigned long end);
- 
--#ifdef CONFIG_ACPI_INITRD_TABLE_OVERRIDE
--void acpi_initrd_override(void *data, size_t size);
--#else
--static inline void acpi_initrd_override(void *data, size_t size)
--{
--}
--#endif
--
- char * __acpi_map_table (unsigned long phys_addr, unsigned long size);
- void __acpi_unmap_table(char *map, unsigned long size);
- int early_acpi_boot_init(void);
-@@ -485,6 +477,14 @@ static inline bool acpi_driver_match_device(struct device *dev,
- 
- #endif	/* !CONFIG_ACPI */
- 
-+#ifdef CONFIG_ACPI_INITRD_TABLE_OVERRIDE
-+void acpi_initrd_override_find(void *data, size_t size);
-+void acpi_initrd_override_copy(void);
++/**
++ * node_map_pfn_alignment - determine the maximum internode alignment
++ *
++ * This function should be called after node map is populated and sorted.
++ * It calculates the maximum power of two alignment which can distinguish
++ * all the nodes.
++ *
++ * For example, if all nodes are 1GiB and aligned to 1GiB, the return value
++ * would indicate 1GiB alignment with (1 << (30 - PAGE_SHIFT)).  If the
++ * nodes are shifted by 256MiB, 256MiB.  Note that if only the last node is
++ * shifted, 1GiB is enough and this function will indicate so.
++ *
++ * This is used to test whether pfn -> nid mapping of the chosen memory
++ * model has fine enough granularity to avoid incorrect mapping for the
++ * populated node map.
++ *
++ * Returns the determined alignment in pfn's.  0 if there is no alignment
++ * requirement (single node).
++ */
++#ifdef NODE_NOT_IN_PAGE_FLAGS
++static unsigned long __init node_map_pfn_alignment(struct numa_meminfo *mi)
++{
++	unsigned long accl_mask = 0, last_end = 0;
++	unsigned long start, end, mask;
++	int last_nid = -1;
++	int i, nid;
++
++	for (i = 0; i < mi->nr_blks; i++) {
++		start = mi->blk[i].start >> PAGE_SHIFT;
++		end = mi->blk[i].end >> PAGE_SHIFT;
++		nid = mi->blk[i].nid;
++		if (!start || last_nid < 0 || last_nid == nid) {
++			last_nid = nid;
++			last_end = end;
++			continue;
++		}
++
++		/*
++		 * Start with a mask granular enough to pin-point to the
++		 * start pfn and tick off bits one-by-one until it becomes
++		 * too coarse to separate the current node from the last.
++		 */
++		mask = ~((1 << __ffs(start)) - 1);
++		while (mask && last_end <= (start & (mask << 1)))
++			mask <<= 1;
++
++		/* accumulate all internode masks */
++		accl_mask |= mask;
++	}
++
++	/* convert mask to number of pages */
++	return ~accl_mask + 1;
++}
 +#else
-+static inline void acpi_initrd_override_find(void *data, size_t size) { }
-+static inline void acpi_initrd_override_copy(void) { }
++static unsigned long __init node_map_pfn_alignment(struct numa_meminfo *mi)
++{
++	return 0;
++}
 +#endif
 +
- #ifdef CONFIG_ACPI
- void acpi_os_set_prepare_sleep(int (*func)(u8 sleep_state,
- 			       u32 pm1a_ctrl,  u32 pm1b_ctrl));
+ static int __init numa_register_memblks(struct numa_meminfo *mi)
+ {
+-	unsigned long uninitialized_var(pfn_align);
++	unsigned long pfn_align;
+ 	int i;
+ 
+ 	/* Account for nodes with cpus and no memory */
+@@ -491,24 +551,22 @@ static int __init numa_register_memblks(struct numa_meminfo *mi)
+ 	if (!numa_meminfo_cover_memory(mi))
+ 		return -EINVAL;
+ 
+-	for (i = 0; i < mi->nr_blks; i++) {
+-		struct numa_memblk *mb = &mi->blk[i];
+-		memblock_set_node(mb->start, mb->end - mb->start, mb->nid);
+-	}
+-
+ 	/*
+ 	 * If sections array is gonna be used for pfn -> nid mapping, check
+ 	 * whether its granularity is fine enough.
+ 	 */
+-#ifdef NODE_NOT_IN_PAGE_FLAGS
+-	pfn_align = node_map_pfn_alignment();
++	pfn_align = node_map_pfn_alignment(mi);
+ 	if (pfn_align && pfn_align < PAGES_PER_SECTION) {
+ 		printk(KERN_WARNING "Node alignment %LuMB < min %LuMB, rejecting NUMA config\n",
+ 		       PFN_PHYS(pfn_align) >> 20,
+ 		       PFN_PHYS(PAGES_PER_SECTION) >> 20);
+ 		return -EINVAL;
+ 	}
+-#endif
++
++	for (i = 0; i < mi->nr_blks; i++) {
++		struct numa_memblk *mb = &mi->blk[i];
++		memblock_set_node(mb->start, mb->end - mb->start, mb->nid);
++	}
+ 
+ 	return 0;
+ }
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 2ae2050..1c79b10 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1323,7 +1323,6 @@ extern void free_initmem(void);
+  * CONFIG_HAVE_MEMBLOCK_NODE_MAP.
+  */
+ extern void free_area_init_nodes(unsigned long *max_zone_pfn);
+-unsigned long node_map_pfn_alignment(void);
+ extern unsigned long absent_pages_in_range(unsigned long start_pfn,
+ 						unsigned long end_pfn);
+ extern void get_pfn_range_for_nid(unsigned int nid,
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 580d919..f368db4 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -4725,56 +4725,6 @@ static inline void setup_nr_node_ids(void)
+ }
+ #endif
+ 
+-/**
+- * node_map_pfn_alignment - determine the maximum internode alignment
+- *
+- * This function should be called after node map is populated and sorted.
+- * It calculates the maximum power of two alignment which can distinguish
+- * all the nodes.
+- *
+- * For example, if all nodes are 1GiB and aligned to 1GiB, the return value
+- * would indicate 1GiB alignment with (1 << (30 - PAGE_SHIFT)).  If the
+- * nodes are shifted by 256MiB, 256MiB.  Note that if only the last node is
+- * shifted, 1GiB is enough and this function will indicate so.
+- *
+- * This is used to test whether pfn -> nid mapping of the chosen memory
+- * model has fine enough granularity to avoid incorrect mapping for the
+- * populated node map.
+- *
+- * Returns the determined alignment in pfn's.  0 if there is no alignment
+- * requirement (single node).
+- */
+-unsigned long __init node_map_pfn_alignment(void)
+-{
+-	unsigned long accl_mask = 0, last_end = 0;
+-	unsigned long start, end, mask;
+-	int last_nid = -1;
+-	int i, nid;
+-
+-	for_each_mem_pfn_range(i, MAX_NUMNODES, &start, &end, &nid) {
+-		if (!start || last_nid < 0 || last_nid == nid) {
+-			last_nid = nid;
+-			last_end = end;
+-			continue;
+-		}
+-
+-		/*
+-		 * Start with a mask granular enough to pin-point to the
+-		 * start pfn and tick off bits one-by-one until it becomes
+-		 * too coarse to separate the current node from the last.
+-		 */
+-		mask = ~((1 << __ffs(start)) - 1);
+-		while (mask && last_end <= (start & (mask << 1)))
+-			mask <<= 1;
+-
+-		/* accumulate all internode masks */
+-		accl_mask |= mask;
+-	}
+-
+-	/* convert mask to number of pages */
+-	return ~accl_mask + 1;
+-}
+-
+ /* Find the lowest pfn for a node */
+ static unsigned long __init find_min_pfn_for_node(int nid)
+ {
 -- 
 1.7.10.4
 
