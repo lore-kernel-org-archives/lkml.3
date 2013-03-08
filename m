@@ -1,138 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752052Ab3CHFsL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 00:48:11 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:24466 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751342Ab3CHFsJ (ORCPT
+	id S933069Ab3CHFu3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 00:50:29 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:52295 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751983Ab3CHFu2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 00:48:09 -0500
-Message-ID: <51397B96.7030008@oracle.com>
-Date: Fri, 08 Mar 2013 00:48:06 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130227 Thunderbird/17.0.3
-MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+	Fri, 8 Mar 2013 00:50:28 -0500
+Date: Thu, 7 Mar 2013 21:50:23 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        paul.gortmaker@windriver.com, Dave Jones <davej@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: irq_work: WARNING: at kernel/irq_work.c:98 irq_work_needs_cpu+0x8a/0xb0()
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+        Thomas Renninger <trenn@suse.de>, Tang Chen <tangchen@cn.fujitsu.com>,
+        linux-kernel@vger.kernel.org, Pekka Enberg <penberg@kernel.org>,
+        Jacob Shin <jacob.shin@amd.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        linux-acpi@vger.kernel.org
+Subject: Re: [PATCH 04/14] x86, ACPI: make acpi override finding work with
+ 32bit flat mode
+Message-ID: <20130308055023.GF14556@mtj.dyndns.org>
+References: <1362718720-27048-1-git-send-email-yinghai@kernel.org>
+ <1362718720-27048-5-git-send-email-yinghai@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1362718720-27048-5-git-send-email-yinghai@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi guys,
+On Thu, Mar 07, 2013 at 08:58:30PM -0800, Yinghai Lu wrote:
+> We will find acpi tables in initrd during head_32.S in 32bit flat mode.
+> 
+> So need acpi_initrd_override_find could take phys directly.
 
-While fuzzing with trinity inside a KVM tools guest it seemed to have hit the
-new warning in kernel/irq_work.c:
+The patch description doesn't explain even half of what's going on.
 
-[  486.527075] ------------[ cut here ]------------
-[  486.527788] WARNING: at kernel/irq_work.c:98 irq_work_needs_cpu+0x8a/0xb0()
-[  486.528870] Modules linked in:
-[  486.529377] Pid: 0, comm: swapper/2 Tainted: G        W    3.9.0-rc1-next-20130307-sasha-00047-g0a7d304-dirty #1037
-[  486.530165] Call Trace:
-[  486.530165]  [<ffffffff8110774c>] warn_slowpath_common+0x8c/0xc0
-[  486.530165]  [<ffffffff81107795>] warn_slowpath_null+0x15/0x20
-[  486.530165]  [<ffffffff811eadda>] irq_work_needs_cpu+0x8a/0xb0
-[  486.530165]  [<ffffffff81174585>] tick_nohz_stop_sched_tick+0x95/0x2a0
-[  486.530165]  [<ffffffff811749d9>] __tick_nohz_idle_enter+0x189/0x1b0
-[  486.530165]  [<ffffffff81174ae1>] tick_nohz_idle_enter+0xa1/0xd0
-[  486.530165]  [<ffffffff8106e4f7>] cpu_idle+0x77/0x180
-[  486.530165]  [<ffffffff83d2e8ae>] ? setup_APIC_timer+0xc9/0xce
-[  486.530165]  [<ffffffff83d2dea9>] start_secondary+0xe1/0xe8
-[  486.530165] ---[ end trace dd075f5cfc2c4f26 ]---
+> @@ -552,38 +552,47 @@ u8 __init acpi_table_checksum(u8 *buffer, u32 length)
+>  	return sum;
+>  }
+>  
+> -/* All but ACPI_SIG_RSDP and ACPI_SIG_FACS: */
+> -static const char * const table_sigs[] = {
+> -	ACPI_SIG_BERT, ACPI_SIG_CPEP, ACPI_SIG_ECDT, ACPI_SIG_EINJ,
+> -	ACPI_SIG_ERST, ACPI_SIG_HEST, ACPI_SIG_MADT, ACPI_SIG_MSCT,
+> -	ACPI_SIG_SBST, ACPI_SIG_SLIT, ACPI_SIG_SRAT, ACPI_SIG_ASF,
+> -	ACPI_SIG_BOOT, ACPI_SIG_DBGP, ACPI_SIG_DMAR, ACPI_SIG_HPET,
+> -	ACPI_SIG_IBFT, ACPI_SIG_IVRS, ACPI_SIG_MCFG, ACPI_SIG_MCHI,
+> -	ACPI_SIG_SLIC, ACPI_SIG_SPCR, ACPI_SIG_SPMI, ACPI_SIG_TCPA,
+> -	ACPI_SIG_UEFI, ACPI_SIG_WAET, ACPI_SIG_WDAT, ACPI_SIG_WDDT,
+> -	ACPI_SIG_WDRT, ACPI_SIG_DSDT, ACPI_SIG_FADT, ACPI_SIG_PSDT,
+> -	ACPI_SIG_RSDT, ACPI_SIG_XSDT, ACPI_SIG_SSDT, NULL };
 
-Obviously this was happening when trinity tried to exercise the shutdown syscall.
+Why is this table made a stack variable?  What's the benefit of doing
+that?
 
-It was followed by RCU choking and causing a bunch of locked tasks, preventing
-shutdown. I guess it's the result of whatever caused this warning above to
-happen, but in-case it isn't, the relevant parts of the RCU hang are:
+>  /* Non-fatal errors: Affected tables/files are ignored */
+>  #define INVALID_TABLE(x, path, name)					\
+> -	{ pr_err("ACPI OVERRIDE: " x " [%s%s]\n", path, name); continue; }
+> +	do { pr_err("ACPI OVERRIDE: " x " [%s%s]\n", path, name); } while (0)
 
-[  607.040283] INFO: task init:1 blocked for more than 120 seconds.
-[  607.042932] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-[  607.047046] init            D ffff8800ba308000  2736     1      0 0x00000000
-[  607.050498]  ffff8800ba311b18 0000000000000002 0000000000000003 ffff8800ba308000
-[  607.055110]  ffff8800ba310000 ffff8800ba310010 ffff8800ba311fd8 ffff8800ba310000
-[  607.058208]  ffff8800ba310010 ffff8800ba311fd8 ffffffff8542c420 ffff8800ba308000
-[  607.060611] Call Trace:
-[  607.060847]  [<ffffffff83d38c85>] ? __mutex_lock_common+0x365/0x5d0
-[  607.061462]  [<ffffffff83d3ad85>] schedule+0x55/0x60
-[  607.061948]  [<ffffffff83d3b143>] schedule_preempt_disabled+0x13/0x20
-[  607.062590]  [<ffffffff83d38cc5>] __mutex_lock_common+0x3a5/0x5d0
-[  607.063209]  [<ffffffff811c2262>] ? rcu_cleanup_dead_cpu+0x52/0x250
-[  607.063840]  [<ffffffff819e73b9>] ? free_cpumask_var+0x9/0x10
-[  607.064453]  [<ffffffff811c2262>] ? rcu_cleanup_dead_cpu+0x52/0x250
-[  607.065035]  [<ffffffff83d39020>] mutex_lock_nested+0x40/0x50
-[  607.065606]  [<ffffffff811c2262>] rcu_cleanup_dead_cpu+0x52/0x250
-[  607.066230]  [<ffffffff8117c2dd>] ? trace_hardirqs_on+0xd/0x10
-[  607.066810]  [<ffffffff83d30f5e>] rcu_cpu_notify+0x1b4/0x1ef
-[  607.067375]  [<ffffffff83d415ae>] notifier_call_chain+0xee/0x130
-[  607.067975]  [<ffffffff8113cec9>] __raw_notifier_call_chain+0x9/0x10
-[  607.068631]  [<ffffffff8110b5ab>] __cpu_notify+0x1b/0x30
-[  607.069165]  [<ffffffff8110b5d0>] cpu_notify_nofail+0x10/0x30
-[  607.069749]  [<ffffffff83d22605>] _cpu_down+0x185/0x2e0
-[  607.070319]  [<ffffffff8110bd38>] disable_nonboot_cpus+0x88/0x1b0
-[  607.070937]  [<ffffffff81125766>] kernel_restart+0x16/0x60
-[  607.071487]  [<ffffffff8112594c>] SYSC_reboot+0x18c/0x2a0
-[  607.072020]  [<ffffffff811c17e3>] ? rcu_cleanup_after_idle+0x23/0xf0
-[  607.072635]  [<ffffffff811c1914>] ? rcu_eqs_exit_common+0x64/0x280
-[  607.073251]  [<ffffffff811fd815>] ? user_exit+0xc5/0x100
-[  607.073772]  [<ffffffff8117c2dd>] ? trace_hardirqs_on+0xd/0x10
-[  607.074352]  [<ffffffff810725f3>] ? syscall_trace_enter+0x23/0x290
-[  607.075054]  [<ffffffff81125a69>] SyS_reboot+0x9/0x10
-[  607.075495]  [<ffffffff83d45c10>] tracesys+0xdd/0xe2
-[  607.075967] 4 locks held by init/1:
-[  607.076439]  #0:  (reboot_mutex){+.+.+.}, at: [<ffffffff811258a6>] SYSC_reboot+0xe6/0x2a0
-[  607.077276]  #1:  (cpu_add_remove_lock){+.+.+.}, at: [<ffffffff8110b602>] cpu_maps_update_begin+0x12/0x20
-[  607.078288]  #2:  (cpu_hotplug.lock){+.+.+.}, at: [<ffffffff8110b6f7>] cpu_hotplug_begin+0x27/0x60
-[  607.079260]  #3:  (rcu_preempt_state.onoff_mutex){+.+...}, at: [<ffffffff811c2262>] rcu_cleanup_dead_cpu+0x52/0x250
+Might as well rename the macro to something which indicates it's just
+printing error message.  Urgh... who thought embedding control flow
+directive like continue inside a macro was a good idea? :(
 
-[  607.187177] rcu_preempt     D ffff8800aa8884a8  5136    11      2 0x00000000
-[  607.187890]  ffff8800ba391c08 0000000000000002 ffff8800ba391bb8 000000078117e00a
-[  607.188674]  ffff8800ba390000 ffff8800ba390010 ffff8800ba391fd8 ffff8800ba390000
-[  607.189472]  ffff8800ba390010 ffff8800ba391fd8 ffff8800ba308000 ffff8800ba388000
-[  607.190581] Call Trace:
-[  607.190849]  [<ffffffff83d3ad85>] schedule+0x55/0x60
-[  607.191336]  [<ffffffff83d381c6>] schedule_timeout+0x276/0x2c0
-[  607.191904]  [<ffffffff81119e40>] ? lock_timer_base+0x70/0x70
-[  607.192460]  [<ffffffff83d38229>] schedule_timeout_uninterruptible+0x19/0x20
-[  607.193132]  [<ffffffff811c61d8>] rcu_gp_init+0x438/0x490
-[  607.193646]  [<ffffffff8117c2dd>] ? trace_hardirqs_on+0xd/0x10
-[  607.194216]  [<ffffffff811c62ec>] rcu_gp_kthread+0xbc/0x2d0
-[  607.194760]  [<ffffffff811c6230>] ? rcu_gp_init+0x490/0x490
-[  607.195298]  [<ffffffff81136570>] ? wake_up_bit+0x40/0x40
-[  607.195823]  [<ffffffff811c6230>] ? rcu_gp_init+0x490/0x490
-[  607.196364]  [<ffffffff81135b72>] kthread+0xe2/0xf0
-[  607.196842]  [<ffffffff8117e00a>] ? __lock_release+0x1da/0x1f0
-[  607.197405]  [<ffffffff81135a90>] ? __init_kthread_worker+0x70/0x70
-[  607.198022]  [<ffffffff83d4593c>] ret_from_fork+0x7c/0xb0
-[  607.198559]  [<ffffffff81135a90>] ? __init_kthread_worker+0x70/0x70
+> -void __init acpi_initrd_override_find(void *data, size_t size)
+> +void __init acpi_initrd_override_find(void *data, size_t size, bool is_phys)
 
-[  609.414891] Showing all locks held in the system:
-[  609.415490] 4 locks held by init/1:
-[  609.415836]  #0:  (reboot_mutex){+.+.+.}, at: [<ffffffff811258a6>] SYSC_reboot+0xe6/0x2a0
-[  609.416708]  #1:  (cpu_add_remove_lock){+.+.+.}, at: [<ffffffff8110b602>] cpu_maps_update_begin+0x12/0x20
-[  609.417712]  #2:  (cpu_hotplug.lock){+.+.+.}, at: [<ffffffff8110b6f7>] cpu_hotplug_begin+0x27/0x60
-[  609.418668]  #3:  (rcu_preempt_state.onoff_mutex){+.+...}, at: [<ffffffff811c2262>] rcu_cleanup_dead_cpu+0x52/0x250
-[  609.419819] 1 lock held by rcu_preempt/11:
-[  609.420277]  #0:  (rcu_preempt_state.onoff_mutex){+.+...}, at: [<ffffffff811c5f09>] rcu_gp_init+0x169/0x490
-[  609.421391] 2 locks held by khungtaskd/3087:
-[  609.421811]  #0:  (rcu_read_lock){.+.+..}, at: [<ffffffff811b0cec>] check_hung_uninterruptible_tasks+0x3c/0x390
-[  609.422867]  #1:  (tasklist_lock){.+.+..}, at: [<ffffffff811791ac>] debug_show_all_locks+0x5c/0x270
-[  609.423841] 2 locks held by sh/7108:
-[  609.424199]  #0:  (&tty->ldisc_sem){.+.+.+}, at: [<ffffffff81c1b03f>] tty_ldisc_ref_wait+0x1f/0x50
-[  609.425134]  #1:  (&ldata->atomic_read_lock){+.+...}, at: [<ffffffff81c1772e>] n_tty_read+0x31e/0x980
+Is it really necessary to make the function take both virtual and
+physical addresses?  Can't we just make the function take phys_addr_t
+and update everyone to call with physaddr?  Also @is_phys isn't simple
+address switch.  It also changes error reporting.  If you're gonna
+keep @is_phys, let's at least write up a function comment explaining
+what's going on and why we need it.  But, really, if at all possible,
+let's change the function to take single type of argument and
+predicate error message printing on something else (e.g. early printk
+initialized or whatever).
 
-It looks like rcu_gp_init() went sleeping with the onoff_mutex held and
-never got it's wakeup, while the rcu_cleanup_dead_cpu() code is waiting
-to grab on that mutex.
+> @@ -654,11 +677,14 @@ void __init acpi_initrd_override_copy(void)
+>  	arch_reserve_mem_area(acpi_tables_addr, all_tables_size);
+>  
+>  	for (no = 0; no < table_nr; no++) {
+> +		unsigned long phys_addr = (unsigned long)early_initrd_files[no].data;
 
+Can we please use phys_addr_t for physical addresses?
 
-Thanks,
-Sasha
+>  		unsigned long size = early_initrd_files[no].size;
+>  
+> +		q = early_ioremap(phys_addr, size);
+> +		pr_info("%4.4s ACPI table found in initrd [%#010lx-%#010lx]\n",
+> +				((struct acpi_table_header *)q)->signature,
+> +				phys_addr, phys_addr + size - 1);
+
+Maybe putting pr_info after ioremapping both p and q would be easier
+on the eyes?
+
+>  		p = early_ioremap(acpi_tables_addr + total_offset, size);
+> -		q = early_ioremap((unsigned long)early_initrd_files[no].data,
+> -					 size);
+>  		memcpy(p, q, size);
+>  		early_iounmap(q, size);
+>  		early_iounmap(p, size);
+
+Thanks.
+
+-- 
+tejun
