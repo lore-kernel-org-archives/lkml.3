@@ -1,49 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933237Ab3CHLiG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 06:38:06 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:25995 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752330Ab3CHLiD (ORCPT
+	id S1756799Ab3CHLiz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 06:38:55 -0500
+Received: from mail-vb0-f42.google.com ([209.85.212.42]:56569 "EHLO
+	mail-vb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752522Ab3CHLix (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 06:38:03 -0500
-X-Authority-Analysis: v=2.0 cv=UN5f7Vjy c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=YMeCJBTquIIA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=RijN4k9VLrAA:10 a=cCcTGBnLAAAA:8 a=4Ruuc49OSHJ3bpq9Z9YA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1362742682.31874.91.camel@gandalf.local.home>
-Subject: Re: [PATCH] init: Scream bloody murder if interrupts are enabled
- too early
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Ard van Breemen <ard@telegraafnet.nl>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Date: Fri, 08 Mar 2013 06:38:02 -0500
-In-Reply-To: <20130308090300.GM1585@telegraafnet.nl>
-References: <1362694743.31874.66.camel@gandalf.local.home>
-	 <20130308090300.GM1585@telegraafnet.nl>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 8 Mar 2013 06:38:53 -0500
+MIME-Version: 1.0
+In-Reply-To: <87sj47t97s.fsf@xmission.com>
+References: <20130307132819.GA31162@localhost>
+	<87sj47t97s.fsf@xmission.com>
+Date: Fri, 8 Mar 2013 17:38:52 +0600
+Message-ID: <CADZ9YHhbvu8WYUMdDtpvkrZmLCD87fQ0Y0AcXdBaQB53=uPYYw@mail.gmail.com>
+Subject: Re: [nsproxy] BUG: unable to handle kernel NULL pointer dereference
+ at 0000000000000024
+From: Rakib Mullick <rakib.mullick@gmail.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Fengguang Wu <fengguang.wu@intel.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-03-08 at 10:03 +0100, Ard van Breemen wrote:
+On 3/7/13, Eric W. Biederman <ebiederm@xmission.com> wrote:
+> Fengguang Wu <fengguang.wu@intel.com> writes:
+>
+>> Greetings,
+>>
+>> I got the below oops and the first bad commit is
+>
+> Doh!  On a second look that change is totally wrong.  Of course we need
+> to up the ref-count every time we create a new process.  Especially if
+> we don't do anything with namespaces.
+>
+> I was looking at it from the wrong angle last night.  I should have
+> known better.
+>
+> Patch dropped.
+>
 
-> The original code was a few versions before the WARN macros.
-> I think it's better to just change the printk to something like:
-> WARN(1,"interrupts were enabled *very* early, fixing it\n")
-> 
+Sad to know :( . From the debug messages, it's kmemcheck report. I
+can't related the problem specified with the patch I've proposed.
 
-Yeah, I thought about updating to that, but I was lazy. I was hoping
-nobody would notice. ;-)
+It seems at task exit path, at switch_task_namespaces() - after my
+patch atomic_dec_and_test(&ns->count) becomes true (-1), thus
+free_nsproxy() gets called. But, free_nsproxy() shouldn't get called
+here.
 
-OK, I'll send out -v2 as soon as I finish testing it.
+Am I right? Or there's something else?
 
 Thanks,
-
--- Steve
-
-
+Rakib
