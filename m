@@ -1,59 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760366Ab3CHEUo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 23:20:44 -0500
-Received: from mail-oa0-f50.google.com ([209.85.219.50]:52963 "EHLO
-	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756010Ab3CHEUn (ORCPT
+	id S1760372Ab3CHEXd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 23:23:33 -0500
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:58276 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760331Ab3CHEXc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 23:20:43 -0500
+	Thu, 7 Mar 2013 23:23:32 -0500
+Message-ID: <513967BD.9010602@hitachi.com>
+Date: Fri, 08 Mar 2013 13:23:25 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-In-Reply-To: <Pine.LNX.4.64.1303072248560.20470@axis700.grange>
-References: <6cba8f153cfd4b0d3075a34a6dfe287bdec2eb06.1362676407.git.viresh.kumar@linaro.org>
-	<Pine.LNX.4.64.1303072248560.20470@axis700.grange>
-Date: Fri, 8 Mar 2013 12:20:42 +0800
-Message-ID: <CAKohpo=-_uzTi6QR4MnXPd5yAZFTcw-3ZZL-TAVY+drV-bDjNw@mail.gmail.com>
-Subject: Re: [PATCH V2] cpufreq: ARM big LITTLE: Add generic cpufreq driver
- and its DT glue
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Cc: rjw@sisk.pl, Steve.Bannister@arm.com, linux@arm.linux.org.uk,
-        linux-pm@vger.kernel.org,
-        Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>,
-        devicetree-discuss@lists.ozlabs.org, Liviu.Dudau@arm.com,
-        linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org,
-        robin.randhawa@arm.com, linux-arm-kernel@lists.infradead.org,
-        mark.hambleton@broadcom.com, linaro-kernel@lists.linaro.org,
-        charles.garcia-tobin@arm.com
-Content-Type: text/plain; charset=ISO-8859-1
+To: oskar.andero@sonymobile.com
+Cc: linux-kernel@vger.kernel.org, davem@davemloft.net,
+        anil.s.keshavamurthy@intel.com, ananth@in.ibm.com,
+        radovan.lekanovic@sonymobile.com,
+        =?UTF-8?B?77+9?= <bjorn.davidsson@sonymobile.com>
+Subject: Re: [PATCH] Kprobes blacklist: Conditionally add x86-specific
+ symbols
+References: <1362653070-24035-1-git-send-email-oskar.andero@sonymobile.com>
+In-Reply-To: <1362653070-24035-1-git-send-email-oskar.andero@sonymobile.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8 March 2013 05:56, Guennadi Liakhovetski <g.liakhovetski@gmx.de> wrote:
-> I like generic drivers :)
+(2013/03/07 19:44), oskar.andero@sonymobile.com wrote:
+> From: Bjorn Davidsson <bjorn.davidsson@sonymobile.com>
+> 
+> The kprobes blacklist contains x86-specific symbols.
+> Looking for these in kallsyms takes unnecessary time
+> during startup on non-X86 platform.
+> Added #ifdef CONFIG_X86 around them.
 
-Me too :)
+Right. however, it might be better break that into
+common and arch-specific lists, because there may be
+other arch-specific non-probe-able functions on each
+architecture...
 
-> cpufreq-cpu0 is yet another such generic
-> (cpufreq) driver. Now, comparing the functionality of the two:
+Would you know some other black points on your platform?
 
-Great!!
+Thank you,
 
-> we see, that this driver "only" switches CPU clock frequencies. Whereas
-> the cpufreq-cpu0 driver also manipulates a regulator (if available)
-> directly. I understand, power-saving is also an important consideration
-> for big.LITTLE systems. So, I presume, you plan to implement voltage
-> switching in cpufreq notifiers?
+> 
+> Reviewed-by: Radovan Lekanovic <radovan.lekanovic@sonymobile.com>
+> Signed-off-by: Björn Davidsson <bjorn.davidsson@sonymobile.com>
+> Signed-off-by: Oskar Andero <oskar.andero@sonymobile.com>
+> ---
+>  kernel/kprobes.c |    2 ++
+>  1 files changed, 2 insertions(+), 0 deletions(-)
+> 
+> diff --git a/kernel/kprobes.c b/kernel/kprobes.c
+> index e35be53..8c3796f 100644
+> --- a/kernel/kprobes.c
+> +++ b/kernel/kprobes.c
+> @@ -95,9 +95,11 @@ static raw_spinlock_t *kretprobe_table_lock_ptr(unsigned long hash)
+>   */
+>  static struct kprobe_blackpoint kprobe_blacklist[] = {
+>  	{"preempt_schedule",},
+> +#ifdef CONFIG_X86
+>  	{"native_get_debugreg",},
+>  	{"irq_entries_start",},
+>  	{"common_interrupt",},
+> +#endif
+>  	{"mcount",},	/* mcount can be called from everywhere */
+>  	{NULL}    /* Terminator */
+>  };
+> 
 
-So the platform on which we are currently testing these is ARM TC2 Soc
-and this switching is done by the firmware instead. And so didn't went
-for regulator hookups initially.. Obviously in future regulator hookups would
-find some space in this driver but not required for now.
 
-> Now, my question is: is this (notifier)
-> actually the preferred method and the cpufreq-cpu0 driver is doing it
-> "wrongly?"
+-- 
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
-What notifiers are you talking about? I believe using the regulator framework
-is the right way of doing this. And that would be part of this code later on.
+
