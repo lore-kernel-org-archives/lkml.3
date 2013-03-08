@@ -1,199 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933679Ab3CHGsl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 01:48:41 -0500
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:37343 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750988Ab3CHGsk (ORCPT
+	id S933705Ab3CHGtH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 01:49:07 -0500
+Received: from mail-oa0-f52.google.com ([209.85.219.52]:34053 "EHLO
+	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753117Ab3CHGtG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 01:48:40 -0500
-Message-ID: <513989C2.7000909@hitachi.com>
-Date: Fri, 08 Mar 2013 15:48:34 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Fri, 8 Mar 2013 01:49:06 -0500
 MIME-Version: 1.0
-To: oskar.andero@sonymobile.com
-Cc: linux-kernel@vger.kernel.org, davem@davemloft.net,
-        anil.s.keshavamurthy@intel.com, ananth@in.ibm.com,
-        radovan.lekanovic@sonymobile.com,
-        Toby Collett <toby.collett@sonymobile.com>
-Subject: Re: [PATCH] delay blacklist symbol lookup until we actually need
- it
-References: <1362660318-30603-1-git-send-email-oskar.andero@sonymobile.com>
-In-Reply-To: <1362660318-30603-1-git-send-email-oskar.andero@sonymobile.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20130308053653.GE14556@mtj.dyndns.org>
+References: <1362718720-27048-1-git-send-email-yinghai@kernel.org>
+	<1362718720-27048-4-git-send-email-yinghai@kernel.org>
+	<20130308053653.GE14556@mtj.dyndns.org>
+Date: Thu, 7 Mar 2013 22:49:04 -0800
+X-Google-Sender-Auth: xB1xwvF3OkYG_O8CsqetU0CsdyI
+Message-ID: <CAE9FiQWdyx3_ao++=0a4rj_1LM7--MKz=+0gKUviws=DWjESZw@mail.gmail.com>
+Subject: Re: [PATCH 03/14] x86, ACPI: store override acpi tables phys addr
+From: Yinghai Lu <yinghai@kernel.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Renninger <trenn@suse.de>, Tang Chen <tangchen@cn.fujitsu.com>,
+        linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        linux-acpi@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/03/07 21:45), oskar.andero@sonymobile.com wrote:
-> From: Toby Collett <toby.collett@sonymobile.com>
-> 
-> The symbol lookup can take a long time and kprobes is
-> initialised very early in boot, so delay symbol lookup
-> until the blacklist is first used.
+On Thu, Mar 7, 2013 at 9:36 PM, Tejun Heo <tj@kernel.org> wrote:
+> On Thu, Mar 07, 2013 at 08:58:29PM -0800, Yinghai Lu wrote:
+>> As later 32bit only find table with phys address during 32bit flat mode
+>> in head_32.S.
+>>
+>> To keep 32bit and 64 bit consistent, use phys_addr for all.
+>>
+>> Use early_ioremap to access during copying.
+>>
+>> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+>> Cc: Thomas Renninger <trenn@suse.de>
+>> Cc: Rafael J. Wysocki <rjw@sisk.pl>
+>> Cc: linux-acpi@vger.kernel.org
+>> ---
+>> @@ -654,10 +654,13 @@ void __init acpi_initrd_override_copy(void)
+>>       arch_reserve_mem_area(acpi_tables_addr, all_tables_size);
+>>
+>>       for (no = 0; no < table_nr; no++) {
+>> -             size_t size = early_initrd_files[no].size;
+>> +             unsigned long size = early_initrd_files[no].size;
+>>
+>>               p = early_ioremap(acpi_tables_addr + total_offset, size);
+>> -             memcpy(p, early_initrd_files[no].data, size);
+>> +             q = early_ioremap((unsigned long)early_initrd_files[no].data,
+>> +                                      size);
+>> +             memcpy(p, q, size);
+>> +             early_iounmap(q, size);
+>
+> Ah, okay, so the loop change in the previous patch was for this, I
+> suppose?  That chunk probably should either be a separate patch or
+> rolled into this one.
 
-I like this idea, but the implementation may have to be changed
-if we split blacklist into common/arch as the previous thread.
-
-I'd like to see the update series of patches including that changes.
-
-Thank you,
-
-> 
-> Reviewed-by: Radovan Lekanovic <radovan.lekanovic@sonymobile.com>
-> Signed-off-by: Toby Collett <toby.collett@sonymobile.com>
-> Signed-off-by: Oskar Andero <oskar.andero@sonymobile.com>
-> ---
->  kernel/kprobes.c |   91 +++++++++++++++++++++++++++++++----------------------
->  1 files changed, 53 insertions(+), 38 deletions(-)
-> 
-> diff --git a/kernel/kprobes.c b/kernel/kprobes.c
-> index e35be53..71a6bee 100644
-> --- a/kernel/kprobes.c
-> +++ b/kernel/kprobes.c
-> @@ -68,6 +68,7 @@
->  #endif
->  
->  static int kprobes_initialized;
-> +static int kprobe_blacklist_initialized;
->  static struct hlist_head kprobe_table[KPROBE_TABLE_SIZE];
->  static struct hlist_head kretprobe_inst_table[KPROBE_TABLE_SIZE];
->  
-> @@ -102,6 +103,53 @@ static struct kprobe_blackpoint kprobe_blacklist[] = {
->  	{NULL}    /* Terminator */
->  };
->  
-> +/* it can take some time ( > 100ms ) to initialise the
-> + * blacklist so we delay this until we actually need it
-> + */
-> +static void init_kprobe_blacklist(void)
-> +{
-> +	int i;
-> +	unsigned long offset = 0, size = 0;
-> +	char *modname, namebuf[128];
-> +	const char *symbol_name;
-> +	void *addr;
-> +	struct kprobe_blackpoint *kb;
-> +
-> +	/*
-> +	 * Lookup and populate the kprobe_blacklist.
-> +	 *
-> +	 * Unlike the kretprobe blacklist, we'll need to determine
-> +	 * the range of addresses that belong to the said functions,
-> +	 * since a kprobe need not necessarily be at the beginning
-> +	 * of a function.
-> +	 */
-> +	for (kb = kprobe_blacklist; kb->name != NULL; kb++) {
-> +		kprobe_lookup_name(kb->name, addr);
-> +		if (!addr)
-> +			continue;
-> +
-> +		kb->start_addr = (unsigned long)addr;
-> +		symbol_name = kallsyms_lookup(kb->start_addr,
-> +				&size, &offset, &modname, namebuf);
-> +		if (!symbol_name)
-> +			kb->range = 0;
-> +		else
-> +			kb->range = size;
-> +	}
-> +
-> +	if (kretprobe_blacklist_size) {
-> +		/* lookup the function address from its name */
-> +		for (i = 0; kretprobe_blacklist[i].name != NULL; i++) {
-> +			kprobe_lookup_name(kretprobe_blacklist[i].name,
-> +					   kretprobe_blacklist[i].addr);
-> +			if (!kretprobe_blacklist[i].addr)
-> +				printk("kretprobe: lookup failed: %s\n",
-> +				       kretprobe_blacklist[i].name);
-> +		}
-> +	}
-> +	kprobe_blacklist_initialized = 1;
-> +}
-> +
->  #ifdef __ARCH_WANT_KPROBES_INSN_SLOT
->  /*
->   * kprobe->ainsn.insn points to the copy of the instruction to be
-> @@ -1331,6 +1379,9 @@ static int __kprobes in_kprobes_functions(unsigned long addr)
->  	if (addr >= (unsigned long)__kprobes_text_start &&
->  	    addr < (unsigned long)__kprobes_text_end)
->  		return -EINVAL;
-> +
-> +	if (!kprobe_blacklist_initialized)
-> +		init_kprobe_blacklist();
->  	/*
->  	 * If there exists a kprobe_blacklist, verify and
->  	 * fail any probe registration in the prohibited area
-> @@ -1816,6 +1867,8 @@ int __kprobes register_kretprobe(struct kretprobe *rp)
->  	void *addr;
->  
->  	if (kretprobe_blacklist_size) {
-> +		if (!kprobe_blacklist_initialized)
-> +			init_kprobe_blacklist();
->  		addr = kprobe_addr(&rp->kp);
->  		if (IS_ERR(addr))
->  			return PTR_ERR(addr);
-> @@ -2065,11 +2118,6 @@ static struct notifier_block kprobe_module_nb = {
->  static int __init init_kprobes(void)
->  {
->  	int i, err = 0;
-> -	unsigned long offset = 0, size = 0;
-> -	char *modname, namebuf[128];
-> -	const char *symbol_name;
-> -	void *addr;
-> -	struct kprobe_blackpoint *kb;
->  
->  	/* FIXME allocate the probe table, currently defined statically */
->  	/* initialize all list heads */
-> @@ -2079,39 +2127,6 @@ static int __init init_kprobes(void)
->  		raw_spin_lock_init(&(kretprobe_table_locks[i].lock));
->  	}
->  
-> -	/*
-> -	 * Lookup and populate the kprobe_blacklist.
-> -	 *
-> -	 * Unlike the kretprobe blacklist, we'll need to determine
-> -	 * the range of addresses that belong to the said functions,
-> -	 * since a kprobe need not necessarily be at the beginning
-> -	 * of a function.
-> -	 */
-> -	for (kb = kprobe_blacklist; kb->name != NULL; kb++) {
-> -		kprobe_lookup_name(kb->name, addr);
-> -		if (!addr)
-> -			continue;
-> -
-> -		kb->start_addr = (unsigned long)addr;
-> -		symbol_name = kallsyms_lookup(kb->start_addr,
-> -				&size, &offset, &modname, namebuf);
-> -		if (!symbol_name)
-> -			kb->range = 0;
-> -		else
-> -			kb->range = size;
-> -	}
-> -
-> -	if (kretprobe_blacklist_size) {
-> -		/* lookup the function address from its name */
-> -		for (i = 0; kretprobe_blacklist[i].name != NULL; i++) {
-> -			kprobe_lookup_name(kretprobe_blacklist[i].name,
-> -					   kretprobe_blacklist[i].addr);
-> -			if (!kretprobe_blacklist[i].addr)
-> -				printk("kretprobe: lookup failed: %s\n",
-> -				       kretprobe_blacklist[i].name);
-> -		}
-> -	}
-> -
->  #if defined(CONFIG_OPTPROBES)
->  #if defined(__ARCH_WANT_KPROBES_INSN_SLOT)
->  	/* Init kprobe_optinsn_slots */
-> 
-
-
--- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+merge two patches?
