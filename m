@@ -1,48 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932704Ab3CHAVQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 19:21:16 -0500
-Received: from mail-ve0-f173.google.com ([209.85.128.173]:57715 "EHLO
-	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759872Ab3CHAVO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 19:21:14 -0500
+	id S1760092Ab3CHAdq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 19:33:46 -0500
+Received: from ozlabs.org ([203.10.76.45]:58992 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758343Ab3CHAdo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Mar 2013 19:33:44 -0500
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Paolo Bonzini <pbonzini@redhat.com>, Asias He <asias@redhat.com>,
+        linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org
+Subject: Re: [PATCH dontapply 0/2] tools/virtio updates for API testing
+In-Reply-To: <cover.1361743821.git.mst@redhat.com>
+References: <cover.1361743821.git.mst@redhat.com>
+User-Agent: Notmuch/0.14 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
+Date: Fri, 08 Mar 2013 11:29:50 +1100
+Message-ID: <87k3piwx6p.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-In-Reply-To: <20130307223610.GA2494@redhat.com>
-References: <CA+55aFwDYocNRjSCJk1PYw0MFy7dpKf1yMMEiePP--=ewQcX6A@mail.gmail.com>
-	<20130307213819.GB19543@redhat.com>
-	<CA+55aFx424SX6S1zFegVaMZ_BkeZctDKCN6eYCLFfaJDKRVG9g@mail.gmail.com>
-	<20130307220333.GA31039@redhat.com>
-	<20130307223610.GA2494@redhat.com>
-Date: Thu, 7 Mar 2013 16:21:13 -0800
-X-Google-Sender-Auth: -SycsNo9jTdi7R0RZf72hisQni0
-Message-ID: <CA+55aFzdPaFQROzFhz-v1Qn=3aDP=4uGTiOJxR26cR91uJHxyg@mail.gmail.com>
-Subject: Re: pipe_release oops.
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Dave Jones <davej@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 7, 2013 at 2:36 PM, Dave Jones <davej@redhat.com> wrote:
+"Michael S. Tsirkin" <mst@redhat.com> writes:
+> Here's a patchset to update tools/virtio with
+> changes in 3.8, as well as the proposed API extension.
 >
-> The hits keep on coming..
+> Useful to see whether the extra level of indirection
+> adds measureable overhead.
 >
-> [  255.609172] BUG: unable to handle kernel NULL pointer dereference at 0000000000000064
-> [  255.610393] IP: [<ffffffff811bad62>] pipe_release+0x42/0xd0
+> I will upstream at least patch 1 soon.
 
-Ok, I think this is the same issue as your fasync thing.
+What happened to this, BTW?
 
-So add a "if (pipe) { }" in pipe_release() too.
+> Michael S. Tsirkin (2):
+>   tools/virtio: fix build for 3.8
 
-It's a bit odd, becuse we always allocate an inode->i_pipe whenever we
-associate the file with any of the pipe operations, so I don't see how
-that NULL i_pipe happens. But we do have that "free_pipe_info() if
-there are no readers or writers" logic and I bet that's what triggers
-this somehow. I just don't see what the exact sequence is.
-
-                    Linus
+Thanks,
+Rusty.
