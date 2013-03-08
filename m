@@ -1,93 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756010Ab3CHTvH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 14:51:07 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:24706 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755033Ab3CHTvD (ORCPT
+	id S932413Ab3CHTvf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 14:51:35 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:23385 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755096Ab3CHTvd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 14:51:03 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19syW6kh48R2Fx/vcLN6Kfq
-Date: Fri, 8 Mar 2013 11:50:58 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 04/10] ARM: OMAP2+: Divorce from local timer API
-Message-ID: <20130308195058.GH11806@atomide.com>
-References: <1362614646-24113-1-git-send-email-sboyd@codeaurora.org>
- <1362614646-24113-5-git-send-email-sboyd@codeaurora.org>
+	Fri, 8 Mar 2013 14:51:33 -0500
+Date: Fri, 8 Mar 2013 14:50:55 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
+        Joerg Roedel <joro@8bytes.org>
+Subject: Re: [PATCH v2 10/26] x86, irq: Convert irq_2_pin list to generic list
+Message-ID: <20130308195055.GD6622@phenom.dumpdata.com>
+References: <1360351703-20571-1-git-send-email-yinghai@kernel.org>
+ <1360351703-20571-11-git-send-email-yinghai@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1362614646-24113-5-git-send-email-sboyd@codeaurora.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1360351703-20571-11-git-send-email-yinghai@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Stephen Boyd <sboyd@codeaurora.org> [130306 16:22]:
-> Now that the TWD doesn't rely on the local timer API, OMAP can
-> stop selecting it in Kconfig and relying on the config option to
-> decide if it should call smp_twd functions.
+On Fri, Feb 08, 2013 at 11:28:07AM -0800, Yinghai Lu wrote:
+> Now irq_2_pin list is own grown list.
+
+I think you meant to say 'has its own list'. Not sure how
+its growing?
+
+> We can use generic list to replace it so we could generic helper
+> functions to operate it.
+
+You need to put the verb a bit earlier. Perhaps:
+
+".. generic list to replace so that we can operate using
+generic helper functions."
+
 > 
-> Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> Also make free_irq_cfg() free irq_2_pin list to support coming ioapic
+> hotplug.
 
-Acked-by: Tony Lindgren <tony@atomide.com>
+If you have them ready - could you say the titles of the patches here?
 
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> 
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> Cc: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+> Cc: Joerg Roedel <joro@8bytes.org>
 > ---
->  arch/arm/mach-omap2/Kconfig | 1 -
->  arch/arm/mach-omap2/timer.c | 7 -------
->  2 files changed, 8 deletions(-)
+>  arch/x86/include/asm/hw_irq.h  |    2 +-
+>  arch/x86/kernel/apic/io_apic.c |   22 ++++++++++++----------
+>  2 files changed, 13 insertions(+), 11 deletions(-)
 > 
-> diff --git a/arch/arm/mach-omap2/Kconfig b/arch/arm/mach-omap2/Kconfig
-> index 49ac3df..6e1f871 100644
-> --- a/arch/arm/mach-omap2/Kconfig
-> +++ b/arch/arm/mach-omap2/Kconfig
-> @@ -88,7 +88,6 @@ config ARCH_OMAP4
->  	select CACHE_L2X0
->  	select CPU_V7
->  	select HAVE_SMP
-> -	select LOCAL_TIMERS if SMP
->  	select OMAP_INTERCONNECT
->  	select PL310_ERRATA_588369
->  	select PL310_ERRATA_727915
-> diff --git a/arch/arm/mach-omap2/timer.c b/arch/arm/mach-omap2/timer.c
-> index 2bdd4cf..c00a8f8 100644
-> --- a/arch/arm/mach-omap2/timer.c
-> +++ b/arch/arm/mach-omap2/timer.c
-> @@ -587,7 +587,6 @@ OMAP_SYS_GP_TIMER_INIT(3_am33xx, 1, OMAP4_MPU_SOURCE, "ti,timer-alwon",
->  #ifdef CONFIG_ARCH_OMAP4
->  OMAP_SYS_32K_TIMER_INIT(4, 1, OMAP4_32K_SOURCE, "ti,timer-alwon",
->  			2, OMAP4_MPU_SOURCE);
-> -#ifdef CONFIG_LOCAL_TIMERS
->  static DEFINE_TWD_LOCAL_TIMER(twd_local_timer, OMAP44XX_LOCAL_TWD_BASE, 29);
->  void __init omap4_local_timer_init(void)
->  {
-> @@ -606,12 +605,6 @@ void __init omap4_local_timer_init(void)
->  			pr_err("twd_local_timer_register failed %d\n", err);
->  	}
->  }
-> -#else /* CONFIG_LOCAL_TIMERS */
-> -void __init omap4_local_timer_init(void)
-> -{
-> -	omap4_sync32k_timer_init();
-> -}
-> -#endif /* CONFIG_LOCAL_TIMERS */
->  #endif /* CONFIG_ARCH_OMAP4 */
+> diff --git a/arch/x86/include/asm/hw_irq.h b/arch/x86/include/asm/hw_irq.h
+> index 10a78c3..69743f8 100644
+> --- a/arch/x86/include/asm/hw_irq.h
+> +++ b/arch/x86/include/asm/hw_irq.h
+> @@ -121,7 +121,7 @@ struct irq_2_irte {
+>   * Most irqs are mapped 1:1 with pins.
+>   */
+>  struct irq_cfg {
+> -	struct irq_pin_list	*irq_2_pin;
+> +	struct list_head	irq_2_pin;
+>  	cpumask_var_t		domain;
+>  	cpumask_var_t		old_domain;
+>  	u8			vector;
+> diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+> index 4c1a726..d2b4988 100644
+> --- a/arch/x86/kernel/apic/io_apic.c
+> +++ b/arch/x86/kernel/apic/io_apic.c
+> @@ -66,7 +66,7 @@
+>  #define __apicdebuginit(type) static type __init
 >  
->  #ifdef CONFIG_SOC_OMAP5
+>  #define for_each_irq_pin(entry, head) \
+> -	for (entry = head; entry; entry = entry->next)
+> +	list_for_each_entry(entry, &head, list)
+>  
+>  /*
+>   *      Is the SiS APIC rmw bug present ?
+> @@ -176,8 +176,8 @@ void mp_save_irq(struct mpc_intsrc *m)
+>  }
+>  
+>  struct irq_pin_list {
+> +	struct list_head list;
+>  	int apic, pin;
+> -	struct irq_pin_list *next;
+>  };
+>  
+>  static struct irq_pin_list *alloc_irq_pin_list(int node)
+> @@ -213,6 +213,7 @@ int __init arch_early_irq_init(void)
+>  	irq_reserve_irqs(0, legacy_pic->nr_legacy_irqs);
+>  
+>  	for (i = 0; i < count; i++) {
+> +		INIT_LIST_HEAD(&cfg[i].irq_2_pin);
+>  		irq_set_chip_data(i, &cfg[i]);
+>  		zalloc_cpumask_var_node(&cfg[i].domain, GFP_KERNEL, node);
+>  		zalloc_cpumask_var_node(&cfg[i].old_domain, GFP_KERNEL, node);
+> @@ -245,6 +246,7 @@ static struct irq_cfg *alloc_irq_cfg(unsigned int irq, int node)
+>  		goto out_cfg;
+>  	if (!zalloc_cpumask_var_node(&cfg->old_domain, GFP_KERNEL, node))
+>  		goto out_domain;
+> +	INIT_LIST_HEAD(&cfg->irq_2_pin);
+>  	return cfg;
+>  out_domain:
+>  	free_cpumask_var(cfg->domain);
+> @@ -255,11 +257,15 @@ out_cfg:
+>  
+>  static void free_irq_cfg(unsigned int at, struct irq_cfg *cfg)
+>  {
+> +	struct irq_pin_list *entry, *tmp;
+> +
+>  	if (!cfg)
+>  		return;
+>  	irq_set_chip_data(at, NULL);
+>  	free_cpumask_var(cfg->domain);
+>  	free_cpumask_var(cfg->old_domain);
+> +	list_for_each_entry_safe(entry, tmp, &cfg->irq_2_pin, list)
+> +		kfree(entry);
+>  	kfree(cfg);
+>  }
+>  
+> @@ -420,15 +426,12 @@ static void ioapic_mask_entry(int apic, int pin)
+>   */
+>  static int __add_pin_to_irq_node(struct irq_cfg *cfg, int node, int apic, int pin)
+>  {
+> -	struct irq_pin_list **last, *entry;
+> +	struct irq_pin_list *entry;
+>  
+>  	/* don't allow duplicates */
+> -	last = &cfg->irq_2_pin;
+> -	for_each_irq_pin(entry, cfg->irq_2_pin) {
+> +	for_each_irq_pin(entry, cfg->irq_2_pin)
+>  		if (entry->apic == apic && entry->pin == pin)
+>  			return 0;
+> -		last = &entry->next;
+> -	}
+>  
+>  	entry = alloc_irq_pin_list(node);
+>  	if (!entry) {
+> @@ -439,7 +442,7 @@ static int __add_pin_to_irq_node(struct irq_cfg *cfg, int node, int apic, int pi
+>  	entry->apic = apic;
+>  	entry->pin = pin;
+>  
+> -	*last = entry;
+> +	list_add_tail(&entry->list, &cfg->irq_2_pin);
+>  	return 0;
+>  }
+>  
+> @@ -1622,8 +1625,7 @@ __apicdebuginit(void) print_IO_APICs(void)
+>  		cfg = irq_get_chip_data(irq);
+>  		if (!cfg)
+>  			continue;
+> -		entry = cfg->irq_2_pin;
+> -		if (!entry)
+> +		if (list_empty(&cfg->irq_2_pin))
+>  			continue;
+>  		printk(KERN_DEBUG "IRQ%d ", irq);
+>  		for_each_irq_pin(entry, cfg->irq_2_pin)
 > -- 
-> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-> hosted by The Linux Foundation
+> 1.7.10.4
 > 
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
