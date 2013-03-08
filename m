@@ -1,158 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751735Ab3CHFCz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 00:02:55 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:51019 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760181Ab3CHE7r (ORCPT
+	id S1751864Ab3CHFDP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 00:03:15 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:43474 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759000Ab3CHE7q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 23:59:47 -0500
+	Thu, 7 Mar 2013 23:59:46 -0500
 From: Yinghai Lu <yinghai@kernel.org>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Thomas Renninger <trenn@suse.de>, Tang Chen <tangchen@cn.fujitsu.com>
 Cc: linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
-        Tejun Heo <tj@kernel.org>
-Subject: [PATCH 06/14] x86, mm, numa: Move successful path handling code later
-Date: Thu,  7 Mar 2013 20:58:32 -0800
-Message-Id: <1362718720-27048-7-git-send-email-yinghai@kernel.org>
+        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-acpi@vger.kernel.org
+Subject: [PATCH 03/14] x86, ACPI: store override acpi tables phys addr
+Date: Thu,  7 Mar 2013 20:58:29 -0800
+Message-Id: <1362718720-27048-4-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1362718720-27048-1-git-send-email-yinghai@kernel.org>
 References: <1362718720-27048-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We could move setup_node_data() and numa_init_array() calling out
-numa_init() to make numa_init() small.
+As later 32bit only find table with phys address during 32bit flat mode
+in head_32.S.
 
-Those functions only need to be called for success path, and only
-call them one time in x86_numa_init().
+To keep 32bit and 64 bit consistent, use phys_addr for all.
 
-So later we could split parse numa info to two stages.
-early one will be before init_mem_mapping.
+Use early_ioremap to access during copying.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Cc: Tejun Heo <tj@kernel.org>
+Cc: Thomas Renninger <trenn@suse.de>
+Cc: Rafael J. Wysocki <rjw@sisk.pl>
+Cc: linux-acpi@vger.kernel.org
 ---
- arch/x86/mm/numa.c |   68 ++++++++++++++++++++++++++++------------------------
- 1 file changed, 37 insertions(+), 31 deletions(-)
+ drivers/acpi/osl.c |   11 +++++++----
+ 1 file changed, 7 insertions(+), 4 deletions(-)
 
-diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
-index 72fe01e..24c20f0 100644
---- a/arch/x86/mm/numa.c
-+++ b/arch/x86/mm/numa.c
-@@ -480,7 +480,7 @@ static bool __init numa_meminfo_cover_memory(const struct numa_meminfo *mi)
- static int __init numa_register_memblks(struct numa_meminfo *mi)
- {
- 	unsigned long uninitialized_var(pfn_align);
--	int i, nid;
-+	int i;
+diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
+index b9d2ff0..60317ea 100644
+--- a/drivers/acpi/osl.c
++++ b/drivers/acpi/osl.c
+@@ -616,7 +616,7 @@ void __init acpi_initrd_override_find(void *data, size_t size)
+ 			table->signature, cpio_path, file.name, table->length);
  
- 	/* Account for nodes with cpus and no memory */
- 	node_possible_map = numa_nodes_parsed;
-@@ -509,24 +509,6 @@ static int __init numa_register_memblks(struct numa_meminfo *mi)
- 	if (!numa_meminfo_cover_memory(mi))
- 		return -EINVAL;
- 
--	/* Finally register nodes. */
--	for_each_node_mask(nid, node_possible_map) {
--		u64 start = PFN_PHYS(max_pfn);
--		u64 end = 0;
--
--		for (i = 0; i < mi->nr_blks; i++) {
--			if (nid != mi->blk[i].nid)
--				continue;
--			start = min(mi->blk[i].start, start);
--			end = max(mi->blk[i].end, end);
--		}
--
--		if (start < end)
--			setup_node_data(nid, start, end);
--	}
--
--	/* Dump memblock with node info and return. */
--	memblock_dump_all();
- 	return 0;
- }
- 
-@@ -580,15 +562,6 @@ static int __init numa_init(int (*init_func)(void))
- 	if (ret < 0)
- 		return ret;
- 
--	for (i = 0; i < nr_cpu_ids; i++) {
--		int nid = early_cpu_to_node(i);
--
--		if (nid == NUMA_NO_NODE)
--			continue;
--		if (!node_online(nid))
--			numa_clear_node(i);
--	}
--	numa_init_array();
- 	return 0;
- }
- 
-@@ -623,22 +596,55 @@ static int __init dummy_numa_init(void)
-  */
- void __init x86_numa_init(void)
- {
-+	int i, nid;
-+	struct numa_meminfo *mi = &numa_meminfo;
-+
- 	if (!numa_off) {
- #ifdef CONFIG_X86_NUMAQ
- 		if (!numa_init(numaq_numa_init))
--			return;
-+			goto out;
- #endif
- #ifdef CONFIG_ACPI_NUMA
- 		if (!numa_init(x86_acpi_numa_init))
--			return;
-+			goto out;
- #endif
- #ifdef CONFIG_AMD_NUMA
- 		if (!numa_init(amd_numa_init))
--			return;
-+			goto out;
- #endif
+ 		all_tables_size += table->length;
+-		early_initrd_files[table_nr].data = file.data;
++		early_initrd_files[table_nr].data = (void *)__pa(file.data);
+ 		early_initrd_files[table_nr].size = file.size;
+ 		table_nr++;
  	}
+@@ -625,7 +625,7 @@ void __init acpi_initrd_override_find(void *data, size_t size)
+ void __init acpi_initrd_override_copy(void)
+ {
+ 	int no, total_offset = 0;
+-	char *p;
++	char *p, *q;
  
- 	numa_init(dummy_numa_init);
-+
-+out:
-+	/* Finally register nodes. */
-+	for_each_node_mask(nid, node_possible_map) {
-+		u64 start = PFN_PHYS(max_pfn);
-+		u64 end = 0;
-+
-+		for (i = 0; i < mi->nr_blks; i++) {
-+			if (nid != mi->blk[i].nid)
-+				continue;
-+			start = min(mi->blk[i].start, start);
-+			end = max(mi->blk[i].end, end);
-+		}
-+
-+		if (start < end)
-+			setup_node_data(nid, start, end);
-+	}
-+
-+	/* Dump memblock with node info */
-+	memblock_dump_all();
-+
-+	for (i = 0; i < nr_cpu_ids; i++) {
-+		int nid = early_cpu_to_node(i);
-+
-+		if (nid == NUMA_NO_NODE)
-+			continue;
-+		if (!node_online(nid))
-+			numa_clear_node(i);
-+	}
-+	numa_init_array();
- }
+ 	if (!table_nr)
+ 		return;
+@@ -654,10 +654,13 @@ void __init acpi_initrd_override_copy(void)
+ 	arch_reserve_mem_area(acpi_tables_addr, all_tables_size);
  
- static __init int find_near_online_node(int node)
+ 	for (no = 0; no < table_nr; no++) {
+-		size_t size = early_initrd_files[no].size;
++		unsigned long size = early_initrd_files[no].size;
+ 
+ 		p = early_ioremap(acpi_tables_addr + total_offset, size);
+-		memcpy(p, early_initrd_files[no].data, size);
++		q = early_ioremap((unsigned long)early_initrd_files[no].data,
++					 size);
++		memcpy(p, q, size);
++		early_iounmap(q, size);
+ 		early_iounmap(p, size);
+ 		total_offset += size;
+ 	}
 -- 
 1.7.10.4
 
