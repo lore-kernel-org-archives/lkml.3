@@ -1,42 +1,41 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755668Ab3CGJdn (ORCPT <rfc822;list-kernel77@spinics.net>);
-	Thu, 7 Mar 2013 04:33:43 -0500
-Received: from outrelay02.libero.it ([212.52.84.102]:43777 "EHLO
-	outrelay02.libero.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754244Ab3CGJdl (ORCPT
+	id S1751451Ab3CIT6U (ORCPT <rfc822;list-kernel77@spinics.net>);
+	Sat, 9 Mar 2013 14:58:20 -0500
+Received: from comms.econetmobile.co.zw ([217.15.120.8]:40043 "EHLO
+	econetmobile.co.zw" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750840Ab3CIT6T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 04:33:41 -0500
-X-CTCH-Spam: Unknown
-X-CTCH-RefID: str=0001.0A0C0206.51385EA2.0002,ss=1,re=0.000,fgs=0
-X-libjamoibt: 1587
-Message-ID: <28124080.19775331362648737910.JavaMail.defaultUser@defaultHost>
-Date: Thu, 7 Mar 2013 10:32:17 +0100 (CET)
-From: "bnhfbrade@libero.it" <bnhfbrade@libero.it>
-Reply-To: "bnhfbrade@libero.it" <bnhfbrade@libero.it>
+	Sat, 9 Mar 2013 14:58:19 -0500
+X-Greylist: delayed 108220 seconds by postgrey-1.27 at vger.kernel.org; Sat, 09 Mar 2013 14:58:17 EST
+X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=127.0.0.1;
+From: anjayawo@yahoo.com
+Reply-to: anjayawo@yahoo.com
 Subject: Hello
+X-Mailer: Quality Web Email v3.1t
+X-Originating-IP: 41.219.54.237
+Date: Fri, 08 Mar 2013 15:51:08 +0200
+Message-id: <5139eccc.320.19d0.22464@econetmobile.co.zw>
 MIME-Version: 1.0
-Content-Type: text/plain;charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-SenderIP: 188.78.234.83
-X-libjamv: WNQpTYi5fgM=
-X-libjamsun: i4EW/Rdz+UL4bt2JWYYw3LTkxXS05HIW
+Content-Type: text/plain; charset="iso-8859-1"
+X-To-Not-Matched: true
+X-Authenticated-User: ninafd@econetmobile.co.zw 
 To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello 
-  
-My names is Gomez  Javier of CANALES & ASOCIADOS ABOGADOS SPAIN. I sent you a 
-business proposal letter long time ago,but  you have not respond to me, I am 
-using this
-medium to remind you again because I am really running out of time. Please I 
-would appreciate if you could
-confirm to me if you received the proposal letter please let me know through 
-this Emails below: 
+Hello
+My name is AnJa. a 22 yrs old girl . I am average in height
+and fair in complexion ,am a loving, romantic and caring
+angel. I read your profile. truely is quiet intresting to me
+then , i deciede to contact you. i really want to have a
+good relationship with you. Beside i have a special
+something i want to discusse with you , so you can reach me
+through this Email: (anjayawo@yahoo.com) Hope to hear from
+you soon. i will send my beautiful pictures to you and also
+tell you more about my self. I know age will not be a
+bearier to our relationship, what i need is just your love
+and caring. I will give you my best, bye for now. contact me
+from here (anjayawo@yahoo.com)
+care from AnJa
 
-For further clarification reach me on this Private Email: gomezjavier113@yahoo.
-es or  javiergomez681@gmail.com
-
-Best Regards, 
-Gomez  Javier. (Esq)
