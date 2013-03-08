@@ -1,85 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934410Ab3CHQY6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 11:24:58 -0500
-Received: from zoneX.GCU-Squad.org ([194.213.125.0]:12941 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933136Ab3CHQY5 (ORCPT
+	id S934424Ab3CHQfX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 11:35:23 -0500
+Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:12702 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S933220Ab3CHQfW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 11:24:57 -0500
-Date: Fri, 8 Mar 2013 17:24:44 +0100
-From: Jean Delvare <khali@linux-fr.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] MAINTAINERS: Add maintainer for MAX6697, INA209, and
- INA2XX drivers
-Message-ID: <20130308172444.5df9b8d8@endymion.delvare>
-In-Reply-To: <1362759722-8252-1-git-send-email-linux@roeck-us.net>
-References: <1362759722-8252-1-git-send-email-linux@roeck-us.net>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 8 Mar 2013 11:35:22 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19MaAshA/fdiomHfC3QIoyy
+Date: Fri, 8 Mar 2013 08:35:07 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Aaro Koskinen <aaro.koskinen@iki.fi>
+Cc: Paul Bolle <pebolle@tiscali.nl>, Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: OMAP: drop "select MACH_NOKIA_RM696"
+Message-ID: <20130308163507.GC26093@atomide.com>
+References: <1362738596.5994.48.camel@x61.thuisdomein>
+ <20130308161159.GE14552@blackmetal.musicnaut.iki.fi>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130308161159.GE14552@blackmetal.musicnaut.iki.fi>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri,  8 Mar 2013 08:22:02 -0800, Guenter Roeck wrote:
-> I actively maintain those drivers and have hardware available
-> to test changes, so add me as explicit maintainer.
+* Aaro Koskinen <aaro.koskinen@iki.fi> [130308 08:16]:
+> On Fri, Mar 08, 2013 at 11:29:56AM +0100, Paul Bolle wrote:
+> > When support was added for Nokia N9 (RM-696), with commit
+> > 63fc5f3bb3d0ca9ab4767a801b518aa6335f87ad ("ARM: OMAP: add minimal
+> > support for Nokia RM-696"), a select statement for MACH_NOKIA_RM696 was
+> > added to the tree. But there's no Kconfig symbol with that name. That
+> > symbol would be superfluous, since support for that machine piggybacks
+> > on MACH_NOKIA_RM680. So drop that select.
 > 
-> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-> ---
->  MAINTAINERS |   25 +++++++++++++++++++++++++
->  1 file changed, 25 insertions(+)
+> This is needed because of arch/arm/tools/mach-types. See
+> include/generated/mach-types.h.
 > 
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index 9561658..1a5aca7 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -4005,6 +4005,22 @@ M:	Stanislaw Gruszka <stf_xl@wp.pl>
->  S:	Maintained
->  F:	drivers/usb/atm/ueagle-atm.c
->  
-> +INA209 HARDWARE MONITOR DRIVER
-> +M:	Guenter Roeck <linux@roeck-us.net>
-> +L:	lm-sensors@lm-sensors.org
-> +S:	Maintained
-> +F:	Documentation/hwmon/ina209
-> +F:	Documentation/devicetree/bindings/i2c/ina209.txt
-> +F:	drivers/hwmon/ina209.c
-> +
-> +INA2XX HARDWARE MONITOR DRIVER
-> +M:	Guenter Roeck <linux@roeck-us.net>
-> +L:	lm-sensors@lm-sensors.org
-> +S:	Maintained
-> +F:	Documentation/hwmon/ina2xx
-> +F:	drivers/hwmon/ina2xx.c
-> +F:	include/linux/platform_data/ina2xx.h
-> +
->  INDUSTRY PACK SUBSYSTEM (IPACK)
->  M:	Samuel Iglesias Gonsalvez <siglesias@igalia.com>
->  M:	Jens Taprogge <jens.taprogge@taprogge.org>
-> @@ -5098,6 +5114,15 @@ S:	Maintained
->  F:	Documentation/hwmon/max6650
->  F:	drivers/hwmon/max6650.c
->  
-> +MAX6697 HARDWARE MONITOR DRIVER
-> +M:	Guenter Roeck <linux@roeck-us.net>
-> +L:	lm-sensors@lm-sensors.org
-> +S:	Maintained
-> +F:	Documentation/hwmon/max6697
-> +F:	Documentation/devicetree/bindings/i2c/max6697.txt
-> +F:	drivers/hwmon/max6697.c
-> +F:	include/linux/platform_data/max6697.h
-> +
->  MAXIRADIO FM RADIO RECEIVER DRIVER
->  M:	Hans Verkuil <hverkuil@xs4all.nl>
->  L:	linux-media@vger.kernel.org
+> If you have just CONFIG_MACH_NOKIA_RM680 and run the kernel on RM-696,
+> then machine_is_nokia_rm696() will return false. If I rememeber correctly,
+> this broke at least early printk / uncompressor output at the time.
+> 
+> I guess people may still want to use machine_is_... macros e.g. for
+> debugging.
 
-Acked-by: Jean Delvare <khali@linux-fr.org>
+I think the righ fix is to just add
 
-And thanks for volunteering to maintain these drivers.
+config MACH_NOKIA_RM680
+	bool
 
--- 
-Jean Delvare
+to the mach-omap2/Kconfig like we have for n8x0 also.
+
+Regards,
+
+Tony
