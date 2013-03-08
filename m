@@ -1,53 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760130Ab3CHTBN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 14:01:13 -0500
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:65475 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751426Ab3CHTBM (ORCPT
+	id S1760155Ab3CHTBo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 14:01:44 -0500
+Received: from mail-ee0-f50.google.com ([74.125.83.50]:40490 "EHLO
+	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759894Ab3CHTBn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 14:01:12 -0500
+	Fri, 8 Mar 2013 14:01:43 -0500
+Message-ID: <513A35B1.4040808@suse.cz>
+Date: Fri, 08 Mar 2013 20:02:09 +0100
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:19.0) Gecko/20130124 Thunderbird/19.0
 MIME-Version: 1.0
-In-Reply-To: <1362768434-30525-1-git-send-email-david.vrabel@citrix.com>
-References: <1362768434-30525-1-git-send-email-david.vrabel@citrix.com>
-Date: Fri, 8 Mar 2013 11:01:12 -0800
-X-Google-Sender-Auth: MdRfc3R58wU7uoDhq7KdZS0nfxY
-Message-ID: <CAE9FiQX38v_3-zMebjbUPum+Tt1z1jrDAzAfXo4o1j4X-xbHSg@mail.gmail.com>
-Subject: Re: [PATCH] x86,mm: fix init_mem_mapping() when the first memory
- chunk is small
-From: Yinghai Lu <yinghai@kernel.org>
-To: David Vrabel <david.vrabel@citrix.com>
-Cc: linux-kernel@vger.kernel.org, x86@kernel.org,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Peter Hurley <peter@hurleysoftware.com>
+CC: gregkh@linuxfoundation.org, jirislaby@gmail.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 05/16] TTY: add tty_port_tty_wakeup helper
+References: <1362658360-26629-1-git-send-email-jslaby@suse.cz>  <1362658360-26629-5-git-send-email-jslaby@suse.cz> <1362754976.4219.29.camel@thor.lan>
+In-Reply-To: <1362754976.4219.29.camel@thor.lan>
+X-Enigmail-Version: 1.6a1pre
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 8, 2013 at 10:47 AM, David Vrabel <david.vrabel@citrix.com> wrote:
-> In init_mem_mapping(), if the first chunk of memory that is mapped is
-> small, there will not be enough mapped pages to allocate page table
-> pages for the next (larger) chunk.
->
-> Estimate how many pages are used for the mappings so far and how many
-> are needed for a larger chunk, and only increase step_size if there
-> are enough free pages.
->
-> This fixes a boot failure on a system where the first chunk of memory
-> mapped only had 3 pages in it.
->
-> init_memory_mapping: [mem 0x00000000-0x000fffff]
-> init_memory_mapping: [mem 0x20d000000-0x20d002fff]
-> init_memory_mapping: [mem 0x20c000000-0x20cffffff]
-> Kernel panic - not syncing: alloc_low_page: can not alloc memory
+On 03/08/2013 04:02 PM, Peter Hurley wrote:
+> On Thu, 2013-03-07 at 13:12 +0100, Jiri Slaby wrote:
+>> It allows for cleaning up on a considerable amount of places. They did
+>> port_get, wakeup, kref_put. Now the only thing needed is to call
+>> tty_port_tty_wakeup which does exactly that.
+>>
+>> One exception is ifx6x60 where tty_wakeup was open-coded. We now call
+>> tty_wakeup properly there.
+>>
+>> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+>> ---
+>>  arch/um/drivers/line.c                  |  8 +-------
+> 
+> 	Cc: Jeff Dike <jdike@addtoit.com>
+> 	Cc: Richard Weinberger <richard@nod.at>
+> 
+>>  drivers/isdn/capi/capi.c                |  7 +------
+> 
+> 	Cc: Karsten Keil <isdn@linux-pingi.de>
+> 
+>>  drivers/isdn/gigaset/interface.c        |  6 +-----
+> 
+> 	Cc: Hansjoerg Lipp <hjlipp@web.de>
+> 	Cc: Tilman Schmidt <tilman@imap.cc>
+> 	Cc: gigaset307x-common@lists.sourceforge.net
+> 	Cc: netdev@vger.kernel.org
+> 
+>>  drivers/net/usb/hso.c                   | 13 ++-----------
+> 
+> 	Cc: Jan Dumon <j.dumon@option.com>
+> 	Cc: linux-usb@vger.kernel.org
+> 
+>>  drivers/s390/char/sclp_tty.c            |  9 ++-------
+>>  drivers/s390/char/sclp_vt220.c          |  8 +-------
+> 
+> 	Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
+> 	Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+> 	Cc: linux390@de.ibm.com
+> 	Cc: linux-s390@vger.kernel.org
+> 
+>>  drivers/staging/fwserial/fwserial.c     | 10 ++--------
+> 
+> 	Cc: Me :)
+> 
+>>  drivers/staging/serqt_usb2/serqt_usb2.c |  7 +------
+> 
+> 	Cc: YAMANE Toshiaki <yamanetoshi@gmail.com>
+> 	Cc: Devendra Naga <devendra.aaru@gmail.com>
+> 
+> and so on...
+> 
+> Same for the other mega-patches.
 
-Can you check current linus tree?
+I'm not sure whether to CC all the people for such patches. I always
+tended not to and instead rely on people reading LKML :P.
 
-https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=98e7a989979b185f49e86ddaed2ad6890299d9f0
+If this is the preferred way, I of course can do it next time.
 
-should fix the problem with your system.
-
-Thanks
-
-Yinghai
+-- 
+js
+suse labs
