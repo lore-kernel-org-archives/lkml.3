@@ -1,61 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933245Ab3CHWuZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 17:50:25 -0500
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:38112 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753976Ab3CHWuY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 17:50:24 -0500
-Message-ID: <1362783019.2370.45.camel@dabdike.int.hansenpartnership.com>
-Subject: Re: [patch] [SCSI] scsi_transport_sas: check for allocation failure
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: dgilbert@interlog.com
-Cc: Dan Carpenter <dan.carpenter@oracle.com>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Date: Fri, 08 Mar 2013 22:50:19 +0000
-In-Reply-To: <513A2678.5000803@interlog.com>
-References: <20130308120215.GB18712@longonot.mountain>
-	 <513A2678.5000803@interlog.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.6.3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1758573Ab3CHWuk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 17:50:40 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:18401 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933359Ab3CHWui (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Mar 2013 17:50:38 -0500
+Date: Fri, 8 Mar 2013 17:49:50 -0500
+From: Josh Boyer <jwboyer@redhat.com>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: 8250.nr_uarts broken in 3.7
+Message-ID: <20130308224950.GM13719@hansolo.jdub.homelinux.org>
+References: <20130307185642.GF13719@hansolo.jdub.homelinux.org>
+ <5138E56B.6090308@suse.cz>
+ <20130307191005.GH13719@hansolo.jdub.homelinux.org>
+ <20130307211426.GI13719@hansolo.jdub.homelinux.org>
+ <20130307231242.GC4280@kroah.com>
+ <20130308010140.GJ13719@hansolo.jdub.homelinux.org>
+ <20130308013923.GA12474@kroah.com>
+ <20130308212722.GL13719@hansolo.jdub.homelinux.org>
+ <513A6A65.9050706@suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <513A6A65.9050706@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-03-08 at 12:57 -0500, Douglas Gilbert wrote:
-> On 13-03-08 07:02 AM, Dan Carpenter wrote:
-> > Static checkers complain that this allocation isn't checked.  We
-> > should return zero if the allocation fails.
-> >
-> > Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-> >
-> > diff --git a/drivers/scsi/scsi_transport_sas.c b/drivers/scsi/scsi_transport_sas.c
-> > index 1b68142..a022997 100644
-> > --- a/drivers/scsi/scsi_transport_sas.c
-> > +++ b/drivers/scsi/scsi_transport_sas.c
-> > @@ -379,9 +379,12 @@ sas_tlr_supported(struct scsi_device *sdev)
-> >   {
-> >   	const int vpd_len = 32;
-> >   	struct sas_end_device *rdev = sas_sdev_to_rdev(sdev);
-> > -	char *buffer = kzalloc(vpd_len, GFP_KERNEL);
-> > +	char *buffer;
-> >   	int ret = 0;
-> >
-> > +	buffer = kzalloc(vpd_len, GFP_KERNEL);
-> > +	if (!buffer)
-> > +		goto out;
-> >   	if (scsi_get_vpd_page(sdev, 0x90, buffer, vpd_len))
-> >   		goto out;
-> >
+On Fri, Mar 08, 2013 at 11:47:01PM +0100, Jiri Slaby wrote:
+> Yeah, I agree this is ugly. Just re-definining MODULE_PARAM_PREFIX at
+> the end of the file should do the trick (followed by
+> "module_param(nr_uarts, uint, 0644)").
+
+For some reason, I thought I had tried that.  Maybe I didn't.  I'll look
+into it again.
+
+> >  module_param(skip_txen_test, uint, 0644);
+> >  MODULE_PARM_DESC(skip_txen_test, "Skip checking for the TXEN bug at init time");
 > 
-> For 32 bytes, why not use the stack?
+> Well, we should do that for all the parameters, right? Sigh.
 
-Because the buffer is a DMA target.  You can't DMA to stack because of
-padding and cacheline issues.
+Yeah.
 
-James
-
-
+josh
