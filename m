@@ -1,83 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934556Ab3CHSPn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 13:15:43 -0500
-Received: from smtp.infotech.no ([82.134.31.41]:42423 "EHLO smtp.infotech.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756119Ab3CHSPm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 13:15:42 -0500
-Message-ID: <513A2678.5000803@interlog.com>
-Date: Fri, 08 Mar 2013 12:57:12 -0500
-From: Douglas Gilbert <dgilbert@interlog.com>
-Reply-To: dgilbert@interlog.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
+	id S934617Ab3CHSPt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 13:15:49 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:19045 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934561Ab3CHSPr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Mar 2013 13:15:47 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Fri, 08 Mar 2013 10:09:34 -0800
+Message-ID: <513A2A6D.7080604@nvidia.com>
+Date: Fri, 8 Mar 2013 23:44:05 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
-To: Dan Carpenter <dan.carpenter@oracle.com>
-CC: "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: Re: [patch] [SCSI] scsi_transport_sas: check for allocation failure
-References: <20130308120215.GB18712@longonot.mountain>
-In-Reply-To: <20130308120215.GB18712@longonot.mountain>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>
+Subject: Re: [PATCH 4/5] ARM: DT: tegra114: add KBC controller DT entry
+References: <1362750782-15174-1-git-send-email-ldewangan@nvidia.com> <1362750782-15174-5-git-send-email-ldewangan@nvidia.com> <513A2810.1070903@wwwdotorg.org>
+In-Reply-To: <513A2810.1070903@wwwdotorg.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13-03-08 07:02 AM, Dan Carpenter wrote:
-> Static checkers complain that this allocation isn't checked.  We
-> should return zero if the allocation fails.
+On Friday 08 March 2013 11:34 PM, Stephen Warren wrote:
+> On 03/08/2013 06:53 AM, Laxman Dewangan wrote:
+>> NVIDIA's Tegra114 SoCs have the matrix keyboard controller which
+>> supports 11x8 type of matrix. The number of rows and columns
+>> are configurable.
+> Earlier Tegra versions supported up to a 16x8 matrix. This feeds into
+> the following defines in the driver:
 >
-> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+> #define KBC_MAX_GPIO    24
+> #define KBC_MAX_ROW     16
+> #define KBC_MAX_COL     8
+> #define KBC_MAX_KEY     (KBC_MAX_ROW * KBC_MAX_COL)
 >
-> diff --git a/drivers/scsi/scsi_transport_sas.c b/drivers/scsi/scsi_transport_sas.c
-> index 1b68142..a022997 100644
-> --- a/drivers/scsi/scsi_transport_sas.c
-> +++ b/drivers/scsi/scsi_transport_sas.c
-> @@ -379,9 +379,12 @@ sas_tlr_supported(struct scsi_device *sdev)
->   {
->   	const int vpd_len = 32;
->   	struct sas_end_device *rdev = sas_sdev_to_rdev(sdev);
-> -	char *buffer = kzalloc(vpd_len, GFP_KERNEL);
-> +	char *buffer;
->   	int ret = 0;
+> Given Tegra114 supports /fewer/ pins and rows than earlier chips, I
+> think that makes the HW technically incompatible, since GPIO IDs 19..23
+> are invalid in this HW but valid earlier.
 >
-> +	buffer = kzalloc(vpd_len, GFP_KERNEL);
-> +	if (!buffer)
-> +		goto out;
->   	if (scsi_get_vpd_page(sdev, 0x90, buffer, vpd_len))
->   		goto out;
+> Now in practice I suppose that with a correct DT keyboard map for a
+> Tegra114 device, those extra invalid GPIOs would never be referenced, so
+> this is a little nit-picky, but I still feel we should fix this.
+
+Where do we fix this? In binding document?
+
 >
+> So, I'd like to see the KBC driver updated to derive the values for all
+> the defines I listed above from the compatible value.
 
-For 32 bytes, why not use the stack?
+Ok, we can update the kbc driver to derive above param from compatible.
 
-unsigned int
-sas_tlr_supported(struct scsi_device *sdev)
-{
-         unsigned char buffer[32];
-         struct sas_end_device *rdev = sas_sdev_to_rdev(sdev);
-         int ret = 0;
+>
+>
+>
+> Re-stated: The rules for compatible are: Always include the exact HW
+> name, then optionally include any other HW names it's compatible with.
 
-         if (scsi_get_vpd_page(sdev, 0x90, buffer, sizeof(buffer)))
-                 goto out;
-
-         /*
-          * The VPD Protocol Specific Logical Unit page (0x90) for SAS
-          * has a 4 byte header and then one descriptor per device port.
-          * The TLR bit is at offset 8 on each port descriptor.
-          * We take the TLR value in the first descriptor.
-          */
-         ret = buffer[4 + 8] & 0x01;
-
-  out:
-         rdev->tlr_supported = ret;
-         return ret;
-}
-
-
-Note the comment is changed.
-
-Doug Gilbert
-
+OK, will update this in next version of patch.
+>
 
