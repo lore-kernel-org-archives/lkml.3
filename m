@@ -1,47 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755278Ab3CHT6K (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 14:58:10 -0500
-Received: from mail-ia0-f169.google.com ([209.85.210.169]:56154 "EHLO
-	mail-ia0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751264Ab3CHT6I (ORCPT
+	id S1756085Ab3CHT64 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 14:58:56 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:32842 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751264Ab3CHT6z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 14:58:08 -0500
+	Fri, 8 Mar 2013 14:58:55 -0500
+Date: Fri, 8 Mar 2013 22:58:39 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Douglas Gilbert <dgilbert@interlog.com>
+Cc: "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [patch] [SCSI] scsi_transport_sas: check for allocation failure
+Message-ID: <20130308195839.GL9189@mwanda>
+References: <20130308120215.GB18712@longonot.mountain>
+ <513A2678.5000803@interlog.com>
 MIME-Version: 1.0
-In-Reply-To: <20130308194627.GB6622@phenom.dumpdata.com>
-References: <1360351703-20571-1-git-send-email-yinghai@kernel.org>
-	<1360351703-20571-6-git-send-email-yinghai@kernel.org>
-	<20130308194627.GB6622@phenom.dumpdata.com>
-Date: Fri, 8 Mar 2013 11:58:07 -0800
-X-Google-Sender-Auth: x-s4q3YETYd2_1xwmK3b4gTDs-Q
-Message-ID: <CAE9FiQUdTjSRZrsQ9AofFQszoe+0Moh+aKZHUQxiPJ-NM9S+OA@mail.gmail.com>
-Subject: Re: [PATCH v2 05/26] x86, irq: Show pci device name for msi in /proc/interrupt
-From: Yinghai Lu <yinghai@kernel.org>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Joerg Roedel <joro@8bytes.org>,
-        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <513A2678.5000803@interlog.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 8, 2013 at 11:46 AM, Konrad Rzeszutek Wilk
-<konrad.wilk@oracle.com> wrote:
-> On Fri, Feb 08, 2013 at 11:28:02AM -0800, Yinghai Lu wrote:
->> We could find out which device is using that MSI/MSI-X.
->> Use irq_print_chip() to append pci device name.
->
-> What would the end result be? For example for:
->
-> 80:     some values PCI-MSI-edge      xhci_hcd
->
-> Is it going to be:
->
-> 80:     some values PCI-MSI-edge-xhci_hcd       xhci_hcd
->
-> ?
+On Fri, Mar 08, 2013 at 12:57:12PM -0500, Douglas Gilbert wrote:
+> On 13-03-08 07:02 AM, Dan Carpenter wrote:
+> 
+> For 32 bytes, why not use the stack?
+> 
 
-should be PCI-MSI-edge@0000:01:00.0  xhci_hcd
+It's a good point.  I'll resend on Monday.
+
+regards,
+dan carpenter
+
