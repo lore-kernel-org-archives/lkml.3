@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934017Ab3CHMyb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 07:54:31 -0500
-Received: from mail-lb0-f170.google.com ([209.85.217.170]:37858 "EHLO
-	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932644Ab3CHMyH (ORCPT
+	id S934061Ab3CHMyx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 07:54:53 -0500
+Received: from mail-la0-f46.google.com ([209.85.215.46]:48130 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932120Ab3CHMyF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 07:54:07 -0500
+	Fri, 8 Mar 2013 07:54:05 -0500
 From: Johan Hovold <jhovold@gmail.com>
 To: Nicolas Ferre <nicolas.ferre@atmel.com>
 Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
@@ -14,205 +14,81 @@ Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
         Alessandro Zummo <a.zummo@towertech.it>,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         rtc-linux@googlegroups.com, Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH 2/3] Revert "arm: at91: move at91rm9200 rtc header in drivers/rtc"
-Date: Fri,  8 Mar 2013 13:51:42 +0100
-Message-Id: <1362747103-21445-3-git-send-email-jhovold@gmail.com>
+Subject: [PATCH 0/3] ARM: at91: fix hanged boot
+Date: Fri,  8 Mar 2013 13:51:40 +0100
+Message-Id: <1362747103-21445-1-git-send-email-jhovold@gmail.com>
 X-Mailer: git-send-email 1.8.1.1
-In-Reply-To: <1362747103-21445-1-git-send-email-jhovold@gmail.com>
-References: <1362747103-21445-1-git-send-email-jhovold@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This reverts commit 75984df05d86956541795f01e62d7dc67bc522fd.
+These patches fix a few severe issues affecting most AT91 SOCs where
+boot can hang after a non-general reset, and where the only way to get
+the system booting again is to do a general reset -- something which
+could require physically removing any backup battery.
 
-A couple of these register definitions are needed by arch code as the
-RTC-interrupts must be disabled at early boot.
+The problems stem from the fact that the RTC and RTT-peripherals are
+powered by backup power (VDDBU) and are not reset on wake-up, user,
+watchdog or software reset. Consequently, RTC and RTT-alarms and their
+interrupts may be enabled at boot, leading to a system lock-up when an
+interrupt arrives on the shared system-interrupt line before the
+appropriate handler (e.g. RTC-driver) has been installed.
 
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
----
- arch/arm/mach-at91/include/mach/at91_rtc.h | 75 ++++++++++++++++++++++++++++++
- drivers/rtc/rtc-at91rm9200.c               |  2 +-
- drivers/rtc/rtc-at91rm9200.h               | 75 ------------------------------
- 3 files changed, 76 insertions(+), 76 deletions(-)
+The easiest way to trigger this is to simply wake up from an RTC-alarm
+on at91sam9g45. The RTC-driver currently does not disable interrupts at
+shutdown so even after a clean shut-down the system will always hang
+after waking up.
+
+The first patch fixes this very general case of RTC-wake up after a
+clean shutdown in the RTC-driver and is marked for stable as it is
+perfectly straight-forward. [ Note that the other, RTT-based, AT91
+RTC-driver already disables its interrupts at shutdown. ]
+
+The more general problem can be triggered, for example, by doing a
+user-reset while updating the RTC-time or if an RTC or RTT-alarm goes
+off after a non-clean shutdown.
+
+To fix this I propose that arch-code should mask the relevant interrupts
+at early boot, and this is what the third patch does. To access the
+RTC-registers I choose to revert a recent patch that moved the register
+definitions to drivers/rtc.
+
+Arguably, the interrupts could also be disabled in bootloaders, but I
+strongly suggest fixing it in the kernel once and for all. By adding a
+new, mandatory AT91 SOC-initialiser (rather extending init) it will not
+be overlooked when adding new SOCs either.
+
+The patches have been tested on at91sam9263 and at91sam9g45, and
+compile-tested for the other SOCs.
+
+Johan
+
+
+Johan Hovold (3):
+  ARM: at91/rtc: fix boot after RTC wake-up
+  Revert "arm: at91: move at91rm9200 rtc header in drivers/rtc"
+  ARM: at91: fix hanged boot
+
+ arch/arm/mach-at91/at91rm9200.c               |  9 ++++
+ arch/arm/mach-at91/at91sam9260.c              |  6 +++
+ arch/arm/mach-at91/at91sam9261.c              |  6 +++
+ arch/arm/mach-at91/at91sam9263.c              |  7 +++
+ arch/arm/mach-at91/at91sam9g45.c              |  7 +++
+ arch/arm/mach-at91/at91sam9n12.c              |  6 +++
+ arch/arm/mach-at91/at91sam9rl.c               |  7 +++
+ arch/arm/mach-at91/at91sam9x5.c               |  6 +++
+ arch/arm/mach-at91/generic.h                  |  2 +
+ arch/arm/mach-at91/include/mach/at91_rtc.h    | 75 +++++++++++++++++++++++++++
+ arch/arm/mach-at91/include/mach/at91sam9n12.h |  5 ++
+ arch/arm/mach-at91/include/mach/at91sam9x5.h  |  5 ++
+ arch/arm/mach-at91/setup.c                    | 31 +++++++++++
+ arch/arm/mach-at91/soc.h                      |  1 +
+ drivers/rtc/rtc-at91rm9200.c                  | 11 +++-
+ drivers/rtc/rtc-at91rm9200.h                  | 75 ---------------------------
+ 16 files changed, 183 insertions(+), 76 deletions(-)
  create mode 100644 arch/arm/mach-at91/include/mach/at91_rtc.h
  delete mode 100644 drivers/rtc/rtc-at91rm9200.h
 
-diff --git a/arch/arm/mach-at91/include/mach/at91_rtc.h b/arch/arm/mach-at91/include/mach/at91_rtc.h
-new file mode 100644
-index 0000000..da1945e
---- /dev/null
-+++ b/arch/arm/mach-at91/include/mach/at91_rtc.h
-@@ -0,0 +1,75 @@
-+/*
-+ * arch/arm/mach-at91/include/mach/at91_rtc.h
-+ *
-+ * Copyright (C) 2005 Ivan Kokshaysky
-+ * Copyright (C) SAN People
-+ *
-+ * Real Time Clock (RTC) - System peripheral registers.
-+ * Based on AT91RM9200 datasheet revision E.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ */
-+
-+#ifndef AT91_RTC_H
-+#define AT91_RTC_H
-+
-+#define	AT91_RTC_CR		0x00			/* Control Register */
-+#define		AT91_RTC_UPDTIM		(1 <<  0)		/* Update Request Time Register */
-+#define		AT91_RTC_UPDCAL		(1 <<  1)		/* Update Request Calendar Register */
-+#define		AT91_RTC_TIMEVSEL	(3 <<  8)		/* Time Event Selection */
-+#define			AT91_RTC_TIMEVSEL_MINUTE	(0 << 8)
-+#define			AT91_RTC_TIMEVSEL_HOUR		(1 << 8)
-+#define			AT91_RTC_TIMEVSEL_DAY24		(2 << 8)
-+#define			AT91_RTC_TIMEVSEL_DAY12		(3 << 8)
-+#define		AT91_RTC_CALEVSEL	(3 << 16)		/* Calendar Event Selection */
-+#define			AT91_RTC_CALEVSEL_WEEK		(0 << 16)
-+#define			AT91_RTC_CALEVSEL_MONTH		(1 << 16)
-+#define			AT91_RTC_CALEVSEL_YEAR		(2 << 16)
-+
-+#define	AT91_RTC_MR		0x04			/* Mode Register */
-+#define			AT91_RTC_HRMOD		(1 <<  0)		/* 12/24 Hour Mode */
-+
-+#define	AT91_RTC_TIMR		0x08			/* Time Register */
-+#define		AT91_RTC_SEC		(0x7f <<  0)		/* Current Second */
-+#define		AT91_RTC_MIN		(0x7f <<  8)		/* Current Minute */
-+#define		AT91_RTC_HOUR		(0x3f << 16)		/* Current Hour */
-+#define		AT91_RTC_AMPM		(1    << 22)		/* Ante Meridiem Post Meridiem Indicator */
-+
-+#define	AT91_RTC_CALR		0x0c			/* Calendar Register */
-+#define		AT91_RTC_CENT		(0x7f <<  0)		/* Current Century */
-+#define		AT91_RTC_YEAR		(0xff <<  8)		/* Current Year */
-+#define		AT91_RTC_MONTH		(0x1f << 16)		/* Current Month */
-+#define		AT91_RTC_DAY		(7    << 21)		/* Current Day */
-+#define		AT91_RTC_DATE		(0x3f << 24)		/* Current Date */
-+
-+#define	AT91_RTC_TIMALR		0x10			/* Time Alarm Register */
-+#define		AT91_RTC_SECEN		(1 <<  7)		/* Second Alarm Enable */
-+#define		AT91_RTC_MINEN		(1 << 15)		/* Minute Alarm Enable */
-+#define		AT91_RTC_HOUREN		(1 << 23)		/* Hour Alarm Enable */
-+
-+#define	AT91_RTC_CALALR		0x14			/* Calendar Alarm Register */
-+#define		AT91_RTC_MTHEN		(1 << 23)		/* Month Alarm Enable */
-+#define		AT91_RTC_DATEEN		(1 << 31)		/* Date Alarm Enable */
-+
-+#define	AT91_RTC_SR		0x18			/* Status Register */
-+#define		AT91_RTC_ACKUPD		(1 <<  0)		/* Acknowledge for Update */
-+#define		AT91_RTC_ALARM		(1 <<  1)		/* Alarm Flag */
-+#define		AT91_RTC_SECEV		(1 <<  2)		/* Second Event */
-+#define		AT91_RTC_TIMEV		(1 <<  3)		/* Time Event */
-+#define		AT91_RTC_CALEV		(1 <<  4)		/* Calendar Event */
-+
-+#define	AT91_RTC_SCCR		0x1c			/* Status Clear Command Register */
-+#define	AT91_RTC_IER		0x20			/* Interrupt Enable Register */
-+#define	AT91_RTC_IDR		0x24			/* Interrupt Disable Register */
-+#define	AT91_RTC_IMR		0x28			/* Interrupt Mask Register */
-+
-+#define	AT91_RTC_VER		0x2c			/* Valid Entry Register */
-+#define		AT91_RTC_NVTIM		(1 <<  0)		/* Non valid Time */
-+#define		AT91_RTC_NVCAL		(1 <<  1)		/* Non valid Calendar */
-+#define		AT91_RTC_NVTIMALR	(1 <<  2)		/* Non valid Time Alarm */
-+#define		AT91_RTC_NVCALALR	(1 <<  3)		/* Non valid Calendar Alarm */
-+
-+#endif
-diff --git a/drivers/rtc/rtc-at91rm9200.c b/drivers/rtc/rtc-at91rm9200.c
-index 936c75a..1ed0433 100644
---- a/drivers/rtc/rtc-at91rm9200.c
-+++ b/drivers/rtc/rtc-at91rm9200.c
-@@ -31,7 +31,7 @@
- 
- #include <asm/uaccess.h>
- 
--#include "rtc-at91rm9200.h"
-+#include <mach/at91_rtc.h>
- 
- #define at91_rtc_read(field) \
- 	__raw_readl(at91_rtc_regs + field)
-diff --git a/drivers/rtc/rtc-at91rm9200.h b/drivers/rtc/rtc-at91rm9200.h
-deleted file mode 100644
-index da1945e..0000000
---- a/drivers/rtc/rtc-at91rm9200.h
-+++ /dev/null
-@@ -1,75 +0,0 @@
--/*
-- * arch/arm/mach-at91/include/mach/at91_rtc.h
-- *
-- * Copyright (C) 2005 Ivan Kokshaysky
-- * Copyright (C) SAN People
-- *
-- * Real Time Clock (RTC) - System peripheral registers.
-- * Based on AT91RM9200 datasheet revision E.
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License as published by
-- * the Free Software Foundation; either version 2 of the License, or
-- * (at your option) any later version.
-- */
--
--#ifndef AT91_RTC_H
--#define AT91_RTC_H
--
--#define	AT91_RTC_CR		0x00			/* Control Register */
--#define		AT91_RTC_UPDTIM		(1 <<  0)		/* Update Request Time Register */
--#define		AT91_RTC_UPDCAL		(1 <<  1)		/* Update Request Calendar Register */
--#define		AT91_RTC_TIMEVSEL	(3 <<  8)		/* Time Event Selection */
--#define			AT91_RTC_TIMEVSEL_MINUTE	(0 << 8)
--#define			AT91_RTC_TIMEVSEL_HOUR		(1 << 8)
--#define			AT91_RTC_TIMEVSEL_DAY24		(2 << 8)
--#define			AT91_RTC_TIMEVSEL_DAY12		(3 << 8)
--#define		AT91_RTC_CALEVSEL	(3 << 16)		/* Calendar Event Selection */
--#define			AT91_RTC_CALEVSEL_WEEK		(0 << 16)
--#define			AT91_RTC_CALEVSEL_MONTH		(1 << 16)
--#define			AT91_RTC_CALEVSEL_YEAR		(2 << 16)
--
--#define	AT91_RTC_MR		0x04			/* Mode Register */
--#define			AT91_RTC_HRMOD		(1 <<  0)		/* 12/24 Hour Mode */
--
--#define	AT91_RTC_TIMR		0x08			/* Time Register */
--#define		AT91_RTC_SEC		(0x7f <<  0)		/* Current Second */
--#define		AT91_RTC_MIN		(0x7f <<  8)		/* Current Minute */
--#define		AT91_RTC_HOUR		(0x3f << 16)		/* Current Hour */
--#define		AT91_RTC_AMPM		(1    << 22)		/* Ante Meridiem Post Meridiem Indicator */
--
--#define	AT91_RTC_CALR		0x0c			/* Calendar Register */
--#define		AT91_RTC_CENT		(0x7f <<  0)		/* Current Century */
--#define		AT91_RTC_YEAR		(0xff <<  8)		/* Current Year */
--#define		AT91_RTC_MONTH		(0x1f << 16)		/* Current Month */
--#define		AT91_RTC_DAY		(7    << 21)		/* Current Day */
--#define		AT91_RTC_DATE		(0x3f << 24)		/* Current Date */
--
--#define	AT91_RTC_TIMALR		0x10			/* Time Alarm Register */
--#define		AT91_RTC_SECEN		(1 <<  7)		/* Second Alarm Enable */
--#define		AT91_RTC_MINEN		(1 << 15)		/* Minute Alarm Enable */
--#define		AT91_RTC_HOUREN		(1 << 23)		/* Hour Alarm Enable */
--
--#define	AT91_RTC_CALALR		0x14			/* Calendar Alarm Register */
--#define		AT91_RTC_MTHEN		(1 << 23)		/* Month Alarm Enable */
--#define		AT91_RTC_DATEEN		(1 << 31)		/* Date Alarm Enable */
--
--#define	AT91_RTC_SR		0x18			/* Status Register */
--#define		AT91_RTC_ACKUPD		(1 <<  0)		/* Acknowledge for Update */
--#define		AT91_RTC_ALARM		(1 <<  1)		/* Alarm Flag */
--#define		AT91_RTC_SECEV		(1 <<  2)		/* Second Event */
--#define		AT91_RTC_TIMEV		(1 <<  3)		/* Time Event */
--#define		AT91_RTC_CALEV		(1 <<  4)		/* Calendar Event */
--
--#define	AT91_RTC_SCCR		0x1c			/* Status Clear Command Register */
--#define	AT91_RTC_IER		0x20			/* Interrupt Enable Register */
--#define	AT91_RTC_IDR		0x24			/* Interrupt Disable Register */
--#define	AT91_RTC_IMR		0x28			/* Interrupt Mask Register */
--
--#define	AT91_RTC_VER		0x2c			/* Valid Entry Register */
--#define		AT91_RTC_NVTIM		(1 <<  0)		/* Non valid Time */
--#define		AT91_RTC_NVCAL		(1 <<  1)		/* Non valid Calendar */
--#define		AT91_RTC_NVTIMALR	(1 <<  2)		/* Non valid Time Alarm */
--#define		AT91_RTC_NVCALALR	(1 <<  3)		/* Non valid Calendar Alarm */
--
--#endif
 -- 
 1.8.1.1
 
