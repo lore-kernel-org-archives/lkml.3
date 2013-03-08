@@ -1,53 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933809Ab3CHHLd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 02:11:33 -0500
-Received: from mail-oa0-f54.google.com ([209.85.219.54]:39165 "EHLO
-	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753811Ab3CHHLc (ORCPT
+	id S1754139Ab3CHHME (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 02:12:04 -0500
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:64589 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753824Ab3CHHMB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 02:11:32 -0500
+	Fri, 8 Mar 2013 02:12:01 -0500
 MIME-Version: 1.0
-In-Reply-To: <20130308062827.GJ14556@mtj.dyndns.org>
-References: <1362718720-27048-1-git-send-email-yinghai@kernel.org>
-	<1362718720-27048-10-git-send-email-yinghai@kernel.org>
-	<20130308062827.GJ14556@mtj.dyndns.org>
-Date: Thu, 7 Mar 2013 23:11:31 -0800
-X-Google-Sender-Auth: iPPV1us30nA4QjwU2zaNX7yyTBM
-Message-ID: <CAE9FiQVYiLykLKA4gt3WKigkP+b_JwWy8kcK76wMAtFvSTv8kQ@mail.gmail.com>
-Subject: Re: [PATCH 09/14] x86, mm, numa: set memblock nid later
-From: Yinghai Lu <yinghai@kernel.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Renninger <trenn@suse.de>, Tang Chen <tangchen@cn.fujitsu.com>,
-        linux-kernel@vger.kernel.org
+In-Reply-To: <513894E3.1070206@slimlogic.co.uk>
+References: <1362662276-20792-1-git-send-email-ian@slimlogic.co.uk>
+	<513894E3.1070206@slimlogic.co.uk>
+Date: Fri, 8 Mar 2013 08:12:00 +0100
+Message-ID: <CACRpkdYHhh=ANiHvgxXiAQ_4LLiBBe0AfJ-60Wy6aEi7Cv0HOg@mail.gmail.com>
+Subject: Re: [PATCH v8 0/12] Palmas Updates
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Ian Lartey <ian@slimlogic.co.uk>
+Cc: linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-leds@vger.kernel.org,
+        linux-watchdog@vger.kernel.org, swarren@wwwdotorg.org,
+        grant.likely@secretlab.ca, broonie@opensource.wolfsonmicro.com,
+        rob.herring@calxeda.com, rob@landley.net, mturquette@linaro.org,
+        cooloney@gmail.com, rpurdie@rpsys.net, sameo@linux.intel.com,
+        wim@iguana.be, lgirdwood@gmail.com, gg@slimlogic.co.uk,
+        j-keerthy@ti.com, ldewangan@nvidia.com, t-kristo@ti.com
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 7, 2013 at 10:28 PM, Tejun Heo <tj@kernel.org> wrote:
-> On Thu, Mar 07, 2013 at 08:58:35PM -0800, Yinghai Lu wrote:
->> Only set memblock nid one time.
+On Thu, Mar 7, 2013 at 2:23 PM, Ian Lartey <ian@slimlogic.co.uk> wrote:
+
+> This patchset adds to the support for the Palmas iseries of PMIC chips.
 >
-> Would be awesome if the description explains why we're doing this and
-> why we're allowed to do this now.
+> Some of the patches have previously been submitted individually.
+> The DT bindings doc has been added first due to comments that it was
+> missing.
 
-will add more:
+Can the patches to the individual subsystems be applied individually
+(like can we apply the two GPIO patches to the GPIO tree) or are
+the deps such that the whole shebang needs to go in at once and you're
+just harvesting ACKs to take it all into MFD or similar?
 
-
-set memblock nid will cause membock layout change like array could be doubled.
-and we do not have current memblock limit set, so will put down under
-1M and could
-use too much under 1M.
-And for fallback path, we can avoid restore memblock and remerge action.
-
-
-After We use numa_meminfo nid for checking, we don't need to send it again.
-
-
-Thanks
-
-Yinghai
+Yours,
+Linus Walleij
