@@ -1,91 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934058Ab3CHXBW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 18:01:22 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:36021 "EHLO
+	id S933992Ab3CHXBU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 18:01:20 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:36024 "EHLO
 	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757067Ab3CHWwp (ORCPT
+	with ESMTP id S1757233Ab3CHWwp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 8 Mar 2013 17:52:45 -0500
 From: Dave Kleikamp <dave.kleikamp@oracle.com>
 To: Zach Brown <zab@zabbo.net>
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         Dave Kleikamp <dave.kleikamp@oracle.com>
-Subject: [PATCH V7 -next 04/33] iov_iter: add __iovec_copy_to_user()
-Date: Fri,  8 Mar 2013 16:51:59 -0600
-Message-Id: <1362783148-22736-5-git-send-email-dave.kleikamp@oracle.com>
+Subject: [PATCH V7 -next 03/33] iov_iter: add copy_to_user support
+Date: Fri,  8 Mar 2013 16:51:58 -0600
+Message-Id: <1362783148-22736-4-git-send-email-dave.kleikamp@oracle.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1362783148-22736-1-git-send-email-dave.kleikamp@oracle.com>
 References: <1362783148-22736-1-git-send-email-dave.kleikamp@oracle.com>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds __iovec_copy_to_user() which doesn't verify write access
-to the user memory to be called from code where that verification has
-already been done.
+From: Zach Brown <zab@zabbo.net>
+
+This adds iov_iter wrappers around copy_to_user() to match the existing
+wrappers around copy_from_user().
+
+This will be used by the generic file system buffered read path.
 
 Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
+Cc: Zach Brown <zab@zabbo.net>
 ---
- fs/iov-iter.c      | 14 ++++++++++++--
- include/linux/fs.h |  4 +++-
- 2 files changed, 15 insertions(+), 3 deletions(-)
+ fs/iov-iter.c      | 80 ++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/fs.h |  4 +++
+ 2 files changed, 84 insertions(+)
 
 diff --git a/fs/iov-iter.c b/fs/iov-iter.c
-index 0b2407e..6cecab4 100644
+index 563a6ba..0b2407e 100644
 --- a/fs/iov-iter.c
 +++ b/fs/iov-iter.c
-@@ -19,7 +19,7 @@ static size_t __iovec_copy_to_user(char *vaddr, const struct iovec *iov,
- 		if (atomic)
- 			left = __copy_to_user_inatomic(buf, vaddr, copy);
- 		else
--			left = copy_to_user(buf, vaddr, copy);
-+			left = __copy_to_user(buf, vaddr, copy);
- 		copied += copy;
- 		bytes -= copy;
- 		vaddr += copy;
-@@ -65,7 +65,7 @@ EXPORT_SYMBOL(iov_iter_copy_to_user_atomic);
-  * The difference is that it attempts to resolve faults.
-  * Page must not be locked.
-  */
--size_t iov_iter_copy_to_user(struct page *page,
-+size_t __iov_iter_copy_to_user(struct page *page,
- 		struct iov_iter *i, unsigned long offset, size_t bytes)
- {
- 	char *kaddr;
-@@ -84,6 +84,16 @@ size_t iov_iter_copy_to_user(struct page *page,
- 	kunmap(page);
- 	return copied;
- }
-+EXPORT_SYMBOL(__iov_iter_copy_to_user);
+@@ -6,6 +6,86 @@
+ #include <linux/highmem.h>
+ #include <linux/pagemap.h>
+ 
++static size_t __iovec_copy_to_user(char *vaddr, const struct iovec *iov,
++				   size_t base, size_t bytes, int atomic)
++{
++	size_t copied = 0, left = 0;
 +
++	while (bytes) {
++		char __user *buf = iov->iov_base + base;
++		int copy = min(bytes, iov->iov_len - base);
++
++		base = 0;
++		if (atomic)
++			left = __copy_to_user_inatomic(buf, vaddr, copy);
++		else
++			left = copy_to_user(buf, vaddr, copy);
++		copied += copy;
++		bytes -= copy;
++		vaddr += copy;
++		iov++;
++
++		if (unlikely(left))
++			break;
++	}
++	return copied - left;
++}
++
++/*
++ * Copy as much as we can into the page and return the number of bytes which
++ * were sucessfully copied.  If a fault is encountered then return the number of
++ * bytes which were copied.
++ */
++size_t iov_iter_copy_to_user_atomic(struct page *page,
++		struct iov_iter *i, unsigned long offset, size_t bytes)
++{
++	char *kaddr;
++	size_t copied;
++
++	BUG_ON(!in_atomic());
++	kaddr = kmap_atomic(page);
++	if (likely(i->nr_segs == 1)) {
++		int left;
++		char __user *buf = i->iov->iov_base + i->iov_offset;
++		left = __copy_to_user_inatomic(buf, kaddr + offset, bytes);
++		copied = bytes - left;
++	} else {
++		copied = __iovec_copy_to_user(kaddr + offset, i->iov,
++					      i->iov_offset, bytes, 1);
++	}
++	kunmap_atomic(kaddr);
++
++	return copied;
++}
++EXPORT_SYMBOL(iov_iter_copy_to_user_atomic);
++
++/*
++ * This has the same sideeffects and return value as
++ * iov_iter_copy_to_user_atomic().
++ * The difference is that it attempts to resolve faults.
++ * Page must not be locked.
++ */
 +size_t iov_iter_copy_to_user(struct page *page,
 +		struct iov_iter *i, unsigned long offset, size_t bytes)
 +{
-+	might_sleep();
-+	if (generic_segment_checks(i->iov, &i->nr_segs, &bytes, VERIFY_WRITE))
-+		return 0;
-+	return __iov_iter_copy_to_user(page, i, offset, bytes);
++	char *kaddr;
++	size_t copied;
++
++	kaddr = kmap(page);
++	if (likely(i->nr_segs == 1)) {
++		int left;
++		char __user *buf = i->iov->iov_base + i->iov_offset;
++		left = copy_to_user(buf, kaddr + offset, bytes);
++		copied = bytes - left;
++	} else {
++		copied = __iovec_copy_to_user(kaddr + offset, i->iov,
++					      i->iov_offset, bytes, 0);
++	}
++	kunmap(page);
++	return copied;
 +}
- EXPORT_SYMBOL(iov_iter_copy_to_user);
- 
++EXPORT_SYMBOL(iov_iter_copy_to_user);
++
  static size_t __iovec_copy_from_user(char *vaddr, const struct iovec *iov,
+ 				     size_t base, size_t bytes, int atomic)
+ {
 diff --git a/include/linux/fs.h b/include/linux/fs.h
-index cd85051..3e60370 100644
+index 4c4f0e4..cd85051 100644
 --- a/include/linux/fs.h
 +++ b/include/linux/fs.h
-@@ -295,7 +295,9 @@ struct iov_iter {
+@@ -295,6 +295,10 @@ struct iov_iter {
  	size_t count;
  };
  
--size_t iov_iter_copy_to_user_atomic(struct page *page,
-+size_t __iov_iter_copy_to_user_atomic(struct page *page,
++size_t iov_iter_copy_to_user_atomic(struct page *page,
 +		struct iov_iter *i, unsigned long offset, size_t bytes);
-+size_t __iov_iter_copy_to_user(struct page *page,
++size_t iov_iter_copy_to_user(struct page *page,
++		struct iov_iter *i, unsigned long offset, size_t bytes);
+ size_t iov_iter_copy_from_user_atomic(struct page *page,
  		struct iov_iter *i, unsigned long offset, size_t bytes);
- size_t iov_iter_copy_to_user(struct page *page,
- 		struct iov_iter *i, unsigned long offset, size_t bytes);
+ size_t iov_iter_copy_from_user(struct page *page,
 -- 
 1.8.1.5
 
