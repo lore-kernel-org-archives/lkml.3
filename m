@@ -1,65 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932544Ab3CHBz3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 20:55:29 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:45887 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752249Ab3CHBz1 (ORCPT
+	id S1760177Ab3CHCCJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 21:02:09 -0500
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:51710 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759329Ab3CHCCH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 20:55:27 -0500
-Date: Fri, 08 Mar 2013 10:55:19 +0900 (JST)
-Message-Id: <20130308.105519.82764856.d.hatayama@jp.fujitsu.com>
-To: zhangyanfei@cn.fujitsu.com
-Cc: kexec@lists.infradead.org, heiko.carstens@de.ibm.com,
-        linux-kernel@vger.kernel.org, lisa.mitchell@hp.com,
-        kumagai-atsushi@mxc.nes.nec.co.jp, ebiederm@xmission.com,
-        akpm@linux-foundation.org, cpw@sgi.com, vgoyal@redhat.com
-Subject: Re: [PATCH v2 15/20] kexec: fill note buffers by NT_VMCORE_PAD
- notes in page-size boundary
-From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-In-Reply-To: <513867D2.7090501@cn.fujitsu.com>
-References: <20130302083447.31252.93914.stgit@localhost6.localdomain6>
-	<20130302083714.31252.17863.stgit@localhost6.localdomain6>
-	<513867D2.7090501@cn.fujitsu.com>
-X-Mailer: Mew version 6.3 on Emacs 24.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=iso-2022-jp
-Content-Transfer-Encoding: 7bit
+	Thu, 7 Mar 2013 21:02:07 -0500
+Date: Thu, 7 Mar 2013 18:01:26 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH] mm: page_alloc: remove branch operation in
+ free_pages_prepare()
+In-Reply-To: <20130308004550.GA19010@lge.com>
+Message-ID: <alpine.LNX.2.00.1303071745001.7553@eggly.anvils>
+References: <1362644480-18381-1-git-send-email-iamjoonsoo.kim@lge.com> <alpine.LNX.2.00.1303071050080.6087@eggly.anvils> <20130308004550.GA19010@lge.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Subject: Re: [PATCH v2 15/20] kexec: fill note buffers by NT_VMCORE_PAD notes in page-size boundary
-Date: Thu, 7 Mar 2013 18:11:30 +0800
-
-> 于 2013年03月02日 16:37, HATAYAMA Daisuke 写道:
->> Fill both crash_notes and vmcoreinfo_note buffers by NT_VMCORE_PAD
->> note type to make them satisfy mmap()'s page-size boundary
->> requirement.
->> 
->> So far, end of note segments has been marked by zero-filled elf
->> header. Instead, this patch writes NT_VMCORE_PAD note in the end of
->> note segments until the offset on page-size boundary.
+On Fri, 8 Mar 2013, Joonsoo Kim wrote:
+> On Thu, Mar 07, 2013 at 10:54:15AM -0800, Hugh Dickins wrote:
+> > On Thu, 7 Mar 2013, Joonsoo Kim wrote:
+> > 
+> > > When we found that the flag has a bit of PAGE_FLAGS_CHECK_AT_PREP,
+> > > we reset the flag. If we always reset the flag, we can reduce one
+> > > branch operation. So remove it.
+> > > 
+> > > Cc: Hugh Dickins <hughd@google.com>
+> > > Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> > 
+> > I don't object to this patch.  But certainly I would have written it
+> > that way in order not to dirty a cacheline unnecessarily.  It may be
+> > obvious to you that the cacheline in question is almost always already
+> > dirty, and the branch almost always more expensive.  But I'll leave that
+> > to you, and to those who know more about these subtle costs than I do.
 > 
+> Yes. I already think about that. I thought that even if a cacheline is
+> not dirty at this time, we always touch the 'struct page' in
+> set_freepage_migratetype() a little later, so dirtying is not the problem.
+
+I expect that a very high proportion of user pages have
+PG_uptodate to be cleared here; and there's also the recently added
+page_nid_reset_last(), which will dirty the flags or a nearby field
+when CONFIG_NUMA_BALANCING.  Those argue in favour of your patch.
+
 > 
-> In the codes below, it seems that you assign name "VMCOREINFO" for
-> note type NT_VMCORE_PAD, right? This is kind of wired, i think. This
-> name has been used for NT_VMCORE_DEBUGINFO note already. Why not something
-> like "VMCOREPAD" or "PAD"?
+> But, now, I re-think this and decide to drop this patch.
+> The reason is that 'struct page' of 'compound pages' may not be dirty
+> at this time and will not be dirty at later time.
+
+Actual compound pages would have PG_head or PG_tail or PG_compound
+to be cleared there, I believe (check if I'm right on that).  The
+questionable case is the ordinary order>0 case without __GFP_COMP
+(and page_nid_reset_last() is applied to each subpage of those).
+
+> So this patch is bad idea.
+
+I'm not so sure.  I doubt your patch will make a giant improvement
+in kernel performance!  But it might make a little - maybe you just
+need to give some numbers from perf to justify it (but I'm easily
+dazzled by numbers - don't expect me to judge the result).
+
+Hugh
+
 > 
-
-It looks you are confusing or don't know name and type. The name is
-namespace and in the namespace, there are multiple note types, each of
-which has the corresponding data. In other words, data corresponding
-to types differ if they belong to differnet name space even if
-integers of the types are coincide with.
-
-The "VMCOREINFO" name represents information exported from
-/proc/vmcore that is used in kdump framework. In this sense,
-NT_VMCORE_PAD that is specific for /proc/vmcore and kdump framework,
-should belong to the "VMCOREINFO" name.
-
-Thanks.
-HATAYAMA, Daisuke
-
+> Is there any comments?
+> 
+> Thanks.
+> 
+> > Hugh
+> > 
+> > > 
+> > > diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> > > index 8fcced7..778f2a9 100644
+> > > --- a/mm/page_alloc.c
+> > > +++ b/mm/page_alloc.c
+> > > @@ -614,8 +614,7 @@ static inline int free_pages_check(struct page *page)
+> > >  		return 1;
+> > >  	}
+> > >  	page_nid_reset_last(page);
+> > > -	if (page->flags & PAGE_FLAGS_CHECK_AT_PREP)
+> > > -		page->flags &= ~PAGE_FLAGS_CHECK_AT_PREP;
+> > > +	page->flags &= ~PAGE_FLAGS_CHECK_AT_PREP;
+> > >  	return 0;
+> > >  }
+> > >  
+> > 
+> > --
+> > To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> > the body to majordomo@kvack.org.  For more info on Linux MM,
+> > see: http://www.linux-mm.org/ .
+> > Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> 
