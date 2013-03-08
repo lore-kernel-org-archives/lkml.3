@@ -1,61 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934424Ab3CHQfX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 11:35:23 -0500
-Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:12702 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S933220Ab3CHQfW (ORCPT
+	id S964797Ab3CHQim (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 11:38:42 -0500
+Received: from mail1.windriver.com ([147.11.146.13]:56179 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933140Ab3CHQil (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 11:35:22 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19MaAshA/fdiomHfC3QIoyy
-Date: Fri, 8 Mar 2013 08:35:07 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Aaro Koskinen <aaro.koskinen@iki.fi>
-Cc: Paul Bolle <pebolle@tiscali.nl>, Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: OMAP: drop "select MACH_NOKIA_RM696"
-Message-ID: <20130308163507.GC26093@atomide.com>
-References: <1362738596.5994.48.camel@x61.thuisdomein>
- <20130308161159.GE14552@blackmetal.musicnaut.iki.fi>
+	Fri, 8 Mar 2013 11:38:41 -0500
+Message-ID: <513A1411.7060403@windriver.com>
+Date: Fri, 8 Mar 2013 11:38:41 -0500
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130308161159.GE14552@blackmetal.musicnaut.iki.fi>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Anton Vorontsov <anton@enomsg.org>
+CC: <linux-kernel@vger.kernel.org>, David Woodhouse <dwmw2@infradead.org>
+Subject: Re: [PATCH] power: make goldfish option have a dependency on goldfish
+References: <1361989666-1922-1-git-send-email-paul.gortmaker@windriver.com> <20130227231826.GA30154@lizard.fhda.edu> <CAP=VYLqg5Q_e4y6bD9x8idOvJx2n_knzujOY9Z0VyGDEQZTzag@mail.gmail.com> <20130228013514.GA7556@lizard.fhda.edu> <CAP=VYLoNV16xJtQGtmnC6TejaBRjBz5x=+Lhu7Yzm7q9UZ20AA@mail.gmail.com> <20130228025931.GA13764@lizard.gateway.2wire.net>
+In-Reply-To: <20130228025931.GA13764@lizard.gateway.2wire.net>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [128.224.146.65]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Aaro Koskinen <aaro.koskinen@iki.fi> [130308 08:16]:
-> On Fri, Mar 08, 2013 at 11:29:56AM +0100, Paul Bolle wrote:
-> > When support was added for Nokia N9 (RM-696), with commit
-> > 63fc5f3bb3d0ca9ab4767a801b518aa6335f87ad ("ARM: OMAP: add minimal
-> > support for Nokia RM-696"), a select statement for MACH_NOKIA_RM696 was
-> > added to the tree. But there's no Kconfig symbol with that name. That
-> > symbol would be superfluous, since support for that machine piggybacks
-> > on MACH_NOKIA_RM680. So drop that select.
+On 13-02-27 09:59 PM, Anton Vorontsov wrote:
+
+[...]
+
 > 
-> This is needed because of arch/arm/tools/mach-types. See
-> include/generated/mach-types.h.
+> I see. In that case, please feel free to send the patch to akpm with my
+> Nack and pointing to this discussion. If Andrew agrees and I was wrong
+> (and I'm really curious whether I am right or wrong), I will start
+> applying such patches in future.
+
+Hi Anton,
+
+I didn't send the patch to akpm, but I did have a chance to ask akpm how
+dependencies should be used, and you can see his answer here:
+
+	https://lkml.org/lkml/2013/3/7/456
+
+Paul.
+--
+
 > 
-> If you have just CONFIG_MACH_NOKIA_RM680 and run the kernel on RM-696,
-> then machine_is_nokia_rm696() will return false. If I rememeber correctly,
-> this broke at least early printk / uncompressor output at the time.
+> Thanks,
 > 
-> I guess people may still want to use machine_is_... macros e.g. for
-> debugging.
-
-I think the righ fix is to just add
-
-config MACH_NOKIA_RM680
-	bool
-
-to the mach-omap2/Kconfig like we have for n8x0 also.
-
-Regards,
-
-Tony
+> Anton
+> 
