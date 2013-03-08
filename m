@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934207Ab3CHNt1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 08:49:27 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:9537 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757872Ab3CHNsa (ORCPT
+	id S934190Ab3CHNt0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 08:49:26 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:11386 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758029Ab3CHNsa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 8 Mar 2013 08:48:30 -0500
 X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Fri, 08 Mar 2013 05:48:25 -0800
+	by hqnvupgp07.nvidia.com on Fri, 08 Mar 2013 05:48:24 -0800
 From: Terje Bergstrom <tbergstrom@nvidia.com>
 To: <airlied@linux.ie>, <thierry.reding@avionic-design.de>,
         <linux-tegra@vger.kernel.org>, <dri-devel@lists.freedesktop.org>
 CC: <linux-kernel@vger.kernel.org>, <amerilainen@nvidia.com>,
         Terje Bergstrom <tbergstrom@nvidia.com>
-Subject: [PATCHv6 9/9] drm: tegra: Add gr2d device
-Date: Fri, 8 Mar 2013 15:47:01 +0200
-Message-ID: <1362750421-18080-10-git-send-email-tbergstrom@nvidia.com>
+Subject: [PATCHv6 7/9] gpu: host1x: Remove second host1x driver
+Date: Fri, 8 Mar 2013 15:46:59 +0200
+Message-ID: <1362750421-18080-8-git-send-email-tbergstrom@nvidia.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1362750421-18080-1-git-send-email-tbergstrom@nvidia.com>
 References: <1362750421-18080-1-git-send-email-tbergstrom@nvidia.com>
@@ -27,789 +27,826 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add client driver for 2D device, and IOCTLs to pass work to host1x
-channel for 2D.
-
-Also adds functions that can be called to access sync points from
-DRM.
+Remove second host1x driver, and bind tegra-drm to the new host1x
+driver. The logic to parse device tree and track clients is moved
+to drm.c.
 
 Signed-off-by: Arto Merilainen <amerilainen@nvidia.com>
 Signed-off-by: Terje Bergstrom <tbergstrom@nvidia.com>
 ---
- drivers/gpu/host1x/Makefile   |    1 +
- drivers/gpu/host1x/dev.c      |    7 +
- drivers/gpu/host1x/drm/drm.c  |  239 +++++++++++++++++++++++++++++-
- drivers/gpu/host1x/drm/drm.h  |   28 +++-
- drivers/gpu/host1x/drm/gr2d.c |  325 +++++++++++++++++++++++++++++++++++++++++
- drivers/gpu/host1x/host1x.h   |    3 +-
- include/drm/tegra_drm.h       |  131 +++++++++++++++++
- 7 files changed, 730 insertions(+), 4 deletions(-)
- create mode 100644 drivers/gpu/host1x/drm/gr2d.c
- create mode 100644 include/drm/tegra_drm.h
+ drivers/gpu/host1x/Makefile        |    2 +-
+ drivers/gpu/host1x/dev.c           |   58 ++++++-
+ drivers/gpu/host1x/dev.h           |    6 +
+ drivers/gpu/host1x/drm/Kconfig     |    2 +-
+ drivers/gpu/host1x/drm/dc.c        |    5 +-
+ drivers/gpu/host1x/drm/drm.c       |  217 +++++++++++++++++++++++-
+ drivers/gpu/host1x/drm/drm.h       |    3 -
+ drivers/gpu/host1x/drm/hdmi.c      |    5 +-
+ drivers/gpu/host1x/drm/host1x.c    |  329 ------------------------------------
+ drivers/gpu/host1x/host1x_client.h |   35 ++++
+ 10 files changed, 318 insertions(+), 344 deletions(-)
+ delete mode 100644 drivers/gpu/host1x/drm/host1x.c
+ create mode 100644 drivers/gpu/host1x/host1x_client.h
 
 diff --git a/drivers/gpu/host1x/Makefile b/drivers/gpu/host1x/Makefile
-index d1d7e35..d90168f 100644
+index db4dc25..ad39fef 100644
 --- a/drivers/gpu/host1x/Makefile
 +++ b/drivers/gpu/host1x/Makefile
-@@ -17,4 +17,5 @@ ccflags-$(CONFIG_DRM_TEGRA_DEBUG) += -DDEBUG
- host1x-$(CONFIG_DRM_TEGRA) += drm/drm.o drm/fb.o drm/dc.o
+@@ -14,6 +14,6 @@ host1x-y = \
+ ccflags-y += -Iinclude/drm
+ ccflags-$(CONFIG_DRM_TEGRA_DEBUG) += -DDEBUG
+ 
+-host1x-$(CONFIG_DRM_TEGRA) += drm/drm.o drm/fb.o drm/dc.o drm/host1x.o
++host1x-$(CONFIG_DRM_TEGRA) += drm/drm.o drm/fb.o drm/dc.o
  host1x-$(CONFIG_DRM_TEGRA) += drm/output.o drm/rgb.o drm/hdmi.o
- host1x-$(CONFIG_DRM_TEGRA) += drm/cma.o
-+host1x-$(CONFIG_DRM_TEGRA) += drm/gr2d.o
  obj-$(CONFIG_TEGRA_HOST1X) += host1x.o
 diff --git a/drivers/gpu/host1x/dev.c b/drivers/gpu/host1x/dev.c
-index 6af8081..0091632 100644
+index d7c6e3e..6af8081 100644
 --- a/drivers/gpu/host1x/dev.c
 +++ b/drivers/gpu/host1x/dev.c
-@@ -211,11 +211,17 @@ static int __init tegra_host1x_init(void)
- 	err = platform_driver_register(&tegra_hdmi_driver);
- 	if (err < 0)
- 		goto unregister_dc;
+@@ -32,6 +32,19 @@
+ #include "channel.h"
+ #include "debug.h"
+ #include "hw/host1x01.h"
++#include "host1x_client.h"
 +
-+	err = platform_driver_register(&tegra_gr2d_driver);
-+	if (err < 0)
-+		goto unregister_hdmi;
- #endif
++void host1x_set_drm_data(struct device *dev, void *data)
++{
++	struct host1x *host1x = dev_get_drvdata(dev);
++	host1x->drm_data = data;
++}
++
++void *host1x_get_drm_data(struct device *dev)
++{
++	struct host1x *host1x = dev_get_drvdata(dev);
++	return host1x->drm_data;
++}
  
+ void host1x_sync_writel(struct host1x *host1x, u32 v, u32 r)
+ {
+@@ -154,6 +167,8 @@ static int host1x_probe(struct platform_device *pdev)
+ 
+ 	host1x_debug_init(host);
+ 
++	host1x_drm_alloc(pdev);
++
  	return 0;
  
- #ifdef CONFIG_DRM_TEGRA
-+unregister_hdmi:
+ fail_deinit_syncpt:
+@@ -170,7 +185,7 @@ static int __exit host1x_remove(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
+-static struct platform_driver platform_driver = {
++static struct platform_driver tegra_host1x_driver = {
+ 	.probe = host1x_probe,
+ 	.remove = __exit_p(host1x_remove),
+ 	.driver = {
+@@ -180,8 +195,47 @@ static struct platform_driver platform_driver = {
+ 	},
+ };
+ 
+-module_platform_driver(platform_driver);
++static int __init tegra_host1x_init(void)
++{
++	int err;
++
++	err = platform_driver_register(&tegra_host1x_driver);
++	if (err < 0)
++		return err;
++
++#ifdef CONFIG_DRM_TEGRA
++	err = platform_driver_register(&tegra_dc_driver);
++	if (err < 0)
++		goto unregister_host1x;
++
++	err = platform_driver_register(&tegra_hdmi_driver);
++	if (err < 0)
++		goto unregister_dc;
++#endif
++
++	return 0;
++
++#ifdef CONFIG_DRM_TEGRA
++unregister_dc:
++	platform_driver_unregister(&tegra_dc_driver);
++unregister_host1x:
++	platform_driver_unregister(&tegra_host1x_driver);
++	return err;
++#endif
++}
++module_init(tegra_host1x_init);
++
++static void __exit tegra_host1x_exit(void)
++{
++#ifdef CONFIG_DRM_TEGRA
 +	platform_driver_unregister(&tegra_hdmi_driver);
- unregister_dc:
- 	platform_driver_unregister(&tegra_dc_driver);
- unregister_host1x:
-@@ -228,6 +234,7 @@ module_init(tegra_host1x_init);
- static void __exit tegra_host1x_exit(void)
- {
- #ifdef CONFIG_DRM_TEGRA
-+	platform_driver_unregister(&tegra_gr2d_driver);
- 	platform_driver_unregister(&tegra_hdmi_driver);
- 	platform_driver_unregister(&tegra_dc_driver);
++	platform_driver_unregister(&tegra_dc_driver);
++#endif
++	platform_driver_unregister(&tegra_host1x_driver);
++}
++module_exit(tegra_host1x_exit);
+ 
++MODULE_AUTHOR("Thierry Reding <thierry.reding@avionic-design.de>");
+ MODULE_AUTHOR("Terje Bergstrom <tbergstrom@nvidia.com>");
+ MODULE_DESCRIPTION("Host1x driver for Tegra products");
+ MODULE_LICENSE("GPL");
+diff --git a/drivers/gpu/host1x/dev.h b/drivers/gpu/host1x/dev.h
+index 3542c00..e74ed4a 100644
+--- a/drivers/gpu/host1x/dev.h
++++ b/drivers/gpu/host1x/dev.h
+@@ -125,6 +125,8 @@ struct host1x {
+ 	unsigned int num_allocated_channels;
+ 
+ 	struct dentry *debugfs;
++
++	void *drm_data;
+ };
+ 
+ static inline struct host1x *host1x_get_host(struct device *dev)
+@@ -308,4 +310,8 @@ static inline void host1x_hw_show_mlocks(struct host1x *host, struct output *o)
+ 	host->debug_op->show_mlocks(host, o);
+ }
+ 
++extern struct platform_driver tegra_hdmi_driver;
++extern struct platform_driver tegra_dc_driver;
++extern struct platform_driver tegra_gr2d_driver;
++
  #endif
+diff --git a/drivers/gpu/host1x/drm/Kconfig b/drivers/gpu/host1x/drm/Kconfig
+index c92955d..8fb6545 100644
+--- a/drivers/gpu/host1x/drm/Kconfig
++++ b/drivers/gpu/host1x/drm/Kconfig
+@@ -1,5 +1,5 @@
+ config DRM_TEGRA
+-	tristate "NVIDIA Tegra DRM"
++	bool "NVIDIA Tegra DRM"
+ 	depends on DRM && OF && ARCH_TEGRA
+ 	select DRM_KMS_HELPER
+ 	select DRM_GEM_CMA_HELPER
+diff --git a/drivers/gpu/host1x/drm/dc.c b/drivers/gpu/host1x/drm/dc.c
+index d1f6609..29a79b6 100644
+--- a/drivers/gpu/host1x/drm/dc.c
++++ b/drivers/gpu/host1x/drm/dc.c
+@@ -16,6 +16,7 @@
+ 
+ #include "drm.h"
+ #include "dc.h"
++#include "host1x_client.h"
+ 
+ struct tegra_plane {
+ 	struct drm_plane base;
+@@ -1097,7 +1098,7 @@ static const struct host1x_client_ops dc_client_ops = {
+ 
+ static int tegra_dc_probe(struct platform_device *pdev)
+ {
+-	struct host1x_drm *host1x = dev_get_drvdata(pdev->dev.parent);
++	struct host1x_drm *host1x = host1x_get_drm_data(pdev->dev.parent);
+ 	struct resource *regs;
+ 	struct tegra_dc *dc;
+ 	int err;
+@@ -1160,7 +1161,7 @@ static int tegra_dc_probe(struct platform_device *pdev)
+ 
+ static int tegra_dc_remove(struct platform_device *pdev)
+ {
+-	struct host1x_drm *host1x = dev_get_drvdata(pdev->dev.parent);
++	struct host1x_drm *host1x = host1x_get_drm_data(pdev->dev.parent);
+ 	struct tegra_dc *dc = platform_get_drvdata(pdev);
+ 	int err;
+ 
 diff --git a/drivers/gpu/host1x/drm/drm.c b/drivers/gpu/host1x/drm/drm.c
-index dbd4808..1f0754a 100644
+index 6c59bcd..dbd4808 100644
 --- a/drivers/gpu/host1x/drm/drm.c
 +++ b/drivers/gpu/host1x/drm/drm.c
-@@ -1,6 +1,6 @@
- /*
-  * Copyright (C) 2012 Avionic Design GmbH
-- * Copyright (C) 2012 NVIDIA CORPORATION.  All rights reserved.
-+ * Copyright (C) 2012-2013 NVIDIA CORPORATION.  All rights reserved.
-  *
-  * This program is free software; you can redistribute it and/or modify
-  * it under the terms of the GNU General Public License version 2 as
-@@ -8,13 +8,17 @@
+@@ -7,14 +7,14 @@
+  * published by the Free Software Foundation.
   */
  
- #include <asm/dma-iommu.h>
-+#include <drm/tegra_drm.h>
++#include <asm/dma-iommu.h>
  #include <linux/module.h>
  #include <linux/of_address.h>
  #include <linux/of_platform.h>
+-
  #include <linux/dma-mapping.h>
+-#include <asm/dma-iommu.h>
  
-+#include "cma.h"
-+#include "dev.h"
  #include "drm.h"
- #include "host1x_client.h"
-+#include "syncpt.h"
++#include "host1x_client.h"
  
  #define DRIVER_NAME "tegra"
  #define DRIVER_DESC "NVIDIA Tegra graphics"
-@@ -77,8 +81,10 @@ static int host1x_parse_dt(struct host1x_drm *host1x)
- 	static const char * const compat[] = {
- 		"nvidia,tegra20-dc",
- 		"nvidia,tegra20-hdmi",
-+		"nvidia,tegra20-gr2d",
- 		"nvidia,tegra30-dc",
- 		"nvidia,tegra30-hdmi",
-+		"nvidia,tegra30-gr2d",
- 	};
- 	unsigned int i;
- 	int err;
-@@ -273,9 +279,24 @@ static int tegra_drm_unload(struct drm_device *drm)
+@@ -23,13 +23,222 @@
+ #define DRIVER_MINOR 0
+ #define DRIVER_PATCHLEVEL 0
  
- static int tegra_drm_open(struct drm_device *drm, struct drm_file *filp)
- {
-+	struct host1x_drm_file *fpriv;
-+
-+	fpriv = kzalloc(sizeof(*fpriv), GFP_KERNEL);
-+	if (!fpriv)
-+		return -ENOMEM;
-+
-+	INIT_LIST_HEAD(&fpriv->contexts);
-+	filp->driver_priv = fpriv;
-+
- 	return 0;
- }
- 
-+static void host1x_drm_context_free(struct host1x_drm_context *context)
-+{
-+	context->client->ops->close_channel(context);
-+	kfree(context);
-+}
-+
- static void tegra_drm_lastclose(struct drm_device *drm)
- {
- 	struct host1x_drm *host1x = drm->dev_private;
-@@ -283,7 +304,214 @@ static void tegra_drm_lastclose(struct drm_device *drm)
- 	drm_fbdev_cma_restore_mode(host1x->fbdev);
- }
- 
-+static int tegra_drm_ioctl_syncpt_read(struct drm_device *drm, void *data,
-+				       struct drm_file *file_priv)
-+{
-+	struct tegra_drm_syncpt_read_args *args = data;
-+	struct host1x *host = host1x_get_host(drm->dev);
-+	struct host1x_syncpt *sp = host1x_syncpt_get(host, args->id);
-+
-+	if (!sp)
-+		return -EINVAL;
-+
-+	args->value = host1x_syncpt_read_min(sp);
-+	return 0;
-+}
-+
-+static int tegra_drm_ioctl_syncpt_incr(struct drm_device *drm, void *data,
-+				       struct drm_file *file_priv)
-+{
-+	struct tegra_drm_syncpt_incr_args *args = data;
-+	struct host1x *host = host1x_get_host(drm->dev);
-+	struct host1x_syncpt *sp = host1x_syncpt_get(host, args->id);
-+
-+	if (!sp)
-+		return -EINVAL;
-+
-+	host1x_syncpt_incr(sp);
-+	return 0;
-+}
-+
-+static int tegra_drm_ioctl_syncpt_wait(struct drm_device *drm, void *data,
-+				       struct drm_file *file_priv)
-+{
-+	struct tegra_drm_syncpt_wait_args *args = data;
-+	struct host1x *host = host1x_get_host(drm->dev);
-+	struct host1x_syncpt *sp = host1x_syncpt_get(host, args->id);
-+
-+	if (!sp)
-+		return -EINVAL;
-+
-+	return host1x_syncpt_wait(sp, args->thresh, args->timeout,
-+				  &args->value);
-+}
-+
-+static inline struct host1x_drm_context *tegra_drm_get_context(
-+					struct list_head *contexts,
-+					struct host1x_drm_context *_ctx)
-+{
-+	struct host1x_drm_context *ctx;
-+
-+	list_for_each_entry(ctx, contexts, list)
-+		if (ctx == _ctx)
-+			return ctx;
-+	return NULL;
-+}
-+
-+static int tegra_drm_ioctl_open_channel(struct drm_device *drm, void *data,
-+					struct drm_file *file_priv)
-+{
-+	struct tegra_drm_open_channel_args *args = data;
++struct host1x_drm_client {
 +	struct host1x_client *client;
-+	struct host1x_drm_context *context;
-+	struct host1x_drm_file *fpriv = file_priv->driver_priv;
-+	struct host1x_drm *host1x = drm->dev_private;
-+	int err = -ENODEV;
-+
-+	context = kzalloc(sizeof(*context), GFP_KERNEL);
-+	if (!context)
-+		return -ENOMEM;
-+
-+	list_for_each_entry(client, &host1x->clients, list)
-+		if (client->class == args->class) {
-+			context->client = client;
-+			err = client->ops->open_channel(client, context);
-+			if (err)
-+				break;
-+
-+			list_add(&context->list, &fpriv->contexts);
-+			args->context = (uintptr_t)context;
-+			return 0;
-+		}
-+
-+	kfree(context);
-+	return err;
-+}
-+
-+static int tegra_drm_ioctl_close_channel(struct drm_device *drm, void *data,
-+					 struct drm_file *file_priv)
-+{
-+	struct tegra_drm_open_channel_args *args = data;
-+	struct host1x_drm_file *fpriv = file_priv->driver_priv;
-+	struct host1x_drm_context *context =
-+		(struct host1x_drm_context *)(uintptr_t)args->context;
-+
-+	if (!tegra_drm_get_context(&fpriv->contexts, context))
-+		return -EINVAL;
-+
-+	list_del(&context->list);
-+	host1x_drm_context_free(context);
-+
-+	return 0;
-+}
-+
-+static int tegra_drm_ioctl_get_syncpoint(struct drm_device *drm, void *data,
-+					 struct drm_file *file_priv)
-+{
-+	struct tegra_drm_get_syncpoint *args = data;
-+	struct host1x_drm_file *fpriv = file_priv->driver_priv;
-+	struct host1x_drm_context *context =
-+		(struct host1x_drm_context *)(uintptr_t)args->context;
-+
-+	if (!tegra_drm_get_context(&fpriv->contexts, context))
-+		return -ENODEV;
-+
-+	if (context->client->num_syncpts < args->param)
-+		return -ENODEV;
-+
-+	args->value = host1x_syncpt_id(context->client->syncpts[args->param]);
-+
-+	return 0;
-+}
-+
-+static int tegra_drm_ioctl_submit(struct drm_device *drm, void *data,
-+				  struct drm_file *file_priv)
-+{
-+	struct tegra_drm_submit_args *args = data;
-+	struct host1x_drm_file *fpriv = file_priv->driver_priv;
-+	struct host1x_drm_context *context =
-+		(struct host1x_drm_context *)(uintptr_t)args->context;
-+
-+	if (!tegra_drm_get_context(&fpriv->contexts, context))
-+		return -ENODEV;
-+
-+	return context->client->ops->submit(context, args, drm, file_priv);
-+}
-+
-+static int tegra_drm_gem_create_ioctl(struct drm_device *drm, void *data,
-+				      struct drm_file *file_priv)
-+{
-+	struct tegra_drm_create *args = data;
-+	struct drm_gem_cma_object *cma_obj;
-+	int ret;
-+
-+	cma_obj = drm_gem_cma_create(drm, args->size);
-+	if (IS_ERR(cma_obj))
-+		goto err_cma_create;
-+
-+	ret = drm_gem_handle_create(file_priv, &cma_obj->base, &args->handle);
-+	if (ret)
-+		goto err_handle_create;
-+
-+	cma_obj->base.driver_private =
-+		host1x_memmgr_create_handle(&host1x_cma_ops, cma_obj);
-+
-+	drm_gem_object_unreference(&cma_obj->base);
-+
-+	return 0;
-+
-+err_handle_create:
-+	drm_gem_cma_free_object(&cma_obj->base);
-+err_cma_create:
-+	return -ENOMEM;
-+}
-+
-+static int tegra_drm_ioctl_get_offset(struct drm_device *drm, void *data,
-+				      struct drm_file *file_priv)
-+{
-+	struct tegra_drm_get_offset *args = data;
-+	struct drm_gem_cma_object *cma_obj;
-+	struct drm_gem_object *obj;
-+
-+	obj = drm_gem_object_lookup(drm, file_priv, args->handle);
-+	if (!obj)
-+		return -EINVAL;
-+	cma_obj = to_drm_gem_cma_obj(obj);
-+
-+	args->offset = cma_obj->base.map_list.hash.key << PAGE_SHIFT;
-+
-+	drm_gem_object_unreference(&cma_obj->base);
-+
-+	return 0;
-+}
-+
-+static void tegra_drm_gem_free_object(struct drm_gem_object *obj)
-+{
-+	/* check that the object is allocated for gr2d usage */
-+	if (obj->driver_private)
-+		host1x_memmgr_release_handle(obj->driver_private);
-+	drm_gem_cma_free_object(obj);
-+}
-+
- static struct drm_ioctl_desc tegra_drm_ioctls[] = {
-+	DRM_IOCTL_DEF_DRV(TEGRA_DRM_GEM_CREATE,
-+			tegra_drm_gem_create_ioctl, DRM_UNLOCKED | DRM_AUTH),
-+	DRM_IOCTL_DEF_DRV(TEGRA_DRM_SYNCPT_READ,
-+			tegra_drm_ioctl_syncpt_read, DRM_UNLOCKED),
-+	DRM_IOCTL_DEF_DRV(TEGRA_DRM_SYNCPT_INCR,
-+			tegra_drm_ioctl_syncpt_incr, DRM_UNLOCKED),
-+	DRM_IOCTL_DEF_DRV(TEGRA_DRM_SYNCPT_WAIT,
-+			tegra_drm_ioctl_syncpt_wait, DRM_UNLOCKED),
-+	DRM_IOCTL_DEF_DRV(TEGRA_DRM_OPEN_CHANNEL,
-+			tegra_drm_ioctl_open_channel, DRM_UNLOCKED),
-+	DRM_IOCTL_DEF_DRV(TEGRA_DRM_CLOSE_CHANNEL,
-+			tegra_drm_ioctl_close_channel, DRM_UNLOCKED),
-+	DRM_IOCTL_DEF_DRV(TEGRA_DRM_GET_SYNCPOINT,
-+			tegra_drm_ioctl_get_syncpoint, DRM_UNLOCKED),
-+	DRM_IOCTL_DEF_DRV(TEGRA_DRM_SUBMIT,
-+			tegra_drm_ioctl_submit, DRM_UNLOCKED),
-+	DRM_IOCTL_DEF_DRV(TEGRA_DRM_GEM_GET_OFFSET,
-+			tegra_drm_ioctl_get_offset, DRM_UNLOCKED),
- };
- 
- static const struct file_operations tegra_drm_fops = {
-@@ -345,10 +573,17 @@ static void tegra_drm_disable_vblank(struct drm_device *drm, int pipe)
- 
- static void tegra_drm_preclose(struct drm_device *drm, struct drm_file *file)
- {
-+	struct host1x_drm_file *fpriv = file->driver_priv;
-+	struct host1x_drm_context *context, *tmp;
- 	struct drm_crtc *crtc;
- 
- 	list_for_each_entry(crtc, &drm->mode_config.crtc_list, head)
- 		tegra_dc_cancel_page_flip(crtc, file);
-+
-+	list_for_each_entry_safe(context, tmp, &fpriv->contexts, list)
-+		host1x_drm_context_free(context);
-+	kfree(fpriv);
-+
- }
- 
- #ifdef CONFIG_DEBUG_FS
-@@ -407,7 +642,7 @@ struct drm_driver tegra_drm_driver = {
- 	.debugfs_cleanup = tegra_debugfs_cleanup,
- #endif
- 
--	.gem_free_object = drm_gem_cma_free_object,
-+	.gem_free_object = tegra_drm_gem_free_object,
- 	.gem_vm_ops = &drm_gem_cma_vm_ops,
- 	.dumb_create = drm_gem_cma_dumb_create,
- 	.dumb_map_offset = drm_gem_cma_dumb_map_offset,
-diff --git a/drivers/gpu/host1x/drm/drm.h b/drivers/gpu/host1x/drm/drm.h
-index 0b8738f..6a8d7e3 100644
---- a/drivers/gpu/host1x/drm/drm.h
-+++ b/drivers/gpu/host1x/drm/drm.h
-@@ -1,6 +1,6 @@
- /*
-  * Copyright (C) 2012 Avionic Design GmbH
-- * Copyright (C) 2012 NVIDIA CORPORATION.  All rights reserved.
-+ * Copyright (C) 2012-2013 NVIDIA CORPORATION.  All rights reserved.
-  *
-  * This program is free software; you can redistribute it and/or modify
-  * it under the terms of the GNU General Public License version 2 as
-@@ -17,6 +17,9 @@
- #include <drm/drm_gem_cma_helper.h>
- #include <drm/drm_fb_cma_helper.h>
- #include <drm/drm_fixed.h>
-+#include <drm/tegra_drm.h>
-+
-+#include "host1x.h"
- 
- struct host1x_drm {
- 	struct drm_device *drm;
-@@ -38,9 +41,26 @@ struct host1x_drm {
- 
- struct host1x_client;
- 
-+struct host1x_drm_context {
-+	struct host1x_client *client;
-+	struct host1x_channel *channel;
++	struct device_node *np;
 +	struct list_head list;
 +};
 +
- struct host1x_client_ops {
- 	int (*drm_init)(struct host1x_client *client, struct drm_device *drm);
- 	int (*drm_exit)(struct host1x_client *client);
-+	int (*open_channel)(struct host1x_client *client,
-+			struct host1x_drm_context *context);
-+	void (*close_channel)(struct host1x_drm_context *context);
-+	int (*submit)(struct host1x_drm_context *context,
-+			struct tegra_drm_submit_args *args,
-+			struct drm_device *drm,
-+			struct drm_file *file_priv);
-+};
++static int host1x_add_drm_client(struct host1x_drm *host1x,
++				 struct device_node *np)
++{
++	struct host1x_drm_client *client;
 +
-+struct host1x_drm_file {
-+	struct list_head contexts;
- };
++	client = kzalloc(sizeof(*client), GFP_KERNEL);
++	if (!client)
++		return -ENOMEM;
++
++	INIT_LIST_HEAD(&client->list);
++	client->np = of_node_get(np);
++
++	list_add_tail(&client->list, &host1x->drm_clients);
++
++	return 0;
++}
++
++static int host1x_activate_drm_client(struct host1x_drm *host1x,
++				      struct host1x_drm_client *drm,
++				      struct host1x_client *client)
++{
++	mutex_lock(&host1x->drm_clients_lock);
++	list_del_init(&drm->list);
++	list_add_tail(&drm->list, &host1x->drm_active);
++	drm->client = client;
++	mutex_unlock(&host1x->drm_clients_lock);
++
++	return 0;
++}
++
++static int host1x_remove_drm_client(struct host1x_drm *host1x,
++				    struct host1x_drm_client *client)
++{
++	mutex_lock(&host1x->drm_clients_lock);
++	list_del_init(&client->list);
++	mutex_unlock(&host1x->drm_clients_lock);
++
++	of_node_put(client->np);
++	kfree(client);
++
++	return 0;
++}
++
++static int host1x_parse_dt(struct host1x_drm *host1x)
++{
++	static const char * const compat[] = {
++		"nvidia,tegra20-dc",
++		"nvidia,tegra20-hdmi",
++		"nvidia,tegra30-dc",
++		"nvidia,tegra30-hdmi",
++	};
++	unsigned int i;
++	int err;
++
++	for (i = 0; i < ARRAY_SIZE(compat); i++) {
++		struct device_node *np;
++
++		for_each_child_of_node(host1x->dev->of_node, np) {
++			if (of_device_is_compatible(np, compat[i]) &&
++			    of_device_is_available(np)) {
++				err = host1x_add_drm_client(host1x, np);
++				if (err < 0)
++					return err;
++			}
++		}
++	}
++
++	return 0;
++}
++
++int host1x_drm_alloc(struct platform_device *pdev)
++{
++	struct host1x_drm *host1x;
++	int err;
++
++	host1x = devm_kzalloc(&pdev->dev, sizeof(*host1x), GFP_KERNEL);
++	if (!host1x)
++		return -ENOMEM;
++
++	mutex_init(&host1x->drm_clients_lock);
++	INIT_LIST_HEAD(&host1x->drm_clients);
++	INIT_LIST_HEAD(&host1x->drm_active);
++	mutex_init(&host1x->clients_lock);
++	INIT_LIST_HEAD(&host1x->clients);
++	host1x->dev = &pdev->dev;
++
++	err = host1x_parse_dt(host1x);
++	if (err < 0) {
++		dev_err(&pdev->dev, "failed to parse DT: %d\n", err);
++		return err;
++	}
++
++	host1x_set_drm_data(&pdev->dev, host1x);
++
++	return 0;
++}
++
++int host1x_drm_init(struct host1x_drm *host1x, struct drm_device *drm)
++{
++	struct host1x_client *client;
++
++	mutex_lock(&host1x->clients_lock);
++
++	list_for_each_entry(client, &host1x->clients, list) {
++		if (client->ops && client->ops->drm_init) {
++			int err = client->ops->drm_init(client, drm);
++			if (err < 0) {
++				dev_err(host1x->dev,
++					"DRM setup failed for %s: %d\n",
++					dev_name(client->dev), err);
++				return err;
++			}
++		}
++	}
++
++	mutex_unlock(&host1x->clients_lock);
++
++	return 0;
++}
++
++int host1x_drm_exit(struct host1x_drm *host1x)
++{
++	struct platform_device *pdev = to_platform_device(host1x->dev);
++	struct host1x_client *client;
++
++	if (!host1x->drm)
++		return 0;
++
++	mutex_lock(&host1x->clients_lock);
++
++	list_for_each_entry_reverse(client, &host1x->clients, list) {
++		if (client->ops && client->ops->drm_exit) {
++			int err = client->ops->drm_exit(client);
++			if (err < 0) {
++				dev_err(host1x->dev,
++					"DRM cleanup failed for %s: %d\n",
++					dev_name(client->dev), err);
++				return err;
++			}
++		}
++	}
++
++	mutex_unlock(&host1x->clients_lock);
++
++	drm_platform_exit(&tegra_drm_driver, pdev);
++	host1x->drm = NULL;
++
++	return 0;
++}
++
++int host1x_register_client(struct host1x_drm *host1x,
++			   struct host1x_client *client)
++{
++	struct host1x_drm_client *drm, *tmp;
++	int err;
++
++	mutex_lock(&host1x->clients_lock);
++	list_add_tail(&client->list, &host1x->clients);
++	mutex_unlock(&host1x->clients_lock);
++
++	list_for_each_entry_safe(drm, tmp, &host1x->drm_clients, list)
++		if (drm->np == client->dev->of_node)
++			host1x_activate_drm_client(host1x, drm, client);
++
++	if (list_empty(&host1x->drm_clients)) {
++		struct platform_device *pdev = to_platform_device(host1x->dev);
++
++		err = drm_platform_init(&tegra_drm_driver, pdev);
++		if (err < 0) {
++			dev_err(host1x->dev, "drm_platform_init(): %d\n", err);
++			return err;
++		}
++	}
++
++	return 0;
++}
++
++int host1x_unregister_client(struct host1x_drm *host1x,
++			     struct host1x_client *client)
++{
++	struct host1x_drm_client *drm, *tmp;
++	int err;
++
++	list_for_each_entry_safe(drm, tmp, &host1x->drm_active, list) {
++		if (drm->client == client) {
++			err = host1x_drm_exit(host1x);
++			if (err < 0) {
++				dev_err(host1x->dev, "host1x_drm_exit(): %d\n",
++					err);
++				return err;
++			}
++
++			host1x_remove_drm_client(host1x, drm);
++			break;
++		}
++	}
++
++	mutex_lock(&host1x->clients_lock);
++	list_del_init(&client->list);
++	mutex_unlock(&host1x->clients_lock);
++
++	return 0;
++}
++
+ static int tegra_drm_load(struct drm_device *drm, unsigned long flags)
+ {
+-	struct device *dev = drm->dev;
+ 	struct host1x_drm *host1x;
+ 	int err;
  
- struct host1x_client {
-@@ -49,6 +69,12 @@ struct host1x_client {
+-	host1x = dev_get_drvdata(dev);
++	host1x = host1x_get_drm_data(drm->dev);
+ 	drm->dev_private = host1x;
+ 	host1x->drm = drm;
  
- 	const struct host1x_client_ops *ops;
+diff --git a/drivers/gpu/host1x/drm/drm.h b/drivers/gpu/host1x/drm/drm.h
+index 7fedb6c..0b8738f 100644
+--- a/drivers/gpu/host1x/drm/drm.h
++++ b/drivers/gpu/host1x/drm/drm.h
+@@ -229,9 +229,6 @@ extern int tegra_output_exit(struct tegra_output *output);
+ extern int tegra_drm_fb_init(struct drm_device *drm);
+ extern void tegra_drm_fb_exit(struct drm_device *drm);
  
-+	enum host1x_class class;
-+	struct host1x_channel *channel;
-+
-+	struct host1x_syncpt **syncpts;
-+	unsigned int num_syncpts;
-+
- 	struct list_head list;
- };
+-extern struct platform_driver tegra_host1x_driver;
+-extern struct platform_driver tegra_hdmi_driver;
+-extern struct platform_driver tegra_dc_driver;
+ extern struct drm_driver tegra_drm_driver;
  
-diff --git a/drivers/gpu/host1x/drm/gr2d.c b/drivers/gpu/host1x/drm/gr2d.c
-new file mode 100644
-index 0000000..00e93d8
---- /dev/null
-+++ b/drivers/gpu/host1x/drm/gr2d.c
-@@ -0,0 +1,325 @@
-+/*
-+ * drivers/video/tegra/host/gr2d/gr2d.c
-+ *
-+ * Tegra Graphics 2D
-+ *
-+ * Copyright (c) 2012-2013, NVIDIA Corporation.
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-+ */
-+
-+#include <linux/export.h>
-+#include <linux/of.h>
-+#include <linux/of_device.h>
-+#include <linux/clk.h>
-+#include <drm/tegra_drm.h>
-+
-+#include "channel.h"
-+#include "drm.h"
-+#include "drm/cma.h"
-+#include "job.h"
-+#include "host1x.h"
+ #endif /* HOST1X_DRM_H */
+diff --git a/drivers/gpu/host1x/drm/hdmi.c b/drivers/gpu/host1x/drm/hdmi.c
+index f438f80..01097da 100644
+--- a/drivers/gpu/host1x/drm/hdmi.c
++++ b/drivers/gpu/host1x/drm/hdmi.c
+@@ -22,6 +22,7 @@
+ #include "hdmi.h"
+ #include "drm.h"
+ #include "dc.h"
 +#include "host1x_client.h"
-+#include "memmgr.h"
-+#include "syncpt.h"
-+
-+struct gr2d {
-+	struct host1x_client client;
-+	struct clk *clk;
-+	struct host1x_channel *channel;
-+	unsigned long *addr_regs;
-+};
-+
-+static int gr2d_is_addr_reg(struct device *dev, u32 class, u32 reg);
-+
-+static int gr2d_client_init(struct host1x_client *client,
-+			    struct drm_device *drm)
-+{
-+	return 0;
-+}
-+
-+static int gr2d_client_exit(struct host1x_client *client)
-+{
-+	return 0;
-+}
-+
-+static int gr2d_open_channel(struct host1x_client *client,
-+			     struct host1x_drm_context *context)
-+{
-+	struct gr2d *gr2d = dev_get_drvdata(client->dev);
-+	context->channel = host1x_channel_get(gr2d->channel);
-+
-+	if (!context->channel)
-+		return -ENOMEM;
-+
-+	return 0;
-+}
-+
-+static void gr2d_close_channel(struct host1x_drm_context *context)
-+{
-+	host1x_channel_put(context->channel);
-+}
-+
-+static struct host1x_mem_handle *handle_cma_to_host1x(struct drm_device *drm,
-+						      struct drm_file *file_priv,
-+						      u32 gem_handle)
-+{
-+	struct drm_gem_object *obj;
-+
-+	obj = drm_gem_object_lookup(drm, file_priv, gem_handle);
-+	if (!obj)
-+		return 0;
-+
-+	mutex_lock(&drm->struct_mutex);
-+	drm_gem_object_unreference(obj);
-+	mutex_unlock(&drm->struct_mutex);
-+
-+	return obj->driver_private;
-+}
-+
-+static int gr2d_submit(struct host1x_drm_context *context,
-+		       struct tegra_drm_submit_args *args,
-+		       struct drm_device *drm,
-+		       struct drm_file *file_priv)
-+{
-+	struct host1x_job *job;
-+	int num_cmdbufs = args->num_cmdbufs;
-+	int num_relocs = args->num_relocs;
-+	int num_waitchks = args->num_waitchks;
-+	struct tegra_drm_cmdbuf __user *cmdbufs =
-+		(void * __user)(uintptr_t)args->cmdbufs;
-+	struct tegra_drm_reloc __user *relocs =
-+		(void * __user)(uintptr_t)args->relocs;
-+	struct tegra_drm_waitchk __user *waitchks =
-+		(void * __user)(uintptr_t)args->waitchks;
-+	struct tegra_drm_syncpt_incr syncpt_incr;
-+	int err;
-+
-+	/* We don't yet support other than one syncpt_incr struct per submit */
-+	if (args->num_syncpt_incrs != 1)
-+		return -EINVAL;
-+
-+	job = host1x_job_alloc(context->channel, args->num_cmdbufs,
-+			       args->num_relocs, args->num_waitchks);
-+	if (!job)
-+		return -ENOMEM;
-+
-+	job->num_relocs = args->num_relocs;
-+	job->num_waitchk = args->num_waitchks;
-+	job->client = (u32)args->context;
-+	job->class = context->client->class;
-+	job->serialize = true;
-+
-+	while (num_cmdbufs) {
-+		struct tegra_drm_cmdbuf cmdbuf;
-+		struct host1x_mem_handle *mem_handle;
-+		err = copy_from_user(&cmdbuf, cmdbufs, sizeof(cmdbuf));
-+		if (err)
-+			goto fail;
-+
-+		mem_handle = handle_cma_to_host1x(drm, file_priv, cmdbuf.mem);
-+		if (!mem_handle)
-+			goto fail;
-+
-+		host1x_job_add_gather(job, mem_handle,
-+				      cmdbuf.words, cmdbuf.offset);
-+		num_cmdbufs--;
-+		cmdbufs++;
-+	}
-+
-+	err = copy_from_user(job->relocarray, relocs,
-+			     sizeof(*relocs) * num_relocs);
-+	if (err)
-+		goto fail;
-+
-+	while (num_relocs--) {
-+		job->relocarray[num_relocs].cmdbuf_mem =
-+			handle_cma_to_host1x(drm, file_priv,
-+			(u32)job->relocarray[num_relocs].cmdbuf_mem);
-+		job->relocarray[num_relocs].target =
-+			handle_cma_to_host1x(drm, file_priv,
-+			(u32)job->relocarray[num_relocs].target);
-+
-+		if (!job->relocarray[num_relocs].target ||
-+		    !job->relocarray[num_relocs].cmdbuf_mem)
-+			goto fail;
-+	}
-+
-+	err = copy_from_user(job->waitchk, waitchks,
-+			     sizeof(*waitchks) * num_waitchks);
-+	if (err)
-+		goto fail;
-+
-+	err = host1x_job_pin(job, context->client->dev);
-+	if (err)
-+		goto fail;
-+
-+	err = copy_from_user(&syncpt_incr,
-+			     (void * __user)(uintptr_t)args->syncpt_incrs,
-+			     sizeof(syncpt_incr));
-+	if (err)
-+		goto fail;
-+
-+	job->syncpt_id = syncpt_incr.id;
-+	job->syncpt_incrs = syncpt_incr.incrs;
-+	job->timeout = 10000;
-+	job->is_addr_reg = gr2d_is_addr_reg;
-+	if (args->timeout && args->timeout < 10000)
-+		job->timeout = args->timeout;
-+
-+	err = host1x_job_submit(job);
-+	if (err)
-+		goto fail_submit;
-+
-+	args->fence = job->syncpt_end;
-+
-+	host1x_job_put(job);
-+	return 0;
-+
-+fail_submit:
-+	host1x_job_unpin(job);
-+fail:
-+	host1x_job_put(job);
-+	return err;
-+}
-+
-+static struct host1x_client_ops gr2d_client_ops = {
-+	.drm_init = gr2d_client_init,
-+	.drm_exit = gr2d_client_exit,
-+	.open_channel = gr2d_open_channel,
-+	.close_channel = gr2d_close_channel,
-+	.submit = gr2d_submit,
-+};
-+
-+static void gr2d_init_addr_reg_map(struct device *dev, struct gr2d *gr2d)
-+{
-+	const u32 gr2d_addr_regs[] = {0x1a, 0x1b, 0x26, 0x2b, 0x2c, 0x2d, 0x31,
-+				      0x32, 0x48, 0x49, 0x4a, 0x4b, 0x4c};
-+	unsigned long *bitmap;
-+	int i;
-+
-+	bitmap = devm_kzalloc(dev, DIV_ROUND_UP(256, BITS_PER_BYTE),
-+			      GFP_KERNEL);
-+
-+	for (i = 0; i < ARRAY_SIZE(gr2d_addr_regs); ++i) {
-+		u32 reg = gr2d_addr_regs[i];
-+		bitmap[BIT_WORD(reg)] |= BIT_MASK(reg);
-+	}
-+
-+	gr2d->addr_regs = bitmap;
-+}
-+
-+static int gr2d_is_addr_reg(struct device *dev, u32 class, u32 reg)
-+{
-+	struct gr2d *gr2d = dev_get_drvdata(dev);
-+
-+	switch (class) {
-+	case HOST1X_CLASS_HOST1X:
-+		return reg == 0x2b;
-+	case HOST1X_CLASS_GR2D:
-+		reg &= 0xff;
-+		if (gr2d->addr_regs[BIT_WORD(reg)] & BIT_MASK(reg))
-+			return 1;
-+	default:
-+		return 0;
-+	}
-+}
-+
-+static const struct of_device_id gr2d_match[] = {
-+	{ .compatible = "nvidia,tegra30-gr2d" },
-+	{ .compatible = "nvidia,tegra20-gr2d" },
-+	{ },
-+};
-+
-+static int gr2d_probe(struct platform_device *pdev)
-+{
-+	struct device *dev = &pdev->dev;
-+	struct host1x_drm *host1x = host1x_get_drm_data(dev->parent);
-+	int err;
-+	struct gr2d *gr2d = NULL;
-+	struct host1x_syncpt **syncpts;
-+
-+	gr2d = devm_kzalloc(dev, sizeof(*gr2d), GFP_KERNEL);
-+	if (!gr2d)
-+		return -ENOMEM;
-+
-+	syncpts = devm_kzalloc(dev, sizeof(*syncpts), GFP_KERNEL);
-+	if (!syncpts)
-+		return -ENOMEM;
-+
-+	gr2d->clk = devm_clk_get(dev, NULL);
-+	if (IS_ERR(gr2d->clk)) {
-+		dev_err(dev, "cannot get clock\n");
-+		return PTR_ERR(gr2d->clk);
-+	}
-+
-+	err = clk_prepare_enable(gr2d->clk);
-+	if (err) {
-+		dev_err(dev, "cannot turn on clock\n");
-+		return err;
-+	}
-+
-+	gr2d->channel = host1x_channel_alloc(dev);
-+	if (!gr2d->channel)
-+		return -ENOMEM;
-+
-+	*syncpts = host1x_syncpt_request(dev, 0);
-+	if (!(*syncpts)) {
-+		host1x_channel_free(gr2d->channel);
-+		return -ENOMEM;
-+	}
-+
-+	gr2d->client.ops = &gr2d_client_ops;
-+	gr2d->client.dev = dev;
-+	gr2d->client.class = HOST1X_CLASS_GR2D;
-+	gr2d->client.syncpts = syncpts;
-+	gr2d->client.num_syncpts = 1;
-+
-+	err = host1x_register_client(host1x, &gr2d->client);
-+	if (err < 0) {
-+		dev_err(dev, "failed to register host1x client: %d\n", err);
-+		return err;
-+	}
-+
-+	gr2d_init_addr_reg_map(dev, gr2d);
-+
-+	dev_set_drvdata(dev, gr2d);
-+
-+	return 0;
-+}
-+
-+static int __exit gr2d_remove(struct platform_device *pdev)
-+{
+ 
+ struct tegra_hdmi {
+ 	struct host1x_client client;
+@@ -1189,7 +1190,7 @@ static const struct host1x_client_ops hdmi_client_ops = {
+ 
+ static int tegra_hdmi_probe(struct platform_device *pdev)
+ {
+-	struct host1x_drm *host1x = dev_get_drvdata(pdev->dev.parent);
 +	struct host1x_drm *host1x = host1x_get_drm_data(pdev->dev.parent);
-+	struct gr2d *gr2d = platform_get_drvdata(pdev);
-+	int err;
-+
-+	err = host1x_unregister_client(host1x, &gr2d->client);
-+	if (err < 0) {
-+		dev_err(&pdev->dev, "failed to unregister client: %d\n", err);
-+		return err;
-+	}
-+
-+	host1x_syncpt_free(*gr2d->client.syncpts);
-+	return 0;
-+}
-+
-+struct platform_driver tegra_gr2d_driver = {
-+	.probe = gr2d_probe,
-+	.remove = __exit_p(gr2d_remove),
-+	.driver = {
-+		.owner = THIS_MODULE,
-+		.name = "gr2d",
-+		.of_match_table = gr2d_match,
-+	}
-+};
-diff --git a/drivers/gpu/host1x/host1x.h b/drivers/gpu/host1x/host1x.h
-index bca6563..128cc9e 100644
---- a/drivers/gpu/host1x/host1x.h
-+++ b/drivers/gpu/host1x/host1x.h
-@@ -22,7 +22,8 @@
- #define __LINUX_HOST1X_H
+ 	struct tegra_hdmi *hdmi;
+ 	struct resource *regs;
+ 	int err;
+@@ -1278,7 +1279,7 @@ static int tegra_hdmi_probe(struct platform_device *pdev)
  
- enum host1x_class {
--	HOST1X_CLASS_HOST1X	= 0x1
-+	HOST1X_CLASS_HOST1X	= 0x1,
-+	HOST1X_CLASS_GR2D	= 0x51
- };
+ static int tegra_hdmi_remove(struct platform_device *pdev)
+ {
+-	struct host1x_drm *host1x = dev_get_drvdata(pdev->dev.parent);
++	struct host1x_drm *host1x = host1x_get_drm_data(pdev->dev.parent);
+ 	struct tegra_hdmi *hdmi = platform_get_drvdata(pdev);
+ 	int err;
  
- #endif
-diff --git a/include/drm/tegra_drm.h b/include/drm/tegra_drm.h
+diff --git a/drivers/gpu/host1x/drm/host1x.c b/drivers/gpu/host1x/drm/host1x.c
+deleted file mode 100644
+index c3d8ee5..0000000
+--- a/drivers/gpu/host1x/drm/host1x.c
++++ /dev/null
+@@ -1,329 +0,0 @@
+-/*
+- * Copyright (C) 2012 Avionic Design GmbH
+- * Copyright (C) 2012 NVIDIA CORPORATION.  All rights reserved.
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License version 2 as
+- * published by the Free Software Foundation.
+- */
+-
+-#include <linux/clk.h>
+-#include <linux/err.h>
+-#include <linux/module.h>
+-#include <linux/of.h>
+-#include <linux/platform_device.h>
+-
+-#include "drm.h"
+-
+-struct host1x_drm_client {
+-	struct host1x_client *client;
+-	struct device_node *np;
+-	struct list_head list;
+-};
+-
+-static int host1x_add_drm_client(struct host1x_drm *host1x,
+-				 struct device_node *np)
+-{
+-	struct host1x_drm_client *client;
+-
+-	client = kzalloc(sizeof(*client), GFP_KERNEL);
+-	if (!client)
+-		return -ENOMEM;
+-
+-	INIT_LIST_HEAD(&client->list);
+-	client->np = of_node_get(np);
+-
+-	list_add_tail(&client->list, &host1x->drm_clients);
+-
+-	return 0;
+-}
+-
+-static int host1x_activate_drm_client(struct host1x_drm *host1x,
+-				      struct host1x_drm_client *drm,
+-				      struct host1x_client *client)
+-{
+-	mutex_lock(&host1x->drm_clients_lock);
+-	list_del_init(&drm->list);
+-	list_add_tail(&drm->list, &host1x->drm_active);
+-	drm->client = client;
+-	mutex_unlock(&host1x->drm_clients_lock);
+-
+-	return 0;
+-}
+-
+-static int host1x_remove_drm_client(struct host1x_drm *host1x,
+-				    struct host1x_drm_client *client)
+-{
+-	mutex_lock(&host1x->drm_clients_lock);
+-	list_del_init(&client->list);
+-	mutex_unlock(&host1x->drm_clients_lock);
+-
+-	of_node_put(client->np);
+-	kfree(client);
+-
+-	return 0;
+-}
+-
+-static int host1x_parse_dt(struct host1x_drm *host1x)
+-{
+-	static const char * const compat[] = {
+-		"nvidia,tegra20-dc",
+-		"nvidia,tegra20-hdmi",
+-		"nvidia,tegra30-dc",
+-		"nvidia,tegra30-hdmi",
+-	};
+-	unsigned int i;
+-	int err;
+-
+-	for (i = 0; i < ARRAY_SIZE(compat); i++) {
+-		struct device_node *np;
+-
+-		for_each_child_of_node(host1x->dev->of_node, np) {
+-			if (of_device_is_compatible(np, compat[i]) &&
+-			    of_device_is_available(np)) {
+-				err = host1x_add_drm_client(host1x, np);
+-				if (err < 0)
+-					return err;
+-			}
+-		}
+-	}
+-
+-	return 0;
+-}
+-
+-static int tegra_host1x_probe(struct platform_device *pdev)
+-{
+-	struct host1x_drm *host1x;
+-	struct resource *regs;
+-	int err;
+-
+-	host1x = devm_kzalloc(&pdev->dev, sizeof(*host1x), GFP_KERNEL);
+-	if (!host1x)
+-		return -ENOMEM;
+-
+-	mutex_init(&host1x->drm_clients_lock);
+-	INIT_LIST_HEAD(&host1x->drm_clients);
+-	INIT_LIST_HEAD(&host1x->drm_active);
+-	mutex_init(&host1x->clients_lock);
+-	INIT_LIST_HEAD(&host1x->clients);
+-	host1x->dev = &pdev->dev;
+-
+-	err = host1x_parse_dt(host1x);
+-	if (err < 0) {
+-		dev_err(&pdev->dev, "failed to parse DT: %d\n", err);
+-		return err;
+-	}
+-
+-	host1x->clk = devm_clk_get(&pdev->dev, NULL);
+-	if (IS_ERR(host1x->clk))
+-		return PTR_ERR(host1x->clk);
+-
+-	err = clk_prepare_enable(host1x->clk);
+-	if (err < 0)
+-		return err;
+-
+-	regs = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	if (!regs) {
+-		err = -ENXIO;
+-		goto err;
+-	}
+-
+-	err = platform_get_irq(pdev, 0);
+-	if (err < 0)
+-		goto err;
+-
+-	host1x->syncpt = err;
+-
+-	err = platform_get_irq(pdev, 1);
+-	if (err < 0)
+-		goto err;
+-
+-	host1x->irq = err;
+-
+-	host1x->regs = devm_ioremap_resource(&pdev->dev, regs);
+-	if (IS_ERR(host1x->regs)) {
+-		err = PTR_ERR(host1x->regs);
+-		goto err;
+-	}
+-
+-	platform_set_drvdata(pdev, host1x);
+-
+-	return 0;
+-
+-err:
+-	clk_disable_unprepare(host1x->clk);
+-	return err;
+-}
+-
+-static int tegra_host1x_remove(struct platform_device *pdev)
+-{
+-	struct host1x_drm *host1x = platform_get_drvdata(pdev);
+-
+-	clk_disable_unprepare(host1x->clk);
+-
+-	return 0;
+-}
+-
+-int host1x_drm_init(struct host1x_drm *host1x, struct drm_device *drm)
+-{
+-	struct host1x_client *client;
+-
+-	mutex_lock(&host1x->clients_lock);
+-
+-	list_for_each_entry(client, &host1x->clients, list) {
+-		if (client->ops && client->ops->drm_init) {
+-			int err = client->ops->drm_init(client, drm);
+-			if (err < 0) {
+-				dev_err(host1x->dev,
+-					"DRM setup failed for %s: %d\n",
+-					dev_name(client->dev), err);
+-				return err;
+-			}
+-		}
+-	}
+-
+-	mutex_unlock(&host1x->clients_lock);
+-
+-	return 0;
+-}
+-
+-int host1x_drm_exit(struct host1x_drm *host1x)
+-{
+-	struct platform_device *pdev = to_platform_device(host1x->dev);
+-	struct host1x_client *client;
+-
+-	if (!host1x->drm)
+-		return 0;
+-
+-	mutex_lock(&host1x->clients_lock);
+-
+-	list_for_each_entry_reverse(client, &host1x->clients, list) {
+-		if (client->ops && client->ops->drm_exit) {
+-			int err = client->ops->drm_exit(client);
+-			if (err < 0) {
+-				dev_err(host1x->dev,
+-					"DRM cleanup failed for %s: %d\n",
+-					dev_name(client->dev), err);
+-				return err;
+-			}
+-		}
+-	}
+-
+-	mutex_unlock(&host1x->clients_lock);
+-
+-	drm_platform_exit(&tegra_drm_driver, pdev);
+-	host1x->drm = NULL;
+-
+-	return 0;
+-}
+-
+-int host1x_register_client(struct host1x_drm *host1x,
+-			   struct host1x_client *client)
+-{
+-	struct host1x_drm_client *drm, *tmp;
+-	int err;
+-
+-	mutex_lock(&host1x->clients_lock);
+-	list_add_tail(&client->list, &host1x->clients);
+-	mutex_unlock(&host1x->clients_lock);
+-
+-	list_for_each_entry_safe(drm, tmp, &host1x->drm_clients, list)
+-		if (drm->np == client->dev->of_node)
+-			host1x_activate_drm_client(host1x, drm, client);
+-
+-	if (list_empty(&host1x->drm_clients)) {
+-		struct platform_device *pdev = to_platform_device(host1x->dev);
+-
+-		err = drm_platform_init(&tegra_drm_driver, pdev);
+-		if (err < 0) {
+-			dev_err(host1x->dev, "drm_platform_init(): %d\n", err);
+-			return err;
+-		}
+-	}
+-
+-	client->host1x = host1x;
+-
+-	return 0;
+-}
+-
+-int host1x_unregister_client(struct host1x_drm *host1x,
+-			     struct host1x_client *client)
+-{
+-	struct host1x_drm_client *drm, *tmp;
+-	int err;
+-
+-	list_for_each_entry_safe(drm, tmp, &host1x->drm_active, list) {
+-		if (drm->client == client) {
+-			err = host1x_drm_exit(host1x);
+-			if (err < 0) {
+-				dev_err(host1x->dev, "host1x_drm_exit(): %d\n",
+-					err);
+-				return err;
+-			}
+-
+-			host1x_remove_drm_client(host1x, drm);
+-			break;
+-		}
+-	}
+-
+-	mutex_lock(&host1x->clients_lock);
+-	list_del_init(&client->list);
+-	mutex_unlock(&host1x->clients_lock);
+-
+-	return 0;
+-}
+-
+-static struct of_device_id tegra_host1x_of_match[] = {
+-	{ .compatible = "nvidia,tegra30-host1x", },
+-	{ .compatible = "nvidia,tegra20-host1x", },
+-	{ },
+-};
+-MODULE_DEVICE_TABLE(of, tegra_host1x_of_match);
+-
+-struct platform_driver tegra_host1x_driver = {
+-	.driver = {
+-		.name = "tegra-host1x",
+-		.owner = THIS_MODULE,
+-		.of_match_table = tegra_host1x_of_match,
+-	},
+-	.probe = tegra_host1x_probe,
+-	.remove = tegra_host1x_remove,
+-};
+-
+-static int __init tegra_host1x_init(void)
+-{
+-	int err;
+-
+-	err = platform_driver_register(&tegra_host1x_driver);
+-	if (err < 0)
+-		return err;
+-
+-	err = platform_driver_register(&tegra_dc_driver);
+-	if (err < 0)
+-		goto unregister_host1x;
+-
+-	err = platform_driver_register(&tegra_hdmi_driver);
+-	if (err < 0)
+-		goto unregister_dc;
+-
+-	return 0;
+-
+-unregister_dc:
+-	platform_driver_unregister(&tegra_dc_driver);
+-unregister_host1x:
+-	platform_driver_unregister(&tegra_host1x_driver);
+-	return err;
+-}
+-module_init(tegra_host1x_init);
+-
+-static void __exit tegra_host1x_exit(void)
+-{
+-	platform_driver_unregister(&tegra_hdmi_driver);
+-	platform_driver_unregister(&tegra_dc_driver);
+-	platform_driver_unregister(&tegra_host1x_driver);
+-}
+-module_exit(tegra_host1x_exit);
+-
+-MODULE_AUTHOR("Thierry Reding <thierry.reding@avionic-design.de>");
+-MODULE_DESCRIPTION("NVIDIA Tegra DRM driver");
+-MODULE_LICENSE("GPL");
+diff --git a/drivers/gpu/host1x/host1x_client.h b/drivers/gpu/host1x/host1x_client.h
 new file mode 100644
-index 0000000..6f7f7e6
+index 0000000..9b85f10
 --- /dev/null
-+++ b/include/drm/tegra_drm.h
-@@ -0,0 +1,131 @@
++++ b/drivers/gpu/host1x/host1x_client.h
+@@ -0,0 +1,35 @@
 +/*
-+ * Copyright (c) 2012-2013, NVIDIA CORPORATION.  All rights reserved.
++ * Copyright (c) 2013, NVIDIA Corporation.
 + *
 + * This program is free software; you can redistribute it and/or modify it
 + * under the terms and conditions of the GNU General Public License,
@@ -824,119 +861,23 @@ index 0000000..6f7f7e6
 + * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 + */
 +
-+#ifndef _TEGRA_DRM_H_
-+#define _TEGRA_DRM_H_
++#ifndef HOST1X_CLIENT_H
++#define HOST1X_CLIENT_H
 +
-+struct tegra_drm_create {
-+	__u64 size;
-+	u32 flags;
-+	u32 handle;
-+	u32 offset;
-+	u32 padding;
-+};
++struct device;
++struct platform_device;
 +
-+struct tegra_drm_get_offset {
-+	__u32 handle;
-+	__u32 offset;
-+};
++#ifdef CONFIG_DRM_TEGRA
++int host1x_drm_alloc(struct platform_device *pdev);
++#else
++static inline int host1x_drm_alloc(struct platform_device *pdev)
++{
++	return 0;
++}
++#endif
 +
-+struct tegra_drm_syncpt_read_args {
-+	__u32 id;
-+	__u32 value;
-+};
-+
-+struct tegra_drm_syncpt_incr_args {
-+	__u32 id;
-+	__u32 pad;
-+};
-+
-+struct tegra_drm_syncpt_wait_args {
-+	__u32 id;
-+	__u32 thresh;
-+	__u32 timeout;
-+	__u32 value;
-+};
-+
-+#define DRM_TEGRA_NO_TIMEOUT	(0xffffffff)
-+
-+struct tegra_drm_open_channel_args {
-+	__u32 class;
-+	__u32 pad;
-+	__u64 context;
-+};
-+
-+struct tegra_drm_get_syncpoint {
-+	__u64 context;
-+	__u32 param;
-+	__u32 value;
-+};
-+
-+struct tegra_drm_syncpt_incr {
-+	__u32 id;
-+	__u32 incrs;
-+};
-+
-+struct tegra_drm_cmdbuf {
-+	__u32 mem;
-+	__u32 offset;
-+	__u32 words;
-+	__u32 pad;
-+};
-+
-+struct tegra_drm_reloc {
-+	__u32 cmdbuf_mem;
-+	__u32 cmdbuf_offset;
-+	__u32 target;
-+	__u32 target_offset;
-+	__u32 shift;
-+	__u32 pad;
-+};
-+
-+struct tegra_drm_waitchk {
-+	__u32 mem;
-+	__u32 offset;
-+	__u32 syncpt_id;
-+	__u32 thresh;
-+};
-+
-+struct tegra_drm_submit_args {
-+	__u64 context;
-+	__u32 num_syncpt_incrs;
-+	__u32 num_cmdbufs;
-+	__u32 num_relocs;
-+	__u32 submit_version;
-+	__u32 num_waitchks;
-+	__u32 waitchk_mask;
-+	__u32 timeout;
-+	__u32 pad;
-+	__u64 syncpt_incrs;
-+	__u64 cmdbufs;
-+	__u64 relocs;
-+	__u64 waitchks;
-+	__u32 fence;		/* Return value */
-+
-+	__u32 reserved[5];	/* future expansion */
-+};
-+
-+#define DRM_TEGRA_DRM_GEM_CREATE	0x00
-+#define DRM_TEGRA_DRM_SYNCPT_READ	0x01
-+#define DRM_TEGRA_DRM_SYNCPT_INCR	0x02
-+#define DRM_TEGRA_DRM_SYNCPT_WAIT	0x03
-+#define DRM_TEGRA_DRM_OPEN_CHANNEL	0x04
-+#define DRM_TEGRA_DRM_CLOSE_CHANNEL	0x05
-+#define DRM_TEGRA_DRM_GET_SYNCPOINT	0x06
-+#define DRM_TEGRA_DRM_SUBMIT		0x08
-+#define DRM_TEGRA_DRM_GEM_GET_OFFSET	0x09
-+
-+#define DRM_IOCTL_TEGRA_DRM_GEM_CREATE DRM_IOWR(DRM_COMMAND_BASE + DRM_TEGRA_DRM_GEM_CREATE, struct tegra_drm_create)
-+#define DRM_IOCTL_TEGRA_DRM_SYNCPT_READ DRM_IOWR(DRM_COMMAND_BASE + DRM_TEGRA_DRM_SYNCPT_READ, struct tegra_drm_syncpt_read_args)
-+#define DRM_IOCTL_TEGRA_DRM_SYNCPT_INCR DRM_IOWR(DRM_COMMAND_BASE + DRM_TEGRA_DRM_SYNCPT_INCR, struct tegra_drm_syncpt_incr_args)
-+#define DRM_IOCTL_TEGRA_DRM_SYNCPT_WAIT DRM_IOWR(DRM_COMMAND_BASE + DRM_TEGRA_DRM_SYNCPT_WAIT, struct tegra_drm_syncpt_wait_args)
-+#define DRM_IOCTL_TEGRA_DRM_OPEN_CHANNEL DRM_IOWR(DRM_COMMAND_BASE + DRM_TEGRA_DRM_OPEN_CHANNEL, struct tegra_drm_open_channel_args)
-+#define DRM_IOCTL_TEGRA_DRM_CLOSE_CHANNEL DRM_IOWR(DRM_COMMAND_BASE + DRM_TEGRA_DRM_CLOSE_CHANNEL, struct tegra_drm_open_channel_args)
-+#define DRM_IOCTL_TEGRA_DRM_GET_SYNCPOINT DRM_IOWR(DRM_COMMAND_BASE + DRM_TEGRA_DRM_GET_SYNCPOINT, struct tegra_drm_get_syncpoint)
-+#define DRM_IOCTL_TEGRA_DRM_SUBMIT DRM_IOWR(DRM_COMMAND_BASE + DRM_TEGRA_DRM_SUBMIT, struct tegra_drm_submit_args)
-+#define DRM_IOCTL_TEGRA_DRM_GEM_GET_OFFSET DRM_IOWR(DRM_COMMAND_BASE + DRM_TEGRA_DRM_GEM_GET_OFFSET, struct tegra_drm_get_offset)
++void host1x_set_drm_data(struct device *dev, void *data);
++void *host1x_get_drm_data(struct device *dev);
 +
 +#endif
 -- 
