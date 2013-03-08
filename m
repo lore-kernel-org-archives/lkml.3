@@ -1,76 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934072Ab3CHNRS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 08:17:18 -0500
-Received: from mail-bk0-f50.google.com ([209.85.214.50]:33850 "EHLO
-	mail-bk0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757186Ab3CHNRQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 08:17:16 -0500
-Date: Fri, 8 Mar 2013 14:17:10 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Hiraku Toyooka <hiraku.toyooka.gu@hitachi.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        yrl.pp-manager.tt@hitachi.com
-Subject: Re: [PATCH 0/2] [GIT PULL][3.9] tracing: Fix in snapshot API
-Message-ID: <20130308131710.GA26790@gmail.com>
-References: <20130307153442.755353831@goodmis.org>
- <51399409.4090207@hitachi.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51399409.4090207@hitachi.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S934093Ab3CHNRa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 08:17:30 -0500
+Received: from mga11.intel.com ([192.55.52.93]:52597 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934076Ab3CHNR3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Mar 2013 08:17:29 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,807,1355126400"; 
+   d="scan'208";a="297716735"
+Message-ID: <1362748695.5101.1.camel@sauron.fi.intel.com>
+Subject: Re: [PATCH] mtd: maps: Remove redundant NULL check before kfree
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Syam Sidhardhan <syamsidhardh@gmail.com>
+Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
+        dwmw2@infradead.org
+Date: Fri, 08 Mar 2013 15:18:15 +0200
+In-Reply-To: <1361908016-3110-1-git-send-email-s.syam@samsung.com>
+References: <1361908016-3110-1-git-send-email-s.syam@samsung.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.3 (3.6.3-2.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 2013-02-27 at 01:16 +0530, Syam Sidhardhan wrote:
+> kfree on NULL pointer is a no-op.
+> 
+> Signed-off-by: Syam Sidhardhan <s.syam@samsung.com>
 
-* Hiraku Toyooka <hiraku.toyooka.gu@hitachi.com> wrote:
+Pushed to l2-mtd.git, thanks!
 
-> Steven,
-> 
-> (03/08/2013 12:34 AM), Steven Rostedt wrote:
-> >The second patch, returns success on a reset of the buffer even if
-> >the buffer wasn't allocated. Returning -EINVAL is just confusing.
-> 
-> I realized we should update the snapshot documentation together with
-> this change.
-> I attached a patch to update the documentation. Could you include this
-> patch?
-> 
-> Thanks,
-> Hiraku Toyooka
-> 
-> 
-> From: Hiraku Toyooka <hiraku.toyooka.gu@hitachi.com>
-> Subject: [PATCH] tracing: update documentation of snapshot utility
-> 
-> Now, "snapshot" file returns success on a reset of snapshot buffer
-> even if the buffer wasn't allocated, instead of returning EINVAL.
-> This patch updates snapshot desctiption according to the change.
-> 
-> Signed-off-by: Hiraku Toyooka <hiraku.toyooka.gu@hitachi.com>
-> ---
->  Documentation/trace/ftrace.txt | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/Documentation/trace/ftrace.txt b/Documentation/trace/ftrace.txt
-> index 53d6a3c..a372304 100644
-> --- a/Documentation/trace/ftrace.txt
-> +++ b/Documentation/trace/ftrace.txt
-> @@ -1873,7 +1873,7 @@ feature:
-> 
->  	status\input  |     0      |     1      |    else    |
->  	--------------+------------+------------+------------+
-> -	not allocated |(do nothing)| alloc+swap |   EINVAL   |
-> +	not allocated |(do nothing)| alloc+swap |(do nothing)|
->  	--------------+------------+------------+------------+
->  	allocated     |    free    |    swap    |   clear    |
->  	--------------+------------+------------+------------+
+-- 
+Best Regards,
+Artem Bityutskiy
 
-I pulled all the updates - thanks guys!
-
-	Ingo
