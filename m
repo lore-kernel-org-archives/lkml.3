@@ -1,81 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760119Ab3CHS7N (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 13:59:13 -0500
-Received: from mail-vc0-f176.google.com ([209.85.220.176]:49603 "EHLO
-	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751783Ab3CHS7M (ORCPT
+	id S1760130Ab3CHTBN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 14:01:13 -0500
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:65475 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751426Ab3CHTBM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 13:59:12 -0500
+	Fri, 8 Mar 2013 14:01:12 -0500
 MIME-Version: 1.0
-In-Reply-To: <s5h6211lrx3.wl%tiwai@suse.de>
-References: <CA+ydwtpxXb2SSpyG9vn7mvvRU6Z+1BhOe5qi+QXf-6+E_iZ3kg@mail.gmail.com>
-	<s5h6211lrx3.wl%tiwai@suse.de>
-Date: Fri, 8 Mar 2013 20:59:11 +0200
-Message-ID: <CA+ydwtriiYSkT5fN_VOw4kHodoadgC80dDg4K3iydjaT5c5jAA@mail.gmail.com>
-Subject: Re: snd_seq_timer_open() NULL pointer dereference
-From: Tommi Rantala <tt.rantala@gmail.com>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Jaroslav Kysela <perex@perex.cz>, alsa-devel@alsa-project.org,
-        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>
+In-Reply-To: <1362768434-30525-1-git-send-email-david.vrabel@citrix.com>
+References: <1362768434-30525-1-git-send-email-david.vrabel@citrix.com>
+Date: Fri, 8 Mar 2013 11:01:12 -0800
+X-Google-Sender-Auth: MdRfc3R58wU7uoDhq7KdZS0nfxY
+Message-ID: <CAE9FiQX38v_3-zMebjbUPum+Tt1z1jrDAzAfXo4o1j4X-xbHSg@mail.gmail.com>
+Subject: Re: [PATCH] x86,mm: fix init_mem_mapping() when the first memory
+ chunk is small
+From: Yinghai Lu <yinghai@kernel.org>
+To: David Vrabel <david.vrabel@citrix.com>
+Cc: linux-kernel@vger.kernel.org, x86@kernel.org,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/3/8 Takashi Iwai <tiwai@suse.de>:
-> At Thu, 7 Mar 2013 21:59:32 +0200,
-> Tommi Rantala wrote:
->>
->> Hello,
->>
->> I'm hitting this while fuzzing the kernel with Trinity:
+On Fri, Mar 8, 2013 at 10:47 AM, David Vrabel <david.vrabel@citrix.com> wrote:
+> In init_mem_mapping(), if the first chunk of memory that is mapped is
+> small, there will not be enough mapped pages to allocate page table
+> pages for the next (larger) chunk.
 >
-> The patch below fixes a clear bug in the code path.
-> Could you check whether it'll fit?
+> Estimate how many pages are used for the mappings so far and how many
+> are needed for a larger chunk, and only increase step_size if there
+> are enough free pages.
 >
+> This fixes a boot failure on a system where the first chunk of memory
+> mapped only had 3 pages in it.
 >
-> thanks,
->
-> Takashi
->
-> ---
-> From: Takashi Iwai <tiwai@suse.de>
-> Subject: [PATCH] ALSA: seq: Fix missing error handling in snd_seq_timer_open()
->
-> snd_seq_timer_open() didn't catch the whole error path but let through
-> if the timer id is a slave.  This may lead to Oops by accessing the
-> uninitialized pointer.
->
-> Signed-off-by: Takashi Iwai <tiwai@suse.de>
+> init_memory_mapping: [mem 0x00000000-0x000fffff]
+> init_memory_mapping: [mem 0x20d000000-0x20d002fff]
+> init_memory_mapping: [mem 0x20c000000-0x20cffffff]
+> Kernel panic - not syncing: alloc_low_page: can not alloc memory
 
-Confirmed, this fixes the bug. Thanks!
+Can you check current linus tree?
 
-Reported-and-tested-by: Tommi Rantala <tt.rantala@gmail.com>
+https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=98e7a989979b185f49e86ddaed2ad6890299d9f0
 
-> ---
->  sound/core/seq/seq_timer.c | 8 ++++----
->  1 file changed, 4 insertions(+), 4 deletions(-)
->
-> diff --git a/sound/core/seq/seq_timer.c b/sound/core/seq/seq_timer.c
-> index 160b1bd..24d44b2 100644
-> --- a/sound/core/seq/seq_timer.c
-> +++ b/sound/core/seq/seq_timer.c
-> @@ -290,10 +290,10 @@ int snd_seq_timer_open(struct snd_seq_queue *q)
->                         tid.device = SNDRV_TIMER_GLOBAL_SYSTEM;
->                         err = snd_timer_open(&t, str, &tid, q->queue);
->                 }
-> -               if (err < 0) {
-> -                       snd_printk(KERN_ERR "seq fatal error: cannot create timer (%i)\n", err);
-> -                       return err;
-> -               }
-> +       }
-> +       if (err < 0) {
-> +               snd_printk(KERN_ERR "seq fatal error: cannot create timer (%i)\n", err);
-> +               return err;
->         }
->         t->callback = snd_seq_timer_interrupt;
->         t->callback_data = q;
-> --
-> 1.8.1.4
->
+should fix the problem with your system.
+
+Thanks
+
+Yinghai
