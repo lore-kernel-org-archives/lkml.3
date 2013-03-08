@@ -1,99 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933760Ab3CHEip (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 23:38:45 -0500
-Received: from mail-da0-f49.google.com ([209.85.210.49]:37305 "EHLO
-	mail-da0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759661Ab3CHEhV (ORCPT
+	id S1760229Ab3CHE4v (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 23:56:51 -0500
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:43257 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752172Ab3CHE4t convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 23:37:21 -0500
-From: Michel Lespinasse <walken@google.com>
-To: Oleg Nesterov <oleg@redhat.com>, David Howells <dhowells@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: [RFC PATCH 1/5] kernel: add tasklist_{read,write}_lock{,_any} helper functions
-Date: Thu,  7 Mar 2013 20:37:13 -0800
-Message-Id: <1362717437-1729-2-git-send-email-walken@google.com>
-X-Mailer: git-send-email 1.8.1.3
-In-Reply-To: <1362717437-1729-1-git-send-email-walken@google.com>
-References: <1362717437-1729-1-git-send-email-walken@google.com>
+	Thu, 7 Mar 2013 23:56:49 -0500
+MIME-Version: 1.0
+In-Reply-To: <20130308013027.GA31830@dcvr.yhbt.net>
+References: <20130307112639.GA25130@dcvr.yhbt.net>
+	<20130308013027.GA31830@dcvr.yhbt.net>
+Date: Thu, 7 Mar 2013 20:56:49 -0800
+Message-ID: <CAMP5Xgdsam2DGLshL5Uu5Q4La_nAq=u1YRNBwAxDstgCvJiqfw@mail.gmail.com>
+Subject: Re: epoll: possible bug from wakeup_source activation
+From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+To: Eric Wong <normalperson@yhbt.net>
+Cc: NeilBrown <neilb@suse.de>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        linux-kernel@vger.kernel.org, Davide Libenzi <davidel@xmailserver.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add tasklist_{read,write}_lock{,_any} functions to acquire/release the
-tasklist_lock.
+On Thu, Mar 7, 2013 at 5:30 PM, Eric Wong <normalperson@yhbt.net> wrote:
+> Eric Wong <normalperson@yhbt.net> wrote:
+>> Hi Arve, looking at commit 4d7e30d98939a0340022ccd49325a3d70f7e0238
+>> (epoll: Add a flag, EPOLLWAKEUP, to prevent suspend ...)
+>>
+>> I think the reason for using ep->ws instead of epi->ws in the unlikely
+>> ovflist case applies to the likely rdllist case, too.  Since epi->ws is
+>> only protected by ep->mtx, it can also be deactivated while inside
+>> ep_poll_callback.
+>>
+>> So something like the following patch might be necessary
+>> (shown here with extra context):
+>>
+>> --- a/fs/eventpoll.c
+>> +++ b/fs/eventpoll.c
+>> @@ -968,39 +968,45 @@ static int ep_poll_callback(wait_queue_t *wait, unsigned mode, int sync, void *k
+>>       if (unlikely(ep->ovflist != EP_UNACTIVE_PTR)) {
+>>               if (epi->next == EP_UNACTIVE_PTR) {
+>>                       epi->next = ep->ovflist;
+>>                       ep->ovflist = epi;
+>>                       if (epi->ws) {
+>>                               /*
+>>                                * Activate ep->ws since epi->ws may get
+>>                                * deactivated at any time.
+>>                                */
+>>                               __pm_stay_awake(ep->ws);
+>>                       }
+>>
+>>               }
+>
+> Thinking about this more, it looks like the original ep->ovflist case of
+> using ep->ws is unnecessary.
+>
+> ep->ovflist != EP_UNACTIVE_PTR can only happen while ep->mtx is held (in
+> ep_scan_ready_list); which means ep_modify+friends cannot remove epi->ws.
+>
 
-The _any variants may be called from any context, while the others must
-be called from process context only.
+The callback function in ep_scan_ready_list can call __pm_relax on it though.
 
-One of the objectives here is to add explicit annotations for this.
-If the call sites for the _any variants could be eliminated somehow,
-all remaining tasklist_lock acquisitions would be in process context
-so we wouldn't have to use an unfair rwlock_t implementation anymore.
+> ep_poll_callback holding ep->lock means ep_poll_callback prevents
+> ep_scan_ready_list from setting ep->ovflist = EP_UNACTIVE_PTR and
+> releasing ep->mtx.
 
-Signed-off-by: Michel Lespinasse <walken@google.com>
+This code is reached when ep_scan_ready_list has set ep->ovflist to
+NULL before releasing ep->lock. Since the callback function can call
+__pm_relax on epi->ws without holding ep->lock we call __pm_stay_awake
+in ep->ws here (the callback does not call __pm_relax on that).
 
----
- include/linux/sched.h | 38 ++++++++++++++++++++++++++++++++++++++
- 1 file changed, 38 insertions(+)
+>
+>>               goto out_unlock;
+>>       }
+>>
+>>       /* If this file is already in the ready list we exit soon */
+>>       if (!ep_is_linked(&epi->rdllink)) {
+>>               list_add_tail(&epi->rdllink, &ep->rdllist);
+>> -             __pm_stay_awake(epi->ws);
+>> +             if (epi->ws) {
+>> +                     /*
+>> +                      * Activate ep->ws since epi->ws may get
+>> +                      * deactivated at any time.
+>> +                      */
+>> +                     __pm_stay_awake(ep->ws);
+>> +             }
+>>       }
+>
+> I still think ep->ws needs to be used in the common ep->rdllist case.
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index ac8dbca5ea15..4eb58b796261 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -218,6 +218,7 @@ extern char ___assert_task_state[1 - 2*!!(
- #define TASK_COMM_LEN 16
- 
- #include <linux/spinlock.h>
-+#include <linux/hardirq.h>
- 
- /*
-  * This serializes "schedule()" and also protects
-@@ -228,6 +229,43 @@ extern char ___assert_task_state[1 - 2*!!(
- extern rwlock_t tasklist_lock;
- extern spinlock_t mmlist_lock;
- 
-+static inline void tasklist_write_lock(void)
-+{
-+	WARN_ON_ONCE(in_serving_softirq() || in_irq() || in_nmi());
-+	write_lock_irq(&tasklist_lock);
-+}
-+
-+static inline void tasklist_write_unlock(void)
-+{
-+	write_unlock_irq(&tasklist_lock);
-+}
-+
-+static inline void tasklist_read_lock(void)
-+{
-+	WARN_ON_ONCE(in_serving_softirq() || in_irq() || in_nmi());
-+	read_lock(&tasklist_lock);
-+}
-+
-+static inline void tasklist_read_unlock(void)
-+{
-+	read_unlock(&tasklist_lock);
-+}
-+
-+static inline void tasklist_read_lock_any(void)
-+{
-+	read_lock(&tasklist_lock);
-+}
-+
-+static inline int tasklist_read_trylock_any(void)
-+{
-+	return read_trylock(&tasklist_lock);
-+}
-+
-+static inline void tasklist_read_unlock_any(void)
-+{
-+	read_unlock(&tasklist_lock);
-+}
-+
- struct task_struct;
- 
- #ifdef CONFIG_PROVE_RCU
+ep_scan_ready_list calls __pm_relax on ep->ws when it is done, so this
+will not work. ep->ws is not a "ep->rdllist not empty wakeup_source is
+is a "ep_scan_ready_list is running" wakeup_source.
+
 -- 
-1.8.1.3
+Arve Hjønnevåg
