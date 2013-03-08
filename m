@@ -1,64 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760321Ab3CHELE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 23:11:04 -0500
-Received: from mail-db8lp0187.outbound.messaging.microsoft.com ([213.199.154.187]:19572
-	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758903Ab3CHELB (ORCPT
+	id S933588Ab3CHENT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 23:13:19 -0500
+Received: from mail-oa0-f54.google.com ([209.85.219.54]:44181 "EHLO
+	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760164Ab3CHENS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 23:11:01 -0500
-X-Greylist: delayed 905 seconds by postgrey-1.27 at vger.kernel.org; Thu, 07 Mar 2013 23:11:00 EST
-X-Forefront-Antispam-Report: CIP:160.33.194.229;KIP:(null);UIP:(null);IPV:NLI;H:usculsndmail02v.am.sony.com;RD:mail.sonyusa.com;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VPS-2(z21eIz936eIzz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ahzz17326ah8275dhz2fh2a8h668h839h947hf0ah10d2h1288h12a5h12a9h12bdh137ah13b6h1441h1537h153bh162dh1631h1758h1765h18e1h190ch1946h19c3h1b0ah1155h)
-Message-ID: <51396143.5060108@am.sony.com>
-Date: Thu, 7 Mar 2013 19:55:47 -0800
-From: Frank Rowand <frank.rowand@am.sony.com>
-Reply-To: <frank.rowand@am.sony.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
+	Thu, 7 Mar 2013 23:13:18 -0500
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>, <linux-kernel@vger.kernel.org>,
-        <linux-rt-users@vger.kernel.org>
-Subject: linux-3.6.11-rt30 smoke test on ARM
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: am.sony.com
+In-Reply-To: <1362709985.14386.33.camel@kjgkr>
+References: <1362195663-20751-1-git-send-email-linkinjeon@gmail.com>
+	<1362285251.14386.10.camel@kjgkr>
+	<CAKYAXd9DDoUyB-kvumojKJQ6kR2rn+Wx+8Z4WjM1tVs10f40zg@mail.gmail.com>
+	<1362709985.14386.33.camel@kjgkr>
+Date: Fri, 8 Mar 2013 13:13:17 +0900
+Message-ID: <CAKYAXd9BQmXV0V_4q9s9zAbdKGki7oSfz5JZmuY6nxsQ=3YHkw@mail.gmail.com>
+Subject: Re: [PATCH 3/5] f2fs: move f2fs_balance_fs to correct place in unlink
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: jaegeuk.kim@samsung.com
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-f2fs-devel@lists.sourceforge.net,
+        Namjae Jeon <namjae.jeon@samsung.com>,
+        Amit Sahrawat <a.sahrawat@samsung.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-linux-3.6.11-rt30 builds and boots on some ARM boards (PandaBoard, Realview) for:
-
-  - SMP, PREEMPT_RT_FULL
-  - SMP, PREEMPT_NONE
-  - UP, PREEMPT_RT_FULL
-  - UP, PREEMPT_NONE
-
-
-The PandaBoard frequently fails to boot with an eth0 error.  I have
-only seen this for SMP, PREEMPT_NONE.  This same error also occurs
-in 3.6.7 without the RT_PREEMPT patches applied, so this does not
-appear to be an RT_PREEMPT issue.
-
-This error also occurred in the previous smoke test of linux-3.6.7-rt18
-
-   http://permalink.gmane.org/gmane.linux.rt.user/9202
-
-The boot error starts with the USB time out on ep0out:
-
-[    3.264373] smsc95xx 1-1.1:1.0: usb_probe_interface
-[    3.269500] smsc95xx 1-1.1:1.0: usb_probe_interface - got id
-[    3.275543] smsc95xx v1.0.4
-[    8.078674] smsc95xx 1-1.1:1.0: eth0: register 'smsc95xx' at usb-ehci-omap.0-1.1, smsc95xx USB 2.0 Ethernet, 82:b9:1d:fa:67:0d
-[    8.091003] hub 1-1:1.0: state 7 ports 5 chg 0000 evt 0002
-[   13.509918] usb 1-1.1: swapper/0 timed out on ep0out len=0/4
-[   13.515869] smsc95xx 1-1.1:1.0: eth0: Failed to write register index 0x00000108
-[   13.523559] smsc95xx 1-1.1:1.0: eth0: Failed to write ADDRL: -110
-[   13.529998] IP-Config: Failed to open eth0
-
-
-The boot error can be avoided with a workaround that simply retries
-the failed USB command.  I will reply to this email with the patch.
-
--Frank
-
+2013/3/8, Jaegeuk Kim <jaegeuk.kim@samsung.com>:
+> 2013-03-04 (월), 15:10 +0900, Namjae Jeon:
+>> 2013/3/3, Jaegeuk Kim <jaegeuk.kim@samsung.com>:
+>> > 2013-03-02 (토), 12:41 +0900, Namjae Jeon:
+>> >> From: Namjae Jeon <namjae.jeon@samsung.com>
+>> >>
+>> >> Actual dirty of pages will occur in f2fs_delete_entry so move the
+>> >> f2fs_balance_fs just before deletion.
+>> >>
+>> >> Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
+>> >> Signed-off-by: Amit Sahrawat <a.sahrawat@samsung.com>
+>> >> ---
+>> >>  fs/f2fs/namei.c |    4 ++--
+>> >>  1 file changed, 2 insertions(+), 2 deletions(-)
+>> >>
+>> >> diff --git a/fs/f2fs/namei.c b/fs/f2fs/namei.c
+>> >> index 1a49b88..eaa86f5 100644
+>> >> --- a/fs/f2fs/namei.c
+>> >> +++ b/fs/f2fs/namei.c
+>> >> @@ -223,8 +223,6 @@ static int f2fs_unlink(struct inode *dir, struct
+>> >> dentry *dentry)
+>> >>  	struct page *page;
+>> >>  	int err = -ENOENT;
+>> >>
+>> >> -	f2fs_balance_fs(sbi);
+>> >> -
+>> >>  	de = f2fs_find_entry(dir, &dentry->d_name, &page);
+>> >>  	if (!de)
+>> >>  		goto fail;
+>> >> @@ -236,6 +234,8 @@ static int f2fs_unlink(struct inode *dir, struct
+>> >> dentry *dentry)
+>> >>  		goto fail;
+>> >>  	}
+>> >>
+>> >> +	f2fs_balance_fs(sbi);
+>> >> +
+>> >
+>> > I think we don't need to do this because of no issues on performance
+>> > and
+>> > reliability.
+>> > In addition, it would be better to call f2fs_balance_fs without any
+>> > dentry page.
+>> Regarding moving “f2fs_balance_fs” in unlink part– we considered one
+>> scenario.
+>> Suppose – when the disk is full and it really needed to trigger the
+>> Garbage collection. But in this we considered one scenario. Let’s say
+>> the ‘name’ being passed is for invalid file i.e., the file does not
+>> exist. So, primarily in this case – I think it should return
+>> immediately.
+>> In such cases it actually results in wrong timing results for the
+>> non-existence files.
+>> For this observation we thought that f2fs_balance_fs be instead called
+>> at a proper place i.e., after there is no lookup-failure.
+>
+> If so, could you check all the locations of f2fs_balance_fs and write
+> one patch for whole things?
+> I suspect that many directory operations are exposed to this issue.
+> Thanks,
+Sure, I will check all places to use f2fs_balance_fs. And will post
+updated patch again.
+Thanks Jaegeuk!
+>
+>>
+>> Let me know your opinion.
+>> Thanks.
+>> >
+>> >>  	f2fs_delete_entry(de, page, inode);
+>> >>
+>> >>  	/* In order to evict this inode,  we set it dirty */
+>> >
+>> > --
+>> > Jaegeuk Kim
+>> > Samsung
+>> >
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel"
+>> in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>
+> --
+> Jaegeuk Kim
+> Samsung
+>
