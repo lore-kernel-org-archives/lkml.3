@@ -1,81 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760151Ab3CHBqw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 20:46:52 -0500
-Received: from mail-yh0-f42.google.com ([209.85.213.42]:34029 "EHLO
-	mail-yh0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754041Ab3CHBqu (ORCPT
+	id S932544Ab3CHBz3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 20:55:29 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:45887 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752249Ab3CHBz1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 20:46:50 -0500
-Date: Fri, 8 Mar 2013 09:39:23 +0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Josh Boyer <jwboyer@redhat.com>
-Cc: Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: 8250.nr_uarts broken in 3.7
-Message-ID: <20130308013923.GA12474@kroah.com>
-References: <20130307185642.GF13719@hansolo.jdub.homelinux.org>
- <5138E56B.6090308@suse.cz>
- <20130307191005.GH13719@hansolo.jdub.homelinux.org>
- <20130307211426.GI13719@hansolo.jdub.homelinux.org>
- <20130307231242.GC4280@kroah.com>
- <20130308010140.GJ13719@hansolo.jdub.homelinux.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130308010140.GJ13719@hansolo.jdub.homelinux.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 7 Mar 2013 20:55:27 -0500
+Date: Fri, 08 Mar 2013 10:55:19 +0900 (JST)
+Message-Id: <20130308.105519.82764856.d.hatayama@jp.fujitsu.com>
+To: zhangyanfei@cn.fujitsu.com
+Cc: kexec@lists.infradead.org, heiko.carstens@de.ibm.com,
+        linux-kernel@vger.kernel.org, lisa.mitchell@hp.com,
+        kumagai-atsushi@mxc.nes.nec.co.jp, ebiederm@xmission.com,
+        akpm@linux-foundation.org, cpw@sgi.com, vgoyal@redhat.com
+Subject: Re: [PATCH v2 15/20] kexec: fill note buffers by NT_VMCORE_PAD
+ notes in page-size boundary
+From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+In-Reply-To: <513867D2.7090501@cn.fujitsu.com>
+References: <20130302083447.31252.93914.stgit@localhost6.localdomain6>
+	<20130302083714.31252.17863.stgit@localhost6.localdomain6>
+	<513867D2.7090501@cn.fujitsu.com>
+X-Mailer: Mew version 6.3 on Emacs 24.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=iso-2022-jp
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 07, 2013 at 08:01:40PM -0500, Josh Boyer wrote:
-> On Fri, Mar 08, 2013 at 07:12:42AM +0800, Greg Kroah-Hartman wrote:
-> > On Thu, Mar 07, 2013 at 04:14:27PM -0500, Josh Boyer wrote:
-> > > On Thu, Mar 07, 2013 at 02:10:05PM -0500, Josh Boyer wrote:
-> > > > On Thu, Mar 07, 2013 at 08:07:23PM +0100, Jiri Slaby wrote:
-> > > > > On 03/07/2013 07:56 PM, Josh Boyer wrote:
-> > > > > > commit 835d844d1a28efba81d5aca7385e24c29d3a6db2
-> > > > > > Author: Sean Young <sean@mess.org>
-> > > > > > Date:   Fri Sep 7 19:06:23 2012 +0100
-> > > > > > 
-> > > > > >     8250_pnp: do pnp probe before legacy probe
-> > > > > > 
-> > > > > > but that is simply moving code around.
-> > > > > 
-> > > > > Hi, not quite. Does it still happen when you revert that one on the top
-> > > > > of 3.[789]*?
-> > > > 
-> > > > That was going to be my first attempt.  I'll let you know how it goes.
-> > > 
-> > > Yes, reverting just 835d844d1 on top of 3.7.0 fixes it.  I also see why
-> > > now.  That commit changed the module name from 8250 to 8250_core in the
-> > > makefile, so clearly 8250.nr_uarts = 16 isn't going to get parsed.
-> > > Adding 8250_core.nr_uarts = 16 seems to work fine.  This wasn't
-> > > immediately obvious because the whole thing is built-in and not a
-> > > module.  Thankfully, looking in /sys/modules/ still works and that
-> > > showed up pretty clearly.
-> > > 
-> > > So I guess this isn't really a break in functionality as much as it's a
-> > > driver rename.  Not sure if it's worth fixing in some form or not.
-> > 
-> > Yes it needs to be fixed, we shouldn't break userspace stuff like that.
-> > Patches gladly accepted.
-> 
-> OK... well I don't think renaming it back to 8250 is going to actually
-> work.  It's already been renamed for 2 releases now, and a renaming
-> isn't appropriate for 3.8.y.
-> 
-> I don't remember exactly, but I don't think simply adding a modalias to
-> 8250 will work either.
-> 
-> So basically, the only way to fix this that I can see is to create a
-> new, additional module parameter or something similar that parses
-> "8250.nr_uarts".  Is that what you had in mind?
+From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Subject: Re: [PATCH v2 15/20] kexec: fill note buffers by NT_VMCORE_PAD notes in page-size boundary
+Date: Thu, 7 Mar 2013 18:11:30 +0800
 
-I think that's the only way we can properly solve this, so yes, that
-would be good.
+> 于 2013年03月02日 16:37, HATAYAMA Daisuke 写道:
+>> Fill both crash_notes and vmcoreinfo_note buffers by NT_VMCORE_PAD
+>> note type to make them satisfy mmap()'s page-size boundary
+>> requirement.
+>> 
+>> So far, end of note segments has been marked by zero-filled elf
+>> header. Instead, this patch writes NT_VMCORE_PAD note in the end of
+>> note segments until the offset on page-size boundary.
+> 
+> 
+> In the codes below, it seems that you assign name "VMCOREINFO" for
+> note type NT_VMCORE_PAD, right? This is kind of wired, i think. This
+> name has been used for NT_VMCORE_DEBUGINFO note already. Why not something
+> like "VMCOREPAD" or "PAD"?
+> 
 
-thanks,
+It looks you are confusing or don't know name and type. The name is
+namespace and in the namespace, there are multiple note types, each of
+which has the corresponding data. In other words, data corresponding
+to types differ if they belong to differnet name space even if
+integers of the types are coincide with.
 
-greg k-h
+The "VMCOREINFO" name represents information exported from
+/proc/vmcore that is used in kdump framework. In this sense,
+NT_VMCORE_PAD that is specific for /proc/vmcore and kdump framework,
+should belong to the "VMCOREINFO" name.
+
+Thanks.
+HATAYAMA, Daisuke
+
