@@ -1,81 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760372Ab3CHEXd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 23:23:33 -0500
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:58276 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760331Ab3CHEXc (ORCPT
+	id S1760381Ab3CHEdx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 23:33:53 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:55589 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756664Ab3CHEdv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 23:23:32 -0500
-Message-ID: <513967BD.9010602@hitachi.com>
-Date: Fri, 08 Mar 2013 13:23:25 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Thu, 7 Mar 2013 23:33:51 -0500
+From: Hanjun Guo <guohanjun@huawei.com>
+To: Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>
+CC: Toshi Kani <toshi.kani@hp.com>, Jiang Liu <jiang.liu@huawei.com>,
+        <linux-ia64@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Hanjun Guo <guohanjun@huawei.com>
+Subject: [PATCH V2 1/2] ia64: iosapic: fix a minor typo in comments
+Date: Fri, 8 Mar 2013 12:32:52 +0800
+Message-ID: <1362717172-36280-1-git-send-email-guohanjun@huawei.com>
+X-Mailer: git-send-email 1.7.10.msysgit.1
 MIME-Version: 1.0
-To: oskar.andero@sonymobile.com
-Cc: linux-kernel@vger.kernel.org, davem@davemloft.net,
-        anil.s.keshavamurthy@intel.com, ananth@in.ibm.com,
-        radovan.lekanovic@sonymobile.com,
-        =?UTF-8?B?77+9?= <bjorn.davidsson@sonymobile.com>
-Subject: Re: [PATCH] Kprobes blacklist: Conditionally add x86-specific
- symbols
-References: <1362653070-24035-1-git-send-email-oskar.andero@sonymobile.com>
-In-Reply-To: <1362653070-24035-1-git-send-email-oskar.andero@sonymobile.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain
+X-Originating-IP: [10.135.68.124]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/03/07 19:44), oskar.andero@sonymobile.com wrote:
-> From: Bjorn Davidsson <bjorn.davidsson@sonymobile.com>
-> 
-> The kprobes blacklist contains x86-specific symbols.
-> Looking for these in kallsyms takes unnecessary time
-> during startup on non-X86 platform.
-> Added #ifdef CONFIG_X86 around them.
+describeinterrupts -> describe interrupts
 
-Right. however, it might be better break that into
-common and arch-specific lists, because there may be
-other arch-specific non-probe-able functions on each
-architecture...
+Signed-off-by: Hanjun Guo <guohanjun@huawei.com>
+---
+ arch/ia64/kernel/iosapic.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Would you know some other black points on your platform?
-
-Thank you,
-
-> 
-> Reviewed-by: Radovan Lekanovic <radovan.lekanovic@sonymobile.com>
-> Signed-off-by: Björn Davidsson <bjorn.davidsson@sonymobile.com>
-> Signed-off-by: Oskar Andero <oskar.andero@sonymobile.com>
-> ---
->  kernel/kprobes.c |    2 ++
->  1 files changed, 2 insertions(+), 0 deletions(-)
-> 
-> diff --git a/kernel/kprobes.c b/kernel/kprobes.c
-> index e35be53..8c3796f 100644
-> --- a/kernel/kprobes.c
-> +++ b/kernel/kprobes.c
-> @@ -95,9 +95,11 @@ static raw_spinlock_t *kretprobe_table_lock_ptr(unsigned long hash)
->   */
->  static struct kprobe_blackpoint kprobe_blacklist[] = {
->  	{"preempt_schedule",},
-> +#ifdef CONFIG_X86
->  	{"native_get_debugreg",},
->  	{"irq_entries_start",},
->  	{"common_interrupt",},
-> +#endif
->  	{"mcount",},	/* mcount can be called from everywhere */
->  	{NULL}    /* Terminator */
->  };
-> 
-
-
+diff --git a/arch/ia64/kernel/iosapic.c b/arch/ia64/kernel/iosapic.c
+index ee33c3a..a6e2f75 100644
+--- a/arch/ia64/kernel/iosapic.c
++++ b/arch/ia64/kernel/iosapic.c
+@@ -76,7 +76,7 @@
+  *	PCI pin -> global system interrupt (GSI) -> IA-64 vector <-> IRQ
+  *
+  * Note: The term "IRQ" is loosely used everywhere in Linux kernel to
+- * describeinterrupts.  Now we use "IRQ" only for Linux IRQ's.  ISA IRQ
++ * describe interrupts.  Now we use "IRQ" only for Linux IRQ's.  ISA IRQ
+  * (isa_irq) is the only exception in this source code.
+  */
+ 
 -- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+1.6.0.2
 
 
