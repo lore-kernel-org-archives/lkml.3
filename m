@@ -1,66 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933293Ab3CHHqs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 02:46:48 -0500
-Received: from zill.ext.symas.net ([69.43.206.106]:51783 "EHLO
-	zill.ext.symas.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752283Ab3CHHqr (ORCPT
+	id S1755218Ab3CHHuD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 02:50:03 -0500
+Received: from mail-oa0-f54.google.com ([209.85.219.54]:40576 "EHLO
+	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752283Ab3CHHuB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 02:46:47 -0500
-Message-ID: <5139975F.9070509@symas.com>
-Date: Thu, 07 Mar 2013 23:46:39 -0800
-From: Howard Chu <hyc@symas.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:22.0) Gecko/20100101 Firefox/22.0 SeaMonkey/2.19a1
+	Fri, 8 Mar 2013 02:50:01 -0500
 MIME-Version: 1.0
-To: Johannes Weiner <hannes@cmpxchg.org>, Jan Kara <jack@suse.cz>
-CC: linux-kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
-Subject: Re: mmap vs fs cache
-References: <5136320E.8030109@symas.com> <20130307154312.GG6723@quack.suse.cz> <20130308020854.GC23767@cmpxchg.org>
-In-Reply-To: <20130308020854.GC23767@cmpxchg.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <51399442.1080609@redhat.com>
+References: <51397D1D.5030602@redhat.com>
+	<1750036321.11235774.1362722613994.JavaMail.root@redhat.com>
+	<CAE9FiQUtDcwJkPMPfjur8LQ+u0Hc2J7sbxC=xkcemqRQ1_Gd8g@mail.gmail.com>
+	<CAE9FiQU7ccdWCL=t=Zn1w33GHpHk56=JXTcotn-Huq9Wiqu7wg@mail.gmail.com>
+	<51399154.5030500@redhat.com>
+	<CAE9FiQVPaG5P7mG9HoFzCkaxF62hkU5hEtq_FhdT7n+38aNs9A@mail.gmail.com>
+	<51399442.1080609@redhat.com>
+Date: Thu, 7 Mar 2013 23:50:00 -0800
+X-Google-Sender-Auth: PkdE7vSUtFcqPRPPAg6uuZ0Tf2I
+Message-ID: <CAE9FiQWCfnOjOuWKihv1GamgHb4KLrrPEiBTspQMqK7_fBDunw@mail.gmail.com>
+Subject: Re: 3.9-rc1: crash kernel panic - not syncing: Can not allocate
+ SWIOTLB buffer earlier and can't now provide you with the DMA bounce buffer
+From: Yinghai Lu <yinghai@kernel.org>
+To: WANG Chao <chaowang@redhat.com>
+Cc: CAI Qian <caiqian@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        kexec <kexec@lists.infradead.org>, Dave Young <dyoung@redhat.com>,
+        Vivek Goyal <vgoyal@redhat.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Johannes Weiner wrote:
-> On Thu, Mar 07, 2013 at 04:43:12PM +0100, Jan Kara wrote:
-
->>> 2 questions:
->>>    why is there data in the FS cache that isn't owned by (the mmap
->>> of) the process that caused it to be paged in in the first place?
+On Thu, Mar 7, 2013 at 11:33 PM, WANG Chao <chaowang@redhat.com> wrote:
+> On 03/08/2013 03:27 PM, Yinghai Lu wrote:
+>> On Thu, Mar 7, 2013 at 11:20 PM, WANG Chao <chaowang@redhat.com> wrote:
+>>>>
+>>>> looks like your system DO have DMAR table, please enable dmar
+>>>> remapping in your kernel config.
+>>>
+>>> I've already got following config:
+>>> CONFIG_DMAR_TABLE=y
+>>> CONFIG_INTEL_IOMMU=y
+>>> CONFIG_IRQ_REMAP=y
+>>>
+>>> but I don't have intel_iommu=on in kernel cmdline. IIRC, iommu will prevent
+>>> 2nd kernel from booting ...
+>>
+>> Did you put intel_iommu=on on first and second cpu both?
 >
-> The filesystem cache is shared among processes because the filesystem
-> is also shared among processes.  If another task were to access the
-> same file, we still should only have one copy of that data in memory.
+> I tried, 2nd kernel didn't boot and keep splitting errors like these:
+> [    2.106939] DMAR: No ATSR found
+> [    2.110121] IOMMU 0 0xfed90000: using Queued invalidation
+> [    2.115522] IOMMU 1 0xfed91000: using Queued invalidation
+> [    2.120919] IOMMU: Setting RMRR:
+> [    2.124162] IOMMU: Setting identity map for device 0000:00:02.0 [0xab800000
+> - 0xaf9fffff]
+> [    2.133099] IOMMU: Setting identity map for device 0000:00:1d.0 [0xaac95000
+> - 0xaacb2fff]
+> [    2.141305] IOMMU: Setting identity map for device 0000:00:1a.0 [0xaac95000
+> - 0xaacb2fff]
+> [    2.149503] IOMMU: Setting identity map for device 0000:00:14.0 [0xaac95000
+> - 0xaacb2fff]
+> [    2.157690] IOMMU: Prepare 0-16MiB unity mapping for LPC
+> [    2.163011] IOMMU: Setting identity map for device 0000:00:1f.0 [0x0 - 0xffffff
+> [Errors, here we go]
+> [    2.170932] dmar: DRHD: handling fault status reg 3
+> [    2.170933] PCI-DMA: Intel(R) Virtualization Technology for Directed I/O
+> [    2.182486] dmar: DMAR:[DMA Write] Request device [00:02.0] fault addr ffffe000
+> [    2.182486] DMAR:[fault reason 05] PTE Write access is not set
+> [    2.195705] dmar: DRHD: handling fault status reg 3
+> [    2.200570] dmar: DMAR:[DMA Read] Request device [00:02.0] fault addr ff873000
+> [    2.200570] DMAR:[fault reason 06] PTE Read access is not set
+> [    2.213618] dmar: DRHD: handling fault status reg 3
 
-That's irrelevant to the question. As I already explained, the first 16GB that 
-was paged in didn't behave this way. Perhaps "owned" was the wrong word, since 
-this is a MAP_SHARED mapping. But the point is that the memory is not being 
-accounted in slapd's process size, when it was before, up to 16GB.
+my Nehalem-EX and Westmere-EX is working with iommu enabled in second kernel.
 
-> It sounds to me like slapd is itself caching all the data it reads.
+what is 00:02.0 in your system?
 
-You're misreading the information then. slapd is doing no caching of its own, 
-its RSS and SHR memory size are both the same. All it is using is the mmap, 
-nothing else. The RSS == SHR == FS cache, up to 16GB. RSS is always == SHR, 
-but above 16GB they grow more slowly than the FS cache.
+Is your kernel upsteam kernel or redhat flavor one?
 
-> If that is true, shouldn't it really be using direct IO to prevent
-> this double buffering of filesystem data in memory?
+Thanks
 
-There is no double buffering.
-
->>>    is there a tunable knob to discourage the page cache from stealing
->>> from the process?
->
-> Try reducing /proc/sys/vm/swappiness, which ranges from 0-100 and
-> defaults to 60.
-
-I've already tried setting it to 0 with no effect.
-
--- 
-   -- Howard Chu
-   CTO, Symas Corp.           http://www.symas.com
-   Director, Highland Sun     http://highlandsun.com/hyc/
-   Chief Architect, OpenLDAP  http://www.openldap.org/project/
+Yinghai
