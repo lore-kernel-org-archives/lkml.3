@@ -1,65 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933553Ab3CHXYu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 18:24:50 -0500
-Received: from mga14.intel.com ([143.182.124.37]:1310 "EHLO mga14.intel.com"
+	id S1759784Ab3CHXZV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 18:25:21 -0500
+Received: from smtp.infotech.no ([82.134.31.41]:51925 "EHLO smtp.infotech.no"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757067Ab3CHXYs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 18:24:48 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,810,1355126400"; 
-   d="scan'208";a="267170866"
-From: Andi Kleen <andi@firstfloor.org>
-To: a.p.zijlstra@chello.nl
-Cc: mingo@kernel.org, linux-kernel@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>, rostedt@goodmis.org
-Subject: [PATCH] perf: Enable function tracing for perf core
-Date: Fri,  8 Mar 2013 15:24:46 -0800
-Message-Id: <1362785086-12901-1-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.7.7.6
+	id S1754510Ab3CHXZU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Mar 2013 18:25:20 -0500
+Message-ID: <513A734C.80807@interlog.com>
+Date: Fri, 08 Mar 2013 18:25:00 -0500
+From: Douglas Gilbert <dgilbert@interlog.com>
+Reply-To: dgilbert@interlog.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
+MIME-Version: 1.0
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+CC: Dan Carpenter <dan.carpenter@oracle.com>, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: [patch] [SCSI] scsi_transport_sas: check for allocation failure
+References: <20130308120215.GB18712@longonot.mountain>  <513A2678.5000803@interlog.com> <1362783019.2370.45.camel@dabdike.int.hansenpartnership.com>
+In-Reply-To: <1362783019.2370.45.camel@dabdike.int.hansenpartnership.com>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+On 13-03-08 05:50 PM, James Bottomley wrote:
+> On Fri, 2013-03-08 at 12:57 -0500, Douglas Gilbert wrote:
+>> On 13-03-08 07:02 AM, Dan Carpenter wrote:
+>>> Static checkers complain that this allocation isn't checked.  We
+>>> should return zero if the allocation fails.
+>>>
+>>> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+>>>
+>>> diff --git a/drivers/scsi/scsi_transport_sas.c b/drivers/scsi/scsi_transport_sas.c
+>>> index 1b68142..a022997 100644
+>>> --- a/drivers/scsi/scsi_transport_sas.c
+>>> +++ b/drivers/scsi/scsi_transport_sas.c
+>>> @@ -379,9 +379,12 @@ sas_tlr_supported(struct scsi_device *sdev)
+>>>    {
+>>>    	const int vpd_len = 32;
+>>>    	struct sas_end_device *rdev = sas_sdev_to_rdev(sdev);
+>>> -	char *buffer = kzalloc(vpd_len, GFP_KERNEL);
+>>> +	char *buffer;
+>>>    	int ret = 0;
+>>>
+>>> +	buffer = kzalloc(vpd_len, GFP_KERNEL);
+>>> +	if (!buffer)
+>>> +		goto out;
+>>>    	if (scsi_get_vpd_page(sdev, 0x90, buffer, vpd_len))
+>>>    		goto out;
+>>>
+>>
+>> For 32 bytes, why not use the stack?
+>
+> Because the buffer is a DMA target.  You can't DMA to stack because of
+> padding and cacheline issues.
 
-According to Steven R. there is no reason left to not support
-function tracing for the perf core. This makes it easier to debug
-perf.
+And I went to the definition of scsi_get_vpd_page()
+to see if that was called out in the header comments.
+Guess what ... and those same header comments talked
+about freeing a returned pointer. It needs to be
+cleaned up, IMO.
 
-Don't remove -pg for the x86 and generic perf core.
+Doug Gilbert
 
-Cc: rostedt@goodmis.org
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- arch/x86/kernel/cpu/Makefile |    1 -
- kernel/events/Makefile       |    4 ----
- 2 files changed, 0 insertions(+), 5 deletions(-)
+/**
+  * scsi_get_vpd_page - Get Vital Product Data from a SCSI device
+  * @sdev: The device to ask
+  * @page: Which Vital Product Data to return
+  * @buf: where to store the VPD
+  * @buf_len: number of bytes in the VPD buffer area
+  *
+  * SCSI devices may optionally supply Vital Product Data.  Each 'page'
+  * of VPD is defined in the appropriate SCSI document (eg SPC, SBC).
+  * If the device supports this VPD page, this routine returns a pointer
+  * to a buffer containing the data from that page.  The caller is
+  * responsible for calling kfree() on this pointer when it is no longer
+  * needed.  If we cannot retrieve the VPD page this routine returns %NULL.
+  */
+int scsi_get_vpd_page(struct scsi_device *sdev, u8 page, unsigned char *buf,
+                       int buf_len)
 
-diff --git a/arch/x86/kernel/cpu/Makefile b/arch/x86/kernel/cpu/Makefile
-index a0e067d..8eb5d28 100644
---- a/arch/x86/kernel/cpu/Makefile
-+++ b/arch/x86/kernel/cpu/Makefile
-@@ -5,7 +5,6 @@
- # Don't trace early stages of a secondary CPU boot
- ifdef CONFIG_FUNCTION_TRACER
- CFLAGS_REMOVE_common.o = -pg
--CFLAGS_REMOVE_perf_event.o = -pg
- endif
- 
- # Make sure load_percpu_segment has no stackprotector
-diff --git a/kernel/events/Makefile b/kernel/events/Makefile
-index 103f5d1..a630994 100644
---- a/kernel/events/Makefile
-+++ b/kernel/events/Makefile
-@@ -1,7 +1,3 @@
--ifdef CONFIG_FUNCTION_TRACER
--CFLAGS_REMOVE_core.o = -pg
--endif
--
- obj-y := core.o ring_buffer.o callchain.o
- 
- obj-$(CONFIG_HAVE_HW_BREAKPOINT) += hw_breakpoint.o
--- 
-1.7.7.6
 
