@@ -1,141 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933710Ab3CHEhv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 23:37:51 -0500
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:50069 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760391Ab3CHEhZ (ORCPT
+	id S933745Ab3CHEi0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 23:38:26 -0500
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:56204 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760392Ab3CHEiY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 23:37:25 -0500
-From: Michel Lespinasse <walken@google.com>
-To: Oleg Nesterov <oleg@redhat.com>, David Howells <dhowells@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: [RFC PATCH 4/5] kernel: add ticket based fair rwlock
-Date: Thu,  7 Mar 2013 20:37:16 -0800
-Message-Id: <1362717437-1729-5-git-send-email-walken@google.com>
-X-Mailer: git-send-email 1.8.1.3
-In-Reply-To: <1362717437-1729-1-git-send-email-walken@google.com>
-References: <1362717437-1729-1-git-send-email-walken@google.com>
+	Thu, 7 Mar 2013 23:38:24 -0500
+Message-ID: <51396B39.3090504@linaro.org>
+Date: Fri, 08 Mar 2013 05:38:17 +0100
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: john.stultz@linaro.org, viresh.kumar@linaro.org,
+        jacob.jun.pan@linux.intel.com, linux-arm-kernel@lists.infradead.org,
+        santosh.shilimkar@ti.com, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, rickard.andersson@stericsson.com,
+        vincent.guittot@linaro.org, linus.walleij@stericsson.com
+Subject: Re: [PATCH 2/4][V2] time : set broadcast irq affinity
+References: <1362219013-18173-1-git-send-email-daniel.lezcano@linaro.org> <1362219013-18173-3-git-send-email-daniel.lezcano@linaro.org> <alpine.LFD.2.02.1303052135080.22263@ionos> <51370C09.5020301@linaro.org> <alpine.LFD.2.02.1303061047240.22263@ionos>
+In-Reply-To: <alpine.LFD.2.02.1303061047240.22263@ionos>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Simple implementation of a fair reader writer spinlock using tickets
-(generic implementation, x86 specialized implementation could be made faster)
+On 03/06/2013 10:48 AM, Thomas Gleixner wrote:
+> On Wed, 6 Mar 2013, Daniel Lezcano wrote:
+>> On 03/05/2013 09:40 PM, Thomas Gleixner wrote:
+>>> On Sat, 2 Mar 2013, Daniel Lezcano wrote:
+>>>> When a cpu goes to a deep idle state where its local timer is shutdown,
+>>>> it notifies the time frame work to use the broadcast timer instead.
+>>>>
+>>>> Unfortunately, the broadcast device could wake up any CPU, including an
+>>>> idle one which is not concerned by the wake up at all.
+>>>>
+>>>> This implies, in the worst case, an idle CPU will wake up to send an IPI
+>>>> to another idle cpu.
+>>>>
+>>>> This patch solves this by setting the irq affinity to the cpu concerned
+>>>> by the nearest timer event, by this way, the CPU which is wake up is
+>>>> guarantee to be the one concerned by the next event and we are safe with
+>>>> unnecessary wakeup for another idle CPU.
+>>>>
+>>>> As the irq affinity is not supported by all the archs, a flag is needed
+>>>> to specify which clocksource can handle it : CLOCK_EVT_FEAT_DYNIRQ
+>>>>
+>>>> Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+>>>> ---
+>>>>  include/linux/clockchips.h   |    5 +++++
+>>>>  kernel/time/tick-broadcast.c |   40 +++++++++++++++++++++++++++++++++-------
+>>>>  2 files changed, 38 insertions(+), 7 deletions(-)
+>>>>
+>>>> diff --git a/include/linux/clockchips.h b/include/linux/clockchips.h
+>>>> index 6634652..c93e2a6 100644
+>>>> --- a/include/linux/clockchips.h
+>>>> +++ b/include/linux/clockchips.h
+>>>> @@ -55,6 +55,11 @@ enum clock_event_nofitiers {
+>>>>  #define CLOCK_EVT_FEAT_C3STOP		0x000008
+>>>>  #define CLOCK_EVT_FEAT_DUMMY		0x000010
+>>>>  
+>>>> +/*
+>>>> + * Clock event device can set its irq affinity dynamically
+>>>> + */
+>>>> +#define CLOCK_EVT_FEAT_DYNIRQ		0x000020
+>>>> +
+>>>>  /**
+>>>>   * struct clock_event_device - clock event device descriptor
+>>>>   * @event_handler:	Assigned by the framework to be called by the low
+>>>> diff --git a/kernel/time/tick-broadcast.c b/kernel/time/tick-broadcast.c
+>>>> index 6197ac0..9ca8ff5 100644
+>>>> --- a/kernel/time/tick-broadcast.c
+>>>> +++ b/kernel/time/tick-broadcast.c
+>>>> @@ -406,13 +406,37 @@ struct cpumask *tick_get_broadcast_oneshot_mask(void)
+>>>>  	return to_cpumask(tick_broadcast_oneshot_mask);
+>>>>  }
+>>>>  
+>>>> -static int tick_broadcast_set_event(struct clock_event_device *bc,
+>>>> +/*
+>>>> + * Set broadcast interrupt affinity
+>>>> + */
+>>>> +static void tick_broadcast_set_affinity(struct clock_event_device *bc,
+>>>> +					const struct cpumask *cpumask)
+>>>> +{
+>>>> +	if (!(bc->features & CLOCK_EVT_FEAT_DYNIRQ))
+>>>> +		return;
+>>>> +
+>>>> +	if (cpumask_equal(bc->cpumask, cpumask))
+>>>> +		return;
+>>>> +
+>>>> +	bc->cpumask = cpumask;
+>>>
+>>> This breaks with CONFIG_CPUMASK_OFFSTACK=y. cpumask_copy() is your friend!
+>>
+>> This instruction copies the pointer, not the cpumask content.
+>>
+>> bc->cpumask is defined as a const struct cpumask * and is used to copy a
+>> cpumask pointer not the content.
+>>
+>> The cpumask parameter is a pointer to a global cpumask provided by the
+>> cpumask_of macro.
+>>
+>> But to be in the safe side, I compiled tested with
+>> CONFIG_CPUMASK_OFFSTACK=y without problem.
 
-Signed-off-by: Michel Lespinasse <walken@google.com>
 
----
- include/linux/fair_rwlock.h | 72 +++++++++++++++++++++++++++++++++++++++++++++
- include/linux/lockdep.h     | 15 ++++++++++
- 2 files changed, 87 insertions(+)
- create mode 100644 include/linux/fair_rwlock.h
+Hi Thomas,
 
-diff --git a/include/linux/fair_rwlock.h b/include/linux/fair_rwlock.h
-new file mode 100644
-index 000000000000..28c49262c4af
---- /dev/null
-+++ b/include/linux/fair_rwlock.h
-@@ -0,0 +1,72 @@
-+#ifndef __LINUX_FAIR_RWLOCK_H
-+#define __LINUX_FAIR_RWLOCK_H
-+
-+struct fair_rwlock {
-+	atomic_t		ticket;
-+	atomic_t		curr_r;
-+	atomic_t		curr_w;
-+#ifdef CONFIG_DEBUG_LOCK_ALLOC
-+	struct lockdep_map	dep_map;
-+#endif
-+};
-+
-+#ifdef CONFIG_DEBUG_LOCK_ALLOC
-+#define __FAIR_RWLOCK_DEP_MAP_INIT(lockname) , { .name = #lockname }
-+#else
-+#define __FAIR_RWLOCK_DEP_MAP_INIT(lockname)
-+#endif
-+
-+#define __FAIR_RW_LOCK_UNLOCKED(name)				\
-+	{ ATOMIC_INIT(0), ATOMIC_INIT(0), ATOMIC_INIT(0)	\
-+		__FAIR_RWLOCK_DEP_MAP_INIT(name) }
-+
-+static inline int get_ticket(struct fair_rwlock *lock)
-+{
-+	return atomic_inc_return(&lock->ticket) - 1;
-+}
-+
-+static inline void fair_write_lock(struct fair_rwlock *lock)
-+{
-+	int ticket;
-+
-+	fair_rwlock_acquire(&lock->dep_map, 0, 0, _RET_IP_);
-+
-+	preempt_disable();
-+	ticket = get_ticket(lock);
-+	while (atomic_read(&lock->curr_w) != ticket);	/* spin */
-+	smp_mb();
-+}
-+
-+static inline void fair_write_unlock(struct fair_rwlock *lock)
-+{
-+	fair_rwlock_release(&lock->dep_map, 1, _RET_IP_);
-+
-+	smp_mb();
-+	atomic_inc(&lock->curr_r);
-+	atomic_inc(&lock->curr_w);
-+	preempt_enable();
-+}
-+
-+static inline void fair_read_lock(struct fair_rwlock *lock)
-+{
-+	int ticket;
-+
-+	fair_rwlock_acquire_read(&lock->dep_map, 0, 0, _RET_IP_);
-+
-+	preempt_disable();
-+	ticket = get_ticket(lock);
-+	while (atomic_read(&lock->curr_r) != ticket);	/* spin */
-+	smp_mb();
-+	atomic_set(&lock->curr_r, ticket + 1);
-+}
-+
-+static inline void fair_read_unlock(struct fair_rwlock *lock)
-+{
-+	fair_rwlock_release(&lock->dep_map, 1, _RET_IP_);
-+
-+	smp_mb();
-+	atomic_inc(&lock->curr_w);
-+	preempt_enable();
-+}
-+
-+#endif /* __LINUX_FAIR_RWLOCK_H */
-diff --git a/include/linux/lockdep.h b/include/linux/lockdep.h
-index f1e877b79ed8..e2f59eadf485 100644
---- a/include/linux/lockdep.h
-+++ b/include/linux/lockdep.h
-@@ -510,6 +510,21 @@ static inline void print_irqtrace_events(struct task_struct *curr)
- 
- #ifdef CONFIG_DEBUG_LOCK_ALLOC
- # ifdef CONFIG_PROVE_LOCKING
-+#  define fair_rwlock_acquire(l, s, t, i)	lock_acquire(l, s, t, 0, 2, NULL, i)
-+#  define fair_rwlock_acquire_read(l, s, t, i)	lock_acquire(l, s, t, 1, 2, NULL, i)
-+# else
-+#  define fair_rwlock_acquire(l, s, t, i)	lock_acquire(l, s, t, 0, 1, NULL, i)
-+#  define fair_rwlock_acquire_read(l, s, t, i)	lock_acquire(l, s, t, 1, 1, NULL, i)
-+# endif
-+# define fair_rwlock_release(l, n, i)		lock_release(l, n, i)
-+#else
-+# define fair_rwlock_acquire(l, s, t, i)	do { } while (0)
-+# define fair_rwlock_acquire_read(l, s, t, i)	do { } while (0)
-+# define fair_rwlock_release(l, n, i)		do { } while (0)
-+#endif
-+
-+#ifdef CONFIG_DEBUG_LOCK_ALLOC
-+# ifdef CONFIG_PROVE_LOCKING
- #  define mutex_acquire(l, s, t, i)		lock_acquire(l, s, t, 0, 2, NULL, i)
- #  define mutex_acquire_nest(l, s, t, n, i)	lock_acquire(l, s, t, 0, 2, n, i)
- # else
+thanks for merging the patch 1 and 2.
+
+I was wondering if it would be possible to take the 3/4 and 4/4
+otherwise the flag dependency will prevent to send those to the
+maintainer's tree until they gain visibility on it.
+
+
 -- 
-1.8.1.3
+ <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
+
