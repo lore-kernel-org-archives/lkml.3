@@ -1,70 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760086Ab3CGX7W (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 18:59:22 -0500
-Received: from mail-la0-f43.google.com ([209.85.215.43]:51457 "EHLO
-	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758814Ab3CGX7U (ORCPT
+	id S1759972Ab3CHAEs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 19:04:48 -0500
+Received: from mail-wg0-f53.google.com ([74.125.82.53]:52885 "EHLO
+	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755496Ab3CHAEr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 18:59:20 -0500
+	Thu, 7 Mar 2013 19:04:47 -0500
 MIME-Version: 1.0
-In-Reply-To: <CABVzNXq=LB87+oSvMo=TLumS6M6qnaA+Wtg5TRO+banNbo9-iw@mail.gmail.com>
-References: <1358901294-3269-1-git-send-email-fweisbec@gmail.com>
-	<CABVzNXq=LB87+oSvMo=TLumS6M6qnaA+Wtg5TRO+banNbo9-iw@mail.gmail.com>
-Date: Fri, 8 Mar 2013 00:59:18 +0100
-Message-ID: <CAFTL4hyN6j5Ci4uRrNQd_A-c2o3dSHH4kA37SajirzeU3St1XA@mail.gmail.com>
-Subject: Re: [ANNOUNCE] 3.8-rc4-nohz3
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Hakan Akkan <hakanakkan@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>, Ingo Molnar <mingo@kernel.org>,
-        Li Zhong <zhong@linux.vnet.ibm.com>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <20130307233116.GF10304@kroah.com>
+References: <1362194662-2344-1-git-send-email-tj@kernel.org>
+ <1362194662-2344-31-git-send-email-tj@kernel.org> <20130302181727.GB2051@kroah.com>
+ <CAPXgP11Zuz166v_M2EhGDY1U5vKtUwE+fTPAWYEu7UxXsr=g=A@mail.gmail.com>
+ <20130305204327.GK12795@htj.dyndns.org> <20130307233116.GF10304@kroah.com>
+From: Kay Sievers <kay@vrfy.org>
+Date: Fri, 8 Mar 2013 01:04:25 +0100
+Message-ID: <CAPXgP10CEMgdOW23txWwwh0xSVd97fKH31xdKjE8Wy51kO6XdQ@mail.gmail.com>
+Subject: Re: [PATCH 30/31] driver/base: implement subsys_virtual_register()
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
+        laijs@cn.fujitsu.com, axboe@kernel.dk, jmoyer@redhat.com,
+        zab@redhat.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/1/23 Hakan Akkan <hakanakkan@gmail.com>:
-> Hi,
+On Fri, Mar 8, 2013 at 12:31 AM, Greg Kroah-Hartman
+<gregkh@linuxfoundation.org> wrote:
+> On Tue, Mar 05, 2013 at 12:43:27PM -0800, Tejun Heo wrote:
+>> On Sun, Mar 03, 2013 at 07:42:31AM +0100, Kay Sievers wrote:
+>> > On Sat, Mar 2, 2013 at 7:17 PM, Greg Kroah-Hartman
+>> > <gregkh@linuxfoundation.org> wrote:
+>> > > On Fri, Mar 01, 2013 at 07:24:21PM -0800, Tejun Heo wrote:
+>> > >> Kay tells me the most appropriate place to expose workqueues to
+>> > >> userland would be /sys/devices/virtual/workqueues/WQ_NAME which is
+>> > >> symlinked to /sys/bus/workqueue/devices/WQ_NAME and that we're lacking
+>> > >> a way to do that outside of driver core as virtual_device_parent()
+>> > >> isn't exported and there's no inteface to conveniently create a
+>> > >> virtual subsystem.
+>> > >
+>> > > I'm almost afraid to ask what you want to export to userspace for a
+>> > > workqueue that userspace would care about...
+>> > >
+>> > > If you create a subsystem, the devices will show up under the virtual
+>> > > "bus" if you don't give them a parent, so this patch shouldn't be
+>> > > needed, unless you are abusing the driver model.  What am I missing
+>> > > here?
+>> >
+>> > Unfortunately, the parent == NULL --> /sys/devices/virtual/<subsys>/
+>> > we have only implemented for classes, and not for buses. We should fix
+>> > that.
+>>
+>> Greg, how should I proceed on this?  As I wrote before, I don't really
+>> care about where or how.  As long as I can make workqueues visible to
+>> userland, I'm happy.
 >
-> This WARN_ON is triggered for every full nohz CPU in the system during
-> AP boot in a 16 core machine:
-
-Yeah it happens because we are enqueuing a timer to an offline CPU.
-I'm trying to fix it, tell me if you still see the warning on the next
-version.
-
-Thanks!
-
+> Sorry for the delay, I'm at a conference all this week, and haven't had
+> much time to think about this.
 >
-> [    0.336895] ------------[ cut here ]------------
-> [    0.341508] WARNING: at arch/x86/kernel/smp.c:123
-> native_smp_send_reschedule+0x4f/0x60()
-> [    0.349578] Hardware name: X8DTG-D
-> [    0.315066] smpboot: Booting Node   0, Processors  #1
-> [    0.352978] Modules linked in:
-> [    0.356233] Pid: 0, comm: swapper/1 Not tainted 3.8.0-rc4+ #3
-> [    0.361959] Call Trace:
-> [    0.364404]  [<ffffffff8103c4fa>] warn_slowpath_common+0x7a/0xb0
-> [    0.370399]  [<ffffffff8103c545>] warn_slowpath_null+0x15/0x20
-> [    0.376213]  [<ffffffff8102435f>] native_smp_send_reschedule+0x4f/0x60
-> [    0.382723]  [<ffffffff8106b328>] wake_up_nohz_cpu+0x78/0x80
-> [    0.388374]  [<ffffffff8104c33a>] add_timer_on+0x8a/0xf0
-> [    0.393679]  [<ffffffff8101c6f4>] mce_start_timer+0x64/0x70
-> [    0.399241]  [<ffffffff8101c752>] __mcheck_cpu_init_timer+0x52/0x60
-> [    0.405490]  [<ffffffff817d804a>] mcheck_cpu_init+0x360/0x3d9
-> [    0.411226]  [<ffffffff817d6160>] identify_cpu+0x39d/0x3ba
-> [    0.416696]  [<ffffffff817d6193>] identify_secondary_cpu+0x16/0x1d
-> [    0.422855]  [<ffffffff817d9730>] smp_store_cpu_info+0x38/0x3a
-> [    0.428672]  [<ffffffff817d981a>] start_secondary+0xe8/0x192
-> [    0.434317] ---[ end trace 17bfa0d8291c432e ]---
+> If Kay says this is ok for now, that's good enough for me.
+
+Yes, it looks fine to me. If we provide the unified handling of
+classes and buses some day, this can probably go away, but until that
+it looks fine and is straight forward to do it that way,
+
+Thanks,
+Kay
