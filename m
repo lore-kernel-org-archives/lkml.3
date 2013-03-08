@@ -1,93 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757521Ab3CHNCx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 08:02:53 -0500
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:46711 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757108Ab3CHNCv convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 08:02:51 -0500
+	id S933555Ab3CHNDs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 08:03:48 -0500
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:59184 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757186Ab3CHNDr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Mar 2013 08:03:47 -0500
+Date: Fri, 8 Mar 2013 18:29:51 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
+Cc: Mike Galbraith <efault@gmx.de>, LKML <linux-kernel@vger.kernel.org>
+Subject: Can we avoid sched:sched_migrate_task event being called twice
+ from sched_fork()
+Message-ID: <20130308125951.GA5669@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <20130308.105519.82764856.d.hatayama@jp.fujitsu.com>
-References: <20130302083447.31252.93914.stgit@localhost6.localdomain6>
-	<20130302083714.31252.17863.stgit@localhost6.localdomain6>
-	<513867D2.7090501@cn.fujitsu.com>
-	<20130308.105519.82764856.d.hatayama@jp.fujitsu.com>
-Date: Fri, 8 Mar 2013 21:02:50 +0800
-Message-ID: <CANBD6kFwTjKL9CqUzVSWFSRH6ibdQstCU5wTBkv4+=4HhPiG4Q@mail.gmail.com>
-Subject: Re: [PATCH v2 15/20] kexec: fill note buffers by NT_VMCORE_PAD notes
- in page-size boundary
-From: Yanfei Zhang <zhangyanfei.yes@gmail.com>
-To: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-Cc: zhangyanfei@cn.fujitsu.com, kexec@lists.infradead.org,
-        heiko.carstens@de.ibm.com, linux-kernel@vger.kernel.org,
-        lisa.mitchell@hp.com, kumagai-atsushi@mxc.nes.nec.co.jp,
-        ebiederm@xmission.com, akpm@linux-foundation.org, cpw@sgi.com,
-        vgoyal@redhat.com
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13030813-7182-0000-0000-000005B3C0B9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/3/8 HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>:
-> From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-> Subject: Re: [PATCH v2 15/20] kexec: fill note buffers by NT_VMCORE_PAD notes in page-size boundary
-> Date: Thu, 7 Mar 2013 18:11:30 +0800
->
->> 于 2013年03月02日 16:37, HATAYAMA Daisuke 写道:
->>> Fill both crash_notes and vmcoreinfo_note buffers by NT_VMCORE_PAD
->>> note type to make them satisfy mmap()'s page-size boundary
->>> requirement.
->>>
->>> So far, end of note segments has been marked by zero-filled elf
->>> header. Instead, this patch writes NT_VMCORE_PAD note in the end of
->>> note segments until the offset on page-size boundary.
->>
->>
->> In the codes below, it seems that you assign name "VMCOREINFO" for
->> note type NT_VMCORE_PAD, right? This is kind of wired, i think. This
->> name has been used for NT_VMCORE_DEBUGINFO note already. Why not something
->> like "VMCOREPAD" or "PAD"?
->>
->
-> It looks you are confusing or don't know name and type. The name is
-> namespace and in the namespace, there are multiple note types, each of
-> which has the corresponding data. In other words, data corresponding
-> to types differ if they belong to differnet name space even if
-> integers of the types are coincide with.
+When using sched:sched_migrate_tasks, its little awkward to see records that
+suggest current task migrating from the current cpu to the same current cpu.
 
-Yes, I knew this. Just as the spec said " a program must recognize both the name
-and the type to recognize a descriptor.". But I cannot understand what your word
-"namespace" came from? I think you complicate simple things here.
+perf record -e sched:sched_migrate_task -af bash -c "ls;ps"; perf script
 
-Only with a type, we cannot recognize a descriptor, because "multiple
-interpretations of
-a single type value may exist", So we should combine the name and the type
-together. If both the name and type of two descriptors are the same,
-we could say we
-have two same descriptors. If one of them (type or name) are
-different, we say the
-two descriptors are different and the two notes have different data.
+            perf  5292 [035] 347249.373741: sched:sched_migrate_task: comm=perf pid=5293 prio=120 orig_cpu=43 dest_cpu=34
+    migration/34   144 [034] 347249.373938: sched:sched_migrate_task: comm=perf pid=5293 prio=120 orig_cpu=34 dest_cpu=43
+         swapper     0 [035] 347249.375030: sched:sched_migrate_task: comm=rcu_sched pid=10 prio=120 orig_cpu=11 dest_cpu=35
+            bash  5293 [043] 347249.377255: sched:sched_migrate_task: comm=bash pid=5293 prio=120 orig_cpu=43 dest_cpu=43     <---- 1
+            bash  5293 [043] 347249.377580: sched:sched_migrate_task: comm=bash pid=5294 prio=120 orig_cpu=43 dest_cpu=51     <---- 2
+    migration/51   231 [051] 347249.377888: sched:sched_migrate_task: comm=bash pid=5294 prio=120 orig_cpu=51 dest_cpu=59
+         swapper     0 [043] 347249.380039: sched:sched_migrate_task: comm=rcu_sched pid=10 prio=120 orig_cpu=35 dest_cpu=43
+           :5294  5294 [059] 347249.381911: sched:sched_migrate_task: comm=bash pid=5293 prio=120 orig_cpu=43 dest_cpu=58
+            bash  5293 [058] 347249.382449: sched:sched_migrate_task: comm=bash pid=5293 prio=120 orig_cpu=58 dest_cpu=58     <---- 3
+            bash  5293 [058] 347249.382995: sched:sched_migrate_task: comm=bash pid=5295 prio=120 orig_cpu=58 dest_cpu=3      <---- 4
+     migration/3    20 [003] 347249.383351: sched:sched_migrate_task: comm=bash pid=5295 prio=120 orig_cpu=3 dest_cpu=11
+    kworker/11:1   175 [011] 347249.419342: sched:sched_migrate_task: comm=tmux pid=10349 prio=120 orig_cpu=11 dest_cpu=10
+           :5295  5295 [011] 347249.427053: sched:sched_migrate_task: comm=bash pid=5293 prio=120 orig_cpu=58 dest_cpu=10
 
-If I am wrong, please correct me.
+If we look at reference 1 & 3 above, the orig_cpu and dest_cpu are the same.
+Also from pid column and the recorded pid, we get an impression that the
+current task is asking itself to be migrated from the current cpu on to the
+current cpu. 
 
->
-> The "VMCOREINFO" name represents information exported from
-> /proc/vmcore that is used in kdump framework. In this sense,
-> NT_VMCORE_PAD that is specific for /proc/vmcore and kdump framework,
-> should belong to the "VMCOREINFO" name.
+On fork/clone path, we set the cpu twice. The first time we do it from
+sched_fork() (references 1 & 3) and then later in wake_up_new_task()
+(references 2 & 4). 
 
-I cannot understand the name explanation totally. Does the name really
-have this meaning? Is there any authentic document? I was always thinking we
-could feel free to name a name by ourselves!
+However perf sw event migrations get accounted correctly.
 
->
-> Thanks.
-> HATAYAMA, Daisuke
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+perf stat numbers also indicate the same. (i.e lesser number of migrations
+than the actual sched:sched_migrate_task)
+
+perf stat -a -e sched:sched_migrate_task -e migrations bash -c "ls;ps"
+
+ Performance counter stats for 'bash -c ls;ps':
+
+                12 sched:sched_migrate_task                                     [100.00%]
+                10 migrations                                                  
+
+       0.052509285 seconds time elapsed
+
+At the time of sched_fork(), even pid field of child is also not updated.
+Further we are trying to set it to the parent's current cpu which should be
+the same as the set in child, (copied from parent in dup_task_struct)
+
+The child task wont run till wake_up_new_task() is called, and the
+actual cpu setting happens at wake_up_new_task(). Can we avoid the trace
+being called from the sched_fork() path?
+
+The below patch tries to call __set_task_cpu() instead of set_task_cpu()
+in sched_fork() and hence avoids calling the trace. 
+
+Here are the results after we avoid trace_sched_migrate_task() from
+sched_fork().
+
+perf record -e sched:sched_migrate_task -af bash -c "ls;ps"; perf script 
+
+    migration/19   104 [019]   406.931532: sched:sched_migrate_task: comm=perf pid=60217 prio=120 orig_cpu=19 dest_cpu=27
+            bash 60217 [027]   406.939006: sched:sched_migrate_task: comm=bash pid=60218 prio=120 orig_cpu=27 dest_cpu=35
+    migration/35   195 [035]   406.939515: sched:sched_migrate_task: comm=bash pid=60218 prio=120 orig_cpu=35 dest_cpu=43
+         swapper     0 [027]   406.942050: sched:sched_migrate_task: comm=rcu_sched pid=10 prio=120 orig_cpu=19 dest_cpu=27
+          :60218 60218 [043]   406.949920: sched:sched_migrate_task: comm=bash pid=60217 prio=120 orig_cpu=27 dest_cpu=42
+            bash 60217 [042]   406.951489: sched:sched_migrate_task: comm=bash pid=60219 prio=120 orig_cpu=42 dest_cpu=51
+    migration/51   289 [051]   406.951950: sched:sched_migrate_task: comm=bash pid=60219 prio=120 orig_cpu=51 dest_cpu=59
+         swapper     0 [043]   406.988034: sched:sched_migrate_task: comm=rcu_sched pid=10 prio=120 orig_cpu=27 dest_cpu=43
+          :60219 60219 [059]   407.051751: sched:sched_migrate_task: comm=bash pid=60217 prio=120 orig_cpu=42 dest_cpu=58
+
+perf stat -a -e sched:sched_migrate_task -e migrations bash -c "ls;ps"
+
+ Performance counter stats for 'bash -c ls;ps':
+
+                17 sched:sched_migrate_task                                     [100.00%]
+                17 migrations                                                  
+
+       0.107531428 seconds time elapsed
+
+Other options could be avoid setting the cpu from sched_fork or move the
+trace_sched_migrate_task() in set_task_cpu() to where the perf sw migrations 
+are accounted.
+
+-- 
+Thanks and Regards
+Srikar
+
+-----8<--------------------------------------------------------------
+>From ac9df9bca38ce22c16f1e9b7949015c14257772c Mon Sep 17 00:00:00 2001
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Date: Thu, 7 Mar 2013 23:40:50 -0800
+Subject: [PATCH] sched: Avoid redundant trace_sched_migrate_task from sched_fork path.
+
+On fork/clone, trace_sched_migrate_task gets called twice. The first call
+tries to record the migration with the parent pid and the migration seems to
+be from the current cpu to the same current cpu. Also the numbers from
+sched:sched_migrate_task and migrations events may vary. 
+
+Avoid duplicate migrate traces by calling __set_task_cpu instead of
+set_task_cpu.
+
+Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+---
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 26058d0..bf1e62d 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1660,7 +1660,7 @@ void sched_fork(struct task_struct *p)
+ 	 * Silence PROVE_RCU.
+ 	 */
+ 	raw_spin_lock_irqsave(&p->pi_lock, flags);
+-	set_task_cpu(p, cpu);
++	__set_task_cpu(p, cpu);
+ 	raw_spin_unlock_irqrestore(&p->pi_lock, flags);
+ 
+ #if defined(CONFIG_SCHEDSTATS) || defined(CONFIG_TASK_DELAY_ACCT)
+
