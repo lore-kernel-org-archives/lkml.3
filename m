@@ -1,54 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934502Ab3CHRMz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 12:12:55 -0500
-Received: from mailout01.c08.mtsvc.net ([205.186.168.189]:49998 "EHLO
-	mailout01.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759809Ab3CHRMw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 12:12:52 -0500
-Message-ID: <1362762762.4219.37.camel@thor.lan>
-Subject: Re: [PATCH v4 25/32] tty: Add read-recursive, writer-prioritized rw
- semaphore
-From: Peter Hurley <peter@hurleysoftware.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Jiri Slaby <jslaby@suse.cz>, Sasha Levin <levinsasha928@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org
-Date: Fri, 08 Mar 2013 12:12:42 -0500
-In-Reply-To: <1361390599-15195-26-git-send-email-peter@hurleysoftware.com>
-References: <1361390599-15195-1-git-send-email-peter@hurleysoftware.com>
-	 <1361390599-15195-26-git-send-email-peter@hurleysoftware.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.3-0pjh1 
-Mime-Version: 1.0
+	id S934477Ab3CHRMv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 12:12:51 -0500
+Received: from slimlogic.co.uk ([89.16.172.20]:40570 "EHLO slimlogic.co.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759805Ab3CHRMt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Mar 2013 12:12:49 -0500
+Message-ID: <513A1C0F.3070602@slimlogic.co.uk>
+Date: Fri, 08 Mar 2013 17:12:47 +0000
+From: Ian Lartey <ian@slimlogic.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: t-kristo@ti.com, broonie@opensource.wolfsonmicro.com,
+        mturquette@linaro.org, linux-watchdog@vger.kernel.org,
+        swarren@wwwdotorg.org, j-keerthy@ti.com, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, rob.herring@calxeda.com,
+        lgirdwood@gmail.com, grant.likely@secretlab.ca, wim@iguana.be,
+        ldewangan@nvidia.com, rpurdie@rpsys.net,
+        linux-arm-kernel@lists.infradead.org, rob@landley.net,
+        cooloney@gmail.com, gg@slimlogic.co.uk, linux-leds@vger.kernel.org,
+        sameo@linux.intel.com
+Subject: Re: [PATCH v8 0/12] Palmas Updates
+References: <1362662276-20792-1-git-send-email-ian@slimlogic.co.uk> <513894E3.1070206@slimlogic.co.uk> <CACRpkdYHhh=ANiHvgxXiAQ_4LLiBBe0AfJ-60Wy6aEi7Cv0HOg@mail.gmail.com>
+In-Reply-To: <CACRpkdYHhh=ANiHvgxXiAQ_4LLiBBe0AfJ-60Wy6aEi7Cv0HOg@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 125194 peter@hurleysoftware.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-02-20 at 15:03 -0500, Peter Hurley wrote:
-> The semantics of a rw semaphore are almost ideally suited
-> for tty line discipline lifetime management;  multiple active
-> threads obtain "references" (read locks) while performing i/o
-> to prevent the loss or change of the current line discipline
-> (write lock).
-> 
-> Unfortunately, the existing rw_semaphore is ill-suited in other
-> ways;
-> 1) obtaining a "reference" can be recursive, ie., a reference holder
->    may attempt to obtain another "reference". Recursive read locks
->    are not supported by rwsem.
+On 08/03/13 07:12, Linus Walleij wrote:
+> On Thu, Mar 7, 2013 at 2:23 PM, Ian Lartey <ian@slimlogic.co.uk> wrote:
+>
+>> This patchset adds to the support for the Palmas iseries of PMIC chips.
+>>
+>> Some of the patches have previously been submitted individually.
+>> The DT bindings doc has been added first due to comments that it was
+>> missing.
+>
+> Can the patches to the individual subsystems be applied individually
+> (like can we apply the two GPIO patches to the GPIO tree) or are
+> the deps such that the whole shebang needs to go in at once and you're
+> just harvesting ACKs to take it all into MFD or similar?
 
-Hi Greg,
+There are a few dependencies:
 
-I just finished auditing all the recursive usage of the tty/ldisc layer
-and I can make this lock non-recursive.
+The GPIO and LEDS subsystem patches both depend on:
+[PATCH v8 02/12] mfd: palmas: is_palmas_charger needed by multiple drivers
 
-Please hold off applying this and I'll send you a v5 series in a couple
-of days, ok?
+all the subsystems depend on:
+[PATCH v8 01/12] mfd: DT bindings for the palmas family MFD
+for their DT documentation.
+
+so taking the whole shooting match in one go seems the safest.
+
+>
+> Yours,
+> Linus Walleij
+
 
 Regards,
-Peter Hurley
 
-
+Ian
