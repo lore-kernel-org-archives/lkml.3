@@ -1,57 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934551Ab3CHSKm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 13:10:42 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:31191 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1759575Ab3CHSKl (ORCPT
+	id S934581Ab3CHSLQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 13:11:16 -0500
+Received: from smtp4.mundo-r.com ([212.51.32.151]:30996 "EHLO
+	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759949Ab3CHSLP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 13:10:41 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/ZTup5sT5gd7mAOjAbNJtB
-Date: Fri, 8 Mar 2013 10:10:29 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Aaro Koskinen <aaro.koskinen@iki.fi>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: OMAP: drop "select MACH_NOKIA_RM696"
-Message-ID: <20130308181029.GF11806@atomide.com>
-References: <1362738596.5994.48.camel@x61.thuisdomein>
- <20130308161159.GE14552@blackmetal.musicnaut.iki.fi>
- <20130308163507.GC26093@atomide.com>
- <1362763232.5994.75.camel@x61.thuisdomein>
- <20130308175539.GG26093@atomide.com>
- <1362765764.5994.87.camel@x61.thuisdomein>
+	Fri, 8 Mar 2013 13:11:15 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AlkFAIMpOlFbdWObgWdsb2JhbABDvGQih0iBWxYOAQEWJiiCLQEFJ1EBEAshFg8JAwIBAgFFBg0BBwEBiBO7Ho8MB4NAA5ZTk30
+X-IPAS-Result: AlkFAIMpOlFbdWObgWdsb2JhbABDvGQih0iBWxYOAQEWJiiCLQEFJ1EBEAshFg8JAwIBAgFFBg0BBwEBiBO7Ho8MB4NAA5ZTk30
+X-IronPort-AV: E=Sophos;i="4.84,809,1355094000"; 
+   d="scan'208";a="8779980"
+Message-ID: <513A29B6.2040807@igalia.com>
+Date: Fri, 08 Mar 2013 19:11:02 +0100
+From: =?ISO-8859-1?Q?Samuel_Iglesias_Gons=E1lvez?= <siglesias@igalia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1362765764.5994.87.camel@x61.thuisdomein>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: industrypack-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        Jens Taprogge <jens.taprogge@taprogge.org>
+Subject: Re: [PATCH 1/3] ipack: avoid double free on device->id
+References: <512DCB33.6030500@igalia.com> <1362730907-10047-1-git-send-email-siglesias@igalia.com> <20130308174701.GA13276@kroah.com>
+In-Reply-To: <20130308174701.GA13276@kroah.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Paul Bolle <pebolle@tiscali.nl> [130308 10:06]:
-> On Fri, 2013-03-08 at 09:55 -0800, Tony Lindgren wrote:
-> > * Paul Bolle <pebolle@tiscali.nl> [130308 09:24]:
-> > > Should I draft a patch?
-> > 
-> > Sure that would be nice.
-> 
-> One thing I couldn't determine is how the generated mach-types.h header
-> handles multiple CONFIG_MACH_* macros.
-> 
-> If both CONFIG_MACH_FOO and CONFIG_MACH_BAR are defined, and these both
-> have a line in */mach-types, will the machine_is_foo() and
-> machine_is_bar() macros both behave as one would expect?
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA256
 
-Yes they do, for the selected ones the macro becomes
-machine_arch_type == MACH_TYPE_XYZ instead of 0.
+On 03/08/2013 06:47 PM, Greg Kroah-Hartman wrote:
 
-Regards,
 
-Tony
+Yes, you are right. It's not possible to have it freed twice once it's
+in ipack_device_release().
+
+You can skip this patch. If you want, I can resend the others accordingly.
+
+Sam
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Using GnuPG with undefined - http://www.enigmail.net/
+
+iQIcBAEBCAAGBQJROim2AAoJEH/0ujLxfcND8ksQAIKZJlIONv1h6FWQEzcOrptA
+ReEB0p+uDQfRzjpbqzeZcXa3vVK6sc2nIUTggdQcnfNcse38Jn4JCKGllAQfZE51
+71ANDmhUpmALKD1o0A8Cya85IfnaVQBhHcmA2b3/wh5dgXjcvgjHWZDjduEC3+I7
+sIikZ+OYAZa69dfXYN+NgVYCTj5Gk+eA9oWdnV17d18bviqVf1/PdHHGMceMke9p
+jW/UY4mxPHGkJdtZ8RV0avm2VAwY0/HOtzjI8JXZ7Nve9HIYhEcMyBrpHxOQI6U3
+CBPY5kqlOa2MdGTiKQct7Daeeqm1guSPPJDRRI3y0O+qgHOn4a8eTVHQ21WMHJoP
+Yq1RterlGzRGGzv8s9k76600gXqbaQreEN96fXxISDtk57N/ffIn0cuZwbaeTLpa
+AfvV0PeuBpwJ5SezQryNx2O708tk8FGiCys3yAFcak82Am4xBsgIrEo1UYIYXonC
+rGbmuG36yxsktMdklz5+ys7R4pDW8Un0iCOMmO3etrYDepy6n9vfjXmYWc8MK2D6
+WaVj01qadSj8iHE1cFZms6LnQ+VETc9256QkkFMWaNApW9+BhnGIRj8DErbgOfKK
+k1BfmNUrPyuFIlxPxy6kkPwPGfLUOP9yRhGmzrJ18DWJJtdELan5RQIrMlH21LA2
+ajvtF3Pt5eDhDy9gM6A8
+=LI+5
+-----END PGP SIGNATURE-----
