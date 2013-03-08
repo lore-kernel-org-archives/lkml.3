@@ -1,60 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933236Ab3CHVrm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 16:47:42 -0500
-Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:39281
-	"EHLO p3plsmtps2ded01.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933075Ab3CHVqk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 16:46:40 -0500
-x-originating-ip: 72.167.245.219
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
-        jasowang@redhat.com
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH 1/6] Drivers: hv: balloon: Do not request completion notification
-Date: Fri,  8 Mar 2013 14:16:08 -0800
-Message-Id: <1362780973-9837-1-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1362780945-9796-1-git-send-email-kys@microsoft.com>
-References: <1362780945-9796-1-git-send-email-kys@microsoft.com>
+	id S932947Ab3CHVzn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 16:55:43 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50649 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757475Ab3CHVzm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Mar 2013 16:55:42 -0500
+Date: Fri, 8 Mar 2013 13:55:40 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ard van Breemen <ard@telegraafnet.nl>
+Subject: Re: [PATCH v2] init: Scream bloody murder if interrupts are enabled
+ too early
+Message-Id: <20130308135540.0739f48551fc600604607c99@linux-foundation.org>
+In-Reply-To: <1362754092.31874.97.camel@gandalf.local.home>
+References: <1362754092.31874.97.camel@gandalf.local.home>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is no need to request completion notification; get rid of it.
+On Fri, 08 Mar 2013 09:48:12 -0500 Steven Rostedt <rostedt@goodmis.org> wrote:
+
+> Also, while examining other warnings in init/main.c, I found two other
+> locations that deserve a bloody murder scream if their conditions are
+> hit, and updated them accordingly.
+
+So the whole effect of this patch is to spew a larger volume of
+unuseful stuff (such as uninteresting stack traces) onto the console so
+people are more likely to notice it?  Hmpf.  I think I prefer
+
+akpm3:/usr/src/25> banner "OMG\!\!"      
+####### #     #  #####    ###     ###
+#     # ##   ## #     #   ###     ###
+#     # # # # # #         ###     ###
+#     # #  #  # #  ####    #       #
+#     # #     # #     #
+#     # #     # #     #   ###     ###
+####### #     #  #####    ###     ###
 
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
----
- drivers/hv/hv_balloon.c |    6 ++----
- 1 files changed, 2 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/hv/hv_balloon.c b/drivers/hv/hv_balloon.c
-index 3787321..7fb72dd 100644
---- a/drivers/hv/hv_balloon.c
-+++ b/drivers/hv/hv_balloon.c
-@@ -962,8 +962,7 @@ static int balloon_probe(struct hv_device *dev,
- 	ret = vmbus_sendpacket(dev->channel, &version_req,
- 				sizeof(struct dm_version_request),
- 				(unsigned long)NULL,
--				VM_PKT_DATA_INBAND,
--				VMBUS_DATA_PACKET_FLAG_COMPLETION_REQUESTED);
-+				VM_PKT_DATA_INBAND, 0);
- 	if (ret)
- 		goto probe_error2;
- 
-@@ -1009,8 +1008,7 @@ static int balloon_probe(struct hv_device *dev,
- 	ret = vmbus_sendpacket(dev->channel, &cap_msg,
- 				sizeof(struct dm_capabilities),
- 				(unsigned long)NULL,
--				VM_PKT_DATA_INBAND,
--				VMBUS_DATA_PACKET_FLAG_COMPLETION_REQUESTED);
-+				VM_PKT_DATA_INBAND, 0);
- 	if (ret)
- 		goto probe_error2;
- 
--- 
-1.7.4.1
+Maybe we should reduce the amount of goop we printk out at boot
+instead ;)
 
