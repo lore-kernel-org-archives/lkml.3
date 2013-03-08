@@ -1,144 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933088Ab3CHSGg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 13:06:36 -0500
-Received: from smtp-out-071.synserver.de ([212.40.185.71]:1201 "EHLO
-	smtp-out-069.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1759812Ab3CHSGd (ORCPT
+	id S934541Ab3CHSHj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 13:07:39 -0500
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:24624 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1759575Ab3CHSHi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 13:06:33 -0500
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 1525
-Message-ID: <513A290A.3060502@metafoo.de>
-Date: Fri, 08 Mar 2013 19:08:10 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
+	Fri, 8 Mar 2013 13:07:38 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18WWpMd/ww6KVqRzY9OvWpE
+Date: Fri, 8 Mar 2013 10:07:31 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 03/10] ARM: smp_twd: Divorce smp_twd from local timer
+ API
+Message-ID: <20130308180730.GE11806@atomide.com>
+References: <1362614646-24113-1-git-send-email-sboyd@codeaurora.org>
+ <1362614646-24113-4-git-send-email-sboyd@codeaurora.org>
+ <20130308004011.GD11806@atomide.com>
+ <51393B59.3070200@codeaurora.org>
 MIME-Version: 1.0
-To: =?UTF-8?B?U8O2cmVuIEJyaW5rbWFubg==?= <soren.brinkmann@xilinx.com>
-CC: =?UTF-8?B?SmFuIEzDvGJiZQ==?= <jlu@pengutronix.de>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Mike Turquette <mturquette@linaro.org>,
-        Josh Cartwright <josh.cartwright@ni.com>,
-        Michal Simek <michal.simek@xilinx.com>,
-        Peter Crosthwaite <pcrost@xilinx.com>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, git@xilinx.com
-Subject: Re: RFC: Zynq Clock Controller
-References: <37032699-343e-485c-80e0-9b23e3706c58@VA3EHSMHS013.ehs.local> <1362570681.5269.98.camel@coredoba.hi.pengutronix.de> <f288874c-d0ae-4581-8d0f-2b9abe4d3117@CO9EHSMHS002.ehs.local> <51385FA3.8080105@metafoo.de> <2a91857c-473f-4f92-b2b1-e7ac4679b72a@AM1EHSMHS007.ehs.local> <51390E92.2080806@metafoo.de> <a6c711bf-7722-4eb0-bb72-0e5c00e4ba9d@CO9EHSMHS016.ehs.local> <51398F54.5080802@metafoo.de> <ad0abbdf-b783-4c43-aa40-534f726fbfb7@DB8EHSMHS013.ehs.local>
-In-Reply-To: <ad0abbdf-b783-4c43-aa40-534f726fbfb7@DB8EHSMHS013.ehs.local>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51393B59.3070200@codeaurora.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/08/2013 06:38 PM, Sören Brinkmann wrote:
-> On Fri, Mar 08, 2013 at 08:12:20AM +0100, Lars-Peter Clausen wrote:
->> On 03/08/2013 12:25 AM, Sören Brinkmann wrote:
->>> On Thu, Mar 07, 2013 at 11:02:58PM +0100, Lars-Peter Clausen wrote:
->>>> On 03/07/2013 08:11 PM, Sören Brinkmann wrote:
->>>>> On Thu, Mar 07, 2013 at 10:36:35AM +0100, Lars-Peter Clausen wrote:
->>>>>> On 03/06/2013 06:27 PM, Sören Brinkmann wrote:
->>>>>>> Hi Jan,
->>>>>>>  
->>>>>>> what a small world. Good to hear from you.
->>>>>>>
->>>>>>> On Wed, Mar 06, 2013 at 12:51:21PM +0100, Jan Lübbe wrote:
->>>>>>>> Hi Sören,
->>>>>>>>
->>>>>>>> On Tue, 2013-03-05 at 12:04 -0800, Sören Brinkmann wrote:
->>>>>>>>> For this reasons, I'd like to propose moving Zynq into the same
->>>>>>>>> direction. I.e. adding a clock controller with the following DT
->>>>>>>>> description (details may change but the general idea should become
->>>>>>>>> clear):
->>>>>>>>> 	clkc: clkc {
->>>>>>>>>                 #clock-cells = <1>;
->>>>>>>>>                 compatible = "xlnx,ps7-clkc";
->>>>>>>>>                 ps_clk_frequency = <33333333>;	# board x-tal
->>>>>>>>>                 # optional props
->>>>>>>>>                 gem0_emio_clk_freq = <125000000>;
->>>>>>>>>                 gem1_emio_clk_freq = <50000000>;
->>>>>>>>>                 can_mio_clk_freq_xx = <1234>; # this is possible 54 times with xx = 00..53
->>>>>>>>>         };
->>>>>>
->>>>>> I definitely prefer the way it is right now in upstream, where we have one
->>>>>> dt node per clock. It is more descriptive and also more extensible. And you
->>>>>> also don't have to remember the clock index, and can use the phandle
->>>>>> directly instead.
->>>>> The problems I see with that are:
->>>>>  - with the clock controller we can model the clock tree as we need without changing the DT all the time
->>>>
->>>> When do we need to change the clock tree? The clock tree is pretty much fixed
->>>> in hardware. And the DT describes the hardware, so I don't so a problem there.
->>>>
->>>>>  - w/o a clock controller there is no block which has knowledge of the whole clock tree (unless we parse the DT), and could conduct reparent operations and similar
->>>>
->>>> The clk framework builds a representation of the clock tree. Each clock should
->>>> be able to handle re-parenting on it's own, without knowing about the other
->>>> clocks in the tree, the parent is selected by a field in the clocks register.
->>>> It doesn't even have to know who the parents are, the clk framework will take
->>>> care of all of this and just say, ok, switch your input clock to X, where X is
->>>> a simple integer number The clk framework will also take care of re-calculating
->>>> all the updates frequencies after re-parenting.
->>> Nope, clk_set_parent() takes two 'struct *clk' as argument. So, you have to have those of the clock to change and all its parents. A device driver for example, which gets a clock through clk_get() does not have that information and should not, since it should not have to be aware of the SOC's clock hierarchy, IMHO.
->>>
->>
->> Yes, you global clk_set_parent() method takes two clk structs. But the clock
->> framework takes care of all the magic of mapping that second clk struct to a
->> integer number, based on the clks parent list. So your set_parent callback in
->> your clk_ops takes as parameters your clk and the index of the parent.
-> Right, but who/what in your scheme is supposed to call the high level API function requiring knowledge about all those 'struct *clk' and their hierarchy? This is where I think a big block has the advantage since it has a holistic view on the clock tree.
+Stephen Boyd <sboyd@codeaurora.org> [130307 17:18]:
+> On 03/07/13 16:40, Tony Lindgren wrote:
+> > Hi,
+> >
+> > Stephen Boyd <sboyd@codeaurora.org> [130306 17:53]:
+> >> Separate the smp_twd timers from the local timer APIThis will
+> >> allow us to remove ARM local timer support in the near future and
+> >> gets us closer to moving this driver to drivers/clocksource.
+> > Looks like applying this patch makes omap4 to stop booting for
+> > some reason.
+> >
+> >
 > 
+> Hm..Perhaps you need the clock?
 
-How would you use the clock controller driver to do re-parent operations? I
-really can't see how it will help to implement re-parent operations.
+Something is missing as the interrupts don't happen and it hangs:
 
->>
->>>>
->>>>>  - once the clock controller is properly defined the clock connection should be contained in a dtsi which never changes. So, regarding remembering outputs, I don't see a problem. I rather see issues with having a pile of clocks described in the DT. I have currently 44 outputs proposed, and to model the whole tree a lot of more clocks are used (I started modeling everything with the clock primitives and removed custom clock implementations, except for the PLLs). Having all those in the DT does not really help, IMHO.
->>>>
->>>> Well, except if you want to use external clocks for ethernet or CAN. Also you
->>>> don't need to change the dtsi either if you have a separate node for each clock.
->>>>
->>>> To avoid misunderstandings let me clarify that I don't want to have one node
->>>> per clock, but rather one node per clock block (or whatever they are called).
->>>> The combination of input select + divider + output gate. E.g. the UART clock
->>>> block with it's 3 inputs and two outputs.
->>>>
->>>> Also the APER clocks should probably be one node with 24 outputs.
->>> Okay, so instead of having one block encapsulating all clocks, you want it on a finer granularity. I don't see huge differences why that should be advantageous? It would just mean to create several blocks with their custom DT bindings instead of a single one. Just the abstraction level would be a little different.
->>
->> The DT is supposed to describe the hardware, not the software. These are the
->> basic blocks. The are independent of each other and mostly orthogonal. It's the
->> same IP block instantiated a couple of times next to each other (sometimes with
->> slightly different parameters). They just happen to have their register mapped
->> in the same IO region. The SLCR is just a container which contains all these
->> blocks. Very much the same way the whole SoC is a container which contains the
->> different peripheral blocks, etc. By you rationale we could argue, why do we
->> need a dt node for each peripheral and not just simply one ZYNQ node?
-> I see us ending up here with custom clock blocks for each and every peripheral. They all look similar on first look but have all their slight differences. So, it's either different implementations or having a lot of DT properties to make a single implementation work for all the variations. That's why I prefer the single controller solution.
-> The DT description will always be an abstraction. You prefer grouping clocks for functional units, whereas I put them all into the same drawer labeled 'clocks'.
+...
+OMAP clockevent source: GPTIMER1 at 32768 Hz
+sched_clock: 32 bits at 32kHz, resolution 30517ns, wraps every 131071999ms
+OMAP clocksource: 32k_counter at 32768 Hz
+Calibrating local timer...
+ 
+> --- a/arch/arm/kernel/smp_twd.c
+> +++ b/arch/arm/kernel/smp_twd.c
+> @@ -345,11 +345,11 @@ static int __init twd_local_timer_common_register(struct device_node *np)
+>         if (err)
+>                 goto out_irq;
+>  
+> +       twd_get_clock(np);
+> +
+>         /Immediately configure the timer on the boot CPU */
+>         twd_timer_setup(this_cpu_ptr(twd_evt));
+>  
+> -       twd_get_clock(np);
+> -
+>         return 0;
+>  
+>  out_irq:
 
-So how many parameters are there?
-- Number of input clocks: We get these by listing the parent clocks in the
-clocks property.
-- Number of output clocks: We get this through the output-clock-names
-  property.
-- Whether the output clocks can be gated, this requires a custom property.
-- Number of 6bit dividers in the chain, can be 0, 1 or 2. Needs a custom
-  property as well
+Adding that produces the following:
 
-So with these 4 properties you can describe ~90% of the clocks found on the
-Zynq.
+...
+OMAP clockevent source: GPTIMER1 at 32768 Hz
+sched_clock: 32 bits at 32kHz, resolution 30517ns, wraps every 131071999ms
+OMAP clocksource: 32k_counter at 32768 Hz
+Console: colour dummy device 80x30
+Lock dependency validator: Copyright (c) 2006 Red Hat, Inc., Ingo Molnar
+Unable to handle kernel NULL pointer dereference at virtual address 0000001d
+pgd = c0004000
+[0000001d] *pgd=00000000
+Internal error: Oops: 5 [#1] SMP ARM
+Modules linked in:
+CPU: 0    Not tainted  (3.9.0-rc1-12182-g90ac757-dirty #42)
+PC is at 0xe7d7f0a0
+LR is at twd_handler+0x34/0x40
+pc : [<e7d7f0a0>]    lr : [<c001a650>]    psr: 200001d3
+sp : c0791ea0  ip : c0790000  fp : 00000004
+r10: ed806780  r9 : c0805840  r8 : 00e0c000
+r7 : c07919c0  r6 : ed801900  r5 : 0000001d  r4 : 00000001
+r3 : fa240600  r2 : fa24060c  r1 : c0090d28  r0 : c0090d28
+Flags: nzCv  IRQs off  FIQs off  Mode SVC_32  ISA ARM  Segment kernel
+Control: 10c53c7d  Table: 8000404a  DAC: 00000017
+Process swapper/0 (pid: 0, stack limit = 0xc0790240)
+Stack: (0xc0791ea0 to 0xc0792000)
+1ea0: c07997a8 c00ac80c 0000001d c078e248 c0790000 00000000 c07997a8 00000000
+1ec0: c0790000 c00a9e2c 0000001d c00152a8 fa24010c c0791f00 c0799904 fa240110
+1ee0: c082b260 c000868c 200001d3 c004901c 20000153 ffffffff c0791f34 c052db64
+1f00: 00000001 00000001 c079bc90 00000000 00000000 00000000 00000048 00000048
+1f20: c082b260 00000000 c0790000 00000004 00000000 c0791f48 60000153 c004901c
+1f40: 20000153 ffffffff 00000000 00000000 00000000 00000000 c082b260 00000048
+1f60: 00000000 00000000 00000000 60000153 c033e2ec c0791fac c08292bc c0829240
+1f80: c076f678 ffffffff 411fc092 c07988c0 00000000 c0529c88 c068460c c0791fac
+1fa0: c082924c c07515b4 c068460c c080bb1c 00000011 c0829258 bfffffff c0736884
+1fc0: ffffffff ffffffff c0736474 00000000 00000000 c076f678 00000000 10c53c7d
+1fe0: c0798934 c076fa7c c079d16c 8000406a 00000000 80008074 00000000 00000000
+[<c001a650>] (twd_handler+0x34/0x40) from [<c00ac80c>] (handle_percpu_devid_irq+0xb8/0x128)
+[<c00ac80c>] (handle_percpu_devid_irq+0xb8/0x128) from [<c00a9e2c>] (generic_handle_irq+0x30/0x3c)
+[<c00a9e2c>] (generic_handle_irq+0x30/0x3c) from [<c00152a8>] (handle_IRQ+0x48/0xa8)
+[<c00152a8>] (handle_IRQ+0x48/0xa8) from [<c000868c>] (gic_handle_irq+0x30/0x6c)
+[<c000868c>] (gic_handle_irq+0x30/0x6c) from [<c052db64>] (__irq_svc+0x44/0x5c)
+Exception stack(0xc0791f00 to 0xc0791f48)
+1f00: 00000001 00000001 c079bc90 00000000 00000000 00000000 00000048 00000048
+1f20: c082b260 00000000 c0790000 00000004 00000000 c0791f48 60000153 c004901c
+1f40: 20000153 ffffffff
+[<c052db64>] (__irq_svc+0x44/0x5c) from [<c004901c>] (vprintk_emit+0x1f8/0x544)
+[<c004901c>] (vprintk_emit+0x1f8/0x544) from [<c0529c88>] (printk+0x30/0x40)
+[<c0529c88>] (printk+0x30/0x40) from [<c07515b4>] (lockdep_info+0x10/0xb4)
+[<c07515b4>] (lockdep_info+0x10/0xb4) from [<c0736884>] (start_kernel+0x1dc/0x328)
+[<c0736884>] (start_kernel+0x1dc/0x328) from [<80008074>] (0x80008074)
+Code: 57555555 55755154 557d5554 55d55655 (54555575) 
 
-And then there are the CAN and GEM clocks, which probably require custom
-clock implementation since they are kind of special.
+Regards,
 
-Your approach ends up with hundreds of lines of open-coding the
-instantiation of all the clock gates and dividers found in the slcr. That's
-just madness.
-
-- Lars
-
+Tony
