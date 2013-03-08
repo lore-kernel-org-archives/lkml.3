@@ -1,140 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752330Ab3CHF4s (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 00:56:48 -0500
-Received: from mga03.intel.com ([143.182.124.21]:38884 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751738Ab3CHF4r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 00:56:47 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,806,1355126400"; 
-   d="scan'208";a="210947054"
-Subject: [PATCH 3/3] intel_idle: set the state_tables array as __initdata
- to save mem
-From: Chuansheng Liu <chuansheng.liu@intel.com>
-To: lenb@kernel.org
-Cc: daniel.lezcano@linaro.org, len.brown@intel.com, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, chuansheng.liu@intel.com
-In-Reply-To: <1362754926.31506.42.camel@cliu38-desktop-build>
-References: <1362674529.31506.17.camel@cliu38-desktop-build>
-	 <1362754926.31506.42.camel@cliu38-desktop-build>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 08 Mar 2013 23:06:09 +0800
-Message-ID: <1362755169.31506.47.camel@cliu38-desktop-build>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S933237Ab3CHF5f (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 00:57:35 -0500
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:52672 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932161Ab3CHF5e (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Mar 2013 00:57:34 -0500
+Date: Thu, 7 Mar 2013 21:57:29 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Renninger <trenn@suse.de>, Tang Chen <tangchen@cn.fujitsu.com>,
+        linux-kernel@vger.kernel.org, Pekka Enberg <penberg@kernel.org>,
+        Jacob Shin <jacob.shin@amd.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        linux-acpi@vger.kernel.org
+Subject: Re: [PATCH 05/14] x86, ACPI: Find acpi tables in initrd early at
+ head_32.S/head64.c
+Message-ID: <20130308055729.GG14556@mtj.dyndns.org>
+References: <1362718720-27048-1-git-send-email-yinghai@kernel.org>
+ <1362718720-27048-6-git-send-email-yinghai@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1362718720-27048-6-git-send-email-yinghai@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Mar 07, 2013 at 08:58:31PM -0800, Yinghai Lu wrote:
+> diff --git a/arch/x86/kernel/head_32.S b/arch/x86/kernel/head_32.S
+> index 73afd11..ca08f0e 100644
+> --- a/arch/x86/kernel/head_32.S
+> +++ b/arch/x86/kernel/head_32.S
+> @@ -149,6 +149,10 @@ ENTRY(startup_32)
+>  	call load_ucode_bsp
+>  #endif
+>  
+> +#ifdef CONFIG_ACPI_INITRD_TABLE_OVERRIDE
+> +	call x86_acpi_override_find
+> +#endif
 
-Currently, in intel_idle.c, there are 5 state_tables array, every
-array size is sizeof(struct cpuidle_state) * CPUIDLE_STATE_MAX.
+The function is always defined.  We can probalby lose ifdef here?
 
-As in intel_idle_cpuidle_driver_init(), we have copied the data into
-intel_idle_driver->state[], so do not need to keep state_tables[]
-there any more after system init.
+Also, does it really have to be called from head_32.S?  No way this
+can be done after entering C code?  It would be great if you can
+explain overall design choices in the head message (and important
+patches).
 
-It will save about 3~4k memory, also benefits mobile devices.
-Here changing them as __initdata, also removing global var
-cpuidle_state_table pointer.
+> diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+> index 668e658..d43545a 100644
+> --- a/arch/x86/kernel/setup.c
+> +++ b/arch/x86/kernel/setup.c
+> @@ -424,6 +424,32 @@ static void __init reserve_initrd(void)
+>  }
+>  #endif /* CONFIG_BLK_DEV_INITRD */
+>  
+> +#ifdef CONFIG_ACPI_INITRD_TABLE_OVERRIDE
+> +void __init x86_acpi_override_find(void)
+> +{
+> +	unsigned long ramdisk_image, ramdisk_size;
+> +	unsigned char *p = NULL;
+> +
+> +#ifdef CONFIG_X86_32
+> +	struct boot_params *boot_params_p;
+> +
+> +	boot_params_p = (struct boot_params *)__pa_symbol(&boot_params);
+> +	ramdisk_image = boot_params_p->hdr.ramdisk_image;
+> +	ramdisk_size  = boot_params_p->hdr.ramdisk_size;
+> +	p = (unsigned char *)ramdisk_image;
+> +	acpi_initrd_override_find(p, ramdisk_size, true);
+> +#else
+> +	ramdisk_image = get_ramdisk_image();
+> +	ramdisk_size  = get_ramdisk_size();
+> +	if (ramdisk_image)
+> +		p = __va(ramdisk_image);
+> +	acpi_initrd_override_find(p, ramdisk_size, false);
+> +#endif
+> +}
+> +#else
+> +void __init x86_acpi_override_find(void) { }
 
-Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
----
- drivers/idle/intel_idle.c |   18 ++++++++----------
- 1 files changed, 8 insertions(+), 10 deletions(-)
+And add a comment here why we're not doing static inline for the dummy
+function?
 
-diff --git a/drivers/idle/intel_idle.c b/drivers/idle/intel_idle.c
-index 503b401..cbdc952 100644
---- a/drivers/idle/intel_idle.c
-+++ b/drivers/idle/intel_idle.c
-@@ -99,8 +99,6 @@ static int intel_idle(struct cpuidle_device *dev,
- 			struct cpuidle_driver *drv, int index);
- static int intel_idle_cpu_init(int cpu);
- 
--static struct cpuidle_state *cpuidle_state_table;
--
- /*
-  * Set this flag for states where the HW flushes the TLB for us
-  * and so we don't need cross-calls to keep it consistent.
-@@ -124,7 +122,7 @@ static struct cpuidle_state *cpuidle_state_table;
-  * which is also the index into the MWAIT hint array.
-  * Thus C0 is a dummy.
-  */
--static struct cpuidle_state nehalem_cstates[CPUIDLE_STATE_MAX] = {
-+static struct cpuidle_state nehalem_cstates[CPUIDLE_STATE_MAX] __initdata = {
- 	{
- 		.name = "C1-NHM",
- 		.desc = "MWAIT 0x00",
-@@ -157,7 +155,7 @@ static struct cpuidle_state nehalem_cstates[CPUIDLE_STATE_MAX] = {
- 		.enter = NULL }
- };
- 
--static struct cpuidle_state snb_cstates[CPUIDLE_STATE_MAX] = {
-+static struct cpuidle_state snb_cstates[CPUIDLE_STATE_MAX] __initdata = {
- 	{
- 		.name = "C1-SNB",
- 		.desc = "MWAIT 0x00",
-@@ -197,7 +195,7 @@ static struct cpuidle_state snb_cstates[CPUIDLE_STATE_MAX] = {
- 		.enter = NULL }
- };
- 
--static struct cpuidle_state ivb_cstates[CPUIDLE_STATE_MAX] = {
-+static struct cpuidle_state ivb_cstates[CPUIDLE_STATE_MAX] __initdata = {
- 	{
- 		.name = "C1-IVB",
- 		.desc = "MWAIT 0x00",
-@@ -237,7 +235,7 @@ static struct cpuidle_state ivb_cstates[CPUIDLE_STATE_MAX] = {
- 		.enter = NULL }
- };
- 
--static struct cpuidle_state hsw_cstates[CPUIDLE_STATE_MAX] = {
-+static struct cpuidle_state hsw_cstates[CPUIDLE_STATE_MAX] __initdata = {
- 	{
- 		.name = "C1-HSW",
- 		.desc = "MWAIT 0x00",
-@@ -277,7 +275,7 @@ static struct cpuidle_state hsw_cstates[CPUIDLE_STATE_MAX] = {
- 		.enter = NULL }
- };
- 
--static struct cpuidle_state atom_cstates[CPUIDLE_STATE_MAX] = {
-+static struct cpuidle_state atom_cstates[CPUIDLE_STATE_MAX] __initdata = {
- 	{
- 		.name = "C1E-ATM",
- 		.desc = "MWAIT 0x00",
-@@ -472,7 +470,7 @@ MODULE_DEVICE_TABLE(x86cpu, intel_idle_ids);
- /*
-  * intel_idle_probe()
-  */
--static int intel_idle_probe(void)
-+static int __init intel_idle_probe(void)
- {
- 	unsigned int eax, ebx, ecx;
- 	const struct x86_cpu_id *id;
-@@ -504,7 +502,6 @@ static int intel_idle_probe(void)
- 	pr_debug(PREFIX "MWAIT substates: 0x%x\n", mwait_substates);
- 
- 	icpu = (const struct idle_cpu *)id->driver_data;
--	cpuidle_state_table = icpu->state_table;
- 
- 	if (boot_cpu_has(X86_FEATURE_ARAT))	/* Always Reliable APIC Timer */
- 		lapic_timer_reliable_states = LAPIC_TIMER_ALWAYS_RELIABLE;
-@@ -540,10 +537,11 @@ static void intel_idle_cpuidle_devices_uninit(void)
-  * intel_idle_cpuidle_driver_init()
-  * allocate, initialize cpuidle_states
-  */
--static int intel_idle_cpuidle_driver_init(void)
-+static int __init intel_idle_cpuidle_driver_init(void)
- {
- 	int cstate;
- 	struct cpuidle_driver *drv = &intel_idle_driver;
-+	struct cpuidle_state *cpuidle_state_table = icpu->state_table;
- 
- 	drv->state_count = 1;
- 
+Thanks.
+
 -- 
-1.7.0.4
-
-
-
+tejun
