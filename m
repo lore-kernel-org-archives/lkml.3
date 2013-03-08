@@ -1,83 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754721Ab3CHHk0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 02:40:26 -0500
-Received: from bitsync.net ([80.83.126.10]:34363 "EHLO bitsync.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751180Ab3CHHkZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 02:40:25 -0500
-X-Greylist: delayed 637 seconds by postgrey-1.27 at vger.kernel.org; Fri, 08 Mar 2013 02:40:25 EST
-Message-ID: <51399368.3040200@bitsync.net>
-Date: Fri, 08 Mar 2013 08:29:44 +0100
-From: Zlatko Calusic <zcalusic@bitsync.net>
+	id S1754902Ab3CHHoU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 02:44:20 -0500
+Received: from mail-ob0-f171.google.com ([209.85.214.171]:58008 "EHLO
+	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752091Ab3CHHoT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Mar 2013 02:44:19 -0500
 MIME-Version: 1.0
-To: Hillf Danton <dhillf@gmail.com>
-CC: Jiri Slaby <jslaby@suse.cz>, Daniel J Blueman <daniel@numascale-asia.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Steffen Persvold <sp@numascale.com>, mm <linux-mm@kvack.org>,
-        Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: kswapd craziness round 2
-References: <5121C7AF.2090803@numascale-asia.com> <CAJd=RBArPT8YowhLuE8YVGNfH7G-xXTOjSyDgdV2RsatL-9m+Q@mail.gmail.com> <51254AD2.7000906@suse.cz> <CAJd=RBCiYof5rRVK+62OFMw+5F=5rS=qxRYF+OHpuRz895bn4w@mail.gmail.com> <512F8D8B.3070307@suse.cz> <CAJd=RBD=eT=xdEy+v3GBZ47gd47eB+fpF-3VtfpLAU7aEkZGgA@mail.gmail.com> <5138EC6C.6030906@suse.cz> <CAJd=RBC6JzXzPn9OV8UsbEjX152RcbKpuGGy+OBGM6E43gourQ@mail.gmail.com>
-In-Reply-To: <CAJd=RBC6JzXzPn9OV8UsbEjX152RcbKpuGGy+OBGM6E43gourQ@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20130308070130.GM14556@mtj.dyndns.org>
+References: <1362718720-27048-1-git-send-email-yinghai@kernel.org>
+	<1362718720-27048-15-git-send-email-yinghai@kernel.org>
+	<20130308070130.GM14556@mtj.dyndns.org>
+Date: Thu, 7 Mar 2013 23:44:18 -0800
+X-Google-Sender-Auth: S0RNDLa0sdK0uvpLX9AwB_AF7iQ
+Message-ID: <CAE9FiQWe_QbsmuJfqT+Wc77v7M0y1+ho-3ZpxV8b0er6tSTFKQ@mail.gmail.com>
+Subject: Re: [PATCH 14/14] x86, mm: Put pagetable on local node ram
+From: Yinghai Lu <yinghai@kernel.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Renninger <trenn@suse.de>, Tang Chen <tangchen@cn.fujitsu.com>,
+        linux-kernel@vger.kernel.org, Pekka Enberg <penberg@kernel.org>,
+        Jacob Shin <jacob.shin@amd.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08.03.2013 07:42, Hillf Danton wrote:
-> On Fri, Mar 8, 2013 at 3:37 AM, Jiri Slaby <jslaby@suse.cz> wrote:
->> On 03/01/2013 03:02 PM, Hillf Danton wrote:
->>> On Fri, Mar 1, 2013 at 1:02 AM, Jiri Slaby <jslaby@suse.cz> wrote:
->>>>
->>>> Ok, no difference, kswap is still crazy. I'm attaching the output of
->>>> "grep -vw '0' /proc/vmstat" if you see something there.
->>>>
->>> Thanks to you for test and data.
->>>
->>> Lets try to restore the deleted nap, then.
+On Thu, Mar 7, 2013 at 11:01 PM, Tejun Heo <tj@kernel.org> wrote:
+> On Thu, Mar 07, 2013 at 08:58:40PM -0800, Yinghai Lu wrote:
+>> If node with ram is hotplugable, local node mem for page table and vmemmap
+>> should be on that node ram.
 >>
->> Oh, it seems to be nice now:
->> root       579  0.0  0.0      0     0 ?        S    Mar04   0:13 [kswapd0]
+>> This patch is some kind of refreshment of
+>> | commit 1411e0ec3123ae4c4ead6bfc9fe3ee5a3ae5c327
+>> | Date:   Mon Dec 27 16:48:17 2010 -0800
+>> |
+>> |    x86-64, numa: Put pgtable to local node memory
+>> That was reverted before.
 >>
-> Double thanks.
+>> We have reason to reintroduce it to make memory hotplug work.
+>>
+>> Split calling of init_mem_mapping into early_initmem_info
+>> for nodes after we get numa info there.
+>>
+>> First node will be low range.
+>> Need to rework alloc_low_pages to alloc page table in following order:
+>>       BRK, local node, low range
+>>
+>> Still only load_cr3 one time, otherwise we would break xen 64bit again.
 >
-> But Mel does not like it, probably.
-> Lets try nap in another way.
->
-> Hillf
->
-> --- a/mm/vmscan.c	Thu Feb 21 20:01:02 2013
-> +++ b/mm/vmscan.c	Fri Mar  8 14:36:10 2013
-> @@ -2793,6 +2793,10 @@ loop_again:
->   				 * speculatively avoid congestion waits
->   				 */
->   				zone_clear_flag(zone, ZONE_CONGESTED);
-> +
-> +			else if (sc.priority > 2 &&
-> +				 sc.priority < DEF_PRIORITY - 2)
-> +				wait_iff_congested(zone, BLK_RW_ASYNC, HZ/10);
->   		}
->
->   		/*
-> --
->
+> Hmmm... can you please split this patch further?  init_mem_mapping()
+> change can be separated, no?
 
-There's another bug in there, which I'm still chasing. Artificial sleeps 
-like this just mask the real bug and introduce new problems (on my 4GB 
-server kswapd spends all the time in those congestion wait calls). The 
-problem is that the bug needs about 5 days of uptime to reveal it's ugly 
-head. So far I can only tell that it was introduced somewhere between 
-3.1 & 3.4.
+will try to split it out.
 
-Also, check shrink_inactive_list(), it already sleeps if really needed:
+> Also, comments are disturbingly missing.
+> How are other people reading the code supposed to know what it's
+> trying to achieve why and how?  Hmmm... we're also likely to end up
+> with smaller mapping for misaligned NUMA configurations (I think my
+> test machine is like that).  Is it guaranteed that the top level ends
+> up in the first node?  It really needs documentation.
 
-if (nr_writeback && nr_writeback >=
-		(nr_taken >> (DEF_PRIORITY - sc->priority)))
-	wait_iff_congested(zone, BLK_RW_ASYNC, HZ/10);
+Yes. To really memory hotplug working, will need to trim the node
+alignment to be
+1G in memblock and numa_meminfo.
 
-Regards,
--- 
-Zlatko
+also need to put pgd page in low range (first node) if 512G block is
+crossing node.
+for example: if node2 is [256g, 1024g), pgd for 256g-512g, must be stay on node0
+and 512g-1024g could stay on node2.
+or just put all PGD pages on low range (first node).
 
+Thanks
+
+Yinghai
