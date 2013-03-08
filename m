@@ -1,52 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964821Ab3CHRzL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 12:55:11 -0500
-Received: from netrider.rowland.org ([192.131.102.5]:38404 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S933621Ab3CHRzJ (ORCPT
+	id S934537Ab3CHRzy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 12:55:54 -0500
+Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:29089 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756917Ab3CHRzx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 12:55:09 -0500
-Date: Fri, 8 Mar 2013 12:55:08 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: Alexey Khoroshilov <khoroshilov@ispras.ru>,
-        Oliver Neukum <oliver@neukum.org>
-cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Hans de Goede <hdegoede@redhat.com>,
-        USB list <linux-usb@vger.kernel.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        <ldv-project@linuxtesting.org>
-Subject: Re: [PATCH] usb/core/devio.c: Don't use GFP_KERNEL while we cannot
- reset a storage device
-In-Reply-To: <1362761447-24643-1-git-send-email-khoroshilov@ispras.ru>
-Message-ID: <Pine.LNX.4.44L0.1303081248090.17427-100000@netrider.rowland.org>
+	Fri, 8 Mar 2013 12:55:53 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+uuMT3U+Z1yKFu3P9f7zZj
+Date: Fri, 8 Mar 2013 09:55:39 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Aaro Koskinen <aaro.koskinen@iki.fi>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: OMAP: drop "select MACH_NOKIA_RM696"
+Message-ID: <20130308175539.GG26093@atomide.com>
+References: <1362738596.5994.48.camel@x61.thuisdomein>
+ <20130308161159.GE14552@blackmetal.musicnaut.iki.fi>
+ <20130308163507.GC26093@atomide.com>
+ <1362763232.5994.75.camel@x61.thuisdomein>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1362763232.5994.75.camel@x61.thuisdomein>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 9 Mar 2013, Alexey Khoroshilov wrote:
-
-> As it was described by Oliver Neukum in commit acbe2fe
-> "USB: Don't use GFP_KERNEL while we cannot reset a storage device":
+* Paul Bolle <pebolle@tiscali.nl> [130308 09:24]:
+> On Fri, 2013-03-08 at 08:35 -0800, Tony Lindgren wrote:
+> > I think the righ fix is to just add
+> > 
+> > config MACH_NOKIA_RM680
+> > 	bool
 > 
->   Memory allocations with GFP_KERNEL can cause IO to a storage device
->   which can fail resulting in a need to reset the device. Therefore
->   GFP_KERNEL cannot be safely used between usb_lock_device()
->   and usb_unlock_device(). Replace by GFP_NOIO.
+> I guess you meant MACH_NOKIA_RM696.
+
+Ooops yes.
+ 
+> > to the mach-omap2/Kconfig like we have for n8x0 also.
 > 
-> The patch fixes the same issue in usb/core/devio.c.
-> All the allocations fixed are under usb_lock_device() from usbdev_do_ioctl().
-> 
-> Found by Linux Driver Verification project (linuxtesting.org).
+> Should I draft a patch?
 
-I don't know if this is a good idea.  People can and do submit 
-transfers requiring a lot of buffer space.  Switching to GFP_NOIO 
-will make those allocations a lot more likely to fail.
+Sure that would be nice.
 
-Oliver, what do you think?
-
-Alan Stern
-
+Tony
