@@ -1,127 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933568Ab3CHWw7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 17:52:59 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:36106 "EHLO
+	id S933637Ab3CHWxE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 17:53:04 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:36132 "EHLO
 	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933431Ab3CHWw4 (ORCPT
+	with ESMTP id S933431Ab3CHWxA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 17:52:56 -0500
+	Fri, 8 Mar 2013 17:53:00 -0500
 From: Dave Kleikamp <dave.kleikamp@oracle.com>
 To: Zach Brown <zab@zabbo.net>
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Asias He <asias@redhat.com>, Dave Kleikamp <dave.kleikamp@oracle.com>
-Subject: [PATCH V7 -next 26/33] block_dev: add support for read_iter, write_iter
-Date: Fri,  8 Mar 2013 16:52:21 -0600
-Message-Id: <1362783148-22736-27-git-send-email-dave.kleikamp@oracle.com>
+        Dave Kleikamp <dave.kleikamp@oracle.com>, Ben Myers <bpm@sgi.com>,
+        Alex Elder <elder@kernel.org>, xfs@oss.sgi.com
+Subject: [PATCH V7 -next 27/33] xfs: add support for read_iter and write_iter
+Date: Fri,  8 Mar 2013 16:52:22 -0600
+Message-Id: <1362783148-22736-28-git-send-email-dave.kleikamp@oracle.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1362783148-22736-1-git-send-email-dave.kleikamp@oracle.com>
 References: <1362783148-22736-1-git-send-email-dave.kleikamp@oracle.com>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Asias He <asias@redhat.com>
-
-Signed-off-by: Asias He <asias@redhat.com>
 Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
+Cc: Ben Myers <bpm@sgi.com>
+Cc: Alex Elder <elder@kernel.org>
+Cc: xfs@oss.sgi.com
 ---
- drivers/char/raw.c |  4 ++--
- fs/block_dev.c     | 19 +++++++++----------
- include/linux/fs.h |  4 ++--
- 3 files changed, 13 insertions(+), 14 deletions(-)
+ fs/xfs/xfs_file.c | 51 ++++++++++++++++++++-------------------------------
+ 1 file changed, 20 insertions(+), 31 deletions(-)
 
-diff --git a/drivers/char/raw.c b/drivers/char/raw.c
-index f3223aa..db5fa4e 100644
---- a/drivers/char/raw.c
-+++ b/drivers/char/raw.c
-@@ -285,9 +285,9 @@ static long raw_ctl_compat_ioctl(struct file *file, unsigned int cmd,
+diff --git a/fs/xfs/xfs_file.c b/fs/xfs/xfs_file.c
+index a81aa74..7bd3609 100644
+--- a/fs/xfs/xfs_file.c
++++ b/fs/xfs/xfs_file.c
+@@ -226,10 +226,9 @@ xfs_file_fsync(
+ }
  
- static const struct file_operations raw_fops = {
- 	.read		= do_sync_read,
--	.aio_read	= generic_file_aio_read,
-+	.read_iter	= generic_file_read_iter,
- 	.write		= do_sync_write,
--	.aio_write	= blkdev_aio_write,
-+	.write_iter	= blkdev_write_iter,
- 	.fsync		= blkdev_fsync,
- 	.open		= raw_open,
- 	.release	= raw_release,
-diff --git a/fs/block_dev.c b/fs/block_dev.c
-index 0d71c44..44edaf7 100644
---- a/fs/block_dev.c
-+++ b/fs/block_dev.c
-@@ -1523,8 +1523,7 @@ static long block_ioctl(struct file *file, unsigned cmd, unsigned long arg)
-  * Does not take i_mutex for the write and thus is not for general purpose
-  * use.
-  */
--ssize_t blkdev_aio_write(struct kiocb *iocb, const struct iovec *iov,
--			 unsigned long nr_segs, loff_t pos)
-+ssize_t blkdev_write_iter(struct kiocb *iocb, struct iov_iter *iter, loff_t pos)
+ STATIC ssize_t
+-xfs_file_aio_read(
++xfs_file_read_iter(
+ 	struct kiocb		*iocb,
+-	const struct iovec	*iovp,
+-	unsigned long		nr_segs,
++	struct iov_iter		*iter,
+ 	loff_t			pos)
  {
- 	struct file *file = iocb->ki_filp;
- 	struct blk_plug plug;
-@@ -1533,7 +1532,7 @@ ssize_t blkdev_aio_write(struct kiocb *iocb, const struct iovec *iov,
+ 	struct file		*file = iocb->ki_filp;
+@@ -250,9 +249,7 @@ xfs_file_aio_read(
+ 	if (file->f_mode & FMODE_NOCMTIME)
+ 		ioflags |= IO_INVIS;
+ 
+-	ret = generic_segment_checks(iovp, &nr_segs, &size, VERIFY_WRITE);
+-	if (ret < 0)
+-		return ret;
++	size = iov_iter_count(iter);
+ 
+ 	if (unlikely(ioflags & IO_ISDIRECT)) {
+ 		xfs_buftarg_t	*target =
+@@ -305,7 +302,7 @@ xfs_file_aio_read(
+ 
+ 	trace_xfs_file_read(ip, size, pos, ioflags);
+ 
+-	ret = generic_file_aio_read(iocb, iovp, nr_segs, pos);
++	ret = generic_file_read_iter(iocb, iter, pos);
+ 	if (ret > 0)
+ 		XFS_STATS_ADD(xs_read_bytes, ret);
+ 
+@@ -621,10 +618,9 @@ restart:
+ STATIC ssize_t
+ xfs_file_dio_aio_write(
+ 	struct kiocb		*iocb,
+-	const struct iovec	*iovp,
+-	unsigned long		nr_segs,
++	struct iov_iter		*iter,
+ 	loff_t			pos,
+-	size_t			ocount)
++	size_t			count)
+ {
+ 	struct file		*file = iocb->ki_filp;
+ 	struct address_space	*mapping = file->f_mapping;
+@@ -632,7 +628,6 @@ xfs_file_dio_aio_write(
+ 	struct xfs_inode	*ip = XFS_I(inode);
+ 	struct xfs_mount	*mp = ip->i_mount;
+ 	ssize_t			ret = 0;
+-	size_t			count = ocount;
+ 	int			unaligned_io = 0;
+ 	int			iolock;
+ 	struct xfs_buftarg	*target = XFS_IS_REALTIME_INODE(ip) ?
+@@ -692,8 +687,8 @@ xfs_file_dio_aio_write(
+ 	}
+ 
+ 	trace_xfs_file_direct_write(ip, count, iocb->ki_pos, 0);
+-	ret = generic_file_direct_write(iocb, iovp,
+-			&nr_segs, pos, &iocb->ki_pos, count, ocount);
++	ret = generic_file_direct_write_iter(iocb, iter,
++			pos, &iocb->ki_pos, count);
+ 
+ out:
+ 	xfs_rw_iunlock(ip, iolock);
+@@ -706,10 +701,9 @@ out:
+ STATIC ssize_t
+ xfs_file_buffered_aio_write(
+ 	struct kiocb		*iocb,
+-	const struct iovec	*iovp,
+-	unsigned long		nr_segs,
++	struct iov_iter		*iter,
+ 	loff_t			pos,
+-	size_t			ocount)
++	size_t			count)
+ {
+ 	struct file		*file = iocb->ki_filp;
+ 	struct address_space	*mapping = file->f_mapping;
+@@ -718,7 +712,6 @@ xfs_file_buffered_aio_write(
+ 	ssize_t			ret;
+ 	int			enospc = 0;
+ 	int			iolock = XFS_IOLOCK_EXCL;
+-	size_t			count = ocount;
+ 
+ 	xfs_rw_ilock(ip, iolock);
+ 
+@@ -731,7 +724,7 @@ xfs_file_buffered_aio_write(
+ 
+ write_retry:
+ 	trace_xfs_file_buffered_write(ip, count, iocb->ki_pos, 0);
+-	ret = generic_file_buffered_write(iocb, iovp, nr_segs,
++	ret = generic_file_buffered_write_iter(iocb, iter,
+ 			pos, &iocb->ki_pos, count, 0);
+ 
+ 	/*
+@@ -752,10 +745,9 @@ out:
+ }
+ 
+ STATIC ssize_t
+-xfs_file_aio_write(
++xfs_file_write_iter(
+ 	struct kiocb		*iocb,
+-	const struct iovec	*iovp,
+-	unsigned long		nr_segs,
++	struct iov_iter		*iter,
+ 	loff_t			pos)
+ {
+ 	struct file		*file = iocb->ki_filp;
+@@ -763,17 +755,15 @@ xfs_file_aio_write(
+ 	struct inode		*inode = mapping->host;
+ 	struct xfs_inode	*ip = XFS_I(inode);
+ 	ssize_t			ret;
+-	size_t			ocount = 0;
++	size_t			count = 0;
+ 
+ 	XFS_STATS_INC(xs_write_calls);
+ 
  	BUG_ON(iocb->ki_pos != pos);
  
- 	blk_start_plug(&plug);
--	ret = __generic_file_aio_write(iocb, iov, nr_segs, &iocb->ki_pos);
-+	ret = __generic_file_write_iter(iocb, iter, &iocb->ki_pos);
- 	if (ret > 0 || ret == -EIOCBQUEUED) {
+-	ret = generic_segment_checks(iovp, &nr_segs, &ocount, VERIFY_READ);
+-	if (ret)
+-		return ret;
++	count = iov_iter_count(iter);
+ 
+-	if (ocount == 0)
++	if (count == 0)
+ 		return 0;
+ 
+ 	if (!sb_start_file_write(file))
+@@ -785,10 +775,9 @@ xfs_file_aio_write(
+ 	}
+ 
+ 	if (unlikely(file->f_flags & O_DIRECT))
+-		ret = xfs_file_dio_aio_write(iocb, iovp, nr_segs, pos, ocount);
++		ret = xfs_file_dio_aio_write(iocb, iter, pos, count);
+ 	else
+-		ret = xfs_file_buffered_aio_write(iocb, iovp, nr_segs, pos,
+-						  ocount);
++		ret = xfs_file_buffered_aio_write(iocb, iter, pos, count);
+ 
+ 	if (ret > 0) {
  		ssize_t err;
- 
-@@ -1544,10 +1543,10 @@ ssize_t blkdev_aio_write(struct kiocb *iocb, const struct iovec *iov,
- 	blk_finish_plug(&plug);
- 	return ret;
- }
--EXPORT_SYMBOL_GPL(blkdev_aio_write);
-+EXPORT_SYMBOL_GPL(blkdev_write_iter);
- 
--static ssize_t blkdev_aio_read(struct kiocb *iocb, const struct iovec *iov,
--			 unsigned long nr_segs, loff_t pos)
-+static ssize_t blkdev_read_iter(struct kiocb *iocb, struct iov_iter *iter,
-+			 loff_t pos)
- {
- 	struct file *file = iocb->ki_filp;
- 	struct inode *bd_inode = file->f_mapping->host;
-@@ -1558,8 +1557,8 @@ static ssize_t blkdev_aio_read(struct kiocb *iocb, const struct iovec *iov,
- 
- 	size -= pos;
- 	if (size < INT_MAX)
--		nr_segs = iov_shorten((struct iovec *)iov, nr_segs, size);
--	return generic_file_aio_read(iocb, iov, nr_segs, pos);
-+		iov_iter_shorten(iter, size);
-+	return generic_file_read_iter(iocb, iter, pos);
- }
- 
- /*
-@@ -1592,8 +1591,8 @@ const struct file_operations def_blk_fops = {
- 	.llseek		= block_llseek,
+@@ -1418,8 +1407,8 @@ const struct file_operations xfs_file_operations = {
+ 	.llseek		= xfs_file_llseek,
  	.read		= do_sync_read,
  	.write		= do_sync_write,
--	.aio_read	= blkdev_aio_read,
--	.aio_write	= blkdev_aio_write,
-+	.read_iter	= blkdev_read_iter,
-+	.write_iter	= blkdev_write_iter,
- 	.mmap		= generic_file_mmap,
- 	.fsync		= blkdev_fsync,
- 	.unlocked_ioctl	= block_ioctl,
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 73fb7a7..a8dc250 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -2509,8 +2509,8 @@ extern int generic_segment_checks(const struct iovec *iov,
- 		unsigned long *nr_segs, size_t *count, int access_flags);
- 
- /* fs/block_dev.c */
--extern ssize_t blkdev_aio_write(struct kiocb *iocb, const struct iovec *iov,
--				unsigned long nr_segs, loff_t pos);
-+extern ssize_t blkdev_write_iter(struct kiocb *iocb, struct iov_iter *iter,
-+				 loff_t pos);
- extern int blkdev_fsync(struct file *filp, loff_t start, loff_t end,
- 			int datasync);
- extern void block_sync_page(struct page *page);
+-	.aio_read	= xfs_file_aio_read,
+-	.aio_write	= xfs_file_aio_write,
++	.read_iter	= xfs_file_read_iter,
++	.write_iter	= xfs_file_write_iter,
+ 	.splice_read	= xfs_file_splice_read,
+ 	.splice_write	= xfs_file_splice_write,
+ 	.unlocked_ioctl	= xfs_file_ioctl,
 -- 
 1.8.1.5
 
