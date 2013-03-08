@@ -1,83 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757097Ab3CHUWc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 15:22:32 -0500
-Received: from mail-oa0-f53.google.com ([209.85.219.53]:59085 "EHLO
-	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752929Ab3CHUW3 (ORCPT
+	id S1753147Ab3CHU3y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 15:29:54 -0500
+Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:25977 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751264Ab3CHU3w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 15:22:29 -0500
+	Fri, 8 Mar 2013 15:29:52 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+UqE3SoANCqJer7L8tsV+G
+Date: Fri, 8 Mar 2013 12:29:47 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 03/10] ARM: smp_twd: Divorce smp_twd from local timer
+ API
+Message-ID: <20130308202947.GK11806@atomide.com>
+References: <1362614646-24113-1-git-send-email-sboyd@codeaurora.org>
+ <1362614646-24113-4-git-send-email-sboyd@codeaurora.org>
+ <20130308004011.GD11806@atomide.com>
+ <51393B59.3070200@codeaurora.org>
+ <20130308180730.GE11806@atomide.com>
+ <513A2B20.30805@codeaurora.org>
+ <20130308194802.GG11806@atomide.com>
+ <513A40EF.8050403@codeaurora.org>
+ <20130308200811.GJ11806@atomide.com>
+ <513A4774.3040605@codeaurora.org>
 MIME-Version: 1.0
-In-Reply-To: <20130308175920.GA26332@redhat.com>
-References: <20130308175852.GA26300@redhat.com>
-	<20130308175920.GA26332@redhat.com>
-Date: Fri, 8 Mar 2013 12:22:29 -0800
-X-Google-Sender-Auth: 1WeX0tcwzyhLdMlP6lzrTEauEpc
-Message-ID: <CACBanvqjE_vaCdL=3OouFPtR2714X+55Wc1LAziK43_35cXr4w@mail.gmail.com>
-Subject: Re: [PATCH 3/3] coredump: change wait_for_dump_helpers() to use wait_event_interruptible()
-From: Mandeep Singh Baines <msb@chromium.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Neil Horman <nhorman@redhat.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Tejun Heo <tj@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <513A4774.3040605@codeaurora.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 8, 2013 at 9:59 AM, Oleg Nesterov <oleg@redhat.com> wrote:
-> wait_for_dump_helpers() calls wake_up/kill_fasync from inside the
-> wait_event-like loop. This is not needed and in fact this is not
-> strictly correct, we can/should do this only once after we change
-> pipe->writers. We could even check if it becomes zero.
->
-> Change this code to use use wait_event_interruptible(), this can
-> also help to make this wait freezable.
->
-> With this patch we check pipe->readers without pipe_lock(), this
-> is fine. Once we see pipe->readers == 1 we know that the handler
-> decremented the counter, this is all we need.
->
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+* Stephen Boyd <sboyd@codeaurora.org> [130308 12:22]:
+> On 03/08/13 12:08, Tony Lindgren wrote:
+> > * Stephen Boyd <sboyd@codeaurora.org> [130308 11:54]:
+> >> On 03/08/13 11:48, Tony Lindgren wrote:
+> >>> * Stephen Boyd <sboyd@codeaurora.org> [130308 10:21]:
+> >>>> diff --git a/arch/arm/kernel/smp_twd.c b/arch/arm/kernel/smp_twd.c
+> >>>> index 081de6f..4ea3e9d 100644
+> >>>> --- a/arch/arm/kernel/smp_twd.c
+> >>>> +++ b/arch/arm/kernel/smp_twd.c
+> >>>> @@ -227,7 +227,7 @@ static void __cpuinit twd_calibrate_rate(void)
+> >>>>  
+> >>>>  static irqreturn_t twd_handler(int irq, void *dev_id)
+> >>>>  {
+> >>>> -       struct clock_event_device *evt = *(struct clock_event_device **)dev_id;
+> >>>> +       struct clock_event_device *evt = dev_id;
+> >>>>  
+> >>>>         if (twd_timer_ack()) {
+> >>>>                 evt->event_handler(evt);
+> >>>>
+> >>> Yup thanks that fixes it, both fixes are needed. So for this patch + the
+> >>> two fixes please feel free to add:
+> >>>
+> >>> Acked-by: Tony Lindgren <tony@atomide.com>
+> >> Great. Thanks for testing.
+> > Hmm noticed one more thing: vexpress no longer boots in qemu for
+> > me after applying this. Sorry did not get any debug_ll output, but
+> > maybe you can take a look at it. I tested with omap2plus_defconfig +
+> > linaro-qemu:
+> >
+> > $ qemu-system-arm -machine vexpress-a9 -m 1024 -curses -net nic -net \
+> > user -serial stdio -append console=ttyAMA0,115200n8 rw \
+> > root=/dev/mmcblk0p2 rootwait physmap.enabled=0 -kernel zImage \
+> > -initrd initrd.img -sd rootfs.img
+> >
+> >
+> 
+> I wonder if you're hitting something similar to this issue on versatile
+> boards [1]. Can you try that patch? Otherwise I will try to get qemu
+> running (something I've never done, do you have instructions?).
 
-Acked-by: Mandeep Singh Baines <msb@chromium.org>
+Applying that does not seem to help, but you might want to get vexpress
+running anyways for some multiplatform sanity checks.
 
-> ---
->  fs/coredump.c |   15 +++++++++------
->  1 files changed, 9 insertions(+), 6 deletions(-)
->
-> diff --git a/fs/coredump.c b/fs/coredump.c
-> index 477f393..667413c 100644
-> --- a/fs/coredump.c
-> +++ b/fs/coredump.c
-> @@ -439,17 +439,20 @@ static void wait_for_dump_helpers(struct file *file)
->         pipe_lock(pipe);
->         pipe->readers++;
->         pipe->writers--;
-> +       wake_up_interruptible_sync(&pipe->wait);
-> +       kill_fasync(&pipe->fasync_readers, SIGIO, POLL_IN);
-> +       pipe_unlock(pipe);
->
-> -       while ((pipe->readers > 1) && (!signal_pending(current))) {
-> -               wake_up_interruptible_sync(&pipe->wait);
-> -               kill_fasync(&pipe->fasync_readers, SIGIO, POLL_IN);
-> -               pipe_wait(pipe);
-> -       }
-> +       /*
-> +        * We actually want wait_event_freezable() but then we need
-> +        * to clear TIF_SIGPENDING and improve dump_interrupted().
-> +        */
-> +       wait_event_interruptible(pipe->wait, pipe->readers == 1);
->
-> +       pipe_lock(pipe);
->         pipe->readers--;
->         pipe->writers++;
->         pipe_unlock(pipe);
-> -
->  }
->
->  /*
-> --
-> 1.5.5.1
->
+I just built and installed qemu-linaro from their git, then ran the
+command above. Looks like stock qemu does not work for vexpress for some
+reason. You can probably use a dummy initrd and rootfs to debug this
+though :)
+
+More info on qemu-linaro at:
+
+https://launchpad.net/qemu-linaro
+
+Regards,
+
+Tony
+ 
+> [1] http://article.gmane.org/gmane.linux.ports.arm.kernel/221539
