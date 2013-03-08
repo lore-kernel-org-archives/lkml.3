@@ -1,95 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934462Ab3CHQr6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 11:47:58 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:53716 "EHLO mail.skyhub.de"
+	id S934407Ab3CHQvO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 11:51:14 -0500
+Received: from mail.ispras.ru ([83.149.199.45]:56702 "EHLO mail.ispras.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933185Ab3CHQr5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 11:47:57 -0500
-Date: Fri, 8 Mar 2013 17:47:49 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Jiri Slaby <jslaby@suse.cz>, Bjorn Helgaas <bhelgaas@google.com>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>, x86@kernel.org,
-        lkml <linux-kernel@vger.kernel.org>, e1000-devel@lists.sourceforge.net,
-        Bruce Allan <bruce.w.allan@intel.com>
-Subject: Re: Uhhuh. NMI received for unknown reason 2c on CPU 0.
-Message-ID: <20130308164749.GA14495@pd.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	"Rafael J. Wysocki" <rjw@sisk.pl>,
-	Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-	Jiri Slaby <jslaby@suse.cz>, Bjorn Helgaas <bhelgaas@google.com>,
-	Konstantin Khlebnikov <khlebnikov@openvz.org>, x86@kernel.org,
-	lkml <linux-kernel@vger.kernel.org>,
-	e1000-devel@lists.sourceforge.net,
-	Bruce Allan <bruce.w.allan@intel.com>
-References: <20130214191234.GH5700@pd.tnic>
- <1362479341.8626.18.camel@jtkirshe-mobl>
- <20130305112737.GE4881@pd.tnic>
- <1372053.VT5YxPEdsx@vostro.rjw.lan>
- <20130306001932.GB30189@pd.tnic>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20130306001932.GB30189@pd.tnic>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S933517Ab3CHQvN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Mar 2013 11:51:13 -0500
+From: Alexey Khoroshilov <khoroshilov@ispras.ru>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>,
+        Hans de Goede <hdegoede@redhat.com>,
+        Alan Stern <stern@rowland.harvard.edu>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, ldv-project@linuxtesting.org
+Subject: [PATCH] usb/core/devio.c: Don't use GFP_KERNEL while we cannot reset a storage device
+Date: Sat,  9 Mar 2013 00:50:47 +0800
+Message-Id: <1362761447-24643-1-git-send-email-khoroshilov@ispras.ru>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 06, 2013 at 01:19:32AM +0100, Borislav Petkov wrote:
-> On Wed, Mar 06, 2013 at 01:13:23AM +0100, Rafael J. Wysocki wrote:
-> > I suspected that during resume from hibernation the boot kernel (the
-> > one that loaded the image) did something to hardware and the restored
-> > kernel didn't handle that change properly. It is hard do say what
-> > piece of hardware that was, however (it might or might not be the NIC,
-> > it may be pure coincidence that the NMI messages appear in the log at
-> > this point).
-> 
-> Agreed with the second part. About the first part, who communicates what
-> to whom, come to think of it, it might not be related to any devices at
-> all.
-> 
-> Here's why I think so:
-> 
-> So one of the things I did to trigger this is boot the machine, run
-> powertop and set all the knobs in the "Tunables" tab to "Good". One of
-> the tunables is turn-off-nmi-watchdog something which turns off the
-> watchdog which is using the perf infrastructure which generates NMIs
-> when the counter overflows.
-> 
-> Now, imagine I do that in the "normal" kernel, then suspend,
-> ...<something happens or does not happen>, then resume back into the
-> normal kernel and it somehow "forgets" the fact that we disabled the NMI
-> watchdog before the suspend cycle. And boom, it gets a single spurious
-> NMI.
-> 
-> Does it make sense? I dunno - I'm just connecting the dots here between
-> the observation points which are most likely.
-> 
-> Anyway, it's getting late, good night. :)
+As it was described by Oliver Neukum in commit acbe2fe
+"USB: Don't use GFP_KERNEL while we cannot reset a storage device":
 
-Exactly as I thought: so I'm running the machine with NMI watchdog
-enabled, i.e. powertop says:
+  Memory allocations with GFP_KERNEL can cause IO to a storage device
+  which can fail resulting in a need to reset the device. Therefore
+  GFP_KERNEL cannot be safely used between usb_lock_device()
+  and usb_unlock_device(). Replace by GFP_NOIO.
 
+The patch fixes the same issue in usb/core/devio.c.
+All the allocations fixed are under usb_lock_device() from usbdev_do_ioctl().
 
-PowerTOP v2.0     Overview   Idle stats   Frequency stats   Device stats	Tunables
+Found by Linux Driver Verification project (linuxtesting.org).
 
->> Bad           NMI watchdog should be turned off
-   Good          VM writeback timeout
-....
+Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+---
+ drivers/usb/core/devio.c |   22 +++++++++++-----------
+ 1 file changed, 11 insertions(+), 11 deletions(-)
 
-and no more spurious NMIs.
-
-I'd say the plot thickens: disabling NMIs and suspending to disk right
-afterwards doesn't seem to really disable the watchdog. Or the disable
-gets delayed leading to one last spurious NMI when resuming... I
-probably need to go stare at the code though...
-
+diff --git a/drivers/usb/core/devio.c b/drivers/usb/core/devio.c
+index 8823e98..4be27e3 100644
+--- a/drivers/usb/core/devio.c
++++ b/drivers/usb/core/devio.c
+@@ -275,10 +275,10 @@ static struct async *alloc_async(unsigned int numisoframes)
+ {
+ 	struct async *as;
+ 
+-	as = kzalloc(sizeof(struct async), GFP_KERNEL);
++	as = kzalloc(sizeof(struct async), GFP_NOIO);
+ 	if (!as)
+ 		return NULL;
+-	as->urb = usb_alloc_urb(numisoframes, GFP_KERNEL);
++	as->urb = usb_alloc_urb(numisoframes, GFP_NOIO);
+ 	if (!as->urb) {
+ 		kfree(as);
+ 		return NULL;
+@@ -887,7 +887,7 @@ static int proc_control(struct dev_state *ps, void __user *arg)
+ 			sizeof(struct usb_ctrlrequest));
+ 	if (ret)
+ 		return ret;
+-	tbuf = (unsigned char *)__get_free_page(GFP_KERNEL);
++	tbuf = (unsigned char *)__get_free_page(GFP_NOIO);
+ 	if (!tbuf) {
+ 		ret = -ENOMEM;
+ 		goto done;
+@@ -983,7 +983,7 @@ static int proc_bulk(struct dev_state *ps, void __user *arg)
+ 	ret = usbfs_increase_memory_usage(len1 + sizeof(struct urb));
+ 	if (ret)
+ 		return ret;
+-	if (!(tbuf = kmalloc(len1, GFP_KERNEL))) {
++	if (!(tbuf = kmalloc(len1, GFP_NOIO))) {
+ 		ret = -ENOMEM;
+ 		goto done;
+ 	}
+@@ -1211,7 +1211,7 @@ static int proc_do_submiturb(struct dev_state *ps, struct usbdevfs_urb *uurb,
+ 		/* min 8 byte setup packet */
+ 		if (uurb->buffer_length < 8)
+ 			return -EINVAL;
+-		dr = kmalloc(sizeof(struct usb_ctrlrequest), GFP_KERNEL);
++		dr = kmalloc(sizeof(struct usb_ctrlrequest), GFP_NOIO);
+ 		if (!dr)
+ 			return -ENOMEM;
+ 		if (copy_from_user(dr, uurb->buffer, 8)) {
+@@ -1278,7 +1278,7 @@ static int proc_do_submiturb(struct dev_state *ps, struct usbdevfs_urb *uurb,
+ 			return -EINVAL;
+ 		isofrmlen = sizeof(struct usbdevfs_iso_packet_desc) *
+ 				   uurb->number_of_packets;
+-		if (!(isopkt = kmalloc(isofrmlen, GFP_KERNEL)))
++		if (!(isopkt = kmalloc(isofrmlen, GFP_NOIO)))
+ 			return -ENOMEM;
+ 		if (copy_from_user(isopkt, iso_frame_desc, isofrmlen)) {
+ 			ret = -EFAULT;
+@@ -1326,7 +1326,7 @@ static int proc_do_submiturb(struct dev_state *ps, struct usbdevfs_urb *uurb,
+ 
+ 	if (num_sgs) {
+ 		as->urb->sg = kmalloc(num_sgs * sizeof(struct scatterlist),
+-				      GFP_KERNEL);
++				      GFP_NOIO);
+ 		if (!as->urb->sg) {
+ 			ret = -ENOMEM;
+ 			goto error;
+@@ -1337,7 +1337,7 @@ static int proc_do_submiturb(struct dev_state *ps, struct usbdevfs_urb *uurb,
+ 		totlen = uurb->buffer_length;
+ 		for (i = 0; i < as->urb->num_sgs; i++) {
+ 			u = (totlen > USB_SG_SIZE) ? USB_SG_SIZE : totlen;
+-			buf = kmalloc(u, GFP_KERNEL);
++			buf = kmalloc(u, GFP_NOIO);
+ 			if (!buf) {
+ 				ret = -ENOMEM;
+ 				goto error;
+@@ -1355,7 +1355,7 @@ static int proc_do_submiturb(struct dev_state *ps, struct usbdevfs_urb *uurb,
+ 		}
+ 	} else if (uurb->buffer_length > 0) {
+ 		as->urb->transfer_buffer = kmalloc(uurb->buffer_length,
+-				GFP_KERNEL);
++				GFP_NOIO);
+ 		if (!as->urb->transfer_buffer) {
+ 			ret = -ENOMEM;
+ 			goto error;
+@@ -1467,7 +1467,7 @@ static int proc_do_submiturb(struct dev_state *ps, struct usbdevfs_urb *uurb,
+ 			ret = usb_submit_urb(as->urb, GFP_ATOMIC);
+ 		spin_unlock_irq(&ps->lock);
+ 	} else {
+-		ret = usb_submit_urb(as->urb, GFP_KERNEL);
++		ret = usb_submit_urb(as->urb, GFP_NOIO);
+ 	}
+ 
+ 	if (ret) {
+@@ -1798,7 +1798,7 @@ static int proc_ioctl(struct dev_state *ps, struct usbdevfs_ioctl *ctl)
+ 
+ 	/* alloc buffer */
+ 	if ((size = _IOC_SIZE(ctl->ioctl_code)) > 0) {
+-		if ((buf = kmalloc(size, GFP_KERNEL)) == NULL)
++		if ((buf = kmalloc(size, GFP_NOIO)) == NULL)
+ 			return -ENOMEM;
+ 		if ((_IOC_DIR(ctl->ioctl_code) & _IOC_WRITE)) {
+ 			if (copy_from_user(buf, ctl->data, size)) {
 -- 
-Regards/Gruss,
-    Boris.
+1.7.9.5
 
-Sent from a fat crate under my desk. Formatting is fine.
---
