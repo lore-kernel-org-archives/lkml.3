@@ -1,73 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759889Ab3CHX25 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 18:28:57 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:32006 "EHLO mx1.redhat.com"
+	id S933431Ab3CHXap (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 18:30:45 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:6776 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754017Ab3CHX24 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 18:28:56 -0500
-Date: Fri, 8 Mar 2013 18:28:10 -0500
-From: Josh Boyer <jwboyer@redhat.com>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: 8250.nr_uarts broken in 3.7
-Message-ID: <20130308232809.GO13719@hansolo.jdub.homelinux.org>
-References: <20130307211426.GI13719@hansolo.jdub.homelinux.org>
- <20130307231242.GC4280@kroah.com>
- <20130308010140.GJ13719@hansolo.jdub.homelinux.org>
- <20130308013923.GA12474@kroah.com>
- <20130308212722.GL13719@hansolo.jdub.homelinux.org>
- <513A6A65.9050706@suse.cz>
- <20130308224950.GM13719@hansolo.jdub.homelinux.org>
- <513A6D1F.5000202@suse.cz>
- <513A6FD4.7000506@suse.cz>
- <513A70CF.9010800@suse.cz>
+	id S1756564Ab3CHXao (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Mar 2013 18:30:44 -0500
+Date: Fri, 8 Mar 2013 18:30:41 -0500
+From: Dave Jones <davej@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: BUG_ON(nd->inode != parent->d_inode);
+Message-ID: <20130308233041.GA32587@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	Al Viro <viro@zeniv.linux.org.uk>
+References: <20130308150408.GA25399@redhat.com>
+ <CA+55aFxAfWHdSH+45qgids1ByBxzieZnz_ujRXYGY-at1mg5eg@mail.gmail.com>
+ <20130308191804.GA9774@redhat.com>
+ <20130308192042.GA10305@redhat.com>
+ <20130308193652.GA11692@redhat.com>
+ <CA+55aFyE12rZ3DZUtTkonPjbcQiZNdAmys7w5zf7_Xry2z=-2A@mail.gmail.com>
+ <20130308210432.GA21500@redhat.com>
+ <CA+55aFyNAA3u2k_38iqRPN0EqtP=qXu1wu_vnXnAgQmp6NwGJA@mail.gmail.com>
+ <20130308230734.GA28317@redhat.com>
+ <CA+55aFxKgZyqbn1M0sAL0CoLxmKSzAALYBTPLYVM7OpG_M_B=A@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <513A70CF.9010800@suse.cz>
+In-Reply-To: <CA+55aFxKgZyqbn1M0sAL0CoLxmKSzAALYBTPLYVM7OpG_M_B=A@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 09, 2013 at 12:14:23AM +0100, Jiri Slaby wrote:
-> On 03/09/2013 12:10 AM, Jiri Slaby wrote:
-> > On 03/08/2013 11:58 PM, Jiri Slaby wrote:
-> >> On 03/08/2013 11:49 PM, Josh Boyer wrote:
-> >>> On Fri, Mar 08, 2013 at 11:47:01PM +0100, Jiri Slaby wrote:
-> >>>> Yeah, I agree this is ugly. Just re-definining MODULE_PARAM_PREFIX at
-> >>>> the end of the file should do the trick (followed by
-> >>>> "module_param(nr_uarts, uint, 0644)").
-> >>>
-> >>> For some reason, I thought I had tried that.  Maybe I didn't.  I'll look
-> >>> into it again.
-> >>
-> >> I see. Because we would re-define some global variables. What if we put
-> >> module_param into a function?
-> > 
-> > Something like this?
-> > #ifdef MODULE
+On Fri, Mar 08, 2013 at 03:20:40PM -0800, Linus Torvalds wrote:
+ > On Fri, Mar 8, 2013 at 3:07 PM, Dave Jones <davej@redhat.com> wrote:
+ > >
+ > > Ok, got something more meaningful out of the lookup_slow trace.
+ > >
+ > > [   66.082984] parent->dname.name  (06b6b6b6b6b6b6b)
+ > > [   66.083637] parent =
+ > >
+ > > At first I thought AH-HA! SLAB POISON!
+ > > But look closer.. it's shifted by 8 bits.
+ > 
+ > Or just the high byte has been cleared.
 
-I don't think you want this surrounded in #ifdef MODULE, do you?  That
-won't let people building the driver into the kernel continue to use
-8250.<whatever> on the kernel command line.
+Duh, yes. I wasn't zero padding, so that's 006b6b6b.
 
-> > static void __unused splat(void) {
-> 
-> I meant __used. It should make no difference though.
-> 
-> > #       undef MODULE_PARAM_PREFIX
-> > #       define MODULE_PARAM_PREFIX "8250."
-> >         module_param_cb(nr_uarts, &param_ops_uint, &nr_uarts, 0644);
-> >         ...
-> > }
-> > #endif
-> > 
-> > Not nice, but should work. The other way is to have those in a separate
-> > file linked to 8250 (to avoid re-definition errors).
+Here's another run, with something similar in path->dentry..
 
-Ew.  I'll try the function first.
+[  100.729395] parent->dname.name  (06 b6 b6b 6b6b6b6b 6b6b6b6b 6b6b6b6b)
+[  100.729397] path->dentry: 6d6e740 6b6b6b6b
+[  100.729401] nd->last.name = (\xffffffd2.W._.N.".\xfffffffe.\xffffff80.^N.?.\xffffffe4.E.8.g.\xffffffd2.N.\xffffffb6.^G.\xfffffff1.\xffffffcc.U.\xffffffda.^_.h.^M.1.\xffffffc5.\xffffff82.%.B.\xffffffe0.\xffffffad.^U.8.^L.c.Z.^K.\xffffffe4.h.J.\xffffffc8.\xffffffad.\xffffff83./.\xffffff80.\xffffffd1.\xffffffe5.\xffffff87.\xffffffc3.\xffffffb2.\xffffffdc.\xffffff9d.\xffffffd1.E.\xffffffab.^B.
+(garbage continues..)
 
-josh
