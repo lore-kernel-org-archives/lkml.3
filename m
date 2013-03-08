@@ -1,53 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758115Ab3CHXpj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 18:45:39 -0500
-Received: from mail-vb0-f41.google.com ([209.85.212.41]:49308 "EHLO
-	mail-vb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751859Ab3CHXpi convert rfc822-to-8bit (ORCPT
+	id S1759667Ab3CHXrC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 18:47:02 -0500
+Received: from mail-lb0-f171.google.com ([209.85.217.171]:57690 "EHLO
+	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753556Ab3CHXrA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 18:45:38 -0500
+	Fri, 8 Mar 2013 18:47:00 -0500
 MIME-Version: 1.0
-In-Reply-To: <20130308233041.GA32587@redhat.com>
-References: <20130308150408.GA25399@redhat.com>
-	<CA+55aFxAfWHdSH+45qgids1ByBxzieZnz_ujRXYGY-at1mg5eg@mail.gmail.com>
-	<20130308191804.GA9774@redhat.com>
-	<20130308192042.GA10305@redhat.com>
-	<20130308193652.GA11692@redhat.com>
-	<CA+55aFyE12rZ3DZUtTkonPjbcQiZNdAmys7w5zf7_Xry2z=-2A@mail.gmail.com>
-	<20130308210432.GA21500@redhat.com>
-	<CA+55aFyNAA3u2k_38iqRPN0EqtP=qXu1wu_vnXnAgQmp6NwGJA@mail.gmail.com>
-	<20130308230734.GA28317@redhat.com>
-	<CA+55aFxKgZyqbn1M0sAL0CoLxmKSzAALYBTPLYVM7OpG_M_B=A@mail.gmail.com>
-	<20130308233041.GA32587@redhat.com>
-Date: Fri, 8 Mar 2013 15:45:37 -0800
-X-Google-Sender-Auth: 1wjI-LCPO1gQmTMqIS4bwSpogyc
-Message-ID: <CA+55aFxBvyLcWJB0JMNcaCXHtgvPLt3cFQqJeRFcb=6rkZFtvA@mail.gmail.com>
-Subject: Re: BUG_ON(nd->inode != parent->d_inode);
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Dave Jones <davej@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
+From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Date: Fri, 8 Mar 2013 15:46:38 -0800
+X-Google-Sender-Auth: JQID2xYslz4k4aJ6qhYPZLWlVGE
+Message-ID: <CAB=NE6WwQDfx+H4zV2niLDaZ0vGAahEF5jg1WS+NU7YhTZ9rQw@mail.gmail.com>
+Subject: Re: [Announce] open ath9k_htc firmware
+To: Adrian Chadd <adrian@freebsd.org>
+Cc: linux-wireless@vger.kernel.org, ath9k-devel <ath9k-devel@venema.h4ckr.net>,
+        ath9k_htc_fw@lists.infradead.org, Chris Zankel <chris@zankel.net>,
+        linux-kernel@vger.kernel.org, Marc Gauthier <marc@tensilica.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 8, 2013 at 3:30 PM, Dave Jones <davej@redhat.com> wrote:
-> [  100.729401] nd->last.name = (\xffffffd2.W._.N.".\xfffffffe.\xffffff80.^N.?.\xffffffe4.E.8.g.\xffffffd2.N.\xffffffb6.^G.\xfffffff1.\xffffffcc.U.\xffffffda.^_.h.^M.1.\xffffffc5.\xffffff82.%.B.\xffffffe0.\xffffffad.^U.8.^L.c.Z.^K.\xffffffe4.h.J.\xffffffc8.\xffffffad.\xffffff83./.\xffffff80.\xffffffd1.\xffffffe5.\xffffff87.\xffffffc3.\xffffffb2.\xffffffdc.\xffffff9d.\xffffffd1.E.\xffffffab.^B.
+Many thanks to Adrian for his hard work on all this and to everyone
+else who volunteered to help make this happen, including the
+understanding by our management at QCA and even Tensilica requires
+some handsome applause for their commitment, understanding on letting
+us get this out. We now have a public mailing list for development:
 
-You're printing out a 'char' with %02x, aren't you? And then the sign
-extensions gives you six extra 'f' character every time the char is
-negative.
+http://lists.infradead.org/mailman/listinfo/ath9k_htc_fw
 
-If using %02x, make sure you use 'unsigned char', or "& 255".
+Full steam ahead!
 
-Depending on just what is going on, the "nd->last.name" thing really
-is probably a valid string. Strictly speaking it's not necessarily
-NUL-terminated, though, and should be printed out to a maximum of
-"nd->last.len" characters (but the whole path will be NUL-terminated,
-so it's all ok, you just might print out more than one component)
+  Luis
 
-               Linus
+On Fri, Mar 8, 2013 at 3:32 PM, Adrian Chadd <adrian@freebsd.org> wrote:
+> Hi,
+>
+> I hate fanfare.
+>
+> You can all thank Luis Rodriguez for his ridiculously long and hard
+> fighting to get this stuff pushed through the grinder to make this
+> happen.
+>
+> There's also been a hard working team of developers behind the scene -
+> Felix Fietkau, Eugene Krasnikov, Sujith Manoharan, and the team from
+> Cozybit. They've been working hard to get the codebase converted over
+> to using the open source tensilica toolchain and finding/fixing up any
+> silly issues that may creep up from that.
+>
+> I've just been involved in shepharding this stuff into a sensible
+> shape and pushing it through the final stage (legal review) before
+> publication.
+>
+> You can find it here:
+>
+> https://github.com/qca/open-ath9k-htc-firmware
+>
+> There's a bunch of sorely needed work to do in the short term:
+>
+> * felix has a replacement cmake build system that I'd like to now integrate;
+> * there's lots of build warnings which need to be removed (and then
+> build this thing using -Wall -Werror);
+> * some general code cleanup and documentation wouldn't be rejected -
+> but I don't really want any sweeping code changes to go in until we've
+> tidied up the build warnings and validated that the image(s) work
+> right.
+>
+> I plan on doing some test builds shortly. I plan on bumping the
+> firmware to 1.4 once felix's cmake system is in place and people have
+> validated that this work.s
+>
+> Thanks,
+>
+>
+>
+> Adrian
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-wireless" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
