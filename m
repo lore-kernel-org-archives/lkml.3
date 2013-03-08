@@ -1,121 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933666Ab3CHEDh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 23:03:37 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:50101 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932552Ab3CHEDe (ORCPT
+	id S1760321Ab3CHELE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 23:11:04 -0500
+Received: from mail-db8lp0187.outbound.messaging.microsoft.com ([213.199.154.187]:19572
+	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758903Ab3CHELB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 23:03:34 -0500
-X-AuditID: cbfee691-b7faa6d000005ae9-5e-51396314246e
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Thierry Reding'" <thierry.reding@avionic-design.de>
-Cc: linux-kernel@vger.kernel.org, "'Jingoo Han'" <jg1.han@samsung.com>
-Subject: [PATCH] pwm: samsung: convert s3c_pwm to dev_pm_ops
-Date: Fri, 08 Mar 2013 13:03:31 +0900
-Message-id: <000201ce1bb1$e5df6fb0$b19e4f10$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac4bseXIs5BEuT8ZStWurBAAwl0nxQ==
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrFIsWRmVeSWpSXmKPExsVy+t8zA12RZMtAg/99PBaXF15itbi8aw6b
-	xe6VS1gcmD36plxl8+jbsorR4/MmuQDmKC6blNSczLLUIn27BK6MVZNPMxfM5a/4vXszawPj
-	Xp4uRk4OCQETiQkXG5khbDGJC/fWs3UxcnEICSxjlHiz+xErTNGfr5uhEtMZJVqermSEcH4x
-	ShxrvAxWxSagJvHly2F2EFtEwFxiyaK9QGM5OJgFXCSOThMBCQsL2EhM3LqYCcRmEVCVWHfy
-	JVgJr4CtxMcpsSBhXgFBiR+T77GA2MwCWhLrdx5ngrDlJTaveQtWLiGgLvHory7EIj2J7dOe
-	sEOUiEjse/EO7DIJgVXsEtdvfWaGWCUg8W3yIRaIXlmJTQeg/pWUOLjiBssERrFZSDbPQrJ5
-	FpLNs5CsWMDIsopRNLUguaA4Kb3IVK84Mbe4NC9dLzk/dxMjJJ4m7mC8f8D6EGMy0PqJzFKi
-	yfnAeMwriTc0NjYxMzE1Mbc0NTclTVhJnFf+kkygkEB6YklqdmpqQWpRfFFpTmrxIUYmDk6p
-	BsY0dft4l5cpxtOX96ac4XBJ52i68O3Ogn6vTd6HYtnMvU+oSXA/jG4xcfBbJ3CryGLqZl7H
-	N+uDcnIYcxcVT/nB+Sv34bHtr2fG/S5rPB+zUPPqzKvavwy12QtU1t/rZ9V/ZGh45H9VZffm
-	M3cMDttp82mcXbX9gG2VzJ+LM+OXir6ou5PwI0uJpTgj0VCLuag4EQAnZPkhvQIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpnleLIzCtJLcpLzFFi42I5/e+xoK5IsmWgwYcGDovLCy+xWlzeNYfN
-	YvfKJSwOzB59U66yefRtWcXo8XmTXABzVAOjTUZqYkpqkUJqXnJ+SmZeuq2Sd3C8c7ypmYGh
-	rqGlhbmSQl5ibqqtkotPgK5bZg7QJiWFssScUqBQQGJxsZK+HaYJoSFuuhYwjRG6viFBcD1G
-	BmggYR1jxqrJp5kL5vJX/N69mbWBcS9PFyMnh4SAicSfr5vZIGwxiQv31gPZXBxCAtMZJVqe
-	rmSEcH4xShxrvMwKUsUmoCbx5cthdhBbRMBcYsmivcxdjBwczAIuEkeniYCEhQVsJCZuXcwE
-	YrMIqEqsO/kSrIRXwFbi45RYkDCvgKDEj8n3WEBsZgEtifU7jzNB2PISm9e8BSuXEFCXePRX
-	F2KRnsT2aU/YIUpEJPa9eMc4gVFgFpJJs5BMmoVk0iwkLQsYWVYxiqYWJBcUJ6XnGuoVJ+YW
-	l+al6yXn525iBEfrM6kdjCsbLA4xCnAwKvHwVmyyCBRiTSwrrsw9xCjBwawkwvtbxjJQiDcl
-	sbIqtSg/vqg0J7X4EGMy0J8TmaVEk/OBiSSvJN7Q2MTMyNLIzMLIxNycNGElcV7GU08ChATS
-	E0tSs1NTC1KLYLYwcXBKNTBGzn2ca7ZeISVDcK21c9CmkKk1Dzxt385OV/z6JY3rmp6LWYn+
-	3UaT2Wqb7PqeupntudD77sc0zT0aO06X8b52r+mQOX2ax0fvnu/rmKzGEt6f0gr6bzJMRFf+
-	FRd139t/cnK1eM090abZ304F7XBm2X5lz+rGyNrCml0veySCzq0pKjKvMFNiKc5INNRiLipO
-	BAAC/gH2GgMAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Thu, 7 Mar 2013 23:11:01 -0500
+X-Greylist: delayed 905 seconds by postgrey-1.27 at vger.kernel.org; Thu, 07 Mar 2013 23:11:00 EST
+X-Forefront-Antispam-Report: CIP:160.33.194.229;KIP:(null);UIP:(null);IPV:NLI;H:usculsndmail02v.am.sony.com;RD:mail.sonyusa.com;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VPS-2(z21eIz936eIzz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ahzz17326ah8275dhz2fh2a8h668h839h947hf0ah10d2h1288h12a5h12a9h12bdh137ah13b6h1441h1537h153bh162dh1631h1758h1765h18e1h190ch1946h19c3h1b0ah1155h)
+Message-ID: <51396143.5060108@am.sony.com>
+Date: Thu, 7 Mar 2013 19:55:47 -0800
+From: Frank Rowand <frank.rowand@am.sony.com>
+Reply-To: <frank.rowand@am.sony.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Thomas Gleixner <tglx@linutronix.de>, <linux-kernel@vger.kernel.org>,
+        <linux-rt-users@vger.kernel.org>
+Subject: linux-3.6.11-rt30 smoke test on ARM
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: am.sony.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Instead of using legacy suspend/resume methods, using newer dev_pm_ops
-structure allows better control over power management.
+linux-3.6.11-rt30 builds and boots on some ARM boards (PandaBoard, Realview) for:
 
-Signed-off-by: Jingoo Han <jg1.han@samsung.com>
----
- drivers/pwm/pwm-samsung.c |   20 +++++++++-----------
- 1 files changed, 9 insertions(+), 11 deletions(-)
+  - SMP, PREEMPT_RT_FULL
+  - SMP, PREEMPT_NONE
+  - UP, PREEMPT_RT_FULL
+  - UP, PREEMPT_NONE
 
-diff --git a/drivers/pwm/pwm-samsung.c b/drivers/pwm/pwm-samsung.c
-index 5207e6c..a0ece50 100644
---- a/drivers/pwm/pwm-samsung.c
-+++ b/drivers/pwm/pwm-samsung.c
-@@ -289,10 +289,10 @@ static int s3c_pwm_remove(struct platform_device *pdev)
- 	return 0;
- }
- 
--#ifdef CONFIG_PM
--static int s3c_pwm_suspend(struct platform_device *pdev, pm_message_t state)
-+#ifdef CONFIG_PM_SLEEP
-+static int s3c_pwm_suspend(struct device *dev)
- {
--	struct s3c_chip *s3c = platform_get_drvdata(pdev);
-+	struct s3c_chip *s3c = dev_get_drvdata(dev);
- 
- 	/* No one preserve these values during suspend so reset them
- 	 * Otherwise driver leaves PWM unconfigured if same values
-@@ -304,9 +304,9 @@ static int s3c_pwm_suspend(struct platform_device *pdev, pm_message_t state)
- 	return 0;
- }
- 
--static int s3c_pwm_resume(struct platform_device *pdev)
-+static int s3c_pwm_resume(struct device *dev)
- {
--	struct s3c_chip *s3c = platform_get_drvdata(pdev);
-+	struct s3c_chip *s3c = dev_get_drvdata(dev);
- 	unsigned long tcon;
- 
- 	/* Restore invertion */
-@@ -316,21 +316,19 @@ static int s3c_pwm_resume(struct platform_device *pdev)
- 
- 	return 0;
- }
--
--#else
--#define s3c_pwm_suspend NULL
--#define s3c_pwm_resume NULL
- #endif
- 
-+static SIMPLE_DEV_PM_OPS(s3c_pwm_pm_ops, s3c_pwm_suspend,
-+			s3c_pwm_resume);
-+
- static struct platform_driver s3c_pwm_driver = {
- 	.driver		= {
- 		.name	= "s3c24xx-pwm",
- 		.owner	= THIS_MODULE,
-+		.pm	= &s3c_pwm_pm_ops,
- 	},
- 	.probe		= s3c_pwm_probe,
- 	.remove		= s3c_pwm_remove,
--	.suspend	= s3c_pwm_suspend,
--	.resume		= s3c_pwm_resume,
- };
- 
- static int __init pwm_init(void)
--- 
-1.7.2.5
 
+The PandaBoard frequently fails to boot with an eth0 error.  I have
+only seen this for SMP, PREEMPT_NONE.  This same error also occurs
+in 3.6.7 without the RT_PREEMPT patches applied, so this does not
+appear to be an RT_PREEMPT issue.
+
+This error also occurred in the previous smoke test of linux-3.6.7-rt18
+
+   http://permalink.gmane.org/gmane.linux.rt.user/9202
+
+The boot error starts with the USB time out on ep0out:
+
+[    3.264373] smsc95xx 1-1.1:1.0: usb_probe_interface
+[    3.269500] smsc95xx 1-1.1:1.0: usb_probe_interface - got id
+[    3.275543] smsc95xx v1.0.4
+[    8.078674] smsc95xx 1-1.1:1.0: eth0: register 'smsc95xx' at usb-ehci-omap.0-1.1, smsc95xx USB 2.0 Ethernet, 82:b9:1d:fa:67:0d
+[    8.091003] hub 1-1:1.0: state 7 ports 5 chg 0000 evt 0002
+[   13.509918] usb 1-1.1: swapper/0 timed out on ep0out len=0/4
+[   13.515869] smsc95xx 1-1.1:1.0: eth0: Failed to write register index 0x00000108
+[   13.523559] smsc95xx 1-1.1:1.0: eth0: Failed to write ADDRL: -110
+[   13.529998] IP-Config: Failed to open eth0
+
+
+The boot error can be avoided with a workaround that simply retries
+the failed USB command.  I will reply to this email with the patch.
+
+-Frank
 
