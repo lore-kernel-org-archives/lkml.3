@@ -1,83 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760130Ab3CHA74 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Mar 2013 19:59:56 -0500
-Received: from nasmtp01.atmel.com ([192.199.1.245]:37912 "EHLO
-	DVREDG01.corp.atmel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1760097Ab3CHA7z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Mar 2013 19:59:55 -0500
-From: "Yang, Wenyou" <Wenyou.Yang@atmel.com>
-To: Grant Likely <grant.likely@secretlab.ca>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-CC: "Ferre, Nicolas" <Nicolas.FERRE@atmel.com>,
-        "plagnioj@jcrosoft.com" <plagnioj@jcrosoft.com>,
-        "richard.genoud@gmail.com" <richard.genoud@gmail.com>,
-        "Lin, JM" <JM.Lin@atmel.com>,
-        "spi-devel-general@lists.sourceforge.net" 
-	<spi-devel-general@lists.sourceforge.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH v5 01/16] spi/spi-atmel: fix master->num_chipselect
- wrongly set.
-Thread-Topic: [PATCH v5 01/16] spi/spi-atmel: fix master->num_chipselect
- wrongly set.
-Thread-Index: AQHOE+2fSjtTCeM8bUCJ0PBTbEJUqJiSibiAgAh8K0A=
-Date: Fri, 8 Mar 2013 00:59:43 +0000
-Message-ID: <B256D81BAE5131468A838E5D7A2436414971AE03@penmbx02>
-References: <1361861289-30332-1-git-send-email-wenyou.yang@atmel.com>
- <1361861289-30332-2-git-send-email-wenyou.yang@atmel.com>
- <20130302231535.8E6043E35BE@localhost>
-In-Reply-To: <20130302231535.8E6043E35BE@localhost>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.168.5.13]
-Content-Type: text/plain; charset="gb2312"
+	id S1760139Ab3CHBC2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Mar 2013 20:02:28 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:28789 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760097Ab3CHBC1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Mar 2013 20:02:27 -0500
+Date: Thu, 7 Mar 2013 20:01:40 -0500
+From: Josh Boyer <jwboyer@redhat.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: 8250.nr_uarts broken in 3.7
+Message-ID: <20130308010140.GJ13719@hansolo.jdub.homelinux.org>
+References: <20130307185642.GF13719@hansolo.jdub.homelinux.org>
+ <5138E56B.6090308@suse.cz>
+ <20130307191005.GH13719@hansolo.jdub.homelinux.org>
+ <20130307211426.GI13719@hansolo.jdub.homelinux.org>
+ <20130307231242.GC4280@kroah.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130307231242.GC4280@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r280xuBu025449
 
-> -----Original Message-----
-> From: Grant Likely [mailto:glikely@secretlab.ca] On Behalf Of Grant Likely
-> Sent: 2013Äê3ÔÂ3ÈÕ 7:16
-> To: Yang, Wenyou; linux-arm-kernel@lists.infradead.org
-> Cc: Ferre, Nicolas; plagnioj@jcrosoft.com; richard.genoud@gmail.com; Lin, JM;
-> Yang, Wenyou; spi-devel-general@lists.sourceforge.net;
-> linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH v5 01/16] spi/spi-atmel: fix master->num_chipselect
-> wrongly set.
+On Fri, Mar 08, 2013 at 07:12:42AM +0800, Greg Kroah-Hartman wrote:
+> On Thu, Mar 07, 2013 at 04:14:27PM -0500, Josh Boyer wrote:
+> > On Thu, Mar 07, 2013 at 02:10:05PM -0500, Josh Boyer wrote:
+> > > On Thu, Mar 07, 2013 at 08:07:23PM +0100, Jiri Slaby wrote:
+> > > > On 03/07/2013 07:56 PM, Josh Boyer wrote:
+> > > > > commit 835d844d1a28efba81d5aca7385e24c29d3a6db2
+> > > > > Author: Sean Young <sean@mess.org>
+> > > > > Date:   Fri Sep 7 19:06:23 2012 +0100
+> > > > > 
+> > > > >     8250_pnp: do pnp probe before legacy probe
+> > > > > 
+> > > > > but that is simply moving code around.
+> > > > 
+> > > > Hi, not quite. Does it still happen when you revert that one on the top
+> > > > of 3.[789]*?
+> > > 
+> > > That was going to be my first attempt.  I'll let you know how it goes.
+> > 
+> > Yes, reverting just 835d844d1 on top of 3.7.0 fixes it.  I also see why
+> > now.  That commit changed the module name from 8250 to 8250_core in the
+> > makefile, so clearly 8250.nr_uarts = 16 isn't going to get parsed.
+> > Adding 8250_core.nr_uarts = 16 seems to work fine.  This wasn't
+> > immediately obvious because the whole thing is built-in and not a
+> > module.  Thankfully, looking in /sys/modules/ still works and that
+> > showed up pretty clearly.
+> > 
+> > So I guess this isn't really a break in functionality as much as it's a
+> > driver rename.  Not sure if it's worth fixing in some form or not.
 > 
-> On Tue, 26 Feb 2013 14:47:54 +0800, Wenyou Yang <wenyou.yang@atmel.com>
-> wrote:
-> > if the spi property "cs-gpios" is set as below:
-> >
-> > 	cs-gpios = <0>, <&pioC 11 0>, <0>, <0>;
-> >
-> > the master->num_chipselect will wrongly be set to 0,
-> > and the spi fail to probe.
-> >
-> > Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
-> > Cc: spi-devel-general@lists.sourceforge.net
-> > Cc: linux-kernel@vger.kernel.org
-> 
-> I think I've got this bug fixed in the core spi code. Give it a couple
-> of days and retest with linux-next.
-Hi Grant,
+> Yes it needs to be fixed, we shouldn't break userspace stuff like that.
+> Patches gladly accepted.
 
-Yes, in v3.9-rc1 this bug fixed, I retested on v3.9-rc1.
-But on "spi/next" git tree, it should to apply this patch.
+OK... well I don't think renaming it back to 8250 is going to actually
+work.  It's already been renamed for 2 releases now, and a renaming
+isn't appropriate for 3.8.y.
 
-I sent the patches version 6, could you take a look them? 
-Thanks a lot for your work.
+I don't remember exactly, but I don't think simply adding a modalias to
+8250 will work either.
 
-> 
-> g.
+So basically, the only way to fix this that I can see is to create a
+new, additional module parameter or something similar that parses
+"8250.nr_uarts".  Is that what you had in mind?
 
-Best Regards,
-Wenyou Yang
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+josh
