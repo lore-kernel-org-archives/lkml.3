@@ -1,101 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754817Ab3CHHZU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 02:25:20 -0500
-Received: from kirsty.vergenet.net ([202.4.237.240]:59722 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753813Ab3CHHZP (ORCPT
+	id S1754699Ab3CHHZR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 02:25:17 -0500
+Received: from mail-ob0-f176.google.com ([209.85.214.176]:48872 "EHLO
+	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752389Ab3CHHZP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 8 Mar 2013 02:25:15 -0500
-Date: Fri, 8 Mar 2013 08:25:09 +0100
-From: Simon Horman <horms@verge.net.au>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Magnus Damm <magnus.damm@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-sh@vger.kernel.org, benh@kernel.crashing.org,
-        grant.likely@secretlab.ca
-Subject: Re: [PATCH] irqchip: Renesas INTC External IRQ pin driver
-Message-ID: <20130308072508.GA13457@verge.net.au>
-References: <20130218142834.28739.39417.sendpatchset@w520>
- <20130306042304.GA2896@verge.net.au>
- <alpine.LFD.2.02.1303061058250.22263@ionos>
- <20130306114622.GE6684@verge.net.au>
- <alpine.LFD.2.02.1303061405200.22263@ionos>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.02.1303061405200.22263@ionos>
-Organisation: Horms Solutions Ltd.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130308070651.GN14556@mtj.dyndns.org>
+References: <1362718720-27048-1-git-send-email-yinghai@kernel.org>
+	<1362718720-27048-5-git-send-email-yinghai@kernel.org>
+	<20130308055023.GF14556@mtj.dyndns.org>
+	<CAE9FiQVXOC71BGSK3t_xg+nP5Qq8ZKoup0sTMJDPnv-y8++=hg@mail.gmail.com>
+	<20130308070651.GN14556@mtj.dyndns.org>
+Date: Thu, 7 Mar 2013 23:25:14 -0800
+X-Google-Sender-Auth: 6Qtvj0Zc-f3JSYhEMOoIJ6MZ5w8
+Message-ID: <CAE9FiQXWzYVeCJOGffsvp3-wUHEMP21f3EA8Qcswn-B4fXC5uQ@mail.gmail.com>
+Subject: Re: [PATCH 04/14] x86, ACPI: make acpi override finding work with
+ 32bit flat mode
+From: Yinghai Lu <yinghai@kernel.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: "Yu, Fenghua" <fenghua.yu@intel.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Renninger <trenn@suse.de>, Tang Chen <tangchen@cn.fujitsu.com>,
+        linux-kernel@vger.kernel.org, Pekka Enberg <penberg@kernel.org>,
+        Jacob Shin <jacob.shin@amd.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        linux-acpi@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 06, 2013 at 02:05:52PM +0100, Thomas Gleixner wrote:
-> On Wed, 6 Mar 2013, Simon Horman wrote:
-> 
-> > On Wed, Mar 06, 2013 at 11:01:14AM +0100, Thomas Gleixner wrote:
-> > > On Wed, 6 Mar 2013, Simon Horman wrote:
-> > > > On Mon, Feb 18, 2013 at 11:28:34PM +0900, Magnus Damm wrote:
-> > > > > The SoCs using this driver are currently mainly used
-> > > > > together with regular platform devices so this driver
-> > > > > allows configuration via platform data to support things
-> > > > > like static interrupt base address. DT support will
-> > > > > be added incrementally in the not so distant future.
-> > > > 
-> > > > Hi Thomas,
-> > > > 
-> > > > I'm wondering how you would like to handle merging this driver.
-> > > > I can think of three options but I'm sure there are others.
-> > > > 
-> > > > * You can take the patches (there is a follow-up series) yourself.
-> > > > * I can prepare a pull request for you
-> > > > * I can prepare a pull request for arm-soc with the shmobile patches that
-> > > >   enable the driver on the r8a7779 and sh73a0.
-> > > > 
-> > > > The last option is possibly the easiest.
-> > > 
-> > > Correct.
-> > > 
-> > > > But in that case I'd appreciate an Ack from you on this patch.
-> > > 
-> > > You want to pick the V2 series, which already has my blessing:
-> > > 
-> > >     https://lkml.org/lkml/2013/2/26/305
-> > > 
-> > > For merging it through arm-soc you have my ack now :)
-> > 
-> > Thanks, I have that.
-> > 
-> > It seems that V2 adds onto this patch rather than replaces it.
-> > So could I also get an Ack for this patch too?
-> 
-> Ah,. right. V2 is an incremental fix for V1. Yes, please add my Ack.
+On Thu, Mar 7, 2013 at 11:06 PM, Tejun Heo <tj@kernel.org> wrote:
+> Hello, Yinghai.
+>
+> On Thu, Mar 07, 2013 at 10:57:21PM -0800, Yinghai Lu wrote:
+>> On Thu, Mar 7, 2013 at 9:50 PM, Tejun Heo <tj@kernel.org> wrote:
+>> > On Thu, Mar 07, 2013 at 08:58:30PM -0800, Yinghai Lu wrote:
+>> >> We will find acpi tables in initrd during head_32.S in 32bit flat mode.
+>> >>
+>> >> So need acpi_initrd_override_find could take phys directly.
+>> >
+>> > The patch description doesn't explain even half of what's going on.
+>>
+>> hope HPA could understand.
+>>
+>> Access initrd before relocate_initrd and init_memory mapping.
+>
+> I really hope the changelogs were better.  Eh well...
+>
+>> >> -/* All but ACPI_SIG_RSDP and ACPI_SIG_FACS: */
+>> >> -static const char * const table_sigs[] = {
+>> >> -     ACPI_SIG_BERT, ACPI_SIG_CPEP, ACPI_SIG_ECDT, ACPI_SIG_EINJ,
+>> >> -     ACPI_SIG_ERST, ACPI_SIG_HEST, ACPI_SIG_MADT, ACPI_SIG_MSCT,
+>> >> -     ACPI_SIG_SBST, ACPI_SIG_SLIT, ACPI_SIG_SRAT, ACPI_SIG_ASF,
+>> >> -     ACPI_SIG_BOOT, ACPI_SIG_DBGP, ACPI_SIG_DMAR, ACPI_SIG_HPET,
+>> >> -     ACPI_SIG_IBFT, ACPI_SIG_IVRS, ACPI_SIG_MCFG, ACPI_SIG_MCHI,
+>> >> -     ACPI_SIG_SLIC, ACPI_SIG_SPCR, ACPI_SIG_SPMI, ACPI_SIG_TCPA,
+>> >> -     ACPI_SIG_UEFI, ACPI_SIG_WAET, ACPI_SIG_WDAT, ACPI_SIG_WDDT,
+>> >> -     ACPI_SIG_WDRT, ACPI_SIG_DSDT, ACPI_SIG_FADT, ACPI_SIG_PSDT,
+>> >> -     ACPI_SIG_RSDT, ACPI_SIG_XSDT, ACPI_SIG_SSDT, NULL };
+>> >
+>> > Why is this table made a stack variable?  What's the benefit of doing
+>> > that?
+>>
+>> so I do need to switch global variables to phys and access it.
+>
+> I can't really understand what your response means.  Can you please
+> elaborate?
 
-Thanks.
+sorry, I missed NOT.
 
-I have added this into a new intc-external-irq branch of
-the renesas tree on kernel.org and thus queued it up for v3.10.
+so I do NOT need to switch global variables from kernel virtual addr
+to phys address and access it
+in 32bit flat mode.
 
-I have also added the following patches to that branch:
+>
+>> > Is it really necessary to make the function take both virtual and
+>> > physical addresses?  Can't we just make the function take phys_addr_t
+>> > and update everyone to call with physaddr?  Also @is_phys isn't simple
+>> > address switch.  It also changes error reporting.  If you're gonna
+>> > keep @is_phys, let's at least write up a function comment explaining
+>> > what's going on and why we need it.  But, really, if at all possible,
+>> > let's change the function to take single type of argument and
+>> > predicate error message printing on something else (e.g. early printk
+>> > initialized or whatever).
+>>
+>> yes, one for 32bit from head_32.S, phys.
+>> one for 64bit from head64.c. with _va.
+>
+> head64.c can't call with phys?  Why not?
 
-irqchip: irqc: Add DT support
-irqchip: intc-irqpin: Initial DT support
-ARM: shmobile: Make r8a7779 INTC irqpin platform data static
-ARM: shmobile: Make sh73a0 INTC irqpin platform data static
-irqchip: Renesas IRQC driver
-irqchip: intc-irqpin: GPL header for platform data
-irqchip: intc-irqpin: Make use of devm functions
-irqchip: intc-irqpin: Add force comments
-irqchip: intc-irqpin: Cache mapped IRQ
-irqchip: intc-irqpin: Whitespace fixes
-ARM: shmobile: INTC External IRQ pin driver on r8a7779
-ARM: shmobile: INTC External IRQ pin driver on sh73a0
-ARM: shmobile: irq_pin() for static IRQ pin assignment
+HPA's #PF set up page table only handle kernel low mapping address.
 
-The intc-external-irq branch is merged into the next branch and
-I expect it to appear in linux-next in the not to distant future.
+and after reset_early_page_tables, only kernel high mapping address is
+there. and other low mapping will be supported via #PF handler.
 
-I have removed the topic/intc-external-irq branch from the reneas tree,
-the branch where these patches were being staged.
+>
+>> Not sure if I could use early_printk from head_32.S, as Fenghua does
+>> not print out
+>> from microcode updating early in the same parts.
+>
+> ISTR it works but it doens't have to (although it would be much nicer
+> if it did).  You can test whether printk is online and skip if it
+> isn't online yet.
 
+ok, will give it try.
 
+Thanks
+
+Yinghai
