@@ -1,73 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933865Ab3CHHeI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 02:34:08 -0500
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:48478 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932694Ab3CHHeH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 02:34:07 -0500
-X-AuditID: 85900ec0-d2ec7b900000151e-fc-5139946c0061
-Message-ID: <51399409.4090207@hitachi.com>
-Date: Fri, 08 Mar 2013 16:32:25 +0900
-From: Hiraku Toyooka <hiraku.toyooka.gu@hitachi.com>
-User-Agent: unknown
+	id S1754721Ab3CHHk0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 02:40:26 -0500
+Received: from bitsync.net ([80.83.126.10]:34363 "EHLO bitsync.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751180Ab3CHHkZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Mar 2013 02:40:25 -0500
+X-Greylist: delayed 637 seconds by postgrey-1.27 at vger.kernel.org; Fri, 08 Mar 2013 02:40:25 EST
+Message-ID: <51399368.3040200@bitsync.net>
+Date: Fri, 08 Mar 2013 08:29:44 +0100
+From: Zlatko Calusic <zcalusic@bitsync.net>
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        yrl.pp-manager.tt@hitachi.com
-Subject: Re: [PATCH 0/2] [GIT PULL][3.9] tracing: Fix in snapshot API
-References: <20130307153442.755353831@goodmis.org>
-In-Reply-To: <20130307153442.755353831@goodmis.org>
+To: Hillf Danton <dhillf@gmail.com>
+CC: Jiri Slaby <jslaby@suse.cz>, Daniel J Blueman <daniel@numascale-asia.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Steffen Persvold <sp@numascale.com>, mm <linux-mm@kvack.org>,
+        Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: kswapd craziness round 2
+References: <5121C7AF.2090803@numascale-asia.com> <CAJd=RBArPT8YowhLuE8YVGNfH7G-xXTOjSyDgdV2RsatL-9m+Q@mail.gmail.com> <51254AD2.7000906@suse.cz> <CAJd=RBCiYof5rRVK+62OFMw+5F=5rS=qxRYF+OHpuRz895bn4w@mail.gmail.com> <512F8D8B.3070307@suse.cz> <CAJd=RBD=eT=xdEy+v3GBZ47gd47eB+fpF-3VtfpLAU7aEkZGgA@mail.gmail.com> <5138EC6C.6030906@suse.cz> <CAJd=RBC6JzXzPn9OV8UsbEjX152RcbKpuGGy+OBGM6E43gourQ@mail.gmail.com>
+In-Reply-To: <CAJd=RBC6JzXzPn9OV8UsbEjX152RcbKpuGGy+OBGM6E43gourQ@mail.gmail.com>
 Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Steven,
+On 08.03.2013 07:42, Hillf Danton wrote:
+> On Fri, Mar 8, 2013 at 3:37 AM, Jiri Slaby <jslaby@suse.cz> wrote:
+>> On 03/01/2013 03:02 PM, Hillf Danton wrote:
+>>> On Fri, Mar 1, 2013 at 1:02 AM, Jiri Slaby <jslaby@suse.cz> wrote:
+>>>>
+>>>> Ok, no difference, kswap is still crazy. I'm attaching the output of
+>>>> "grep -vw '0' /proc/vmstat" if you see something there.
+>>>>
+>>> Thanks to you for test and data.
+>>>
+>>> Lets try to restore the deleted nap, then.
+>>
+>> Oh, it seems to be nice now:
+>> root       579  0.0  0.0      0     0 ?        S    Mar04   0:13 [kswapd0]
+>>
+> Double thanks.
+>
+> But Mel does not like it, probably.
+> Lets try nap in another way.
+>
+> Hillf
+>
+> --- a/mm/vmscan.c	Thu Feb 21 20:01:02 2013
+> +++ b/mm/vmscan.c	Fri Mar  8 14:36:10 2013
+> @@ -2793,6 +2793,10 @@ loop_again:
+>   				 * speculatively avoid congestion waits
+>   				 */
+>   				zone_clear_flag(zone, ZONE_CONGESTED);
+> +
+> +			else if (sc.priority > 2 &&
+> +				 sc.priority < DEF_PRIORITY - 2)
+> +				wait_iff_congested(zone, BLK_RW_ASYNC, HZ/10);
+>   		}
+>
+>   		/*
+> --
+>
 
-(03/08/2013 12:34 AM), Steven Rostedt wrote:
-> The second patch, returns success on a reset of the buffer even if
-> the buffer wasn't allocated. Returning -EINVAL is just confusing.
+There's another bug in there, which I'm still chasing. Artificial sleeps 
+like this just mask the real bug and introduce new problems (on my 4GB 
+server kswapd spends all the time in those congestion wait calls). The 
+problem is that the bug needs about 5 days of uptime to reveal it's ugly 
+head. So far I can only tell that it was introduced somewhere between 
+3.1 & 3.4.
 
-I realized we should update the snapshot documentation together with
-this change.
-I attached a patch to update the documentation. Could you include this
-patch?
+Also, check shrink_inactive_list(), it already sleeps if really needed:
 
-Thanks,
-Hiraku Toyooka
+if (nr_writeback && nr_writeback >=
+		(nr_taken >> (DEF_PRIORITY - sc->priority)))
+	wait_iff_congested(zone, BLK_RW_ASYNC, HZ/10);
 
-
-From: Hiraku Toyooka <hiraku.toyooka.gu@hitachi.com>
-Subject: [PATCH] tracing: update documentation of snapshot utility
-
-Now, "snapshot" file returns success on a reset of snapshot buffer
-even if the buffer wasn't allocated, instead of returning EINVAL.
-This patch updates snapshot desctiption according to the change.
-
-Signed-off-by: Hiraku Toyooka <hiraku.toyooka.gu@hitachi.com>
----
-  Documentation/trace/ftrace.txt | 2 +-
-  1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/Documentation/trace/ftrace.txt b/Documentation/trace/ftrace.txt
-index 53d6a3c..a372304 100644
---- a/Documentation/trace/ftrace.txt
-+++ b/Documentation/trace/ftrace.txt
-@@ -1873,7 +1873,7 @@ feature:
-
-  	status\input  |     0      |     1      |    else    |
-  	--------------+------------+------------+------------+
--	not allocated |(do nothing)| alloc+swap |   EINVAL   |
-+	not allocated |(do nothing)| alloc+swap |(do nothing)|
-  	--------------+------------+------------+------------+
-  	allocated     |    free    |    swap    |   clear    |
-  	--------------+------------+------------+------------+
+Regards,
 -- 
-1.7.11.7
+Zlatko
 
