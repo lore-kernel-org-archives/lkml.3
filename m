@@ -1,103 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760095Ab3CHSnI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 13:43:08 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:30126 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759575Ab3CHSnF convert rfc822-to-8bit (ORCPT
+	id S1760057Ab3CHSri (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 13:47:38 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:44764 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759575Ab3CHSrh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 13:43:05 -0500
-Date: Fri, 8 Mar 2013 13:43:01 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Zoltan Kiss <zoltan.kiss@citrix.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] xen-blkback: Change statistics counter types to
- unsigned
-Message-ID: <20130308184301.GA31104@phenom.dumpdata.com>
-References: <1362506372-19079-1-git-send-email-zoltan.kiss@citrix.com>
+	Fri, 8 Mar 2013 13:47:37 -0500
+X-IronPort-AV: E=Sophos;i="4.84,809,1355097600"; 
+   d="scan'208";a="11507195"
+From: David Vrabel <david.vrabel@citrix.com>
+To: <linux-kernel@vger.kernel.org>
+CC: <x86@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Yinghai Lu <yinghai@kernel.org>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        David Vrabel <david.vrabel@citrix.com>
+Subject: [PATCH] x86,mm: fix init_mem_mapping() when the first memory chunk is small
+Date: Fri, 8 Mar 2013 18:47:14 +0000
+Message-ID: <1362768434-30525-1-git-send-email-david.vrabel@citrix.com>
+X-Mailer: git-send-email 1.7.2.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1362506372-19079-1-git-send-email-zoltan.kiss@citrix.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 05, 2013 at 05:59:32PM +0000, Zoltan Kiss wrote:
-> These values shouldn't be negative, but after an overflow their value
-> can turn into negative, if they are signed. xentop can show bogus
-> values in this case.
+In init_mem_mapping(), if the first chunk of memory that is mapped is
+small, there will not be enough mapped pages to allocate page table
+pages for the next (larger) chunk.
 
-I get this during compilation:
+Estimate how many pages are used for the mappings so far and how many
+are needed for a larger chunk, and only increase step_size if there
+are enough free pages.
 
-/home/konrad/linux/drivers/block/xen-blkback/xenbus.c: In function ‘show_oo_req’:
-/home/konrad/linux/drivers/block/xen-blkback/xenbus.c:233: warning: format ‘%d’ expects type ‘int’, but argument 3 has type ‘long long unsigned int’
-/home/konrad/linux/drivers/block/xen-blkback/xenbus.c: In function ‘show_rd_req’:
-/home/konrad/linux/drivers/block/xen-blkback/xenbus.c:234: warning: format ‘%d’ expects type ‘int’, but argument 3 has type ‘long long unsigned int’
-/home/konrad/linux/drivers/block/xen-blkback/xenbus.c: In function ‘show_wr_req’:
-/home/konrad/linux/drivers/block/xen-blkback/xenbus.c:235: warning: format ‘%d’ expects type ‘int’, but argument 3 has type ‘long long unsigned int’
-/home/konrad/linux/drivers/block/xen-blkback/xenbus.c: In function ‘show_f_req’:
-/home/konrad/linux/drivers/block/xen-blkback/xenbus.c:236: warning: format ‘%d’ expects type ‘int’, but argument 3 has type ‘long long unsigned int’
-/home/konrad/linux/drivers/block/xen-blkback/xenbus.c: In function ‘show_ds_req’:
-/home/konrad/linux/drivers/block/xen-blkback/xenbus.c:237: warning: format ‘%d’ expects type ‘int’, but argument 3 has type ‘long long unsigned int’
-/home/konrad/linux/drivers/block/xen-blkback/xenbus.c: In function ‘show_rd_sect’:
-/home/konrad/linux/drivers/block/xen-blkback/xenbus.c:238: warning: format ‘%d’ expects type ‘int’, but argument 3 has type ‘long long unsigned int’
-/home/konrad/linux/drivers/block/xen-blkback/xenbus.c: In function ‘show_wr_sect’:
-/home/konrad/linux/drivers/block/xen-blkback/xenbus.c:239: warning: format ‘%d’ expects type ‘int’, but argument 3 has type ‘long long unsigned int’
-  CC      block/bsg-lib.o
-  CC      mm/dmapool.o
-  CC      kernel/debug/debug_core.o
-  CC      mm/hugetlb.o
-  CC      mm/mempolicy.o
-  CC      drivers/acpi/sleep.o
-/home/konrad/linux/drivers/block/xen-blkback/blkback.c: In function ‘print_stats’:
-/home/konrad/linux/drivers/block/xen-blkback/blkback.c:384: warning: format ‘%3d’ expects type ‘int’, but argument 3 has type ‘long long unsigned int’
-/home/konrad/linux/drivers/block/xen-blkback/blkback.c:384: warning: format ‘%4d’ expects type ‘int’, but argument 4 has type ‘long long unsigned int’
-/home/konrad/linux/drivers/block/xen-blkback/blkback.c:384: warning: format ‘%4d’ expects type ‘int’, but argument 5 has type ‘lo
+This fixes a boot failure on a system where the first chunk of memory
+mapped only had 3 pages in it.
 
-Could you fix it up please as one big patch if possible?
+init_memory_mapping: [mem 0x00000000-0x000fffff]
+init_memory_mapping: [mem 0x20d000000-0x20d002fff]
+init_memory_mapping: [mem 0x20c000000-0x20cffffff]
+Kernel panic - not syncing: alloc_low_page: can not alloc memory
 
-> 
-> Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
-> Reported-by: Ichiro Ogino <ichiro.ogino@citrix.co.jp>
-> ---
->  drivers/block/xen-blkback/common.h |   14 +++++++-------
->  1 files changed, 7 insertions(+), 7 deletions(-)
-> 
-> diff --git a/drivers/block/xen-blkback/common.h b/drivers/block/xen-blkback/common.h
-> index 6072390..72d09ac 100644
-> --- a/drivers/block/xen-blkback/common.h
-> +++ b/drivers/block/xen-blkback/common.h
-> @@ -208,13 +208,13 @@ struct xen_blkif {
->  
->  	/* statistics */
->  	unsigned long		st_print;
-> -	int			st_rd_req;
-> -	int			st_wr_req;
-> -	int			st_oo_req;
-> -	int			st_f_req;
-> -	int			st_ds_req;
-> -	int			st_rd_sect;
-> -	int			st_wr_sect;
-> +	unsigned long long			st_rd_req;
-> +	unsigned long long			st_wr_req;
-> +	unsigned long long			st_oo_req;
-> +	unsigned long long			st_f_req;
-> +	unsigned long long			st_ds_req;
-> +	unsigned long long			st_rd_sect;
-> +	unsigned long long			st_wr_sect;
->  
->  	wait_queue_head_t	waiting_to_free;
->  };
-> -- 
-> 1.7.0.4
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+---
+ arch/x86/mm/init.c |   21 +++++++++++++++------
+ 1 files changed, 15 insertions(+), 6 deletions(-)
+
+diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
+index 4903a03..0cc7afb 100644
+--- a/arch/x86/mm/init.c
++++ b/arch/x86/mm/init.c
+@@ -389,6 +389,12 @@ static unsigned long __init init_range_memory_mapping(
+ 	return mapped_ram_size;
+ }
+ 
++/* Estimate of the number of pages needed to page 'size' bytes. */
++static unsigned long __init nr_pages_to_map(unsigned long size)
++{
++	return DIV_ROUND_UP(size, PMD_SIZE) + DIV_ROUND_UP(size, PUD_SIZE);
++}
++
+ /* (PUD_SHIFT-PMD_SHIFT)/2 */
+ #define STEP_SIZE_SHIFT 5
+ void __init init_mem_mapping(void)
+@@ -397,7 +403,7 @@ void __init init_mem_mapping(void)
+ 	unsigned long step_size;
+ 	unsigned long addr;
+ 	unsigned long mapped_ram_size = 0;
+-	unsigned long new_mapped_ram_size;
++	unsigned long mapped_pages;
+ 
+ 	probe_page_size_mask();
+ 
+@@ -427,14 +433,17 @@ void __init init_mem_mapping(void)
+ 				start = ISA_END_ADDRESS;
+ 		} else
+ 			start = ISA_END_ADDRESS;
+-		new_mapped_ram_size = init_range_memory_mapping(start,
+-							last_start);
++		mapped_ram_size += init_range_memory_mapping(start,
++							     last_start);
++		mapped_pages = mapped_ram_size >> PAGE_SHIFT;
+ 		last_start = start;
+ 		min_pfn_mapped = last_start >> PAGE_SHIFT;
+-		/* only increase step_size after big range get mapped */
+-		if (new_mapped_ram_size > mapped_ram_size)
++
++		/* Only increase step_size if there is enough mapped
++		   ram to map the larger block. */
++		if (nr_pages_to_map(step_size << STEP_SIZE_SHIFT)
++		    < mapped_pages - nr_pages_to_map(mapped_ram_size))
+ 			step_size <<= STEP_SIZE_SHIFT;
+-		mapped_ram_size += new_mapped_ram_size;
+ 	}
+ 
+ 	if (real_end < end)
+-- 
+1.7.2.5
+
