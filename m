@@ -1,53 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756642Ab3CIHKj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Mar 2013 02:10:39 -0500
-Received: from dcvr.yhbt.net ([64.71.152.64]:34546 "EHLO dcvr.yhbt.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754766Ab3CIHKi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Mar 2013 02:10:38 -0500
-Date: Sat, 9 Mar 2013 07:10:37 +0000
-From: Eric Wong <normalperson@yhbt.net>
-To: Arve =?utf-8?B?SGrDuG5uZXbDpWc=?= <arve@android.com>
-Cc: NeilBrown <neilb@suse.de>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        linux-kernel@vger.kernel.org, Davide Libenzi <davidel@xmailserver.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: epoll: possible bug from wakeup_source activation
-Message-ID: <20130309071037.GA13360@dcvr.yhbt.net>
-References: <20130307112639.GA25130@dcvr.yhbt.net>
- <20130308013027.GA31830@dcvr.yhbt.net>
- <CAMP5Xgdsam2DGLshL5Uu5Q4La_nAq=u1YRNBwAxDstgCvJiqfw@mail.gmail.com>
- <20130308204944.GA27379@dcvr.yhbt.net>
- <CAMP5Xgc4-oX=-V57Mu5PARCWdfpkjck0VnZNAXH-JisvKi5tAg@mail.gmail.com>
+	id S1756853Ab3CIHWq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Mar 2013 02:22:46 -0500
+Received: from mail-ia0-f169.google.com ([209.85.210.169]:59686 "EHLO
+	mail-ia0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754764Ab3CIHWo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 9 Mar 2013 02:22:44 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAMP5Xgc4-oX=-V57Mu5PARCWdfpkjck0VnZNAXH-JisvKi5tAg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130308195324.GE6622@phenom.dumpdata.com>
+References: <1360351703-20571-1-git-send-email-yinghai@kernel.org>
+	<1360351703-20571-13-git-send-email-yinghai@kernel.org>
+	<20130308195324.GE6622@phenom.dumpdata.com>
+Date: Fri, 8 Mar 2013 23:22:43 -0800
+X-Google-Sender-Auth: cltKcqtfmaGm8KOGOBiHpv_SOig
+Message-ID: <CAE9FiQUWxiLtw4xpe-Xt9peCpUMn-vsTHh4hDf=m5xs3pAf7nA@mail.gmail.com>
+Subject: Re: [PATCH v2 12/26] x86, irq: Add realloc_irq_and_cfg_at()
+From: Yinghai Lu <yinghai@kernel.org>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Joerg Roedel <joro@8bytes.org>,
+        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arve Hjønnevåg <arve@android.com> wrote:
-> On Fri, Mar 8, 2013 at 12:49 PM, Eric Wong <normalperson@yhbt.net> wrote:
-> > What happens if ep_modify calls ep_destroy_wakeup_source
-> > while __pm_stay_awake is running on the same epi->ws?
-> 
-> Yes, that looks like a problem. I think calling
-> ep_destroy_wakeup_source with ep->lock held should fix that. It is not
-> clear how useful changing EPOLLWAKEUP in ep_modify is, so
-> alternatively we could remove that feature and instead only allow it
-> to be set in ep_insert.
+On Fri, Mar 8, 2013 at 11:53 AM, Konrad Rzeszutek Wilk
+<konrad.wilk@oracle.com> wrote:
+>> + * irq_realloc_desc - allocate irq descriptor for irq that is already reserved
+>
+> Which begs the question - why was it not allocated when it was reserved?
 
-ep->lock would work, but ep->lock is already a source of heavy
-contention in my multithreaded+epoll webservers.
+The reasons for not allocating them during reserving:
+1. only several pins in ioapic are used, allocate for them pin, will
+   waste memory for not used one.
+2. relocate later could make sure irq_desc is allocated on local node ram.
 
-Perhaps RCU can be used?  I've no experience with RCU, but I've been
-meaning to get acquainted with RCU.
+Thanks
 
-Another possible solution is to only use ep->ws and add an atomic
-counter to ep; so __pm_relax(ep->ws) is only called when the atomic
-counter reaches zero.
+Yinghai
