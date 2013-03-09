@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751567Ab3CIUXY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Mar 2013 15:23:24 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:32714 "EHLO mx1.redhat.com"
+	id S1751730Ab3CIUZU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Mar 2013 15:25:20 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:46820 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751327Ab3CIUXX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Mar 2013 15:23:23 -0500
-Date: Sat, 9 Mar 2013 21:21:34 +0100
+	id S1751653Ab3CIUZS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 9 Mar 2013 15:25:18 -0500
+Date: Sat, 9 Mar 2013 21:23:29 +0100
 From: Oleg Nesterov <oleg@redhat.com>
 To: Lucas De Marchi <lucas.demarchi@profusion.mobi>
 Cc: lucas.de.marchi@gmail.com, David Howells <dhowells@redhat.com>,
         James Morris <james.l.morris@oracle.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 2/7] usermodehelper: Export _exec() and _setup()
-	functions
-Message-ID: <20130309202134.GB16399@redhat.com>
-References: <1362723313-839-1-git-send-email-lucas.demarchi@profusion.mobi> <1362723313-839-3-git-send-email-lucas.demarchi@profusion.mobi>
+Subject: Re: [PATCH v2 3/7] kmod: split call to call_usermodehelper_fns()
+Message-ID: <20130309202329.GC16399@redhat.com>
+References: <1362723313-839-1-git-send-email-lucas.demarchi@profusion.mobi> <1362723313-839-4-git-send-email-lucas.demarchi@profusion.mobi>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1362723313-839-3-git-send-email-lucas.demarchi@profusion.mobi>
+In-Reply-To: <1362723313-839-4-git-send-email-lucas.demarchi@profusion.mobi>
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,151 +27,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 On 03/08, Lucas De Marchi wrote:
 >
-> call_usermodehelper_setup() + call_usermodehelper_exec() need to be
-> called instead of call_usermodehelper_fns() when the cleanup function
-> needs to be called even when an ENOMEM error occurs. In this case using
-> call_usermodehelper_fns() the user can't distinguish if the cleanup
-> function was called or not.
+> Use call_usermodehelper_setup() + call_usermodehelper_exec() instead of
+> calling call_usermodehelper_fns(). In case the latter returns -ENOMEM
+> the cleanup function may had not been called - in this case we would
+> not free argv and module_name.
 >
 > Signed-off-by: Lucas De Marchi <lucas.demarchi@profusion.mobi>
 
-Reviewed-by: Oleg Nesterov <oleg@redhat.com>
+Thanks!
 
-> ---
->  include/linux/kmod.h |  8 ++++++++
->  kernel/kmod.c        | 56 +++++++++++++++++++++-------------------------------
->  2 files changed, 31 insertions(+), 33 deletions(-)
-> 
-> diff --git a/include/linux/kmod.h b/include/linux/kmod.h
-> index 5398d58..7eebcf5 100644
-> --- a/include/linux/kmod.h
-> +++ b/include/linux/kmod.h
-> @@ -71,6 +71,14 @@ call_usermodehelper_fns(char *path, char **argv, char **envp, int wait,
->  			int (*init)(struct subprocess_info *info, struct cred *new),
->  			void (*cleanup)(struct subprocess_info *), void *data);
->  
-> +extern struct subprocess_info *
-> +call_usermodehelper_setup(char *path, char **argv, char **envp, gfp_t gfp_mask,
-> +			  int (*init)(struct subprocess_info *info, struct cred *new),
-> +			  void (*cleanup)(struct subprocess_info *), void *data);
-> +
-> +extern int
-> +call_usermodehelper_exec(struct subprocess_info *info, int wait);
-> +
->  static inline int
->  call_usermodehelper(char *path, char **argv, char **envp, int wait)
->  {
-> diff --git a/kernel/kmod.c b/kernel/kmod.c
-> index 56dd349..b39f240 100644
-> --- a/kernel/kmod.c
-> +++ b/kernel/kmod.c
-> @@ -502,14 +502,28 @@ static void helper_unlock(void)
->   * @argv: arg vector for process
->   * @envp: environment for process
->   * @gfp_mask: gfp mask for memory allocation
-> + * @cleanup: a cleanup function
-> + * @init: an init function
-> + * @data: arbitrary context sensitive data
->   *
->   * Returns either %NULL on allocation failure, or a subprocess_info
->   * structure.  This should be passed to call_usermodehelper_exec to
->   * exec the process and free the structure.
-> + *
-> + * The init function is used to customize the helper process prior to
-> + * exec.  A non-zero return code causes the process to error out, exit,
-> + * and return the failure to the calling process
-> + *
-> + * The cleanup function is just before ethe subprocess_info is about to
-> + * be freed.  This can be used for freeing the argv and envp.  The
-> + * Function must be runnable in either a process context or the
-> + * context in which call_usermodehelper_exec is called.
->   */
-> -static
->  struct subprocess_info *call_usermodehelper_setup(char *path, char **argv,
-> -						  char **envp, gfp_t gfp_mask)
-> +		char **envp, gfp_t gfp_mask,
-> +		int (*init)(struct subprocess_info *info, struct cred *new),
-> +		void (*cleanup)(struct subprocess_info *info),
-> +		void *data)
->  {
->  	struct subprocess_info *sub_info;
->  	sub_info = kzalloc(sizeof(struct subprocess_info), gfp_mask);
-> @@ -520,38 +534,15 @@ struct subprocess_info *call_usermodehelper_setup(char *path, char **argv,
->  	sub_info->path = path;
->  	sub_info->argv = argv;
->  	sub_info->envp = envp;
-> +
-> +	sub_info->cleanup = cleanup;
-> +	sub_info->init = init;
-> +	sub_info->data = data;
->    out:
->  	return sub_info;
->  }
->  
->  /**
-> - * call_usermodehelper_setfns - set a cleanup/init function
-> - * @info: a subprocess_info returned by call_usermodehelper_setup
-> - * @cleanup: a cleanup function
-> - * @init: an init function
-> - * @data: arbitrary context sensitive data
-> - *
-> - * The init function is used to customize the helper process prior to
-> - * exec.  A non-zero return code causes the process to error out, exit,
-> - * and return the failure to the calling process
-> - *
-> - * The cleanup function is just before ethe subprocess_info is about to
-> - * be freed.  This can be used for freeing the argv and envp.  The
-> - * Function must be runnable in either a process context or the
-> - * context in which call_usermodehelper_exec is called.
-> - */
-> -static
-> -void call_usermodehelper_setfns(struct subprocess_info *info,
-> -		    int (*init)(struct subprocess_info *info, struct cred *new),
-> -		    void (*cleanup)(struct subprocess_info *info),
-> -		    void *data)
-> -{
-> -	info->cleanup = cleanup;
-> -	info->init = init;
-> -	info->data = data;
-> -}
-> -
-> -/**
->   * call_usermodehelper_exec - start a usermode application
->   * @sub_info: information about the subprocessa
->   * @wait: wait for the application to finish and return status.
-> @@ -563,7 +554,6 @@ void call_usermodehelper_setfns(struct subprocess_info *info,
->   * asynchronously if wait is not set, and runs as a child of keventd.
->   * (ie. it runs with full root capabilities).
->   */
-> -static
->  int call_usermodehelper_exec(struct subprocess_info *sub_info, int wait)
->  {
->  	DECLARE_COMPLETION_ONSTACK(done);
-> @@ -615,6 +605,7 @@ unlock:
->  	helper_unlock();
->  	return retval;
->  }
-> +EXPORT_SYMBOL(call_usermodehelper_exec);
->  
->  /*
->   * call_usermodehelper_fns() will not run the caller-provided cleanup function
-> @@ -630,13 +621,12 @@ int call_usermodehelper_fns(
->  	struct subprocess_info *info;
->  	gfp_t gfp_mask = (wait == UMH_NO_WAIT) ? GFP_ATOMIC : GFP_KERNEL;
->  
-> -	info = call_usermodehelper_setup(path, argv, envp, gfp_mask);
-> +	info = call_usermodehelper_setup(path, argv, envp, gfp_mask,
-> +					 init, cleanup, data);
->  
->  	if (info == NULL)
->  		return -ENOMEM;
->  
-> -	call_usermodehelper_setfns(info, init, cleanup, data);
-> -
->  	return call_usermodehelper_exec(info, wait);
->  }
->  EXPORT_SYMBOL(call_usermodehelper_fns);
-> -- 
-> 1.8.1.5
-> 
+looks correct, but...
+
+> @@ -98,8 +100,17 @@ static int call_modprobe(char *module_name, int wait)
+>  	argv[3] = module_name;	/* check free_modprobe_argv() */
+>  	argv[4] = NULL;
+>
+> -	return call_usermodehelper_fns(modprobe_path, argv, envp,
+> -		wait | UMH_KILLABLE, NULL, free_modprobe_argv, NULL);
+> +	gfp_mask = (wait == UMH_NO_WAIT) ? GFP_ATOMIC : GFP_KERNEL;
+
+Why? it is never called with UMH_NO_WAIT,
+
+> +	info = call_usermodehelper_setup(modprobe_path, argv, envp,
+> +					 gfp_mask, NULL, free_modprobe_argv,
+
+can't we simply use GFP_KERNEL?
+
+Oleg.
 
