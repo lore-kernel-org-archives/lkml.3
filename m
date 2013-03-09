@@ -1,59 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757349Ab3CIIvW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Mar 2013 03:51:22 -0500
-Received: from jacques.telenet-ops.be ([195.130.132.50]:38101 "EHLO
-	jacques.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755051Ab3CIIvU (ORCPT
+	id S1757183Ab3CIIyE (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Mar 2013 03:54:04 -0500
+Received: from www17.your-server.de ([213.133.104.17]:60434 "EHLO
+	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755273Ab3CIIyC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Mar 2013 03:51:20 -0500
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Li Zefan <lizefan@huawei.com>
-Cc: Tejun Heo <tj@kernel.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH -next] res_counter: Add missing #include <linux/errno.h>
-Date: Sat,  9 Mar 2013 09:51:17 +0100
-Message-Id: <1362819077-14211-1-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.7.0.4
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Sat, 9 Mar 2013 03:54:02 -0500
+Message-ID: <1362819234.1220.1.camel@localhost.localdomain>
+Subject: Re: [3.9-rc1] irq 16: nobody cared  (was [3.9-rc1] very poor
+ interrupt responses)
+From: Thomas Meyer <thomas@m3y3r.de>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Peter Hurley <peter@hurleysoftware.com>,
+        Shawn Starr <shawn.starr@rogers.com>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        USB list <linux-usb@vger.kernel.org>
+Date: Sat, 09 Mar 2013 09:53:54 +0100
+In-Reply-To: <Pine.LNX.4.44L0.1303082116310.28403-100000@netrider.rowland.org>
+References: <Pine.LNX.4.44L0.1303082116310.28403-100000@netrider.rowland.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.3 (3.6.3-2.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Authenticated-Sender: thomas@m3y3r.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 9259826ccb8165f797e4c2c9d17925b41af5f6ae ("res_counter: remove
-include of cgroup.h from res_counter.h") removed the indirect inclusion of
-<linux/errno.h>, breaking the build on m68k and sparc:
+Am Freitag, den 08.03.2013, 21:19 -0500 schrieb Alan Stern:
+> On Fri, 8 Mar 2013, Peter Hurley wrote:
+> 
+> > [ +linux-usb ]
+> > 
+> > On Fri, 2013-03-08 at 14:12 -0500, Shawn Starr wrote:
+> > > Hello folks,
+> > > 
+> > > I am noticing since rc0 and now rc1, very poor interrupt handling. Keyboard response, mouse movements, display refreshing etc. General input/display sluggishness. Did something break IRQ handling somewhere? I need to validate if this happens with X not running also if it is i915 related somehow. The behavor is noticed in a console login however.
+> > > 
+> > > Device: Lenovo W500 laptop
+> > 
+> > Hi Shawn,
+> > 
+> > Unhandled interrupts is the problem.
+> > 
+> > Is the device below being id'd properly?
+> > If you remove this device, does the problem go away?
+> 
+> Does either of the kernels in question have commit 0f815a0a700b (USB:
+> UHCI: fix IRQ race during initialization)?  That commit was added to
+> fix precisely this sort of thing.
 
-In file included from mm/memcontrol.c:29:
-include/linux/res_counter.h: In function ‘res_counter_set_limit’:
-include/linux/res_counter.h:203: error: ‘EBUSY’ undeclared (first use in this function)
-include/linux/res_counter.h:203: error: (Each undeclared identifier is reported only once
-include/linux/res_counter.h:203: error: for each function it appears in.)
+I think so:
 
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
----
-http://kisskb.ellerman.id.au/kisskb/buildresult/8342952/
-http://kisskb.ellerman.id.au/kisskb/buildresult/8342757/
-http://kisskb.ellerman.id.au/kisskb/buildresult/8342767/
+$ git describe
+v3.9-rc1-211-g47b3bc9
 
- include/linux/res_counter.h |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+$ git branch --contains 0f815a0a700b
+* master
 
-diff --git a/include/linux/res_counter.h b/include/linux/res_counter.h
-index a83a849..f9822dc 100644
---- a/include/linux/res_counter.h
-+++ b/include/linux/res_counter.h
-@@ -13,6 +13,7 @@
-  * info about what this counter is.
-  */
- 
-+#include <linux/errno.h>
- #include <linux/spinlock.h>
- 
- /*
--- 
-1.7.0.4
+> 
+> Alan Stern
+> 
+
+
 
