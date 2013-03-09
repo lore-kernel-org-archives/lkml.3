@@ -1,76 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757183Ab3CIIHt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Mar 2013 03:07:49 -0500
-Received: from smtp3-g21.free.fr ([212.27.42.3]:45876 "EHLO smtp3-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755273Ab3CIIHs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Mar 2013 03:07:48 -0500
-Message-ID: <1362816406.19016.16.camel@scapa>
-Subject: Re: [ibm-acpi-devel] x230: unhandled HKEY event 0x6050
-From: Yves-Alexis Perez <corsac@debian.org>
-To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-Cc: Borislav Petkov <bp@alien8.de>, ibm-acpi-devel@lists.sourceforge.net,
-        lkml <linux-kernel@vger.kernel.org>
-Date: Sat, 09 Mar 2013 09:06:46 +0100
-In-Reply-To: <20130307003016.GA21655@khazad-dum.debian.net>
-References: <20130304213804.GE22274@pd.tnic>
-	 <20130307003016.GA21655@khazad-dum.debian.net>
-Content-Type: multipart/signed; micalg="pgp-sha256";
-	protocol="application/pgp-signature"; boundary="=-srGwRgbnFjx9JKmKB+df"
-X-Mailer: Evolution 3.6.1-1 
-Mime-Version: 1.0
+	id S1757369Ab3CII0z (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Mar 2013 03:26:55 -0500
+Received: from mail-ee0-f51.google.com ([74.125.83.51]:37148 "EHLO
+	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752365Ab3CII0y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 9 Mar 2013 03:26:54 -0500
+Message-ID: <513AF24A.2070200@gmail.com>
+Date: Sat, 09 Mar 2013 09:26:50 +0100
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
+MIME-Version: 1.0
+To: Daniel Mack <zonque@gmail.com>
+CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Afzal Mohammed <afzal.mohd.ma@gmail.com>,
+        Fabio Estevam <festevam@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Mike Turquette <mturquette@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <robherring2@gmail.com>
+Subject: Re: Question about fixed-clock
+References: <20130307184240.GA3327@afzal-ThinkPad-R50e> <5139155F.5050407@gmail.com> <20130308021527.GA28481@opensource.wolfsonmicro.com> <5139E7F3.5010906@gmail.com>
+In-Reply-To: <5139E7F3.5010906@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 03/08/2013 02:30 PM, Daniel Mack wrote:
+> On 08.03.2013 03:15, Mark Brown wrote:
+>> On Thu, Mar 07, 2013 at 11:31:59PM +0100, Daniel Mack wrote:
+>>> On 07.03.2013 19:42, Afzal Mohammed wrote:
+>>> Grep'ing through arch/arm, it seems that the imx arch does the same
+>>> thing my patch does, but I could also imagine that it should be done
+>>> somewhere from the DT core. I copied Grant, Rob and Mark for more comments.
+>>
+>> Wouldn't this just be set up by the DT in the same way that other
+>> off-SoC hardware is?
+ >
+ > [...]
+>
+> I don't know the clock framework well enough, but it seems that either
+> all DT boards are supposed to do the same in their generic bits (which
+> sounds like a lot of code duplication), or the fixed-clock driver should
+> behave like any other driver wrt its probing from DT. I'm open to
+> suggestions :)
 
---=-srGwRgbnFjx9JKmKB+df
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Daniel,
 
-On mer., 2013-03-06 at 21:30 -0300, Henrique de Moraes Holschuh wrote:
-> On Mon, 04 Mar 2013, Borislav Petkov wrote:
-> > I get this in dmesg with 3.9-rc1:
-> >=20
-> > [   12.951434] thinkpad_acpi: unhandled HKEY event 0x6050
-> > [   12.951438] thinkpad_acpi: please report the conditions when this
-> event happened to ibm-acpi-devel@lists.sourceforge.net
-> > [   13.516752] thinkpad_acpi: unknown possible thermal alarm or
-> keyboard event received
-> >=20
-> > when pressing Fn+F8/F9, i.e. the display backlight keys. I'm loading
-> > thinkpad_acpi with brightness_enable=3D1 and booting the kernel with
-> > "acpi_backlight=3Dvendor" so that the backlight intensity gets
-> controlled
-> > by thinkpad_acpi. But the last maybe shouldn't complain about it,
-> no?
->=20
-> It shouldn't even work right on a x230, that box should be doing
-> standard
-> ACPI backlight control...
+the current common clock framework does not register any of its "core"
+clocks, i.e. fixed-clock, et.al. I haven't had a look at the way regulator
+api registers them. But if you find the way reasonable, why not propose
+a patch for ccf that registers at least a set of the core clocks itself?
 
-Also see https://bugzilla.kernel.org/show_bug.cgi?id=3D51231 and
-https://patchwork.kernel.org/patch/2124861/
+Sebastian
 
-Regards,
---=20
-Yves-Alexis
-
---=-srGwRgbnFjx9JKmKB+df
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQEcBAABCAAGBQJROu2WAAoJEG3bU/KmdcClTLUIAJN1f4Ydx5DbNVEu2E1dl3GO
-oOjyTn2QSrcY8946yFdtkZT/8PKBPPmFvqyS4yT4p7RUS/HHwi6pTXPktNvOaZ0N
-sZ+I1hfDCVQBdqCABHUM1inP4V+pP4NR0PSGu0+X53bpdSYHhYUtDTZV8DHg9MCg
-vhId8wN4C817ViyAE4EYDzDLh0/5dYioONlLJ7KWtiJdExtZCRyOH1QkurnJQVsg
-Iyh3c7hB23luqNBppurS7Pn5SYzUBW9VkxYv9TIQuYkYLCNNMuawD67AKTXlRXt7
-4foQiKq7jkCWNXUbQfcvcDFuUMmnMS/C5tFxl6/qkmYCbgunrUcFnrk4F9qYoC8=
-=q4hC
------END PGP SIGNATURE-----
-
---=-srGwRgbnFjx9JKmKB+df--
