@@ -1,71 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760196Ab3CIBWF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 20:22:05 -0500
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:54992 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753849Ab3CIBWD (ORCPT
+	id S933704Ab3CIBWX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 20:22:23 -0500
+Received: from cdptpa-omtalb.mail.rr.com ([75.180.132.120]:42926 "EHLO
+	cdptpa-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932716Ab3CIBWV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 20:22:03 -0500
-Date: Fri, 8 Mar 2013 17:18:10 -0800
-From: Anton Vorontsov <anton@enomsg.org>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: linux-kernel@vger.kernel.org, David Woodhouse <dwmw2@infradead.org>
-Subject: Re: [PATCH] power: make goldfish option have a dependency on goldfish
-Message-ID: <20130309011809.GA4028@lizard.sbx05280.losalca.wayport.net>
-References: <1361989666-1922-1-git-send-email-paul.gortmaker@windriver.com>
- <20130227231826.GA30154@lizard.fhda.edu>
- <CAP=VYLqg5Q_e4y6bD9x8idOvJx2n_knzujOY9Z0VyGDEQZTzag@mail.gmail.com>
- <20130228013514.GA7556@lizard.fhda.edu>
- <CAP=VYLoNV16xJtQGtmnC6TejaBRjBz5x=+Lhu7Yzm7q9UZ20AA@mail.gmail.com>
- <20130228025931.GA13764@lizard.gateway.2wire.net>
- <513A1411.7060403@windriver.com>
+	Fri, 8 Mar 2013 20:22:21 -0500
+X-Authority-Analysis: v=2.0 cv=cYNQXw/M c=1 sm=0 a=C56BoFkcj+OI1kjAe8jE5A==:17 a=MtVMNMWb1ewA:10 a=mBswGg73kkcA:10 a=S1A5HrydsesA:10 a=8nJEP1OIZ-IA:10 a=fxJcL_dCAAAA:8 a=VrFzeNeFecIA:10 a=QfKxxUxMAAAA:8 a=ULGdlB65cfvei5oWAMAA:9 a=wPNLvfGTeEIA:10 a=C56BoFkcj+OI1kjAe8jE5A==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 142.196.87.46
+Message-ID: <513A8ECB.8000504@ubuntu.com>
+Date: Fri, 08 Mar 2013 20:22:19 -0500
+From: Phillip Susi <psusi@ubuntu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130105 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <513A1411.7060403@windriver.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Howard Chu <hyc@symas.com>
+CC: Chris Friesen <chris.friesen@genband.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Johannes Weiner <hannes@cmpxchg.org>, Jan Kara <jack@suse.cz>,
+        linux-kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
+Subject: Re: mmap vs fs cache
+References: <5136320E.8030109@symas.com> <20130307154312.GG6723@quack.suse.cz> <20130308020854.GC23767@cmpxchg.org> <5139975F.9070509@symas.com> <20130308084246.GA4411@shutemov.name> <5139B214.3040303@symas.com> <5139FA13.8090305@genband.com> <5139FD27.1030208@symas.com>
+In-Reply-To: <5139FD27.1030208@symas.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paul,
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-On Fri, Mar 08, 2013 at 11:38:41AM -0500, Paul Gortmaker wrote:
-> > I see. In that case, please feel free to send the patch to akpm with my
-> > Nack and pointing to this discussion. If Andrew agrees and I was wrong
-> > (and I'm really curious whether I am right or wrong), I will start
-> > applying such patches in future.
-> 
-> I didn't send the patch to akpm, but I did have a chance to ask akpm how
-> dependencies should be used, and you can see his answer here:
-> 
-> 	https://lkml.org/lkml/2013/3/7/456
+On 03/08/2013 10:00 AM, Howard Chu wrote:
+> Yes, that's what I was thinking. I added a 
+> posix_madvise(..POSIX_MADV_RANDOM) but that had no effect on the
+> test.
 
-Thanks for asking! FWIW, I won't be against CONFIG_AKPM. ;-) Something
-like that will work:
+Yep, that's because it isn't implemented.
 
-	depends on GENERIC_HARDIRQS
-	depends on RESTRICT_PLATFORM && GOLDFISH
+You might try MADV_WILLNEED to schedule it to be read in first.  I
+believe that will only read in the requested page, without additional
+readahead, and then when you fault on the page, it already has IO
+scheduled, so the extra readahead will also be skipped.
 
-But not that I think we really need this option, though. Whoever wants to
-(re)build the kernel is assumed to be knowledgeable enough to figure out
-what needed/unneeded for the given HW. I, for example, use 'ARCH=foo
-allnoconfig' for stripped kernels, and then enable specific options which
-I know I will need. Distros, however, they are using kind of
-'allmodconfig' anyways:
 
-	~$ du -sh /lib/modules/3.8.0-28-desktop/
-	148M    /lib/modules/3.8.0-28-desktop/
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Using GnuPG with undefined - http://www.enigmail.net/
 
-One module less, one module more does not matter, but maintaining
-CONFIG_AKPM will cost devs' time and efforts (especially figuring out what
-is platform dep and what is not... I think it is easier to just keep
-things simple.
-
-But again, I won't be against it -- at least it doesn't make my life
-harder. :-)
-
-Cheers,
-
-Anton
+iQEcBAEBAgAGBQJROo7GAAoJEJrBOlT6nu759SAH+wRhoUIZUuzNGrhfUJ6RnwV8
+VjFyftBCAsdC+Mzq81Da3KJOi+BdYV8VbkYNPzbKll5AnxzL5Udvbdyf9SkROhug
+UgLWHe8pC6ZtHfSvWBCqS1YDLkzw+TiWwJzuL5iUEDC2NGuUJQ5SbhwyTEypvWai
+pdPZeFVyhLAKOtAUwD5e/5vhBWSq2M1TG2C7BUCow2fbJ6kil+kWuXtiDeNPvtUk
+4FwabL8zHA9pNtMlHB0cUrn5W3VQYGqeTaDngjyLxR1gw7uFQn52G47IPe2LAMGx
+58L/tHjbkSY9oukGiMHoF1jiaFqJqV1pw+Q2P7S+0XsU8JdW6CmzotTqDmcozqE=
+=DOZT
+-----END PGP SIGNATURE-----
