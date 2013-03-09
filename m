@@ -1,61 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932197Ab3CIKra (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Mar 2013 05:47:30 -0500
-Received: from mail-ob0-f170.google.com ([209.85.214.170]:44001 "EHLO
-	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756767Ab3CIKr1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Mar 2013 05:47:27 -0500
+	id S1758382Ab3CILgl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Mar 2013 06:36:41 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:43947 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756804Ab3CILgk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 9 Mar 2013 06:36:40 -0500
+Date: Sat, 9 Mar 2013 12:36:31 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Yves-Alexis Perez <corsac@debian.org>
+Cc: Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        ibm-acpi-devel@lists.sourceforge.net,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [ibm-acpi-devel] x230: unhandled HKEY event 0x6050
+Message-ID: <20130309113631.GA18133@pd.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Yves-Alexis Perez <corsac@debian.org>,
+	Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+	ibm-acpi-devel@lists.sourceforge.net,
+	lkml <linux-kernel@vger.kernel.org>
+References: <20130304213804.GE22274@pd.tnic>
+ <20130307003016.GA21655@khazad-dum.debian.net>
+ <1362816406.19016.16.camel@scapa>
 MIME-Version: 1.0
-In-Reply-To: <1362629627-10012-1-git-send-email-amit.daniel@samsung.com>
-References: <1362629627-10012-1-git-send-email-amit.daniel@samsung.com>
-Date: Sat, 9 Mar 2013 18:47:26 +0800
-Message-ID: <CAKohpokJafWjXj8hYT6tgYMGSqgnFCc3MZmNFco2tTeNkOWDmQ@mail.gmail.com>
-Subject: Re: [PATCH V3 1/4] cpufreq: exynos: Adding cpufreq driver for exynos5440
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Amit Daniel Kachhap <amit.daniel@samsung.com>
-Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>, cpufreq@vger.kernel.org,
-        Inderpal Singh <inderpal.singh@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1362816406.19016.16.camel@scapa>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7 March 2013 12:13, Amit Daniel Kachhap <amit.daniel@samsung.com> wrote:
-> diff --git a/drivers/cpufreq/exynos5440-cpufreq.c b/drivers/cpufreq/exynos5440-cpufreq.c
-> +struct exynos_dvfs_data {
-> +       void __iomem *base;
-> +       struct resource *mem;
-> +       int irq;
-> +       struct clk *cpu_clk;
-> +       unsigned int cur_frequency;
-> +       unsigned int latency;
-> +       struct cpufreq_frequency_table *freq_table;
-> +       unsigned int freq_count;
-> +       struct device *dev;
-> +       bool dvfs_enable;
+On Sat, Mar 09, 2013 at 09:06:46AM +0100, Yves-Alexis Perez wrote:
+> Also see https://bugzilla.kernel.org/show_bug.cgi?id=51231 and
+> https://patchwork.kernel.org/patch/2124861/
 
-s/enable/enabled?
+Great, another fit-the-hardware-to-the-software idiocy because those
+dimwits which call their pile of stinking software running in ring 0 the
+parts of a house want to control every-f*cking-thing. Sigh :(.
 
-> +static int exynos_cpufreq_probe(struct platform_device *pdev)
+Thanks for the links Yves-Alexis, certainly a sad read.
 
-> +       dvfs_info->cpu_clk = devm_clk_get(dvfs_info->dev, "armclk");
-> +       if (IS_ERR_OR_NULL(dvfs_info->cpu_clk)) {
+-- 
+Regards/Gruss,
+    Boris.
 
-s/IS_ERR_OR_NULL/IS_ERR
-
-> +       if (devm_request_irq(dvfs_info->dev, dvfs_info->irq, exynos_cpufreq_irq,
-> +                               IRQF_TRIGGER_NONE, CPUFREQ_NAME, dvfs_info)) {
-> +               pr_err("Failed to register IRQ\n");
-> +               ret = -ENODEV;
-
-use the value returned from this function rather than creating your
-own.. true for all
-other calls too, unless they return NULL on error.
-
-> +}
+Sent from a fat crate under my desk. Formatting is fine.
+--
