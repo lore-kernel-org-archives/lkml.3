@@ -1,55 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751270Ab3CIRj0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Mar 2013 12:39:26 -0500
-Received: from mail2.sha-bang.de ([78.47.120.114]:44939 "EHLO mail.sha-bang.de"
+	id S1751145Ab3CIRv0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Mar 2013 12:51:26 -0500
+Received: from fieldses.org ([174.143.236.118]:43501 "EHLO fieldses.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750766Ab3CIRjZ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Mar 2013 12:39:25 -0500
-X-Greylist: delayed 412 seconds by postgrey-1.27 at vger.kernel.org; Sat, 09 Mar 2013 12:39:25 EST
-From: Sascha Wilde <wilde@sha-bang.de>
-To: Roberto Oppedisano <roberto.oppedisano@infracom.it>,
-        Salvatore Sisinni <s.sisinni@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: regression in linux 3.7 - fan speed at 100% after suspend/resume at 100%
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3.50 (gnu/linux)
-Date: Sat, 09 Mar 2013 18:50:54 +0100
-Message-ID: <m2vc90798h.fsf@kenny.lan.sha-bang.de>
+	id S1750732Ab3CIRvY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 9 Mar 2013 12:51:24 -0500
+Date: Sat, 9 Mar 2013 12:51:18 -0500
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Trond Myklebust <Trond.Myklebust@netapp.com>,
+        "David S. Miller" <davem@davemloft.net>, linux-nfs@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Mel Gorman <mgorman@suse.de>
+Subject: Re: [PATCH] sunrpc: drop "select NETVM"
+Message-ID: <20130309175118.GJ31448@fieldses.org>
+References: <1362844951.3137.3.camel@x61.thuisdomein>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1362844951.3137.3.camel@x61.thuisdomein>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi *,
+ACK.
 
-same problem here on my HP Compaq 6910p.
+On Sat, Mar 09, 2013 at 05:02:31PM +0100, Paul Bolle wrote:
+> The Kconfig entry for SUNRPC_SWAP selects NETVM. That select statement
+> was added in commit a564b8f0398636ba30b07c0eaebdef7ff7837249 ("nfs:
+> enable swap on NFS").
 
-I just tested with vanilla linux 3.8.2 -- unfortunately the problem
-still persists.[1][2]  The last (stable) kernel working for me is 3.6.11.
+Cc'ing Mel Gorman just in case there was something else going on there.
 
-I'll happily provide any additional information which might help getting
-this fixed.  Just ask... :)
+--b.
 
-Please CC me in any response, for I'm not subscribed to lkml.
-
-cheers
-sascha
-
-[1]  FWIW, self build vanilla linux 3.8.2 with very generic config on
-     Debian Wheezy 64bit.
-[2]  FWIW², I'm under the stron impression that the whole fan control
-     changed in the latest vanilla kernels on my 6910p even before doing
-     a suspend/resume -- it seems to be more "binary" if you will, in
-     that the fan is not running at all for a while and then at a 100%
-     to return back to 0% after doing some serious cooling.  With 3.6.11
-     and older it is more "analogue", with slow fan when only a bit
-     cooling is needed.  No idea if this is related to the issue at
-     hand.
--- 
-Sascha Wilde
-
-If you think technology can solve your problems you don't understand
-technology and you don't understand your problems.  (Bruce Schneier)
+> But there's no Kconfig symbol NETVM. It apparently
+> was only in used in development versions of the swap over nfs
+> functionality but never entered mainline. Anyhow, it is a nop and can
+> safely be dropped.
+> 
+> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+> ---
+>  net/sunrpc/Kconfig | 1 -
+>  1 file changed, 1 deletion(-)
+> 
+> diff --git a/net/sunrpc/Kconfig b/net/sunrpc/Kconfig
+> index 516fe2c..262caf0 100644
+> --- a/net/sunrpc/Kconfig
+> +++ b/net/sunrpc/Kconfig
+> @@ -24,7 +24,6 @@ config SUNRPC_XPRT_RDMA
+>  config SUNRPC_SWAP
+>  	bool
+>  	depends on SUNRPC
+> -	select NETVM
+>  
+>  config RPCSEC_GSS_KRB5
+>  	tristate "Secure RPC: Kerberos V mechanism"
+> -- 
+> 1.7.11.7
+> 
