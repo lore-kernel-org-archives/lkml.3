@@ -1,124 +1,248 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751253Ab3CIXY6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Mar 2013 18:24:58 -0500
-Received: from mail-oa0-f49.google.com ([209.85.219.49]:37443 "EHLO
-	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751007Ab3CIXY4 (ORCPT
+	id S1751284Ab3CIXji (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Mar 2013 18:39:38 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:41683 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751067Ab3CIXjh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Mar 2013 18:24:56 -0500
-MIME-Version: 1.0
-In-Reply-To: <F766E4F80769BD478052FB6533FA745D25F440A477@SC-VEXCH4.marvell.com>
-References: <1362666556-10036-1-git-send-email-yxlraid@gmail.com>
-	<CAErSpo7feQK7pXD=moA_hf=Y-j82oZZKwfDNzfo2Ea7i9VPxtA@mail.gmail.com>
-	<F766E4F80769BD478052FB6533FA745D25F436856A@SC-VEXCH4.marvell.com>
-	<CAErSpo6RDC+QyyN4kwt7-kU5d8b1iu+zCQZTGZPxCJU2UicTCA@mail.gmail.com>
-	<F766E4F80769BD478052FB6533FA745D25F436861C@SC-VEXCH4.marvell.com>
-	<CAErSpo6ascpN=bBUUzkk5W3-Wee_1ZztAyTwnKd-tq=L_9Q3mw@mail.gmail.com>
-	<F766E4F80769BD478052FB6533FA745D25F440A477@SC-VEXCH4.marvell.com>
-Date: Sat, 9 Mar 2013 16:24:55 -0700
-Message-ID: <CAL-B5D1=zqB_9sWL9A_GgY6OgGdw18qxBHbgj_YG2bj0VGDh4Q@mail.gmail.com>
-Subject: Re: [PATCH 2/2] PCI: fix system hang issue of Marvell SATA host controller
-From: Myron Stowe <myron.stowe@gmail.com>
-To: Xiangliang Yu <yuxiangl@marvell.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, yxlraid <yxlraid@gmail.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Sat, 9 Mar 2013 18:39:37 -0500
+Message-ID: <1362872371.3690.106.camel@shinybook.infradead.org>
+Subject: Re: memory leak and other oddness in pinctrl-mvebu.c
+From: David Woodhouse <dwmw2@infradead.org>
+To: Jason Cooper <jason@lakedaemon.net>
+Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Stephen Warren <swarren@wwwdotorg.org>, linux-kernel@vger.kernel.org
+Date: Sat, 09 Mar 2013 23:39:31 +0000
+In-Reply-To: <20130309225333.GY23237@titan.lakedaemon.net>
+References: <1362758331.32099.121.camel@i7.infradead.org>
+	 <513AF783.6050906@gmail.com>
+	 <1362855725.3690.92.camel@shinybook.infradead.org>
+	 <20130309225333.GY23237@titan.lakedaemon.net>
+Content-Type: multipart/signed; micalg="sha1"; protocol="application/x-pkcs7-signature";
+	boundary="=-M10aWUWvmWHK+4HIpqZL"
+X-Mailer: Evolution 3.6.3 (3.6.3-2.fc18) 
+Mime-Version: 1.0
+X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by merlin.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 9, 2013 at 7:49 AM, Xiangliang Yu <yuxiangl@marvell.com> wrote:
-> Hi, Bjorn
->
->>> >> > Fix system hang issue: if first accessed resource file of BAR0 ~
->>> >> > BAR4, system will hang after executing lspci command
->>> >>
->>> >> This needs more explanation.  We've already read the BARs by the
->>> >> time header quirks are run, so apparently it's not just the mere
->>> >> act of accessing a BAR that causes a hang.
->>> >>
->>> >> We need to know exactly what's going on here.  For example, do
->>> >> BARs
->>> >> 0-4 exist?  Does the device decode accesses to the regions
->>> >> described by the BARs?  The PCI core has to know what resources
->>> >> the device uses, so if the device decodes accesses, we can't just
->>> >> throw away the start/end information.
->>> > The BARs 0-4 is exist and the PCI device is enable IO space, but
->>> > user access
->>> the regions file by udevadm command with info parameter, the system will hang.
->>> > Like this: udevadmin info --attribut-walk
->>> --path=/sys/device/pci-device/000:*.
->>> > Because the device is just AHCI host controller, don't need the
->>> > BAR0 ~ 4 region
->>> file.
->>> > Is my explanation ok for the patch?
->>>
->>> No, I still don't know what causes the hang; I only know that udevadm
->>> can trigger it.  I don't want to just paper over the problem until we
->>> know what the root cause is.
->>>
->>> Does "lspci -H1 -vv" also cause a hang?  What about "setpci -s<dev>
->>> BASE_ADDRESS_0"?  "setpci -H1 -s<dev> BASE_ADDRESS_0"?
->> The commands are ok because the commands can't find the device after accessing IO port.
->> The root cause is that accessing of IO port will make the chip go bad. So, the point of the patch is don't export capability of the IO accessing.
->
->>Ah, so the problem is not with accessing the BAR in config space.  The problem is with accessing the I/O port space mapped by the BAR.  Is that right?
->
-> Yes...
->
->>Does "udevadm info --attribute-walk" really access the device address space mapped by the BARs?
->
-> The older version maybe will access the space, I just got the info from HP. And I simplify the issue by executing following command:
-> Cat /sys/devices/pci-device/**/resourceX
->
-> I want to set the resources of BAR0 ~ 4 to 0 to avoid the IO accessing by user.
 
-I tried to explain earlier the possible issues with the approach that
-is currently being put forth.  Please review that and if you have any
-questions ask.
+--=-M10aWUWvmWHK+4HIpqZL
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
->
-> Any question? Thanks!
+On Sat, 2013-03-09 at 17:53 -0500, Jason Cooper wrote:
+> > +     if (!nr_funcs)
+>=20
+> shouldn't this be:
+>=20
+>         if (nr_funcs <=3D 0)
 
-Googling and looking at the PCI IDs data base I see that the Marvell
-9125 device has been around since sometime around 2010 and that there
-even seem to be a number of follow-on iterations of the chip (i.e.
-9128, 9120, ...).  It seems incredibly unlikely that Marvell made a
-device that has been shipping for 2+ years with five I/O BARs that do
-not work and we are only now finding out such.
+Hm, no. But the loop should terminate if nr_funcs ever reaches zero,
+otherwise funcs->num_groups will be off the end of the original array:
 
-Am I missing something relevant here?  Can you verify that this device
-has is indeed not new and has been successfully used in recent
-platforms?
+diff --git a/drivers/pinctrl/mvebu/pinctrl-mvebu.c b/drivers/pinctrl/mvebu/=
+pinctrl-mvebu.c
+index c689c04..8bbc607 100644
+--- a/drivers/pinctrl/mvebu/pinctrl-mvebu.c
++++ b/drivers/pinctrl/mvebu/pinctrl-mvebu.c
+@@ -478,16 +478,21 @@ static struct pinctrl_ops mvebu_pinctrl_ops =3D {
+ 	.dt_free_map =3D mvebu_pinctrl_dt_free_map,
+ };
+=20
+-static int _add_function(struct mvebu_pinctrl_function *funcs, const char =
+*name)
++static int _add_function(struct mvebu_pinctrl_function *funcs, int nr_func=
+s,
++			 const char *name)
+ {
+-	while (funcs->num_groups) {
++	while (nr_funcs && funcs->num_groups) {
+ 		/* function already there */
+ 		if (strcmp(funcs->name, name) =3D=3D 0) {
+ 			funcs->num_groups++;
+ 			return -EEXIST;
+ 		}
+ 		funcs++;
++		nr_funcs--;
+ 	}
++	if (!nr_funcs)
++		return -EOVERFLOW;
++
+ 	funcs->name =3D name;
+ 	funcs->num_groups =3D 1;
+ 	return 0;
+@@ -501,7 +506,7 @@ static int mvebu_pinctrl_build_functions(struct platfor=
+m_device *pdev,
+ 	int n, s;
+=20
+ 	/* we allocate functions for number of pins and hope
+-	 * there are less unique functions than pins available */
++	 * there are fewer unique functions than pins available */
+ 	funcs =3D devm_kzalloc(&pdev->dev, pctl->desc.npins *
+ 			     sizeof(struct mvebu_pinctrl_function), GFP_KERNEL);
+ 	if (!funcs)
+@@ -510,26 +515,27 @@ static int mvebu_pinctrl_build_functions(struct platf=
+orm_device *pdev,
+ 	for (n =3D 0; n < pctl->num_groups; n++) {
+ 		struct mvebu_pinctrl_group *grp =3D &pctl->groups[n];
+ 		for (s =3D 0; s < grp->num_settings; s++) {
++			int ret;
++
+ 			/* skip unsupported settings on this variant */
+ 			if (pctl->variant &&
+ 			    !(pctl->variant & grp->settings[s].variant))
+ 				continue;
+=20
+ 			/* check for unique functions and count groups */
+-			if (_add_function(funcs, grp->settings[s].name))
++			ret =3D _add_function(funcs, pctl->desc.npins,
++					    grp->settings[s].name);
++			if (ret =3D=3D -EOVERFLOW)
++				dev_err(&pdev->dev,
++					"More functions than pins(%d)\n",
++					pctl->desc.npins);
++			if (ret)
+ 				continue;
+=20
+ 			num++;
+ 		}
+ 	}
+=20
+-	/* with the number of unique functions and it's groups known,
+-	   reallocate functions and assign group names */
+-	funcs =3D krealloc(funcs, num * sizeof(struct mvebu_pinctrl_function),
+-			 GFP_KERNEL);
+-	if (!funcs)
+-		return -ENOMEM;
+-
+ 	pctl->num_functions =3D num;
+ 	pctl->functions =3D funcs;
+=20
+
+--=20
+dwmw2
 
 
-You just recently responded with  "... I just got the info from HP.
-..." so I'm assuming this is an issue that has just been encountered
-on some type of HP system - is this correct?  If so, do you have
-access to the system to provide the logs I asked for earlier?  Also,
-is there anything special or completely new about this platform that
-would explain away the arguments for why this is probably not a
-Marvell device issue?
+--=-M10aWUWvmWHK+4HIpqZL
+Content-Type: application/x-pkcs7-signature; name="smime.p7s"
+Content-Disposition: attachment; filename="smime.p7s"
+Content-Transfer-Encoding: base64
 
-At this point it seems more likely that there is an issue with the
-BIOS of the HP system, perhaps a resource duplication/overlap issue
-much like I talked about earlier.
+MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIIUbjCCBjQw
+ggQcoAMCAQICAR4wDQYJKoZIhvcNAQEFBQAwfTELMAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0
+Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNpZ25pbmcxKTAn
+BgNVBAMTIFN0YXJ0Q29tIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MB4XDTA3MTAyNDIxMDE1NVoX
+DTE3MTAyNDIxMDE1NVowgYwxCzAJBgNVBAYTAklMMRYwFAYDVQQKEw1TdGFydENvbSBMdGQuMSsw
+KQYDVQQLEyJTZWN1cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWduaW5nMTgwNgYDVQQDEy9TdGFy
+dENvbSBDbGFzcyAxIFByaW1hcnkgSW50ZXJtZWRpYXRlIENsaWVudCBDQTCCASIwDQYJKoZIhvcN
+AQEBBQADggEPADCCAQoCggEBAMcJg8zOLdgasSmkLhOrlr6KMoOMpohBllVHrdRvEg/q6r8jR+EK
+75xCGhR8ToREoqe7zM9/UnC6TS2y9UKTpT1v7RSMzR0t6ndl0TWBuUr/UXBhPk+Kmy7bI4yW4urC
++y7P3/1/X7U8ocb8VpH/Clt+4iq7nirMcNh6qJR+xjOhV+VHzQMALuGYn5KZmc1NbJQYclsGkDxD
+z2UbFqE2+6vIZoL+jb9x4Pa5gNf1TwSDkOkikZB1xtB4ZqtXThaABSONdfmv/Z1pua3FYxnCFmdr
+/+N2JLKutIxMYqQOJebr/f/h5t95m4JgrM3Y/w7YX9d7YAL9jvN4SydHsU6n65cCAwEAAaOCAa0w
+ggGpMA8GA1UdEwEB/wQFMAMBAf8wDgYDVR0PAQH/BAQDAgEGMB0GA1UdDgQWBBRTcu2SnODaywFc
+fH6WNU7y1LhRgjAfBgNVHSMEGDAWgBROC+8apEBbpRdphzDKNGhD0EGu8jBmBggrBgEFBQcBAQRa
+MFgwJwYIKwYBBQUHMAGGG2h0dHA6Ly9vY3NwLnN0YXJ0c3NsLmNvbS9jYTAtBggrBgEFBQcwAoYh
+aHR0cDovL3d3dy5zdGFydHNzbC5jb20vc2ZzY2EuY3J0MFsGA1UdHwRUMFIwJ6AloCOGIWh0dHA6
+Ly93d3cuc3RhcnRzc2wuY29tL3Nmc2NhLmNybDAnoCWgI4YhaHR0cDovL2NybC5zdGFydHNzbC5j
+b20vc2ZzY2EuY3JsMIGABgNVHSAEeTB3MHUGCysGAQQBgbU3AQIBMGYwLgYIKwYBBQUHAgEWImh0
+dHA6Ly93d3cuc3RhcnRzc2wuY29tL3BvbGljeS5wZGYwNAYIKwYBBQUHAgEWKGh0dHA6Ly93d3cu
+c3RhcnRzc2wuY29tL2ludGVybWVkaWF0ZS5wZGYwDQYJKoZIhvcNAQEFBQADggIBAAqDCH14qywG
+XLhjjF6uHLkjd02hcdh9hrw+VUsv+q1eeQWB21jWj3kJ96AUlPCoEGZ/ynJNScWy6QMVQjbbMXlt
+UfO4n4bGGdKo3awPWp61tjAFgraLJgDk+DsSvUD6EowjMTNx25GQgyYJ5RPIzKKR9tQW8gGK+2+R
+HxkUCTbYFnL6kl8Ch507rUdPPipJ9CgJFws3kDS3gOS5WFMxcjO5DwKfKSETEPrHh7p5shuuNktv
+sv6hxHTLhiMKX893gxdT3XLS9OKmCv87vkINQcNEcIIoFWbP9HORz9v3vQwR4e3ksLc2JZOAFK+s
+sS5XMEoznzpihEP0PLc4dCBYjbvSD7kxgDwZ+Aj8Q9PkbvE9sIPP7ON0fz095HdThKjiVJe6vofq
++n6b1NBc8XdrQvBmunwxD5nvtTW4vtN6VY7mUCmxsCieuoBJ9OlqmsVWQvifIYf40dJPZkk9YgGT
+zWLpXDSfLSplbY2LL9C9U0ptvjcDjefLTvqSFc7tw1sEhF0n/qpA2r0GpvkLRDmcSwVyPvmjFBGq
+Up/pNy8ZuPGQmHwFi2/14+xeSUDG2bwnsYJQG2EdJCB6luQ57GEnTA/yKZSTKI8dDQa8Sd3zfXb1
+9mOgSF0bBdXbuKhEpuP9wirslFe6fQ1t5j5R0xi72MZ8ikMu1RQZKCyDbMwazlHiMIIHFzCCBf+g
+AwIBAgIDBCZ6MA0GCSqGSIb3DQEBBQUAMIGMMQswCQYDVQQGEwJJTDEWMBQGA1UEChMNU3RhcnRD
+b20gTHRkLjErMCkGA1UECxMiU2VjdXJlIERpZ2l0YWwgQ2VydGlmaWNhdGUgU2lnbmluZzE4MDYG
+A1UEAxMvU3RhcnRDb20gQ2xhc3MgMSBQcmltYXJ5IEludGVybWVkaWF0ZSBDbGllbnQgQ0EwHhcN
+MTIwNTAxMTI1ODI3WhcNMTMwNTAzMTEzNzIwWjBdMRkwFwYDVQQNExA4Y1VOSzUzMTc0ODRYRjk3
+MRwwGgYDVQQDDBNkd213MkBpbmZyYWRlYWQub3JnMSIwIAYJKoZIhvcNAQkBFhNkd213MkBpbmZy
+YWRlYWQub3JnMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAyYe7wo6MrtrB4uIGGbrY
+4IifY/Xsq22pSv605yganL0+uyUdd8rCjrYlH6Q/ra5TVJCQFTgzaepkuqPQc79DC/Cxmzm6Qo+s
+wLZy868oFsccsVokL2bPAWIPaRXfNPJKkYR1FTWQfZpWJVQmT+sPf1XFUullVBAK+d9RztopyacI
+xWoZ/W/Cmv7mseQbttYTtGKJa0btX73nsQRWl6SgErWXo59zg9friCLTy1GXMXJYB8H+PtnuwX0w
+MrAvWDdX1ABgIlA17W3FraCn0eW15ZM46eyu0/amGzJZNtemCWF73P7BAijzeV1jNmiJFXdZ0DT0
+w+hmtMO9PxdDUyt78QIDAQABo4IDrjCCA6owCQYDVR0TBAIwADALBgNVHQ8EBAMCBLAwHQYDVR0l
+BBYwFAYIKwYBBQUHAwIGCCsGAQUFBwMEMB0GA1UdDgQWBBTkfe5UOr3PcirsjApibyyUEfsyRzAf
+BgNVHSMEGDAWgBRTcu2SnODaywFcfH6WNU7y1LhRgjAeBgNVHREEFzAVgRNkd213MkBpbmZyYWRl
+YWQub3JnMIICIQYDVR0gBIICGDCCAhQwggIQBgsrBgEEAYG1NwECAjCCAf8wLgYIKwYBBQUHAgEW
+Imh0dHA6Ly93d3cuc3RhcnRzc2wuY29tL3BvbGljeS5wZGYwNAYIKwYBBQUHAgEWKGh0dHA6Ly93
+d3cuc3RhcnRzc2wuY29tL2ludGVybWVkaWF0ZS5wZGYwgfcGCCsGAQUFBwICMIHqMCcWIFN0YXJ0
+Q29tIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MAMCAQEagb5UaGlzIGNlcnRpZmljYXRlIHdhcyBp
+c3N1ZWQgYWNjb3JkaW5nIHRvIHRoZSBDbGFzcyAxIFZhbGlkYXRpb24gcmVxdWlyZW1lbnRzIG9m
+IHRoZSBTdGFydENvbSBDQSBwb2xpY3ksIHJlbGlhbmNlIG9ubHkgZm9yIHRoZSBpbnRlbmRlZCBw
+dXJwb3NlIGluIGNvbXBsaWFuY2Ugb2YgdGhlIHJlbHlpbmcgcGFydHkgb2JsaWdhdGlvbnMuMIGc
+BggrBgEFBQcCAjCBjzAnFiBTdGFydENvbSBDZXJ0aWZpY2F0aW9uIEF1dGhvcml0eTADAgECGmRM
+aWFiaWxpdHkgYW5kIHdhcnJhbnRpZXMgYXJlIGxpbWl0ZWQhIFNlZSBzZWN0aW9uICJMZWdhbCBh
+bmQgTGltaXRhdGlvbnMiIG9mIHRoZSBTdGFydENvbSBDQSBwb2xpY3kuMDYGA1UdHwQvMC0wK6Ap
+oCeGJWh0dHA6Ly9jcmwuc3RhcnRzc2wuY29tL2NydHUxLWNybC5jcmwwgY4GCCsGAQUFBwEBBIGB
+MH8wOQYIKwYBBQUHMAGGLWh0dHA6Ly9vY3NwLnN0YXJ0c3NsLmNvbS9zdWIvY2xhc3MxL2NsaWVu
+dC9jYTBCBggrBgEFBQcwAoY2aHR0cDovL2FpYS5zdGFydHNzbC5jb20vY2VydHMvc3ViLmNsYXNz
+MS5jbGllbnQuY2EuY3J0MCMGA1UdEgQcMBqGGGh0dHA6Ly93d3cuc3RhcnRzc2wuY29tLzANBgkq
+hkiG9w0BAQUFAAOCAQEAqDU1FKifNtCFJbLnvOi1BLRfk7mut55PMtPSZLJ4/AnG7AjmJnbBI4U5
+DELwvVq3mIpwUpGqZUkqkZMEfBPIbfq517UZB3h4iANtqif+ULfTLhg5XgcK5eF8/T6EtX2c3epq
+ylARdleCbj/0FwiUDvPlTsA6PIN4SCekjRLgjKERrL3heFz+Hteq1rtMAvMkNuyL0/0ijyyg2y45
+NASAl2Afl9SLes/fnoh9nBwzfNQfb6qDYUFpnglfpGrq/0b1NtaOUb2z1SR+H1tKlb8bVJJIdvpu
+mEi27kSRIhzk3h30uTfKkKetgy++ouyldxZ7KZ0PuoLQrBy465EoQLosETCCBxcwggX/oAMCAQIC
+AwQmejANBgkqhkiG9w0BAQUFADCBjDELMAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0Q29tIEx0
+ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNpZ25pbmcxODA2BgNVBAMT
+L1N0YXJ0Q29tIENsYXNzIDEgUHJpbWFyeSBJbnRlcm1lZGlhdGUgQ2xpZW50IENBMB4XDTEyMDUw
+MTEyNTgyN1oXDTEzMDUwMzExMzcyMFowXTEZMBcGA1UEDRMQOGNVTks1MzE3NDg0WEY5NzEcMBoG
+A1UEAwwTZHdtdzJAaW5mcmFkZWFkLm9yZzEiMCAGCSqGSIb3DQEJARYTZHdtdzJAaW5mcmFkZWFk
+Lm9yZzCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMmHu8KOjK7aweLiBhm62OCIn2P1
+7KttqUr+tOcoGpy9PrslHXfKwo62JR+kP62uU1SQkBU4M2nqZLqj0HO/QwvwsZs5ukKPrMC2cvOv
+KBbHHLFaJC9mzwFiD2kV3zTySpGEdRU1kH2aViVUJk/rD39VxVLpZVQQCvnfUc7aKcmnCMVqGf1v
+wpr+5rHkG7bWE7RiiWtG7V+957EEVpekoBK1l6Ofc4PX64gi08tRlzFyWAfB/j7Z7sF9MDKwL1g3
+V9QAYCJQNe1txa2gp9HlteWTOOnsrtP2phsyWTbXpglhe9z+wQIo83ldYzZoiRV3WdA09MPoZrTD
+vT8XQ1Mre/ECAwEAAaOCA64wggOqMAkGA1UdEwQCMAAwCwYDVR0PBAQDAgSwMB0GA1UdJQQWMBQG
+CCsGAQUFBwMCBggrBgEFBQcDBDAdBgNVHQ4EFgQU5H3uVDq9z3Iq7IwKYm8slBH7MkcwHwYDVR0j
+BBgwFoAUU3Ltkpzg2ssBXHx+ljVO8tS4UYIwHgYDVR0RBBcwFYETZHdtdzJAaW5mcmFkZWFkLm9y
+ZzCCAiEGA1UdIASCAhgwggIUMIICEAYLKwYBBAGBtTcBAgIwggH/MC4GCCsGAQUFBwIBFiJodHRw
+Oi8vd3d3LnN0YXJ0c3NsLmNvbS9wb2xpY3kucGRmMDQGCCsGAQUFBwIBFihodHRwOi8vd3d3LnN0
+YXJ0c3NsLmNvbS9pbnRlcm1lZGlhdGUucGRmMIH3BggrBgEFBQcCAjCB6jAnFiBTdGFydENvbSBD
+ZXJ0aWZpY2F0aW9uIEF1dGhvcml0eTADAgEBGoG+VGhpcyBjZXJ0aWZpY2F0ZSB3YXMgaXNzdWVk
+IGFjY29yZGluZyB0byB0aGUgQ2xhc3MgMSBWYWxpZGF0aW9uIHJlcXVpcmVtZW50cyBvZiB0aGUg
+U3RhcnRDb20gQ0EgcG9saWN5LCByZWxpYW5jZSBvbmx5IGZvciB0aGUgaW50ZW5kZWQgcHVycG9z
+ZSBpbiBjb21wbGlhbmNlIG9mIHRoZSByZWx5aW5nIHBhcnR5IG9ibGlnYXRpb25zLjCBnAYIKwYB
+BQUHAgIwgY8wJxYgU3RhcnRDb20gQ2VydGlmaWNhdGlvbiBBdXRob3JpdHkwAwIBAhpkTGlhYmls
+aXR5IGFuZCB3YXJyYW50aWVzIGFyZSBsaW1pdGVkISBTZWUgc2VjdGlvbiAiTGVnYWwgYW5kIExp
+bWl0YXRpb25zIiBvZiB0aGUgU3RhcnRDb20gQ0EgcG9saWN5LjA2BgNVHR8ELzAtMCugKaAnhiVo
+dHRwOi8vY3JsLnN0YXJ0c3NsLmNvbS9jcnR1MS1jcmwuY3JsMIGOBggrBgEFBQcBAQSBgTB/MDkG
+CCsGAQUFBzABhi1odHRwOi8vb2NzcC5zdGFydHNzbC5jb20vc3ViL2NsYXNzMS9jbGllbnQvY2Ew
+QgYIKwYBBQUHMAKGNmh0dHA6Ly9haWEuc3RhcnRzc2wuY29tL2NlcnRzL3N1Yi5jbGFzczEuY2xp
+ZW50LmNhLmNydDAjBgNVHRIEHDAahhhodHRwOi8vd3d3LnN0YXJ0c3NsLmNvbS8wDQYJKoZIhvcN
+AQEFBQADggEBAKg1NRSonzbQhSWy57zotQS0X5O5rreeTzLT0mSyePwJxuwI5iZ2wSOFOQxC8L1a
+t5iKcFKRqmVJKpGTBHwTyG36ude1GQd4eIgDbaon/lC30y4YOV4HCuXhfP0+hLV9nN3qaspQEXZX
+gm4/9BcIlA7z5U7AOjyDeEgnpI0S4IyhEay94Xhc/h7Xqta7TALzJDbsi9P9Io8soNsuOTQEgJdg
+H5fUi3rP356IfZwcM3zUH2+qg2FBaZ4JX6Rq6v9G9TbWjlG9s9Ukfh9bSpW/G1SSSHb6bphItu5E
+kSIc5N4d9Lk3ypCnrYMvvqLspXcWeymdD7qC0KwcuOuRKEC6LBExggNvMIIDawIBATCBlDCBjDEL
+MAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdp
+dGFsIENlcnRpZmljYXRlIFNpZ25pbmcxODA2BgNVBAMTL1N0YXJ0Q29tIENsYXNzIDEgUHJpbWFy
+eSBJbnRlcm1lZGlhdGUgQ2xpZW50IENBAgMEJnowCQYFKw4DAhoFAKCCAa8wGAYJKoZIhvcNAQkD
+MQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMTMwMzA5MjMzOTMxWjAjBgkqhkiG9w0BCQQx
+FgQUEFP3XnCX14h7r7/L9a5bkzumiAYwgaUGCSsGAQQBgjcQBDGBlzCBlDCBjDELMAkGA1UEBhMC
+SUwxFjAUBgNVBAoTDVN0YXJ0Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRp
+ZmljYXRlIFNpZ25pbmcxODA2BgNVBAMTL1N0YXJ0Q29tIENsYXNzIDEgUHJpbWFyeSBJbnRlcm1l
+ZGlhdGUgQ2xpZW50IENBAgMEJnowgacGCyqGSIb3DQEJEAILMYGXoIGUMIGMMQswCQYDVQQGEwJJ
+TDEWMBQGA1UEChMNU3RhcnRDb20gTHRkLjErMCkGA1UECxMiU2VjdXJlIERpZ2l0YWwgQ2VydGlm
+aWNhdGUgU2lnbmluZzE4MDYGA1UEAxMvU3RhcnRDb20gQ2xhc3MgMSBQcmltYXJ5IEludGVybWVk
+aWF0ZSBDbGllbnQgQ0ECAwQmejANBgkqhkiG9w0BAQEFAASCAQBqekU1E86pjOsFdqzPTIdRJkvT
+eULsXV+HCPL0oRbElJ4tZD5QyrZupNSYNjIQdsjdvipfAEPWSVDBJfm0kxdH4CFA1jtig7lMwKTg
+rVGhFSPA0jyiYr/CE81N/Z83/uAdiv6Lvf2JJTitEyt2JQ40BNTPcKRhqTC0yenKZmyt4OILekXo
+VgYIiCSx1/kac8O4VObYaEsD81ADd4IFKenS1j/l/2y5b4qBXVNliWABI1JzPOsMdQwjGSHb2uN6
+P5AynbCi4kjFcP9BWKg7hNcPkVQhlsWTA1D3wHgX9WJEJQGjREyVZSSCT7H0DxFwu5SLby9aqAcr
+tMNInv5fN8XzAAAAAAAA
 
-To understand the root cause and not just band-aid over a symptom we
-need to get the logs asked for from the system.  HP likely needs to
-get involved and start participating and providing such at this point.
 
-Again, the logs that would be helpful currently are: A 'dmesg' log
-from the system which was booted using both the "debug" and
-"ignore_loglevel" boot parameters, a 'lspci -xxx -s<dev>' capture
-targeting the Marvell 9125 device, and a 'lspci -vv' capture of the
-system's entire PCI hierarchy.
+--=-M10aWUWvmWHK+4HIpqZL--
 
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
