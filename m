@@ -1,141 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933807Ab3CIDrB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 22:47:01 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:35865 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760295Ab3CIDrA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 22:47:00 -0500
-Date: Sat, 09 Mar 2013 12:46:33 +0900 (JST)
-Message-Id: <20130309.124633.504064737.d.hatayama@jp.fujitsu.com>
-To: zhangyanfei.yes@gmail.com
-Cc: heiko.carstens@de.ibm.com, kexec@lists.infradead.org,
-        linux-kernel@vger.kernel.org, lisa.mitchell@hp.com,
-        kumagai-atsushi@mxc.nes.nec.co.jp, ebiederm@xmission.com,
-        zhangyanfei@cn.fujitsu.com, akpm@linux-foundation.org, cpw@sgi.com,
-        vgoyal@redhat.com
-Subject: Re: [PATCH v2 15/20] kexec: fill note buffers by NT_VMCORE_PAD
- notes in page-size boundary
-From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-In-Reply-To: <CANBD6kFwTjKL9CqUzVSWFSRH6ibdQstCU5wTBkv4+=4HhPiG4Q@mail.gmail.com>
-References: <513867D2.7090501@cn.fujitsu.com>
-	<20130308.105519.82764856.d.hatayama@jp.fujitsu.com>
-	<CANBD6kFwTjKL9CqUzVSWFSRH6ibdQstCU5wTBkv4+=4HhPiG4Q@mail.gmail.com>
-X-Mailer: Mew version 6.3 on Emacs 24.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=iso-2022-jp
-Content-Transfer-Encoding: 7bit
+	id S933884Ab3CIDvB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 22:51:01 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:62998 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760304Ab3CIDu7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Mar 2013 22:50:59 -0500
+Date: Fri, 8 Mar 2013 22:50:53 -0500
+From: Dave Jones <davej@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: BUG_ON(nd->inode != parent->d_inode);
+Message-ID: <20130309035053.GA1396@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	Al Viro <viro@zeniv.linux.org.uk>,
+	"Eric W. Biederman" <ebiederm@xmission.com>
+References: <20130309003617.GB6743@redhat.com>
+ <CA+55aFzS0MpqRNM_HmJq6GKiuBncieA6LysNjSM1qSmETitkGw@mail.gmail.com>
+ <20130309020318.GA11449@redhat.com>
+ <CA+55aFwoqQUgS3ou4oqA-G7-cQzU-pwq7aSJ9vA5oyWCshhDkw@mail.gmail.com>
+ <20130309022623.GB11449@redhat.com>
+ <20130309025631.GA13188@redhat.com>
+ <20130309025752.GA13913@redhat.com>
+ <CA+55aFxyOYXnzDoWr7Utr1QLjjMUCON5EGH3FMvGBHxnxMJmQQ@mail.gmail.com>
+ <20130309032530.GA19839@redhat.com>
+ <CA+55aFweyfew3VU79ZQV4otJcWiF0=xKXxDtADXcccNxGaqMwA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFweyfew3VU79ZQV4otJcWiF0=xKXxDtADXcccNxGaqMwA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Yanfei Zhang <zhangyanfei.yes@gmail.com>
-Subject: Re: [PATCH v2 15/20] kexec: fill note buffers by NT_VMCORE_PAD notes in page-size boundary
-Date: Fri, 8 Mar 2013 21:02:50 +0800
+On Fri, Mar 08, 2013 at 07:36:34PM -0800, Linus Torvalds wrote:
+ > Note that my tree does not have the pipe changes. Um still not sure about
+ > the cause, see the patch with a warn-on-once in it. I don't like just
+ > adding the NULL pointer checks willy nilly without understanding why they
+ > made...
 
-> 2013/3/8 HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>:
->> From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
->> Subject: Re: [PATCH v2 15/20] kexec: fill note buffers by NT_VMCORE_PAD notes in page-size boundary
->> Date: Thu, 7 Mar 2013 18:11:30 +0800
->>
->>> 于 2013年03月02日 16:37, HATAYAMA Daisuke 写道:
->>>> Fill both crash_notes and vmcoreinfo_note buffers by NT_VMCORE_PAD
->>>> note type to make them satisfy mmap()'s page-size boundary
->>>> requirement.
->>>>
->>>> So far, end of note segments has been marked by zero-filled elf
->>>> header. Instead, this patch writes NT_VMCORE_PAD note in the end of
->>>> note segments until the offset on page-size boundary.
->>>
->>>
->>> In the codes below, it seems that you assign name "VMCOREINFO" for
->>> note type NT_VMCORE_PAD, right? This is kind of wired, i think. This
->>> name has been used for NT_VMCORE_DEBUGINFO note already. Why not something
->>> like "VMCOREPAD" or "PAD"?
->>>
->>
->> It looks you are confusing or don't know name and type. The name is
->> namespace and in the namespace, there are multiple note types, each of
->> which has the corresponding data. In other words, data corresponding
->> to types differ if they belong to differnet name space even if
->> integers of the types are coincide with.
-> 
-> Yes, I knew this. Just as the spec said " a program must recognize both the name
-> and the type to recognize a descriptor.". But I cannot understand what your word
-> "namespace" came from? I think you complicate simple things here.
-> 
-> Only with a type, we cannot recognize a descriptor, because "multiple
-> interpretations of
-> a single type value may exist", So we should combine the name and the type
-> together. If both the name and type of two descriptors are the same,
-> we could say we
-> have two same descriptors. If one of them (type or name) are
-> different, we say the
-> two descriptors are different and the two notes have different data.
-> 
-> If I am wrong, please correct me.
+Yeah, understood. I still have that patched.
 
-??? I think you're saying here the same thing as my explanation above.
+ > > To be honest I've lost track of the whole collection.
+ > > Let me repull your latest tree, and see what falls out.
+ > > (I'll turn off CONFIG_USER_NS for now too until that gets fixed)
+ > >
+ > > I have a feeling there were some sysfs ones that may still be unfixed.
 
-Although the term ''name space'' never occurs in ELF, it seems to me
-standard to represent the same values as different ones by combining
-additional elements as names to them.
+I was right..
 
-Well, formally, it is represented as simply tuples or vector
-space. For example, support set S and S' and define new set S x S' by
+[  425.836722] general protection fault: 0000 [#1] PREEMPT SMP 
+[  425.837529] Modules linked in: hidp l2tp_ppp l2tp_netlink l2tp_core cmtp kernelcapi bnep rfcomm scsi_transport_iscsi can_raw ipt_ULOG nfnetlink irda can_bcm ipx caif_socket appletalk x25 p8023 af_key caif psnap p8022 crc_ccitt phonet netrom rose rds llc2 nfc llc af_802154 can ax25 pppoe decnet af_rxrpc pppox ppp_generic slhc atm lockd sunrpc ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 xt_conntrack nf_conntrack ip6table_filter ip6_tables snd_hda_codec_realtek snd_hda_intel snd_hda_codec btusb bluetooth snd_pcm snd_page_alloc snd_timer snd usb_debug microcode rfkill pcspkr serio_raw soundcore edac_core vhost_net tun macvtap macvlan kvm_amd r8169 kvm mii radeon backlight drm_kms_helper ttm
+[  425.846148] CPU 2 
+[  425.846387] Pid: 15263, comm: trinity-child3 Not tainted 3.9.0-rc1+ #88 Gigabyte Technology Co., Ltd. GA-MA78GM-S2H/GA-MA78GM-S2H
+[  425.847859] RIP: 0010:[<ffffffff8123f657>]  [<ffffffff8123f657>] sysfs_find_dirent+0x47/0xf0
+[  425.848919] RSP: 0018:ffff88011aab5d38  EFLAGS: 00010202
+[  425.849581] RAX: 000000000ad55669 RBX: 6b6b6b6b6b6b6b6b RCX: 000000006b6b6b6b
+[  425.850468] RDX: 0000000000000000 RSI: 0000000000000000 RDI: 0000000000000000
+[  425.851356] RBP: ffff88011aab5d58 R08: 0000000000000000 R09: 0000000000000000
+[  425.852237] R10: 0000000000000000 R11: 0000000000000000 R12: 000000007640c1d4
+[  425.853119] R13: ffff880105b41e48 R14: 0000000000000000 R15: ffff880127110000
+[  425.854001] FS:  00007f7cdb71d740(0000) GS:ffff88012b200000(0000) knlGS:0000000000000000
+[  425.855000] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[  425.855712] CR2: 0000000000000001 CR3: 0000000102df4000 CR4: 00000000000007e0
+[  425.856599] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[  425.857486] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+[  425.858368] Process trinity-child3 (pid: 15263, threadinfo ffff88011aab4000, task ffff880127110000)
+[  425.859490] Stack:
+[  425.859747]  ffff880113228d58 ffff880105b41e10 fffffffffffffffe ffff88010887eee8
+[  425.860718]  ffff88011aab5d88 ffffffff8123f76d ffff880105b41e10 ffff8801088804a0
+[  425.861683]  ffff88011aab5f28 0000000000000000 ffff88011aab5db8 ffffffff811c5b7d
+[  425.862648] Call Trace:
+[  425.862960]  [<ffffffff8123f76d>] sysfs_lookup+0x6d/0xe0
+[  425.863623]  [<ffffffff811c5b7d>] lookup_real+0x1d/0x60
+[  425.864274]  [<ffffffff811c5d98>] __lookup_hash+0x38/0x50
+[  425.864951]  [<ffffffff811c5dc9>] lookup_hash+0x19/0x20
+[  425.865607]  [<ffffffff811c9275>] kern_path_create+0x95/0x170
+[  425.866322]  [<ffffffff811c7726>] ? getname_flags.part.33+0x86/0x150
+[  425.868909]  [<ffffffff811c939a>] user_path_create+0x4a/0x70
+[  425.871401]  [<ffffffff811cc668>] sys_linkat+0x88/0x230
+[  425.873841]  [<ffffffff8134b06e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+[  425.876433]  [<ffffffff811cc82e>] sys_link+0x1e/0x20
+[  425.878839]  [<ffffffff816d0d42>] system_call_fastpath+0x16/0x1b
+[  425.881364] Code: 00 48 8b 9f 88 00 00 00 f6 c4 0f 0f 95 c0 48 85 f6 0f 95 c2 38 d0 75 79 4c 89 ee 4c 89 f7 e8 91 ef ff ff 41 89 c4 48 85 db 74 1d <8b> 4b 28 41 39 cc 74 21 44 89 e0 29 c8 83 f8 00 7c 2c 74 45 48 
 
-  S x S' := { (s, s') | s in S, s' in S' }
 
-and equality of the S x S' are defined as usual:
+I'll try some more divide and conquer debugging in a while.
 
-  (s1, s1') == (s2, s2') iff s1 == s2 and s1' == s2'.
-
-In ELF, S is names and S' is types. There's no other formal meaning
-there.
-
->>
->> The "VMCOREINFO" name represents information exported from
->> /proc/vmcore that is used in kdump framework. In this sense,
->> NT_VMCORE_PAD that is specific for /proc/vmcore and kdump framework,
->> should belong to the "VMCOREINFO" name.
-> 
-> I cannot understand the name explanation totally. Does the name really
-> have this meaning? Is there any authentic document? I was always thinking we
-> could feel free to name a name by ourselves!
-
-Of course, it's optional for you to decide how to name notes within
-the mechanism. But it's important to treat naming for ease of managing
-note types. In addition to the above formal definition, it's important
-to consider what name gives us. It's readability, telling us that note
-types that belong to unique name are treated in common in the sense of
-the name. This is apart from the formal definition above.
-
-It's certainly possible to distinguish notes by giving names only and
-not giving types. For example, imagine there are new 27 notes and they
-have different names but have 0 as type.
-
-name          type
-"SOME_NOTE_A" 0
-"SOME_NOTE_B" 0
-...
-"SOME_NOTE_Z" 0
-
-Also, for example,
-
-name        type
-"SOME_NOTE" 0     => NT_SOME_NOTE_A
-"SOME_NOTE" 1     => NT_SOME_NOTE_B
-...
-"SOME_NOTE" 26    => NT_SOME_NOTE_Z
-
-For the former case, it *looks to me* that space of time is not used
-effectively and it *looks to me* that space of name is not consumed
-efficiently.
-
-After all, it amounts to individual preference about naming. I cannot
-say anything more.
-
-Thanks.
-HATAYAMA, Daisuke
+	Dave
 
