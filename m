@@ -1,106 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760260Ab3CICek (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 21:34:40 -0500
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:33344 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760014Ab3CICej (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 21:34:39 -0500
-Message-ID: <513A9FB8.1050807@gmail.com>
-Date: Sat, 09 Mar 2013 10:34:32 +0800
-From: Ric Mason <ric.masonn@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
+	id S933454Ab3CIC4h (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 21:56:37 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:49071 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760162Ab3CIC4g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Mar 2013 21:56:36 -0500
+Date: Fri, 8 Mar 2013 21:56:31 -0500
+From: Dave Jones <davej@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: BUG_ON(nd->inode != parent->d_inode);
+Message-ID: <20130309025631.GA13188@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	Al Viro <viro@zeniv.linux.org.uk>
+References: <20130308233041.GA32587@redhat.com>
+ <CA+55aFxBvyLcWJB0JMNcaCXHtgvPLt3cFQqJeRFcb=6rkZFtvA@mail.gmail.com>
+ <20130308235514.GA5605@redhat.com>
+ <CA+55aFyfOKXVpn41F_OPE7+CeNyN2ZhwPeEJ8bkZLxBEkz31sg@mail.gmail.com>
+ <20130309001917.GA6015@redhat.com>
+ <20130309003617.GB6743@redhat.com>
+ <CA+55aFzS0MpqRNM_HmJq6GKiuBncieA6LysNjSM1qSmETitkGw@mail.gmail.com>
+ <20130309020318.GA11449@redhat.com>
+ <CA+55aFwoqQUgS3ou4oqA-G7-cQzU-pwq7aSJ9vA5oyWCshhDkw@mail.gmail.com>
+ <20130309022623.GB11449@redhat.com>
 MIME-Version: 1.0
-To: Johannes Weiner <hannes@cmpxchg.org>
-CC: Jan Kara <jack@suse.cz>, Howard Chu <hyc@symas.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
-Subject: Re: mmap vs fs cache
-References: <5136320E.8030109@symas.com> <20130307154312.GG6723@quack.suse.cz> <20130308020854.GC23767@cmpxchg.org>
-In-Reply-To: <20130308020854.GC23767@cmpxchg.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130309022623.GB11449@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Johannes,
-On 03/08/2013 10:08 AM, Johannes Weiner wrote:
-> On Thu, Mar 07, 2013 at 04:43:12PM +0100, Jan Kara wrote:
->>    Added mm list to CC.
->>
->> On Tue 05-03-13 09:57:34, Howard Chu wrote:
->>> I'm testing our memory-mapped database code on a small VM. The
->>> machine has 32GB of RAM and the size of the DB on disk is ~44GB. The
->>> database library mmaps the entire file as a single region and starts
->>> accessing it as a tree of B+trees. Running on an Ubuntu 3.5.0-23
->>> kernel, XFS on a local disk.
->>>
->>> If I start running read-only queries against the DB with a freshly
->>> started server, I see that my process (OpenLDAP slapd) quickly grows
->>> to an RSS of about 16GB in tandem with the FS cache. (I.e., "top"
->>> shows 16GB cached, and slapd is 16GB.)
->>> If I confine my queries to the first 20% of the data then it all
->>> fits in RAM and queries are nice and fast.
->>>
->>> if I extend the query range to cover more of the data, approaching
->>> the size of physical RAM, I see something strange - the FS cache
->>> keeps growing, but the slapd process size grows at a slower rate.
->>> This is rather puzzling to me since the only thing triggering reads
->>> is accesses through the mmap region. Eventually the FS cache grows
->>> to basically all of the 32GB of RAM (+/- some text/data space...)
->>> but the slapd process only reaches 25GB, at which point it actually
->>> starts to shrink - apparently the FS cache is now stealing pages
->>> from it. I find that a bit puzzling; if the pages are present in
->>> memory, and the only reason they were paged in was to satisfy an
->>> mmap reference, why aren't they simply assigned to the slapd
->>> process?
->>>
->>> The current behavior gets even more aggravating: I can run a test
->>> that spans exactly 30GB of the data. One would expect that the slapd
->>> process should simply grow to 30GB in size, and then remain static
->>> for the remainder of the test. Instead, the server grows to 25GB,
->>> the FS cache grows to 32GB, and starts stealing pages from the
->>> server, shrinking it back down to 19GB or so.
->>>
->>> If I do an "echo 1 > /proc/sys/vm/drop_caches" at the onset of this
->>> condition, the FS cache shrinks back to 25GB, matching the slapd
->>> process size.
->>> This then frees up enough RAM for slapd to grow further. If I don't
->>> do this, the test is constantly paging in data from disk. Even so,
->>> the FS cache continues to grow faster than the slapd process size,
->>> so the system may run out of free RAM again, and I have to drop
->>> caches multiple times before slapd finally grows to the full 30GB.
->>> Once it gets to that size the test runs entirely from RAM with zero
->>> I/Os, but it doesn't get there without a lot of babysitting.
->>>
->>> 2 questions:
->>>    why is there data in the FS cache that isn't owned by (the mmap
->>> of) the process that caused it to be paged in in the first place?
-> The filesystem cache is shared among processes because the filesystem
-> is also shared among processes.  If another task were to access the
-> same file, we still should only have one copy of that data in memory.
->
-> It sounds to me like slapd is itself caching all the data it reads.
-> If that is true, shouldn't it really be using direct IO to prevent
-> this double buffering of filesystem data in memory?
+On Fri, Mar 08, 2013 at 09:26:23PM -0500, Dave Jones wrote:
+ > On Fri, Mar 08, 2013 at 06:08:52PM -0800, Linus Torvalds wrote:
+ >  > On Fri, Mar 8, 2013 at 6:03 PM, Dave Jones <davej@redhat.com> wrote:
+ >  > >
+ >  > > existing pathname + 'a' = fine.
+ >  > >
+ >  > > existing pathname + '/' + 'a' = boom.
+ >  > 
+ >  > Good.
+ >  > 
+ >  > > Looks like if I do this..
+ >  > >
+ >  > >        if (isdigit(newpath[len]) != 0) {
+ >  > >                 newpath[len] = '/';
+ >  > >                newpath[len+1] = 'A';
+ >  > >                newpath[len+2] = 0;
+ >  > >
+ >  > > no bug.
+ >  > 
+ >  > Well, but that will never trigger. newpath[len] will always be NUL, so
+ >  > you just disabled things entirely. Use "len-1".
+ >  > 
+ >  > So I don't think that did what you meant it to do.
+ > 
+ > Fixed that up, and even double checked my sanity by printing stuff out.
+ > 
+ > Confirmed that it's something that doesn't end in a number.
+ 
+I've got a hunch that it's /proc/$$/ns/uts.
 
-When use direct IO is better? When use page cache is better?
+After 3-4 runs, that's the only common file in the last few that got mangled.
 
->
->>>    is there a tunable knob to discourage the page cache from stealing
->>> from the process?
-> Try reducing /proc/sys/vm/swappiness, which ranges from 0-100 and
-> defaults to 60.
+I'll do some more tests, but this might be the one.
 
-Why redunce? IIUC, swappiness is used to determine how aggressive 
-reclaim anonymous pages, if the value is high more anonymous pages will 
-be reclaimed.
-
->
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+	Dave
 
