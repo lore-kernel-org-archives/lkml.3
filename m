@@ -1,71 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760172Ab3CIBIQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 20:08:16 -0500
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:34885 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758045Ab3CIBIP (ORCPT
+	id S1760205Ab3CIBSd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 20:18:33 -0500
+Received: from mail-vb0-f47.google.com ([209.85.212.47]:43826 "EHLO
+	mail-vb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759941Ab3CIBSc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 20:08:15 -0500
-Message-ID: <513A8B76.5000202@gmail.com>
-Date: Sat, 09 Mar 2013 09:08:06 +0800
-From: Simon Jeons <simon.jeons@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
+	Fri, 8 Mar 2013 20:18:32 -0500
 MIME-Version: 1.0
-To: Hugh Dickins <hughd@google.com>
-CC: Johannes Weiner <hannes@cmpxchg.org>, dormando <dormando@rydia.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, Seiji Aguchi <seiji.aguchi@hds.com>,
-        Satoru Moriya <satoru.moriya@hds.com>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "lwoodman@redhat.com" <lwoodman@redhat.com>,
-        Mel Gorman <mel@csn.ul.ie>
-Subject: Re: [PATCH] add extra free kbytes tunable
-References: <alpine.DEB.2.02.1302111734090.13090@dflat> <A5ED84D3BB3A384992CBB9C77DEDA4D414A98EBF@USINDEM103.corp.hds.com> <511EB5CB.2060602@redhat.com> <alpine.DEB.2.02.1302171546120.10836@dflat> <20130219152936.f079c971.akpm@linux-foundation.org> <alpine.DEB.2.02.1302192100100.23162@dflat> <20130222175634.GA4824@cmpxchg.org> <51307354.5000401@gmail.com> <51307583.2020006@gmail.com> <alpine.LNX.2.00.1303011431290.9961@eggly.anvils> <5131438B.4090507@gmail.com> <alpine.LNX.2.00.1303011648330.16381@eggly.anvils> <51316727.1040806@gmail.com> <alpine.LNX.2.00.1303011900430.23383@eggly.anvils>
-In-Reply-To: <alpine.LNX.2.00.1303011900430.23383@eggly.anvils>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20130309003617.GB6743@redhat.com>
+References: <CA+55aFyE12rZ3DZUtTkonPjbcQiZNdAmys7w5zf7_Xry2z=-2A@mail.gmail.com>
+	<20130308210432.GA21500@redhat.com>
+	<CA+55aFyNAA3u2k_38iqRPN0EqtP=qXu1wu_vnXnAgQmp6NwGJA@mail.gmail.com>
+	<20130308230734.GA28317@redhat.com>
+	<CA+55aFxKgZyqbn1M0sAL0CoLxmKSzAALYBTPLYVM7OpG_M_B=A@mail.gmail.com>
+	<20130308233041.GA32587@redhat.com>
+	<CA+55aFxBvyLcWJB0JMNcaCXHtgvPLt3cFQqJeRFcb=6rkZFtvA@mail.gmail.com>
+	<20130308235514.GA5605@redhat.com>
+	<CA+55aFyfOKXVpn41F_OPE7+CeNyN2ZhwPeEJ8bkZLxBEkz31sg@mail.gmail.com>
+	<20130309001917.GA6015@redhat.com>
+	<20130309003617.GB6743@redhat.com>
+Date: Fri, 8 Mar 2013 17:18:29 -0800
+X-Google-Sender-Auth: DFDWHwydcMXqD1ojvHU1P9l9IGc
+Message-ID: <CA+55aFzS0MpqRNM_HmJq6GKiuBncieA6LysNjSM1qSmETitkGw@mail.gmail.com>
+Subject: Re: BUG_ON(nd->inode != parent->d_inode);
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Dave Jones <davej@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Hugh,
-On 03/02/2013 11:08 AM, Hugh Dickins wrote:
-> On Sat, 2 Mar 2013, Simon Jeons wrote:
->> On 03/02/2013 09:42 AM, Hugh Dickins wrote:
->>> On Sat, 2 Mar 2013, Simon Jeons wrote:
->>>> In function __add_to_swap_cache if add to radix tree successfully will
->>>> result
->>>> in increase NR_FILE_PAGES, why? This is anonymous page instead of file
->>>> backed
->>>> page.
->>> Right, that's hard to understand without historical background.
->>>
->>> I think the quick answer would be that we used to (and still do) think
->>> of file-cache and swap-cache as two halves of page-cache.  And then when
->> shmem page should be treated as file-cache or swap-cache? It is strange since
->> it is consist of anonymous pages and these pages establish files.
-> A shmem page is swap-backed file-cache, and it may get transferred to or
-> from swap-cache: yes, it's a difficult and confusing case, as I said below.
+On Fri, Mar 8, 2013 at 4:36 PM, Dave Jones <davej@redhat.com> wrote:
 >
-> I would never call it "anonymous", but it is counted in /proc/meminfo's
-> Active(anon) or Inactive(anon) rather than in (file), because "anon"
-> there is shorthand for "swap-backed".
+> Ok, it's definitly the 'append something on the end of a valid pathname'
+> changeset. 'something' can be anything it seems.
 
-In read_swap_cache_async:
+Ok. so maybe the way to "bisect" this is to play with that.
 
-SetPageSwapBacked(new_page);
-__add_to_swap_cache();
-swap_readpage();
-ClearPageSwapBacked(new_page);
+For example, does it happen even if the "something" does not have a
+slash in it? IOW, you just append, say, a single 'a' character to a
+name that doesn't already end in a slash?
 
-Why clear PG_swapbacked flag?
+And if it still does happen with that, perhaps you could have some
+logic that only appends the 'a' to names that end with numbers. Does
+it stop happening?
 
->
->>> So you'll find that shmem and swap are counted as file in some places
->>> and anon in others, and it's hard to grasp which is where and why,
->>> without remembering the history.
-> Hugh
+The machine keeps running, right? So you can try this out without
+rebooting, just changing when you append the character?
 
+               Linus
