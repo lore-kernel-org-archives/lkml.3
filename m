@@ -1,98 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751567Ab3CISPw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Mar 2013 13:15:52 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:5171 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751029Ab3CISPu (ORCPT
+	id S1751523Ab3CISQQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Mar 2013 13:16:16 -0500
+Received: from smtp-out-195.synserver.de ([212.40.185.195]:1144 "EHLO
+	smtp-out-193.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751271Ab3CISPL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Mar 2013 13:15:50 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Sat, 09 Mar 2013 10:09:04 -0800
-From: Laxman Dewangan <ldewangan@nvidia.com>
-To: <akpm@linux-foundation.org>, <a.zummo@towertech.it>
-CC: <swarren@wwwdotorg.org>, <rtc-linux@googlegroups.com>,
-        <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH 5/5] rtc: tegra: use managed rtc_device_register
-Date: Sat, 9 Mar 2013 23:43:36 +0530
-Message-ID: <1362852816-13460-1-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
-MIME-Version: 1.0
-Content-Type: text/plain
+	Sat, 9 Mar 2013 13:15:11 -0500
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 31737
+From: Lars-Peter Clausen <lars@metafoo.de>
+To: Wolfram Sang <wsa@the-dreams.de>, Ben Dooks <ben-linux@fluff.org>
+Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Lars-Peter Clausen <lars@metafoo.de>
+Subject: [PATCH 4/6] i2c: Make return type of i2c_del_adapter() void
+Date: Sat,  9 Mar 2013 19:16:47 +0100
+Message-Id: <1362853009-20789-5-git-send-email-lars@metafoo.de>
+X-Mailer: git-send-email 1.8.0
+In-Reply-To: <1362853009-20789-1-git-send-email-lars@metafoo.de>
+References: <1362853009-20789-1-git-send-email-lars@metafoo.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use devm_rtc_device_register for registering rtc device.
-This will reduce the code for unregistering rtc device in
-cleanup path and remove the implementation of remove
-callback of platform driver.
+i2c_del_adapter() is usually called from a drivers remove callback. The Linux
+device driver model does not allow the remove callback to fail and all resources
+allocated in the probe callback need to be freed, as well as all resources which
+have been provided to the rest of the kernel(for example a I2C adapter) need to
+be revoked. So any function revoking such resources isn't allowed to fail
+either. i2c_del_adapter() adheres to this requirement and will never fail. But
+i2c_del_adapter()'s return type is int, which may cause driver authors to think
+that it can fail. This led to code constructs like:
 
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+	ret = i2c_del_adapter(...);
+	BUG_ON(ret);
+
+Since i2c_del_adapter() always returns 0 the BUG_ON is never hit and essentially
+becomes dead code, which means it can be removed. Making the return type of
+i2c_del_adapter() void makes it explicit that the function will never fail and
+should prevent constructs like the above from re-appearing in the kernel code.
+
+All callers of i2c_del_adapter() have already been updated in a previous patch
+to ignore the return value, so the conversion of the return type from int to
+void can be done without causing any build failures.
+
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
 ---
- drivers/rtc/rtc-tegra.c |   27 ++++-----------------------
- 1 files changed, 4 insertions(+), 23 deletions(-)
+ drivers/i2c/i2c-core.c | 6 ++----
+ include/linux/i2c.h    | 2 +-
+ 2 files changed, 3 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/rtc/rtc-tegra.c b/drivers/rtc/rtc-tegra.c
-index 8186405..1ac8199 100644
---- a/drivers/rtc/rtc-tegra.c
-+++ b/drivers/rtc/rtc-tegra.c
-@@ -348,13 +348,11 @@ static int __init tegra_rtc_probe(struct platform_device *pdev)
- 
- 	device_init_wakeup(&pdev->dev, 1);
- 
--	info->rtc_dev = rtc_device_register(
--		pdev->name, &pdev->dev, &tegra_rtc_ops, THIS_MODULE);
-+	info->rtc_dev = devm_rtc_device_register(
-+		dev_name(&pdev->dev), &pdev->dev, &tegra_rtc_ops, THIS_MODULE);
- 	if (IS_ERR(info->rtc_dev)) {
- 		ret = PTR_ERR(info->rtc_dev);
--		info->rtc_dev = NULL;
--		dev_err(&pdev->dev,
--			"Unable to register device (err=%d).\n",
-+		dev_err(&pdev->dev, "Unable to register device (err=%d).\n",
- 			ret);
- 		return ret;
- 	}
-@@ -366,28 +364,12 @@ static int __init tegra_rtc_probe(struct platform_device *pdev)
- 		dev_err(&pdev->dev,
- 			"Unable to request interrupt for device (err=%d).\n",
- 			ret);
--		goto err_dev_unreg;
-+		return ret;
+diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
+index 7727d33..838d030 100644
+--- a/drivers/i2c/i2c-core.c
++++ b/drivers/i2c/i2c-core.c
+@@ -1060,7 +1060,7 @@ static int __process_removed_adapter(struct device_driver *d, void *data)
+  * This unregisters an I2C adapter which was previously registered
+  * by @i2c_add_adapter or @i2c_add_numbered_adapter.
+  */
+-int i2c_del_adapter(struct i2c_adapter *adap)
++void i2c_del_adapter(struct i2c_adapter *adap)
+ {
+ 	struct i2c_adapter *found;
+ 	struct i2c_client *client, *next;
+@@ -1072,7 +1072,7 @@ int i2c_del_adapter(struct i2c_adapter *adap)
+ 	if (found != adap) {
+ 		pr_debug("i2c-core: attempting to delete unregistered "
+ 			 "adapter [%s]\n", adap->name);
+-		return 0;
++		return;
  	}
  
- 	dev_notice(&pdev->dev, "Tegra internal Real Time Clock\n");
- 
- 	return 0;
--
--err_dev_unreg:
--	rtc_device_unregister(info->rtc_dev);
--
--	return ret;
--}
--
--static int __exit tegra_rtc_remove(struct platform_device *pdev)
--{
--	struct tegra_rtc_info *info = platform_get_drvdata(pdev);
--
--	rtc_device_unregister(info->rtc_dev);
--
--	platform_set_drvdata(pdev, NULL);
+ 	/* Tell drivers about this removal */
+@@ -1124,8 +1124,6 @@ int i2c_del_adapter(struct i2c_adapter *adap)
+ 	/* Clear the device structure in case this adapter is ever going to be
+ 	   added again */
+ 	memset(&adap->dev, 0, sizeof(adap->dev));
 -
 -	return 0;
  }
+ EXPORT_SYMBOL(i2c_del_adapter);
  
- #ifdef CONFIG_PM_SLEEP
-@@ -441,7 +423,6 @@ static void tegra_rtc_shutdown(struct platform_device *pdev)
+diff --git a/include/linux/i2c.h b/include/linux/i2c.h
+index 8ffab3f..dec1702 100644
+--- a/include/linux/i2c.h
++++ b/include/linux/i2c.h
+@@ -447,7 +447,7 @@ void i2c_unlock_adapter(struct i2c_adapter *);
+  */
+ #if defined(CONFIG_I2C) || defined(CONFIG_I2C_MODULE)
+ extern int i2c_add_adapter(struct i2c_adapter *);
+-extern int i2c_del_adapter(struct i2c_adapter *);
++extern void i2c_del_adapter(struct i2c_adapter *);
+ extern int i2c_add_numbered_adapter(struct i2c_adapter *);
  
- MODULE_ALIAS("platform:tegra_rtc");
- static struct platform_driver tegra_rtc_driver = {
--	.remove		= __exit_p(tegra_rtc_remove),
- 	.shutdown	= tegra_rtc_shutdown,
- 	.driver		= {
- 		.name	= "tegra_rtc",
+ extern int i2c_register_driver(struct module *, struct i2c_driver *);
 -- 
-1.7.1.1
+1.8.0
 
