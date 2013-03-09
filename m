@@ -1,100 +1,623 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751523Ab3CISQQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Mar 2013 13:16:16 -0500
-Received: from smtp-out-195.synserver.de ([212.40.185.195]:1144 "EHLO
-	smtp-out-193.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751271Ab3CISPL (ORCPT
+	id S1751677Ab3CISQ0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Mar 2013 13:16:26 -0500
+Received: from perceval.ideasonboard.com ([95.142.166.194]:51440 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751402Ab3CISQW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Mar 2013 13:15:11 -0500
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 31737
-From: Lars-Peter Clausen <lars@metafoo.de>
-To: Wolfram Sang <wsa@the-dreams.de>, Ben Dooks <ben-linux@fluff.org>
-Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Lars-Peter Clausen <lars@metafoo.de>
-Subject: [PATCH 4/6] i2c: Make return type of i2c_del_adapter() void
-Date: Sat,  9 Mar 2013 19:16:47 +0100
-Message-Id: <1362853009-20789-5-git-send-email-lars@metafoo.de>
-X-Mailer: git-send-email 1.8.0
-In-Reply-To: <1362853009-20789-1-git-send-email-lars@metafoo.de>
-References: <1362853009-20789-1-git-send-email-lars@metafoo.de>
+	Sat, 9 Mar 2013 13:16:22 -0500
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Magnus Damm <magnus.damm@gmail.com>
+Cc: linux-kernel@vger.kernel.org, grant.likely@secretlab.ca,
+        horms@verge.net.au, linus.walleij@linaro.org, linux-sh@vger.kernel.org
+Subject: Re: [PATCH] gpio: Renesas R-Car GPIO driver
+Date: Sat, 09 Mar 2013 19:16:47 +0100
+Message-ID: <6341264.ceyzOgjW1K@avalon>
+User-Agent: KMail/4.10 (Linux/3.7.10-gentoo; KDE/4.10.0; x86_64; ; )
+In-Reply-To: <20130305003219.14792.13300.sendpatchset@w520>
+References: <20130305003219.14792.13300.sendpatchset@w520>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-i2c_del_adapter() is usually called from a drivers remove callback. The Linux
-device driver model does not allow the remove callback to fail and all resources
-allocated in the probe callback need to be freed, as well as all resources which
-have been provided to the rest of the kernel(for example a I2C adapter) need to
-be revoked. So any function revoking such resources isn't allowed to fail
-either. i2c_del_adapter() adheres to this requirement and will never fail. But
-i2c_del_adapter()'s return type is int, which may cause driver authors to think
-that it can fail. This led to code constructs like:
+Hi Magnus,
 
-	ret = i2c_del_adapter(...);
-	BUG_ON(ret);
+Thank you for the patch.
 
-Since i2c_del_adapter() always returns 0 the BUG_ON is never hit and essentially
-becomes dead code, which means it can be removed. Making the return type of
-i2c_del_adapter() void makes it explicit that the function will never fail and
-should prevent constructs like the above from re-appearing in the kernel code.
+On Tuesday 05 March 2013 09:32:19 Magnus Damm wrote:
+> From: Magnus Damm <damm@opensource.se>
+> 
+> This patch implements a GPIO driver for the R-Car series
+> of SoCs from Renesas. This driver is designed to be reusable
+> between multiple SoCs that share the same basic building block,
+> but so far it has only been used on R-Car H1 (r8a7779).
+> 
+> Each driver instance handles 32 GPIOs with individually
+> maskable IRQs. The driver operates on a single I/O memory
+> range and the 32 GPIOs are hooked up a single interrupt.
+> 
+> In the case of R-Car H1 either external IRQ pins or GPIOs
+> with interrupts can be used for on-board interupts. For
+> external IRQs 4 pins are supported, and in the case of GPIO
+> there are 202 GPIOS as 202 interrupts hooked up via 6 driver
+> instances and to the GIC and the Cortex-A9 Quad.
+> 
+> At this point this driver is interfacing as a regular
+> platform device driver. In the future DT support will be
+> submitted as an incremental feature patch.
+> 
+> Signed-off-by: Magnus Damm <damm@opensource.se>
+> ---
+> 
+>  drivers/gpio/Kconfig                    |    6
+>  drivers/gpio/Makefile                   |    1
+>  drivers/gpio/gpio-rcar.c                |  406 ++++++++++++++++++++++++++++
+>  include/linux/platform_data/gpio-rcar.h |   29 ++
+>  4 files changed, 442 insertions(+)
+> 
+> --- 0001/drivers/gpio/Kconfig
+> +++ work/drivers/gpio/Kconfig	2013-03-05 09:07:34.000000000 +0900
+> @@ -201,6 +201,12 @@ config GPIO_PXA
+>  	help
+>  	  Say yes here to support the PXA GPIO device
+> 
+> +config GPIO_RCAR
+> +	tristate "Renesas R-Car GPIO"
+> +	depends on ARM
+> +	help
+> +	  Say yes here to support GPIO on Renesas R-Car SoCs.
+> +
+>  config GPIO_SPEAR_SPICS
+>  	bool "ST SPEAr13xx SPI Chip Select as GPIO support"
+>  	depends on PLAT_SPEAR
+> --- 0001/drivers/gpio/Makefile
+> +++ work/drivers/gpio/Makefile	2013-03-05 09:07:34.000000000 +0900
+> @@ -56,6 +56,7 @@ obj-$(CONFIG_GPIO_PL061)	+= gpio-pl061.o
+>  obj-$(CONFIG_GPIO_PXA)		+= gpio-pxa.o
+>  obj-$(CONFIG_GPIO_RC5T583)	+= gpio-rc5t583.o
+>  obj-$(CONFIG_GPIO_RDC321X)	+= gpio-rdc321x.o
+> +obj-$(CONFIG_GPIO_RCAR)		+= gpio-rcar.o
+>  obj-$(CONFIG_PLAT_SAMSUNG)	+= gpio-samsung.o
+>  obj-$(CONFIG_ARCH_SA1100)	+= gpio-sa1100.o
+>  obj-$(CONFIG_GPIO_SCH)		+= gpio-sch.o
+> --- /dev/null
+> +++ work/drivers/gpio/gpio-rcar.c	2013-03-05 09:13:23.000000000 +0900
+> @@ -0,0 +1,406 @@
+> +/*
+> + * Renesas R-Car GPIO Support
+> + *
+> + *  Copyright (C) 2013 Magnus Damm
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation; either version 2 of the License
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+> + * You should have received a copy of the GNU General Public License
+> + * along with this program; if not, write to the Free Software
+> + * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 
+> USA + */
 
-All callers of i2c_del_adapter() have already been updated in a previous patch
-to ignore the return value, so the conversion of the return type from int to
-void can be done without causing any build failures.
+You can remove the last paragraph.
 
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
----
- drivers/i2c/i2c-core.c | 6 ++----
- include/linux/i2c.h    | 2 +-
- 2 files changed, 3 insertions(+), 5 deletions(-)
+> +
+> +#include <linux/init.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/spinlock.h>
+> +#include <linux/interrupt.h>
+> +#include <linux/ioport.h>
+> +#include <linux/io.h>
+> +#include <linux/irq.h>
+> +#include <linux/irqdomain.h>
+> +#include <linux/bitops.h>
+> +#include <linux/err.h>
+> +#include <linux/gpio.h>
+> +#include <linux/slab.h>
+> +#include <linux/module.h>
+> +#include <linux/platform_data/gpio-rcar.h>
 
-diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
-index 7727d33..838d030 100644
---- a/drivers/i2c/i2c-core.c
-+++ b/drivers/i2c/i2c-core.c
-@@ -1060,7 +1060,7 @@ static int __process_removed_adapter(struct device_driver *d, void *data)
-  * This unregisters an I2C adapter which was previously registered
-  * by @i2c_add_adapter or @i2c_add_numbered_adapter.
-  */
--int i2c_del_adapter(struct i2c_adapter *adap)
-+void i2c_del_adapter(struct i2c_adapter *adap)
- {
- 	struct i2c_adapter *found;
- 	struct i2c_client *client, *next;
-@@ -1072,7 +1072,7 @@ int i2c_del_adapter(struct i2c_adapter *adap)
- 	if (found != adap) {
- 		pr_debug("i2c-core: attempting to delete unregistered "
- 			 "adapter [%s]\n", adap->name);
--		return 0;
-+		return;
- 	}
- 
- 	/* Tell drivers about this removal */
-@@ -1124,8 +1124,6 @@ int i2c_del_adapter(struct i2c_adapter *adap)
- 	/* Clear the device structure in case this adapter is ever going to be
- 	   added again */
- 	memset(&adap->dev, 0, sizeof(adap->dev));
--
--	return 0;
- }
- EXPORT_SYMBOL(i2c_del_adapter);
- 
-diff --git a/include/linux/i2c.h b/include/linux/i2c.h
-index 8ffab3f..dec1702 100644
---- a/include/linux/i2c.h
-+++ b/include/linux/i2c.h
-@@ -447,7 +447,7 @@ void i2c_unlock_adapter(struct i2c_adapter *);
-  */
- #if defined(CONFIG_I2C) || defined(CONFIG_I2C_MODULE)
- extern int i2c_add_adapter(struct i2c_adapter *);
--extern int i2c_del_adapter(struct i2c_adapter *);
-+extern void i2c_del_adapter(struct i2c_adapter *);
- extern int i2c_add_numbered_adapter(struct i2c_adapter *);
- 
- extern int i2c_register_driver(struct module *, struct i2c_driver *);
+Could you please sort the headers alphabetically ?
+
+> +
+> +struct gpio_rcar_priv {
+> +	void __iomem *base;
+> +	spinlock_t lock;
+> +	struct gpio_rcar_config config;
+> +	struct platform_device *pdev;
+> +	struct gpio_chip gpio_chip;
+> +	struct irq_chip irq_chip;
+> +	struct irq_domain *irq_domain;
+> +};
+> +
+> +#define IOINTSEL 0x00
+> +#define INOUTSEL 0x04
+> +#define OUTDT 0x08
+> +#define INDT 0x0c
+> +#define INTDT 0x10
+> +#define INTCLR 0x14
+> +#define INTMSK 0x18
+> +#define MSKCLR 0x1c
+> +#define POSNEG 0x20
+> +#define EDGLEVEL 0x24
+> +#define FILONOFF 0x28
+
+#define'd values are usually tab-aligned, but that's up to you.
+
+> +static inline unsigned long gpio_rcar_read(struct gpio_rcar_priv *p, int
+> offs)
+> +{
+> +	return ioread32(p->base + offs);
+> +}
+> +
+> +static inline void gpio_rcar_write(struct gpio_rcar_priv *p, int offs,
+> +				   unsigned long value)
+> +{
+> +	iowrite32(value, p->base + offs);
+> +}
+
+You often perform read-update-write operations, would it make sense to define 
+gpio_rcar_clr() and gpio_rcar_set() functions ?
+
+> +static void gpio_rcar_irq_disable(struct irq_data *d)
+> +{
+> +	struct gpio_rcar_priv *p = irq_data_get_irq_chip_data(d);
+> +
+> +	gpio_rcar_write(p, INTMSK, ~BIT(irqd_to_hwirq(d)));
+> +}
+> +
+> +static void gpio_rcar_irq_enable(struct irq_data *d)
+> +{
+> +	struct gpio_rcar_priv *p = irq_data_get_irq_chip_data(d);
+> +
+> +	gpio_rcar_write(p, MSKCLR, BIT(irqd_to_hwirq(d)));
+> +}
+> +
+> +static void gpio_rcar_config_interrupt_input_mode(struct gpio_rcar_priv *p,
+> +						  unsigned int hwirq,
+> +						  bool active_high_rising_edge,
+> +						  bool level_trigger)
+> +{
+> +	unsigned long bit = BIT(hwirq);
+> +	unsigned long flags, tmp;
+> +
+> +	/* follow steps in the GPIO documentation for
+> +	 * "Setting Edge-Sensitive Interrupt Input Mode" and
+> +	 * "Setting Level-Sensitive Interrupt Input Mode"
+> +	 */
+> +
+> +	spin_lock_irqsave(&p->lock, flags);
+> +
+> +	/* Configure postive or negative logic in POSNEG */
+> +	tmp = gpio_rcar_read(p, POSNEG);
+> +	if (active_high_rising_edge)
+> +		tmp &= ~bit;
+> +	else
+> +		tmp |= bit;
+> +	gpio_rcar_write(p, POSNEG, tmp);
+> +
+> +	/* Configure edge or level trigger in EDGLEVEL */
+> +	tmp = gpio_rcar_read(p, EDGLEVEL);
+> +	if (level_trigger)
+> +		tmp &= ~bit;
+> +	else
+> +		tmp |= bit;
+> +	gpio_rcar_write(p, EDGLEVEL, tmp);
+> +
+> +	/* Select "Interrupt Input Mode" in IOINTSEL */
+> +	tmp = gpio_rcar_read(p, IOINTSEL);
+> +	tmp |= bit;
+> +	gpio_rcar_write(p, IOINTSEL, tmp);
+> +
+> +	/* Write INTCLR in case of edge trigger */
+> +	if (!level_trigger)
+
+Maybe you could do so unconditionally.
+
+> +		gpio_rcar_write(p, INTCLR, bit);
+
+I suppose the idea here it to avoid spurious interrupts when switching to 
+edge-triggered interrupt mode. If the interrupt was already enabled wouldn't 
+it still be registered before you clear the flag ?
+
+> +
+> +	spin_unlock_irqrestore(&p->lock, flags);
+> +}
+> +
+> +static int gpio_rcar_irq_set_type(struct irq_data *d, unsigned int type)
+> +{
+> +	struct gpio_rcar_priv *p = irq_data_get_irq_chip_data(d);
+> +	unsigned int hwirq = irqd_to_hwirq(d);
+> +
+> +	pr_debug("gpio: sense irq = %d, type = %d\n", hwirq, type);
+
+dev_dbg() ?
+
+> +
+> +	switch (type & IRQ_TYPE_SENSE_MASK) {
+> +	case IRQ_TYPE_LEVEL_HIGH:
+> +		gpio_rcar_config_interrupt_input_mode(p, hwirq, true, true);
+> +		break;
+> +	case IRQ_TYPE_LEVEL_LOW:
+> +		gpio_rcar_config_interrupt_input_mode(p, hwirq, false, true);
+> +		break;
+> +	case IRQ_TYPE_EDGE_RISING:
+> +		gpio_rcar_config_interrupt_input_mode(p, hwirq, true, false);
+> +		break;
+> +	case IRQ_TYPE_EDGE_FALLING:
+> +		gpio_rcar_config_interrupt_input_mode(p, hwirq, false, false);
+> +		break;
+> +	default:
+> +		return -EINVAL;
+> +	}
+> +	return 0;
+> +}
+> +
+> +static irqreturn_t gpio_rcar_irq_handler(int irq, void *dev_id)
+> +{
+> +	struct gpio_rcar_priv *p = dev_id;
+> +	unsigned long pending;
+
+I would use u32 here as the register is 32-bits wide.
+
+> +	unsigned int offset, irqs_handled = 0;
+> +
+> +	while ((pending = gpio_rcar_read(p, INTDT))) {
+> +		offset = __ffs(pending);
+> +		gpio_rcar_write(p, INTCLR, BIT(offset));
+> +		generic_handle_irq(irq_find_mapping(p->irq_domain, offset));
+> +		irqs_handled++;
+> +	}
+> +
+> +	return irqs_handled ? IRQ_HANDLED : IRQ_NONE;
+> +}
+> +
+> +static inline struct gpio_rcar_priv *gpio_to_priv(struct gpio_chip *chip)
+> +{
+> +	return container_of(chip, struct gpio_rcar_priv, gpio_chip);
+> +}
+> +
+> +static void gpio_rcar_config_general_input_output_mode(struct gpio_chip
+> *chip,
+> +						       unsigned int gpio,
+> +						       bool output)
+> +{
+> +	struct gpio_rcar_priv *p = gpio_to_priv(chip);
+> +	unsigned long bit = BIT(gpio);
+> +	unsigned long flags, tmp;
+> +
+> +	/* follow steps in the GPIO documentation for
+> +	 * "Setting General Output Mode" and
+> +	 * "Setting General Input Mode"
+> +	 */
+> +
+> +	spin_lock_irqsave(&p->lock, flags);
+> +
+> +	/* Configure postive logic in POSNEG */
+> +	tmp = gpio_rcar_read(p, POSNEG);
+> +	tmp &= ~bit;
+> +	gpio_rcar_write(p, POSNEG, tmp);
+> +
+> +	/* Select "General Input/Output Mode" in IOINTSEL */
+> +	tmp = gpio_rcar_read(p, IOINTSEL);
+> +	tmp &= ~bit;
+> +	gpio_rcar_write(p, IOINTSEL, tmp);
+> +
+> +	/* Select Input Mode or Output Mode in INOUTSEL */
+> +	tmp = gpio_rcar_read(p, INOUTSEL);
+> +	if (output)
+> +		tmp |= bit;
+> +	else
+> +		tmp &= ~bit;
+> +	gpio_rcar_write(p, INOUTSEL, tmp);
+> +
+> +	spin_unlock_irqrestore(&p->lock, flags);
+> +}
+> +
+> +static int gpio_rcar_direction_input(struct gpio_chip *chip, unsigned
+> offset)
+> +{
+> +	gpio_rcar_config_general_input_output_mode(chip, offset, false);
+> +	return 0;
+> +}
+> +
+> +static int gpio_rcar_get(struct gpio_chip *chip, unsigned offset)
+> +{
+> +	return (int)(gpio_rcar_read(gpio_to_priv(chip), INDT) & BIT(offset));
+> +}
+
+Isn't the get operation supposed to return 0 or 1 ? In that case
+
+	return !!(gpio_rcar_read(gpio_to_priv(chip), INDT) & BIT(offset));
+
+would be better.
+
+> +static void gpio_rcar_set(struct gpio_chip *chip, unsigned offset, int
+> value)
+> +{
+> +	struct gpio_rcar_priv *p = gpio_to_priv(chip);
+> +	unsigned long bit = BIT(offset);
+> +	unsigned long flags, tmp;
+
+I would declare both bit and tmp as u32.
+
+> +	spin_lock_irqsave(&p->lock, flags);
+> +
+> +	tmp = gpio_rcar_read(p, OUTDT);
+> +	if (value)
+> +		tmp |= bit;
+> +	else
+> +		tmp &= ~bit;
+> +	gpio_rcar_write(p, OUTDT, tmp);
+> +
+> +	spin_unlock_irqrestore(&p->lock, flags);
+> +}
+> +
+> +static int gpio_rcar_direction_output(struct gpio_chip *chip, unsigned
+> offset,
+> +				      int value)
+> +{
+> +	/* write GPIO value to output before selecting output mode of pin */
+> +	gpio_rcar_set(chip, offset, value);
+> +	gpio_rcar_config_general_input_output_mode(chip, offset, true);
+> +	return 0;
+> +}
+> +
+> +static int gpio_rcar_to_irq(struct gpio_chip *chip, unsigned offset)
+> +{
+> +	return irq_create_mapping(gpio_to_priv(chip)->irq_domain, offset);
+> +}
+> +
+
+I would personally move the irq_chip operations handlers here to group all 
+irq_chip-related functions together, but that's up to you.
+
+> +static int gpio_rcar_irq_domain_map(struct irq_domain *h, unsigned int
+> virq,
+> +				 irq_hw_number_t hw)
+> +{
+> +	struct gpio_rcar_priv *p = h->host_data;
+> +
+> +	pr_debug("gpio: map hw irq = %d, virq = %d\n", (int)hw, virq);
+
+Maybe dev_dbg() ?
+
+> +
+> +	irq_set_chip_data(virq, h->host_data);
+> +	irq_set_chip_and_handler(virq, &p->irq_chip, handle_level_irq);
+
+I'm not too familiar with the IRQ core. GPIO interrupts can be configured as 
+either edge-trigerred or level-trigerred. Can handle_level_irq() handle both ?
+
+> +	set_irq_flags(virq, IRQF_VALID); /* kill me now */
+> +	return 0;
+> +}
+> +
+> +static struct irq_domain_ops gpio_rcar_irq_domain_ops = {
+> +	.map	= gpio_rcar_irq_domain_map,
+> +};
+> +
+> +static int gpio_rcar_probe(struct platform_device *pdev)
+> +{
+> +	struct gpio_rcar_config *pdata = pdev->dev.platform_data;
+> +	struct gpio_rcar_priv *p;
+> +	struct resource *io, *irq;
+> +	struct gpio_chip *gpio_chip;
+> +	struct irq_chip *irq_chip;
+> +	const char *name = dev_name(&pdev->dev);
+> +	int ret;
+> +
+> +	p = kzalloc(sizeof(*p), GFP_KERNEL);
+
+You can use devm_kzalloc() to simplify error management.
+
+> +	if (!p) {
+> +		dev_err(&pdev->dev, "failed to allocate driver data\n");
+> +		ret = -ENOMEM;
+
+You can return -ENOMEM; directly here.
+
+> +		goto err0;
+> +	}
+> +
+> +	/* deal with driver instance configuration */
+> +	if (pdata)
+
+Shouldn't you return an error if pdata == NULL ?
+
+> +		memcpy(&p->config, pdata, sizeof(*pdata));
+
+	p->config = *pdata;
+
+seems to be the preferred style nowadays. You could also store a pointer to a 
+struct gpio_rcar_config in gpio_rcar_priv, but I suppose you have decided not 
+to do so in prevision for DT support.
+
+> +	p->pdev = pdev;
+> +	platform_set_drvdata(pdev, p);
+> +	spin_lock_init(&p->lock);
+> +
+> +	io = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> +	irq = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
+> +
+> +	if (!io || !irq) {
+> +		dev_err(&pdev->dev, "missing IRQ or IOMEM\n");
+> +		ret = -EINVAL;
+
+	return -EINVAL;
+
+> +		goto err1;
+> +	}
+> +
+> +	p->base = ioremap_nocache(io->start, resource_size(io));
+
+devm_ioremap_nocache()
+
+> +	if (!p->base) {
+> +		dev_err(&pdev->dev, "failed to remap I/O memory\n");
+> +		ret = -ENXIO;
+
+	return -ENXIO;
+
+> +		goto err1;
+> +	}
+> +
+> +	gpio_chip = &p->gpio_chip;
+> +	gpio_chip->direction_input = gpio_rcar_direction_input;
+> +	gpio_chip->get = gpio_rcar_get;
+> +	gpio_chip->direction_output = gpio_rcar_direction_output;
+> +	gpio_chip->set = gpio_rcar_set;
+> +	gpio_chip->to_irq = gpio_rcar_to_irq;
+> +	gpio_chip->label = name;
+> +	gpio_chip->owner = THIS_MODULE;
+> +	gpio_chip->base = p->config.gpio_base;
+> +	gpio_chip->ngpio = p->config.number_of_pins;
+> +
+> +	irq_chip = &p->irq_chip;
+> +	irq_chip->name = name;
+> +	irq_chip->irq_mask = gpio_rcar_irq_disable;
+> +	irq_chip->irq_unmask = gpio_rcar_irq_enable;
+> +	irq_chip->irq_enable = gpio_rcar_irq_enable;
+> +	irq_chip->irq_disable = gpio_rcar_irq_disable;
+> +	irq_chip->irq_set_type = gpio_rcar_irq_set_type;
+> +	irq_chip->flags	= IRQCHIP_SKIP_SET_WAKE;
+> +
+> +	p->irq_domain = irq_domain_add_simple(pdev->dev.of_node,
+> +					      p->config.number_of_pins,
+> +					      p->config.irq_base,
+> +					      &gpio_rcar_irq_domain_ops, p);
+> +	if (!p->irq_domain) {
+> +		ret = -ENXIO;
+> +		dev_err(&pdev->dev, "cannot initialize irq domain\n");
+> +		goto err2;
+
+return -ENXIO;
+
+> +	}
+> +
+> +	if (request_irq(irq->start, gpio_rcar_irq_handler, 0, name, p)) {
+
+devm_request_irq()
+
+> +		dev_err(&pdev->dev, "failed to request IRQ\n");
+> +		ret = -ENOENT;
+> +		goto err3;
+> +	}
+> +
+> +	ret = gpiochip_add(gpio_chip);
+> +	if (ret) {
+> +		dev_err(&pdev->dev, "failed to add GPIO controller\n");
+> +		goto err4;
+> +	}
+> +
+> +	dev_info(&pdev->dev, "driving %d GPIOs\n", p->config.number_of_pins);
+> +
+> +	/* warn in case of mismatch if irq base is specified */
+
+When does this happen ?
+
+> +	if (p->config.irq_base) {
+> +		ret = irq_find_mapping(p->irq_domain, 0);
+> +		if (p->config.irq_base != ret)
+> +			dev_warn(&pdev->dev, "irq base mismatch (%d/%d)\n",
+
+p->config.irq_base is unsigned and irq_find_mapping() returns an unsigned. 
+%u/%u would this be more appropriate.
+
+> +				 p->config.irq_base, ret);
+> +	}
+> +
+> +	return 0;
+> +
+> +err4:
+> +	free_irq(irq->start, p);
+> +err3:
+> +	irq_domain_remove(p->irq_domain);
+> +err2:
+> +	iounmap(p->base);
+> +err1:
+> +	kfree(p);
+> +err0:
+> +	return ret;
+
+With the devm_* functions used above you will have a single error label to 
+call irq_domain_remove.
+
+> +}
+> +
+> +static int gpio_rcar_remove(struct platform_device *pdev)
+> +{
+> +	struct gpio_rcar_priv *p = platform_get_drvdata(pdev);
+> +	struct resource *irq;
+> +	int ret;
+> +
+> +	ret = gpiochip_remove(&p->gpio_chip);
+> +	if (ret)
+> +		return ret;
+> +
+> +	irq = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
+> +
+> +	free_irq(irq->start, p);
+> +	irq_domain_remove(p->irq_domain);
+> +	iounmap(p->base);
+> +	kfree(p);
+> +	return 0;
+> +}
+> +
+> +static struct platform_driver gpio_rcar_device_driver = {
+> +	.probe		= gpio_rcar_probe,
+> +	.remove		= gpio_rcar_remove,
+> +	.driver		= {
+> +		.name	= "gpio_rcar",
+> +	}
+> +};
+> +
+> +module_platform_driver(gpio_rcar_device_driver);
+> +
+> +MODULE_AUTHOR("Magnus Damm");
+> +MODULE_DESCRIPTION("Renesas R-Car GPIO Driver");
+> +MODULE_LICENSE("GPL v2");
+> --- /dev/null
+> +++ work/include/linux/platform_data/gpio-rcar.h	2013-03-05
+> 09:07:35.000000000 +0900 @@ -0,0 +1,29 @@
+> +/*
+> + * Renesas R-Car GPIO Support
+> + *
+> + *  Copyright (C) 2013 Magnus Damm
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation; either version 2 of the License
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+> + * You should have received a copy of the GNU General Public License
+> + * along with this program; if not, write to the Free Software
+> + * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 
+> USA + */
+> +
+> +#ifndef __GPIO_RCAR_H__
+> +#define __GPIO_RCAR_H__
+> +
+> +struct gpio_rcar_config {
+> +	unsigned int gpio_base;
+> +	unsigned int irq_base;
+> +	unsigned int number_of_pins;
+> +};
+> +
+> +#endif /* __GPIO_RCAR_H__ */
+
 -- 
-1.8.0
+Regards,
 
+Laurent Pinchart
