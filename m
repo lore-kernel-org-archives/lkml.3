@@ -1,64 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933905Ab3CIE1F (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 23:27:05 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:40502 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760295Ab3CIE1D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 23:27:03 -0500
-Date: Fri, 8 Mar 2013 23:26:58 -0500
-From: Dave Jones <davej@redhat.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: BUG_ON(nd->inode != parent->d_inode);
-Message-ID: <20130309042658.GB1396@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	"Eric W. Biederman" <ebiederm@xmission.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Al Viro <viro@zeniv.linux.org.uk>,
-	Linux Kernel <linux-kernel@vger.kernel.org>
-References: <20130309003617.GB6743@redhat.com>
- <CA+55aFzS0MpqRNM_HmJq6GKiuBncieA6LysNjSM1qSmETitkGw@mail.gmail.com>
- <20130309020318.GA11449@redhat.com>
- <CA+55aFwoqQUgS3ou4oqA-G7-cQzU-pwq7aSJ9vA5oyWCshhDkw@mail.gmail.com>
- <20130309022623.GB11449@redhat.com>
- <20130309025631.GA13188@redhat.com>
- <20130309025752.GA13913@redhat.com>
- <CA+55aFxyOYXnzDoWr7Utr1QLjjMUCON5EGH3FMvGBHxnxMJmQQ@mail.gmail.com>
- <20130309032530.GA19839@redhat.com>
- <87wqthmedi.fsf@xmission.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87wqthmedi.fsf@xmission.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1760372Ab3CIEb0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 23:31:26 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:41134 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760326Ab3CIEbZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Mar 2013 23:31:25 -0500
+Date: Sat, 09 Mar 2013 13:31:18 +0900 (JST)
+Message-Id: <20130309.133118.214580151.d.hatayama@jp.fujitsu.com>
+To: jingbai.ma@hp.com
+Cc: vgoyal@redhat.com, kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
+        lisa.mitchell@hp.com, mingo@redhat.com,
+        kumagai-atsushi@mxc.nes.nec.co.jp, ebiederm@xmission.com,
+        hpa@zytor.com, yinghai@kernel.org
+Subject: Re: [RFC PATCH 0/5] crash dump bitmap: scan memory pages in kernel
+ to speedup kernel dump process
+From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+In-Reply-To: <5139B827.3050500@hp.com>
+References: <20130307145808.29098.41592.stgit@k.asiapacific.hpqcorp.net>
+	<20130307152108.GC2790@redhat.com>
+	<5139B827.3050500@hp.com>
+X-Mailer: Mew version 6.3 on Emacs 24.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 08, 2013 at 07:38:33PM -0800, Eric W. Biederman wrote:
- > Dave Jones <davej@redhat.com> writes:
- > 
- > > On Fri, Mar 08, 2013 at 07:16:09PM -0800, Linus Torvalds wrote:
- > >  > Goodie. Your bug reports gave me heartburn. But it sounds like we have an
- > >  > angle on all of the ones you've seen now?
- > >  > 
- > >  > Or have I forgotten about some case?
- > >  
- > > To be honest I've lost track of the whole collection.
- > > Let me repull your latest tree, and see what falls out.
- > > (I'll turn off CONFIG_USER_NS for now too until that gets fixed)
- > 
- > It was CONFIG_UTS_NS that tripped you.  
- > 
- > Since I can trigger this with /proc/self/ns/mnt/a you are going to be
- > able to compile this one out.
+From: Jingbai Ma <jingbai.ma@hp.com>
+Subject: Re: [RFC PATCH 0/5] crash dump bitmap: scan memory pages in kernel to speedup kernel dump process
+Date: Fri, 8 Mar 2013 18:06:31 +0800
 
-fwiw, the other namespace procfs files look like they have the same bug
+> On 03/07/2013 11:21 PM, Vivek Goyal wrote:
+>> On Thu, Mar 07, 2013 at 10:58:18PM +0800, Jingbai Ma wrote:
+...
+>> First of all 64MB per TB should not be a huge deal. And makedumpfile
+>> also has this cyclic mode where you process a map, discard it and then
+>> move on to next section. So memory usage remains constant at the
+>> expense
+>> of processing time.
+> 
+> Yes, that's true. But in cyclic mode, makedumpfile will have to
+> write/read bitmap from storage, it will also impact the performance.
+> I have measured the penalty for cyclic mode is about 70%
+> slowdown. Maybe could be faster after mmap implemented.
 
-I just triggered it again on /proc/571/task/571/ns/net
+I guess the slowdown came from the issue that enough VMCOREINFO was
+not provided from the kernel, and unnecessary filtering processing for
+free pages is done multiple times.
 
-	Dave
+For example, confirm how filtering is done in your environment like
+this:
+
+$ makedumpfile --message-level 16      # 16 is report message
+makedumpfile: map_size = 4
+sadump: does not have partition header
+...
+  pfn_end    : 880000
+Can't select page_is_buddy handler; follow free lists instead of mem_map array.
+STEP [Excluding free pages       ] : 0.431724 seconds
+STEP [Excluding unnecessary pages] : 1.052160 seconds
+
+Here STEP [..] colum occurs the number of cycles in cyclic-mode. If
+STEP [Excluding free pages ] column occurs multiple times in log, it
+causes the slowdown on your environment. (free_list doesn't sort its
+elements in pfn's order, so we have only to iterate a whole part of
+free_list in each cycle...; it could amount to be close to a whole
+memory size in worst case just after system boot)
+
+To use mem_map array logic, VMCOREINFO nees to have the corresponding
+information to refer to related data structures. The patch is 
+
+commit 8d67091ec6ae98ca67f77990ef9e9ec21337f077
+Author: Atsushi Kumagai <kumagai-atsushi@mxc.nes.nec.co.jp>
+Date:   Wed Feb 27 17:03:25 2013 -0800
+
+    kexec: add the values related to buddy system for filtering free pages.
+
+and it has been merged in 3.9-rc1.
+
+$ git describe 8d67091ec6ae98ca67f77990ef9e9ec21337f077
+v3.8-9443-g8d67091
+
+Or you can edit VMCOREINFO manually and specify it to makedumpfile as:
+
+1. generate vmcoreinfo from vmlinux
+
+  makedumpfile -x vmlinux -g vmcoreinfo.txt
+
+2. Add the following values in the generated vmcoreinfo.txt
+
+- 3.1, 3.4, 3.8.x
+NUMBER(PG_slab)=7
+SIZE(pageflags)=4
+OFFSET(page._mapcount)=24
+OFFSET(page.private)=48
+NUMBER(PAGE_BUDDY_MAPCOUNT_VALUE)=-128
+
+- 2.6.38
+SIZE(pageflags)=4
+OFFSET(page._mapcount)=12
+OFFSET(page.private)=16
+NUMBER(PG_slab)=7
+NUMBER(PAGE_BUDDY_MAPCOUNT_VALUE)=-2
+
+- 2.6.32
+NUMBER(PG_slab)=7
+NUMBER(PG_buddy)=19
+OFFSET(page._mapcount)=12
+OFFSET(page.private)=16
+SIZE(pageflags)=4
+
+- 2.6.18
+NUMBER(PG_slab)=7
+NUMBER(PG_buddy)=19
+OFFSET(page._mapcount)=12
+OFFSET(page.private)=16
+
+3. Specify the vmcoreinfo.txt to makedumpfile via -i option
+
+  makedumpfile -i vmcoreinfo.txt [-c|-l|-p] -d 31 /proc/vmcore dumpfile
+
+Anyway, please help benchmark. I'll send CC to you too.
+
+Thanks.
+HATAYAMA, Daisuke
 
