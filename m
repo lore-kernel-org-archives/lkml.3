@@ -1,50 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751319Ab3CIXxk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Mar 2013 18:53:40 -0500
-Received: from mail-pb0-f44.google.com ([209.85.160.44]:46734 "EHLO
-	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751161Ab3CIXxj (ORCPT
+	id S1751467Ab3CIXye (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Mar 2013 18:54:34 -0500
+Received: from mail-ve0-f172.google.com ([209.85.128.172]:34486 "EHLO
+	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751161Ab3CIXyd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Mar 2013 18:53:39 -0500
-Date: Sat, 9 Mar 2013 15:53:36 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
-        Liam Girdwood <lrg@slimlogic.co.uk>, linux-input@vger.kernel.org
-Subject: Re: [PATCH 17/25] wm97xx: don't use [delayed_]work_pending()
-Message-ID: <20130309235336.GA22734@core.coreip.homeip.net>
-References: <1356141435-17340-1-git-send-email-tj@kernel.org>
- <1356141435-17340-18-git-send-email-tj@kernel.org>
- <20121223095450.GA17407@core.coreip.homeip.net>
- <20121224161827.GR30837@opensource.wolfsonmicro.com>
+	Sat, 9 Mar 2013 18:54:33 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121224161827.GR30837@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130309202329.GC16399@redhat.com>
+References: <1362723313-839-1-git-send-email-lucas.demarchi@profusion.mobi>
+ <1362723313-839-4-git-send-email-lucas.demarchi@profusion.mobi> <20130309202329.GC16399@redhat.com>
+From: Lucas De Marchi <lucas.demarchi@profusion.mobi>
+Date: Sat, 9 Mar 2013 20:54:10 -0300
+Message-ID: <CAMOw1v52=MOZkBOrB-AGPd4Z87fu0pb+6hYEdpQFkjJQrUop=w@mail.gmail.com>
+Subject: Re: [PATCH v2 3/7] kmod: split call to call_usermodehelper_fns()
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: lucas.de.marchi@gmail.com, David Howells <dhowells@redhat.com>,
+        James Morris <james.l.morris@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 24, 2012 at 04:18:27PM +0000, Mark Brown wrote:
-> On Sun, Dec 23, 2012 at 01:54:50AM -0800, Dmitry Torokhov wrote:
-> 
-> > This is not 100% equivalent transformation as now we schedule first and
-> > disable IRQ later... Anyway, I think the driver shoudl be converted to
-> > threaded IRQ instead. Mark, does the patch below make any sense to you?
-> 
-> I'm a bit nervous about the fact that currently both the pen down IRQ
-> and the coordinate read are pushed through a single workqueue so are
-> serialised but after your patch they'll be split into the IRQ thread and
-> the workqueue.  It *should* be fine but I'd have to sit there and study
-> it to convince myself that it's safe.
+On Sat, Mar 9, 2013 at 5:23 PM, Oleg Nesterov <oleg@redhat.com> wrote:
+> On 03/08, Lucas De Marchi wrote:
+>>
+>> Use call_usermodehelper_setup() + call_usermodehelper_exec() instead of
+>> calling call_usermodehelper_fns(). In case the latter returns -ENOMEM
+>> the cleanup function may had not been called - in this case we would
+>> not free argv and module_name.
+>>
+>> Signed-off-by: Lucas De Marchi <lucas.demarchi@profusion.mobi>
+>
+> Thanks!
+>
+> looks correct, but...
+>
+>> @@ -98,8 +100,17 @@ static int call_modprobe(char *module_name, int wait)
+>>       argv[3] = module_name;  /* check free_modprobe_argv() */
+>>       argv[4] = NULL;
+>>
+>> -     return call_usermodehelper_fns(modprobe_path, argv, envp,
+>> -             wait | UMH_KILLABLE, NULL, free_modprobe_argv, NULL);
+>> +     gfp_mask = (wait == UMH_NO_WAIT) ? GFP_ATOMIC : GFP_KERNEL;
+>
+> Why? it is never called with UMH_NO_WAIT,
+>
+>> +     info = call_usermodehelper_setup(modprobe_path, argv, envp,
+>> +                                      gfp_mask, NULL, free_modprobe_argv,
+>
+> can't we simply use GFP_KERNEL?
 
-Mark,
+True... I was preserving the previous behavior and didn't check the
+callers of this function.
+I'm going to send a v3.
 
-Did yo have a chance to review the patch?
-
-Thanks!
-
--- 
-Dmitry
+Thanks
+Lucas De Marchi
