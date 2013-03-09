@@ -1,89 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753376Ab3CJWzW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Mar 2013 18:55:22 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:36134 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752984Ab3CJWzV (ORCPT
+	id S1753407Ab3CJW6T (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Mar 2013 18:58:19 -0400
+Received: from mail-ee0-f43.google.com ([74.125.83.43]:64218 "EHLO
+	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752995Ab3CJW6R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Mar 2013 18:55:21 -0400
-Date: Sun, 10 Mar 2013 15:55:13 -0700
-From: Joel Becker <jlbec@evilplan.org>
-To: Alexandru Gheorghiu <gheorghiuandru@gmail.com>
-Cc: Mark Fasheh <mfasheh@suse.com>, ocfs2-devel@oss.oracle.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] fs: fs2fs: Replaced calls to kmalloc and memcpy with
- kmemdup
-Message-ID: <20130310225513.GF7783@localhost>
-Mail-Followup-To: Alexandru Gheorghiu <gheorghiuandru@gmail.com>,
-	Mark Fasheh <mfasheh@suse.com>, ocfs2-devel@oss.oracle.com,
-	linux-kernel@vger.kernel.org
-References: <1362829777-6924-1-git-send-email-gheorghiuandru@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1362829777-6924-1-git-send-email-gheorghiuandru@gmail.com>
-X-Burt-Line: Trees are cool.
-X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
- come to perfection.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 10 Mar 2013 18:58:17 -0400
+From: Alexandru Gheorghiu <gheorghiuandru@gmail.com>
+To: Anton Vorontsov <cbouatmailru@gmail.com>
+Cc: Colin Cross <ccross@android.com>, Kees Cook <keescook@chromium.org>,
+        Tony Luck <tony.luck@intel.com>, linux-kernel@vger.kernel.org,
+        Alexandru Gheorghiu <gheorghiuandru@gmail.com>
+Subject: [PATCH] fs: pstore: Replaced calls to kmalloc and memcpy with kmemdup
+Date: Sat,  9 Mar 2013 13:57:28 +0200
+Message-Id: <1362830248-7017-1-git-send-email-gheorghiuandru@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 09, 2013 at 01:49:37PM +0200, Alexandru Gheorghiu wrote:
-> Replaced calls to kmalloc followd by memcpy with a single call to kmemdup.
-> This patch was found using coccicheck.
-> 
-> Signed-off-by: Alexandru Gheorghiu <gheorghiuandru@gmail.com>
+Replaced calls to kmalloc and memcpy with a single call to kmemdup.
+This patch was found using coccicheck.
 
-Acked-by: Joel Becker <jlbec@evilplan.org>
+Signed-off-by: Alexandru Gheorghiu <gheorghiuandru@gmail.com>
+---
+ fs/pstore/ram.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-> ---
->  fs/ocfs2/localalloc.c |    6 ++----
->  1 file changed, 2 insertions(+), 4 deletions(-)
-> 
-> diff --git a/fs/ocfs2/localalloc.c b/fs/ocfs2/localalloc.c
-> index aebeacd..839183f 100644
-> --- a/fs/ocfs2/localalloc.c
-> +++ b/fs/ocfs2/localalloc.c
-> @@ -434,12 +434,11 @@ void ocfs2_shutdown_local_alloc(struct ocfs2_super *osb)
->  	bh = osb->local_alloc_bh;
->  	alloc = (struct ocfs2_dinode *) bh->b_data;
->  
-> -	alloc_copy = kmalloc(bh->b_size, GFP_NOFS);
-> +	alloc_copy = kmemdup(alloc, bh->b_size, GFP_NOFS);
->  	if (!alloc_copy) {
->  		status = -ENOMEM;
->  		goto out_commit;
->  	}
-> -	memcpy(alloc_copy, alloc, bh->b_size);
->  
->  	status = ocfs2_journal_access_di(handle, INODE_CACHE(local_alloc_inode),
->  					 bh, OCFS2_JOURNAL_ACCESS_WRITE);
-> @@ -1244,13 +1243,12 @@ static int ocfs2_local_alloc_slide_window(struct ocfs2_super *osb,
->  	 * local alloc shutdown won't try to double free main bitmap
->  	 * bits. Make a copy so the sync function knows which bits to
->  	 * free. */
-> -	alloc_copy = kmalloc(osb->local_alloc_bh->b_size, GFP_NOFS);
-> +	alloc_copy = kmemdup(alloc, osb->local_alloc_bh->b_size, GFP_NOFS);
->  	if (!alloc_copy) {
->  		status = -ENOMEM;
->  		mlog_errno(status);
->  		goto bail;
->  	}
-> -	memcpy(alloc_copy, alloc, osb->local_alloc_bh->b_size);
->  
->  	status = ocfs2_journal_access_di(handle,
->  					 INODE_CACHE(local_alloc_inode),
-> -- 
-> 1.7.9.5
-> 
-
+diff --git a/fs/pstore/ram.c b/fs/pstore/ram.c
+index 288f068..38babb3 100644
+--- a/fs/pstore/ram.c
++++ b/fs/pstore/ram.c
+@@ -156,10 +156,9 @@ static ssize_t ramoops_pstore_read(u64 *id, enum pstore_type_id *type,
+ 	time->tv_nsec = 0;
+ 
+ 	size = persistent_ram_old_size(prz);
+-	*buf = kmalloc(size, GFP_KERNEL);
++	*buf = kmemdup(persistent_ram_old(prz), size, GFP_KERNEL);
+ 	if (*buf == NULL)
+ 		return -ENOMEM;
+-	memcpy(*buf, persistent_ram_old(prz), size);
+ 
+ 	return size;
+ }
 -- 
+1.7.9.5
 
-"Egotist: a person more interested in himself than in me."
-         - Ambrose Bierce 
-
-			http://www.jlbec.org/
-			jlbec@evilplan.org
