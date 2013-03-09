@@ -1,70 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752032Ab3CIWVC (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Mar 2013 17:21:02 -0500
-Received: from mail-oa0-f48.google.com ([209.85.219.48]:36790 "EHLO
-	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751279Ab3CIWVA (ORCPT
+	id S1752096Ab3CIWeW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Mar 2013 17:34:22 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:38302 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751843Ab3CIWeU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Mar 2013 17:21:00 -0500
+	Sat, 9 Mar 2013 17:34:20 -0500
+Date: Sun, 10 Mar 2013 01:34:03 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Christopher Li <sparse@chrisli.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Linux-Sparse <linux-sparse@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: Suggestion for fixing the variable length array used in the
+ kernel.
+Message-ID: <20130309223403.GZ9138@mwanda>
+References: <CANeU7Qn-5b5U_64QzFt-beP-PyAJgzz=z1100F0v5WbWqZwZOQ@mail.gmail.com>
+ <20130308162922.88ad40997d01099949008452@linux-foundation.org>
+ <20130309053859.GY9138@mwanda>
+ <CANeU7QnhB566ZJqjcaLkn7o701EeVbJcB=8VHW_33nwK=FZRhg@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20130309204940.GA31808@neilslaptop.think-freely.org>
-References: <1362158276-4901-1-git-send-email-nhorman@tuxdriver.com>
-	<1362423859-18516-1-git-send-email-nhorman@tuxdriver.com>
-	<20130309204940.GA31808@neilslaptop.think-freely.org>
-Date: Sat, 9 Mar 2013 15:20:57 -0700
-Message-ID: <CAL-B5D15YY6L01q6BCNnP5VCJN7=LeHJSYLjNGXZPRx7VhsZCg@mail.gmail.com>
-Subject: Re: [PATCH v2] irq: add quirk for broken interrupt remapping on 55XX chipsets
-From: Myron Stowe <myron.stowe@gmail.com>
-To: Neil Horman <nhorman@tuxdriver.com>
-Cc: linux-kernel@vger.kernel.org, Prarit Bhargava <prarit@redhat.com>,
-        Don Zickus <dzickus@redhat.com>, Don Dutile <ddutile@redhat.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Asit Mallick <asit.k.mallick@intel.com>, linux-pci@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CANeU7QnhB566ZJqjcaLkn7o701EeVbJcB=8VHW_33nwK=FZRhg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 9, 2013 at 1:49 PM, Neil Horman <nhorman@tuxdriver.com> wrote:
-> On Mon, Mar 04, 2013 at 02:04:19PM -0500, Neil Horman wrote:
->> A few years back intel published a spec update:
->> http://www.intel.com/content/dam/doc/specification-update/5520-and-5500-chipset-ioh-specification-update.pdf
->>
->> For the 5520 and 5500 chipsets which contained an errata (specificially errata
->> 53), which noted that these chipsets can't properly do interrupt remapping, and
->> as a result the recommend that interrupt remapping be disabled in bios.  While
->> many vendors have a bios update to do exactly that, not all do, and of course
->> not all users update their bios to a level that corrects the problem.  As a
->> result, occasionally interrupts can arrive at a cpu even after affinity for that
->> interrupt has be moved, leading to lost or spurrious interrupts (usually
->> characterized by the message:
->> kernel: do_IRQ: 7.71 No irq handler for vector (irq -1)
->>
->> There have been several incidents recently of people seeing this error, and
->> investigation has shown that they have system for which their BIOS level is such
->> that this feature was not properly turned off.  As such, it would be good to
->> give them a reminder that their systems are vulnurable to this problem.
->>
->> Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
->> CC: Prarit Bhargava <prarit@redhat.com>
->> CC: Don Zickus <dzickus@redhat.com>
->> CC: Don Dutile <ddutile@redhat.com>
->> CC: Bjorn Helgaas <bhelgaas@google.com>
->> CC: Asit Mallick <asit.k.mallick@intel.com>
->> CC: linux-pci@vger.kernel.org
->>
-> Ping, anyone want to Ack/Nack this?
+On Sat, Mar 09, 2013 at 10:10:08AM -0800, Christopher Li wrote:
+> On Fri, Mar 8, 2013 at 9:39 PM, Dan Carpenter <dan.carpenter@oracle.com> wrote:
+> > On Fri, Mar 08, 2013 at 04:29:22PM -0800, Andrew Morton wrote:
+> >> Roughly how many instances of this are there kernel-wide?
+> >>
+> >
+> > Around 150 on x86 allmodconfig.  They are pretty well audited.
+> 
+> I saw 207 on x86-64 allmodconfig. See the list that I attached.
+> 
 
-Don's comment earlier seems to imply that this is a short term fix and
-that a more long term fix may be coming soon.  If that is the case
-wouldn't we want to wait for the long term fix and just pull that in?
+Ah.  Sorry, I'm on my laptop and my sparse output was old.
 
-Myron
+> Can you elaborate the well audited part? How it was audited?
+> 
 
-> Neil
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+The problems is if we go over the 8k stack.  So big arrays are bad.
+Also if the dynamically sized array is inside a loop then normally
+GCC frees it after each iteration, but on some arches it didn't free
+it until after the last iteration.
+
+Btw, I've Smatch has cross function analysis, and I'd like to use
+it here to figure out if the max size for dynamically sized arrays.
+I ran into a problem:
+
+The code looks like this:
+	char buf[a];
+The size expression should be an EXPR_SYMBOL, but smatch gets:
+	char buf[*a];
+Where the size expression is an EXPR_PREOP.
+
+In smatch, how I use sparse is that I call sparse_keep_tokens() and
+then I parse the resulting symbol list myself.  The problem is in
+examine_array_type() we call get_expression_value() which changes
+the symbols from normal symbols to dereferences. The call tree is:
+examine_array_type()
+  -> get_expression_value()
+     -> __get_expression_value()
+        -> evaluate_expression()
+	   -> evaluate_symbol_expression() <- change happens here.
+
+I'm not sure what to do.
+
+regards,
+dan carpenter
+
