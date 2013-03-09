@@ -1,63 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751145Ab3CIRv0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Mar 2013 12:51:26 -0500
-Received: from fieldses.org ([174.143.236.118]:43501 "EHLO fieldses.org"
+	id S1750984Ab3CISCV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Mar 2013 13:02:21 -0500
+Received: from 8bytes.org ([85.214.48.195]:50944 "EHLO mail.8bytes.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750732Ab3CIRvY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Mar 2013 12:51:24 -0500
-Date: Sat, 9 Mar 2013 12:51:18 -0500
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Trond Myklebust <Trond.Myklebust@netapp.com>,
-        "David S. Miller" <davem@davemloft.net>, linux-nfs@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Mel Gorman <mgorman@suse.de>
-Subject: Re: [PATCH] sunrpc: drop "select NETVM"
-Message-ID: <20130309175118.GJ31448@fieldses.org>
-References: <1362844951.3137.3.camel@x61.thuisdomein>
+	id S1750794Ab3CISCU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 9 Mar 2013 13:02:20 -0500
+Date: Sat, 9 Mar 2013 19:02:14 +0100
+From: Joerg Roedel <joro@8bytes.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        arm@kernel.org, iommu@lists.linux-foundation.org,
+        Ohad Ben-Cohen <ohad@wizery.com>, Tony Lindgren <tony@atomide.com>,
+        Omar Ramirez Luna <omar.luna@linaro.org>
+Subject: Re: [PATCH 8/9] iommu: OMAP: build only on OMAP2+
+Message-ID: <20130309180213.GA4876@8bytes.org>
+References: <1362521809-22989-1-git-send-email-arnd@arndb.de>
+ <1362521809-22989-9-git-send-email-arnd@arndb.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1362844951.3137.3.camel@x61.thuisdomein>
+In-Reply-To: <1362521809-22989-9-git-send-email-arnd@arndb.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Sat Mar  9 19:02:18 2013
+X-DSPAM-Confidence: 0.9995
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 513b792a23671668575250
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ACK.
-
-On Sat, Mar 09, 2013 at 05:02:31PM +0100, Paul Bolle wrote:
-> The Kconfig entry for SUNRPC_SWAP selects NETVM. That select statement
-> was added in commit a564b8f0398636ba30b07c0eaebdef7ff7837249 ("nfs:
-> enable swap on NFS").
-
-Cc'ing Mel Gorman just in case there was something else going on there.
-
---b.
-
-> But there's no Kconfig symbol NETVM. It apparently
-> was only in used in development versions of the swap over nfs
-> functionality but never entered mainline. Anyhow, it is a nop and can
-> safely be dropped.
+On Tue, Mar 05, 2013 at 11:16:48PM +0100, Arnd Bergmann wrote:
+> The OMAP IOMMU driver intentionally fails to build on OMAP1
+> platforms, so we should not allow enabling it there.
 > 
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-> ---
->  net/sunrpc/Kconfig | 1 -
->  1 file changed, 1 deletion(-)
-> 
-> diff --git a/net/sunrpc/Kconfig b/net/sunrpc/Kconfig
-> index 516fe2c..262caf0 100644
-> --- a/net/sunrpc/Kconfig
-> +++ b/net/sunrpc/Kconfig
-> @@ -24,7 +24,6 @@ config SUNRPC_XPRT_RDMA
->  config SUNRPC_SWAP
->  	bool
->  	depends on SUNRPC
-> -	select NETVM
->  
->  config RPCSEC_GSS_KRB5
->  	tristate "Secure RPC: Kerberos V mechanism"
-> -- 
-> 1.7.11.7
-> 
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Cc: Joerg Roedel <joro@8bytes.org>
+> Cc: iommu@lists.linux-foundation.org
+> Cc: Ohad Ben-Cohen <ohad@wizery.com>
+> Cc: Tony Lindgren <tony@atomide.com>
+> Cc: Omar Ramirez Luna <omar.luna@linaro.org>
+
+Applied to iommu/fixes, thanks Arnd.
+
+
