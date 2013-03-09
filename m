@@ -1,64 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751580Ab3CIUod (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Mar 2013 15:44:33 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:14579 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751194Ab3CIUoc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Mar 2013 15:44:32 -0500
-Date: Sat, 9 Mar 2013 21:42:42 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Lucas De Marchi <lucas.demarchi@profusion.mobi>
-Cc: lucas.de.marchi@gmail.com, David Howells <dhowells@redhat.com>,
-        James Morris <james.l.morris@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 6/7] Split remaining calls to
-	call_usermodehelper_fns()
-Message-ID: <20130309204242.GA17303@redhat.com>
-References: <1362723313-839-1-git-send-email-lucas.demarchi@profusion.mobi> <1362723313-839-7-git-send-email-lucas.demarchi@profusion.mobi>
+	id S1751567Ab3CIUtR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Mar 2013 15:49:17 -0500
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:35180 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751194Ab3CIUtQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 9 Mar 2013 15:49:16 -0500
+X-Sasl-enc: 8Y5QoIvizccFIZTnrGIpMVuKo/OF/6d9jQ4mMSR/pMjm 1362862155
+Date: Sat, 9 Mar 2013 17:49:13 -0300
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Borislav Petkov <bp@alien8.de>, Yves-Alexis Perez <corsac@debian.org>,
+        ibm-acpi-devel@lists.sourceforge.net,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [ibm-acpi-devel] x230: unhandled HKEY event 0x6050
+Message-ID: <20130309204913.GA7559@khazad-dum.debian.net>
+References: <20130304213804.GE22274@pd.tnic>
+ <20130307003016.GA21655@khazad-dum.debian.net>
+ <1362816406.19016.16.camel@scapa>
+ <20130309113631.GA18133@pd.tnic>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1362723313-839-7-git-send-email-lucas.demarchi@profusion.mobi>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20130309113631.GA18133@pd.tnic>
+X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/08, Lucas De Marchi wrote:
->
-> @@ -571,9 +572,17 @@ void do_coredump(siginfo_t *siginfo)
->  			goto fail_dropcount;
->  		}
->
-> -		retval = call_usermodehelper_fns(helper_argv[0], helper_argv,
-> -					NULL, UMH_WAIT_EXEC, umh_pipe_setup,
-> -					NULL, &cprm);
-> +		sub_info = call_usermodehelper_setup(helper_argv[0],
-> +						helper_argv, NULL, GFP_KERNEL,
-> +						umh_pipe_setup, NULL, &cprm);
-> +		if (!sub_info) {
-> +			printk(KERN_WARNING "%s failed to allocate memory\n",
-> +			       __func__);
+On Sat, 09 Mar 2013, Borislav Petkov wrote:
+> On Sat, Mar 09, 2013 at 09:06:46AM +0100, Yves-Alexis Perez wrote:
+> > Also see https://bugzilla.kernel.org/show_bug.cgi?id=51231 and
+> > https://patchwork.kernel.org/patch/2124861/
+> 
+> Great, another fit-the-hardware-to-the-software idiocy because those
+> dimwits which call their pile of stinking software running in ring 0 the
+> parts of a house want to control every-f*cking-thing. Sigh :(.
+> 
+> Thanks for the links Yves-Alexis, certainly a sad read.
 
-Why?
+Hmm, I don't follow.  thinkpad-acpi does run on ring 0, so was that aimed at
+me?  Or are you complaining about the Win-8 bug-to-bug compatibility madness
+Lenovo added to the ACPI firmware?
 
-> +			argv_free(helper_argv);
-> +			goto fail_dropcount;
-> +		}
-> +
-> +		retval = call_usermodehelper_exec(sub_info, UMH_WAIT_EXEC);
-
-I do not really like another argv_free() here... How about
-
-		retval = -ENOMEM;
-		info = call_usermodehelper_setup(...);
-		if (info)
-			retval = call_usermodehelper_fns(...);
-		argv_free();
-
-?
-
-Oleg.
-
+-- 
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
