@@ -1,118 +1,222 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755644Ab3CIGDG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Mar 2013 01:03:06 -0500
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:57990 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751161Ab3CIGDE (ORCPT
+	id S1755633Ab3CIGjX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Mar 2013 01:39:23 -0500
+Received: from mail-gg0-f172.google.com ([209.85.161.172]:52872 "EHLO
+	mail-gg0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752601Ab3CIGjW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Mar 2013 01:03:04 -0500
-MIME-Version: 1.0
-In-Reply-To: <1362654678.6034.2.camel@anish-Inspiron-N5050>
-References: <1362654678.6034.2.camel@anish-Inspiron-N5050>
-Date: Sat, 9 Mar 2013 11:33:02 +0530
-Message-ID: <CAK7N6vpLumng7bXpAYD3+e8MfR6ge-9qduAaMiJWmcHnxfnrMg@mail.gmail.com>
-Subject: Re: [PATCH] [Timer][Trivial] __clocksource_register_scale return
- value use?
-From: anish singh <anish198519851985@gmail.com>
-To: john.stultz@linaro.org, tglx@linutronix.de
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Sat, 9 Mar 2013 01:39:22 -0500
+From: "Raphael S. Carvalho" <raphael.scarv@gmail.com>
+Cc: linux-kernel@vger.kernel.org,
+        "Raphael S. Carvalho" <raphael.scarv@gmail.com>
+Subject: [PATCH 1/1] scripts/gen_sendmail.py: Script Added: Generate git send-email arguments automatically!
+Date: Sat,  9 Mar 2013 03:13:06 -0300
+Message-Id: <1362809586-18477-1-git-send-email-raphael.scarv@gmail.com>
+X-Mailer: git-send-email 1.7.2.5
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ping
+I guess this script won't be merged upstream, but I think it could be useful for someone else.
 
-On Thu, Mar 7, 2013 at 4:41 PM, anish kumar <anish198519851985@gmail.com> wrote:
-> __clocksource_register_scale() currently returns int but it should
-> return void as there are no error paths in that function.
-> Making it void would help some amount of code to be removed at various
-> places.
->
-> clocksource_register_hz/khz() return value is checked
-> in most of the places but I think it will translate to always
-> if(true) so let's remove those checks as well(patch will be sent
-> later for that).
->
-> Is this return value for some future usecase(?), if yes then my
-> apologies.
->
-> Signed-off-by: anish kumar <anish198519851985@gmail.com>
-> ---
->  include/linux/clocksource.h |    6 +++---
->  kernel/time/clocksource.c   |    7 +------
->  2 files changed, 4 insertions(+), 9 deletions(-)
->
-> diff --git a/include/linux/clocksource.h b/include/linux/clocksource.h
-> index 27cfda4..2b074cc 100644
-> --- a/include/linux/clocksource.h
-> +++ b/include/linux/clocksource.h
-> @@ -294,17 +294,17 @@ clocks_calc_mult_shift(u32 *mult, u32 *shift, u32
-> from, u32 to, u32 minsec);
->   * Don't call __clocksource_register_scale directly, use
->   * clocksource_register_hz/khz
->   */
-> -extern int
-> +extern void
->  __clocksource_register_scale(struct clocksource *cs, u32 scale, u32
-> freq);
->  extern void
->  __clocksource_updatefreq_scale(struct clocksource *cs, u32 scale, u32
-> freq);
->
-> -static inline int clocksource_register_hz(struct clocksource *cs, u32
-> hz)
-> +static inline void clocksource_register_hz(struct clocksource *cs, u32
-> hz)
->  {
->         return __clocksource_register_scale(cs, 1, hz);
->  }
->
-> -static inline int clocksource_register_khz(struct clocksource *cs, u32
-> khz)
-> +static inline void clocksource_register_khz(struct clocksource *cs, u32
-> khz)
->  {
->         return __clocksource_register_scale(cs, 1000, khz);
->  }
-> diff --git a/kernel/time/clocksource.c b/kernel/time/clocksource.c
-> index c958338..1915550 100644
-> --- a/kernel/time/clocksource.c
-> +++ b/kernel/time/clocksource.c
-> @@ -703,14 +703,11 @@ EXPORT_SYMBOL_GPL(__clocksource_updatefreq_scale);
->   * @scale:     Scale factor multiplied against freq to get clocksource hz
->   * @freq:      clocksource frequency (cycles per second) divided by scale
->   *
-> - * Returns -EBUSY if registration fails, zero otherwise.
-> - *
->   * This *SHOULD NOT* be called directly! Please use the
->   * clocksource_register_hz() or clocksource_register_khz helper
-> functions.
->   */
-> -int __clocksource_register_scale(struct clocksource *cs, u32 scale, u32
-> freq)
-> +void __clocksource_register_scale(struct clocksource *cs, u32 scale,
-> u32 freq)
->  {
-> -
->         /* Initialize mult/shift and max_idle_ns */
->         __clocksource_updatefreq_scale(cs, scale, freq);
->
-> @@ -720,11 +717,9 @@ int __clocksource_register_scale(struct clocksource
-> *cs, u32 scale, u32 freq)
->         clocksource_enqueue_watchdog(cs);
->         clocksource_select();
->         mutex_unlock(&clocksource_mutex);
-> -       return 0;
->  }
->  EXPORT_SYMBOL_GPL(__clocksource_register_scale);
->
-> -
->  /**
->   * clocksource_register - Used to install new clocksources
->   * @cs:                clocksource to be registered
-> --
-> 1.7.1
->
->
+Description borrowed from the header:
+---------------
+!# This script generates the git send-email automatically
+!# by looking at the output generated by scripts/get_maintainer.pl
+!#
+!# You can pass as many patch files as needed.
+!# Usage: python send-mail.py [option] <patch1> <patch2> ...
+
+Example of use:
+Passed as arguments one patch file and -v (verbose mode).
+---------------
+raphaelsc@debian:~/kernel/linux$ scripts/gen_sendmail.py -v 0001-kernel-pid.c-Improve-flow-of-a-loop-inside-alloc_pid.patch
+git send-email --from "Raphael S. Carvalho <raphael.scarv@gmail.com>" --to "Eric W. Biederman <ebiederm@xmission.com>" --to "Andrew Morton <akpm@linux-foundation.org>" --to "Serge E. Hallyn <serge@hallyn.com>" --to "Serge Hallyn <serge.hallyn@canonical.com>" --to "David S. Miller <davem@davemloft.net>" --cc "linux-kernel@vger.kernel.org" 0001-kernel-pid.c-Improve-flow-of-a-loop-inside-alloc_pid.patch
+
+* Statistics: Maintainer(s): 5, List(s): 1
+---------------
+
+Any bug reports or improvements are welcome!
+
+Signed-off-by: Raphael S. Carvalho <raphael.scarv@gmail.com>
+---
+ scripts/gen_sendmail.py |  165 +++++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 165 insertions(+), 0 deletions(-)
+ create mode 100755 scripts/gen_sendmail.py
+
+diff --git a/scripts/gen_sendmail.py b/scripts/gen_sendmail.py
+new file mode 100755
+index 0000000..921a8cc
+--- /dev/null
++++ b/scripts/gen_sendmail.py
+@@ -0,0 +1,165 @@
++#! /usr/bin/env python
++#
++# Generate git send-email arguments (gen_sendmail.py)
++# (c) 2013, Raphael S.Carvalho <raphael.scarv@gmail.com>
++#
++# This script generates the git send-email automatically
++# by looking at the output generated by scripts/get_maintainer.pl
++#
++# You can pass as many patch files as needed.
++# Usage: python send-mail.py [options] <patch1> <patch2> ...
++#
++# Licensed under the terms of the GNU GPL License version 2
++
++import commands
++import sys
++import StringIO
++import getopt
++
++# Default definitions
++GIT_SENDMAIL = "git send-email"
++SCRIPT = "scripts/get_maintainer.pl"
++
++
++def get_user_gitconfig(git_config):
++	get_name = "git config user.name"
++	get_email = "git config user.email"
++
++	(stat, name) = commands.getstatusoutput(get_name)
++	if (stat != 0):
++		return (stat, get_name)
++
++	(stat, email) = commands.getstatusoutput(get_email)
++	if (stat != 0):
++		return (stat, get_email)
++
++	# Setup git config structure!
++	git_config['user_name'] = name
++	git_config['user_email'] = email
++
++	return (0, None)
++
++
++# Try to execute: get_maintainer.pl <patch>
++def exec_get_maintainers(patch_name):
++	command = SCRIPT + ' ' + patch_name
++	(stat, output) = commands.getstatusoutput(command)
++	return (stat, output)
++
++
++def find_maintainer(maintainers, email):
++	for m in maintainers:
++		if m['email'] == email:
++			return True
++	return False
++
++
++# Get file and/or mail from each line,
++# and build a simple maintainers database.
++def build_list(buf):
++	maintainers = []
++
++	for line in iter(buf.readline, ""):
++		name = ""
++		email = ""
++
++		pos = line.find("<")
++		if pos != -1:
++			name = line[: pos-1].replace('"', "")
++			pos2 = line.find("(")
++			email = line[pos : pos2-1]
++		else:
++			pos = line.find("(")
++			email = line[: pos-1]
++
++		# If not find_maintainer, then add to the list.
++		if not find_maintainer(maintainers, email):
++			maintainer = {'name': name, 'email': email}
++			maintainers.append(maintainer)
++
++	return maintainers
++
++
++# Generates command from the built database.
++def generate_gitmail_cmd(maintainers, git_config, args):
++	mnt_count = list_count = 0
++
++	print '%s --from "%s <%s>"' % \
++		(GIT_SENDMAIL, \
++		git_config['user_name'], git_config['user_email']),
++
++	for m in maintainers:
++		if m['name'] != "":
++			print '--to "%s %s"' % (m['name'], m['email']),
++			mnt_count += 1
++		else:
++			print '--cc "%s"' % m['email'],
++			list_count += 1
++	for arg in args:
++		print arg,
++
++	return (mnt_count, list_count)
++
++
++def usage(program):
++	print 'Usage: %s [options] <patch(es) file>\n' \
++		'-v --verbose: Print verbose messages.\n' \
++		'-h --help: Print this information.\n\n' \
++		'This script must be installed in the directory' \
++		' scripts of linux tree!' % program,
++	sys.exit(2)
++
++
++def main(argc, argv):
++	verbose = False
++
++	try:
++		opts, args = getopt.getopt(argv[1:], 'hv', ['help', 'verbose'])
++		if not opts and argc < 2:
++			usage(argv[0])
++	except getopt.GetoptError, e:
++		print e
++		usage(argv[0])
++
++	arg_count = 1 # program name: argv[0]
++	for opt, arg in opts:
++		arg_count += 1
++		if opt in ('-h', '--help'):
++			usage(argv[0])
++		elif opt in ('-v', '--verbose'):
++			verbose = True
++		else:
++			usage(argv[0])
++	if (arg_count == argc):
++		usage(argv[0])
++
++	git_config = {'user_name': "", 'user_email': ""}
++	(stat, err_msg) = get_user_gitconfig(git_config)
++	if (stat != 0):
++		print "It wasn't possible to execute: %s" % err_msg
++		sys.exit(2)
++
++	final_output = ""
++	args = argv[arg_count:]
++	# Get output regarding to the each patch file!
++	for arg in args:
++		(stat, output) = exec_get_maintainers(arg)
++		if (stat != 0):
++			print '%s: %s failed! Please, check the patch: %s,'  \
++				' and make sure you "installed" this script' \
++				' in the *directory scripts* of Linux tree.' \
++				% (argv[0], SCRIPT, arg)
++			sys.exit(2)
++		final_output += (output + '\n')
++
++	buf = StringIO.StringIO(final_output)
++	(mnt_count, list_count) = \
++		generate_gitmail_cmd(build_list(buf), git_config, args)
++
++	if (verbose):
++		print "\n\n* Statistics: Maintainer(s): %d, List(s): %d" \
++			% (mnt_count, list_count)
++
++
++if __name__ == "__main__":
++	main(len(sys.argv), sys.argv)
+-- 
+1.7.2.5
+
