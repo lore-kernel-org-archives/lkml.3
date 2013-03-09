@@ -1,86 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933885Ab3CID2n (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 22:28:43 -0500
-Received: from mail-ob0-f177.google.com ([209.85.214.177]:46189 "EHLO
-	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933454Ab3CID2m (ORCPT
+	id S933943Ab3CID3n (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 22:29:43 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:62267 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933431Ab3CID3l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 22:28:42 -0500
-Message-ID: <513AAC63.3050207@gmail.com>
-Date: Sat, 09 Mar 2013 11:28:35 +0800
-From: Ric Mason <ric.masonn@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
+	Fri, 8 Mar 2013 22:29:41 -0500
+Date: Fri, 8 Mar 2013 19:29:36 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Li Zefan <lizefan@huawei.com>
+Cc: Oleg Nesterov <oleg@redhat.com>, Dave Jones <davej@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>, cgroups@vger.kernel.org
+Subject: Re: lockdep trace from prepare_bprm_creds
+Message-ID: <20130309032936.GT14556@mtj.dyndns.org>
+References: <20130306223657.GA7392@redhat.com>
+ <20130307172545.GA10353@redhat.com>
+ <20130307180139.GD29601@htj.dyndns.org>
+ <20130307180332.GE29601@htj.dyndns.org>
+ <20130307191242.GA18265@redhat.com>
+ <20130307193820.GB3209@htj.dyndns.org>
+ <513A9A67.60909@huawei.com>
 MIME-Version: 1.0
-To: Johannes Weiner <hannes@cmpxchg.org>
-CC: Howard Chu <hyc@symas.com>, Chris Friesen <chris.friesen@genband.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mel@csn.ul.ie>, Rik van Riel <riel@redhat.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
-Subject: Re: mmap vs fs cache
-References: <5136320E.8030109@symas.com> <20130307154312.GG6723@quack.suse.cz> <20130308020854.GC23767@cmpxchg.org> <5139975F.9070509@symas.com> <20130308084246.GA4411@shutemov.name> <5139B214.3040303@symas.com> <5139FA13.8090305@genband.com> <5139FD27.1030208@symas.com> <20130308161643.GE23767@cmpxchg.org>
-In-Reply-To: <20130308161643.GE23767@cmpxchg.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <513A9A67.60909@huawei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Johannes,
-On 03/09/2013 12:16 AM, Johannes Weiner wrote:
-> On Fri, Mar 08, 2013 at 07:00:55AM -0800, Howard Chu wrote:
->> Chris Friesen wrote:
->>> On 03/08/2013 03:40 AM, Howard Chu wrote:
->>>
->>>> There is no way that a process that is accessing only 30GB of a mmap
->>>> should be able to fill up 32GB of RAM. There's nothing else running on
->>>> the machine, I've killed or suspended everything else in userland
->>>> besides a couple shells running top and vmstat. When I manually
->>>> drop_caches repeatedly, then eventually slapd RSS/SHR grows to 30GB and
->>>> the physical I/O stops.
->>> Is it possible that the kernel is doing some sort of automatic
->>> readahead, but it ends up reading pages corresponding to data that isn't
->>> ever queried and so doesn't get mapped by the application?
->> Yes, that's what I was thinking. I added a
->> posix_madvise(..POSIX_MADV_RANDOM) but that had no effect on the
->> test.
->>
->> First obvious conclusion - kswapd is being too aggressive. When free
->> memory hits the low watermark, the reclaim shrinks slapd down from
->> 25GB to 18-19GB, while the page cache still contains ~7GB of
->> unmapped pages. Ideally I'd like a tuning knob so I can say to keep
->> no more than 2GB of unmapped pages in the cache. (And the desired
->> effect of that would be to allow user processes to grow to 30GB
->> total, in this case.)
-> We should find out where the unmapped page cache is coming from if you
-> are only accessing mapped file cache and disabled readahead.
->
-> How do you arrive at this number of unmapped page cache?
->
-> What could happen is that previously used and activated pages do not
-> get evicted anymore since there is a constant supply of younger
+Hello, Li.
 
-If a user process exit, its file pages and anonymous pages will be freed 
-immediately or go through page reclaim?
+On Sat, Mar 09, 2013 at 10:11:51AM +0800, Li Zefan wrote:
+> On 2013/3/8 3:38, Tejun Heo wrote:
+> > On Thu, Mar 07, 2013 at 08:12:42PM +0100, Oleg Nesterov wrote:
+> >> Well yes, I agree. I think that perfomance-wise threadgroup_change_begin()
+> >> in de_thread() is fine, and perhaps it is even more clean because we are
+> >> going to do the thread-group change. The scope of cred_guard_mutex is huge,
+> >> it doesn't look very nice in threadgroup_lock().
+> >>
+> >> But we should avoid the cgroup-specific hooks as much as possible, so I
+> >> like your patch more.
+> > 
+> > I don't really mind how it's done but while my approach seems to limit
+> > itself to cgroup proper, threadgroup locking is actually more invasive
+> > by meddling with cred_mutex.  As you said, yours is the cleaner and
+> > probably more permanent one here.
+> > 
+> 
+> Agreed.
+> 
+> Now we need that patch to be resent with SOB and proper changelog.
 
-> reclaimable cache that is actually thrashing.  Whenever you drop the
-> caches, you get rid of those stale active pages and allow the
-> previously thrashing cache to get activated.  However, that would
-> require that there is already a significant amount of active file
+Now that I think more about it, I think I want both patches.  It is
+bothering that threadgroup lock is nested inside cgroup_lock.  It
+always has.  I just couldn't do anything about that until recently.
+Li, can you be persuaded into getting the lock reordering patch into a
+useable shape?  :)
 
-Why you emphasize a *significant* amount of active file pages?
+Thanks.
 
-> pages before your workload starts (check the nr_active_file number in
-> /proc/vmstat before launching slapd, try sync; echo 3 >drop_caches
-> before launching to eliminate this option) OR that the set of pages
-> accessed during your workload changes and the combined set of pages
-> accessed by your workload is bigger than available memory -- which you
-> claimed would not happen because you only access the 30GB file area on
-> that system.
->
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-
+-- 
+tejun
