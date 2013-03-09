@@ -1,93 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933728Ab3CIAik (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 19:38:40 -0500
-Received: from dkim2.fusionio.com ([66.114.96.54]:59951 "EHLO
-	dkim2.fusionio.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932161Ab3CIAii (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 19:38:38 -0500
-X-ASG-Debug-ID: 1362789515-03d6a5521e031b0001-xx1T2L
-X-Barracuda-Envelope-From: clmason@fusionio.com
-Date: Fri, 8 Mar 2013 19:38:26 -0500
-From: Chris Mason <chris.mason@fusionio.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] Btrfs updates
-Message-ID: <20130309003826.GB21566@shiny.masoncoding.com>
-X-ASG-Orig-Subj: [GIT PULL] Btrfs updates
-Mail-Followup-To: Chris Mason <chris.mason@fusionio.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	"linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+	id S933843Ab3CIAlK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 19:41:10 -0500
+Received: from dcvr.yhbt.net ([64.71.152.64]:59993 "EHLO dcvr.yhbt.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933426Ab3CIAlI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Mar 2013 19:41:08 -0500
+Date: Sat, 9 Mar 2013 00:41:07 +0000
+From: Eric Wong <normalperson@yhbt.net>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Davide Libenzi <davidel@xmailserver.org>,
+        Al Viro <viro@ZenIV.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] epoll: comment + BUILD_BUG_ON to prevent epitem bloat
+Message-ID: <20130309004107.GA31085@dcvr.yhbt.net>
+References: <20130304112941.GA16284@dcvr.yhbt.net>
+ <20130306143741.d5e56f13c94d2d6b2c1ea449@linux-foundation.org>
+ <20130307103240.GA24132@dcvr.yhbt.net>
+ <20130308155410.3c63f24ee28e6532006cb0d4@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2011-07-01)
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1362789515
-X-Barracuda-Encrypted: AES128-SHA
-X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
-X-Barracuda-Bayes: INNOCENT GLOBAL 0.0000 1.0000 -2.0210
-X-Barracuda-Spam-Score: -2.02
-X-Barracuda-Spam-Status: No, SCORE=-2.02 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.124653
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+In-Reply-To: <20130308155410.3c63f24ee28e6532006cb0d4@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+This will prevent us from accidentally introducing a memory bloat
+regression here in the future.
 
-Please grab my for-linus:
+Signed-off-by: Eric Wong <normalperson@yhbt.net>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Davide Libenzi <davidel@xmailserver.org>,
+Cc: Al Viro <viro@ZenIV.linux.org.uk>
+---
+  Andrew Morton <akpm@linux-foundation.org> wrote:
+  > On Thu, 7 Mar 2013 10:32:40 +0000 Eric Wong <normalperson@yhbt.net> wrote:
+  > 
+  > > Andrew Morton <akpm@linux-foundation.org> wrote:
+  > > > It's going to be hard to maintain this - someone will change something
+  > > > sometime and break it.  I suppose we could add a runtime check if we
+  > > > cared enough.  Adding a big fat comment to struct epitem might help.
+  > > 
+  > > Thanks for looking at this patch.  I'll send a patch with a comment
+  > > about keeping epitem size in check.  Also, would adding (with comments):
+  > > 
+  > > 	BUILD_BUG_ON(sizeof(struct epitem) > 128);
+  > > 
+  > > ...be too heavy-handed?  I used that in my testing.  I'll check for:
+  > > sizeof(void *) <= 8 too; in case 128-bit machines appear...
+  > 
+  > I guess such a check might avoid accidents in the future.  If it
+  > becomes a problem, we can always delete it.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs.git for-linus
+ fs/eventpoll.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-These are scattered fixes and one performance improvement.  The biggest
-functional change is in how we throttle metadata changes.  The new code
-bumps our average file creation rate up by ~13% in fs_mark, and lowers
-CPU usage.
-
-Stefan bisected out a regression in our allocation code that made
-balance loop on extents larger than 256MB.
-
-Liu Bo (6) commits (+71/-19):
-    Btrfs: build up error handling for merge_reloc_roots (+35/-12)
-    Btrfs: check for NULL pointer in updating reloc roots (+2/-0)
-    Btrfs: avoid deadlock on transaction waiting list (+7/-0)
-    Btrfs: free all recorded tree blocks on error (+6/-3)
-    Btrfs: do not BUG_ON on aborted situation (+12/-3)
-    Btrfs: do not BUG_ON in prepare_to_reloc (+9/-1)
-
-Chris Mason (2) commits (+96/-63):
-    Btrfs: enforce min_bytes parameter during extent allocation (+4/-2)
-    Btrfs: improve the delayed inode throttling (+92/-61)
-
-Miao Xie (2) commits (+45/-39):
-    Btrfs: fix unclosed transaction handler when the async transaction commitment fails (+4/-0)
-    Btrfs: fix wrong handle at error path of create_snapshot() when the commit fails (+41/-39)
-
-Stefan Behrens (1) commits (+0/-8):
-    Btrfs: allow running defrag in parallel to administrative tasks
-
-Ilya Dryomov (1) commits (+5/-0):
-    Btrfs: fix a mismerge in btrfs_balance()
-
-Josef Bacik (1) commits (+4/-1):
-    Btrfs: use set_nlink if our i_nlink is 0
-
-Total: (13) commits (+221/-130)
-
- fs/btrfs/delayed-inode.c | 151 ++++++++++++++++++++++++++++-------------------
- fs/btrfs/delayed-inode.h |   2 +
- fs/btrfs/disk-io.c       |  16 +++--
- fs/btrfs/inode.c         |   6 +-
- fs/btrfs/ioctl.c         |  18 ++----
- fs/btrfs/relocation.c    |  74 +++++++++++++++++------
- fs/btrfs/transaction.c   |  65 ++++++++++++--------
- fs/btrfs/tree-log.c      |   5 +-
- fs/btrfs/volumes.c       |  14 ++++-
- 9 files changed, 221 insertions(+), 130 deletions(-)
+diff --git a/fs/eventpoll.c b/fs/eventpoll.c
+index 9fec183..55028da 100644
+--- a/fs/eventpoll.c
++++ b/fs/eventpoll.c
+@@ -128,6 +128,8 @@ struct nested_calls {
+ /*
+  * Each file descriptor added to the eventpoll interface will
+  * have an entry of this type linked to the "rbr" RB tree.
++ * Avoid increasing the size of this struct, there can be many thousands
++ * of these on a server and we do not want this to take another cache line.
+  */
+ struct epitem {
+ 	/* RB tree node used to link this structure to the eventpoll RB tree */
+@@ -1964,6 +1966,12 @@ static int __init eventpoll_init(void)
+ 	/* Initialize the structure used to perform file's f_op->poll() calls */
+ 	ep_nested_calls_init(&poll_readywalk_ncalls);
+ 
++	/*
++	 * We can have many thousands of epitems, so prevent this from
++	 * using an extra cache line on 64-bit (and smaller) CPUs
++	 */
++	BUILD_BUG_ON(sizeof(void *) <= 8 && sizeof(struct epitem) > 128);
++
+ 	/* Allocates slab cache used to allocate "struct epitem" items */
+ 	epi_cache = kmem_cache_create("eventpoll_epi", sizeof(struct epitem),
+ 			0, SLAB_HWCACHE_ALIGN | SLAB_PANIC, NULL);
+-- 
+Eric Wong
