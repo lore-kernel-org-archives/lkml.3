@@ -1,125 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751399Ab3CITqr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Mar 2013 14:46:47 -0500
-Received: from mail-oa0-f45.google.com ([209.85.219.45]:38271 "EHLO
-	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750840Ab3CITqq (ORCPT
+	id S1751425Ab3CITse (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Mar 2013 14:48:34 -0500
+Received: from cpsmtpb-ews10.kpnxchange.com ([213.75.39.15]:63754 "EHLO
+	cpsmtpb-ews10.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750840Ab3CITsc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Mar 2013 14:46:46 -0500
-MIME-Version: 1.0
-In-Reply-To: <1362855725.3690.92.camel@shinybook.infradead.org>
-References: <1362758331.32099.121.camel@i7.infradead.org>
-	<513AF783.6050906@gmail.com>
-	<1362855725.3690.92.camel@shinybook.infradead.org>
-Date: Sat, 9 Mar 2013 20:46:45 +0100
-Message-ID: <CABJ1b_TJKZFp7uwc46K1NnUvhHfAXR7yYH5mVLBDO9S8ywGg+Q@mail.gmail.com>
-Subject: Re: memory leak and other oddness in pinctrl-mvebu.c
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-To: David Woodhouse <dwmw2@infradead.org>
-Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+	Sat, 9 Mar 2013 14:48:32 -0500
+Message-ID: <1362858510.3137.31.camel@x61.thuisdomein>
+Subject: Re: [PATCH] ARM: OMAP: drop "select MACH_NOKIA_RM696"
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Tony Lindgren <tony@atomide.com>, Aaro Koskinen <aaro.koskinen@iki.fi>,
+        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Date: Sat, 09 Mar 2013 20:48:30 +0100
+In-Reply-To: <20130309000157.GE30923@n2100.arm.linux.org.uk>
+References: <1362738596.5994.48.camel@x61.thuisdomein>
+	 <20130308161159.GE14552@blackmetal.musicnaut.iki.fi>
+	 <20130308163507.GC26093@atomide.com>
+	 <1362763232.5994.75.camel@x61.thuisdomein>
+	 <20130308175539.GG26093@atomide.com>
+	 <1362765764.5994.87.camel@x61.thuisdomein>
+	 <20130309000157.GE30923@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 09 Mar 2013 19:48:31.0130 (UTC) FILETIME=[139827A0:01CE1CFF]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David,
+On Sat, 2013-03-09 at 00:01 +0000, Russell King - ARM Linux wrote:
+> It's actually quite clever.  There's two levels to it.
+> 
+> The first is that CONFIG_MACH_xxx result in their machine_is_xxx() macros
+> being defined to constant zero if the CONFIG option is not enabled.  That
+> allows the compiler to throw away code for disabled platforms because
+> the expression is always false.
+> 
+> Otherwise, they end up as (machine_arch_type == MACH_TYPE_xxx).
+> 
+> The second is the magic which happens when two CONFIG_MACH_xxx are
+> selected.  If only one is selected, then machine_arch_type is defined
+> to the appropriate MACH_TYPE_xxx.  This means that the above expression
+> becomes constant-true, and the conditional is eliminated.
+> 
+> If more than one is selected, then machine_arch_type is defined to a
+> variable which is appropriately set to one of the MACH_TYPE_xxx values.
 
-I will not be able to test before mid-week ealiest. I added Andrew Lunn to
-the list. He and Thomas can test your patch for Kirkwood and Armada XP/370
-respectively. I will test on Dove asap.
+At boot?
 
-Sebastian
+> So, the result is that:
+> - de-selected platforms have their if (machine_is_xxx()) { } optimised
+>   out of the kernel.
+> - for a kernel built targetting one platform, all the
+>   if (machine_is_xxx()) tests are optimised away, leaving only the
+>   relevant code behind.
+> - otherwise, we get the _appropriate_ conditional code for the
+>   configuration generated.
 
-On Sat, Mar 9, 2013 at 8:02 PM, David Woodhouse <dwmw2@infradead.org> wrote:
-> On Sat, 2013-03-09 at 09:49 +0100, Sebastian Hesselbarth wrote:
->> I don't have a strong opinion on that, but I prefer not to have the list
->> statically in the SoC specific drivers. I think counting the number of
->> unique functions for each SoC specific driver once and verify the above
->> heuristic (fewer unique functions than pins) is still valid. Then drop
->> the krealloc and leave the array the way it is allocated on devm_kzalloc.
->
-> Yeah. If you stick a check in the loop and make it warn if it *would*
-> have run over the end of the array, that sounds like it ought to be
-> fine. Something like this, perhaps? Still untested but otherwise
-> Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
->
-> diff --git a/drivers/pinctrl/mvebu/pinctrl-mvebu.c b/drivers/pinctrl/mvebu/pinctrl-mvebu.c
-> index c689c04..55d55d5 100644
-> --- a/drivers/pinctrl/mvebu/pinctrl-mvebu.c
-> +++ b/drivers/pinctrl/mvebu/pinctrl-mvebu.c
-> @@ -478,7 +478,8 @@ static struct pinctrl_ops mvebu_pinctrl_ops = {
->         .dt_free_map = mvebu_pinctrl_dt_free_map,
->  };
->
-> -static int _add_function(struct mvebu_pinctrl_function *funcs, const char *name)
-> +static int _add_function(struct mvebu_pinctrl_function *funcs, int nr_funcs,
-> +                        const char *name)
->  {
->         while (funcs->num_groups) {
->                 /* function already there */
-> @@ -487,7 +488,11 @@ static int _add_function(struct mvebu_pinctrl_function *funcs, const char *name)
->                         return -EEXIST;
->                 }
->                 funcs++;
-> +               nr_funcs--;
->         }
-> +       if (!nr_funcs)
-> +               return -EOVERFLOW;
-> +
->         funcs->name = name;
->         funcs->num_groups = 1;
->         return 0;
-> @@ -501,7 +506,7 @@ static int mvebu_pinctrl_build_functions(struct platform_device *pdev,
->         int n, s;
->
->         /* we allocate functions for number of pins and hope
-> -        * there are less unique functions than pins available */
-> +        * there are fewer unique functions than pins available */
->         funcs = devm_kzalloc(&pdev->dev, pctl->desc.npins *
->                              sizeof(struct mvebu_pinctrl_function), GFP_KERNEL);
->         if (!funcs)
-> @@ -510,26 +515,27 @@ static int mvebu_pinctrl_build_functions(struct platform_device *pdev,
->         for (n = 0; n < pctl->num_groups; n++) {
->                 struct mvebu_pinctrl_group *grp = &pctl->groups[n];
->                 for (s = 0; s < grp->num_settings; s++) {
-> +                       int ret;
-> +
->                         /* skip unsupported settings on this variant */
->                         if (pctl->variant &&
->                             !(pctl->variant & grp->settings[s].variant))
->                                 continue;
->
->                         /* check for unique functions and count groups */
-> -                       if (_add_function(funcs, grp->settings[s].name))
-> +                       ret = _add_function(funcs, pctl->desc.npins,
-> +                                           grp->settings[s].name);
-> +                       if (ret == -EOVERFLOW)
-> +                               dev_err(&pdev->dev,
-> +                                       "More functions than pins(%d)\n",
-> +                                       pctl->desc.npins);
-> +                       if (ret)
->                                 continue;
->
->                         num++;
->                 }
->         }
->
-> -       /* with the number of unique functions and it's groups known,
-> -          reallocate functions and assign group names */
-> -       funcs = krealloc(funcs, num * sizeof(struct mvebu_pinctrl_function),
-> -                        GFP_KERNEL);
-> -       if (!funcs)
-> -               return -ENOMEM;
-> -
->         pctl->num_functions = num;
->         pctl->functions = funcs;
->
->
->
-> --
-> dwmw2
->
+Thanks for clarifying this. Quite clever indeed. 
+
+> However, going back to that MACH_NOKIA_RM696.  If there exists only a
+> select of this symbol and no "config MACH_NOKIA_RM696" entry, then the
+> symbol will never be generated in the output .config file.
+> 
+>[...]
+> 
+> My conclusion is... it's a mess.
+
+That mess can only be fully cleaned up if the code for the RM-696 that
+now is maintained in some unknown to me repository gets merged into
+mainline, can't it?
+
+In the meantime, how do you prefer I solve the (trivial) issue of an
+useless select for MACH_NOKIA_RM696? Drop that select or add an (equally
+useless) config entry for MACH_NOKIA_RM696? Or should I try to ignore it
+for the time being?
+
+
+Paul Bolle
+
