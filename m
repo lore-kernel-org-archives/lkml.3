@@ -1,88 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760119Ab3CIAHY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 19:07:24 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:59222 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756564Ab3CIAHU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 19:07:20 -0500
-Date: Sat, 9 Mar 2013 00:01:57 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Tony Lindgren <tony@atomide.com>, Aaro Koskinen <aaro.koskinen@iki.fi>,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: OMAP: drop "select MACH_NOKIA_RM696"
-Message-ID: <20130309000157.GE30923@n2100.arm.linux.org.uk>
-References: <1362738596.5994.48.camel@x61.thuisdomein> <20130308161159.GE14552@blackmetal.musicnaut.iki.fi> <20130308163507.GC26093@atomide.com> <1362763232.5994.75.camel@x61.thuisdomein> <20130308175539.GG26093@atomide.com> <1362765764.5994.87.camel@x61.thuisdomein>
+	id S1760092Ab3CIATX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 19:19:23 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:24327 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754898Ab3CIATW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Mar 2013 19:19:22 -0500
+Date: Fri, 8 Mar 2013 19:19:17 -0500
+From: Dave Jones <davej@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: BUG_ON(nd->inode != parent->d_inode);
+Message-ID: <20130309001917.GA6015@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	Al Viro <viro@zeniv.linux.org.uk>
+References: <20130308193652.GA11692@redhat.com>
+ <CA+55aFyE12rZ3DZUtTkonPjbcQiZNdAmys7w5zf7_Xry2z=-2A@mail.gmail.com>
+ <20130308210432.GA21500@redhat.com>
+ <CA+55aFyNAA3u2k_38iqRPN0EqtP=qXu1wu_vnXnAgQmp6NwGJA@mail.gmail.com>
+ <20130308230734.GA28317@redhat.com>
+ <CA+55aFxKgZyqbn1M0sAL0CoLxmKSzAALYBTPLYVM7OpG_M_B=A@mail.gmail.com>
+ <20130308233041.GA32587@redhat.com>
+ <CA+55aFxBvyLcWJB0JMNcaCXHtgvPLt3cFQqJeRFcb=6rkZFtvA@mail.gmail.com>
+ <20130308235514.GA5605@redhat.com>
+ <CA+55aFyfOKXVpn41F_OPE7+CeNyN2ZhwPeEJ8bkZLxBEkz31sg@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1362765764.5994.87.camel@x61.thuisdomein>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <CA+55aFyfOKXVpn41F_OPE7+CeNyN2ZhwPeEJ8bkZLxBEkz31sg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 08, 2013 at 07:02:44PM +0100, Paul Bolle wrote:
-> On Fri, 2013-03-08 at 09:55 -0800, Tony Lindgren wrote:
-> > * Paul Bolle <pebolle@tiscali.nl> [130308 09:24]:
-> > > Should I draft a patch?
-> > 
-> > Sure that would be nice.
-> 
-> One thing I couldn't determine is how the generated mach-types.h header
-> handles multiple CONFIG_MACH_* macros.
-> 
-> If both CONFIG_MACH_FOO and CONFIG_MACH_BAR are defined, and these both
-> have a line in */mach-types, will the machine_is_foo() and
-> machine_is_bar() macros both behave as one would expect?
+On Fri, Mar 08, 2013 at 04:02:02PM -0800, Linus Torvalds wrote:
+ > On Fri, Mar 8, 2013 at 3:55 PM, Dave Jones <davej@redhat.com> wrote:
+ > >
+ > > That one was printed out with %s
+ > 
+ > Ok, so those random pathnames you generate? They're funky.
 
-It's actually quite clever.  There's two levels to it.
+I just did a test with just a page of 'A's, and got the same result,
+so while that unicode stuff looks fancy, it isn't necessary to tickle
+these bugs.
 
-The first is that CONFIG_MACH_xxx result in their machine_is_xxx() macros
-being defined to constant zero if the CONFIG option is not enabled.  That
-allows the compiler to throw away code for disabled platforms because
-the expression is always false.
+Trying to figure out exactly what change I made that started triggering this.
 
-Otherwise, they end up as (machine_arch_type == MACH_TYPE_xxx).
+	Dave
 
-The second is the magic which happens when two CONFIG_MACH_xxx are
-selected.  If only one is selected, then machine_arch_type is defined
-to the appropriate MACH_TYPE_xxx.  This means that the above expression
-becomes constant-true, and the conditional is eliminated.
-
-If more than one is selected, then machine_arch_type is defined to a
-variable which is appropriately set to one of the MACH_TYPE_xxx values.
-
-So, the result is that:
-- de-selected platforms have their if (machine_is_xxx()) { } optimised
-  out of the kernel.
-- for a kernel built targetting one platform, all the
-  if (machine_is_xxx()) tests are optimised away, leaving only the
-  relevant code behind.
-- otherwise, we get the _appropriate_ conditional code for the
-  configuration generated.
-
-However, going back to that MACH_NOKIA_RM696.  If there exists only a
-select of this symbol and no "config MACH_NOKIA_RM696" entry, then the
-symbol will never be generated in the output .config file.
-
-I too can find no trace of any use of machine_is_nokia_rm696 in the
-mainline kernel.  So, if there's nothing using the machine_is_()
-symbol, and nothing using the CONFIG_MACH_NOKIA_RM696 symbol, then
-any select of that is entirely superfluous.
-
-Well, I did this:
-
-$ git grep -i nokia_rm696
-arch/arm/mach-omap2/Kconfig:    select MACH_NOKIA_RM696
-arch/arm/mach-omap2/board-rm680.c:MACHINE_START(NOKIA_RM696, "Nokia RM-696 board")
-arch/arm/tools/mach-types:nokia_rm696           MACH_NOKIA_RM696        NOKIA_RM696             3522
-
-So, there exists platform support for this device, provided by the RM680
-support, but there's no use of the machine_is_xxx() symbol - and if there
-was, it would always be false.
-
-My conclusion is... it's a mess.
