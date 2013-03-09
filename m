@@ -1,76 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760176Ab3CICOY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 21:14:24 -0500
-Received: from mail-ia0-f172.google.com ([209.85.210.172]:64603 "EHLO
-	mail-ia0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759947Ab3CICOW (ORCPT
+	id S1760217Ab3CICPZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 21:15:25 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:23193 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759829Ab3CICPX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 21:14:22 -0500
-Message-ID: <513A9AF7.4020909@gmail.com>
-Date: Sat, 09 Mar 2013 10:14:15 +0800
-From: Will Huck <will.huckk@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
+	Fri, 8 Mar 2013 21:15:23 -0500
+Message-ID: <513A9A67.60909@huawei.com>
+Date: Sat, 9 Mar 2013 10:11:51 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
 MIME-Version: 1.0
-To: Lenky Gao <lenky.gao@gmail.com>
-CC: Zlatko Calusic <zlatko.calusic@iskon.hr>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "olaf@aepfle.de" <olaf@aepfle.de>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "andi@firstfloor.org" <andi@firstfloor.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Hugh Dickins <hughd@google.com>, Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: Inactive memory keep growing and how to release it?
-References: <CAAO_Xo7sEH5W_9xoOjax8ynyjLCx7GBpse+EU0mF=9mEBFhrgw@mail.gmail.com> <51347A6E.8010608@iskon.hr> <CAAO_Xo6bWo4QOvdowLG88NoQr2AEq4jxCWHQXeA8g-VBT4Yk9Q@mail.gmail.com>
-In-Reply-To: <CAAO_Xo6bWo4QOvdowLG88NoQr2AEq4jxCWHQXeA8g-VBT4Yk9Q@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Tejun Heo <tj@kernel.org>
+CC: Oleg Nesterov <oleg@redhat.com>, Dave Jones <davej@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>, <cgroups@vger.kernel.org>
+Subject: Re: lockdep trace from prepare_bprm_creds
+References: <20130306223657.GA7392@redhat.com> <20130307172545.GA10353@redhat.com> <20130307180139.GD29601@htj.dyndns.org> <20130307180332.GE29601@htj.dyndns.org> <20130307191242.GA18265@redhat.com> <20130307193820.GB3209@htj.dyndns.org>
+In-Reply-To: <20130307193820.GB3209@htj.dyndns.org>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cc experts. Hugh, Johannes,
-
-On 03/04/2013 08:21 PM, Lenky Gao wrote:
-> 2013/3/4 Zlatko Calusic <zlatko.calusic@iskon.hr>:
->> The drop_caches mechanism doesn't free dirty page cache pages. And your bash
->> script is creating a lot of dirty pages. Run it like this and see if it
->> helps your case:
+On 2013/3/8 3:38, Tejun Heo wrote:
+> Hello,
+> 
+> On Thu, Mar 07, 2013 at 08:12:42PM +0100, Oleg Nesterov wrote:
+>> Well yes, I agree. I think that perfomance-wise threadgroup_change_begin()
+>> in de_thread() is fine, and perhaps it is even more clean because we are
+>> going to do the thread-group change. The scope of cred_guard_mutex is huge,
+>> it doesn't look very nice in threadgroup_lock().
 >>
->> sync; echo 3 > /proc/sys/vm/drop_caches
-> Thanks for your advice.
->
-> The inactive memory still cannot be reclaimed after i execute the sync command:
->
-> # cat /proc/meminfo | grep Inactive\(file\);
-> Inactive(file):   882824 kB
-> # sync;
-> # echo 3 > /proc/sys/vm/drop_caches
-> # cat /proc/meminfo | grep Inactive\(file\);
-> Inactive(file):   777664 kB
->
-> I find these page becomes orphaned in this function, but do not understand why:
->
-> /*
->   * If truncate cannot remove the fs-private metadata from the page, the page
->   * becomes orphaned.  It will be left on the LRU and may even be mapped into
->   * user pagetables if we're racing with filemap_fault().
->   *
->   * We need to bale out if page->mapping is no longer equal to the original
->   * mapping.  This happens a) when the VM reclaimed the page while we waited on
->   * its lock, b) when a concurrent invalidate_mapping_pages got there first and
->   * c) when tmpfs swizzles a page between a tmpfs inode and swapper_space.
->   */
-> static int
-> truncate_complete_page(struct address_space *mapping, struct page *page)
-> {
-> ...
->
-> My file system type is ext3, mounted with the opteion data=journal and
-> it is easy to reproduce.
->
->
+>> But we should avoid the cgroup-specific hooks as much as possible, so I
+>> like your patch more.
+> 
+> I don't really mind how it's done but while my approach seems to limit
+> itself to cgroup proper, threadgroup locking is actually more invasive
+> by meddling with cred_mutex.  As you said, yours is the cleaner and
+> probably more permanent one here.
+> 
+
+Agreed.
+
+Now we need that patch to be resent with SOB and proper changelog.
+
+>>> +	if (threadgroup && !thread_group_leader(tsk)) {
+>>> +		/*
+>>> +		 * a race with de_thread from another thread's exec() may
+>>> +		 * strip us of our leadership, if this happens, there is no
+>>> +		 * choice but to throw this task away and try again; this
+>>> +		 * is "double-double-toil-and-trouble-check locking".
+>>> +		 */
+>>> +		threadgroup_unlock(tsk);
+>>> +		put_task_struct(tsk);
+>>> +		goto retry_find_task;
+>>> +	}
+>>>
+>>> +	ret = -ENODEV;
+>>> +	if (cgroup_lock_live_group(cgrp)) {
+>>> +		if (threadgroup)
+>>> +			ret = cgroup_attach_proc(cgrp, tsk);
+>>
+>> Offtopic, but with or without this change I do not understand the
+>> thread_group_leader/retry_find_task logic.
+>>
+>> Why do we actually need to restart? We do not really care if it is leader
+>> or not, we only need to ensure we can safely use while_each_thread() to
+>> find all !PF_EXITING threads.
+> 
+> If my memory serves me right (which BTW often fails), it's cgroup API
+> thing.  cgroup wants to guarantee to the controllers that if multiple
+> tasks are migrated together, they always constitute a threadgroup and
+> the first one is the leader.  ISTR a controller callback which depends
+> on the first one being the leader.
+> 
+
+It did serve you right this time. :)
 
