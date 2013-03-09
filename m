@@ -1,66 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760228Ab3CIBXe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Mar 2013 20:23:34 -0500
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:60203 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756762Ab3CIBXd (ORCPT
+	id S1760248Ab3CIB16 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Mar 2013 20:27:58 -0500
+Received: from mail-vc0-f178.google.com ([209.85.220.178]:55358 "EHLO
+	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759941Ab3CIB15 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Mar 2013 20:23:33 -0500
-Message-ID: <513A8F13.3070402@hitachi.com>
-Date: Sat, 09 Mar 2013 10:23:31 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Fri, 8 Mar 2013 20:27:57 -0500
 MIME-Version: 1.0
-To: oskar.andero@sonymobile.com
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "anil.s.keshavamurthy@intel.com" <anil.s.keshavamurthy@intel.com>,
-        "ananth@in.ibm.com" <ananth@in.ibm.com>,
-        "Lekanovic, Radovan" <Radovan.Lekanovic@sonymobile.com>,
-        =?ISO-8859-1?Q?=22Davidsson=2C_Bj=F6rn=22?= 
-	<Bjorn.Davidsson@sonymobile.com>
-Subject: Re: Re: [PATCH] Kprobes blacklist: Conditionally add x86-specific
- symbols
-References: <1362653070-24035-1-git-send-email-oskar.andero@sonymobile.com> <513967BD.9010602@hitachi.com> <20130308131534.GI26148@caracas.corpusers.net>
-In-Reply-To: <20130308131534.GI26148@caracas.corpusers.net>
+Date: Sat, 9 Mar 2013 01:27:56 +0000
+Message-ID: <CAG=jzgAQjtbcu3GC-MZqFpbuvTCJ9DT6VXRVcUo8uOFzQMwMXg@mail.gmail.com>
+Subject: screen failing to display after resume from hibernate
+From: kernel kernel <kernel@kenobrien.org>
+To: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/03/08 22:15), oskar.andero@sonymobile.com wrote:
-> On 05:23 Fri 08 Mar     , Masami Hiramatsu wrote:
->> (2013/03/07 19:44), oskar.andero@sonymobile.com wrote:
->>> From: Bjorn Davidsson <bjorn.davidsson@sonymobile.com>
->>>
->>> The kprobes blacklist contains x86-specific symbols.
->>> Looking for these in kallsyms takes unnecessary time
->>> during startup on non-X86 platform.
->>> Added #ifdef CONFIG_X86 around them.
->>
->> Right. however, it might be better break that into
->> common and arch-specific lists, because there may be
->> other arch-specific non-probe-able functions on each
->> architecture...
-> 
-> Ok. You mean adding, for instance, a kprobe_blacklist_arch[] in arch/x86
-> somewhere or did you have something else in mind? I guess we preferably want
-> to get rid of the #ifdef.
+Machine resumes and fails to power on the screen.
 
-Yes, we can have symbol tables (const char *arch_kprobes_blacksyms[],
-common_kprobes_blacksyms[]) to list it up, and when initializing
-the blacklist table, we can check whether kprobes_blacklist == NULL
-and initialize it.
+Trace:
 
-Thank you,
+Mar  7 23:35:09 lenovo kernel: [33562.808041] [drm:intel_lvds_disable]
+*ERROR* timed out waiting for panel to power off
+Mar  7 23:35:09 lenovo kernel: [33562.808052] ------------[ cut here
+]------------
+Mar  7 23:35:09 lenovo kernel: [33562.808087] WARNING: at
+/home/abuild/rpmbuild/BUILD/kernel-desktop-3.4.28/linux-3.4/drivers/gpu/drm/i915/int
+el_display.c:981 intel_crtc_disable+0x2e/0x80 [i915]()
+Mar  7 23:35:09 lenovo kernel: [33562.808090] Hardware name: 6474B84
+Mar  7 23:35:09 lenovo kernel: [33562.808092] plane B assertion
+failure (expected off, current on)
+Mar  7 23:35:09 lenovo kernel: [33562.808094] Modules linked in: fuse
+af_packet rfcomm bnep cpufreq_conservative cpufreq_userspace
+cpufreq_pow
+ersave sha256_generic cbc dm_crypt dm_mod sg snd_hda_codec_conexant
+thinkpad_acpi snd_hda_intel snd_hda_codec snd_hwdep snd_seq
+snd_pcm_oss pc
+mcia arc4 btusb acpi_cpufreq bluetooth sr_mod cdrom yenta_socket
+pcmcia_rsrc wmi tpm_tis mperf kvm_intel snd_seq_device snd_pcm
+snd_mixer_oss
+mei(C) pcmcia_core tpm coretemp iTCO_wdt iTCO_vendor_support i2c_i801
+iwlwifi mac80211 cfg80211 snd_timer e1000e joydev pcspkr rfkill snd
+snd_
+page_alloc kvm ac battery ata_generic tpm_bios soundcore edd microcode
+autofs4 thermal i915 processor drm_kms_helper drm i2c_algo_bit button
+v
+ideo thermal_sys scsi_dh_emc scsi_dh_alua scsi_dh_hp_sw scsi_dh_rdac scsi_dh
+Mar  7 23:35:09 lenovo kernel: [33562.808138] Pid: 19431, comm:
+kworker/u:2 Tainted: G        WC   3.4.28-2.20-desktop #1
+Mar  7 23:35:09 lenovo kernel: [33562.808140] Call Trace:
+Mar  7 23:35:09 lenovo kernel: [33562.808159]  [<ffffffff81004648>]
+dump_trace+0x88/0x300
+Mar  7 23:35:09 lenovo kernel: [33562.808169]  [<ffffffff81582ddc>]
+dump_stack+0x69/0x6f
+Mar  7 23:35:09 lenovo kernel: [33562.808174]  [<ffffffff8103fd99>]
+warn_slowpath_common+0x79/0xc0
+Mar  7 23:35:09 lenovo kernel: [33562.808178]  [<ffffffff8103fe95>]
+warn_slowpath_fmt+0x45/0x50
+Mar  7 23:35:09 lenovo kernel: [33562.808188]  [<ffffffffa00d770e>]
+intel_crtc_disable+0x2e/0x80 [i915]
+Mar  7 23:35:09 lenovo kernel: [33562.808223]  [<ffffffffa009f655>]
+drm_helper_disable_unused_functions+0x105/0x160 [drm_kms_helper]
+Mar  7 23:35:09 lenovo kernel: [33562.808230]  [<ffffffffa00a0138>]
+drm_helper_resume_force_mode+0x118/0x150 [drm_kms_helper]
+Mar  7 23:35:09 lenovo kernel: [33562.808240]  [<ffffffffa00b01f5>]
+i915_drm_thaw+0x115/0x170 [i915]
+Mar  7 23:35:09 lenovo kernel: [33562.808248]  [<ffffffffa00b0395>]
+i915_resume+0x45/0x70 [i915]
+Mar  7 23:35:09 lenovo kernel: [33562.808253]  [<ffffffff813a2e54>]
+dpm_run_callback+0x54/0xa0
+Mar  7 23:35:09 lenovo kernel: [33562.808257]  [<ffffffff813a359a>]
+device_resume+0x10a/0x240
+Mar  7 23:35:09 lenovo kernel: [33562.808261]  [<ffffffff813a36e4>]
+async_resume+0x14/0x40
+Mar  7 23:35:09 lenovo kernel: [33562.808265]  [<ffffffff81067e6e>]
+async_run_entry_fn+0x6e/0x160
+Mar  7 23:35:09 lenovo kernel: [33562.808269]  [<ffffffff8105ada3>]
+process_one_work+0x123/0x450
+Mar  7 23:35:09 lenovo kernel: [33562.808272]  [<ffffffff8105b44d>]
+worker_thread+0x12d/0x2e0
+Mar  7 23:35:09 lenovo kernel: [33562.808275]  [<ffffffff81060c05>]
+kthread+0x85/0x90
+Mar  7 23:35:09 lenovo kernel: [33562.808279]  [<ffffffff81596f94>]
+kernel_thread_helper+0x4/0x10
+Mar  7 23:35:09 lenovo kernel: [33562.808282] ---[ end trace
+9e35440e65239f66 ]---
 
--- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
 
-
+--
+Ken O'Brien
+PhD Researcher
+Simulation Science and Extreme Events Cluster,
+3B1, UCD CASL,
+8 Belfield Business Park,
+Dublin 4,
+Ireland.
