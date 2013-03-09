@@ -1,86 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751425Ab3CITse (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Mar 2013 14:48:34 -0500
-Received: from cpsmtpb-ews10.kpnxchange.com ([213.75.39.15]:63754 "EHLO
-	cpsmtpb-ews10.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750840Ab3CITsc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Mar 2013 14:48:32 -0500
-Message-ID: <1362858510.3137.31.camel@x61.thuisdomein>
-Subject: Re: [PATCH] ARM: OMAP: drop "select MACH_NOKIA_RM696"
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Tony Lindgren <tony@atomide.com>, Aaro Koskinen <aaro.koskinen@iki.fi>,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Sat, 09 Mar 2013 20:48:30 +0100
-In-Reply-To: <20130309000157.GE30923@n2100.arm.linux.org.uk>
-References: <1362738596.5994.48.camel@x61.thuisdomein>
-	 <20130308161159.GE14552@blackmetal.musicnaut.iki.fi>
-	 <20130308163507.GC26093@atomide.com>
-	 <1362763232.5994.75.camel@x61.thuisdomein>
-	 <20130308175539.GG26093@atomide.com>
-	 <1362765764.5994.87.camel@x61.thuisdomein>
-	 <20130309000157.GE30923@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 09 Mar 2013 19:48:31.0130 (UTC) FILETIME=[139827A0:01CE1CFF]
-X-RcptDomain: vger.kernel.org
+	id S1751467Ab3CIUCi (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Mar 2013 15:02:38 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:40459 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751289Ab3CIUCh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 9 Mar 2013 15:02:37 -0500
+Date: Sat, 9 Mar 2013 21:00:46 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Li Zefan <lizefan@huawei.com>
+Cc: Tejun Heo <tj@kernel.org>, Dave Jones <davej@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>, cgroups@vger.kernel.org
+Subject: [PATCH 0/1] do not abuse ->cred_guard_mutex in threadgroup_lock()
+Message-ID: <20130309200046.GA8149@redhat.com>
+References: <20130306223657.GA7392@redhat.com> <20130307172545.GA10353@redhat.com> <20130307180139.GD29601@htj.dyndns.org> <20130307180332.GE29601@htj.dyndns.org> <20130307191242.GA18265@redhat.com> <20130307193820.GB3209@htj.dyndns.org> <513A9A67.60909@huawei.com> <20130309032936.GT14556@mtj.dyndns.org> <513AE918.7020704@huawei.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <513AE918.7020704@huawei.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2013-03-09 at 00:01 +0000, Russell King - ARM Linux wrote:
-> It's actually quite clever.  There's two levels to it.
-> 
-> The first is that CONFIG_MACH_xxx result in their machine_is_xxx() macros
-> being defined to constant zero if the CONFIG option is not enabled.  That
-> allows the compiler to throw away code for disabled platforms because
-> the expression is always false.
-> 
-> Otherwise, they end up as (machine_arch_type == MACH_TYPE_xxx).
-> 
-> The second is the magic which happens when two CONFIG_MACH_xxx are
-> selected.  If only one is selected, then machine_arch_type is defined
-> to the appropriate MACH_TYPE_xxx.  This means that the above expression
-> becomes constant-true, and the conditional is eliminated.
-> 
-> If more than one is selected, then machine_arch_type is defined to a
-> variable which is appropriately set to one of the MACH_TYPE_xxx values.
+On 03/09, Li Zefan wrote:
+>
+> We don't need both patches for 3.9, so we'll queue Oleg's fix for 3.9 and
+> yours for 3.10?
 
-At boot?
+Well. OK, please see 1/1 (compile tested only).
 
-> So, the result is that:
-> - de-selected platforms have their if (machine_is_xxx()) { } optimised
->   out of the kernel.
-> - for a kernel built targetting one platform, all the
->   if (machine_is_xxx()) tests are optimised away, leaving only the
->   relevant code behind.
-> - otherwise, we get the _appropriate_ conditional code for the
->   configuration generated.
+But I still like the patch from Tejun more... Except _perhaps_ my
+patch is better for 3.9 just because it is simpler.
 
-Thanks for clarifying this. Quite clever indeed. 
+And. I still think that probably we can avoid thread_group_leader()
+recheck-and-restart logic in attach_task_by_pid(). But even if this
+is true (and thus we can revert the changes in de_thread), we should
+do this on top of Tejun's patch.
 
-> However, going back to that MACH_NOKIA_RM696.  If there exists only a
-> select of this symbol and no "config MACH_NOKIA_RM696" entry, then the
-> symbol will never be generated in the output .config file.
-> 
->[...]
-> 
-> My conclusion is... it's a mess.
-
-That mess can only be fully cleaned up if the code for the RM-696 that
-now is maintained in some unknown to me repository gets merged into
-mainline, can't it?
-
-In the meantime, how do you prefer I solve the (trivial) issue of an
-useless select for MACH_NOKIA_RM696? Drop that select or add an (equally
-useless) config entry for MACH_NOKIA_RM696? Or should I try to ignore it
-for the time being?
-
-
-Paul Bolle
+Oleg.
 
