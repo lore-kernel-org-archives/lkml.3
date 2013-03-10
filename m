@@ -1,16 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753231Ab3CJSls (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Mar 2013 14:41:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36042 "EHLO mx1.redhat.com"
+	id S1753135Ab3CJSlr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Mar 2013 14:41:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47677 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752763Ab3CJSlp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752711Ab3CJSlp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 10 Mar 2013 14:41:45 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: linux-kernel@vger.kernel.org
-Cc: Jiri Olsa <jolsa@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <andi@firstfloor.org>,
-        Oleg Nesterov <oleg@redhat.com>,
+Cc: Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Andi Kleen <andi@firstfloor.org>, Oleg Nesterov <oleg@redhat.com>,
         Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
         Paul Mackerras <paulus@samba.org>,
@@ -18,23 +17,27 @@ Cc: Jiri Olsa <jolsa@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Vince Weaver <vincent.weaver@maine.edu>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 2/6] signal x86: Clear RF EFLAGS bit for signal handler
-Date: Sun, 10 Mar 2013 19:41:07 +0100
-Message-Id: <1362940871-24486-3-git-send-email-jolsa@redhat.com>
-In-Reply-To: <1362940871-24486-1-git-send-email-jolsa@redhat.com>
-References: <1362940871-24486-1-git-send-email-jolsa@redhat.com>
+Subject: [PATCHv2 0/6] perf, signal x86: Fix breakpoint events overflow handling
+Date: Sun, 10 Mar 2013 19:41:05 +0100
+Message-Id: <1362940871-24486-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Clearing RF EFLAGS bit for signal handler. The reason is,
-that this flag is set by debug exception code to prevent
-the recursive exception entry.
+hi,
+sendign v2 for initial RFC patchset:
+https://lkml.org/lkml/2013/3/1/324
 
-Leaving it set for signal handler might prevent debug
-exception of the signal handler itself.
+v2 changes:
+  - added patch to merge EFLAGS bit clearing into single statement
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Also available at:
+git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/linux.git
+perf/RF5
+
+thanks,
+jirka
+
 Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: H. Peter Anvin <hpa@zytor.com>
 Cc: Andi Kleen <andi@firstfloor.org>
@@ -48,26 +51,25 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Vince Weaver <vincent.weaver@maine.edu>
 Cc: Stephane Eranian <eranian@google.com>
 ---
- arch/x86/kernel/signal.c | 6 ++++++
- 1 file changed, 6 insertions(+)
+Jiri Olsa (6):
+      signal x86: Propage RF EFLAGS bit throught the signal restore call
+      signal x86: Clear RF EFLAGS bit for signal handler
+      signal x86: Merge EFLAGS bit clearing into single statement
+      perf: Fix hw breakpoints overflow period sampling
+      perf tests: Test breakpoint overflow signal handler
+      perf tests: Test breakpoint overflow signal handler counts
 
-diff --git a/arch/x86/kernel/signal.c b/arch/x86/kernel/signal.c
-index 9df4c0b..cb12fc9 100644
---- a/arch/x86/kernel/signal.c
-+++ b/arch/x86/kernel/signal.c
-@@ -665,6 +665,12 @@ handle_signal(struct ksignal *ksig, struct pt_regs *regs)
- 		 */
- 		regs->flags &= ~X86_EFLAGS_DF;
- 		/*
-+		 * Clear RF when entering the signal handler, because
-+		 * it might disable possible debug exception from the
-+		 * signal handler.
-+		 */
-+		regs->flags &= ~X86_EFLAGS_RF;
-+		/*
- 		 * Clear TF when entering the signal handler, but
- 		 * notify any tracer that was single-stepping it.
- 		 * The tracer may want to single-step inside the
--- 
-1.7.11.7
-
+ arch/x86/ia32/ia32_signal.c           |   2 -
+ arch/x86/include/asm/sighandling.h    |   4 +-
+ arch/x86/kernel/signal.c              |  16 +++-----
+ include/linux/perf_event.h            |   2 +
+ kernel/events/core.c                  |   2 +-
+ kernel/events/hw_breakpoint.c         |   5 +++
+ tools/perf/Makefile                   |   2 +
+ tools/perf/tests/bp_signal.c          | 187 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ tools/perf/tests/bp_signal_overflow.c | 126 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ tools/perf/tests/builtin-test.c       |   8 ++++
+ tools/perf/tests/tests.h              |   2 +
+ 11 files changed, 341 insertions(+), 15 deletions(-)
+ create mode 100644 tools/perf/tests/bp_signal.c
+ create mode 100644 tools/perf/tests/bp_signal_overflow.c
