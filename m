@@ -1,101 +1,273 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753031Ab3CJGsA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Mar 2013 01:48:00 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:48311 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752987Ab3CJGr5 (ORCPT
+	id S1753139Ab3CJGsK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Mar 2013 01:48:10 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:19195 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753106Ab3CJGsH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Mar 2013 01:47:57 -0500
+	Sun, 10 Mar 2013 01:48:07 -0500
 From: Yinghai Lu <yinghai@kernel.org>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>,
         Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
         Thomas Renninger <trenn@suse.de>, Tang Chen <tangchen@cn.fujitsu.com>
 Cc: linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
-        Pekka Enberg <penberg@kernel.org>, Jacob Shin <jacob.shin@amd.com>
-Subject: [PATCH v2 18/20] x86, mm: Parse numa info early
-Date: Sat,  9 Mar 2013 22:44:45 -0800
-Message-Id: <1362897887-30808-19-git-send-email-yinghai@kernel.org>
+        Pekka Enberg <penberg@kernel.org>, Jacob Shin <jacob.shin@amd.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH v2 19/20] x86, mm: Make init_mem_mapping be able to be called several times
+Date: Sat,  9 Mar 2013 22:44:46 -0800
+Message-Id: <1362897887-30808-20-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1362897887-30808-1-git-send-email-yinghai@kernel.org>
 References: <1362897887-30808-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Parsing numa info has been separated to two functions now.
+Prepare to put page table on local nodes.
 
-early_initmem_info() only parse info in numa_meminfo and
-nodes_parsed. still keep numaq, acpi_numa, amd_numa, dummy
-fall back sequence working.
+Move calling of init_mem_mapping to early_initmem_init.
 
-SLIT and numa emulation handling are still left in initmem_init().
+Rework alloc_low_pages to alloc page table in following order:
+	BRK, local node, low range
 
-Call early_initmem_init before init_mem_mapping() to prepare
-to use numa_info with it.
+Still only load_cr3 one time, otherwise we would break xen 64bit again.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 Cc: Pekka Enberg <penberg@kernel.org>
 Cc: Jacob Shin <jacob.shin@amd.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- arch/x86/kernel/setup.c |   24 ++++++++++--------------
- 1 file changed, 10 insertions(+), 14 deletions(-)
+ arch/x86/include/asm/pgtable.h |    2 +-
+ arch/x86/kernel/setup.c        |    1 -
+ arch/x86/mm/init.c             |   88 ++++++++++++++++++++++++----------------
+ arch/x86/mm/numa.c             |   24 +++++++++++
+ 4 files changed, 79 insertions(+), 36 deletions(-)
 
+diff --git a/arch/x86/include/asm/pgtable.h b/arch/x86/include/asm/pgtable.h
+index 1e67223..868687c 100644
+--- a/arch/x86/include/asm/pgtable.h
++++ b/arch/x86/include/asm/pgtable.h
+@@ -621,7 +621,7 @@ static inline int pgd_none(pgd_t pgd)
+ #ifndef __ASSEMBLY__
+ 
+ extern int direct_gbpages;
+-void init_mem_mapping(void);
++void init_mem_mapping(unsigned long begin, unsigned long end);
+ void early_alloc_pgt_buf(void);
+ 
+ /* local pte updates need not use xchg for locking */
 diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index 626bc9f..86e1ec0 100644
+index 86e1ec0..1cdc1a7 100644
 --- a/arch/x86/kernel/setup.c
 +++ b/arch/x86/kernel/setup.c
-@@ -1098,13 +1098,21 @@ void __init setup_arch(char **cmdline_p)
- 	trim_platform_memory_ranges();
- 	trim_low_memory_range();
- 
-+	/*
-+	 * Parse the ACPI tables for possible boot-time SMP configuration.
-+	 */
-+	acpi_initrd_override_copy();
-+	acpi_boot_table_init();
-+	early_acpi_boot_init();
-+	early_initmem_init();
- 	init_mem_mapping();
--
-+	memblock.current_limit = get_max_mapped();
+@@ -1105,7 +1105,6 @@ void __init setup_arch(char **cmdline_p)
+ 	acpi_boot_table_init();
+ 	early_acpi_boot_init();
+ 	early_initmem_init();
+-	init_mem_mapping();
+ 	memblock.current_limit = get_max_mapped();
  	early_trap_pf_init();
  
-+	reserve_initrd();
+diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
+index 28b294f..8d0007a 100644
+--- a/arch/x86/mm/init.c
++++ b/arch/x86/mm/init.c
+@@ -24,7 +24,10 @@ static unsigned long __initdata pgt_buf_start;
+ static unsigned long __initdata pgt_buf_end;
+ static unsigned long __initdata pgt_buf_top;
+ 
+-static unsigned long min_pfn_mapped;
++static unsigned long low_min_pfn_mapped;
++static unsigned long low_max_pfn_mapped;
++static unsigned long local_min_pfn_mapped;
++static unsigned long local_max_pfn_mapped;
+ 
+ static bool __initdata can_use_brk_pgt = true;
+ 
+@@ -52,10 +55,17 @@ __ref void *alloc_low_pages(unsigned int num)
+ 
+ 	if ((pgt_buf_end + num) > pgt_buf_top || !can_use_brk_pgt) {
+ 		unsigned long ret;
+-		if (min_pfn_mapped >= max_pfn_mapped)
+-			panic("alloc_low_page: ran out of memory");
+-		ret = memblock_find_in_range(min_pfn_mapped << PAGE_SHIFT,
+-					max_pfn_mapped << PAGE_SHIFT,
++		if (local_min_pfn_mapped >= local_max_pfn_mapped) {
++			if (low_min_pfn_mapped >= low_max_pfn_mapped)
++				panic("alloc_low_page: ran out of memory");
++			ret = memblock_find_in_range(
++					low_min_pfn_mapped << PAGE_SHIFT,
++					low_max_pfn_mapped << PAGE_SHIFT,
++					PAGE_SIZE * num , PAGE_SIZE);
++		} else
++			ret = memblock_find_in_range(
++					local_min_pfn_mapped << PAGE_SHIFT,
++					local_max_pfn_mapped << PAGE_SHIFT,
+ 					PAGE_SIZE * num , PAGE_SIZE);
+ 		if (!ret)
+ 			panic("alloc_low_page: can not alloc memory");
+@@ -387,60 +397,75 @@ static unsigned long __init init_range_memory_mapping(
+ 
+ /* (PUD_SHIFT-PMD_SHIFT)/2 */
+ #define STEP_SIZE_SHIFT 5
+-void __init init_mem_mapping(void)
++void __init init_mem_mapping(unsigned long begin, unsigned long end)
+ {
+-	unsigned long end, real_end, start, last_start;
++	unsigned long real_end, start, last_start;
+ 	unsigned long step_size;
+ 	unsigned long addr;
+ 	unsigned long mapped_ram_size = 0;
+ 	unsigned long new_mapped_ram_size;
++	bool is_low = false;
 +
- 	setup_real_mode();
++	if (!begin) {
++		probe_page_size_mask();
++		/* the ISA range is always mapped regardless of memory holes */
++		init_memory_mapping(0, ISA_END_ADDRESS);
++		begin = ISA_END_ADDRESS;
++		is_low = true;
++	}
  
--	memblock.current_limit = get_max_mapped();
- 	dma_contiguous_reserve(0);
- 
- 	/*
-@@ -1118,24 +1126,12 @@ void __init setup_arch(char **cmdline_p)
- 	/* Allocate bigger log buffer */
- 	setup_log_buf(1);
- 
--	reserve_initrd();
+-	probe_page_size_mask();
 -
--	acpi_initrd_override_copy();
+-#ifdef CONFIG_X86_64
+-	end = max_pfn << PAGE_SHIFT;
+-#else
+-	end = max_low_pfn << PAGE_SHIFT;
+-#endif
 -
- 	reserve_crashkernel();
+-	/* the ISA range is always mapped regardless of memory holes */
+-	init_memory_mapping(0, ISA_END_ADDRESS);
++	if (begin >= end)
++		return;
  
- 	vsmp_init();
+ 	/* xen has big range in reserved near end of ram, skip it at first.*/
+-	addr = memblock_find_in_range(ISA_END_ADDRESS, end, PMD_SIZE, PMD_SIZE);
++	addr = memblock_find_in_range(begin, end, PMD_SIZE, PMD_SIZE);
+ 	real_end = addr + PMD_SIZE;
  
- 	io_delay_init();
+ 	/* step_size need to be small so pgt_buf from BRK could cover it */
+ 	step_size = PMD_SIZE;
+-	max_pfn_mapped = 0; /* will get exact value next */
+-	min_pfn_mapped = real_end >> PAGE_SHIFT;
++	local_max_pfn_mapped = begin >> PAGE_SHIFT;
++	local_min_pfn_mapped = real_end >> PAGE_SHIFT;
+ 	last_start = start = real_end;
+-	while (last_start > ISA_END_ADDRESS) {
++	while (last_start > begin) {
+ 		if (last_start > step_size) {
+ 			start = round_down(last_start - 1, step_size);
+-			if (start < ISA_END_ADDRESS)
+-				start = ISA_END_ADDRESS;
++			if (start < begin)
++				start = begin;
+ 		} else
+-			start = ISA_END_ADDRESS;
++			start = begin;
+ 		new_mapped_ram_size = init_range_memory_mapping(start,
+ 							last_start);
++		if ((last_start >> PAGE_SHIFT) > local_max_pfn_mapped)
++			local_max_pfn_mapped = last_start >> PAGE_SHIFT;
++		local_min_pfn_mapped = start >> PAGE_SHIFT;
+ 		last_start = start;
+-		min_pfn_mapped = last_start >> PAGE_SHIFT;
+ 		/* only increase step_size after big range get mapped */
+ 		if (new_mapped_ram_size > mapped_ram_size)
+ 			step_size <<= STEP_SIZE_SHIFT;
+ 		mapped_ram_size += new_mapped_ram_size;
+ 	}
  
--	/*
--	 * Parse the ACPI tables for possible boot-time SMP configuration.
--	 */
--	acpi_boot_table_init();
+-	if (real_end < end)
++	if (real_end < end) {
+ 		init_range_memory_mapping(real_end, end);
++		if ((end >> PAGE_SHIFT) > local_max_pfn_mapped)
++			local_max_pfn_mapped = end >> PAGE_SHIFT;
++	}
+ 
++	if (is_low) {
++		low_min_pfn_mapped = local_min_pfn_mapped;
++		low_max_pfn_mapped = local_max_pfn_mapped;
++	}
++}
++
++#ifndef CONFIG_NUMA
++void __init early_initmem_init(void)
++{
+ #ifdef CONFIG_X86_64
+-	if (max_pfn > max_low_pfn) {
+-		/* can we preseve max_low_pfn ?*/
++	init_mem_mapping(0, max_pfn << PAGE_SHIFT);
++	if (max_pfn > max_low_pfn)
+ 		max_low_pfn = max_pfn;
+-	}
+ #else
++	init_mem_mapping(0, max_low_pfn << PAGE_SHIFT);
+ 	early_ioremap_page_table_range_init();
+ #endif
+ 
+@@ -449,11 +474,6 @@ void __init init_mem_mapping(void)
+ 
+ 	early_memtest(0, max_pfn_mapped << PAGE_SHIFT);
+ }
 -
--	early_acpi_boot_init();
--
--	early_initmem_init();
- 	initmem_init();
- 	memblock_find_dma_reserve();
+-#ifndef CONFIG_NUMA
+-void __init early_initmem_init(void)
+-{
+-}
+ #endif
  
+ /*
+diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
+index c2d4653..d3eb0c9 100644
+--- a/arch/x86/mm/numa.c
++++ b/arch/x86/mm/numa.c
+@@ -17,8 +17,10 @@
+ #include <asm/dma.h>
+ #include <asm/acpi.h>
+ #include <asm/amd_nb.h>
++#include <asm/tlbflush.h>
+ 
+ #include "numa_internal.h"
++#include "mm_internal.h"
+ 
+ int __initdata numa_off;
+ nodemask_t numa_nodes_parsed __initdata;
+@@ -668,9 +670,31 @@ static void __init early_x86_numa_init(void)
+ 	numa_init(dummy_numa_init);
+ }
+ 
++#ifdef CONFIG_X86_64
++static void __init early_x86_numa_init_mapping(void)
++{
++	init_mem_mapping(0, max_pfn << PAGE_SHIFT);
++	if (max_pfn > max_low_pfn)
++		max_low_pfn = max_pfn;
++}
++#else
++static void __init early_x86_numa_init_mapping(void)
++{
++	init_mem_mapping(0, max_low_pfn << PAGE_SHIFT);
++	early_ioremap_page_table_range_init();
++}
++#endif
++
+ void __init early_initmem_init(void)
+ {
+ 	early_x86_numa_init();
++
++	early_x86_numa_init_mapping();
++
++	load_cr3(swapper_pg_dir);
++	__flush_tlb_all();
++
++	early_memtest(0, max_pfn_mapped<<PAGE_SHIFT);
+ }
+ 
+ void __init x86_numa_init(void)
 -- 
 1.7.10.4
 
