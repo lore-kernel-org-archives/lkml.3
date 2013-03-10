@@ -1,44 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753360Ab3CJXPK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Mar 2013 19:15:10 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:52004 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751642Ab3CJXPH (ORCPT
+	id S1753322Ab3CJXXE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Mar 2013 19:23:04 -0400
+Received: from mail-ob0-f179.google.com ([209.85.214.179]:57767 "EHLO
+	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751801Ab3CJXXD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Mar 2013 19:15:07 -0400
-X-Virus-Scan: Scanned by ClamAV 0.97.2 (no viruses);
-  Sun, 10 Mar 2013 18:15:02 -0500
-X-Originating-IP: 108.223.40.66
-From: Guenter Roeck <linux@roeck-us.net>
-To: linux-watchdog@vger.kernel.org
-Cc: Wim Van Sebroeck <wim@iguana.be>, linux-kernel@vger.kernel.org,
-        Guenter Roeck <linux@roeck-us.net>
-Subject: [PATCH v2 0/8] watchdog: w83627hf: Convert to watchdog infrastructure
-Date: Sun, 10 Mar 2013 16:14:53 -0700
-Message-Id: <1362957300-18223-1-git-send-email-linux@roeck-us.net>
-X-Mailer: git-send-email 1.7.9.7
+	Sun, 10 Mar 2013 19:23:03 -0400
+MIME-Version: 1.0
+In-Reply-To: <1362830248-7017-1-git-send-email-gheorghiuandru@gmail.com>
+References: <1362830248-7017-1-git-send-email-gheorghiuandru@gmail.com>
+Date: Sun, 10 Mar 2013 16:23:01 -0700
+X-Google-Sender-Auth: QZnPRrU13y74WUle2JTLYfnDP3Q
+Message-ID: <CAGXu5jLakegTD5KPmpJviWtRJ2UgRUX7v+q2+BrsGZknzOLA0Q@mail.gmail.com>
+Subject: Re: [PATCH] fs: pstore: Replaced calls to kmalloc and memcpy with kmemdup
+From: Kees Cook <keescook@chromium.org>
+To: Alexandru Gheorghiu <gheorghiuandru@gmail.com>
+Cc: Anton Vorontsov <cbouatmailru@gmail.com>, Colin Cross <ccross@android.com>,
+        Tony Luck <tony.luck@intel.com>, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert to watchdog infrastructure, cleanup, add support for additional
-chips, and merge with W83697HF and W83697UG watchdog drivers.
+On Sat, Mar 9, 2013 at 3:57 AM, Alexandru Gheorghiu
+<gheorghiuandru@gmail.com> wrote:
+> Replaced calls to kmalloc and memcpy with a single call to kmemdup.
+> This patch was found using coccicheck.
+>
+> Signed-off-by: Alexandru Gheorghiu <gheorghiuandru@gmail.com>
+> ---
+>  fs/pstore/ram.c |    3 +--
+>  1 file changed, 1 insertion(+), 2 deletions(-)
+>
+> diff --git a/fs/pstore/ram.c b/fs/pstore/ram.c
+> index 288f068..38babb3 100644
+> --- a/fs/pstore/ram.c
+> +++ b/fs/pstore/ram.c
+> @@ -156,10 +156,9 @@ static ssize_t ramoops_pstore_read(u64 *id, enum pstore_type_id *type,
+>         time->tv_nsec = 0;
+>
+>         size = persistent_ram_old_size(prz);
+> -       *buf = kmalloc(size, GFP_KERNEL);
+> +       *buf = kmemdup(persistent_ram_old(prz), size, GFP_KERNEL);
+>         if (*buf == NULL)
+>                 return -ENOMEM;
+> -       memcpy(*buf, persistent_ram_old(prz), size);
+>
+>         return size;
+>  }
 
-Tested with W83627UHG, NCT6775, NCT6776. Additional test feedback
-for other chips would be appreciated.
+Looks fine to me. Thanks!
 
-Original idea was to prepare the driver for use as a client to an MFD driver,
-but I found that requesting memory with request_muxed_region works just as well
-and has less impact. v2 includes the knowledge gained from converting the
-driver to an MFD client driver, but without the actual conversion.
+Acked-by: Kees Cook <keescook@chromium.org>
 
-v2: Tested with W83627UHG
-    Retain timeout module parameter; use watchdog_init_timeout to set it
-    Eliminate some cosmetic changes
-    Drop spinlock.h include
-    Keep "initialized" message
-    Don't try to configure WDTO for W83627UHG and W83627EHF
-    Don't report the nowayout option with the 'initializing' message
-    Use request_muxed_region to reserve memory range only while needed
-    Add support for W83627S, W83627DHG-P, W83667HG, and NCT6779
+-Kees
+
+-- 
+Kees Cook
+Chrome OS Security
