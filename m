@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752847Ab3CJGd2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Mar 2013 01:33:28 -0500
-Received: from mail-da0-f41.google.com ([209.85.210.41]:63301 "EHLO
-	mail-da0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752469Ab3CJGdX (ORCPT
+	id S1752874Ab3CJGde (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Mar 2013 01:33:34 -0500
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:53494 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752469Ab3CJGdc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Mar 2013 01:33:23 -0500
+	Sun, 10 Mar 2013 01:33:32 -0500
 From: Jiang Liu <liuj97@gmail.com>
 To: Andrew Morton <akpm@linux-foundation.org>,
         David Rientjes <rientjes@google.com>
@@ -18,10 +18,10 @@ Cc: Jiang Liu <jiang.liu@huawei.com>, Wen Congyang <wency@cn.fujitsu.com>,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
         Michal Hocko <mhocko@suse.cz>, Jianguo Wu <wujianguo@huawei.com>,
         linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Chris Zankel <chris@zankel.net>, Max Filippov <jcmvbkbc@gmail.com>
-Subject: [PATCH v2, part1 26/29] mm/xtensa: use common help functions to free reserved pages
-Date: Sun, 10 Mar 2013 14:27:09 +0800
-Message-Id: <1362896833-21104-27-git-send-email-jiang.liu@huawei.com>
+        linux-snps-arc@vger.kernel.org
+Subject: [PATCH v2, part1 27/29] mm/arc: use common help functions to free reserved pages
+Date: Sun, 10 Mar 2013 14:27:10 +0800
+Message-Id: <1362896833-21104-28-git-send-email-jiang.liu@huawei.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1362896833-21104-1-git-send-email-jiang.liu@huawei.com>
 References: <1362896833-21104-1-git-send-email-jiang.liu@huawei.com>
@@ -32,52 +32,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Use common help functions to free reserved pages.
 
 Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Cc: Chris Zankel <chris@zankel.net>
-Cc: Max Filippov <jcmvbkbc@gmail.com>
+Acked-by: Vineet Gupta <vgupta@synopsys.com>
+Cc: linux-snps-arc@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org (open list)
 ---
- arch/xtensa/mm/init.c |   21 +++------------------
- 1 file changed, 3 insertions(+), 18 deletions(-)
+ arch/arc/mm/init.c |   23 ++---------------------
+ 1 file changed, 2 insertions(+), 21 deletions(-)
 
-diff --git a/arch/xtensa/mm/init.c b/arch/xtensa/mm/init.c
-index 7a5156f..bba125b 100644
---- a/arch/xtensa/mm/init.c
-+++ b/arch/xtensa/mm/init.c
-@@ -208,32 +208,17 @@ void __init mem_init(void)
- 	       highmemsize >> 10);
+diff --git a/arch/arc/mm/init.c b/arch/arc/mm/init.c
+index caf797d..727d479 100644
+--- a/arch/arc/mm/init.c
++++ b/arch/arc/mm/init.c
+@@ -144,37 +144,18 @@ void __init mem_init(void)
+ 		PAGES_TO_KB(reserved_pages));
  }
  
--void
--free_reserved_mem(void *start, void *end)
+-static void __init free_init_pages(const char *what, unsigned long begin,
+-				   unsigned long end)
 -{
--	for (; start < end; start += PAGE_SIZE) {
--		ClearPageReserved(virt_to_page(start));
--		init_page_count(virt_to_page(start));
--		free_page((unsigned long)start);
+-	unsigned long addr;
+-
+-	pr_info("Freeing %s: %ldk [%lx] to [%lx]\n",
+-		what, TO_KB(end - begin), begin, end);
+-
+-	/* need to check that the page we free is not a partial page */
+-	for (addr = begin; addr + PAGE_SIZE <= end; addr += PAGE_SIZE) {
+-		ClearPageReserved(virt_to_page(addr));
+-		init_page_count(virt_to_page(addr));
+-		free_page(addr);
 -		totalram_pages++;
 -	}
 -}
 -
- #ifdef CONFIG_BLK_DEV_INITRD
- extern int initrd_is_mapped;
- 
- void free_initrd_mem(unsigned long start, unsigned long end)
+ /*
+  * free_initmem: Free all the __init memory.
+  */
+ void __init_refok free_initmem(void)
  {
--	if (initrd_is_mapped) {
--		free_reserved_mem((void*)start, (void*)end);
--		printk ("Freeing initrd memory: %ldk freed\n",(end-start)>>10);
--	}
-+	if (initrd_is_mapped)
-+		free_reserved_area(start, end, 0, "initrd");
+-	free_init_pages("unused kernel memory",
+-			(unsigned long)__init_begin,
+-			(unsigned long)__init_end);
++	free_initmem_default(0);
+ }
+ 
+ #ifdef CONFIG_BLK_DEV_INITRD
+ void __init free_initrd_mem(unsigned long start, unsigned long end)
+ {
+-	free_init_pages("initrd memory", start, end);
++	free_reserved_area(start, end, 0, "initrd");
  }
  #endif
  
- void free_initmem(void)
- {
--	free_reserved_mem(__init_begin, __init_end);
--	printk("Freeing unused kernel memory: %zuk freed\n",
--	       (__init_end - __init_begin) >> 10);
-+	free_initmem_default(0);
- }
 -- 
 1.7.9.5
 
