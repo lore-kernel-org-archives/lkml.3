@@ -1,135 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753136Ab3CJSYy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Mar 2013 14:24:54 -0400
-Received: from smtprelay01.ispgateway.de ([80.67.31.28]:49747 "EHLO
-	smtprelay01.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752711Ab3CJSYx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Mar 2013 14:24:53 -0400
-X-Greylist: delayed 600 seconds by postgrey-1.27 at vger.kernel.org; Sun, 10 Mar 2013 14:24:52 EDT
-Date: Sun, 10 Mar 2013 19:12:30 +0100
-Message-ID: <20130310191230.Horde.Sp6uaruWis5RPM0Ob2rz_mA@webmail.df.eu>
-From: Stephan Schreiber <info@fs-driver.org>
-To: kvm-ia64@vger.kernel.org
-Cc: alan@lxorguk.ukuu.org.uk, linux-ia64@vger.kernel.org,
-        linux-kernel@vger.kernel.org, 70639@bugs.debian.org
-Subject: [RFC/PATCH] ia64, wrong asm register contraints in the kvm
- implementation
-User-Agent: Internet Messaging Program (IMP) H4 (5.0.19)
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed; DelSp=Yes
+	id S1753184Ab3CJSZv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Mar 2013 14:25:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61164 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752893Ab3CJSZu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Mar 2013 14:25:50 -0400
+Date: Sun, 10 Mar 2013 19:23:58 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Eric Wong <normalperson@yhbt.net>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org,
+        Davide Libenzi <davidel@xmailserver.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH] epoll: fix sparse error on RCU assignment
+Message-ID: <20130310182358.GA686@redhat.com>
+References: <20130310113559.GA16551@dcvr.yhbt.net>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Df-Sender: aW5mb0Bmcy1kcml2ZXIub3Jn
+In-Reply-To: <20130310113559.GA16551@dcvr.yhbt.net>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Linux Kernel contains some inline assembly source code which has  
-wrong asm register constraints in arch/ia64/kvm/vtlb.c.
+On 03/10, Eric Wong wrote:
+>
+> This fixes the following sparse error when using
+> CONFIG_SPARSE_RCU_POINTER=y and "make C=2 fs/eventpoll.o"
+>
+>   fs/eventpoll.c:514:17: error: incompatible types in comparison expression (different address spaces)
 
-I observed this on Kernel 3.2.35 but it is also true on the most  
-recent Kernel 3.9-rc1.
+ep_remove_wait_queue() does rcu_dereference(pwq->whead) and
+rcu_dereference_sparse(__rcu) complains, I guess.
 
-File arch/ia64/kvm/vtlb.c:
+> --- a/fs/eventpoll.c
+> +++ b/fs/eventpoll.c
+> @@ -228,7 +228,7 @@ struct eppoll_entry {
+>  	wait_queue_t wait;
+>
+>  	/* The wait queue head that linked the "wait" wait queue item */
+> -	wait_queue_head_t *whead;
+> +	wait_queue_head_t __rcu *whead;
 
-u64 guest_vhpt_lookup(u64 iha, u64 *pte)
-{
-	u64 ret;
-	struct thash_data *data;
+Well, perhaps this change is fine... but otoh this this a bit misleading.
+It is not actually __rcu. The special case is sighand->signalfd_wqh, and
+the commemt in ep_remove_wait_queue() means: if ->whead is not stable then
+we can only race with signalfd_cleanup(), and rcu_read_lock() ensures this
+memory can't go away.
 
-	data = __vtr_lookup(current_vcpu, iha, D_TLB);
-	if (data != NULL)
-		thash_vhpt_insert(current_vcpu, data->page_flags,
-			data->itir, iha, D_TLB);
+We do not even need smp_read_barrier_depends() here, ACCESS_ONCE() should
+be enough.
 
-	asm volatile (
-			"rsm psr.ic|psr.i;;"
-			"srlz.d;;"
-			"ld8.s r9=[%1];;"
-			"tnat.nz p6,p7=r9;;"
-			"(p6) mov %0=1;"
-			"(p6) mov r9=r0;"
-			"(p7) extr.u r9=r9,0,53;;"
-			"(p7) mov %0=r0;"
-			"(p7) st8 [%2]=r9;;"
-			"ssm psr.ic;;"
-			"srlz.d;;"
-			"ssm psr.i;;"
-			"srlz.d;;"
-			: "=r"(ret) : "r"(iha), "r"(pte):"memory");
+Perhaps it would be better to simply shut up this warning somehow...
 
-	return ret;
-}
-
-The list of output registers is
-			: "=r"(ret) : "r"(iha), "r"(pte):"memory");
-The constraint "=r" means that the GCC has to maintain that these vars  
-are in registers and contain valid info when the program flow leaves  
-the assembly block (output registers).
-But "=r" also means that GCC can put them in registers that are used  
-as input registers. Input registers are iha, pte on the example.
-If the predicate p7 is true, the 8th assembly instruction
-			"(p7) mov %0=r0;"
-is the first one which writes to a register which is maintained by the  
-register constraints; it sets %0. %0 means the first register operand;  
-it is ret here.
-This instruction might overwrite the %2 register (pte) which is needed  
-by the next instruction:
-			"(p7) st8 [%2]=r9;;"
-Whether it really happens depends on how GCC decides what registers it  
-uses and how it optimizes the code.
-
-
-The attached patch  fixes the register operand constraints in  
-arch/ia64/kvm/vtlb.c.
-The register constraints should be
-			: "=&r"(ret) : "r"(iha), "r"(pte):"memory");
-The & means that GCC must not use any of the input registers to place  
-this output register in.
-
-
-This is Debian bug#702639  
-(http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=702639).
-
-The patch is applicable on Kernel 3.9-rc1, 3.2.35 and many other versions.
-
-
-
-
-
---- a/arch/ia64/kvm/vtlb.c.orig	2013-03-03 16:37:27.000000000 +0100
-+++ b/arch/ia64/kvm/vtlb.c	2013-03-03 16:42:33.000000000 +0100
-@@ -246,27 +246,27 @@ u64 guest_vhpt_lookup(u64 iha, u64 *pte)
-  	asm volatile ("rsm psr.ic|psr.i;;"
-  			"srlz.d;;"
-  			"ld8.s r9=[%1];;"
-  			"tnat.nz p6,p7=r9;;"
-  			"(p6) mov %0=1;"
-  			"(p6) mov r9=r0;"
-  			"(p7) extr.u r9=r9,0,53;;"
-  			"(p7) mov %0=r0;"
-  			"(p7) st8 [%2]=r9;;"
-  			"ssm psr.ic;;"
-  			"srlz.d;;"
-  			"ssm psr.i;;"
-  			"srlz.d;;"
--			: "=r"(ret) : "r"(iha), "r"(pte):"memory");
-+			: "=&r"(ret) : "r"(iha), "r"(pte) : "memory");
-
-  	return ret;
-  }
-
-  /*
-   *  purge software guest tlb
-   */
-
-  static void vtlb_purge(struct kvm_vcpu *v, u64 va, u64 ps)
-  {
-  	struct thash_data *cur;
-  	u64 start, curadr, size, psbits, tag, rr_ps, num;
-  	union ia64_rr vrr;
-
-Cc: stable@vger.kernel.org
-Signed-off-by: Stephan Schreiber <info@fs-driver.org>
+>  };
+>
+>  /* Wrapper struct used by poll queueing */
+> @@ -929,7 +929,7 @@ static int ep_poll_callback(wait_queue_t *wait, unsigned mode, int sync, void *k
+>  	struct eventpoll *ep = epi->ep;
+>
+>  	if ((unsigned long)key & POLLFREE) {
+> -		ep_pwq_from_wait(wait)->whead = NULL;
+> +		RCU_INIT_POINTER(ep_pwq_from_wait(wait)->whead, NULL);
+>  		/*
+>  		 * whead = NULL above can race with ep_remove_wait_queue()
+>  		 * which can do another remove_wait_queue() after us, so we
+> @@ -1018,7 +1018,7 @@ static void ep_ptable_queue_proc(struct file *file, wait_queue_head_t *whead,
+>
+>  	if (epi->nwait >= 0 && (pwq = kmem_cache_alloc(pwq_cache, GFP_KERNEL))) {
+>  		init_waitqueue_func_entry(&pwq->wait, ep_poll_callback);
+> -		pwq->whead = whead;
+> +		RCU_INIT_POINTER(pwq->whead, whead);
+>  		pwq->base = epi;
+>  		add_wait_queue(whead, &pwq->wait);
+>  		list_add_tail(&pwq->llink, &epi->pwqlist);
+> -- 
+> Eric Wong
 
