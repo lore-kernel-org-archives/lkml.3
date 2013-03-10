@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752571Ab3CJGcR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Mar 2013 01:32:17 -0500
-Received: from mail-da0-f54.google.com ([209.85.210.54]:40417 "EHLO
-	mail-da0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751243Ab3CJGcM (ORCPT
+	id S1752619Ab3CJGcY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Mar 2013 01:32:24 -0500
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:43712 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751243Ab3CJGcV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Mar 2013 01:32:12 -0500
+	Sun, 10 Mar 2013 01:32:21 -0500
 From: Jiang Liu <liuj97@gmail.com>
 To: Andrew Morton <akpm@linux-foundation.org>,
         David Rientjes <rientjes@google.com>
@@ -18,11 +18,11 @@ Cc: Jiang Liu <jiang.liu@huawei.com>, Wen Congyang <wency@cn.fujitsu.com>,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
         Michal Hocko <mhocko@suse.cz>, Jianguo Wu <wujianguo@huawei.com>,
         linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        Helge Deller <deller@gmx.de>
-Subject: [PATCH v2, part1 17/29] mm/parisc: use common help functions to free reserved pages
-Date: Sun, 10 Mar 2013 14:27:00 +0800
-Message-Id: <1362896833-21104-18-git-send-email-jiang.liu@huawei.com>
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, Anatolij Gustschin <agust@denx.de>
+Subject: [PATCH v2, part1 18/29] mm/ppc: use common help functions to free reserved pages
+Date: Sun, 10 Mar 2013 14:27:01 +0800
+Message-Id: <1362896833-21104-19-git-send-email-jiang.liu@huawei.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1362896833-21104-1-git-send-email-jiang.liu@huawei.com>
 References: <1362896833-21104-1-git-send-email-jiang.liu@huawei.com>
@@ -33,62 +33,131 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Use common help functions to free reserved pages.
 
 Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Cc: "James E.J. Bottomley" <jejb@parisc-linux.org>
-Cc: Helge Deller <deller@gmx.de>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Anatolij Gustschin <agust@denx.de>
 ---
- arch/parisc/mm/init.c |   23 ++---------------------
- 1 file changed, 2 insertions(+), 21 deletions(-)
+ arch/powerpc/kernel/crash_dump.c             |    5 +----
+ arch/powerpc/kernel/fadump.c                 |    5 +----
+ arch/powerpc/kernel/kvm.c                    |    7 +------
+ arch/powerpc/mm/mem.c                        |   29 ++------------------------
+ arch/powerpc/platforms/512x/mpc512x_shared.c |    5 +----
+ 5 files changed, 6 insertions(+), 45 deletions(-)
 
-diff --git a/arch/parisc/mm/init.c b/arch/parisc/mm/init.c
-index 3ac462d..de2159a 100644
---- a/arch/parisc/mm/init.c
-+++ b/arch/parisc/mm/init.c
-@@ -505,7 +505,6 @@ static void __init map_pages(unsigned long start_vaddr,
+diff --git a/arch/powerpc/kernel/crash_dump.c b/arch/powerpc/kernel/crash_dump.c
+index b3ba516..9ec3fe1 100644
+--- a/arch/powerpc/kernel/crash_dump.c
++++ b/arch/powerpc/kernel/crash_dump.c
+@@ -150,10 +150,7 @@ void crash_free_reserved_phys_range(unsigned long begin, unsigned long end)
+ 		if (addr <= rtas_end && ((addr + PAGE_SIZE) > rtas_start))
+ 			continue;
  
- void free_initmem(void)
- {
--	unsigned long addr;
- 	unsigned long init_begin = (unsigned long)__init_begin;
- 	unsigned long init_end = (unsigned long)__init_end;
- 
-@@ -533,19 +532,10 @@ void free_initmem(void)
- 	 * pages are no-longer executable */
- 	flush_icache_range(init_begin, init_end);
- 	
--	for (addr = init_begin; addr < init_end; addr += PAGE_SIZE) {
--		ClearPageReserved(virt_to_page(addr));
--		init_page_count(virt_to_page(addr));
--		free_page(addr);
--		num_physpages++;
+-		ClearPageReserved(pfn_to_page(addr >> PAGE_SHIFT));
+-		init_page_count(pfn_to_page(addr >> PAGE_SHIFT));
+-		free_page((unsigned long)__va(addr));
 -		totalram_pages++;
--	}
-+	num_physpages += free_initmem_default(0);
++		free_reserved_page(pfn_to_page(addr >> PAGE_SHIFT));
+ 	}
+ }
+ #endif
+diff --git a/arch/powerpc/kernel/fadump.c b/arch/powerpc/kernel/fadump.c
+index 06c8202..2230fd0 100644
+--- a/arch/powerpc/kernel/fadump.c
++++ b/arch/powerpc/kernel/fadump.c
+@@ -1045,10 +1045,7 @@ static void fadump_release_memory(unsigned long begin, unsigned long end)
+ 		if (addr <= ra_end && ((addr + PAGE_SIZE) > ra_start))
+ 			continue;
  
- 	/* set up a new led state on systems shipped LED State panel */
- 	pdc_chassis_send_status(PDC_CHASSIS_DIRECT_BCOMPLETE);
--	
--	printk(KERN_INFO "Freeing unused kernel memory: %luk freed\n",
--		(init_end - init_begin) >> 10);
+-		ClearPageReserved(pfn_to_page(addr >> PAGE_SHIFT));
+-		init_page_count(pfn_to_page(addr >> PAGE_SHIFT));
+-		free_page((unsigned long)__va(addr));
+-		totalram_pages++;
++		free_reserved_page(pfn_to_page(addr >> PAGE_SHIFT));
+ 	}
  }
  
+diff --git a/arch/powerpc/kernel/kvm.c b/arch/powerpc/kernel/kvm.c
+index a61b133..6782221 100644
+--- a/arch/powerpc/kernel/kvm.c
++++ b/arch/powerpc/kernel/kvm.c
+@@ -756,12 +756,7 @@ static __init void kvm_free_tmp(void)
+ 	end = (ulong)&kvm_tmp[ARRAY_SIZE(kvm_tmp)] & PAGE_MASK;
  
-@@ -1107,15 +1097,6 @@ void flush_tlb_all(void)
- #ifdef CONFIG_BLK_DEV_INITRD
- void free_initrd_mem(unsigned long start, unsigned long end)
- {
--	if (start >= end)
--		return;
--	printk(KERN_INFO "Freeing initrd memory: %ldk freed\n", (end - start) >> 10);
+ 	/* Free the tmp space we don't need */
 -	for (; start < end; start += PAGE_SIZE) {
 -		ClearPageReserved(virt_to_page(start));
 -		init_page_count(virt_to_page(start));
 -		free_page(start);
--		num_physpages++;
 -		totalram_pages++;
 -	}
-+	num_physpages += free_reserved_area(start, end, 0, "initrd");
++	free_reserved_area(start, end, 0, NULL);
+ }
+ 
+ static int __init kvm_guest_init(void)
+diff --git a/arch/powerpc/mm/mem.c b/arch/powerpc/mm/mem.c
+index f1f7409..c756713 100644
+--- a/arch/powerpc/mm/mem.c
++++ b/arch/powerpc/mm/mem.c
+@@ -405,39 +405,14 @@ void __init mem_init(void)
+ 
+ void free_initmem(void)
+ {
+-	unsigned long addr;
+-
+ 	ppc_md.progress = ppc_printk_progress;
+-
+-	addr = (unsigned long)__init_begin;
+-	for (; addr < (unsigned long)__init_end; addr += PAGE_SIZE) {
+-		memset((void *)addr, POISON_FREE_INITMEM, PAGE_SIZE);
+-		ClearPageReserved(virt_to_page(addr));
+-		init_page_count(virt_to_page(addr));
+-		free_page(addr);
+-		totalram_pages++;
+-	}
+-	pr_info("Freeing unused kernel memory: %luk freed\n",
+-		((unsigned long)__init_end -
+-		(unsigned long)__init_begin) >> 10);
++	free_initmem_default(POISON_FREE_INITMEM);
+ }
+ 
+ #ifdef CONFIG_BLK_DEV_INITRD
+ void __init free_initrd_mem(unsigned long start, unsigned long end)
+ {
+-	if (start >= end)
+-		return;
+-
+-	start = _ALIGN_DOWN(start, PAGE_SIZE);
+-	end = _ALIGN_UP(end, PAGE_SIZE);
+-	pr_info("Freeing initrd memory: %ldk freed\n", (end - start) >> 10);
+-
+-	for (; start < end; start += PAGE_SIZE) {
+-		ClearPageReserved(virt_to_page(start));
+-		init_page_count(virt_to_page(start));
+-		free_page(start);
+-		totalram_pages++;
+-	}
++	free_reserved_area(start, end, 0, "initrd");
  }
  #endif
+ 
+diff --git a/arch/powerpc/platforms/512x/mpc512x_shared.c b/arch/powerpc/platforms/512x/mpc512x_shared.c
+index d30235b..db6ac38 100644
+--- a/arch/powerpc/platforms/512x/mpc512x_shared.c
++++ b/arch/powerpc/platforms/512x/mpc512x_shared.c
+@@ -172,12 +172,9 @@ static struct fsl_diu_shared_fb __attribute__ ((__aligned__(8))) diu_shared_fb;
+ 
+ static inline void mpc512x_free_bootmem(struct page *page)
+ {
+-	__ClearPageReserved(page);
+ 	BUG_ON(PageTail(page));
+ 	BUG_ON(atomic_read(&page->_count) > 1);
+-	atomic_set(&page->_count, 1);
+-	__free_page(page);
+-	totalram_pages++;
++	free_reserved_page(page);
+ }
+ 
+ void mpc512x_release_bootmem(void)
 -- 
 1.7.9.5
 
