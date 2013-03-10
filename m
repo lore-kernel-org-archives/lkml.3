@@ -1,72 +1,620 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753262Ab3CJVEd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Mar 2013 17:04:33 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:56342 "EHLO e9.ny.us.ibm.com"
+	id S1753260Ab3CJVKP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Mar 2013 17:10:15 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:34410 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751331Ab3CJVEc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Mar 2013 17:04:32 -0400
-Date: Sun, 10 Mar 2013 14:04:23 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: Sasha Levin <sasha.levin@oracle.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        paul.gortmaker@windriver.com, Dave Jones <davej@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: irq_work: WARNING: at kernel/irq_work.c:98
- irq_work_needs_cpu+0x8a/0xb0()
-Message-ID: <20130310210423.GA3601@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <51397B96.7030008@oracle.com>
- <20130308164435.GI3268@linux.vnet.ibm.com>
- <513A2CF1.9060006@oracle.com>
- <20130308194608.GK3268@linux.vnet.ibm.com>
- <513A4E8F.2020704@oracle.com>
- <20130308222058.GP3268@linux.vnet.ibm.com>
- <513CD568.90409@gmail.com>
+	id S1751650Ab3CJVKN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Mar 2013 17:10:13 -0400
+Date: Sun, 10 Mar 2013 14:10:06 -0700
+From: Kees Cook <keescook@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>, David Airlie <airlied@linux.ie>,
+        dri-devel@lists.freedesktop.org
+Subject: [PATCH] drm/i915: use simple attribute in debugfs routines
+Message-ID: <20130310211006.GA26200@www.outflux.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <513CD568.90409@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13031021-7182-0000-0000-000005B92078
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 10, 2013 at 02:48:08PM -0400, Sasha Levin wrote:
-> On 03/08/2013 05:20 PM, Paul E. McKenney wrote:
-> > Alternatively, given that this is a debug option, how about replacing
-> > the schedule_timeout_uninterruptible() with something like the following:
-> > 
-> > 	{
-> > 		unsigned long starttime = jiffies + 2;
-> > 
-> > 		while (ULONG_CMP_LT(jiffies, starttime))
-> > 			cpu_relax();
-> > 	}
-> > 
-> > That way the RCU GP kthread would never go to sleep, and thus would not
-> > have to wait for the timer to wake it up.  If this works, then my next
-> > thought would be to try to get at the timer state for the wakeup fo
-> > schedule_timeout_uninterruptible().
-> 
-> It did the trick, I still see those IRQ warnings but the RCU lockup
-> is gone.
+This replaces the manual read/write routines in debugfs with the common
+simple attribute helpers. Doing this gets rid of repeated copy/pasting
+of copy_from_user and value formatting code.
 
-So it looks like RCU's problem was that when it gave up the CPU, it never got
-it back.  The earlier warning looks to be due to getting an interrupt on
-a CPU that had already marked itself offline.  If this interrupt was the
-timer interrupt that was supposed to wake up RCU, that would explain the
-RCU hang -- but I thought that timers got migrated during the offline
-procedure.  Of course, we are shutting down as well.
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
+---
+ drivers/gpu/drm/i915/i915_debugfs.c |  394 +++++++++--------------------------
+ 1 file changed, 98 insertions(+), 296 deletions(-)
 
-Hmmmm...  In case this is inherent, I should condition that debug
-statement with "system_state == SYSTEM_RUNNING".
+diff --git a/drivers/gpu/drm/i915/i915_debugfs.c b/drivers/gpu/drm/i915/i915_debugfs.c
+index aae3148..d86c304 100644
+--- a/drivers/gpu/drm/i915/i915_debugfs.c
++++ b/drivers/gpu/drm/i915/i915_debugfs.c
+@@ -849,76 +849,42 @@ static const struct file_operations i915_error_state_fops = {
+ 	.release = i915_error_state_release,
+ };
+ 
+-static ssize_t
+-i915_next_seqno_read(struct file *filp,
+-		 char __user *ubuf,
+-		 size_t max,
+-		 loff_t *ppos)
++static int
++i915_next_seqno_get(void *data, u64 *val)
+ {
+-	struct drm_device *dev = filp->private_data;
++	struct drm_device *dev = data;
+ 	drm_i915_private_t *dev_priv = dev->dev_private;
+-	char buf[80];
+-	int len;
+ 	int ret;
+ 
+ 	ret = mutex_lock_interruptible(&dev->struct_mutex);
+ 	if (ret)
+ 		return ret;
+ 
+-	len = snprintf(buf, sizeof(buf),
+-		       "next_seqno :  0x%x\n",
+-		       dev_priv->next_seqno);
+-
++	*val = dev_priv->next_seqno;
+ 	mutex_unlock(&dev->struct_mutex);
+ 
+-	if (len > sizeof(buf))
+-		len = sizeof(buf);
+-
+-	return simple_read_from_buffer(ubuf, max, ppos, buf, len);
++	return 0;
+ }
+ 
+-static ssize_t
+-i915_next_seqno_write(struct file *filp,
+-		      const char __user *ubuf,
+-		      size_t cnt,
+-		      loff_t *ppos)
+-{
+-	struct drm_device *dev = filp->private_data;
+-	char buf[20];
+-	u32 val = 1;
++static int
++i915_next_seqno_set(void *data, u64 val)
++{
++	struct drm_device *dev = data;
+ 	int ret;
+ 
+-	if (cnt > 0) {
+-		if (cnt > sizeof(buf) - 1)
+-			return -EINVAL;
+-
+-		if (copy_from_user(buf, ubuf, cnt))
+-			return -EFAULT;
+-		buf[cnt] = 0;
+-
+-		ret = kstrtouint(buf, 0, &val);
+-		if (ret < 0)
+-			return ret;
+-	}
+-
+ 	ret = mutex_lock_interruptible(&dev->struct_mutex);
+ 	if (ret)
+ 		return ret;
+ 
+ 	ret = i915_gem_set_seqno(dev, val);
+-
+ 	mutex_unlock(&dev->struct_mutex);
+ 
+-	return ret ?: cnt;
++	return ret;
+ }
+ 
+-static const struct file_operations i915_next_seqno_fops = {
+-	.owner = THIS_MODULE,
+-	.open = simple_open,
+-	.read = i915_next_seqno_read,
+-	.write = i915_next_seqno_write,
+-	.llseek = default_llseek,
+-};
++DEFINE_SIMPLE_ATTRIBUTE(i915_next_seqno_fops,
++			i915_next_seqno_get, i915_next_seqno_set,
++			"next_seqno :  0x%llx\n");
+ 
+ static int i915_rstdby_delays(struct seq_file *m, void *unused)
+ {
+@@ -1680,105 +1646,51 @@ static int i915_dpio_info(struct seq_file *m, void *data)
+ 	return 0;
+ }
+ 
+-static ssize_t
+-i915_wedged_read(struct file *filp,
+-		 char __user *ubuf,
+-		 size_t max,
+-		 loff_t *ppos)
++static int
++i915_wedged_get(void *data, u64 *val)
+ {
+-	struct drm_device *dev = filp->private_data;
++	struct drm_device *dev = data;
+ 	drm_i915_private_t *dev_priv = dev->dev_private;
+-	char buf[80];
+-	int len;
+ 
+-	len = snprintf(buf, sizeof(buf),
+-		       "wedged :  %d\n",
+-		       atomic_read(&dev_priv->gpu_error.reset_counter));
++	*val = atomic_read(&dev_priv->gpu_error.reset_counter);
+ 
+-	if (len > sizeof(buf))
+-		len = sizeof(buf);
+-
+-	return simple_read_from_buffer(ubuf, max, ppos, buf, len);
++	return 0;
+ }
+ 
+-static ssize_t
+-i915_wedged_write(struct file *filp,
+-		  const char __user *ubuf,
+-		  size_t cnt,
+-		  loff_t *ppos)
++static int
++i915_wedged_set(void *data, u64 val)
+ {
+-	struct drm_device *dev = filp->private_data;
+-	char buf[20];
+-	int val = 1;
+-
+-	if (cnt > 0) {
+-		if (cnt > sizeof(buf) - 1)
+-			return -EINVAL;
++	struct drm_device *dev = data;
+ 
+-		if (copy_from_user(buf, ubuf, cnt))
+-			return -EFAULT;
+-		buf[cnt] = 0;
+-
+-		val = simple_strtoul(buf, NULL, 0);
+-	}
+-
+-	DRM_INFO("Manually setting wedged to %d\n", val);
++	DRM_INFO("Manually setting wedged to %llu\n", val);
+ 	i915_handle_error(dev, val);
+ 
+-	return cnt;
++	return 0;
+ }
+ 
+-static const struct file_operations i915_wedged_fops = {
+-	.owner = THIS_MODULE,
+-	.open = simple_open,
+-	.read = i915_wedged_read,
+-	.write = i915_wedged_write,
+-	.llseek = default_llseek,
+-};
++DEFINE_SIMPLE_ATTRIBUTE(i915_wedged_fops,
++			i915_wedged_get, i915_wedged_set,
++			"wedged :  %llu\n");
+ 
+-static ssize_t
+-i915_ring_stop_read(struct file *filp,
+-		    char __user *ubuf,
+-		    size_t max,
+-		    loff_t *ppos)
++static int
++i915_ring_stop_get(void *data, u64 *val)
+ {
+-	struct drm_device *dev = filp->private_data;
++	struct drm_device *dev = data;
+ 	drm_i915_private_t *dev_priv = dev->dev_private;
+-	char buf[20];
+-	int len;
+-
+-	len = snprintf(buf, sizeof(buf),
+-		       "0x%08x\n", dev_priv->gpu_error.stop_rings);
+ 
+-	if (len > sizeof(buf))
+-		len = sizeof(buf);
++	*val = dev_priv->gpu_error.stop_rings;
+ 
+-	return simple_read_from_buffer(ubuf, max, ppos, buf, len);
++	return 0;
+ }
+ 
+-static ssize_t
+-i915_ring_stop_write(struct file *filp,
+-		     const char __user *ubuf,
+-		     size_t cnt,
+-		     loff_t *ppos)
++static int
++i915_ring_stop_set(void *data, u64 val)
+ {
+-	struct drm_device *dev = filp->private_data;
++	struct drm_device *dev = data;
+ 	struct drm_i915_private *dev_priv = dev->dev_private;
+-	char buf[20];
+-	int val = 0, ret;
+-
+-	if (cnt > 0) {
+-		if (cnt > sizeof(buf) - 1)
+-			return -EINVAL;
+-
+-		if (copy_from_user(buf, ubuf, cnt))
+-			return -EFAULT;
+-		buf[cnt] = 0;
+-
+-		val = simple_strtoul(buf, NULL, 0);
+-	}
++	int ret;
+ 
+-	DRM_DEBUG_DRIVER("Stopping rings 0x%08x\n", val);
++	DRM_DEBUG_DRIVER("Stopping rings 0x%08llx\n", val);
+ 
+ 	ret = mutex_lock_interruptible(&dev->struct_mutex);
+ 	if (ret)
+@@ -1787,16 +1699,12 @@ i915_ring_stop_write(struct file *filp,
+ 	dev_priv->gpu_error.stop_rings = val;
+ 	mutex_unlock(&dev->struct_mutex);
+ 
+-	return cnt;
++	return 0;
+ }
+ 
+-static const struct file_operations i915_ring_stop_fops = {
+-	.owner = THIS_MODULE,
+-	.open = simple_open,
+-	.read = i915_ring_stop_read,
+-	.write = i915_ring_stop_write,
+-	.llseek = default_llseek,
+-};
++DEFINE_SIMPLE_ATTRIBUTE(i915_ring_stop_fops,
++			i915_ring_stop_get, i915_ring_stop_set,
++			"0x%08llx\n");
+ 
+ #define DROP_UNBOUND 0x1
+ #define DROP_BOUND 0x2
+@@ -1806,46 +1714,23 @@ static const struct file_operations i915_ring_stop_fops = {
+ 		  DROP_BOUND | \
+ 		  DROP_RETIRE | \
+ 		  DROP_ACTIVE)
+-static ssize_t
+-i915_drop_caches_read(struct file *filp,
+-		      char __user *ubuf,
+-		      size_t max,
+-		      loff_t *ppos)
++static int
++i915_drop_caches_get(void *data, u64 *val)
+ {
+-	char buf[20];
+-	int len;
+-
+-	len = snprintf(buf, sizeof(buf), "0x%08x\n", DROP_ALL);
+-	if (len > sizeof(buf))
+-		len = sizeof(buf);
++	*val = DROP_ALL;
+ 
+-	return simple_read_from_buffer(ubuf, max, ppos, buf, len);
++	return 0;
+ }
+ 
+-static ssize_t
+-i915_drop_caches_write(struct file *filp,
+-		       const char __user *ubuf,
+-		       size_t cnt,
+-		       loff_t *ppos)
++static int
++i915_drop_caches_set(void *data, u64 val)
+ {
+-	struct drm_device *dev = filp->private_data;
++	struct drm_device *dev = data;
+ 	struct drm_i915_private *dev_priv = dev->dev_private;
+ 	struct drm_i915_gem_object *obj, *next;
+-	char buf[20];
+-	int val = 0, ret;
+-
+-	if (cnt > 0) {
+-		if (cnt > sizeof(buf) - 1)
+-			return -EINVAL;
+-
+-		if (copy_from_user(buf, ubuf, cnt))
+-			return -EFAULT;
+-		buf[cnt] = 0;
+-
+-		val = simple_strtoul(buf, NULL, 0);
+-	}
++	int ret;
+ 
+-	DRM_DEBUG_DRIVER("Dropping caches: 0x%08x\n", val);
++	DRM_DEBUG_DRIVER("Dropping caches: 0x%08llx\n", val);
+ 
+ 	/* No need to check and wait for gpu resets, only libdrm auto-restarts
+ 	 * on ioctls on -EAGAIN. */
+@@ -1883,27 +1768,19 @@ i915_drop_caches_write(struct file *filp,
+ unlock:
+ 	mutex_unlock(&dev->struct_mutex);
+ 
+-	return ret ?: cnt;
++	return ret;
+ }
+ 
+-static const struct file_operations i915_drop_caches_fops = {
+-	.owner = THIS_MODULE,
+-	.open = simple_open,
+-	.read = i915_drop_caches_read,
+-	.write = i915_drop_caches_write,
+-	.llseek = default_llseek,
+-};
++DEFINE_SIMPLE_ATTRIBUTE(i915_drop_caches_fops,
++			i915_drop_caches_get, i915_drop_caches_set,
++			"0x%08llx\n");
+ 
+-static ssize_t
+-i915_max_freq_read(struct file *filp,
+-		   char __user *ubuf,
+-		   size_t max,
+-		   loff_t *ppos)
++static int
++i915_max_freq_get(void *data, u64 *val)
+ {
+-	struct drm_device *dev = filp->private_data;
++	struct drm_device *dev = data;
+ 	drm_i915_private_t *dev_priv = dev->dev_private;
+-	char buf[80];
+-	int len, ret;
++	int ret;
+ 
+ 	if (!(IS_GEN6(dev) || IS_GEN7(dev)))
+ 		return -ENODEV;
+@@ -1912,42 +1789,23 @@ i915_max_freq_read(struct file *filp,
+ 	if (ret)
+ 		return ret;
+ 
+-	len = snprintf(buf, sizeof(buf),
+-		       "max freq: %d\n", dev_priv->rps.max_delay * GT_FREQUENCY_MULTIPLIER);
++	*val = dev_priv->rps.max_delay * GT_FREQUENCY_MULTIPLIER;
+ 	mutex_unlock(&dev_priv->rps.hw_lock);
+ 
+-	if (len > sizeof(buf))
+-		len = sizeof(buf);
+-
+-	return simple_read_from_buffer(ubuf, max, ppos, buf, len);
++	return 0;
+ }
+ 
+-static ssize_t
+-i915_max_freq_write(struct file *filp,
+-		  const char __user *ubuf,
+-		  size_t cnt,
+-		  loff_t *ppos)
++static int
++i915_max_freq_set(void *data, u64 val)
+ {
+-	struct drm_device *dev = filp->private_data;
++	struct drm_device *dev = data;
+ 	struct drm_i915_private *dev_priv = dev->dev_private;
+-	char buf[20];
+-	int val = 1, ret;
++	int ret;
+ 
+ 	if (!(IS_GEN6(dev) || IS_GEN7(dev)))
+ 		return -ENODEV;
+ 
+-	if (cnt > 0) {
+-		if (cnt > sizeof(buf) - 1)
+-			return -EINVAL;
+-
+-		if (copy_from_user(buf, ubuf, cnt))
+-			return -EFAULT;
+-		buf[cnt] = 0;
+-
+-		val = simple_strtoul(buf, NULL, 0);
+-	}
+-
+-	DRM_DEBUG_DRIVER("Manually setting max freq to %d\n", val);
++	DRM_DEBUG_DRIVER("Manually setting max freq to %llu\n", val);
+ 
+ 	ret = mutex_lock_interruptible(&dev_priv->rps.hw_lock);
+ 	if (ret)
+@@ -1961,25 +1819,19 @@ i915_max_freq_write(struct file *filp,
+ 	gen6_set_rps(dev, val / GT_FREQUENCY_MULTIPLIER);
+ 	mutex_unlock(&dev_priv->rps.hw_lock);
+ 
+-	return cnt;
++	return 0;
+ }
+ 
+-static const struct file_operations i915_max_freq_fops = {
+-	.owner = THIS_MODULE,
+-	.open = simple_open,
+-	.read = i915_max_freq_read,
+-	.write = i915_max_freq_write,
+-	.llseek = default_llseek,
+-};
++DEFINE_SIMPLE_ATTRIBUTE(i915_max_freq_fops,
++			i915_max_freq_get, i915_max_freq_set,
++			"max freq: %llu\n");
+ 
+-static ssize_t
+-i915_min_freq_read(struct file *filp, char __user *ubuf, size_t max,
+-		   loff_t *ppos)
++static int
++i915_min_freq_get(void *data, u64 *val)
+ {
+-	struct drm_device *dev = filp->private_data;
++	struct drm_device *dev = data;
+ 	drm_i915_private_t *dev_priv = dev->dev_private;
+-	char buf[80];
+-	int len, ret;
++	int ret;
+ 
+ 	if (!(IS_GEN6(dev) || IS_GEN7(dev)))
+ 		return -ENODEV;
+@@ -1988,40 +1840,23 @@ i915_min_freq_read(struct file *filp, char __user *ubuf, size_t max,
+ 	if (ret)
+ 		return ret;
+ 
+-	len = snprintf(buf, sizeof(buf),
+-		       "min freq: %d\n", dev_priv->rps.min_delay * GT_FREQUENCY_MULTIPLIER);
++	*val = dev_priv->rps.min_delay * GT_FREQUENCY_MULTIPLIER;
+ 	mutex_unlock(&dev_priv->rps.hw_lock);
+ 
+-	if (len > sizeof(buf))
+-		len = sizeof(buf);
+-
+-	return simple_read_from_buffer(ubuf, max, ppos, buf, len);
++	return 0;
+ }
+ 
+-static ssize_t
+-i915_min_freq_write(struct file *filp, const char __user *ubuf, size_t cnt,
+-		    loff_t *ppos)
++static int
++i915_min_freq_set(void *data, u64 val)
+ {
+-	struct drm_device *dev = filp->private_data;
++	struct drm_device *dev = data;
+ 	struct drm_i915_private *dev_priv = dev->dev_private;
+-	char buf[20];
+-	int val = 1, ret;
++	int ret;
+ 
+ 	if (!(IS_GEN6(dev) || IS_GEN7(dev)))
+ 		return -ENODEV;
+ 
+-	if (cnt > 0) {
+-		if (cnt > sizeof(buf) - 1)
+-			return -EINVAL;
+-
+-		if (copy_from_user(buf, ubuf, cnt))
+-			return -EFAULT;
+-		buf[cnt] = 0;
+-
+-		val = simple_strtoul(buf, NULL, 0);
+-	}
+-
+-	DRM_DEBUG_DRIVER("Manually setting min freq to %d\n", val);
++	DRM_DEBUG_DRIVER("Manually setting min freq to %llu\n", val);
+ 
+ 	ret = mutex_lock_interruptible(&dev_priv->rps.hw_lock);
+ 	if (ret)
+@@ -2035,28 +1870,20 @@ i915_min_freq_write(struct file *filp, const char __user *ubuf, size_t cnt,
+ 	gen6_set_rps(dev, val / GT_FREQUENCY_MULTIPLIER);
+ 	mutex_unlock(&dev_priv->rps.hw_lock);
+ 
+-	return cnt;
++	return 0;
+ }
+ 
+-static const struct file_operations i915_min_freq_fops = {
+-	.owner = THIS_MODULE,
+-	.open = simple_open,
+-	.read = i915_min_freq_read,
+-	.write = i915_min_freq_write,
+-	.llseek = default_llseek,
+-};
++DEFINE_SIMPLE_ATTRIBUTE(i915_min_freq_fops,
++			i915_min_freq_get, i915_min_freq_set,
++			"min freq: %llu\n");
+ 
+-static ssize_t
+-i915_cache_sharing_read(struct file *filp,
+-		   char __user *ubuf,
+-		   size_t max,
+-		   loff_t *ppos)
++static int
++i915_cache_sharing_get(void *data, u64 *val)
+ {
+-	struct drm_device *dev = filp->private_data;
++	struct drm_device *dev = data;
+ 	drm_i915_private_t *dev_priv = dev->dev_private;
+-	char buf[80];
+ 	u32 snpcr;
+-	int len, ret;
++	int ret;
+ 
+ 	if (!(IS_GEN6(dev) || IS_GEN7(dev)))
+ 		return -ENODEV;
+@@ -2068,46 +1895,25 @@ i915_cache_sharing_read(struct file *filp,
+ 	snpcr = I915_READ(GEN6_MBCUNIT_SNPCR);
+ 	mutex_unlock(&dev_priv->dev->struct_mutex);
+ 
+-	len = snprintf(buf, sizeof(buf),
+-		       "%d\n", (snpcr & GEN6_MBC_SNPCR_MASK) >>
+-		       GEN6_MBC_SNPCR_SHIFT);
+-
+-	if (len > sizeof(buf))
+-		len = sizeof(buf);
++	*val = (snpcr & GEN6_MBC_SNPCR_MASK) >> GEN6_MBC_SNPCR_SHIFT;
+ 
+-	return simple_read_from_buffer(ubuf, max, ppos, buf, len);
++	return 0;
+ }
+ 
+-static ssize_t
+-i915_cache_sharing_write(struct file *filp,
+-		  const char __user *ubuf,
+-		  size_t cnt,
+-		  loff_t *ppos)
++static int
++i915_cache_sharing_set(void *data, u64 val)
+ {
+-	struct drm_device *dev = filp->private_data;
++	struct drm_device *dev = data;
+ 	struct drm_i915_private *dev_priv = dev->dev_private;
+-	char buf[20];
+ 	u32 snpcr;
+-	int val = 1;
+ 
+ 	if (!(IS_GEN6(dev) || IS_GEN7(dev)))
+ 		return -ENODEV;
+ 
+-	if (cnt > 0) {
+-		if (cnt > sizeof(buf) - 1)
+-			return -EINVAL;
+-
+-		if (copy_from_user(buf, ubuf, cnt))
+-			return -EFAULT;
+-		buf[cnt] = 0;
+-
+-		val = simple_strtoul(buf, NULL, 0);
+-	}
+-
+-	if (val < 0 || val > 3)
++	if (val > 3)
+ 		return -EINVAL;
+ 
+-	DRM_DEBUG_DRIVER("Manually setting uncore sharing to %d\n", val);
++	DRM_DEBUG_DRIVER("Manually setting uncore sharing to %llu\n", val);
+ 
+ 	/* Update the cache sharing policy here as well */
+ 	snpcr = I915_READ(GEN6_MBCUNIT_SNPCR);
+@@ -2115,16 +1921,12 @@ i915_cache_sharing_write(struct file *filp,
+ 	snpcr |= (val << GEN6_MBC_SNPCR_SHIFT);
+ 	I915_WRITE(GEN6_MBCUNIT_SNPCR, snpcr);
+ 
+-	return cnt;
++	return 0;
+ }
+ 
+-static const struct file_operations i915_cache_sharing_fops = {
+-	.owner = THIS_MODULE,
+-	.open = simple_open,
+-	.read = i915_cache_sharing_read,
+-	.write = i915_cache_sharing_write,
+-	.llseek = default_llseek,
+-};
++DEFINE_SIMPLE_ATTRIBUTE(i915_cache_sharing_fops,
++			i915_cache_sharing_get, i915_cache_sharing_set,
++			"%llu\n");
+ 
+ /* As the drm_debugfs_init() routines are called before dev->dev_private is
+  * allocated we need to hook into the minor for release. */
+-- 
+1.7.9.5
 
-							Thanx, Paul
 
+-- 
+Kees Cook
+Chrome OS Security
