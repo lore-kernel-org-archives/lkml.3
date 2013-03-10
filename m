@@ -1,75 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753380Ab3CJWwb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Mar 2013 18:52:31 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:52506 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752984Ab3CJWw3 (ORCPT
+	id S1753376Ab3CJWzW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Mar 2013 18:55:22 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:36134 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752984Ab3CJWzV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Mar 2013 18:52:29 -0400
-Date: Sun, 10 Mar 2013 23:51:50 +0100
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: akpm@linux-foundation.org, a.zummo@towertech.it, swarren@wwwdotorg.org,
-        rtc-linux@googlegroups.com, linux-tegra@vger.kernel.org,
+	Sun, 10 Mar 2013 18:55:21 -0400
+Date: Sun, 10 Mar 2013 15:55:13 -0700
+From: Joel Becker <jlbec@evilplan.org>
+To: Alexandru Gheorghiu <gheorghiuandru@gmail.com>
+Cc: Mark Fasheh <mfasheh@suse.com>, ocfs2-devel@oss.oracle.com,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/5] rtc: tegra: use managed rtc_device_register
-Message-ID: <20130310225150.GJ4743@avionic-0098.mockup.avionic-design.de>
-References: <1362852816-13460-1-git-send-email-ldewangan@nvidia.com>
+Subject: Re: [PATCH] fs: fs2fs: Replaced calls to kmalloc and memcpy with
+ kmemdup
+Message-ID: <20130310225513.GF7783@localhost>
+Mail-Followup-To: Alexandru Gheorghiu <gheorghiuandru@gmail.com>,
+	Mark Fasheh <mfasheh@suse.com>, ocfs2-devel@oss.oracle.com,
+	linux-kernel@vger.kernel.org
+References: <1362829777-6924-1-git-send-email-gheorghiuandru@gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="pMCBjikF2xGw87uL"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1362852816-13460-1-git-send-email-ldewangan@nvidia.com>
+In-Reply-To: <1362829777-6924-1-git-send-email-gheorghiuandru@gmail.com>
+X-Burt-Line: Trees are cool.
+X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
+ come to perfection.
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:8ZmLNVl7IC4keygNXPGq8GNKLasLtcPkmICfe8n21g/
- eF/4xxqxajCSoRe7XwNQcUw9ej//DvShDkzA5UpFgJHKSLA05o
- 3uHC8nZGHj8KsPF6991UFf5ZC0V7y/eZ3V9h8M4qiQq1cXXJ14
- uRXD6bLfffr2Eah9c/pHpYNlGEtPq0y7UemNq8/WnqH+DoA1xO
- GgPkCK+RJkLwV9GmbrKcEwiZEm8QbPPToh0SpkGUWtIP9QYVpc
- ITX2j1Et9JnN9NaL3bUqVbDPNTI0tdUKfwF9W9VrdXYPFyWvXy
- o7mKzHwchbIOnDrB4OYcgD5ZnnI/lW2iSuV33znZ2YLgbvjEwr
- hEog66KpcAjgJD3CqNRJEVQr7IkctfW88PeTROXMYmZaqREJJ3
- 6JcqUzFgONTOYDLriIl9htpA7slJ+ZEMk2zrlgTrKG0fp7FHuV
- 6eLIY
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, Mar 09, 2013 at 01:49:37PM +0200, Alexandru Gheorghiu wrote:
+> Replaced calls to kmalloc followd by memcpy with a single call to kmemdup.
+> This patch was found using coccicheck.
+> 
+> Signed-off-by: Alexandru Gheorghiu <gheorghiuandru@gmail.com>
 
---pMCBjikF2xGw87uL
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Acked-by: Joel Becker <jlbec@evilplan.org>
 
-On Sat, Mar 09, 2013 at 11:43:36PM +0530, Laxman Dewangan wrote:
-> Use devm_rtc_device_register for registering rtc device.
-> This will reduce the code for unregistering rtc device in
-> cleanup path and remove the implementation of remove
-> callback of platform driver.
+> ---
+>  fs/ocfs2/localalloc.c |    6 ++----
+>  1 file changed, 2 insertions(+), 4 deletions(-)
+> 
+> diff --git a/fs/ocfs2/localalloc.c b/fs/ocfs2/localalloc.c
+> index aebeacd..839183f 100644
+> --- a/fs/ocfs2/localalloc.c
+> +++ b/fs/ocfs2/localalloc.c
+> @@ -434,12 +434,11 @@ void ocfs2_shutdown_local_alloc(struct ocfs2_super *osb)
+>  	bh = osb->local_alloc_bh;
+>  	alloc = (struct ocfs2_dinode *) bh->b_data;
+>  
+> -	alloc_copy = kmalloc(bh->b_size, GFP_NOFS);
+> +	alloc_copy = kmemdup(alloc, bh->b_size, GFP_NOFS);
+>  	if (!alloc_copy) {
+>  		status = -ENOMEM;
+>  		goto out_commit;
+>  	}
+> -	memcpy(alloc_copy, alloc, bh->b_size);
+>  
+>  	status = ocfs2_journal_access_di(handle, INODE_CACHE(local_alloc_inode),
+>  					 bh, OCFS2_JOURNAL_ACCESS_WRITE);
+> @@ -1244,13 +1243,12 @@ static int ocfs2_local_alloc_slide_window(struct ocfs2_super *osb,
+>  	 * local alloc shutdown won't try to double free main bitmap
+>  	 * bits. Make a copy so the sync function knows which bits to
+>  	 * free. */
+> -	alloc_copy = kmalloc(osb->local_alloc_bh->b_size, GFP_NOFS);
+> +	alloc_copy = kmemdup(alloc, osb->local_alloc_bh->b_size, GFP_NOFS);
+>  	if (!alloc_copy) {
+>  		status = -ENOMEM;
+>  		mlog_errno(status);
+>  		goto bail;
+>  	}
+> -	memcpy(alloc_copy, alloc, osb->local_alloc_bh->b_size);
+>  
+>  	status = ocfs2_journal_access_di(handle,
+>  					 INODE_CACHE(local_alloc_inode),
+> -- 
+> 1.7.9.5
+> 
 
-And RTC is also an abbreviation. =)
+-- 
 
-Thierry
+"Egotist: a person more interested in himself than in me."
+         - Ambrose Bierce 
 
---pMCBjikF2xGw87uL
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRPQ6GAAoJEN0jrNd/PrOhcjkQAJmyMum2G2cts+CbdQ+srVsP
-wvbvRaBtnmDMXOJlrqpSIq+gPVf00rjaxzgArN60XWx8AKuFme5e7/UybSRH2/qE
-EfEER8RDyy01rBhOKcGoOpSyu162/Ed4cGPgbFqPauiKcqEd3hte8SNUsEInRZP4
-atmdwTqLab0DQjkBWFSkHcKY5HDmGz+8dIRzBhulwX+wU+/egEfPBhJ6L/GlObFt
-uiYwot0VvkXEAq/9gBrFzmU+YEAhalfoImASebSYzJ80/wwWtwyhiPo5l87bhYHN
-I7diOIi5re5O57u3Nny11/sNwLIS6/FSSgusB/pLIU5kMwjAvmlnJ//OQOhcqKO/
-zHW2XiiXTP8WoMBmmgu3oljVowYG34l7neoLbwOmYOBWwiTeFVSryZIFhoRDHI63
-KfpWNv6KTYyhkNbzxLoff/jOHQlOOK1t3bo29Voe3gbVtN+edM7YvYPuhctgqPp9
-L76+Y1FIKJKszi3GnEB5MLLeKoZ/A6BZOwyxLADg2FDrNfaktMUYv4uBLh06YCfl
-OgpXbwvjiz1qKPqx+3bZ/UuMaCzphZvr+SdnXSIRvbiT78BTWwhGOINrYt/s4NE/
-f7jHT1xqMAYkzueF01/VKn8nOBTmC8yy/N+5UcyFvDtiIo+ZfLPuVyAYu0uTiUqo
-ukME93ULj+GkxVAqL9Hd
-=M2s7
------END PGP SIGNATURE-----
-
---pMCBjikF2xGw87uL--
+			http://www.jlbec.org/
+			jlbec@evilplan.org
