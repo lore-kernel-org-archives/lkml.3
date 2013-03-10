@@ -1,110 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753249Ab3CJVPa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Mar 2013 17:15:30 -0400
-Received: from mail-wg0-f54.google.com ([74.125.82.54]:65378 "EHLO
-	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751299Ab3CJVP2 (ORCPT
+	id S1753247Ab3CJVj2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Mar 2013 17:39:28 -0400
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:62151 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751331Ab3CJVj0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Mar 2013 17:15:28 -0400
-From: Valentin Ilie <valentin.ilie@gmail.com>
-To: socketcan@hartkopp.net, davem@davemloft.net
-Cc: linux-can@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Valentin Ilie <valentin.ilie@gmail.com>
-Subject: [PATCHv2] net: can: af_can.c: Fix checkpatch warnings
-Date: Sun, 10 Mar 2013 23:15:13 +0200
-Message-Id: <1362950113-25515-1-git-send-email-valentin.ilie@gmail.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1362918526-26730-1-git-send-email-valentin.ilie@gmail.com>
-References: <1362918526-26730-1-git-send-email-valentin.ilie@gmail.com>
+	Sun, 10 Mar 2013 17:39:26 -0400
+Date: Sun, 10 Mar 2013 14:40:09 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Ming Lei <tom.leiming@gmail.com>, Tommi Rantala <tt.rantala@gmail.com>,
+        Jens Axboe <axboe@kernel.dk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Guo Chao <yan@linux.vnet.ibm.com>, Tejun Heo <tj@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>
+Subject: Re: kernel BUG at fs/sysfs/group.c:65!
+Message-ID: <20130310214009.GB5445@kroah.com>
+References: <CA+ydwtqqLZykdJXRPcd0_6UoNQJmTb2VeVKheHYDA+8-4wkW1g@mail.gmail.com>
+ <20130308204113.GA15334@kroah.com>
+ <CACVXFVP1_wXXw46KJCLhWy-TfGdnmSijnKGcycbZxS_0ZQUikg@mail.gmail.com>
+ <CA+ydwtqHtwizg1=-KeLOjUUr+tzoFSPWRaeitE=10sm+pOYYKw@mail.gmail.com>
+ <CACVXFVNJR69B=0G59FEqnu4Vhpn0_S_gf8j+vdUG2+0oLSPi_Q@mail.gmail.com>
+ <20130310164102.GD4392@kroah.com>
+ <87r4jnouwv.fsf@xmission.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87r4jnouwv.fsf@xmission.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace printk(KERN_ERR with pr_err
-Add space before {
-Removed OOM messages
+On Sun, Mar 10, 2013 at 01:35:12PM -0700, Eric W. Biederman wrote:
+> Greg KH <gregkh@linuxfoundation.org> writes:
+> 
+> > On Sun, Mar 10, 2013 at 04:53:11PM +0800, Ming Lei wrote:
+> >> On Sun, Mar 10, 2013 at 12:36 AM, Tommi Rantala <tt.rantala@gmail.com> wrote:
+> >> > [   40.089036]  [<ffffffff81222e29>] sysfs_get_dirent+0x39/0x80
+> >> > [   40.089036]  [<ffffffff81224ad9>] sysfs_remove_group+0x29/0x100
+> >> > [   40.089036]  [<ffffffff8113f2c4>] blk_trace_remove_sysfs+0x14/0x20
+> >> > [   40.089036]  [<ffffffff813453ae>] blk_unregister_queue+0x5e/0x90
+> >> > [   40.089036]  [<ffffffff8134d417>] del_gendisk+0x107/0x250
+> >> > [   40.089036]  [<ffffffff814f66b8>] loop_remove+0x18/0x40
+> >> 
+> >> Then the crash is triggered in device release path, which should have
+> >> been avoided in device add path.
+> >> 
+> >> If we want to fix the problem completely, add_disk() must handle failure
+> >> path correctly and return error code on failures, which may involve big
+> >> work, since add_disk() are called by 50+ drivers.
+> >
+> > Ok, but the root problem here is add_disk() is being called to create a
+> > disk that was already created, right?  Surely the caller should have
+> > detected this before it called to the block core?
+> >
+> > Who is calling add_disk() here?  Is this a fuse device?  If so, then any
+> > user can trigger this, right?
+> >
+> > That should be the "easier" fix at the moment to resolve this issue.
+> 
+> At first glance this looks like rances in the loop driver.
 
-Signed-off-by: Valentin Ilie <valentin.ilie@gmail.com>
----
- net/can/af_can.c | 21 ++++++++-------------
- 1 file changed, 8 insertions(+), 13 deletions(-)
+Then that should be easy to fix, only allow one loop device to be
+created / removed at a time?
 
-diff --git a/net/can/af_can.c b/net/can/af_can.c
-index c48e522..8bacf28 100644
---- a/net/can/af_can.c
-+++ b/net/can/af_can.c
-@@ -525,7 +525,7 @@ void can_rx_unregister(struct net_device *dev, canid_t can_id, canid_t mask,
- 
- 	d = find_dev_rcv_lists(dev);
- 	if (!d) {
--		printk(KERN_ERR "BUG: receive list not found for "
-+		pr_err("BUG: receive list not found for "
- 		       "dev %s, id %03X, mask %03X\n",
- 		       DNAME(dev), can_id, mask);
- 		goto out;
-@@ -552,7 +552,7 @@ void can_rx_unregister(struct net_device *dev, canid_t can_id, canid_t mask,
- 	 */
- 
- 	if (!r) {
--		printk(KERN_ERR "BUG: receive list entry not found for "
-+		pr_err("BUG: receive list entry not found for "
- 		       "dev %s, id %03X, mask %03X\n",
- 		       DNAME(dev), can_id, mask);
- 		r = NULL;
-@@ -749,8 +749,7 @@ int can_proto_register(const struct can_proto *cp)
- 	int err = 0;
- 
- 	if (proto < 0 || proto >= CAN_NPROTO) {
--		printk(KERN_ERR "can: protocol number %d out of range\n",
--		       proto);
-+		pr_err("can: protocol number %d out of range\n", proto);
- 		return -EINVAL;
- 	}
- 
-@@ -761,8 +760,7 @@ int can_proto_register(const struct can_proto *cp)
- 	mutex_lock(&proto_tab_lock);
- 
- 	if (proto_tab[proto]) {
--		printk(KERN_ERR "can: protocol %d already registered\n",
--		       proto);
-+		pr_err("can: protocol %d already registered\n", proto);
- 		err = -EBUSY;
- 	} else
- 		RCU_INIT_POINTER(proto_tab[proto], cp);
-@@ -816,11 +814,8 @@ static int can_notifier(struct notifier_block *nb, unsigned long msg,
- 
- 		/* create new dev_rcv_lists for this device */
- 		d = kzalloc(sizeof(*d), GFP_KERNEL);
--		if (!d) {
--			printk(KERN_ERR
--			       "can: allocation of receive list failed\n");
-+		if (!d)
- 			return NOTIFY_DONE;
--		}
- 		BUG_ON(dev->ml_priv);
- 		dev->ml_priv = d;
- 
-@@ -838,8 +833,8 @@ static int can_notifier(struct notifier_block *nb, unsigned long msg,
- 				dev->ml_priv = NULL;
- 			}
- 		} else
--			printk(KERN_ERR "can: notifier: receive list not "
--			       "found for dev %s\n", dev->name);
-+			pr_err("can: notifier: receive list not found for dev "
-+			       "%s\n", dev->name);
- 
- 		spin_unlock(&can_rcvlists_lock);
- 
-@@ -927,7 +922,7 @@ static __exit void can_exit(void)
- 	/* remove created dev_rcv_lists from still registered CAN devices */
- 	rcu_read_lock();
- 	for_each_netdev_rcu(&init_net, dev) {
--		if (dev->type == ARPHRD_CAN && dev->ml_priv){
-+		if (dev->type == ARPHRD_CAN && dev->ml_priv) {
- 
- 			struct dev_rcv_lists *d = dev->ml_priv;
- 
--- 
-1.8.1.2
-
+greg k-h
