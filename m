@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752687Ab3CJGck (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Mar 2013 01:32:40 -0500
-Received: from mail-da0-f47.google.com ([209.85.210.47]:37099 "EHLO
-	mail-da0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751243Ab3CJGch (ORCPT
+	id S1752766Ab3CJGcz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Mar 2013 01:32:55 -0500
+Received: from mail-da0-f50.google.com ([209.85.210.50]:61324 "EHLO
+	mail-da0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751243Ab3CJGcw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Mar 2013 01:32:37 -0500
+	Sun, 10 Mar 2013 01:32:52 -0500
 From: Jiang Liu <liuj97@gmail.com>
 To: Andrew Morton <akpm@linux-foundation.org>,
         David Rientjes <rientjes@google.com>
@@ -18,10 +18,10 @@ Cc: Jiang Liu <jiang.liu@huawei.com>, Wen Congyang <wency@cn.fujitsu.com>,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
         Michal Hocko <mhocko@suse.cz>, Jianguo Wu <wujianguo@huawei.com>,
         linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Chen Liqin <liqin.chen@sunplusct.com>, Lennox Wu <lennox.wu@gmail.com>
-Subject: [PATCH v2, part1 20/29] mm/score: use common help functions to free reserved pages
-Date: Sun, 10 Mar 2013 14:27:03 +0800
-Message-Id: <1362896833-21104-21-git-send-email-jiang.liu@huawei.com>
+        Sam Ravnborg <sam@ravnborg.org>
+Subject: [PATCH v2, part1 22/29] mm/SPARC: use common help functions to free reserved pages
+Date: Sun, 10 Mar 2013 14:27:05 +0800
+Message-Id: <1362896833-21104-23-git-send-email-jiang.liu@huawei.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1362896833-21104-1-git-send-email-jiang.liu@huawei.com>
 References: <1362896833-21104-1-git-send-email-jiang.liu@huawei.com>
@@ -32,85 +32,165 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Use common help functions to free reserved pages.
 
 Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Cc: Chen Liqin <liqin.chen@sunplusct.com>
-Cc: Lennox Wu <lennox.wu@gmail.com>
+Acked-by: David S. Miller <davem@davemloft.net>
+Cc: Sam Ravnborg <sam@ravnborg.org>
 ---
- arch/score/mm/init.c |   33 +++++----------------------------
- 1 file changed, 5 insertions(+), 28 deletions(-)
+ arch/sparc/kernel/leon_smp.c |   15 +++------------
+ arch/sparc/mm/init_32.c      |   37 +++----------------------------------
+ arch/sparc/mm/init_64.c      |   26 +++++---------------------
+ 3 files changed, 11 insertions(+), 67 deletions(-)
 
-diff --git a/arch/score/mm/init.c b/arch/score/mm/init.c
-index cee6bce..1592aad 100644
---- a/arch/score/mm/init.c
-+++ b/arch/score/mm/init.c
-@@ -43,7 +43,7 @@ EXPORT_SYMBOL_GPL(empty_zero_page);
+diff --git a/arch/sparc/kernel/leon_smp.c b/arch/sparc/kernel/leon_smp.c
+index 9b40c9c..6cfc1b0 100644
+--- a/arch/sparc/kernel/leon_smp.c
++++ b/arch/sparc/kernel/leon_smp.c
+@@ -253,24 +253,15 @@ void __init leon_smp_done(void)
  
- static struct kcore_list kcore_mem, kcore_vmalloc;
- 
--static unsigned long setup_zero_page(void)
-+static void setup_zero_page(void)
- {
- 	struct page *page;
- 
-@@ -52,9 +52,7 @@ static unsigned long setup_zero_page(void)
- 		panic("Oh boy, that early out of memory?");
- 
- 	page = virt_to_page((void *) empty_zero_page);
--	SetPageReserved(page);
--
--	return 1UL;
-+	mark_page_reserved(page);
- }
- 
- #ifndef CONFIG_NEED_MULTIPLE_NODES
-@@ -84,7 +82,7 @@ void __init mem_init(void)
- 
- 	high_memory = (void *) __va(max_low_pfn << PAGE_SHIFT);
- 	totalram_pages += free_all_bootmem();
--	totalram_pages -= setup_zero_page();	/* Setup zeroed pages. */
-+	setup_zero_page();	/* Setup zeroed pages. */
- 	reservedpages = 0;
- 
- 	for (tmp = 0; tmp < max_low_pfn; tmp++)
-@@ -109,37 +107,16 @@ void __init mem_init(void)
- }
- #endif /* !CONFIG_NEED_MULTIPLE_NODES */
- 
--static void free_init_pages(const char *what, unsigned long begin, unsigned long end)
--{
--	unsigned long pfn;
--
--	for (pfn = PFN_UP(begin); pfn < PFN_DOWN(end); pfn++) {
--		struct page *page = pfn_to_page(pfn);
--		void *addr = phys_to_virt(PFN_PHYS(pfn));
--
--		ClearPageReserved(page);
--		init_page_count(page);
--		memset(addr, POISON_FREE_INITMEM, PAGE_SIZE);
--		__free_page(page);
+ 	/* Free unneeded trap tables */
+ 	if (!cpu_present(1)) {
+-		ClearPageReserved(virt_to_page(&trapbase_cpu1));
+-		init_page_count(virt_to_page(&trapbase_cpu1));
+-		free_page((unsigned long)&trapbase_cpu1);
 -		totalram_pages++;
--	}
--	printk(KERN_INFO "Freeing %s: %ldk freed\n", what, (end - begin) >> 10);
--}
++		free_reserved_page(virt_to_page(&trapbase_cpu1));
+ 		num_physpages++;
+ 	}
+ 	if (!cpu_present(2)) {
+-		ClearPageReserved(virt_to_page(&trapbase_cpu2));
+-		init_page_count(virt_to_page(&trapbase_cpu2));
+-		free_page((unsigned long)&trapbase_cpu2);
+-		totalram_pages++;
++		free_reserved_page(virt_to_page(&trapbase_cpu2));
+ 		num_physpages++;
+ 	}
+ 	if (!cpu_present(3)) {
+-		ClearPageReserved(virt_to_page(&trapbase_cpu3));
+-		init_page_count(virt_to_page(&trapbase_cpu3));
+-		free_page((unsigned long)&trapbase_cpu3);
+-		totalram_pages++;
++		free_reserved_page(virt_to_page(&trapbase_cpu3));
+ 		num_physpages++;
+ 	}
+ 	/* Ok, they are spinning and ready to go. */
+diff --git a/arch/sparc/mm/init_32.c b/arch/sparc/mm/init_32.c
+index 48e0c03..13d6fee 100644
+--- a/arch/sparc/mm/init_32.c
++++ b/arch/sparc/mm/init_32.c
+@@ -374,45 +374,14 @@ void __init mem_init(void)
+ 
+ void free_initmem (void)
+ {
+-	unsigned long addr;
+-	unsigned long freed;
 -
+-	addr = (unsigned long)(&__init_begin);
+-	freed = (unsigned long)(&__init_end) - addr;
+-	for (; addr < (unsigned long)(&__init_end); addr += PAGE_SIZE) {
+-		struct page *p;
+-
+-		memset((void *)addr, POISON_FREE_INITMEM, PAGE_SIZE);
+-		p = virt_to_page(addr);
+-
+-		ClearPageReserved(p);
+-		init_page_count(p);
+-		__free_page(p);
+-		totalram_pages++;
+-		num_physpages++;
+-	}
+-	printk(KERN_INFO "Freeing unused kernel memory: %ldk freed\n",
+-		freed >> 10);
++	num_physpages += free_initmem_default(POISON_FREE_INITMEM);
+ }
+ 
  #ifdef CONFIG_BLK_DEV_INITRD
  void free_initrd_mem(unsigned long start, unsigned long end)
  {
--	free_init_pages("initrd memory",
--		virt_to_phys((void *) start),
--		virt_to_phys((void *) end));
-+	free_reserved_area(start, end, POISON_FREE_INITMEM, "initrd");
+-	if (start < end)
+-		printk(KERN_INFO "Freeing initrd memory: %ldk freed\n",
+-			(end - start) >> 10);
+-	for (; start < end; start += PAGE_SIZE) {
+-		struct page *p;
+-
+-		memset((void *)start, POISON_FREE_INITMEM, PAGE_SIZE);
+-		p = virt_to_page(start);
+-
+-		ClearPageReserved(p);
+-		init_page_count(p);
+-		__free_page(p);
+-		totalram_pages++;
+-		num_physpages++;
+-	}
++	num_physpages += free_reserved_area(start, end, POISON_FREE_INITMEM,
++					    "initrd");
  }
  #endif
  
- void __init_refok free_initmem(void)
- {
--	free_init_pages("unused kernel memory",
--	__pa(&__init_begin),
--	__pa(&__init_end));
-+	free_initmem_default(POISON_FREE_INITMEM);
- }
+diff --git a/arch/sparc/mm/init_64.c b/arch/sparc/mm/init_64.c
+index 1588d33..3f559d1 100644
+--- a/arch/sparc/mm/init_64.c
++++ b/arch/sparc/mm/init_64.c
+@@ -2060,8 +2060,7 @@ void __init mem_init(void)
+ 	/* We subtract one to account for the mem_map_zero page
+ 	 * allocated below.
+ 	 */
+-	totalram_pages -= 1;
+-	num_physpages = totalram_pages;
++	num_physpages = totalram_pages - 1;
  
- unsigned long pgd_current;
+ 	/*
+ 	 * Set up the zero page, mark it reserved, so that page count
+@@ -2072,7 +2071,7 @@ void __init mem_init(void)
+ 		prom_printf("paging_init: Cannot alloc zero page.\n");
+ 		prom_halt();
+ 	}
+-	SetPageReserved(mem_map_zero);
++	mark_page_reserved(mem_map_zero);
+ 
+ 	codepages = (((unsigned long) _etext) - ((unsigned long) _start));
+ 	codepages = PAGE_ALIGN(codepages) >> PAGE_SHIFT;
+@@ -2112,7 +2111,6 @@ void free_initmem(void)
+ 	initend = (unsigned long)(__init_end) & PAGE_MASK;
+ 	for (; addr < initend; addr += PAGE_SIZE) {
+ 		unsigned long page;
+-		struct page *p;
+ 
+ 		page = (addr +
+ 			((unsigned long) __va(kern_base)) -
+@@ -2120,13 +2118,8 @@ void free_initmem(void)
+ 		memset((void *)addr, POISON_FREE_INITMEM, PAGE_SIZE);
+ 
+ 		if (do_free) {
+-			p = virt_to_page(page);
+-
+-			ClearPageReserved(p);
+-			init_page_count(p);
+-			__free_page(p);
++			free_reserved_page(virt_to_page(page));
+ 			num_physpages++;
+-			totalram_pages++;
+ 		}
+ 	}
+ }
+@@ -2134,17 +2127,8 @@ void free_initmem(void)
+ #ifdef CONFIG_BLK_DEV_INITRD
+ void free_initrd_mem(unsigned long start, unsigned long end)
+ {
+-	if (start < end)
+-		printk ("Freeing initrd memory: %ldk freed\n", (end - start) >> 10);
+-	for (; start < end; start += PAGE_SIZE) {
+-		struct page *p = virt_to_page(start);
+-
+-		ClearPageReserved(p);
+-		init_page_count(p);
+-		__free_page(p);
+-		num_physpages++;
+-		totalram_pages++;
+-	}
++	num_physpages += free_reserved_area(start, end, POISON_FREE_INITMEM,
++					    "initrd");
+ }
+ #endif
+ 
 -- 
 1.7.9.5
 
