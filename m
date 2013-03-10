@@ -1,45 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751299Ab3CJKRy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Mar 2013 06:17:54 -0400
-Received: from sting.hengli.com.au ([178.18.18.71]:51237 "EHLO
+	id S1751730Ab3CJKSO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Mar 2013 06:18:14 -0400
+Received: from sting.hengli.com.au ([178.18.18.71]:54772 "EHLO
 	fornost.hengli.com.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750964Ab3CJKRx (ORCPT
+	with ESMTP id S1750964Ab3CJKSM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Mar 2013 06:17:53 -0400
-Date: Sun, 10 Mar 2013 18:17:43 +0800
+	Sun, 10 Mar 2013 06:18:12 -0400
+Date: Sun, 10 Mar 2013 18:17:57 +0800
 From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: Kim Phillips <kim.phillips@freescale.com>
-Cc: Paul Bolle <pebolle@tiscali.nl>, "David S. Miller" <davem@davemloft.net>,
-        linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] crypto: caam - fix typo "CRYPTO_AHASH"
-Message-ID: <20130310101743.GG10910@gondor.apana.org.au>
-References: <1362490396.16460.87.camel@x61.thuisdomein>
- <20130307185127.a525f832276be2b30153aedf@freescale.com>
+To: Tang Chen <tangchen@cn.fujitsu.com>
+Cc: lenb@kernel.org, rjw@sisk.pl, robert.moore@intel.com, lv.zheng@intel.com,
+        ming.m.lin@intel.com, mpm@selenic.com, rob@landley.net,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org, trivial@kernel.org
+Subject: Re: [RESEND PATCH 6/6] doc: Fix a wrong comment in
+ Documentation/hw_random.txt
+Message-ID: <20130310101756.GH10910@gondor.apana.org.au>
+References: <1362652697-30284-1-git-send-email-tangchen@cn.fujitsu.com>
+ <1362652697-30284-7-git-send-email-tangchen@cn.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130307185127.a525f832276be2b30153aedf@freescale.com>
+In-Reply-To: <1362652697-30284-7-git-send-email-tangchen@cn.fujitsu.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 07, 2013 at 06:51:27PM -0600, Kim Phillips wrote:
-> On Tue, 5 Mar 2013 14:33:16 +0100
-> Paul Bolle <pebolle@tiscali.nl> wrote:
+On Thu, Mar 07, 2013 at 06:38:17PM +0800, Tang Chen wrote:
+> Seeing from the comment, there should be three reasons for removing request_mem_region.
+> Change the comment "two" to "three".
 > 
-> > The Kconfig entry for CAAM's hash algorithm implementations has always
-> > selected CRYPTO_AHASH. But there's no corresponding Kconfig symbol.
-> > 
-> > It seems it was intended to select CRYPTO_HASH, like other crypto
-> > drivers do. That would apparently (indirectly) select CRYPTO_HASH2,
-> > which would enable the ahash functionality this driver uses.
-> > 
-> > Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-> > ---
-> 
-> Reviewed-by: Kim Phillips <kim.phillips@freescale.com>
+> Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+> Acked-by: Rob Landley <rob@landley.net> 
 
 Patch applied.
 -- 
