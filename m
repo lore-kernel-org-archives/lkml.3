@@ -1,179 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752850Ab3CJLdl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Mar 2013 07:33:41 -0400
-Received: from mail-in-06.arcor-online.net ([151.189.21.46]:44503 "EHLO
-	mail-in-06.arcor-online.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751778Ab3CJLdE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Mar 2013 07:33:04 -0400
-X-DKIM: Sendmail DKIM Filter v2.8.2 mail-in-18.arcor-online.net 36D633DC324
-Subject: [PATCH 4/5] HID: roccat: Added support for IskuFX
-From: Stefan Achatz <erazor_de@users.sourceforge.net>
-Reply-To: erazor_de@users.sourceforge.net
-To: Rob Landley <rob@landley.net>, Jiri Kosina <jkosina@suse.cz>,
-        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-input@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 10 Mar 2013 12:33:02 +0100
-Message-ID: <1362915182.2769.169.camel@neuromancer.tessier-ashpool>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
-Content-Transfer-Encoding: 7bit
+	id S1752171Ab3CJLgC (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Mar 2013 07:36:02 -0400
+Received: from dcvr.yhbt.net ([64.71.152.64]:45439 "EHLO dcvr.yhbt.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751338Ab3CJLgA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Mar 2013 07:36:00 -0400
+Date: Sun, 10 Mar 2013 11:35:59 +0000
+From: Eric Wong <normalperson@yhbt.net>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org,
+        Davide Libenzi <davidel@xmailserver.org>
+Subject: [PATCH] epoll: fix sparse error on RCU assignment
+Message-ID: <20130310113559.GA16551@dcvr.yhbt.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Extending isku module with one additional and one changed sysfs attr. IskuFX has
-larger light sysfs attr. Made the code size tolerant so both devices can be
-handled.
+This fixes the following sparse error when using
+CONFIG_SPARSE_RCU_POINTER=y and "make C=2 fs/eventpoll.o"
 
-Signed-off-by: Stefan Achatz <erazor_de@users.sourceforge.net>
+  fs/eventpoll.c:514:17: error: incompatible types in comparison expression (different address spaces)
+
+Cc: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Davide Libenzi <davidel@xmailserver.org>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: Eric Wong <normalperson@yhbt.net>
 ---
- .../ABI/testing/sysfs-driver-hid-roccat-isku       |   12 +++++++++++-
- drivers/hid/hid-ids.h                              |    1 +
- drivers/hid/hid-roccat-isku.c                      |   17 ++++++++++-------
- drivers/hid/hid-roccat-isku.h                      |    4 +++-
- 4 files changed, 25 insertions(+), 9 deletions(-)
+ Oleg: I found this error since I was working on an unrelated patch
+ to convert wakeup_source users to RCU in epoll.  This was introduced
+ in:
 
-diff --git a/Documentation/ABI/testing/sysfs-driver-hid-roccat-isku b/Documentation/ABI/testing/sysfs-driver-hid-roccat-isku
-index 9eca5a1..c601d0f 100644
---- a/Documentation/ABI/testing/sysfs-driver-hid-roccat-isku
-+++ b/Documentation/ABI/testing/sysfs-driver-hid-roccat-isku
-@@ -101,7 +101,8 @@ Date:		June 2011
- Contact:	Stefan Achatz <erazor_de@users.sourceforge.net>
- Description:	When written, this file lets one set the backlight intensity for
- 		a specific profile. Profile number is included in written data.
--		The data has to be 10 bytes long.
-+		The data has to be 10 bytes long for Isku, IskuFX needs	16 bytes
-+		of data.
- 		Before reading this file, control has to be written to select
- 		which profile to read.
- Users:		http://roccat.sourceforge.net
-@@ -141,3 +142,12 @@ Description:	When written, this file lets one trigger easyshift functionality
- 		The data has to be 16 bytes long.
- 		This file is writeonly.
- Users:		http://roccat.sourceforge.net
-+
-+What:		/sys/bus/usb/devices/<busnum>-<devnum>:<config num>.<interface num>/<hid-bus>:<vendor-id>:<product-id>.<num>/isku/roccatisku<minor>/talkfx
-+Date:		February 2013
-+Contact:	Stefan Achatz <erazor_de@users.sourceforge.net>
-+Description:	When written, this file lets one trigger temporary color schemes
-+		from the host.
-+		The data has to be 16 bytes long.
-+		This file is writeonly.
-+Users:		http://roccat.sourceforge.net
-diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
-index 007ee74..a2e767b 100644
---- a/drivers/hid/hid-ids.h
-+++ b/drivers/hid/hid-ids.h
-@@ -687,6 +687,7 @@
- #define USB_VENDOR_ID_ROCCAT		0x1e7d
- #define USB_DEVICE_ID_ROCCAT_ARVO	0x30d4
- #define USB_DEVICE_ID_ROCCAT_ISKU	0x319c
-+#define USB_DEVICE_ID_ROCCAT_ISKUFX	0x3264
- #define USB_DEVICE_ID_ROCCAT_KONE	0x2ced
- #define USB_DEVICE_ID_ROCCAT_KONEPLUS	0x2d51
- #define USB_DEVICE_ID_ROCCAT_KONEPURE	0x2dbe
-diff --git a/drivers/hid/hid-roccat-isku.c b/drivers/hid/hid-roccat-isku.c
-index 8ac83bb..aea9280 100644
---- a/drivers/hid/hid-roccat-isku.c
-+++ b/drivers/hid/hid-roccat-isku.c
-@@ -122,14 +122,14 @@ static ssize_t isku_sysfs_read(struct file *fp, struct kobject *kobj,
- 	if (off >= real_size)
- 		return 0;
+  commit 971316f0503a5c50633d07b83b6db2f15a3a5b00
+  (epoll: ep_unregister_pollwait() can use the freed pwq->whead)
+
+ fs/eventpoll.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/fs/eventpoll.c b/fs/eventpoll.c
+index 9fec183..1326409 100644
+--- a/fs/eventpoll.c
++++ b/fs/eventpoll.c
+@@ -228,7 +228,7 @@ struct eppoll_entry {
+ 	wait_queue_t wait;
  
--	if (off != 0 || count != real_size)
-+	if (off != 0 || count > real_size)
- 		return -EINVAL;
- 
- 	mutex_lock(&isku->isku_lock);
--	retval = isku_receive(usb_dev, command, buf, real_size);
-+	retval = isku_receive(usb_dev, command, buf, count);
- 	mutex_unlock(&isku->isku_lock);
- 
--	return retval ? retval : real_size;
-+	return retval ? retval : count;
- }
- 
- static ssize_t isku_sysfs_write(struct file *fp, struct kobject *kobj,
-@@ -142,15 +142,15 @@ static ssize_t isku_sysfs_write(struct file *fp, struct kobject *kobj,
- 	struct usb_device *usb_dev = interface_to_usbdev(to_usb_interface(dev));
- 	int retval;
- 
--	if (off != 0 || count != real_size)
-+	if (off != 0 || count > real_size)
- 		return -EINVAL;
- 
- 	mutex_lock(&isku->isku_lock);
- 	retval = roccat_common2_send_with_status(usb_dev, command,
--			(void *)buf, real_size);
-+			(void *)buf, count);
- 	mutex_unlock(&isku->isku_lock);
- 
--	return retval ? retval : real_size;
-+	return retval ? retval : count;
- }
- 
- #define ISKU_SYSFS_W(thingy, THINGY) \
-@@ -208,6 +208,7 @@ ISKU_SYSFS_RW(light, LIGHT)
- ISKU_SYSFS_RW(key_mask, KEY_MASK)
- ISKU_SYSFS_RW(last_set, LAST_SET)
- ISKU_SYSFS_W(talk, TALK)
-+ISKU_SYSFS_W(talkfx, TALKFX)
- ISKU_SYSFS_R(info, INFO)
- ISKU_SYSFS_W(control, CONTROL)
- ISKU_SYSFS_W(reset, RESET)
-@@ -224,6 +225,7 @@ static struct bin_attribute isku_bin_attributes[] = {
- 	ISKU_BIN_ATTR_RW(key_mask, KEY_MASK),
- 	ISKU_BIN_ATTR_RW(last_set, LAST_SET),
- 	ISKU_BIN_ATTR_W(talk, TALK),
-+	ISKU_BIN_ATTR_W(talkfx, TALKFX),
- 	ISKU_BIN_ATTR_R(info, INFO),
- 	ISKU_BIN_ATTR_W(control, CONTROL),
- 	ISKU_BIN_ATTR_W(reset, RESET),
-@@ -369,6 +371,7 @@ static int isku_raw_event(struct hid_device *hdev,
- 
- static const struct hid_device_id isku_devices[] = {
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_ROCCAT, USB_DEVICE_ID_ROCCAT_ISKU) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_ROCCAT, USB_DEVICE_ID_ROCCAT_ISKUFX) },
- 	{ }
+ 	/* The wait queue head that linked the "wait" wait queue item */
+-	wait_queue_head_t *whead;
++	wait_queue_head_t __rcu *whead;
  };
  
-@@ -407,5 +410,5 @@ module_init(isku_init);
- module_exit(isku_exit);
+ /* Wrapper struct used by poll queueing */
+@@ -929,7 +929,7 @@ static int ep_poll_callback(wait_queue_t *wait, unsigned mode, int sync, void *k
+ 	struct eventpoll *ep = epi->ep;
  
- MODULE_AUTHOR("Stefan Achatz");
--MODULE_DESCRIPTION("USB Roccat Isku driver");
-+MODULE_DESCRIPTION("USB Roccat Isku/FX driver");
- MODULE_LICENSE("GPL v2");
-diff --git a/drivers/hid/hid-roccat-isku.h b/drivers/hid/hid-roccat-isku.h
-index 102cb1e..35de150 100644
---- a/drivers/hid/hid-roccat-isku.h
-+++ b/drivers/hid/hid-roccat-isku.h
-@@ -25,10 +25,11 @@ enum {
- 	ISKU_SIZE_KEYS_MACRO = 0x23,
- 	ISKU_SIZE_KEYS_CAPSLOCK = 0x06,
- 	ISKU_SIZE_LAST_SET = 0x14,
--	ISKU_SIZE_LIGHT = 0x0a,
-+	ISKU_SIZE_LIGHT = 0x10,
- 	ISKU_SIZE_MACRO = 0x823,
- 	ISKU_SIZE_RESET = 0x03,
- 	ISKU_SIZE_TALK = 0x10,
-+	ISKU_SIZE_TALKFX = 0x10,
- };
+ 	if ((unsigned long)key & POLLFREE) {
+-		ep_pwq_from_wait(wait)->whead = NULL;
++		RCU_INIT_POINTER(ep_pwq_from_wait(wait)->whead, NULL);
+ 		/*
+ 		 * whead = NULL above can race with ep_remove_wait_queue()
+ 		 * which can do another remove_wait_queue() after us, so we
+@@ -1018,7 +1018,7 @@ static void ep_ptable_queue_proc(struct file *file, wait_queue_head_t *whead,
  
- enum {
-@@ -59,6 +60,7 @@ enum isku_commands {
- 	ISKU_COMMAND_LAST_SET = 0x14,
- 	ISKU_COMMAND_15 = 0x15,
- 	ISKU_COMMAND_TALK = 0x16,
-+	ISKU_COMMAND_TALKFX = 0x17,
- 	ISKU_COMMAND_FIRMWARE_WRITE = 0x1b,
- 	ISKU_COMMAND_FIRMWARE_WRITE_CONTROL = 0x1c,
- };
+ 	if (epi->nwait >= 0 && (pwq = kmem_cache_alloc(pwq_cache, GFP_KERNEL))) {
+ 		init_waitqueue_func_entry(&pwq->wait, ep_poll_callback);
+-		pwq->whead = whead;
++		RCU_INIT_POINTER(pwq->whead, whead);
+ 		pwq->base = epi;
+ 		add_wait_queue(whead, &pwq->wait);
+ 		list_add_tail(&pwq->llink, &epi->pwqlist);
 -- 
-1.7.3.4
-
-
-
+Eric Wong
