@@ -1,62 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753077Ab3CJRex (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Mar 2013 13:34:53 -0400
-Received: from mail.tpi.com ([70.99.223.143]:1839 "EHLO mail.tpi.com"
+	id S1752991Ab3CJRqM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Mar 2013 13:46:12 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:60543 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752850Ab3CJRew (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Mar 2013 13:34:52 -0400
-From: Tim Gardner <tim.gardner@canonical.com>
-To: linux-kernel@vger.kernel.org
-Cc: Tim Gardner <tim.gardner@canonical.com>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        device-drivers-devel@blackfin.uclinux.org, alsa-devel@alsa-project.org
-Subject: [PATCH] ASoC: adau1373: adau1373_hw_params: Silence overflow warning
-Date: Sun, 10 Mar 2013 11:34:38 -0600
-Message-Id: <1362936878-84443-1-git-send-email-tim.gardner@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1751619Ab3CJRqK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Mar 2013 13:46:10 -0400
+User-Agent: K-9 Mail for Android
+In-Reply-To: <CAE9FiQWQm0K2yywRisTRmFJmnpMpVsg6Ewh=swaZC2aM9ZKQQw@mail.gmail.com>
+References: <1362897887-30808-1-git-send-email-yinghai@kernel.org> <1362897887-30808-9-git-send-email-yinghai@kernel.org> <CAOJsxLG2Qg7vmLWirWK-GOBp65NxogGcAU5guoVphDu2G=BsjA@mail.gmail.com> <CAE9FiQWQm0K2yywRisTRmFJmnpMpVsg6Ewh=swaZC2aM9ZKQQw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH v2 08/20] x86, ACPI: Find acpi tables in initrd early from head_32.S/head64.c
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Sun, 10 Mar 2013 10:42:36 -0700
+To: Yinghai Lu <yinghai@kernel.org>, Pekka Enberg <penberg@kernel.org>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Thomas Renninger <trenn@suse.de>, Tang Chen <tangchen@cn.fujitsu.com>,
+        linux-kernel@vger.kernel.org, Jacob Shin <jacob.shin@amd.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-acpi@vger.kernel.org
+Message-ID: <a2b9bc9e-ccff-483a-a73c-2b4993a413d2@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ADAU1373_BCLKDIV_SOURCE is defined as BIT(5) which uses UL constants. On
-amd64 the result of the ones complement operator is then truncated to
-unsigned int according to the prototype of snd_soc_update_bits(). I think
-gcc is correctly warning that the upper 32 bits are lost.
+There is no 64-bit flat mode.  We use a #PF handler to emulate one by creating page tables on the fly.
 
-sound/soc/codecs/adau1373.c: In function 'adau1373_hw_params':
-sound/soc/codecs/adau1373.c:940:3: warning: large integer implicitly truncated to unsigned type [-Woverflow]
+Yinghai Lu <yinghai@kernel.org> wrote:
 
-gcc version 4.6.3
+>On Sun, Mar 10, 2013 at 3:25 AM, Pekka Enberg <penberg@kernel.org>
+>wrote:
+>>
+>> What is preventing us from making the 64-bit variant also work in
+>flat
+>> mode to make the code consistent and not hiding the differences under
+>> the rug? What am I missing here?
+>
+>Boot loader could start kernel from 64bit directly from
+>from arch/x86/boot/compressed/head_64.s::startup_64.
+>
+>initrd can be loaded by 64bit bootloader above 4G.
+>
+>So we even switch back to 32bit flat mode, we still can not access
+>those initrd
+>directly.
+>
+>Thanks
+>
+>Yinghai
 
-Cc: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Liam Girdwood <lgirdwood@gmail.com>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Jaroslav Kysela <perex@perex.cz>
-Cc: Takashi Iwai <tiwai@suse.de>
-Cc: device-drivers-devel@blackfin.uclinux.org
-Cc: alsa-devel@alsa-project.org
-Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
----
- sound/soc/codecs/adau1373.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/sound/soc/codecs/adau1373.c b/sound/soc/codecs/adau1373.c
-index 068b3ae..56ed788 100644
---- a/sound/soc/codecs/adau1373.c
-+++ b/sound/soc/codecs/adau1373.c
-@@ -132,7 +132,7 @@ struct adau1373 {
- #define ADAU1373_DAI_FORMAT_I2S		0x2
- #define ADAU1373_DAI_FORMAT_DSP		0x3
- 
--#define ADAU1373_BCLKDIV_SOURCE		BIT(5)
-+#define ADAU1373_BCLKDIV_SOURCE		(unsigned int)BIT(5)
- #define ADAU1373_BCLKDIV_32		0x03
- #define ADAU1373_BCLKDIV_64		0x02
- #define ADAU1373_BCLKDIV_128		0x01
 -- 
-1.7.9.5
-
+Sent from my mobile phone. Please excuse brevity and lack of formatting.
