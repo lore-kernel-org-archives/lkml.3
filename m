@@ -1,100 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751738Ab3CJM3O (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Mar 2013 08:29:14 -0400
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:48542 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750864Ab3CJM3N (ORCPT
+	id S1752523Ab3CJM3V (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Mar 2013 08:29:21 -0400
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:36342 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751921Ab3CJM3T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Mar 2013 08:29:13 -0400
-From: Valentin Ilie <valentin.ilie@gmail.com>
-To: socketcan@hartkopp.net, davem@davemloft.net
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Valentin Ilie <valentin.ilie@gmail.com>
-Subject: [PATCH] net: can: af_can.c: Fix checkpatch warnings
-Date: Sun, 10 Mar 2013 14:28:46 +0200
-Message-Id: <1362918526-26730-1-git-send-email-valentin.ilie@gmail.com>
-X-Mailer: git-send-email 1.8.1.2
+	Sun, 10 Mar 2013 08:29:19 -0400
+From: Dia Vasile <winged.flamespitter@gmail.com>
+To: sfrench@samba.org
+Cc: linux-cifs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        samba-technical@lists.samba.org, Dia Vasile <kill.elohim@hotmail.com>
+Subject: [PATCH] cifs: replaced kmalloc + memset with kzalloc
+Date: Sun, 10 Mar 2013 14:29:04 +0200
+Message-Id: <1362918544-31796-1-git-send-email-winged.flamespitter@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace printk(KERN_ERR with pr_err
-Add space before {
+From: Dia Vasile <kill.elohim@hotmail.com>
 
-Signed-off-by: Valentin Ilie <valentin.ilie@gmail.com>
+Signed-off-by: Diana Vasile <kill.elohim@hotmail.com>
 ---
- net/can/af_can.c | 15 +++++++--------
- 1 file changed, 7 insertions(+), 8 deletions(-)
+ fs/cifs/smb2pdu.c |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
-diff --git a/net/can/af_can.c b/net/can/af_can.c
-index c48e522..a14c0aa 100644
---- a/net/can/af_can.c
-+++ b/net/can/af_can.c
-@@ -525,7 +525,7 @@ void can_rx_unregister(struct net_device *dev, canid_t can_id, canid_t mask,
+diff --git a/fs/cifs/smb2pdu.c b/fs/cifs/smb2pdu.c
+index 41d9d07..83ef66e 100644
+--- a/fs/cifs/smb2pdu.c
++++ b/fs/cifs/smb2pdu.c
+@@ -846,12 +846,10 @@ create_lease_buf(u8 *lease_key, u8 oplock)
+ {
+ 	struct create_lease *buf;
  
- 	d = find_dev_rcv_lists(dev);
- 	if (!d) {
--		printk(KERN_ERR "BUG: receive list not found for "
-+		pr_err("BUG: receive list not found for "
- 		       "dev %s, id %03X, mask %03X\n",
- 		       DNAME(dev), can_id, mask);
- 		goto out;
-@@ -552,7 +552,7 @@ void can_rx_unregister(struct net_device *dev, canid_t can_id, canid_t mask,
- 	 */
+-	buf = kmalloc(sizeof(struct create_lease), GFP_KERNEL);
++	buf = kzalloc(sizeof(struct create_lease), GFP_KERNEL);
+ 	if (!buf)
+ 		return NULL;
  
- 	if (!r) {
--		printk(KERN_ERR "BUG: receive list entry not found for "
-+		pr_err("BUG: receive list entry not found for "
- 		       "dev %s, id %03X, mask %03X\n",
- 		       DNAME(dev), can_id, mask);
- 		r = NULL;
-@@ -749,7 +749,7 @@ int can_proto_register(const struct can_proto *cp)
- 	int err = 0;
- 
- 	if (proto < 0 || proto >= CAN_NPROTO) {
--		printk(KERN_ERR "can: protocol number %d out of range\n",
-+		pr_err("can: protocol number %d out of range\n",
- 		       proto);
- 		return -EINVAL;
- 	}
-@@ -761,7 +761,7 @@ int can_proto_register(const struct can_proto *cp)
- 	mutex_lock(&proto_tab_lock);
- 
- 	if (proto_tab[proto]) {
--		printk(KERN_ERR "can: protocol %d already registered\n",
-+		pr_err("can: protocol %d already registered\n",
- 		       proto);
- 		err = -EBUSY;
- 	} else
-@@ -817,8 +817,7 @@ static int can_notifier(struct notifier_block *nb, unsigned long msg,
- 		/* create new dev_rcv_lists for this device */
- 		d = kzalloc(sizeof(*d), GFP_KERNEL);
- 		if (!d) {
--			printk(KERN_ERR
--			       "can: allocation of receive list failed\n");
-+			pr_err("can: allocation of receive list failed\n");
- 			return NOTIFY_DONE;
- 		}
- 		BUG_ON(dev->ml_priv);
-@@ -838,7 +837,7 @@ static int can_notifier(struct notifier_block *nb, unsigned long msg,
- 				dev->ml_priv = NULL;
- 			}
- 		} else
--			printk(KERN_ERR "can: notifier: receive list not "
-+			pr_err("can: notifier: receive list not "
- 			       "found for dev %s\n", dev->name);
- 
- 		spin_unlock(&can_rcvlists_lock);
-@@ -927,7 +926,7 @@ static __exit void can_exit(void)
- 	/* remove created dev_rcv_lists from still registered CAN devices */
- 	rcu_read_lock();
- 	for_each_netdev_rcu(&init_net, dev) {
--		if (dev->type == ARPHRD_CAN && dev->ml_priv){
-+		if (dev->type == ARPHRD_CAN && dev->ml_priv) {
- 
- 			struct dev_rcv_lists *d = dev->ml_priv;
- 
+-	memset(buf, 0, sizeof(struct create_lease));
+-
+ 	buf->lcontext.LeaseKeyLow = cpu_to_le64(*((u64 *)lease_key));
+ 	buf->lcontext.LeaseKeyHigh = cpu_to_le64(*((u64 *)(lease_key + 8)));
+ 	if (oplock == SMB2_OPLOCK_LEVEL_EXCLUSIVE)
 -- 
-1.8.1.2
+1.7.10.4
 
