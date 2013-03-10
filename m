@@ -1,36 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753273Ab3CJU4I (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Mar 2013 16:56:08 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:53396 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751650Ab3CJU4F (ORCPT
+	id S1753296Ab3CJU7x (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Mar 2013 16:59:53 -0400
+Received: from netrider.rowland.org ([192.131.102.5]:49077 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751906Ab3CJU7v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Mar 2013 16:56:05 -0400
-Date: Sun, 10 Mar 2013 16:56:13 -0400 (EDT)
-Message-Id: <20130310.165613.427736360718722534.davem@davemloft.net>
-To: andreea.cristina.hodea@gmail.com
-Cc: mac@melware.de, isdn@linux-pingi.de, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, hodea_andreea@yahoo.com
-Subject: Re: [PATCH] eicon: Fixed checkpatch warning
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1362918876-18694-1-git-send-email-hodea_andreea@yahoo.com>
-References: <1362918876-18694-1-git-send-email-hodea_andreea@yahoo.com>
-X-Mailer: Mew version 6.4 on Emacs 23.4 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Sun, 10 Mar 2013 13:56:09 -0700 (PDT)
+	Sun, 10 Mar 2013 16:59:51 -0400
+Date: Sun, 10 Mar 2013 16:59:50 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: Soeren Moch <smoch@web.de>
+cc: USB list <linux-usb@vger.kernel.org>, Jason Cooper <jason@lakedaemon.net>,
+        Andrew Lunn <andrew@lunn.ch>, Arnd Bergmann <arnd@arndb.de>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] USB: EHCI: fix for leaking isochronous data
+In-Reply-To: <513CD4C3.9060701@web.de>
+Message-ID: <Pine.LNX.4.44L0.1303101638330.3146-100000@netrider.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andreea Hodea <andreea.cristina.hodea@gmail.com>
-Date: Sun, 10 Mar 2013 14:34:36 +0200
+On Sun, 10 Mar 2013, Soeren Moch wrote:
 
-> drivers/isdn/hardware/eicon/diva_didd.c:32:6: warning: symbol
-> 'DRIVERRELEASE_DIDD' was not declared. Should it be static?
+> > On Wed, 20 Feb 2013, Soeren Moch wrote:
+> >
+> >> Ok. I use 2 em2840-based usb sticks (em28xx driver) attached to a
+> >> Marvell Kirkwood-SoC with a orion-ehci usb controller. These usb sticks
+> >> stream dvb data (digital TV) employing isochronous usb transfers (user
+> >> application is vdr).
+> >>
+> >> Starting from linux-3.6 I see
+> >>     ERROR: 1024 KiB atomic DMA coherent pool is too small!
+> >> in the syslog after several 10 minutes (sometimes hours) of streaming
+> >> and then streaming stops.
+> >>
+> >> In linux-3.6 the memory management for the arm architecture was changed,
+> >> so that atomic coherent dma allocations are served from a special pool.
+> >> This pool gets exhausted. The only user of this pool (in my test) is
+> >> orion-ehci. Although I have only 10 URBs in flight (5 for each stick,
+> >> resubmitted in the completion handler), I have 256 atomic coherent
+> >> allocations (memory from the pool is allocated in pages) from orion-ehci
+> >> when I see this error. So I think there must be a memory leak (memory
+> >> allocated atomic somewhere below the usb_submit_urb call in em28xx-core.c).
+> >>
+> >> With other dvb sticks using usb bulk transfers I never see this error.
+> >>
+> >> Since you already found a memory leak in the ehci driver for isoc
+> >> transfers, I hoped you can help to solve this problem. If there are
+> >> additional questions, please ask. If there is something I can test, I
+> >> would be glad to do so.
+> >
+> > I guess the first thing is to get a dmesg log showing the problem.  You
+> > should build a kernel with CONFIG_USB_DEBUG enabled and post the part
+> > of the dmesg output starting from when you plug in the troublesome DVB
+> > stick.
 > 
-> Signed-off-by: Andreea Hodea <hodea_andreea@yahoo.com>
+> Sorry for my late response. Now I built a kernel 3.8.0 with usb_debug 
+> enabled. See below for the syslog of device plug-in.
+> 
+> > It also might help to have a record of all the isochronous-related
+> > coherent allocations and deallocations done by the ehci-hcd driver.
+> > Are you comfortable making your own debugging changes?  The allocations
+> > are done by a call to dma_pool_alloc() in
+> > drivers/usb/host/ehci-sched.c:itd_urb_transaction() if the device runs
+> > at high speed and sitd_urb_transaction() if the device runs at full
+> > speed.  The deallocations are done by calls to dma_pool_free() in
+> > ehci-timer.c:end_free_itds().
+> >
+> 
+> I added a debug message to 
+> drivers/usb/host/ehci-sched.c:itd_urb_transaction() to log the 
+> allocation flags, see log below.
 
-Applied, thanks.
+But it looks like you didn't add a message to end_free_itds(), so we
+don't know when the memory gets deallocated.  And you didn't print out
+the values of urb, num_itds, and i, or the value of itd (so we can
+match up allocations against deallocations).
+
+> For me this looks like nothing is 
+> allocated atomic here, so this function should not be the root cause of 
+> the dma coherent pool exhaustion.
+
+I don't understand.  If non-atomic allocations can't exhaust the pool, 
+why do we see these allocations fail?
+
+> Are there other allocation functions 
+> which I could track?
+
+Yes, but they wouldn't be used for isochronous transfers.  See 
+ehci_qtd_alloc(), ehci_qtd_free(), ehci_qh_alloc(), and qh_destroy() in 
+ehci-mem.c, as well as some other one-time-only coherent allocations in 
+that file.
+
+Alan Stern
+
