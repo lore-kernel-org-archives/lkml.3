@@ -1,69 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752532Ab3CJMBT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Mar 2013 08:01:19 -0400
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:44563 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751987Ab3CJMBR (ORCPT
+	id S1752417Ab3CJMG2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Mar 2013 08:06:28 -0400
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:52178 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751910Ab3CJMG0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Mar 2013 08:01:17 -0400
-Date: Sun, 10 Mar 2013 05:01:13 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, axboe@kernel.dk, jmoyer@redhat.com,
-        zab@redhat.com
-Subject: Re: [PATCHSET wq/for-3.10-tmp] workqueue: implement workqueue with
- custom worker attributes
-Message-ID: <20130310120113.GC24522@htj.dyndns.org>
-References: <1362194662-2344-1-git-send-email-tj@kernel.org>
- <513C61B9.5030004@cn.fujitsu.com>
+	Sun, 10 Mar 2013 08:06:26 -0400
+Message-ID: <513C773B.60802@gmail.com>
+Date: Sun, 10 Mar 2013 16:06:19 +0400
+From: Lijo Antony <lijo.kernel@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <513C61B9.5030004@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Simeon Bird <bladud@gmail.com>
+CC: Linux Filesystem Development Mailinglist 
+	<linux-fsdevel@vger.kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: Fwd: [Nepomuk] Better support for (desktop) file search / indexing
+ applications
+References: <201211011352.42476.Martin@lichtvoll.de> <6898338.Kmf2pUBmi1@deuteros> <201211101753.46211.Martin@lichtvoll.de> <10569573.iu1a6eiZCO@deuteros> <CAKRKD_W8pW+8kUO2HvgCQrtqnHOZzgeGiwAF5ER3Yad4OMcizg@mail.gmail.com> <CAKRKD_XvW3hjpboNJELMwDkFAsu80gvWXXtedgRmSpjZE6dSug@mail.gmail.com>
+In-Reply-To: <CAKRKD_XvW3hjpboNJELMwDkFAsu80gvWXXtedgRmSpjZE6dSug@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey, Lai.
+On 03/10/2013 08:51 AM, Simeon Bird wrote:
+>
+> Hi,
+>
+> We (nepomuk) recently looked at using fanotify, and indeed we would
+> need user watches, support for moves and recursive directory watches
+> (we need to support the case where /home is not a separate filesystem)
+> before it would be useful to us. If you are interested in adding
+> these, we would be delighted to use nepomuk as a test-case for them.
+>
+> We were wondering also if it would be possible to extend inotify a
+> little? Our wishlist is:
+>
+> 1) Recursive folder watches
+> 2) When a file moves, some way to get the destination without watching
+> the directory it moved to, so moves can be tracked without watching
+> every file on the system.
 
-On Sun, Mar 10, 2013 at 06:34:33PM +0800, Lai Jiangshan wrote:
-> > This patchset contains the following 31 patches.
-> > 
-> >  0001-workqueue-make-sanity-checks-less-punshing-using-WAR.patch
-> 
-> >  0002-workqueue-make-workqueue_lock-irq-safe.patch
-> 
-> workqueue_lock protects too many things. We can introduce different locks
-> for different purpose later.
+I am also interested in these features. As of now, my solutions are,
 
-I don't know.  My general attitude toward locking is the simpler the
-better.  None of the paths protected by workqueue_lock are hot.
-There's no actual benefit in making them finer grained.
+1) When the limit is reached, ask the user to increase the limit and 
+restart the application.
 
-> >  0023-workqueue-implement-get-put_pwq.patch
-> 
-> I guess this patch and patch25 may have very deep issue VS RCU.
+2) When top level directory move is detected, do a file system search 
+based on inode to find out the new location. Very slow and not fool proof.
 
-Hmmm... scary.  I suppose you're gonna elaborate on the review of the
-actual patch?
+I would also like to any other solutions for these problems. I am yet to 
+look into fanotify.
 
-> >  0024-workqueue-prepare-flush_workqueue-for-dynamic-creati.patch
-> >  0025-workqueue-perform-non-reentrancy-test-when-queueing-.patch
-> >  0026-workqueue-implement-apply_workqueue_attrs.patch
-> >  0027-workqueue-make-it-clear-that-WQ_DRAINING-is-an-inter.patch
-> >  0028-workqueue-reject-increasing-max_active-for-ordered-w.patch
-> >  0029-cpumask-implement-cpumask_parse.patch
-> >  0030-driver-base-implement-subsys_virtual_register.patch
-> >  0031-workqueue-implement-sysfs-interface-for-workqueues.patch
-> 
-> 
-> for 1~13,15~22,26~28, please add Reviewed-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+-lijo
 
-Done.
+[leaving the rest for reference]
 
-Thanks.
+>
+> I understand that there are reasons of security and performance why
+> you cannot implement 1), but is 2) possible? Maybe by extending
+> IN_MOVED_TO, or adding a new event type?
+>
+> 2) is actually in some ways the more severe problem for us. As well as
+> being an indexer, nepomuk is a system that allows you to store file
+> metadata such as ratings. When users move the files, they want the
+> metadata to move too, so we need to track where the file moved, and
+> thus at the moment we recursively watch everything. This is
+> particularly problematic with removable media; because a lot of people
+> will plug in an external drive and then move files onto it, we have to
+> watch every drive as soon as it is plugged in. If we were able to get
+> the destination of move events without watching the destination
+> directory, we could watch only those directories with interesting
+> metadata in, which would make things a lot easier.
+>
+> inotify move tracking would also be useful for other things - eg, a
+> text editor could use inotify to see if a file it has open has moved
+> and offer to re-open the file in its new location, which is impossible
+> at the moment.
+>
+> Since the lack of recursive watches is really a problem because we
+> have a tendency to run out of watches, it would also really help if
+> the default limit was a bit higher -  most people seem to have > 8000
+> folders, but I suspect far fewer have > 32000 (probably excepting
+> those who are indexing kernel source trees: I have 21000, and half of
+> that is KDE source).
+>
+> Would any of this be possible? If you happen to know of a better way
+> to track moves using existing tools, that would be even better.
+>
+> Thanks,
+> Simeon
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
 
--- 
-tejun
