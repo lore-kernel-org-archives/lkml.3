@@ -1,156 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751856Ab3CJBLi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Mar 2013 20:11:38 -0500
-Received: from dcvr.yhbt.net ([64.71.152.64]:41730 "EHLO dcvr.yhbt.net"
+	id S1752091Ab3CJBL6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Mar 2013 20:11:58 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:45901 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751357Ab3CJBLh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Mar 2013 20:11:37 -0500
-Date: Sun, 10 Mar 2013 01:11:36 +0000
-From: Eric Wong <normalperson@yhbt.net>
-To: Arve =?utf-8?B?SGrDuG5uZXbDpWc=?= <arve@android.com>
-Cc: NeilBrown <neilb@suse.de>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        linux-kernel@vger.kernel.org, Davide Libenzi <davidel@xmailserver.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: epoll: possible bug from wakeup_source activation
-Message-ID: <20130310011136.GA4815@dcvr.yhbt.net>
-References: <20130307112639.GA25130@dcvr.yhbt.net>
- <20130308013027.GA31830@dcvr.yhbt.net>
- <CAMP5Xgdsam2DGLshL5Uu5Q4La_nAq=u1YRNBwAxDstgCvJiqfw@mail.gmail.com>
- <20130308204944.GA27379@dcvr.yhbt.net>
- <CAMP5Xgc4-oX=-V57Mu5PARCWdfpkjck0VnZNAXH-JisvKi5tAg@mail.gmail.com>
- <20130309071037.GA13360@dcvr.yhbt.net>
+	id S1751946Ab3CJBL5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 9 Mar 2013 20:11:57 -0500
+Message-ID: <513BDDCE.2050502@redhat.com>
+Date: Sat, 09 Mar 2013 20:11:42 -0500
+From: Prarit Bhargava <prarit@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110419 Red Hat/3.1.10-1.el6_0 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130309071037.GA13360@dcvr.yhbt.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Don Dutile <ddutile@redhat.com>
+CC: Andreas Mohr <andi@lisas.de>, Neil Horman <nhorman@tuxdriver.com>,
+        linux-kernel@vger.kernel.org, Don Zickus <dzickus@redhat.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Asit Mallick <asit.k.mallick@intel.com>, linux-pci@vger.kernel.org
+Subject: Re: [PATCH] irq: add quirk for broken interrupt remapping on 55XX
+ chipsets
+References: <20130302155942.GA353@rhlx01.hs-esslingen.de> <5134A080.9070308@redhat.com>
+In-Reply-To: <5134A080.9070308@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Eric Wong <normalperson@yhbt.net> wrote:
-> Arve Hjønnevåg <arve@android.com> wrote:
-> > On Fri, Mar 8, 2013 at 12:49 PM, Eric Wong <normalperson@yhbt.net> wrote:
-> > > What happens if ep_modify calls ep_destroy_wakeup_source
-> > > while __pm_stay_awake is running on the same epi->ws?
-> > 
-> > Yes, that looks like a problem. I think calling
-> > ep_destroy_wakeup_source with ep->lock held should fix that. It is not
-> > clear how useful changing EPOLLWAKEUP in ep_modify is, so
-> > alternatively we could remove that feature and instead only allow it
-> > to be set in ep_insert.
+On 03/04/2013 08:24 AM, Don Dutile wrote:
+> On 03/02/2013 10:59 AM, Andreas Mohr wrote:
+>> Hi,
+>>
+>>> if ((revision == 0x13)&&  irq_remapping_enabled) {
+>>> +        pr_warn("WARNING WARNING WARNING WARNING WARNING
+>>> WARNING\n"
+>>> +            "This system BIOS has enabled interrupt
+>>> remapping\n"
+>>> +            "on a chipset that contains an errata making
+>>> that\n"
+>>> +            "feature unstable.  Please reboot with
+>>> nointremap\n"
+>>> +            "added to the kernel command line and contact\n"
+>>> +            "your BIOS vendor for an update");
+>>> +    }
+>>
+>> Forgive me, but ISTR that there's a special BIOS firmware quirk bug annotating
+>> logger warning message mechanism (have I managed to hit all keywords yet? ;)
+>> in the kernel which might be useful in this case.
+>>
+>>
+>> OK, found something (but I don't think it was the mechanism
+>> that ISTR - perhaps it got modernized?):
+>>
+>>
+>> include/linux/printk.h:
+>>
+>> /*
+>>   * FW_BUG
+>>   * Add this to a message where you are sure the firmware is buggy or
+>>   * behaves
+>>   * really stupid or out of spec. Be aware that the responsible BIOS
+>>   * developer
+>>   * should be able to fix this issue or at least get a concrete idea of
+>>   * the
+>>   * problem by reading your message without the need of looking at the
+>>   * kernel
+>>   * code.
+>>   *
+>>   * Use it for definite and high priority BIOS bugs.
+>>   *
+>>   * FW_WARN
+>>   * Use it for not that clear (e.g. could the kernel messed up things
+>>   * already?)
+>>   * and medium priority BIOS bugs.
+>>   *
+>>   * FW_INFO
+>>   * Use this one if you want to tell the user or vendor about something
+>>   * suspicious, but generally harmless related to the firmware.
+>>   *
+>>   * Use it for information or very low priority BIOS bugs.
+>>   */
+>>
 > 
-> ep->lock would work, but ep->lock is already a source of heavy
-> contention in my multithreaded+epoll webservers.
-> 
-> Perhaps RCU can be used?  I've no experience with RCU, but I've been
-> meaning to get acquainted with RCU.
+> It is not a firmware/BIOS bug. 
 
-The following is lightly tested, at least I haven't gotten lockdep
-to complain.
+Correct.  This is a hardware bug that *may be* resolved through a BIOS update.
+But there is no guarantee that a BIOS update is available.  Labelling it a FW
+bug would be a mistake.
 
---------------------------------- 8< ----------------------------
->From 2bcd549893aa204bd858cc1500a70f20b28e47c1 Mon Sep 17 00:00:00 2001
-From: Eric Wong <normalperson@yhbt.net>
-Date: Sun, 10 Mar 2013 01:06:50 +0000
-Subject: [PATCH] epoll: RCU protect wakeup_source in epitem
+Prarit's comment to annotate it as
+> a HW_ERR is more accurate.  A software patch is being tested now
+> to see if it can do set-affinity in a manner that avoids this race
+> and enables IR to stay on for all these systems.  It requires
+> more testing to ensure the logic is valid.  This patch was
+> recommended as a necessary short-term fix, and to highlight to
+> others this possible state -- which Gerry mentioned he had.
 
-This prevents wakeup_source destruction when a user hits the
-item with EPOLL_CTL_MOD while ep_poll_callback is running.
+Yup -- as mstowe asked ... should we even consider this patch then, or should we
+wait for the possible real fix?
 
-Signed-off-by: Eric Wong <normalperson@yhbt.net>
----
- fs/eventpoll.c | 31 ++++++++++++++++++++++++-------
- 1 file changed, 24 insertions(+), 7 deletions(-)
+Having said that ... I'm nervous about playing around with the set-affinity path
+for this HW problem.  We're basically changing good/reliable code for broken-ass
+hardware.  :/  That doesn't seem a like a good choice to me.
 
-diff --git a/fs/eventpoll.c b/fs/eventpoll.c
-index 9fec183..e008d54 100644
---- a/fs/eventpoll.c
-+++ b/fs/eventpoll.c
-@@ -158,7 +158,7 @@ struct epitem {
- 	struct list_head fllink;
- 
- 	/* wakeup_source used when EPOLLWAKEUP is set */
--	struct wakeup_source *ws;
-+	struct wakeup_source __rcu *ws;
- 
- 	/* The structure that describe the interested events and the source fd */
- 	struct epoll_event event;
-@@ -536,6 +536,17 @@ static void ep_unregister_pollwait(struct eventpoll *ep, struct epitem *epi)
- 	}
- }
- 
-+static inline void ep_pm_stay_awake(struct epitem *epi)
-+{
-+	struct wakeup_source *ws;
-+
-+	rcu_read_lock();
-+	ws = rcu_dereference(epi->ws);
-+	if (ws)
-+		__pm_stay_awake(ws);
-+	rcu_read_unlock();
-+}
-+
- /**
-  * ep_scan_ready_list - Scans the ready list in a way that makes possible for
-  *                      the scan code, to call f_op->poll(). Also allows for
-@@ -984,7 +995,7 @@ static int ep_poll_callback(wait_queue_t *wait, unsigned mode, int sync, void *k
- 	/* If this file is already in the ready list we exit soon */
- 	if (!ep_is_linked(&epi->rdllink)) {
- 		list_add_tail(&epi->rdllink, &ep->rdllist);
--		__pm_stay_awake(epi->ws);
-+		ep_pm_stay_awake(epi);
- 	}
- 
- 	/*
-@@ -1146,6 +1157,7 @@ static int reverse_path_check(void)
- static int ep_create_wakeup_source(struct epitem *epi)
- {
- 	const char *name;
-+	struct wakeup_source *ws;
- 
- 	if (!epi->ep->ws) {
- 		epi->ep->ws = wakeup_source_register("eventpoll");
-@@ -1154,17 +1166,22 @@ static int ep_create_wakeup_source(struct epitem *epi)
- 	}
- 
- 	name = epi->ffd.file->f_path.dentry->d_name.name;
--	epi->ws = wakeup_source_register(name);
--	if (!epi->ws)
-+	ws = wakeup_source_register(name);
-+
-+	if (!ws)
- 		return -ENOMEM;
-+	rcu_assign_pointer(epi->ws, ws);
- 
- 	return 0;
- }
- 
- static void ep_destroy_wakeup_source(struct epitem *epi)
- {
--	wakeup_source_unregister(epi->ws);
--	epi->ws = NULL;
-+	struct wakeup_source *ws = epi->ws;
-+
-+	rcu_assign_pointer(epi->ws, NULL);
-+	synchronize_rcu(); /* wait for ep_pm_stay_awake to finish */
-+	wakeup_source_unregister(ws);
- }
- 
- /*
-@@ -1199,7 +1216,7 @@ static int ep_insert(struct eventpoll *ep, struct epoll_event *event,
- 		if (error)
- 			goto error_create_wakeup_source;
- 	} else {
--		epi->ws = NULL;
-+		RCU_INIT_POINTER(epi->ws, NULL);
- 	}
- 
- 	/* Initialize the poll table using the queue callback */
--- 
-Eric Wong
+I can understand if we all feel that the code is broken, or it can be made
+better -- but to change it because of bad HW  just doesn't seem like the right
+thing to do.
 
+IMO.
+
+P.
