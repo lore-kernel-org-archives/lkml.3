@@ -1,82 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752837Ab3CJRQA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Mar 2013 13:16:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20662 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751562Ab3CJRP7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Mar 2013 13:15:59 -0400
-Date: Sun, 10 Mar 2013 18:15:18 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Andi Kleen <andi@firstfloor.org>, Oleg Nesterov <oleg@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Vince Weaver <vincent.weaver@maine.edu>
-Subject: Re: [PATCH 2/5] signal x86: Clear RF EFLAGS bit for signal handler
-Message-ID: <20130310171518.GA1724@krava.brq.redhat.com>
-References: <1362161512-16803-1-git-send-email-jolsa@redhat.com>
- <1362161512-16803-3-git-send-email-jolsa@redhat.com>
- <5130FA2E.9010502@zytor.com>
- <20130303104321.GA1024@krava.redhat.com>
+	id S1752897Ab3CJRTN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Mar 2013 13:19:13 -0400
+Received: from mail-wg0-f41.google.com ([74.125.82.41]:37109 "EHLO
+	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752437Ab3CJRTM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Mar 2013 13:19:12 -0400
+Message-ID: <513CC08B.2040800@redhat.com>
+Date: Sun, 10 Mar 2013 18:19:07 +0100
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130219 Thunderbird/17.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130303104321.GA1024@krava.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Gleb Natapov <gleb@redhat.com>
+CC: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, mtosatti@redhat.com,
+        jan.kiszka@siemens.com
+Subject: Re: [PATCH] x86: kvm: reset the bootstrap processor when it gets
+ an INIT
+References: <1362811713-25830-1-git-send-email-pbonzini@redhat.com> <20130310114646.GM11223@redhat.com> <513C9E82.1020304@redhat.com> <20130310153540.GL24444@redhat.com>
+In-Reply-To: <20130310153540.GL24444@redhat.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 03, 2013 at 11:43:21AM +0100, Jiri Olsa wrote:
-> On Fri, Mar 01, 2013 at 10:57:50AM -0800, H. Peter Anvin wrote:
-> > On 03/01/2013 10:11 AM, Jiri Olsa wrote:
-> > > Clearing RF EFLAGS bit for signal handler. The reason is,
-> > > that this flag is set by debug exception code to prevent
-> > > the recursive exception entry.
-> > > 
-> > > Leaving it set for signal handler might prevent debug
-> > > exception of the signal handler itself.
-> > > 
-> > > diff --git a/arch/x86/kernel/signal.c b/arch/x86/kernel/signal.c
-> > > index b6fe116..e273571 100644
-> > > --- a/arch/x86/kernel/signal.c
-> > > +++ b/arch/x86/kernel/signal.c
-> > > @@ -726,6 +726,13 @@ handle_signal(unsigned long sig, siginfo_t *info, struct k_sigaction *ka,
-> > >  	regs->flags &= ~X86_EFLAGS_DF;
-> > >  
-> > >  	/*
-> > > +	 * Clear RF when entering the signal handler, because
-> > > +	 * it might disable possible debug exception from the
-> > > +	 * signal handler.
-> > > +	 */
-> > > +	regs->flags &= ~X86_EFLAGS_RF;
-> > > +
-> > > +	/*
-> > >  	 * Clear TF when entering the signal handler, but
-> > >  	 * notify any tracer that was single-stepping it.
-> > >  	 * The tracer may want to single-step inside the
-> > > 
-> > 
-> > Makes sense.  However, can you combine all the flags-clearing into one
-> > statement while you are at it?
+Il 10/03/2013 16:35, Gleb Natapov ha scritto:
+>> > However, it would effectively redefine the meaning of
+>> > KVM_MP_STATE_INIT_RECEIVED and KVM_MP_STATE_SIPI_RECEIVED, respectively
+>> > to KVM_MP_STATE_WAIT_FOR_SIPI and KVM_MP_STATE_RESETTING.  I wasn't sure
+>> > if this is considered an API change (personally, I would treat it as one).
+>> > 
+> If it is kernel module internal it definitely is not API change.
+> INIT/SIPI handling is a bit ad-hoc right now anyway as Jan noticed. For
+> instance INIT does not really resets VCPU. Only after SIPI it is really
+> reset, so KVM_MP_STATE_SIPI_RECEIVED is really KVM_MP_STATE_RESET_ME_RIGHT_NOW
+> state.
 
-Is there any other reason for this besides having just signal
-instruction doing this update?
+Yeah, and the current definition is ambiguous (without hypervisor
+patches, there's no way to use it as the names would suggest), so
+perhaps the right thing to do is to rename the states (old names kept
+for backwards compatibility only) and work from there.
 
-It looks like gcc is smart enough to do that anyway:
-
-...
-andq   $0xfffffffffffffaff,(%rdi)
-...
-
-
-I need to send V2 anyway, since the patchset no longer
-applies into latest tip.
-
-thanks,
-jirka
+Paolo
