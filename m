@@ -1,38 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752732Ab3CJMLP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Mar 2013 08:11:15 -0400
-Received: from mail-ee0-f43.google.com ([74.125.83.43]:53652 "EHLO
-	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752364Ab3CJMLK (ORCPT
+	id S1752829Ab3CJMLV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Mar 2013 08:11:21 -0400
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:60102 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752364Ab3CJMLS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Mar 2013 08:11:10 -0400
-Message-ID: <513C7858.70401@suse.cz>
-Date: Sun, 10 Mar 2013 13:11:04 +0100
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:19.0) Gecko/20130124 Thunderbird/19.0
-MIME-Version: 1.0
-To: Thomas Meyer <thomas@m3y3r.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: WARNING: at drivers/tty/tty_buffer.c:428 flush_to_ldisc
-References: <1362915489.1220.8.camel@localhost.localdomain>
-In-Reply-To: <1362915489.1220.8.camel@localhost.localdomain>
-X-Enigmail-Version: 1.6a1pre
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Sun, 10 Mar 2013 08:11:18 -0400
+From: Mihnea Dobrescu-Balaur <mihneadb@gmail.com>
+To: iss_storagedev@hp.com
+Cc: mike.miller@hp.com, linux-kernel@vger.kernel.org,
+        Mihnea Dobrescu-Balaur <mihneadb@gmail.com>
+Subject: [PATCH] block: don't cast kmalloc() return value
+Date: Sun, 10 Mar 2013 14:11:09 +0200
+Message-Id: <1362917469-20015-1-git-send-email-mihneadb@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/10/2013 12:38 PM, Thomas Meyer wrote:
-> [25693.253108] ------------[ cut here ]------------
-> [25693.253117] WARNING: at drivers/tty/tty_buffer.c:428 flush_to_ldisc+0x162/0x170()
-> [25693.253118] Hardware name: Aspire 1810T
-> [25693.253119] tty is NULL
+Signed-off-by: Mihnea Dobrescu-Balaur <mihneadb@gmail.com>
+---
+ drivers/block/cciss_scsi.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-Yeah, thanks. I sent a patch to disable that warning completely:
-https://lkml.org/lkml/2013/2/27/244
-
+diff --git a/drivers/block/cciss_scsi.c b/drivers/block/cciss_scsi.c
+index da33111..13a70d8 100644
+--- a/drivers/block/cciss_scsi.c
++++ b/drivers/block/cciss_scsi.c
+@@ -705,8 +705,7 @@ cciss_scsi_setup(ctlr_info_t *h)
+ 	struct cciss_scsi_adapter_data_t * shba;
+ 
+ 	ccissscsi[h->ctlr].ndevices = 0;
+-	shba = (struct cciss_scsi_adapter_data_t *)
+-		kmalloc(sizeof(*shba), GFP_KERNEL);	
++	shba = kmalloc(sizeof(*shba), GFP_KERNEL);
+ 	if (shba == NULL)
+ 		return;
+ 	shba->scsi_host = NULL;
 -- 
-js
-suse labs
+1.7.10.4
+
