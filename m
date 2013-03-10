@@ -1,87 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752904Ab3CJQ6e (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Mar 2013 12:58:34 -0400
-Received: from mail.tpi.com ([70.99.223.143]:1121 "EHLO mail.tpi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751650Ab3CJQ6d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Mar 2013 12:58:33 -0400
-From: Tim Gardner <tim.gardner@canonical.com>
-To: linux-kernel@vger.kernel.org
-Cc: Tim Gardner <tim.gardner@canonical.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, patches@opensource.wolfsonmicro.com,
-        alsa-devel@alsa-project.org
-Subject: [PATCH linux-next] ASoC: wm_hubs: Silence reg_r and reg_l 'may be used uninitialized' warnings
-Date: Sun, 10 Mar 2013 10:58:21 -0600
-Message-Id: <1362934701-75951-1-git-send-email-tim.gardner@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1752897Ab3CJRAk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Mar 2013 13:00:40 -0400
+Received: from mail-we0-f181.google.com ([74.125.82.181]:53545 "EHLO
+	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751619Ab3CJRAj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Mar 2013 13:00:39 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130310164530.GA4523@kroah.com>
+References: <1362194662-2344-1-git-send-email-tj@kernel.org>
+ <1362194662-2344-31-git-send-email-tj@kernel.org> <20130302181727.GB2051@kroah.com>
+ <CAPXgP11Zuz166v_M2EhGDY1U5vKtUwE+fTPAWYEu7UxXsr=g=A@mail.gmail.com>
+ <20130305204327.GK12795@htj.dyndns.org> <20130307233116.GF10304@kroah.com>
+ <CAPXgP10CEMgdOW23txWwwh0xSVd97fKH31xdKjE8Wy51kO6XdQ@mail.gmail.com>
+ <20130310115702.GB24522@htj.dyndns.org> <20130310164530.GA4523@kroah.com>
+From: Kay Sievers <kay@vrfy.org>
+Date: Sun, 10 Mar 2013 18:00:18 +0100
+Message-ID: <CAPXgP136685qRguL6C91C+NE7GbgrU7CdpQJW89Fi-_Vw6EukA@mail.gmail.com>
+Subject: Re: [PATCH 30/31] driver/base: implement subsys_virtual_register()
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
+        laijs@cn.fujitsu.com, axboe@kernel.dk, jmoyer@redhat.com,
+        zab@redhat.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Return an error from wm_hubs_read_dc_servo() if hubs->dcs_readback_mode is not
-correctly initialized. You might as well bail out since nothing is likely to
-work correctly afterwards.
+On Sun, Mar 10, 2013 at 5:45 PM, Greg Kroah-Hartman
+<gregkh@linuxfoundation.org> wrote:
+> On Sun, Mar 10, 2013 at 04:57:02AM -0700, Tejun Heo wrote:
+>> Hey, guys.
+>>
+>> On Fri, Mar 08, 2013 at 01:04:25AM +0100, Kay Sievers wrote:
+>> > > Sorry for the delay, I'm at a conference all this week, and haven't had
+>> > > much time to think about this.
+>> > >
+>> > > If Kay says this is ok for now, that's good enough for me.
+>> >
+>> > Yes, it looks fine to me. If we provide the unified handling of
+>> > classes and buses some day, this can probably go away, but until that
+>> > it looks fine and is straight forward to do it that way,
+>>
+>> How should this be routed?  I can take it but Kay needs it too so
+>> workqueue tree probably isn't the best fit although I can set up a
+>> separate branch if needed.
+>
+> What patch set does Kay need it for?  I have no objection for you to
+> take it through the workqueue tree:
 
-sound/soc/codecs/wm_hubs.c:321:11: warning: 'reg_r' may be used uninitialized in this function [-Wuninitialized]
-sound/soc/codecs/wm_hubs.c:251:13: note: 'reg_r' was declared here
-sound/soc/codecs/wm_hubs.c:322:11: warning: 'reg_l' may be used uninitialized in this function [-Wuninitialized]
-sound/soc/codecs/wm_hubs.c:251:6: note: 'reg_l' was declared here
+The dbus bus has the same issues and needs the devices put under
+virtual/ and not the devices/ root.
 
-gcc version 4.6.3
-
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Liam Girdwood <lgirdwood@gmail.com>
-Cc: Jaroslav Kysela <perex@perex.cz>
-Cc: Takashi Iwai <tiwai@suse.de>
-Cc: patches@opensource.wolfsonmicro.com
-Cc: alsa-devel@alsa-project.org
-Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
----
- sound/soc/codecs/wm_hubs.c |    9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
-
-diff --git a/sound/soc/codecs/wm_hubs.c b/sound/soc/codecs/wm_hubs.c
-index 867ae97..f5d81b9 100644
---- a/sound/soc/codecs/wm_hubs.c
-+++ b/sound/soc/codecs/wm_hubs.c
-@@ -199,11 +199,12 @@ static void wm_hubs_dcs_cache_set(struct snd_soc_codec *codec, u16 dcs_cfg)
- 	list_add_tail(&cache->list, &hubs->dcs_cache);
- }
- 
--static void wm_hubs_read_dc_servo(struct snd_soc_codec *codec,
-+static int wm_hubs_read_dc_servo(struct snd_soc_codec *codec,
- 				  u16 *reg_l, u16 *reg_r)
- {
- 	struct wm_hubs_data *hubs = snd_soc_codec_get_drvdata(codec);
- 	u16 dcs_reg, reg;
-+	int ret = 0;
- 
- 	switch (hubs->dcs_readback_mode) {
- 	case 2:
-@@ -236,8 +237,9 @@ static void wm_hubs_read_dc_servo(struct snd_soc_codec *codec,
- 		break;
- 	default:
- 		WARN(1, "Unknown DCS readback method\n");
--		return;
-+		ret = -1;
- 	}
-+	return ret;
- }
- 
- /*
-@@ -286,7 +288,8 @@ static void enable_dc_servo(struct snd_soc_codec *codec)
- 				  WM8993_DCS_TRIG_STARTUP_1);
- 	}
- 
--	wm_hubs_read_dc_servo(codec, &reg_l, &reg_r);
-+	if (wm_hubs_read_dc_servo(codec, &reg_l, &reg_r) < 0)
-+		return;
- 
- 	dev_dbg(codec->dev, "DCS input: %x %x\n", reg_l, reg_r);
- 
--- 
-1.7.9.5
-
+Kay
