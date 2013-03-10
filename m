@@ -1,81 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752171Ab3CJLgC (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Mar 2013 07:36:02 -0400
-Received: from dcvr.yhbt.net ([64.71.152.64]:45439 "EHLO dcvr.yhbt.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751338Ab3CJLgA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Mar 2013 07:36:00 -0400
-Date: Sun, 10 Mar 2013 11:35:59 +0000
-From: Eric Wong <normalperson@yhbt.net>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org,
-        Davide Libenzi <davidel@xmailserver.org>
-Subject: [PATCH] epoll: fix sparse error on RCU assignment
-Message-ID: <20130310113559.GA16551@dcvr.yhbt.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1752220Ab3CJLiS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Mar 2013 07:38:18 -0400
+Received: from www17.your-server.de ([213.133.104.17]:34681 "EHLO
+	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751338Ab3CJLiR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Mar 2013 07:38:17 -0400
+Message-ID: <1362915489.1220.8.camel@localhost.localdomain>
+Subject: WARNING: at drivers/tty/tty_buffer.c:428 flush_to_ldisc
+From: Thomas Meyer <thomas@m3y3r.de>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Sun, 10 Mar 2013 12:38:09 +0100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.3 (3.6.3-2.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Authenticated-Sender: thomas@m3y3r.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This fixes the following sparse error when using
-CONFIG_SPARSE_RCU_POINTER=y and "make C=2 fs/eventpoll.o"
+[25693.253108] ------------[ cut here ]------------
+[25693.253117] WARNING: at drivers/tty/tty_buffer.c:428 flush_to_ldisc+0x162/0x170()
+[25693.253118] Hardware name: Aspire 1810T
+[25693.253119] tty is NULL
+[25693.253148] Modules linked in: fuse ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 ip6table_filter ip6_tables btusb bluetooth acer_wmi sparse_keymap snd_hda_codec_hdmi snd_hda_codec_realtek snd_usb_audio snd_usbmidi_lib acerhdf snd_hda_intel snd_hda_codec snd_hwdep snd_seq acpi_cpufreq mperf freq_table snd_pcm udlfb syscopyarea sysfillrect joydev sysimgblt snd_rawmidi fb_sys_fops snd_seq_device pcspkr asix usbnet arc4 iwldvm mac80211 ipv6 iwlwifi snd_page_alloc snd_timer cfg80211 rfkill atl1c snd soundcore wmi kvm_intel kvm
+[25693.253151] Pid: 8266, comm: kworker/0:2 Not tainted 3.9.0-rc1+ #24
+[25693.253152] Call Trace:
+[25693.253157]  [<ffffffff81032e4a>] warn_slowpath_common+0x7a/0xc0
+[25693.253160]  [<ffffffff81032f31>] warn_slowpath_fmt+0x41/0x50
+[25693.253163]  [<ffffffff810348e2>] ? console_unlock+0x252/0x380
+[25693.253166]  [<ffffffff812b2cf2>] flush_to_ldisc+0x162/0x170
+[25693.253170]  [<ffffffff810484b7>] process_one_work+0x147/0x3a0
+[25693.253173]  [<ffffffff81049fa0>] worker_thread+0x110/0x350
+[25693.253175]  [<ffffffff81049e90>] ? busy_worker_rebind_fn+0xa0/0xa0
+[25693.253178]  [<ffffffff8104e57a>] kthread+0xba/0xc0
+[25693.253181]  [<ffffffff8104e4c0>] ? kthread_create_on_node+0x110/0x110
+[25693.253186]  [<ffffffff81519d6a>] ret_from_fork+0x7a/0xb0
+[25693.253188]  [<ffffffff8104e4c0>] ? kthread_create_on_node+0x110/0x110
+[25693.253190] ---[ end trace 2d19715e8b176a09 ]---
 
-  fs/eventpoll.c:514:17: error: incompatible types in comparison expression (different address spaces)
-
-Cc: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Davide Libenzi <davidel@xmailserver.org>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Signed-off-by: Eric Wong <normalperson@yhbt.net>
----
- Oleg: I found this error since I was working on an unrelated patch
- to convert wakeup_source users to RCU in epoll.  This was introduced
- in:
-
-  commit 971316f0503a5c50633d07b83b6db2f15a3a5b00
-  (epoll: ep_unregister_pollwait() can use the freed pwq->whead)
-
- fs/eventpoll.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/fs/eventpoll.c b/fs/eventpoll.c
-index 9fec183..1326409 100644
---- a/fs/eventpoll.c
-+++ b/fs/eventpoll.c
-@@ -228,7 +228,7 @@ struct eppoll_entry {
- 	wait_queue_t wait;
- 
- 	/* The wait queue head that linked the "wait" wait queue item */
--	wait_queue_head_t *whead;
-+	wait_queue_head_t __rcu *whead;
- };
- 
- /* Wrapper struct used by poll queueing */
-@@ -929,7 +929,7 @@ static int ep_poll_callback(wait_queue_t *wait, unsigned mode, int sync, void *k
- 	struct eventpoll *ep = epi->ep;
- 
- 	if ((unsigned long)key & POLLFREE) {
--		ep_pwq_from_wait(wait)->whead = NULL;
-+		RCU_INIT_POINTER(ep_pwq_from_wait(wait)->whead, NULL);
- 		/*
- 		 * whead = NULL above can race with ep_remove_wait_queue()
- 		 * which can do another remove_wait_queue() after us, so we
-@@ -1018,7 +1018,7 @@ static void ep_ptable_queue_proc(struct file *file, wait_queue_head_t *whead,
- 
- 	if (epi->nwait >= 0 && (pwq = kmem_cache_alloc(pwq_cache, GFP_KERNEL))) {
- 		init_waitqueue_func_entry(&pwq->wait, ep_poll_callback);
--		pwq->whead = whead;
-+		RCU_INIT_POINTER(pwq->whead, whead);
- 		pwq->base = epi;
- 		add_wait_queue(whead, &pwq->wait);
- 		list_add_tail(&pwq->llink, &epi->pwqlist);
--- 
-Eric Wong
