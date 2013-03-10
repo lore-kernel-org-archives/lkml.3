@@ -1,47 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751965Ab3CJNeY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Mar 2013 09:34:24 -0400
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:53420 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751074Ab3CJNeX (ORCPT
+	id S1751864Ab3CJNfy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Mar 2013 09:35:54 -0400
+Received: from mail-we0-f175.google.com ([74.125.82.175]:38836 "EHLO
+	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751074Ab3CJNfx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Mar 2013 09:34:23 -0400
-From: Ghennadi Procopciuc <ghennadi.procopciuc1@gmail.com>
-To: airlied@linux.ie
-Cc: airlied@redhat.com, ghennadi.procopciuc1@gmail.com,
-        paulmck@linux.vnet.ibm.com, dhowells@redhat.com, davej@redhat.com,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] make 'vmw_fences_perform_actions' static
-Date: Sun, 10 Mar 2013 15:34:14 +0200
-Message-Id: <1362922454-13967-1-git-send-email-ghennadi.procopciuc1@gmail.com>
+	Sun, 10 Mar 2013 09:35:53 -0400
+From: Mihai Stirbat <mihai.stirbat@gmail.com>
+To: linux@arm.linux.org.uk
+Cc: vincent.guittot@linaro.org, namhyung@kernel.org, lorenzo.pieralisi@arm.com,
+        a.p.zijlstra@chello.nl, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Mihai Stirbat <mihai.stirbat@gmail.com>
+Subject: [PATCH] topology: removed kzalloc return value cast
+Date: Sun, 10 Mar 2013 15:35:35 +0200
+Message-Id: <1362922535-25172-1-git-send-email-mihai.stirbat@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This fixes the following checkpatch warning :
-drivers/gpu/drm/vmwgfx/vmwgfx_fence.c:274:6: warning: symbol
-'vmw_fences_perform_actions' was not declared. Should it be static?
-
-Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc1@gmail.com>
+Signed-off-by: Mihai Stirbat <mihai.stirbat@gmail.com>
 ---
- drivers/gpu/drm/vmwgfx/vmwgfx_fence.c |    2 +-
+ arch/arm/kernel/topology.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/vmwgfx/vmwgfx_fence.c b/drivers/gpu/drm/vmwgfx/vmwgfx_fence.c
-index e0846e6..2762fe3 100644
---- a/drivers/gpu/drm/vmwgfx/vmwgfx_fence.c
-+++ b/drivers/gpu/drm/vmwgfx/vmwgfx_fence.c
-@@ -271,7 +271,7 @@ void vmw_fence_obj_unreference(struct vmw_fence_obj **fence_p)
- 	spin_unlock_irq(&fman->lock);
- }
+diff --git a/arch/arm/kernel/topology.c b/arch/arm/kernel/topology.c
+index 79282eb..f10316b 100644
+--- a/arch/arm/kernel/topology.c
++++ b/arch/arm/kernel/topology.c
+@@ -100,7 +100,7 @@ static void __init parse_dt_topology(void)
+ 	int alloc_size, cpu = 0;
  
--void vmw_fences_perform_actions(struct vmw_fence_manager *fman,
-+static void vmw_fences_perform_actions(struct vmw_fence_manager *fman,
- 				struct list_head *list)
- {
- 	struct vmw_fence_action *action, *next_action;
+ 	alloc_size = nr_cpu_ids * sizeof(struct cpu_capacity);
+-	cpu_capacity = (struct cpu_capacity *)kzalloc(alloc_size, GFP_NOWAIT);
++	cpu_capacity = kzalloc(alloc_size, GFP_NOWAIT);
+ 
+ 	while ((cn = of_find_node_by_type(cn, "cpu"))) {
+ 		const u32 *rate, *reg;
 -- 
 1.7.10.4
 
