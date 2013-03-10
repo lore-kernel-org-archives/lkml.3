@@ -1,74 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751921Ab3CJM60 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Mar 2013 08:58:26 -0400
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:51607 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751074Ab3CJM6Z (ORCPT
+	id S1752201Ab3CJNF5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Mar 2013 09:05:57 -0400
+Received: from mail-lb0-f169.google.com ([209.85.217.169]:44327 "EHLO
+	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751074Ab3CJNF4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Mar 2013 08:58:25 -0400
-Date: Sun, 10 Mar 2013 05:58:21 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, axboe@kernel.dk, jmoyer@redhat.com,
-        zab@redhat.com
-Subject: Re: [PATCH 17/31] workqueue: implement attribute-based unbound
- worker_pool management
-Message-ID: <20130310125821.GG24522@htj.dyndns.org>
-References: <1362194662-2344-1-git-send-email-tj@kernel.org>
- <1362194662-2344-18-git-send-email-tj@kernel.org>
- <513C5BB9.7030305@cn.fujitsu.com>
+	Sun, 10 Mar 2013 09:05:56 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <513C5BB9.7030305@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <513C8062.6030001@hartkopp.net>
+References: <1362918526-26730-1-git-send-email-valentin.ilie@gmail.com>
+	<513C8062.6030001@hartkopp.net>
+Date: Sun, 10 Mar 2013 14:05:54 +0100
+Message-ID: <CACTFLAM4DtRGvEFQo5yXhR4Sjx8hKBJoNqARqA5U+9iQK=gkBg@mail.gmail.com>
+Subject: Re: [PATCH] net: can: af_can.c: Fix checkpatch warnings
+From: Daniel Mack <zonque@gmail.com>
+To: Oliver Hartkopp <socketcan@hartkopp.net>
+Cc: Valentin Ilie <valentin.ilie@gmail.com>, davem@davemloft.net,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 10, 2013 at 06:08:57PM +0800, Lai Jiangshan wrote:
-> > @@ -3185,12 +3250,133 @@ static int init_worker_pool(struct worker_pool *pool)
-> >  	mutex_init(&pool->assoc_mutex);
-> >  	ida_init(&pool->worker_ida);
-> >  
-> > +	INIT_HLIST_NODE(&pool->hash_node);
-> > +	atomic_set(&pool->refcnt, 1);
-> 
-> We should document: the code before "atomic_set(&pool->refcnt, 1);" should not failed.
-> (In case we add failable code before it when we forget this requirement in future".
-> reason: when get_unbound_pool() fails, we expected ->refcnt = 1)
+On Sun, Mar 10, 2013 at 1:45 PM, Oliver Hartkopp <socketcan@hartkopp.net> wrote:
+> Hallo Valentin,
+>
+> thanks for the idea for the cleanup.
+>
+> But if you replace the the printk() statements it's worth to check if code
+> fits into a single line now, e.g.
+>
+> On 10.03.2013 13:28, Valentin Ilie wrote:
+>
+>                 r = NULL;
+>> @@ -749,7 +749,7 @@ int can_proto_register(const struct can_proto *cp)
+>>       int err = 0;
+>>
+>>       if (proto < 0 || proto >= CAN_NPROTO) {
+>> -             printk(KERN_ERR "can: protocol number %d out of range\n",
+>> +             pr_err("can: protocol number %d out of range\n",
+>>                      proto);
+>
+>
+> here " ,proto);" can obviously be move into the previous line while preserving
+> the 80 chars per line rule.
+>
+>
+>>               return -EINVAL;
+>>       }
+>> @@ -761,7 +761,7 @@ int can_proto_register(const struct can_proto *cp)
+>>       mutex_lock(&proto_tab_lock);
+>>
+>>       if (proto_tab[proto]) {
+>> -             printk(KERN_ERR "can: protocol %d already registered\n",
+>> +             pr_err("can: protocol %d already registered\n",
+>>                      proto);
+>
+>
+> here too
+>
+>>               err = -EBUSY;
+>>       } else
+>> @@ -817,8 +817,7 @@ static int can_notifier(struct notifier_block *nb, unsigned long msg,
+>>               /* create new dev_rcv_lists for this device */
+>>               d = kzalloc(sizeof(*d), GFP_KERNEL);
+>>               if (!d) {
+>> -                     printk(KERN_ERR
+>> -                            "can: allocation of receive list failed\n");
+>> +                     pr_err("can: allocation of receive list failed\n");
+>>                       return NOTIFY_DONE;
+>>               }
+>
+>
+> As i've seen in former patches from Joe Perches OOM messages are obsolete.
+>
+> You could write
+>
+> if(!d)
+>         return NOTIFY_DONE;
+>
+> here instead.
 
-Yeap, comments added.
+While at it, why not switch to dev_err() instead?
 
-> > +/**
-> > + * put_unbound_pool - put a worker_pool
-> > + * @pool: worker_pool to put
-> > + *
-> > + * Put @pool.  If its refcnt reaches zero, it gets destroyed in sched-RCU
-> > + * safe manner.
-> > + */
-> > +static void put_unbound_pool(struct worker_pool *pool)
-> > +{
-> > +	struct worker *worker;
-> > +
-> > +	if (!atomic_dec_and_test(&pool->refcnt))
-> > +		return;
-> 
-> if get_unbound_pool() happens here, it will get a destroyed pool.
-> so we need to move "spin_lock_irq(&workqueue_lock);" before above statement.
-> (and ->refcnt don't need atomic after moved)
 
-Hmmm... right.  Nice catch.  Updating...
-
-> > +	if (WARN_ON(pool->nr_workers != pool->nr_idle))
-> > +		return;
-> 
-> This can be false-negative. we should remove this WARN_ON().
-
-How would the test fail spuriously?  Can you please elaborate?
-
-Thanks.
-
--- 
-tejun
+Daniel
