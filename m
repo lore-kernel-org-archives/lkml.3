@@ -1,101 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753296Ab3CJU7x (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Mar 2013 16:59:53 -0400
-Received: from netrider.rowland.org ([192.131.102.5]:49077 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751906Ab3CJU7v (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Mar 2013 16:59:51 -0400
-Date: Sun, 10 Mar 2013 16:59:50 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: Soeren Moch <smoch@web.de>
-cc: USB list <linux-usb@vger.kernel.org>, Jason Cooper <jason@lakedaemon.net>,
-        Andrew Lunn <andrew@lunn.ch>, Arnd Bergmann <arnd@arndb.de>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] USB: EHCI: fix for leaking isochronous data
-In-Reply-To: <513CD4C3.9060701@web.de>
-Message-ID: <Pine.LNX.4.44L0.1303101638330.3146-100000@netrider.rowland.org>
+	id S1753262Ab3CJVEd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Mar 2013 17:04:33 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:56342 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751331Ab3CJVEc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Mar 2013 17:04:32 -0400
+Date: Sun, 10 Mar 2013 14:04:23 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: Sasha Levin <sasha.levin@oracle.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        paul.gortmaker@windriver.com, Dave Jones <davej@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: irq_work: WARNING: at kernel/irq_work.c:98
+ irq_work_needs_cpu+0x8a/0xb0()
+Message-ID: <20130310210423.GA3601@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <51397B96.7030008@oracle.com>
+ <20130308164435.GI3268@linux.vnet.ibm.com>
+ <513A2CF1.9060006@oracle.com>
+ <20130308194608.GK3268@linux.vnet.ibm.com>
+ <513A4E8F.2020704@oracle.com>
+ <20130308222058.GP3268@linux.vnet.ibm.com>
+ <513CD568.90409@gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <513CD568.90409@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13031021-7182-0000-0000-000005B92078
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 10 Mar 2013, Soeren Moch wrote:
-
-> > On Wed, 20 Feb 2013, Soeren Moch wrote:
-> >
-> >> Ok. I use 2 em2840-based usb sticks (em28xx driver) attached to a
-> >> Marvell Kirkwood-SoC with a orion-ehci usb controller. These usb sticks
-> >> stream dvb data (digital TV) employing isochronous usb transfers (user
-> >> application is vdr).
-> >>
-> >> Starting from linux-3.6 I see
-> >>     ERROR: 1024 KiB atomic DMA coherent pool is too small!
-> >> in the syslog after several 10 minutes (sometimes hours) of streaming
-> >> and then streaming stops.
-> >>
-> >> In linux-3.6 the memory management for the arm architecture was changed,
-> >> so that atomic coherent dma allocations are served from a special pool.
-> >> This pool gets exhausted. The only user of this pool (in my test) is
-> >> orion-ehci. Although I have only 10 URBs in flight (5 for each stick,
-> >> resubmitted in the completion handler), I have 256 atomic coherent
-> >> allocations (memory from the pool is allocated in pages) from orion-ehci
-> >> when I see this error. So I think there must be a memory leak (memory
-> >> allocated atomic somewhere below the usb_submit_urb call in em28xx-core.c).
-> >>
-> >> With other dvb sticks using usb bulk transfers I never see this error.
-> >>
-> >> Since you already found a memory leak in the ehci driver for isoc
-> >> transfers, I hoped you can help to solve this problem. If there are
-> >> additional questions, please ask. If there is something I can test, I
-> >> would be glad to do so.
-> >
-> > I guess the first thing is to get a dmesg log showing the problem.  You
-> > should build a kernel with CONFIG_USB_DEBUG enabled and post the part
-> > of the dmesg output starting from when you plug in the troublesome DVB
-> > stick.
+On Sun, Mar 10, 2013 at 02:48:08PM -0400, Sasha Levin wrote:
+> On 03/08/2013 05:20 PM, Paul E. McKenney wrote:
+> > Alternatively, given that this is a debug option, how about replacing
+> > the schedule_timeout_uninterruptible() with something like the following:
+> > 
+> > 	{
+> > 		unsigned long starttime = jiffies + 2;
+> > 
+> > 		while (ULONG_CMP_LT(jiffies, starttime))
+> > 			cpu_relax();
+> > 	}
+> > 
+> > That way the RCU GP kthread would never go to sleep, and thus would not
+> > have to wait for the timer to wake it up.  If this works, then my next
+> > thought would be to try to get at the timer state for the wakeup fo
+> > schedule_timeout_uninterruptible().
 > 
-> Sorry for my late response. Now I built a kernel 3.8.0 with usb_debug 
-> enabled. See below for the syslog of device plug-in.
-> 
-> > It also might help to have a record of all the isochronous-related
-> > coherent allocations and deallocations done by the ehci-hcd driver.
-> > Are you comfortable making your own debugging changes?  The allocations
-> > are done by a call to dma_pool_alloc() in
-> > drivers/usb/host/ehci-sched.c:itd_urb_transaction() if the device runs
-> > at high speed and sitd_urb_transaction() if the device runs at full
-> > speed.  The deallocations are done by calls to dma_pool_free() in
-> > ehci-timer.c:end_free_itds().
-> >
-> 
-> I added a debug message to 
-> drivers/usb/host/ehci-sched.c:itd_urb_transaction() to log the 
-> allocation flags, see log below.
+> It did the trick, I still see those IRQ warnings but the RCU lockup
+> is gone.
 
-But it looks like you didn't add a message to end_free_itds(), so we
-don't know when the memory gets deallocated.  And you didn't print out
-the values of urb, num_itds, and i, or the value of itd (so we can
-match up allocations against deallocations).
+So it looks like RCU's problem was that when it gave up the CPU, it never got
+it back.  The earlier warning looks to be due to getting an interrupt on
+a CPU that had already marked itself offline.  If this interrupt was the
+timer interrupt that was supposed to wake up RCU, that would explain the
+RCU hang -- but I thought that timers got migrated during the offline
+procedure.  Of course, we are shutting down as well.
 
-> For me this looks like nothing is 
-> allocated atomic here, so this function should not be the root cause of 
-> the dma coherent pool exhaustion.
+Hmmmm...  In case this is inherent, I should condition that debug
+statement with "system_state == SYSTEM_RUNNING".
 
-I don't understand.  If non-atomic allocations can't exhaust the pool, 
-why do we see these allocations fail?
-
-> Are there other allocation functions 
-> which I could track?
-
-Yes, but they wouldn't be used for isochronous transfers.  See 
-ehci_qtd_alloc(), ehci_qtd_free(), ehci_qh_alloc(), and qh_destroy() in 
-ehci-mem.c, as well as some other one-time-only coherent allocations in 
-that file.
-
-Alan Stern
+							Thanx, Paul
 
