@@ -1,80 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750881Ab3CJPjv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Mar 2013 11:39:51 -0400
-Received: from mail.tpi.com ([70.99.223.143]:4932 "EHLO mail.tpi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750921Ab3CJPjt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Mar 2013 11:39:49 -0400
-From: Tim Gardner <tim.gardner@canonical.com>
-To: linux-kernel@vger.kernel.org
-Cc: Tim Gardner <tim.gardner@canonical.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        "David S. Miller" <davem@davemloft.net>, Tom Tucker <tom@ogc.us>,
-        Haggai Eran <haggaie@mellanox.com>, Or Gerlitz <ogerlitz@mellanox.com>,
-        Shani Michaeli <shanim@mellanox.com>, linux-nfs@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: [PATCH linux-next] SUNRPC: rpcrdma_register_default_external: Dynamically allocate ib_phys_buf
-Date: Sun, 10 Mar 2013 09:39:13 -0600
-Message-Id: <1362929953-63785-1-git-send-email-tim.gardner@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1752331Ab3CJPn3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Mar 2013 11:43:29 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:17984 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750921Ab3CJPn2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Mar 2013 11:43:28 -0400
+X-Authority-Analysis: v=2.0 cv=UN5f7Vjy c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=wom5GMh1gUkA:10 a=lTS-ss-zTAkA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=ywnzNTuzcLMA:10 a=VwQbUJbxAAAA:8 a=W0vUJOdyAAAA:8 a=5Tto6a8WAAAA:8 a=teZLUl3CQOirfboXSOcA:9 a=CjuIK1q_8ugA:10 a=x8gzFH9gYPwA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Date: Sun, 10 Mar 2013 11:43:27 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Thomas Meyer <thomas@m3y3r.de>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: lock() -> Where is this defined?
+Message-ID: <20130310154327.GF9161@home.goodmis.org>
+References: <1362929420.1220.11.camel@localhost.localdomain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1362929420.1220.11.camel@localhost.localdomain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-rpcrdma_register_default_external() is several frames into
-the call stack which goes deeper yet. You run the risk of stack
-corruption by declaring such a large automatic variable,
-so dynamically allocate the array of 'struct ib_phys_buf' objects in
-order to silence the frame-larger-than warning.
+On Sun, Mar 10, 2013 at 04:30:20PM +0100, Thomas Meyer wrote:
+> Hi,
+> 
+> in include/linux/lockdep.h:
+> 
+> #define LOCK_CONTENDED(_lock, try, lock) \
+                                      ^
+				      |
+				    here
 
-net/sunrpc/xprtrdma/verbs.c: In function 'rpcrdma_register_default_external':
-net/sunrpc/xprtrdma/verbs.c:1774:1: warning: the frame size of 1056 bytes is larger than 1024 bytes [-Wframe-larger-than=]
+-- Steve
 
-gcc version 4.6.3
-
-Cc: Trond Myklebust <Trond.Myklebust@netapp.com>
-Cc: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Tom Tucker <tom@ogc.us>
-Cc: Haggai Eran <haggaie@mellanox.com>
-Cc: Or Gerlitz <ogerlitz@mellanox.com>
-Cc: Shani Michaeli <shanim@mellanox.com>
-Cc: linux-nfs@vger.kernel.org
-Cc: netdev@vger.kernel.org
-Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
----
- net/sunrpc/xprtrdma/verbs.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
-
-diff --git a/net/sunrpc/xprtrdma/verbs.c b/net/sunrpc/xprtrdma/verbs.c
-index 93726560..0916467 100644
---- a/net/sunrpc/xprtrdma/verbs.c
-+++ b/net/sunrpc/xprtrdma/verbs.c
-@@ -1736,9 +1736,13 @@ rpcrdma_register_default_external(struct rpcrdma_mr_seg *seg,
- 	int mem_priv = (writing ? IB_ACCESS_REMOTE_WRITE :
- 				  IB_ACCESS_REMOTE_READ);
- 	struct rpcrdma_mr_seg *seg1 = seg;
--	struct ib_phys_buf ipb[RPCRDMA_MAX_DATA_SEGS];
-+	struct ib_phys_buf *ipb;
- 	int len, i, rc = 0;
- 
-+	ipb = kmalloc(sizeof(*ipb) * RPCRDMA_MAX_DATA_SEGS, GFP_KERNEL);
-+	if (!ipb)
-+		return -ENOMEM;
-+
- 	if (*nsegs > RPCRDMA_MAX_DATA_SEGS)
- 		*nsegs = RPCRDMA_MAX_DATA_SEGS;
- 	for (len = 0, i = 0; i < *nsegs;) {
-@@ -1770,6 +1774,7 @@ rpcrdma_register_default_external(struct rpcrdma_mr_seg *seg,
- 		seg1->mr_len = len;
- 	}
- 	*nsegs = i;
-+	kfree(ipb);
- 	return rc;
- }
- 
--- 
-1.7.9.5
-
+>     lock(_lock)
+> 
+> Where is this lock() function defined?
+> 
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
