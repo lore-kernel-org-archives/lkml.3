@@ -1,50 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753263Ab3CJT7P (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Mar 2013 15:59:15 -0400
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:46688 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753224Ab3CJT7O (ORCPT
+	id S1751299Ab3CJUFG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Mar 2013 16:05:06 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:38739 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750777Ab3CJUFE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Mar 2013 15:59:14 -0400
-MIME-Version: 1.0
-In-Reply-To: <513CE3B8.9020308@ladisch.de>
-References: <1362919067-17250-1-git-send-email-cvicentiu@gmail.com>
-	<513CB587.5010304@ladisch.de>
-	<CACzaYTOE=tVst3=TvUCtxpMuUOtJiHQ3o2wbgWeMvxwZy41DMw@mail.gmail.com>
-	<513CE3B8.9020308@ladisch.de>
-Date: Sun, 10 Mar 2013 21:59:13 +0200
-Message-ID: <CACzaYTNGou67KhL5iRW8w2qViu2Q05TMdnUjmeSVebdYwS9g0A@mail.gmail.com>
-Subject: Re: [PATCH] emu10k1: Fix coccicheck warning
-From: Vicentiu Ciorbaru <cvicentiu@gmail.com>
-To: Clemens Ladisch <clemens@ladisch.de>
-Cc: perex@perex.cz, tiwai@suse.de, wfp5p@virginia.edu,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Sun, 10 Mar 2013 16:05:04 -0400
+From: Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
+To: linux-scsi@vger.kernel.org
+Cc: hare@suse.de, JBottomley@parallels.com, linux-kernel@vger.kernel.org,
+        Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
+Subject: [PATCH] aic7xxx: fix coccicheck warnings
+Date: Sun, 10 Mar 2013 22:04:55 +0200
+Message-Id: <1362945896-18475-1-git-send-email-silviupopescu1990@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> My reasoning behind the patch is that the C standard does not require a
->> specific cast of a void pointer in order to set it to the type of the
->> member gpr_map of the struct snd_emu10k1_fx8010_code. I named it redundant
->> because the compiler would cast to it anyway.
->
-> That's correct as far as the C standard is concerned.  However, __user is
-> a non-standard extension.
->
->> The line also appears as a warning when running make coccicheck.
->
-> And when you remove the __user, you get a warning when running make C=x.
->
-> Both coccinelle and sparse are merely tools for finding likely bugs.
-> When it isn't possible to make them both happy with or without the cast,
-> that just shows that the code itself is badly designed.
->
-> The driver should be redesigned to not access user and kernel space
-> memory through the same pointer.
+This replaces a call to kmalloc() followed by memset() with just one
+call to kzalloc().
 
-In that case I thank you for the quick feedback and I will try looking
-more deeply into the issue.
+Signed-off-by: Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
+---
+ drivers/scsi/aic7xxx/aic79xx_osm.c |    3 +--
+ drivers/scsi/aic7xxx/aic7xxx_osm.c |    3 +--
+ 2 files changed, 2 insertions(+), 4 deletions(-)
 
-Vicentiu
+diff --git a/drivers/scsi/aic7xxx/aic79xx_osm.c b/drivers/scsi/aic7xxx/aic79xx_osm.c
+index 9328121..f6fdb65 100644
+--- a/drivers/scsi/aic7xxx/aic79xx_osm.c
++++ b/drivers/scsi/aic7xxx/aic79xx_osm.c
+@@ -1324,10 +1324,9 @@ int
+ ahd_platform_alloc(struct ahd_softc *ahd, void *platform_arg)
+ {
+ 	ahd->platform_data =
+-	    kmalloc(sizeof(struct ahd_platform_data), GFP_ATOMIC);
++	    kzalloc(sizeof(struct ahd_platform_data), GFP_ATOMIC);
+ 	if (ahd->platform_data == NULL)
+ 		return (ENOMEM);
+-	memset(ahd->platform_data, 0, sizeof(struct ahd_platform_data));
+ 	ahd->platform_data->irq = AHD_LINUX_NOIRQ;
+ 	ahd_lockinit(ahd);
+ 	ahd->seltime = (aic79xx_seltime & 0x3) << 4;
+diff --git a/drivers/scsi/aic7xxx/aic7xxx_osm.c b/drivers/scsi/aic7xxx/aic7xxx_osm.c
+index 5a477cd..54bb1de 100644
+--- a/drivers/scsi/aic7xxx/aic7xxx_osm.c
++++ b/drivers/scsi/aic7xxx/aic7xxx_osm.c
+@@ -1222,10 +1222,9 @@ ahc_platform_alloc(struct ahc_softc *ahc, void *platform_arg)
+ {
+ 
+ 	ahc->platform_data =
+-	    kmalloc(sizeof(struct ahc_platform_data), GFP_ATOMIC);
++	    kzalloc(sizeof(struct ahc_platform_data), GFP_ATOMIC);
+ 	if (ahc->platform_data == NULL)
+ 		return (ENOMEM);
+-	memset(ahc->platform_data, 0, sizeof(struct ahc_platform_data));
+ 	ahc->platform_data->irq = AHC_LINUX_NOIRQ;
+ 	ahc_lockinit(ahc);
+ 	ahc->seltime = (aic7xxx_seltime & 0x3) << 4;
+-- 
+1.7.9.5
+
