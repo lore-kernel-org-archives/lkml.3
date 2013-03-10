@@ -1,49 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753235Ab3CJUle (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Mar 2013 16:41:34 -0400
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:54146 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751614Ab3CJUld (ORCPT
+	id S1753273Ab3CJU4I (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Mar 2013 16:56:08 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:53396 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751650Ab3CJU4F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Mar 2013 16:41:33 -0400
-From: Alexandru Gheorghiu <gheorghiuandru@gmail.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        Alexandru Gheorghiu <gheorghiuandru@gmail.com>
-Subject: [PATCH] arch: x86: platform: uv: Replaced kmalloc & memset with kzalloc
-Date: Sat,  9 Mar 2013 11:40:43 +0200
-Message-Id: <1362822043-15559-1-git-send-email-gheorghiuandru@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Sun, 10 Mar 2013 16:56:05 -0400
+Date: Sun, 10 Mar 2013 16:56:13 -0400 (EDT)
+Message-Id: <20130310.165613.427736360718722534.davem@davemloft.net>
+To: andreea.cristina.hodea@gmail.com
+Cc: mac@melware.de, isdn@linux-pingi.de, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, hodea_andreea@yahoo.com
+Subject: Re: [PATCH] eicon: Fixed checkpatch warning
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1362918876-18694-1-git-send-email-hodea_andreea@yahoo.com>
+References: <1362918876-18694-1-git-send-email-hodea_andreea@yahoo.com>
+X-Mailer: Mew version 6.4 on Emacs 23.4 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Sun, 10 Mar 2013 13:56:09 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replaced kmalloc followed by memset calls with a single kzalloc call.
-This was found using coccicheck.
+From: Andreea Hodea <andreea.cristina.hodea@gmail.com>
+Date: Sun, 10 Mar 2013 14:34:36 +0200
 
-Signed-off-by: Alexandru Gheorghiu <gheorghiuandru@gmail.com>
----
- arch/x86/platform/uv/uv_time.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+> drivers/isdn/hardware/eicon/diva_didd.c:32:6: warning: symbol
+> 'DRIVERRELEASE_DIDD' was not declared. Should it be static?
+> 
+> Signed-off-by: Andreea Hodea <hodea_andreea@yahoo.com>
 
-diff --git a/arch/x86/platform/uv/uv_time.c b/arch/x86/platform/uv/uv_time.c
-index 98718f6..5c86786 100644
---- a/arch/x86/platform/uv/uv_time.c
-+++ b/arch/x86/platform/uv/uv_time.c
-@@ -159,10 +159,9 @@ static __init int uv_rtc_allocate_timers(void)
- {
- 	int cpu;
- 
--	blade_info = kmalloc(uv_possible_blades * sizeof(void *), GFP_KERNEL);
-+	blade_info = kzalloc(uv_possible_blades * sizeof(void *), GFP_KERNEL);
- 	if (!blade_info)
- 		return -ENOMEM;
--	memset(blade_info, 0, uv_possible_blades * sizeof(void *));
- 
- 	for_each_present_cpu(cpu) {
- 		int nid = cpu_to_node(cpu);
--- 
-1.7.9.5
-
+Applied, thanks.
