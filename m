@@ -1,37 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753283Ab3CJVMh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Mar 2013 17:12:37 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:53592 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752139Ab3CJVMg (ORCPT
+	id S1753249Ab3CJVPa (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Mar 2013 17:15:30 -0400
+Received: from mail-wg0-f54.google.com ([74.125.82.54]:65378 "EHLO
+	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751299Ab3CJVP2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Mar 2013 17:12:36 -0400
-Date: Sun, 10 Mar 2013 17:12:38 -0400 (EDT)
-Message-Id: <20130310.171238.330349067962026661.davem@davemloft.net>
-To: gang.chen@asianux.com
-Cc: linux@arm.linux.org.uk, mgherzan@gmail.com, nschichan@freebox.fr,
-        daniel.borkmann@tik.ee.ethz.ch, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM:net: an issue for k which is u32, never < 0
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <513BECDA.3030803@asianux.com>
-References: <513BECDA.3030803@asianux.com>
-X-Mailer: Mew version 6.4 on Emacs 23.4 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Sun, 10 Mar 2013 14:12:34 -0700 (PDT)
+	Sun, 10 Mar 2013 17:15:28 -0400
+From: Valentin Ilie <valentin.ilie@gmail.com>
+To: socketcan@hartkopp.net, davem@davemloft.net
+Cc: linux-can@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Valentin Ilie <valentin.ilie@gmail.com>
+Subject: [PATCHv2] net: can: af_can.c: Fix checkpatch warnings
+Date: Sun, 10 Mar 2013 23:15:13 +0200
+Message-Id: <1362950113-25515-1-git-send-email-valentin.ilie@gmail.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1362918526-26730-1-git-send-email-valentin.ilie@gmail.com>
+References: <1362918526-26730-1-git-send-email-valentin.ilie@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Chen Gang <gang.chen@asianux.com>
-Date: Sun, 10 Mar 2013 10:15:54 +0800
+Replace printk(KERN_ERR with pr_err
+Add space before {
+Removed OOM messages
 
-> 
->   k is u32 which never < 0, need type cast, or cause issue.
-> 
-> Signed-off-by: Chen Gang <gang.chen@asianux.com>
+Signed-off-by: Valentin Ilie <valentin.ilie@gmail.com>
+---
+ net/can/af_can.c | 21 ++++++++-------------
+ 1 file changed, 8 insertions(+), 13 deletions(-)
 
-Who will apply this, ARM folks or me?
+diff --git a/net/can/af_can.c b/net/can/af_can.c
+index c48e522..8bacf28 100644
+--- a/net/can/af_can.c
++++ b/net/can/af_can.c
+@@ -525,7 +525,7 @@ void can_rx_unregister(struct net_device *dev, canid_t can_id, canid_t mask,
+ 
+ 	d = find_dev_rcv_lists(dev);
+ 	if (!d) {
+-		printk(KERN_ERR "BUG: receive list not found for "
++		pr_err("BUG: receive list not found for "
+ 		       "dev %s, id %03X, mask %03X\n",
+ 		       DNAME(dev), can_id, mask);
+ 		goto out;
+@@ -552,7 +552,7 @@ void can_rx_unregister(struct net_device *dev, canid_t can_id, canid_t mask,
+ 	 */
+ 
+ 	if (!r) {
+-		printk(KERN_ERR "BUG: receive list entry not found for "
++		pr_err("BUG: receive list entry not found for "
+ 		       "dev %s, id %03X, mask %03X\n",
+ 		       DNAME(dev), can_id, mask);
+ 		r = NULL;
+@@ -749,8 +749,7 @@ int can_proto_register(const struct can_proto *cp)
+ 	int err = 0;
+ 
+ 	if (proto < 0 || proto >= CAN_NPROTO) {
+-		printk(KERN_ERR "can: protocol number %d out of range\n",
+-		       proto);
++		pr_err("can: protocol number %d out of range\n", proto);
+ 		return -EINVAL;
+ 	}
+ 
+@@ -761,8 +760,7 @@ int can_proto_register(const struct can_proto *cp)
+ 	mutex_lock(&proto_tab_lock);
+ 
+ 	if (proto_tab[proto]) {
+-		printk(KERN_ERR "can: protocol %d already registered\n",
+-		       proto);
++		pr_err("can: protocol %d already registered\n", proto);
+ 		err = -EBUSY;
+ 	} else
+ 		RCU_INIT_POINTER(proto_tab[proto], cp);
+@@ -816,11 +814,8 @@ static int can_notifier(struct notifier_block *nb, unsigned long msg,
+ 
+ 		/* create new dev_rcv_lists for this device */
+ 		d = kzalloc(sizeof(*d), GFP_KERNEL);
+-		if (!d) {
+-			printk(KERN_ERR
+-			       "can: allocation of receive list failed\n");
++		if (!d)
+ 			return NOTIFY_DONE;
+-		}
+ 		BUG_ON(dev->ml_priv);
+ 		dev->ml_priv = d;
+ 
+@@ -838,8 +833,8 @@ static int can_notifier(struct notifier_block *nb, unsigned long msg,
+ 				dev->ml_priv = NULL;
+ 			}
+ 		} else
+-			printk(KERN_ERR "can: notifier: receive list not "
+-			       "found for dev %s\n", dev->name);
++			pr_err("can: notifier: receive list not found for dev "
++			       "%s\n", dev->name);
+ 
+ 		spin_unlock(&can_rcvlists_lock);
+ 
+@@ -927,7 +922,7 @@ static __exit void can_exit(void)
+ 	/* remove created dev_rcv_lists from still registered CAN devices */
+ 	rcu_read_lock();
+ 	for_each_netdev_rcu(&init_net, dev) {
+-		if (dev->type == ARPHRD_CAN && dev->ml_priv){
++		if (dev->type == ARPHRD_CAN && dev->ml_priv) {
+ 
+ 			struct dev_rcv_lists *d = dev->ml_priv;
+ 
+-- 
+1.8.1.2
+
