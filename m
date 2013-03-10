@@ -1,113 +1,332 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751533Ab3CJGqH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Mar 2013 01:46:07 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:18963 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751145Ab3CJGqF (ORCPT
+	id S1751663Ab3CJHME (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Mar 2013 03:12:04 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:27894 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751260Ab3CJHMC convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Mar 2013 01:46:05 -0500
-From: Yinghai Lu <yinghai@kernel.org>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Thomas Renninger <trenn@suse.de>, Tang Chen <tangchen@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v2 00/20] x86, ACPI, numa: Parse numa info early
-Date: Sat,  9 Mar 2013 22:44:27 -0800
-Message-Id: <1362897887-30808-1-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.7.10.4
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Sun, 10 Mar 2013 03:12:02 -0400
+X-IronPort-AV: E=Sophos;i="4.84,817,1355068800"; 
+   d="scan'208";a="6843846"
+Message-ID: <513C2553.5050402@cn.fujitsu.com>
+Date: Sun, 10 Mar 2013 14:16:51 +0800
+From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.8) Gecko/20121012 Thunderbird/10.0.8
+MIME-Version: 1.0
+To: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+CC: vgoyal@redhat.com, ebiederm@xmission.com, cpw@sgi.com,
+        kumagai-atsushi@mxc.nes.nec.co.jp, lisa.mitchell@hp.com,
+        heiko.carstens@de.ibm.com, akpm@linux-foundation.org,
+        kexec@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 07/20] vmcore: copy non page-size aligned head and
+ tail pages in 2nd kernel
+References: <20130302083447.31252.93914.stgit@localhost6.localdomain6> <20130302083627.31252.41277.stgit@localhost6.localdomain6>
+In-Reply-To: <20130302083627.31252.41277.stgit@localhost6.localdomain6>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/03/10 14:17:12,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/03/10 14:17:18
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-One commit that tried to parse SRAT early get reverted before v3.9-rc1.
+于 2013年03月02日 16:36, HATAYAMA Daisuke 写道:
+> Due to mmap() requirement, we need to copy pages not starting or
+> ending with page-size aligned address in 2nd kernel and to map them to
+> user-space.
+> 
+> For example, see the map below:
+> 
+>     00000000-0001ffff : reserved
+>     00010000-0009f7ff : System RAM
+>     0009f800-0009ffff : reserved
+> 
+> where the System RAM ends with 0x9f800 that is not page-size
+> aligned. This map is divided into two parts:
+> 
+>     00010000-0009dfff
 
-| commit e8d1955258091e4c92d5a975ebd7fd8a98f5d30f
-| Author: Tang Chen <tangchen@cn.fujitsu.com>
-| Date:   Fri Feb 22 16:33:44 2013 -0800
-|
-|    acpi, memory-hotplug: parse SRAT before memblock is ready
+00010000-0009efff
 
-It broke several things, like acpi override and fall back path etc.
+>     0009f000-0009f7ff
+> 
+> and the first one is kept in old memory and the 2nd one is copied into
+> buffer on 2nd kernel.
+> 
+> This kind of non-page-size-aligned area can always occur since any
+> part of System RAM can be converted into reserved area at runtime.
+> 
+> If not doing copying like this and if remapping non page-size aligned
+> pages on old memory directly, mmap() had to export memory which is not
+> dump target to user-space. In the above example this is reserved
+> 0x9f800-0xa0000.
+> 
+> Signed-off-by: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+> ---
+> 
+>  fs/proc/vmcore.c |  192 ++++++++++++++++++++++++++++++++++++++++++++++++------
+>  1 files changed, 172 insertions(+), 20 deletions(-)
+> 
+> diff --git a/fs/proc/vmcore.c b/fs/proc/vmcore.c
+> index c511cf4..6b071b4 100644
+> --- a/fs/proc/vmcore.c
+> +++ b/fs/proc/vmcore.c
+> @@ -474,11 +474,10 @@ static int __init process_ptload_program_headers_elf64(char *elfptr,
+>  						size_t elfsz,
+>  						struct list_head *vc_list)
+>  {
+> -	int i;
+> +	int i, rc;
+>  	Elf64_Ehdr *ehdr_ptr;
+>  	Elf64_Phdr *phdr_ptr;
+>  	loff_t vmcore_off;
+> -	struct vmcore *new;
+>  
+>  	ehdr_ptr = (Elf64_Ehdr *)elfptr;
+>  	phdr_ptr = (Elf64_Phdr*)(elfptr + ehdr_ptr->e_phoff); /* PT_NOTE hdr */
+> @@ -488,20 +487,97 @@ static int __init process_ptload_program_headers_elf64(char *elfptr,
+>  						  PAGE_SIZE);
+>  
+>  	for (i = 0; i < ehdr_ptr->e_phnum; i++, phdr_ptr++) {
+> +		u64 start, end, rest;
+> +
+>  		if (phdr_ptr->p_type != PT_LOAD)
+>  			continue;
+>  
+> -		/* Add this contiguous chunk of memory to vmcore list.*/
+> -		new = get_new_element();
+> -		if (!new)
+> -			return -ENOMEM;
+> -		new->paddr = phdr_ptr->p_offset;
+> -		new->size = phdr_ptr->p_memsz;
+> -		list_add_tail(&new->list, vc_list);
+> +		start = phdr_ptr->p_offset;
+> +		end = phdr_ptr->p_offset + phdr_ptr->p_memsz;
+> +		rest = phdr_ptr->p_memsz;
+> +
+> +		if (start & ~PAGE_MASK) {
+> +			u64 paddr, len;
+> +			char *buf;
+> +			struct vmcore *new;
+> +
+> +			paddr = start;
+> +			len = min(roundup(start,PAGE_SIZE), end) - start;
+> +
+> +			buf = (char *)get_zeroed_page(GFP_KERNEL);
+> +			if (!buf)
+> +				return -ENOMEM;
+> +			rc = read_from_oldmem(buf + (start & ~PAGE_MASK), len,
+> +					      &paddr, 0);
+> +			if (rc < 0) {
+> +				free_pages((unsigned long)buf, 0);
+> +				return rc;
+> +			}
+> +
+> +			new = get_new_element();
+> +			if (!new) {
+> +				free_pages((unsigned long)buf, 0);
+> +				return -ENOMEM;
+> +			}
+> +			new->flag |= MEM_TYPE_CURRENT_KERNEL;
+> +			new->size = PAGE_SIZE;
+> +			new->buf = buf;
+> +			list_add_tail(&new->list, vc_list);
+> +
+> +			rest -= len;
+> +		}
+> +
+> +		if (rest > 0 &&
+> +		    roundup(start, PAGE_SIZE) < rounddown(end, PAGE_SIZE)) {
+> +			u64 paddr, len;
+> +			struct vmcore *new;
+> +
+> +			paddr = roundup(start, PAGE_SIZE);
+> +			len =rounddown(end,PAGE_SIZE)-roundup(start,PAGE_SIZE);
+> +
+> +			new = get_new_element();
+> +			if (!new)
+> +				return -ENOMEM;
+> +			new->paddr = paddr;
+> +			new->size = len;
+> +			list_add_tail(&new->list, vc_list);
+> +
+> +			rest -= len;
+> +		}
+> +
+> +		if (rest > 0) {
+> +			u64 paddr, len;
+> +			char *buf;
+> +			struct vmcore *new;
+> +
+> +			paddr = rounddown(end, PAGE_SIZE);
+> +			len = end - rounddown(end, PAGE_SIZE);
+> +
+> +			buf = (char *)get_zeroed_page(GFP_KERNEL);
+> +			if (!buf)
+> +				return -ENOMEM;
+> +			rc = read_from_oldmem(buf, len, &paddr, 0);
+> +			if (rc < 0) {
+> +				free_pages((unsigned long)buf, 0);
+> +				return rc;
+> +			}
+> +
+> +			new = get_new_element();
+> +			if (!new) {
+> +				free_pages((unsigned long)buf, 0);
+> +				return -ENOMEM;
+> +			}
+> +			new->flag |= MEM_TYPE_CURRENT_KERNEL;
+> +			new->size = PAGE_SIZE;
+> +			new->buf = buf;
+> +			list_add_tail(&new->list, vc_list);
+> +
+> +			rest -= len;
+> +		}
+>  
+>  		/* Update the program header offset. */
+>  		phdr_ptr->p_offset = vmcore_off;
+> -		vmcore_off = vmcore_off + phdr_ptr->p_memsz;
+> +		vmcore_off +=roundup(end,PAGE_SIZE)-rounddown(start,PAGE_SIZE);
 
-This patchset is clean implementation that will parse numa info early.
-1. keep the acpi table initrd override working by split finding with copying.
-   finding is done at head_32.S and head64.c stage,
-        in head_32.S, initrd is accessed in 32bit flat mode with phys addr.
-        in head64.c, initrd is accessed via kernel low mapping address
-        with help of #PF set page table.
-   copying is done with early_ioremap just after memblock is setup.
-2. keep fallback path working. numaq and ACPI and amd_nmua and dummy.
-   seperate initmem_init to two stages.
-   early_initmem_init will only extract numa info early into numa_meminfo.
-   initmem_init will keep slit and emulation handling.
-3. keep other old code flow untouched like relocate_initrd and initmem_init.
-   early_initmem_init will take old init_mem_mapping position.
-   it call early_x86_numa_init and init_mem_mapping for every nodes.
-   For 64bit, we avoid having size limit on initrd, as relocate_initrd
-   is still after init_mem_mapping for all memory.
-4. last patch will try to put page table on local node, so that memory
-   hotplug will be happy.
+Here the code changes phdr_ptr->p_offset to a new page-size aligned offset.
+But it seems the phdr_ptr->p_paddr is still the non page-size aligned
+physical address? Does the mismatch of a PT_LOAD segment and the physical
+memory occur?
 
-In short, early_initmem_init will parse numa info early and call
-init_mem_mapping to set page table for every nodes's mem.
+Or, later in makedumpfile, it will check the phdr_ptr->paddr to see if it
+is page-size aligned and also phdr_ptr->p_memsz to get the real memory size,
+not including padding?
 
-could be found at:
-        git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git for-x86-mm
-
-and it is based on today's Linus tree.
-
--v2: Address tj's review and split patches to small ones.
-
-Thanks
-
-Yinghai
-
-Yinghai Lu (20):
-  x86: Change get_ramdisk_image() to global
-  x86, microcode: Use common get_ramdisk_image()
-  x86, ACPI, mm: Kill max_low_pfn_mapped
-  x86, ACPI: Increase override tables number limit
-  x86, ACPI: Split acpi_initrd_override to find/copy two functions
-  x86, ACPI: Store override acpi tables phys addr in cpio files info array
-  x86, ACPI: Make acpi_initrd_override_find work with 32bit flat mode
-  x86, ACPI: Find acpi tables in initrd early from head_32.S/head64.c
-  x86, mm, numa: Move two functions calling on successful path later
-  x86, mm, numa: Call numa_meminfo_cover_memory() checking early
-  x86, mm, numa: Move node_map_pfn alignment() to x86
-  x86, mm, numa: Use numa_meminfo to check node_map_pfn alignment
-  x86, mm, numa: Set memblock nid later
-  x86, mm, numa: Move node_possible_map setting later
-  x86, mm, numa: Move emulation handling down.
-  x86, ACPI, numa, ia64: split SLIT handling out
-  x86, mm, numa: Add early_initmem_init() stub
-  x86, mm: Parse numa info early
-  x86, mm: Make init_mem_mapping be able to be called several times
-  x86, mm, numa: Put pagetable on local node ram for 64bit
-
- arch/ia64/kernel/setup.c                |    4 +-
- arch/x86/include/asm/acpi.h             |    3 +-
- arch/x86/include/asm/page_types.h       |    2 +-
- arch/x86/include/asm/pgtable.h          |    2 +-
- arch/x86/include/asm/setup.h            |    9 ++
- arch/x86/kernel/head64.c                |    2 +
- arch/x86/kernel/head_32.S               |    4 +
- arch/x86/kernel/microcode_intel_early.c |    8 +-
- arch/x86/kernel/setup.c                 |   86 ++++++-----
- arch/x86/mm/init.c                      |   88 +++++++-----
- arch/x86/mm/numa.c                      |  240 ++++++++++++++++++++++++-------
- arch/x86/mm/numa_emulation.c            |    2 +-
- arch/x86/mm/numa_internal.h             |    2 +
- arch/x86/mm/srat.c                      |   11 +-
- drivers/acpi/numa.c                     |   13 +-
- drivers/acpi/osl.c                      |  134 +++++++++++------
- include/linux/acpi.h                    |   20 +--
- include/linux/mm.h                      |    3 -
- mm/page_alloc.c                         |   52 +------
- 19 files changed, 445 insertions(+), 240 deletions(-)
-
--- 
-1.7.10.4
+>  	}
+>  	return 0;
+>  }
+> @@ -510,11 +586,10 @@ static int __init process_ptload_program_headers_elf32(char *elfptr,
+>  						size_t elfsz,
+>  						struct list_head *vc_list)
+>  {
+> -	int i;
+> +	int i, rc;
+>  	Elf32_Ehdr *ehdr_ptr;
+>  	Elf32_Phdr *phdr_ptr;
+>  	loff_t vmcore_off;
+> -	struct vmcore *new;
+>  
+>  	ehdr_ptr = (Elf32_Ehdr *)elfptr;
+>  	phdr_ptr = (Elf32_Phdr*)(elfptr + ehdr_ptr->e_phoff); /* PT_NOTE hdr */
+> @@ -524,20 +599,97 @@ static int __init process_ptload_program_headers_elf32(char *elfptr,
+>  						 PAGE_SIZE);
+>  
+>  	for (i = 0; i < ehdr_ptr->e_phnum; i++, phdr_ptr++) {
+> +		u64 start, end, rest;
+> +
+>  		if (phdr_ptr->p_type != PT_LOAD)
+>  			continue;
+>  
+> -		/* Add this contiguous chunk of memory to vmcore list.*/
+> -		new = get_new_element();
+> -		if (!new)
+> -			return -ENOMEM;
+> -		new->paddr = phdr_ptr->p_offset;
+> -		new->size = phdr_ptr->p_memsz;
+> -		list_add_tail(&new->list, vc_list);
+> +		start = phdr_ptr->p_offset;
+> +		end = phdr_ptr->p_offset + phdr_ptr->p_memsz;
+> +		rest = phdr_ptr->p_memsz;
+> +
+> +		if (start & ~PAGE_MASK) {
+> +			u64 paddr, len;
+> +			char *buf;
+> +			struct vmcore *new;
+> +
+> +			paddr = start;
+> +			len = min(roundup(start,PAGE_SIZE), end) - start;
+> +
+> +			buf = (char *)get_zeroed_page(GFP_KERNEL);
+> +			if (!buf)
+> +				return -ENOMEM;
+> +			rc = read_from_oldmem(buf + (start & ~PAGE_MASK), len,
+> +					      &paddr, 0);
+> +			if (rc < 0) {
+> +				free_pages((unsigned long)buf, 0);
+> +				return rc;
+> +			}
+> +
+> +			new = get_new_element();
+> +			if (!new) {
+> +				free_pages((unsigned long)buf, 0);
+> +				return -ENOMEM;
+> +			}
+> +			new->flag |= MEM_TYPE_CURRENT_KERNEL;
+> +			new->size = PAGE_SIZE;
+> +			new->buf = buf;
+> +			list_add_tail(&new->list, vc_list);
+> +
+> +			rest -= len;
+> +		}
+> +
+> +		if (rest > 0 &&
+> +		    roundup(start, PAGE_SIZE) < rounddown(end, PAGE_SIZE)) {
+> +			u64 paddr, len;
+> +			struct vmcore *new;
+> +
+> +			paddr = roundup(start, PAGE_SIZE);
+> +			len =rounddown(end,PAGE_SIZE)-roundup(start,PAGE_SIZE);
+> +
+> +			new = get_new_element();
+> +			if (!new)
+> +				return -ENOMEM;
+> +			new->paddr = paddr;
+> +			new->size = len;
+> +			list_add_tail(&new->list, vc_list);
+> +
+> +			rest -= len;
+> +		}
+> +
+> +		if (rest > 0) {
+> +			u64 paddr, len;
+> +			char *buf;
+> +			struct vmcore *new;
+> +
+> +			paddr = rounddown(end, PAGE_SIZE);
+> +			len = end - rounddown(end, PAGE_SIZE);
+> +
+> +			buf = (char *)get_zeroed_page(GFP_KERNEL);
+> +			if (!buf)
+> +				return -ENOMEM;
+> +			rc = read_from_oldmem(buf, len, &paddr, 0);
+> +			if (rc < 0) {
+> +				free_pages((unsigned long)buf, 0);
+> +				return rc;
+> +			}
+> +
+> +			new = get_new_element();
+> +			if (!new) {
+> +				free_pages((unsigned long)buf, 0);
+> +				return -ENOMEM;
+> +			}
+> +			new->flag |= MEM_TYPE_CURRENT_KERNEL;
+> +			new->size = PAGE_SIZE;
+> +			new->buf = buf;
+> +			list_add_tail(&new->list, vc_list);
+> +
+> +			rest -= len;
+> +		}
+>  
+>  		/* Update the program header offset */
+>  		phdr_ptr->p_offset = vmcore_off;
+> -		vmcore_off = vmcore_off + phdr_ptr->p_memsz;
+> +		vmcore_off +=roundup(end,PAGE_SIZE)-rounddown(start,PAGE_SIZE);
+>  	}
+>  	return 0;
+>  }
+> 
+> 
+> _______________________________________________
+> kexec mailing list
+> kexec@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/kexec
+> 
 
