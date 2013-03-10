@@ -1,70 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752610Ab3CJNdU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Mar 2013 09:33:20 -0400
-Received: from smtp-out-220.synserver.de ([212.40.185.220]:1090 "EHLO
-	smtp-out-220.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751921Ab3CJNcr (ORCPT
+	id S1751965Ab3CJNeY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Mar 2013 09:34:24 -0400
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:53420 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751074Ab3CJNeX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Mar 2013 09:32:47 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 5425
-From: Lars-Peter Clausen <lars@metafoo.de>
-To: Anton Vorontsov <cbou@mail.ru>, David Woodhouse <dwmw2@infradead.org>
-Cc: linux-kernel@vger.kernel.org, Lars-Peter Clausen <lars@metafoo.de>,
-        Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 5/5] power: pm2301_charger: Remove no-op suspend/resume callbacks
-Date: Sun, 10 Mar 2013 14:34:09 +0100
-Message-Id: <1362922449-27531-5-git-send-email-lars@metafoo.de>
-X-Mailer: git-send-email 1.8.0
-In-Reply-To: <1362922449-27531-1-git-send-email-lars@metafoo.de>
-References: <1362922449-27531-1-git-send-email-lars@metafoo.de>
+	Sun, 10 Mar 2013 09:34:23 -0400
+From: Ghennadi Procopciuc <ghennadi.procopciuc1@gmail.com>
+To: airlied@linux.ie
+Cc: airlied@redhat.com, ghennadi.procopciuc1@gmail.com,
+        paulmck@linux.vnet.ibm.com, dhowells@redhat.com, davej@redhat.com,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] make 'vmw_fences_perform_actions' static
+Date: Sun, 10 Mar 2013 15:34:14 +0200
+Message-Id: <1362922454-13967-1-git-send-email-ghennadi.procopciuc1@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Having suspend/resume callbacks which do nothing other then return 0 are
-functional equivalent to having no suspend/resume callbacks. So just remove
-these no-op suspend/resume callbacks.
+This fixes the following checkpatch warning :
+drivers/gpu/drm/vmwgfx/vmwgfx_fence.c:274:6: warning: symbol
+'vmw_fences_perform_actions' was not declared. Should it be static?
 
-Cc: Lee Jones <lee.jones@linaro.org>
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+Signed-off-by: Ghennadi Procopciuc <ghennadi.procopciuc1@gmail.com>
 ---
- drivers/power/pm2301_charger.c | 13 -------------
- 1 file changed, 13 deletions(-)
+ drivers/gpu/drm/vmwgfx/vmwgfx_fence.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/power/pm2301_charger.c b/drivers/power/pm2301_charger.c
-index ca424b8..e8aaa9d 100644
---- a/drivers/power/pm2301_charger.c
-+++ b/drivers/power/pm2301_charger.c
-@@ -840,17 +840,6 @@ static struct pm2xxx_irq pm2xxx_charger_irq[] = {
- 	{"PM2XXX_IRQ_INT", pm2xxx_irq_int},
- };
+diff --git a/drivers/gpu/drm/vmwgfx/vmwgfx_fence.c b/drivers/gpu/drm/vmwgfx/vmwgfx_fence.c
+index e0846e6..2762fe3 100644
+--- a/drivers/gpu/drm/vmwgfx/vmwgfx_fence.c
++++ b/drivers/gpu/drm/vmwgfx/vmwgfx_fence.c
+@@ -271,7 +271,7 @@ void vmw_fence_obj_unreference(struct vmw_fence_obj **fence_p)
+ 	spin_unlock_irq(&fman->lock);
+ }
  
--static int pm2xxx_wall_charger_resume(struct i2c_client *i2c_client)
--{
--	return 0;
--}
--
--static int pm2xxx_wall_charger_suspend(struct i2c_client *i2c_client,
--	pm_message_t state)
--{
--	return 0;
--}
--
- static int pm2xxx_wall_charger_probe(struct i2c_client *i2c_client,
- 		const struct i2c_device_id *id)
+-void vmw_fences_perform_actions(struct vmw_fence_manager *fman,
++static void vmw_fences_perform_actions(struct vmw_fence_manager *fman,
+ 				struct list_head *list)
  {
-@@ -1059,8 +1048,6 @@ MODULE_DEVICE_TABLE(i2c, pm2xxx_id);
- static struct i2c_driver pm2xxx_charger_driver = {
- 	.probe = pm2xxx_wall_charger_probe,
- 	.remove = pm2xxx_wall_charger_remove,
--	.suspend = pm2xxx_wall_charger_suspend,
--	.resume = pm2xxx_wall_charger_resume,
- 	.driver = {
- 		.name = "pm2xxx-wall_charger",
- 		.owner = THIS_MODULE,
+ 	struct vmw_fence_action *action, *next_action;
 -- 
-1.8.0
+1.7.10.4
 
