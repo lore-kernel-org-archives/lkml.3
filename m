@@ -1,79 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751581Ab3CJMev (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Mar 2013 08:34:51 -0400
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:48686 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750762Ab3CJMeu (ORCPT
+	id S1752464Ab3CJMfK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Mar 2013 08:35:10 -0400
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:41697 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751074Ab3CJMfI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Mar 2013 08:34:50 -0400
-Date: Sun, 10 Mar 2013 05:34:46 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, axboe@kernel.dk, jmoyer@redhat.com,
-        zab@redhat.com
-Subject: Re: [PATCH 07/31] workqueue: restructure pool / pool_workqueue
- iterations in freeze/thaw functions
-Message-ID: <20130310123446.GD24522@htj.dyndns.org>
-References: <1362194662-2344-1-git-send-email-tj@kernel.org>
- <1362194662-2344-8-git-send-email-tj@kernel.org>
- <513C5BCD.4030108@cn.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <513C5BCD.4030108@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 10 Mar 2013 08:35:08 -0400
+From: Andreea Hodea <andreea.cristina.hodea@gmail.com>
+To: mac@melware.de
+Cc: isdn@linux-pingi.de, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Andreea Hodea <hodea_andreea@yahoo.com>
+Subject: [PATCH] eicon: Fixed checkpatch warning
+Date: Sun, 10 Mar 2013 14:34:36 +0200
+Message-Id: <1362918876-18694-1-git-send-email-hodea_andreea@yahoo.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Lai.
+drivers/isdn/hardware/eicon/diva_didd.c:32:6: warning: symbol
+'DRIVERRELEASE_DIDD' was not declared. Should it be static?
 
-On Sun, Mar 10, 2013 at 06:09:17PM +0800, Lai Jiangshan wrote:
-> > +	/* clear FREEZING */
-> > +	for_each_pool(pool, id) {
-> > +		spin_lock(&pool->lock);
-> > +		WARN_ON_ONCE(!(pool->flags & POOL_FREEZING));
-> > +		pool->flags &= ~POOL_FREEZING;
-> > +		spin_unlock(&pool->lock);
-> > +	}
-> 
-> 
-> I think it would be better if we move this code to ...
-> 
-> >  
-> > -			wake_up_worker(pool);
-> > +	/* restore max_active and repopulate worklist */
-> > +	list_for_each_entry(wq, &workqueues, list) {
-> > +		if (!(wq->flags & WQ_FREEZABLE))
-> > +			continue;
-> >  
-> > -			spin_unlock(&pool->lock);
-> > +		for_each_pwq(pwq, wq) {
-> > +			spin_lock(&pwq->pool->lock);
-> > +			pwq_set_max_active(pwq, wq->saved_max_active);
-> > +			spin_unlock(&pwq->pool->lock);
-> >  		}
-> >  	}
-> >  
-> > +	/* kick workers */
-> > +	for_each_pool(pool, id) {
-> > +		spin_lock(&pool->lock);
-> > +		wake_up_worker(pool);
-> > +		spin_unlock(&pool->lock);
-> > +	}
-> 
-> 
-> ... to here.
-> 
-> clear FREEZING and then kick.
+Signed-off-by: Andreea Hodea <hodea_andreea@yahoo.com>
+---
+ drivers/isdn/hardware/eicon/diva_didd.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Yeah, that would be prettier but also change the order of operations
-which I'd like to keep the same across the conversion.  We can create
-a separate patch to merge the two loops later.  Care to send a
-separate patch?
-
-Thanks.
-
+diff --git a/drivers/isdn/hardware/eicon/diva_didd.c b/drivers/isdn/hardware/eicon/diva_didd.c
+index fab6ccf..21468be 100644
+--- a/drivers/isdn/hardware/eicon/diva_didd.c
++++ b/drivers/isdn/hardware/eicon/diva_didd.c
+@@ -29,7 +29,7 @@ static char *main_revision = "$Revision: 1.13.6.4 $";
+ static char *DRIVERNAME =
+ 	"Eicon DIVA - DIDD table (http://www.melware.net)";
+ static char *DRIVERLNAME = "divadidd";
+-char *DRIVERRELEASE_DIDD = "2.0";
++static char *DRIVERRELEASE_DIDD = "2.0";
+ 
+ MODULE_DESCRIPTION("DIDD table driver for diva drivers");
+ MODULE_AUTHOR("Cytronics & Melware, Eicon Networks");
 -- 
-tejun
+1.7.10.4
+
