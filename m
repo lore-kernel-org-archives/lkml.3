@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752651Ab3CJGcd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Mar 2013 01:32:33 -0500
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:43852 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751243Ab3CJGc3 (ORCPT
+	id S1752723Ab3CJGcr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Mar 2013 01:32:47 -0500
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:43469 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751243Ab3CJGco (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Mar 2013 01:32:29 -0500
+	Sun, 10 Mar 2013 01:32:44 -0500
 From: Jiang Liu <liuj97@gmail.com>
 To: Andrew Morton <akpm@linux-foundation.org>,
         David Rientjes <rientjes@google.com>
@@ -17,12 +17,10 @@ Cc: Jiang Liu <jiang.liu@huawei.com>, Wen Congyang <wency@cn.fujitsu.com>,
         Minchan Kim <minchan@kernel.org>,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
         Michal Hocko <mhocko@suse.cz>, Jianguo Wu <wujianguo@huawei.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>
-Subject: [PATCH v2, part1 19/29] mm/s390: use common help functions to free reserved pages
-Date: Sun, 10 Mar 2013 14:27:02 +0800
-Message-Id: <1362896833-21104-20-git-send-email-jiang.liu@huawei.com>
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v2, part1 21/29] mm/SH: use common help functions to free reserved pages
+Date: Sun, 10 Mar 2013 14:27:04 +0800
+Message-Id: <1362896833-21104-22-git-send-email-jiang.liu@huawei.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1362896833-21104-1-git-send-email-jiang.liu@huawei.com>
 References: <1362896833-21104-1-git-send-email-jiang.liu@huawei.com>
@@ -33,89 +31,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Use common help functions to free reserved pages.
 
 Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+Acked-by: Paul Mundt <lethal@linux-sh.org>
 ---
- arch/s390/mm/init.c |   35 ++++++-----------------------------
- 1 file changed, 6 insertions(+), 29 deletions(-)
+ arch/sh/mm/init.c |   26 +++-----------------------
+ 1 file changed, 3 insertions(+), 23 deletions(-)
 
-diff --git a/arch/s390/mm/init.c b/arch/s390/mm/init.c
-index 49ce6bb..70bda9e 100644
---- a/arch/s390/mm/init.c
-+++ b/arch/s390/mm/init.c
-@@ -42,11 +42,10 @@ pgd_t swapper_pg_dir[PTRS_PER_PGD] __attribute__((__aligned__(PAGE_SIZE)));
- unsigned long empty_zero_page, zero_page_mask;
- EXPORT_SYMBOL(empty_zero_page);
+diff --git a/arch/sh/mm/init.c b/arch/sh/mm/init.c
+index 1057940..20f9ead 100644
+--- a/arch/sh/mm/init.c
++++ b/arch/sh/mm/init.c
+@@ -417,15 +417,13 @@ void __init mem_init(void)
  
--static unsigned long __init setup_zero_pages(void)
-+static void __init setup_zero_pages(void)
+ 	for_each_online_node(nid) {
+ 		pg_data_t *pgdat = NODE_DATA(nid);
+-		unsigned long node_pages = 0;
+ 		void *node_high_memory;
+ 
+ 		num_physpages += pgdat->node_present_pages;
+ 
+ 		if (pgdat->node_spanned_pages)
+-			node_pages = free_all_bootmem_node(pgdat);
++			totalram_pages += free_all_bootmem_node(pgdat);
+ 
+-		totalram_pages += node_pages;
+ 
+ 		node_high_memory = (void *)__va((pgdat->node_start_pfn +
+ 						 pgdat->node_spanned_pages) <<
+@@ -501,31 +499,13 @@ void __init mem_init(void)
+ 
+ void free_initmem(void)
  {
- 	struct cpuid cpu_id;
- 	unsigned int order;
--	unsigned long size;
- 	struct page *page;
- 	int i;
- 
-@@ -75,14 +74,11 @@ static unsigned long __init setup_zero_pages(void)
- 	page = virt_to_page((void *) empty_zero_page);
- 	split_page(page, order);
- 	for (i = 1 << order; i > 0; i--) {
--		SetPageReserved(page);
-+		mark_page_reserved(page);
- 		page++;
- 	}
- 
--	size = PAGE_SIZE << order;
--	zero_page_mask = (size - 1) & PAGE_MASK;
+-	unsigned long addr;
 -
--	return 1UL << order;
-+	zero_page_mask = ((PAGE_SIZE << order) - 1) & PAGE_MASK;
- }
- 
- /*
-@@ -139,7 +135,7 @@ void __init mem_init(void)
- 
- 	/* this will put all low memory onto the freelists */
- 	totalram_pages += free_all_bootmem();
--	totalram_pages -= setup_zero_pages();	/* Setup zeroed pages. */
-+	setup_zero_pages();	/* Setup zeroed pages. */
- 
- 	reservedpages = 0;
- 
-@@ -158,34 +154,15 @@ void __init mem_init(void)
- 	       PFN_ALIGN((unsigned long)&_eshared) - 1);
- }
- 
--void free_init_pages(char *what, unsigned long begin, unsigned long end)
--{
--	unsigned long addr = begin;
--
--	if (begin >= end)
--		return;
--	for (; addr < end; addr += PAGE_SIZE) {
+-	addr = (unsigned long)(&__init_begin);
+-	for (; addr < (unsigned long)(&__init_end); addr += PAGE_SIZE) {
 -		ClearPageReserved(virt_to_page(addr));
 -		init_page_count(virt_to_page(addr));
--		memset((void *)(addr & PAGE_MASK), POISON_FREE_INITMEM,
--		       PAGE_SIZE);
 -		free_page(addr);
 -		totalram_pages++;
 -	}
--	printk(KERN_INFO "Freeing %s: %luk freed\n", what, (end - begin) >> 10);
--}
--
- void free_initmem(void)
- {
--	free_init_pages("unused kernel memory",
--			(unsigned long)&__init_begin,
--			(unsigned long)&__init_end);
+-	printk("Freeing unused kernel memory: %ldk freed\n",
+-	       ((unsigned long)&__init_end -
+-	        (unsigned long)&__init_begin) >> 10);
 +	free_initmem_default(0);
  }
  
  #ifdef CONFIG_BLK_DEV_INITRD
- void __init free_initrd_mem(unsigned long start, unsigned long end)
+ void free_initrd_mem(unsigned long start, unsigned long end)
  {
--	free_init_pages("initrd memory", start, end);
-+	free_reserved_area(start, end, POISON_FREE_INITMEM, "initrd");
+-	unsigned long p;
+-	for (p = start; p < end; p += PAGE_SIZE) {
+-		ClearPageReserved(virt_to_page(p));
+-		init_page_count(virt_to_page(p));
+-		free_page(p);
+-		totalram_pages++;
+-	}
+-	printk("Freeing initrd memory: %ldk freed\n", (end - start) >> 10);
++	free_reserved_area(start, end, 0, "initrd");
  }
  #endif
  
