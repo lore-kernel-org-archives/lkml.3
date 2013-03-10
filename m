@@ -1,273 +1,245 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753139Ab3CJGsK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Mar 2013 01:48:10 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:19195 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753106Ab3CJGsH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753098Ab3CJGsH (ORCPT <rfc822;w@1wt.eu>);
 	Sun, 10 Mar 2013 01:48:07 -0500
-From: Yinghai Lu <yinghai@kernel.org>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Thomas Renninger <trenn@suse.de>, Tang Chen <tangchen@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
-        Pekka Enberg <penberg@kernel.org>, Jacob Shin <jacob.shin@amd.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH v2 19/20] x86, mm: Make init_mem_mapping be able to be called several times
-Date: Sat,  9 Mar 2013 22:44:46 -0800
-Message-Id: <1362897887-30808-20-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1362897887-30808-1-git-send-email-yinghai@kernel.org>
-References: <1362897887-30808-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+Received: from cn.fujitsu.com ([222.73.24.84]:36356 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753059Ab3CJGsE convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Mar 2013 01:48:04 -0500
+X-IronPort-AV: E=Sophos;i="4.84,817,1355068800"; 
+   d="scan'208";a="6843783"
+Message-ID: <513C2C47.5020008@cn.fujitsu.com>
+Date: Sun, 10 Mar 2013 14:46:31 +0800
+From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.8) Gecko/20121012 Thunderbird/10.0.8
+MIME-Version: 1.0
+To: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+CC: kexec@lists.infradead.org, heiko.carstens@de.ibm.com,
+        linux-kernel@vger.kernel.org, lisa.mitchell@hp.com,
+        kumagai-atsushi@mxc.nes.nec.co.jp, ebiederm@xmission.com,
+        akpm@linux-foundation.org, cpw@sgi.com, vgoyal@redhat.com
+Subject: Re: [PATCH v2 01/20] vmcore: refer to e_phoff member explicitly
+References: <20130302083447.31252.93914.stgit@localhost6.localdomain6> <20130302083554.31252.30615.stgit@localhost6.localdomain6> <5135A054.7010401@cn.fujitsu.com>
+In-Reply-To: <5135A054.7010401@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/03/10 14:46:51,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/03/10 14:46:52
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Prepare to put page table on local nodes.
+于 2013年03月05日 15:35, Zhang Yanfei 写道:
+> 于 2013年03月02日 16:35, HATAYAMA Daisuke 写道:
+>> Code around /proc/vmcore currently assumes program header table is
+>> next to ELF header. But future change can break the assumption on
+>> kexec-tools and the 1st kernel. To avoid worst case, now refer to
+>> e_phoff member that indicates position of program header table in
+>> file-offset.
+> 
+> Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+> 
+>>
+>> Signed-off-by: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+>> ---
+>>
+>>  fs/proc/vmcore.c |   40 ++++++++++++++++++++--------------------
+>>  1 files changed, 20 insertions(+), 20 deletions(-)
+>>
+>> diff --git a/fs/proc/vmcore.c b/fs/proc/vmcore.c
+>> index b870f74..abf4f01 100644
+>> --- a/fs/proc/vmcore.c
+>> +++ b/fs/proc/vmcore.c
+>> @@ -221,8 +221,8 @@ static u64 __init get_vmcore_size_elf64(char *elfptr)
+>>  	Elf64_Phdr *phdr_ptr;
+>>  
+>>  	ehdr_ptr = (Elf64_Ehdr *)elfptr;
+>> -	phdr_ptr = (Elf64_Phdr*)(elfptr + sizeof(Elf64_Ehdr));
+>> -	size = sizeof(Elf64_Ehdr) + ((ehdr_ptr->e_phnum) * sizeof(Elf64_Phdr));
+>> +	phdr_ptr = (Elf64_Phdr*)(elfptr + ehdr_ptr->e_phoff);
+>> +	size = ehdr_ptr->e_phoff + ((ehdr_ptr->e_phnum) * sizeof(Elf64_Phdr));
+>>  	for (i = 0; i < ehdr_ptr->e_phnum; i++) {
+>>  		size += phdr_ptr->p_memsz;
+>>  		phdr_ptr++;
+>> @@ -238,8 +238,8 @@ static u64 __init get_vmcore_size_elf32(char *elfptr)
+>>  	Elf32_Phdr *phdr_ptr;
+>>  
+>>  	ehdr_ptr = (Elf32_Ehdr *)elfptr;
+>> -	phdr_ptr = (Elf32_Phdr*)(elfptr + sizeof(Elf32_Ehdr));
+>> -	size = sizeof(Elf32_Ehdr) + ((ehdr_ptr->e_phnum) * sizeof(Elf32_Phdr));
+>> +	phdr_ptr = (Elf32_Phdr*)(elfptr + ehdr_ptr->e_phoff);
+>> +	size = ehdr_ptr->e_phoff + ((ehdr_ptr->e_phnum) * sizeof(Elf32_Phdr));
+>>  	for (i = 0; i < ehdr_ptr->e_phnum; i++) {
+>>  		size += phdr_ptr->p_memsz;
+>>  		phdr_ptr++;
+>> @@ -259,7 +259,7 @@ static int __init merge_note_headers_elf64(char *elfptr, size_t *elfsz,
+>>  	u64 phdr_sz = 0, note_off;
+>>  
+>>  	ehdr_ptr = (Elf64_Ehdr *)elfptr;
+>> -	phdr_ptr = (Elf64_Phdr*)(elfptr + sizeof(Elf64_Ehdr));
+>> +	phdr_ptr = (Elf64_Phdr*)(elfptr + ehdr_ptr->e_phoff);
+>>  	for (i = 0; i < ehdr_ptr->e_phnum; i++, phdr_ptr++) {
+>>  		int j;
+>>  		void *notes_section;
+>> @@ -305,7 +305,7 @@ static int __init merge_note_headers_elf64(char *elfptr, size_t *elfsz,
+>>  	/* Prepare merged PT_NOTE program header. */
+>>  	phdr.p_type    = PT_NOTE;
+>>  	phdr.p_flags   = 0;
+>> -	note_off = sizeof(Elf64_Ehdr) +
+>> +	note_off = ehdr_ptr->e_phoff +
+>>  			(ehdr_ptr->e_phnum - nr_ptnote +1) * sizeof(Elf64_Phdr);
+>>  	phdr.p_offset  = note_off;
+>>  	phdr.p_vaddr   = phdr.p_paddr = 0;
+>> @@ -313,14 +313,14 @@ static int __init merge_note_headers_elf64(char *elfptr, size_t *elfsz,
+>>  	phdr.p_align   = 0;
+>>  
+>>  	/* Add merged PT_NOTE program header*/
+>> -	tmp = elfptr + sizeof(Elf64_Ehdr);
+>> +	tmp = elfptr + ehdr_ptr->e_phoff;
+>>  	memcpy(tmp, &phdr, sizeof(phdr));
+>>  	tmp += sizeof(phdr);
+>>  
+>>  	/* Remove unwanted PT_NOTE program headers. */
+>>  	i = (nr_ptnote - 1) * sizeof(Elf64_Phdr);
+>>  	*elfsz = *elfsz - i;
+>> -	memmove(tmp, tmp+i, ((*elfsz)-sizeof(Elf64_Ehdr)-sizeof(Elf64_Phdr)));
+>> +	memmove(tmp, tmp+i, ((*elfsz)-ehdr_ptr->e_phoff-sizeof(Elf64_Phdr)));
+>>  
+>>  	/* Modify e_phnum to reflect merged headers. */
+>>  	ehdr_ptr->e_phnum = ehdr_ptr->e_phnum - nr_ptnote + 1;
+>> @@ -340,7 +340,7 @@ static int __init merge_note_headers_elf32(char *elfptr, size_t *elfsz,
+>>  	u64 phdr_sz = 0, note_off;
+>>  
+>>  	ehdr_ptr = (Elf32_Ehdr *)elfptr;
+>> -	phdr_ptr = (Elf32_Phdr*)(elfptr + sizeof(Elf32_Ehdr));
+>> +	phdr_ptr = (Elf32_Phdr*)(elfptr + ehdr_ptr->e_phoff);
+>>  	for (i = 0; i < ehdr_ptr->e_phnum; i++, phdr_ptr++) {
+>>  		int j;
+>>  		void *notes_section;
+>> @@ -386,7 +386,7 @@ static int __init merge_note_headers_elf32(char *elfptr, size_t *elfsz,
+>>  	/* Prepare merged PT_NOTE program header. */
+>>  	phdr.p_type    = PT_NOTE;
+>>  	phdr.p_flags   = 0;
+>> -	note_off = sizeof(Elf32_Ehdr) +
+>> +	note_off = ehdr_ptr->e_phoff +
+>>  			(ehdr_ptr->e_phnum - nr_ptnote +1) * sizeof(Elf32_Phdr);
+>>  	phdr.p_offset  = note_off;
+>>  	phdr.p_vaddr   = phdr.p_paddr = 0;
+>> @@ -394,14 +394,14 @@ static int __init merge_note_headers_elf32(char *elfptr, size_t *elfsz,
+>>  	phdr.p_align   = 0;
+>>  
+>>  	/* Add merged PT_NOTE program header*/
+>> -	tmp = elfptr + sizeof(Elf32_Ehdr);
+>> +	tmp = elfptr + ehdr_ptr->e_phoff;
+>>  	memcpy(tmp, &phdr, sizeof(phdr));
+>>  	tmp += sizeof(phdr);
+>>  
+>>  	/* Remove unwanted PT_NOTE program headers. */
+>>  	i = (nr_ptnote - 1) * sizeof(Elf32_Phdr);
+>>  	*elfsz = *elfsz - i;
+>> -	memmove(tmp, tmp+i, ((*elfsz)-sizeof(Elf32_Ehdr)-sizeof(Elf32_Phdr)));
+>> +	memmove(tmp, tmp+i, ((*elfsz)-ehdr_ptr->e_phoff-sizeof(Elf32_Phdr)));
+>>  
+>>  	/* Modify e_phnum to reflect merged headers. */
+>>  	ehdr_ptr->e_phnum = ehdr_ptr->e_phnum - nr_ptnote + 1;
+>> @@ -422,10 +422,10 @@ static int __init process_ptload_program_headers_elf64(char *elfptr,
+>>  	struct vmcore *new;
+>>  
+>>  	ehdr_ptr = (Elf64_Ehdr *)elfptr;
+>> -	phdr_ptr = (Elf64_Phdr*)(elfptr + sizeof(Elf64_Ehdr)); /* PT_NOTE hdr */
+>> +	phdr_ptr = (Elf64_Phdr*)(elfptr + ehdr_ptr->e_phoff); /* PT_NOTE hdr */
+>>  
+>>  	/* First program header is PT_NOTE header. */
+>> -	vmcore_off = sizeof(Elf64_Ehdr) +
+>> +	vmcore_off = ehdr_ptr->e_phoff +
+>>  			(ehdr_ptr->e_phnum) * sizeof(Elf64_Phdr) +
+>>  			phdr_ptr->p_memsz; /* Note sections */
+>>  
+>> @@ -459,10 +459,10 @@ static int __init process_ptload_program_headers_elf32(char *elfptr,
+>>  	struct vmcore *new;
+>>  
+>>  	ehdr_ptr = (Elf32_Ehdr *)elfptr;
+>> -	phdr_ptr = (Elf32_Phdr*)(elfptr + sizeof(Elf32_Ehdr)); /* PT_NOTE hdr */
+>> +	phdr_ptr = (Elf32_Phdr*)(elfptr + ehdr_ptr->e_phoff); /* PT_NOTE hdr */
+>>  
+>>  	/* First program header is PT_NOTE header. */
+>> -	vmcore_off = sizeof(Elf32_Ehdr) +
+>> +	vmcore_off = ehdr_ptr->e_phoff +
+>>  			(ehdr_ptr->e_phnum) * sizeof(Elf32_Phdr) +
+>>  			phdr_ptr->p_memsz; /* Note sections */
+>>  
+>> @@ -496,7 +496,7 @@ static void __init set_vmcore_list_offsets_elf64(char *elfptr,
+>>  	ehdr_ptr = (Elf64_Ehdr *)elfptr;
+>>  
+>>  	/* Skip Elf header and program headers. */
+>> -	vmcore_off = sizeof(Elf64_Ehdr) +
+>> +	vmcore_off = ehdr_ptr->e_phoff +
+>>  			(ehdr_ptr->e_phnum) * sizeof(Elf64_Phdr);
+>>  
+>>  	list_for_each_entry(m, vc_list, list) {
+>> @@ -516,7 +516,7 @@ static void __init set_vmcore_list_offsets_elf32(char *elfptr,
+>>  	ehdr_ptr = (Elf32_Ehdr *)elfptr;
+>>  
+>>  	/* Skip Elf header and program headers. */
+>> -	vmcore_off = sizeof(Elf32_Ehdr) +
+>> +	vmcore_off = ehdr_ptr->e_phoff +
+>>  			(ehdr_ptr->e_phnum) * sizeof(Elf32_Phdr);
+>>  
+>>  	list_for_each_entry(m, vc_list, list) {
+>> @@ -553,7 +553,7 @@ static int __init parse_crash_elf64_headers(void)
+>>  	}
+>>  
+>>  	/* Read in all elf headers. */
+>> -	elfcorebuf_sz = sizeof(Elf64_Ehdr) + ehdr.e_phnum * sizeof(Elf64_Phdr);
+>> +	elfcorebuf_sz = ehdr.e_phoff + ehdr.e_phnum * sizeof(Elf64_Phdr);
 
-Move calling of init_mem_mapping to early_initmem_init.
+One minor suggestion.
 
-Rework alloc_low_pages to alloc page table in following order:
-	BRK, local node, low range
+Previously, when the code assumes program headers are following immediately
+the ELF header, it uses
 
-Still only load_cr3 one time, otherwise we would break xen 64bit again.
+ elfcorebuf_sz = sizeof(Elf64_Ehdr) + ehdr.e_phnum * sizeof(Elf64_Phdr);
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Cc: Pekka Enberg <penberg@kernel.org>
-Cc: Jacob Shin <jacob.shin@amd.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- arch/x86/include/asm/pgtable.h |    2 +-
- arch/x86/kernel/setup.c        |    1 -
- arch/x86/mm/init.c             |   88 ++++++++++++++++++++++++----------------
- arch/x86/mm/numa.c             |   24 +++++++++++
- 4 files changed, 79 insertions(+), 36 deletions(-)
+to calculate the size of ELF header and ELF program headers
 
-diff --git a/arch/x86/include/asm/pgtable.h b/arch/x86/include/asm/pgtable.h
-index 1e67223..868687c 100644
---- a/arch/x86/include/asm/pgtable.h
-+++ b/arch/x86/include/asm/pgtable.h
-@@ -621,7 +621,7 @@ static inline int pgd_none(pgd_t pgd)
- #ifndef __ASSEMBLY__
- 
- extern int direct_gbpages;
--void init_mem_mapping(void);
-+void init_mem_mapping(unsigned long begin, unsigned long end);
- void early_alloc_pgt_buf(void);
- 
- /* local pte updates need not use xchg for locking */
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index 86e1ec0..1cdc1a7 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -1105,7 +1105,6 @@ void __init setup_arch(char **cmdline_p)
- 	acpi_boot_table_init();
- 	early_acpi_boot_init();
- 	early_initmem_init();
--	init_mem_mapping();
- 	memblock.current_limit = get_max_mapped();
- 	early_trap_pf_init();
- 
-diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-index 28b294f..8d0007a 100644
---- a/arch/x86/mm/init.c
-+++ b/arch/x86/mm/init.c
-@@ -24,7 +24,10 @@ static unsigned long __initdata pgt_buf_start;
- static unsigned long __initdata pgt_buf_end;
- static unsigned long __initdata pgt_buf_top;
- 
--static unsigned long min_pfn_mapped;
-+static unsigned long low_min_pfn_mapped;
-+static unsigned long low_max_pfn_mapped;
-+static unsigned long local_min_pfn_mapped;
-+static unsigned long local_max_pfn_mapped;
- 
- static bool __initdata can_use_brk_pgt = true;
- 
-@@ -52,10 +55,17 @@ __ref void *alloc_low_pages(unsigned int num)
- 
- 	if ((pgt_buf_end + num) > pgt_buf_top || !can_use_brk_pgt) {
- 		unsigned long ret;
--		if (min_pfn_mapped >= max_pfn_mapped)
--			panic("alloc_low_page: ran out of memory");
--		ret = memblock_find_in_range(min_pfn_mapped << PAGE_SHIFT,
--					max_pfn_mapped << PAGE_SHIFT,
-+		if (local_min_pfn_mapped >= local_max_pfn_mapped) {
-+			if (low_min_pfn_mapped >= low_max_pfn_mapped)
-+				panic("alloc_low_page: ran out of memory");
-+			ret = memblock_find_in_range(
-+					low_min_pfn_mapped << PAGE_SHIFT,
-+					low_max_pfn_mapped << PAGE_SHIFT,
-+					PAGE_SIZE * num , PAGE_SIZE);
-+		} else
-+			ret = memblock_find_in_range(
-+					local_min_pfn_mapped << PAGE_SHIFT,
-+					local_max_pfn_mapped << PAGE_SHIFT,
- 					PAGE_SIZE * num , PAGE_SIZE);
- 		if (!ret)
- 			panic("alloc_low_page: can not alloc memory");
-@@ -387,60 +397,75 @@ static unsigned long __init init_range_memory_mapping(
- 
- /* (PUD_SHIFT-PMD_SHIFT)/2 */
- #define STEP_SIZE_SHIFT 5
--void __init init_mem_mapping(void)
-+void __init init_mem_mapping(unsigned long begin, unsigned long end)
- {
--	unsigned long end, real_end, start, last_start;
-+	unsigned long real_end, start, last_start;
- 	unsigned long step_size;
- 	unsigned long addr;
- 	unsigned long mapped_ram_size = 0;
- 	unsigned long new_mapped_ram_size;
-+	bool is_low = false;
-+
-+	if (!begin) {
-+		probe_page_size_mask();
-+		/* the ISA range is always mapped regardless of memory holes */
-+		init_memory_mapping(0, ISA_END_ADDRESS);
-+		begin = ISA_END_ADDRESS;
-+		is_low = true;
-+	}
- 
--	probe_page_size_mask();
--
--#ifdef CONFIG_X86_64
--	end = max_pfn << PAGE_SHIFT;
--#else
--	end = max_low_pfn << PAGE_SHIFT;
--#endif
--
--	/* the ISA range is always mapped regardless of memory holes */
--	init_memory_mapping(0, ISA_END_ADDRESS);
-+	if (begin >= end)
-+		return;
- 
- 	/* xen has big range in reserved near end of ram, skip it at first.*/
--	addr = memblock_find_in_range(ISA_END_ADDRESS, end, PMD_SIZE, PMD_SIZE);
-+	addr = memblock_find_in_range(begin, end, PMD_SIZE, PMD_SIZE);
- 	real_end = addr + PMD_SIZE;
- 
- 	/* step_size need to be small so pgt_buf from BRK could cover it */
- 	step_size = PMD_SIZE;
--	max_pfn_mapped = 0; /* will get exact value next */
--	min_pfn_mapped = real_end >> PAGE_SHIFT;
-+	local_max_pfn_mapped = begin >> PAGE_SHIFT;
-+	local_min_pfn_mapped = real_end >> PAGE_SHIFT;
- 	last_start = start = real_end;
--	while (last_start > ISA_END_ADDRESS) {
-+	while (last_start > begin) {
- 		if (last_start > step_size) {
- 			start = round_down(last_start - 1, step_size);
--			if (start < ISA_END_ADDRESS)
--				start = ISA_END_ADDRESS;
-+			if (start < begin)
-+				start = begin;
- 		} else
--			start = ISA_END_ADDRESS;
-+			start = begin;
- 		new_mapped_ram_size = init_range_memory_mapping(start,
- 							last_start);
-+		if ((last_start >> PAGE_SHIFT) > local_max_pfn_mapped)
-+			local_max_pfn_mapped = last_start >> PAGE_SHIFT;
-+		local_min_pfn_mapped = start >> PAGE_SHIFT;
- 		last_start = start;
--		min_pfn_mapped = last_start >> PAGE_SHIFT;
- 		/* only increase step_size after big range get mapped */
- 		if (new_mapped_ram_size > mapped_ram_size)
- 			step_size <<= STEP_SIZE_SHIFT;
- 		mapped_ram_size += new_mapped_ram_size;
- 	}
- 
--	if (real_end < end)
-+	if (real_end < end) {
- 		init_range_memory_mapping(real_end, end);
-+		if ((end >> PAGE_SHIFT) > local_max_pfn_mapped)
-+			local_max_pfn_mapped = end >> PAGE_SHIFT;
-+	}
- 
-+	if (is_low) {
-+		low_min_pfn_mapped = local_min_pfn_mapped;
-+		low_max_pfn_mapped = local_max_pfn_mapped;
-+	}
-+}
-+
-+#ifndef CONFIG_NUMA
-+void __init early_initmem_init(void)
-+{
- #ifdef CONFIG_X86_64
--	if (max_pfn > max_low_pfn) {
--		/* can we preseve max_low_pfn ?*/
-+	init_mem_mapping(0, max_pfn << PAGE_SHIFT);
-+	if (max_pfn > max_low_pfn)
- 		max_low_pfn = max_pfn;
--	}
- #else
-+	init_mem_mapping(0, max_low_pfn << PAGE_SHIFT);
- 	early_ioremap_page_table_range_init();
- #endif
- 
-@@ -449,11 +474,6 @@ void __init init_mem_mapping(void)
- 
- 	early_memtest(0, max_pfn_mapped << PAGE_SHIFT);
- }
--
--#ifndef CONFIG_NUMA
--void __init early_initmem_init(void)
--{
--}
- #endif
- 
- /*
-diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
-index c2d4653..d3eb0c9 100644
---- a/arch/x86/mm/numa.c
-+++ b/arch/x86/mm/numa.c
-@@ -17,8 +17,10 @@
- #include <asm/dma.h>
- #include <asm/acpi.h>
- #include <asm/amd_nb.h>
-+#include <asm/tlbflush.h>
- 
- #include "numa_internal.h"
-+#include "mm_internal.h"
- 
- int __initdata numa_off;
- nodemask_t numa_nodes_parsed __initdata;
-@@ -668,9 +670,31 @@ static void __init early_x86_numa_init(void)
- 	numa_init(dummy_numa_init);
- }
- 
-+#ifdef CONFIG_X86_64
-+static void __init early_x86_numa_init_mapping(void)
-+{
-+	init_mem_mapping(0, max_pfn << PAGE_SHIFT);
-+	if (max_pfn > max_low_pfn)
-+		max_low_pfn = max_pfn;
-+}
-+#else
-+static void __init early_x86_numa_init_mapping(void)
-+{
-+	init_mem_mapping(0, max_low_pfn << PAGE_SHIFT);
-+	early_ioremap_page_table_range_init();
-+}
-+#endif
-+
- void __init early_initmem_init(void)
- {
- 	early_x86_numa_init();
-+
-+	early_x86_numa_init_mapping();
-+
-+	load_cr3(swapper_pg_dir);
-+	__flush_tlb_all();
-+
-+	early_memtest(0, max_pfn_mapped<<PAGE_SHIFT);
- }
- 
- void __init x86_numa_init(void)
--- 
-1.7.10.4
+This patch avoids the assumption, and uses ehdr.e_phoff to get the program
+headers' address. But it will read unrelated contents into elfcorebuf if
+program headers are not following immediately the ELF header. So could the
+code be:
+
+elfcorebuf_sz = sizeof(Elf64_Ehdr) + ehdr.e_phnum * sizeof(Elf64_Phdr);
+addr = elfcorehdr_addr + ehdr.e_phoff;
+memcpy(elfcorebuf, &ehdr, sizeof(Elf64_Ehdr));
+read_from_oldmem(elfcorebuf + sizeof(Elf64_Ehdr), elfcorebuf_sz -
+                 sizeof(Elf64_Ehdr), &addr, 0);
+(Elf64_Ehdr *)elfcorebuf->e_phoff = sizeof(Elf64_Ehdr);
+
+>>  	elfcorebuf = kmalloc(elfcorebuf_sz, GFP_KERNEL);
+>>  	if (!elfcorebuf)
+>>  		return -ENOMEM;
+>> @@ -608,7 +608,7 @@ static int __init parse_crash_elf32_headers(void)
+>>  	}
+>>  
+>>  	/* Read in all elf headers. */
+>> -	elfcorebuf_sz = sizeof(Elf32_Ehdr) + ehdr.e_phnum * sizeof(Elf32_Phdr);
+>> +	elfcorebuf_sz = ehdr.e_phoff + ehdr.e_phnum * sizeof(Elf32_Phdr);
+>>  	elfcorebuf = kmalloc(elfcorebuf_sz, GFP_KERNEL);
+>>  	if (!elfcorebuf)
+>>  		return -ENOMEM;
+>>
+>>
+>> _______________________________________________
+>> kexec mailing list
+>> kexec@lists.infradead.org
+>> http://lists.infradead.org/mailman/listinfo/kexec
+>>
+> 
+> 
+> _______________________________________________
+> kexec mailing list
+> kexec@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/kexec
 
