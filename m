@@ -1,44 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752501Ab3CJNq3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Mar 2013 09:46:29 -0400
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:52062 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751359Ab3CJNq1 (ORCPT
+	id S1751921Ab3CJNw2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Mar 2013 09:52:28 -0400
+Received: from mail-we0-f177.google.com ([74.125.82.177]:35357 "EHLO
+	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750909Ab3CJNw0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Mar 2013 09:46:27 -0400
-From: Ioan Orghici <ioanorghici@gmail.com>
-To: mtosatti@redhat.com
-Cc: gleb@redhat.com, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org, x86@kernel.org,
-        Ioan Orghici <ioan.orghici@gmail.com>
-Subject: [PATCH] kvm: remove cast for kmalloc return value
-Date: Sun, 10 Mar 2013 15:46:00 +0200
-Message-Id: <1362923160-26300-1-git-send-email-ioan.orghici@gmail.com>
+	Sun, 10 Mar 2013 09:52:26 -0400
+From: Paul Vlase <vlase.paul@gmail.com>
+To: stern@rowland.harvard.edu
+Cc: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Paul Vlase <vlase.paul@gmail.com>
+Subject: [PATCH] usb: Use resource_size function
+Date: Sun, 10 Mar 2013 15:52:02 +0200
+Message-Id: <1362923522-20842-1-git-send-email-vlase.paul@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Ioan Orghici<ioan.orghici@gmail.com>
+Signed-off-by: Paul Vlase <vlase.paul@gmail.com>
 ---
- arch/x86/kvm/vmx.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/usb/host/ehci-mv.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-index 7cc566b..35c2c8f 100644
---- a/arch/x86/kvm/vmx.c
-+++ b/arch/x86/kvm/vmx.c
-@@ -5261,8 +5261,7 @@ static struct loaded_vmcs *nested_get_current_vmcs02(struct vcpu_vmx *vmx)
- 	}
+diff --git a/drivers/usb/host/ehci-mv.c b/drivers/usb/host/ehci-mv.c
+index 3065809..5cd9f96 100644
+--- a/drivers/usb/host/ehci-mv.c
++++ b/drivers/usb/host/ehci-mv.c
+@@ -225,7 +225,7 @@ static int mv_ehci_probe(struct platform_device *pdev)
+ 		(void __iomem *) ((unsigned long) ehci_mv->cap_regs + offset);
  
- 	/* Create a new VMCS */
--	item = (struct vmcs02_list *)
--		kmalloc(sizeof(struct vmcs02_list), GFP_KERNEL);
-+	item = kmalloc(sizeof(struct vmcs02_list), GFP_KERNEL);
- 	if (!item)
- 		return NULL;
- 	item->vmcs02.vmcs = alloc_vmcs();
+ 	hcd->rsrc_start = r->start;
+-	hcd->rsrc_len = r->end - r->start + 1;
++	hcd->rsrc_len = resource_size(r);
+ 	hcd->regs = ehci_mv->op_regs;
+ 
+ 	hcd->irq = platform_get_irq(pdev, 0);
 -- 
 1.7.10.4
 
