@@ -1,45 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752464Ab3CJMfK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Mar 2013 08:35:10 -0400
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:41697 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751074Ab3CJMfI (ORCPT
+	id S1751576Ab3CJMh7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Mar 2013 08:37:59 -0400
+Received: from mail-we0-f173.google.com ([74.125.82.173]:52591 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751074Ab3CJMh6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Mar 2013 08:35:08 -0400
-From: Andreea Hodea <andreea.cristina.hodea@gmail.com>
-To: mac@melware.de
-Cc: isdn@linux-pingi.de, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Andreea Hodea <hodea_andreea@yahoo.com>
-Subject: [PATCH] eicon: Fixed checkpatch warning
-Date: Sun, 10 Mar 2013 14:34:36 +0200
-Message-Id: <1362918876-18694-1-git-send-email-hodea_andreea@yahoo.com>
+	Sun, 10 Mar 2013 08:37:58 -0400
+From: Vicentiu Ciorbaru <cvicentiu@gmail.com>
+To: perex@perex.cz
+Cc: tiwai@suse.de, wfp5p@virginia.edu, cvicentiu@gmail.com,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] emu10k1: Fix coccicheck warning
+Date: Sun, 10 Mar 2013 14:37:47 +0200
+Message-Id: <1362919067-17250-1-git-send-email-cvicentiu@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-drivers/isdn/hardware/eicon/diva_didd.c:32:6: warning: symbol
-'DRIVERRELEASE_DIDD' was not declared. Should it be static?
+Removed redundant cast of kmalloc return pointer.
 
-Signed-off-by: Andreea Hodea <hodea_andreea@yahoo.com>
+Signed-off-by: Vicentiu Ciorbaru <cvicentiu@gmail.com>
 ---
- drivers/isdn/hardware/eicon/diva_didd.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ sound/pci/emu10k1/emufx.c |    5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/isdn/hardware/eicon/diva_didd.c b/drivers/isdn/hardware/eicon/diva_didd.c
-index fab6ccf..21468be 100644
---- a/drivers/isdn/hardware/eicon/diva_didd.c
-+++ b/drivers/isdn/hardware/eicon/diva_didd.c
-@@ -29,7 +29,7 @@ static char *main_revision = "$Revision: 1.13.6.4 $";
- static char *DRIVERNAME =
- 	"Eicon DIVA - DIDD table (http://www.melware.net)";
- static char *DRIVERLNAME = "divadidd";
--char *DRIVERRELEASE_DIDD = "2.0";
-+static char *DRIVERRELEASE_DIDD = "2.0";
+diff --git a/sound/pci/emu10k1/emufx.c b/sound/pci/emu10k1/emufx.c
+index 0275209..a0f7502 100644
+--- a/sound/pci/emu10k1/emufx.c
++++ b/sound/pci/emu10k1/emufx.c
+@@ -1183,9 +1183,8 @@ static int _snd_emu10k1_audigy_init_efx(struct snd_emu10k1 *emu)
+ 	mm_segment_t seg;
  
- MODULE_DESCRIPTION("DIDD table driver for diva drivers");
- MODULE_AUTHOR("Cytronics & Melware, Eicon Networks");
+ 	if ((icode = kzalloc(sizeof(*icode), GFP_KERNEL)) == NULL ||
+-	    (icode->gpr_map = (u_int32_t __user *)
+-	     kcalloc(512 + 256 + 256 + 2 * 1024, sizeof(u_int32_t),
+-		     GFP_KERNEL)) == NULL ||
++	    (icode->gpr_map = kcalloc(512 + 256 + 256 + 2 * 1024,
++				sizeof(u_int32_t), GFP_KERNEL)) == NULL ||
+ 	    (controls = kcalloc(SND_EMU10K1_GPR_CONTROLS,
+ 				sizeof(*controls), GFP_KERNEL)) == NULL) {
+ 		err = -ENOMEM;
 -- 
 1.7.10.4
 
