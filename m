@@ -1,147 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752584Ab3CJGuA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Mar 2013 01:50:00 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:19035 "EHLO
+	id S1752364Ab3CJGqe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Mar 2013 01:46:34 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:19002 "EHLO
 	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751907Ab3CJGqq (ORCPT
+	with ESMTP id S1752069Ab3CJGqV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Mar 2013 01:46:46 -0500
+	Sun, 10 Mar 2013 01:46:21 -0500
 From: Yinghai Lu <yinghai@kernel.org>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>,
         Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
         Thomas Renninger <trenn@suse.de>, Tang Chen <tangchen@cn.fujitsu.com>
 Cc: linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
-        Pekka Enberg <penberg@kernel.org>, Jacob Shin <jacob.shin@amd.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-acpi@vger.kernel.org
-Subject: [PATCH v2 08/20] x86, ACPI: Find acpi tables in initrd early from head_32.S/head64.c
-Date: Sat,  9 Mar 2013 22:44:35 -0800
-Message-Id: <1362897887-30808-9-git-send-email-yinghai@kernel.org>
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        David Airlie <airlied@linux.ie>, Jacob Shin <jacob.shin@amd.com>,
+        linux-acpi@vger.kernel.org, dri-devel@lists.freedesktop.org
+Subject: [PATCH v2 03/20] x86, ACPI, mm: Kill max_low_pfn_mapped
+Date: Sat,  9 Mar 2013 22:44:30 -0800
+Message-Id: <1362897887-30808-4-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1362897887-30808-1-git-send-email-yinghai@kernel.org>
 References: <1362897887-30808-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-head64.c could use #PF handler set page table to access initrd before
-init mem mapping and initrd relocating.
+Now we have arch_pfn_mapped array, and max_low_pfn_mapped should not
+be used anymore.
 
-head_32.S could use 32bit flat mode to access initrd before init mem
-mapping initrd relocating.
+User should use arch_pfn_mapped or just 1UL<<(32-PAGE_SHIFT) instead.
 
-That make 32bit and 64 bit more consistent.
+Only user is ACPI_INITRD_TABLE_OVERRIDE, and it should not use that,
+as later accessing is using early_ioremap(). Change to try to 4G below
+and then 4G above.
 
--v2: use inline function in header file instead according to tj.
-     also still need to keep #idef head_32.S to avoid compiling error.
+-v2: Leave alone max_low_pfn_mapped in i915 code according to tj.
 
+Suggested-by: H. Peter Anvin <hpa@zytor.com>
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Cc: Pekka Enberg <penberg@kernel.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: David Airlie <airlied@linux.ie>
 Cc: Jacob Shin <jacob.shin@amd.com>
-Cc: Rafael J. Wysocki <rjw@sisk.pl>
 Cc: linux-acpi@vger.kernel.org
+Cc: dri-devel@lists.freedesktop.org
 ---
- arch/x86/include/asm/setup.h |    6 ++++++
- arch/x86/kernel/head64.c     |    2 ++
- arch/x86/kernel/head_32.S    |    4 ++++
- arch/x86/kernel/setup.c      |   30 ++++++++++++++++++++++++++++--
- 4 files changed, 40 insertions(+), 2 deletions(-)
+ arch/x86/include/asm/page_types.h |    1 -
+ arch/x86/kernel/setup.c           |    4 +---
+ arch/x86/mm/init.c                |    4 ----
+ drivers/acpi/osl.c                |   10 +++++++---
+ 4 files changed, 8 insertions(+), 11 deletions(-)
 
-diff --git a/arch/x86/include/asm/setup.h b/arch/x86/include/asm/setup.h
-index 4f71d48..6f885b7 100644
---- a/arch/x86/include/asm/setup.h
-+++ b/arch/x86/include/asm/setup.h
-@@ -42,6 +42,12 @@ extern void visws_early_detect(void);
- static inline void visws_early_detect(void) { }
- #endif
+diff --git a/arch/x86/include/asm/page_types.h b/arch/x86/include/asm/page_types.h
+index 54c9787..b012b82 100644
+--- a/arch/x86/include/asm/page_types.h
++++ b/arch/x86/include/asm/page_types.h
+@@ -43,7 +43,6 @@
  
-+#ifdef CONFIG_ACPI_INITRD_TABLE_OVERRIDE
-+void x86_acpi_override_find(void);
-+#else
-+static inline void x86_acpi_override_find(void) { }
-+#endif
-+
- extern unsigned long saved_video_mode;
+ extern int devmem_is_allowed(unsigned long pagenr);
  
- extern void reserve_standard_io_resources(void);
-diff --git a/arch/x86/kernel/head64.c b/arch/x86/kernel/head64.c
-index c5e403f..a31bc63 100644
---- a/arch/x86/kernel/head64.c
-+++ b/arch/x86/kernel/head64.c
-@@ -174,6 +174,8 @@ void __init x86_64_start_kernel(char * real_mode_data)
- 	if (console_loglevel == 10)
- 		early_printk("Kernel alive\n");
+-extern unsigned long max_low_pfn_mapped;
+ extern unsigned long max_pfn_mapped;
  
-+	x86_acpi_override_find();
-+
- 	clear_page(init_level4_pgt);
- 	/* set init_level4_pgt kernel high mapping*/
- 	init_level4_pgt[511] = early_level4_pgt[511];
-diff --git a/arch/x86/kernel/head_32.S b/arch/x86/kernel/head_32.S
-index 73afd11..ca08f0e 100644
---- a/arch/x86/kernel/head_32.S
-+++ b/arch/x86/kernel/head_32.S
-@@ -149,6 +149,10 @@ ENTRY(startup_32)
- 	call load_ucode_bsp
- #endif
- 
-+#ifdef CONFIG_ACPI_INITRD_TABLE_OVERRIDE
-+	call x86_acpi_override_find
-+#endif
-+
- /*
-  * Initialize page tables.  This creates a PDE and a set of page
-  * tables, which are located immediately beyond __brk_base.  The variable
+ static inline phys_addr_t get_max_mapped(void)
 diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index 16a703f..b067663 100644
+index 1629577..e75c6e6 100644
 --- a/arch/x86/kernel/setup.c
 +++ b/arch/x86/kernel/setup.c
-@@ -424,6 +424,34 @@ static void __init reserve_initrd(void)
+@@ -113,13 +113,11 @@
+ #include <asm/prom.h>
+ 
+ /*
+- * max_low_pfn_mapped: highest direct mapped pfn under 4GB
+- * max_pfn_mapped:     highest direct mapped pfn over 4GB
++ * max_pfn_mapped:     highest direct mapped pfn
+  *
+  * The direct mapping only covers E820_RAM regions, so the ranges and gaps are
+  * represented by pfn_mapped
+  */
+-unsigned long max_low_pfn_mapped;
+ unsigned long max_pfn_mapped;
+ 
+ #ifdef CONFIG_DMI
+diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
+index 59b7fc4..abcc241 100644
+--- a/arch/x86/mm/init.c
++++ b/arch/x86/mm/init.c
+@@ -313,10 +313,6 @@ static void add_pfn_range_mapped(unsigned long start_pfn, unsigned long end_pfn)
+ 	nr_pfn_mapped = clean_sort_range(pfn_mapped, E820_X_MAX);
+ 
+ 	max_pfn_mapped = max(max_pfn_mapped, end_pfn);
+-
+-	if (start_pfn < (1UL<<(32-PAGE_SHIFT)))
+-		max_low_pfn_mapped = max(max_low_pfn_mapped,
+-					 min(end_pfn, 1UL<<(32-PAGE_SHIFT)));
  }
- #endif /* CONFIG_BLK_DEV_INITRD */
  
-+#ifdef CONFIG_ACPI_INITRD_TABLE_OVERRIDE
-+void __init x86_acpi_override_find(void)
-+{
-+	unsigned long ramdisk_image, ramdisk_size;
-+	unsigned char *p = NULL;
-+
-+#ifdef CONFIG_X86_32
-+	struct boot_params *boot_params_p;
-+
-+	/*
-+	 * 32bit is from head_32.S, and it is 32bit flat mode.
-+	 * So need to use phys address to access global variables.
-+	 */
-+	boot_params_p = (struct boot_params *)__pa_symbol(&boot_params);
-+	ramdisk_image = get_ramdisk_image(boot_params_p);
-+	ramdisk_size  = get_ramdisk_size(boot_params_p);
-+	p = (unsigned char *)ramdisk_image;
-+	acpi_initrd_override_find(p, ramdisk_size, true);
-+#else
-+	ramdisk_image = get_ramdisk_image(&boot_params);
-+	ramdisk_size  = get_ramdisk_size(&boot_params);
-+	if (ramdisk_image)
-+		p = __va(ramdisk_image);
-+	acpi_initrd_override_find(p, ramdisk_size, false);
-+#endif
-+}
-+#endif
-+
- static void __init parse_setup_data(void)
- {
- 	struct setup_data *data;
-@@ -1092,8 +1120,6 @@ void __init setup_arch(char **cmdline_p)
+ bool pfn_range_is_mapped(unsigned long start_pfn, unsigned long end_pfn)
+diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
+index 586e7e9..c08cdb6 100644
+--- a/drivers/acpi/osl.c
++++ b/drivers/acpi/osl.c
+@@ -624,9 +624,13 @@ void __init acpi_initrd_override(void *data, size_t size)
+ 	if (table_nr == 0)
+ 		return;
  
- 	reserve_initrd();
- 
--	acpi_initrd_override_find((void *)initrd_start,
--					initrd_end - initrd_start, false);
- 	acpi_initrd_override_copy();
- 
- 	reserve_crashkernel();
+-	acpi_tables_addr =
+-		memblock_find_in_range(0, max_low_pfn_mapped << PAGE_SHIFT,
+-				       all_tables_size, PAGE_SIZE);
++	/* under 4G at first, then above 4G */
++	acpi_tables_addr = memblock_find_in_range(0, (1ULL<<32) - 1,
++					all_tables_size, PAGE_SIZE);
++	if (!acpi_tables_addr)
++		acpi_tables_addr = memblock_find_in_range(0,
++					~(phys_addr_t)0,
++					all_tables_size, PAGE_SIZE);
+ 	if (!acpi_tables_addr) {
+ 		WARN_ON(1);
+ 		return;
 -- 
 1.7.10.4
 
