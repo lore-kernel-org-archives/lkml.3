@@ -1,46 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751280Ab3CJMPL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Mar 2013 08:15:11 -0400
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:63584 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752350Ab3CJMPI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Mar 2013 08:15:08 -0400
-From: Alexandru Gheorghiu <gheorghiuandru@gmail.com>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Alexandru Gheorghiu <gheorghiuandru@gmail.com>
-Subject: [PATCH] Drivers: staging: media: davinci_vpfe: Use resource_size function
-Date: Sun, 10 Mar 2013 14:14:53 +0200
-Message-Id: <1362917693-29589-1-git-send-email-gheorghiuandru@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S1752853Ab3CJMV1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Mar 2013 08:21:27 -0400
+Received: from pequod.mess.org ([46.65.169.142]:50820 "EHLO pequod.mess.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752224Ab3CJMV0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Mar 2013 08:21:26 -0400
+Date: Sun, 10 Mar 2013 12:21:23 +0000
+From: Sean Young <sean@mess.org>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: Josh Boyer <jwboyer@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: 8250.nr_uarts broken in 3.7
+Message-ID: <20130310122123.GA25551@pequod.mess.org>
+References: <513A6A65.9050706@suse.cz>
+ <20130308224950.GM13719@hansolo.jdub.homelinux.org>
+ <513A6D1F.5000202@suse.cz>
+ <513A6FD4.7000506@suse.cz>
+ <513A70CF.9010800@suse.cz>
+ <20130308232809.GO13719@hansolo.jdub.homelinux.org>
+ <20130308234404.GP13719@hansolo.jdub.homelinux.org>
+ <513AFD66.3030404@suse.cz>
+ <20130309133014.GQ13719@hansolo.jdub.homelinux.org>
+ <513B43BA.3000906@suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <513B43BA.3000906@suse.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use resource_size function on resource object instead of explicit
-computation.
+On Sat, Mar 09, 2013 at 03:14:18PM +0100, Jiri Slaby wrote:
+> This is so disgusting that I will do the following:
+> * ack your patch after you change the above (if that works)
+> * rename 8250.c to 8250_core.c
+> * change 8250_core.ko back to 8250.ko (ie. bring back the old module name)
+> * thus switch MODULE_PARAM_PREFIX above to "8250_core."
+> * deprecate all the newly added 8250_core.* params somehow and schedule
+> for removal. IMO this warrants a kernel config option like
+> CONFIG_8250_DEPRECATED_MODULE_PARAMS.
+> 
+> We have a lesson learned.
 
-Signed-off-by: Alexandru Gheorghiu <gheorghiuandru@gmail.com>
----
- drivers/staging/media/davinci_vpfe/dm365_ipipeif.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+Indeed. In the patch that broke things, I renamed the module rather than 
+the 8250.c source file in order to keep the patch small, but obviously 
+did not consider the consequences well enough. I'm sorry about the mess 
+I created.
 
-diff --git a/drivers/staging/media/davinci_vpfe/dm365_ipipeif.c b/drivers/staging/media/davinci_vpfe/dm365_ipipeif.c
-index c8cae51..b2f4ef8 100644
---- a/drivers/staging/media/davinci_vpfe/dm365_ipipeif.c
-+++ b/drivers/staging/media/davinci_vpfe/dm365_ipipeif.c
-@@ -1065,7 +1065,6 @@ vpfe_ipipeif_cleanup(struct vpfe_ipipeif_device *ipipeif,
- 	iounmap(ipipeif->ipipeif_base_addr);
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 3);
- 	if (res)
--		release_mem_region(res->start,
--					res->end - res->start + 1);
-+		release_mem_region(res->start, resource_size(res));
- 
- }
--- 
-1.7.10.4
 
+Sean
