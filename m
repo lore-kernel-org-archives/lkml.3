@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752723Ab3CJIJx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Mar 2013 04:09:53 -0400
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:52969 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752670Ab3CJIJq (ORCPT
+	id S1752803Ab3CJIKG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Mar 2013 04:10:06 -0400
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:35256 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752670Ab3CJIJz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Mar 2013 04:09:46 -0400
+	Sun, 10 Mar 2013 04:09:55 -0400
 From: Jiang Liu <liuj97@gmail.com>
 To: Andrew Morton <akpm@linux-foundation.org>,
         David Rientjes <rientjes@google.com>
@@ -15,11 +15,13 @@ Cc: Jiang Liu <jiang.liu@huawei.com>, Wen Congyang <wency@cn.fujitsu.com>,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
         Michal Hocko <mhocko@suse.cz>, Jianguo Wu <wujianguo@huawei.com>,
         linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Jeff Dike <jdike@addtoit.com>, Richard Weinberger <richard@nod.at>,
-        user-mode-linux-devel@lists.sourceforge.net
-Subject: [PATCH v2, part2 09/10] mm/um: use free_highmem_page() to free highmem pages into buddy system
-Date: Sun, 10 Mar 2013 16:01:09 +0800
-Message-Id: <1362902470-25787-10-git-send-email-jiang.liu@huawei.com>
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Cong Wang <amwang@redhat.com>, Yinghai Lu <yinghai@kernel.org>,
+        Attilio Rao <attilio.rao@citrix.com>, konrad.wilk@oracle.com
+Subject: [PATCH v2, part2 10/10] mm/x86: use free_highmem_page() to free highmem pages into buddy system
+Date: Sun, 10 Mar 2013 16:01:10 +0800
+Message-Id: <1362902470-25787-11-git-send-email-jiang.liu@huawei.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1362902470-25787-1-git-send-email-jiang.liu@huawei.com>
 References: <1362902470-25787-1-git-send-email-jiang.liu@huawei.com>
@@ -31,58 +33,58 @@ Use helper function free_highmem_page() to free highmem pages into
 the buddy system.
 
 Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Cc: Jeff Dike <jdike@addtoit.com>
-Cc: Richard Weinberger <richard@nod.at>
-Cc: user-mode-linux-devel@lists.sourceforge.net
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: x86@kernel.org
+Cc: Cong Wang <amwang@redhat.com>
+Cc: Yinghai Lu <yinghai@kernel.org>
+Cc: Attilio Rao <attilio.rao@citrix.com>
+Cc: konrad.wilk@oracle.com
 Cc: linux-kernel@vger.kernel.org
 ---
- arch/um/kernel/mem.c |   16 +++-------------
- 1 file changed, 3 insertions(+), 13 deletions(-)
+ arch/x86/mm/highmem_32.c |    1 -
+ arch/x86/mm/init_32.c    |   10 +---------
+ 2 files changed, 1 insertion(+), 10 deletions(-)
 
-diff --git a/arch/um/kernel/mem.c b/arch/um/kernel/mem.c
-index d5ac802..9df292b 100644
---- a/arch/um/kernel/mem.c
-+++ b/arch/um/kernel/mem.c
-@@ -42,17 +42,12 @@ static unsigned long brk_end;
- static void setup_highmem(unsigned long highmem_start,
- 			  unsigned long highmem_len)
- {
--	struct page *page;
- 	unsigned long highmem_pfn;
- 	int i;
- 
- 	highmem_pfn = __pa(highmem_start) >> PAGE_SHIFT;
--	for (i = 0; i < highmem_len >> PAGE_SHIFT; i++) {
--		page = &mem_map[highmem_pfn + i];
--		ClearPageReserved(page);
--		init_page_count(page);
--		__free_page(page);
--	}
-+	for (i = 0; i < highmem_len >> PAGE_SHIFT; i++)
-+		free_highmem_page(&mem_map[highmem_pfn + i]);
- }
- #endif
- 
-@@ -73,18 +68,13 @@ void __init mem_init(void)
- 	totalram_pages = free_all_bootmem();
- 	max_low_pfn = totalram_pages;
- #ifdef CONFIG_HIGHMEM
--	totalhigh_pages = highmem >> PAGE_SHIFT;
+diff --git a/arch/x86/mm/highmem_32.c b/arch/x86/mm/highmem_32.c
+index 6f31ee5..252b8f5 100644
+--- a/arch/x86/mm/highmem_32.c
++++ b/arch/x86/mm/highmem_32.c
+@@ -137,5 +137,4 @@ void __init set_highmem_pages_init(void)
+ 		add_highpages_with_active_regions(nid, zone_start_pfn,
+ 				 zone_end_pfn);
+ 	}
 -	totalram_pages += totalhigh_pages;
-+	setup_highmem(end_iomem, highmem);
- #endif
- 	num_physpages = totalram_pages;
- 	max_pfn = totalram_pages;
- 	printk(KERN_INFO "Memory: %luk available\n",
- 	       nr_free_pages() << (PAGE_SHIFT-10));
- 	kmalloc_ok = 1;
--
--#ifdef CONFIG_HIGHMEM
--	setup_highmem(end_iomem, highmem);
--#endif
+ }
+diff --git a/arch/x86/mm/init_32.c b/arch/x86/mm/init_32.c
+index 2d19001..3ac7e31 100644
+--- a/arch/x86/mm/init_32.c
++++ b/arch/x86/mm/init_32.c
+@@ -427,14 +427,6 @@ static void __init permanent_kmaps_init(pgd_t *pgd_base)
+ 	pkmap_page_table = pte;
  }
  
- /*
+-static void __init add_one_highpage_init(struct page *page)
+-{
+-	ClearPageReserved(page);
+-	init_page_count(page);
+-	__free_page(page);
+-	totalhigh_pages++;
+-}
+-
+ void __init add_highpages_with_active_regions(int nid,
+ 			 unsigned long start_pfn, unsigned long end_pfn)
+ {
+@@ -448,7 +440,7 @@ void __init add_highpages_with_active_regions(int nid,
+ 					      start_pfn, end_pfn);
+ 		for ( ; pfn < e_pfn; pfn++)
+ 			if (pfn_valid(pfn))
+-				add_one_highpage_init(pfn_to_page(pfn));
++				free_highmem_page(pfn_to_page(pfn));
+ 	}
+ }
+ #else
 -- 
 1.7.9.5
 
