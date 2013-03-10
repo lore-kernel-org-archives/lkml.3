@@ -1,69 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752126Ab3CJE7n (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Mar 2013 23:59:43 -0500
-Received: from mail-ea0-f169.google.com ([209.85.215.169]:38644 "EHLO
-	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751124Ab3CJE7l (ORCPT
+	id S1750941Ab3CJFFZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Mar 2013 00:05:25 -0500
+Received: from mail-ob0-f172.google.com ([209.85.214.172]:48199 "EHLO
+	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750746Ab3CJFFY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Mar 2013 23:59:41 -0500
-Message-ID: <1362891577.4051.21.camel@edumazet-glaptop>
-Subject: Re: epoll: possible bug from wakeup_source activation
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Eric Wong <normalperson@yhbt.net>
-Cc: Arve =?ISO-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>,
-        NeilBrown <neilb@suse.de>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        linux-kernel@vger.kernel.org, Davide Libenzi <davidel@xmailserver.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Date: Sun, 10 Mar 2013 05:59:37 +0100
-In-Reply-To: <20130310011136.GA4815@dcvr.yhbt.net>
-References: <20130307112639.GA25130@dcvr.yhbt.net>
-	 <20130308013027.GA31830@dcvr.yhbt.net>
-	 <CAMP5Xgdsam2DGLshL5Uu5Q4La_nAq=u1YRNBwAxDstgCvJiqfw@mail.gmail.com>
-	 <20130308204944.GA27379@dcvr.yhbt.net>
-	 <CAMP5Xgc4-oX=-V57Mu5PARCWdfpkjck0VnZNAXH-JisvKi5tAg@mail.gmail.com>
-	 <20130309071037.GA13360@dcvr.yhbt.net>
-	 <20130310011136.GA4815@dcvr.yhbt.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Sun, 10 Mar 2013 00:05:24 -0500
+MIME-Version: 1.0
+Date: Sun, 10 Mar 2013 13:05:23 +0800
+Message-ID: <CAJd=RBDPPpqhHh3CJAwkC4J=tukDLErwf6juS+x3irvu3PHdbA@mail.gmail.com>
+Subject: [PATCH] vmscan: minor cleanup for kswapd
+From: Hillf Danton <dhillf@gmail.com>
+To: Linux-MM <linux-mm@kvack.org>
+Cc: Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Hillf Danton <dhillf@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2013-03-10 at 01:11 +0000, Eric Wong wrote:
->  
->  static void ep_destroy_wakeup_source(struct epitem *epi)
->  {
-> -	wakeup_source_unregister(epi->ws);
-> -	epi->ws = NULL;
-> +	struct wakeup_source *ws = epi->ws;
-> +
-> +	rcu_assign_pointer(epi->ws, NULL);
+The local variable, total_scanned, is no longer used, so clean up now.
 
-There is no need to use a memory barrier before setting epi->ws to NULL
+Signed-off-by: Hillf Danton <dhillf@gmail.com>
+---
 
-You should use RCU_POINTER_INIT()
+--- a/mm/vmscan.c	Thu Feb 21 20:01:02 2013
++++ b/mm/vmscan.c	Sun Mar 10 12:52:10 2013
+@@ -2619,7 +2619,6 @@ static unsigned long balance_pgdat(pg_da
+ 	bool pgdat_is_balanced = false;
+ 	int i;
+ 	int end_zone = 0;	/* Inclusive.  0 = ZONE_DMA */
+-	unsigned long total_scanned;
+ 	struct reclaim_state *reclaim_state = current->reclaim_state;
+ 	unsigned long nr_soft_reclaimed;
+ 	unsigned long nr_soft_scanned;
+@@ -2639,7 +2638,6 @@ static unsigned long balance_pgdat(pg_da
+ 		.gfp_mask = sc.gfp_mask,
+ 	};
+ loop_again:
+-	total_scanned = 0;
+ 	sc.priority = DEF_PRIORITY;
+ 	sc.nr_reclaimed = 0;
+ 	sc.may_writepage = !laptop_mode;
+@@ -2730,7 +2728,6 @@ loop_again:
+ 							order, sc.gfp_mask,
+ 							&nr_soft_scanned);
+ 			sc.nr_reclaimed += nr_soft_reclaimed;
+-			total_scanned += nr_soft_scanned;
 
-> +	synchronize_rcu(); /* wait for ep_pm_stay_awake to finish */
+ 			/*
+ 			 * We put equal pressure on every zone, unless
+@@ -2765,7 +2762,6 @@ loop_again:
+ 				reclaim_state->reclaimed_slab = 0;
+ 				nr_slab = shrink_slab(&shrink, sc.nr_scanned, lru_pages);
+ 				sc.nr_reclaimed += reclaim_state->reclaimed_slab;
+-				total_scanned += sc.nr_scanned;
 
-Wont this add a significant slowdown ?
-
-> +	wakeup_source_unregister(ws);
->  }
-
-Please add the following in your .config
-
-CONFIG_SPARSE_RCU_POINTER=y
-
-and try :
-
-make C=2 fs/eventpoll.o
-
-And fix all warnings ;)
-
-
-
+ 				if (nr_slab == 0 && !zone_reclaimable(zone))
+ 					zone->all_unreclaimable = 1;
+--
