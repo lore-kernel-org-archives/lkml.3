@@ -1,136 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751365Ab3CJAGy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Mar 2013 19:06:54 -0500
-Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:26505 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751161Ab3CJAGx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Mar 2013 19:06:53 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 72.84.113.162
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18NzyepWfBfBRZkB6sasaa8bf6mdxOMExk=
-Date: Sat, 9 Mar 2013 19:06:47 -0500
-From: Jason Cooper <jason@lakedaemon.net>
-To: David Woodhouse <dwmw2@infradead.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Stephen Warren <swarren@wwwdotorg.org>, linux-kernel@vger.kernel.org,
-        Linux ARM Kernel <linux-arm-kernel@lists.infradead.org>
-Subject: Re: memory leak and other oddness in pinctrl-mvebu.c
-Message-ID: <20130310000647.GZ23237@titan.lakedaemon.net>
-References: <1362758331.32099.121.camel@i7.infradead.org>
- <513AF783.6050906@gmail.com>
- <1362855725.3690.92.camel@shinybook.infradead.org>
- <20130309225333.GY23237@titan.lakedaemon.net>
- <1362872371.3690.106.camel@shinybook.infradead.org>
+	id S1751856Ab3CJBLi (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Mar 2013 20:11:38 -0500
+Received: from dcvr.yhbt.net ([64.71.152.64]:41730 "EHLO dcvr.yhbt.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751357Ab3CJBLh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 9 Mar 2013 20:11:37 -0500
+Date: Sun, 10 Mar 2013 01:11:36 +0000
+From: Eric Wong <normalperson@yhbt.net>
+To: Arve =?utf-8?B?SGrDuG5uZXbDpWc=?= <arve@android.com>
+Cc: NeilBrown <neilb@suse.de>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        linux-kernel@vger.kernel.org, Davide Libenzi <davidel@xmailserver.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: epoll: possible bug from wakeup_source activation
+Message-ID: <20130310011136.GA4815@dcvr.yhbt.net>
+References: <20130307112639.GA25130@dcvr.yhbt.net>
+ <20130308013027.GA31830@dcvr.yhbt.net>
+ <CAMP5Xgdsam2DGLshL5Uu5Q4La_nAq=u1YRNBwAxDstgCvJiqfw@mail.gmail.com>
+ <20130308204944.GA27379@dcvr.yhbt.net>
+ <CAMP5Xgc4-oX=-V57Mu5PARCWdfpkjck0VnZNAXH-JisvKi5tAg@mail.gmail.com>
+ <20130309071037.GA13360@dcvr.yhbt.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1362872371.3690.106.camel@shinybook.infradead.org>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130309071037.GA13360@dcvr.yhbt.net>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added LinusW, Gregory and Ezequiel to the email.  Guys, can you give
-this a Tested-by before I apply (or Ack for LinusW)?
-
-thx,
-
-Jason.
-
-On Sat, Mar 09, 2013 at 11:39:31PM +0000, David Woodhouse wrote:
-> On Sat, 2013-03-09 at 17:53 -0500, Jason Cooper wrote:
-> > > +     if (!nr_funcs)
+Eric Wong <normalperson@yhbt.net> wrote:
+> Arve Hjønnevåg <arve@android.com> wrote:
+> > On Fri, Mar 8, 2013 at 12:49 PM, Eric Wong <normalperson@yhbt.net> wrote:
+> > > What happens if ep_modify calls ep_destroy_wakeup_source
+> > > while __pm_stay_awake is running on the same epi->ws?
 > > 
-> > shouldn't this be:
-> > 
-> >         if (nr_funcs <= 0)
+> > Yes, that looks like a problem. I think calling
+> > ep_destroy_wakeup_source with ep->lock held should fix that. It is not
+> > clear how useful changing EPOLLWAKEUP in ep_modify is, so
+> > alternatively we could remove that feature and instead only allow it
+> > to be set in ep_insert.
 > 
-> Hm, no. But the loop should terminate if nr_funcs ever reaches zero,
-> otherwise funcs->num_groups will be off the end of the original array:
+> ep->lock would work, but ep->lock is already a source of heavy
+> contention in my multithreaded+epoll webservers.
 > 
-> diff --git a/drivers/pinctrl/mvebu/pinctrl-mvebu.c b/drivers/pinctrl/mvebu/pinctrl-mvebu.c
-> index c689c04..8bbc607 100644
-> --- a/drivers/pinctrl/mvebu/pinctrl-mvebu.c
-> +++ b/drivers/pinctrl/mvebu/pinctrl-mvebu.c
-> @@ -478,16 +478,21 @@ static struct pinctrl_ops mvebu_pinctrl_ops = {
->  	.dt_free_map = mvebu_pinctrl_dt_free_map,
->  };
->  
-> -static int _add_function(struct mvebu_pinctrl_function *funcs, const char *name)
-> +static int _add_function(struct mvebu_pinctrl_function *funcs, int nr_funcs,
-> +			 const char *name)
->  {
-> -	while (funcs->num_groups) {
-> +	while (nr_funcs && funcs->num_groups) {
->  		/* function already there */
->  		if (strcmp(funcs->name, name) == 0) {
->  			funcs->num_groups++;
->  			return -EEXIST;
->  		}
->  		funcs++;
-> +		nr_funcs--;
->  	}
-> +	if (!nr_funcs)
-> +		return -EOVERFLOW;
-> +
->  	funcs->name = name;
->  	funcs->num_groups = 1;
->  	return 0;
-> @@ -501,7 +506,7 @@ static int mvebu_pinctrl_build_functions(struct platform_device *pdev,
->  	int n, s;
->  
->  	/* we allocate functions for number of pins and hope
-> -	 * there are less unique functions than pins available */
-> +	 * there are fewer unique functions than pins available */
->  	funcs = devm_kzalloc(&pdev->dev, pctl->desc.npins *
->  			     sizeof(struct mvebu_pinctrl_function), GFP_KERNEL);
->  	if (!funcs)
-> @@ -510,26 +515,27 @@ static int mvebu_pinctrl_build_functions(struct platform_device *pdev,
->  	for (n = 0; n < pctl->num_groups; n++) {
->  		struct mvebu_pinctrl_group *grp = &pctl->groups[n];
->  		for (s = 0; s < grp->num_settings; s++) {
-> +			int ret;
-> +
->  			/* skip unsupported settings on this variant */
->  			if (pctl->variant &&
->  			    !(pctl->variant & grp->settings[s].variant))
->  				continue;
->  
->  			/* check for unique functions and count groups */
-> -			if (_add_function(funcs, grp->settings[s].name))
-> +			ret = _add_function(funcs, pctl->desc.npins,
-> +					    grp->settings[s].name);
-> +			if (ret == -EOVERFLOW)
-> +				dev_err(&pdev->dev,
-> +					"More functions than pins(%d)\n",
-> +					pctl->desc.npins);
-> +			if (ret)
->  				continue;
->  
->  			num++;
->  		}
->  	}
->  
-> -	/* with the number of unique functions and it's groups known,
-> -	   reallocate functions and assign group names */
-> -	funcs = krealloc(funcs, num * sizeof(struct mvebu_pinctrl_function),
-> -			 GFP_KERNEL);
-> -	if (!funcs)
-> -		return -ENOMEM;
-> -
->  	pctl->num_functions = num;
->  	pctl->functions = funcs;
->  
-> 
-> -- 
-> dwmw2
-> 
+> Perhaps RCU can be used?  I've no experience with RCU, but I've been
+> meaning to get acquainted with RCU.
 
+The following is lightly tested, at least I haven't gotten lockdep
+to complain.
+
+--------------------------------- 8< ----------------------------
+>From 2bcd549893aa204bd858cc1500a70f20b28e47c1 Mon Sep 17 00:00:00 2001
+From: Eric Wong <normalperson@yhbt.net>
+Date: Sun, 10 Mar 2013 01:06:50 +0000
+Subject: [PATCH] epoll: RCU protect wakeup_source in epitem
+
+This prevents wakeup_source destruction when a user hits the
+item with EPOLL_CTL_MOD while ep_poll_callback is running.
+
+Signed-off-by: Eric Wong <normalperson@yhbt.net>
+---
+ fs/eventpoll.c | 31 ++++++++++++++++++++++++-------
+ 1 file changed, 24 insertions(+), 7 deletions(-)
+
+diff --git a/fs/eventpoll.c b/fs/eventpoll.c
+index 9fec183..e008d54 100644
+--- a/fs/eventpoll.c
++++ b/fs/eventpoll.c
+@@ -158,7 +158,7 @@ struct epitem {
+ 	struct list_head fllink;
+ 
+ 	/* wakeup_source used when EPOLLWAKEUP is set */
+-	struct wakeup_source *ws;
++	struct wakeup_source __rcu *ws;
+ 
+ 	/* The structure that describe the interested events and the source fd */
+ 	struct epoll_event event;
+@@ -536,6 +536,17 @@ static void ep_unregister_pollwait(struct eventpoll *ep, struct epitem *epi)
+ 	}
+ }
+ 
++static inline void ep_pm_stay_awake(struct epitem *epi)
++{
++	struct wakeup_source *ws;
++
++	rcu_read_lock();
++	ws = rcu_dereference(epi->ws);
++	if (ws)
++		__pm_stay_awake(ws);
++	rcu_read_unlock();
++}
++
+ /**
+  * ep_scan_ready_list - Scans the ready list in a way that makes possible for
+  *                      the scan code, to call f_op->poll(). Also allows for
+@@ -984,7 +995,7 @@ static int ep_poll_callback(wait_queue_t *wait, unsigned mode, int sync, void *k
+ 	/* If this file is already in the ready list we exit soon */
+ 	if (!ep_is_linked(&epi->rdllink)) {
+ 		list_add_tail(&epi->rdllink, &ep->rdllist);
+-		__pm_stay_awake(epi->ws);
++		ep_pm_stay_awake(epi);
+ 	}
+ 
+ 	/*
+@@ -1146,6 +1157,7 @@ static int reverse_path_check(void)
+ static int ep_create_wakeup_source(struct epitem *epi)
+ {
+ 	const char *name;
++	struct wakeup_source *ws;
+ 
+ 	if (!epi->ep->ws) {
+ 		epi->ep->ws = wakeup_source_register("eventpoll");
+@@ -1154,17 +1166,22 @@ static int ep_create_wakeup_source(struct epitem *epi)
+ 	}
+ 
+ 	name = epi->ffd.file->f_path.dentry->d_name.name;
+-	epi->ws = wakeup_source_register(name);
+-	if (!epi->ws)
++	ws = wakeup_source_register(name);
++
++	if (!ws)
+ 		return -ENOMEM;
++	rcu_assign_pointer(epi->ws, ws);
+ 
+ 	return 0;
+ }
+ 
+ static void ep_destroy_wakeup_source(struct epitem *epi)
+ {
+-	wakeup_source_unregister(epi->ws);
+-	epi->ws = NULL;
++	struct wakeup_source *ws = epi->ws;
++
++	rcu_assign_pointer(epi->ws, NULL);
++	synchronize_rcu(); /* wait for ep_pm_stay_awake to finish */
++	wakeup_source_unregister(ws);
+ }
+ 
+ /*
+@@ -1199,7 +1216,7 @@ static int ep_insert(struct eventpoll *ep, struct epoll_event *event,
+ 		if (error)
+ 			goto error_create_wakeup_source;
+ 	} else {
+-		epi->ws = NULL;
++		RCU_INIT_POINTER(epi->ws, NULL);
+ 	}
+ 
+ 	/* Initialize the poll table using the queue callback */
+-- 
+Eric Wong
 
