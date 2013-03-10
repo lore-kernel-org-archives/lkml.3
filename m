@@ -1,64 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752437Ab3CJNLy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Mar 2013 09:11:54 -0400
-Received: from mo-p00-ob.rzone.de ([81.169.146.161]:15156 "EHLO
-	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751074Ab3CJNLx (ORCPT
+	id S1752745Ab3CJNMS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Mar 2013 09:12:18 -0400
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:51528 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751163Ab3CJNMQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Mar 2013 09:11:53 -0400
-X-RZG-AUTH: :P2MHfkW8eP4Mre39l357AZT/I7AY/7nT2yrT1q0ngWNsKR9Dbc7nsXB+5kzIuKuS8A==
-X-RZG-CLASS-ID: mo00
-Message-ID: <513C8694.9090003@hartkopp.net>
-Date: Sun, 10 Mar 2013 14:11:48 +0100
-From: Oliver Hartkopp <socketcan@hartkopp.net>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
-MIME-Version: 1.0
-To: Daniel Mack <zonque@gmail.com>
-CC: Valentin Ilie <valentin.ilie@gmail.com>, davem@davemloft.net,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] net: can: af_can.c: Fix checkpatch warnings
-References: <1362918526-26730-1-git-send-email-valentin.ilie@gmail.com> <513C8062.6030001@hartkopp.net> <CACTFLAM4DtRGvEFQo5yXhR4Sjx8hKBJoNqARqA5U+9iQK=gkBg@mail.gmail.com>
-In-Reply-To: <CACTFLAM4DtRGvEFQo5yXhR4Sjx8hKBJoNqARqA5U+9iQK=gkBg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Sun, 10 Mar 2013 09:12:16 -0400
+From: Ghennadi Procopciuc <ghennadi.procopciuc1@gmail.com>
+To: airlied@linux.ie
+Cc: airlied@redhat.com, paulmck@linux.vnet.ibm.com, unix140@gmail.com,
+        dhowells@redhat.com, davej@redhat.com, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org,
+        Ghennadi Procopciuc <ghennadi.procopciuc1@gmail.com>
+Subject: [PATCH] gpu: make 'vmw_event_fence_action_create' static
+Date: Sun, 10 Mar 2013 15:12:06 +0200
+Message-Id: <1362921126-685-1-git-send-email-ghennadi.procopciuc1@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10.03.2013 14:05, Daniel Mack wrote:
+This fixes the following checkpatch warning :
+drivers/gpu/drm/vmwgfx/vmwgfx_fence.c:996:5: warning: symbol
+'vmw_event_fence_action_create' was not declared. Should it be static?
 
+Signed-off-by: Ghennadi Procopciuc <unix140@gmail.com>
+---
+ drivers/gpu/drm/vmwgfx/vmwgfx_fence.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
->>> @@ -817,8 +817,7 @@ static int can_notifier(struct notifier_block *nb, unsigned long msg,
->>>               /* create new dev_rcv_lists for this device */
->>>               d = kzalloc(sizeof(*d), GFP_KERNEL);
->>>               if (!d) {
->>> -                     printk(KERN_ERR
->>> -                            "can: allocation of receive list failed\n");
->>> +                     pr_err("can: allocation of receive list failed\n");
->>>                       return NOTIFY_DONE;
->>>               }
->>
->>
->> As i've seen in former patches from Joe Perches OOM messages are obsolete.
->>
->> You could write
->>
->> if(!d)
->>         return NOTIFY_DONE;
->>
->> here instead.
-> 
-> While at it, why not switch to dev_err() instead?
-
-
-Hm, no.
-
-1. pr_err() would be fine, as dev_err() is for drivers - and we're in
-linux/net here and not in linux/drivers
-
-2. When removing the entire printk() statement there's nothing to be modified left
-
-Regards,
-Oliver
+diff --git a/drivers/gpu/drm/vmwgfx/vmwgfx_fence.c b/drivers/gpu/drm/vmwgfx/vmwgfx_fence.c
+index c62d20e..e0846e6 100644
+--- a/drivers/gpu/drm/vmwgfx/vmwgfx_fence.c
++++ b/drivers/gpu/drm/vmwgfx/vmwgfx_fence.c
+@@ -952,7 +952,7 @@ void vmw_fence_obj_add_action(struct vmw_fence_obj *fence,
+  * an error code, the caller needs to free that object.
+  */
+ 
+-int vmw_event_fence_action_queue(struct drm_file *file_priv,
++static int vmw_event_fence_action_queue(struct drm_file *file_priv,
+ 				 struct vmw_fence_obj *fence,
+ 				 struct drm_pending_event *event,
+ 				 uint32_t *tv_sec,
+-- 
+1.7.10.4
 
