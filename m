@@ -1,54 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752991Ab3CJSKk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Mar 2013 14:10:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23139 "EHLO mx1.redhat.com"
+	id S1753117Ab3CJSMl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Mar 2013 14:12:41 -0400
+Received: from mail.tpi.com ([70.99.223.143]:2219 "EHLO mail.tpi.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751562Ab3CJSKj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Mar 2013 14:10:39 -0400
-Date: Sun, 10 Mar 2013 20:10:36 +0200
-From: Gleb Natapov <gleb@redhat.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, mtosatti@redhat.com,
-        jan.kiszka@siemens.com
-Subject: Re: [PATCH] x86: kvm: reset the bootstrap processor when it gets an
- INIT
-Message-ID: <20130310181035.GM24444@redhat.com>
-References: <1362811713-25830-1-git-send-email-pbonzini@redhat.com>
- <20130310114646.GM11223@redhat.com>
- <513C9E82.1020304@redhat.com>
- <20130310153540.GL24444@redhat.com>
- <513CC08B.2040800@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <513CC08B.2040800@redhat.com>
+	id S1752857Ab3CJSMk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Mar 2013 14:12:40 -0400
+From: Tim Gardner <tim.gardner@canonical.com>
+To: linux-kernel@vger.kernel.org
+Cc: Tim Gardner <tim.gardner@canonical.com>,
+        Richard Purdie <rpurdie@rpsys.net>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        linux-fbdev@vger.kernel.org
+Subject: [PATCH linux-next] mfd: max8925: max8925_backlight_probe: Silence 'statement with no effect' warning
+Date: Sun, 10 Mar 2013 12:12:25 -0600
+Message-Id: <1362939145-88329-1-git-send-email-tim.gardner@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 10, 2013 at 06:19:07PM +0100, Paolo Bonzini wrote:
-> Il 10/03/2013 16:35, Gleb Natapov ha scritto:
-> >> > However, it would effectively redefine the meaning of
-> >> > KVM_MP_STATE_INIT_RECEIVED and KVM_MP_STATE_SIPI_RECEIVED, respectively
-> >> > to KVM_MP_STATE_WAIT_FOR_SIPI and KVM_MP_STATE_RESETTING.  I wasn't sure
-> >> > if this is considered an API change (personally, I would treat it as one).
-> >> > 
-> > If it is kernel module internal it definitely is not API change.
-> > INIT/SIPI handling is a bit ad-hoc right now anyway as Jan noticed. For
-> > instance INIT does not really resets VCPU. Only after SIPI it is really
-> > reset, so KVM_MP_STATE_SIPI_RECEIVED is really KVM_MP_STATE_RESET_ME_RIGHT_NOW
-> > state.
-> 
-> Yeah, and the current definition is ambiguous (without hypervisor
-> patches, there's no way to use it as the names would suggest), so
-> perhaps the right thing to do is to rename the states (old names kept
-> for backwards compatibility only) and work from there.
-> 
-I do not see how renaming clarify things. From userspace point of view
-KVM_MP_STATE_SIPI_RECEIVED does not exists. If AP is hard reset
-userspase makes it UNINIT, if soft reset it makes it INIT_RECEIVED, if
-BSP it makes it running no matter what type of reset.
+Commit 47ec340cb8e232671e7c4a4689ff32c3bdf329da 'mfd: max8925: Support dt for backlight'
+caused a gcc warning if CONFIG_OF is not defined:
 
---
-			Gleb.
+drivers/video/backlight/max8925_bl.c: In function 'max8925_backlight_probe':
+drivers/video/backlight/max8925_bl.c:177:3: warning: statement with no effect [-Wunused-value]
+
+gcc version 4.6.3
+
+Convert max8925_backlight_dt_init() to an 'inline void' since it is only
+called from one place where the return code is ignored. Protect the
+guts of the function with '#ifdef CONFIG_OF'.
+
+Cc: Richard Purdie <rpurdie@rpsys.net>
+Cc: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Cc: linux-fbdev@vger.kernel.org
+Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
+---
+ drivers/video/backlight/max8925_bl.c |    9 +++------
+ 1 file changed, 3 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/video/backlight/max8925_bl.c b/drivers/video/backlight/max8925_bl.c
+index 5ca11b0..199f887 100644
+--- a/drivers/video/backlight/max8925_bl.c
++++ b/drivers/video/backlight/max8925_bl.c
+@@ -101,10 +101,10 @@ static const struct backlight_ops max8925_backlight_ops = {
+ 	.get_brightness	= max8925_backlight_get_brightness,
+ };
+ 
+-#ifdef CONFIG_OF
+-static int max8925_backlight_dt_init(struct platform_device *pdev,
++static inline void max8925_backlight_dt_init(struct platform_device *pdev,
+ 			      struct max8925_backlight_pdata *pdata)
+ {
++#ifdef CONFIG_OF
+ 	struct device_node *nproot = pdev->dev.parent->of_node, *np;
+ 	int dual_string;
+ 
+@@ -118,11 +118,8 @@ static int max8925_backlight_dt_init(struct platform_device *pdev,
+ 
+ 	of_property_read_u32(np, "maxim,max8925-dual-string", &dual_string);
+ 	pdata->dual_string = dual_string;
+-	return 0;
+-}
+-#else
+-#define max8925_backlight_dt_init(x, y)	(-1)
+ #endif
++}
+ 
+ static int max8925_backlight_probe(struct platform_device *pdev)
+ {
+-- 
+1.7.9.5
+
