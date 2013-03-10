@@ -1,45 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752425Ab3CJNNm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Mar 2013 09:13:42 -0400
-Received: from mail-we0-f172.google.com ([74.125.82.172]:56668 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751074Ab3CJNNk (ORCPT
+	id S1752796Ab3CJNWn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Mar 2013 09:22:43 -0400
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:53080 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751319Ab3CJNWm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Mar 2013 09:13:40 -0400
-From: Stelian Nirlu <steliannirlu@gmail.com>
-To: schwidefsky@de.ibm.com
-Cc: heiko.carstens@de.ibm.com, linux390@de.ibm.com, linux-s390@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Stelian Nirlu <steliannirlu@gmail.com>
-Subject: [PATCH] s390: replace kmalloc + memset with kzalloc
-Date: Sun, 10 Mar 2013 15:13:25 +0200
-Message-Id: <1362921205-10295-1-git-send-email-steliannirlu@gmail.com>
+	Sun, 10 Mar 2013 09:22:42 -0400
+From: Andrei Epure <epure.andrei@gmail.com>
+To: johannes.berg@intel.com, wey-yi.w.guy@intel.com, ilw@linux.intel.com,
+        linville@tuxdriver.com
+Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Andrei Epure <epure.andrei@gmail.com>
+Subject: [PATCH] wireless:iwlwifi: changed kmalloc+memcpy with kmemdup
+Date: Sun, 10 Mar 2013 15:22:33 +0200
+Message-Id: <1362921753-9554-1-git-send-email-epure.andrei@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Stelian Nirlu <steliannirlu@gmail.com>
+Signed-off-by: Andrei Epure <epure.andrei@gmail.com>
 ---
- arch/s390/net/bpf_jit_comp.c |    3 +--
+ drivers/net/wireless/iwlwifi/iwl-test.c |    3 +--
  1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/arch/s390/net/bpf_jit_comp.c b/arch/s390/net/bpf_jit_comp.c
-index 0972e91..e645528 100644
---- a/arch/s390/net/bpf_jit_comp.c
-+++ b/arch/s390/net/bpf_jit_comp.c
-@@ -747,10 +747,9 @@ void bpf_jit_compile(struct sk_filter *fp)
+diff --git a/drivers/net/wireless/iwlwifi/iwl-test.c b/drivers/net/wireless/iwlwifi/iwl-test.c
+index ce0c67b..9bc402c 100644
+--- a/drivers/net/wireless/iwlwifi/iwl-test.c
++++ b/drivers/net/wireless/iwlwifi/iwl-test.c
+@@ -271,7 +271,7 @@ static int iwl_test_fw_cmd(struct iwl_test *tst, struct nlattr **tb)
  
- 	if (!bpf_jit_enable)
- 		return;
--	addrs = kmalloc(fp->len * sizeof(*addrs), GFP_KERNEL);
-+	addrs = kzalloc(fp->len * sizeof(*addrs), GFP_KERNEL);
- 	if (addrs == NULL)
- 		return;
--	memset(addrs, 0, fp->len * sizeof(*addrs));
- 	memset(&jit, 0, sizeof(cjit));
- 	memset(&cjit, 0, sizeof(cjit));
+ 	reply_len = le32_to_cpu(pkt->len_n_flags) & FH_RSCSR_FRAME_SIZE_MSK;
+ 	skb = iwl_test_alloc_reply(tst, reply_len + 20);
+-	reply_buf = kmalloc(reply_len, GFP_KERNEL);
++	reply_buf = kmemdup(&(pkt->hdr), reply_len, GFP_KERNEL);
+ 	if (!skb || !reply_buf) {
+ 		kfree_skb(skb);
+ 		kfree(reply_buf);
+@@ -279,7 +279,6 @@ static int iwl_test_fw_cmd(struct iwl_test *tst, struct nlattr **tb)
+ 	}
  
+ 	/* The reply is in a page, that we cannot send to user space. */
+-	memcpy(reply_buf, &(pkt->hdr), reply_len);
+ 	iwl_free_resp(&cmd);
+ 
+ 	if (nla_put_u32(skb, IWL_TM_ATTR_COMMAND,
 -- 
 1.7.10.4
 
