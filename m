@@ -1,104 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751338Ab3CJKUU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Mar 2013 06:20:20 -0400
-Received: from mail-we0-f171.google.com ([74.125.82.171]:61270 "EHLO
-	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750964Ab3CJKUS (ORCPT
+	id S1751331Ab3CJKZQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Mar 2013 06:25:16 -0400
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:56037 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750964Ab3CJKZO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Mar 2013 06:20:18 -0400
-Message-ID: <513C5EBA.7040402@gmail.com>
-Date: Sun, 10 Mar 2013 11:21:46 +0100
-From: Francesco Lavra <francescolavra.fl@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
+	Sun, 10 Mar 2013 06:25:14 -0400
 MIME-Version: 1.0
-To: Mike Turquette <mturquette@linaro.org>
-CC: linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
-        linux-arm-kernel@lists.infradead.org, patches@linaro.org
-Subject: Re: [PATCH 2/5] clk: notifier handler for dynamic voltage scaling
-References: <1362026969-11457-1-git-send-email-mturquette@linaro.org> <1362026969-11457-3-git-send-email-mturquette@linaro.org>
-In-Reply-To: <1362026969-11457-3-git-send-email-mturquette@linaro.org>
+In-Reply-To: <1362897887-30808-9-git-send-email-yinghai@kernel.org>
+References: <1362897887-30808-1-git-send-email-yinghai@kernel.org>
+	<1362897887-30808-9-git-send-email-yinghai@kernel.org>
+Date: Sun, 10 Mar 2013 12:25:12 +0200
+X-Google-Sender-Auth: neLkl3lZuuj6VWKEH8lQDNyM0Aw
+Message-ID: <CAOJsxLG2Qg7vmLWirWK-GOBp65NxogGcAU5guoVphDu2G=BsjA@mail.gmail.com>
+Subject: Re: [PATCH v2 08/20] x86, ACPI: Find acpi tables in initrd early from head_32.S/head64.c
+From: Pekka Enberg <penberg@kernel.org>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Thomas Renninger <trenn@suse.de>, Tang Chen <tangchen@cn.fujitsu.com>,
+        linux-kernel@vger.kernel.org, Jacob Shin <jacob.shin@amd.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-acpi@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/28/2013 05:49 AM, Mike Turquette wrote:
-> Dynamic voltage and frequency scaling (dvfs) is a common power saving
-> technique in many of today's modern processors.  This patch introduces a
-> common clk rate-change notifier handler which scales voltage
-> appropriately whenever clk_set_rate is called on an affected clock.
-> 
-> There are three prerequisites to using this feature:
-> 
-> 1) the affected clocks must be using the common clk framework
-> 2) voltage must be scaled using the regulator framework
-> 3) clock frequency and regulator voltage values must be paired via the
-> OPP library
-> 
-> If a platform or device meets these requirements then using the notifier
-> handler is straightforward.  A struct device is used as the basis for
-> performing initial look-ups for clocks via clk_get and regulators via
-> regulator_get.  This means that notifiers are subscribed on a per-device
-> basis and multiple devices can have notifiers subscribed to the same
-> clock.  Put another way, the voltage chosen for a rail during a call to
-> clk_set_rate is a function of the device, not the clock.
-> 
-> Signed-off-by: Mike Turquette <mturquette@linaro.org>
-[...]
-> +struct dvfs_info *dvfs_clk_notifier_register(struct dvfs_info_init *dii)
+On Sun, Mar 10, 2013 at 8:44 AM, Yinghai Lu <yinghai@kernel.org> wrote:
+> +void __init x86_acpi_override_find(void)
 > +{
-> +	struct dvfs_info *di;
-> +	int ret = 0;
+> +       unsigned long ramdisk_image, ramdisk_size;
+> +       unsigned char *p = NULL;
 > +
-> +	if (!dii)
-> +		return ERR_PTR(-EINVAL);
+> +#ifdef CONFIG_X86_32
+> +       struct boot_params *boot_params_p;
 > +
-> +	di = kzalloc(sizeof(struct dvfs_info), GFP_KERNEL);
-> +	if (!di)
-> +		return ERR_PTR(-ENOMEM);
-> +
-> +	di->dev = dii->dev;
-> +	di->clk = clk_get(di->dev, dii->con_id);
-> +	if (IS_ERR(di->clk)) {
-> +		ret = -ENOMEM;
-> +		goto err;
-> +	}
-> +
-> +	di->reg = regulator_get(di->dev, dii->reg_id);
-> +	if (IS_ERR(di->reg)) {
-> +		ret = -ENOMEM;
-> +		goto err;
-> +	}
-> +
-> +	di->tol = dii->tol;
-> +	di->nb.notifier_call = dvfs_clk_notifier_handler;
-> +
-> +	ret = clk_notifier_register(di->clk, &di->nb);
-> +
-> +	if (ret)
-> +		goto err;
-
-Shouldn't regulator_put() and clk_put() be called in the error path?
-
-> +
-> +	return di;
-> +
-> +err:
-> +	kfree(di);
-> +	return ERR_PTR(ret);
+> +       /*
+> +        * 32bit is from head_32.S, and it is 32bit flat mode.
+> +        * So need to use phys address to access global variables.
+> +        */
+> +       boot_params_p = (struct boot_params *)__pa_symbol(&boot_params);
+> +       ramdisk_image = get_ramdisk_image(boot_params_p);
+> +       ramdisk_size  = get_ramdisk_size(boot_params_p);
+> +       p = (unsigned char *)ramdisk_image;
+> +       acpi_initrd_override_find(p, ramdisk_size, true);
+> +#else
+> +       ramdisk_image = get_ramdisk_image(&boot_params);
+> +       ramdisk_size  = get_ramdisk_size(&boot_params);
+> +       if (ramdisk_image)
+> +               p = __va(ramdisk_image);
+> +       acpi_initrd_override_find(p, ramdisk_size, false);
+> +#endif
 > +}
-> +EXPORT_SYMBOL_GPL(dvfs_clk_notifier_register);
-> +
-> +void dvfs_clk_notifier_unregister(struct dvfs_info *di)
-> +{
-> +	clk_notifier_unregister(di->clk, &di->nb);
-> +	clk_put(di->clk);
-> +	regulator_put(di->reg);
-> +	kfree(di);
-> +}
-> +EXPORT_SYMBOL_GPL(dvfs_clk_notifier_unregister);
+> +#endif
 
-Regards,
-Francesco
+What is preventing us from making the 64-bit variant also work in flat
+mode to make the code consistent and not hiding the differences under
+the rug? What am I missing here?
+
+                        Pekka
