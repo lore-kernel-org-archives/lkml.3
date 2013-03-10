@@ -1,87 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752437Ab3CJMp2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Mar 2013 08:45:28 -0400
-Received: from mo-p00-ob.rzone.de ([81.169.146.160]:62994 "EHLO
-	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751074Ab3CJMp0 (ORCPT
+	id S1752501Ab3CJMqi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Mar 2013 08:46:38 -0400
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:65528 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751176Ab3CJMqh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Mar 2013 08:45:26 -0400
-X-RZG-AUTH: :P2MHfkW8eP4Mre39l357AZT/I7AY/7nT2yrT1q0ngWNsKR9Dbc7nsXB+5kzIuKuS8A==
-X-RZG-CLASS-ID: mo00
-Message-ID: <513C8062.6030001@hartkopp.net>
-Date: Sun, 10 Mar 2013 13:45:22 +0100
-From: Oliver Hartkopp <socketcan@hartkopp.net>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
+	Sun, 10 Mar 2013 08:46:37 -0400
+Date: Sun, 10 Mar 2013 05:46:32 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org, axboe@kernel.dk, jmoyer@redhat.com,
+        zab@redhat.com
+Subject: Re: [PATCH 14/31] workqueue: replace POOL_MANAGING_WORKERS flag with
+ worker_pool->manager_mutex
+Message-ID: <20130310124632.GF24522@htj.dyndns.org>
+References: <1362194662-2344-1-git-send-email-tj@kernel.org>
+ <1362194662-2344-15-git-send-email-tj@kernel.org>
+ <513C5BE2.8090409@cn.fujitsu.com>
 MIME-Version: 1.0
-To: Valentin Ilie <valentin.ilie@gmail.com>
-CC: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] net: can: af_can.c: Fix checkpatch warnings
-References: <1362918526-26730-1-git-send-email-valentin.ilie@gmail.com>
-In-Reply-To: <1362918526-26730-1-git-send-email-valentin.ilie@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <513C5BE2.8090409@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hallo Valentin,
+Hello, Lai.
 
-thanks for the idea for the cleanup.
+On Sun, Mar 10, 2013 at 06:09:38PM +0800, Lai Jiangshan wrote:
+> > -	if (pool->flags & POOL_MANAGING_WORKERS)
+> > +	if (!mutex_trylock(&pool->manager_mutex))
+> >  		return ret;
+> >  
+> > -	pool->flags |= POOL_MANAGING_WORKERS;
+> 
+> 
+> if mutex_trylock(&pool->manager_mutex) fails, it does not mean
+> the pool is managing workers. (although current code does).
+> so I recommend to keep POOL_MANAGING_WORKERS.
 
-But if you replace the the printk() statements it's worth to check if code
-fits into a single line now, e.g.
+So, that's the intention.  It's gonna be used during pool destruction
+and we want all the workers to think that the pool is being managed
+and it's safe to proceed.
 
-On 10.03.2013 13:28, Valentin Ilie wrote:
+> I suggest that you reuse assoc_mutex for your purpose(later patches).
+> (and rename assoc_mutex back to manager_mutex)
 
- 		r = NULL;
-> @@ -749,7 +749,7 @@ int can_proto_register(const struct can_proto *cp)
->  	int err = 0;
->  
->  	if (proto < 0 || proto >= CAN_NPROTO) {
-> -		printk(KERN_ERR "can: protocol number %d out of range\n",
-> +		pr_err("can: protocol number %d out of range\n",
->  		       proto);
+They are different.  assoc_mutex makes the workers wait for the
+managership, which shouldn't happen during pool destruction.  We want
+the workers to assume that the pool is managed which is what
+manager_mutex achieves.
 
+Thanks.
 
-here " ,proto);" can obviously be move into the previous line while preserving
-the 80 chars per line rule.
-
-
->  		return -EINVAL;
->  	}
-> @@ -761,7 +761,7 @@ int can_proto_register(const struct can_proto *cp)
->  	mutex_lock(&proto_tab_lock);
->  
->  	if (proto_tab[proto]) {
-> -		printk(KERN_ERR "can: protocol %d already registered\n",
-> +		pr_err("can: protocol %d already registered\n",
->  		       proto);
-
-
-here too
-
->  		err = -EBUSY;
->  	} else
-> @@ -817,8 +817,7 @@ static int can_notifier(struct notifier_block *nb, unsigned long msg,
->  		/* create new dev_rcv_lists for this device */
->  		d = kzalloc(sizeof(*d), GFP_KERNEL);
->  		if (!d) {
-> -			printk(KERN_ERR
-> -			       "can: allocation of receive list failed\n");
-> +			pr_err("can: allocation of receive list failed\n");
->  			return NOTIFY_DONE;
->  		}
-
-
-As i've seen in former patches from Joe Perches OOM messages are obsolete.
-
-You could write
-
-if(!d)
-	return NOTIFY_DONE;
-
-here instead.
-
-Thanks,
-Oliver
+-- 
+tejun
