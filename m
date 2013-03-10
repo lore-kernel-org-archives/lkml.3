@@ -1,42 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752584Ab3CJMXQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Mar 2013 08:23:16 -0400
-Received: from mail-we0-f171.google.com ([74.125.82.171]:58251 "EHLO
-	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752201Ab3CJMXP (ORCPT
+	id S1752281Ab3CJM0t (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Mar 2013 08:26:49 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:49133 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750762Ab3CJM0r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Mar 2013 08:23:15 -0400
-From: Mihnea Dobrescu-Balaur <mihneadb@gmail.com>
-To: dri-devel@lists.freedesktop.org
-Cc: daniel.vetter@ffwll.ch, airlied@linux.ie, linux-kernel@vger.kernel.org,
-        Mihnea Dobrescu-Balaur <mihneadb@gmail.com>
-Subject: [PATCH] gpu: don't cast kzalloc() return value
-Date: Sun, 10 Mar 2013 14:22:48 +0200
-Message-Id: <1362918168-20271-1-git-send-email-mihneadb@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Sun, 10 Mar 2013 08:26:47 -0400
+From: Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
+To: linux-scsi@vger.kernel.org
+Cc: hare@suse.de, JBottomley@parallels.com, linux-kernel@vger.kernel.org
+Subject: [PATCH] aic7xxx: use kzalloc instead of kmalloc + memset
+Date: Sun, 10 Mar 2013 14:26:43 +0200
+Message-Id: <1362918403-6530-1-git-send-email-silviupopescu1990@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Mihnea Dobrescu-Balaur <mihneadb@gmail.com>
----
- drivers/gpu/drm/i915/intel_sdvo.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+This replaces a call to kmalloc() followed by memset() with just one
+call to kzalloc(). This was found using make coccicheck.
 
-diff --git a/drivers/gpu/drm/i915/intel_sdvo.c b/drivers/gpu/drm/i915/intel_sdvo.c
-index df08e81..5300526 100644
---- a/drivers/gpu/drm/i915/intel_sdvo.c
-+++ b/drivers/gpu/drm/i915/intel_sdvo.c
-@@ -451,7 +451,7 @@ static bool intel_sdvo_write_cmd(struct intel_sdvo *intel_sdvo, u8 cmd,
- 	int i, ret = true;
+Signed-off-by: Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
+---
+ drivers/scsi/aic7xxx/aic7xxx_core.c |    9 +++------
+ 1 file changed, 3 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/scsi/aic7xxx/aic7xxx_core.c b/drivers/scsi/aic7xxx/aic7xxx_core.c
+index 10172a3..7f34d25 100644
+--- a/drivers/scsi/aic7xxx/aic7xxx_core.c
++++ b/drivers/scsi/aic7xxx/aic7xxx_core.c
+@@ -4464,10 +4464,9 @@ ahc_softc_init(struct ahc_softc *ahc)
+ 	ahc->pause = ahc->unpause | PAUSE; 
+ 	/* XXX The shared scb data stuff should be deprecated */
+ 	if (ahc->scb_data == NULL) {
+-		ahc->scb_data = kmalloc(sizeof(*ahc->scb_data), GFP_ATOMIC);
++		ahc->scb_data = kzalloc(sizeof(*ahc->scb_data), GFP_ATOMIC);
+ 		if (ahc->scb_data == NULL)
+ 			return (ENOMEM);
+-		memset(ahc->scb_data, 0, sizeof(*ahc->scb_data));
+ 	}
  
-         /* Would be simpler to allocate both in one go ? */        
--	buf = (u8 *)kzalloc(args_len * 2 + 2, GFP_KERNEL);
-+	buf = kzalloc(args_len * 2 + 2, GFP_KERNEL);
- 	if (!buf)
- 		return false;
+ 	return (0);
+@@ -4780,10 +4779,9 @@ ahc_init_scbdata(struct ahc_softc *ahc)
+ 	SLIST_INIT(&scb_data->sg_maps);
  
+ 	/* Allocate SCB resources */
+-	scb_data->scbarray = kmalloc(sizeof(struct scb) * AHC_SCB_MAX_ALLOC, GFP_ATOMIC);
++	scb_data->scbarray = kzalloc(sizeof(struct scb) * AHC_SCB_MAX_ALLOC, GFP_ATOMIC);
+ 	if (scb_data->scbarray == NULL)
+ 		return (ENOMEM);
+-	memset(scb_data->scbarray, 0, sizeof(struct scb) * AHC_SCB_MAX_ALLOC);
+ 
+ 	/* Determine the number of hardware SCBs and initialize them */
+ 
+@@ -7558,14 +7556,13 @@ ahc_handle_en_lun(struct ahc_softc *ahc, struct cam_sim *sim, union ccb *ccb)
+ 				return;
+ 			}
+ 		}
+-		lstate = kmalloc(sizeof(*lstate), GFP_ATOMIC);
++		lstate = kzalloc(sizeof(*lstate), GFP_ATOMIC);
+ 		if (lstate == NULL) {
+ 			xpt_print_path(ccb->ccb_h.path);
+ 			printk("Couldn't allocate lstate\n");
+ 			ccb->ccb_h.status = CAM_RESRC_UNAVAIL;
+ 			return;
+ 		}
+-		memset(lstate, 0, sizeof(*lstate));
+ 		status = xpt_create_path(&lstate->path, /*periph*/NULL,
+ 					 xpt_path_path_id(ccb->ccb_h.path),
+ 					 xpt_path_target_id(ccb->ccb_h.path),
 -- 
-1.7.10.4
+1.7.9.5
 
