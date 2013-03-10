@@ -1,71 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752364Ab3CJLjI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Mar 2013 07:39:08 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:17570 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751768Ab3CJLjG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Mar 2013 07:39:06 -0400
-Date: Sun, 10 Mar 2013 14:38:42 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Christopher Li <sparse@chrisli.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Linux-Sparse <linux-sparse@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: Suggestion for fixing the variable length array used in the
- kernel.
-Message-ID: <20130310113842.GA9138@mwanda>
-References: <CANeU7Qn-5b5U_64QzFt-beP-PyAJgzz=z1100F0v5WbWqZwZOQ@mail.gmail.com>
- <20130308162922.88ad40997d01099949008452@linux-foundation.org>
- <20130309053859.GY9138@mwanda>
- <CANeU7QnhB566ZJqjcaLkn7o701EeVbJcB=8VHW_33nwK=FZRhg@mail.gmail.com>
- <20130309223403.GZ9138@mwanda>
- <CANeU7Qk2axG8wUFt9JgHt3UpJZTiF50Ug9Udt3BAv99cBR9HPw@mail.gmail.com>
+	id S1752241Ab3CJLqw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Mar 2013 07:46:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10219 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751764Ab3CJLqv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Mar 2013 07:46:51 -0400
+Date: Sun, 10 Mar 2013 13:46:46 +0200
+From: Gleb Natapov <gleb@redhat.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, mtosatti@redhat.com,
+        jan.kiszka@siemens.com
+Subject: Re: [PATCH] x86: kvm: reset the bootstrap processor when it gets an
+ INIT
+Message-ID: <20130310114646.GM11223@redhat.com>
+References: <1362811713-25830-1-git-send-email-pbonzini@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CANeU7Qk2axG8wUFt9JgHt3UpJZTiF50Ug9Udt3BAv99cBR9HPw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+In-Reply-To: <1362811713-25830-1-git-send-email-pbonzini@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 09, 2013 at 03:00:54PM -0800, Christopher Li wrote:
-> On Sat, Mar 9, 2013 at 2:34 PM, Dan Carpenter <dan.carpenter@oracle.com> wrote:
-> > The problems is if we go over the 8k stack.  So big arrays are bad.
-> > Also if the dynamically sized array is inside a loop then normally
-> > GCC frees it after each iteration, but on some arches it didn't free
-> > it until after the last iteration.
+On Sat, Mar 09, 2013 at 07:48:33AM +0100, Paolo Bonzini wrote:
+> After receiving an INIT signal (either via the local APIC, or through
+> KVM_SET_MP_STATE), the bootstrap processor should reset immediately
+> and start execution at 0xfffffff0.  Also, SIPIs have no effect on the
+> bootstrap processor.  However, KVM currently does not differentiate
+> between the BSP and APs.
 > 
-> So it seems that you agree those variable array usage should be
-> better change to use kmalloc or some thing.
-> 
-> > Btw, I've Smatch has cross function analysis, and I'd like to use
-> > it here to figure out if the max size for dynamically sized arrays.
-> > I ran into a problem:
-> >
-> > The code looks like this:
-> >         char buf[a];
-> > The size expression should be an EXPR_SYMBOL, but smatch gets:
-> >         char buf[*a];
-> 
-> Sparse currently does not deal with the dynamic array size right now.
-> It only want to get constant value from the array size.
-> 
-> The part that evaluate the array size is actually correct. Remember
-> the EXPR_SYMBOL
-> actually contain the *address* of symbol "a". So the proper
-> sizeof(buf) is actually
-> the content of "*a". That part is fine.
+Userspace is capable of resetting vcpu by itself, so adding code to
+handle KVM_SET_MP_STATE(INIT) looks unnecessary to me. I think the
+simple patch below (not tested) should handle INIT for in-kernel irq chip
+and userspace does not need special handling for cpu reset. It already
+knows how to reset cpu on system_reset, so reseting only cpus should not
+be different.
 
-It's evaluating it correctly, but Smatch normally expects
-expressions which haven't been evaluated yet.
 
-I can probably hack my own Sparse tree for what I need.  It's not a
-big deal.
-
-regards,
-dan carpenter
+diff --git a/arch/x86/kvm/lapic.c b/arch/x86/kvm/lapic.c
+index 02b51dd..6cb3c21 100644
+--- a/arch/x86/kvm/lapic.c
++++ b/arch/x86/kvm/lapic.c
+@@ -731,7 +731,9 @@ static int __apic_accept_irq(struct kvm_lapic *apic, int delivery_mode,
+ 	case APIC_DM_INIT:
+ 		if (!trig_mode || level) {
+ 			result = 1;
+-			vcpu->arch.mp_state = KVM_MP_STATE_INIT_RECEIVED;
++			vcpu->arch.mp_state = kvm_vcpu_is_bsp(vcpu) ?
++				KVM_MP_STATE_SIPI_RECEIVED :
++				KVM_MP_STATE_INIT_RECEIVED;
+ 			kvm_make_request(KVM_REQ_EVENT, vcpu);
+ 			kvm_vcpu_kick(vcpu);
+ 		} else {
+--
+			Gleb.
