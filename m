@@ -1,61 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752802Ab3CJPrJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Mar 2013 11:47:09 -0400
-Received: from mail2.sha-bang.de ([78.47.120.114]:45098 "EHLO mail.sha-bang.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751264Ab3CJPrH convert rfc822-to-8bit (ORCPT
+	id S1753019Ab3CJP4z (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Mar 2013 11:56:55 -0400
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:47930 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751327Ab3CJP4w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Mar 2013 11:47:07 -0400
-From: Sascha Wilde <wilde@sha-bang.de>
-To: linux-kernel@vger.kernel.org
-Cc: Salvatore Sisinni <s.sisinni@gmail.com>,
-        Roberto Oppedisano <roberto.oppedisano@infracom.it>
-Subject: Re: regression in linux 3.7 - fan speed at 100% after suspend/resume at 100%
-In-Reply-To: <m2vc90798h.fsf@kenny.lan.sha-bang.de> (Sascha Wilde's message of
-	"Sat, 09 Mar 2013 18:50:54 +0100")
-References: <m2vc90798h.fsf@kenny.lan.sha-bang.de>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3.50 (gnu/linux)
-Date: Sun, 10 Mar 2013 16:47:00 +0100
-Message-ID: <m2d2v76yvf.fsf@kenny.lan.sha-bang.de>
+	Sun, 10 Mar 2013 11:56:52 -0400
+Message-ID: <513CAD9B.908@gmail.com>
+Date: Sun, 10 Mar 2013 16:58:19 +0100
+From: Francesco Lavra <francescolavra.fl@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+To: Viresh Kumar <viresh.kumar@linaro.org>
+CC: rjw@sisk.pl, Steve.Bannister@arm.com, linux@arm.linux.org.uk,
+        linux-pm@vger.kernel.org,
+        Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>,
+        devicetree-discuss@lists.ozlabs.org, Liviu.Dudau@arm.com,
+        linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org,
+        robin.randhawa@arm.com, linux-arm-kernel@lists.infradead.org,
+        mark.hambleton@broadcom.com, linaro-kernel@lists.linaro.org,
+        charles.garcia-tobin@arm.com
+Subject: Re: [PATCH V2] cpufreq: ARM big LITTLE: Add generic cpufreq driver
+ and its DT glue
+References: <6cba8f153cfd4b0d3075a34a6dfe287bdec2eb06.1362676407.git.viresh.kumar@linaro.org>
+In-Reply-To: <6cba8f153cfd4b0d3075a34a6dfe287bdec2eb06.1362676407.git.viresh.kumar@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sascha Wilde <wilde@sha-bang.de> wrote:
+Hi,
+On 03/07/2013 06:14 PM, Viresh Kumar wrote:
+> big LITTLE is ARM's new Architecture focussing power/performance needs of modern
+> world. More information about big LITTLE can be found here:
+> 
+> http://www.arm.com/products/processors/technologies/biglittleprocessing.php
+> http://lwn.net/Articles/481055/
+> 
+> In order to keep cpufreq support for all big LITTLE platforms simple/generic,
+> this patch tries to add a generic cpufreq driver layer for all big LITTLE
+> platforms.
+> 
+> The driver is divided into two parts:
+> - Core driver: Generic and shared across all big LITTLE SoC's
+> - Glue drivers: Per platform drivers providing ops to the core driver
+> 
+> This patch adds in a generic glue driver which would extract information from
+> Device Tree.
+> 
+> Future SoC's can either reuse the DT glue or write their own depending on the
+> need.
+> 
+> Signed-off-by: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
+> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 [...]
-> [2]  FWIW², I'm under the stron impression that the whole fan control
->      changed in the latest vanilla kernels on my 6910p even before doing
->      a suspend/resume -- it seems to be more "binary" if you will, in
->      that the fan is not running at all for a while and then at a 100%
->      to return back to 0% after doing some serious cooling.  With 3.6.11
->      and older it is more "analogue", with slow fan when only a bit
->      cooling is needed.  No idea if this is related to the issue at
->      hand.
+> +void bL_cpufreq_unregister(struct cpufreq_arm_bL_ops *ops)
+> +{
+> +	if (arm_bL_ops != ops) {
+> +		pr_info("%s: Registered with: %s, can't unregister, exiting\n",
+> +				__func__, arm_bL_ops->name);
+> +	}
 
-For that part of the problem I just discovered something that might be a
-hint on the cause, there is no governor set for the thermal zones:
+The code is not doing what the info message says.
 
-/sys/devices/virtual/thermal/thermal_zone0/policy : (null)
-/sys/devices/virtual/thermal/thermal_zone1/policy : (null)
-/sys/devices/virtual/thermal/thermal_zone2/policy : (null)
-/sys/devices/virtual/thermal/thermal_zone3/policy : (null)
-/sys/devices/virtual/thermal/thermal_zone4/policy : (null)
+> +
+> +	cpufreq_unregister_driver(&bL_cpufreq_driver);
+> +	pr_info("%s: Un-registered platform driver: %s\n", __func__,
+> +			arm_bL_ops->name);
+> +	arm_bL_ops = NULL;
+> +}
+> +EXPORT_SYMBOL_GPL(bL_cpufreq_unregister);
 
-to my understanding this policies should default default to the
-CONFIG_THERMAL_DEFAULT_GOV_*
-configured in the kernel.  But it is always (null) for me.  And
-something like 
-# echo fair_share >/sys/devices/virtual/thermal/thermal_zone0/policy
-does not work either.
-
-Or is this expected behavior?
-
-cheers
-sascha
--- 
-Sascha Wilde : "There are 10 types of people in the world. 
-             : Those who understand binary and those who don't."
+--
+Francesco
