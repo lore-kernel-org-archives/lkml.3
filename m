@@ -1,80 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753359Ab3CJWe4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Mar 2013 18:34:56 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:64664 "EHLO
+	id S1753356Ab3CJWhS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Mar 2013 18:37:18 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:52813 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751487Ab3CJWey (ORCPT
+	with ESMTP id S1751487Ab3CJWhP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Mar 2013 18:34:54 -0400
-Date: Sun, 10 Mar 2013 23:34:50 +0100
+	Sun, 10 Mar 2013 18:37:15 -0400
+Date: Sun, 10 Mar 2013 23:37:12 +0100
 From: Thierry Reding <thierry.reding@avionic-design.de>
 To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: akpm@linux-foundation.org, a.zummo@towertech.it, swarren@wwwdotorg.org,
-        rtc-linux@googlegroups.com, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/5] rtc: tegra: set irq name as device name
-Message-ID: <20130310223450.GD4743@avionic-0098.mockup.avionic-design.de>
-References: <1362852588-13362-1-git-send-email-ldewangan@nvidia.com>
- <1362852588-13362-5-git-send-email-ldewangan@nvidia.com>
+Cc: swarren@wwwdotorg.org, linux-arm-kernel@lists.infradead.org,
+        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
+        pdeschrijver@nvidia.com
+Subject: Re: [PATCH V2 1/5] ARM: DT: tegra114: add APB DMA controller DT entry
+Message-ID: <20130310223712.GE4743@avionic-0098.mockup.avionic-design.de>
+References: <1362852678-13421-1-git-send-email-ldewangan@nvidia.com>
+ <1362852678-13421-2-git-send-email-ldewangan@nvidia.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="wULyF7TL5taEdwHz"
+	protocol="application/pgp-signature"; boundary="ffoCPvUAPMgSXi6H"
 Content-Disposition: inline
-In-Reply-To: <1362852588-13362-5-git-send-email-ldewangan@nvidia.com>
+In-Reply-To: <1362852678-13421-2-git-send-email-ldewangan@nvidia.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:lfy9B4VBJyoO3z+6e9oXYXIjRhzr8/D5q0NxTeWCO0d
- K4jN34+aday+jA50/oLtupZ12mKzbOeZfSte58Gg/Um8BPQ3v8
- YUxiqhRJL3qll+vJXCUt4ha4bodbIIUBnIeSD5SqQVu0Q6HwnM
- dFV4LlQMGOpbysqP7Yb+afV9lpf+A3z+H9lKmqAaXHodyvR2sR
- KTSOFR/s2JXpIQ3W6RAZf8/m0iNCcUXiJLuggh21XQP0g1HJ/m
- IIzMeqKXFrVDPOPaU9rkxcFB15gij7aJMNB6SrNEUZIUhgtEvP
- zCdHPrHZ3GTBNG1rn99tvX1On2CmleTpUD/u5sgOfvL1+yyKZ0
- qxmS7BGfMWJuIS5zx3K3gzgFfoXm1OAm19cy8V4NONYGEqRV6g
- wMnZUNzkcMq8Is8CORjcE/Yr1qPfOiBMWj9wAP4V5r/435nOs9
- cMimI
+X-Provags-ID: V02:K0:dt4WFKoPqy5KmMqNG26QATjrw+6X7n7fO/Ritulo12J
+ P80AN1OxEWzDSIQ6z0tuk4RYE+KnxwPG1jsh0B99WkVvzV6vFR
+ GpvbammdNOVx4KAswgg/1nHT3Bk4jbe5+6qXDH/xp/UI2KzrCl
+ DFMPnEJZNl+6Ya2WSccT29xIyH6tNJQ4QXHHU5Q3XE4G28HXo4
+ Qs+hNdfdWMcupQVoVW7YNNJMtlXLnk3D5ORfvBxKwDOAo7G1dt
+ EDlnSRgM6aV24kV2LEpsCrAJ2Iy2OwedNCLn1U5+41mIvJKbni
+ e1B1XuKn06XxfNQI0/Lad0KC1VpwPN+fy8hCX9Z/vB/63W/Zat
+ mwH+h6SZp0qHRmjcSRqRQtVz6dLzSynO1We1b2figuX/Vmds4t
+ d2pw2X7Rpxx4ttVIE+Yxbc1m3IRZZGCVLE=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---wULyF7TL5taEdwHz
+--ffoCPvUAPMgSXi6H
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Sat, Mar 09, 2013 at 11:39:48PM +0530, Laxman Dewangan wrote:
-> When watching the irq name of tegra rtc, it shows as "rtc alarm"
-> which actually does not reflect the name related to driver.
+On Sat, Mar 09, 2013 at 11:41:14PM +0530, Laxman Dewangan wrote:
+> NVIDIA's Tegra114 has 32 channels APB DMA controller. Add DT entry for
+> APB DMA controllers and make it compatible with "nvidia,tegra114-apbdma".
 >=20
-> Passing the device name to have the irq names with driver name.
->=20
-> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
-> ---
->  drivers/rtc/rtc-tegra.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+> Tegra114 DMA controller is not compatible with Tegra30/Tegra20 DMA
+> controller driver as in T114, the global pause also clock gate the
 
-Reviewed-by: Thierry Reding <thierry.reding@avionic-design.de>
+"clockgates"? "clock-gates"?
 
---wULyF7TL5taEdwHz
+> DMA register and hence it iw not possible to write the DMA register
+
+"it is not"
+
+Thierry
+
+--ffoCPvUAPMgSXi6H
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2.0.19 (GNU/Linux)
 
-iQIcBAEBAgAGBQJRPQqKAAoJEN0jrNd/PrOhCuEQALz4iobtxdV3YLjx6TzcaUnL
-ajWmK/D4m4QzKLJO1uvdfHmFVVfiZiWaYOdtZ24Y2P97r3QRzRhaQub9eq/S3uIw
-gHRo3Y1S6HqOlnWZkqNbx8FdhUMyIBb6vx4hEd2NRWE5bkqEJGI50x7NRqLZZ2in
-pjxRQy/3LYG9MnuepP9xbl5yppCEXLBu1qIfpd53rKl1CvV+g6Izlaf8aXoFz9eT
-3FqBKsyraruIunF28xw8JUCnezdlTs5ttFzQ9xh/0EWuHeJCw7JT0F3C4go24PU/
-sNcp0Rs1yv06+E/yn4quDJ4vCoKwIEiIgDZOwBkqENgDqIb3n1TucV1AziRvtjMn
-gNhiBborob6HWo7NOkUefkap4vkwZi0c76rdz0MHWsimTwSmNUC54NEmckTSKT0B
-MZlAco9igY3hpSmW3pYtlqQ1Jvrrd/KC6YD+zLI6/ekveTBe2/7J0gRMbFc5AxtV
-Z4eFrXNMEZYVOGnY5mWQl9FEsms6RbMUWVYfutb6CWfVQqYxEhg8Tw6pXlhwCVDG
-T9AhnmYmbEVCJcdOZTOhUt377bxkfkH2AnGRVCToUwVxDZSZU5bImACncrAbo9tr
-4CNeLRrsVC21ugNPPcsf5wyQhYf4jPoS+5Tx6iEOkjVsiDGJpP3TGgbnVh3Ik0U+
-Ha6Su7S46LPz2lniOjOg
-=IeHx
+iQIcBAEBAgAGBQJRPQsYAAoJEN0jrNd/PrOhzskQAJQ7KuFg9SozYJTQOxAohR6H
+/hOITuXYlGVDSkkV2KclAbvKxtLP7VvLOta1rR7IIsxguB/NVQ8E8RKPo1sihy4U
+ChsgmtXnA++1k9EzWIA1cIXNafxqPqZwMIZGV9RBRKITxBbl4mu8wcU7iQERHTrH
+yiW1Uk8nsJGIYXj2TBdvxGm1A/GAxDfSiOukn4gEam3ZthYkyIyEcFk55NzbW5L+
+fTKktBGS6lGFnlzjGOUsjDD6iH7I8tEftBL0qC6OL4bh+nmjFbVQ3Ox7DBE0VfI5
+tXPOrMn5l/cO/u3h7qApHkPZ4znHTNur0YCyIZjD037HBiwykwsGotjIVaF96Wk6
+Q2iB80rHRehmmge7rY8L+mj0/CSPQ1sZEKqIGPEo7sVtsAfeXHw51h8XF9Dvx7OW
+PyYFZdeFBgffMqRrxiqoAi6iFiEnEvKDmI4KNIlThLkh8Jd0hKB6VqOvPPlb/JB0
+YUopjyR0E/19RJc1nlkgnQ08voOU8Ouq12pywG/xvf7RhJUuEJO/AY8y5u/1xYvD
+kdISRzx1KRA+AOZOL/J+YdD6uRmqDB70jfXf8mpwyHBC/Pe36INJOsHmc0Jgk7nq
+HDvt+ohAo/c1ScrvMAkwSVoAq6rQ6W7qpFMTX5MCxXw9Vt5QeV/AATfFDgJxVGPI
+8S9wsqu6GuOXfrImIiZr
+=VJCW
 -----END PGP SIGNATURE-----
 
---wULyF7TL5taEdwHz--
+--ffoCPvUAPMgSXi6H--
