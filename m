@@ -1,62 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752631Ab3CJINo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Mar 2013 04:13:44 -0400
-Received: from mail-da0-f44.google.com ([209.85.210.44]:60272 "EHLO
-	mail-da0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752193Ab3CJIJG (ORCPT
+	id S1752417Ab3CJIWw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Mar 2013 04:22:52 -0400
+Received: from mx0.parallels.com ([199.115.104.20]:53548 "EHLO
+	mx0.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752204Ab3CJIWs convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Mar 2013 04:09:06 -0400
-From: Jiang Liu <liuj97@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>
-Cc: Jiang Liu <jiang.liu@huawei.com>, Wen Congyang <wency@cn.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan@kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>, Jianguo Wu <wujianguo@huawei.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        James Hogan <james.hogan@imgtec.com>
-Subject: [PATCH v2, part2 04/10] mm/metag: use free_highmem_page() to free highmem pages into buddy system
-Date: Sun, 10 Mar 2013 16:01:04 +0800
-Message-Id: <1362902470-25787-5-git-send-email-jiang.liu@huawei.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1362902470-25787-1-git-send-email-jiang.liu@huawei.com>
-References: <1362902470-25787-1-git-send-email-jiang.liu@huawei.com>
+	Sun, 10 Mar 2013 04:22:48 -0400
+From: James Bottomley <jbottomley@parallels.com>
+To: Akinobu Mita <akinobu.mita@gmail.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        Andrew Vasquez <andrew.vasquez@qlogic.com>,
+        Andrew Vasquez <andrew.vasquez@qlogic.com>
+Subject: Re: [PATCH -mmotm] scsi: fix the wrong position of the comment
+Thread-Topic: [PATCH -mmotm] scsi: fix the wrong position of the comment
+Thread-Index: AQHOHWaugnbpva3RokGvOc0XzwiVrJifC22A
+Date: Sun, 10 Mar 2013 08:22:47 +0000
+Message-ID: <1362903765.3003.2.camel@dabdike.int.hansenpartnership.com>
+References: <1362902990-25137-1-git-send-email-akinobu.mita@gmail.com>
+In-Reply-To: <1362902990-25137-1-git-send-email-akinobu.mita@gmail.com>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [46.65.52.191]
+Content-Type: text/plain; charset=US-ASCII
+Content-ID: <19E55EEC942AF247B1B31F6E961DDC95@sw.swsoft.com>
+Content-Transfer-Encoding: 7BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use helper function free_highmem_page() to free highmem pages into
-the buddy system.
+[missing SCSI cc added]
+On Sun, 2013-03-10 at 17:09 +0900, Akinobu Mita wrote:
+> This fixes the wrong position of the comment introduced by
+> scsi-rename-random32-to-prandom_u32.patch in the -mm tree.
+> 
+> Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
+> Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
+> Cc: Andrew Vasquez <andrew.vasquez@qlogic.com>
+> ---
+>  drivers/scsi/qla2xxx/qla_attr.c | 6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/scsi/qla2xxx/qla_attr.c b/drivers/scsi/qla2xxx/qla_attr.c
+> index 04bf7b8..e44d47e 100644
+> --- a/drivers/scsi/qla2xxx/qla_attr.c
+> +++ b/drivers/scsi/qla2xxx/qla_attr.c
+> @@ -1939,13 +1939,13 @@ qla24xx_vport_delete(struct fc_vport *fc_vport)
+>  	}
+>  
+>  	/* No pending activities shall be there on the vha now */
+> -	if (ql2xextended_error_logging & ql_dbg_user)
+> -		msleep(prandom_u32() % 10);
+> +	if (ql2xextended_error_logging & ql_dbg_user) {
+>  		/*
+>  		 * Just to see if something falls on the net we have placed
+>  		 * below
+>  		 */
+> -
+> +		msleep(prandom_u32() % 10);
+> +	}
 
-Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Cc: James Hogan <james.hogan@imgtec.com>
-Cc: linux-kernel@vger.kernel.org
----
- arch/metag/mm/init.c |   10 ++--------
- 1 file changed, 2 insertions(+), 8 deletions(-)
+I don't git a toss if it's random or prandom: Andrew: get rid of it; we
+do not sleep in kernel for random intervals whatever the provocation ...
+if this is supposed to be a warning or error condition then print
+something.
 
-diff --git a/arch/metag/mm/init.c b/arch/metag/mm/init.c
-index c6784fb..d05b845 100644
---- a/arch/metag/mm/init.c
-+++ b/arch/metag/mm/init.c
-@@ -380,14 +380,8 @@ void __init mem_init(void)
- 
- #ifdef CONFIG_HIGHMEM
- 	unsigned long tmp;
--	for (tmp = highstart_pfn; tmp < highend_pfn; tmp++) {
--		struct page *page = pfn_to_page(tmp);
--		ClearPageReserved(page);
--		init_page_count(page);
--		__free_page(page);
--		totalhigh_pages++;
--	}
--	totalram_pages += totalhigh_pages;
-+	for (tmp = highstart_pfn; tmp < highend_pfn; tmp++)
-+		free_highmem_page(pfn_to_page(tmp));
- 	num_physpages += totalhigh_pages;
- #endif /* CONFIG_HIGHMEM */
- 
--- 
-1.7.9.5
+James
 
