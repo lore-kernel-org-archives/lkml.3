@@ -1,81 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753356Ab3CJWhS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Mar 2013 18:37:18 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:52813 "EHLO
+	id S1753355Ab3CJWjr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Mar 2013 18:39:47 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:58218 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751487Ab3CJWhP (ORCPT
+	with ESMTP id S1751642Ab3CJWjp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Mar 2013 18:37:15 -0400
-Date: Sun, 10 Mar 2013 23:37:12 +0100
+	Sun, 10 Mar 2013 18:39:45 -0400
+Date: Sun, 10 Mar 2013 23:39:36 +0100
 From: Thierry Reding <thierry.reding@avionic-design.de>
 To: Laxman Dewangan <ldewangan@nvidia.com>
 Cc: swarren@wwwdotorg.org, linux-arm-kernel@lists.infradead.org,
         linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
         pdeschrijver@nvidia.com
-Subject: Re: [PATCH V2 1/5] ARM: DT: tegra114: add APB DMA controller DT entry
-Message-ID: <20130310223712.GE4743@avionic-0098.mockup.avionic-design.de>
+Subject: Re: [PATCH V2 2/5] ARM: DT: tegra114: Add i2c controller DT entry
+Message-ID: <20130310223936.GF4743@avionic-0098.mockup.avionic-design.de>
 References: <1362852678-13421-1-git-send-email-ldewangan@nvidia.com>
- <1362852678-13421-2-git-send-email-ldewangan@nvidia.com>
+ <1362852678-13421-3-git-send-email-ldewangan@nvidia.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ffoCPvUAPMgSXi6H"
+	protocol="application/pgp-signature"; boundary="i3lJ51RuaGWuFYNw"
 Content-Disposition: inline
-In-Reply-To: <1362852678-13421-2-git-send-email-ldewangan@nvidia.com>
+In-Reply-To: <1362852678-13421-3-git-send-email-ldewangan@nvidia.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:dt4WFKoPqy5KmMqNG26QATjrw+6X7n7fO/Ritulo12J
- P80AN1OxEWzDSIQ6z0tuk4RYE+KnxwPG1jsh0B99WkVvzV6vFR
- GpvbammdNOVx4KAswgg/1nHT3Bk4jbe5+6qXDH/xp/UI2KzrCl
- DFMPnEJZNl+6Ya2WSccT29xIyH6tNJQ4QXHHU5Q3XE4G28HXo4
- Qs+hNdfdWMcupQVoVW7YNNJMtlXLnk3D5ORfvBxKwDOAo7G1dt
- EDlnSRgM6aV24kV2LEpsCrAJ2Iy2OwedNCLn1U5+41mIvJKbni
- e1B1XuKn06XxfNQI0/Lad0KC1VpwPN+fy8hCX9Z/vB/63W/Zat
- mwH+h6SZp0qHRmjcSRqRQtVz6dLzSynO1We1b2figuX/Vmds4t
- d2pw2X7Rpxx4ttVIE+Yxbc1m3IRZZGCVLE=
+X-Provags-ID: V02:K0:UMso3trby6GNc2xBI6HXUH7z+HT2GviJt8XMxhhEfra
+ Gz3LFFjY64t//P62ySpukXcgRzSTBpRbm7HaR8j5FER61Rafpz
+ +8emHQJrfX453gPQfxR7+dIbsejg4neaxCftJl9CiAIn4YbyK9
+ mg2w74Q9hHVcrvm47gv8oUuS+id0ivxdE8ypogZvJygqAgKEyO
+ zcdRAmKHLgjeI8WMvG4jHwhl8LRMroXVthLNxDN9WgqDFbQkI5
+ RO4070/t3eD2g2MNfxX+cSNbQrgTvFAC6f82Ps0adzYZTc7j9D
+ 49qpQAibwau0ckBjNma+uSzM9N3VoqlYjtM3YP6OakZl/9AZ6o
+ TPh3oe+uPnSGOzZEgpSP7vGTL3MrVp1lDeHm4VssIiXhs3PRaR
+ XQf9qYp7xzhvL4Wz/RO80vg34iCLL6CEPA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---ffoCPvUAPMgSXi6H
+--i3lJ51RuaGWuFYNw
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Sat, Mar 09, 2013 at 11:41:14PM +0530, Laxman Dewangan wrote:
-> NVIDIA's Tegra114 has 32 channels APB DMA controller. Add DT entry for
-> APB DMA controllers and make it compatible with "nvidia,tegra114-apbdma".
+On Sat, Mar 09, 2013 at 11:41:15PM +0530, Laxman Dewangan wrote:
+> NVIDIA's Tegra114 has 5 i2c controllers. These controllers have
+> additional feature/configurations to make it functional over
+> Tegra30's i2c controller driver.
 >=20
-> Tegra114 DMA controller is not compatible with Tegra30/Tegra20 DMA
-> controller driver as in T114, the global pause also clock gate the
+> Add DT entry for i2c controllers and make it compatible with
+> "nvidia,tegra114-i2c".
 
-"clockgates"? "clock-gates"?
-
-> DMA register and hence it iw not possible to write the DMA register
-
-"it is not"
+Both the subject and description should probably use I2C instead of i2c.
+Also I don't understand what "make it functional over" means. Perhaps,
+since the entries aren't marked compatible with nvidia,tegra30-i2c you
+meant to say that they are incompatible with Tegra30?
 
 Thierry
 
---ffoCPvUAPMgSXi6H
+--i3lJ51RuaGWuFYNw
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2.0.19 (GNU/Linux)
 
-iQIcBAEBAgAGBQJRPQsYAAoJEN0jrNd/PrOhzskQAJQ7KuFg9SozYJTQOxAohR6H
-/hOITuXYlGVDSkkV2KclAbvKxtLP7VvLOta1rR7IIsxguB/NVQ8E8RKPo1sihy4U
-ChsgmtXnA++1k9EzWIA1cIXNafxqPqZwMIZGV9RBRKITxBbl4mu8wcU7iQERHTrH
-yiW1Uk8nsJGIYXj2TBdvxGm1A/GAxDfSiOukn4gEam3ZthYkyIyEcFk55NzbW5L+
-fTKktBGS6lGFnlzjGOUsjDD6iH7I8tEftBL0qC6OL4bh+nmjFbVQ3Ox7DBE0VfI5
-tXPOrMn5l/cO/u3h7qApHkPZ4znHTNur0YCyIZjD037HBiwykwsGotjIVaF96Wk6
-Q2iB80rHRehmmge7rY8L+mj0/CSPQ1sZEKqIGPEo7sVtsAfeXHw51h8XF9Dvx7OW
-PyYFZdeFBgffMqRrxiqoAi6iFiEnEvKDmI4KNIlThLkh8Jd0hKB6VqOvPPlb/JB0
-YUopjyR0E/19RJc1nlkgnQ08voOU8Ouq12pywG/xvf7RhJUuEJO/AY8y5u/1xYvD
-kdISRzx1KRA+AOZOL/J+YdD6uRmqDB70jfXf8mpwyHBC/Pe36INJOsHmc0Jgk7nq
-HDvt+ohAo/c1ScrvMAkwSVoAq6rQ6W7qpFMTX5MCxXw9Vt5QeV/AATfFDgJxVGPI
-8S9wsqu6GuOXfrImIiZr
-=VJCW
+iQIcBAEBAgAGBQJRPQuoAAoJEN0jrNd/PrOh8XQQAJbqkhIafoQ5nFE8DdE4Oz8Q
+sq4WpAkEsYbOSQ2KB31yDqbttkFOEzphY4ooEN5ypUqGvk4v5mdfbtbPQkGopQ6a
+IWiMym9g47KJNmolABAWixFCYFySyOiFQqRgOvlNtmR+0aG9+aSvzGYWBH4+SyKD
+lj0KHj165VLsRg4DY5fAcyNNlNYsqXrJXpL3xcrDw9jW3pr6GjVnPPw/bXzW2T7n
+3KU+U4wcfbIf8qNNbpO8Or+FqtKJtQbn/KNm1zeiJ4U1XLzE9kxiGY7RZkFu+NcV
+b4u1wpL2FfUVwV3QeF8molVEiWvB8nwlyZ6YJME3NJYx6+dJesnkojypTXrMbYzP
+B5yt7/ITd4z7HeAt/XonP5LAPHnDPilsHkPwYJbys+1Hwm7aVNltvvDZ3cX4Cgcq
+8knCzLgCvURjdc1hcw3MsSfJ0//I82msp7SjEE8qrqTWJP37Wea9JoSGPB+kU/3h
+Zkjxs0cLWn5PFaKGOl6PIsdBFKMjmOGeWfG4j7GulWEMqoYpjZz9d2UT5BspGCnt
+HZUH6m3NIbTtfw7fhfwllKKrfE+mq/6gRTrUq9rsIz7SgkIehdZhN9IRGfwoze7R
+RiNsRgJR0Ceukau6qlzL6QSNdksobtPnJj/HRNDwlpsC/hp8EM1JzlMMCy63hOPN
+Q2ikQF2hgaiISsDtxGmp
+=a+4Y
 -----END PGP SIGNATURE-----
 
---ffoCPvUAPMgSXi6H--
+--i3lJ51RuaGWuFYNw--
