@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752967Ab3CJGrz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Mar 2013 01:47:55 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:19169 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752932Ab3CJGrw (ORCPT
+	id S1753031Ab3CJGsA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Mar 2013 01:48:00 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:48311 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752987Ab3CJGr5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Mar 2013 01:47:52 -0500
+	Sun, 10 Mar 2013 01:47:57 -0500
 From: Yinghai Lu <yinghai@kernel.org>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>,
@@ -14,95 +14,88 @@ To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         Thomas Renninger <trenn@suse.de>, Tang Chen <tangchen@cn.fujitsu.com>
 Cc: linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
         Pekka Enberg <penberg@kernel.org>, Jacob Shin <jacob.shin@amd.com>
-Subject: [PATCH v2 17/20] x86, mm, numa: Add early_initmem_init() stub
-Date: Sat,  9 Mar 2013 22:44:44 -0800
-Message-Id: <1362897887-30808-18-git-send-email-yinghai@kernel.org>
+Subject: [PATCH v2 18/20] x86, mm: Parse numa info early
+Date: Sat,  9 Mar 2013 22:44:45 -0800
+Message-Id: <1362897887-30808-19-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1362897887-30808-1-git-send-email-yinghai@kernel.org>
 References: <1362897887-30808-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-early_initmem_init() call early_x86_numa_init() to parse numa info early.
+Parsing numa info has been separated to two functions now.
 
-Later will call init_mem_mapping for nodes in it.
+early_initmem_info() only parse info in numa_meminfo and
+nodes_parsed. still keep numaq, acpi_numa, amd_numa, dummy
+fall back sequence working.
+
+SLIT and numa emulation handling are still left in initmem_init().
+
+Call early_initmem_init before init_mem_mapping() to prepare
+to use numa_info with it.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 Cc: Pekka Enberg <penberg@kernel.org>
 Cc: Jacob Shin <jacob.shin@amd.com>
 ---
- arch/x86/include/asm/page_types.h |    1 +
- arch/x86/kernel/setup.c           |    1 +
- arch/x86/mm/init.c                |    6 ++++++
- arch/x86/mm/numa.c                |    7 +++++--
- 4 files changed, 13 insertions(+), 2 deletions(-)
+ arch/x86/kernel/setup.c |   24 ++++++++++--------------
+ 1 file changed, 10 insertions(+), 14 deletions(-)
 
-diff --git a/arch/x86/include/asm/page_types.h b/arch/x86/include/asm/page_types.h
-index b012b82..d04dd8c 100644
---- a/arch/x86/include/asm/page_types.h
-+++ b/arch/x86/include/asm/page_types.h
-@@ -55,6 +55,7 @@ bool pfn_range_is_mapped(unsigned long start_pfn, unsigned long end_pfn);
- extern unsigned long init_memory_mapping(unsigned long start,
- 					 unsigned long end);
- 
-+void early_initmem_init(void);
- extern void initmem_init(void);
- 
- #endif	/* !__ASSEMBLY__ */
 diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index b067663..626bc9f 100644
+index 626bc9f..86e1ec0 100644
 --- a/arch/x86/kernel/setup.c
 +++ b/arch/x86/kernel/setup.c
-@@ -1135,6 +1135,7 @@ void __init setup_arch(char **cmdline_p)
+@@ -1098,13 +1098,21 @@ void __init setup_arch(char **cmdline_p)
+ 	trim_platform_memory_ranges();
+ 	trim_low_memory_range();
  
- 	early_acpi_boot_init();
- 
++	/*
++	 * Parse the ACPI tables for possible boot-time SMP configuration.
++	 */
++	acpi_initrd_override_copy();
++	acpi_boot_table_init();
++	early_acpi_boot_init();
 +	early_initmem_init();
+ 	init_mem_mapping();
+-
++	memblock.current_limit = get_max_mapped();
+ 	early_trap_pf_init();
+ 
++	reserve_initrd();
++
+ 	setup_real_mode();
+ 
+-	memblock.current_limit = get_max_mapped();
+ 	dma_contiguous_reserve(0);
+ 
+ 	/*
+@@ -1118,24 +1126,12 @@ void __init setup_arch(char **cmdline_p)
+ 	/* Allocate bigger log buffer */
+ 	setup_log_buf(1);
+ 
+-	reserve_initrd();
+-
+-	acpi_initrd_override_copy();
+-
+ 	reserve_crashkernel();
+ 
+ 	vsmp_init();
+ 
+ 	io_delay_init();
+ 
+-	/*
+-	 * Parse the ACPI tables for possible boot-time SMP configuration.
+-	 */
+-	acpi_boot_table_init();
+-
+-	early_acpi_boot_init();
+-
+-	early_initmem_init();
  	initmem_init();
  	memblock_find_dma_reserve();
  
-diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-index abcc241..28b294f 100644
---- a/arch/x86/mm/init.c
-+++ b/arch/x86/mm/init.c
-@@ -450,6 +450,12 @@ void __init init_mem_mapping(void)
- 	early_memtest(0, max_pfn_mapped << PAGE_SHIFT);
- }
- 
-+#ifndef CONFIG_NUMA
-+void __init early_initmem_init(void)
-+{
-+}
-+#endif
-+
- /*
-  * devmem_is_allowed() checks to see if /dev/mem access to a certain address
-  * is valid. The argument is a physical page number.
-diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
-index 182e085..c2d4653 100644
---- a/arch/x86/mm/numa.c
-+++ b/arch/x86/mm/numa.c
-@@ -668,13 +668,16 @@ static void __init early_x86_numa_init(void)
- 	numa_init(dummy_numa_init);
- }
- 
-+void __init early_initmem_init(void)
-+{
-+	early_x86_numa_init();
-+}
-+
- void __init x86_numa_init(void)
- {
- 	int i, nid;
- 	struct numa_meminfo *mi = &numa_meminfo;
- 
--	early_x86_numa_init();
--
- #ifdef CONFIG_ACPI_NUMA
- 	if (srat_used)
- 		x86_acpi_numa_init_slit();
 -- 
 1.7.10.4
 
