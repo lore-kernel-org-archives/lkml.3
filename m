@@ -1,47 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751576Ab3CJMh7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Mar 2013 08:37:59 -0400
-Received: from mail-we0-f173.google.com ([74.125.82.173]:52591 "EHLO
-	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751074Ab3CJMh6 (ORCPT
+	id S1752201Ab3CJMit (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Mar 2013 08:38:49 -0400
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:50395 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751176Ab3CJMis (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Mar 2013 08:37:58 -0400
-From: Vicentiu Ciorbaru <cvicentiu@gmail.com>
-To: perex@perex.cz
-Cc: tiwai@suse.de, wfp5p@virginia.edu, cvicentiu@gmail.com,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] emu10k1: Fix coccicheck warning
-Date: Sun, 10 Mar 2013 14:37:47 +0200
-Message-Id: <1362919067-17250-1-git-send-email-cvicentiu@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Sun, 10 Mar 2013 08:38:48 -0400
+Date: Sun, 10 Mar 2013 05:38:44 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org, axboe@kernel.dk, jmoyer@redhat.com,
+        zab@redhat.com
+Subject: Re: [PATCH 12/31] workqueue: update synchronization rules on
+ workqueue->pwqs
+Message-ID: <20130310123844.GE24522@htj.dyndns.org>
+References: <1362194662-2344-1-git-send-email-tj@kernel.org>
+ <1362194662-2344-13-git-send-email-tj@kernel.org>
+ <513C5BD8.9050909@cn.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <513C5BD8.9050909@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removed redundant cast of kmalloc return pointer.
+Hello, Lai.
 
-Signed-off-by: Vicentiu Ciorbaru <cvicentiu@gmail.com>
----
- sound/pci/emu10k1/emufx.c |    5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+On Sun, Mar 10, 2013 at 06:09:28PM +0800, Lai Jiangshan wrote:
+> >  #define for_each_pwq(pwq, wq)						\
+> > -	list_for_each_entry((pwq), &(wq)->pwqs, pwqs_node)
+> > +	list_for_each_entry_rcu((pwq), &(wq)->pwqs, pwqs_node)		\
+> > +		if (({ assert_rcu_or_wq_lock(); true; }))
+> 
+> Aware this:
+> 
+> if (somecondition)
+> 	for_each_pwq(pwq, wq)
+> 		one_statement;q
+> else
+> 	xxxxx;
+> 
+> 
+> for_each_pwq() will eat the else.
 
-diff --git a/sound/pci/emu10k1/emufx.c b/sound/pci/emu10k1/emufx.c
-index 0275209..a0f7502 100644
---- a/sound/pci/emu10k1/emufx.c
-+++ b/sound/pci/emu10k1/emufx.c
-@@ -1183,9 +1183,8 @@ static int _snd_emu10k1_audigy_init_efx(struct snd_emu10k1 *emu)
- 	mm_segment_t seg;
- 
- 	if ((icode = kzalloc(sizeof(*icode), GFP_KERNEL)) == NULL ||
--	    (icode->gpr_map = (u_int32_t __user *)
--	     kcalloc(512 + 256 + 256 + 2 * 1024, sizeof(u_int32_t),
--		     GFP_KERNEL)) == NULL ||
-+	    (icode->gpr_map = kcalloc(512 + 256 + 256 + 2 * 1024,
-+				sizeof(u_int32_t), GFP_KERNEL)) == NULL ||
- 	    (controls = kcalloc(SND_EMU10K1_GPR_CONTROLS,
- 				sizeof(*controls), GFP_KERNEL)) == NULL) {
- 		err = -ENOMEM;
+Yeah, but that will also generate a compiler warning.
+
+> To avoid this, you can use:
+> 
+> #define for_each_pwq(pwq, wq)						\
+> 	list_for_each_entry_rcu((pwq), &(wq)->pwqs, pwqs_node)		\
+> 		if (({ assert_rcu_or_wq_lock(); false; })) { }		\
+> 		else
+> 
+> 
+> The same for for_each_pool() in later patch.
+
+Ooh, yeah, that's better.  Will do that.
+
+Thanks.
+
 -- 
-1.7.10.4
-
+tejun
