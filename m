@@ -1,46 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752897Ab3CJRTN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Mar 2013 13:19:13 -0400
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:37109 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752437Ab3CJRTM (ORCPT
+	id S1753015Ab3CJRXt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Mar 2013 13:23:49 -0400
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:35752 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751619Ab3CJRXs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Mar 2013 13:19:12 -0400
-Message-ID: <513CC08B.2040800@redhat.com>
-Date: Sun, 10 Mar 2013 18:19:07 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130219 Thunderbird/17.0.3
+	Sun, 10 Mar 2013 13:23:48 -0400
+Date: Sun, 10 Mar 2013 10:24:30 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Kay Sievers <kay@vrfy.org>
+Cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
+        laijs@cn.fujitsu.com, axboe@kernel.dk, jmoyer@redhat.com,
+        zab@redhat.com
+Subject: Re: [PATCH 30/31] driver/base: implement subsys_virtual_register()
+Message-ID: <20130310172430.GA4723@kroah.com>
+References: <1362194662-2344-1-git-send-email-tj@kernel.org>
+ <1362194662-2344-31-git-send-email-tj@kernel.org>
+ <20130302181727.GB2051@kroah.com>
+ <CAPXgP11Zuz166v_M2EhGDY1U5vKtUwE+fTPAWYEu7UxXsr=g=A@mail.gmail.com>
+ <20130305204327.GK12795@htj.dyndns.org>
+ <20130307233116.GF10304@kroah.com>
+ <CAPXgP10CEMgdOW23txWwwh0xSVd97fKH31xdKjE8Wy51kO6XdQ@mail.gmail.com>
+ <20130310115702.GB24522@htj.dyndns.org>
+ <20130310164530.GA4523@kroah.com>
+ <CAPXgP136685qRguL6C91C+NE7GbgrU7CdpQJW89Fi-_Vw6EukA@mail.gmail.com>
 MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-CC: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, mtosatti@redhat.com,
-        jan.kiszka@siemens.com
-Subject: Re: [PATCH] x86: kvm: reset the bootstrap processor when it gets
- an INIT
-References: <1362811713-25830-1-git-send-email-pbonzini@redhat.com> <20130310114646.GM11223@redhat.com> <513C9E82.1020304@redhat.com> <20130310153540.GL24444@redhat.com>
-In-Reply-To: <20130310153540.GL24444@redhat.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAPXgP136685qRguL6C91C+NE7GbgrU7CdpQJW89Fi-_Vw6EukA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 10/03/2013 16:35, Gleb Natapov ha scritto:
->> > However, it would effectively redefine the meaning of
->> > KVM_MP_STATE_INIT_RECEIVED and KVM_MP_STATE_SIPI_RECEIVED, respectively
->> > to KVM_MP_STATE_WAIT_FOR_SIPI and KVM_MP_STATE_RESETTING.  I wasn't sure
->> > if this is considered an API change (personally, I would treat it as one).
->> > 
-> If it is kernel module internal it definitely is not API change.
-> INIT/SIPI handling is a bit ad-hoc right now anyway as Jan noticed. For
-> instance INIT does not really resets VCPU. Only after SIPI it is really
-> reset, so KVM_MP_STATE_SIPI_RECEIVED is really KVM_MP_STATE_RESET_ME_RIGHT_NOW
-> state.
+On Sun, Mar 10, 2013 at 06:00:18PM +0100, Kay Sievers wrote:
+> On Sun, Mar 10, 2013 at 5:45 PM, Greg Kroah-Hartman
+> <gregkh@linuxfoundation.org> wrote:
+> > On Sun, Mar 10, 2013 at 04:57:02AM -0700, Tejun Heo wrote:
+> >> Hey, guys.
+> >>
+> >> On Fri, Mar 08, 2013 at 01:04:25AM +0100, Kay Sievers wrote:
+> >> > > Sorry for the delay, I'm at a conference all this week, and haven't had
+> >> > > much time to think about this.
+> >> > >
+> >> > > If Kay says this is ok for now, that's good enough for me.
+> >> >
+> >> > Yes, it looks fine to me. If we provide the unified handling of
+> >> > classes and buses some day, this can probably go away, but until that
+> >> > it looks fine and is straight forward to do it that way,
+> >>
+> >> How should this be routed?  I can take it but Kay needs it too so
+> >> workqueue tree probably isn't the best fit although I can set up a
+> >> separate branch if needed.
+> >
+> > What patch set does Kay need it for?  I have no objection for you to
+> > take it through the workqueue tree:
+> 
+> The dbus bus has the same issues and needs the devices put under
+> virtual/ and not the devices/ root.
 
-Yeah, and the current definition is ambiguous (without hypervisor
-patches, there's no way to use it as the names would suggest), so
-perhaps the right thing to do is to rename the states (old names kept
-for backwards compatibility only) and work from there.
+Yes, but I can keep Tejun's patch in my local queue for now, dbus is
+going to not make 3.10, right?
 
-Paolo
+thanks,
+
+greg k-h
