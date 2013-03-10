@@ -1,75 +1,239 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753135Ab3CJSlr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Mar 2013 14:41:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47677 "EHLO mx1.redhat.com"
+	id S1753181Ab3CJSq2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Mar 2013 14:46:28 -0400
+Received: from mout.web.de ([212.227.15.4]:63814 "EHLO mout.web.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752711Ab3CJSlp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Mar 2013 14:41:45 -0400
-From: Jiri Olsa <jolsa@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andi Kleen <andi@firstfloor.org>, Oleg Nesterov <oleg@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Vince Weaver <vincent.weaver@maine.edu>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCHv2 0/6] perf, signal x86: Fix breakpoint events overflow handling
-Date: Sun, 10 Mar 2013 19:41:05 +0100
-Message-Id: <1362940871-24486-1-git-send-email-jolsa@redhat.com>
+	id S1752976Ab3CJSq0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Mar 2013 14:46:26 -0400
+Message-ID: <513CD4C3.9060701@web.de>
+Date: Sun, 10 Mar 2013 19:45:23 +0100
+From: Soeren Moch <smoch@web.de>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
+MIME-Version: 1.0
+To: Alan Stern <stern@rowland.harvard.edu>
+CC: USB list <linux-usb@vger.kernel.org>, Jason Cooper <jason@lakedaemon.net>,
+        Andrew Lunn <andrew@lunn.ch>, Arnd Bergmann <arnd@arndb.de>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] USB: EHCI: fix for leaking isochronous data
+References: <Pine.LNX.4.44L0.1302211337580.1529-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1302211337580.1529-100000@iolanthe.rowland.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V02:K0:uubVNWWcZGePWTwqA8+gtO2h9xQgEbGNmI1+cNKV0bf
+ FjoVmZuVwX66jRzN4qqrXxGEifQ1Zyx4CW/wy8y5rpbEeCYDfo
+ kP0PH1/VUEzgSVeibcgMD+UFBfociL8bby2+BJ2oPnMJVjVGWQ
+ O+cTVMdWiZQ5h5JtFUdMNOkgSqbj2iNOijB33DqWtXuPY0smJS
+ 7CzKI4J3dGSSp/deziQFQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi,
-sendign v2 for initial RFC patchset:
-https://lkml.org/lkml/2013/3/1/324
+On 21.02.2013 19:54, Alan Stern wrote:
+> I trust you won't mind if I put this on the public mailing list.  In
+> general, problems of this sort should be discussed in public.  In
+> addition to creating a permanent record in the various mailing list
+> archives, it also gives other people a chance to learn about these
+> problems and to chime in if they think of something I have overlooked.
 
-v2 changes:
-  - added patch to merge EFLAGS bit clearing into single statement
+This problem was already discussed on the kernel and mm mailing list. 
+(see thread starting here: https://lkml.org/lkml/2012/11/6/408 )
 
-Also available at:
-git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/linux.git
-perf/RF5
+Since this seems to be USB related now, of course it makes sense to 
+discuss this problem on the usb mailing list.
 
-thanks,
-jirka
+> On Wed, 20 Feb 2013, Soeren Moch wrote:
+>
+>> Ok. I use 2 em2840-based usb sticks (em28xx driver) attached to a
+>> Marvell Kirkwood-SoC with a orion-ehci usb controller. These usb sticks
+>> stream dvb data (digital TV) employing isochronous usb transfers (user
+>> application is vdr).
+>>
+>> Starting from linux-3.6 I see
+>>     ERROR: 1024 KiB atomic DMA coherent pool is too small!
+>> in the syslog after several 10 minutes (sometimes hours) of streaming
+>> and then streaming stops.
+>>
+>> In linux-3.6 the memory management for the arm architecture was changed,
+>> so that atomic coherent dma allocations are served from a special pool.
+>> This pool gets exhausted. The only user of this pool (in my test) is
+>> orion-ehci. Although I have only 10 URBs in flight (5 for each stick,
+>> resubmitted in the completion handler), I have 256 atomic coherent
+>> allocations (memory from the pool is allocated in pages) from orion-ehci
+>> when I see this error. So I think there must be a memory leak (memory
+>> allocated atomic somewhere below the usb_submit_urb call in em28xx-core.c).
+>>
+>> With other dvb sticks using usb bulk transfers I never see this error.
+>>
+>> Since you already found a memory leak in the ehci driver for isoc
+>> transfers, I hoped you can help to solve this problem. If there are
+>> additional questions, please ask. If there is something I can test, I
+>> would be glad to do so.
+>
+> I guess the first thing is to get a dmesg log showing the problem.  You
+> should build a kernel with CONFIG_USB_DEBUG enabled and post the part
+> of the dmesg output starting from when you plug in the troublesome DVB
+> stick.
 
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: H. Peter Anvin <hpa@zytor.com>
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Vince Weaver <vincent.weaver@maine.edu>
-Cc: Stephane Eranian <eranian@google.com>
----
-Jiri Olsa (6):
-      signal x86: Propage RF EFLAGS bit throught the signal restore call
-      signal x86: Clear RF EFLAGS bit for signal handler
-      signal x86: Merge EFLAGS bit clearing into single statement
-      perf: Fix hw breakpoints overflow period sampling
-      perf tests: Test breakpoint overflow signal handler
-      perf tests: Test breakpoint overflow signal handler counts
+Sorry for my late response. Now I built a kernel 3.8.0 with usb_debug 
+enabled. See below for the syslog of device plug-in.
 
- arch/x86/ia32/ia32_signal.c           |   2 -
- arch/x86/include/asm/sighandling.h    |   4 +-
- arch/x86/kernel/signal.c              |  16 +++-----
- include/linux/perf_event.h            |   2 +
- kernel/events/core.c                  |   2 +-
- kernel/events/hw_breakpoint.c         |   5 +++
- tools/perf/Makefile                   |   2 +
- tools/perf/tests/bp_signal.c          | 187 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- tools/perf/tests/bp_signal_overflow.c | 126 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- tools/perf/tests/builtin-test.c       |   8 ++++
- tools/perf/tests/tests.h              |   2 +
- 11 files changed, 341 insertions(+), 15 deletions(-)
- create mode 100644 tools/perf/tests/bp_signal.c
- create mode 100644 tools/perf/tests/bp_signal_overflow.c
+> It also might help to have a record of all the isochronous-related
+> coherent allocations and deallocations done by the ehci-hcd driver.
+> Are you comfortable making your own debugging changes?  The allocations
+> are done by a call to dma_pool_alloc() in
+> drivers/usb/host/ehci-sched.c:itd_urb_transaction() if the device runs
+> at high speed and sitd_urb_transaction() if the device runs at full
+> speed.  The deallocations are done by calls to dma_pool_free() in
+> ehci-timer.c:end_free_itds().
+>
+
+I added a debug message to 
+drivers/usb/host/ehci-sched.c:itd_urb_transaction() to log the 
+allocation flags, see log below. For me this looks like nothing is 
+allocated atomic here, so this function should not be the root cause of 
+the dma coherent pool exhaustion. Are there other allocation functions 
+which I could track?
+
+Regards,
+  Soeren Moch
+
+
+
+Mar 10 15:21:05 guruvdr kernel: hub 1-1:1.0: state 7 ports 4 chg 0000 
+evt 0008
+Mar 10 15:21:05 guruvdr kernel: hub 1-1:1.0: port 3, status 0101, change 
+0001, 12 Mb/s
+Mar 10 15:21:05 guruvdr kernel: hub 1-1:1.0: debounce: port 3: total 
+100ms stable 100ms status 0x101
+Mar 10 15:21:05 guruvdr kernel: usb 1-1.3: new high-speed USB device 
+number 6 using orion-ehci
+Mar 10 15:21:06 guruvdr kernel: usb 1-1.3: default language 0x0409
+Mar 10 15:21:06 guruvdr kernel: usb 1-1.3: udev 6, busnum 1, minor = 5
+Mar 10 15:21:06 guruvdr kernel: usb 1-1.3: New USB device found, 
+idVendor=0ccd, idProduct=00b2
+Mar 10 15:21:06 guruvdr kernel: usb 1-1.3: New USB device strings: 
+Mfr=3, Product=1, SerialNumber=2
+Mar 10 15:21:06 guruvdr kernel: usb 1-1.3: Product: Cinergy HTC Stick
+Mar 10 15:21:06 guruvdr kernel: usb 1-1.3: Manufacturer: TERRATEC
+Mar 10 15:21:06 guruvdr kernel: usb 1-1.3: SerialNumber: 123456789ABCD
+Mar 10 15:21:06 guruvdr kernel: usb 1-1.3: usb_probe_device
+Mar 10 15:21:06 guruvdr kernel: usb 1-1.3: configuration #1 chosen from 
+1 choice
+Mar 10 15:21:06 guruvdr kernel: usb 1-1.3: adding 1-1.3:1.0 (config #1, 
+interface 0)
+Mar 10 15:21:06 guruvdr kernel: em28xx 1-1.3:1.0: usb_probe_interface
+Mar 10 15:21:06 guruvdr kernel: em28xx 1-1.3:1.0: usb_probe_interface - 
+got id
+Mar 10 15:21:06 guruvdr kernel: em28xx: New device TERRATEC  Cinergy HTC 
+Stick @ 480 Mbps (0ccd:00b2, interface 0, class 0)
+Mar 10 15:21:06 guruvdr kernel: em28xx: Audio Vendor Class interface 0 found
+Mar 10 15:21:06 guruvdr kernel: em28xx: Video interface 0 found
+Mar 10 15:21:06 guruvdr kernel: em28xx: DVB interface 0 found
+Mar 10 15:21:06 guruvdr kernel: em28xx #0: chip ID is em2884
+Mar 10 15:21:06 guruvdr kernel: em28xx #0: Identified as Terratec 
+Cinergy HTC Stick (card=82)
+Mar 10 15:21:06 guruvdr kernel: em28xx #0: Config register raw data: 0x45
+Mar 10 15:21:06 guruvdr kernel: em28xx #0: v4l2 driver version 0.1.3
+Mar 10 15:21:06 guruvdr kernel: em28xx #0: V4L2 video device registered 
+as video0
+Mar 10 15:21:06 guruvdr kernel: usbcore: registered new interface driver 
+em28xx
+Mar 10 15:21:07 guruvdr kernel: drxk: status = 0x639260d9
+Mar 10 15:21:07 guruvdr kernel: drxk: detected a drx-3926k, spin A3, 
+xtal 20.250 MHz
+Mar 10 15:21:09 guruvdr kernel: hub 1-1:1.0: state 7 ports 4 chg 0000 
+evt 0010
+Mar 10 15:21:09 guruvdr kernel: hub 1-1:1.0: port 4, status 0101, change 
+0001, 12 Mb/s
+Mar 10 15:21:09 guruvdr kernel: hub 1-1:1.0: debounce: port 4: total 
+100ms stable 100ms status 0x101
+Mar 10 15:21:09 guruvdr kernel: usb 1-1.4: new high-speed USB device 
+number 7 using orion-ehci
+Mar 10 15:21:09 guruvdr kernel: usb 1-1.4: default language 0x0409
+Mar 10 15:21:09 guruvdr kernel: usb 1-1.4: udev 7, busnum 1, minor = 6
+Mar 10 15:21:09 guruvdr kernel: usb 1-1.4: New USB device found, 
+idVendor=2304, idProduct=0242
+Mar 10 15:21:09 guruvdr kernel: usb 1-1.4: New USB device strings: 
+Mfr=1, Product=2, SerialNumber=3
+Mar 10 15:21:09 guruvdr kernel: usb 1-1.4: Product: PCTV 510e
+Mar 10 15:21:09 guruvdr kernel: usb 1-1.4: Manufacturer: Pinnacle Systems
+Mar 10 15:21:09 guruvdr kernel: usb 1-1.4: SerialNumber: 123456789012
+Mar 10 15:21:09 guruvdr kernel: usb 1-1.4: usb_probe_device
+Mar 10 15:21:09 guruvdr kernel: usb 1-1.4: configuration #1 chosen from 
+1 choice
+Mar 10 15:21:09 guruvdr kernel: usb 1-1.4: adding 1-1.4:1.0 (config #1, 
+interface 0)
+Mar 10 15:21:09 guruvdr kernel: em28xx 1-1.4:1.0: usb_probe_interface
+Mar 10 15:21:09 guruvdr kernel: em28xx 1-1.4:1.0: usb_probe_interface - 
+got id
+Mar 10 15:21:09 guruvdr kernel: em28xx: New device Pinnacle Systems PCTV 
+510e @ 480 Mbps (2304:0242, interface 0, class 0)
+Mar 10 15:21:09 guruvdr kernel: em28xx: Audio Vendor Class interface 0 found
+Mar 10 15:21:09 guruvdr kernel: em28xx: Video interface 0 found
+Mar 10 15:21:09 guruvdr kernel: em28xx: DVB interface 0 found
+Mar 10 15:21:09 guruvdr kernel: em28xx #1: chip ID is em2884
+Mar 10 15:21:10 guruvdr kernel: em28xx #1: Identified as PCTV 
+QuatroStick (510e) (card=85)
+Mar 10 15:21:10 guruvdr kernel: em28xx #1: Config register raw data: 0x31
+Mar 10 15:21:10 guruvdr kernel: em28xx #1: I2S Audio (5 sample rates)
+Mar 10 15:21:10 guruvdr kernel: em28xx #1: No AC97 audio processor
+Mar 10 15:21:10 guruvdr kernel: em28xx #1: v4l2 driver version 0.1.3
+Mar 10 15:21:10 guruvdr kernel: em28xx #1: V4L2 video device registered 
+as video1
+Mar 10 15:21:10 guruvdr kernel: hub 1-1:1.0: state 7 ports 4 chg 0000 
+evt 0010
+Mar 10 15:21:11 guruvdr kernel: DRXK driver version 0.9.4300
+Mar 10 15:21:11 guruvdr kernel: drxk: frontend initialized.
+Mar 10 15:21:11 guruvdr kernel: tda18271 2-0060: creating new instance
+Mar 10 15:21:11 guruvdr kernel: TDA18271HD/C2 detected @ 2-0060
+Mar 10 15:21:12 guruvdr kernel: DVB: registering new adapter (em28xx #0)
+Mar 10 15:21:12 guruvdr kernel: usb 1-1.3: DVB: registering adapter 2 
+frontend 0 (DRXK DVB-C DVB-T)...
+Mar 10 15:21:12 guruvdr kernel: em28xx #0: Successfully loaded em28xx-dvb
+Mar 10 15:21:12 guruvdr kernel: Em28xx: Initialized (Em28xx dvb 
+Extension) extension
+Mar 10 15:21:12 guruvdr kernel: drxk: status = 0x039260d9
+Mar 10 15:21:12 guruvdr kernel: drxk: detected a drx-3926k, spin A1, 
+xtal 20.250 MHz
+Mar 10 15:21:13 guruvdr kernel: DRXK driver version 0.9.4300
+Mar 10 15:21:13 guruvdr kernel: drxk: frontend initialized.
+Mar 10 15:21:13 guruvdr kernel: tda18271 3-0060: creating new instance
+Mar 10 15:21:13 guruvdr kernel: TDA18271HD/C2 detected @ 3-0060
+Mar 10 15:21:13 guruvdr kernel: DVB: registering new adapter (em28xx #1)
+Mar 10 15:21:13 guruvdr kernel: usb 1-1.4: DVB: registering adapter 3 
+frontend 0 (DRXK DVB-C DVB-T)...
+Mar 10 15:21:13 guruvdr kernel: em28xx #1: Successfully loaded em28xx-dvb
+[...]
+Mar 10 18:55:05 guruvdr kernel: itd dma_pool_alloc flags: 0x20000093
+Mar 10 18:55:05 guruvdr kernel: itd dma_pool_alloc flags: 0x20000093
+Mar 10 18:55:06 guruvdr kernel: itd dma_pool_alloc flags: 0x80000093
+Mar 10 18:55:06 guruvdr kernel: itd dma_pool_alloc flags: 0x20000093
+Mar 10 18:55:06 guruvdr kernel: itd dma_pool_alloc flags: 0x20000093
+Mar 10 18:55:06 guruvdr kernel: itd dma_pool_alloc flags: 0x20000093
+Mar 10 18:55:06 guruvdr kernel: itd dma_pool_alloc flags: 0x20000093
+Mar 10 18:55:06 guruvdr kernel: itd dma_pool_alloc flags: 0x20000093
+Mar 10 18:55:06 guruvdr kernel: itd dma_pool_alloc flags: 0x20000093
+Mar 10 18:55:06 guruvdr kernel: itd dma_pool_alloc flags: 0x20000093
+Mar 10 18:55:06 guruvdr kernel: itd dma_pool_alloc flags: 0x20000093
+Mar 10 18:55:06 guruvdr kernel: itd dma_pool_alloc flags: 0x80000093
+Mar 10 18:55:06 guruvdr kernel: itd dma_pool_alloc flags: 0x20000093
+Mar 10 18:55:06 guruvdr kernel: itd dma_pool_alloc flags: 0x20000093
+Mar 10 18:55:06 guruvdr kernel: ERROR: 1024 KiB atomic DMA coherent pool 
+is too small!
+Mar 10 18:55:06 guruvdr kernel: Please increase it with coherent_pool= 
+kernel parameter!
+Mar 10 18:55:06 guruvdr kernel: itd dma_pool_alloc flags: 0x20000093
+Mar 10 18:55:06 guruvdr kernel: orion-ehci orion-ehci.0: can't init itds
+Mar 10 18:55:07 guruvdr kernel: itd dma_pool_alloc flags: 0x80000093
+Mar 10 18:55:07 guruvdr kernel: orion-ehci orion-ehci.0: can't init itds
+Mar 10 18:55:07 guruvdr kernel: itd dma_pool_alloc flags: 0x80000093
+Mar 10 18:55:07 guruvdr kernel: orion-ehci orion-ehci.0: can't init itds
+Mar 10 18:55:08 guruvdr kernel: itd dma_pool_alloc flags: 0x80000093
+Mar 10 18:55:08 guruvdr kernel: orion-ehci orion-ehci.0: can't init itds
+Mar 10 18:55:13 guruvdr kernel: itd dma_pool_alloc flags: 0x80000013
+Mar 10 18:55:13 guruvdr kernel: itd dma_pool_alloc flags: 0x20000013
+Mar 10 18:55:13 guruvdr kernel: itd dma_pool_alloc flags: 0x20000013
+
