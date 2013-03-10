@@ -1,57 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752879Ab3CJIKn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Mar 2013 04:10:43 -0400
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:34419 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752755Ab3CJIKg (ORCPT
+	id S1752422Ab3CJIJN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Mar 2013 04:09:13 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:35269 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752184Ab3CJIIv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Mar 2013 04:10:36 -0400
-From: Akinobu Mita <akinobu.mita@gmail.com>
-To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
-Cc: Akinobu Mita <akinobu.mita@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Brett Rudley <brudley@broadcom.com>,
-        Arend van Spriel <arend@broadcom.com>,
-        "Franky (Zhenhui) Lin" <frankyl@broadcom.com>,
-        Hante Meuleman <meuleman@broadcom.com>
-Subject: [PATCH -mmotm] brcm80211: fix the misaligned indentation
-Date: Sun, 10 Mar 2013 17:10:14 +0900
-Message-Id: <1362903014-25192-1-git-send-email-akinobu.mita@gmail.com>
-X-Mailer: git-send-email 1.8.1.4
+	Sun, 10 Mar 2013 04:08:51 -0400
+From: Jiang Liu <liuj97@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>
+Cc: Jiang Liu <jiang.liu@huawei.com>, Wen Congyang <wency@cn.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan@kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>, Jianguo Wu <wujianguo@huawei.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Russell King <linux@arm.linux.org.uk>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH v2, part2 02/10] mm/ARM: use free_highmem_page() to free highmem pages into buddy system
+Date: Sun, 10 Mar 2013 16:01:02 +0800
+Message-Id: <1362902470-25787-3-git-send-email-jiang.liu@huawei.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1362902470-25787-1-git-send-email-jiang.liu@huawei.com>
+References: <1362902470-25787-1-git-send-email-jiang.liu@huawei.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This fixes the misaligned indentation introduced by
-drivers-net-rename-random32-to-prandom_u32.patch in the -mm tree.
+Use helper function free_highmem_page() to free highmem pages into
+the buddy system.
 
-This also remove unneeded parentheses in order not to cause line over
-80 characters.
-
-Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Brett Rudley <brudley@broadcom.com>
-Cc: Arend van Spriel <arend@broadcom.com>
-Cc: "Franky (Zhenhui) Lin" <frankyl@broadcom.com>
-Cc: Hante Meuleman <meuleman@broadcom.com>
+Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Linus Walleij <linus.walleij@linaro.org>
+cc: Marek Szyprowski <m.szyprowski@samsung.com>
+Cc: Stephen Boyd <sboyd@codeaurora.org>
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org
 ---
- drivers/net/wireless/brcm80211/brcmfmac/p2p.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm/mm/init.c |    7 ++-----
+ 1 file changed, 2 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/net/wireless/brcm80211/brcmfmac/p2p.c b/drivers/net/wireless/brcm80211/brcmfmac/p2p.c
-index bca31a8..5da1645 100644
---- a/drivers/net/wireless/brcm80211/brcmfmac/p2p.c
-+++ b/drivers/net/wireless/brcm80211/brcmfmac/p2p.c
-@@ -1118,7 +1118,7 @@ static void brcmf_p2p_afx_handler(struct work_struct *work)
- 	if (afx_hdl->is_listen && afx_hdl->my_listen_chan)
- 		/* 100ms ~ 300ms */
- 		err = brcmf_p2p_discover_listen(p2p, afx_hdl->my_listen_chan,
--					100 * (1 + (prandom_u32() % 3)));
-+						100 * (1 + prandom_u32() % 3));
- 	else
- 		err = brcmf_p2p_act_frm_search(p2p, afx_hdl->peer_listen_chan);
+diff --git a/arch/arm/mm/init.c b/arch/arm/mm/init.c
+index 40a5bc2..687a114 100644
+--- a/arch/arm/mm/init.c
++++ b/arch/arm/mm/init.c
+@@ -519,10 +519,8 @@ static void __init free_unused_memmap(struct meminfo *mi)
+ #ifdef CONFIG_HIGHMEM
+ static inline void free_area_high(unsigned long pfn, unsigned long end)
+ {
+-	for (; pfn < end; pfn++) {
+-		__free_reserved_page(pfn_to_page(pfn));
+-		totalhigh_pages++;
+-	}
++	for (; pfn < end; pfn++)
++		free_highmem_page(pfn_to_page(pfn));
+ }
+ #endif
+ 
+@@ -571,7 +569,6 @@ static void __init free_highpages(void)
+ 		if (start < end)
+ 			free_area_high(start, end);
+ 	}
+-	totalram_pages += totalhigh_pages;
+ #endif
+ }
  
 -- 
-1.8.1.4
+1.7.9.5
 
