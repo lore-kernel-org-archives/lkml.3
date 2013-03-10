@@ -1,111 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752115Ab3CJDer (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Mar 2013 22:34:47 -0500
-Received: from plane.gmane.org ([80.91.229.3]:38215 "EHLO plane.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751852Ab3CJDeq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Mar 2013 22:34:46 -0500
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: Marco <scamar@gmail.com>
-Subject: Re: xhci module fails when booting in UEFI mode
-Date: Sun, 10 Mar 2013 03:26:35 +0000 (UTC)
-Message-ID: <loom.20130310T042356-814@post.gmane.org>
-References: <kcm7tc$aom$1@ger.gmane.org> <20130216173350.GA4821@hardeman.nu>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
-X-Complaints-To: usenet@ger.gmane.org
-X-Gmane-NNTP-Posting-Host: sea.gmane.org
-User-Agent: Loom/3.14 (http://gmane.org/)
-X-Loom-IP: 2.227.133.46 (Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:19.0) Gecko/20100101 Firefox/19.0)
+	id S1752086Ab3CJEvd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Mar 2013 23:51:33 -0500
+Received: from mail-we0-f170.google.com ([74.125.82.170]:52078 "EHLO
+	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751124Ab3CJEvb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 9 Mar 2013 23:51:31 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAKRKD_W8pW+8kUO2HvgCQrtqnHOZzgeGiwAF5ER3Yad4OMcizg@mail.gmail.com>
+References: <201211011352.42476.Martin@lichtvoll.de>
+	<6898338.Kmf2pUBmi1@deuteros>
+	<201211101753.46211.Martin@lichtvoll.de>
+	<10569573.iu1a6eiZCO@deuteros>
+	<CAKRKD_W8pW+8kUO2HvgCQrtqnHOZzgeGiwAF5ER3Yad4OMcizg@mail.gmail.com>
+Date: Sat, 9 Mar 2013 23:51:30 -0500
+Message-ID: <CAKRKD_XvW3hjpboNJELMwDkFAsu80gvWXXtedgRmSpjZE6dSug@mail.gmail.com>
+Subject: Fwd: [Nepomuk] Better support for (desktop) file search / indexing applications
+From: Simeon Bird <bladud@gmail.com>
+To: Linux Filesystem Development Mailinglist 
+	<linux-fsdevel@vger.kernel.org>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Härdeman <david <at> hardeman.nu> writes:
+Sent again in plain-text - apologies.
 
-> 
-> On Thu, Jan 10, 2013 at 11:15:56AM +0000, Frederik Himpe wrote:
-> >I've got a HP EliteBook 8470p on which I installed Debian Wheezy in UEFI 
-> >mode. With both the 3.2 kernel from Wheezy, as the 3.7.1 kernel from 
-> >experimental, xhci fails to initialize and my USB mouse connected to one 
-> >of these ports is not recognized at all. The USB3 ports work fine in 
-> >Windows.
-> >
-> >[    1.316248] xhci_hcd 0000:00:14.0: can't derive routing for PCI INT A
-> >[    1.316251] xhci_hcd 0000:00:14.0: PCI INT A: no GSI
-> >[    1.316253] 
-> >[    1.316277] xhci_hcd 0000:00:14.0: setting latency timer to 64
-> >[    1.316281] xhci_hcd 0000:00:14.0: xHCI Host Controller
-> >[    1.316287] xhci_hcd 0000:00:14.0: new USB bus registered, assigned 
-> >bus number 1
-> >[    1.316393] xhci_hcd 0000:00:14.0: cache line size of 64 is not 
-> >supported
-> >[    1.316395] xhci_hcd 0000:00:14.0: request interrupt 255 failed
-> >[    1.316447] xhci_hcd 0000:00:14.0: USB bus 1 deregistered
-> >[    1.316466] xhci_hcd 0000:00:14.0: can't derive routing for PCI INT A
-> >[    1.316467] xhci_hcd 0000:00:14.0: init 0000:00:14.0 fail, -22
-> >[    1.316505] xhci_hcd: probe of 0000:00:14.0 failed with error -22
-> >
-> >Full dmesg, lspci, lsusb and lsmod can be found here:
-> >http://artipc10.vub.ac.be/~frederik/uefi-xhci/
-> >
-> >I found this report about the same problem on a HP Probook system: 
-> >https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1072918 
-> 
-> I have the same problem (HP Elitebook 8570p in my case).
-> 
-> This thread seems related:
-> https://lkml.org/lkml/2012/2/13/453
-> 
-> No idea what happened to the patches in that thread though...
-> 
+---------- Forwarded message ----------
+From: Simeon Bird <bladud@gmail.com>
+Date: 9 March 2013 23:49
+Subject: Re: [Nepomuk] Better support for (desktop) file search /
+indexing applications
+To: Tvrtko Ursulin <tvrtko.ursulin@onelan.co.uk>
+Cc: Martin Steigerwald <Martin@lichtvoll.de>, Jan Kara <jack@suse.cz>,
+Robert Love <rlove@rlove.org>, linux-kernel@vger.kernel.org, Eric
+Paris <eparis@redhat.com>, Nepomuk Mailing List <nepomuk@kde.org>,
+Linux Filesystem Development Mailinglist
+<linux-fsdevel@vger.kernel.org>, Eric Paris <eparis@parisplace.org>,
+John McCutchan <john@johnmccutchan.com>
 
 
-workaround on hp 8570
+On 12 November 2012 04:10, Tvrtko Ursulin <tvrtko.ursulin@onelan.co.uk> wrote:
+>
+> On Saturday 10 November 2012 17:53:45 Martin Steigerwald wrote:
+> > Still fanotify needs root access and thus this would need a daemon running
+> > as root and some policy kit stuff to access it and in case of mount point
+> > watches robust and secure code so that each user may only see his/her own
+> > results.
+>
+> Perhaps then also extend fanotify to support user watches, from the top of my
+> head I can't think of a reason it would be very difficult to implement. But it
+> has been a few years since I actively worked with that code.
+>
+> Since you are not the only group having issues with fanotify feature set I can
+> see this mini-project (together with extensions from me previous reply) being
+> useful. It is also better to evolve it than neglect due a few shortcomings and
+> then in a few years someone will come up with something completely new and
+> then we will have yet another notification system.
+>
+> Tvrtko
 
 
-using kernel parameter
+Hi,
 
-acpi=noirq
+We (nepomuk) recently looked at using fanotify, and indeed we would
+need user watches, support for moves and recursive directory watches
+(we need to support the case where /home is not a separate filesystem)
+before it would be useful to us. If you are interested in adding
+these, we would be delighted to use nepomuk as a test-case for them.
 
-USB 3 will work
+We were wondering also if it would be possible to extend inotify a
+little? Our wishlist is:
 
-........
-[ 0.000000] Linux version 3.5.0-25-generic (buildd@komainu) (gcc version 4.7.2
-(Ubuntu/Linaro 4.7.2-2ubuntu1) ) #39-Ubuntu SMP Mon Feb 25 18:26:58 UTC 2013
-(Ubuntu 3.5.0-25.39-generic 3.5.7.4)
-[ 0.000000] Command line: BOOT_IMAGE=/boot/vmlinuz-3.5.0-25-generic.efi.signed
-root=UUID=f8ccd8b4-9642-48c1-b57d-258ebbb6ee14 ro quiet splash acpi=noirq
-vt.handoff=7
-........
-$ dmesg | grep xhci
-[ 1.141906] xhci_hcd 0000:00:14.0: can't find IRQ for PCI INT A; please try
-using pci=biosirq
-[ 1.141922] xhci_hcd 0000:00:14.0: setting latency timer to 64
-[ 1.141924] xhci_hcd 0000:00:14.0: xHCI Host Controller
-[ 1.141927] xhci_hcd 0000:00:14.0: new USB bus registered, assigned bus number 3
-[ 1.142008] xhci_hcd 0000:00:14.0: cache line size of 64 is not supported
-[ 1.142048] xhci_hcd 0000:00:14.0: irq 23 for MSI/MSI-X
-[ 1.142087] usb usb3: Manufacturer: Linux 3.5.0-25-generic xhci_hcd
-[ 1.142137] xHCI xhci_add_endpoint called for root hub
-[ 1.142139] xHCI xhci_check_bandwidth called for root hub
-[ 1.142196] xhci_hcd 0000:00:14.0: xHCI Host Controller
-[ 1.142198] xhci_hcd 0000:00:14.0: new USB bus registered, assigned bus number 4
-[ 1.142218] usb usb4: Manufacturer: Linux 3.5.0-25-generic xhci_hcd
-[ 1.142260] xHCI xhci_add_endpoint called for root hub
-[ 1.142261] xHCI xhci_check_bandwidth called for root hub
-[ 15.089213] genirq: Flags mismatch irq 23. 00002001 (lis3lv02d) vs. 00000000
-(xhci_hcd)
-........
+1) Recursive folder watches
+2) When a file moves, some way to get the destination without watching
+the directory it moved to, so moves can be tracked without watching
+every file on the system.
 
-if you like to recompile your own kernel, someone has reported this patch work
-i can wait until this one will be included in the main kernel :D
+I understand that there are reasons of security and performance why
+you cannot implement 1), but is 2) possible? Maybe by extending
+IN_MOVED_TO, or adding a new event type?
 
-https://lkml.org/lkml/2013/2/18/115
+2) is actually in some ways the more severe problem for us. As well as
+being an indexer, nepomuk is a system that allows you to store file
+metadata such as ratings. When users move the files, they want the
+metadata to move too, so we need to track where the file moved, and
+thus at the moment we recursively watch everything. This is
+particularly problematic with removable media; because a lot of people
+will plug in an external drive and then move files onto it, we have to
+watch every drive as soon as it is plugged in. If we were able to get
+the destination of move events without watching the destination
+directory, we could watch only those directories with interesting
+metadata in, which would make things a lot easier.
 
+inotify move tracking would also be useful for other things - eg, a
+text editor could use inotify to see if a file it has open has moved
+and offer to re-open the file in its new location, which is impossible
+at the moment.
 
+Since the lack of recursive watches is really a problem because we
+have a tendency to run out of watches, it would also really help if
+the default limit was a bit higher -  most people seem to have > 8000
+folders, but I suspect far fewer have > 32000 (probably excepting
+those who are indexing kernel source trees: I have 21000, and half of
+that is KDE source).
 
+Would any of this be possible? If you happen to know of a better way
+to track moves using existing tools, that would be even better.
 
+Thanks,
+Simeon
