@@ -1,97 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753360Ab3CJWda (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Mar 2013 18:33:30 -0400
-Received: from mail-ea0-f177.google.com ([209.85.215.177]:39158 "EHLO
-	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751642Ab3CJWd2 (ORCPT
+	id S1753369Ab3CJWeN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Mar 2013 18:34:13 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:62577 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753228Ab3CJWeJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Mar 2013 18:33:28 -0400
-Message-ID: <513D0A33.5050204@suse.cz>
-Date: Sun, 10 Mar 2013 23:33:23 +0100
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:19.0) Gecko/20130124 Thunderbird/19.0
+	Sun, 10 Mar 2013 18:34:09 -0400
+Date: Sun, 10 Mar 2013 23:34:05 +0100
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: akpm@linux-foundation.org, a.zummo@towertech.it, swarren@wwwdotorg.org,
+        rtc-linux@googlegroups.com, linux-tegra@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/5] rtc: tegra: use module_platform_driver_probe for
+ module init/exit
+Message-ID: <20130310223405.GC4743@avionic-0098.mockup.avionic-design.de>
+References: <1362852588-13362-1-git-send-email-ldewangan@nvidia.com>
+ <1362852588-13362-4-git-send-email-ldewangan@nvidia.com>
 MIME-Version: 1.0
-To: Josh Boyer <jwboyer@redhat.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] serial: 8250: Keep 8250.<xxxx> module options functional
- after driver rename
-References: <20130308224950.GM13719@hansolo.jdub.homelinux.org> <513A6D1F.5000202@suse.cz> <513A6FD4.7000506@suse.cz> <513A70CF.9010800@suse.cz> <20130308232809.GO13719@hansolo.jdub.homelinux.org> <20130308234404.GP13719@hansolo.jdub.homelinux.org> <513AFD66.3030404@suse.cz> <20130309133014.GQ13719@hansolo.jdub.homelinux.org> <513B43BA.3000906@suse.cz> <20130309170241.GR13719@hansolo.jdub.homelinux.org> <20130310143340.GA7718@hansolo.jdub.homelinux.org>
-In-Reply-To: <20130310143340.GA7718@hansolo.jdub.homelinux.org>
-X-Enigmail-Version: 1.6a1pre
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="QRj9sO5tAVLaXnSD"
+Content-Disposition: inline
+In-Reply-To: <1362852588-13362-4-git-send-email-ldewangan@nvidia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:uzv/odVWRzyEm7XwwM3DeRe0t2hqrjicBuinJtEsPAr
+ Jwn6Nw52xq5m+I20Cjn+dnwBZJBrL3QEnW6olcmqNYfDQOkJ0P
+ Tv0VvGBHt3SGh9T5hMv/4yBtEu54rvEY032sG3CusjdviPwVZX
+ ycdNa703rtmQSnwFWp3Uk4ITxeFg6/WsCwIyxyvnCViaHUZX6f
+ W1BvuHMeYGkaA1qdkGDdT3H0fdMOK8F0Xan/fzFe9XfUA4GQcP
+ YE3LNoBK8+dlf1SnRwAKmSgqc7w7+xinBw8sPwOdYgHyk7xgY7
+ X1gB5nFbAgKiVuw4qtRMujfq6OigPbQO/uZ/I+aHbrMRQOMncD
+ 484VdJ/4OsHL10lyanafgGusxdjoZ+QHQloFfZLUVmpG0jZCgN
+ 0jRxCPwCcT8ykZP8uh3oZfEbAiBd/uzq04=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/10/2013 03:33 PM, Josh Boyer wrote:
-> With commit 835d844d1 (8250_pnp: do pnp probe before legacy probe), the
-> 8250 driver was renamed to 8250_core.  This means any existing usage of
-> the 8259.<xxxx> module parameters or as a kernel command line switch is
-> now broken, as the 8250_core driver doesn't parse options belonging to
-> something called "8250".
-> 
-> To solve this, we redefine the module options in a dummy function using
-> a redefined MODULE_PARAM_PREFX when built into the kernel.  In the case
-> where we're building as a module, we provide an alias to the old 8250
-> name.  The dummy function prevents compiler errors due to global variable
-> redefinitions that happen as part of the module_param_ macro expansions.
-> 
-> Signed-off-by: Josh Boyer <jwboyer@redhat.com>
 
-Despite the inevitable ugly nature of the approach:
+--QRj9sO5tAVLaXnSD
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Acked-by: Jiri Slaby <jslaby@suse.cz>
-
+On Sat, Mar 09, 2013 at 11:39:47PM +0530, Laxman Dewangan wrote:
+> Use macro module_platform_driver_probe() to reduce some of the
+> boilerplate code in the driver.
+>=20
+> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
 > ---
->  v2: Use __module_param_call for probe_rsa instead of undefining the
->      __param_check macro as suggested by Jiri Slaby
-> 
->  drivers/tty/serial/8250/8250.c | 29 +++++++++++++++++++++++++++++
->  1 file changed, 29 insertions(+)
-> 
-> diff --git a/drivers/tty/serial/8250/8250.c b/drivers/tty/serial/8250/8250.c
-> index 0efc815..f982633 100644
-> --- a/drivers/tty/serial/8250/8250.c
-> +++ b/drivers/tty/serial/8250/8250.c
-> @@ -3396,3 +3396,32 @@ module_param_array(probe_rsa, ulong, &probe_rsa_count, 0444);
->  MODULE_PARM_DESC(probe_rsa, "Probe I/O ports for RSA");
->  #endif
->  MODULE_ALIAS_CHARDEV_MAJOR(TTY_MAJOR);
-> +
-> +#ifndef MODULE
-> +/* This module was renamed to 8250_core in 3.7.  Keep the old "8250" name
-> + * working as well for the module options so we don't break people.  We
-> + * need to keep the names identical and the convenient macros will happily
-> + * refuse to let us do that by failing the build with redefinition errors
-> + * of global variables.  So we stick them inside a dummy function to avoid
-> + * those conflicts.  The options still get parsed, and the redefined
-> + * MODULE_PARAM_PREFIX lets us keep the "8250." syntax alive.
-> + *
-> + * This is hacky.  I'm sorry.
-> + */
-> +static void __used s8250_options(void)
-> +{
-> +#undef MODULE_PARAM_PREFIX
-> +#define MODULE_PARAM_PREFIX "8250."
-> +
-> +	module_param_cb(share_irqs, &param_ops_uint, &share_irqs, 0644);
-> +	module_param_cb(nr_uarts, &param_ops_uint, &nr_uarts, 0644);
-> +	module_param_cb(skip_txen_test, &param_ops_uint, &skip_txen_test, 0644);
-> +#ifdef CONFIG_SERIAL_8250_RSA
-> +	__module_param_call(MODULE_PARAM_PREFIX, probe_rsa,
-> +		&param_array_ops, .arr = &__param_arr_probe_rsa,
-> +		0444, -1);
-> +#endif
-> +}
-> +#else
-> +MODULE_ALIAS("8250");
-> +#endif
-> 
+>  drivers/rtc/rtc-tegra.c |   12 +-----------
+>  1 files changed, 1 insertions(+), 11 deletions(-)
 
+Reviewed-by: Thierry Reding <thierry.reding@avionic-design.de>
 
--- 
-js
-suse labs
+--QRj9sO5tAVLaXnSD
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRPQpdAAoJEN0jrNd/PrOhtaYQAJP2nuZRRIimVOe8KZj4aJDN
+7HA996VPkdL4mvOg854Sr9i9wYn2afAhxMnoDfj0Jpit8NUSTPzliINeQeV5ql22
+XcV83jW3y7UjG2/yz9TJRMqqoGkXiLdQHxmUi7CZmK3hTZsc4cbT1wk5oq36jrgK
+7+KzNlAOy7pNNWf1XbJbBzbE53bJBRRpoBmXPNKdCiYxB2cpDdUEyWtW7mEQNETR
+mxRMotROLeK4HRjIKs8HERkatttvSgAyVCMkVp3LTeu6Vqn2sfp6wdVmY34VemEC
+Rv47+UDm2LnGimyjkPC35teOIMR2sZoKdkQgQy2aIEcZDaFj068Rw36HvT7cSJ6l
+bTM7UODoT5fq490fTPHBF36kUVagJArsONhoXu5Vz1A3n+4py8KL0q8ne9Ed/gXh
+aTwEcvr4Ue3u09pgEr3Bi9Ky+mI19QvHAFS8fUi6dYhJzMgVDBLPaCi46lS8IYaM
+K8rZHL6qsKWR/6bUBbilSxn/O524Ht9ikXiBSQE3MvOtKZciP51lI8hIRhWzTIS/
+ezQw0EI0uysq+FQmRxy6PUvN2N/pi5gnjfj9BoQ2e0oDC0DvW+kdRYi00mXKiONw
+PZr08MuctDlI8F+b2ZDRqdAOForuZ7A7cseKJB5gxAr6Onzyf+OaO0qO/dT+fm+L
+v8C+THXTxuDQ+e+3T6X3
+=0oKM
+-----END PGP SIGNATURE-----
+
+--QRj9sO5tAVLaXnSD--
