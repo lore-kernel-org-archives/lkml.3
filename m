@@ -1,206 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751479Ab3CJGae (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Mar 2013 01:30:34 -0500
-Received: from mail-pb0-f44.google.com ([209.85.160.44]:54140 "EHLO
-	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751282Ab3CJGaL (ORCPT
+	id S1751731Ab3CJGqI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Mar 2013 01:46:08 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:48079 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751230Ab3CJGqF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Mar 2013 01:30:11 -0500
-From: Jiang Liu <liuj97@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>
-Cc: Jiang Liu <jiang.liu@huawei.com>, Wen Congyang <wency@cn.fujitsu.com>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Chris Clayton <chris2553@googlemail.com>,
-        "Rafael J . Wysocki" <rjw@sisk.pl>, Mel Gorman <mgorman@suse.de>,
-        Minchan Kim <minchan@kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>, Jianguo Wu <wujianguo@huawei.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Russell King <linux@arm.linux.org.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH v2, part1 03/29] mm/ARM: use common help functions to free reserved pages
-Date: Sun, 10 Mar 2013 14:26:46 +0800
-Message-Id: <1362896833-21104-4-git-send-email-jiang.liu@huawei.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1362896833-21104-1-git-send-email-jiang.liu@huawei.com>
-References: <1362896833-21104-1-git-send-email-jiang.liu@huawei.com>
+	Sun, 10 Mar 2013 01:46:05 -0500
+From: Yinghai Lu <yinghai@kernel.org>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Thomas Renninger <trenn@suse.de>, Tang Chen <tangchen@cn.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH v2 01/20] x86: Change get_ramdisk_image() to global
+Date: Sat,  9 Mar 2013 22:44:28 -0800
+Message-Id: <1362897887-30808-2-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1362897887-30808-1-git-send-email-yinghai@kernel.org>
+References: <1362897887-30808-1-git-send-email-yinghai@kernel.org>
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use common help functions to free reserved pages.
+Need to use get_ramdisk_image() with early microcode_updating in other file.
+Change it to global.
 
-Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Will Deacon <will.deacon@arm.com>
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org
+Also make it to take boot_params pointer, as head_32.S need to access it via
+phys address during 32bit flat mode.
+
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- arch/arm/mm/init.c   |   48 ++++++++++++++++--------------------------------
- arch/arm64/mm/init.c |   26 ++------------------------
- 2 files changed, 18 insertions(+), 56 deletions(-)
+ arch/x86/include/asm/setup.h |    3 +++
+ arch/x86/kernel/setup.c      |   28 ++++++++++++++--------------
+ 2 files changed, 17 insertions(+), 14 deletions(-)
 
-diff --git a/arch/arm/mm/init.c b/arch/arm/mm/init.c
-index ad722f1..40a5bc2 100644
---- a/arch/arm/mm/init.c
-+++ b/arch/arm/mm/init.c
-@@ -424,24 +424,6 @@ void __init bootmem_init(void)
- 	max_pfn = max_high - PHYS_PFN_OFFSET;
- }
+diff --git a/arch/x86/include/asm/setup.h b/arch/x86/include/asm/setup.h
+index b7bf350..4f71d48 100644
+--- a/arch/x86/include/asm/setup.h
++++ b/arch/x86/include/asm/setup.h
+@@ -106,6 +106,9 @@ void *extend_brk(size_t size, size_t align);
+ 	RESERVE_BRK(name, sizeof(type) * entries)
  
--static inline int free_area(unsigned long pfn, unsigned long end, char *s)
--{
--	unsigned int pages = 0, size = (end - pfn) << (PAGE_SHIFT - 10);
--
--	for (; pfn < end; pfn++) {
--		struct page *page = pfn_to_page(pfn);
--		ClearPageReserved(page);
--		init_page_count(page);
--		__free_page(page);
--		pages++;
--	}
--
--	if (size && s)
--		printk(KERN_INFO "Freeing %s memory: %dK\n", s, size);
--
--	return pages;
--}
--
- /*
-  * Poison init memory with an undefined instruction (ARM) or a branch to an
-  * undefined instruction (Thumb).
-@@ -534,6 +516,16 @@ static void __init free_unused_memmap(struct meminfo *mi)
- #endif
- }
- 
-+#ifdef CONFIG_HIGHMEM
-+static inline void free_area_high(unsigned long pfn, unsigned long end)
-+{
-+	for (; pfn < end; pfn++) {
-+		__free_reserved_page(pfn_to_page(pfn));
-+		totalhigh_pages++;
-+	}
-+}
-+#endif
+ extern void probe_roms(void);
++u64 get_ramdisk_image(struct boot_params *bp);
++u64 get_ramdisk_size(struct boot_params *bp);
 +
- static void __init free_highpages(void)
- {
- #ifdef CONFIG_HIGHMEM
-@@ -569,8 +561,7 @@ static void __init free_highpages(void)
- 			if (res_end > end)
- 				res_end = end;
- 			if (res_start != start)
--				totalhigh_pages += free_area(start, res_start,
--							     NULL);
-+				free_area_high(start, res_start);
- 			start = res_end;
- 			if (start == end)
- 				break;
-@@ -578,7 +569,7 @@ static void __init free_highpages(void)
+ #ifdef __i386__
  
- 		/* And now free anything which remains */
- 		if (start < end)
--			totalhigh_pages += free_area(start, end, NULL);
-+			free_area_high(start, end);
- 	}
- 	totalram_pages += totalhigh_pages;
- #endif
-@@ -609,8 +600,7 @@ void __init mem_init(void)
- 
- #ifdef CONFIG_SA1111
- 	/* now that our DMA memory is actually so designated, we can free it */
--	totalram_pages += free_area(PHYS_PFN_OFFSET,
--				    __phys_to_pfn(__pa(swapper_pg_dir)), NULL);
-+	free_reserved_area(__va(PHYS_PFN_OFFSET), swapper_pg_dir, 0, NULL);
- #endif
- 
- 	free_highpages();
-@@ -738,16 +728,12 @@ void free_initmem(void)
- 	extern char __tcm_start, __tcm_end;
- 
- 	poison_init_mem(&__tcm_start, &__tcm_end - &__tcm_start);
--	totalram_pages += free_area(__phys_to_pfn(__pa(&__tcm_start)),
--				    __phys_to_pfn(__pa(&__tcm_end)),
--				    "TCM link");
-+	free_reserved_area(&__tcm_start, &__tcm_end, 0, "TCM link");
- #endif
- 
- 	poison_init_mem(__init_begin, __init_end - __init_begin);
- 	if (!machine_is_integrator() && !machine_is_cintegrator())
--		totalram_pages += free_area(__phys_to_pfn(__pa(__init_begin)),
--					    __phys_to_pfn(__pa(__init_end)),
--					    "init");
-+		free_initmem_default(0);
- }
+ void __init i386_start_kernel(void);
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index 90d8cc9..1629577 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -300,19 +300,19 @@ static void __init reserve_brk(void)
  
  #ifdef CONFIG_BLK_DEV_INITRD
-@@ -758,9 +744,7 @@ void free_initrd_mem(unsigned long start, unsigned long end)
+ 
+-static u64 __init get_ramdisk_image(void)
++u64 __init get_ramdisk_image(struct boot_params *bp)
  {
- 	if (!keep_initrd) {
- 		poison_init_mem((void *)start, PAGE_ALIGN(end) - start);
--		totalram_pages += free_area(__phys_to_pfn(__pa(start)),
--					    __phys_to_pfn(__pa(end)),
--					    "initrd");
-+		free_reserved_area(start, end, 0, "initrd");
+-	u64 ramdisk_image = boot_params.hdr.ramdisk_image;
++	u64 ramdisk_image = bp->hdr.ramdisk_image;
+ 
+-	ramdisk_image |= (u64)boot_params.ext_ramdisk_image << 32;
++	ramdisk_image |= (u64)bp->ext_ramdisk_image << 32;
+ 
+ 	return ramdisk_image;
+ }
+-static u64 __init get_ramdisk_size(void)
++u64 __init get_ramdisk_size(struct boot_params *bp)
+ {
+-	u64 ramdisk_size = boot_params.hdr.ramdisk_size;
++	u64 ramdisk_size = bp->hdr.ramdisk_size;
+ 
+-	ramdisk_size |= (u64)boot_params.ext_ramdisk_size << 32;
++	ramdisk_size |= (u64)bp->ext_ramdisk_size << 32;
+ 
+ 	return ramdisk_size;
+ }
+@@ -321,8 +321,8 @@ static u64 __init get_ramdisk_size(void)
+ static void __init relocate_initrd(void)
+ {
+ 	/* Assume only end is not page aligned */
+-	u64 ramdisk_image = get_ramdisk_image();
+-	u64 ramdisk_size  = get_ramdisk_size();
++	u64 ramdisk_image = get_ramdisk_image(&boot_params);
++	u64 ramdisk_size  = get_ramdisk_size(&boot_params);
+ 	u64 area_size     = PAGE_ALIGN(ramdisk_size);
+ 	u64 ramdisk_here;
+ 	unsigned long slop, clen, mapaddr;
+@@ -361,8 +361,8 @@ static void __init relocate_initrd(void)
+ 		ramdisk_size  -= clen;
  	}
- }
  
-diff --git a/arch/arm64/mm/init.c b/arch/arm64/mm/init.c
-index 800aac3..f497ca7 100644
---- a/arch/arm64/mm/init.c
-+++ b/arch/arm64/mm/init.c
-@@ -197,24 +197,6 @@ void __init bootmem_init(void)
- 	max_pfn = max_low_pfn = max;
- }
- 
--static inline int free_area(unsigned long pfn, unsigned long end, char *s)
--{
--	unsigned int pages = 0, size = (end - pfn) << (PAGE_SHIFT - 10);
--
--	for (; pfn < end; pfn++) {
--		struct page *page = pfn_to_page(pfn);
--		ClearPageReserved(page);
--		init_page_count(page);
--		__free_page(page);
--		pages++;
--	}
--
--	if (size && s)
--		pr_info("Freeing %s memory: %dK\n", s, size);
--
--	return pages;
--}
--
- /*
-  * Poison init memory with an undefined instruction (0x0).
-  */
-@@ -405,9 +387,7 @@ void __init mem_init(void)
- void free_initmem(void)
+-	ramdisk_image = get_ramdisk_image();
+-	ramdisk_size  = get_ramdisk_size();
++	ramdisk_image = get_ramdisk_image(&boot_params);
++	ramdisk_size  = get_ramdisk_size(&boot_params);
+ 	printk(KERN_INFO "Move RAMDISK from [mem %#010llx-%#010llx] to"
+ 		" [mem %#010llx-%#010llx]\n",
+ 		ramdisk_image, ramdisk_image + ramdisk_size - 1,
+@@ -372,8 +372,8 @@ static void __init relocate_initrd(void)
+ static void __init early_reserve_initrd(void)
  {
- 	poison_init_mem(__init_begin, __init_end - __init_begin);
--	totalram_pages += free_area(__phys_to_pfn(__pa(__init_begin)),
--				    __phys_to_pfn(__pa(__init_end)),
--				    "init");
-+	free_initmem_default(0);
- }
+ 	/* Assume only end is not page aligned */
+-	u64 ramdisk_image = get_ramdisk_image();
+-	u64 ramdisk_size  = get_ramdisk_size();
++	u64 ramdisk_image = get_ramdisk_image(&boot_params);
++	u64 ramdisk_size  = get_ramdisk_size(&boot_params);
+ 	u64 ramdisk_end   = PAGE_ALIGN(ramdisk_image + ramdisk_size);
  
- #ifdef CONFIG_BLK_DEV_INITRD
-@@ -418,9 +398,7 @@ void free_initrd_mem(unsigned long start, unsigned long end)
+ 	if (!boot_params.hdr.type_of_loader ||
+@@ -385,8 +385,8 @@ static void __init early_reserve_initrd(void)
+ static void __init reserve_initrd(void)
  {
- 	if (!keep_initrd) {
- 		poison_init_mem((void *)start, PAGE_ALIGN(end) - start);
--		totalram_pages += free_area(__phys_to_pfn(__pa(start)),
--					    __phys_to_pfn(__pa(end)),
--					    "initrd");
-+		free_reserved_area(start, end, 0, "initrd");
- 	}
- }
+ 	/* Assume only end is not page aligned */
+-	u64 ramdisk_image = get_ramdisk_image();
+-	u64 ramdisk_size  = get_ramdisk_size();
++	u64 ramdisk_image = get_ramdisk_image(&boot_params);
++	u64 ramdisk_size  = get_ramdisk_size(&boot_params);
+ 	u64 ramdisk_end   = PAGE_ALIGN(ramdisk_image + ramdisk_size);
+ 	u64 mapped_size;
  
 -- 
-1.7.9.5
+1.7.10.4
 
