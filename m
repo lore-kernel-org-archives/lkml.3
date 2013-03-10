@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752686Ab3CJL4j (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Mar 2013 07:56:39 -0400
+	id S1752799Ab3CJL4n (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Mar 2013 07:56:43 -0400
 Received: from mga11.intel.com ([192.55.52.93]:23657 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752115Ab3CJL4i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Mar 2013 07:56:38 -0400
+	id S1752115Ab3CJL4k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Mar 2013 07:56:40 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,817,1355126400"; 
-   d="scan'208";a="299148189"
+   d="scan'208";a="299148224"
 From: Tomas Winkler <tomas.winkler@intel.com>
 To: gregkh@linuxfoundation.org, sameo@linux.intel.com
 Cc: arnd@arndb.de, linux-kernel@vger.kernel.org,
         Tomas Winkler <tomas.winkler@intel.com>
-Subject: [char-misc 1/2][3.9] mei: ME hardware reset needs to be synchronized
-Date: Sun, 10 Mar 2013 13:56:07 +0200
-Message-Id: <1362916568-9650-2-git-send-email-tomas.winkler@intel.com>
+Subject: [char-misc 2/2][3.9] mei: add mei_stop function to stop mei device
+Date: Sun, 10 Mar 2013 13:56:08 +0200
+Message-Id: <1362916568-9650-3-git-send-email-tomas.winkler@intel.com>
 X-Mailer: git-send-email 1.8.1.3
 In-Reply-To: <1362916568-9650-1-git-send-email-tomas.winkler@intel.com>
 References: <1362916568-9650-1-git-send-email-tomas.winkler@intel.com>
@@ -23,83 +23,147 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This fixes failure during initialization on Lynx Point LP devices.
+mei_stop calls mei_reset with disabling the interrupts.
+It will have the same effect as the open code it replaces in the mei_remove.
 
-ME driver needs to release the device from the reset
-only after the FW has completed its flow and indicated
-it by delivering an interrupt to the host.
+The reset sequence on remove is required for the Lynx Point LP devices
+to clean the reset state.
 
-This is the correct behavior for all the ME devices yet the
-the previous versions are less susceptive to the implementation
-that ignored FW reset completion indication.
-
-We add mei_me_hw_reset_release function which is called
-after reset from the interrupt thread or directly
-from mei_reset during power down.
+mei_stop is called from mei_pci_suspend and mei_remove functions
 
 Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
 ---
- drivers/misc/mei/hw-me.c | 29 ++++++++++++++++++++---------
- 1 file changed, 20 insertions(+), 9 deletions(-)
+ drivers/misc/mei/init.c    | 18 ++++++++++++++++
+ drivers/misc/mei/mei_dev.h |  1 +
+ drivers/misc/mei/pci-me.c  | 52 +++++++---------------------------------------
+ 3 files changed, 26 insertions(+), 45 deletions(-)
 
-diff --git a/drivers/misc/mei/hw-me.c b/drivers/misc/mei/hw-me.c
-index 45ea718..642c622 100644
---- a/drivers/misc/mei/hw-me.c
-+++ b/drivers/misc/mei/hw-me.c
-@@ -152,6 +152,20 @@ static void mei_me_intr_disable(struct mei_device *dev)
+diff --git a/drivers/misc/mei/init.c b/drivers/misc/mei/init.c
+index 6ec5301..3561799 100644
+--- a/drivers/misc/mei/init.c
++++ b/drivers/misc/mei/init.c
+@@ -183,6 +183,24 @@ void mei_reset(struct mei_device *dev, int interrupts_enabled)
+ 	mei_cl_all_write_clear(dev);
  }
  
- /**
-+ * mei_me_hw_reset_release - release device from the reset
-+ *
-+ * @dev: the device structure
-+ */
-+static void mei_me_hw_reset_release(struct mei_device *dev)
++void mei_stop(struct mei_device *dev)
 +{
-+	struct mei_me_hw *hw = to_me_hw(dev);
-+	u32 hcsr = mei_hcsr_read(hw);
++	dev_dbg(&dev->pdev->dev, "stopping the device.\n");
 +
-+	hcsr |= H_IG;
-+	hcsr &= ~H_RST;
-+	mei_hcsr_set(hw, hcsr);
++	mutex_lock(&dev->device_lock);
++
++	cancel_delayed_work(&dev->timer_work);
++
++	mei_wd_stop(dev);
++
++	dev->dev_state = MEI_DEV_POWER_DOWN;
++	mei_reset(dev, 0);
++
++	mutex_unlock(&dev->device_lock);
++
++	flush_scheduled_work();
 +}
-+/**
-  * mei_me_hw_reset - resets fw via mei csr register.
-  *
-  * @dev: the device structure
-@@ -169,18 +183,14 @@ static void mei_me_hw_reset(struct mei_device *dev, bool intr_enable)
- 	if (intr_enable)
- 		hcsr |= H_IE;
- 	else
--		hcsr &= ~H_IE;
++
+ 
+ 
+ 
+diff --git a/drivers/misc/mei/mei_dev.h b/drivers/misc/mei/mei_dev.h
+index cb80166..9787381 100644
+--- a/drivers/misc/mei/mei_dev.h
++++ b/drivers/misc/mei/mei_dev.h
+@@ -381,6 +381,7 @@ static inline unsigned long mei_secs_to_jiffies(unsigned long sec)
+ void mei_device_init(struct mei_device *dev);
+ void mei_reset(struct mei_device *dev, int interrupts);
+ int mei_hw_init(struct mei_device *dev);
++void mei_stop(struct mei_device *dev);
+ 
+ /*
+  *  MEI interrupt functions prototype
+diff --git a/drivers/misc/mei/pci-me.c b/drivers/misc/mei/pci-me.c
+index b40ec06..b8b5c9c 100644
+--- a/drivers/misc/mei/pci-me.c
++++ b/drivers/misc/mei/pci-me.c
+@@ -247,44 +247,14 @@ static void mei_remove(struct pci_dev *pdev)
+ 
+ 	hw = to_me_hw(dev);
+ 
+-	mutex_lock(&dev->device_lock);
 -
--	mei_hcsr_set(hw, hcsr);
+-	cancel_delayed_work(&dev->timer_work);
+ 
+-	mei_wd_stop(dev);
++	dev_err(&pdev->dev, "stop\n");
++	mei_stop(dev);
+ 
+ 	mei_pdev = NULL;
+ 
+-	if (dev->iamthif_cl.state == MEI_FILE_CONNECTED) {
+-		dev->iamthif_cl.state = MEI_FILE_DISCONNECTING;
+-		mei_cl_disconnect(&dev->iamthif_cl);
+-	}
+-	if (dev->wd_cl.state == MEI_FILE_CONNECTED) {
+-		dev->wd_cl.state = MEI_FILE_DISCONNECTING;
+-		mei_cl_disconnect(&dev->wd_cl);
+-	}
 -
--	hcsr = mei_hcsr_read(hw) | H_IG;
--	hcsr &= ~H_RST;
-+		hcsr |= ~H_IE;
+-	/* Unregistering watchdog device */
+ 	mei_watchdog_unregister(dev);
  
- 	mei_hcsr_set(hw, hcsr);
+-	/* remove entry if already in list */
+-	dev_dbg(&pdev->dev, "list del iamthif and wd file list.\n");
+-
+-	if (dev->open_handle_count > 0)
+-		dev->open_handle_count--;
+-	mei_cl_unlink(&dev->wd_cl);
+-
+-	if (dev->open_handle_count > 0)
+-		dev->open_handle_count--;
+-	mei_cl_unlink(&dev->iamthif_cl);
+-
+-	dev->iamthif_current_cb = NULL;
+-	dev->me_clients_num = 0;
+-
+-	mutex_unlock(&dev->device_lock);
+-
+-	flush_scheduled_work();
+-
+ 	/* disable interrupts */
+ 	mei_disable_interrupts(dev);
  
--	hcsr = mei_hcsr_read(hw);
-+	if (dev->dev_state == MEI_DEV_POWER_DOWN)
-+		mei_me_hw_reset_release(dev);
+@@ -308,28 +278,20 @@ static int mei_pci_suspend(struct device *device)
+ {
+ 	struct pci_dev *pdev = to_pci_dev(device);
+ 	struct mei_device *dev = pci_get_drvdata(pdev);
+-	int err;
  
--	dev_dbg(&dev->pdev->dev, "current HCSR = 0x%08x.\n", hcsr);
-+	dev_dbg(&dev->pdev->dev, "current HCSR = 0x%08x.\n", mei_hcsr_read(hw));
+ 	if (!dev)
+ 		return -ENODEV;
+-	mutex_lock(&dev->device_lock);
+ 
+-	cancel_delayed_work(&dev->timer_work);
++	dev_err(&pdev->dev, "suspend\n");
+ 
+-	/* Stop watchdog if exists */
+-	err = mei_wd_stop(dev);
+-	/* Set new mei state */
+-	if (dev->dev_state == MEI_DEV_ENABLED ||
+-	    dev->dev_state == MEI_DEV_RECOVERING_FROM_RESET) {
+-		dev->dev_state = MEI_DEV_POWER_DOWN;
+-		mei_reset(dev, 0);
+-	}
+-	mutex_unlock(&dev->device_lock);
++	mei_stop(dev);
++
++	mei_disable_interrupts(dev);
+ 
+ 	free_irq(pdev->irq, dev);
+ 	pci_disable_msi(pdev);
+ 
+-	return err;
++	return 0;
  }
  
- /**
-@@ -466,7 +476,8 @@ irqreturn_t mei_me_irq_thread_handler(int irq, void *dev_id)
- 			mutex_unlock(&dev->device_lock);
- 			return IRQ_HANDLED;
- 		} else {
--			dev_dbg(&dev->pdev->dev, "FW not ready.\n");
-+			dev_dbg(&dev->pdev->dev, "Reset Completed.\n");
-+			mei_me_hw_reset_release(dev);
- 			mutex_unlock(&dev->device_lock);
- 			return IRQ_HANDLED;
- 		}
+ static int mei_pci_resume(struct device *device)
 -- 
 1.8.1.3
 
