@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752204Ab3CJGgU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Mar 2013 01:36:20 -0500
-Received: from mail-da0-f45.google.com ([209.85.210.45]:51139 "EHLO
-	mail-da0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751637Ab3CJGag (ORCPT
+	id S1751479Ab3CJGae (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Mar 2013 01:30:34 -0500
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:54140 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751282Ab3CJGaL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Mar 2013 01:30:36 -0500
+	Sun, 10 Mar 2013 01:30:11 -0500
 From: Jiang Liu <liuj97@gmail.com>
 To: Andrew Morton <akpm@linux-foundation.org>,
         David Rientjes <rientjes@google.com>
@@ -18,11 +18,13 @@ Cc: Jiang Liu <jiang.liu@huawei.com>, Wen Congyang <wency@cn.fujitsu.com>,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
         Michal Hocko <mhocko@suse.cz>, Jianguo Wu <wujianguo@huawei.com>,
         linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Mark Salter <msalter@redhat.com>,
-        Aurelien Jacquiot <a-jacquiot@ti.com>
-Subject: [PATCH v2, part1 06/29] mm/c6x: use common help functions to free reserved pages
-Date: Sun, 10 Mar 2013 14:26:49 +0800
-Message-Id: <1362896833-21104-7-git-send-email-jiang.liu@huawei.com>
+        Russell King <linux@arm.linux.org.uk>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH v2, part1 03/29] mm/ARM: use common help functions to free reserved pages
+Date: Sun, 10 Mar 2013 14:26:46 +0800
+Message-Id: <1362896833-21104-4-git-send-email-jiang.liu@huawei.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1362896833-21104-1-git-send-email-jiang.liu@huawei.com>
 References: <1362896833-21104-1-git-send-email-jiang.liu@huawei.com>
@@ -33,56 +35,172 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Use common help functions to free reserved pages.
 
 Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Cc: Mark Salter <msalter@redhat.com>
-Cc: Aurelien Jacquiot <a-jacquiot@ti.com>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Will Deacon <will.deacon@arm.com>
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org
 ---
- arch/c6x/mm/init.c |   30 ++----------------------------
- 1 file changed, 2 insertions(+), 28 deletions(-)
+ arch/arm/mm/init.c   |   48 ++++++++++++++++--------------------------------
+ arch/arm64/mm/init.c |   26 ++------------------------
+ 2 files changed, 18 insertions(+), 56 deletions(-)
 
-diff --git a/arch/c6x/mm/init.c b/arch/c6x/mm/init.c
-index 89395f0..a9fcd89 100644
---- a/arch/c6x/mm/init.c
-+++ b/arch/c6x/mm/init.c
-@@ -77,37 +77,11 @@ void __init mem_init(void)
- #ifdef CONFIG_BLK_DEV_INITRD
- void __init free_initrd_mem(unsigned long start, unsigned long end)
- {
--	int pages = 0;
--	for (; start < end; start += PAGE_SIZE) {
--		ClearPageReserved(virt_to_page(start));
--		init_page_count(virt_to_page(start));
--		free_page(start);
--		totalram_pages++;
+diff --git a/arch/arm/mm/init.c b/arch/arm/mm/init.c
+index ad722f1..40a5bc2 100644
+--- a/arch/arm/mm/init.c
++++ b/arch/arm/mm/init.c
+@@ -424,24 +424,6 @@ void __init bootmem_init(void)
+ 	max_pfn = max_high - PHYS_PFN_OFFSET;
+ }
+ 
+-static inline int free_area(unsigned long pfn, unsigned long end, char *s)
+-{
+-	unsigned int pages = 0, size = (end - pfn) << (PAGE_SHIFT - 10);
+-
+-	for (; pfn < end; pfn++) {
+-		struct page *page = pfn_to_page(pfn);
+-		ClearPageReserved(page);
+-		init_page_count(page);
+-		__free_page(page);
 -		pages++;
 -	}
--	printk(KERN_INFO "Freeing initrd memory: %luk freed\n",
--	       (pages * PAGE_SIZE) >> 10);
-+	free_reserved_area(start, end, 0, "initrd");
+-
+-	if (size && s)
+-		printk(KERN_INFO "Freeing %s memory: %dK\n", s, size);
+-
+-	return pages;
+-}
+-
+ /*
+  * Poison init memory with an undefined instruction (ARM) or a branch to an
+  * undefined instruction (Thumb).
+@@ -534,6 +516,16 @@ static void __init free_unused_memmap(struct meminfo *mi)
+ #endif
  }
+ 
++#ifdef CONFIG_HIGHMEM
++static inline void free_area_high(unsigned long pfn, unsigned long end)
++{
++	for (; pfn < end; pfn++) {
++		__free_reserved_page(pfn_to_page(pfn));
++		totalhigh_pages++;
++	}
++}
++#endif
++
+ static void __init free_highpages(void)
+ {
+ #ifdef CONFIG_HIGHMEM
+@@ -569,8 +561,7 @@ static void __init free_highpages(void)
+ 			if (res_end > end)
+ 				res_end = end;
+ 			if (res_start != start)
+-				totalhigh_pages += free_area(start, res_start,
+-							     NULL);
++				free_area_high(start, res_start);
+ 			start = res_end;
+ 			if (start == end)
+ 				break;
+@@ -578,7 +569,7 @@ static void __init free_highpages(void)
+ 
+ 		/* And now free anything which remains */
+ 		if (start < end)
+-			totalhigh_pages += free_area(start, end, NULL);
++			free_area_high(start, end);
+ 	}
+ 	totalram_pages += totalhigh_pages;
+ #endif
+@@ -609,8 +600,7 @@ void __init mem_init(void)
+ 
+ #ifdef CONFIG_SA1111
+ 	/* now that our DMA memory is actually so designated, we can free it */
+-	totalram_pages += free_area(PHYS_PFN_OFFSET,
+-				    __phys_to_pfn(__pa(swapper_pg_dir)), NULL);
++	free_reserved_area(__va(PHYS_PFN_OFFSET), swapper_pg_dir, 0, NULL);
  #endif
  
- void __init free_initmem(void)
+ 	free_highpages();
+@@ -738,16 +728,12 @@ void free_initmem(void)
+ 	extern char __tcm_start, __tcm_end;
+ 
+ 	poison_init_mem(&__tcm_start, &__tcm_end - &__tcm_start);
+-	totalram_pages += free_area(__phys_to_pfn(__pa(&__tcm_start)),
+-				    __phys_to_pfn(__pa(&__tcm_end)),
+-				    "TCM link");
++	free_reserved_area(&__tcm_start, &__tcm_end, 0, "TCM link");
+ #endif
+ 
+ 	poison_init_mem(__init_begin, __init_end - __init_begin);
+ 	if (!machine_is_integrator() && !machine_is_cintegrator())
+-		totalram_pages += free_area(__phys_to_pfn(__pa(__init_begin)),
+-					    __phys_to_pfn(__pa(__init_end)),
+-					    "init");
++		free_initmem_default(0);
+ }
+ 
+ #ifdef CONFIG_BLK_DEV_INITRD
+@@ -758,9 +744,7 @@ void free_initrd_mem(unsigned long start, unsigned long end)
  {
--	unsigned long addr;
+ 	if (!keep_initrd) {
+ 		poison_init_mem((void *)start, PAGE_ALIGN(end) - start);
+-		totalram_pages += free_area(__phys_to_pfn(__pa(start)),
+-					    __phys_to_pfn(__pa(end)),
+-					    "initrd");
++		free_reserved_area(start, end, 0, "initrd");
+ 	}
+ }
+ 
+diff --git a/arch/arm64/mm/init.c b/arch/arm64/mm/init.c
+index 800aac3..f497ca7 100644
+--- a/arch/arm64/mm/init.c
++++ b/arch/arm64/mm/init.c
+@@ -197,24 +197,6 @@ void __init bootmem_init(void)
+ 	max_pfn = max_low_pfn = max;
+ }
+ 
+-static inline int free_area(unsigned long pfn, unsigned long end, char *s)
+-{
+-	unsigned int pages = 0, size = (end - pfn) << (PAGE_SHIFT - 10);
 -
--	/*
--	 * The following code should be cool even if these sections
--	 * are not page aligned.
--	 */
--	addr = PAGE_ALIGN((unsigned long)(__init_begin));
--
--	/* next to check that the page we free is not a partial page */
--	for (; addr + PAGE_SIZE < (unsigned long)(__init_end);
--	     addr += PAGE_SIZE) {
--		ClearPageReserved(virt_to_page(addr));
--		init_page_count(virt_to_page(addr));
--		free_page(addr);
--		totalram_pages++;
+-	for (; pfn < end; pfn++) {
+-		struct page *page = pfn_to_page(pfn);
+-		ClearPageReserved(page);
+-		init_page_count(page);
+-		__free_page(page);
+-		pages++;
 -	}
--	printk(KERN_INFO "Freeing unused kernel memory: %dK freed\n",
--	       (int) ((addr - PAGE_ALIGN((long) &__init_begin)) >> 10));
+-
+-	if (size && s)
+-		pr_info("Freeing %s memory: %dK\n", s, size);
+-
+-	return pages;
+-}
+-
+ /*
+  * Poison init memory with an undefined instruction (0x0).
+  */
+@@ -405,9 +387,7 @@ void __init mem_init(void)
+ void free_initmem(void)
+ {
+ 	poison_init_mem(__init_begin, __init_end - __init_begin);
+-	totalram_pages += free_area(__phys_to_pfn(__pa(__init_begin)),
+-				    __phys_to_pfn(__pa(__init_end)),
+-				    "init");
 +	free_initmem_default(0);
  }
+ 
+ #ifdef CONFIG_BLK_DEV_INITRD
+@@ -418,9 +398,7 @@ void free_initrd_mem(unsigned long start, unsigned long end)
+ {
+ 	if (!keep_initrd) {
+ 		poison_init_mem((void *)start, PAGE_ALIGN(end) - start);
+-		totalram_pages += free_area(__phys_to_pfn(__pa(start)),
+-					    __phys_to_pfn(__pa(end)),
+-					    "initrd");
++		free_reserved_area(start, end, 0, "initrd");
+ 	}
+ }
+ 
 -- 
 1.7.9.5
 
