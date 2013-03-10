@@ -1,47 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752837Ab3CJKOq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Mar 2013 06:14:46 -0400
-Received: from sting.hengli.com.au ([178.18.18.71]:36370 "EHLO
+	id S1752903Ab3CJKOx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Mar 2013 06:14:53 -0400
+Received: from sting.hengli.com.au ([178.18.18.71]:39786 "EHLO
 	fornost.hengli.com.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752732Ab3CJKOo (ORCPT
+	with ESMTP id S1752732Ab3CJKOv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Mar 2013 06:14:44 -0400
-Date: Sun, 10 Mar 2013 18:14:32 +0800
+	Sun, 10 Mar 2013 06:14:51 -0400
+Date: Sun, 10 Mar 2013 18:14:43 +0800
 From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: Nicolas Royer <nicolas@eukrea.com>
-Cc: linux-kernel@vger.kernel.org, nicolas.ferre@atmel.com,
-        linux-arm-kernel@lists.infradead.org, linux-crypto@vger.kernel.org,
-        davem@davemloft.net, plagnioj@jcrosoft.com, eric@eukrea.com
-Subject: Re: [PATCH 1/4 v4] ARM: AT91SAM9G45: same platform data structure
- for all crypto peripherals
-Message-ID: <20130310101432.GA10910@gondor.apana.org.au>
-References: <1361376626-28987-1-git-send-email-nicolas@eukrea.com>
+To: Tim Chen <tim.c.chen@linux.intel.com>
+Cc: Wajdi Feghali <wajdi.k.feghali@intel.com>,
+        James Guilford <james.guilford@intel.com>,
+        David Cote <david.m.cote@intel.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-crypto <linux-crypto@vger.kernel.org>
+Subject: Re: [PATCH] Update the links to the white papers on CRC32C
+ calculations with PCLMULQDQ instructions.
+Message-ID: <20130310101443.GB10910@gondor.apana.org.au>
+References: <1361473462.17632.202.camel@schen9-DESK>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1361376626-28987-1-git-send-email-nicolas@eukrea.com>
+In-Reply-To: <1361473462.17632.202.camel@schen9-DESK>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 20, 2013 at 05:10:23PM +0100, Nicolas Royer wrote:
-> Only AES use DMA in AT91SAM9G45 (TDES and SHA use PDC).
+On Thu, Feb 21, 2013 at 11:04:22AM -0800, Tim Chen wrote:
+> Herbert,
 > 
-> However latest Atmel TDES and SHA IP releases use DMA instead of PDC.
->   --> Atmel TDES and SHA drivers need DMA platform data for those IP releases.
-> 
-> Goal of this patch is to use the same platform data structure for all Atmel
-> crypto peripherals. This structure contains information about DMA interface.
-> 
-> Signed-off-by: Nicolas Royer <nicolas@eukrea.com>
-> Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-> Acked-by: Eric Bénard <eric@eukrea.com>
-> Tested-by: Eric Bénard <eric@eukrea.com>
+> The following patch update the stale link to the CRC32C white paper 
+> that was referenced.
 
-All applied.  Thanks!
+Patch applied.
 -- 
 Email: Herbert Xu <herbert@gondor.apana.org.au>
 Home Page: http://gondor.apana.org.au/~herbert/
