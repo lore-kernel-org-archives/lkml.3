@@ -1,92 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753015Ab3CJRsN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Mar 2013 13:48:13 -0400
-Received: from smtp.opengridcomputing.com ([72.48.136.20]:51191 "EHLO
-	smtp.opengridcomputing.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751562Ab3CJRsL (ORCPT
+	id S1753076Ab3CJRu6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Mar 2013 13:50:58 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:57060 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751619Ab3CJRu5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Mar 2013 13:48:11 -0400
-X-Greylist: delayed 1924 seconds by postgrey-1.27 at vger.kernel.org; Sun, 10 Mar 2013 13:48:11 EDT
-Message-ID: <513CBFD6.1000504@opengridcomputing.com>
-Date: Sun, 10 Mar 2013 12:16:06 -0500
-From: Tom Tucker <tom@opengridcomputing.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:17.0) Gecko/20130216 Thunderbird/17.0.3
+	Sun, 10 Mar 2013 13:50:57 -0400
 MIME-Version: 1.0
-To: Tim Gardner <tim.gardner@canonical.com>
-CC: linux-kernel@vger.kernel.org, Trond Myklebust <Trond.Myklebust@netapp.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        "David S. Miller" <davem@davemloft.net>, Tom Tucker <tom@ogc.us>,
-        Haggai Eran <haggaie@mellanox.com>, Or Gerlitz <ogerlitz@mellanox.com>,
-        Shani Michaeli <shanim@mellanox.com>, linux-nfs@vger.kernel.org,
-        netdev@vger.kernel.org, Steve Dickson <SteveD@redhat.com>
-Subject: Re: [PATCH linux-next] SUNRPC: rpcrdma_register_default_external:
- Dynamically allocate ib_phys_buf
-References: <1362929953-63785-1-git-send-email-tim.gardner@canonical.com>
-In-Reply-To: <1362929953-63785-1-git-send-email-tim.gardner@canonical.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20130310172430.GA4723@kroah.com>
+References: <1362194662-2344-1-git-send-email-tj@kernel.org>
+ <1362194662-2344-31-git-send-email-tj@kernel.org> <20130302181727.GB2051@kroah.com>
+ <CAPXgP11Zuz166v_M2EhGDY1U5vKtUwE+fTPAWYEu7UxXsr=g=A@mail.gmail.com>
+ <20130305204327.GK12795@htj.dyndns.org> <20130307233116.GF10304@kroah.com>
+ <CAPXgP10CEMgdOW23txWwwh0xSVd97fKH31xdKjE8Wy51kO6XdQ@mail.gmail.com>
+ <20130310115702.GB24522@htj.dyndns.org> <20130310164530.GA4523@kroah.com>
+ <CAPXgP136685qRguL6C91C+NE7GbgrU7CdpQJW89Fi-_Vw6EukA@mail.gmail.com> <20130310172430.GA4723@kroah.com>
+From: Kay Sievers <kay@vrfy.org>
+Date: Sun, 10 Mar 2013 18:50:34 +0100
+Message-ID: <CAPXgP13Vjp_H-_Xvm0O4D0=k02H7bb=dEmx43w8N+EZisxeZ8g@mail.gmail.com>
+Subject: Re: [PATCH 30/31] driver/base: implement subsys_virtual_register()
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
+        laijs@cn.fujitsu.com, axboe@kernel.dk, jmoyer@redhat.com,
+        zab@redhat.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-This is the result of 2773395b34883fe54418de188733a63bb38e0ad6. Steve 
-might want to weigh in on this since it was done for performance reasons.
-
-Tom
-
-On 3/10/13 10:39 AM, Tim Gardner wrote:
-> rpcrdma_register_default_external() is several frames into
-> the call stack which goes deeper yet. You run the risk of stack
-> corruption by declaring such a large automatic variable,
-> so dynamically allocate the array of 'struct ib_phys_buf' objects in
-> order to silence the frame-larger-than warning.
+On Sun, Mar 10, 2013 at 6:24 PM, Greg Kroah-Hartman
+<gregkh@linuxfoundation.org> wrote:
+> On Sun, Mar 10, 2013 at 06:00:18PM +0100, Kay Sievers wrote:
+>> On Sun, Mar 10, 2013 at 5:45 PM, Greg Kroah-Hartman
+>> <gregkh@linuxfoundation.org> wrote:
+>> > On Sun, Mar 10, 2013 at 04:57:02AM -0700, Tejun Heo wrote:
+>> >> Hey, guys.
+>> >>
+>> >> On Fri, Mar 08, 2013 at 01:04:25AM +0100, Kay Sievers wrote:
+>> >> > > Sorry for the delay, I'm at a conference all this week, and haven't had
+>> >> > > much time to think about this.
+>> >> > >
+>> >> > > If Kay says this is ok for now, that's good enough for me.
+>> >> >
+>> >> > Yes, it looks fine to me. If we provide the unified handling of
+>> >> > classes and buses some day, this can probably go away, but until that
+>> >> > it looks fine and is straight forward to do it that way,
+>> >>
+>> >> How should this be routed?  I can take it but Kay needs it too so
+>> >> workqueue tree probably isn't the best fit although I can set up a
+>> >> separate branch if needed.
+>> >
+>> > What patch set does Kay need it for?  I have no objection for you to
+>> > take it through the workqueue tree:
+>>
+>> The dbus bus has the same issues and needs the devices put under
+>> virtual/ and not the devices/ root.
 >
-> net/sunrpc/xprtrdma/verbs.c: In function 'rpcrdma_register_default_external':
-> net/sunrpc/xprtrdma/verbs.c:1774:1: warning: the frame size of 1056 bytes is larger than 1024 bytes [-Wframe-larger-than=]
->
-> gcc version 4.6.3
->
-> Cc: Trond Myklebust <Trond.Myklebust@netapp.com>
-> Cc: "J. Bruce Fields" <bfields@fieldses.org>
-> Cc: "David S. Miller" <davem@davemloft.net>
-> Cc: Tom Tucker <tom@ogc.us>
-> Cc: Haggai Eran <haggaie@mellanox.com>
-> Cc: Or Gerlitz <ogerlitz@mellanox.com>
-> Cc: Shani Michaeli <shanim@mellanox.com>
-> Cc: linux-nfs@vger.kernel.org
-> Cc: netdev@vger.kernel.org
-> Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
-> ---
->   net/sunrpc/xprtrdma/verbs.c |    7 ++++++-
->   1 file changed, 6 insertions(+), 1 deletion(-)
->
-> diff --git a/net/sunrpc/xprtrdma/verbs.c b/net/sunrpc/xprtrdma/verbs.c
-> index 93726560..0916467 100644
-> --- a/net/sunrpc/xprtrdma/verbs.c
-> +++ b/net/sunrpc/xprtrdma/verbs.c
-> @@ -1736,9 +1736,13 @@ rpcrdma_register_default_external(struct rpcrdma_mr_seg *seg,
->   	int mem_priv = (writing ? IB_ACCESS_REMOTE_WRITE :
->   				  IB_ACCESS_REMOTE_READ);
->   	struct rpcrdma_mr_seg *seg1 = seg;
-> -	struct ib_phys_buf ipb[RPCRDMA_MAX_DATA_SEGS];
-> +	struct ib_phys_buf *ipb;
->   	int len, i, rc = 0;
->   
-> +	ipb = kmalloc(sizeof(*ipb) * RPCRDMA_MAX_DATA_SEGS, GFP_KERNEL);
-> +	if (!ipb)
-> +		return -ENOMEM;
-> +
->   	if (*nsegs > RPCRDMA_MAX_DATA_SEGS)
->   		*nsegs = RPCRDMA_MAX_DATA_SEGS;
->   	for (len = 0, i = 0; i < *nsegs;) {
-> @@ -1770,6 +1774,7 @@ rpcrdma_register_default_external(struct rpcrdma_mr_seg *seg,
->   		seg1->mr_len = len;
->   	}
->   	*nsegs = i;
-> +	kfree(ipb);
->   	return rc;
->   }
->   
+> Yes, but I can keep Tejun's patch in my local queue for now, dbus is
+> going to not make 3.10, right?
 
+No, sure not. It's just something we will need there too, but there is
+no hurry, it's only a cosmetic issue anyway and nothing that matters
+functionality-wise.
+
+Kay
