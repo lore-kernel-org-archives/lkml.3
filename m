@@ -1,88 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753196Ab3CJScT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Mar 2013 14:32:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26049 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752889Ab3CJScS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Mar 2013 14:32:18 -0400
-Date: Sun, 10 Mar 2013 19:31:40 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Andi Kleen <andi@firstfloor.org>, Oleg Nesterov <oleg@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Vince Weaver <vincent.weaver@maine.edu>
-Subject: Re: [PATCH 2/5] signal x86: Clear RF EFLAGS bit for signal handler
-Message-ID: <20130310183140.GB1724@krava.brq.redhat.com>
-References: <1362161512-16803-1-git-send-email-jolsa@redhat.com>
- <1362161512-16803-3-git-send-email-jolsa@redhat.com>
- <5130FA2E.9010502@zytor.com>
- <20130303104321.GA1024@krava.redhat.com>
- <20130310171518.GA1724@krava.brq.redhat.com>
+	id S1753201Ab3CJSeH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Mar 2013 14:34:07 -0400
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:48986 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753117Ab3CJSeF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Mar 2013 14:34:05 -0400
+Date: Sun, 10 Mar 2013 11:34:00 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Kay Sievers <kay@vrfy.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, laijs@cn.fujitsu.com, axboe@kernel.dk,
+        jmoyer@redhat.com, zab@redhat.com
+Subject: Re: [PATCH 30/31] driver/base: implement subsys_virtual_register()
+Message-ID: <20130310183400.GH24522@htj.dyndns.org>
+References: <20130302181727.GB2051@kroah.com>
+ <CAPXgP11Zuz166v_M2EhGDY1U5vKtUwE+fTPAWYEu7UxXsr=g=A@mail.gmail.com>
+ <20130305204327.GK12795@htj.dyndns.org>
+ <20130307233116.GF10304@kroah.com>
+ <CAPXgP10CEMgdOW23txWwwh0xSVd97fKH31xdKjE8Wy51kO6XdQ@mail.gmail.com>
+ <20130310115702.GB24522@htj.dyndns.org>
+ <20130310164530.GA4523@kroah.com>
+ <CAPXgP136685qRguL6C91C+NE7GbgrU7CdpQJW89Fi-_Vw6EukA@mail.gmail.com>
+ <20130310172430.GA4723@kroah.com>
+ <CAPXgP13Vjp_H-_Xvm0O4D0=k02H7bb=dEmx43w8N+EZisxeZ8g@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130310171518.GA1724@krava.brq.redhat.com>
+In-Reply-To: <CAPXgP13Vjp_H-_Xvm0O4D0=k02H7bb=dEmx43w8N+EZisxeZ8g@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 10, 2013 at 06:15:18PM +0100, Jiri Olsa wrote:
-> On Sun, Mar 03, 2013 at 11:43:21AM +0100, Jiri Olsa wrote:
-> > On Fri, Mar 01, 2013 at 10:57:50AM -0800, H. Peter Anvin wrote:
-> > > On 03/01/2013 10:11 AM, Jiri Olsa wrote:
-> > > > Clearing RF EFLAGS bit for signal handler. The reason is,
-> > > > that this flag is set by debug exception code to prevent
-> > > > the recursive exception entry.
-> > > > 
-> > > > Leaving it set for signal handler might prevent debug
-> > > > exception of the signal handler itself.
-> > > > 
-> > > > diff --git a/arch/x86/kernel/signal.c b/arch/x86/kernel/signal.c
-> > > > index b6fe116..e273571 100644
-> > > > --- a/arch/x86/kernel/signal.c
-> > > > +++ b/arch/x86/kernel/signal.c
-> > > > @@ -726,6 +726,13 @@ handle_signal(unsigned long sig, siginfo_t *info, struct k_sigaction *ka,
-> > > >  	regs->flags &= ~X86_EFLAGS_DF;
-> > > >  
-> > > >  	/*
-> > > > +	 * Clear RF when entering the signal handler, because
-> > > > +	 * it might disable possible debug exception from the
-> > > > +	 * signal handler.
-> > > > +	 */
-> > > > +	regs->flags &= ~X86_EFLAGS_RF;
-> > > > +
-> > > > +	/*
-> > > >  	 * Clear TF when entering the signal handler, but
-> > > >  	 * notify any tracer that was single-stepping it.
-> > > >  	 * The tracer may want to single-step inside the
-> > > > 
-> > > 
-> > > Makes sense.  However, can you combine all the flags-clearing into one
-> > > statement while you are at it?
+On Sun, Mar 10, 2013 at 06:50:34PM +0100, Kay Sievers wrote:
+> > Yes, but I can keep Tejun's patch in my local queue for now, dbus is
+> > going to not make 3.10, right?
 > 
-> Is there any other reason for this besides having just signal
+> No, sure not. It's just something we will need there too, but there is
+> no hurry, it's only a cosmetic issue anyway and nothing that matters
+> functionality-wise.
 
-s/signal/single/ ;-)
+In that case, I'll just route it together with the rest of workqueue
+changes with Greg's ack added.
 
-jirka
-> instruction doing this update?
-> 
-> It looks like gcc is smart enough to do that anyway:
-> 
-> ...
-> andq   $0xfffffffffffffaff,(%rdi)
-> ...
-> 
-> 
-> I need to send V2 anyway, since the patchset no longer
-> applies into latest tip.
-> 
-> thanks,
-> jirka
+Thanks!
+
+-- 
+tejun
