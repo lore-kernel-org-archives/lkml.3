@@ -1,58 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753296Ab3CJWKx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Mar 2013 18:10:53 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:35973 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751404Ab3CJWKw (ORCPT
+	id S1753351Ab3CJWaz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Mar 2013 18:30:55 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:52148 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753228Ab3CJWax (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Mar 2013 18:10:52 -0400
-Date: Sun, 10 Mar 2013 22:10:47 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: pipe_release oops.
-Message-ID: <20130310221047.GA21522@ZenIV.linux.org.uk>
-References: <CA+55aFwDYocNRjSCJk1PYw0MFy7dpKf1yMMEiePP--=ewQcX6A@mail.gmail.com>
- <20130307213819.GB19543@redhat.com>
- <CA+55aFx424SX6S1zFegVaMZ_BkeZctDKCN6eYCLFfaJDKRVG9g@mail.gmail.com>
- <20130307220333.GA31039@redhat.com>
- <20130307223610.GA2494@redhat.com>
- <CA+55aFzdPaFQROzFhz-v1Qn=3aDP=4uGTiOJxR26cR91uJHxyg@mail.gmail.com>
- <20130308145306.GA24085@redhat.com>
- <CA+55aFzwOnRnp2B09fKjt8hd9tOCv44H482z1QpCnYc2mywnpA@mail.gmail.com>
+	Sun, 10 Mar 2013 18:30:53 -0400
+Date: Sun, 10 Mar 2013 23:30:15 +0100
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: akpm@linux-foundation.org, a.zummo@towertech.it, swarren@wwwdotorg.org,
+        rtc-linux@googlegroups.com, linux-tegra@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/5] rtc: tegra: protect suspend/resume callbacks with
+ CONFIG_PM_SLEEP
+Message-ID: <20130310223015.GA4743@avionic-0098.mockup.avionic-design.de>
+References: <1362852588-13362-1-git-send-email-ldewangan@nvidia.com>
+ <1362852588-13362-2-git-send-email-ldewangan@nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Dxnq1zWXvFF0Q93v"
 Content-Disposition: inline
-In-Reply-To: <CA+55aFzwOnRnp2B09fKjt8hd9tOCv44H482z1QpCnYc2mywnpA@mail.gmail.com>
+In-Reply-To: <1362852588-13362-2-git-send-email-ldewangan@nvidia.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:R5PihH9myhNDNfOwVtZWlUmOOa2PeuICNMvuGXMy5ob
+ mwO8vSdDYd8xBCFypzsmtIgtnzi1qAF+1Yjm0C9/hearPtXN55
+ tSLPDrt14CzzRGRAvvFxRZlI6jQuKqHMIvxWcw2cNRIgq4IYrZ
+ uNMNczrP3zRowreudw3ASOae6+TqDDjQwzZc0k+uCj26AmkO4J
+ ZJSVyiid0ngVQX1OckMEuXbTJ5TxdsmHTSTxcFSN01+6mjWjgl
+ f0KBdyLCTH6UhnXrO8ogrAoDL2CBmGOBXGHTmEPDF1EHlXOcds
+ lP0f78qLK9YMBucttO2N1ez80QLz5f//NySYeGet4O7yIh2C6O
+ rHr0NeUrrLDohc9FGFAXOEcaiQ8szSbk1Fdl7AL1iUgSIKvz4a
+ 5Lbf01/wwjKCNG2nfsBtGSLq+OkIkb2cts=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 08, 2013 at 10:30:01AM -0800, Linus Torvalds wrote:
 
-> I must be missing something, and I wonder if the thing I'm missing is
-> that with OPEN_PATH we may now have open calls that don't actually
-> have FMODE_READ or FMODE_WRITE set at all.
+--Dxnq1zWXvFF0Q93v
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-With OPEN_PATH we don't call ->open() (or anything in the driver, for that
-matter) at all.  I really don't see how that could trigger...
+On Sat, Mar 09, 2013 at 11:39:45PM +0530, Laxman Dewangan wrote:
+> The CONFIG_PM doesn't actually enable any of the PM callbacks, it
+> only allows to enable CONFIG_PM_SLEEP and CONFIG_PM_RUNTIME.
+> This means if CONFIG_PM is used to protect system sleep callbacks
+> then it may end up unreferenced if only runtime PM is enabled.
+> Hence protecting sleep callbacks with CONFIG_PM_SLEEP.
+>=20
+> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+> ---
+>  drivers/rtc/rtc-tegra.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
 
-> So suddenly we end up with these pipe openers that don't update the
-> counts, and I could imagine that really confusing us...
-> 
-> So I'm wondering if you could apply this patch, and see if that
-> triggers. In fact, please un-apply the other changes to fs/pipe.c too,
-> to see if it also obviates the need for checking i_pipe for NULL. You
-> should get the new warning (once), but you should not get any oopses..
-> 
-> Anyway, this would explain why the actual read/write paths don't need
-> to check for i_pipe - if FMODE_READ/WRITE aren't set, we'll never get
-> that far. But the release() and the fasync functions do get called
-> even for non-readable and non-writable files...
-> 
-> And Al, please get your email fixed. Is somebody usually on irc with
-> him or something?
+Reviewed-by: Thierry Reding <thierry.reding@avionic-design.de>
 
-Back and looking through all that fun...
+--Dxnq1zWXvFF0Q93v
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRPQl3AAoJEN0jrNd/PrOhZi0P/RCrHDh6UdZSqgeprjSBHqBi
+7AlbLPU3XbPjTI6JQoEvS2f4qBz9reNr17PNk4orJo6PnOB0dxEqL9MCJfXxeN06
+ULRiyzPcEKJ0a2J/ZTKbo+6Hy8p/brPQuPi3sNqX8QMIfNrIjBOXh7FPur3wm1RR
+R1rnveC8LYJ5a9cLGuX8iYBJuBdmpKfAqXF+WdqRoBGnwy7JSpSIyK/yY4Zw9UOs
+vDTRgSM5ss9q4GxpX0RHNVRD51JUJ8mAO96RTsTYQ5GREnoTWa9bELGjEePYagy7
+tZ8K5j46z/b4k2cBAAtQqjqGGbn3OEgaHm23M/m06jZ33bLlqhkYgykERRCJ6MtF
+HAzGa5RFUEluzvV0FOfd3v3/BLuNocX+0mMTlvb5UWClOemzSdSy3phrapIxvyPs
+vzTWf11867Kg2zyiu81GWdoqjCxbmwC1IGyjs3rPvPwEeOvFX9iYKMMK2gVFN8Au
+FRDtzQtEExvfb9AqTqJwDds10R1CRzCp3Ux95oMi9eGwCev8lJZJgvffjeoBpu1e
+qU9N4XTtF0Gmysy8Exdq6y3CEqwWhwo6mPYKJzbR92O0X596lJs6xgVrXoJzt+2U
+qFenDDo9tj+73jh1ESELQZCwXlZvxOSDMPYm8Pj3X/KtUt6qb7IPxY59DcqPX/99
+KEPa2FU81fRYuI4wfqre
+=ON/y
+-----END PGP SIGNATURE-----
+
+--Dxnq1zWXvFF0Q93v--
