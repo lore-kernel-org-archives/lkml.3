@@ -1,56 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752991Ab3CJRqM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Mar 2013 13:46:12 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:60543 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751619Ab3CJRqK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Mar 2013 13:46:10 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <CAE9FiQWQm0K2yywRisTRmFJmnpMpVsg6Ewh=swaZC2aM9ZKQQw@mail.gmail.com>
-References: <1362897887-30808-1-git-send-email-yinghai@kernel.org> <1362897887-30808-9-git-send-email-yinghai@kernel.org> <CAOJsxLG2Qg7vmLWirWK-GOBp65NxogGcAU5guoVphDu2G=BsjA@mail.gmail.com> <CAE9FiQWQm0K2yywRisTRmFJmnpMpVsg6Ewh=swaZC2aM9ZKQQw@mail.gmail.com>
+	id S1753015Ab3CJRsN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Mar 2013 13:48:13 -0400
+Received: from smtp.opengridcomputing.com ([72.48.136.20]:51191 "EHLO
+	smtp.opengridcomputing.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751562Ab3CJRsL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Mar 2013 13:48:11 -0400
+X-Greylist: delayed 1924 seconds by postgrey-1.27 at vger.kernel.org; Sun, 10 Mar 2013 13:48:11 EDT
+Message-ID: <513CBFD6.1000504@opengridcomputing.com>
+Date: Sun, 10 Mar 2013 12:16:06 -0500
+From: Tom Tucker <tom@opengridcomputing.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:17.0) Gecko/20130216 Thunderbird/17.0.3
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH v2 08/20] x86, ACPI: Find acpi tables in initrd early from head_32.S/head64.c
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Sun, 10 Mar 2013 10:42:36 -0700
-To: Yinghai Lu <yinghai@kernel.org>, Pekka Enberg <penberg@kernel.org>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Thomas Renninger <trenn@suse.de>, Tang Chen <tangchen@cn.fujitsu.com>,
-        linux-kernel@vger.kernel.org, Jacob Shin <jacob.shin@amd.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-acpi@vger.kernel.org
-Message-ID: <a2b9bc9e-ccff-483a-a73c-2b4993a413d2@email.android.com>
+To: Tim Gardner <tim.gardner@canonical.com>
+CC: linux-kernel@vger.kernel.org, Trond Myklebust <Trond.Myklebust@netapp.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        "David S. Miller" <davem@davemloft.net>, Tom Tucker <tom@ogc.us>,
+        Haggai Eran <haggaie@mellanox.com>, Or Gerlitz <ogerlitz@mellanox.com>,
+        Shani Michaeli <shanim@mellanox.com>, linux-nfs@vger.kernel.org,
+        netdev@vger.kernel.org, Steve Dickson <SteveD@redhat.com>
+Subject: Re: [PATCH linux-next] SUNRPC: rpcrdma_register_default_external:
+ Dynamically allocate ib_phys_buf
+References: <1362929953-63785-1-git-send-email-tim.gardner@canonical.com>
+In-Reply-To: <1362929953-63785-1-git-send-email-tim.gardner@canonical.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is no 64-bit flat mode.  We use a #PF handler to emulate one by creating page tables on the fly.
 
-Yinghai Lu <yinghai@kernel.org> wrote:
+This is the result of 2773395b34883fe54418de188733a63bb38e0ad6. Steve 
+might want to weigh in on this since it was done for performance reasons.
 
->On Sun, Mar 10, 2013 at 3:25 AM, Pekka Enberg <penberg@kernel.org>
->wrote:
->>
->> What is preventing us from making the 64-bit variant also work in
->flat
->> mode to make the code consistent and not hiding the differences under
->> the rug? What am I missing here?
->
->Boot loader could start kernel from 64bit directly from
->from arch/x86/boot/compressed/head_64.s::startup_64.
->
->initrd can be loaded by 64bit bootloader above 4G.
->
->So we even switch back to 32bit flat mode, we still can not access
->those initrd
->directly.
->
->Thanks
->
->Yinghai
+Tom
 
--- 
-Sent from my mobile phone. Please excuse brevity and lack of formatting.
+On 3/10/13 10:39 AM, Tim Gardner wrote:
+> rpcrdma_register_default_external() is several frames into
+> the call stack which goes deeper yet. You run the risk of stack
+> corruption by declaring such a large automatic variable,
+> so dynamically allocate the array of 'struct ib_phys_buf' objects in
+> order to silence the frame-larger-than warning.
+>
+> net/sunrpc/xprtrdma/verbs.c: In function 'rpcrdma_register_default_external':
+> net/sunrpc/xprtrdma/verbs.c:1774:1: warning: the frame size of 1056 bytes is larger than 1024 bytes [-Wframe-larger-than=]
+>
+> gcc version 4.6.3
+>
+> Cc: Trond Myklebust <Trond.Myklebust@netapp.com>
+> Cc: "J. Bruce Fields" <bfields@fieldses.org>
+> Cc: "David S. Miller" <davem@davemloft.net>
+> Cc: Tom Tucker <tom@ogc.us>
+> Cc: Haggai Eran <haggaie@mellanox.com>
+> Cc: Or Gerlitz <ogerlitz@mellanox.com>
+> Cc: Shani Michaeli <shanim@mellanox.com>
+> Cc: linux-nfs@vger.kernel.org
+> Cc: netdev@vger.kernel.org
+> Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
+> ---
+>   net/sunrpc/xprtrdma/verbs.c |    7 ++++++-
+>   1 file changed, 6 insertions(+), 1 deletion(-)
+>
+> diff --git a/net/sunrpc/xprtrdma/verbs.c b/net/sunrpc/xprtrdma/verbs.c
+> index 93726560..0916467 100644
+> --- a/net/sunrpc/xprtrdma/verbs.c
+> +++ b/net/sunrpc/xprtrdma/verbs.c
+> @@ -1736,9 +1736,13 @@ rpcrdma_register_default_external(struct rpcrdma_mr_seg *seg,
+>   	int mem_priv = (writing ? IB_ACCESS_REMOTE_WRITE :
+>   				  IB_ACCESS_REMOTE_READ);
+>   	struct rpcrdma_mr_seg *seg1 = seg;
+> -	struct ib_phys_buf ipb[RPCRDMA_MAX_DATA_SEGS];
+> +	struct ib_phys_buf *ipb;
+>   	int len, i, rc = 0;
+>   
+> +	ipb = kmalloc(sizeof(*ipb) * RPCRDMA_MAX_DATA_SEGS, GFP_KERNEL);
+> +	if (!ipb)
+> +		return -ENOMEM;
+> +
+>   	if (*nsegs > RPCRDMA_MAX_DATA_SEGS)
+>   		*nsegs = RPCRDMA_MAX_DATA_SEGS;
+>   	for (len = 0, i = 0; i < *nsegs;) {
+> @@ -1770,6 +1774,7 @@ rpcrdma_register_default_external(struct rpcrdma_mr_seg *seg,
+>   		seg1->mr_len = len;
+>   	}
+>   	*nsegs = i;
+> +	kfree(ipb);
+>   	return rc;
+>   }
+>   
+
