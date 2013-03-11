@@ -1,48 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752994Ab3CKOuU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 10:50:20 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:56435 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751130Ab3CKOuR (ORCPT
+	id S1752821Ab3CKOyu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 10:54:50 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:18394 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751526Ab3CKOyt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 10:50:17 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Subject: Re: SYSV IPC broken for no-legacy syscall kernels (was Re: [RFC PATCH v1 26/31] ARC: Build system: Makefiles, Kconfig, Linker script)
-Date: Mon, 11 Mar 2013 14:50:11 +0000
-User-Agent: KMail/1.12.2 (Linux/3.8.0-8-generic; KDE/4.3.2; x86_64; ; )
-Cc: James Hogan <james.hogan@imgtec.com>, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Markos <markos.chandras@imgtec.com>
-References: <1352281674-2186-1-git-send-email-vgupta@synopsys.com> <201303111330.15589.arnd@arndb.de> <513DE0C7.9030304@synopsys.com>
-In-Reply-To: <513DE0C7.9030304@synopsys.com>
+	Mon, 11 Mar 2013 10:54:49 -0400
+Date: Mon, 11 Mar 2013 10:54:35 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Mihnea Dobrescu-Balaur <mihneadb@gmail.com>
+Cc: xen-devel@lists.xensource.com, jeremy@goop.org,
+        virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] block: replace kmalloc and then memcpy with kmemdup
+Message-ID: <20130311145435.GB26394@phenom.dumpdata.com>
+References: <1363001016-8439-1-git-send-email-mihneadb@gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201303111450.12067.arnd@arndb.de>
-X-Provags-ID: V02:K0:zqZYdkKUJnU1BUW86Wq2eCQwqD3wlm7lNRyVu76Nyxm
- S79PU3jHg/cnsUoh/AusRBff3mzQ9VQjMMQ7CagWCYg8gxqQOw
- HKsRJoC2DuqsiRseCrmsoZPyZFYU1Dlk352v3pGp/4b6JkueZ/
- si1+X9XxatjeB98Yw8zfHj0R6qlSbl2pVSCVtV50mQhX2NZMY+
- /m84D1NW6rZOjwJE9WSjhz9wLaMlWUJFUmXs536Uew7FCoLp8l
- auM3Ydu5VDu2lJiDbhPc0wwoBkkDxH5rvi5zHy0kD2Ss4Ys6ts
- kMeWE2hL0SyeNQZaau3S5Gaz1KWi61umyLOnTyfY1WdnE/oQlK
- jdjkQT7EeTNYgfGZ4ksE=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1363001016-8439-1-git-send-email-mihneadb@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 11 March 2013, Vineet Gupta wrote:
-> The question is what should the msgctl(2) ABI be w.r.t. @cmd arg. Does it need to
-> be of type 0x01NN  (i.e. IPC_64 ORed) or should it be be 0xNN. If it's 0x01NN,
-> then ARCH_WANT_IPC_PARSE_VERSION is needed in Kconfig, otherwise, I need to fix
-> uClibc.
+On Mon, Mar 11, 2013 at 01:23:36PM +0200, Mihnea Dobrescu-Balaur wrote:
+
+Are there performance improvements to doing it this way?
+
+> Signed-off-by: Mihnea Dobrescu-Balaur <mihneadb@gmail.com>
+> ---
+>  drivers/block/xen-blkfront.c |    3 +--
+>  1 file changed, 1 insertion(+), 2 deletions(-)
 > 
-> The reason for confusion seems to be a comment in existing uapi/linux/ipc.h which
-> seems to suggest that IPC_OLD is 0 and IPC_64 is newer version.
-
-Modern architecture ports should ignore this flag and always use the IPC_64 API,
-there is no reason to maintain backwards compatibility with old binaries.
-
-	Arnd
+> diff --git a/drivers/block/xen-blkfront.c b/drivers/block/xen-blkfront.c
+> index c3dae2e..9620644 100644
+> --- a/drivers/block/xen-blkfront.c
+> +++ b/drivers/block/xen-blkfront.c
+> @@ -1203,11 +1203,10 @@ static int blkif_recover(struct blkfront_info *info)
+>  	int j;
+>  
+>  	/* Stage 1: Make a safe copy of the shadow state. */
+> -	copy = kmalloc(sizeof(info->shadow),
+> +	copy = kmemdup(info->shadow, sizeof(info->shadow),
+>  		       GFP_NOIO | __GFP_REPEAT | __GFP_HIGH);
+>  	if (!copy)
+>  		return -ENOMEM;
+> -	memcpy(copy, info->shadow, sizeof(info->shadow));
+>  
+>  	/* Stage 2: Set up free list. */
+>  	memset(&info->shadow, 0, sizeof(info->shadow));
+> -- 
+> 1.7.10.4
+> 
