@@ -1,172 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753913Ab3CKUh3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 16:37:29 -0400
-Received: from mailout01.c08.mtsvc.net ([205.186.168.189]:58413 "EHLO
-	mailout01.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752462Ab3CKUh2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 16:37:28 -0400
-Message-ID: <1363034207.27803.8.camel@thor.lan>
-Subject: Re: [PATCH 11/12] rwsem: wake all readers when first waiter is a
- reader
-From: Peter Hurley <peter@hurleysoftware.com>
-To: Michel Lespinasse <walken@google.com>
-Cc: Alex Shi <alex.shi@intel.com>, Ingo Molnar <mingo@kernel.org>,
-        David Howells <dhowells@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Yuanhan Liu <yuanhan.liu@linux.intel.com>,
-        Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
+	id S1754102Ab3CKUht (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 16:37:49 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:52631 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753991Ab3CKUhs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Mar 2013 16:37:48 -0400
+Date: Mon, 11 Mar 2013 16:37:38 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Markus Trippelsdorf <markus@trippelsdorf.de>
+Cc: Dave Jones <davej@redhat.com>, linux-ext4@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Date: Mon, 11 Mar 2013 16:36:47 -0400
-In-Reply-To: <1362612111-28673-12-git-send-email-walken@google.com>
-References: <1362612111-28673-1-git-send-email-walken@google.com>
-	 <1362612111-28673-12-git-send-email-walken@google.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.3-0pjh1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 125194 peter@hurleysoftware.com
+Subject: Re: torrent hash failures since 3.9.0-rc1
+Message-ID: <20130311203738.GB15478@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Markus Trippelsdorf <markus@trippelsdorf.de>,
+	Dave Jones <davej@redhat.com>, linux-ext4@vger.kernel.org,
+	linux-kernel@vger.kernel.org
+References: <20130311171824.GA434@x4>
+ <20130311191753.GA439@x4>
+ <20130311194159.GB3579@redhat.com>
+ <20130311201334.GA444@x4>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130311201334.GA444@x4>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Mar 11, 2013 at 09:13:34PM +0100, Markus Trippelsdorf wrote:
+> On 2013.03.11 at 15:41 -0400, Dave Jones wrote:
+> > Worked fine for me on two separate machines.  Could it be a network problem
+> > perhaps ? If something is mangling the packet before it hits the disk,
+> > that would explain it.  What NIC do you use ?
 
-On Wed, 2013-03-06 at 15:21 -0800, Michel Lespinasse wrote:
-> + retry_reader_grants:
-> +	oldcount = rwsem_atomic_update(adjustment, sem) - adjustment;
-> +	if (unlikely(oldcount < RWSEM_WAITING_BIAS)) {
-> +		/* A writer stole the lock.  Undo our reader grants. */
-> +		if (rwsem_atomic_update(-adjustment, sem) < RWSEM_WAITING_BIAS)
-> +			goto out;
-> +		/* The writer left.  Retry waking readers. */
-> +		goto retry_reader_grants;
-> +	}
+I'm not a torrent expert, but I thought it did enough checksumming
+such that if the packet got mangled, it would get noticd by the
+torrent client before it writes the chunks to disk?
 
-This can be reduced to single looping cmpxchg in the grant reversal
-path; then if reversing the grant fails, the count can simply be
-re-tested for grant success, rather than trying to atomically re-grant.
-For example, with a helper function, rwsem_cmpxchg():
+> > Or maybe you could isolate it to a filesystem problem using something
+> > like fsx ?
+> 
+> I've found fsx on your homepage, but I've no idea on how to use this
+> tool. Any pointers?
 
-static inline int rwsem_cmpxchg(long *old, long new, struct rw_semaphore *sem)
-{
-	long tmp = *old;
-	*old = cmpxchg(&sem->count, *old, new);
-	return tmp == *old;
-}
+We actually run fsx in a number of different configruations as part of
+our regression testing before we send Linus a pull request, and
+haven't found any issues.  So unless it's a hardware problem, it seems
+unlikely to me that your running fsx would turn up anything.
 
-... then above becomes ...
+Can you send a dumpefs -h of the file system in question, and what
+mount options (if any) you are using?  Thanks!!
 
-	count = rwsem_atomic_update(adjustment, sem);
-	do {
-		if (count - adjustment >= RWSEM_WAITING_BIAS)
-			break;
-		if (rwsem_cmpxchg(&count, count - adjustment, sem))
-			goto out;   /* or simply return sem */
-	} while (1);
+BTW, I'm currently running 3.9-rc2 with some additional fixes from the
+ext4 dev branch, and I'm not able to reproduce the problem using
+rtorrent on my laptop.  How reliably is it reproducing for you?  Are
+you seeing the problem every time you try this?
 
-	< wake up readers >
-
-
-Also, this series and the original rwsem can mistakenly sleep reader(s)
-when the lock is transitioned from writer-owned to waiting readers-owned
-with no waiting writers. For example,
-
-
-  CPU 0                               |  CPU 1
-                                      |
-                                      | down_write()
-
-... CPU 1 has the write lock for the semaphore.
-    Meanwhile, 1 or more down_read(s) are attempted and fail;
-    these are put on the wait list. Then ...
-
-down_read()                           | up_write()
-  local = atomic_update(+read_bias)   |
-  local <= 0?                         |   local = atomic_update(-write_bias)
-  if (true)                           |   local < 0?
-     down_read_failed()               |   if (true)
-                                      |      wake()
-                                      |         grab wait_lock
-        wait for wait_lock            |         wake all readers
-                                      |         release wait_lock
-
-... At this point, sem->count > 0 and the wait list is empty,
-    but down_read_failed() will sleep the reader.
-
-
-In this case, CPU 0 has observed the sem count with the write lock (and
-the other waiters) and so is detoured to down_read_failed(). But if 
-CPU 0 can't grab the wait_lock before the up_write() does (via
-rwsem_wake()), then down_read_failed() will wake no one and sleep the
-reader.
-
-Unfortunately, this means readers and writers which observe the sem
-count after the adjustment is committed by CPU 0 in down_read_failed()
-will sleep as well, until the sem count returns to 0.
-
-I think the best solution would be to preserve the observed count when
-down_read() fails and pass it to rwsem_down_read_failed() -- of course,
-this is also the most disruptive approach as it changes the per-arch
-interface (the attached patch does not include the arch changes). The
-other alternative is to go through the __rwsem_do_wake() path.
-
-Regards,
-Peter Hurley
-
---- >% ---
-Subject: [PATCH] rwsem: Early-out tardy readers
-
-
-Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
----
- lib/rwsem.c | 17 +++++++++++++++--
- 1 file changed, 15 insertions(+), 2 deletions(-)
-
-diff --git a/lib/rwsem.c b/lib/rwsem.c
-index f9a5705..8eb2cdf 100644
---- a/lib/rwsem.c
-+++ b/lib/rwsem.c
-@@ -118,12 +118,11 @@ __rwsem_do_wake(struct rw_semaphore *sem, bool wakewrite)
- /*
-  * wait for the read lock to be granted
-  */
--struct rw_semaphore __sched *rwsem_down_read_failed(struct rw_semaphore *sem)
-+struct rw_semaphore __sched *rwsem_down_read_failed(struct rw_semaphore *sem, long count)
- {
- 	signed long adjustment = -RWSEM_ACTIVE_READ_BIAS;
- 	struct rwsem_waiter waiter;
- 	struct task_struct *tsk = current;
--	signed long count;
- 
- 	/* set up my own style of waitqueue */
- 	waiter.task = tsk;
-@@ -131,6 +130,20 @@ struct rw_semaphore __sched *rwsem_down_read_failed(struct rw_semaphore *sem)
- 	get_task_struct(tsk);
- 
- 	raw_spin_lock_irq(&sem->wait_lock);
-+
-+	/* Try to reverse the lock attempt but if the count has changed
-+	 * so that reversing fails, check if there are are no waiters,
-+	 * and early-out if not */
-+	do {
-+		if (rwsem_cmpxchg(&count, count + adjust, sem))
-+			break;
-+		if (count > 0) {
-+			raw_spin_unlock_irq(&sem->wait_lock);
-+			put_task_struct(tsk);
-+			return sem;
-+		}
-+	} while (1);
-+
- 	sem->wait_readers++;
- 	if (list_empty(&sem->wait_list))
- 		adjustment += RWSEM_WAITING_BIAS;
--- 
-1.8.1.2
-
+						- Ted
 
 
 
