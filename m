@@ -1,56 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754800Ab3CKUqs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 16:46:48 -0400
-Received: from mail-ob0-f173.google.com ([209.85.214.173]:46830 "EHLO
-	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754334Ab3CKUqo (ORCPT
+	id S1754205Ab3CKUrK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 16:47:10 -0400
+Received: from cpsmtpb-ews07.kpnxchange.com ([213.75.39.10]:56481 "EHLO
+	cpsmtpb-ews07.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752738Ab3CKUrG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 16:46:44 -0400
-Message-ID: <513E42B1.3030108@lwfinger.net>
-Date: Mon, 11 Mar 2013 15:46:41 -0500
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
-MIME-Version: 1.0
-To: Andrei Epure <epure.andrei@gmail.com>
-CC: chaoming_li@realsil.com.cn, linville@tuxdriver.com,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] wireless:rtlwifi: replaced kmalloc+memcpy with kmemdup
-References: <1362920987-6679-1-git-send-email-epure.andrei@gmail.com>
-In-Reply-To: <1362920987-6679-1-git-send-email-epure.andrei@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Mon, 11 Mar 2013 16:47:06 -0400
+Message-ID: <1363034823.3137.110.camel@x61.thuisdomein>
+Subject: [PATCH] backlight: fix typo "MACH_SAM9...EK" three times
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Richard Purdie <rpurdie@rpsys.net>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Cc: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Mon, 11 Mar 2013 21:47:03 +0100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 11 Mar 2013 20:47:03.0315 (UTC) FILETIME=[95D88E30:01CE1E99]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/10/2013 08:09 AM, Andrei Epure wrote:
-> Signed-off-by: Andrei Epure <epure.andrei@gmail.com>
-> ---
->   drivers/net/wireless/rtlwifi/usb.c |    3 +--
->   1 file changed, 1 insertion(+), 2 deletions(-)
->
-> diff --git a/drivers/net/wireless/rtlwifi/usb.c b/drivers/net/wireless/rtlwifi/usb.c
-> index 156b527..b5c80b5 100644
-> --- a/drivers/net/wireless/rtlwifi/usb.c
-> +++ b/drivers/net/wireless/rtlwifi/usb.c
-> @@ -224,10 +224,9 @@ static void _usb_writeN_sync(struct rtl_priv *rtlpriv, u32 addr, void *data,
->   	u8 *buffer;
->
->   	wvalue = (u16)(addr & 0x0000ffff);
-> -	buffer = kmalloc(len, GFP_ATOMIC);
-> +	buffer = kmemdup(data, len, GFP_ATOMIC);
->   	if (!buffer)
->   		return;
-> -	memcpy(buffer, data, len);
->   	usb_control_msg(udev, pipe, request, reqtype, wvalue,
->   			index, buffer, len, 50);
+Fix three typos (originally) introduced by commit
+a9a84c37d1ee50db8f3752b117caf2b48dcd4f8a ("atmel_lcdfb: backlight
+control").
 
-Acked-by: Larry Finger <Larry.Finger@lwfinger.net>
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+0) Tested by grepping the tree.
 
-Thanks,
+1) So two of these typos were introduced in v2.6.25. (The third was
+introduced in commit 915190f7d4f08e413e5fde6b0abcd5375aeacdf4 ("[ARM]
+5614/1: at91: atmel_lcdfb: add at91sam9g10 support to atmel LCD
+driver")). Checking these commits reveals that the default value of 'y'
+has never been set automatically in all releases since v2.6.25! Perhaps
+this line might as well be dropped.
 
-Larry
+ drivers/video/backlight/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
+diff --git a/drivers/video/backlight/Kconfig b/drivers/video/backlight/Kconfig
+index db10d01..a4481df 100644
+--- a/drivers/video/backlight/Kconfig
++++ b/drivers/video/backlight/Kconfig
+@@ -161,7 +161,7 @@ if BACKLIGHT_CLASS_DEVICE
+ config BACKLIGHT_ATMEL_LCDC
+ 	bool "Atmel LCDC Contrast-as-Backlight control"
+ 	depends on FB_ATMEL
+-	default y if MACH_SAM9261EK || MACH_SAM9G10EK || MACH_SAM9263EK
++	default y if MACH_AT91SAM9261EK || MACH_AT91SAM9G10EK || MACH_AT91SAM9263EK
+ 	help
+ 	  This provides a backlight control internal to the Atmel LCDC
+ 	  driver.  If the LCD "contrast control" on your board is wired
+-- 
+1.7.11.7
 
