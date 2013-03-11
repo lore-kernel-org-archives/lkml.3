@@ -1,67 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752618Ab3CKIDK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 04:03:10 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:61481 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751205Ab3CKIDI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 04:03:08 -0400
-Date: Mon, 11 Mar 2013 09:03:04 +0100 (CET)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: Silviu Popescu <silviupopescu1990@gmail.com>
-cc: linux-media@vger.kernel.org, mchehab@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] soc_camera: convert to devm_ioremap_resource()
-In-Reply-To: <CAPWTe+LMw1r9N7ObARu5Fs3OUS99ATjtjARAPbUK+4CmpcG4eQ@mail.gmail.com>
-Message-ID: <Pine.LNX.4.64.1303110902320.21241@axis700.grange>
-References: <1362987621-6527-1-git-send-email-silviupopescu1990@gmail.com>
- <Pine.LNX.4.64.1303110849530.21241@axis700.grange>
- <CAPWTe+LMw1r9N7ObARu5Fs3OUS99ATjtjARAPbUK+4CmpcG4eQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V02:K0:NqiTxrxaxN1/2IoQ9kqjAl4orieIzyosUGkLPNLbf4M
- kQ1kAI/+Uhk5Qre4qYKN5EYtmYmbLxDkpWsRT7ME3azUYlu0Yg
- 5qCMhjByeE2/3HDi1B+5K/EjSrmxCvgKVNtXYTs79VCU2RuNA4
- Q72p/kXbid9wzD6DxuksOO2f+P374Z0QPJgc65DmigAjl2rCBc
- zPaltDynOZNrxHJNG7OLIeVnI1moyc5Dr2FFKoUuCqCPMpUba+
- h6QOMRKUbXIeNntFztXMzUJsn4PfydUgr3WH5dsd/D50VqoXpq
- muKJSx4TK7YucxiHdRxafLucgPoUuT4WRoRp36W/y9ADdkliei
- zN0SZmtXIqP2W3pMQePSVoe3QcB6x8M3zUuE42kAzD3okFFSJY
- P3OpN6LHZZRaQ==
+	id S1752426Ab3CKIIA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 04:08:00 -0400
+Received: from mga02.intel.com ([134.134.136.20]:28701 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751868Ab3CKIH7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Mar 2013 04:07:59 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,822,1355126400"; 
+   d="scan'208";a="276178332"
+Message-ID: <1362989331.5101.41.camel@sauron.fi.intel.com>
+Subject: Re: Bug in mtd_get_device_size()?
+From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Reply-To: artem.bityutskiy@linux.intel.com
+To: Richard Genoud <richard.genoud@gmail.com>,
+        "Velykokhatko, Sergey" <Sergey.Velykokhatko@mcc-med.de>
+Cc: Brian Norris <computersforpeace@gmail.com>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ricard Wanderlof <ricard.wanderlof@axis.com>
+Date: Mon, 11 Mar 2013 10:08:51 +0200
+In-Reply-To: <CACQ1gAhJzy5tGSuejc3GqaqRxtHvkABOY-tODzedveeRXddvxQ@mail.gmail.com>
+References: <BAF0C2081321BA469F9ADF648F97D9B04C78FA6069@MCC023.weinmann.com>
+	 <CAN8TOE9YJBvUE9GDW3krZB-Js6gUkqY23gYNLS4gFX0e2NDNZw@mail.gmail.com>
+	 <BAF0C2081321BA469F9ADF648F97D9B04C78FA6071@MCC023.weinmann.com>
+	 <CACQ1gAg0rE+X+uxRWbrPKhmdS1T0MG00cwwBbzWM+VwU4zaXmw@mail.gmail.com>
+	 <BAF0C2081321BA469F9ADF648F97D9B04C78FA607C@MCC023.weinmann.com>
+	 <CACQ1gAg=L7ru5J4C7OQN0r-c2VN3baKX1qqty8Z0ObS5Wk48yg@mail.gmail.com>
+	 <BAF0C2081321BA469F9ADF648F97D9B04C78FA607E@MCC023.weinmann.com>
+	 <CACQ1gAhJzy5tGSuejc3GqaqRxtHvkABOY-tODzedveeRXddvxQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.3 (3.6.3-2.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 11 Mar 2013, Silviu Popescu wrote:
+On Fri, 2013-03-01 at 15:29 +0100, Richard Genoud wrote:
+> > Unfortunately I have no additional information why it happened, but
+> anyway is it really necessary to runs ubiformat+ubimkvol for such
+> cases? Or is it possible to recover data?
+> I honestly don't know, but I'm sure Artem has some idea on that.
 
-> On Mon, Mar 11, 2013 at 9:50 AM, Guennadi Liakhovetski
-> <g.liakhovetski@gmx.de> wrote:
-> >
-> > Is there anything in this patch, that this patch series
-> >
-> > http://thread.gmane.org/gmane.linux.drivers.video-input-infrastructure/61337
-> >
-> > is missing?
-> >
-> > Thanks
-> > Guennadi
-> 
-> Hello Guennadi,
-> 
-> I seem to have missed that patch series. And no, this does not cover
-> anything extra.
+Everything should work in theory. If there are issues, they should be
+looked at and investigated. I do not have any better suggestion off the
+top of my head.
 
-Good, thanks for checking!
+> >Since my solution for this case is to put the device data in separate MTD with one single UBI volume. But you know how much space I should reserve on NAND MTD for single XML-File with 200Bytes :-).
+> I've got the same problem with uboot environment for example. It's
+> only some hundred bytes, and still I have to reserve the maximum bad
+> blocks number + 1 for the environment itself (so for your device 41).
+> I know, this looks overkill...
+> For 200bytes, I would try to store them elsewhere (spi dataflash,
+> eeprom...) if there's such devices on your board.
+> There's also the 1st block of the nand device which is guaranteed to
+> be "valid" for 1000 erase cycles (valid with 1-bit ECC per 528 bytes)
 
-> I'm sorry for the lack of attention on my behalf.
+The ideal solution would be to not partition the chip at all, of course.
 
-No problem, it's hard to follow all incoming changes.
+BTW, if we ara talking about a device for medicine with tens of years of
+lifetime, you need to be careful about read disturb issues. In the MTD
+web site we discuss them - and there is a suggestion to read whole UBI
+device from time to time to force scrubbing.
 
-Thanks
-Guennadi
----
-Guennadi Liakhovetski, Ph.D.
-Freelance Open-Source Software Developer
-http://www.open-technology.de/
+> > Alternative is to try to mount only device volume, copy data in tmpfs, run ubiformat+ubimkvol+mount and copy the data back to the device volume. Or you have other idea?
+
+Not sure why this would be needed. We did not do any on-flash format
+breakage AFAIK. But I admit I did not read this thread carefully.
+
+Sergey, feel free to ask specific questions in separate threads, to make
+it easier to answer them.
+
+-- 
+Best Regards,
+Artem Bityutskiy
+
