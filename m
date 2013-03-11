@@ -1,81 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754045Ab3CKTtv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 15:49:51 -0400
-Received: from mga01.intel.com ([192.55.52.88]:20174 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750948Ab3CKTtt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 15:49:49 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,825,1355126400"; 
-   d="asc'?scan'208";a="300235125"
-Message-ID: <513E355C.4000204@gmail.com>
-Date: Mon, 11 Mar 2013 12:49:48 -0700
-From: Jeff Kirsher <tarbal@gmail.com>
-Reply-To: jeffrey.t.kirsher@intel.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130219 Thunderbird/17.0.3
+	id S1754339Ab3CKTz7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 15:55:59 -0400
+Received: from mail-qe0-f52.google.com ([209.85.128.52]:59659 "EHLO
+	mail-qe0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754236Ab3CKTz5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Mar 2013 15:55:57 -0400
+Date: Mon, 11 Mar 2013 16:55:50 -0300
+From: Gustavo Padovan <gustavo@padovan.org>
+To: Sunguk Lee <d3m3vilurr@gmail.com>
+Cc: Marcel Holtmann <marcel@holtmann.org>,
+        Johan Hedberg <johan.hedberg@gmail.com>,
+        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Bluetooth device 0cf3:3008 should map AR 3012
+Message-ID: <20130311195550.GB22451@joana>
+Mail-Followup-To: Gustavo Padovan <gustavo@padovan.org>,
+	Sunguk Lee <d3m3vilurr@gmail.com>,
+	Marcel Holtmann <marcel@holtmann.org>,
+	Johan Hedberg <johan.hedberg@gmail.com>,
+	linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <1363030918-8186-1-git-send-email-d3m3vilurr@gmail.com>
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>, Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Jiri Slaby <jslaby@suse.cz>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>, x86@kernel.org,
-        lkml <linux-kernel@vger.kernel.org>, e1000-devel@lists.sourceforge.net,
-        Bruce Allan <bruce.w.allan@intel.com>
-Subject: Re: e1000e + suspend, 3.9-rc2
-References: <20130311191936.GD5000@pd.tnic>
-In-Reply-To: <20130311191936.GD5000@pd.tnic>
-X-Enigmail-Version: 1.4.6
-Content-Type: multipart/signed; micalg=pgp-sha512;
- protocol="application/pgp-signature";
- boundary="------------enig640270FD7F362B88D0F492B9"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1363030918-8186-1-git-send-email-d3m3vilurr@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enig640270FD7F362B88D0F492B9
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+Hi Sunguk,
 
-On 03/11/2013 12:19 PM, Borislav Petkov wrote:
-> Hi,
->
-> When I try to suspend with 3.9-rc2, it fails to do so and returns back
-> to the prompt. Below's what's in dmesg.
->
-> Jeff, am I assuming correctly that the fixes I was testing last week
-> haven't trickled upstream yet?
->
-> If so, then it's a no biggie, I'll wait. This mail is then just FYI.
->
-> Thanks.
-No, the patches have not made it into Linus's tree yet.  They are in
-David Miller's net tree, and he just sent a pull request to Linus this
-morning.  So expect them to be in 3.9-rc3.
+* Sunguk Lee <d3m3vilurr@gmail.com> [2013-03-12 04:41:58 +0900]:
 
+> T:  Bus=01 Lev=02 Prnt=02 Port=00 Cnt=01 Dev#=  3 Spd=12   MxCh= 0
+> D:  Ver= 1.10 Cls=e0(wlcon) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
+> P:  Vendor=0cf3 ProdID=3008 Rev= 0.01
+> S:  Manufacturer=Atheros Communications
+> S:  Product=Bluetooth USB Host Controller
+> S:  SerialNumber=Alaska Day 2006
+> C:* #Ifs= 2 Cfg#= 1 Atr=e0 MxPwr=100mA
+> I:* If#= 0 Alt= 0 #EPs= 3 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+> E:  Ad=81(I) Atr=03(Int.) MxPS=  16 Ivl=1ms
+> E:  Ad=82(I) Atr=02(Bulk) MxPS=  64 Ivl=0ms
+> E:  Ad=02(O) Atr=02(Bulk) MxPS=  64 Ivl=0ms
+> I:* If#= 1 Alt= 0 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+> E:  Ad=83(I) Atr=01(Isoc) MxPS=   0 Ivl=1ms
+> E:  Ad=03(O) Atr=01(Isoc) MxPS=   0 Ivl=1ms
+> I:  If#= 1 Alt= 1 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+> E:  Ad=83(I) Atr=01(Isoc) MxPS=   9 Ivl=1ms
+> E:  Ad=03(O) Atr=01(Isoc) MxPS=   9 Ivl=1ms
+> I:  If#= 1 Alt= 2 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+> E:  Ad=83(I) Atr=01(Isoc) MxPS=  17 Ivl=1ms
+> E:  Ad=03(O) Atr=01(Isoc) MxPS=  17 Ivl=1ms
+> I:  If#= 1 Alt= 3 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+> E:  Ad=83(I) Atr=01(Isoc) MxPS=  25 Ivl=1ms
+> E:  Ad=03(O) Atr=01(Isoc) MxPS=  25 Ivl=1ms
+> I:  If#= 1 Alt= 4 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+> E:  Ad=83(I) Atr=01(Isoc) MxPS=  33 Ivl=1ms
+> E:  Ad=03(O) Atr=01(Isoc) MxPS=  33 Ivl=1ms
+> I:  If#= 1 Alt= 5 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+> E:  Ad=83(I) Atr=01(Isoc) MxPS=  49 Ivl=1ms
+> E:  Ad=03(O) Atr=01(Isoc) MxPS=  49 Ivl=1ms
+> 
+> Signed-off-by: Sunguk Lee <d3m3vilurr@gmail.com>
+> ---
+>  drivers/bluetooth/ath3k.c |    2 ++
+>  drivers/bluetooth/btusb.c |    1 +
+>  2 files changed, 3 insertions(+)
 
---------------enig640270FD7F362B88D0F492B9
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+Patch has been applied to bluetooth.git. Thanks.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.13 (GNU/Linux)
-Comment: Using GnuPG with undefined - http://www.enigmail.net/
-
-iQIcBAEBCgAGBQJRPjVcAAoJEOVv75VaS+3OeK0QAIKjZFNhL58LGx1Cmopu3zJ3
-IKfZ2lrGsORLVKzvrTKHaV2gmGAJZug3yMr2JWideHjCbG1a/xi8P5kIA5oHrTrb
-GjBU3dymlpycpRig0flwM7Q7rKfSYNDLspclJFmPYqAtkrJBVi1AD/opoF3s2Bj/
-an6Srz0KPvjV7gg2PkVZg3erRZNjwhelYvMqIqiScnIbTvupGuBS547LPlkShIte
-l6pGWfvke/M2wkSE2G9As7346AC1z6DVJEmG5DFj4OTPQZLvBb+B4ZxM0AphGuX6
-IK5qIj6Jkng12M2PJNMDE3hXPHLNphce+e7ooQLfK7UQI76b6WlZUlyY6zgQOcVd
-UcAJv1ze0acMBmxTtRGwkCU6MZfeq+zNgLd5pK3eMO4SSyHOBzj5HgWQQHCs6HBO
-RrvCVvZ70yWBJYkZHHhip4LWjNRcBW9v+Fu+hkv9s2BV6g0AIJ+iAxIQHvw6koiL
-uDaV6lpsNamUsFc/AVk/+QVfk0OjwwYH9+yLbntgTP+q3PIY+Z3CQ5qcOhmGFQ17
-g7w40cyOH9nvlPRQSqG/YpAxJ0jWoQhWd0uBSjase/eigQ28rajNvwUn1imTSaAT
-pi0P4iHT+munISzUToSrTEolcuIys/QqGsor9EoA8AWJ4ITg49wmhmhQ+MyEoVu8
-iKggK9PL4toMh4FmRaqp
-=9uCM
------END PGP SIGNATURE-----
-
---------------enig640270FD7F362B88D0F492B9--
+	Gustavo
