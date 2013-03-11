@@ -1,91 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754709Ab3CKXFy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 19:05:54 -0400
-Received: from mail-oa0-f52.google.com ([209.85.219.52]:48945 "EHLO
-	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754301Ab3CKXFk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 19:05:40 -0400
-From: Nishanth Menon <nm@ti.com>
-To: cpufreq <cpufreq@vger.kernel.org>
-Cc: Nishanth Menon <nm@ti.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Shawn Guo <shawn.guo@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-omap@vger.kernel.org
-Subject: [PATCH 2/2] cpufreq: cpufreq-cpu0: provide compatibility string for DT matchup
-Date: Mon, 11 Mar 2013 18:05:30 -0500
-Message-Id: <1363043130-30270-3-git-send-email-nm@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1363043130-30270-1-git-send-email-nm@ti.com>
-References: <1363043130-30270-1-git-send-email-nm@ti.com>
+	id S1754355Ab3CKXJO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 19:09:14 -0400
+Received: from mga03.intel.com ([143.182.124.21]:20283 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753839Ab3CKXJK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Mar 2013 19:09:10 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,825,1355126400"; 
+   d="scan'208";a="268862727"
+Date: Mon, 11 Mar 2013 23:09:02 +0000
+From: Chris Wilson <chris@chris-wilson.co.uk>
+To: "H. Peter Anvin" <hpa@zytor.com>, Tejun Heo <tj@kernel.org>,
+        Yinghai Lu <yinghai@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Renninger <trenn@suse.de>, Tang Chen <tangchen@cn.fujitsu.com>,
+        linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        David Airlie <airlied@linux.ie>, Jacob Shin <jacob.shin@amd.com>,
+        linux-acpi@vger.kernel.org, dri-devel@lists.freedesktop.org
+Subject: Re: [PATCH 01/14] x86, ACPI, mm: Kill max_low_pfn_mapped
+Message-ID: <20130311230902.GC18499@cantiga.alporthouse.com>
+Mail-Followup-To: Chris Wilson <chris@chris-wilson.co.uk>,
+	"H. Peter Anvin" <hpa@zytor.com>, Tejun Heo <tj@kernel.org>,
+	Yinghai Lu <yinghai@kernel.org>,
+	Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Thomas Renninger <trenn@suse.de>,
+	Tang Chen <tangchen@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
+	"Rafael J. Wysocki" <rjw@sisk.pl>, David Airlie <airlied@linux.ie>,
+	Jacob Shin <jacob.shin@amd.com>, linux-acpi@vger.kernel.org,
+	dri-devel@lists.freedesktop.org
+References: <1362718720-27048-1-git-send-email-yinghai@kernel.org>
+ <1362718720-27048-2-git-send-email-yinghai@kernel.org>
+ <20130308051059.GC14556@mtj.dyndns.org>
+ <CAE9FiQVMjm7P28XLYGQ675we2+dU+H6rJK2eiO+FFeynYefJHA@mail.gmail.com>
+ <CAOS58YOwSjHyFfAfaY_o3YZKhD-p2gc78ZGrc4N5_NCg+ZVu1A@mail.gmail.com>
+ <CAE9FiQVFvg2M5A5Se5pys5yquNSZeOTV=s4YgLwr6QH_6=nY_w@mail.gmail.com>
+ <CAOS58YNy_Rhg8M_7Qbgyutz68Q67i9R00rTuVy6CyZaFV1MSgA@mail.gmail.com>
+ <51398096.1060304@zytor.com>
+ <20130311225048.GA3872@bremse>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130311225048.GA3872@bremse>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit 5553f9e (cpufreq: instantiate cpufreq-cpu0 as a platform_driver)
-now forces platform device to be registered for allowing cpufreq-cpu0
-to be used by SoCs. example: drivers/cpufreq/highbank-cpufreq.c
+On Mon, Mar 11, 2013 at 11:50:48PM +0100, Daniel Vetter wrote:
+> On Thu, Mar 07, 2013 at 10:09:26PM -0800, H. Peter Anvin wrote:
+> > On 03/07/2013 09:28 PM, Tejun Heo wrote:
+> > > On Thu, Mar 7, 2013 at 9:27 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+> > >> They are not using memblock_find_in_range(), so 1ULL<< will not help.
+> > >>
+> > >> Really hope i915 drm guys could clean that hacks.
+> > > 
+> > > The code isn't being used.  Just leave it alone.  Maybe add a comment.
+> > >  The change is just making things more confusing.
+> > > 
+> > 
+> > Indeed, but...
+> > 
+> > Daniel: can you guys clean this up or can we just remove the #if 0 clause?
+> 
+> I guess we could just put this into a comment explaining where stolen
+> memory for the gfx devices is at on gen2. But tbh I don't mind if we just
+> keep the #if 0 code around. For all newer platforms we can get at that
+> offset through mch bar registers, so I don't really care.
 
-However, for SoCs that wish to link up using device tree, instead
-of platform device, provide compatibility string match:
-compatible = "cpufreq,cpu0";
+If you want to keep the comment accurate
+s/max_low_pfn_mapped/max_pfn_mapped/ as the machines in question don't
+support more than 4GiB anyway. Or you can help address the underlying
+issue of figuring out how we can derive the location of the stolen
+memory which is reserved by the BIOS but not communicated to the OS.
+-Chris
 
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Cc: Shawn Guo <shawn.guo@linaro.org>
-Cc: linux-kernel@vger.kernel.org
-Cc: cpufreq@vger.kernel.org
-Cc: linux-pm@vger.kernel.org
-Cc: linux-omap@vger.kernel.org
-
-Signed-off-by: Nishanth Menon <nm@ti.com>
----
- .../devicetree/bindings/cpufreq/cpufreq-cpu0.txt   |    3 +++
- drivers/cpufreq/cpufreq-cpu0.c                     |    6 ++++++
- 2 files changed, 9 insertions(+)
-
-diff --git a/Documentation/devicetree/bindings/cpufreq/cpufreq-cpu0.txt b/Documentation/devicetree/bindings/cpufreq/cpufreq-cpu0.txt
-index f180963..a5699f0 100644
---- a/Documentation/devicetree/bindings/cpufreq/cpufreq-cpu0.txt
-+++ b/Documentation/devicetree/bindings/cpufreq/cpufreq-cpu0.txt
-@@ -10,6 +10,8 @@ under node /cpus/cpu@0.
- Required properties:
- - operating-points: Refer to Documentation/devicetree/bindings/power/opp.txt
-   for details
-+- compatible: if platform_device is *not* used, should be:
-+  "cpufreq,cpu0"
- 
- Optional properties:
- - clock-name: If the clock is not converted to device tree, then describe
-@@ -24,6 +26,7 @@ Examples:
- cpus {
- 	#address-cells = <1>;
- 	#size-cells = <0>;
-+	compatible = "cpufreq,cpu0";
- 
- 	cpu@0 {
- 		compatible = "arm,cortex-a9";
-diff --git a/drivers/cpufreq/cpufreq-cpu0.c b/drivers/cpufreq/cpufreq-cpu0.c
-index 28223c9..a6f0a9b 100644
---- a/drivers/cpufreq/cpufreq-cpu0.c
-+++ b/drivers/cpufreq/cpufreq-cpu0.c
-@@ -277,9 +277,15 @@ static int cpu0_cpufreq_remove(struct platform_device *pdev)
- 	return 0;
- }
- 
-+static struct of_device_id of_cpu0_cpufreq_match[] = {
-+	{ .compatible = "cpufreq,cpu0", },
-+	{ /* end */ }
-+};
-+
- static struct platform_driver cpu0_cpufreq_platdrv = {
- 	.driver = {
- 		.name	= "cpufreq-cpu0",
-+		.of_match_table = of_cpu0_cpufreq_match,
- 		.owner	= THIS_MODULE,
- 	},
- 	.probe		= cpu0_cpufreq_probe,
 -- 
-1.7.9.5
-
+Chris Wilson, Intel Open Source Technology Centre
