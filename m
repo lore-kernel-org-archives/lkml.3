@@ -1,59 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754962Ab3CKVhn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 17:37:43 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:39593 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754907Ab3CKVhl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 17:37:41 -0400
-Date: Mon, 11 Mar 2013 14:37:35 -0700
-From: Kees Cook <keescook@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>, David Airlie <airlied@linux.ie>,
-        dri-devel@lists.freedesktop.org
-Subject: [PATCH v2] drm/i915: clarify reasoning for the access_ok call
-Message-ID: <20130311213735.GA22493@www.outflux.net>
+	id S1754828Ab3CKVil (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 17:38:41 -0400
+Received: from ud10.udmedia.de ([194.117.254.50]:55622 "EHLO
+	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753313Ab3CKVik (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Mar 2013 17:38:40 -0400
+Date: Mon, 11 Mar 2013 22:38:37 +0100
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: "Theodore Ts'o" <tytso@mit.edu>, Dave Jones <davej@redhat.com>,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: torrent hash failures since 3.9.0-rc1
+Message-ID: <20130311213837.GA438@x4>
+References: <20130311171824.GA434@x4>
+ <20130311191753.GA439@x4>
+ <20130311194159.GB3579@redhat.com>
+ <20130311201334.GA444@x4>
+ <20130311203738.GB15478@thunk.org>
+ <20130311204625.GA433@x4>
+ <20130311211833.GC15478@thunk.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-HELO: www.outflux.net
+In-Reply-To: <20130311211833.GC15478@thunk.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This clarifies the comment above the access_ok check so a missing
-VERIFY_READ doesn't alarm anyone.
+On 2013.03.11 at 17:18 -0400, Theodore Ts'o wrote:
+> On Mon, Mar 11, 2013 at 09:46:25PM +0100, Markus Trippelsdorf wrote:
+> > > BTW, I'm currently running 3.9-rc2 with some additional fixes from the
+> > > ext4 dev branch, and I'm not able to reproduce the problem using
+> > > rtorrent on my laptop.  How reliably is it reproducing for you?  Are
+> > > you seeing the problem every time you try this?
+> > 
+> > Yes, it's 100% reproducible for me. If I boot a 3.8 kernel the issue
+> > vanishes.
+> 
+> Would you be willing to try an experiment? 
+> 
+> Try pulling down the master branch from the ext4 git tree here:
+> 
+> git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4.git
+> 
+> This contains all of the ext4 changes which are in 3.9-rc1, based on
+> top of 3.8-rc3.  See if it reproduces there.  If it does, then it
+> would tend to confirm the hypothesis that the issue was introduced by
+> one of the ext4 patches that we merged during the 3.9-rc1 merge
+> window... and then, since if you can reproduce the problem, if you
+> could do a git bisect to find the guilty commit, that would really
+> greatly appreciated.
+> 
+> If you can't reproduce it from the ext4.git tree, then the problem is
+> probably caused by some other change that was introduced between 3.8
+> and 3.9-rc1.
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
----
-v2:
- - rewrote comment, thanks to Chris Wilson
----
- drivers/gpu/drm/i915/i915_gem_execbuffer.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+I've started a full bisection from v3.8 to todays git tree. It will take
+~13 steps. However it's already late here in Germany. I will continue
+the bisection tomorrow and report back.
 
-diff --git a/drivers/gpu/drm/i915/i915_gem_execbuffer.c b/drivers/gpu/drm/i915/i915_gem_execbuffer.c
-index bf7ceca..89c4039 100644
---- a/drivers/gpu/drm/i915/i915_gem_execbuffer.c
-+++ b/drivers/gpu/drm/i915/i915_gem_execbuffer.c
-@@ -751,7 +751,11 @@ validate_exec_list(struct drm_i915_gem_exec_object2 *exec,
- 
- 		length = exec[i].relocation_count *
- 			sizeof(struct drm_i915_gem_relocation_entry);
--		/* we may also need to update the presumed offsets */
-+		/*
-+		 * We must check that the entire relocation array is safe
-+		 * to read, but since we may need to update the presumed
-+		 * offsets during execution, check for full write access.
-+		 */
- 		if (!access_ok(VERIFY_WRITE, ptr, length))
- 			return -EFAULT;
- 
 -- 
-1.7.9.5
-
-
--- 
-Kees Cook
-Chrome OS Security
+Markus
