@@ -1,115 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753245Ab3CKSKh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 14:10:37 -0400
-Received: from f43.mail.ru ([217.69.128.200]:56537 "EHLO f43.mail.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751247Ab3CKSKg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 14:10:36 -0400
-From: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
-To: =?UTF-8?B?TGFycy1QZXRlciBDbGF1c2Vu?= <lars@metafoo.de>
-Cc: =?UTF-8?B?R3JlZyBLcm9haC1IYXJ0bWFu?= <gregkh@linuxfoundation.org>,
-        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: =?UTF-8?B?UmU6IFtQQVRDSCAyLzRdIHR0eTogbWF4MzEweDogVXNlIGRldl9wbV9vcHM=?=
-Mime-Version: 1.0
-X-Mailer: Mail.Ru Mailer 1.0
-X-Originating-IP: [188.134.40.128]
-Date: Mon, 11 Mar 2013 22:10:31 +0400
-Reply-To: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
-X-Priority: 3 (Normal)
-Message-ID: <1363025431.558252587@f43.mail.ru>
-Content-Type: text/plain; charset=utf-8
-X-Spam: Not detected
-X-Mras: Ok
-In-Reply-To: <1363023892-15957-2-git-send-email-lars@metafoo.de>
-References: <1363023892-15957-1-git-send-email-lars@metafoo.de> <1363023892-15957-2-git-send-email-lars@metafoo.de>
+	id S1753971Ab3CKSLX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 14:11:23 -0400
+Received: from mail-lb0-f171.google.com ([209.85.217.171]:36541 "EHLO
+	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752815Ab3CKSLW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Mar 2013 14:11:22 -0400
+From: Johan Hovold <jhovold@gmail.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        rtc-linux@googlegroups.com, Johan Hovold <jhovold@gmail.com>
+Subject: [PATCH v2 0/5] ARM: at91: fix hanged boot
+Date: Mon, 11 Mar 2013 19:07:54 +0100
+Message-Id: <1363025279-17615-1-git-send-email-jhovold@gmail.com>
+X-Mailer: git-send-email 1.8.1.5
+In-Reply-To: <20130311180611.GF8797@localhost>
+References: <20130311180611.GF8797@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r2BIAeKx009177
 
-Hello.
+These patches fix a few severe issues affecting most AT91 SOCs where
+boot can hang after a non-general reset, and where the only way to get
+the system booting again is to do a general reset -- something which
+could require physically removing any backup battery.
 
-> Use dev_pm_ops instead of the deprecated legacy suspend/resume for the
-> max310x driver.
-> 
-> Cc: Alexander Shiyan <shc_work@mail.ru>
-> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-> ---
->  drivers/tty/serial/max310x.c | 24 ++++++++++++++++--------
->  1 file changed, 16 insertions(+), 8 deletions(-)
-> 
-> diff --git a/drivers/tty/serial/max310x.c b/drivers/tty/serial/max310x.c
-> index 0c2422c..8941e64 100644
-> --- a/drivers/tty/serial/max310x.c
-> +++ b/drivers/tty/serial/max310x.c
-> @@ -881,12 +881,14 @@ static struct uart_ops max310x_ops = {
->  	.verify_port	= max310x_verify_port,
->  };
->  
-> -static int max310x_suspend(struct spi_device *spi, pm_message_t state)
-> +#ifdef CONFIG_PM_SLEEP
-> +
-> +static int max310x_suspend(struct device *dev)
->  {
->  	int ret;
-> -	struct max310x_port *s = dev_get_drvdata(&spi->dev);
-> +	struct max310x_port *s = dev_get_drvdata(dev);
->  
-> -	dev_dbg(&spi->dev, "Suspend\n");
-> +	dev_dbg(dev, "Suspend\n");
->  
->  	ret = uart_suspend_port(&s->uart, &s->port);
->  
-> @@ -905,11 +907,11 @@ static int max310x_suspend(struct spi_device *spi, pm_message_t state)
->  	return ret;
->  }
->  
-> -static int max310x_resume(struct spi_device *spi)
-> +static int max310x_resume(struct device *dev)
->  {
-> -	struct max310x_port *s = dev_get_drvdata(&spi->dev);
-> +	struct max310x_port *s = dev_get_drvdata(dev);
->  
-> -	dev_dbg(&spi->dev, "Resume\n");
-> +	dev_dbg(dev, "Resume\n");
->  
->  	if (s->pdata->suspend)
->  		s->pdata->suspend(0);
-> @@ -928,6 +930,13 @@ static int max310x_resume(struct spi_device *spi)
->  	return uart_resume_port(&s->uart, &s->port);
->  }
->  
-> +static SIMPLE_DEV_PM_OPS(max310x_pm_ops, max310x_suspend, max310x_resume);
-> +#define MAX310X_PM_OPS (&max310x_pm_ops)
-> +
-> +#else
-> +#define MAX310X_PM_OPS NULL
-> +#endif
-> +
->  #ifdef CONFIG_GPIOLIB
->  static int max310x_gpio_get(struct gpio_chip *chip, unsigned offset)
->  {
-> @@ -1242,11 +1251,10 @@ static struct spi_driver max310x_driver = {
->  	.driver = {
->  		.name	= "max310x",
->  		.owner	= THIS_MODULE,
-> +		.pm	= MAX310X_PM_OPS,
+The problems stem from the fact that the RTC and RTT-peripherals are
+powered by backup power (VDDBU) and are not reset on wake-up, user,
+watchdog or software reset. Consequently, RTC and RTT-alarms and their
+interrupts may be enabled at boot, leading to a system lock-up when an
+interrupt arrives on the shared system-interrupt line before the
+appropriate handler (e.g. RTC-driver) has been installed.
 
-Check for CONFIG_PM_SLEEP not necessary at all.
-<linux/pm.h> will do all for us.
+The easiest way to trigger this is to simply wake up from an RTC-alarm
+on at91sam9g45. The RTC-driver currently does not disable interrupts at
+shutdown so even after a clean shut-down the system will always hang
+after waking up.
 
->  	},
->  	.probe		= max310x_probe,
->  	.remove		= max310x_remove,
-> -	.suspend	= max310x_suspend,
-> -	.resume		= max310x_resume,
->  	.id_table	= max310x_id_table,
->  };
->  module_spi_driver(max310x_driver);
-> -- 
-> 1.8.0
+The first patch fixes this very general case of RTC-wake up after a
+clean shutdown in the RTC-driver and is marked for stable as it is
+perfectly straight-forward. [ Note that the other, RTT-based, AT91
+RTC-driver already disables its interrupts at shutdown. ]
 
----
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+The more general problem can be triggered, for example, by doing a
+user-reset while updating the RTC-time or if an RTC or RTT-alarm goes
+off after a non-clean shutdown.
+
+To fix this I propose that arch-code should mask the relevant interrupts
+before enabling the system interrupt at early boot, and this is what
+the fifth patch does. To access the RTC-registers I choose to revert a
+recent patch that moved the register definitions to drivers/rtc.
+
+Arguably, the relevant interrupts could also be disabled in bootloaders,
+but I suggest fixing it in the kernel once and for all.
+
+The patches have been tested on at91sam9263 and at91sam9g45 (non-DT),
+and compile-tested for the other SOCs and DT.
+
+Johan
+
+
+v2:
+ - add DT-support
+ - make sys_irq_mask non-mandatory
+
+
+Johan Hovold (5):
+  ARM: at91/rtc: fix boot after RTC wake-up
+  ARM: at91/dts: add RTC nodes
+  ARM: at91/dts: add RTT nodes
+  Revert "arm: at91: move at91rm9200 rtc header in drivers/rtc"
+  ARM: at91: fix hanged boot
+
+ arch/arm/boot/dts/at91rm9200.dtsi          |  5 ++
+ arch/arm/boot/dts/at91sam9260.dtsi         |  5 ++
+ arch/arm/boot/dts/at91sam9263.dtsi         | 10 ++++
+ arch/arm/boot/dts/at91sam9g45.dtsi         | 10 ++++
+ arch/arm/boot/dts/at91sam9n12.dtsi         |  5 ++
+ arch/arm/boot/dts/at91sam9x5.dtsi          |  5 ++
+ arch/arm/mach-at91/at91sam9260.c           |  6 ++
+ arch/arm/mach-at91/at91sam9261.c           |  6 ++
+ arch/arm/mach-at91/at91sam9263.c           |  7 +++
+ arch/arm/mach-at91/at91sam9g45.c           |  7 +++
+ arch/arm/mach-at91/at91sam9rl.c            |  7 +++
+ arch/arm/mach-at91/generic.h               |  2 +
+ arch/arm/mach-at91/include/mach/at91_rtc.h | 75 +++++++++++++++++++++++++
+ arch/arm/mach-at91/setup.c                 | 88 ++++++++++++++++++++++++++++++
+ arch/arm/mach-at91/soc.h                   |  1 +
+ drivers/rtc/rtc-at91rm9200.c               | 11 +++-
+ drivers/rtc/rtc-at91rm9200.h               | 75 -------------------------
+ 17 files changed, 249 insertions(+), 76 deletions(-)
+ create mode 100644 arch/arm/mach-at91/include/mach/at91_rtc.h
+ delete mode 100644 drivers/rtc/rtc-at91rm9200.h
+
+-- 
+1.8.1.5
+
