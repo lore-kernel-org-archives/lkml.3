@@ -1,70 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754364Ab3CKTem (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 15:34:42 -0400
-Received: from mail-oa0-f44.google.com ([209.85.219.44]:41723 "EHLO
-	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751690Ab3CKTek (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 15:34:40 -0400
+	id S1754381Ab3CKTfn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 15:35:43 -0400
+Received: from dcvr.yhbt.net ([64.71.152.64]:57319 "EHLO dcvr.yhbt.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754236Ab3CKTfm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Mar 2013 15:35:42 -0400
+Date: Mon, 11 Mar 2013 19:35:41 +0000
+From: Eric Wong <normalperson@yhbt.net>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org, Davide Libenzi <davidel@xmailserver.org>
+Subject: wfcqueue (in Userspace RCU) for Linux kernel (for epoll)
+Message-ID: <20130311193541.GA11149@dcvr.yhbt.net>
 MIME-Version: 1.0
-In-Reply-To: <20130311192805.GA19428@redhat.com>
-References: <20130311191156.GA17763@www.outflux.net>
-	<20130311192805.GA19428@redhat.com>
-Date: Mon, 11 Mar 2013 12:34:39 -0700
-X-Google-Sender-Auth: IaX8GqcxxKmw_VSbC0hcHfJG7_Y
-Message-ID: <CAGXu5jJEhDHgVR_iAdf27G0+Mip82vYBHv-r0Q_vZwDodfADRQ@mail.gmail.com>
-Subject: Re: [PATCH] signal: always clear sa_restorer on execve
-From: Kees Cook <keescook@chromium.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Emese Revfy <re.emese@gmail.com>, PaX Team <pageexec@freemail.hu>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 11, 2013 at 12:28 PM, Oleg Nesterov <oleg@redhat.com> wrote:
-> On 03/11, Kees Cook wrote:
->>
->> When the new signal handlers are set up for a fork, the location of
->> sa_restorer is not cleared, leaking a parent process's address space
->> location to children. This allows for a potential bypass of the parent's
->> ASLR by examining the sa_restorer value returned when calling sigaction().
->
-> I don't understand.
->
-> fork() should not change restorer/etc, and the child has the same address
-> space anyway. There is no any leak and the patch can't make any difference
-> in this case because flush_signal_handlers() is not called by fork().
+Hi, I'm looking to reduce contention for the ep->lock spin lock in epoll.
 
-I probably failed to explain this correctly. From the perspective of
-what should be considered "secret", it only matters across the exec,
-not the fork (since the VMAs haven't changed until the exec). But the
-info leak is easy to see, and this patch fixes it. As you say, since
-other things were reset, so should sa_restorer.
+I came across wfcqueue in Userspace RCU and am wondering if there's any
+reason (other that lack of developer time/users) it hasn't been adapted
+for the Linux kernel.
 
->
->> @@ -485,6 +485,9 @@ flush_signal_handlers(struct task_struct *t, int force_default)
->>               if (force_default || ka->sa.sa_handler != SIG_IGN)
->>                       ka->sa.sa_handler = SIG_DFL;
->>               ka->sa.sa_flags = 0;
->> +#ifdef __ARCH_HAS_SA_RESTORER
->> +             ka->sa.sa_restorer = NULL;
->> +#endif
->
-> However, exec sets SIG_DFL but keeps ->sa_restorer, so probably this
-> patch makes sense anyway.
->
-> Oleg.
->
+I'd be happy to do the work if it's suitable (and omit parts which
+may not be, such as busy wait).
 
--Kees
+Using a mutex lock (while in process context) for dequeue works for
+epoll.  I mainly want a lock-free enqueue for ep_poll_callback since
+that may be called in IRQ context.
+
+I suppose I can also use the llist LIFO in ep_poll_callback and
+reverse that while in process context, too...
 
 
--- 
-Kees Cook
-Chrome OS Security
+ref: http://git.lttng.org/userspace-rcu.git
