@@ -1,57 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754301Ab3CKT5Y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 15:57:24 -0400
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:44776 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753621Ab3CKT5X (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 15:57:23 -0400
+	id S1754261Ab3CKT6R (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 15:58:17 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:45533 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750948Ab3CKT6Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Mar 2013 15:58:16 -0400
+Message-ID: <513E36CB.5040908@zytor.com>
+Date: Mon, 11 Mar 2013 12:55:55 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130219 Thunderbird/17.0.3
 MIME-Version: 1.0
-In-Reply-To: <1363029780-2902-1-git-send-email-valentin.ilie@gmail.com>
-References: <1363029780-2902-1-git-send-email-valentin.ilie@gmail.com>
-Date: Mon, 11 Mar 2013 21:57:22 +0200
-X-Google-Sender-Auth: AMc-rKsJ8wikHgOgbO4CbCOp9ms
-Message-ID: <CAEnQRZDdOO9DAZoypCs5jV5Zy0u=btX-zQV7kxo6HxoXZxEN3w@mail.gmail.com>
-Subject: Re: [PATCH] Arch: x86: kernel: smpboot.c: Remove unused variable
-From: Daniel Baluta <dbaluta@ixiacom.com>
-To: Valentin Ilie <valentin.ilie@gmail.com>
-Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+To: Vivek Goyal <vgoyal@redhat.com>
+CC: Yinghai Lu <yinghai@kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        WANG Chao <chaowang@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
         linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Subject: Re: [PATCH] x86, kdump: Set crashkernel_low automatically
+References: <513D52BA.3070206@redhat.com> <1362977817-23297-1-git-send-email-yinghai@kernel.org> <20130311144853.GB8482@redhat.com> <20130311150256.GC8482@redhat.com> <CAE9FiQW1CHJ-j9aFgdtKEsgyZSTHTS1HzgMSGM8FnV7Ns3kUvw@mail.gmail.com> <20130311182655.GB12107@redhat.com> <513E2695.3080707@zytor.com> <CAE9FiQXLodhSFy4T9pKLMS+axF0jHGL9B0+TL=dYOFrLVudN9g@mail.gmail.com> <513E28B8.3000502@zytor.com> <CAE9FiQW-gpEMmc6kseb7E+TEg1F9CqEYZBRDiJ3bDY=t6zGRmg@mail.gmail.com> <20130311192021.GF12107@redhat.com>
+In-Reply-To: <20130311192021.GF12107@redhat.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 11, 2013 at 9:23 PM, Valentin Ilie <valentin.ilie@gmail.com> wrote:
-> Remove unused variable 'c'
->
-> Signed-off-by: Valentin Ilie <valentin.ilie@gmail.com>
-> ---
->  arch/x86/kernel/smpboot.c |    1 -
->  1 file changed, 1 deletion(-)
->
-> diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-> index a6ceaed..7bc998a 100644
-> --- a/arch/x86/kernel/smpboot.c
-> +++ b/arch/x86/kernel/smpboot.c
-> @@ -1367,7 +1367,6 @@ static inline void mwait_play_dead(void)
->         unsigned int highest_subcstate = 0;
->         int i;
->         void *mwait_ptr;
-> -       struct cpuinfo_x86 *c = __this_cpu_ptr(&cpu_info);
->
->         if (!this_cpu_has(X86_FEATURE_MWAIT))
->                 return;
-> --
-> 1.7.10.4
+On 03/11/2013 12:20 PM, Vivek Goyal wrote:
+> 
+> I find it odd that if a user wants to load a 32bit kernel or use 32bit
+> entry point then he needs to first reboot the kernel and re-reserve
+> the memory.
+> 
+> At installation time, one does not necessarily know what kind of kernel
+> will be used for crashdump. So reserving as high as possible limits
+> the choices.
+> 
+> I would rather prefer that user opt in for higher addresses instead of
+> these being reserved by default.
+> 
 
-Hi Valentin,
+Quite frankly the whole design seems to be held together with chewing
+gum.  At the core, the problem is a tight coupling between kexec-tools
+version, kexec-tools options, and kernel command line options that have
+to be combined in very ugly ways.  Part of the reason is that the kernel
+isn't actually given the information it needs to do the job required.
 
-I guess a better subject for this patch should be
-x86, smpboot: Remove unused variable
+As far as "if a user wants to load"... why on Earth should that be the
+default?  How could that *not* be an exceptional case?
 
-Use git log arch/x86/kernel/smpboot.c to check previous commits.
+	-hpa
 
-thanks,
-Daniel.
+
