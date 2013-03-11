@@ -1,45 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752104Ab3CKNnn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 09:43:43 -0400
-Received: from cpsmtpb-ews03.kpnxchange.com ([213.75.39.6]:52311 "EHLO
-	cpsmtpb-ews03.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751352Ab3CKNnl (ORCPT
+	id S1752204Ab3CKNph (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 09:45:37 -0400
+Received: from mail-bk0-f48.google.com ([209.85.214.48]:52231 "EHLO
+	mail-bk0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751352Ab3CKNpg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 09:43:41 -0400
-Message-ID: <1363009420.3137.76.camel@x61.thuisdomein>
-Subject: Re: [PATCH] ARM: imx: fix typo "DEBUG_IMX50_IMX53_UART"
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Shawn Guo <shawn.guo@linaro.org>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Date: Mon, 11 Mar 2013 14:43:40 +0100
-In-Reply-To: <20130311133720.GB25910@S2101-09.ap.freescale.net>
-References: <1363007760.3137.69.camel@x61.thuisdomein>
-	 <20130311133720.GB25910@S2101-09.ap.freescale.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 11 Mar 2013 13:43:40.0476 (UTC) FILETIME=[7092EFC0:01CE1E5E]
-X-RcptDomain: vger.kernel.org
+	Mon, 11 Mar 2013 09:45:36 -0400
+MIME-Version: 1.0
+Date: Mon, 11 Mar 2013 21:45:34 +0800
+Message-ID: <CAPgLHd-GV3sHfWdFMKY_Y1qAb9kSvsU98PAXiDA1ur49ErjqLw@mail.gmail.com>
+Subject: [PATCH -next] staging: sync: fix return value check in sync_fence_alloc()
+From: Wei Yongjun <weiyj.lk@gmail.com>
+To: gregkh@linuxfoundation.org, john.stultz@linaro.org, konkers@android.com
+Cc: yongjun_wei@trendmicro.com.cn, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-03-11 at 21:37 +0800, Shawn Guo wrote:
-> On Mon, Mar 11, 2013 at 02:16:00PM +0100, Paul Bolle wrote:
-> > 1) Typo was added in commit f8c95fe6d9adad72fc7bce90f4ab68d119f50c5b
-> > ("ARM: imx: support DEBUG_LL uart port selection for all i.MX SoCs").
-> > Looking at that patch and at the tree makes clear that DEBUG_IMX53_UART
-> > was intended here.
-> 
-> Thanks for the fixing.  Above comment should really be in the commit
-> log.  I just applied the patch as below.
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-Thanks for updating the commit explanation. I guess I'll have to reserve
-the "one line commit summary only" style for the really obvious typos.
+In case of error, the function anon_inode_getfile() returns
+ERR_PTR() and never returns NULL. The NULL test in the return
+value check should be replaced with IS_ERR().
 
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+---
+ drivers/staging/android/sync.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Paul Bolle
+diff --git a/drivers/staging/android/sync.c b/drivers/staging/android/sync.c
+index b9bb974..bf66c19 100644
+--- a/drivers/staging/android/sync.c
++++ b/drivers/staging/android/sync.c
+@@ -261,7 +261,7 @@ static struct sync_fence *sync_fence_alloc(const char *name)
+ 
+ 	fence->file = anon_inode_getfile("sync_fence", &sync_fence_fops,
+ 					 fence, 0);
+-	if (fence->file == NULL)
++	if (IS_ERR(fence->file))
+ 		goto err;
+ 
+ 	kref_init(&fence->kref);
 
