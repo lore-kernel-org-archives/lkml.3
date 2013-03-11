@@ -1,93 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753588Ab3CKPLF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 11:11:05 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:37208 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751821Ab3CKPLB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 11:11:01 -0400
-Message-ID: <1363014655.2395.69.camel@dabdike.int.hansenpartnership.com>
-Subject: Re: [patch] [SCSI] scsi_transport_sas: check for allocation failure
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: dgilbert@interlog.com
-Cc: Dan Carpenter <dan.carpenter@oracle.com>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Date: Mon, 11 Mar 2013 15:10:55 +0000
-In-Reply-To: <513DEED6.3090709@interlog.com>
-References: <20130308120215.GB18712@longonot.mountain>
-	 <513A2678.5000803@interlog.com>
-	 <1362783019.2370.45.camel@dabdike.int.hansenpartnership.com>
-	 <20130311131032.GO9189@mwanda> <513DEED6.3090709@interlog.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.6.3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753443Ab3CKPMG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 11:12:06 -0400
+Received: from gwu.lbox.cz ([62.245.111.132]:46061 "EHLO gwu.lbox.cz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751821Ab3CKPME (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Mar 2013 11:12:04 -0400
+X-Greylist: delayed 1462 seconds by postgrey-1.27 at vger.kernel.org; Mon, 11 Mar 2013 11:12:04 EDT
+Date: Mon, 11 Mar 2013 15:47:37 +0100
+From: Nikola Ciprich <nikola.ciprich@linuxbox.cz>
+To: linux-kernel mlist <linux-kernel@vger.kernel.org>
+Subject: in.tftpd - ulimit -u not working? cgroups?
+Message-ID: <20130311144737.GA7024@pcnci.linuxbox.cz>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="4Ckj6UjgE2iN1+kY"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2011-07-01)
+X-Antivirus: on lbxovapx by Kaspersky antivirus, 9314994 records (last update: 20130303)
+X-Spam-Score: N/A (imported whitelist)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-03-11 at 10:48 -0400, Douglas Gilbert wrote:
-> On 13-03-11 09:10 AM, Dan Carpenter wrote:
-> > On Fri, Mar 08, 2013 at 10:50:19PM +0000, James Bottomley wrote:
-> >> On Fri, 2013-03-08 at 12:57 -0500, Douglas Gilbert wrote:
-> >>> On 13-03-08 07:02 AM, Dan Carpenter wrote:
-> >>>> Static checkers complain that this allocation isn't checked.  We
-> >>>> should return zero if the allocation fails.
-> >>>>
-> >>>> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-> >>>>
-> >>>> diff --git a/drivers/scsi/scsi_transport_sas.c b/drivers/scsi/scsi_transport_sas.c
-> >>>> index 1b68142..a022997 100644
-> >>>> --- a/drivers/scsi/scsi_transport_sas.c
-> >>>> +++ b/drivers/scsi/scsi_transport_sas.c
-> >>>> @@ -379,9 +379,12 @@ sas_tlr_supported(struct scsi_device *sdev)
-> >>>>    {
-> >>>>    	const int vpd_len = 32;
-> >>>>    	struct sas_end_device *rdev = sas_sdev_to_rdev(sdev);
-> >>>> -	char *buffer = kzalloc(vpd_len, GFP_KERNEL);
-> >>>> +	char *buffer;
-> >>>>    	int ret = 0;
-> >>>>
-> >>>> +	buffer = kzalloc(vpd_len, GFP_KERNEL);
-> >>>> +	if (!buffer)
-> >>>> +		goto out;
-> >>>>    	if (scsi_get_vpd_page(sdev, 0x90, buffer, vpd_len))
-> >>>>    		goto out;
-> >>>>
-> >>>
-> >>> For 32 bytes, why not use the stack?
-> >>
-> >> Because the buffer is a DMA target.  You can't DMA to stack because of
-> >> padding and cacheline issues.
-> >>
-> >
-> > I think stack data works here.  scsi_execute() calls
-> > blk_rq_map_kern() which handles stack memory and alignment issues.
-> 
-> That being the case, several other callers of
-> scsi_get_vpd_page() 9and friends) could be
-> simplified and sped up.
 
-Um, I'm not sure you'll speed stuff up by doing this: have you seen what
-bio_copy_kern() does?  it will allocate a page per iov entry (in this
-case probably only a single entry) and copy the data into and out of
-that page, so not only do we get the copy overhead. We also get page
-allocation overheads instead of the small number of bytes we might need,
-which could cause quite a stall in a low memory situation.
+--4Ckj6UjgE2iN1+kY
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I'm not saying don't do it, I'm just saying think of the consequences
-over the fiddle of doing a small kmalloc.
+Hello everybody,
 
-> Also since VPD pages don't change and they can carry
-> a lot of disparate information (e.g. the Extended
-> Inquiry and Block Limits pages) perhaps they could
-> be cached by the appropriate level (e.g. Extended
-> Inquiry cached by mid-level; Block Limits cached
-> by sd driver).
+on one of our boxes, I'm encountering strange problem from
+time to time.. in.tftpd processes are forking up to thousand of
+processes, getting server to almost unresponsive state.
 
-We cache the ones we care about, but we could always add more if there's
-enough call, I suppose.
+I've tried various approaches to limiting tftp daemon but to no
+avail..
 
-James
+what puzzles me most is, that it seems to breach even ulimit -u setting.
 
+I'm starting in.tftpd from initscript (so no xinetd), prior to starting it,=
+ ulimit -n 50
+is run.
+
+I can see limit set up correctly for master process:
+
+grep processes /proc/XXX/limits:
+Max processes             50                   50                   process=
+es
+
+but again, few days ago, problem occured again, according to atop records, =
+thousands
+of in.tftpd processes got forked..
+
+Any idea on what could I be doing wrong?
+
+I also tried limiting memory using cgroups, but even with limit of 2MB, it =
+can spawn
+much more processes than I'd like, and 1MB is too low... Is it possible to =
+limit
+number of processes using cgroups? but I still think ulimit should be enoug=
+h, but
+what am I doing wrong here?
+
+thanks a lot for any clues in advance, I'm really becoming desperate...
+
+BR
+
+nik
+
+--=20
+-------------------------------------
+Ing. Nikola CIPRICH
+LinuxBox.cz, s.r.o.
+28.rijna 168, 709 00 Ostrava
+
+tel.:   +420 591 166 214
+fax:    +420 596 621 273
+mobil:  +420 777 093 799
+www.linuxbox.cz
+
+mobil servis: +420 737 238 656
+email servis: servis@linuxbox.cz
+-------------------------------------
+
+--4Ckj6UjgE2iN1+kY
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.14 (GNU/Linux)
+
+iEYEARECAAYFAlE97okACgkQ3xdJJrLygV7dfwCdHDk4vGc+YYmq1BO/c+v26A6T
+4psAn0+/94L2S4Kyi3w/yIXmkRhwfT4z
+=UtSk
+-----END PGP SIGNATURE-----
+
+--4Ckj6UjgE2iN1+kY--
