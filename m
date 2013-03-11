@@ -1,106 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753605Ab3CKQQM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 12:16:12 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:45706 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751526Ab3CKQQL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 12:16:11 -0400
-X-IronPort-AV: E=Sophos;i="4.84,824,1355097600"; 
-   d="scan'208";a="12444760"
-From: Zoltan Kiss <zoltan.kiss@citrix.com>
-To: <linux-kernel@vger.kernel.org>, <konrad.wilk@oracle.com>
-CC: Zoltan Kiss <zoltan.kiss@citrix.com>
-Subject: [PATCH 1/1] xen-blkback: Change statistics counter types to unsigned
-Date: Mon, 11 Mar 2013 16:15:50 +0000
-Message-ID: <1363018550-22416-1-git-send-email-zoltan.kiss@citrix.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <20130308184301.GA31104@phenom.dumpdata.com>
-References: <20130308184301.GA31104@phenom.dumpdata.com>
+	id S1753906Ab3CKQQm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 12:16:42 -0400
+Received: from mail-bk0-f43.google.com ([209.85.214.43]:36208 "EHLO
+	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752994Ab3CKQQl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Mar 2013 12:16:41 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.80.2.133]
+Date: Tue, 12 Mar 2013 00:16:40 +0800
+Message-ID: <CAPgLHd8oUa=YMtQ1P5Qo4=M0ysqJV4L7U9RCN0W7aB+A4xLbvA@mail.gmail.com>
+Subject: [PATCH] ALSA: asihpi - fix potential NULL pointer dereference
+From: Wei Yongjun <weiyj.lk@gmail.com>
+To: perex@perex.cz, tiwai@suse.de
+Cc: yongjun_wei@trendmicro.com.cn, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These values shouldn't be negative, but after an overflow their value
-can turn into negative, if they are signed. xentop can show bogus
-values in this case.
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
-Reported-by: Ichiro Ogino <ichiro.ogino@citrix.co.jp>
+The dereference should be moved below the NULL test.
+
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 ---
- drivers/block/xen-blkback/blkback.c |    4 ++--
- drivers/block/xen-blkback/common.h  |   14 +++++++-------
- drivers/block/xen-blkback/xenbus.c  |   14 +++++++-------
- 3 files changed, 16 insertions(+), 16 deletions(-)
+ sound/pci/asihpi/asihpi.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/block/xen-blkback/blkback.c b/drivers/block/xen-blkback/blkback.c
-index de1f319..75740f9 100644
---- a/drivers/block/xen-blkback/blkback.c
-+++ b/drivers/block/xen-blkback/blkback.c
-@@ -381,8 +381,8 @@ irqreturn_t xen_blkif_be_int(int irq, void *dev_id)
+diff --git a/sound/pci/asihpi/asihpi.c b/sound/pci/asihpi/asihpi.c
+index 3536b07..0aabfed 100644
+--- a/sound/pci/asihpi/asihpi.c
++++ b/sound/pci/asihpi/asihpi.c
+@@ -2549,7 +2549,7 @@ static int snd_asihpi_sampleclock_add(struct snd_card_asihpi *asihpi,
  
- static void print_stats(struct xen_blkif *blkif)
+ static int snd_card_asihpi_mixer_new(struct snd_card_asihpi *asihpi)
  {
--	pr_info("xen-blkback (%s): oo %3d  |  rd %4d  |  wr %4d  |  f %4d"
--		 "  |  ds %4d\n",
-+	pr_info("xen-blkback (%s): oo %3llu  |  rd %4llu  |  wr %4llu  |  f %4llu"
-+		 "  |  ds %4llu\n",
- 		 current->comm, blkif->st_oo_req,
- 		 blkif->st_rd_req, blkif->st_wr_req,
- 		 blkif->st_f_req, blkif->st_ds_req);
-diff --git a/drivers/block/xen-blkback/common.h b/drivers/block/xen-blkback/common.h
-index 6072390..72d09ac 100644
---- a/drivers/block/xen-blkback/common.h
-+++ b/drivers/block/xen-blkback/common.h
-@@ -208,13 +208,13 @@ struct xen_blkif {
+-	struct snd_card *card = asihpi->card;
++	struct snd_card *card;
+ 	unsigned int idx = 0;
+ 	unsigned int subindex = 0;
+ 	int err;
+@@ -2557,6 +2557,7 @@ static int snd_card_asihpi_mixer_new(struct snd_card_asihpi *asihpi)
  
- 	/* statistics */
- 	unsigned long		st_print;
--	int			st_rd_req;
--	int			st_wr_req;
--	int			st_oo_req;
--	int			st_f_req;
--	int			st_ds_req;
--	int			st_rd_sect;
--	int			st_wr_sect;
-+	unsigned long long			st_rd_req;
-+	unsigned long long			st_wr_req;
-+	unsigned long long			st_oo_req;
-+	unsigned long long			st_f_req;
-+	unsigned long long			st_ds_req;
-+	unsigned long long			st_rd_sect;
-+	unsigned long long			st_wr_sect;
+ 	if (snd_BUG_ON(!asihpi))
+ 		return -EINVAL;
++	card = asihpi->card;
+ 	strcpy(card->mixername, "Asihpi Mixer");
  
- 	wait_queue_head_t	waiting_to_free;
- };
-diff --git a/drivers/block/xen-blkback/xenbus.c b/drivers/block/xen-blkback/xenbus.c
-index 5e237f6..8bfd1bc 100644
---- a/drivers/block/xen-blkback/xenbus.c
-+++ b/drivers/block/xen-blkback/xenbus.c
-@@ -230,13 +230,13 @@ int __init xen_blkif_interface_init(void)
- 	}								\
- 	static DEVICE_ATTR(name, S_IRUGO, show_##name, NULL)
- 
--VBD_SHOW(oo_req,  "%d\n", be->blkif->st_oo_req);
--VBD_SHOW(rd_req,  "%d\n", be->blkif->st_rd_req);
--VBD_SHOW(wr_req,  "%d\n", be->blkif->st_wr_req);
--VBD_SHOW(f_req,  "%d\n", be->blkif->st_f_req);
--VBD_SHOW(ds_req,  "%d\n", be->blkif->st_ds_req);
--VBD_SHOW(rd_sect, "%d\n", be->blkif->st_rd_sect);
--VBD_SHOW(wr_sect, "%d\n", be->blkif->st_wr_sect);
-+VBD_SHOW(oo_req,  "%llu\n", be->blkif->st_oo_req);
-+VBD_SHOW(rd_req,  "%llu\n", be->blkif->st_rd_req);
-+VBD_SHOW(wr_req,  "%llu\n", be->blkif->st_wr_req);
-+VBD_SHOW(f_req,  "%llu\n", be->blkif->st_f_req);
-+VBD_SHOW(ds_req,  "%llu\n", be->blkif->st_ds_req);
-+VBD_SHOW(rd_sect, "%llu\n", be->blkif->st_rd_sect);
-+VBD_SHOW(wr_sect, "%llu\n", be->blkif->st_wr_sect);
- 
- static struct attribute *xen_vbdstat_attrs[] = {
- 	&dev_attr_oo_req.attr,
--- 
-1.7.0.4
+ 	err =
+
 
