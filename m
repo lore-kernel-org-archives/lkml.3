@@ -1,50 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753320Ab3CKPwL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 11:52:11 -0400
-Received: from mail-ve0-f175.google.com ([209.85.128.175]:60298 "EHLO
-	mail-ve0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751302Ab3CKPwJ (ORCPT
+	id S1753263Ab3CKPxJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 11:53:09 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:23791 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751526Ab3CKPxH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 11:52:09 -0400
-MIME-Version: 1.0
-In-Reply-To: <Pine.LNX.4.44L0.1303111127030.2246-100000@iolanthe.rowland.org>
-References: <CACVXFVNuJa0i9gtUWP2tVexwjKF0k1MJ2bA9V5M28LUWFJt5DQ@mail.gmail.com>
-	<Pine.LNX.4.44L0.1303111127030.2246-100000@iolanthe.rowland.org>
-Date: Mon, 11 Mar 2013 23:52:08 +0800
-Message-ID: <CACVXFVN6zm2gG4v1jhV=8EwAtKs=bg3urJ7dRiOgPGHtKXHYxA@mail.gmail.com>
-Subject: Re: [PATCH] usb/core/devio.c: Don't use GFP_KERNEL while we cannot
- reset a storage device
-From: Ming Lei <tom.leiming@gmail.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Hans de Goede <hdegoede@redhat.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, ldv-project@linuxtesting.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 11 Mar 2013 11:53:07 -0400
+X-Authority-Analysis: v=2.0 cv=H5hZMpki c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=4tJu7dT1YMoA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=1YWbut8buxUA:10 a=VwQbUJbxAAAA:8 a=t2dSz0Cs3JsyNU80n04A:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1363017185.12608.21.camel@gandalf.local.home>
+Subject: Re: [PATCH 12/13] scsi/tracing: include correct header file
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Jovi Zhang <bookjovi@gmail.com>
+Cc: James Bottomley <jbottomley@parallels.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 11 Mar 2013 11:53:05 -0400
+In-Reply-To: <CACV3sbJi-1S_yWbJWL5u6j6HN6ej_R8=FsH2txmEYGM5AfauoQ@mail.gmail.com>
+References: <513D844D.7000301@huawei.com>
+	 <1363011675.12608.14.camel@gandalf.local.home>
+	 <1363015456.2395.80.camel@dabdike.int.hansenpartnership.com>
+	 <1363016174.12608.20.camel@gandalf.local.home>
+	 <CACV3sbJi-1S_yWbJWL5u6j6HN6ej_R8=FsH2txmEYGM5AfauoQ@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 11, 2013 at 11:32 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
->
-> Of course you have to lock the device before changing its driver.  What
-> would happen if two different threads tried to change a device's driver
-> at the same time?
+On Mon, 2013-03-11 at 23:45 +0800, Jovi Zhang wrote:
 
-Yes, claim/release interface need device lock, but the patch doesn't
-touch claim/release command handling.
+> Thanks, sometimes I forgot cc mailing list in MAINTAINERS file(just
+> attention on M),
+> I will got this in next patch submission.
 
->
-> usbdev_do_ioctl() needs to acquire the device lock in order to prevent
-> races with driver_disconnect() and usbdev_remove().
+Note, the patches I said were fine, please do not resend. I'll take them
+as is.
 
-Looks the patch basically converts the allocation inside URB submit path,
-and actually I mean why we need to hold device lock in submitting
-URB path?  Device lock isn't required before submitting URBs
-in kernel driver.
+> 
+> I will resend those two patches with Cc linux-scsi@vger.kernel.org
+
+Send them as their own patch set. They do not need to be included with
+the others.
+
+-- Steve
 
 
-Thanks,
--- 
-Ming Lei
+
