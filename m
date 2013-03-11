@@ -1,74 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753924Ab3CKK47 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 06:56:59 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:51147 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753735Ab3CKK46 (ORCPT
+	id S1753953Ab3CKK5Z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 06:57:25 -0400
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:54015 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753735Ab3CKK5X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 06:56:58 -0400
-Date: Mon, 11 Mar 2013 11:56:44 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Olof Johansson <olof@lixom.net>
-Cc: Stephen Warren <swarren@wwwdotorg.org>, grant.likely@secretlab.ca,
-        kernel list <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, linux@arm.linux.org.uk,
-        arnd@arndb.de, linux-arm-kernel@lists.infradead.org,
-        rob.herring@calxeda.com, torvalds@linux-foundation.org
-Subject: Re: 3.9-rc1 regression in arm dtb build
-Message-ID: <20130311105643.GA1921@amd.pavel.ucw.cz>
-References: <20130306193332.GA6022@amd.pavel.ucw.cz>
- <5137C404.9060902@wwwdotorg.org>
- <20130307144506.GB7344@amd.pavel.ucw.cz>
- <5138FDAE.8060202@wwwdotorg.org>
- <20130311050546.GA21863@quad.lixom.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130311050546.GA21863@quad.lixom.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 11 Mar 2013 06:57:23 -0400
+From: Amit Daniel Kachhap <amit.daniel@samsung.com>
+To: linux-samsung-soc@vger.kernel.org, Kukjin Kim <kgene.kim@samsung.com>
+Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Kukjin Kim <kgene.kim@samsung.com>
+Subject: [PATCH 1/2] ARM: EXYNOS: enable all secondary cores for exynos5440
+Date: Mon, 11 Mar 2013 16:27:01 +0530
+Message-Id: <1362999422-24655-1-git-send-email-amit.daniel@samsung.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun 2013-03-10 22:05:46, Olof Johansson wrote:
-> On Thu, Mar 07, 2013 at 01:50:54PM -0700, Stephen Warren wrote:
-> > On 03/07/2013 07:45 AM, Pavel Machek wrote:
-> > > Hi!
-> > >>> commit 499cd8298628eeabf0eb5eb6525d4faa0eec80d8
-> > >>> Author: Grant Likely <grant.likely@secretlab.ca>
-> > >>> Date:   Tue Nov 27 16:29:11 2012 -0700
-> > > ...
-> > >>> 1) it is inconsistent with 3.8, making switching between 3.9-rc1 and
-> > >>> 3.8 tricky
-> > >>
-> > >> It's pretty easy to locate the DTB by automatically looking in
-> > >> arch/*/boot/dts first, then if the file doesn't exist there, looking in
-> > >> arch/*/boot instead as a legacy fallback.
-> > > 
-> > > Unfortunately, that does not work. See 2) below. Stale files even
-> > > survive "make clean".
-> > 
-> > Oh right. I guess it works fine when having built 3.7 and then building
-> > 3.8, since you'd look in the new location first and only fall back to
-> > the old location if missing. However, if you then switch back to 3.7 to
-> > test something, I guess that doesn't work so well.
-> > 
-> > I tend to always build the dtbs target, so I wasn't affected by this.
-> > And, often run "git clean -f -d -x" too.
-> > 
-> > Grant, what's your call on this issue; should I/you look into ways to
-> > clean the files better, or do you want to revert this?
-> 
-> I'm not Grant, but I think we're better off cleaning up the current situation
-> instead of reverting. Otherwise 3.8 will be the oddball weird release; it's
-> better to get people moved over to the new location.
+This patch enables four cores on exynos5440. Also this patch skips the non
+exynos5440 pmu control changes.
 
-Well... it seems that noone is willing to fix the patch, that new
-location has no advantages, and that it is incompatible with
-powerpc. Maybe oddball release is less evil here, and we can still fix
-it up in -stable...
-									Pavel
+Cc: Kukjin Kim <kgene.kim@samsung.com>
+Signed-off-by: Kukjin Kim <kgene.kim@samsung.com>
+Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
+---
+ arch/arm/mach-exynos/platsmp.c |   44 ++++++++++++++++++++++-----------------
+ 1 files changed, 25 insertions(+), 19 deletions(-)
+
+diff --git a/arch/arm/mach-exynos/platsmp.c b/arch/arm/mach-exynos/platsmp.c
+index 60f7c5b..087b73f 100644
+--- a/arch/arm/mach-exynos/platsmp.c
++++ b/arch/arm/mach-exynos/platsmp.c
+@@ -40,6 +40,8 @@ static inline void __iomem *cpu_boot_reg_base(void)
+ {
+ 	if (soc_is_exynos4210() && samsung_rev() == EXYNOS4210_REV_1_1)
+ 		return S5P_INFORM5;
++	else if (soc_is_exynos5440())
++		return S5P_VA_CHIPID + 0x560;
+ 	return S5P_VA_SYSRAM;
+ }
+ 
+@@ -116,27 +118,29 @@ static int __cpuinit exynos_boot_secondary(unsigned int cpu, struct task_struct
+ 	 */
+ 	write_pen_release(phys_cpu);
+ 
+-	if (!(__raw_readl(S5P_ARM_CORE1_STATUS) & S5P_CORE_LOCAL_PWR_EN)) {
+-		__raw_writel(S5P_CORE_LOCAL_PWR_EN,
+-			     S5P_ARM_CORE1_CONFIGURATION);
+-
+-		timeout = 10;
+-
+-		/* wait max 10 ms until cpu1 is on */
+-		while ((__raw_readl(S5P_ARM_CORE1_STATUS)
+-			& S5P_CORE_LOCAL_PWR_EN) != S5P_CORE_LOCAL_PWR_EN) {
+-			if (timeout-- == 0)
+-				break;
+-
+-			mdelay(1);
+-		}
+-
+-		if (timeout == 0) {
+-			printk(KERN_ERR "cpu1 power enable failed");
+-			spin_unlock(&boot_lock);
+-			return -ETIMEDOUT;
++	timeout = 10;
++	if (!soc_is_exynos5440()) {
++		if (!(__raw_readl(S5P_ARM_CORE1_STATUS) &
++					S5P_CORE_LOCAL_PWR_EN)) {
++
++			__raw_writel(S5P_CORE_LOCAL_PWR_EN,
++				     S5P_ARM_CORE1_CONFIGURATION);
++
++			/* wait max 10 ms until this cpu is on */
++			while (!(__raw_readl(S5P_ARM_CORE1_STATUS) &
++					S5P_CORE_LOCAL_PWR_EN)) {
++				if (timeout-- == 0)
++					break;
++				mdelay(1);
++			}
+ 		}
+ 	}
++	if (timeout == 0) {
++		pr_err("cpu%d power enable failed", cpu);
++		spin_unlock(&boot_lock);
++		return -ETIMEDOUT;
++	}
++
+ 	/*
+ 	 * Send the secondary CPU a soft interrupt, thereby causing
+ 	 * the boot monitor to read the system wide flags register,
+@@ -178,6 +182,8 @@ static void __init exynos_smp_init_cpus(void)
+ 
+ 	if (soc_is_exynos5250())
+ 		ncores = 2;
++	else if (soc_is_exynos5440())
++		ncores = 4;
+ 	else
+ 		ncores = scu_base ? scu_get_core_count(scu_base) : 1;
+ 
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+1.7.1
+
