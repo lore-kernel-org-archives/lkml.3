@@ -1,39 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754543Ab3CKWwM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 18:52:12 -0400
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:47228 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753506Ab3CKWwL (ORCPT
+	id S1754519Ab3CKWyl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 18:54:41 -0400
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:44944 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752994Ab3CKWyk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 18:52:11 -0400
-Date: Mon, 11 Mar 2013 23:52:05 +0100
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Mihnea Dobrescu-Balaur <mihneadb@gmail.com>
-Cc: dri-devel@lists.freedesktop.org, daniel.vetter@ffwll.ch, airlied@linux.ie,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] gpu: don't cast kzalloc() return value
-Message-ID: <20130311225205.GB3872@bremse>
-Mail-Followup-To: Mihnea Dobrescu-Balaur <mihneadb@gmail.com>,
-	dri-devel@lists.freedesktop.org, airlied@linux.ie,
-	linux-kernel@vger.kernel.org
-References: <1362918168-20271-1-git-send-email-mihneadb@gmail.com>
+	Mon, 11 Mar 2013 18:54:40 -0400
+From: =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>
+To: linux-kernel@vger.kernel.org, Miklos Szeredi <mszeredi@suse.cz>
+Cc: =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>
+Subject: [PATCH] fuse: Fix build after change to synchronize with library
+Date: Mon, 11 Mar 2013 15:54:16 -0700
+Message-Id: <1363042456-8895-1-git-send-email-arve@android.com>
+X-Mailer: git-send-email 1.8.1.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1362918168-20271-1-git-send-email-mihneadb@gmail.com>
-X-Operating-System: Linux bremse 3.8.0-rc6+
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 10, 2013 at 02:22:48PM +0200, Mihnea Dobrescu-Balaur wrote:
-> Signed-off-by: Mihnea Dobrescu-Balaur <mihneadb@gmail.com>
+__linux__ is not always defined so check __KERNEL__ as well.
 
-Queued for -next, thanks for the patch.
--Daniel
+Signed-off-by: Arve Hjønnevåg <arve@android.com>
+---
+ include/uapi/linux/fuse.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/include/uapi/linux/fuse.h b/include/uapi/linux/fuse.h
+index 4c43b44..fc5d400 100644
+--- a/include/uapi/linux/fuse.h
++++ b/include/uapi/linux/fuse.h
+@@ -95,7 +95,7 @@
+ #ifndef _LINUX_FUSE_H
+ #define _LINUX_FUSE_H
+ 
+-#ifdef __linux__
++#if defined(__KERNEL__) || defined(__linux__)
+ #include <linux/types.h>
+ #else
+ #include <stdint.h>
 -- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+1.8.1.3
+
