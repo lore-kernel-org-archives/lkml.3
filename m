@@ -1,100 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753542Ab3CKJbr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 05:31:47 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:39684 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753287Ab3CKJbp (ORCPT
+	id S1753530Ab3CKJhe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 05:37:34 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:57866 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752079Ab3CKJhd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 05:31:45 -0400
-Date: Mon, 11 Mar 2013 02:31:35 -0700
-From: Joel Becker <jlbec@evilplan.org>
-To: Zach Brown <zab@redhat.com>
-Cc: "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Ric Wheeler <rwheeler@redhat.com>, Paolo Bonzini <pbonzini@redhat.com>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Chris L. Mason" <clmason@fusionio.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Alexander Viro <aviro@redhat.com>, "Martin K. Petersen" <mkp@mkp.net>,
-        Hannes Reinecke <hare@suse.de>
-Subject: Re: New copyfile system call - discuss before LSF?
-Message-ID: <20130311093134.GI7783@localhost>
-Mail-Followup-To: Zach Brown <zab@redhat.com>,
-	"Myklebust, Trond" <Trond.Myklebust@netapp.com>,
-	Andy Lutomirski <luto@amacapital.net>,
-	Ric Wheeler <rwheeler@redhat.com>,
-	Paolo Bonzini <pbonzini@redhat.com>,
-	Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-	"Chris L. Mason" <clmason@fusionio.com>,
-	Christoph Hellwig <hch@infradead.org>,
-	Alexander Viro <aviro@redhat.com>,
-	"Martin K. Petersen" <mkp@mkp.net>, Hannes Reinecke <hare@suse.de>
-References: <4FA345DA4F4AE44899BD2B03EEEC2FA9235DAA99@SACEXCMBX04-PRD.hq.netapp.com>
- <20130221222449.GY22221@lenny.home.zabbo.net>
- <512BD44C.40907@amacapital.net>
- <512BDC82.5060203@redhat.com>
- <4FA345DA4F4AE44899BD2B03EEEC2FA928699C17@sacexcmbx05-prd.hq.netapp.com>
- <CALCETrVXxdJ0Pg7wLS9T7mHRj8Ak2M1Yn3EPE_eBmHN3L9+70A@mail.gmail.com>
- <4FA345DA4F4AE44899BD2B03EEEC2FA92869CE90@sacexcmbx05-prd.hq.netapp.com>
- <CALCETrU-cfYeEnh6DF4f6z=d0gJsPd1rfShbPDYF4kX8R+8eRQ@mail.gmail.com>
- <4FA345DA4F4AE44899BD2B03EEEC2FA92869CFCE@sacexcmbx05-prd.hq.netapp.com>
- <20130226000301.GG1658@lenny.home.zabbo.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130226000301.GG1658@lenny.home.zabbo.net>
-X-Burt-Line: Trees are cool.
-X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
- come to perfection.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 11 Mar 2013 05:37:33 -0400
+X-AuditID: cbfee68f-b7f4a6d000001436-89-513da5db833d
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Andrew Morton'" <akpm@linux-foundation.org>
+Cc: "'LKML'" <linux-kernel@vger.kernel.org>,
+        "'Richard Purdie'" <rpurdie@rpsys.net>,
+        "'Jingoo Han'" <jg1.han@samsung.com>
+Subject: [PATCH] backlight: adp8870: add missing braces
+Date: Mon, 11 Mar 2013 18:37:30 +0900
+Message-id: <00c801ce1e3c$0d5023f0$27f06bd0$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac4ePA0xuiLT2nkYRcS0gOTrPXZXFw==
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprGIsWRmVeSWpSXmKPExsVy+t8zA93bS20DDfrXilpc3jWHzYHR4/Mm
+	uQDGKC6blNSczLLUIn27BK6MlqWTWQvecVR8XNXA2sC4jL2LkZNDQsBE4vuvh8wQtpjEhXvr
+	2boYuTiEBJYxSrz5PZcRpuj6loksEIlFjBK3f08C6xASmM0ksaJXC8RmE1CT+PLlMNBUDg4R
+	AX2JthYNkDCzQKnE1gfvWUBsYQFzifPPdoLNZBFQlXi5exMriM0rYCvxYvlTRghbUOLH5Hss
+	EL1aEpu3NbFC2PISm9e8ZQYZLyGgLvHory5IWERAT2LLweVMECUiEvtevGMEOVNCoJtdomHV
+	dKhdAhLfJh9igeiVldh0AOpfSYmDK26wTGAUm4Vk8ywkm2ch2TwLyYoFjCyrGEVTC5ILipPS
+	i4z1ihNzi0vz0vWS83M3MULipH8H490D1ocYk4HWT2SWEk3OB8ZZXkm8obGZkYWpiamxkbml
+	GWnCSuK8ai3WgUIC6YklqdmpqQWpRfFFpTmpxYcYmTg4pRoYtZW3JtytEVDmlpDMWBjc2bn2
+	3p2lggEXzByuyYvJi0tVnH1W8r2waO9J98eK37bP/HVkMVvt8mPXOIPjlV323OJdsNPva+8O
+	5curS1Q8zjeKV0c+zzmelXKatdF0nsOLE+8/Wk848zCUYW1G/6v0L2xHQkXvHm4W+vRc9sOj
+	UubQFYKfnVfNVGIpzkg01GIuKk4EAOg0Y82pAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrMIsWRmVeSWpSXmKPExsVy+t9jAd3bS20DDRad4re4vGsOmwOjx+dN
+	cgGMUQ2MNhmpiSmpRQqpecn5KZl56bZK3sHxzvGmZgaGuoaWFuZKCnmJuam2Si4+AbpumTlA
+	U5UUyhJzSoFCAYnFxUr6dpgmhIa46VrANEbo+oYEwfUYGaCBhHWMGS1LJ7MWvOOo+LiqgbWB
+	cRl7FyMnh4SAicT1LRNZIGwxiQv31rN1MXJxCAksYpS4/XsSM0hCSGA2k8SKXi0Qm01ATeLL
+	l8NAzRwcIgL6Em0tGiBhZoFSia0P3oPNERYwlzj/bCcjiM0ioCrxcvcmVhCbV8BW4sXyp4wQ
+	tqDEj8n3WCB6tSQ2b2tihbDlJTavecsMMl5CQF3i0V9dkLCIgJ7EloPLmSBKRCT2vXjHOIFR
+	YBaSSbOQTJqFZNIsJC0LGFlWMYqmFiQXFCel5xrqFSfmFpfmpesl5+duYgRH4TOpHYwrGywO
+	MQpwMCrx8E7QsQ0UYk0sK67MPcQowcGsJMK7cpNNoBBvSmJlVWpRfnxRaU5q8SHGZKBHJzJL
+	iSbnAxNEXkm8obGJmZGlkZmFkYm5OWnCSuK8B1qtA4UE0hNLUrNTUwtSi2C2MHFwSjUwTlvx
+	OUaQNeaWZFCF36zS9mn2YjrlH8xDj2u/zfZVrju16WDdg0NCIiETv82bfd5ZPTLRTK1dMJFV
+	etlP7td5txykp7i8lz85lcPz09HC6ZaV54veHlGY9tTh0a3fXJ5pJjfE5ou7P2Vfm3jDxbBq
+	6p9dOQ/cW9+GZE86PTG+9d/L53w6v25kKbEUZyQaajEXFScCAGveumMGAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 25, 2013 at 04:03:01PM -0800, Zach Brown wrote:
-> > >   I think it would be neat if it couldn't
-> > > corrupt data.
-> > 
-> > It would also be neat if the moon were made of cheese...
-> 
-> And there we have the lsf2013 t-shirt slogan.  I think we're done here!
-> 
-> - z
+This patch adds missing braces to include error message.
+The error message is related to the return value for
+sysfs_create_group(). However, sysfs_create_group() is called
+when pdata->en_ambl_sens is not zero. Thus, the checking return
+value should be included in the if statement.
 
-Hey Everyone,
-	So, of course, this thread happened while I was celebrating my
-10-year anniversary on a warm, sunny island.  I won't trade.  But let me
-drop my $0.02 in here.
-	First, we have our T-shirt slogan.  That overrides every other
-concern.
-	Second, I agree that moving forward on anything is better than
-not.  I haven't delivered the updated fastcopy(2) patch I promised two
-years ago, and I have to admit that I can't promise code on any sane
-timeframe.
-	Back when I was working on this, I thought that link(2) was a
-good model for a full-file copy.  Thus I came up with reflink(2).  This
-eventually became the fastcopyu(2) proposal discussed two years ago.  I
-did not think, and I still don't think, that we should conflate the API
-for "copy/clone this file in some way" (ala fastcopy(2)) with
-"duplicate/link this range of bytes" (ala BTRFS_IOC_CLONE_RANGE).  I
-thought that splice(2) or something like it was a better fit for ranges;
-this thread has already had the same thought.
-	fastcopy(2) had a provision for CoW for atomicity, including
-metadata.  This is because ocfs2 reflinks *can* provide atomic clones
-with metadata included.  I would like any new proposal to allow for
-that.  If it does not, of course, callers can continue to use
-OCFS2_IOC_REFLINK, but I'd rather make it part of the generic behavior,
-so that generic tools come with it.
+Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+---
+ drivers/video/backlight/adp8870_bl.c |   10 +++++-----
+ 1 files changed, 5 insertions(+), 5 deletions(-)
 
-Joel
-
+diff --git a/drivers/video/backlight/adp8870_bl.c b/drivers/video/backlight/adp8870_bl.c
+index 712c25a..7930ab3 100644
+--- a/drivers/video/backlight/adp8870_bl.c
++++ b/drivers/video/backlight/adp8870_bl.c
+@@ -895,13 +895,13 @@ static int adp8870_probe(struct i2c_client *client,
+ 
+ 	data->bl = bl;
+ 
+-	if (pdata->en_ambl_sens)
++	if (pdata->en_ambl_sens) {
+ 		ret = sysfs_create_group(&bl->dev.kobj,
+ 			&adp8870_bl_attr_group);
+-
+-	if (ret) {
+-		dev_err(&client->dev, "failed to register sysfs\n");
+-		goto out1;
++		if (ret) {
++			dev_err(&client->dev, "failed to register sysfs\n");
++			goto out1;
++		}
+ 	}
+ 
+ 	ret = adp8870_bl_setup(bl);
 -- 
+1.7.2.5
 
-"You don't make the poor richer by making the rich poorer."
-	- Sir Winston Churchill
 
-			http://www.jlbec.org/
-			jlbec@evilplan.org
