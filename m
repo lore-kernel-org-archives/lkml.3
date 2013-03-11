@@ -1,68 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753913Ab3CKTRt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 15:17:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58960 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752821Ab3CKTRr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 15:17:47 -0400
-Date: Mon, 11 Mar 2013 15:17:34 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Yinghai Lu <yinghai@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>, WANG Chao <chaowang@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86, kdump: Set crashkernel_low automatically
-Message-ID: <20130311191734.GE12107@redhat.com>
-References: <513D52BA.3070206@redhat.com>
- <1362977817-23297-1-git-send-email-yinghai@kernel.org>
- <20130311144853.GB8482@redhat.com>
- <20130311150256.GC8482@redhat.com>
- <CAE9FiQW1CHJ-j9aFgdtKEsgyZSTHTS1HzgMSGM8FnV7Ns3kUvw@mail.gmail.com>
- <20130311182655.GB12107@redhat.com>
- <513E2695.3080707@zytor.com>
- <20130311190242.GC12107@redhat.com>
- <513E2AC6.1000707@zytor.com>
+	id S1754134Ab3CKTR6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 15:17:58 -0400
+Received: from ud10.udmedia.de ([194.117.254.50]:55804 "EHLO
+	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754013Ab3CKTR4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Mar 2013 15:17:56 -0400
+Date: Mon, 11 Mar 2013 20:17:53 +0100
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: torrent hash failures since 3.9.0-rc1
+Message-ID: <20130311191753.GA439@x4>
+References: <20130311171824.GA434@x4>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <513E2AC6.1000707@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130311171824.GA434@x4>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 11, 2013 at 12:04:38PM -0700, H. Peter Anvin wrote:
-> On 03/11/2013 12:02 PM, Vivek Goyal wrote:
-> >>
-> >> What is the purpose of reserving that kind of memory below 896 MB?  If
-> >> you have a 32-bit system, it will likely be useless since you are
-> >> robbing the primary of most of lowmem, on a 64-bit system 896 MB is not
-> >> a magic value in any way...?
-> > 
-> > Actually I am not sure where did 896MB magic value had come from for
-> > x86_64 so far. I assumed that it was some kexec-tools limitation so
-> > first trying 896MB will preserve working with old kexec-tools. If it
-> > was some kernel limitation, then I agree it should not be required anymore.
-> > 
-> > I do remember that old pugatory had 2G limit. So may be we can first
-> > try reserve with-in first 2G, then with-in first 4G and then above
-> > 4G. (Assuming 896M was not kexec-tools limitation and had something
-> > to do with kernel/initramfs).
-> > 
+On 2013.03.11 at 18:18 +0100, Markus Trippelsdorf wrote:
+> I get hash failures on "completed" torrents since 3.9.0-rc1 (Linux 3.8
+> seems to be fine). What happens is that the torrents apparently complete
+> successfully. After reboot however the hash check fails and there are
+> missing (or corrupted) chunks. I've tested this with two different
+> clients (rtorrent and aria2c) and both are affected. So I think this
+> might be a filesystem issue.
 > 
-> It is obvious where it *originated* from... it is the *default* (but not
-> necessarily the actual!) HIGHMEM crossover point on x86-32.
+> /dev/sda       ext4      1.4T  666G  640G  51% /var
+> /dev/sda on /var type ext4 (rw,noatime,data=ordered)
 > 
+> I use ECC memory (and there is nothing in the logs).
 
-On x86-32, max addr limit is 512M. 896M limit is on x86_64. So it probably
-came from somewhere else. 
+To reproduce this issue just do the following:
 
-Also always reserving at high memory cuts down on what kind of bzImage
-can be booted from that address. For example, x86_32bit kernels. Hence
-reserving at low addresses enables booting more type of images without
-rebooting.
+ % wget http://torrents.linuxmint.com/torrents/linuxmint-12-gnome-cd-nocodecs-64bit.iso.torrent
+ % rtorrent linuxmint-12-gnome-cd-nocodecs-64bit.iso.torrent
+ (Wait until the torrent finishes)
+ % sudo echo 3 > /proc/sys/vm/drop_caches
+ (Rehash the torrent (Ctrl-R))
+ The torrent doesn't rehash successfully and a few hunks are
+ missing/corrupted and need to be downloaded again.
 
-Thanks
-Vivek
+-- 
+Markus
