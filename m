@@ -1,59 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754454Ab3CKWf1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 18:35:27 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:55059 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754011Ab3CKWf0 (ORCPT
+	id S1754391Ab3CKWuK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 18:50:10 -0400
+Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:18967 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752994Ab3CKWuI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 18:35:26 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Subject: Re: [PATCH 9/9] ARM: spear3xx: Use correct pl080 header file
-Date: Mon, 11 Mar 2013 22:34:55 +0000
-User-Agent: KMail/1.12.2 (Linux/3.8.0-8-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        arm@kernel.org, Alessandro Rubini <rubini@gnudd.com>,
-        "spear-devel" <spear-devel@list.st.com>
-References: <1362521809-22989-1-git-send-email-arnd@arndb.de> <1362521809-22989-10-git-send-email-arnd@arndb.de> <CAKohponFisFjM9CbpHoR7h-pn1SAOWeck63v3FKZe4UV0cR2DQ@mail.gmail.com>
-In-Reply-To: <CAKohponFisFjM9CbpHoR7h-pn1SAOWeck63v3FKZe4UV0cR2DQ@mail.gmail.com>
+	Mon, 11 Mar 2013 18:50:08 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18aRNX42tjVntj1u9oYT4hq
+Date: Mon, 11 Mar 2013 15:50:04 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 03/10] ARM: smp_twd: Divorce smp_twd from local timer
+ API
+Message-ID: <20130311225004.GR26093@atomide.com>
+References: <20130308180730.GE11806@atomide.com>
+ <513A2B20.30805@codeaurora.org>
+ <20130308194802.GG11806@atomide.com>
+ <513A40EF.8050403@codeaurora.org>
+ <20130308200811.GJ11806@atomide.com>
+ <513A4774.3040605@codeaurora.org>
+ <20130308202947.GK11806@atomide.com>
+ <513A8B22.5030008@codeaurora.org>
+ <20130311172847.GP26093@atomide.com>
+ <513E5804.3050104@codeaurora.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201303112234.55748.arnd@arndb.de>
-X-Provags-ID: V02:K0:j/UFjv9aKZyrXIPEgaW8RcnN90qvrMavCtvn5gzysO1
- P61auOBij4urW4wpk2qI0w5F8zGRpr3Ml3kFPwRhtSNuLOK+9G
- FbZH44ytEYALZl0dAzVoj7JP0wKMZP6//LT4p4kmzLLnoU8JaB
- t/e3yDkZYmlsDBGNLIb0bsAl64OojIQzppNILwRi6n1Ebqn0WD
- 4RvBevMv1EgAPa8yKe1tv5O8sv7Dfq8oszpUDD+jxNgBx0Q3NX
- TTTYs6A8kZauUaHlLF8qSid3tjyGdayXBfyQYoafNZi+kUgGjl
- A66rtj3VnxQU3Bhiby6ZpGCv3COe4DVkiM4qO/LYJegLaH36sj
- /E6ejLBxaeCZtrB9yllY=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <513E5804.3050104@codeaurora.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 05 March 2013, Viresh Kumar wrote:
-> On 6 March 2013 06:16, Arnd Bergmann <arnd@arndb.de> wrote:
-> > The definitions have move around recently, causing build errors
-> > in spear3xx for all configurations:
+* Stephen Boyd <sboyd@codeaurora.org> [130311 15:22]:
+> On 03/11/13 10:28, Tony Lindgren wrote:
+> > * Stephen Boyd <sboyd@codeaurora.org> [130308 17:10]:
+> >> On 03/08/13 12:29, Tony Lindgren wrote:
+> >>> Applying that does not seem to help, but you might want to get vexpress
+> >>> running anyways for some multiplatform sanity checks.
+> >>>
+> >>> I just built and installed qemu-linaro from their git, then ran the
+> >>> command above. Looks like stock qemu does not work for vexpress for some
+> >>> reason. You can probably use a dummy initrd and rootfs to debug this
+> >>> though :)
+> >> So my patchset didn't break qemu?
+> > Sorry if that was unclear: Yes your patchset breaks booting vexpress
+> > in qemu.
 > >
-> > spear3xx.c:47:5: error: 'PL080_BSIZE_16' undeclared here (not in a function)
-> > spear3xx.c:47:23: error: 'PL080_CONTROL_SB_SIZE_SHIFT' undeclared here (not in a function)
-> > spear3xx.c:48:22: error: 'PL080_CONTROL_DB_SIZE_SHIFT' undeclared here (not in a function)
 > >
-> > Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> > Cc: Alessandro Rubini <rubini@gnudd.com>
-> > Cc: Viresh Kumar <viresh.kumar@linaro.org>
-> > ---
-> >  arch/arm/mach-spear3xx/spear3xx.c | 2 +-
-> >  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> You are a bit late in posting this.
-> We already got the same patch from Vipul yesterday :)
+> Ok. qemu works for me before applying my patches. I've added this into
+> the series before this patch to fix the boot issue.
 
-Are you going to send a pull request for that one then? Another -rc has
-just passed with the platform being broken.
+OK thanks:
 
-	Arnd
+Acked-by: Tony Lindgren <tony@atomide.com>
+
+ 
+> -----8<-----
+> 
+> Subject: [PATCH] ARM: vexpress: Move smp_twd setup to time_late_init hook
+> 
+> On devices without a clock describing the rate of the twd we
+> detect the rate at runtime via twd_calibrate_rate(). Currently
+> this happens when smp_prepare_cpus() calls the localtimer start
+> callback, after the sp804 timer has been registered and when
+> jiffies have started incrementing.
+> 
+> In the next patch we're going to make twd_local_timer_register()
+> register the twd clockevent on the boot CPU. In the case of
+> vexpress, this will hang the system at boot because jiffies
+> haven't started incrementing when twd_calibrate_rate() is called.
+> Register the smp_twd during time_late_init() on vexpress to avoid
+> this problem.
+> 
+> Based on a patch by Marc Zyngier <marc.zyngier@arm.com>.
+> 
+> Reported-by: Tony Lindgren <tony@atomide.com>
+> Cc: Pawel Moll <pawel.moll@arm.com>
+> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> ---
+>  arch/arm/mach-vexpress/ct-ca9x4.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/arch/arm/mach-vexpress/ct-ca9x4.c b/arch/arm/mach-vexpress/ct-ca9x4.c
+> index 6f34497..a9f39bf 100644
+> --- a/arch/arm/mach-vexpress/ct-ca9x4.c
+> +++ b/arch/arm/mach-vexpress/ct-ca9x4.c
+> @@ -62,7 +62,7 @@ static void __init ct_ca9x4_init_irq(void)
+>  {
+>  	gic_init(0, 29, ioremap(A9_MPCORE_GIC_DIST, SZ_4K),
+>  		 ioremap(A9_MPCORE_GIC_CPU, SZ_256));
+> -	ca9x4_twd_init();
+> +	late_time_init = ca9x4_twd_init;
+>  }
+>  
+>  static int ct_ca9x4_clcd_setup(struct clcd_fb *fb)
+> 
+> -- 
+> Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+> hosted by The Linux Foundation
+> 
