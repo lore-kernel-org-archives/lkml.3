@@ -1,56 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753086Ab3CKPYI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 11:24:08 -0400
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:62230 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751105Ab3CKPYG (ORCPT
+	id S1753584Ab3CKPYW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 11:24:22 -0400
+Received: from mx0.parallels.com ([199.115.104.20]:60110 "EHLO
+	mx0.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751105Ab3CKPYT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 11:24:06 -0400
-Date: Mon, 11 Mar 2013 08:24:00 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, axboe@kernel.dk, jmoyer@redhat.com,
-        zab@redhat.com
-Subject: Re: [PATCHSET wq/for-3.10-tmp] workqueue: implement workqueue with
- custom worker attributes
-Message-ID: <20130311152400.GK24522@htj.dyndns.org>
-References: <1362194662-2344-1-git-send-email-tj@kernel.org>
- <513C61B9.5030004@cn.fujitsu.com>
- <20130310120113.GC24522@htj.dyndns.org>
+	Mon, 11 Mar 2013 11:24:19 -0400
+From: James Bottomley <jbottomley@parallels.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 12/13] scsi/tracing: include correct header file
+Thread-Topic: [PATCH 12/13] scsi/tracing: include correct header file
+Thread-Index: AQHOHigYv9CZ7BqHwUekH+0/Euc9UpihAGmAgAARmwA=
+Date: Mon, 11 Mar 2013 15:24:16 +0000
+Message-ID: <1363015456.2395.80.camel@dabdike.int.hansenpartnership.com>
+References: <513D844D.7000301@huawei.com>
+	 <1363011675.12608.14.camel@gandalf.local.home>
+In-Reply-To: <1363011675.12608.14.camel@gandalf.local.home>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [46.65.52.191]
+Content-Type: text/plain; charset=US-ASCII
+Content-ID: <DD3ADD2C833753458F87097BDD05D969@sw.swsoft.com>
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130310120113.GC24522@htj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 10, 2013 at 05:01:13AM -0700, Tejun Heo wrote:
-> Hey, Lai.
+On Mon, 2013-03-11 at 10:21 -0400, Steven Rostedt wrote:
+> As you didn't include James in the header patch [0/13], he didn't see
+> you say:
 > 
-> On Sun, Mar 10, 2013 at 06:34:33PM +0800, Lai Jiangshan wrote:
-> > > This patchset contains the following 31 patches.
-> > > 
-> > >  0001-workqueue-make-sanity-checks-less-punshing-using-WAR.patch
-> > 
-> > >  0002-workqueue-make-workqueue_lock-irq-safe.patch
-> > 
-> > workqueue_lock protects too many things. We can introduce different locks
-> > for different purpose later.
+> "Two patches changed compilation on scsi subsystem, it should go through
+> to
+> SCSI tree."
 > 
-> I don't know.  My general attitude toward locking is the simpler the
-> better.  None of the paths protected by workqueue_lock are hot.
-> There's no actual benefit in making them finer grained.
+> In the future, send them as a separate patch series. There's no
+> dependencies on these patches with the rest of the series. They should
+> have been sent directly to James, with me as the Cc.
 
-Heh, I need to make workqueues and pools protected by a mutex rather
-than spinlock, so I'm breaking out the locking after all.  This is
-gonna be a separate series of patches and it seems like there are
-gonna be three locks - wq_mutex (pool and workqueues), pwq_lock
-(spinlock protecting pwqs), wq_mayday_lock (lock for the mayday list).
+Actually, if you want them applied, they need to go to the SCSI list
+<linux-scsi@vger.kernel.org>.  It tracks all my pending patches.  Stuff
+to me personally has a high probability of getting forgotten.
 
-Thanks.
+Thanks,
 
--- 
-tejun
+James
+
