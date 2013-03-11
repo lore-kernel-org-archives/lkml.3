@@ -1,25 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752961Ab3CKHoe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 03:44:34 -0400
+	id S1751941Ab3CKHnZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 03:43:25 -0400
 Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:42341 "EHLO
 	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751241Ab3CKHn0 (ORCPT
+	with ESMTP id S1751241Ab3CKHnY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 03:43:26 -0400
-X-AuditID: 9c930179-b7c78ae000000e4b-76-513d8b1b453e
+	Mon, 11 Mar 2013 03:43:24 -0400
+X-AuditID: 9c930179-b7c78ae000000e4b-42-513d8b174a19
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
         Jiri Olsa <jolsa@redhat.com>, David Ahern <dsahern@gmail.com>,
         Namhyung Kim <namhyung.kim@lge.com>
-Subject: [PATCH 3/7] perf evlist: Add thread_map__nr() helper
-Date: Mon, 11 Mar 2013 16:43:14 +0900
-Message-Id: <1362987798-24969-3-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 1/7] perf evlist: Remove cpus and threads arguments from perf_evlist__new()
+Date: Mon, 11 Mar 2013 16:43:12 +0900
+Message-Id: <1362987798-24969-1-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1362987798-24969-1-git-send-email-namhyung@kernel.org>
-References: <1362987798-24969-1-git-send-email-namhyung@kernel.org>
 X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,182 +25,228 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung.kim@lge.com>
 
-Introduce and use the thread_map__nr() function to protect a possible
-NULL pointer dereference and cleanup the code a bit.
+It's almost always used with NULL for both arguments.  Get rid of the
+arguments from the signature and use perf_evlist__set_maps() if needed.
 
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/builtin-stat.c    |  4 ++--
- tools/perf/util/evlist.c     | 37 +++++++++++++++++++++++--------------
- tools/perf/util/thread_map.h |  5 +++++
- 3 files changed, 30 insertions(+), 16 deletions(-)
+ tools/perf/builtin-record.c               | 2 +-
+ tools/perf/builtin-stat.c                 | 2 +-
+ tools/perf/builtin-top.c                  | 2 +-
+ tools/perf/builtin-trace.c                | 2 +-
+ tools/perf/tests/evsel-roundtrip-name.c   | 4 ++--
+ tools/perf/tests/hists_link.c             | 2 +-
+ tools/perf/tests/mmap-basic.c             | 4 +++-
+ tools/perf/tests/open-syscall-tp-fields.c | 2 +-
+ tools/perf/tests/parse-events.c           | 2 +-
+ tools/perf/tests/perf-record.c            | 2 +-
+ tools/perf/util/evlist.c                  | 5 ++---
+ tools/perf/util/evlist.h                  | 3 +--
+ tools/perf/util/header.c                  | 4 ++--
+ 13 files changed, 18 insertions(+), 18 deletions(-)
 
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index f1a939ebc19c..e3261eae0ad7 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -964,7 +964,7 @@ int cmd_record(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	struct perf_record *rec = &record;
+ 	char errbuf[BUFSIZ];
+ 
+-	evsel_list = perf_evlist__new(NULL, NULL);
++	evsel_list = perf_evlist__new();
+ 	if (evsel_list == NULL)
+ 		return -ENOMEM;
+ 
 diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index 020329dca005..20ffaf98782e 100644
+index 99848761f573..020329dca005 100644
 --- a/tools/perf/builtin-stat.c
 +++ b/tools/perf/builtin-stat.c
-@@ -249,7 +249,7 @@ static int read_counter_aggr(struct perf_evsel *counter)
- 	int i;
+@@ -1336,7 +1336,7 @@ int cmd_stat(int argc, const char **argv, const char *prefix __maybe_unused)
  
- 	if (__perf_evsel__read(counter, perf_evsel__nr_cpus(counter),
--			       evsel_list->threads->nr, scale) < 0)
-+			       thread_map__nr(evsel_list->threads), scale) < 0)
- 		return -1;
+ 	setlocale(LC_ALL, "");
  
- 	for (i = 0; i < 3; i++)
-@@ -488,7 +488,7 @@ static int __run_perf_stat(int argc __maybe_unused, const char **argv)
- 		list_for_each_entry(counter, &evsel_list->entries, node) {
- 			read_counter_aggr(counter);
- 			perf_evsel__close_fd(counter, perf_evsel__nr_cpus(counter),
--					     evsel_list->threads->nr);
-+					     thread_map__nr(evsel_list->threads));
- 		}
+-	evsel_list = perf_evlist__new(NULL, NULL);
++	evsel_list = perf_evlist__new();
+ 	if (evsel_list == NULL)
+ 		return -ENOMEM;
+ 
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index 72f6eb7b4173..c5601aa7a870 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -1116,7 +1116,7 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		NULL
+ 	};
+ 
+-	top.evlist = perf_evlist__new(NULL, NULL);
++	top.evlist = perf_evlist__new();
+ 	if (top.evlist == NULL)
+ 		return -ENOMEM;
+ 
+diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
+index d222d7fc7e96..6198eb11e1c6 100644
+--- a/tools/perf/builtin-trace.c
++++ b/tools/perf/builtin-trace.c
+@@ -419,7 +419,7 @@ out_dump:
+ 
+ static int trace__run(struct trace *trace, int argc, const char **argv)
+ {
+-	struct perf_evlist *evlist = perf_evlist__new(NULL, NULL);
++	struct perf_evlist *evlist = perf_evlist__new();
+ 	struct perf_evsel *evsel;
+ 	int err = -1, i;
+ 	unsigned long before;
+diff --git a/tools/perf/tests/evsel-roundtrip-name.c b/tools/perf/tests/evsel-roundtrip-name.c
+index 0fd99a9adb91..570eff9524c1 100644
+--- a/tools/perf/tests/evsel-roundtrip-name.c
++++ b/tools/perf/tests/evsel-roundtrip-name.c
+@@ -8,7 +8,7 @@ static int perf_evsel__roundtrip_cache_name_test(void)
+ 	char name[128];
+ 	int type, op, err = 0, ret = 0, i, idx;
+ 	struct perf_evsel *evsel;
+-        struct perf_evlist *evlist = perf_evlist__new(NULL, NULL);
++        struct perf_evlist *evlist = perf_evlist__new();
+ 
+         if (evlist == NULL)
+                 return -ENOMEM;
+@@ -64,7 +64,7 @@ static int __perf_evsel__name_array_test(const char *names[], int nr_names)
+ {
+ 	int i, err;
+ 	struct perf_evsel *evsel;
+-        struct perf_evlist *evlist = perf_evlist__new(NULL, NULL);
++        struct perf_evlist *evlist = perf_evlist__new();
+ 
+         if (evlist == NULL)
+                 return -ENOMEM;
+diff --git a/tools/perf/tests/hists_link.c b/tools/perf/tests/hists_link.c
+index 1be64a6c5daf..0ea4c96679b4 100644
+--- a/tools/perf/tests/hists_link.c
++++ b/tools/perf/tests/hists_link.c
+@@ -436,7 +436,7 @@ int test__hists_link(void)
+ 	struct machines machines;
+ 	struct machine *machine = NULL;
+ 	struct perf_evsel *evsel, *first;
+-        struct perf_evlist *evlist = perf_evlist__new(NULL, NULL);
++        struct perf_evlist *evlist = perf_evlist__new();
+ 
+ 	if (evlist == NULL)
+                 return -ENOMEM;
+diff --git a/tools/perf/tests/mmap-basic.c b/tools/perf/tests/mmap-basic.c
+index cdd50755af51..5b1b5aba722b 100644
+--- a/tools/perf/tests/mmap-basic.c
++++ b/tools/perf/tests/mmap-basic.c
+@@ -53,12 +53,14 @@ int test__basic_mmap(void)
+ 		goto out_free_cpus;
  	}
  
+-	evlist = perf_evlist__new(cpus, threads);
++	evlist = perf_evlist__new();
+ 	if (evlist == NULL) {
+ 		pr_debug("perf_evlist__new\n");
+ 		goto out_free_cpus;
+ 	}
+ 
++	perf_evlist__set_maps(evlist, cpus, threads);
++
+ 	for (i = 0; i < nsyscalls; ++i) {
+ 		char name[64];
+ 
+diff --git a/tools/perf/tests/open-syscall-tp-fields.c b/tools/perf/tests/open-syscall-tp-fields.c
+index 1c52fdc1164e..02cb74174e23 100644
+--- a/tools/perf/tests/open-syscall-tp-fields.c
++++ b/tools/perf/tests/open-syscall-tp-fields.c
+@@ -18,7 +18,7 @@ int test__syscall_open_tp_fields(void)
+ 	};
+ 	const char *filename = "/etc/passwd";
+ 	int flags = O_RDONLY | O_DIRECTORY;
+-	struct perf_evlist *evlist = perf_evlist__new(NULL, NULL);
++	struct perf_evlist *evlist = perf_evlist__new();
+ 	struct perf_evsel *evsel;
+ 	int err = -1, i, nr_events = 0, nr_polls = 0;
+ 
+diff --git a/tools/perf/tests/parse-events.c b/tools/perf/tests/parse-events.c
+index 0d3d0c59f924..88e2f44cb157 100644
+--- a/tools/perf/tests/parse-events.c
++++ b/tools/perf/tests/parse-events.c
+@@ -1218,7 +1218,7 @@ static int test_event(struct evlist_test *e)
+ 	struct perf_evlist *evlist;
+ 	int ret;
+ 
+-	evlist = perf_evlist__new(NULL, NULL);
++	evlist = perf_evlist__new();
+ 	if (evlist == NULL)
+ 		return -ENOMEM;
+ 
+diff --git a/tools/perf/tests/perf-record.c b/tools/perf/tests/perf-record.c
+index 1e8e5128d0da..f6ba75a983a8 100644
+--- a/tools/perf/tests/perf-record.c
++++ b/tools/perf/tests/perf-record.c
+@@ -45,7 +45,7 @@ int test__PERF_RECORD(void)
+ 	};
+ 	cpu_set_t cpu_mask;
+ 	size_t cpu_mask_size = sizeof(cpu_mask);
+-	struct perf_evlist *evlist = perf_evlist__new(NULL, NULL);
++	struct perf_evlist *evlist = perf_evlist__new();
+ 	struct perf_evsel *evsel;
+ 	struct perf_sample sample;
+ 	const char *cmd = "sleep";
 diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index a482547495b6..7d71a691b864 100644
+index 7626bb49508d..a199f1887bef 100644
 --- a/tools/perf/util/evlist.c
 +++ b/tools/perf/util/evlist.c
-@@ -227,12 +227,14 @@ void perf_evlist__disable(struct perf_evlist *evlist)
- {
- 	int cpu, thread;
- 	struct perf_evsel *pos;
-+	int nr_cpus = cpu_map__nr(evlist->cpus);
-+	int nr_threads = thread_map__nr(evlist->threads);
- 
--	for (cpu = 0; cpu < cpu_map__nr(evlist->cpus); cpu++) {
-+	for (cpu = 0; cpu < nr_cpus; cpu++) {
- 		list_for_each_entry(pos, &evlist->entries, node) {
- 			if (!perf_evsel__is_group_leader(pos))
- 				continue;
--			for (thread = 0; thread < evlist->threads->nr; thread++)
-+			for (thread = 0; thread < nr_threads; thread++)
- 				ioctl(FD(pos, cpu, thread),
- 				      PERF_EVENT_IOC_DISABLE, 0);
- 		}
-@@ -243,12 +245,14 @@ void perf_evlist__enable(struct perf_evlist *evlist)
- {
- 	int cpu, thread;
- 	struct perf_evsel *pos;
-+	int nr_cpus = cpu_map__nr(evlist->cpus);
-+	int nr_threads = thread_map__nr(evlist->threads);
- 
--	for (cpu = 0; cpu < cpu_map__nr(evlist->cpus); cpu++) {
-+	for (cpu = 0; cpu < nr_cpus; cpu++) {
- 		list_for_each_entry(pos, &evlist->entries, node) {
- 			if (!perf_evsel__is_group_leader(pos))
- 				continue;
--			for (thread = 0; thread < evlist->threads->nr; thread++)
-+			for (thread = 0; thread < nr_threads; thread++)
- 				ioctl(FD(pos, cpu, thread),
- 				      PERF_EVENT_IOC_ENABLE, 0);
- 		}
-@@ -257,7 +261,9 @@ void perf_evlist__enable(struct perf_evlist *evlist)
- 
- static int perf_evlist__alloc_pollfd(struct perf_evlist *evlist)
- {
--	int nfds = cpu_map__nr(evlist->cpus) * evlist->threads->nr * evlist->nr_entries;
-+	int nr_cpus = cpu_map__nr(evlist->cpus);
-+	int nr_threads = thread_map__nr(evlist->threads);
-+	int nfds = nr_cpus * nr_threads * evlist->nr_entries;
- 	evlist->pollfd = malloc(sizeof(struct pollfd) * nfds);
- 	return evlist->pollfd != NULL ? 0 : -ENOMEM;
+@@ -38,13 +38,12 @@ void perf_evlist__init(struct perf_evlist *evlist, struct cpu_map *cpus,
+ 	evlist->workload.pid = -1;
  }
-@@ -417,7 +423,7 @@ static int perf_evlist__alloc_mmap(struct perf_evlist *evlist)
+ 
+-struct perf_evlist *perf_evlist__new(struct cpu_map *cpus,
+-				     struct thread_map *threads)
++struct perf_evlist *perf_evlist__new(void)
  {
- 	evlist->nr_mmaps = cpu_map__nr(evlist->cpus);
- 	if (cpu_map__all(evlist->cpus))
--		evlist->nr_mmaps = evlist->threads->nr;
-+		evlist->nr_mmaps = thread_map__nr(evlist->threads);
- 	evlist->mmap = zalloc(evlist->nr_mmaps * sizeof(struct perf_mmap));
- 	return evlist->mmap != NULL ? 0 : -ENOMEM;
+ 	struct perf_evlist *evlist = zalloc(sizeof(*evlist));
+ 
+ 	if (evlist != NULL)
+-		perf_evlist__init(evlist, cpus, threads);
++		perf_evlist__init(evlist, NULL, NULL);
+ 
+ 	return evlist;
  }
-@@ -442,11 +448,13 @@ static int perf_evlist__mmap_per_cpu(struct perf_evlist *evlist, int prot, int m
- {
- 	struct perf_evsel *evsel;
- 	int cpu, thread;
-+	int nr_cpus = cpu_map__nr(evlist->cpus);
-+	int nr_threads = thread_map__nr(evlist->threads);
+diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
+index 2dd07bd60b4f..9a7b76e3a873 100644
+--- a/tools/perf/util/evlist.h
++++ b/tools/perf/util/evlist.h
+@@ -49,8 +49,7 @@ struct perf_evsel_str_handler {
+ 	void	   *handler;
+ };
  
--	for (cpu = 0; cpu < cpu_map__nr(evlist->cpus); cpu++) {
-+	for (cpu = 0; cpu < nr_cpus; cpu++) {
- 		int output = -1;
+-struct perf_evlist *perf_evlist__new(struct cpu_map *cpus,
+-				     struct thread_map *threads);
++struct perf_evlist *perf_evlist__new(void);
+ void perf_evlist__init(struct perf_evlist *evlist, struct cpu_map *cpus,
+ 		       struct thread_map *threads);
+ void perf_evlist__exit(struct perf_evlist *evlist);
+diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
+index d005c73b47bc..b3c4d5969218 100644
+--- a/tools/perf/util/header.c
++++ b/tools/perf/util/header.c
+@@ -2789,7 +2789,7 @@ int perf_session__read_header(struct perf_session *session, int fd)
+ 	u64			f_id;
+ 	int nr_attrs, nr_ids, i, j;
  
--		for (thread = 0; thread < evlist->threads->nr; thread++) {
-+		for (thread = 0; thread < nr_threads; thread++) {
- 			list_for_each_entry(evsel, &evlist->entries, node) {
- 				int fd = FD(evsel, cpu, thread);
+-	session->evlist = perf_evlist__new(NULL, NULL);
++	session->evlist = perf_evlist__new();
+ 	if (session->evlist == NULL)
+ 		return -ENOMEM;
  
-@@ -470,7 +478,7 @@ static int perf_evlist__mmap_per_cpu(struct perf_evlist *evlist, int prot, int m
- 	return 0;
+@@ -2940,7 +2940,7 @@ int perf_event__process_attr(union perf_event *event,
+ 	struct perf_evlist *evlist = *pevlist;
  
- out_unmap:
--	for (cpu = 0; cpu < cpu_map__nr(evlist->cpus); cpu++) {
-+	for (cpu = 0; cpu < nr_cpus; cpu++) {
- 		if (evlist->mmap[cpu].base != NULL) {
- 			munmap(evlist->mmap[cpu].base, evlist->mmap_len);
- 			evlist->mmap[cpu].base = NULL;
-@@ -483,8 +491,9 @@ static int perf_evlist__mmap_per_thread(struct perf_evlist *evlist, int prot, in
- {
- 	struct perf_evsel *evsel;
- 	int thread;
-+	int nr_threads = thread_map__nr(evlist->threads);
- 
--	for (thread = 0; thread < evlist->threads->nr; thread++) {
-+	for (thread = 0; thread < nr_threads; thread++) {
- 		int output = -1;
- 
- 		list_for_each_entry(evsel, &evlist->entries, node) {
-@@ -509,7 +518,7 @@ static int perf_evlist__mmap_per_thread(struct perf_evlist *evlist, int prot, in
- 	return 0;
- 
- out_unmap:
--	for (thread = 0; thread < evlist->threads->nr; thread++) {
-+	for (thread = 0; thread < nr_threads; thread++) {
- 		if (evlist->mmap[thread].base != NULL) {
- 			munmap(evlist->mmap[thread].base, evlist->mmap_len);
- 			evlist->mmap[thread].base = NULL;
-@@ -610,7 +619,7 @@ int perf_evlist__apply_filters(struct perf_evlist *evlist)
- 	struct perf_evsel *evsel;
- 	int err = 0;
- 	const int ncpus = cpu_map__nr(evlist->cpus),
--		  nthreads = evlist->threads->nr;
-+		  nthreads = thread_map__nr(evlist->threads);
- 
- 	list_for_each_entry(evsel, &evlist->entries, node) {
- 		if (evsel->filter == NULL)
-@@ -629,7 +638,7 @@ int perf_evlist__set_filter(struct perf_evlist *evlist, const char *filter)
- 	struct perf_evsel *evsel;
- 	int err = 0;
- 	const int ncpus = cpu_map__nr(evlist->cpus),
--		  nthreads = evlist->threads->nr;
-+		  nthreads = thread_map__nr(evlist->threads);
- 
- 	list_for_each_entry(evsel, &evlist->entries, node) {
- 		err = perf_evsel__set_filter(evsel, ncpus, nthreads, filter);
-@@ -726,7 +735,7 @@ int perf_evlist__open(struct perf_evlist *evlist)
- 	return 0;
- out_err:
- 	ncpus = cpu_map__nr(evlist->cpus);
--	nthreads = evlist->threads ? evlist->threads->nr : 1;
-+	nthreads = thread_map__nr(evlist->threads);
- 
- 	list_for_each_entry_reverse(evsel, &evlist->entries, node)
- 		perf_evsel__close(evsel, ncpus, nthreads);
-diff --git a/tools/perf/util/thread_map.h b/tools/perf/util/thread_map.h
-index f718df8a3c59..0cd8b3108084 100644
---- a/tools/perf/util/thread_map.h
-+++ b/tools/perf/util/thread_map.h
-@@ -21,4 +21,9 @@ void thread_map__delete(struct thread_map *threads);
- 
- size_t thread_map__fprintf(struct thread_map *threads, FILE *fp);
- 
-+static inline int thread_map__nr(struct thread_map *threads)
-+{
-+	return threads ? threads->nr : 1;
-+}
-+
- #endif	/* __PERF_THREAD_MAP_H */
+ 	if (evlist == NULL) {
+-		*pevlist = evlist = perf_evlist__new(NULL, NULL);
++		*pevlist = evlist = perf_evlist__new();
+ 		if (evlist == NULL)
+ 			return -ENOMEM;
+ 	}
 -- 
 1.7.11.7
 
