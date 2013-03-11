@@ -1,42 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932184Ab3CKVXd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 17:23:33 -0400
-Received: from mail-da0-f44.google.com ([209.85.210.44]:62687 "EHLO
-	mail-da0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754800Ab3CKVXb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 17:23:31 -0400
-Date: Mon, 11 Mar 2013 14:23:28 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Udo van den Heuvel <udovdh@xs4all.nl>
-cc: Hans de Goede <hdegoede@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: 3.6.11: khubd issue SLAB related?
-In-Reply-To: <5139E36A.5000109@xs4all.nl>
-Message-ID: <alpine.DEB.2.02.1303111410470.4160@chino.kir.corp.google.com>
-References: <5139E36A.5000109@xs4all.nl>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S932244Ab3CKVXi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 17:23:38 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:53002 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754800Ab3CKVXg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Mar 2013 17:23:36 -0400
+Date: Mon, 11 Mar 2013 14:23:29 -0700
+From: Kees Cook <keescook@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>, David Airlie <airlied@linux.ie>,
+        dri-devel@lists.freedesktop.org, jln@google.com, marcheu@chromium.org
+Subject: [PATCH v2] drm/i915: bounds check execbuffer relocation count
+Message-ID: <20130311212329.GA21629@www.outflux.net>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 8 Mar 2013, Udo van den Heuvel wrote:
+It is possible to wrap the counter used to allocate the buffer for
+relocation copies. This could lead to heap writing overflows.
 
-> [3663200.799579] SLAB: Unable to allocate memory on node 0 (gfp=0xd0)
-> [3663200.799581]   cache: size-65536, object size: 65536, order: 4
-> [3663200.799583]   node 0: slabs: 6/6, objs: 6/6, free: 0
-> [3663200.799585] pwc: Oops, could not allocate memory for pwc_device.
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Reported-by: Pinkie Pie
+Cc: stable@vger.kernel.org
+---
+v2:
+ - move check into validate_exec_list
+---
+ drivers/gpu/drm/i915/i915_gem_execbuffer.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
-You have memory freed, but like your earlier page allocation failure on 
-mount, it is too fragmented.  This is an order-4 page allocation, the 
-kmalloc() of struct pwc_device, and you don't even have any order-3 pages 
-that are available.  Are you running with CONFIG_COMPACTION enabled?
+diff --git a/drivers/gpu/drm/i915/i915_gem_execbuffer.c b/drivers/gpu/drm/i915/i915_gem_execbuffer.c
+index 752e399..72d7841 100644
+--- a/drivers/gpu/drm/i915/i915_gem_execbuffer.c
++++ b/drivers/gpu/drm/i915/i915_gem_execbuffer.c
+@@ -732,6 +732,7 @@ validate_exec_list(struct drm_i915_gem_exec_object2 *exec,
+ 		   int count)
+ {
+ 	int i;
++	int total = 0;
+ 
+ 	for (i = 0; i < count; i++) {
+ 		char __user *ptr = (char __user *)(uintptr_t)exec[i].relocs_ptr;
+@@ -744,6 +745,9 @@ validate_exec_list(struct drm_i915_gem_exec_object2 *exec,
+ 		if (exec[i].relocation_count >
+ 		    INT_MAX / sizeof(struct drm_i915_gem_relocation_entry))
+ 			return -EINVAL;
++		if (exec[i].relocation_count > INT_MAX - total)
++			return -ENOMEM;
++		total += exec[i].relocation_count;
+ 
+ 		length = exec[i].relocation_count *
+ 			sizeof(struct drm_i915_gem_relocation_entry);
+-- 
+1.7.9.5
 
-If not, enable it and try again, or get root and manually try to 
-defragment memory by doing echo 1 > /proc/sys/vm/compact_memory.
 
-If so, try killing a memory hogging process to free some memory and 
-attempt to get some higher order pages available.
+-- 
+Kees Cook
+Chrome OS Security
