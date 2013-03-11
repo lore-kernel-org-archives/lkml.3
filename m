@@ -1,108 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754162Ab3CKSMh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 14:12:37 -0400
-Received: from mail-la0-f46.google.com ([209.85.215.46]:36085 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752686Ab3CKSLW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 14:11:22 -0400
-From: Johan Hovold <jhovold@gmail.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        rtc-linux@googlegroups.com, Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH v2 2/5] ARM: at91/dts: add RTC nodes
-Date: Mon, 11 Mar 2013 19:07:56 +0100
-Message-Id: <1363025279-17615-3-git-send-email-jhovold@gmail.com>
-X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <1363025279-17615-1-git-send-email-jhovold@gmail.com>
-References: <20130311180611.GF8797@localhost>
- <1363025279-17615-1-git-send-email-jhovold@gmail.com>
+	id S1754043Ab3CKSNM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 14:13:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13882 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752686Ab3CKSNK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Mar 2013 14:13:10 -0400
+Date: Mon, 11 Mar 2013 20:13:06 +0200
+From: Gleb Natapov <gleb@redhat.com>
+To: Jan Kiszka <jan.kiszka@siemens.com>
+Cc: Paolo Bonzini <pbonzini@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "mtosatti@redhat.com" <mtosatti@redhat.com>
+Subject: Re: [PATCH] x86: kvm: reset the bootstrap processor when it gets an
+ INIT
+Message-ID: <20130311181306.GW31619@redhat.com>
+References: <513DDCC2.9070807@redhat.com>
+ <20130311135441.GN31619@redhat.com>
+ <513DE3C4.5000503@siemens.com>
+ <20130311140503.GO31619@redhat.com>
+ <513DE8C5.3090209@redhat.com>
+ <513DFA01.1040500@siemens.com>
+ <20130311172342.GS31619@redhat.com>
+ <513E158B.80506@siemens.com>
+ <20130311174155.GU31619@redhat.com>
+ <513E1CFC.6010201@siemens.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <513E1CFC.6010201@siemens.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add RTC nodes for Atmel SOCs.
+On Mon, Mar 11, 2013 at 07:05:48PM +0100, Jan Kiszka wrote:
+> On 2013-03-11 18:41, Gleb Natapov wrote:
+> > On Mon, Mar 11, 2013 at 06:34:03PM +0100, Jan Kiszka wrote:
+> >> On 2013-03-11 18:23, Gleb Natapov wrote:
+> >>> On Mon, Mar 11, 2013 at 04:36:33PM +0100, Jan Kiszka wrote:
+> >>>> On 2013-03-11 15:23, Paolo Bonzini wrote:
+> >>>>> Il 11/03/2013 15:05, Gleb Natapov ha scritto:
+> >>>>>> On Mon, Mar 11, 2013 at 03:01:40PM +0100, Jan Kiszka wrote:
+> >>>>>>>> We are not moving away from mp_state, we are moving away from using
+> >>>>>>>> mp_state for signaling because with nested virt INIT does not always
+> >>>>>>>> change mp_state, not only that it can change mp_state long after signal
+> >>>>>>>> is received after vmx off is done.
+> >>>>>>>
+> >>>>>>> Right.
+> >>>>>>>
+> >>>>>>> BTW, for that to happen, we will also need to influence the INIT level.
+> >>>>>>> Unless I misread the spec, INIT is blocked while in root mode, and if
+> >>>>>>> you deassert INIT before leaving root (vmxoff, vmenter), nothing
+> >>>>>>> actually happens. So what matters is the INIT signal level at the exit
+> >>>>>>> of root mode.
+> >>>>>>>
+> >>>>>> You are talking about INIT# signal received via CPU pin, right? I think
+> >>>>>> INIT send by IPI cannot go away.
+> >>>>>
+> >>>>> Neither can go away.  For INIT sent by IPI, 10.4.7 says:
+> >>>>>
+> >>>>> Only the Pentium and P6 family processors support the INIT-deassert IPI.
+> >>>>> An INIT-disassert IPI has no affect on the state of the APIC, other than
+> >>>>> to reload the arbitration ID register with the value in the APIC ID
+> >>>>> register.
+> >>>>>
+> >>>>> 18.27.1 also says that "In the local APIC, NMI and INIT (except for INIT
+> >>>>> deassert) are always treated as edge triggered interrupts".
+> >>>>>
+> >>>>>
+> >>>>> For INIT#, the ICH9 chipset says that "INIT# is driven low for 16 PCI
+> >>>>> clocks" when a soft reset is requested.  So we can guess that INIT# is
+> >>>>> also edge-triggered.
+> >>>>
+> >>>> Ah, ok. So, virtually, INIT stays asserted until it can be delivered in
+> >>>> form of a reset or a vmexit.
+> >>>>
+> >>> vmexit clears it?
+> >>
+> >> It has to. Otherwise, it would hit the host on vmxoff.
+> >>
+> > Why do you thing this is not happening?
+> > 
+> > Look at [1] page 10 "VMX and INIT blocking". Do you think they were
+> > lucky to hit CPU while it was in a root mode?
+> > 
+> > [1] http://www.invisiblethingslab.com/resources/2011/Software%20Attacks%20on%20Intel%20VT-d.pdf
+> 
+> Interesting. And confusing. If a VMM cannot "consume" INIT events by
+> reentering the guest nor postpone those events up to that point if they
+> arrived in root mode, the whole vmexit-on-INIT thing is practically
+> useless. I wonder what use case Intel had in mind while designing this.
+> 
+I actually find it very useful. On INIT vmexit hypervisor may call
+vmxoff and do proper reset. I find it less useful on AMD where you need
+to send self INIT IPI, but then how you can send self SIPI?
 
-Use two different compatible properties to reflect the fact that the
-RTC-peripherals are backup powered (VDDBU) and are thus not reset on
-wake-up, user, watchdog or software reset on all SOCs but at91rm9200.
+> That article claims they tested it, though via MSI injection, so they
+> are probably right, at least for the used CPU type.
+> 
+> Jan
+> 
+> -- 
+> Siemens AG, Corporate Technology, CT RTC ITP SDP-DE
+> Corporate Competence Center Embedded Linux
 
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
----
- arch/arm/boot/dts/at91rm9200.dtsi  | 5 +++++
- arch/arm/boot/dts/at91sam9g45.dtsi | 5 +++++
- arch/arm/boot/dts/at91sam9n12.dtsi | 5 +++++
- arch/arm/boot/dts/at91sam9x5.dtsi  | 5 +++++
- 4 files changed, 20 insertions(+)
-
-diff --git a/arch/arm/boot/dts/at91rm9200.dtsi b/arch/arm/boot/dts/at91rm9200.dtsi
-index 222047f..96b4e30 100644
---- a/arch/arm/boot/dts/at91rm9200.dtsi
-+++ b/arch/arm/boot/dts/at91rm9200.dtsi
-@@ -326,6 +326,11 @@
- 			status = "disabled";
- 		};
- 
-+		rtc@fffffe00 {
-+			compatible = "atmel,at91rm9200-rtc";
-+			reg = <0xfffffe00 0x30>;
-+		};
-+
- 		usb0: ohci@00300000 {
- 			compatible = "atmel,at91rm9200-ohci", "usb-ohci";
- 			reg = <0x00300000 0x100000>;
-diff --git a/arch/arm/boot/dts/at91sam9g45.dtsi b/arch/arm/boot/dts/at91sam9g45.dtsi
-index 6b1d4ca..c1ad522 100644
---- a/arch/arm/boot/dts/at91sam9g45.dtsi
-+++ b/arch/arm/boot/dts/at91sam9g45.dtsi
-@@ -526,6 +526,11 @@
- 				status = "disabled";
- 			};
- 
-+			rtc@fffffdb0 {
-+				compatible = "atmel,at91sam9g45-rtc";
-+				reg = <0xfffffdb0 0x30>;
-+			};
-+
- 			watchdog@fffffd40 {
- 				compatible = "atmel,at91sam9260-wdt";
- 				reg = <0xfffffd40 0x10>;
-diff --git a/arch/arm/boot/dts/at91sam9n12.dtsi b/arch/arm/boot/dts/at91sam9n12.dtsi
-index 4801717..802e92f 100644
---- a/arch/arm/boot/dts/at91sam9n12.dtsi
-+++ b/arch/arm/boot/dts/at91sam9n12.dtsi
-@@ -311,6 +311,11 @@
- 				status = "disabled";
- 			};
- 
-+			rtc@fffffeb0 {
-+				compatible = "atmel,at91sam9g45-rtc";
-+				reg = <0xfffffeb0 0x30>;
-+			};
-+
- 			ssc0: ssc@f0010000 {
- 				compatible = "atmel,at91sam9g45-ssc";
- 				reg = <0xf0010000 0x4000>;
-diff --git a/arch/arm/boot/dts/at91sam9x5.dtsi b/arch/arm/boot/dts/at91sam9x5.dtsi
-index c461e11..432fbfb 100644
---- a/arch/arm/boot/dts/at91sam9x5.dtsi
-+++ b/arch/arm/boot/dts/at91sam9x5.dtsi
-@@ -362,6 +362,11 @@
- 				};
- 			};
- 
-+			rtc@fffffeb0 {
-+				compatible = "atmel,at91sam9g45-rtc";
-+				reg = <0xfffffeb0 0x30>;
-+			};
-+
- 			ssc0: ssc@f0010000 {
- 				compatible = "atmel,at91sam9g45-ssc";
- 				reg = <0xf0010000 0x4000>;
--- 
-1.8.1.5
-
+--
+			Gleb.
