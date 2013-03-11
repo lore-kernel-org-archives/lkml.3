@@ -1,48 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754724Ab3CKX1l (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 19:27:41 -0400
-Received: from vpn.mirsal.fr ([178.79.141.108]:53869 "EHLO
-	mirsal-laptop1.mirsal.fr" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754427Ab3CKX0w (ORCPT
+	id S1754741Ab3CKX3J (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 19:29:09 -0400
+Received: from cpsmtpb-ews05.kpnxchange.com ([213.75.39.8]:58089 "EHLO
+	cpsmtpb-ews05.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754188Ab3CKX3H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 19:26:52 -0400
-From: Mirsal Ennaime <mirsal@mirsal.fr>
-To: Greg Kroah-Hartman <greg@kroah.com>
-Cc: =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
-        Brian Swetland <swetland@google.com>, devel@driverdev.osuosl.org,
-        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Joe Perches <joe@perches.com>
-Subject: [PATCH v2 0/3] Cosmetic changes to the android binder proc release code
-Date: Tue, 12 Mar 2013 00:26:25 +0100
-Message-Id: <1363044388-11409-1-git-send-email-mirsal@mirsal.fr>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1363030315-10229-1-git-send-email-mirsal@mirsal.fr>
-References: <1363030315-10229-1-git-send-email-mirsal@mirsal.fr>
+	Mon, 11 Mar 2013 19:29:07 -0400
+Message-ID: <1363044544.3137.120.camel@x61.thuisdomein>
+Subject: [PATCH] decompressors: fix typo "POWERPC"
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Florian Fainelli <florian@openwrt.org>,
+        Lasse Collin <lasse.collin@tukaani.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+Date: Tue, 12 Mar 2013 00:29:04 +0100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 11 Mar 2013 23:29:03.0956 (UTC) FILETIME=[37CCA940:01CE1EB0]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Commit 5dc49c75a26b99e86a18441e0b64c1f7c7c6a500 ("decompressors: make
+the default XZ_DEC_* config match the selected architecture") added
+	default y if POWERPC
 
-These are cleanup patches related to the binder_deferred_release function
-in the android binder staging driver which improve readability while removing
-checkpatch and compiler warnings.
+to lib/xz/Kconfig. But there is no Kconfig symbol POWERPC. The most
+general Kconfig symbol for the powerpc architecture is PPC. So let's use
+that.
 
- drivers/staging/android/binder.c |  137 +++++++++++++++++-----------
- 1 file changed, 85 insertions(+), 52 deletions(-)
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+0) Tested with "make ARCH=powerpc oldconfig" (on some powerpc
+defconfig).
 
-Changes from v1:
+1) By the way: why does the XZ related code use both the macro
+CONFIG_XZ_DEC_POWERPC and the macro XZ_DEC_POWERPC? (Ditto for other
+architectures.) That looks odd.
 
- * squashed patches 3 and 4 together instead of introducing a warning
-   in patch 3 and then fix it in patch 4. (Following Joe Perches' review)
- * removed the extra nd_refs variable from patch 1 and fixed whitespace
-   in patch 2 (Following Dan Carpenter's reviews)
+ lib/xz/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Thank you for your time and sorry again for the noise,
-Best regards,
-
---
-mirsal
+diff --git a/lib/xz/Kconfig b/lib/xz/Kconfig
+index 82a04d7..08837db 100644
+--- a/lib/xz/Kconfig
++++ b/lib/xz/Kconfig
+@@ -15,7 +15,7 @@ config XZ_DEC_X86
+ 
+ config XZ_DEC_POWERPC
+ 	bool "PowerPC BCJ filter decoder"
+-	default y if POWERPC
++	default y if PPC
+ 	select XZ_DEC_BCJ
+ 
+ config XZ_DEC_IA64
+-- 
+1.7.11.7
 
