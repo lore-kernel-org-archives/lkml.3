@@ -1,62 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752738Ab3CKOJa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 10:09:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27050 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750872Ab3CKOJ2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 10:09:28 -0400
-Date: Mon, 11 Mar 2013 16:09:25 +0200
-From: Gleb Natapov <gleb@redhat.com>
-To: Jan Kiszka <jan.kiszka@siemens.com>
-Cc: Paolo Bonzini <pbonzini@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "mtosatti@redhat.com" <mtosatti@redhat.com>
-Subject: Re: [PATCH] x86: kvm: reset the bootstrap processor when it gets an
- INIT
-Message-ID: <20130311140925.GP31619@redhat.com>
-References: <20130310181035.GM24444@redhat.com>
- <513DAE8F.3050102@redhat.com>
- <20130311102852.GE31619@redhat.com>
- <513DBF45.9030803@redhat.com>
- <20130311115144.GG31619@redhat.com>
- <513DDCC2.9070807@redhat.com>
- <20130311135441.GN31619@redhat.com>
- <513DE3C4.5000503@siemens.com>
- <20130311140503.GO31619@redhat.com>
- <513DE4DA.4050009@siemens.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <513DE4DA.4050009@siemens.com>
+	id S1753020Ab3CKOJj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 10:09:39 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:29957 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751647Ab3CKOJ3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Mar 2013 10:09:29 -0400
+X-Authority-Analysis: v=2.0 cv=BZhaI8R2 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=YIQl_LLSjZwA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=Ox5BbmyYL-8A:10 a=i0EeH86SAAAA:8 a=PkHgMhmOxsv1ywEtETMA:9 a=PUjeQqilurYA:10 a=hPjdaMEvmhQA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1363010968.12608.6.camel@gandalf.local.home>
+Subject: Re: [PATCH 07/13] tracing/kdb: remove redundant checking
+From: Steven Rostedt <rostedt@goodmis.org>
+To: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        Jason Wessel <jason.wessel@windriver.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>
+Date: Mon, 11 Mar 2013 10:09:28 -0400
+In-Reply-To: <513D8437.8060400@huawei.com>
+References: <513D8437.8060400@huawei.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 11, 2013 at 03:06:18PM +0100, Jan Kiszka wrote:
-> On 2013-03-11 15:05, Gleb Natapov wrote:
-> > On Mon, Mar 11, 2013 at 03:01:40PM +0100, Jan Kiszka wrote:
-> >>> We are not moving away from mp_state, we are moving away from using
-> >>> mp_state for signaling because with nested virt INIT does not always
-> >>> change mp_state, not only that it can change mp_state long after signal
-> >>> is received after vmx off is done.
-> >>
-> >> Right.
-> >>
-> >> BTW, for that to happen, we will also need to influence the INIT level.
-> >> Unless I misread the spec, INIT is blocked while in root mode, and if
-> >> you deassert INIT before leaving root (vmxoff, vmenter), nothing
-> >> actually happens. So what matters is the INIT signal level at the exit
-> >> of root mode.
-> >>
-> > You are talking about INIT# signal received via CPU pin, right? I think
-> > INIT send by IPI cannot go away.
-> 
-> Why shouldn't it? Besides edge, there is also level-triggered INIT.
-> 
-OK, so level-triggered INIT can be de-asserted what about edge triggered
-one? :)
+This is Jason's code.
 
---
-			Gleb.
+Jason, please give an Ack or Nack.
+
+Thanks,
+
+-- Steve
+
+
+On Mon, 2013-03-11 at 15:13 +0800, zhangwei(Jovi) wrote:
+> trace_empty is checking in while-loop, so the previous checking
+> is totally redundant, and more worse, the first trace entry is losted.
+> 
+> so remove it.
+> 
+> Signed-off-by: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
+> ---
+>  kernel/trace/trace_kdb.c |    3 +--
+>  1 file changed, 1 insertion(+), 2 deletions(-)
+> 
+> diff --git a/kernel/trace/trace_kdb.c b/kernel/trace/trace_kdb.c
+> index 3c5c5df..6489b2e 100644
+> --- a/kernel/trace/trace_kdb.c
+> +++ b/kernel/trace/trace_kdb.c
+> @@ -57,8 +57,7 @@ static void ftrace_dump_buf(int skip_lines, long cpu_file)
+>  		ring_buffer_read_start(iter.buffer_iter[cpu_file]);
+>  		tracing_iter_reset(&iter, cpu_file);
+>  	}
+> -	if (!trace_empty(&iter))
+> -		trace_find_next_entry_inc(&iter);
+> +
+>  	while (!trace_empty(&iter)) {
+>  		if (!cnt)
+>  			kdb_printf("---------------------------------\n");
+
+
