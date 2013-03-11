@@ -1,71 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754610Ab3CKVJs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 17:09:48 -0400
-Received: from slow3-v.mail.gandi.net ([217.70.178.89]:39764 "EHLO
-	slow3-v.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754132Ab3CKVJr (ORCPT
+	id S1754557Ab3CKVKg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 17:10:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46912 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754011Ab3CKVKf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 17:09:47 -0400
-X-Policy: 217.70.183.197 is whitelisted
-X-Policy: 217.70.183.197 is whitelisted
-X-Originating-IP: 173.246.103.110
-Date: Mon, 11 Mar 2013 13:25:12 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: Alexandru Gheorghiu <gheorghiuandru@gmail.com>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>, David Airlie <airlied@linux.ie>,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers: gpu: drm: i915: Replaced calls to kmalloc &
- memcpy with kmemdup
-Message-ID: <20130311202512.GA7626@jtriplet-mobl1>
-References: <1363030240-22250-1-git-send-email-gheorghiuandru@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1363030240-22250-1-git-send-email-gheorghiuandru@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 11 Mar 2013 17:10:35 -0400
+Date: Mon, 11 Mar 2013 14:10:32 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: James Morris <jmorris@namei.org>, David Howells <dhowells@redhat.com>,
+        torvalds@linux-foundation.org, keyrings@linux-nfs.org,
+        pmatouse@redhat.com, security@kernel.org, linux-kernel@vger.kernel.org,
+        mguzik@redhat.com, ben@decadent.org.uk
+Subject: Re: [PATCH] KEYS: Fix race with concurrent install_user_keyrings()
+Message-Id: <20130311141032.7c0fa60279fa172b72fc0bf7@linux-foundation.org>
+In-Reply-To: <20130311210211.GA13575@kroah.com>
+References: <20130306222412.1255.81929.stgit@warthog.procyon.org.uk>
+	<alpine.LRH.2.02.1303071558030.25164@tundra.namei.org>
+	<20130311210211.GA13575@kroah.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 11, 2013 at 09:30:40PM +0200, Alexandru Gheorghiu wrote:
-> Replaced calls to kmalloc followed by memcpy with a single call to kmemdup.
-> This patch was found using coccinelle.
+On Mon, 11 Mar 2013 14:02:11 -0700 Greg KH <gregkh@linuxfoundation.org> wrote:
+
+> On Thu, Mar 07, 2013 at 03:59:09PM +1100, James Morris wrote:
+> > On Wed, 6 Mar 2013, David Howells wrote:
+> > 
+> > > Reported-by: Mateusz Guzik <mguzik@redhat.com>
+> > > Signed-off-by: David Howells <dhowells@redhat.com>
+> > 
+> > Acked-by: James Morris <james.l.morris@oracle.com>
 > 
-> Signed-off-by: Alexandru Gheorghiu <gheorghiuandru@gmail.com>
-> ---
->  drivers/gpu/drm/i915/intel_dp.c |    3 +--
->  1 file changed, 1 insertion(+), 2 deletions(-)
-> 
-> diff --git a/drivers/gpu/drm/i915/intel_dp.c b/drivers/gpu/drm/i915/intel_dp.c
-> index f61cb79..a3fdd65 100644
-> --- a/drivers/gpu/drm/i915/intel_dp.c
-> +++ b/drivers/gpu/drm/i915/intel_dp.c
-> @@ -2335,11 +2335,10 @@ intel_dp_get_edid(struct drm_connector *connector, struct i2c_adapter *adapter)
->  			return NULL;
->  
->  		size = (intel_connector->edid->extensions + 1) * EDID_LENGTH;
-> -		edid = kmalloc(size, GFP_KERNEL);
-> +		edid = kmemdup(intel_connector->edid, size, GFP_KERNEL);
->  		if (!edid)
->  			return NULL;
->  
-> -		memcpy(edid, intel_connector->edid, size);
->  		return edid;
->  	}
+> What happened to this patch?  I don't see it in Linus's tree, James, did
+> you pick it up?
 
-With this change, the conditional no longer makes sense; this should
-just "return kmemdup(...);".
+James has acked it.  I have it queued for processing so it isn't lost. 
+It has no cc:stable's in it, but David always forgets that ;)
 
-That suggests an obvious further cleanup that coccinelle could easily
-handle:
-
-if (!foo)
-    return NULL;
-return foo;
-
-should become just "return foo;".  And you might then want to check for
-variables used *only* to capture a return value and immediately
-returned, and eliminate them.
-
-- Josh Triplett
