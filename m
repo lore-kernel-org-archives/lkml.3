@@ -1,14 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752270Ab3CKFgj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 01:36:39 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:39223 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751040Ab3CKFgh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 01:36:37 -0400
-Message-ID: <513D6DCD.20507@ti.com>
-Date: Mon, 11 Mar 2013 11:08:21 +0530
+	id S1752391Ab3CKFiP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 01:38:15 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:49548 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751516Ab3CKFiN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Mar 2013 01:38:13 -0400
+Message-ID: <513D6E2D.4040805@ti.com>
+Date: Mon, 11 Mar 2013 11:09:57 +0530
 From: Santosh Shilimkar <santosh.shilimkar@ti.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
@@ -16,10 +15,10 @@ To: Lokesh Vutla <lokeshvutla@ti.com>
 CC: <linux-kernel@vger.kernel.org>, <gregkh@linuxfoundation.org>,
         <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         Nishanth Menon <nm@ti.com>
-Subject: Re: [PATCH 4/8] memory: emif: Handle devices which are not rated
- for >85C
-References: <1362978365-5593-1-git-send-email-lokeshvutla@ti.com> <1362978365-5593-5-git-send-email-lokeshvutla@ti.com>
-In-Reply-To: <1362978365-5593-5-git-send-email-lokeshvutla@ti.com>
+Subject: Re: [PATCH 5/8] memory: emif: use restart if power_off not present
+ when out of spec
+References: <1362978365-5593-1-git-send-email-lokeshvutla@ti.com> <1362978365-5593-6-git-send-email-lokeshvutla@ti.com>
+In-Reply-To: <1362978365-5593-6-git-send-email-lokeshvutla@ti.com>
 Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
@@ -29,32 +28,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 On Monday 11 March 2013 10:36 AM, Lokesh Vutla wrote:
 > From: Nishanth Menon <nm@ti.com>
 > 
-> As per JESD209-2E specification for LPDDR2,
->       http://www.jedec.org/standards-documents/results/jesd209-2E
-> Table 73, LPDDR2 memories come in two flavors - Standard and
-> Extended. The Standard types can operate from -25C to +85C
-> However, beyond that and upto +105C can only be supported by
-> Extended types.
+> Some machine or kernel variants might have missed implementation
+> of power off handlers. We DONOT want to let the system be in
+> "out of spec" state in this condition. So, WARN and attempt
+> a machine restart in the hopes of clearing the out-of-spec
+> temperature condition.
 > 
-right.
-
-> Unfortunately, it seems there is no info in MR0(device info) or
-> MR[1,2](device feature) for run time detection of this capability
-> as far as seen on the spec. Hence, we provide a custom_config
-> flag to be populated by platforms which have these "extended"
-> type memories.
+> NOTE: This is not the safest option, but safer than leaving the
+> system in unstable conditions.
 > 
-> For the "Standard" memories, we need to consider MR4 notifications
-> of temperature triggers >85C as equivalent to thermal shutdown
-> events (equivalent to Spec specified thermal shutdown events for
-> "extended" parts).
->
-Make sense.
- 
-> Reported-by: Richard Woodruff <r-woodruff2@ti.com>
 > Signed-off-by: Nishanth Menon <nm@ti.com>
 > Signed-off-by: Lokesh Vutla <lokeshvutla@ti.com>
 > ---
-Thanks for the fix.
+>  drivers/memory/emif.c |    9 ++++++++-
+>  1 file changed, 8 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/memory/emif.c b/drivers/memory/emif.c
+> index 927fb55..02a94fc 100644
+> --- a/drivers/memory/emif.c
+> +++ b/drivers/memory/emif.c
+> @@ -25,6 +25,7 @@
+>  #include <linux/module.h>
+>  #include <linux/list.h>
+>  #include <linux/spinlock.h>
+> +#include <linux/pm.h>
+>  #include <memory/jedec_ddr.h>
+>  #include "emif.h"
+>  #include "of_memory.h"
+> @@ -1011,7 +1012,13 @@ static irqreturn_t emif_threaded_isr(int irq, void *dev_id)
+>  
+>  	if (emif->temperature_level == SDRAM_TEMP_VERY_HIGH_SHUTDOWN) {
+>  		dev_emerg(emif->dev, "SDRAM temperature exceeds operating limit.. Needs shut down!!!\n");
+> -		kernel_power_off();
+Extra line here would be good here.
+> +		/* If we have Power OFF ability, use it, else try restarting */
+> +		if (pm_power_off) {
+> +			kernel_power_off();
+> +		} else {
+> +			WARN(1, "FIXME: NO pm_power_off!!! trying restart\n");
+> +			kernel_restart("SDRAM Over-temp Emergency restart");
+> +		}
+>  		return IRQ_HANDLED;
+>  	}
+>  
+Otherwise,
 Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
 
