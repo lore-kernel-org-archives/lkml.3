@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753327Ab3CKJM7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 05:12:59 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:8836 "EHLO relay.sw.ru"
+	id S1753521Ab3CKJNW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 05:13:22 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:11153 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752143Ab3CKJM6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 05:12:58 -0400
-Message-ID: <513DA00D.6070009@parallels.com>
-Date: Mon, 11 Mar 2013 13:12:45 +0400
+	id S1752861Ab3CKJNT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Mar 2013 05:13:19 -0400
+Message-ID: <513DA024.80404@parallels.com>
+Date: Mon, 11 Mar 2013 13:13:08 +0400
 From: Pavel Emelyanov <xemul@parallels.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
@@ -16,7 +16,7 @@ CC: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
         Michael Kerrisk <mtk.manpages@gmail.com>,
         Matthew Helsley <matt.helsley@gmail.com>, linux-api@vger.kernel.org,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [PATCH 2/3] posix-timers: Introduce /proc/<pid>/timers file
+Subject: [PATCH 3/3] posix-timers: Show sigevent info in proc file
 References: <513D9FD9.6020507@parallels.com>
 In-Reply-To: <513D9FD9.6020507@parallels.com>
 Content-Type: text/plain; charset=ISO-8859-1
@@ -25,140 +25,72 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently kernel doesn't provide any API for getting info about
-what posix timers are configured by tasks. It's implied, that
-task, that configured some timers, knows what it did. However,
-for external tools it's impossible to get this information. In
-particular, this is critical for checkpoint-restore project to
-have this info.
+Previous patch added proc file to list posix timers created by task.
+Expand the information provided in this file by adding info about
+notification method, with which timers were created. I.e. after
+the "ID:" line there go
 
-That said, the proposal is to introduce the per-pid proc file
-with information about posix timers. Since these timers are shared
-between threads, this file is present on tgid level only, no such
-thing in tid subdirs.
+1. "signal:" line, that shows signal number and sigval bits;
+2. "notify:" line, that shows the timer notification method.
 
-The file format is expected to be the "/proc/<pid>/smaps"-like,
-i.e. each timer will occupy seveal lines to allow for future
-extending.
+Thus the timer entry would looke like this:
 
-Each new timer entry starts with the
+ID: 123
+signal: 14/0000000000b005d0
+notify: signal/pid.732
 
-ID: <number>
-
-line which is added by this patch.
+This information is enough to understand how the timer_create() was
+called for each particular timer.
 
 Signed-off-by: Pavel Emelyanov <xemul@parallels.com>
 ---
- fs/proc/base.c |   83 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 83 insertions(+), 0 deletions(-)
+ fs/proc/base.c |   17 +++++++++++++++++
+ 1 files changed, 17 insertions(+), 0 deletions(-)
 
 diff --git a/fs/proc/base.c b/fs/proc/base.c
-index 69078c7..01def9f 100644
+index 01def9f..a193086 100644
 --- a/fs/proc/base.c
 +++ b/fs/proc/base.c
-@@ -86,6 +86,7 @@
- #include <linux/fs_struct.h>
- #include <linux/slab.h>
- #include <linux/flex_array.h>
-+#include <linux/posix-timers.h>
- #ifdef CONFIG_HARDWALL
- #include <asm/hardwall.h>
- #endif
-@@ -2013,6 +2014,85 @@ static const struct file_operations proc_map_files_operations = {
- 	.llseek		= default_llseek,
+@@ -2018,6 +2018,7 @@ struct timers_private {
+ 	struct pid *pid;
+ 	struct task_struct *task;
+ 	struct sighand_struct *sighand;
++	struct pid_namespace *ns;
+ 	unsigned long flags;
  };
  
-+struct timers_private {
-+	struct pid *pid;
-+	struct task_struct *task;
-+	struct sighand_struct *sighand;
-+	unsigned long flags;
-+};
-+
-+static void *timers_start(struct seq_file *m, loff_t *pos)
-+{
+@@ -2060,9 +2061,24 @@ static void timers_stop(struct seq_file *m, void *v)
+ static int show_timer(struct seq_file *m, void *v)
+ {
+ 	struct k_itimer *timer;
 +	struct timers_private *tp = m->private;
-+
-+	tp->task = get_pid_task(tp->pid, PIDTYPE_PID);
-+	if (!tp->task)
-+		return ERR_PTR(-ESRCH);
-+
-+	tp->sighand = lock_task_sighand(tp->task, &tp->flags);
-+	if (!tp->sighand)
-+		return ERR_PTR(-ESRCH);
-+
-+	return seq_list_start(&tp->task->signal->posix_timers, *pos);
-+}
-+
-+static void *timers_next(struct seq_file *m, void *v, loff_t *pos)
-+{
-+	struct timers_private *tp = m->private;
-+	return seq_list_next(v, &tp->task->signal->posix_timers, pos);
-+}
-+
-+static void timers_stop(struct seq_file *m, void *v)
-+{
-+	struct timers_private *tp = m->private;
-+
-+	if (tp->sighand) {
-+		unlock_task_sighand(tp->task, &tp->flags);
-+		tp->sighand = NULL;
-+	}
-+
-+	if (tp->task) {
-+		put_task_struct(tp->task);
-+		tp->task = NULL;
-+	}
-+}
-+
-+static int show_timer(struct seq_file *m, void *v)
-+{
-+	struct k_itimer *timer;
-+
-+	timer = list_entry((struct list_head *)v, struct k_itimer, list);
-+	seq_printf(m, "ID: %d\n", timer->it_id);
-+
-+	return 0;
-+}
-+
-+static const struct seq_operations proc_timers_seq_ops = {
-+	.start	= timers_start,
-+	.next	= timers_next,
-+	.stop	= timers_stop,
-+	.show	= show_timer,
-+};
-+
-+static int proc_timers_open(struct inode *inode, struct file *file)
-+{
-+	struct timers_private *tp;
-+
-+	tp = __seq_open_private(file, &proc_timers_seq_ops,
-+			sizeof(struct timers_private));
-+	if (!tp)
-+		return -ENOMEM;
-+
-+	tp->pid = proc_pid(inode);
-+	return 0;
-+}
-+
-+static const struct file_operations proc_timers_operations = {
-+	.open		= proc_timers_open,
-+	.read		= seq_read,
-+	.llseek		= seq_lseek,
-+	.release	= seq_release_private,
-+};
- #endif /* CONFIG_CHECKPOINT_RESTORE */
++	int notify;
++	static char *nstr[] = {
++		[SIGEV_SIGNAL] = "signal",
++		[SIGEV_NONE] = "none",
++		[SIGEV_THREAD] = "thread",
++	};
  
- static struct dentry *proc_pident_instantiate(struct inode *dir,
-@@ -2583,6 +2663,9 @@ static const struct pid_entry tgid_base_stuff[] = {
- 	REG("gid_map",    S_IRUGO|S_IWUSR, proc_gid_map_operations),
- 	REG("projid_map", S_IRUGO|S_IWUSR, proc_projid_map_operations),
- #endif
-+#ifdef CONFIG_CHECKPOINT_RESTORE
-+	REG("timers",	  S_IRUGO, proc_timers_operations),
-+#endif
- };
+ 	timer = list_entry((struct list_head *)v, struct k_itimer, list);
++	notify = timer->it_sigev_notify;
++
+ 	seq_printf(m, "ID: %d\n", timer->it_id);
++	seq_printf(m, "signal: %d/%p\n", timer->sigq->info.si_signo,
++			timer->sigq->info.si_value.sival_ptr);
++	seq_printf(m, "notify: %s/%s.%d\n",
++		nstr[notify & ~SIGEV_THREAD_ID],
++		(notify & SIGEV_THREAD_ID) ? "tid" : "pid",
++		pid_nr_ns(timer->it_pid, tp->ns));
  
- static int proc_tgid_base_readdir(struct file * filp,
+ 	return 0;
+ }
+@@ -2084,6 +2100,7 @@ static int proc_timers_open(struct inode *inode, struct file *file)
+ 		return -ENOMEM;
+ 
+ 	tp->pid = proc_pid(inode);
++	tp->ns = inode->i_sb->s_fs_info;
+ 	return 0;
+ }
+ 
 -- 
 1.7.6.5
