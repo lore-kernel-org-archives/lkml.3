@@ -1,60 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753816Ab3CKQLS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 12:11:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48358 "EHLO mx1.redhat.com"
+	id S1753605Ab3CKQQM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 12:16:12 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:45706 "EHLO SMTP.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750923Ab3CKQLR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 12:11:17 -0400
-Subject: Re: [PATCH] GFS2: return error if malloc failed in gfs2_rs_alloc()
-From: Steven Whitehouse <swhiteho@redhat.com>
-To: Wei Yongjun <weiyj.lk@gmail.com>
-Cc: yongjun_wei@trendmicro.com.cn, cluster-devel@redhat.com,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <CAPgLHd9eg02c+HiLN9AGNDYUCx1qey7sSr6DoR6tJnp20eAvcw@mail.gmail.com>
-References: <CAPgLHd9eg02c+HiLN9AGNDYUCx1qey7sSr6DoR6tJnp20eAvcw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Red Hat UK Ltd
-Date: Mon, 11 Mar 2013 16:09:23 +0000
-Message-ID: <1363018163.2698.25.camel@menhir>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751526Ab3CKQQL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Mar 2013 12:16:11 -0400
+X-IronPort-AV: E=Sophos;i="4.84,824,1355097600"; 
+   d="scan'208";a="12444760"
+From: Zoltan Kiss <zoltan.kiss@citrix.com>
+To: <linux-kernel@vger.kernel.org>, <konrad.wilk@oracle.com>
+CC: Zoltan Kiss <zoltan.kiss@citrix.com>
+Subject: [PATCH 1/1] xen-blkback: Change statistics counter types to unsigned
+Date: Mon, 11 Mar 2013 16:15:50 +0000
+Message-ID: <1363018550-22416-1-git-send-email-zoltan.kiss@citrix.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <20130308184301.GA31104@phenom.dumpdata.com>
+References: <20130308184301.GA31104@phenom.dumpdata.com>
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [10.80.2.133]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+These values shouldn't be negative, but after an overflow their value
+can turn into negative, if they are signed. xentop can show bogus
+values in this case.
 
-Now in the GFS2 -nmw tree. Thanks,
+Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
+Reported-by: Ichiro Ogino <ichiro.ogino@citrix.co.jp>
+---
+ drivers/block/xen-blkback/blkback.c |    4 ++--
+ drivers/block/xen-blkback/common.h  |   14 +++++++-------
+ drivers/block/xen-blkback/xenbus.c  |   14 +++++++-------
+ 3 files changed, 16 insertions(+), 16 deletions(-)
 
-Steve.
-
-On Mon, 2013-03-11 at 23:01 +0800, Wei Yongjun wrote:
-> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-> 
-> The error code in gfs2_rs_alloc() is set to ENOMEM when error
-> but never be used, instead, gfs2_rs_alloc() always return 0.
-> Fix to return 'error'.
-> 
-> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-> ---
->  fs/gfs2/rgrp.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/fs/gfs2/rgrp.c b/fs/gfs2/rgrp.c
-> index 9d16a6f..b850198 100644
-> --- a/fs/gfs2/rgrp.c
-> +++ b/fs/gfs2/rgrp.c
-> @@ -576,7 +576,7 @@ int gfs2_rs_alloc(struct gfs2_inode *ip)
->  	RB_CLEAR_NODE(&ip->i_res->rs_node);
->  out:
->  	up_write(&ip->i_rw_mutex);
-> -	return 0;
-> +	return error;
->  }
->  
->  static void dump_rs(struct seq_file *seq, const struct gfs2_blkreserv *rs)
-> 
-> 
-
+diff --git a/drivers/block/xen-blkback/blkback.c b/drivers/block/xen-blkback/blkback.c
+index de1f319..75740f9 100644
+--- a/drivers/block/xen-blkback/blkback.c
++++ b/drivers/block/xen-blkback/blkback.c
+@@ -381,8 +381,8 @@ irqreturn_t xen_blkif_be_int(int irq, void *dev_id)
+ 
+ static void print_stats(struct xen_blkif *blkif)
+ {
+-	pr_info("xen-blkback (%s): oo %3d  |  rd %4d  |  wr %4d  |  f %4d"
+-		 "  |  ds %4d\n",
++	pr_info("xen-blkback (%s): oo %3llu  |  rd %4llu  |  wr %4llu  |  f %4llu"
++		 "  |  ds %4llu\n",
+ 		 current->comm, blkif->st_oo_req,
+ 		 blkif->st_rd_req, blkif->st_wr_req,
+ 		 blkif->st_f_req, blkif->st_ds_req);
+diff --git a/drivers/block/xen-blkback/common.h b/drivers/block/xen-blkback/common.h
+index 6072390..72d09ac 100644
+--- a/drivers/block/xen-blkback/common.h
++++ b/drivers/block/xen-blkback/common.h
+@@ -208,13 +208,13 @@ struct xen_blkif {
+ 
+ 	/* statistics */
+ 	unsigned long		st_print;
+-	int			st_rd_req;
+-	int			st_wr_req;
+-	int			st_oo_req;
+-	int			st_f_req;
+-	int			st_ds_req;
+-	int			st_rd_sect;
+-	int			st_wr_sect;
++	unsigned long long			st_rd_req;
++	unsigned long long			st_wr_req;
++	unsigned long long			st_oo_req;
++	unsigned long long			st_f_req;
++	unsigned long long			st_ds_req;
++	unsigned long long			st_rd_sect;
++	unsigned long long			st_wr_sect;
+ 
+ 	wait_queue_head_t	waiting_to_free;
+ };
+diff --git a/drivers/block/xen-blkback/xenbus.c b/drivers/block/xen-blkback/xenbus.c
+index 5e237f6..8bfd1bc 100644
+--- a/drivers/block/xen-blkback/xenbus.c
++++ b/drivers/block/xen-blkback/xenbus.c
+@@ -230,13 +230,13 @@ int __init xen_blkif_interface_init(void)
+ 	}								\
+ 	static DEVICE_ATTR(name, S_IRUGO, show_##name, NULL)
+ 
+-VBD_SHOW(oo_req,  "%d\n", be->blkif->st_oo_req);
+-VBD_SHOW(rd_req,  "%d\n", be->blkif->st_rd_req);
+-VBD_SHOW(wr_req,  "%d\n", be->blkif->st_wr_req);
+-VBD_SHOW(f_req,  "%d\n", be->blkif->st_f_req);
+-VBD_SHOW(ds_req,  "%d\n", be->blkif->st_ds_req);
+-VBD_SHOW(rd_sect, "%d\n", be->blkif->st_rd_sect);
+-VBD_SHOW(wr_sect, "%d\n", be->blkif->st_wr_sect);
++VBD_SHOW(oo_req,  "%llu\n", be->blkif->st_oo_req);
++VBD_SHOW(rd_req,  "%llu\n", be->blkif->st_rd_req);
++VBD_SHOW(wr_req,  "%llu\n", be->blkif->st_wr_req);
++VBD_SHOW(f_req,  "%llu\n", be->blkif->st_f_req);
++VBD_SHOW(ds_req,  "%llu\n", be->blkif->st_ds_req);
++VBD_SHOW(rd_sect, "%llu\n", be->blkif->st_rd_sect);
++VBD_SHOW(wr_sect, "%llu\n", be->blkif->st_wr_sect);
+ 
+ static struct attribute *xen_vbdstat_attrs[] = {
+ 	&dev_attr_oo_req.attr,
+-- 
+1.7.0.4
 
