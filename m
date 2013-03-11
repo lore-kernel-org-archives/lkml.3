@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932191Ab3CKVPu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 17:15:50 -0400
-Received: from mailout01.c08.mtsvc.net ([205.186.168.189]:33593 "EHLO
+	id S932202Ab3CKVRV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 17:17:21 -0400
+Received: from mailout01.c08.mtsvc.net ([205.186.168.189]:33611 "EHLO
 	mailout01.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754974Ab3CKVPo (ORCPT
+	with ESMTP id S932175Ab3CKVPs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 17:15:44 -0400
+	Mon, 11 Mar 2013 17:15:48 -0400
 From: Peter Hurley <peter@hurleysoftware.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Jiri Slaby <jslaby@suse.cz>
@@ -14,9 +14,9 @@ Cc: Sasha Levin <levinsasha928@gmail.com>, Dave Jones <davej@redhat.com>,
         Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
         Shawn Guo <shawn.guo@linaro.org>, linux-kernel@vger.kernel.org,
         linux-serial@vger.kernel.org, Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH v5 29/44] tty: Add lock/unlock ldisc pair functions
-Date: Mon, 11 Mar 2013 16:44:49 -0400
-Message-Id: <1363034704-28036-30-git-send-email-peter@hurleysoftware.com>
+Subject: [PATCH v5 22/44] tty: Fold one-line assign function into callers
+Date: Mon, 11 Mar 2013 16:44:42 -0400
+Message-Id: <1363034704-28036-23-git-send-email-peter@hurleysoftware.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1363034704-28036-1-git-send-email-peter@hurleysoftware.com>
 References: <1361390599-15195-1-git-send-email-peter@hurleysoftware.com>
@@ -26,120 +26,101 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just as the tty pair must be locked in a stable sequence
-(ie, independent of which is consider the 'other' tty), so must
-the ldisc pair be locked in a stable sequence as well.
+Now that tty_ldisc_assign() is a one-line file-scoped function,
+remove it and perform the simple assignment at its call sites.
 
 Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
 ---
- drivers/tty/tty_ldisc.c | 87 +++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 87 insertions(+)
+ drivers/tty/tty_ldisc.c | 31 ++++++-------------------------
+ 1 file changed, 6 insertions(+), 25 deletions(-)
 
 diff --git a/drivers/tty/tty_ldisc.c b/drivers/tty/tty_ldisc.c
-index 1afe192..ae0287f 100644
+index 5ee0b2b..f26ef1a 100644
 --- a/drivers/tty/tty_ldisc.c
 +++ b/drivers/tty/tty_ldisc.c
-@@ -31,6 +31,13 @@
- #define tty_ldisc_debug(tty, f, args...)
- #endif
+@@ -228,24 +228,6 @@ const struct file_operations tty_ldiscs_proc_fops = {
+ };
  
-+/* lockdep nested classes for tty->ldisc_sem */
-+enum {
-+	LDISC_SEM_NORMAL,
-+	LDISC_SEM_OTHER,
-+};
-+
-+
- /*
-  *	This guards the refcounted line discipline lists. The lock
-  *	must be taken with irqs off because there are hangup path
-@@ -351,6 +358,86 @@ void tty_ldisc_deref(struct tty_ldisc *ld)
- }
- EXPORT_SYMBOL_GPL(tty_ldisc_deref);
- 
-+
-+static inline int __lockfunc
-+tty_ldisc_lock(struct tty_struct *tty, unsigned long timeout)
-+{
-+	return ldsem_down_write(&tty->ldisc_sem, timeout);
-+}
-+
-+static inline int __lockfunc
-+tty_ldisc_lock_nested(struct tty_struct *tty, unsigned long timeout)
-+{
-+	return ldsem_down_write_nested(&tty->ldisc_sem,
-+				       LDISC_SEM_OTHER, timeout);
-+}
-+
-+static inline void tty_ldisc_unlock(struct tty_struct *tty)
-+{
-+	return ldsem_up_write(&tty->ldisc_sem);
-+}
-+
-+static int __lockfunc
-+tty_ldisc_lock_pair_timeout(struct tty_struct *tty, struct tty_struct *tty2,
-+			    unsigned long timeout)
-+{
-+	int ret;
-+
-+	if (tty < tty2) {
-+		ret = tty_ldisc_lock(tty, timeout);
-+		if (ret) {
-+			ret = tty_ldisc_lock_nested(tty2, timeout);
-+			if (!ret)
-+				tty_ldisc_unlock(tty);
-+		}
-+	} else {
-+		/* if this is possible, it has lots of implications */
-+		WARN_ON_ONCE(tty == tty2);
-+		if (tty2 && tty != tty2) {
-+			ret = tty_ldisc_lock(tty2, timeout);
-+			if (ret) {
-+				ret = tty_ldisc_lock_nested(tty, timeout);
-+				if (!ret)
-+					tty_ldisc_unlock(tty2);
-+			}
-+		} else
-+			ret = tty_ldisc_lock(tty, timeout);
-+	}
-+
-+	if (!ret)
-+		return -EBUSY;
-+
-+	set_bit(TTY_LDISC_HALTED, &tty->flags);
-+	if (tty2)
-+		set_bit(TTY_LDISC_HALTED, &tty2->flags);
-+	return 0;
-+}
-+
-+static void __lockfunc
-+tty_ldisc_lock_pair(struct tty_struct *tty, struct tty_struct *tty2)
-+{
-+	tty_ldisc_lock_pair_timeout(tty, tty2, MAX_SCHEDULE_TIMEOUT);
-+}
-+
-+static void __lockfunc tty_ldisc_unlock_pair(struct tty_struct *tty,
-+					     struct tty_struct *tty2)
-+{
-+	tty_ldisc_unlock(tty);
-+	if (tty2)
-+		tty_ldisc_unlock(tty2);
-+}
-+
-+static void __lockfunc tty_ldisc_enable_pair(struct tty_struct *tty,
-+					     struct tty_struct *tty2)
-+{
-+	clear_bit(TTY_LDISC_HALTED, &tty->flags);
-+	if (tty2)
-+		clear_bit(TTY_LDISC_HALTED, &tty2->flags);
-+
-+	tty_ldisc_unlock_pair(tty, tty2);
-+}
-+
-+
  /**
-  *	tty_ldisc_enable	-	allow ldisc use
-  *	@tty: terminal to activate ldisc on
+- *	tty_ldisc_assign	-	set ldisc on a tty
+- *	@tty: tty to assign
+- *	@ld: line discipline
+- *
+- *	Install an instance of a line discipline into a tty structure. The
+- *	ldisc must have a reference count above zero to ensure it remains.
+- *	The tty instance refcount starts at zero.
+- *
+- *	Locking:
+- *		Caller must hold references
+- */
+-
+-static void tty_ldisc_assign(struct tty_struct *tty, struct tty_ldisc *ld)
+-{
+-	tty->ldisc = ld;
+-}
+-
+-/**
+  *	tty_ldisc_try		-	internal helper
+  *	@tty: the tty
+  *
+@@ -488,7 +470,7 @@ static void tty_ldisc_restore(struct tty_struct *tty, struct tty_ldisc *old)
+ 	/* There is an outstanding reference here so this is safe */
+ 	old = tty_ldisc_get(old->ops->num);
+ 	WARN_ON(IS_ERR(old));
+-	tty_ldisc_assign(tty, old);
++	tty->ldisc = old;
+ 	tty_set_termios_ldisc(tty, old->ops->num);
+ 	if (tty_ldisc_open(tty, old) < 0) {
+ 		tty_ldisc_put(old);
+@@ -496,7 +478,7 @@ static void tty_ldisc_restore(struct tty_struct *tty, struct tty_ldisc *old)
+ 		new_ldisc = tty_ldisc_get(N_TTY);
+ 		if (IS_ERR(new_ldisc))
+ 			panic("n_tty: get");
+-		tty_ldisc_assign(tty, new_ldisc);
++		tty->ldisc = new_ldisc;
+ 		tty_set_termios_ldisc(tty, N_TTY);
+ 		r = tty_ldisc_open(tty, new_ldisc);
+ 		if (r < 0)
+@@ -725,7 +707,7 @@ int tty_set_ldisc(struct tty_struct *tty, int ldisc)
+ 	tty_ldisc_close(tty, o_ldisc);
+ 
+ 	/* Now set up the new line discipline. */
+-	tty_ldisc_assign(tty, new_ldisc);
++	tty->ldisc = new_ldisc;
+ 	tty_set_termios_ldisc(tty, ldisc);
+ 
+ 	retval = tty_ldisc_open(tty, new_ldisc);
+@@ -799,11 +781,10 @@ static int tty_ldisc_reinit(struct tty_struct *tty, int ldisc)
+ 
+ 	tty_ldisc_close(tty, tty->ldisc);
+ 	tty_ldisc_put(tty->ldisc);
+-	tty->ldisc = NULL;
+ 	/*
+ 	 *	Switch the line discipline back
+ 	 */
+-	tty_ldisc_assign(tty, ld);
++	tty->ldisc = ld;
+ 	tty_set_termios_ldisc(tty, ldisc);
+ 
+ 	return 0;
+@@ -986,7 +967,7 @@ void tty_ldisc_init(struct tty_struct *tty)
+ 	struct tty_ldisc *ld = tty_ldisc_get(N_TTY);
+ 	if (IS_ERR(ld))
+ 		panic("n_tty: init_tty");
+-	tty_ldisc_assign(tty, ld);
++	tty->ldisc = ld;
+ }
+ 
+ /**
+@@ -999,7 +980,7 @@ void tty_ldisc_init(struct tty_struct *tty)
+ void tty_ldisc_deinit(struct tty_struct *tty)
+ {
+ 	tty_ldisc_put(tty->ldisc);
+-	tty_ldisc_assign(tty, NULL);
++	tty->ldisc = NULL;
+ }
+ 
+ void tty_ldisc_begin(void)
 -- 
 1.8.1.2
 
