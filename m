@@ -1,127 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754273Ab3CKSrk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 14:47:40 -0400
-Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:62144 "EHLO
-	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752738Ab3CKSri (ORCPT
+	id S1754308Ab3CKSro (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 14:47:44 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:47935 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752738Ab3CKSrl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 14:47:38 -0400
-Message-ID: <513E2756.2050300@metafoo.de>
-Date: Mon, 11 Mar 2013 19:49:58 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Icedove/3.0.11
+	Mon, 11 Mar 2013 14:47:41 -0400
+Message-ID: <513E26C9.4080706@wwwdotorg.org>
+Date: Mon, 11 Mar 2013 12:47:37 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Alexander Shiyan <shc_work@mail.ru>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/4] tty: max310x: Use dev_pm_ops
-References: <1363023892-15957-1-git-send-email-lars@metafoo.de> <1363025431.558252587@f43.mail.ru> <513E23DA.90100@metafoo.de> <1363027278.637327455@f338.mail.ru>
-In-Reply-To: <1363027278.637327455@f338.mail.ru>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=UTF-8
+To: Laxman Dewangan <ldewangan@nvidia.com>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>
+Subject: Re: [PATCH V2 4/5] ARM: DT: tegra114: add KBC controller DT entry
+References: <1362852678-13421-1-git-send-email-ldewangan@nvidia.com> <1362852678-13421-5-git-send-email-ldewangan@nvidia.com> <513E17C1.1070305@wwwdotorg.org> <513E1B7E.8090203@nvidia.com>
+In-Reply-To: <513E1B7E.8090203@nvidia.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/11/2013 07:41 PM, Alexander Shiyan wrote:
->> On 03/11/2013 07:10 PM, Alexander Shiyan wrote:
->>> Hello.
+On 03/11/2013 11:59 AM, Laxman Dewangan wrote:
+> On Monday 11 March 2013 11:13 PM, Stephen Warren wrote:
+>> On 03/09/2013 11:11 AM, Laxman Dewangan wrote:
+>>> NVIDIA's Tegra114 SoCs have the matrix keyboard controller which
+>>> supports 11x8 type of matrix. The number of rows and columns
+>>> are configurable.
 >>>
->>>> Use dev_pm_ops instead of the deprecated legacy suspend/resume for the
->>>> max310x driver.
->>>>
->>>> Cc: Alexander Shiyan <shc_work@mail.ru>
->>>> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
->>>> ---
->>>>  drivers/tty/serial/max310x.c | 24 ++++++++++++++++--------
->>>>  1 file changed, 16 insertions(+), 8 deletions(-)
->>>>
->>>> diff --git a/drivers/tty/serial/max310x.c b/drivers/tty/serial/max310x.c
->>>> index 0c2422c..8941e64 100644
->>>> --- a/drivers/tty/serial/max310x.c
->>>> +++ b/drivers/tty/serial/max310x.c
->>>> @@ -881,12 +881,14 @@ static struct uart_ops max310x_ops = {
->>>>  	.verify_port	= max310x_verify_port,
->>>>  };
->>>>  
->>>> -static int max310x_suspend(struct spi_device *spi, pm_message_t state)
->>>> +#ifdef CONFIG_PM_SLEEP
->>>> +
->>>> +static int max310x_suspend(struct device *dev)
->>>>  {
->>>>  	int ret;
->>>> -	struct max310x_port *s = dev_get_drvdata(&spi->dev);
->>>> +	struct max310x_port *s = dev_get_drvdata(dev);
->>>>  
->>>> -	dev_dbg(&spi->dev, "Suspend\n");
->>>> +	dev_dbg(dev, "Suspend\n");
->>>>  
->>>>  	ret = uart_suspend_port(&s->uart, &s->port);
->>>>  
->>>> @@ -905,11 +907,11 @@ static int max310x_suspend(struct spi_device *spi, pm_message_t state)
->>>>  	return ret;
->>>>  }
->>>>  
->>>> -static int max310x_resume(struct spi_device *spi)
->>>> +static int max310x_resume(struct device *dev)
->>>>  {
->>>> -	struct max310x_port *s = dev_get_drvdata(&spi->dev);
->>>> +	struct max310x_port *s = dev_get_drvdata(dev);
->>>>  
->>>> -	dev_dbg(&spi->dev, "Resume\n");
->>>> +	dev_dbg(dev, "Resume\n");
->>>>  
->>>>  	if (s->pdata->suspend)
->>>>  		s->pdata->suspend(0);
->>>> @@ -928,6 +930,13 @@ static int max310x_resume(struct spi_device *spi)
->>>>  	return uart_resume_port(&s->uart, &s->port);
->>>>  }
->>>>  
->>>> +static SIMPLE_DEV_PM_OPS(max310x_pm_ops, max310x_suspend, max310x_resume);
->>>> +#define MAX310X_PM_OPS (&max310x_pm_ops)
->>>> +
->>>> +#else
->>>> +#define MAX310X_PM_OPS NULL
->>>> +#endif
->>>> +
->>>>  #ifdef CONFIG_GPIOLIB
->>>>  static int max310x_gpio_get(struct gpio_chip *chip, unsigned offset)
->>>>  {
->>>> @@ -1242,11 +1251,10 @@ static struct spi_driver max310x_driver = {
->>>>  	.driver = {
->>>>  		.name	= "max310x",
->>>>  		.owner	= THIS_MODULE,
->>>> +		.pm	= MAX310X_PM_OPS,
->>>
->>> Check for CONFIG_PM_SLEEP not necessary at all.
->>> <linux/pm.h> will do all for us.
->>
->> No it wont, you'll end up with a dev_pm_ops struct full of zeros and two
-> I.e. NULL, it is OK.
-
-But what's the point of keeping it around?
-
+>>> Add DT entry for KBC controller with compatibility as
+>>> "nvidia,tegra114-kbc",
+>>> "nvidia,tegra20-kbc".
+>> I thought the HW really wasn't compatible with Tegra20 due to the
+>> reduced number of rows/columns/pins supported?
 > 
->> warnings from your compiler about unused functions.
-> I think attribute "__maybe_unused" can help here.
+> Hw controller is really compatible. Only thing is that there is no
+> physical pins on SoC for KBC-ROW11 to KBC-ROW15.
+> Because, there is no physical pins for ROW11 to ROW15, we asked to
+> remove programming/reference this rows from  TRM of T114 to consistent
+> with SoCs.
 
-Or a #ifdef
-
-> 
->>>>  	},
->>>>  	.probe		= max310x_probe,
->>>>  	.remove		= max310x_remove,
->>>> -	.suspend	= max310x_suspend,
->>>> -	.resume		= max310x_resume,
->>>>  	.id_table	= max310x_id_table,
->>>>  };
->>>>  module_spi_driver(max310x_driver);
->>>> -- 
->>>> 1.8.0
->>>
->>> ---
-> 
-> ---
-
+I think that makes the HW incompatible. If you only have knowledge of
+Tegra20/30, you can assume that there are more rows/pins/columns than
+there actually are. Applying those same validation restrictions on
+Tegra114 will yield validation that isn't strict enough; invalid values
+could be accepted.
