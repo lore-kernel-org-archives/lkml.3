@@ -1,89 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753801Ab3CKRl7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 13:41:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26789 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751379Ab3CKRl6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 13:41:58 -0400
-Date: Mon, 11 Mar 2013 19:41:55 +0200
-From: Gleb Natapov <gleb@redhat.com>
-To: Jan Kiszka <jan.kiszka@siemens.com>
-Cc: Paolo Bonzini <pbonzini@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "mtosatti@redhat.com" <mtosatti@redhat.com>
-Subject: Re: [PATCH] x86: kvm: reset the bootstrap processor when it gets an
- INIT
-Message-ID: <20130311174155.GU31619@redhat.com>
-References: <513DBF45.9030803@redhat.com>
- <20130311115144.GG31619@redhat.com>
- <513DDCC2.9070807@redhat.com>
- <20130311135441.GN31619@redhat.com>
- <513DE3C4.5000503@siemens.com>
- <20130311140503.GO31619@redhat.com>
- <513DE8C5.3090209@redhat.com>
- <513DFA01.1040500@siemens.com>
- <20130311172342.GS31619@redhat.com>
- <513E158B.80506@siemens.com>
+	id S1753549Ab3CKRmw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 13:42:52 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:57255 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751749Ab3CKRmu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Mar 2013 13:42:50 -0400
+Message-ID: <513E1797.4010808@wwwdotorg.org>
+Date: Mon, 11 Mar 2013 11:42:47 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <513E158B.80506@siemens.com>
+To: Thierry Reding <thierry.reding@avionic-design.de>
+CC: Laxman Dewangan <ldewangan@nvidia.com>,
+        linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org,
+        linux-kernel@vger.kernel.org, pdeschrijver@nvidia.com
+Subject: Re: [PATCH V2 3/5] ARM: DT: tegra114:add aliases and DMA requestor
+ for serial controller
+References: <1362852678-13421-1-git-send-email-ldewangan@nvidia.com> <1362852678-13421-4-git-send-email-ldewangan@nvidia.com> <20130310224219.GG4743@avionic-0098.mockup.avionic-design.de>
+In-Reply-To: <20130310224219.GG4743@avionic-0098.mockup.avionic-design.de>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 11, 2013 at 06:34:03PM +0100, Jan Kiszka wrote:
-> On 2013-03-11 18:23, Gleb Natapov wrote:
-> > On Mon, Mar 11, 2013 at 04:36:33PM +0100, Jan Kiszka wrote:
-> >> On 2013-03-11 15:23, Paolo Bonzini wrote:
-> >>> Il 11/03/2013 15:05, Gleb Natapov ha scritto:
-> >>>> On Mon, Mar 11, 2013 at 03:01:40PM +0100, Jan Kiszka wrote:
-> >>>>>> We are not moving away from mp_state, we are moving away from using
-> >>>>>> mp_state for signaling because with nested virt INIT does not always
-> >>>>>> change mp_state, not only that it can change mp_state long after signal
-> >>>>>> is received after vmx off is done.
-> >>>>>
-> >>>>> Right.
-> >>>>>
-> >>>>> BTW, for that to happen, we will also need to influence the INIT level.
-> >>>>> Unless I misread the spec, INIT is blocked while in root mode, and if
-> >>>>> you deassert INIT before leaving root (vmxoff, vmenter), nothing
-> >>>>> actually happens. So what matters is the INIT signal level at the exit
-> >>>>> of root mode.
-> >>>>>
-> >>>> You are talking about INIT# signal received via CPU pin, right? I think
-> >>>> INIT send by IPI cannot go away.
-> >>>
-> >>> Neither can go away.  For INIT sent by IPI, 10.4.7 says:
-> >>>
-> >>> Only the Pentium and P6 family processors support the INIT-deassert IPI.
-> >>> An INIT-disassert IPI has no affect on the state of the APIC, other than
-> >>> to reload the arbitration ID register with the value in the APIC ID
-> >>> register.
-> >>>
-> >>> 18.27.1 also says that "In the local APIC, NMI and INIT (except for INIT
-> >>> deassert) are always treated as edge triggered interrupts".
-> >>>
-> >>>
-> >>> For INIT#, the ICH9 chipset says that "INIT# is driven low for 16 PCI
-> >>> clocks" when a soft reset is requested.  So we can guess that INIT# is
-> >>> also edge-triggered.
-> >>
-> >> Ah, ok. So, virtually, INIT stays asserted until it can be delivered in
-> >> form of a reset or a vmexit.
-> >>
-> > vmexit clears it?
+On 03/10/2013 04:42 PM, Thierry Reding wrote:
+> On Sat, Mar 09, 2013 at 11:41:16PM +0530, Laxman Dewangan wrote: 
+> [...]
+>> diff --git a/arch/arm/boot/dts/tegra114.dtsi 
+>> b/arch/arm/boot/dts/tegra114.dtsi
+> [...]
+>> @@ -99,38 +106,50 @@ 0x70003000 0x40c>;	/* Mux registers */ };
+>> 
+>> -	serial@70006000 { +	/* +	 * There are two serial driver i.e. 
+>> 8250 based simple serial +	 * driver and APB DMA based serial 
+>> driver for higher baudrate +	 * and performace. To enable the 
+>> 8250 based driver, the compatible +	 * is
+>> "nvidia,tegra114-uart", "nvidia,tegra20-uart" and to enable +	 *
+>> the APB DMA based serial driver, the comptible is +	 *
+>> "nvidia,tegra114-hsuart", "nvidia,tegra30-hsuart". +	 */ +	uarta:
+>> serial@70006000 {
 > 
-> It has to. Otherwise, it would hit the host on vmxoff.
-> 
-Why do you thing this is not happening?
+> I'm not sure if this is a good place for this comment. Perhaps it 
+> should go into the binding documentation?
 
-Look at [1] page 10 "VMX and INIT blocking". Do you think they were
-lucky to hit CPU while it was in a root mode?
-
-[1] http://www.invisiblethingslab.com/resources/2011/Software%20Attacks%20on%20Intel%20VT-d.pdf
-
---
-			Gleb.
+It is at least consistent with previous tegra20/30.dtsi. The two
+compatible values are separate bindings, so a clue here re: which one
+to go look at isn't a bad idea, although I agree that having each
+binding document mention the other one would also be good.
