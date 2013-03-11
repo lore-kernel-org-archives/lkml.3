@@ -1,59 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754674Ab3CKVLD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 17:11:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52780 "EHLO mx1.redhat.com"
+	id S1754635Ab3CKVNd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 17:13:33 -0400
+Received: from mga09.intel.com ([134.134.136.24]:30667 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754102Ab3CKVLA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 17:11:00 -0400
-Date: Mon, 11 Mar 2013 17:10:51 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Yinghai Lu <yinghai@kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        WANG Chao <chaowang@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86, kdump: Set crashkernel_low automatically
-Message-ID: <20130311211050.GA16843@redhat.com>
-References: <513E2695.3080707@zytor.com>
- <CAE9FiQXLodhSFy4T9pKLMS+axF0jHGL9B0+TL=dYOFrLVudN9g@mail.gmail.com>
- <513E28B8.3000502@zytor.com>
- <CAE9FiQW-gpEMmc6kseb7E+TEg1F9CqEYZBRDiJ3bDY=t6zGRmg@mail.gmail.com>
- <20130311192021.GF12107@redhat.com>
- <513E36CB.5040908@zytor.com>
- <20130311201245.GC14738@redhat.com>
- <513E3C44.9030402@zytor.com>
- <87hakhk6xu.fsf@xmission.com>
- <513E41BD.3030003@zytor.com>
+	id S1754011Ab3CKVNc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Mar 2013 17:13:32 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,825,1355126400"; 
+   d="scan'208";a="276712476"
+Date: Mon, 11 Mar 2013 21:13:26 +0000
+From: Chris Wilson <chris@chris-wilson.co.uk>
+To: Kees Cook <keescook@chromium.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org
+Subject: Re: [PATCH] drm/i915: clarify reasoning for the access_ok call
+Message-ID: <20130311211326.GC31324@cantiga.alporthouse.com>
+Mail-Followup-To: Chris Wilson <chris@chris-wilson.co.uk>,
+	Kees Cook <keescook@chromium.org>,
+	LKML <linux-kernel@vger.kernel.org>,
+	Daniel Vetter <daniel.vetter@ffwll.ch>,
+	David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org
+References: <20130311192630.GA18227@www.outflux.net>
+ <20130311205125.GA31324@cantiga.alporthouse.com>
+ <CAGXu5j+v9ma5rwhtPqtJKzve5q5G_m9VQkAUqJ38VnDFPpvGYw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <513E41BD.3030003@zytor.com>
+In-Reply-To: <CAGXu5j+v9ma5rwhtPqtJKzve5q5G_m9VQkAUqJ38VnDFPpvGYw@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 11, 2013 at 01:42:37PM -0700, H. Peter Anvin wrote:
-> On 03/11/2013 01:38 PM, Eric W. Biederman wrote:
-> > 
-> > I totally makes sense to figure out how to load a kernel high.  I am not
-> > convinced kexec on panic is the best use of that ability.  I would argue
-> > that it might be better to figure out how to use a small memory
-> > foot-print and try to keep that foot-print from growing.
-> > 
-> 
-> I could not agree more with this.  The whole reason this is a problem is
-> because we are talking about hundreds of megabytes of crashkernel.  If
-> we can fix *that* problem, we are much better off.
+On Mon, Mar 11, 2013 at 02:04:51PM -0700, Kees Cook wrote:
+> Probably not. It just seemed like the existing comment was
+> insufficient after the removal of the redundant VERIFY_READ check that
+> happened recently.
 
-This kind of goal is achievable only if we also restrict how much memory
-first kernel can use. Then all the dependent component will be aware of
-how severe boot requirements are. And there is no such requirement. It is
-just a goal that keep memory bloat to the minimum. But bloat does not mean
-that booting is not allowed. To me kdump environment requirement should be
-no different. Otherwise enforcing them becomes a challenge.
+That's certainly true, the remaining comment is a little cryptic.
+Something more like:
 
-Thanks
-Vivek
+/* We need to check that we can read the entire relocation array, but
+ * as we may need to update the presumed_offsets upon execution, we
+ * need to check now for full write access.
+ */
+-Chris
+
+-- 
+Chris Wilson, Intel Open Source Technology Centre
