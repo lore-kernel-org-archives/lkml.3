@@ -1,74 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754371Ab3CKTbh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 15:31:37 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:3799 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754332Ab3CKTbf (ORCPT
+	id S1754318Ab3CKTca (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 15:32:30 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:15158 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753971Ab3CKTc3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 15:31:35 -0400
+	Mon, 11 Mar 2013 15:32:29 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Mon, 11 Mar 2013 12:31:33 -0700
-Message-ID: <513E30A5.8020104@nvidia.com>
-Date: Tue, 12 Mar 2013 00:59:41 +0530
+	by hqnvupgp08.nvidia.com on Mon, 11 Mar 2013 12:25:30 -0700
 From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+To: <akpm@linux-foundation.org>, <a.zummo@towertech.it>
+CC: <swarren@wwwdotorg.org>, <rtc-linux@googlegroups.com>,
+        <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <thierry.reding@avionic-design.de>,
+        Laxman Dewangan <ldewangan@nvidia.com>
+Subject: [PATCH V3 0/5] rtc: tegra: cleanups to remove warning/code lines
+Date: Tue, 12 Mar 2013 00:59:56 +0530
+Message-ID: <1363030201-14717-1-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
 MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "a.zummo@towertech.it" <a.zummo@towertech.it>,
-        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/5] rtc: tegra: use module_platform_driver_probe for
- module init/exit
-References: <1362852588-13362-1-git-send-email-ldewangan@nvidia.com> <1362852588-13362-4-git-send-email-ldewangan@nvidia.com> <513E1153.20207@wwwdotorg.org>
-In-Reply-To: <513E1153.20207@wwwdotorg.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 11 March 2013 10:46 PM, Stephen Warren wrote:
-> On 03/09/2013 11:09 AM, Laxman Dewangan wrote:
->> Use macro module_platform_driver_probe() to reduce some of the
->> boilerplate code in the driver.
->>
->> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
->> ---
->>   drivers/rtc/rtc-tegra.c |   12 +-----------
->>   1 files changed, 1 insertions(+), 11 deletions(-)
->>
->> diff --git a/drivers/rtc/rtc-tegra.c b/drivers/rtc/rtc-tegra.c
->> index f7718de..4cba10d 100644
->> --- a/drivers/rtc/rtc-tegra.c
->> +++ b/drivers/rtc/rtc-tegra.c
->> @@ -451,17 +451,7 @@ static struct platform_driver tegra_rtc_driver = {
->>   	},
->>   };
->>   
->> -static int __init tegra_rtc_init(void)
->> -{
->> -	return platform_driver_probe(&tegra_rtc_driver, tegra_rtc_probe);
->> -}
->> -module_init(tegra_rtc_init);
->> -
->> -static void __exit tegra_rtc_exit(void)
->> -{
->> -	platform_driver_unregister(&tegra_rtc_driver);
->> -}
->> -module_exit(tegra_rtc_exit);
->> +module_platform_driver_probe(tegra_rtc_driver, tegra_rtc_probe);
-> Out of curiosity here, why not just module_platform_driver(); can't the
-> instantiation of the RTC device be driven by the presence of the DT
-> node, and hence the creation of the platform device object, just like
-> any other driver/device?
+This patch series does the cleanups in the rtc driver as follows:
+- Protect suspend/resume with CONFIG_PM_SLEEP.
+- Use dev_pm_ops in place of legacy way for suspend/resume.
+- Properly reflect teh irq name when doing cat /proc/interrupts.
+- Use module_platform_probe() to remove boilerplate code.
+- use devm_rtc_device_register.
 
-Theoretically it should work but I will work with John (original author) 
-about using the platform_driver_probe().
-If he agrees then  I will send patch to convert it to 
-module_platform_driver().
+Changes from V1: 
+- Use SIMPLE_DEV_PM_OPS
+- Correctd the acronym case rtc to RTC in description.
+- Add Thierry reviewed by on some of patches.
 
+Changes from V2:
+- define tegra_rtc_pm_ops as static.
+- Added Stephen's reviewed by on all patches.
 
+Laxman Dewangan (5):
+  rtc: tegra: protect suspend/resume callbacks with CONFIG_PM_SLEEP
+  rtc: tegra: Use struct dev_pm_ops for power management
+  rtc: tegra: use module_platform_driver_probe for module init/exit
+  rtc: tegra: set irq name as device name
+  rtc: tegra: use managed rtc_device_register
+
+ drivers/rtc/rtc-tegra.c |   61 +++++++++++-----------------------------------
+ 1 files changed, 15 insertions(+), 46 deletions(-)
 
