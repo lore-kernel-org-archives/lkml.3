@@ -1,74 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753441Ab3CKPOM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 11:14:12 -0400
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:38395 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751665Ab3CKPOK (ORCPT
+	id S1753621Ab3CKPRL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 11:17:11 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:47596 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752692Ab3CKPRK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 11:14:10 -0400
-From: Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
-To: cpufreq@vger.kernel.org
-Cc: rjw@sisk.pl, jason@lakedaemon.net, andrew@lunn.ch,
-        daniel.lezcano@linaro.org, len.brown@intel.com, rob.lee@linaro.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
-Subject: [PATCH v2] kirkwood: fix coccicheck warnings
-Date: Mon, 11 Mar 2013 17:14:02 +0200
-Message-Id: <1363014842-11659-1-git-send-email-silviupopescu1990@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Mon, 11 Mar 2013 11:17:10 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130311145435.GB26394@phenom.dumpdata.com>
+References: <1363001016-8439-1-git-send-email-mihneadb@gmail.com>
+	<20130311145435.GB26394@phenom.dumpdata.com>
+Date: Mon, 11 Mar 2013 17:17:02 +0200
+Message-ID: <CAEnQRZBZr+7tLxmSL44q8avpDX7x2yG36ruQAv+9diudhQF_kQ@mail.gmail.com>
+Subject: Re: [PATCH] block: replace kmalloc and then memcpy with kmemdup
+From: Daniel Baluta <daniel.baluta@gmail.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Mihnea Dobrescu-Balaur <mihneadb@gmail.com>, jeremy@goop.org,
+        xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert all uses of devm_request_and_ioremap() to the newly introduced
-devm_ioremap_resource() which provides more consistent error handling.
+Hi Konrad,
 
-devm_ioremap_resource() provides its own error messages so all explicit
-error messages can be removed from the failure code paths.
+The performance is the same using kmemdup, but we have the following advantages:
+* code is cleaner
+* kmemdup adds additional debugging info useful for tracking the real
+place where memory was allocated [1] [2].
 
-Signed-off-by: Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
----
- drivers/cpufreq/kirkwood-cpufreq.c |    8 +++-----
- drivers/cpuidle/cpuidle-kirkwood.c |    6 +++---
- 2 files changed, 6 insertions(+), 8 deletions(-)
+thanks,
+Daniel.
 
-diff --git a/drivers/cpufreq/kirkwood-cpufreq.c b/drivers/cpufreq/kirkwood-cpufreq.c
-index 0e83e3c..6052476 100644
---- a/drivers/cpufreq/kirkwood-cpufreq.c
-+++ b/drivers/cpufreq/kirkwood-cpufreq.c
-@@ -175,11 +175,9 @@ static int kirkwood_cpufreq_probe(struct platform_device *pdev)
- 		dev_err(&pdev->dev, "Cannot get memory resource\n");
- 		return -ENODEV;
- 	}
--	priv.base = devm_request_and_ioremap(&pdev->dev, res);
--	if (!priv.base) {
--		dev_err(&pdev->dev, "Cannot ioremap\n");
--		return -EADDRNOTAVAIL;
--	}
-+	priv.base = devm_ioremap_resource(&pdev->dev, res);
-+	if (IS_ERR(priv.base))
-+		return PTR_ERR(priv.base);
- 
- 	np = of_find_node_by_path("/cpus/cpu@0");
- 	if (!np)
-diff --git a/drivers/cpuidle/cpuidle-kirkwood.c b/drivers/cpuidle/cpuidle-kirkwood.c
-index 670aa1e..53aad73 100644
---- a/drivers/cpuidle/cpuidle-kirkwood.c
-+++ b/drivers/cpuidle/cpuidle-kirkwood.c
-@@ -66,9 +66,9 @@ static int kirkwood_cpuidle_probe(struct platform_device *pdev)
- 	if (res == NULL)
- 		return -EINVAL;
- 
--	ddr_operation_base = devm_request_and_ioremap(&pdev->dev, res);
--	if (!ddr_operation_base)
--		return -EADDRNOTAVAIL;
-+	ddr_operation_base = devm_ioremap_resource(&pdev->dev, res);
-+	if (IS_ERR(ddr_operation_base))
-+		return PTR_ERR(ddr_operation_base);
- 
- 	device = &per_cpu(kirkwood_cpuidle_device, smp_processor_id());
- 	device->state_count = KIRKWOOD_MAX_STATES;
--- 
-1.7.9.5
+[1] http://lxr.linux.no/#linux+v3.8.2/mm/util.c#L61
+[2] http://lxr.linux.no/#linux+v3.8.2/include/linux/slab.h#L363
 
+On Mon, Mar 11, 2013 at 4:54 PM, Konrad Rzeszutek Wilk
+<konrad.wilk@oracle.com> wrote:
+> On Mon, Mar 11, 2013 at 01:23:36PM +0200, Mihnea Dobrescu-Balaur wrote:
+>
+> Are there performance improvements to doing it this way?
+>
+>> Signed-off-by: Mihnea Dobrescu-Balaur <mihneadb@gmail.com>
+>> ---
+>>  drivers/block/xen-blkfront.c |    3 +--
+>>  1 file changed, 1 insertion(+), 2 deletions(-)
+>>
+>> diff --git a/drivers/block/xen-blkfront.c b/drivers/block/xen-blkfront.c
+>> index c3dae2e..9620644 100644
+>> --- a/drivers/block/xen-blkfront.c
+>> +++ b/drivers/block/xen-blkfront.c
+>> @@ -1203,11 +1203,10 @@ static int blkif_recover(struct blkfront_info *info)
+>>       int j;
+>>
+>>       /* Stage 1: Make a safe copy of the shadow state. */
+>> -     copy = kmalloc(sizeof(info->shadow),
+>> +     copy = kmemdup(info->shadow, sizeof(info->shadow),
+>>                      GFP_NOIO | __GFP_REPEAT | __GFP_HIGH);
+>>       if (!copy)
+>>               return -ENOMEM;
+>> -     memcpy(copy, info->shadow, sizeof(info->shadow));
+>>
+>>       /* Stage 2: Set up free list. */
+>>       memset(&info->shadow, 0, sizeof(info->shadow));
+>> --
+>> 1.7.10.4
+>>
+> _______________________________________________
+> Virtualization mailing list
+> Virtualization@lists.linux-foundation.org
+> https://lists.linuxfoundation.org/mailman/listinfo/virtualization
