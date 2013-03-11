@@ -1,89 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753448Ab3CKJLW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 05:11:22 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:49495 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753212Ab3CKJLV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 05:11:21 -0400
-Message-ID: <513DA009.9080601@ti.com>
-Date: Mon, 11 Mar 2013 14:42:41 +0530
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1753274Ab3CKJMY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 05:12:24 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:45956 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751994Ab3CKJMX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Mar 2013 05:12:23 -0400
+Message-ID: <513D9FD9.6020507@parallels.com>
+Date: Mon, 11 Mar 2013 13:11:53 +0400
+From: Pavel Emelyanov <xemul@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-CC: <john.stultz@linaro.org>, <tglx@linutronix.de>, <viresh.kumar@linaro.org>,
-        <jacob.jun.pan@linux.intel.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-pm@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linaro-kernel@lists.linaro.org>,
-        <patches@linaro.org>, <linus.walleij@stericsson.com>
-Subject: Re: [PATCH 0/4] time: dynamic irq affinity
-References: <1361917047-29230-1-git-send-email-daniel.lezcano@linaro.org> <513CC404.6000200@ti.com> <513CCF60.6060406@linaro.org> <513D4E79.5090307@ti.com> <513D9896.2010304@linaro.org>
-In-Reply-To: <513D9896.2010304@linaro.org>
-Content-Type: text/plain; charset="UTF-8"
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Matthew Helsley <matt.helsley@gmail.com>, linux-api@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [PATCH 0/3] posix timers: Extend kernel API to report more info about
+ timers (v3)
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 11 March 2013 02:10 PM, Daniel Lezcano wrote:
-> On 03/11/2013 04:24 AM, Santosh Shilimkar wrote:
->> On Sunday 10 March 2013 11:52 PM, Daniel Lezcano wrote:
-> 
-> [ ... ]
-> 
->>> I don't think it is the case for all the ARM platforms, at least we
->>> tested it on vexpress TC2 and u8500, and the number of IPI were reduced
->>> very significantly increasing the idle time for cpu0. TC2 will need
->>> another optimization on another area for the idle wake up to gain real
->>> improvements.
->>>
->> You are missing my point. TC2 can be an exception since the SGI can wakeup
->> CPUs even from low power states where local timer's are stalled. Is that
->> the case with U8500 ?
-> 
-> Well, the cpuidle driver is not going into a deep idle state to check
-> this out.
-> 
-> AFAICT this board has a specific firmware with the PRCMU (a device
-> managing the power on the board) and it replaces the GIC when going to
-> deep idle state, especially by reconnecting the GIC to the A9 cores
-> automatically when an interrupt occurs.
-> 
-But most likely it will be limited to peripheral interrupts. SGI's
-are per-cpu irq's so you need to check that part.
+Hi.
 
-> But definitively worth to check.
-> 
->>> I will test it on OMAP but with the coupled idle state, I am not sure of
->>> the behavior. Could elaborate a bit the specificity of OMAP ? I am not
->>> sure to understand why I may miss some IPI wakeups.
->>>
->> I already mention the issue here [1]. You might not see any major issues
->> because the missed asynchronous IPIs might eventually get executed when
->> CPU's wakeup from deeper states because of idle wakeups. OMAP is no
->> different from idle wakeup optimisation and it will surely benefit and work.
->> The main reason I didn't pursue it because of not having solution for
->> [1] which as discussed in past is very much essential from kernel
->> functional correctness perspective. You might want to verify that by
->> adding a tracepoint on IPI's on other reasons except the timer wakeup.
-> 
-> Oh, ok. I didn't make the connection. I got the point now.
-> 
-Good.
+Currently kernel doesn't provide any API for getting information about
+what timers are currently created by process and in which state they 
+are. Also, the way timer IDs are generated makes it impossible to create
+a timer with any desired ID. Both facilities are very very tempting by
+the checkpoint-restore project.
 
-> If we can raise a fake hardware interrupt on the GIC (not sure that
-> could be done), may be we can implement something similar to the
-> broadcast timer mechanism to replace the IPI when the cores are not IPI
-> wakeup capable.
-> 
-It isn't straight forward. The easiest way is to replace the SGI IPI
-with one which is wakeup capable even from deeper states. But then
-it all depends on hardware support and what that hook looks
-like per platform.
+That said, this series fixes posix timers API in this way:
 
-Regards,
-Santosh
+1. it makes timers IDs generation per-signal_struct to allow for
+   recreation of a timer with desired ID;
+2. it adds per-task proc file where all timers created by it are
+   listed.
 
+This v3 series is ported on v3.9-rc2 and patches' changelogs are fixed
+according to Thomas' feedback to contain info why the change is required.
 
+Thanks,
+Pavel
