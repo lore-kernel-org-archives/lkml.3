@@ -1,61 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753650Ab3CKP3L (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Mar 2013 11:29:11 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:64084 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751929Ab3CKP3I (ORCPT
+	id S1753756Ab3CKPbn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Mar 2013 11:31:43 -0400
+Received: from cpsmtpb-ews03.kpnxchange.com ([213.75.39.6]:57740 "EHLO
+	cpsmtpb-ews03.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751919Ab3CKPbm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Mar 2013 11:29:08 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Tim Gardner <tim.gardner@canonical.com>
-Subject: Re: [PATCH linux-next] mfd: max8925: max8925_backlight_probe: Silence 'statement with no effect' warning
-Date: Mon, 11 Mar 2013 15:29:03 +0000
-User-Agent: KMail/1.12.2 (Linux/3.8.0-8-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, Richard Purdie <rpurdie@rpsys.net>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        linux-fbdev@vger.kernel.org
-References: <1362939145-88329-1-git-send-email-tim.gardner@canonical.com>
-In-Reply-To: <1362939145-88329-1-git-send-email-tim.gardner@canonical.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+	Mon, 11 Mar 2013 11:31:42 -0400
+Message-ID: <1363015899.3137.91.camel@x61.thuisdomein>
+Subject: [PATCH] [media] ts2020: use customise option correctly
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Konstantin Dimitrov <kosio.dimitrov@gmail.com>,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Mon, 11 Mar 2013 16:31:39 +0100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-Message-Id: <201303111529.03872.arnd@arndb.de>
-X-Provags-ID: V02:K0:JdCDeQohOjjC0VHbLnXQIBYhaZ+cLZTRDyz4/ZtoM2l
- qkdwOP4Tke6NEtZYGi3LIC0/qfrlgfe3aTnYJF7tizg4RLacwg
- yspt/86xkj3z4WvVb1yKzVoG0W4tJNDLKA0jOIUy3qt38xa5qW
- kroSldRsImiMSZ98VWWvK0b8yStybRNead8leAIGu+YpfQy6MW
- 1Zd+Duce7EhNb0xS6EXSjKqYhDNgEWOoViu2ICK6veXRGYoByr
- isPoClYUfs8oc9gj8IGONFwzxcuS70hdywLeWDC0gCeKkdrL9P
- A6P+GR9nFqjnwcGxzkb/tvCjx2i8ukHp9NbDGXjZ1kp8WFpUd6
- X/0EJlEFxlDYvR6EHRls=
+X-OriginalArrivalTime: 11 Mar 2013 15:31:40.0408 (UTC) FILETIME=[86EA1780:01CE1E6D]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 10 March 2013, Tim Gardner wrote:
-> drivers/video/backlight/max8925_bl.c: In function 'max8925_backlight_probe':
-> drivers/video/backlight/max8925_bl.c:177:3: warning: statement with no effect [-Wunused-value]
-> 
-> gcc version 4.6.3
-> 
-> Convert max8925_backlight_dt_init() to an 'inline void' since it is only
-> called from one place where the return code is ignored. Protect the
-> guts of the function with '#ifdef CONFIG_OF'.
-> 
-> Cc: Richard Purdie <rpurdie@rpsys.net>
-> Cc: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-> Cc: linux-fbdev@vger.kernel.org
-> Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
-> ---
->  drivers/video/backlight/max8925_bl.c |    9 +++------
->  1 file changed, 3 insertions(+), 6 deletions(-)
+The Kconfig entry for "TS2020 based tuners" defaults to modular if
+DVB_FE_CUSTOMISE is set. But that Kconfig symbol was replaced with
+MEDIA_SUBDRV_AUTOSELECT as of v3.7. So use the new symbol. And negate
+the logic, so we are in line with all the similar entries in this file.
 
-I had already sent a better patch for this earlier, see "mfd: max8925:
-fix trivial build warning for non-dt". Unfortunately when I looked into
-the problem again, I found more problems with the original patches,
-apparently the DT bindings were never properly reviewed. It may be
-better to revert the original patch for 3.9 and do it better for 3.10.
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+Entirely untested.
 
-	Arnd
+ drivers/media/dvb-frontends/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/media/dvb-frontends/Kconfig b/drivers/media/dvb-frontends/Kconfig
+index 6f809a7..0e2ec6f 100644
+--- a/drivers/media/dvb-frontends/Kconfig
++++ b/drivers/media/dvb-frontends/Kconfig
+@@ -210,7 +210,7 @@ config DVB_SI21XX
+ config DVB_TS2020
+ 	tristate "Montage Tehnology TS2020 based tuners"
+ 	depends on DVB_CORE && I2C
+-	default m if DVB_FE_CUSTOMISE
++	default m if !MEDIA_SUBDRV_AUTOSELECT
+ 	help
+ 	  A DVB-S/S2 silicon tuner. Say Y when you want to support this tuner.
+ 
+-- 
+1.7.11.7
+
